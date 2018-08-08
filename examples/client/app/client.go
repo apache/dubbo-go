@@ -19,7 +19,7 @@ import (
 )
 
 import (
-	"github.com/dubbo/dubbo-go/client"
+	"github.com/dubbo/dubbo-go/public"
 	"github.com/dubbo/dubbo-go/registry"
 )
 
@@ -54,7 +54,7 @@ func main() {
 func initClient() {
 	var (
 		err       error
-		codecType client.CodecType
+		codecType public.CodecType
 	)
 
 	if clientConfig == nil {
@@ -96,8 +96,8 @@ func initClient() {
 	}
 
 	for idx := range clientConfig.Service_List {
-		codecType = client.GetCodecType(clientConfig.Service_List[idx].Protocol)
-		if codecType == client.CODECTYPE_UNKNOWN {
+		codecType = public.GetCodecType(clientConfig.Service_List[idx].Protocol)
+		if codecType == public.CODECTYPE_UNKNOWN {
 			panic(fmt.Sprintf("unknown protocol %s", clientConfig.Service_List[idx].Protocol))
 		}
 	}

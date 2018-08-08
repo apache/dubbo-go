@@ -1,4 +1,4 @@
-package client
+package jsonrpc
 
 import (
 	"bufio"
@@ -20,11 +20,8 @@ import (
 )
 
 import (
+	"github.com/dubbo/dubbo-go/public"
 	"github.com/dubbo/dubbo-go/registry"
-)
-
-const (
-	DUBBOGO_CTX_KEY = "dubbogo-ctx"
 )
 
 //////////////////////////////////////////////
@@ -120,7 +117,7 @@ func (c *HTTPClient) Call(ctx context.Context, service registry.ServiceURL, req 
 		reqTimeout = 1e8
 	}
 	httpHeader.Set("Timeout", fmt.Sprintf("%d", reqTimeout))
-	if md, ok := ctx.Value(DUBBOGO_CTX_KEY).(map[string]string); ok {
+	if md, ok := ctx.Value(public.DUBBOGO_CTX_KEY).(map[string]string); ok {
 		for k := range md {
 			httpHeader.Set(k, md[k])
 		}
