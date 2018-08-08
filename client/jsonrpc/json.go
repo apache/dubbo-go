@@ -21,7 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package client
+package jsonrpc
 
 import (
 	"bytes"
@@ -39,43 +39,6 @@ const (
 	MAX_JSONRPC_ID = 0x7FFFFFFF
 	VERSION        = "2.0"
 )
-
-//////////////////////////////////////////
-// codec type
-//////////////////////////////////////////
-
-type CodecType int
-
-const (
-	CODECTYPE_UNKNOWN CodecType = iota
-	CODECTYPE_JSONRPC
-)
-
-var codecTypeStrings = [...]string{
-	"unknown",
-	"jsonrpc",
-}
-
-func (c CodecType) String() string {
-	typ := CODECTYPE_UNKNOWN
-	switch c {
-	case CODECTYPE_JSONRPC:
-		typ = c
-	}
-
-	return codecTypeStrings[typ]
-}
-
-func GetCodecType(t string) CodecType {
-	var typ = CODECTYPE_UNKNOWN
-
-	switch t {
-	case codecTypeStrings[CODECTYPE_JSONRPC]:
-		typ = CODECTYPE_JSONRPC
-	}
-
-	return typ
-}
 
 //////////////////////////////////////////
 // json codec

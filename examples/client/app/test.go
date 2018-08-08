@@ -13,7 +13,8 @@ import (
 )
 
 import (
-	"github.com/dubbo/dubbo-go/client"
+	"github.com/dubbo/dubbo-go/client/jsonrpc"
+	"github.com/dubbo/dubbo-go/public"
 	"github.com/dubbo/dubbo-go/registry"
 )
 
@@ -26,13 +27,13 @@ func testJsonrpc(userKey string) {
 		user       *JsonRPCUser
 		ctx        context.Context
 		conf       registry.ServiceConfig
-		req        client.Request
+		req        jsonrpc.Request
 		serviceURL *registry.ServiceURL
-		clt        *client.HTTPClient
+		clt        *jsonrpc.HTTPClient
 	)
 
-	clt = client.NewHTTPClient(
-		&client.HTTPOptions{
+	clt = jsonrpc.NewHTTPClient(
+		&jsonrpc.HTTPOptions{
 			HandshakeTimeout: clientConfig.connectTimeout,
 			HTTPTimeout:      clientConfig.requestTimeout,
 		},
@@ -41,7 +42,7 @@ func testJsonrpc(userKey string) {
 	serviceIdx = -1
 	service = "com.ikurento.user.UserProvider"
 	for i := range clientConfig.Service_List {
-		if clientConfig.Service_List[i].Service == service && clientConfig.Service_List[i].Protocol == client.CODECTYPE_JSONRPC.String() {
+		if clientConfig.Service_List[i].Service == service && clientConfig.Service_List[i].Protocol == public.CODECTYPE_JSONRPC.String() {
 			serviceIdx = i
 			break
 		}
@@ -55,7 +56,7 @@ func testJsonrpc(userKey string) {
 	// gxlog.CInfo("jsonrpc selected service %#v", clientConfig.Service_List[serviceIdx])
 	conf = registry.ServiceConfig{
 		Group:    clientConfig.Service_List[serviceIdx].Group,
-		Protocol: client.CodecType(client.CODECTYPE_JSONRPC).String(),
+		Protocol: public.CodecType(public.CODECTYPE_JSONRPC).String(),
 		Version:  clientConfig.Service_List[serviceIdx].Version,
 		Service:  clientConfig.Service_List[serviceIdx].Service,
 	}
@@ -70,7 +71,7 @@ func testJsonrpc(userKey string) {
 	}
 	log.Debug("got serviceURL: %s", serviceURL)
 	// Set arbitrary headers in context
-	ctx = context.WithValue(context.Background(), client.DUBBOGO_CTX_KEY, map[string]string{
+	ctx = context.WithValue(context.Background(), public.DUBBOGO_CTX_KEY, map[string]string{
 		"X-Proxy-Id": "dubbogo",
 		"X-Services": service,
 		"X-Method":   method,
