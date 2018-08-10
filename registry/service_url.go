@@ -203,10 +203,6 @@ func (s *serviceArray) String() string {
 }
 
 func (s *serviceArray) Select(ID int64, mode Mode, ttl time.Duration) (*ServiceURL, error) {
-	if s.arr == nil {
-		return nil, ErrServiceArrayEmpty
-	}
-
 	arrSize := len(s.arr)
 	if arrSize == 0 {
 		return nil, ErrServiceArrayEmpty
