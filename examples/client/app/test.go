@@ -13,7 +13,7 @@ import (
 )
 
 import (
-	"github.com/dubbo/dubbo-go/client/jsonrpc"
+	"github.com/dubbo/dubbo-go/jsonrpc"
 	"github.com/dubbo/dubbo-go/public"
 	"github.com/dubbo/dubbo-go/registry"
 )
