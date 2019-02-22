@@ -43,10 +43,11 @@ func main() {
 
 	time.Sleep(3e9)
 	gxlog.CInfo("\n\n\nstart to test jsonrpc")
-	for i := 0; i < 100; i++ {
-		testJsonrpc("A003")
-		time.Sleep(1e9)
-	}
+	testJsonrpc("A003")
+	time.Sleep(3e9)
+
+	gxlog.CInfo("\n\n\nstart to test jsonrpc illegal method")
+	testJsonrpcIllegalMethod("A003")
 
 	initSignal()
 }
