@@ -1,0 +1,35 @@
+# dubbo server yaml configure file
+
+# pprof
+pprof_enabled : true
+pprof_port : 20080
+
+# server
+transport : "http"
+net_timeout : "3s"
+
+# application config
+application_config:
+    organization : "ikurento.com"
+    name : "BDTService"
+    module : "dubbogo user-info server"
+    version : "0.0.1"
+    owner : "ZX"
+
+registry_config:
+    timeout	: 3
+    address:
+        - "127.0.0.1:2181"
+
+service_list:
+    -
+        protocol : "jsonrpc"
+        # 相当于dubbo.xml中的interface
+        service : "com.ikurento.user.UserProvider"
+
+server_list:
+    -
+        ip : "127.0.0.1"
+        port : 20000
+        # 本server能够提供所有支持同样的Protocol的servicelist的服务
+        protocol : "jsonrpc"

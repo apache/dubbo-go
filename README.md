@@ -14,7 +14,7 @@ Apache License, Version 2.0
 + 4 Registry: ZooKeeper(√), Etcd(X), Redis(X)
 + 5 Strategy: Failover(√), Failfast(√)
 + 6 Load Balance: Random(√), RoundRobin(√)
-+ 7 Role: Consumer(√), Provider(X)
++ 7 Role: Consumer(√), Provider(√)
 
 ## Code Example
 

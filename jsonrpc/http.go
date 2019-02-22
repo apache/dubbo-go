@@ -173,9 +173,7 @@ func (c *HTTPClient) Do(addr, path string, httpHeader http.Header, body []byte) 
 
 		conn.SetReadDeadline(t)
 	}
-
 	setNetConnTimeout(tcpConn, c.options.HTTPTimeout)
-	// defer setNetConnTimeout(tcpConn, 0)
 
 	if _, err := reqBuf.WriteTo(tcpConn); err != nil {
 		return nil, jerrors.Trace(err)
