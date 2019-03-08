@@ -86,6 +86,10 @@ func initServerConf() *ServerConfig {
 		panic(fmt.Sprintf("time.ParseDuration(NetTimeout:%#v) = error:%s", conf.NetTimeout, err))
 		return nil
 	}
+	if conf.Registry_Config.Timeout, err = time.ParseDuration(conf.Registry_Config.TimeoutStr); err != nil {
+		panic(fmt.Sprintf("time.ParseDuration(Registry_Config.Timeout:%#v) = error:%s", conf.Registry_Config.TimeoutStr, err))
+		return nil
+	}
 
 	gxlog.CInfo("config{%#v}\n", conf)
 

@@ -23,7 +23,7 @@ application_config:
     owner : "ZX"
 
 registry_config:
-    timeout	: 3
+    timeout	: "3s"
     address:
         - "127.0.0.1:2181"
 

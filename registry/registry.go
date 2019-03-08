@@ -2,6 +2,7 @@ package registry
 
 import (
 	"fmt"
+	"time"
 )
 
 import (
@@ -39,7 +40,8 @@ type RegistryConfig struct {
 	Address  []string `required:"true" yaml:"address"  json:"address,omitempty"`
 	UserName string   `yaml:"user_name" json:"user_name,omitempty"`
 	Password string   `yaml:"password" json:"password,omitempty"`
-	Timeout  int      `yaml:"timeout" default:"5" json:"timeout,omitempty"` // unit: second
+	TimeoutStr  string      `yaml:"timeout" default:"5s" json:"timeout,omitempty"` // unit: second
+	Timeout  time.Duration  `yaml:"-"  json:"-"`
 }
 
 //////////////////////////////////////////////
