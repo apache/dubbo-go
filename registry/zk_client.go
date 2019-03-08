@@ -22,7 +22,7 @@ type zookeeperClient struct {
 	zkAddrs       []string
 	sync.Mutex    // for conn
 	conn          *zk.Conn
-	timeout       int
+	timeout       time.Duration
 	exit          chan struct{}
 	wait          sync.WaitGroup
 	eventRegistry map[string][]*chan struct{}
@@ -63,7 +63,7 @@ func timeSecondDuration(sec int) time.Duration {
 	return time.Duration(sec) * time.Second
 }
 
-func newZookeeperClient(name string, zkAddrs []string, timeout int) (*zookeeperClient, error) {
+func newZookeeperClient(name string, zkAddrs []string, timeout time.Duration) (*zookeeperClient, error) {
 	var (
 		err   error
 		event <-chan zk.Event
@@ -78,7 +78,7 @@ func newZookeeperClient(name string, zkAddrs []string, timeout int) (*zookeeperC
 		eventRegistry: make(map[string][]*chan struct{}),
 	}
 	// connect to zookeeper
-	z.conn, event, err = zk.Connect(zkAddrs, timeSecondDuration(timeout))
+	z.conn, event, err = zk.Connect(zkAddrs, timeout)
 	if err != nil {
 		return nil, jerrors.Annotatef(err, "zk.Connect(zkAddrs:%+v)", zkAddrs)
 	}
