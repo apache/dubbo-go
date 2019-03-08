@@ -115,7 +115,7 @@ func (c *HTTPClient) Call(ctx context.Context, service registry.ServiceURL, req 
 	if reqTimeout <= 0 {
 		reqTimeout = 1e8
 	}
-	httpHeader.Set("Timeout", fmt.Sprintf("%d", reqTimeout))
+	httpHeader.Set("Timeout", reqTimeout.String())
 	if md, ok := ctx.Value(public.DUBBOGO_CTX_KEY).(map[string]string); ok {
 		for k := range md {
 			httpHeader.Set(k, md[k])
