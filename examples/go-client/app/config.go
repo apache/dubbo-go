@@ -81,6 +81,11 @@ func initClientConfig() error {
 		panic(fmt.Sprintf("yaml.Unmarshal() = error:%s", jerrors.ErrorStack(err)))
 		return nil
 	}
+	if clientConfig.Registry_Config.Timeout, err = time.ParseDuration(clientConfig.Registry_Config.TimeoutStr); err != nil {
+		panic(fmt.Sprintf("time.ParseDuration(Registry_Config.Timeout:%#v) = error:%s", clientConfig.Registry_Config.TimeoutStr, err))
+		return nil
+	}
+
 	gxlog.CInfo("config{%#v}\n", clientConfig)
 
 	// log

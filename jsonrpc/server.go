@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"runtime"
 	"runtime/debug"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -204,9 +203,9 @@ func (s *Server) handlePkg(rpc *serviceMap, conn net.Conn) {
 
 		ctx := context.Background()
 		if len(reqHeader["Timeout"]) > 0 {
-			timeout, err := strconv.ParseUint(reqHeader["Timeout"], 10, 64)
+			timeout, err := time.ParseDuration(reqHeader["Timeout"])
 			if err == nil {
-				httpTimeout = time.Duration(timeout)
+				httpTimeout = timeout
 				ctx, _ = context.WithTimeout(ctx, httpTimeout)
 			}
 			delete(reqHeader, "Timeout")

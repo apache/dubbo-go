@@ -9,7 +9,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -106,17 +105,17 @@ func (c *HTTPClient) Call(ctx context.Context, service registry.ServiceURL, req 
 
 	reqTimeout := c.options.HTTPTimeout
 	if len(service.Query.Get("timeout")) != 0 {
-		if timeout, err := strconv.Atoi(service.Query.Get("timeout")); err == nil {
-			timeoutDuration := time.Duration(timeout) * time.Millisecond
-			if timeoutDuration < reqTimeout {
-				reqTimeout = timeoutDuration
+
+		if timeout, err := time.ParseDuration(service.Query.Get("timeout")+"s"); err == nil {
+			if timeout < reqTimeout {
+				reqTimeout = timeout
 			}
 		}
 	}
 	if reqTimeout <= 0 {
 		reqTimeout = 1e8
 	}
-	httpHeader.Set("Timeout", fmt.Sprintf("%d", reqTimeout))
+	httpHeader.Set("Timeout", reqTimeout.String())
 	if md, ok := ctx.Value(public.DUBBOGO_CTX_KEY).(map[string]string); ok {
 		for k := range md {
 			httpHeader.Set(k, md[k])
