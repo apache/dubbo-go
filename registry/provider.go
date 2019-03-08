@@ -124,7 +124,7 @@ func (r *ZkProviderRegistry) validateZookeeperClient() error {
 		r.client, err = newZookeeperClient(ProviderRegistryZkClient, r.Address, r.RegistryConfig.Timeout)
 		if err != nil {
 			log.Warn("newZookeeperClient(name{%s}, zk addresss{%v}, timeout{%d}) = error{%#v}",
-				ProviderRegistryZkClient, r.Address, r.Timeout, jerrors.ErrorStack(err))
+				ProviderRegistryZkClient, r.Address, r.Timeout.String(), jerrors.ErrorStack(err))
 		}
 	}
 	r.Unlock()
@@ -241,7 +241,7 @@ func (r *ZkProviderRegistry) register(conf *ProviderServiceConfig) error {
 	params.Add("side", (DubboType(PROVIDER)).Role())
 	params.Add("pid", processID)
 	params.Add("ip", localIP)
-	params.Add("timeout", fmt.Sprintf("%v", r.Timeout))
+	params.Add("timeout", fmt.Sprintf("%v", r.Timeout.Seconds()))
 	// params.Add("timestamp", time.Now().Format("20060102150405"))
 	params.Add("timestamp", fmt.Sprintf("%d", r.birth))
 	if conf.ServiceConfig.Version != "" {

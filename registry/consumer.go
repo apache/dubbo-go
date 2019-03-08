@@ -65,7 +65,7 @@ func (t DubboType) Role() string {
 //////////////////////////////////////////////
 
 const (
-	DEFAULT_REGISTRY_TIMEOUT = 1
+	DEFAULT_REGISTRY_TIMEOUT = 1 * time.Second
 	ConsumerRegistryZkClient = "consumer zk registry"
 )
 
@@ -239,7 +239,7 @@ func (r *ZkConsumerRegistry) validateZookeeperClient() error {
 		r.client, err = newZookeeperClient(ConsumerRegistryZkClient, r.Address, r.RegistryConfig.Timeout)
 		if err != nil {
 			log.Warn("newZookeeperClient(name{%s}, zk addresss{%v}, timeout{%d}) = error{%v}",
-				ConsumerRegistryZkClient, r.Address, r.Timeout, err)
+				ConsumerRegistryZkClient, r.Address, r.Timeout.String(), err)
 		}
 	}
 
@@ -343,7 +343,7 @@ func (r *ZkConsumerRegistry) register(conf *ServiceConfig) error {
 	params.Add("side", (DubboType(CONSUMER)).Role())
 	params.Add("pid", processID)
 	params.Add("ip", localIP)
-	params.Add("timeout", fmt.Sprintf("%v", r.Timeout))
+	params.Add("timeout", fmt.Sprintf("%v", r.Timeout.Seconds()))
 	params.Add("timestamp", fmt.Sprintf("%d", r.birth))
 	if conf.Version != "" {
 		params.Add("version", conf.Version)

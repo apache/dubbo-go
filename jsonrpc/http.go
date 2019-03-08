@@ -9,7 +9,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -106,10 +105,10 @@ func (c *HTTPClient) Call(ctx context.Context, service registry.ServiceURL, req 
 
 	reqTimeout := c.options.HTTPTimeout
 	if len(service.Query.Get("timeout")) != 0 {
-		if timeout, err := strconv.Atoi(service.Query.Get("timeout")); err == nil {
-			timeoutDuration := time.Duration(timeout) * time.Second
-			if timeoutDuration < reqTimeout {
-				reqTimeout = timeoutDuration
+
+		if timeout, err := time.ParseDuration(service.Query.Get("timeout")+"s"); err == nil {
+			if timeout < reqTimeout {
+				reqTimeout = timeout
 			}
 		}
 	}
