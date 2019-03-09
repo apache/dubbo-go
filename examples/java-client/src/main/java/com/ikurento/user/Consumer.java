@@ -39,7 +39,7 @@ public class Consumer {
 
     private void testGetUser() throws Exception {
         try {
-            User user1 = userProvider.GetUser("003");
+            User user1 = userProvider.GetUser("A003");
             System.out.println("[" + new SimpleDateFormat("HH:mm:ss").format(new Date()) + "] " +
                     " UserInfo, Id:" + user1.getId() + ", name:" + user1.getName() + ", sex:" + user1.getSex().toString()
                     + ", age:" + user1.getAge() + ", time:" + user1.getTime().toString());
@@ -51,9 +51,9 @@ public class Consumer {
     private void testGetUsers() throws Exception {
         try {
             List<String> userIDList = new ArrayList<String>();
-            userIDList.add("001");
-            userIDList.add("002");
-            userIDList.add("003");
+            userIDList.add("A001");
+            userIDList.add("A002");
+            userIDList.add("A003");
 
             List<User> userList = userProvider.GetUsers(userIDList);
 
@@ -72,6 +72,7 @@ public class Consumer {
     public void start() throws Exception {
         testGetUser();
         // testGetUsers();
-        Thread.sleep(120000);
+//        Thread.sleep(120000);
+Thread.sleep(2000);
     }
 }

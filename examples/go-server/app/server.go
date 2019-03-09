@@ -1,13 +1,3 @@
-/******************************************************
-# DESC    : provider example
-# AUTHOR  : Alex Stocks
-# VERSION : 1.0
-# LICENCE : Apache License 2.0
-# EMAIL   : alexstocks@foxmail.com
-# MOD     : 2016-07-21 16:41
-# FILE    : server.go
-******************************************************/
-
 package main
 
 import (
@@ -18,9 +8,10 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+)
 
+import (
 	// "github.com/AlexStocks/gocolor"
-
 	"github.com/AlexStocks/goext/net"
 	"github.com/AlexStocks/goext/time"
 	log "github.com/AlexStocks/log4go"
@@ -30,7 +21,7 @@ import (
 )
 
 var (
-	survivalTimeout int = 3e9
+	survivalTimeout = int(3e9)
 	servo           *jsonrpc.Server
 )
 

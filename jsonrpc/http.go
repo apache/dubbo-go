@@ -106,7 +106,7 @@ func (c *HTTPClient) Call(ctx context.Context, service registry.ServiceURL, req 
 	reqTimeout := c.options.HTTPTimeout
 	if len(service.Query.Get("timeout")) != 0 {
 
-		if timeout, err := time.ParseDuration(service.Query.Get("timeout")+"s"); err == nil {
+		if timeout, err := time.ParseDuration(service.Query.Get("timeout") + "s"); err == nil {
 			if timeout < reqTimeout {
 				reqTimeout = timeout
 			}

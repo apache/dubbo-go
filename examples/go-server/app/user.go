@@ -1,13 +1,3 @@
-/*****************************************************
-# DESC    : UserProvider Service
-# AUTHOR  : Alex Stocks
-# VERSION : 1.0
-# LICENCE : Apache License 2.0
-# EMAIL   : alexstocks@foxmail.com
-# MOD     : 2016-07-21 19:22
-# FILE    : user.go
-******************************************************/
-
 package main
 
 import (
@@ -83,16 +73,16 @@ func init() {
 
 /*
 // you can define your json unmarshal function here
-func (this *UserId) UnmarshalJSON(value []byte) error {
-	this.Id = string(value)
-	this.Id = strings.TrimPrefix(this.Id, "\"")
-	this.Id = strings.TrimSuffix(this.Id, `"`)
+func (u *UserId) UnmarshalJSON(value []byte) error {
+	u.Id = string(value)
+	u.Id = strings.TrimPrefix(u.Id, "\"")
+	u.Id = strings.TrimSuffix(u.Id, `"`)
 
 	return nil
 }
 */
 
-func (this *UserProvider) getUser(userId string) (*User, error) {
+func (u *UserProvider) getUser(userId string) (*User, error) {
 	if user, ok := userMap.user[userId]; ok {
 		return &user, nil
 	}
@@ -102,12 +92,12 @@ func (this *UserProvider) getUser(userId string) (*User, error) {
 
 /*
 // can not work
-func (this *UserProvider) GetUser(ctx context.Context, req *UserId, rsp *User) error {
+func (u *UserProvider) GetUser(ctx context.Context, req *UserId, rsp *User) error {
 	var (
 		err  error
 		user *User
 	)
-	user, err = this.getUser(req.Id)
+	user, err = u.getUser(req.Id)
 	if err == nil {
 		*rsp = *user
 		gxlog.CInfo("rsp:%#v", rsp)
@@ -123,14 +113,14 @@ func (this *UserProvider) GetUser(ctx context.Context, req *UserId, rsp *User) e
 
 /*
 // work
-func (this *UserProvider) GetUser(ctx context.Context, req *string, rsp *User) error {
+func (u *UserProvider) GetUser(ctx context.Context, req *string, rsp *User) error {
 	var (
 		err  error
 		user *User
 	)
 
 	gxlog.CInfo("req:%#v", *req)
-	user, err = this.getUser(*req)
+	user, err = u.getUser(*req)
 	if err == nil {
 		*rsp = *user
 		gxlog.CInfo("rsp:%#v", rsp)
@@ -144,30 +134,30 @@ func (this *UserProvider) GetUser(ctx context.Context, req *string, rsp *User) e
 }
 */
 
-func (this *UserProvider) GetUser(ctx context.Context, req []string, rsp *User) error {
+func (u *UserProvider) GetUser(ctx context.Context, req []string, rsp *User) error {
 	var (
 		err  error
 		user *User
 	)
 
 	gxlog.CInfo("req:%#v", req)
-	user, err = this.getUser(req[0])
+	user, err = u.getUser(req[0])
 	if err == nil {
 		*rsp = *user
 		gxlog.CInfo("rsp:%#v", rsp)
 		// s, _ := json.Marshal(rsp)
-		// fmt.Println(string(s))
+		// fmt.Println("hello0:", string(s))
 
 		// s, _ = json.Marshal(*rsp)
-		// fmt.Println(string(s))
+		// fmt.Println("hello1:", string(s))
 	}
 	return err
 }
 
-func (this *UserProvider) Service() string {
+func (u *UserProvider) Service() string {
 	return "com.ikurento.user.UserProvider"
 }
 
-func (this *UserProvider) Version() string {
+func (u *UserProvider) Version() string {
 	return ""
 }
