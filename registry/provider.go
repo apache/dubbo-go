@@ -22,6 +22,7 @@ import (
 //////////////////////////////////////////////
 
 const (
+	defaultTimeout           = int64(10e9)
 	ProviderRegistryZkClient = "provider zk registry"
 )
 
@@ -84,7 +85,7 @@ type ZkProviderRegistry struct {
 
 func NewZkProviderRegistry(opts ...Option) (*ZkProviderRegistry, error) {
 	r := &ZkProviderRegistry{
-		birth:    time.Now().Unix(),
+		birth:    time.Now().UnixNano(),
 		done:     make(chan struct{}),
 		services: make(map[string]ServiceConfigIf),
 		zkPath:   make(map[string]int),
@@ -220,8 +221,11 @@ func (r *ZkProviderRegistry) register(conf *ProviderServiceConfig) error {
 	}
 
 	params = url.Values{}
-	params.Add("interface", conf.ServiceConfig.Service)
+	params.Add("anyhost", "true")
 	params.Add("application", r.ApplicationConfig.Name)
+	params.Add("default.timeout", fmt.Sprintf("%d", defaultTimeout/1e6))
+	params.Add("environment", r.ApplicationConfig.Environment)
+	params.Add("interface", conf.ServiceConfig.Service)
 	revision = r.ApplicationConfig.Version
 	if revision == "" {
 		revision = "0.1.0"
@@ -241,9 +245,8 @@ func (r *ZkProviderRegistry) register(conf *ProviderServiceConfig) error {
 	params.Add("side", (DubboType(PROVIDER)).Role())
 	params.Add("pid", processID)
 	params.Add("ip", localIP)
-	params.Add("timeout", fmt.Sprintf("%v", r.Timeout.Seconds()))
-	// params.Add("timestamp", time.Now().Format("20060102150405"))
-	params.Add("timestamp", fmt.Sprintf("%d", r.birth))
+	params.Add("timeout", fmt.Sprintf("%d", int64(r.Timeout)/1e6))
+	params.Add("timestamp", fmt.Sprintf("%d", r.birth/1e6))
 	if conf.ServiceConfig.Version != "" {
 		params.Add("version", conf.ServiceConfig.Version)
 	}

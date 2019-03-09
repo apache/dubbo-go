@@ -258,8 +258,10 @@ func (server *serviceMap) serveRequest(ctx context.Context,
 		return jerrors.Trace(err)
 	}
 	rsp := &http.Response{
-		Header:        make(http.Header),
 		StatusCode:    code,
+		ProtoMajor:    1,
+		ProtoMinor:    1,
+		Header:        make(http.Header),
 		ContentLength: int64(len(rspStream)),
 		Body:          ioutil.NopCloser(bytes.NewReader(rspStream)),
 	}

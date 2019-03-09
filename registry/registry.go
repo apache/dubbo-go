@@ -29,6 +29,7 @@ type ApplicationConfig struct {
 	Module       string `yaml:"module" json:"module,omitempty"`
 	Version      string `yaml:"version" json:"version,omitempty"`
 	Owner        string `yaml:"owner" json:"owner,omitempty"`
+	Environment  string `yaml:"environment" json:"environment,omitempty"`
 }
 
 func (c *ApplicationConfig) ToString() string {
@@ -37,11 +38,11 @@ func (c *ApplicationConfig) ToString() string {
 }
 
 type RegistryConfig struct {
-	Address  []string `required:"true" yaml:"address"  json:"address,omitempty"`
-	UserName string   `yaml:"user_name" json:"user_name,omitempty"`
-	Password string   `yaml:"password" json:"password,omitempty"`
-	TimeoutStr  string      `yaml:"timeout" default:"5s" json:"timeout,omitempty"` // unit: second
-	Timeout  time.Duration  `yaml:"-"  json:"-"`
+	Address    []string      `required:"true" yaml:"address"  json:"address,omitempty"`
+	UserName   string        `yaml:"user_name" json:"user_name,omitempty"`
+	Password   string        `yaml:"password" json:"password,omitempty"`
+	TimeoutStr string        `yaml:"timeout" default:"5s" json:"timeout,omitempty"` // unit: second
+	Timeout    time.Duration `yaml:"-"  json:"-"`
 }
 
 //////////////////////////////////////////////

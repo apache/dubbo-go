@@ -1,13 +1,3 @@
-/******************************************************
-# DESC    : env var & configure
-# AUTHOR  : Alex Stocks
-# VERSION : 1.0
-# LICENCE : Apache License 2.0
-# EMAIL   : alexstocks@foxmail.com
-# MOD     : 2016-07-21 16:41
-# FILE    : config.go
-******************************************************/
-
 package main
 
 import (
@@ -16,14 +6,13 @@ import (
 	"os"
 	"path"
 	"time"
+)
 
+import (
 	"github.com/AlexStocks/goext/log"
-
 	log "github.com/AlexStocks/log4go"
-
-	jerrors "github.com/juju/errors"
-
 	"github.com/dubbo/dubbo-go/registry"
+	jerrors "github.com/juju/errors"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -87,7 +76,8 @@ func initServerConf() *ServerConfig {
 		return nil
 	}
 	if conf.Registry_Config.Timeout, err = time.ParseDuration(conf.Registry_Config.TimeoutStr); err != nil {
-		panic(fmt.Sprintf("time.ParseDuration(Registry_Config.Timeout:%#v) = error:%s", conf.Registry_Config.TimeoutStr, err))
+		panic(fmt.Sprintf("time.ParseDuration(Registry_Config.Timeout:%#v) = error:%s",
+			conf.Registry_Config.TimeoutStr, err))
 		return nil
 	}
 
