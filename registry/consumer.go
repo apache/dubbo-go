@@ -123,7 +123,7 @@ func NewZkConsumerRegistry(opts ...Option) (*ZkConsumerRegistry, error) {
 	)
 
 	r = &ZkConsumerRegistry{
-		birth:              time.Now().Unix(),
+		birth:              time.Now().UnixNano(),
 		done:               make(chan struct{}),
 		services:           make(map[string]ServiceConfigIf),
 		listenerServiceMap: make(map[string]*serviceArray),
@@ -325,8 +325,11 @@ func (r *ZkConsumerRegistry) register(conf *ServiceConfig) error {
 	}
 
 	params = url.Values{}
-	params.Add("interface", conf.Service)
 	params.Add("application", r.ApplicationConfig.Name)
+	params.Add("default.timeout", fmt.Sprintf("%d", defaultTimeout/1e6))
+	params.Add("environment", r.ApplicationConfig.Environment)
+	params.Add("protocol", conf.Protocol)
+	params.Add("interface", conf.Service)
 	revision = r.ApplicationConfig.Version
 	if revision == "" {
 		revision = "0.1.0"
@@ -343,12 +346,12 @@ func (r *ZkConsumerRegistry) register(conf *ServiceConfig) error {
 	params.Add("side", (DubboType(CONSUMER)).Role())
 	params.Add("pid", processID)
 	params.Add("ip", localIP)
-	params.Add("timeout", fmt.Sprintf("%v", r.Timeout.Seconds()))
-	params.Add("timestamp", fmt.Sprintf("%d", r.birth))
+	params.Add("timeout", fmt.Sprintf("%d", int64(r.Timeout)/1e6))
+	params.Add("timestamp", fmt.Sprintf("%d", r.birth/1e6))
 	if conf.Version != "" {
 		params.Add("version", conf.Version)
 	}
-	rawURL = fmt.Sprintf("%s://%s/%s?%s", conf.Protocol, localIP, conf.Service+conf.Version, params.Encode())
+	rawURL = fmt.Sprintf("consumer://%s/%s?%s", localIP, conf.Service+conf.Version, params.Encode())
 	encodedURL = url.QueryEscape(rawURL)
 
 	dubboPath = fmt.Sprintf("/dubbo/%s/%s", conf.Service, (DubboType(CONSUMER)).String())

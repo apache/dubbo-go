@@ -21,6 +21,7 @@ application_config:
     module : "dubbogo user-info client"
     version : "0.0.1"
     owner : "ZX"
+    environment : "product"
 
 registry_config:
     timeout	: "3s"
