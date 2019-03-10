@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -80,7 +81,7 @@ func NewHTTPClient(opt *HTTPOptions) *HTTPClient {
 
 	t := time.Now()
 	return &HTTPClient{
-		ID:      int64(uint32(t.Second() * t.Nanosecond())),
+		ID:      int64(uint32(os.Getpid() * t.Second() * t.Nanosecond())),
 		options: *opt,
 	}
 }
@@ -104,13 +105,8 @@ func (c *HTTPClient) Call(ctx context.Context, service registry.ServiceURL, req 
 	httpHeader.Set("Accept", "application/json")
 
 	reqTimeout := c.options.HTTPTimeout
-	if len(service.Query.Get("timeout")) != 0 {
-
-		if timeout, err := time.ParseDuration(service.Query.Get("timeout") + "s"); err == nil {
-			if timeout < reqTimeout {
-				reqTimeout = timeout
-			}
-		}
+	if service.Timeout != 0 && service.Timeout < reqTimeout {
+		reqTimeout = time.Duration(service.Timeout)
 	}
 	if reqTimeout <= 0 {
 		reqTimeout = 1e8

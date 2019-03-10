@@ -5,12 +5,11 @@ import (
 	"math/rand"
 	"net"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
-)
 
-import (
 	jerrors "github.com/juju/errors"
 )
 
@@ -90,6 +89,7 @@ type ServiceURL struct {
 	Path         string // like  /com.ikurento.dubbo.UserProvider3
 	Ip           string
 	Port         string
+	Timeout      time.Duration
 	Version      string
 	Group        string
 	Query        url.Values
@@ -100,9 +100,9 @@ type ServiceURL struct {
 func (s ServiceURL) String() string {
 	return fmt.Sprintf(
 		"ServiceURL{Protocol:%s, Location:%s, Path:%s, Ip:%s, Port:%s, "+
-			"Version:%s, Group:%s, Weight:%d, Query:%+v}",
+			"Timeout:%s, Version:%s, Group:%s, Weight:%d, Query:%+v}",
 		s.Protocol, s.Location, s.Path, s.Ip, s.Port,
-		s.Version, s.Group, s.Weight, s.Query)
+		s.Timeout, s.Version, s.Group, s.Weight, s.Query)
 }
 
 func NewServiceURL(urlString string) (*ServiceURL, error) {
@@ -140,6 +140,16 @@ func NewServiceURL(urlString string) (*ServiceURL, error) {
 	}
 	s.Group = s.Query.Get("group")
 	s.Version = s.Query.Get("version")
+	timeoutStr := s.Query.Get("timeout")
+	if len(timeoutStr) == 0 {
+		timeoutStr = s.Query.Get("default.timeout")
+	}
+	if len(timeoutStr) != 0 {
+		timeout, err := strconv.Atoi(timeoutStr)
+		if err == nil && timeout != 0 {
+			s.Timeout = time.Duration(timeout * 1e6) // timeout unit is millisecond
+		}
+	}
 
 	return s, nil
 }
