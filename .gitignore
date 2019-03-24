@@ -16,5 +16,5 @@
 target/
 classes
 
-Gopkg.lock
-vendor/
+# Gopkg.lock
+# vendor/
