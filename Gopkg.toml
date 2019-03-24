@@ -27,11 +27,11 @@
 
 [[constraint]]
   name = "github.com/AlexStocks/goext"
-  version = "0.3.1"
+  version = "0.3.2"
 
 [[constraint]]
   name = "github.com/AlexStocks/log4go"
-  version = "1.0.0"
+  version = "1.0.1"
 
 [[constraint]]
   branch = "master"
