@@ -18,3 +18,5 @@ classes
 
 # Gopkg.lock
 # vendor/
+
+go.sum
