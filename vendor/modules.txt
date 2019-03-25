@@ -1,0 +1,30 @@
+# github.com/AlexStocks/goext v0.3.2
+github.com/AlexStocks/goext/log
+github.com/AlexStocks/goext/net
+github.com/AlexStocks/goext/time
+github.com/AlexStocks/goext/os
+github.com/AlexStocks/goext/container/xorlist
+github.com/AlexStocks/goext/strings
+# github.com/AlexStocks/log4go v1.0.1
+github.com/AlexStocks/log4go
+# github.com/davecgh/go-spew v1.1.1
+github.com/davecgh/go-spew/spew
+# github.com/juju/errors v0.0.0-20190207033735-e65537c515d7
+github.com/juju/errors
+# github.com/k0kubun/pp v3.0.0+incompatible
+github.com/k0kubun/pp
+# github.com/mailru/easyjson v0.0.0-20190312143242-1de009706dbe
+github.com/mailru/easyjson
+github.com/mailru/easyjson/jlexer
+github.com/mailru/easyjson/jwriter
+github.com/mailru/easyjson/buffer
+# github.com/mattn/go-colorable v0.1.1
+github.com/mattn/go-colorable
+# github.com/mattn/go-isatty v0.0.7
+github.com/mattn/go-isatty
+# github.com/samuel/go-zookeeper v0.0.0-20180130194729-c4fab1ac1bec
+github.com/samuel/go-zookeeper/zk
+# golang.org/x/sys v0.0.0-20190222072716-a9d3bda3a223
+golang.org/x/sys/unix
+# gopkg.in/yaml.v2 v2.2.2
+gopkg.in/yaml.v2
