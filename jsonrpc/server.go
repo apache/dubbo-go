@@ -233,7 +233,7 @@ func (s *Server) Options() Options {
 func (s *Server) Handle(h Handler) error {
 	var (
 		err         error
-		serviceConf registry.ProviderServiceConfig
+		serviceConf registry.ServiceConfig
 	)
 
 	opts := s.Options()
@@ -261,7 +261,7 @@ func (s *Server) Handle(h Handler) error {
 					}
 
 					serviceConf.Path = opts.ConfList[j].Address()
-					err = opts.Registry.Register(serviceConf)
+					err = opts.Registry.ProviderRegister(s.opts.Registry.NewProviderServiceConfig(serviceConf))
 					if err != nil {
 						return err
 					}
