@@ -16,5 +16,11 @@
 target/
 classes
 
+
 # Gopkg.lock
 # vendor/
+
+logs/
+go.sum
+go.mod
+
