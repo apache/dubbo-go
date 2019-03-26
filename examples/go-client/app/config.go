@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/dubbo/dubbo-go/registry/zookeeper"
 	"io/ioutil"
 	"os"
 	"path"
@@ -48,7 +49,7 @@ type (
 		Registry     string `default:"zookeeper"  yaml:"registry" json:"registry,omitempty"`
 		// application
 		Application_Config registry.ApplicationConfig `yaml:"application_config" json:"application_config,omitempty"`
-		Registry_Config    registry.RegistryConfig    `yaml:"registry_config" json:"registry_config,omitempty"`
+		ZkRegistryConfig zookeeper.ZkRegistryConfig  `yaml:"zk_registry_config" json:"zk_registry_config,omitempty"`
 		// 一个客户端只允许使用一个service的其中一个group和其中一个version
 		Service_List []registry.ServiceConfig `yaml:"service_list" json:"service_list,omitempty"`
 	}
@@ -81,8 +82,8 @@ func initClientConfig() error {
 		panic(fmt.Sprintf("yaml.Unmarshal() = error:%s", jerrors.ErrorStack(err)))
 		return nil
 	}
-	if clientConfig.Registry_Config.Timeout, err = time.ParseDuration(clientConfig.Registry_Config.TimeoutStr); err != nil {
-		panic(fmt.Sprintf("time.ParseDuration(Registry_Config.Timeout:%#v) = error:%s", clientConfig.Registry_Config.TimeoutStr, err))
+	if clientConfig.ZkRegistryConfig.Timeout, err = time.ParseDuration(clientConfig.ZkRegistryConfig.TimeoutStr); err != nil {
+		panic(fmt.Sprintf("time.ParseDuration(Registry_Config.Timeout:%#v) = error:%s", clientConfig.ZkRegistryConfig.TimeoutStr, err))
 		return nil
 	}
 

@@ -188,41 +188,41 @@ var (
 	ErrServiceArrayTimeout = jerrors.New("serviceArray timeout")
 )
 
-type serviceArray struct {
-	arr   []*ServiceURL
-	birth time.Time
-	idx   int64
+type ServiceArray struct {
+	Arr   []*ServiceURL
+	Birth time.Time
+	Idx   int64
 }
 
-func newServiceArray(arr []*ServiceURL) *serviceArray {
-	return &serviceArray{
-		arr:   arr,
-		birth: time.Now(),
+func NewServiceArray(arr []*ServiceURL) *ServiceArray {
+	return &ServiceArray{
+		Arr:   arr,
+		Birth: time.Now(),
 	}
 }
 
-func (s *serviceArray) String() string {
+func (s *ServiceArray) String() string {
 	var builder strings.Builder
-	builder.WriteString(fmt.Sprintf("birth:%s, idx:%d, arr len:%d, arr:{", s.birth, s.idx, len(s.arr)))
-	for i := range s.arr {
-		builder.WriteString(fmt.Sprintf("%d:%s, ", i, s.arr[i]))
+	builder.WriteString(fmt.Sprintf("birth:%s, idx:%d, arr len:%d, arr:{", s.Birth, s.Idx, len(s.Arr)))
+	for i := range s.Arr {
+		builder.WriteString(fmt.Sprintf("%d:%s, ", i, s.Arr[i]))
 	}
 	builder.WriteString("}")
 
 	return builder.String()
 }
 
-func (s *serviceArray) Select(ID int64, mode Mode, ttl time.Duration) (*ServiceURL, error) {
-	arrSize := len(s.arr)
+func (s *ServiceArray) Select(ID int64, mode Mode, ttl time.Duration) (*ServiceURL, error) {
+	arrSize := len(s.Arr)
 	if arrSize == 0 {
 		return nil, ErrServiceArrayEmpty
 	}
 
-	if ttl != 0 && time.Since(s.birth) > ttl {
+	if ttl != 0 && time.Since(s.Birth) > ttl {
 		return nil, ErrServiceArrayTimeout
 	}
 
-	idx := atomic.AddInt64(&s.idx, 1)
+	idx := atomic.AddInt64(&s.Idx, 1)
 	switch mode {
 	case SM_RoundRobin:
 		idx = (ID + idx) % int64(arrSize)
@@ -230,19 +230,19 @@ func (s *serviceArray) Select(ID int64, mode Mode, ttl time.Duration) (*ServiceU
 		idx = ((int64)(rand.Int()) + ID) % int64(arrSize)
 	}
 
-	return s.arr[idx], nil
+	return s.Arr[idx], nil
 }
 
-func (s *serviceArray) Add(service *ServiceURL, ttl time.Duration) {
-	s.arr = append(s.arr, service)
-	s.birth = time.Now().Add(ttl)
+func (s *ServiceArray) Add(service *ServiceURL, ttl time.Duration) {
+	s.Arr = append(s.Arr, service)
+	s.Birth = time.Now().Add(ttl)
 }
 
-func (s *serviceArray) Del(service *ServiceURL, ttl time.Duration) {
-	for i, svc := range s.arr {
+func (s *ServiceArray) Del(service *ServiceURL, ttl time.Duration) {
+	for i, svc := range s.Arr {
 		if svc.PrimitiveURL == service.PrimitiveURL {
-			s.arr = append(s.arr[:i], s.arr[i+1:]...)
-			s.birth = time.Now().Add(ttl)
+			s.Arr = append(s.Arr[:i], s.Arr[i+1:]...)
+			s.Birth = time.Now().Add(ttl)
 			break
 		}
 	}

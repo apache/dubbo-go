@@ -13,52 +13,102 @@ import (
 // Registry Interface
 //////////////////////////////////////////////
 
+const (
+	CONSUMER = iota
+	CONFIGURATOR
+	ROUTER
+	PROVIDER
+)
+
+var (
+	DubboNodes = [...]string{"consumers", "configurators", "routers", "providers"}
+	DubboRole  = [...]string{"consumer", "", "", "provider"}
+)
+type DubboType int
+
+func (t DubboType) String() string {
+	return DubboNodes[t]
+}
+
+func (t DubboType) Role() string {
+	return DubboRole[t]
+}
+
+
 // for service discovery/registry
 type Registry interface {
-	Register(conf interface{}) error
+
+	//used for service provider calling , register services to registry
+	ProviderRegister(conf ServiceConfigIf) error
+	//used for service consumer calling , register services cared about ,for dubbo's admin monitoring
+	ConsumerRegister(conf ServiceConfig) error
+	//unregister service for service provider
+	//Unregister(conf interface{}) error
+	//used for service consumer ,start listen goroutine
+	Listen()
+
+	//input service config & request id, should return url which registry used
+	Filter(ServiceConfigIf, int64) (*ServiceURL, error)
 	Close()
+	//new Provider conf
+	NewProviderServiceConfig(ServiceConfig)ServiceConfigIf
 }
 
-//////////////////////////////////////////////
-// application config
-//////////////////////////////////////////////
+type OptionInf interface{
+	OptionName()string
+}
+type Options struct{
+	ApplicationConfig
+	Mode           Mode
+	ServiceTTL     time.Duration
+	DubboType      DubboType
+}
+type Option func(*Options)
 
-type ApplicationConfig struct {
-	Organization string `yaml:"organization"  json:"organization,omitempty"`
-	Name         string `yaml:"name" json:"name,omitempty"`
-	Module       string `yaml:"module" json:"module,omitempty"`
-	Version      string `yaml:"version" json:"version,omitempty"`
-	Owner        string `yaml:"owner" json:"owner,omitempty"`
-	Environment  string `yaml:"environment" json:"environment,omitempty"`
+func(Option)OptionName() string {
+	return "Abstact option func"
 }
 
-func (c *ApplicationConfig) ToString() string {
-	return fmt.Sprintf("ApplicationConfig is {name:%s, version:%s, owner:%s, module:%s, organization:%s}",
-		c.Name, c.Version, c.Owner, c.Module, c.Organization)
+func WithDubboType(tp DubboType)Option{
+	return func (o *Options){
+		o.DubboType = tp
+	}
 }
 
-type RegistryConfig struct {
-	Address    []string      `required:"true" yaml:"address"  json:"address,omitempty"`
-	UserName   string        `yaml:"user_name" json:"user_name,omitempty"`
-	Password   string        `yaml:"password" json:"password,omitempty"`
-	TimeoutStr string        `yaml:"timeout" default:"5s" json:"timeout,omitempty"` // unit: second
-	Timeout    time.Duration `yaml:"-"  json:"-"`
+func WithApplicationConf(conf  ApplicationConfig) Option {
+	return func(o *Options) {
+		o.ApplicationConfig = conf
+	}
+}
+
+func WithServiceTTL(ttl time.Duration) Option {
+	return func(o *Options) {
+		o.ServiceTTL = ttl
+	}
+}
+func WithBalanceMode(mode Mode) Option {
+	return func(o *Options) {
+		o.Mode = mode
+	}
 }
 
 //////////////////////////////////////////////
 // service config
 //////////////////////////////////////////////
 
+
 type ServiceConfigIf interface {
 	String() string
 	ServiceEqual(url *ServiceURL) bool
 }
-
 type ServiceConfig struct {
 	Protocol string `required:"true",default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty"`
 	Service  string `required:"true"  yaml:"service"  json:"service,omitempty"`
 	Group    string `yaml:"group" json:"group,omitempty"`
 	Version  string `yaml:"version" json:"version,omitempty"`
+	//add for provider
+	Path    string	`yaml:"path" json:"path,omitempty"`
+	Methods string	`yaml:"methods" json:"methods,omitempty"`
 }
 
 func (c ServiceConfig) Key() string {
@@ -97,4 +147,19 @@ type ServerConfig struct {
 
 func (c *ServerConfig) Address() string {
 	return gxnet.HostAddress(c.IP, c.Port)
+}
+
+
+type ApplicationConfig struct {
+	Organization string `yaml:"organization"  json:"organization,omitempty"`
+	Name         string `yaml:"name" json:"name,omitempty"`
+	Module       string `yaml:"module" json:"module,omitempty"`
+	Version      string `yaml:"version" json:"version,omitempty"`
+	Owner        string `yaml:"owner" json:"owner,omitempty"`
+	Environment  string `yaml:"environment" json:"environment,omitempty"`
+}
+
+func (c *ApplicationConfig) ToString() string {
+	return fmt.Sprintf("ApplicationConfig is {name:%s, version:%s, owner:%s, module:%s, organization:%s}",
+		c.Name, c.Version, c.Owner, c.Module, c.Organization)
 }
