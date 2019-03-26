@@ -15,5 +15,6 @@
 *.iml
 target/
 classes
-
-
+logs/
+go.sum
+go.mod

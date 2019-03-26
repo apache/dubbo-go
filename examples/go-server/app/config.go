@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/dubbo/dubbo-go/registry/zookeeper"
 	"io/ioutil"
 	"os"
 	"path"
@@ -38,7 +39,8 @@ type (
 		// application
 		Application_Config registry.ApplicationConfig `yaml:"application_config" json:"application_config,omitempty"`
 		// Registry_Address  string `default:"192.168.35.3:2181"`
-		Registry_Config registry.RegistryConfig  `yaml:"registry_config" json:"registry_config,omitempty"`
+		Registry     string `default:"zookeeper"  yaml:"registry" json:"registry,omitempty"`
+		ZkRegistryConfig zookeeper.ZkRegistryConfig  `yaml:"zk_registry_config" json:"zk_registry_config,omitempty"`
 		Service_List    []registry.ServiceConfig `yaml:"service_list" json:"service_list,omitempty"`
 		Server_List     []registry.ServerConfig  `yaml:"server_list" json:"server_list,omitempty"`
 	}
@@ -75,9 +77,9 @@ func initServerConf() *ServerConfig {
 		panic(fmt.Sprintf("time.ParseDuration(NetTimeout:%#v) = error:%s", conf.NetTimeout, err))
 		return nil
 	}
-	if conf.Registry_Config.Timeout, err = time.ParseDuration(conf.Registry_Config.TimeoutStr); err != nil {
+	if conf.ZkRegistryConfig.Timeout, err = time.ParseDuration(conf.ZkRegistryConfig.TimeoutStr); err != nil {
 		panic(fmt.Sprintf("time.ParseDuration(Registry_Config.Timeout:%#v) = error:%s",
-			conf.Registry_Config.TimeoutStr, err))
+			conf.ZkRegistryConfig.TimeoutStr, err))
 		return nil
 	}
 
