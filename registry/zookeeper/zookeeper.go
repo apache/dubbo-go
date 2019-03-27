@@ -326,7 +326,6 @@ func (r *ZkRegistry) register(c interface{}) error {
 			return jerrors.Trace(err)
 		}
 
-		params = url.Values{}
 		params.Add("protocol", conf.Protocol)
 		params.Add("interface", conf.Service)
 		revision = r.ApplicationConfig.Version

@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/dubbo/dubbo-go/plugins"
-	"github.com/dubbo/dubbo-go/registry/zookeeper"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -21,6 +19,8 @@ import (
 )
 
 import (
+	"github.com/dubbo/dubbo-go/plugins"
+	"github.com/dubbo/dubbo-go/registry/zookeeper"
 	"github.com/dubbo/dubbo-go/public"
 	"github.com/dubbo/dubbo-go/registry"
 )
