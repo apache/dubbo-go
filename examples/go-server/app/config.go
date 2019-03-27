@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/dubbo/dubbo-go/registry/zookeeper"
+	"github.com/dubbo/dubbo-go/server"
 	"io/ioutil"
 	"os"
 	"path"
@@ -42,7 +43,7 @@ type (
 		Registry     string `default:"zookeeper"  yaml:"registry" json:"registry,omitempty"`
 		ZkRegistryConfig zookeeper.ZkRegistryConfig  `yaml:"zk_registry_config" json:"zk_registry_config,omitempty"`
 		Service_List    []registry.ServiceConfig `yaml:"service_list" json:"service_list,omitempty"`
-		Server_List     []registry.ServerConfig  `yaml:"server_list" json:"server_list,omitempty"`
+		Server_List     []server.ServerConfig  `yaml:"server_list" json:"server_list,omitempty"`
 	}
 )
 
