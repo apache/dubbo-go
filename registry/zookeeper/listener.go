@@ -3,6 +3,7 @@ package zookeeper
 import (
 	"fmt"
 	"github.com/dubbo/dubbo-go/registry"
+	"github.com/dubbo/dubbo-go/service"
 	"path"
 	"sync"
 	"time"
@@ -79,7 +80,7 @@ func (l *zkEventListener) listenServiceNodeEvent(zkPath string) bool {
 	return false
 }
 
-func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, conf registry.ServiceConfig) {
+func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, conf *service.ServiceConfig) {
 	contains := func(s []string, e string) bool {
 		for _, a := range s {
 			if a == e {
@@ -99,7 +100,7 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 	// a node was added -- listen the new node
 	var (
 		newNode    string
-		serviceURL *registry.ServiceURL
+		serviceURL *service.ServiceURL
 	)
 	for _, n := range newChildren {
 		if contains(children, n) {
@@ -108,7 +109,7 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 
 		newNode = path.Join(zkPath, n)
 		log.Info("add zkNode{%s}", newNode)
-		serviceURL, err = registry.NewServiceURL(n)
+		serviceURL, err = service.NewServiceURL(n)
 		if err != nil {
 			log.Error("NewServiceURL(%s) = error{%v}", n, jerrors.ErrorStack(err))
 			continue
@@ -120,7 +121,7 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 		log.Info("add serviceURL{%s}", serviceURL)
 		l.events <- zkEvent{&registry.ServiceURLEvent{registry.ServiceURLAdd, serviceURL}, nil}
 		// listen l service node
-		go func(node string, serviceURL *registry.ServiceURL) {
+		go func(node string, serviceURL *service.ServiceURL) {
 			log.Info("delete zkNode{%s}", node)
 			if l.listenServiceNodeEvent(node) {
 				log.Info("delete serviceURL{%s}", serviceURL)
@@ -139,7 +140,7 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 
 		oldNode = path.Join(zkPath, n)
 		log.Warn("delete zkPath{%s}", oldNode)
-		serviceURL, err = registry.NewServiceURL(n)
+		serviceURL, err = service.NewServiceURL(n)
 		if !conf.ServiceEqual(serviceURL) {
 			log.Warn("serviceURL{%s} has been deleted is not compatible with ServiceConfig{%#v}", serviceURL, conf)
 			continue
@@ -153,7 +154,7 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 	}
 }
 
-func (l *zkEventListener) listenDirEvent(zkPath string, conf registry.ServiceConfig) {
+func (l *zkEventListener) listenDirEvent(zkPath string, conf *service.ServiceConfig) {
 	l.wg.Add(1)
 	defer l.wg.Done()
 
@@ -219,13 +220,13 @@ func (l *zkEventListener) listenDirEvent(zkPath string, conf registry.ServiceCon
 // registry.go:Listen -> listenServiceEvent -> listenDirEvent -> listenServiceNodeEvent
 //                            |
 //                            --------> listenServiceNodeEvent
-func (l *zkEventListener) listenServiceEvent(conf registry.ServiceConfig) {
+func (l *zkEventListener) listenServiceEvent(conf *service.ServiceConfig) {
 	var (
 		err        error
 		zkPath     string
 		dubboPath  string
 		children   []string
-		serviceURL *registry.ServiceURL
+		serviceURL *service.ServiceURL
 	)
 
 	zkPath = fmt.Sprintf("/dubbo/%s/providers", conf.Service)
@@ -250,7 +251,7 @@ func (l *zkEventListener) listenServiceEvent(conf registry.ServiceConfig) {
 	}
 
 	for _, c := range children {
-		serviceURL, err = registry.NewServiceURL(c)
+		serviceURL, err = service.NewServiceURL(c)
 		if err != nil {
 			log.Error("NewServiceURL(r{%s}) = error{%v}", c, err)
 			continue
@@ -265,7 +266,7 @@ func (l *zkEventListener) listenServiceEvent(conf registry.ServiceConfig) {
 		// listen l service node
 		dubboPath = path.Join(zkPath, c)
 		log.Info("listen dubbo service key{%s}", dubboPath)
-		go func(zkPath string, serviceURL *registry.ServiceURL) {
+		go func(zkPath string, serviceURL *service.ServiceURL) {
 			if l.listenServiceNodeEvent(dubboPath) {
 				log.Debug("delete serviceUrl{%s}", serviceURL)
 				l.events <- zkEvent{&registry.ServiceURLEvent{registry.ServiceURLDel, serviceURL}, nil}
@@ -275,23 +276,25 @@ func (l *zkEventListener) listenServiceEvent(conf registry.ServiceConfig) {
 	}
 
 	log.Info("listen dubbo path{%s}", zkPath)
-	go func(zkPath string, conf registry.ServiceConfig) {
+	go func(zkPath string, conf *service.ServiceConfig) {
 		l.listenDirEvent(zkPath, conf)
 		log.Warn("listenDirEvent(zkPath{%s}) goroutine exit now", zkPath)
 	}(zkPath, conf)
 }
 
-func (l *zkEventListener) listenEvent(r *ZkRegistry) error {
+func (l *zkEventListener) listenEvent(r *ZkRegistry,ch chan *registry.ServiceURLEvent) error {
 	for {
 		select {
 		case <-l.client.done():
 			log.Warn("listener's zk client connection is broken, so zk event listener exit now.")
 			l.close()
+			close(ch)
 			return jerrors.New("listener stopped")
 
 		case <-r.done:
 			log.Warn("zk consumer register has quit, so zk event listener exit asap now.")
 			l.close()
+			close(ch)
 			return jerrors.New("listener stopped")
 
 		case e := <-l.events:
@@ -303,7 +306,9 @@ func (l *zkEventListener) listenEvent(r *ZkRegistry) error {
 				log.Warn("update @result{%s}. But its connection to registry is invalid", e.res)
 				continue
 			}
-			r.update(e.res)
+			//r.update(e.res)
+			//write to invoker
+			ch <- e.res
 		}
 	}
 }
