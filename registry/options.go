@@ -1,9 +1,5 @@
 package registry
 
-import (
-	"time"
-)
-
 const (
 	CONSUMER = iota
 	CONFIGURATOR
@@ -41,8 +37,6 @@ type OptionInf interface{
 }
 type Options struct{
 	ApplicationConfig
-	Mode           Mode
-	ServiceTTL     time.Duration
 	DubboType      DubboType
 }
 
@@ -68,16 +62,5 @@ func WithDubboType(tp DubboType)Option{
 func WithApplicationConf(conf  ApplicationConfig) Option {
 	return func(o *Options) {
 		o.ApplicationConfig = conf
-	}
-}
-
-func WithServiceTTL(ttl time.Duration) Option {
-	return func(o *Options) {
-		o.ServiceTTL = ttl
-	}
-}
-func WithBalanceMode(mode Mode) Option {
-	return func(o *Options) {
-		o.Mode = mode
 	}
 }

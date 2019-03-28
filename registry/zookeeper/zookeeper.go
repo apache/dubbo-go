@@ -5,6 +5,7 @@ import (
 	"github.com/AlexStocks/goext/net"
 	log "github.com/AlexStocks/log4go"
 	"github.com/dubbo/dubbo-go/registry"
+	"github.com/dubbo/dubbo-go/service"
 	"github.com/dubbo/dubbo-go/version"
 	jerrors "github.com/juju/errors"
 	"net/url"
@@ -56,10 +57,9 @@ type ZkRegistry struct {
 
 	sync.Mutex
 	client             *zookeeperClient
-	services           map[string]registry.ServiceConfigIf // service name + protocol -> service config
+	services           map[string]service.ServiceConfigIf // service name + protocol -> service config
 	listenerLock       sync.Mutex
 	listener           *zkEventListener
-	listenerServiceMap map[string]*registry.ServiceArray
 	//for provider
 	zkPath map[string]int // key = protocol://ip:port/interface
 
@@ -89,8 +89,7 @@ func NewZkRegistry(opts ...registry.OptionInf) (registry.Registry, error) {
 	r = &ZkRegistry{
 		birth:              time.Now().UnixNano(),
 		done:               make(chan struct{}),
-		services:           make(map[string]registry.ServiceConfigIf),
-		listenerServiceMap: make(map[string]*registry.ServiceArray),
+		services:           make(map[string]service.ServiceConfigIf),
 		zkPath:   make(map[string]int),
 	}
 
@@ -125,7 +124,6 @@ func NewZkRegistry(opts ...registry.OptionInf) (registry.Registry, error) {
 
 	r.wg.Add(1)
 	go r.handleZkRestart()
-	r.wg.Add(1)
 	return r, nil
 }
 func (r *ZkRegistry) Close() {
@@ -159,8 +157,8 @@ func (r *ZkRegistry) handleZkRestart() {
 		err       error
 		flag      bool
 		failTimes int
-		confIf    registry.ServiceConfigIf
-		services  []registry.ServiceConfigIf
+		confIf    service.ServiceConfigIf
+		services  []service.ServiceConfigIf
 	)
 
 	defer r.wg.Done()
@@ -308,7 +306,7 @@ func (r *ZkRegistry) register(c interface{}) error {
 		log.Debug("provider path:%s, url:%s", dubboPath, rawURL)
 
 	}else if r.DubboType == registry.CONSUMER{
-		conf := c.(registry.ServiceConfig)
+		conf := c.(*service.ServiceConfig)
 		dubboPath = fmt.Sprintf("/dubbo/%s/%s", conf.Service, registry.DubboNodes[registry.CONSUMER])
 		r.Lock()
 		err = r.client.Create(dubboPath)

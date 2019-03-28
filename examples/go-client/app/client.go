@@ -20,9 +20,9 @@ import (
 
 import (
 	"github.com/dubbo/dubbo-go/plugins"
-	"github.com/dubbo/dubbo-go/registry/zookeeper"
 	"github.com/dubbo/dubbo-go/public"
 	"github.com/dubbo/dubbo-go/registry"
+	"github.com/dubbo/dubbo-go/registry/zookeeper"
 )
 
 var (
@@ -45,11 +45,12 @@ func main() {
 
 	time.Sleep(3e9)
 	gxlog.CInfo("\n\n\nstart to test jsonrpc")
-	testJsonrpc("A003")
+	testJsonrpc("A003","GetUser")
 	time.Sleep(3e9)
 
 	gxlog.CInfo("\n\n\nstart to test jsonrpc illegal method")
-	testJsonrpcIllegalMethod("A003")
+
+	testJsonrpc("A003","GetUser1")
 
 	initSignal()
 }
@@ -70,21 +71,12 @@ func initClient() {
 		registry.WithDubboType(registry.CONSUMER),
 		registry.WithApplicationConf(clientConfig.Application_Config),
 		zookeeper.WithRegistryConf(clientConfig.ZkRegistryConfig),
-		registry.WithBalanceMode(registry.SM_RoundRobin),
-		registry.WithServiceTTL(300e9),
-
 	)
 	if err != nil {
 		panic(fmt.Sprintf("fail to init registry.Registy, err:%s", jerrors.ErrorStack(err)))
 		return
 	}
-	for _, service := range clientConfig.Service_List {
-		err = clientRegistry.ConsumerRegister(service)
-		if err != nil {
-			panic(fmt.Sprintf("registry.Register(service{%#v}) = error{%v}", service, jerrors.ErrorStack(err)))
-			return
-		}
-	}
+
 
 	// consumer
 	clientConfig.requestTimeout, err = time.ParseDuration(clientConfig.Request_Timeout)
@@ -104,6 +96,14 @@ func initClient() {
 		codecType = public.GetCodecType(clientConfig.Service_List[idx].Protocol)
 		if codecType == public.CODECTYPE_UNKNOWN {
 			panic(fmt.Sprintf("unknown protocol %s", clientConfig.Service_List[idx].Protocol))
+		}
+	}
+
+	for _, service := range clientConfig.Service_List {
+		err = clientRegistry.ConsumerRegister(&service)
+		if err != nil {
+			panic(fmt.Sprintf("registry.Register(service{%#v}) = error{%v}", service, jerrors.ErrorStack(err)))
+			return
 		}
 	}
 

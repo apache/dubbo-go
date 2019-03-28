@@ -2,20 +2,20 @@ package main
 
 import (
 	"fmt"
+	"github.com/AlexStocks/goext/net"
+	"github.com/AlexStocks/goext/time"
+	log "github.com/AlexStocks/log4go"
+	"github.com/dubbo/dubbo-go/jsonrpc"
 	"github.com/dubbo/dubbo-go/plugins"
 	registry2 "github.com/dubbo/dubbo-go/registry"
 	"github.com/dubbo/dubbo-go/registry/zookeeper"
+	jerrors "github.com/juju/errors"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
-	"github.com/AlexStocks/goext/net"
-	"github.com/AlexStocks/goext/time"
-	log "github.com/AlexStocks/log4go"
-	"github.com/dubbo/dubbo-go/jsonrpc"
-	jerrors "github.com/juju/errors"
 )
 
 var (
@@ -62,8 +62,6 @@ func initServer() *jsonrpc.Server {
 		registry2.WithDubboType(registry2.PROVIDER),
 		registry2.WithApplicationConf(conf.Application_Config),
 		zookeeper.WithRegistryConf(conf.ZkRegistryConfig),
-		//zookeeper.WithBalanceMode(registry.SM_RoundRobin),
-		registry2.WithServiceTTL(conf.netTimeout),
 	)
 
 	if err != nil || registry == nil {

@@ -44,7 +44,7 @@ func (m *serviceMethod) suiteContext(ctx context.Context) reflect.Value {
 	return reflect.Zero(m.ctxType)
 }
 
-type service struct {
+type svc struct {
 	name     string                    // name of service
 	rcvr     reflect.Value             // receiver of methods for the service
 	rcvrType reflect.Type              // type of the receiver
@@ -53,12 +53,12 @@ type service struct {
 
 type serviceMap struct {
 	mutex      sync.Mutex          // protects the serviceMap
-	serviceMap map[string]*service // service name -> service
+	serviceMap map[string]*svc // service name -> service
 }
 
 func initServer() *serviceMap {
 	return &serviceMap{
-		serviceMap: make(map[string]*service),
+		serviceMap: make(map[string]*svc),
 	}
 }
 
@@ -134,10 +134,10 @@ func (server *serviceMap) register(rcvr Handler) (string, error) {
 	server.mutex.Lock()
 	defer server.mutex.Unlock()
 	if server.serviceMap == nil {
-		server.serviceMap = make(map[string]*service)
+		server.serviceMap = make(map[string]*svc)
 	}
 
-	s := new(service)
+	s := new(svc)
 	s.rcvrType = reflect.TypeOf(rcvr)
 	s.rcvr = reflect.ValueOf(rcvr)
 	sname := reflect.Indirect(s.rcvr).Type().Name()
