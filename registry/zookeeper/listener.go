@@ -251,6 +251,7 @@ func (l *zkEventListener) listenServiceEvent(conf *service.ServiceConfig) {
 	}
 
 	for _, c := range children {
+
 		serviceURL, err = service.NewServiceURL(c)
 		if err != nil {
 			log.Error("NewServiceURL(r{%s}) = error{%v}", c, err)
@@ -282,19 +283,17 @@ func (l *zkEventListener) listenServiceEvent(conf *service.ServiceConfig) {
 	}(zkPath, conf)
 }
 
-func (l *zkEventListener) listenEvent(r *ZkRegistry,ch chan *registry.ServiceURLEvent) error {
+func (l *zkEventListener) listenEvent(r *ZkRegistry) error {
 	for {
 		select {
 		case <-l.client.done():
 			log.Warn("listener's zk client connection is broken, so zk event listener exit now.")
 			l.close()
-			close(ch)
 			return jerrors.New("listener stopped")
 
 		case <-r.done:
 			log.Warn("zk consumer register has quit, so zk event listener exit asap now.")
 			l.close()
-			close(ch)
 			return jerrors.New("listener stopped")
 
 		case e := <-l.events:
@@ -308,7 +307,7 @@ func (l *zkEventListener) listenEvent(r *ZkRegistry,ch chan *registry.ServiceURL
 			}
 			//r.update(e.res)
 			//write to invoker
-			ch <- e.res
+			r.outerEventCh <- e.res
 		}
 	}
 }

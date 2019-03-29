@@ -10,7 +10,6 @@ import (
 	jerrors "github.com/juju/errors"
 	"net/url"
 	"os"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -62,7 +61,7 @@ type ZkRegistry struct {
 	listener           *zkEventListener
 	//for provider
 	zkPath map[string]int // key = protocol://ip:port/interface
-
+	outerEventCh     chan *registry.ServiceURLEvent
 }
 
 func init() {
@@ -91,6 +90,7 @@ func NewZkRegistry(opts ...registry.OptionInf) (registry.Registry, error) {
 		done:               make(chan struct{}),
 		services:           make(map[string]service.ServiceConfigIf),
 		zkPath:   make(map[string]int),
+		outerEventCh:       make(chan *registry.ServiceURLEvent),
 	}
 
 	for _, opt := range opts {
@@ -124,6 +124,12 @@ func NewZkRegistry(opts ...registry.OptionInf) (registry.Registry, error) {
 
 	r.wg.Add(1)
 	go r.handleZkRestart()
+
+	if r.DubboType == registry.CONSUMER{
+		r.wg.Add(1)
+		go r.listen()
+	}
+
 	return r, nil
 }
 func (r *ZkRegistry) Close() {
@@ -295,7 +301,7 @@ func (r *ZkRegistry) register(c interface{}) error {
 
 		urlPath = conf.Service
 		if r.zkPath[urlPath] != 0 {
-			urlPath += strconv.Itoa(r.zkPath[urlPath])
+			//urlPath += strconv.Itoa(r.zkPath[urlPath])
 		}
 		r.zkPath[urlPath]++
 		rawURL = fmt.Sprintf("%s://%s/%s?%s", conf.Protocol, conf.Path, urlPath, params.Encode())
@@ -390,6 +396,8 @@ func (r *ZkRegistry) closeRegisters() {
 	r.client.Close()
 	r.client = nil
 	r.services = nil
+	//关闭outerListenerEvent
+	close(r.outerEventCh)
 }
 
 func (r *ZkRegistry) isClosed() bool {

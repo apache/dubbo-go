@@ -45,7 +45,7 @@ func (r *ZkRegistry) ProviderRegister(c service.ServiceConfigIf) error {
 	}
 
 	r.Lock()
-	r.services[conf.String()] = &conf
+	r.services[conf.String()] = conf
 	log.Debug("(ZkProviderRegistry)Register(conf{%#v})", conf)
 	r.Unlock()
 

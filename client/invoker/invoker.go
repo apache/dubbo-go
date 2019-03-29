@@ -15,7 +15,6 @@ import (
 type Options struct{
 	ServiceTTL time.Duration
 	selector loadBalance.Selector
-	ctx      context.Context
 }
 type Option func(*Options)
 
@@ -30,15 +29,12 @@ func WithLBSelector(selector loadBalance.Selector ) Option {
 	}
 }
 
-func WithContext(ctx context.Context) Option {
-	return func(o *Options) {
-		o.ctx= ctx
-	}
-}
+
 
 type Invoker struct {
 	Options
-	client   *jsonrpc.HTTPClient
+	//TODO:we should provider a transport client interface
+	Client   *jsonrpc.HTTPClient
 	cacheServiceMap map[string]*ServiceArray
 	registry registry.Registry
 	listenerLock       sync.Mutex
@@ -48,7 +44,6 @@ func NewInvoker(registry registry.Registry,client *jsonrpc.HTTPClient, opts ...O
 	options:=Options{
 		//default 300s
 		ServiceTTL:time.Duration(300e9),
-		ctx:context.Background(),
 		selector:loadBalance.NewRandomSelector(),
 	}
 	for _,opt:=range opts{
@@ -56,7 +51,7 @@ func NewInvoker(registry registry.Registry,client *jsonrpc.HTTPClient, opts ...O
 	}
 	invoker := &Invoker{
 		Options:options,
-		client:client,
+		Client:client,
 		cacheServiceMap:make(map[string]*ServiceArray),
 		registry:registry,
 	}
@@ -70,16 +65,18 @@ func (ivk * Invoker)Listen(){
 }
 
  func (ivk *Invoker)listen(){
-	ch:=ivk.registry.Listen()
+ 	for {
+		ch:=ivk.registry.GetListenEvent()
 
-	for {
-		e, isOpen := <-ch
-		if !isOpen {
-			log.Warn("registry listen channel closed!")
-			break
-		}
-		log.Warn("registry listen channel not closed!")
-		ivk.update(e)
+			for {
+				e, isOpen := <-ch
+				if !isOpen {
+					log.Warn("registry closed!")
+					break
+				}
+				ivk.update(e)
+			}
+
 	}
  }
 
@@ -117,6 +114,8 @@ func (ivk * Invoker) update(res *registry.ServiceURLEvent) {
 }
 
 func (ivk * Invoker) getService(serviceConf *service.ServiceConfig)(*ServiceArray,error){
+	defer ivk.listenerLock.Unlock()
+
 	serviceKey := serviceConf.Key()
 
 	ivk.listenerLock.Lock()
@@ -129,7 +128,7 @@ func (ivk * Invoker) getService(serviceConf *service.ServiceConfig)(*ServiceArra
 
 	svcs, err := ivk.registry.GetService(serviceConf)
 	ivk.listenerLock.Lock()
-	defer ivk.listenerLock.Unlock()
+
 	if err != nil {
 		log.Error("Registry.get(conf:%+v) = {err:%s, svcs:%+v}",
 			serviceConf, jerrors.ErrorStack(err), svcs)
@@ -142,16 +141,20 @@ func (ivk * Invoker) getService(serviceConf *service.ServiceConfig)(*ServiceArra
 	return newSvcArr, nil
 }
 
-func (ivk * Invoker)Call(reqId int64,serviceConf *service.ServiceConfig,req jsonrpc.Request,resp interface{})error{
+func (ivk * Invoker)Call(ctx context.Context,reqId int64,serviceConf *service.ServiceConfig,req jsonrpc.Request,resp interface{})error{
+
 	serviceArray ,err:= ivk.getService(serviceConf)
 	if err != nil{
 		return err
+	}
+	if len(serviceArray.arr) ==0 {
+		return jerrors.New("cannot find svc " + serviceConf.String())
 	}
 	url,err := ivk.selector.Select(reqId,serviceArray)
 	if err != nil{
 		return err
 	}
-	if err = ivk.client.Call(ivk.ctx, url, req, resp); err != nil {
+	if err = ivk.Client.Call(ctx, url, req, resp); err != nil {
 		log.Error("client.Call() return error:%+v", jerrors.ErrorStack(err))
 		return err
 	}

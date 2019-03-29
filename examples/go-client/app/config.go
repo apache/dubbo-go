@@ -47,6 +47,8 @@ type (
 		// codec & selector & transport & registry
 		Selector     string `default:"cache"  yaml:"selector" json:"selector,omitempty"`
 		Selector_TTL string `default:"10m"  yaml:"selector_ttl" json:"selector_ttl,omitempty"`
+		//client load balance algorithm
+		ClientLoadBalance string  `default:"round_robin"  yaml:"client_load_balance" json:"client_load_balance,omitempty"`
 		Registry     string `default:"zookeeper"  yaml:"registry" json:"registry,omitempty"`
 		// application
 		Application_Config registry.ApplicationConfig `yaml:"application_config" json:"application_config,omitempty"`

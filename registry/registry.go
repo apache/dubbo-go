@@ -20,7 +20,7 @@ type Registry interface {
 	//unregister service for service provider
 	//Unregister(conf interface{}) error
 	//used for service consumer ,start listen goroutine
-	Listen()chan *ServiceURLEvent
+	GetListenEvent()(chan *ServiceURLEvent)
 
 	//input the serviceConfig , registry should return serviceUrlArray with multi location(provider nodes) available
 	GetService(*service.ServiceConfig) ([]*service.ServiceURL, error)
