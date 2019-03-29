@@ -42,12 +42,15 @@ func main() {
 	initClient()
 
 	time.Sleep(3e9)
-	gxlog.CInfo("\n\n\nstart to test jsonrpc")
-	testJsonrpc("A003")
+
+	gxlog.CInfo("\n\n\nstart to test dubbo")
+	testDubborpc("A003")
+	//gxlog.CInfo("\n\n\nstart to test jsonrpc")
+	//testJsonrpc("A003")
 	time.Sleep(3e9)
 
-	gxlog.CInfo("\n\n\nstart to test jsonrpc illegal method")
-	testJsonrpcIllegalMethod("A003")
+	//gxlog.CInfo("\n\n\nstart to test jsonrpc illegal method")
+	//testJsonrpcIllegalMethod("A003")
 
 	initSignal()
 }
