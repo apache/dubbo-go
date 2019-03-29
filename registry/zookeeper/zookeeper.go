@@ -8,25 +8,24 @@ import (
 	"github.com/dubbo/dubbo-go/service"
 	"github.com/dubbo/dubbo-go/version"
 	jerrors "github.com/juju/errors"
+	"github.com/samuel/go-zookeeper/zk"
 	"net/url"
 	"os"
 	"sync"
 	"time"
 )
-const(
 
-	defaultTimeout   = int64(10e9)
-	RegistryZkClient = "zk registry"
+const (
+	defaultTimeout           = int64(10e9)
+	RegistryZkClient         = "zk registry"
 	DEFAULT_REGISTRY_TIMEOUT = 1 * time.Second
-	REGISTRY_CONN_DELAY = 3
-
-)
-var(
-	processID        = ""
-	localIP          = ""
+	REGISTRY_CONN_DELAY      = 3
 )
 
-
+var (
+	processID = ""
+	localIP   = ""
+)
 
 type ZkRegistryConfig struct {
 	Address    []string      `required:"true" yaml:"address"  json:"address,omitempty"`
@@ -35,7 +34,6 @@ type ZkRegistryConfig struct {
 	TimeoutStr string        `yaml:"timeout" default:"5s" json:"timeout,omitempty"` // unit: second
 	Timeout    time.Duration `yaml:"-"  json:"-"`
 }
-
 
 type Options struct {
 	registry.Options
@@ -55,13 +53,13 @@ type ZkRegistry struct {
 	done  chan struct{}
 
 	sync.Mutex
-	client             *zookeeperClient
-	services           map[string]service.ServiceConfigIf // service name + protocol -> service config
-	listenerLock       sync.Mutex
-	listener           *zkEventListener
+	client       *zookeeperClient
+	services     map[string]service.ServiceConfigIf // service name + protocol -> service config
+	listenerLock sync.Mutex
+	listener     *zkEventListener
 	//for provider
-	zkPath map[string]int // key = protocol://ip:port/interface
-	outerEventCh     chan *registry.ServiceURLEvent
+	zkPath       map[string]int // key = protocol://ip:port/interface
+	outerEventCh chan *registry.ServiceURLEvent
 }
 
 func init() {
@@ -69,15 +67,11 @@ func init() {
 	localIP, _ = gxnet.GetLocalIP()
 }
 
-
-
-
 func WithRegistryConf(conf ZkRegistryConfig) Option {
 	return func(o *Options) {
 		o.ZkRegistryConfig = conf
 	}
 }
-
 
 func NewZkRegistry(opts ...registry.OptionInf) (registry.Registry, error) {
 	var (
@@ -86,22 +80,21 @@ func NewZkRegistry(opts ...registry.OptionInf) (registry.Registry, error) {
 	)
 
 	r = &ZkRegistry{
-		birth:              time.Now().UnixNano(),
-		done:               make(chan struct{}),
-		services:           make(map[string]service.ServiceConfigIf),
-		zkPath:   make(map[string]int),
-		outerEventCh:       make(chan *registry.ServiceURLEvent),
+		birth:        time.Now().UnixNano(),
+		done:         make(chan struct{}),
+		services:     make(map[string]service.ServiceConfigIf),
+		zkPath:       make(map[string]int),
+		outerEventCh: make(chan *registry.ServiceURLEvent),
 	}
 
 	for _, opt := range opts {
-		if o,ok:=opt.(Option) ; ok{
+		if o, ok := opt.(Option); ok {
 			o(&r.Options)
-		}else if o,ok:=opt.(registry.Option) ; ok{
+		} else if o, ok := opt.(registry.Option); ok {
 			o(&r.Options.Options)
-		}else{
-			return nil,jerrors.New("option is not available")
+		} else {
+			return nil, jerrors.New("option is not available")
 		}
-
 
 	}
 	//if r.DubboType == 0{
@@ -125,7 +118,7 @@ func NewZkRegistry(opts ...registry.OptionInf) (registry.Registry, error) {
 	r.wg.Add(1)
 	go r.handleZkRestart()
 
-	if r.DubboType == registry.CONSUMER{
+	if r.DubboType == registry.CONSUMER {
 		r.wg.Add(1)
 		go r.listen()
 	}
@@ -137,7 +130,6 @@ func (r *ZkRegistry) Close() {
 	r.wg.Wait()
 	r.closeRegisters()
 }
-
 
 func (r *ZkRegistry) validateZookeeperClient() error {
 	var (
@@ -152,6 +144,14 @@ func (r *ZkRegistry) validateZookeeperClient() error {
 		if err != nil {
 			log.Warn("newZookeeperClient(name{%s}, zk addresss{%v}, timeout{%d}) = error{%v}",
 				RegistryZkClient, r.Address, r.Timeout.String(), err)
+		}
+	}
+	if r.client.conn == nil {
+		var event <-chan zk.Event
+		r.client.conn, event, err = zk.Connect(r.client.zkAddrs, r.client.timeout)
+		if err != nil {
+			r.client.wait.Add(1)
+			go r.client.handleZkEvent(event)
 		}
 	}
 
@@ -203,7 +203,7 @@ LOOP:
 
 					flag = true
 					for _, confIf = range services {
-							err = r.register(confIf)
+						err = r.register(confIf)
 						if err != nil {
 							log.Error("(ZkProviderRegistry)register(conf{%#v}) = error{%#v}",
 								confIf, jerrors.ErrorStack(err))
@@ -223,8 +223,6 @@ LOOP:
 		}
 	}
 }
-
-
 
 func (r *ZkRegistry) register(c interface{}) error {
 	var (
@@ -259,7 +257,7 @@ func (r *ZkRegistry) register(c interface{}) error {
 	}
 	params.Add("revision", revision) // revision是pox.xml中application的version属性的值
 
-	if  r.DubboType == registry.PROVIDER{
+	if r.DubboType == registry.PROVIDER {
 
 		conf := c.(ProviderServiceConfig)
 		if conf.Service == "" || conf.Methods == "" {
@@ -311,7 +309,7 @@ func (r *ZkRegistry) register(c interface{}) error {
 		dubboPath = fmt.Sprintf("/dubbo/%s/%s", conf.Service, (registry.DubboType(registry.PROVIDER)).String())
 		log.Debug("provider path:%s, url:%s", dubboPath, rawURL)
 
-	}else if r.DubboType == registry.CONSUMER{
+	} else if r.DubboType == registry.CONSUMER {
 		conf := c.(*service.ServiceConfig)
 		dubboPath = fmt.Sprintf("/dubbo/%s/%s", conf.Service, registry.DubboNodes[registry.CONSUMER])
 		r.Lock()
@@ -351,7 +349,7 @@ func (r *ZkRegistry) register(c interface{}) error {
 
 		dubboPath = fmt.Sprintf("/dubbo/%s/%s", conf.Service, (registry.DubboType(registry.CONSUMER)).String())
 		log.Debug("consumer path:%s, url:%s", dubboPath, rawURL)
-	}else{
+	} else {
 		return jerrors.Errorf("@c{%v} type is not ServiceConfig or ProviderServiceConfig", c)
 	}
 
@@ -386,8 +384,6 @@ func (r *ZkRegistry) registerTempZookeeperNode(root string, node string) error {
 	return nil
 }
 
-
-
 func (r *ZkRegistry) closeRegisters() {
 	r.Lock()
 	defer r.Unlock()
@@ -408,6 +404,3 @@ func (r *ZkRegistry) isClosed() bool {
 		return false
 	}
 }
-
-
-
