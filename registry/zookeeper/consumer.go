@@ -44,10 +44,8 @@ func (r *ZkRegistry) ConsumerRegister(conf *service.ServiceConfig) error {
 }
 
 
-func (r *ZkRegistry) Listen()chan *registry.ServiceURLEvent {
-	eventCh := make(chan *registry.ServiceURLEvent,1000)
-	go r.listen(eventCh)
-	return eventCh
+func (r *ZkRegistry) GetListenEvent() (chan *registry.ServiceURLEvent) {
+	return r.outerEventCh
 }
 
 
@@ -122,7 +120,7 @@ func (r *ZkRegistry) GetService(conf *service.ServiceConfig) ([]*service.Service
 	return services, nil
 }
 
-func (r *ZkRegistry) listen(ch chan *registry.ServiceURLEvent) {
+func (r *ZkRegistry) listen() {
 	defer r.wg.Done()
 
 	for {
@@ -131,7 +129,7 @@ func (r *ZkRegistry) listen(ch chan *registry.ServiceURLEvent) {
 			return
 		}
 
-		listener, err := r.getListener()
+		listener , err := r.getListener()
 		if err != nil {
 			if r.isClosed() {
 				log.Warn("event listener game over.")
@@ -141,8 +139,7 @@ func (r *ZkRegistry) listen(ch chan *registry.ServiceURLEvent) {
 			time.Sleep(timeSecondDuration(REGISTRY_CONN_DELAY))
 			continue
 		}
-
-		if err = listener.listenEvent(r,ch); err != nil {
+		if err = listener.listenEvent(r); err != nil {
 			log.Warn("Selector.watch() = error{%v}", jerrors.ErrorStack(err))
 
 			r.listenerLock.Lock()

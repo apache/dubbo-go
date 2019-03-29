@@ -4,12 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/AlexStocks/goext/log"
-	"github.com/dubbo/dubbo-go/client/invoker"
-	"github.com/dubbo/dubbo-go/client/loadBalance"
-	"github.com/dubbo/dubbo-go/registry/zookeeper"
 	"github.com/dubbo/dubbo-go/service"
 	_ "net/http/pprof"
-	jerrors "github.com/juju/errors"
 )
 
 import (
@@ -26,14 +22,6 @@ func testJsonrpc(userKey string,method string) {
 		ctx        context.Context
 		conf       service.ServiceConfig
 		req        jsonrpc.Request
-		clt        *jsonrpc.HTTPClient
-	)
-
-	clt = jsonrpc.NewHTTPClient(
-		&jsonrpc.HTTPOptions{
-			HandshakeTimeout: clientConfig.connectTimeout,
-			HTTPTimeout:      clientConfig.requestTimeout,
-		},
 	)
 
 
@@ -58,9 +46,8 @@ func testJsonrpc(userKey string,method string) {
 			Service:  clientConfig.Service_List[serviceIdx].Service,
 	}
 	// Attention the last parameter : []UserKey{userKey}
-	req = clt.NewRequest(conf, method, []string{userKey})
+	req = clientInvoker.Client.NewRequest(conf, method, []string{userKey})
 
-	clientRegistry = clientRegistry.(*zookeeper.ZkRegistry)
 
 	ctx = context.WithValue(context.Background(), public.DUBBOGO_CTX_KEY, map[string]string{
 		"X-Proxy-Id": "dubbogo",
@@ -69,14 +56,12 @@ func testJsonrpc(userKey string,method string) {
 	})
 
 	user = new(JsonRPCUser)
-	// new invoker to Call service
 
-	invoker := invoker.NewInvoker(clientRegistry,clt,
-		invoker.WithContext(ctx),
-		invoker.WithLBSelector(loadBalance.NewRandomSelector()))
-	err = invoker.Call(1,&conf,req,user)
+	err = clientInvoker.Call(ctx,1,&conf,req,user)
 	if err !=nil{
-		jerrors.Errorf("call service err , msg is :",err)
+		panic(err)
+	}else{
+		gxlog.CInfo("response result:%s", user)
 	}
-	 gxlog.CInfo("response result:%s", user)
+
 }

@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/dubbo/dubbo-go/client/invoker"
+	"github.com/dubbo/dubbo-go/jsonrpc"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -27,7 +29,7 @@ import (
 
 var (
 	survivalTimeout int = 10e9
-	clientRegistry  registry.Registry
+	clientInvoker *invoker.Invoker
 )
 
 func main() {
@@ -43,7 +45,7 @@ func main() {
 	initProfiling()
 	initClient()
 
-	time.Sleep(3e9)
+	time.Sleep(10e9)
 	gxlog.CInfo("\n\n\nstart to test jsonrpc")
 	testJsonrpc("A003","GetUser")
 	time.Sleep(3e9)
@@ -55,9 +57,8 @@ func main() {
 	initSignal()
 }
 
-func initClient() {
+func initClient(){
 	var (
-		err error
 		codecType public.CodecType
 	)
 
@@ -67,7 +68,7 @@ func initClient() {
 	}
 
 	// registry
-	clientRegistry,err = plugins.PluggableRegistries[clientConfig.Registry](
+	clientRegistry,err := plugins.PluggableRegistries[clientConfig.Registry](
 		registry.WithDubboType(registry.CONSUMER),
 		registry.WithApplicationConf(clientConfig.Application_Config),
 		zookeeper.WithRegistryConf(clientConfig.ZkRegistryConfig),
@@ -106,6 +107,21 @@ func initClient() {
 			return
 		}
 	}
+
+	//read the client lb config in config.yml
+	configClientLB := plugins.PluggableLoadbalance[clientConfig.ClientLoadBalance]()
+
+	//init http client & init invoker
+	clt := jsonrpc.NewHTTPClient(
+		&jsonrpc.HTTPOptions{
+			HandshakeTimeout: clientConfig.connectTimeout,
+			HTTPTimeout:      clientConfig.requestTimeout,
+		},
+	)
+
+	clientInvoker = invoker.NewInvoker(clientRegistry,clt,
+		invoker.WithLBSelector(configClientLB))
+
 
 }
 

@@ -247,6 +247,13 @@ func (z *zookeeperClient) Create(basePath string) error {
 		z.Lock()
 		if z.conn != nil {
 			_, err = z.conn.Create(tmpPath, []byte(""), 0, zk.WorldACL(zk.PermAll))
+		}else{
+			var event <-chan zk.Event
+			z.conn, event, err = zk.Connect(z.zkAddrs, z.timeout)
+			if err !=nil{
+				z.wait.Add(1)
+				go z.handleZkEvent(event)
+			}
 		}
 		z.Unlock()
 		if err != nil {
