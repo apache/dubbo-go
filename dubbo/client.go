@@ -36,7 +36,9 @@ type CallOptions struct {
 	RequestTimeout time.Duration
 	// response timeout
 	ResponseTimeout time.Duration
-	Meta            map[interface{}]interface{}
+	// serial ID
+	SerialID SerialID
+	Meta     map[interface{}]interface{}
 }
 
 type CallOption func(*CallOptions)
@@ -50,6 +52,12 @@ func WithCallRequestTimeout(d time.Duration) CallOption {
 func WithCallResponseTimeout(d time.Duration) CallOption {
 	return func(o *CallOptions) {
 		o.ResponseTimeout = d
+	}
+}
+
+func WithCallSerialID(s SerialID) CallOption {
+	return func(o *CallOptions) {
+		o.SerialID = s
 	}
 }
 
@@ -114,7 +122,7 @@ func (c *Client) Call(addr string, svcUrl registry.ServiceURL, method string, ar
 		o(&copts)
 	}
 
-	ct := CT_OneWay
+	ct := CT_TwoWay
 	if reply == nil {
 		ct = CT_OneWay
 	}
@@ -149,7 +157,12 @@ func (c *Client) call(ct CallType, addr string, svcUrl registry.ServiceURL, meth
 	p.Service.Version = svcUrl.Version
 	p.Service.Method = method
 	p.Service.Timeout = opts.RequestTimeout
-	p.Header.SerialID = byte(0)
+	if opts.SerialID == 1 || opts.SerialID == 3 || opts.SerialID == 4 || opts.SerialID == 5 || opts.SerialID == 6 ||
+		opts.SerialID == 7 || opts.SerialID == 8 {
+		p.Header.SerialID = byte(S_Default)
+	} else {
+		p.Header.SerialID = byte(opts.SerialID)
+	}
 	p.Body = args
 
 	var rsp *PendingResponse
@@ -223,7 +236,7 @@ func (c *Client) transfer(session getty.Session, pkg *DubboPackage,
 		pkg = &DubboPackage{}
 		pkg.Body = []interface{}{}
 		pkg.Header.Type = hessian.Heartbeat
-		pkg.Header.SerialID = byte(10)
+		pkg.Header.SerialID = byte(S_Default)
 	} else {
 		pkg.Header.Type = hessian.Request
 	}

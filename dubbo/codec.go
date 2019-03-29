@@ -12,6 +12,14 @@ import (
 	jerrors "github.com/juju/errors"
 )
 
+// serial ID
+// except '1 3 4 5 6 7 8'
+type SerialID byte
+
+const (
+	S_Default SerialID = 0
+)
+
 // call type
 type CallType int32
 
