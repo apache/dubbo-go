@@ -30,5 +30,5 @@ registry_config:
 
 service_list:
     -
-        protocol : "jsonrpc"
+        protocol : "dubbo"
         service : "com.ikurento.user.UserProvider"
