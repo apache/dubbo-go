@@ -179,7 +179,7 @@ func testDubborpc(userKey string) {
 		PoolTTL:         600,
 		ConnectionNum:   2, // 不能太大
 		FailFastTimeout: "5s",
-		SessionTimeout:  "200s",
+		SessionTimeout:  "20s",
 		HeartbeatPeriod: "5s",
 		GettySessionParam: dubbo.GettySessionParam{
 			CompressEncoding: false, // 必须false
@@ -237,7 +237,7 @@ func testDubborpc(userKey string) {
 	hessian.RegisterPOJO(&Response{})
 
 	user = new(DubboUser)
-	err = cltD.Call(serviceURL.Ip+":"+serviceURL.Port, *serviceURL, method, []interface{}{userKey}, user, dubbo.WithCallRequestTimeout(100e9), dubbo.WithCallResponseTimeout(100e9))
+	err = cltD.Call(serviceURL.Ip+":"+serviceURL.Port, *serviceURL, method, []interface{}{userKey}, user, dubbo.WithCallRequestTimeout(10e9), dubbo.WithCallResponseTimeout(10e9), dubbo.WithCallSerialID(dubbo.S_Default))
 	// Call service
 	if err != nil {
 		log.Error("client.Call() return error:%+v", jerrors.ErrorStack(err))
