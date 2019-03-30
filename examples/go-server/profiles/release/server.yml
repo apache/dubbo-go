@@ -17,7 +17,9 @@ application_config:
     owner : "ZX"
     environment : "product"
 
-registry_config:
+registry: "zookeeper"
+
+zk_registry_config:
     timeout	: "3s"
     address:
         - "127.0.0.1:2181"
