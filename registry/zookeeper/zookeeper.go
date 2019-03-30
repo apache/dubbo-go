@@ -2,17 +2,24 @@ package zookeeper
 
 import (
 	"fmt"
+	"net/url"
+	"os"
+	"strconv"
+	"sync"
+	"time"
+)
+
+import (
 	"github.com/AlexStocks/goext/net"
 	log "github.com/AlexStocks/log4go"
+	jerrors "github.com/juju/errors"
+	"github.com/samuel/go-zookeeper/zk"
+)
+
+import (
 	"github.com/dubbo/dubbo-go/registry"
 	"github.com/dubbo/dubbo-go/service"
 	"github.com/dubbo/dubbo-go/version"
-	jerrors "github.com/juju/errors"
-	"github.com/samuel/go-zookeeper/zk"
-	"net/url"
-	"os"
-	"sync"
-	"time"
 )
 
 const (
@@ -299,7 +306,7 @@ func (r *ZkRegistry) register(c interface{}) error {
 
 		urlPath = conf.Service
 		if r.zkPath[urlPath] != 0 {
-			//urlPath += strconv.Itoa(r.zkPath[urlPath])
+			urlPath += strconv.Itoa(r.zkPath[urlPath])
 		}
 		r.zkPath[urlPath]++
 		rawURL = fmt.Sprintf("%s://%s/%s?%s", conf.Protocol, conf.Path, urlPath, params.Encode())

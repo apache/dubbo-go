@@ -2,15 +2,17 @@ package registry
 
 import (
 	"fmt"
-	"github.com/dubbo/dubbo-go/service"
 	"math/rand"
 	"time"
+)
+
+import (
+	"github.com/dubbo/dubbo-go/service"
 )
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
 }
-
 
 //////////////////////////////////////////
 // service url event type
@@ -44,6 +46,3 @@ type ServiceURLEvent struct {
 func (e ServiceURLEvent) String() string {
 	return fmt.Sprintf("ServiceURLEvent{Action{%s}, Service{%s}}", e.Action.String(), e.Service)
 }
-
-
-

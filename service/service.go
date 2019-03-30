@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	jerrors "github.com/juju/errors"
 	"net"
 	"net/url"
 	"strconv"
@@ -10,6 +9,9 @@ import (
 	"time"
 )
 
+import (
+	jerrors "github.com/juju/errors"
+)
 //////////////////////////////////////////
 // service url
 //////////////////////////////////////////

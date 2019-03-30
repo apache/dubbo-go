@@ -1,25 +1,26 @@
 package loadBalance
 
 import (
-	"github.com/dubbo/dubbo-go/client"
-	"github.com/dubbo/dubbo-go/service"
 	"sync/atomic"
 )
 
+import (
+	"github.com/dubbo/dubbo-go/client"
+	"github.com/dubbo/dubbo-go/service"
+)
 
-
-type RoundRobinSelector struct{
+type RoundRobinSelector struct {
 }
 
-func NewRoundRobinSelector()Selector{
+func NewRoundRobinSelector() Selector {
 	return &RoundRobinSelector{}
 }
 
-func (s *RoundRobinSelector) Select(ID int64,array client.ServiceArrayIf) (*service.ServiceURL, error) {
+func (s *RoundRobinSelector) Select(ID int64, array client.ServiceArrayIf) (*service.ServiceURL, error) {
 
 	idx := atomic.AddInt64(array.GetIdx(), 1)
 
-		idx = (ID + idx) % int64(array.GetSize())
+	idx = (ID + idx) % int64(array.GetSize())
 	//default: // random
 	//	idx = ((int64)(rand.Int()) + ID) % int64(arrSize)
 	//}

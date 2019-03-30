@@ -6,9 +6,10 @@ import (
 	"strings"
 	"sync"
 	"time"
+)
 
+import (
 	log "github.com/AlexStocks/log4go"
-
 	jerrors "github.com/juju/errors"
 	"github.com/samuel/go-zookeeper/zk"
 )
