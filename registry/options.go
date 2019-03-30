@@ -1,5 +1,13 @@
 package registry
 
+import (
+	"fmt"
+)
+
+/////////////////////////////////
+// dubbo role type
+/////////////////////////////////
+
 const (
 	CONSUMER = iota
 	CONFIGURATOR
@@ -22,6 +30,14 @@ func (t DubboType) Role() string {
 	return DubboRole[t]
 }
 
+/////////////////////////////////
+// dubbo config & options
+/////////////////////////////////
+
+type RegistryOption interface {
+	Name() string
+}
+
 type ApplicationConfig struct {
 	Organization string `yaml:"organization"  json:"organization,omitempty"`
 	Name         string `yaml:"name" json:"name,omitempty"`
@@ -31,28 +47,25 @@ type ApplicationConfig struct {
 	Environment  string `yaml:"environment" json:"environment,omitempty"`
 }
 
-type OptionInf interface {
-	OptionName() string
-}
 type Options struct {
 	ApplicationConfig
 	DubboType DubboType
 }
 
-//func (c *ApplicationConfig) ToString() string {
-//	return fmt.Sprintf("ApplicationConfig is {name:%s, version:%s, owner:%s, module:%s, organization:%s}",
-//		c.Name, c.Version, c.Owner, c.Module, c.Organization)
-//}
+func (o *Options) String() string {
+	return fmt.Sprintf("name:%s, version:%s, owner:%s, module:%s, organization:%s, type:%s",
+		o.Name, o.Version, o.Owner, o.Module, o.Organization, o.DubboType)
+}
 
 type Option func(*Options)
 
-func (Option) OptionName() string {
-	return "Abstact option func"
+func (Option) Name() string {
+	return "dubbogo-registry-option"
 }
 
-func WithDubboType(tp DubboType) Option {
+func WithDubboType(typ DubboType) Option {
 	return func(o *Options) {
-		o.DubboType = tp
+		o.DubboType = typ
 	}
 }
 

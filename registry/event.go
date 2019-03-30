@@ -44,5 +44,5 @@ type ServiceURLEvent struct {
 }
 
 func (e ServiceURLEvent) String() string {
-	return fmt.Sprintf("ServiceURLEvent{Action{%s}, Service{%s}}", e.Action.String(), e.Service)
+	return fmt.Sprintf("ServiceURLEvent{Action{%s}, Service{%s}}", e.Action, e.Service)
 }
