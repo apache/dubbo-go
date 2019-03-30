@@ -129,8 +129,12 @@ func initClient(clientConfig *examples.ClientConfig) {
 			SessionName:      "client",
 		},
 	})
+	if err != nil {
+		log.Error("hessian.NewClient(conf) = error:%s", jerrors.ErrorStack(err))
+		return
+	}
 	clientInvoker, err = invoker.NewInvoker(clientRegistry,
-		invoker.WithClientTransport(cltD),
+		invoker.WithDubboClient(cltD),
 		invoker.WithLBSelector(configClientLB))
 }
 

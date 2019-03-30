@@ -115,7 +115,7 @@ func initClient(clientConfig *examples.ClientConfig) {
 	)
 
 	clientInvoker, err = invoker.NewInvoker(clientRegistry,
-		invoker.WithClientTransport(clt),
+		invoker.WithHttpClient(clt),
 		invoker.WithLBSelector(configClientLB))
 
 }
