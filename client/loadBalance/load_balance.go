@@ -6,7 +6,7 @@ import (
 )
 
 type Selector interface {
-	Select(ID int64,  array client.ServiceArrayIf) (*service.ServiceURL, error)
+	Select(ID int64, array client.ServiceArrayIf) (*service.ServiceURL, error)
 }
 
 //////////////////////////////////////////
@@ -37,5 +37,3 @@ type Selector interface {
 //
 //	return ""
 //}
-
-

@@ -2,7 +2,7 @@ package invoker
 
 import (
 	"context"
-	"github.com/dubbo/dubbo-go/client"
+	"github.com/dubbo/dubbo-go/dubbo"
 	"sync"
 	"time"
 )
@@ -14,6 +14,7 @@ import (
 
 import (
 	"github.com/dubbo/dubbo-go/client/loadBalance"
+	"github.com/dubbo/dubbo-go/jsonrpc"
 	"github.com/dubbo/dubbo-go/registry"
 	"github.com/dubbo/dubbo-go/service"
 )
@@ -21,7 +22,9 @@ import (
 type Options struct {
 	ServiceTTL time.Duration
 	selector   loadBalance.Selector
-	Transport  client.Transport
+	//TODO:we should provider a transport client interface
+	HttpClient  *jsonrpc.HTTPClient
+	DubboClient *dubbo.Client
 }
 type Option func(*Options)
 
@@ -31,9 +34,14 @@ func WithServiceTTL(ttl time.Duration) Option {
 	}
 }
 
-func WithClientTransport(client client.Transport) Option {
+func WithHttpClient(client *jsonrpc.HTTPClient) Option {
 	return func(o *Options) {
-		o.Transport = client
+		o.HttpClient = client
+	}
+}
+func WithDubboClient(client *dubbo.Client) Option {
+	return func(o *Options) {
+		o.DubboClient = client
 	}
 }
 
@@ -59,8 +67,8 @@ func NewInvoker(registry registry.Registry, opts ...Option) (*Invoker, error) {
 	for _, opt := range opts {
 		opt(&options)
 	}
-	if options.Transport == nil {
-		return nil, jerrors.New("Must specify the client transport !")
+	if options.HttpClient == nil && options.DubboClient == nil {
+		return nil, jerrors.New("Must specify the transport client!")
 	}
 	invoker := &Invoker{
 		Options:         options,
@@ -152,7 +160,7 @@ func (ivk *Invoker) getService(serviceConf *service.ServiceConfig) (*ServiceArra
 	return newSvcArr, nil
 }
 
-func (ivk *Invoker) Call(ctx context.Context, reqId int64, serviceConf *service.ServiceConfig, req client.Request, resp interface{}) error {
+func (ivk *Invoker) HttpCall(ctx context.Context, reqId int64, serviceConf *service.ServiceConfig, req jsonrpc.Request, resp interface{}) error {
 
 	serviceArray, err := ivk.getService(serviceConf)
 	if err != nil {
@@ -165,10 +173,32 @@ func (ivk *Invoker) Call(ctx context.Context, reqId int64, serviceConf *service.
 	if err != nil {
 		return err
 	}
-	if err = ivk.Transport.Call(ctx, url, req, resp); err != nil {
+	if err = ivk.HttpClient.Call(ctx, url, req, resp); err != nil {
 		log.Error("client.Call() return error:%+v", jerrors.ErrorStack(err))
 		return err
 	}
 	log.Info("response result:%s", resp)
+	return nil
+}
+
+func (ivk *Invoker) DubboCall(reqId int64, serviceConf *service.ServiceConfig, method string, args, reply interface{}, opts ...dubbo.CallOption) error {
+
+	serviceArray, err := ivk.getService(serviceConf)
+	if err != nil {
+		return err
+	}
+	if len(serviceArray.arr) == 0 {
+		return jerrors.New("cannot find svc " + serviceConf.String())
+	}
+	url, err := ivk.selector.Select(reqId, serviceArray)
+	if err != nil {
+		return err
+	}
+	//TODO:这里要改一下call方法改为接收指针类型
+	if err = ivk.DubboClient.Call(url.Ip+":"+url.Port, *url, method, args, reply, opts...); err != nil {
+		log.Error("client.Call() return error:%+v", jerrors.ErrorStack(err))
+		return err
+	}
+	log.Info("response result:%s", reply)
 	return nil
 }
