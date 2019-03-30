@@ -2,19 +2,25 @@ package invoker
 
 import (
 	"context"
-	log "github.com/AlexStocks/log4go"
-	"github.com/dubbo/dubbo-go/client/loadBalance"
-	"github.com/dubbo/dubbo-go/jsonrpc"
-	"github.com/dubbo/dubbo-go/registry"
-	"github.com/dubbo/dubbo-go/service"
-	jerrors "github.com/juju/errors"
 	"sync"
 	"time"
 )
 
-type Options struct{
+import (
+	log "github.com/AlexStocks/log4go"
+	jerrors "github.com/juju/errors"
+)
+
+import (
+	"github.com/dubbo/dubbo-go/client/loadBalance"
+	"github.com/dubbo/dubbo-go/jsonrpc"
+	"github.com/dubbo/dubbo-go/registry"
+	"github.com/dubbo/dubbo-go/service"
+)
+
+type Options struct {
 	ServiceTTL time.Duration
-	selector loadBalance.Selector
+	selector   loadBalance.Selector
 }
 type Option func(*Options)
 
@@ -23,64 +29,61 @@ func WithServiceTTL(ttl time.Duration) Option {
 		o.ServiceTTL = ttl
 	}
 }
-func WithLBSelector(selector loadBalance.Selector ) Option {
+func WithLBSelector(selector loadBalance.Selector) Option {
 	return func(o *Options) {
-		o.selector= selector
+		o.selector = selector
 	}
 }
-
-
 
 type Invoker struct {
 	Options
 	//TODO:we should provider a transport client interface
-	Client   *jsonrpc.HTTPClient
+	Client          *jsonrpc.HTTPClient
 	cacheServiceMap map[string]*ServiceArray
-	registry registry.Registry
-	listenerLock       sync.Mutex
+	registry        registry.Registry
+	listenerLock    sync.Mutex
 }
 
-func NewInvoker(registry registry.Registry,client *jsonrpc.HTTPClient, opts ...Option)*Invoker{
-	options:=Options{
+func NewInvoker(registry registry.Registry, client *jsonrpc.HTTPClient, opts ...Option) *Invoker {
+	options := Options{
 		//default 300s
-		ServiceTTL:time.Duration(300e9),
-		selector:loadBalance.NewRandomSelector(),
+		ServiceTTL: time.Duration(300e9),
+		selector:   loadBalance.NewRandomSelector(),
 	}
-	for _,opt:=range opts{
+	for _, opt := range opts {
 		opt(&options)
 	}
 	invoker := &Invoker{
-		Options:options,
-		Client:client,
-		cacheServiceMap:make(map[string]*ServiceArray),
-		registry:registry,
+		Options:         options,
+		Client:          client,
+		cacheServiceMap: make(map[string]*ServiceArray),
+		registry:        registry,
 	}
 	invoker.Listen()
 	return invoker
 }
 
-
-func (ivk * Invoker)Listen(){
+func (ivk *Invoker) Listen() {
 	go ivk.listen()
 }
 
- func (ivk *Invoker)listen(){
- 	for {
-		ch:=ivk.registry.GetListenEvent()
+func (ivk *Invoker) listen() {
+	for {
+		ch := ivk.registry.GetListenEvent()
 
-			for {
-				e, isOpen := <-ch
-				if !isOpen {
-					log.Warn("registry closed!")
-					break
-				}
-				ivk.update(e)
+		for {
+			e, isOpen := <-ch
+			if !isOpen {
+				log.Warn("registry closed!")
+				break
 			}
+			ivk.update(e)
+		}
 
 	}
- }
+}
 
-func (ivk * Invoker) update(res *registry.ServiceURLEvent) {
+func (ivk *Invoker) update(res *registry.ServiceURLEvent) {
 	if res == nil || res.Service == nil {
 		return
 	}
@@ -103,7 +106,7 @@ func (ivk * Invoker) update(res *registry.ServiceURLEvent) {
 		}
 	case registry.ServiceURLDel:
 		if ok {
-			svcArr.del(res.Service,  ivk.ServiceTTL)
+			svcArr.del(res.Service, ivk.ServiceTTL)
 			if len(svcArr.arr) == 0 {
 				delete(ivk.cacheServiceMap, serviceKey)
 				log.Warn("delete service %s from service map", serviceKey)
@@ -113,7 +116,7 @@ func (ivk * Invoker) update(res *registry.ServiceURLEvent) {
 	}
 }
 
-func (ivk * Invoker) getService(serviceConf *service.ServiceConfig)(*ServiceArray,error){
+func (ivk *Invoker) getService(serviceConf *service.ServiceConfig) (*ServiceArray, error) {
 	defer ivk.listenerLock.Unlock()
 
 	serviceKey := serviceConf.Key()
@@ -121,8 +124,8 @@ func (ivk * Invoker) getService(serviceConf *service.ServiceConfig)(*ServiceArra
 	ivk.listenerLock.Lock()
 	svcArr, sok := ivk.cacheServiceMap[serviceKey]
 	log.Debug("r.svcArr[serviceString{%v}] = svcArr{%s}", serviceKey, svcArr)
-	if sok && time.Since(svcArr.birth) < ivk.Options.ServiceTTL{
-		return svcArr,nil
+	if sok && time.Since(svcArr.birth) < ivk.Options.ServiceTTL {
+		return svcArr, nil
 	}
 	ivk.listenerLock.Unlock()
 
@@ -141,17 +144,17 @@ func (ivk * Invoker) getService(serviceConf *service.ServiceConfig)(*ServiceArra
 	return newSvcArr, nil
 }
 
-func (ivk * Invoker)Call(ctx context.Context,reqId int64,serviceConf *service.ServiceConfig,req jsonrpc.Request,resp interface{})error{
+func (ivk *Invoker) Call(ctx context.Context, reqId int64, serviceConf *service.ServiceConfig, req jsonrpc.Request, resp interface{}) error {
 
-	serviceArray ,err:= ivk.getService(serviceConf)
-	if err != nil{
+	serviceArray, err := ivk.getService(serviceConf)
+	if err != nil {
 		return err
 	}
-	if len(serviceArray.arr) ==0 {
+	if len(serviceArray.arr) == 0 {
 		return jerrors.New("cannot find svc " + serviceConf.String())
 	}
-	url,err := ivk.selector.Select(reqId,serviceArray)
-	if err != nil{
+	url, err := ivk.selector.Select(reqId, serviceArray)
+	if err != nil {
 		return err
 	}
 	if err = ivk.Client.Call(ctx, url, req, resp); err != nil {

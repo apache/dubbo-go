@@ -2,8 +2,6 @@ package zookeeper
 
 import (
 	"fmt"
-	"github.com/dubbo/dubbo-go/registry"
-	"github.com/dubbo/dubbo-go/service"
 	"path"
 	"sync"
 	"time"
@@ -13,6 +11,11 @@ import (
 	log "github.com/AlexStocks/log4go"
 	jerrors "github.com/juju/errors"
 	"github.com/samuel/go-zookeeper/zk"
+)
+
+import (
+	"github.com/dubbo/dubbo-go/registry"
+	"github.com/dubbo/dubbo-go/service"
 )
 
 const (

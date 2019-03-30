@@ -2,11 +2,17 @@ package zookeeper
 
 import (
 	"fmt"
+	"time"
+)
+
+import (
+	log "github.com/AlexStocks/log4go"
+	jerrors "github.com/juju/errors"
+)
+
+import (
 	"github.com/dubbo/dubbo-go/registry"
 	"github.com/dubbo/dubbo-go/service"
-	jerrors "github.com/juju/errors"
-	log "github.com/AlexStocks/log4go"
-	"time"
 )
 
 func (r *ZkRegistry) ConsumerRegister(conf *service.ServiceConfig) error {
@@ -43,11 +49,9 @@ func (r *ZkRegistry) ConsumerRegister(conf *service.ServiceConfig) error {
 	return nil
 }
 
-
-func (r *ZkRegistry) GetListenEvent() (chan *registry.ServiceURLEvent) {
+func (r *ZkRegistry) GetListenEvent() chan *registry.ServiceURLEvent {
 	return r.outerEventCh
 }
-
 
 // name: service@protocol
 func (r *ZkRegistry) GetService(conf *service.ServiceConfig) ([]*service.ServiceURL, error) {
@@ -129,7 +133,7 @@ func (r *ZkRegistry) listen() {
 			return
 		}
 
-		listener , err := r.getListener()
+		listener, err := r.getListener()
 		if err != nil {
 			if r.isClosed() {
 				log.Warn("event listener game over.")
@@ -193,4 +197,3 @@ func (r *ZkRegistry) getListener() (*zkEventListener, error) {
 
 	return zkListener, nil
 }
-

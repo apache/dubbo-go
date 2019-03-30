@@ -2,10 +2,16 @@ package invoker
 
 import (
 	"fmt"
-	"github.com/dubbo/dubbo-go/service"
-	jerrors "github.com/juju/errors"
 	"strings"
 	"time"
+)
+
+import (
+	jerrors "github.com/juju/errors"
+)
+
+import (
+	"github.com/dubbo/dubbo-go/service"
 )
 
 //////////////////////////////////////////
@@ -13,12 +19,10 @@ import (
 // should be returned by registry ,will be used by client & waiting to loadBalance
 //////////////////////////////////////////
 
-
 var (
 	ErrServiceArrayEmpty   = jerrors.New("serviceArray empty")
 	ErrServiceArrayTimeout = jerrors.New("serviceArray timeout")
 )
-
 
 type ServiceArray struct {
 	arr   []*service.ServiceURL
@@ -33,13 +37,13 @@ func newServiceArray(arr []*service.ServiceURL) *ServiceArray {
 	}
 }
 
-func (s *ServiceArray)GetIdx()*int64{
+func (s *ServiceArray) GetIdx() *int64 {
 	return &s.idx
 }
-func (s *ServiceArray)GetSize()int{
+func (s *ServiceArray) GetSize() int {
 	return len(s.arr)
 }
-func  (s *ServiceArray)GetService(i int)*service.ServiceURL{
+func (s *ServiceArray) GetService(i int) *service.ServiceURL {
 	return s.arr[i]
 }
 
@@ -53,7 +57,6 @@ func (s *ServiceArray) String() string {
 
 	return builder.String()
 }
-
 
 func (s *ServiceArray) add(service *service.ServiceURL, ttl time.Duration) {
 	s.arr = append(s.arr, service)
@@ -69,4 +72,3 @@ func (s *ServiceArray) del(service *service.ServiceURL, ttl time.Duration) {
 		}
 	}
 }
-
