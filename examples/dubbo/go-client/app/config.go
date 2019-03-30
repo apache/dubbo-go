@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/dubbo/dubbo-go/registry/zookeeper"
+	"github.com/dubbo/dubbo-go/service"
 	"io/ioutil"
 	"os"
 	"path"
@@ -46,12 +47,14 @@ type (
 		// codec & selector & transport & registry
 		Selector     string `default:"cache"  yaml:"selector" json:"selector,omitempty"`
 		Selector_TTL string `default:"10m"  yaml:"selector_ttl" json:"selector_ttl,omitempty"`
+		//client load balance algorithm
+		ClientLoadBalance string  `default:"round_robin"  yaml:"client_load_balance" json:"client_load_balance,omitempty"`
 		Registry     string `default:"zookeeper"  yaml:"registry" json:"registry,omitempty"`
 		// application
 		Application_Config registry.ApplicationConfig `yaml:"application_config" json:"application_config,omitempty"`
 		ZkRegistryConfig zookeeper.ZkRegistryConfig  `yaml:"zk_registry_config" json:"zk_registry_config,omitempty"`
 		// 一个客户端只允许使用一个service的其中一个group和其中一个version
-		Service_List []registry.ServiceConfig `yaml:"service_list" json:"service_list,omitempty"`
+		Service_List []service.ServiceConfig `yaml:"service_list" json:"service_list,omitempty"`
 	}
 )
 

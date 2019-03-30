@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"github.com/dubbo/dubbo-go/server"
+	"github.com/dubbo/dubbo-go/service"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -57,7 +58,7 @@ type Option func(*Options)
 type Options struct {
 	Registry        registry.Registry
 	ConfList        []server.ServerConfig
-	ServiceConfList []registry.ServiceConfig
+	ServiceConfList []service.ServiceConfig
 	Timeout         time.Duration
 }
 
@@ -92,7 +93,7 @@ func ConfList(confList []server.ServerConfig) Option {
 	}
 }
 
-func ServiceConfList(confList []registry.ServiceConfig) Option {
+func ServiceConfList(confList []service.ServiceConfig) Option {
 	return func(o *Options) {
 		o.ServiceConfList = confList
 	}
@@ -234,7 +235,7 @@ func (s *Server) Options() Options {
 func (s *Server) Handle(h Handler) error {
 	var (
 		err         error
-		serviceConf registry.ServiceConfig
+		serviceConf service.ServiceConfig
 	)
 
 	opts := s.Options()

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/AlexStocks/goext/log"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -13,21 +12,24 @@ import (
 )
 
 import (
+	"github.com/AlexStocks/goext/log"
 	"github.com/AlexStocks/goext/net"
 	log "github.com/AlexStocks/log4go"
 	jerrors "github.com/juju/errors"
 )
 
 import (
+	"github.com/dubbo/dubbo-go/client/invoker"
+	"github.com/dubbo/dubbo-go/jsonrpc"
 	"github.com/dubbo/dubbo-go/plugins"
-	"github.com/dubbo/dubbo-go/registry/zookeeper"
 	"github.com/dubbo/dubbo-go/public"
 	"github.com/dubbo/dubbo-go/registry"
+	"github.com/dubbo/dubbo-go/registry/zookeeper"
 )
 
 var (
 	survivalTimeout int = 10e9
-	clientRegistry  registry.Registry
+	clientInvoker   *invoker.Invoker
 )
 
 func main() {
@@ -46,18 +48,18 @@ func main() {
 	time.Sleep(3e9)
 
 	gxlog.CInfo("\n\n\nstart to test jsonrpc")
-	testJsonrpc("A003")
+	testJsonrpc("A003", "GetUser")
 	time.Sleep(3e9)
 
 	gxlog.CInfo("\n\n\nstart to test jsonrpc illegal method")
-	testJsonrpcIllegalMethod("A003")
+
+	testJsonrpc("A003", "GetUser1")
 
 	initSignal()
 }
 
 func initClient() {
 	var (
-		err error
 		codecType public.CodecType
 	)
 
@@ -67,24 +69,14 @@ func initClient() {
 	}
 
 	// registry
-	clientRegistry,err = plugins.PluggableRegistries[clientConfig.Registry](
+	clientRegistry, err := plugins.PluggableRegistries[clientConfig.Registry](
 		registry.WithDubboType(registry.CONSUMER),
 		registry.WithApplicationConf(clientConfig.Application_Config),
 		zookeeper.WithRegistryConf(clientConfig.ZkRegistryConfig),
-		registry.WithBalanceMode(registry.SM_RoundRobin),
-		registry.WithServiceTTL(300e9),
-
 	)
 	if err != nil {
 		panic(fmt.Sprintf("fail to init registry.Registy, err:%s", jerrors.ErrorStack(err)))
 		return
-	}
-	for _, service := range clientConfig.Service_List {
-		err = clientRegistry.ConsumerRegister(service)
-		if err != nil {
-			panic(fmt.Sprintf("registry.Register(service{%#v}) = error{%v}", service, jerrors.ErrorStack(err)))
-			return
-		}
 	}
 
 	// consumer
@@ -107,6 +99,28 @@ func initClient() {
 			panic(fmt.Sprintf("unknown protocol %s", clientConfig.Service_List[idx].Protocol))
 		}
 	}
+
+	for _, service := range clientConfig.Service_List {
+		err = clientRegistry.ConsumerRegister(&service)
+		if err != nil {
+			panic(fmt.Sprintf("registry.Register(service{%#v}) = error{%v}", service, jerrors.ErrorStack(err)))
+			return
+		}
+	}
+
+	//read the client lb config in config.yml
+	configClientLB := plugins.PluggableLoadbalance[clientConfig.ClientLoadBalance]()
+
+	//init http client & init invoker
+	clt := jsonrpc.NewHTTPClient(
+		&jsonrpc.HTTPOptions{
+			HandshakeTimeout: clientConfig.connectTimeout,
+			HTTPTimeout:      clientConfig.requestTimeout,
+		},
+	)
+
+	clientInvoker = invoker.NewInvoker(clientRegistry, clt,
+		invoker.WithLBSelector(configClientLB))
 
 }
 
