@@ -158,7 +158,7 @@ func (c *Client) call(ct CallType, addr string, svcUrl registry.ServiceURL, meth
 	p.Service.Method = method
 	p.Service.Timeout = opts.RequestTimeout
 	if opts.SerialID == 1 || opts.SerialID == 3 || opts.SerialID == 4 || opts.SerialID == 5 || opts.SerialID == 6 ||
-		opts.SerialID == 7 || opts.SerialID == 8 {
+		opts.SerialID == 7 {
 		p.Header.SerialID = byte(S_Default)
 	} else {
 		p.Header.SerialID = byte(opts.SerialID)
