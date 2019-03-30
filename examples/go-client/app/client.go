@@ -19,13 +19,15 @@ import (
 )
 
 import (
+	"github.com/dubbo/dubbo-go/plugins"
+	"github.com/dubbo/dubbo-go/registry/zookeeper"
 	"github.com/dubbo/dubbo-go/public"
 	"github.com/dubbo/dubbo-go/registry"
 )
 
 var (
 	survivalTimeout int = 10e9
-	clientRegistry  *registry.ZkConsumerRegistry
+	clientRegistry  registry.Registry
 )
 
 func main() {
@@ -54,7 +56,7 @@ func main() {
 
 func initClient() {
 	var (
-		err       error
+		err error
 		codecType public.CodecType
 	)
 
@@ -64,18 +66,20 @@ func initClient() {
 	}
 
 	// registry
-	clientRegistry, err = registry.NewZkConsumerRegistry(
-		registry.ApplicationConf(clientConfig.Application_Config),
-		registry.RegistryConf(clientConfig.Registry_Config),
-		registry.BalanceMode(registry.SM_RoundRobin),
-		registry.ServiceTTL(300e9),
+	clientRegistry,err = plugins.PluggableRegistries[clientConfig.Registry](
+		registry.WithDubboType(registry.CONSUMER),
+		registry.WithApplicationConf(clientConfig.Application_Config),
+		zookeeper.WithRegistryConf(clientConfig.ZkRegistryConfig),
+		registry.WithBalanceMode(registry.SM_RoundRobin),
+		registry.WithServiceTTL(300e9),
+
 	)
 	if err != nil {
 		panic(fmt.Sprintf("fail to init registry.Registy, err:%s", jerrors.ErrorStack(err)))
 		return
 	}
 	for _, service := range clientConfig.Service_List {
-		err = clientRegistry.Register(service)
+		err = clientRegistry.ConsumerRegister(service)
 		if err != nil {
 			panic(fmt.Sprintf("registry.Register(service{%#v}) = error{%v}", service, jerrors.ErrorStack(err)))
 			return
@@ -102,6 +106,7 @@ func initClient() {
 			panic(fmt.Sprintf("unknown protocol %s", clientConfig.Service_List[idx].Protocol))
 		}
 	}
+
 }
 
 func uninitClient() {
