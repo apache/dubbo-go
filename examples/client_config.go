@@ -1,4 +1,4 @@
-package main
+package examples
 
 import (
 	"fmt"
@@ -17,18 +17,14 @@ import (
 )
 
 import (
+	"github.com/dubbo/dubbo-go/registry"
 	"github.com/dubbo/dubbo-go/registry/zookeeper"
 	"github.com/dubbo/dubbo-go/service"
-	"github.com/dubbo/dubbo-go/registry"
 )
 
 const (
 	APP_CONF_FILE     = "APP_CONF_FILE"
 	APP_LOG_CONF_FILE = "APP_LOG_CONF_FILE"
-)
-
-var (
-	clientConfig *ClientConfig
 )
 
 type (
@@ -40,28 +36,30 @@ type (
 
 		// client
 		Connect_Timeout string `default:"100ms"  yaml:"connect_timeout" json:"connect_timeout,omitempty"`
-		connectTimeout  time.Duration
+		ConnectTimeout  time.Duration
 
 		Request_Timeout string `yaml:"request_timeout" default:"5s" json:"request_timeout,omitempty"` // 500ms, 1m
-		requestTimeout  time.Duration
+		RequestTimeout  time.Duration
 
 		// codec & selector & transport & registry
 		Selector     string `default:"cache"  yaml:"selector" json:"selector,omitempty"`
 		Selector_TTL string `default:"10m"  yaml:"selector_ttl" json:"selector_ttl,omitempty"`
 		//client load balance algorithm
-		ClientLoadBalance string  `default:"round_robin"  yaml:"client_load_balance" json:"client_load_balance,omitempty"`
-		Registry     string `default:"zookeeper"  yaml:"registry" json:"registry,omitempty"`
+		ClientLoadBalance string `default:"round_robin"  yaml:"client_load_balance" json:"client_load_balance,omitempty"`
+		Registry          string `default:"zookeeper"  yaml:"registry" json:"registry,omitempty"`
 		// application
 		Application_Config registry.ApplicationConfig `yaml:"application_config" json:"application_config,omitempty"`
-		ZkRegistryConfig zookeeper.ZkRegistryConfig  `yaml:"zk_registry_config" json:"zk_registry_config,omitempty"`
+		ZkRegistryConfig   zookeeper.ZkRegistryConfig `yaml:"zk_registry_config" json:"zk_registry_config,omitempty"`
 		// 一个客户端只允许使用一个service的其中一个group和其中一个version
 		Service_List []service.ServiceConfig `yaml:"service_list" json:"service_list,omitempty"`
 	}
 )
 
-func initClientConfig() error {
+func InitClientConfig() *ClientConfig {
+
 	var (
-		confFile string
+		clientConfig *ClientConfig
+		confFile     string
 	)
 
 	// configure
@@ -105,5 +103,5 @@ func initClientConfig() error {
 	}
 	log.LoadConfiguration(confFile)
 
-	return nil
+	return clientConfig
 }

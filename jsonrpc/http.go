@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/dubbo/dubbo-go/client"
 	"github.com/dubbo/dubbo-go/service"
 	"io/ioutil"
 	"net"
@@ -23,30 +24,6 @@ import (
 import (
 	"github.com/dubbo/dubbo-go/public"
 )
-
-//////////////////////////////////////////////
-// Request
-//////////////////////////////////////////////
-
-type Request struct {
-	ID          int64
-	group       string
-	protocol    string
-	version     string
-	service     string
-	method      string
-	args        interface{}
-	contentType string
-}
-
-func (r *Request) ServiceConfig() service.ServiceConfigIf {
-	return &service.ServiceConfig{
-		Protocol: r.protocol,
-		Service:  r.service,
-		Group:    r.group,
-		Version:  r.version,
-	}
-}
 
 //////////////////////////////////////////////
 // HTTP Client
@@ -86,19 +63,19 @@ func NewHTTPClient(opt *HTTPOptions) *HTTPClient {
 	}
 }
 
-func (c *HTTPClient) NewRequest(conf service.ServiceConfig, method string, args interface{}) Request {
-	return Request{
+func (c *HTTPClient) NewRequest(conf service.ServiceConfig, method string, args interface{}) client.Request {
+	return client.Request{
 		ID:       atomic.AddInt64(&c.ID, 1),
-		group:    conf.Group,
-		protocol: conf.Protocol,
-		version:  conf.Version,
-		service:  conf.Service,
-		method:   method,
-		args:     args,
+		Group:    conf.Group,
+		Protocol: conf.Protocol,
+		Version:  conf.Version,
+		Service:  conf.Service,
+		Method:   method,
+		Args:     args,
 	}
 }
 
-func (c *HTTPClient) Call(ctx context.Context, service *service.ServiceURL, req Request, rsp interface{}) error {
+func (c *HTTPClient) Call(ctx context.Context, service *service.ServiceURL, req client.Request, rsp interface{}) error {
 	// header
 	httpHeader := http.Header{}
 	httpHeader.Set("Content-Type", "application/json")
@@ -122,8 +99,8 @@ func (c *HTTPClient) Call(ctx context.Context, service *service.ServiceURL, req 
 	codec := newJsonClientCodec()
 	codecData := CodecData{
 		ID:     req.ID,
-		Method: req.method,
-		Args:   req.args,
+		Method: req.Method,
+		Args:   req.Args,
 	}
 	reqBody, err := codec.Write(&codecData)
 	if err != nil {

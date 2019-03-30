@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/dubbo/dubbo-go/examples"
 	"github.com/dubbogo/hessian2"
 	_ "net/http/pprof"
 )
@@ -18,7 +19,7 @@ import (
 	"github.com/dubbo/dubbo-go/registry"
 )
 
-func testDubborpc(userKey string) {
+func testDubborpc(clientConfig *examples.ClientConfig,userKey string) {
 	var (
 		err        error
 		service    string

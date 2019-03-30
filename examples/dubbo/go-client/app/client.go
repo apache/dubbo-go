@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/dubbo/dubbo-go/dubbo"
+	"github.com/dubbo/dubbo-go/plugins"
+	"github.com/dubbo/dubbo-go/registry/zookeeper"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -19,39 +22,34 @@ import (
 )
 
 import (
+	"github.com/dubbo/dubbo-go/client/invoker"
+	"github.com/dubbo/dubbo-go/examples"
 	"github.com/dubbo/dubbo-go/public"
 	"github.com/dubbo/dubbo-go/registry"
 )
 
 var (
 	survivalTimeout int = 10e9
-	clientRegistry  *registry.ZkConsumerRegistry
+	clientInvoker   *invoker.Invoker
 )
 
 func main() {
-	var (
-		err error
-	)
 
-	err = initClientConfig()
-	if err != nil {
-		log.Error("initClientConfig() = error{%#v}", err)
-		return
-	}
-	initProfiling()
-	initClient()
+	clientConfig := examples.InitClientConfig()
+	initProfiling(clientConfig)
+	initClient(clientConfig)
 
 	time.Sleep(3e9)
 
 	gxlog.CInfo("\n\n\nstart to test dubbo")
-	testDubborpc("A003")
+	testDubborpc(clientConfig, "A003")
 
 	time.Sleep(3e9)
 
 	initSignal()
 }
 
-func initClient() {
+func initClient(clientConfig *examples.ClientConfig) {
 	var (
 		err       error
 		codecType public.CodecType
@@ -63,32 +61,24 @@ func initClient() {
 	}
 
 	// registry
-	clientRegistry, err = registry.NewZkConsumerRegistry(
-		registry.ApplicationConf(clientConfig.Application_Config),
-		registry.RegistryConf(clientConfig.Registry_Config),
-		registry.BalanceMode(registry.SM_RoundRobin),
-		registry.ServiceTTL(300e9),
+	clientRegistry, err := plugins.PluggableRegistries[clientConfig.Registry](
+		registry.WithDubboType(registry.CONSUMER),
+		registry.WithApplicationConf(clientConfig.Application_Config),
+		zookeeper.WithRegistryConf(clientConfig.ZkRegistryConfig),
 	)
 	if err != nil {
 		panic(fmt.Sprintf("fail to init registry.Registy, err:%s", jerrors.ErrorStack(err)))
 		return
 	}
-	for _, service := range clientConfig.Service_List {
-		err = clientRegistry.Register(service)
-		if err != nil {
-			panic(fmt.Sprintf("registry.Register(service{%#v}) = error{%v}", service, jerrors.ErrorStack(err)))
-			return
-		}
-	}
 
 	// consumer
-	clientConfig.requestTimeout, err = time.ParseDuration(clientConfig.Request_Timeout)
+	clientConfig.RequestTimeout, err = time.ParseDuration(clientConfig.Request_Timeout)
 	if err != nil {
 		panic(fmt.Sprintf("time.ParseDuration(Request_Timeout{%#v}) = error{%v}",
 			clientConfig.Request_Timeout, err))
 		return
 	}
-	clientConfig.connectTimeout, err = time.ParseDuration(clientConfig.Connect_Timeout)
+	clientConfig.ConnectTimeout, err = time.ParseDuration(clientConfig.Connect_Timeout)
 	if err != nil {
 		panic(fmt.Sprintf("time.ParseDuration(Connect_Timeout{%#v}) = error{%v}",
 			clientConfig.Connect_Timeout, err))
@@ -101,13 +91,54 @@ func initClient() {
 			panic(fmt.Sprintf("unknown protocol %s", clientConfig.Service_List[idx].Protocol))
 		}
 	}
+
+	for _, service := range clientConfig.Service_List {
+		err = clientRegistry.ConsumerRegister(&service)
+		if err != nil {
+			panic(fmt.Sprintf("registry.Register(service{%#v}) = error{%v}", service, jerrors.ErrorStack(err)))
+			return
+		}
+	}
+
+	//read the client lb config in config.yml
+	configClientLB := plugins.PluggableLoadbalance[clientConfig.ClientLoadBalance]()
+
+	//init dubbo rpc client & init invoker
+	var cltD *dubbo.Client
+
+	cltD, err = dubbo.NewClient(&dubbo.ClientConfig{
+		PoolSize:        64,
+		PoolTTL:         600,
+		ConnectionNum:   2, // 不能太大
+		FailFastTimeout: "5s",
+		SessionTimeout:  "20s",
+		HeartbeatPeriod: "5s",
+		GettySessionParam: dubbo.GettySessionParam{
+			CompressEncoding: false, // 必须false
+			TcpNoDelay:       true,
+			KeepAlivePeriod:  "120s",
+			TcpRBufSize:      262144,
+			TcpKeepAlive:     true,
+			TcpWBufSize:      65536,
+			PkgRQSize:        1024,
+			PkgWQSize:        512,
+			TcpReadTimeout:   "1s",
+			TcpWriteTimeout:  "5s",
+			WaitTimeout:      "1s",
+			MaxMsgLen:        1024,
+			SessionName:      "client",
+		},
+	})
+	clientInvoker, err = invoker.NewInvoker(clientRegistry,
+		invoker.WithClientTransport(cltD),
+		invoker.WithLBSelector(configClientLB))
 }
 
 func uninitClient() {
 	log.Close()
 }
 
-func initProfiling() {
+func initProfiling(clientConfig *examples.ClientConfig) {
 	if !clientConfig.Pprof_Enabled {
 		return
 	}

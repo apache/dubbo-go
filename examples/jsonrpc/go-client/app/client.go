@@ -20,6 +20,7 @@ import (
 
 import (
 	"github.com/dubbo/dubbo-go/client/invoker"
+	"github.com/dubbo/dubbo-go/examples"
 	"github.com/dubbo/dubbo-go/jsonrpc"
 	"github.com/dubbo/dubbo-go/plugins"
 	"github.com/dubbo/dubbo-go/public"
@@ -33,32 +34,26 @@ var (
 )
 
 func main() {
-	var (
-		err error
-	)
 
-	err = initClientConfig()
-	if err != nil {
-		log.Error("initClientConfig() = error{%#v}", err)
-		return
-	}
-	initProfiling()
-	initClient()
+	clientConfig := examples.InitClientConfig()
+
+	initProfiling(clientConfig)
+	initClient(clientConfig)
 
 	time.Sleep(3e9)
 
 	gxlog.CInfo("\n\n\nstart to test jsonrpc")
-	testJsonrpc("A003", "GetUser")
+	testJsonrpc(clientConfig, "A003", "GetUser")
 	time.Sleep(3e9)
 
 	gxlog.CInfo("\n\n\nstart to test jsonrpc illegal method")
 
-	testJsonrpc("A003", "GetUser1")
+	testJsonrpc(clientConfig, "A003", "GetUser1")
 
 	initSignal()
 }
 
-func initClient() {
+func initClient(clientConfig *examples.ClientConfig) {
 	var (
 		codecType public.CodecType
 	)
@@ -80,13 +75,13 @@ func initClient() {
 	}
 
 	// consumer
-	clientConfig.requestTimeout, err = time.ParseDuration(clientConfig.Request_Timeout)
+	clientConfig.RequestTimeout, err = time.ParseDuration(clientConfig.Request_Timeout)
 	if err != nil {
 		panic(fmt.Sprintf("time.ParseDuration(Request_Timeout{%#v}) = error{%v}",
 			clientConfig.Request_Timeout, err))
 		return
 	}
-	clientConfig.connectTimeout, err = time.ParseDuration(clientConfig.Connect_Timeout)
+	clientConfig.ConnectTimeout, err = time.ParseDuration(clientConfig.Connect_Timeout)
 	if err != nil {
 		panic(fmt.Sprintf("time.ParseDuration(Connect_Timeout{%#v}) = error{%v}",
 			clientConfig.Connect_Timeout, err))
@@ -114,12 +109,13 @@ func initClient() {
 	//init http client & init invoker
 	clt := jsonrpc.NewHTTPClient(
 		&jsonrpc.HTTPOptions{
-			HandshakeTimeout: clientConfig.connectTimeout,
-			HTTPTimeout:      clientConfig.requestTimeout,
+			HandshakeTimeout: clientConfig.ConnectTimeout,
+			HTTPTimeout:      clientConfig.RequestTimeout,
 		},
 	)
 
-	clientInvoker = invoker.NewInvoker(clientRegistry, clt,
+	clientInvoker, err = invoker.NewInvoker(clientRegistry,
+		invoker.WithClientTransport(clt),
 		invoker.WithLBSelector(configClientLB))
 
 }
@@ -128,7 +124,7 @@ func uninitClient() {
 	log.Close()
 }
 
-func initProfiling() {
+func initProfiling(clientConfig *examples.ClientConfig) {
 	if !clientConfig.Pprof_Enabled {
 		return
 	}
