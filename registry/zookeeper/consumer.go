@@ -140,7 +140,7 @@ func (r *ZkRegistry) listen() {
 				return
 			}
 			log.Warn("getListener() = err:%s", jerrors.ErrorStack(err))
-			time.Sleep(timeSecondDuration(REGISTRY_CONN_DELAY))
+			time.Sleep(timeSecondDuration(RegistryConnDelay))
 			continue
 		}
 		if err = listener.listenEvent(r); err != nil {
@@ -152,7 +152,7 @@ func (r *ZkRegistry) listen() {
 
 			listener.close()
 
-			time.Sleep(timeSecondDuration(REGISTRY_CONN_DELAY))
+			time.Sleep(timeSecondDuration(RegistryConnDelay))
 			continue
 		}
 	}

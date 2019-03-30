@@ -19,9 +19,7 @@ import (
 )
 
 const (
-	MAX_TIMES                   = 15
-	ZkEvent_Channel_Size        = 32
-	ZKCLIENT_EVENT_CHANNEL_SIZE = 4
+	MaxFailTimes = 15
 )
 
 type zkEvent struct {
@@ -44,7 +42,7 @@ type zkEventListener struct {
 func newZkEventListener(client *zookeeperClient) *zkEventListener {
 	return &zkEventListener{
 		client:     client,
-		events:     make(chan zkEvent, ZkEvent_Channel_Size),
+		events:     make(chan zkEvent, 32),
 		serviceMap: make(map[string]struct{}),
 	}
 }
@@ -166,15 +164,15 @@ func (l *zkEventListener) listenDirEvent(zkPath string, conf *service.ServiceCon
 		event     chan struct{}
 		zkEvent   zk.Event
 	)
-	event = make(chan struct{}, ZKCLIENT_EVENT_CHANNEL_SIZE)
+	event = make(chan struct{}, 4)
 	defer close(event)
 	for {
 		// get current children for a zkPath
 		children, childEventCh, err := l.client.getChildrenW(zkPath)
 		if err != nil {
 			failTimes++
-			if MAX_TIMES <= failTimes {
-				failTimes = MAX_TIMES
+			if MaxFailTimes <= failTimes {
+				failTimes = MaxFailTimes
 			}
 			log.Error("listenDirEvent(path{%s}) = error{%v}", zkPath, err)
 			// clear the event channel
@@ -188,7 +186,7 @@ func (l *zkEventListener) listenDirEvent(zkPath string, conf *service.ServiceCon
 			}
 			l.client.registerEvent(zkPath, &event)
 			select {
-			case <-time.After(timeSecondDuration(failTimes * REGISTRY_CONN_DELAY)):
+			case <-time.After(timeSecondDuration(failTimes * RegistryConnDelay)):
 				l.client.unregisterEvent(zkPath, &event)
 				continue
 			case <-l.client.done():

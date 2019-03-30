@@ -34,8 +34,8 @@ func (t DubboType) Role() string {
 // dubbo config & options
 /////////////////////////////////
 
-type RegistryOptions interface {
-	ToString() string
+type RegistryOption interface {
+	Name() string
 }
 
 type ApplicationConfig struct {
@@ -52,12 +52,16 @@ type Options struct {
 	DubboType DubboType
 }
 
-func (o *Options) ToString() string {
-	return fmt.Sprintf("Options{name:%s, version:%s, owner:%s, module:%s, organization:%s, type:%s}",
+func (o *Options) String() string {
+	return fmt.Sprintf("name:%s, version:%s, owner:%s, module:%s, organization:%s, type:%s",
 		o.Name, o.Version, o.Owner, o.Module, o.Organization, o.DubboType)
 }
 
 type Option func(*Options)
+
+func (Option) Name() string {
+	return "dubbogo-registry-option"
+}
 
 func WithDubboType(typ DubboType) Option {
 	return func(o *Options) {
