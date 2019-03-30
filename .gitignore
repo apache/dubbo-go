@@ -21,6 +21,4 @@ classes
 # vendor/
 
 logs/
-go.sum
-go.mod
 
