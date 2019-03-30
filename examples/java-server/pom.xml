@@ -5,14 +5,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.ikurento</groupId>
-    <artifactId>jsonrpc-java-server</artifactId>
+    <artifactId>user-info-server</artifactId>
     <packaging>jar</packaging>
     <version>0.2.0</version>
     <description>The demo provider module of dubbo project</description>
     <properties>
         <skip_maven_deploy>false</skip_maven_deploy>
 
-        <dubbo-version>2.5.4</dubbo-version>
+        <dubbo-version>2.5.10</dubbo-version>
         <dubbo-jsonrpc-version>1.0.1</dubbo-jsonrpc-version>
     </properties>
 
@@ -32,7 +32,7 @@
         </dependency>
 
         <dependency>
-            <groupId>com.ofpay</groupId>
+            <groupId>com.qianmi</groupId>
             <artifactId>dubbo-rpc-jsonrpc</artifactId>
             <version>${dubbo-jsonrpc-version}</version>
             <exclusions>
