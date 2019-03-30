@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/dubbo/dubbo-go/registry/zookeeper"
 	_ "net/http/pprof"
 )
 
@@ -63,6 +64,7 @@ func testJsonrpc(userKey string) {
 	// Attention the last parameter : []UserKey{userKey}
 	req = clt.NewRequest(conf, method, []string{userKey})
 
+	clientRegistry = clientRegistry.(*zookeeper.ZkRegistry)
 	serviceURL, err = clientRegistry.Filter(req.ServiceConfig(), 1)
 	if err != nil {
 		log.Error("registry.Filter(conf:%#v) = error:%s", req.ServiceConfig(), jerrors.ErrorStack(err))
