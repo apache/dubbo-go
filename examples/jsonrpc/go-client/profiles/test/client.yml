@@ -13,6 +13,7 @@ connect_timeout : "100ms"
 selector : "cache"
 selector_ttl : "10m"
 registry : "zookeeper"
+client_load_balance: "round_robin"
 
 # application config
 application_config:

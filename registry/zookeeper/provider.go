@@ -1,23 +1,25 @@
 package zookeeper
 
 import (
-	"github.com/dubbo/dubbo-go/registry"
-	jerrors "github.com/juju/errors"
 	log "github.com/AlexStocks/log4go"
+	jerrors "github.com/juju/errors"
+)
+
+import (
+	"github.com/dubbo/dubbo-go/service"
 )
 
 type ProviderServiceConfig struct {
-	registry.ServiceConfig
+	service.ServiceConfig
 }
 
-
-func (r *ZkRegistry) NewProviderServiceConfig(config registry.ServiceConfig)registry.ServiceConfigIf{
+func (r *ZkRegistry) NewProviderServiceConfig(config service.ServiceConfig) service.ServiceConfigIf {
 	return ProviderServiceConfig{
 		config,
 	}
 }
 
-func (r *ZkRegistry) ProviderRegister(c registry.ServiceConfigIf) error {
+func (r *ZkRegistry) ProviderRegister(c service.ServiceConfigIf) error {
 	var (
 		ok   bool
 		err  error
@@ -45,9 +47,10 @@ func (r *ZkRegistry) ProviderRegister(c registry.ServiceConfigIf) error {
 	}
 
 	r.Lock()
-	r.services[conf.String()] = &conf
-	log.Debug("(ZkProviderRegistry)Register(conf{%#v})", conf)
+	r.services[conf.String()] = conf
 	r.Unlock()
+
+	log.Debug("(ZkProviderRegistry)Register(conf{%#v})", conf)
 
 	return nil
 }

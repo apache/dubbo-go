@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/dubbo/dubbo-go/registry/zookeeper"
-	"github.com/dubbo/dubbo-go/server"
 	"io/ioutil"
 	"os"
 	"path"
@@ -13,9 +11,15 @@ import (
 import (
 	"github.com/AlexStocks/goext/log"
 	log "github.com/AlexStocks/log4go"
-	"github.com/dubbo/dubbo-go/registry"
 	jerrors "github.com/juju/errors"
 	yaml "gopkg.in/yaml.v2"
+)
+
+import (
+	"github.com/dubbo/dubbo-go/registry"
+	"github.com/dubbo/dubbo-go/registry/zookeeper"
+	"github.com/dubbo/dubbo-go/server"
+	"github.com/dubbo/dubbo-go/service"
 )
 
 const (
@@ -40,10 +44,10 @@ type (
 		// application
 		Application_Config registry.ApplicationConfig `yaml:"application_config" json:"application_config,omitempty"`
 		// Registry_Address  string `default:"192.168.35.3:2181"`
-		Registry     string `default:"zookeeper"  yaml:"registry" json:"registry,omitempty"`
-		ZkRegistryConfig zookeeper.ZkRegistryConfig  `yaml:"zk_registry_config" json:"zk_registry_config,omitempty"`
-		Service_List    []registry.ServiceConfig `yaml:"service_list" json:"service_list,omitempty"`
-		Server_List     []server.ServerConfig  `yaml:"server_list" json:"server_list,omitempty"`
+		Registry         string                     `default:"zookeeper"  yaml:"registry" json:"registry,omitempty"`
+		ZkRegistryConfig zookeeper.ZkRegistryConfig `yaml:"zk_registry_config" json:"zk_registry_config,omitempty"`
+		Service_List     []service.ServiceConfig    `yaml:"service_list" json:"service_list,omitempty"`
+		Server_List      []server.ServerConfig      `yaml:"server_list" json:"server_list,omitempty"`
 	}
 )
 
