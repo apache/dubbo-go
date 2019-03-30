@@ -80,7 +80,7 @@ func WithRegistryConf(conf ZkRegistryConfig) Option {
 	}
 }
 
-func NewZkRegistry(opts ...registry.OptionInf) (registry.Registry, error) {
+func NewZkRegistry(opts ...registry.RegistryOptions) (registry.Registry, error) {
 	var (
 		err error
 		r   *ZkRegistry
