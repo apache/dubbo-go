@@ -1,5 +1,13 @@
 package registry
 
+import (
+	"fmt"
+)
+
+/////////////////////////////////
+// dubbo role type
+/////////////////////////////////
+
 const (
 	CONSUMER = iota
 	CONFIGURATOR
@@ -11,6 +19,7 @@ var (
 	DubboNodes = [...]string{"consumers", "configurators", "routers", "providers"}
 	DubboRole  = [...]string{"consumer", "", "", "provider"}
 )
+
 type DubboType int
 
 func (t DubboType) String() string {
@@ -20,6 +29,15 @@ func (t DubboType) String() string {
 func (t DubboType) Role() string {
 	return DubboRole[t]
 }
+
+/////////////////////////////////
+// dubbo config & options
+/////////////////////////////////
+
+type RegistryOptions interface {
+	ToString() string
+}
+
 type ApplicationConfig struct {
 	Organization string `yaml:"organization"  json:"organization,omitempty"`
 	Name         string `yaml:"name" json:"name,omitempty"`
@@ -29,37 +47,25 @@ type ApplicationConfig struct {
 	Environment  string `yaml:"environment" json:"environment,omitempty"`
 }
 
-
-
-
-type OptionInf interface{
-	OptionName()string
-}
-type Options struct{
+type Options struct {
 	ApplicationConfig
-	DubboType      DubboType
+	DubboType DubboType
 }
 
-
-
-//func (c *ApplicationConfig) ToString() string {
-//	return fmt.Sprintf("ApplicationConfig is {name:%s, version:%s, owner:%s, module:%s, organization:%s}",
-//		c.Name, c.Version, c.Owner, c.Module, c.Organization)
-//}
+func (o *Options) ToString() string {
+	return fmt.Sprintf("Options{name:%s, version:%s, owner:%s, module:%s, organization:%s, type:%s}",
+		o.Name, o.Version, o.Owner, o.Module, o.Organization, o.DubboType)
+}
 
 type Option func(*Options)
 
-func(Option)OptionName() string {
-	return "Abstact option func"
-}
-
-func WithDubboType(tp DubboType)Option{
-	return func (o *Options){
-		o.DubboType = tp
+func WithDubboType(typ DubboType) Option {
+	return func(o *Options) {
+		o.DubboType = typ
 	}
 }
 
-func WithApplicationConf(conf  ApplicationConfig) Option {
+func WithApplicationConf(conf ApplicationConfig) Option {
 	return func(o *Options) {
 		o.ApplicationConfig = conf
 	}
