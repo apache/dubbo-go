@@ -23,16 +23,20 @@ import (
 )
 
 const (
-	defaultTimeout           = int64(10e9)
-	RegistryZkClient         = "zk registry"
-	DEFAULT_REGISTRY_TIMEOUT = 1 * time.Second
-	REGISTRY_CONN_DELAY      = 3
+	defaultTimeout    = int64(10e9)
+	RegistryZkClient  = "zk registry"
+	RegistryConnDelay = 3
 )
 
 var (
 	processID = ""
 	localIP   = ""
 )
+
+func init() {
+	processID = fmt.Sprintf("%d", os.Getpid())
+	localIP, _ = gxnet.GetLocalIP()
+}
 
 type ZkRegistryConfig struct {
 	Address    []string      `required:"true" yaml:"address"  json:"address,omitempty"`
@@ -47,10 +51,21 @@ type Options struct {
 	ZkRegistryConfig
 }
 
+func (o Options) ToString() string {
+	return fmt.Sprintf("%s, address:%+v, user:%s, password:%s, conn-timeout:%s",
+		o.Options, o.Address, o.UserName, o.Password, o.Timeout)
+}
+
 type Option func(*Options)
 
-func (Option) OptionName() string {
-	return "zk's option func"
+func (Option) Name() string {
+	return "dubbogo-zookeeper-registry-option"
+}
+
+func WithRegistryConf(conf ZkRegistryConfig) Option {
+	return func(o *Options) {
+		o.ZkRegistryConfig = conf
+	}
 }
 
 type ZkRegistry struct {
@@ -69,18 +84,7 @@ type ZkRegistry struct {
 	outerEventCh chan *registry.ServiceURLEvent
 }
 
-func init() {
-	processID = fmt.Sprintf("%d", os.Getpid())
-	localIP, _ = gxnet.GetLocalIP()
-}
-
-func WithRegistryConf(conf ZkRegistryConfig) Option {
-	return func(o *Options) {
-		o.ZkRegistryConfig = conf
-	}
-}
-
-func NewZkRegistry(opts ...registry.OptionInf) (registry.Registry, error) {
+func NewZkRegistry(opts ...registry.RegistryOption) (registry.Registry, error) {
 	var (
 		err error
 		r   *ZkRegistry
@@ -115,7 +119,7 @@ func NewZkRegistry(opts ...registry.OptionInf) (registry.Registry, error) {
 	}
 
 	if r.ZkRegistryConfig.Timeout == 0 {
-		r.ZkRegistryConfig.Timeout = DEFAULT_REGISTRY_TIMEOUT
+		r.ZkRegistryConfig.Timeout = 1e9
 	}
 	err = r.validateZookeeperClient()
 	if err != nil {
@@ -195,7 +199,7 @@ LOOP:
 				case <-r.done:
 					log.Warn("(ZkProviderRegistry)reconnectZkRegistry goroutine exit now...")
 					break LOOP
-				case <-time.After(time.Duration(1e9 * failTimes * REGISTRY_CONN_DELAY)): // 防止疯狂重连zk
+				case <-time.After(time.Duration(1e9 * failTimes * RegistryConnDelay)): // 防止疯狂重连zk
 				}
 				err = r.validateZookeeperClient()
 				log.Info("ZkProviderRegistry.validateZookeeperClient(zkAddr{%s}) = error{%#v}",
@@ -223,8 +227,8 @@ LOOP:
 					}
 				}
 				failTimes++
-				if MAX_TIMES <= failTimes {
-					failTimes = MAX_TIMES
+				if MaxFailTimes <= failTimes {
+					failTimes = MaxFailTimes
 				}
 			}
 		}
