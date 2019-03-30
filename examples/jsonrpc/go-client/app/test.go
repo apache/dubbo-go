@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-
+	"github.com/dubbo/dubbo-go/client"
 	_ "net/http/pprof"
 )
 
@@ -12,12 +12,12 @@ import (
 )
 
 import (
-	"github.com/dubbo/dubbo-go/jsonrpc"
+	"github.com/dubbo/dubbo-go/examples"
 	"github.com/dubbo/dubbo-go/public"
 	"github.com/dubbo/dubbo-go/service"
 )
 
-func testJsonrpc(userKey string, method string) {
+func testJsonrpc(clientConfig *examples.ClientConfig, userKey string, method string) {
 	var (
 		err        error
 		svc        string
@@ -25,7 +25,7 @@ func testJsonrpc(userKey string, method string) {
 		user       *JsonRPCUser
 		ctx        context.Context
 		conf       service.ServiceConfig
-		req        jsonrpc.Request
+		req        client.Request
 	)
 
 	serviceIdx = -1
@@ -49,7 +49,7 @@ func testJsonrpc(userKey string, method string) {
 		Service:  clientConfig.Service_List[serviceIdx].Service,
 	}
 	// Attention the last parameter : []UserKey{userKey}
-	req = clientInvoker.Client.NewRequest(conf, method, []string{userKey})
+	req = clientInvoker.Transport.NewRequest(conf, method, []string{userKey})
 
 	ctx = context.WithValue(context.Background(), public.DUBBOGO_CTX_KEY, map[string]string{
 		"X-Proxy-Id": "dubbogo",

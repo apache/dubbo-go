@@ -2,6 +2,7 @@ package invoker
 
 import (
 	"context"
+	"github.com/dubbo/dubbo-go/client"
 	"sync"
 	"time"
 )
@@ -13,7 +14,6 @@ import (
 
 import (
 	"github.com/dubbo/dubbo-go/client/loadBalance"
-	"github.com/dubbo/dubbo-go/jsonrpc"
 	"github.com/dubbo/dubbo-go/registry"
 	"github.com/dubbo/dubbo-go/service"
 )
@@ -21,6 +21,7 @@ import (
 type Options struct {
 	ServiceTTL time.Duration
 	selector   loadBalance.Selector
+	Transport  client.Transport
 }
 type Option func(*Options)
 
@@ -29,6 +30,13 @@ func WithServiceTTL(ttl time.Duration) Option {
 		o.ServiceTTL = ttl
 	}
 }
+
+func WithClientTransport(client client.Transport) Option {
+	return func(o *Options) {
+		o.Transport = client
+	}
+}
+
 func WithLBSelector(selector loadBalance.Selector) Option {
 	return func(o *Options) {
 		o.selector = selector
@@ -37,14 +45,12 @@ func WithLBSelector(selector loadBalance.Selector) Option {
 
 type Invoker struct {
 	Options
-	//TODO:we should provider a transport client interface
-	Client          *jsonrpc.HTTPClient
 	cacheServiceMap map[string]*ServiceArray
 	registry        registry.Registry
 	listenerLock    sync.Mutex
 }
 
-func NewInvoker(registry registry.Registry, client *jsonrpc.HTTPClient, opts ...Option) *Invoker {
+func NewInvoker(registry registry.Registry, opts ...Option) (*Invoker, error) {
 	options := Options{
 		//default 300s
 		ServiceTTL: time.Duration(300e9),
@@ -53,14 +59,16 @@ func NewInvoker(registry registry.Registry, client *jsonrpc.HTTPClient, opts ...
 	for _, opt := range opts {
 		opt(&options)
 	}
+	if options.Transport == nil {
+		return nil, jerrors.New("Must specify the client transport !")
+	}
 	invoker := &Invoker{
 		Options:         options,
-		Client:          client,
 		cacheServiceMap: make(map[string]*ServiceArray),
 		registry:        registry,
 	}
 	invoker.Listen()
-	return invoker
+	return invoker, nil
 }
 
 func (ivk *Invoker) Listen() {
@@ -144,7 +152,7 @@ func (ivk *Invoker) getService(serviceConf *service.ServiceConfig) (*ServiceArra
 	return newSvcArr, nil
 }
 
-func (ivk *Invoker) Call(ctx context.Context, reqId int64, serviceConf *service.ServiceConfig, req jsonrpc.Request, resp interface{}) error {
+func (ivk *Invoker) Call(ctx context.Context, reqId int64, serviceConf *service.ServiceConfig, req client.Request, resp interface{}) error {
 
 	serviceArray, err := ivk.getService(serviceConf)
 	if err != nil {
@@ -157,7 +165,7 @@ func (ivk *Invoker) Call(ctx context.Context, reqId int64, serviceConf *service.
 	if err != nil {
 		return err
 	}
-	if err = ivk.Client.Call(ctx, url, req, resp); err != nil {
+	if err = ivk.Transport.Call(ctx, url, req, resp); err != nil {
 		log.Error("client.Call() return error:%+v", jerrors.ErrorStack(err))
 		return err
 	}

@@ -11,6 +11,7 @@ var (
 	DubboNodes = [...]string{"consumers", "configurators", "routers", "providers"}
 	DubboRole  = [...]string{"consumer", "", "", "provider"}
 )
+
 type DubboType int
 
 func (t DubboType) String() string {
@@ -20,6 +21,7 @@ func (t DubboType) String() string {
 func (t DubboType) Role() string {
 	return DubboRole[t]
 }
+
 type ApplicationConfig struct {
 	Organization string `yaml:"organization"  json:"organization,omitempty"`
 	Name         string `yaml:"name" json:"name,omitempty"`
@@ -29,18 +31,13 @@ type ApplicationConfig struct {
 	Environment  string `yaml:"environment" json:"environment,omitempty"`
 }
 
-
-
-
-type OptionInf interface{
-	OptionName()string
+type OptionInf interface {
+	OptionName() string
 }
-type Options struct{
+type Options struct {
 	ApplicationConfig
-	DubboType      DubboType
+	DubboType DubboType
 }
-
-
 
 //func (c *ApplicationConfig) ToString() string {
 //	return fmt.Sprintf("ApplicationConfig is {name:%s, version:%s, owner:%s, module:%s, organization:%s}",
@@ -49,17 +46,17 @@ type Options struct{
 
 type Option func(*Options)
 
-func(Option)OptionName() string {
+func (Option) OptionName() string {
 	return "Abstact option func"
 }
 
-func WithDubboType(tp DubboType)Option{
-	return func (o *Options){
+func WithDubboType(tp DubboType) Option {
+	return func(o *Options) {
 		o.DubboType = tp
 	}
 }
 
-func WithApplicationConf(conf  ApplicationConfig) Option {
+func WithApplicationConf(conf ApplicationConfig) Option {
 	return func(o *Options) {
 		o.ApplicationConfig = conf
 	}
