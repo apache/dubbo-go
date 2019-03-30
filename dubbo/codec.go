@@ -69,7 +69,7 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, pkgType hessian.PackgeType) 
 }
 
 func (p *DubboPackage) ReadBody(body interface{}) error {
-	err := p.Codec.ReadBody(&body)
+	err := p.Codec.ReadBody(body)
 	return jerrors.Trace(err)
 }
 
