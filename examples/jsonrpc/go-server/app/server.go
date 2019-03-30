@@ -2,21 +2,19 @@ package main
 
 import (
 	"fmt"
+	"github.com/dubbo/dubbo-go/plugins"
+	registry2 "github.com/dubbo/dubbo-go/registry"
+	"github.com/dubbo/dubbo-go/registry/zookeeper"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
-)
-
-import (
-	// "github.com/AlexStocks/gocolor"
 	"github.com/AlexStocks/goext/net"
 	"github.com/AlexStocks/goext/time"
 	log "github.com/AlexStocks/log4go"
 	"github.com/dubbo/dubbo-go/jsonrpc"
-	"github.com/dubbo/dubbo-go/registry"
 	jerrors "github.com/juju/errors"
 )
 
@@ -50,8 +48,6 @@ func main() {
 
 func initServer() *jsonrpc.Server {
 	var (
-		err            error
-		serverRegistry *registry.ZkProviderRegistry
 		srv            *jsonrpc.Server
 	)
 
@@ -61,20 +57,23 @@ func initServer() *jsonrpc.Server {
 	}
 
 	// registry
-	serverRegistry, err = registry.NewZkProviderRegistry(
-		registry.ApplicationConf(conf.Application_Config),
-		registry.RegistryConf(conf.Registry_Config),
-		registry.BalanceMode(registry.SM_RoundRobin),
-		registry.ServiceTTL(conf.netTimeout),
+
+	registry, err := plugins.PluggableRegistries[conf.Registry](
+		registry2.WithDubboType(registry2.PROVIDER),
+		registry2.WithApplicationConf(conf.Application_Config),
+		zookeeper.WithRegistryConf(conf.ZkRegistryConfig),
+		//zookeeper.WithBalanceMode(registry.SM_RoundRobin),
+		registry2.WithServiceTTL(conf.netTimeout),
 	)
-	if err != nil || serverRegistry == nil {
+
+	if err != nil || registry == nil {
 		panic(fmt.Sprintf("fail to init registry.Registy, err:%s", jerrors.ErrorStack(err)))
 		return nil
 	}
 
 	// provider
 	srv = jsonrpc.NewServer(
-		jsonrpc.Registry(serverRegistry),
+		jsonrpc.Registry(registry),
 		jsonrpc.ConfList(conf.Server_List),
 		jsonrpc.ServiceConfList(conf.Service_List),
 	)
