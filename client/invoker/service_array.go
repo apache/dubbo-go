@@ -16,7 +16,7 @@ import (
 
 //////////////////////////////////////////
 // service array
-// should be returned by registry ,will be used by client & waiting to loadBalance
+// should be returned by registry ,will be used by client & waiting to selector
 //////////////////////////////////////////
 
 var (

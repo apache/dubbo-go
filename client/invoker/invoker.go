@@ -13,7 +13,7 @@ import (
 )
 
 import (
-	"github.com/dubbo/dubbo-go/client/loadBalance"
+	"github.com/dubbo/dubbo-go/client/selector"
 	"github.com/dubbo/dubbo-go/jsonrpc"
 	"github.com/dubbo/dubbo-go/registry"
 	"github.com/dubbo/dubbo-go/service"
@@ -21,7 +21,7 @@ import (
 
 type Options struct {
 	ServiceTTL time.Duration
-	selector   loadBalance.Selector
+	selector   selector.Selector
 	//TODO:we should provider a transport client interface
 	HttpClient  *jsonrpc.HTTPClient
 	DubboClient *dubbo.Client
@@ -45,7 +45,7 @@ func WithDubboClient(client *dubbo.Client) Option {
 	}
 }
 
-func WithLBSelector(selector loadBalance.Selector) Option {
+func WithLBSelector(selector selector.Selector) Option {
 	return func(o *Options) {
 		o.selector = selector
 	}
@@ -62,7 +62,7 @@ func NewInvoker(registry registry.Registry, opts ...Option) (*Invoker, error) {
 	options := Options{
 		//default 300s
 		ServiceTTL: time.Duration(300e9),
-		selector:   loadBalance.NewRandomSelector(),
+		selector:   selector.NewRandomSelector(),
 	}
 	for _, opt := range opts {
 		opt(&options)

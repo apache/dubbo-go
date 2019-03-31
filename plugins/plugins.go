@@ -1,7 +1,7 @@
 package plugins
 
 import (
-	"github.com/dubbo/dubbo-go/client/loadBalance"
+	"github.com/dubbo/dubbo-go/client/selector"
 	"github.com/dubbo/dubbo-go/registry"
 	"github.com/dubbo/dubbo-go/registry/zookeeper"
 )
@@ -10,7 +10,7 @@ var PluggableRegistries = map[string]func(...registry.RegistryOption) (registry.
 	"zookeeper": zookeeper.NewZkRegistry,
 }
 
-var PluggableLoadbalance = map[string]func() loadBalance.Selector{
-	"round_robin": loadBalance.NewRoundRobinSelector,
-	"random":      loadBalance.NewRandomSelector,
+var PluggableLoadbalance = map[string]func() selector.Selector{
+	"round_robin": selector.NewRoundRobinSelector,
+	"random":      selector.NewRandomSelector,
 }
