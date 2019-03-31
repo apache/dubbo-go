@@ -12,6 +12,7 @@ import (
 import (
 	jerrors "github.com/juju/errors"
 )
+
 //////////////////////////////////////////
 // service url
 //////////////////////////////////////////
@@ -111,4 +112,3 @@ func (s *ServiceURL) CheckMethod(method string) bool {
 
 	return false
 }
-

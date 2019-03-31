@@ -52,7 +52,7 @@ type svc struct {
 }
 
 type serviceMap struct {
-	mutex      sync.Mutex          // protects the serviceMap
+	mutex      sync.Mutex      // protects the serviceMap
 	serviceMap map[string]*svc // service name -> service
 }
 

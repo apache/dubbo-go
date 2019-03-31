@@ -6,7 +6,6 @@ import "fmt"
 // service config
 //////////////////////////////////////////////
 
-
 type ServiceConfigIf interface {
 	Key() string
 	String() string
@@ -18,8 +17,8 @@ type ServiceConfig struct {
 	Group    string `yaml:"group" json:"group,omitempty"`
 	Version  string `yaml:"version" json:"version,omitempty"`
 	//add for provider
-	Path    string	`yaml:"path" json:"path,omitempty"`
-	Methods string	`yaml:"methods" json:"methods,omitempty"`
+	Path    string `yaml:"path" json:"path,omitempty"`
+	Methods string `yaml:"methods" json:"methods,omitempty"`
 }
 
 func (c ServiceConfig) Key() string {
@@ -49,4 +48,3 @@ func (c ServiceConfig) ServiceEqual(url *ServiceURL) bool {
 
 	return true
 }
-

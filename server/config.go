@@ -11,5 +11,3 @@ type ServerConfig struct {
 func (c *ServerConfig) Address() string {
 	return gxnet.HostAddress(c.IP, c.Port)
 }
-
-

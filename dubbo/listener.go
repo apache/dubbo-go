@@ -55,9 +55,10 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 	}
 
 	if p.Header.Type == hessian.Heartbeat {
-		log.Debug("get rpc heartbeat response{header: %#v}", p.Header)
+		log.Debug("get rpc heartbeat response{header: %#v, body: %#v}", p.Header, p.Body)
 		return
 	}
+	log.Debug("get rpc response{header: %#v, header: %#v}", p.Header, p.Body)
 
 	h.conn.updateSession(session)
 
@@ -66,11 +67,10 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 		return
 	}
 
-	// unmarshal
-	err := p.ReadBody(pendingResponse.reply)
-	log.Debug("get rpc response{header: %#v, header: %#v}", p.Header, pendingResponse.reply)
+	if p.Err != nil {
+		pendingResponse.err = p.Err
+	}
 
-	pendingResponse.err = err
 	if pendingResponse.callback == nil {
 		pendingResponse.done <- struct{}{}
 	} else {
