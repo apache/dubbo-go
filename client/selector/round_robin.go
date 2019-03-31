@@ -1,4 +1,4 @@
-package loadBalance
+package selector
 
 import (
 	"sync/atomic"
