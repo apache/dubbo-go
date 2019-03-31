@@ -6,7 +6,7 @@ import (
 
 import (
 	"github.com/dubbo/dubbo-go/client"
-	"github.com/dubbo/dubbo-go/service"
+	"github.com/dubbo/dubbo-go/registry"
 )
 
 var (
@@ -14,5 +14,5 @@ var (
 )
 
 type Selector interface {
-	Select(ID int64, array client.ServiceArrayIf) (*service.ServiceURL, error)
+	Select(ID int64, array client.ServiceArrayIf) (*registry.ServiceURL, error)
 }

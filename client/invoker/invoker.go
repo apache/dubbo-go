@@ -2,7 +2,6 @@ package invoker
 
 import (
 	"context"
-	"github.com/dubbo/dubbo-go/dubbo"
 	"sync"
 	"time"
 )
@@ -14,9 +13,9 @@ import (
 
 import (
 	"github.com/dubbo/dubbo-go/client/selector"
+	"github.com/dubbo/dubbo-go/dubbo"
 	"github.com/dubbo/dubbo-go/jsonrpc"
 	"github.com/dubbo/dubbo-go/registry"
-	"github.com/dubbo/dubbo-go/service"
 )
 
 type Options struct {
@@ -99,77 +98,77 @@ func (ivk *Invoker) listen() {
 	}
 }
 
-func (ivk *Invoker) update(res *registry.ServiceURLEvent) {
+func (ivk *Invoker) update(res *registry.ServiceEvent) {
 	if res == nil || res.Service == nil {
 		return
 	}
 
 	log.Debug("registry update, result{%s}", res)
-	serviceKey := res.Service.ServiceConfig().Key()
+	registryKey := res.Service.ServiceConfig().Key()
 
 	ivk.listenerLock.Lock()
 	defer ivk.listenerLock.Unlock()
 
-	svcArr, ok := ivk.cacheServiceMap[serviceKey]
-	log.Debug("service name:%s, its current member lists:%+v", serviceKey, svcArr)
+	svcArr, ok := ivk.cacheServiceMap[registryKey]
+	log.Debug("registry name:%s, its current member lists:%+v", registryKey, svcArr)
 
 	switch res.Action {
-	case registry.ServiceURLAdd:
+	case registry.ServiceAdd:
 		if ok {
 			svcArr.add(res.Service, ivk.ServiceTTL)
 		} else {
-			ivk.cacheServiceMap[serviceKey] = newServiceArray([]*service.ServiceURL{res.Service})
+			ivk.cacheServiceMap[registryKey] = newServiceArray([]*registry.ServiceURL{res.Service})
 		}
-	case registry.ServiceURLDel:
+	case registry.ServiceDel:
 		if ok {
 			svcArr.del(res.Service, ivk.ServiceTTL)
 			if len(svcArr.arr) == 0 {
-				delete(ivk.cacheServiceMap, serviceKey)
-				log.Warn("delete service %s from service map", serviceKey)
+				delete(ivk.cacheServiceMap, registryKey)
+				log.Warn("delete registry %s from registry map", registryKey)
 			}
 		}
-		log.Error("selector delete serviceURL{%s}", *res.Service)
+		log.Error("selector delete registryURL{%s}", *res.Service)
 	}
 }
 
-func (ivk *Invoker) getService(serviceConf *service.ServiceConfig) (*ServiceArray, error) {
+func (ivk *Invoker) getService(registryConf *registry.ServiceConfig) (*ServiceArray, error) {
 	defer ivk.listenerLock.Unlock()
 
-	serviceKey := serviceConf.Key()
+	registryKey := registryConf.Key()
 
 	ivk.listenerLock.Lock()
-	svcArr, sok := ivk.cacheServiceMap[serviceKey]
-	log.Debug("r.svcArr[serviceString{%v}] = svcArr{%s}", serviceKey, svcArr)
+	svcArr, sok := ivk.cacheServiceMap[registryKey]
+	log.Debug("r.svcArr[registryString{%v}] = svcArr{%s}", registryKey, svcArr)
 	if sok && time.Since(svcArr.birth) < ivk.Options.ServiceTTL {
 		return svcArr, nil
 	}
 	ivk.listenerLock.Unlock()
 
-	svcs, err := ivk.registry.GetService(serviceConf)
+	svcs, err := ivk.registry.GetService(registryConf)
 	ivk.listenerLock.Lock()
 
 	if err != nil {
 		log.Error("Registry.get(conf:%+v) = {err:%s, svcs:%+v}",
-			serviceConf, jerrors.ErrorStack(err), svcs)
+			registryConf, jerrors.ErrorStack(err), svcs)
 
 		return nil, jerrors.Trace(err)
 	}
 
 	newSvcArr := newServiceArray(svcs)
-	ivk.cacheServiceMap[serviceKey] = newSvcArr
+	ivk.cacheServiceMap[registryKey] = newSvcArr
 	return newSvcArr, nil
 }
 
-func (ivk *Invoker) HttpCall(ctx context.Context, reqId int64, serviceConf *service.ServiceConfig, req jsonrpc.Request, resp interface{}) error {
+func (ivk *Invoker) HttpCall(ctx context.Context, reqId int64, registryConf *registry.ServiceConfig, req jsonrpc.Request, resp interface{}) error {
 
-	serviceArray, err := ivk.getService(serviceConf)
+	registryArray, err := ivk.getService(registryConf)
 	if err != nil {
 		return err
 	}
-	if len(serviceArray.arr) == 0 {
-		return jerrors.New("cannot find svc " + serviceConf.String())
+	if len(registryArray.arr) == 0 {
+		return jerrors.New("cannot find svc " + registryConf.String())
 	}
-	url, err := ivk.selector.Select(reqId, serviceArray)
+	url, err := ivk.selector.Select(reqId, registryArray)
 	if err != nil {
 		return err
 	}
@@ -181,16 +180,16 @@ func (ivk *Invoker) HttpCall(ctx context.Context, reqId int64, serviceConf *serv
 	return nil
 }
 
-func (ivk *Invoker) DubboCall(reqId int64, serviceConf *service.ServiceConfig, method string, args, reply interface{}, opts ...dubbo.CallOption) error {
+func (ivk *Invoker) DubboCall(reqId int64, registryConf *registry.ServiceConfig, method string, args, reply interface{}, opts ...dubbo.CallOption) error {
 
-	serviceArray, err := ivk.getService(serviceConf)
+	registryArray, err := ivk.getService(registryConf)
 	if err != nil {
 		return err
 	}
-	if len(serviceArray.arr) == 0 {
-		return jerrors.New("cannot find svc " + serviceConf.String())
+	if len(registryArray.arr) == 0 {
+		return jerrors.New("cannot find svc " + registryConf.String())
 	}
-	url, err := ivk.selector.Select(reqId, serviceArray)
+	url, err := ivk.selector.Select(reqId, registryArray)
 	if err != nil {
 		return err
 	}

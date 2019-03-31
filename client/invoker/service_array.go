@@ -11,26 +11,26 @@ import (
 )
 
 import (
-	"github.com/dubbo/dubbo-go/service"
+	"github.com/dubbo/dubbo-go/registry"
 )
 
 //////////////////////////////////////////
-// service array
+// registry array
 // should be returned by registry ,will be used by client & waiting to selector
 //////////////////////////////////////////
 
 var (
-	ErrServiceArrayEmpty   = jerrors.New("serviceArray empty")
-	ErrServiceArrayTimeout = jerrors.New("serviceArray timeout")
+	ErrServiceArrayEmpty   = jerrors.New("registryArray empty")
+	ErrServiceArrayTimeout = jerrors.New("registryArray timeout")
 )
 
 type ServiceArray struct {
-	arr   []*service.ServiceURL
+	arr   []*registry.ServiceURL
 	birth time.Time
 	idx   int64
 }
 
-func newServiceArray(arr []*service.ServiceURL) *ServiceArray {
+func newServiceArray(arr []*registry.ServiceURL) *ServiceArray {
 	return &ServiceArray{
 		arr:   arr,
 		birth: time.Now(),
@@ -40,10 +40,12 @@ func newServiceArray(arr []*service.ServiceURL) *ServiceArray {
 func (s *ServiceArray) GetIdx() *int64 {
 	return &s.idx
 }
-func (s *ServiceArray) GetSize() int {
-	return len(s.arr)
+
+func (s *ServiceArray) GetSize() int64 {
+	return int64(len(s.arr))
 }
-func (s *ServiceArray) GetService(i int) *service.ServiceURL {
+
+func (s *ServiceArray) GetService(i int64) *registry.ServiceURL {
 	return s.arr[i]
 }
 
@@ -58,14 +60,14 @@ func (s *ServiceArray) String() string {
 	return builder.String()
 }
 
-func (s *ServiceArray) add(service *service.ServiceURL, ttl time.Duration) {
-	s.arr = append(s.arr, service)
+func (s *ServiceArray) add(registry *registry.ServiceURL, ttl time.Duration) {
+	s.arr = append(s.arr, registry)
 	s.birth = time.Now().Add(ttl)
 }
 
-func (s *ServiceArray) del(service *service.ServiceURL, ttl time.Duration) {
+func (s *ServiceArray) del(registry *registry.ServiceURL, ttl time.Duration) {
 	for i, svc := range s.arr {
-		if svc.PrimitiveURL == service.PrimitiveURL {
+		if svc.PrimitiveURL == registry.PrimitiveURL {
 			s.arr = append(s.arr[:i], s.arr[i+1:]...)
 			s.birth = time.Now().Add(ttl)
 			break

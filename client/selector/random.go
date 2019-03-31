@@ -7,21 +7,21 @@ import (
 
 import (
 	"github.com/dubbo/dubbo-go/client"
-	"github.com/dubbo/dubbo-go/service"
+	"github.com/dubbo/dubbo-go/registry"
 )
 
-type RandomSelector struct {
-}
+type RandomSelector struct{}
 
 func NewRandomSelector() Selector {
 	return &RandomSelector{}
 }
 
-func (s *RandomSelector) Select(ID int64, array client.ServiceArrayIf) (*service.ServiceURL, error) {
+func (s *RandomSelector) Select(ID int64, array client.ServiceArrayIf) (*registry.ServiceURL, error) {
+	if array.GetSize() == 0 {
+		return nil, ServiceArrayEmpty
+	}
 
 	idx := atomic.AddInt64(array.GetIdx(), 1)
-
-	idx = ((int64)(rand.Int()) + ID) % int64(array.GetSize())
-
-	return array.GetService(int(idx)), nil
+	idx = ((int64)(rand.Int()) + ID) % array.GetSize()
+	return array.GetService(idx), nil
 }

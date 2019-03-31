@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"github.com/dubbo/dubbo-go/server"
-	"github.com/dubbo/dubbo-go/service"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -20,6 +18,10 @@ import (
 	log "github.com/AlexStocks/log4go"
 	"github.com/dubbo/dubbo-go/registry"
 	jerrors "github.com/juju/errors"
+)
+
+import (
+	"github.com/dubbo/dubbo-go/server"
 )
 
 const (
@@ -58,7 +60,7 @@ type Option func(*Options)
 type Options struct {
 	Registry        registry.Registry
 	ConfList        []server.ServerConfig
-	ServiceConfList []service.ServiceConfig
+	ServiceConfList []registry.ServiceConfig
 	Timeout         time.Duration
 }
 
@@ -93,7 +95,7 @@ func ConfList(confList []server.ServerConfig) Option {
 	}
 }
 
-func ServiceConfList(confList []service.ServiceConfig) Option {
+func ServiceConfList(confList []registry.ServiceConfig) Option {
 	return func(o *Options) {
 		o.ServiceConfList = confList
 	}
@@ -235,7 +237,7 @@ func (s *Server) Options() Options {
 func (s *Server) Handle(h Handler) error {
 	var (
 		err         error
-		serviceConf service.ServiceConfig
+		serviceConf registry.ProviderServiceConfig
 	)
 
 	opts := s.Options()
@@ -263,7 +265,7 @@ func (s *Server) Handle(h Handler) error {
 					}
 
 					serviceConf.Path = opts.ConfList[j].Address()
-					err = opts.Registry.ProviderRegister(s.opts.Registry.NewProviderServiceConfig(serviceConf))
+					err = opts.Registry.RegisterProvider(registry.ProviderServiceConfig{serviceConf})
 					if err != nil {
 						return err
 					}
