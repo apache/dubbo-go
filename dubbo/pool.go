@@ -87,7 +87,7 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 
 	session.SetName(conf.GettySessionParam.SessionName)
 	session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
-	session.SetPkgHandler(NewRpcClientPackageHandler())
+	session.SetPkgHandler(NewRpcClientPackageHandler(c.pool.rpcClient))
 	session.SetEventListener(NewRpcClientHandler(c))
 	session.SetRQLen(conf.GettySessionParam.PkgRQSize)
 	session.SetWQLen(conf.GettySessionParam.PkgWQSize)

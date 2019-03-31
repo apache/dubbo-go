@@ -16,19 +16,23 @@ import (
 ////////////////////////////////////////////
 
 type RpcClientPackageHandler struct {
+	client *Client
 }
 
-func NewRpcClientPackageHandler() *RpcClientPackageHandler {
-	return &RpcClientPackageHandler{}
+func NewRpcClientPackageHandler(client *Client) *RpcClientPackageHandler {
+	return &RpcClientPackageHandler{client: client}
 }
 
 func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
-	pkg := &DubboPackage{}
+	pkg := &DubboPackage{
+		Body: p.client.pendingResponses[SequenceType(int64(p.client.sequence.Load()))].reply,
+	}
 
 	buf := bytes.NewBuffer(data)
 	err := pkg.Unmarshal(buf, hessian.Response)
 	if err != nil {
-		return nil, 0, jerrors.Trace(err)
+		pkg.Err = jerrors.Trace(err)
+		return pkg, len(data), nil
 	}
 
 	return pkg, len(data), nil

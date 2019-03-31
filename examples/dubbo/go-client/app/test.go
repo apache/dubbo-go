@@ -57,7 +57,7 @@ func testDubborpc(clientConfig *examples.ClientConfig, userKey string) {
 
 	user = new(DubboUser)
 	defer clientInvoker.DubboClient.Close()
-	err = clientInvoker.DubboCall(1, &conf, method, []interface{}{userKey}, user, dubbo.WithCallRequestTimeout(10e9), dubbo.WithCallResponseTimeout(10e9), dubbo.WithCallSerialID(dubbo.S_Default))
+	err = clientInvoker.DubboCall(1, &conf, method, []interface{}{userKey}, user, dubbo.WithCallRequestTimeout(10e9), dubbo.WithCallResponseTimeout(10e9), dubbo.WithCallSerialID(dubbo.S_Dubbo))
 	// Call service
 	if err != nil {
 		log.Error("client.Call() return error:%+v", jerrors.ErrorStack(err))

@@ -25,6 +25,8 @@ github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/dubbogo/hessian2 v0.0.0-20190330063706-e01b2c027961 h1:nGlTGXqzalnFtNqDsar2k/Gle/7pILm0MeH65fJSE7Y=
 github.com/dubbogo/hessian2 v0.0.0-20190330063706-e01b2c027961/go.mod h1:v+gfInE8fm/k3Fjkb2oUCKSO9LKbWvf+PtweEI89BmI=
+github.com/dubbogo/hessian2 v0.0.0-20190331022028-ade83b794bf2 h1:5kv4/4ptZTNcG2dzfHqXPiBHZcPPR3jshgxpHvlidew=
+github.com/dubbogo/hessian2 v0.0.0-20190331022028-ade83b794bf2/go.mod h1:v+gfInE8fm/k3Fjkb2oUCKSO9LKbWvf+PtweEI89BmI=
 github.com/fatih/set v0.2.1/go.mod h1:+RKtMCH+favT2+3YecHGxcc0b4KyVWA1QWWJUs4E0CI=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/gogo/protobuf v1.2.1/go.mod h1:hp+jE20tsWTFYpLwKvXlhS1hjn+gTNwPg2I6zVXpSg4=
