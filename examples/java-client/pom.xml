@@ -27,7 +27,7 @@
 		<skip_maven_deploy>false</skip_maven_deploy>
 
 		<dubbo-jsonrpc-version>1.0.1</dubbo-jsonrpc-version>
-		<dubbo-version>2.6.6</dubbo-version>
+		<dubbo-version>2.6.5</dubbo-version>
 	</properties>
 
 	<dependencyManagement>
