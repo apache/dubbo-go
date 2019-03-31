@@ -6,10 +6,6 @@ import (
 	"time"
 )
 
-import (
-	"github.com/dubbo/dubbo-go/service"
-)
-
 func init() {
 	rand.Seed(time.Now().UnixNano())
 }
@@ -18,31 +14,31 @@ func init() {
 // service url event type
 //////////////////////////////////////////
 
-type ServiceURLEventType int
+type ServiceEventType int
 
 const (
-	ServiceURLAdd = iota
-	ServiceURLDel
+	ServiceAdd = iota
+	ServiceDel
 )
 
-var serviceURLEventTypeStrings = [...]string{
-	"add service url",
-	"delete service url",
+var serviceEventTypeStrings = [...]string{
+	"add service",
+	"delete service",
 }
 
-func (t ServiceURLEventType) String() string {
-	return serviceURLEventTypeStrings[t]
+func (t ServiceEventType) String() string {
+	return serviceEventTypeStrings[t]
 }
 
 //////////////////////////////////////////
-// service url event
+// service event
 //////////////////////////////////////////
 
-type ServiceURLEvent struct {
-	Action  ServiceURLEventType
-	Service *service.ServiceURL
+type ServiceEvent struct {
+	Action  ServiceEventType
+	Service *ServiceURL
 }
 
-func (e ServiceURLEvent) String() string {
-	return fmt.Sprintf("ServiceURLEvent{Action{%s}, Service{%s}}", e.Action, e.Service)
+func (e ServiceEvent) String() string {
+	return fmt.Sprintf("ServiceEvent{Action{%s}, Service{%s}}", e.Action, e.Service)
 }

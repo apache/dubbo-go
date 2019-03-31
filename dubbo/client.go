@@ -16,7 +16,7 @@ import (
 
 import (
 	"github.com/dubbo/dubbo-go/public"
-	svc "github.com/dubbo/dubbo-go/service"
+	"github.com/dubbo/dubbo-go/registry"
 )
 
 var (
@@ -104,7 +104,7 @@ func NewClient(conf *ClientConfig) (*Client, error) {
 }
 
 // call one way
-func (c *Client) CallOneway(addr string, svcUrl svc.ServiceURL, method string, args interface{}, opts ...CallOption) error {
+func (c *Client) CallOneway(addr string, svcUrl registry.ServiceURL, method string, args interface{}, opts ...CallOption) error {
 	var copts CallOptions
 
 	for _, o := range opts {
@@ -115,7 +115,7 @@ func (c *Client) CallOneway(addr string, svcUrl svc.ServiceURL, method string, a
 }
 
 // if @reply is nil, the transport layer will get the response without notify the invoker.
-func (c *Client) Call(addr string, svcUrl svc.ServiceURL, method string, args, reply interface{}, opts ...CallOption) error {
+func (c *Client) Call(addr string, svcUrl registry.ServiceURL, method string, args, reply interface{}, opts ...CallOption) error {
 	var copts CallOptions
 
 	for _, o := range opts {
@@ -130,7 +130,7 @@ func (c *Client) Call(addr string, svcUrl svc.ServiceURL, method string, args, r
 	return jerrors.Trace(c.call(ct, addr, svcUrl, method, args, reply, nil, copts))
 }
 
-func (c *Client) AsyncCall(addr string, svcUrl svc.ServiceURL, method string, args interface{},
+func (c *Client) AsyncCall(addr string, svcUrl registry.ServiceURL, method string, args interface{},
 	callback AsyncCallback, reply interface{}, opts ...CallOption) error {
 
 	var copts CallOptions
@@ -141,7 +141,7 @@ func (c *Client) AsyncCall(addr string, svcUrl svc.ServiceURL, method string, ar
 	return jerrors.Trace(c.call(CT_TwoWay, addr, svcUrl, method, args, reply, callback, copts))
 }
 
-func (c *Client) call(ct CallType, addr string, svcUrl svc.ServiceURL, method string,
+func (c *Client) call(ct CallType, addr string, svcUrl registry.ServiceURL, method string,
 	args, reply interface{}, callback AsyncCallback, opts CallOptions) error {
 
 	if opts.RequestTimeout == 0 {
