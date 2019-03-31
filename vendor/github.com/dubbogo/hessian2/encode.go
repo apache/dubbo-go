@@ -48,7 +48,7 @@ import (
 // used to ref object,list,map
 type _refElem struct {
 	// record the kind of target, objects are the same only if the address and kind are the same
-	kind  reflect.Kind
+	kind reflect.Kind
 
 	// ref index
 	index int

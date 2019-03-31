@@ -377,7 +377,7 @@ func SetSlice(dest reflect.Value, objects interface{}) error {
 		}
 		SetValue(dest, v)
 		ref.change(v) // change finally
-		ref.notify() // delay set value to all destinations
+		ref.notify()  // delay set value to all destinations
 		return nil
 	}
 
