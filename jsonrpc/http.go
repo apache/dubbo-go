@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/dubbo/dubbo-go/service"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -22,6 +21,7 @@ import (
 
 import (
 	"github.com/dubbo/dubbo-go/public"
+	"github.com/dubbo/dubbo-go/registry"
 )
 
 //////////////////////////////////////////////
@@ -39,8 +39,8 @@ type Request struct {
 	contentType string
 }
 
-func (r *Request) ServiceConfig() service.ServiceConfigIf {
-	return &service.ServiceConfig{
+func (r *Request) ServiceConfig() registry.ServiceConfigIf {
+	return &registry.ServiceConfig{
 		Protocol: r.protocol,
 		Service:  r.service,
 		Group:    r.group,
@@ -86,7 +86,7 @@ func NewHTTPClient(opt *HTTPOptions) *HTTPClient {
 	}
 }
 
-func (c *HTTPClient) NewRequest(conf service.ServiceConfig, method string, args interface{}) Request {
+func (c *HTTPClient) NewRequest(conf registry.ServiceConfig, method string, args interface{}) Request {
 	return Request{
 		ID:       atomic.AddInt64(&c.ID, 1),
 		group:    conf.Group,
@@ -98,7 +98,7 @@ func (c *HTTPClient) NewRequest(conf service.ServiceConfig, method string, args 
 	}
 }
 
-func (c *HTTPClient) Call(ctx context.Context, service *service.ServiceURL, req Request, rsp interface{}) error {
+func (c *HTTPClient) Call(ctx context.Context, service *registry.ServiceURL, req Request, rsp interface{}) error {
 	// header
 	httpHeader := http.Header{}
 	httpHeader.Set("Content-Type", "application/json")

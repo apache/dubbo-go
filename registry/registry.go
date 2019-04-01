@@ -1,9 +1,5 @@
 package registry
 
-import (
-	"github.com/dubbo/dubbo-go/service"
-)
-
 //////////////////////////////////////////////
 // Registry Interface
 //////////////////////////////////////////////
@@ -12,16 +8,14 @@ import (
 type Registry interface {
 
 	//used for service provider calling , register services to registry
-	ProviderRegister(conf service.ServiceConfigIf) error
+	RegisterProvider(ServiceConfigIf) error
 	//used for service consumer calling , register services cared about ,for dubbo's admin monitoring
-	ConsumerRegister(conf *service.ServiceConfig) error
+	RegisterConsumer(ServiceConfigIf) error
 	//used for service consumer ,start listen goroutine
-	GetListenEvent() chan *ServiceURLEvent
+	GetListenEvent() chan *ServiceEvent
 
 	//input the serviceConfig , registry should return serviceUrlArray with multi location(provider nodes) available
-	GetService(*service.ServiceConfig) ([]*service.ServiceURL, error)
+	GetService(*ServiceConfig) ([]*ServiceURL, error)
 
 	Close()
-	//new Provider conf
-	NewProviderServiceConfig(service.ServiceConfig) service.ServiceConfigIf
 }

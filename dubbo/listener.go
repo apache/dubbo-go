@@ -50,7 +50,7 @@ func (h *RpcClientHandler) OnClose(session getty.Session) {
 func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 	p, ok := pkg.(*DubboPackage)
 	if !ok {
-		log.Error("illegal packge")
+		log.Error("illegal package")
 		return
 	}
 
