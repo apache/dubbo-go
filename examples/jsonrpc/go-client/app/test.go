@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/dubbo/dubbo-go/registry"
 	_ "net/http/pprof"
 )
 
@@ -14,7 +15,6 @@ import (
 	"github.com/dubbo/dubbo-go/examples"
 	"github.com/dubbo/dubbo-go/jsonrpc"
 	"github.com/dubbo/dubbo-go/public"
-	"github.com/dubbo/dubbo-go/service"
 )
 
 func testJsonrpc(clientConfig *examples.ClientConfig, userKey string, method string) {
@@ -24,7 +24,7 @@ func testJsonrpc(clientConfig *examples.ClientConfig, userKey string, method str
 		serviceIdx int
 		user       *JsonRPCUser
 		ctx        context.Context
-		conf       service.ServiceConfig
+		conf       registry.ServiceConfig
 		req        jsonrpc.Request
 	)
 
@@ -42,7 +42,7 @@ func testJsonrpc(clientConfig *examples.ClientConfig, userKey string, method str
 
 	// Create request
 	// gxlog.CInfo("jsonrpc selected service %#v", clientConfig.Service_List[serviceIdx])
-	conf = service.ServiceConfig{
+	conf = registry.ServiceConfig{
 		Group:    clientConfig.Service_List[serviceIdx].Group,
 		Protocol: public.CodecType(public.CODECTYPE_JSONRPC).String(),
 		Version:  clientConfig.Service_List[serviceIdx].Version,
