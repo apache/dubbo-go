@@ -278,7 +278,7 @@ func (r *ZkRegistry) register(c registry.ServiceConfigIf) error {
 	if r.DubboType == registry.PROVIDER {
 		conf, ok := c.(registry.ProviderServiceConfig)
 		if !ok {
-			return fmt.Errorf("the type of @c:%+v is not *registry.ProviderServiceConfig", c)
+			return fmt.Errorf("the type of @c:%+v is not registry.ProviderServiceConfig", c)
 		}
 
 		if conf.Service == "" || conf.Methods == "" {
@@ -331,9 +331,9 @@ func (r *ZkRegistry) register(c registry.ServiceConfigIf) error {
 		log.Debug("provider path:%s, url:%s", dubboPath, rawURL)
 
 	} else if r.DubboType == registry.CONSUMER {
-		conf, ok := c.(*registry.ServiceConfig)
-		if ok {
-			return fmt.Errorf("the type of @c:%+v is not *registry.ServiceConfig", c)
+		conf, ok := c.(registry.ServiceConfig)
+		if !ok {
+			return fmt.Errorf("the type of @c:%+v is not registry.ServiceConfig", c)
 		}
 
 		dubboPath = fmt.Sprintf("/dubbo/%s/%s", conf.Service, registry.DubboNodes[registry.CONSUMER])
