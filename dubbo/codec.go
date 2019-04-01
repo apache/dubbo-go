@@ -13,11 +13,10 @@ import (
 )
 
 // serial ID
-// except '1 3 4 5 6 7 8'
 type SerialID byte
 
 const (
-	S_Default SerialID = 0
+	S_Dubbo SerialID = 2
 )
 
 // call type
@@ -39,8 +38,7 @@ type DubboPackage struct {
 	Header  hessian.DubboHeader
 	Service hessian.Service
 	Body    interface{}
-	Codec   *hessian.HessianCodec
-	Buf     *bytes.Buffer
+	Err     error
 }
 
 func (p DubboPackage) String() string {
@@ -60,16 +58,15 @@ func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 
 func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, pkgType hessian.PackgeType) error {
 	codec := hessian.NewHessianCodec(bufio.NewReader(buf))
-	p.Codec = codec
-	p.Buf = buf
 
 	// read header
 	err := codec.ReadHeader(&p.Header, pkgType)
-	return jerrors.Trace(err)
-}
+	if err != nil {
+		return jerrors.Trace(err)
+	}
 
-func (p *DubboPackage) ReadBody(body interface{}) error {
-	err := p.Codec.ReadBody(body)
+	// read body
+	err = codec.ReadBody(p.Body)
 	return jerrors.Trace(err)
 }
 

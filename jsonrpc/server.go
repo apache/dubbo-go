@@ -265,7 +265,7 @@ func (s *Server) Handle(h Handler) error {
 					}
 
 					serviceConf.Path = opts.ConfList[j].Address()
-					err = opts.Registry.RegisterProvider(registry.ProviderServiceConfig{serviceConf})
+					err = opts.Registry.RegisterProvider(serviceConf)
 					if err != nil {
 						return err
 					}
