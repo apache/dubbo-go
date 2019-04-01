@@ -96,7 +96,7 @@ func (s *Server) newSession(session getty.Session) error {
 
 	session.SetName(s.conf.GettySessionParam.SessionName)
 	session.SetMaxMsgLen(s.conf.GettySessionParam.MaxMsgLen)
-	//session.SetPkgHandler(NewRpcServerPackageHandler(s))
+	session.SetPkgHandler(NewRpcServerPackageHandler(s))
 	//session.SetEventListener(NewRpcServerHandler(s.conf.SessionNumber, s.conf.sessionTimeout))
 	session.SetRQLen(s.conf.GettySessionParam.PkgRQSize)
 	session.SetWQLen(s.conf.GettySessionParam.PkgWQSize)

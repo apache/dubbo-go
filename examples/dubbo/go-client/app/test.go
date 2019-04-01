@@ -2,21 +2,21 @@ package main
 
 import (
 	"fmt"
-	"github.com/dubbo/dubbo-go/examples"
-	"github.com/dubbo/dubbo-go/service"
-	"github.com/dubbogo/hessian2"
 	_ "net/http/pprof"
 )
 
 import (
 	// "github.com/AlexStocks/goext/log"
 	log "github.com/AlexStocks/log4go"
+	"github.com/dubbogo/hessian2"
 	jerrors "github.com/juju/errors"
 )
 
 import (
 	"github.com/dubbo/dubbo-go/dubbo"
+	"github.com/dubbo/dubbo-go/examples"
 	"github.com/dubbo/dubbo-go/public"
+	"github.com/dubbo/dubbo-go/registry"
 )
 
 func testDubborpc(clientConfig *examples.ClientConfig, userKey string) {
@@ -26,7 +26,7 @@ func testDubborpc(clientConfig *examples.ClientConfig, userKey string) {
 		method     string
 		serviceIdx int
 		user       *DubboUser
-		conf       service.ServiceConfig
+		conf       registry.ServiceConfig
 	)
 	serviceIdx = -1
 	svc = "com.ikurento.user.UserProvider"
@@ -42,7 +42,7 @@ func testDubborpc(clientConfig *examples.ClientConfig, userKey string) {
 
 	// Create request
 	method = string("GetUser")
-	conf = service.ServiceConfig{
+	conf = registry.ServiceConfig{
 		Group:    clientConfig.Service_List[serviceIdx].Group,
 		Protocol: public.CodecType(public.CODECTYPE_DUBBO).String(),
 		Version:  clientConfig.Service_List[serviceIdx].Version,
