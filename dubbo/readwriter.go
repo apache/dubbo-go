@@ -53,3 +53,31 @@ func (p *RpcClientPackageHandler) Write(ss getty.Session, pkg interface{}) error
 
 	return jerrors.Trace(ss.WriteBytes(buf.Bytes()))
 }
+
+////////////////////////////////////////////
+// RpcServerPackageHandler
+////////////////////////////////////////////
+
+type RpcServerPackageHandler struct {
+	server *Server
+}
+
+func NewRpcServerPackageHandler(server *Server) *RpcServerPackageHandler {
+	return &RpcServerPackageHandler{
+		server: server,
+	}
+}
+
+func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
+	pkg := &DubboPackage{
+		Body: nil,
+	}
+
+	// todo:
+	return pkg, len(data), nil
+}
+
+func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg interface{}) error {
+	// todo:
+	return nil
+}

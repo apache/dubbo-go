@@ -276,8 +276,8 @@ func (r *ZkRegistry) register(c registry.ServiceConfigIf) error {
 	params.Add("revision", revision) // revision是pox.xml中application的version属性的值
 
 	if r.DubboType == registry.PROVIDER {
-		conf, ok := c.(*registry.ProviderServiceConfig)
-		if ok {
+		conf, ok := c.(registry.ProviderServiceConfig)
+		if !ok {
 			return fmt.Errorf("the type of @c:%+v is not *registry.ProviderServiceConfig", c)
 		}
 
