@@ -9,7 +9,6 @@ import (
 	"github.com/dubbo/dubbo-go/registry"
 )
 
-
 func (r *ZkRegistry) RegisterProvider(regConf registry.ServiceConfigIf) error {
 	var (
 		ok   bool

@@ -93,7 +93,7 @@ func initClient(clientConfig *examples.ClientConfig) {
 	}
 
 	for _, service := range clientConfig.Service_List {
-		err = clientRegistry.RegisterConsumer(&service)
+		err = clientRegistry.RegisterConsumer(service)
 		if err != nil {
 			panic(fmt.Sprintf("registry.Register(service{%#v}) = error{%v}", service, jerrors.ErrorStack(err)))
 			return

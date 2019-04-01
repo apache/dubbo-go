@@ -19,10 +19,10 @@ func (r *ZkRegistry) RegisterConsumer(regConf registry.ServiceConfigIf) error {
 		ok       bool
 		err      error
 		listener *zkEventListener
-		conf     *registry.ServiceConfig
+		conf     registry.ServiceConfig
 	)
 
-	if conf, ok = regConf.(*registry.ServiceConfig); !ok {
+	if conf, ok = regConf.(registry.ServiceConfig); !ok {
 		return jerrors.Errorf("the type of @regConf %T is not registry.ServiceConfig", regConf)
 	}
 
@@ -48,7 +48,7 @@ func (r *ZkRegistry) RegisterConsumer(regConf registry.ServiceConfigIf) error {
 	listener = r.listener
 	r.listenerLock.Unlock()
 	if listener != nil {
-		go listener.listenServiceEvent(conf)
+		go listener.listenServiceEvent(&conf)
 	}
 
 	return nil

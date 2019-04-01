@@ -157,12 +157,12 @@ func (c *Client) call(ct CallType, addr string, svcUrl registry.ServiceURL, meth
 	p.Service.Version = svcUrl.Version
 	p.Service.Method = method
 	p.Service.Timeout = opts.RequestTimeout
-	if opts.SerialID == 1 || opts.SerialID == 3 || opts.SerialID == 4 || opts.SerialID == 5 || opts.SerialID == 6 ||
-		opts.SerialID == 7 {
-		p.Header.SerialID = byte(S_Default)
-	} else {
-		p.Header.SerialID = byte(opts.SerialID)
-	}
+	//if opts.SerialID == 0 || opts.SerialID == 1 || opts.SerialID == 3 || opts.SerialID == 4 || opts.SerialID == 5 || opts.SerialID == 6 ||
+	//	opts.SerialID == 7 || pts.SerialID == 8 {
+	//	p.Header.SerialID = byte(S_Dubbo)
+	//} else {
+	p.Header.SerialID = byte(opts.SerialID)
+	//}
 	p.Body = args
 
 	var rsp *PendingResponse
@@ -236,7 +236,7 @@ func (c *Client) transfer(session getty.Session, pkg *DubboPackage,
 		pkg = &DubboPackage{}
 		pkg.Body = []interface{}{}
 		pkg.Header.Type = hessian.Heartbeat
-		pkg.Header.SerialID = byte(S_Default)
+		//pkg.Header.SerialID = byte(4)
 	} else {
 		pkg.Header.Type = hessian.Request
 	}
