@@ -40,7 +40,7 @@ func main() {
 	initProfiling(clientConfig)
 	initClient(clientConfig)
 
-	time.Sleep(3e9)
+	time.Sleep(10e9)
 
 	gxlog.CInfo("\n\n\nstart to test jsonrpc")
 	testJsonrpc(clientConfig, "A003", "GetUser")

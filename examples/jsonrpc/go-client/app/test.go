@@ -59,7 +59,7 @@ func testJsonrpc(clientConfig *examples.ClientConfig, userKey string, method str
 
 	user = new(JsonRPCUser)
 
-	err = clientInvoker.HttpCall(ctx, 1, &conf, req, user)
+	err = clientInvoker.HttpCall(ctx, 1, conf, req, user)
 	if err != nil {
 		panic(err)
 	} else {

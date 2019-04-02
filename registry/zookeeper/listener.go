@@ -36,11 +36,13 @@ type zkEventListener struct {
 	serviceMapLock sync.Mutex
 	serviceMap     map[string]struct{}
 	wg             sync.WaitGroup
+	registry       *ZkRegistry
 }
 
-func newZkEventListener(client *zookeeperClient) *zkEventListener {
+func newZkEventListener(registry *ZkRegistry, client *zookeeperClient) *zkEventListener {
 	return &zkEventListener{
 		client:     client,
+		registry:   registry,
 		events:     make(chan zkEvent, 32),
 		serviceMap: make(map[string]struct{}),
 	}
@@ -80,7 +82,7 @@ func (l *zkEventListener) listenServiceNodeEvent(zkPath string) bool {
 	return false
 }
 
-func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, conf *registry.ServiceConfig) {
+func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, conf registry.ServiceConfig) {
 	contains := func(s []string, e string) bool {
 		for _, a := range s {
 			if a == e {
@@ -154,7 +156,7 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 	}
 }
 
-func (l *zkEventListener) listenDirEvent(zkPath string, conf *registry.ServiceConfig) {
+func (l *zkEventListener) listenDirEvent(zkPath string, conf registry.ServiceConfig) {
 	l.wg.Add(1)
 	defer l.wg.Done()
 
@@ -220,7 +222,7 @@ func (l *zkEventListener) listenDirEvent(zkPath string, conf *registry.ServiceCo
 // registry.go:Listen -> listenServiceEvent -> listenDirEvent -> listenServiceNodeEvent
 //                            |
 //                            --------> listenServiceNodeEvent
-func (l *zkEventListener) listenServiceEvent(conf *registry.ServiceConfig) {
+func (l *zkEventListener) listenServiceEvent(conf registry.ServiceConfig) {
 	var (
 		err        error
 		zkPath     string
@@ -277,29 +279,27 @@ func (l *zkEventListener) listenServiceEvent(conf *registry.ServiceConfig) {
 	}
 
 	log.Info("listen dubbo path{%s}", zkPath)
-	go func(zkPath string, conf *registry.ServiceConfig) {
+	go func(zkPath string, conf registry.ServiceConfig) {
 		l.listenDirEvent(zkPath, conf)
 		log.Warn("listenDirEvent(zkPath{%s}) goroutine exit now", zkPath)
 	}(zkPath, conf)
 }
 
-func (l *zkEventListener) listenEvent(r *ZkRegistry) error {
+func (l *zkEventListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
 		case <-l.client.done():
 			log.Warn("listener's zk client connection is broken, so zk event listener exit now.")
-			l.close()
-			return jerrors.New("listener stopped")
+			return nil, jerrors.New("listener stopped")
 
-		case <-r.done:
+		case <-l.registry.done:
 			log.Warn("zk consumer register has quit, so zk event listener exit asap now.")
-			l.close()
-			return jerrors.New("listener stopped")
+			return nil, jerrors.New("listener stopped")
 
 		case e := <-l.events:
 			log.Debug("got zk event %s", e)
 			if e.err != nil {
-				return jerrors.Trace(e.err)
+				return nil, jerrors.Trace(e.err)
 			}
 			if e.res.Action == registry.ServiceDel && !l.valid() {
 				log.Warn("update @result{%s}. But its connection to registry is invalid", e.res)
@@ -307,7 +307,8 @@ func (l *zkEventListener) listenEvent(r *ZkRegistry) error {
 			}
 			//r.update(e.res)
 			//write to invoker
-			r.outerEventCh <- e.res
+			//r.outerEventCh <- e.res
+			return e.res, nil
 		}
 	}
 }
@@ -316,7 +317,10 @@ func (l *zkEventListener) valid() bool {
 	return l.client.zkConnValid()
 }
 
-func (l *zkEventListener) close() {
+func (l *zkEventListener) Close() {
+	l.registry.listenerLock.Lock()
 	l.client.Close()
+	l.registry.listenerLock.Unlock()
+	l.registry.wg.Done()
 	l.wg.Wait()
 }
