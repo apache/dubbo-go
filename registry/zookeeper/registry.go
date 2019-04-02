@@ -85,8 +85,7 @@ type ZkRegistry struct {
 	listener     *zkEventListener
 
 	//for provider
-	zkPath       map[string]int // key = protocol://ip:port/interface
-	outerEventCh chan *registry.ServiceEvent
+	zkPath map[string]int // key = protocol://ip:port/interface
 }
 
 func NewZkRegistry(opts ...registry.RegistryOption) (registry.Registry, error) {
@@ -96,11 +95,10 @@ func NewZkRegistry(opts ...registry.RegistryOption) (registry.Registry, error) {
 	)
 
 	r = &ZkRegistry{
-		birth:        time.Now().UnixNano(),
-		done:         make(chan struct{}),
-		services:     make(map[string]registry.ServiceConfigIf),
-		zkPath:       make(map[string]int),
-		outerEventCh: make(chan *registry.ServiceEvent),
+		birth:    time.Now().UnixNano(),
+		done:     make(chan struct{}),
+		services: make(map[string]registry.ServiceConfigIf),
+		zkPath:   make(map[string]int),
 	}
 
 	for _, opt := range opts {
@@ -134,10 +132,10 @@ func NewZkRegistry(opts ...registry.RegistryOption) (registry.Registry, error) {
 	r.wg.Add(1)
 	go r.handleZkRestart()
 
-	if r.DubboType == registry.CONSUMER {
-		r.wg.Add(1)
-		go r.listen()
-	}
+	//if r.DubboType == registry.CONSUMER {
+	//	r.wg.Add(1)
+	//	go r.listen()
+	//}
 
 	return r, nil
 }
@@ -417,11 +415,9 @@ func (r *ZkRegistry) closeRegisters() {
 	r.client.Close()
 	r.client = nil
 	r.services = nil
-	//关闭outerListenerEvent
-	close(r.outerEventCh)
 }
 
-func (r *ZkRegistry) isClosed() bool {
+func (r *ZkRegistry) IsClosed() bool {
 	select {
 	case <-r.done:
 		return true
