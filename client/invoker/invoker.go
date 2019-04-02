@@ -18,6 +18,8 @@ import (
 	"github.com/dubbo/dubbo-go/registry"
 )
 
+const RegistryConnDelay = 3
+
 type Options struct {
 	ServiceTTL time.Duration
 	selector   selector.Selector
@@ -74,25 +76,38 @@ func NewInvoker(registry registry.Registry, opts ...Option) (*Invoker, error) {
 		cacheServiceMap: make(map[string]*ServiceArray),
 		registry:        registry,
 	}
-	invoker.Listen()
+	go invoker.listen()
 	return invoker, nil
-}
-
-func (ivk *Invoker) Listen() {
-	go ivk.listen()
 }
 
 func (ivk *Invoker) listen() {
 	for {
-		ch := ivk.registry.GetListenEvent()
+		if ivk.registry.IsClosed() {
+			log.Warn("event listener game over.")
+			return
+		}
+
+		listener, err := ivk.registry.Subscribe()
+		if err != nil {
+			if ivk.registry.IsClosed() {
+				log.Warn("event listener game over.")
+				return
+			}
+			log.Warn("getListener() = err:%s", jerrors.ErrorStack(err))
+			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
+			continue
+		}
 
 		for {
-			e, isOpen := <-ch
-			if !isOpen {
-				log.Warn("registry closed!")
-				break
+			if serviceEvent, err := listener.Next(); err != nil {
+				log.Warn("Selector.watch() = error{%v}", jerrors.ErrorStack(err))
+				listener.Close()
+				time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
+				return
+			} else {
+				ivk.update(serviceEvent)
 			}
-			ivk.update(e)
+
 		}
 
 	}
@@ -131,7 +146,7 @@ func (ivk *Invoker) update(res *registry.ServiceEvent) {
 	}
 }
 
-func (ivk *Invoker) getService(registryConf *registry.ServiceConfig) (*ServiceArray, error) {
+func (ivk *Invoker) getService(registryConf registry.ServiceConfig) (*ServiceArray, error) {
 	defer ivk.listenerLock.Unlock()
 
 	registryKey := registryConf.Key()
@@ -159,7 +174,7 @@ func (ivk *Invoker) getService(registryConf *registry.ServiceConfig) (*ServiceAr
 	return newSvcArr, nil
 }
 
-func (ivk *Invoker) HttpCall(ctx context.Context, reqId int64, registryConf *registry.ServiceConfig, req jsonrpc.Request, resp interface{}) error {
+func (ivk *Invoker) HttpCall(ctx context.Context, reqId int64, registryConf registry.ServiceConfig, req jsonrpc.Request, resp interface{}) error {
 
 	registryArray, err := ivk.getService(registryConf)
 	if err != nil {
@@ -180,7 +195,7 @@ func (ivk *Invoker) HttpCall(ctx context.Context, reqId int64, registryConf *reg
 	return nil
 }
 
-func (ivk *Invoker) DubboCall(reqId int64, registryConf *registry.ServiceConfig, method string, args, reply interface{}, opts ...dubbo.CallOption) error {
+func (ivk *Invoker) DubboCall(reqId int64, registryConf registry.ServiceConfig, method string, args, reply interface{}, opts ...dubbo.CallOption) error {
 
 	registryArray, err := ivk.getService(registryConf)
 	if err != nil {
@@ -200,4 +215,8 @@ func (ivk *Invoker) DubboCall(reqId int64, registryConf *registry.ServiceConfig,
 	}
 	log.Info("response result:%s", reply)
 	return nil
+}
+
+func (ivk *Invoker) Close() {
+	ivk.DubboClient.Close()
 }

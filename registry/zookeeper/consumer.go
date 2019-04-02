@@ -2,7 +2,6 @@ package zookeeper
 
 import (
 	"fmt"
-	"time"
 )
 
 import (
@@ -48,18 +47,14 @@ func (r *ZkRegistry) RegisterConsumer(regConf registry.ServiceConfigIf) error {
 	listener = r.listener
 	r.listenerLock.Unlock()
 	if listener != nil {
-		go listener.listenServiceEvent(&conf)
+		go listener.listenServiceEvent(conf)
 	}
 
 	return nil
 }
 
-func (r *ZkRegistry) GetListenEvent() chan *registry.ServiceEvent {
-	return r.outerEventCh
-}
-
 // name: service@protocol
-func (r *ZkRegistry) GetService(conf *registry.ServiceConfig) ([]*registry.ServiceURL, error) {
+func (r *ZkRegistry) GetService(conf registry.ServiceConfig) ([]*registry.ServiceURL, error) {
 	var (
 		ok            bool
 		err           error
@@ -68,7 +63,7 @@ func (r *ZkRegistry) GetService(conf *registry.ServiceConfig) ([]*registry.Servi
 		listener      *zkEventListener
 		serviceURL    *registry.ServiceURL
 		serviceConfIf registry.ServiceConfigIf
-		serviceConf   *registry.ServiceConfig
+		serviceConf   registry.ServiceConfig
 	)
 	r.listenerLock.Lock()
 	listener = r.listener
@@ -84,7 +79,7 @@ func (r *ZkRegistry) GetService(conf *registry.ServiceConfig) ([]*registry.Servi
 	if !ok {
 		return nil, jerrors.Errorf("Service{%s} has not been registered", conf.Key())
 	}
-	serviceConf, ok = serviceConfIf.(*registry.ServiceConfig)
+	serviceConf, ok = serviceConfIf.(registry.ServiceConfig)
 	if !ok {
 		return nil, jerrors.Errorf("Service{%s}: failed to get serviceConfigIf type", conf.Key())
 	}
@@ -129,45 +124,16 @@ func (r *ZkRegistry) GetService(conf *registry.ServiceConfig) ([]*registry.Servi
 	return services, nil
 }
 
-func (r *ZkRegistry) listen() {
-	defer r.wg.Done()
-
-	for {
-		if r.isClosed() {
-			log.Warn("event listener game over.")
-			return
-		}
-
-		listener, err := r.getListener()
-		if err != nil {
-			if r.isClosed() {
-				log.Warn("event listener game over.")
-				return
-			}
-			log.Warn("getListener() = err:%s", jerrors.ErrorStack(err))
-			time.Sleep(timeSecondDuration(RegistryConnDelay))
-			continue
-		}
-		if err = listener.listenEvent(r); err != nil {
-			log.Warn("Selector.watch() = error{%v}", jerrors.ErrorStack(err))
-
-			r.listenerLock.Lock()
-			r.listener = nil
-			r.listenerLock.Unlock()
-
-			listener.close()
-
-			time.Sleep(timeSecondDuration(RegistryConnDelay))
-			continue
-		}
-	}
+func (r *ZkRegistry) Subscribe() (registry.Listener, error) {
+	r.wg.Add(1)
+	return r.getListener()
 }
 
 func (r *ZkRegistry) getListener() (*zkEventListener, error) {
 	var (
 		ok          bool
 		zkListener  *zkEventListener
-		serviceConf *registry.ServiceConfig
+		serviceConf registry.ServiceConfig
 	)
 
 	r.listenerLock.Lock()
@@ -185,7 +151,7 @@ func (r *ZkRegistry) getListener() (*zkEventListener, error) {
 	}
 
 	// new client & listener
-	zkListener = newZkEventListener(client)
+	zkListener = newZkEventListener(r, client)
 
 	r.listenerLock.Lock()
 	r.listener = zkListener
@@ -194,7 +160,7 @@ func (r *ZkRegistry) getListener() (*zkEventListener, error) {
 	// listen
 	r.cltLock.Lock()
 	for _, svs := range r.services {
-		if serviceConf, ok = svs.(*registry.ServiceConfig); ok {
+		if serviceConf, ok = svs.(registry.ServiceConfig); ok {
 			go zkListener.listenServiceEvent(serviceConf)
 		}
 	}
