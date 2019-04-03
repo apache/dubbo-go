@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/dubbo/dubbo-go/client"
-	"github.com/dubbo/dubbo-go/registry"
 	_ "net/http/pprof"
 )
 
@@ -15,6 +13,8 @@ import (
 import (
 	"github.com/dubbo/dubbo-go/examples"
 	"github.com/dubbo/dubbo-go/public"
+	"github.com/dubbo/dubbo-go/client"
+	"github.com/dubbo/dubbo-go/registry"
 )
 
 func testJsonrpc(clientConfig *examples.ClientConfig, userKey string, method string) {

@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/dubbo/dubbo-go/client"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -23,6 +22,7 @@ import (
 import (
 	"github.com/dubbo/dubbo-go/public"
 	"github.com/dubbo/dubbo-go/registry"
+	"github.com/dubbo/dubbo-go/client"
 )
 
 //////////////////////////////////////////////
