@@ -60,7 +60,7 @@ type Option func(*Options)
 type Options struct {
 	Registry        registry.Registry
 	ConfList        []server.ServerConfig
-	ServiceConfList []registry.ServiceConfig
+	ServiceConfList []registry.DefaultServiceConfig
 	Timeout         time.Duration
 }
 
@@ -95,7 +95,7 @@ func ConfList(confList []server.ServerConfig) Option {
 	}
 }
 
-func ServiceConfList(confList []registry.ServiceConfig) Option {
+func ServiceConfList(confList []registry.DefaultServiceConfig) Option {
 	return func(o *Options) {
 		o.ServiceConfList = confList
 	}

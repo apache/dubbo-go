@@ -26,7 +26,7 @@ func testDubborpc(clientConfig *examples.ClientConfig, userKey string) {
 		method     string
 		serviceIdx int
 		user       *DubboUser
-		conf       registry.ServiceConfig
+		conf       registry.DefaultServiceConfig
 	)
 	serviceIdx = -1
 	svc = "com.ikurento.user.UserProvider"
@@ -42,7 +42,7 @@ func testDubborpc(clientConfig *examples.ClientConfig, userKey string) {
 
 	// Create request
 	method = string("GetUser")
-	conf = registry.ServiceConfig{
+	conf = registry.DefaultServiceConfig{
 		Group:    clientConfig.Service_List[serviceIdx].Group,
 		Protocol: public.CodecType(public.CODECTYPE_DUBBO).String(),
 		Version:  clientConfig.Service_List[serviceIdx].Version,

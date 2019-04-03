@@ -24,7 +24,7 @@ func testJsonrpc(clientConfig *examples.ClientConfig, userKey string, method str
 		serviceIdx int
 		user       *JsonRPCUser
 		ctx        context.Context
-		conf       registry.ServiceConfig
+		conf       registry.DefaultServiceConfig
 		req        jsonrpc.Request
 	)
 
@@ -42,7 +42,7 @@ func testJsonrpc(clientConfig *examples.ClientConfig, userKey string, method str
 
 	// Create request
 	// gxlog.CInfo("jsonrpc selected service %#v", clientConfig.Service_List[serviceIdx])
-	conf = registry.ServiceConfig{
+	conf = registry.DefaultServiceConfig{
 		Group:    clientConfig.Service_List[serviceIdx].Group,
 		Protocol: public.CodecType(public.CODECTYPE_JSONRPC).String(),
 		Version:  clientConfig.Service_List[serviceIdx].Version,

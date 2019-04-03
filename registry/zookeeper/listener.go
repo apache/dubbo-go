@@ -82,7 +82,7 @@ func (l *zkEventListener) listenServiceNodeEvent(zkPath string) bool {
 	return false
 }
 
-func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, conf registry.ServiceConfig) {
+func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, conf registry.DefaultServiceConfig) {
 	contains := func(s []string, e string) bool {
 		for _, a := range s {
 			if a == e {
@@ -156,7 +156,7 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 	}
 }
 
-func (l *zkEventListener) listenDirEvent(zkPath string, conf registry.ServiceConfig) {
+func (l *zkEventListener) listenDirEvent(zkPath string, conf registry.DefaultServiceConfig) {
 	l.wg.Add(1)
 	defer l.wg.Done()
 
@@ -222,7 +222,7 @@ func (l *zkEventListener) listenDirEvent(zkPath string, conf registry.ServiceCon
 // registry.go:Listen -> listenServiceEvent -> listenDirEvent -> listenServiceNodeEvent
 //                            |
 //                            --------> listenServiceNodeEvent
-func (l *zkEventListener) listenServiceEvent(conf registry.ServiceConfig) {
+func (l *zkEventListener) listenServiceEvent(conf registry.DefaultServiceConfig) {
 	var (
 		err        error
 		zkPath     string
@@ -279,7 +279,7 @@ func (l *zkEventListener) listenServiceEvent(conf registry.ServiceConfig) {
 	}
 
 	log.Info("listen dubbo path{%s}", zkPath)
-	go func(zkPath string, conf registry.ServiceConfig) {
+	go func(zkPath string, conf registry.DefaultServiceConfig) {
 		l.listenDirEvent(zkPath, conf)
 		log.Warn("listenDirEvent(zkPath{%s}) goroutine exit now", zkPath)
 	}(zkPath, conf)
