@@ -2,6 +2,7 @@ package invoker
 
 import (
 	"context"
+	"github.com/dubbo/dubbo-go/client"
 	"sync"
 	"time"
 )
@@ -174,14 +175,15 @@ func (ivk *Invoker) getService(registryConf registry.DefaultServiceConfig) (*Ser
 	return newSvcArr, nil
 }
 
-func (ivk *Invoker) HttpCall(ctx context.Context, reqId int64, registryConf registry.DefaultServiceConfig, req jsonrpc.Request, resp interface{}) error {
+func (ivk *Invoker) HttpCall(ctx context.Context, reqId int64, req client.Request, resp interface{}) error {
 
-	registryArray, err := ivk.getService(registryConf)
+	serviceConf := req.ServiceConfig()
+	registryArray, err := ivk.getService(serviceConf)
 	if err != nil {
 		return err
 	}
 	if len(registryArray.arr) == 0 {
-		return jerrors.New("cannot find svc " + registryConf.String())
+		return jerrors.New("cannot find svc " + serviceConf.String())
 	}
 	url, err := ivk.selector.Select(reqId, registryArray)
 	if err != nil {

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/dubbo/dubbo-go/client"
 	"github.com/dubbo/dubbo-go/registry"
 	_ "net/http/pprof"
 )
@@ -13,7 +14,6 @@ import (
 
 import (
 	"github.com/dubbo/dubbo-go/examples"
-	"github.com/dubbo/dubbo-go/jsonrpc"
 	"github.com/dubbo/dubbo-go/public"
 )
 
@@ -25,7 +25,7 @@ func testJsonrpc(clientConfig *examples.ClientConfig, userKey string, method str
 		user       *JsonRPCUser
 		ctx        context.Context
 		conf       registry.DefaultServiceConfig
-		req        jsonrpc.Request
+		req        client.Request
 	)
 
 	serviceIdx = -1
@@ -59,7 +59,7 @@ func testJsonrpc(clientConfig *examples.ClientConfig, userKey string, method str
 
 	user = new(JsonRPCUser)
 
-	err = clientInvoker.HttpCall(ctx, 1, conf, req, user)
+	err = clientInvoker.HttpCall(ctx, 1, req, user)
 	if err != nil {
 		panic(err)
 	} else {
