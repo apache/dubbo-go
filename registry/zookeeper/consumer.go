@@ -13,46 +13,6 @@ import (
 	"github.com/dubbo/dubbo-go/registry"
 )
 
-func (r *ZkRegistry) RegisterConsumer(regConf registry.ServiceConfigIf) error {
-	var (
-		ok       bool
-		err      error
-		listener *zkEventListener
-		conf     registry.ServiceConfig
-	)
-
-	if conf, ok = regConf.(registry.ServiceConfig); !ok {
-		return jerrors.Errorf("the type of @regConf %T is not registry.ServiceConfig", regConf)
-	}
-
-	ok = false
-	r.cltLock.Lock()
-	_, ok = r.services[conf.Key()]
-	r.cltLock.Unlock()
-	if ok {
-		return jerrors.Errorf("Service{%s} has been registered", conf.Service)
-	}
-
-	err = r.register(conf)
-	if err != nil {
-		return jerrors.Trace(err)
-	}
-
-	r.cltLock.Lock()
-	r.services[conf.Key()] = conf
-	r.cltLock.Unlock()
-	log.Debug("(consumerZkConsumerRegistry)Register(conf{%#v})", conf)
-
-	r.listenerLock.Lock()
-	listener = r.listener
-	r.listenerLock.Unlock()
-	if listener != nil {
-		go listener.listenServiceEvent(conf)
-	}
-
-	return nil
-}
-
 // name: service@protocol
 func (r *ZkRegistry) GetService(conf registry.ServiceConfig) ([]*registry.ServiceURL, error) {
 	var (
