@@ -239,6 +239,79 @@ LOOP:
 	}
 }
 
+
+func (r *ZkRegistry) Register(regConf registry.ServiceConfigIf) error {
+	var (
+		ok       bool
+		err      error
+		listener *zkEventListener
+	)
+	switch r.DubboType {
+	case registry.CONSUMER:
+
+		var conf registry.ServiceConfig
+		if conf, ok = regConf.(registry.ServiceConfig); !ok {
+			return jerrors.Errorf("the type of @regConf %T is not registry.ServiceConfig", regConf)
+		}
+
+		ok = false
+		r.cltLock.Lock()
+		_, ok = r.services[conf.Key()]
+		r.cltLock.Unlock()
+		if ok {
+			return jerrors.Errorf("Service{%s} has been registered", conf.Service)
+		}
+
+		err = r.register(conf)
+		if err != nil {
+			return jerrors.Trace(err)
+		}
+
+		r.cltLock.Lock()
+		r.services[conf.Key()] = conf
+		r.cltLock.Unlock()
+		log.Debug("(consumerZkConsumerRegistry)Register(conf{%#v})", conf)
+
+		r.listenerLock.Lock()
+		listener = r.listener
+		r.listenerLock.Unlock()
+		if listener != nil {
+			go listener.listenServiceEvent(conf)
+		}
+	case registry.PROVIDER:
+		var conf registry.ProviderServiceConfig
+		if conf, ok = regConf.(registry.ProviderServiceConfig); !ok {
+			return jerrors.Errorf("the tyep of @regConf{%v} is not ProviderServiceConfig", regConf)
+		}
+
+		// 检验服务是否已经注册过
+		ok = false
+		r.cltLock.Lock()
+		// 注意此处与consumerZookeeperRegistry的差异，consumer用的是conf.Service，
+		// 因为consumer要提供watch功能给selector使用, provider允许注册同一个service的多个group or version
+		_, ok = r.services[conf.String()]
+		r.cltLock.Unlock()
+		if ok {
+			return jerrors.Errorf("Service{%s} has been registered", conf.String())
+		}
+
+		err = r.register(conf)
+		if err != nil {
+			return jerrors.Annotatef(err, "register(conf:%+v)", conf)
+		}
+
+		r.cltLock.Lock()
+		r.services[conf.String()] = conf
+		r.cltLock.Unlock()
+
+		log.Debug("(ZkProviderRegistry)Register(conf{%#v})", conf)
+	}
+
+
+
+	return nil
+}
+
 func (r *ZkRegistry) register(c registry.ServiceConfigIf) error {
 	var (
 		err        error
