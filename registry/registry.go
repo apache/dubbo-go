@@ -8,9 +8,9 @@ package registry
 type Registry interface {
 
 	//used for service provider calling , register services to registry
-	RegisterProvider(ServiceConfigIf) error
-	//used for service consumer calling , register services cared about ,for dubbo's admin monitoring
-	RegisterConsumer(ServiceConfigIf) error
+	//And it is also used for service consumer calling , register services cared about ,for dubbo's admin monitoring.
+	Register(ServiceConfigIf) error
+
 	//used for service consumer ,start subscribe service event from registry
 	Subscribe() (Listener, error)
 
