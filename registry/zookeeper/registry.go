@@ -79,7 +79,7 @@ type ZkRegistry struct {
 
 	cltLock  sync.Mutex
 	client   *zookeeperClient
-	services map[string]registry.ServiceConfigIf // service name + protocol -> service config
+	services map[string]registry.ServiceConfig // service name + protocol -> service config
 
 	listenerLock sync.Mutex
 	listener     *zkEventListener
@@ -97,7 +97,7 @@ func NewZkRegistry(opts ...registry.RegistryOption) (registry.Registry, error) {
 	r = &ZkRegistry{
 		birth:    time.Now().UnixNano(),
 		done:     make(chan struct{}),
-		services: make(map[string]registry.ServiceConfigIf),
+		services: make(map[string]registry.ServiceConfig),
 		zkPath:   make(map[string]int),
 	}
 
@@ -178,8 +178,8 @@ func (r *ZkRegistry) handleZkRestart() {
 		err       error
 		flag      bool
 		failTimes int
-		confIf    registry.ServiceConfigIf
-		services  []registry.ServiceConfigIf
+		confIf    registry.ServiceConfig
+		services  []registry.ServiceConfig
 	)
 
 	defer r.wg.Done()
@@ -240,7 +240,7 @@ LOOP:
 }
 
 
-func (r *ZkRegistry) Register(regConf registry.ServiceConfigIf) error {
+func (r *ZkRegistry) Register(regConf registry.ServiceConfig) error {
 	var (
 		ok       bool
 		err      error
@@ -249,8 +249,8 @@ func (r *ZkRegistry) Register(regConf registry.ServiceConfigIf) error {
 	switch r.DubboType {
 	case registry.CONSUMER:
 
-		var conf registry.ServiceConfig
-		if conf, ok = regConf.(registry.ServiceConfig); !ok {
+		var conf registry.DefaultServiceConfig
+		if conf, ok = regConf.(registry.DefaultServiceConfig); !ok {
 			return jerrors.Errorf("the type of @regConf %T is not registry.ServiceConfig", regConf)
 		}
 
@@ -312,7 +312,7 @@ func (r *ZkRegistry) Register(regConf registry.ServiceConfigIf) error {
 	return nil
 }
 
-func (r *ZkRegistry) register(c registry.ServiceConfigIf) error {
+func (r *ZkRegistry) register(c registry.ServiceConfig) error {
 	var (
 		err        error
 		revision   string
@@ -365,10 +365,10 @@ func (r *ZkRegistry) register(c registry.ServiceConfigIf) error {
 			return jerrors.Annotatef(err, "zkclient.Create(path:%s)", dubboPath)
 		}
 		params.Add("anyhost", "true")
-		params.Add("interface", conf.ServiceConfig.Service)
+		params.Add("interface", conf.DefaultServiceConfig.Service)
 
-		if conf.ServiceConfig.Group != "" {
-			params.Add("group", conf.ServiceConfig.Group)
+		if conf.DefaultServiceConfig.Group != "" {
+			params.Add("group", conf.DefaultServiceConfig.Group)
 		}
 		// dubbo java consumer来启动找provider url时，因为category不匹配，会找不到provider，导致consumer启动不了,所以使用consumers&providers
 		// DubboRole               = [...]string{"consumer", "", "", "provider"}
@@ -378,8 +378,8 @@ func (r *ZkRegistry) register(c registry.ServiceConfigIf) error {
 
 		params.Add("side", (registry.DubboType(registry.PROVIDER)).Role())
 
-		if conf.ServiceConfig.Version != "" {
-			params.Add("version", conf.ServiceConfig.Version)
+		if conf.DefaultServiceConfig.Version != "" {
+			params.Add("version", conf.DefaultServiceConfig.Version)
 		}
 		if conf.Methods != "" {
 			params.Add("methods", conf.Methods)
@@ -402,7 +402,7 @@ func (r *ZkRegistry) register(c registry.ServiceConfigIf) error {
 		log.Debug("provider path:%s, url:%s", dubboPath, rawURL)
 
 	} else if r.DubboType == registry.CONSUMER {
-		conf, ok := c.(registry.ServiceConfig)
+		conf, ok := c.(registry.DefaultServiceConfig)
 		if !ok {
 			return fmt.Errorf("the type of @c:%+v is not registry.ServiceConfig", c)
 		}
@@ -446,7 +446,7 @@ func (r *ZkRegistry) register(c registry.ServiceConfigIf) error {
 		dubboPath = fmt.Sprintf("/dubbo/%s/%s", conf.Service, (registry.DubboType(registry.CONSUMER)).String())
 		log.Debug("consumer path:%s, url:%s", dubboPath, rawURL)
 	} else {
-		return jerrors.Errorf("@c{%v} type is not ServiceConfig or ProviderServiceConfig", c)
+		return jerrors.Errorf("@c{%v} type is not DefaultServiceConfig or ProviderServiceConfig", c)
 	}
 
 	err = r.registerTempZookeeperNode(dubboPath, encodedURL)
