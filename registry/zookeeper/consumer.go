@@ -14,7 +14,7 @@ import (
 )
 
 // name: service@protocol
-func (r *ZkRegistry) GetService(conf registry.ServiceConfig) ([]*registry.ServiceURL, error) {
+func (r *ZkRegistry) GetService(conf registry.DefaultServiceConfig) ([]*registry.ServiceURL, error) {
 	var (
 		ok            bool
 		err           error
@@ -22,8 +22,8 @@ func (r *ZkRegistry) GetService(conf registry.ServiceConfig) ([]*registry.Servic
 		nodes         []string
 		listener      *zkEventListener
 		serviceURL    *registry.ServiceURL
-		serviceConfIf registry.ServiceConfigIf
-		serviceConf   registry.ServiceConfig
+		serviceConfIf registry.ServiceConfig
+		serviceConf   registry.DefaultServiceConfig
 	)
 	r.listenerLock.Lock()
 	listener = r.listener
@@ -39,7 +39,7 @@ func (r *ZkRegistry) GetService(conf registry.ServiceConfig) ([]*registry.Servic
 	if !ok {
 		return nil, jerrors.Errorf("Service{%s} has not been registered", conf.Key())
 	}
-	serviceConf, ok = serviceConfIf.(registry.ServiceConfig)
+	serviceConf, ok = serviceConfIf.(registry.DefaultServiceConfig)
 	if !ok {
 		return nil, jerrors.Errorf("Service{%s}: failed to get serviceConfigIf type", conf.Key())
 	}
@@ -93,7 +93,7 @@ func (r *ZkRegistry) getListener() (*zkEventListener, error) {
 	var (
 		ok          bool
 		zkListener  *zkEventListener
-		serviceConf registry.ServiceConfig
+		serviceConf registry.DefaultServiceConfig
 	)
 
 	r.listenerLock.Lock()
@@ -120,7 +120,7 @@ func (r *ZkRegistry) getListener() (*zkEventListener, error) {
 	// listen
 	r.cltLock.Lock()
 	for _, svs := range r.services {
-		if serviceConf, ok = svs.(registry.ServiceConfig); ok {
+		if serviceConf, ok = svs.(registry.DefaultServiceConfig); ok {
 			go zkListener.listenServiceEvent(serviceConf)
 		}
 	}

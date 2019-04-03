@@ -17,28 +17,28 @@ import (
 // service config
 //////////////////////////////////////////////
 
-type ServiceConfigIf interface {
+type ServiceConfig interface {
 	Key() string
 	String() string
 	ServiceEqual(url *ServiceURL) bool
 }
 
-type ServiceConfig struct {
+type DefaultServiceConfig struct {
 	Protocol string `required:"true",default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty"`
 	Service  string `required:"true"  yaml:"service"  json:"service,omitempty"`
 	Group    string `yaml:"group" json:"group,omitempty"`
 	Version  string `yaml:"version" json:"version,omitempty"`
 }
 
-func (c ServiceConfig) Key() string {
+func (c DefaultServiceConfig) Key() string {
 	return fmt.Sprintf("%s@%s", c.Service, c.Protocol)
 }
 
-func (c ServiceConfig) String() string {
+func (c DefaultServiceConfig) String() string {
 	return fmt.Sprintf("%s@%s-%s-%s", c.Service, c.Protocol, c.Group, c.Version)
 }
 
-func (c ServiceConfig) ServiceEqual(url *ServiceURL) bool {
+func (c DefaultServiceConfig) ServiceEqual(url *ServiceURL) bool {
 	if c.Protocol != url.Protocol {
 		return false
 	}
@@ -59,7 +59,7 @@ func (c ServiceConfig) ServiceEqual(url *ServiceURL) bool {
 }
 
 type ProviderServiceConfig struct {
-	ServiceConfig
+	DefaultServiceConfig
 	Path    string `yaml:"path" json:"path,omitempty"`
 	Methods string `yaml:"methods" json:"methods,omitempty"`
 }
@@ -139,9 +139,9 @@ func (s ServiceURL) String() string {
 		s.Timeout, s.Version, s.Group, s.Weight, s.Query)
 }
 
-func (s *ServiceURL) ServiceConfig() ServiceConfig {
+func (s *ServiceURL) ServiceConfig() DefaultServiceConfig {
 	interfaceName := s.Query.Get("interface")
-	return ServiceConfig{
+	return DefaultServiceConfig{
 		Protocol: s.Protocol,
 		Service:  interfaceName,
 		Group:    s.Group,

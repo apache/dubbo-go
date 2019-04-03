@@ -39,8 +39,8 @@ type Request struct {
 	contentType string
 }
 
-func (r *Request) ServiceConfig() registry.ServiceConfigIf {
-	return &registry.ServiceConfig{
+func (r *Request) ServiceConfig() registry.ServiceConfig {
+	return &registry.DefaultServiceConfig{
 		Protocol: r.protocol,
 		Service:  r.service,
 		Group:    r.group,
@@ -86,7 +86,7 @@ func NewHTTPClient(opt *HTTPOptions) *HTTPClient {
 	}
 }
 
-func (c *HTTPClient) NewRequest(conf registry.ServiceConfig, method string, args interface{}) Request {
+func (c *HTTPClient) NewRequest(conf registry.DefaultServiceConfig, method string, args interface{}) Request {
 	return Request{
 		ID:       atomic.AddInt64(&c.ID, 1),
 		group:    conf.Group,
