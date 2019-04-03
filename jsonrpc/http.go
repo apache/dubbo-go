@@ -130,7 +130,7 @@ func (c *HTTPClient) Call(ctx context.Context, service registry.ServiceURL, req 
 		return jerrors.Trace(err)
 	}
 
-	rspBody, err := c.Do(service.Location, service.Path, httpHeader, reqBody)
+	rspBody, err := c.Do(service.Location, service.Query.Get("interface"), httpHeader, reqBody)
 	if err != nil {
 		return jerrors.Trace(err)
 	}
