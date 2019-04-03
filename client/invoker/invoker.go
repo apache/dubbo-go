@@ -2,7 +2,6 @@ package invoker
 
 import (
 	"context"
-	"github.com/dubbo/dubbo-go/client"
 	"sync"
 	"time"
 )
@@ -17,6 +16,7 @@ import (
 	"github.com/dubbo/dubbo-go/dubbo"
 	"github.com/dubbo/dubbo-go/jsonrpc"
 	"github.com/dubbo/dubbo-go/registry"
+	"github.com/dubbo/dubbo-go/client"
 )
 
 const RegistryConnDelay = 3
