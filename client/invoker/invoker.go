@@ -146,7 +146,7 @@ func (ivk *Invoker) update(res *registry.ServiceEvent) {
 	}
 }
 
-func (ivk *Invoker) getService(registryConf registry.ServiceConfig) (*ServiceArray, error) {
+func (ivk *Invoker) getService(registryConf registry.DefaultServiceConfig) (*ServiceArray, error) {
 	defer ivk.listenerLock.Unlock()
 
 	registryKey := registryConf.Key()
@@ -174,7 +174,7 @@ func (ivk *Invoker) getService(registryConf registry.ServiceConfig) (*ServiceArr
 	return newSvcArr, nil
 }
 
-func (ivk *Invoker) HttpCall(ctx context.Context, reqId int64, registryConf registry.ServiceConfig, req jsonrpc.Request, resp interface{}) error {
+func (ivk *Invoker) HttpCall(ctx context.Context, reqId int64, registryConf registry.DefaultServiceConfig, req jsonrpc.Request, resp interface{}) error {
 
 	registryArray, err := ivk.getService(registryConf)
 	if err != nil {
@@ -195,7 +195,7 @@ func (ivk *Invoker) HttpCall(ctx context.Context, reqId int64, registryConf regi
 	return nil
 }
 
-func (ivk *Invoker) DubboCall(reqId int64, registryConf registry.ServiceConfig, method string, args, reply interface{}, opts ...dubbo.CallOption) error {
+func (ivk *Invoker) DubboCall(reqId int64, registryConf registry.DefaultServiceConfig, method string, args, reply interface{}, opts ...dubbo.CallOption) error {
 
 	registryArray, err := ivk.getService(registryConf)
 	if err != nil {
