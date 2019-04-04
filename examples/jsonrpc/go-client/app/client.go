@@ -89,9 +89,9 @@ func initClient(clientConfig *examples.ClientConfig) {
 	}
 
 	for idx := range clientConfig.Service_List {
-		codecType = public.GetCodecType(clientConfig.Service_List[idx].Protocol)
+		codecType = public.GetCodecType(clientConfig.Service_List[idx].Protocol())
 		if codecType == public.CODECTYPE_UNKNOWN {
-			panic(fmt.Sprintf("unknown protocol %s", clientConfig.Service_List[idx].Protocol))
+			panic(fmt.Sprintf("unknown protocol %s", clientConfig.Service_List[idx].Protocol()))
 		}
 	}
 

@@ -159,6 +159,7 @@ func (r *ZkRegistry) validateZookeeperClient() error {
 		if err != nil {
 			log.Warn("newZookeeperClient(name{%s}, zk addresss{%v}, timeout{%d}) = error{%v}",
 				RegistryZkClient, r.Address, r.Timeout.String(), err)
+			return jerrors.Annotatef(err, "newZookeeperClient(address:%+v)", r.Address)
 		}
 	}
 	if r.client.conn == nil {
@@ -239,8 +240,7 @@ LOOP:
 	}
 }
 
-
-func (r *ZkRegistry) Register(regConf registry.ServiceConfig) error {
+func (r *ZkRegistry) Register(conf registry.ServiceConfig) error {
 	var (
 		ok       bool
 		err      error
@@ -248,18 +248,12 @@ func (r *ZkRegistry) Register(regConf registry.ServiceConfig) error {
 	)
 	switch r.DubboType {
 	case registry.CONSUMER:
-
-		var conf registry.DefaultServiceConfig
-		if conf, ok = regConf.(registry.DefaultServiceConfig); !ok {
-			return jerrors.Errorf("the type of @regConf %T is not registry.ServiceConfig", regConf)
-		}
-
 		ok = false
 		r.cltLock.Lock()
 		_, ok = r.services[conf.Key()]
 		r.cltLock.Unlock()
 		if ok {
-			return jerrors.Errorf("Service{%s} has been registered", conf.Service)
+			return jerrors.Errorf("Service{%s} has been registered", conf.Service())
 		}
 
 		err = r.register(conf)
@@ -279,10 +273,6 @@ func (r *ZkRegistry) Register(regConf registry.ServiceConfig) error {
 			go listener.listenServiceEvent(conf)
 		}
 	case registry.PROVIDER:
-		var conf registry.ProviderServiceConfig
-		if conf, ok = regConf.(registry.ProviderServiceConfig); !ok {
-			return jerrors.Errorf("the tyep of @regConf{%v} is not ProviderServiceConfig", regConf)
-		}
 
 		// 检验服务是否已经注册过
 		ok = false
@@ -307,8 +297,6 @@ func (r *ZkRegistry) Register(regConf registry.ServiceConfig) error {
 		log.Debug("(ZkProviderRegistry)Register(conf{%#v})", conf)
 	}
 
-
-
 	return nil
 }
 
@@ -321,6 +309,8 @@ func (r *ZkRegistry) register(c registry.ServiceConfig) error {
 		rawURL     string
 		encodedURL string
 		dubboPath  string
+		conf       registry.ProviderServiceConfig
+		ok         bool
 	)
 
 	err = r.validateZookeeperClient()
@@ -347,16 +337,14 @@ func (r *ZkRegistry) register(c registry.ServiceConfig) error {
 	params.Add("revision", revision) // revision是pox.xml中application的version属性的值
 
 	if r.DubboType == registry.PROVIDER {
-		conf, ok := c.(registry.ProviderServiceConfig)
-		if !ok {
-			return fmt.Errorf("the type of @c:%+v is not registry.ProviderServiceConfig", c)
+		if conf, ok = c.(registry.ProviderServiceConfig); !ok {
+			return jerrors.Errorf("conf is not ProviderServiceConfig")
 		}
-
-		if conf.Service == "" || conf.Methods == "" {
-			return jerrors.Errorf("conf{Service:%s, Methods:%s}", conf.Service, conf.Methods)
+		if conf.Service() == "" || conf.Methods() == "" {
+			return jerrors.Errorf("conf{Service:%s, Methods:%s}", conf.Service(), conf.Methods())
 		}
 		// 先创建服务下面的provider node
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", conf.Service, registry.DubboNodes[registry.PROVIDER])
+		dubboPath = fmt.Sprintf("/dubbo/%s/%s", conf.Service(), registry.DubboNodes[registry.PROVIDER])
 		r.cltLock.Lock()
 		err = r.client.Create(dubboPath)
 		r.cltLock.Unlock()
@@ -365,10 +353,10 @@ func (r *ZkRegistry) register(c registry.ServiceConfig) error {
 			return jerrors.Annotatef(err, "zkclient.Create(path:%s)", dubboPath)
 		}
 		params.Add("anyhost", "true")
-		params.Add("interface", conf.DefaultServiceConfig.Service)
+		params.Add("interface", conf.Service())
 
-		if conf.DefaultServiceConfig.Group != "" {
-			params.Add("group", conf.DefaultServiceConfig.Group)
+		if conf.Group() != "" {
+			params.Add("group", conf.Group())
 		}
 		// dubbo java consumer来启动找provider url时，因为category不匹配，会找不到provider，导致consumer启动不了,所以使用consumers&providers
 		// DubboRole               = [...]string{"consumer", "", "", "provider"}
@@ -378,36 +366,32 @@ func (r *ZkRegistry) register(c registry.ServiceConfig) error {
 
 		params.Add("side", (registry.DubboType(registry.PROVIDER)).Role())
 
-		if conf.DefaultServiceConfig.Version != "" {
-			params.Add("version", conf.DefaultServiceConfig.Version)
+		if conf.Version() != "" {
+			params.Add("version", conf.Version())
 		}
-		if conf.Methods != "" {
-			params.Add("methods", conf.Methods)
+		if conf.Methods() != "" {
+			params.Add("methods", conf.Methods())
 		}
 		log.Debug("provider zk url params:%#v", params)
-		if conf.Path == "" {
-			conf.Path = localIP
+		var path = conf.Path()
+		if path == "" {
+			path = localIP
 		}
 
-		urlPath = conf.Service
+		urlPath = conf.Service()
 		if r.zkPath[urlPath] != 0 {
 			urlPath += strconv.Itoa(r.zkPath[urlPath])
 		}
 		r.zkPath[urlPath]++
-		rawURL = fmt.Sprintf("%s://%s/%s?%s", conf.Protocol, conf.Path, urlPath, params.Encode())
+		rawURL = fmt.Sprintf("%s://%s/%s?%s", conf.Protocol(), path, urlPath, params.Encode())
 		encodedURL = url.QueryEscape(rawURL)
 
 		// 把自己注册service providers
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", conf.Service, (registry.DubboType(registry.PROVIDER)).String())
+		dubboPath = fmt.Sprintf("/dubbo/%s/%s", conf.Service(), (registry.DubboType(registry.PROVIDER)).String())
 		log.Debug("provider path:%s, url:%s", dubboPath, rawURL)
 
 	} else if r.DubboType == registry.CONSUMER {
-		conf, ok := c.(registry.DefaultServiceConfig)
-		if !ok {
-			return fmt.Errorf("the type of @c:%+v is not registry.ServiceConfig", c)
-		}
-
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", conf.Service, registry.DubboNodes[registry.CONSUMER])
+		dubboPath = fmt.Sprintf("/dubbo/%s/%s", c.Service(), registry.DubboNodes[registry.CONSUMER])
 		r.cltLock.Lock()
 		err = r.client.Create(dubboPath)
 		r.cltLock.Unlock()
@@ -415,7 +399,7 @@ func (r *ZkRegistry) register(c registry.ServiceConfig) error {
 			log.Error("zkClient.create(path{%s}) = error{%v}", dubboPath, jerrors.ErrorStack(err))
 			return jerrors.Trace(err)
 		}
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", conf.Service, registry.DubboNodes[registry.PROVIDER])
+		dubboPath = fmt.Sprintf("/dubbo/%s/%s", c.Service(), registry.DubboNodes[registry.PROVIDER])
 		r.cltLock.Lock()
 		err = r.client.Create(dubboPath)
 		r.cltLock.Unlock()
@@ -424,29 +408,29 @@ func (r *ZkRegistry) register(c registry.ServiceConfig) error {
 			return jerrors.Trace(err)
 		}
 
-		params.Add("protocol", conf.Protocol)
-		params.Add("interface", conf.Service)
+		params.Add("protocol", c.Protocol())
+		params.Add("interface", c.Service())
 		revision = r.ApplicationConfig.Version
 		if revision == "" {
 			revision = "0.1.0"
 		}
 		params.Add("revision", revision)
-		if conf.Group != "" {
-			params.Add("group", conf.Group)
+		if c.Group() != "" {
+			params.Add("group", c.Group())
 		}
 		params.Add("category", (registry.DubboType(registry.CONSUMER)).String())
 		params.Add("dubbo", "dubbogo-consumer-"+version.Version)
 
-		if conf.Version != "" {
-			params.Add("version", conf.Version)
+		if c.Version() != "" {
+			params.Add("version", c.Version())
 		}
-		rawURL = fmt.Sprintf("consumer://%s/%s?%s", localIP, conf.Service+conf.Version, params.Encode())
+		rawURL = fmt.Sprintf("consumer://%s/%s?%s", localIP, c.Service()+c.Version(), params.Encode())
 		encodedURL = url.QueryEscape(rawURL)
 
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", conf.Service, (registry.DubboType(registry.CONSUMER)).String())
+		dubboPath = fmt.Sprintf("/dubbo/%s/%s", c.Service(), (registry.DubboType(registry.CONSUMER)).String())
 		log.Debug("consumer path:%s, url:%s", dubboPath, rawURL)
 	} else {
-		return jerrors.Errorf("@c{%v} type is not DefaultServiceConfig or ProviderServiceConfig", c)
+		return jerrors.Errorf("@c{%v} type is not DefaultServiceConfig or DefaultProviderServiceConfig", c)
 	}
 
 	err = r.registerTempZookeeperNode(dubboPath, encodedURL)
