@@ -28,25 +28,17 @@ type ServiceConfig interface {
 	Group() string
 	SetProtocol(string)
 	SetService(string)
+	SetVersion(string)
+	SetGroup(string)
 }
 
 type ProviderServiceConfig interface {
-	Key() string
-	String() string
-	ServiceEqual(url *DefaultServiceURL) bool
 	//your service config implements must contain properties below
-	Service() string
-	Protocol() string
-	Version() string
-	Group() string
+	ServiceConfig
 	Methods() string
 	Path() string
-	SetService(string)
-	SetVersion(string)
 	SetMethods(string)
 	SetPath(string)
-	SetProtocol(string)
-	SetGroup(string)
 }
 
 type DefaultServiceConfig struct {
@@ -110,6 +102,13 @@ func (c *DefaultServiceConfig) SetProtocol(s string) {
 func (c *DefaultServiceConfig) SetService(s string) {
 	c.DService = s
 }
+func (c *DefaultServiceConfig) SetVersion(s string) {
+	c.DVersion = s
+}
+
+func (c *DefaultServiceConfig) SetGroup(s string) {
+	c.DGroup = s
+}
 
 type DefaultProviderServiceConfig struct {
 	*DefaultServiceConfig
@@ -131,20 +130,12 @@ func (c *DefaultProviderServiceConfig) Path() string {
 	return c.DPath
 }
 
-func (c *DefaultProviderServiceConfig) SetVersion(s string) {
-	c.DVersion = s
-}
-
 func (c *DefaultProviderServiceConfig) SetMethods(s string) {
 	c.DMethods = s
 }
 
 func (c *DefaultProviderServiceConfig) SetPath(s string) {
 	c.DPath = s
-}
-
-func (c *DefaultProviderServiceConfig) SetGroup(s string) {
-	c.DGroup = s
 }
 
 //////////////////////////////////////////
