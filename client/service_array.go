@@ -7,5 +7,5 @@ import (
 type ServiceArrayIf interface {
 	GetIdx() *int64
 	GetSize() int64
-	GetService(i int64) *registry.ServiceURL
+	GetService(i int64) *registry.DefaultServiceURL
 }

@@ -15,7 +15,7 @@ func NewRoundRobinSelector() Selector {
 	return &RoundRobinSelector{}
 }
 
-func (s *RoundRobinSelector) Select(ID int64, array client.ServiceArrayIf) (*registry.ServiceURL, error) {
+func (s *RoundRobinSelector) Select(ID int64, array client.ServiceArrayIf) (*registry.DefaultServiceURL, error) {
 	if array.GetSize() == 0 {
 		return nil, ServiceArrayEmpty
 	}

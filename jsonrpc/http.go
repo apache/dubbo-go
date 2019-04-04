@@ -20,9 +20,9 @@ import (
 )
 
 import (
+	"github.com/dubbo/dubbo-go/client"
 	"github.com/dubbo/dubbo-go/public"
 	"github.com/dubbo/dubbo-go/registry"
-	"github.com/dubbo/dubbo-go/client"
 )
 
 //////////////////////////////////////////////
@@ -38,15 +38,11 @@ type Request struct {
 	method      string
 	args        interface{}
 	contentType string
+	conf        registry.ServiceConfig
 }
 
-func (r *Request) ServiceConfig() registry.DefaultServiceConfig {
-	return registry.DefaultServiceConfig{
-		Protocol: r.protocol,
-		Service:  r.service,
-		Group:    r.group,
-		Version:  r.version,
-	}
+func (r *Request) ServiceConfig() registry.ServiceConfig {
+	return r.conf
 }
 
 //////////////////////////////////////////////
@@ -87,19 +83,21 @@ func NewHTTPClient(opt *HTTPOptions) *HTTPClient {
 	}
 }
 
-func (c *HTTPClient) NewRequest(conf registry.DefaultServiceConfig, method string, args interface{}) client.Request {
+func (c *HTTPClient) NewRequest(conf registry.ServiceConfig, method string, args interface{}) (client.Request, error) {
+
 	return &Request{
 		ID:       atomic.AddInt64(&c.ID, 1),
-		group:    conf.Group,
-		protocol: conf.Protocol,
-		version:  conf.Version,
-		service:  conf.Service,
+		group:    conf.Group(),
+		protocol: conf.Protocol(),
+		version:  conf.Version(),
+		service:  conf.Service(),
 		method:   method,
 		args:     args,
-	}
+		conf:	  conf,
+	}, nil
 }
 
-func (c *HTTPClient) Call(ctx context.Context, service *registry.ServiceURL, request client.Request, rsp interface{}) error {
+func (c *HTTPClient) Call(ctx context.Context, service *registry.DefaultServiceURL, request client.Request, rsp interface{}) error {
 	// header
 	req := request.(*Request)
 	httpHeader := http.Header{}

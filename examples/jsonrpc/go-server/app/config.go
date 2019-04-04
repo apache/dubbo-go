@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/dubbo/dubbo-go/plugins"
 	"io/ioutil"
 	"os"
 	"path"
@@ -43,10 +44,13 @@ type (
 		// application
 		Application_Config registry.ApplicationConfig `yaml:"application_config" json:"application_config,omitempty"`
 		// Registry_Address  string `default:"192.168.35.3:2181"`
-		Registry         string                          `default:"zookeeper"  yaml:"registry" json:"registry,omitempty"`
-		ZkRegistryConfig zookeeper.ZkRegistryConfig      `yaml:"zk_registry_config" json:"zk_registry_config,omitempty"`
-		Service_List     []registry.DefaultServiceConfig `yaml:"service_list" json:"service_list,omitempty"`
-		Server_List      []server.ServerConfig           `yaml:"server_list" json:"server_list,omitempty"`
+		Registry         string                           `default:"zookeeper"  yaml:"registry" json:"registry,omitempty"`
+		ZkRegistryConfig zookeeper.ZkRegistryConfig       `yaml:"zk_registry_config" json:"zk_registry_config,omitempty"`
+		Service_List     []registry.ProviderServiceConfig `yaml:"-"`
+
+		ServiceConfigType string                `default:"default" yaml:"service_config_type" json:"service_config_type,omitempty"`
+		ServiceList       []map[string]string   `yaml:"service_list" json:"service_list,omitempty"`
+		Server_List       []server.ServerConfig `yaml:"server_list" json:"server_list,omitempty"`
 	}
 )
 
@@ -73,6 +77,22 @@ func initServerConf() *ServerConfig {
 		return nil
 	}
 	err = yaml.Unmarshal(confFileStream, conf)
+
+	//动态加载service config
+	//设置默认ProviderServiceConfig类
+	plugins.SetDefaultProviderServiceConfig(conf.ServiceConfigType)
+	fmt.Println(1111)
+	for _, service := range conf.ServiceList {
+
+		svc := plugins.DefaultProviderServiceConfig()()
+		svc.SetProtocol(service["protocol"])
+		fmt.Println(service["protocol"])
+		fmt.Println(svc.Protocol())
+		svc.SetService(service["service"])
+		fmt.Println(svc)
+		conf.Service_List = append(conf.Service_List, svc)
+	}
+	//动态加载service config  end
 	if err != nil {
 		panic(fmt.Sprintf("yaml.Unmarshal() = error:%s", jerrors.ErrorStack(err)))
 		return nil

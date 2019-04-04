@@ -14,5 +14,5 @@ var (
 )
 
 type Selector interface {
-	Select(ID int64, array client.ServiceArrayIf) (*registry.ServiceURL, error)
+	Select(ID int64, array client.ServiceArrayIf) (*registry.DefaultServiceURL, error)
 }
