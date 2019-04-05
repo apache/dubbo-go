@@ -28,21 +28,21 @@ func testJsonrpc(clientConfig *examples.ClientConfig, userKey string, method str
 
 	serviceIdx = -1
 	svc = "com.ikurento.user.UserProvider"
-	for i := range clientConfig.ServiceConfig_List {
-		if clientConfig.ServiceConfig_List[i].Service() == svc && clientConfig.ServiceConfig_List[i].Protocol() == public.CODECTYPE_JSONRPC.String() {
+	for i := range clientConfig.ServiceConfigList {
+		if clientConfig.ServiceConfigList[i].Service() == svc && clientConfig.ServiceConfigList[i].Protocol() == public.CODECTYPE_JSONRPC.String() {
 			serviceIdx = i
 			break
 		}
 	}
 	if serviceIdx == -1 {
-		panic(fmt.Sprintf("can not find service in config service list:%#v", clientConfig.ServiceConfig_List))
+		panic(fmt.Sprintf("can not find service in config service list:%#v", clientConfig.ServiceConfigList))
 	}
 
 	// Create request
-	// gxlog.CInfo("jsonrpc selected service %#v", clientConfig.ServiceConfig_List[serviceIdx])
+	// gxlog.CInfo("jsonrpc selected service %#v", clientConfig.ServiceConfigList[serviceIdx])
 
 	// Attention the last parameter : []UserKey{userKey}
-	req, err = clientInvoker.HttpClient.NewRequest(clientConfig.ServiceConfig_List[serviceIdx], method, []string{userKey})
+	req, err = clientInvoker.HttpClient.NewRequest(clientConfig.ServiceConfigList[serviceIdx], method, []string{userKey})
 
 	if err != nil {
 		panic(err)

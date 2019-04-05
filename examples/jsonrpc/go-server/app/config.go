@@ -46,11 +46,13 @@ type (
 		// Registry_Address  string `default:"192.168.35.3:2181"`
 		Registry           string                           `default:"zookeeper"  yaml:"registry" json:"registry,omitempty"`
 		ZkRegistryConfig   zookeeper.ZkRegistryConfig       `yaml:"zk_registry_config" json:"zk_registry_config,omitempty"`
-		ServiceConfig_List []registry.ProviderServiceConfig `yaml:"-"`
 
-		ServiceConfigType string                `default:"default" yaml:"service_config_type" json:"service_config_type,omitempty"`
-		ServiceConfigList []map[string]string   `yaml:"service_list" json:"service_list,omitempty"`
-		Server_List       []server.ServerConfig `yaml:"server_list" json:"server_list,omitempty"`
+
+		ServiceConfigType    string                           `default:"default" yaml:"service_config_type" json:"service_config_type,omitempty"`
+		ServiceConfigList    []registry.ProviderServiceConfig `yaml:"-"`
+		ServiceConfigMapList []map[string]string              `yaml:"service_list" json:"service_list,omitempty"`
+
+		ServerConfigList []server.ServerConfig `yaml:"server_list" json:"server_list,omitempty"`
 	}
 )
 
@@ -81,12 +83,12 @@ func initServerConf() *ServerConfig {
 	//动态加载service config
 	//设置默认ProviderServiceConfig类
 	plugins.SetDefaultProviderServiceConfig(conf.ServiceConfigType)
-	for _, service := range conf.ServiceConfigList {
+	for _, service := range conf.ServiceConfigMapList {
 
 		svc := plugins.DefaultProviderServiceConfig()()
 		svc.SetProtocol(service["protocol"])
 		svc.SetService(service["service"])
-		conf.ServiceConfig_List = append(conf.ServiceConfig_List, svc)
+		conf.ServiceConfigList = append(conf.ServiceConfigList, svc)
 	}
 	//动态加载service config  end
 	if err != nil {
