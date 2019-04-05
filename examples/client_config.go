@@ -2,7 +2,6 @@ package examples
 
 import (
 	"fmt"
-	"github.com/dubbo/dubbo-go/plugins"
 	"io/ioutil"
 	"os"
 	"path"
@@ -17,6 +16,7 @@ import (
 )
 
 import (
+	"github.com/dubbo/dubbo-go/plugins"
 	"github.com/dubbo/dubbo-go/registry"
 	"github.com/dubbo/dubbo-go/registry/zookeeper"
 )
@@ -50,9 +50,9 @@ type (
 		Application_Config registry.ApplicationConfig `yaml:"application_config" json:"application_config,omitempty"`
 		ZkRegistryConfig   zookeeper.ZkRegistryConfig `yaml:"zk_registry_config" json:"zk_registry_config,omitempty"`
 		// 一个客户端只允许使用一个service的其中一个group和其中一个version
-		ServiceConfigType string                   `default:"default" yaml:"service_config_type" json:"service_config_type,omitempty"`
-		Service_List      []registry.ServiceConfig `yaml:"-"`
-		ServiceList       []map[string]string      `yaml:"service_list" json:"service_list,omitempty"`
+		ServiceConfigType  string                   `default:"default" yaml:"service_config_type" json:"service_config_type,omitempty"`
+		ServiceConfig_List []registry.ServiceConfig `yaml:"-"`
+		ServiceConfigList  []map[string]string      `yaml:"service_list" json:"service_list,omitempty"`
 	}
 )
 
@@ -90,11 +90,11 @@ func InitClientConfig() *ClientConfig {
 	//设置默认ProviderServiceConfig类
 	plugins.SetDefaultServiceConfig(clientConfig.ServiceConfigType)
 
-	for _, service := range clientConfig.ServiceList {
+	for _, service := range clientConfig.ServiceConfigList {
 		svc := plugins.DefaultServiceConfig()()
 		svc.SetProtocol(service["protocol"])
 		svc.SetService(service["service"])
-		clientConfig.Service_List = append(clientConfig.Service_List, svc)
+		clientConfig.ServiceConfig_List = append(clientConfig.ServiceConfig_List, svc)
 	}
 	//动态加载service config  end
 

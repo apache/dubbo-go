@@ -79,7 +79,7 @@ func initServer() *jsonrpc.Server {
 	srv = jsonrpc.NewServer(
 		jsonrpc.Registry(registry),
 		jsonrpc.ConfList(conf.Server_List),
-		jsonrpc.ServiceConfList(conf.Service_List),
+		jsonrpc.ServiceConfList(conf.ServiceConfig_List),
 	)
 
 	return srv

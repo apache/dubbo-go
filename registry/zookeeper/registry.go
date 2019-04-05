@@ -2,6 +2,7 @@ package zookeeper
 
 import (
 	"fmt"
+	"github.com/dubbo/dubbo-go/plugins"
 	"net/url"
 	"os"
 	"strconv"
@@ -35,6 +36,7 @@ var (
 func init() {
 	processID = fmt.Sprintf("%d", os.Getpid())
 	localIP, _ = gxnet.GetLocalIP()
+	plugins.PluggableRegistries["zookeeper"] = NewZkRegistry
 }
 
 type ZkRegistryConfig struct {
