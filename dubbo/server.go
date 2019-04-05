@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+	"strconv"
 )
 
 import (
@@ -13,62 +14,168 @@ import (
 	jerrors "github.com/juju/errors"
 )
 
-type Server struct {
-	conf          ServerConfig
-	serviceMap    map[string]*service
-	tcpServerList []getty.Server
+import (
+	"github.com/dubbo/dubbo-go/registry"
+)
+
+type Option func(*Options)
+
+type Options struct {
+	Registry        registry.Registry
+	ConfList        []ServerConfig
+	ServiceConfList []registry.DefaultServiceConfig
 }
 
-func NewServer(conf *ServerConfig) (*Server, error) {
-	if err := conf.CheckValidity(); err != nil {
-		return nil, jerrors.Trace(err)
+func newOptions(opt ...Option) Options {
+	opts := Options{}
+	for _, o := range opt {
+		o(&opts)
+	}
+
+	if opts.Registry == nil {
+		panic("server.Options.Registry is nil")
+	}
+
+	return opts
+}
+
+// Registry used for discovery
+func Registry(r registry.Registry) Option {
+	return func(o *Options) {
+		o.Registry = r
+	}
+}
+
+func ConfList(confList []ServerConfig) Option {
+	return func(o *Options) {
+		o.ConfList = confList
+		for i := 0; i < len(o.ConfList); i++ {
+			if err := o.ConfList[i].CheckValidity(); err != nil {
+				log.Error("ServerConfig check failed: ", err)
+				o.ConfList = []ServerConfig{}
+				return
+			}
+			if o.ConfList[i].IP == "" {
+				o.ConfList[i].IP, _ = gxnet.GetLocalIP()
+			}
+		}
+	}
+}
+
+func ServiceConfList(confList []registry.DefaultServiceConfig) Option {
+	return func(o *Options) {
+		o.ServiceConfList = confList
+		if o.ServiceConfList == nil {
+			o.ServiceConfList = []registry.DefaultServiceConfig{}
+		}
+	}
+}
+
+type serviceMap map[string]*service
+
+type Server struct {
+	opts            Options
+	indexOfConfList int
+	srvs            []serviceMap
+	tcpServerList   []getty.Server
+}
+
+func NewServer(opts ...Option) *Server {
+	options := newOptions(opts...)
+	num := len(options.ConfList)
+	servers := make([]serviceMap, len(options.ConfList))
+
+	for i := 0; i < num; i++ {
+		servers[i] = map[string]*service{}
 	}
 
 	s := &Server{
-		serviceMap: make(map[string]*service),
-		conf:       *conf,
+		opts: options,
+		srvs: servers,
 	}
 
-	return s, nil
+	return s
 }
 
+// Register export services and register with the registry
 func (s *Server) Register(rcvr GettyRPCService) error {
-	svc := &service{
-		typ:  reflect.TypeOf(rcvr),
-		rcvr: reflect.ValueOf(rcvr),
-		name: reflect.Indirect(reflect.ValueOf(rcvr)).Type().Name(),
-		// Install the methods
-		method: suitableMethods(reflect.TypeOf(rcvr)),
-	}
-	if svc.name == "" {
-		s := "rpc.Register: no service name for type " + svc.typ.String()
-		log.Error(s)
-		return jerrors.New(s)
-	}
-	if !isExported(svc.name) {
-		s := "rpc.Register: type " + svc.name + " is not exported"
-		log.Error(s)
-		return jerrors.New(s)
-	}
-	if _, present := s.serviceMap[svc.name]; present {
-		return jerrors.New("rpc: service already defined: " + svc.name)
-	}
 
-	if len(svc.method) == 0 {
-		// To help the user, see if a pointer receiver would work.
-		method := suitableMethods(reflect.PtrTo(svc.typ))
-		str := "rpc.Register: type " + svc.name + " has no exported methods of suitable type"
-		if len(method) != 0 {
-			str = "rpc.Register: type " + svc.name + " has no exported methods of suitable type (" +
-				"hint: pass a pointer to value of that type)"
+	var serviceConf registry.ProviderServiceConfig
+
+	opts := s.opts
+
+	serviceConf.Service = rcvr.Service()
+	serviceConf.Version = rcvr.Version()
+
+	flag := false
+	serviceNum := len(opts.ServiceConfList)
+	serverNum := len(opts.ConfList)
+	for i := 0; i < serviceNum; i++ {
+		if opts.ServiceConfList[i].Service == serviceConf.Service &&
+			opts.ServiceConfList[i].Version == serviceConf.Version {
+
+			serviceConf.Protocol = opts.ServiceConfList[i].Protocol
+			serviceConf.Group = opts.ServiceConfList[i].Group
+
+			for j := 0; j < serverNum; j++ {
+				if opts.ConfList[j].Protocol == serviceConf.Protocol {
+					rcvrName := reflect.Indirect(reflect.ValueOf(rcvr)).Type().Name()
+					svc := &service{
+						rcvrType: reflect.TypeOf(rcvr),
+						rcvr:     reflect.ValueOf(rcvr),
+					}
+					if rcvrName == "" {
+						s := "rpc.Register: no service name for type " + svc.rcvrType.String()
+						log.Error(s)
+						return jerrors.New(s)
+					}
+					if !isExported(rcvrName) {
+						s := "rpc.Register: type " + rcvrName + " is not exported"
+						log.Error(s)
+						return jerrors.New(s)
+					}
+
+					svc.name = rcvr.Service() // service name is from 'Service()'
+					if _, present := s.srvs[j][svc.name]; present {
+						return jerrors.New("rpc: service already defined: " + svc.name)
+					}
+
+					// Install the methods
+					mts, methods := suitableMethods(svc.rcvrType)
+					svc.method = methods
+
+					if len(svc.method) == 0 {
+						// To help the user, see if a pointer receiver would work.
+						mts, methods = suitableMethods(reflect.PtrTo(svc.rcvrType))
+						str := "rpc.Register: type " + rcvrName + " has no exported methods of suitable type"
+						if len(methods) != 0 {
+							str = "rpc.Register: type " + rcvrName + " has no exported methods of suitable type (" +
+								"hint: pass a pointer to value of that type)"
+						}
+						log.Error(str)
+
+						return jerrors.New(str)
+					}
+
+					s.srvs[j][svc.name] = svc
+
+					serviceConf.Methods = mts
+					serviceConf.Path = opts.ConfList[j].Address()
+
+					err := opts.Registry.Register(serviceConf)
+					if err != nil {
+						return err
+					}
+					flag = true
+				}
+			}
 		}
-		log.Error(str)
-
-		return jerrors.New(str)
 	}
 
-	s.serviceMap[svc.name] = svc
-
+	if !flag {
+		return jerrors.Errorf("fail to register Handler{service:%s, version:%s}",
+			serviceConf.Service, serviceConf.Version)
+	}
 	return nil
 }
 
@@ -77,8 +184,9 @@ func (s *Server) newSession(session getty.Session) error {
 		ok      bool
 		tcpConn *net.TCPConn
 	)
+	conf := s.opts.ConfList[s.indexOfConfList]
 
-	if s.conf.GettySessionParam.CompressEncoding {
+	if conf.GettySessionParam.CompressEncoding {
 		session.SetCompressType(getty.CompressZip)
 	}
 
@@ -86,24 +194,24 @@ func (s *Server) newSession(session getty.Session) error {
 		panic(fmt.Sprintf("%s, session.conn{%#v} is not tcp connection\n", session.Stat(), session.Conn()))
 	}
 
-	tcpConn.SetNoDelay(s.conf.GettySessionParam.TcpNoDelay)
-	tcpConn.SetKeepAlive(s.conf.GettySessionParam.TcpKeepAlive)
-	if s.conf.GettySessionParam.TcpKeepAlive {
-		tcpConn.SetKeepAlivePeriod(s.conf.GettySessionParam.keepAlivePeriod)
+	tcpConn.SetNoDelay(conf.GettySessionParam.TcpNoDelay)
+	tcpConn.SetKeepAlive(conf.GettySessionParam.TcpKeepAlive)
+	if conf.GettySessionParam.TcpKeepAlive {
+		tcpConn.SetKeepAlivePeriod(conf.GettySessionParam.keepAlivePeriod)
 	}
-	tcpConn.SetReadBuffer(s.conf.GettySessionParam.TcpRBufSize)
-	tcpConn.SetWriteBuffer(s.conf.GettySessionParam.TcpWBufSize)
+	tcpConn.SetReadBuffer(conf.GettySessionParam.TcpRBufSize)
+	tcpConn.SetWriteBuffer(conf.GettySessionParam.TcpWBufSize)
 
-	session.SetName(s.conf.GettySessionParam.SessionName)
-	session.SetMaxMsgLen(s.conf.GettySessionParam.MaxMsgLen)
-	session.SetPkgHandler(NewRpcServerPackageHandler(s))
-	//session.SetEventListener(NewRpcServerHandler(s.conf.SessionNumber, s.conf.sessionTimeout))
-	session.SetRQLen(s.conf.GettySessionParam.PkgRQSize)
-	session.SetWQLen(s.conf.GettySessionParam.PkgWQSize)
-	session.SetReadTimeout(s.conf.GettySessionParam.tcpReadTimeout)
-	session.SetWriteTimeout(s.conf.GettySessionParam.tcpWriteTimeout)
-	session.SetCronPeriod((int)(s.conf.sessionTimeout.Nanoseconds() / 1e6))
-	session.SetWaitTime(s.conf.GettySessionParam.waitTimeout)
+	session.SetName(conf.GettySessionParam.SessionName)
+	session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
+	session.SetPkgHandler(NewRpcServerPackageHandler(s, s.srvs[s.indexOfConfList]))
+	session.SetEventListener(NewRpcServerHandler(conf.SessionNumber, conf.sessionTimeout))
+	session.SetRQLen(conf.GettySessionParam.PkgRQSize)
+	session.SetWQLen(conf.GettySessionParam.PkgWQSize)
+	session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
+	session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
+	session.SetCronPeriod((int)(conf.sessionTimeout.Nanoseconds() / 1e6))
+	session.SetWaitTime(conf.GettySessionParam.waitTimeout)
 	log.Debug("app accepts new session:%s\n", session.Stat())
 
 	return nil
@@ -112,23 +220,24 @@ func (s *Server) newSession(session getty.Session) error {
 func (s *Server) Start() {
 	var (
 		addr      string
-		portList  []string
 		tcpServer getty.Server
 	)
 
-	portList = s.conf.Ports
-	if len(portList) == 0 {
-		panic("portList is nil")
+	if len(s.opts.ConfList) == 0 {
+		panic("ConfList is nil")
 	}
-	for _, port := range portList {
-		addr = gxnet.HostAddress2(s.conf.Host, port)
+
+	for i := 0; i < len(s.opts.ConfList); i++ {
+		addr = gxnet.HostAddress2(s.opts.ConfList[i].IP, strconv.Itoa(s.opts.ConfList[i].Port))
 		tcpServer = getty.NewTCPServer(
 			getty.WithLocalAddress(addr),
 		)
+		s.indexOfConfList = i
 		tcpServer.RunEventLoop(s.newSession)
 		log.Debug("s bind addr{%s} ok!", addr)
 		s.tcpServerList = append(s.tcpServerList, tcpServer)
 	}
+
 }
 
 func (s *Server) Stop() {

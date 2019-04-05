@@ -56,13 +56,17 @@ func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 	return bytes.NewBuffer(pkg), nil
 }
 
-func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, pkgType hessian.PackgeType) error {
+func (p *DubboPackage) Unmarshal(buf *bytes.Buffer) error {
 	codec := hessian.NewHessianCodec(bufio.NewReader(buf))
 
 	// read header
-	err := codec.ReadHeader(&p.Header, pkgType)
+	err := codec.ReadHeader(&p.Header)
 	if err != nil {
 		return jerrors.Trace(err)
+	}
+
+	if p.Header.Type&hessian.Heartbeat != 0x00 {
+		return nil
 	}
 
 	// read body

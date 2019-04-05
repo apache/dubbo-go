@@ -1,6 +1,5 @@
 package client
 
-
 import (
 	"context"
 )
@@ -18,7 +17,6 @@ type Transport interface {
 // Request
 //////////////////////////////////////////////
 
-type Request interface  {
+type Request interface {
 	ServiceConfig() registry.DefaultServiceConfig
 }
-

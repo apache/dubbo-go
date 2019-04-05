@@ -1,6 +1,7 @@
 package dubbo
 
 import (
+	"github.com/dubbo/dubbo-go/server"
 	"time"
 )
 
@@ -31,11 +32,12 @@ type (
 
 	// Config holds supported types by the multiconfig package
 	ServerConfig struct {
+		server.ServerConfig
 		// local address
-		AppName     string   `default:"rpc-server" yaml:"app_name" json:"app_name,omitempty"`
-		Host        string   `default:"127.0.0.1" yaml:"host" json:"host,omitempty"`
-		Ports       []string `yaml:"ports" json:"ports,omitempty"` // `default:["10000"]`
-		ProfilePort int      `default:"10086" yaml:"profile_port" json:"profile_port,omitempty"`
+		//AppName     string   `default:"rpc-server" yaml:"app_name" json:"app_name,omitempty"`
+		//Host        string   `default:"127.0.0.1" yaml:"host" json:"host,omitempty"`
+		//Ports       []string `yaml:"ports" json:"ports,omitempty"` // `default:["10000"]`
+		//ProfilePort int      `default:"10086" yaml:"profile_port" json:"profile_port,omitempty"`
 
 		// session
 		SessionTimeout string `default:"60s" yaml:"session_timeout" json:"session_timeout,omitempty"`
@@ -53,9 +55,9 @@ type (
 	// Config holds supported types by the multiconfig package
 	ClientConfig struct {
 		// local address
-		AppName     string `default:"rpc-client" yaml:"app_name" json:"app_name,omitempty"`
-		Host        string `default:"127.0.0.1" yaml:"host" json:"host,omitempty"`
-		ProfilePort int    `default:"10086" yaml:"profile_port" json:"profile_port,omitempty"`
+		//AppName     string `default:"rpc-client" yaml:"app_name" json:"app_name,omitempty"`
+		//Host        string `default:"127.0.0.1" yaml:"host" json:"host,omitempty"`
+		//ProfilePort int    `default:"10086" yaml:"profile_port" json:"profile_port,omitempty"`
 
 		// session pool
 		ConnectionNum int `default:"16" yaml:"connection_number" json:"connection_number,omitempty"`

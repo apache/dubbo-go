@@ -1,6 +1,6 @@
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
-github.com/AlexStocks/getty v1.0.4 h1:SGv/6104d1GHAi5cm24Q50H9jsXZzEnNX1cmRno7N8s=
-github.com/AlexStocks/getty v1.0.4/go.mod h1:n25mdqPgFi06sWL6mZTjm1hBIZuKwgXUVXAX+KGB97U=
+github.com/AlexStocks/getty v0.0.0-20190331201845-1ca64ac5a589 h1:iat4jfMomN+G0SqwLJRUM2iha0LHwX+VpdT8PR8NihA=
+github.com/AlexStocks/getty v0.0.0-20190331201845-1ca64ac5a589/go.mod h1:n25mdqPgFi06sWL6mZTjm1hBIZuKwgXUVXAX+KGB97U=
 github.com/AlexStocks/goext v0.3.2 h1:Bn4C+R6/E5Yjk2Uc/voawtbGv91x9aCid92xwYL2AS0=
 github.com/AlexStocks/goext v0.3.2 h1:Bn4C+R6/E5Yjk2Uc/voawtbGv91x9aCid92xwYL2AS0=
 github.com/AlexStocks/goext v0.3.2/go.mod h1:3M5j9Pjge4CdkNg2WIjRLUeoPedJHHKwkkglDGSl3Hc=
@@ -80,6 +80,7 @@ github.com/modern-go/reflect2 v1.0.1/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3Rllmb
 github.com/name5566/leaf v0.0.0-20181103040206-1364c176dfbd h1:22rhYEzttbrnKjgYh5pifnDluXHHcJ3uSOi2l8Nw+9A=
 github.com/name5566/leaf v0.0.0-20181103040206-1364c176dfbd/go.mod h1:JrOIxq3vDxvtuEI7Kmm2yqkuBfuT9DMLFMnCyYHLaKM=
 github.com/name5566/leaf v0.0.0-20181103040206-1364c176dfbd/go.mod h1:JrOIxq3vDxvtuEI7Kmm2yqkuBfuT9DMLFMnCyYHLaKM=
+github.com/pkg/errors v0.8.1 h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
