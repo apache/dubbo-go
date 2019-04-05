@@ -1,11 +1,11 @@
 package dubbo
 
 import (
-	"github.com/dubbo/dubbo-go/server"
 	"time"
 )
 
 import (
+	"github.com/dubbo/dubbo-go/server"
 	jerrors "github.com/juju/errors"
 )
 
