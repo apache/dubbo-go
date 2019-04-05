@@ -338,7 +338,9 @@ func (r *ZkRegistry) register(c registry.ServiceConfig) error {
 	}
 	params.Add("revision", revision) // revision是pox.xml中application的version属性的值
 
-	if r.DubboType == registry.PROVIDER {
+	switch r.DubboType {
+
+	case registry.PROVIDER:
 		if conf, ok = c.(registry.ProviderServiceConfig); !ok {
 			return jerrors.Errorf("conf is not ProviderServiceConfig")
 		}
@@ -392,7 +394,7 @@ func (r *ZkRegistry) register(c registry.ServiceConfig) error {
 		dubboPath = fmt.Sprintf("/dubbo/%s/%s", conf.Service(), (registry.DubboType(registry.PROVIDER)).String())
 		log.Debug("provider path:%s, url:%s", dubboPath, rawURL)
 
-	} else if r.DubboType == registry.CONSUMER {
+	case registry.CONSUMER:
 		dubboPath = fmt.Sprintf("/dubbo/%s/%s", c.Service(), registry.DubboNodes[registry.CONSUMER])
 		r.cltLock.Lock()
 		err = r.client.Create(dubboPath)
@@ -431,7 +433,7 @@ func (r *ZkRegistry) register(c registry.ServiceConfig) error {
 
 		dubboPath = fmt.Sprintf("/dubbo/%s/%s", c.Service(), (registry.DubboType(registry.CONSUMER)).String())
 		log.Debug("consumer path:%s, url:%s", dubboPath, rawURL)
-	} else {
+	default:
 		return jerrors.Errorf("@c{%v} type is not DefaultServiceConfig or DefaultProviderServiceConfig", c)
 	}
 
