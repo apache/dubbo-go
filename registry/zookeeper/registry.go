@@ -239,7 +239,6 @@ LOOP:
 	}
 }
 
-
 func (r *ZkRegistry) Register(regConf registry.ServiceConfig) error {
 	var (
 		ok       bool
@@ -306,8 +305,6 @@ func (r *ZkRegistry) Register(regConf registry.ServiceConfig) error {
 
 		log.Debug("(ZkProviderRegistry)Register(conf{%#v})", conf)
 	}
-
-
 
 	return nil
 }

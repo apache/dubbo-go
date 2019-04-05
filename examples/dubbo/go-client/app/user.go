@@ -2,29 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/dubbogo/hessian2"
 	"strconv"
 	"time"
 )
 
 import (
-	"github.com/AlexStocks/goext/time"
+	"github.com/dubbogo/hessian2"
 )
-
-type JsonRPCUser struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Age  int64  `json:"age"`
-	Time int64  `json:"time"`
-	Sex  string `json:"sex"`
-}
-
-func (u JsonRPCUser) String() string {
-	return fmt.Sprintf(
-		"User{ID:%s, Name:%s, Age:%d, Time:%s, Sex:%s}",
-		u.ID, u.Name, u.Age, gxtime.YMDPrint(int(u.Time), 0), u.Sex,
-	)
-}
 
 type Gender hessian.JavaEnum
 
@@ -82,21 +66,4 @@ func (u DubboUser) String() string {
 
 func (DubboUser) JavaClassName() string {
 	return "com.ikurento.user.User"
-}
-
-type Response struct {
-	Status int
-	Err    string
-	Data   int
-}
-
-func (r Response) String() string {
-	return fmt.Sprintf(
-		"Response{Status:%d, Err:%s, Data:%d}",
-		r.Status, r.Err, r.Data,
-	)
-}
-
-func (Response) JavaClassName() string {
-	return "com.ikurento.user.Response"
 }

@@ -12,11 +12,11 @@ import (
 )
 
 import (
+	"github.com/dubbo/dubbo-go/client"
 	"github.com/dubbo/dubbo-go/client/selector"
 	"github.com/dubbo/dubbo-go/dubbo"
 	"github.com/dubbo/dubbo-go/jsonrpc"
 	"github.com/dubbo/dubbo-go/registry"
-	"github.com/dubbo/dubbo-go/client"
 )
 
 const RegistryConnDelay = 3
