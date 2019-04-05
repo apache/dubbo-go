@@ -14,6 +14,9 @@ import (
 	jerrors "github.com/juju/errors"
 )
 
+// todo: WritePkg_Timeout will entry *.yml
+const WritePkg_Timeout = 5*time.Second
+
 var (
 	errTooManySessions = jerrors.New("too many sessions")
 )
@@ -280,7 +283,7 @@ func (h *RpcServerHandler) reply(session getty.Session, req *DubboPackage, tp he
 		resp.Body = nil
 	}
 
-	if err := session.WritePkg(resp, 10*time.Second); err != nil {
+	if err := session.WritePkg(resp, WritePkg_Timeout); err != nil {
 		log.Error("WritePkg error: %#v, %#v", jerrors.Trace(err), req.Header)
 	}
 }
