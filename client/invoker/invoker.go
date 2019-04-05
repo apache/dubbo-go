@@ -16,7 +16,7 @@ import (
 	"github.com/dubbo/dubbo-go/dubbo"
 	"github.com/dubbo/dubbo-go/jsonrpc"
 	"github.com/dubbo/dubbo-go/registry"
-	"github.com/dubbo/dubbo-go/client"
+	"github.com/dubbo/dubbo-go/public"
 )
 
 const RegistryConnDelay = 3
@@ -56,11 +56,12 @@ func WithLBSelector(selector selector.Selector) Option {
 type Invoker struct {
 	Options
 	cacheServiceMap map[string]*ServiceArray
+	ServiceConfig    registry.ServiceConfig
 	registry        registry.Registry
 	listenerLock    sync.Mutex
 }
 
-func NewInvoker(registry registry.Registry, opts ...Option) (*Invoker, error) {
+func NewInvoker(registry registry.Registry, serviceConfig registry.ServiceConfig, opts ...Option) (*Invoker, error) {
 	options := Options{
 		//default 300s
 		ServiceTTL: time.Duration(300e9),
@@ -75,6 +76,7 @@ func NewInvoker(registry registry.Registry, opts ...Option) (*Invoker, error) {
 	invoker := &Invoker{
 		Options:         options,
 		cacheServiceMap: make(map[string]*ServiceArray),
+		ServiceConfig:   serviceConfig,
 		registry:        registry,
 	}
 	go invoker.listen()
@@ -175,9 +177,8 @@ func (ivk *Invoker) getService(registryConf registry.ServiceConfig) (*ServiceArr
 	return newSvcArr, nil
 }
 
-func (ivk *Invoker) HttpCall(ctx context.Context, reqId int64, req client.Request, resp interface{}) error {
-
-	serviceConf := req.ServiceConfig()
+func (ivk *Invoker) HttpCall(reqId int64, method string, args interface{}, resp interface{}) error {
+	serviceConf := ivk.ServiceConfig
 	registryArray, err := ivk.getService(serviceConf)
 	if err != nil {
 		return err
@@ -189,6 +190,21 @@ func (ivk *Invoker) HttpCall(ctx context.Context, reqId int64, req client.Reques
 	if err != nil {
 		return err
 	}
+
+	ctx := context.WithValue(
+		context.Background(),
+		public.DUBBOGO_CTX_KEY,
+		map[string]string{
+			"X-Proxy-Id": "dubbogo",
+			"X-Service": serviceConf.Service(),
+			"X-Method": method,
+		},
+	)
+	req, err := ivk.HttpClient.NewRequest(serviceConf, method, args)
+	if err != nil {
+		log.Error("client.NewRequest() return error:%+v", jerrors.ErrorStack(err))
+		return err
+	}
 	if err = ivk.HttpClient.Call(ctx, url, req, resp); err != nil {
 		log.Error("client.Call() return error:%+v", jerrors.ErrorStack(err))
 		return err
@@ -197,21 +213,22 @@ func (ivk *Invoker) HttpCall(ctx context.Context, reqId int64, req client.Reques
 	return nil
 }
 
-func (ivk *Invoker) DubboCall(reqId int64, registryConf registry.ServiceConfig, method string, args, reply interface{}, opts ...dubbo.CallOption) error {
-
-	registryArray, err := ivk.getService(registryConf)
+func (ivk *Invoker) DubboCall(reqId int64, method string, args interface{}, reply interface{}, opts ...dubbo.CallOption) error {
+	serviceConf := ivk.ServiceConfig
+	registryArray, err := ivk.getService(serviceConf)
 	if err != nil {
 		return err
 	}
 	if len(registryArray.arr) == 0 {
-		return jerrors.New("cannot find svc " + registryConf.String())
+		return jerrors.New("cannot find svc " + serviceConf.String())
 	}
 	url, err := ivk.selector.Select(reqId, registryArray)
 	if err != nil {
 		return err
 	}
+
 	//TODO:这里要改一下call方法改为接收指针类型
-	if err = ivk.DubboClient.Call(url.Ip+":"+url.Port, *url, method, args, reply, opts...); err != nil {
+	if err = ivk.DubboClient.Call(url.Ip + ":" + url.Port, *url, method, args, reply, opts...); err != nil {
 		log.Error("client.Call() return error:%+v", jerrors.ErrorStack(err))
 		return err
 	}

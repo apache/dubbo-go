@@ -23,8 +23,8 @@ import (
 )
 
 const (
-	APP_CONF_FILE     string = "APP_CONF_FILE"
-	APP_LOG_CONF_FILE string = "APP_LOG_CONF_FILE"
+	APP_CONF_FILE     = "APP_CONF_FILE"
+	APP_LOG_CONF_FILE = "APP_LOG_CONF_FILE"
 )
 
 var (
@@ -81,9 +81,7 @@ func initServerConf() *ServerConfig {
 	//动态加载service config
 	//设置默认ProviderServiceConfig类
 	plugins.SetDefaultProviderServiceConfig(conf.ServiceConfigType)
-	fmt.Println(1111)
 	for _, service := range conf.ServiceList {
-
 		svc := plugins.DefaultProviderServiceConfig()()
 		svc.SetProtocol(service["protocol"])
 		fmt.Println(service["protocol"])

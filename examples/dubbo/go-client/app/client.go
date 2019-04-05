@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/dubbo/dubbo-go/dubbo"
 	"github.com/dubbo/dubbo-go/plugins"
 	"github.com/dubbo/dubbo-go/registry/zookeeper"
 	"net/http"
@@ -15,7 +14,6 @@ import (
 )
 
 import (
-	"github.com/AlexStocks/goext/log"
 	"github.com/AlexStocks/goext/net"
 	log "github.com/AlexStocks/log4go"
 	jerrors "github.com/juju/errors"
@@ -26,25 +24,26 @@ import (
 	"github.com/dubbo/dubbo-go/examples"
 	"github.com/dubbo/dubbo-go/public"
 	"github.com/dubbo/dubbo-go/registry"
+	"github.com/dubbo/dubbo-go/dubbo"
+	"github.com/dubbogo/hessian2"
 )
 
 var (
 	survivalTimeout int = 10e9
-	clientInvoker   *invoker.Invoker
+	clientInvokers  []*invoker.Invoker
 )
 
 func main() {
-
 	clientConfig := examples.InitClientConfig()
 	initProfiling(clientConfig)
 	initClient(clientConfig)
 
 	time.Sleep(3e9)
 
-	gxlog.CInfo("\n\n\nstart to test dubbo")
-	testDubborpc(clientConfig, "A003")
-
-	time.Sleep(3e9)
+	log.Info("start to test dubbo")
+	testDubborpc("GetUser", "A003")
+	log.Info("start to test dubbo illegal method")
+	testDubborpc("GetUser1", "A003")
 
 	initSignal()
 }
@@ -98,44 +97,48 @@ func initClient(clientConfig *examples.ClientConfig) {
 			panic(fmt.Sprintf("registry.Register(service{%#v}) = error{%v}", service, jerrors.ErrorStack(err)))
 			return
 		}
+
+		//read the client lb config in config.yml
+		configClientLB := plugins.PluggableLoadbalance[clientConfig.ClientLoadBalance]()
+
+		//init dubbo rpc client & init invoker
+		cltD, err := dubbo.NewClient(&dubbo.ClientConfig{
+			PoolSize:        64,
+			PoolTTL:         600,
+			ConnectionNum:   2, // 不能太大
+			FailFastTimeout: "5s",
+			SessionTimeout:  "20s",
+			HeartbeatPeriod: "5s",
+			GettySessionParam: dubbo.GettySessionParam{
+				CompressEncoding: false, // 必须false
+				TcpNoDelay:       true,
+				KeepAlivePeriod:  "120s",
+				TcpRBufSize:      262144,
+				TcpKeepAlive:     true,
+				TcpWBufSize:      65536,
+				PkgRQSize:        1024,
+				PkgWQSize:        512,
+				TcpReadTimeout:   "1s",
+				TcpWriteTimeout:  "5s",
+				WaitTimeout:      "1s",
+				MaxMsgLen:        1024,
+				SessionName:      "client",
+			},
+		})
+		if err != nil {
+			log.Error("hessian.NewClient(conf) = error:%s", jerrors.ErrorStack(err))
+			return
+		}
+
+		clientInvoker, _ := invoker.NewInvoker(
+			clientRegistry,
+			service,
+			invoker.WithDubboClient(cltD),
+			invoker.WithLBSelector(configClientLB),
+		)
+
+		clientInvokers = append(clientInvokers, clientInvoker)
 	}
-
-	//read the client lb config in config.yml
-	configClientLB := plugins.PluggableLoadbalance[clientConfig.ClientLoadBalance]()
-
-	//init dubbo rpc client & init invoker
-	var cltD *dubbo.Client
-
-	cltD, err = dubbo.NewClient(&dubbo.ClientConfig{
-		PoolSize:        64,
-		PoolTTL:         600,
-		ConnectionNum:   2, // 不能太大
-		FailFastTimeout: "5s",
-		SessionTimeout:  "20s",
-		HeartbeatPeriod: "5s",
-		GettySessionParam: dubbo.GettySessionParam{
-			CompressEncoding: false, // 必须false
-			TcpNoDelay:       true,
-			KeepAlivePeriod:  "120s",
-			TcpRBufSize:      262144,
-			TcpKeepAlive:     true,
-			TcpWBufSize:      65536,
-			PkgRQSize:        1024,
-			PkgWQSize:        512,
-			TcpReadTimeout:   "1s",
-			TcpWriteTimeout:  "5s",
-			WaitTimeout:      "1s",
-			MaxMsgLen:        1024,
-			SessionName:      "client",
-		},
-	})
-	if err != nil {
-		log.Error("hessian.NewClient(conf) = error:%s", jerrors.ErrorStack(err))
-		return
-	}
-	clientInvoker, err = invoker.NewInvoker(clientRegistry,
-		invoker.WithDubboClient(cltD),
-		invoker.WithLBSelector(configClientLB))
 }
 
 func uninitClient() {
@@ -188,6 +191,32 @@ func initSignal() {
 			uninitClient()
 			fmt.Println("app exit now...")
 			return
+		}
+	}
+}
+
+func testDubborpc(method string, userKey string) {
+	// registry pojo
+	hessian.RegisterJavaEnum(Gender(MAN))
+	hessian.RegisterJavaEnum(Gender(WOMAN))
+	hessian.RegisterPOJO(&DubboUser{})
+	hessian.RegisterPOJO(&Response{})
+
+	for _, clientInvoker := range clientInvokers {
+		user := new(DubboUser)
+		err := clientInvoker.DubboCall(
+			1,
+			method,
+			[]interface{}{userKey},
+			user,
+			dubbo.WithCallRequestTimeout(10e9),
+			dubbo.WithCallResponseTimeout(10e9),
+			dubbo.WithCallSerialID(dubbo.S_Dubbo),
+		)
+		if err != nil {
+			log.Error(err)
+		} else {
+			log.Info(user)
 		}
 	}
 }

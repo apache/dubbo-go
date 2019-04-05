@@ -12,7 +12,6 @@ import (
 )
 
 import (
-	"github.com/AlexStocks/goext/log"
 	"github.com/AlexStocks/goext/net"
 	log "github.com/AlexStocks/log4go"
 	jerrors "github.com/juju/errors"
@@ -21,20 +20,19 @@ import (
 import (
 	"github.com/dubbo/dubbo-go/client/invoker"
 	"github.com/dubbo/dubbo-go/examples"
-	"github.com/dubbo/dubbo-go/jsonrpc"
 	"github.com/dubbo/dubbo-go/plugins"
 	"github.com/dubbo/dubbo-go/public"
 	"github.com/dubbo/dubbo-go/registry"
 	"github.com/dubbo/dubbo-go/registry/zookeeper"
+	"github.com/dubbo/dubbo-go/jsonrpc"
 )
 
 var (
 	survivalTimeout int = 10e9
-	clientInvoker   *invoker.Invoker
+	clientInvokers  []*invoker.Invoker
 )
 
 func main() {
-
 	clientConfig := examples.InitClientConfig()
 
 	initProfiling(clientConfig)
@@ -42,13 +40,10 @@ func main() {
 
 	time.Sleep(10e9)
 
-	gxlog.CInfo("\n\n\nstart to test jsonrpc")
-	testJsonrpc(clientConfig, "A003", "GetUser")
-	time.Sleep(3e9)
-
-	gxlog.CInfo("\n\n\nstart to test jsonrpc illegal method")
-
-	testJsonrpc(clientConfig, "A003", "GetUser1")
+	log.Info("start to test jsonrpc")
+	testJsonrpc("GetUser", "A003")
+	log.Info("start to test jsonrpc illegal method")
+	testJsonrpc("GetUser1", "A003")
 
 	initSignal()
 }
@@ -101,23 +96,27 @@ func initClient(clientConfig *examples.ClientConfig) {
 			panic(fmt.Sprintf("registry.Register(service{%#v}) = error{%v}", service, jerrors.ErrorStack(err)))
 			return
 		}
+
+		//read the client lb config in config.yml
+		configClientLB := plugins.PluggableLoadbalance[clientConfig.ClientLoadBalance]()
+
+		//init http client & init invoker
+		clt := jsonrpc.NewHTTPClient(
+			&jsonrpc.HTTPOptions{
+				HandshakeTimeout: clientConfig.ConnectTimeout,
+				HTTPTimeout:      clientConfig.RequestTimeout,
+			},
+		)
+
+		clientInvoker, _ := invoker.NewInvoker(
+			clientRegistry,
+			service,
+			invoker.WithHttpClient(clt),
+			invoker.WithLBSelector(configClientLB),
+		)
+
+		clientInvokers = append(clientInvokers, clientInvoker)
 	}
-
-	//read the client lb config in config.yml
-	configClientLB := plugins.PluggableLoadbalance[clientConfig.ClientLoadBalance]()
-
-	//init http client & init invoker
-	clt := jsonrpc.NewHTTPClient(
-		&jsonrpc.HTTPOptions{
-			HandshakeTimeout: clientConfig.ConnectTimeout,
-			HTTPTimeout:      clientConfig.RequestTimeout,
-		},
-	)
-
-	clientInvoker, err = invoker.NewInvoker(clientRegistry,
-		invoker.WithHttpClient(clt),
-		invoker.WithLBSelector(configClientLB))
-
 }
 
 func uninitClient() {
@@ -170,6 +169,18 @@ func initSignal() {
 			uninitClient()
 			fmt.Println("app exit now...")
 			return
+		}
+	}
+}
+
+func testJsonrpc(method string, userKey string) {
+	for _, clientInvoker := range clientInvokers {
+		user := new(JsonRPCUser)
+		err := clientInvoker.HttpCall(1, method, []string{userKey}, user)
+		if err != nil {
+			log.Error(err)
+		} else {
+			log.Info(user)
 		}
 	}
 }
