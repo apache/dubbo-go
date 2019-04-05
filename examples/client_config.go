@@ -50,9 +50,9 @@ type (
 		Application_Config registry.ApplicationConfig `yaml:"application_config" json:"application_config,omitempty"`
 		ZkRegistryConfig   zookeeper.ZkRegistryConfig `yaml:"zk_registry_config" json:"zk_registry_config,omitempty"`
 		// 一个客户端只允许使用一个service的其中一个group和其中一个version
-		ServiceConfigType  string                   `default:"default" yaml:"service_config_type" json:"service_config_type,omitempty"`
-		ServiceConfig_List []registry.ServiceConfig `yaml:"-"`
-		ServiceConfigList  []map[string]string      `yaml:"service_list" json:"service_list,omitempty"`
+		ServiceConfigType    string                   `default:"default" yaml:"service_config_type" json:"service_config_type,omitempty"`
+		ServiceConfigList    []registry.ServiceConfig `yaml:"-"`
+		ServiceConfigMapList []map[string]string      `yaml:"service_list" json:"service_list,omitempty"`
 	}
 )
 
@@ -90,11 +90,11 @@ func InitClientConfig() *ClientConfig {
 	//设置默认ProviderServiceConfig类
 	plugins.SetDefaultServiceConfig(clientConfig.ServiceConfigType)
 
-	for _, service := range clientConfig.ServiceConfigList {
+	for _, service := range clientConfig.ServiceConfigMapList {
 		svc := plugins.DefaultServiceConfig()()
 		svc.SetProtocol(service["protocol"])
 		svc.SetService(service["service"])
-		clientConfig.ServiceConfig_List = append(clientConfig.ServiceConfig_List, svc)
+		clientConfig.ServiceConfigList = append(clientConfig.ServiceConfigList, svc)
 	}
 	//动态加载service config  end
 
