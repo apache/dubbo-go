@@ -2,7 +2,7 @@ package examples
 
 import (
 	"fmt"
-
+	"github.com/dubbo/dubbo-go/plugins"
 	"io/ioutil"
 	"os"
 	"path"
@@ -13,7 +13,7 @@ import (
 	"github.com/AlexStocks/goext/log"
 	log "github.com/AlexStocks/log4go"
 	jerrors "github.com/juju/errors"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 import (
@@ -50,7 +50,9 @@ type (
 		Application_Config registry.ApplicationConfig `yaml:"application_config" json:"application_config,omitempty"`
 		ZkRegistryConfig   zookeeper.ZkRegistryConfig `yaml:"zk_registry_config" json:"zk_registry_config,omitempty"`
 		// 一个客户端只允许使用一个service的其中一个group和其中一个version
-		Service_List []registry.DefaultServiceConfig `yaml:"service_list" json:"service_list,omitempty"`
+		ServiceConfigType string                   `default:"default" yaml:"service_config_type" json:"service_config_type,omitempty"`
+		Service_List      []registry.ServiceConfig `yaml:"-"`
+		ServiceList       []map[string]string      `yaml:"service_list" json:"service_list,omitempty"`
 	}
 )
 
@@ -83,6 +85,19 @@ func InitClientConfig() *ClientConfig {
 		panic(fmt.Sprintf("yaml.Unmarshal() = error:%s", jerrors.ErrorStack(err)))
 		return nil
 	}
+
+	//动态加载service config
+	//设置默认ProviderServiceConfig类
+	plugins.SetDefaultServiceConfig(clientConfig.ServiceConfigType)
+
+	for _, service := range clientConfig.ServiceList {
+		svc := plugins.DefaultServiceConfig()()
+		svc.SetProtocol(service["protocol"])
+		svc.SetService(service["service"])
+		clientConfig.Service_List = append(clientConfig.Service_List, svc)
+	}
+	//动态加载service config  end
+
 	if clientConfig.ZkRegistryConfig.Timeout, err = time.ParseDuration(clientConfig.ZkRegistryConfig.TimeoutStr); err != nil {
 		panic(fmt.Sprintf("time.ParseDuration(Registry_Config.Timeout:%#v) = error:%s", clientConfig.ZkRegistryConfig.TimeoutStr, err))
 		return nil

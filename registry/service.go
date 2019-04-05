@@ -20,55 +20,134 @@ import (
 type ServiceConfig interface {
 	Key() string
 	String() string
-	ServiceEqual(url *ServiceURL) bool
+	ServiceEqual(url *DefaultServiceURL) bool
+	//your service config implements must contain properties below
+	Service() string
+	Protocol() string
+	Version() string
+	Group() string
+	SetProtocol(string)
+	SetService(string)
+	SetVersion(string)
+	SetGroup(string)
+}
+
+type ProviderServiceConfig interface {
+	//your service config implements must contain properties below
+	ServiceConfig
+	Methods() string
+	Path() string
+	SetMethods(string)
+	SetPath(string)
 }
 
 type DefaultServiceConfig struct {
-	Protocol string `required:"true",default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty"`
-	Service  string `required:"true"  yaml:"service"  json:"service,omitempty"`
-	Group    string `yaml:"group" json:"group,omitempty"`
-	Version  string `yaml:"version" json:"version,omitempty"`
+	DProtocol string `required:"true",default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty"`
+	DService  string `required:"true"  yaml:"service"  json:"service,omitempty"`
+	DGroup    string `yaml:"group" json:"group,omitempty"`
+	DVersion  string `yaml:"version" json:"version,omitempty"`
 }
 
-func (c DefaultServiceConfig) Key() string {
-	return fmt.Sprintf("%s@%s", c.Service, c.Protocol)
+func NewDefaultServiceConfig() ServiceConfig {
+	return &DefaultServiceConfig{}
 }
 
-func (c DefaultServiceConfig) String() string {
-	return fmt.Sprintf("%s@%s-%s-%s", c.Service, c.Protocol, c.Group, c.Version)
+func (c *DefaultServiceConfig) Key() string {
+	return fmt.Sprintf("%s@%s", c.DService, c.DProtocol)
 }
 
-func (c DefaultServiceConfig) ServiceEqual(url *ServiceURL) bool {
-	if c.Protocol != url.Protocol {
+func (c *DefaultServiceConfig) String() string {
+	return fmt.Sprintf("%s@%s-%s-%s", c.DService, c.DProtocol, c.DGroup, c.DVersion)
+}
+
+func (c *DefaultServiceConfig) ServiceEqual(url *DefaultServiceURL) bool {
+	if c.DProtocol != url.Protocol {
 		return false
 	}
 
-	if c.Service != url.Query.Get("interface") {
+	if c.DService != url.Query.Get("interface") {
 		return false
 	}
 
-	if c.Group != url.Group {
+	if c.DGroup != url.Group {
 		return false
 	}
 
-	if c.Version != url.Version {
+	if c.DVersion != url.Version {
 		return false
 	}
 
 	return true
 }
 
-type ProviderServiceConfig struct {
-	DefaultServiceConfig
-	Path    string `yaml:"path" json:"path,omitempty"`
-	Methods string `yaml:"methods" json:"methods,omitempty"`
+func (c *DefaultServiceConfig) Service() string {
+	return c.DService
+}
+
+func (c *DefaultServiceConfig) Protocol() string {
+	return c.DProtocol
+}
+
+func (c *DefaultServiceConfig) Version() string {
+	return c.DVersion
+}
+
+func (c *DefaultServiceConfig) Group() string {
+	return c.DGroup
+}
+func (c *DefaultServiceConfig) SetProtocol(s string) {
+	c.DProtocol = s
+}
+
+func (c *DefaultServiceConfig) SetService(s string) {
+	c.DService = s
+}
+func (c *DefaultServiceConfig) SetVersion(s string) {
+	c.DVersion = s
+}
+
+func (c *DefaultServiceConfig) SetGroup(s string) {
+	c.DGroup = s
+}
+
+type DefaultProviderServiceConfig struct {
+	*DefaultServiceConfig
+	DPath    string `yaml:"path" json:"path,omitempty"`
+	DMethods string `yaml:"methods" json:"methods,omitempty"`
+}
+
+func NewDefaultProviderServiceConfig() ProviderServiceConfig {
+	return &DefaultProviderServiceConfig{
+		DefaultServiceConfig: NewDefaultServiceConfig().(*DefaultServiceConfig),
+	}
+}
+
+func (c *DefaultProviderServiceConfig) Methods() string {
+	return c.DMethods
+}
+
+func (c *DefaultProviderServiceConfig) Path() string {
+	return c.DPath
+}
+
+func (c *DefaultProviderServiceConfig) SetMethods(s string) {
+	c.DMethods = s
+}
+
+func (c *DefaultProviderServiceConfig) SetPath(s string) {
+	c.DPath = s
 }
 
 //////////////////////////////////////////
 // service url
 //////////////////////////////////////////
 
-type ServiceURL struct {
+type ServiceURL interface {
+	ServiceConfig() ServiceConfig
+	CheckMethod(string) bool
+}
+
+type DefaultServiceURL struct {
 	Protocol     string
 	Location     string // ip+port
 	Path         string // like  /com.ikurento.dubbo.UserProvider3
@@ -82,12 +161,12 @@ type ServiceURL struct {
 	PrimitiveURL string
 }
 
-func NewServiceURL(urlString string) (*ServiceURL, error) {
+func NewDefaultServiceURL(urlString string) (*DefaultServiceURL, error) {
 	var (
 		err          error
 		rawUrlString string
 		serviceUrl   *url.URL
-		s            = &ServiceURL{}
+		s            = &DefaultServiceURL{}
 	)
 
 	rawUrlString, err = url.QueryUnescape(urlString)
@@ -131,25 +210,25 @@ func NewServiceURL(urlString string) (*ServiceURL, error) {
 	return s, nil
 }
 
-func (s ServiceURL) String() string {
+func (s DefaultServiceURL) String() string {
 	return fmt.Sprintf(
-		"ServiceURL{Protocol:%s, Location:%s, Path:%s, Ip:%s, Port:%s, "+
+		"DefaultServiceURL{Protocol:%s, Location:%s, Path:%s, Ip:%s, Port:%s, "+
 			"Timeout:%s, Version:%s, Group:%s, Weight:%d, Query:%+v}",
 		s.Protocol, s.Location, s.Path, s.Ip, s.Port,
 		s.Timeout, s.Version, s.Group, s.Weight, s.Query)
 }
 
-func (s *ServiceURL) ServiceConfig() DefaultServiceConfig {
+func (s *DefaultServiceURL) ServiceConfig() ServiceConfig {
 	interfaceName := s.Query.Get("interface")
-	return DefaultServiceConfig{
-		Protocol: s.Protocol,
-		Service:  interfaceName,
-		Group:    s.Group,
-		Version:  s.Version,
+	return &DefaultServiceConfig{
+		DProtocol: s.Protocol,
+		DService:  interfaceName,
+		DGroup:    s.Group,
+		DVersion:  s.Version,
 	}
 }
 
-func (s *ServiceURL) CheckMethod(method string) bool {
+func (s *DefaultServiceURL) CheckMethod(method string) bool {
 	var (
 		methodArray []string
 	)
