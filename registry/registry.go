@@ -15,7 +15,7 @@ type Registry interface {
 	Subscribe() (Listener, error)
 
 	//input the serviceConfig , registry should return serviceUrlArray with multi location(provider nodes) available
-	GetService(DefaultServiceConfig) ([]*ServiceURL, error)
+	GetService(ServiceConfig) ([]ServiceURL, error)
 	//close the registry for Elegant closing
 	Close()
 	//return if the registry is closed for consumer subscribing

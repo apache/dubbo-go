@@ -85,14 +85,14 @@ func initClient(clientConfig *examples.ClientConfig) {
 		return
 	}
 
-	for idx := range clientConfig.Service_List {
-		codecType = public.GetCodecType(clientConfig.Service_List[idx].Protocol)
+	for idx := range clientConfig.ServiceConfigList {
+		codecType = public.GetCodecType(clientConfig.ServiceConfigList[idx].Protocol())
 		if codecType == public.CODECTYPE_UNKNOWN {
-			panic(fmt.Sprintf("unknown protocol %s", clientConfig.Service_List[idx].Protocol))
+			panic(fmt.Sprintf("unknown protocol %s", clientConfig.ServiceConfigList[idx].Protocol()))
 		}
 	}
 
-	for _, service := range clientConfig.Service_List {
+	for _, service := range clientConfig.ServiceConfigList {
 		err = clientRegistry.Register(service)
 		if err != nil {
 			panic(fmt.Sprintf("registry.Register(service{%#v}) = error{%v}", service, jerrors.ErrorStack(err)))
