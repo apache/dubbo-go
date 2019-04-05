@@ -152,9 +152,9 @@ func (c *Client) call(ct CallType, addr string, svcUrl registry.ServiceURL, meth
 	}
 
 	p := &DubboPackage{}
-	p.Service.Path = strings.TrimPrefix(svcUrl.Path, "/")
-	p.Service.Target = strings.TrimPrefix(svcUrl.Path, "/")
-	p.Service.Version = svcUrl.Version
+	p.Service.Path = strings.TrimPrefix(svcUrl.Path(), "/")
+	p.Service.Target = strings.TrimPrefix(svcUrl.Path(), "/")
+	p.Service.Version = svcUrl.Version()
 	p.Service.Method = method
 	p.Service.Timeout = opts.RequestTimeout
 	//if opts.SerialID == 0 || opts.SerialID == 1 || opts.SerialID == 3 || opts.SerialID == 4 || opts.SerialID == 5 || opts.SerialID == 6 ||
