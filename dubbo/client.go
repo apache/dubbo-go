@@ -104,7 +104,7 @@ func NewClient(conf *ClientConfig) (*Client, error) {
 }
 
 // call one way
-func (c *Client) CallOneway(addr string, svcUrl registry.DefaultServiceURL, method string, args interface{}, opts ...CallOption) error {
+func (c *Client) CallOneway(addr string, svcUrl registry.ServiceURL, method string, args interface{}, opts ...CallOption) error {
 	var copts CallOptions
 
 	for _, o := range opts {
@@ -115,7 +115,7 @@ func (c *Client) CallOneway(addr string, svcUrl registry.DefaultServiceURL, meth
 }
 
 // if @reply is nil, the transport layer will get the response without notify the invoker.
-func (c *Client) Call(addr string, svcUrl registry.DefaultServiceURL, method string, args, reply interface{}, opts ...CallOption) error {
+func (c *Client) Call(addr string, svcUrl registry.ServiceURL, method string, args, reply interface{}, opts ...CallOption) error {
 	var copts CallOptions
 
 	for _, o := range opts {
@@ -130,7 +130,7 @@ func (c *Client) Call(addr string, svcUrl registry.DefaultServiceURL, method str
 	return jerrors.Trace(c.call(ct, addr, svcUrl, method, args, reply, nil, copts))
 }
 
-func (c *Client) AsyncCall(addr string, svcUrl registry.DefaultServiceURL, method string, args interface{},
+func (c *Client) AsyncCall(addr string, svcUrl registry.ServiceURL, method string, args interface{},
 	callback AsyncCallback, reply interface{}, opts ...CallOption) error {
 
 	var copts CallOptions
@@ -141,7 +141,7 @@ func (c *Client) AsyncCall(addr string, svcUrl registry.DefaultServiceURL, metho
 	return jerrors.Trace(c.call(CT_TwoWay, addr, svcUrl, method, args, reply, callback, copts))
 }
 
-func (c *Client) call(ct CallType, addr string, svcUrl registry.DefaultServiceURL, method string,
+func (c *Client) call(ct CallType, addr string, svcUrl registry.ServiceURL, method string,
 	args, reply interface{}, callback AsyncCallback, opts CallOptions) error {
 
 	if opts.RequestTimeout == 0 {
@@ -152,9 +152,9 @@ func (c *Client) call(ct CallType, addr string, svcUrl registry.DefaultServiceUR
 	}
 
 	p := &DubboPackage{}
-	p.Service.Path = strings.TrimPrefix(svcUrl.Path, "/")
-	p.Service.Target = strings.TrimPrefix(svcUrl.Path, "/")
-	p.Service.Version = svcUrl.Version
+	p.Service.Path = strings.TrimPrefix(svcUrl.Path(), "/")
+	p.Service.Target = strings.TrimPrefix(svcUrl.Path(), "/")
+	p.Service.Version = svcUrl.Version()
 	p.Service.Method = method
 	p.Service.Timeout = opts.RequestTimeout
 	//if opts.SerialID == 0 || opts.SerialID == 1 || opts.SerialID == 3 || opts.SerialID == 4 || opts.SerialID == 5 || opts.SerialID == 6 ||

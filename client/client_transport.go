@@ -9,7 +9,7 @@ import (
 )
 
 type Transport interface {
-	Call(ctx context.Context, url *registry.DefaultServiceURL, request Request, resp interface{}) error
+	Call(ctx context.Context, url registry.ServiceURL, request Request, resp interface{}) error
 	NewRequest(conf registry.ServiceConfig, method string, args interface{}) (Request,error)
 }
 

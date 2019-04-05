@@ -20,7 +20,7 @@ import (
 type ServiceConfig interface {
 	Key() string
 	String() string
-	ServiceEqual(url *DefaultServiceURL) bool
+	ServiceEqual(url ServiceURL) bool
 	//your service config implements must contain properties below
 	Service() string
 	Protocol() string
@@ -60,20 +60,20 @@ func (c *DefaultServiceConfig) String() string {
 	return fmt.Sprintf("%s@%s-%s-%s", c.DService, c.DProtocol, c.DGroup, c.DVersion)
 }
 
-func (c *DefaultServiceConfig) ServiceEqual(url *DefaultServiceURL) bool {
-	if c.DProtocol != url.Protocol {
+func (c *DefaultServiceConfig) ServiceEqual(url ServiceURL) bool {
+	if c.DProtocol != url.Protocol() {
 		return false
 	}
 
-	if c.DService != url.Query.Get("interface") {
+	if c.DService != url.Query().Get("interface") {
 		return false
 	}
 
-	if c.DGroup != url.Group {
+	if c.DGroup != url.Group() {
 		return false
 	}
 
-	if c.DVersion != url.Version {
+	if c.DVersion != url.Version() {
 		return false
 	}
 
@@ -145,23 +145,33 @@ func (c *DefaultProviderServiceConfig) SetPath(s string) {
 type ServiceURL interface {
 	ServiceConfig() ServiceConfig
 	CheckMethod(string) bool
+	PrimitiveURL() string
+	Query() url.Values
+	Location() string
+	Timeout() time.Duration
+	Group() string
+	Protocol() string
+	Version() string
+	Ip() string
+	Port() string
+	Path() string
 }
 
 type DefaultServiceURL struct {
-	Protocol     string
-	Location     string // ip+port
-	Path         string // like  /com.ikurento.dubbo.UserProvider3
-	Ip           string
-	Port         string
-	Timeout      time.Duration
-	Version      string
-	Group        string
-	Query        url.Values
-	Weight       int32
-	PrimitiveURL string
+	DProtocol     string
+	DLocation     string // ip+port
+	DPath         string // like  /com.ikurento.dubbo.UserProvider3
+	DIp           string
+	DPort         string
+	DTimeout      time.Duration
+	DVersion      string
+	DGroup        string
+	DQuery        url.Values
+	Weight        int32
+	DPrimitiveURL string
 }
 
-func NewDefaultServiceURL(urlString string) (*DefaultServiceURL, error) {
+func NewDefaultServiceURL(urlString string) (ServiceURL, error) {
 	var (
 		err          error
 		rawUrlString string
@@ -179,31 +189,31 @@ func NewDefaultServiceURL(urlString string) (*DefaultServiceURL, error) {
 		return nil, jerrors.Errorf("url.Parse(url string{%s}),  error{%v}", rawUrlString, err)
 	}
 
-	s.Query, err = url.ParseQuery(serviceUrl.RawQuery)
+	s.DQuery, err = url.ParseQuery(serviceUrl.RawQuery)
 	if err != nil {
 		return nil, jerrors.Errorf("url.ParseQuery(raw url string{%s}),  error{%v}", serviceUrl.RawQuery, err)
 	}
 
-	s.PrimitiveURL = urlString
-	s.Protocol = serviceUrl.Scheme
-	s.Location = serviceUrl.Host
-	s.Path = serviceUrl.Path
-	if strings.Contains(s.Location, ":") {
-		s.Ip, s.Port, err = net.SplitHostPort(s.Location)
+	s.DPrimitiveURL = urlString
+	s.DProtocol = serviceUrl.Scheme
+	s.DLocation = serviceUrl.Host
+	s.DPath = serviceUrl.Path
+	if strings.Contains(s.DLocation, ":") {
+		s.DIp, s.DPort, err = net.SplitHostPort(s.DLocation)
 		if err != nil {
-			return nil, jerrors.Errorf("net.SplitHostPort(Url.Host{%s}), error{%v}", s.Location, err)
+			return nil, jerrors.Errorf("net.SplitHostPort(Url.Host{%s}), error{%v}", s.DLocation, err)
 		}
 	}
-	s.Group = s.Query.Get("group")
-	s.Version = s.Query.Get("version")
-	timeoutStr := s.Query.Get("timeout")
+	s.DGroup = s.DQuery.Get("group")
+	s.DVersion = s.DQuery.Get("version")
+	timeoutStr := s.DQuery.Get("timeout")
 	if len(timeoutStr) == 0 {
-		timeoutStr = s.Query.Get("default.timeout")
+		timeoutStr = s.DQuery.Get("default.timeout")
 	}
 	if len(timeoutStr) != 0 {
 		timeout, err := strconv.Atoi(timeoutStr)
 		if err == nil && timeout != 0 {
-			s.Timeout = time.Duration(timeout * 1e6) // timeout unit is millisecond
+			s.DTimeout = time.Duration(timeout * 1e6) // timeout unit is millisecond
 		}
 	}
 
@@ -214,17 +224,17 @@ func (s DefaultServiceURL) String() string {
 	return fmt.Sprintf(
 		"DefaultServiceURL{Protocol:%s, Location:%s, Path:%s, Ip:%s, Port:%s, "+
 			"Timeout:%s, Version:%s, Group:%s, Weight:%d, Query:%+v}",
-		s.Protocol, s.Location, s.Path, s.Ip, s.Port,
-		s.Timeout, s.Version, s.Group, s.Weight, s.Query)
+		s.DProtocol, s.DLocation, s.DPath, s.DIp, s.DPort,
+		s.DTimeout, s.DVersion, s.DGroup, s.Weight, s.DQuery)
 }
 
 func (s *DefaultServiceURL) ServiceConfig() ServiceConfig {
-	interfaceName := s.Query.Get("interface")
+	interfaceName := s.DQuery.Get("interface")
 	return &DefaultServiceConfig{
-		DProtocol: s.Protocol,
+		DProtocol: s.DProtocol,
 		DService:  interfaceName,
-		DGroup:    s.Group,
-		DVersion:  s.Version,
+		DGroup:    s.DGroup,
+		DVersion:  s.DVersion,
 	}
 }
 
@@ -233,7 +243,7 @@ func (s *DefaultServiceURL) CheckMethod(method string) bool {
 		methodArray []string
 	)
 
-	methodArray = strings.Split(s.Query.Get("methods"), ",")
+	methodArray = strings.Split(s.DQuery.Get("methods"), ",")
 	for _, m := range methodArray {
 		if m == method {
 			return true
@@ -241,4 +251,43 @@ func (s *DefaultServiceURL) CheckMethod(method string) bool {
 	}
 
 	return false
+}
+
+func (s *DefaultServiceURL) PrimitiveURL() string {
+	return s.DPrimitiveURL
+}
+
+func (s *DefaultServiceURL) Timeout() time.Duration {
+	return s.DTimeout
+}
+func (s *DefaultServiceURL) Location() string {
+	return s.DLocation
+}
+
+func (s *DefaultServiceURL) Query() url.Values {
+	return s.DQuery
+}
+
+func (s *DefaultServiceURL) Group() string {
+	return s.DGroup
+}
+
+func (s *DefaultServiceURL) Protocol() string {
+	return s.DProtocol
+}
+
+func (s *DefaultServiceURL) Version() string {
+	return s.DVersion
+}
+
+func (s *DefaultServiceURL) Ip() string {
+	return s.DIp
+}
+
+func (s *DefaultServiceURL) Port() string {
+	return s.DPort
+}
+
+func (s *DefaultServiceURL) Path() string {
+	return s.DPath
 }

@@ -36,7 +36,7 @@ func (t ServiceEventType) String() string {
 
 type ServiceEvent struct {
 	Action  ServiceEventType
-	Service *DefaultServiceURL
+	Service ServiceURL
 }
 
 func (e ServiceEvent) String() string {

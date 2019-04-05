@@ -25,12 +25,12 @@ var (
 )
 
 type ServiceArray struct {
-	arr   []*registry.DefaultServiceURL
+	arr   []registry.ServiceURL
 	birth time.Time
 	idx   int64
 }
 
-func newServiceArray(arr []*registry.DefaultServiceURL) *ServiceArray {
+func newServiceArray(arr []registry.ServiceURL) *ServiceArray {
 	return &ServiceArray{
 		arr:   arr,
 		birth: time.Now(),
@@ -45,7 +45,7 @@ func (s *ServiceArray) GetSize() int64 {
 	return int64(len(s.arr))
 }
 
-func (s *ServiceArray) GetService(i int64) *registry.DefaultServiceURL {
+func (s *ServiceArray) GetService(i int64) registry.ServiceURL {
 	return s.arr[i]
 }
 
@@ -60,14 +60,14 @@ func (s *ServiceArray) String() string {
 	return builder.String()
 }
 
-func (s *ServiceArray) add(registry *registry.DefaultServiceURL, ttl time.Duration) {
+func (s *ServiceArray) add(registry registry.ServiceURL, ttl time.Duration) {
 	s.arr = append(s.arr, registry)
 	s.birth = time.Now().Add(ttl)
 }
 
-func (s *ServiceArray) del(registry *registry.DefaultServiceURL, ttl time.Duration) {
+func (s *ServiceArray) del(registry registry.ServiceURL, ttl time.Duration) {
 	for i, svc := range s.arr {
-		if svc.PrimitiveURL == registry.PrimitiveURL {
+		if svc.PrimitiveURL() == registry.PrimitiveURL() {
 			s.arr = append(s.arr[:i], s.arr[i+1:]...)
 			s.birth = time.Now().Add(ttl)
 			break

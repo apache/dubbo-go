@@ -10,20 +10,21 @@ import (
 )
 
 import (
+	"github.com/dubbo/dubbo-go/plugins"
 	"github.com/dubbo/dubbo-go/registry"
 )
 
 // name: service@protocol
-func (r *ZkRegistry) GetService(conf registry.ServiceConfig) ([]*registry.DefaultServiceURL, error) {
+func (r *ZkRegistry) GetService(conf registry.ServiceConfig) ([]registry.ServiceURL, error) {
 
 	var (
-		err           error
-		dubboPath     string
-		nodes         []string
-		listener      *zkEventListener
-		serviceURL    *registry.DefaultServiceURL
+		err         error
+		dubboPath   string
+		nodes       []string
+		listener    *zkEventListener
+		serviceURL  registry.ServiceURL
 		serviceConf registry.ServiceConfig
-		ok            bool
+		ok          bool
 	)
 	r.listenerLock.Lock()
 	listener = r.listener
@@ -56,9 +57,10 @@ func (r *ZkRegistry) GetService(conf registry.ServiceConfig) ([]*registry.Defaul
 		return nil, jerrors.Trace(err)
 	}
 
-	var listenerServiceMap = make(map[string]*registry.DefaultServiceURL)
+	var listenerServiceMap = make(map[string]registry.ServiceURL)
 	for _, n := range nodes {
-		serviceURL, err = registry.NewDefaultServiceURL(n)
+
+		serviceURL, err = plugins.DefaultServiceURL()(n)
 		if err != nil {
 			log.Error("NewDefaultServiceURL({%s}) = error{%v}", n, err)
 			continue
@@ -68,14 +70,14 @@ func (r *ZkRegistry) GetService(conf registry.ServiceConfig) ([]*registry.Defaul
 			continue
 		}
 
-		_, ok := listenerServiceMap[serviceURL.Query.Get(serviceURL.Location)]
+		_, ok := listenerServiceMap[serviceURL.Query().Get(serviceURL.Location())]
 		if !ok {
-			listenerServiceMap[serviceURL.Location] = serviceURL
+			listenerServiceMap[serviceURL.Location()] = serviceURL
 			continue
 		}
 	}
 
-	var services []*registry.DefaultServiceURL
+	var services []registry.ServiceURL
 	for _, service := range listenerServiceMap {
 		services = append(services, service)
 	}
@@ -90,7 +92,7 @@ func (r *ZkRegistry) Subscribe() (registry.Listener, error) {
 
 func (r *ZkRegistry) getListener() (*zkEventListener, error) {
 	var (
-		zkListener  *zkEventListener
+		zkListener *zkEventListener
 	)
 
 	r.listenerLock.Lock()
@@ -117,7 +119,7 @@ func (r *ZkRegistry) getListener() (*zkEventListener, error) {
 	// listen
 	r.cltLock.Lock()
 	for _, svs := range r.services {
-			go zkListener.listenServiceEvent(svs)
+		go zkListener.listenServiceEvent(svs)
 	}
 	r.cltLock.Unlock()
 

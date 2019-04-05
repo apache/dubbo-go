@@ -16,7 +16,7 @@ func NewRandomSelector() Selector {
 	return &RandomSelector{}
 }
 
-func (s *RandomSelector) Select(ID int64, array client.ServiceArrayIf) (*registry.DefaultServiceURL, error) {
+func (s *RandomSelector) Select(ID int64, array client.ServiceArrayIf) (registry.ServiceURL, error) {
 	if array.GetSize() == 0 {
 		return nil, ServiceArrayEmpty
 	}
