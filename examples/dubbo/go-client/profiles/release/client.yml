@@ -28,7 +28,7 @@ zk_registry_config:
     timeout	: "3s"
     address:
         - "127.0.0.1:2181"
-
+service_config_type: "default"
 service_list:
     -
         protocol : "dubbo"
