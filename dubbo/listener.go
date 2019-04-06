@@ -15,7 +15,7 @@ import (
 )
 
 // todo: WritePkg_Timeout will entry *.yml
-const WritePkg_Timeout = 5*time.Second
+const WritePkg_Timeout = 5 * time.Second
 
 var (
 	errTooManySessions = jerrors.New("too many sessions")

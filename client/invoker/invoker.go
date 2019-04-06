@@ -133,7 +133,7 @@ func (ivk *Invoker) update(res *registry.ServiceEvent) {
 		if ok {
 			svcArr.add(res.Service, ivk.ServiceTTL)
 		} else {
-			ivk.cacheServiceMap[registryKey] = newServiceArray([]*registry.ServiceURL{res.Service})
+			ivk.cacheServiceMap[registryKey] = newServiceArray([]registry.ServiceURL{res.Service})
 		}
 	case registry.ServiceDel:
 		if ok {
@@ -143,11 +143,11 @@ func (ivk *Invoker) update(res *registry.ServiceEvent) {
 				log.Warn("delete registry %s from registry map", registryKey)
 			}
 		}
-		log.Error("selector delete registryURL{%s}", *res.Service)
+		log.Error("selector delete registryURL{%s}", res.Service)
 	}
 }
 
-func (ivk *Invoker) getService(registryConf registry.DefaultServiceConfig) (*ServiceArray, error) {
+func (ivk *Invoker) getService(registryConf registry.ServiceConfig) (*ServiceArray, error) {
 	defer ivk.listenerLock.Unlock()
 
 	registryKey := registryConf.Key()
@@ -197,7 +197,7 @@ func (ivk *Invoker) HttpCall(ctx context.Context, reqId int64, req client.Reques
 	return nil
 }
 
-func (ivk *Invoker) DubboCall(reqId int64, registryConf registry.DefaultServiceConfig, method string, args, reply interface{}, opts ...dubbo.CallOption) error {
+func (ivk *Invoker) DubboCall(reqId int64, registryConf registry.ServiceConfig, method string, args, reply interface{}, opts ...dubbo.CallOption) error {
 
 	registryArray, err := ivk.getService(registryConf)
 	if err != nil {
@@ -211,7 +211,7 @@ func (ivk *Invoker) DubboCall(reqId int64, registryConf registry.DefaultServiceC
 		return err
 	}
 	//TODO:这里要改一下call方法改为接收指针类型
-	if err = ivk.DubboClient.Call(url.Ip+":"+url.Port, *url, method, args, reply, opts...); err != nil {
+	if err = ivk.DubboClient.Call(url.Ip()+":"+url.Port(), url, method, args, reply, opts...); err != nil {
 		log.Error("client.Call() return error:%+v", jerrors.ErrorStack(err))
 		return err
 	}
