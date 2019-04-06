@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/dubbo/dubbo-go/plugins"
 	"io/ioutil"
 	"os"
 	"path"
@@ -43,10 +44,13 @@ type (
 		// application
 		Application_Config registry.ApplicationConfig `yaml:"application_config" json:"application_config,omitempty"`
 		// Registry_Address  string `default:"192.168.35.3:2181"`
-		Registry         string                          `default:"zookeeper"  yaml:"registry" json:"registry,omitempty"`
-		ZkRegistryConfig zookeeper.ZkRegistryConfig      `yaml:"zk_registry_config" json:"zk_registry_config,omitempty"`
-		Service_List     []registry.DefaultServiceConfig `yaml:"service_list" json:"service_list,omitempty"`
-		Server_List      []server.ServerConfig           `yaml:"server_list" json:"server_list,omitempty"`
+		Registry         string                     `default:"zookeeper"  yaml:"registry" json:"registry,omitempty"`
+		ZkRegistryConfig zookeeper.ZkRegistryConfig `yaml:"zk_registry_config" json:"zk_registry_config,omitempty"`
+
+		ServiceConfigType    string                   `default:"default" yaml:"service_config_type" json:"service_config_type,omitempty"`
+		ServiceConfigList    []registry.ServiceConfig `yaml:"-"`
+		ServiceConfigMapList []map[string]string      `yaml:"service_list" json:"service_list,omitempty"`
+		Server_List          []server.ServerConfig    `yaml:"server_list" json:"server_list,omitempty"`
 	}
 )
 
@@ -85,6 +89,16 @@ func initServerConf() *ServerConfig {
 		panic(fmt.Sprintf("time.ParseDuration(Registry_Config.Timeout:%#v) = error:%s",
 			conf.ZkRegistryConfig.TimeoutStr, err))
 		return nil
+	}
+
+	// set designated service_config_type to default
+	plugins.SetDefaultProviderServiceConfig(conf.ServiceConfigType)
+	for _, service := range conf.ServiceConfigMapList {
+
+		svc := plugins.DefaultProviderServiceConfig()()
+		svc.SetProtocol(service["protocol"])
+		svc.SetService(service["service"])
+		conf.ServiceConfigList = append(conf.ServiceConfigList, svc)
 	}
 
 	gxlog.CInfo("config{%#v}\n", conf)

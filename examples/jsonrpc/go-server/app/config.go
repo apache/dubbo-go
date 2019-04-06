@@ -12,10 +12,11 @@ import (
 	"github.com/AlexStocks/goext/log"
 	log "github.com/AlexStocks/log4go"
 	jerrors "github.com/juju/errors"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 import (
+	"github.com/dubbo/dubbo-go/plugins"
 	"github.com/dubbo/dubbo-go/registry"
 	"github.com/dubbo/dubbo-go/registry/zookeeper"
 	"github.com/dubbo/dubbo-go/server"
@@ -43,10 +44,14 @@ type (
 		// application
 		Application_Config registry.ApplicationConfig `yaml:"application_config" json:"application_config,omitempty"`
 		// Registry_Address  string `default:"192.168.35.3:2181"`
-		Registry         string                          `default:"zookeeper"  yaml:"registry" json:"registry,omitempty"`
-		ZkRegistryConfig zookeeper.ZkRegistryConfig      `yaml:"zk_registry_config" json:"zk_registry_config,omitempty"`
-		Service_List     []registry.DefaultServiceConfig `yaml:"service_list" json:"service_list,omitempty"`
-		Server_List      []server.ServerConfig           `yaml:"server_list" json:"server_list,omitempty"`
+		Registry         string                     `default:"zookeeper"  yaml:"registry" json:"registry,omitempty"`
+		ZkRegistryConfig zookeeper.ZkRegistryConfig `yaml:"zk_registry_config" json:"zk_registry_config,omitempty"`
+
+		ServiceConfigType    string                           `default:"default" yaml:"service_config_type" json:"service_config_type,omitempty"`
+		ServiceConfigList    []registry.ProviderServiceConfig `yaml:"-"`
+		ServiceConfigMapList []map[string]string              `yaml:"service_list" json:"service_list,omitempty"`
+
+		ServerConfigList []server.ServerConfig `yaml:"server_list" json:"server_list,omitempty"`
 	}
 )
 
@@ -73,6 +78,18 @@ func initServerConf() *ServerConfig {
 		return nil
 	}
 	err = yaml.Unmarshal(confFileStream, conf)
+
+	//动态加载service config
+	//设置默认ProviderServiceConfig类
+	plugins.SetDefaultProviderServiceConfig(conf.ServiceConfigType)
+	for _, service := range conf.ServiceConfigMapList {
+
+		svc := plugins.DefaultProviderServiceConfig()()
+		svc.SetProtocol(service["protocol"])
+		svc.SetService(service["service"])
+		conf.ServiceConfigList = append(conf.ServiceConfigList, svc)
+	}
+	//动态加载service config  end
 	if err != nil {
 		panic(fmt.Sprintf("yaml.Unmarshal() = error:%s", jerrors.ErrorStack(err)))
 		return nil

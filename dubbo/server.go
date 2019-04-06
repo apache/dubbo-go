@@ -2,6 +2,7 @@ package dubbo
 
 import (
 	"fmt"
+	"github.com/dubbo/dubbo-go/plugins"
 	"net"
 	"reflect"
 	"strconv"
@@ -23,7 +24,7 @@ type Option func(*Options)
 type Options struct {
 	Registry        registry.Registry
 	ConfList        []ServerConfig
-	ServiceConfList []registry.DefaultServiceConfig
+	ServiceConfList []registry.ServiceConfig
 }
 
 func newOptions(opt ...Option) Options {
@@ -62,11 +63,11 @@ func ConfList(confList []ServerConfig) Option {
 	}
 }
 
-func ServiceConfList(confList []registry.DefaultServiceConfig) Option {
+func ServiceConfList(confList []registry.ServiceConfig) Option {
 	return func(o *Options) {
 		o.ServiceConfList = confList
 		if o.ServiceConfList == nil {
-			o.ServiceConfList = []registry.DefaultServiceConfig{}
+			o.ServiceConfList = []registry.ServiceConfig{}
 		}
 	}
 }
@@ -100,25 +101,25 @@ func NewServer(opts ...Option) *Server {
 // Register export services and register with the registry
 func (s *Server) Register(rcvr GettyRPCService) error {
 
-	var serviceConf registry.ProviderServiceConfig
+	serviceConf := plugins.DefaultProviderServiceConfig()()
 
 	opts := s.opts
 
-	serviceConf.Service = rcvr.Service()
-	serviceConf.Version = rcvr.Version()
+	serviceConf.SetService(rcvr.Service())
+	serviceConf.SetVersion(rcvr.Version())
 
 	flag := false
 	serviceNum := len(opts.ServiceConfList)
 	serverNum := len(opts.ConfList)
 	for i := 0; i < serviceNum; i++ {
-		if opts.ServiceConfList[i].Service == serviceConf.Service &&
-			opts.ServiceConfList[i].Version == serviceConf.Version {
+		if opts.ServiceConfList[i].Service() == serviceConf.Service() &&
+			opts.ServiceConfList[i].Version() == serviceConf.Version() {
 
-			serviceConf.Protocol = opts.ServiceConfList[i].Protocol
-			serviceConf.Group = opts.ServiceConfList[i].Group
+			serviceConf.SetProtocol(opts.ServiceConfList[i].Protocol())
+			serviceConf.SetGroup(opts.ServiceConfList[i].Group())
 
 			for j := 0; j < serverNum; j++ {
-				if opts.ConfList[j].Protocol == serviceConf.Protocol {
+				if opts.ConfList[j].Protocol == serviceConf.Protocol() {
 					rcvrName := reflect.Indirect(reflect.ValueOf(rcvr)).Type().Name()
 					svc := &service{
 						rcvrType: reflect.TypeOf(rcvr),
@@ -159,8 +160,8 @@ func (s *Server) Register(rcvr GettyRPCService) error {
 
 					s.srvs[j][svc.name] = svc
 
-					serviceConf.Methods = mts
-					serviceConf.Path = opts.ConfList[j].Address()
+					serviceConf.SetMethods(mts)
+					serviceConf.SetPath(opts.ConfList[j].Address())
 
 					err := opts.Registry.Register(serviceConf)
 					if err != nil {

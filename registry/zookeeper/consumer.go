@@ -10,20 +10,21 @@ import (
 )
 
 import (
+	"github.com/dubbo/dubbo-go/plugins"
 	"github.com/dubbo/dubbo-go/registry"
 )
 
 // name: service@protocol
-func (r *ZkRegistry) GetService(conf registry.DefaultServiceConfig) ([]*registry.ServiceURL, error) {
+func (r *ZkRegistry) GetService(conf registry.ServiceConfig) ([]registry.ServiceURL, error) {
+
 	var (
-		ok            bool
-		err           error
-		dubboPath     string
-		nodes         []string
-		listener      *zkEventListener
-		serviceURL    *registry.ServiceURL
-		serviceConfIf registry.ServiceConfig
-		serviceConf   registry.DefaultServiceConfig
+		err         error
+		dubboPath   string
+		nodes       []string
+		listener    *zkEventListener
+		serviceURL  registry.ServiceURL
+		serviceConf registry.ServiceConfig
+		ok          bool
 	)
 	r.listenerLock.Lock()
 	listener = r.listener
@@ -34,17 +35,16 @@ func (r *ZkRegistry) GetService(conf registry.DefaultServiceConfig) ([]*registry
 	}
 
 	r.cltLock.Lock()
-	serviceConfIf, ok = r.services[conf.Key()]
+	serviceConf, ok = r.services[conf.Key()]
 	r.cltLock.Unlock()
 	if !ok {
 		return nil, jerrors.Errorf("Service{%s} has not been registered", conf.Key())
 	}
-	serviceConf, ok = serviceConfIf.(registry.DefaultServiceConfig)
 	if !ok {
 		return nil, jerrors.Errorf("Service{%s}: failed to get serviceConfigIf type", conf.Key())
 	}
 
-	dubboPath = fmt.Sprintf("/dubbo/%s/providers", conf.Service)
+	dubboPath = fmt.Sprintf("/dubbo/%s/providers", conf.Service())
 	err = r.validateZookeeperClient()
 	if err != nil {
 		return nil, jerrors.Trace(err)
@@ -57,11 +57,12 @@ func (r *ZkRegistry) GetService(conf registry.DefaultServiceConfig) ([]*registry
 		return nil, jerrors.Trace(err)
 	}
 
-	var listenerServiceMap = make(map[string]*registry.ServiceURL)
+	var listenerServiceMap = make(map[string]registry.ServiceURL)
 	for _, n := range nodes {
-		serviceURL, err = registry.NewServiceURL(n)
+
+		serviceURL, err = plugins.DefaultServiceURL()(n)
 		if err != nil {
-			log.Error("NewServiceURL({%s}) = error{%v}", n, err)
+			log.Error("NewDefaultServiceURL({%s}) = error{%v}", n, err)
 			continue
 		}
 		if !serviceConf.ServiceEqual(serviceURL) {
@@ -69,14 +70,14 @@ func (r *ZkRegistry) GetService(conf registry.DefaultServiceConfig) ([]*registry
 			continue
 		}
 
-		_, ok := listenerServiceMap[serviceURL.Query.Get(serviceURL.Location)]
+		_, ok := listenerServiceMap[serviceURL.Query().Get(serviceURL.Location())]
 		if !ok {
-			listenerServiceMap[serviceURL.Location] = serviceURL
+			listenerServiceMap[serviceURL.Location()] = serviceURL
 			continue
 		}
 	}
 
-	var services []*registry.ServiceURL
+	var services []registry.ServiceURL
 	for _, service := range listenerServiceMap {
 		services = append(services, service)
 	}
@@ -91,9 +92,7 @@ func (r *ZkRegistry) Subscribe() (registry.Listener, error) {
 
 func (r *ZkRegistry) getListener() (*zkEventListener, error) {
 	var (
-		ok          bool
-		zkListener  *zkEventListener
-		serviceConf registry.DefaultServiceConfig
+		zkListener *zkEventListener
 	)
 
 	r.listenerLock.Lock()
@@ -120,9 +119,7 @@ func (r *ZkRegistry) getListener() (*zkEventListener, error) {
 	// listen
 	r.cltLock.Lock()
 	for _, svs := range r.services {
-		if serviceConf, ok = svs.(registry.DefaultServiceConfig); ok {
-			go zkListener.listenServiceEvent(serviceConf)
-		}
+		go zkListener.listenServiceEvent(svs)
 	}
 	r.cltLock.Unlock()
 

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"github.com/dubbo/dubbo-go/plugins"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -60,7 +61,7 @@ type Option func(*Options)
 type Options struct {
 	Registry        registry.Registry
 	ConfList        []server.ServerConfig
-	ServiceConfList []registry.DefaultServiceConfig
+	ServiceConfList []registry.ProviderServiceConfig
 	Timeout         time.Duration
 }
 
@@ -95,7 +96,7 @@ func ConfList(confList []server.ServerConfig) Option {
 	}
 }
 
-func ServiceConfList(confList []registry.DefaultServiceConfig) Option {
+func ServiceConfList(confList []registry.ProviderServiceConfig) Option {
 	return func(o *Options) {
 		o.ServiceConfList = confList
 	}
@@ -236,35 +237,38 @@ func (s *Server) Options() Options {
 
 func (s *Server) Handle(h Handler) error {
 	var (
-		err         error
-		serviceConf registry.ProviderServiceConfig
+		err error
 	)
 
 	opts := s.Options()
+	serviceConf := plugins.DefaultProviderServiceConfig()()
 
-	serviceConf.Service = h.Service()
-	serviceConf.Version = h.Version()
+	serviceConf.SetService(h.Service())
+	serviceConf.SetVersion(h.Version())
 
 	flag := 0
 	serviceNum := len(opts.ServiceConfList)
 	ServerNum := len(opts.ConfList)
 	for i := 0; i < serviceNum; i++ {
-		if opts.ServiceConfList[i].Service == serviceConf.Service &&
-			opts.ServiceConfList[i].Version == serviceConf.Version {
+		if opts.ServiceConfList[i].Service() == serviceConf.Service() &&
+			opts.ServiceConfList[i].Version() == serviceConf.Version() {
 
-			serviceConf.Protocol = opts.ServiceConfList[i].Protocol
-			serviceConf.Group = opts.ServiceConfList[i].Group
+			serviceConf.SetProtocol(opts.ServiceConfList[i].Protocol())
+			serviceConf.SetGroup(opts.ServiceConfList[i].Group())
 			// serviceConf.Version = opts.ServiceConfList[i].Version
+			var methods, path string
 			for j := 0; j < ServerNum; j++ {
-				if opts.ConfList[j].Protocol == serviceConf.Protocol {
+				if opts.ConfList[j].Protocol == serviceConf.Protocol() {
 					s.Lock()
-					serviceConf.Methods, err = s.rpc[j].register(h)
+					methods, err = s.rpc[j].register(h)
 					s.Unlock()
 					if err != nil {
 						return err
 					}
+					serviceConf.SetMethods(methods)
 
-					serviceConf.Path = opts.ConfList[j].Address()
+					path = opts.ConfList[j].Address()
+					serviceConf.SetPath(path)
 					err = opts.Registry.Register(serviceConf)
 					if err != nil {
 						return err
@@ -277,7 +281,7 @@ func (s *Server) Handle(h Handler) error {
 
 	if flag == 0 {
 		return jerrors.Errorf("fail to register Handler{service:%s, version:%s}",
-			serviceConf.Service, serviceConf.Version)
+			serviceConf.Service(), serviceConf.Version())
 	}
 
 	s.Lock()

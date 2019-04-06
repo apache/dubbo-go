@@ -112,7 +112,7 @@ func initServer() *dubbo.Server {
 	srv = dubbo.NewServer(
 		dubbo.Registry(regs),
 		dubbo.ConfList(serverConfig),
-		dubbo.ServiceConfList(conf.Service_List),
+		dubbo.ServiceConfList(conf.ServiceConfigList),
 	)
 
 	return srv
