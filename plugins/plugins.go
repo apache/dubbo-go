@@ -3,12 +3,9 @@ package plugins
 import (
 	"github.com/dubbo/dubbo-go/client/selector"
 	"github.com/dubbo/dubbo-go/registry"
-	"github.com/dubbo/dubbo-go/registry/zookeeper"
 )
 
-var PluggableRegistries = map[string]func(...registry.RegistryOption) (registry.Registry, error){
-	"zookeeper": zookeeper.NewZkRegistry,
-}
+var PluggableRegistries = map[string]func(...registry.RegistryOption) (registry.Registry, error){}
 
 var PluggableLoadbalance = map[string]func() selector.Selector{
 	"round_robin": selector.NewRoundRobinSelector,
@@ -25,14 +22,14 @@ var PluggableProviderServiceConfig = map[string]func() registry.ProviderServiceC
 	"default": registry.NewDefaultProviderServiceConfig,
 }
 
-//var PluggableServiceURL = map[string]func(string) (registry.ServiceURL, error){
-//	"default": registry.NewDefaultServiceURL,
-//}
+var PluggableServiceURL = map[string]func(string) (registry.ServiceURL, error){
+	"default": registry.NewDefaultServiceURL,
+}
 
 var defaultServiceConfig = registry.NewDefaultServiceConfig
 var defaultProviderServiceConfig = registry.NewDefaultProviderServiceConfig
 
-//var defaultServiceURL = registry.NewDefaultServiceURL
+var defaultServiceURL = registry.NewDefaultServiceURL
 
 func SetDefaultServiceConfig(s string) {
 	defaultServiceConfig = PluggableServiceConfig[s]
@@ -48,10 +45,9 @@ func DefaultProviderServiceConfig() func() registry.ProviderServiceConfig {
 	return defaultProviderServiceConfig
 }
 
-//
-//func SetDefaultServiceURL(s string) {
-//	defaultProviderServiceConfig = PluggableProviderServiceConfig[s]
-//}
-//func DefaultServiceURL() func() registry.ProviderServiceConfig {
-//	return defaultProviderServiceConfig
-//}
+func SetDefaultServiceURL(s string) {
+	defaultServiceURL = PluggableServiceURL[s]
+}
+func DefaultServiceURL() func(string) (registry.ServiceURL, error) {
+	return defaultServiceURL
+}

@@ -20,7 +20,7 @@ import (
 type ServiceConfig interface {
 	Key() string
 	String() string
-	ServiceEqual(url *DefaultServiceURL) bool
+	ServiceEqual(url ServiceURL) bool
 	//your service config implements must contain properties below
 	Service() string
 	Protocol() string
@@ -42,10 +42,10 @@ type ProviderServiceConfig interface {
 }
 
 type DefaultServiceConfig struct {
-	DProtocol string `required:"true",default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty"`
-	DService  string `required:"true"  yaml:"service"  json:"service,omitempty"`
-	DGroup    string `yaml:"group" json:"group,omitempty"`
-	DVersion  string `yaml:"version" json:"version,omitempty"`
+	Protocol_ string `required:"true",default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty"`
+	Service_  string `required:"true"  yaml:"service"  json:"service,omitempty"`
+	Group_    string `yaml:"group" json:"group,omitempty"`
+	Version_  string `yaml:"version" json:"version,omitempty"`
 }
 
 func NewDefaultServiceConfig() ServiceConfig {
@@ -53,27 +53,27 @@ func NewDefaultServiceConfig() ServiceConfig {
 }
 
 func (c *DefaultServiceConfig) Key() string {
-	return fmt.Sprintf("%s@%s", c.DService, c.DProtocol)
+	return fmt.Sprintf("%s@%s", c.Service_, c.Protocol_)
 }
 
 func (c *DefaultServiceConfig) String() string {
-	return fmt.Sprintf("%s@%s-%s-%s", c.DService, c.DProtocol, c.DGroup, c.DVersion)
+	return fmt.Sprintf("%s@%s-%s-%s", c.Service_, c.Protocol_, c.Group_, c.Version_)
 }
 
-func (c *DefaultServiceConfig) ServiceEqual(url *DefaultServiceURL) bool {
-	if c.DProtocol != url.Protocol {
+func (c *DefaultServiceConfig) ServiceEqual(url ServiceURL) bool {
+	if c.Protocol_ != url.Protocol() {
 		return false
 	}
 
-	if c.DService != url.Query.Get("interface") {
+	if c.Service_ != url.Query().Get("interface") {
 		return false
 	}
 
-	if c.DGroup != url.Group {
+	if c.Group_ != url.Group() {
 		return false
 	}
 
-	if c.DVersion != url.Version {
+	if c.Version_ != url.Version() {
 		return false
 	}
 
@@ -81,39 +81,39 @@ func (c *DefaultServiceConfig) ServiceEqual(url *DefaultServiceURL) bool {
 }
 
 func (c *DefaultServiceConfig) Service() string {
-	return c.DService
+	return c.Service_
 }
 
 func (c *DefaultServiceConfig) Protocol() string {
-	return c.DProtocol
+	return c.Protocol_
 }
 
 func (c *DefaultServiceConfig) Version() string {
-	return c.DVersion
+	return c.Version_
 }
 
 func (c *DefaultServiceConfig) Group() string {
-	return c.DGroup
+	return c.Group_
 }
 func (c *DefaultServiceConfig) SetProtocol(s string) {
-	c.DProtocol = s
+	c.Protocol_ = s
 }
 
 func (c *DefaultServiceConfig) SetService(s string) {
-	c.DService = s
+	c.Service_ = s
 }
 func (c *DefaultServiceConfig) SetVersion(s string) {
-	c.DVersion = s
+	c.Version_ = s
 }
 
 func (c *DefaultServiceConfig) SetGroup(s string) {
-	c.DGroup = s
+	c.Group_ = s
 }
 
 type DefaultProviderServiceConfig struct {
 	*DefaultServiceConfig
-	DPath    string `yaml:"path" json:"path,omitempty"`
-	DMethods string `yaml:"methods" json:"methods,omitempty"`
+	Path_    string `yaml:"path" json:"path,omitempty"`
+	Methods_ string `yaml:"methods" json:"methods,omitempty"`
 }
 
 func NewDefaultProviderServiceConfig() ProviderServiceConfig {
@@ -123,19 +123,19 @@ func NewDefaultProviderServiceConfig() ProviderServiceConfig {
 }
 
 func (c *DefaultProviderServiceConfig) Methods() string {
-	return c.DMethods
+	return c.Methods_
 }
 
 func (c *DefaultProviderServiceConfig) Path() string {
-	return c.DPath
+	return c.Path_
 }
 
 func (c *DefaultProviderServiceConfig) SetMethods(s string) {
-	c.DMethods = s
+	c.Methods_ = s
 }
 
 func (c *DefaultProviderServiceConfig) SetPath(s string) {
-	c.DPath = s
+	c.Path_ = s
 }
 
 //////////////////////////////////////////
@@ -145,23 +145,33 @@ func (c *DefaultProviderServiceConfig) SetPath(s string) {
 type ServiceURL interface {
 	ServiceConfig() ServiceConfig
 	CheckMethod(string) bool
+	PrimitiveURL() string
+	Query() url.Values
+	Location() string
+	Timeout() time.Duration
+	Group() string
+	Protocol() string
+	Version() string
+	Ip() string
+	Port() string
+	Path() string
 }
 
 type DefaultServiceURL struct {
-	Protocol     string
-	Location     string // ip+port
-	Path         string // like  /com.ikurento.dubbo.UserProvider3
-	Ip           string
-	Port         string
-	Timeout      time.Duration
-	Version      string
-	Group        string
-	Query        url.Values
-	Weight       int32
-	PrimitiveURL string
+	Protocol_     string
+	Location_     string // ip+port
+	Path_         string // like  /com.ikurento.dubbo.UserProvider3
+	Ip_           string
+	Port_         string
+	Timeout_      time.Duration
+	Version_      string
+	Group_        string
+	Query_        url.Values
+	Weight_       int32
+	PrimitiveURL_ string
 }
 
-func NewDefaultServiceURL(urlString string) (*DefaultServiceURL, error) {
+func NewDefaultServiceURL(urlString string) (ServiceURL, error) {
 	var (
 		err          error
 		rawUrlString string
@@ -179,31 +189,31 @@ func NewDefaultServiceURL(urlString string) (*DefaultServiceURL, error) {
 		return nil, jerrors.Errorf("url.Parse(url string{%s}),  error{%v}", rawUrlString, err)
 	}
 
-	s.Query, err = url.ParseQuery(serviceUrl.RawQuery)
+	s.Query_, err = url.ParseQuery(serviceUrl.RawQuery)
 	if err != nil {
 		return nil, jerrors.Errorf("url.ParseQuery(raw url string{%s}),  error{%v}", serviceUrl.RawQuery, err)
 	}
 
-	s.PrimitiveURL = urlString
-	s.Protocol = serviceUrl.Scheme
-	s.Location = serviceUrl.Host
-	s.Path = serviceUrl.Path
-	if strings.Contains(s.Location, ":") {
-		s.Ip, s.Port, err = net.SplitHostPort(s.Location)
+	s.PrimitiveURL_ = urlString
+	s.Protocol_ = serviceUrl.Scheme
+	s.Location_ = serviceUrl.Host
+	s.Path_ = serviceUrl.Path
+	if strings.Contains(s.Location_, ":") {
+		s.Ip_, s.Port_, err = net.SplitHostPort(s.Location_)
 		if err != nil {
-			return nil, jerrors.Errorf("net.SplitHostPort(Url.Host{%s}), error{%v}", s.Location, err)
+			return nil, jerrors.Errorf("net.SplitHostPort(Url.Host{%s}), error{%v}", s.Location_, err)
 		}
 	}
-	s.Group = s.Query.Get("group")
-	s.Version = s.Query.Get("version")
-	timeoutStr := s.Query.Get("timeout")
+	s.Group_ = s.Query_.Get("group")
+	s.Version_ = s.Query_.Get("version")
+	timeoutStr := s.Query_.Get("timeout")
 	if len(timeoutStr) == 0 {
-		timeoutStr = s.Query.Get("default.timeout")
+		timeoutStr = s.Query_.Get("default.timeout")
 	}
 	if len(timeoutStr) != 0 {
 		timeout, err := strconv.Atoi(timeoutStr)
 		if err == nil && timeout != 0 {
-			s.Timeout = time.Duration(timeout * 1e6) // timeout unit is millisecond
+			s.Timeout_ = time.Duration(timeout * 1e6) // timeout unit is millisecond
 		}
 	}
 
@@ -213,18 +223,18 @@ func NewDefaultServiceURL(urlString string) (*DefaultServiceURL, error) {
 func (s DefaultServiceURL) String() string {
 	return fmt.Sprintf(
 		"DefaultServiceURL{Protocol:%s, Location:%s, Path:%s, Ip:%s, Port:%s, "+
-			"Timeout:%s, Version:%s, Group:%s, Weight:%d, Query:%+v}",
-		s.Protocol, s.Location, s.Path, s.Ip, s.Port,
-		s.Timeout, s.Version, s.Group, s.Weight, s.Query)
+			"Timeout:%s, Version:%s, Group:%s, Weight_:%d, Query:%+v}",
+		s.Protocol_, s.Location_, s.Path_, s.Ip_, s.Port_,
+		s.Timeout_, s.Version_, s.Group_, s.Weight_, s.Query_)
 }
 
 func (s *DefaultServiceURL) ServiceConfig() ServiceConfig {
-	interfaceName := s.Query.Get("interface")
+	interfaceName := s.Query_.Get("interface")
 	return &DefaultServiceConfig{
-		DProtocol: s.Protocol,
-		DService:  interfaceName,
-		DGroup:    s.Group,
-		DVersion:  s.Version,
+		Protocol_: s.Protocol_,
+		Service_:  interfaceName,
+		Group_:    s.Group_,
+		Version_:  s.Version_,
 	}
 }
 
@@ -233,7 +243,7 @@ func (s *DefaultServiceURL) CheckMethod(method string) bool {
 		methodArray []string
 	)
 
-	methodArray = strings.Split(s.Query.Get("methods"), ",")
+	methodArray = strings.Split(s.Query_.Get("methods"), ",")
 	for _, m := range methodArray {
 		if m == method {
 			return true
@@ -241,4 +251,43 @@ func (s *DefaultServiceURL) CheckMethod(method string) bool {
 	}
 
 	return false
+}
+
+func (s *DefaultServiceURL) PrimitiveURL() string {
+	return s.PrimitiveURL_
+}
+
+func (s *DefaultServiceURL) Timeout() time.Duration {
+	return s.Timeout_
+}
+func (s *DefaultServiceURL) Location() string {
+	return s.Location_
+}
+
+func (s *DefaultServiceURL) Query() url.Values {
+	return s.Query_
+}
+
+func (s *DefaultServiceURL) Group() string {
+	return s.Group_
+}
+
+func (s *DefaultServiceURL) Protocol() string {
+	return s.Protocol_
+}
+
+func (s *DefaultServiceURL) Version() string {
+	return s.Version_
+}
+
+func (s *DefaultServiceURL) Ip() string {
+	return s.Ip_
+}
+
+func (s *DefaultServiceURL) Port() string {
+	return s.Port_
+}
+
+func (s *DefaultServiceURL) Path() string {
+	return s.Path_
 }

@@ -97,7 +97,7 @@ func (c *HTTPClient) NewRequest(conf registry.ServiceConfig, method string, args
 	}, nil
 }
 
-func (c *HTTPClient) Call(ctx context.Context, service *registry.DefaultServiceURL, request client.Request, rsp interface{}) error {
+func (c *HTTPClient) Call(ctx context.Context, service registry.ServiceURL, request client.Request, rsp interface{}) error {
 	// header
 	req := request.(*Request)
 	httpHeader := http.Header{}
@@ -105,8 +105,8 @@ func (c *HTTPClient) Call(ctx context.Context, service *registry.DefaultServiceU
 	httpHeader.Set("Accept", "application/json")
 
 	reqTimeout := c.options.HTTPTimeout
-	if service.Timeout != 0 && service.Timeout < reqTimeout {
-		reqTimeout = time.Duration(service.Timeout)
+	if service.Timeout() != 0 && service.Timeout() < reqTimeout {
+		reqTimeout = time.Duration(service.Timeout())
 	}
 	if reqTimeout <= 0 {
 		reqTimeout = 1e8
@@ -130,7 +130,7 @@ func (c *HTTPClient) Call(ctx context.Context, service *registry.DefaultServiceU
 		return jerrors.Trace(err)
 	}
 
-	rspBody, err := c.Do(service.Location, service.Query.Get("interface"), httpHeader, reqBody)
+	rspBody, err := c.Do(service.Location(), service.Query().Get("interface"), httpHeader, reqBody)
 	if err != nil {
 		return jerrors.Trace(err)
 	}

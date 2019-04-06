@@ -14,6 +14,7 @@ import (
 )
 
 import (
+	"github.com/dubbo/dubbo-go/plugins"
 	"github.com/dubbo/dubbo-go/registry"
 )
 
@@ -102,7 +103,7 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 	// a node was added -- listen the new node
 	var (
 		newNode    string
-		serviceURL *registry.DefaultServiceURL
+		serviceURL registry.ServiceURL
 	)
 	for _, n := range newChildren {
 		if contains(children, n) {
@@ -111,7 +112,7 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 
 		newNode = path.Join(zkPath, n)
 		log.Info("add zkNode{%s}", newNode)
-		serviceURL, err = registry.NewDefaultServiceURL(n)
+		serviceURL, err = plugins.DefaultServiceURL()(n)
 		if err != nil {
 			log.Error("NewDefaultServiceURL(%s) = error{%v}", n, jerrors.ErrorStack(err))
 			continue
@@ -123,7 +124,7 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 		log.Info("add serviceURL{%s}", serviceURL)
 		l.events <- zkEvent{&registry.ServiceEvent{Action: registry.ServiceAdd, Service: serviceURL}, nil}
 		// listen l service node
-		go func(node string, serviceURL *registry.DefaultServiceURL) {
+		go func(node string, serviceURL registry.ServiceURL) {
 			log.Info("delete zkNode{%s}", node)
 			if l.listenServiceNodeEvent(node) {
 				log.Info("delete serviceURL{%s}", serviceURL)
@@ -228,7 +229,7 @@ func (l *zkEventListener) listenServiceEvent(conf registry.ServiceConfig) {
 		zkPath     string
 		dubboPath  string
 		children   []string
-		serviceURL *registry.DefaultServiceURL
+		serviceURL registry.ServiceURL
 	)
 
 	zkPath = fmt.Sprintf("/dubbo/%s/providers", conf.Service())
@@ -254,7 +255,7 @@ func (l *zkEventListener) listenServiceEvent(conf registry.ServiceConfig) {
 
 	for _, c := range children {
 
-		serviceURL, err = registry.NewDefaultServiceURL(c)
+		serviceURL, err = plugins.DefaultServiceURL()(c)
 		if err != nil {
 			log.Error("NewDefaultServiceURL(r{%s}) = error{%v}", c, err)
 			continue
@@ -269,7 +270,7 @@ func (l *zkEventListener) listenServiceEvent(conf registry.ServiceConfig) {
 		// listen l service node
 		dubboPath = path.Join(zkPath, c)
 		log.Info("listen dubbo service key{%s}", dubboPath)
-		go func(zkPath string, serviceURL *registry.DefaultServiceURL) {
+		go func(zkPath string, serviceURL registry.ServiceURL) {
 			if l.listenServiceNodeEvent(dubboPath) {
 				log.Debug("delete serviceUrl{%s}", serviceURL)
 				l.events <- zkEvent{&registry.ServiceEvent{Action: registry.ServiceDel, Service: serviceURL}, nil}
