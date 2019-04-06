@@ -1,6 +1,9 @@
 package dubbo
 
 import (
+	"context"
+	"reflect"
+	"sync"
 	"time"
 )
 
@@ -10,6 +13,9 @@ import (
 	"github.com/dubbogo/hessian2"
 	jerrors "github.com/juju/errors"
 )
+
+// todo: WritePkg_Timeout will entry *.yml
+const WritePkg_Timeout = 5 * time.Second
 
 var (
 	errTooManySessions = jerrors.New("too many sessions")
@@ -54,11 +60,11 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 		return
 	}
 
-	if p.Header.Type == hessian.Heartbeat {
+	if p.Header.Type&hessian.Heartbeat != 0x00 {
 		log.Debug("get rpc heartbeat response{header: %#v, body: %#v}", p.Header, p.Body)
 		return
 	}
-	log.Debug("get rpc response{header: %#v, header: %#v}", p.Header, p.Body)
+	log.Debug("get rpc response{header: %#v, body: %#v}", p.Header, p.Body)
 
 	h.conn.updateSession(session)
 
@@ -93,4 +99,191 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 	}
 
 	h.conn.pool.rpcClient.heartbeat(session)
+}
+
+////////////////////////////////////////////
+// RpcServerHandler
+////////////////////////////////////////////
+
+type RpcServerHandler struct {
+	maxSessionNum  int
+	sessionTimeout time.Duration
+	sessionMap     map[getty.Session]*rpcSession
+	rwlock         sync.RWMutex
+}
+
+func NewRpcServerHandler(maxSessionNum int, sessionTimeout time.Duration) *RpcServerHandler {
+	return &RpcServerHandler{
+		maxSessionNum:  maxSessionNum,
+		sessionTimeout: sessionTimeout,
+		sessionMap:     make(map[getty.Session]*rpcSession),
+	}
+}
+
+func (h *RpcServerHandler) OnOpen(session getty.Session) error {
+	var err error
+	h.rwlock.RLock()
+	if h.maxSessionNum <= len(h.sessionMap) {
+		err = errTooManySessions
+	}
+	h.rwlock.RUnlock()
+	if err != nil {
+		return jerrors.Trace(err)
+	}
+
+	log.Info("got session:%s", session.Stat())
+	h.rwlock.Lock()
+	h.sessionMap[session] = &rpcSession{session: session}
+	h.rwlock.Unlock()
+	return nil
+}
+
+func (h *RpcServerHandler) OnError(session getty.Session, err error) {
+	log.Info("session{%s} got error{%v}, will be closed.", session.Stat(), err)
+	h.rwlock.Lock()
+	delete(h.sessionMap, session)
+	h.rwlock.Unlock()
+}
+
+func (h *RpcServerHandler) OnClose(session getty.Session) {
+	log.Info("session{%s} is closing......", session.Stat())
+	h.rwlock.Lock()
+	delete(h.sessionMap, session)
+	h.rwlock.Unlock()
+}
+
+func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
+	h.rwlock.Lock()
+	if _, ok := h.sessionMap[session]; ok {
+		h.sessionMap[session].reqNum++
+	}
+	h.rwlock.Unlock()
+
+	p, ok := pkg.(*DubboPackage)
+	if !ok {
+		log.Error("illegal packge{%#v}", pkg)
+		return
+	}
+	p.Header.ResponseStatus = hessian.Response_OK
+
+	// heartbeat
+	if p.Header.Type&hessian.Heartbeat != 0x00 {
+		log.Debug("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", p.Header, p.Service, p.Body)
+		h.reply(session, p, hessian.Heartbeat)
+		return
+	}
+
+	// twoway
+	if p.Header.Type&hessian.Request_TwoWay == 0x00 {
+		h.reply(session, p, hessian.Response)
+		h.callService(p, nil)
+		return
+	}
+
+	h.callService(p, nil)
+	h.reply(session, p, hessian.Response)
+}
+
+func (h *RpcServerHandler) OnCron(session getty.Session) {
+	var (
+		flag   bool
+		active time.Time
+	)
+
+	h.rwlock.RLock()
+	if _, ok := h.sessionMap[session]; ok {
+		active = session.GetActive()
+		if h.sessionTimeout.Nanoseconds() < time.Since(active).Nanoseconds() {
+			flag = true
+			log.Warn("session{%s} timeout{%s}, reqNum{%d}",
+				session.Stat(), time.Since(active).String(), h.sessionMap[session].reqNum)
+		}
+	}
+	h.rwlock.RUnlock()
+
+	if flag {
+		h.rwlock.Lock()
+		delete(h.sessionMap, session)
+		h.rwlock.Unlock()
+		session.Close()
+	}
+}
+
+func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
+
+	defer func() {
+		if e := recover(); e != nil {
+			req.Header.ResponseStatus = hessian.Response_BAD_REQUEST
+			if err, ok := e.(error); ok {
+				log.Error("callService panic: %#v", err)
+				req.Body = e.(error)
+			} else if err, ok := e.(string); ok {
+				log.Error("callService panic: %#v", jerrors.New(err))
+				req.Body = jerrors.New(err)
+			} else {
+				log.Error("callService panic: %#v", e)
+				req.Body = e
+			}
+		}
+	}()
+
+	svc := req.Body.(map[string]interface{})["service"].(*service)
+	method := svc.method[req.Service.Method]
+
+	// prepare argv
+	var argv reflect.Value
+	argIsValue := false // if true, need to indirect before calling.
+	if method.ArgType.Kind() == reflect.Ptr {
+		argv = reflect.New(method.ArgType.Elem())
+	} else {
+		argv = reflect.New(method.ArgType)
+		argIsValue = true
+	}
+	argvTmp := argv.Interface()
+	argvTmp = req.Body.(map[string]interface{})["args"] // type is []interface
+	if argIsValue {
+		argv = argv.Elem()
+	}
+
+	// prepare replyv
+	replyv := reflect.New(method.ReplyType.Elem())
+	var returnValues []reflect.Value
+	if method.CtxType == nil {
+		returnValues = method.method.Func.Call([]reflect.Value{svc.rcvr, reflect.ValueOf(argvTmp), reflect.ValueOf(replyv.Interface())})
+	} else {
+		if contextv := reflect.ValueOf(ctx); contextv.IsValid() {
+			returnValues = method.method.Func.Call([]reflect.Value{svc.rcvr, contextv, reflect.ValueOf(argvTmp), reflect.ValueOf(replyv.Interface())})
+		} else {
+			returnValues = method.method.Func.Call([]reflect.Value{svc.rcvr, reflect.Zero(method.CtxType), reflect.ValueOf(argvTmp), reflect.ValueOf(replyv.Interface())})
+		}
+	}
+
+	// The return value for the method is an error.
+	if retErr := returnValues[0].Interface(); retErr != nil {
+		req.Header.ResponseStatus = hessian.Response_SERVER_ERROR
+		req.Body = retErr.(error)
+	} else {
+		req.Body = replyv.Interface()
+	}
+}
+
+func (h *RpcServerHandler) reply(session getty.Session, req *DubboPackage, tp hessian.PackgeType) {
+	resp := &DubboPackage{
+		Header: hessian.DubboHeader{
+			SerialID:       req.Header.SerialID,
+			Type:           tp,
+			ID:             req.Header.ID,
+			ResponseStatus: req.Header.ResponseStatus,
+		},
+	}
+
+	if req.Header.Type&hessian.Request != 0x00 {
+		resp.Body = req.Body
+	} else {
+		resp.Body = nil
+	}
+
+	if err := session.WritePkg(resp, WritePkg_Timeout); err != nil {
+		log.Error("WritePkg error: %#v, %#v", jerrors.Trace(err), req.Header)
+	}
 }

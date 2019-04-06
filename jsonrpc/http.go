@@ -93,7 +93,7 @@ func (c *HTTPClient) NewRequest(conf registry.ServiceConfig, method string, args
 		service:  conf.Service(),
 		method:   method,
 		args:     args,
-		conf:	  conf,
+		conf:     conf,
 	}, nil
 }
 

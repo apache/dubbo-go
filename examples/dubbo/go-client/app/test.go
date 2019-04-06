@@ -45,7 +45,6 @@ func testDubborpc(clientConfig *examples.ClientConfig, userKey string) {
 	hessian.RegisterJavaEnum(Gender(MAN))
 	hessian.RegisterJavaEnum(Gender(WOMAN))
 	hessian.RegisterPOJO(&DubboUser{})
-	hessian.RegisterPOJO(&Response{})
 
 	user = new(DubboUser)
 	defer clientInvoker.DubboClient.Close()
