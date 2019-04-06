@@ -10,7 +10,7 @@ import (
 
 import (
 	"github.com/AlexStocks/goext/log"
-	log "github.com/AlexStocks/log4go"
+	log "github.com/dubbogo/log4go"
 	jerrors "github.com/juju/errors"
 	"gopkg.in/yaml.v2"
 )

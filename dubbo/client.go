@@ -8,7 +8,7 @@ import (
 )
 
 import (
-	"github.com/AlexStocks/getty"
+	"github.com/dubbogo/getty"
 	"github.com/AlexStocks/goext/sync/atomic"
 	"github.com/dubbogo/hessian2"
 	jerrors "github.com/juju/errors"

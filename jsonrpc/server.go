@@ -16,8 +16,8 @@ import (
 
 import (
 	"github.com/AlexStocks/goext/net"
-	log "github.com/AlexStocks/log4go"
 	"github.com/dubbo/dubbo-go/registry"
+	log "github.com/dubbogo/log4go"
 	jerrors "github.com/juju/errors"
 )
 

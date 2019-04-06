@@ -6,8 +6,8 @@ import (
 )
 
 import (
-	"github.com/AlexStocks/getty"
-	log "github.com/AlexStocks/log4go"
+	"github.com/dubbogo/getty"
+	log "github.com/dubbogo/log4go"
 	jerrors "github.com/juju/errors"
 )
 
