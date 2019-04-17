@@ -1,7 +1,7 @@
 package version
 
 const (
-	Version = "0.3.1"
+	Version = "1.0.0"
 	Name    = "dubbogo"
-	DATE    = "2018/08/08"
+	DATE    = "2019/04/17"
 )
