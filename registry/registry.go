@@ -1,10 +1,6 @@
 package registry
 
-//////////////////////////////////////////////
-// Registry Interface
-//////////////////////////////////////////////
-
-// for service discovery/registry
+// Extension - Registry
 type Registry interface {
 
 	//used for service provider calling , register services to registry
