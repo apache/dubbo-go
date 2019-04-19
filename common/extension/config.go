@@ -5,41 +5,33 @@ import (
 )
 
 var (
-	serviceConfig map[string]func() config.ServiceConfig
-	url           map[string]func(string) config.URL
+	url           map[string]func(string) (config.ConfigURL,error)
 )
 
 func init() {
 	// init map
-	serviceConfig = make(map[string]func() config.ServiceConfig)
-	url = make(map[string]func(string) config.URL)
+	url = make(map[string]func(string) (config.ConfigURL,error))
 }
 
-func SetServiceConfig(name string, v func() config.ServiceConfig) {
-	serviceConfig[name] = v
-}
 
-func SetURL(name string, v func(string) config.URL) {
+
+func SetURL(name string, v func(string) config.ConfigURL) {
 	url[name] = v
 }
 
-func GetServiceConfigExtension(name string) config.ServiceConfig {
-	if name == "" {
-		name = "default"
-	}
-	return serviceConfig[name]()
-}
 
-func GetDefaultServiceConfigExtension() config.ServiceConfig {
-	return serviceConfig["default"]()
-}
 
-func GetURLExtension(name string, urlString string) config.URL {
+
+func GetURLExtension(name string, urlString string) (config.ConfigURL,error){
 	if name == "" {
 		name = "default"
 	}
 	return url[name](urlString)
 }
-func GetDefaultURLExtension(urlString string) config.URL {
+func GetDefaultURLExtension(urlString string) (config.ConfigURL,error) {
 	return url["default"](urlString)
+}
+
+func SetDefaultURLExtension(v func(string) (config.ConfigURL,error)) {
+	 url["default"] = v
 }

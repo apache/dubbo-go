@@ -24,7 +24,7 @@ type Option func(*Options)
 type Options struct {
 	Registry        registry.Registry
 	ConfList        []ServerConfig
-	ServiceConfList []registry.ServiceConfig
+	ServiceConfList []registry.ReferenceConfig
 }
 
 func newOptions(opt ...Option) Options {
@@ -63,11 +63,11 @@ func ConfList(confList []ServerConfig) Option {
 	}
 }
 
-func ServiceConfList(confList []registry.ServiceConfig) Option {
+func ServiceConfList(confList []registry.ReferenceConfig) Option {
 	return func(o *Options) {
 		o.ServiceConfList = confList
 		if o.ServiceConfList == nil {
-			o.ServiceConfList = []registry.ServiceConfig{}
+			o.ServiceConfList = []registry.ReferenceConfig{}
 		}
 	}
 }

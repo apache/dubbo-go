@@ -47,10 +47,10 @@ type (
 		Registry         string                     `default:"zookeeper"  yaml:"registry" json:"registry,omitempty"`
 		ZkRegistryConfig zookeeper.ZkRegistryConfig `yaml:"zk_registry_config" json:"zk_registry_config,omitempty"`
 
-		ServiceConfigType    string                   `default:"default" yaml:"service_config_type" json:"service_config_type,omitempty"`
-		ServiceConfigList    []registry.ServiceConfig `yaml:"-"`
-		ServiceConfigMapList []map[string]string      `yaml:"service_list" json:"service_list,omitempty"`
-		Server_List          []server.ServerConfig    `yaml:"server_list" json:"server_list,omitempty"`
+		ServiceConfigType    string                     `default:"default" yaml:"service_config_type" json:"service_config_type,omitempty"`
+		ServiceConfigList    []registry.ReferenceConfig `yaml:"-"`
+		ServiceConfigMapList []map[string]string        `yaml:"service_list" json:"service_list,omitempty"`
+		Server_List          []server.ServerConfig      `yaml:"server_list" json:"server_list,omitempty"`
 	}
 )
 
