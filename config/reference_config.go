@@ -29,4 +29,5 @@ func (refconfig *ReferenceConfig) loadRegistries() []ConfigURL {
 		}
 
 	}
+	return nil
 }
