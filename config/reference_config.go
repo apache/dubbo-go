@@ -50,5 +50,9 @@ func (refconfig *ReferenceConfig) loadRegistries() []ConfigURL {
 		}
 
 	}
+<<<<<<< HEAD
 	return urls
+=======
+	return nil
+>>>>>>> 34ad782cbc0dfc96000bc3a18191537218a21186
 }
