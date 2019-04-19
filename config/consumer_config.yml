@@ -1,0 +1,47 @@
+# dubbo client yaml configure file
+
+# pprof
+pprof_enabled : true
+pprof_port : 10086
+
+# client
+request_timeout : "3500ms"
+net_io_timeout : "2s"
+retries : 1
+# connect timeout
+connect_timeout : "100ms"
+selector : "cache"
+selector_ttl : "10m"
+
+client_load_balance: "round_robin"
+
+# application config
+application_config:
+    organization : "ikurento.com"
+    name  : "BDTService"
+    module : "dubbogo user-info client"
+    version : "0.0.1"
+    owner : "ZX"
+    environment : "dev"
+
+registries :
+  - id: "hangzhouzk"
+    type: "zookeeper"
+    timeout	: "3s"
+    address: "127.0.0.1:2181"
+    username: ""
+    password: ""
+
+  - id: "shanghaizk"
+    type: "zookeeper"
+    timeout	: "3s"
+    address: "127.0.0.1:2181"
+    username: ""
+    password: ""
+
+references:
+  - registries :
+      - "hangzhouzk"
+      - "shanghaizk"
+#    protocol : "dubbo"
+    interface : "com.ikurento.user.UserProvider"

@@ -1,6 +1,8 @@
 package registry
 
-import "github.com/dubbo/dubbo-go/config"
+import (
+	"github.com/dubbo/dubbo-go/config"
+)
 
 // Extension - Registry
 type Registry interface {

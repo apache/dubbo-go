@@ -14,11 +14,9 @@ import (
 	jerrors "github.com/juju/errors"
 )
 
-func init(){
+func init() {
 	extension.SetDefaultURLExtension(NewDefaultServiceURL)
 }
-
-
 
 //////////////////////////////////////////
 // service url
@@ -38,15 +36,15 @@ type ConfigURL interface {
 	Ip() string
 	Port() string
 	Path() string
-	Service()string
-	Methods()string
+	Service() string
+	Methods() string
 }
 
 type DefaultServiceURL struct {
 	Service_      string
 	Protocol_     string `required:"true",default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty"`
 	Location_     string // ip+port
-	Path_         string `yaml:"path" json:"path,omitempty"`// like  /com.ikurento.dubbo.UserProvider3
+	Path_         string `yaml:"path" json:"path,omitempty"` // like  /com.ikurento.dubbo.UserProvider3
 	Ip_           string
 	Port_         string
 	Timeout_      time.Duration
@@ -108,11 +106,9 @@ func NewDefaultServiceURL(urlString string) (ConfigURL, error) {
 }
 
 
-
 func (c *DefaultServiceURL) Key() string {
-	return fmt.Sprintf("%s@%s-%s-%s-%s-%s", c.Service_, c.Protocol_,c.Group_,c.Location_,c.Version_,c.Methods_)
+	return fmt.Sprintf("%s@%s-%s-%s-%s-%s", c.Service_, c.Protocol_, c.Group_, c.Location_, c.Version_, c.Methods_)
 }
-
 
 func (c *DefaultServiceURL) ConfigURLEqual(url ConfigURL) bool {
 	if c.Key() != url.Key() {
