@@ -114,7 +114,7 @@ func (r *ZkRegistry) getListener(conf config.ConfigURL) (*zkEventListener, error
 	// listen
 	r.cltLock.Lock()
 	for _, svs := range r.services {
-		if svs.ConfigURLEqual(conf){
+		if svs.ConfigURLEqual(conf) {
 			go zkListener.listenServiceEvent(svs)
 		}
 	}

@@ -3,14 +3,14 @@ package registry
 type RegistryProtocol struct {
 }
 
-func (*RegistryProtocol)Refer(){
+func (r *RegistryProtocol) Refer() {
 
 }
 
-func (*RegistryProtocol)Export(){
+func (r *RegistryProtocol) Export() {
 
 }
 
-func (*RegistryProtocol)Destroy(){
+func (r *RegistryProtocol) Destroy() {
 
 }

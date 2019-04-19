@@ -15,13 +15,10 @@ import (
 )
 
 func init() {
-	extension.SetDefaultURLExtension(NewDefaultServiceURL)
+	extension.SetDefaultURLExtension(NewDefaultConfigURL)
 }
 
-//////////////////////////////////////////
-// service url
-//////////////////////////////////////////
-
+// load url config
 type ConfigURL interface {
 	Key() string
 	String() string
@@ -38,9 +35,16 @@ type ConfigURL interface {
 	Path() string
 	Service() string
 	Methods() string
+
+	SetProtocol(string)
+	SetService(string)
+	SetVersion(string)
+	SetGroup(string)
+	SetMethods(string)
+	SetPath(string)
 }
 
-type DefaultServiceURL struct {
+type DefaultConfigURL struct {
 	Service_      string
 	Protocol_     string `required:"true",default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty"`
 	Location_     string // ip+port
@@ -56,13 +60,18 @@ type DefaultServiceURL struct {
 	Methods_      string `yaml:"methods" json:"methods,omitempty"`
 }
 
-func NewDefaultServiceURL(urlString string) (ConfigURL, error) {
+func NewDefaultConfigURL(urlString string) (ConfigURL, error) {
 	var (
 		err          error
 		rawUrlString string
 		serviceUrl   *url.URL
-		s            = &DefaultServiceURL{}
+		s            = &DefaultConfigURL{}
 	)
+
+	// new a null instance
+	if urlString == "" {
+		return s, nil
+	}
 
 	rawUrlString, err = url.QueryUnescape(urlString)
 	if err != nil {
@@ -105,67 +114,91 @@ func NewDefaultServiceURL(urlString string) (ConfigURL, error) {
 	return s, nil
 }
 
-
-func (c *DefaultServiceURL) Key() string {
+func (c *DefaultConfigURL) Key() string {
 	return fmt.Sprintf("%s@%s-%s-%s-%s-%s", c.Service_, c.Protocol_, c.Group_, c.Location_, c.Version_, c.Methods_)
 }
 
-func (c *DefaultServiceURL) ConfigURLEqual(url ConfigURL) bool {
+func (c *DefaultConfigURL) ConfigURLEqual(url ConfigURL) bool {
 	if c.Key() != url.Key() {
 		return false
 	}
 	return true
 }
-func (s DefaultServiceURL) String() string {
+
+func (c DefaultConfigURL) String() string {
 	return fmt.Sprintf(
 		"DefaultServiceURL{Protocol:%s, Location:%s, Path:%s, Ip:%s, Port:%s, "+
 			"Timeout:%s, Version:%s, Group:%s, Weight_:%d, Query:%+v}",
-		s.Protocol_, s.Location_, s.Path_, s.Ip_, s.Port_,
-		s.Timeout_, s.Version_, s.Group_, s.Weight_, s.Query_)
+		c.Protocol_, c.Location_, c.Path_, c.Ip_, c.Port_,
+		c.Timeout_, c.Version_, c.Group_, c.Weight_, c.Query_)
 }
 
-func (s *DefaultServiceURL) Service() string {
-	return s.Service_
+func (c *DefaultConfigURL) Service() string {
+	return c.Service_
 }
-func (s *DefaultServiceURL) PrimitiveURL() string {
-	return s.PrimitiveURL_
-}
-
-func (s *DefaultServiceURL) Timeout() time.Duration {
-	return s.Timeout_
-}
-func (s *DefaultServiceURL) Location() string {
-	return s.Location_
+func (c *DefaultConfigURL) PrimitiveURL() string {
+	return c.PrimitiveURL_
 }
 
-func (s *DefaultServiceURL) Query() url.Values {
-	return s.Query_
+func (c *DefaultConfigURL) Timeout() time.Duration {
+	return c.Timeout_
+}
+func (c *DefaultConfigURL) Location() string {
+	return c.Location_
 }
 
-func (s *DefaultServiceURL) Group() string {
-	return s.Group_
+func (c *DefaultConfigURL) Query() url.Values {
+	return c.Query_
 }
 
-func (s *DefaultServiceURL) Protocol() string {
-	return s.Protocol_
+func (c *DefaultConfigURL) Group() string {
+	return c.Group_
 }
 
-func (s *DefaultServiceURL) Version() string {
-	return s.Version_
+func (c *DefaultConfigURL) Protocol() string {
+	return c.Protocol_
 }
 
-func (s *DefaultServiceURL) Ip() string {
-	return s.Ip_
+func (c *DefaultConfigURL) Version() string {
+	return c.Version_
 }
 
-func (s *DefaultServiceURL) Port() string {
-	return s.Port_
+func (c *DefaultConfigURL) Ip() string {
+	return c.Ip_
 }
 
-func (s *DefaultServiceURL) Path() string {
-	return s.Path_
+func (c *DefaultConfigURL) Port() string {
+	return c.Port_
 }
 
-func (c *DefaultServiceURL) Methods() string {
+func (c *DefaultConfigURL) Path() string {
+	return c.Path_
+}
+
+func (c *DefaultConfigURL) Methods() string {
 	return c.Methods_
+}
+
+func (c *DefaultConfigURL) SetProtocol(p string) {
+	c.Protocol_ = p
+}
+
+func (c *DefaultConfigURL) SetService(s string) {
+	c.Service_ = s
+}
+
+func (c *DefaultConfigURL) SetVersion(v string) {
+	c.Version_ = v
+}
+
+func (c *DefaultConfigURL) SetGroup(g string) {
+	c.Group_ = g
+}
+
+func (c *DefaultConfigURL) SetMethods(m string) {
+	c.Methods_ = m
+}
+
+func (c *DefaultConfigURL) SetPath(p string) {
+	c.Path_ = p
 }

@@ -1,8 +1,15 @@
 package protocol
 
+import "github.com/dubbo/dubbo-go/config"
+
 // Extension - Protocol
 type Protocol interface {
-	Export()
-	Refer()
+	Export(invoker Invoker) Exporter
+	Refer(url config.ConfigURL) Invoker
 	Destroy()
+}
+
+type Exporter interface {
+	GetInvoker() Invoker
+	Unexport()
 }
