@@ -9,8 +9,8 @@ import (
 )
 
 type Transport interface {
-	Call(ctx context.Context, url registry.ServiceURL, request Request, resp interface{}) error
-	NewRequest(conf registry.ServiceConfig, method string, args interface{}) (Request, error)
+	Call(ctx context.Context, url config.ConfigURL, request Request, resp interface{}) error
+	NewRequest(conf registry.ReferenceConfig, method string, args interface{}) (Request, error)
 }
 
 //////////////////////////////////////////////
@@ -18,5 +18,5 @@ type Transport interface {
 //////////////////////////////////////////////
 
 type Request interface {
-	ServiceConfig() registry.ServiceConfig
+	ServiceConfig() registry.ReferenceConfig
 }

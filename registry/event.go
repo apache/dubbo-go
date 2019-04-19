@@ -2,6 +2,7 @@ package registry
 
 import (
 	"fmt"
+	"github.com/dubbo/dubbo-go/config"
 	"math/rand"
 	"time"
 )
@@ -36,7 +37,7 @@ func (t ServiceEventType) String() string {
 
 type ServiceEvent struct {
 	Action  ServiceEventType
-	Service ServiceURL
+	Service config.ConfigURL
 }
 
 func (e ServiceEvent) String() string {

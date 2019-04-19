@@ -38,10 +38,10 @@ type Request struct {
 	method      string
 	args        interface{}
 	contentType string
-	conf        registry.ServiceConfig
+	conf        registry.ReferenceConfig
 }
 
-func (r *Request) ServiceConfig() registry.ServiceConfig {
+func (r *Request) ServiceConfig() registry.ReferenceConfig {
 	return r.conf
 }
 
@@ -83,7 +83,7 @@ func NewHTTPClient(opt *HTTPOptions) *HTTPClient {
 	}
 }
 
-func (c *HTTPClient) NewRequest(conf registry.ServiceConfig, method string, args interface{}) (client.Request, error) {
+func (c *HTTPClient) NewRequest(conf registry.ReferenceConfig, method string, args interface{}) (client.Request, error) {
 
 	return &Request{
 		ID:       atomic.AddInt64(&c.ID, 1),
@@ -97,7 +97,7 @@ func (c *HTTPClient) NewRequest(conf registry.ServiceConfig, method string, args
 	}, nil
 }
 
-func (c *HTTPClient) Call(ctx context.Context, service registry.ServiceURL, request client.Request, rsp interface{}) error {
+func (c *HTTPClient) Call(ctx context.Context, service config.ConfigURL, request client.Request, rsp interface{}) error {
 	// header
 	req := request.(*Request)
 	httpHeader := http.Header{}

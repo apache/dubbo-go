@@ -14,19 +14,19 @@ var PluggableLoadbalance = map[string]func() selector.Selector{
 
 // service configuration plugins , related to SeviceConfig for consumer paramters / ProviderSeviceConfig for provider parameters /
 
-// TODO:ServiceEven & ServiceURL subscribed by consumer from provider's listener shoud abstract to interface
-var PluggableServiceConfig = map[string]func() registry.ServiceConfig{
-	"default": registry.NewDefaultServiceConfig,
+// TODO:ServiceEven & ConfigURL subscribed by consumer from provider's listener shoud abstract to interface
+var PluggableServiceConfig = map[string]func() registry.ReferenceConfig{
+	"default": registry.NewServiceConfig,
 }
 var PluggableProviderServiceConfig = map[string]func() registry.ProviderServiceConfig{
 	"default": registry.NewDefaultProviderServiceConfig,
 }
 
-var PluggableServiceURL = map[string]func(string) (registry.ServiceURL, error){
+var PluggableServiceURL = map[string]func(string) (config.ConfigURL, error){
 	"default": registry.NewDefaultServiceURL,
 }
 
-var defaultServiceConfig = registry.NewDefaultServiceConfig
+var defaultServiceConfig = registry.NewServiceConfig
 var defaultProviderServiceConfig = registry.NewDefaultProviderServiceConfig
 
 var defaultServiceURL = registry.NewDefaultServiceURL
@@ -34,7 +34,7 @@ var defaultServiceURL = registry.NewDefaultServiceURL
 func SetDefaultServiceConfig(s string) {
 	defaultServiceConfig = PluggableServiceConfig[s]
 }
-func DefaultServiceConfig() func() registry.ServiceConfig {
+func DefaultServiceConfig() func() registry.ReferenceConfig {
 	return defaultServiceConfig
 }
 
@@ -48,6 +48,6 @@ func DefaultProviderServiceConfig() func() registry.ProviderServiceConfig {
 func SetDefaultServiceURL(s string) {
 	defaultServiceURL = PluggableServiceURL[s]
 }
-func DefaultServiceURL() func(string) (registry.ServiceURL, error) {
+func DefaultServiceURL() func(string) (config.ConfigURL, error) {
 	return defaultServiceURL
 }

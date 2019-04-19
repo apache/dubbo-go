@@ -1,7 +1,8 @@
-package _default
+package config
 
 import (
 	"fmt"
+	"github.com/dubbo/dubbo-go/common/extension"
 	"net"
 	"net/url"
 	"strconv"
@@ -10,117 +11,54 @@ import (
 )
 
 import (
-	log "github.com/AlexStocks/log4go"
 	jerrors "github.com/juju/errors"
 )
 
-import (
-	"github.com/dubbo/dubbo-go/common/extension"
-	"github.com/dubbo/dubbo-go/config"
-)
-
-func init() {
-	extension.SetServiceConfig("default", GetServiceConfig)
-	extension.SetURL("default", GetURL)
+func init(){
+	extension.SetDefaultURLExtension(NewDefaultServiceURL)
 }
 
-type DefaultServiceConfig struct {
-	Protocol_ string `required:"true",default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty"`
-	Service_  string `required:"true"  yaml:"service"  json:"service,omitempty"`
-	Group_    string `yaml:"group" json:"group,omitempty"`
-	Version_  string `yaml:"version" json:"version,omitempty"`
+
+
+//////////////////////////////////////////
+// service url
+//////////////////////////////////////////
+
+type ConfigURL interface {
+	Key() string
+	String() string
+	ConfigURLEqual(url ConfigURL) bool
+	PrimitiveURL() string
+	Query() url.Values
+	Location() string
+	Timeout() time.Duration
+	Group() string
+	Protocol() string
+	Version() string
+	Ip() string
+	Port() string
+	Path() string
+	Service()string
+	Methods()string
 }
-
-func NewDefaultServiceConfig() DefaultServiceConfig {
-	return DefaultServiceConfig{}
-}
-
-func (c *DefaultServiceConfig) Key() string {
-	return fmt.Sprintf("%s@%s", c.Service_, c.Protocol_)
-}
-
-func (c *DefaultServiceConfig) String() string {
-	return fmt.Sprintf("%s@%s-%s-%s", c.Service_, c.Protocol_, c.Group_, c.Version_)
-}
-
-func (c *DefaultServiceConfig) ServiceEqual(url config.URL) bool {
-	if c.Protocol_ != url.Protocol() {
-		return false
-	}
-
-	if c.Service_ != url.Query().Get("interface") {
-		return false
-	}
-
-	if c.Group_ != url.Group() {
-		return false
-	}
-
-	if c.Version_ != url.Version() {
-		return false
-	}
-
-	return true
-}
-
-func (c *DefaultServiceConfig) Service() string {
-	return c.Service_
-}
-
-func (c *DefaultServiceConfig) Protocol() string {
-	return c.Protocol_
-}
-
-func (c *DefaultServiceConfig) Version() string {
-	return c.Version_
-}
-
-func (c *DefaultServiceConfig) Group() string {
-	return c.Group_
-}
-func (c *DefaultServiceConfig) SetProtocol(s string) {
-	c.Protocol_ = s
-}
-
-func (c *DefaultServiceConfig) SetService(s string) {
-	c.Service_ = s
-}
-func (c *DefaultServiceConfig) SetVersion(s string) {
-	c.Version_ = s
-}
-
-func (c *DefaultServiceConfig) SetGroup(s string) {
-	c.Group_ = s
-}
-
-func (c *DefaultServiceConfig) Export() {
-	//todo:export
-}
-
-func GetServiceConfig() config.ServiceConfig {
-	s := NewDefaultServiceConfig()
-	return &s
-}
-
-/////////////////////////////////////
-// url
-/////////////////////////////////////
 
 type DefaultServiceURL struct {
-	Protocol_     string
+	Service_      string
+	Protocol_     string `required:"true",default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty"`
 	Location_     string // ip+port
-	Path_         string // like  /com.ikurento.dubbo.UserProvider3
+	Path_         string `yaml:"path" json:"path,omitempty"`// like  /com.ikurento.dubbo.UserProvider3
 	Ip_           string
 	Port_         string
 	Timeout_      time.Duration
-	Version_      string
-	Group_        string
+	Version_      string `yaml:"version" json:"version,omitempty"`
+	Group_        string `yaml:"group" json:"group,omitempty"`
 	Query_        url.Values
 	Weight_       int32
 	PrimitiveURL_ string
+	Methods_      string `yaml:"methods" json:"methods,omitempty"`
 }
 
-func NewDefaultServiceURL(urlString string) (config.URL, error) {
+func NewDefaultServiceURL(urlString string) (ConfigURL, error) {
 	var (
 		err          error
 		rawUrlString string
@@ -169,6 +107,19 @@ func NewDefaultServiceURL(urlString string) (config.URL, error) {
 	return s, nil
 }
 
+
+
+func (c *DefaultServiceURL) Key() string {
+	return fmt.Sprintf("%s@%s-%s-%s-%s-%s", c.Service_, c.Protocol_,c.Group_,c.Location_,c.Version_,c.Methods_)
+}
+
+
+func (c *DefaultServiceURL) ConfigURLEqual(url ConfigURL) bool {
+	if c.Key() != url.Key() {
+		return false
+	}
+	return true
+}
 func (s DefaultServiceURL) String() string {
 	return fmt.Sprintf(
 		"DefaultServiceURL{Protocol:%s, Location:%s, Path:%s, Ip:%s, Port:%s, "+
@@ -177,21 +128,9 @@ func (s DefaultServiceURL) String() string {
 		s.Timeout_, s.Version_, s.Group_, s.Weight_, s.Query_)
 }
 
-func (s *DefaultServiceURL) CheckMethod(method string) bool {
-	var (
-		methodArray []string
-	)
-
-	methodArray = strings.Split(s.Query_.Get("methods"), ",")
-	for _, m := range methodArray {
-		if m == method {
-			return true
-		}
-	}
-
-	return false
+func (s *DefaultServiceURL) Service() string {
+	return s.Service_
 }
-
 func (s *DefaultServiceURL) PrimitiveURL() string {
 	return s.PrimitiveURL_
 }
@@ -231,10 +170,6 @@ func (s *DefaultServiceURL) Path() string {
 	return s.Path_
 }
 
-func GetURL(urlString string) config.URL {
-	url, err := NewDefaultServiceURL(urlString)
-	if err != nil {
-		log.Error(jerrors.Trace(err))
-	}
-	return url
+func (c *DefaultServiceURL) Methods() string {
+	return c.Methods_
 }
