@@ -57,7 +57,7 @@ import (
 //
 //		serviceURL, err = plugins.DefaultServiceURL()(n)
 //		if err != nil {
-//			log.Error("NewDefaultServiceURL({%s}) = error{%v}", n, err)
+//			log.Error("NewConfigURL({%s}) = error{%v}", n, err)
 //			continue
 //		}
 //		if !serviceConf.ServiceEqual(serviceURL) {

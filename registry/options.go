@@ -59,7 +59,7 @@ func (o *Options) String() string {
 
 type Option func(*Options)
 
-func (Option) Name() string {
+func (o Option) Name() string {
 	return "dubbogo-registry-option"
 }
 

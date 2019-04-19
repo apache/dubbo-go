@@ -116,7 +116,7 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 		log.Info("add zkNode{%s}", newNode)
 		serviceURL, err = plugins.DefaultServiceURL()(n)
 		if err != nil {
-			log.Error("NewDefaultServiceURL(%s) = error{%v}", n, jerrors.ErrorStack(err))
+			log.Error("NewConfigURL(%s) = error{%v}", n, jerrors.ErrorStack(err))
 			continue
 		}
 		if !conf.ConfigURLEqual(serviceURL) {
@@ -152,7 +152,7 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 		}
 		log.Warn("delete serviceURL{%s}", serviceURL)
 		if err != nil {
-			log.Error("NewDefaultServiceURL(i{%s}) = error{%v}", n, jerrors.ErrorStack(err))
+			log.Error("NewConfigURL(i{%s}) = error{%v}", n, jerrors.ErrorStack(err))
 			continue
 		}
 		l.events <- zkEvent{&registry.ServiceEvent{Action: registry.ServiceDel, Service: serviceURL}, nil}
@@ -259,7 +259,7 @@ func (l *zkEventListener) listenServiceEvent(conf config.ConfigURL) {
 
 		serviceURL, err = plugins.DefaultServiceURL()(c)
 		if err != nil {
-			log.Error("NewDefaultServiceURL(r{%s}) = error{%v}", c, err)
+			log.Error("NewConfigURL(r{%s}) = error{%v}", c, err)
 			continue
 		}
 		if !conf.ConfigURLEqual(serviceURL) {
