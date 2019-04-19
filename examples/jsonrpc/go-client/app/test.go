@@ -39,7 +39,7 @@ func testJsonrpc(clientConfig *examples.ClientConfig, userKey string, method str
 	}
 
 	// Create request
-	// gxlog.CInfo("jsonrpc selected service %#v", clientConfig.ServiceConfigList[serviceIdx])
+	// gxlog.CInfo("jsonrpc selected service %#v", clientConfig.References[serviceIdx])
 
 	// Attention the last parameter : []UserKey{userKey}
 	req, err = clientInvoker.HttpClient.NewRequest(clientConfig.ServiceConfigList[serviceIdx], method, []string{userKey})

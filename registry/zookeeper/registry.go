@@ -40,17 +40,9 @@ func init() {
 	plugins.PluggableRegistries["zookeeper"] = NewZkRegistry
 }
 
-type ZkRegistryConfig struct {
-	Address    []string      `required:"true" yaml:"address"  json:"address,omitempty"`
-	UserName   string        `yaml:"user_name" json:"user_name,omitempty"`
-	Password   string        `yaml:"password" json:"password,omitempty"`
-	TimeoutStr string        `yaml:"timeout" default:"5s" json:"timeout,omitempty"` // unit: second
-	Timeout    time.Duration `yaml:"-"  json:"-"`
-}
-
 type Options struct {
 	registry.Options
-	ZkRegistryConfig
+	config.RegistryConfig
 }
 
 func (o Options) ToString() string {
@@ -64,9 +56,9 @@ func (Option) Name() string {
 	return "dubbogo-zookeeper-registry-option"
 }
 
-func WithRegistryConf(conf ZkRegistryConfig) Option {
+func WithRegistryConf(conf config.RegistryConfig) Option {
 	return func(o *Options) {
-		o.ZkRegistryConfig = conf
+		o.RegistryConfig = conf
 	}
 }
 
@@ -124,8 +116,8 @@ func NewZkRegistry(opts ...registry.RegistryOption) (registry.Registry, error) {
 		r.Version = version.Version
 	}
 
-	if r.ZkRegistryConfig.Timeout == 0 {
-		r.ZkRegistryConfig.Timeout = 1e9
+	if r.RegistryConfig.Timeout == 0 {
+		r.RegistryConfig.Timeout = 1e9
 	}
 	err = r.validateZookeeperClient()
 	if err != nil {
@@ -158,7 +150,8 @@ func (r *ZkRegistry) validateZookeeperClient() error {
 	r.cltLock.Lock()
 	defer r.cltLock.Unlock()
 	if r.client == nil {
-		r.client, err = newZookeeperClient(RegistryZkClient, r.Address, r.ZkRegistryConfig.Timeout)
+		//in dubbp ,every registry only connect one node ,so this is []string{r.Address}
+		r.client, err = newZookeeperClient(RegistryZkClient, []string{r.Address}, r.RegistryConfig.Timeout)
 		if err != nil {
 			log.Warn("newZookeeperClient(name{%s}, zk addresss{%v}, timeout{%d}) = error{%v}",
 				RegistryZkClient, r.Address, r.Timeout.String(), err)
