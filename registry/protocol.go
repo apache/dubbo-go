@@ -37,5 +37,4 @@ func (*RegistryProtocol) Export() {
 }
 
 func (*RegistryProtocol) Destroy() {
-
 }

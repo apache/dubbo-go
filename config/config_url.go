@@ -14,12 +14,12 @@ import (
 )
 
 type baseUrl struct {
-	Protocol string `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
-	Location string // ip+port
-	Ip       string
-	Port     string
-	Timeout  time.Duration
-	Query    url.Values
+	Protocol     string `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
+	Location     string // ip+port
+	Ip           string
+	Port         string
+	Timeout      time.Duration
+	Query        url.Values
 	PrimitiveURL string
 }
 
@@ -32,19 +32,25 @@ type ConfigURL struct {
 	Version string `yaml:"version" json:"version,omitempty"`
 	Group   string `yaml:"group" json:"group,omitempty"`
 
-	Weight       int32
-	Methods      string `yaml:"methods" json:"methods,omitempty"`
-	Username     string
-	Password     string
+	Weight   int32
+	Methods  string `yaml:"methods" json:"methods,omitempty"`
+	Username string
+	Password string
 }
 
 func NewConfigURL(urlString string) (*ConfigURL, error) {
+
 	var (
 		err          error
 		rawUrlString string
 		serviceUrl   *url.URL
 		s            = &ConfigURL{}
 	)
+
+	// new a null instance
+	if urlString == "" {
+		return s, nil
+	}
 
 	rawUrlString, err = url.QueryUnescape(urlString)
 	if err != nil {
@@ -92,6 +98,7 @@ func (c *ConfigURL) Key() string {
 }
 
 func (c *ConfigURL) ConfigURLEqual(url ConfigURL) bool {
+
 	if c.Key() != url.Key() {
 		return false
 	}
