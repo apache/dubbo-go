@@ -67,3 +67,18 @@ func (u DubboUser) String() string {
 func (DubboUser) JavaClassName() string {
 	return "com.ikurento.user.User"
 }
+
+type UserProvider struct {
+	GetUser  func(userID string) (user DubboUser, err error)
+	GetUsers func(userIDs []string) (user []DubboUser, err error)
+}
+
+type UserProviderNoErr struct {
+	GetUser  func(userID string) (user DubboUser)
+	GetUsers func(userIDs []string) (user []DubboUser)
+}
+
+type UserProviderRetPtr struct {
+	GetUser  func(userID string) (user *DubboUser, err error)
+	GetUsers func(userIDs []string) (user []DubboUser, err error)
+}

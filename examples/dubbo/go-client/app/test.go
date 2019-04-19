@@ -55,5 +55,44 @@ func testDubborpc(clientConfig *examples.ClientConfig, userKey string) {
 		return
 	}
 
-	log.Info("response result:%s", user)
+	log.Info("response result of method [GetUser]: %s", user)
+
+	userProvider := new(UserProvider)
+	userProviderNoErr := new(UserProviderNoErr)
+	userProviderRetPtr := new(UserProviderRetPtr)
+	err = clientInvoker.ImplementService(userProvider, clientConfig.ServiceConfigList[serviceIdx], dubbo.WithCallRequestTimeout(10e9), dubbo.WithCallResponseTimeout(10e9), dubbo.WithCallSerialID(dubbo.S_Dubbo))
+	if err != nil {
+		log.Error("ImplementService return error:%+v", jerrors.ErrorStack(err))
+	}
+
+	err = clientInvoker.ImplementService(userProviderNoErr, clientConfig.ServiceConfigList[serviceIdx], dubbo.WithCallRequestTimeout(10e9), dubbo.WithCallResponseTimeout(10e9), dubbo.WithCallSerialID(dubbo.S_Dubbo))
+	if err != nil {
+		panic(fmt.Sprintf("ImplementService return error: %+v", jerrors.ErrorStack(err)))
+	}
+
+	err = clientInvoker.ImplementService(userProviderRetPtr, clientConfig.ServiceConfigList[serviceIdx], dubbo.WithCallRequestTimeout(10e9), dubbo.WithCallResponseTimeout(10e9), dubbo.WithCallSerialID(dubbo.S_Dubbo))
+	if err != nil {
+		panic(fmt.Sprintf("ImplementService return error: %+v", jerrors.ErrorStack(err)))
+	}
+
+	dubboUser, err := userProvider.GetUser(userKey)
+	if err != nil {
+		log.Error("userProvider.GetUser return error:%+v", jerrors.ErrorStack(err))
+	}
+
+	log.Info("response result of method [GetUser] by ImplementService: %+v", dubboUser)
+
+	// using userProviderNoErr will panic if has error when invoke
+	dubboUserNoErr := userProviderNoErr.GetUser(userKey)
+	log.Info("response result of method [GetUser] by ImplementService userProviderNoErr: %+v", dubboUserNoErr)
+
+	dubboUserPtr, err := userProviderRetPtr.GetUser(userKey)
+	switch {
+	case err != nil:
+		log.Error("userProviderRetPtr.GetUser return error:%+v", jerrors.ErrorStack(err))
+	case dubboUserPtr == nil:
+		log.Error("dubboUserPtr may not exist.")
+	default:
+		log.Info("response result of method [GetUser] by ImplementService userProviderRetPtr: %+v", *dubboUserPtr)
+	}
 }
