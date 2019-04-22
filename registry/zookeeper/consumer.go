@@ -10,14 +10,14 @@ import (
 )
 
 // name: service@protocol
-//func (r *ZkRegistry) GetService(conf registry.ReferenceConfig) ([]config.ConfigURL, error) {
+//func (r *ZkRegistry) GetService(conf registry.ReferenceConfig) ([]config.URL, error) {
 //
 //	var (
 //		err         error
 //		dubboPath   string
 //		nodes       []string
 //		listener    *zkEventListener
-//		serviceURL  config.ConfigURL
+//		serviceURL  config.URL
 //		serviceConf registry.ReferenceConfig
 //		ok          bool
 //	)
@@ -52,12 +52,12 @@ import (
 //		return nil, jerrors.Trace(err)
 //	}
 //
-//	var listenerServiceMap = make(map[string]config.ConfigURL)
+//	var listenerServiceMap = make(map[string]config.URL)
 //	for _, n := range nodes {
 //
 //		serviceURL, err = plugins.DefaultServiceURL()(n)
 //		if err != nil {
-//			log.Error("NewConfigURL({%s}) = error{%v}", n, err)
+//			log.Error("NewURL({%s}) = error{%v}", n, err)
 //			continue
 //		}
 //		if !serviceConf.ServiceEqual(serviceURL) {
@@ -65,14 +65,14 @@ import (
 //			continue
 //		}
 //
-//		_, ok := listenerServiceMap[serviceURL.Query().Get(serviceURL.Location())]
+//		_, ok := listenerServiceMap[serviceURL.Params().Get(serviceURL.Location())]
 //		if !ok {
 //			listenerServiceMap[serviceURL.Location()] = serviceURL
 //			continue
 //		}
 //	}
 //
-//	var services []config.ConfigURL
+//	var services []config.URL
 //	for _, service := range listenerServiceMap {
 //		services = append(services, service)
 //	}
@@ -80,12 +80,12 @@ import (
 //	return services, nil
 //}
 
-func (r *ZkRegistry) Subscribe(conf config.ConfigURL) (registry.Listener, error) {
+func (r *ZkRegistry) Subscribe(conf config.URL) (registry.Listener, error) {
 	r.wg.Add(1)
 	return r.getListener(conf)
 }
 
-func (r *ZkRegistry) getListener(conf config.ConfigURL) (*zkEventListener, error) {
+func (r *ZkRegistry) getListener(conf config.URL) (*zkEventListener, error) {
 	var (
 		zkListener *zkEventListener
 	)
@@ -114,7 +114,7 @@ func (r *ZkRegistry) getListener(conf config.ConfigURL) (*zkEventListener, error
 	// listen
 	r.cltLock.Lock()
 	for _, svs := range r.services {
-		if svs.ConfigURLEqual(conf) {
+		if svs.URLEqual(&conf) {
 			go zkListener.listenServiceEvent(svs)
 		}
 	}

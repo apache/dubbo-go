@@ -39,7 +39,7 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	return exporter
 }
 
-func (dp *DubboProtocol) Refer(url config.ConfigURL) protocol.Invoker {
+func (dp *DubboProtocol) Refer(url config.URL) protocol.Invoker {
 	invoker := &DubboInvoker{url: url}
 	dp.invokers = append(dp.invokers, invoker)
 	log.Info("Refer service: ", url.String())
@@ -50,7 +50,7 @@ func (dp *DubboProtocol) Destroy() {
 
 }
 
-func (dp *DubboProtocol) openServer(url config.ConfigURL) {
+func (dp *DubboProtocol) openServer(url config.URL) {
 	srv.Start(url)
 }
 

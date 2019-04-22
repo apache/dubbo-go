@@ -103,7 +103,7 @@ func NewClient(conf *ClientConfig) (*Client, error) {
 }
 
 // call one way
-func (c *Client) CallOneway(addr string, svcUrl config.ConfigURL, method string, args interface{}, opts ...CallOption) error {
+func (c *Client) CallOneway(addr string, svcUrl config.URL, method string, args interface{}, opts ...CallOption) error {
 	var copts CallOptions
 
 	for _, o := range opts {
@@ -114,7 +114,7 @@ func (c *Client) CallOneway(addr string, svcUrl config.ConfigURL, method string,
 }
 
 // if @reply is nil, the transport layer will get the response without notify the invoker.
-func (c *Client) Call(addr string, svcUrl config.ConfigURL, method string, args, reply interface{}, opts ...CallOption) error {
+func (c *Client) Call(addr string, svcUrl config.URL, method string, args, reply interface{}, opts ...CallOption) error {
 	var copts CallOptions
 
 	for _, o := range opts {
@@ -129,7 +129,7 @@ func (c *Client) Call(addr string, svcUrl config.ConfigURL, method string, args,
 	return jerrors.Trace(c.call(ct, addr, svcUrl, method, args, reply, nil, copts))
 }
 
-func (c *Client) AsyncCall(addr string, svcUrl config.ConfigURL, method string, args interface{},
+func (c *Client) AsyncCall(addr string, svcUrl config.URL, method string, args interface{},
 	callback AsyncCallback, reply interface{}, opts ...CallOption) error {
 
 	var copts CallOptions
@@ -140,7 +140,7 @@ func (c *Client) AsyncCall(addr string, svcUrl config.ConfigURL, method string, 
 	return jerrors.Trace(c.call(CT_TwoWay, addr, svcUrl, method, args, reply, callback, copts))
 }
 
-func (c *Client) call(ct CallType, addr string, svcUrl config.ConfigURL, method string,
+func (c *Client) call(ct CallType, addr string, svcUrl config.URL, method string,
 	args, reply interface{}, callback AsyncCallback, opts CallOptions) error {
 
 	if opts.RequestTimeout == 0 {

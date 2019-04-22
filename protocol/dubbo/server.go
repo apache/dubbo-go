@@ -99,7 +99,7 @@ func (s *Server) newSession(session getty.Session) error {
 	return nil
 }
 
-func (s *Server) Start(url config.ConfigURL) {
+func (s *Server) Start(url config.URL) {
 	var (
 		addr      string
 		tcpServer getty.Server

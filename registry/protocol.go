@@ -1,11 +1,23 @@
 package registry
 
 import (
+	"github.com/juju/utils/registry"
+	"github.com/prometheus/common/log"
+	"sync"
+	"time"
+)
+
+import (
+	jerrors "github.com/juju/errors"
+)
+
+import (
 	"github.com/dubbo/dubbo-go/common/extension"
 	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbo/dubbo-go/protocol"
-	"sync"
 )
+
+const RegistryConnDelay = 3
 
 type RegistryProtocol struct {
 	// Registry  Map<RegistryAddress, Registry>
@@ -23,13 +35,21 @@ func NewRegistryProtocol() protocol.Protocol {
 	}
 }
 
-func (protocol *RegistryProtocol) Refer(url config.ConfigURL) Registry {
-	protocol.registiesMutex.Lock()
-	if registry, ok := protocol.registies[url.Key()]; ok {
+func (protocol *RegistryProtocol) Refer(url config.IURL) (Registry, error) {
+	var regUrl = url.(*config.RegistryURL)
 
-	} else {
-		extension.GetRegistryExtension(url.Protocol(), WithDubboType(CONSUMER), WithApplicationConf())
+	protocol.registiesMutex.Lock()
+	var reg Registry
+	if reg, ok := protocol.registies[url.Key()]; !ok {
+
+		var err error
+		reg, err = extension.GetRegistryExtension(regUrl.Protocol, regUrl)
+		protocol.registies[url.Key()] = reg
+		if err != nil {
+			return nil, err
+		}
 	}
+	protocol.subscribe(reg, regUrl.URL)
 }
 
 func (*RegistryProtocol) Export() {
