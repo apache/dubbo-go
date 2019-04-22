@@ -16,7 +16,6 @@ import (
 
 import (
 	"github.com/dubbo/dubbo-go/common/constant"
-	"github.com/dubbo/dubbo-go/registry"
 )
 
 var (
@@ -103,9 +102,9 @@ type ConsumerConfig struct {
 	//client load balance algorithm
 	ClientLoadBalance string `default:"round_robin"  yaml:"client_load_balance" json:"client_load_balance,omitempty"`
 	// application
-	Application_Config registry.ApplicationConfig `yaml:"application_config" json:"application_config,omitempty"`
-	Registries         []RegistryConfig           `yaml:"registries" json:"registries,omitempty"`
-	References         []ReferenceConfig          `yaml:"references" json:"references,omitempty"`
+	ApplicationConfig ApplicationConfig `yaml:"application_config" json:"application_config,omitempty"`
+	Registries        []RegistryConfig  `yaml:"registries" json:"registries,omitempty"`
+	References        []ReferenceConfig `yaml:"references" json:"references,omitempty"`
 }
 
 type ReferenceConfigTmp struct {

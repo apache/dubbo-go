@@ -3,14 +3,14 @@ package dubbo
 import "github.com/dubbo/dubbo-go/config"
 
 type DubboInvoker struct {
-	url config.ConfigURL
+	url config.URL
 }
 
 func (di *DubboInvoker) Invoke() {
 
 }
 
-func (di *DubboInvoker) GetURL() config.ConfigURL {
+func (di *DubboInvoker) GetURL() config.URL {
 	return di.url
 }
 

@@ -2,7 +2,7 @@ package config
 
 type ServiceConfig struct {
 	Service    string `required:"true"  yaml:"service"  json:"service,omitempty"`
-	URLs       []ConfigURL
+	URLs       []URL
 	rpcService RPCService
 }
 

@@ -37,7 +37,7 @@ func (t ServiceEventType) String() string {
 
 type ServiceEvent struct {
 	Action  ServiceEventType
-	Service config.ConfigURL
+	Service config.URL
 }
 
 func (e ServiceEvent) String() string {
