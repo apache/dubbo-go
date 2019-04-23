@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"context"
 	"sync"
 	"time"
 )
@@ -15,21 +16,45 @@ import (
 	"github.com/dubbo/dubbo-go/config"
 )
 
+type Options struct {
+	serviceTTL time.Duration
+}
+type Option func(*Options)
+
+func WithServiceTTL(ttl time.Duration) Option {
+	return func(o *Options) {
+		o.serviceTTL = ttl
+	}
+}
+
 type RegistryDirectory struct {
+	directory.BaseDirectory
 	cacheService *directory.ServiceArray
 	listenerLock sync.Mutex
 	serviceType  string
 	registry     Registry
+	Options
 }
 
-func NewRegistryDirectory(url config.RegistryURL, registry Registry) *RegistryDirectory {
+func NewRegistryDirectory(ctx context.Context, url *config.RegistryURL, registry Registry, opts ...Option) *RegistryDirectory {
+	options := Options{
+		//default 300s
+		serviceTTL: time.Duration(300e9),
+	}
+	for _, opt := range opts {
+		opt(&options)
+	}
+
 	return &RegistryDirectory{
-		cacheService: directory.NewServiceArray([]config.URL{}),
-		serviceType:  url.URL.Service,
-		registry:     registry,
+		BaseDirectory: directory.NewBaseDirectory(ctx, url),
+		cacheService:  directory.NewServiceArray(ctx, []config.URL{}),
+		serviceType:   url.URL.Service,
+		registry:      registry,
+		Options:       options,
 	}
 }
 
+//subscibe from registry
 func (dir *RegistryDirectory) subscribe(url config.URL) {
 	for {
 		if dir.registry.IsClosed() {
@@ -63,35 +88,37 @@ func (dir *RegistryDirectory) subscribe(url config.URL) {
 	}
 }
 
+//subscribe service from registry , and update the cacheServices
 func (dir *RegistryDirectory) update(res *ServiceEvent) {
 	if res == nil {
 		return
 	}
 
 	log.Debug("registry update, result{%s}", res)
-	registryKey := res.Service.Key()
 
 	dir.listenerLock.Lock()
 	defer dir.listenerLock.Unlock()
 
-	svcArr, ok := dir.cacheService[registryKey]
-	log.Debug("registry name:%s, its current member lists:%+v", registryKey, svcArr)
+	log.Debug("update service name: %s!", res.Service)
 
 	switch res.Action {
 	case ServiceAdd:
-		if ok {
-			svcArr.add(res.Service, ivk.ServiceTTL)
-		} else {
-			ivk.cacheServiceMap[registryKey] = newServiceArray([]registry.ServiceURL{res.Service})
-		}
-	case registry.ServiceDel:
-		if ok {
-			svcArr.del(res.Service, ivk.ServiceTTL)
-			if len(svcArr.arr) == 0 {
-				delete(ivk.cacheServiceMap, registryKey)
-				log.Warn("delete registry %s from registry map", registryKey)
-			}
-		}
-		log.Error("selector delete registryURL{%s}", res.Service)
+		dir.cacheService.Add(res.Service, dir.serviceTTL)
+
+	case ServiceDel:
+		dir.cacheService.Del(res.Service, dir.serviceTTL)
+
+		log.Error("selector delete service url{%s}", res.Service)
 	}
+}
+
+func (dir *RegistryDirectory) List(){
+
+}
+func (dir *RegistryDirectory) IsAvailable() bool {
+	return true
+}
+
+func (dir *RegistryDirectory) Destroy() {
+	dir.BaseDirectory.Destroy()
 }

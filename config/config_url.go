@@ -13,7 +13,6 @@ import (
 	jerrors "github.com/juju/errors"
 )
 
-
 type IURL interface {
 	Key() string
 	URLEqual(IURL) bool
@@ -38,9 +37,9 @@ type URL struct {
 	Weight  int32
 	Methods string `yaml:"methods" json:"methods,omitempty"`
 
-	//both for registry & service & reference
 	Version string `yaml:"version" json:"version,omitempty"`
 	Group   string `yaml:"group" json:"group,omitempty"`
+	Cluster string
 }
 
 func NewURL(urlString string) (*URL, error) {

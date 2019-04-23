@@ -1,8 +1,8 @@
 package config
 
 import (
+	"context"
 	log "github.com/AlexStocks/log4go"
-	"reflect"
 )
 
 import "github.com/dubbo/dubbo-go/common/extension"
@@ -10,17 +10,24 @@ import "github.com/dubbo/dubbo-go/common/extension"
 var refprotocol = extension.GetRefProtocol()
 
 type ReferenceConfig struct {
+	context    context.Context
 	Interface  string                    `required:"true"  yaml:"interface"  json:"interface,omitempty"`
 	Registries []referenceConfigRegistry `required:"true"  yaml:"registries"  json:"registries,omitempty"`
+	Cluster    string                    `default:"failover" yaml:"cluster"  json:"cluster,omitempty"`
+	Methods    []method                  `yaml:"methods"  json:"methods,omitempty"`
 	URLs       []URL                     `yaml:"-"`
-	Type       reflect.Type
 }
 type referenceConfigRegistry struct {
 	string
 }
 
-func NewReferenceConfig() *ReferenceConfig {
-	return &ReferenceConfig{}
+type method struct {
+	name    string `yaml:"name"  json:"name,omitempty"`
+	retries int    `yaml:"retries"  json:"retries,omitempty"`
+}
+
+func NewReferenceConfig(ctx context.Context) *ReferenceConfig {
+	return &ReferenceConfig{context: ctx}
 }
 
 func (refconfig *ReferenceConfig) CreateProxy() {

@@ -1,6 +1,7 @@
 package zookeeper
 
 import (
+	"context"
 	"fmt"
 	"github.com/dubbo/dubbo-go/common/extension"
 	"github.com/dubbo/dubbo-go/config"
@@ -46,6 +47,7 @@ func init() {
 /////////////////////////////////////
 
 type ZkRegistry struct {
+	context context.Context
 	*config.RegistryURL
 	birth int64          // time of file birth, seconds since Epoch; 0 if unknown
 	wg    sync.WaitGroup // wg+done for zk restart
@@ -62,13 +64,14 @@ type ZkRegistry struct {
 	zkPath map[string]int // key = protocol://ip:port/interface
 }
 
-func NewZkRegistry(url *config.RegistryURL) (registry.Registry, error) {
+func NewZkRegistry(ctx context.Context, url *config.RegistryURL) (registry.Registry, error) {
 	var (
 		err error
 		r   *ZkRegistry
 	)
 
 	r = &ZkRegistry{
+		context:     ctx,
 		RegistryURL: url,
 		birth:       time.Now().UnixNano(),
 		done:        make(chan struct{}),

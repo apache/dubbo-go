@@ -12,6 +12,7 @@ require (
 	github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223 // indirect
 	github.com/prometheus/common v0.0.0-20181126121408-4724e9255275
 	github.com/samuel/go-zookeeper v0.0.0-20180130194729-c4fab1ac1bec
+	github.com/tevino/abool v0.0.0-20170917061928-9b9efcf221b5 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6 // indirect
 	gopkg.in/yaml.v2 v2.2.2
 )
