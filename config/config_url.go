@@ -13,7 +13,6 @@ import (
 	jerrors "github.com/juju/errors"
 )
 
-
 type IURL interface {
 	Key() string
 	URLEqual(IURL) bool
@@ -109,10 +108,10 @@ func (c *URL) URLEqual(url IURL) bool {
 	}
 	return true
 }
-func (s URL) String() string {
+func (c URL) String() string {
 	return fmt.Sprintf(
 		"DefaultServiceURL{Protocol:%s, Location:%s, Path:%s, Ip:%s, Port:%s, "+
 			"Timeout:%s, Version:%s, Group:%s, Weight_:%d, Params:%+v}",
-		s.Protocol, s.Location, s.Path, s.Ip, s.Port,
-		s.Timeout, s.Version, s.Group, s.Weight, s.Params)
+		c.Protocol, c.Location, c.Path, c.Ip, c.Port,
+		c.Timeout, c.Version, c.Group, c.Weight, c.Params)
 }

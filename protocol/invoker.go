@@ -4,7 +4,7 @@ import "github.com/dubbo/dubbo-go/config"
 
 // Extension - Invoker
 type Invoker interface {
-	Invoke()
+	Invoke(Invocation) Result
 	GetURL() config.URL
 	Destroy()
 }

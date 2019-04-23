@@ -1,7 +1,10 @@
 package dubbo
 
 import (
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
 	"math/rand"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -10,6 +13,7 @@ import (
 import (
 	"github.com/AlexStocks/getty"
 	"github.com/AlexStocks/goext/sync/atomic"
+	log "github.com/AlexStocks/log4go"
 	"github.com/dubbogo/hessian2"
 	jerrors "github.com/juju/errors"
 )
@@ -24,10 +28,35 @@ var (
 	errSessionNotExist   = jerrors.New("session not exist")
 	errClientClosed      = jerrors.New("client closed")
 	errClientReadTimeout = jerrors.New("client read timeout")
+
+	conf *ClientConfig
 )
+
+const CONF_CLIENT_FILE_PATH = "CONF_CLIENT_FILE_PATH"
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
+
+	conf = &ClientConfig{}
+	// load clientconfig from *.yml
+	path := os.Getenv(CONF_CLIENT_FILE_PATH)
+	if path == "" {
+		log.Info("CONF_CLIENT_FILE_PATH is null")
+	}
+
+	file, err := ioutil.ReadFile(path)
+	if err != nil {
+		log.Error(jerrors.Trace(err))
+	}
+
+	err = yaml.Unmarshal(file, conf)
+	if err != nil {
+		log.Error(jerrors.Trace(err))
+	}
+
+	if err := conf.CheckValidity(); err != nil {
+		log.Error("ClientConfig check failed: ", jerrors.Trace(err))
+	}
 }
 
 type CallOptions struct {
@@ -60,6 +89,12 @@ func WithCallSerialID(s SerialID) CallOption {
 	}
 }
 
+func WithCallMeta_All(callMeta map[interface{}]interface{}) CallOption {
+	return func(o *CallOptions) {
+		o.Meta = callMeta
+	}
+}
+
 func WithCallMeta(k, v interface{}) CallOption {
 	return func(o *CallOptions) {
 		if o.Meta == nil {
@@ -88,10 +123,7 @@ type Client struct {
 	pendingResponses map[SequenceType]*PendingResponse
 }
 
-func NewClient(conf *ClientConfig) (*Client, error) {
-	if err := conf.CheckValidity(); err != nil {
-		return nil, jerrors.Trace(err)
-	}
+func NewClient() *Client {
 
 	c := &Client{
 		pendingResponses: make(map[SequenceType]*PendingResponse),
@@ -99,7 +131,7 @@ func NewClient(conf *ClientConfig) (*Client, error) {
 	}
 	c.pool = newGettyRPCClientConnPool(c, conf.PoolSize, time.Duration(int(time.Second)*conf.PoolTTL))
 
-	return c, nil
+	return c
 }
 
 // call one way
@@ -151,9 +183,9 @@ func (c *Client) call(ct CallType, addr string, svcUrl config.URL, method string
 	}
 
 	p := &DubboPackage{}
-	p.Service.Path = strings.TrimPrefix(svcUrl.Path(), "/")
-	p.Service.Target = strings.TrimPrefix(svcUrl.Path(), "/")
-	p.Service.Version = svcUrl.Version()
+	p.Service.Path = strings.TrimPrefix(svcUrl.Path, "/")
+	p.Service.Target = strings.TrimPrefix(svcUrl.Path, "/")
+	p.Service.Version = svcUrl.Version
 	p.Service.Method = method
 	p.Service.Timeout = opts.RequestTimeout
 	if opts.SerialID == 0 {

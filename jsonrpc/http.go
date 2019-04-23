@@ -97,7 +97,7 @@ func (c *HTTPClient) NewRequest(conf registry.ReferenceConfig, method string, ar
 	}, nil
 }
 
-func (c *HTTPClient) Call(ctx context.Context, service config.ConfigURL, request client.Request, rsp interface{}) error {
+func (c *HTTPClient) Call(ctx context.Context, service config.URL, request client.Request, rsp interface{}) error {
 	// header
 	req := request.(*Request)
 	httpHeader := http.Header{}
