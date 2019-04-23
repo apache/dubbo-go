@@ -30,14 +30,14 @@ func NewDubboProtocol(ctx context.Context) *DubboProtocol {
 }
 
 func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
-	url := invoker.GetURL()
+	url := invoker.GetUrl().(*config.URL)
 	serviceKey := url.Key()
 	exporter := NewDubboExporter(nil, serviceKey, invoker)
 	dp.exporterMap[serviceKey] = exporter
 	log.Info("Export service: ", url.String())
 
 	// start server
-	dp.openServer(url)
+	dp.openServer(*url)
 	return exporter
 }
 

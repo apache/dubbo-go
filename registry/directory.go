@@ -112,7 +112,7 @@ func (dir *RegistryDirectory) update(res *ServiceEvent) {
 	}
 }
 
-func (dir *RegistryDirectory) List(){
+func (dir *RegistryDirectory) List() {
 
 }
 func (dir *RegistryDirectory) IsAvailable() bool {
