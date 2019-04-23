@@ -45,3 +45,7 @@ references:
       - "shanghaizk"
 #    protocol : "dubbo"
     interface : "com.ikurento.user.UserProvider"
+    cluster: "failover"
+    methods :
+      - name: "GetUser"
+        retries: 3

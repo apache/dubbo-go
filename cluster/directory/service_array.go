@@ -1,6 +1,7 @@
 package directory
 
 import (
+	"context"
 	"fmt"
 
 	"strings"
@@ -24,15 +25,17 @@ var (
 )
 
 type ServiceArray struct {
-	arr   []config.URL
-	birth time.Time
-	idx   int64
+	context context.Context
+	arr     []config.URL
+	birth   time.Time
+	idx     int64
 }
 
-func NewServiceArray(arr []config.URL) *ServiceArray {
+func NewServiceArray(ctx context.Context, arr []config.URL) *ServiceArray {
 	return &ServiceArray{
-		arr:   arr,
-		birth: time.Now(),
+		context: ctx,
+		arr:     arr,
+		birth:   time.Now(),
 	}
 }
 
@@ -59,12 +62,12 @@ func (s *ServiceArray) String() string {
 	return builder.String()
 }
 
-func (s *ServiceArray) add(url config.URL, ttl time.Duration) {
+func (s *ServiceArray) Add(url config.URL, ttl time.Duration) {
 	s.arr = append(s.arr, url)
 	s.birth = time.Now().Add(ttl)
 }
 
-func (s *ServiceArray) del(url config.URL, ttl time.Duration) {
+func (s *ServiceArray) Del(url config.URL, ttl time.Duration) {
 	for i, svc := range s.arr {
 		if svc.PrimitiveURL == url.PrimitiveURL {
 			s.arr = append(s.arr[:i], s.arr[i+1:]...)
