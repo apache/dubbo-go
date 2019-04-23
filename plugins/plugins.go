@@ -10,7 +10,7 @@ package plugins
 //
 //// service configuration plugins , related to SeviceConfig for consumer paramters / ProviderSeviceConfig for provider parameters /
 //
-//// TODO:ServiceEven & ConfigURL subscribed by consumer from provider's listener shoud abstract to interface
+//// TODO:ServiceEven & URL subscribed by consumer from provider's listener shoud abstract to interface
 //var PluggableServiceConfig = map[string]func() registry.ReferenceConfig{
 //	"default": registry.NewServiceConfig,
 //}
@@ -18,7 +18,7 @@ package plugins
 //	"default": registry.NewDefaultProviderServiceConfig,
 //}
 //
-//var PluggableServiceURL = map[string]func(string) (config.ConfigURL, error){
+//var PluggableServiceURL = map[string]func(string) (config.URL, error){
 //	"default": registry.NewDefaultServiceURL,
 //}
 //
@@ -44,6 +44,6 @@ package plugins
 //func SetDefaultServiceURL(s string) {
 //	defaultServiceURL = PluggableServiceURL[s]
 //}
-//func DefaultServiceURL() func(string) (config.ConfigURL, error) {
+//func DefaultServiceURL() func(string) (config.URL, error) {
 //	return defaultServiceURL
 //}

@@ -1,6 +1,7 @@
 package dubbo
 
 import (
+	"context"
 	log "github.com/AlexStocks/log4go"
 )
 
@@ -19,18 +20,19 @@ func init() {
 var dubboProtocol *DubboProtocol
 
 type DubboProtocol struct {
+	ctx         context.Context
 	exporterMap map[string]protocol.Exporter
 	invokers    []protocol.Invoker
 }
 
-func NewDubboProtocol() protocol.Protocol {
-	return &DubboProtocol{exporterMap: make(map[string]protocol.Exporter)}
+func NewDubboProtocol(ctx context.Context) *DubboProtocol {
+	return &DubboProtocol{ctx: ctx, exporterMap: make(map[string]protocol.Exporter)}
 }
 
 func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetURL()
 	serviceKey := url.Key()
-	exporter := &DubboExporter{invoker: invoker, key: serviceKey}
+	exporter := NewDubboExporter(nil, serviceKey, invoker)
 	dp.exporterMap[serviceKey] = exporter
 	log.Info("Export service: ", url.String())
 
@@ -40,7 +42,7 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 }
 
 func (dp *DubboProtocol) Refer(url config.URL) protocol.Invoker {
-	invoker := &DubboInvoker{url: url}
+	invoker := NewDubboInvoker(nil, url, getClient())
 	dp.invokers = append(dp.invokers, invoker)
 	log.Info("Refer service: ", url.String())
 	return invoker
@@ -58,5 +60,9 @@ func GetProtocol() protocol.Protocol {
 	if dubboProtocol != nil {
 		return dubboProtocol
 	}
-	return NewDubboProtocol()
+	return NewDubboProtocol(nil)
+}
+
+func getClient() *Client {
+	return NewClient()
 }

@@ -24,4 +24,5 @@ func SetRegistry(name string, v func(ctx context.Context, config *config.Registr
 
 func GetRegistryExtension(name string, ctx context.Context, config *config.RegistryURL) (registry.Registry, error) {
 	return registrys[name](ctx, config)
+
 }
