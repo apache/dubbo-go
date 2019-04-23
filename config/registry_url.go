@@ -48,7 +48,7 @@ type RegistryURL struct {
 }
 
 func (c *RegistryURL) Key() string {
-	return fmt.Sprintf("%s-%s-%s-%s-%s",  c.Protocol, c.Group, c.Location, c.Version, c.DubboType)
+	return fmt.Sprintf("%s-%s-%s-%s-%s", c.Protocol, c.Group, c.Location, c.Version, c.DubboType)
 }
 
 func (c *RegistryURL) URLEqual(url IURL) bool {
