@@ -8,4 +8,3 @@ type ApplicationConfig struct {
 	Owner        string `yaml:"owner" json:"owner,omitempty"`
 	Environment  string `yaml:"environment" json:"environment,omitempty"`
 }
-
