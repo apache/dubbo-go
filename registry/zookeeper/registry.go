@@ -2,7 +2,6 @@ package zookeeper
 
 import (
 	"fmt"
-	"github.com/dubbo/dubbo-go/plugins"
 	"net/url"
 	"os"
 	"strconv"
@@ -18,8 +17,9 @@ import (
 )
 
 import (
-	"github.com/dubbo/dubbo-go/registry"
-	"github.com/dubbo/dubbo-go/version"
+	"github.com/dubbo/go-for-apache-dubbo/registry"
+	"github.com/dubbo/go-for-apache-dubbo/version"
+	"github.com/dubbo/go-for-apache-dubbo/plugins"
 )
 
 const (

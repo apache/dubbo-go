@@ -1,6 +1,6 @@
 package client
 
-import "github.com/dubbo/dubbo-go/registry"
+import "github.com/dubbo/go-for-apache-dubbo/registry"
 
 type ServiceArrayIf interface {
 	GetIdx() *int64

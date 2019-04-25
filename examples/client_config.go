@@ -16,9 +16,9 @@ import (
 )
 
 import (
-	"github.com/dubbo/dubbo-go/plugins"
-	"github.com/dubbo/dubbo-go/registry"
-	"github.com/dubbo/dubbo-go/registry/zookeeper"
+	"github.com/dubbo/go-for-apache-dubbo/plugins"
+	"github.com/dubbo/go-for-apache-dubbo/registry"
+	"github.com/dubbo/go-for-apache-dubbo/registry/zookeeper"
 )
 
 const (
