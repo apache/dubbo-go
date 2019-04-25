@@ -250,13 +250,8 @@ func (p *gettyRPCClientPool) close() {
 }
 
 func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPCClient, error) {
-	var builder strings.Builder
 
-	builder.WriteString(addr)
-	builder.WriteString("@")
-	builder.WriteString(protocol)
-
-	key := builder.String()
+	key := GenerateEndpointAddr(protocol, addr)
 
 	p.Lock()
 	defer p.Unlock()
@@ -293,13 +288,7 @@ func (p *gettyRPCClientPool) release(conn *gettyRPCClient, err error) {
 		return
 	}
 
-	var builder strings.Builder
-
-	builder.WriteString(conn.addr)
-	builder.WriteString("@")
-	builder.WriteString(conn.protocol)
-
-	key := builder.String()
+	key := GenerateEndpointAddr(conn.protocol, conn.addr)
 
 	p.Lock()
 	defer p.Unlock()
@@ -320,13 +309,7 @@ func (p *gettyRPCClientPool) remove(conn *gettyRPCClient) {
 		return
 	}
 
-	var builder strings.Builder
-
-	builder.WriteString(conn.addr)
-	builder.WriteString("@")
-	builder.WriteString(conn.protocol)
-
-	key := builder.String()
+	key := GenerateEndpointAddr(conn.protocol, conn.addr)
 
 	p.Lock()
 	defer p.Unlock()
@@ -343,4 +326,14 @@ func (p *gettyRPCClientPool) remove(conn *gettyRPCClient) {
 			}
 		}
 	}
+}
+
+func GenerateEndpointAddr(protocol, addr string) string {
+	var builder strings.Builder
+
+	builder.WriteString(protocol)
+	builder.WriteString("://")
+	builder.WriteString(addr)
+
+	return builder.String()
 }
