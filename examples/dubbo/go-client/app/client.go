@@ -2,9 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/dubbo/dubbo-go/dubbo"
-	"github.com/dubbo/dubbo-go/plugins"
-	"github.com/dubbo/dubbo-go/registry/zookeeper"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -22,10 +19,13 @@ import (
 )
 
 import (
-	"github.com/dubbo/dubbo-go/client/invoker"
-	"github.com/dubbo/dubbo-go/examples"
-	"github.com/dubbo/dubbo-go/public"
-	"github.com/dubbo/dubbo-go/registry"
+	"github.com/dubbo/go-for-apache-dubbo/client/invoker"
+	"github.com/dubbo/go-for-apache-dubbo/examples"
+	"github.com/dubbo/go-for-apache-dubbo/public"
+	"github.com/dubbo/go-for-apache-dubbo/registry"
+	"github.com/dubbo/go-for-apache-dubbo/dubbo"
+	"github.com/dubbo/go-for-apache-dubbo/plugins"
+	"github.com/dubbo/go-for-apache-dubbo/registry/zookeeper"
 )
 
 var (

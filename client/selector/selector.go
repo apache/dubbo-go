@@ -5,8 +5,8 @@ import (
 )
 
 import (
-	"github.com/dubbo/dubbo-go/client"
-	"github.com/dubbo/dubbo-go/registry"
+	"github.com/dubbo/go-for-apache-dubbo/client"
+	"github.com/dubbo/go-for-apache-dubbo/registry"
 )
 
 var (

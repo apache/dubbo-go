@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"github.com/dubbo/dubbo-go/plugins"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -17,12 +16,13 @@ import (
 import (
 	"github.com/AlexStocks/goext/net"
 	log "github.com/AlexStocks/log4go"
-	"github.com/dubbo/dubbo-go/registry"
+	"github.com/dubbo/go-for-apache-dubbo/registry"
 	jerrors "github.com/juju/errors"
 )
 
 import (
-	"github.com/dubbo/dubbo-go/server"
+	"github.com/dubbo/go-for-apache-dubbo/server"
+	"github.com/dubbo/go-for-apache-dubbo/plugins"
 )
 
 const (

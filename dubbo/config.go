@@ -5,7 +5,7 @@ import (
 )
 
 import (
-	"github.com/dubbo/dubbo-go/server"
+	"github.com/dubbo/go-for-apache-dubbo/server"
 	jerrors "github.com/juju/errors"
 )
 

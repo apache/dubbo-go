@@ -13,9 +13,9 @@ import (
 )
 
 import (
-	"github.com/dubbo/dubbo-go/dubbo"
-	"github.com/dubbo/dubbo-go/examples"
-	"github.com/dubbo/dubbo-go/public"
+	"github.com/dubbo/go-for-apache-dubbo/dubbo"
+	"github.com/dubbo/go-for-apache-dubbo/examples"
+	"github.com/dubbo/go-for-apache-dubbo/public"
 )
 
 func testDubborpc(clientConfig *examples.ClientConfig, userKey string) {

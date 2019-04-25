@@ -2,7 +2,6 @@ package dubbo
 
 import (
 	"fmt"
-	"github.com/dubbo/dubbo-go/plugins"
 	"net"
 	"reflect"
 	"strconv"
@@ -16,7 +15,8 @@ import (
 )
 
 import (
-	"github.com/dubbo/dubbo-go/registry"
+	"github.com/dubbo/go-for-apache-dubbo/registry"
+	"github.com/dubbo/go-for-apache-dubbo/plugins"
 )
 
 type Option func(*Options)

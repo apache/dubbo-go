@@ -1,8 +1,8 @@
 package plugins
 
 import (
-	"github.com/dubbo/dubbo-go/client/selector"
-	"github.com/dubbo/dubbo-go/registry"
+	"github.com/dubbo/go-for-apache-dubbo/client/selector"
+	"github.com/dubbo/go-for-apache-dubbo/registry"
 )
 
 var PluggableRegistries = map[string]func(...registry.RegistryOption) (registry.Registry, error){}

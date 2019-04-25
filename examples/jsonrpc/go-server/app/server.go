@@ -18,10 +18,10 @@ import (
 )
 
 import (
-	"github.com/dubbo/dubbo-go/jsonrpc"
-	"github.com/dubbo/dubbo-go/plugins"
-	registry2 "github.com/dubbo/dubbo-go/registry"
-	"github.com/dubbo/dubbo-go/registry/zookeeper"
+	"github.com/dubbo/go-for-apache-dubbo/jsonrpc"
+	"github.com/dubbo/go-for-apache-dubbo/plugins"
+	registry2 "github.com/dubbo/go-for-apache-dubbo/registry"
+	"github.com/dubbo/go-for-apache-dubbo/registry/zookeeper"
 )
 
 var (
