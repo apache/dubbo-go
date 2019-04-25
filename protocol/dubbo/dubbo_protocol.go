@@ -32,7 +32,7 @@ func NewDubboProtocol(ctx context.Context) *DubboProtocol {
 func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetUrl().(*config.URL)
 	serviceKey := url.Key()
-	exporter := NewDubboExporter(nil, serviceKey, invoker)
+	exporter := NewDubboExporter(nil, serviceKey, invoker, dp.exporterMap)
 	dp.exporterMap[serviceKey] = exporter
 	log.Info("Export service: ", url.String())
 
@@ -49,7 +49,8 @@ func (dp *DubboProtocol) Refer(url config.URL) protocol.Invoker {
 }
 
 func (dp *DubboProtocol) Destroy() {
-
+	log.Info("DubboProtocol destroy.")
+	srv.Stop() // stop server
 }
 
 func (dp *DubboProtocol) openServer(url config.URL) {
