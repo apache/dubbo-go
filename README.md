@@ -1,4 +1,4 @@
-# dubbo-go #
+# GO for Apache Dubbo #
 ---
 Apache Dubbo Golang Implementation.
 
