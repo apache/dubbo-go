@@ -18,5 +18,5 @@ func NewFailoverClusterInvoker(directory cluster.Directory) protocol.Invoker {
 func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	invokers := invoker.directory.List(invocation)
 	invokers[0].GetUrl()
-	return
+	return &protocol.RPCResult{}
 }

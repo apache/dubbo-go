@@ -1,6 +1,8 @@
-package registry
+package protocol
 
 import (
+	"github.com/dubbo/dubbo-go/registry"
+	directory2 "github.com/dubbo/dubbo-go/registry/directory"
 	"sync"
 )
 
@@ -18,7 +20,7 @@ const RegistryConnDelay = 3
 
 type RegistryProtocol struct {
 	// Registry  Map<RegistryAddress, Registry>
-	registies      map[string]Registry
+	registies      map[string]registry.Registry
 	registiesMutex sync.Mutex
 }
 
@@ -28,7 +30,7 @@ func init() {
 
 func NewRegistryProtocol() protocol.Protocol {
 	return &RegistryProtocol{
-		registies: make(map[string]Registry),
+		registies: make(map[string]registry.Registry),
 	}
 }
 
@@ -38,7 +40,7 @@ func (protocol *RegistryProtocol) Refer(url config.IURL) protocol.Invoker {
 
 	protocol.registiesMutex.Lock()
 	defer protocol.registiesMutex.Unlock()
-	var reg Registry
+	var reg registry.Registry
 	var ok bool
 
 	if reg, ok = protocol.registies[url.Key()]; !ok {
@@ -52,8 +54,8 @@ func (protocol *RegistryProtocol) Refer(url config.IURL) protocol.Invoker {
 		}
 	}
 	//new registry directory for store service url from registry
-	directory := NewRegistryDirectory(regUrl, reg)
-	go directory.subscribe(serviceUrl)
+	directory := directory2.NewRegistryDirectory(regUrl, reg)
+	go directory.Subscribe(serviceUrl)
 
 	//new cluster invoker
 	cluster := extension.GetCluster(serviceUrl.Cluster)

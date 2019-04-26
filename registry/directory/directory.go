@@ -1,6 +1,8 @@
-package registry
+package directory
 
 import (
+	"github.com/dubbo/dubbo-go/registry"
+	protocol2 "github.com/dubbo/dubbo-go/registry/protocol"
 	"sync"
 	"time"
 )
@@ -33,13 +35,13 @@ type RegistryDirectory struct {
 	cacheInvokers    []protocol.Invoker
 	listenerLock     sync.Mutex
 	serviceType      string
-	registry         Registry
+	registry         registry.Registry
 	cacheInvokersMap sync.Map //use sync.map
 	//cacheInvokersMap map[string]protocol.Invoker
 	Options
 }
 
-func NewRegistryDirectory(url *config.RegistryURL, registry Registry, opts ...Option) *RegistryDirectory {
+func NewRegistryDirectory(url *config.RegistryURL, registry registry.Registry, opts ...Option) *RegistryDirectory {
 	options := Options{
 		//default 300s
 		serviceTTL: time.Duration(300e9),
@@ -59,7 +61,7 @@ func NewRegistryDirectory(url *config.RegistryURL, registry Registry, opts ...Op
 }
 
 //subscibe from registry
-func (dir *RegistryDirectory) subscribe(url config.URL) {
+func (dir *RegistryDirectory) Subscribe(url config.URL) {
 	for {
 		if dir.registry.IsClosed() {
 			log.Warn("event listener game over.")
@@ -73,7 +75,7 @@ func (dir *RegistryDirectory) subscribe(url config.URL) {
 				return
 			}
 			log.Warn("getListener() = err:%s", jerrors.ErrorStack(err))
-			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
+			time.Sleep(time.Duration(protocol2.RegistryConnDelay) * time.Second)
 			continue
 		}
 
@@ -81,7 +83,7 @@ func (dir *RegistryDirectory) subscribe(url config.URL) {
 			if serviceEvent, err := listener.Next(); err != nil {
 				log.Warn("Selector.watch() = error{%v}", jerrors.ErrorStack(err))
 				listener.Close()
-				time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
+				time.Sleep(time.Duration(protocol2.RegistryConnDelay) * time.Second)
 				return
 			} else {
 				go dir.update(serviceEvent)
@@ -93,7 +95,7 @@ func (dir *RegistryDirectory) subscribe(url config.URL) {
 }
 
 //subscribe service from registry , and update the cacheServices
-func (dir *RegistryDirectory) update(res *ServiceEvent) {
+func (dir *RegistryDirectory) update(res *registry.ServiceEvent) {
 	if res == nil {
 		return
 	}
@@ -105,14 +107,14 @@ func (dir *RegistryDirectory) update(res *ServiceEvent) {
 	dir.refreshInvokers(res)
 }
 
-func (dir *RegistryDirectory) refreshInvokers(res *ServiceEvent) {
+func (dir *RegistryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 	var newCacheInvokersMap sync.Map
 
 	switch res.Action {
-	case ServiceAdd:
+	case registry.ServiceAdd:
 		//dir.cacheService.Add(res.Service, dir.serviceTTL)
 		newCacheInvokersMap = dir.cacheInvoker(res.Service)
-	case ServiceDel:
+	case registry.ServiceDel:
 		//dir.cacheService.Del(res.Service, dir.serviceTTL)
 		newCacheInvokersMap = dir.uncacheInvoker(res.Service)
 		log.Info("selector delete service url{%s}", res.Service)
