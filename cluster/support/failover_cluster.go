@@ -10,10 +10,11 @@ import (
 type FailoverCluster struct {
 	context context.Context
 }
+
 const name = "failover"
 
-func init(){
-	extension.SetCluster(name,NewFailoverCluster)
+func init() {
+	extension.SetCluster(name, NewFailoverCluster)
 }
 
 func NewFailoverCluster(ctx context.Context) cluster.Cluster {
