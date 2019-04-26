@@ -50,13 +50,13 @@ type URL struct {
 	Cluster string
 }
 
-func NewURL(urlString string) (*URL, error) {
+func NewURL(ctx context.Context, urlString string) (*URL, error) {
 
 	var (
 		err          error
 		rawUrlString string
 		serviceUrl   *url.URL
-		s            = &URL{}
+		s            = &URL{baseUrl: baseUrl{ctx: ctx}}
 	)
 
 	// new a null instance
