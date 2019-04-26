@@ -1,6 +1,8 @@
 package protocol
 
 type Result interface {
+	Error() error
+	Result() interface{}
 }
 
 /////////////////////////////
@@ -10,4 +12,12 @@ type Result interface {
 type RPCResult struct {
 	Err  error
 	Rest interface{}
+}
+
+func (r *RPCResult) Error() error {
+	return r.Err
+}
+
+func (r *RPCResult) Result() interface{} {
+	return r.Rest
 }
