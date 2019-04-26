@@ -1,7 +1,6 @@
 package dubbo
 
 import (
-	"context"
 	log "github.com/AlexStocks/log4go"
 )
 
@@ -20,20 +19,22 @@ func init() {
 var dubboProtocol *DubboProtocol
 
 type DubboProtocol struct {
-	ctx         context.Context
-	exporterMap map[string]protocol.Exporter
-	invokers    []protocol.Invoker
+	protocol.BaseProtocol
+	serverMap map[string]*Server
 }
 
-func NewDubboProtocol(ctx context.Context) *DubboProtocol {
-	return &DubboProtocol{ctx: ctx, exporterMap: make(map[string]protocol.Exporter)}
+func NewDubboProtocol() *DubboProtocol {
+	return &DubboProtocol{
+		BaseProtocol: protocol.NewBaseProtocol(),
+		serverMap:    make(map[string]*Server),
+	}
 }
 
 func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetUrl().(*config.URL)
 	serviceKey := url.Key()
-	exporter := NewDubboExporter(nil, serviceKey, invoker, dp.exporterMap)
-	dp.exporterMap[serviceKey] = exporter
+	exporter := NewDubboExporter(serviceKey, invoker, dp.ExporterMap())
+	dp.SetExporterMap(serviceKey, exporter)
 	log.Info("Export service: ", url.String())
 
 	// start server
@@ -41,19 +42,28 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	return exporter
 }
 
-func (dp *DubboProtocol) Refer(url config.URL) protocol.Invoker {
-	invoker := NewDubboInvoker(nil, url, getClient())
-	dp.invokers = append(dp.invokers, invoker)
-	log.Info("Refer service: ", url.String())
+func (dp *DubboProtocol) Refer(url config.IURL) protocol.Invoker {
+	invoker := NewDubboInvoker(url, NewClient())
+	dp.SetInvokers(invoker)
+	log.Info("Refer service: ", url.(*config.URL).String())
 	return invoker
 }
 
 func (dp *DubboProtocol) Destroy() {
 	log.Info("DubboProtocol destroy.")
-	srv.Stop() // stop server
+
+	dp.BaseProtocol.Destroy()
+
+	// stop server
+	for key, server := range dp.serverMap {
+		delete(dp.serverMap, key)
+		server.Stop()
+	}
 }
 
 func (dp *DubboProtocol) openServer(url config.URL) {
+	srv := NewServer(dp.ExporterMap()[url.Key()])
+	dp.serverMap[url.Location] = srv
 	srv.Start(url)
 }
 
@@ -61,9 +71,5 @@ func GetProtocol() protocol.Protocol {
 	if dubboProtocol != nil {
 		return dubboProtocol
 	}
-	return NewDubboProtocol(nil)
-}
-
-func getClient() *Client {
-	return NewClient()
+	return NewDubboProtocol()
 }

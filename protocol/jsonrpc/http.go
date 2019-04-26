@@ -20,9 +20,8 @@ import (
 )
 
 import (
-	"github.com/dubbo/dubbo-go/client"
+	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbo/dubbo-go/public"
-	"github.com/dubbo/dubbo-go/registry"
 )
 
 //////////////////////////////////////////////
@@ -38,11 +37,6 @@ type Request struct {
 	method      string
 	args        interface{}
 	contentType string
-	conf        registry.ReferenceConfig
-}
-
-func (r *Request) ServiceConfig() registry.ReferenceConfig {
-	return r.conf
 }
 
 //////////////////////////////////////////////
@@ -83,30 +77,28 @@ func NewHTTPClient(opt *HTTPOptions) *HTTPClient {
 	}
 }
 
-func (c *HTTPClient) NewRequest(conf registry.ReferenceConfig, method string, args interface{}) (client.Request, error) {
+func (c *HTTPClient) NewRequest(service config.URL, method string, args interface{}) *Request {
 
 	return &Request{
 		ID:       atomic.AddInt64(&c.ID, 1),
-		group:    conf.Group(),
-		protocol: conf.Protocol(),
-		version:  conf.Version(),
-		service:  conf.Service(),
+		group:    service.Group,
+		protocol: service.Protocol,
+		version:  service.Version,
+		service:  service.Service,
 		method:   method,
 		args:     args,
-		conf:     conf,
-	}, nil
+	}
 }
 
-func (c *HTTPClient) Call(ctx context.Context, service config.URL, request client.Request, rsp interface{}) error {
+func (c *HTTPClient) Call(ctx context.Context, service config.URL, req *Request, rsp interface{}) error {
 	// header
-	req := request.(*Request)
 	httpHeader := http.Header{}
 	httpHeader.Set("Content-Type", "application/json")
 	httpHeader.Set("Accept", "application/json")
 
 	reqTimeout := c.options.HTTPTimeout
-	if service.Timeout() != 0 && service.Timeout() < reqTimeout {
-		reqTimeout = time.Duration(service.Timeout())
+	if service.Timeout != 0 && service.Timeout < reqTimeout {
+		reqTimeout = time.Duration(service.Timeout)
 	}
 	if reqTimeout <= 0 {
 		reqTimeout = 1e8
@@ -130,7 +122,7 @@ func (c *HTTPClient) Call(ctx context.Context, service config.URL, request clien
 		return jerrors.Trace(err)
 	}
 
-	rspBody, err := c.Do(service.Location(), service.Query().Get("interface"), httpHeader, reqBody)
+	rspBody, err := c.Do(service.Location, service.Params.Get("interface"), httpHeader, reqBody)
 	if err != nil {
 		return jerrors.Trace(err)
 	}
