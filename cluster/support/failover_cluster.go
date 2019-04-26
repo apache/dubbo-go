@@ -17,12 +17,10 @@ func init() {
 	extension.SetCluster(name, NewFailoverCluster)
 }
 
-func NewFailoverCluster(ctx context.Context) cluster.Cluster {
-	return &FailoverCluster{
-		context: ctx,
-	}
+func NewFailoverCluster() cluster.Cluster {
+	return &FailoverCluster{}
 }
 
 func (cluster *FailoverCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return NewFailoverClusterInvoker(cluster.context, directory)
+	return NewFailoverClusterInvoker( directory)
 }

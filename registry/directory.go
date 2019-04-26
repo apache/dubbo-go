@@ -1,7 +1,6 @@
 package registry
 
 import (
-	"context"
 	"sync"
 	"time"
 )
@@ -40,7 +39,7 @@ type RegistryDirectory struct {
 	Options
 }
 
-func NewRegistryDirectory(ctx context.Context, url *config.RegistryURL, registry Registry, opts ...Option) *RegistryDirectory {
+func NewRegistryDirectory(url *config.RegistryURL, registry Registry, opts ...Option) *RegistryDirectory {
 	options := Options{
 		//default 300s
 		serviceTTL: time.Duration(300e9),
@@ -50,7 +49,7 @@ func NewRegistryDirectory(ctx context.Context, url *config.RegistryURL, registry
 	}
 
 	return &RegistryDirectory{
-		BaseDirectory:    directory.NewBaseDirectory(ctx, url),
+		BaseDirectory:    directory.NewBaseDirectory(url),
 		cacheInvokers:    []protocol.Invoker{},
 		cacheInvokersMap: sync.Map{},
 		serviceType:      url.URL.Service,
@@ -153,8 +152,8 @@ func (dir *RegistryDirectory) toGroupInvokers(newInvokersMap sync.Map) []protoco
 		groupInvokersList = groupInvokersMap[""]
 	} else {
 		for _, invokers := range groupInvokersMap {
-			staticDir := directory.NewStaticDirectory(dir.Context(), invokers)
-			cluster := extension.GetCluster(dir.GetUrl().(*config.RegistryURL).URL.Cluster, dir.Context())
+			staticDir := directory.NewStaticDirectory(invokers)
+			cluster := extension.GetCluster(dir.GetUrl().(*config.RegistryURL).URL.Cluster)
 			groupInvokersList = append(groupInvokersList, cluster.Join(staticDir))
 		}
 	}
@@ -200,8 +199,13 @@ func (dir *RegistryDirectory) Destroy() {
 	dir.BaseDirectory.Destroy()
 }
 
+// configuration  > reference config >service config
 //  in this function we should merge the reference local url config into the service url from registry.
-//for some reason(I have not finish the service module, so this function marked as TODO)
+//TODO configuration merge, in the future , the configuration center's config should merge too.
 func mergeUrl(serviceUrl config.URL, referenceUrl config.URL) config.URL {
+	//loadBalance strategy config
+
+	//cluster strategy config
+
 	return serviceUrl
 }

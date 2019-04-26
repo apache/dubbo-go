@@ -58,7 +58,7 @@ type RegistryURL struct {
 	Address      string    `yaml:"address" json:"address,omitempty"`
 }
 
-func NewRegistryURL(urlString string) (*RegistryURL, error) {
+func NewRegistryURL(context context.Context, urlString string) (*RegistryURL, error) {
 
 	var (
 		err          error
@@ -108,7 +108,7 @@ func NewRegistryURL(urlString string) (*RegistryURL, error) {
 			s.Timeout = time.Duration(timeout * 1e6) // timeout unit is millisecond
 		}
 	}
-
+	s.ctx = context
 	return s, nil
 }
 

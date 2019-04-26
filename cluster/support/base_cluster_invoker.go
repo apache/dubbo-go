@@ -1,7 +1,6 @@
 package cluster
 
 import (
-	"context"
 	"github.com/tevino/abool"
 )
 
@@ -11,15 +10,13 @@ import (
 )
 
 type baseClusterInvoker struct {
-	context        context.Context
 	directory      cluster.Directory
 	availablecheck bool
 	destroyed      *abool.AtomicBool
 }
 
-func newBaseClusterInvoker(ctx context.Context, directory cluster.Directory) baseClusterInvoker {
+func newBaseClusterInvoker(directory cluster.Directory) baseClusterInvoker {
 	return baseClusterInvoker{
-		context:        ctx,
 		directory:      directory,
 		availablecheck: false,
 		destroyed:      abool.NewBool(false),

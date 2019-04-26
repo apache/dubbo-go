@@ -1,4 +1,4 @@
-package config
+package support
 
 import (
 	"fmt"
@@ -108,8 +108,8 @@ type ConsumerConfig struct {
 }
 
 type ReferenceConfigTmp struct {
-	Service    string                    `required:"true"  yaml:"service"  json:"service,omitempty"`
-	Registries []referenceConfigRegistry `required:"true"  yaml:"registries"  json:"registries,omitempty"`
+	Service    string           `required:"true"  yaml:"service"  json:"service,omitempty"`
+	Registries []RegistryConfig `required:"true"  yaml:"registries"  json:"registries,omitempty"`
 	URLs       []map[string]string
 }
 
