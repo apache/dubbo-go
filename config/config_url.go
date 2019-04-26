@@ -50,6 +50,11 @@ type URL struct {
 	Cluster string
 }
 
+type method struct {
+	Name    string
+	Retries int
+}
+
 func NewURL(ctx context.Context, urlString string) (*URL, error) {
 
 	var (
