@@ -2,6 +2,7 @@ package dubbo
 
 import (
 	"fmt"
+	"github.com/dubbo/dubbo-go/protocol"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net"
@@ -18,45 +19,51 @@ import (
 	"github.com/dubbo/dubbo-go/config"
 )
 
-var srv = NewServer()
+var srvConf *ServerConfig
 
-const CONF_SERVER_FILE_PATH = "CONF_SERVER_FILE_PATH"
+const CONF_DUBBO_SERVER_FILE_PATH = "CONF_SERVER_FILE_PATH"
 
-type Server struct {
-	conf          ServerConfig
-	tcpServerList []getty.Server
-}
-
-func NewServer() *Server {
-
-	s := &Server{}
-
+func init() {
 	// load serverconfig from *.yml
-	path := os.Getenv(CONF_SERVER_FILE_PATH)
+	path := os.Getenv(CONF_DUBBO_SERVER_FILE_PATH)
 	if path == "" {
 		log.Info("CONF_SERVER_FILE_PATH is null")
-		return s
+		return
 	}
 
 	file, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Error(jerrors.Trace(err))
-		return s
+		return
 	}
 
 	conf := &ServerConfig{}
 	err = yaml.Unmarshal(file, conf)
 	if err != nil {
 		log.Error(jerrors.Trace(err))
-		return s
+		return
 	}
 
 	if err := conf.CheckValidity(); err != nil {
 		log.Error("ServerConfig check failed: ", err)
-		return s
+		return
 	}
 
-	s.conf = *conf
+	srvConf = conf
+}
+
+type Server struct {
+	conf      ServerConfig
+	tcpServer getty.Server
+	exporter  protocol.Exporter
+}
+
+func NewServer(exporter protocol.Exporter) *Server {
+
+	s := &Server{
+		exporter: exporter,
+		conf:     *srvConf,
+	}
 
 	return s
 }
@@ -86,8 +93,8 @@ func (s *Server) newSession(session getty.Session) error {
 
 	session.SetName(conf.GettySessionParam.SessionName)
 	session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
-	session.SetPkgHandler(NewRpcServerPackageHandler()) // TODO: now, a server will bind all service
-	session.SetEventListener(NewRpcServerHandler(conf.SessionNumber, conf.sessionTimeout))
+	session.SetPkgHandler(NewRpcServerPackageHandler())
+	session.SetEventListener(NewRpcServerHandler(s.exporter, conf.SessionNumber, conf.sessionTimeout))
 	session.SetRQLen(conf.GettySessionParam.PkgRQSize)
 	session.SetWQLen(conf.GettySessionParam.PkgWQSize)
 	session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
@@ -111,16 +118,10 @@ func (s *Server) Start(url config.URL) {
 	)
 	tcpServer.RunEventLoop(s.newSession)
 	log.Debug("s bind addr{%s} ok!", addr)
-	s.tcpServerList = append(s.tcpServerList, tcpServer)
+	s.tcpServer = tcpServer
 
 }
 
 func (s *Server) Stop() {
-	list := s.tcpServerList
-	s.tcpServerList = nil
-	if list != nil {
-		for _, tcpServer := range list {
-			tcpServer.Close()
-		}
-	}
+	s.tcpServer.Close()
 }

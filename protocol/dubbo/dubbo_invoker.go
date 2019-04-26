@@ -1,7 +1,6 @@
 package dubbo
 
 import (
-	"context"
 	"errors"
 	"strconv"
 	"sync"
@@ -18,24 +17,18 @@ import (
 	"github.com/dubbo/dubbo-go/protocol"
 )
 
-var Err_No_Reply = errors.New("no reply")
+var Err_No_Reply = errors.New("request need @reply")
 
 type DubboInvoker struct {
-	ctx         context.Context
-	url         config.URL
+	protocol.BaseInvoker
 	client      *Client
-	available   bool
-	destroyed   bool
 	destroyLock sync.Mutex
 }
 
-func NewDubboInvoker(ctx context.Context, url config.URL, client *Client) *DubboInvoker {
+func NewDubboInvoker(url config.IURL, client *Client) *DubboInvoker {
 	return &DubboInvoker{
-		ctx:       ctx,
-		url:       url,
-		client:    client,
-		available: true,
-		destroyed: false,
+		BaseInvoker: protocol.NewBaseInvoker(url),
+		client:      client,
 	}
 }
 
@@ -56,13 +49,13 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	}
 	if async {
 		if callBack, ok := inv.CallBack().(func(response CallResponse)); ok {
-			result.Err = di.client.AsyncCall(url.Location, *url, inv.MethodName(), inv.Reply(), callBack,
+			result.Err = di.client.AsyncCall(url.Location, *url, inv.MethodName(), inv.Arguments(), callBack, inv.Reply(),
 				WithCallRequestTimeout(inv.Params()["requestTimeout"].(time.Duration)),
 				WithCallResponseTimeout(inv.Params()["responseTimeout"].(time.Duration)),
 				WithCallSerialID(inv.Params()["serialID"].(SerialID)),
 				WithCallMeta_All(inv.Params()["callMeta"].(map[interface{}]interface{})))
 		} else {
-			result.Err = di.client.CallOneway(url.Location, *url, inv.MethodName(),
+			result.Err = di.client.CallOneway(url.Location, *url, inv.MethodName(), inv.Arguments(),
 				WithCallRequestTimeout(inv.Params()["requestTimeout"].(time.Duration)),
 				WithCallResponseTimeout(inv.Params()["responseTimeout"].(time.Duration)),
 				WithCallSerialID(inv.Params()["serialID"].(SerialID)),
@@ -72,7 +65,7 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 		if inv.Reply() == nil {
 			result.Err = Err_No_Reply
 		} else {
-			result.Err = di.client.Call(url.Location, *url, inv.MethodName(), inv.Reply(),
+			result.Err = di.client.Call(url.Location, *url, inv.MethodName(), inv.Arguments(), inv.Reply(),
 				WithCallRequestTimeout(inv.Params()["requestTimeout"].(time.Duration)),
 				WithCallResponseTimeout(inv.Params()["responseTimeout"].(time.Duration)),
 				WithCallSerialID(inv.Params()["serialID"].(SerialID)),
@@ -81,26 +74,23 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 		}
 	}
 
-	return result
-}
-
-func (di *DubboInvoker) GetUrl() config.IURL {
-	return &di.url
-}
-
-func (di *DubboInvoker) IsAvailable() bool {
-	return di.available
+	return &result
 }
 
 func (di *DubboInvoker) Destroy() {
-	if di.destroyed {
+	if di.IsDestroyed() {
 		return
 	}
 	di.destroyLock.Lock()
 	defer di.destroyLock.Unlock()
 
-	di.destroyed = true
-	di.available = false
+	if di.IsDestroyed() {
+		return
+	}
 
-	di.client.Close() // close client
+	di.BaseInvoker.Destroy()
+
+	if di.client != nil {
+		di.client.Close() // close client
+	}
 }

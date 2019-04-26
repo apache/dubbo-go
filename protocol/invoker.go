@@ -1,9 +1,56 @@
 package protocol
 
-import "github.com/dubbo/dubbo-go/common"
+import (
+	log "github.com/AlexStocks/log4go"
+)
+
+import (
+	"github.com/dubbo/dubbo-go/common"
+	"github.com/dubbo/dubbo-go/config"
+)
 
 // Extension - Invoker
 type Invoker interface {
 	common.Node
 	Invoke(Invocation) Result
+}
+
+/////////////////////////////
+// base invoker
+/////////////////////////////
+
+type BaseInvoker struct {
+	url       config.IURL
+	available bool
+	destroyed bool
+}
+
+func NewBaseInvoker(url config.IURL) BaseInvoker {
+	return BaseInvoker{
+		url:       url,
+		available: true,
+		destroyed: false,
+	}
+}
+
+func (bi *BaseInvoker) GetUrl() config.IURL {
+	return bi.url
+}
+
+func (bi *BaseInvoker) IsAvailable() bool {
+	return bi.available
+}
+
+func (bi *BaseInvoker) IsDestroyed() bool {
+	return bi.destroyed
+}
+
+func (bi *BaseInvoker) Invoke(invocation Invocation) Result {
+	return nil
+}
+
+func (bi *BaseInvoker) Destroy() {
+	log.Info("Destroy invoker: %s", bi.GetUrl().(*config.URL).String())
+	bi.destroyed = true
+	bi.available = false
 }
