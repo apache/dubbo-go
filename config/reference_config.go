@@ -7,7 +7,7 @@ import (
 
 import "github.com/dubbo/dubbo-go/common/extension"
 
-var refprotocol = extension.GetRefProtocol()
+var refprotocol = extension.GetProtocolExtension("registry")
 
 type ReferenceConfig struct {
 	context    context.Context
@@ -37,22 +37,22 @@ func (refconfig *ReferenceConfig) CreateProxy() {
 	urls := refconfig.loadRegistries()
 
 	if len(urls) == 1 {
-		refprotocol.Export()
+		refprotocol.Refer(urls[0])
 	} else {
 
 	}
 }
 
-func (refconfig *ReferenceConfig) loadRegistries() []URL {
-	var urls []URL
+func (refconfig *ReferenceConfig) loadRegistries() []*RegistryURL {
+	var urls []*RegistryURL
 	for _, registry := range refconfig.Registries {
 		for _, registryConf := range consumerConfig.Registries {
 			if registry.string == registryConf.Id {
-				url, err := NewURL(registryConf.Address)
+				url, err := NewRegistryURL(registryConf.Address)
 				if err != nil {
 					log.Error("The registry id:%s url is invalid ,and will skip the registry", registryConf.Id)
 				} else {
-					urls = append(urls, *url)
+					urls = append(urls, url)
 				}
 
 			}

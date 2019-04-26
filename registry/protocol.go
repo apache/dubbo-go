@@ -1,13 +1,11 @@
 package registry
 
 import (
-	"context"
 	"sync"
-	"time"
 )
 
 import (
-	jerrors "github.com/juju/errors"
+	log "github.com/AlexStocks/log4go"
 )
 
 import (
@@ -19,24 +17,22 @@ import (
 const RegistryConnDelay = 3
 
 type RegistryProtocol struct {
-	context context.Context
 	// Registry  Map<RegistryAddress, Registry>
 	registies      map[string]Registry
 	registiesMutex sync.Mutex
 }
 
 func init() {
-	extension.SetRefProtocol(NewRegistryProtocol)
+	extension.SetProtocol("registry", NewRegistryProtocol)
 }
 
-func NewRegistryProtocol(ctx context.Context) protocol.Protocol {
+func NewRegistryProtocol() protocol.Protocol {
 	return &RegistryProtocol{
-		context:   ctx,
 		registies: make(map[string]Registry),
 	}
 }
 
-func (protocol *RegistryProtocol) Refer(url config.IURL) (protocol.Invoker, error) {
+func (protocol *RegistryProtocol) Refer(url config.IURL) protocol.Invoker {
 	var regUrl = url.(*config.RegistryURL)
 	var serviceUrl = regUrl.URL
 
@@ -47,24 +43,25 @@ func (protocol *RegistryProtocol) Refer(url config.IURL) (protocol.Invoker, erro
 
 	if reg, ok = protocol.registies[url.Key()]; !ok {
 		var err error
-		reg, err = extension.GetRegistryExtension(regUrl.Protocol, protocol.context, regUrl)
+		reg, err = extension.GetRegistryExtension(regUrl.Protocol, url.Context(), regUrl)
 		if err != nil {
-			return nil, err
+			log.Error("Registry can not connect success, program is going to panic.Error message is %s", err.Error())
+			panic(err.Error())
 		} else {
 			protocol.registies[url.Key()] = reg
 		}
 	}
 	//new registry directory for store service url from registry
-	directory := NewRegistryDirectory(protocol.context, regUrl, reg)
+	directory := NewRegistryDirectory(url.Context(), regUrl, reg)
 	go directory.subscribe(serviceUrl)
 
 	//new cluster invoker
-	cluster := extension.GetCluster(serviceUrl.Cluster, protocol.context)
-	return cluster.Join(directory), nil
+	cluster := extension.GetCluster(serviceUrl.Cluster, url.Context())
+	return cluster.Join(directory)
 }
 
-func (*RegistryProtocol) Export() {
-
+func (*RegistryProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
+	return nil
 }
 
 func (*RegistryProtocol) Destroy() {

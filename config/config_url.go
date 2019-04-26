@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/url"
@@ -16,6 +17,7 @@ import (
 type IURL interface {
 	Key() string
 	URLEqual(IURL) bool
+	Context() context.Context
 }
 
 type baseUrl struct {
@@ -26,6 +28,7 @@ type baseUrl struct {
 	Timeout      time.Duration
 	Params       url.Values
 	PrimitiveURL string
+	ctx          context.Context
 }
 
 type URL struct {
@@ -39,6 +42,11 @@ type URL struct {
 
 	Version string `yaml:"version" json:"version,omitempty"`
 	Group   string `yaml:"group" json:"group,omitempty"`
+
+	Username string
+	Password string
+
+	//reference only
 	Cluster string
 }
 
@@ -114,4 +122,14 @@ func (c URL) String() string {
 			"Timeout:%s, Version:%s, Group:%s, Weight_:%d, Params:%+v}",
 		c.Protocol, c.Location, c.Path, c.Ip, c.Port,
 		c.Timeout, c.Version, c.Group, c.Weight, c.Params)
+}
+
+func (c *URL) ToFullString() string {
+	return fmt.Sprintf(
+		"%s://%s:%s@%s:%s/%s?%s&%s&%s&%s",
+		c.Protocol, c.Password, c.Username, c.Ip, c.Port, c.Path, c.Methods, c.Version, c.Group, c.Params)
+}
+
+func (c *URL) Context() context.Context {
+	return c.ctx
 }
