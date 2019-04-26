@@ -17,24 +17,27 @@ type Invocation interface {
 /////////////////////////////
 // Invocation Impletment of RPC
 /////////////////////////////
-
+// todo: is it necessary to separate fields of consumer(provider) from RPCInvocation
 type RPCInvocation struct {
 	methodName     string
 	parameterTypes []reflect.Type
 	arguments      []interface{}
 	reply          interface{}
+	callBack       interface{}
 	attachments    map[string]string
 	invoker        Invoker
 	params         map[string]interface{} // Store some parameters that are not easy to refine
 }
 
+// todo: arguments table is too many
 func NewRPCInvocation(methodName string, parameterTypes []reflect.Type, arguments []interface{},
-	reply interface{}, attachments map[string]string, invoker Invoker, params map[string]interface{}) *RPCInvocation {
+	reply interface{}, callBack interface{}, attachments map[string]string, invoker Invoker, params map[string]interface{}) *RPCInvocation {
 	return &RPCInvocation{
 		methodName:     methodName,
 		parameterTypes: parameterTypes,
 		arguments:      arguments,
 		reply:          reply,
+		callBack:       callBack,
 		attachments:    attachments,
 		invoker:        invoker,
 		params:         params,
@@ -78,4 +81,8 @@ func (r *RPCInvocation) SetInvoker() Invoker {
 
 func (r *RPCInvocation) Params() map[string]interface{} {
 	return r.params
+}
+
+func (r *RPCInvocation) CallBack() interface{} {
+	return r.callBack
 }

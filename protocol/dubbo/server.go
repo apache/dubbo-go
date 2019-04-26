@@ -105,7 +105,7 @@ func (s *Server) Start(url config.URL) {
 		tcpServer getty.Server
 	)
 
-	addr = url.Location()
+	addr = url.Location
 	tcpServer = getty.NewTCPServer(
 		getty.WithLocalAddress(addr),
 	)

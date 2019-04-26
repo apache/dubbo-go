@@ -5,5 +5,5 @@ import "github.com/dubbo/dubbo-go/common"
 // Extension - Invoker
 type Invoker interface {
 	common.Node
-	Invoke()
+	Invoke(Invocation) Result
 }
