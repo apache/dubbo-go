@@ -43,7 +43,7 @@ func (protocol *RegistryProtocol) Refer(url config.IURL) protocol.Invoker {
 
 	if reg, ok = protocol.registies[url.Key()]; !ok {
 		var err error
-		reg, err = extension.GetRegistryExtension(regUrl.Protocol, url.Context(), regUrl)
+		reg, err = extension.GetRegistryExtension(regUrl.Protocol, regUrl)
 		if err != nil {
 			log.Error("Registry can not connect success, program is going to panic.Error message is %s", err.Error())
 			panic(err.Error())
@@ -52,11 +52,11 @@ func (protocol *RegistryProtocol) Refer(url config.IURL) protocol.Invoker {
 		}
 	}
 	//new registry directory for store service url from registry
-	directory := NewRegistryDirectory(url.Context(), regUrl, reg)
+	directory := NewRegistryDirectory(regUrl, reg)
 	go directory.subscribe(serviceUrl)
 
 	//new cluster invoker
-	cluster := extension.GetCluster(serviceUrl.Cluster, url.Context())
+	cluster := extension.GetCluster(serviceUrl.Cluster)
 	return cluster.Join(directory)
 }
 

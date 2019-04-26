@@ -64,14 +64,13 @@ type ZkRegistry struct {
 	zkPath map[string]int // key = protocol://ip:port/interface
 }
 
-func NewZkRegistry(ctx context.Context, url *config.RegistryURL) (registry.Registry, error) {
+func NewZkRegistry( url *config.RegistryURL) (registry.Registry, error) {
 	var (
 		err error
 		r   *ZkRegistry
 	)
 
 	r = &ZkRegistry{
-		context:     ctx,
 		RegistryURL: url,
 		birth:       time.Now().UnixNano(),
 		done:        make(chan struct{}),

@@ -1,11 +1,17 @@
-package config
+package support
 
 import (
 	"context"
+	"github.com/dubbo/dubbo-go/config"
+)
+
+import (
 	log "github.com/AlexStocks/log4go"
 )
 
-import "github.com/dubbo/dubbo-go/common/extension"
+import (
+	"github.com/dubbo/dubbo-go/common/extension"
+)
 
 var refprotocol = extension.GetProtocolExtension("registry")
 
@@ -15,7 +21,7 @@ type ReferenceConfig struct {
 	Registries []referenceConfigRegistry `required:"true"  yaml:"registries"  json:"registries,omitempty"`
 	Cluster    string                    `default:"failover" yaml:"cluster"  json:"cluster,omitempty"`
 	Methods    []method                  `yaml:"methods"  json:"methods,omitempty"`
-	URLs       []URL                     `yaml:"-"`
+	URLs       []config.URL                     `yaml:"-"`
 }
 type referenceConfigRegistry struct {
 	string
@@ -43,12 +49,12 @@ func (refconfig *ReferenceConfig) CreateProxy() {
 	}
 }
 
-func (refconfig *ReferenceConfig) loadRegistries() []*RegistryURL {
-	var urls []*RegistryURL
+func (refconfig *ReferenceConfig) loadRegistries() []*config.RegistryURL {
+	var urls []*config.RegistryURL
 	for _, registry := range refconfig.Registries {
 		for _, registryConf := range consumerConfig.Registries {
 			if registry.string == registryConf.Id {
-				url, err := NewRegistryURL(registryConf.Address)
+				url, err := config.NewRegistryURL(refconfig.context, registryConf.Address)
 				if err != nil {
 					log.Error("The registry id:%s url is invalid ,and will skip the registry", registryConf.Id)
 				} else {

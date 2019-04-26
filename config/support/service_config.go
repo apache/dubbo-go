@@ -1,9 +1,11 @@
-package config
+package support
+
+import "github.com/dubbo/dubbo-go/config"
 
 type ServiceConfig struct {
 	Service    string `required:"true"  yaml:"service"  json:"service,omitempty"`
-	URLs       []URL
-	rpcService RPCService
+	URLs       []config.URL
+	rpcService config.RPCService
 }
 
 func NewDefaultProviderServiceConfig() *ServiceConfig {
