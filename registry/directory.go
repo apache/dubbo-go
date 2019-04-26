@@ -13,7 +13,9 @@ import (
 
 import (
 	"github.com/dubbo/dubbo-go/cluster/directory"
+	"github.com/dubbo/dubbo-go/common/extension"
 	"github.com/dubbo/dubbo-go/config"
+	"github.com/dubbo/dubbo-go/protocol"
 )
 
 type Options struct {
@@ -29,10 +31,12 @@ func WithServiceTTL(ttl time.Duration) Option {
 
 type RegistryDirectory struct {
 	directory.BaseDirectory
-	cacheService *directory.ServiceArray
-	listenerLock sync.Mutex
-	serviceType  string
-	registry     Registry
+	cacheInvokers    []protocol.Invoker
+	listenerLock     sync.Mutex
+	serviceType      string
+	registry         Registry
+	cacheInvokersMap sync.Map //use sync.map
+	//cacheInvokersMap map[string]protocol.Invoker
 	Options
 }
 
@@ -46,11 +50,12 @@ func NewRegistryDirectory(ctx context.Context, url *config.RegistryURL, registry
 	}
 
 	return &RegistryDirectory{
-		BaseDirectory: directory.NewBaseDirectory(ctx, url),
-		cacheService:  directory.NewServiceArray(ctx, []config.URL{}),
-		serviceType:   url.URL.Service,
-		registry:      registry,
-		Options:       options,
+		BaseDirectory:    directory.NewBaseDirectory(ctx, url),
+		cacheInvokers:    []protocol.Invoker{},
+		cacheInvokersMap: sync.Map{},
+		serviceType:      url.URL.Service,
+		registry:         registry,
+		Options:          options,
 	}
 }
 
@@ -80,7 +85,7 @@ func (dir *RegistryDirectory) subscribe(url config.URL) {
 				time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
 				return
 			} else {
-				dir.update(serviceEvent)
+				go dir.update(serviceEvent)
 			}
 
 		}
@@ -96,29 +101,110 @@ func (dir *RegistryDirectory) update(res *ServiceEvent) {
 
 	log.Debug("registry update, result{%s}", res)
 
-	dir.listenerLock.Lock()
-	defer dir.listenerLock.Unlock()
-
 	log.Debug("update service name: %s!", res.Service)
+
+	dir.refreshInvokers(res)
+}
+
+func (dir *RegistryDirectory) refreshInvokers(res *ServiceEvent) {
+	var newCacheInvokersMap sync.Map
 
 	switch res.Action {
 	case ServiceAdd:
-		dir.cacheService.Add(res.Service, dir.serviceTTL)
-
+		//dir.cacheService.Add(res.Service, dir.serviceTTL)
+		newCacheInvokersMap = dir.cacheInvoker(res.Service)
 	case ServiceDel:
-		dir.cacheService.Del(res.Service, dir.serviceTTL)
-
-		log.Error("selector delete service url{%s}", res.Service)
+		//dir.cacheService.Del(res.Service, dir.serviceTTL)
+		newCacheInvokersMap = dir.uncacheInvoker(res.Service)
+		log.Info("selector delete service url{%s}", res.Service)
+	default:
+		return
 	}
+
+	newInvokers := dir.toGroupInvokers(newCacheInvokersMap)
+
+	dir.listenerLock.Lock()
+	defer dir.listenerLock.Unlock()
+	dir.cacheInvokers = newInvokers
 }
 
-func (dir *RegistryDirectory) List(){
+func (dir *RegistryDirectory) toGroupInvokers(newInvokersMap sync.Map) []protocol.Invoker {
 
+	newInvokersList := []protocol.Invoker{}
+	groupInvokersMap := make(map[string][]protocol.Invoker)
+	groupInvokersList := []protocol.Invoker{}
+
+	newInvokersMap.Range(func(key, value interface{}) bool {
+		newInvokersList = append(newInvokersList, value.(protocol.Invoker))
+		return true
+	})
+
+	for _, invoker := range newInvokersList {
+		group := invoker.GetUrl().(*config.URL).Group
+
+		if _, ok := groupInvokersMap[group]; ok {
+			groupInvokersMap[group] = append(groupInvokersMap[group], invoker)
+		} else {
+			groupInvokersMap[group] = []protocol.Invoker{}
+		}
+	}
+	if len(groupInvokersMap) == 1 {
+		//len is 1 it means no group setting ,so do not need cluster again
+		groupInvokersList = groupInvokersMap[""]
+	} else {
+		for _, invokers := range groupInvokersMap {
+			staticDir := directory.NewStaticDirectory(dir.Context(), invokers)
+			cluster := extension.GetCluster(dir.GetUrl().(*config.RegistryURL).URL.Cluster, dir.Context())
+			groupInvokersList = append(groupInvokersList, cluster.Join(staticDir))
+		}
+	}
+
+	return groupInvokersList
 }
+
+func (dir *RegistryDirectory) uncacheInvoker(url config.URL) sync.Map {
+	log.Debug("service will be deleted in cache invokers: invokers key is  %s!", url.ToFullString())
+	newCacheInvokers := dir.cacheInvokersMap
+	newCacheInvokers.Delete(url.ToFullString())
+	return newCacheInvokers
+}
+
+func (dir *RegistryDirectory) cacheInvoker(url config.URL) sync.Map {
+	//check the url's protocol is equal to the protocol which is configured in reference config
+	referenceUrl := dir.GetUrl().(*config.RegistryURL).URL
+	newCacheInvokers := dir.cacheInvokersMap
+	if url.Protocol == referenceUrl.Protocol {
+		url = mergeUrl(url, referenceUrl)
+
+		if _, ok := newCacheInvokers.Load(url.ToFullString()); !ok {
+
+			log.Debug("service will be added in cache invokers: invokers key is  %s!", url.ToFullString())
+			newInvoker,err := extension.GetProtocolExtension(url.Protocol).Refer(url)
+			if err!=nil{
+
+			}
+			newCacheInvokers.Store(url.ToFullString(), newInvoker)
+		}
+	}
+	return newCacheInvokers
+}
+
+//select the protocol invokers from the directory
+func (dir *RegistryDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
+	//TODO:router
+	return dir.cacheInvokers
+}
+
 func (dir *RegistryDirectory) IsAvailable() bool {
 	return true
 }
 
 func (dir *RegistryDirectory) Destroy() {
 	dir.BaseDirectory.Destroy()
+}
+
+//  in this function we should merge the reference local url config into the service url from registry.
+//for some reason(I have not finish the service module, so this function marked as TODO)
+func mergeUrl(serviceUrl config.URL, referenceUrl config.URL) config.URL {
+	return serviceUrl
 }

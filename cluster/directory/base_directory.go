@@ -24,3 +24,7 @@ func (dir *BaseDirectory) GetUrl() config.IURL {
 func (dir *BaseDirectory) Destroy() {
 	dir.destroyed = false
 }
+
+func (dir *BaseDirectory) Context() context.Context {
+	return dir.context
+}
