@@ -1,7 +1,9 @@
 package config
 
 import (
+	"context"
 	"reflect"
+	"strings"
 	"sync"
 	"unicode"
 	"unicode/utf8"
@@ -9,6 +11,7 @@ import (
 
 import (
 	log "github.com/AlexStocks/log4go"
+	jerrors "github.com/juju/errors"
 )
 
 // rpc service interface
@@ -18,11 +21,6 @@ type RPCService interface {
 }
 
 var (
-	// A value sent as a placeholder for the server's response value when the server
-	// receives an invalid request. It is never decoded by the client since the Response
-	// contains an error when it is used.
-	invalidRequest = struct{}{}
-
 	// Precompute the reflect type for error. Can't use error directly
 	// because Typeof takes an empty interface value. This is annoying.
 	typeOfError = reflect.TypeOf((*error)(nil)).Elem()
@@ -32,7 +30,10 @@ var (
 	}
 )
 
+//////////////////////////
 // info of method
+//////////////////////////
+
 type MethodType struct {
 	method    reflect.Method
 	ctxType   reflect.Type // type of the request context
@@ -52,17 +53,26 @@ func (m *MethodType) ArgType() reflect.Type {
 func (m *MethodType) ReplyType() reflect.Type {
 	return m.replyType
 }
+func (m *MethodType) SuiteContext(ctx context.Context) reflect.Value {
+	if contextv := reflect.ValueOf(ctx); contextv.IsValid() {
+		return contextv
+	}
+	return reflect.Zero(m.ctxType)
+}
 
+//////////////////////////
 // info of service interface
+//////////////////////////
+
 type Service struct {
 	name     string
 	rcvr     reflect.Value
 	rcvrType reflect.Type
-	method   map[string]*MethodType
+	methods  map[string]*MethodType
 }
 
 func (s *Service) Method() map[string]*MethodType {
-	return s.method
+	return s.methods
 }
 func (s *Service) RcvrType() reflect.Type {
 	return s.rcvrType
@@ -71,13 +81,66 @@ func (s *Service) Rcvr() reflect.Value {
 	return s.rcvr
 }
 
+//////////////////////////
+// serviceMap
+// todo: use sync.Map?
+//////////////////////////
+
 type serviceMap struct {
-	mutex      sync.Mutex          // protects the serviceMap
+	mutex      sync.RWMutex        // protects the serviceMap
 	serviceMap map[string]*Service // service name -> service
 }
 
 func (sm *serviceMap) GetService(name string) *Service {
-	return sm.serviceMap[name]
+	sm.mutex.RLock()
+	defer sm.mutex.RUnlock()
+	if s, ok := sm.serviceMap[name]; ok {
+		return s
+	}
+	return nil
+}
+
+func (sm *serviceMap) Register(rcvr RPCService) (string, error) {
+	sm.mutex.Lock()
+	defer sm.mutex.Unlock()
+	if sm.serviceMap == nil {
+		sm.serviceMap = make(map[string]*Service)
+	}
+
+	s := new(Service)
+	s.rcvrType = reflect.TypeOf(rcvr)
+	s.rcvr = reflect.ValueOf(rcvr)
+	sname := reflect.Indirect(s.rcvr).Type().Name()
+	if sname == "" {
+		s := "no service name for type " + s.rcvrType.String()
+		log.Error(s)
+		return "", jerrors.New(s)
+	}
+	if !isExported(sname) {
+		s := "type " + sname + " is not exported"
+		log.Error(s)
+		return "", jerrors.New(s)
+	}
+
+	sname = rcvr.Service()
+	if server := sm.GetService(sname); server == nil {
+		return "", jerrors.New("service already defined: " + sname)
+	}
+	s.name = sname
+	s.methods = make(map[string]*MethodType)
+
+	// Install the methods
+	methods := ""
+	methods, s.methods = suitableMethods(s.rcvrType)
+
+	if len(s.methods) == 0 {
+		s := "type " + sname + " has no exported methods of suitable type"
+		log.Error(s)
+		return "", jerrors.New(s)
+	}
+	sm.serviceMap[s.name] = s
+
+	return strings.TrimSuffix(methods, ","), nil
 }
 
 // Is this an exported - upper case - name

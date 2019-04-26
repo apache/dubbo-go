@@ -10,9 +10,14 @@ import (
 import (
 	"github.com/AlexStocks/getty"
 	log "github.com/AlexStocks/log4go"
-	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbogo/hessian2"
 	jerrors "github.com/juju/errors"
+)
+
+import (
+	"github.com/dubbo/dubbo-go/common/constant"
+	"github.com/dubbo/dubbo-go/config"
+	"github.com/dubbo/dubbo-go/protocol"
 )
 
 // todo: WritePkg_Timeout will entry *.yml
@@ -107,14 +112,16 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 ////////////////////////////////////////////
 
 type RpcServerHandler struct {
+	exporter       protocol.Exporter
 	maxSessionNum  int
 	sessionTimeout time.Duration
 	sessionMap     map[getty.Session]*rpcSession
 	rwlock         sync.RWMutex
 }
 
-func NewRpcServerHandler(maxSessionNum int, sessionTimeout time.Duration) *RpcServerHandler {
+func NewRpcServerHandler(exporter protocol.Exporter, maxSessionNum int, sessionTimeout time.Duration) *RpcServerHandler {
 	return &RpcServerHandler{
+		exporter:       exporter,
 		maxSessionNum:  maxSessionNum,
 		sessionTimeout: sessionTimeout,
 		sessionMap:     make(map[getty.Session]*rpcSession),
@@ -167,6 +174,23 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	}
 	p.Header.ResponseStatus = hessian.Response_OK
 
+	invoker := h.exporter.GetInvoker()
+	if invoker != nil {
+		attchments := map[string]string{}
+		// todo: use them followingly if need
+		url := invoker.GetUrl().(*config.URL)
+		attchments[constant.PATH_KEY] = url.Path
+		attchments[constant.GROUP_KEY] = url.Group
+		attchments[constant.SERVICE_KEY] = url.Service
+		attchments[constant.VERSION_KEY] = url.Version
+		result := invoker.Invoke(protocol.NewRPCInvocationForProvider(attchments))
+		if err := result.Error(); err != nil {
+			p.Header.ResponseStatus = hessian.Response_SERVER_ERROR
+			p.Body = err
+			return
+		}
+	}
+
 	// heartbeat
 	if p.Header.Type&hessian.Heartbeat != 0x00 {
 		log.Debug("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", p.Header, p.Service, p.Body)
@@ -174,7 +198,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 		return
 	}
 
-	// twoway
+	// not twoway
 	if p.Header.Type&hessian.Request_TwoWay == 0x00 {
 		h.reply(session, p, hessian.Response)
 		h.callService(p, nil)
@@ -228,7 +252,14 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 		}
 	}()
 
-	svc := req.Body.(map[string]interface{})["service"].(*config.Service)
+	svcIf := req.Body.(map[string]interface{})["service"]
+	if svcIf == nil {
+		log.Error("service not found!")
+		req.Header.ResponseStatus = hessian.Response_SERVICE_NOT_FOUND
+		req.Body = nil
+		return
+	}
+	svc := svcIf.(*config.Service)
 	method := svc.Method()[req.Service.Method]
 
 	// prepare argv
