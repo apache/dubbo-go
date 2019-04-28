@@ -56,7 +56,6 @@ func (p *Proxy) Implement(v interface{}) error {
 				argsInterface[k] = v.Interface()
 			}
 
-			//todo:call
 			inv := protocol.NewRPCInvocationForConsumer(methodName, nil, argsInterface, in[2].Interface(), p.callBack, p.attachments, nil)
 			result := p.invoke.Invoke(inv)
 			var err error

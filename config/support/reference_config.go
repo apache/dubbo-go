@@ -10,6 +10,7 @@ import (
 
 import (
 	"github.com/dubbo/dubbo-go/common/extension"
+	"github.com/dubbo/dubbo-go/common/proxy"
 	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbo/dubbo-go/protocol"
 )
@@ -18,11 +19,13 @@ var refprotocol = extension.GetProtocolExtension("registry")
 
 type ReferenceConfig struct {
 	context    context.Context
+	pxy        *proxy.Proxy
 	Interface  string                    `required:"true"  yaml:"interface"  json:"interface,omitempty"`
 	Registries []referenceConfigRegistry `required:"true"  yaml:"registries"  json:"registries,omitempty"`
 	Cluster    string                    `default:"failover" yaml:"cluster"  json:"cluster,omitempty"`
 	Methods    []method                  `yaml:"methods"  json:"methods,omitempty"`
 	URLs       []config.URL              `yaml:"-"`
+	Async      bool                      `yaml:"async"  json:"async,omitempty"`
 	invoker    protocol.Invoker
 }
 type referenceConfigRegistry struct {
@@ -49,7 +52,14 @@ func (refconfig *ReferenceConfig) Refer() {
 	} else {
 		//TODO:multi registries
 	}
-	//TODO:invoker yincheng 's proxy
+	//create proxy
+	attachments := map[string]string{} // todo : attachments is necessary, include keys: ASYNC_KEY、
+	refconfig.pxy = proxy.NewProxy(refconfig.invoker, nil, attachments)
+}
+
+// @v is service provider implemented RPCService
+func (refconfig *ReferenceConfig) Implement(v interface{}) error {
+	return refconfig.pxy.Implement(v)
 }
 
 func (refconfig *ReferenceConfig) loadRegistries() []*config.RegistryURL {
