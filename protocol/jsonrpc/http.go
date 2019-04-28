@@ -20,8 +20,8 @@ import (
 )
 
 import (
+	"github.com/dubbo/dubbo-go/common/constant"
 	"github.com/dubbo/dubbo-go/config"
-	"github.com/dubbo/dubbo-go/public"
 )
 
 //////////////////////////////////////////////
@@ -104,7 +104,7 @@ func (c *HTTPClient) Call(ctx context.Context, service config.URL, req *Request,
 		reqTimeout = 1e8
 	}
 	httpHeader.Set("Timeout", reqTimeout.String())
-	if md, ok := ctx.Value(public.DUBBOGO_CTX_KEY).(map[string]string); ok {
+	if md, ok := ctx.Value(constant.DUBBOGO_CTX_KEY).(map[string]string); ok {
 		for k := range md {
 			httpHeader.Set(k, md[k])
 		}

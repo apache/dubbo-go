@@ -7,6 +7,7 @@ import (
 import (
 	"github.com/dubbo/dubbo-go/common/extension"
 	"github.com/dubbo/dubbo-go/config"
+	"github.com/dubbo/dubbo-go/config/support"
 	"github.com/dubbo/dubbo-go/protocol"
 )
 
@@ -45,8 +46,8 @@ func (jp *JsonrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 
 func (jp *JsonrpcProtocol) Refer(url config.IURL) protocol.Invoker {
 	invoker := NewJsonrpcInvoker(url, NewHTTPClient(&HTTPOptions{
-		HandshakeTimeout: config.GetConsumerConfig().ConnectTimeout,
-		HTTPTimeout:      config.GetConsumerConfig().RequestTimeout,
+		HandshakeTimeout: support.GetConsumerConfig().ConnectTimeout,
+		HTTPTimeout:      support.GetConsumerConfig().RequestTimeout,
 	}))
 	jp.SetInvokers(invoker)
 	log.Info("Refer service: ", url.(*config.URL).String())

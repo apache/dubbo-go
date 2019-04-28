@@ -22,5 +22,5 @@ func NewFailoverCluster() cluster.Cluster {
 }
 
 func (cluster *FailoverCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return NewFailoverClusterInvoker( directory)
+	return NewFailoverClusterInvoker(directory)
 }

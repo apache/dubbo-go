@@ -26,12 +26,11 @@ type RPCInvocation struct {
 	callBack       interface{}
 	attachments    map[string]string
 	invoker        Invoker
-	params         map[string]interface{} // Store some parameters that are not easy to refine
 }
 
 // todo: arguments table is too many
 func NewRPCInvocationForConsumer(methodName string, parameterTypes []reflect.Type, arguments []interface{},
-	reply interface{}, callBack interface{}, attachments map[string]string, invoker Invoker, params map[string]interface{}) *RPCInvocation {
+	reply interface{}, callBack interface{}, attachments map[string]string, invoker Invoker) *RPCInvocation {
 	return &RPCInvocation{
 		methodName:     methodName,
 		parameterTypes: parameterTypes,
@@ -40,7 +39,6 @@ func NewRPCInvocationForConsumer(methodName string, parameterTypes []reflect.Typ
 		callBack:       callBack,
 		attachments:    attachments,
 		invoker:        invoker,
-		params:         params,
 	}
 }
 
@@ -71,6 +69,9 @@ func (r *RPCInvocation) Attachments() map[string]string {
 }
 
 func (r *RPCInvocation) AttachmentsByKey(key string, defaultValue string) string {
+	if r.attachments == nil {
+		return defaultValue
+	}
 	value, ok := r.attachments[key]
 	if ok {
 		return value
@@ -81,12 +82,10 @@ func (r *RPCInvocation) AttachmentsByKey(key string, defaultValue string) string
 func (r *RPCInvocation) Invoker() Invoker {
 	return r.invoker
 }
+
+// SetInvoker is called while getting url, maybe clusterInvoker?
 func (r *RPCInvocation) SetInvoker() Invoker {
 	return r.invoker
-}
-
-func (r *RPCInvocation) Params() map[string]interface{} {
-	return r.params
 }
 
 func (r *RPCInvocation) CallBack() interface{} {
