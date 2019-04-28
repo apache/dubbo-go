@@ -38,7 +38,7 @@ func NewReferenceConfig(ctx context.Context) *ReferenceConfig {
 	return &ReferenceConfig{context: ctx}
 }
 
-func (refconfig *ReferenceConfig) CreateProxy() {
+func (refconfig *ReferenceConfig) Refer() {
 	//首先是user specified URL, could be peer-to-peer address, or register center's address.
 
 	//其次是assemble URL from register center's configuration模式
