@@ -1,6 +1,8 @@
 package directory
 
 import (
+	"github.com/dubbo/dubbo-go/common/constant"
+	"github.com/dubbo/dubbo-go/protocol/protocolwrapper"
 	"github.com/dubbo/dubbo-go/registry"
 	protocol2 "github.com/dubbo/dubbo-go/registry/protocol"
 	"sync"
@@ -155,7 +157,7 @@ func (dir *RegistryDirectory) toGroupInvokers(newInvokersMap sync.Map) []protoco
 	} else {
 		for _, invokers := range groupInvokersMap {
 			staticDir := directory.NewStaticDirectory(invokers)
-			cluster := extension.GetCluster(dir.GetUrl().(*config.RegistryURL).URL.Cluster)
+			cluster := extension.GetCluster(dir.GetUrl().(*config.RegistryURL).URL.Params.Get(constant.CLUSTER_KEY))
 			groupInvokersList = append(groupInvokersList, cluster.Join(staticDir))
 		}
 	}
@@ -180,7 +182,7 @@ func (dir *RegistryDirectory) cacheInvoker(url config.URL) sync.Map {
 		if _, ok := newCacheInvokers.Load(url.ToFullString()); !ok {
 
 			log.Debug("service will be added in cache invokers: invokers key is  %s!", url.ToFullString())
-			newInvoker := extension.GetProtocolExtension(url.Protocol).Refer(&url)
+			newInvoker := extension.GetProtocolExtension(protocolwrapper.FILTER).Refer(&url)
 			newCacheInvokers.Store(url.ToFullString(), newInvoker)
 		}
 	}
@@ -205,9 +207,41 @@ func (dir *RegistryDirectory) Destroy() {
 //  in this function we should merge the reference local url config into the service url from registry.
 //TODO configuration merge, in the future , the configuration center's config should merge too.
 func mergeUrl(serviceUrl config.URL, referenceUrl config.URL) config.URL {
+	mergedUrl := serviceUrl
+	var methodConfigMergeFcn = []func(method string){}
+
 	//loadBalance strategy config
+	if v := referenceUrl.Params.Get(constant.LOADBALANCE_KEY); v != "" {
+		mergedUrl.Params.Set(constant.LOADBALANCE_KEY, v)
+	}
+	methodConfigMergeFcn = append(methodConfigMergeFcn, func(method string) {
+		if v := referenceUrl.Params.Get(method + "." + constant.LOADBALANCE_KEY); v != "" {
+			mergedUrl.Params.Set(method+"."+constant.LOADBALANCE_KEY, v)
+		}
+	})
 
 	//cluster strategy config
+	if v := referenceUrl.Params.Get(constant.CLUSTER_KEY); v != "" {
+		mergedUrl.Params.Set(constant.CLUSTER_KEY, v)
+	}
+	methodConfigMergeFcn = append(methodConfigMergeFcn, func(method string) {
+		if v := referenceUrl.Params.Get(method + "." + constant.CLUSTER_KEY); v != "" {
+			mergedUrl.Params.Set(method+"."+constant.CLUSTER_KEY, v)
+		}
+	})
+
+	//remote timestamp
+	if v := serviceUrl.Params.Get(constant.TIMESTAMP_KEY); v != "" {
+		mergedUrl.Params.Set(constant.REMOTE_TIMESTAMP_KEY, v)
+		mergedUrl.Params.Set(constant.TIMESTAMP_KEY, referenceUrl.Params.Get(constant.TIMESTAMP_KEY))
+	}
+
+	//finally execute methodConfigMergeFcn
+	for _, method := range referenceUrl.Methods {
+		for _, fcn := range methodConfigMergeFcn {
+			fcn("methods." + method)
+		}
+	}
 
 	return serviceUrl
 }

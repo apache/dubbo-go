@@ -127,3 +127,24 @@ func (c *RegistryURL) URLEqual(url IURL) bool {
 func (c *RegistryURL) Context() context.Context {
 	return c.ctx
 }
+
+func (c *RegistryURL) GetParam(s string, d string) string {
+	var r string
+	if r = c.Params.Get(s); r == "" {
+		r = d
+	}
+	return r
+}
+
+func (c *RegistryURL) GetParamInt(s string, d int64) int64 {
+	var r int
+	var err error
+	if r, err = strconv.Atoi(c.Params.Get(s)); r == 0 || err != nil {
+		return d
+	}
+	return int64(r)
+}
+
+func (c *RegistryURL) String() string {
+	return ""
+}

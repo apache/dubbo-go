@@ -3,6 +3,7 @@ package support
 import (
 	"context"
 	"github.com/dubbo/dubbo-go/config"
+	"github.com/dubbo/dubbo-go/protocol"
 )
 
 import (
@@ -21,7 +22,8 @@ type ReferenceConfig struct {
 	Registries []referenceConfigRegistry `required:"true"  yaml:"registries"  json:"registries,omitempty"`
 	Cluster    string                    `default:"failover" yaml:"cluster"  json:"cluster,omitempty"`
 	Methods    []method                  `yaml:"methods"  json:"methods,omitempty"`
-	URLs       []config.URL                     `yaml:"-"`
+	URLs       []config.URL              `yaml:"-"`
+	invoker    protocol.Invoker
 }
 type referenceConfigRegistry struct {
 	string
@@ -43,10 +45,11 @@ func (refconfig *ReferenceConfig) CreateProxy() {
 	urls := refconfig.loadRegistries()
 
 	if len(urls) == 1 {
-		refprotocol.Refer(urls[0])
+		refconfig.invoker = refprotocol.Refer(urls[0])
 	} else {
-
+		//TODO:multi registries
 	}
+	//TODO:invoker yincheng 's proxy
 }
 
 func (refconfig *ReferenceConfig) loadRegistries() []*config.RegistryURL {
