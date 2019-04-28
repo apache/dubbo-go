@@ -3,7 +3,6 @@ package zookeeper
 import (
 	"context"
 	"fmt"
-	"github.com/dubbo/dubbo-go/config"
 	"path"
 	"sync"
 	"time"
@@ -16,6 +15,7 @@ import (
 )
 
 import (
+	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbo/dubbo-go/registry"
 )
 

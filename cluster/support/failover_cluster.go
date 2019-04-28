@@ -2,6 +2,9 @@ package cluster
 
 import (
 	"context"
+)
+
+import (
 	"github.com/dubbo/dubbo-go/cluster"
 	"github.com/dubbo/dubbo-go/common/extension"
 	"github.com/dubbo/dubbo-go/protocol"
@@ -22,5 +25,5 @@ func NewFailoverCluster() cluster.Cluster {
 }
 
 func (cluster *FailoverCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return NewFailoverClusterInvoker( directory)
+	return NewFailoverClusterInvoker(directory)
 }

@@ -1,9 +1,6 @@
 package protocol
 
 import (
-	"github.com/dubbo/dubbo-go/common/constant"
-	"github.com/dubbo/dubbo-go/registry"
-	directory2 "github.com/dubbo/dubbo-go/registry/directory"
 	"sync"
 )
 
@@ -12,9 +9,12 @@ import (
 )
 
 import (
+	"github.com/dubbo/dubbo-go/common/constant"
 	"github.com/dubbo/dubbo-go/common/extension"
 	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbo/dubbo-go/protocol"
+	"github.com/dubbo/dubbo-go/registry"
+	directory2 "github.com/dubbo/dubbo-go/registry/directory"
 )
 
 const RegistryConnDelay = 3

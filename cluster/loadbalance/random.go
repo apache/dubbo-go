@@ -1,11 +1,14 @@
 package loadbalance
 
 import (
+	"math/rand"
+)
+
+import (
 	"github.com/dubbo/dubbo-go/cluster"
 	"github.com/dubbo/dubbo-go/common/extension"
 	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbo/dubbo-go/protocol"
-	"math/rand"
 )
 
 const name = "random"

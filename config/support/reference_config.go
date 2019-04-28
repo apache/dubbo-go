@@ -2,8 +2,6 @@ package support
 
 import (
 	"context"
-	"github.com/dubbo/dubbo-go/config"
-	"github.com/dubbo/dubbo-go/protocol"
 )
 
 import (
@@ -12,6 +10,8 @@ import (
 
 import (
 	"github.com/dubbo/dubbo-go/common/extension"
+	"github.com/dubbo/dubbo-go/config"
+	"github.com/dubbo/dubbo-go/protocol"
 )
 
 var refprotocol = extension.GetProtocolExtension("registry")

@@ -1,11 +1,11 @@
 package zookeeper
 
 import (
-	"github.com/dubbo/dubbo-go/config"
 	jerrors "github.com/juju/errors"
 )
 
 import (
+	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbo/dubbo-go/registry"
 )
 

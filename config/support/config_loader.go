@@ -2,7 +2,6 @@ package support
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
 	"path"
@@ -12,6 +11,7 @@ import (
 import (
 	"github.com/AlexStocks/goext/log"
 	jerrors "github.com/juju/errors"
+	"gopkg.in/yaml.v2"
 )
 
 import (
