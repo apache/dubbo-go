@@ -27,3 +27,7 @@ const (
 	WARMUP_KEY      = "warmup"
 	RETRIES_KEY     = "retries"
 )
+
+const (
+	DUBBOGO_CTX_KEY = "dubbogo-ctx"
+)
