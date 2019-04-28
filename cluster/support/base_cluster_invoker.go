@@ -2,7 +2,6 @@ package cluster
 
 import (
 	gxnet "github.com/AlexStocks/goext/net"
-	"github.com/dubbo/dubbo-go/version"
 	jerrors "github.com/juju/errors"
 	"github.com/tevino/abool"
 )
@@ -11,6 +10,7 @@ import (
 	"github.com/dubbo/dubbo-go/cluster"
 	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbo/dubbo-go/protocol"
+	"github.com/dubbo/dubbo-go/version"
 )
 
 type baseClusterInvoker struct {

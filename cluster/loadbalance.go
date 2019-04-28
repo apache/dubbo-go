@@ -1,10 +1,13 @@
 package cluster
 
 import (
+	"time"
+)
+
+import (
 	"github.com/dubbo/dubbo-go/common/constant"
 	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbo/dubbo-go/protocol"
-	"time"
 )
 
 // Extension - LoadBalance

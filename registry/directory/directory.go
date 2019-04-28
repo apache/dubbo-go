@@ -1,10 +1,6 @@
 package directory
 
 import (
-	"github.com/dubbo/dubbo-go/common/constant"
-	"github.com/dubbo/dubbo-go/protocol/protocolwrapper"
-	"github.com/dubbo/dubbo-go/registry"
-	protocol2 "github.com/dubbo/dubbo-go/registry/protocol"
 	"sync"
 	"time"
 )
@@ -16,9 +12,13 @@ import (
 
 import (
 	"github.com/dubbo/dubbo-go/cluster/directory"
+	"github.com/dubbo/dubbo-go/common/constant"
 	"github.com/dubbo/dubbo-go/common/extension"
 	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbo/dubbo-go/protocol"
+	"github.com/dubbo/dubbo-go/protocol/protocolwrapper"
+	"github.com/dubbo/dubbo-go/registry"
+	protocol2 "github.com/dubbo/dubbo-go/registry/protocol"
 )
 
 type Options struct {

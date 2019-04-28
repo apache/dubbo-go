@@ -3,7 +3,6 @@ package directory
 import (
 	"context"
 	"fmt"
-
 	"strings"
 	"time"
 )

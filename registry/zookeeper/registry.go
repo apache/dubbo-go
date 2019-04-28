@@ -3,8 +3,6 @@ package zookeeper
 import (
 	"context"
 	"fmt"
-	"github.com/dubbo/dubbo-go/common/extension"
-	"github.com/dubbo/dubbo-go/config"
 	"net/url"
 	"os"
 	"strconv"
@@ -20,6 +18,8 @@ import (
 )
 
 import (
+	"github.com/dubbo/dubbo-go/common/extension"
+	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbo/dubbo-go/registry"
 	"github.com/dubbo/dubbo-go/version"
 )
@@ -64,7 +64,7 @@ type ZkRegistry struct {
 	zkPath map[string]int // key = protocol://ip:port/interface
 }
 
-func NewZkRegistry( url *config.RegistryURL) (registry.Registry, error) {
+func NewZkRegistry(url *config.RegistryURL) (registry.Registry, error) {
 	var (
 		err error
 		r   *ZkRegistry
