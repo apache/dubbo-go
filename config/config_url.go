@@ -18,6 +18,9 @@ type IURL interface {
 	Key() string
 	URLEqual(IURL) bool
 	Context() context.Context
+	GetParam(string, string) string
+	GetParamInt(string, int64) int64
+	String() string
 }
 
 type baseUrl struct {
@@ -37,22 +40,13 @@ type URL struct {
 
 	Path string `yaml:"path" json:"path,omitempty"` // like  /com.ikurento.dubbo.UserProvider3
 
-	Weight  int32
-	Methods string `yaml:"methods" json:"methods,omitempty"`
-
+	//Weight  int32
 	Version string `yaml:"version" json:"version,omitempty"`
 	Group   string `yaml:"group" json:"group,omitempty"`
 
 	Username string
 	Password string
-
-	//reference only
-	Cluster string
-}
-
-type method struct {
-	Name    string
-	Retries int
+	Methods  []string
 }
 
 func NewURL(ctx context.Context, urlString string) (*URL, error) {
@@ -111,7 +105,7 @@ func NewURL(ctx context.Context, urlString string) (*URL, error) {
 }
 
 func (c *URL) Key() string {
-	return fmt.Sprintf("%s@%s-%s-%s-%s-%s", c.Service, c.Protocol, c.Group, c.Location, c.Version, c.Methods)
+	return fmt.Sprintf("%s@%s-%s-%s-%s", c.Service, c.Protocol, c.Group, c.Location, c.Version)
 }
 
 func (c *URL) URLEqual(url IURL) bool {
@@ -124,17 +118,51 @@ func (c *URL) URLEqual(url IURL) bool {
 func (c URL) String() string {
 	return fmt.Sprintf(
 		"DefaultServiceURL{Protocol:%s, Location:%s, Path:%s, Ip:%s, Port:%s, "+
-			"Timeout:%s, Version:%s, Group:%s, Weight_:%d, Params:%+v}",
+			"Timeout:%s, Version:%s, Group:%s,  Params:%+v}",
 		c.Protocol, c.Location, c.Path, c.Ip, c.Port,
-		c.Timeout, c.Version, c.Group, c.Weight, c.Params)
+		c.Timeout, c.Version, c.Group, c.Params)
 }
 
 func (c *URL) ToFullString() string {
 	return fmt.Sprintf(
-		"%s://%s:%s@%s:%s/%s?%s&%s&%s&%s",
-		c.Protocol, c.Password, c.Username, c.Ip, c.Port, c.Path, c.Methods, c.Version, c.Group, c.Params)
+		"%s://%s:%s@%s:%s/%s?%s&%s&%s",
+		c.Protocol, c.Password, c.Username, c.Ip, c.Port, c.Path, c.Version, c.Group, c.Params)
 }
 
 func (c *URL) Context() context.Context {
 	return c.ctx
+}
+
+func (c *URL) GetParam(s string, d string) string {
+	var r string
+	if r = c.Params.Get(s); r == "" {
+		r = d
+	}
+	return r
+}
+
+func (c *URL) GetParamInt(s string, d int64) int64 {
+	var r int
+	var err error
+	if r, err = strconv.Atoi(c.Params.Get(s)); r == 0 || err != nil {
+		return d
+	}
+	return int64(r)
+}
+
+func (c *URL) GetMethodParamInt(method string, key string, d int64) int64 {
+	var r int
+	var err error
+	if r, err = strconv.Atoi(c.Params.Get("methods." + method + "." + key)); r == 0 || err != nil {
+		return d
+	}
+	return int64(r)
+}
+
+func (c *URL) GetMethodParam(method string, key string, d string) string {
+	var r string
+	if r = c.Params.Get(c.Params.Get("methods." + method + "." + key)); r == "" {
+		r = d
+	}
+	return r
 }

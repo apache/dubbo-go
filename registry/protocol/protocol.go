@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"github.com/dubbo/dubbo-go/common/constant"
 	"github.com/dubbo/dubbo-go/registry"
 	directory2 "github.com/dubbo/dubbo-go/registry/directory"
 	"sync"
@@ -58,7 +59,7 @@ func (protocol *RegistryProtocol) Refer(url config.IURL) protocol.Invoker {
 	go directory.Subscribe(serviceUrl)
 
 	//new cluster invoker
-	cluster := extension.GetCluster(serviceUrl.Cluster)
+	cluster := extension.GetCluster(serviceUrl.Params.Get(constant.CLUSTER_KEY))
 	return cluster.Join(directory)
 }
 
