@@ -4,7 +4,6 @@ import (
 	"errors"
 	"strconv"
 	"sync"
-	"time"
 )
 
 import (
@@ -49,27 +48,15 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	}
 	if async {
 		if callBack, ok := inv.CallBack().(func(response CallResponse)); ok {
-			result.Err = di.client.AsyncCall(url.Location, *url, inv.MethodName(), inv.Arguments(), callBack, inv.Reply(),
-				WithCallRequestTimeout(inv.Params()["requestTimeout"].(time.Duration)),
-				WithCallResponseTimeout(inv.Params()["responseTimeout"].(time.Duration)),
-				WithCallSerialID(inv.Params()["serialID"].(SerialID)),
-				WithCallMeta_All(inv.Params()["callMeta"].(map[interface{}]interface{})))
+			result.Err = di.client.AsyncCall(url.Location, *url, inv.MethodName(), inv.Arguments(), callBack, inv.Reply())
 		} else {
-			result.Err = di.client.CallOneway(url.Location, *url, inv.MethodName(), inv.Arguments(),
-				WithCallRequestTimeout(inv.Params()["requestTimeout"].(time.Duration)),
-				WithCallResponseTimeout(inv.Params()["responseTimeout"].(time.Duration)),
-				WithCallSerialID(inv.Params()["serialID"].(SerialID)),
-				WithCallMeta_All(inv.Params()["callMeta"].(map[interface{}]interface{})))
+			result.Err = di.client.CallOneway(url.Location, *url, inv.MethodName(), inv.Arguments())
 		}
 	} else {
 		if inv.Reply() == nil {
 			result.Err = Err_No_Reply
 		} else {
-			result.Err = di.client.Call(url.Location, *url, inv.MethodName(), inv.Arguments(), inv.Reply(),
-				WithCallRequestTimeout(inv.Params()["requestTimeout"].(time.Duration)),
-				WithCallResponseTimeout(inv.Params()["responseTimeout"].(time.Duration)),
-				WithCallSerialID(inv.Params()["serialID"].(SerialID)),
-				WithCallMeta_All(inv.Params()["callMeta"].(map[interface{}]interface{})))
+			result.Err = di.client.Call(url.Location, *url, inv.MethodName(), inv.Arguments(), inv.Reply())
 			result.Rest = inv.Reply() // reply should be set to result.Rest when sync
 		}
 	}
