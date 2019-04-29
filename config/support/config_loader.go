@@ -1,10 +1,13 @@
 package support
 
 import (
+	"context"
 	"fmt"
+	"github.com/dubbo/dubbo-go/config"
 	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 	"time"
 )
 
@@ -165,7 +168,10 @@ func GetConsumerConfig() ConsumerConfig {
 /////////////////////////
 
 type ProviderConfig struct {
-	RegistryConfigs []map[string]string `yaml:"registryConfigs" json:"registryConfigs"`
+	Path       string           `yaml:"path" json:"path,omitempty"`
+	Registries []RegistryConfig `yaml:"registries" json:"registries,omitempty"`
+	Services   []ServiceConfig  `yaml:"services" json:"services,omitempty"`
+	Protocols  []ProtocolConfig `yaml:"protocols" json:"protocols,omitempty"`
 }
 
 func SetProviderConfig(p ProviderConfig) {
@@ -173,4 +179,49 @@ func SetProviderConfig(p ProviderConfig) {
 }
 func GetProviderConfig() ProviderConfig {
 	return *providerConfig
+}
+
+type RegistryConfig struct {
+	Id         string `required:"true" yaml:"id"  json:"id,omitempty"`
+	TimeoutStr string `yaml:"timeout" default:"5s" json:"timeout,omitempty"` // unit: second
+	config.RegistryURL
+}
+
+type ProtocolConfig struct {
+	name        string `required:"true" yaml:"name"  json:"name,omitempty"`
+	ip          string `required:"true" yaml:"ip"  json:"ip,omitempty"`
+	port        string `required:"true" yaml:"port"  json:"port,omitempty"`
+	contextPath string `required:"true" yaml:"contextPath"  json:"contextPath,omitempty"`
+}
+
+func loadRegistries(registriesIds []ConfigRegistry, registries []RegistryConfig) []*config.RegistryURL {
+	var urls []*config.RegistryURL
+	for _, registry := range registriesIds {
+		for _, registryConf := range registries {
+			if registry.string == registryConf.Id {
+				url, err := config.NewRegistryURL(context.TODO(), registryConf.Address)
+				if err != nil {
+					log.Error("The registry id:%s url is invalid ,and will skip the registry", registryConf.Id)
+				} else {
+					urls = append(urls, url)
+				}
+
+			}
+		}
+
+	}
+	return urls
+}
+
+func loadProtocol(protocolsIds string, protocols []ProtocolConfig) []ProtocolConfig {
+	returnProtocols := []ProtocolConfig{}
+	for _, v := range strings.Split(protocolsIds, ",") {
+		for _, prot := range protocols {
+			if v == prot.name {
+				returnProtocols = append(returnProtocols, prot)
+			}
+		}
+
+	}
+	return returnProtocols
 }
