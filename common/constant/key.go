@@ -31,3 +31,12 @@ const (
 const (
 	DUBBOGO_CTX_KEY = "dubbogo-ctx"
 )
+
+const (
+	REGISTRY_KEY      = "registry"
+	REGISTRY_PROTOCOL = "registry"
+)
+
+const (
+	EXPORT_KEY = "export"
+)
