@@ -46,7 +46,7 @@ func (bi *BaseInvoker) IsDestroyed() bool {
 }
 
 func (bi *BaseInvoker) Invoke(invocation Invocation) Result {
-	return nil
+	return &RPCResult{}
 }
 
 func (bi *BaseInvoker) Destroy() {

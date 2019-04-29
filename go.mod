@@ -9,5 +9,6 @@ require (
 	github.com/samuel/go-zookeeper v0.0.0-20180130194729-c4fab1ac1bec
 	github.com/stretchr/testify v1.3.0
 	github.com/tevino/abool v0.0.0-20170917061928-9b9efcf221b5
+	go.uber.org/atomic v1.3.2
 	gopkg.in/yaml.v2 v2.2.2
 )
