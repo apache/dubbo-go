@@ -107,6 +107,15 @@ func (srvconfig *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.WARMUP_KEY, srvconfig.warmup)
 	urlMap.Set(constant.RETRIES_KEY, strconv.FormatInt(srvconfig.retries, 10))
 
+	//application info
+	urlMap.Set(constant.APPLICATION_KEY, providerConfig.ApplicationConfig.Name)
+	urlMap.Set(constant.ORGANIZATION_KEY, providerConfig.ApplicationConfig.Organization)
+	urlMap.Set(constant.NAME_KEY, providerConfig.ApplicationConfig.Name)
+	urlMap.Set(constant.MODULE_KEY, providerConfig.ApplicationConfig.Module)
+	urlMap.Set(constant.APP_VERSION_KEY, providerConfig.ApplicationConfig.Version)
+	urlMap.Set(constant.OWNER_KEY, providerConfig.ApplicationConfig.Owner)
+	urlMap.Set(constant.ENVIRONMENT_KEY, providerConfig.ApplicationConfig.Environment)
+
 	for _, v := range srvconfig.Methods {
 		urlMap.Set("methods."+v.name+"."+constant.LOADBALANCE_KEY, v.loadbalance)
 		urlMap.Set("methods."+v.name+"."+constant.RETRIES_KEY, strconv.FormatInt(v.retries, 10))

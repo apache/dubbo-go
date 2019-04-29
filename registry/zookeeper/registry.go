@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -18,6 +19,7 @@ import (
 )
 
 import (
+	"github.com/dubbo/dubbo-go/common/constant"
 	"github.com/dubbo/dubbo-go/common/extension"
 	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbo/dubbo-go/registry"
@@ -78,12 +80,12 @@ func NewZkRegistry(url *config.RegistryURL) (registry.Registry, error) {
 		zkPath:      make(map[string]int),
 	}
 
-	if r.Name == "" {
-		r.Name = RegistryZkClient
-	}
-	if r.Version == "" {
-		r.Version = version.Version
-	}
+	//if r.URL.Name == "" {
+	//	r.URL.Name = RegistryZkClient
+	//}
+	//if r.Version == "" {
+	//	r.Version = version.Version
+	//}
 
 	if r.Timeout == 0 {
 		r.Timeout = 1e9
@@ -283,12 +285,12 @@ func (r *ZkRegistry) register(c config.URL) error {
 	}
 	params = url.Values{}
 
-	params.Add("application", r.Name)
+	params.Add("application", c.GetParam(constant.APPLICATION_KEY, ""))
 	params.Add("default.timeout", fmt.Sprintf("%d", defaultTimeout/1e6))
-	params.Add("environment", r.Environment)
-	params.Add("org", r.Organization)
-	params.Add("module", r.Module)
-	params.Add("owner", r.Owner)
+	params.Add("environment", c.GetParam(constant.ENVIRONMENT_KEY, ""))
+	params.Add("org", c.GetParam(constant.ORGANIZATION_KEY, ""))
+	params.Add("module", c.GetParam(constant.MODULE_KEY, ""))
+	params.Add("owner", c.GetParam(constant.OWNER_KEY, ""))
 	params.Add("pid", processID)
 	params.Add("ip", localIP)
 	params.Add("timeout", fmt.Sprintf("%d", int64(r.Timeout)/1e6))
@@ -309,7 +311,7 @@ func (r *ZkRegistry) register(c config.URL) error {
 
 	case config.PROVIDER:
 
-		if conf.Service == "" || conf.Methods == "" {
+		if conf.Service == "" || len(conf.Methods) == 0 {
 			return jerrors.Errorf("conf{Service:%s, Methods:%s}", conf.Service, conf.Methods)
 		}
 		// 先创建服务下面的provider node
@@ -338,8 +340,8 @@ func (r *ZkRegistry) register(c config.URL) error {
 		if conf.Version != "" {
 			params.Add("version", conf.Version)
 		}
-		if conf.Methods != "" {
-			params.Add("methods", conf.Methods)
+		if len(conf.Methods) == 0 {
+			params.Add("methods", strings.Join(conf.Methods, ","))
 		}
 		log.Debug("provider zk url params:%#v", params)
 		var path = conf.Path
