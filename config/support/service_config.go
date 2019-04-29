@@ -25,13 +25,16 @@ type ServiceConfig struct {
 	Registries  []ConfigRegistry `required:"true"  yaml:"registries"  json:"registries,omitempty"`
 	Cluster     string           `default:"failover" yaml:"cluster"  json:"cluster,omitempty"`
 	Loadbalance string           `default:"random" yaml:"loadbalance"  json:"loadbalance,omitempty"`
-	Methods     []method         `yaml:"methods"  json:"methods,omitempty"`
-	warmup      string           `yaml:"warmup"  json:"warmup,omitempty"`
-	retries     int64            `yaml:"retries"  json:"retries,omitempty"`
-	unexported  *atomic.Bool
-	exported    *atomic.Bool
-
-	URLs       []config.URL
+	Methods     []struct {
+		name        string `yaml:"name"  json:"name,omitempty"`
+		retries     int64  `yaml:"retries"  json:"retries,omitempty"`
+		loadbalance string `yaml:"loadbalance"  json:"loadbalance,omitempty"`
+		weight      int64  `yaml:"weight"  json:"weight,omitempty"`
+	} `yaml:"methods"  json:"methods,omitempty"`
+	warmup     string `yaml:"warmup"  json:"warmup,omitempty"`
+	retries    int64  `yaml:"retries"  json:"retries,omitempty"`
+	unexported *atomic.Bool
+	exported   *atomic.Bool
 	rpcService config.RPCService
 	exporters  []protocol.Exporter
 }
@@ -59,7 +62,7 @@ func (srvconfig *ServiceConfig) Export() error {
 	}
 
 	regUrls := loadRegistries(srvconfig.Registries, providerConfig.Registries)
-	urlMap := getUrlMap(srvconfig)
+	urlMap := srvconfig.getUrlMap()
 
 	for _, proto := range loadProtocol(srvconfig.Protocol, providerConfig.Protocols) {
 		//registry the service reflect
@@ -73,7 +76,13 @@ func (srvconfig *ServiceConfig) Export() error {
 		if contextPath == "" {
 			contextPath = providerConfig.Path
 		}
-		url := config.NewURLWithOptions(srvconfig.Interface, proto.name, proto.ip, proto.port, contextPath, config.WithParams(urlMap))
+		url := config.NewURLWithOptions(srvconfig.Interface,
+			config.WithProtocol(proto.name),
+			config.WithIp(proto.ip),
+			config.WithPort(proto.port),
+			config.WithPath(contextPath),
+			config.WithParams(urlMap))
+
 		for _, regUrl := range regUrls {
 			regUrl.URL = *url
 			invoker := protocol.NewBaseInvoker(regUrl)
@@ -89,18 +98,19 @@ func (srvconfig *ServiceConfig) Implement(s config.RPCService) {
 	srvconfig.rpcService = s
 }
 
-func getUrlMap(config *ServiceConfig) url.Values {
+func (srvconfig *ServiceConfig) getUrlMap() url.Values {
 	urlMap := url.Values{}
 
 	urlMap.Set(constant.TIMESTAMP_KEY, strconv.FormatInt(time.Now().Unix(), 10))
-	urlMap.Set(constant.CLUSTER_KEY, config.Cluster)
-	urlMap.Set(constant.LOADBALANCE_KEY, config.Loadbalance)
-	urlMap.Set(constant.WARMUP_KEY, config.warmup)
-	urlMap.Set(constant.RETRIES_KEY, strconv.FormatInt(config.retries, 10))
+	urlMap.Set(constant.CLUSTER_KEY, srvconfig.Cluster)
+	urlMap.Set(constant.LOADBALANCE_KEY, srvconfig.Loadbalance)
+	urlMap.Set(constant.WARMUP_KEY, srvconfig.warmup)
+	urlMap.Set(constant.RETRIES_KEY, strconv.FormatInt(srvconfig.retries, 10))
 
-	for _, v := range config.Methods {
+	for _, v := range srvconfig.Methods {
 		urlMap.Set("methods."+v.name+"."+constant.LOADBALANCE_KEY, v.loadbalance)
 		urlMap.Set("methods."+v.name+"."+constant.RETRIES_KEY, strconv.FormatInt(v.retries, 10))
+		urlMap.Set("methods."+v.name+"."+constant.WEIGHT_KEY, strconv.FormatInt(v.weight, 10))
 	}
 
 	return urlMap
