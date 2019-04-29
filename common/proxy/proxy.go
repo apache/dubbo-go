@@ -9,12 +9,13 @@ import (
 )
 
 import (
+	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbo/dubbo-go/protocol"
 )
 
 // Proxy struct
 type Proxy struct {
-	v           interface{}
+	v           config.RPCService
 	invoke      protocol.Invoker
 	callBack    interface{}
 	attachments map[string]string
@@ -31,7 +32,7 @@ func NewProxy(invoke protocol.Invoker, callBack interface{}, attachments map[str
 }
 
 // proxy implement
-func (p *Proxy) Implement(v interface{}) error {
+func (p *Proxy) Implement(v config.RPCService) error {
 
 	// check parameters, incoming interface must be a elem's pointer.
 	valueOf := reflect.ValueOf(v)
