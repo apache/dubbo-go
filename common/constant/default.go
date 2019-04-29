@@ -8,4 +8,5 @@ const (
 const (
 	DEFAULT_LOADBALANCE = "random"
 	DEFAULT_RETRIES     = 2
+	DEFAULT_PROTOCOL    = "dubbo"
 )
