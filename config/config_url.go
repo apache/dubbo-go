@@ -68,11 +68,32 @@ func WithParams(params url.Values) option {
 	}
 }
 
-func NewURLWithOptions(service string, protocol string, ip string, port string, path string, opts ...option) *URL {
+func WithProtocol(proto string) option {
+	return func(url *URL) {
+		url.Protocol = proto
+	}
+}
+func WithIp(ip string) option {
+	return func(url *URL) {
+		url.Ip = ip
+	}
+}
+
+func WithPort(port string) option {
+	return func(url *URL) {
+		url.Port = port
+	}
+}
+
+func WithPath(path string) option {
+	return func(url *URL) {
+		url.Path = path
+	}
+}
+
+func NewURLWithOptions(service string, opts ...option) *URL {
 	url := &URL{
-		baseUrl: baseUrl{Protocol: protocol, Ip: ip, Port: port},
 		Service: service,
-		Path:    path,
 	}
 	for _, opt := range opts {
 		opt(url)
