@@ -54,6 +54,6 @@ func (refconfig *ReferenceConfig) Refer() {
 }
 
 // @v is service provider implemented RPCService
-func (refconfig *ReferenceConfig) Implement(v interface{}) error {
+func (refconfig *ReferenceConfig) Implement(v config.RPCService) error {
 	return refconfig.pxy.Implement(v)
 }

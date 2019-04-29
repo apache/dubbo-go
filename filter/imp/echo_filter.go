@@ -17,6 +17,7 @@ type EchoFilter struct {
 }
 
 func (ef *EchoFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+
 	if invocation.MethodName() == constant.ECHO && len(invocation.Arguments()) == 1 {
 		return &protocol.RPCResult{
 			Rest: invocation.Arguments()[0],
