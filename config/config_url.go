@@ -80,6 +80,8 @@ func NewURL(ctx context.Context, urlString string) (*URL, error) {
 
 	s.PrimitiveURL = urlString
 	s.Protocol = serviceUrl.Scheme
+	s.Username = serviceUrl.User.Username()
+	s.Password, _ = serviceUrl.User.Password()
 	s.Location = serviceUrl.Host
 	s.Path = serviceUrl.Path
 	if strings.Contains(s.Location, ":") {
@@ -90,6 +92,7 @@ func NewURL(ctx context.Context, urlString string) (*URL, error) {
 	}
 	s.Group = s.Params.Get("group")
 	s.Version = s.Params.Get("version")
+
 	timeoutStr := s.Params.Get("timeout")
 	if len(timeoutStr) == 0 {
 		timeoutStr = s.Params.Get("default.timeout")
@@ -124,9 +127,13 @@ func (c URL) String() string {
 }
 
 func (c *URL) ToFullString() string {
-	return fmt.Sprintf(
-		"%s://%s:%s@%s:%s/%s?%s&%s&%s",
-		c.Protocol, c.Password, c.Username, c.Ip, c.Port, c.Path, c.Version, c.Group, c.Params)
+	buildString := fmt.Sprintf(
+		"%s://%s:%s@%s:%s/%s?verison=%s&group=%s",
+		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path, c.Version, c.Group)
+	for k, v := range c.Params {
+		buildString += "&" + k + "=" + v[0]
+	}
+	return buildString
 }
 
 func (c *URL) Context() context.Context {
