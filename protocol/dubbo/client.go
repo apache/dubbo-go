@@ -38,30 +38,38 @@ func init() {
 	// load clientconfig from *.yml
 	path := os.Getenv(CONF_CLIENT_FILE_PATH)
 	if path == "" {
-		log.Info("CONF_CLIENT_FILE_PATH is null")
+		log.Warn("CONF_CLIENT_FILE_PATH is null")
 		return
 	}
 
 	file, err := ioutil.ReadFile(path)
 	if err != nil {
-		log.Error(jerrors.Trace(err))
+		log.Warn(jerrors.Trace(err))
 		return
 	}
 
 	conf := &ClientConfig{}
 	err = yaml.Unmarshal(file, conf)
 	if err != nil {
-		log.Error(jerrors.Trace(err))
+		log.Warn(jerrors.Trace(err))
 		return
 	}
 
 	if err := conf.CheckValidity(); err != nil {
-		log.Error("ClientConfig check failed: ", jerrors.Trace(err))
+		log.Warn("ClientConfig check failed: ", jerrors.Trace(err))
 		return
 	}
 
 	clientConf = conf
 
+}
+
+func SetClientConf(c ClientConfig) {
+	clientConf = &c
+}
+
+func GetClientConf() ClientConfig {
+	return *clientConf
 }
 
 type CallOptions struct {

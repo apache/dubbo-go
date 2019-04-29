@@ -27,29 +27,37 @@ func init() {
 	// load serverconfig from *.yml
 	path := os.Getenv(CONF_DUBBO_SERVER_FILE_PATH)
 	if path == "" {
-		log.Info("CONF_SERVER_FILE_PATH is null")
+		log.Warn("CONF_SERVER_FILE_PATH is null")
 		return
 	}
 
 	file, err := ioutil.ReadFile(path)
 	if err != nil {
-		log.Error(jerrors.Trace(err))
+		log.Warn(jerrors.Trace(err))
 		return
 	}
 
 	conf := &ServerConfig{}
 	err = yaml.Unmarshal(file, conf)
 	if err != nil {
-		log.Error(jerrors.Trace(err))
+		log.Warn(jerrors.Trace(err))
 		return
 	}
 
 	if err := conf.CheckValidity(); err != nil {
-		log.Error("ServerConfig check failed: ", err)
+		log.Warn("ServerConfig check failed: ", err)
 		return
 	}
 
 	srvConf = conf
+}
+
+func SetServerConfig(s ServerConfig) {
+	srvConf = &s
+}
+
+func GetServerConfig() ServerConfig {
+	return *srvConf
 }
 
 type Server struct {
