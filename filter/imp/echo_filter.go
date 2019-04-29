@@ -2,8 +2,16 @@ package imp
 
 import (
 	"github.com/dubbo/dubbo-go/common/constant"
+	"github.com/dubbo/dubbo-go/common/extension"
+	"github.com/dubbo/dubbo-go/filter"
 	"github.com/dubbo/dubbo-go/protocol"
 )
+
+const ECHO = "echo"
+
+func init() {
+	extension.SetFilter(ECHO, GetFilter)
+}
 
 type EchoFilter struct {
 }
@@ -19,4 +27,8 @@ func (ef *EchoFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invoc
 
 func (ef *EchoFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
+}
+
+func GetFilter() filter.Filter {
+	return &EchoFilter{}
 }
