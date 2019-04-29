@@ -62,7 +62,11 @@ func (dp *DubboProtocol) Destroy() {
 }
 
 func (dp *DubboProtocol) openServer(url config.URL) {
-	srv := NewServer(dp.ExporterMap()[url.Key()])
+	exporter, ok := dp.ExporterMap().Load(url.Key())
+	if !ok {
+		panic("[DubboProtocol]" + url.Key() + "is not existing")
+	}
+	srv := NewServer(exporter.(protocol.Exporter))
 	dp.serverMap[url.Location] = srv
 	srv.Start(url)
 }

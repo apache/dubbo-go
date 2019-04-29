@@ -26,7 +26,7 @@ type DubboInvoker struct {
 
 func NewDubboInvoker(url config.IURL, client *Client) *DubboInvoker {
 	return &DubboInvoker{
-		BaseInvoker: protocol.NewBaseInvoker(url),
+		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
 	}
 }

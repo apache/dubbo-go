@@ -261,6 +261,12 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 	}
 	svc := svcIf.(*config.Service)
 	method := svc.Method()[req.Service.Method]
+	if method == nil {
+		log.Error("method not found!")
+		req.Header.ResponseStatus = hessian.Response_SERVICE_NOT_FOUND
+		req.Body = nil
+		return
+	}
 
 	// prepare argv
 	var argv reflect.Value
@@ -280,7 +286,7 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 	// prepare replyv
 	replyv := reflect.New(method.ReplyType().Elem())
 	var returnValues []reflect.Value
-	if method.CtxType == nil {
+	if method.CtxType() == nil {
 		returnValues = method.Method().Func.Call([]reflect.Value{svc.Rcvr(), reflect.ValueOf(argvTmp), reflect.ValueOf(replyv.Interface())})
 	} else {
 		if contextv := reflect.ValueOf(ctx); contextv.IsValid() {

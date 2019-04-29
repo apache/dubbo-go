@@ -1,9 +1,7 @@
 package dubbo
 
 import (
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	"math/rand"
 	"os"
 	"strings"
 	"sync"
@@ -16,6 +14,7 @@ import (
 	log "github.com/AlexStocks/log4go"
 	"github.com/dubbogo/hessian2"
 	jerrors "github.com/juju/errors"
+	"gopkg.in/yaml.v2"
 )
 
 import (
@@ -29,34 +28,40 @@ var (
 	errClientClosed      = jerrors.New("client closed")
 	errClientReadTimeout = jerrors.New("client read timeout")
 
-	conf *ClientConfig
+	clientConf *ClientConfig
 )
 
 const CONF_CLIENT_FILE_PATH = "CONF_CLIENT_FILE_PATH"
 
 func init() {
-	rand.Seed(time.Now().UnixNano())
 
-	conf = &ClientConfig{}
 	// load clientconfig from *.yml
 	path := os.Getenv(CONF_CLIENT_FILE_PATH)
 	if path == "" {
 		log.Info("CONF_CLIENT_FILE_PATH is null")
+		return
 	}
 
 	file, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Error(jerrors.Trace(err))
+		return
 	}
 
+	conf := &ClientConfig{}
 	err = yaml.Unmarshal(file, conf)
 	if err != nil {
 		log.Error(jerrors.Trace(err))
+		return
 	}
 
 	if err := conf.CheckValidity(); err != nil {
 		log.Error("ClientConfig check failed: ", jerrors.Trace(err))
+		return
 	}
+
+	clientConf = conf
+
 }
 
 type CallOptions struct {
@@ -127,9 +132,9 @@ func NewClient() *Client {
 
 	c := &Client{
 		pendingResponses: make(map[SequenceType]*PendingResponse),
-		conf:             *conf,
+		conf:             *clientConf,
 	}
-	c.pool = newGettyRPCClientConnPool(c, conf.PoolSize, time.Duration(int(time.Second)*conf.PoolTTL))
+	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
 
 	return c
 }

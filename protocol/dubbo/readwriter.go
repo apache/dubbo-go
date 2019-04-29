@@ -107,7 +107,7 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 			"dubboVersion": dubboVersion,
 			"argsTypes":    argsTypes,
 			"args":         args,
-			"service":      config.ServiceMap.GetService(pkg.Service.Target),
+			"service":      config.ServiceMap.GetService(DUBBO, pkg.Service.Target),
 			"attachments":  attachments,
 		}
 	}

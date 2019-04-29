@@ -1,8 +1,15 @@
 package protocol
 
 import (
+	"sync"
+)
+
+import (
+	log "github.com/AlexStocks/log4go"
+)
+
+import (
 	"github.com/dubbo/dubbo-go/config"
-	"github.com/prometheus/common/log"
 )
 
 // Extension - Protocol
@@ -23,21 +30,21 @@ type Exporter interface {
 /////////////////////////////
 
 type BaseProtocol struct {
-	exporterMap map[string]Exporter
+	exporterMap *sync.Map
 	invokers    []Invoker
 }
 
 func NewBaseProtocol() BaseProtocol {
 	return BaseProtocol{
-		exporterMap: make(map[string]Exporter),
+		exporterMap: new(sync.Map),
 	}
 }
 
 func (bp *BaseProtocol) SetExporterMap(key string, exporter Exporter) {
-	bp.exporterMap[key] = exporter
+	bp.exporterMap.Store(key, exporter)
 }
 
-func (bp *BaseProtocol) ExporterMap() map[string]Exporter {
+func (bp *BaseProtocol) ExporterMap() *sync.Map {
 	return bp.exporterMap
 }
 
@@ -57,6 +64,7 @@ func (bp *BaseProtocol) Refer(url config.IURL) Invoker {
 	return nil
 }
 
+//Destroy will destroy all invoker and exporter, so it only is called once.
 func (bp *BaseProtocol) Destroy() {
 	// destroy invokers
 	for _, invoker := range bp.invokers {
@@ -67,13 +75,14 @@ func (bp *BaseProtocol) Destroy() {
 	bp.invokers = []Invoker{}
 
 	// unexport exporters
-	for key, exporter := range bp.ExporterMap() {
+	bp.exporterMap.Range(func(key, exporter interface{}) bool {
 		if exporter != nil {
-			exporter.Unexport()
+			exporter.(Exporter).Unexport()
 		} else {
-			delete(bp.exporterMap, key)
+			bp.exporterMap.Delete(key)
 		}
-	}
+		return true
+	})
 }
 
 /////////////////////////////
@@ -83,10 +92,10 @@ func (bp *BaseProtocol) Destroy() {
 type BaseExporter struct {
 	key         string
 	invoker     Invoker
-	exporterMap map[string]Exporter
+	exporterMap *sync.Map
 }
 
-func NewBaseExporter(key string, invoker Invoker, exporterMap map[string]Exporter) *BaseExporter {
+func NewBaseExporter(key string, invoker Invoker, exporterMap *sync.Map) *BaseExporter {
 	return &BaseExporter{
 		key:         key,
 		invoker:     invoker,
@@ -102,5 +111,5 @@ func (de *BaseExporter) GetInvoker() Invoker {
 func (de *BaseExporter) Unexport() {
 	log.Info("Exporter unexport.")
 	de.invoker.Destroy()
-	delete(de.exporterMap, de.key)
+	de.exporterMap.Delete(de.key)
 }

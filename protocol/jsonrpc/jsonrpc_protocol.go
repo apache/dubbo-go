@@ -67,7 +67,11 @@ func (jp *JsonrpcProtocol) Destroy() {
 }
 
 func (jp *JsonrpcProtocol) openServer(url config.URL) {
-	srv := NewServer(jp.ExporterMap()[url.Key()])
+	exporter, ok := jp.ExporterMap().Load(url.Key())
+	if !ok {
+		panic("[JsonrpcProtocol]" + url.Key() + "is not existing")
+	}
+	srv := NewServer(exporter.(protocol.Exporter))
 	jp.serverMap[url.Location] = srv
 	srv.Start(url)
 }
