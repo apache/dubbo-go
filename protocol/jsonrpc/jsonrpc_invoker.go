@@ -22,7 +22,7 @@ type JsonrpcInvoker struct {
 
 func NewJsonrpcInvoker(url config.IURL, client *HTTPClient) *JsonrpcInvoker {
 	return &JsonrpcInvoker{
-		BaseInvoker: protocol.NewBaseInvoker(url),
+		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
 	}
 }

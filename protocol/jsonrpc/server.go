@@ -272,7 +272,7 @@ func serveRequest(ctx context.Context,
 	}
 
 	// get method
-	svc := config.ServiceMap.GetService(serviceName)
+	svc := config.ServiceMap.GetService(JSONRPC, serviceName)
 	if svc == nil {
 		codec.ReadBody(nil)
 		return jerrors.New("cannot find svc " + serviceName)

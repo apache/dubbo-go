@@ -26,7 +26,7 @@ var (
 	typeOfError = reflect.TypeOf((*error)(nil)).Elem()
 
 	ServiceMap = &serviceMap{
-		serviceMap: make(map[string]*Service),
+		serviceMap: make(map[string]map[string]*Service),
 	}
 )
 
@@ -87,24 +87,28 @@ func (s *Service) Rcvr() reflect.Value {
 //////////////////////////
 
 type serviceMap struct {
-	mutex      sync.RWMutex        // protects the serviceMap
-	serviceMap map[string]*Service // service name -> service
+	mutex      sync.RWMutex                   // protects the serviceMap
+	serviceMap map[string]map[string]*Service // protocol -> service name -> service
 }
 
-func (sm *serviceMap) GetService(name string) *Service {
+func (sm *serviceMap) GetService(protocol, name string) *Service {
 	sm.mutex.RLock()
 	defer sm.mutex.RUnlock()
-	if s, ok := sm.serviceMap[name]; ok {
-		return s
+	if s, ok := sm.serviceMap[protocol]; ok {
+		if srv, ok := s[name]; ok {
+			return srv
+		}
+		return nil
 	}
 	return nil
 }
 
-func (sm *serviceMap) Register(rcvr RPCService) (string, error) {
+// todo:Register is called by 'ServiceConfig'
+func (sm *serviceMap) Register(protocol string, rcvr RPCService) (string, error) {
 	sm.mutex.Lock()
 	defer sm.mutex.Unlock()
-	if sm.serviceMap == nil {
-		sm.serviceMap = make(map[string]*Service)
+	if sm.serviceMap[protocol] == nil {
+		sm.serviceMap[protocol] = make(map[string]*Service)
 	}
 
 	s := new(Service)
@@ -123,7 +127,7 @@ func (sm *serviceMap) Register(rcvr RPCService) (string, error) {
 	}
 
 	sname = rcvr.Service()
-	if server := sm.GetService(sname); server == nil {
+	if server := sm.GetService(protocol, sname); server != nil {
 		return "", jerrors.New("service already defined: " + sname)
 	}
 	s.name = sname
@@ -138,7 +142,7 @@ func (sm *serviceMap) Register(rcvr RPCService) (string, error) {
 		log.Error(s)
 		return "", jerrors.New(s)
 	}
-	sm.serviceMap[s.name] = s
+	sm.serviceMap[protocol][s.name] = s
 
 	return strings.TrimSuffix(methods, ","), nil
 }

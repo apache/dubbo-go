@@ -25,8 +25,8 @@ type BaseInvoker struct {
 	destroyed bool
 }
 
-func NewBaseInvoker(url config.IURL) BaseInvoker {
-	return BaseInvoker{
+func NewBaseInvoker(url config.IURL) *BaseInvoker {
+	return &BaseInvoker{
 		url:       url,
 		available: true,
 		destroyed: false,
