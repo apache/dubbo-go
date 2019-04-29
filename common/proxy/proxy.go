@@ -32,6 +32,10 @@ func NewProxy(invoke protocol.Invoker, callBack interface{}, attachments map[str
 }
 
 // proxy implement
+// In consumer, RPCService like:
+// 		type XxxProvider struct {
+//  		Yyy func(ctx context.Context, args []interface{}, rsp *Zzz) error
+// 		}
 func (p *Proxy) Implement(v config.RPCService) error {
 
 	// check parameters, incoming interface must be a elem's pointer.
