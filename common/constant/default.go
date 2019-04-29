@@ -12,5 +12,5 @@ const (
 )
 
 const (
-	ECHO = "$echo"
+	ECHO = "Echo"
 )
