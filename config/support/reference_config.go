@@ -2,16 +2,16 @@ package support
 
 import (
 	"context"
-	"github.com/dubbo/dubbo-go/common/constant"
-	"github.com/dubbo/dubbo-go/config"
 	"net/url"
 	"strconv"
 	"time"
 )
 
 import (
+	"github.com/dubbo/dubbo-go/common/constant"
 	"github.com/dubbo/dubbo-go/common/extension"
 	"github.com/dubbo/dubbo-go/common/proxy"
+	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbo/dubbo-go/protocol"
 )
 
@@ -76,6 +76,15 @@ func (refconfig *ReferenceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.RETRIES_KEY, strconv.FormatInt(refconfig.retries, 10))
 	//getty invoke async or sync
 	urlMap.Set(constant.ASYNC_KEY, strconv.FormatBool(refconfig.Async))
+
+	//application info
+	urlMap.Set(constant.APPLICATION_KEY, consumerConfig.ApplicationConfig.Name)
+	urlMap.Set(constant.ORGANIZATION_KEY, consumerConfig.ApplicationConfig.Organization)
+	urlMap.Set(constant.NAME_KEY, consumerConfig.ApplicationConfig.Name)
+	urlMap.Set(constant.MODULE_KEY, consumerConfig.ApplicationConfig.Module)
+	urlMap.Set(constant.APP_VERSION_KEY, consumerConfig.ApplicationConfig.Version)
+	urlMap.Set(constant.OWNER_KEY, consumerConfig.ApplicationConfig.Owner)
+	urlMap.Set(constant.ENVIRONMENT_KEY, consumerConfig.ApplicationConfig.Environment)
 
 	for _, v := range refconfig.Methods {
 		urlMap.Set("methods."+v.name+"."+constant.LOADBALANCE_KEY, v.loadbalance)

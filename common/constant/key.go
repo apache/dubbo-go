@@ -38,5 +38,11 @@ const (
 )
 
 const (
-//EXPORT_KEY = "export"
+	APPLICATION_KEY  = "application"
+	ORGANIZATION_KEY = "organization"
+	NAME_KEY         = "name"
+	MODULE_KEY       = "module"
+	APP_VERSION_KEY  = "version"
+	OWNER_KEY        = "owner"
+	ENVIRONMENT_KEY  = "environment"
 )

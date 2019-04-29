@@ -47,15 +47,10 @@ type RegistryURL struct {
 	Version string `yaml:"version" json:"version,omitempty"`
 	Group   string `yaml:"group" json:"group,omitempty"`
 	//for registry
-	Username     string    `yaml:"username" json:"username,omitempty"`
-	Password     string    `yaml:"password" json:"password,omitempty"`
-	DubboType    DubboType `yaml:"-"`
-	Organization string    `yaml:"organization" json:"organization,omitempty"`
-	Name         string    `yaml:"name" json:"name,omitempty"`
-	Module       string    `yaml:"module" json:"module,omitempty"`
-	Owner        string    `yaml:"owner" json:"owner,omitempty"`
-	Environment  string    `yaml:"environment" json:"environment,omitempty"`
-	Address      string    `yaml:"address" json:"address,omitempty"`
+	Username  string    `yaml:"username" json:"username,omitempty"`
+	Password  string    `yaml:"password" json:"password,omitempty"`
+	DubboType DubboType `yaml:"-"`
+	Address   string    `yaml:"address" json:"address,omitempty"`
 }
 
 func NewRegistryURL(context context.Context, urlString string) (*RegistryURL, error) {

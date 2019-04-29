@@ -142,8 +142,6 @@ type ConsumerConfig struct {
 	// codec & selector & transport & registry
 	Selector     string `default:"cache"  yaml:"selector" json:"selector,omitempty"`
 	Selector_TTL string `default:"10m"  yaml:"selector_ttl" json:"selector_ttl,omitempty"`
-	//client load balance algorithm
-	ClientLoadBalance string `default:"round_robin"  yaml:"client_load_balance" json:"client_load_balance,omitempty"`
 	// application
 	ApplicationConfig ApplicationConfig `yaml:"application_config" json:"application_config,omitempty"`
 	Registries        []RegistryConfig  `yaml:"registries" json:"registries,omitempty"`
@@ -168,10 +166,11 @@ func GetConsumerConfig() ConsumerConfig {
 /////////////////////////
 
 type ProviderConfig struct {
-	Path       string           `yaml:"path" json:"path,omitempty"`
-	Registries []RegistryConfig `yaml:"registries" json:"registries,omitempty"`
-	Services   []ServiceConfig  `yaml:"services" json:"services,omitempty"`
-	Protocols  []ProtocolConfig `yaml:"protocols" json:"protocols,omitempty"`
+	ApplicationConfig ApplicationConfig `yaml:"application_config" json:"application_config,omitempty"`
+	Path              string            `yaml:"path" json:"path,omitempty"`
+	Registries        []RegistryConfig  `yaml:"registries" json:"registries,omitempty"`
+	Services          []ServiceConfig   `yaml:"services" json:"services,omitempty"`
+	Protocols         []ProtocolConfig  `yaml:"protocols" json:"protocols,omitempty"`
 }
 
 func SetProviderConfig(p ProviderConfig) {
