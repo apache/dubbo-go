@@ -10,3 +10,7 @@ const (
 	DEFAULT_RETRIES     = 2
 	DEFAULT_PROTOCOL    = "dubbo"
 )
+
+const (
+	ECHO = "$ECHO"
+)

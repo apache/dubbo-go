@@ -21,16 +21,18 @@ import (
 
 const RegistryConnDelay = 3
 
+var registryProtocol *RegistryProtocol
+
 type RegistryProtocol struct {
 	// Registry  Map<RegistryAddress, Registry>
 	registies sync.Map
 }
 
 func init() {
-	extension.SetProtocol("registry", NewRegistryProtocol)
+	extension.SetProtocol("registry", GetProtocol)
 }
 
-func NewRegistryProtocol() protocol.Protocol {
+func NewRegistryProtocol() *RegistryProtocol {
 	return &RegistryProtocol{
 		registies: sync.Map{},
 	}
@@ -113,6 +115,13 @@ func (*RegistryProtocol) getProviderUrl(invoker protocol.Invoker) config.URL {
 	return *newUrl
 }
 
+func GetProtocol() protocol.Protocol {
+	if registryProtocol != nil {
+		return registryProtocol
+	}
+	return NewRegistryProtocol()
+}
+
 type wrappedInvoker struct {
 	invoker protocol.Invoker
 	url     config.URL
@@ -123,7 +132,7 @@ func newWrappedInvoker(invoker protocol.Invoker, url config.URL) *wrappedInvoker
 	return &wrappedInvoker{
 		invoker:     invoker,
 		url:         url,
-		BaseInvoker: protocol.NewBaseInvoker(nil),
+		BaseInvoker: *protocol.NewBaseInvoker(nil),
 	}
 }
 func (ivk *wrappedInvoker) GetUrl() config.IURL {

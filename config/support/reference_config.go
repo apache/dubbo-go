@@ -15,8 +15,6 @@ import (
 	"github.com/dubbo/dubbo-go/protocol"
 )
 
-var refprotocol = extension.GetProtocolExtension("registry")
-
 type ReferenceConfig struct {
 	context    context.Context
 	pxy        *proxy.Proxy
@@ -48,7 +46,7 @@ func (refconfig *ReferenceConfig) Refer() {
 	urls := refconfig.loadRegistries()
 
 	if len(urls) == 1 {
-		refconfig.invoker = refprotocol.Refer(urls[0])
+		refconfig.invoker = extension.GetProtocolExtension("registry").Refer(urls[0])
 	} else {
 		//TODO:multi registries
 	}

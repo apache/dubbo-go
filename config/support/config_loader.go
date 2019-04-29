@@ -10,6 +10,7 @@ import (
 
 import (
 	"github.com/AlexStocks/goext/log"
+	log "github.com/AlexStocks/log4go"
 	jerrors "github.com/juju/errors"
 	"gopkg.in/yaml.v2"
 )
@@ -19,13 +20,17 @@ import (
 )
 
 var (
-	consumerConfig ConsumerConfig
-	providerConfig ProviderConfig
+	consumerConfig *ConsumerConfig
+	providerConfig *ProviderConfig
 )
 
-// loaded comsumer & provider config from xxx.yml
+// loaded comsumer & provider config from xxx.yml, and log config from xxx.xml
 // Namely: dubbo.comsumer.xml & dubbo.provider.xml in java dubbo
 func init() {
+
+	if err := logInit(); err != nil { // log config
+		log.Warn("[logInit] %#v", err)
+	}
 
 	var (
 		confConFile, confProFile string
@@ -34,50 +39,85 @@ func init() {
 	confConFile = os.Getenv(constant.CONF_CONSUMER_FILE_PATH)
 	confProFile = os.Getenv(constant.CONF_PROVIDER_FILE_PATH)
 
-	if confConFile == "" && confProFile == "" {
-		panic(fmt.Sprintf("application configure(consumer & provider) file name is nil"))
+	if errCon := consumerInit(confConFile); errCon != nil {
+		log.Warn("[consumerInit] %#v", errCon)
+		consumerConfig = nil
+	}
+	if errPro := providerInit(confProFile); errPro != nil {
+		log.Warn("[providerInit] %#v", errPro)
+		providerConfig = nil
 	}
 
-	if confConFile != "" {
+}
 
-		if path.Ext(confConFile) != ".yml" {
-			panic(fmt.Sprintf("application configure file name{%v} suffix must be .yml", confConFile))
-		}
+func logInit() error {
+	var (
+		confFile string
+	)
 
-		confFileStream, err := ioutil.ReadFile(confConFile)
-		if err != nil {
-			panic(fmt.Sprintf("ioutil.ReadFile(file:%s) = error:%s", confConFile, jerrors.ErrorStack(err)))
-		}
-		err = yaml.Unmarshal(confFileStream, consumerConfig)
-		if err != nil {
-			panic(fmt.Sprintf("yaml.Unmarshal() = error:%s", jerrors.ErrorStack(err)))
-		}
-		//动态加载service config  end
-		for _, config := range consumerConfig.Registries {
-			if config.Timeout, err = time.ParseDuration(config.TimeoutStr); err != nil {
-				panic(fmt.Sprintf("time.ParseDuration(Registry_Config.Timeout:%#v) = error:%s", config.TimeoutStr, err))
-			}
-		}
-
-		gxlog.CInfo("consumer config{%#v}\n", consumerConfig)
+	confFile = os.Getenv(constant.APP_LOG_CONF_FILE)
+	if confFile == "" {
+		return fmt.Errorf("log configure file name is nil")
+	}
+	if path.Ext(confFile) != ".xml" {
+		return fmt.Errorf("log configure file name{%v} suffix must be .xml", confFile)
 	}
 
-	if confProFile != "" {
+	log.LoadConfiguration(confFile)
 
+	return nil
+}
+
+func consumerInit(confConFile string) error {
+	if confConFile == "" {
+		return fmt.Errorf("application configure(consumer) file name is nil")
 	}
 
-	// log
-	//confFile = os.Getenv(APP_LOG_CONF_FILE)
-	//if confFile == "" {
-	//	panic(fmt.Sprintf("log configure file name is nil"))
-	//	return nil
-	//}
-	//if path.Ext(confFile) != ".xml" {
-	//	panic(fmt.Sprintf("log configure file name{%v} suffix must be .xml", confFile))
-	//	return nil
-	//}
-	//log.LoadConfiguration(confFile)
+	if path.Ext(confConFile) != ".yml" {
+		return fmt.Errorf("application configure file name{%v} suffix must be .yml", confConFile)
+	}
 
+	confFileStream, err := ioutil.ReadFile(confConFile)
+	if err != nil {
+		return fmt.Errorf("ioutil.ReadFile(file:%s) = error:%s", confConFile, jerrors.ErrorStack(err))
+	}
+	err = yaml.Unmarshal(confFileStream, consumerConfig)
+	if err != nil {
+		return fmt.Errorf("yaml.Unmarshal() = error:%s", jerrors.ErrorStack(err))
+	}
+	//动态加载service config  end
+	for _, config := range consumerConfig.Registries {
+		if config.Timeout, err = time.ParseDuration(config.TimeoutStr); err != nil {
+			return fmt.Errorf("time.ParseDuration(Registry_Config.Timeout:%#v) = error:%s", config.TimeoutStr, err)
+		}
+	}
+
+	gxlog.CInfo("consumer config{%#v}\n", consumerConfig)
+	return nil
+}
+
+func providerInit(confProFile string) error {
+	if confProFile == "" {
+		return fmt.Errorf("application configure(provider) file name is nil")
+	}
+
+	if path.Ext(confProFile) != ".yml" {
+		return fmt.Errorf("application configure file name{%v} suffix must be .yml", confProFile)
+	}
+
+	confFileStream, err := ioutil.ReadFile(confProFile)
+	if err != nil {
+		return fmt.Errorf("ioutil.ReadFile(file:%s) = error:%s", confProFile, jerrors.ErrorStack(err))
+	}
+	err = yaml.Unmarshal(confFileStream, providerConfig)
+	if err != nil {
+		return fmt.Errorf("yaml.Unmarshal() = error:%s", jerrors.ErrorStack(err))
+	}
+
+	//todo: provider config
+
+	gxlog.CInfo("provider config{%#v}\n", providerConfig)
+	return nil
 }
 
 /////////////////////////
@@ -114,10 +154,10 @@ type ReferenceConfigTmp struct {
 }
 
 func SetConsumerConfig(c ConsumerConfig) {
-	consumerConfig = c
+	consumerConfig = &c
 }
 func GetConsumerConfig() ConsumerConfig {
-	return consumerConfig
+	return *consumerConfig
 }
 
 /////////////////////////
@@ -129,8 +169,8 @@ type ProviderConfig struct {
 }
 
 func SetProviderConfig(p ProviderConfig) {
-	providerConfig = p
+	providerConfig = &p
 }
 func GetProviderConfig() ProviderConfig {
-	return providerConfig
+	return *providerConfig
 }
