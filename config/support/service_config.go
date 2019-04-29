@@ -1,19 +1,108 @@
 package support
 
-import "github.com/dubbo/dubbo-go/config"
+import (
+	"context"
+	"net/url"
+	"strconv"
+	"time"
+)
+import (
+	log "github.com/AlexStocks/log4go"
+	jerrors "github.com/juju/errors"
+	"go.uber.org/atomic"
+)
+import (
+	"github.com/dubbo/dubbo-go/common/constant"
+	"github.com/dubbo/dubbo-go/common/extension"
+	"github.com/dubbo/dubbo-go/config"
+	"github.com/dubbo/dubbo-go/protocol"
+)
 
 type ServiceConfig struct {
-	Service    string `required:"true"  yaml:"service"  json:"service,omitempty"`
+	context     context.Context
+	Protocol    string           //multi protocol support, split by ','
+	Interface   string           `required:"true"  yaml:"interface"  json:"interface,omitempty"`
+	Registries  []ConfigRegistry `required:"true"  yaml:"registries"  json:"registries,omitempty"`
+	Cluster     string           `default:"failover" yaml:"cluster"  json:"cluster,omitempty"`
+	Loadbalance string           `default:"random" yaml:"loadbalance"  json:"loadbalance,omitempty"`
+	Methods     []method         `yaml:"methods"  json:"methods,omitempty"`
+	warmup      string           `yaml:"warmup"  json:"warmup,omitempty"`
+	retries     int64            `yaml:"retries"  json:"retries,omitempty"`
+	unexported  *atomic.Bool
+	exported    *atomic.Bool
+
 	URLs       []config.URL
 	rpcService config.RPCService
+	exporters  []protocol.Exporter
 }
 
-func NewDefaultProviderServiceConfig() *ServiceConfig {
-	return &ServiceConfig{}
+func NewServiceConfig() *ServiceConfig {
+	return &ServiceConfig{
+		unexported: atomic.NewBool(false),
+		exported:   atomic.NewBool(false),
+	}
+
 }
 
-// todo: D:\Users\yc.fang\WorkStation\goWorkStation\fangyincheng\dubbo-go\dubbo\server.go#Line102
-// todo: D:\Users\yc.fang\WorkStation\goWorkStation\fangyincheng\dubbo-go\jsonrpc\server.go#Line238
-func (sc *ServiceConfig) Export() {
+func (srvconfig *ServiceConfig) Export() error {
+	//TODO: config center start here
+
+	//TODO:delay export
+	if srvconfig.unexported.Load() {
+		err := jerrors.Errorf("The service %v has already unexported! ", srvconfig.Interface)
+		log.Error(err.Error())
+		return err
+	}
+	if srvconfig.exported.Load() {
+		log.Warn("The service %v has already exported! ", srvconfig.Interface)
+		return nil
+	}
+
+	regUrls := loadRegistries(srvconfig.Registries, providerConfig.Registries)
+	urlMap := getUrlMap(srvconfig)
+
+	for _, proto := range loadProtocol(srvconfig.Protocol, providerConfig.Protocols) {
+		//registry the service reflect
+		_, err := config.ServiceMap.Register(proto.name, srvconfig.rpcService)
+		if err != nil {
+			err := jerrors.Errorf("The service %v  export the protocol %v error! Error message is %v .", srvconfig.Interface, proto.name, err.Error())
+			log.Error(err.Error())
+			return err
+		}
+		contextPath := proto.contextPath
+		if contextPath == "" {
+			contextPath = providerConfig.Path
+		}
+		url := config.NewURLWithOptions(srvconfig.Interface, proto.name, proto.ip, proto.port, contextPath, config.WithParams(urlMap))
+		for _, regUrl := range regUrls {
+			regUrl.URL = *url
+			invoker := protocol.NewBaseInvoker(regUrl)
+			exporter := extension.GetProtocolExtension("registry").Export(invoker)
+			srvconfig.exporters = append(srvconfig.exporters, exporter)
+		}
+	}
+	return nil
+
+}
+
+func (srvconfig *ServiceConfig) Implement(s config.RPCService) {
+	srvconfig.rpcService = s
+}
+
+func getUrlMap(config *ServiceConfig) url.Values {
+	urlMap := url.Values{}
+
+	urlMap.Set(constant.TIMESTAMP_KEY, strconv.FormatInt(time.Now().Unix(), 10))
+	urlMap.Set(constant.CLUSTER_KEY, config.Cluster)
+	urlMap.Set(constant.LOADBALANCE_KEY, config.Loadbalance)
+	urlMap.Set(constant.WARMUP_KEY, config.warmup)
+	urlMap.Set(constant.RETRIES_KEY, strconv.FormatInt(config.retries, 10))
+
+	for _, v := range config.Methods {
+		urlMap.Set("methods."+v.name+"."+constant.LOADBALANCE_KEY, v.loadbalance)
+		urlMap.Set("methods."+v.name+"."+constant.RETRIES_KEY, strconv.FormatInt(v.retries, 10))
+	}
+
+	return urlMap
 
 }

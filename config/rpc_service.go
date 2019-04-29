@@ -103,7 +103,6 @@ func (sm *serviceMap) GetService(protocol, name string) *Service {
 	return nil
 }
 
-// todo:Register is called by 'ServiceConfig'
 func (sm *serviceMap) Register(protocol string, rcvr RPCService) (string, error) {
 	sm.mutex.Lock()
 	defer sm.mutex.Unlock()

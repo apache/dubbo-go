@@ -7,7 +7,6 @@ import (
 
 import (
 	log "github.com/AlexStocks/log4go"
-	jerrors "github.com/juju/errors"
 )
 
 import (
@@ -89,30 +88,18 @@ func (*RegistryProtocol) Destroy() {
 
 func (*RegistryProtocol) getRegistryUrl(invoker protocol.Invoker) config.RegistryURL {
 	//here add * for return a new url
-	url := *invoker.GetUrl().(*config.RegistryURL)
+	url := invoker.GetUrl().(*config.RegistryURL)
 	//if the protocol == registry ,set protocol the registry value in url.params
 	if url.Protocol == constant.REGISTRY_PROTOCOL {
 		protocol := url.GetParam(constant.REGISTRY_KEY, constant.DEFAULT_PROTOCOL)
 		url.Protocol = protocol
 	}
-	return url
+	return *url
 }
 
 func (*RegistryProtocol) getProviderUrl(invoker protocol.Invoker) config.URL {
 	url := invoker.GetUrl().(*config.RegistryURL)
-	var export string
-	if export = url.GetParam(constant.EXPORT_KEY, ""); export == "" {
-		err := jerrors.Errorf("The registry export url is null! registry: %v", url.String())
-		log.Error(err.Error())
-		panic(err)
-	}
-	newUrl, err := config.NewURL(url.Context(), export)
-	if err != nil {
-		err := jerrors.Errorf("The registry export url is invalid! registry: %v ,error messsage:%v ", url.String(), err.Error())
-		log.Error(err.Error())
-		panic(err)
-	}
-	return *newUrl
+	return url.URL
 }
 
 func GetProtocol() protocol.Protocol {

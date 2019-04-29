@@ -49,6 +49,37 @@ type URL struct {
 	Methods  []string
 }
 
+type option func(*URL)
+
+func WithUsername(username string) option {
+	return func(url *URL) {
+		url.Username = username
+	}
+}
+
+func WithPassword(pwd string) option {
+	return func(url *URL) {
+		url.Password = pwd
+	}
+}
+func WithParams(params url.Values) option {
+	return func(url *URL) {
+		url.Params = params
+	}
+}
+
+func NewURLWithOptions(service string, protocol string, ip string, port string, path string, opts ...option) *URL {
+	url := &URL{
+		baseUrl: baseUrl{Protocol: protocol, Ip: ip, Port: port},
+		Service: service,
+		Path:    path,
+	}
+	for _, opt := range opts {
+		opt(url)
+	}
+	return url
+}
+
 func NewURL(ctx context.Context, urlString string) (*URL, error) {
 
 	var (

@@ -38,7 +38,7 @@ type RegistryDirectory struct {
 	listenerLock     sync.Mutex
 	serviceType      string
 	registry         registry.Registry
-	cacheInvokersMap sync.Map //use sync.map
+	cacheInvokersMap *sync.Map //use sync.map
 	//cacheInvokersMap map[string]protocol.Invoker
 	Options
 }
@@ -55,7 +55,7 @@ func NewRegistryDirectory(url *config.RegistryURL, registry registry.Registry, o
 	return &RegistryDirectory{
 		BaseDirectory:    directory.NewBaseDirectory(url),
 		cacheInvokers:    []protocol.Invoker{},
-		cacheInvokersMap: sync.Map{},
+		cacheInvokersMap: &sync.Map{},
 		serviceType:      url.URL.Service,
 		registry:         registry,
 		Options:          options,
@@ -115,23 +115,23 @@ func (dir *RegistryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 	switch res.Action {
 	case registry.ServiceAdd:
 		//dir.cacheService.Add(res.Service, dir.serviceTTL)
-		newCacheInvokersMap = dir.cacheInvoker(res.Service)
+		newCacheInvokersMap = *dir.cacheInvoker(res.Service)
 	case registry.ServiceDel:
 		//dir.cacheService.Del(res.Service, dir.serviceTTL)
-		newCacheInvokersMap = dir.uncacheInvoker(res.Service)
+		newCacheInvokersMap = *dir.uncacheInvoker(res.Service)
 		log.Info("selector delete service url{%s}", res.Service)
 	default:
 		return
 	}
 
-	newInvokers := dir.toGroupInvokers(newCacheInvokersMap)
+	newInvokers := dir.toGroupInvokers(&newCacheInvokersMap)
 
 	dir.listenerLock.Lock()
 	defer dir.listenerLock.Unlock()
 	dir.cacheInvokers = newInvokers
 }
 
-func (dir *RegistryDirectory) toGroupInvokers(newInvokersMap sync.Map) []protocol.Invoker {
+func (dir *RegistryDirectory) toGroupInvokers(newInvokersMap *sync.Map) []protocol.Invoker {
 
 	newInvokersList := []protocol.Invoker{}
 	groupInvokersMap := make(map[string][]protocol.Invoker)
@@ -165,14 +165,14 @@ func (dir *RegistryDirectory) toGroupInvokers(newInvokersMap sync.Map) []protoco
 	return groupInvokersList
 }
 
-func (dir *RegistryDirectory) uncacheInvoker(url config.URL) sync.Map {
+func (dir *RegistryDirectory) uncacheInvoker(url config.URL) *sync.Map {
 	log.Debug("service will be deleted in cache invokers: invokers key is  %s!", url.ToFullString())
 	newCacheInvokers := dir.cacheInvokersMap
 	newCacheInvokers.Delete(url.ToFullString())
 	return newCacheInvokers
 }
 
-func (dir *RegistryDirectory) cacheInvoker(url config.URL) sync.Map {
+func (dir *RegistryDirectory) cacheInvoker(url config.URL) *sync.Map {
 	//check the url's protocol is equal to the protocol which is configured in reference config
 	referenceUrl := dir.GetUrl().(*config.RegistryURL).URL
 	newCacheInvokers := dir.cacheInvokersMap
