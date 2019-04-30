@@ -25,6 +25,8 @@ type ServiceConfig struct {
 	Registries  []ConfigRegistry `required:"true"  yaml:"registries"  json:"registries,omitempty"`
 	Cluster     string           `default:"failover" yaml:"cluster"  json:"cluster,omitempty"`
 	Loadbalance string           `default:"random" yaml:"loadbalance"  json:"loadbalance,omitempty"`
+	group       string           `yaml:"group"  json:"group,omitempty"`
+	version     string           `yaml:"version"  json:"version,omitempty"`
 	Methods     []struct {
 		name        string `yaml:"name"  json:"name,omitempty"`
 		retries     int64  `yaml:"retries"  json:"retries,omitempty"`
@@ -61,7 +63,7 @@ func (srvconfig *ServiceConfig) Export() error {
 		return nil
 	}
 
-	regUrls := loadRegistries(srvconfig.Registries, providerConfig.Registries)
+	regUrls := loadRegistries(srvconfig.Registries, providerConfig.Registries, config.PROVIDER)
 	urlMap := srvconfig.getUrlMap()
 
 	for _, proto := range loadProtocol(srvconfig.Protocol, providerConfig.Protocols) {
@@ -106,7 +108,8 @@ func (srvconfig *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.LOADBALANCE_KEY, srvconfig.Loadbalance)
 	urlMap.Set(constant.WARMUP_KEY, srvconfig.warmup)
 	urlMap.Set(constant.RETRIES_KEY, strconv.FormatInt(srvconfig.retries, 10))
-
+	urlMap.Set(constant.GROUP_KEY, srvconfig.group)
+	urlMap.Set(constant.VERSION_KEY, srvconfig.version)
 	//application info
 	urlMap.Set(constant.APPLICATION_KEY, providerConfig.ApplicationConfig.Name)
 	urlMap.Set(constant.ORGANIZATION_KEY, providerConfig.ApplicationConfig.Organization)

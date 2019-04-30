@@ -81,9 +81,9 @@ func (c *HTTPClient) NewRequest(service config.URL, method string, args interfac
 
 	return &Request{
 		ID:       atomic.AddInt64(&c.ID, 1),
-		group:    service.Group,
+		group:    service.GetParam(constant.GROUP_KEY, ""),
 		protocol: service.Protocol,
-		version:  service.Version,
+		version:  service.GetParam(constant.VERSION_KEY,constant.DEFAULT_VERSION),
 		service:  service.Service,
 		method:   method,
 		args:     args,

@@ -14,13 +14,30 @@ import (
 	jerrors "github.com/juju/errors"
 )
 
-type IURL interface {
-	Key() string
-	URLEqual(IURL) bool
-	Context() context.Context
-	GetParam(string, string) string
-	GetParamInt(string, int64) int64
-	String() string
+/////////////////////////////////
+// dubbo role type
+/////////////////////////////////
+
+const (
+	CONSUMER = iota
+	CONFIGURATOR
+	ROUTER
+	PROVIDER
+)
+
+var (
+	DubboNodes = [...]string{"consumers", "configurators", "routers", "providers"}
+	DubboRole  = [...]string{"consumer", "", "", "provider"}
+)
+
+type RoleType int
+
+func (t RoleType) String() string {
+	return DubboNodes[t]
+}
+
+func (t RoleType) Role() string {
+	return DubboRole[t]
 }
 
 type baseUrl struct {
@@ -38,15 +55,12 @@ type URL struct {
 	baseUrl
 	Service string
 
-	Path string `yaml:"path" json:"path,omitempty"` // like  /com.ikurento.dubbo.UserProvider3
-
-	//Weight  int32
-	Version string `yaml:"version" json:"version,omitempty"`
-	Group   string `yaml:"group" json:"group,omitempty"`
-
+	Path     string `yaml:"path" json:"path,omitempty"` // like  /com.ikurento.dubbo.UserProvider3
 	Username string
 	Password string
 	Methods  []string
+	//special for registry
+	URL URL
 }
 
 type option func(*URL)
@@ -101,7 +115,7 @@ func NewURLWithOptions(service string, opts ...option) *URL {
 	return url
 }
 
-func NewURL(ctx context.Context, urlString string) (*URL, error) {
+func NewURL(ctx context.Context, urlString string, opts ...option) (*URL, error) {
 
 	var (
 		err          error
@@ -142,8 +156,6 @@ func NewURL(ctx context.Context, urlString string) (*URL, error) {
 			return nil, jerrors.Errorf("net.SplitHostPort(Url.Host{%s}), error{%v}", s.Location, err)
 		}
 	}
-	s.Group = s.Params.Get("group")
-	s.Version = s.Params.Get("version")
 
 	timeoutStr := s.Params.Get("timeout")
 	if len(timeoutStr) == 0 {
@@ -155,33 +167,38 @@ func NewURL(ctx context.Context, urlString string) (*URL, error) {
 			s.Timeout = time.Duration(timeout * 1e6) // timeout unit is millisecond
 		}
 	}
-
+	for _, opt := range opts {
+		opt(s)
+	}
 	return s, nil
 }
 
 func (c *URL) Key() string {
-	return fmt.Sprintf("%s@%s-%s-%s-%s", c.Service, c.Protocol, c.Group, c.Location, c.Version)
+	return fmt.Sprintf(
+		"%s://%s:%s@%s:%s/%s",
+		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path)
 }
 
-func (c *URL) URLEqual(url IURL) bool {
+func (c *URL) URLEqual(url URL) bool {
 
 	if c.Key() != url.Key() {
 		return false
 	}
 	return true
 }
-func (c URL) String() string {
-	return fmt.Sprintf(
-		"DefaultServiceURL{Protocol:%s, Location:%s, Path:%s, Ip:%s, Port:%s, "+
-			"Timeout:%s, Version:%s, Group:%s,  Params:%+v}",
-		c.Protocol, c.Location, c.Path, c.Ip, c.Port,
-		c.Timeout, c.Version, c.Group, c.Params)
-}
 
-func (c *URL) ToFullString() string {
+//func (c URL) String() string {
+//	return fmt.Sprintf(
+//		"DefaultServiceURL{Protocol:%s, Location:%s, Path:%s, Ip:%s, Port:%s, "+
+//			"Timeout:%s, Version:%s, Group:%s,  Params:%+v}",
+//		c.Protocol, c.Location, c.Path, c.Ip, c.Port,
+//		c.Timeout, c.Version, c.Group, c.Params)
+//}
+
+func (c *URL) String() string {
 	buildString := fmt.Sprintf(
-		"%s://%s:%s@%s:%s/%s?verison=%s&group=%s",
-		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path, c.Version, c.Group)
+		"%s://%s:%s@%s:%s/%s?",
+		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path)
 	for k, v := range c.Params {
 		buildString += "&" + k + "=" + v[0]
 	}

@@ -1,9 +1,7 @@
 package support
 
 import (
-	"context"
 	"fmt"
-	"github.com/dubbo/dubbo-go/config"
 	"io/ioutil"
 	"os"
 	"path"
@@ -180,36 +178,12 @@ func GetProviderConfig() ProviderConfig {
 	return *providerConfig
 }
 
-type RegistryConfig struct {
-	Id         string `required:"true" yaml:"id"  json:"id,omitempty"`
-	TimeoutStr string `yaml:"timeout" default:"5s" json:"timeout,omitempty"` // unit: second
-	config.RegistryURL
-}
 
 type ProtocolConfig struct {
 	name        string `required:"true" yaml:"name"  json:"name,omitempty"`
 	ip          string `required:"true" yaml:"ip"  json:"ip,omitempty"`
 	port        string `required:"true" yaml:"port"  json:"port,omitempty"`
 	contextPath string `required:"true" yaml:"contextPath"  json:"contextPath,omitempty"`
-}
-
-func loadRegistries(registriesIds []ConfigRegistry, registries []RegistryConfig) []*config.RegistryURL {
-	var urls []*config.RegistryURL
-	for _, registry := range registriesIds {
-		for _, registryConf := range registries {
-			if registry.string == registryConf.Id {
-				url, err := config.NewRegistryURL(context.TODO(), registryConf.Address)
-				if err != nil {
-					log.Error("The registry id:%s url is invalid ,and will skip the registry", registryConf.Id)
-				} else {
-					urls = append(urls, url)
-				}
-
-			}
-		}
-
-	}
-	return urls
 }
 
 func loadProtocol(protocolsIds string, protocols []ProtocolConfig) []ProtocolConfig {

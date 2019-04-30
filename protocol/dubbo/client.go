@@ -1,6 +1,7 @@
 package dubbo
 
 import (
+	"github.com/dubbo/dubbo-go/common/constant"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -198,7 +199,7 @@ func (c *Client) call(ct CallType, addr string, svcUrl config.URL, method string
 	p := &DubboPackage{}
 	p.Service.Path = strings.TrimPrefix(svcUrl.Path, "/")
 	p.Service.Target = strings.TrimPrefix(svcUrl.Path, "/")
-	p.Service.Version = svcUrl.Version
+	p.Service.Version = svcUrl.GetParam(constant.VERSION_KEY, constant.DEFAULT_VERSION)
 	p.Service.Method = method
 	p.Service.Timeout = opts.RequestTimeout
 	if opts.SerialID == 0 {

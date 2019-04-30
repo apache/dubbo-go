@@ -24,7 +24,7 @@ type DubboInvoker struct {
 	destroyLock sync.Mutex
 }
 
-func NewDubboInvoker(url config.IURL, client *Client) *DubboInvoker {
+func NewDubboInvoker(url config.URL, client *Client) *DubboInvoker {
 	return &DubboInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
@@ -39,7 +39,7 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	)
 
 	inv := invocation.(*protocol.RPCInvocation)
-	url := inv.Invoker().GetUrl().(*config.URL)
+	url := inv.Invoker().GetUrl()
 	// async
 	async, err := strconv.ParseBool(inv.AttachmentsByKey(constant.ASYNC_KEY, "false"))
 	if err != nil {
@@ -48,15 +48,15 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	}
 	if async {
 		if callBack, ok := inv.CallBack().(func(response CallResponse)); ok {
-			result.Err = di.client.AsyncCall(url.Location, *url, inv.MethodName(), inv.Arguments(), callBack, inv.Reply())
+			result.Err = di.client.AsyncCall(url.Location, url, inv.MethodName(), inv.Arguments(), callBack, inv.Reply())
 		} else {
-			result.Err = di.client.CallOneway(url.Location, *url, inv.MethodName(), inv.Arguments())
+			result.Err = di.client.CallOneway(url.Location, url, inv.MethodName(), inv.Arguments())
 		}
 	} else {
 		if inv.Reply() == nil {
 			result.Err = Err_No_Reply
 		} else {
-			result.Err = di.client.Call(url.Location, *url, inv.MethodName(), inv.Arguments(), inv.Reply())
+			result.Err = di.client.Call(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Reply())
 			result.Rest = inv.Reply() // reply should be set to result.Rest when sync
 		}
 	}

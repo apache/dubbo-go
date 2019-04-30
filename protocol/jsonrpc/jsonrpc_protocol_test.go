@@ -25,10 +25,10 @@ func TestJsonrpcProtocol_Export(t *testing.T) {
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&"+
 		"side=provider&timeout=3000&timestamp=1556509797245")
 	assert.NoError(t, err)
-	exporter := proto.Export(protocol.NewBaseInvoker(url))
+	exporter := proto.Export(protocol.NewBaseInvoker(*url))
 
 	// make sure url
-	eq := exporter.GetInvoker().GetUrl().URLEqual(url)
+	eq := exporter.GetInvoker().GetUrl().URLEqual(*url)
 	assert.True(t, eq)
 
 	// make sure exporterMap after 'Unexport'
@@ -60,10 +60,10 @@ func TestJsonrpcProtocol_Refer(t *testing.T) {
 		RequestTimeout: 5 * time.Second,
 	}
 	support.SetConsumerConfig(con)
-	invoker := proto.Refer(url)
+	invoker := proto.Refer(*url)
 
 	// make sure url
-	eq := invoker.GetUrl().URLEqual(url)
+	eq := invoker.GetUrl().URLEqual(*url)
 	assert.True(t, eq)
 
 	// make sure invokers after 'Destroy'

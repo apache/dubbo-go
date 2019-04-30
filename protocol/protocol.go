@@ -15,7 +15,7 @@ import (
 // Extension - Protocol
 type Protocol interface {
 	Export(invoker Invoker) Exporter
-	Refer(url config.IURL) Invoker
+	Refer(url config.URL) Invoker
 	Destroy()
 }
 
@@ -60,7 +60,7 @@ func (bp *BaseProtocol) Export(invoker Invoker) Exporter {
 	return nil
 }
 
-func (bp *BaseProtocol) Refer(url config.IURL) Invoker {
+func (bp *BaseProtocol) Refer(url config.URL) Invoker {
 	return nil
 }
 

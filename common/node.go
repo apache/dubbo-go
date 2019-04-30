@@ -3,7 +3,7 @@ package common
 import "github.com/dubbo/dubbo-go/config"
 
 type Node interface {
-	GetUrl() config.IURL
+	GetUrl() config.URL
 	IsAvailable() bool
 	Destroy()
 }

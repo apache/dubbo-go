@@ -5,17 +5,17 @@ import (
 )
 
 type BaseDirectory struct {
-	url       *config.RegistryURL
+	url       *config.URL
 	destroyed bool
 }
 
-func NewBaseDirectory(url *config.RegistryURL) BaseDirectory {
+func NewBaseDirectory(url *config.URL) BaseDirectory {
 	return BaseDirectory{
 		url: url,
 	}
 }
-func (dir *BaseDirectory) GetUrl() config.IURL {
-	return dir.url
+func (dir *BaseDirectory) GetUrl() config.URL {
+	return *dir.url
 }
 
 func (dir *BaseDirectory) Destroy() {

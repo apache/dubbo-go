@@ -20,7 +20,7 @@ type JsonrpcInvoker struct {
 	client *HTTPClient
 }
 
-func NewJsonrpcInvoker(url config.IURL, client *HTTPClient) *JsonrpcInvoker {
+func NewJsonrpcInvoker(url config.URL, client *HTTPClient) *JsonrpcInvoker {
 	return &JsonrpcInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
@@ -34,15 +34,14 @@ func (ji *JsonrpcInvoker) Invoke(invocation protocol.Invocation) protocol.Result
 	)
 
 	inv := invocation.(*protocol.RPCInvocation)
-	url := inv.Invoker().GetUrl().(*config.URL)
-
-	req := ji.client.NewRequest(*url, inv.MethodName(), inv.Arguments())
+	url := inv.Invoker().GetUrl()
+	req := ji.client.NewRequest(url, inv.MethodName(), inv.Arguments())
 	ctx := context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
 		"X-Proxy-Id": "dubbogo",
 		"X-Services": url.Service,
 		"X-Method":   inv.MethodName(),
 	})
-	if err := ji.client.Call(ctx, *url, req, inv.Reply()); err != nil {
+	if err := ji.client.Call(ctx, url, req, inv.Reply()); err != nil {
 		log.Error("client.Call() return error:%+v", jerrors.ErrorStack(err))
 		result.Err = err
 	} else {

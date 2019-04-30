@@ -20,12 +20,12 @@ type Invoker interface {
 /////////////////////////////
 
 type BaseInvoker struct {
-	url       config.IURL
+	url       *config.URL
 	available bool
 	destroyed bool
 }
 
-func NewBaseInvoker(url config.IURL) *BaseInvoker {
+func NewBaseInvoker(url *config.URL) *BaseInvoker {
 	return &BaseInvoker{
 		url:       url,
 		available: true,
@@ -33,8 +33,8 @@ func NewBaseInvoker(url config.IURL) *BaseInvoker {
 	}
 }
 
-func (bi *BaseInvoker) GetUrl() config.IURL {
-	return bi.url
+func (bi *BaseInvoker) GetUrl() config.URL {
+	return *bi.url
 }
 
 func (bi *BaseInvoker) IsAvailable() bool {
@@ -50,7 +50,7 @@ func (bi *BaseInvoker) Invoke(invocation Invocation) Result {
 }
 
 func (bi *BaseInvoker) Destroy() {
-	log.Info("Destroy invoker: %s", bi.GetUrl().(*config.URL).String())
+	log.Info("Destroy invoker: %s", bi.GetUrl().String())
 	bi.destroyed = true
 	bi.available = false
 }

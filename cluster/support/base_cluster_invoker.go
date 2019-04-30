@@ -26,7 +26,7 @@ func newBaseClusterInvoker(directory cluster.Directory) baseClusterInvoker {
 		destroyed:      abool.NewBool(false),
 	}
 }
-func (invoker *baseClusterInvoker) GetUrl() config.IURL {
+func (invoker *baseClusterInvoker) GetUrl() config.URL {
 	return invoker.directory.GetUrl()
 }
 
@@ -59,7 +59,7 @@ func (invoker *baseClusterInvoker) checkWhetherDestroyed() error {
 	if invoker.destroyed.IsSet() {
 		ip, _ := gxnet.GetLocalIP()
 		return jerrors.Errorf("Rpc cluster invoker for %v on consumer %v use dubbo version %v is now destroyed! can not invoke any more. ",
-			invoker.directory.GetUrl().(*config.URL).Service, ip, version.Version)
+			invoker.directory.GetUrl().Service, ip, version.Version)
 	}
 	return nil
 }
@@ -69,7 +69,7 @@ func (invoker *baseClusterInvoker) doSelect(lb cluster.LoadBalance, invocation p
 	if len(invokers) == 1 {
 		return invokers[0]
 	}
-	selectedInvoker := lb.Select(invokers, *invoker.GetUrl().(*config.URL), invocation)
+	selectedInvoker := lb.Select(invokers, invoker.GetUrl(), invocation)
 
 	//judge to if the selectedInvoker is invoked
 
@@ -88,7 +88,7 @@ func (invoker *baseClusterInvoker) doSelect(lb cluster.LoadBalance, invocation p
 		}
 
 		if len(reslectInvokers) > 0 {
-			return lb.Select(reslectInvokers, *invoker.GetUrl().(*config.URL), invocation)
+			return lb.Select(reslectInvokers, invoker.GetUrl(), invocation)
 		} else {
 			return nil
 		}
