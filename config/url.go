@@ -173,13 +173,13 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (*URL, error)
 	return s, nil
 }
 
-func (c *URL) Key() string {
+func (c URL) Key() string {
 	return fmt.Sprintf(
 		"%s://%s:%s@%s:%s/%s",
 		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path)
 }
 
-func (c *URL) URLEqual(url URL) bool {
+func (c URL) URLEqual(url URL) bool {
 
 	if c.Key() != url.Key() {
 		return false
@@ -195,7 +195,7 @@ func (c *URL) URLEqual(url URL) bool {
 //		c.Timeout, c.Version, c.Group, c.Params)
 //}
 
-func (c *URL) String() string {
+func (c URL) String() string {
 	buildString := fmt.Sprintf(
 		"%s://%s:%s@%s:%s/%s?",
 		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path)
@@ -205,11 +205,11 @@ func (c *URL) String() string {
 	return buildString
 }
 
-func (c *URL) Context() context.Context {
+func (c URL) Context() context.Context {
 	return c.ctx
 }
 
-func (c *URL) GetParam(s string, d string) string {
+func (c URL) GetParam(s string, d string) string {
 	var r string
 	if r = c.Params.Get(s); r == "" {
 		r = d
@@ -217,7 +217,7 @@ func (c *URL) GetParam(s string, d string) string {
 	return r
 }
 
-func (c *URL) GetParamInt(s string, d int64) int64 {
+func (c URL) GetParamInt(s string, d int64) int64 {
 	var r int
 	var err error
 	if r, err = strconv.Atoi(c.Params.Get(s)); r == 0 || err != nil {
@@ -226,7 +226,7 @@ func (c *URL) GetParamInt(s string, d int64) int64 {
 	return int64(r)
 }
 
-func (c *URL) GetMethodParamInt(method string, key string, d int64) int64 {
+func (c URL) GetMethodParamInt(method string, key string, d int64) int64 {
 	var r int
 	var err error
 	if r, err = strconv.Atoi(c.Params.Get("methods." + method + "." + key)); r == 0 || err != nil {
@@ -235,7 +235,7 @@ func (c *URL) GetMethodParamInt(method string, key string, d int64) int64 {
 	return int64(r)
 }
 
-func (c *URL) GetMethodParam(method string, key string, d string) string {
+func (c URL) GetMethodParam(method string, key string, d string) string {
 	var r string
 	if r = c.Params.Get(c.Params.Get("methods." + method + "." + key)); r == "" {
 		r = d

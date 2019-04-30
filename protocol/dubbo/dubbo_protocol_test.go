@@ -24,7 +24,7 @@ func TestDubboProtocol_Export(t *testing.T) {
 		"side=provider&timeout=3000&timestamp=1556509797245")
 	assert.NoError(t, err)
 	srvConf = &ServerConfig{}
-	exporter := proto.Export(protocol.NewBaseInvoker(*url))
+	exporter := proto.Export(protocol.NewBaseInvoker(url))
 
 	// make sure url
 	eq := exporter.GetInvoker().GetUrl().URLEqual(*url)
