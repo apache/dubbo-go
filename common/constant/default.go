@@ -10,6 +10,7 @@ const (
 	DEFAULT_RETRIES     = 2
 	DEFAULT_PROTOCOL    = "dubbo"
 	DEFAULT_VERSION     = "0.0"
+	DEFAULT_REG_TIMEOUT = "10s"
 )
 
 const (

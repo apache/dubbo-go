@@ -48,7 +48,7 @@ func (refconfig *ReferenceConfig) Refer() {
 
 	//其次是assemble SubURL from register center's configuration模式
 	regUrls := loadRegistries(refconfig.registries, consumerConfig.Registries, config.CONSUMER)
-	url := config.NewURLWithOptions(refconfig.interfaceName, config.WithParams(refconfig.getUrlMap()))
+	url := config.NewURLWithOptions(refconfig.interfaceName, config.WithProtocol(refconfig.protocol), config.WithParams(refconfig.getUrlMap()))
 
 	//set url to regUrls
 	for _, regUrl := range regUrls {
