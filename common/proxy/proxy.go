@@ -15,7 +15,7 @@ import (
 
 // Proxy struct
 type Proxy struct {
-	v           config.RPCService
+	rpc         config.RPCService
 	invoke      protocol.Invoker
 	callBack    interface{}
 	attachments map[string]string
@@ -41,9 +41,6 @@ func (p *Proxy) Implement(v config.RPCService) error {
 	// check parameters, incoming interface must be a elem's pointer.
 	valueOf := reflect.ValueOf(v)
 	log.Debug("[Implement] reflect.TypeOf: %s", valueOf.String())
-	if valueOf.Kind() != reflect.Ptr {
-		return fmt.Errorf("%s must be a pointer", valueOf)
-	}
 
 	valueOfElem := valueOf.Elem()
 	typeOf := valueOfElem.Type()
@@ -82,6 +79,11 @@ func (p *Proxy) Implement(v config.RPCService) error {
 					t.Name, t.Type.String(), t.Type.NumIn())
 			}
 
+			if t.Type.NumIn() == 3 && t.Type.In(2).Kind() != reflect.Ptr {
+				log.Error("reply type of method %q is not a pointer %v", t.Name, t.Type.In(2))
+				return fmt.Errorf("reply type of method %q is not a pointer %v", t.Name, t.Type.In(2))
+			}
+
 			// Method needs one out.
 			if t.Type.NumOut() != 1 {
 				log.Error("method %q has %d out parameters; needs exactly 1", t.Name, t.Type.NumOut())
@@ -102,11 +104,11 @@ func (p *Proxy) Implement(v config.RPCService) error {
 		}
 	}
 
-	p.v = v
+	p.rpc = v
 
 	return nil
 }
 
 func (p *Proxy) Get() interface{} {
-	return p.v
+	return p.rpc
 }

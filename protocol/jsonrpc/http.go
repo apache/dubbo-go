@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -83,7 +84,7 @@ func (c *HTTPClient) NewRequest(service config.URL, method string, args interfac
 		ID:       atomic.AddInt64(&c.ID, 1),
 		group:    service.GetParam(constant.GROUP_KEY, ""),
 		protocol: service.Protocol,
-		version:  service.GetParam(constant.VERSION_KEY,constant.DEFAULT_VERSION),
+		version:  service.GetParam(constant.VERSION_KEY, constant.DEFAULT_VERSION),
 		service:  service.Service,
 		method:   method,
 		args:     args,
@@ -97,8 +98,9 @@ func (c *HTTPClient) Call(ctx context.Context, service config.URL, req *Request,
 	httpHeader.Set("Accept", "application/json")
 
 	reqTimeout := c.options.HTTPTimeout
-	if service.Timeout != 0 && service.Timeout < reqTimeout {
-		reqTimeout = time.Duration(service.Timeout)
+	timeout, err := strconv.ParseInt(service.GetParam(constant.TIMEOUT_KEY,""), 10, 64)
+	if err == nil && time.Duration(timeout)< reqTimeout {
+		reqTimeout = time.Duration(timeout)
 	}
 	if reqTimeout <= 0 {
 		reqTimeout = 1e8

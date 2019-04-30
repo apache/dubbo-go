@@ -103,8 +103,6 @@ func (sm *serviceMap) GetService(protocol, name string) *Service {
 }
 
 func (sm *serviceMap) Register(protocol string, rcvr RPCService) (string, error) {
-	sm.mutex.Lock()
-	defer sm.mutex.Unlock()
 	if sm.serviceMap[protocol] == nil {
 		sm.serviceMap[protocol] = make(map[string]*Service)
 	}
@@ -140,7 +138,9 @@ func (sm *serviceMap) Register(protocol string, rcvr RPCService) (string, error)
 		log.Error(s)
 		return "", jerrors.New(s)
 	}
+	sm.mutex.Lock()
 	sm.serviceMap[protocol][s.name] = s
+	sm.mutex.Unlock()
 
 	return strings.TrimSuffix(methods, ","), nil
 }
@@ -165,11 +165,16 @@ func isExportedOrBuiltinType(t reflect.Type) bool {
 func suitableMethods(typ reflect.Type) (string, map[string]*MethodType) {
 	methods := make(map[string]*MethodType)
 	mts := ""
+	log.Debug("[%s] NumMethod is %d", typ.String(), typ.NumMethod())
 	for m := 0; m < typ.NumMethod(); m++ {
 		method := typ.Method(m)
 		if mt := suiteMethod(method); mt != nil {
 			methods[method.Name] = mt
-			mts += method.Name + ","
+			if m == 0 {
+				mts += method.Name
+			} else {
+				mts += "," + method.Name
+			}
 		}
 	}
 	return mts, methods

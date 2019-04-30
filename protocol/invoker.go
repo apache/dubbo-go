@@ -20,12 +20,12 @@ type Invoker interface {
 /////////////////////////////
 
 type BaseInvoker struct {
-	url       *config.URL
+	url       config.URL
 	available bool
 	destroyed bool
 }
 
-func NewBaseInvoker(url *config.URL) *BaseInvoker {
+func NewBaseInvoker(url config.URL) *BaseInvoker {
 	return &BaseInvoker{
 		url:       url,
 		available: true,
@@ -34,7 +34,7 @@ func NewBaseInvoker(url *config.URL) *BaseInvoker {
 }
 
 func (bi *BaseInvoker) GetUrl() config.URL {
-	return *bi.url
+	return bi.url
 }
 
 func (bi *BaseInvoker) IsAvailable() bool {

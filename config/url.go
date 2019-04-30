@@ -113,13 +113,13 @@ func NewURLWithOptions(service string, opts ...option) *URL {
 	return url
 }
 
-func NewURL(ctx context.Context, urlString string, opts ...option) (*URL, error) {
+func NewURL(ctx context.Context, urlString string, opts ...option) (URL, error) {
 
 	var (
 		err          error
 		rawUrlString string
 		serviceUrl   *url.URL
-		s            = &URL{baseUrl: baseUrl{ctx: ctx}}
+		s            = URL{baseUrl: baseUrl{ctx: ctx}}
 	)
 
 	// new a null instance
@@ -129,17 +129,17 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (*URL, error)
 
 	rawUrlString, err = url.QueryUnescape(urlString)
 	if err != nil {
-		return nil, jerrors.Errorf("url.QueryUnescape(%s),  error{%v}", urlString, err)
+		return s, jerrors.Errorf("url.QueryUnescape(%s),  error{%v}", urlString, err)
 	}
 
 	serviceUrl, err = url.Parse(rawUrlString)
 	if err != nil {
-		return nil, jerrors.Errorf("url.Parse(url string{%s}),  error{%v}", rawUrlString, err)
+		return s, jerrors.Errorf("url.Parse(url string{%s}),  error{%v}", rawUrlString, err)
 	}
 
 	s.Params, err = url.ParseQuery(serviceUrl.RawQuery)
 	if err != nil {
-		return nil, jerrors.Errorf("url.ParseQuery(raw url string{%s}),  error{%v}", serviceUrl.RawQuery, err)
+		return s, jerrors.Errorf("url.ParseQuery(raw url string{%s}),  error{%v}", serviceUrl.RawQuery, err)
 	}
 
 	s.PrimitiveURL = urlString
@@ -151,7 +151,7 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (*URL, error)
 	if strings.Contains(s.Location, ":") {
 		s.Ip, s.Port, err = net.SplitHostPort(s.Location)
 		if err != nil {
-			return nil, jerrors.Errorf("net.SplitHostPort(Url.Host{%s}), error{%v}", s.Location, err)
+			return s, jerrors.Errorf("net.SplitHostPort(Url.Host{%s}), error{%v}", s.Location, err)
 		}
 	}
 	//
@@ -166,7 +166,7 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (*URL, error)
 	//	}
 	//}
 	for _, opt := range opts {
-		opt(s)
+		opt(&s)
 	}
 	return s, nil
 }

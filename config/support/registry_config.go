@@ -27,7 +27,7 @@ func loadRegistries(registriesIds []ConfigRegistry, registries []RegistryConfig,
 				if err != nil {
 					log.Error("The registry id:%s url is invalid ,and will skip the registry", registryConf.Id)
 				} else {
-					urls = append(urls, url)
+					urls = append(urls, &url)
 				}
 
 			}

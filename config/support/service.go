@@ -3,14 +3,24 @@ package support
 import "github.com/dubbo/dubbo-go/config"
 
 var (
-	services = map[string]config.RPCService{} // service name -> service
+	conServices = map[string]config.RPCService{} // service name -> service
+	proServices = map[string]config.RPCService{} // service name -> service
 )
 
-// SetService is called by init() of implement of RPCService
-func SetService(service config.RPCService) {
-	services[service.Service()] = service
+// SetConService is called by init() of implement of RPCService
+func SetConService(service config.RPCService) {
+	conServices[service.Service()] = service
 }
 
-func GetService(name string) config.RPCService {
-	return services[name]
+// SetProService is called by init() of implement of RPCService
+func SetProService(service config.RPCService) {
+	proServices[service.Service()] = service
+}
+
+func GetConService(name string) config.RPCService {
+	return conServices[name]
+}
+
+func GetProService(name string) config.RPCService {
+	return proServices[name]
 }
