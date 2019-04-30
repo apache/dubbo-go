@@ -58,7 +58,8 @@ func (refconfig *ReferenceConfig) Refer() {
 		//TODO:multi registries ，just wrap multi registry as registry cluster invoker including cluster invoker
 	}
 	//create proxy
-	attachments := map[string]string{} // todo : attachments is necessary, include keys: ASYNC_KEY、
+	attachments := map[string]string{}
+	attachments[constant.ASYNC_KEY] = url.GetParam(constant.ASYNC_KEY, "false")
 	refconfig.pxy = proxy.NewProxy(refconfig.invoker, nil, attachments)
 }
 

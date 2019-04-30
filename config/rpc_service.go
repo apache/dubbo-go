@@ -83,7 +83,6 @@ func (s *Service) Rcvr() reflect.Value {
 
 //////////////////////////
 // serviceMap
-// todo: use sync.Map?
 //////////////////////////
 
 type serviceMap struct {

@@ -177,7 +177,6 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	invoker := h.exporter.GetInvoker()
 	if invoker != nil {
 		attchments := map[string]string{}
-		// todo: use them followingly if need
 		url := invoker.GetUrl().(*config.URL)
 		attchments[constant.PATH_KEY] = url.Path
 		attchments[constant.GROUP_KEY] = url.Group
