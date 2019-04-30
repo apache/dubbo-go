@@ -12,7 +12,7 @@ import (
 	"github.com/dubbo/dubbo-go/config"
 )
 
-// Extension - Protocol
+// Extension - protocol
 type Protocol interface {
 	Export(invoker Invoker) Exporter
 	Refer(url config.URL) Invoker
