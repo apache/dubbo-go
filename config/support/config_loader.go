@@ -207,7 +207,7 @@ func Load() (map[string]*ReferenceConfig, map[string]*ServiceConfig) {
 	length := len(consumerConfig.References)
 	for index := 0; index < length; index++ {
 		con := &consumerConfig.References[index]
-		con.Implement(services[con.interfaceName])
+		con.Implement(conServices[con.interfaceName])
 		con.Refer()
 		refMap[con.interfaceName] = con
 	}
@@ -216,8 +216,10 @@ func Load() (map[string]*ReferenceConfig, map[string]*ServiceConfig) {
 	length = len(providerConfig.Services)
 	for index := 0; index < length; index++ {
 		pro := &providerConfig.Services[index]
-		pro.Implement(services[pro.interfaceName])
-		pro.Export()
+		pro.Implement(proServices[pro.interfaceName])
+		if err := pro.Export(); err != nil {
+			panic(fmt.Sprintf("service %s export failed! ", pro.interfaceName))
+		}
 		srvMap[pro.interfaceName] = pro
 	}
 
