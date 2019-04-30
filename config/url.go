@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 )
 
 import (
@@ -41,11 +40,10 @@ func (t RoleType) Role() string {
 }
 
 type baseUrl struct {
-	Protocol     string `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
+	Protocol     string
 	Location     string // ip+port
 	Ip           string
 	Port         string
-	Timeout      time.Duration
 	Params       url.Values
 	PrimitiveURL string
 	ctx          context.Context
@@ -55,7 +53,7 @@ type URL struct {
 	baseUrl
 	Service string
 
-	Path     string `yaml:"path" json:"path,omitempty"` // like  /com.ikurento.dubbo.UserProvider3
+	Path     string // like  /com.ikurento.dubbo.UserProvider3
 	Username string
 	Password string
 	Methods  []string
@@ -156,17 +154,17 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (*URL, error)
 			return nil, jerrors.Errorf("net.SplitHostPort(Url.Host{%s}), error{%v}", s.Location, err)
 		}
 	}
-
-	timeoutStr := s.Params.Get("timeout")
-	if len(timeoutStr) == 0 {
-		timeoutStr = s.Params.Get("default.timeout")
-	}
-	if len(timeoutStr) != 0 {
-		timeout, err := strconv.Atoi(timeoutStr)
-		if err == nil && timeout != 0 {
-			s.Timeout = time.Duration(timeout * 1e6) // timeout unit is millisecond
-		}
-	}
+	//
+	//timeoutStr := s.Params.Get("timeout")
+	//if len(timeoutStr) == 0 {
+	//	timeoutStr = s.Params.Get("default.timeout")
+	//}
+	//if len(timeoutStr) != 0 {
+	//	timeout, err := strconv.Atoi(timeoutStr)
+	//	if err == nil && timeout != 0 {
+	//		s.Timeout = time.Duration(timeout * 1e6) // timeout unit is millisecond
+	//	}
+	//}
 	for _, opt := range opts {
 		opt(s)
 	}

@@ -37,6 +37,7 @@ const (
 	REGISTRY_PROTOCOL    = "registry"
 	ROLE_KEY             = "registry.role"
 	REGISTRY_DEFAULT_KEY = "registry.default"
+	REGISTRY_TIMEOUT_KEY = "registry.timeout"
 )
 
 const (

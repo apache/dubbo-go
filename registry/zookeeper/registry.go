@@ -87,9 +87,6 @@ func NewZkRegistry(url *config.URL) (registry.Registry, error) {
 	//	r.Version = version.Version
 	//}
 
-	if r.Timeout == 0 {
-		r.Timeout = 1e9
-	}
 	err = r.validateZookeeperClient()
 	if err != nil {
 		return nil, jerrors.Trace(err)
@@ -122,10 +119,16 @@ func (r *ZkRegistry) validateZookeeperClient() error {
 	defer r.cltLock.Unlock()
 	if r.client == nil {
 		//in dubbp ,every registry only connect one node ,so this is []string{r.Address}
-		r.client, err = newZookeeperClient(RegistryZkClient, []string{r.PrimitiveURL}, r.Timeout)
+		timeout, err := time.ParseDuration(r.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
+		if err != nil {
+			log.Error("timeout config %v is invalid ,err is %v",
+				r.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), err.Error())
+			return jerrors.Annotatef(err, "newZookeeperClient(address:%+v)", r.PrimitiveURL)
+		}
+		r.client, err = newZookeeperClient(RegistryZkClient, []string{r.PrimitiveURL}, timeout)
 		if err != nil {
 			log.Warn("newZookeeperClient(name{%s}, zk addresss{%v}, timeout{%d}) = error{%v}",
-				RegistryZkClient, r.PrimitiveURL, r.Timeout.String(), err)
+				RegistryZkClient, r.PrimitiveURL, timeout.String(), err)
 			return jerrors.Annotatef(err, "newZookeeperClient(address:%+v)", r.PrimitiveURL)
 		}
 	}
@@ -289,7 +292,7 @@ func (r *ZkRegistry) register(c config.URL) error {
 
 	params.Add("pid", processID)
 	params.Add("ip", localIP)
-	params.Add("timeout", fmt.Sprintf("%d", int64(r.Timeout)/1e6))
+	//params.Add("timeout", fmt.Sprintf("%d", int64(r.Timeout)/1e6))
 
 	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
 	switch role {

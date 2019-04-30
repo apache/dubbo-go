@@ -173,14 +173,14 @@ func (dir *RegistryDirectory) uncacheInvoker(url config.URL) *sync.Map {
 }
 
 func (dir *RegistryDirectory) cacheInvoker(url config.URL) *sync.Map {
-	//check the url's protocol is equal to the protocol which is configured in reference config
+
 	referenceUrl := dir.GetUrl().SubURL
 	newCacheInvokers := dir.cacheInvokersMap
-	if url.Protocol == referenceUrl.Protocol {
+	//check the url's protocol is equal to the protocol which is configured in reference config or referenceUrl is not care about protocol
+	if url.Protocol == referenceUrl.Protocol || referenceUrl.Protocol == "" {
 		url = mergeUrl(url, referenceUrl)
 
 		if _, ok := newCacheInvokers.Load(url.String()); !ok {
-
 			log.Debug("service will be added in cache invokers: invokers key is  %s!", url.String())
 			newInvoker := extension.GetProtocolExtension(protocolwrapper.FILTER).Refer(url)
 			newCacheInvokers.Store(url.String(), newInvoker)
