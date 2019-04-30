@@ -56,7 +56,7 @@ func NewRegistryDirectory(url *config.URL, registry registry.Registry, opts ...O
 		BaseDirectory:    directory.NewBaseDirectory(url),
 		cacheInvokers:    []protocol.Invoker{},
 		cacheInvokersMap: &sync.Map{},
-		serviceType:      url.URL.Service,
+		serviceType:      url.SubURL.Service,
 		registry:         registry,
 		Options:          options,
 	}
@@ -157,7 +157,7 @@ func (dir *RegistryDirectory) toGroupInvokers(newInvokersMap *sync.Map) []protoc
 	} else {
 		for _, invokers := range groupInvokersMap {
 			staticDir := directory.NewStaticDirectory(invokers)
-			cluster := extension.GetCluster(dir.GetUrl().URL.Params.Get(constant.CLUSTER_KEY))
+			cluster := extension.GetCluster(dir.GetUrl().SubURL.Params.Get(constant.CLUSTER_KEY))
 			groupInvokersList = append(groupInvokersList, cluster.Join(staticDir))
 		}
 	}
@@ -174,7 +174,7 @@ func (dir *RegistryDirectory) uncacheInvoker(url config.URL) *sync.Map {
 
 func (dir *RegistryDirectory) cacheInvoker(url config.URL) *sync.Map {
 	//check the url's protocol is equal to the protocol which is configured in reference config
-	referenceUrl := dir.GetUrl().URL
+	referenceUrl := dir.GetUrl().SubURL
 	newCacheInvokers := dir.cacheInvokersMap
 	if url.Protocol == referenceUrl.Protocol {
 		url = mergeUrl(url, referenceUrl)
@@ -206,7 +206,7 @@ func (dir *RegistryDirectory) Destroy() {
 // configuration  > reference config >service config
 //  in this function we should merge the reference local url config into the service url from registry.
 //TODO configuration merge, in the future , the configuration center's config should merge too.
-func mergeUrl(serviceUrl config.URL, referenceUrl config.URL) config.URL {
+func mergeUrl(serviceUrl config.URL, referenceUrl *config.URL) config.URL {
 	mergedUrl := serviceUrl
 	var methodConfigMergeFcn = []func(method string){}
 
@@ -243,5 +243,5 @@ func mergeUrl(serviceUrl config.URL, referenceUrl config.URL) config.URL {
 		}
 	}
 
-	return serviceUrl
+	return mergedUrl
 }

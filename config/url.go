@@ -60,7 +60,7 @@ type URL struct {
 	Password string
 	Methods  []string
 	//special for registry
-	URL URL
+	SubURL *URL
 }
 
 type option func(*URL)
@@ -187,7 +187,7 @@ func (c *URL) URLEqual(url URL) bool {
 	return true
 }
 
-//func (c URL) String() string {
+//func (c SubURL) String() string {
 //	return fmt.Sprintf(
 //		"DefaultServiceURL{Protocol:%s, Location:%s, Path:%s, Ip:%s, Port:%s, "+
 //			"Timeout:%s, Version:%s, Group:%s,  Params:%+v}",

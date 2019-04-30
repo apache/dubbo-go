@@ -33,9 +33,10 @@ const (
 )
 
 const (
-	REGISTRY_KEY      = "registry"
-	REGISTRY_PROTOCOL = "registry"
-	ROLE_KEY          = "registry.role"
+	REGISTRY_KEY         = "registry"
+	REGISTRY_PROTOCOL    = "registry"
+	ROLE_KEY             = "registry.role"
+	REGISTRY_DEFAULT_KEY = "registry.default"
 )
 
 const (

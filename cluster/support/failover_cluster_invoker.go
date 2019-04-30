@@ -16,7 +16,7 @@ type failoverClusterInvoker struct {
 	baseClusterInvoker
 }
 
-func NewFailoverClusterInvoker(directory cluster.Directory) protocol.Invoker {
+func newFailoverClusterInvoker(directory cluster.Directory) protocol.Invoker {
 	return &failoverClusterInvoker{
 		baseClusterInvoker: newBaseClusterInvoker(directory),
 	}

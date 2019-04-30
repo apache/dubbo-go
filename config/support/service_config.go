@@ -86,7 +86,7 @@ func (srvconfig *ServiceConfig) Export() error {
 			config.WithParams(urlMap))
 
 		for _, regUrl := range regUrls {
-			regUrl.URL = *url
+			regUrl.SubURL = url
 			invoker := protocol.NewBaseInvoker(regUrl)
 			exporter := extension.GetProtocolExtension("registry").Export(invoker)
 			srvconfig.exporters = append(srvconfig.exporters, exporter)

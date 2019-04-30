@@ -2,6 +2,7 @@ package support
 
 import (
 	"context"
+	"github.com/dubbo/dubbo-go/cluster/directory"
 	"net/url"
 	"strconv"
 	"time"
@@ -42,22 +43,27 @@ func NewReferenceConfig(ctx context.Context) *ReferenceConfig {
 }
 
 func (refconfig *ReferenceConfig) Refer() {
-	//首先是user specified URL, could be peer-to-peer address, or register center's address.
+	//首先是user specified SubURL, could be peer-to-peer address, or register center's address.
 
-	//其次是assemble URL from register center's configuration模式
-	regUrls := loadRegistries(refconfig.Registries, consumerConfig.Registries,config.CONSUMER)
+	//其次是assemble SubURL from register center's configuration模式
+	regUrls := loadRegistries(refconfig.Registries, consumerConfig.Registries, config.CONSUMER)
 	url := config.NewURLWithOptions(refconfig.Interface, config.WithParams(refconfig.getUrlMap()))
 
 	//set url to regUrls
 	for _, regUrl := range regUrls {
-		regUrl.URL = *url
+		regUrl.SubURL = url
 	}
 
 	if len(regUrls) == 1 {
 		refconfig.invoker = extension.GetProtocolExtension("registry").Refer(*regUrls[0])
 
 	} else {
-		//TODO:multi registries ，just wrap multi registry as registry cluster invoker including cluster invoker
+		invokers := []protocol.Invoker{}
+		for _, regUrl := range regUrls {
+			invokers = append(invokers, extension.GetProtocolExtension("registry").Refer(*regUrl))
+		}
+		cluster := extension.GetCluster("registryAware")
+		refconfig.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
 	}
 	//create proxy
 	attachments := map[string]string{}

@@ -80,8 +80,8 @@ func NewZkRegistry(url *config.URL) (registry.Registry, error) {
 		zkPath:   make(map[string]int),
 	}
 
-	//if r.URL.Name == "" {
-	//	r.URL.Name = RegistryZkClient
+	//if r.SubURL.Name == "" {
+	//	r.SubURL.Name = RegistryZkClient
 	//}
 	//if r.Version == "" {
 	//	r.Version = version.Version
