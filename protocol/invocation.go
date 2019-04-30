@@ -28,7 +28,6 @@ type RPCInvocation struct {
 	invoker        Invoker
 }
 
-// todo: arguments table is too many
 func NewRPCInvocationForConsumer(methodName string, parameterTypes []reflect.Type, arguments []interface{},
 	reply interface{}, callBack interface{}, attachments map[string]string, invoker Invoker) *RPCInvocation {
 	return &RPCInvocation{

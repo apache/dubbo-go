@@ -198,3 +198,29 @@ func loadProtocol(protocolsIds string, protocols []ProtocolConfig) []ProtocolCon
 	}
 	return returnProtocols
 }
+
+// Dubbo Init
+func Load() (map[string]*ReferenceConfig, map[string]*ServiceConfig) {
+	refMap := make(map[string]*ReferenceConfig)
+	srvMap := make(map[string]*ServiceConfig)
+
+	// reference config
+	length := len(consumerConfig.References)
+	for index := 0; index < length; index++ {
+		con := &consumerConfig.References[index]
+		con.Implement(services[con.Interface])
+		con.Refer()
+		refMap[con.Interface] = con
+	}
+
+	// service config
+	length = len(providerConfig.Services)
+	for index := 0; index < length; index++ {
+		pro := &providerConfig.Services[index]
+		pro.Implement(services[pro.Interface])
+		pro.Export()
+		srvMap[pro.Interface] = pro
+	}
+
+	return refMap, srvMap
+}

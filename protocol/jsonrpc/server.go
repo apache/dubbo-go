@@ -135,8 +135,9 @@ func (s *Server) handlePkg(conn net.Conn) {
 		invoker := s.exporter.GetInvoker()
 		if invoker != nil {
 			attchments := map[string]string{}
-			// todo: use them followingly if need
+
 			url := invoker.GetUrl()
+
 			attchments[constant.PATH_KEY] = url.Path
 			attchments[constant.GROUP_KEY] = url.GetParam(constant.GROUP_KEY, "")
 			attchments[constant.SERVICE_KEY] = url.Service
