@@ -189,9 +189,9 @@ func (c URL) URLEqual(url URL) bool {
 
 //func (c SubURL) String() string {
 //	return fmt.Sprintf(
-//		"DefaultServiceURL{Protocol:%s, Location:%s, Path:%s, Ip:%s, Port:%s, "+
+//		"DefaultServiceURL{protocol:%s, Location:%s, Path:%s, Ip:%s, Port:%s, "+
 //			"Timeout:%s, Version:%s, Group:%s,  Params:%+v}",
-//		c.Protocol, c.Location, c.Path, c.Ip, c.Port,
+//		c.protocol, c.Location, c.Path, c.Ip, c.Port,
 //		c.Timeout, c.Version, c.Group, c.Params)
 //}
 

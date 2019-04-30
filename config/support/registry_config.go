@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/dubbo/dubbo-go/common/constant"
 	"net/url"
+	"time"
 )
 import (
 	log "github.com/AlexStocks/log4go"
@@ -13,6 +14,7 @@ import "github.com/dubbo/dubbo-go/config"
 type RegistryConfig struct {
 	Id         string `required:"true" yaml:"id"  json:"id,omitempty"`
 	TimeoutStr string `yaml:"timeout" default:"5s" json:"timeout,omitempty"` // unit: second
+	Timeout    time.Duration
 	Group      string `yaml:"group" json:"group,omitempty"`
 	//for registry
 	Address string `yaml:"address" json:"address,omitempty"`
