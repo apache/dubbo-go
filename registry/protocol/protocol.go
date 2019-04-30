@@ -36,7 +36,7 @@ func NewRegistryProtocol() *RegistryProtocol {
 		registies: sync.Map{},
 	}
 }
-func getRegistry(regUrl *config.RegistryURL) registry.Registry {
+func getRegistry(regUrl *config.URL) registry.Registry {
 	reg, err := extension.GetRegistryExtension(regUrl.Protocol, regUrl)
 	if err != nil {
 		log.Error("Registry can not connect success, program is going to panic.Error message is %s", err.Error())
@@ -44,18 +44,18 @@ func getRegistry(regUrl *config.RegistryURL) registry.Registry {
 	}
 	return reg
 }
-func (protocol *RegistryProtocol) Refer(url config.IURL) protocol.Invoker {
-	var regUrl = url.(*config.RegistryURL)
+func (protocol *RegistryProtocol) Refer(url config.URL) protocol.Invoker {
+	var regUrl = url
 	var serviceUrl = regUrl.URL
 
 	var reg registry.Registry
 
 	regI, _ := protocol.registies.LoadOrStore(url.Key(),
-		getRegistry(regUrl))
+		getRegistry(&regUrl))
 	reg = regI.(registry.Registry)
 
 	//new registry directory for store service url from registry
-	directory := directory2.NewRegistryDirectory(regUrl, reg)
+	directory := directory2.NewRegistryDirectory(&regUrl, reg)
 	go directory.Subscribe(serviceUrl)
 
 	//new cluster invoker
@@ -74,7 +74,7 @@ func (protocol *RegistryProtocol) Export(invoker protocol.Invoker) protocol.Expo
 
 	err := reg.Register(providerUrl)
 	if err != nil {
-		log.Error("provider service %v register registry %v error, error message is %v", providerUrl.ToFullString(), registryUrl.String(), err.Error())
+		log.Error("provider service %v register registry %v error, error message is %v", providerUrl.String(), registryUrl.String(), err.Error())
 	}
 
 	wrappedInvoker := newWrappedInvoker(invoker, providerUrl)
@@ -86,19 +86,19 @@ func (protocol *RegistryProtocol) Export(invoker protocol.Invoker) protocol.Expo
 func (*RegistryProtocol) Destroy() {
 }
 
-func (*RegistryProtocol) getRegistryUrl(invoker protocol.Invoker) config.RegistryURL {
+func (*RegistryProtocol) getRegistryUrl(invoker protocol.Invoker) config.URL {
 	//here add * for return a new url
-	url := invoker.GetUrl().(*config.RegistryURL)
+	url := invoker.GetUrl()
 	//if the protocol == registry ,set protocol the registry value in url.params
 	if url.Protocol == constant.REGISTRY_PROTOCOL {
 		protocol := url.GetParam(constant.REGISTRY_KEY, constant.DEFAULT_PROTOCOL)
 		url.Protocol = protocol
 	}
-	return *url
+	return url
 }
 
 func (*RegistryProtocol) getProviderUrl(invoker protocol.Invoker) config.URL {
-	url := invoker.GetUrl().(*config.RegistryURL)
+	url := invoker.GetUrl()
 	return url.URL
 }
 
@@ -122,8 +122,8 @@ func newWrappedInvoker(invoker protocol.Invoker, url config.URL) *wrappedInvoker
 		BaseInvoker: *protocol.NewBaseInvoker(nil),
 	}
 }
-func (ivk *wrappedInvoker) GetUrl() config.IURL {
-	return &ivk.url
+func (ivk *wrappedInvoker) GetUrl() config.URL {
+	return ivk.url
 }
 func (ivk *wrappedInvoker) getInvoker() protocol.Invoker {
 	return ivk.invoker

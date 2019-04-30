@@ -32,25 +32,25 @@ func NewDubboProtocol() *JsonrpcProtocol {
 }
 
 func (jp *JsonrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
-	url := invoker.GetUrl().(*config.URL)
+	url := invoker.GetUrl()
 	serviceKey := url.Key()
 	exporter := NewJsonrpcExporter(serviceKey, invoker, jp.ExporterMap())
 	jp.SetExporterMap(serviceKey, exporter)
 	log.Info("Export service: %s", url.String())
 
 	// start server
-	jp.openServer(*url)
+	jp.openServer(url)
 
 	return exporter
 }
 
-func (jp *JsonrpcProtocol) Refer(url config.IURL) protocol.Invoker {
+func (jp *JsonrpcProtocol) Refer(url config.URL) protocol.Invoker {
 	invoker := NewJsonrpcInvoker(url, NewHTTPClient(&HTTPOptions{
 		HandshakeTimeout: support.GetConsumerConfig().ConnectTimeout,
 		HTTPTimeout:      support.GetConsumerConfig().RequestTimeout,
 	}))
 	jp.SetInvokers(invoker)
-	log.Info("Refer service: %s", url.(*config.URL).String())
+	log.Info("Refer service: %s", url.String())
 	return invoker
 }
 

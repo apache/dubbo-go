@@ -20,9 +20,11 @@ type ReferenceConfig struct {
 	pxy         *proxy.Proxy
 	Interface   string           `required:"true"  yaml:"interface"  json:"interface,omitempty"`
 	Registries  []ConfigRegistry `required:"true"  yaml:"registries"  json:"registries,omitempty"`
-	Cluster     string           `default:"failover" yaml:"cluster"  json:"cluster,omitempty"`
-	Loadbalance string           `default:"random" yaml:"loadbalance"  json:"loadbalance,omitempty"`
+	Cluster     string           `yaml:"cluster"  json:"cluster,omitempty"`
+	Loadbalance string           `yaml:"loadbalance"  json:"loadbalance,omitempty"`
 	retries     int64            `yaml:"retries"  json:"retries,omitempty"`
+	group       string           `yaml:"group"  json:"group,omitempty"`
+	version     string           `yaml:"version"  json:"version,omitempty"`
 	Methods     []struct {
 		name        string `yaml:"name"  json:"name,omitempty"`
 		retries     int64  `yaml:"retries"  json:"retries,omitempty"`
@@ -43,7 +45,7 @@ func (refconfig *ReferenceConfig) Refer() {
 	//首先是user specified URL, could be peer-to-peer address, or register center's address.
 
 	//其次是assemble URL from register center's configuration模式
-	regUrls := loadRegistries(refconfig.Registries, consumerConfig.Registries)
+	regUrls := loadRegistries(refconfig.Registries, consumerConfig.Registries,config.CONSUMER)
 	url := config.NewURLWithOptions(refconfig.Interface, config.WithParams(refconfig.getUrlMap()))
 
 	//set url to regUrls
@@ -52,7 +54,7 @@ func (refconfig *ReferenceConfig) Refer() {
 	}
 
 	if len(regUrls) == 1 {
-		refconfig.invoker = extension.GetProtocolExtension("registry").Refer(regUrls[0])
+		refconfig.invoker = extension.GetProtocolExtension("registry").Refer(*regUrls[0])
 
 	} else {
 		//TODO:multi registries ，just wrap multi registry as registry cluster invoker including cluster invoker
@@ -74,6 +76,8 @@ func (refconfig *ReferenceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.CLUSTER_KEY, refconfig.Cluster)
 	urlMap.Set(constant.LOADBALANCE_KEY, refconfig.Loadbalance)
 	urlMap.Set(constant.RETRIES_KEY, strconv.FormatInt(refconfig.retries, 10))
+	urlMap.Set(constant.GROUP_KEY, refconfig.group)
+	urlMap.Set(constant.VERSION_KEY, refconfig.version)
 	//getty invoke async or sync
 	urlMap.Set(constant.ASYNC_KEY, strconv.FormatBool(refconfig.Async))
 

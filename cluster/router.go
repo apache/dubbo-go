@@ -8,11 +8,11 @@ import (
 // Extension - Router
 
 type RouterFactory interface {
-	Router(config.IURL) Router
+	Router(config.URL) Router
 }
 
 type Router interface {
-	Route([]protocol.Invoker, config.IURL, protocol.Invocation) []protocol.Invoker
+	Route([]protocol.Invoker, config.URL, protocol.Invocation) []protocol.Invoker
 }
 
 type RouterChain struct {

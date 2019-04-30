@@ -136,11 +136,11 @@ func (s *Server) handlePkg(conn net.Conn) {
 		if invoker != nil {
 			attchments := map[string]string{}
 			// todo: use them followingly if need
-			url := invoker.GetUrl().(*config.URL)
+			url := invoker.GetUrl()
 			attchments[constant.PATH_KEY] = url.Path
-			attchments[constant.GROUP_KEY] = url.Group
+			attchments[constant.GROUP_KEY] = url.GetParam(constant.GROUP_KEY, "")
 			attchments[constant.SERVICE_KEY] = url.Service
-			attchments[constant.VERSION_KEY] = url.Version
+			attchments[constant.VERSION_KEY] = url.GetParam(constant.VERSION_KEY, constant.DEFAULT_VERSION)
 			result := invoker.Invoke(protocol.NewRPCInvocationForProvider(attchments))
 			if err := result.Error(); err != nil {
 				if errRsp := sendErrorResp(r.Header, []byte(err.Error())); errRsp != nil {

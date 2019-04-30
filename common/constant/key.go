@@ -35,6 +35,7 @@ const (
 const (
 	REGISTRY_KEY      = "registry"
 	REGISTRY_PROTOCOL = "registry"
+	ROLE_KEY          = "registry.role"
 )
 
 const (
@@ -42,7 +43,7 @@ const (
 	ORGANIZATION_KEY = "organization"
 	NAME_KEY         = "name"
 	MODULE_KEY       = "module"
-	APP_VERSION_KEY  = "version"
+	APP_VERSION_KEY  = "app.version"
 	OWNER_KEY        = "owner"
 	ENVIRONMENT_KEY  = "environment"
 )

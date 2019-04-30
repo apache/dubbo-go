@@ -8,7 +8,6 @@ import (
 	"github.com/dubbo/dubbo-go/cluster"
 	"github.com/dubbo/dubbo-go/common/constant"
 	"github.com/dubbo/dubbo-go/common/extension"
-	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbo/dubbo-go/protocol"
 	"github.com/dubbo/dubbo-go/version"
 )
@@ -31,7 +30,7 @@ func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) pr
 	if err != nil {
 		return &protocol.RPCResult{Err: err}
 	}
-	url := invokers[0].GetUrl().(*config.URL)
+	url := invokers[0].GetUrl()
 
 	methodName := invocation.MethodName()
 	//Get the service loadbalance config
@@ -82,6 +81,6 @@ func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) pr
 	ip, _ := gxnet.GetLocalIP()
 	return &protocol.RPCResult{Err: jerrors.Errorf("Failed to invoke the method %v in the service %v . Tried %v times of "+
 		"the providers %v (%v/%v)from the registry %v on the consumer %v using the dubbo version %v. Last error is %v.",
-		methodName, invocation, invoker.GetUrl().(*config.URL).Service, retries, providers, len(providers), len(invokers), invoker.directory.GetUrl(), ip, version.Version, result.Error().Error(),
+		methodName, invocation, invoker.GetUrl().Service, retries, providers, len(providers), len(invokers), invoker.directory.GetUrl(), ip, version.Version, result.Error().Error(),
 	)}
 }

@@ -43,7 +43,7 @@ type RegistryDirectory struct {
 	Options
 }
 
-func NewRegistryDirectory(url *config.RegistryURL, registry registry.Registry, opts ...Option) *RegistryDirectory {
+func NewRegistryDirectory(url *config.URL, registry registry.Registry, opts ...Option) *RegistryDirectory {
 	options := Options{
 		//default 300s
 		serviceTTL: time.Duration(300e9),
@@ -143,7 +143,7 @@ func (dir *RegistryDirectory) toGroupInvokers(newInvokersMap *sync.Map) []protoc
 	})
 
 	for _, invoker := range newInvokersList {
-		group := invoker.GetUrl().(*config.URL).Group
+		group := invoker.GetUrl().GetParam(constant.GROUP_KEY, "")
 
 		if _, ok := groupInvokersMap[group]; ok {
 			groupInvokersMap[group] = append(groupInvokersMap[group], invoker)
@@ -157,7 +157,7 @@ func (dir *RegistryDirectory) toGroupInvokers(newInvokersMap *sync.Map) []protoc
 	} else {
 		for _, invokers := range groupInvokersMap {
 			staticDir := directory.NewStaticDirectory(invokers)
-			cluster := extension.GetCluster(dir.GetUrl().(*config.RegistryURL).URL.Params.Get(constant.CLUSTER_KEY))
+			cluster := extension.GetCluster(dir.GetUrl().URL.Params.Get(constant.CLUSTER_KEY))
 			groupInvokersList = append(groupInvokersList, cluster.Join(staticDir))
 		}
 	}
@@ -166,24 +166,24 @@ func (dir *RegistryDirectory) toGroupInvokers(newInvokersMap *sync.Map) []protoc
 }
 
 func (dir *RegistryDirectory) uncacheInvoker(url config.URL) *sync.Map {
-	log.Debug("service will be deleted in cache invokers: invokers key is  %s!", url.ToFullString())
+	log.Debug("service will be deleted in cache invokers: invokers key is  %s!", url.String())
 	newCacheInvokers := dir.cacheInvokersMap
-	newCacheInvokers.Delete(url.ToFullString())
+	newCacheInvokers.Delete(url.String())
 	return newCacheInvokers
 }
 
 func (dir *RegistryDirectory) cacheInvoker(url config.URL) *sync.Map {
 	//check the url's protocol is equal to the protocol which is configured in reference config
-	referenceUrl := dir.GetUrl().(*config.RegistryURL).URL
+	referenceUrl := dir.GetUrl().URL
 	newCacheInvokers := dir.cacheInvokersMap
 	if url.Protocol == referenceUrl.Protocol {
 		url = mergeUrl(url, referenceUrl)
 
-		if _, ok := newCacheInvokers.Load(url.ToFullString()); !ok {
+		if _, ok := newCacheInvokers.Load(url.String()); !ok {
 
-			log.Debug("service will be added in cache invokers: invokers key is  %s!", url.ToFullString())
-			newInvoker := extension.GetProtocolExtension(protocolwrapper.FILTER).Refer(&url)
-			newCacheInvokers.Store(url.ToFullString(), newInvoker)
+			log.Debug("service will be added in cache invokers: invokers key is  %s!", url.String())
+			newInvoker := extension.GetProtocolExtension(protocolwrapper.FILTER).Refer(url)
+			newCacheInvokers.Store(url.String(), newInvoker)
 		}
 	}
 	return newCacheInvokers

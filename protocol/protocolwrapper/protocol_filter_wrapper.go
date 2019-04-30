@@ -25,15 +25,15 @@ type ProtocolFilterWrapper struct {
 
 func (pfw *ProtocolFilterWrapper) Export(invoker protocol.Invoker) protocol.Exporter {
 	if pfw.protocol == nil {
-		pfw.protocol = extension.GetProtocolExtension(invoker.GetUrl().(*config.URL).Protocol)
+		pfw.protocol = extension.GetProtocolExtension(invoker.GetUrl().Protocol)
 	}
 	invoker = buildInvokerChain(invoker, constant.SERVICE_FILTER_KEY)
 	return pfw.protocol.Export(invoker)
 }
 
-func (pfw *ProtocolFilterWrapper) Refer(url config.IURL) protocol.Invoker {
+func (pfw *ProtocolFilterWrapper) Refer(url config.URL) protocol.Invoker {
 	if pfw.protocol == nil {
-		pfw.protocol = extension.GetProtocolExtension(url.(*config.URL).Protocol)
+		pfw.protocol = extension.GetProtocolExtension(url.Protocol)
 	}
 	return buildInvokerChain(pfw.protocol.Refer(url), constant.REFERENCE_FILTER_KEY)
 }
@@ -43,7 +43,7 @@ func (pfw *ProtocolFilterWrapper) Destroy() {
 }
 
 func buildInvokerChain(invoker protocol.Invoker, key string) protocol.Invoker {
-	filtName := invoker.GetUrl().(*config.URL).Params.Get(key)
+	filtName := invoker.GetUrl().Params.Get(key)
 	filtNames := strings.Split(filtName, ",")
 	next := invoker
 	// The order of filters is from left to right, so loading from right to left
@@ -70,7 +70,7 @@ type FilterInvoker struct {
 	filter  filter.Filter
 }
 
-func (fi *FilterInvoker) GetUrl() config.IURL {
+func (fi *FilterInvoker) GetUrl() config.URL {
 	return fi.invoker.GetUrl()
 }
 

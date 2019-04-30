@@ -3,6 +3,7 @@ package zookeeper
 import (
 	"context"
 	"fmt"
+	"github.com/dubbo/dubbo-go/common/constant"
 	"net/url"
 	"os"
 	"strconv"
@@ -19,7 +20,6 @@ import (
 )
 
 import (
-	"github.com/dubbo/dubbo-go/common/constant"
 	"github.com/dubbo/dubbo-go/common/extension"
 	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbo/dubbo-go/registry"
@@ -50,7 +50,7 @@ func init() {
 
 type ZkRegistry struct {
 	context context.Context
-	*config.RegistryURL
+	*config.URL
 	birth int64          // time of file birth, seconds since Epoch; 0 if unknown
 	wg    sync.WaitGroup // wg+done for zk restart
 	done  chan struct{}
@@ -66,18 +66,18 @@ type ZkRegistry struct {
 	zkPath map[string]int // key = protocol://ip:port/interface
 }
 
-func NewZkRegistry(url *config.RegistryURL) (registry.Registry, error) {
+func NewZkRegistry(url *config.URL) (registry.Registry, error) {
 	var (
 		err error
 		r   *ZkRegistry
 	)
 
 	r = &ZkRegistry{
-		RegistryURL: url,
-		birth:       time.Now().UnixNano(),
-		done:        make(chan struct{}),
-		services:    make(map[string]config.URL),
-		zkPath:      make(map[string]int),
+		URL:      url,
+		birth:    time.Now().UnixNano(),
+		done:     make(chan struct{}),
+		services: make(map[string]config.URL),
+		zkPath:   make(map[string]int),
 	}
 
 	//if r.URL.Name == "" {
@@ -98,7 +98,7 @@ func NewZkRegistry(url *config.RegistryURL) (registry.Registry, error) {
 	r.wg.Add(1)
 	go r.handleZkRestart()
 
-	//if r.DubboType == registry.CONSUMER {
+	//if r.RoleType == registry.CONSUMER {
 	//	r.wg.Add(1)
 	//	go r.listen()
 	//}
@@ -122,11 +122,11 @@ func (r *ZkRegistry) validateZookeeperClient() error {
 	defer r.cltLock.Unlock()
 	if r.client == nil {
 		//in dubbp ,every registry only connect one node ,so this is []string{r.Address}
-		r.client, err = newZookeeperClient(RegistryZkClient, []string{r.Address}, r.Timeout)
+		r.client, err = newZookeeperClient(RegistryZkClient, []string{r.PrimitiveURL}, r.Timeout)
 		if err != nil {
 			log.Warn("newZookeeperClient(name{%s}, zk addresss{%v}, timeout{%d}) = error{%v}",
-				RegistryZkClient, r.Address, r.Timeout.String(), err)
-			return jerrors.Annotatef(err, "newZookeeperClient(address:%+v)", r.Address)
+				RegistryZkClient, r.PrimitiveURL, r.Timeout.String(), err)
+			return jerrors.Annotatef(err, "newZookeeperClient(address:%+v)", r.PrimitiveURL)
 		}
 	}
 	if r.client.conn == nil {
@@ -138,7 +138,7 @@ func (r *ZkRegistry) validateZookeeperClient() error {
 		}
 	}
 
-	return jerrors.Annotatef(err, "newZookeeperClient(address:%+v)", r.Address)
+	return jerrors.Annotatef(err, "newZookeeperClient(address:%+v)", r.PrimitiveURL)
 }
 
 func (r *ZkRegistry) handleZkRestart() {
@@ -213,7 +213,8 @@ func (r *ZkRegistry) Register(conf config.URL) error {
 		err      error
 		listener *zkEventListener
 	)
-	switch r.DubboType {
+	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
+	switch role {
 	case config.CONSUMER:
 		ok = false
 		r.cltLock.Lock()
@@ -269,8 +270,8 @@ func (r *ZkRegistry) Register(conf config.URL) error {
 
 func (r *ZkRegistry) register(c config.URL) error {
 	var (
-		err        error
-		revision   string
+		err error
+		//revision   string
 		params     url.Values
 		urlPath    string
 		rawURL     string
@@ -284,30 +285,14 @@ func (r *ZkRegistry) register(c config.URL) error {
 		return jerrors.Trace(err)
 	}
 	params = url.Values{}
+	params = c.Params
 
-	params.Add("application", c.GetParam(constant.APPLICATION_KEY, ""))
-	params.Add("default.timeout", fmt.Sprintf("%d", defaultTimeout/1e6))
-	params.Add("environment", c.GetParam(constant.ENVIRONMENT_KEY, ""))
-	params.Add("org", c.GetParam(constant.ORGANIZATION_KEY, ""))
-	params.Add("module", c.GetParam(constant.MODULE_KEY, ""))
-	params.Add("owner", c.GetParam(constant.OWNER_KEY, ""))
 	params.Add("pid", processID)
 	params.Add("ip", localIP)
 	params.Add("timeout", fmt.Sprintf("%d", int64(r.Timeout)/1e6))
-	params.Add("timestamp", fmt.Sprintf("%d", r.birth/1e6))
 
-	revision = r.Version
-	if revision == "" {
-		revision = "0.1.0"
-	}
-	params.Add("revision", revision) // revision是pox.xml中application的version属性的值
-
-	//for loop the params of configUrl , for supporting param extention
-	for k, v := range c.Params {
-		params.Add(k, v[0])
-	}
-
-	switch r.DubboType {
+	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
+	switch role {
 
 	case config.PROVIDER:
 
@@ -326,20 +311,14 @@ func (r *ZkRegistry) register(c config.URL) error {
 		params.Add("anyhost", "true")
 		params.Add("interface", conf.Service)
 
-		if conf.Group != "" {
-			params.Add("group", conf.Group)
-		}
 		// dubbo java consumer来启动找provider url时，因为category不匹配，会找不到provider，导致consumer启动不了,所以使用consumers&providers
 		// DubboRole               = [...]string{"consumer", "", "", "provider"}
-		// params.Add("category", (DubboType(PROVIDER)).Role())
-		params.Add("category", (config.DubboType(config.PROVIDER)).String())
+		// params.Add("category", (RoleType(PROVIDER)).Role())
+		params.Add("category", (config.RoleType(config.PROVIDER)).String())
 		params.Add("dubbo", "dubbo-provider-golang-"+version.Version)
 
-		params.Add("side", (config.DubboType(config.PROVIDER)).Role())
+		params.Add("side", (config.RoleType(config.PROVIDER)).Role())
 
-		if conf.Version != "" {
-			params.Add("version", conf.Version)
-		}
 		if len(conf.Methods) == 0 {
 			params.Add("methods", strings.Join(conf.Methods, ","))
 		}
@@ -358,7 +337,7 @@ func (r *ZkRegistry) register(c config.URL) error {
 		encodedURL = url.QueryEscape(rawURL)
 
 		// 把自己注册service providers
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", conf.Service, (config.DubboType(config.PROVIDER)).String())
+		dubboPath = fmt.Sprintf("/dubbo/%s/%s", conf.Service, (config.RoleType(config.PROVIDER)).String())
 		log.Debug("provider path:%s, url:%s", dubboPath, rawURL)
 
 	case config.CONSUMER:
@@ -381,24 +360,14 @@ func (r *ZkRegistry) register(c config.URL) error {
 
 		params.Add("protocol", c.Protocol)
 		params.Add("interface", c.Service)
-		revision = r.Version
-		if revision == "" {
-			revision = "0.1.0"
-		}
-		params.Add("revision", revision)
-		if c.Group != "" {
-			params.Add("group", c.Group)
-		}
-		params.Add("category", (config.DubboType(config.CONSUMER)).String())
+
+		params.Add("category", (config.RoleType(config.CONSUMER)).String())
 		params.Add("dubbo", "dubbogo-consumer-"+version.Version)
 
-		if c.Version != "" {
-			params.Add("version", c.Version)
-		}
-		rawURL = fmt.Sprintf("consumer://%s/%s?%s", localIP, c.Service+c.Version, params.Encode())
+		rawURL = fmt.Sprintf("consumer://%s/%s?%s", localIP, c.Service, params.Encode())
 		encodedURL = url.QueryEscape(rawURL)
 
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", c.Service, (config.DubboType(config.CONSUMER)).String())
+		dubboPath = fmt.Sprintf("/dubbo/%s/%s", c.Service, (config.RoleType(config.CONSUMER)).String())
 		log.Debug("consumer path:%s, url:%s", dubboPath, rawURL)
 	default:
 		return jerrors.Errorf("@c{%v} type is not referencer or provider", c)

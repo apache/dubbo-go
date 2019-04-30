@@ -119,7 +119,7 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 			log.Error("NewURL(%s) = error{%v}", n, jerrors.ErrorStack(err))
 			continue
 		}
-		if !conf.URLEqual(&serviceURL) {
+		if !conf.URLEqual(serviceURL) {
 			log.Warn("serviceURL{%s} is not compatible with URL{%#v}", serviceURL, conf)
 			continue
 		}
@@ -146,7 +146,7 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 		oldNode = path.Join(zkPath, n)
 		log.Warn("delete zkPath{%s}", oldNode)
 		&serviceURL, err = config.NewURL(context.TODO(), n)
-		if !conf.URLEqual(&serviceURL) {
+		if !conf.URLEqual(serviceURL) {
 			log.Warn("serviceURL{%s} has been deleted is not compatible with URL{%#v}", serviceURL, conf)
 			continue
 		}
@@ -262,7 +262,7 @@ func (l *zkEventListener) listenServiceEvent(conf config.URL) {
 			log.Error("NewURL(r{%s}) = error{%v}", c, err)
 			continue
 		}
-		if !conf.URLEqual(&serviceURL) {
+		if !conf.URLEqual(serviceURL) {
 			log.Warn("serviceURL{%s} is not compatible with URL{%#v}", serviceURL, conf)
 			continue
 		}

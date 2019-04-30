@@ -31,21 +31,21 @@ func NewDubboProtocol() *DubboProtocol {
 }
 
 func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
-	url := invoker.GetUrl().(*config.URL)
+	url := invoker.GetUrl()
 	serviceKey := url.Key()
 	exporter := NewDubboExporter(serviceKey, invoker, dp.ExporterMap())
 	dp.SetExporterMap(serviceKey, exporter)
 	log.Info("Export service: %s", url.String())
 
 	// start server
-	dp.openServer(*url)
+	dp.openServer(url)
 	return exporter
 }
 
-func (dp *DubboProtocol) Refer(url config.IURL) protocol.Invoker {
+func (dp *DubboProtocol) Refer(url config.URL) protocol.Invoker {
 	invoker := NewDubboInvoker(url, NewClient())
 	dp.SetInvokers(invoker)
-	log.Info("Refer service: %s", url.(*config.URL).String())
+	log.Info("Refer service: %s", url.String())
 	return invoker
 }
 
