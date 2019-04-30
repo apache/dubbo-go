@@ -10,14 +10,14 @@ import (
 )
 
 // name: service@protocol
-//func (r *ZkRegistry) GetService(conf registry.ReferenceConfig) ([]config.URL, error) {
+//func (r *ZkRegistry) GetService(conf registry.ReferenceConfig) ([]config.SubURL, error) {
 //
 //	var (
 //		err         error
 //		dubboPath   string
 //		nodes       []string
 //		listener    *zkEventListener
-//		serviceURL  config.URL
+//		serviceURL  config.SubURL
 //		serviceConf registry.ReferenceConfig
 //		ok          bool
 //	)
@@ -52,7 +52,7 @@ import (
 //		return nil, jerrors.Trace(err)
 //	}
 //
-//	var listenerServiceMap = make(map[string]config.URL)
+//	var listenerServiceMap = make(map[string]config.SubURL)
 //	for _, n := range nodes {
 //
 //		serviceURL, err = plugins.DefaultServiceURL()(n)
@@ -72,7 +72,7 @@ import (
 //		}
 //	}
 //
-//	var services []config.URL
+//	var services []config.SubURL
 //	for _, service := range listenerServiceMap {
 //		services = append(services, service)
 //	}
@@ -114,7 +114,7 @@ func (r *ZkRegistry) getListener(conf config.URL) (*zkEventListener, error) {
 	// listen
 	r.cltLock.Lock()
 	for _, svs := range r.services {
-		if svs.URLEqual(&conf) {
+		if svs.URLEqual(conf) {
 			go zkListener.listenServiceEvent(svs)
 		}
 	}

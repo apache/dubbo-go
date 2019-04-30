@@ -46,7 +46,7 @@ func getRegistry(regUrl *config.URL) registry.Registry {
 }
 func (protocol *RegistryProtocol) Refer(url config.URL) protocol.Invoker {
 	var regUrl = url
-	var serviceUrl = regUrl.URL
+	var serviceUrl = regUrl.SubURL
 
 	var reg registry.Registry
 
@@ -56,7 +56,7 @@ func (protocol *RegistryProtocol) Refer(url config.URL) protocol.Invoker {
 
 	//new registry directory for store service url from registry
 	directory := directory2.NewRegistryDirectory(&regUrl, reg)
-	go directory.Subscribe(serviceUrl)
+	go directory.Subscribe(*serviceUrl)
 
 	//new cluster invoker
 	cluster := extension.GetCluster(serviceUrl.Params.Get(constant.CLUSTER_KEY))
@@ -99,7 +99,7 @@ func (*RegistryProtocol) getRegistryUrl(invoker protocol.Invoker) config.URL {
 
 func (*RegistryProtocol) getProviderUrl(invoker protocol.Invoker) config.URL {
 	url := invoker.GetUrl()
-	return url.URL
+	return *url.SubURL
 }
 
 func GetProtocol() protocol.Protocol {
