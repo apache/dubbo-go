@@ -87,11 +87,11 @@ func consumerInit(confConFile string) error {
 		return fmt.Errorf("yaml.Unmarshal() = error:%s", jerrors.ErrorStack(err))
 	}
 	//动态加载service config  end
-	for _, config := range consumerConfig.Registries {
-		if config.Timeout, err = time.ParseDuration(config.TimeoutStr); err != nil {
-			return fmt.Errorf("time.ParseDuration(Registry_Config.Timeout:%#v) = error:%s", config.TimeoutStr, err)
-		}
-	}
+	//for _, config := range consumerConfig.Registries {
+	//	if config.Timeout, err = time.ParseDuration(config.TimeoutStr); err != nil {
+	//		return fmt.Errorf("time.ParseDuration(Registry_Config.Timeout:%#v) = error:%s", config.TimeoutStr, err)
+	//	}
+	//}
 
 	gxlog.CInfo("consumer config{%#v}\n", consumerConfig)
 	return nil
@@ -177,7 +177,6 @@ func SetProviderConfig(p ProviderConfig) {
 func GetProviderConfig() ProviderConfig {
 	return *providerConfig
 }
-
 
 type ProtocolConfig struct {
 	name        string `required:"true" yaml:"name"  json:"name,omitempty"`
