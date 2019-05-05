@@ -82,16 +82,11 @@ func consumerInit(confConFile string) error {
 	if err != nil {
 		return fmt.Errorf("ioutil.ReadFile(file:%s) = error:%s", confConFile, jerrors.ErrorStack(err))
 	}
+	consumerConfig = &ConsumerConfig{}
 	err = yaml.Unmarshal(confFileStream, consumerConfig)
 	if err != nil {
 		return fmt.Errorf("yaml.Unmarshal() = error:%s", jerrors.ErrorStack(err))
 	}
-	//动态加载service config  end
-	//for _, config := range consumerConfig.Registries {
-	//	if config.Timeout, err = time.ParseDuration(config.TimeoutStr); err != nil {
-	//		return fmt.Errorf("time.ParseDuration(Registry_Config.Timeout:%#v) = error:%s", config.TimeoutStr, err)
-	//	}
-	//}
 
 	gxlog.CInfo("consumer config{%#v}\n", consumerConfig)
 	return nil
@@ -110,6 +105,7 @@ func providerInit(confProFile string) error {
 	if err != nil {
 		return fmt.Errorf("ioutil.ReadFile(file:%s) = error:%s", confProFile, jerrors.ErrorStack(err))
 	}
+	providerConfig = &ProviderConfig{}
 	err = yaml.Unmarshal(confFileStream, providerConfig)
 	if err != nil {
 		return fmt.Errorf("yaml.Unmarshal() = error:%s", jerrors.ErrorStack(err))
@@ -156,6 +152,10 @@ func SetConsumerConfig(c ConsumerConfig) {
 	consumerConfig = &c
 }
 func GetConsumerConfig() ConsumerConfig {
+	if consumerConfig == nil {
+		log.Warn("consumerConfig is nil!")
+		return ConsumerConfig{}
+	}
 	return *consumerConfig
 }
 
@@ -164,6 +164,10 @@ func GetConsumerConfig() ConsumerConfig {
 /////////////////////////
 
 type ProviderConfig struct {
+	// pprof
+	Pprof_Enabled bool `default:"false" yaml:"pprof_enabled" json:"pprof_enabled,omitempty"`
+	Pprof_Port    int  `default:"10086"  yaml:"pprof_port" json:"pprof_port,omitempty"`
+
 	ApplicationConfig ApplicationConfig `yaml:"application_config" json:"application_config,omitempty"`
 	Path              string            `yaml:"path" json:"path,omitempty"`
 	Registries        []RegistryConfig  `yaml:"registries" json:"registries,omitempty"`
@@ -175,21 +179,25 @@ func SetProviderConfig(p ProviderConfig) {
 	providerConfig = &p
 }
 func GetProviderConfig() ProviderConfig {
+	if providerConfig == nil {
+		log.Warn("providerConfig is nil!")
+		return ProviderConfig{}
+	}
 	return *providerConfig
 }
 
 type ProtocolConfig struct {
-	name        string `required:"true" yaml:"name"  json:"name,omitempty"`
-	ip          string `required:"true" yaml:"ip"  json:"ip,omitempty"`
-	port        string `required:"true" yaml:"port"  json:"port,omitempty"`
-	contextPath string `required:"true" yaml:"contextPath"  json:"contextPath,omitempty"`
+	Name        string `required:"true" yaml:"name"  json:"name,omitempty"`
+	Ip          string `required:"true" yaml:"ip"  json:"ip,omitempty"`
+	Port        string `required:"true" yaml:"port"  json:"port,omitempty"`
+	ContextPath string `required:"true" yaml:"contextPath"  json:"contextPath,omitempty"`
 }
 
 func loadProtocol(protocolsIds string, protocols []ProtocolConfig) []ProtocolConfig {
 	returnProtocols := []ProtocolConfig{}
 	for _, v := range strings.Split(protocolsIds, ",") {
 		for _, prot := range protocols {
-			if v == prot.name {
+			if v == prot.Name {
 				returnProtocols = append(returnProtocols, prot)
 			}
 		}
@@ -200,27 +208,37 @@ func loadProtocol(protocolsIds string, protocols []ProtocolConfig) []ProtocolCon
 
 // Dubbo Init
 func Load() (map[string]*ReferenceConfig, map[string]*ServiceConfig) {
-	refMap := make(map[string]*ReferenceConfig)
-	srvMap := make(map[string]*ServiceConfig)
+	var refMap map[string]*ReferenceConfig
+	var srvMap map[string]*ServiceConfig
 
 	// reference config
-	length := len(consumerConfig.References)
-	for index := 0; index < length; index++ {
-		con := &consumerConfig.References[index]
-		con.Implement(conServices[con.interfaceName])
-		con.Refer()
-		refMap[con.interfaceName] = con
+	if consumerConfig == nil {
+		log.Warn("consumerConfig is nil!")
+	} else {
+		refMap = make(map[string]*ReferenceConfig)
+		length := len(consumerConfig.References)
+		for index := 0; index < length; index++ {
+			con := &consumerConfig.References[index]
+			con.Implement(conServices[con.InterfaceName])
+			con.Refer()
+			refMap[con.InterfaceName] = con
+		}
 	}
 
 	// service config
-	length = len(providerConfig.Services)
-	for index := 0; index < length; index++ {
-		pro := &providerConfig.Services[index]
-		pro.Implement(proServices[pro.interfaceName])
-		if err := pro.Export(); err != nil {
-			panic(fmt.Sprintf("service %s export failed! ", pro.interfaceName))
+	if providerConfig == nil {
+		log.Warn("providerConfig is nil!")
+	} else {
+		srvMap = make(map[string]*ServiceConfig)
+		length := len(providerConfig.Services)
+		for index := 0; index < length; index++ {
+			pro := &providerConfig.Services[index]
+			pro.Implement(proServices[pro.InterfaceName])
+			if err := pro.Export(); err != nil {
+				panic(fmt.Sprintf("service %s export failed! ", pro.InterfaceName))
+			}
+			srvMap[pro.InterfaceName] = pro
 		}
-		srvMap[pro.interfaceName] = pro
 	}
 
 	return refMap, srvMap

@@ -1,7 +1,6 @@
 package protocol
 
 import (
-	"github.com/dubbo/dubbo-go/protocol/protocolwrapper"
 	"sync"
 )
 
@@ -14,11 +13,10 @@ import (
 	"github.com/dubbo/dubbo-go/common/extension"
 	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbo/dubbo-go/protocol"
+	"github.com/dubbo/dubbo-go/protocol/protocolwrapper"
 	"github.com/dubbo/dubbo-go/registry"
 	directory2 "github.com/dubbo/dubbo-go/registry/directory"
 )
-
-const RegistryConnDelay = 3
 
 var registryProtocol *RegistryProtocol
 
@@ -119,7 +117,7 @@ func newWrappedInvoker(invoker protocol.Invoker, url config.URL) *wrappedInvoker
 	return &wrappedInvoker{
 		invoker:     invoker,
 		url:         url,
-		BaseInvoker: *protocol.NewBaseInvoker(nil),
+		BaseInvoker: *protocol.NewBaseInvoker(config.URL{}),
 	}
 }
 func (ivk *wrappedInvoker) GetUrl() config.URL {

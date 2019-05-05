@@ -16,7 +16,7 @@ import (
 
 // rpc service interface
 type RPCService interface {
-	Service() string // Service interfaceName
+	Service() string // Service InterfaceName
 	Version() string
 }
 

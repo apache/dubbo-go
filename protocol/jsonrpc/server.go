@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"github.com/dubbo/dubbo-go/common/constant"
 	"io"
 	"io/ioutil"
 	"net"
@@ -22,6 +21,7 @@ import (
 )
 
 import (
+	"github.com/dubbo/dubbo-go/common/constant"
 	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbo/dubbo-go/protocol"
 )
