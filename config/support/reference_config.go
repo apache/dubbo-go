@@ -82,7 +82,7 @@ func (refconfig *ReferenceConfig) GetRPCService() config.RPCService {
 
 func (refconfig *ReferenceConfig) getUrlMap() url.Values {
 	urlMap := url.Values{}
-
+	urlMap.Set(constant.INTERFACE_KEY, refconfig.InterfaceName)
 	urlMap.Set(constant.TIMESTAMP_KEY, strconv.FormatInt(time.Now().Unix(), 10))
 	urlMap.Set(constant.CLUSTER_KEY, refconfig.Cluster)
 	urlMap.Set(constant.LOADBALANCE_KEY, refconfig.Loadbalance)
