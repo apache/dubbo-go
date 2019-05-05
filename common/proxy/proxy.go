@@ -53,13 +53,8 @@ func (p *Proxy) Implement(v config.RPCService) {
 
 	makeDubboCallProxy := func(methodName string, outs []reflect.Type) func(in []reflect.Value) []reflect.Value {
 		return func(in []reflect.Value) []reflect.Value {
-			// Convert input parameters to interface.
-			var argsInterface = make([]interface{}, len(in))
-			for k, v := range in {
-				argsInterface[k] = v.Interface()
-			}
 
-			inv := support.NewRPCInvocationForConsumer(methodName, nil, argsInterface, in[2].Interface(), p.callBack, config.URL{}, nil)
+			inv := support.NewRPCInvocationForConsumer(methodName, nil, in[1].Interface().([]interface{}), in[2].Interface(), p.callBack, config.URL{}, nil)
 			for k, v := range p.attachments {
 				inv.SetAttachments(k, v)
 			}

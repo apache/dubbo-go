@@ -1,12 +1,12 @@
 package support
 
 import (
-	"github.com/dubbo/dubbo-go/common/constant"
-	"github.com/dubbo/dubbo-go/config"
 	"reflect"
 )
 
 import (
+	"github.com/dubbo/dubbo-go/common/constant"
+	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbo/dubbo-go/protocol"
 )
 
@@ -97,7 +97,6 @@ func (r *RPCInvocation) Invoker() protocol.Invoker {
 	return r.invoker
 }
 
-// SetInvoker is called while getting url, maybe clusterInvoker?
 func (r *RPCInvocation) SetInvoker() protocol.Invoker {
 	return r.invoker
 }
