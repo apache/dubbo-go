@@ -188,7 +188,8 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (URL, error) 
 //}
 
 func (c URL) URLEqual(url URL) bool {
-
+	url.Ip = ""
+	url.Port = ""
 	if c.Key() != url.Key() {
 		return false
 	}
