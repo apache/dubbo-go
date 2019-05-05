@@ -35,7 +35,7 @@ func (ji *JsonrpcInvoker) Invoke(invocation protocol.Invocation) protocol.Result
 	)
 
 	inv := invocation.(*support.RPCInvocation)
-	url := inv.Invoker().GetUrl()
+	url := ji.GetUrl()
 	req := ji.client.NewRequest(url, inv.MethodName(), inv.Arguments())
 	ctx := context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
 		"X-Proxy-Id": "dubbogo",
