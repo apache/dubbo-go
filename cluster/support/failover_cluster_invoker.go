@@ -66,7 +66,6 @@ func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) pr
 				return &protocol.RPCResult{Err: err}
 			}
 		}
-
 		ivk := invoker.doSelect(loadbalance, invocation, invokers, invoked)
 		invoked = append(invoked, ivk)
 		//DO INVOKE

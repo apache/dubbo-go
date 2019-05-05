@@ -150,7 +150,7 @@ func (dir *RegistryDirectory) toGroupInvokers(newInvokersMap *sync.Map) []protoc
 		if _, ok := groupInvokersMap[group]; ok {
 			groupInvokersMap[group] = append(groupInvokersMap[group], invoker)
 		} else {
-			groupInvokersMap[group] = []protocol.Invoker{}
+			groupInvokersMap[group] = []protocol.Invoker{invoker}
 		}
 	}
 	if len(groupInvokersMap) == 1 {

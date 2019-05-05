@@ -18,5 +18,5 @@ func NewRegistryAwareCluster() cluster.Cluster {
 }
 
 func (cluster *RegistryAwareCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return newFailoverClusterInvoker(directory)
+	return newRegistryAwareClusterInvoker(directory)
 }
