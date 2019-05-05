@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"fmt"
+	"github.com/dubbo/dubbo-go/common/constant"
 	"net"
 	"net/url"
 	"strconv"
@@ -173,11 +174,12 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (URL, error) 
 	return s, nil
 }
 
-func (c URL) Key() string {
-	return fmt.Sprintf(
-		"%s://%s:%s@%s:%s/%s",
-		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path)
-}
+//
+//func (c URL) Key() string {
+//	return fmt.Sprintf(
+//		"%s://%s:%s@%s:%s/%s",
+//		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path)
+//}
 
 func (c URL) URLEqual(url URL) bool {
 
@@ -202,6 +204,14 @@ func (c URL) String() string {
 	for k, v := range c.Params {
 		buildString += "&" + k + "=" + v[0]
 	}
+	return buildString
+}
+
+func (c URL) Key() string {
+	buildString := fmt.Sprintf(
+		"%s://%s:%s@%s:%s/%s?group=%s&version=%s",
+		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path, c.GetParam(constant.GROUP_KEY, ""), c.GetParam(constant.VERSION_KEY, constant.DEFAULT_VERSION))
+
 	return buildString
 }
 

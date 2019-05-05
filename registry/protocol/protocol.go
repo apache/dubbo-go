@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"github.com/dubbo/dubbo-go/protocol/protocolwrapper"
 	"sync"
 )
 
@@ -13,7 +14,6 @@ import (
 	"github.com/dubbo/dubbo-go/common/extension"
 	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbo/dubbo-go/protocol"
-	"github.com/dubbo/dubbo-go/protocol/protocolwrapper"
 	"github.com/dubbo/dubbo-go/registry"
 	directory2 "github.com/dubbo/dubbo-go/registry/directory"
 )
@@ -22,7 +22,10 @@ var registryProtocol *RegistryProtocol
 
 type RegistryProtocol struct {
 	// Registry  Map<RegistryAddress, Registry>
-	registies sync.Map
+	//registies sync.Map
+	//To solve the problem of RMI repeated exposure port conflicts, the services that have been exposed are no longer exposed.
+	//providerurl <--> exporter
+	bounds sync.Map
 }
 
 func init() {
@@ -31,7 +34,8 @@ func init() {
 
 func NewRegistryProtocol() *RegistryProtocol {
 	return &RegistryProtocol{
-		registies: sync.Map{},
+		//registies: sync.Map{},
+		bounds: sync.Map{},
 	}
 }
 func getRegistry(regUrl *config.URL) registry.Registry {
@@ -46,11 +50,7 @@ func (protocol *RegistryProtocol) Refer(url config.URL) protocol.Invoker {
 	var regUrl = url
 	var serviceUrl = regUrl.SubURL
 
-	var reg registry.Registry
-
-	regI, _ := protocol.registies.LoadOrStore(url.Key(),
-		getRegistry(&regUrl))
-	reg = regI.(registry.Registry)
+	reg := getRegistry(&regUrl)
 
 	//new registry directory for store service url from registry
 	directory := directory2.NewRegistryDirectory(&regUrl, reg)
@@ -61,23 +61,30 @@ func (protocol *RegistryProtocol) Refer(url config.URL) protocol.Invoker {
 	return cluster.Join(directory)
 }
 
-func (protocol *RegistryProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
-	registryUrl := protocol.getRegistryUrl(invoker)
-	providerUrl := protocol.getProviderUrl(invoker)
+func (proto *RegistryProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
+	registryUrl := proto.getRegistryUrl(invoker)
+	providerUrl := proto.getProviderUrl(invoker)
 
-	regI, _ := protocol.registies.LoadOrStore(providerUrl.Key(),
-		getRegistry(&registryUrl))
-
-	reg := regI.(registry.Registry)
+	reg := getRegistry(&registryUrl)
 
 	err := reg.Register(providerUrl)
 	if err != nil {
 		log.Error("provider service %v register registry %v error, error message is %v", providerUrl.String(), registryUrl.String(), err.Error())
 	}
 
-	wrappedInvoker := newWrappedInvoker(invoker, providerUrl)
+	key := providerUrl.Key()
+	log.Info("The cached exporter keys is %v !", key)
+	cachedExporter, loaded := proto.bounds.Load(key)
+	if loaded {
+		log.Info("The exporter has been cached, and will return cached exporter!")
+	} else {
+		wrappedInvoker := newWrappedInvoker(invoker, providerUrl)
+		cachedExporter = extension.GetProtocolExtension(protocolwrapper.FILTER).Export(wrappedInvoker)
+		proto.bounds.Store(key, cachedExporter)
+		log.Info("The exporter has not been cached, and will return a new  exporter!")
+	}
 
-	return extension.GetProtocolExtension(protocolwrapper.FILTER).Export(wrappedInvoker)
+	return cachedExporter.(protocol.Exporter)
 
 }
 
