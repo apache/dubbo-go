@@ -44,7 +44,7 @@ func stateToString(state zk.State) string {
 	case zk.StateExpired:
 		return "zookeeper connection expired"
 	case zk.StateConnected:
-		return "zookeeper conneced"
+		return "zookeeper connected"
 	case zk.StateHasSession:
 		return "zookeeper has session"
 	case zk.StateUnknown:

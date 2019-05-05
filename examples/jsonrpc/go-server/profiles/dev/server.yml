@@ -38,7 +38,7 @@ services:
 - registries:
   - "hangzhouzk"
 #  - "shanghaizk"
-  protocol : "dubbo,jsonrpc"
+  protocol : "dubbo"
     # 相当于dubbo.xml中的interface
   interface : "com.ikurento.user.UserProvider"
   loadbalance: "random"

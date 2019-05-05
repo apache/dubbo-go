@@ -140,7 +140,7 @@ func (s *Server) handlePkg(conn net.Conn) {
 
 			attchments[constant.PATH_KEY] = url.Path
 			attchments[constant.GROUP_KEY] = url.GetParam(constant.GROUP_KEY, "")
-			attchments[constant.SERVICE_KEY] = url.Service
+			attchments[constant.SERVICE_KEY] = url.Path
 			attchments[constant.VERSION_KEY] = url.GetParam(constant.VERSION_KEY, constant.DEFAULT_VERSION)
 			result := invoker.Invoke(protocol.NewRPCInvocationForProvider(attchments))
 			if err := result.Error(); err != nil {
@@ -222,7 +222,7 @@ func accept(listener net.Listener, fn func(net.Conn)) error {
 func (s *Server) Start(url config.URL) {
 	listener, err := net.Listen("tcp", url.Location)
 	if err != nil {
-		log.Error("jsonrpc server [%s] start failed: %v", url.Service, err)
+		log.Error("jsonrpc server [%s] start failed: %v", url.Path, err)
 		return
 	}
 	log.Info("rpc server start to listen on %s", listener.Addr())

@@ -78,15 +78,14 @@ func (srvconfig *ServiceConfig) Export() error {
 			log.Error(err.Error())
 			return err
 		}
-		contextPath := proto.ContextPath
-		if contextPath == "" {
-			contextPath = providerConfig.Path
-		}
+		//contextPath := proto.ContextPath
+		//if contextPath == "" {
+		//	contextPath = providerConfig.Path
+		//}
 		url := config.NewURLWithOptions(srvconfig.InterfaceName,
 			config.WithProtocol(proto.Name),
 			config.WithIp(proto.Ip),
 			config.WithPort(proto.Port),
-			config.WithPath(contextPath),
 			config.WithParams(urlMap),
 			config.WithMethods(strings.Split(methods, ",")))
 

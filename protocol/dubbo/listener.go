@@ -182,7 +182,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 		attchments[constant.PATH_KEY] = url.Path
 		attchments[constant.GROUP_KEY] = url.GetParam(constant.GROUP_KEY, "")
-		attchments[constant.SERVICE_KEY] = url.Service
+		attchments[constant.SERVICE_KEY] = url.Path
 		attchments[constant.VERSION_KEY] = url.GetParam(constant.VERSION_KEY, constant.DEFAULT_VERSION)
 		result := invoker.Invoke(protocol.NewRPCInvocationForProvider(attchments))
 		if err := result.Error(); err != nil {

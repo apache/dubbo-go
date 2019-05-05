@@ -52,8 +52,6 @@ type baseUrl struct {
 
 type URL struct {
 	baseUrl
-	Service string
-
 	Path     string // like  /com.ikurento.dubbo.UserProvider3
 	Username string
 	Password string
@@ -105,15 +103,15 @@ func WithPort(port string) option {
 	}
 }
 
-func WithPath(path string) option {
-	return func(url *URL) {
-		url.Path = path
-	}
-}
+//func WithPath(path string) option {
+//	return func(url *URL) {
+//		url.Path = path
+//	}
+//}
 
 func NewURLWithOptions(service string, opts ...option) *URL {
 	url := &URL{
-		Service: service,
+		Path: "/" + service,
 	}
 	for _, opt := range opts {
 		opt(url)
@@ -141,7 +139,7 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (URL, error) 
 		return s, jerrors.Errorf("url.QueryUnescape(%s),  error{%v}", urlString, err)
 	}
 
-	rawUrlString = "//" + rawUrlString
+	//rawUrlString = "//" + rawUrlString
 	serviceUrl, err = url.Parse(rawUrlString)
 	if err != nil {
 		return s, jerrors.Errorf("url.Parse(url string{%s}),  error{%v}", rawUrlString, err)
@@ -178,6 +176,7 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (URL, error) 
 	for _, opt := range opts {
 		opt(&s)
 	}
+	//fmt.Println(s.String())
 	return s, nil
 }
 
@@ -206,7 +205,7 @@ func (c URL) URLEqual(url URL) bool {
 
 func (c URL) String() string {
 	buildString := fmt.Sprintf(
-		"%s://%s:%s@%s:%s/%s?",
+		"%s://%s:%s@%s:%s%s?",
 		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path)
 	for k, v := range c.Params {
 		buildString += "&" + k + "=" + v[0]
@@ -216,7 +215,7 @@ func (c URL) String() string {
 
 func (c URL) Key() string {
 	buildString := fmt.Sprintf(
-		"%s://%s:%s@%s:%s/%s?group=%s&version=%s",
+		"%s://%s:%s@%s:%s%s?group=%s&version=%s",
 		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path, c.GetParam(constant.GROUP_KEY, ""), c.GetParam(constant.VERSION_KEY, constant.DEFAULT_VERSION))
 
 	return buildString
@@ -226,6 +225,9 @@ func (c URL) Context() context.Context {
 	return c.ctx
 }
 
+func (c URL) Service() string {
+	return strings.TrimPrefix(c.Path, "/")
+}
 func (c URL) GetParam(s string, d string) string {
 	var r string
 	if r = c.Params.Get(s); r == "" {

@@ -123,13 +123,13 @@ func (r *ZkRegistry) validateZookeeperClient() error {
 		if err != nil {
 			log.Error("timeout config %v is invalid ,err is %v",
 				r.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), err.Error())
-			return jerrors.Annotatef(err, "newZookeeperClient(address:%+v)", r.PrimitiveURL)
+			return jerrors.Annotatef(err, "newZookeeperClient(address:%+v)", r.Location)
 		}
-		r.client, err = newZookeeperClient(RegistryZkClient, []string{r.PrimitiveURL}, timeout)
+		r.client, err = newZookeeperClient(RegistryZkClient, []string{r.Location}, timeout)
 		if err != nil {
 			log.Warn("newZookeeperClient(name{%s}, zk addresss{%v}, timeout{%d}) = error{%v}",
-				RegistryZkClient, r.PrimitiveURL, timeout.String(), err)
-			return jerrors.Annotatef(err, "newZookeeperClient(address:%+v)", r.PrimitiveURL)
+				RegistryZkClient, r.Location, timeout.String(), err)
+			return jerrors.Annotatef(err, "newZookeeperClient(address:%+v)", r.Location)
 		}
 	}
 	if r.client.conn == nil {
@@ -224,7 +224,7 @@ func (r *ZkRegistry) Register(conf config.URL) error {
 		_, ok = r.services[conf.Key()]
 		r.cltLock.Unlock()
 		if ok {
-			return jerrors.Errorf("Service{%s} has been registered", conf.Service)
+			return jerrors.Errorf("Path{%s} has been registered", conf.Path)
 		}
 
 		err = r.register(conf)
@@ -248,12 +248,12 @@ func (r *ZkRegistry) Register(conf config.URL) error {
 		// 检验服务是否已经注册过
 		ok = false
 		r.cltLock.Lock()
-		// 注意此处与consumerZookeeperRegistry的差异，consumer用的是conf.Service，
+		// 注意此处与consumerZookeeperRegistry的差异，consumer用的是conf.Path，
 		// 因为consumer要提供watch功能给selector使用, provider允许注册同一个service的多个group or version
 		_, ok = r.services[conf.Key()]
 		r.cltLock.Unlock()
 		if ok {
-			return jerrors.Errorf("Service{%s} has been registered", conf.Key())
+			return jerrors.Errorf("Path{%s} has been registered", conf.Key())
 		}
 
 		err = r.register(conf)
@@ -299,11 +299,11 @@ func (r *ZkRegistry) register(c config.URL) error {
 
 	case config.PROVIDER:
 
-		if c.Service == "" || len(c.Methods) == 0 {
-			return jerrors.Errorf("conf{Service:%s, Methods:%s}", c.Service, c.Methods)
+		if c.Path == "" || len(c.Methods) == 0 {
+			return jerrors.Errorf("conf{Path:%s, Methods:%s}", c.Path, c.Methods)
 		}
 		// 先创建服务下面的provider node
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", c.Service, config.DubboNodes[config.PROVIDER])
+		dubboPath = fmt.Sprintf("/dubbo%s/%s", c.Path, config.DubboNodes[config.PROVIDER])
 		r.cltLock.Lock()
 		err = r.client.Create(dubboPath)
 		r.cltLock.Unlock()
@@ -312,7 +312,7 @@ func (r *ZkRegistry) register(c config.URL) error {
 			return jerrors.Annotatef(err, "zkclient.Create(path:%s)", dubboPath)
 		}
 		params.Add("anyhost", "true")
-		params.Add("interface", c.Service)
+		params.Add("interface", c.Service())
 
 		// dubbo java consumer来启动找provider url时，因为category不匹配，会找不到provider，导致consumer启动不了,所以使用consumers&providers
 		// DubboRole               = [...]string{"consumer", "", "", "provider"}
@@ -326,25 +326,25 @@ func (r *ZkRegistry) register(c config.URL) error {
 			params.Add("methods", strings.Join(c.Methods, ","))
 		}
 		log.Debug("provider zk url params:%#v", params)
-		var path = c.Path
-		if path == "" {
-			path = localIP
-		}
+		//var path = c.Path
+		//if path == "" {
+		//	path = localIP
+		//}
 
-		urlPath = c.Service
+		urlPath = c.Path
 		if r.zkPath[urlPath] != 0 {
 			urlPath += strconv.Itoa(r.zkPath[urlPath])
 		}
 		r.zkPath[urlPath]++
-		rawURL = fmt.Sprintf("%s://%s/%s?%s", c.Protocol, path, urlPath, params.Encode())
+		rawURL = fmt.Sprintf("%s://%s?%s", c.Protocol, urlPath, params.Encode())
 		encodedURL = url.QueryEscape(rawURL)
 
 		// 把自己注册service providers
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", c.Service, (config.RoleType(config.PROVIDER)).String())
+		dubboPath = fmt.Sprintf("/dubbo%s/%s", c.Path, (config.RoleType(config.PROVIDER)).String())
 		log.Debug("provider path:%s, url:%s", dubboPath, rawURL)
 
 	case config.CONSUMER:
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", c.Service, config.DubboNodes[config.CONSUMER])
+		dubboPath = fmt.Sprintf("/dubbo%s/%s", c.Path, config.DubboNodes[config.CONSUMER])
 		r.cltLock.Lock()
 		err = r.client.Create(dubboPath)
 		r.cltLock.Unlock()
@@ -352,7 +352,7 @@ func (r *ZkRegistry) register(c config.URL) error {
 			log.Error("zkClient.create(path{%s}) = error{%v}", dubboPath, jerrors.ErrorStack(err))
 			return jerrors.Trace(err)
 		}
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", c.Service, config.DubboNodes[config.PROVIDER])
+		dubboPath = fmt.Sprintf("/dubbo%s/%s", c.Path, config.DubboNodes[config.PROVIDER])
 		r.cltLock.Lock()
 		err = r.client.Create(dubboPath)
 		r.cltLock.Unlock()
@@ -362,15 +362,15 @@ func (r *ZkRegistry) register(c config.URL) error {
 		}
 
 		params.Add("protocol", c.Protocol)
-		params.Add("interface", c.Service)
+		params.Add("interface", c.Service())
 
 		params.Add("category", (config.RoleType(config.CONSUMER)).String())
 		params.Add("dubbo", "dubbogo-consumer-"+version.Version)
 
-		rawURL = fmt.Sprintf("consumer://%s/%s?%s", localIP, c.Service, params.Encode())
+		rawURL = fmt.Sprintf("consumer://%s%s?%s", localIP, c.Path, params.Encode())
 		encodedURL = url.QueryEscape(rawURL)
 
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", c.Service, (config.RoleType(config.CONSUMER)).String())
+		dubboPath = fmt.Sprintf("/dubbo%s/%s", c.Path, (config.RoleType(config.CONSUMER)).String())
 		log.Debug("consumer path:%s, url:%s", dubboPath, rawURL)
 	default:
 		return jerrors.Errorf("@c{%v} type is not referencer or provider", c)

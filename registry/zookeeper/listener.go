@@ -120,7 +120,7 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 			continue
 		}
 		if !conf.URLEqual(serviceURL) {
-			log.Warn("serviceURL{%s} is not compatible with SubURL{%#v}", serviceURL, conf)
+			log.Warn("serviceURL{%s} is not compatible with SubURL{%#v}", serviceURL.Key(), conf.Key())
 			continue
 		}
 		log.Info("add serviceURL{%s}", serviceURL)
@@ -147,7 +147,7 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 		log.Warn("delete zkPath{%s}", oldNode)
 		serviceURL, err = config.NewURL(context.TODO(), n)
 		if !conf.URLEqual(serviceURL) {
-			log.Warn("serviceURL{%s} has been deleted is not compatible with SubURL{%#v}", serviceURL, conf)
+			log.Warn("serviceURL{%s} has been deleted is not compatible with SubURL{%#v}", serviceURL.Key(), conf.Key())
 			continue
 		}
 		log.Warn("delete serviceURL{%s}", serviceURL)
@@ -234,7 +234,7 @@ func (l *zkEventListener) listenServiceEvent(conf config.URL) {
 		serviceURL config.URL
 	)
 
-	zkPath = fmt.Sprintf("/dubbo/%s/providers", conf.Service)
+	zkPath = fmt.Sprintf("/dubbo%s/providers", conf.Path)
 
 	l.serviceMapLock.Lock()
 	_, ok := l.serviceMap[zkPath]
@@ -248,6 +248,7 @@ func (l *zkEventListener) listenServiceEvent(conf config.URL) {
 	l.serviceMap[zkPath] = struct{}{}
 	l.serviceMapLock.Unlock()
 
+	log.Info(conf.String())
 	log.Info("listen dubbo provider path{%s} event and wait to get all provider zk nodes", zkPath)
 	children, err = l.client.getChildren(zkPath)
 	if err != nil {
@@ -256,14 +257,13 @@ func (l *zkEventListener) listenServiceEvent(conf config.URL) {
 	}
 
 	for _, c := range children {
-
 		serviceURL, err = config.NewURL(context.TODO(), c)
 		if err != nil {
 			log.Error("NewURL(r{%s}) = error{%v}", c, err)
 			continue
 		}
 		if !conf.URLEqual(serviceURL) {
-			log.Warn("serviceURL{%s} is not compatible with SubURL{%#v}", serviceURL, conf)
+			log.Warn("serviceURL %v is not compatible with SubURL %v", serviceURL.Key(), conf.Key())
 			continue
 		}
 		log.Debug("add serviceUrl{%s}", serviceURL)

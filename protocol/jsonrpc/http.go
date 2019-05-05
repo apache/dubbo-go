@@ -84,7 +84,7 @@ func (c *HTTPClient) NewRequest(service config.URL, method string, args interfac
 		group:    service.GetParam(constant.GROUP_KEY, ""),
 		protocol: service.Protocol,
 		version:  service.GetParam(constant.VERSION_KEY, constant.DEFAULT_VERSION),
-		service:  service.Service,
+		service:  service.Path,
 		method:   method,
 		args:     args,
 	}
