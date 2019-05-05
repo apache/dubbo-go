@@ -248,7 +248,6 @@ func (l *zkEventListener) listenServiceEvent(conf config.URL) {
 	l.serviceMap[zkPath] = struct{}{}
 	l.serviceMapLock.Unlock()
 
-	log.Info(conf.String())
 	log.Info("listen dubbo provider path{%s} event and wait to get all provider zk nodes", zkPath)
 	children, err = l.client.getChildren(zkPath)
 	if err != nil {

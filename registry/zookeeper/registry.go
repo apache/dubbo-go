@@ -325,17 +325,19 @@ func (r *ZkRegistry) register(c config.URL) error {
 			params.Add("methods", strings.Join(c.Methods, ","))
 		}
 		log.Debug("provider zk url params:%#v", params)
-		//var path = c.Path
-		//if path == "" {
-		//	path = localIP
-		//}
+		var host string
+		if c.Ip == "" {
+			host = localIP + ":" + c.Port
+		} else {
+			host = c.Ip + ":" + c.Port
+		}
 
 		urlPath = c.Path
 		if r.zkPath[urlPath] != 0 {
 			urlPath += strconv.Itoa(r.zkPath[urlPath])
 		}
 		r.zkPath[urlPath]++
-		rawURL = fmt.Sprintf("%s://%s?%s", c.Protocol, urlPath, params.Encode())
+		rawURL = fmt.Sprintf("%s://%s%s?%s", c.Protocol, host, urlPath, params.Encode())
 		encodedURL = url.QueryEscape(rawURL)
 
 		// 把自己注册service providers
