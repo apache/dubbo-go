@@ -72,8 +72,12 @@ func (refconfig *ReferenceConfig) Refer() {
 }
 
 // @v is service provider implemented RPCService
-func (refconfig *ReferenceConfig) Implement(v config.RPCService) error {
-	return refconfig.pxy.Implement(v)
+func (refconfig *ReferenceConfig) Implement(v config.RPCService) {
+	refconfig.pxy.Implement(v)
+}
+
+func (refconfig *ReferenceConfig) GetRPCService() config.RPCService {
+	return refconfig.pxy.Get()
 }
 
 func (refconfig *ReferenceConfig) getUrlMap() url.Values {

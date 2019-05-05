@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -71,7 +72,7 @@ func (srvconfig *ServiceConfig) Export() error {
 
 	for _, proto := range loadProtocol(srvconfig.Protocol, providerConfig.Protocols) {
 		//registry the service reflect
-		_, err := config.ServiceMap.Register(proto.Name, srvconfig.rpcService)
+		methods, err := config.ServiceMap.Register(proto.Name, srvconfig.rpcService)
 		if err != nil {
 			err := jerrors.Errorf("The service %v  export the protocol %v error! Error message is %v .", srvconfig.InterfaceName, proto.Name, err.Error())
 			log.Error(err.Error())
@@ -86,7 +87,8 @@ func (srvconfig *ServiceConfig) Export() error {
 			config.WithIp(proto.Ip),
 			config.WithPort(proto.Port),
 			config.WithPath(contextPath),
-			config.WithParams(urlMap))
+			config.WithParams(urlMap),
+			config.WithMethods(strings.Split(methods, ",")))
 
 		for _, regUrl := range regUrls {
 			regUrl.SubURL = url

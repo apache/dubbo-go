@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/dubbo/dubbo-go/common/constant"
 	"net/url"
+	"strconv"
 )
 import (
 	log "github.com/AlexStocks/log4go"
@@ -47,7 +48,7 @@ func loadRegistries(registriesIds []ConfigRegistry, registries []RegistryConfig,
 func (regconfig *RegistryConfig) getUrlMap(roleType config.RoleType) url.Values {
 	urlMap := url.Values{}
 	urlMap.Set(constant.GROUP_KEY, regconfig.Group)
-	urlMap.Set(constant.ROLE_KEY, roleType.String())
+	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(int(roleType)))
 	urlMap.Set(constant.REGISTRY_KEY, regconfig.Type)
 	urlMap.Set(constant.REGISTRY_TIMEOUT_KEY, regconfig.TimeoutStr)
 	return urlMap

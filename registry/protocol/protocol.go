@@ -69,7 +69,7 @@ func (proto *RegistryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 
 	err := reg.Register(providerUrl)
 	if err != nil {
-		log.Error("provider service %v register registry %v error, error message is %v", providerUrl.String(), registryUrl.String(), err.Error())
+		log.Error("provider service %v register registry %v error, error message is %s", providerUrl.String(), registryUrl.String(), err.Error())
 	}
 
 	key := providerUrl.Key()

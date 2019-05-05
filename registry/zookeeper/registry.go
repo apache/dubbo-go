@@ -280,7 +280,7 @@ func (r *ZkRegistry) register(c config.URL) error {
 		rawURL     string
 		encodedURL string
 		dubboPath  string
-		conf       config.URL
+		//conf       config.URL
 	)
 
 	err = r.validateZookeeperClient()
@@ -299,11 +299,11 @@ func (r *ZkRegistry) register(c config.URL) error {
 
 	case config.PROVIDER:
 
-		if conf.Service == "" || len(conf.Methods) == 0 {
-			return jerrors.Errorf("conf{Service:%s, Methods:%s}", conf.Service, conf.Methods)
+		if c.Service == "" || len(c.Methods) == 0 {
+			return jerrors.Errorf("conf{Service:%s, Methods:%s}", c.Service, c.Methods)
 		}
 		// 先创建服务下面的provider node
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", conf.Service, config.DubboNodes[config.PROVIDER])
+		dubboPath = fmt.Sprintf("/dubbo/%s/%s", c.Service, config.DubboNodes[config.PROVIDER])
 		r.cltLock.Lock()
 		err = r.client.Create(dubboPath)
 		r.cltLock.Unlock()
@@ -312,7 +312,7 @@ func (r *ZkRegistry) register(c config.URL) error {
 			return jerrors.Annotatef(err, "zkclient.Create(path:%s)", dubboPath)
 		}
 		params.Add("anyhost", "true")
-		params.Add("interface", conf.Service)
+		params.Add("interface", c.Service)
 
 		// dubbo java consumer来启动找provider url时，因为category不匹配，会找不到provider，导致consumer启动不了,所以使用consumers&providers
 		// DubboRole               = [...]string{"consumer", "", "", "provider"}
@@ -322,25 +322,25 @@ func (r *ZkRegistry) register(c config.URL) error {
 
 		params.Add("side", (config.RoleType(config.PROVIDER)).Role())
 
-		if len(conf.Methods) == 0 {
-			params.Add("methods", strings.Join(conf.Methods, ","))
+		if len(c.Methods) == 0 {
+			params.Add("methods", strings.Join(c.Methods, ","))
 		}
 		log.Debug("provider zk url params:%#v", params)
-		var path = conf.Path
+		var path = c.Path
 		if path == "" {
 			path = localIP
 		}
 
-		urlPath = conf.Service
+		urlPath = c.Service
 		if r.zkPath[urlPath] != 0 {
 			urlPath += strconv.Itoa(r.zkPath[urlPath])
 		}
 		r.zkPath[urlPath]++
-		rawURL = fmt.Sprintf("%s://%s/%s?%s", conf.Protocol, path, urlPath, params.Encode())
+		rawURL = fmt.Sprintf("%s://%s/%s?%s", c.Protocol, path, urlPath, params.Encode())
 		encodedURL = url.QueryEscape(rawURL)
 
 		// 把自己注册service providers
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", conf.Service, (config.RoleType(config.PROVIDER)).String())
+		dubboPath = fmt.Sprintf("/dubbo/%s/%s", c.Service, (config.RoleType(config.PROVIDER)).String())
 		log.Debug("provider path:%s, url:%s", dubboPath, rawURL)
 
 	case config.CONSUMER:

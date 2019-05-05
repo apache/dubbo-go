@@ -75,6 +75,13 @@ func WithPassword(pwd string) option {
 		url.Password = pwd
 	}
 }
+
+func WithMethods(methods []string) option {
+	return func(url *URL) {
+		url.Methods = methods
+	}
+}
+
 func WithParams(params url.Values) option {
 	return func(url *URL) {
 		url.Params = params
