@@ -44,6 +44,9 @@ func (pfw *ProtocolFilterWrapper) Destroy() {
 
 func buildInvokerChain(invoker protocol.Invoker, key string) protocol.Invoker {
 	filtName := invoker.GetUrl().Params.Get(key)
+	if filtName == "" {
+		return invoker
+	}
 	filtNames := strings.Split(filtName, ",")
 	next := invoker
 	// The order of filters is from left to right, so loading from right to left
