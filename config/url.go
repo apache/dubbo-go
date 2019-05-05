@@ -110,6 +110,7 @@ func NewURLWithOptions(service string, opts ...option) *URL {
 	for _, opt := range opts {
 		opt(url)
 	}
+	url.Location = url.Ip + ":" + url.Port
 	return url
 }
 
@@ -132,7 +133,7 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (URL, error) 
 		return s, jerrors.Errorf("url.QueryUnescape(%s),  error{%v}", urlString, err)
 	}
 
-	rawUrlString = "//"+rawUrlString
+	rawUrlString = "//" + rawUrlString
 	serviceUrl, err = url.Parse(rawUrlString)
 	if err != nil {
 		return s, jerrors.Errorf("url.Parse(url string{%s}),  error{%v}", rawUrlString, err)

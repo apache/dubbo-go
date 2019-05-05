@@ -21,7 +21,7 @@ import (
 
 var srvConf *ServerConfig
 
-const CONF_DUBBO_SERVER_FILE_PATH = "CONF_SERVER_FILE_PATH"
+const CONF_DUBBO_SERVER_FILE_PATH = "CONF_DUBBO_SERVER_FILE_PATH"
 
 func init() {
 	// load serverconfig from *.yml

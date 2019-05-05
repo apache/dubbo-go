@@ -20,7 +20,7 @@ import (
 
 type ServiceConfig struct {
 	context       context.Context
-	Protocol      string           `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`//multi protocol support, split by ','
+	Protocol      string           `required:"true"  yaml:"protocol"  json:"protocol,omitempty"` //multi protocol support, split by ','
 	InterfaceName string           `required:"true"  yaml:"interface"  json:"interface,omitempty"`
 	Registries    []ConfigRegistry `required:"true"  yaml:"registries"  json:"registries,omitempty"`
 	Cluster       string           `default:"failover" yaml:"cluster"  json:"cluster,omitempty"`
