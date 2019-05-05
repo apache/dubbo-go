@@ -1,7 +1,6 @@
 package protocol
 
 import (
-	"github.com/dubbo/dubbo-go/protocol/protocolwrapper"
 	"sync"
 )
 
@@ -14,6 +13,7 @@ import (
 	"github.com/dubbo/dubbo-go/common/extension"
 	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbo/dubbo-go/protocol"
+	"github.com/dubbo/dubbo-go/protocol/protocolwrapper"
 	"github.com/dubbo/dubbo-go/registry"
 	directory2 "github.com/dubbo/dubbo-go/registry/directory"
 )
@@ -46,10 +46,14 @@ func getRegistry(regUrl *config.URL) registry.Registry {
 	}
 	return reg
 }
-func (protocol *RegistryProtocol) Refer(url config.URL) protocol.Invoker {
+func (proto *RegistryProtocol) Refer(url config.URL) protocol.Invoker {
 	var regUrl = url
 	var serviceUrl = regUrl.SubURL
 
+	if regUrl.Protocol == constant.REGISTRY_PROTOCOL {
+		protocol := regUrl.GetParam(constant.REGISTRY_KEY, "")
+		regUrl.Protocol = protocol
+	}
 	reg := getRegistry(&regUrl)
 
 	//new registry directory for store service url from registry
@@ -96,7 +100,7 @@ func (*RegistryProtocol) getRegistryUrl(invoker protocol.Invoker) config.URL {
 	url := invoker.GetUrl()
 	//if the protocol == registry ,set protocol the registry value in url.params
 	if url.Protocol == constant.REGISTRY_PROTOCOL {
-		protocol := url.GetParam(constant.REGISTRY_KEY, constant.DEFAULT_PROTOCOL)
+		protocol := url.GetParam(constant.REGISTRY_KEY, "")
 		url.Protocol = protocol
 	}
 	return url
