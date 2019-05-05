@@ -14,6 +14,7 @@ import (
 	"github.com/dubbo/dubbo-go/common/constant"
 	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbo/dubbo-go/protocol"
+	"github.com/dubbo/dubbo-go/protocol/support"
 )
 
 var Err_No_Reply = errors.New("request need @reply")
@@ -38,7 +39,7 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 		result protocol.RPCResult
 	)
 
-	inv := invocation.(*protocol.RPCInvocation)
+	inv := invocation.(*support.RPCInvocation)
 	url := inv.Invoker().GetUrl()
 	// async
 	async, err := strconv.ParseBool(inv.AttachmentsByKey(constant.ASYNC_KEY, "false"))

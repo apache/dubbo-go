@@ -47,7 +47,9 @@ func main() {
 	}
 
 	initProfiling()
+
 	time.Sleep(3e9)
+
 	gxlog.CInfo("\n\n\nstart to test jsonrpc")
 	user := &JsonRPCUser{}
 	err := conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser(context.TODO(), []interface{}{"A003"}, user)
