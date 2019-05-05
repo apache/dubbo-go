@@ -40,7 +40,7 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	)
 
 	inv := invocation.(*support.RPCInvocation)
-	url := inv.Invoker().GetUrl()
+	url := di.GetUrl()
 	// async
 	async, err := strconv.ParseBool(inv.AttachmentsByKey(constant.ASYNC_KEY, "false"))
 	if err != nil {
