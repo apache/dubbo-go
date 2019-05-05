@@ -1,6 +1,7 @@
 package protocolwrapper
 
 import (
+	"github.com/dubbo/dubbo-go/filter/imp"
 	"strings"
 )
 
@@ -44,8 +45,10 @@ func (pfw *ProtocolFilterWrapper) Destroy() {
 
 func buildInvokerChain(invoker protocol.Invoker, key string) protocol.Invoker {
 	filtName := invoker.GetUrl().Params.Get(key)
-	if filtName == "" {
-		return invoker
+	if filtName == "" { // echo must be the first
+		filtName = imp.ECHO
+	} else {
+		filtName = imp.ECHO + "," + filtName
 	}
 	filtNames := strings.Split(filtName, ",")
 	next := invoker

@@ -38,6 +38,7 @@ references:
 - registries :
   - "hangzhouzk"
   - "shanghaizk"
+
   protocol : "jsonrpc"
   interface : "com.ikurento.user.UserProvider"
   cluster: "failover"
