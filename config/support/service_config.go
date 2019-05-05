@@ -112,7 +112,7 @@ func (srvconfig *ServiceConfig) Implement(s config.RPCService) {
 
 func (srvconfig *ServiceConfig) getUrlMap() url.Values {
 	urlMap := url.Values{}
-
+	urlMap.Set(constant.INTERFACE_KEY, srvconfig.InterfaceName)
 	urlMap.Set(constant.TIMESTAMP_KEY, strconv.FormatInt(time.Now().Unix(), 10))
 	urlMap.Set(constant.CLUSTER_KEY, srvconfig.Cluster)
 	urlMap.Set(constant.LOADBALANCE_KEY, srvconfig.Loadbalance)

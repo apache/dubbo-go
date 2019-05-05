@@ -312,7 +312,6 @@ func (r *ZkRegistry) register(c config.URL) error {
 			return jerrors.Annotatef(err, "zkclient.Create(path:%s)", dubboPath)
 		}
 		params.Add("anyhost", "true")
-		params.Add("interface", c.Service())
 
 		// dubbo java consumer来启动找provider url时，因为category不匹配，会找不到provider，导致consumer启动不了,所以使用consumers&providers
 		// DubboRole               = [...]string{"consumer", "", "", "provider"}
@@ -362,7 +361,6 @@ func (r *ZkRegistry) register(c config.URL) error {
 		}
 
 		params.Add("protocol", c.Protocol)
-		params.Add("interface", c.Service())
 
 		params.Add("category", (config.RoleType(config.CONSUMER)).String())
 		params.Add("dubbo", "dubbogo-consumer-"+version.Version)
