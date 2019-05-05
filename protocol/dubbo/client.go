@@ -1,7 +1,6 @@
 package dubbo
 
 import (
-	"github.com/dubbo/dubbo-go/common/constant"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -19,6 +18,7 @@ import (
 )
 
 import (
+	"github.com/dubbo/dubbo-go/common/constant"
 	"github.com/dubbo/dubbo-go/config"
 )
 
@@ -32,12 +32,12 @@ var (
 	clientConf *ClientConfig
 )
 
-const CONF_CLIENT_FILE_PATH = "CONF_CLIENT_FILE_PATH"
+const CONF_DUBBO_CLIENT_FILE_PATH = "CONF_DUBBO_CLIENT_FILE_PATH"
 
 func init() {
 
 	// load clientconfig from *.yml
-	path := os.Getenv(CONF_CLIENT_FILE_PATH)
+	path := os.Getenv(CONF_DUBBO_CLIENT_FILE_PATH)
 	if path == "" {
 		log.Warn("CONF_CLIENT_FILE_PATH is null")
 		return

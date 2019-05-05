@@ -26,18 +26,18 @@ registries :
   username: ""
   password: ""
 
-- id: "shanghaizk"
-  type: "zookeeper"
-  timeout	: "3s"
-  address: "127.0.0.1:2182"
-  username: ""
-  password: ""
+#- id: "shanghaizk"
+#  type: "zookeeper"
+#  timeout	: "3s"
+#  address: "127.0.0.1:2182"
+#  username: ""
+#  password: ""
 
 
 services:
 - registries:
   - "hangzhouzk"
-  - "shanghaizk"
+#  - "shanghaizk"
   protocol : "dubbo,jsonrpc"
   # 相当于dubbo.xml中的interface
   interface : "com.ikurento.user.UserProvider"

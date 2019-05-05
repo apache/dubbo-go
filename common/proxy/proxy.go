@@ -1,7 +1,6 @@
 package proxy
 
 import (
-	"fmt"
 	"reflect"
 )
 import (
@@ -36,7 +35,7 @@ func NewProxy(invoke protocol.Invoker, callBack interface{}, attachments map[str
 // 		type XxxProvider struct {
 //  		Yyy func(ctx context.Context, args []interface{}, rsp *Zzz) error
 // 		}
-func (p *Proxy) Implement(v config.RPCService) error {
+func (p *Proxy) Implement(v config.RPCService) {
 
 	// check parameters, incoming interface must be a elem's pointer.
 	valueOf := reflect.ValueOf(v)
@@ -47,7 +46,8 @@ func (p *Proxy) Implement(v config.RPCService) error {
 
 	// check incoming interface, incoming interface's elem must be a struct.
 	if typeOf.Kind() != reflect.Struct {
-		return fmt.Errorf("%s must be a struct ptr", valueOf.String())
+		log.Error("%s must be a struct ptr", valueOf.String())
+		return
 	}
 
 	makeDubboCallProxy := func(methodName string, outs []reflect.Type) func(in []reflect.Value) []reflect.Value {
@@ -73,30 +73,34 @@ func (p *Proxy) Implement(v config.RPCService) error {
 		if f.Kind() == reflect.Func && f.IsValid() && f.CanSet() {
 
 			if t.Type.NumIn() != 3 && t.Type.NumIn() != 4 {
-				log.Error("method %s of mtype %v has wrong number of in parameters %d; needs exactly 3/4",
+				log.Warn("method %s of mtype %v has wrong number of in parameters %d; needs exactly 3/4",
 					t.Name, t.Type.String(), t.Type.NumIn())
-				return fmt.Errorf("method %s of mtype %v has wrong number of in parameters %d; needs exactly 3/4",
-					t.Name, t.Type.String(), t.Type.NumIn())
+				continue
 			}
 
 			if t.Type.NumIn() == 3 && t.Type.In(2).Kind() != reflect.Ptr {
-				log.Error("reply type of method %q is not a pointer %v", t.Name, t.Type.In(2))
-				return fmt.Errorf("reply type of method %q is not a pointer %v", t.Name, t.Type.In(2))
+				log.Warn("reply type of method %q is not a pointer %v", t.Name, t.Type.In(2))
+				continue
+			}
+
+			if t.Type.NumIn() == 4 && t.Type.In(3).Kind() != reflect.Ptr {
+				log.Warn("reply type of method %q is not a pointer %v", t.Name, t.Type.In(3))
+				continue
 			}
 
 			// Method needs one out.
 			if t.Type.NumOut() != 1 {
-				log.Error("method %q has %d out parameters; needs exactly 1", t.Name, t.Type.NumOut())
-				return fmt.Errorf("method %q has %d out parameters; needs exactly 1", t.Name, t.Type.NumOut())
+				log.Warn("method %q has %d out parameters; needs exactly 1", t.Name, t.Type.NumOut())
+				continue
 			}
 			// The return type of the method must be error.
 			if returnType := t.Type.Out(0); returnType != typError {
-				log.Error("return type %s of method %q is not error", returnType, t.Name)
-				return fmt.Errorf("return type %s of method %q is not error", returnType, t.Name)
+				log.Warn("return type %s of method %q is not error", returnType, t.Name)
+				continue
 			}
 
 			var funcOuts = make([]reflect.Type, t.Type.NumOut())
-			funcOuts[i] = t.Type.Out(0)
+			funcOuts[0] = t.Type.Out(0)
 
 			// do method proxy here:
 			f.Set(reflect.MakeFunc(f.Type(), makeDubboCallProxy(t.Name, funcOuts)))
@@ -106,9 +110,8 @@ func (p *Proxy) Implement(v config.RPCService) error {
 
 	p.rpc = v
 
-	return nil
 }
 
-func (p *Proxy) Get() interface{} {
+func (p *Proxy) Get() config.RPCService {
 	return p.rpc
 }
