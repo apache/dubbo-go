@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -98,10 +97,6 @@ func (c *HTTPClient) Call(ctx context.Context, service config.URL, req *Request,
 	httpHeader.Set("Accept", "application/json")
 
 	reqTimeout := c.options.HTTPTimeout
-	timeout, err := strconv.ParseInt(service.GetParam(constant.TIMEOUT_KEY,""), 10, 64)
-	if err == nil && time.Duration(timeout)< reqTimeout {
-		reqTimeout = time.Duration(timeout)
-	}
 	if reqTimeout <= 0 {
 		reqTimeout = 1e8
 	}

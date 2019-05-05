@@ -51,10 +51,8 @@ services:
 
 protocols:
     -   name: "dubbo"
-        # 如果是127.0.0.1, java-client将无法连接到go-server
         ip : "192.168.56.1"
         port : 20000
-        # 本server能够提供所有支持同样的Protocol的servicelist的服务
     -   name: "jsonrpc"
         ip: "127.0.0.1"
         port: 20001

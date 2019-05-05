@@ -114,7 +114,7 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 		newNode = path.Join(zkPath, n)
 		log.Info("add zkNode{%s}", newNode)
 		//context.TODO
-		&serviceURL, err = config.NewURL(context.TODO(), n)
+		serviceURL, err = config.NewURL(context.TODO(), n)
 		if err != nil {
 			log.Error("NewURL(%s) = error{%v}", n, jerrors.ErrorStack(err))
 			continue
@@ -145,7 +145,7 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 
 		oldNode = path.Join(zkPath, n)
 		log.Warn("delete zkPath{%s}", oldNode)
-		&serviceURL, err = config.NewURL(context.TODO(), n)
+		serviceURL, err = config.NewURL(context.TODO(), n)
 		if !conf.URLEqual(serviceURL) {
 			log.Warn("serviceURL{%s} has been deleted is not compatible with SubURL{%#v}", serviceURL, conf)
 			continue
@@ -257,7 +257,7 @@ func (l *zkEventListener) listenServiceEvent(conf config.URL) {
 
 	for _, c := range children {
 
-		&serviceURL, err = config.NewURL(context.TODO(), c)
+		serviceURL, err = config.NewURL(context.TODO(), c)
 		if err != nil {
 			log.Error("NewURL(r{%s}) = error{%v}", c, err)
 			continue

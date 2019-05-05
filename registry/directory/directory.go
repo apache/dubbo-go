@@ -18,8 +18,9 @@ import (
 	"github.com/dubbo/dubbo-go/protocol"
 	"github.com/dubbo/dubbo-go/protocol/protocolwrapper"
 	"github.com/dubbo/dubbo-go/registry"
-	protocol2 "github.com/dubbo/dubbo-go/registry/protocol"
 )
+
+const RegistryConnDelay = 3
 
 type Options struct {
 	serviceTTL time.Duration
@@ -77,7 +78,7 @@ func (dir *RegistryDirectory) Subscribe(url config.URL) {
 				return
 			}
 			log.Warn("getListener() = err:%s", jerrors.ErrorStack(err))
-			time.Sleep(time.Duration(protocol2.RegistryConnDelay) * time.Second)
+			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
 			continue
 		}
 
@@ -85,7 +86,7 @@ func (dir *RegistryDirectory) Subscribe(url config.URL) {
 			if serviceEvent, err := listener.Next(); err != nil {
 				log.Warn("Selector.watch() = error{%v}", jerrors.ErrorStack(err))
 				listener.Close()
-				time.Sleep(time.Duration(protocol2.RegistryConnDelay) * time.Second)
+				time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
 				return
 			} else {
 				go dir.update(serviceEvent)

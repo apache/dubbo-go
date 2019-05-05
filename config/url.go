@@ -132,6 +132,7 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (URL, error) 
 		return s, jerrors.Errorf("url.QueryUnescape(%s),  error{%v}", urlString, err)
 	}
 
+	rawUrlString = "//"+rawUrlString
 	serviceUrl, err = url.Parse(rawUrlString)
 	if err != nil {
 		return s, jerrors.Errorf("url.Parse(url string{%s}),  error{%v}", rawUrlString, err)
