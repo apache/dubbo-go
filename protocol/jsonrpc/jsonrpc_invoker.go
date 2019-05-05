@@ -13,6 +13,7 @@ import (
 	"github.com/dubbo/dubbo-go/common/constant"
 	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbo/dubbo-go/protocol"
+	"github.com/dubbo/dubbo-go/protocol/support"
 )
 
 type JsonrpcInvoker struct {
@@ -33,7 +34,7 @@ func (ji *JsonrpcInvoker) Invoke(invocation protocol.Invocation) protocol.Result
 		result protocol.RPCResult
 	)
 
-	inv := invocation.(*protocol.RPCInvocation)
+	inv := invocation.(*support.RPCInvocation)
 	url := inv.Invoker().GetUrl()
 	req := ji.client.NewRequest(url, inv.MethodName(), inv.Arguments())
 	ctx := context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{

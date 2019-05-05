@@ -15,9 +15,9 @@ import (
 )
 
 import (
-	"github.com/dubbo/dubbo-go/common/constant"
 	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbo/dubbo-go/protocol"
+	"github.com/dubbo/dubbo-go/protocol/support"
 )
 
 // todo: WritePkg_Timeout will entry *.yml
@@ -176,15 +176,9 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 	invoker := h.exporter.GetInvoker()
 	if invoker != nil {
-		attchments := map[string]string{}
-
 		url := invoker.GetUrl()
 
-		attchments[constant.PATH_KEY] = url.Path
-		attchments[constant.GROUP_KEY] = url.GetParam(constant.GROUP_KEY, "")
-		attchments[constant.SERVICE_KEY] = url.Path
-		attchments[constant.VERSION_KEY] = url.GetParam(constant.VERSION_KEY, constant.DEFAULT_VERSION)
-		result := invoker.Invoke(protocol.NewRPCInvocationForProvider(attchments))
+		result := invoker.Invoke(support.NewRPCInvocationForProvider(url))
 		if err := result.Error(); err != nil {
 			p.Header.ResponseStatus = hessian.Response_SERVER_ERROR
 			p.Body = err

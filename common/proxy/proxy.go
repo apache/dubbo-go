@@ -10,6 +10,7 @@ import (
 import (
 	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbo/dubbo-go/protocol"
+	"github.com/dubbo/dubbo-go/protocol/support"
 )
 
 // Proxy struct
@@ -58,7 +59,11 @@ func (p *Proxy) Implement(v config.RPCService) {
 				argsInterface[k] = v.Interface()
 			}
 
-			inv := protocol.NewRPCInvocationForConsumer(methodName, nil, argsInterface, in[2].Interface(), p.callBack, p.attachments, nil)
+			inv := support.NewRPCInvocationForConsumer(methodName, nil, argsInterface, in[2].Interface(), p.callBack, p.invoke.GetUrl(), nil)
+			for k, v := range p.attachments {
+				inv.SetAttachments(k, v)
+			}
+
 			result := p.invoke.Invoke(inv)
 			var err error
 			err = result.Error()
