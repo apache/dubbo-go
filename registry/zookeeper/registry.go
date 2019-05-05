@@ -250,10 +250,10 @@ func (r *ZkRegistry) Register(conf config.URL) error {
 		r.cltLock.Lock()
 		// 注意此处与consumerZookeeperRegistry的差异，consumer用的是conf.Service，
 		// 因为consumer要提供watch功能给selector使用, provider允许注册同一个service的多个group or version
-		_, ok = r.services[conf.String()]
+		_, ok = r.services[conf.Key()]
 		r.cltLock.Unlock()
 		if ok {
-			return jerrors.Errorf("Service{%s} has been registered", conf.String())
+			return jerrors.Errorf("Service{%s} has been registered", conf.Key())
 		}
 
 		err = r.register(conf)
@@ -262,7 +262,7 @@ func (r *ZkRegistry) Register(conf config.URL) error {
 		}
 
 		r.cltLock.Lock()
-		r.services[conf.String()] = conf
+		r.services[conf.Key()] = conf
 		r.cltLock.Unlock()
 
 		log.Debug("(ZkProviderRegistry)Register(conf{%#v})", conf)

@@ -167,9 +167,9 @@ func (dir *RegistryDirectory) toGroupInvokers(newInvokersMap *sync.Map) []protoc
 }
 
 func (dir *RegistryDirectory) uncacheInvoker(url config.URL) *sync.Map {
-	log.Debug("service will be deleted in cache invokers: invokers key is  %s!", url.String())
+	log.Debug("service will be deleted in cache invokers: invokers key is  %s!", url.Key())
 	newCacheInvokers := dir.cacheInvokersMap
-	newCacheInvokers.Delete(url.String())
+	newCacheInvokers.Delete(url.Key())
 	return newCacheInvokers
 }
 
@@ -181,10 +181,10 @@ func (dir *RegistryDirectory) cacheInvoker(url config.URL) *sync.Map {
 	if url.Protocol == referenceUrl.Protocol || referenceUrl.Protocol == "" {
 		url = mergeUrl(url, referenceUrl)
 
-		if _, ok := newCacheInvokers.Load(url.String()); !ok {
-			log.Debug("service will be added in cache invokers: invokers key is  %s!", url.String())
+		if _, ok := newCacheInvokers.Load(url.Key()); !ok {
+			log.Debug("service will be added in cache invokers: invokers key is  %s!", url.Key())
 			newInvoker := extension.GetProtocolExtension(protocolwrapper.FILTER).Refer(url)
-			newCacheInvokers.Store(url.String(), newInvoker)
+			newCacheInvokers.Store(url.Key(), newInvoker)
 		}
 	}
 	return newCacheInvokers

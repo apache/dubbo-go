@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/url"
 	"strconv"
+	"sync"
 	"time"
 )
 import (
@@ -33,12 +34,14 @@ type ServiceConfig struct {
 		Loadbalance string `yaml:"loadbalance"  json:"loadbalance,omitempty"`
 		Weight      int64  `yaml:"weight"  json:"weight,omitempty"`
 	} `yaml:"methods"  json:"methods,omitempty"`
-	Warmup     string `yaml:"warmup"  json:"warmup,omitempty"`
-	Retries    int64  `yaml:"retries"  json:"retries,omitempty"`
-	unexported *atomic.Bool
-	exported   *atomic.Bool
-	rpcService config.RPCService
-	exporters  []protocol.Exporter
+	Warmup        string `yaml:"warmup"  json:"warmup,omitempty"`
+	Retries       int64  `yaml:"retries"  json:"retries,omitempty"`
+	unexported    *atomic.Bool
+	exported      *atomic.Bool
+	rpcService    config.RPCService
+	exporters     []protocol.Exporter
+	cacheProtocol protocol.Protocol
+	cacheMutex    sync.Mutex
 }
 
 func NewServiceConfig() *ServiceConfig {
@@ -88,7 +91,13 @@ func (srvconfig *ServiceConfig) Export() error {
 		for _, regUrl := range regUrls {
 			regUrl.SubURL = url
 			invoker := protocol.NewBaseInvoker(*regUrl)
-			exporter := extension.GetProtocolExtension("registry").Export(invoker)
+			srvconfig.cacheMutex.Lock()
+			if srvconfig.cacheProtocol == nil {
+				log.Info("First load the registry protocol!")
+				srvconfig.cacheProtocol = extension.GetProtocolExtension("registry")
+			}
+			srvconfig.cacheMutex.Unlock()
+			exporter := srvconfig.cacheProtocol.Export(invoker)
 			srvconfig.exporters = append(srvconfig.exporters, exporter)
 		}
 	}
