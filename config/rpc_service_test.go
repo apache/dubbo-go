@@ -22,7 +22,7 @@ func (s *TestService) MethodTwo(ctx context.Context, args []interface{}, rsp *st
 }
 
 func (s *TestService) Service() string {
-	return "com.test.Service"
+	return "com.test.Path"
 }
 func (s *TestService) Version() string {
 	return ""

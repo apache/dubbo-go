@@ -22,7 +22,7 @@ var registryProtocol *RegistryProtocol
 
 type RegistryProtocol struct {
 	// Registry  Map<RegistryAddress, Registry>
-	//registies sync.Map
+	registries sync.Map
 	//To solve the problem of RMI repeated exposure port conflicts, the services that have been exposed are no longer exposed.
 	//providerurl <--> exporter
 	bounds sync.Map
@@ -34,8 +34,8 @@ func init() {
 
 func NewRegistryProtocol() *RegistryProtocol {
 	return &RegistryProtocol{
-		//registies: sync.Map{},
-		bounds: sync.Map{},
+		registries: sync.Map{},
+		bounds:     sync.Map{},
 	}
 }
 func getRegistry(regUrl *config.URL) registry.Registry {
@@ -47,17 +47,29 @@ func getRegistry(regUrl *config.URL) registry.Registry {
 	return reg
 }
 func (proto *RegistryProtocol) Refer(url config.URL) protocol.Invoker {
-	var regUrl = url
-	var serviceUrl = regUrl.SubURL
 
-	if regUrl.Protocol == constant.REGISTRY_PROTOCOL {
-		protocol := regUrl.GetParam(constant.REGISTRY_KEY, "")
-		regUrl.Protocol = protocol
+	var registryUrl = url
+	var serviceUrl = registryUrl.SubURL
+	if registryUrl.Protocol == constant.REGISTRY_PROTOCOL {
+		protocol := registryUrl.GetParam(constant.REGISTRY_KEY, "")
+		registryUrl.Protocol = protocol
 	}
-	reg := getRegistry(&regUrl)
+	var reg registry.Registry
+
+	if regI, loaded := proto.registries.Load(registryUrl.Key()); !loaded {
+		reg = getRegistry(&registryUrl)
+		proto.registries.Store(registryUrl.Key(), reg)
+	} else {
+		reg = regI.(registry.Registry)
+	}
 
 	//new registry directory for store service url from registry
-	directory := directory2.NewRegistryDirectory(&regUrl, reg)
+	directory := directory2.NewRegistryDirectory(&registryUrl, reg)
+
+	err := reg.Register(*serviceUrl)
+	if err != nil {
+		log.Error("consumer service %v register registry %v error, error message is %s", serviceUrl.String(), registryUrl.String(), err.Error())
+	}
 	go directory.Subscribe(*serviceUrl)
 
 	//new cluster invoker
@@ -69,7 +81,14 @@ func (proto *RegistryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 	registryUrl := proto.getRegistryUrl(invoker)
 	providerUrl := proto.getProviderUrl(invoker)
 
-	reg := getRegistry(&registryUrl)
+	var reg registry.Registry
+
+	if regI, loaded := proto.registries.Load(registryUrl.Key()); !loaded {
+		reg = getRegistry(&registryUrl)
+		proto.registries.Store(registryUrl.Key(), reg)
+	} else {
+		reg = regI.(registry.Registry)
+	}
 
 	err := reg.Register(providerUrl)
 	if err != nil {

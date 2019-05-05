@@ -33,13 +33,13 @@ import (
 //	serviceConf, ok = r.services[conf.Key()]
 //	r.cltLock.Unlock()
 //	if !ok {
-//		return nil, jerrors.Errorf("Service{%s} has not been registered", conf.Key())
+//		return nil, jerrors.Errorf("Path{%s} has not been registered", conf.Key())
 //	}
 //	if !ok {
-//		return nil, jerrors.Errorf("Service{%s}: failed to get serviceConfigIf type", conf.Key())
+//		return nil, jerrors.Errorf("Path{%s}: failed to get serviceConfigIf type", conf.Key())
 //	}
 //
-//	dubboPath = fmt.Sprintf("/dubbo/%s/providers", conf.Service())
+//	dubboPath = fmt.Sprintf("/dubbo/%s/providers", conf.Path())
 //	err = r.validateZookeeperClient()
 //	if err != nil {
 //		return nil, jerrors.Trace(err)

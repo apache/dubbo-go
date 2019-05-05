@@ -20,7 +20,7 @@ type TestService struct {
 }
 
 func (s *TestService) Service() string {
-	return "com.test.Service"
+	return "com.test.Path"
 }
 func (s *TestService) Version() string {
 	return ""

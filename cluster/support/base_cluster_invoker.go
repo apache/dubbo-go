@@ -59,7 +59,7 @@ func (invoker *baseClusterInvoker) checkWhetherDestroyed() error {
 	if invoker.destroyed.IsSet() {
 		ip, _ := gxnet.GetLocalIP()
 		return jerrors.Errorf("Rpc cluster invoker for %v on consumer %v use dubbo version %v is now destroyed! can not invoke any more. ",
-			invoker.directory.GetUrl().Service, ip, version.Version)
+			invoker.directory.GetUrl().Service(), ip, version.Version)
 	}
 	return nil
 }

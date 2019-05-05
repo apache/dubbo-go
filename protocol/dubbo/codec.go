@@ -42,7 +42,7 @@ type DubboPackage struct {
 }
 
 func (p DubboPackage) String() string {
-	return fmt.Sprintf("DubboPackage: Header-%v, Service-%v, Body-%v", p.Header, p.Service, p.Body)
+	return fmt.Sprintf("DubboPackage: Header-%v, Path-%v, Body-%v", p.Header, p.Service, p.Body)
 }
 
 func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {

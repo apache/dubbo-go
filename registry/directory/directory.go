@@ -57,7 +57,7 @@ func NewRegistryDirectory(url *config.URL, registry registry.Registry, opts ...O
 		BaseDirectory:    directory.NewBaseDirectory(url),
 		cacheInvokers:    []protocol.Invoker{},
 		cacheInvokersMap: &sync.Map{},
-		serviceType:      url.SubURL.Service,
+		serviceType:      url.SubURL.Service(),
 		registry:         registry,
 		Options:          options,
 	}
@@ -89,6 +89,7 @@ func (dir *RegistryDirectory) Subscribe(url config.URL) {
 				time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
 				return
 			} else {
+				log.Info("update begin, service event: %v", serviceEvent.String())
 				go dir.update(serviceEvent)
 			}
 
@@ -115,10 +116,10 @@ func (dir *RegistryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 
 	switch res.Action {
 	case registry.ServiceAdd:
-		//dir.cacheService.Add(res.Service, dir.serviceTTL)
+		//dir.cacheService.Add(res.Path, dir.serviceTTL)
 		newCacheInvokersMap = *dir.cacheInvoker(res.Service)
 	case registry.ServiceDel:
-		//dir.cacheService.Del(res.Service, dir.serviceTTL)
+		//dir.cacheService.Del(res.Path, dir.serviceTTL)
 		newCacheInvokersMap = *dir.uncacheInvoker(res.Service)
 		log.Info("selector delete service url{%s}", res.Service)
 	default:

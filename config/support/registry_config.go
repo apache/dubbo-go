@@ -28,9 +28,9 @@ func loadRegistries(registriesIds []ConfigRegistry, registries []RegistryConfig,
 		for _, registryConf := range registries {
 			if string(registry) == registryConf.Id {
 
-				url, err := config.NewURL(context.TODO(), registryConf.Address, config.WithParams(registryConf.getUrlMap(roleType)),
+				url, err := config.NewURL(context.TODO(), constant.REGISTRY_PROTOCOL+"://"+registryConf.Address, config.WithParams(registryConf.getUrlMap(roleType)),
 					config.WithUsername(registryConf.Username), config.WithPassword(registryConf.Password),
-					config.WithProtocol(constant.REGISTRY_PROTOCOL))
+				)
 
 				if err != nil {
 					log.Error("The registry id:%s url is invalid ,and will skip the registry, error: %#v", registryConf.Id, err)
