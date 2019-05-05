@@ -219,8 +219,8 @@ func Load() (map[string]*ReferenceConfig, map[string]*ServiceConfig) {
 		length := len(consumerConfig.References)
 		for index := 0; index < length; index++ {
 			con := &consumerConfig.References[index]
-			con.Implement(conServices[con.InterfaceName])
 			con.Refer()
+			con.Implement(conServices[con.InterfaceName])
 			refMap[con.InterfaceName] = con
 		}
 	}
