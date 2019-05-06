@@ -189,7 +189,6 @@ LOOP:
 					for _, confIf = range r.services {
 						services = append(services, confIf)
 					}
-					r.cltLock.Unlock()
 
 					flag = true
 					for _, confIf = range services {
@@ -201,6 +200,7 @@ LOOP:
 							break
 						}
 					}
+					r.cltLock.Unlock()
 					if flag {
 						break
 					}
