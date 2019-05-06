@@ -47,7 +47,7 @@ func main() {
 
 	initProfiling()
 
-	time.Sleep(5e9)
+	time.Sleep(10e9)
 
 	gxlog.CInfo("\n\n\nstart to test jsonrpc")
 	user := &JsonRPCUser{}
