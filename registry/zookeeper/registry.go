@@ -102,8 +102,11 @@ func NewZkRegistry(url *config.URL) (registry.Registry, error) {
 
 	return r, nil
 }
+func (r *ZkRegistry) GetUrl() config.URL {
+	return *r.URL
+}
 
-func (r *ZkRegistry) Close() {
+func (r *ZkRegistry) Destroy() {
 	close(r.done)
 	r.wg.Wait()
 	r.closeRegisters()
@@ -135,7 +138,7 @@ func (r *ZkRegistry) validateZookeeperClient() error {
 	if r.client.conn == nil {
 		var event <-chan zk.Event
 		r.client.conn, event, err = zk.Connect(r.client.zkAddrs, r.client.timeout)
-		if err != nil {
+		if err == nil {
 			r.client.wait.Add(1)
 			go r.client.handleZkEvent(event)
 		}
@@ -417,11 +420,11 @@ func (r *ZkRegistry) closeRegisters() {
 	r.services = nil
 }
 
-func (r *ZkRegistry) IsClosed() bool {
+func (r *ZkRegistry) IsAvailable() bool {
 	select {
 	case <-r.done:
-		return true
-	default:
 		return false
+	default:
+		return true
 	}
 }

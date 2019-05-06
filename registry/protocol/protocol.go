@@ -64,9 +64,12 @@ func (proto *RegistryProtocol) Refer(url config.URL) protocol.Invoker {
 	}
 
 	//new registry directory for store service url from registry
-	directory := directory2.NewRegistryDirectory(&registryUrl, reg)
-
-	err := reg.Register(*serviceUrl)
+	directory, err := directory2.NewRegistryDirectory(&registryUrl, reg)
+	if err != nil {
+		log.Error("consumer service %v  create registry directory  error, error message is %s, and will return nil invoker!", serviceUrl.String(), err.Error())
+		return nil
+	}
+	err = reg.Register(*serviceUrl)
 	if err != nil {
 		log.Error("consumer service %v register registry %v error, error message is %s", serviceUrl.String(), registryUrl.String(), err.Error())
 	}
@@ -113,6 +116,7 @@ func (proto *RegistryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 }
 
 func (*RegistryProtocol) Destroy() {
+
 }
 
 func (*RegistryProtocol) getRegistryUrl(invoker protocol.Invoker) config.URL {

@@ -27,12 +27,6 @@ type Options struct {
 }
 type Option func(*Options)
 
-func WithServiceTTL(ttl time.Duration) Option {
-	return func(o *Options) {
-		o.serviceTTL = ttl
-	}
-}
-
 type RegistryDirectory struct {
 	directory.BaseDirectory
 	cacheInvokers    []protocol.Invoker
@@ -44,7 +38,7 @@ type RegistryDirectory struct {
 	Options
 }
 
-func NewRegistryDirectory(url *config.URL, registry registry.Registry, opts ...Option) *RegistryDirectory {
+func NewRegistryDirectory(url *config.URL, registry registry.Registry, opts ...Option) (*RegistryDirectory, error) {
 	options := Options{
 		//default 300s
 		serviceTTL: time.Duration(300e9),
@@ -52,7 +46,9 @@ func NewRegistryDirectory(url *config.URL, registry registry.Registry, opts ...O
 	for _, opt := range opts {
 		opt(&options)
 	}
-
+	if url.SubURL == nil {
+		return nil, jerrors.Errorf("url is invalid, suburl can not be nil")
+	}
 	return &RegistryDirectory{
 		BaseDirectory:    directory.NewBaseDirectory(url),
 		cacheInvokers:    []protocol.Invoker{},
@@ -60,20 +56,20 @@ func NewRegistryDirectory(url *config.URL, registry registry.Registry, opts ...O
 		serviceType:      url.SubURL.Service(),
 		registry:         registry,
 		Options:          options,
-	}
+	}, nil
 }
 
 //subscibe from registry
 func (dir *RegistryDirectory) Subscribe(url config.URL) {
 	for {
-		if dir.registry.IsClosed() {
+		if !dir.registry.IsAvailable() {
 			log.Warn("event listener game over.")
 			return
 		}
 
 		listener, err := dir.registry.Subscribe(url)
 		if err != nil {
-			if dir.registry.IsClosed() {
+			if !dir.registry.IsAvailable() {
 				log.Warn("event listener game over.")
 				return
 			}
@@ -159,7 +155,7 @@ func (dir *RegistryDirectory) toGroupInvokers(newInvokersMap *sync.Map) []protoc
 	} else {
 		for _, invokers := range groupInvokersMap {
 			staticDir := directory.NewStaticDirectory(invokers)
-			cluster := extension.GetCluster(dir.GetUrl().SubURL.Params.Get(constant.CLUSTER_KEY))
+			cluster := extension.GetCluster(dir.GetUrl().SubURL.GetParam(constant.CLUSTER_KEY, constant.DEFAULT_CLUSTER))
 			groupInvokersList = append(groupInvokersList, cluster.Join(staticDir))
 		}
 	}
@@ -184,7 +180,9 @@ func (dir *RegistryDirectory) cacheInvoker(url config.URL) *sync.Map {
 		if _, ok := newCacheInvokers.Load(url.Key()); !ok {
 			log.Debug("service will be added in cache invokers: invokers key is  %s!", url.Key())
 			newInvoker := extension.GetProtocolExtension(protocolwrapper.FILTER).Refer(url)
-			newCacheInvokers.Store(url.Key(), newInvoker)
+			if newInvoker != nil {
+				newCacheInvokers.Store(url.Key(), newInvoker)
+			}
 		}
 	}
 	return newCacheInvokers
@@ -197,10 +195,12 @@ func (dir *RegistryDirectory) List(invocation protocol.Invocation) []protocol.In
 }
 
 func (dir *RegistryDirectory) IsAvailable() bool {
-	return true
+	return dir.BaseDirectory.IsAvailable()
 }
 
 func (dir *RegistryDirectory) Destroy() {
+	//dir.registry.Destroy() should move it in protocol
+	//TODO:unregister & unsubscribe
 	dir.BaseDirectory.Destroy()
 }
 
