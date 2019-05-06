@@ -2,7 +2,7 @@ package dubbo
 
 import (
 	"fmt"
-	"github.com/dubbo/dubbo-go/protocol"
+	"github.com/dubbo/go-for-apache-dubbo/protocol"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net"
@@ -16,7 +16,7 @@ import (
 )
 
 import (
-	"github.com/dubbo/dubbo-go/config"
+	"github.com/dubbo/go-for-apache-dubbo/config"
 )
 
 var srvConf *ServerConfig

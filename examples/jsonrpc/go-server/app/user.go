@@ -4,7 +4,7 @@ import (
 	// "encoding/json"
 	"context"
 	"fmt"
-	"github.com/dubbo/dubbo-go/config/support"
+	"github.com/dubbo/go-for-apache-dubbo/config/support"
 	"time"
 )
 

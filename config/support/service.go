@@ -1,6 +1,6 @@
 package support
 
-import "github.com/dubbo/dubbo-go/config"
+import "github.com/dubbo/go-for-apache-dubbo/config"
 
 var (
 	conServices = map[string]config.RPCService{} // service name -> service

@@ -17,16 +17,16 @@ import (
 )
 
 import (
-	"github.com/dubbo/dubbo-go/config/support"
+	"github.com/dubbo/go-for-apache-dubbo/config/support"
 
-	_ "github.com/dubbo/dubbo-go/protocol/jsonrpc"
-	_ "github.com/dubbo/dubbo-go/registry/protocol"
+	_ "github.com/dubbo/go-for-apache-dubbo/protocol/jsonrpc"
+	_ "github.com/dubbo/go-for-apache-dubbo/registry/protocol"
 
-	_ "github.com/dubbo/dubbo-go/filter/imp"
+	_ "github.com/dubbo/go-for-apache-dubbo/filter/imp"
 
-	_ "github.com/dubbo/dubbo-go/cluster/loadbalance"
-	_ "github.com/dubbo/dubbo-go/cluster/support"
-	_ "github.com/dubbo/dubbo-go/registry/zookeeper"
+	_ "github.com/dubbo/go-for-apache-dubbo/cluster/loadbalance"
+	_ "github.com/dubbo/go-for-apache-dubbo/cluster/support"
+	_ "github.com/dubbo/go-for-apache-dubbo/registry/zookeeper"
 )
 
 var (

@@ -3,7 +3,7 @@ package config
 import (
 	"context"
 	"fmt"
-	"github.com/dubbo/dubbo-go/common/constant"
+	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"net"
 	"net/url"
 	"strconv"

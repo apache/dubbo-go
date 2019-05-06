@@ -1,16 +1,16 @@
 package protocolwrapper
 
 import (
-	"github.com/dubbo/dubbo-go/filter/imp"
 	"strings"
 )
 
 import (
-	"github.com/dubbo/dubbo-go/common/constant"
-	"github.com/dubbo/dubbo-go/common/extension"
-	"github.com/dubbo/dubbo-go/config"
-	"github.com/dubbo/dubbo-go/filter"
-	"github.com/dubbo/dubbo-go/protocol"
+	"github.com/dubbo/go-for-apache-dubbo/common/constant"
+	"github.com/dubbo/go-for-apache-dubbo/common/extension"
+	"github.com/dubbo/go-for-apache-dubbo/config"
+	"github.com/dubbo/go-for-apache-dubbo/filter"
+	"github.com/dubbo/go-for-apache-dubbo/filter/imp"
+	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
 const FILTER = "filter"

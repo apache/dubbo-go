@@ -1,9 +1,9 @@
 package cluster
 
 import (
-	"github.com/dubbo/dubbo-go/cluster"
-	"github.com/dubbo/dubbo-go/common/constant"
-	"github.com/dubbo/dubbo-go/protocol"
+	"github.com/dubbo/go-for-apache-dubbo/cluster"
+	"github.com/dubbo/go-for-apache-dubbo/common/constant"
+	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
 type registryAwareClusterInvoker struct {

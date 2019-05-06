@@ -4,7 +4,7 @@ import (
 	"github.com/tevino/abool"
 )
 import (
-	"github.com/dubbo/dubbo-go/config"
+	"github.com/dubbo/go-for-apache-dubbo/config"
 )
 
 type BaseDirectory struct {

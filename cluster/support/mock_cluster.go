@@ -1,9 +1,9 @@
 package cluster
 
 import (
-	"github.com/dubbo/dubbo-go/cluster"
-	"github.com/dubbo/dubbo-go/config"
-	"github.com/dubbo/dubbo-go/protocol"
+	"github.com/dubbo/go-for-apache-dubbo/cluster"
+	"github.com/dubbo/go-for-apache-dubbo/config"
+	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
 type MockCluster struct {

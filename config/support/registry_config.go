@@ -2,14 +2,14 @@ package support
 
 import (
 	"context"
-	"github.com/dubbo/dubbo-go/common/constant"
+	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"net/url"
 	"strconv"
 )
 import (
 	log "github.com/AlexStocks/log4go"
 )
-import "github.com/dubbo/dubbo-go/config"
+import "github.com/dubbo/go-for-apache-dubbo/config"
 
 type RegistryConfig struct {
 	Id         string `required:"true" yaml:"id"  json:"id,omitempty"`

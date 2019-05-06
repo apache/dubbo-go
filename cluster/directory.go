@@ -1,8 +1,8 @@
 package cluster
 
 import (
-	"github.com/dubbo/dubbo-go/common"
-	"github.com/dubbo/dubbo-go/protocol"
+	"github.com/dubbo/go-for-apache-dubbo/common"
+	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
 // Extension - Directory
