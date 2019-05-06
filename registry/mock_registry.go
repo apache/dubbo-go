@@ -1,7 +1,7 @@
 package registry
 
 import (
-	"github.com/dubbo/dubbo-go/config"
+	"github.com/dubbo/go-for-apache-dubbo/config"
 )
 
 type MockRegistry struct {

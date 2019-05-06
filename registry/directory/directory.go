@@ -11,13 +11,13 @@ import (
 )
 
 import (
-	"github.com/dubbo/dubbo-go/cluster/directory"
-	"github.com/dubbo/dubbo-go/common/constant"
-	"github.com/dubbo/dubbo-go/common/extension"
-	"github.com/dubbo/dubbo-go/config"
-	"github.com/dubbo/dubbo-go/protocol"
-	"github.com/dubbo/dubbo-go/protocol/protocolwrapper"
-	"github.com/dubbo/dubbo-go/registry"
+	"github.com/dubbo/go-for-apache-dubbo/cluster/directory"
+	"github.com/dubbo/go-for-apache-dubbo/common/constant"
+	"github.com/dubbo/go-for-apache-dubbo/common/extension"
+	"github.com/dubbo/go-for-apache-dubbo/config"
+	"github.com/dubbo/go-for-apache-dubbo/protocol"
+	"github.com/dubbo/go-for-apache-dubbo/protocol/protocolwrapper"
+	"github.com/dubbo/go-for-apache-dubbo/registry"
 )
 
 const RegistryConnDelay = 3

@@ -20,8 +20,8 @@ import (
 )
 
 import (
-	"github.com/dubbo/dubbo-go/common/constant"
-	"github.com/dubbo/dubbo-go/config"
+	"github.com/dubbo/go-for-apache-dubbo/common/constant"
+	"github.com/dubbo/go-for-apache-dubbo/config"
 )
 
 //////////////////////////////////////////////

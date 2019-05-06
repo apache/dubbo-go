@@ -1,8 +1,8 @@
 package protocolwrapper
 
 import (
-	"github.com/dubbo/dubbo-go/config"
-	"github.com/dubbo/dubbo-go/protocol"
+	"github.com/dubbo/go-for-apache-dubbo/config"
+	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
 type mockProtocolFilter struct {

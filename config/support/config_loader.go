@@ -17,7 +17,7 @@ import (
 )
 
 import (
-	"github.com/dubbo/dubbo-go/common/constant"
+	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 )
 
 var (

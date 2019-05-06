@@ -9,7 +9,7 @@ import (
 )
 
 import (
-	"github.com/dubbo/dubbo-go/config"
+	"github.com/dubbo/go-for-apache-dubbo/config"
 )
 
 // Extension - protocol

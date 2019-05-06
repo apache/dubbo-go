@@ -10,10 +10,10 @@ import (
 )
 
 import (
-	"github.com/dubbo/dubbo-go/common/constant"
-	"github.com/dubbo/dubbo-go/config"
-	"github.com/dubbo/dubbo-go/protocol"
-	"github.com/dubbo/dubbo-go/protocol/support"
+	"github.com/dubbo/go-for-apache-dubbo/common/constant"
+	"github.com/dubbo/go-for-apache-dubbo/config"
+	"github.com/dubbo/go-for-apache-dubbo/protocol"
+	"github.com/dubbo/go-for-apache-dubbo/protocol/support"
 )
 
 type JsonrpcInvoker struct {

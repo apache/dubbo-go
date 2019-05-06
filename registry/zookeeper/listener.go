@@ -15,8 +15,8 @@ import (
 )
 
 import (
-	"github.com/dubbo/dubbo-go/config"
-	"github.com/dubbo/dubbo-go/registry"
+	"github.com/dubbo/go-for-apache-dubbo/config"
+	"github.com/dubbo/go-for-apache-dubbo/registry"
 )
 
 const (
