@@ -11,6 +11,7 @@ const (
 	DEFAULT_PROTOCOL    = "dubbo"
 	DEFAULT_VERSION     = ""
 	DEFAULT_REG_TIMEOUT = "10s"
+	DEFAULT_CLUSTER     = "failover"
 )
 
 const (

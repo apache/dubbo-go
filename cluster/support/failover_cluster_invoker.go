@@ -80,6 +80,6 @@ func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) pr
 	ip, _ := gxnet.GetLocalIP()
 	return &protocol.RPCResult{Err: jerrors.Errorf("Failed to invoke the method %v in the service %v . Tried %v times of "+
 		"the providers %v (%v/%v)from the registry %v on the consumer %v using the dubbo version %v. Last error is %v.",
-		methodName, invocation, invoker.GetUrl().Service(), retries, providers, len(providers), len(invokers), invoker.directory.GetUrl(), ip, version.Version, result.Error(),
+		methodName, invoker.GetUrl().Service(), retries, providers, len(providers), len(invokers), invoker.directory.GetUrl(), ip, version.Version, result.Error().Error(),
 	)}
 }
