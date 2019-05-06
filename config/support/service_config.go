@@ -99,7 +99,7 @@ func (srvconfig *ServiceConfig) Export() error {
 			}
 			srvconfig.cacheMutex.Unlock()
 			exporter := srvconfig.cacheProtocol.Export(invoker)
-			if exporter == nil{
+			if exporter == nil {
 				panic(jerrors.New("New exporter error"))
 			}
 			srvconfig.exporters = append(srvconfig.exporters, exporter)

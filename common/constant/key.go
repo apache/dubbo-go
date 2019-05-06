@@ -11,7 +11,7 @@ const (
 	PATH_KEY      = "path"
 	SERVICE_KEY   = "service"
 	METHODS_KEY   = "methods"
-	TIMEOUT_KEY = "timeout"
+	TIMEOUT_KEY   = "timeout"
 )
 
 const (
