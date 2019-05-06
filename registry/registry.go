@@ -1,25 +1,26 @@
 package registry
 
-//////////////////////////////////////////////
-// Registry Interface
-//////////////////////////////////////////////
+import (
+	"github.com/dubbo/go-for-apache-dubbo/common"
+	"github.com/dubbo/go-for-apache-dubbo/config"
+)
 
-// for service discovery/registry
+// Extension - Registry
 type Registry interface {
-
+	common.Node
 	//used for service provider calling , register services to registry
 	//And it is also used for service consumer calling , register services cared about ,for dubbo's admin monitoring.
-	Register(ServiceConfig) error
+	Register(url config.URL) error
 
 	//used for service consumer ,start subscribe service event from registry
-	Subscribe() (Listener, error)
+	Subscribe(config.URL) (Listener, error)
 
 	//input the serviceConfig , registry should return serviceUrlArray with multi location(provider nodes) available
-	GetService(ServiceConfig) ([]ServiceURL, error)
+	//GetService(SubURL) ([]SubURL, error)
 	//close the registry for Elegant closing
-	Close()
+	//Close()
 	//return if the registry is closed for consumer subscribing
-	IsClosed() bool
+	//IsClosed() bool
 }
 
 type Listener interface {

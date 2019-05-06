@@ -1,12 +1,21 @@
 package main
 
 import (
+	"context"
 	"fmt"
 )
 
 import (
 	"github.com/AlexStocks/goext/time"
 )
+
+import (
+	"github.com/dubbo/go-for-apache-dubbo/config/support"
+)
+
+func init() {
+	support.SetConService(new(UserProvider))
+}
 
 type JsonRPCUser struct {
 	ID   string `json:"id"`
@@ -21,4 +30,17 @@ func (u JsonRPCUser) String() string {
 		"User{ID:%s, Name:%s, Age:%d, Time:%s, Sex:%s}",
 		u.ID, u.Name, u.Age, gxtime.YMDPrint(int(u.Time), 0), u.Sex,
 	)
+}
+
+type UserProvider struct {
+	GetUser  func(ctx context.Context, req []interface{}, rsp *JsonRPCUser) error
+	GetUser1 func(ctx context.Context, req []interface{}, rsp *JsonRPCUser) error
+}
+
+func (u *UserProvider) Service() string {
+	return "com.ikurento.user.UserProvider"
+}
+
+func (u *UserProvider) Version() string {
+	return ""
 }

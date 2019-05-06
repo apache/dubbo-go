@@ -1,6 +1,7 @@
 package zookeeper
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"sync"
@@ -14,8 +15,8 @@ import (
 )
 
 import (
-	"github.com/dubbo/dubbo-go/plugins"
-	"github.com/dubbo/dubbo-go/registry"
+	"github.com/dubbo/go-for-apache-dubbo/config"
+	"github.com/dubbo/go-for-apache-dubbo/registry"
 )
 
 const (
@@ -83,7 +84,7 @@ func (l *zkEventListener) listenServiceNodeEvent(zkPath string) bool {
 	return false
 }
 
-func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, conf registry.ServiceConfig) {
+func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, conf config.URL) {
 	contains := func(s []string, e string) bool {
 		for _, a := range s {
 			if a == e {
@@ -103,7 +104,7 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 	// a node was added -- listen the new node
 	var (
 		newNode    string
-		serviceURL registry.ServiceURL
+		serviceURL config.URL
 	)
 	for _, n := range newChildren {
 		if contains(children, n) {
@@ -112,19 +113,20 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 
 		newNode = path.Join(zkPath, n)
 		log.Info("add zkNode{%s}", newNode)
-		serviceURL, err = plugins.DefaultServiceURL()(n)
+		//context.TODO
+		serviceURL, err = config.NewURL(context.TODO(), n)
 		if err != nil {
-			log.Error("NewDefaultServiceURL(%s) = error{%v}", n, jerrors.ErrorStack(err))
+			log.Error("NewURL(%s) = error{%v}", n, jerrors.ErrorStack(err))
 			continue
 		}
-		if !conf.ServiceEqual(serviceURL) {
-			log.Warn("serviceURL{%s} is not compatible with ServiceConfig{%#v}", serviceURL, conf)
+		if !conf.URLEqual(serviceURL) {
+			log.Warn("serviceURL{%s} is not compatible with SubURL{%#v}", serviceURL.Key(), conf.Key())
 			continue
 		}
 		log.Info("add serviceURL{%s}", serviceURL)
 		l.events <- zkEvent{&registry.ServiceEvent{Action: registry.ServiceAdd, Service: serviceURL}, nil}
 		// listen l service node
-		go func(node string, serviceURL registry.ServiceURL) {
+		go func(node string, serviceURL config.URL) {
 			log.Info("delete zkNode{%s}", node)
 			if l.listenServiceNodeEvent(node) {
 				log.Info("delete serviceURL{%s}", serviceURL)
@@ -143,21 +145,21 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 
 		oldNode = path.Join(zkPath, n)
 		log.Warn("delete zkPath{%s}", oldNode)
-		serviceURL, err = registry.NewDefaultServiceURL(n)
-		if !conf.ServiceEqual(serviceURL) {
-			log.Warn("serviceURL{%s} has been deleted is not compatible with ServiceConfig{%#v}", serviceURL, conf)
+		serviceURL, err = config.NewURL(context.TODO(), n)
+		if !conf.URLEqual(serviceURL) {
+			log.Warn("serviceURL{%s} has been deleted is not compatible with SubURL{%#v}", serviceURL.Key(), conf.Key())
 			continue
 		}
 		log.Warn("delete serviceURL{%s}", serviceURL)
 		if err != nil {
-			log.Error("NewDefaultServiceURL(i{%s}) = error{%v}", n, jerrors.ErrorStack(err))
+			log.Error("NewURL(i{%s}) = error{%v}", n, jerrors.ErrorStack(err))
 			continue
 		}
 		l.events <- zkEvent{&registry.ServiceEvent{Action: registry.ServiceDel, Service: serviceURL}, nil}
 	}
 }
 
-func (l *zkEventListener) listenDirEvent(zkPath string, conf registry.ServiceConfig) {
+func (l *zkEventListener) listenDirEvent(zkPath string, conf config.URL) {
 	l.wg.Add(1)
 	defer l.wg.Done()
 
@@ -193,7 +195,7 @@ func (l *zkEventListener) listenDirEvent(zkPath string, conf registry.ServiceCon
 				continue
 			case <-l.client.done():
 				l.client.unregisterEvent(zkPath, &event)
-				log.Warn("client.done(), listen(path{%s}, ServiceConfig{%#v}) goroutine exit now...", zkPath, conf)
+				log.Warn("client.done(), listen(path{%s}, ReferenceConfig{%#v}) goroutine exit now...", zkPath, conf)
 				return
 			case <-event:
 				log.Info("get zk.EventNodeDataChange notify event")
@@ -213,7 +215,7 @@ func (l *zkEventListener) listenDirEvent(zkPath string, conf registry.ServiceCon
 			}
 			l.handleZkNodeEvent(zkEvent.Path, children, conf)
 		case <-l.client.done():
-			log.Warn("client.done(), listen(path{%s}, ServiceConfig{%#v}) goroutine exit now...", zkPath, conf)
+			log.Warn("client.done(), listen(path{%s}, ReferenceConfig{%#v}) goroutine exit now...", zkPath, conf)
 			return
 		}
 	}
@@ -223,16 +225,16 @@ func (l *zkEventListener) listenDirEvent(zkPath string, conf registry.ServiceCon
 // registry.go:Listen -> listenServiceEvent -> listenDirEvent -> listenServiceNodeEvent
 //                            |
 //                            --------> listenServiceNodeEvent
-func (l *zkEventListener) listenServiceEvent(conf registry.ServiceConfig) {
+func (l *zkEventListener) listenServiceEvent(conf config.URL) {
 	var (
 		err        error
 		zkPath     string
 		dubboPath  string
 		children   []string
-		serviceURL registry.ServiceURL
+		serviceURL config.URL
 	)
 
-	zkPath = fmt.Sprintf("/dubbo/%s/providers", conf.Service())
+	zkPath = fmt.Sprintf("/dubbo%s/providers", conf.Path)
 
 	l.serviceMapLock.Lock()
 	_, ok := l.serviceMap[zkPath]
@@ -254,14 +256,13 @@ func (l *zkEventListener) listenServiceEvent(conf registry.ServiceConfig) {
 	}
 
 	for _, c := range children {
-
-		serviceURL, err = plugins.DefaultServiceURL()(c)
+		serviceURL, err = config.NewURL(context.TODO(), c)
 		if err != nil {
-			log.Error("NewDefaultServiceURL(r{%s}) = error{%v}", c, err)
+			log.Error("NewURL(r{%s}) = error{%v}", c, err)
 			continue
 		}
-		if !conf.ServiceEqual(serviceURL) {
-			log.Warn("serviceURL{%s} is not compatible with ServiceConfig{%#v}", serviceURL, conf)
+		if !conf.URLEqual(serviceURL) {
+			log.Warn("serviceURL %v is not compatible with SubURL %v", serviceURL.Key(), conf.Key())
 			continue
 		}
 		log.Debug("add serviceUrl{%s}", serviceURL)
@@ -270,7 +271,7 @@ func (l *zkEventListener) listenServiceEvent(conf registry.ServiceConfig) {
 		// listen l service node
 		dubboPath = path.Join(zkPath, c)
 		log.Info("listen dubbo service key{%s}", dubboPath)
-		go func(zkPath string, serviceURL registry.ServiceURL) {
+		go func(zkPath string, serviceURL config.URL) {
 			if l.listenServiceNodeEvent(dubboPath) {
 				log.Debug("delete serviceUrl{%s}", serviceURL)
 				l.events <- zkEvent{&registry.ServiceEvent{Action: registry.ServiceDel, Service: serviceURL}, nil}
@@ -280,7 +281,7 @@ func (l *zkEventListener) listenServiceEvent(conf registry.ServiceConfig) {
 	}
 
 	log.Info("listen dubbo path{%s}", zkPath)
-	go func(zkPath string, conf registry.ServiceConfig) {
+	go func(zkPath string, conf config.URL) {
 		l.listenDirEvent(zkPath, conf)
 		log.Warn("listenDirEvent(zkPath{%s}) goroutine exit now", zkPath)
 	}(zkPath, conf)

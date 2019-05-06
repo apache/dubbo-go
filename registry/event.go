@@ -5,6 +5,9 @@ import (
 	"math/rand"
 	"time"
 )
+import (
+	"github.com/dubbo/go-for-apache-dubbo/config"
+)
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
@@ -36,9 +39,9 @@ func (t ServiceEventType) String() string {
 
 type ServiceEvent struct {
 	Action  ServiceEventType
-	Service ServiceURL
+	Service config.URL
 }
 
 func (e ServiceEvent) String() string {
-	return fmt.Sprintf("ServiceEvent{Action{%s}, Service{%s}}", e.Action, e.Service)
+	return fmt.Sprintf("ServiceEvent{Action{%s}, Path{%s}}", e.Action, e.Service)
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	// "encoding/json"
 	"context"
 	"fmt"
 	"strconv"
@@ -13,7 +12,15 @@ import (
 	"github.com/dubbogo/hessian2"
 )
 
+import (
+	"github.com/dubbo/go-for-apache-dubbo/config/support"
+)
+
 type Gender hessian.JavaEnum
+
+func init() {
+	support.SetProService(new(UserProvider))
+}
 
 const (
 	MAN hessian.JavaEnum = iota
@@ -53,7 +60,7 @@ func (g Gender) EnumValue(s string) hessian.JavaEnum {
 }
 
 type (
-	DubboUser struct {
+	User struct {
 		// !!! Cannot define lowercase names of variable
 		Id   string
 		Name string
@@ -63,42 +70,42 @@ type (
 	}
 
 	UserProvider struct {
-		user map[string]DubboUser
+		user map[string]User
 	}
 )
 
-func (u DubboUser) String() string {
+var (
+	DefaultUser = User{
+		Id: "0", Name: "Alex Stocks", Age: 31,
+		Sex: Gender(MAN),
+	}
+
+	userMap = UserProvider{user: make(map[string]User)}
+)
+
+func init() {
+	userMap.user["A000"] = DefaultUser
+	userMap.user["A001"] = User{Id: "001", Name: "ZhangSheng", Age: 18, Sex: Gender(MAN)}
+	userMap.user["A002"] = User{Id: "002", Name: "Lily", Age: 20, Sex: Gender(WOMAN)}
+	userMap.user["A003"] = User{Id: "113", Name: "Moorse", Age: 30, Sex: Gender(WOMAN)}
+	for k, v := range userMap.user {
+		v.Time = time.Now()
+		userMap.user[k] = v
+	}
+}
+
+func (u User) String() string {
 	return fmt.Sprintf(
 		"User{Id:%s, Name:%s, Age:%d, Time:%s, Sex:%s}",
 		u.Id, u.Name, u.Age, u.Time, u.Sex,
 	)
 }
 
-func (DubboUser) JavaClassName() string {
+func (u User) JavaClassName() string {
 	return "com.ikurento.user.User"
 }
 
-var (
-	DefaultUser = DubboUser{
-		Id: "0", Name: "Alex Stocks", Age: 31,
-		Sex: Gender(MAN),
-	}
-
-	userMap = UserProvider{user: make(map[string]DubboUser)}
-)
-
-func init() {
-	//DefaultUser.Sex = DefaultUser.sex.String()
-	userMap.user["A000"] = DefaultUser
-	userMap.user["A001"] = DubboUser{Id: "001", Name: "ZhangSheng", Age: 18, Sex: Gender(MAN)}
-	userMap.user["A002"] = DubboUser{Id: "002", Name: "Lily", Age: 20, Sex: Gender(WOMAN)}
-	userMap.user["A003"] = DubboUser{Id: "113", Name: "Moorse", Age: 30, Sex: Gender(WOMAN)}
-	for k, v := range userMap.user {
-		userMap.user[k] = v
-	}
-}
-
-func (u *UserProvider) getUser(userId string) (*DubboUser, error) {
+func (u *UserProvider) getUser(userId string) (*User, error) {
 	if user, ok := userMap.user[userId]; ok {
 		return &user, nil
 	}
@@ -106,13 +113,10 @@ func (u *UserProvider) getUser(userId string) (*DubboUser, error) {
 	return nil, fmt.Errorf("invalid user id:%s", userId)
 }
 
-/*
-	!!! req must be []interface{}
-*/
-func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *DubboUser) error {
+func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User) error {
 	var (
 		err  error
-		user *DubboUser
+		user *User
 	)
 
 	gxlog.CInfo("req:%#v", req)
@@ -120,6 +124,11 @@ func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *Dubb
 	if err == nil {
 		*rsp = *user
 		gxlog.CInfo("rsp:%#v", rsp)
+		// s, _ := json.Marshal(rsp)
+		// fmt.Println("hello0:", string(s))
+
+		// s, _ = json.Marshal(*rsp)
+		// fmt.Println("hello1:", string(s))
 	}
 	return err
 }

@@ -44,7 +44,7 @@ func stateToString(state zk.State) string {
 	case zk.StateExpired:
 		return "zookeeper connection expired"
 	case zk.StateConnected:
-		return "zookeeper conneced"
+		return "zookeeper connected"
 	case zk.StateHasSession:
 		return "zookeeper has session"
 	case zk.StateUnknown:
@@ -134,7 +134,7 @@ LOOP:
 				}
 				z.Unlock()
 			case (int)(zk.StateConnecting), (int)(zk.StateConnected), (int)(zk.StateHasSession):
-				if state != (int)(zk.StateConnecting) || state != (int)(zk.StateDisconnected) {
+				if state == (int)(zk.StateHasSession) {
 					continue
 				}
 				if a, ok := z.eventRegistry[event.Path]; ok && 0 < len(a) {

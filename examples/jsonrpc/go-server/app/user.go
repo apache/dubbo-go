@@ -4,6 +4,7 @@ import (
 	// "encoding/json"
 	"context"
 	"fmt"
+	"github.com/dubbo/go-for-apache-dubbo/config/support"
 	"time"
 )
 
@@ -13,6 +14,10 @@ import (
 )
 
 type Gender int
+
+func init() {
+	support.SetProService(new(UserProvider))
+}
 
 const (
 	MAN = iota
@@ -134,14 +139,14 @@ func (u *UserProvider) GetUser(ctx context.Context, req *string, rsp *User) erro
 }
 */
 
-func (u *UserProvider) GetUser(ctx context.Context, req []string, rsp *User) error {
+func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User) error {
 	var (
 		err  error
 		user *User
 	)
 
 	gxlog.CInfo("req:%#v", req)
-	user, err = u.getUser(req[0])
+	user, err = u.getUser(req[0].(string))
 	if err == nil {
 		*rsp = *user
 		gxlog.CInfo("rsp:%#v", rsp)

@@ -1,6 +1,6 @@
 # dubbo-go #
 ---
-Apache Dubbo golang version.
+Apache Dubbo Golang Implementation.
 
 ## License
 
@@ -19,6 +19,7 @@ Apache License, Version 2.0
 ## Code Example
 
 The subdirectory examples shows how to use dubbo-go. Please read the examples/readme.md carefully to learn how to dispose the configuration and compile the program.
+
 
 ## Todo list
 
