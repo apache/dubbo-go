@@ -134,7 +134,7 @@ LOOP:
 				}
 				z.Unlock()
 			case (int)(zk.StateConnecting), (int)(zk.StateConnected), (int)(zk.StateHasSession):
-				if state != (int)(zk.StateConnecting) || state != (int)(zk.StateDisconnected) {
+				if state == (int)(zk.StateHasSession) {
 					continue
 				}
 				if a, ok := z.eventRegistry[event.Path]; ok && 0 < len(a) {

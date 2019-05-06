@@ -64,7 +64,7 @@ func (bp *BaseProtocol) Refer(url config.URL) Invoker {
 	return nil
 }
 
-//Destroy will destroy all invoker and exporter, so it only is called once.
+// Destroy will destroy all invoker and exporter, so it only is called once.
 func (bp *BaseProtocol) Destroy() {
 	// destroy invokers
 	for _, invoker := range bp.invokers {
