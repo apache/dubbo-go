@@ -3,7 +3,6 @@ package zookeeper
 import (
 	"context"
 	"fmt"
-	"github.com/dubbo/dubbo-go/common/constant"
 	"net/url"
 	"os"
 	"strconv"
@@ -20,6 +19,7 @@ import (
 )
 
 import (
+	"github.com/dubbo/dubbo-go/common/constant"
 	"github.com/dubbo/dubbo-go/common/extension"
 	"github.com/dubbo/dubbo-go/config"
 	"github.com/dubbo/dubbo-go/registry"
@@ -89,7 +89,7 @@ func NewZkRegistry(url *config.URL) (registry.Registry, error) {
 
 	err = r.validateZookeeperClient()
 	if err != nil {
-		return nil, jerrors.Trace(err)
+		return nil, err
 	}
 
 	r.wg.Add(1)
@@ -185,6 +185,7 @@ LOOP:
 				if err == nil {
 					// copy r.services
 					r.cltLock.Lock()
+					services = []config.URL{}
 					for _, confIf = range r.services {
 						services = append(services, confIf)
 					}
@@ -291,7 +292,9 @@ func (r *ZkRegistry) register(c config.URL) error {
 		return jerrors.Trace(err)
 	}
 	params = url.Values{}
-	params = c.Params
+	for k, v := range c.Params {
+		params[k] = v
+	}
 
 	params.Add("pid", processID)
 	params.Add("ip", localIP)
