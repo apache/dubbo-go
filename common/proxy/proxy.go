@@ -62,6 +62,7 @@ func (p *Proxy) Implement(v config.RPCService) {
 			result := p.invoke.Invoke(inv)
 			var err error
 			err = result.Error()
+			log.Info("[makeDubboCallProxy] err: %v", err)
 			return []reflect.Value{reflect.ValueOf(&err).Elem()}
 		}
 	}

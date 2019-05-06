@@ -216,8 +216,8 @@ func (c URL) String() string {
 
 func (c URL) Key() string {
 	buildString := fmt.Sprintf(
-		"%s://%s:%s@%s:%s%s?group=%s&version=%s",
-		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path, c.GetParam(constant.GROUP_KEY, ""), c.GetParam(constant.VERSION_KEY, constant.DEFAULT_VERSION))
+		"%s://%s:%s@%s:%s/%s?group=%s&version=%s",
+		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/")), c.GetParam(constant.GROUP_KEY, ""), c.GetParam(constant.VERSION_KEY, constant.DEFAULT_VERSION))
 
 	return buildString
 }
