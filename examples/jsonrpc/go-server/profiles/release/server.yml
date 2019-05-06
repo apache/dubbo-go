@@ -11,12 +11,12 @@ net_timeout : "3s"
 path: ""
 # application config
 application_config:
-    organization : "ikurento.com"
-    name : "BDTService"
-    module : "dubbogo user-info server"
-    version : "0.0.1"
-    owner : "ZX"
-    environment : "pro"
+  organization : "ikurento.com"
+  name : "BDTService"
+  module : "dubbogo user-info server"
+  version : "0.0.1"
+  owner : "ZX"
+  environment : "dev"
 
 registries :
 - id: "hangzhouzk"
@@ -26,20 +26,20 @@ registries :
   username: ""
   password: ""
 
-#- id: "shanghaizk"
-#  type: "zookeeper"
-#  timeout	: "3s"
-#  address: "127.0.0.1:2182"
-#  username: ""
-#  password: ""
+- id: "shanghaizk"
+  type: "zookeeper"
+  timeout	: "3s"
+  address: "127.0.0.1:2182"
+  username: ""
+  password: ""
 
 
 services:
 - registries:
   - "hangzhouzk"
-#  - "shanghaizk"
-  protocol : "dubbo,jsonrpc"
-    # 相当于dubbo.xml中的interface
+  - "shanghaizk"
+  protocol : "jsonrpc"
+  # 相当于dubbo.xml中的interface
   interface : "com.ikurento.user.UserProvider"
   loadbalance: "random"
   warmup: "100"
@@ -50,9 +50,9 @@ services:
     loadbalance: "random"
 
 protocols:
--   name: "dubbo"
-    ip : "127.0.0.1"
-    port : 20000
+#-   name: "dubbo"
+#    ip : "127.0.0.1"
+#    port : 20000
 -   name: "jsonrpc"
     ip: "127.0.0.1"
     port: 20001

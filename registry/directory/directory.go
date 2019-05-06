@@ -175,7 +175,6 @@ func (dir *RegistryDirectory) uncacheInvoker(url config.URL) *sync.Map {
 }
 
 func (dir *RegistryDirectory) cacheInvoker(url config.URL) *sync.Map {
-
 	referenceUrl := dir.GetUrl().SubURL
 	newCacheInvokers := dir.cacheInvokersMap
 	//check the url's protocol is equal to the protocol which is configured in reference config or referenceUrl is not care about protocol

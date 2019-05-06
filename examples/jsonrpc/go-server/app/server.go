@@ -19,7 +19,6 @@ import (
 import (
 	"github.com/dubbo/dubbo-go/config/support"
 
-	_ "github.com/dubbo/dubbo-go/protocol/dubbo"
 	_ "github.com/dubbo/dubbo-go/protocol/jsonrpc"
 	_ "github.com/dubbo/dubbo-go/registry/protocol"
 
@@ -35,7 +34,6 @@ var (
 )
 
 // they are necessary:
-// 		export CONF_CONSUMER_FILE_PATH="xxx"
 // 		export CONF_PROVIDER_FILE_PATH="xxx"
 // 		export APP_LOG_CONF_FILE="xxx"
 func main() {

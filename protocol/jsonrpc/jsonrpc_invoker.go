@@ -46,6 +46,7 @@ func (ji *JsonrpcInvoker) Invoke(invocation protocol.Invocation) protocol.Result
 		log.Error("client.Call() return error:%+v", jerrors.ErrorStack(err))
 		result.Err = err
 	} else {
+		log.Debug("result: %v", inv.Reply())
 		result.Rest = inv.Reply()
 	}
 

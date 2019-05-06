@@ -1,10 +1,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"github.com/dubbo/dubbo-go/dubbo"
-	"github.com/dubbo/dubbo-go/plugins"
-	"github.com/dubbo/dubbo-go/registry/zookeeper"
+	"github.com/dubbogo/hessian2"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -18,132 +17,62 @@ import (
 	"github.com/AlexStocks/goext/log"
 	"github.com/AlexStocks/goext/net"
 	log "github.com/AlexStocks/log4go"
-	jerrors "github.com/juju/errors"
 )
 
 import (
-	"github.com/dubbo/dubbo-go/client/invoker"
-	"github.com/dubbo/dubbo-go/examples"
-	"github.com/dubbo/dubbo-go/public"
-	"github.com/dubbo/dubbo-go/registry"
+	_ "github.com/dubbo/dubbo-go/protocol/dubbo"
+	_ "github.com/dubbo/dubbo-go/registry/protocol"
+
+	_ "github.com/dubbo/dubbo-go/filter/imp"
+
+	_ "github.com/dubbo/dubbo-go/cluster/loadbalance"
+	_ "github.com/dubbo/dubbo-go/cluster/support"
+	_ "github.com/dubbo/dubbo-go/registry/zookeeper"
+
+	"github.com/dubbo/dubbo-go/config/support"
 )
 
 var (
 	survivalTimeout int = 10e9
-	clientInvoker   *invoker.Invoker
 )
 
+// they are necessary:
+// 		export CONF_CONSUMER_FILE_PATH="xxx"
+// 		export APP_LOG_CONF_FILE="xxx"
 func main() {
 
-	clientConfig := examples.InitClientConfig()
-	initProfiling(clientConfig)
-	initClient(clientConfig)
+	hessian.RegisterJavaEnum(Gender(MAN))
+	hessian.RegisterJavaEnum(Gender(WOMAN))
+	hessian.RegisterPOJO(&User{})
+
+	conMap, _ := support.Load()
+	if conMap == nil {
+		panic("conMap is nil")
+	}
+
+	initProfiling()
 
 	time.Sleep(3e9)
 
 	gxlog.CInfo("\n\n\nstart to test dubbo")
-	testDubborpc(clientConfig, "A003")
+	user := &User{}
+	err := conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser(context.TODO(), []interface{}{"A003"}, user)
+	if err != nil {
+		panic(err)
+	}
+	gxlog.CInfo("response result: %v", user)
 
-	time.Sleep(3e9)
+	gxlog.CInfo("\n\n\nstart to test dubbo illegal method")
+	err = conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser1(context.TODO(), []interface{}{"A003"}, user)
+	if err != nil {
+		panic(err)
+	}
 
 	initSignal()
 }
 
-func initClient(clientConfig *examples.ClientConfig) {
-	var (
-		err       error
-		codecType public.CodecType
-	)
-
-	if clientConfig == nil {
-		panic(fmt.Sprintf("clientConfig is nil"))
-		return
-	}
-
-	// registry
-	clientRegistry, err := plugins.PluggableRegistries[clientConfig.Registry](
-		registry.WithDubboType(registry.CONSUMER),
-		registry.WithApplicationConf(clientConfig.Application_Config),
-		zookeeper.WithRegistryConf(clientConfig.ZkRegistryConfig),
-	)
-	if err != nil {
-		panic(fmt.Sprintf("fail to init registry.Registy, err:%s", jerrors.ErrorStack(err)))
-		return
-	}
-
-	// consumer
-	clientConfig.RequestTimeout, err = time.ParseDuration(clientConfig.Request_Timeout)
-	if err != nil {
-		panic(fmt.Sprintf("time.ParseDuration(Request_Timeout{%#v}) = error{%v}",
-			clientConfig.Request_Timeout, err))
-		return
-	}
-	clientConfig.ConnectTimeout, err = time.ParseDuration(clientConfig.Connect_Timeout)
-	if err != nil {
-		panic(fmt.Sprintf("time.ParseDuration(Connect_Timeout{%#v}) = error{%v}",
-			clientConfig.Connect_Timeout, err))
-		return
-	}
-
-	for idx := range clientConfig.ServiceConfigList {
-		codecType = public.GetCodecType(clientConfig.ServiceConfigList[idx].Protocol())
-		if codecType == public.CODECTYPE_UNKNOWN {
-			panic(fmt.Sprintf("unknown protocol %s", clientConfig.ServiceConfigList[idx].Protocol()))
-		}
-	}
-
-	for _, service := range clientConfig.ServiceConfigList {
-		err = clientRegistry.Register(service)
-		if err != nil {
-			panic(fmt.Sprintf("registry.Register(service{%#v}) = error{%v}", service, jerrors.ErrorStack(err)))
-			return
-		}
-	}
-
-	//read the client lb config in config.yml
-	configClientLB := plugins.PluggableLoadbalance[clientConfig.ClientLoadBalance]()
-
-	//init dubbo rpc client & init invoker
-	var cltD *dubbo.Client
-
-	cltD, err = dubbo.NewClient(&dubbo.ClientConfig{
-		PoolSize:        64,
-		PoolTTL:         600,
-		ConnectionNum:   2, // 不能太大
-		FailFastTimeout: "5s",
-		SessionTimeout:  "20s",
-		HeartbeatPeriod: "5s",
-		GettySessionParam: dubbo.GettySessionParam{
-			CompressEncoding: false, // 必须false
-			TcpNoDelay:       true,
-			KeepAlivePeriod:  "120s",
-			TcpRBufSize:      262144,
-			TcpKeepAlive:     true,
-			TcpWBufSize:      65536,
-			PkgRQSize:        1024,
-			PkgWQSize:        512,
-			TcpReadTimeout:   "1s",
-			TcpWriteTimeout:  "5s",
-			WaitTimeout:      "1s",
-			MaxMsgLen:        1024,
-			SessionName:      "client",
-		},
-	})
-	if err != nil {
-		log.Error("hessian.NewClient(conf) = error:%s", jerrors.ErrorStack(err))
-		return
-	}
-	clientInvoker, err = invoker.NewInvoker(clientRegistry,
-		invoker.WithDubboClient(cltD),
-		invoker.WithLBSelector(configClientLB))
-}
-
-func uninitClient() {
-	log.Close()
-}
-
-func initProfiling(clientConfig *examples.ClientConfig) {
-	if !clientConfig.Pprof_Enabled {
+func initProfiling() {
+	if !support.GetProviderConfig().Pprof_Enabled {
 		return
 	}
 	const (
@@ -159,7 +88,7 @@ func initProfiling(clientConfig *examples.ClientConfig) {
 	if err != nil {
 		panic("cat not get local ip!")
 	}
-	addr = ip + ":" + strconv.Itoa(clientConfig.Pprof_Port)
+	addr = ip + ":" + strconv.Itoa(support.GetProviderConfig().Pprof_Port)
 	log.Info("App Profiling startup on address{%v}", addr+PprofPath)
 
 	go func() {
@@ -177,7 +106,7 @@ func initSignal() {
 		log.Info("get signal %s", sig.String())
 		switch sig {
 		case syscall.SIGHUP:
-		// reload()
+			// reload()
 		default:
 			go time.AfterFunc(time.Duration(survivalTimeout)*time.Second, func() {
 				log.Warn("app exit now by force...")
@@ -185,7 +114,6 @@ func initSignal() {
 			})
 
 			// 要么fastFailTimeout时间内执行完毕下面的逻辑然后程序退出，要么执行上面的超时函数程序强行退出
-			uninitClient()
 			fmt.Println("app exit now...")
 			return
 		}
