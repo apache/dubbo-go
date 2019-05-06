@@ -69,6 +69,13 @@ else
     sed -i "s~TARGET_LOG_CONF_FILE~${TARGET_LOG_CONF_FILE}~g" ${BIN_DIR}/bin/*
 fi
 
+# modify TARGET_DUBBO_CONF_FILE
+if [ ${platform} == "Darwin" ]; then
+    sed -i "" "s~TARGET_DUBBO_CONF_FILE~${TARGET_DUBBO_CONF_FILE}~g" ${BIN_DIR}/bin/*
+else
+    sed -i "s~TARGET_DUBBO_CONF_FILE~${TARGET_DUBBO_CONF_FILE}~g" ${BIN_DIR}/bin/*
+fi
+
 cp -r profiles/${PROFILE}/* ${CONF_DIR}
 
 cd ${TARGET_FOLDER}
