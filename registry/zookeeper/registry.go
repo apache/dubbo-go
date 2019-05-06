@@ -17,9 +17,9 @@ import (
 )
 
 import (
+	"github.com/dubbo/go-for-apache-dubbo/plugins"
 	"github.com/dubbo/go-for-apache-dubbo/registry"
 	"github.com/dubbo/go-for-apache-dubbo/version"
-	"github.com/dubbo/go-for-apache-dubbo/plugins"
 )
 
 const (
@@ -167,7 +167,7 @@ func (r *ZkRegistry) validateZookeeperClient() error {
 	if r.client.conn == nil {
 		var event <-chan zk.Event
 		r.client.conn, event, err = zk.Connect(r.client.zkAddrs, r.client.timeout)
-		if err != nil {
+		if err == nil {
 			r.client.wait.Add(1)
 			go r.client.handleZkEvent(event)
 		}
