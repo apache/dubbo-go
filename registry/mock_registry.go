@@ -2,16 +2,17 @@ package registry
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/config"
+	"github.com/tevino/abool"
 )
 
 type MockRegistry struct {
-	listener *listener
-	isClosed bool
+	listener  *listener
+	destroyed *abool.AtomicBool
 }
 
 func NewMockRegistry() *MockRegistry {
 	registry := &MockRegistry{
-		isClosed: false,
+		destroyed: abool.NewBool(false),
 	}
 	listener := &listener{count: 0, registry: registry, listenChan: make(chan *ServiceEvent)}
 	registry.listener = listener
@@ -22,10 +23,11 @@ func (*MockRegistry) Register(url config.URL) error {
 }
 
 func (r *MockRegistry) Destroy() {
-	r.isClosed = true
+	if r.destroyed.SetToIf(false, true) {
+	}
 }
 func (r *MockRegistry) IsAvailable() bool {
-	return r.isClosed
+	return !r.destroyed.IsSet()
 }
 func (r *MockRegistry) GetUrl() config.URL {
 	return config.URL{}

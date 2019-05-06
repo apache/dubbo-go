@@ -3,7 +3,6 @@ package config
 import (
 	"context"
 	"fmt"
-	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"net"
 	"net/url"
 	"strconv"
@@ -12,6 +11,9 @@ import (
 
 import (
 	jerrors "github.com/juju/errors"
+)
+import (
+	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 )
 
 /////////////////////////////////
