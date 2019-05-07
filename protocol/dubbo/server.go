@@ -12,7 +12,6 @@ import (
 import (
 	"github.com/AlexStocks/getty"
 	log "github.com/AlexStocks/log4go"
-	jerrors "github.com/juju/errors"
 )
 
 import (
@@ -27,26 +26,22 @@ func init() {
 	// load serverconfig from *.yml
 	path := os.Getenv(CONF_DUBBO_SERVER_FILE_PATH)
 	if path == "" {
-		log.Warn("CONF_SERVER_FILE_PATH is null")
-		return
+		panic("CONF_SERVER_FILE_PATH is null")
 	}
 
 	file, err := ioutil.ReadFile(path)
 	if err != nil {
-		log.Warn(jerrors.Trace(err))
-		return
+		panic(err)
 	}
 
 	conf := &ServerConfig{}
 	err = yaml.Unmarshal(file, conf)
 	if err != nil {
-		log.Warn(jerrors.Trace(err))
-		return
+		panic(err)
 	}
 
 	if err := conf.CheckValidity(); err != nil {
-		log.Warn("ServerConfig check failed: ", err)
-		return
+		panic(err)
 	}
 
 	srvConf = conf

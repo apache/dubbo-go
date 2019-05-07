@@ -5,13 +5,17 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	log "github.com/AlexStocks/log4go"
-	hessian "github.com/dubbogo/hessian2"
-	"github.com/montanaflynn/stats"
+	"log"
 	"sync"
 	"sync/atomic"
 	"time"
 )
+
+import (
+	hessian "github.com/dubbogo/hessian2"
+	"github.com/montanaflynn/stats"
+)
+
 import (
 	_ "github.com/dubbo/go-for-apache-dubbo/protocol/dubbo"
 	_ "github.com/dubbo/go-for-apache-dubbo/registry/protocol"
@@ -36,18 +40,18 @@ func main() {
 
 	conc, tn, err := checkArgs(*concurrency, *total)
 	if err != nil {
-		log.Info("err: %v", err)
+		log.Printf("err: %v", err)
 		return
 	}
 	n := conc
 	m := tn / n
 
-	log.Info("concurrency: %d\nrequests per client: %d\n\n", n, m)
+	log.Printf("concurrency: %d\nrequests per client: %d\n\n", n, m)
 
 	var wg sync.WaitGroup
 	wg.Add(n * m)
 
-	log.Info("sent total %d messages, %d message per client", n*m, m)
+	log.Printf("sent total %d messages, %d message per client", n*m, m)
 
 	hessian.RegisterJavaEnum(Gender(MAN))
 	hessian.RegisterJavaEnum(Gender(WOMAN))
@@ -77,7 +81,7 @@ func main() {
 		go func(i int) {
 			defer func() {
 				if r := recover(); r != nil {
-					log.Info("Recovered in f", r)
+					log.Printf("Recovered in f", r)
 				}
 			}()
 
@@ -107,7 +111,7 @@ func main() {
 				}
 
 				if err != nil {
-					log.Error("The benchmark request is err , err is %v", err.Error())
+					log.Printf("The benchmark request is err , err is %v", err.Error())
 				}
 
 				atomic.AddUint64(&trans, 1)
@@ -120,7 +124,7 @@ func main() {
 	wg.Wait()
 
 	totalT = time.Now().UnixNano() - totalT
-	log.Info("took %f ms for %d requests\n", float64(totalT)/1000000, n*m)
+	log.Printf("took %f ms for %d requests\n", float64(totalT)/1000000, n*m)
 
 	totalD := make([]int64, 0, n*m)
 	for _, k := range d {
@@ -137,23 +141,23 @@ func main() {
 	min, _ := stats.Min(totalD2)
 	p99, _ := stats.Percentile(totalD2, 99.9)
 
-	log.Info("sent     requests    : %d\n", n*m)
-	log.Info("received requests    : %d\n", atomic.LoadUint64(&trans))
-	log.Info("received requests_OK : %d\n", atomic.LoadUint64(&transOK))
-	log.Info("throughput  (TPS)    : %d\n", int64(n*m)*1000000000/totalT)
-	log.Info("mean: %.f ns, median: %.f ns, max: %.f ns, min: %.f ns, p99.9: %.f ns\n", mean, median, max, min, p99)
-	log.Info("mean: %d ms, median: %d ms, max: %d ms, min: %d ms, p99: %d ms\n", int64(mean/1000000), int64(median/1000000), int64(max/1000000), int64(min/1000000), int64(p99/1000000))
+	log.Printf("sent     requests    : %d\n", n*m)
+	log.Printf("received requests    : %d\n", atomic.LoadUint64(&trans))
+	log.Printf("received requests_OK : %d\n", atomic.LoadUint64(&transOK))
+	log.Printf("throughput  (TPS)    : %d\n", int64(n*m)*1000000000/totalT)
+	log.Printf("mean: %.f ns, median: %.f ns, max: %.f ns, min: %.f ns, p99.9: %.f ns\n", mean, median, max, min, p99)
+	log.Printf("mean: %d ms, median: %d ms, max: %d ms, min: %d ms, p99: %d ms\n", int64(mean/1000000), int64(median/1000000), int64(max/1000000), int64(min/1000000), int64(p99/1000000))
 
 }
 
 // checkArgs check concurrency and total request count.
 func checkArgs(c, n int) (int, int, error) {
 	if c < 1 {
-		log.Info("c < 1 and reset c = 1")
+		log.Printf("c < 1 and reset c = 1")
 		c = 1
 	}
 	if n < 1 {
-		log.Info("n < 1 and reset n = 1")
+		log.Printf("n < 1 and reset n = 1")
 		n = 1
 	}
 	if c > n {
