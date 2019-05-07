@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/dubbogo/hessian2"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -17,6 +16,7 @@ import (
 	"github.com/AlexStocks/goext/log"
 	"github.com/AlexStocks/goext/net"
 	log "github.com/AlexStocks/log4go"
+	"github.com/dubbogo/hessian2"
 )
 
 import (

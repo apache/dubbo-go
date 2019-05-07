@@ -11,7 +11,6 @@ import (
 import (
 	"github.com/AlexStocks/getty"
 	"github.com/AlexStocks/goext/sync/atomic"
-	log "github.com/AlexStocks/log4go"
 	"github.com/dubbogo/hessian2"
 	jerrors "github.com/juju/errors"
 	"gopkg.in/yaml.v2"
@@ -39,26 +38,22 @@ func init() {
 	// load clientconfig from *.yml
 	path := os.Getenv(CONF_DUBBO_CLIENT_FILE_PATH)
 	if path == "" {
-		log.Warn("CONF_CLIENT_FILE_PATH is null")
-		return
+		panic("CONF_CLIENT_FILE_PATH is null")
 	}
 
 	file, err := ioutil.ReadFile(path)
 	if err != nil {
-		log.Warn(jerrors.Trace(err))
-		return
+		panic(err)
 	}
 
 	conf := &ClientConfig{}
 	err = yaml.Unmarshal(file, conf)
 	if err != nil {
-		log.Warn(jerrors.Trace(err))
-		return
+		panic(err)
 	}
 
 	if err := conf.CheckValidity(); err != nil {
-		log.Warn("ClientConfig check failed: ", jerrors.Trace(err))
-		return
+		panic(err)
 	}
 
 	clientConf = conf
@@ -275,6 +270,7 @@ func (c *Client) transfer(session getty.Session, pkg *DubboPackage,
 	)
 
 	sequence = c.sequence.Add(1)
+	session.SetAttribute("seq", sequence) // store seq
 
 	if pkg == nil {
 		pkg = &DubboPackage{}

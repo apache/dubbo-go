@@ -111,8 +111,6 @@ func providerInit(confProFile string) error {
 		return fmt.Errorf("yaml.Unmarshal() = error:%s", jerrors.ErrorStack(err))
 	}
 
-	//todo: provider config
-
 	gxlog.CInfo("provider config{%#v}\n", providerConfig)
 	return nil
 }

@@ -28,7 +28,7 @@ func NewRpcClientPackageHandler(client *Client) *RpcClientPackageHandler {
 
 func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
 	pkg := &DubboPackage{
-		Body: p.client.pendingResponses[SequenceType(int64(p.client.sequence.Load()))].reply,
+		Body: p.client.pendingResponses[SequenceType(ss.GetAttribute("seq").(uint64))].reply,
 	}
 
 	buf := bytes.NewBuffer(data)
