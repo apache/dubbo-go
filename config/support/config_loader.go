@@ -138,6 +138,7 @@ type ConsumerConfig struct {
 	ApplicationConfig ApplicationConfig `yaml:"application_config" json:"application_config,omitempty"`
 	Registries        []RegistryConfig  `yaml:"registries" json:"registries,omitempty"`
 	References        []ReferenceConfig `yaml:"references" json:"references,omitempty"`
+	ProtocolConf      interface{}       `yaml:"protocol_conf" json:"protocol_conf,omitempty"`
 }
 
 type ReferenceConfigTmp struct {
@@ -171,6 +172,7 @@ type ProviderConfig struct {
 	Registries        []RegistryConfig  `yaml:"registries" json:"registries,omitempty"`
 	Services          []ServiceConfig   `yaml:"services" json:"services,omitempty"`
 	Protocols         []ProtocolConfig  `yaml:"protocols" json:"protocols,omitempty"`
+	ProtocolConf      interface{}       `yaml:"protocol_conf" json:"protocol_conf,omitempty"`
 }
 
 func SetProviderConfig(p ProviderConfig) {

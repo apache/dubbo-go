@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/dubbogo/hessian2"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -15,13 +14,13 @@ import (
 	"github.com/AlexStocks/goext/net"
 	"github.com/AlexStocks/goext/time"
 	log "github.com/AlexStocks/log4go"
+	"github.com/dubbogo/hessian2"
 )
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/config/support"
 
 	_ "github.com/dubbo/go-for-apache-dubbo/protocol/dubbo"
-	_ "github.com/dubbo/go-for-apache-dubbo/protocol/jsonrpc"
 	_ "github.com/dubbo/go-for-apache-dubbo/registry/protocol"
 
 	_ "github.com/dubbo/go-for-apache-dubbo/filter/imp"
