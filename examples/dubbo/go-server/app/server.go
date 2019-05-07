@@ -71,7 +71,7 @@ func initProfiling() {
 
 	ip, err = gxnet.GetLocalIP()
 	if err != nil {
-		panic("cat not get local ip!")
+		panic("can not get local ip!")
 	}
 	addr = ip + ":" + strconv.Itoa(support.GetProviderConfig().Pprof_Port)
 	log.Info("App Profiling startup on address{%v}", addr+PprofPath)
