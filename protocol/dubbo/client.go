@@ -1,8 +1,6 @@
 package dubbo
 
 import (
-	"io/ioutil"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -11,6 +9,7 @@ import (
 import (
 	"github.com/AlexStocks/getty"
 	"github.com/AlexStocks/goext/sync/atomic"
+	log "github.com/AlexStocks/log4go"
 	"github.com/dubbogo/hessian2"
 	jerrors "github.com/juju/errors"
 	"gopkg.in/yaml.v2"
@@ -19,6 +18,7 @@ import (
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"github.com/dubbo/go-for-apache-dubbo/config"
+	"github.com/dubbo/go-for-apache-dubbo/config/support"
 )
 
 var (
@@ -31,33 +31,36 @@ var (
 	clientConf *ClientConfig
 )
 
-const CONF_DUBBO_CLIENT_FILE_PATH = "CONF_DUBBO_CLIENT_FILE_PATH"
-
 func init() {
 
-	// load clientconfig from *.yml
-	path := os.Getenv(CONF_DUBBO_CLIENT_FILE_PATH)
-	if path == "" {
-		panic("CONF_CLIENT_FILE_PATH is null")
+	// load clientconfig from consumer_config
+	protocolConf := support.GetConsumerConfig().ProtocolConf
+	if protocolConf == nil {
+		log.Warn("protocol_conf is nil")
+		return
+	}
+	dubboConf := protocolConf.(map[interface{}]interface{})[DUBBO]
+	if protocolConf == nil {
+		log.Warn("dubboConf is nil")
+		return
 	}
 
-	file, err := ioutil.ReadFile(path)
+	dubboConfByte, err := yaml.Marshal(dubboConf)
 	if err != nil {
 		panic(err)
 	}
-
 	conf := &ClientConfig{}
-	err = yaml.Unmarshal(file, conf)
+	err = yaml.Unmarshal(dubboConfByte, conf)
 	if err != nil {
 		panic(err)
 	}
 
 	if err := conf.CheckValidity(); err != nil {
-		panic(err)
+		log.Warn(err)
+		return
 	}
 
 	clientConf = conf
-
 }
 
 func SetClientConf(c ClientConfig) {

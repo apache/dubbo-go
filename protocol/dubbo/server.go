@@ -2,40 +2,43 @@ package dubbo
 
 import (
 	"fmt"
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
 	"net"
-	"os"
 )
 
 import (
 	"github.com/AlexStocks/getty"
 	log "github.com/AlexStocks/log4go"
+	"gopkg.in/yaml.v2"
 )
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/config"
+	"github.com/dubbo/go-for-apache-dubbo/config/support"
+	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
 var srvConf *ServerConfig
 
-const CONF_DUBBO_SERVER_FILE_PATH = "CONF_DUBBO_SERVER_FILE_PATH"
-
 func init() {
-	// load serverconfig from *.yml
-	path := os.Getenv(CONF_DUBBO_SERVER_FILE_PATH)
-	if path == "" {
-		panic("CONF_SERVER_FILE_PATH is null")
+
+	// load clientconfig from provider_config
+	protocolConf := support.GetProviderConfig().ProtocolConf
+	if protocolConf == nil {
+		log.Warn("protocol_conf is nil")
+		return
+	}
+	dubboConf := protocolConf.(map[interface{}]interface{})[DUBBO]
+	if protocolConf == nil {
+		log.Warn("dubboConf is nil")
+		return
 	}
 
-	file, err := ioutil.ReadFile(path)
+	dubboConfByte, err := yaml.Marshal(dubboConf)
 	if err != nil {
 		panic(err)
 	}
-
 	conf := &ServerConfig{}
-	err = yaml.Unmarshal(file, conf)
+	err = yaml.Unmarshal(dubboConfByte, conf)
 	if err != nil {
 		panic(err)
 	}
