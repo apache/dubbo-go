@@ -52,11 +52,19 @@ func main() {
 
 	initProfiling()
 
+	gxlog.CInfo("\n\n\necho")
+	res := ""
+	err := conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).Echo(context.TODO(), []interface{}{"OK"}, &res)
+	if err != nil {
+		panic(err)
+	}
+	gxlog.CInfo("res: %s", res)
+
 	time.Sleep(3e9)
 
 	gxlog.CInfo("\n\n\nstart to test dubbo")
 	user := &User{}
-	err := conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser(context.TODO(), []interface{}{"A003"}, user)
+	err = conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser(context.TODO(), []interface{}{"A003"}, user)
 	if err != nil {
 		panic(err)
 	}

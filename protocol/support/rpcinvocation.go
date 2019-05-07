@@ -44,13 +44,10 @@ func NewRPCInvocationForConsumer(methodName string, parameterTypes []reflect.Typ
 	}
 }
 
-func NewRPCInvocationForProvider(url config.URL) *RPCInvocation {
-	attachments := map[string]string{}
-	attachments[constant.PATH_KEY] = url.Path
-	attachments[constant.GROUP_KEY] = url.GetParam(constant.GROUP_KEY, "")
-	attachments[constant.INTERFACE_KEY] = url.GetParam(constant.INTERFACE_KEY, "")
-	attachments[constant.VERSION_KEY] = url.GetParam(constant.VERSION_KEY, constant.DEFAULT_VERSION)
+func NewRPCInvocationForProvider(methodName string, arguments []interface{}, attachments map[string]string) *RPCInvocation {
 	return &RPCInvocation{
+		methodName:  methodName,
+		arguments:   arguments,
 		attachments: attachments,
 	}
 }
