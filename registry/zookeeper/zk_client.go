@@ -294,8 +294,9 @@ func (z *zookeeperClient) RegisterTemp(basePath string, node string) (string, er
 		tmpPath, err = z.conn.Create(zkPath, data, zk.FlagEphemeral, zk.WorldACL(zk.PermAll))
 	}
 	z.Unlock()
-	if err != nil && err != zk.ErrNodeExists {
-		log.Error("conn.Create(\"%s\", zk.FlagEphemeral) = error(%v)\n", zkPath, jerrors.ErrorStack(err))
+	//if err != nil && err != zk.ErrNodeExists {
+	if err != nil {
+		log.Warn("conn.Create(\"%s\", zk.FlagEphemeral) = error(%v)\n", zkPath, jerrors.ErrorStack(err))
 		return "", jerrors.Trace(err)
 	}
 	log.Debug("zkClient{%s} create a temp zookeeper node:%s\n", z.name, tmpPath)

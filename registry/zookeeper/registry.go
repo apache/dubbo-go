@@ -153,7 +153,6 @@ func (r *ZkRegistry) handleZkRestart() {
 		flag      bool
 		failTimes int
 		confIf    config.URL
-		services  []config.URL
 	)
 
 	defer r.wg.Done()
@@ -184,12 +183,10 @@ LOOP:
 					r.client.zkAddrs, jerrors.ErrorStack(err))
 				if err == nil {
 					// copy r.services
-					r.cltLock.Lock()
-					services = []config.URL{}
+					services := []config.URL{}
 					for _, confIf = range r.services {
 						services = append(services, confIf)
 					}
-					r.cltLock.Unlock()
 
 					flag = true
 					for _, confIf = range services {
@@ -200,6 +197,7 @@ LOOP:
 							flag = false
 							break
 						}
+						log.Info("success to re-register service :%v", confIf.Key())
 					}
 					if flag {
 						break
