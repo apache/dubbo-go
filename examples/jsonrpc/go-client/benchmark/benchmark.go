@@ -5,15 +5,19 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/dubbo/go-for-apache-dubbo/config/support"
-	"github.com/montanaflynn/stats"
 	"log"
 	"sync"
 	"sync/atomic"
 
 	"time"
 )
+
 import (
+	"github.com/montanaflynn/stats"
+)
+
+import (
+	"github.com/dubbo/go-for-apache-dubbo/config/support"
 	_ "github.com/dubbo/go-for-apache-dubbo/protocol/jsonrpc"
 	_ "github.com/dubbo/go-for-apache-dubbo/registry/protocol"
 
