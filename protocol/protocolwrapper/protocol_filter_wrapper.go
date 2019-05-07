@@ -1,6 +1,7 @@
 package protocolwrapper
 
 import (
+	"github.com/dubbo/go-for-apache-dubbo/filter/imp"
 	"strings"
 )
 
@@ -9,7 +10,6 @@ import (
 	"github.com/dubbo/go-for-apache-dubbo/common/extension"
 	"github.com/dubbo/go-for-apache-dubbo/config"
 	"github.com/dubbo/go-for-apache-dubbo/filter"
-	"github.com/dubbo/go-for-apache-dubbo/filter/imp"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
@@ -45,15 +45,16 @@ func (pfw *ProtocolFilterWrapper) Destroy() {
 
 func buildInvokerChain(invoker protocol.Invoker, key string) protocol.Invoker {
 	filtName := invoker.GetUrl().Params.Get(key)
-	if filtName == "" { // echo must be the first
-		filtName = imp.ECHO
-	} else {
+	if filtName != "" && strings.LastIndex(filtName, ",") != len(filtName)-1 {
+		filtName = filtName + ","
+	}
+	if key == constant.SERVICE_FILTER_KEY { // echofilter must be the first in provider
 		filtName = imp.ECHO + "," + filtName
 	}
 	filtNames := strings.Split(filtName, ",")
 	next := invoker
 	// The order of filters is from left to right, so loading from right to left
-	for i := len(filtNames) - 1; i >= 0; i-- {
+	for i := len(filtNames) - 2; i >= 0; i-- {
 		filter := extension.GetFilterExtension(filtNames[i])
 		fi := &FilterInvoker{next: next, invoker: invoker, filter: filter}
 		next = fi

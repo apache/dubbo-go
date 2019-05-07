@@ -21,6 +21,7 @@ import (
 )
 
 import (
+	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"github.com/dubbo/go-for-apache-dubbo/config"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 	"github.com/dubbo/go-for-apache-dubbo/protocol/support"
@@ -131,21 +132,6 @@ func (s *Server) handlePkg(conn net.Conn) {
 			return
 		}
 
-		// exporter invoke
-		invoker := s.exporter.GetInvoker()
-		if invoker != nil {
-			url := invoker.GetUrl()
-
-			result := invoker.Invoke(support.NewRPCInvocationForProvider(url))
-			if err := result.Error(); err != nil {
-				if errRsp := sendErrorResp(r.Header, []byte(err.Error())); errRsp != nil {
-					log.Warn("Exporter: sendErrorResp(header:%#v, error:%v) = error:%s",
-						r.Header, err, errRsp)
-				}
-				return
-			}
-		}
-
 		ctx := context.Background()
 		if len(reqHeader["Timeout"]) > 0 {
 			timeout, err := time.ParseDuration(reqHeader["Timeout"])
@@ -157,7 +143,7 @@ func (s *Server) handlePkg(conn net.Conn) {
 		}
 		setReadTimeout(conn, httpTimeout)
 
-		if err := serveRequest(ctx, reqHeader, reqBody, conn); err != nil {
+		if err := serveRequest(ctx, reqHeader, reqBody, conn, s.exporter); err != nil {
 			if errRsp := sendErrorResp(r.Header, []byte(jerrors.ErrorStack(err))); errRsp != nil {
 				log.Warn("sendErrorResp(header:%#v, error:%s) = error:%s",
 					r.Header, jerrors.ErrorStack(err), errRsp)
@@ -247,7 +233,55 @@ func (s *Server) Stop() {
 }
 
 func serveRequest(ctx context.Context,
-	header map[string]string, body []byte, conn net.Conn) error {
+	header map[string]string, body []byte, conn net.Conn, exporter protocol.Exporter) error {
+
+	sendErrorResp := func(header map[string]string, body []byte) error {
+		rsp := &http.Response{
+			Header:        make(http.Header),
+			StatusCode:    500,
+			ContentLength: int64(len(body)),
+			Body:          ioutil.NopCloser(bytes.NewReader(body)),
+		}
+		rsp.Header.Del("Content-Type")
+		rsp.Header.Del("Content-Length")
+		rsp.Header.Del("Timeout")
+		for k, v := range header {
+			rsp.Header.Set(k, v)
+		}
+
+		rspBuf := bytes.NewBuffer(make([]byte, DefaultHTTPRspBufferSize))
+		rspBuf.Reset()
+		err := rsp.Write(rspBuf)
+		if err != nil {
+			return jerrors.Trace(err)
+		}
+		_, err = rspBuf.WriteTo(conn)
+		return jerrors.Trace(err)
+	}
+
+	sendResp := func(header map[string]string, body []byte) error {
+		rsp := &http.Response{
+			Header:        make(http.Header),
+			StatusCode:    200,
+			ContentLength: int64(len(body)),
+			Body:          ioutil.NopCloser(bytes.NewReader(body)),
+		}
+		rsp.Header.Del("Content-Type")
+		rsp.Header.Del("Content-Length")
+		rsp.Header.Del("Timeout")
+		for k, v := range header {
+			rsp.Header.Set(k, v)
+		}
+
+		rspBuf := bytes.NewBuffer(make([]byte, DefaultHTTPRspBufferSize))
+		rspBuf.Reset()
+		err := rsp.Write(rspBuf)
+		if err != nil {
+			return jerrors.Trace(err)
+		}
+		_, err = rspBuf.WriteTo(conn)
+		return jerrors.Trace(err)
+	}
 
 	// read request header
 	codec := newServerCodec()
@@ -266,15 +300,49 @@ func serveRequest(ctx context.Context,
 		return jerrors.New("service/method request ill-formed: " + serviceName + "/" + methodName)
 	}
 
+	// read body
+	var args interface{}
+	if err = codec.ReadBody(&args); err != nil {
+		return jerrors.Trace(err)
+	}
+	log.Debug("args: %v", args)
+
+	// exporter invoke
+	invoker := exporter.GetInvoker()
+	if invoker != nil {
+		result := invoker.Invoke(support.NewRPCInvocationForProvider(methodName, args.([]interface{}), map[string]string{
+			//attachments[constant.PATH_KEY] = url.Path
+			//attachments[constant.GROUP_KEY] = url.GetParam(constant.GROUP_KEY, "")
+			//attachments[constant.INTERFACE_KEY] = url.GetParam(constant.INTERFACE_KEY, "")
+			constant.VERSION_KEY: codec.req.Version,
+		}))
+		if err := result.Error(); err != nil {
+			if errRsp := sendErrorResp(header, []byte(err.Error())); errRsp != nil {
+				log.Warn("Exporter: sendErrorResp(header:%#v, error:%v) = error:%s",
+					header, err, errRsp)
+				return jerrors.Trace(errRsp)
+			}
+		}
+		if res := result.Result(); res != nil {
+			rspStream, err := codec.Write("", res)
+			if err != nil {
+				return jerrors.Trace(err)
+			}
+			if errRsp := sendResp(header, rspStream); errRsp != nil {
+				log.Warn("Exporter: sendResp(header:%#v, error:%v) = error:%s",
+					header, err, errRsp)
+				return jerrors.Trace(errRsp)
+			}
+		}
+	}
+
 	// get method
 	svc := config.ServiceMap.GetService(JSONRPC, serviceName)
 	if svc == nil {
-		codec.ReadBody(nil)
 		return jerrors.New("cannot find svc " + serviceName)
 	}
 	mtype := svc.Method()[methodName]
 	if mtype == nil {
-		codec.ReadBody(nil)
 		return jerrors.New("cannot find method " + methodName + " of svc " + serviceName)
 	}
 
@@ -288,9 +356,11 @@ func serveRequest(ctx context.Context,
 		argIsValue = true
 	}
 	// argv guaranteed to be a pointer now.
-	if err = codec.ReadBody(argv.Interface()); err != nil {
-		return jerrors.Trace(err)
-	}
+	argvTmp := argv.Interface()
+	argvTmp = args
+	//if err = codec.ReadBody(argv.Interface()); err != nil {
+	//	return jerrors.Trace(err)
+	//}
 	if argIsValue {
 		argv = argv.Elem()
 	}
@@ -302,7 +372,7 @@ func serveRequest(ctx context.Context,
 	returnValues := mtype.Method().Func.Call([]reflect.Value{
 		svc.Rcvr(),
 		mtype.SuiteContext(ctx),
-		reflect.ValueOf(argv.Interface()),
+		reflect.ValueOf(argvTmp),
 		reflect.ValueOf(replyv.Interface()),
 	})
 	// The return value for the method is an error.

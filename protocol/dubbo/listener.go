@@ -2,6 +2,7 @@ package dubbo
 
 import (
 	"context"
+	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"reflect"
 	"sync"
 	"time"
@@ -176,12 +177,22 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 	invoker := h.exporter.GetInvoker()
 	if invoker != nil {
-		url := invoker.GetUrl()
-
-		result := invoker.Invoke(support.NewRPCInvocationForProvider(url))
+		result := invoker.Invoke(support.NewRPCInvocationForProvider(p.Service.Method, p.Body.(map[string]interface{})["args"].([]interface{}), map[string]string{
+			constant.PATH_KEY: p.Service.Path,
+			//attachments[constant.GROUP_KEY] = url.GetParam(constant.GROUP_KEY, "")
+			constant.INTERFACE_KEY: p.Service.Interface,
+			constant.VERSION_KEY:   p.Service.Version,
+		}))
 		if err := result.Error(); err != nil {
 			p.Header.ResponseStatus = hessian.Response_SERVER_ERROR
 			p.Body = err
+			h.reply(session, p, hessian.Response)
+			return
+		}
+		if res := result.Result(); res != nil {
+			p.Header.ResponseStatus = hessian.Response_OK
+			p.Body = res
+			h.reply(session, p, hessian.Response)
 			return
 		}
 	}
