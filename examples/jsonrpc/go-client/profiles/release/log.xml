@@ -7,7 +7,7 @@
     <property name="json">false</property> <!-- true enables json log format, its priority is high than format -->
     <property name="format">[%D %T] [%L] (%S) %M</property> <!-- log format, if json is false this option is enable -->
   </filter>
-  <filter enabled="true">
+  <filter enabled="false">
     <tag>debug_file</tag>
     <type>file</type>
     <level>DEBUG</level>
@@ -20,7 +20,7 @@
     <property name="maxbackup">16</property> <!-- \d+ -->
     <property name="daily">true</property> <!-- Automatically rotates when a log message is written after midnight -->
   </filter>
-  <filter enabled="true">
+  <filter enabled="false">
     <tag>info_file</tag>
     <type>file</type>
     <level>INFO</level>

@@ -5,7 +5,7 @@ pprof_enabled : true
 pprof_port : 10086
 
 # client
-request_timeout : "3500ms"
+request_timeout : "100ms"
 net_io_timeout : "2s"
 # connect timeout
 connect_timeout : "100ms"

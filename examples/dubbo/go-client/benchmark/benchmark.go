@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"fmt"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -12,7 +11,7 @@ import (
 )
 
 import (
-	hessian "github.com/dubbogo/hessian2"
+	"github.com/dubbogo/hessian2"
 	"github.com/montanaflynn/stats"
 )
 
@@ -81,18 +80,18 @@ func main() {
 		go func(i int) {
 			defer func() {
 				if r := recover(); r != nil {
-					log.Printf("Recovered in f", r)
+					log.Print("Recovered in f", r)
 				}
 			}()
 
 			//warmup
-			for j := 0; j < 5; j++ {
-				user := &User{}
-				err := conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser(context.TODO(), []interface{}{"A003"}, user)
-				if err != nil {
-					fmt.Println(err)
-				}
-			}
+			//for j := 0; j < 5; j++ {
+			//	user := &User{}
+			//	err := conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser(context.TODO(), []interface{}{"A003"}, user)
+			//	if err != nil {
+			//		fmt.Println(err)
+			//	}
+			//}
 
 			startWg.Done()
 			startWg.Wait()
