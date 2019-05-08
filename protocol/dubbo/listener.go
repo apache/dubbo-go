@@ -175,6 +175,20 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	}
 	p.Header.ResponseStatus = hessian.Response_OK
 
+	// heartbeat
+	if p.Header.Type&hessian.Heartbeat != 0x00 {
+		log.Debug("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", p.Header, p.Service, p.Body)
+		h.reply(session, p, hessian.Heartbeat)
+		return
+	}
+
+	// not twoway
+	if p.Header.Type&hessian.Request_TwoWay == 0x00 {
+		h.reply(session, p, hessian.Response)
+		h.callService(p, nil)
+		return
+	}
+
 	invoker := h.exporter.GetInvoker()
 	if invoker != nil {
 		result := invoker.Invoke(support.NewRPCInvocationForProvider(p.Service.Method, p.Body.(map[string]interface{})["args"].([]interface{}), map[string]string{
@@ -195,20 +209,6 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 			h.reply(session, p, hessian.Response)
 			return
 		}
-	}
-
-	// heartbeat
-	if p.Header.Type&hessian.Heartbeat != 0x00 {
-		log.Debug("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", p.Header, p.Service, p.Body)
-		h.reply(session, p, hessian.Heartbeat)
-		return
-	}
-
-	// not twoway
-	if p.Header.Type&hessian.Request_TwoWay == 0x00 {
-		h.reply(session, p, hessian.Response)
-		h.callService(p, nil)
-		return
 	}
 
 	h.callService(p, nil)
