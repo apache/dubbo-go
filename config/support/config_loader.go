@@ -219,8 +219,13 @@ func Load() (map[string]*ReferenceConfig, map[string]*ServiceConfig) {
 		length := len(consumerConfig.References)
 		for index := 0; index < length; index++ {
 			con := &consumerConfig.References[index]
+			rpcService := conServices[con.InterfaceName]
+			if rpcService == nil {
+				log.Warn("%s is not exsist!", con.InterfaceName)
+				continue
+			}
 			con.Refer()
-			con.Implement(conServices[con.InterfaceName])
+			con.Implement(rpcService)
 			refMap[con.InterfaceName] = con
 		}
 	}
@@ -233,7 +238,12 @@ func Load() (map[string]*ReferenceConfig, map[string]*ServiceConfig) {
 		length := len(providerConfig.Services)
 		for index := 0; index < length; index++ {
 			pro := &providerConfig.Services[index]
-			pro.Implement(proServices[pro.InterfaceName])
+			rpcService := proServices[pro.InterfaceName]
+			if rpcService == nil {
+				log.Warn("%s is not exsist!", pro.InterfaceName)
+				continue
+			}
+			pro.Implement(rpcService)
 			if err := pro.Export(); err != nil {
 				panic(fmt.Sprintf("service %s export failed! ", pro.InterfaceName))
 			}

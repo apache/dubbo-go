@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"fmt"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -81,13 +80,13 @@ func main() {
 			}()
 
 			//warmup
-			for j := 0; j < 5; j++ {
-				user := &JsonRPCUser{}
-				err := conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser(context.TODO(), []interface{}{"A003"}, user)
-				if err != nil {
-					fmt.Println(err)
-				}
-			}
+			//for j := 0; j < 5; j++ {
+			//	user := &JsonRPCUser{}
+			//	err := conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser(context.TODO(), []interface{}{"A003"}, user)
+			//	if err != nil {
+			//		fmt.Println(err)
+			//	}
+			//}
 
 			startWg.Done()
 			startWg.Wait()
