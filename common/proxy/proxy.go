@@ -53,7 +53,7 @@ func (p *Proxy) Implement(v config.RPCService) {
 
 	makeDubboCallProxy := func(methodName string, outs []reflect.Type) func(in []reflect.Value) []reflect.Value {
 		return func(in []reflect.Value) []reflect.Value {
-
+			log.Info("call method!")
 			inv := support.NewRPCInvocationForConsumer(methodName, nil, in[1].Interface().([]interface{}), in[2].Interface(), p.callBack, config.URL{}, nil)
 			for k, v := range p.attachments {
 				inv.SetAttachments(k, v)

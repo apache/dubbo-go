@@ -1,9 +1,9 @@
 <logging>
-  <filter enabled="false">
+  <filter enabled="true">
     <tag>stdout</tag>
     <type>console</type>
     <!-- level is (:?FINEST|FINE|DEBUG|TRACE|INFO|WARNING|ERROR) -->
-    <level>DEBUG</level>
+    <level>INFO</level>
     <property name="json">false</property> <!-- true enables json log format, its priority is high than format -->
     <property name="format">[%D %T] [%L] (%S) %M</property> <!-- log format, if json is false this option is enable -->
   </filter>
@@ -20,7 +20,7 @@
     <property name="maxbackup">16</property> <!-- \d+ -->
     <property name="daily">true</property> <!-- Automatically rotates when a log message is written after midnight -->
   </filter>
-  <filter enabled="false">
+  <filter enabled="true">
     <tag>info_file</tag>
     <type>file</type>
     <level>INFO</level>
