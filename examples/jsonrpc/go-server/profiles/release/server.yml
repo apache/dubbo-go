@@ -4,10 +4,6 @@
 pprof_enabled : true
 pprof_port : 20080
 
-# server
-transport : "http"
-net_timeout : "3s"
-
 path: ""
 # application config
 application_config:
