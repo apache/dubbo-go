@@ -14,13 +14,6 @@ type Registry interface {
 
 	//used for service consumer ,start subscribe service event from registry
 	Subscribe(config.URL) (Listener, error)
-
-	//input the serviceConfig , registry should return serviceUrlArray with multi location(provider nodes) available
-	//GetService(SubURL) ([]SubURL, error)
-	//close the registry for Elegant closing
-	//Close()
-	//return if the registry is closed for consumer subscribing
-	//IsClosed() bool
 }
 
 type Listener interface {
