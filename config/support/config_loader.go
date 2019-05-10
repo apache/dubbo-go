@@ -88,6 +88,13 @@ func consumerInit(confConFile string) error {
 		return fmt.Errorf("yaml.Unmarshal() = error:%s", jerrors.ErrorStack(err))
 	}
 
+	if consumerConfig.RequestTimeout, err = time.ParseDuration(consumerConfig.Request_Timeout); err != nil {
+		return jerrors.Annotatef(err, "time.ParseDuration(Request_Timeout{%#v})", consumerConfig.Request_Timeout)
+	}
+	if consumerConfig.ConnectTimeout, err = time.ParseDuration(consumerConfig.Connect_Timeout); err != nil {
+		return jerrors.Annotatef(err, "time.ParseDuration(Connect_Timeout{%#v})", consumerConfig.Connect_Timeout)
+	}
+
 	gxlog.CInfo("consumer config{%#v}\n", consumerConfig)
 	return nil
 }
@@ -128,7 +135,7 @@ type ConsumerConfig struct {
 	Connect_Timeout string `default:"100ms"  yaml:"connect_timeout" json:"connect_timeout,omitempty"`
 	ConnectTimeout  time.Duration
 
-	Request_Timeout string `yaml:"request_timeout" default:"5s" json:"request_timeout,omitempty"` // 500ms, 1m
+	Request_Timeout string `yaml:"request_timeout" default:"5s" json:"request_timeout,omitempty"`
 	RequestTimeout  time.Duration
 
 	// codec & selector & transport & registry
