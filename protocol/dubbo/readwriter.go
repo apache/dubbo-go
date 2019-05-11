@@ -29,12 +29,10 @@ func NewRpcClientPackageHandler(client *Client) *RpcClientPackageHandler {
 func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
 	p.client.pendingLock.RLock()
 	defer p.client.pendingLock.RUnlock()
-	pkg := &DubboPackage{
-		Body: p.client.pendingResponses[SequenceType(ss.GetAttribute("seq").(uint64))].reply,
-	}
+	pkg := &DubboPackage{}
 
 	buf := bytes.NewBuffer(data)
-	err := pkg.Unmarshal(buf)
+	err := pkg.Unmarshal(buf, p.client)
 	if err != nil {
 		pkg.Err = jerrors.Trace(err) // client will get this err
 		return pkg, len(data), nil
