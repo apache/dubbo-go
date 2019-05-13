@@ -89,6 +89,5 @@ func Test_ProviderDestory(t *testing.T) {
 	//listener.Close()
 	time.Sleep(1e9)
 	reg.Destroy()
-	time.Sleep(1e9)
 	assert.Equal(t, false, reg.IsAvailable())
 }
