@@ -222,6 +222,7 @@ func (c *Client) call(ct CallType, addr string, svcUrl config.URL, method string
 	)
 	conn, session, err = c.selectSession(addr)
 	if err != nil || session == nil {
+		log.Warn(err)
 		return errSessionNotExist
 	}
 	defer c.pool.release(conn, err)
@@ -273,7 +274,6 @@ func (c *Client) transfer(session getty.Session, pkg *DubboPackage,
 	)
 
 	sequence = c.sequence.Add(1)
-	session.SetAttribute("seq", sequence) // store seq
 
 	if pkg == nil {
 		pkg = &DubboPackage{}

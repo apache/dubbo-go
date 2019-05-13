@@ -1,6 +1,6 @@
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
-github.com/AlexStocks/getty v0.0.0-20190331201845-1ca64ac5a589 h1:iat4jfMomN+G0SqwLJRUM2iha0LHwX+VpdT8PR8NihA=
-github.com/AlexStocks/getty v0.0.0-20190331201845-1ca64ac5a589/go.mod h1:n25mdqPgFi06sWL6mZTjm1hBIZuKwgXUVXAX+KGB97U=
+github.com/AlexStocks/getty v0.0.0-20190513191741-cb811d1c31dd h1:kLcmlBGDmo9S+VSmRnDTUFCq3wvlIh9CMd4zLWqY1+4=
+github.com/AlexStocks/getty v0.0.0-20190513191741-cb811d1c31dd/go.mod h1:n25mdqPgFi06sWL6mZTjm1hBIZuKwgXUVXAX+KGB97U=
 github.com/AlexStocks/goext v0.3.2 h1:Bn4C+R6/E5Yjk2Uc/voawtbGv91x9aCid92xwYL2AS0=
 github.com/AlexStocks/goext v0.3.2 h1:Bn4C+R6/E5Yjk2Uc/voawtbGv91x9aCid92xwYL2AS0=
 github.com/AlexStocks/goext v0.3.2/go.mod h1:3M5j9Pjge4CdkNg2WIjRLUeoPedJHHKwkkglDGSl3Hc=

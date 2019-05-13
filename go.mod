@@ -1,7 +1,7 @@
 module github.com/dubbo/go-for-apache-dubbo
 
 require (
-	github.com/AlexStocks/getty v0.0.0-20190331201845-1ca64ac5a589
+	github.com/AlexStocks/getty v0.0.0-20190513191741-cb811d1c31dd
 	github.com/AlexStocks/goext v0.3.2
 	github.com/AlexStocks/log4go v1.0.2
 	github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc // indirect

@@ -80,7 +80,7 @@ func main() {
 }
 
 func initProfiling() {
-	if !support.GetProviderConfig().Pprof_Enabled {
+	if !support.GetConsumerConfig().Pprof_Enabled {
 		return
 	}
 	const (
@@ -96,7 +96,7 @@ func initProfiling() {
 	if err != nil {
 		panic("cat not get local ip!")
 	}
-	addr = ip + ":" + strconv.Itoa(support.GetProviderConfig().Pprof_Port)
+	addr = ip + ":" + strconv.Itoa(support.GetConsumerConfig().Pprof_Port)
 	log.Info("App Profiling startup on address{%v}", addr+PprofPath)
 
 	go func() {
