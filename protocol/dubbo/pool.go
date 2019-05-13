@@ -40,6 +40,7 @@ func newGettyRPCClientConn(pool *gettyRPCClientPool, protocol, addr string) (*ge
 		gettyClient: getty.NewTCPClient(
 			getty.WithServerAddress(addr),
 			getty.WithConnectionNumber((int)(pool.rpcClient.conf.ConnectionNum)),
+			getty.WithReconnectInterval(pool.rpcClient.conf.ReconnectInterval),
 		),
 	}
 	c.gettyClient.RunEventLoop(c.newSession)
@@ -225,7 +226,7 @@ type gettyRPCClientPool struct {
 	ttl       int64 // 每个gettyRPCClient的有效期时间. pool对象会在getConn时执行ttl检查
 
 	sync.Mutex
-	connMap map[string][]*gettyRPCClient // 从[]*gettyRPCClient 可见key是连接地址，而value是对应这个地址的连接数组
+	conns []*gettyRPCClient // 从[]*gettyRPCClient 可见key是连接地址，而value是对应这个地址的连接数组
 }
 
 func newGettyRPCClientConnPool(rpcClient *Client, size int, ttl time.Duration) *gettyRPCClientPool {
@@ -233,39 +234,33 @@ func newGettyRPCClientConnPool(rpcClient *Client, size int, ttl time.Duration) *
 		rpcClient: rpcClient,
 		size:      size,
 		ttl:       int64(ttl.Seconds()),
-		connMap:   make(map[string][]*gettyRPCClient),
+		conns:     []*gettyRPCClient{},
 	}
 }
 
 func (p *gettyRPCClientPool) close() {
 	p.Lock()
-	connMap := p.connMap
-	p.connMap = nil
+	conns := p.conns
+	p.conns = nil
 	p.Unlock()
-	for _, connArray := range connMap {
-		for _, conn := range connArray {
-			conn.close()
-		}
+	for _, conn := range conns {
+		conn.close()
 	}
 }
 
 func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPCClient, error) {
 
-	key := GenerateEndpointAddr(protocol, addr)
-
 	p.Lock()
 	defer p.Unlock()
-	if p.connMap == nil {
+	if p.conns == nil {
 		return nil, errClientPoolClosed
 	}
 
-	connArray := p.connMap[key]
 	now := time.Now().Unix()
 
-	for len(connArray) > 0 {
-		conn := connArray[len(connArray)-1]
-		connArray = connArray[:len(connArray)-1]
-		p.connMap[key] = connArray
+	for len(p.conns) > 0 {
+		conn := p.conns[len(p.conns)-1]
+		p.conns = p.conns[:len(p.conns)-1]
 
 		if d := now - conn.created; d > p.ttl {
 			conn.close() // -> pool.remove(c)
@@ -288,20 +283,17 @@ func (p *gettyRPCClientPool) release(conn *gettyRPCClient, err error) {
 		return
 	}
 
-	key := GenerateEndpointAddr(conn.protocol, conn.addr)
-
 	p.Lock()
 	defer p.Unlock()
-	if p.connMap == nil {
+	if p.conns == nil {
 		return
 	}
 
-	connArray := p.connMap[key]
-	if len(connArray) >= p.size {
+	if len(p.conns) >= p.size {
 		conn.close()
 		return
 	}
-	p.connMap[key] = append(connArray, conn)
+	p.conns = append(p.conns, conn)
 }
 
 func (p *gettyRPCClientPool) remove(conn *gettyRPCClient) {
@@ -309,19 +301,16 @@ func (p *gettyRPCClientPool) remove(conn *gettyRPCClient) {
 		return
 	}
 
-	key := GenerateEndpointAddr(conn.protocol, conn.addr)
-
-	p.Lock()
-	defer p.Unlock()
-	if p.connMap == nil {
+	//p.Lock()
+	//defer p.Unlock()
+	if p.conns == nil {
 		return
 	}
 
-	connArray := p.connMap[key]
-	if len(connArray) > 0 {
-		for idx, c := range connArray {
+	if len(p.conns) > 0 {
+		for idx, c := range p.conns {
 			if conn == c {
-				p.connMap[key] = append(connArray[:idx], connArray[idx+1:]...)
+				p.conns = append(p.conns[:idx], p.conns[idx+1:]...)
 				break
 			}
 		}

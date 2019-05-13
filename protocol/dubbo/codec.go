@@ -67,9 +67,14 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 
 	if len(opts) != 0 { // for client
 		if client, ok := opts[0].(*Client); ok {
+
+			r := client.pendingResponses[SequenceType(p.Header.ID)]
+			if r == nil {
+				return fmt.Errorf("pendingResponses[%v] = nil", p.Header.ID)
+			}
 			p.Body = client.pendingResponses[SequenceType(p.Header.ID)].reply
 		} else {
-			return fmt.Errorf("pendingResponses[%v] = nil", p.Header.ID)
+			return fmt.Errorf("opts[0] is not *Client")
 		}
 	}
 

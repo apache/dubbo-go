@@ -4,13 +4,19 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"log"
+	"net/http"
+	_ "net/http/pprof"
+
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
 )
 
 import (
+	"github.com/AlexStocks/goext/net"
 	"github.com/dubbogo/hessian2"
 	"github.com/montanaflynn/stats"
 )
@@ -35,6 +41,7 @@ var total = flag.Int("n", 1, "total requests for all clients")
 var survivalTimeout int = 10e9
 
 func main() {
+	initProfiling()
 	flag.Parse()
 
 	conc, tn, err := checkArgs(*concurrency, *total)
@@ -163,4 +170,28 @@ func checkArgs(c, n int) (int, int, error) {
 		return c, n, errors.New("c must be set <= n")
 	}
 	return c, n, nil
+}
+
+func initProfiling() {
+	if !support.GetConsumerConfig().Pprof_Enabled {
+		return
+	}
+	const (
+		PprofPath = "/debug/pprof/"
+	)
+	var (
+		err  error
+		ip   string
+		addr string
+	)
+
+	ip, err = gxnet.GetLocalIP()
+	if err != nil {
+		panic("can not get local ip!")
+	}
+	addr = ip + ":" + strconv.Itoa(support.GetConsumerConfig().Pprof_Port)
+	fmt.Println(addr)
+	go func() {
+		http.ListenAndServe(addr, nil)
+	}()
 }

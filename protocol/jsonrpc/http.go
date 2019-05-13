@@ -155,7 +155,7 @@ func (c *HTTPClient) Do(addr, path string, httpHeader http.Header, body []byte) 
 			t = time.Now().Add(timeout)
 		}
 
-		conn.SetReadDeadline(t)
+		conn.SetDeadline(t)
 	}
 	setNetConnTimeout(tcpConn, c.options.HTTPTimeout)
 
