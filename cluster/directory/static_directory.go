@@ -1,6 +1,7 @@
 package directory
 
 import (
+	"github.com/dubbo/go-for-apache-dubbo/config"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
@@ -11,7 +12,7 @@ type StaticDirectory struct {
 
 func NewStaticDirectory(invokers []protocol.Invoker) *StaticDirectory {
 	return &StaticDirectory{
-		BaseDirectory: NewBaseDirectory(nil),
+		BaseDirectory: NewBaseDirectory(&config.URL{}),
 		invokers:      invokers,
 	}
 }
@@ -29,4 +30,13 @@ func (dir *StaticDirectory) IsAvailable() bool {
 func (dir *StaticDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
 	//TODO:Here should add router
 	return dir.invokers
+}
+
+func (dir *StaticDirectory) Destroy() {
+	dir.BaseDirectory.Destroy(func() {
+		for _, ivk := range dir.invokers {
+			ivk.Destroy()
+		}
+		dir.invokers = []protocol.Invoker{}
+	})
 }

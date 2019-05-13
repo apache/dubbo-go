@@ -102,11 +102,46 @@ func NewZkRegistry(url *config.URL) (registry.Registry, error) {
 
 	return r, nil
 }
+
+func NewMockZkRegistry(url *config.URL) (*zk.TestCluster, *ZkRegistry, error) {
+	var (
+		err error
+		r   *ZkRegistry
+		c   *zk.TestCluster
+		//event <-chan zk.Event
+	)
+
+	r = &ZkRegistry{
+		URL:      url,
+		birth:    time.Now().UnixNano(),
+		done:     make(chan struct{}),
+		services: make(map[string]config.URL),
+		zkPath:   make(map[string]int),
+	}
+
+	c, r.client, _, err = newMockZookeeperClient("test", 15*time.Second)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	r.wg.Add(1)
+	go r.handleZkRestart()
+
+	//if r.RoleType == registry.CONSUMER {
+	//	r.wg.Add(1)
+	//	go r.listen()
+	//}
+
+	return c, r, nil
+}
 func (r *ZkRegistry) GetUrl() config.URL {
 	return *r.URL
 }
 
 func (r *ZkRegistry) Destroy() {
+	if r.listener != nil {
+		r.listener.Close()
+	}
 	close(r.done)
 	r.wg.Wait()
 	r.closeRegisters()
@@ -409,6 +444,49 @@ func (r *ZkRegistry) registerTempZookeeperNode(root string, node string) error {
 	log.Debug("create a zookeeper node:%s", zkPath)
 
 	return nil
+}
+
+func (r *ZkRegistry) Subscribe(conf config.URL) (registry.Listener, error) {
+	r.wg.Add(1)
+	return r.getListener(conf)
+}
+
+func (r *ZkRegistry) getListener(conf config.URL) (*zkEventListener, error) {
+	var (
+		zkListener *zkEventListener
+	)
+
+	r.listenerLock.Lock()
+	zkListener = r.listener
+	r.listenerLock.Unlock()
+	if zkListener != nil {
+		return zkListener, nil
+	}
+
+	r.cltLock.Lock()
+	client := r.client
+	r.cltLock.Unlock()
+	if client == nil {
+		return nil, jerrors.New("zk connection broken")
+	}
+
+	// new client & listener
+	zkListener = newZkEventListener(r, client)
+
+	r.listenerLock.Lock()
+	r.listener = zkListener
+	r.listenerLock.Unlock()
+
+	// listen
+	r.cltLock.Lock()
+	for _, svs := range r.services {
+		if svs.URLEqual(conf) {
+			go zkListener.listenServiceEvent(svs)
+		}
+	}
+	r.cltLock.Unlock()
+
+	return zkListener, nil
 }
 
 func (r *ZkRegistry) closeRegisters() {

@@ -199,9 +199,13 @@ func (dir *RegistryDirectory) IsAvailable() bool {
 }
 
 func (dir *RegistryDirectory) Destroy() {
-	//dir.registry.Destroy() should move it in protocol
 	//TODO:unregister & unsubscribe
-	dir.BaseDirectory.Destroy()
+	dir.BaseDirectory.Destroy(func() {
+		for _, ivk := range dir.cacheInvokers {
+			ivk.Destroy()
+		}
+		dir.cacheInvokers = []protocol.Invoker{}
+	})
 }
 
 // configuration  > reference config >service config

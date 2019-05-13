@@ -21,6 +21,7 @@ import (
 var registryProtocol *RegistryProtocol
 
 type RegistryProtocol struct {
+	invokers []protocol.Invoker
 	// Registry  Map<RegistryAddress, Registry>
 	registries sync.Map
 	//To solve the problem of RMI repeated exposure port conflicts, the services that have been exposed are no longer exposed.
@@ -76,9 +77,11 @@ func (proto *RegistryProtocol) Refer(url config.URL) protocol.Invoker {
 	go directory.Subscribe(*serviceUrl)
 
 	//new cluster invoker
-	cluster := extension.GetCluster(serviceUrl.Params.Get(constant.CLUSTER_KEY))
+	cluster := extension.GetCluster(serviceUrl.GetParam(constant.CLUSTER_KEY, constant.DEFAULT_CLUSTER))
 
-	return cluster.Join(directory)
+	invoker := cluster.Join(directory)
+	proto.invokers = append(proto.invokers, invoker)
+	return invoker
 }
 
 func (proto *RegistryProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
@@ -116,8 +119,27 @@ func (proto *RegistryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 
 }
 
-func (*RegistryProtocol) Destroy() {
+func (proto *RegistryProtocol) Destroy() {
+	for _, ivk := range proto.invokers {
+		ivk.Destroy()
+	}
+	proto.invokers = []protocol.Invoker{}
 
+	proto.bounds.Range(func(key, value interface{}) bool {
+		exporter := value.(protocol.Exporter)
+		exporter.Unexport()
+		proto.bounds.Delete(key)
+		return true
+	})
+
+	proto.registries.Range(func(key, value interface{}) bool {
+		reg := value.(registry.Registry)
+		if reg.IsAvailable() {
+			reg.Destroy()
+		}
+		proto.registries.Delete(key)
+		return true
+	})
 }
 
 func (*RegistryProtocol) getRegistryUrl(invoker protocol.Invoker) config.URL {
