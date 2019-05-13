@@ -47,6 +47,7 @@ references:
 
 protocol_conf:
   dubbo:
+    reconnect_interval: 0
     connection_number: 2
     heartbeat_period: "5s"
     session_timeout: "20s"

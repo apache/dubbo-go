@@ -5,9 +5,9 @@ pprof_enabled : true
 pprof_port : 10086
 
 # client
-request_timeout : "100ms"
+request_timeout : "3s"
 # connect timeout
-connect_timeout : "100ms"
+connect_timeout : "3s"
 
 # application config
 application_config:
