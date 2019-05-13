@@ -57,6 +57,8 @@ type (
 		//Host        string `default:"127.0.0.1" yaml:"host" json:"host,omitempty"`
 		//ProfilePort int    `default:"10086" yaml:"profile_port" json:"profile_port,omitempty"`
 
+		ReconnectInterval int `default:"0" yaml:"reconnect_interval" json:"reconnect_interval,omitempty"`
+
 		// session pool
 		ConnectionNum int `default:"16" yaml:"connection_number" json:"connection_number,omitempty"`
 

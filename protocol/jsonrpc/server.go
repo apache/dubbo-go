@@ -67,7 +67,7 @@ func (s *Server) handlePkg(conn net.Conn) {
 		conn.Close()
 	}()
 
-	setReadTimeout := func(conn net.Conn, timeout time.Duration) {
+	setTimeout := func(conn net.Conn, timeout time.Duration) {
 		t := time.Time{}
 		if timeout > time.Duration(0) {
 			t = time.Now().Add(timeout)
@@ -101,6 +101,7 @@ func (s *Server) handlePkg(conn net.Conn) {
 		bufReader := bufio.NewReader(conn)
 		r, err := http.ReadRequest(bufReader)
 		if err != nil {
+			log.Warn("[ReadRequest] error: %v", err)
 			return
 		}
 
@@ -123,7 +124,7 @@ func (s *Server) handlePkg(conn net.Conn) {
 		httpTimeout := s.timeout
 		contentType := reqHeader["Content-Type"]
 		if contentType != "application/json" && contentType != "application/json-rpc" {
-			setReadTimeout(conn, httpTimeout)
+			setTimeout(conn, httpTimeout)
 			r.Header.Set("Content-Type", "text/plain")
 			if errRsp := sendErrorResp(r.Header, []byte(jerrors.ErrorStack(err))); errRsp != nil {
 				log.Warn("sendErrorResp(header:%#v, error:%s) = error:%s",
@@ -141,7 +142,7 @@ func (s *Server) handlePkg(conn net.Conn) {
 			}
 			delete(reqHeader, "Timeout")
 		}
-		setReadTimeout(conn, httpTimeout)
+		setTimeout(conn, httpTimeout)
 
 		if err := serveRequest(ctx, reqHeader, reqBody, conn, s.exporter); err != nil {
 			if errRsp := sendErrorResp(r.Header, []byte(jerrors.ErrorStack(err))); errRsp != nil {
@@ -157,15 +158,13 @@ func (s *Server) handlePkg(conn net.Conn) {
 
 func accept(listener net.Listener, fn func(net.Conn)) error {
 	var (
-		err      error
-		c        net.Conn
 		ok       bool
 		ne       net.Error
 		tmpDelay time.Duration
 	)
 
 	for {
-		c, err = listener.Accept()
+		c, err := listener.Accept()
 		if err != nil {
 			if ne, ok = err.(net.Error); ok && ne.Temporary() {
 				if tmpDelay != 0 {
