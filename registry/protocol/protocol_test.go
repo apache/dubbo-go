@@ -96,7 +96,7 @@ func TestMultiRegAndMultiProtoExporter(t *testing.T) {
 	exporterNormal(t, regProtocol)
 
 	url2, _ := config.NewURL(context.TODO(), "mock://127.0.0.1:2222")
-	suburl2, _ := config.NewURL(context.TODO(), "dubbo://127.0.0.1:20000//", config.WithParamsValue(constant.CLUSTER_KEY, "mock"))
+	suburl2, _ := config.NewURL(context.TODO(), "jsonrpc://127.0.0.1:20000//", config.WithParamsValue(constant.CLUSTER_KEY, "mock"))
 
 	url2.SubURL = &suburl2
 	invoker2 := protocol.NewBaseInvoker(url2)
