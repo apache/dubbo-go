@@ -1,8 +1,10 @@
 package registry
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/config"
 	"github.com/tevino/abool"
+)
+import (
+	"github.com/dubbo/go-for-apache-dubbo/config"
 )
 
 type MockRegistry struct {
@@ -10,13 +12,13 @@ type MockRegistry struct {
 	destroyed *abool.AtomicBool
 }
 
-func NewMockRegistry() *MockRegistry {
+func NewMockRegistry(url *config.URL) (Registry, error) {
 	registry := &MockRegistry{
 		destroyed: abool.NewBool(false),
 	}
 	listener := &listener{count: 0, registry: registry, listenChan: make(chan *ServiceEvent)}
 	registry.listener = listener
-	return registry
+	return registry, nil
 }
 func (*MockRegistry) Register(url config.URL) error {
 	return nil

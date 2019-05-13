@@ -87,7 +87,11 @@ func WithParams(params url.Values) option {
 		url.Params = params
 	}
 }
-
+func WithParamsValue(key, val string) option {
+	return func(url *URL) {
+		url.Params.Set(key, val)
+	}
+}
 func WithProtocol(proto string) option {
 	return func(url *URL) {
 		url.Protocol = proto

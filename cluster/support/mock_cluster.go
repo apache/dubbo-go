@@ -2,7 +2,6 @@ package cluster
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/cluster"
-	"github.com/dubbo/go-for-apache-dubbo/config"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
@@ -14,5 +13,5 @@ func NewMockCluster() cluster.Cluster {
 }
 
 func (cluster *MockCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return protocol.NewBaseInvoker(config.URL{})
+	return protocol.NewBaseInvoker(directory.GetUrl())
 }
