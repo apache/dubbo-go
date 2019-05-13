@@ -89,6 +89,40 @@ func newZookeeperClient(name string, zkAddrs []string, timeout time.Duration) (*
 
 	return z, nil
 }
+func newMockZookeeperClient(name string, timeout time.Duration) (*zk.TestCluster, *zookeeperClient, <-chan zk.Event, error) {
+	var (
+		err   error
+		event <-chan zk.Event
+		z     *zookeeperClient
+	)
+
+	z = &zookeeperClient{
+		name:          name,
+		zkAddrs:       []string{},
+		timeout:       timeout,
+		exit:          make(chan struct{}),
+		eventRegistry: make(map[string][]*chan struct{}),
+	}
+	// connect to zookeeper
+
+	ts, err := zk.StartTestCluster(1, nil, nil)
+	if err != nil {
+		return nil, nil, nil, jerrors.Annotatef(err, "zk.Connect")
+	}
+
+	//callbackChan := make(chan zk.Event)
+	//f := func(event zk.Event) {
+	//	callbackChan <- event
+	//}
+
+	z.conn, event, err = ts.ConnectWithOptions(timeout)
+	if err != nil {
+		return nil, nil, nil, jerrors.Annotatef(err, "zk.Connect")
+	}
+	//z.wait.Add(1)
+
+	return ts, z, event, nil
+}
 
 func (z *zookeeperClient) handleZkEvent(session <-chan zk.Event) {
 	var (
