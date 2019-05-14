@@ -5,20 +5,20 @@ import (
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
-type StaticDirectory struct {
+type staticDirectory struct {
 	BaseDirectory
 	invokers []protocol.Invoker
 }
 
-func NewStaticDirectory(invokers []protocol.Invoker) *StaticDirectory {
-	return &StaticDirectory{
+func NewStaticDirectory(invokers []protocol.Invoker) *staticDirectory {
+	return &staticDirectory{
 		BaseDirectory: NewBaseDirectory(&common.URL{}),
 		invokers:      invokers,
 	}
 }
 
 //for-loop invokers ,if all invokers is available ,then it means directory is available
-func (dir *StaticDirectory) IsAvailable() bool {
+func (dir *staticDirectory) IsAvailable() bool {
 	for _, invoker := range dir.invokers {
 		if !invoker.IsAvailable() {
 			return false
@@ -27,12 +27,12 @@ func (dir *StaticDirectory) IsAvailable() bool {
 	return true
 }
 
-func (dir *StaticDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
+func (dir *staticDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
 	//TODO:Here should add router
 	return dir.invokers
 }
 
-func (dir *StaticDirectory) Destroy() {
+func (dir *staticDirectory) Destroy() {
 	dir.BaseDirectory.Destroy(func() {
 		for _, ivk := range dir.invokers {
 			ivk.Destroy()

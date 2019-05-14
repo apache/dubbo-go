@@ -15,7 +15,7 @@ import (
 	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"github.com/dubbo/go-for-apache-dubbo/common/extension"
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
+	"github.com/dubbo/go-for-apache-dubbo/protocol/invocation"
 	"github.com/dubbo/go-for-apache-dubbo/protocol/protocolwrapper"
 	"github.com/dubbo/go-for-apache-dubbo/registry"
 )
@@ -93,12 +93,12 @@ func Test_List(t *testing.T) {
 	registryDirectory, _ := normalRegistryDir()
 
 	time.Sleep(1e9)
-	assert.Len(t, registryDirectory.List(protocol.Invocation()), 3)
+	assert.Len(t, registryDirectory.List(&invocation.RPCInvocation{}), 3)
 	assert.Equal(t, true, registryDirectory.IsAvailable())
 
 }
 
-func normalRegistryDir() (*RegistryDirectory, *registry.MockRegistry) {
+func normalRegistryDir() (*registryDirectory, *registry.MockRegistry) {
 	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
 
 	url, _ := common.NewURL(context.TODO(), "mock://127.0.0.1:1111")
