@@ -2,6 +2,7 @@ package dubbo
 
 import (
 	"context"
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"reflect"
 	"sync"
@@ -16,9 +17,8 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/config"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
-	"github.com/dubbo/go-for-apache-dubbo/protocol/support"
+	"github.com/dubbo/go-for-apache-dubbo/protocol/invocation"
 )
 
 // todo: WritePkg_Timeout will entry *.yml
@@ -191,7 +191,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 	invoker := h.exporter.GetInvoker()
 	if invoker != nil {
-		result := invoker.Invoke(support.NewRPCInvocationForProvider(p.Service.Method, p.Body.(map[string]interface{})["args"].([]interface{}), map[string]string{
+		result := invoker.Invoke(invocation.NewRPCInvocationForProvider(p.Service.Method, p.Body.(map[string]interface{})["args"].([]interface{}), map[string]string{
 			constant.PATH_KEY: p.Service.Path,
 			//attachments[constant.GROUP_KEY] = url.GetParam(constant.GROUP_KEY, "")
 			constant.INTERFACE_KEY: p.Service.Interface,
@@ -265,7 +265,7 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 		req.Body = nil
 		return
 	}
-	svc := svcIf.(*config.Service)
+	svc := svcIf.(*common.Service)
 	method := svc.Method()[req.Service.Method]
 	if method == nil {
 		log.Error("method not found!")

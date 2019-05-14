@@ -4,6 +4,7 @@ import (
 	// "encoding/json"
 	"context"
 	"fmt"
+	"github.com/dubbo/go-for-apache-dubbo/config"
 	"time"
 )
 
@@ -12,14 +13,10 @@ import (
 	"github.com/AlexStocks/goext/time"
 )
 
-import (
-	"github.com/dubbo/go-for-apache-dubbo/config/support"
-)
-
 type Gender int
 
 func init() {
-	support.SetProService(new(UserProvider))
+	config.SetProService(new(UserProvider))
 }
 
 const (

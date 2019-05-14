@@ -1,12 +1,12 @@
-package support
+package invocation
 
 import (
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"reflect"
 )
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
-	"github.com/dubbo/go-for-apache-dubbo/config"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
@@ -25,7 +25,7 @@ type RPCInvocation struct {
 }
 
 func NewRPCInvocationForConsumer(methodName string, parameterTypes []reflect.Type, arguments []interface{},
-	reply interface{}, callBack interface{}, url config.URL, invoker protocol.Invoker) *RPCInvocation {
+	reply interface{}, callBack interface{}, url common.URL, invoker protocol.Invoker) *RPCInvocation {
 
 	attachments := map[string]string{}
 	attachments[constant.PATH_KEY] = url.Path
