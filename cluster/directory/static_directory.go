@@ -1,7 +1,7 @@
 package directory
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/config"
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
@@ -12,7 +12,7 @@ type StaticDirectory struct {
 
 func NewStaticDirectory(invokers []protocol.Invoker) *StaticDirectory {
 	return &StaticDirectory{
-		BaseDirectory: NewBaseDirectory(&config.URL{}),
+		BaseDirectory: NewBaseDirectory(&common.URL{}),
 		invokers:      invokers,
 	}
 }

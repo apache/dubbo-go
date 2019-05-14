@@ -2,6 +2,7 @@ package jsonrpc
 
 import (
 	"context"
+	"github.com/dubbo/go-for-apache-dubbo/common"
 )
 
 import (
@@ -11,9 +12,8 @@ import (
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
-	"github.com/dubbo/go-for-apache-dubbo/config"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
-	"github.com/dubbo/go-for-apache-dubbo/protocol/support"
+	invocation_impl "github.com/dubbo/go-for-apache-dubbo/protocol/invocation"
 )
 
 type JsonrpcInvoker struct {
@@ -21,7 +21,7 @@ type JsonrpcInvoker struct {
 	client *HTTPClient
 }
 
-func NewJsonrpcInvoker(url config.URL, client *HTTPClient) *JsonrpcInvoker {
+func NewJsonrpcInvoker(url common.URL, client *HTTPClient) *JsonrpcInvoker {
 	return &JsonrpcInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
@@ -34,7 +34,7 @@ func (ji *JsonrpcInvoker) Invoke(invocation protocol.Invocation) protocol.Result
 		result protocol.RPCResult
 	)
 
-	inv := invocation.(*support.RPCInvocation)
+	inv := invocation.(*invocation_impl.RPCInvocation)
 	url := ji.GetUrl()
 	req := ji.client.NewRequest(url, inv.MethodName(), inv.Arguments())
 	ctx := context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{

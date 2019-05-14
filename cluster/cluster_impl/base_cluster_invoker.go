@@ -2,13 +2,13 @@ package cluster
 
 import (
 	gxnet "github.com/AlexStocks/goext/net"
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	jerrors "github.com/juju/errors"
 	"github.com/tevino/abool"
 )
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/cluster"
-	"github.com/dubbo/go-for-apache-dubbo/config"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 	"github.com/dubbo/go-for-apache-dubbo/version"
 )
@@ -26,7 +26,7 @@ func newBaseClusterInvoker(directory cluster.Directory) baseClusterInvoker {
 		destroyed:      abool.NewBool(false),
 	}
 }
-func (invoker *baseClusterInvoker) GetUrl() config.URL {
+func (invoker *baseClusterInvoker) GetUrl() common.URL {
 	return invoker.directory.GetUrl()
 }
 

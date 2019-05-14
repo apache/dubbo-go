@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/dubbo/go-for-apache-dubbo/config"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -25,10 +26,8 @@ import (
 	_ "github.com/dubbo/go-for-apache-dubbo/filter/imp"
 
 	_ "github.com/dubbo/go-for-apache-dubbo/cluster/loadbalance"
-	_ "github.com/dubbo/go-for-apache-dubbo/cluster/support"
+	_ "github.com/dubbo/go-for-apache-dubbo/cluster/cluster_impl"
 	_ "github.com/dubbo/go-for-apache-dubbo/registry/zookeeper"
-
-	"github.com/dubbo/go-for-apache-dubbo/config/support"
 )
 
 var (
@@ -40,7 +39,7 @@ var (
 // 		export APP_LOG_CONF_FILE="xxx"
 func main() {
 
-	conMap, _ := support.Load()
+	conMap, _ := config.Load()
 	if conMap == nil {
 		panic("conMap is nil")
 	}
@@ -75,7 +74,7 @@ func main() {
 }
 
 func initProfiling() {
-	if !support.GetConsumerConfig().Pprof_Enabled {
+	if !config.GetConsumerConfig().Pprof_Enabled {
 		return
 	}
 	const (
@@ -91,7 +90,7 @@ func initProfiling() {
 	if err != nil {
 		panic("cat not get local ip!")
 	}
-	addr = ip + ":" + strconv.Itoa(support.GetConsumerConfig().Pprof_Port)
+	addr = ip + ":" + strconv.Itoa(config.GetConsumerConfig().Pprof_Port)
 	log.Info("App Profiling startup on address{%v}", addr+PprofPath)
 
 	go func() {

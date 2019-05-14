@@ -2,6 +2,8 @@ package jsonrpc
 
 import (
 	"context"
+	"github.com/dubbo/go-for-apache-dubbo/common"
+	"github.com/dubbo/go-for-apache-dubbo/config"
 	"testing"
 	"time"
 )
@@ -11,15 +13,13 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/config"
-	"github.com/dubbo/go-for-apache-dubbo/config/support"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
 func TestJsonrpcProtocol_Export(t *testing.T) {
 	// Export
 	proto := GetProtocol()
-	url, err := config.NewURL(context.Background(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&"+
+	url, err := common.NewURL(context.Background(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&"+
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&"+
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&"+
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&"+
@@ -49,17 +49,17 @@ func TestJsonrpcProtocol_Export(t *testing.T) {
 func TestJsonrpcProtocol_Refer(t *testing.T) {
 	// Refer
 	proto := GetProtocol()
-	url, err := config.NewURL(context.Background(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&"+
+	url, err := common.NewURL(context.Background(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&"+
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&"+
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&"+
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&"+
 		"side=provider&timeout=3000&timestamp=1556509797245")
 	assert.NoError(t, err)
-	con := support.ConsumerConfig{
+	con := config.ConsumerConfig{
 		ConnectTimeout: 5 * time.Second,
 		RequestTimeout: 5 * time.Second,
 	}
-	support.SetConsumerConfig(con)
+	config.SetConsumerConfig(con)
 	invoker := proto.Refer(url)
 
 	// make sure url

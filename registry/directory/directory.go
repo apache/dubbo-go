@@ -1,6 +1,7 @@
 package directory
 
 import (
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"sync"
 	"time"
 )
@@ -14,7 +15,6 @@ import (
 	"github.com/dubbo/go-for-apache-dubbo/cluster/directory"
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"github.com/dubbo/go-for-apache-dubbo/common/extension"
-	"github.com/dubbo/go-for-apache-dubbo/config"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 	"github.com/dubbo/go-for-apache-dubbo/protocol/protocolwrapper"
 	"github.com/dubbo/go-for-apache-dubbo/registry"
@@ -38,7 +38,7 @@ type RegistryDirectory struct {
 	Options
 }
 
-func NewRegistryDirectory(url *config.URL, registry registry.Registry, opts ...Option) (*RegistryDirectory, error) {
+func NewRegistryDirectory(url *common.URL, registry registry.Registry, opts ...Option) (*RegistryDirectory, error) {
 	options := Options{
 		//default 300s
 		serviceTTL: time.Duration(300e9),
@@ -60,7 +60,7 @@ func NewRegistryDirectory(url *config.URL, registry registry.Registry, opts ...O
 }
 
 //subscibe from registry
-func (dir *RegistryDirectory) Subscribe(url config.URL) {
+func (dir *RegistryDirectory) Subscribe(url common.URL) {
 	for {
 		if !dir.registry.IsAvailable() {
 			log.Warn("event listener game over.")
@@ -163,14 +163,14 @@ func (dir *RegistryDirectory) toGroupInvokers(newInvokersMap *sync.Map) []protoc
 	return groupInvokersList
 }
 
-func (dir *RegistryDirectory) uncacheInvoker(url config.URL) *sync.Map {
+func (dir *RegistryDirectory) uncacheInvoker(url common.URL) *sync.Map {
 	log.Debug("service will be deleted in cache invokers: invokers key is  %s!", url.Key())
 	newCacheInvokers := dir.cacheInvokersMap
 	newCacheInvokers.Delete(url.Key())
 	return newCacheInvokers
 }
 
-func (dir *RegistryDirectory) cacheInvoker(url config.URL) *sync.Map {
+func (dir *RegistryDirectory) cacheInvoker(url common.URL) *sync.Map {
 	referenceUrl := dir.GetUrl().SubURL
 	newCacheInvokers := dir.cacheInvokersMap
 	//check the url's protocol is equal to the protocol which is configured in reference config or referenceUrl is not care about protocol
@@ -211,7 +211,7 @@ func (dir *RegistryDirectory) Destroy() {
 // configuration  > reference config >service config
 //  in this function we should merge the reference local url config into the service url from registry.
 //TODO configuration merge, in the future , the configuration center's config should merge too.
-func mergeUrl(serviceUrl config.URL, referenceUrl *config.URL) config.URL {
+func mergeUrl(serviceUrl common.URL, referenceUrl *common.URL) common.URL {
 	mergedUrl := serviceUrl
 	var methodConfigMergeFcn = []func(method string){}
 

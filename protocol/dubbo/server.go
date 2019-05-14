@@ -2,6 +2,8 @@ package dubbo
 
 import (
 	"fmt"
+	"github.com/dubbo/go-for-apache-dubbo/common"
+	"github.com/dubbo/go-for-apache-dubbo/config"
 	"net"
 )
 
@@ -12,8 +14,6 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/config"
-	"github.com/dubbo/go-for-apache-dubbo/config/support"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
@@ -22,7 +22,7 @@ var srvConf *ServerConfig
 func init() {
 
 	// load clientconfig from provider_config
-	protocolConf := support.GetProviderConfig().ProtocolConf
+	protocolConf := config.GetProviderConfig().ProtocolConf
 	if protocolConf == nil {
 		log.Warn("protocol_conf is nil")
 		return
@@ -112,7 +112,7 @@ func (s *Server) newSession(session getty.Session) error {
 	return nil
 }
 
-func (s *Server) Start(url config.URL) {
+func (s *Server) Start(url common.URL) {
 	var (
 		addr      string
 		tcpServer getty.Server

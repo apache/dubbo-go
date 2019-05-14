@@ -2,12 +2,12 @@ package jsonrpc
 
 import (
 	log "github.com/AlexStocks/log4go"
+	"github.com/dubbo/go-for-apache-dubbo/common"
+	"github.com/dubbo/go-for-apache-dubbo/config"
 )
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common/extension"
-	"github.com/dubbo/go-for-apache-dubbo/config"
-	"github.com/dubbo/go-for-apache-dubbo/config/support"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
@@ -44,10 +44,10 @@ func (jp *JsonrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	return exporter
 }
 
-func (jp *JsonrpcProtocol) Refer(url config.URL) protocol.Invoker {
+func (jp *JsonrpcProtocol) Refer(url common.URL) protocol.Invoker {
 	invoker := NewJsonrpcInvoker(url, NewHTTPClient(&HTTPOptions{
-		HandshakeTimeout: support.GetConsumerConfig().ConnectTimeout,
-		HTTPTimeout:      support.GetConsumerConfig().RequestTimeout,
+		HandshakeTimeout: config.GetConsumerConfig().ConnectTimeout,
+		HTTPTimeout:      config.GetConsumerConfig().RequestTimeout,
 	}))
 	jp.SetInvokers(invoker)
 	log.Info("Refer service: %s", url.String())
@@ -66,7 +66,7 @@ func (jp *JsonrpcProtocol) Destroy() {
 	}
 }
 
-func (jp *JsonrpcProtocol) openServer(url config.URL) {
+func (jp *JsonrpcProtocol) openServer(url common.URL) {
 	exporter, ok := jp.ExporterMap().Load(url.Key())
 	if !ok {
 		panic("[JsonrpcProtocol]" + url.Key() + "is not existing")

@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -21,7 +22,6 @@ import (
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
-	"github.com/dubbo/go-for-apache-dubbo/config"
 )
 
 //////////////////////////////////////////////
@@ -77,7 +77,7 @@ func NewHTTPClient(opt *HTTPOptions) *HTTPClient {
 	}
 }
 
-func (c *HTTPClient) NewRequest(service config.URL, method string, args interface{}) *Request {
+func (c *HTTPClient) NewRequest(service common.URL, method string, args interface{}) *Request {
 
 	return &Request{
 		ID:       atomic.AddInt64(&c.ID, 1),
@@ -90,7 +90,7 @@ func (c *HTTPClient) NewRequest(service config.URL, method string, args interfac
 	}
 }
 
-func (c *HTTPClient) Call(ctx context.Context, service config.URL, req *Request, rsp interface{}) error {
+func (c *HTTPClient) Call(ctx context.Context, service common.URL, req *Request, rsp interface{}) error {
 	// header
 	httpHeader := http.Header{}
 	httpHeader.Set("Content-Type", "application/json")

@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"sync"
 )
 
@@ -8,14 +9,10 @@ import (
 	log "github.com/AlexStocks/log4go"
 )
 
-import (
-	"github.com/dubbo/go-for-apache-dubbo/config"
-)
-
 // Extension - protocol
 type Protocol interface {
 	Export(invoker Invoker) Exporter
-	Refer(url config.URL) Invoker
+	Refer(url common.URL) Invoker
 	Destroy()
 }
 
@@ -60,7 +57,7 @@ func (bp *BaseProtocol) Export(invoker Invoker) Exporter {
 	return nil
 }
 
-func (bp *BaseProtocol) Refer(url config.URL) Invoker {
+func (bp *BaseProtocol) Refer(url common.URL) Invoker {
 	return nil
 }
 

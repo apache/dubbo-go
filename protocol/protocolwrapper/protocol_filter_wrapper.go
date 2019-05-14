@@ -1,6 +1,7 @@
 package protocolwrapper
 
 import (
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/filter/imp"
 	"strings"
 )
@@ -8,7 +9,6 @@ import (
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"github.com/dubbo/go-for-apache-dubbo/common/extension"
-	"github.com/dubbo/go-for-apache-dubbo/config"
 	"github.com/dubbo/go-for-apache-dubbo/filter"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
@@ -32,7 +32,7 @@ func (pfw *ProtocolFilterWrapper) Export(invoker protocol.Invoker) protocol.Expo
 	return pfw.protocol.Export(invoker)
 }
 
-func (pfw *ProtocolFilterWrapper) Refer(url config.URL) protocol.Invoker {
+func (pfw *ProtocolFilterWrapper) Refer(url common.URL) protocol.Invoker {
 	if pfw.protocol == nil {
 		pfw.protocol = extension.GetProtocolExtension(url.Protocol)
 	}
@@ -77,7 +77,7 @@ type FilterInvoker struct {
 	filter  filter.Filter
 }
 
-func (fi *FilterInvoker) GetUrl() config.URL {
+func (fi *FilterInvoker) GetUrl() common.URL {
 	return fi.invoker.GetUrl()
 }
 

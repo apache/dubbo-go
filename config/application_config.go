@@ -1,4 +1,4 @@
-package support
+package config
 
 type ApplicationConfig struct {
 	Organization string `yaml:"organization"  json:"organization,omitempty"`

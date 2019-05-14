@@ -2,6 +2,7 @@ package zookeeper
 
 import (
 	"context"
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"strconv"
 	"testing"
 	"time"
@@ -11,12 +12,11 @@ import (
 )
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
-	"github.com/dubbo/go-for-apache-dubbo/config"
 )
 
 func Test_Register(t *testing.T) {
-	regurl, _ := config.NewURL(context.TODO(), "registry://127.0.0.1:1111", config.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(config.PROVIDER)))
-	url, _ := config.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", config.WithParamsValue(constant.CLUSTER_KEY, "mock"), config.WithMethods([]string{"GetUser", "AddUser"}))
+	regurl, _ := common.NewURL(context.TODO(), "registry://127.0.0.1:1111", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
+	url, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 
 	ts, reg, err := NewMockZkRegistry(&regurl)
 	defer ts.Stop()
@@ -27,8 +27,8 @@ func Test_Register(t *testing.T) {
 }
 
 func Test_Subscribe(t *testing.T) {
-	regurl, _ := config.NewURL(context.TODO(), "registry://127.0.0.1:1111", config.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(config.PROVIDER)))
-	url, _ := config.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", config.WithParamsValue(constant.CLUSTER_KEY, "mock"), config.WithMethods([]string{"GetUser", "AddUser"}))
+	regurl, _ := common.NewURL(context.TODO(), "registry://127.0.0.1:1111", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
+	url, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 	ts, reg, err := NewMockZkRegistry(&regurl)
 	defer ts.Stop()
 
@@ -41,7 +41,7 @@ func Test_Subscribe(t *testing.T) {
 	}
 
 	//consumer register
-	regurl.Params.Set(constant.ROLE_KEY, strconv.Itoa(config.CONSUMER))
+	regurl.Params.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
 	_, reg2, err := NewMockZkRegistry(&regurl)
 	reg2.client = reg.client
 	err = reg2.Register(url)
@@ -57,8 +57,8 @@ func Test_Subscribe(t *testing.T) {
 }
 
 func Test_ConsumerDestory(t *testing.T) {
-	regurl, _ := config.NewURL(context.TODO(), "registry://127.0.0.1:1111", config.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(config.CONSUMER)))
-	url, _ := config.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", config.WithParamsValue(constant.CLUSTER_KEY, "mock"), config.WithMethods([]string{"GetUser", "AddUser"}))
+	regurl, _ := common.NewURL(context.TODO(), "registry://127.0.0.1:1111", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER)))
+	url, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 
 	ts, reg, err := NewMockZkRegistry(&regurl)
 	defer ts.Stop()
@@ -77,8 +77,8 @@ func Test_ConsumerDestory(t *testing.T) {
 }
 
 func Test_ProviderDestory(t *testing.T) {
-	regurl, _ := config.NewURL(context.TODO(), "registry://127.0.0.1:1111", config.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(config.PROVIDER)))
-	url, _ := config.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", config.WithParamsValue(constant.CLUSTER_KEY, "mock"), config.WithMethods([]string{"GetUser", "AddUser"}))
+	regurl, _ := common.NewURL(context.TODO(), "registry://127.0.0.1:1111", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
+	url, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 
 	ts, reg, err := NewMockZkRegistry(&regurl)
 	defer ts.Stop()

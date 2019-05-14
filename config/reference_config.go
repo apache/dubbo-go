@@ -1,7 +1,8 @@
-package support
+package config
 
 import (
 	"context"
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"net/url"
 	"strconv"
 	"time"
@@ -12,7 +13,6 @@ import (
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"github.com/dubbo/go-for-apache-dubbo/common/extension"
 	"github.com/dubbo/go-for-apache-dubbo/common/proxy"
-	"github.com/dubbo/go-for-apache-dubbo/config"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
@@ -46,8 +46,8 @@ func (refconfig *ReferenceConfig) Refer() {
 	//首先是user specified SubURL, could be peer-to-peer address, or register center's address.
 
 	//其次是assemble SubURL from register center's configuration模式
-	regUrls := loadRegistries(refconfig.Registries, consumerConfig.Registries, config.CONSUMER)
-	url := config.NewURLWithOptions(refconfig.InterfaceName, config.WithProtocol(refconfig.Protocol), config.WithParams(refconfig.getUrlMap()))
+	regUrls := loadRegistries(refconfig.Registries, consumerConfig.Registries, common.CONSUMER)
+	url := common.NewURLWithOptions(refconfig.InterfaceName, common.WithProtocol(refconfig.Protocol), common.WithParams(refconfig.getUrlMap()))
 
 	//set url to regUrls
 	for _, regUrl := range regUrls {
@@ -72,11 +72,11 @@ func (refconfig *ReferenceConfig) Refer() {
 }
 
 // @v is service provider implemented RPCService
-func (refconfig *ReferenceConfig) Implement(v config.RPCService) {
+func (refconfig *ReferenceConfig) Implement(v common.RPCService) {
 	refconfig.pxy.Implement(v)
 }
 
-func (refconfig *ReferenceConfig) GetRPCService() config.RPCService {
+func (refconfig *ReferenceConfig) GetRPCService() common.RPCService {
 	return refconfig.pxy.Get()
 }
 
