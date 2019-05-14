@@ -98,7 +98,7 @@ func Test_List(t *testing.T) {
 
 }
 
-func normalRegistryDir() (*RegistryDirectory, *registry.MockRegistry) {
+func normalRegistryDir() (*registryDirectory, *registry.MockRegistry) {
 	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
 
 	url, _ := common.NewURL(context.TODO(), "mock://127.0.0.1:1111")

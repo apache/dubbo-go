@@ -27,7 +27,7 @@ type Options struct {
 }
 type Option func(*Options)
 
-type RegistryDirectory struct {
+type registryDirectory struct {
 	directory.BaseDirectory
 	cacheInvokers    []protocol.Invoker
 	listenerLock     sync.Mutex
@@ -38,7 +38,7 @@ type RegistryDirectory struct {
 	Options
 }
 
-func NewRegistryDirectory(url *common.URL, registry registry.Registry, opts ...Option) (*RegistryDirectory, error) {
+func NewRegistryDirectory(url *common.URL, registry registry.Registry, opts ...Option) (*registryDirectory, error) {
 	options := Options{
 		//default 300s
 		serviceTTL: time.Duration(300e9),
@@ -49,7 +49,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry, opts ...O
 	if url.SubURL == nil {
 		return nil, jerrors.Errorf("url is invalid, suburl can not be nil")
 	}
-	return &RegistryDirectory{
+	return &registryDirectory{
 		BaseDirectory:    directory.NewBaseDirectory(url),
 		cacheInvokers:    []protocol.Invoker{},
 		cacheInvokersMap: &sync.Map{},
@@ -60,7 +60,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry, opts ...O
 }
 
 //subscibe from registry
-func (dir *RegistryDirectory) Subscribe(url common.URL) {
+func (dir *registryDirectory) Subscribe(url common.URL) {
 	for {
 		if !dir.registry.IsAvailable() {
 			log.Warn("event listener game over.")
@@ -95,7 +95,7 @@ func (dir *RegistryDirectory) Subscribe(url common.URL) {
 }
 
 //subscribe service from registry , and update the cacheServices
-func (dir *RegistryDirectory) update(res *registry.ServiceEvent) {
+func (dir *registryDirectory) update(res *registry.ServiceEvent) {
 	if res == nil {
 		return
 	}
@@ -107,35 +107,34 @@ func (dir *RegistryDirectory) update(res *registry.ServiceEvent) {
 	dir.refreshInvokers(res)
 }
 
-func (dir *RegistryDirectory) refreshInvokers(res *registry.ServiceEvent) {
-	var newCacheInvokersMap sync.Map
+func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 
 	switch res.Action {
 	case registry.ServiceAdd:
 		//dir.cacheService.Add(res.Path, dir.serviceTTL)
-		newCacheInvokersMap = *dir.cacheInvoker(res.Service)
+		dir.cacheInvoker(res.Service)
 	case registry.ServiceDel:
 		//dir.cacheService.Del(res.Path, dir.serviceTTL)
-		newCacheInvokersMap = *dir.uncacheInvoker(res.Service)
+		dir.uncacheInvoker(res.Service)
 		log.Info("selector delete service url{%s}", res.Service)
 	default:
 		return
 	}
 
-	newInvokers := dir.toGroupInvokers(&newCacheInvokersMap)
+	newInvokers := dir.toGroupInvokers()
 
 	dir.listenerLock.Lock()
 	defer dir.listenerLock.Unlock()
 	dir.cacheInvokers = newInvokers
 }
 
-func (dir *RegistryDirectory) toGroupInvokers(newInvokersMap *sync.Map) []protocol.Invoker {
+func (dir *registryDirectory) toGroupInvokers() []protocol.Invoker {
 
 	newInvokersList := []protocol.Invoker{}
 	groupInvokersMap := make(map[string][]protocol.Invoker)
 	groupInvokersList := []protocol.Invoker{}
 
-	newInvokersMap.Range(func(key, value interface{}) bool {
+	dir.cacheInvokersMap.Range(func(key, value interface{}) bool {
 		newInvokersList = append(newInvokersList, value.(protocol.Invoker))
 		return true
 	})
@@ -163,42 +162,38 @@ func (dir *RegistryDirectory) toGroupInvokers(newInvokersMap *sync.Map) []protoc
 	return groupInvokersList
 }
 
-func (dir *RegistryDirectory) uncacheInvoker(url common.URL) *sync.Map {
+func (dir *registryDirectory) uncacheInvoker(url common.URL) {
 	log.Debug("service will be deleted in cache invokers: invokers key is  %s!", url.Key())
-	newCacheInvokers := dir.cacheInvokersMap
-	newCacheInvokers.Delete(url.Key())
-	return newCacheInvokers
+	dir.cacheInvokersMap.Delete(url.Key())
 }
 
-func (dir *RegistryDirectory) cacheInvoker(url common.URL) *sync.Map {
+func (dir *registryDirectory) cacheInvoker(url common.URL) {
 	referenceUrl := dir.GetUrl().SubURL
-	newCacheInvokers := dir.cacheInvokersMap
 	//check the url's protocol is equal to the protocol which is configured in reference config or referenceUrl is not care about protocol
 	if url.Protocol == referenceUrl.Protocol || referenceUrl.Protocol == "" {
 		url = mergeUrl(url, referenceUrl)
 
-		if _, ok := newCacheInvokers.Load(url.Key()); !ok {
+		if _, ok := dir.cacheInvokersMap.Load(url.Key()); !ok {
 			log.Debug("service will be added in cache invokers: invokers key is  %s!", url.Key())
 			newInvoker := extension.GetProtocolExtension(protocolwrapper.FILTER).Refer(url)
 			if newInvoker != nil {
-				newCacheInvokers.Store(url.Key(), newInvoker)
+				dir.cacheInvokersMap.Store(url.Key(), newInvoker)
 			}
 		}
 	}
-	return newCacheInvokers
 }
 
 //select the protocol invokers from the directory
-func (dir *RegistryDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
+func (dir *registryDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
 	//TODO:router
 	return dir.cacheInvokers
 }
 
-func (dir *RegistryDirectory) IsAvailable() bool {
+func (dir *registryDirectory) IsAvailable() bool {
 	return dir.BaseDirectory.IsAvailable()
 }
 
-func (dir *RegistryDirectory) Destroy() {
+func (dir *registryDirectory) Destroy() {
 	//TODO:unregister & unsubscribe
 	dir.BaseDirectory.Destroy(func() {
 		for _, ivk := range dir.cacheInvokers {
