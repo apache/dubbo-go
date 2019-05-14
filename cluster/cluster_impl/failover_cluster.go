@@ -1,4 +1,4 @@
-package cluster
+package cluster_impl
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/cluster"
@@ -12,10 +12,10 @@ type failoverCluster struct {
 const name = "failover"
 
 func init() {
-	extension.SetCluster(name, newFailoverCluster)
+	extension.SetCluster(name, NewFailoverCluster)
 }
 
-func newFailoverCluster() cluster.Cluster {
+func NewFailoverCluster() cluster.Cluster {
 	return &failoverCluster{}
 }
 

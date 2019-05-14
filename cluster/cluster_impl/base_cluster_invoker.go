@@ -1,4 +1,4 @@
-package cluster
+package cluster_impl
 
 import (
 	gxnet "github.com/AlexStocks/goext/net"
@@ -69,7 +69,7 @@ func (invoker *baseClusterInvoker) doSelect(lb cluster.LoadBalance, invocation p
 	if len(invokers) == 1 {
 		return invokers[0]
 	}
-	selectedInvoker := lb.Select(invokers, invoker.GetUrl(), invocation)
+	selectedInvoker := lb.Select(invokers, invocation)
 
 	//judge to if the selectedInvoker is invoked
 
@@ -88,7 +88,7 @@ func (invoker *baseClusterInvoker) doSelect(lb cluster.LoadBalance, invocation p
 		}
 
 		if len(reslectInvokers) > 0 {
-			return lb.Select(reslectInvokers, invoker.GetUrl(), invocation)
+			return lb.Select(reslectInvokers, invocation)
 		} else {
 			return nil
 		}

@@ -1,4 +1,4 @@
-package cluster
+package cluster_impl
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/cluster"

@@ -1,4 +1,4 @@
-package cluster
+package cluster_impl
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/cluster"
@@ -10,10 +10,10 @@ type registryAwareCluster struct {
 }
 
 func init() {
-	extension.SetCluster("registryAware", newRegistryAwareCluster)
+	extension.SetCluster("registryAware", NewRegistryAwareCluster)
 }
 
-func newRegistryAwareCluster() cluster.Cluster {
+func NewRegistryAwareCluster() cluster.Cluster {
 	return &registryAwareCluster{}
 }
 
