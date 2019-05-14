@@ -6,17 +6,17 @@ import (
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
-type RegistryAwareCluster struct {
+type registryAwareCluster struct {
 }
 
 func init() {
-	extension.SetCluster("registryAware", NewRegistryAwareCluster)
+	extension.SetCluster("registryAware", newRegistryAwareCluster)
 }
 
-func NewRegistryAwareCluster() cluster.Cluster {
-	return &RegistryAwareCluster{}
+func newRegistryAwareCluster() cluster.Cluster {
+	return &registryAwareCluster{}
 }
 
-func (cluster *RegistryAwareCluster) Join(directory cluster.Directory) protocol.Invoker {
+func (cluster *registryAwareCluster) Join(directory cluster.Directory) protocol.Invoker {
 	return newRegistryAwareClusterInvoker(directory)
 }

@@ -18,9 +18,9 @@ import (
 	directory2 "github.com/dubbo/go-for-apache-dubbo/registry/directory"
 )
 
-var registryProtocol *RegistryProtocol
+var regProtocol *registryProtocol
 
-type RegistryProtocol struct {
+type registryProtocol struct {
 	invokers []protocol.Invoker
 	// Registry  Map<RegistryAddress, Registry>
 	registries sync.Map
@@ -33,8 +33,8 @@ func init() {
 	extension.SetProtocol("registry", GetProtocol)
 }
 
-func NewRegistryProtocol() *RegistryProtocol {
-	return &RegistryProtocol{
+func newRegistryProtocol() *registryProtocol {
+	return &registryProtocol{
 		registries: sync.Map{},
 		bounds:     sync.Map{},
 	}
@@ -47,7 +47,7 @@ func getRegistry(regUrl *common.URL) registry.Registry {
 	}
 	return reg
 }
-func (proto *RegistryProtocol) Refer(url common.URL) protocol.Invoker {
+func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 
 	var registryUrl = url
 	var serviceUrl = registryUrl.SubURL
@@ -84,7 +84,7 @@ func (proto *RegistryProtocol) Refer(url common.URL) protocol.Invoker {
 	return invoker
 }
 
-func (proto *RegistryProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
+func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	registryUrl := proto.getRegistryUrl(invoker)
 	providerUrl := proto.getProviderUrl(invoker)
 
@@ -119,7 +119,7 @@ func (proto *RegistryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 
 }
 
-func (proto *RegistryProtocol) Destroy() {
+func (proto *registryProtocol) Destroy() {
 	for _, ivk := range proto.invokers {
 		ivk.Destroy()
 	}
@@ -142,7 +142,7 @@ func (proto *RegistryProtocol) Destroy() {
 	})
 }
 
-func (*RegistryProtocol) getRegistryUrl(invoker protocol.Invoker) common.URL {
+func (*registryProtocol) getRegistryUrl(invoker protocol.Invoker) common.URL {
 	//here add * for return a new url
 	url := invoker.GetUrl()
 	//if the protocol == registry ,set protocol the registry value in url.params
@@ -153,16 +153,16 @@ func (*RegistryProtocol) getRegistryUrl(invoker protocol.Invoker) common.URL {
 	return url
 }
 
-func (*RegistryProtocol) getProviderUrl(invoker protocol.Invoker) common.URL {
+func (*registryProtocol) getProviderUrl(invoker protocol.Invoker) common.URL {
 	url := invoker.GetUrl()
 	return *url.SubURL
 }
 
 func GetProtocol() protocol.Protocol {
-	if registryProtocol != nil {
-		return registryProtocol
+	if regProtocol != nil {
+		return regProtocol
 	}
-	return NewRegistryProtocol()
+	return newRegistryProtocol()
 }
 
 type wrappedInvoker struct {
