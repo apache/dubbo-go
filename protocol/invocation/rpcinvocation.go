@@ -94,10 +94,14 @@ func (r *RPCInvocation) Invoker() protocol.Invoker {
 	return r.invoker
 }
 
-func (r *RPCInvocation) SetInvoker() protocol.Invoker {
-	return r.invoker
-}
+//func (r *RPCInvocation) SetInvoker() protocol.Invoker {
+//	return r.invoker
+//}
 
 func (r *RPCInvocation) CallBack() interface{} {
 	return r.callBack
+}
+
+func (r *RPCInvocation) SetMethod(method string) {
+	r.methodName = method
 }
