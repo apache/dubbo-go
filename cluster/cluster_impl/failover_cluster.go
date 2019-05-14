@@ -6,7 +6,7 @@ import (
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
-type FailoverCluster struct {
+type failoverCluster struct {
 }
 
 const name = "failover"
@@ -16,9 +16,9 @@ func init() {
 }
 
 func NewFailoverCluster() cluster.Cluster {
-	return &FailoverCluster{}
+	return &failoverCluster{}
 }
 
-func (cluster *FailoverCluster) Join(directory cluster.Directory) protocol.Invoker {
+func (cluster *failoverCluster) Join(directory cluster.Directory) protocol.Invoker {
 	return newFailoverClusterInvoker(directory)
 }

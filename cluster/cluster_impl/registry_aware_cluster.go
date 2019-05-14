@@ -6,7 +6,7 @@ import (
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
-type RegistryAwareCluster struct {
+type registryAwareCluster struct {
 }
 
 func init() {
@@ -14,9 +14,9 @@ func init() {
 }
 
 func NewRegistryAwareCluster() cluster.Cluster {
-	return &RegistryAwareCluster{}
+	return &registryAwareCluster{}
 }
 
-func (cluster *RegistryAwareCluster) Join(directory cluster.Directory) protocol.Invoker {
+func (cluster *registryAwareCluster) Join(directory cluster.Directory) protocol.Invoker {
 	return newRegistryAwareClusterInvoker(directory)
 }
