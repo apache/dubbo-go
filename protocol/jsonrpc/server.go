@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"io"
 	"io/ioutil"
 	"net"
@@ -22,9 +23,8 @@ import (
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
-	"github.com/dubbo/go-for-apache-dubbo/config"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
-	"github.com/dubbo/go-for-apache-dubbo/protocol/support"
+	"github.com/dubbo/go-for-apache-dubbo/protocol/invocation"
 )
 
 var (
@@ -198,7 +198,7 @@ func accept(listener net.Listener, fn func(net.Conn)) error {
 	}
 }
 
-func (s *Server) Start(url config.URL) {
+func (s *Server) Start(url common.URL) {
 	listener, err := net.Listen("tcp", url.Location)
 	if err != nil {
 		log.Error("jsonrpc server [%s] start failed: %v", url.Path, err)
@@ -309,7 +309,7 @@ func serveRequest(ctx context.Context,
 	// exporter invoke
 	invoker := exporter.GetInvoker()
 	if invoker != nil {
-		result := invoker.Invoke(support.NewRPCInvocationForProvider(methodName, args.([]interface{}), map[string]string{
+		result := invoker.Invoke(invocation.NewRPCInvocationForProvider(methodName, args.([]interface{}), map[string]string{
 			//attachments[constant.PATH_KEY] = url.Path
 			//attachments[constant.GROUP_KEY] = url.GetParam(constant.GROUP_KEY, "")
 			//attachments[constant.INTERFACE_KEY] = url.GetParam(constant.INTERFACE_KEY, "")
@@ -336,7 +336,7 @@ func serveRequest(ctx context.Context,
 	}
 
 	// get method
-	svc := config.ServiceMap.GetService(JSONRPC, serviceName)
+	svc := common.ServiceMap.GetService(JSONRPC, serviceName)
 	if svc == nil {
 		return jerrors.New("cannot find svc " + serviceName)
 	}

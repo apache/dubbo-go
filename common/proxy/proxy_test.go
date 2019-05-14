@@ -3,6 +3,7 @@ package proxy
 import (
 	"context"
 	"errors"
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"testing"
 )
 
@@ -11,7 +12,6 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/config"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
@@ -28,7 +28,7 @@ func (s *TestService) Version() string {
 
 func TestProxy_Implement(t *testing.T) {
 
-	invoker := protocol.NewBaseInvoker(config.URL{})
+	invoker := protocol.NewBaseInvoker(common.URL{})
 	p := NewProxy(invoker, nil, nil)
 	s := &TestService{MethodOne: func(i context.Context, i2 []interface{}, i3 *struct{}) error {
 		return errors.New("errors")

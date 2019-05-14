@@ -2,11 +2,11 @@ package dubbo
 
 import (
 	log "github.com/AlexStocks/log4go"
+	"github.com/dubbo/go-for-apache-dubbo/common"
 )
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common/extension"
-	"github.com/dubbo/go-for-apache-dubbo/config"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
@@ -42,7 +42,7 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	return exporter
 }
 
-func (dp *DubboProtocol) Refer(url config.URL) protocol.Invoker {
+func (dp *DubboProtocol) Refer(url common.URL) protocol.Invoker {
 	invoker := NewDubboInvoker(url, NewClient())
 	dp.SetInvokers(invoker)
 	log.Info("Refer service: %s", url.String())
@@ -61,7 +61,7 @@ func (dp *DubboProtocol) Destroy() {
 	}
 }
 
-func (dp *DubboProtocol) openServer(url config.URL) {
+func (dp *DubboProtocol) openServer(url common.URL) {
 	exporter, ok := dp.ExporterMap().Load(url.Key())
 	if !ok {
 		panic("[DubboProtocol]" + url.Key() + "is not existing")

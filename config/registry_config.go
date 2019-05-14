@@ -1,7 +1,8 @@
-package support
+package config
 
 import (
 	"context"
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"net/url"
 	"strconv"
@@ -9,7 +10,6 @@ import (
 import (
 	log "github.com/AlexStocks/log4go"
 )
-import "github.com/dubbo/go-for-apache-dubbo/config"
 
 type RegistryConfig struct {
 	Id         string `required:"true" yaml:"id"  json:"id,omitempty"`
@@ -22,14 +22,14 @@ type RegistryConfig struct {
 	Password string `yaml:"password" json:"address,omitempty"`
 }
 
-func loadRegistries(registriesIds []ConfigRegistry, registries []RegistryConfig, roleType config.RoleType) []*config.URL {
-	var urls []*config.URL
+func loadRegistries(registriesIds []ConfigRegistry, registries []RegistryConfig, roleType common.RoleType) []*common.URL {
+	var urls []*common.URL
 	for _, registry := range registriesIds {
 		for _, registryConf := range registries {
 			if string(registry) == registryConf.Id {
 
-				url, err := config.NewURL(context.TODO(), constant.REGISTRY_PROTOCOL+"://"+registryConf.Address, config.WithParams(registryConf.getUrlMap(roleType)),
-					config.WithUsername(registryConf.Username), config.WithPassword(registryConf.Password),
+				url, err := common.NewURL(context.TODO(), constant.REGISTRY_PROTOCOL+"://"+registryConf.Address, common.WithParams(registryConf.getUrlMap(roleType)),
+					common.WithUsername(registryConf.Username), common.WithPassword(registryConf.Password),
 				)
 
 				if err != nil {
@@ -45,7 +45,7 @@ func loadRegistries(registriesIds []ConfigRegistry, registries []RegistryConfig,
 	return urls
 }
 
-func (regconfig *RegistryConfig) getUrlMap(roleType config.RoleType) url.Values {
+func (regconfig *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 	urlMap := url.Values{}
 	urlMap.Set(constant.GROUP_KEY, regconfig.Group)
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(int(roleType)))
