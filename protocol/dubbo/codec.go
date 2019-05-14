@@ -78,7 +78,7 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 		}
 	}
 
-	if p.Header.Type&hessian.Heartbeat != 0x00 {
+	if p.Header.Type&hessian.PackageHeartbeat != 0x00 {
 		return nil
 	}
 

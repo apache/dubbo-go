@@ -10,7 +10,7 @@ import (
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
-	"github.com/dubbo/go-for-apache-dubbo/protocol/invocation"
+	invocation_impl "github.com/dubbo/go-for-apache-dubbo/protocol/invocation"
 )
 
 // Proxy struct
@@ -53,8 +53,12 @@ func (p *Proxy) Implement(v common.RPCService) {
 
 	makeDubboCallProxy := func(methodName string, outs []reflect.Type) func(in []reflect.Value) []reflect.Value {
 		return func(in []reflect.Value) []reflect.Value {
-			log.Info("call method!")
-			inv := invocation.NewRPCInvocationForConsumer(methodName, nil, in[1].Interface().([]interface{}), in[2].Interface(), p.callBack, common.URL{}, nil)
+
+			if methodName == "Echo" {
+				methodName = "$echo"
+			}
+			inv := invocation_impl.NewRPCInvocationForConsumer(methodName, nil, in[1].Interface().([]interface{}), in[2].Interface(), p.callBack, common.URL{}, nil)
+
 			for k, v := range p.attachments {
 				inv.SetAttachments(k, v)
 			}
