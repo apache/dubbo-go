@@ -17,7 +17,7 @@ import (
 	"github.com/dubbo/go-for-apache-dubbo/registry"
 )
 
-func referNormal(t *testing.T, regProtocol *RegistryProtocol) {
+func referNormal(t *testing.T, regProtocol *registryProtocol) {
 	extension.SetProtocol("registry", GetProtocol)
 	extension.SetRegistry("mock", registry.NewMockRegistry)
 	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
@@ -33,12 +33,12 @@ func referNormal(t *testing.T, regProtocol *RegistryProtocol) {
 	assert.Equal(t, invoker.GetUrl().String(), url.String())
 }
 func TestRefer(t *testing.T) {
-	regProtocol := NewRegistryProtocol()
+	regProtocol := newRegistryProtocol()
 	referNormal(t, regProtocol)
 }
 
 func TestMultiRegRefer(t *testing.T) {
-	regProtocol := NewRegistryProtocol()
+	regProtocol := newRegistryProtocol()
 	referNormal(t, regProtocol)
 	url2, _ := common.NewURL(context.TODO(), "mock://127.0.0.1:2222")
 	suburl2, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000//", common.WithParamsValue(constant.CLUSTER_KEY, "mock"))
@@ -55,7 +55,7 @@ func TestMultiRegRefer(t *testing.T) {
 }
 
 func TestOneRegRefer(t *testing.T) {
-	regProtocol := NewRegistryProtocol()
+	regProtocol := newRegistryProtocol()
 	referNormal(t, regProtocol)
 
 	url2, _ := common.NewURL(context.TODO(), "mock://127.0.0.1:1111")
@@ -71,7 +71,7 @@ func TestOneRegRefer(t *testing.T) {
 	})
 	assert.Equal(t, count, 1)
 }
-func exporterNormal(t *testing.T, regProtocol *RegistryProtocol) {
+func exporterNormal(t *testing.T, regProtocol *registryProtocol) {
 	extension.SetProtocol("registry", GetProtocol)
 	extension.SetRegistry("mock", registry.NewMockRegistry)
 	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
@@ -87,12 +87,12 @@ func exporterNormal(t *testing.T, regProtocol *RegistryProtocol) {
 }
 
 func TestExporter(t *testing.T) {
-	regProtocol := NewRegistryProtocol()
+	regProtocol := newRegistryProtocol()
 	exporterNormal(t, regProtocol)
 }
 
 func TestMultiRegAndMultiProtoExporter(t *testing.T) {
-	regProtocol := NewRegistryProtocol()
+	regProtocol := newRegistryProtocol()
 	exporterNormal(t, regProtocol)
 
 	url2, _ := common.NewURL(context.TODO(), "mock://127.0.0.1:2222")
@@ -118,7 +118,7 @@ func TestMultiRegAndMultiProtoExporter(t *testing.T) {
 }
 
 func TestOneRegAndProtoExporter(t *testing.T) {
-	regProtocol := NewRegistryProtocol()
+	regProtocol := newRegistryProtocol()
 	exporterNormal(t, regProtocol)
 
 	url2, _ := common.NewURL(context.TODO(), "mock://127.0.0.1:1111")
@@ -144,7 +144,7 @@ func TestOneRegAndProtoExporter(t *testing.T) {
 }
 
 func TestDestry(t *testing.T) {
-	regProtocol := NewRegistryProtocol()
+	regProtocol := newRegistryProtocol()
 	referNormal(t, regProtocol)
 	exporterNormal(t, regProtocol)
 
