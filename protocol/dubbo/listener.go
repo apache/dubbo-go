@@ -2,6 +2,7 @@ package dubbo
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"sync"
 	"time"
@@ -67,7 +68,7 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 		return
 	}
 
-	if p.Header.Type&hessian.Heartbeat != 0x00 {
+	if p.Header.Type&hessian.PackageHeartbeat != 0x00 {
 		log.Debug("get rpc heartbeat response{header: %#v, body: %#v}", p.Header, p.Body)
 		return
 	}
@@ -176,15 +177,15 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	p.Header.ResponseStatus = hessian.Response_OK
 
 	// heartbeat
-	if p.Header.Type&hessian.Heartbeat != 0x00 {
+	if p.Header.Type&hessian.PackageHeartbeat != 0x00 {
 		log.Debug("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", p.Header, p.Service, p.Body)
-		h.reply(session, p, hessian.Heartbeat)
+		h.reply(session, p, hessian.PackageHeartbeat)
 		return
 	}
 
 	// not twoway
-	if p.Header.Type&hessian.Request_TwoWay == 0x00 {
-		h.reply(session, p, hessian.Response)
+	if p.Header.Type&hessian.PackageRequest_TwoWay == 0x00 {
+		h.reply(session, p, hessian.PackageResponse)
 		h.callService(p, nil)
 		return
 	}
@@ -200,19 +201,19 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 		if err := result.Error(); err != nil {
 			p.Header.ResponseStatus = hessian.Response_SERVER_ERROR
 			p.Body = err
-			h.reply(session, p, hessian.Response)
+			h.reply(session, p, hessian.PackageResponse)
 			return
 		}
 		if res := result.Result(); res != nil {
 			p.Header.ResponseStatus = hessian.Response_OK
 			p.Body = res
-			h.reply(session, p, hessian.Response)
+			h.reply(session, p, hessian.PackageResponse)
 			return
 		}
 	}
 
 	h.callService(p, nil)
-	h.reply(session, p, hessian.Response)
+	h.reply(session, p, hessian.PackageResponse)
 }
 
 func (h *RpcServerHandler) OnCron(session getty.Session) {
@@ -262,7 +263,7 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 	if svcIf == nil {
 		log.Error("service not found!")
 		req.Header.ResponseStatus = hessian.Response_SERVICE_NOT_FOUND
-		req.Body = nil
+		req.Body = errors.New("service not found")
 		return
 	}
 	svc := svcIf.(*common.Service)
@@ -270,7 +271,7 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 	if method == nil {
 		log.Error("method not found!")
 		req.Header.ResponseStatus = hessian.Response_SERVICE_NOT_FOUND
-		req.Body = nil
+		req.Body = errors.New("method not found")
 		return
 	}
 
@@ -311,7 +312,7 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 	}
 }
 
-func (h *RpcServerHandler) reply(session getty.Session, req *DubboPackage, tp hessian.PackgeType) {
+func (h *RpcServerHandler) reply(session getty.Session, req *DubboPackage, tp hessian.PackageType) {
 	resp := &DubboPackage{
 		Header: hessian.DubboHeader{
 			SerialID:       req.Header.SerialID,
@@ -321,7 +322,7 @@ func (h *RpcServerHandler) reply(session getty.Session, req *DubboPackage, tp he
 		},
 	}
 
-	if req.Header.Type&hessian.Request != 0x00 {
+	if req.Header.Type&hessian.PackageRequest != 0x00 {
 		resp.Body = req.Body
 	} else {
 		resp.Body = nil

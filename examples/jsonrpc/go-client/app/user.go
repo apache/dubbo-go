@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/dubbo/go-for-apache-dubbo/config"
 )
 
 import (
 	"github.com/AlexStocks/goext/time"
+	"github.com/dubbo/go-for-apache-dubbo/config"
 )
 
 func init() {
