@@ -18,7 +18,7 @@ func Test_Register(t *testing.T) {
 	regurl, _ := common.NewURL(context.TODO(), "registry://127.0.0.1:1111", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
 	url, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 
-	ts, reg, err := NewMockZkRegistry(&regurl)
+	ts, reg, err := newMockZkRegistry(&regurl)
 	defer ts.Stop()
 	err = reg.Register(url)
 	children, _ := reg.client.getChildren("/dubbo/com.ikurento.user.UserProvider/providers")
@@ -29,7 +29,7 @@ func Test_Register(t *testing.T) {
 func Test_Subscribe(t *testing.T) {
 	regurl, _ := common.NewURL(context.TODO(), "registry://127.0.0.1:1111", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
 	url, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
-	ts, reg, err := NewMockZkRegistry(&regurl)
+	ts, reg, err := newMockZkRegistry(&regurl)
 	defer ts.Stop()
 
 	//provider register
@@ -42,7 +42,7 @@ func Test_Subscribe(t *testing.T) {
 
 	//consumer register
 	regurl.Params.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
-	_, reg2, err := NewMockZkRegistry(&regurl)
+	_, reg2, err := newMockZkRegistry(&regurl)
 	reg2.client = reg.client
 	err = reg2.Register(url)
 	listener, err := reg2.Subscribe(url)
@@ -60,7 +60,7 @@ func Test_ConsumerDestory(t *testing.T) {
 	regurl, _ := common.NewURL(context.TODO(), "registry://127.0.0.1:1111", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER)))
 	url, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 
-	ts, reg, err := NewMockZkRegistry(&regurl)
+	ts, reg, err := newMockZkRegistry(&regurl)
 	defer ts.Stop()
 
 	assert.NoError(t, err)
@@ -80,7 +80,7 @@ func Test_ProviderDestory(t *testing.T) {
 	regurl, _ := common.NewURL(context.TODO(), "registry://127.0.0.1:1111", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
 	url, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 
-	ts, reg, err := NewMockZkRegistry(&regurl)
+	ts, reg, err := newMockZkRegistry(&regurl)
 	defer ts.Stop()
 
 	assert.NoError(t, err)

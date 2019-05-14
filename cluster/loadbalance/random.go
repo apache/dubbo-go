@@ -14,13 +14,13 @@ import (
 const name = "random"
 
 func init() {
-	extension.SetLoadbalance(name, NewRandomLoadBalance)
+	extension.SetLoadbalance(name, newRandomLoadBalance)
 }
 
 type randomLoadBalance struct {
 }
 
-func NewRandomLoadBalance() cluster.LoadBalance {
+func newRandomLoadBalance() cluster.LoadBalance {
 	return &randomLoadBalance{}
 }
 

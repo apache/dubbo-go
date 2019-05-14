@@ -10,10 +10,10 @@ type registryAwareCluster struct {
 }
 
 func init() {
-	extension.SetCluster("registryAware", NewRegistryAwareCluster)
+	extension.SetCluster("registryAware", newRegistryAwareCluster)
 }
 
-func NewRegistryAwareCluster() cluster.Cluster {
+func newRegistryAwareCluster() cluster.Cluster {
 	return &registryAwareCluster{}
 }
 
