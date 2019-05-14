@@ -1,9 +1,13 @@
 package directory
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/tevino/abool"
 	"sync"
+)
+import (
+	"github.com/tevino/abool"
+)
+import (
+	"github.com/dubbo/go-for-apache-dubbo/common"
 )
 
 type BaseDirectory struct {

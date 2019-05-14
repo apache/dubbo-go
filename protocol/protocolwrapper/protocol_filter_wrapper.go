@@ -1,15 +1,15 @@
 package protocolwrapper
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/filter/imp"
 	"strings"
 )
 
 import (
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"github.com/dubbo/go-for-apache-dubbo/common/extension"
 	"github.com/dubbo/go-for-apache-dubbo/filter"
+	"github.com/dubbo/go-for-apache-dubbo/filter/imp"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 

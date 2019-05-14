@@ -3,13 +3,15 @@ package directory
 import (
 	"context"
 	"fmt"
-	"github.com/dubbo/go-for-apache-dubbo/common"
 	"strings"
 	"time"
 )
 
 import (
 	jerrors "github.com/juju/errors"
+)
+import (
+	"github.com/dubbo/go-for-apache-dubbo/common"
 )
 
 //////////////////////////////////////////

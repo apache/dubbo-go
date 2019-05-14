@@ -2,7 +2,6 @@ package zookeeper
 
 import (
 	"context"
-	"github.com/dubbo/go-for-apache-dubbo/common"
 	"strconv"
 	"testing"
 	"time"
@@ -11,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 import (
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 )
 
