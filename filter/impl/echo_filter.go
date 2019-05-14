@@ -1,4 +1,4 @@
-package imp
+package impl
 
 import (
 	log "github.com/AlexStocks/log4go"
