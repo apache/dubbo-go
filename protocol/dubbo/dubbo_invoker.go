@@ -2,6 +2,7 @@ package dubbo
 
 import (
 	"errors"
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"strconv"
 	"sync"
 )
@@ -12,9 +13,8 @@ import (
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
-	"github.com/dubbo/go-for-apache-dubbo/config"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
-	"github.com/dubbo/go-for-apache-dubbo/protocol/support"
+	invocation_impl "github.com/dubbo/go-for-apache-dubbo/protocol/invocation"
 )
 
 var Err_No_Reply = errors.New("request need @reply")
@@ -25,7 +25,7 @@ type DubboInvoker struct {
 	destroyLock sync.Mutex
 }
 
-func NewDubboInvoker(url config.URL, client *Client) *DubboInvoker {
+func NewDubboInvoker(url common.URL, client *Client) *DubboInvoker {
 	return &DubboInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
@@ -39,7 +39,7 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 		result protocol.RPCResult
 	)
 
-	inv := invocation.(*support.RPCInvocation)
+	inv := invocation.(*invocation_impl.RPCInvocation)
 	url := di.GetUrl()
 	// async
 	async, err := strconv.ParseBool(inv.AttachmentsByKey(constant.ASYNC_KEY, "false"))

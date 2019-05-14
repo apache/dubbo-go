@@ -1,13 +1,13 @@
 package loadbalance
 
 import (
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"math/rand"
 )
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/cluster"
 	"github.com/dubbo/go-for-apache-dubbo/common/extension"
-	"github.com/dubbo/go-for-apache-dubbo/config"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
@@ -24,7 +24,7 @@ func NewRandomLoadBalance() cluster.LoadBalance {
 	return &RandomLoadBalance{}
 }
 
-func (lb *RandomLoadBalance) Select(invokers []protocol.Invoker, url config.URL, invocation protocol.Invocation) protocol.Invoker {
+func (lb *RandomLoadBalance) Select(invokers []protocol.Invoker, url common.URL, invocation protocol.Invocation) protocol.Invoker {
 	var length int
 	if length = len(invokers); length == 1 {
 		return invokers[0]

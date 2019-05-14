@@ -1,7 +1,7 @@
 package protocolwrapper
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/config"
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 	"sync"
 )
@@ -17,7 +17,7 @@ func (pfw *mockProtocolFilter) Export(invoker protocol.Invoker) protocol.Exporte
 	return protocol.NewBaseExporter("key", invoker, &sync.Map{})
 }
 
-func (pfw *mockProtocolFilter) Refer(url config.URL) protocol.Invoker {
+func (pfw *mockProtocolFilter) Refer(url common.URL) protocol.Invoker {
 	return protocol.NewBaseInvoker(url)
 }
 

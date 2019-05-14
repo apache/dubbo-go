@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"sync"
 )
 
@@ -11,7 +12,6 @@ import (
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"github.com/dubbo/go-for-apache-dubbo/common/extension"
-	"github.com/dubbo/go-for-apache-dubbo/config"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 	"github.com/dubbo/go-for-apache-dubbo/protocol/protocolwrapper"
 	"github.com/dubbo/go-for-apache-dubbo/registry"
@@ -39,7 +39,7 @@ func NewRegistryProtocol() *RegistryProtocol {
 		bounds:     sync.Map{},
 	}
 }
-func getRegistry(regUrl *config.URL) registry.Registry {
+func getRegistry(regUrl *common.URL) registry.Registry {
 	reg, err := extension.GetRegistryExtension(regUrl.Protocol, regUrl)
 	if err != nil {
 		log.Error("Registry can not connect success, program is going to panic.Error message is %s", err.Error())
@@ -47,7 +47,7 @@ func getRegistry(regUrl *config.URL) registry.Registry {
 	}
 	return reg
 }
-func (proto *RegistryProtocol) Refer(url config.URL) protocol.Invoker {
+func (proto *RegistryProtocol) Refer(url common.URL) protocol.Invoker {
 
 	var registryUrl = url
 	var serviceUrl = registryUrl.SubURL
@@ -142,7 +142,7 @@ func (proto *RegistryProtocol) Destroy() {
 	})
 }
 
-func (*RegistryProtocol) getRegistryUrl(invoker protocol.Invoker) config.URL {
+func (*RegistryProtocol) getRegistryUrl(invoker protocol.Invoker) common.URL {
 	//here add * for return a new url
 	url := invoker.GetUrl()
 	//if the protocol == registry ,set protocol the registry value in url.params
@@ -153,7 +153,7 @@ func (*RegistryProtocol) getRegistryUrl(invoker protocol.Invoker) config.URL {
 	return url
 }
 
-func (*RegistryProtocol) getProviderUrl(invoker protocol.Invoker) config.URL {
+func (*RegistryProtocol) getProviderUrl(invoker protocol.Invoker) common.URL {
 	url := invoker.GetUrl()
 	return *url.SubURL
 }
@@ -167,18 +167,18 @@ func GetProtocol() protocol.Protocol {
 
 type wrappedInvoker struct {
 	invoker protocol.Invoker
-	url     config.URL
+	url     common.URL
 	protocol.BaseInvoker
 }
 
-func newWrappedInvoker(invoker protocol.Invoker, url config.URL) *wrappedInvoker {
+func newWrappedInvoker(invoker protocol.Invoker, url common.URL) *wrappedInvoker {
 	return &wrappedInvoker{
 		invoker:     invoker,
 		url:         url,
-		BaseInvoker: *protocol.NewBaseInvoker(config.URL{}),
+		BaseInvoker: *protocol.NewBaseInvoker(common.URL{}),
 	}
 }
-func (ivk *wrappedInvoker) GetUrl() config.URL {
+func (ivk *wrappedInvoker) GetUrl() common.URL {
 	return ivk.url
 }
 func (ivk *wrappedInvoker) getInvoker() protocol.Invoker {

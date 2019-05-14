@@ -3,18 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/dubbo/go-for-apache-dubbo/config"
 )
 
 import (
 	"github.com/AlexStocks/goext/time"
 )
 
-import (
-	"github.com/dubbo/go-for-apache-dubbo/config/support"
-)
-
 func init() {
-	support.SetConService(new(UserProvider))
+	config.SetConService(new(UserProvider))
 }
 
 type JsonRPCUser struct {

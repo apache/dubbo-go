@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"reflect"
 )
 import (
@@ -8,14 +9,13 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/config"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
-	"github.com/dubbo/go-for-apache-dubbo/protocol/support"
+	"github.com/dubbo/go-for-apache-dubbo/protocol/invocation"
 )
 
 // Proxy struct
 type Proxy struct {
-	rpc         config.RPCService
+	rpc         common.RPCService
 	invoke      protocol.Invoker
 	callBack    interface{}
 	attachments map[string]string
@@ -36,7 +36,7 @@ func NewProxy(invoke protocol.Invoker, callBack interface{}, attachments map[str
 // 		type XxxProvider struct {
 //  		Yyy func(ctx context.Context, args []interface{}, rsp *Zzz) error
 // 		}
-func (p *Proxy) Implement(v config.RPCService) {
+func (p *Proxy) Implement(v common.RPCService) {
 
 	// check parameters, incoming interface must be a elem's pointer.
 	valueOf := reflect.ValueOf(v)
@@ -54,7 +54,7 @@ func (p *Proxy) Implement(v config.RPCService) {
 	makeDubboCallProxy := func(methodName string, outs []reflect.Type) func(in []reflect.Value) []reflect.Value {
 		return func(in []reflect.Value) []reflect.Value {
 			log.Info("call method!")
-			inv := support.NewRPCInvocationForConsumer(methodName, nil, in[1].Interface().([]interface{}), in[2].Interface(), p.callBack, config.URL{}, nil)
+			inv := invocation.NewRPCInvocationForConsumer(methodName, nil, in[1].Interface().([]interface{}), in[2].Interface(), p.callBack, common.URL{}, nil)
 			for k, v := range p.attachments {
 				inv.SetAttachments(k, v)
 			}
@@ -113,6 +113,6 @@ func (p *Proxy) Implement(v config.RPCService) {
 
 }
 
-func (p *Proxy) Get() config.RPCService {
+func (p *Proxy) Get() common.RPCService {
 	return p.rpc
 }

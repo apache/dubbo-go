@@ -6,7 +6,6 @@ import (
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/config"
 )
 
 // Extension - Invoker
@@ -20,12 +19,12 @@ type Invoker interface {
 /////////////////////////////
 
 type BaseInvoker struct {
-	url       config.URL
+	url       common.URL
 	available bool
 	destroyed bool
 }
 
-func NewBaseInvoker(url config.URL) *BaseInvoker {
+func NewBaseInvoker(url common.URL) *BaseInvoker {
 	return &BaseInvoker{
 		url:       url,
 		available: true,
@@ -33,7 +32,7 @@ func NewBaseInvoker(url config.URL) *BaseInvoker {
 	}
 }
 
-func (bi *BaseInvoker) GetUrl() config.URL {
+func (bi *BaseInvoker) GetUrl() common.URL {
 	return bi.url
 }
 

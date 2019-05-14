@@ -1,7 +1,8 @@
-package support
+package config
 
 import (
 	"context"
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"net/url"
 	"strconv"
 	"strings"
@@ -16,7 +17,6 @@ import (
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"github.com/dubbo/go-for-apache-dubbo/common/extension"
-	"github.com/dubbo/go-for-apache-dubbo/config"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
@@ -39,7 +39,7 @@ type ServiceConfig struct {
 	Retries       int64  `yaml:"retries"  json:"retries,omitempty"`
 	unexported    *atomic.Bool
 	exported      *atomic.Bool
-	rpcService    config.RPCService
+	rpcService    common.RPCService
 	exporters     []protocol.Exporter
 	cacheProtocol protocol.Protocol
 	cacheMutex    sync.Mutex
@@ -67,12 +67,12 @@ func (srvconfig *ServiceConfig) Export() error {
 		return nil
 	}
 
-	regUrls := loadRegistries(srvconfig.Registries, providerConfig.Registries, config.PROVIDER)
+	regUrls := loadRegistries(srvconfig.Registries, providerConfig.Registries, common.PROVIDER)
 	urlMap := srvconfig.getUrlMap()
 
 	for _, proto := range loadProtocol(srvconfig.Protocol, providerConfig.Protocols) {
 		//registry the service reflect
-		methods, err := config.ServiceMap.Register(proto.Name, srvconfig.rpcService)
+		methods, err := common.ServiceMap.Register(proto.Name, srvconfig.rpcService)
 		if err != nil {
 			err := jerrors.Errorf("The service %v  export the protocol %v error! Error message is %v .", srvconfig.InterfaceName, proto.Name, err.Error())
 			log.Error(err.Error())
@@ -82,12 +82,12 @@ func (srvconfig *ServiceConfig) Export() error {
 		//if contextPath == "" {
 		//	contextPath = providerConfig.Path
 		//}
-		url := config.NewURLWithOptions(srvconfig.InterfaceName,
-			config.WithProtocol(proto.Name),
-			config.WithIp(proto.Ip),
-			config.WithPort(proto.Port),
-			config.WithParams(urlMap),
-			config.WithMethods(strings.Split(methods, ",")))
+		url := common.NewURLWithOptions(srvconfig.InterfaceName,
+			common.WithProtocol(proto.Name),
+			common.WithIp(proto.Ip),
+			common.WithPort(proto.Port),
+			common.WithParams(urlMap),
+			common.WithMethods(strings.Split(methods, ",")))
 
 		for _, regUrl := range regUrls {
 			regUrl.SubURL = url
@@ -109,7 +109,7 @@ func (srvconfig *ServiceConfig) Export() error {
 
 }
 
-func (srvconfig *ServiceConfig) Implement(s config.RPCService) {
+func (srvconfig *ServiceConfig) Implement(s common.RPCService) {
 	srvconfig.rpcService = s
 }
 

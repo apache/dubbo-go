@@ -1,18 +1,18 @@
 package cluster
 
 import (
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"time"
 )
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
-	"github.com/dubbo/go-for-apache-dubbo/config"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
 // Extension - LoadBalance
 type LoadBalance interface {
-	Select([]protocol.Invoker, config.URL, protocol.Invocation) protocol.Invoker
+	Select([]protocol.Invoker, common.URL, protocol.Invocation) protocol.Invoker
 }
 
 func GetWeight(invoker protocol.Invoker, invocation protocol.Invocation) int64 {

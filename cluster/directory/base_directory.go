@@ -1,26 +1,24 @@
 package directory
 
 import (
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/tevino/abool"
 	"sync"
 )
-import (
-	"github.com/dubbo/go-for-apache-dubbo/config"
-)
 
 type BaseDirectory struct {
-	url       *config.URL
+	url       *common.URL
 	destroyed *abool.AtomicBool
 	mutex     sync.Mutex
 }
 
-func NewBaseDirectory(url *config.URL) BaseDirectory {
+func NewBaseDirectory(url *common.URL) BaseDirectory {
 	return BaseDirectory{
 		url:       url,
 		destroyed: abool.NewBool(false),
 	}
 }
-func (dir *BaseDirectory) GetUrl() config.URL {
+func (dir *BaseDirectory) GetUrl() common.URL {
 	return *dir.url
 }
 
