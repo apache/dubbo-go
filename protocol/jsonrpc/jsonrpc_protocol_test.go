@@ -2,8 +2,6 @@ package jsonrpc
 
 import (
 	"context"
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/config"
 	"testing"
 	"time"
 )
@@ -13,6 +11,8 @@ import (
 )
 
 import (
+	"github.com/dubbo/go-for-apache-dubbo/common"
+	"github.com/dubbo/go-for-apache-dubbo/config"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 

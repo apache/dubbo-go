@@ -1,8 +1,6 @@
 package dubbo
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/config"
 	"strings"
 	"sync"
 	"time"
@@ -18,7 +16,9 @@ import (
 )
 
 import (
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
+	"github.com/dubbo/go-for-apache-dubbo/config"
 )
 
 var (

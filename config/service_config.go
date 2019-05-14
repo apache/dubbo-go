@@ -2,7 +2,6 @@ package config
 
 import (
 	"context"
-	"github.com/dubbo/go-for-apache-dubbo/common"
 	"net/url"
 	"strconv"
 	"strings"
@@ -15,6 +14,7 @@ import (
 	"go.uber.org/atomic"
 )
 import (
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"github.com/dubbo/go-for-apache-dubbo/common/extension"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"

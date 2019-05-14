@@ -3,7 +3,6 @@ package proxy
 import (
 	"context"
 	"errors"
-	"github.com/dubbo/go-for-apache-dubbo/common"
 	"testing"
 )
 
@@ -12,6 +11,7 @@ import (
 )
 
 import (
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 

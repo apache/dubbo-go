@@ -2,7 +2,6 @@ package dubbo
 
 import (
 	"bytes"
-	"github.com/dubbo/go-for-apache-dubbo/common"
 	"reflect"
 )
 
@@ -10,6 +9,9 @@ import (
 	"github.com/AlexStocks/getty"
 	log "github.com/AlexStocks/log4go"
 	jerrors "github.com/juju/errors"
+)
+import (
+	"github.com/dubbo/go-for-apache-dubbo/common"
 )
 
 ////////////////////////////////////////////
