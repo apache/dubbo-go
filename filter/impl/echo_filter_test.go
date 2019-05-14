@@ -17,7 +17,7 @@ import (
 func TestEchoFilter_Invoke(t *testing.T) {
 	filter := GetFilter()
 	result := filter.Invoke(protocol.NewBaseInvoker(common.URL{}),
-		invocation.NewRPCInvocationForProvider("Echo", []interface{}{"OK"}, nil))
+		invocation.NewRPCInvocationForProvider("$echo", []interface{}{"OK"}, nil))
 	assert.Equal(t, "OK", result.Result())
 
 	result = filter.Invoke(protocol.NewBaseInvoker(common.URL{}),
