@@ -38,10 +38,10 @@ type zkEventListener struct {
 	serviceMapLock sync.Mutex
 	serviceMap     map[string]struct{}
 	wg             sync.WaitGroup
-	registry       *ZkRegistry
+	registry       *zkRegistry
 }
 
-func newZkEventListener(registry *ZkRegistry, client *zookeeperClient) *zkEventListener {
+func newZkEventListener(registry *zkRegistry, client *zookeeperClient) *zkEventListener {
 	return &zkEventListener{
 		client:     client,
 		registry:   registry,
