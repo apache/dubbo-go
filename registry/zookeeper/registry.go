@@ -40,15 +40,15 @@ var (
 func init() {
 	processID = fmt.Sprintf("%d", os.Getpid())
 	localIP, _ = gxnet.GetLocalIP()
-	//plugins.PluggableRegistries["zookeeper"] = NewZkRegistry
-	extension.SetRegistry("zookeeper", NewZkRegistry)
+	//plugins.PluggableRegistries["zookeeper"] = newZkRegistry
+	extension.SetRegistry("zookeeper", newZkRegistry)
 }
 
 /////////////////////////////////////
 // zookeeper registry
 /////////////////////////////////////
 
-type ZkRegistry struct {
+type zkRegistry struct {
 	context context.Context
 	*common.URL
 	birth int64          // time of file birth, seconds since Epoch; 0 if unknown
@@ -66,13 +66,13 @@ type ZkRegistry struct {
 	zkPath map[string]int // key = protocol://ip:port/interface
 }
 
-func NewZkRegistry(url *common.URL) (registry.Registry, error) {
+func newZkRegistry(url *common.URL) (registry.Registry, error) {
 	var (
 		err error
-		r   *ZkRegistry
+		r   *zkRegistry
 	)
 
-	r = &ZkRegistry{
+	r = &zkRegistry{
 		URL:      url,
 		birth:    time.Now().UnixNano(),
 		done:     make(chan struct{}),
@@ -103,15 +103,15 @@ func NewZkRegistry(url *common.URL) (registry.Registry, error) {
 	return r, nil
 }
 
-func NewMockZkRegistry(url *common.URL) (*zk.TestCluster, *ZkRegistry, error) {
+func newMockZkRegistry(url *common.URL) (*zk.TestCluster, *zkRegistry, error) {
 	var (
 		err error
-		r   *ZkRegistry
+		r   *zkRegistry
 		c   *zk.TestCluster
 		//event <-chan zk.Event
 	)
 
-	r = &ZkRegistry{
+	r = &zkRegistry{
 		URL:      url,
 		birth:    time.Now().UnixNano(),
 		done:     make(chan struct{}),
@@ -134,11 +134,11 @@ func NewMockZkRegistry(url *common.URL) (*zk.TestCluster, *ZkRegistry, error) {
 
 	return c, r, nil
 }
-func (r *ZkRegistry) GetUrl() common.URL {
+func (r *zkRegistry) GetUrl() common.URL {
 	return *r.URL
 }
 
-func (r *ZkRegistry) Destroy() {
+func (r *zkRegistry) Destroy() {
 	if r.listener != nil {
 		r.listener.Close()
 	}
@@ -147,7 +147,7 @@ func (r *ZkRegistry) Destroy() {
 	r.closeRegisters()
 }
 
-func (r *ZkRegistry) validateZookeeperClient() error {
+func (r *zkRegistry) validateZookeeperClient() error {
 	var (
 		err error
 	)
@@ -182,7 +182,7 @@ func (r *ZkRegistry) validateZookeeperClient() error {
 	return jerrors.Annotatef(err, "newZookeeperClient(address:%+v)", r.PrimitiveURL)
 }
 
-func (r *ZkRegistry) handleZkRestart() {
+func (r *zkRegistry) handleZkRestart() {
 	var (
 		err       error
 		flag      bool
@@ -247,7 +247,7 @@ LOOP:
 	}
 }
 
-func (r *ZkRegistry) Register(conf common.URL) error {
+func (r *zkRegistry) Register(conf common.URL) error {
 	var (
 		ok       bool
 		err      error
@@ -308,7 +308,7 @@ func (r *ZkRegistry) Register(conf common.URL) error {
 	return nil
 }
 
-func (r *ZkRegistry) register(c common.URL) error {
+func (r *zkRegistry) register(c common.URL) error {
 	var (
 		err error
 		//revision   string
@@ -423,7 +423,7 @@ func (r *ZkRegistry) register(c common.URL) error {
 	return nil
 }
 
-func (r *ZkRegistry) registerTempZookeeperNode(root string, node string) error {
+func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 	var (
 		err    error
 		zkPath string
@@ -446,12 +446,12 @@ func (r *ZkRegistry) registerTempZookeeperNode(root string, node string) error {
 	return nil
 }
 
-func (r *ZkRegistry) Subscribe(conf common.URL) (registry.Listener, error) {
+func (r *zkRegistry) Subscribe(conf common.URL) (registry.Listener, error) {
 	r.wg.Add(1)
 	return r.getListener(conf)
 }
 
-func (r *ZkRegistry) getListener(conf common.URL) (*zkEventListener, error) {
+func (r *zkRegistry) getListener(conf common.URL) (*zkEventListener, error) {
 	var (
 		zkListener *zkEventListener
 	)
@@ -489,7 +489,7 @@ func (r *ZkRegistry) getListener(conf common.URL) (*zkEventListener, error) {
 	return zkListener, nil
 }
 
-func (r *ZkRegistry) closeRegisters() {
+func (r *zkRegistry) closeRegisters() {
 	r.cltLock.Lock()
 	defer r.cltLock.Unlock()
 	log.Info("begin to close provider zk client")
@@ -499,7 +499,7 @@ func (r *ZkRegistry) closeRegisters() {
 	r.services = nil
 }
 
-func (r *ZkRegistry) IsAvailable() bool {
+func (r *zkRegistry) IsAvailable() bool {
 	select {
 	case <-r.done:
 		return false
