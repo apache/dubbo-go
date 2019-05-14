@@ -1,12 +1,12 @@
 package loadbalance
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common"
 	"math/rand"
 )
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/cluster"
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/common/extension"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )

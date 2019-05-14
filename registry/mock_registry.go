@@ -1,8 +1,10 @@
 package registry
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/tevino/abool"
+)
+import (
+	"github.com/dubbo/go-for-apache-dubbo/common"
 )
 
 type MockRegistry struct {

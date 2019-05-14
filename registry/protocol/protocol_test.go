@@ -2,7 +2,6 @@ package protocol
 
 import (
 	"context"
-	"github.com/dubbo/go-for-apache-dubbo/common"
 	"testing"
 )
 import (
@@ -10,6 +9,7 @@ import (
 )
 import (
 	cluster "github.com/dubbo/go-for-apache-dubbo/cluster/cluster_impl"
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"github.com/dubbo/go-for-apache-dubbo/common/extension"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"

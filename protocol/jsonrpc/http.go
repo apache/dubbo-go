@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/dubbo/go-for-apache-dubbo/common"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -21,6 +20,7 @@ import (
 )
 
 import (
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 )
 

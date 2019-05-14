@@ -2,9 +2,11 @@ package registry
 
 import (
 	"fmt"
-	"github.com/dubbo/go-for-apache-dubbo/common"
 	"math/rand"
 	"time"
+)
+import (
+	"github.com/dubbo/go-for-apache-dubbo/common"
 )
 
 func init() {

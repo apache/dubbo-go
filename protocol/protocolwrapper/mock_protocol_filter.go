@@ -1,9 +1,11 @@
 package protocolwrapper
 
 import (
+	"sync"
+)
+import (
 	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
-	"sync"
 )
 
 type mockProtocolFilter struct {
