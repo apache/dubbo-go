@@ -5,13 +5,13 @@ import (
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
-type MockCluster struct {
+type mockCluster struct {
 }
 
 func NewMockCluster() cluster.Cluster {
-	return &MockCluster{}
+	return &mockCluster{}
 }
 
-func (cluster *MockCluster) Join(directory cluster.Directory) protocol.Invoker {
+func (cluster *mockCluster) Join(directory cluster.Directory) protocol.Invoker {
 	return protocol.NewBaseInvoker(directory.GetUrl())
 }
