@@ -1,4 +1,4 @@
-package cluster
+package cluster_impl
 
 import (
 	gxnet "github.com/AlexStocks/goext/net"
@@ -37,7 +37,7 @@ func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) pr
 	lb := url.GetParam(constant.LOADBALANCE_KEY, constant.DEFAULT_LOADBALANCE)
 
 	//Get the service method loadbalance config if have
-	if v := url.GetMethodParam(methodName, constant.LOADBALANCE_KEY, constant.DEFAULT_LOADBALANCE); v != "" {
+	if v := url.GetMethodParam(methodName, constant.LOADBALANCE_KEY, ""); v != "" {
 		lb = v
 	}
 	loadbalance := extension.GetLoadbalance(lb)
@@ -46,7 +46,7 @@ func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) pr
 	retries := url.GetParamInt(constant.RETRIES_KEY, constant.DEFAULT_RETRIES)
 
 	//Get the service method loadbalance config if have
-	if v := url.GetMethodParamInt(methodName, constant.RETRIES_KEY, constant.DEFAULT_RETRIES); v != 0 {
+	if v := url.GetMethodParamInt(methodName, constant.RETRIES_KEY, 0); v != 0 {
 		retries = v
 	}
 	invoked := []protocol.Invoker{}
