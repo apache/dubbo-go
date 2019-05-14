@@ -12,10 +12,10 @@ type failoverCluster struct {
 const name = "failover"
 
 func init() {
-	extension.SetCluster(name, NewFailoverCluster)
+	extension.SetCluster(name, newFailoverCluster)
 }
 
-func NewFailoverCluster() cluster.Cluster {
+func newFailoverCluster() cluster.Cluster {
 	return &failoverCluster{}
 }
 
