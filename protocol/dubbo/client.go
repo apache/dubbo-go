@@ -278,10 +278,10 @@ func (c *Client) transfer(session getty.Session, pkg *DubboPackage,
 	if pkg == nil {
 		pkg = &DubboPackage{}
 		pkg.Body = []interface{}{}
-		pkg.Header.Type = hessian.Heartbeat
+		pkg.Header.Type = hessian.PackageHeartbeat
 		pkg.Header.SerialID = byte(S_Dubbo)
 	} else {
-		pkg.Header.Type = hessian.Request
+		pkg.Header.Type = hessian.PackageRequest
 	}
 	pkg.Header.ID = int64(sequence)
 

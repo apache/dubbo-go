@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/dubbo/go-for-apache-dubbo/config"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -18,13 +17,14 @@ import (
 )
 
 import (
+	"github.com/dubbo/go-for-apache-dubbo/config"
 	_ "github.com/dubbo/go-for-apache-dubbo/protocol/jsonrpc"
 	_ "github.com/dubbo/go-for-apache-dubbo/registry/protocol"
 
-	_ "github.com/dubbo/go-for-apache-dubbo/filter/imp"
+	_ "github.com/dubbo/go-for-apache-dubbo/filter/impl"
 
-	_ "github.com/dubbo/go-for-apache-dubbo/cluster/loadbalance"
 	_ "github.com/dubbo/go-for-apache-dubbo/cluster/cluster_impl"
+	_ "github.com/dubbo/go-for-apache-dubbo/cluster/loadbalance"
 	_ "github.com/dubbo/go-for-apache-dubbo/registry/zookeeper"
 )
 
