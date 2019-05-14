@@ -17,14 +17,14 @@ func init() {
 	extension.SetLoadbalance(name, NewRandomLoadBalance)
 }
 
-type RandomLoadBalance struct {
+type randomLoadBalance struct {
 }
 
 func NewRandomLoadBalance() cluster.LoadBalance {
-	return &RandomLoadBalance{}
+	return &randomLoadBalance{}
 }
 
-func (lb *RandomLoadBalance) Select(invokers []protocol.Invoker, url common.URL, invocation protocol.Invocation) protocol.Invoker {
+func (lb *randomLoadBalance) Select(invokers []protocol.Invoker, url common.URL, invocation protocol.Invocation) protocol.Invoker {
 	var length int
 	if length = len(invokers); length == 1 {
 		return invokers[0]
