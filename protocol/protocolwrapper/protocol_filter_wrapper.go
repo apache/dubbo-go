@@ -9,7 +9,7 @@ import (
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"github.com/dubbo/go-for-apache-dubbo/common/extension"
 	"github.com/dubbo/go-for-apache-dubbo/filter"
-	"github.com/dubbo/go-for-apache-dubbo/filter/imp"
+	"github.com/dubbo/go-for-apache-dubbo/filter/impl"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
@@ -49,7 +49,7 @@ func buildInvokerChain(invoker protocol.Invoker, key string) protocol.Invoker {
 		filtName = filtName + ","
 	}
 	if key == constant.SERVICE_FILTER_KEY { // echofilter must be the first in provider
-		filtName = imp.ECHO + "," + filtName
+		filtName = impl.ECHO + "," + filtName
 	}
 	filtNames := strings.Split(filtName, ",")
 	next := invoker
