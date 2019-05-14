@@ -3,12 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/dubbo/go-for-apache-dubbo/config"
 	"strconv"
 	"time"
 )
 
 import (
+	"github.com/dubbo/go-for-apache-dubbo/config"
 	"github.com/dubbogo/hessian2"
 )
 

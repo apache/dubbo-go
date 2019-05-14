@@ -1,12 +1,14 @@
 package protocol
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common"
 	"sync"
 )
 
 import (
 	log "github.com/AlexStocks/log4go"
+)
+import (
+	"github.com/dubbo/go-for-apache-dubbo/common"
 )
 
 // Extension - protocol

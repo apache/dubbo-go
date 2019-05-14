@@ -2,13 +2,16 @@ package config
 
 import (
 	"context"
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"net/url"
 	"strconv"
 )
 import (
 	log "github.com/AlexStocks/log4go"
+)
+
+import (
+	"github.com/dubbo/go-for-apache-dubbo/common"
+	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 )
 
 type RegistryConfig struct {
