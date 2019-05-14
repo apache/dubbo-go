@@ -2,6 +2,7 @@ package directory
 
 import (
 	"context"
+	"github.com/dubbo/go-for-apache-dubbo/protocol/invocation"
 	"net/url"
 	"strconv"
 	"testing"
@@ -15,7 +16,6 @@ import (
 	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"github.com/dubbo/go-for-apache-dubbo/common/extension"
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
 	"github.com/dubbo/go-for-apache-dubbo/protocol/protocolwrapper"
 	"github.com/dubbo/go-for-apache-dubbo/registry"
 )
@@ -93,7 +93,7 @@ func Test_List(t *testing.T) {
 	registryDirectory, _ := normalRegistryDir()
 
 	time.Sleep(1e9)
-	assert.Len(t, registryDirectory.List(protocol.Invocation()), 3)
+	assert.Len(t, registryDirectory.List(&invocation.RPCInvocation{}), 3)
 	assert.Equal(t, true, registryDirectory.IsAvailable())
 
 }
