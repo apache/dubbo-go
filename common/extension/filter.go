@@ -17,5 +17,8 @@ func SetFilter(name string, v func() filter.Filter) {
 }
 
 func GetFilterExtension(name string) filter.Filter {
+	if filters[name] == nil {
+		panic("filter for " + name + " is not existing, you must import corresponding package.")
+	}
 	return filters[name]()
 }
