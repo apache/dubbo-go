@@ -11,5 +11,8 @@ func SetLoadbalance(name string, fcn func() cluster.LoadBalance) {
 }
 
 func GetLoadbalance(name string) cluster.LoadBalance {
+	if loadbalances[name] == nil {
+		panic("loadbalance for " + name + " is not existing, you must import corresponding package.")
+	}
 	return loadbalances[name]()
 }
