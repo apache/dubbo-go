@@ -34,7 +34,7 @@ func TestProxy_Implement(t *testing.T) {
 		return errors.New("errors")
 	}}
 	p.Implement(s)
-	err := s.MethodOne(nil, nil, nil)
+	err := p.Get().(*TestService).MethodOne(nil, nil, nil)
 	assert.NoError(t, err)
 
 	// inherit & lowercase
@@ -54,12 +54,11 @@ func TestProxy_Implement(t *testing.T) {
 	// args number
 	type S2 struct {
 		TestService
-		MethodOne func(context.Context, []interface{}) error
+		MethodOne func([]interface{}) error
 	}
 	s2 := &S2{TestService: *s}
 	p.Implement(s2)
 	assert.Nil(t, s2.MethodOne)
-	//assert.EqualError(t, err, "method MethodOne of mtype func(context.Context, []interface {}) error has wrong number of in parameters 2; needs exactly 3/4")
 
 	// returns number
 	type S3 struct {
@@ -69,7 +68,6 @@ func TestProxy_Implement(t *testing.T) {
 	s3 := &S3{TestService: *s}
 	p.Implement(s3)
 	assert.Nil(t, s3.MethodOne)
-	//assert.EqualError(t, err, "method \"MethodOne\" has 2 out parameters; needs exactly 1")
 
 	// returns type
 	type S4 struct {
@@ -79,9 +77,8 @@ func TestProxy_Implement(t *testing.T) {
 	s4 := &S4{TestService: *s}
 	p.Implement(s4)
 	assert.Nil(t, s4.MethodOne)
-	//assert.EqualError(t, err, "return type interface {} of method \"MethodOne\" is not error")
 
-	// reply type
+	// reply type for number 3
 	type S5 struct {
 		TestService
 		MethodOne func(context.Context, []interface{}, interface{}) error
@@ -89,6 +86,13 @@ func TestProxy_Implement(t *testing.T) {
 	s5 := &S5{TestService: *s}
 	p.Implement(s5)
 	assert.Nil(t, s5.MethodOne)
-	//assert.EqualError(t, err, "reply type of method \"MethodOne\" is not a pointer interface {}")
 
+	// reply type for number 2
+	type S6 struct {
+		TestService
+		MethodOne func([]interface{}, interface{}) error
+	}
+	s6 := &S6{TestService: *s}
+	p.Implement(s6)
+	assert.Nil(t, s5.MethodOne)
 }
