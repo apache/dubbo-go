@@ -216,9 +216,7 @@ func (c URL) String() string {
 	buildString := fmt.Sprintf(
 		"%s://%s:%s@%s:%s%s?",
 		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path)
-	for k, v := range c.Params {
-		buildString += "&" + k + "=" + v[0]
-	}
+	buildString += c.Params.Encode()
 	return buildString
 }
 
@@ -265,7 +263,7 @@ func (c URL) GetMethodParamInt(method string, key string, d int64) int64 {
 
 func (c URL) GetMethodParam(method string, key string, d string) string {
 	var r string
-	if r = c.Params.Get(c.Params.Get("methods." + method + "." + key)); r == "" {
+	if r = c.Params.Get("methods." + method + "." + key); r == "" {
 		r = d
 	}
 	return r
