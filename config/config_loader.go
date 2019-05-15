@@ -138,9 +138,6 @@ type ConsumerConfig struct {
 	Request_Timeout string `yaml:"request_timeout" default:"5s" json:"request_timeout,omitempty"`
 	RequestTimeout  time.Duration
 
-	// codec & selector & transport & registry
-	Selector     string `default:"cache"  yaml:"selector" json:"selector,omitempty"`
-	Selector_TTL string `default:"10m"  yaml:"selector_ttl" json:"selector_ttl,omitempty"`
 	// application
 	ApplicationConfig ApplicationConfig `yaml:"application_config" json:"application_config,omitempty"`
 	Registries        []RegistryConfig  `yaml:"registries" json:"registries,omitempty"`
@@ -175,7 +172,6 @@ type ProviderConfig struct {
 	Pprof_Port    int  `default:"10086"  yaml:"pprof_port" json:"pprof_port,omitempty"`
 
 	ApplicationConfig ApplicationConfig `yaml:"application_config" json:"application_config,omitempty"`
-	Path              string            `yaml:"path" json:"path,omitempty"`
 	Registries        []RegistryConfig  `yaml:"registries" json:"registries,omitempty"`
 	Services          []ServiceConfig   `yaml:"services" json:"services,omitempty"`
 	Protocols         []ProtocolConfig  `yaml:"protocols" json:"protocols,omitempty"`
