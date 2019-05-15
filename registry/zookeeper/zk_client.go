@@ -220,7 +220,6 @@ func (z *zookeeperClient) unregisterEvent(zkPath string, event *chan struct{}) {
 		} else {
 			z.eventRegistry[zkPath] = a
 		}
-		break
 	}
 	z.Unlock()
 }
