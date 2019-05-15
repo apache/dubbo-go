@@ -53,18 +53,26 @@ func (p *Proxy) Implement(v common.RPCService) {
 
 	makeDubboCallProxy := func(methodName string, outs []reflect.Type) func(in []reflect.Value) []reflect.Value {
 		return func(in []reflect.Value) []reflect.Value {
-
+			var (
+				err error
+				inv *invocation_impl.RPCInvocation
+			)
 			if methodName == "Echo" {
 				methodName = "$echo"
 			}
-			inv := invocation_impl.NewRPCInvocationForConsumer(methodName, nil, in[1].Interface().([]interface{}), in[2].Interface(), p.callBack, common.URL{}, nil)
+			if len(in) == 2 {
+				inv = invocation_impl.NewRPCInvocationForConsumer(methodName, nil, in[0].Interface().([]interface{}), in[1].Interface(), p.callBack, common.URL{}, nil)
+			}
+			if len(in) == 3 {
+				inv = invocation_impl.NewRPCInvocationForConsumer(methodName, nil, in[1].Interface().([]interface{}), in[2].Interface(), p.callBack, common.URL{}, nil)
+			}
 
 			for k, v := range p.attachments {
 				inv.SetAttachments(k, v)
 			}
 
 			result := p.invoke.Invoke(inv)
-			var err error
+
 			err = result.Error()
 			log.Info("[makeDubboCallProxy] err: %v", err)
 			return []reflect.Value{reflect.ValueOf(&err).Elem()}
@@ -76,20 +84,19 @@ func (p *Proxy) Implement(v common.RPCService) {
 		t := typeOf.Field(i)
 		f := valueOfElem.Field(i)
 		if f.Kind() == reflect.Func && f.IsValid() && f.CanSet() {
-
-			if t.Type.NumIn() != 3 && t.Type.NumIn() != 4 {
+			if t.Type.NumIn() != 2 && t.Type.NumIn() != 3 {
 				log.Warn("method %s of mtype %v has wrong number of in parameters %d; needs exactly 3/4",
 					t.Name, t.Type.String(), t.Type.NumIn())
 				continue
 			}
 
-			if t.Type.NumIn() == 3 && t.Type.In(2).Kind() != reflect.Ptr {
-				log.Warn("reply type of method %q is not a pointer %v", t.Name, t.Type.In(2))
+			if t.Type.NumIn() == 2 && t.Type.In(1).Kind() != reflect.Ptr {
+				log.Warn("reply type of method %q is not a pointer %v", t.Name, t.Type.In(1))
 				continue
 			}
 
-			if t.Type.NumIn() == 4 && t.Type.In(3).Kind() != reflect.Ptr {
-				log.Warn("reply type of method %q is not a pointer %v", t.Name, t.Type.In(3))
+			if t.Type.NumIn() == 3 && t.Type.In(2).Kind() != reflect.Ptr {
+				log.Warn("reply type of method %q is not a pointer %v", t.Name, t.Type.In(2))
 				continue
 			}
 
