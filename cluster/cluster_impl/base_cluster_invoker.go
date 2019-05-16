@@ -38,7 +38,7 @@ func (invoker *baseClusterInvoker) Destroy() {
 }
 
 func (invoker *baseClusterInvoker) IsAvailable() bool {
-	//TODO:不理解java版本中关于stikyInvoker的逻辑所以先不写
+	//TODO:sticky connection
 	return invoker.directory.IsAvailable()
 }
 
@@ -46,9 +46,9 @@ func (invoker *baseClusterInvoker) IsAvailable() bool {
 func (invoker *baseClusterInvoker) checkInvokers(invokers []protocol.Invoker, invocation protocol.Invocation) error {
 	if len(invokers) == 0 {
 		ip, _ := gxnet.GetLocalIP()
-		return jerrors.Errorf("Failed to invoke the method %v . No provider available for the service %v from"+
+		return jerrors.Errorf("Failed to invoke the method %v . No provider available for the service %v from "+
 			"registry %v on the consumer %v using the dubbo version %v .Please check if the providers have been started and registered.",
-			invocation.MethodName(), invoker.directory.GetUrl().Key(), invoker.directory.GetUrl().String(), ip, version.Version)
+			invocation.MethodName(), invoker.directory.GetUrl().SubURL.Key(), invoker.directory.GetUrl().String(), ip, version.Version)
 	}
 	return nil
 
