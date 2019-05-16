@@ -1,4 +1,4 @@
-# dubbo-go #
+# go-for-apache-dubbo #
 ---
 Apache Dubbo Golang Implementation.
 
@@ -28,7 +28,7 @@ About detail design please refer to [code layered design](https://github.com/dub
 
 ## Code Example
 
-The subdirectory examples shows how to use dubbo-go. Please read the examples/readme.md carefully to learn how to dispose the configuration and compile the program.
+The subdirectory examples shows how to use go-for-apache-dubbo. Please read the examples/readme.md carefully to learn how to dispose the configuration and compile the program.
 
 
 ## Todo list
