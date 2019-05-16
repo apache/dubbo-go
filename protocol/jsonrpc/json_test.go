@@ -23,6 +23,10 @@ func TestJsonClientCodec_Write(t *testing.T) {
 	data, err := codec.Write(cd)
 	assert.NoError(t, err)
 	assert.Equal(t, "{\"jsonrpc\":\"2.0\",\"method\":\"GetUser\",\"params\":[\"args\",2],\"id\":1}\n", string(data))
+
+	cd.Args = 1
+	data, err = codec.Write(cd)
+	assert.EqualError(t, err, "unsupported param type: int")
 }
 
 func TestJsonClientCodec_Read(t *testing.T) {
@@ -44,6 +48,10 @@ func TestServerCodec_Write(t *testing.T) {
 	a := json.RawMessage([]byte("1"))
 	codec.req = serverRequest{Version: "1.0", Method: "GetUser", ID: &a}
 	data, err := codec.Write("error", &TestData{Test: "test"})
+	assert.NoError(t, err)
+	assert.Equal(t, "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"Test\":\"test\"},\"error\":{\"code\":-32000,\"message\":\"error\"}}\n", string(data))
+
+	data, err = codec.Write("{\"code\":-32000,\"message\":\"error\"}", &TestData{Test: "test"})
 	assert.NoError(t, err)
 	assert.Equal(t, "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"Test\":\"test\"},\"error\":{\"code\":-32000,\"message\":\"error\"}}\n", string(data))
 }
