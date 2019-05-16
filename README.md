@@ -7,7 +7,7 @@ Apache Dubbo Golang Implementation.
 Apache License, Version 2.0
 
 ## Code design ##
-Based on dubbo's layered design (protocol layer,registry layer,cluster layer,config layer and so on),
+Based on dubbo's layered code design (protocol layer,registry layer,cluster layer,config layer and so on),
 
 About detail design please refer to [code layered design](https://github.com/dubbo/go-for-apache-dubbo/wiki/dubbo-go-V2.6-design)
 ## Feature list ##
