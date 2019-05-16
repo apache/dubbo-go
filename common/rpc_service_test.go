@@ -81,6 +81,30 @@ func TestServiceMap_Register(t *testing.T) {
 	s1 := &TestService1{}
 	methods, err = ServiceMap.Register("testporotocol", s1)
 	assert.EqualError(t, err, "type com.test.Path1 has no exported methods of suitable type")
+
+	ServiceMap = &serviceMap{
+		serviceMap: make(map[string]map[string]*Service),
+	}
+}
+
+func TestServiceMap_UnRegister(t *testing.T) {
+	s := &TestService{}
+	_, err := ServiceMap.Register("testprotocol", s)
+	assert.NoError(t, err)
+	assert.NotNil(t, ServiceMap.GetService("testprotocol", "com.test.Path"))
+
+	err = ServiceMap.UnRegister("", "com.test.Path")
+	assert.EqualError(t, err, "protocol or serviceName is nil")
+
+	err = ServiceMap.UnRegister("protocol", "com.test.Path")
+	assert.EqualError(t, err, "no services for protocol")
+
+	err = ServiceMap.UnRegister("testprotocol", "com.test.Path1")
+	assert.EqualError(t, err, "no service for com.test.Path1")
+
+	// succ
+	err = ServiceMap.UnRegister("testprotocol", "com.test.Path")
+	assert.NoError(t, err)
 }
 
 func TestMethodType_SuiteContext(t *testing.T) {
