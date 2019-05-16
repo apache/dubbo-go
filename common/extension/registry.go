@@ -22,6 +22,9 @@ func SetRegistry(name string, v func(config *common.URL) (registry.Registry, err
 }
 
 func GetRegistryExtension(name string, config *common.URL) (registry.Registry, error) {
+	if registrys[name] == nil {
+		panic("registry for " + name + " is not existing, you must import corresponding package.")
+	}
 	return registrys[name](config)
 
 }

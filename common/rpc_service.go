@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"strings"
 	"sync"
@@ -25,6 +26,7 @@ var (
 	// because Typeof takes an empty interface value. This is annoying.
 	typeOfError = reflect.TypeOf((*error)(nil)).Elem()
 
+	// todo: lowerecas?
 	ServiceMap = &serviceMap{
 		serviceMap: make(map[string]map[string]*Service),
 	}
@@ -143,6 +145,31 @@ func (sm *serviceMap) Register(protocol string, rcvr RPCService) (string, error)
 	sm.mutex.Unlock()
 
 	return strings.TrimSuffix(methods, ","), nil
+}
+
+func (sm *serviceMap) UnRegister(protocol, serviceName string) error {
+	if protocol == "" || serviceName == "" {
+		return errors.New("protocol or serviceName is nil")
+	}
+	sm.mutex.RLock()
+	svcs, ok := sm.serviceMap[protocol]
+	if !ok {
+		sm.mutex.RUnlock()
+		return errors.New("no services for " + protocol)
+	}
+	_, ok = svcs[serviceName]
+	if !ok {
+		sm.mutex.RUnlock()
+		return errors.New("no service for " + serviceName)
+	}
+	sm.mutex.RUnlock()
+
+	sm.mutex.Lock()
+	defer sm.mutex.Unlock()
+	delete(svcs, serviceName)
+	delete(sm.serviceMap, protocol)
+
+	return nil
 }
 
 // Is this an exported - upper case - name

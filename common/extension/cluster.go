@@ -13,5 +13,8 @@ func SetCluster(name string, fcn func() cluster.Cluster) {
 }
 
 func GetCluster(name string) cluster.Cluster {
+	if clusters[name] == nil {
+		panic("cluster for " + name + " is not existing, you must import corresponding package.")
+	}
 	return clusters[name]()
 }
