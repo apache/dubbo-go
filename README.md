@@ -16,7 +16,7 @@ About detail design please refer to [code layered design](https://github.com/dub
 
 +  Transport: HTTP(√), TCP(√) Based on [getty](https://github.com/AlexStocks/getty)
 
-+  Codec:  JsonRPC(√), Hessian(√) Based on [Hession2](https://github.com/dubbogo/hessian2)
++  Codec:  JsonRPC(√), Hessian(√) Based on [hession2](https://github.com/dubbogo/hessian2)
 
 +  Registry: ZooKeeper(√)
 
@@ -52,3 +52,5 @@ Compatible with dubbo v2.7.x and not finished function in dubbo v2.6.x:
  * metrics (dubbo v2.6.x)
  
  * dynamic configuration (dubbo v2.7.x)
+
+About the roadmap please refer to [roadmap](https://github.com/dubbo/go-for-apache-dubbo/wiki/Roadmap)
