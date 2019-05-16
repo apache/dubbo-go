@@ -56,11 +56,11 @@ func (bp *BaseProtocol) Invokers() []Invoker {
 }
 
 func (bp *BaseProtocol) Export(invoker Invoker) Exporter {
-	return nil
+	return NewBaseExporter("base", invoker, bp.exporterMap)
 }
 
 func (bp *BaseProtocol) Refer(url common.URL) Invoker {
-	return nil
+	return NewBaseInvoker(url)
 }
 
 // Destroy will destroy all invoker and exporter, so it only is called once.

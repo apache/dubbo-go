@@ -16,7 +16,9 @@ func TestConfigLoader(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Nil(t, consumerConfig)
+	assert.Equal(t, ConsumerConfig{}, GetConsumerConfig())
 	assert.Nil(t, providerConfig)
+	assert.Equal(t, ProviderConfig{}, GetProviderConfig())
 
 	err = consumerInit(conPath)
 	assert.NoError(t, err)
@@ -24,5 +26,7 @@ func TestConfigLoader(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NotNil(t, consumerConfig)
+	assert.NotEqual(t, ConsumerConfig{}, GetConsumerConfig())
 	assert.NotNil(t, providerConfig)
+	assert.NotEqual(t, ProviderConfig{}, GetProviderConfig())
 }
