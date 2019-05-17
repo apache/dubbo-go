@@ -37,7 +37,7 @@ func TestHTTPClient_Call(t *testing.T) {
 
 	// Export
 	proto := GetProtocol()
-	url, err := common.NewURL(context.Background(), "jsonrpc://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&"+
+	url, err := common.NewURL(context.Background(), "jsonrpc://127.0.0.1:20001/com.ikurento.user.UserProvider?anyhost=true&"+
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&"+
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&"+
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&"+

@@ -1,0 +1,17 @@
+language: go
+
+go:
+  - "1.11"
+  - "1.12"
+
+env:
+  - GO111MODULE=on
+
+install: true
+
+script:
+  - go fmt ./... && [[ -z `git status -s` ]]
+  - go mod vendor && go test ./... -coverprofile=coverage.txt -covermode=atomic
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
