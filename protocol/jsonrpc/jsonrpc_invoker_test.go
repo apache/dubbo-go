@@ -2,7 +2,6 @@ package jsonrpc
 
 import (
 	"context"
-	"github.com/dubbo/go-for-apache-dubbo/protocol/invocation"
 	"testing"
 	"time"
 )
@@ -14,13 +13,14 @@ import (
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
+	"github.com/dubbo/go-for-apache-dubbo/protocol/invocation"
 )
 
 func TestJsonrpcInvoker_Invoke(t *testing.T) {
 
 	methods, err := common.ServiceMap.Register("jsonrpc", &UserProvider{})
 	assert.NoError(t, err)
-	assert.Equal(t, "GetUser,GetUser1", methods)
+	assert.Equal(t, "GetUser,GetUser0,GetUser1", methods)
 
 	// Export
 	proto := GetProtocol()
@@ -31,6 +31,7 @@ func TestJsonrpcInvoker_Invoke(t *testing.T) {
 		"side=provider&timeout=3000&timestamp=1556509797245")
 	assert.NoError(t, err)
 	proto.Export(protocol.NewBaseInvoker(url))
+	time.Sleep(time.Second * 2)
 
 	client := NewHTTPClient(&HTTPOptions{
 		HandshakeTimeout: time.Second,

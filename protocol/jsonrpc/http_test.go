@@ -33,7 +33,7 @@ func TestHTTPClient_Call(t *testing.T) {
 
 	methods, err := common.ServiceMap.Register("jsonrpc", &UserProvider{})
 	assert.NoError(t, err)
-	assert.Equal(t, "GetUser,GetUser1", methods)
+	assert.Equal(t, "GetUser,GetUser0,GetUser1", methods)
 
 	// Export
 	proto := GetProtocol()
@@ -44,11 +44,9 @@ func TestHTTPClient_Call(t *testing.T) {
 		"side=provider&timeout=3000&timestamp=1556509797245")
 	assert.NoError(t, err)
 	proto.Export(protocol.NewBaseInvoker(url))
+	time.Sleep(time.Second * 2)
 
-	client := NewHTTPClient(&HTTPOptions{
-		HandshakeTimeout: time.Second,
-		HTTPTimeout:      time.Second,
-	})
+	client := NewHTTPClient(&HTTPOptions{})
 
 	// call GetUser
 	ctx := context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
@@ -58,6 +56,19 @@ func TestHTTPClient_Call(t *testing.T) {
 	})
 	req := client.NewRequest(url, "GetUser", []interface{}{"1", "username"})
 	reply := &User{}
+	err = client.Call(ctx, url, req, reply)
+	assert.NoError(t, err)
+	assert.Equal(t, "1", reply.Id)
+	assert.Equal(t, "username", reply.Name)
+
+	// call GetUser
+	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
+		"X-Proxy-Id": "dubbogo",
+		"X-Services": url.Path,
+		"X-Method":   "GetUser",
+	})
+	req = client.NewRequest(url, "GetUser0", []interface{}{"1", "username"})
+	reply = &User{}
 	err = client.Call(ctx, url, req, reply)
 	assert.NoError(t, err)
 	assert.Equal(t, "1", reply.Id)
@@ -81,6 +92,12 @@ func TestHTTPClient_Call(t *testing.T) {
 }
 
 func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User) error {
+	rsp.Id = req[0].(string)
+	rsp.Name = req[1].(string)
+	return nil
+}
+
+func (u *UserProvider) GetUser0(req []interface{}, rsp *User) error {
 	rsp.Id = req[0].(string)
 	rsp.Name = req[1].(string)
 	return nil
