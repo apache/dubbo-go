@@ -183,11 +183,11 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 		return
 	}
 
+	twoway := true
 	// not twoway
 	if p.Header.Type&hessian.PackageRequest_TwoWay == 0x00 {
+		twoway = false
 		h.reply(session, p, hessian.PackageResponse)
-		h.callService(p, nil)
-		return
 	}
 
 	invoker := h.exporter.GetInvoker()
@@ -213,6 +213,9 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	}
 
 	h.callService(p, nil)
+	if !twoway {
+		return
+	}
 	h.reply(session, p, hessian.PackageResponse)
 }
 

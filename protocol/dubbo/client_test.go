@@ -3,13 +3,13 @@ package dubbo
 import (
 	"context"
 	"errors"
-	"github.com/dubbogo/hessian2"
 	"sync"
 	"testing"
 	"time"
 )
 
 import (
+	"github.com/dubbogo/hessian2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -60,6 +60,11 @@ func TestClient_Call(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "1", Name: "username"}, *user)
 
+	user = &User{}
+	err = c.Call("127.0.0.1:20000", url, "GetUser0", []interface{}{"1", "username"}, user)
+	assert.NoError(t, err)
+	assert.Equal(t, User{Id: "1", Name: "username"}, *user)
+
 	// destroy
 	proto.Destroy()
 }
@@ -95,7 +100,7 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 
 	methods, err := common.ServiceMap.Register("dubbo", &UserProvider{})
 	assert.NoError(t, err)
-	assert.Equal(t, "GetUser,GetUser1", methods)
+	assert.Equal(t, "GetUser,GetUser0,GetUser1", methods)
 
 	// config
 	SetClientConf(ClientConfig{
@@ -153,10 +158,18 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 	assert.NoError(t, err)
 	proto.Export(protocol.NewBaseInvoker(url))
 
+	time.Sleep(time.Second * 2)
+
 	return proto, url
 }
 
 func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User) error {
+	rsp.Id = req[0].(string)
+	rsp.Name = req[1].(string)
+	return nil
+}
+
+func (u *UserProvider) GetUser0(req []interface{}, rsp *User) error {
 	rsp.Id = req[0].(string)
 	rsp.Name = req[1].(string)
 	return nil
