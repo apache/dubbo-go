@@ -7,12 +7,12 @@ pprof_port : 20080
 path: ""
 # application config
 application_config:
-    organization : "ikurento.com"
-    name : "BDTService"
-    module : "dubbogo user-info server"
-    version : "0.0.1"
-    owner : "ZX"
-    environment : "dev"
+  organization : "ikurento.com"
+  name : "BDTService"
+  module : "dubbogo user-info server"
+  version : "0.0.1"
+  owner : "ZX"
+  environment : "dev"
 
 registries :
 - id: "hangzhouzk"
@@ -35,7 +35,7 @@ services:
   - "hangzhouzk"
   - "shanghaizk"
   protocol : "dubbo"
-    # 相当于dubbo.xml中的interface
+  # 相当于dubbo.xml中的interface
   interface : "com.ikurento.user.UserProvider"
   loadbalance: "random"
   warmup: "100"
