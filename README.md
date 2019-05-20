@@ -40,7 +40,7 @@ You can know more about [dubbo-go](github.com/dubbo/go-dubbo) by its [roadmap](h
 
 ## Quick Start
 
-The subdirectory examples shows how to use go-for-apache-dubbo. Please read the examples/readme.md carefully to learn how to dispose the configuration and compile the program.
+The subdirectory examples shows how to use go-for-apache-dubbo. Please read the [examples/README.md](https://github.com/dubbo/go-for-apache-dubbo/blob/develop/examples/README.md) carefully to learn how to dispose the configuration and compile the program.
 
 ## Benchmark
 
