@@ -190,7 +190,16 @@ func (dir *registryDirectory) List(invocation protocol.Invocation) []protocol.In
 }
 
 func (dir *registryDirectory) IsAvailable() bool {
-	return dir.BaseDirectory.IsAvailable()
+	if !dir.BaseDirectory.IsAvailable() {
+		return dir.BaseDirectory.IsAvailable()
+	} else {
+		for _, ivk := range dir.cacheInvokers {
+			if ivk.IsAvailable() {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (dir *registryDirectory) Destroy() {

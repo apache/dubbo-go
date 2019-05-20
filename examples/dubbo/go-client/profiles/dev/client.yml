@@ -8,7 +8,7 @@ pprof_port : 10086
 request_timeout : "100ms"
 # connect timeout
 connect_timeout : "100ms"
-
+check: true
 # application config
 application_config:
     organization : "ikurento.com"
@@ -29,7 +29,7 @@ registries :
 - id: "shanghaizk"
   type: "zookeeper"
   timeout	: "3s"
-  address: "127.0.0.1:2181"
+  address: "127.0.0.1:2182"
   username: ""
   password: ""
 
