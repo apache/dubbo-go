@@ -18,11 +18,13 @@ import (
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
+	"github.com/dubbo/go-for-apache-dubbo/version"
 )
 
 var (
 	consumerConfig *ConsumerConfig
 	providerConfig *ProviderConfig
+	maxWait        = 3
 )
 
 // loaded comsumer & provider config from xxx.yml, and log config from xxx.xml
@@ -137,7 +139,7 @@ type ConsumerConfig struct {
 
 	Request_Timeout string `yaml:"request_timeout" default:"5s" json:"request_timeout,omitempty"`
 	RequestTimeout  time.Duration
-
+	Check           *bool `yaml:"check"  json:"check,omitempty"`
 	// application
 	ApplicationConfig ApplicationConfig `yaml:"application_config" json:"application_config,omitempty"`
 	Registries        []RegistryConfig  `yaml:"registries" json:"registries,omitempty"`
@@ -178,9 +180,6 @@ type ProviderConfig struct {
 	ProtocolConf      interface{}       `yaml:"protocol_conf" json:"protocol_conf,omitempty"`
 }
 
-func SetProviderConfig(p ProviderConfig) {
-	providerConfig = &p
-}
 func GetProviderConfig() ProviderConfig {
 	if providerConfig == nil {
 		log.Warn("providerConfig is nil!")
@@ -230,6 +229,30 @@ func Load() (map[string]*ReferenceConfig, map[string]*ServiceConfig) {
 			con.Refer()
 			con.Implement(rpcService)
 			refMap[con.InterfaceName] = con
+		}
+
+		//wait for invoker is available, if wait over default 3s, then panic
+		var count int
+		checkok := true
+		for {
+			for _, refconfig := range consumerConfig.References {
+				if ((refconfig.Check != nil && *refconfig.Check) ||
+					(refconfig.Check == nil && consumerConfig.Check != nil && *consumerConfig.Check) ||
+					(refconfig.Check == nil && consumerConfig.Check == nil)) && //default to true
+					!refconfig.invoker.IsAvailable() {
+					checkok = false
+					count++
+					if count > maxWait {
+						panic(fmt.Sprintf("Failed to check the status of the service %v . No provider available for the service to the consumer use dubbo version %v", refconfig.InterfaceName, version.Version))
+					}
+					time.Sleep(time.Second * 1)
+					break
+				}
+			}
+			if checkok {
+				break
+			}
+			checkok = true
 		}
 	}
 

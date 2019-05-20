@@ -20,6 +20,7 @@ type ReferenceConfig struct {
 	context       context.Context
 	pxy           *proxy.Proxy
 	InterfaceName string           `required:"true"  yaml:"interface"  json:"interface,omitempty"`
+	Check         *bool            `yaml:"check"  json:"check,omitempty"`
 	Protocol      string           `yaml:"protocol"  json:"protocol,omitempty"`
 	Registries    []ConfigRegistry `required:"true"  yaml:"registries"  json:"registries,omitempty"`
 	Cluster       string           `yaml:"cluster"  json:"cluster,omitempty"`
@@ -41,7 +42,16 @@ type ConfigRegistry string
 func NewReferenceConfig(ctx context.Context) *ReferenceConfig {
 	return &ReferenceConfig{context: ctx}
 }
+func (refconfig *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	type rf ReferenceConfig
+	raw := rf{} // Put your defaults here
+	if err := unmarshal(&raw); err != nil {
+		return err
+	}
 
+	*refconfig = ReferenceConfig(raw)
+	return nil
+}
 func (refconfig *ReferenceConfig) Refer() {
 	//首先是user specified SubURL, could be peer-to-peer address, or register center's address.
 
@@ -65,6 +75,7 @@ func (refconfig *ReferenceConfig) Refer() {
 		cluster := extension.GetCluster("registryAware")
 		refconfig.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
 	}
+
 	//create proxy
 	attachments := map[string]string{}
 	attachments[constant.ASYNC_KEY] = url.GetParam(constant.ASYNC_KEY, "false")

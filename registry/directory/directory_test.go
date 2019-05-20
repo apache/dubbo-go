@@ -77,7 +77,7 @@ func TestSubscribe_Group(t *testing.T) {
 	assert.Len(t, registryDirectory.cacheInvokers, 2)
 }
 
-func Test_Destory(t *testing.T) {
+func Test_Destroy(t *testing.T) {
 	registryDirectory, _ := normalRegistryDir()
 
 	time.Sleep(1e9)
