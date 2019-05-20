@@ -78,6 +78,7 @@ func (User) JavaClassName() string {
 type UserProvider struct {
 	GetUser  func(ctx context.Context, req []interface{}, rsp *User) error
 	GetUser1 func(ctx context.Context, req []interface{}, rsp *User) error
+	GetUser2 func(ctx context.Context, req []interface{}, rsp *User) error   `dubbo:"getUser"`
 	Echo     func(ctx context.Context, req []interface{}, rsp *string) error // Echo represent EchoFilter will be used
 }
 

@@ -17,9 +17,10 @@ import (
 )
 
 type TestService struct {
-	MethodOne func(context.Context, []interface{}, *struct{}) error
-	MethodTwo func([]interface{}, *struct{}) error
-	Echo      func([]interface{}, *struct{}) error
+	MethodOne   func(context.Context, []interface{}, *struct{}) error
+	MethodTwo   func([]interface{}, *struct{}) error
+	MethodThree func([]interface{}, *struct{}) error `dubbo:"methodThree"`
+	Echo        func([]interface{}, *struct{}) error
 }
 
 func (s *TestService) Service() string {
@@ -47,6 +48,8 @@ func TestProxy_Implement(t *testing.T) {
 	err := p.Get().(*TestService).MethodOne(nil, nil, nil)
 	assert.NoError(t, err)
 	err = p.Get().(*TestService).MethodTwo(nil, nil)
+	assert.NoError(t, err)
+	err = p.Get().(*TestService).MethodThree(nil, nil)
 	assert.NoError(t, err)
 	err = p.Get().(*TestService).Echo(nil, nil)
 	assert.NoError(t, err)
