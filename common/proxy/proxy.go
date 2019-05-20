@@ -82,6 +82,10 @@ func (p *Proxy) Implement(v common.RPCService) {
 	numField := valueOfElem.NumField()
 	for i := 0; i < numField; i++ {
 		t := typeOf.Field(i)
+		methodName := t.Tag.Get("dubbo")
+		if methodName == "" {
+			methodName = t.Name
+		}
 		f := valueOfElem.Field(i)
 		if f.Kind() == reflect.Func && f.IsValid() && f.CanSet() {
 			if t.Type.NumIn() != 2 && t.Type.NumIn() != 3 {
@@ -115,8 +119,8 @@ func (p *Proxy) Implement(v common.RPCService) {
 			funcOuts[0] = t.Type.Out(0)
 
 			// do method proxy here:
-			f.Set(reflect.MakeFunc(f.Type(), makeDubboCallProxy(t.Name, funcOuts)))
-			log.Debug("set method [%s]", t.Name)
+			f.Set(reflect.MakeFunc(f.Type(), makeDubboCallProxy(methodName, funcOuts)))
+			log.Debug("set method [%s]", methodName)
 		}
 	}
 
