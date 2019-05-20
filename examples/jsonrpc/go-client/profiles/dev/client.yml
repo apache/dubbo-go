@@ -3,7 +3,7 @@
 # pprof
 pprof_enabled : true
 pprof_port : 10086
-
+check: true
 # client
 request_timeout : "3s"
 # connect timeout
@@ -29,7 +29,7 @@ registries :
 - id: "shanghaizk"
   type: "zookeeper"
   timeout	: "3s"
-  address: "127.0.0.1:2181"
+  address: "127.0.0.1:2182"
   username: ""
   password: ""
 
