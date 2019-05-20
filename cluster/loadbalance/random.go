@@ -31,7 +31,7 @@ func (lb *randomLoadBalance) Select(invokers []protocol.Invoker, invocation prot
 	sameWeight := true
 	weights := make([]int64, length)
 
-	firstWeight :=GetWeight(invokers[0], invocation)
+	firstWeight := GetWeight(invokers[0], invocation)
 	totalWeight := firstWeight
 	weights[0] = firstWeight
 

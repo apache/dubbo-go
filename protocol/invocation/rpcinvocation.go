@@ -68,6 +68,10 @@ func (r *RPCInvocation) Reply() interface{} {
 	return r.reply
 }
 
+func (r *RPCInvocation) SetReply(reply interface{}) {
+	r.reply = reply
+}
+
 func (r *RPCInvocation) Attachments() map[string]string {
 	return r.attachments
 }
@@ -94,9 +98,13 @@ func (r *RPCInvocation) Invoker() protocol.Invoker {
 	return r.invoker
 }
 
-//func (r *RPCInvocation) SetInvoker() protocol.Invoker {
-//	return r.invoker
-//}
+func (r *RPCInvocation) SetInvoker() protocol.Invoker {
+	return r.invoker
+}
+
+func (r *RPCInvocation) SetCallBack(c interface{}) {
+	r.callBack = c
+}
 
 func (r *RPCInvocation) CallBack() interface{} {
 	return r.callBack
