@@ -16,9 +16,9 @@ import (
 )
 
 func TestConfigLoader(t *testing.T) {
-	conPath, err := filepath.Abs("./consumer_config.yml")
+	conPath, err := filepath.Abs("./testdata/consumer_config.yml")
 	assert.NoError(t, err)
-	proPath, err := filepath.Abs("./provider_config.yml")
+	proPath, err := filepath.Abs("./testdata/provider_config.yml")
 	assert.NoError(t, err)
 
 	assert.Nil(t, consumerConfig)
