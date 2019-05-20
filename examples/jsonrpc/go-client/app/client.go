@@ -50,7 +50,7 @@ func main() {
 	res := ""
 	err := conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).Echo(context.TODO(), []interface{}{"OK"}, &res)
 	if err != nil {
-		panic(err)
+		fmt.Println("echo - error: ", err)
 	}
 	gxlog.CInfo("res: %s", res)
 
@@ -61,6 +61,14 @@ func main() {
 	err = conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser(context.TODO(), []interface{}{"A003"}, user)
 	if err != nil {
 		panic(err)
+	}
+	gxlog.CInfo("response result: %v", user)
+
+	gxlog.CInfo("\n\n\nstart to test jsonrpc - getUser")
+	user = &JsonRPCUser{}
+	err = conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser2(context.TODO(), []interface{}{1}, user)
+	if err != nil {
+		fmt.Println("getUser - error: ", err)
 	}
 	gxlog.CInfo("response result: %v", user)
 
