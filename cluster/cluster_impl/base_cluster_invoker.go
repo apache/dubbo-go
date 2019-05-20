@@ -3,7 +3,7 @@ package cluster_impl
 import (
 	gxnet "github.com/AlexStocks/goext/net"
 	jerrors "github.com/juju/errors"
-	"github.com/tevino/abool"
+	"go.uber.org/atomic"
 )
 
 import (
@@ -16,14 +16,14 @@ import (
 type baseClusterInvoker struct {
 	directory      cluster.Directory
 	availablecheck bool
-	destroyed      *abool.AtomicBool
+	destroyed      *atomic.Bool
 }
 
 func newBaseClusterInvoker(directory cluster.Directory) baseClusterInvoker {
 	return baseClusterInvoker{
 		directory:      directory,
 		availablecheck: true,
-		destroyed:      abool.NewBool(false),
+		destroyed:      atomic.NewBool(false),
 	}
 }
 func (invoker *baseClusterInvoker) GetUrl() common.URL {
@@ -32,7 +32,7 @@ func (invoker *baseClusterInvoker) GetUrl() common.URL {
 
 func (invoker *baseClusterInvoker) Destroy() {
 	//this is must atom operation
-	if invoker.destroyed.SetToIf(false, true) {
+	if invoker.destroyed.CAS(false, true) {
 		invoker.directory.Destroy()
 	}
 }
@@ -56,7 +56,7 @@ func (invoker *baseClusterInvoker) checkInvokers(invokers []protocol.Invoker, in
 
 //check cluster invoker is destroyed or not
 func (invoker *baseClusterInvoker) checkWhetherDestroyed() error {
-	if invoker.destroyed.IsSet() {
+	if invoker.destroyed.Load() {
 		ip, _ := gxnet.GetLocalIP()
 		return jerrors.Errorf("Rpc cluster invoker for %v on consumer %v use dubbo version %v is now destroyed! can not invoke any more. ",
 			invoker.directory.GetUrl().Service(), ip, version.Version)

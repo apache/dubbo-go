@@ -1,7 +1,7 @@
 package registry
 
 import (
-	"github.com/tevino/abool"
+	"go.uber.org/atomic"
 )
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common"
@@ -9,12 +9,12 @@ import (
 
 type MockRegistry struct {
 	listener  *listener
-	destroyed *abool.AtomicBool
+	destroyed *atomic.Bool
 }
 
 func NewMockRegistry(url *common.URL) (Registry, error) {
 	registry := &MockRegistry{
-		destroyed: abool.NewBool(false),
+		destroyed: atomic.NewBool(false),
 	}
 	listener := &listener{count: 0, registry: registry, listenChan: make(chan *ServiceEvent)}
 	registry.listener = listener
@@ -25,11 +25,11 @@ func (*MockRegistry) Register(url common.URL) error {
 }
 
 func (r *MockRegistry) Destroy() {
-	if r.destroyed.SetToIf(false, true) {
+	if r.destroyed.CAS(false, true) {
 	}
 }
 func (r *MockRegistry) IsAvailable() bool {
-	return !r.destroyed.IsSet()
+	return !r.destroyed.Load()
 }
 func (r *MockRegistry) GetUrl() common.URL {
 	return common.URL{}
