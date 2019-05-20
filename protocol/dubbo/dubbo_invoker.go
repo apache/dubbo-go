@@ -53,17 +53,17 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 		} else {
 			result.Err = di.client.CallOneway(url.Location, url, inv.MethodName(), inv.Arguments())
 		}
-		log.Debug("result.Err: %v, result.Rest: %v", result.Err, result.Rest)
 	} else {
 		if inv.Reply() == nil {
 			result.Err = Err_No_Reply
 		} else {
-
 			result.Err = di.client.Call(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Reply())
-			result.Rest = inv.Reply() // reply should be set to result.Rest when sync
 		}
-		log.Debug("result.Err: %v, result.Rest: %v", result.Err, result.Rest)
 	}
+	if result.Err == nil {
+		result.Rest = inv.Reply()
+	}
+	log.Debug("result.Err: %v, result.Rest: %v", result.Err, result.Rest)
 
 	return &result
 }

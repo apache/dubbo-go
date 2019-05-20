@@ -6,7 +6,7 @@ type MockService struct {
 }
 
 func (*MockService) Service() string {
-	return "mockservice"
+	return "MockService"
 }
 func (*MockService) Version() string {
 	return "1.0"

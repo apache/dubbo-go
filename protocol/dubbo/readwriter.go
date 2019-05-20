@@ -2,6 +2,7 @@ package dubbo
 
 import (
 	"bytes"
+	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"reflect"
 )
 
@@ -88,7 +89,7 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 			dubboVersion = req[0].(string)
 		}
 		if req[1] != nil {
-			pkg.Service.Target = req[1].(string)
+			pkg.Service.Path = req[1].(string)
 		}
 		if req[2] != nil {
 			pkg.Service.Version = req[2].(string)
@@ -105,11 +106,12 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 		if req[6] != nil {
 			attachments = req[6].(map[interface{}]interface{})
 		}
+		pkg.Service.Interface = attachments[constant.INTERFACE_KEY].(string)
 		pkg.Body = map[string]interface{}{
 			"dubboVersion": dubboVersion,
 			"argsTypes":    argsTypes,
 			"args":         args,
-			"service":      common.ServiceMap.GetService(DUBBO, pkg.Service.Target),
+			"service":      common.ServiceMap.GetService(DUBBO, pkg.Service.Interface),
 			"attachments":  attachments,
 		}
 	}

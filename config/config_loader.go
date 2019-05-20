@@ -221,7 +221,7 @@ func Load() (map[string]*ReferenceConfig, map[string]*ServiceConfig) {
 		length := len(consumerConfig.References)
 		for index := 0; index < length; index++ {
 			con := &consumerConfig.References[index]
-			rpcService := conServices[con.InterfaceName]
+			rpcService := GetConService(con.InterfaceName)
 			if rpcService == nil {
 				log.Warn("%s is not exsist!", con.InterfaceName)
 				continue
@@ -264,7 +264,7 @@ func Load() (map[string]*ReferenceConfig, map[string]*ServiceConfig) {
 		length := len(providerConfig.Services)
 		for index := 0; index < length; index++ {
 			pro := &providerConfig.Services[index]
-			rpcService := proServices[pro.InterfaceName]
+			rpcService := GetProService(pro.InterfaceName)
 			if rpcService == nil {
 				log.Warn("%s is not exsist!", pro.InterfaceName)
 				continue

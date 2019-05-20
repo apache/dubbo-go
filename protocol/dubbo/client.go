@@ -83,38 +83,38 @@ type CallOptions struct {
 
 type CallOption func(*CallOptions)
 
-func WithCallRequestTimeout(d time.Duration) CallOption {
-	return func(o *CallOptions) {
-		o.RequestTimeout = d
-	}
-}
+//func WithCallRequestTimeout(d time.Duration) CallOption {
+//	return func(o *CallOptions) {
+//		o.RequestTimeout = d
+//	}
+//}
+//
+//func WithCallResponseTimeout(d time.Duration) CallOption {
+//	return func(o *CallOptions) {
+//		o.ResponseTimeout = d
+//	}
+//}
+//
+//func WithCallSerialID(s SerialID) CallOption {
+//	return func(o *CallOptions) {
+//		o.SerialID = s
+//	}
+//}
+//
+//func WithCallMeta_All(callMeta map[interface{}]interface{}) CallOption {
+//	return func(o *CallOptions) {
+//		o.Meta = callMeta
+//	}
+//}
 
-func WithCallResponseTimeout(d time.Duration) CallOption {
-	return func(o *CallOptions) {
-		o.ResponseTimeout = d
-	}
-}
-
-func WithCallSerialID(s SerialID) CallOption {
-	return func(o *CallOptions) {
-		o.SerialID = s
-	}
-}
-
-func WithCallMeta_All(callMeta map[interface{}]interface{}) CallOption {
-	return func(o *CallOptions) {
-		o.Meta = callMeta
-	}
-}
-
-func WithCallMeta(k, v interface{}) CallOption {
-	return func(o *CallOptions) {
-		if o.Meta == nil {
-			o.Meta = make(map[interface{}]interface{})
-		}
-		o.Meta[k] = v
-	}
-}
+//func WithCallMeta(k, v interface{}) CallOption {
+//	return func(o *CallOptions) {
+//		if o.Meta == nil {
+//			o.Meta = make(map[interface{}]interface{})
+//		}
+//		o.Meta[k] = v
+//	}
+//}
 
 type CallResponse struct {
 	Opts      CallOptions
@@ -197,6 +197,7 @@ func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string
 	p := &DubboPackage{}
 	p.Service.Path = strings.TrimPrefix(svcUrl.Path, "/")
 	p.Service.Target = svcUrl.GetParam(constant.INTERFACE_KEY, "")
+	p.Service.Interface = svcUrl.GetParam(constant.INTERFACE_KEY, "")
 	p.Service.Version = svcUrl.GetParam(constant.VERSION_KEY, constant.DEFAULT_VERSION)
 	p.Service.Method = method
 	p.Service.Timeout = opts.RequestTimeout
@@ -209,11 +210,14 @@ func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string
 
 	var rsp *PendingResponse
 	if ct != CT_OneWay {
+		p.Header.Type = hessian.PackageRequest_TwoWay
 		rsp = NewPendingResponse()
 		rsp.reply = reply
 		rsp.callback = callback
 		rsp.opts = opts
 	}
+	// todo: it must be PackageRequest because of hessian2, but it is twoway actually
+	p.Header.Type = hessian.PackageRequest
 
 	var (
 		err     error
@@ -280,8 +284,6 @@ func (c *Client) transfer(session getty.Session, pkg *DubboPackage,
 		pkg.Body = []interface{}{}
 		pkg.Header.Type = hessian.PackageHeartbeat
 		pkg.Header.SerialID = byte(S_Dubbo)
-	} else {
-		pkg.Header.Type = hessian.PackageRequest
 	}
 	pkg.Header.ID = int64(sequence)
 
