@@ -57,13 +57,19 @@ go server
 > You should change IP in dubbo/go-server/target/linux/user_info_server-0.3.1-20190517-0930-release/conf/server.yml
 ```bash
 cd dubbo/go-server/target/linux/user_info_server-0.3.1-20190517-0930-release
-sh ./bin/load.sh start
+#conf suffix appoint config file, 
+#such as server_zookeeper.yml when "sh ./bin/load.sh start is zookeeper", 
+#default server.yml
+sh ./bin/load.sh start [conf suffix]
 ```
 
 go client
 ```bash
 cd dubbo/go-client/target/linux/user_info_client-0.3.1-20190517-0921-release
-sh ./bin/load_user_info_client.sh start
+#conf suffix appoint config file, 
+#such as client_zookeeper.yml when "sh ./bin/load.sh start is zookeeper", 
+#default client.yml
+sh ./bin/load_user_info_client.sh start [conf suffix]
 ```
 
 ## jsonrpc
