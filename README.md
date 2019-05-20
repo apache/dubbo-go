@@ -36,7 +36,7 @@ Todo List:
 - metrics (dubbo v2.6.x)
 - dynamic configuration (dubbo v2.7.x)
 
-You can know more about [dubbo-go](github.com/dubbo/go-dubbo) by its [roadmap](https://github.com/dubbo/go-for-apache-dubbo/wiki/Roadmap).
+You can know more about dubbo-go by its [roadmap](https://github.com/dubbo/go-for-apache-dubbo/wiki/Roadmap).
 
 ## Quick Start
 
