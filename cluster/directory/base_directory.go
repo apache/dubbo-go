@@ -4,7 +4,7 @@ import (
 	"sync"
 )
 import (
-	"github.com/tevino/abool"
+	"go.uber.org/atomic"
 )
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common"
@@ -12,14 +12,14 @@ import (
 
 type BaseDirectory struct {
 	url       *common.URL
-	destroyed *abool.AtomicBool
+	destroyed *atomic.Bool
 	mutex     sync.Mutex
 }
 
 func NewBaseDirectory(url *common.URL) BaseDirectory {
 	return BaseDirectory{
 		url:       url,
-		destroyed: abool.NewBool(false),
+		destroyed: atomic.NewBool(false),
 	}
 }
 func (dir *BaseDirectory) GetUrl() common.URL {
@@ -27,7 +27,7 @@ func (dir *BaseDirectory) GetUrl() common.URL {
 }
 
 func (dir *BaseDirectory) Destroy(doDestroy func()) {
-	if dir.destroyed.SetToIf(false, true) {
+	if dir.destroyed.CAS(false, true) {
 		dir.mutex.Lock()
 		doDestroy()
 		dir.mutex.Unlock()
@@ -35,5 +35,5 @@ func (dir *BaseDirectory) Destroy(doDestroy func()) {
 }
 
 func (dir *BaseDirectory) IsAvailable() bool {
-	return !dir.destroyed.IsSet()
+	return !dir.destroyed.Load()
 }
