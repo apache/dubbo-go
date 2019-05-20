@@ -367,13 +367,24 @@ func serveRequest(ctx context.Context,
 	replyv := reflect.New(mtype.ReplyType().Elem())
 
 	//  call service.method(args)
-	var errMsg string
-	returnValues := mtype.Method().Func.Call([]reflect.Value{
-		svc.Rcvr(),
-		mtype.SuiteContext(ctx),
-		reflect.ValueOf(argvTmp),
-		reflect.ValueOf(replyv.Interface()),
-	})
+	var (
+		errMsg       string
+		returnValues []reflect.Value
+	)
+	if mtype.CtxType() == nil {
+		returnValues = mtype.Method().Func.Call([]reflect.Value{
+			svc.Rcvr(),
+			reflect.ValueOf(argvTmp),
+			reflect.ValueOf(replyv.Interface()),
+		})
+	} else {
+		returnValues = mtype.Method().Func.Call([]reflect.Value{
+			svc.Rcvr(),
+			mtype.SuiteContext(ctx),
+			reflect.ValueOf(argvTmp),
+			reflect.ValueOf(replyv.Interface()),
+		})
+	}
 	// The return value for the method is an error.
 	if retErr := returnValues[0].Interface(); retErr != nil {
 		errMsg = retErr.(error).Error()

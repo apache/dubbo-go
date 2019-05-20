@@ -6,7 +6,6 @@ import (
 
 import (
 	log "github.com/AlexStocks/log4go"
-	jerrors "github.com/juju/errors"
 )
 
 import (
@@ -42,13 +41,11 @@ func (ji *JsonrpcInvoker) Invoke(invocation protocol.Invocation) protocol.Result
 		"X-Services": url.Path,
 		"X-Method":   inv.MethodName(),
 	})
-	if err := ji.client.Call(ctx, url, req, inv.Reply()); err != nil {
-		log.Error("client.Call() return error:%+v", jerrors.ErrorStack(err))
-		result.Err = err
-	} else {
-		log.Debug("result: %v", inv.Reply())
+	result.Err = ji.client.Call(ctx, url, req, inv.Reply())
+	if result.Err == nil {
 		result.Rest = inv.Reply()
 	}
+	log.Debug("result.Err: %v, result.Rest: %v", result.Err, result.Rest)
 
 	return &result
 }

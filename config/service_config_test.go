@@ -55,7 +55,7 @@ func doinit() {
 		},
 		Services: []ServiceConfig{
 			{
-				InterfaceName: "testInterface",
+				InterfaceName: "MockService",
 				Protocol:      "mock",
 				Registries:    []ConfigRegistry{"shanghai_reg1", "shanghai_reg2", "hangzhou_reg1", "hangzhou_reg2"},
 				Cluster:       "failover",
