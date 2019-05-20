@@ -69,6 +69,14 @@ func main() {
 	}
 	gxlog.CInfo("response result: %v", user)
 
+	gxlog.CInfo("\n\n\nstart to test dubbo - getUser")
+	user = &User{}
+	err = conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser2(context.TODO(), []interface{}{1}, user)
+	if err != nil {
+		fmt.Println("getUser - error: ", err)
+	}
+	gxlog.CInfo("response result: %v", user)
+
 	gxlog.CInfo("\n\n\nstart to test dubbo illegal method")
 	err = conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser1(context.TODO(), []interface{}{"A003"}, user)
 	if err != nil {

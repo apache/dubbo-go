@@ -13,6 +13,7 @@ package com.ikurento.user;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import com.alibaba.dubbo.rpc.service.EchoService;
 import java.util.List;
 
 public class Consumer {
@@ -39,6 +40,16 @@ public class Consumer {
 
     private void testGetUser() throws Exception {
         try {
+            EchoService echoService = (EchoService)userProvider;
+            Object status = echoService.$echo("OK");
+            System.out.println("echo: "+status);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            EchoService echoService = (EchoService)userProvider;
+            Object status = echoService.$echo("OK");
+            System.out.println("echo: "+status);
             User user1 = userProvider.GetUser("A003");
             System.out.println("[" + new SimpleDateFormat("HH:mm:ss").format(new Date()) + "] " +
                     " UserInfo, Id:" + user1.getId() + ", name:" + user1.getName() + ", sex:" + user1.getSex().toString()
