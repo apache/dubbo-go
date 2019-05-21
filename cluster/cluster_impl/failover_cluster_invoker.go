@@ -15,9 +15,10 @@
 package cluster_impl
 
 import (
-	gxnet "github.com/AlexStocks/goext/net"
-	jerrors "github.com/juju/errors"
+	"github.com/AlexStocks/goext/net"
+	"github.com/pkg/errors"
 )
+
 import (
 	"github.com/dubbo/go-for-apache-dubbo/cluster"
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
@@ -92,7 +93,7 @@ func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) pr
 		}
 	}
 	ip, _ := gxnet.GetLocalIP()
-	return &protocol.RPCResult{Err: jerrors.Errorf("Failed to invoke the method %v in the service %v . Tried %v times of "+
+	return &protocol.RPCResult{Err: errors.Errorf("Failed to invoke the method %v in the service %v . Tried %v times of "+
 		"the providers %v (%v/%v)from the registry %v on the consumer %v using the dubbo version %v. Last error is %v.",
 		methodName, invoker.GetUrl().Service(), retries, providers, len(providers), len(invokers), invoker.directory.GetUrl(), ip, version.Version, result.Error().Error(),
 	)}

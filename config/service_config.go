@@ -24,7 +24,7 @@ import (
 )
 import (
 	log "github.com/AlexStocks/log4go"
-	jerrors "github.com/juju/errors"
+	"github.com/pkg/errors"
 	"go.uber.org/atomic"
 )
 import (
@@ -72,7 +72,7 @@ func (srvconfig *ServiceConfig) Export() error {
 
 	//TODO:delay export
 	if srvconfig.unexported != nil && srvconfig.unexported.Load() {
-		err := jerrors.Errorf("The service %v has already unexported! ", srvconfig.InterfaceName)
+		err := errors.Errorf("The service %v has already unexported! ", srvconfig.InterfaceName)
 		log.Error(err.Error())
 		return err
 	}
@@ -88,7 +88,7 @@ func (srvconfig *ServiceConfig) Export() error {
 		//registry the service reflect
 		methods, err := common.ServiceMap.Register(proto.Name, srvconfig.rpcService)
 		if err != nil {
-			err := jerrors.Errorf("The service %v  export the protocol %v error! Error message is %v .", srvconfig.InterfaceName, proto.Name, err.Error())
+			err := errors.Errorf("The service %v  export the protocol %v error! Error message is %v .", srvconfig.InterfaceName, proto.Name, err.Error())
 			log.Error(err.Error())
 			return err
 		}
@@ -114,7 +114,7 @@ func (srvconfig *ServiceConfig) Export() error {
 			srvconfig.cacheMutex.Unlock()
 			exporter := srvconfig.cacheProtocol.Export(invoker)
 			if exporter == nil {
-				panic(jerrors.New("New exporter error"))
+				panic(errors.New("New exporter error"))
 			}
 			srvconfig.exporters = append(srvconfig.exporters, exporter)
 		}

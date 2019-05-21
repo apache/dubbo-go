@@ -15,9 +15,15 @@
 package config
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common/extension"
-	"github.com/stretchr/testify/assert"
 	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/dubbo/go-for-apache-dubbo/common/extension"
 )
 
 func doinit() {

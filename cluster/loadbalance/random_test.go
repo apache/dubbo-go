@@ -17,17 +17,21 @@ package loadbalance
 import (
 	"context"
 	"fmt"
-	"github.com/dubbo/go-for-apache-dubbo/common/constant"
-	"github.com/dubbo/go-for-apache-dubbo/protocol/invocation"
-	"github.com/stretchr/testify/assert"
 	"net/url"
 	"strconv"
 	"testing"
 	"time"
 )
+
+import (
+	"github.com/stretchr/testify/assert"
+)
+
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common"
+	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
+	"github.com/dubbo/go-for-apache-dubbo/protocol/invocation"
 )
 
 func Test_RandomlbSelect(t *testing.T) {

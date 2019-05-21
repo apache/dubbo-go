@@ -16,13 +16,13 @@ package cluster_impl
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/url"
 	"testing"
 )
 import (
 	log "github.com/AlexStocks/log4go"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
