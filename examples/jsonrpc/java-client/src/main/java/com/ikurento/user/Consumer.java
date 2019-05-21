@@ -47,9 +47,6 @@ public class Consumer {
             e.printStackTrace();
         }
         try {
-            EchoService echoService = (EchoService)userProvider;
-            Object status = echoService.$echo("OK");
-            System.out.println("echo: "+status);
             User user1 = userProvider.GetUser("A003");
             System.out.println("[" + new SimpleDateFormat("HH:mm:ss").format(new Date()) + "] " +
                     " UserInfo, Id:" + user1.getId() + ", name:" + user1.getName() + ", sex:" + user1.getSex().toString()

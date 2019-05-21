@@ -3,6 +3,7 @@ package proxy
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 )
 
@@ -17,10 +18,11 @@ import (
 )
 
 type TestService struct {
-	MethodOne   func(context.Context, []interface{}, *struct{}) error
-	MethodTwo   func([]interface{}, *struct{}) error
-	MethodThree func([]interface{}, *struct{}) error `dubbo:"methodThree"`
-	Echo        func([]interface{}, *struct{}) error
+	MethodOne   func(context.Context, int, bool, *interface{}) error
+	MethodTwo   func([]interface{}, *interface{}) error
+	MethodThree func(int, bool) (interface{}, error)
+	MethodFour  func(int, bool) (*interface{}, error) `dubbo:"methodFour"`
+	Echo        func(interface{}, *interface{}) error
 }
 
 func (s *TestService) Service() string {
@@ -45,12 +47,16 @@ func TestProxy_Implement(t *testing.T) {
 	p := NewProxy(invoker, nil, map[string]string{constant.ASYNC_KEY: "false"})
 	s := &TestService{}
 	p.Implement(s)
-	err := p.Get().(*TestService).MethodOne(nil, nil, nil)
+	err := p.Get().(*TestService).MethodOne(nil, 0, false, nil)
 	assert.NoError(t, err)
 	err = p.Get().(*TestService).MethodTwo(nil, nil)
 	assert.NoError(t, err)
-	err = p.Get().(*TestService).MethodThree(nil, nil)
+	ret, err := p.Get().(*TestService).MethodThree(0, false)
 	assert.NoError(t, err)
+	assert.Nil(t, ret) // ret is nil, because it doesn't be injection yet
+	ret2, err := p.Get().(*TestService).MethodFour(0, false)
+	assert.NoError(t, err)
+	assert.Equal(t, "*interface {}", reflect.TypeOf(ret2).String())
 	err = p.Get().(*TestService).Echo(nil, nil)
 	assert.NoError(t, err)
 
@@ -58,13 +64,13 @@ func TestProxy_Implement(t *testing.T) {
 	p.rpc = nil
 	type S1 struct {
 		TestService
-		methodOne func(context.Context, []interface{}, *struct{}) error
+		methodOne func(context.Context, interface{}, *struct{}) error
 	}
-	s1 := &S1{TestService: *s, methodOne: func(i context.Context, i2 []interface{}, i3 *struct{}) error {
+	s1 := &S1{TestService: *s, methodOne: func(i context.Context, i2 interface{}, i3 *struct{}) error {
 		return errors.New("errors")
 	}}
 	p.Implement(s1)
-	err = s1.MethodOne(nil, nil, nil)
+	err = s1.MethodOne(nil, 0, false, nil)
 	assert.NoError(t, err)
 	err = s1.methodOne(nil, nil, nil)
 	assert.EqualError(t, err, "errors")
@@ -75,21 +81,21 @@ func TestProxy_Implement(t *testing.T) {
 	p.Implement(&it)
 	assert.Nil(t, p.rpc)
 
-	// args number
+	// return number
 	p.rpc = nil
 	type S2 struct {
 		TestService
-		MethodOne func([]interface{}) error
+		MethodOne func([]interface{}) (*struct{}, int, error)
 	}
 	s2 := &S2{TestService: *s}
 	p.Implement(s2)
 	assert.Nil(t, s2.MethodOne)
 
-	// returns number
+	// reply type
 	p.rpc = nil
 	type S3 struct {
 		TestService
-		MethodOne func(context.Context, []interface{}, *struct{}) (interface{}, error)
+		MethodOne func(context.Context, []interface{}, struct{}) error
 	}
 	s3 := &S3{TestService: *s}
 	p.Implement(s3)
@@ -105,23 +111,4 @@ func TestProxy_Implement(t *testing.T) {
 	p.Implement(s4)
 	assert.Nil(t, s4.MethodOne)
 
-	// reply type for number 3
-	p.rpc = nil
-	type S5 struct {
-		TestService
-		MethodOne func(context.Context, []interface{}, interface{}) error
-	}
-	s5 := &S5{TestService: *s}
-	p.Implement(s5)
-	assert.Nil(t, s5.MethodOne)
-
-	// reply type for number 2
-	p.rpc = nil
-	type S6 struct {
-		TestService
-		MethodOne func([]interface{}, interface{}) error
-	}
-	s6 := &S6{TestService: *s}
-	p.Implement(s6)
-	assert.Nil(t, s5.MethodOne)
 }
