@@ -16,7 +16,6 @@ package dubbo
 
 import (
 	"context"
-	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -24,6 +23,7 @@ import (
 
 import (
 	"github.com/dubbogo/hessian2"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 

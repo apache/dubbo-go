@@ -15,13 +15,13 @@
 package dubbo
 
 import (
-	"errors"
 	"strconv"
 	"sync"
 )
 
 import (
 	log "github.com/AlexStocks/log4go"
+	"github.com/pkg/errors"
 )
 
 import (

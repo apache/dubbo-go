@@ -24,7 +24,7 @@ import (
 
 import (
 	log "github.com/AlexStocks/log4go"
-	jerrors "github.com/juju/errors"
+	"github.com/pkg/errors"
 	"github.com/samuel/go-zookeeper/zk"
 )
 
@@ -111,7 +111,7 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 
 	newChildren, err := l.client.getChildren(zkPath)
 	if err != nil {
-		log.Error("path{%s} child nodes changed, zk.Children() = error{%v}", zkPath, jerrors.ErrorStack(err))
+		log.Error("path{%s} child nodes changed, zk.Children() = error{%v}", zkPath, errors.Cause(err))
 		return
 	}
 
@@ -130,7 +130,7 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 		//context.TODO
 		serviceURL, err = common.NewURL(context.TODO(), n)
 		if err != nil {
-			log.Error("NewURL(%s) = error{%v}", n, jerrors.ErrorStack(err))
+			log.Error("NewURL(%s) = error{%v}", n, errors.Cause(err))
 			continue
 		}
 		if !conf.URLEqual(serviceURL) {
@@ -166,7 +166,7 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 		}
 		log.Warn("delete serviceURL{%s}", serviceURL)
 		if err != nil {
-			log.Error("NewURL(i{%s}) = error{%v}", n, jerrors.ErrorStack(err))
+			log.Error("NewURL(i{%s}) = error{%v}", n, errors.Cause(err))
 			continue
 		}
 		l.events <- zkEvent{&registry.ServiceEvent{Action: registry.ServiceDel, Service: serviceURL}, nil}
@@ -306,16 +306,16 @@ func (l *zkEventListener) Next() (*registry.ServiceEvent, error) {
 		select {
 		case <-l.client.done():
 			log.Warn("listener's zk client connection is broken, so zk event listener exit now.")
-			return nil, jerrors.New("listener stopped")
+			return nil, errors.New("listener stopped")
 
 		case <-l.registry.done:
 			log.Warn("zk consumer register has quit, so zk event listener exit asap now.")
-			return nil, jerrors.New("listener stopped")
+			return nil, errors.New("listener stopped")
 
 		case e := <-l.events:
 			log.Debug("got zk event %s", e)
 			if e.err != nil {
-				return nil, jerrors.Trace(e.err)
+				return nil, errors.WithStack(e.err)
 			}
 			if e.res.Action == registry.ServiceDel && !l.valid() {
 				log.Warn("update @result{%s}. But its connection to registry is invalid", e.res)

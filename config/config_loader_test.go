@@ -15,7 +15,6 @@
 package config
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common"
 	"path/filepath"
 	"testing"
 )
@@ -26,6 +25,7 @@ import (
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/cluster/cluster_impl"
+	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/common/extension"
 )
 

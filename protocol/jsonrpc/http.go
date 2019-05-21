@@ -30,7 +30,7 @@ import (
 )
 
 import (
-	jerrors "github.com/juju/errors"
+	"github.com/pkg/errors"
 )
 
 import (
@@ -130,15 +130,15 @@ func (c *HTTPClient) Call(ctx context.Context, service common.URL, req *Request,
 	}
 	reqBody, err := codec.Write(&codecData)
 	if err != nil {
-		return jerrors.Trace(err)
+		return errors.WithStack(err)
 	}
 
 	rspBody, err := c.Do(service.Location, service.Params.Get("interface"), httpHeader, reqBody)
 	if err != nil {
-		return jerrors.Trace(err)
+		return errors.WithStack(err)
 	}
 
-	return jerrors.Trace(codec.Read(rspBody, rsp))
+	return errors.WithStack(codec.Read(rspBody, rsp))
 }
 
 // !!The high level of complexity and the likelihood that the fasthttp client has not been extensively used
@@ -148,19 +148,19 @@ func (c *HTTPClient) Do(addr, path string, httpHeader http.Header, body []byte) 
 	u := url.URL{Host: strings.TrimSuffix(addr, ":"), Path: path}
 	httpReq, err := http.NewRequest("POST", u.String(), bytes.NewBuffer(body))
 	if err != nil {
-		return nil, jerrors.Trace(err)
+		return nil, errors.WithStack(err)
 	}
 	httpReq.Header = httpHeader
 	httpReq.Close = true
 
 	reqBuf := bytes.NewBuffer(make([]byte, 0))
 	if err := httpReq.Write(reqBuf); err != nil {
-		return nil, jerrors.Trace(err)
+		return nil, errors.WithStack(err)
 	}
 
 	tcpConn, err := net.DialTimeout("tcp", addr, c.options.HandshakeTimeout)
 	if err != nil {
-		return nil, jerrors.Trace(err)
+		return nil, errors.WithStack(err)
 	}
 	defer tcpConn.Close()
 	setNetConnTimeout := func(conn net.Conn, timeout time.Duration) {
@@ -174,22 +174,22 @@ func (c *HTTPClient) Do(addr, path string, httpHeader http.Header, body []byte) 
 	setNetConnTimeout(tcpConn, c.options.HTTPTimeout)
 
 	if _, err := reqBuf.WriteTo(tcpConn); err != nil {
-		return nil, jerrors.Trace(err)
+		return nil, errors.WithStack(err)
 	}
 
 	httpRsp, err := http.ReadResponse(bufio.NewReader(tcpConn), httpReq)
 	if err != nil {
-		return nil, jerrors.Trace(err)
+		return nil, errors.WithStack(err)
 	}
 	defer httpRsp.Body.Close()
 
 	b, err := ioutil.ReadAll(httpRsp.Body)
 	if err != nil {
-		return nil, jerrors.Trace(err)
+		return nil, errors.WithStack(err)
 	}
 
 	if httpRsp.StatusCode != http.StatusOK {
-		return nil, jerrors.New(fmt.Sprintf("http status:%q, error string:%q", httpRsp.Status, string(b)))
+		return nil, errors.New(fmt.Sprintf("http status:%q, error string:%q", httpRsp.Status, string(b)))
 	}
 
 	return b, nil

@@ -15,13 +15,19 @@
 package config
 
 import (
+	"sync"
+	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"github.com/dubbo/go-for-apache-dubbo/cluster/cluster_impl"
 	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/common/extension"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
-	"github.com/stretchr/testify/assert"
-	"sync"
-	"testing"
 )
 
 var regProtocol protocol.Protocol
