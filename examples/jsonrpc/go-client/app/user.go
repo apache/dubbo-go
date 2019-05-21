@@ -31,9 +31,10 @@ func (u JsonRPCUser) String() string {
 
 type UserProvider struct {
 	GetUser  func(ctx context.Context, req []interface{}, rsp *JsonRPCUser) error
+	GetUser0 func(ctx context.Context, req interface{}) (*JsonRPCUser, error) `dubbo:"GetUser"`
 	GetUser1 func(ctx context.Context, req []interface{}, rsp *JsonRPCUser) error
 	GetUser2 func(ctx context.Context, req []interface{}, rsp *JsonRPCUser) error `dubbo:"getUser"`
-	Echo     func(ctx context.Context, req []interface{}, rsp *string) error      // Echo represent EchoFilter will be used
+	Echo     func(ctx context.Context, req interface{}) (interface{}, error)      // Echo represent EchoFilter will be used
 }
 
 func (u *UserProvider) Service() string {

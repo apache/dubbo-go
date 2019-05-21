@@ -47,12 +47,12 @@ func main() {
 	initProfiling()
 
 	gxlog.CInfo("\n\n\necho")
-	res := ""
-	err := conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).Echo(context.TODO(), []interface{}{"OK"}, &res)
+	res, err := conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).Echo(context.TODO(), "OK")
 	if err != nil {
 		fmt.Println("echo - error: ", err)
+	} else {
+		gxlog.CInfo("res: %s", res)
 	}
-	gxlog.CInfo("res: %s", res)
 
 	time.Sleep(3e9)
 
@@ -64,13 +64,21 @@ func main() {
 	}
 	gxlog.CInfo("response result: %v", user)
 
+	gxlog.CInfo("\n\n\nstart to test dubbo - GetUser0")
+	ret, err := conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser0(context.TODO(), "A003")
+	if err != nil {
+		panic(err)
+	}
+	gxlog.CInfo("response result: %v", ret)
+
 	gxlog.CInfo("\n\n\nstart to test jsonrpc - getUser")
 	user = &JsonRPCUser{}
 	err = conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser2(context.TODO(), []interface{}{1}, user)
 	if err != nil {
 		fmt.Println("getUser - error: ", err)
+	} else {
+		gxlog.CInfo("response result: %v", user)
 	}
-	gxlog.CInfo("response result: %v", user)
 
 	gxlog.CInfo("\n\n\nstart to test jsonrpc illegal method")
 	err = conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser1(context.TODO(), []interface{}{"A003"}, user)
