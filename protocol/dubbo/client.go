@@ -229,9 +229,9 @@ func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string
 		rsp.reply = reply
 		rsp.callback = callback
 		rsp.opts = opts
+	} else {
+		p.Header.Type = hessian.PackageRequest
 	}
-	// todo: it must be PackageRequest because of hessian2, but it is twoway actually
-	p.Header.Type = hessian.PackageRequest
 
 	var (
 		err     error
