@@ -16,7 +16,6 @@ package dubbo
 
 import (
 	"context"
-	"errors"
 	"reflect"
 	"sync"
 	"time"
@@ -26,7 +25,7 @@ import (
 	"github.com/AlexStocks/getty"
 	log "github.com/AlexStocks/log4go"
 	"github.com/dubbogo/hessian2"
-	jerrors "github.com/juju/errors"
+	"github.com/pkg/errors"
 )
 
 import (
@@ -40,7 +39,7 @@ import (
 const WritePkg_Timeout = 5 * time.Second
 
 var (
-	errTooManySessions = jerrors.New("too many sessions")
+	errTooManySessions = errors.New("too many sessions")
 )
 
 type rpcSession struct {
@@ -109,8 +108,8 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 func (h *RpcClientHandler) OnCron(session getty.Session) {
 	rpcSession, err := h.conn.getClientRpcSession(session)
 	if err != nil {
-		log.Error("client.getClientSession(session{%s}) = error{%s}",
-			session.Stat(), jerrors.ErrorStack(err))
+		log.Error("client.getClientSession(session{%s}) = error{%v}",
+			session.Stat(), errors.Cause(err))
 		return
 	}
 	if h.conn.pool.rpcClient.conf.sessionTimeout.Nanoseconds() < time.Since(session.GetActive()).Nanoseconds() {
@@ -152,7 +151,7 @@ func (h *RpcServerHandler) OnOpen(session getty.Session) error {
 	}
 	h.rwlock.RUnlock()
 	if err != nil {
-		return jerrors.Trace(err)
+		return errors.WithStack(err)
 	}
 
 	log.Info("got session:%s", session.Stat())
@@ -267,8 +266,8 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 				log.Error("callService panic: %#v", err)
 				req.Body = e.(error)
 			} else if err, ok := e.(string); ok {
-				log.Error("callService panic: %#v", jerrors.New(err))
-				req.Body = jerrors.New(err)
+				log.Error("callService panic: %#v", errors.New(err))
+				req.Body = errors.New(err)
 			} else {
 				log.Error("callService panic: %#v", e)
 				req.Body = e
@@ -334,6 +333,6 @@ func (h *RpcServerHandler) reply(session getty.Session, req *DubboPackage, tp he
 	}
 
 	if err := session.WritePkg(resp, WritePkg_Timeout); err != nil {
-		log.Error("WritePkg error: %#v, %#v", jerrors.Trace(err), req.Header)
+		log.Error("WritePkg error: %#v, %#v", errors.WithStack(err), req.Header)
 	}
 }

@@ -16,13 +16,13 @@ package jsonrpc
 
 import (
 	"context"
-	"errors"
 	"strings"
 	"testing"
 	"time"
 )
 
 import (
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 

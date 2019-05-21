@@ -16,7 +16,6 @@ package common
 
 import (
 	"context"
-	"errors"
 	"reflect"
 	"strings"
 	"sync"
@@ -26,7 +25,7 @@ import (
 
 import (
 	log "github.com/AlexStocks/log4go"
-	jerrors "github.com/juju/errors"
+	"github.com/pkg/errors"
 )
 
 // rpc service interface
@@ -130,17 +129,17 @@ func (sm *serviceMap) Register(protocol string, rcvr RPCService) (string, error)
 	if sname == "" {
 		s := "no service name for type " + s.rcvrType.String()
 		log.Error(s)
-		return "", jerrors.New(s)
+		return "", errors.New(s)
 	}
 	if !isExported(sname) {
 		s := "type " + sname + " is not exported"
 		log.Error(s)
-		return "", jerrors.New(s)
+		return "", errors.New(s)
 	}
 
 	sname = rcvr.Service()
 	if server := sm.GetService(protocol, sname); server != nil {
-		return "", jerrors.New("service already defined: " + sname)
+		return "", errors.New("service already defined: " + sname)
 	}
 	s.name = sname
 	s.methods = make(map[string]*MethodType)
@@ -152,7 +151,7 @@ func (sm *serviceMap) Register(protocol string, rcvr RPCService) (string, error)
 	if len(s.methods) == 0 {
 		s := "type " + sname + " has no exported methods of suitable type"
 		log.Error(s)
-		return "", jerrors.New(s)
+		return "", errors.New(s)
 	}
 	sm.mutex.Lock()
 	sm.serviceMap[protocol][s.name] = s
