@@ -26,7 +26,7 @@ import (
 import (
 	"github.com/AlexStocks/getty"
 	log "github.com/AlexStocks/log4go"
-	jerrors "github.com/juju/errors"
+	"github.com/pkg/errors"
 )
 
 type gettyRPCClient struct {
@@ -43,7 +43,7 @@ type gettyRPCClient struct {
 }
 
 var (
-	errClientPoolClosed = jerrors.New("client pool closed")
+	errClientPoolClosed = errors.New("client pool closed")
 )
 
 func newGettyRPCClientConn(pool *gettyRPCClientPool, protocol, addr string) (*gettyRPCClient, error) {
@@ -66,7 +66,7 @@ func newGettyRPCClientConn(pool *gettyRPCClientPool, protocol, addr string) (*ge
 		}
 
 		if idx > 5000 {
-			return nil, jerrors.New(fmt.Sprintf("failed to create client connection to %s in 5 seconds", addr))
+			return nil, errors.New(fmt.Sprintf("failed to create client connection to %s in 5 seconds", addr))
 		}
 		time.Sleep(1e6)
 	}
@@ -203,7 +203,7 @@ func (c *gettyRPCClient) getClientRpcSession(session getty.Session) (rpcSession,
 		}
 	}
 
-	return rpcSession, jerrors.Trace(err)
+	return rpcSession, errors.WithStack(err)
 }
 
 func (c *gettyRPCClient) isAvailable() bool {
@@ -215,7 +215,7 @@ func (c *gettyRPCClient) isAvailable() bool {
 }
 
 func (c *gettyRPCClient) close() error {
-	err := jerrors.Errorf("close gettyRPCClient{%#v} again", c)
+	err := errors.Errorf("close gettyRPCClient{%#v} again", c)
 	c.once.Do(func() {
 		// delete @c from client pool
 		c.pool.remove(c)

@@ -31,7 +31,7 @@ import (
 
 import (
 	log "github.com/AlexStocks/log4go"
-	jerrors "github.com/juju/errors"
+	"github.com/pkg/errors"
 )
 
 import (
@@ -105,10 +105,10 @@ func (s *Server) handlePkg(conn net.Conn) {
 		rspBuf.Reset()
 		err := rsp.Write(rspBuf)
 		if err != nil {
-			return jerrors.Trace(err)
+			return errors.WithStack(err)
 		}
 		_, err = rspBuf.WriteTo(conn)
-		return jerrors.Trace(err)
+		return errors.WithStack(err)
 	}
 
 	for {
@@ -140,9 +140,9 @@ func (s *Server) handlePkg(conn net.Conn) {
 		if contentType != "application/json" && contentType != "application/json-rpc" {
 			setTimeout(conn, httpTimeout)
 			r.Header.Set("Content-Type", "text/plain")
-			if errRsp := sendErrorResp(r.Header, []byte(jerrors.ErrorStack(err))); errRsp != nil {
-				log.Warn("sendErrorResp(header:%#v, error:%s) = error:%s",
-					r.Header, jerrors.ErrorStack(err), errRsp)
+			if errRsp := sendErrorResp(r.Header, []byte(errors.Cause(err).Error())); errRsp != nil {
+				log.Warn("sendErrorResp(header:%#v, error:%v) = error:%s",
+					r.Header, errors.Cause(err), errRsp)
 			}
 			return
 		}
@@ -159,9 +159,9 @@ func (s *Server) handlePkg(conn net.Conn) {
 		setTimeout(conn, httpTimeout)
 
 		if err := serveRequest(ctx, reqHeader, reqBody, conn, s.exporter); err != nil {
-			if errRsp := sendErrorResp(r.Header, []byte(jerrors.ErrorStack(err))); errRsp != nil {
-				log.Warn("sendErrorResp(header:%#v, error:%s) = error:%s",
-					r.Header, jerrors.ErrorStack(err), errRsp)
+			if errRsp := sendErrorResp(r.Header, []byte(errors.Cause(err).Error())); errRsp != nil {
+				log.Warn("sendErrorResp(header:%#v, error:%v) = error:%s",
+					r.Header, errors.Cause(err), errRsp)
 			}
 
 			log.Info("Unexpected error serving request, closing socket: %v", err)
@@ -193,7 +193,7 @@ func accept(listener net.Listener, fn func(net.Conn)) error {
 				time.Sleep(tmpDelay)
 				continue
 			}
-			return jerrors.Trace(err)
+			return errors.WithStack(err)
 		}
 
 		go func() {
@@ -266,10 +266,10 @@ func serveRequest(ctx context.Context,
 		rspBuf.Reset()
 		err := rsp.Write(rspBuf)
 		if err != nil {
-			return jerrors.Trace(err)
+			return errors.WithStack(err)
 		}
 		_, err = rspBuf.WriteTo(conn)
-		return jerrors.Trace(err)
+		return errors.WithStack(err)
 	}
 
 	sendResp := func(header map[string]string, body []byte) error {
@@ -290,10 +290,10 @@ func serveRequest(ctx context.Context,
 		rspBuf.Reset()
 		err := rsp.Write(rspBuf)
 		if err != nil {
-			return jerrors.Trace(err)
+			return errors.WithStack(err)
 		}
 		_, err = rspBuf.WriteTo(conn)
-		return jerrors.Trace(err)
+		return errors.WithStack(err)
 	}
 
 	// read request header
@@ -301,22 +301,22 @@ func serveRequest(ctx context.Context,
 	err := codec.ReadHeader(header, body)
 	if err != nil {
 		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			return jerrors.Trace(err)
+			return errors.WithStack(err)
 		}
 
-		return jerrors.New("server cannot decode request: " + err.Error())
+		return errors.New("server cannot decode request: " + err.Error())
 	}
 	serviceName := header["Path"]
 	methodName := codec.req.Method
 	if len(serviceName) == 0 || len(methodName) == 0 {
 		codec.ReadBody(nil)
-		return jerrors.New("service/method request ill-formed: " + serviceName + "/" + methodName)
+		return errors.New("service/method request ill-formed: " + serviceName + "/" + methodName)
 	}
 
 	// read body
 	var args interface{}
 	if err = codec.ReadBody(&args); err != nil {
-		return jerrors.Trace(err)
+		return errors.WithStack(err)
 	}
 	log.Debug("args: %v", args)
 
@@ -333,18 +333,18 @@ func serveRequest(ctx context.Context,
 			if errRsp := sendErrorResp(header, []byte(err.Error())); errRsp != nil {
 				log.Warn("Exporter: sendErrorResp(header:%#v, error:%v) = error:%s",
 					header, err, errRsp)
-				return jerrors.Trace(errRsp)
+				return errors.WithStack(errRsp)
 			}
 		}
 		if res := result.Result(); res != nil {
 			rspStream, err := codec.Write("", res)
 			if err != nil {
-				return jerrors.Trace(err)
+				return errors.WithStack(err)
 			}
 			if errRsp := sendResp(header, rspStream); errRsp != nil {
 				log.Warn("Exporter: sendResp(header:%#v, error:%v) = error:%s",
 					header, err, errRsp)
-				return jerrors.Trace(errRsp)
+				return errors.WithStack(errRsp)
 			}
 		}
 	}
@@ -352,11 +352,11 @@ func serveRequest(ctx context.Context,
 	// get method
 	svc := common.ServiceMap.GetService(JSONRPC, serviceName)
 	if svc == nil {
-		return jerrors.New("cannot find svc " + serviceName)
+		return errors.New("cannot find svc " + serviceName)
 	}
 	mtype := svc.Method()[methodName]
 	if mtype == nil {
-		return jerrors.New("cannot find method " + methodName + " of svc " + serviceName)
+		return errors.New("cannot find method " + methodName + " of svc " + serviceName)
 	}
 
 	replyv := reflect.New(mtype.ReplyType().Elem())
@@ -394,7 +394,7 @@ func serveRequest(ctx context.Context,
 	}
 	rspStream, err := codec.Write(errMsg, rspReply)
 	if err != nil {
-		return jerrors.Trace(err)
+		return errors.WithStack(err)
 	}
 	rsp := &http.Response{
 		StatusCode:    code,

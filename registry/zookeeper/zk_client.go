@@ -15,7 +15,6 @@
 package zookeeper
 
 import (
-	"errors"
 	"path"
 	"strings"
 	"sync"
@@ -24,7 +23,7 @@ import (
 
 import (
 	log "github.com/AlexStocks/log4go"
-	jerrors "github.com/juju/errors"
+	"github.com/pkg/errors"
 	"github.com/samuel/go-zookeeper/zk"
 )
 
@@ -95,7 +94,7 @@ func newZookeeperClient(name string, zkAddrs []string, timeout time.Duration) (*
 	// connect to zookeeper
 	z.conn, event, err = zk.Connect(zkAddrs, timeout)
 	if err != nil {
-		return nil, jerrors.Annotatef(err, "zk.Connect(zkAddrs:%+v)", zkAddrs)
+		return nil, errors.WithMessagef(err, "zk.Connect(zkAddrs:%+v)", zkAddrs)
 	}
 
 	z.wait.Add(1)
@@ -121,7 +120,7 @@ func newMockZookeeperClient(name string, timeout time.Duration) (*zk.TestCluster
 
 	ts, err := zk.StartTestCluster(1, nil, nil)
 	if err != nil {
-		return nil, nil, nil, jerrors.Annotatef(err, "zk.Connect")
+		return nil, nil, nil, errors.WithMessagef(err, "zk.Connect")
 	}
 
 	//callbackChan := make(chan zk.Event)
@@ -131,7 +130,7 @@ func newMockZookeeperClient(name string, timeout time.Duration) (*zk.TestCluster
 
 	z.conn, event, err = ts.ConnectWithOptions(timeout)
 	if err != nil {
-		return nil, nil, nil, jerrors.Annotatef(err, "zk.Connect")
+		return nil, nil, nil, errors.WithMessagef(err, "zk.Connect")
 	}
 	//z.wait.Add(1)
 
@@ -305,8 +304,8 @@ func (z *zookeeperClient) Create(basePath string) error {
 			if err == zk.ErrNodeExists {
 				log.Error("zk.create(\"%s\") exists\n", tmpPath)
 			} else {
-				log.Error("zk.create(\"%s\") error(%v)\n", tmpPath, jerrors.ErrorStack(err))
-				return jerrors.Annotatef(err, "zk.Create(path:%s)", basePath)
+				log.Error("zk.create(\"%s\") error(%v)\n", tmpPath, errors.Cause(err))
+				return errors.WithMessagef(err, "zk.Create(path:%s)", basePath)
 			}
 		}
 	}
@@ -326,7 +325,7 @@ func (z *zookeeperClient) Delete(basePath string) error {
 	}
 	z.Unlock()
 
-	return jerrors.Annotatef(err, "Delete(basePath:%s)", basePath)
+	return errors.WithMessagef(err, "Delete(basePath:%s)", basePath)
 }
 
 func (z *zookeeperClient) RegisterTemp(basePath string, node string) (string, error) {
@@ -347,8 +346,8 @@ func (z *zookeeperClient) RegisterTemp(basePath string, node string) (string, er
 	z.Unlock()
 	//if err != nil && err != zk.ErrNodeExists {
 	if err != nil {
-		log.Warn("conn.Create(\"%s\", zk.FlagEphemeral) = error(%v)\n", zkPath, jerrors.ErrorStack(err))
-		return "", jerrors.Trace(err)
+		log.Warn("conn.Create(\"%s\", zk.FlagEphemeral) = error(%v)\n", zkPath, errors.Cause(err))
+		return "", errors.WithStack(err)
 	}
 	log.Debug("zkClient{%s} create a temp zookeeper node:%s\n", z.name, tmpPath)
 
@@ -376,7 +375,7 @@ func (z *zookeeperClient) RegisterTempSeq(basePath string, data []byte) (string,
 	if err != nil && err != zk.ErrNodeExists {
 		log.Error("zkClient{%s} conn.Create(\"%s\", \"%s\", zk.FlagEphemeral|zk.FlagSequence) error(%v)\n",
 			z.name, basePath, string(data), err)
-		return "", jerrors.Trace(err)
+		return "", errors.WithStack(err)
 	}
 	log.Debug("zkClient{%s} create a temp zookeeper node:%s\n", z.name, tmpPath)
 
@@ -399,16 +398,16 @@ func (z *zookeeperClient) getChildrenW(path string) ([]string, <-chan zk.Event, 
 	z.Unlock()
 	if err != nil {
 		if err == zk.ErrNoNode {
-			return nil, nil, jerrors.Errorf("path{%s} has none children", path)
+			return nil, nil, errors.Errorf("path{%s} has none children", path)
 		}
 		log.Error("zk.ChildrenW(path{%s}) = error(%v)", path, err)
-		return nil, nil, jerrors.Annotatef(err, "zk.ChildrenW(path:%s)", path)
+		return nil, nil, errors.WithMessagef(err, "zk.ChildrenW(path:%s)", path)
 	}
 	if stat == nil {
-		return nil, nil, jerrors.Errorf("path{%s} has none children", path)
+		return nil, nil, errors.Errorf("path{%s} has none children", path)
 	}
 	if len(children) == 0 {
-		return nil, nil, jerrors.Errorf("path{%s} has none children", path)
+		return nil, nil, errors.Errorf("path{%s} has none children", path)
 	}
 
 	return children, event, nil
@@ -429,16 +428,16 @@ func (z *zookeeperClient) getChildren(path string) ([]string, error) {
 	z.Unlock()
 	if err != nil {
 		if err == zk.ErrNoNode {
-			return nil, jerrors.Errorf("path{%s} has none children", path)
+			return nil, errors.Errorf("path{%s} has none children", path)
 		}
-		log.Error("zk.Children(path{%s}) = error(%v)", path, jerrors.ErrorStack(err))
-		return nil, jerrors.Annotatef(err, "zk.Children(path:%s)", path)
+		log.Error("zk.Children(path{%s}) = error(%v)", path, errors.Cause(err))
+		return nil, errors.WithMessagef(err, "zk.Children(path:%s)", path)
 	}
 	if stat == nil {
-		return nil, jerrors.Errorf("path{%s} has none children", path)
+		return nil, errors.Errorf("path{%s} has none children", path)
 	}
 	if len(children) == 0 {
-		return nil, jerrors.Errorf("path{%s} has none children", path)
+		return nil, errors.Errorf("path{%s} has none children", path)
 	}
 
 	return children, nil
@@ -458,12 +457,12 @@ func (z *zookeeperClient) existW(zkPath string) (<-chan zk.Event, error) {
 	}
 	z.Unlock()
 	if err != nil {
-		log.Error("zkClient{%s}.ExistsW(path{%s}) = error{%v}.", z.name, zkPath, jerrors.ErrorStack(err))
-		return nil, jerrors.Annotatef(err, "zk.ExistsW(path:%s)", zkPath)
+		log.Error("zkClient{%s}.ExistsW(path{%s}) = error{%v}.", z.name, zkPath, errors.Cause(err))
+		return nil, errors.WithMessagef(err, "zk.ExistsW(path:%s)", zkPath)
 	}
 	if !exist {
 		log.Warn("zkClient{%s}'s App zk path{%s} does not exist.", z.name, zkPath)
-		return nil, jerrors.Errorf("zkClient{%s} App zk path{%s} does not exist.", z.name, zkPath)
+		return nil, errors.Errorf("zkClient{%s} App zk path{%s} does not exist.", z.name, zkPath)
 	}
 
 	return event, nil

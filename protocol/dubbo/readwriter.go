@@ -16,17 +16,17 @@ package dubbo
 
 import (
 	"bytes"
-	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"reflect"
 )
 
 import (
 	"github.com/AlexStocks/getty"
 	log "github.com/AlexStocks/log4go"
-	jerrors "github.com/juju/errors"
+	"github.com/pkg/errors"
 )
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common"
+	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 )
 
 ////////////////////////////////////////////
@@ -49,7 +49,7 @@ func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface
 	buf := bytes.NewBuffer(data)
 	err := pkg.Unmarshal(buf, p.client)
 	if err != nil {
-		pkg.Err = jerrors.Trace(err) // client will get this err
+		pkg.Err = errors.WithStack(err) // client will get this err
 		return pkg, len(data), nil
 	}
 
@@ -60,16 +60,16 @@ func (p *RpcClientPackageHandler) Write(ss getty.Session, pkg interface{}) error
 	req, ok := pkg.(*DubboPackage)
 	if !ok {
 		log.Error("illegal pkg:%+v\n", pkg)
-		return jerrors.New("invalid rpc request")
+		return errors.New("invalid rpc request")
 	}
 
 	buf, err := req.Marshal()
 	if err != nil {
-		log.Warn("binary.Write(req{%#v}) = err{%#v}", req, jerrors.ErrorStack(err))
-		return jerrors.Trace(err)
+		log.Warn("binary.Write(req{%#v}) = err{%#v}", req, errors.Cause(err))
+		return errors.WithStack(err)
 	}
 
-	return jerrors.Trace(ss.WriteBytes(buf.Bytes()))
+	return errors.WithStack(ss.WriteBytes(buf.Bytes()))
 }
 
 ////////////////////////////////////////////
@@ -91,7 +91,7 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 	buf := bytes.NewBuffer(data)
 	err := pkg.Unmarshal(buf)
 	if err != nil {
-		return nil, 0, jerrors.Trace(err)
+		return nil, 0, errors.WithStack(err)
 	}
 	// convert params of request
 	req := pkg.Body.([]interface{}) // length of body should be 7
@@ -137,14 +137,14 @@ func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg interface{}) error
 	res, ok := pkg.(*DubboPackage)
 	if !ok {
 		log.Error("illegal pkg:%+v\n, it is %+v", pkg, reflect.TypeOf(pkg))
-		return jerrors.New("invalid rpc response")
+		return errors.New("invalid rpc response")
 	}
 
 	buf, err := res.Marshal()
 	if err != nil {
-		log.Warn("binary.Write(res{%#v}) = err{%#v}", res, jerrors.ErrorStack(err))
-		return jerrors.Trace(err)
+		log.Warn("binary.Write(res{%#v}) = err{%#v}", res, errors.Cause(err))
+		return errors.WithStack(err)
 	}
 
-	return jerrors.Trace(ss.WriteBytes(buf.Bytes()))
+	return errors.WithStack(ss.WriteBytes(buf.Bytes()))
 }

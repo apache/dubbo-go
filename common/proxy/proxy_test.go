@@ -16,12 +16,12 @@ package proxy
 
 import (
 	"context"
-	"errors"
 	"reflect"
 	"testing"
 )
 
 import (
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 

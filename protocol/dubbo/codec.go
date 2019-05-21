@@ -23,7 +23,7 @@ import (
 
 import (
 	"github.com/dubbogo/hessian2"
-	jerrors "github.com/juju/errors"
+	"github.com/pkg/errors"
 )
 
 // serial ID
@@ -64,7 +64,7 @@ func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 
 	pkg, err := codec.Write(p.Service, p.Header, p.Body)
 	if err != nil {
-		return nil, jerrors.Trace(err)
+		return nil, errors.WithStack(err)
 	}
 
 	return bytes.NewBuffer(pkg), nil
@@ -76,7 +76,7 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 	// read header
 	err := codec.ReadHeader(&p.Header)
 	if err != nil {
-		return jerrors.Trace(err)
+		return errors.WithStack(err)
 	}
 
 	if len(opts) != 0 { // for client
@@ -84,11 +84,11 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 
 			r := client.pendingResponses[SequenceType(p.Header.ID)]
 			if r == nil {
-				return fmt.Errorf("pendingResponses[%v] = nil", p.Header.ID)
+				return errors.Errorf("pendingResponses[%v] = nil", p.Header.ID)
 			}
 			p.Body = client.pendingResponses[SequenceType(p.Header.ID)].reply
 		} else {
-			return fmt.Errorf("opts[0] is not *Client")
+			return errors.Errorf("opts[0] is not *Client")
 		}
 	}
 
@@ -98,7 +98,7 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 
 	// read body
 	err = codec.ReadBody(p.Body)
-	return jerrors.Trace(err)
+	return errors.WithStack(err)
 }
 
 ////////////////////////////////////////////
