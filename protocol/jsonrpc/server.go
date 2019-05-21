@@ -345,25 +345,6 @@ func serveRequest(ctx context.Context,
 		return jerrors.New("cannot find method " + methodName + " of svc " + serviceName)
 	}
 
-	// get args
-	var argv reflect.Value
-	argIsValue := false
-	if mtype.ArgType().Kind() == reflect.Ptr {
-		argv = reflect.New(mtype.ArgType().Elem())
-	} else {
-		argv = reflect.New(mtype.ArgType())
-		argIsValue = true
-	}
-	// argv guaranteed to be a pointer now.
-	argvTmp := argv.Interface()
-	argvTmp = args
-	//if err = codec.ReadBody(argv.Interface()); err != nil {
-	//	return jerrors.Trace(err)
-	//}
-	if argIsValue {
-		argv = argv.Elem()
-	}
-
 	replyv := reflect.New(mtype.ReplyType().Elem())
 
 	//  call service.method(args)
@@ -374,14 +355,14 @@ func serveRequest(ctx context.Context,
 	if mtype.CtxType() == nil {
 		returnValues = mtype.Method().Func.Call([]reflect.Value{
 			svc.Rcvr(),
-			reflect.ValueOf(argvTmp),
+			reflect.ValueOf(args),
 			reflect.ValueOf(replyv.Interface()),
 		})
 	} else {
 		returnValues = mtype.Method().Func.Call([]reflect.Value{
 			svc.Rcvr(),
 			mtype.SuiteContext(ctx),
-			reflect.ValueOf(argvTmp),
+			reflect.ValueOf(args),
 			reflect.ValueOf(replyv.Interface()),
 		})
 	}

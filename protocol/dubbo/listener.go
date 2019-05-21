@@ -279,30 +279,18 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 	}
 
 	// prepare argv
-	var argv reflect.Value
-	argIsValue := false // if true, need to indirect before calling.
-	if method.ArgType().Kind() == reflect.Ptr {
-		argv = reflect.New(method.ArgType().Elem())
-	} else {
-		argv = reflect.New(method.ArgType())
-		argIsValue = true
-	}
-	argvTmp := argv.Interface()
-	argvTmp = req.Body.(map[string]interface{})["args"] // type is []interface
-	if argIsValue {
-		argv = argv.Elem()
-	}
+	argv := req.Body.(map[string]interface{})["args"] // type is []interface
 
 	// prepare replyv
 	replyv := reflect.New(method.ReplyType().Elem())
 	var returnValues []reflect.Value
 	if method.CtxType() == nil {
-		returnValues = method.Method().Func.Call([]reflect.Value{svc.Rcvr(), reflect.ValueOf(argvTmp), reflect.ValueOf(replyv.Interface())})
+		returnValues = method.Method().Func.Call([]reflect.Value{svc.Rcvr(), reflect.ValueOf(argv), reflect.ValueOf(replyv.Interface())})
 	} else {
 		if contextv := reflect.ValueOf(ctx); contextv.IsValid() {
-			returnValues = method.Method().Func.Call([]reflect.Value{svc.Rcvr(), contextv, reflect.ValueOf(argvTmp), reflect.ValueOf(replyv.Interface())})
+			returnValues = method.Method().Func.Call([]reflect.Value{svc.Rcvr(), contextv, reflect.ValueOf(argv), reflect.ValueOf(replyv.Interface())})
 		} else {
-			returnValues = method.Method().Func.Call([]reflect.Value{svc.Rcvr(), reflect.Zero(method.CtxType()), reflect.ValueOf(argvTmp), reflect.ValueOf(replyv.Interface())})
+			returnValues = method.Method().Func.Call([]reflect.Value{svc.Rcvr(), reflect.Zero(method.CtxType()), reflect.ValueOf(argv), reflect.ValueOf(replyv.Interface())})
 		}
 	}
 
