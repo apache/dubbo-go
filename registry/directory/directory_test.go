@@ -127,3 +127,19 @@ func normalRegistryDir() (*registryDirectory, *registry.MockRegistry) {
 	}
 	return registryDirectory, mockRegistry.(*registry.MockRegistry)
 }
+
+func TestMergeUrl(t *testing.T) {
+	referenceUrlParams := url.Values{}
+	referenceUrlParams.Set(constant.CLUSTER_KEY, "random")
+	referenceUrlParams.Set("test3", "1")
+	serviceUrlParams := url.Values{}
+	serviceUrlParams.Set("test2", "1")
+	serviceUrlParams.Set(constant.CLUSTER_KEY, "roundrobin")
+	referenceUrl, _ := common.NewURL(context.TODO(), "mock1://127.0.0.1:1111", common.WithParams(referenceUrlParams))
+	serviceUrl, _ := common.NewURL(context.TODO(), "mock2://127.0.0.1:20000", common.WithParams(serviceUrlParams))
+
+	mergedUrl := mergeUrl(serviceUrl, &referenceUrl)
+	assert.Equal(t, "random", mergedUrl.GetParam(constant.CLUSTER_KEY, ""))
+	assert.Equal(t, "1", mergedUrl.GetParam("test2", ""))
+	assert.Equal(t, "1", mergedUrl.GetParam("test3", ""))
+}
