@@ -41,7 +41,7 @@ type ProtocolFilterWrapper struct {
 
 func (pfw *ProtocolFilterWrapper) Export(invoker protocol.Invoker) protocol.Exporter {
 	if pfw.protocol == nil {
-		pfw.protocol = extension.GetProtocolExtension(invoker.GetUrl().Protocol)
+		pfw.protocol = extension.GetProtocol(invoker.GetUrl().Protocol)
 	}
 	invoker = buildInvokerChain(invoker, constant.SERVICE_FILTER_KEY)
 	return pfw.protocol.Export(invoker)
@@ -49,7 +49,7 @@ func (pfw *ProtocolFilterWrapper) Export(invoker protocol.Invoker) protocol.Expo
 
 func (pfw *ProtocolFilterWrapper) Refer(url common.URL) protocol.Invoker {
 	if pfw.protocol == nil {
-		pfw.protocol = extension.GetProtocolExtension(url.Protocol)
+		pfw.protocol = extension.GetProtocol(url.Protocol)
 	}
 	return buildInvokerChain(pfw.protocol.Refer(url), constant.REFERENCE_FILTER_KEY)
 }
@@ -67,8 +67,9 @@ func buildInvokerChain(invoker protocol.Invoker, key string) protocol.Invoker {
 	next := invoker
 
 	// The order of filters is from left to right, so loading from right to left
+
 	for i := len(filtNames) - 1; i >= 0; i-- {
-		filter := extension.GetFilterExtension(filtNames[i])
+		filter := extension.GetFilter(filtNames[i])
 		fi := &FilterInvoker{next: next, invoker: invoker, filter: filter}
 		next = fi
 	}

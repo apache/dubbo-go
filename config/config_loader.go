@@ -154,7 +154,8 @@ type ConsumerConfig struct {
 
 	Request_Timeout string `yaml:"request_timeout" default:"5s" json:"request_timeout,omitempty"`
 	RequestTimeout  time.Duration
-	Check           *bool `yaml:"check"  json:"check,omitempty"`
+	ProxyFactory    string `yaml:"proxy_factory" default:"default" json:"proxy_factory,omitempty"`
+	Check           *bool  `yaml:"check"  json:"check,omitempty"`
 	// application
 	ApplicationConfig ApplicationConfig `yaml:"application_config" json:"application_config,omitempty"`
 	Registries        []RegistryConfig  `yaml:"registries" json:"registries,omitempty"`
@@ -188,7 +189,8 @@ type ProviderConfig struct {
 	Pprof_Enabled bool `default:"false" yaml:"pprof_enabled" json:"pprof_enabled,omitempty"`
 	Pprof_Port    int  `default:"10086"  yaml:"pprof_port" json:"pprof_port,omitempty"`
 
-	Filter string `yaml:"filter" json:"filter,omitempty"`
+	Filter       string `yaml:"filter" json:"filter,omitempty"`
+	ProxyFactory string `yaml:"proxy_factory" default:"default" json:"proxy_factory,omitempty"`
 
 	ApplicationConfig ApplicationConfig `yaml:"application_config" json:"application_config,omitempty"`
 	Registries        []RegistryConfig  `yaml:"registries" json:"registries,omitempty"`
