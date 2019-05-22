@@ -22,16 +22,16 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 )
 
 import (
-	"github.com/AlexStocks/goext/net"
-	"github.com/AlexStocks/goext/time"
 	log "github.com/AlexStocks/log4go"
 	"github.com/dubbogo/hessian2"
 )
 
 import (
+	"github.com/dubbo/go-for-apache-dubbo/common/utils"
 	"github.com/dubbo/go-for-apache-dubbo/config"
 	_ "github.com/dubbo/go-for-apache-dubbo/protocol/dubbo"
 	_ "github.com/dubbo/go-for-apache-dubbo/registry/protocol"
@@ -81,7 +81,7 @@ func initProfiling() {
 		addr string
 	)
 
-	ip, err = gxnet.GetLocalIP()
+	ip, err = utils.GetLocalIP()
 	if err != nil {
 		panic("can not get local ip!")
 	}
@@ -104,7 +104,7 @@ func initSignal() {
 		case syscall.SIGHUP:
 			// reload()
 		default:
-			go gxtime.Future(survivalTimeout, func() {
+			go time.AfterFunc(time.Duration(float64(survivalTimeout)*float64(time.Second)), func() {
 				log.Warn("app exit now by force...")
 				os.Exit(1)
 			})

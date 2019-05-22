@@ -22,7 +22,6 @@ import (
 )
 
 import (
-	"github.com/AlexStocks/goext/log"
 	"github.com/dubbo/go-for-apache-dubbo/config"
 	"github.com/dubbogo/hessian2"
 )
@@ -130,11 +129,11 @@ func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User
 		user *User
 	)
 
-	gxlog.CInfo("req:%#v", req)
+	println("req:%#v", req)
 	user, err = u.getUser(req[0].(string))
 	if err == nil {
 		*rsp = *user
-		gxlog.CInfo("rsp:%#v", rsp)
+		println("rsp:%#v", rsp)
 		// s, _ := json.Marshal(rsp)
 		// fmt.Println("hello0:", string(s))
 
@@ -150,4 +149,8 @@ func (u *UserProvider) Service() string {
 
 func (u *UserProvider) Version() string {
 	return ""
+}
+
+func println(format string, args ...interface{}) {
+	fmt.Printf("\033[32;40m"+format+"\033[0m\n", args...)
 }

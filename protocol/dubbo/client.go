@@ -22,10 +22,10 @@ import (
 
 import (
 	"github.com/AlexStocks/getty"
-	"github.com/AlexStocks/goext/sync/atomic"
 	log "github.com/AlexStocks/log4go"
 	"github.com/dubbogo/hessian2"
 	"github.com/pkg/errors"
+	"go.uber.org/atomic"
 	"gopkg.in/yaml.v2"
 )
 
@@ -143,7 +143,7 @@ type AsyncCallback func(response CallResponse)
 type Client struct {
 	conf     ClientConfig
 	pool     *gettyRPCClientPool
-	sequence gxatomic.Uint64
+	sequence atomic.Uint64
 
 	pendingLock      sync.RWMutex
 	pendingResponses map[SequenceType]*PendingResponse
