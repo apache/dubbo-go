@@ -232,7 +232,13 @@ func (dir *registryDirectory) Destroy() {
 func mergeUrl(serviceUrl common.URL, referenceUrl *common.URL) common.URL {
 	mergedUrl := serviceUrl
 	var methodConfigMergeFcn = []func(method string){}
+	//iterator the referenceUrl if serviceUrl not have the key ,merge in
 
+	for k, v := range referenceUrl.Params {
+		if _, ok := mergedUrl.Params[k]; !ok {
+			mergedUrl.Params.Set(k, v[0])
+		}
+	}
 	//loadBalance strategy config
 	if v := referenceUrl.Params.Get(constant.LOADBALANCE_KEY); v != "" {
 		mergedUrl.Params.Set(constant.LOADBALANCE_KEY, v)
