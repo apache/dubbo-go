@@ -35,6 +35,7 @@ type ReferenceConfig struct {
 	pxy           *proxy.Proxy
 	InterfaceName string           `required:"true"  yaml:"interface"  json:"interface,omitempty"`
 	Check         *bool            `yaml:"check"  json:"check,omitempty"`
+	Filter        string           `yaml:"filter" json:"filter,omitempty"`
 	Protocol      string           `yaml:"protocol"  json:"protocol,omitempty"`
 	Registries    []ConfigRegistry `required:"true"  yaml:"registries"  json:"registries,omitempty"`
 	Cluster       string           `yaml:"cluster"  json:"cluster,omitempty"`
@@ -67,9 +68,9 @@ func (refconfig *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) erro
 	return nil
 }
 func (refconfig *ReferenceConfig) Refer() {
-	//首先是user specified SubURL, could be peer-to-peer address, or register center's address.
+	//1. user specified SubURL, could be peer-to-peer address, or register center's address.
 
-	//其次是assemble SubURL from register center's configuration模式
+	//2. assemble SubURL from register center's configuration模式
 	regUrls := loadRegistries(refconfig.Registries, consumerConfig.Registries, common.CONSUMER)
 	url := common.NewURLWithOptions(refconfig.InterfaceName, common.WithProtocol(refconfig.Protocol), common.WithParams(refconfig.getUrlMap()))
 
@@ -125,6 +126,9 @@ func (refconfig *ReferenceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.APP_VERSION_KEY, consumerConfig.ApplicationConfig.Version)
 	urlMap.Set(constant.OWNER_KEY, consumerConfig.ApplicationConfig.Owner)
 	urlMap.Set(constant.ENVIRONMENT_KEY, consumerConfig.ApplicationConfig.Environment)
+
+	//filter
+	urlMap.Set(constant.REFERENCE_FILTER_KEY, mergeValue(consumerConfig.Filter, refconfig.Filter, constant.DEFAULT_REFERENCE_FILTERS))
 
 	for _, v := range refconfig.Methods {
 		urlMap.Set("methods."+v.Name+"."+constant.LOADBALANCE_KEY, v.Loadbalance)

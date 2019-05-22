@@ -36,6 +36,7 @@ import (
 
 type ServiceConfig struct {
 	context       context.Context
+	Filter        string           `yaml:"filter" json:"filter,omitempty"`
 	Protocol      string           `required:"true"  yaml:"protocol"  json:"protocol,omitempty"` //multi protocol support, split by ','
 	InterfaceName string           `required:"true"  yaml:"interface"  json:"interface,omitempty"`
 	Registries    []ConfigRegistry `required:"true"  yaml:"registries"  json:"registries,omitempty"`
@@ -145,6 +146,9 @@ func (srvconfig *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.APP_VERSION_KEY, providerConfig.ApplicationConfig.Version)
 	urlMap.Set(constant.OWNER_KEY, providerConfig.ApplicationConfig.Owner)
 	urlMap.Set(constant.ENVIRONMENT_KEY, providerConfig.ApplicationConfig.Environment)
+
+	//filter
+	urlMap.Set(constant.SERVICE_FILTER_KEY, mergeValue(providerConfig.Filter, srvconfig.Filter, constant.DEFAULT_SERVICE_FILTERS))
 
 	for _, v := range srvconfig.Methods {
 		urlMap.Set("methods."+v.Name+"."+constant.LOADBALANCE_KEY, v.Loadbalance)

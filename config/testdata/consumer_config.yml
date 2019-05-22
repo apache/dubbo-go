@@ -4,6 +4,8 @@
 pprof_enabled : true
 pprof_port : 10086
 
+filter: ""
+
 # client
 request_timeout : "100ms"
 # connect timeout
@@ -37,7 +39,7 @@ references:
 - registries :
   - "hangzhouzk"
   - "shanghaizk"
-
+  filter: ""
   protocol : "dubbo"
   interface : "com.ikurento.user.UserProvider"
   cluster: "failover"
