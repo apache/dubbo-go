@@ -19,7 +19,7 @@ import (
 )
 
 import (
-	"github.com/pkg/errors"
+	perrors "github.com/pkg/errors"
 )
 
 type (
@@ -101,19 +101,19 @@ func (c *GettySessionParam) CheckValidity() error {
 	var err error
 
 	if c.keepAlivePeriod, err = time.ParseDuration(c.KeepAlivePeriod); err != nil {
-		return errors.WithMessagef(err, "time.ParseDuration(KeepAlivePeriod{%#v})", c.KeepAlivePeriod)
+		return perrors.WithMessagef(err, "time.ParseDuration(KeepAlivePeriod{%#v})", c.KeepAlivePeriod)
 	}
 
 	if c.tcpReadTimeout, err = time.ParseDuration(c.TcpReadTimeout); err != nil {
-		return errors.WithMessagef(err, "time.ParseDuration(TcpReadTimeout{%#v})", c.TcpReadTimeout)
+		return perrors.WithMessagef(err, "time.ParseDuration(TcpReadTimeout{%#v})", c.TcpReadTimeout)
 	}
 
 	if c.tcpWriteTimeout, err = time.ParseDuration(c.TcpWriteTimeout); err != nil {
-		return errors.WithMessagef(err, "time.ParseDuration(TcpWriteTimeout{%#v})", c.TcpWriteTimeout)
+		return perrors.WithMessagef(err, "time.ParseDuration(TcpWriteTimeout{%#v})", c.TcpWriteTimeout)
 	}
 
 	if c.waitTimeout, err = time.ParseDuration(c.WaitTimeout); err != nil {
-		return errors.WithMessagef(err, "time.ParseDuration(WaitTimeout{%#v})", c.WaitTimeout)
+		return perrors.WithMessagef(err, "time.ParseDuration(WaitTimeout{%#v})", c.WaitTimeout)
 	}
 
 	return nil
@@ -123,30 +123,30 @@ func (c *ClientConfig) CheckValidity() error {
 	var err error
 
 	if c.heartbeatPeriod, err = time.ParseDuration(c.HeartbeatPeriod); err != nil {
-		return errors.WithMessagef(err, "time.ParseDuration(HeartbeatPeroid{%#v})", c.HeartbeatPeriod)
+		return perrors.WithMessagef(err, "time.ParseDuration(HeartbeatPeroid{%#v})", c.HeartbeatPeriod)
 	}
 
 	if c.sessionTimeout, err = time.ParseDuration(c.SessionTimeout); err != nil {
-		return errors.WithMessagef(err, "time.ParseDuration(SessionTimeout{%#v})", c.SessionTimeout)
+		return perrors.WithMessagef(err, "time.ParseDuration(SessionTimeout{%#v})", c.SessionTimeout)
 	}
 
 	if c.failFastTimeout, err = time.ParseDuration(c.FailFastTimeout); err != nil {
-		return errors.WithMessagef(err, "time.ParseDuration(FailFastTimeout{%#v})", c.FailFastTimeout)
+		return perrors.WithMessagef(err, "time.ParseDuration(FailFastTimeout{%#v})", c.FailFastTimeout)
 	}
 
-	return errors.WithStack(c.GettySessionParam.CheckValidity())
+	return perrors.WithStack(c.GettySessionParam.CheckValidity())
 }
 
 func (c *ServerConfig) CheckValidity() error {
 	var err error
 
 	if c.sessionTimeout, err = time.ParseDuration(c.SessionTimeout); err != nil {
-		return errors.WithMessagef(err, "time.ParseDuration(SessionTimeout{%#v})", c.SessionTimeout)
+		return perrors.WithMessagef(err, "time.ParseDuration(SessionTimeout{%#v})", c.SessionTimeout)
 	}
 
 	if c.failFastTimeout, err = time.ParseDuration(c.FailFastTimeout); err != nil {
-		return errors.WithMessagef(err, "time.ParseDuration(FailFastTimeout{%#v})", c.FailFastTimeout)
+		return perrors.WithMessagef(err, "time.ParseDuration(FailFastTimeout{%#v})", c.FailFastTimeout)
 	}
 
-	return errors.WithStack(c.GettySessionParam.CheckValidity())
+	return perrors.WithStack(c.GettySessionParam.CheckValidity())
 }

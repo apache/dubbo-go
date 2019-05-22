@@ -21,7 +21,7 @@ import (
 
 import (
 	log "github.com/AlexStocks/log4go"
-	"github.com/pkg/errors"
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -61,7 +61,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry, opts ...O
 		opt(&options)
 	}
 	if url.SubURL == nil {
-		return nil, errors.Errorf("url is invalid, suburl can not be nil")
+		return nil, perrors.Errorf("url is invalid, suburl can not be nil")
 	}
 	return &registryDirectory{
 		BaseDirectory:    directory.NewBaseDirectory(url),
@@ -87,14 +87,14 @@ func (dir *registryDirectory) Subscribe(url common.URL) {
 				log.Warn("event listener game over.")
 				return
 			}
-			log.Warn("getListener() = err:%v", errors.Cause(err))
+			log.Warn("getListener() = err:%v", perrors.WithStack(err))
 			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
 			continue
 		}
 
 		for {
 			if serviceEvent, err := listener.Next(); err != nil {
-				log.Warn("Selector.watch() = error{%v}", errors.Cause(err))
+				log.Warn("Selector.watch() = error{%v}", perrors.WithStack(err))
 				listener.Close()
 				time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
 				return

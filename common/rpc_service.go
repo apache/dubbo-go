@@ -25,7 +25,7 @@ import (
 
 import (
 	log "github.com/AlexStocks/log4go"
-	"github.com/pkg/errors"
+	perrors "github.com/pkg/errors"
 )
 
 // rpc service interface
@@ -129,17 +129,17 @@ func (sm *serviceMap) Register(protocol string, rcvr RPCService) (string, error)
 	if sname == "" {
 		s := "no service name for type " + s.rcvrType.String()
 		log.Error(s)
-		return "", errors.New(s)
+		return "", perrors.New(s)
 	}
 	if !isExported(sname) {
 		s := "type " + sname + " is not exported"
 		log.Error(s)
-		return "", errors.New(s)
+		return "", perrors.New(s)
 	}
 
 	sname = rcvr.Service()
 	if server := sm.GetService(protocol, sname); server != nil {
-		return "", errors.New("service already defined: " + sname)
+		return "", perrors.New("service already defined: " + sname)
 	}
 	s.name = sname
 	s.methods = make(map[string]*MethodType)
@@ -151,7 +151,7 @@ func (sm *serviceMap) Register(protocol string, rcvr RPCService) (string, error)
 	if len(s.methods) == 0 {
 		s := "type " + sname + " has no exported methods of suitable type"
 		log.Error(s)
-		return "", errors.New(s)
+		return "", perrors.New(s)
 	}
 	sm.mutex.Lock()
 	sm.serviceMap[protocol][s.name] = s
@@ -162,18 +162,18 @@ func (sm *serviceMap) Register(protocol string, rcvr RPCService) (string, error)
 
 func (sm *serviceMap) UnRegister(protocol, serviceName string) error {
 	if protocol == "" || serviceName == "" {
-		return errors.New("protocol or serviceName is nil")
+		return perrors.New("protocol or serviceName is nil")
 	}
 	sm.mutex.RLock()
 	svcs, ok := sm.serviceMap[protocol]
 	if !ok {
 		sm.mutex.RUnlock()
-		return errors.New("no services for " + protocol)
+		return perrors.New("no services for " + protocol)
 	}
 	_, ok = svcs[serviceName]
 	if !ok {
 		sm.mutex.RUnlock()
-		return errors.New("no service for " + serviceName)
+		return perrors.New("no service for " + serviceName)
 	}
 	sm.mutex.RUnlock()
 

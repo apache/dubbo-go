@@ -25,7 +25,7 @@ import (
 
 import (
 	log "github.com/AlexStocks/log4go"
-	"github.com/pkg/errors"
+	perrors "github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
 
@@ -73,10 +73,10 @@ func logInit() error {
 
 	confFile = os.Getenv(constant.APP_LOG_CONF_FILE)
 	if confFile == "" {
-		return errors.Errorf("log configure file name is nil")
+		return perrors.Errorf("log configure file name is nil")
 	}
 	if path.Ext(confFile) != ".xml" {
-		return errors.Errorf("log configure file name{%v} suffix must be .xml", confFile)
+		return perrors.Errorf("log configure file name{%v} suffix must be .xml", confFile)
 	}
 
 	log.LoadConfiguration(confFile)
@@ -86,28 +86,28 @@ func logInit() error {
 
 func consumerInit(confConFile string) error {
 	if confConFile == "" {
-		return errors.Errorf("application configure(consumer) file name is nil")
+		return perrors.Errorf("application configure(consumer) file name is nil")
 	}
 
 	if path.Ext(confConFile) != ".yml" {
-		return errors.Errorf("application configure file name{%v} suffix must be .yml", confConFile)
+		return perrors.Errorf("application configure file name{%v} suffix must be .yml", confConFile)
 	}
 
 	confFileStream, err := ioutil.ReadFile(confConFile)
 	if err != nil {
-		return errors.Errorf("ioutil.ReadFile(file:%s) = error:%v", confConFile, errors.Cause(err))
+		return perrors.Errorf("ioutil.ReadFile(file:%s) = error:%v", confConFile, perrors.WithStack(err))
 	}
 	consumerConfig = &ConsumerConfig{}
 	err = yaml.Unmarshal(confFileStream, consumerConfig)
 	if err != nil {
-		return errors.Errorf("yaml.Unmarshal() = error:%v", errors.Cause(err))
+		return perrors.Errorf("yaml.Unmarshal() = error:%v", perrors.WithStack(err))
 	}
 
 	if consumerConfig.RequestTimeout, err = time.ParseDuration(consumerConfig.Request_Timeout); err != nil {
-		return errors.WithMessagef(err, "time.ParseDuration(Request_Timeout{%#v})", consumerConfig.Request_Timeout)
+		return perrors.WithMessagef(err, "time.ParseDuration(Request_Timeout{%#v})", consumerConfig.Request_Timeout)
 	}
 	if consumerConfig.ConnectTimeout, err = time.ParseDuration(consumerConfig.Connect_Timeout); err != nil {
-		return errors.WithMessagef(err, "time.ParseDuration(Connect_Timeout{%#v})", consumerConfig.Connect_Timeout)
+		return perrors.WithMessagef(err, "time.ParseDuration(Connect_Timeout{%#v})", consumerConfig.Connect_Timeout)
 	}
 
 	log.Debug("consumer config{%#v}\n", consumerConfig)
@@ -116,21 +116,21 @@ func consumerInit(confConFile string) error {
 
 func providerInit(confProFile string) error {
 	if confProFile == "" {
-		return errors.Errorf("application configure(provider) file name is nil")
+		return perrors.Errorf("application configure(provider) file name is nil")
 	}
 
 	if path.Ext(confProFile) != ".yml" {
-		return errors.Errorf("application configure file name{%v} suffix must be .yml", confProFile)
+		return perrors.Errorf("application configure file name{%v} suffix must be .yml", confProFile)
 	}
 
 	confFileStream, err := ioutil.ReadFile(confProFile)
 	if err != nil {
-		return errors.Errorf("ioutil.ReadFile(file:%s) = error:%v", confProFile, errors.Cause(err))
+		return perrors.Errorf("ioutil.ReadFile(file:%s) = error:%v", confProFile, perrors.WithStack(err))
 	}
 	providerConfig = &ProviderConfig{}
 	err = yaml.Unmarshal(confFileStream, providerConfig)
 	if err != nil {
-		return errors.Errorf("yaml.Unmarshal() = error:%v", errors.Cause(err))
+		return perrors.Errorf("yaml.Unmarshal() = error:%v", perrors.WithStack(err))
 	}
 
 	log.Debug("provider config{%#v}\n", providerConfig)

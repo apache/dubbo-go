@@ -21,7 +21,7 @@ import (
 
 import (
 	log "github.com/AlexStocks/log4go"
-	"github.com/pkg/errors"
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -31,7 +31,7 @@ import (
 	invocation_impl "github.com/dubbo/go-for-apache-dubbo/protocol/invocation"
 )
 
-var Err_No_Reply = errors.New("request need @reply")
+var Err_No_Reply = perrors.New("request need @reply")
 
 type DubboInvoker struct {
 	protocol.BaseInvoker
