@@ -17,10 +17,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 )
 
 import (
-	"github.com/AlexStocks/goext/time"
 	"github.com/dubbo/go-for-apache-dubbo/config"
 )
 
@@ -39,7 +39,7 @@ type JsonRPCUser struct {
 func (u JsonRPCUser) String() string {
 	return fmt.Sprintf(
 		"User{ID:%s, Name:%s, Age:%d, Time:%s, Sex:%s}",
-		u.ID, u.Name, u.Age, gxtime.YMDPrint(int(u.Time), 0), u.Sex,
+		u.ID, u.Name, u.Age, time.Unix(u.Time, 0).Format("2006-01-02 15:04:05.99999"), u.Sex,
 	)
 }
 

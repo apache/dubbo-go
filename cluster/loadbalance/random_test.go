@@ -38,7 +38,13 @@ func Test_RandomlbSelect(t *testing.T) {
 	randomlb := NewRandomLoadBalance()
 
 	invokers := []protocol.Invoker{}
-	for i := 0; i < 10; i++ {
+
+	url, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", 0))
+	invokers = append(invokers, protocol.NewBaseInvoker(url))
+	i := randomlb.Select(invokers, &invocation.RPCInvocation{})
+	assert.True(t, i.GetUrl().URLEqual(url))
+
+	for i := 1; i < 10; i++ {
 		url, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		invokers = append(invokers, protocol.NewBaseInvoker(url))
 	}

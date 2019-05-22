@@ -27,13 +27,12 @@ import (
 )
 
 import (
-	"github.com/AlexStocks/goext/log"
-	"github.com/AlexStocks/goext/net"
 	log "github.com/AlexStocks/log4go"
 	"github.com/dubbogo/hessian2"
 )
 
 import (
+	"github.com/dubbo/go-for-apache-dubbo/common/utils"
 	"github.com/dubbo/go-for-apache-dubbo/config"
 	_ "github.com/dubbo/go-for-apache-dubbo/protocol/dubbo"
 	_ "github.com/dubbo/go-for-apache-dubbo/registry/protocol"
@@ -65,40 +64,40 @@ func main() {
 
 	initProfiling()
 
-	gxlog.CInfo("\n\n\necho")
+	println("\n\n\necho")
 	res, err := conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).Echo(context.TODO(), "OK")
 	if err != nil {
 		panic(err)
 	}
-	gxlog.CInfo("res: %s", res)
+	println("res: %s\n", res)
 
 	time.Sleep(3e9)
 
-	gxlog.CInfo("\n\n\nstart to test dubbo")
+	println("\n\n\nstart to test dubbo")
 	user := &User{}
 	err = conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser(context.TODO(), []interface{}{"A003"}, user)
 	if err != nil {
 		panic(err)
 	}
-	gxlog.CInfo("response result: %v", user)
+	println("response result: %v", user)
 
-	gxlog.CInfo("\n\n\nstart to test dubbo - GetUser0")
+	println("\n\n\nstart to test dubbo - GetUser0")
 	ret, err := conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser0(context.TODO(), "A003")
 	if err != nil {
 		panic(err)
 	}
-	gxlog.CInfo("response result: %v", ret)
+	println("response result: %v", ret)
 
-	gxlog.CInfo("\n\n\nstart to test dubbo - getUser")
+	println("\n\n\nstart to test dubbo - getUser")
 	user = &User{}
 	err = conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser2(context.TODO(), []interface{}{1}, user)
 	if err != nil {
-		fmt.Println("getUser - error: ", err)
+		println("getUser - error: %v", err)
 	} else {
-		gxlog.CInfo("response result: %v", user)
+		println("response result: %v", user)
 	}
 
-	gxlog.CInfo("\n\n\nstart to test dubbo illegal method")
+	println("\n\n\nstart to test dubbo illegal method")
 	err = conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser1(context.TODO(), []interface{}{"A003"}, user)
 	if err != nil {
 		panic(err)
@@ -120,7 +119,7 @@ func initProfiling() {
 		addr string
 	)
 
-	ip, err = gxnet.GetLocalIP()
+	ip, err = utils.GetLocalIP()
 	if err != nil {
 		panic("cat not get local ip!")
 	}
@@ -154,4 +153,8 @@ func initSignal() {
 			return
 		}
 	}
+}
+
+func println(format string, args ...interface{}) {
+	fmt.Printf("\033[32;40m"+format+"\033[0m\n", args...)
 }
