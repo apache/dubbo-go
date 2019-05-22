@@ -54,7 +54,7 @@ func newRegistryProtocol() *registryProtocol {
 	}
 }
 func getRegistry(regUrl *common.URL) registry.Registry {
-	reg, err := extension.GetRegistryExtension(regUrl.Protocol, regUrl)
+	reg, err := extension.GetRegistry(regUrl.Protocol, regUrl)
 	if err != nil {
 		log.Error("Registry can not connect success, program is going to panic.Error message is %s", err.Error())
 		panic(err.Error())
@@ -124,7 +124,7 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 		log.Info("The exporter has been cached, and will return cached exporter!")
 	} else {
 		wrappedInvoker := newWrappedInvoker(invoker, providerUrl)
-		cachedExporter = extension.GetProtocolExtension(protocolwrapper.FILTER).Export(wrappedInvoker)
+		cachedExporter = extension.GetProtocol(protocolwrapper.FILTER).Export(wrappedInvoker)
 		proto.bounds.Store(key, cachedExporter)
 		log.Info("The exporter has not been cached, and will return a new  exporter!")
 	}
