@@ -189,7 +189,7 @@ func (dir *registryDirectory) cacheInvoker(url common.URL) {
 
 		if _, ok := dir.cacheInvokersMap.Load(url.Key()); !ok {
 			log.Debug("service will be added in cache invokers: invokers key is  %s!", url.Key())
-			newInvoker := extension.GetProtocolExtension(protocolwrapper.FILTER).Refer(url)
+			newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(url)
 			if newInvoker != nil {
 				dir.cacheInvokersMap.Store(url.Key(), newInvoker)
 			}

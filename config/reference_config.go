@@ -80,21 +80,19 @@ func (refconfig *ReferenceConfig) Refer() {
 	}
 
 	if len(regUrls) == 1 {
-		refconfig.invoker = extension.GetProtocolExtension("registry").Refer(*regUrls[0])
+		refconfig.invoker = extension.GetProtocol("registry").Refer(*regUrls[0])
 
 	} else {
 		invokers := []protocol.Invoker{}
 		for _, regUrl := range regUrls {
-			invokers = append(invokers, extension.GetProtocolExtension("registry").Refer(*regUrl))
+			invokers = append(invokers, extension.GetProtocol("registry").Refer(*regUrl))
 		}
 		cluster := extension.GetCluster("registryAware")
 		refconfig.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
 	}
 
 	//create proxy
-	attachments := map[string]string{}
-	attachments[constant.ASYNC_KEY] = url.GetParam(constant.ASYNC_KEY, "false")
-	refconfig.pxy = proxy.NewProxy(refconfig.invoker, nil, attachments)
+	refconfig.pxy = extension.GetProxyFactory(consumerConfig.ProxyFactory).GetProxy(refconfig.invoker, url)
 }
 
 // @v is service provider implemented RPCService
