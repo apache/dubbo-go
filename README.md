@@ -33,8 +33,8 @@ Todo List:
 
 - routing rule (dubbo v2.6.x)
 - monitoring (dubbo v2.6.x)
-- metrics (dubbo v2.6.x)
 - dynamic configuration (dubbo v2.7.x)
+- metrics (dubbo v2.7.x) waiting dubbo's quota
 
 You can know more about dubbo-go by its [roadmap](https://github.com/dubbo/go-for-apache-dubbo/wiki/Roadmap).
 
