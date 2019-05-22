@@ -15,6 +15,7 @@
 package config
 
 import (
+	"github.com/dubbo/go-for-apache-dubbo/common/proxy/proxy_factory"
 	"path/filepath"
 	"testing"
 )
@@ -60,6 +61,7 @@ func TestLoad(t *testing.T) {
 
 	extension.SetProtocol("registry", GetProtocol)
 	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
+	extension.SetProxyFactory("default", proxy_factory.NewDefaultProxyFactory)
 	consumerConfig.References[0].Registries = []ConfigRegistry{"shanghai_reg1"}
 
 	refConfigs, svcConfigs := Load()
