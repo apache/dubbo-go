@@ -24,7 +24,6 @@ import (
 )
 
 import (
-	"github.com/AlexStocks/goext/log"
 	log "github.com/AlexStocks/log4go"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
@@ -111,7 +110,7 @@ func consumerInit(confConFile string) error {
 		return errors.WithMessagef(err, "time.ParseDuration(Connect_Timeout{%#v})", consumerConfig.Connect_Timeout)
 	}
 
-	gxlog.CInfo("consumer config{%#v}\n", consumerConfig)
+	log.Debug("consumer config{%#v}\n", consumerConfig)
 	return nil
 }
 
@@ -134,7 +133,7 @@ func providerInit(confProFile string) error {
 		return errors.Errorf("yaml.Unmarshal() = error:%v", errors.Cause(err))
 	}
 
-	gxlog.CInfo("provider config{%#v}\n", providerConfig)
+	log.Debug("provider config{%#v}\n", providerConfig)
 	return nil
 }
 
