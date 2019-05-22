@@ -11,24 +11,25 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-package extension
+package proxy_factory
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/cluster"
+	"github.com/dubbo/go-for-apache-dubbo/common"
+	"github.com/dubbo/go-for-apache-dubbo/protocol"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
-var (
-	clusters = make(map[string]func() cluster.Cluster)
-)
-
-func SetCluster(name string, fcn func() cluster.Cluster) {
-	clusters[name] = fcn
+func Test_GetProxy(t *testing.T) {
+	proxyFactory := NewDefaultProxyFactory()
+	url := common.NewURLWithOptions("testservice")
+	proxy := proxyFactory.GetProxy(protocol.NewBaseInvoker(*url), url)
+	assert.NotNil(t, proxy)
 }
 
-func GetCluster(name string) cluster.Cluster {
-	if clusters[name] == nil {
-		panic("cluster for " + name + " is not existing, make sure you have import the package.")
-	}
-	return clusters[name]()
+func Test_GetInvoker(t *testing.T) {
+	proxyFactory := NewDefaultProxyFactory()
+	url := common.NewURLWithOptions("testservice")
+	invoker := proxyFactory.GetInvoker(*url)
+	assert.True(t, invoker.IsAvailable())
 }
