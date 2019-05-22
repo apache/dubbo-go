@@ -7,7 +7,7 @@ Apache Dubbo Go Implementation.
 Apache License, Version 2.0
 
 ## Code design ##
-Based on dubbo's layered code design (protocol layer,registry layer,cluster layer,config layer and so on), you can achieve your needs by extending these layered interfaces instead of modifying go-for-apache-dubbo's source code. And welcome to contribute your awesome extension.
+Based on dubbo's layered code design (protocol layer,registry layer,cluster layer,config layer and so on), you can achieve your needs by invoking 'extension.SetXXX' to extend these layered interfaces instead of modifying go-for-apache-dubbo's source code. And welcome to contribute your awesome extension.
 
 About detail design please refer to [code layered design](https://github.com/dubbo/go-for-apache-dubbo/wiki/dubbo-go-V2.6-design)
 ## Feature list ##
