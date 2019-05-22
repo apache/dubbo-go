@@ -1,4 +1,4 @@
-// Copyright 2016-2019 Yincheng Fang
+// Copyright 2016-2019 hxmhlt
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,25 +11,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-package extension
+package proxy
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/filter"
+	"github.com/dubbo/go-for-apache-dubbo/common"
+	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
-var (
-	filters = make(map[string]func() filter.Filter)
-)
-
-
-func SetFilter(name string, v func() filter.Filter) {
-	filters[name] = v
+type ProxyFactory interface {
+	GetProxy(invoker protocol.Invoker, url *common.URL) *Proxy
+	GetInvoker(url common.URL) protocol.Invoker
 }
 
-func GetFilter(name string) filter.Filter {
-	if filters[name] == nil {
-		panic("filter for " + name + " is not existing, make sure you have import the package.")
-	}
-	return filters[name]()
-}
+type Option func(ProxyFactory)

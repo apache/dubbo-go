@@ -105,13 +105,15 @@ func (srvconfig *ServiceConfig) Export() error {
 
 		for _, regUrl := range regUrls {
 			regUrl.SubURL = url
-			invoker := protocol.NewBaseInvoker(*regUrl)
+
 			srvconfig.cacheMutex.Lock()
 			if srvconfig.cacheProtocol == nil {
 				log.Info("First load the registry protocol!")
-				srvconfig.cacheProtocol = extension.GetProtocolExtension("registry")
+				srvconfig.cacheProtocol = extension.GetProtocol("registry")
 			}
 			srvconfig.cacheMutex.Unlock()
+
+			invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*regUrl)
 			exporter := srvconfig.cacheProtocol.Export(invoker)
 			if exporter == nil {
 				panic(errors.New("New exporter error"))

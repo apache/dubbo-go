@@ -32,7 +32,7 @@ import (
 )
 
 func TestProtocolFilterWrapper_Export(t *testing.T) {
-	filtProto := extension.GetProtocolExtension(FILTER)
+	filtProto := extension.GetProtocol(FILTER)
 	filtProto.(*ProtocolFilterWrapper).protocol = &protocol.BaseProtocol{}
 
 	u := common.NewURLWithOptions("Service",
@@ -44,7 +44,7 @@ func TestProtocolFilterWrapper_Export(t *testing.T) {
 }
 
 func TestProtocolFilterWrapper_Refer(t *testing.T) {
-	filtProto := extension.GetProtocolExtension(FILTER)
+	filtProto := extension.GetProtocol(FILTER)
 	filtProto.(*ProtocolFilterWrapper).protocol = &protocol.BaseProtocol{}
 
 	u := common.NewURLWithOptions("Service",
