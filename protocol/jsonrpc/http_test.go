@@ -22,7 +22,7 @@ import (
 )
 
 import (
-	"github.com/pkg/errors"
+	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -118,7 +118,7 @@ func (u *UserProvider) GetUser0(req []interface{}, rsp *User) error {
 }
 
 func (u *UserProvider) GetUser1(ctx context.Context, req []interface{}, rsp *User) error {
-	return errors.New("error")
+	return perrors.New("error")
 }
 
 func (u *UserProvider) Service() string {

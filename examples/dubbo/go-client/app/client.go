@@ -32,6 +32,7 @@ import (
 )
 
 import (
+	_ "github.com/dubbo/go-for-apache-dubbo/common/proxy/proxy_factory"
 	"github.com/dubbo/go-for-apache-dubbo/common/utils"
 	"github.com/dubbo/go-for-apache-dubbo/config"
 	_ "github.com/dubbo/go-for-apache-dubbo/protocol/dubbo"
@@ -69,7 +70,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	println("res: %s\n", res)
+	println("res: %v\n", res)
 
 	time.Sleep(3e9)
 
