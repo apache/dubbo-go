@@ -4,7 +4,7 @@
 pprof_enabled : true
 pprof_port : 20080
 
-path: ""
+filter: ""
 # application config
 application_config:
   organization : "ikurento.com"
@@ -34,6 +34,7 @@ services:
 - registries:
   - "hangzhouzk"
   - "shanghaizk"
+  filter: ""
   protocol : "dubbo"
   # equivalent to interface of dubbo.xml
   interface : "com.ikurento.user.UserProvider"
