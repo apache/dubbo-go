@@ -27,7 +27,7 @@ import (
 
 import (
 	log "github.com/AlexStocks/log4go"
-	"github.com/pkg/errors"
+	perrors "github.com/pkg/errors"
 	"github.com/samuel/go-zookeeper/zk"
 )
 
@@ -175,13 +175,13 @@ func (r *zkRegistry) validateZookeeperClient() error {
 		if err != nil {
 			log.Error("timeout config %v is invalid ,err is %v",
 				r.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), err.Error())
-			return errors.WithMessagef(err, "newZookeeperClient(address:%+v)", r.Location)
+			return perrors.WithMessagef(err, "newZookeeperClient(address:%+v)", r.Location)
 		}
 		r.client, err = newZookeeperClient(RegistryZkClient, []string{r.Location}, timeout)
 		if err != nil {
 			log.Warn("newZookeeperClient(name{%s}, zk addresss{%v}, timeout{%d}) = error{%v}",
 				RegistryZkClient, r.Location, timeout.String(), err)
-			return errors.WithMessagef(err, "newZookeeperClient(address:%+v)", r.Location)
+			return perrors.WithMessagef(err, "newZookeeperClient(address:%+v)", r.Location)
 		}
 	}
 	if r.client.conn == nil {
@@ -193,7 +193,7 @@ func (r *zkRegistry) validateZookeeperClient() error {
 		}
 	}
 
-	return errors.WithMessagef(err, "newZookeeperClient(address:%+v)", r.PrimitiveURL)
+	return perrors.WithMessagef(err, "newZookeeperClient(address:%+v)", r.PrimitiveURL)
 }
 
 func (r *zkRegistry) handleZkRestart() {
@@ -229,7 +229,7 @@ LOOP:
 				}
 				err = r.validateZookeeperClient()
 				log.Info("ZkProviderRegistry.validateZookeeperClient(zkAddr{%s}) = error{%#v}",
-					r.client.zkAddrs, errors.Cause(err))
+					r.client.zkAddrs, perrors.WithStack(err))
 				if err == nil {
 					// copy r.services
 					services := []common.URL{}
@@ -242,7 +242,7 @@ LOOP:
 						err = r.register(confIf)
 						if err != nil {
 							log.Error("(ZkProviderRegistry)register(conf{%#v}) = error{%#v}",
-								confIf, errors.Cause(err))
+								confIf, perrors.WithStack(err))
 							flag = false
 							break
 						}
@@ -275,12 +275,12 @@ func (r *zkRegistry) Register(conf common.URL) error {
 		_, ok = r.services[conf.Key()]
 		r.cltLock.Unlock()
 		if ok {
-			return errors.Errorf("Path{%s} has been registered", conf.Path)
+			return perrors.Errorf("Path{%s} has been registered", conf.Path)
 		}
 
 		err = r.register(conf)
 		if err != nil {
-			return errors.WithStack(err)
+			return perrors.WithStack(err)
 		}
 
 		r.cltLock.Lock()
@@ -304,12 +304,12 @@ func (r *zkRegistry) Register(conf common.URL) error {
 		_, ok = r.services[conf.Key()]
 		r.cltLock.Unlock()
 		if ok {
-			return errors.Errorf("Path{%s} has been registered", conf.Key())
+			return perrors.Errorf("Path{%s} has been registered", conf.Key())
 		}
 
 		err = r.register(conf)
 		if err != nil {
-			return errors.WithMessagef(err, "register(conf:%+v)", conf)
+			return perrors.WithMessagef(err, "register(conf:%+v)", conf)
 		}
 
 		r.cltLock.Lock()
@@ -336,7 +336,7 @@ func (r *zkRegistry) register(c common.URL) error {
 
 	err = r.validateZookeeperClient()
 	if err != nil {
-		return errors.WithStack(err)
+		return perrors.WithStack(err)
 	}
 	params = url.Values{}
 	for k, v := range c.Params {
@@ -353,7 +353,7 @@ func (r *zkRegistry) register(c common.URL) error {
 	case common.PROVIDER:
 
 		if c.Path == "" || len(c.Methods) == 0 {
-			return errors.Errorf("conf{Path:%s, Methods:%s}", c.Path, c.Methods)
+			return perrors.Errorf("conf{Path:%s, Methods:%s}", c.Path, c.Methods)
 		}
 		// 先创建服务下面的provider node
 		dubboPath = fmt.Sprintf("/dubbo%s/%s", c.Path, common.DubboNodes[common.PROVIDER])
@@ -361,8 +361,8 @@ func (r *zkRegistry) register(c common.URL) error {
 		err = r.client.Create(dubboPath)
 		r.cltLock.Unlock()
 		if err != nil {
-			log.Error("zkClient.create(path{%s}) = error{%#v}", dubboPath, errors.Cause(err))
-			return errors.WithMessagef(err, "zkclient.Create(path:%s)", dubboPath)
+			log.Error("zkClient.create(path{%s}) = error{%#v}", dubboPath, perrors.WithStack(err))
+			return perrors.WithMessagef(err, "zkclient.Create(path:%s)", dubboPath)
 		}
 		params.Add("anyhost", "true")
 
@@ -403,16 +403,16 @@ func (r *zkRegistry) register(c common.URL) error {
 		err = r.client.Create(dubboPath)
 		r.cltLock.Unlock()
 		if err != nil {
-			log.Error("zkClient.create(path{%s}) = error{%v}", dubboPath, errors.Cause(err))
-			return errors.WithStack(err)
+			log.Error("zkClient.create(path{%s}) = error{%v}", dubboPath, perrors.WithStack(err))
+			return perrors.WithStack(err)
 		}
 		dubboPath = fmt.Sprintf("/dubbo%s/%s", c.Path, common.DubboNodes[common.PROVIDER])
 		r.cltLock.Lock()
 		err = r.client.Create(dubboPath)
 		r.cltLock.Unlock()
 		if err != nil {
-			log.Error("zkClient.create(path{%s}) = error{%v}", dubboPath, errors.Cause(err))
-			return errors.WithStack(err)
+			log.Error("zkClient.create(path{%s}) = error{%v}", dubboPath, perrors.WithStack(err))
+			return perrors.WithStack(err)
 		}
 
 		params.Add("protocol", c.Protocol)
@@ -426,13 +426,13 @@ func (r *zkRegistry) register(c common.URL) error {
 		dubboPath = fmt.Sprintf("/dubbo%s/%s", c.Path, (common.RoleType(common.CONSUMER)).String())
 		log.Debug("consumer path:%s, url:%s", dubboPath, rawURL)
 	default:
-		return errors.Errorf("@c{%v} type is not referencer or provider", c)
+		return perrors.Errorf("@c{%v} type is not referencer or provider", c)
 	}
 
 	err = r.registerTempZookeeperNode(dubboPath, encodedURL)
 
 	if err != nil {
-		return errors.WithMessagef(err, "registerTempZookeeperNode(path:%s, url:%s)", dubboPath, rawURL)
+		return perrors.WithMessagef(err, "registerTempZookeeperNode(path:%s, url:%s)", dubboPath, rawURL)
 	}
 	return nil
 }
@@ -447,13 +447,13 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 	defer r.cltLock.Unlock()
 	err = r.client.Create(root)
 	if err != nil {
-		log.Error("zk.Create(root{%s}) = err{%v}", root, errors.Cause(err))
-		return errors.WithStack(err)
+		log.Error("zk.Create(root{%s}) = err{%v}", root, perrors.WithStack(err))
+		return perrors.WithStack(err)
 	}
 	zkPath, err = r.client.RegisterTemp(root, node)
 	if err != nil {
-		log.Error("RegisterTempNode(root{%s}, node{%s}) = error{%v}", root, node, errors.Cause(err))
-		return errors.WithMessagef(err, "RegisterTempNode(root{%s}, node{%s})", root, node)
+		log.Error("RegisterTempNode(root{%s}, node{%s}) = error{%v}", root, node, perrors.WithStack(err))
+		return perrors.WithMessagef(err, "RegisterTempNode(root{%s}, node{%s})", root, node)
 	}
 	log.Debug("create a zookeeper node:%s", zkPath)
 
@@ -481,7 +481,7 @@ func (r *zkRegistry) getListener(conf common.URL) (*zkEventListener, error) {
 	client := r.client
 	r.cltLock.Unlock()
 	if client == nil {
-		return nil, errors.New("zk connection broken")
+		return nil, perrors.New("zk connection broken")
 	}
 
 	// new client & listener

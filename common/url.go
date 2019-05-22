@@ -24,7 +24,7 @@ import (
 )
 
 import (
-	"github.com/pkg/errors"
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -157,18 +157,18 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (URL, error) 
 
 	rawUrlString, err = url.QueryUnescape(urlString)
 	if err != nil {
-		return s, errors.Errorf("url.QueryUnescape(%s),  error{%v}", urlString, err)
+		return s, perrors.Errorf("url.QueryUnescape(%s),  error{%v}", urlString, err)
 	}
 
 	//rawUrlString = "//" + rawUrlString
 	serviceUrl, err = url.Parse(rawUrlString)
 	if err != nil {
-		return s, errors.Errorf("url.Parse(url string{%s}),  error{%v}", rawUrlString, err)
+		return s, perrors.Errorf("url.Parse(url string{%s}),  error{%v}", rawUrlString, err)
 	}
 
 	s.Params, err = url.ParseQuery(serviceUrl.RawQuery)
 	if err != nil {
-		return s, errors.Errorf("url.ParseQuery(raw url string{%s}),  error{%v}", serviceUrl.RawQuery, err)
+		return s, perrors.Errorf("url.ParseQuery(raw url string{%s}),  error{%v}", serviceUrl.RawQuery, err)
 	}
 
 	s.PrimitiveURL = urlString
@@ -180,7 +180,7 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (URL, error) 
 	if strings.Contains(s.Location, ":") {
 		s.Ip, s.Port, err = net.SplitHostPort(s.Location)
 		if err != nil {
-			return s, errors.Errorf("net.SplitHostPort(Url.Host{%s}), error{%v}", s.Location, err)
+			return s, perrors.Errorf("net.SplitHostPort(Url.Host{%s}), error{%v}", s.Location, err)
 		}
 	}
 	//
