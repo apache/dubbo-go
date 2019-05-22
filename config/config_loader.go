@@ -146,6 +146,8 @@ type ConsumerConfig struct {
 	Pprof_Enabled bool `default:"false" yaml:"pprof_enabled" json:"pprof_enabled,omitempty"`
 	Pprof_Port    int  `default:"10086"  yaml:"pprof_port" json:"pprof_port,omitempty"`
 
+	Filter string `yaml:"filter" json:"filter,omitempty"`
+
 	// client
 	Connect_Timeout string `default:"100ms"  yaml:"connect_timeout" json:"connect_timeout,omitempty"`
 	ConnectTimeout  time.Duration
@@ -185,6 +187,8 @@ type ProviderConfig struct {
 	// pprof
 	Pprof_Enabled bool `default:"false" yaml:"pprof_enabled" json:"pprof_enabled,omitempty"`
 	Pprof_Port    int  `default:"10086"  yaml:"pprof_port" json:"pprof_port,omitempty"`
+
+	Filter string `yaml:"filter" json:"filter,omitempty"`
 
 	ApplicationConfig ApplicationConfig `yaml:"application_config" json:"application_config,omitempty"`
 	Registries        []RegistryConfig  `yaml:"registries" json:"registries,omitempty"`
