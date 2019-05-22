@@ -25,7 +25,7 @@ import (
 	"github.com/AlexStocks/getty"
 	log "github.com/AlexStocks/log4go"
 	"github.com/dubbogo/hessian2"
-	"github.com/pkg/errors"
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -39,7 +39,7 @@ import (
 const WritePkg_Timeout = 5 * time.Second
 
 var (
-	errTooManySessions = errors.New("too many sessions")
+	errTooManySessions = perrors.New("too many sessions")
 )
 
 type rpcSession struct {
@@ -109,7 +109,7 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 	rpcSession, err := h.conn.getClientRpcSession(session)
 	if err != nil {
 		log.Error("client.getClientSession(session{%s}) = error{%v}",
-			session.Stat(), errors.Cause(err))
+			session.Stat(), perrors.WithStack(err))
 		return
 	}
 	if h.conn.pool.rpcClient.conf.sessionTimeout.Nanoseconds() < time.Since(session.GetActive()).Nanoseconds() {
@@ -151,7 +151,7 @@ func (h *RpcServerHandler) OnOpen(session getty.Session) error {
 	}
 	h.rwlock.RUnlock()
 	if err != nil {
-		return errors.WithStack(err)
+		return perrors.WithStack(err)
 	}
 
 	log.Info("got session:%s", session.Stat())
@@ -266,8 +266,8 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 				log.Error("callService panic: %#v", err)
 				req.Body = e.(error)
 			} else if err, ok := e.(string); ok {
-				log.Error("callService panic: %#v", errors.New(err))
-				req.Body = errors.New(err)
+				log.Error("callService panic: %#v", perrors.New(err))
+				req.Body = perrors.New(err)
 			} else {
 				log.Error("callService panic: %#v", e)
 				req.Body = e
@@ -279,7 +279,7 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 	if svcIf == nil {
 		log.Error("service not found!")
 		req.Header.ResponseStatus = hessian.Response_SERVICE_NOT_FOUND
-		req.Body = errors.New("service not found")
+		req.Body = perrors.New("service not found")
 		return
 	}
 	svc := svcIf.(*common.Service)
@@ -287,7 +287,7 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 	if method == nil {
 		log.Error("method not found!")
 		req.Header.ResponseStatus = hessian.Response_SERVICE_NOT_FOUND
-		req.Body = errors.New("method not found")
+		req.Body = perrors.New("method not found")
 		return
 	}
 
@@ -333,6 +333,6 @@ func (h *RpcServerHandler) reply(session getty.Session, req *DubboPackage, tp he
 	}
 
 	if err := session.WritePkg(resp, WritePkg_Timeout); err != nil {
-		log.Error("WritePkg error: %#v, %#v", errors.WithStack(err), req.Header)
+		log.Error("WritePkg error: %#v, %#v", perrors.WithStack(err), req.Header)
 	}
 }

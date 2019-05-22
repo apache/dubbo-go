@@ -30,6 +30,7 @@ import (
 )
 
 import (
+	_ "github.com/dubbo/go-for-apache-dubbo/common/proxy/proxy_factory"
 	"github.com/dubbo/go-for-apache-dubbo/common/utils"
 	"github.com/dubbo/go-for-apache-dubbo/config"
 	_ "github.com/dubbo/go-for-apache-dubbo/protocol/jsonrpc"
