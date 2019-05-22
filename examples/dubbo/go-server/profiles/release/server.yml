@@ -4,7 +4,6 @@
 pprof_enabled : true
 pprof_port : 20080
 
-path: ""
 # application config
 application_config:
   organization : "ikurento.com"
