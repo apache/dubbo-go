@@ -93,7 +93,7 @@ func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) pr
 		}
 	}
 	ip, _ := utils.GetLocalIP()
-	return &protocol.RPCResult{Err: perrors.Errorf("Failed to invoke the method %v in the service %v . Tried %v times of "+
+	return &protocol.RPCResult{Err: perrors.Errorf("Failed to invoke the method %v in the service %v. Tried %v times of "+
 		"the providers %v (%v/%v)from the registry %v on the consumer %v using the dubbo version %v. Last error is %v.",
 		methodName, invoker.GetUrl().Service(), retries, providers, len(providers), len(invokers), invoker.directory.GetUrl(), ip, version.Version, result.Error().Error(),
 	)}
