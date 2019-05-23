@@ -1,9 +1,5 @@
 # dubbo client yaml configure file
 
-# pprof
-pprof_enabled : true
-pprof_port : 10086
-
 # client
 request_timeout : "100ms"
 # connect timeout
