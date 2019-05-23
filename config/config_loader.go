@@ -258,6 +258,7 @@ func Load() (map[string]*ReferenceConfig, map[string]*ServiceConfig) {
 				if ((refconfig.Check != nil && *refconfig.Check) ||
 					(refconfig.Check == nil && consumerConfig.Check != nil && *consumerConfig.Check) ||
 					(refconfig.Check == nil && consumerConfig.Check == nil)) && //default to true
+					refconfig.invoker != nil &&
 					!refconfig.invoker.IsAvailable() {
 					checkok = false
 					count++
