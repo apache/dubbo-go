@@ -19,7 +19,7 @@ import (
 )
 
 import (
-	"github.com/pkg/errors"
+	perrors "github.com/pkg/errors"
 )
 
 var (
@@ -38,14 +38,14 @@ func init() {
 func GetLocalIP() (string, error) {
 	ifs, err := net.Interfaces()
 	if err != nil {
-		return "", errors.WithStack(err)
+		return "", perrors.WithStack(err)
 	}
 
 	var ipAddr []byte
 	for _, i := range ifs {
 		addrs, err := i.Addrs()
 		if err != nil {
-			return "", errors.WithStack(err)
+			return "", perrors.WithStack(err)
 		}
 		var ip net.IP
 		for _, addr := range addrs {
@@ -64,7 +64,7 @@ func GetLocalIP() (string, error) {
 	}
 
 	if ipAddr == nil {
-		return "", errors.Errorf("can not get local IP")
+		return "", perrors.Errorf("can not get local IP")
 	}
 
 	return net.IP(ipAddr).String(), nil

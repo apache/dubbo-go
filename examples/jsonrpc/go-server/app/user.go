@@ -21,6 +21,10 @@ import (
 )
 
 import (
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"github.com/dubbo/go-for-apache-dubbo/config"
 )
 
@@ -104,6 +108,20 @@ func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User
 		println("rsp:%#v", rsp)
 	}
 	return err
+}
+
+func (u *UserProvider) GetUser0(id string, name string) (User, error) {
+	var err error
+
+	println("id:%s, name:%s", id, name)
+	user, err := u.getUser(id)
+	if err != nil {
+		return User{}, err
+	}
+	if user.Name != name {
+		return User{}, perrors.New("name is not " + user.Name)
+	}
+	return *user, err
 }
 
 func (u *UserProvider) Service() string {

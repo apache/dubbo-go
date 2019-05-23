@@ -32,6 +32,10 @@ public class UserProviderAnotherImpl implements UserProvider {
         return new User(userId, "Joe", 48);
     }
 
+    public User GetUser0(String userId, String name) {
+                return new User(userId, name, 48);
+    }
+
     public List<User> GetUsers(ArrayList<String> userIdList) {
         Iterator it = userIdList.iterator();
         List<User> userList = new ArrayList<User>();

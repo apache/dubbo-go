@@ -150,7 +150,7 @@ func (p *Proxy) Implement(v common.RPCService) {
 
 			// reply must be Ptr when outNum == 1
 			if outNum == 1 && t.Type.In(inNum-1).Kind() != reflect.Ptr {
-				log.Warn("reply type of method %q is not a pointer or interface", t.Name)
+				log.Warn("reply type of method %q is not a pointer", t.Name)
 				continue
 			}
 
