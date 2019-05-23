@@ -24,7 +24,7 @@ import (
 )
 import (
 	log "github.com/AlexStocks/log4go"
-	"github.com/pkg/errors"
+	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
 )
 import (
@@ -73,7 +73,7 @@ func (srvconfig *ServiceConfig) Export() error {
 
 	//TODO:delay export
 	if srvconfig.unexported != nil && srvconfig.unexported.Load() {
-		err := errors.Errorf("The service %v has already unexported! ", srvconfig.InterfaceName)
+		err := perrors.Errorf("The service %v has already unexported! ", srvconfig.InterfaceName)
 		log.Error(err.Error())
 		return err
 	}
@@ -89,7 +89,7 @@ func (srvconfig *ServiceConfig) Export() error {
 		//registry the service reflect
 		methods, err := common.ServiceMap.Register(proto.Name, srvconfig.rpcService)
 		if err != nil {
-			err := errors.Errorf("The service %v  export the protocol %v error! Error message is %v .", srvconfig.InterfaceName, proto.Name, err.Error())
+			err := perrors.Errorf("The service %v  export the protocol %v error! Error message is %v .", srvconfig.InterfaceName, proto.Name, err.Error())
 			log.Error(err.Error())
 			return err
 		}
@@ -117,7 +117,7 @@ func (srvconfig *ServiceConfig) Export() error {
 			invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*regUrl)
 			exporter := srvconfig.cacheProtocol.Export(invoker)
 			if exporter == nil {
-				panic(errors.New("New exporter error"))
+				panic(perrors.New("New exporter error"))
 			}
 			srvconfig.exporters = append(srvconfig.exporters, exporter)
 		}

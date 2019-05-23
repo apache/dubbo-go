@@ -31,6 +31,7 @@ import (
 )
 
 import (
+	_ "github.com/dubbo/go-for-apache-dubbo/common/proxy/proxy_factory"
 	"github.com/dubbo/go-for-apache-dubbo/common/utils"
 	"github.com/dubbo/go-for-apache-dubbo/config"
 	_ "github.com/dubbo/go-for-apache-dubbo/protocol/jsonrpc"
@@ -64,7 +65,7 @@ func main() {
 	if err != nil {
 		println("echo - error: %v", err)
 	} else {
-		println("res: %s", res)
+		println("res: %v", res)
 	}
 
 	time.Sleep(3e9)
@@ -78,7 +79,7 @@ func main() {
 	println("response result: %v", user)
 
 	println("\n\n\nstart to test dubbo - GetUser0")
-	ret, err := conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser0(context.TODO(), "A003")
+	ret, err := conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser0("A003", "Moorse")
 	if err != nil {
 		panic(err)
 	}

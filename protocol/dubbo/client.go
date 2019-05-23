@@ -24,7 +24,7 @@ import (
 	"github.com/AlexStocks/getty"
 	log "github.com/AlexStocks/log4go"
 	"github.com/dubbogo/hessian2"
-	"github.com/pkg/errors"
+	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
 	"gopkg.in/yaml.v2"
 )
@@ -36,11 +36,11 @@ import (
 )
 
 var (
-	errInvalidCodecType  = errors.New("illegal CodecType")
-	errInvalidAddress    = errors.New("remote address invalid or empty")
-	errSessionNotExist   = errors.New("session not exist")
-	errClientClosed      = errors.New("client closed")
-	errClientReadTimeout = errors.New("client read timeout")
+	errInvalidCodecType  = perrors.New("illegal CodecType")
+	errInvalidAddress    = perrors.New("remote address invalid or empty")
+	errSessionNotExist   = perrors.New("session not exist")
+	errClientClosed      = perrors.New("client closed")
+	errClientReadTimeout = perrors.New("client read timeout")
 
 	clientConf *ClientConfig
 )
@@ -168,7 +168,7 @@ func (c *Client) CallOneway(addr string, svcUrl common.URL, method string, args 
 		o(&copts)
 	}
 
-	return errors.WithStack(c.call(CT_OneWay, addr, svcUrl, method, args, nil, nil, copts))
+	return perrors.WithStack(c.call(CT_OneWay, addr, svcUrl, method, args, nil, nil, copts))
 }
 
 // if @reply is nil, the transport layer will get the response without notify the invoker.
@@ -184,7 +184,7 @@ func (c *Client) Call(addr string, svcUrl common.URL, method string, args, reply
 		ct = CT_OneWay
 	}
 
-	return errors.WithStack(c.call(ct, addr, svcUrl, method, args, reply, nil, copts))
+	return perrors.WithStack(c.call(ct, addr, svcUrl, method, args, reply, nil, copts))
 }
 
 func (c *Client) AsyncCall(addr string, svcUrl common.URL, method string, args interface{},
@@ -195,7 +195,7 @@ func (c *Client) AsyncCall(addr string, svcUrl common.URL, method string, args i
 		o(&copts)
 	}
 
-	return errors.WithStack(c.call(CT_TwoWay, addr, svcUrl, method, args, reply, callback, copts))
+	return perrors.WithStack(c.call(CT_TwoWay, addr, svcUrl, method, args, reply, callback, copts))
 }
 
 func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string,
@@ -246,7 +246,7 @@ func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string
 	defer c.pool.release(conn, err)
 
 	if err = c.transfer(session, p, rsp, opts); err != nil {
-		return errors.WithStack(err)
+		return perrors.WithStack(err)
 	}
 
 	if ct == CT_OneWay || callback != nil {
@@ -261,7 +261,7 @@ func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string
 		err = rsp.err
 	}
 
-	return errors.WithStack(err)
+	return perrors.WithStack(err)
 }
 
 func (c *Client) Close() {
@@ -274,7 +274,7 @@ func (c *Client) Close() {
 func (c *Client) selectSession(addr string) (*gettyRPCClient, getty.Session, error) {
 	rpcClient, err := c.pool.getGettyRpcClient(DUBBO, addr)
 	if err != nil {
-		return nil, nil, errors.WithStack(err)
+		return nil, nil, perrors.WithStack(err)
 	}
 	return rpcClient, rpcClient.selectSession(), nil
 }
@@ -316,7 +316,7 @@ func (c *Client) transfer(session getty.Session, pkg *DubboPackage,
 		rsp.readStart = time.Now()
 	}
 
-	return errors.WithStack(err)
+	return perrors.WithStack(err)
 }
 
 func (c *Client) addPendingResponse(pr *PendingResponse) {
