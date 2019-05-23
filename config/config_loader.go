@@ -142,10 +142,6 @@ func providerInit(confProFile string) error {
 /////////////////////////
 
 type ConsumerConfig struct {
-	// pprof
-	Pprof_Enabled bool `default:"false" yaml:"pprof_enabled" json:"pprof_enabled,omitempty"`
-	Pprof_Port    int  `default:"10086"  yaml:"pprof_port" json:"pprof_port,omitempty"`
-
 	Filter string `yaml:"filter" json:"filter,omitempty"`
 
 	// client
@@ -185,10 +181,6 @@ func GetConsumerConfig() ConsumerConfig {
 /////////////////////////
 
 type ProviderConfig struct {
-	// pprof
-	Pprof_Enabled bool `default:"false" yaml:"pprof_enabled" json:"pprof_enabled,omitempty"`
-	Pprof_Port    int  `default:"10086"  yaml:"pprof_port" json:"pprof_port,omitempty"`
-
 	Filter       string `yaml:"filter" json:"filter,omitempty"`
 	ProxyFactory string `yaml:"proxy_factory" default:"default" json:"proxy_factory,omitempty"`
 
