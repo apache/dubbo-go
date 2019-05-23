@@ -33,6 +33,10 @@ public class UserProviderImpl implements UserProvider {
         return new User(userId, "zhangsan", 18);
     }
 
+    public User GetUser0(String userId, String name) {
+        return new User(userId, name, 18);
+    }
+
     public List<User> GetUsers(List<String> userIdList) {
         Iterator it = userIdList.iterator();
         List<User> userList = new ArrayList<User>();
