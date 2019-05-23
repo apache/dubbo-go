@@ -276,7 +276,7 @@ func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPC
 			conn.close() // -> pool.remove(c)
 			continue
 		}
-
+		conn.created = now
 		return conn, nil
 	}
 
