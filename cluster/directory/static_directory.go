@@ -25,8 +25,13 @@ type staticDirectory struct {
 }
 
 func NewStaticDirectory(invokers []protocol.Invoker) *staticDirectory {
+	var url common.URL
+
+	if len(invokers) > 0 {
+		url = invokers[0].GetUrl()
+	}
 	return &staticDirectory{
-		BaseDirectory: NewBaseDirectory(&common.URL{}),
+		BaseDirectory: NewBaseDirectory(&url),
 		invokers:      invokers,
 	}
 }

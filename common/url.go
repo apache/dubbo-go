@@ -248,7 +248,16 @@ func (c URL) Context() context.Context {
 }
 
 func (c URL) Service() string {
-	return strings.TrimPrefix(c.Path, "/")
+	service := strings.TrimPrefix(c.Path, "/")
+	if service != "" {
+		return service
+	} else if c.SubURL != nil {
+		service = strings.TrimPrefix(c.SubURL.Path, "/")
+		if service != "" { //if url.path is "" then return suburl's path, special for registry Url
+			return service
+		}
+	}
+	return ""
 }
 func (c URL) GetParam(s string, d string) string {
 	var r string
