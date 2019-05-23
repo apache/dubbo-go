@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/dubbogo/hessian2"
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -137,13 +138,22 @@ func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User
 	if err == nil {
 		*rsp = *user
 		println("rsp:%#v", rsp)
-		// s, _ := json.Marshal(rsp)
-		// fmt.Println("hello0:", string(s))
-
-		// s, _ = json.Marshal(*rsp)
-		// fmt.Println("hello1:", string(s))
 	}
 	return err
+}
+
+func (u *UserProvider) GetUser0(id string, name string) (User, error) {
+	var err error
+
+	println("id:%s, name:%s", id, name)
+	user, err := u.getUser(id)
+	if err != nil {
+		return User{}, err
+	}
+	if user.Name != name {
+		return User{}, perrors.New("name is not " + user.Name)
+	}
+	return *user, err
 }
 
 func (u *UserProvider) Service() string {

@@ -354,34 +354,45 @@ func serveRequest(ctx context.Context,
 	if svc == nil {
 		return perrors.New("cannot find svc " + serviceName)
 	}
-	mtype := svc.Method()[methodName]
-	if mtype == nil {
+	method := svc.Method()[methodName]
+	if method == nil {
 		return perrors.New("cannot find method " + methodName + " of svc " + serviceName)
 	}
 
-	replyv := reflect.New(mtype.ReplyType().Elem())
-
-	//  call service.method(args)
-	var (
-		errMsg       string
-		returnValues []reflect.Value
-	)
-	if mtype.CtxType() == nil {
-		returnValues = mtype.Method().Func.Call([]reflect.Value{
-			svc.Rcvr(),
-			reflect.ValueOf(args),
-			reflect.ValueOf(replyv.Interface()),
-		})
-	} else {
-		returnValues = mtype.Method().Func.Call([]reflect.Value{
-			svc.Rcvr(),
-			mtype.SuiteContext(ctx),
-			reflect.ValueOf(args),
-			reflect.ValueOf(replyv.Interface()),
-		})
+	in := []reflect.Value{svc.Rcvr()}
+	if method.CtxType() != nil {
+		in = append(in, method.SuiteContext(ctx))
 	}
-	// The return value for the method is an error.
-	if retErr := returnValues[0].Interface(); retErr != nil {
+
+	// prepare argv
+	if (len(method.ArgsType()) == 1 || len(method.ArgsType()) == 2 && method.ReplyType() == nil) && method.ArgsType()[0].String() == "[]interface {}" {
+		in = append(in, reflect.ValueOf(args))
+	} else {
+		for i := 0; i < len(args.([]interface{})); i++ {
+			in = append(in, reflect.ValueOf(args.([]interface{})[i]))
+		}
+	}
+
+	// prepare replyv
+	var replyv reflect.Value
+	if method.ReplyType() == nil {
+		replyv = reflect.New(method.ArgsType()[len(method.ArgsType())-1].Elem())
+		in = append(in, replyv)
+	}
+
+	returnValues := method.Method().Func.Call(in)
+
+	var (
+		retErr interface{}
+		errMsg string
+	)
+	if len(returnValues) == 1 {
+		retErr = returnValues[0].Interface()
+	} else {
+		replyv = returnValues[0]
+		retErr = returnValues[1].Interface()
+	}
+	if retErr != nil {
 		errMsg = retErr.(error).Error()
 	}
 

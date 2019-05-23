@@ -51,9 +51,9 @@ var (
 
 type MethodType struct {
 	method    reflect.Method
-	ctxType   reflect.Type // type of the request context
-	argType   reflect.Type
-	replyType reflect.Type
+	ctxType   reflect.Type   // request context
+	argsType  []reflect.Type // args except ctx, include replyType if existing
+	replyType reflect.Type   // return value, otherwise it is nil
 }
 
 func (m *MethodType) Method() reflect.Method {
@@ -62,8 +62,8 @@ func (m *MethodType) Method() reflect.Method {
 func (m *MethodType) CtxType() reflect.Type {
 	return m.ctxType
 }
-func (m *MethodType) ArgType() reflect.Type {
-	return m.argType
+func (m *MethodType) ArgsType() []reflect.Type {
+	return m.argsType
 }
 func (m *MethodType) ReplyType() reflect.Type {
 	return m.replyType
@@ -224,51 +224,61 @@ func suitableMethods(typ reflect.Type) (string, map[string]*MethodType) {
 func suiteMethod(method reflect.Method) *MethodType {
 	mtype := method.Type
 	mname := method.Name
+	inNum := mtype.NumIn()
+	outNum := mtype.NumOut()
 
 	// Method must be exported.
 	if method.PkgPath != "" {
 		return nil
 	}
 
-	var replyType, argType, ctxType reflect.Type
-	switch mtype.NumIn() {
-	case 3:
-		argType = mtype.In(1)
-		replyType = mtype.In(2)
-	case 4:
-		ctxType = mtype.In(1)
-		argType = mtype.In(2)
-		replyType = mtype.In(3)
-	default:
-		log.Error("method %s of mtype %v has wrong number of in parameters %d; needs exactly 3/4",
-			mname, mtype, mtype.NumIn())
-		return nil
-	}
-	// First arg need not be a pointer.
-	if !isExportedOrBuiltinType(argType) {
-		log.Error("argument type of method %q is not exported %v", mname, argType)
-		return nil
-	}
-	// Second arg must be a pointer.
-	if replyType.Kind() != reflect.Ptr {
-		log.Error("reply type of method %q is not a pointer %v", mname, replyType)
-		return nil
-	}
-	// Reply type must be exported.
-	if !isExportedOrBuiltinType(replyType) {
-		log.Error("reply type of method %s not exported{%v}", mname, replyType)
-		return nil
-	}
-	// Method needs one out.
-	if mtype.NumOut() != 1 {
-		log.Error("method %q has %d out parameters; needs exactly 1", mname, mtype.NumOut())
-		return nil
-	}
-	// The return type of the method must be error.
-	if returnType := mtype.Out(0); returnType != typeOfError {
-		log.Error("return type %s of method %q is not error", returnType, mname)
+	var (
+		replyType, ctxType reflect.Type
+		argsType           []reflect.Type
+	)
+
+	if outNum != 1 && outNum != 2 {
+		log.Warn("method %s of mtype %v has wrong number of in out parameters %d; needs exactly 1/2",
+			mname, mtype.String(), outNum)
 		return nil
 	}
 
-	return &MethodType{method: method, argType: argType, replyType: replyType, ctxType: ctxType}
+	// The latest return type of the method must be error.
+	if returnType := mtype.Out(outNum - 1); returnType != typeOfError {
+		log.Warn("the latest return type %s of method %q is not error", returnType, mname)
+		return nil
+	}
+
+	// replyType
+	if outNum == 1 {
+		if mtype.In(inNum-1).Kind() != reflect.Ptr {
+			log.Error("reply type of method %q is not a pointer %v", mname, replyType)
+			return nil
+		}
+	} else {
+		replyType = mtype.Out(0)
+		if !isExportedOrBuiltinType(replyType) {
+			log.Error("reply type of method %s not exported{%v}", mname, replyType)
+			return nil
+		}
+	}
+
+	index := 1
+
+	// ctxType
+	if mtype.In(1).String() == "context.Context" {
+		ctxType = mtype.In(1)
+		index = 2
+	}
+
+	for ; index < inNum; index++ {
+		argsType = append(argsType, mtype.In(index))
+		// need not be a pointer.
+		if !isExportedOrBuiltinType(mtype.In(index)) {
+			log.Error("argument type of method %q is not exported %v", mname, mtype.In(index))
+			return nil
+		}
+	}
+
+	return &MethodType{method: method, argsType: argsType, replyType: replyType, ctxType: ctxType}
 }
