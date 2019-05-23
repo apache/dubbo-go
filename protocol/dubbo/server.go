@@ -20,8 +20,8 @@ import (
 )
 
 import (
-	"github.com/AlexStocks/getty"
 	log "github.com/AlexStocks/log4go"
+	"github.com/dubbogo/getty"
 	"gopkg.in/yaml.v2"
 )
 
