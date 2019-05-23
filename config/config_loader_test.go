@@ -56,8 +56,8 @@ func TestLoad(t *testing.T) {
 	doInit()
 	doinit()
 
-	SetConService(&MockService{})
-	SetProService(&MockService{})
+	SetConsumerService(&MockService{})
+	SetProviderService(&MockService{})
 
 	extension.SetProtocol("registry", GetProtocol)
 	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
