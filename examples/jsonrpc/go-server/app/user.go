@@ -31,7 +31,7 @@ import (
 type Gender int
 
 func init() {
-	config.SetProService(new(UserProvider))
+	config.SetProviderService(new(UserProvider))
 }
 
 const (
