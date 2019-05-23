@@ -25,7 +25,7 @@ import (
 )
 
 func init() {
-	config.SetConService(new(UserProvider))
+	config.SetConsumerService(new(UserProvider))
 }
 
 type JsonRPCUser struct {
