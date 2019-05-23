@@ -79,7 +79,7 @@ func main() {
 	println("response result: %v", user)
 
 	println("\n\n\nstart to test dubbo - GetUser0")
-	ret, err := conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser0(context.TODO(), "A003")
+	ret, err := conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser0("A003", "Moorse")
 	if err != nil {
 		panic(err)
 	}

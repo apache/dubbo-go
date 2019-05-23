@@ -291,24 +291,38 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 		return
 	}
 
-	// prepare argv
-	argv := req.Body.(map[string]interface{})["args"] // type is []interface
+	in := []reflect.Value{svc.Rcvr()}
+	if method.CtxType() != nil {
+		in = append(in, method.SuiteContext(ctx))
+	}
 
-	// prepare replyv
-	replyv := reflect.New(method.ReplyType().Elem())
-	var returnValues []reflect.Value
-	if method.CtxType() == nil {
-		returnValues = method.Method().Func.Call([]reflect.Value{svc.Rcvr(), reflect.ValueOf(argv), reflect.ValueOf(replyv.Interface())})
+	// prepare argv
+	argv := req.Body.(map[string]interface{})["args"]
+	if (len(method.ArgsType()) == 1 || len(method.ArgsType()) == 2 && method.ReplyType() == nil) && method.ArgsType()[0].String() == "[]interface {}" {
+		in = append(in, reflect.ValueOf(argv))
 	} else {
-		if contextv := reflect.ValueOf(ctx); contextv.IsValid() {
-			returnValues = method.Method().Func.Call([]reflect.Value{svc.Rcvr(), contextv, reflect.ValueOf(argv), reflect.ValueOf(replyv.Interface())})
-		} else {
-			returnValues = method.Method().Func.Call([]reflect.Value{svc.Rcvr(), reflect.Zero(method.CtxType()), reflect.ValueOf(argv), reflect.ValueOf(replyv.Interface())})
+		for i := 0; i < len(argv.([]interface{})); i++ {
+			in = append(in, reflect.ValueOf(argv.([]interface{})[i]))
 		}
 	}
 
-	// The return value for the method is an error.
-	if retErr := returnValues[0].Interface(); retErr != nil {
+	// prepare replyv
+	var replyv reflect.Value
+	if method.ReplyType() == nil {
+		replyv = reflect.New(method.ArgsType()[len(method.ArgsType())-1].Elem())
+		in = append(in, replyv)
+	}
+
+	returnValues := method.Method().Func.Call(in)
+
+	var retErr interface{}
+	if len(returnValues) == 1 {
+		retErr = returnValues[0].Interface()
+	} else {
+		replyv = returnValues[0]
+		retErr = returnValues[1].Interface()
+	}
+	if retErr != nil {
 		req.Header.ResponseStatus = hessian.Response_SERVER_ERROR
 		req.Body = retErr.(error)
 	} else {
