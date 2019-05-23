@@ -255,18 +255,23 @@ func Load() (map[string]*ReferenceConfig, map[string]*ServiceConfig) {
 		checkok := true
 		for {
 			for _, refconfig := range consumerConfig.References {
-				if ((refconfig.Check != nil && *refconfig.Check) ||
+				if (refconfig.Check != nil && *refconfig.Check) ||
 					(refconfig.Check == nil && consumerConfig.Check != nil && *consumerConfig.Check) ||
-					(refconfig.Check == nil && consumerConfig.Check == nil)) && //default to true
-					refconfig.invoker != nil &&
-					!refconfig.invoker.IsAvailable() {
-					checkok = false
-					count++
-					if count > maxWait {
-						panic(fmt.Sprintf("Failed to check the status of the service %v . No provider available for the service to the consumer use dubbo version %v", refconfig.InterfaceName, version.Version))
+					(refconfig.Check == nil && consumerConfig.Check == nil) { //default to true
+
+					if refconfig.invoker != nil &&
+						!refconfig.invoker.IsAvailable() {
+						checkok = false
+						count++
+						if count > maxWait {
+							panic(fmt.Sprintf("Failed to check the status of the service %v . No provider available for the service to the consumer use dubbo version %v", refconfig.InterfaceName, version.Version))
+						}
+						time.Sleep(time.Second * 1)
+						break
 					}
-					time.Sleep(time.Second * 1)
-					break
+					if refconfig.invoker == nil {
+						log.Warn("The interface %s invoker not exsist , may you should check your interface config.", refconfig.InterfaceName)
+					}
 				}
 			}
 			if checkok {
