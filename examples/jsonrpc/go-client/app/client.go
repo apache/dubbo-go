@@ -17,11 +17,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
-	_ "net/http/pprof"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 )
@@ -32,7 +29,6 @@ import (
 
 import (
 	_ "github.com/dubbo/go-for-apache-dubbo/common/proxy/proxy_factory"
-	"github.com/dubbo/go-for-apache-dubbo/common/utils"
 	"github.com/dubbo/go-for-apache-dubbo/config"
 	_ "github.com/dubbo/go-for-apache-dubbo/protocol/jsonrpc"
 	_ "github.com/dubbo/go-for-apache-dubbo/registry/protocol"
@@ -57,8 +53,6 @@ func main() {
 	if conMap == nil {
 		panic("conMap is nil")
 	}
-
-	initProfiling()
 
 	println("\n\n\necho")
 	res, err := conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).Echo(context.TODO(), "OK")
@@ -101,31 +95,6 @@ func main() {
 	}
 
 	initSignal()
-}
-
-func initProfiling() {
-	if !config.GetConsumerConfig().Pprof_Enabled {
-		return
-	}
-	const (
-		PprofPath = "/debug/pprof/"
-	)
-	var (
-		err  error
-		ip   string
-		addr string
-	)
-
-	ip, err = utils.GetLocalIP()
-	if err != nil {
-		panic("cat not get local ip!")
-	}
-	addr = ip + ":" + strconv.Itoa(config.GetConsumerConfig().Pprof_Port)
-	log.Info("App Profiling startup on address{%v}", addr+PprofPath)
-
-	go func() {
-		log.Info(http.ListenAndServe(addr, nil))
-	}()
 }
 
 func initSignal() {

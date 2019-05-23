@@ -1,9 +1,5 @@
 # dubbo server yaml configure file
 
-# pprof
-pprof_enabled : true
-pprof_port : 20080
-
 # application config
 application_config:
   organization : "ikurento.com"
