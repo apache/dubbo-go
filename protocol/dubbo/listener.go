@@ -22,8 +22,8 @@ import (
 )
 
 import (
-	"github.com/AlexStocks/getty"
 	log "github.com/AlexStocks/log4go"
+	"github.com/dubbogo/getty"
 	"github.com/dubbogo/hessian2"
 	perrors "github.com/pkg/errors"
 )
