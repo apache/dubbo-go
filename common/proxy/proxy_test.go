@@ -21,7 +21,7 @@ import (
 )
 
 import (
-	"github.com/pkg/errors"
+	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -81,7 +81,7 @@ func TestProxy_Implement(t *testing.T) {
 		methodOne func(context.Context, interface{}, *struct{}) error
 	}
 	s1 := &S1{TestService: *s, methodOne: func(i context.Context, i2 interface{}, i3 *struct{}) error {
-		return errors.New("errors")
+		return perrors.New("errors")
 	}}
 	p.Implement(s1)
 	err = s1.MethodOne(nil, 0, false, nil)

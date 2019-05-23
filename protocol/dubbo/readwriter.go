@@ -22,7 +22,7 @@ import (
 import (
 	"github.com/AlexStocks/getty"
 	log "github.com/AlexStocks/log4go"
-	"github.com/pkg/errors"
+	perrors "github.com/pkg/errors"
 )
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common"
@@ -49,7 +49,7 @@ func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface
 	buf := bytes.NewBuffer(data)
 	err := pkg.Unmarshal(buf, p.client)
 	if err != nil {
-		pkg.Err = errors.WithStack(err) // client will get this err
+		pkg.Err = perrors.WithStack(err) // client will get this err
 		return pkg, len(data), nil
 	}
 
@@ -60,16 +60,16 @@ func (p *RpcClientPackageHandler) Write(ss getty.Session, pkg interface{}) error
 	req, ok := pkg.(*DubboPackage)
 	if !ok {
 		log.Error("illegal pkg:%+v\n", pkg)
-		return errors.New("invalid rpc request")
+		return perrors.New("invalid rpc request")
 	}
 
 	buf, err := req.Marshal()
 	if err != nil {
-		log.Warn("binary.Write(req{%#v}) = err{%#v}", req, errors.Cause(err))
-		return errors.WithStack(err)
+		log.Warn("binary.Write(req{%#v}) = err{%#v}", req, perrors.WithStack(err))
+		return perrors.WithStack(err)
 	}
 
-	return errors.WithStack(ss.WriteBytes(buf.Bytes()))
+	return perrors.WithStack(ss.WriteBytes(buf.Bytes()))
 }
 
 ////////////////////////////////////////////
@@ -91,7 +91,7 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 	buf := bytes.NewBuffer(data)
 	err := pkg.Unmarshal(buf)
 	if err != nil {
-		return nil, 0, errors.WithStack(err)
+		return nil, 0, perrors.WithStack(err)
 	}
 	// convert params of request
 	req := pkg.Body.([]interface{}) // length of body should be 7
@@ -137,14 +137,14 @@ func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg interface{}) error
 	res, ok := pkg.(*DubboPackage)
 	if !ok {
 		log.Error("illegal pkg:%+v\n, it is %+v", pkg, reflect.TypeOf(pkg))
-		return errors.New("invalid rpc response")
+		return perrors.New("invalid rpc response")
 	}
 
 	buf, err := res.Marshal()
 	if err != nil {
-		log.Warn("binary.Write(res{%#v}) = err{%#v}", res, errors.Cause(err))
-		return errors.WithStack(err)
+		log.Warn("binary.Write(res{%#v}) = err{%#v}", res, perrors.WithStack(err))
+		return perrors.WithStack(err)
 	}
 
-	return errors.WithStack(ss.WriteBytes(buf.Bytes()))
+	return perrors.WithStack(ss.WriteBytes(buf.Bytes()))
 }

@@ -30,9 +30,8 @@ type TestService struct {
 func (s *TestService) MethodOne(ctx context.Context, args []interface{}, rsp *struct{}) error {
 	return nil
 }
-func (s *TestService) MethodTwo(args []interface{}, rsp *struct{}) error {
-	return nil
-
+func (s *TestService) MethodTwo(args []interface{}) (struct{}, error) {
+	return struct{}{}, nil
 }
 func (s *TestService) Service() string {
 	return "com.test.Path"
@@ -50,8 +49,8 @@ func (s *testService) Method1(ctx context.Context, args testService, rsp *struct
 func (s *testService) Method2(ctx context.Context, args []interface{}, rsp struct{}) error {
 	return nil
 }
-func (s *testService) Method3(ctx context.Context, args []interface{}, rsp *testService) error {
-	return nil
+func (s *testService) Method3(ctx context.Context, args []interface{}) (testService, error) {
+	return testService{}, nil
 }
 func (s *testService) Method4(ctx context.Context, args []interface{}, rsp *struct{}) {
 }
@@ -131,33 +130,33 @@ func TestMethodType_SuiteContext(t *testing.T) {
 }
 
 func TestSuiteMethod(t *testing.T) {
-	// 4
+
 	s := &TestService{}
 	method, ok := reflect.TypeOf(s).MethodByName("MethodOne")
 	assert.True(t, ok)
 	methodType := suiteMethod(method)
 	method = methodType.Method()
 	assert.Equal(t, "func(*common.TestService, context.Context, []interface {}, *struct {}) error", method.Type.String())
-	at := methodType.ArgType()
-	assert.Equal(t, "[]interface {}", at.String())
+	at := methodType.ArgsType()
+	assert.Equal(t, "[]interface {}", at[0].String())
+	assert.Equal(t, "*struct {}", at[1].String())
 	ct := methodType.CtxType()
 	assert.Equal(t, "context.Context", ct.String())
 	rt := methodType.ReplyType()
-	assert.Equal(t, "*struct {}", rt.String())
+	assert.Nil(t, rt)
 
-	// 3
 	method, ok = reflect.TypeOf(s).MethodByName("MethodTwo")
 	assert.True(t, ok)
 	methodType = suiteMethod(method)
 	method = methodType.Method()
-	assert.Equal(t, "func(*common.TestService, []interface {}, *struct {}) error", method.Type.String())
-	at = methodType.ArgType()
-	assert.Equal(t, "[]interface {}", at.String())
+	assert.Equal(t, "func(*common.TestService, []interface {}) (struct {}, error)", method.Type.String())
+	at = methodType.ArgsType()
+	assert.Equal(t, "[]interface {}", at[0].String())
 	assert.Nil(t, methodType.CtxType())
 	rt = methodType.ReplyType()
-	assert.Equal(t, "*struct {}", rt.String())
+	assert.Equal(t, "struct {}", rt.String())
 
-	// wrong number of in parameters
+	// wrong number of in return
 	s1 := &testService{}
 	method, ok = reflect.TypeOf(s1).MethodByName("Version")
 	assert.True(t, ok)
