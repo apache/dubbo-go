@@ -20,7 +20,7 @@ import (
 )
 
 import (
-	log "github.com/AlexStocks/log4go"
+	"github.com/dubbo/go-for-apache-dubbo/common/logger"
 	perrors "github.com/pkg/errors"
 )
 
@@ -77,29 +77,29 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry, opts ...O
 func (dir *registryDirectory) Subscribe(url common.URL) {
 	for {
 		if !dir.registry.IsAvailable() {
-			log.Warn("event listener game over.")
+			logger.Warnf("event listener game over.")
 			return
 		}
 
 		listener, err := dir.registry.Subscribe(url)
 		if err != nil {
 			if !dir.registry.IsAvailable() {
-				log.Warn("event listener game over.")
+				logger.Warnf("event listener game over.")
 				return
 			}
-			log.Warn("getListener() = err:%v", perrors.WithStack(err))
+			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
 			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
 			continue
 		}
 
 		for {
 			if serviceEvent, err := listener.Next(); err != nil {
-				log.Warn("Selector.watch() = error{%v}", perrors.WithStack(err))
+				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
 				listener.Close()
 				time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
 				return
 			} else {
-				log.Info("update begin, service event: %v", serviceEvent.String())
+				logger.Infof("update begin, service event: %v", serviceEvent.String())
 				go dir.update(serviceEvent)
 			}
 
@@ -114,9 +114,9 @@ func (dir *registryDirectory) update(res *registry.ServiceEvent) {
 		return
 	}
 
-	log.Debug("registry update, result{%s}", res)
+	logger.Debugf("registry update, result{%s}", res)
 
-	log.Debug("update service name: %s!", res.Service)
+	logger.Debugf("update service name: %s!", res.Service)
 
 	dir.refreshInvokers(res)
 }
@@ -130,7 +130,7 @@ func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 	case registry.ServiceDel:
 		//dir.cacheService.Del(res.Path, dir.serviceTTL)
 		dir.uncacheInvoker(res.Service)
-		log.Info("selector delete service url{%s}", res.Service)
+		logger.Infof("selector delete service url{%s}", res.Service)
 	default:
 		return
 	}
@@ -177,7 +177,7 @@ func (dir *registryDirectory) toGroupInvokers() []protocol.Invoker {
 }
 
 func (dir *registryDirectory) uncacheInvoker(url common.URL) {
-	log.Debug("service will be deleted in cache invokers: invokers key is  %s!", url.Key())
+	logger.Debugf("service will be deleted in cache invokers: invokers key is  %s!", url.Key())
 	dir.cacheInvokersMap.Delete(url.Key())
 }
 
@@ -188,7 +188,7 @@ func (dir *registryDirectory) cacheInvoker(url common.URL) {
 		url = mergeUrl(url, referenceUrl)
 
 		if _, ok := dir.cacheInvokersMap.Load(url.Key()); !ok {
-			log.Debug("service will be added in cache invokers: invokers key is  %s!", url.Key())
+			logger.Debugf("service will be added in cache invokers: invokers key is  %s!", url.Key())
 			newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(url)
 			if newInvoker != nil {
 				dir.cacheInvokersMap.Store(url.Key(), newInvoker)

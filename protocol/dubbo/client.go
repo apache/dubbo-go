@@ -21,7 +21,6 @@ import (
 )
 
 import (
-	log "github.com/AlexStocks/log4go"
 	"github.com/dubbogo/getty"
 	"github.com/dubbogo/hessian2"
 	perrors "github.com/pkg/errors"
@@ -32,6 +31,7 @@ import (
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
+	"github.com/dubbo/go-for-apache-dubbo/common/logger"
 	"github.com/dubbo/go-for-apache-dubbo/config"
 )
 
@@ -50,12 +50,12 @@ func init() {
 	// load clientconfig from consumer_config
 	protocolConf := config.GetConsumerConfig().ProtocolConf
 	if protocolConf == nil {
-		log.Warn("protocol_conf is nil")
+		logger.Warnf("protocol_conf is nil")
 		return
 	}
 	dubboConf := protocolConf.(map[interface{}]interface{})[DUBBO]
 	if protocolConf == nil {
-		log.Warn("dubboConf is nil")
+		logger.Warnf("dubboConf is nil")
 		return
 	}
 
@@ -70,7 +70,7 @@ func init() {
 	}
 
 	if err := conf.CheckValidity(); err != nil {
-		log.Warn(err)
+		logger.Warnf("[CheckValidity] error: %v", err)
 		return
 	}
 
@@ -240,7 +240,7 @@ func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string
 	)
 	conn, session, err = c.selectSession(addr)
 	if err != nil || session == nil {
-		log.Warn(err)
+		logger.Warnf("%s, %v", errSessionNotExist.Error(), err)
 		return errSessionNotExist
 	}
 	defer c.pool.release(conn, err)

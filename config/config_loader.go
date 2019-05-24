@@ -17,6 +17,7 @@ package config
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"strings"
@@ -24,13 +25,13 @@ import (
 )
 
 import (
-	log "github.com/AlexStocks/log4go"
 	perrors "github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
+	"github.com/dubbo/go-for-apache-dubbo/common/logger"
 	"github.com/dubbo/go-for-apache-dubbo/version"
 )
 
@@ -44,10 +45,6 @@ var (
 // Namely: dubbo.comsumer.xml & dubbo.provider.xml in java dubbo
 func init() {
 
-	if err := logInit(); err != nil { // log config
-		log.Warn("[logInit] %#v", err)
-	}
-
 	var (
 		confConFile, confProFile string
 	)
@@ -56,32 +53,13 @@ func init() {
 	confProFile = os.Getenv(constant.CONF_PROVIDER_FILE_PATH)
 
 	if errCon := consumerInit(confConFile); errCon != nil {
-		log.Warn("[consumerInit] %#v", errCon)
+		log.Printf("[consumerInit] %#v", errCon)
 		consumerConfig = nil
 	}
 	if errPro := providerInit(confProFile); errPro != nil {
-		log.Warn("[providerInit] %#v", errPro)
+		log.Printf("[providerInit] %#v", errPro)
 		providerConfig = nil
 	}
-
-}
-
-func logInit() error {
-	var (
-		confFile string
-	)
-
-	confFile = os.Getenv(constant.APP_LOG_CONF_FILE)
-	if confFile == "" {
-		return perrors.Errorf("log configure file name is nil")
-	}
-	if path.Ext(confFile) != ".xml" {
-		return perrors.Errorf("log configure file name{%v} suffix must be .xml", confFile)
-	}
-
-	log.LoadConfiguration(confFile)
-
-	return nil
 }
 
 func consumerInit(confConFile string) error {
@@ -110,7 +88,7 @@ func consumerInit(confConFile string) error {
 		return perrors.WithMessagef(err, "time.ParseDuration(Connect_Timeout{%#v})", consumerConfig.Connect_Timeout)
 	}
 
-	log.Debug("consumer config{%#v}\n", consumerConfig)
+	logger.Debugf("consumer config{%#v}\n", consumerConfig)
 	return nil
 }
 
@@ -133,7 +111,7 @@ func providerInit(confProFile string) error {
 		return perrors.Errorf("yaml.Unmarshal() = error:%v", perrors.WithStack(err))
 	}
 
-	log.Debug("provider config{%#v}\n", providerConfig)
+	logger.Debugf("provider config{%#v}\n", providerConfig)
 	return nil
 }
 
@@ -170,7 +148,7 @@ func SetConsumerConfig(c ConsumerConfig) {
 }
 func GetConsumerConfig() ConsumerConfig {
 	if consumerConfig == nil {
-		log.Warn("consumerConfig is nil!")
+		logger.Warnf("consumerConfig is nil!")
 		return ConsumerConfig{}
 	}
 	return *consumerConfig
@@ -193,7 +171,7 @@ type ProviderConfig struct {
 
 func GetProviderConfig() ProviderConfig {
 	if providerConfig == nil {
-		log.Warn("providerConfig is nil!")
+		logger.Warnf("providerConfig is nil!")
 		return ProviderConfig{}
 	}
 	return *providerConfig
@@ -226,7 +204,7 @@ func Load() (map[string]*ReferenceConfig, map[string]*ServiceConfig) {
 
 	// reference config
 	if consumerConfig == nil {
-		log.Warn("consumerConfig is nil!")
+		logger.Warnf("consumerConfig is nil!")
 	} else {
 		refMap = make(map[string]*ReferenceConfig)
 		length := len(consumerConfig.References)
@@ -234,7 +212,7 @@ func Load() (map[string]*ReferenceConfig, map[string]*ServiceConfig) {
 			con := &consumerConfig.References[index]
 			rpcService := GetConsumerService(con.InterfaceName)
 			if rpcService == nil {
-				log.Warn("%s is not exsist!", con.InterfaceName)
+				logger.Warnf("%s is not exsist!", con.InterfaceName)
 				continue
 			}
 			con.Refer()
@@ -262,7 +240,7 @@ func Load() (map[string]*ReferenceConfig, map[string]*ServiceConfig) {
 						break
 					}
 					if refconfig.invoker == nil {
-						log.Warn("The interface %s invoker not exsist , may you should check your interface config.", refconfig.InterfaceName)
+						logger.Warnf("The interface %s invoker not exsist , may you should check your interface config.", refconfig.InterfaceName)
 					}
 				}
 			}
@@ -275,7 +253,7 @@ func Load() (map[string]*ReferenceConfig, map[string]*ServiceConfig) {
 
 	// service config
 	if providerConfig == nil {
-		log.Warn("providerConfig is nil!")
+		logger.Warnf("providerConfig is nil!")
 	} else {
 		srvMap = make(map[string]*ServiceConfig)
 		length := len(providerConfig.Services)
@@ -283,7 +261,7 @@ func Load() (map[string]*ReferenceConfig, map[string]*ServiceConfig) {
 			pro := &providerConfig.Services[index]
 			rpcService := GetProviderService(pro.InterfaceName)
 			if rpcService == nil {
-				log.Warn("%s is not exsist!", pro.InterfaceName)
+				logger.Warnf("%s is not exsist!", pro.InterfaceName)
 				continue
 			}
 			pro.Implement(rpcService)

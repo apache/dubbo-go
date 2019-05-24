@@ -30,13 +30,13 @@ import (
 )
 
 import (
-	log "github.com/AlexStocks/log4go"
 	perrors "github.com/pkg/errors"
 )
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
+	"github.com/dubbo/go-for-apache-dubbo/common/logger"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 	"github.com/dubbo/go-for-apache-dubbo/protocol/invocation"
 )
@@ -74,7 +74,7 @@ func NewServer(exporter protocol.Exporter) *Server {
 func (s *Server) handlePkg(conn net.Conn) {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Warn("connection{local:%v, remote:%v} panic error:%#v, debug stack:%s",
+			logger.Warnf("connection{local:%v, remote:%v} panic error:%#v, debug stack:%s",
 				conn.LocalAddr(), conn.RemoteAddr(), r, string(debug.Stack()))
 		}
 
@@ -115,7 +115,7 @@ func (s *Server) handlePkg(conn net.Conn) {
 		bufReader := bufio.NewReader(conn)
 		r, err := http.ReadRequest(bufReader)
 		if err != nil {
-			log.Warn("[ReadRequest] error: %v", err)
+			logger.Warnf("[ReadRequest] error: %v", err)
 			return
 		}
 
@@ -141,7 +141,7 @@ func (s *Server) handlePkg(conn net.Conn) {
 			setTimeout(conn, httpTimeout)
 			r.Header.Set("Content-Type", "text/plain")
 			if errRsp := sendErrorResp(r.Header, []byte(perrors.WithStack(err).Error())); errRsp != nil {
-				log.Warn("sendErrorResp(header:%#v, error:%v) = error:%s",
+				logger.Warnf("sendErrorResp(header:%#v, error:%v) = error:%s",
 					r.Header, perrors.WithStack(err), errRsp)
 			}
 			return
@@ -160,11 +160,11 @@ func (s *Server) handlePkg(conn net.Conn) {
 
 		if err := serveRequest(ctx, reqHeader, reqBody, conn, s.exporter); err != nil {
 			if errRsp := sendErrorResp(r.Header, []byte(perrors.WithStack(err).Error())); errRsp != nil {
-				log.Warn("sendErrorResp(header:%#v, error:%v) = error:%s",
+				logger.Warnf("sendErrorResp(header:%#v, error:%v) = error:%s",
 					r.Header, perrors.WithStack(err), errRsp)
 			}
 
-			log.Info("Unexpected error serving request, closing socket: %v", err)
+			logger.Infof("Unexpected error serving request, closing socket: %v", err)
 			return
 		}
 	}
@@ -189,7 +189,7 @@ func accept(listener net.Listener, fn func(net.Conn)) error {
 				if tmpDelay > DefaultMaxSleepTime {
 					tmpDelay = DefaultMaxSleepTime
 				}
-				log.Info("http: Accept error: %v; retrying in %v\n", err, tmpDelay)
+				logger.Infof("http: Accept error: %v; retrying in %v\n", err, tmpDelay)
 				time.Sleep(tmpDelay)
 				continue
 			}
@@ -202,7 +202,7 @@ func accept(listener net.Listener, fn func(net.Conn)) error {
 					const size = 64 << 10
 					buf := make([]byte, size)
 					buf = buf[:runtime.Stack(buf, false)]
-					log.Error("http: panic serving %v: %v\n%s", c.RemoteAddr(), r, buf)
+					logger.Errorf("http: panic serving %v: %v\n%s", c.RemoteAddr(), r, buf)
 					c.Close()
 				}
 			}()
@@ -215,10 +215,10 @@ func accept(listener net.Listener, fn func(net.Conn)) error {
 func (s *Server) Start(url common.URL) {
 	listener, err := net.Listen("tcp", url.Location)
 	if err != nil {
-		log.Error("jsonrpc server [%s] start failed: %v", url.Path, err)
+		logger.Errorf("jsonrpc server [%s] start failed: %v", url.Path, err)
 		return
 	}
-	log.Info("rpc server start to listen on %s", listener.Addr())
+	logger.Infof("rpc server start to listen on %s", listener.Addr())
 
 	s.wg.Add(1)
 	go func() {
@@ -232,7 +232,7 @@ func (s *Server) Start(url common.URL) {
 		<-s.done               // step1: block to wait for done channel(wait Server.Stop step2)
 		err = listener.Close() // step2: and then close listener
 		if err != nil {
-			log.Warn("listener{addr:%s}.Close() = error{%#v}", listener.Addr(), err)
+			logger.Warnf("listener{addr:%s}.Close() = error{%#v}", listener.Addr(), err)
 		}
 		s.wg.Done()
 	}()
@@ -318,7 +318,7 @@ func serveRequest(ctx context.Context,
 	if err = codec.ReadBody(&args); err != nil {
 		return perrors.WithStack(err)
 	}
-	log.Debug("args: %v", args)
+	logger.Debugf("args: %v", args)
 
 	// exporter invoke
 	invoker := exporter.GetInvoker()
@@ -331,7 +331,7 @@ func serveRequest(ctx context.Context,
 		}))
 		if err := result.Error(); err != nil {
 			if errRsp := sendErrorResp(header, []byte(err.Error())); errRsp != nil {
-				log.Warn("Exporter: sendErrorResp(header:%#v, error:%v) = error:%s",
+				logger.Warnf("Exporter: sendErrorResp(header:%#v, error:%v) = error:%s",
 					header, err, errRsp)
 				return perrors.WithStack(errRsp)
 			}
@@ -342,7 +342,7 @@ func serveRequest(ctx context.Context,
 				return perrors.WithStack(err)
 			}
 			if errRsp := sendResp(header, rspStream); errRsp != nil {
-				log.Warn("Exporter: sendResp(header:%#v, error:%v) = error:%s",
+				logger.Warnf("Exporter: sendResp(header:%#v, error:%v) = error:%s",
 					header, err, errRsp)
 				return perrors.WithStack(errRsp)
 			}
@@ -425,11 +425,11 @@ func serveRequest(ctx context.Context,
 	rspBuf := bytes.NewBuffer(make([]byte, DefaultHTTPRspBufferSize))
 	rspBuf.Reset()
 	if err = rsp.Write(rspBuf); err != nil {
-		log.Warn("rsp.Write(rsp:%#v) = error:%s", rsp, err)
+		logger.Warnf("rsp.Write(rsp:%#v) = error:%s", rsp, err)
 		return nil
 	}
 	if _, err = rspBuf.WriteTo(conn); err != nil {
-		log.Warn("rspBuf.WriteTo(conn:%#v) = error:%s", conn, err)
+		logger.Warnf("rspBuf.WriteTo(conn:%#v) = error:%s", conn, err)
 	}
 	return nil
 }

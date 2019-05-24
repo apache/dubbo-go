@@ -23,7 +23,6 @@ import (
 	"time"
 )
 import (
-	log "github.com/AlexStocks/log4go"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
 )
@@ -31,6 +30,7 @@ import (
 	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"github.com/dubbo/go-for-apache-dubbo/common/extension"
+	"github.com/dubbo/go-for-apache-dubbo/common/logger"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
@@ -74,11 +74,11 @@ func (srvconfig *ServiceConfig) Export() error {
 	//TODO:delay export
 	if srvconfig.unexported != nil && srvconfig.unexported.Load() {
 		err := perrors.Errorf("The service %v has already unexported! ", srvconfig.InterfaceName)
-		log.Error(err.Error())
+		logger.Errorf(err.Error())
 		return err
 	}
 	if srvconfig.unexported != nil && srvconfig.exported.Load() {
-		log.Warn("The service %v has already exported! ", srvconfig.InterfaceName)
+		logger.Warnf("The service %v has already exported! ", srvconfig.InterfaceName)
 		return nil
 	}
 
@@ -90,7 +90,7 @@ func (srvconfig *ServiceConfig) Export() error {
 		methods, err := common.ServiceMap.Register(proto.Name, srvconfig.rpcService)
 		if err != nil {
 			err := perrors.Errorf("The service %v  export the protocol %v error! Error message is %v .", srvconfig.InterfaceName, proto.Name, err.Error())
-			log.Error(err.Error())
+			logger.Errorf(err.Error())
 			return err
 		}
 		//contextPath := proto.ContextPath
@@ -109,7 +109,7 @@ func (srvconfig *ServiceConfig) Export() error {
 
 			srvconfig.cacheMutex.Lock()
 			if srvconfig.cacheProtocol == nil {
-				log.Info("First load the registry protocol!")
+				logger.Infof("First load the registry protocol!")
 				srvconfig.cacheProtocol = extension.GetProtocol("registry")
 			}
 			srvconfig.cacheMutex.Unlock()
