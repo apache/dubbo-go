@@ -20,13 +20,13 @@ import (
 )
 
 import (
-	log "github.com/AlexStocks/log4go"
 	perrors "github.com/pkg/errors"
 )
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
+	"github.com/dubbo/go-for-apache-dubbo/common/logger"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 	invocation_impl "github.com/dubbo/go-for-apache-dubbo/protocol/invocation"
 )
@@ -58,7 +58,7 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	// async
 	async, err := strconv.ParseBool(inv.AttachmentsByKey(constant.ASYNC_KEY, "false"))
 	if err != nil {
-		log.Error("ParseBool - error: %v", err)
+		logger.Errorf("ParseBool - error: %v", err)
 		async = false
 	}
 	if async {
@@ -77,7 +77,7 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	if result.Err == nil {
 		result.Rest = inv.Reply()
 	}
-	log.Debug("result.Err: %v, result.Rest: %v", result.Err, result.Rest)
+	logger.Debugf("result.Err: %v, result.Rest: %v", result.Err, result.Rest)
 
 	return &result
 }

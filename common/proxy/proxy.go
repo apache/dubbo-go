@@ -17,12 +17,10 @@ package proxy
 import (
 	"reflect"
 )
-import (
-	log "github.com/AlexStocks/log4go"
-)
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common"
+	"github.com/dubbo/go-for-apache-dubbo/common/logger"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 	invocation_impl "github.com/dubbo/go-for-apache-dubbo/protocol/invocation"
 )
@@ -54,14 +52,14 @@ func (p *Proxy) Implement(v common.RPCService) {
 
 	// check parameters, incoming interface must be a elem's pointer.
 	valueOf := reflect.ValueOf(v)
-	log.Debug("[Implement] reflect.TypeOf: %s", valueOf.String())
+	logger.Debugf("[Implement] reflect.TypeOf: %s", valueOf.String())
 
 	valueOfElem := valueOf.Elem()
 	typeOf := valueOfElem.Type()
 
 	// check incoming interface, incoming interface's elem must be a struct.
 	if typeOf.Kind() != reflect.Struct {
-		log.Error("%s must be a struct ptr", valueOf.String())
+		logger.Errorf("%s must be a struct ptr", valueOf.String())
 		return
 	}
 
@@ -113,7 +111,7 @@ func (p *Proxy) Implement(v common.RPCService) {
 			result := p.invoke.Invoke(inv)
 
 			err = result.Error()
-			log.Info("[makeDubboCallProxy] result: %v, err: %v", result.Result(), err)
+			logger.Infof("[makeDubboCallProxy] result: %v, err: %v", result.Result(), err)
 			if len(outs) == 1 {
 				return []reflect.Value{reflect.ValueOf(&err).Elem()}
 			}
@@ -137,20 +135,20 @@ func (p *Proxy) Implement(v common.RPCService) {
 			outNum := t.Type.NumOut()
 
 			if outNum != 1 && outNum != 2 {
-				log.Warn("method %s of mtype %v has wrong number of in out parameters %d; needs exactly 1/2",
+				logger.Warnf("method %s of mtype %v has wrong number of in out parameters %d; needs exactly 1/2",
 					t.Name, t.Type.String(), outNum)
 				continue
 			}
 
 			// The latest return type of the method must be error.
 			if returnType := t.Type.Out(outNum - 1); returnType != typError {
-				log.Warn("the latest return type %s of method %q is not error", returnType, t.Name)
+				logger.Warnf("the latest return type %s of method %q is not error", returnType, t.Name)
 				continue
 			}
 
 			// reply must be Ptr when outNum == 1
 			if outNum == 1 && t.Type.In(inNum-1).Kind() != reflect.Ptr {
-				log.Warn("reply type of method %q is not a pointer", t.Name)
+				logger.Warnf("reply type of method %q is not a pointer", t.Name)
 				continue
 			}
 
@@ -161,7 +159,7 @@ func (p *Proxy) Implement(v common.RPCService) {
 
 			// do method proxy here:
 			f.Set(reflect.MakeFunc(f.Type(), makeDubboCallProxy(methodName, funcOuts)))
-			log.Debug("set method [%s]", methodName)
+			logger.Debugf("set method [%s]", methodName)
 		}
 	}
 

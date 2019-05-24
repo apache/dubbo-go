@@ -15,12 +15,9 @@
 package jsonrpc
 
 import (
-	log "github.com/AlexStocks/log4go"
-)
-
-import (
 	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/common/extension"
+	"github.com/dubbo/go-for-apache-dubbo/common/logger"
 	"github.com/dubbo/go-for-apache-dubbo/config"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
@@ -50,7 +47,7 @@ func (jp *JsonrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	serviceKey := url.Key()
 	exporter := NewJsonrpcExporter(serviceKey, invoker, jp.ExporterMap())
 	jp.SetExporterMap(serviceKey, exporter)
-	log.Info("Export service: %s", url.String())
+	logger.Infof("Export service: %s", url.String())
 
 	// start server
 	jp.openServer(url)
@@ -64,12 +61,12 @@ func (jp *JsonrpcProtocol) Refer(url common.URL) protocol.Invoker {
 		HTTPTimeout:      config.GetConsumerConfig().RequestTimeout,
 	}))
 	jp.SetInvokers(invoker)
-	log.Info("Refer service: %s", url.String())
+	logger.Infof("Refer service: %s", url.String())
 	return invoker
 }
 
 func (jp *JsonrpcProtocol) Destroy() {
-	log.Info("jsonrpcProtocol destroy.")
+	logger.Infof("jsonrpcProtocol destroy.")
 
 	jp.BaseProtocol.Destroy()
 

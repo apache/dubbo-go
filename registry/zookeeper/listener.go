@@ -23,7 +23,7 @@ import (
 )
 
 import (
-	log "github.com/AlexStocks/log4go"
+	"github.com/dubbo/go-for-apache-dubbo/common/logger"
 	perrors "github.com/pkg/errors"
 	"github.com/samuel/go-zookeeper/zk"
 )
@@ -71,23 +71,23 @@ func (l *zkEventListener) listenServiceNodeEvent(zkPath string) bool {
 	for {
 		keyEventCh, err := l.client.existW(zkPath)
 		if err != nil {
-			log.Error("existW{key:%s} = error{%v}", zkPath, err)
+			logger.Errorf("existW{key:%s} = error{%v}", zkPath, err)
 			return false
 		}
 
 		select {
 		case zkEvent = <-keyEventCh:
-			log.Warn("get a zookeeper zkEvent{type:%s, server:%s, path:%s, state:%d-%s, err:%s}",
+			logger.Warnf("get a zookeeper zkEvent{type:%s, server:%s, path:%s, state:%d-%s, err:%s}",
 				zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, stateToString(zkEvent.State), zkEvent.Err)
 			switch zkEvent.Type {
 			case zk.EventNodeDataChanged:
-				log.Warn("zk.ExistW(key{%s}) = event{EventNodeDataChanged}", zkPath)
+				logger.Warnf("zk.ExistW(key{%s}) = event{EventNodeDataChanged}", zkPath)
 			case zk.EventNodeCreated:
-				log.Warn("zk.ExistW(key{%s}) = event{EventNodeCreated}", zkPath)
+				logger.Warnf("zk.ExistW(key{%s}) = event{EventNodeCreated}", zkPath)
 			case zk.EventNotWatching:
-				log.Warn("zk.ExistW(key{%s}) = event{EventNotWatching}", zkPath)
+				logger.Warnf("zk.ExistW(key{%s}) = event{EventNotWatching}", zkPath)
 			case zk.EventNodeDeleted:
-				log.Warn("zk.ExistW(key{%s}) = event{EventNodeDeleted}", zkPath)
+				logger.Warnf("zk.ExistW(key{%s}) = event{EventNodeDeleted}", zkPath)
 				return true
 			}
 		case <-l.client.done():
@@ -111,7 +111,7 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 
 	newChildren, err := l.client.getChildren(zkPath)
 	if err != nil {
-		log.Error("path{%s} child nodes changed, zk.Children() = error{%v}", zkPath, perrors.WithStack(err))
+		logger.Errorf("path{%s} child nodes changed, zk.Children() = error{%v}", zkPath, perrors.WithStack(err))
 		return
 	}
 
@@ -126,27 +126,27 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 		}
 
 		newNode = path.Join(zkPath, n)
-		log.Info("add zkNode{%s}", newNode)
+		logger.Infof("add zkNode{%s}", newNode)
 		//context.TODO
 		serviceURL, err = common.NewURL(context.TODO(), n)
 		if err != nil {
-			log.Error("NewURL(%s) = error{%v}", n, perrors.WithStack(err))
+			logger.Errorf("NewURL(%s) = error{%v}", n, perrors.WithStack(err))
 			continue
 		}
 		if !conf.URLEqual(serviceURL) {
-			log.Warn("serviceURL{%s} is not compatible with SubURL{%#v}", serviceURL.Key(), conf.Key())
+			logger.Warnf("serviceURL{%s} is not compatible with SubURL{%#v}", serviceURL.Key(), conf.Key())
 			continue
 		}
-		log.Info("add serviceURL{%s}", serviceURL)
+		logger.Infof("add serviceURL{%s}", serviceURL)
 		l.events <- zkEvent{&registry.ServiceEvent{Action: registry.ServiceAdd, Service: serviceURL}, nil}
 		// listen l service node
 		go func(node string, serviceURL common.URL) {
-			log.Info("delete zkNode{%s}", node)
+			logger.Infof("delete zkNode{%s}", node)
 			if l.listenServiceNodeEvent(node) {
-				log.Info("delete serviceURL{%s}", serviceURL)
+				logger.Infof("delete serviceURL{%s}", serviceURL)
 				l.events <- zkEvent{&registry.ServiceEvent{Action: registry.ServiceDel, Service: serviceURL}, nil}
 			}
-			log.Warn("listenSelf(zk path{%s}) goroutine exit now", zkPath)
+			logger.Warnf("listenSelf(zk path{%s}) goroutine exit now", zkPath)
 		}(newNode, serviceURL)
 	}
 
@@ -158,15 +158,15 @@ func (l *zkEventListener) handleZkNodeEvent(zkPath string, children []string, co
 		}
 
 		oldNode = path.Join(zkPath, n)
-		log.Warn("delete zkPath{%s}", oldNode)
+		logger.Warnf("delete zkPath{%s}", oldNode)
 		serviceURL, err = common.NewURL(context.TODO(), n)
 		if !conf.URLEqual(serviceURL) {
-			log.Warn("serviceURL{%s} has been deleted is not compatible with SubURL{%#v}", serviceURL.Key(), conf.Key())
+			logger.Warnf("serviceURL{%s} has been deleted is not compatible with SubURL{%#v}", serviceURL.Key(), conf.Key())
 			continue
 		}
-		log.Warn("delete serviceURL{%s}", serviceURL)
+		logger.Warnf("delete serviceURL{%s}", serviceURL)
 		if err != nil {
-			log.Error("NewURL(i{%s}) = error{%v}", n, perrors.WithStack(err))
+			logger.Errorf("NewURL(i{%s}) = error{%v}", n, perrors.WithStack(err))
 			continue
 		}
 		l.events <- zkEvent{&registry.ServiceEvent{Action: registry.ServiceDel, Service: serviceURL}, nil}
@@ -192,7 +192,7 @@ func (l *zkEventListener) listenDirEvent(zkPath string, conf common.URL) {
 			if MaxFailTimes <= failTimes {
 				failTimes = MaxFailTimes
 			}
-			log.Error("listenDirEvent(path{%s}) = error{%v}", zkPath, err)
+			logger.Errorf("listenDirEvent(path{%s}) = error{%v}", zkPath, err)
 			// clear the event channel
 		CLEAR:
 			for {
@@ -209,10 +209,10 @@ func (l *zkEventListener) listenDirEvent(zkPath string, conf common.URL) {
 				continue
 			case <-l.client.done():
 				l.client.unregisterEvent(zkPath, &event)
-				log.Warn("client.done(), listen(path{%s}, ReferenceConfig{%#v}) goroutine exit now...", zkPath, conf)
+				logger.Warnf("client.done(), listen(path{%s}, ReferenceConfig{%#v}) goroutine exit now...", zkPath, conf)
 				return
 			case <-event:
-				log.Info("get zk.EventNodeDataChange notify event")
+				logger.Infof("get zk.EventNodeDataChange notify event")
 				l.client.unregisterEvent(zkPath, &event)
 				l.handleZkNodeEvent(zkPath, nil, conf)
 				continue
@@ -222,14 +222,14 @@ func (l *zkEventListener) listenDirEvent(zkPath string, conf common.URL) {
 
 		select {
 		case zkEvent = <-childEventCh:
-			log.Warn("get a zookeeper zkEvent{type:%s, server:%s, path:%s, state:%d-%s, err:%s}",
+			logger.Warnf("get a zookeeper zkEvent{type:%s, server:%s, path:%s, state:%d-%s, err:%s}",
 				zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, stateToString(zkEvent.State), zkEvent.Err)
 			if zkEvent.Type != zk.EventNodeChildrenChanged {
 				continue
 			}
 			l.handleZkNodeEvent(zkEvent.Path, children, conf)
 		case <-l.client.done():
-			log.Warn("client.done(), listen(path{%s}, ReferenceConfig{%#v}) goroutine exit now...", zkPath, conf)
+			logger.Warnf("client.done(), listen(path{%s}, ReferenceConfig{%#v}) goroutine exit now...", zkPath, conf)
 			return
 		}
 	}
@@ -254,7 +254,7 @@ func (l *zkEventListener) listenServiceEvent(conf common.URL) {
 	_, ok := l.serviceMap[zkPath]
 	l.serviceMapLock.Unlock()
 	if ok {
-		log.Warn("@zkPath %s has already been listened.", zkPath)
+		logger.Warnf("@zkPath %s has already been listened.", zkPath)
 		return
 	}
 
@@ -262,42 +262,42 @@ func (l *zkEventListener) listenServiceEvent(conf common.URL) {
 	l.serviceMap[zkPath] = struct{}{}
 	l.serviceMapLock.Unlock()
 
-	log.Info("listen dubbo provider path{%s} event and wait to get all provider zk nodes", zkPath)
+	logger.Infof("listen dubbo provider path{%s} event and wait to get all provider zk nodes", zkPath)
 	children, err = l.client.getChildren(zkPath)
 	if err != nil {
 		children = nil
-		log.Error("fail to get children of zk path{%s}", zkPath)
+		logger.Errorf("fail to get children of zk path{%s}", zkPath)
 	}
 
 	for _, c := range children {
 		serviceURL, err = common.NewURL(context.TODO(), c)
 		if err != nil {
-			log.Error("NewURL(r{%s}) = error{%v}", c, err)
+			logger.Errorf("NewURL(r{%s}) = error{%v}", c, err)
 			continue
 		}
 		if !conf.URLEqual(serviceURL) {
-			log.Warn("serviceURL %v is not compatible with SubURL %v", serviceURL.Key(), conf.Key())
+			logger.Warnf("serviceURL %v is not compatible with SubURL %v", serviceURL.Key(), conf.Key())
 			continue
 		}
-		log.Debug("add serviceUrl{%s}", serviceURL)
+		logger.Debugf("add serviceUrl{%s}", serviceURL)
 		l.events <- zkEvent{&registry.ServiceEvent{Action: registry.ServiceAdd, Service: serviceURL}, nil}
 
 		// listen l service node
 		dubboPath = path.Join(zkPath, c)
-		log.Info("listen dubbo service key{%s}", dubboPath)
+		logger.Infof("listen dubbo service key{%s}", dubboPath)
 		go func(zkPath string, serviceURL common.URL) {
 			if l.listenServiceNodeEvent(dubboPath) {
-				log.Debug("delete serviceUrl{%s}", serviceURL)
+				logger.Debugf("delete serviceUrl{%s}", serviceURL)
 				l.events <- zkEvent{&registry.ServiceEvent{Action: registry.ServiceDel, Service: serviceURL}, nil}
 			}
-			log.Warn("listenSelf(zk path{%s}) goroutine exit now", zkPath)
+			logger.Warnf("listenSelf(zk path{%s}) goroutine exit now", zkPath)
 		}(dubboPath, serviceURL)
 	}
 
-	log.Info("listen dubbo path{%s}", zkPath)
+	logger.Infof("listen dubbo path{%s}", zkPath)
 	go func(zkPath string, conf common.URL) {
 		l.listenDirEvent(zkPath, conf)
-		log.Warn("listenDirEvent(zkPath{%s}) goroutine exit now", zkPath)
+		logger.Warnf("listenDirEvent(zkPath{%s}) goroutine exit now", zkPath)
 	}(zkPath, conf)
 }
 
@@ -305,20 +305,20 @@ func (l *zkEventListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
 		case <-l.client.done():
-			log.Warn("listener's zk client connection is broken, so zk event listener exit now.")
+			logger.Warnf("listener's zk client connection is broken, so zk event listener exit now.")
 			return nil, perrors.New("listener stopped")
 
 		case <-l.registry.done:
-			log.Warn("zk consumer register has quit, so zk event listener exit asap now.")
+			logger.Warnf("zk consumer register has quit, so zk event listener exit asap now.")
 			return nil, perrors.New("listener stopped")
 
 		case e := <-l.events:
-			log.Debug("got zk event %s", e)
+			logger.Debugf("got zk event %s", e)
 			if e.err != nil {
 				return nil, perrors.WithStack(e.err)
 			}
 			if e.res.Action == registry.ServiceDel && !l.valid() {
-				log.Warn("update @result{%s}. But its connection to registry is invalid", e.res)
+				logger.Warnf("update @result{%s}. But its connection to registry is invalid", e.res)
 				continue
 			}
 			//r.update(e.res)
