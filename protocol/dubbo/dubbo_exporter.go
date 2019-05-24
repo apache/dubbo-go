@@ -19,12 +19,9 @@ import (
 )
 
 import (
-	log "github.com/AlexStocks/log4go"
-)
-
-import (
 	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
+	"github.com/dubbo/go-for-apache-dubbo/common/logger"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
@@ -43,6 +40,6 @@ func (de *DubboExporter) Unexport() {
 	de.BaseExporter.Unexport()
 	err := common.ServiceMap.UnRegister(DUBBO, service)
 	if err != nil {
-		log.Error("[DubboExporter.Unexport] error: %v", err)
+		logger.Errorf("[DubboExporter.Unexport] error: %v", err)
 	}
 }

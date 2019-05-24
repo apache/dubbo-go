@@ -15,12 +15,9 @@
 package dubbo
 
 import (
-	log "github.com/AlexStocks/log4go"
-)
-
-import (
 	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/common/extension"
+	"github.com/dubbo/go-for-apache-dubbo/common/logger"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
 
@@ -49,7 +46,7 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	serviceKey := url.Key()
 	exporter := NewDubboExporter(serviceKey, invoker, dp.ExporterMap())
 	dp.SetExporterMap(serviceKey, exporter)
-	log.Info("Export service: %s", url.String())
+	logger.Infof("Export service: %s", url.String())
 
 	// start server
 	dp.openServer(url)
@@ -59,12 +56,12 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 func (dp *DubboProtocol) Refer(url common.URL) protocol.Invoker {
 	invoker := NewDubboInvoker(url, NewClient())
 	dp.SetInvokers(invoker)
-	log.Info("Refer service: %s", url.String())
+	logger.Infof("Refer service: %s", url.String())
 	return invoker
 }
 
 func (dp *DubboProtocol) Destroy() {
-	log.Info("DubboProtocol destroy.")
+	logger.Infof("DubboProtocol destroy.")
 
 	dp.BaseProtocol.Destroy()
 

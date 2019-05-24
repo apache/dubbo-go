@@ -22,7 +22,6 @@ import (
 )
 
 import (
-	log "github.com/AlexStocks/log4go"
 	"github.com/dubbogo/getty"
 	"github.com/dubbogo/hessian2"
 	perrors "github.com/pkg/errors"
@@ -31,6 +30,7 @@ import (
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
+	"github.com/dubbo/go-for-apache-dubbo/common/logger"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 	"github.com/dubbo/go-for-apache-dubbo/protocol/invocation"
 )
@@ -65,27 +65,27 @@ func (h *RpcClientHandler) OnOpen(session getty.Session) error {
 }
 
 func (h *RpcClientHandler) OnError(session getty.Session, err error) {
-	log.Info("session{%s} got error{%v}, will be closed.", session.Stat(), err)
+	logger.Infof("session{%s} got error{%v}, will be closed.", session.Stat(), err)
 	h.conn.removeSession(session)
 }
 
 func (h *RpcClientHandler) OnClose(session getty.Session) {
-	log.Info("session{%s} is closing......", session.Stat())
+	logger.Infof("session{%s} is closing......", session.Stat())
 	h.conn.removeSession(session)
 }
 
 func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 	p, ok := pkg.(*DubboPackage)
 	if !ok {
-		log.Error("illegal package")
+		logger.Errorf("illegal package")
 		return
 	}
 
 	if p.Header.Type&hessian.PackageHeartbeat != 0x00 {
-		log.Debug("get rpc heartbeat response{header: %#v, body: %#v}", p.Header, p.Body)
+		logger.Debugf("get rpc heartbeat response{header: %#v, body: %#v}", p.Header, p.Body)
 		return
 	}
-	log.Debug("get rpc response{header: %#v, body: %#v}", p.Header, p.Body)
+	logger.Debugf("get rpc response{header: %#v, body: %#v}", p.Header, p.Body)
 
 	h.conn.updateSession(session)
 
@@ -108,12 +108,12 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 func (h *RpcClientHandler) OnCron(session getty.Session) {
 	rpcSession, err := h.conn.getClientRpcSession(session)
 	if err != nil {
-		log.Error("client.getClientSession(session{%s}) = error{%v}",
+		logger.Errorf("client.getClientSession(session{%s}) = error{%v}",
 			session.Stat(), perrors.WithStack(err))
 		return
 	}
 	if h.conn.pool.rpcClient.conf.sessionTimeout.Nanoseconds() < time.Since(session.GetActive()).Nanoseconds() {
-		log.Warn("session{%s} timeout{%s}, reqNum{%d}",
+		logger.Warnf("session{%s} timeout{%s}, reqNum{%d}",
 			session.Stat(), time.Since(session.GetActive()).String(), rpcSession.reqNum)
 		h.conn.removeSession(session) // -> h.conn.close() -> h.conn.pool.remove(h.conn)
 		return
@@ -154,7 +154,7 @@ func (h *RpcServerHandler) OnOpen(session getty.Session) error {
 		return perrors.WithStack(err)
 	}
 
-	log.Info("got session:%s", session.Stat())
+	logger.Infof("got session:%s", session.Stat())
 	h.rwlock.Lock()
 	h.sessionMap[session] = &rpcSession{session: session}
 	h.rwlock.Unlock()
@@ -162,14 +162,14 @@ func (h *RpcServerHandler) OnOpen(session getty.Session) error {
 }
 
 func (h *RpcServerHandler) OnError(session getty.Session, err error) {
-	log.Info("session{%s} got error{%v}, will be closed.", session.Stat(), err)
+	logger.Infof("session{%s} got error{%v}, will be closed.", session.Stat(), err)
 	h.rwlock.Lock()
 	delete(h.sessionMap, session)
 	h.rwlock.Unlock()
 }
 
 func (h *RpcServerHandler) OnClose(session getty.Session) {
-	log.Info("session{%s} is closing......", session.Stat())
+	logger.Infof("session{%s} is closing......", session.Stat())
 	h.rwlock.Lock()
 	delete(h.sessionMap, session)
 	h.rwlock.Unlock()
@@ -184,14 +184,14 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 	p, ok := pkg.(*DubboPackage)
 	if !ok {
-		log.Error("illegal packge{%#v}", pkg)
+		logger.Errorf("illegal packge{%#v}", pkg)
 		return
 	}
 	p.Header.ResponseStatus = hessian.Response_OK
 
 	// heartbeat
 	if p.Header.Type&hessian.PackageHeartbeat != 0x00 {
-		log.Debug("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", p.Header, p.Service, p.Body)
+		logger.Debugf("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", p.Header, p.Service, p.Body)
 		h.reply(session, p, hessian.PackageHeartbeat)
 		return
 	}
@@ -243,7 +243,7 @@ func (h *RpcServerHandler) OnCron(session getty.Session) {
 		active = session.GetActive()
 		if h.sessionTimeout.Nanoseconds() < time.Since(active).Nanoseconds() {
 			flag = true
-			log.Warn("session{%s} timeout{%s}, reqNum{%d}",
+			logger.Warnf("session{%s} timeout{%s}, reqNum{%d}",
 				session.Stat(), time.Since(active).String(), h.sessionMap[session].reqNum)
 		}
 	}
@@ -263,13 +263,13 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 		if e := recover(); e != nil {
 			req.Header.ResponseStatus = hessian.Response_BAD_REQUEST
 			if err, ok := e.(error); ok {
-				log.Error("callService panic: %#v", err)
+				logger.Errorf("callService panic: %#v", err)
 				req.Body = e.(error)
 			} else if err, ok := e.(string); ok {
-				log.Error("callService panic: %#v", perrors.New(err))
+				logger.Errorf("callService panic: %#v", perrors.New(err))
 				req.Body = perrors.New(err)
 			} else {
-				log.Error("callService panic: %#v", e)
+				logger.Errorf("callService panic: %#v", e)
 				req.Body = e
 			}
 		}
@@ -277,7 +277,7 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 
 	svcIf := req.Body.(map[string]interface{})["service"]
 	if svcIf == nil {
-		log.Error("service not found!")
+		logger.Errorf("service not found!")
 		req.Header.ResponseStatus = hessian.Response_SERVICE_NOT_FOUND
 		req.Body = perrors.New("service not found")
 		return
@@ -285,7 +285,7 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 	svc := svcIf.(*common.Service)
 	method := svc.Method()[req.Service.Method]
 	if method == nil {
-		log.Error("method not found!")
+		logger.Errorf("method not found!")
 		req.Header.ResponseStatus = hessian.Response_SERVICE_NOT_FOUND
 		req.Body = perrors.New("method not found")
 		return
@@ -347,6 +347,6 @@ func (h *RpcServerHandler) reply(session getty.Session, req *DubboPackage, tp he
 	}
 
 	if err := session.WritePkg(resp, WritePkg_Timeout); err != nil {
-		log.Error("WritePkg error: %#v, %#v", perrors.WithStack(err), req.Header)
+		logger.Errorf("WritePkg error: %#v, %#v", perrors.WithStack(err), req.Header)
 	}
 }

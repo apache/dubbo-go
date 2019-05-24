@@ -15,11 +15,8 @@
 package protocol
 
 import (
-	log "github.com/AlexStocks/log4go"
-)
-
-import (
 	"github.com/dubbo/go-for-apache-dubbo/common"
+	"github.com/dubbo/go-for-apache-dubbo/common/logger"
 )
 
 // Extension - Invoker
@@ -63,7 +60,7 @@ func (bi *BaseInvoker) Invoke(invocation Invocation) Result {
 }
 
 func (bi *BaseInvoker) Destroy() {
-	log.Info("Destroy invoker: %s", bi.GetUrl().String())
+	logger.Infof("Destroy invoker: %s", bi.GetUrl().String())
 	bi.destroyed = true
 	bi.available = false
 }

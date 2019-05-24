@@ -21,7 +21,6 @@ import (
 	"testing"
 )
 import (
-	log "github.com/AlexStocks/log4go"
 	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
@@ -32,6 +31,7 @@ import (
 	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"github.com/dubbo/go-for-apache-dubbo/common/extension"
+	"github.com/dubbo/go-for-apache-dubbo/common/logger"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 	"github.com/dubbo/go-for-apache-dubbo/protocol/invocation"
 )
@@ -89,7 +89,7 @@ func (bi *MockInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 }
 
 func (bi *MockInvoker) Destroy() {
-	log.Info("Destroy invoker: %v", bi.GetUrl().String())
+	logger.Infof("Destroy invoker: %v", bi.GetUrl().String())
 	bi.destroyed = true
 	bi.available = false
 }

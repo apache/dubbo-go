@@ -19,13 +19,11 @@ import (
 	"net/url"
 	"strconv"
 )
-import (
-	log "github.com/AlexStocks/log4go"
-)
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
+	"github.com/dubbo/go-for-apache-dubbo/common/logger"
 )
 
 type RegistryConfig struct {
@@ -50,7 +48,7 @@ func loadRegistries(registriesIds []ConfigRegistry, registries []RegistryConfig,
 				)
 
 				if err != nil {
-					log.Error("The registry id:%s url is invalid ,and will skip the registry, error: %#v", registryConf.Id, err)
+					logger.Errorf("The registry id:%s url is invalid ,and will skip the registry, error: %#v", registryConf.Id, err)
 				} else {
 					urls = append(urls, &url)
 				}
