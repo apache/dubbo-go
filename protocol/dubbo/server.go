@@ -20,13 +20,13 @@ import (
 )
 
 import (
-	log "github.com/AlexStocks/log4go"
 	"github.com/dubbogo/getty"
 	"gopkg.in/yaml.v2"
 )
 
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common"
+	"github.com/dubbo/go-for-apache-dubbo/common/logger"
 	"github.com/dubbo/go-for-apache-dubbo/config"
 	"github.com/dubbo/go-for-apache-dubbo/protocol"
 )
@@ -38,12 +38,12 @@ func init() {
 	// load clientconfig from provider_config
 	protocolConf := config.GetProviderConfig().ProtocolConf
 	if protocolConf == nil {
-		log.Warn("protocol_conf is nil")
+		logger.Warnf("protocol_conf is nil")
 		return
 	}
 	dubboConf := protocolConf.(map[interface{}]interface{})[DUBBO]
 	if protocolConf == nil {
-		log.Warn("dubboConf is nil")
+		logger.Warnf("dubboConf is nil")
 		return
 	}
 
@@ -121,7 +121,7 @@ func (s *Server) newSession(session getty.Session) error {
 	session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
 	session.SetCronPeriod((int)(conf.sessionTimeout.Nanoseconds() / 1e6))
 	session.SetWaitTime(conf.GettySessionParam.waitTimeout)
-	log.Debug("app accepts new session:%s\n", session.Stat())
+	logger.Debugf("app accepts new session:%s\n", session.Stat())
 
 	return nil
 }
@@ -137,7 +137,7 @@ func (s *Server) Start(url common.URL) {
 		getty.WithLocalAddress(addr),
 	)
 	tcpServer.RunEventLoop(s.newSession)
-	log.Debug("s bind addr{%s} ok!", addr)
+	logger.Debugf("s bind addr{%s} ok!", addr)
 	s.tcpServer = tcpServer
 
 }

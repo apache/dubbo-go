@@ -24,8 +24,11 @@ import (
 )
 
 import (
-	log "github.com/AlexStocks/log4go"
 	perrors "github.com/pkg/errors"
+)
+
+import (
+	"github.com/dubbo/go-for-apache-dubbo/common/logger"
 )
 
 // rpc service interface
@@ -128,12 +131,12 @@ func (sm *serviceMap) Register(protocol string, rcvr RPCService) (string, error)
 	sname := reflect.Indirect(s.rcvr).Type().Name()
 	if sname == "" {
 		s := "no service name for type " + s.rcvrType.String()
-		log.Error(s)
+		logger.Errorf(s)
 		return "", perrors.New(s)
 	}
 	if !isExported(sname) {
 		s := "type " + sname + " is not exported"
-		log.Error(s)
+		logger.Errorf(s)
 		return "", perrors.New(s)
 	}
 
@@ -150,7 +153,7 @@ func (sm *serviceMap) Register(protocol string, rcvr RPCService) (string, error)
 
 	if len(s.methods) == 0 {
 		s := "type " + sname + " has no exported methods of suitable type"
-		log.Error(s)
+		logger.Errorf(s)
 		return "", perrors.New(s)
 	}
 	sm.mutex.Lock()
@@ -205,7 +208,7 @@ func isExportedOrBuiltinType(t reflect.Type) bool {
 func suitableMethods(typ reflect.Type) (string, map[string]*MethodType) {
 	methods := make(map[string]*MethodType)
 	mts := ""
-	log.Debug("[%s] NumMethod is %d", typ.String(), typ.NumMethod())
+	logger.Debugf("[%s] NumMethod is %d", typ.String(), typ.NumMethod())
 	for m := 0; m < typ.NumMethod(); m++ {
 		method := typ.Method(m)
 		if mt := suiteMethod(method); mt != nil {
@@ -238,27 +241,27 @@ func suiteMethod(method reflect.Method) *MethodType {
 	)
 
 	if outNum != 1 && outNum != 2 {
-		log.Warn("method %s of mtype %v has wrong number of in out parameters %d; needs exactly 1/2",
+		logger.Warnf("method %s of mtype %v has wrong number of in out parameters %d; needs exactly 1/2",
 			mname, mtype.String(), outNum)
 		return nil
 	}
 
 	// The latest return type of the method must be error.
 	if returnType := mtype.Out(outNum - 1); returnType != typeOfError {
-		log.Warn("the latest return type %s of method %q is not error", returnType, mname)
+		logger.Warnf("the latest return type %s of method %q is not error", returnType, mname)
 		return nil
 	}
 
 	// replyType
 	if outNum == 1 {
 		if mtype.In(inNum-1).Kind() != reflect.Ptr {
-			log.Error("reply type of method %q is not a pointer %v", mname, replyType)
+			logger.Errorf("reply type of method %q is not a pointer %v", mname, replyType)
 			return nil
 		}
 	} else {
 		replyType = mtype.Out(0)
 		if !isExportedOrBuiltinType(replyType) {
-			log.Error("reply type of method %s not exported{%v}", mname, replyType)
+			logger.Errorf("reply type of method %s not exported{%v}", mname, replyType)
 			return nil
 		}
 	}
@@ -275,7 +278,7 @@ func suiteMethod(method reflect.Method) *MethodType {
 		argsType = append(argsType, mtype.In(index))
 		// need not be a pointer.
 		if !isExportedOrBuiltinType(mtype.In(index)) {
-			log.Error("argument type of method %q is not exported %v", mname, mtype.In(index))
+			logger.Errorf("argument type of method %q is not exported %v", mname, mtype.In(index))
 			return nil
 		}
 	}

@@ -24,7 +24,7 @@ import (
 )
 
 import (
-	log "github.com/AlexStocks/log4go"
+	"github.com/dubbo/go-for-apache-dubbo/common/logger"
 	"github.com/dubbogo/hessian2"
 )
 
@@ -108,13 +108,13 @@ func initSignal() {
 		syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
 	for {
 		sig := <-signals
-		log.Info("get signal %s", sig.String())
+		logger.Infof("get signal %s", sig.String())
 		switch sig {
 		case syscall.SIGHUP:
 			// reload()
 		default:
 			go time.AfterFunc(time.Duration(survivalTimeout)*time.Second, func() {
-				log.Warn("app exit now by force...")
+				logger.Warnf("app exit now by force...")
 				os.Exit(1)
 			})
 

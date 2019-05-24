@@ -20,13 +20,13 @@ import (
 )
 
 import (
-	log "github.com/AlexStocks/log4go"
 	"github.com/dubbogo/getty"
 	perrors "github.com/pkg/errors"
 )
 import (
 	"github.com/dubbo/go-for-apache-dubbo/common"
 	"github.com/dubbo/go-for-apache-dubbo/common/constant"
+	"github.com/dubbo/go-for-apache-dubbo/common/logger"
 )
 
 ////////////////////////////////////////////
@@ -59,13 +59,13 @@ func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface
 func (p *RpcClientPackageHandler) Write(ss getty.Session, pkg interface{}) error {
 	req, ok := pkg.(*DubboPackage)
 	if !ok {
-		log.Error("illegal pkg:%+v\n", pkg)
+		logger.Errorf("illegal pkg:%+v\n", pkg)
 		return perrors.New("invalid rpc request")
 	}
 
 	buf, err := req.Marshal()
 	if err != nil {
-		log.Warn("binary.Write(req{%#v}) = err{%#v}", req, perrors.WithStack(err))
+		logger.Warnf("binary.Write(req{%#v}) = err{%#v}", req, perrors.WithStack(err))
 		return perrors.WithStack(err)
 	}
 
@@ -136,13 +136,13 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg interface{}) error {
 	res, ok := pkg.(*DubboPackage)
 	if !ok {
-		log.Error("illegal pkg:%+v\n, it is %+v", pkg, reflect.TypeOf(pkg))
+		logger.Errorf("illegal pkg:%+v\n, it is %+v", pkg, reflect.TypeOf(pkg))
 		return perrors.New("invalid rpc response")
 	}
 
 	buf, err := res.Marshal()
 	if err != nil {
-		log.Warn("binary.Write(res{%#v}) = err{%#v}", res, perrors.WithStack(err))
+		logger.Warnf("binary.Write(res{%#v}) = err{%#v}", res, perrors.WithStack(err))
 		return perrors.WithStack(err)
 	}
 

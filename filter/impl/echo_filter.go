@@ -15,7 +15,7 @@
 package impl
 
 import (
-	log "github.com/AlexStocks/log4go"
+	"github.com/dubbo/go-for-apache-dubbo/common/logger"
 )
 
 import (
@@ -38,8 +38,8 @@ type EchoFilter struct {
 }
 
 func (ef *EchoFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	log.Info("invoking echo filter.")
-	log.Debug("%v,%v", invocation.MethodName(), len(invocation.Arguments()))
+	logger.Infof("invoking echo filter.")
+	logger.Debugf("%v,%v", invocation.MethodName(), len(invocation.Arguments()))
 	if invocation.MethodName() == constant.ECHO && len(invocation.Arguments()) == 1 {
 		return &protocol.RPCResult{
 			Rest: invocation.Arguments()[0],

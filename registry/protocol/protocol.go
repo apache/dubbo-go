@@ -19,7 +19,7 @@ import (
 )
 
 import (
-	log "github.com/AlexStocks/log4go"
+	"github.com/dubbo/go-for-apache-dubbo/common/logger"
 )
 
 import (
@@ -56,7 +56,7 @@ func newRegistryProtocol() *registryProtocol {
 func getRegistry(regUrl *common.URL) registry.Registry {
 	reg, err := extension.GetRegistry(regUrl.Protocol, regUrl)
 	if err != nil {
-		log.Error("Registry can not connect success, program is going to panic.Error message is %s", err.Error())
+		logger.Errorf("Registry can not connect success, program is going to panic.Error message is %s", err.Error())
 		panic(err.Error())
 	}
 	return reg
@@ -81,12 +81,12 @@ func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 	//new registry directory for store service url from registry
 	directory, err := directory2.NewRegistryDirectory(&registryUrl, reg)
 	if err != nil {
-		log.Error("consumer service %v  create registry directory  error, error message is %s, and will return nil invoker!", serviceUrl.String(), err.Error())
+		logger.Errorf("consumer service %v  create registry directory  error, error message is %s, and will return nil invoker!", serviceUrl.String(), err.Error())
 		return nil
 	}
 	err = reg.Register(*serviceUrl)
 	if err != nil {
-		log.Error("consumer service %v register registry %v error, error message is %s", serviceUrl.String(), registryUrl.String(), err.Error())
+		logger.Errorf("consumer service %v register registry %v error, error message is %s", serviceUrl.String(), registryUrl.String(), err.Error())
 	}
 	go directory.Subscribe(*serviceUrl)
 
@@ -113,20 +113,20 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 
 	err := reg.Register(providerUrl)
 	if err != nil {
-		log.Error("provider service %v register registry %v error, error message is %s", providerUrl.Key(), registryUrl.Key(), err.Error())
+		logger.Errorf("provider service %v register registry %v error, error message is %s", providerUrl.Key(), registryUrl.Key(), err.Error())
 		return nil
 	}
 
 	key := providerUrl.Key()
-	log.Info("The cached exporter keys is %v !", key)
+	logger.Infof("The cached exporter keys is %v !", key)
 	cachedExporter, loaded := proto.bounds.Load(key)
 	if loaded {
-		log.Info("The exporter has been cached, and will return cached exporter!")
+		logger.Infof("The exporter has been cached, and will return cached exporter!")
 	} else {
 		wrappedInvoker := newWrappedInvoker(invoker, providerUrl)
 		cachedExporter = extension.GetProtocol(protocolwrapper.FILTER).Export(wrappedInvoker)
 		proto.bounds.Store(key, cachedExporter)
-		log.Info("The exporter has not been cached, and will return a new  exporter!")
+		logger.Infof("The exporter has not been cached, and will return a new  exporter!")
 	}
 
 	return cachedExporter.(protocol.Exporter)

@@ -19,10 +19,8 @@ import (
 )
 
 import (
-	log "github.com/AlexStocks/log4go"
-)
-import (
 	"github.com/dubbo/go-for-apache-dubbo/common"
+	"github.com/dubbo/go-for-apache-dubbo/common/logger"
 )
 
 // Extension - protocol
@@ -122,7 +120,7 @@ func (de *BaseExporter) GetInvoker() Invoker {
 }
 
 func (de *BaseExporter) Unexport() {
-	log.Info("Exporter unexport.")
+	logger.Infof("Exporter unexport.")
 	de.invoker.Destroy()
 	de.exporterMap.Delete(de.key)
 }

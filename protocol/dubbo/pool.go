@@ -24,9 +24,12 @@ import (
 )
 
 import (
-	log "github.com/AlexStocks/log4go"
 	"github.com/dubbogo/getty"
 	perrors "github.com/pkg/errors"
+)
+
+import (
+	"github.com/dubbo/go-for-apache-dubbo/common/logger"
 )
 
 type gettyRPCClient struct {
@@ -70,7 +73,7 @@ func newGettyRPCClientConn(pool *gettyRPCClientPool, protocol, addr string) (*ge
 		}
 		time.Sleep(1e6)
 	}
-	log.Info("client init ok")
+	logger.Infof("client init ok")
 	c.created = time.Now().Unix()
 
 	return c, nil
@@ -110,7 +113,7 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 	session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
 	session.SetCronPeriod((int)(conf.heartbeatPeriod.Nanoseconds() / 1e6))
 	session.SetWaitTime(conf.GettySessionParam.waitTimeout)
-	log.Debug("client new session:%s\n", session.Stat())
+	logger.Debugf("client new session:%s\n", session.Stat())
 
 	return nil
 }
@@ -131,7 +134,7 @@ func (c *gettyRPCClient) selectSession() getty.Session {
 }
 
 func (c *gettyRPCClient) addSession(session getty.Session) {
-	log.Debug("add session{%s}", session.Stat())
+	logger.Debugf("add session{%s}", session.Stat())
 	if session == nil {
 		return
 	}
@@ -155,11 +158,11 @@ func (c *gettyRPCClient) removeSession(session getty.Session) {
 	for i, s := range c.sessions {
 		if s.session == session {
 			c.sessions = append(c.sessions[:i], c.sessions[i+1:]...)
-			log.Debug("delete session{%s}, its index{%d}", session.Stat(), i)
+			logger.Debugf("delete session{%s}, its index{%d}", session.Stat(), i)
 			break
 		}
 	}
-	log.Info("after remove session{%s}, left session number:%d", session.Stat(), len(c.sessions))
+	logger.Infof("after remove session{%s}, left session number:%d", session.Stat(), len(c.sessions))
 	if len(c.sessions) == 0 {
 		c.close() // -> pool.remove(c)
 	}
@@ -220,7 +223,7 @@ func (c *gettyRPCClient) close() error {
 		// delete @c from client pool
 		c.pool.remove(c)
 		for _, s := range c.sessions {
-			log.Info("close client session{%s, last active:%s, request number:%d}",
+			logger.Infof("close client session{%s, last active:%s, request number:%d}",
 				s.session.Stat(), s.session.GetActive().String(), s.reqNum)
 			s.session.Close()
 		}
