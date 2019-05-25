@@ -20,11 +20,11 @@ if [[ ${OS_NAME} != "Windows" ]]; then
     PROJECT_HOME=${PROJECT_HOME}"/"
 fi
 
-export APP_CONF_FILE=${PROJECT_HOME}"TARGET_CONF_FILE"
+export CONF_PROVIDER_FILE_PATH=${PROJECT_HOME}"TARGET_CONF_FILE"
 export APP_LOG_CONF_FILE=${PROJECT_HOME}"TARGET_LOG_CONF_FILE"
 
 usage() {
-    echo "Usage: $0 start"
+    echo "Usage: $0 start [conf suffix]"
     echo "       $0 stop"
     echo "       $0 term"
     echo "       $0 restart"
@@ -35,6 +35,16 @@ usage() {
 }
 
 start() {
+    arg=$1
+    if [ "$arg" = "" ];then
+        echo "No registry type! Default server.yml!"
+    else
+        export CONF_PROVIDER_FILE_PATH=${CONF_PROVIDER_FILE_PATH//\.yml/\_$arg\.yml}
+    fi
+    if [ ! -f "${CONF_PROVIDER_FILE_PATH}" ];then
+        echo $CONF_PROVIDER_FILE_PATH" is not existing!"
+        return
+    fi
     APP_LOG_PATH="${PROJECT_HOME}logs/"
     mkdir -p ${APP_LOG_PATH}
     APP_BIN=${PROJECT_HOME}sbin/${APP_NAME}
@@ -112,7 +122,7 @@ list() {
 opt=$1
 case C"$opt" in
     Cstart)
-        start
+        start $2
         ;;
     Cstop)
         stop
@@ -122,7 +132,7 @@ case C"$opt" in
         ;;
     Crestart)
         term
-        start
+        start $2
         ;;
     Clist)
         list

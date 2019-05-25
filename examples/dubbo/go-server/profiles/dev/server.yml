@@ -1,13 +1,5 @@
 # dubbo server yaml configure file
 
-# pprof
-pprof_enabled : true
-pprof_port : 20080
-
-# server
-transport : "http"
-net_timeout : "3s"
-
 # application config
 application_config:
     organization : "ikurento.com"
@@ -17,23 +9,61 @@ application_config:
     owner : "ZX"
     environment : "dev"
 
-registry: "zookeeper"
+registries :
+- id: "hangzhouzk"
+  type: "zookeeper"
+  timeout	: "3s"
+  address: "127.0.0.1:2181"
+  username: ""
+  password: ""
 
-zk_registry_config:
-    timeout	: "3s"
-    address:
-        - "127.0.0.1:2181"
-service_config_type: "default"
-service_list:
-    -
-        protocol : "dubbo"
-        # 相当于dubbo.xml中的interface
-        service : "com.ikurento.user.UserProvider"
+- id: "shanghaizk"
+  type: "zookeeper"
+  timeout	: "3s"
+  address: "127.0.0.1:2182"
+  username: ""
+  password: ""
 
-server_list:
-    -
-        # 如果是127.0.0.1, java-client将无法连接到go-server
-        ip : "192.168.56.1"
-        port : 20000
-        # 本server能够提供所有支持同样的Protocol的servicelist的服务
-        protocol : "dubbo"
+
+services:
+- registries:
+  - "hangzhouzk"
+  - "shanghaizk"
+  protocol : "dubbo"
+    # 相当于dubbo.xml中的interface
+  interface : "com.ikurento.user.UserProvider"
+  loadbalance: "random"
+  warmup: "100"
+  cluster: "failover"
+  methods:
+  - name: "GetUser"
+    retries: 1
+    loadbalance: "random"
+
+protocols:
+-   name: "dubbo"
+    ip : "127.0.0.1"
+    port : 20000
+#-   name: "jsonrpc"
+#    ip: "127.0.0.1"
+#    port: 20001
+
+protocol_conf:
+  dubbo:
+    session_number: 700
+    fail_fast_timeout: "5s"
+    session_timeout: "20s"
+    getty_session_param:
+      compress_encoding: false
+      tcp_no_delay: true
+      tcp_keep_alive: true
+      keep_alive_period: "120s"
+      tcp_r_buf_size: 262144
+      tcp_w_buf_size: 65536
+      pkg_rq_size: 1024
+      pkg_wq_size: 512
+      tcp_read_timeout: "1s"
+      tcp_write_timeout: "5s"
+      wait_timeout: "1s"
+      max_msg_len: 1024
+      session_name: "server"
