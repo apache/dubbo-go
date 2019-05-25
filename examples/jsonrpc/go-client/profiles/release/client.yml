@@ -1,36 +1,44 @@
 # dubbo client yaml configure file
 
-# pprof
-pprof_enabled : true
-pprof_port : 10086
 
+check: true
 # client
-request_timeout : "3500ms"
-net_io_timeout : "2s"
-retries : 1
+request_timeout : "3s"
 # connect timeout
-connect_timeout : "100ms"
-selector : "cache"
-selector_ttl : "10m"
-registry : "zookeeper"
-client_load_balance: "round_robin"
+connect_timeout : "3s"
 
 # application config
 application_config:
-    organization : "ikurento.com"
-    name  : "BDTService"
-    module : "dubbogo user-info client"
-    version : "0.0.1"
-    owner : "ZX"
-    environment : "product"
+  organization : "ikurento.com"
+  name  : "BDTService"
+  module : "dubbogo user-info client"
+  version : "0.0.1"
+  owner : "ZX"
+  environment : "dev"
 
-zk_registry_config:
-    timeout	: "3s"
-    address:
-        - "127.0.0.1:2181"
+registries :
+- id: "hangzhouzk"
+  type: "zookeeper"
+  timeout	: "3s"
+  address: "127.0.0.1:2181"
+  username: ""
+  password: ""
 
-service_config_type: "default"
-service_list:
-    -
-        protocol : "jsonrpc"
-        service : "com.ikurento.user.UserProvider"
+- id: "shanghaizk"
+  type: "zookeeper"
+  timeout	: "3s"
+  address: "127.0.0.1:2182"
+  username: ""
+  password: ""
+
+references:
+- registries :
+  - "hangzhouzk"
+  - "shanghaizk"
+
+  protocol : "jsonrpc"
+  interface : "com.ikurento.user.UserProvider"
+  cluster: "failover"
+  methods :
+  - name: "GetUser"
+    retries: 3
