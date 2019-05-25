@@ -47,7 +47,7 @@ func TestHTTPClient_Call(t *testing.T) {
 
 	methods, err := common.ServiceMap.Register("jsonrpc", &UserProvider{})
 	assert.NoError(t, err)
-	assert.Equal(t, "GetUser,GetUser0,GetUser1", methods)
+	assert.Equal(t, "GetUser,GetUser0,GetUser1,GetUser2,GetUser3", methods)
 
 	// Export
 	proto := GetProtocol()
@@ -75,7 +75,7 @@ func TestHTTPClient_Call(t *testing.T) {
 	assert.Equal(t, "1", reply.Id)
 	assert.Equal(t, "username", reply.Name)
 
-	// call GetUser
+	// call GetUser0
 	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
 		"X-Proxy-Id": "dubbogo",
 		"X-Services": url.Path,
@@ -100,6 +100,30 @@ func TestHTTPClient_Call(t *testing.T) {
 	assert.True(t, strings.Contains(err.Error(), "500 Internal Server Error"))
 	assert.True(t, strings.Contains(err.Error(), "\\\"result\\\":{},\\\"error\\\":{\\\"code\\\":-32000,\\\"message\\\":\\\"error\\\"}"))
 
+	// call GetUser2
+	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
+		"X-Proxy-Id": "dubbogo",
+		"X-Services": url.Path,
+		"X-Method":   "GetUser",
+	})
+	req = client.NewRequest(url, "GetUser2", []interface{}{"1", "username"})
+	reply1 := []User{}
+	err = client.Call(ctx, url, req, &reply1)
+	assert.NoError(t, err)
+	assert.Equal(t, User{Id: "1", Name: "username"}, reply1[0])
+
+	// call GetUser3
+	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
+		"X-Proxy-Id": "dubbogo",
+		"X-Services": url.Path,
+		"X-Method":   "GetUser",
+	})
+	req = client.NewRequest(url, "GetUser3", []interface{}{"1", "username"})
+	reply1 = []User{}
+	err = client.Call(ctx, url, req, &reply1)
+	assert.NoError(t, err)
+	assert.Equal(t, User{Id: "1", Name: "username"}, reply1[0])
+
 	// destroy
 	proto.Destroy()
 
@@ -117,6 +141,15 @@ func (u *UserProvider) GetUser0(id string, name string) (User, error) {
 
 func (u *UserProvider) GetUser1(ctx context.Context, req []interface{}, rsp *User) error {
 	return perrors.New("error")
+}
+
+func (u *UserProvider) GetUser2(ctx context.Context, req []interface{}, rsp *[]User) error {
+	*rsp = append(*rsp, User{Id: req[0].(string), Name: req[1].(string)})
+	return nil
+}
+
+func (u *UserProvider) GetUser3(ctx context.Context, req []interface{}) ([]User, error) {
+	return []User{{Id: req[0].(string), Name: req[1].(string)}}, nil
 }
 
 func (u *UserProvider) Service() string {

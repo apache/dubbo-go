@@ -83,6 +83,13 @@ func main() {
 	}
 	println("response result: %v", ret)
 
+	println("\n\n\nstart to test dubbo - GetUsers")
+	ret1, err := conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUsers([]interface{}{[]interface{}{"A002", "A003"}})
+	if err != nil {
+		panic(err)
+	}
+	println("response result: %v", ret1)
+
 	println("\n\n\nstart to test dubbo - getUser")
 	user = &User{}
 	err = conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser2(context.TODO(), []interface{}{1}, user)
