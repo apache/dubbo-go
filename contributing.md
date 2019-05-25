@@ -1,7 +1,7 @@
 Contributing to Dubbogo
 
 ## 1. Branch
- 
+
   >- The name of branches `SHOULD` be in the format of `feature/xxx`.
   >- You `SHOULD` checkout a new branch after a feature branch already being merged into upstream, `DO NOT` commit in the old branch.
 
@@ -24,3 +24,8 @@ The title format of the pull request `MUST` follow the following rules:
   >- Start with `Dep:` for adding depending libs.
   >- Start with `Rem:` for removing feature/struct/function/member/files.
 
+## 3. Code Style
+
+### 3.1 log
+
+> 1 when logging the function's input parameter, you should add '@' before input parameter name.
