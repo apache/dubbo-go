@@ -1,11 +1,12 @@
 module github.com/dubbo/go-for-apache-dubbo
 
 require (
-	github.com/AlexStocks/getty v0.0.0-20190331201845-1ca64ac5a589
-	github.com/AlexStocks/goext v0.3.2
-	github.com/AlexStocks/log4go v1.0.2
-	github.com/dubbogo/hessian2 v0.0.0-20190410112310-f093e4436e31
-	github.com/juju/errors v0.0.0-20190207033735-e65537c515d7
+	github.com/dubbogo/getty v0.0.0-20190523180329-bdf5e640ea53
+	github.com/dubbogo/hessian2 v0.0.0-20190525165532-d994415a90c3
+	github.com/pkg/errors v0.8.1
 	github.com/samuel/go-zookeeper v0.0.0-20180130194729-c4fab1ac1bec
+	github.com/stretchr/testify v1.3.0
+	go.uber.org/atomic v1.4.0
+	go.uber.org/zap v1.10.0
 	gopkg.in/yaml.v2 v2.2.2
 )

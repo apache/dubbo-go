@@ -18,7 +18,7 @@ classes
 
 
 # Gopkg.lock
-# vendor/
+vendor/
 
 logs/
 
