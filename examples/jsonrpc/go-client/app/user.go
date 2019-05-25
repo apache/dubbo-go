@@ -44,6 +44,7 @@ func (u JsonRPCUser) String() string {
 }
 
 type UserProvider struct {
+	GetUsers func(req []interface{}) ([]JsonRPCUser, error)
 	GetUser  func(ctx context.Context, req []interface{}, rsp *JsonRPCUser) error
 	GetUser0 func(id string, name string) (JsonRPCUser, error)
 	GetUser1 func(ctx context.Context, req []interface{}, rsp *JsonRPCUser) error

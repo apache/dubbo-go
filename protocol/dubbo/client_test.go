@@ -16,13 +16,13 @@ package dubbo
 
 import (
 	"context"
+	"github.com/dubbogo/hessian2"
 	"sync"
 	"testing"
 	"time"
 )
 
 import (
-	"github.com/dubbogo/hessian2"
 	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
@@ -79,6 +79,26 @@ func TestClient_Call(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "1", Name: "username"}, *user)
 
+	user = &User{}
+	err = c.Call("127.0.0.1:20000", url, "GetUser1", []interface{}{"1", "username"}, user)
+	assert.EqualError(t, err, "java exception:error")
+
+	user2 := []interface{}{}
+	err = c.Call("127.0.0.1:20000", url, "GetUser2", []interface{}{"1", "username"}, &user2)
+	assert.NoError(t, err)
+	assert.Equal(t, &User{Id: "1", Name: "username"}, user2[0])
+
+	user2 = []interface{}{}
+	err = c.Call("127.0.0.1:20000", url, "GetUser3", []interface{}{[]interface{}{"1", "username"}}, &user2)
+	assert.NoError(t, err)
+	assert.Equal(t, &User{Id: "1", Name: "username"}, user2[0])
+
+	user3 := map[interface{}]interface{}{}
+	err = c.Call("127.0.0.1:20000", url, "GetUser4", []interface{}{map[interface{}]interface{}{"id": "1", "name": "username"}}, &user3)
+	assert.NoError(t, err)
+	assert.NotNil(t, user3)
+	assert.Equal(t, &User{Id: "1", Name: "username"}, user3["key"])
+
 	// destroy
 	proto.Destroy()
 }
@@ -114,7 +134,7 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 
 	methods, err := common.ServiceMap.Register("dubbo", &UserProvider{})
 	assert.NoError(t, err)
-	assert.Equal(t, "GetUser,GetUser0,GetUser1", methods)
+	assert.Equal(t, "GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4", methods)
 
 	// config
 	SetClientConf(ClientConfig{
@@ -189,6 +209,20 @@ func (u *UserProvider) GetUser0(id string, name string) (User, error) {
 
 func (u *UserProvider) GetUser1(ctx context.Context, req []interface{}, rsp *User) error {
 	return perrors.New("error")
+}
+
+func (u *UserProvider) GetUser2(ctx context.Context, req []interface{}, rsp *[]interface{}) error {
+	*rsp = append(*rsp, User{Id: req[0].(string), Name: req[1].(string)})
+	return nil
+}
+
+func (u *UserProvider) GetUser3(ctx context.Context, req []interface{}) ([]interface{}, error) {
+
+	return []interface{}{User{Id: req[0].([]interface{})[0].(string), Name: req[0].([]interface{})[1].(string)}}, nil
+}
+
+func (u *UserProvider) GetUser4(ctx context.Context, req []interface{}) (map[interface{}]interface{}, error) {
+	return map[interface{}]interface{}{"key": User{Id: req[0].(map[interface{}]interface{})["id"].(string), Name: req[0].(map[interface{}]interface{})["name"].(string)}}, nil
 }
 
 func (u *UserProvider) Service() string {
