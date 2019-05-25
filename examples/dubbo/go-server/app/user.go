@@ -156,6 +156,25 @@ func (u *UserProvider) GetUser0(id string, name string) (User, error) {
 	return *user, err
 }
 
+func (u *UserProvider) GetUsers(req []interface{}) ([]interface{}, error) {
+	var err error
+
+	println("req:%s", req)
+	t := req[0].([]interface{})
+	user, err := u.getUser(t[0].(string))
+	if err != nil {
+		return nil, err
+	}
+	println("user:%v", user)
+	user1, err := u.getUser(t[1].(string))
+	if err != nil {
+		return nil, err
+	}
+	println("user1:%v", user1)
+
+	return []interface{}{user, user1}, err
+}
+
 func (u *UserProvider) Service() string {
 	return "com.ikurento.user.UserProvider"
 }
