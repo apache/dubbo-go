@@ -24,12 +24,13 @@
 	<dubbo:application name="user-info-server"/>
 	<!-- 连接到哪个本地注册中心 -->
 	<dubbo:registry id="ikurento"  address="zookeeper://127.0.0.1:2181" />
+	<dubbo:registry id="ikurento2"  address="zookeeper://127.0.0.1:2182" />
 	<!-- 用dubbo协议在20880端口暴露服务 -->
     <!-- dubbo:protocol host="127.0.0.1" / -->
 	<dubbo:protocol id="dubbo" name="dubbo" host="127.0.0.1" port="20010" />
 	<dubbo:protocol id="jsonrpc" name="jsonrpc" host="127.0.0.1" port="10010" />
 	<!-- 声明需要暴露的服务接口 -->
-	<dubbo:service registry="ikurento" timeout="3000" interface="com.ikurento.user.UserProvider" ref="demoService"/>
+	<dubbo:service registry="ikurento,ikurento2" timeout="3000" interface="com.ikurento.user.UserProvider" ref="demoService"/>
 	<dubbo:service registry="ikurento" timeout="3000" interface="com.ikurento.user.UserProvider" ref="otherService" version="2.0"/>
 	<dubbo:service registry="ikurento" timeout="3000" interface="com.ikurento.user.UserProvider" ref="otherService" group="as" version="2.0"/>
 
