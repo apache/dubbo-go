@@ -1,7 +1,20 @@
+// Copyright 2016-2019 Yincheng Fang, Alex Stocks
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
-	// "encoding/json"
 	"context"
 	"fmt"
 	"strconv"
@@ -9,11 +22,19 @@ import (
 )
 
 import (
-	"github.com/AlexStocks/goext/log"
 	"github.com/dubbogo/hessian2"
+	perrors "github.com/pkg/errors"
+)
+
+import (
+	"github.com/dubbo/go-for-apache-dubbo/config"
 )
 
 type Gender hessian.JavaEnum
+
+func init() {
+	config.SetProviderService(new(UserProvider))
+}
 
 const (
 	MAN hessian.JavaEnum = iota
@@ -53,7 +74,7 @@ func (g Gender) EnumValue(s string) hessian.JavaEnum {
 }
 
 type (
-	DubboUser struct {
+	User struct {
 		// !!! Cannot define lowercase names of variable
 		Id   string
 		Name string
@@ -63,42 +84,42 @@ type (
 	}
 
 	UserProvider struct {
-		user map[string]DubboUser
+		user map[string]User
 	}
 )
 
-func (u DubboUser) String() string {
+var (
+	DefaultUser = User{
+		Id: "0", Name: "Alex Stocks", Age: 31,
+		Sex: Gender(MAN),
+	}
+
+	userMap = UserProvider{user: make(map[string]User)}
+)
+
+func init() {
+	userMap.user["A000"] = DefaultUser
+	userMap.user["A001"] = User{Id: "001", Name: "ZhangSheng", Age: 18, Sex: Gender(MAN)}
+	userMap.user["A002"] = User{Id: "002", Name: "Lily", Age: 20, Sex: Gender(WOMAN)}
+	userMap.user["A003"] = User{Id: "113", Name: "Moorse", Age: 30, Sex: Gender(WOMAN)}
+	for k, v := range userMap.user {
+		v.Time = time.Now()
+		userMap.user[k] = v
+	}
+}
+
+func (u User) String() string {
 	return fmt.Sprintf(
 		"User{Id:%s, Name:%s, Age:%d, Time:%s, Sex:%s}",
 		u.Id, u.Name, u.Age, u.Time, u.Sex,
 	)
 }
 
-func (DubboUser) JavaClassName() string {
+func (u User) JavaClassName() string {
 	return "com.ikurento.user.User"
 }
 
-var (
-	DefaultUser = DubboUser{
-		Id: "0", Name: "Alex Stocks", Age: 31,
-		Sex: Gender(MAN),
-	}
-
-	userMap = UserProvider{user: make(map[string]DubboUser)}
-)
-
-func init() {
-	//DefaultUser.Sex = DefaultUser.sex.String()
-	userMap.user["A000"] = DefaultUser
-	userMap.user["A001"] = DubboUser{Id: "001", Name: "ZhangSheng", Age: 18, Sex: Gender(MAN)}
-	userMap.user["A002"] = DubboUser{Id: "002", Name: "Lily", Age: 20, Sex: Gender(WOMAN)}
-	userMap.user["A003"] = DubboUser{Id: "113", Name: "Moorse", Age: 30, Sex: Gender(WOMAN)}
-	for k, v := range userMap.user {
-		userMap.user[k] = v
-	}
-}
-
-func (u *UserProvider) getUser(userId string) (*DubboUser, error) {
+func (u *UserProvider) getUser(userId string) (*User, error) {
 	if user, ok := userMap.user[userId]; ok {
 		return &user, nil
 	}
@@ -106,22 +127,52 @@ func (u *UserProvider) getUser(userId string) (*DubboUser, error) {
 	return nil, fmt.Errorf("invalid user id:%s", userId)
 }
 
-/*
-	!!! req must be []interface{}
-*/
-func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *DubboUser) error {
+func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User) error {
 	var (
 		err  error
-		user *DubboUser
+		user *User
 	)
 
-	gxlog.CInfo("req:%#v", req)
+	println("req:%#v", req)
 	user, err = u.getUser(req[0].(string))
 	if err == nil {
 		*rsp = *user
-		gxlog.CInfo("rsp:%#v", rsp)
+		println("rsp:%#v", rsp)
 	}
 	return err
+}
+
+func (u *UserProvider) GetUser0(id string, name string) (User, error) {
+	var err error
+
+	println("id:%s, name:%s", id, name)
+	user, err := u.getUser(id)
+	if err != nil {
+		return User{}, err
+	}
+	if user.Name != name {
+		return User{}, perrors.New("name is not " + user.Name)
+	}
+	return *user, err
+}
+
+func (u *UserProvider) GetUsers(req []interface{}) ([]interface{}, error) {
+	var err error
+
+	println("req:%s", req)
+	t := req[0].([]interface{})
+	user, err := u.getUser(t[0].(string))
+	if err != nil {
+		return nil, err
+	}
+	println("user:%v", user)
+	user1, err := u.getUser(t[1].(string))
+	if err != nil {
+		return nil, err
+	}
+	println("user1:%v", user1)
+
+	return []interface{}{user, user1}, err
 }
 
 func (u *UserProvider) Service() string {
@@ -130,4 +181,8 @@ func (u *UserProvider) Service() string {
 
 func (u *UserProvider) Version() string {
 	return ""
+}
+
+func println(format string, args ...interface{}) {
+	fmt.Printf("\033[32;40m"+format+"\033[0m\n", args...)
 }

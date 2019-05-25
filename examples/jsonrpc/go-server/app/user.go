@@ -1,18 +1,38 @@
+// Copyright 2016-2019 Yincheng Fang, Alex Stocks
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
-	// "encoding/json"
 	"context"
 	"fmt"
 	"time"
 )
 
 import (
-	"github.com/AlexStocks/goext/log"
-	"github.com/AlexStocks/goext/time"
+	perrors "github.com/pkg/errors"
+)
+
+import (
+	"github.com/dubbo/go-for-apache-dubbo/config"
 )
 
 type Gender int
+
+func init() {
+	config.SetProviderService(new(UserProvider))
+}
 
 const (
 	MAN = iota
@@ -38,10 +58,6 @@ type (
 		Sex   string `json:"sex"`
 	}
 
-	UserId struct {
-		Id string
-	}
-
 	UserProvider struct {
 		user map[string]User
 	}
@@ -51,7 +67,7 @@ var (
 	DefaultUser = User{
 		Id: "0", Name: "Alex Stocks", Age: 31,
 		// Birth: int(time.Date(1985, time.November, 10, 23, 0, 0, 0, time.UTC).Unix()),
-		Birth: gxtime.YMD(1985, 11, 24, 15, 15, 0),
+		Birth: int(time.Date(1985, 11, 24, 15, 15, 0, 0, time.Local).Unix()),
 		sex:   Gender(MAN),
 	}
 
@@ -71,17 +87,6 @@ func init() {
 	}
 }
 
-/*
-// you can define your json unmarshal function here
-func (u *UserId) UnmarshalJSON(value []byte) error {
-	u.Id = string(value)
-	u.Id = strings.TrimPrefix(u.Id, "\"")
-	u.Id = strings.TrimSuffix(u.Id, `"`)
-
-	return nil
-}
-*/
-
 func (u *UserProvider) getUser(userId string) (*User, error) {
 	if user, ok := userMap.user[userId]; ok {
 		return &user, nil
@@ -90,68 +95,52 @@ func (u *UserProvider) getUser(userId string) (*User, error) {
 	return nil, fmt.Errorf("invalid user id:%s", userId)
 }
 
-/*
-// can not work
-func (u *UserProvider) GetUser(ctx context.Context, req *UserId, rsp *User) error {
+func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User) error {
 	var (
 		err  error
 		user *User
 	)
-	user, err = u.getUser(req.Id)
+
+	println("req:%#v", req)
+	user, err = u.getUser(req[0].(string))
 	if err == nil {
 		*rsp = *user
-		gxlog.CInfo("rsp:%#v", rsp)
-		// s, _ := json.Marshal(rsp)
-		// fmt.Println(string(s))
-
-		// s, _ = json.Marshal(*rsp)
-		// fmt.Println(string(s))
+		println("rsp:%#v", rsp)
 	}
 	return err
 }
-*/
 
-/*
-// work
-func (u *UserProvider) GetUser(ctx context.Context, req *string, rsp *User) error {
-	var (
-		err  error
-		user *User
-	)
+func (u *UserProvider) GetUser0(id string, name string) (User, error) {
+	var err error
 
-	gxlog.CInfo("req:%#v", *req)
-	user, err = u.getUser(*req)
-	if err == nil {
-		*rsp = *user
-		gxlog.CInfo("rsp:%#v", rsp)
-		// s, _ := json.Marshal(rsp)
-		// fmt.Println(string(s))
-
-		// s, _ = json.Marshal(*rsp)
-		// fmt.Println(string(s))
+	println("id:%s, name:%s", id, name)
+	user, err := u.getUser(id)
+	if err != nil {
+		return User{}, err
 	}
-	return err
+	if user.Name != name {
+		return User{}, perrors.New("name is not " + user.Name)
+	}
+	return *user, err
 }
-*/
 
-func (u *UserProvider) GetUser(ctx context.Context, req []string, rsp *User) error {
-	var (
-		err  error
-		user *User
-	)
+func (u *UserProvider) GetUsers(req []interface{}) ([]User, error) {
+	var err error
 
-	gxlog.CInfo("req:%#v", req)
-	user, err = u.getUser(req[0])
-	if err == nil {
-		*rsp = *user
-		gxlog.CInfo("rsp:%#v", rsp)
-		// s, _ := json.Marshal(rsp)
-		// fmt.Println("hello0:", string(s))
-
-		// s, _ = json.Marshal(*rsp)
-		// fmt.Println("hello1:", string(s))
+	println("req:%s", req)
+	t := req[0].([]interface{})
+	user, err := u.getUser(t[0].(string))
+	if err != nil {
+		return nil, err
 	}
-	return err
+	println("user:%v", user)
+	user1, err := u.getUser(t[1].(string))
+	if err != nil {
+		return nil, err
+	}
+	println("user1:%v", user1)
+
+	return []User{*user, *user1}, err
 }
 
 func (u *UserProvider) Service() string {
@@ -160,4 +149,8 @@ func (u *UserProvider) Service() string {
 
 func (u *UserProvider) Version() string {
 	return ""
+}
+
+func println(format string, args ...interface{}) {
+	fmt.Printf("\033[32;40m"+format+"\033[0m\n", args...)
 }
