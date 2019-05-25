@@ -79,7 +79,7 @@ public class Consumer {
     //启动consumer的入口函数(在配置文件中指定)
     public void start() throws Exception {
         testGetUser();
-        // testGetUsers();
+        testGetUsers();
 //        Thread.sleep(120000);
 Thread.sleep(2000);
     }

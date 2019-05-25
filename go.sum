@@ -6,8 +6,8 @@ github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dubbogo/getty v0.0.0-20190523180329-bdf5e640ea53 h1:bniSNoC4xnAbrx4estwc9F0qkWnh6ZDsAS0y9d7mPos=
 github.com/dubbogo/getty v0.0.0-20190523180329-bdf5e640ea53/go.mod h1:cRMSuoCmwc5lULFFnYZTxyCfZhObmRTNbS7XRnPNHSo=
-github.com/dubbogo/hessian2 v0.0.0-20190521184416-2dbe10487e1d h1:t4xwsC+7Vqh/a9IvNQehzI6coThd7+DLi5MKdleFA64=
-github.com/dubbogo/hessian2 v0.0.0-20190521184416-2dbe10487e1d/go.mod h1:XFGDn4oSZX26zkcfhkM/fCJrOqwQJxk/xgWW1KMJBKM=
+github.com/dubbogo/hessian2 v0.0.0-20190525165532-d994415a90c3 h1:qK0t4cWXFAng5VoPRdvnUyRyB9TdE+Q7G3ROOEY86tE=
+github.com/dubbogo/hessian2 v0.0.0-20190525165532-d994415a90c3/go.mod h1:XFGDn4oSZX26zkcfhkM/fCJrOqwQJxk/xgWW1KMJBKM=
 github.com/golang/snappy v0.0.1 h1:Qgr9rKW7uDUkrbSmQeiDsGa8SjGyCOGtuasMWwvp2P4=
 github.com/golang/snappy v0.0.1/go.mod h1:/XxbfmMg8lxefKM7IXC3fBNl/7bRcc72aCRzEWrmP2Q=
 github.com/gorilla/websocket v1.4.0 h1:WDFjx/TMzVgy9VdMMQi2K2Emtwi2QcUQsztZ/zLaH/Q=
