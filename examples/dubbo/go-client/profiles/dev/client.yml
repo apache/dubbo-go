@@ -35,6 +35,7 @@ references:
   - "shanghaizk"
 
   protocol : "dubbo"
+#  url: "dubbo://127.0.0.1:20000"
   interface : "com.ikurento.user.UserProvider"
   cluster: "failover"
   methods :
