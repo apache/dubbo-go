@@ -127,4 +127,3 @@ func normalRegistryDir() (*registryDirectory, *registry.MockRegistry) {
 	}
 	return registryDirectory, mockRegistry.(*registry.MockRegistry)
 }
-
