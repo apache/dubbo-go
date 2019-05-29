@@ -12,7 +12,7 @@ Apache License, Version 2.0
 
 ## Release note ##
 
-[v1.0.0 - compatible with dubbo v2.6.5](https://github.com/dubbo/go-for-apache-dubbo/releases/tag/v1.0.0)
+[v1.0.0 - May 29, 2019 compatible with dubbo v2.6.5](https://github.com/dubbo/go-for-apache-dubbo/releases/tag/v1.0.0)
 
 ## Code design ##
 
