@@ -16,6 +16,7 @@ package common
 
 import (
 	"context"
+	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"net/url"
 	"testing"
 )
@@ -132,4 +133,20 @@ func TestURL_GetMethodParam(t *testing.T) {
 	u = URL{}
 	v = u.GetMethodParam("GetValue", "timeout", "1s")
 	assert.Equal(t, "1s", v)
+}
+
+func TestMergeUrl(t *testing.T) {
+	referenceUrlParams := url.Values{}
+	referenceUrlParams.Set(constant.CLUSTER_KEY, "random")
+	referenceUrlParams.Set("test3", "1")
+	serviceUrlParams := url.Values{}
+	serviceUrlParams.Set("test2", "1")
+	serviceUrlParams.Set(constant.CLUSTER_KEY, "roundrobin")
+	referenceUrl, _ := NewURL(context.TODO(), "mock1://127.0.0.1:1111", WithParams(referenceUrlParams))
+	serviceUrl, _ := NewURL(context.TODO(), "mock2://127.0.0.1:20000", WithParams(serviceUrlParams))
+
+	mergedUrl := MergeUrl(serviceUrl, &referenceUrl)
+	assert.Equal(t, "random", mergedUrl.GetParam(constant.CLUSTER_KEY, ""))
+	assert.Equal(t, "1", mergedUrl.GetParam("test2", ""))
+	assert.Equal(t, "1", mergedUrl.GetParam("test3", ""))
 }
