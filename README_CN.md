@@ -11,18 +11,11 @@ Apache Dubbo Go 语言实现
 Apache License, Version 2.0
 
 ## 代码设计 ##
-<<<<<<< HEAD
-基于dubbo的分层代码设计( protocol layer , registry layer , cluster layer , config 等等)，你可以通过调用“ extension.SetXXX ”拓展这些分层替换 dubbo 的默认拓展来实现你的需求。欢迎贡献你觉得好的拓展。
-=======
->>>>>>> upstream/develop
 
 基于dubbo的extension模块和分层的代码设计(包括 protocol layer, registry layer, cluster layer, config 等等)。我们的目标是：你可以对这些分层接口进行新的实现，并通过调用 extension 模块的“ extension.SetXXX ”方法来覆盖 dubbo-go [同 go-for-apache-dubbo ]的默认实现，以完成自己的特殊需求而无需修改源代码。同时，欢迎你为社区贡献有用的拓展实现。
 
-<<<<<<< HEAD
-=======
 ![框架设计](https://raw.githubusercontent.com/wiki/dubbo/dubbo-go/dubbo-go%E4%BB%A3%E7%A0%81%E5%88%86%E5%B1%82%E8%AE%BE%E8%AE%A1.png)
 
->>>>>>> upstream/develop
 关于详细设计请阅读 [code layered design](https://github.com/dubbo/go-for-apache-dubbo/wiki/dubbo-go-V2.6-design)
 
 ## 功能列表 ##
