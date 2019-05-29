@@ -38,6 +38,7 @@ references:
   filter: ""
   protocol : "dubbo"
   interface : "com.ikurento.user.UserProvider"
+  url: "dubbo://127.0.0.1:20000"
   cluster: "failover"
   methods :
   - name: "GetUser"

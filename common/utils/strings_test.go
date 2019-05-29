@@ -1,8 +1,10 @@
 package utils
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+)
+import (
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_RegSplit(t *testing.T) {
