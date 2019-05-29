@@ -136,7 +136,44 @@ func Test_Refer(t *testing.T) {
 	}
 	consumerConfig = nil
 }
+func Test_ReferP2P(t *testing.T) {
+	doInit()
+	extension.SetProtocol("dubbo", GetProtocol)
+	consumerConfig.References[0].Url = "dubbo://127.0.0.1:20000"
 
+	for _, reference := range consumerConfig.References {
+		reference.Refer()
+		assert.NotNil(t, reference.invoker)
+		assert.NotNil(t, reference.pxy)
+	}
+	consumerConfig = nil
+}
+func Test_ReferMultiP2P(t *testing.T) {
+	doInit()
+	extension.SetProtocol("dubbo", GetProtocol)
+	consumerConfig.References[0].Url = "dubbo://127.0.0.1:20000;dubbo://127.0.0.2:20000"
+
+	for _, reference := range consumerConfig.References {
+		reference.Refer()
+		assert.NotNil(t, reference.invoker)
+		assert.NotNil(t, reference.pxy)
+	}
+	consumerConfig = nil
+}
+
+func Test_ReferMultiP2PWithReg(t *testing.T) {
+	doInit()
+	extension.SetProtocol("dubbo", GetProtocol)
+	extension.SetProtocol("registry", GetProtocol)
+	consumerConfig.References[0].Url = "dubbo://127.0.0.1:20000;registry://127.0.0.2:20000"
+
+	for _, reference := range consumerConfig.References {
+		reference.Refer()
+		assert.NotNil(t, reference.invoker)
+		assert.NotNil(t, reference.pxy)
+	}
+	consumerConfig = nil
+}
 func Test_Implement(t *testing.T) {
 	doInit()
 	extension.SetProtocol("registry", GetProtocol)

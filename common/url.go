@@ -292,3 +292,52 @@ func (c URL) GetMethodParam(method string, key string, d string) string {
 	}
 	return r
 }
+
+// configuration  > reference config >service config
+//  in this function we should merge the reference local url config into the service url from registry.
+//TODO configuration merge, in the future , the configuration center's config should merge too.
+func MergeUrl(serviceUrl URL, referenceUrl *URL) URL {
+	mergedUrl := serviceUrl
+	var methodConfigMergeFcn = []func(method string){}
+	//iterator the referenceUrl if serviceUrl not have the key ,merge in
+
+	for k, v := range referenceUrl.Params {
+		if _, ok := mergedUrl.Params[k]; !ok {
+			mergedUrl.Params.Set(k, v[0])
+		}
+	}
+	//loadBalance strategy config
+	if v := referenceUrl.Params.Get(constant.LOADBALANCE_KEY); v != "" {
+		mergedUrl.Params.Set(constant.LOADBALANCE_KEY, v)
+	}
+	methodConfigMergeFcn = append(methodConfigMergeFcn, func(method string) {
+		if v := referenceUrl.Params.Get(method + "." + constant.LOADBALANCE_KEY); v != "" {
+			mergedUrl.Params.Set(method+"."+constant.LOADBALANCE_KEY, v)
+		}
+	})
+
+	//cluster strategy config
+	if v := referenceUrl.Params.Get(constant.CLUSTER_KEY); v != "" {
+		mergedUrl.Params.Set(constant.CLUSTER_KEY, v)
+	}
+	methodConfigMergeFcn = append(methodConfigMergeFcn, func(method string) {
+		if v := referenceUrl.Params.Get(method + "." + constant.CLUSTER_KEY); v != "" {
+			mergedUrl.Params.Set(method+"."+constant.CLUSTER_KEY, v)
+		}
+	})
+
+	//remote timestamp
+	if v := serviceUrl.Params.Get(constant.TIMESTAMP_KEY); v != "" {
+		mergedUrl.Params.Set(constant.REMOTE_TIMESTAMP_KEY, v)
+		mergedUrl.Params.Set(constant.TIMESTAMP_KEY, referenceUrl.Params.Get(constant.TIMESTAMP_KEY))
+	}
+
+	//finally execute methodConfigMergeFcn
+	for _, method := range referenceUrl.Methods {
+		for _, fcn := range methodConfigMergeFcn {
+			fcn("methods." + method)
+		}
+	}
+
+	return mergedUrl
+}
