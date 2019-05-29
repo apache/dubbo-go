@@ -109,7 +109,7 @@ func (refconfig *ReferenceConfig) Refer() {
 		refconfig.invoker = extension.GetProtocol(refconfig.urls[0].Protocol).Refer(*refconfig.urls[0])
 	} else {
 		invokers := []protocol.Invoker{}
-		var regUrl *common.URL = nil
+		var regUrl *common.URL
 		for _, u := range refconfig.urls {
 			invokers = append(invokers, extension.GetProtocol(u.Protocol).Refer(*u))
 			if u.Protocol == constant.REGISTRY_PROTOCOL {

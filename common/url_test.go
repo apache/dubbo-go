@@ -16,12 +16,12 @@ package common
 
 import (
 	"context"
-	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"net/url"
 	"testing"
 )
 
 import (
+	"github.com/dubbo/go-for-apache-dubbo/common/constant"
 	"github.com/stretchr/testify/assert"
 )
 
