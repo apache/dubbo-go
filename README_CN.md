@@ -44,9 +44,9 @@ Apache License, Version 2.0
 任务列表:
 
 - routing rule (dubbo v2.6.x)
-- monitoring (dubbo v2.6.x)
-- dynamic configuration (dubbo v2.7.x)
 - metrics (dubbo v2.7.x) waiting dubbo's quota
+- dynamic configuration center & metadata center (dubbo v2.7.x)
+- tracing (dubbo ecosystem)
 
 你可以通过访问 [roadmap](https://github.com/dubbo/go-for-apache-dubbo/wiki/Roadmap) 知道更多关于 dubbo-go 的信息
 
