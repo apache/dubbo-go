@@ -169,6 +169,9 @@ type ProviderConfig struct {
 	ProtocolConf      interface{}       `yaml:"protocol_conf" json:"protocol_conf,omitempty"`
 }
 
+func SetProviderConfig(p ProviderConfig) {
+	providerConfig = &p
+}
 func GetProviderConfig() ProviderConfig {
 	if providerConfig == nil {
 		logger.Warnf("providerConfig is nil!")
