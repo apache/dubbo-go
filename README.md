@@ -10,13 +10,17 @@ Apache Dubbo Go Implementation.
 
 Apache License, Version 2.0
 
+## Release note ##
+
+[v1.0.0 - May 29, 2019 compatible with dubbo v2.6.5](https://github.com/dubbo/go-for-apache-dubbo/releases/tag/v1.0.0)
+
 ## Code design ##
 
 Extension module and layered code design based on dubbo (include protocol layer,registry layer,cluster layer,config layer and so on), Our goal is: you can implement these layered interfaces in a new way, and override the default implementation of dubbo-go[same go-for-apache-dubbo] by calling 'extension.SetXXX' of extension, and complete your special needs without modifying the source code. At the same time, you are welcome to contribute implementation of useful expansion to the community.
 
 ![frame design](https://raw.githubusercontent.com/wiki/dubbo/dubbo-go/dubbo-go%E4%BB%A3%E7%A0%81%E5%88%86%E5%B1%82%E8%AE%BE%E8%AE%A1.png)
 
-About detail design please refer to [code layered design](https://github.com/dubbo/go-for-apache-dubbo/wiki/dubbo-go-V2.6-design)
+About detail design please refer to [code layered design](https://github.com/dubbo/go-for-apache-dubbo/wiki/dubbo-go-V1.0-design)
 
 ## Feature list ##
 
