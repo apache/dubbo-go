@@ -63,3 +63,8 @@ Apache License, Version 2.0
 ## [User List](https://github.com/dubbo/go-for-apache-dubbo/issues/2)
 
 ![ctrip](https://pic.c-ctrip.com/common/c_logo2013.png)
+
+## Stargazers
+
+[![Stargazers over time](https://starchart.cc/dubbo/dubbo-go.svg)](https://starchart.cc/dubbo/dubbo-go)
+
