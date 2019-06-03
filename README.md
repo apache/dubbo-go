@@ -63,3 +63,8 @@ About dubbo-go benchmarking report, please refer to [dubbo benchmarking report](
 ## [User List](https://github.com/dubbo/go-for-apache-dubbo/issues/2)
 
 ![ctrip](https://pic.c-ctrip.com/common/c_logo2013.png)
+
+## Stargazers
+
+[![Stargazers over time](https://starchart.cc/dubbo/dubbo-go.svg)](https://starchart.cc/dubbo/dubbo-go)
+
