@@ -14,7 +14,7 @@ Apache License, Version 2.0
 
 [v1.0.0 - May 29, 2019 compatible with dubbo v2.6.5](https://github.com/dubbo/go-for-apache-dubbo/releases/tag/v1.0.0)
 
-## Code design ##
+## Project Architecture ##
 
 Extension module and layered code design based on dubbo (include protocol layer,registry layer,cluster layer,config layer and so on), Our goal is: you can implement these layered interfaces in a new way, and override the default implementation of dubbo-go[same go-for-apache-dubbo] by calling 'extension.SetXXX' of extension, and complete your special needs without modifying the source code. At the same time, you are welcome to contribute implementation of useful expansion to the community.
 
