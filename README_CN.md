@@ -14,7 +14,7 @@ Apache License, Version 2.0
 
 [v1.0.0 - 2019年5月29日 兼容dubbo v2.6.5 版本](https://github.com/dubbo/go-for-apache-dubbo/releases/tag/v1.0.0)
 
-## 代码设计 ##
+## 工程架构 ##
 
 基于dubbo的extension模块和分层的代码设计(包括 protocol layer, registry layer, cluster layer, config 等等)。我们的目标是：你可以对这些分层接口进行新的实现，并通过调用 extension 模块的“ extension.SetXXX ”方法来覆盖 dubbo-go [同 go-for-apache-dubbo ]的默认实现，以完成自己的特殊需求而无需修改源代码。同时，欢迎你为社区贡献有用的拓展实现。
 
@@ -63,3 +63,8 @@ Apache License, Version 2.0
 ## [User List](https://github.com/dubbo/go-for-apache-dubbo/issues/2)
 
 ![ctrip](https://pic.c-ctrip.com/common/c_logo2013.png)
+
+## Stargazers
+
+[![Stargazers over time](https://starchart.cc/dubbo/dubbo-go.svg)](https://starchart.cc/dubbo/dubbo-go)
+
