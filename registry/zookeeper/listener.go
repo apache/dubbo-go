@@ -23,9 +23,12 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common/logger"
 	perrors "github.com/pkg/errors"
 	"github.com/samuel/go-zookeeper/zk"
+)
+
+import (
+	"github.com/dubbo/go-for-apache-dubbo/common/logger"
 )
 
 import (
