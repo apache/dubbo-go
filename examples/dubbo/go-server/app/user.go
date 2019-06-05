@@ -142,6 +142,10 @@ func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User
 	return err
 }
 
+func (u *UserProvider) GetErr(ctx context.Context, req []interface{}, rsp *User) error {
+	return perrors.New("exception")
+}
+
 func (u *UserProvider) GetUser0(id string, name string) (User, error) {
 	var err error
 
