@@ -42,7 +42,7 @@ services:
 
 protocols:
 -   name: "dubbo"
-    ip : "127.0.0.1"
+#    ip : "127.0.0.1"
     port : 20000
 #-   name: "jsonrpc"
 #    ip: "127.0.0.1"
