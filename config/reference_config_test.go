@@ -1,16 +1,19 @@
-// Copyright 2016-2019 hxmhlt
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package config
 
@@ -24,10 +27,10 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/cluster/cluster_impl"
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/common/extension"
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
+	"github.com/apache/dubbo-go/cluster/cluster_impl"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/protocol"
 )
 
 var regProtocol protocol.Protocol
@@ -174,6 +177,7 @@ func Test_ReferMultiP2PWithReg(t *testing.T) {
 	}
 	consumerConfig = nil
 }
+
 func Test_Implement(t *testing.T) {
 	doInit()
 	extension.SetProtocol("registry", GetProtocol)
@@ -186,6 +190,7 @@ func Test_Implement(t *testing.T) {
 	}
 	consumerConfig = nil
 }
+
 func GetProtocol() protocol.Protocol {
 	if regProtocol != nil {
 		return regProtocol
@@ -197,8 +202,7 @@ func newRegistryProtocol() protocol.Protocol {
 	return &mockRegistryProtocol{}
 }
 
-type mockRegistryProtocol struct {
-}
+type mockRegistryProtocol struct{}
 
 func (*mockRegistryProtocol) Refer(url common.URL) protocol.Invoker {
 	return protocol.NewBaseInvoker(url)
@@ -208,6 +212,4 @@ func (*mockRegistryProtocol) Export(invoker protocol.Invoker) protocol.Exporter 
 	return protocol.NewBaseExporter("test", invoker, &sync.Map{})
 }
 
-func (*mockRegistryProtocol) Destroy() {
-
-}
+func (*mockRegistryProtocol) Destroy() {}
