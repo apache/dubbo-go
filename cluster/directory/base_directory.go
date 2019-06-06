@@ -21,7 +21,7 @@ import (
 	"go.uber.org/atomic"
 )
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common"
+	"github.com/apache/dubbo-go/common"
 )
 
 type BaseDirectory struct {

@@ -15,7 +15,7 @@
 package extension
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/cluster"
+	"github.com/apache/dubbo-go/cluster"
 )
 
 var (

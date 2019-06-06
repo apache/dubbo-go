@@ -24,10 +24,10 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/cluster/cluster_impl"
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/common/extension"
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
+	"github.com/apache/dubbo-go/cluster/cluster_impl"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/protocol"
 )
 
 var regProtocol protocol.Protocol
@@ -174,6 +174,7 @@ func Test_ReferMultiP2PWithReg(t *testing.T) {
 	}
 	consumerConfig = nil
 }
+
 func Test_Implement(t *testing.T) {
 	doInit()
 	extension.SetProtocol("registry", GetProtocol)
@@ -186,6 +187,7 @@ func Test_Implement(t *testing.T) {
 	}
 	consumerConfig = nil
 }
+
 func GetProtocol() protocol.Protocol {
 	if regProtocol != nil {
 		return regProtocol
@@ -197,8 +199,7 @@ func newRegistryProtocol() protocol.Protocol {
 	return &mockRegistryProtocol{}
 }
 
-type mockRegistryProtocol struct {
-}
+type mockRegistryProtocol struct{}
 
 func (*mockRegistryProtocol) Refer(url common.URL) protocol.Invoker {
 	return protocol.NewBaseInvoker(url)
@@ -208,6 +209,4 @@ func (*mockRegistryProtocol) Export(invoker protocol.Invoker) protocol.Exporter 
 	return protocol.NewBaseExporter("test", invoker, &sync.Map{})
 }
 
-func (*mockRegistryProtocol) Destroy() {
-
-}
+func (*mockRegistryProtocol) Destroy() {}

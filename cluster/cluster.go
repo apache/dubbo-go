@@ -14,7 +14,9 @@
 
 package cluster
 
-import "github.com/dubbo/go-for-apache-dubbo/protocol"
+import (
+	"github.com/apache/dubbo-go/protocol"
+)
 
 type Cluster interface {
 	Join(Directory) protocol.Invoker
