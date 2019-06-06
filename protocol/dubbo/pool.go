@@ -39,7 +39,7 @@ type gettyRPCClient struct {
 	once     sync.Once
 	protocol string
 	addr     string
-	created  int64 // 为0，则说明没有被创建或者被销毁了
+	created  int64 // zero, not create or be destroyed
 
 	pool *gettyRPCClientPool
 
