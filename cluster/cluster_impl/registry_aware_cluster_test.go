@@ -24,10 +24,10 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/cluster/directory"
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
-	"github.com/dubbo/go-for-apache-dubbo/protocol/invocation"
+	"github.com/apache/dubbo-go/cluster/directory"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 func Test_RegAwareInvokeSuccess(t *testing.T) {

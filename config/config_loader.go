@@ -30,9 +30,9 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common/constant"
-	"github.com/dubbo/go-for-apache-dubbo/common/logger"
-	"github.com/dubbo/go-for-apache-dubbo/version"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/version"
 )
 
 var (

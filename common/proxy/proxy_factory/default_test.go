@@ -14,10 +14,13 @@
 package proxy_factory
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
-	"github.com/stretchr/testify/assert"
 	"testing"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/protocol"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_GetProxy(t *testing.T) {
