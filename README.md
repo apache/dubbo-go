@@ -1,6 +1,6 @@
 # Apache Dubbo-go [中文](./README_CN.md) #
 
-[![Build Status](https://travis-ci.com/apache/dubbo-go.svg?branch=master)](https://travis-ci.com/apache/dubbo-go)
+[![Build Status](https://travis-ci.org/apache/dubbo-go.svg?branch=master)](https://travis-ci.org/apache/dubbo-go)
 [![codecov](https://codecov.io/gh/apache/dubbo-go/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/dubbo-go)
 
 ---
