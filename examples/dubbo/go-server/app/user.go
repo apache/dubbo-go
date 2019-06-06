@@ -146,7 +146,7 @@ func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User
 }
 
 func (u *UserProvider) GetErr(ctx context.Context, req []interface{}, rsp *User) error {
-	return perrors.New("exception")
+	return hessian.NewThrowable("exception")
 }
 
 func (u *UserProvider) GetUser0(id string, name string) (User, error) {
