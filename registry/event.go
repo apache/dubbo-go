@@ -19,8 +19,9 @@ import (
 	"math/rand"
 	"time"
 )
+
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common"
+	"github.com/apache/dubbo-go/common"
 )
 
 func init() {

@@ -26,18 +26,18 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common/logger"
+	"github.com/apache/dubbo-go/common/logger"
 	perrors "github.com/pkg/errors"
 	"github.com/samuel/go-zookeeper/zk"
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/common/constant"
-	"github.com/dubbo/go-for-apache-dubbo/common/extension"
-	"github.com/dubbo/go-for-apache-dubbo/common/utils"
-	"github.com/dubbo/go-for-apache-dubbo/registry"
-	"github.com/dubbo/go-for-apache-dubbo/version"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/utils"
+	"github.com/apache/dubbo-go/registry"
+	"github.com/apache/dubbo-go/version"
 )
 
 const (

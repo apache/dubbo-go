@@ -17,9 +17,10 @@ package loadbalance
 import (
 	"time"
 )
+
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common/constant"
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/protocol"
 )
 
 func GetWeight(invoker protocol.Invoker, invocation protocol.Invocation) int64 {

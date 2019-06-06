@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 )
+
 import (
 	"github.com/samuel/go-zookeeper/zk"
 	"github.com/stretchr/testify/assert"
@@ -43,6 +44,7 @@ func verifyEventStateOrder(t *testing.T, c <-chan zk.Event, expectedStates []zk.
 		}
 	}
 }
+
 func verifyEventOrder(t *testing.T, c <-chan zk.Event, expectedEvent []zk.EventType, source string) {
 	for _, e := range expectedEvent {
 		for {
