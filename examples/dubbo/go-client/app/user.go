@@ -94,6 +94,7 @@ func (User) JavaClassName() string {
 
 type UserProvider struct {
 	GetUsers func(req []interface{}) ([]interface{}, error)
+	GetErr   func(ctx context.Context, req []interface{}, rsp *User) error
 	GetUser  func(ctx context.Context, req []interface{}, rsp *User) error
 	GetUser0 func(id string, name string) (User, error)
 	GetUser1 func(ctx context.Context, req []interface{}, rsp *User) error

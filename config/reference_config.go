@@ -92,7 +92,7 @@ func (refconfig *ReferenceConfig) Refer() {
 				refconfig.urls = append(refconfig.urls, &serviceUrl)
 			} else {
 				if serviceUrl.Path == "" {
-					serviceUrl.Path = refconfig.InterfaceName + "/"
+					serviceUrl.Path = "/" + refconfig.InterfaceName
 				}
 				// merge url need to do
 				newUrl := common.MergeUrl(serviceUrl, url)
