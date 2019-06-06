@@ -15,8 +15,8 @@
 package extension
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/registry"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/registry"
 )
 
 var (

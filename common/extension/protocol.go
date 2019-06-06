@@ -15,7 +15,7 @@
 package extension
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
+	"github.com/apache/dubbo-go/protocol"
 )
 
 var (

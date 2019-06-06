@@ -15,7 +15,7 @@
 package registry
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common"
+	"github.com/apache/dubbo-go/common"
 )
 
 // Extension - Registry

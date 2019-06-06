@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common/constant"
+	"github.com/apache/dubbo-go/common/constant"
 )
 
 func mergeValue(str1, str2, def string) string {

@@ -19,12 +19,14 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/cluster"
-	"github.com/dubbo/go-for-apache-dubbo/common/extension"
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
+	"github.com/apache/dubbo-go/cluster"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/protocol"
 )
 
-const name = "random"
+const (
+	name = "random"
+)
 
 func init() {
 	extension.SetLoadbalance(name, NewRandomLoadBalance)

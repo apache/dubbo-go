@@ -18,17 +18,19 @@ import (
 	"context"
 	"testing"
 )
+
 import (
 	"github.com/stretchr/testify/assert"
 )
+
 import (
-	cluster "github.com/dubbo/go-for-apache-dubbo/cluster/cluster_impl"
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/common/constant"
-	"github.com/dubbo/go-for-apache-dubbo/common/extension"
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
-	"github.com/dubbo/go-for-apache-dubbo/protocol/protocolwrapper"
-	"github.com/dubbo/go-for-apache-dubbo/registry"
+	cluster "github.com/apache/dubbo-go/cluster/cluster_impl"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/protocolwrapper"
+	"github.com/apache/dubbo-go/registry"
 )
 
 func referNormal(t *testing.T, regProtocol *registryProtocol) {
@@ -46,6 +48,7 @@ func referNormal(t *testing.T, regProtocol *registryProtocol) {
 	assert.IsType(t, &protocol.BaseInvoker{}, invoker)
 	assert.Equal(t, invoker.GetUrl().String(), url.String())
 }
+
 func TestRefer(t *testing.T) {
 	regProtocol := newRegistryProtocol()
 	referNormal(t, regProtocol)
@@ -85,6 +88,7 @@ func TestOneRegRefer(t *testing.T) {
 	})
 	assert.Equal(t, count, 1)
 }
+
 func exporterNormal(t *testing.T, regProtocol *registryProtocol) {
 	extension.SetProtocol("registry", GetProtocol)
 	extension.SetRegistry("mock", registry.NewMockRegistry)
