@@ -34,8 +34,8 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/common/constant"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 )
 
 //////////////////////////////////////////////

@@ -24,11 +24,11 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/common/constant"
-	"github.com/dubbo/go-for-apache-dubbo/common/logger"
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
-	invocation_impl "github.com/dubbo/go-for-apache-dubbo/protocol/invocation"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/protocol"
+	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 )
 
 var Err_No_Reply = perrors.New("request need @reply")

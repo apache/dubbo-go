@@ -23,17 +23,17 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common/logger"
-	_ "github.com/dubbo/go-for-apache-dubbo/common/proxy/proxy_factory"
-	"github.com/dubbo/go-for-apache-dubbo/config"
-	_ "github.com/dubbo/go-for-apache-dubbo/protocol/jsonrpc"
-	_ "github.com/dubbo/go-for-apache-dubbo/registry/protocol"
+	"github.com/apache/dubbo-go/common/logger"
+	_ "github.com/apache/dubbo-go/common/proxy/proxy_factory"
+	"github.com/apache/dubbo-go/config"
+	_ "github.com/apache/dubbo-go/protocol/jsonrpc"
+	_ "github.com/apache/dubbo-go/registry/protocol"
 
-	_ "github.com/dubbo/go-for-apache-dubbo/filter/impl"
+	_ "github.com/apache/dubbo-go/filter/impl"
 
-	_ "github.com/dubbo/go-for-apache-dubbo/cluster/cluster_impl"
-	_ "github.com/dubbo/go-for-apache-dubbo/cluster/loadbalance"
-	_ "github.com/dubbo/go-for-apache-dubbo/registry/zookeeper"
+	_ "github.com/apache/dubbo-go/cluster/cluster_impl"
+	_ "github.com/apache/dubbo-go/cluster/loadbalance"
+	_ "github.com/apache/dubbo-go/registry/zookeeper"
 )
 
 var (

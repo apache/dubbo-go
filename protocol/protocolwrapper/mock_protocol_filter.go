@@ -17,13 +17,13 @@ package protocolwrapper
 import (
 	"sync"
 )
+
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/protocol"
 )
 
-type mockProtocolFilter struct {
-}
+type mockProtocolFilter struct{}
 
 func NewMockProtocolFilter() protocol.Protocol {
 	return &mockProtocolFilter{}

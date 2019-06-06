@@ -20,25 +20,28 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common/logger"
+	"github.com/apache/dubbo-go/common/logger"
 	perrors "github.com/pkg/errors"
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/cluster/directory"
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/common/constant"
-	"github.com/dubbo/go-for-apache-dubbo/common/extension"
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
-	"github.com/dubbo/go-for-apache-dubbo/protocol/protocolwrapper"
-	"github.com/dubbo/go-for-apache-dubbo/registry"
+	"github.com/apache/dubbo-go/cluster/directory"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/protocolwrapper"
+	"github.com/apache/dubbo-go/registry"
 )
 
-const RegistryConnDelay = 3
+const (
+	RegistryConnDelay = 3
+)
 
 type Options struct {
 	serviceTTL time.Duration
 }
+
 type Option func(*Options)
 
 type registryDirectory struct {
