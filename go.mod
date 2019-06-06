@@ -1,4 +1,4 @@
-module github.com/dubbo/go-for-apache-dubbo
+module github.com/apache/dubbo-go
 
 require (
 	github.com/dubbogo/getty v0.0.0-20190523180329-bdf5e640ea53
