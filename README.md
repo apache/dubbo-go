@@ -1,4 +1,4 @@
-# Go for Apache Dubbo [中文](./README_CN.md) #
+# Apache Dubbo-go [中文](./README_CN.md) #
 
 [![Build Status](https://travis-ci.com/apache/dubbo-go.svg?branch=master)](https://travis-ci.com/apache/dubbo-go)
 [![codecov](https://codecov.io/gh/apache/dubbo-go/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/dubbo-go)
@@ -16,11 +16,11 @@ Apache License, Version 2.0
 
 ## Project Architecture ##
 
-Extension module and layered code design based on dubbo (include protocol layer,registry layer,cluster layer,config layer and so on), Our goal is: you can implement these layered interfaces in a new way, and override the default implementation of dubbo-go[same go-for-apache-dubbo] by calling 'extension.SetXXX' of extension, and complete your special needs without modifying the source code. At the same time, you are welcome to contribute implementation of useful expansion to the community.
+Both extension module and layered project architecture is according to Apache Dubbo (including protocol layer, registry layer, cluster layer, config layer and so on), the advantage of this arch is as following: you can implement these layered interfaces in your own way, override the default implementation of dubbo-go by calling 'extension.SetXXX' of extension, complete your special needs without modifying the source code. At the same time, you are welcome to contribute implementation of useful extension to the community.
 
 ![frame design](https://raw.githubusercontent.com/wiki/dubbo/dubbo-go/dubbo-go%E4%BB%A3%E7%A0%81%E5%88%86%E5%B1%82%E8%AE%BE%E8%AE%A1.png)
 
-About detail design please refer to [code layered design](https://github.com/apache/dubbo-go/wiki/dubbo-go-V1.0-design)
+If you wanna know more about dubbo-go, please visit this reference [Project Architeture design](https://github.com/apache/dubbo-go/wiki/dubbo-go-V1.0-design)
 
 ## Feature list ##
 
@@ -67,4 +67,3 @@ About dubbo-go benchmarking report, please refer to [dubbo benchmarking report](
 ## Stargazers
 
 [![Stargazers over time](https://starchart.cc/apache/dubbo-go.svg)](https://starchart.cc/apache/dubbo-go)
-
