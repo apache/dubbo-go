@@ -28,9 +28,6 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common/logger"
-)
-
-import (
 	_ "github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/config"
 	_ "github.com/apache/dubbo-go/protocol/jsonrpc"

@@ -26,13 +26,13 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/logger"
 	perrors "github.com/pkg/errors"
 	"github.com/samuel/go-zookeeper/zk"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/registry"
 )
 
