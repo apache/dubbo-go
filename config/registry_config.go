@@ -21,9 +21,9 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/common/constant"
-	"github.com/dubbo/go-for-apache-dubbo/common/logger"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
 )
 
 type RegistryConfig struct {
@@ -43,8 +43,12 @@ func loadRegistries(registriesIds []ConfigRegistry, registries []RegistryConfig,
 		for _, registryConf := range registries {
 			if string(registry) == registryConf.Id {
 
-				url, err := common.NewURL(context.TODO(), constant.REGISTRY_PROTOCOL+"://"+registryConf.Address, common.WithParams(registryConf.getUrlMap(roleType)),
-					common.WithUsername(registryConf.Username), common.WithPassword(registryConf.Password),
+				url, err := common.NewURL(
+					context.TODO(),
+					constant.REGISTRY_PROTOCOL+"://"+registryConf.Address,
+					common.WithParams(registryConf.getUrlMap(roleType)),
+					common.WithUsername(registryConf.Username),
+					common.WithPassword(registryConf.Password),
 				)
 
 				if err != nil {
@@ -66,5 +70,6 @@ func (regconfig *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values 
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(int(roleType)))
 	urlMap.Set(constant.REGISTRY_KEY, regconfig.Type)
 	urlMap.Set(constant.REGISTRY_TIMEOUT_KEY, regconfig.TimeoutStr)
+
 	return urlMap
 }

@@ -23,7 +23,7 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common/extension"
+	"github.com/apache/dubbo-go/common/extension"
 )
 
 func doinit() {
@@ -114,6 +114,7 @@ func doinit() {
 		},
 	}
 }
+
 func Test_Export(t *testing.T) {
 	doinit()
 	extension.SetProtocol("registry", GetProtocol)

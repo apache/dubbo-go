@@ -20,12 +20,14 @@ import (
 	"testing"
 	"time"
 )
+
 import (
 	"github.com/stretchr/testify/assert"
 )
+
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/common/constant"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 )
 
 func Test_Register(t *testing.T) {

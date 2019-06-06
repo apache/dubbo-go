@@ -19,20 +19,22 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common/logger"
+	"github.com/apache/dubbo-go/common/logger"
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/common/constant"
-	"github.com/dubbo/go-for-apache-dubbo/common/extension"
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
-	"github.com/dubbo/go-for-apache-dubbo/protocol/protocolwrapper"
-	"github.com/dubbo/go-for-apache-dubbo/registry"
-	directory2 "github.com/dubbo/go-for-apache-dubbo/registry/directory"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/protocolwrapper"
+	"github.com/apache/dubbo-go/registry"
+	directory2 "github.com/apache/dubbo-go/registry/directory"
 )
 
-var regProtocol *registryProtocol
+var (
+	regProtocol *registryProtocol
+)
 
 type registryProtocol struct {
 	invokers []protocol.Invoker
