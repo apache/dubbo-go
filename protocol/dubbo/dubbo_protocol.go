@@ -15,19 +15,23 @@
 package dubbo
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/common/extension"
-	"github.com/dubbo/go-for-apache-dubbo/common/logger"
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/protocol"
 )
 
-const DUBBO = "dubbo"
+const (
+	DUBBO = "dubbo"
+)
 
 func init() {
 	extension.SetProtocol(DUBBO, GetProtocol)
 }
 
-var dubboProtocol *DubboProtocol
+var (
+	dubboProtocol *DubboProtocol
+)
 
 type DubboProtocol struct {
 	protocol.BaseProtocol

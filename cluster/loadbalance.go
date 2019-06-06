@@ -15,7 +15,7 @@
 package cluster
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
+	"github.com/apache/dubbo-go/protocol"
 )
 
 // Extension - LoadBalance

@@ -21,17 +21,19 @@ import (
 	"testing"
 	"time"
 )
+
 import (
 	"github.com/stretchr/testify/assert"
 )
+
 import (
-	"github.com/dubbo/go-for-apache-dubbo/cluster/cluster_impl"
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/common/constant"
-	"github.com/dubbo/go-for-apache-dubbo/common/extension"
-	"github.com/dubbo/go-for-apache-dubbo/protocol/invocation"
-	"github.com/dubbo/go-for-apache-dubbo/protocol/protocolwrapper"
-	"github.com/dubbo/go-for-apache-dubbo/registry"
+	"github.com/apache/dubbo-go/cluster/cluster_impl"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/protocol/invocation"
+	"github.com/apache/dubbo-go/protocol/protocolwrapper"
+	"github.com/apache/dubbo-go/registry"
 )
 
 func TestSubscribe(t *testing.T) {
@@ -48,8 +50,8 @@ func TestSubscribe_Delete(t *testing.T) {
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: registry.ServiceDel, Service: *common.NewURLWithOptions("TEST0", common.WithProtocol("dubbo"))})
 	time.Sleep(1e9)
 	assert.Len(t, registryDirectory.cacheInvokers, 2)
-
 }
+
 func TestSubscribe_InvalidUrl(t *testing.T) {
 	url, _ := common.NewURL(context.TODO(), "mock://127.0.0.1:1111")
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})

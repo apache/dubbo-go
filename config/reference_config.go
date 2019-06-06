@@ -23,13 +23,13 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/cluster/directory"
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/common/constant"
-	"github.com/dubbo/go-for-apache-dubbo/common/extension"
-	"github.com/dubbo/go-for-apache-dubbo/common/proxy"
-	"github.com/dubbo/go-for-apache-dubbo/common/utils"
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
+	"github.com/apache/dubbo-go/cluster/directory"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/proxy"
+	"github.com/apache/dubbo-go/common/utils"
+	"github.com/apache/dubbo-go/protocol"
 )
 
 type ReferenceConfig struct {
@@ -61,6 +61,7 @@ type ConfigRegistry string
 func NewReferenceConfig(ctx context.Context) *ReferenceConfig {
 	return &ReferenceConfig{context: ctx}
 }
+
 func (refconfig *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	type rf ReferenceConfig
 	raw := rf{} // Put your defaults here
@@ -71,6 +72,7 @@ func (refconfig *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) erro
 	*refconfig = ReferenceConfig(raw)
 	return nil
 }
+
 func (refconfig *ReferenceConfig) Refer() {
 	url := common.NewURLWithOptions(refconfig.InterfaceName, common.WithProtocol(refconfig.Protocol), common.WithParams(refconfig.getUrlMap()))
 

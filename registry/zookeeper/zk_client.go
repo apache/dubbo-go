@@ -22,7 +22,7 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common/logger"
+	"github.com/apache/dubbo-go/common/logger"
 	perrors "github.com/pkg/errors"
 	"github.com/samuel/go-zookeeper/zk"
 )
@@ -102,6 +102,7 @@ func newZookeeperClient(name string, zkAddrs []string, timeout time.Duration) (*
 
 	return z, nil
 }
+
 func newMockZookeeperClient(name string, timeout time.Duration) (*zk.TestCluster, *zookeeperClient, <-chan zk.Event, error) {
 	var (
 		err   error

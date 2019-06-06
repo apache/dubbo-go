@@ -14,7 +14,9 @@
 
 package extension
 
-import "github.com/dubbo/go-for-apache-dubbo/cluster"
+import (
+	"github.com/apache/dubbo-go/cluster"
+)
 
 var (
 	loadbalances = make(map[string]func() cluster.LoadBalance)
@@ -28,5 +30,6 @@ func GetLoadbalance(name string) cluster.LoadBalance {
 	if loadbalances[name] == nil {
 		panic("loadbalance for " + name + " is not existing, make sure you have import the package.")
 	}
+
 	return loadbalances[name]()
 }
