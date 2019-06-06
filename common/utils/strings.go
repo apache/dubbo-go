@@ -1,6 +1,8 @@
 package utils
 
-import "regexp"
+import (
+	"regexp"
+)
 
 func RegSplit(text string, delimeter string) []string {
 	reg := regexp.MustCompile(delimeter)

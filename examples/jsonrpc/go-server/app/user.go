@@ -25,7 +25,7 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/config"
+	"github.com/apache/dubbo-go/config"
 )
 
 type Gender int

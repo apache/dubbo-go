@@ -19,12 +19,12 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/cluster"
-	"github.com/dubbo/go-for-apache-dubbo/common/constant"
-	"github.com/dubbo/go-for-apache-dubbo/common/extension"
-	"github.com/dubbo/go-for-apache-dubbo/common/utils"
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
-	"github.com/dubbo/go-for-apache-dubbo/version"
+	"github.com/apache/dubbo-go/cluster"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/utils"
+	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/version"
 )
 
 type failoverClusterInvoker struct {

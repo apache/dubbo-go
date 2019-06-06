@@ -15,12 +15,11 @@
 package cluster_impl
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/cluster"
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
+	"github.com/apache/dubbo-go/cluster"
+	"github.com/apache/dubbo-go/protocol"
 )
 
-type mockCluster struct {
-}
+type mockCluster struct{}
 
 func NewMockCluster() cluster.Cluster {
 	return &mockCluster{}
