@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/dubbogo/getty"
+	hessian "github.com/dubbogo/hessian2"
 	perrors "github.com/pkg/errors"
 )
 import (
@@ -52,8 +53,14 @@ func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface
 	buf := bytes.NewBuffer(data)
 	err := pkg.Unmarshal(buf, p.client)
 	if err != nil {
-		pkg.Err = perrors.WithStack(err) // client will get this err
-		return pkg, len(data), nil
+		originErr := perrors.Cause(err)
+		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
+			return nil, 0, nil
+		}
+
+		logger.Errorf("pkg.Unmarshal(ss:%+v, len(@data):%d) = error:%+v", ss, len(data), err)
+
+		return nil, 0, perrors.WithStack(err)
 	}
 
 	return pkg, len(data), nil
