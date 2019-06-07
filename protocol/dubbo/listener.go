@@ -22,16 +22,20 @@ import (
 	"reflect"
 	"sync"
 	"time"
+)
 
+import (
 	"github.com/dubbogo/getty"
+	"github.com/dubbogo/hessian2"
+	perrors "github.com/pkg/errors"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
-	hessian "github.com/dubbogo/hessian2"
-	perrors "github.com/pkg/errors"
 )
 
 // todo: WritePkg_Timeout will entry *.yml
@@ -323,7 +327,7 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 	}
 	if retErr != nil {
 		req.Header.ResponseStatus = hessian.Response_OK
-		req.Body = perrors.WithStack(retErr.(error))
+		req.Body = retErr
 	} else {
 		req.Body = replyv.Interface()
 	}
