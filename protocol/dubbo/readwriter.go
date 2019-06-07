@@ -101,6 +101,13 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 	buf := bytes.NewBuffer(data)
 	err := pkg.Unmarshal(buf)
 	if err != nil {
+		originErr := perrors.Cause(err)
+		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
+			return nil, 0, nil
+		}
+
+		logger.Errorf("pkg.Unmarshal(ss:%+v, len(@data):%d) = error:%+v", ss, len(data), err)
+
 		return nil, 0, perrors.WithStack(err)
 	}
 	// convert params of request
