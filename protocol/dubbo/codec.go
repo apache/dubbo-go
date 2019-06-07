@@ -74,7 +74,7 @@ func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 }
 
 func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
-	codec := hessian.NewHessianCodec(bufio.NewReader(buf))
+	codec := hessian.NewHessianCodec(bufio.NewReaderSize(buf, buf.Len()))
 
 	// read header
 	err := codec.ReadHeader(&p.Header)
