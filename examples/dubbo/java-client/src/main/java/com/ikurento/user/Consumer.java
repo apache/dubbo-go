@@ -59,9 +59,9 @@ public class Consumer {
         }
         try {
             userProvider.GetErr("A003");
-        } catch (Exception e) {
+        } catch (Throwable t) {
             System.out.println("*************exception***********");
-            e.printStackTrace();
+            t.printStackTrace();
         }
     }
 
