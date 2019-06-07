@@ -74,7 +74,7 @@ func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 }
 
 func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
-	codec := hessian.NewHessianCodec(bufio.NewReaderSize(buf, buf.Len()))
+	codec := hessian.NewHessianCodec(bufio.NewReader(buf))
 
 	// read header
 	err := codec.ReadHeader(&p.Header)
@@ -88,7 +88,7 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 			return perrors.Errorf("opts[0] is not of type *Client")
 		}
 
-		p.Body = client.GetPendingResponse(SequenceType(p.Header.ID))
+		p.Body = client.GetPendingResponse(SequenceType(p.Header.ID)).reply
 		if p.Body == nil {
 			return perrors.Errorf("client.GetPendingResponse(%v) = nil", p.Header.ID)
 		}
