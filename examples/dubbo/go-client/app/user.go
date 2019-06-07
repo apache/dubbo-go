@@ -25,8 +25,11 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/config"
 	hessian "github.com/dubbogo/hessian2"
+)
+
+import (
+	"github.com/apache/dubbo-go/config"
 )
 
 type Gender hessian.JavaEnum
