@@ -88,7 +88,7 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 		logger.Debugf("get rpc heartbeat response{header: %#v, body: %#v}", p.Header, p.Body)
 		return
 	}
-	logger.Debugf("get rpc response{header: %#v, body: %#v}", p.Header, p.Body)
+	//logger.Debugf("get rpc response{header: %#v, body: %#v}", p.Header, p.Body)
 
 	h.conn.updateSession(session)
 
