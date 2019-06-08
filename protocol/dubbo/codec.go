@@ -25,7 +25,7 @@ import (
 )
 
 import (
-	hessian "github.com/dubbogo/hessian2"
+	"github.com/dubbogo/hessian2"
 	perrors "github.com/pkg/errors"
 )
 
@@ -88,10 +88,12 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 			return perrors.Errorf("opts[0] is not of type *Client")
 		}
 
-		p.Body = client.GetPendingResponse(SequenceType(p.Header.ID)).reply
-		if p.Body == nil {
+		pendingRsp := client.GetPendingResponse(SequenceType(p.Header.ID))
+		if pendingRsp == nil {
 			return perrors.Errorf("client.GetPendingResponse(%v) = nil", p.Header.ID)
 		}
+		response := &hessian.Response{RspObj: pendingRsp.reply}
+		p.Body = response
 	}
 
 	if p.Header.Type&hessian.PackageHeartbeat != 0x00 {
