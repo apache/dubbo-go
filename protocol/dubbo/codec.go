@@ -96,8 +96,7 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 		if pendingRsp == nil {
 			return perrors.Errorf("client.GetPendingResponse(%v) = nil", p.Header.ID)
 		}
-		response := &hessian.Response{RspObj: pendingRsp.reply}
-		p.Body = response
+		p.Body = &hessian.Response{RspObj: pendingRsp.reply}
 	}
 
 	if p.Header.Type&hessian.PackageHeartbeat != 0x00 {
