@@ -19,6 +19,7 @@ package dubbo
 
 import (
 	"bytes"
+	"fmt"
 	"reflect"
 )
 
@@ -164,6 +165,6 @@ func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg interface{}) error
 		logger.Warnf("binary.Write(res{%#v}) = err{%#v}", res, perrors.WithStack(err))
 		return perrors.WithStack(err)
 	}
-
+	fmt.Println("eofefe", buf.Len())
 	return perrors.WithStack(ss.WriteBytes(buf.Bytes()))
 }
