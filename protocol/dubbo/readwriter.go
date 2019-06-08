@@ -24,7 +24,7 @@ import (
 
 import (
 	"github.com/dubbogo/getty"
-	hessian "github.com/dubbogo/hessian2"
+	"github.com/dubbogo/hessian2"
 	perrors "github.com/pkg/errors"
 )
 import (
@@ -63,7 +63,9 @@ func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface
 		return nil, 0, perrors.WithStack(err)
 	}
 
-	return pkg, len(data), nil
+	pkg.Err = pkg.Body.(*hessian.Response).Exception
+	pkg.Body = pkg.Body.(*hessian.Response).RspObj
+	return pkg, hessian.HEADER_LENGTH + pkg.Header.BodyLen, nil
 }
 
 func (p *RpcClientPackageHandler) Write(ss getty.Session, pkg interface{}) error {
@@ -147,7 +149,7 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 		}
 	}
 
-	return pkg, len(data), nil
+	return pkg, hessian.HEADER_LENGTH + pkg.Header.BodyLen, nil
 }
 
 func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg interface{}) error {
