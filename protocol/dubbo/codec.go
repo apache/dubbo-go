@@ -79,6 +79,10 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 	// read header
 	err := codec.ReadHeader(&p.Header)
 	if err != nil {
+		if p.Header.Type&hessian.PackageError != hessian.PackageType(hessian.Zero) {
+			p.Body = &hessian.Response{Exception: err}
+			return nil
+		}
 		return perrors.WithStack(err)
 	}
 
