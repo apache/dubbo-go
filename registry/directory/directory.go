@@ -130,10 +130,10 @@ func (dir *registryDirectory) update(res *registry.ServiceEvent) {
 func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 
 	switch res.Action {
-	case registry.ServiceAdd:
+	case common.Add:
 		//dir.cacheService.Add(res.Path, dir.serviceTTL)
 		dir.cacheInvoker(res.Service)
-	case registry.ServiceDel:
+	case common.Del:
 		//dir.cacheService.Del(res.Path, dir.serviceTTL)
 		dir.uncacheInvoker(res.Service)
 		logger.Infof("selector delete service url{%s}", res.Service)
