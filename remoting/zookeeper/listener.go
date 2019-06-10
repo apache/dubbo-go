@@ -25,14 +25,18 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/logger"
 	perrors "github.com/pkg/errors"
 	"github.com/samuel/go-zookeeper/zk"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/logger"
 )
+
+type DataListener interface {
+	DataChange(eventType ZkEvent) bool //bool is return for interface implement is interesting
+}
 
 type ZkEvent struct {
 	Res *common.Event

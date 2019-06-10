@@ -18,7 +18,6 @@
 package zookeeper
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
 	"path"
 	"strings"
 	"sync"
@@ -26,9 +25,13 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/logger"
 	perrors "github.com/pkg/errors"
 	"github.com/samuel/go-zookeeper/zk"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
 )
 
 const (
@@ -219,7 +222,6 @@ func NewMockZookeeperClient(name string, timeout time.Duration, opts ...Option) 
 
 	return ts, z, event, nil
 }
-
 
 func (z *ZookeeperClient) HandleZkEvent(session <-chan zk.Event) {
 	var (
