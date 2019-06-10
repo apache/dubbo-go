@@ -27,11 +27,11 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/logger"
-	hessian "github.com/dubbogo/hessian2"
+	"github.com/dubbogo/hessian2"
 )
 
 import (
+	"github.com/apache/dubbo-go/common/logger"
 	_ "github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/config"
 	_ "github.com/apache/dubbo-go/protocol/dubbo"
@@ -100,6 +100,13 @@ func main() {
 		println("getUser - error: %v", err)
 	} else {
 		println("response result: %v", user)
+	}
+
+	println("\n\n\nstart to test dubbo - getErr")
+	user = &User{}
+	err = conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetErr(context.TODO(), []interface{}{"A003"}, user)
+	if err != nil {
+		println("getErr - error: %v", err)
 	}
 
 	println("\n\n\nstart to test dubbo illegal method")
