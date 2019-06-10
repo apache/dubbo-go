@@ -67,3 +67,8 @@ const (
 	OWNER_KEY        = "owner"
 	ENVIRONMENT_KEY  = "environment"
 )
+
+const(
+	CONFIG_NAMESPACE_KEY = "config.namespace"
+	CONFIG_TIMEOUT_KET = "config.timeout"
+)

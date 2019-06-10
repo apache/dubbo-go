@@ -32,31 +32,11 @@ func init() {
 }
 
 //////////////////////////////////////////
-// service url event type
-//////////////////////////////////////////
-
-type ServiceEventType int
-
-const (
-	ServiceAdd = iota
-	ServiceDel
-)
-
-var serviceEventTypeStrings = [...]string{
-	"add service",
-	"delete service",
-}
-
-func (t ServiceEventType) String() string {
-	return serviceEventTypeStrings[t]
-}
-
-//////////////////////////////////////////
 // service event
 //////////////////////////////////////////
 
 type ServiceEvent struct {
-	Action  ServiceEventType
+	Action  common.EventType
 	Service common.URL
 }
 
