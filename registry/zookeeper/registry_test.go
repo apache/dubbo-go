@@ -19,7 +19,6 @@ package zookeeper
 
 import (
 	"context"
-	"github.com/apache/dubbo-go/remoting/zookeeper"
 	"strconv"
 	"testing"
 	"time"
@@ -32,6 +31,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
 func Test_Register(t *testing.T) {
