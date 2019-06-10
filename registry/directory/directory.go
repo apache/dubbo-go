@@ -18,6 +18,7 @@
 package directory
 
 import (
+	"github.com/apache/dubbo-go/remoting"
 	"sync"
 	"time"
 )
@@ -130,10 +131,10 @@ func (dir *registryDirectory) update(res *registry.ServiceEvent) {
 func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 
 	switch res.Action {
-	case common.Add:
+	case remoting.Add:
 		//dir.cacheService.Add(res.Path, dir.serviceTTL)
 		dir.cacheInvoker(res.Service)
-	case common.Del:
+	case remoting.Del:
 		//dir.cacheService.Del(res.Path, dir.serviceTTL)
 		dir.uncacheInvoker(res.Service)
 		logger.Infof("selector delete service url{%s}", res.Service)

@@ -19,6 +19,7 @@ package registry
 
 import (
 	"fmt"
+	"github.com/apache/dubbo-go/remoting"
 	"math/rand"
 	"time"
 )
@@ -36,7 +37,7 @@ func init() {
 //////////////////////////////////////////
 
 type ServiceEvent struct {
-	Action  common.EventType
+	Action  remoting.EventType
 	Service common.URL
 }
 
