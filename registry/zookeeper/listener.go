@@ -42,15 +42,15 @@ func (l *RegistryDataListener) AddInterestedURL(url *common.URL) {
 	l.interestedURL = append(l.interestedURL, url)
 }
 
-func (l *RegistryDataListener) DataChange(eventType zk.ZkEvent) bool {
-	serviceURL, err := common.NewURL(context.TODO(), eventType.Res.Content)
+func (l *RegistryDataListener) DataChange(eventType common.Event) bool {
+	serviceURL, err := common.NewURL(context.TODO(), eventType.Content)
 	if err != nil {
-		logger.Errorf("Listen NewURL(r{%s}) = error{%v}", eventType.Res.Content, err)
+		logger.Errorf("Listen NewURL(r{%s}) = error{%v}", eventType.Content, err)
 		return false
 	}
 	for _, v := range l.interestedURL {
 		if serviceURL.URLEqual(*v) {
-			l.listener.Process(&common.ConfigChangeEvent{Value: serviceURL, ConfigType: eventType.Res.Action})
+			l.listener.Process(&common.ConfigChangeEvent{Value: serviceURL, ConfigType: eventType.Action})
 			return true
 		}
 	}
