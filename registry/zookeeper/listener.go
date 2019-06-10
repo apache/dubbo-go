@@ -19,6 +19,7 @@ package zookeeper
 
 import (
 	"context"
+	"github.com/apache/dubbo-go/remoting"
 )
 import (
 	perrors "github.com/pkg/errors"
@@ -42,7 +43,7 @@ func (l *RegistryDataListener) AddInterestedURL(url *common.URL) {
 	l.interestedURL = append(l.interestedURL, url)
 }
 
-func (l *RegistryDataListener) DataChange(eventType common.Event) bool {
+func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 	serviceURL, err := common.NewURL(context.TODO(), eventType.Content)
 	if err != nil {
 		logger.Errorf("Listen NewURL(r{%s}) = error{%v}", eventType.Content, err)
@@ -50,7 +51,7 @@ func (l *RegistryDataListener) DataChange(eventType common.Event) bool {
 	}
 	for _, v := range l.interestedURL {
 		if serviceURL.URLEqual(*v) {
-			l.listener.Process(&common.ConfigChangeEvent{Value: serviceURL, ConfigType: eventType.Action})
+			l.listener.Process(&remoting.ConfigChangeEvent{Value: serviceURL, ConfigType: eventType.Action})
 			return true
 		}
 	}
@@ -61,14 +62,14 @@ func (l *RegistryDataListener) DataChange(eventType common.Event) bool {
 type RegistryConfigurationListener struct {
 	client   *zk.ZookeeperClient
 	registry *zkRegistry
-	events   chan *common.ConfigChangeEvent
+	events   chan *remoting.ConfigChangeEvent
 }
 
 func NewRegistryConfigurationListener(client *zk.ZookeeperClient, reg *zkRegistry) *RegistryConfigurationListener {
 	reg.wg.Add(1)
-	return &RegistryConfigurationListener{client: client, registry: reg, events: make(chan *common.ConfigChangeEvent, 32)}
+	return &RegistryConfigurationListener{client: client, registry: reg, events: make(chan *remoting.ConfigChangeEvent, 32)}
 }
-func (l *RegistryConfigurationListener) Process(configType *common.ConfigChangeEvent) {
+func (l *RegistryConfigurationListener) Process(configType *remoting.ConfigChangeEvent) {
 	l.events <- configType
 }
 
@@ -85,7 +86,7 @@ func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 
 		case e := <-l.events:
 			logger.Debugf("got zk event %s", e)
-			if e.ConfigType == common.Del && !l.valid() {
+			if e.ConfigType == remoting.Del && !l.valid() {
 				logger.Warnf("update @result{%s}. But its connection to registry is invalid", e.Value)
 				continue
 			}
