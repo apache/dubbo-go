@@ -22,13 +22,17 @@ import (
 	"sync"
 	"testing"
 	"time"
+)
 
-	hessian "github.com/dubbogo/hessian2"
-
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/protocol"
+import (
+	"github.com/dubbogo/hessian2"
 	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/protocol"
 )
 
 type (
@@ -80,7 +84,7 @@ func TestClient_Call(t *testing.T) {
 
 	user = &User{}
 	err = c.Call("127.0.0.1:20000", url, "GetUser1", []interface{}{"1", "username"}, user)
-	assert.EqualError(t, err, "java exception:error")
+	assert.EqualError(t, err, "got exception: error")
 
 	user2 := []interface{}{}
 	err = c.Call("127.0.0.1:20000", url, "GetUser2", []interface{}{"1", "username"}, &user2)

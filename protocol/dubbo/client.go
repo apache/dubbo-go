@@ -201,6 +201,13 @@ func (c *Client) AsyncCall(addr string, svcUrl common.URL, method string, args i
 	return perrors.WithStack(c.call(CT_TwoWay, addr, svcUrl, method, args, reply, callback, copts))
 }
 
+func (c *Client) GetPendingResponse(seq SequenceType) *PendingResponse {
+	c.pendingLock.RLock()
+	defer c.pendingLock.RUnlock()
+
+	return c.pendingResponses[SequenceType(seq)]
+}
+
 func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string,
 	args, reply interface{}, callback AsyncCallback, opts CallOptions) error {
 
@@ -257,7 +264,7 @@ func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string
 	}
 
 	select {
-	case <-getty.GetTimeWheel().After(opts.ResponseTimeout):
+	case <-time.After(opts.ResponseTimeout):
 		err = errClientReadTimeout
 		c.removePendingResponse(SequenceType(rsp.seq))
 	case <-rsp.done:
