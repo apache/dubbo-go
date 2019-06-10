@@ -23,6 +23,10 @@ type ConfigurationListener interface {
 	Process(*ConfigChangeEvent)
 }
 
+type DataListener interface {
+	DataChange(eventType Event) bool //bool is return for interface implement is interesting
+}
+
 type ConfigChangeEvent struct {
 	Key        string
 	Value      interface{}

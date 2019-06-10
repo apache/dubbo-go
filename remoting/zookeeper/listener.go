@@ -18,7 +18,6 @@
 package zookeeper
 
 import (
-	"fmt"
 	"path"
 	"sync"
 	"time"
@@ -33,19 +32,6 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 )
-
-type DataListener interface {
-	DataChange(eventType ZkEvent) bool //bool is return for interface implement is interesting
-}
-
-type ZkEvent struct {
-	Res *common.Event
-	err error
-}
-
-func (e ZkEvent) String() string {
-	return fmt.Sprintf("err:%s, res:%s", e.err, e.Res)
-}
 
 type ZkEventListener struct {
 	client      *ZookeeperClient
@@ -97,7 +83,7 @@ func (l *ZkEventListener) listenServiceNodeEvent(zkPath string) bool {
 	return false
 }
 
-func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, listener DataListener) {
+func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, listener common.DataListener) {
 	contains := func(s []string, e string) bool {
 		for _, a := range s {
 			if a == e {
@@ -125,7 +111,7 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 
 		newNode = path.Join(zkPath, n)
 		logger.Infof("add zkNode{%s}", newNode)
-		if !listener.DataChange(ZkEvent{&common.Event{Path: zkPath, Action: common.Add, Content: n}, nil}) {
+		if !listener.DataChange(common.Event{Path: zkPath, Action: common.Add, Content: n}) {
 			continue
 		}
 		// listen l service node
@@ -133,7 +119,7 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 			logger.Infof("delete zkNode{%s}", node)
 			if l.listenServiceNodeEvent(node) {
 				logger.Infof("delete content{%s}", n)
-				listener.DataChange(ZkEvent{&common.Event{Path: zkPath, Action: common.Del, Content: n}, nil})
+				listener.DataChange(common.Event{Path: zkPath, Action: common.Del, Content: n})
 			}
 			logger.Warnf("listenSelf(zk path{%s}) goroutine exit now", zkPath)
 		}(newNode)
@@ -148,7 +134,7 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 
 		oldNode = path.Join(zkPath, n)
 		logger.Warnf("delete zkPath{%s}", oldNode)
-		if !listener.DataChange(ZkEvent{&common.Event{Path: zkPath, Action: common.Add, Content: n}, nil}) {
+		if !listener.DataChange(common.Event{Path: zkPath, Action: common.Add, Content: n}) {
 			continue
 		}
 		logger.Warnf("delete content{%s}", n)
@@ -156,11 +142,11 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 			logger.Errorf("NewURL(i{%s}) = error{%v}", n, perrors.WithStack(err))
 			continue
 		}
-		listener.DataChange(ZkEvent{&common.Event{Path: zkPath, Action: common.Del, Content: n}, nil})
+		listener.DataChange(common.Event{Path: zkPath, Action: common.Del, Content: n})
 	}
 }
 
-func (l *ZkEventListener) listenDirEvent(zkPath string, listener DataListener) {
+func (l *ZkEventListener) listenDirEvent(zkPath string, listener common.DataListener) {
 	l.wg.Add(1)
 	defer l.wg.Done()
 
@@ -230,7 +216,7 @@ func timeSecondDuration(sec int) time.Duration {
 // registry.go:Listen -> listenServiceEvent -> listenDirEvent -> listenServiceNodeEvent
 //                            |
 //                            --------> listenServiceNodeEvent
-func (l *ZkEventListener) ListenServiceEvent(zkPath string, listener DataListener) {
+func (l *ZkEventListener) ListenServiceEvent(zkPath string, listener common.DataListener) {
 	var (
 		err        error
 		dubboPath  string
@@ -258,7 +244,7 @@ func (l *ZkEventListener) ListenServiceEvent(zkPath string, listener DataListene
 	}
 
 	for _, c := range children {
-		if !listener.DataChange(ZkEvent{&common.Event{Path: zkPath, Action: common.Add, Content: c}, nil}) {
+		if !listener.DataChange(common.Event{Path: zkPath, Action: common.Add, Content: c}) {
 			continue
 		}
 
@@ -268,14 +254,14 @@ func (l *ZkEventListener) ListenServiceEvent(zkPath string, listener DataListene
 		go func(zkPath string, serviceURL common.URL) {
 			if l.listenServiceNodeEvent(dubboPath) {
 				logger.Debugf("delete serviceUrl{%s}", serviceURL)
-				listener.DataChange(ZkEvent{&common.Event{Path: zkPath, Action: common.Del, Content: c}, nil})
+				listener.DataChange(common.Event{Path: zkPath, Action: common.Del, Content: c})
 			}
 			logger.Warnf("listenSelf(zk path{%s}) goroutine exit now", zkPath)
 		}(dubboPath, serviceURL)
 	}
 
 	logger.Infof("listen dubbo path{%s}", zkPath)
-	go func(zkPath string, listener DataListener) {
+	go func(zkPath string, listener common.DataListener) {
 		l.listenDirEvent(zkPath, listener)
 		logger.Warnf("listenDirEvent(zkPath{%s}) goroutine exit now", zkPath)
 	}(zkPath, listener)
