@@ -15,31 +15,41 @@
  * limitations under the License.
  */
 
-package registry
-
-import (
-	"fmt"
-	"math/rand"
-	"time"
-)
+package config_center
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"time"
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
+//////////////////////////////////////////
+// DynamicConfiguration
+//////////////////////////////////////////
+const DEFAULT_GROUP = "dubbo"
+const DEFAULT_CONFIG_TIMEOUT = "10s"
+
+type DynamicConfiguration interface {
+	AddListener(string, common.ConfigurationListener, ...Option)
+	RemoveListener(string, common.ConfigurationListener, ...Option)
+	GetConfig(string, ...Option) string
+	GetConfigs(string, ...Option) string
 }
 
-//////////////////////////////////////////
-// service event
-//////////////////////////////////////////
-
-type ServiceEvent struct {
-	Action  common.EventType
-	Service common.URL
+type Options struct {
+	Group   string
+	Timeout time.Duration
 }
 
-func (e ServiceEvent) String() string {
-	return fmt.Sprintf("ServiceEvent{Action{%s}, Path{%s}}", e.Action, e.Service)
+type Option func(*Options)
+
+func WithGroup(group string) Option {
+	return func(opt *Options) {
+		opt.Group = group
+	}
+}
+
+func WithTimeout(time time.Duration) Option {
+	return func(opt *Options) {
+		opt.Timeout = time
+	}
 }

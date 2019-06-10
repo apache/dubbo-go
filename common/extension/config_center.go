@@ -15,31 +15,25 @@
  * limitations under the License.
  */
 
-package registry
-
-import (
-	"fmt"
-	"math/rand"
-	"time"
-)
+package extension
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/config_center"
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
+var (
+	configCenters = make(map[string]func(config *common.URL) (config_center.DynamicConfiguration, error))
+)
+
+func SetConfigCenter(name string, v func(config *common.URL) (config_center.DynamicConfiguration, error)) {
+	configCenters[name] = v
 }
 
-//////////////////////////////////////////
-// service event
-//////////////////////////////////////////
+func GetConfigCenter(name string, config *common.URL) (config_center.DynamicConfiguration, error) {
+	if configCenters[name] == nil {
+		panic("config center for " + name + " is not existing, make sure you have import the package.")
+	}
+	return configCenters[name](config)
 
-type ServiceEvent struct {
-	Action  common.EventType
-	Service common.URL
-}
-
-func (e ServiceEvent) String() string {
-	return fmt.Sprintf("ServiceEvent{Action{%s}, Path{%s}}", e.Action, e.Service)
 }
