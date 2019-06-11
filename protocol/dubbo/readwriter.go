@@ -65,6 +65,7 @@ func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface
 
 	pkg.Err = pkg.Body.(*hessian.Response).Exception
 	pkg.Body = pkg.Body.(*hessian.Response).RspObj
+
 	return pkg, hessian.HEADER_LENGTH + pkg.Header.BodyLen, nil
 }
 
@@ -112,40 +113,43 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 
 		return nil, 0, perrors.WithStack(err)
 	}
-	// convert params of request
-	req := pkg.Body.([]interface{}) // length of body should be 7
-	if len(req) > 0 {
-		var dubboVersion, argsTypes string
-		var args []interface{}
-		var attachments map[interface{}]interface{}
-		if req[0] != nil {
-			dubboVersion = req[0].(string)
-		}
-		if req[1] != nil {
-			pkg.Service.Path = req[1].(string)
-		}
-		if req[2] != nil {
-			pkg.Service.Version = req[2].(string)
-		}
-		if req[3] != nil {
-			pkg.Service.Method = req[3].(string)
-		}
-		if req[4] != nil {
-			argsTypes = req[4].(string)
-		}
-		if req[5] != nil {
-			args = req[5].([]interface{})
-		}
-		if req[6] != nil {
-			attachments = req[6].(map[interface{}]interface{})
-		}
-		pkg.Service.Interface = attachments[constant.INTERFACE_KEY].(string)
-		pkg.Body = map[string]interface{}{
-			"dubboVersion": dubboVersion,
-			"argsTypes":    argsTypes,
-			"args":         args,
-			"service":      common.ServiceMap.GetService(DUBBO, pkg.Service.Interface),
-			"attachments":  attachments,
+
+	if pkg.Header.Type&hessian.PackageHeartbeat == 0x00 {
+		// convert params of request
+		req := pkg.Body.([]interface{}) // length of body should be 7
+		if len(req) > 0 {
+			var dubboVersion, argsTypes string
+			var args []interface{}
+			var attachments map[interface{}]interface{}
+			if req[0] != nil {
+				dubboVersion = req[0].(string)
+			}
+			if req[1] != nil {
+				pkg.Service.Path = req[1].(string)
+			}
+			if req[2] != nil {
+				pkg.Service.Version = req[2].(string)
+			}
+			if req[3] != nil {
+				pkg.Service.Method = req[3].(string)
+			}
+			if req[4] != nil {
+				argsTypes = req[4].(string)
+			}
+			if req[5] != nil {
+				args = req[5].([]interface{})
+			}
+			if req[6] != nil {
+				attachments = req[6].(map[interface{}]interface{})
+			}
+			pkg.Service.Interface = attachments[constant.INTERFACE_KEY].(string)
+			pkg.Body = map[string]interface{}{
+				"dubboVersion": dubboVersion,
+				"argsTypes":    argsTypes,
+				"args":         args,
+				"service":      common.ServiceMap.GetService(DUBBO, pkg.Service.Interface),
+				"attachments":  attachments,
+			}
 		}
 	}
 
