@@ -268,13 +268,13 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 		if e := recover(); e != nil {
 			req.Header.ResponseStatus = hessian.Response_SERVER_ERROR
 			if err, ok := e.(error); ok {
-				logger.Errorf("callService panic: %#v", err)
+				logger.Errorf("callService panic: %+v", err)
 				req.Body = perrors.WithStack(err)
 			} else if err, ok := e.(string); ok {
-				logger.Errorf("callService panic: %#v", perrors.New(err))
+				logger.Errorf("callService panic: %+v", perrors.New(err))
 				req.Body = perrors.New(err)
 			} else {
-				logger.Errorf("callService panic: %#v, this is impossible.", e)
+				logger.Errorf("callService panic: %+v, this is impossible.", e)
 				req.Body = e
 			}
 		}

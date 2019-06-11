@@ -93,14 +93,14 @@ func main() {
 	}
 	println("response result: %v", ret1)
 
-	println("\n\n\nstart to test dubbo - getUser2")
+	println("\n\n\nstart to test dubbo - getUser")
 	user = &User{}
-	err = userProvider.GetUser2(context.TODO(), []interface{}{1}, user)
+	var i int32 = 1
+	err = userProvider.GetUser2(context.TODO(), []interface{}{i}, user)
 	if err != nil {
-		println("getUser - error: %v", err)
-	} else {
-		println("response result: %v", user)
+		panic(err)
 	}
+	println("response result: %v", user)
 
 	println("\n\n\nstart to test dubbo - getErr")
 	user = &User{}
