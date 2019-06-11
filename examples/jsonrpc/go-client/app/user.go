@@ -27,8 +27,10 @@ import (
 	"github.com/apache/dubbo-go/config"
 )
 
+var userProvider = new(UserProvider)
+
 func init() {
-	config.SetConsumerService(new(UserProvider))
+	config.SetConsumerService(userProvider)
 }
 
 type JsonRPCUser struct {
