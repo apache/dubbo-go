@@ -25,7 +25,7 @@ import (
 
 import (
 	"github.com/dubbogo/getty"
-	hessian "github.com/dubbogo/hessian2"
+	"github.com/dubbogo/hessian2"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
 	"gopkg.in/yaml.v2"
