@@ -79,10 +79,6 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 	// read header
 	err := codec.ReadHeader(&p.Header)
 	if err != nil {
-		if p.Header.Type&hessian.PackageError != hessian.PackageType(hessian.Zero) {
-			p.Body = &hessian.Response{Exception: err}
-			return nil
-		}
 		return perrors.WithStack(err)
 	}
 
@@ -95,12 +91,9 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 		pendingRsp := client.GetPendingResponse(SequenceType(p.Header.ID))
 		if pendingRsp == nil {
 			return perrors.Errorf("client.GetPendingResponse(%v) = nil", p.Header.ID)
+		} else {
+			p.Body = &hessian.Response{RspObj: pendingRsp.reply}
 		}
-		p.Body = &hessian.Response{RspObj: pendingRsp.reply}
-	}
-
-	if p.Header.Type&hessian.PackageHeartbeat != 0x00 {
-		return nil
 	}
 
 	// read body

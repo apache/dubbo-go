@@ -86,9 +86,12 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 	if p.Header.Type&hessian.PackageHeartbeat != 0x00 {
 		logger.Debugf("get rpc heartbeat response{header: %#v, body: %#v}", p.Header, p.Body)
+		if p.Err != nil {
+			logger.Errorf("rpc heartbeat response{error: %#v}", p.Err)
+		}
 		return
 	}
-	//logger.Debugf("get rpc response{header: %#v, body: %#v}", p.Header, p.Body)
+	logger.Debugf("get rpc response{header: %#v, body: %#v}", p.Header, p.Body)
 
 	h.conn.updateSession(session)
 
@@ -203,7 +206,6 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	// not twoway
 	if p.Header.Type&hessian.PackageRequest_TwoWay == 0x00 {
 		twoway = false
-		h.reply(session, p, hessian.PackageResponse)
 	}
 
 	invoker := h.exporter.GetInvoker()
