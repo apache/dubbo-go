@@ -20,6 +20,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 )
 
@@ -127,6 +128,15 @@ func (u *UserProvider) GetUser0(id string, name string) (User, error) {
 	return *user, err
 }
 
+func (u *UserProvider) GetUser2(ctx context.Context, req []interface{}, rsp *User) error {
+	var err error
+
+	println("req:%#v", req)
+	rsp.Id = strconv.FormatFloat(req[0].(float64), 'f', 0, 64)
+	rsp.Sex = Gender(MAN).String()
+	return err
+}
+
 func (u *UserProvider) GetUsers(req []interface{}) ([]User, error) {
 	var err error
 
@@ -144,6 +154,12 @@ func (u *UserProvider) GetUsers(req []interface{}) ([]User, error) {
 	println("user1:%v", user1)
 
 	return []User{*user, *user1}, err
+}
+
+func (s *UserProvider) MethodMapper() map[string]string {
+	return map[string]string{
+		"GetUser2": "getUser",
+	}
 }
 
 func (u *UserProvider) Service() string {
