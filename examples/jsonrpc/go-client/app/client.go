@@ -90,10 +90,9 @@ func main() {
 	user = &JsonRPCUser{}
 	err = userProvider.GetUser2(context.TODO(), []interface{}{1}, user)
 	if err != nil {
-		println("getUser - error: %v", err)
-	} else {
-		println("response result: %v", user)
+		panic(err)
 	}
+	println("response result: %v", user)
 
 	println("\n\n\nstart to test jsonrpc illegal method")
 	err = userProvider.GetUser1(context.TODO(), []interface{}{"A003"}, user)

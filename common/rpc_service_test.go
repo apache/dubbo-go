@@ -42,6 +42,11 @@ func (s *TestService) Service() string {
 func (s *TestService) Version() string {
 	return ""
 }
+func (s *TestService) MethodMapper() map[string]string {
+	return map[string]string{
+		"MethodTwo": "methodTwo",
+	}
+}
 
 type testService struct {
 }
@@ -87,7 +92,7 @@ func TestServiceMap_Register(t *testing.T) {
 	s := &TestService{}
 	methods, err = ServiceMap.Register("testporotocol", s)
 	assert.NoError(t, err)
-	assert.Equal(t, "MethodOne,MethodTwo", methods)
+	assert.Equal(t, "MethodOne,methodTwo", methods)
 
 	// repeat
 	methods, err = ServiceMap.Register("testporotocol", s)
