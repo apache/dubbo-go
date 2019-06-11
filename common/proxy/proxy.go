@@ -19,6 +19,7 @@ package proxy
 
 import (
 	"reflect"
+	"sync"
 )
 
 import (
@@ -34,6 +35,8 @@ type Proxy struct {
 	invoke      protocol.Invoker
 	callBack    interface{}
 	attachments map[string]string
+
+	once sync.Once
 }
 
 var typError = reflect.Zero(reflect.TypeOf((*error)(nil)).Elem()).Type()
@@ -166,7 +169,9 @@ func (p *Proxy) Implement(v common.RPCService) {
 		}
 	}
 
-	p.rpc = v
+	p.once.Do(func() {
+		p.rpc = v
+	})
 
 }
 

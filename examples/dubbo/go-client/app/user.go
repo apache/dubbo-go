@@ -34,8 +34,10 @@ import (
 
 type Gender hessian.JavaEnum
 
+var userProvider = new(UserProvider)
+
 func init() {
-	config.SetConsumerService(new(UserProvider))
+	config.SetConsumerService(userProvider)
 }
 
 const (
