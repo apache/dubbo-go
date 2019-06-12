@@ -18,9 +18,13 @@
 package logger
 
 import (
+	"fmt"
 	"path/filepath"
+	"runtime"
 	"testing"
+)
 
+import (
 	"github.com/stretchr/testify/assert"
 )
 
@@ -41,7 +45,13 @@ func TestInitLog(t *testing.T) {
 	path, err = filepath.Abs("./logger.yml")
 	assert.NoError(t, err)
 	err = InitLog(path)
-	assert.EqualError(t, err, "ioutil.ReadFile(file:"+path+") = error:open "+path+": no such file or directory")
+	var errMsg string
+	if runtime.GOOS == "windows" {
+		errMsg = fmt.Sprintf("open %s: The system cannot find the file specified.", path)
+	} else {
+		errMsg = fmt.Sprintf("open %s: no such file or directory", path)
+	}
+	assert.EqualError(t, err, fmt.Sprintf("ioutil.ReadFile(file:%s) = error:%s", path, errMsg))
 
 	err = InitLog("./log.yml")
 	assert.NoError(t, err)
