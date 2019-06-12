@@ -18,7 +18,6 @@
 package zookeeper
 
 import (
-	"github.com/apache/dubbo-go/remoting"
 	"path"
 	"sync"
 	"time"
@@ -32,6 +31,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 type ZkEventListener struct {

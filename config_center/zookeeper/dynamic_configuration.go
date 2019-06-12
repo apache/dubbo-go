@@ -18,7 +18,6 @@
 package zookeeper
 
 import (
-	"github.com/apache/dubbo-go/remoting"
 	"sync"
 )
 import (
@@ -26,10 +25,11 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config_center"
+	"github.com/apache/dubbo-go/remoting"
 	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
-const ZkClient = "zk config_center"
+const ZK_CLIENT = "zk config_center"
 
 type ZookeeperDynamicConfiguration struct {
 	url      common.URL
@@ -48,7 +48,7 @@ func NewZookeeperDynamicConfiguration(url common.URL) (config_center.DynamicConf
 		url:      url,
 		rootPath: "/" + url.GetParam(constant.CONFIG_NAMESPACE_KEY, config_center.DEFAULT_GROUP) + "/config",
 	}
-	err := zookeeper.ValidateZookeeperClient(c, zookeeper.WithZkName(ZkClient))
+	err := zookeeper.ValidateZookeeperClient(c, zookeeper.WithZkName(ZK_CLIENT))
 	if err != nil {
 		return nil, err
 	}
