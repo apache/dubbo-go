@@ -15,25 +15,32 @@
  * limitations under the License.
  */
 
-package constant
+package zookeeper
 
-const (
-	DEFAULT_WEIGHT = 100     //
-	DEFAULT_WARMUP = 10 * 60 // in java here is 10*60*1000 because of System.currentTimeMillis() is measured in milliseconds & in go time.Unix() is second
+import (
+	"sync"
+)
+import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/config_center"
 )
 
-const (
-	DEFAULT_LOADBALANCE = "random"
-	DEFAULT_RETRIES     = 2
-	DEFAULT_PROTOCOL    = "dubbo"
-	DEFAULT_VERSION     = ""
-	DEFAULT_REG_TIMEOUT = "10s"
-	DEFAULT_CLUSTER     = "failover"
-)
+func init() {
+	extension.SetConfigCenterFactory("zookeeper", func() config_center.DynamicConfigurationFactory { return &zookeeperDynamicConfigurationFactory{} })
+}
 
-const (
-	DEFAULT_KEY               = "default"
-	DEFAULT_SERVICE_FILTERS   = "echo"
-	DEFAULT_REFERENCE_FILTERS = ""
-	ECHO                      = "$echo"
-)
+type zookeeperDynamicConfigurationFactory struct {
+}
+
+var once sync.Once
+var dynamicConfiguration *zookeeperDynamicConfiguration
+
+func (f *zookeeperDynamicConfigurationFactory) GetDynamicConfiguration(url *common.URL) (config_center.DynamicConfiguration, error) {
+	var err error
+	once.Do(func() {
+		dynamicConfiguration, err = newZookeeperDynamicConfiguration(url)
+	})
+	return dynamicConfiguration, err
+
+}

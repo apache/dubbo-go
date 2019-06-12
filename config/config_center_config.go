@@ -15,25 +15,23 @@
  * limitations under the License.
  */
 
-package constant
+package config
 
-const (
-	DEFAULT_WEIGHT = 100     //
-	DEFAULT_WARMUP = 10 * 60 // in java here is 10*60*1000 because of System.currentTimeMillis() is measured in milliseconds & in go time.Unix() is second
+import (
+	"context"
+	"time"
 )
 
-const (
-	DEFAULT_LOADBALANCE = "random"
-	DEFAULT_RETRIES     = 2
-	DEFAULT_PROTOCOL    = "dubbo"
-	DEFAULT_VERSION     = ""
-	DEFAULT_REG_TIMEOUT = "10s"
-	DEFAULT_CLUSTER     = "failover"
-)
-
-const (
-	DEFAULT_KEY               = "default"
-	DEFAULT_SERVICE_FILTERS   = "echo"
-	DEFAULT_REFERENCE_FILTERS = ""
-	ECHO                      = "$echo"
-)
+type ConfigCenterConfig struct {
+	context    context.Context
+	Protocol   string `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
+	Address    string `yaml:"address" json:"address,omitempty"`
+	Cluster    string `yaml:"cluster" json:"cluster,omitempty"`
+	Group      string `default:"dubbo" yaml:"group" json:"group,omitempty"`
+	Username   string `yaml:"username" json:"username,omitempty"`
+	Password   string `yaml:"password" json:"password,omitempty"`
+	Check      *bool  `yaml:"check"  json:"check,omitempty"`
+	ConfigFile string `default:"dubbo.properties" yaml:"config_file"  json:"config_file,omitempty"`
+	TimeoutStr string `yaml:"timeout"  json:"timeout,omitempty"`
+	timeout    time.Duration
+}

@@ -33,8 +33,8 @@ const DEFAULT_CONFIG_TIMEOUT = "10s"
 type DynamicConfiguration interface {
 	AddListener(string, remoting.ConfigurationListener, ...Option)
 	RemoveListener(string, remoting.ConfigurationListener, ...Option)
-	GetConfig(string, ...Option) string
-	GetConfigs(string, ...Option) string
+	GetConfig(string, ...Option) (string, error)
+	GetConfigs(string, ...Option) (string, error)
 }
 
 type Options struct {

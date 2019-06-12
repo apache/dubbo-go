@@ -15,25 +15,24 @@
  * limitations under the License.
  */
 
-package constant
+package extension
 
-const (
-	DEFAULT_WEIGHT = 100     //
-	DEFAULT_WARMUP = 10 * 60 // in java here is 10*60*1000 because of System.currentTimeMillis() is measured in milliseconds & in go time.Unix() is second
+import (
+	"github.com/apache/dubbo-go/config_center"
 )
 
-const (
-	DEFAULT_LOADBALANCE = "random"
-	DEFAULT_RETRIES     = 2
-	DEFAULT_PROTOCOL    = "dubbo"
-	DEFAULT_VERSION     = ""
-	DEFAULT_REG_TIMEOUT = "10s"
-	DEFAULT_CLUSTER     = "failover"
+var (
+	configCenterFactories = make(map[string]func() config_center.DynamicConfigurationFactory)
 )
 
-const (
-	DEFAULT_KEY               = "default"
-	DEFAULT_SERVICE_FILTERS   = "echo"
-	DEFAULT_REFERENCE_FILTERS = ""
-	ECHO                      = "$echo"
-)
+func SetConfigCenterFactory(name string, v func() config_center.DynamicConfigurationFactory) {
+	configCenterFactories[name] = v
+}
+
+func GetConfigCenterFactory(name string) config_center.DynamicConfigurationFactory {
+	if configCenterFactories[name] == nil {
+		panic("config center for " + name + " is not existing, make sure you have import the package.")
+	}
+	return configCenterFactories[name]()
+
+}

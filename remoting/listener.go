@@ -46,6 +46,7 @@ type EventType int
 const (
 	Add = iota
 	Del
+	Mod
 )
 
 var serviceEventTypeStrings = [...]string{
