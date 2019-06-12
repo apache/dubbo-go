@@ -1,16 +1,19 @@
-// Copyright 2016-2019 hxmhlt
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package directory
 
@@ -20,25 +23,28 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common/logger"
 	perrors "github.com/pkg/errors"
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/cluster/directory"
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/common/constant"
-	"github.com/dubbo/go-for-apache-dubbo/common/extension"
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
-	"github.com/dubbo/go-for-apache-dubbo/protocol/protocolwrapper"
-	"github.com/dubbo/go-for-apache-dubbo/registry"
+	"github.com/apache/dubbo-go/cluster/directory"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/protocolwrapper"
+	"github.com/apache/dubbo-go/registry"
 )
 
-const RegistryConnDelay = 3
+const (
+	RegistryConnDelay = 3
+)
 
 type Options struct {
 	serviceTTL time.Duration
 }
+
 type Option func(*Options)
 
 type registryDirectory struct {
@@ -185,7 +191,7 @@ func (dir *registryDirectory) cacheInvoker(url common.URL) {
 	referenceUrl := dir.GetUrl().SubURL
 	//check the url's protocol is equal to the protocol which is configured in reference config or referenceUrl is not care about protocol
 	if url.Protocol == referenceUrl.Protocol || referenceUrl.Protocol == "" {
-		url = mergeUrl(url, referenceUrl)
+		url = common.MergeUrl(url, referenceUrl)
 
 		if _, ok := dir.cacheInvokersMap.Load(url.Key()); !ok {
 			logger.Debugf("service will be added in cache invokers: invokers key is  %s!", url.Key())
@@ -224,53 +230,4 @@ func (dir *registryDirectory) Destroy() {
 		}
 		dir.cacheInvokers = []protocol.Invoker{}
 	})
-}
-
-// configuration  > reference config >service config
-//  in this function we should merge the reference local url config into the service url from registry.
-//TODO configuration merge, in the future , the configuration center's config should merge too.
-func mergeUrl(serviceUrl common.URL, referenceUrl *common.URL) common.URL {
-	mergedUrl := serviceUrl
-	var methodConfigMergeFcn = []func(method string){}
-	//iterator the referenceUrl if serviceUrl not have the key ,merge in
-
-	for k, v := range referenceUrl.Params {
-		if _, ok := mergedUrl.Params[k]; !ok {
-			mergedUrl.Params.Set(k, v[0])
-		}
-	}
-	//loadBalance strategy config
-	if v := referenceUrl.Params.Get(constant.LOADBALANCE_KEY); v != "" {
-		mergedUrl.Params.Set(constant.LOADBALANCE_KEY, v)
-	}
-	methodConfigMergeFcn = append(methodConfigMergeFcn, func(method string) {
-		if v := referenceUrl.Params.Get(method + "." + constant.LOADBALANCE_KEY); v != "" {
-			mergedUrl.Params.Set(method+"."+constant.LOADBALANCE_KEY, v)
-		}
-	})
-
-	//cluster strategy config
-	if v := referenceUrl.Params.Get(constant.CLUSTER_KEY); v != "" {
-		mergedUrl.Params.Set(constant.CLUSTER_KEY, v)
-	}
-	methodConfigMergeFcn = append(methodConfigMergeFcn, func(method string) {
-		if v := referenceUrl.Params.Get(method + "." + constant.CLUSTER_KEY); v != "" {
-			mergedUrl.Params.Set(method+"."+constant.CLUSTER_KEY, v)
-		}
-	})
-
-	//remote timestamp
-	if v := serviceUrl.Params.Get(constant.TIMESTAMP_KEY); v != "" {
-		mergedUrl.Params.Set(constant.REMOTE_TIMESTAMP_KEY, v)
-		mergedUrl.Params.Set(constant.TIMESTAMP_KEY, referenceUrl.Params.Get(constant.TIMESTAMP_KEY))
-	}
-
-	//finally execute methodConfigMergeFcn
-	for _, method := range referenceUrl.Methods {
-		for _, fcn := range methodConfigMergeFcn {
-			fcn("methods." + method)
-		}
-	}
-
-	return mergedUrl
 }

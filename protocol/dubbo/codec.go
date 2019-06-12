@@ -1,16 +1,19 @@
-// Copyright 2016-2019 Yincheng Fang, Alex Stocks
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package dubbo
 
@@ -71,7 +74,7 @@ func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 }
 
 func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
-	codec := hessian.NewHessianCodec(bufio.NewReader(buf))
+	codec := hessian.NewHessianCodec(bufio.NewReaderSize(buf, buf.Len()))
 
 	// read header
 	err := codec.ReadHeader(&p.Header)
@@ -80,20 +83,17 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 	}
 
 	if len(opts) != 0 { // for client
-		if client, ok := opts[0].(*Client); ok {
-
-			r := client.pendingResponses[SequenceType(p.Header.ID)]
-			if r == nil {
-				return perrors.Errorf("pendingResponses[%v] = nil", p.Header.ID)
-			}
-			p.Body = client.pendingResponses[SequenceType(p.Header.ID)].reply
-		} else {
-			return perrors.Errorf("opts[0] is not *Client")
+		client, ok := opts[0].(*Client)
+		if !ok {
+			return perrors.Errorf("opts[0] is not of type *Client")
 		}
-	}
 
-	if p.Header.Type&hessian.PackageHeartbeat != 0x00 {
-		return nil
+		pendingRsp := client.GetPendingResponse(SequenceType(p.Header.ID))
+		if pendingRsp == nil {
+			return perrors.Errorf("client.GetPendingResponse(%v) = nil", p.Header.ID)
+		} else {
+			p.Body = &hessian.Response{RspObj: pendingRsp.reply}
+		}
 	}
 
 	// read body
