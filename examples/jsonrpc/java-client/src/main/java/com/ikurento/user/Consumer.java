@@ -59,6 +59,9 @@ public class Consumer {
             System.out.println("[" + new SimpleDateFormat("HH:mm:ss").format(new Date()) + "] " +
                      " UserInfo, Id:" + user3.getId() + ", name:" + user3.getName() + ", sex:" + user3.getSex().toString()
                      + ", age:" + user3.getAge() + ", time:" + user3.getTime().toString());
+
+            userProvider.GetUser3();
+            System.out.println("GetUser3 succ");
         } catch (Exception e) {
             e.printStackTrace();
         }

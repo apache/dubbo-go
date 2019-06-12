@@ -268,12 +268,7 @@ func suiteMethod(method reflect.Method) *MethodType {
 	}
 
 	// replyType
-	if outNum == 1 {
-		if mtype.In(inNum-1).Kind() != reflect.Ptr {
-			logger.Errorf("reply type of method %q is not a pointer %v", mname, replyType)
-			return nil
-		}
-	} else {
+	if outNum == 2 {
 		replyType = mtype.Out(0)
 		if !isExportedOrBuiltinType(replyType) {
 			logger.Errorf("reply type of method %s not exported{%v}", mname, replyType)
@@ -284,7 +279,7 @@ func suiteMethod(method reflect.Method) *MethodType {
 	index := 1
 
 	// ctxType
-	if mtype.In(1).String() == "context.Context" {
+	if inNum > 1 && mtype.In(1).String() == "context.Context" {
 		ctxType = mtype.In(1)
 		index = 2
 	}
