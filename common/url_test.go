@@ -24,8 +24,11 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/constant"
 )
 
 func TestNewURLWithOptions(t *testing.T) {
