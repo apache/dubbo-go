@@ -14,43 +14,44 @@
 package loadbalance
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/cluster"
-	"github.com/dubbo/go-for-apache-dubbo/common/extension"
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
 	"math"
 	"sync"
 	"sync/atomic"
 	"time"
 )
 
-const (
-	roundRobin = "roundrobin"
+import (
+	"github.com/dubbo/go-for-apache-dubbo/cluster"
+	"github.com/dubbo/go-for-apache-dubbo/common/extension"
+	"github.com/dubbo/go-for-apache-dubbo/protocol"
+)
 
-	complete = 0
-	updating = 1
+const (
+	RoundRobin = "roundrobin"
+
+	COMPLETE = 0
+	UPDATING = 1
 )
 
 var (
 	methodWeightMap sync.Map            // [string]invokers
-	state           int32    = complete // update lock acquired ?
+	state           int32    = COMPLETE // update lock acquired ?
 	recyclePeriod   int64    = 60 * time.Second.Nanoseconds()
 )
 
 func init() {
-	extension.SetLoadbalance(roundRobin, NewRoundRobinLoadBalance)
+	extension.SetLoadbalance(RoundRobin, NewRoundRobinLoadBalance)
 }
 
-type roundRobinLoadBalance struct {
-}
+type roundRobinLoadBalance struct{}
 
 func NewRoundRobinLoadBalance() cluster.LoadBalance {
 	return &roundRobinLoadBalance{}
 }
 
 func (lb *roundRobinLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
-
 	count := len(invokers)
-	if invokers == nil || count == 0 {
+	if count == 0 {
 		return nil
 	}
 	if count == 1 {
@@ -69,7 +70,6 @@ func (lb *roundRobinLoadBalance) Select(invokers []protocol.Invoker, invocation 
 	now := time.Now()
 
 	for _, invoker := range invokers {
-
 		var weight = GetWeight(invoker, invocation)
 		if weight < 0 {
 			weight = 0
@@ -108,8 +108,8 @@ func (lb *roundRobinLoadBalance) Select(invokers []protocol.Invoker, invocation 
 }
 
 func cleanIfRequired(clean bool, invokers cachedInvokers, now *time.Time) {
-	if atomic.LoadInt32(&state) < updating && clean && atomic.CompareAndSwapInt32(&state, complete, updating) {
-		defer atomic.CompareAndSwapInt32(&state, updating, complete)
+	if atomic.LoadInt32(&state) < UPDATING && clean && atomic.CompareAndSwapInt32(&state, COMPLETE, UPDATING) {
+		defer atomic.CompareAndSwapInt32(&state, UPDATING, COMPLETE)
 		invokers.Range(func(identify, robin interface{}) bool {
 			weightedRoundRobin := robin.(weightedRoundRobin)
 			if now.Sub(*weightedRoundRobin.lastUpdate).Nanoseconds() > recyclePeriod {
