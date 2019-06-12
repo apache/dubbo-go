@@ -59,8 +59,8 @@ func (lb *roundRobinLoadBalance) Select(invokers []protocol.Invoker, invocation 
 	}
 
 	key := invokers[0].GetUrl().Path + "." + invocation.MethodName()
-	cache, _ := methodWeightMap.LoadOrStore(key, cachedInvokers{})
-	cachedInvokers := cache.(cachedInvokers)
+	cache, _ := methodWeightMap.LoadOrStore(key, &cachedInvokers{})
+	cachedInvokers := cache.(*cachedInvokers)
 
 	clean := false
 	totalWeight := int64(0)
@@ -75,9 +75,9 @@ func (lb *roundRobinLoadBalance) Select(invokers []protocol.Invoker, invocation 
 			weight = 0
 		}
 
-		identify := invoker.GetUrl().Key()
-		loaded, found := cachedInvokers.LoadOrStore(identify, weightedRoundRobin{weight: weight})
-		weightRobin := loaded.(weightedRoundRobin)
+		identifier := invoker.GetUrl().Key()
+		loaded, found := cachedInvokers.LoadOrStore(identifier, &weightedRoundRobin{weight: weight})
+		weightRobin := loaded.(*weightedRoundRobin)
 		if !found {
 			clean = true
 		}
@@ -92,7 +92,7 @@ func (lb *roundRobinLoadBalance) Select(invokers []protocol.Invoker, invocation 
 		if currentWeight > maxCurrentWeight {
 			maxCurrentWeight = currentWeight
 			selectedInvoker = invoker
-			selectedWeightRobin = weightRobin
+			selectedWeightRobin = *weightRobin
 		}
 		totalWeight += weight
 	}
@@ -107,12 +107,13 @@ func (lb *roundRobinLoadBalance) Select(invokers []protocol.Invoker, invocation 
 	return invokers[0]
 }
 
-func cleanIfRequired(clean bool, invokers cachedInvokers, now *time.Time) {
-	if atomic.LoadInt32(&state) < UPDATING && clean && atomic.CompareAndSwapInt32(&state, COMPLETE, UPDATING) {
+func cleanIfRequired(clean bool, invokers *cachedInvokers, now *time.Time) {
+	if clean && atomic.CompareAndSwapInt32(&state, COMPLETE, UPDATING) {
 		defer atomic.CompareAndSwapInt32(&state, UPDATING, COMPLETE)
 		invokers.Range(func(identify, robin interface{}) bool {
-			weightedRoundRobin := robin.(weightedRoundRobin)
-			if now.Sub(*weightedRoundRobin.lastUpdate).Nanoseconds() > recyclePeriod {
+			weightedRoundRobin := robin.(*weightedRoundRobin)
+			elapsed := now.Sub(*weightedRoundRobin.lastUpdate).Nanoseconds()
+			if elapsed > recyclePeriod {
 				invokers.Delete(identify)
 			}
 			return true
