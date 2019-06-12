@@ -1,8 +1,8 @@
-module github.com/dubbo/go-for-apache-dubbo
+module github.com/apache/dubbo-go
 
 require (
-	github.com/dubbogo/getty v0.0.0-20190523180329-bdf5e640ea53
-	github.com/dubbogo/hessian2 v0.0.0-20190525165532-d994415a90c3
+	github.com/dubbogo/getty v1.0.7
+	github.com/dubbogo/hessian2 v1.0.1
 	github.com/pkg/errors v0.8.1
 	github.com/samuel/go-zookeeper v0.0.0-20180130194729-c4fab1ac1bec
 	github.com/stretchr/testify v1.3.0
