@@ -1,16 +1,19 @@
-// Copyright 2016-2019 Yincheng Fang, Alex Stocks
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package dubbo
 
@@ -29,10 +32,10 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/common/constant"
-	"github.com/dubbo/go-for-apache-dubbo/common/logger"
-	"github.com/dubbo/go-for-apache-dubbo/config"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/config"
 )
 
 var (
@@ -198,6 +201,13 @@ func (c *Client) AsyncCall(addr string, svcUrl common.URL, method string, args i
 	return perrors.WithStack(c.call(CT_TwoWay, addr, svcUrl, method, args, reply, callback, copts))
 }
 
+func (c *Client) GetPendingResponse(seq SequenceType) *PendingResponse {
+	c.pendingLock.RLock()
+	defer c.pendingLock.RUnlock()
+
+	return c.pendingResponses[SequenceType(seq)]
+}
+
 func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string,
 	args, reply interface{}, callback AsyncCallback, opts CallOptions) error {
 
@@ -254,7 +264,7 @@ func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string
 	}
 
 	select {
-	case <-getty.GetTimeWheel().After(opts.ResponseTimeout):
+	case <-time.After(opts.ResponseTimeout):
 		err = errClientReadTimeout
 		c.removePendingResponse(SequenceType(rsp.seq))
 	case <-rsp.done:

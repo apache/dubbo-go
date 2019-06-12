@@ -1,35 +1,39 @@
-// Copyright 2016-2019 Yincheng Fang
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package dubbo
 
 import (
+	"bytes"
 	"context"
-	"github.com/dubbogo/hessian2"
 	"sync"
 	"testing"
 	"time"
 )
 
 import (
+	"github.com/dubbogo/hessian2"
 	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/protocol"
 )
 
 type (
@@ -70,7 +74,13 @@ func TestClient_Call(t *testing.T) {
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
 
 	user := &User{}
-	err := c.Call("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"}, user)
+	err := c.Call("127.0.0.1:20000", url, "GetBigPkg", []interface{}{}, user)
+	assert.NoError(t, err)
+	assert.NotEqual(t, "", user.Id)
+	assert.NotEqual(t, "", user.Name)
+
+	user = &User{}
+	err = c.Call("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"}, user)
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "1", Name: "username"}, *user)
 
@@ -81,7 +91,7 @@ func TestClient_Call(t *testing.T) {
 
 	user = &User{}
 	err = c.Call("127.0.0.1:20000", url, "GetUser1", []interface{}{"1", "username"}, user)
-	assert.EqualError(t, err, "java exception:error")
+	assert.EqualError(t, err, "got exception: error")
 
 	user2 := []interface{}{}
 	err = c.Call("127.0.0.1:20000", url, "GetUser2", []interface{}{"1", "username"}, &user2)
@@ -134,7 +144,7 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 
 	methods, err := common.ServiceMap.Register("dubbo", &UserProvider{})
 	assert.NoError(t, err)
-	assert.Equal(t, "GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4", methods)
+	assert.Equal(t, "GetBigPkg,GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4", methods)
 
 	// config
 	SetClientConf(ClientConfig{
@@ -153,10 +163,10 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 			TcpWBufSize:      65536,
 			PkgRQSize:        1024,
 			PkgWQSize:        512,
-			TcpReadTimeout:   "1s",
+			TcpReadTimeout:   "4s",
 			TcpWriteTimeout:  "5s",
 			WaitTimeout:      "1s",
-			MaxMsgLen:        1024,
+			MaxMsgLen:        10240000000,
 			SessionName:      "client",
 		},
 	})
@@ -177,7 +187,7 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 			TcpReadTimeout:   "1s",
 			TcpWriteTimeout:  "5s",
 			WaitTimeout:      "1s",
-			MaxMsgLen:        1024,
+			MaxMsgLen:        10240000000,
 			SessionName:      "server",
 		}})
 	assert.NoError(t, srvConf.CheckValidity())
@@ -195,6 +205,18 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 	time.Sleep(time.Second * 2)
 
 	return proto, url
+}
+
+// size:4801228
+func (u *UserProvider) GetBigPkg(ctx context.Context, req []interface{}, rsp *User) error {
+	argBuf := new(bytes.Buffer)
+	for i := 0; i < 4000; i++ {
+		argBuf.WriteString("击鼓其镗，踊跃用兵。土国城漕，我独南行。从孙子仲，平陈与宋。不我以归，忧心有忡。爰居爰处？爰丧其马？于以求之？于林之下。死生契阔，与子成说。执子之手，与子偕老。于嗟阔兮，不我活兮。于嗟洵兮，不我信兮。")
+		argBuf.WriteString("击鼓其镗，踊跃用兵。土国城漕，我独南行。从孙子仲，平陈与宋。不我以归，忧心有忡。爰居爰处？爰丧其马？于以求之？于林之下。死生契阔，与子成说。执子之手，与子偕老。于嗟阔兮，不我活兮。于嗟洵兮，不我信兮。")
+	}
+	rsp.Id = argBuf.String()
+	rsp.Name = argBuf.String()
+	return nil
 }
 
 func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User) error {

@@ -1,16 +1,19 @@
-// Copyright 2016-2019 Yincheng Fang, Alex Stocks
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package dubbo
 
@@ -28,11 +31,11 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/common/constant"
-	"github.com/dubbo/go-for-apache-dubbo/common/logger"
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
-	"github.com/dubbo/go-for-apache-dubbo/protocol/invocation"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 // todo: WritePkg_Timeout will entry *.yml
@@ -83,6 +86,9 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 	if p.Header.Type&hessian.PackageHeartbeat != 0x00 {
 		logger.Debugf("get rpc heartbeat response{header: %#v, body: %#v}", p.Header, p.Body)
+		if p.Err != nil {
+			logger.Errorf("rpc heartbeat response{error: %#v}", p.Err)
+		}
 		return
 	}
 	logger.Debugf("get rpc response{header: %#v, body: %#v}", p.Header, p.Body)
@@ -200,7 +206,6 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	// not twoway
 	if p.Header.Type&hessian.PackageRequest_TwoWay == 0x00 {
 		twoway = false
-		h.reply(session, p, hessian.PackageResponse)
 	}
 
 	invoker := h.exporter.GetInvoker()
@@ -212,7 +217,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 			constant.VERSION_KEY:   p.Service.Version,
 		}))
 		if err := result.Error(); err != nil {
-			p.Header.ResponseStatus = hessian.Response_SERVER_ERROR
+			p.Header.ResponseStatus = hessian.Response_OK
 			p.Body = err
 			h.reply(session, p, hessian.PackageResponse)
 			return
@@ -261,15 +266,15 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 
 	defer func() {
 		if e := recover(); e != nil {
-			req.Header.ResponseStatus = hessian.Response_BAD_REQUEST
+			req.Header.ResponseStatus = hessian.Response_SERVER_ERROR
 			if err, ok := e.(error); ok {
 				logger.Errorf("callService panic: %#v", err)
-				req.Body = e.(error)
+				req.Body = perrors.WithStack(err)
 			} else if err, ok := e.(string); ok {
 				logger.Errorf("callService panic: %#v", perrors.New(err))
 				req.Body = perrors.New(err)
 			} else {
-				logger.Errorf("callService panic: %#v", e)
+				logger.Errorf("callService panic: %#v, this is impossible.", e)
 				req.Body = e
 			}
 		}
@@ -278,7 +283,7 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 	svcIf := req.Body.(map[string]interface{})["service"]
 	if svcIf == nil {
 		logger.Errorf("service not found!")
-		req.Header.ResponseStatus = hessian.Response_SERVICE_NOT_FOUND
+		req.Header.ResponseStatus = hessian.Response_BAD_REQUEST
 		req.Body = perrors.New("service not found")
 		return
 	}
@@ -286,7 +291,7 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 	method := svc.Method()[req.Service.Method]
 	if method == nil {
 		logger.Errorf("method not found!")
-		req.Header.ResponseStatus = hessian.Response_SERVICE_NOT_FOUND
+		req.Header.ResponseStatus = hessian.Response_BAD_REQUEST
 		req.Body = perrors.New("method not found")
 		return
 	}
@@ -323,8 +328,8 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 		retErr = returnValues[1].Interface()
 	}
 	if retErr != nil {
-		req.Header.ResponseStatus = hessian.Response_SERVER_ERROR
-		req.Body = retErr.(error)
+		req.Header.ResponseStatus = hessian.Response_OK
+		req.Body = retErr
 	} else {
 		req.Body = replyv.Interface()
 	}

@@ -22,7 +22,7 @@ encoderConfig:
   nameEncoder: ""
 
 outputPaths:
-- "stderr"
+  - "stderr"
 errorOutputPaths:
-- "stderr"
+  - "stderr"
 initialFields:
