@@ -30,11 +30,14 @@ import (
 type TestService struct {
 }
 
-func (s *TestService) MethodOne(ctx context.Context, args []interface{}, rsp *struct{}) error {
+func (s *TestService) MethodOne(ctx context.Context, arg1, arg2, arg3 interface{}) error {
 	return nil
 }
-func (s *TestService) MethodTwo(args []interface{}) (struct{}, error) {
+func (s *TestService) MethodTwo(arg1, arg2, arg3 interface{}) (interface{}, error) {
 	return struct{}{}, nil
+}
+func (s *TestService) MethodThree() error {
+	return nil
 }
 func (s *TestService) Service() string {
 	return "com.test.Path"
@@ -54,15 +57,12 @@ type testService struct {
 func (s *testService) Method1(ctx context.Context, args testService, rsp *struct{}) error {
 	return nil
 }
-func (s *testService) Method2(ctx context.Context, args []interface{}, rsp struct{}) error {
-	return nil
-}
-func (s *testService) Method3(ctx context.Context, args []interface{}) (testService, error) {
+func (s *testService) Method2(ctx context.Context, args []interface{}) (testService, error) {
 	return testService{}, nil
 }
-func (s *testService) Method4(ctx context.Context, args []interface{}, rsp *struct{}) {
+func (s *testService) Method3(ctx context.Context, args []interface{}, rsp *struct{}) {
 }
-func (s *testService) Method5(ctx context.Context, args []interface{}, rsp *struct{}) *testService {
+func (s *testService) Method4(ctx context.Context, args []interface{}, rsp *struct{}) *testService {
 	return nil
 }
 func (s *testService) Service() string {
@@ -92,7 +92,7 @@ func TestServiceMap_Register(t *testing.T) {
 	s := &TestService{}
 	methods, err = ServiceMap.Register("testporotocol", s)
 	assert.NoError(t, err)
-	assert.Equal(t, "MethodOne,methodTwo", methods)
+	assert.Equal(t, "MethodOne,MethodThree,methodTwo", methods)
 
 	// repeat
 	methods, err = ServiceMap.Register("testporotocol", s)
@@ -144,10 +144,11 @@ func TestSuiteMethod(t *testing.T) {
 	assert.True(t, ok)
 	methodType := suiteMethod(method)
 	method = methodType.Method()
-	assert.Equal(t, "func(*common.TestService, context.Context, []interface {}, *struct {}) error", method.Type.String())
+	assert.Equal(t, "func(*common.TestService, context.Context, interface {}, interface {}, interface {}) error", method.Type.String())
 	at := methodType.ArgsType()
-	assert.Equal(t, "[]interface {}", at[0].String())
-	assert.Equal(t, "*struct {}", at[1].String())
+	assert.Equal(t, "interface {}", at[0].String())
+	assert.Equal(t, "interface {}", at[1].String())
+	assert.Equal(t, "interface {}", at[2].String())
 	ct := methodType.CtxType()
 	assert.Equal(t, "context.Context", ct.String())
 	rt := methodType.ReplyType()
@@ -157,12 +158,25 @@ func TestSuiteMethod(t *testing.T) {
 	assert.True(t, ok)
 	methodType = suiteMethod(method)
 	method = methodType.Method()
-	assert.Equal(t, "func(*common.TestService, []interface {}) (struct {}, error)", method.Type.String())
+	assert.Equal(t, "func(*common.TestService, interface {}, interface {}, interface {}) (interface {}, error)", method.Type.String())
 	at = methodType.ArgsType()
-	assert.Equal(t, "[]interface {}", at[0].String())
+	assert.Equal(t, "interface {}", at[0].String())
+	assert.Equal(t, "interface {}", at[1].String())
+	assert.Equal(t, "interface {}", at[2].String())
 	assert.Nil(t, methodType.CtxType())
 	rt = methodType.ReplyType()
-	assert.Equal(t, "struct {}", rt.String())
+	assert.Equal(t, "interface {}", rt.String())
+
+	method, ok = reflect.TypeOf(s).MethodByName("MethodThree")
+	assert.True(t, ok)
+	methodType = suiteMethod(method)
+	method = methodType.Method()
+	assert.Equal(t, "func(*common.TestService) error", method.Type.String())
+	at = methodType.ArgsType()
+	assert.Equal(t, 0, len(at))
+	assert.Nil(t, methodType.CtxType())
+	rt = methodType.ReplyType()
+	assert.Nil(t, rt)
 
 	// wrong number of in return
 	s1 := &testService{}
@@ -177,26 +191,20 @@ func TestSuiteMethod(t *testing.T) {
 	methodType = suiteMethod(method)
 	assert.Nil(t, methodType)
 
-	// replyType != Ptr
+	// Reply not exported
 	method, ok = reflect.TypeOf(s1).MethodByName("Method2")
 	assert.True(t, ok)
 	methodType = suiteMethod(method)
 	assert.Nil(t, methodType)
 
-	// Reply not exported
+	// no return
 	method, ok = reflect.TypeOf(s1).MethodByName("Method3")
 	assert.True(t, ok)
 	methodType = suiteMethod(method)
 	assert.Nil(t, methodType)
 
-	// no return
-	method, ok = reflect.TypeOf(s1).MethodByName("Method4")
-	assert.True(t, ok)
-	methodType = suiteMethod(method)
-	assert.Nil(t, methodType)
-
 	// return value is not error
-	method, ok = reflect.TypeOf(s1).MethodByName("Method5")
+	method, ok = reflect.TypeOf(s1).MethodByName("Method4")
 	assert.True(t, ok)
 	methodType = suiteMethod(method)
 	assert.Nil(t, methodType)
