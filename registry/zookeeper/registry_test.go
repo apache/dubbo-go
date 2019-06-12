@@ -31,6 +31,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
 func Test_Register(t *testing.T) {
@@ -40,7 +41,7 @@ func Test_Register(t *testing.T) {
 	ts, reg, err := newMockZkRegistry(&regurl)
 	defer ts.Stop()
 	err = reg.Register(url)
-	children, _ := reg.client.getChildren("/dubbo/com.ikurento.user.UserProvider/providers")
+	children, _ := reg.client.GetChildren("/dubbo/com.ikurento.user.UserProvider/providers")
 	assert.Regexp(t, ".*dubbo%3A%2F%2F127.0.0.1%3A20000%2Fcom.ikurento.user.UserProvider%3Fanyhost%3Dtrue%26category%3Dproviders%26cluster%3Dmock%26dubbo%3Ddubbo-provider-golang-2.6.0%26.*provider", children)
 	assert.NoError(t, err)
 }
@@ -49,7 +50,6 @@ func Test_Subscribe(t *testing.T) {
 	regurl, _ := common.NewURL(context.TODO(), "registry://127.0.0.1:1111", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
 	url, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 	ts, reg, err := newMockZkRegistry(&regurl)
-	defer ts.Stop()
 
 	//provider register
 	err = reg.Register(url)
@@ -61,8 +61,8 @@ func Test_Subscribe(t *testing.T) {
 
 	//consumer register
 	regurl.Params.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
-	_, reg2, err := newMockZkRegistry(&regurl)
-	reg2.client = reg.client
+	_, reg2, err := newMockZkRegistry(&regurl, zookeeper.WithTestCluster(ts))
+
 	err = reg2.Register(url)
 	listener, err := reg2.Subscribe(url)
 
@@ -71,8 +71,8 @@ func Test_Subscribe(t *testing.T) {
 	if err != nil {
 		return
 	}
-	assert.Regexp(t, ".*ServiceEvent{Action{add service}.*", serviceEvent.String())
-
+	assert.Regexp(t, ".*ServiceEvent{Action{add}.*", serviceEvent.String())
+	defer ts.Stop()
 }
 
 func Test_ConsumerDestory(t *testing.T) {
