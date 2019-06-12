@@ -66,7 +66,7 @@ func (lb *roundRobinLoadBalance) Select(invokers []protocol.Invoker, invocation 
 	totalWeight := int64(0)
 	maxCurrentWeight := int64(math.MinInt64)
 	var selectedInvoker protocol.Invoker
-	var selectedWeightRobin weightedRoundRobin
+	var selectedWeightRobin *weightedRoundRobin
 	now := time.Now()
 
 	for _, invoker := range invokers {
@@ -92,18 +92,19 @@ func (lb *roundRobinLoadBalance) Select(invokers []protocol.Invoker, invocation 
 		if currentWeight > maxCurrentWeight {
 			maxCurrentWeight = currentWeight
 			selectedInvoker = invoker
-			selectedWeightRobin = *weightRobin
+			selectedWeightRobin = weightRobin
 		}
 		totalWeight += weight
 	}
 
 	cleanIfRequired(clean, cachedInvokers, &now)
 
-	if selectedInvoker != nil {
+	if selectedWeightRobin != nil {
 		selectedWeightRobin.Current(totalWeight)
 		return selectedInvoker
 	}
 
+	// should never happen
 	return invokers[0]
 }
 
