@@ -22,7 +22,9 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+)
 
+import (
 	"github.com/stretchr/testify/assert"
 )
 
