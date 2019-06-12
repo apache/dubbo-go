@@ -37,4 +37,3 @@ const (
 	DEFAULT_REFERENCE_FILTERS = ""
 	ECHO                      = "$echo"
 )
-
