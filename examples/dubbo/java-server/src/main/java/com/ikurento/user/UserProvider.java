@@ -14,6 +14,8 @@ public interface UserProvider {
 
     User GetUser0(String userId, String name);
 
+	User GetErr(String userId) throws Exception;
+
     Map<String, User> GetUserMap(List<String> userIdList);
 
     User getUser(int usercode);
