@@ -36,9 +36,10 @@ import (
 
 type TestService struct {
 	MethodOne   func(context.Context, int, bool, *interface{}) error
-	MethodTwo   func([]interface{}, *interface{}) error
+	MethodTwo   func([]interface{}) error
 	MethodThree func(int, bool) (interface{}, error)
 	MethodFour  func(int, bool) (*interface{}, error) `dubbo:"methodFour"`
+	MethodFive  func() error
 	Echo        func(interface{}, *interface{}) error
 }
 
@@ -64,17 +65,23 @@ func TestProxy_Implement(t *testing.T) {
 	p := NewProxy(invoker, nil, map[string]string{constant.ASYNC_KEY: "false"})
 	s := &TestService{}
 	p.Implement(s)
+
 	err := p.Get().(*TestService).MethodOne(nil, 0, false, nil)
 	assert.NoError(t, err)
-	err = p.Get().(*TestService).MethodTwo(nil, nil)
+
+	err = p.Get().(*TestService).MethodTwo(nil)
 	assert.NoError(t, err)
 	ret, err := p.Get().(*TestService).MethodThree(0, false)
 	assert.NoError(t, err)
 	assert.Nil(t, ret) // ret is nil, because it doesn't be injection yet
+
 	ret2, err := p.Get().(*TestService).MethodFour(0, false)
 	assert.NoError(t, err)
 	assert.Equal(t, "*interface {}", reflect.TypeOf(ret2).String())
 	err = p.Get().(*TestService).Echo(nil, nil)
+	assert.NoError(t, err)
+
+	err = p.Get().(*TestService).MethodFive()
 	assert.NoError(t, err)
 
 	// inherit & lowercase
@@ -108,24 +115,14 @@ func TestProxy_Implement(t *testing.T) {
 	p.Implement(s2)
 	assert.Nil(t, s2.MethodOne)
 
-	// reply type
+	// returns type
 	p.rpc = nil
 	type S3 struct {
 		TestService
-		MethodOne func(context.Context, []interface{}, struct{}) error
+		MethodOne func(context.Context, []interface{}, *struct{}) interface{}
 	}
 	s3 := &S3{TestService: *s}
 	p.Implement(s3)
 	assert.Nil(t, s3.MethodOne)
-
-	// returns type
-	p.rpc = nil
-	type S4 struct {
-		TestService
-		MethodOne func(context.Context, []interface{}, *struct{}) interface{}
-	}
-	s4 := &S4{TestService: *s}
-	p.Implement(s4)
-	assert.Nil(t, s4.MethodOne)
 
 }
