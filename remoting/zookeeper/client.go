@@ -100,7 +100,7 @@ func WithZkName(name string) Option {
 	}
 }
 
-func ValidateZookeeperClient(container ZkClientContainer, opts ...Option) error {
+func ValidateZookeeperClient(container zkClientFacade, opts ...Option) error {
 	var (
 		err error
 	)
@@ -552,4 +552,8 @@ func (z *ZookeeperClient) ExistW(zkPath string) (<-chan zk.Event, error) {
 	}
 
 	return event, nil
+}
+
+func (z *ZookeeperClient) GetContent(zkPath string) ([]byte, *zk.Stat, error) {
+	return z.Conn.Get(zkPath)
 }
