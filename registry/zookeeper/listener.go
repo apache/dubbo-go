@@ -19,7 +19,6 @@ package zookeeper
 
 import (
 	"context"
-	"github.com/apache/dubbo-go/remoting"
 )
 import (
 	perrors "github.com/pkg/errors"
@@ -28,6 +27,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/registry"
+	"github.com/apache/dubbo-go/remoting"
 	zk "github.com/apache/dubbo-go/remoting/zookeeper"
 )
 

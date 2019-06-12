@@ -45,7 +45,6 @@ import (
 )
 
 const (
-	defaultTimeout   = int64(10e9)
 	RegistryZkClient = "zk registry"
 )
 
