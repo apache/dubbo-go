@@ -40,13 +40,12 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/registry"
+	"github.com/apache/dubbo-go/remoting/zookeeper"
 	"github.com/apache/dubbo-go/version"
 )
 
 const (
-	defaultTimeout    = int64(10e9)
-	RegistryZkClient  = "zk registry"
-	RegistryConnDelay = 3
+	RegistryZkClient = "zk registry"
 )
 
 var (
@@ -73,14 +72,16 @@ type zkRegistry struct {
 	done  chan struct{}
 
 	cltLock  sync.Mutex
-	client   *zookeeperClient
+	client   *zookeeper.ZookeeperClient
 	services map[string]common.URL // service name + protocol -> service config
 
-	listenerLock sync.Mutex
-	listener     *zkEventListener
-
+	listenerLock   sync.Mutex
+	listener       *zookeeper.ZkEventListener
+	dataListener   *RegistryDataListener
+	configListener *RegistryConfigurationListener
 	//for provider
 	zkPath map[string]int // key = protocol://ip:port/interface
+
 }
 
 func newZkRegistry(url *common.URL) (registry.Registry, error) {
@@ -97,30 +98,28 @@ func newZkRegistry(url *common.URL) (registry.Registry, error) {
 		zkPath:   make(map[string]int),
 	}
 
-	//if r.SubURL.Name == "" {
-	//	r.SubURL.Name = RegistryZkClient
-	//}
-	//if r.Version == "" {
-	//	r.Version = version.Version
-	//}
-
-	err = r.validateZookeeperClient()
+	err = zookeeper.ValidateZookeeperClient(r, zookeeper.WithZkName(RegistryZkClient))
 	if err != nil {
 		return nil, err
 	}
 
 	r.wg.Add(1)
-	go r.handleZkRestart()
+	go zookeeper.HandleClientRestart(r)
 
-	//if r.RoleType == registry.CONSUMER {
-	//	r.wg.Add(1)
-	//	go r.listen()
-	//}
+	r.listener = zookeeper.NewZkEventListener(r.client)
+	r.configListener = NewRegistryConfigurationListener(r.client, r)
+	r.dataListener = NewRegistryDataListener(r.configListener)
 
 	return r, nil
 }
 
-func newMockZkRegistry(url *common.URL) (*zk.TestCluster, *zkRegistry, error) {
+type Options struct {
+	client *zookeeper.ZookeeperClient
+}
+
+type Option func(*Options)
+
+func newMockZkRegistry(url *common.URL, opts ...zookeeper.Option) (*zk.TestCluster, *zkRegistry, error) {
 	var (
 		err error
 		r   *zkRegistry
@@ -136,139 +135,78 @@ func newMockZkRegistry(url *common.URL) (*zk.TestCluster, *zkRegistry, error) {
 		zkPath:   make(map[string]int),
 	}
 
-	c, r.client, _, err = newMockZookeeperClient("test", 15*time.Second)
+	c, r.client, _, err = zookeeper.NewMockZookeeperClient("test", 15*time.Second, opts...)
 	if err != nil {
 		return nil, nil, err
 	}
-
 	r.wg.Add(1)
-	go r.handleZkRestart()
+	go zookeeper.HandleClientRestart(r)
 
-	//if r.RoleType == registry.CONSUMER {
-	//	r.wg.Add(1)
-	//	go r.listen()
-	//}
+	r.listener = zookeeper.NewZkEventListener(r.client)
+	r.configListener = NewRegistryConfigurationListener(r.client, r)
+	r.dataListener = NewRegistryDataListener(r.configListener)
 
 	return c, r, nil
 }
+func (r *zkRegistry) ZkClient() *zookeeper.ZookeeperClient {
+	return r.client
+}
+
+func (r *zkRegistry) SetZkClient(client *zookeeper.ZookeeperClient) {
+	r.client = client
+}
+
+func (r *zkRegistry) ZkClientLock() *sync.Mutex {
+	return &r.cltLock
+}
+
+func (r *zkRegistry) WaitGroup() *sync.WaitGroup {
+	return &r.wg
+}
+
+func (r *zkRegistry) GetDone() chan struct{} {
+	return r.done
+}
+
 func (r *zkRegistry) GetUrl() common.URL {
 	return *r.URL
 }
 
 func (r *zkRegistry) Destroy() {
-	if r.listener != nil {
-		r.listener.Close()
+	if r.configListener != nil {
+		r.configListener.Close()
 	}
 	close(r.done)
 	r.wg.Wait()
 	r.closeRegisters()
 }
 
-func (r *zkRegistry) validateZookeeperClient() error {
-	var (
-		err error
-	)
+func (r *zkRegistry) RestartCallBack() bool {
 
-	err = nil
-	r.cltLock.Lock()
-	defer r.cltLock.Unlock()
-	if r.client == nil {
-		//in dubbp ,every registry only connect one node ,so this is []string{r.Address}
-		timeout, err := time.ParseDuration(r.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
+	// copy r.services
+	services := []common.URL{}
+	for _, confIf := range r.services {
+		services = append(services, confIf)
+	}
+
+	flag := true
+	for _, confIf := range services {
+		err := r.register(confIf)
 		if err != nil {
-			logger.Errorf("timeout config %v is invalid ,err is %v",
-				r.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), err.Error())
-			return perrors.WithMessagef(err, "newZookeeperClient(address:%+v)", r.Location)
+			logger.Errorf("(ZkProviderRegistry)register(conf{%#v}) = error{%#v}",
+				confIf, perrors.WithStack(err))
+			flag = false
+			break
 		}
-		r.client, err = newZookeeperClient(RegistryZkClient, []string{r.Location}, timeout)
-		if err != nil {
-			logger.Warnf("newZookeeperClient(name{%s}, zk addresss{%v}, timeout{%d}) = error{%v}",
-				RegistryZkClient, r.Location, timeout.String(), err)
-			return perrors.WithMessagef(err, "newZookeeperClient(address:%+v)", r.Location)
-		}
+		logger.Infof("success to re-register service :%v", confIf.Key())
 	}
-	if r.client.conn == nil {
-		var event <-chan zk.Event
-		r.client.conn, event, err = zk.Connect(r.client.zkAddrs, r.client.timeout)
-		if err == nil {
-			r.client.wait.Add(1)
-			go r.client.handleZkEvent(event)
-		}
-	}
-
-	return perrors.WithMessagef(err, "newZookeeperClient(address:%+v)", r.PrimitiveURL)
-}
-
-func (r *zkRegistry) handleZkRestart() {
-	var (
-		err       error
-		flag      bool
-		failTimes int
-		confIf    common.URL
-	)
-
-	defer r.wg.Done()
-LOOP:
-	for {
-		select {
-		case <-r.done:
-			logger.Warnf("(ZkProviderRegistry)reconnectZkRegistry goroutine exit now...")
-			break LOOP
-			// re-register all services
-		case <-r.client.done():
-			r.cltLock.Lock()
-			r.client.Close()
-			r.client = nil
-			r.cltLock.Unlock()
-
-			// 接zk，直至成功
-			failTimes = 0
-			for {
-				select {
-				case <-r.done:
-					logger.Warnf("(ZkProviderRegistry)reconnectZkRegistry goroutine exit now...")
-					break LOOP
-				case <-time.After(time.Duration(1e9 * failTimes * RegistryConnDelay)): // 防止疯狂重连zk
-				}
-				err = r.validateZookeeperClient()
-				logger.Infof("ZkProviderRegistry.validateZookeeperClient(zkAddr{%s}) = error{%#v}",
-					r.client.zkAddrs, perrors.WithStack(err))
-				if err == nil {
-					// copy r.services
-					services := []common.URL{}
-					for _, confIf = range r.services {
-						services = append(services, confIf)
-					}
-
-					flag = true
-					for _, confIf = range services {
-						err = r.register(confIf)
-						if err != nil {
-							logger.Errorf("(ZkProviderRegistry)register(conf{%#v}) = error{%#v}",
-								confIf, perrors.WithStack(err))
-							flag = false
-							break
-						}
-						logger.Infof("success to re-register service :%v", confIf.Key())
-					}
-					if flag {
-						break
-					}
-				}
-				failTimes++
-				if MaxFailTimes <= failTimes {
-					failTimes = MaxFailTimes
-				}
-			}
-		}
-	}
+	return flag
 }
 
 func (r *zkRegistry) Register(conf common.URL) error {
 	var (
-		ok       bool
-		err      error
-		listener *zkEventListener
+		ok  bool
+		err error
 	)
 	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
 	switch role {
@@ -291,12 +229,6 @@ func (r *zkRegistry) Register(conf common.URL) error {
 		r.cltLock.Unlock()
 		logger.Debugf("(consumerZkConsumerRegistry)Register(conf{%#v})", conf)
 
-		r.listenerLock.Lock()
-		listener = r.listener
-		r.listenerLock.Unlock()
-		if listener != nil {
-			go listener.listenServiceEvent(conf)
-		}
 	case common.PROVIDER:
 
 		// 检验服务是否已经注册过
@@ -337,7 +269,7 @@ func (r *zkRegistry) register(c common.URL) error {
 		//conf       config.URL
 	)
 
-	err = r.validateZookeeperClient()
+	err = zookeeper.ValidateZookeeperClient(r, zookeeper.WithZkName(RegistryZkClient))
 	if err != nil {
 		return perrors.WithStack(err)
 	}
@@ -428,6 +360,7 @@ func (r *zkRegistry) register(c common.URL) error {
 
 		dubboPath = fmt.Sprintf("/dubbo%s/%s", c.Path, (common.RoleType(common.CONSUMER)).String())
 		logger.Debugf("consumer path:%s, url:%s", dubboPath, rawURL)
+
 	default:
 		return perrors.Errorf("@c{%v} type is not referencer or provider", c)
 	}
@@ -464,44 +397,37 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 }
 
 func (r *zkRegistry) Subscribe(conf common.URL) (registry.Listener, error) {
-	r.wg.Add(1)
 	return r.getListener(conf)
 }
 
-func (r *zkRegistry) getListener(conf common.URL) (*zkEventListener, error) {
+func (r *zkRegistry) getListener(conf common.URL) (*RegistryConfigurationListener, error) {
 	var (
-		zkListener *zkEventListener
+		zkListener *RegistryConfigurationListener
 	)
 
 	r.listenerLock.Lock()
-	zkListener = r.listener
+	zkListener = r.configListener
 	r.listenerLock.Unlock()
-	if zkListener != nil {
-		return zkListener, nil
-	}
-
-	r.cltLock.Lock()
-	client := r.client
-	r.cltLock.Unlock()
-	if client == nil {
-		return nil, perrors.New("zk connection broken")
-	}
-
-	// new client & listener
-	zkListener = newZkEventListener(r, client)
-
-	r.listenerLock.Lock()
-	r.listener = zkListener
-	r.listenerLock.Unlock()
-
-	// listen
-	r.cltLock.Lock()
-	for _, svs := range r.services {
-		if svs.URLEqual(conf) {
-			go zkListener.listenServiceEvent(svs)
+	if r.listener == nil {
+		r.cltLock.Lock()
+		client := r.client
+		r.cltLock.Unlock()
+		if client == nil {
+			return nil, perrors.New("zk connection broken")
 		}
+
+		// new client & listener
+		listener := zookeeper.NewZkEventListener(r.client)
+
+		r.listenerLock.Lock()
+		r.listener = listener
+		r.listenerLock.Unlock()
 	}
-	r.cltLock.Unlock()
+
+	//注册到dataconfig的interested
+	r.dataListener.AddInterestedURL(&conf)
+
+	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo%s/providers", conf.Path), r.dataListener)
 
 	return zkListener, nil
 }
