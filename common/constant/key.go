@@ -68,7 +68,7 @@ const (
 	ENVIRONMENT_KEY  = "environment"
 )
 
-const(
+const (
 	CONFIG_NAMESPACE_KEY = "config.namespace"
-	CONFIG_TIMEOUT_KET = "config.timeout"
+	CONFIG_TIMEOUT_KET   = "config.timeout"
 )

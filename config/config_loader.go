@@ -123,6 +123,7 @@ func providerInit(confProFile string) error {
 /////////////////////////
 
 type ConsumerConfig struct {
+	baseConfig
 	Filter string `yaml:"filter" json:"filter,omitempty"`
 
 	// client
@@ -133,11 +134,11 @@ type ConsumerConfig struct {
 	RequestTimeout  time.Duration
 	ProxyFactory    string `yaml:"proxy_factory" default:"default" json:"proxy_factory,omitempty"`
 	Check           *bool  `yaml:"check"  json:"check,omitempty"`
-	// application
-	ApplicationConfig ApplicationConfig `yaml:"application_config" json:"application_config,omitempty"`
-	Registries        []RegistryConfig  `yaml:"registries" json:"registries,omitempty"`
-	References        []ReferenceConfig `yaml:"references" json:"references,omitempty"`
-	ProtocolConf      interface{}       `yaml:"protocol_conf" json:"protocol_conf,omitempty"`
+
+	Registries   []RegistryConfig   `yaml:"registries" json:"registries,omitempty"`
+	References   []ReferenceConfig  `yaml:"references" json:"references,omitempty"`
+	ConfigCenter ConfigCenterConfig `yaml:"config_center" json:"config_center,omitempty"`
+	ProtocolConf interface{}        `yaml:"protocol_conf" json:"protocol_conf,omitempty"`
 }
 
 type ReferenceConfigTmp struct {
