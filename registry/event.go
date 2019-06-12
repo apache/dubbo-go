@@ -19,13 +19,13 @@ package registry
 
 import (
 	"fmt"
-	"github.com/apache/dubbo-go/remoting"
 	"math/rand"
 	"time"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 func init() {

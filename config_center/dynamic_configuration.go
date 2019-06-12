@@ -18,8 +18,10 @@
 package config_center
 
 import (
-	"github.com/apache/dubbo-go/remoting"
 	"time"
+)
+import (
+	"github.com/apache/dubbo-go/remoting"
 )
 
 //////////////////////////////////////////
