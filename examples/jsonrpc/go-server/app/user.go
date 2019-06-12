@@ -137,6 +137,10 @@ func (u *UserProvider) GetUser2(ctx context.Context, req []interface{}, rsp *Use
 	return err
 }
 
+func (u *UserProvider) GetUser3() error {
+	return nil
+}
+
 func (u *UserProvider) GetUsers(req []interface{}) ([]User, error) {
 	var err error
 

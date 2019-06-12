@@ -102,6 +102,13 @@ func main() {
 	}
 	println("response result: %v", user)
 
+	println("\n\n\nstart to test dubbo - GetUser3")
+	err = userProvider.GetUser3()
+	if err != nil {
+		panic(err)
+	}
+	println("succ!")
+
 	println("\n\n\nstart to test dubbo - getErr")
 	user = &User{}
 	err = userProvider.GetErr(context.TODO(), []interface{}{"A003"}, user)

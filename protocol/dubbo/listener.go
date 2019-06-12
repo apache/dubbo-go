@@ -268,7 +268,7 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 		if e := recover(); e != nil {
 			req.Header.ResponseStatus = hessian.Response_SERVER_ERROR
 			if err, ok := e.(error); ok {
-				logger.Errorf("callService panic: %+v", err)
+				logger.Errorf("callService panic: %+v", perrors.WithStack(err))
 				req.Body = perrors.WithStack(err)
 			} else if err, ok := e.(string); ok {
 				logger.Errorf("callService panic: %+v", perrors.New(err))
@@ -307,13 +307,21 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 		in = append(in, reflect.ValueOf(argv))
 	} else {
 		for i := 0; i < len(argv.([]interface{})); i++ {
-			in = append(in, reflect.ValueOf(argv.([]interface{})[i]))
+			t := reflect.ValueOf(argv.([]interface{})[i])
+			if !t.IsValid() {
+				at := method.ArgsType()[i]
+				if at.Kind() == reflect.Ptr {
+					at = at.Elem()
+				}
+				t = reflect.New(at)
+			}
+			in = append(in, t)
 		}
 	}
 
 	// prepare replyv
 	var replyv reflect.Value
-	if method.ReplyType() == nil {
+	if method.ReplyType() == nil && len(method.ArgsType()) > 0 {
 		replyv = reflect.New(method.ArgsType()[len(method.ArgsType())-1].Elem())
 		in = append(in, replyv)
 	}
@@ -331,7 +339,11 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 		req.Header.ResponseStatus = hessian.Response_OK
 		req.Body = retErr
 	} else {
-		req.Body = replyv.Interface()
+		if replyv.IsValid() && (replyv.Kind() != reflect.Ptr || replyv.Kind() == reflect.Ptr && replyv.Elem().IsValid()) {
+			req.Body = replyv.Interface()
+		} else {
+			req.Body = nil
+		}
 	}
 }
 

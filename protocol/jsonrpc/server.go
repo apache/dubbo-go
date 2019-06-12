@@ -317,7 +317,7 @@ func serveRequest(ctx context.Context,
 	}
 
 	// read body
-	var args interface{}
+	var args []interface{}
 	if err = codec.ReadBody(&args); err != nil {
 		return perrors.WithStack(err)
 	}
@@ -326,7 +326,7 @@ func serveRequest(ctx context.Context,
 	// exporter invoke
 	invoker := exporter.GetInvoker()
 	if invoker != nil {
-		result := invoker.Invoke(invocation.NewRPCInvocationForProvider(methodName, args.([]interface{}), map[string]string{
+		result := invoker.Invoke(invocation.NewRPCInvocationForProvider(methodName, args, map[string]string{
 			//attachments[constant.PATH_KEY] = url.Path
 			//attachments[constant.GROUP_KEY] = url.GetParam(constant.GROUP_KEY, "")
 			//attachments[constant.INTERFACE_KEY] = url.GetParam(constant.INTERFACE_KEY, "")
@@ -371,14 +371,22 @@ func serveRequest(ctx context.Context,
 	if (len(method.ArgsType()) == 1 || len(method.ArgsType()) == 2 && method.ReplyType() == nil) && method.ArgsType()[0].String() == "[]interface {}" {
 		in = append(in, reflect.ValueOf(args))
 	} else {
-		for i := 0; i < len(args.([]interface{})); i++ {
-			in = append(in, reflect.ValueOf(args.([]interface{})[i]))
+		for i := 0; i < len(args); i++ {
+			t := reflect.ValueOf(args[i])
+			if !t.IsValid() {
+				at := method.ArgsType()[i]
+				if at.Kind() == reflect.Ptr {
+					at = at.Elem()
+				}
+				t = reflect.New(at)
+			}
+			in = append(in, t)
 		}
 	}
 
 	// prepare replyv
 	var replyv reflect.Value
-	if method.ReplyType() == nil {
+	if method.ReplyType() == nil && len(method.ArgsType()) > 0 {
 		replyv = reflect.New(method.ArgsType()[len(method.ArgsType())-1].Elem())
 		in = append(in, replyv)
 	}
@@ -401,7 +409,10 @@ func serveRequest(ctx context.Context,
 
 	// write response
 	code := 200
-	rspReply := replyv.Interface()
+	var rspReply interface{}
+	if replyv.IsValid() && (replyv.Kind() != reflect.Ptr || replyv.Kind() == reflect.Ptr && replyv.Elem().IsValid()) {
+		rspReply = replyv.Interface()
+	}
 	if len(errMsg) != 0 {
 		code = 500
 		rspReply = invalidRequest
