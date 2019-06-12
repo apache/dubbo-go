@@ -35,13 +35,13 @@ type ActiveFilter struct {
 func (ef *ActiveFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("invoking active filter. %v,%v", invocation.MethodName(), len(invocation.Arguments()))
 
-	filter.BeginCount(invoker.GetUrl(), invocation.MethodName())
+	protocol.BeginCount(invoker.GetUrl(), invocation.MethodName())
 	return invoker.Invoke(invocation)
 }
 
 func (ef *ActiveFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 
-	filter.EndCount(invoker.GetUrl(), invocation.MethodName())
+	protocol.EndCount(invoker.GetUrl(), invocation.MethodName())
 	return result
 }
 
