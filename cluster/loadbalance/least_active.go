@@ -14,19 +14,21 @@
 package loadbalance
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/cluster"
-	"github.com/dubbo/go-for-apache-dubbo/common/extension"
-	"github.com/dubbo/go-for-apache-dubbo/filter"
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
 	"math/rand"
 )
 
+import (
+	"github.com/dubbo/go-for-apache-dubbo/cluster"
+	"github.com/dubbo/go-for-apache-dubbo/common/extension"
+	"github.com/dubbo/go-for-apache-dubbo/protocol"
+)
+
 const (
-	leastActive = "leastactive"
+	LeastActive = "leastactive"
 )
 
 func init() {
-	extension.SetLoadbalance(leastActive, NewLeastActiveLoadBalance)
+	extension.SetLoadbalance(LeastActive, NewLeastActiveLoadBalance)
 }
 
 type leastActiveLoadBalance struct {
@@ -37,9 +39,8 @@ func NewLeastActiveLoadBalance() cluster.LoadBalance {
 }
 
 func (lb *leastActiveLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
-
 	count := len(invokers)
-	if invokers == nil || count == 0 {
+	if count == 0 {
 		return nil
 	}
 	if count == 1 {
@@ -48,17 +49,17 @@ func (lb *leastActiveLoadBalance) Select(invokers []protocol.Invoker, invocation
 
 	var (
 		leastActive  int32 = -1                 // The least active value of all invokers
-		totalWeight  int64 = 0                  // The number of invokers having the same least active value (leastActive)
+		totalWeight  int64 = 0                  // The number of invokers having the same least active value (LEAST_ACTIVE)
 		firstWeight  int64 = 0                  // Initial value, used for comparision
-		leastIndexes       = make([]int, count) // The index of invokers having the same least active value (leastActive)
-		leastCount         = 0                  // The number of invokers having the same least active value (leastActive)
+		leastIndexes       = make([]int, count) // The index of invokers having the same least active value (LEAST_ACTIVE)
+		leastCount         = 0                  // The number of invokers having the same least active value (LEAST_ACTIVE)
 		sameWeight         = true               // Every invoker has the same weight value?
 	)
 
 	for i := 0; i < count; i++ {
 		invoker := invokers[i]
 		// Active number
-		active := filter.GetStatus(invoker.GetUrl(), invocation.MethodName()).GetActive()
+		active := protocol.GetStatus(invoker.GetUrl(), invocation.MethodName()).GetActive()
 		// current weight (maybe in warmUp)
 		weight := GetWeight(invoker, invocation)
 		// There are smaller active services

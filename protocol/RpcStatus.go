@@ -11,16 +11,19 @@
 // limitations under the License.
 
 // @author yiji@apache.org
-package filter
+package protocol
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common"
 	"sync"
 	"sync/atomic"
 )
 
+import (
+	"github.com/dubbo/go-for-apache-dubbo/common"
+)
+
 var (
-	methodStatistics = sync.Map{} // url -> { methodName : RpcStatus}
+	methodStatistics sync.Map // url -> { methodName : RpcStatus}
 )
 
 type RpcStatus struct {
