@@ -18,6 +18,7 @@
 package logger
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -41,7 +42,7 @@ func TestInitLog(t *testing.T) {
 	path, err = filepath.Abs("./logger.yml")
 	assert.NoError(t, err)
 	err = InitLog(path)
-	assert.EqualError(t, err, "ioutil.ReadFile(file:"+path+") = error:open "+path+": no such file or directory")
+	assert.Contains(t, err.Error(), fmt.Sprintf("ioutil.ReadFile(file:%s) = error:", path))
 
 	err = InitLog("./log.yml")
 	assert.NoError(t, err)
