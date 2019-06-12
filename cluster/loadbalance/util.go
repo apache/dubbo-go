@@ -24,7 +24,8 @@ import (
 
 func GetWeight(invoker protocol.Invoker, invocation protocol.Invocation) int64 {
 	url := invoker.GetUrl()
-	weight := url.GetMethodParamInt(invocation.MethodName(), constant.WEIGHT_KEY, constant.DEFAULT_WEIGHT)
+	weight := url.GetMethodParamInt64(invocation.MethodName(), constant.WEIGHT_KEY, constant.DEFAULT_WEIGHT)
+
 	if weight > 0 {
 		//get service register time an do warm up time
 		now := time.Now().Unix()
