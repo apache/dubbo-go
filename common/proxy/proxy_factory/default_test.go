@@ -22,9 +22,12 @@ import (
 )
 
 import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_GetProxy(t *testing.T) {
