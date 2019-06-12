@@ -15,7 +15,7 @@ PROJECT_HOME=`pwd`
 TARGET_FOLDER=${PROJECT_HOME}/target/${GOOS}
 
 TARGET_SBIN_NAME=${TARGET_EXEC_NAME}
-version=`cat app/version.go | grep Version | awk -F '=' '{print $2}' | awk -F '"' '{print $2}'`
+version=`cat app/version.go | grep Version | grep -v "Apache"  | awk -F '=' '{print $2}' | awk -F '"' '{print $2}'`
 if [[ ${GOOS} == "windows" ]]; then
     TARGET_SBIN_NAME=${TARGET_SBIN_NAME}.exe
 fi

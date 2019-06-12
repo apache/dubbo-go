@@ -1,33 +1,38 @@
-// Copyright 2016-2019 hxmhlt
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package config
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"strconv"
 	"time"
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/cluster/directory"
-	"github.com/dubbo/go-for-apache-dubbo/common"
-	"github.com/dubbo/go-for-apache-dubbo/common/constant"
-	"github.com/dubbo/go-for-apache-dubbo/common/extension"
-	"github.com/dubbo/go-for-apache-dubbo/common/proxy"
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
+	"github.com/apache/dubbo-go/cluster/directory"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/proxy"
+	"github.com/apache/dubbo-go/common/utils"
+	"github.com/apache/dubbo-go/protocol"
 )
 
 type ReferenceConfig struct {
@@ -35,6 +40,7 @@ type ReferenceConfig struct {
 	pxy           *proxy.Proxy
 	InterfaceName string           `required:"true"  yaml:"interface"  json:"interface,omitempty"`
 	Check         *bool            `yaml:"check"  json:"check,omitempty"`
+	Url           string           `yaml:"url"  json:"url,omitempty"`
 	Filter        string           `yaml:"filter" json:"filter,omitempty"`
 	Protocol      string           `yaml:"protocol"  json:"protocol,omitempty"`
 	Registries    []ConfigRegistry `required:"true"  yaml:"registries"  json:"registries,omitempty"`
@@ -50,6 +56,7 @@ type ReferenceConfig struct {
 	} `yaml:"methods"  json:"methods,omitempty"`
 	async   bool `yaml:"async"  json:"async,omitempty"`
 	invoker protocol.Invoker
+	urls    []*common.URL
 }
 
 type ConfigRegistry string
@@ -57,6 +64,7 @@ type ConfigRegistry string
 func NewReferenceConfig(ctx context.Context) *ReferenceConfig {
 	return &ReferenceConfig{context: ctx}
 }
+
 func (refconfig *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	type rf ReferenceConfig
 	raw := rf{} // Put your defaults here
@@ -67,28 +75,59 @@ func (refconfig *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) erro
 	*refconfig = ReferenceConfig(raw)
 	return nil
 }
-func (refconfig *ReferenceConfig) Refer() {
-	//1. user specified SubURL, could be peer-to-peer address, or register center's address.
 
-	//2. assemble SubURL from register center's configuration模式
-	regUrls := loadRegistries(refconfig.Registries, consumerConfig.Registries, common.CONSUMER)
+func (refconfig *ReferenceConfig) Refer() {
 	url := common.NewURLWithOptions(refconfig.InterfaceName, common.WithProtocol(refconfig.Protocol), common.WithParams(refconfig.getUrlMap()))
 
-	//set url to regUrls
-	for _, regUrl := range regUrls {
-		regUrl.SubURL = url
+	//1. user specified URL, could be peer-to-peer address, or register center's address.
+	if refconfig.Url != "" {
+		urlStrings := utils.RegSplit(refconfig.Url, "\\s*[;]+\\s*")
+		for _, urlStr := range urlStrings {
+			serviceUrl, err := common.NewURL(context.Background(), urlStr)
+			if err != nil {
+				panic(fmt.Sprintf("user specified URL %v refer error, error message is %v ", urlStr, err.Error()))
+			}
+			if serviceUrl.Protocol == constant.REGISTRY_PROTOCOL {
+				serviceUrl.SubURL = url
+				refconfig.urls = append(refconfig.urls, &serviceUrl)
+			} else {
+				if serviceUrl.Path == "" {
+					serviceUrl.Path = "/" + refconfig.InterfaceName
+				}
+				// merge url need to do
+				newUrl := common.MergeUrl(serviceUrl, url)
+				refconfig.urls = append(refconfig.urls, &newUrl)
+			}
+
+		}
+	} else {
+		//2. assemble SubURL from register center's configuration模式
+		refconfig.urls = loadRegistries(refconfig.Registries, consumerConfig.Registries, common.CONSUMER)
+
+		//set url to regUrls
+		for _, regUrl := range refconfig.urls {
+			regUrl.SubURL = url
+		}
 	}
 
-	if len(regUrls) == 1 {
-		refconfig.invoker = extension.GetProtocol("registry").Refer(*regUrls[0])
-
+	if len(refconfig.urls) == 1 {
+		refconfig.invoker = extension.GetProtocol(refconfig.urls[0].Protocol).Refer(*refconfig.urls[0])
 	} else {
 		invokers := []protocol.Invoker{}
-		for _, regUrl := range regUrls {
-			invokers = append(invokers, extension.GetProtocol("registry").Refer(*regUrl))
+		var regUrl *common.URL
+		for _, u := range refconfig.urls {
+			invokers = append(invokers, extension.GetProtocol(u.Protocol).Refer(*u))
+			if u.Protocol == constant.REGISTRY_PROTOCOL {
+				regUrl = u
+			}
 		}
-		cluster := extension.GetCluster("registryAware")
-		refconfig.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
+		if regUrl != nil {
+			cluster := extension.GetCluster("registryAware")
+			refconfig.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
+		} else {
+			cluster := extension.GetCluster(refconfig.Cluster)
+			refconfig.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
+		}
 	}
 
 	//create proxy
