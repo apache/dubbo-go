@@ -62,12 +62,14 @@ func (lb *roundRobinLoadBalance) Select(invokers []protocol.Invoker, invocation 
 	cache, _ := methodWeightMap.LoadOrStore(key, &cachedInvokers{})
 	cachedInvokers := cache.(*cachedInvokers)
 
-	clean := false
-	totalWeight := int64(0)
-	maxCurrentWeight := int64(math.MinInt64)
-	var selectedInvoker protocol.Invoker
-	var selectedWeightRobin *weightedRoundRobin
-	now := time.Now()
+	var (
+		clean               = false
+		totalWeight         = int64(0)
+		maxCurrentWeight    = int64(math.MinInt64)
+		now                 = time.Now()
+		selectedInvoker     protocol.Invoker
+		selectedWeightRobin *weightedRoundRobin
+	)
 
 	for _, invoker := range invokers {
 		var weight = GetWeight(invoker, invocation)
