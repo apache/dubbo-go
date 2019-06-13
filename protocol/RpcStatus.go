@@ -38,11 +38,11 @@ func GetStatus(url common.URL, methodName string) *RpcStatus {
 	identifier := url.Key()
 	methodMap, found := methodStatistics.Load(identifier)
 	if !found {
-		methodMap = sync.Map{}
+		methodMap = &sync.Map{}
 		methodStatistics.Store(identifier, methodMap)
 	}
 
-	methodActive := methodMap.(sync.Map)
+	methodActive := methodMap.(*sync.Map)
 	rpcStatus, found := methodActive.Load(methodName)
 	if !found {
 		rpcStatus = &RpcStatus{}
