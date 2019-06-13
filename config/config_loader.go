@@ -125,7 +125,8 @@ func providerInit(confProFile string) error {
 type ConsumerConfig struct {
 	baseConfig
 	Filter string `yaml:"filter" json:"filter,omitempty"`
-
+	// application
+	ApplicationConfig ApplicationConfig `yaml:"application_config" json:"application_config,omitempty"`
 	// client
 	Connect_Timeout string `default:"100ms"  yaml:"connect_timeout" json:"connect_timeout,omitempty"`
 	ConnectTimeout  time.Duration

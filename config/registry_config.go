@@ -31,13 +31,13 @@ import (
 
 type RegistryConfig struct {
 	Id         string `required:"true" yaml:"id"  json:"id,omitempty"`
-	Type       string `required:"true" yaml:"type"  json:"type,omitempty"`
-	TimeoutStr string `yaml:"timeout" default:"5s" json:"timeout,omitempty"` // unit: second
-	Group      string `yaml:"group" json:"group,omitempty"`
+	Type       string `required:"true" yaml:"type"  json:"type,omitempty" property:"type"`
+	TimeoutStr string `yaml:"timeout" default:"5s" json:"timeout,omitempty" property:"timeout"` // unit: second
+	Group      string `yaml:"group" json:"group,omitempty" property:"group"`
 	//for registry
-	Address  string `yaml:"address" json:"address,omitempty"`
-	Username string `yaml:"username" json:"address,omitempty"`
-	Password string `yaml:"password" json:"address,omitempty"`
+	Address  string `yaml:"address" json:"address,omitempty" property:"address"`
+	Username string `yaml:"username" json:"address,omitempty" property:"username"`
+	Password string `yaml:"password" json:"address,omitempty"  property:"password"`
 }
 
 func loadRegistries(registriesIds []ConfigRegistry, registries []RegistryConfig, roleType common.RoleType) []*common.URL {

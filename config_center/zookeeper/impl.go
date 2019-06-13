@@ -46,6 +46,7 @@ type zookeeperDynamicConfiguration struct {
 	listenerLock  sync.Mutex
 	listener      *zookeeper.ZkEventListener
 	cacheListener *CacheListener
+	parser        config_center.ConfigurationParser
 }
 
 func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfiguration, error) {
@@ -106,6 +107,13 @@ func (c *zookeeperDynamicConfiguration) GetConfig(key string, opts ...config_cen
 //For zookeeper, getConfig and getConfigs have the same meaning.
 func (c *zookeeperDynamicConfiguration) GetConfigs(key string, opts ...config_center.Option) (string, error) {
 	return c.GetConfig(key, opts...)
+}
+
+func (c *zookeeperDynamicConfiguration) Parser() config_center.ConfigurationParser {
+	return c.parser
+}
+func (c *zookeeperDynamicConfiguration) SetParser(p config_center.ConfigurationParser) {
+	c.parser = p
 }
 
 func (r *zookeeperDynamicConfiguration) ZkClient() *zookeeper.ZookeeperClient {
