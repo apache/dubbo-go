@@ -14,13 +14,13 @@
 package impl
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common/logger"
+	"github.com/apache/dubbo-go/common/logger"
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common/extension"
-	"github.com/dubbo/go-for-apache-dubbo/filter"
-	"github.com/dubbo/go-for-apache-dubbo/protocol"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/filter"
+	"github.com/apache/dubbo-go/protocol"
 )
 
 const active = "active"

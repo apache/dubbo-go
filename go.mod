@@ -1,6 +1,7 @@
 module github.com/apache/dubbo-go
 
 require (
+	github.com/dubbo/go-for-apache-dubbo v1.0.0
 	github.com/dubbogo/getty v1.0.7
 	github.com/dubbogo/hessian2 v1.0.1
 	github.com/pkg/errors v0.8.1
