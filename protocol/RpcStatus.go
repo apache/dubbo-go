@@ -19,7 +19,7 @@ import (
 )
 
 import (
-	"github.com/dubbo/go-for-apache-dubbo/common"
+	"github.com/apache/dubbo-go/common"
 )
 
 var (
@@ -35,22 +35,22 @@ func (rpc *RpcStatus) GetActive() int32 {
 }
 
 func GetStatus(url common.URL, methodName string) *RpcStatus {
-	identity := url.Key()
-	methodMap, found := methodStatistics.Load(identity)
+	identifier := url.Key()
+	methodMap, found := methodStatistics.Load(identifier)
 	if !found {
 		methodMap = sync.Map{}
-		methodStatistics.Store(identity, methodMap)
+		methodStatistics.Store(identifier, methodMap)
 	}
 
 	methodActive := methodMap.(sync.Map)
 	rpcStatus, found := methodActive.Load(methodName)
 	if !found {
-		rpcStatus = RpcStatus{}
+		rpcStatus = &RpcStatus{}
 		methodActive.Store(methodName, rpcStatus)
 	}
 
-	status := rpcStatus.(RpcStatus)
-	return &status
+	status := rpcStatus.(*RpcStatus)
+	return status
 }
 
 func BeginCount(url common.URL, methodName string) {
