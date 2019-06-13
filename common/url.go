@@ -20,6 +20,7 @@ package common
 import (
 	"context"
 	"fmt"
+	"math"
 	"net"
 	"net/url"
 	"strconv"
@@ -286,6 +287,15 @@ func (c URL) GetMethodParamInt(method string, key string, d int64) int64 {
 		return d
 	}
 	return int64(r)
+}
+
+func (c URL) GetMethodParamInt64(method string, key string, d int64) int64 {
+	r := c.GetMethodParamInt(method, key, math.MinInt64)
+	if r == math.MinInt64 {
+		return c.GetParamInt(key, d)
+	}
+
+	return r
 }
 
 func (c URL) GetMethodParam(method string, key string, d string) string {
