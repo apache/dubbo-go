@@ -45,8 +45,6 @@ func TestLeastActiveByWeight(t *testing.T) {
 
 	inv := new(invocation.RPCInvocation)
 	inv.SetMethod("test")
-
-	// test3 active count equals 1
 	protocol.BeginCount(invokers[2].GetUrl(), inv.MethodName())
 
 	loop = 10000
@@ -66,5 +64,4 @@ func TestLeastActiveByWeight(t *testing.T) {
 	}
 
 	assert.Equal(t, firstCount+secondCount, loop)
-
 }
