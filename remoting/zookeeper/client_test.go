@@ -93,7 +93,8 @@ func verifyEventOrder(t *testing.T, c <-chan zk.Event, expectedEvent []zk.EventT
 //}
 
 func Test_newMockZookeeperClient(t *testing.T) {
-	ts, z, event, _ := newMockZookeeperClient("test", 15*time.Second)
+	ts, z, event, err := NewMockZookeeperClient("test", 15*time.Second)
+	assert.NoError(t, err)
 	defer ts.Stop()
 	states := []zk.State{zk.StateConnecting, zk.StateConnected, zk.StateHasSession}
 	verifyEventStateOrder(t, event, states, "event channel")
@@ -103,7 +104,7 @@ func Test_newMockZookeeperClient(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	ts, z, event, _ := newMockZookeeperClient("test", 15*time.Second)
+	ts, z, event, _ := NewMockZookeeperClient("test", 15*time.Second)
 	defer ts.Stop()
 	err := z.Create("test1/test2/test3/test4")
 	assert.NoError(t, err)
@@ -113,7 +114,7 @@ func TestCreate(t *testing.T) {
 }
 
 func TestCreateDelete(t *testing.T) {
-	ts, z, event, _ := newMockZookeeperClient("test", 15*time.Second)
+	ts, z, event, _ := NewMockZookeeperClient("test", 15*time.Second)
 	defer ts.Stop()
 
 	states := []zk.State{zk.StateConnecting, zk.StateConnected, zk.StateHasSession}
@@ -126,7 +127,7 @@ func TestCreateDelete(t *testing.T) {
 }
 
 func TestRegisterTemp(t *testing.T) {
-	ts, z, event, _ := newMockZookeeperClient("test", 15*time.Second)
+	ts, z, event, _ := NewMockZookeeperClient("test", 15*time.Second)
 	defer ts.Stop()
 	err := z.Create("/test1/test2/test3")
 	assert.NoError(t, err)
@@ -139,7 +140,7 @@ func TestRegisterTemp(t *testing.T) {
 }
 
 func TestRegisterTempSeq(t *testing.T) {
-	ts, z, event, _ := newMockZookeeperClient("test", 15*time.Second)
+	ts, z, event, _ := NewMockZookeeperClient("test", 15*time.Second)
 	defer ts.Stop()
 	err := z.Create("/test1/test2/test3")
 	assert.NoError(t, err)
