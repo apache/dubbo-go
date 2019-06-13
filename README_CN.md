@@ -31,7 +31,7 @@ Apache License, Version 2.0
 - Codec: JsonRPC v2(√), Hessian v2(√)
 - Registry: ZooKeeper(√)
 - Cluster Strategy: Failover(√)
-- Load Balance: Random(√)
+- Load Balance: Random(√), RoundRobin(√), LeastActive(√)
 - Filter: Echo Health Check(√)
 
 开发中列表:
