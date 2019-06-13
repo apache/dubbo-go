@@ -31,6 +31,8 @@ const DEFAULT_GROUP = "dubbo"
 const DEFAULT_CONFIG_TIMEOUT = "10s"
 
 type DynamicConfiguration interface {
+	Parser() ConfigurationParser
+	SetParser(ConfigurationParser)
 	AddListener(string, remoting.ConfigurationListener, ...Option)
 	RemoveListener(string, remoting.ConfigurationListener, ...Option)
 	GetConfig(string, ...Option) (string, error)
