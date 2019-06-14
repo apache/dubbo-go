@@ -19,6 +19,7 @@ package config
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -116,7 +117,7 @@ func (srvconfig *ServiceConfig) Export() error {
 
 				srvconfig.cacheMutex.Lock()
 				if srvconfig.cacheProtocol == nil {
-					logger.Infof("First load the registry protocol!")
+					logger.Infof(fmt.Sprintf("First load the registry protocol , url is {%v}!", url))
 					srvconfig.cacheProtocol = extension.GetProtocol("registry")
 				}
 				srvconfig.cacheMutex.Unlock()
@@ -124,7 +125,7 @@ func (srvconfig *ServiceConfig) Export() error {
 				invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*regUrl)
 				exporter := srvconfig.cacheProtocol.Export(invoker)
 				if exporter == nil {
-					panic(perrors.New("New exporter error"))
+					panic(perrors.New(fmt.Sprintf("Registry protocol new exporter error,registry is {%v},url is {%v}", regUrl, url)))
 				}
 				srvconfig.exporters = append(srvconfig.exporters, exporter)
 			}
@@ -132,7 +133,7 @@ func (srvconfig *ServiceConfig) Export() error {
 			invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*url)
 			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {
-				panic(perrors.New("New exporter error"))
+				panic(perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error,url is {%v}", url)))
 			}
 			srvconfig.exporters = append(srvconfig.exporters, exporter)
 		}
