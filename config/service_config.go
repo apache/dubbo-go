@@ -37,6 +37,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 )
 
 type ServiceConfig struct {
@@ -109,23 +110,33 @@ func (srvconfig *ServiceConfig) Export() error {
 			common.WithParams(urlMap),
 			common.WithMethods(strings.Split(methods, ",")))
 
-		for _, regUrl := range regUrls {
-			regUrl.SubURL = url
+		if len(regUrls) > 0 {
+			for _, regUrl := range regUrls {
+				regUrl.SubURL = url
 
-			srvconfig.cacheMutex.Lock()
-			if srvconfig.cacheProtocol == nil {
-				logger.Infof("First load the registry protocol!")
-				srvconfig.cacheProtocol = extension.GetProtocol("registry")
+				srvconfig.cacheMutex.Lock()
+				if srvconfig.cacheProtocol == nil {
+					logger.Infof("First load the registry protocol!")
+					srvconfig.cacheProtocol = extension.GetProtocol("registry")
+				}
+				srvconfig.cacheMutex.Unlock()
+
+				invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*regUrl)
+				exporter := srvconfig.cacheProtocol.Export(invoker)
+				if exporter == nil {
+					panic(perrors.New("New exporter error"))
+				}
+				srvconfig.exporters = append(srvconfig.exporters, exporter)
 			}
-			srvconfig.cacheMutex.Unlock()
-
-			invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*regUrl)
-			exporter := srvconfig.cacheProtocol.Export(invoker)
+		} else {
+			invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*url)
+			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {
 				panic(perrors.New("New exporter error"))
 			}
 			srvconfig.exporters = append(srvconfig.exporters, exporter)
 		}
+
 	}
 	return nil
 
