@@ -24,7 +24,7 @@ import (
 
 import (
 	"github.com/dubbogo/getty"
-	"github.com/dubbogo/hessian2"
+	hessian "github.com/dubbogo/hessian2"
 	perrors "github.com/pkg/errors"
 )
 import (
@@ -89,12 +89,11 @@ func (p *RpcClientPackageHandler) Write(ss getty.Session, pkg interface{}) error
 // RpcServerPackageHandler
 ////////////////////////////////////////////
 
-type RpcServerPackageHandler struct {
-}
+var (
+	rpcServerPkgHandler = &RpcServerPackageHandler{}
+)
 
-func NewRpcServerPackageHandler() *RpcServerPackageHandler {
-	return &RpcServerPackageHandler{}
-}
+type RpcServerPackageHandler struct{}
 
 func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
 	pkg := &DubboPackage{
