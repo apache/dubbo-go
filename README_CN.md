@@ -37,7 +37,7 @@ Apache License, Version 2.0
 开发中列表:
 
 - Cluster Strategy: Failfast/Failsafe/Failback/Forking
-- Load Balance: RoundRobin/LeastActive/ConsistentHash
+- Load Balance: ConsistentHash
 - Filter: TokenFilter/AccessLogFilter/CountFilter/ActiveLimitFilter/ExecuteLimitFilter/GenericFilter/TpsLimitFilter
 - Registry: etcd/k8s/consul
 
