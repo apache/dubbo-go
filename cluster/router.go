@@ -25,11 +25,12 @@ import (
 // Extension - Router
 
 type RouterFactory interface {
-	Router(common.URL) Router
+	GetRouter(common.URL) (Router, error)
 }
 
 type Router interface {
-	Route([]protocol.Invoker, common.URL, protocol.Invocation) []protocol.Invoker
+	Route([]protocol.Invoker, common.URL, protocol.Invocation) ([]protocol.Invoker, error)
+	CompareTo(router Router) int
 }
 
 type RouterChain struct {
