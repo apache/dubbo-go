@@ -67,3 +67,7 @@ const (
 	OWNER_KEY        = "owner"
 	ENVIRONMENT_KEY  = "environment"
 )
+const (
+	METHOD_KEY  = "method"
+	METHOD_KEYS = "methods"
+)
