@@ -288,6 +288,17 @@ func (c URL) GetParam(s string, d string) string {
 	return r
 }
 
+// GetParamBool
+func (c URL) GetParamBool(s string, d bool) bool {
+
+	var r bool
+	var err error
+	if r, err = strconv.ParseBool(c.Params.Get(s)); err != nil {
+		return d
+	}
+	return r
+}
+
 func (c URL) GetParamInt(s string, d int64) int64 {
 	var r int
 	var err error
@@ -321,6 +332,31 @@ func (c URL) GetMethodParam(method string, key string, d string) string {
 		r = d
 	}
 	return r
+}
+
+// ToMap transfer URL to Map
+func (c URL) ToMap() map[string]string {
+
+	paramsMap := make(map[string]string)
+	if c.Protocol != "" {
+		paramsMap["protocol"] = c.Protocol
+	}
+	if c.Username != "" {
+		paramsMap["username"] = c.Username
+	}
+	if c.Password != "" {
+		paramsMap["password"] = c.Password
+	}
+	if c.Ip != "" {
+		paramsMap["host"] = c.Ip
+	}
+	if c.Protocol != "" {
+		paramsMap["protocol"] = c.Protocol
+	}
+	if c.Path != "" {
+		paramsMap["path"] = c.Path
+	}
+	return paramsMap
 }
 
 // configuration  > reference config >service config
