@@ -37,7 +37,7 @@ Finished List:
 Working List:
 
 - Cluster Strategy: Failfast/Failsafe/Failback/Forking
-- Load Balance: RoundRobin/LeastActive/ConsistentHash
+- Load Balance: ConsistentHash
 - Filter: TokenFilter/AccessLogFilter/CountFilter/ActiveLimitFilter/ExecuteLimitFilter/GenericFilter/TpsLimitFilter
 - Registry: etcd/k8s/consul
 
