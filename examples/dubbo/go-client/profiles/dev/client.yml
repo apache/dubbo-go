@@ -32,9 +32,11 @@ registries :
 references:
   - registries :
     - "hangzhouzk"
-    - "shanghaizk"
+#    - "shanghaizk"
 
     protocol : "dubbo"
+#    version: "2.0"
+#    group: "as"
   #  url: "dubbo://127.0.0.1:20000"
     interface : "com.ikurento.user.UserProvider"
     cluster: "failover"

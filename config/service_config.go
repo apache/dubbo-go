@@ -104,7 +104,7 @@ func (srvconfig *ServiceConfig) Export() error {
 		//if contextPath == "" {
 		//	contextPath = providerConfig.Path
 		//}
-		url := common.NewURLWithOptions(srvconfig.InterfaceName,
+		url := common.NewURLWithOptions(common.WithPath(srvconfig.InterfaceName),
 			common.WithProtocol(proto.Name),
 			common.WithIp(proto.Ip),
 			common.WithPort(proto.Port),
