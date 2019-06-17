@@ -40,7 +40,6 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
@@ -58,19 +57,17 @@ const (
 )
 
 type Server struct {
-	exporter protocol.Exporter
-	done     chan struct{}
-	once     sync.Once
+	done chan struct{}
+	once sync.Once
 
 	sync.RWMutex
 	wg      sync.WaitGroup
 	timeout time.Duration
 }
 
-func NewServer(exporter protocol.Exporter) *Server {
+func NewServer() *Server {
 	return &Server{
-		exporter: exporter,
-		done:     make(chan struct{}),
+		done: make(chan struct{}),
 	}
 }
 
@@ -161,7 +158,7 @@ func (s *Server) handlePkg(conn net.Conn) {
 		}
 		setTimeout(conn, httpTimeout)
 
-		if err := serveRequest(ctx, reqHeader, reqBody, conn, s.exporter); err != nil {
+		if err := serveRequest(ctx, reqHeader, reqBody, conn); err != nil {
 			if errRsp := sendErrorResp(r.Header, []byte(perrors.WithStack(err).Error())); errRsp != nil {
 				logger.Warnf("sendErrorResp(header:%#v, error:%v) = error:%s",
 					r.Header, perrors.WithStack(err), errRsp)
@@ -249,8 +246,7 @@ func (s *Server) Stop() {
 }
 
 func serveRequest(ctx context.Context,
-	header map[string]string, body []byte, conn net.Conn, exporter protocol.Exporter) error {
-
+	header map[string]string, body []byte, conn net.Conn) error {
 	sendErrorResp := func(header map[string]string, body []byte) error {
 		rsp := &http.Response{
 			Header:        make(http.Header),
@@ -309,11 +305,11 @@ func serveRequest(ctx context.Context,
 
 		return perrors.New("server cannot decode request: " + err.Error())
 	}
-	serviceName := header["Path"]
+	path := header["Path"]
 	methodName := codec.req.Method
-	if len(serviceName) == 0 || len(methodName) == 0 {
+	if len(path) == 0 || len(methodName) == 0 {
 		codec.ReadBody(nil)
-		return perrors.New("service/method request ill-formed: " + serviceName + "/" + methodName)
+		return perrors.New("service/method request ill-formed: " + path + "/" + methodName)
 	}
 
 	// read body
@@ -324,12 +320,11 @@ func serveRequest(ctx context.Context,
 	logger.Debugf("args: %v", args)
 
 	// exporter invoke
-	invoker := exporter.GetInvoker()
+	exporter, _ := jsonrpcProtocol.ExporterMap().Load(path)
+	invoker := exporter.(*JsonrpcExporter).GetInvoker()
 	if invoker != nil {
 		result := invoker.Invoke(invocation.NewRPCInvocationForProvider(methodName, args, map[string]string{
-			//attachments[constant.PATH_KEY] = url.Path
-			//attachments[constant.GROUP_KEY] = url.GetParam(constant.GROUP_KEY, "")
-			//attachments[constant.INTERFACE_KEY] = url.GetParam(constant.INTERFACE_KEY, "")
+			constant.PATH_KEY:    path,
 			constant.VERSION_KEY: codec.req.Version,
 		}))
 		if err := result.Error(); err != nil {
@@ -351,7 +346,7 @@ func serveRequest(ctx context.Context,
 			}
 		}
 	}
-
+	serviceName := invoker.GetUrl().Service()
 	// get method
 	svc := common.ServiceMap.GetService(JSONRPC, serviceName)
 	if svc == nil {

@@ -37,3 +37,7 @@ const (
 	DEFAULT_REFERENCE_FILTERS = ""
 	ECHO                      = "$echo"
 )
+
+const (
+	ANY_VALUE = "*"
+)
