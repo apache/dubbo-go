@@ -136,7 +136,7 @@ func (c *HTTPClient) Call(ctx context.Context, service common.URL, req *Request,
 		return perrors.WithStack(err)
 	}
 
-	rspBody, err := c.Do(service.Location, service.Params.Get("interface"), httpHeader, reqBody)
+	rspBody, err := c.Do(service.Location, service.Path, httpHeader, reqBody)
 	if err != nil {
 		return perrors.WithStack(err)
 	}

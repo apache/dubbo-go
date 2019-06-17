@@ -23,6 +23,8 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
+	"strings"
+	"sync"
 )
 
 const JSONRPC = "jsonrpc"
@@ -35,10 +37,11 @@ var jsonrpcProtocol *JsonrpcProtocol
 
 type JsonrpcProtocol struct {
 	protocol.BaseProtocol
-	serverMap map[string]*Server
+	serverMap  map[string]*Server
+	serverLock sync.Mutex
 }
 
-func NewDubboProtocol() *JsonrpcProtocol {
+func NewJsonrpcProtocol() *JsonrpcProtocol {
 	return &JsonrpcProtocol{
 		BaseProtocol: protocol.NewBaseProtocol(),
 		serverMap:    make(map[string]*Server),
@@ -47,7 +50,8 @@ func NewDubboProtocol() *JsonrpcProtocol {
 
 func (jp *JsonrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetUrl()
-	serviceKey := url.Key()
+	serviceKey := strings.TrimPrefix(url.Path, "/")
+
 	exporter := NewJsonrpcExporter(serviceKey, invoker, jp.ExporterMap())
 	jp.SetExporterMap(serviceKey, exporter)
 	logger.Infof("Export service: %s", url.String())
@@ -81,18 +85,27 @@ func (jp *JsonrpcProtocol) Destroy() {
 }
 
 func (jp *JsonrpcProtocol) openServer(url common.URL) {
-	exporter, ok := jp.ExporterMap().Load(url.Key())
+	_, ok := jp.serverMap[url.Location]
 	if !ok {
-		panic("[JsonrpcProtocol]" + url.Key() + "is not existing")
+		_, ok := jp.ExporterMap().Load(strings.TrimPrefix(url.Path, "/"))
+		if !ok {
+			panic("[JsonrpcProtocol]" + url.Key() + "is not existing")
+		}
+
+		jp.serverLock.Lock()
+		_, ok = jp.serverMap[url.Location]
+		if !ok {
+			srv := NewServer()
+			jp.serverMap[url.Location] = srv
+			srv.Start(url)
+		}
+		jp.serverLock.Unlock()
 	}
-	srv := NewServer(exporter.(protocol.Exporter))
-	jp.serverMap[url.Location] = srv
-	srv.Start(url)
 }
 
 func GetProtocol() protocol.Protocol {
-	if jsonrpcProtocol != nil {
-		return jsonrpcProtocol
+	if jsonrpcProtocol == nil {
+		jsonrpcProtocol = NewJsonrpcProtocol()
 	}
-	return NewDubboProtocol()
+	return jsonrpcProtocol
 }

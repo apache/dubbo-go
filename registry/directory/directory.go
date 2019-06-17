@@ -171,7 +171,9 @@ func (dir *registryDirectory) toGroupInvokers() []protocol.Invoker {
 	}
 	if len(groupInvokersMap) == 1 {
 		//len is 1 it means no group setting ,so do not need cluster again
-		groupInvokersList = groupInvokersMap[""]
+		for _, invokers := range groupInvokersMap {
+			groupInvokersList = invokers
+		}
 	} else {
 		for _, invokers := range groupInvokersMap {
 			staticDir := directory.NewStaticDirectory(invokers)

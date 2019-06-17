@@ -19,6 +19,9 @@ package dubbo
 
 import (
 	"context"
+	"fmt"
+	"github.com/apache/dubbo-go/protocol"
+	"net/url"
 	"reflect"
 	"sync"
 	"time"
@@ -34,7 +37,6 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
@@ -133,16 +135,14 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 ////////////////////////////////////////////
 
 type RpcServerHandler struct {
-	exporter       protocol.Exporter
 	maxSessionNum  int
 	sessionTimeout time.Duration
 	sessionMap     map[getty.Session]*rpcSession
 	rwlock         sync.RWMutex
 }
 
-func NewRpcServerHandler(exporter protocol.Exporter, maxSessionNum int, sessionTimeout time.Duration) *RpcServerHandler {
+func NewRpcServerHandler(maxSessionNum int, sessionTimeout time.Duration) *RpcServerHandler {
 	return &RpcServerHandler{
-		exporter:       exporter,
 		maxSessionNum:  maxSessionNum,
 		sessionTimeout: sessionTimeout,
 		sessionMap:     make(map[getty.Session]*rpcSession),
@@ -208,11 +208,24 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 		twoway = false
 	}
 
-	invoker := h.exporter.GetInvoker()
+	u := common.NewURLWithOptions(common.WithPath(p.Service.Path), common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.GROUP_KEY, ""),
+		common.WithParamsValue(constant.INTERFACE_KEY, p.Service.Interface),
+		common.WithParamsValue(constant.VERSION_KEY, p.Service.Version))
+	exporter, _ := dubboProtocol.ExporterMap().Load(u.ServiceKey())
+	if exporter == nil {
+		err := fmt.Errorf("don't have this exporter, key: %s", u.ServiceKey())
+		logger.Errorf(err.Error())
+		p.Header.ResponseStatus = hessian.Response_OK
+		p.Body = err
+		h.reply(session, p, hessian.PackageResponse)
+		return
+	}
+	invoker := exporter.(protocol.Exporter).GetInvoker()
 	if invoker != nil {
 		result := invoker.Invoke(invocation.NewRPCInvocationForProvider(p.Service.Method, p.Body.(map[string]interface{})["args"].([]interface{}), map[string]string{
-			constant.PATH_KEY: p.Service.Path,
-			//attachments[constant.GROUP_KEY] = url.GetParam(constant.GROUP_KEY, "")
+			constant.PATH_KEY:      p.Service.Path,
+			constant.GROUP_KEY:     "",
 			constant.INTERFACE_KEY: p.Service.Interface,
 			constant.VERSION_KEY:   p.Service.Version,
 		}))
