@@ -18,7 +18,6 @@
 package directory
 
 import (
-	"github.com/apache/dubbo-go/remoting"
 	"sync"
 	"time"
 )
@@ -36,6 +35,7 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 	"github.com/apache/dubbo-go/registry"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 const (
