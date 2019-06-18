@@ -51,5 +51,6 @@ func (factory *DefaultProxyFactory) GetProxy(invoker protocol.Invoker, url *comm
 	return proxy.NewProxy(invoker, nil, attachments)
 }
 func (factory *DefaultProxyFactory) GetInvoker(url common.URL) protocol.Invoker {
-	return proxy.NewCallInvoker(url)
+	// todo: call service
+	return protocol.NewBaseInvoker(url)
 }
