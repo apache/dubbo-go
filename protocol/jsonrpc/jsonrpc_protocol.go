@@ -18,13 +18,16 @@
 package jsonrpc
 
 import (
+	"strings"
+	"sync"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
-	"strings"
-	"sync"
 )
 
 const JSONRPC = "jsonrpc"
