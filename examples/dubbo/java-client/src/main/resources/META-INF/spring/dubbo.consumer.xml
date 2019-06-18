@@ -34,7 +34,7 @@
 
 	<!-- 声明需要使用的服务接口 -->
 	<!--<dubbo:reference id="userProvider" protocol="jsonrpc" interface="com.ikurento.user.UserProvider">-->
-	<dubbo:reference registry="ikurento" check="false" id="userProvider" protocol="dubbo" interface="com.ikurento.user.UserProvider" version="2.0" group="as">
+	<dubbo:reference registry="ikurento" check="false" id="userProvider" protocol="dubbo" interface="com.ikurento.user.UserProvider">
 		<!--<dubbo:parameter key="heartbeat" value="10000"/ -->
     </dubbo:reference>
 
