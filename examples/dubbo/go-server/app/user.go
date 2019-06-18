@@ -37,7 +37,6 @@ type Gender hessian.JavaEnum
 
 func init() {
 	config.SetProviderService(new(UserProvider))
-	config.SetProviderService(new(UsersProvider))
 }
 
 const (
@@ -206,20 +205,6 @@ func (u *UserProvider) Service() string {
 }
 
 func (u *UserProvider) Version() string {
-	return ""
-}
-
-type UsersProvider struct {
-}
-
-func (s *UsersProvider) GetXxx() error {
-	return nil
-}
-func (u *UsersProvider) Service() string {
-	return "com.ikurento.user.UsersProvider"
-}
-
-func (u *UsersProvider) Version() string {
 	return ""
 }
 
