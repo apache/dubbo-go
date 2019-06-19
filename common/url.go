@@ -280,12 +280,39 @@ func (c URL) Service() string {
 	}
 	return ""
 }
+
+func (c *URL) AddParam(key string, value string) {
+	c.Params.Add(key, value)
+}
+
 func (c URL) GetParam(s string, d string) string {
 	var r string
 	if r = c.Params.Get(s); r == "" {
 		r = d
 	}
 	return r
+}
+
+func (c URL) GetRawParameter(key string) string {
+	if "protocol" == key {
+		return c.Protocol
+	}
+	if "username" == key {
+		return c.Username
+	}
+	if "password" == key {
+		return c.Password
+	}
+	if "host" == key {
+		return c.Ip
+	}
+	if "port" == key {
+		return c.Port
+	}
+	if "path" == key {
+		return c.Path
+	}
+	return c.Params.Get(key)
 }
 
 // GetParamBool
@@ -338,6 +365,10 @@ func (c URL) GetMethodParam(method string, key string, d string) string {
 func (c URL) ToMap() map[string]string {
 
 	paramsMap := make(map[string]string)
+
+	for k, v := range c.Params {
+		paramsMap[k] = v[0]
+	}
 	if c.Protocol != "" {
 		paramsMap["protocol"] = c.Protocol
 	}
@@ -347,8 +378,15 @@ func (c URL) ToMap() map[string]string {
 	if c.Password != "" {
 		paramsMap["password"] = c.Password
 	}
-	if c.Ip != "" {
-		paramsMap["host"] = c.Ip
+	if c.Location != "" {
+		paramsMap["host"] = strings.Split(c.Location, ":")[0]
+		var port string
+		if strings.Contains(c.Location, ":") {
+			port = strings.Split(c.Location, ":")[1]
+		} else {
+			port = "0"
+		}
+		paramsMap["port"] = port
 	}
 	if c.Protocol != "" {
 		paramsMap["protocol"] = c.Protocol
