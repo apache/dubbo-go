@@ -1,8 +1,10 @@
 package router
 
 import (
+	"encoding/base64"
 	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/utils"
 	"regexp"
 	"strings"
 
@@ -14,6 +16,8 @@ import (
 const (
 	RoutePattern = `([&!=,]*)\\s*([^&!=,\\s]+)`
 )
+
+var itemExists = struct{}{}
 
 type ConditionRouter struct {
 	Pattern       string
@@ -28,7 +32,7 @@ func (c *ConditionRouter) Route(invokers []protocol.Invoker, url common.URL, inv
 	if len(invokers) == 0 {
 		return invokers, nil
 	}
-	if !c.matchWhen(url, invocation) {
+	if !c.MatchWhen(url, invocation) {
 		return invokers, nil
 	}
 	var result []protocol.Invoker
@@ -36,7 +40,7 @@ func (c *ConditionRouter) Route(invokers []protocol.Invoker, url common.URL, inv
 		return result, nil
 	}
 	for _, invoker := range invokers {
-		if c.matchThen(invoker.GetUrl(), url) {
+		if c.MatchThen(invoker.GetUrl(), url) {
 			result = append(result, invoker)
 		}
 	}
@@ -70,7 +74,18 @@ func (c ConditionRouter) CompareTo(r cluster.Router) int {
 func newConditionRouter(url common.URL) (*ConditionRouter, error) {
 	var whenRule string
 	var thenRule string
-	//rule := url.GetParam("rule", "")
+
+	ruleDec, err := base64.URLEncoding.DecodeString(url.GetParam("rule", ""))
+	rule := string(ruleDec)
+	if err != nil || rule == "" {
+		return nil, perrors.Errorf("Illegal route rule!")
+	}
+	rule = strings.Replace(rule, "consumer.", "", -1)
+	rule = strings.Replace(rule, "provider.", "", -1)
+	i := strings.Index(rule, "=>")
+	whenRule = strings.Trim(If(i < 0, "", rule[0:i]).(string), " ")
+	thenRule = strings.Trim(If(i < 0, rule, rule[i+2:]).(string), " ")
+
 	w, err := parseRule(whenRule)
 	if err != nil {
 		return nil, perrors.Errorf("%s", "")
@@ -100,7 +115,7 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 		return condition, nil
 	}
 	var pair MatchPair
-	values := make(map[string]interface{})
+	values := utils.NewSet()
 
 	reg := regexp.MustCompile(`([&!=,]*)\s*([^&!=,\s]+)`)
 
@@ -112,7 +127,10 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 
 		switch separator {
 		case "":
-			pair = MatchPair{}
+			pair = MatchPair{
+				Matches:    utils.NewSet(),
+				Mismatches: utils.NewSet(),
+			}
 			condition[content] = pair
 		case "&":
 			if r, ok := condition[content]; ok {
@@ -126,18 +144,18 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 				return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex[0], startIndex[0])
 			}
 			values = pair.Matches
-			values[content] = ""
+			values.Add(content)
 		case "!=":
 			if &pair == nil {
 				return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex[0], startIndex[0])
 			}
-			values = pair.Matches
-			values[content] = ""
+			values = pair.Mismatches
+			values.Add(content)
 		case ",":
-			if len(values) == 0 {
+			if values.Empty() {
 				return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex[0], startIndex[0])
 			}
-			values[content] = ""
+			values.Add(content)
 		default:
 			return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex[0], startIndex[0])
 
@@ -149,16 +167,16 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 
 }
 
-func (c *ConditionRouter) matchWhen(url common.URL, invocation protocol.Invocation) bool {
+func (c *ConditionRouter) MatchWhen(url common.URL, invocation protocol.Invocation) bool {
 
-	return len(c.WhenCondition) == 0 || len(c.WhenCondition) == 0 || matchCondition(c.WhenCondition, &url, nil, invocation)
+	return len(c.WhenCondition) == 0 || MatchCondition(c.WhenCondition, &url, nil, invocation)
 }
-func (c *ConditionRouter) matchThen(url common.URL, param common.URL) bool {
+func (c *ConditionRouter) MatchThen(url common.URL, param common.URL) bool {
 
-	return !(len(c.ThenCondition) == 0) && matchCondition(c.ThenCondition, &url, &param, nil)
+	return len(c.ThenCondition) > 0 && MatchCondition(c.ThenCondition, &url, &param, nil)
 }
 
-func matchCondition(pairs map[string]MatchPair, url *common.URL, param *common.URL, invocation protocol.Invocation) bool {
+func MatchCondition(pairs map[string]MatchPair, url *common.URL, param *common.URL, invocation protocol.Invocation) bool {
 	sample := url.ToMap()
 	result := false
 	for key, matchPair := range pairs {
@@ -168,18 +186,18 @@ func matchCondition(pairs map[string]MatchPair, url *common.URL, param *common.U
 			sampleValue = invocation.MethodName()
 		} else {
 			sampleValue = sample[key]
-			if &sampleValue == nil {
-				sampleValue = sample[constant.DEFAULT_KEY_PREFIX+key]
+			if sampleValue == "" {
+				sampleValue = sample[constant.PREFIX_DEFAULT_KEY+key]
 			}
 		}
-		if &sampleValue != nil {
+		if sampleValue != "" {
 			if !matchPair.isMatch(sampleValue, param) {
 				return false
 			} else {
 				result = true
 			}
 		} else {
-			if !(len(matchPair.Matches) == 0) {
+			if !(matchPair.Matches.Empty()) {
 				return false
 			} else {
 				result = true
@@ -198,11 +216,72 @@ func If(b bool, t, f interface{}) interface{} {
 }
 
 type MatchPair struct {
-	Matches    map[string]interface{}
-	Mismatches map[string]interface{}
+	Matches    *utils.HashSet
+	Mismatches *utils.HashSet
 }
 
-func (pair MatchPair) isMatch(s string, param *common.URL) bool {
+func (pair MatchPair) isMatch(value string, param *common.URL) bool {
+
+	if !pair.Matches.Empty() && pair.Mismatches.Empty() {
+
+		for match := range pair.Matches.Items {
+			if isMatchGlobPattern(match.(string), value, param) {
+				return true
+			}
+		}
+		return false
+	}
+	if !pair.Mismatches.Empty() && pair.Matches.Empty() {
+
+		for mismatch := range pair.Mismatches.Items {
+			if isMatchGlobPattern(mismatch.(string), value, param) {
+				return false
+			}
+		}
+		return true
+	}
+	if !pair.Mismatches.Empty() && !pair.Matches.Empty() {
+		for mismatch := range pair.Mismatches.Items {
+			if isMatchGlobPattern(mismatch.(string), value, param) {
+				return false
+			}
+		}
+		for match := range pair.Matches.Items {
+			if isMatchGlobPattern(match.(string), value, param) {
+				return true
+			}
+		}
+		return false
+	}
 
 	return false
+}
+
+func isMatchGlobPattern(pattern string, value string, param *common.URL) bool {
+	if param != nil && strings.HasPrefix(pattern, "$") {
+		pattern = param.GetRawParameter(pattern[1:])
+	}
+	if "*" == pattern {
+		return true
+	}
+	if pattern == "" && value == "" {
+		return true
+	}
+	if pattern == "" || value == "" {
+		return false
+	}
+	i := strings.LastIndex(pattern, "*")
+	switch i {
+	case -1:
+		return value == pattern
+	case len(pattern) - 1:
+		return strings.HasPrefix(value, pattern[0:i])
+	case 0:
+		return strings.HasSuffix(value, pattern[:i+1])
+	default:
+		prefix := pattern[0:1]
+		suffix := pattern[i+1:]
+		return strings.HasPrefix(value, prefix) && strings.HasSuffix(value, suffix)
+
+	}
 }
