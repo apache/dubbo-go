@@ -34,8 +34,10 @@ import (
 
 type Gender hessian.JavaEnum
 
+var userProvider = new(UserProvider)
+
 func init() {
-	config.SetConsumerService(new(UserProvider))
+	config.SetConsumerService(userProvider)
 }
 
 const (
@@ -101,7 +103,8 @@ type UserProvider struct {
 	GetUser  func(ctx context.Context, req []interface{}, rsp *User) error
 	GetUser0 func(id string, name string) (User, error)
 	GetUser1 func(ctx context.Context, req []interface{}, rsp *User) error
-	GetUser2 func(ctx context.Context, req []interface{}, rsp *User) error   `dubbo:"getUser"`
+	GetUser2 func(ctx context.Context, req []interface{}, rsp *User) error `dubbo:"getUser"`
+	GetUser3 func() error
 	Echo     func(ctx context.Context, req interface{}) (interface{}, error) // Echo represent EchoFilter will be used
 }
 

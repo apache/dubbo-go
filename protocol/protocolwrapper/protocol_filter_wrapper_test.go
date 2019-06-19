@@ -38,7 +38,7 @@ func TestProtocolFilterWrapper_Export(t *testing.T) {
 	filtProto := extension.GetProtocol(FILTER)
 	filtProto.(*ProtocolFilterWrapper).protocol = &protocol.BaseProtocol{}
 
-	u := common.NewURLWithOptions("Service",
+	u := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.SERVICE_FILTER_KEY, impl.ECHO))
 	exporter := filtProto.Export(protocol.NewBaseInvoker(*u))
@@ -50,7 +50,7 @@ func TestProtocolFilterWrapper_Refer(t *testing.T) {
 	filtProto := extension.GetProtocol(FILTER)
 	filtProto.(*ProtocolFilterWrapper).protocol = &protocol.BaseProtocol{}
 
-	u := common.NewURLWithOptions("Service",
+	u := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.REFERENCE_FILTER_KEY, impl.ECHO))
 	invoker := filtProto.Refer(*u)
