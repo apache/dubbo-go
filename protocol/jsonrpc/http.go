@@ -100,7 +100,7 @@ func (c *HTTPClient) NewRequest(service common.URL, method string, args interfac
 		ID:       atomic.AddInt64(&c.ID, 1),
 		group:    service.GetParam(constant.GROUP_KEY, ""),
 		protocol: service.Protocol,
-		version:  service.GetParam(constant.VERSION_KEY, constant.DEFAULT_VERSION),
+		version:  service.GetParam(constant.VERSION_KEY, ""),
 		service:  service.Path,
 		method:   method,
 		args:     args,
