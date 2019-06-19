@@ -26,7 +26,6 @@ const (
 	DEFAULT_LOADBALANCE = "random"
 	DEFAULT_RETRIES     = 2
 	DEFAULT_PROTOCOL    = "dubbo"
-	DEFAULT_VERSION     = ""
 	DEFAULT_REG_TIMEOUT = "10s"
 	DEFAULT_CLUSTER     = "failover"
 )
