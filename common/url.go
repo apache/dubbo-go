@@ -236,7 +236,7 @@ func (c URL) String() string {
 func (c URL) Key() string {
 	buildString := fmt.Sprintf(
 		"%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s",
-		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GROUP_KEY, ""), c.GetParam(constant.VERSION_KEY, constant.DEFAULT_VERSION))
+		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GROUP_KEY, ""), c.GetParam(constant.VERSION_KEY, ""))
 	return buildString
 	//return c.ServiceKey()
 }
@@ -255,8 +255,8 @@ func (c URL) ServiceKey() string {
 
 	buf.WriteString(intf)
 
-	version := c.GetParam(constant.VERSION_KEY, constant.DEFAULT_VERSION)
-	if version != "" {
+	version := c.GetParam(constant.VERSION_KEY, "")
+	if version != "" && version != "0.0.0" {
 		buf.WriteString(":")
 		buf.WriteString(version)
 	}
