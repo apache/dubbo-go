@@ -25,12 +25,12 @@ import (
 )
 
 import (
+	"github.com/dubbogo/hessian2"
 	perrors "github.com/pkg/errors"
 )
 
 import (
 	"github.com/apache/dubbo-go/config"
-	hessian "github.com/dubbogo/hessian2"
 )
 
 type Gender hessian.JavaEnum
@@ -145,10 +145,6 @@ func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User
 	return err
 }
 
-func (u *UserProvider) GetErr(ctx context.Context, req []interface{}, rsp *User) error {
-	return hessian.NewThrowable("exception")
-}
-
 func (u *UserProvider) GetUser0(id string, name string) (User, error) {
 	var err error
 
@@ -161,6 +157,22 @@ func (u *UserProvider) GetUser0(id string, name string) (User, error) {
 		return User{}, perrors.New("name is not " + user.Name)
 	}
 	return *user, err
+}
+
+func (u *UserProvider) GetUser2(ctx context.Context, req []interface{}, rsp *User) error {
+	var err error
+
+	println("req:%#v", req)
+	rsp.Id = strconv.Itoa(int(req[0].(int32)))
+	return err
+}
+
+func (u *UserProvider) GetUser3() error {
+	return nil
+}
+
+func (u *UserProvider) GetErr(ctx context.Context, req []interface{}, rsp *User) error {
+	return hessian.NewThrowable("exception")
 }
 
 func (u *UserProvider) GetUsers(req []interface{}) ([]interface{}, error) {
@@ -180,6 +192,12 @@ func (u *UserProvider) GetUsers(req []interface{}) ([]interface{}, error) {
 	println("user1:%v", user1)
 
 	return []interface{}{user, user1}, err
+}
+
+func (s *UserProvider) MethodMapper() map[string]string {
+	return map[string]string{
+		"GetUser2": "getUser",
+	}
 }
 
 func (u *UserProvider) Service() string {

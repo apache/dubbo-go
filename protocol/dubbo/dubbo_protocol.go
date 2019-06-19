@@ -22,6 +22,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
+	"sync"
 )
 
 const (
@@ -38,7 +39,8 @@ var (
 
 type DubboProtocol struct {
 	protocol.BaseProtocol
-	serverMap map[string]*Server
+	serverMap  map[string]*Server
+	serverLock sync.Mutex
 }
 
 func NewDubboProtocol() *DubboProtocol {
@@ -50,7 +52,7 @@ func NewDubboProtocol() *DubboProtocol {
 
 func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetUrl()
-	serviceKey := url.Key()
+	serviceKey := url.ServiceKey()
 	exporter := NewDubboExporter(serviceKey, invoker, dp.ExporterMap())
 	dp.SetExporterMap(serviceKey, exporter)
 	logger.Infof("Export service: %s", url.String())
@@ -80,18 +82,27 @@ func (dp *DubboProtocol) Destroy() {
 }
 
 func (dp *DubboProtocol) openServer(url common.URL) {
-	exporter, ok := dp.ExporterMap().Load(url.Key())
+	_, ok := dp.serverMap[url.Location]
 	if !ok {
-		panic("[DubboProtocol]" + url.Key() + "is not existing")
+		_, ok := dp.ExporterMap().Load(url.ServiceKey())
+		if !ok {
+			panic("[DubboProtocol]" + url.Key() + "is not existing")
+		}
+
+		dp.serverLock.Lock()
+		_, ok = dp.serverMap[url.Location]
+		if !ok {
+			srv := NewServer()
+			dp.serverMap[url.Location] = srv
+			srv.Start(url)
+		}
+		dp.serverLock.Unlock()
 	}
-	srv := NewServer(exporter.(protocol.Exporter))
-	dp.serverMap[url.Location] = srv
-	srv.Start(url)
 }
 
 func GetProtocol() protocol.Protocol {
-	if dubboProtocol != nil {
-		return dubboProtocol
+	if dubboProtocol == nil {
+		dubboProtocol = NewDubboProtocol()
 	}
-	return NewDubboProtocol()
+	return dubboProtocol
 }
