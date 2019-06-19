@@ -50,7 +50,7 @@ func TestHTTPClient_Call(t *testing.T) {
 
 	methods, err := common.ServiceMap.Register("jsonrpc", &UserProvider{})
 	assert.NoError(t, err)
-	assert.Equal(t, "GetUser,GetUser0,GetUser1,GetUser2,GetUser3", methods)
+	assert.Equal(t, "GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4", methods)
 
 	// Export
 	proto := GetProtocol()
@@ -82,9 +82,9 @@ func TestHTTPClient_Call(t *testing.T) {
 	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
 		"X-Proxy-Id": "dubbogo",
 		"X-Services": url.Path,
-		"X-Method":   "GetUser",
+		"X-Method":   "GetUser0",
 	})
-	req = client.NewRequest(url, "GetUser0", []interface{}{"1", "username"})
+	req = client.NewRequest(url, "GetUser0", []interface{}{"1", nil, "username"})
 	reply = &User{}
 	err = client.Call(ctx, url, req, reply)
 	assert.NoError(t, err)
@@ -97,7 +97,7 @@ func TestHTTPClient_Call(t *testing.T) {
 		"X-Services": url.Path,
 		"X-Method":   "GetUser1",
 	})
-	req = client.NewRequest(url, "GetUser1", []interface{}{""})
+	req = client.NewRequest(url, "GetUser1", []interface{}{})
 	reply = &User{}
 	err = client.Call(ctx, url, req, reply)
 	assert.True(t, strings.Contains(err.Error(), "500 Internal Server Error"))
@@ -107,7 +107,7 @@ func TestHTTPClient_Call(t *testing.T) {
 	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
 		"X-Proxy-Id": "dubbogo",
 		"X-Services": url.Path,
-		"X-Method":   "GetUser",
+		"X-Method":   "GetUser2",
 	})
 	req = client.NewRequest(url, "GetUser2", []interface{}{"1", "username"})
 	reply1 := []User{}
@@ -119,13 +119,36 @@ func TestHTTPClient_Call(t *testing.T) {
 	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
 		"X-Proxy-Id": "dubbogo",
 		"X-Services": url.Path,
-		"X-Method":   "GetUser",
+		"X-Method":   "GetUser3",
 	})
 	req = client.NewRequest(url, "GetUser3", []interface{}{"1", "username"})
 	reply1 = []User{}
 	err = client.Call(ctx, url, req, &reply1)
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "1", Name: "username"}, reply1[0])
+
+	// call GetUser4
+	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
+		"X-Proxy-Id": "dubbogo",
+		"X-Services": url.Path,
+		"X-Method":   "GetUser4",
+	})
+	req = client.NewRequest(url, "GetUser4", []interface{}{0})
+	reply = &User{}
+	err = client.Call(ctx, url, req, reply)
+	assert.NoError(t, err)
+	assert.Equal(t, &User{Id: "", Name: ""}, reply)
+
+	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
+		"X-Proxy-Id": "dubbogo",
+		"X-Services": url.Path,
+		"X-Method":   "GetUser4",
+	})
+	req = client.NewRequest(url, "GetUser4", []interface{}{1})
+	reply = &User{}
+	err = client.Call(ctx, url, req, reply)
+	assert.NoError(t, err)
+	assert.Equal(t, &User{Id: "1", Name: ""}, reply)
 
 	// destroy
 	proto.Destroy()
@@ -138,11 +161,11 @@ func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User
 	return nil
 }
 
-func (u *UserProvider) GetUser0(id string, name string) (User, error) {
+func (u *UserProvider) GetUser0(id string, k *User, name string) (User, error) {
 	return User{Id: id, Name: name}, nil
 }
 
-func (u *UserProvider) GetUser1(ctx context.Context, req []interface{}, rsp *User) error {
+func (u *UserProvider) GetUser1() error {
 	return perrors.New("error")
 }
 
@@ -153,6 +176,13 @@ func (u *UserProvider) GetUser2(ctx context.Context, req []interface{}, rsp *[]U
 
 func (u *UserProvider) GetUser3(ctx context.Context, req []interface{}) ([]User, error) {
 	return []User{{Id: req[0].(string), Name: req[1].(string)}}, nil
+}
+
+func (u *UserProvider) GetUser4(id float64) (*User, error) {
+	if id == 0 {
+		return nil, nil
+	}
+	return &User{Id: "1"}, nil
 }
 
 func (u *UserProvider) Service() string {

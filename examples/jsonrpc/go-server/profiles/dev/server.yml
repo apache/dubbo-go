@@ -28,7 +28,7 @@ registries :
 services:
  - registries:
    - "hangzhouzk"
-   - "shanghaizk"
+#   - "shanghaizk"
    protocol : "jsonrpc"
      # 相当于dubbo.xml中的interface
    interface : "com.ikurento.user.UserProvider"

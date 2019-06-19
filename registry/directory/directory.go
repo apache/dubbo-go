@@ -18,7 +18,6 @@
 package directory
 
 import (
-	"github.com/apache/dubbo-go/remoting"
 	"sync"
 	"time"
 )
@@ -36,6 +35,7 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 	"github.com/apache/dubbo-go/registry"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 const (
@@ -171,7 +171,9 @@ func (dir *registryDirectory) toGroupInvokers() []protocol.Invoker {
 	}
 	if len(groupInvokersMap) == 1 {
 		//len is 1 it means no group setting ,so do not need cluster again
-		groupInvokersList = groupInvokersMap[""]
+		for _, invokers := range groupInvokersMap {
+			groupInvokersList = invokers
+		}
 	} else {
 		for _, invokers := range groupInvokersMap {
 			staticDir := directory.NewStaticDirectory(invokers)
