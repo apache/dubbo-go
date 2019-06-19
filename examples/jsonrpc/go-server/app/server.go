@@ -48,8 +48,8 @@ var (
 // 		export APP_LOG_CONF_FILE="xxx"
 func main() {
 
-	_, proMap := config.Load()
-	if proMap == nil {
+	_, proLen := config.Load()
+	if proLen == 0 {
 		panic("proMap is nil")
 	}
 

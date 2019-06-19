@@ -18,8 +18,14 @@
 package protocol
 
 type Result interface {
+	SetError(error)
 	Error() error
+	SetResult(interface{})
 	Result() interface{}
+	SetAttachments(map[string]string)
+	Attachments() map[string]string
+	AddAttachment(string, string)
+	Attachment(string, string) string
 }
 
 /////////////////////////////
@@ -27,14 +33,43 @@ type Result interface {
 /////////////////////////////
 
 type RPCResult struct {
-	Err  error
-	Rest interface{}
+	Attrs map[string]string
+	Err   error
+	Rest  interface{}
+}
+
+func (r *RPCResult) SetError(err error) {
+	r.Err = err
 }
 
 func (r *RPCResult) Error() error {
 	return r.Err
 }
 
+func (r *RPCResult) SetResult(rest interface{}) {
+	r.Rest = rest
+}
+
 func (r *RPCResult) Result() interface{} {
 	return r.Rest
+}
+
+func (r *RPCResult) SetAttachments(attr map[string]string) {
+	r.Attrs = attr
+}
+
+func (r *RPCResult) Attachments() map[string]string {
+	return r.Attrs
+}
+
+func (r *RPCResult) AddAttachment(key, value string) {
+	r.Attrs[key] = value
+}
+
+func (r *RPCResult) Attachment(key, defaultValue string) string {
+	v, ok := r.Attrs[key]
+	if !ok {
+		v = defaultValue
+	}
+	return v
 }

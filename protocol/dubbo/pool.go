@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
-	"strings"
 	"sync"
 	"time"
 )
@@ -336,14 +335,4 @@ func (p *gettyRPCClientPool) remove(conn *gettyRPCClient) {
 			}
 		}
 	}
-}
-
-func GenerateEndpointAddr(protocol, addr string) string {
-	var builder strings.Builder
-
-	builder.WriteString(protocol)
-	builder.WriteString("://")
-	builder.WriteString(addr)
-
-	return builder.String()
 }

@@ -56,6 +56,9 @@ public class UserProviderImpl implements UserProvider {
         return userList;
     }
 
+    public void GetUser3() {
+    }
+
     public Map<String, User> GetUserMap(List<String> userIdList) {
         Iterator it = userIdList.iterator();
         Map<String, User> map = new HashMap<String, User>();
