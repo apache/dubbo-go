@@ -282,11 +282,11 @@ func (c URL) GetRawParameter(key string) string {
 	if "username" == key {
 		return c.Username
 	}
+	if "host" == key {
+		return strings.Split(c.Location, ":")[0]
+	}
 	if "password" == key {
 		return c.Password
-	}
-	if "host" == key {
-		return c.Ip
 	}
 	if "port" == key {
 		return c.Port

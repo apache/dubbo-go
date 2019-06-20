@@ -69,6 +69,14 @@ func NewRPCInvocationForProvider(methodName string, arguments []interface{}, att
 	}
 }
 
+func NewRPCInvocation(methodName string, parameterTypes []reflect.Type, arguments []interface{}) *RPCInvocation {
+	return &RPCInvocation{
+		methodName:     methodName,
+		arguments:      arguments,
+		parameterTypes: parameterTypes,
+	}
+}
+
 func (r *RPCInvocation) MethodName() string {
 	return r.methodName
 }
