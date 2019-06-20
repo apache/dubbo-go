@@ -40,6 +40,7 @@ func (c *ConditionRouter) Route(invokers []protocol.Invoker, url common.URL, inv
 		return result, nil
 	}
 	for _, invoker := range invokers {
+
 		if c.MatchThen(invoker.GetUrl(), url) {
 			result = append(result, invoker)
 		}
@@ -50,7 +51,7 @@ func (c *ConditionRouter) Route(invokers []protocol.Invoker, url common.URL, inv
 		//todo 日志
 		return result, nil
 	}
-	return result, nil
+	return invokers, nil
 }
 
 func (c ConditionRouter) CompareTo(r cluster.Router) int {
@@ -101,8 +102,8 @@ func newConditionRouter(url common.URL) (*ConditionRouter, error) {
 	return &ConditionRouter{
 		RoutePattern,
 		url,
-		url.GetParamInt("Priority", 0),
-		url.GetParamBool("Force", false),
+		url.GetParamInt("priority", 0),
+		url.GetParamBool("force", false),
 		when,
 		then,
 	}, nil
@@ -118,8 +119,10 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 	values := utils.NewSet()
 
 	reg := regexp.MustCompile(`([&!=,]*)\s*([^&!=,\s]+)`)
-
-	startIndex := reg.FindIndex([]byte(rule))
+	var startIndex = 0
+	if indexTuple := reg.FindIndex([]byte(rule)); len(indexTuple) > 0 {
+		startIndex = indexTuple[0]
+	}
 	matches := reg.FindAllSubmatch([]byte(rule), -1)
 	for _, groups := range matches {
 		separator := string(groups[1])
@@ -136,28 +139,31 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 			if r, ok := condition[content]; ok {
 				pair = r
 			} else {
-				pair = MatchPair{}
+				pair = MatchPair{
+					Matches:    utils.NewSet(),
+					Mismatches: utils.NewSet(),
+				}
 				condition[content] = pair
 			}
 		case "=":
 			if &pair == nil {
-				return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex[0], startIndex[0])
+				return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex, startIndex)
 			}
 			values = pair.Matches
 			values.Add(content)
 		case "!=":
 			if &pair == nil {
-				return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex[0], startIndex[0])
+				return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex, startIndex)
 			}
 			values = pair.Mismatches
 			values.Add(content)
 		case ",":
 			if values.Empty() {
-				return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex[0], startIndex[0])
+				return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex, startIndex)
 			}
 			values.Add(content)
 		default:
-			return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex[0], startIndex[0])
+			return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex, startIndex)
 
 		}
 	}
@@ -178,6 +184,9 @@ func (c *ConditionRouter) MatchThen(url common.URL, param common.URL) bool {
 
 func MatchCondition(pairs map[string]MatchPair, url *common.URL, param *common.URL, invocation protocol.Invocation) bool {
 	sample := url.ToMap()
+	if len(sample) == 0 {
+		return true
+	}
 	result := false
 	for key, matchPair := range pairs {
 		var sampleValue string
