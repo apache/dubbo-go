@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	extension.SetRouterFactory("conditionRouterFactory", NewConditionRouterFactory)
+	extension.SetRouterFactory("condition", NewConditionRouterFactory)
 }
 
 type ConditionRouterFactory struct {
