@@ -72,3 +72,11 @@ const (
 	CONFIG_NAMESPACE_KEY = "config.namespace"
 	CONFIG_TIMEOUT_KET   = "config.timeout"
 )
+const (
+	RegistryConfigPrefix  = "dubbo.registries."
+	ReferenceConfigPrefix = "dubbo.reference."
+	ServiceConfigPrefix   = "dubbo.service."
+	ProtocolConfigPrefix  = "dubbo.protocols."
+	ProviderConfigPrefix  = "dubbo.provider."
+	ConsumerConfigPrefix  = "dubbo.consumer."
+)

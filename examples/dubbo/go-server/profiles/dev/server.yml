@@ -1,24 +1,24 @@
 # dubbo server yaml configure file
 
+
 # application config
 application_config:
-    organization : "ikurento.com"
-    name : "BDTService"
-    module : "dubbogo user-info server"
-    version : "0.0.1"
-    owner : "ZX"
-    environment : "dev"
+  organization : "ikurento.com"
+  name : "BDTService"
+  module : "dubbogo user-info server"
+  version : "0.0.1"
+  owner : "ZX"
+  environment : "dev"
 
 registries :
-  - id: "hangzhouzk"
-    type: "zookeeper"
+  "hangzhouzk":
+    protocol: "zookeeper"
     timeout	: "3s"
     address: "127.0.0.1:2181"
     username: ""
     password: ""
-
-  - id: "shanghaizk"
-    type: "zookeeper"
+  "shanghaizk":
+    protocol: "zookeeper"
     timeout	: "3s"
     address: "127.0.0.1:2182"
     username: ""
@@ -26,11 +26,9 @@ registries :
 
 
 services:
-  - registries:
-    - "hangzhouzk"
-    - "shanghaizk"
+  "UserProvider":
     protocol : "dubbo"
-      # 相当于dubbo.xml中的interface
+    # 相当于dubbo.xml中的interface
     interface : "com.ikurento.user.UserProvider"
     loadbalance: "random"
     warmup: "100"
@@ -41,12 +39,11 @@ services:
         loadbalance: "random"
 
 protocols:
-  -   name: "dubbo"
+  "dubbo1":
+      name: "dubbo"
   #    ip : "127.0.0.1"
-      port : 20000
-  #-   name: "jsonrpc"
-  #    ip: "127.0.0.1"
-  #    port: 20001
+      port: 20000
+
 
 protocol_conf:
   dubbo:

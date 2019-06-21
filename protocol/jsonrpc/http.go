@@ -110,7 +110,7 @@ func (c *HTTPClient) NewRequest(service common.URL, method string, args interfac
 func (c *HTTPClient) Call(ctx context.Context, service common.URL, req *Request, rsp interface{}) error {
 	// header
 	httpHeader := http.Header{}
-	httpHeader.Set("Content-Type", "application/json")
+	httpHeader.Set("Content-Protocol", "application/json")
 	httpHeader.Set("Accept", "application/json")
 
 	reqTimeout := c.options.HTTPTimeout

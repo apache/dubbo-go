@@ -164,6 +164,13 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (URL, error) 
 	}
 
 	//rawUrlString = "//" + rawUrlString
+	if strings.Index(rawUrlString, "//") < 0 {
+		t := URL{baseUrl: baseUrl{ctx: ctx}}
+		for _, opt := range opts {
+			opt(&t)
+		}
+		rawUrlString = t.Protocol + "://" + rawUrlString
+	}
 	serviceUrl, err = url.Parse(rawUrlString)
 	if err != nil {
 		return s, perrors.Errorf("url.Parse(url string{%s}),  error{%v}", rawUrlString, err)
@@ -197,10 +204,10 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (URL, error) 
 	//		s.Timeout = time.Duration(timeout * 1e6) // timeout unit is millisecond
 	//	}
 	//}
+	//fmt.Println(s.String())
 	for _, opt := range opts {
 		opt(&s)
 	}
-	//fmt.Println(s.String())
 	return s, nil
 }
 
