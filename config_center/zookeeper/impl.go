@@ -18,8 +18,10 @@
 package zookeeper
 
 import (
+	"github.com/samuel/go-zookeeper/zk"
 	"strings"
 	"sync"
+	"time"
 )
 import (
 	perrors "github.com/pkg/errors"
@@ -64,7 +66,36 @@ func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfigu
 
 	c.listener = zookeeper.NewZkEventListener(c.client)
 	c.cacheListener = NewCacheListener(c.rootPath)
+
+	err = c.client.Create(c.rootPath)
+	c.listener.ListenServiceEvent(c.rootPath, c.cacheListener)
 	return c, nil
+
+}
+
+func newMockZookeeperDynamicConfiguration(url *common.URL, opts ...zookeeper.Option) (*zk.TestCluster, *zookeeperDynamicConfiguration, error) {
+	c := &zookeeperDynamicConfiguration{
+		url:      url,
+		rootPath: "/" + url.GetParam(constant.CONFIG_NAMESPACE_KEY, config_center.DEFAULT_GROUP) + "/config",
+	}
+	var (
+		tc  *zk.TestCluster
+		err error
+	)
+	tc, c.client, _, err = zookeeper.NewMockZookeeperClient("test", 15*time.Second, opts...)
+	if err != nil {
+		logger.Errorf("mock zookeeper client start error ,error message is %v", err)
+		return tc, c, err
+	}
+	c.wg.Add(1)
+	go zookeeper.HandleClientRestart(c)
+
+	c.listener = zookeeper.NewZkEventListener(c.client)
+	c.cacheListener = NewCacheListener(c.rootPath)
+
+	err = c.client.Create(c.rootPath)
+	go c.listener.ListenServiceEvent(c.rootPath, c.cacheListener)
+	return tc, c, nil
 
 }
 
@@ -77,31 +108,34 @@ func (c *zookeeperDynamicConfiguration) RemoveListener(key string, listener remo
 }
 
 func (c *zookeeperDynamicConfiguration) GetConfig(key string, opts ...config_center.Option) (string, error) {
-	/**
-	 * when group is not null, we are getting startup configs from Config Center, for example:
-	 * group=dubbo, key=dubbo.properties
-	 */
+
 	opions := &config_center.Options{}
 	for _, opt := range opts {
 		opt(opions)
 	}
-
+	/**
+	 * when group is not null, we are getting startup configs from Config Center, for example:
+	 * group=dubbo, key=dubbo.properties
+	 */
 	if opions.Group != "" {
 		key = opions.Group + "/" + key
+	} else {
+
+		/**
+		 * when group is null, we are fetching governance rules, for example:
+		 * 1. key=org.apache.dubbo.DemoService.configurators
+		 * 2. key = org.apache.dubbo.DemoService.condition-router
+		 */
+		i := strings.LastIndex(key, ".")
+		key = key[0:i] + "/" + key[i+1:]
 	}
-	/**
-	 * when group is null, we are fetching governance rules, for example:
-	 * 1. key=org.apache.dubbo.DemoService.configurators
-	 * 2. key = org.apache.dubbo.DemoService.condition-router
-	 */
-	i := strings.LastIndex(key, ".")
-	key = key[0:i] + "/" + key[i+1:]
 	content, _, err := c.client.GetContent(c.rootPath + "/" + key)
 	if err != nil {
 		return "", perrors.WithStack(err)
 	} else {
 		return string(content), nil
 	}
+
 }
 
 //For zookeeper, getConfig and getConfigs have the same meaning.
