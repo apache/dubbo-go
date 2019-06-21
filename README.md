@@ -31,13 +31,13 @@ Finished List:
 - Codec: JsonRPC v2(√), Hessian v2(√)
 - Registry: ZooKeeper(√)
 - Cluster Strategy: Failover(√)
-- Load Balance: Random(√)
+- Load Balance: Random(√), RoundRobin(√), LeastActive(√)
 - Filter: Echo Health Check(√)
 
 Working List:
 
 - Cluster Strategy: Failfast/Failsafe/Failback/Forking
-- Load Balance: RoundRobin/LeastActive/ConsistentHash
+- Load Balance: ConsistentHash
 - Filter: TokenFilter/AccessLogFilter/CountFilter/ActiveLimitFilter/ExecuteLimitFilter/GenericFilter/TpsLimitFilter
 - Registry: etcd/k8s/consul
 
