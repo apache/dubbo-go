@@ -201,16 +201,13 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (URL, error) 
 	for _, opt := range opts {
 		opt(&s)
 	}
-	//fmt.Println(s.String())
+
 	return s, nil
 }
 
-//
-//func (c URL) Key() string {
-//	return fmt.Sprintf(
-//		"%s://%s:%s@%s:%s/%s",
-//		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path)
-//}
+func NewURLFromString(url string) URL {
+
+}
 
 func (c URL) URLEqual(url URL) bool {
 	c.Ip = ""
