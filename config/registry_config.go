@@ -30,8 +30,7 @@ import (
 )
 
 type RegistryConfig struct {
-	Id         string `required:"true" yaml:"id"  json:"id,omitempty"`
-	Type       string `required:"true" yaml:"type"  json:"type,omitempty" property:"type"`
+	Protocol   string `required:"true" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
 	TimeoutStr string `yaml:"timeout" default:"5s" json:"timeout,omitempty" property:"timeout"` // unit: second
 	Group      string `yaml:"group" json:"group,omitempty" property:"group"`
 	//for registry
@@ -40,30 +39,30 @@ type RegistryConfig struct {
 	Password string `yaml:"password" json:"address,omitempty"  property:"password"`
 }
 
-func loadRegistries(registriesIds []ConfigRegistry, registries []RegistryConfig, roleType common.RoleType) []*common.URL {
+func (*RegistryConfig) Prefix() string {
+	return constant.RegistryConfigPrefix
+}
+
+func loadRegistries(registries map[string]*RegistryConfig, roleType common.RoleType) []*common.URL {
 	var urls []*common.URL
-	for _, registry := range registriesIds {
-		for _, registryConf := range registries {
-			if string(registry) == registryConf.Id {
+	for k, registryConf := range registries {
 
-				url, err := common.NewURL(
-					context.TODO(),
-					constant.REGISTRY_PROTOCOL+"://"+registryConf.Address,
-					common.WithParams(registryConf.getUrlMap(roleType)),
-					common.WithUsername(registryConf.Username),
-					common.WithPassword(registryConf.Password),
-				)
+		url, err := common.NewURL(
+			context.TODO(),
+			constant.REGISTRY_PROTOCOL+"://"+registryConf.Address,
+			common.WithParams(registryConf.getUrlMap(roleType)),
+			common.WithUsername(registryConf.Username),
+			common.WithPassword(registryConf.Password),
+		)
 
-				if err != nil {
-					logger.Errorf("The registry id:%s url is invalid ,and will skip the registry, error: %#v", registryConf.Id, err)
-				} else {
-					urls = append(urls, &url)
-				}
-
-			}
+		if err != nil {
+			logger.Errorf("The registry id:%s url is invalid ,and will skip the registry, error: %#v", k, err)
+		} else {
+			urls = append(urls, &url)
 		}
 
 	}
+
 	return urls
 }
 
@@ -71,7 +70,7 @@ func (regconfig *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values 
 	urlMap := url.Values{}
 	urlMap.Set(constant.GROUP_KEY, regconfig.Group)
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(int(roleType)))
-	urlMap.Set(constant.REGISTRY_KEY, regconfig.Type)
+	urlMap.Set(constant.REGISTRY_KEY, regconfig.Protocol)
 	urlMap.Set(constant.REGISTRY_TIMEOUT_KEY, regconfig.TimeoutStr)
 
 	return urlMap

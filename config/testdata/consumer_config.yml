@@ -17,14 +17,16 @@ application_config:
   environment : "dev"
 
 registries :
-  - id: "hangzhouzk"
+
+  "hangzhouzk":
+    id: "hangzhouzk"
     type: "zookeeper"
     timeout	: "3s"
     address: "127.0.0.1:2181"
     username: ""
     password: ""
-
-  - id: "shanghaizk"
+  "shanghaizk":
+    id: "shanghaizk"
     type: "zookeeper"
     timeout	: "3s"
     address: "127.0.0.1:2182"
@@ -32,9 +34,7 @@ registries :
     password: ""
 
 references:
-  - registries :
-      - "hangzhouzk"
-      - "shanghaizk"
+  "UserProvider":
     filter: ""
     protocol : "dubbo"
     interface : "com.ikurento.user.UserProvider"
