@@ -18,7 +18,6 @@
 package zookeeper
 
 import (
-	"fmt"
 	"strings"
 	"sync"
 )
@@ -53,7 +52,10 @@ func (l *CacheListener) RemoveListener(key string, listener remoting.Configurati
 }
 
 func (l *CacheListener) DataChange(event remoting.Event) bool {
-	fmt.Println(event)
+	if event.Content == "" {
+		//meanings new node
+		return true
+	}
 	key := l.pathToKey(event.Path)
 	if key != "" {
 		if listeners, ok := l.keyListeners.Load(key); ok {

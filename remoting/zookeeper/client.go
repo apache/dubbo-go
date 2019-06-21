@@ -543,7 +543,7 @@ func (z *ZookeeperClient) ExistW(zkPath string) (<-chan zk.Event, error) {
 	}
 	z.Unlock()
 	if err != nil {
-		logger.Errorf("zkClient{%s}.ExistsW(path{%s}) = error{%v}.", z.name, zkPath, perrors.WithStack(err))
+		logger.Warnf("zkClient{%s}.ExistsW(path{%s}) = error{%v}.", z.name, zkPath, perrors.WithStack(err))
 		return nil, perrors.WithMessagef(err, "zk.ExistsW(path:%s)", zkPath)
 	}
 	if !exist {

@@ -19,6 +19,7 @@ package config
 
 import (
 	"container/list"
+	"strings"
 	"sync"
 )
 
@@ -58,31 +59,45 @@ func (env *Environment) UpdateExternalConfigMap(externalMap map[string]string) {
 	}
 }
 
-func (env *Environment) Configuration(prefix string) *list.List {
+func (env *Environment) Configuration() *list.List {
 	list := list.New()
-	memConf := newInmemoryConfiguration(prefix)
+	memConf := newInmemoryConfiguration()
 	memConf.setProperties(env.externalConfigMap)
 	list.PushBack(memConf)
 	return list
 }
 
 type InmemoryConfiguration struct {
-	prefix string
-	store  sync.Map
+	store sync.Map
 }
 
-func newInmemoryConfiguration(prefix string) *InmemoryConfiguration {
-	return &InmemoryConfiguration{prefix: prefix}
+func newInmemoryConfiguration() *InmemoryConfiguration {
+	return &InmemoryConfiguration{}
 }
 func (conf *InmemoryConfiguration) setProperties(p sync.Map) {
 	conf.store = p
 }
 
-func (conf *InmemoryConfiguration) GetProperty(key string) string {
-	v, ok := conf.store.Load(conf.prefix + "." + key)
+func (conf *InmemoryConfiguration) GetProperty(key string) (bool, string) {
+	v, ok := conf.store.Load(key)
 	if ok {
-		return v.(string)
+		return true, v.(string)
 	} else {
-		return ""
+		return false, ""
 	}
+}
+
+func (conf *InmemoryConfiguration) GetSubProperty(subKey string) map[string]struct{} {
+	properties := make(map[string]struct{})
+	conf.store.Range(func(key, value interface{}) bool {
+		if idx := strings.Index(key.(string), subKey); idx >= 0 {
+			after := key.(string)[idx+len(subKey):]
+			if i := strings.Index(after, "."); i >= 0 {
+				properties[after[0:strings.Index(after, ".")]] = struct{}{}
+			}
+
+		}
+		return true
+	})
+	return properties
 }

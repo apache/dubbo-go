@@ -40,8 +40,11 @@ func (f *zookeeperDynamicConfigurationFactory) GetDynamicConfiguration(url *comm
 	var err error
 	once.Do(func() {
 		dynamicConfiguration, err = newZookeeperDynamicConfiguration(url)
-		dynamicConfiguration.SetParser(&config_center.DefaultConfigurationParser{})
 	})
+	if err != nil {
+		return nil, err
+	}
+	dynamicConfiguration.SetParser(&config_center.DefaultConfigurationParser{})
 	return dynamicConfiguration, err
 
 }

@@ -30,7 +30,6 @@ type ConfigCenterConfig struct {
 	Group      string `default:"dubbo" yaml:"group" json:"group,omitempty"`
 	Username   string `yaml:"username" json:"username,omitempty"`
 	Password   string `yaml:"password" json:"password,omitempty"`
-	Check      *bool  `yaml:"check"  json:"check,omitempty"`
 	ConfigFile string `default:"dubbo.properties" yaml:"config_file"  json:"config_file,omitempty"`
 	TimeoutStr string `yaml:"timeout"  json:"timeout,omitempty"`
 	timeout    time.Duration
