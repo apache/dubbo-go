@@ -19,6 +19,7 @@ package config
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -37,6 +38,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 )
 
 type ServiceConfig struct {
@@ -108,23 +110,33 @@ func (srvconfig *ServiceConfig) Export() error {
 			common.WithParams(urlMap),
 			common.WithMethods(strings.Split(methods, ",")))
 
-		for _, regUrl := range regUrls {
-			regUrl.SubURL = url
+		if len(regUrls) > 0 {
+			for _, regUrl := range regUrls {
+				regUrl.SubURL = url
 
-			srvconfig.cacheMutex.Lock()
-			if srvconfig.cacheProtocol == nil {
-				logger.Infof("First load the registry protocol!")
-				srvconfig.cacheProtocol = extension.GetProtocol("registry")
+				srvconfig.cacheMutex.Lock()
+				if srvconfig.cacheProtocol == nil {
+					logger.Infof(fmt.Sprintf("First load the registry protocol , url is {%v}!", url))
+					srvconfig.cacheProtocol = extension.GetProtocol("registry")
+				}
+				srvconfig.cacheMutex.Unlock()
+
+				invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*regUrl)
+				exporter := srvconfig.cacheProtocol.Export(invoker)
+				if exporter == nil {
+					panic(perrors.New(fmt.Sprintf("Registry protocol new exporter error,registry is {%v},url is {%v}", regUrl, url)))
+				}
+				srvconfig.exporters = append(srvconfig.exporters, exporter)
 			}
-			srvconfig.cacheMutex.Unlock()
-
-			invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*regUrl)
-			exporter := srvconfig.cacheProtocol.Export(invoker)
+		} else {
+			invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*url)
+			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {
-				panic(perrors.New("New exporter error"))
+				panic(perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error,url is {%v}", url)))
 			}
 			srvconfig.exporters = append(srvconfig.exporters, exporter)
 		}
+
 	}
 	return nil
 

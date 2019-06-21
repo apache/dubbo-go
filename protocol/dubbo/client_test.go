@@ -91,7 +91,7 @@ func TestClient_Call(t *testing.T) {
 
 	user = &User{}
 	err = c.Call("127.0.0.1:20000", url, "GetUser1", []interface{}{"1", "username"}, user)
-	assert.EqualError(t, err, "got exception: error")
+	assert.EqualError(t, err, "error")
 
 	user2 := []interface{}{}
 	err = c.Call("127.0.0.1:20000", url, "GetUser2", []interface{}{"1", "username"}, &user2)
