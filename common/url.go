@@ -220,14 +220,6 @@ func (c URL) URLEqual(url URL) bool {
 	return true
 }
 
-//func (c SubURL) String() string {
-//	return fmt.Sprintf(
-//		"DefaultServiceURL{protocol:%s, Location:%s, Path:%s, Ip:%s, Port:%s, "+
-//			"Timeout:%s, Version:%s, Group:%s,  Params:%+v}",
-//		c.protocol, c.Location, c.Path, c.Ip, c.Port,
-//		c.Timeout, c.Version, c.Group, c.Params)
-//}
-
 func (c URL) String() string {
 	buildString := fmt.Sprintf(
 		"%s://%s:%s@%s:%s%s?",

@@ -11,14 +11,14 @@ import (
 )
 
 type consulListener struct {
-	plan      *watch.Plan
-	addrsChan chan []*consul.ServiceEntry
+	plan   *watch.Plan
+	addrCh chan *consul.ServiceEntry
 }
 
 func newConsulListener(url common.URL) (registry.Listener, error) {
 	var err error
 
-	addrsChan := make(chan []*consul.ServiceEntry, 1)
+	addrCh := make(chan *consul.ServiceEntry, 1)
 
 	params := make(map[string]interface{})
 	params["type"] = "service"
@@ -29,12 +29,22 @@ func newConsulListener(url common.URL) (registry.Listener, error) {
 	}
 	plan.Handler = func(idx uint64, raw interface{}) {
 		addrs, _ := raw.([]*consul.ServiceEntry)
-		addrsChan <- addrs
+		for _, addr := range addrs {
+			addrCh <- addr
+		}
 	}
 
+	go func() {
+		err := plan.Run(url.Location)
+		if err != nil {
+
+		}
+		plan.Stop()
+	}()
+
 	listener := &consulListener{
-		plan:      plan,
-		addrsChan: addrsChan,
+		plan:   plan,
+		addrCh: addrCh,
 	}
 	return listener, nil
 }
