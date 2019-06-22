@@ -109,39 +109,39 @@ func (bi *MockInvoker) Destroy() {
 func TestRoute_matchWhen(t *testing.T) {
 	inv := &invocation.RPCInvocation{}
 	rule := base64.URLEncoding.EncodeToString([]byte("=> host = 1.2.3.4"))
-	router, _ := NewConditionRouterFactory().GetRouter(getRouteUrl(rule))
+	router, _ := NewConditionRouterFactory().Router(getRouteUrl(rule))
 	cUrl, _ := common.NewURL(context.TODO(), "consumer://1.1.1.1/com.foo.BarService")
 
 	matchWhen, _ := router.(*ConditionRouter).MatchWhen(cUrl, inv)
 	assert.Equal(t, true, matchWhen)
 
 	rule1 := base64.URLEncoding.EncodeToString([]byte("host = 2.2.2.2,1.1.1.1,3.3.3.3 => host = 1.2.3.4"))
-	router1, _ := NewConditionRouterFactory().GetRouter(getRouteUrl(rule1))
+	router1, _ := NewConditionRouterFactory().Router(getRouteUrl(rule1))
 	matchWhen1, _ := router1.(*ConditionRouter).MatchWhen(cUrl, inv)
 	assert.Equal(t, true, matchWhen1)
 
 	rule2 := base64.URLEncoding.EncodeToString([]byte("host = 2.2.2.2,1.1.1.1,3.3.3.3 & host !=1.1.1.1 => host = 1.2.3.4"))
-	router2, _ := NewConditionRouterFactory().GetRouter(getRouteUrl(rule2))
+	router2, _ := NewConditionRouterFactory().Router(getRouteUrl(rule2))
 	matchWhen2, _ := router2.(*ConditionRouter).MatchWhen(cUrl, inv)
 	assert.Equal(t, false, matchWhen2)
 
 	rule3 := base64.URLEncoding.EncodeToString([]byte("host !=4.4.4.4 & host = 2.2.2.2,1.1.1.1,3.3.3.3 => host = 1.2.3.4"))
-	router3, _ := NewConditionRouterFactory().GetRouter(getRouteUrl(rule3))
+	router3, _ := NewConditionRouterFactory().Router(getRouteUrl(rule3))
 	matchWhen3, _ := router3.(*ConditionRouter).MatchWhen(cUrl, inv)
 	assert.Equal(t, true, matchWhen3)
 
 	rule4 := base64.URLEncoding.EncodeToString([]byte("host !=4.4.4.* & host = 2.2.2.2,1.1.1.1,3.3.3.3 => host = 1.2.3.4"))
-	router4, _ := NewConditionRouterFactory().GetRouter(getRouteUrl(rule4))
+	router4, _ := NewConditionRouterFactory().Router(getRouteUrl(rule4))
 	matchWhen4, _ := router4.(*ConditionRouter).MatchWhen(cUrl, inv)
 	assert.Equal(t, true, matchWhen4)
 
 	rule5 := base64.URLEncoding.EncodeToString([]byte("host = 2.2.2.2,1.1.1.*,3.3.3.3 & host != 1.1.1.1 => host = 1.2.3.4"))
-	router5, _ := NewConditionRouterFactory().GetRouter(getRouteUrl(rule5))
+	router5, _ := NewConditionRouterFactory().Router(getRouteUrl(rule5))
 	matchWhen5, _ := router5.(*ConditionRouter).MatchWhen(cUrl, inv)
 	assert.Equal(t, false, matchWhen5)
 
 	rule6 := base64.URLEncoding.EncodeToString([]byte("host = 2.2.2.2,1.1.1.*,3.3.3.3 & host != 1.1.1.2 => host = 1.2.3.4"))
-	router6, _ := NewConditionRouterFactory().GetRouter(getRouteUrl(rule6))
+	router6, _ := NewConditionRouterFactory().Router(getRouteUrl(rule6))
 	matchWhen6, _ := router6.(*ConditionRouter).MatchWhen(cUrl, inv)
 	assert.Equal(t, true, matchWhen6)
 }
@@ -156,12 +156,12 @@ func TestRoute_matchFilter(t *testing.T) {
 	rule4 := base64.URLEncoding.EncodeToString([]byte("host = " + LocalIp() + " => " + " host = 10.20.3.2,10.20.3.3,10.20.3.4"))
 	rule5 := base64.URLEncoding.EncodeToString([]byte("host = " + LocalIp() + " => " + " host != 10.20.3.3"))
 	rule6 := base64.URLEncoding.EncodeToString([]byte("host = " + LocalIp() + " => " + " serialization = fastjson"))
-	router1, _ := NewConditionRouterFactory().GetRouter(getRouteUrl(rule1))
-	router2, _ := NewConditionRouterFactory().GetRouter(getRouteUrl(rule2))
-	router3, _ := NewConditionRouterFactory().GetRouter(getRouteUrl(rule3))
-	router4, _ := NewConditionRouterFactory().GetRouter(getRouteUrl(rule4))
-	router5, _ := NewConditionRouterFactory().GetRouter(getRouteUrl(rule5))
-	router6, _ := NewConditionRouterFactory().GetRouter(getRouteUrl(rule6))
+	router1, _ := NewConditionRouterFactory().Router(getRouteUrl(rule1))
+	router2, _ := NewConditionRouterFactory().Router(getRouteUrl(rule2))
+	router3, _ := NewConditionRouterFactory().Router(getRouteUrl(rule3))
+	router4, _ := NewConditionRouterFactory().Router(getRouteUrl(rule4))
+	router5, _ := NewConditionRouterFactory().Router(getRouteUrl(rule5))
+	router6, _ := NewConditionRouterFactory().Router(getRouteUrl(rule6))
 	cUrl, _ := common.NewURL(context.TODO(), "consumer://"+LocalIp()+"/com.foo.BarService")
 
 	fileredInvokers1 := router1.Route(invokers, cUrl, &invocation.RPCInvocation{})
@@ -183,7 +183,7 @@ func TestRoute_methodRoute(t *testing.T) {
 
 	inv := invocation.NewRPCInvocation("getFoo", []reflect.Type{}, []interface{}{})
 	rule := base64.URLEncoding.EncodeToString([]byte("host !=4.4.4.* & host = 2.2.2.2,1.1.1.1,3.3.3.3 => host = 1.2.3.4"))
-	router, _ := NewConditionRouterFactory().GetRouter(getRouteUrl(rule))
+	router, _ := NewConditionRouterFactory().Router(getRouteUrl(rule))
 
 	url, _ := common.NewURL(context.TODO(), "consumer://1.1.1.1/com.foo.BarService?methods=setFoo,getFoo,findFoo")
 	matchWhen, _ := router.(*ConditionRouter).MatchWhen(url, inv)
@@ -195,13 +195,13 @@ func TestRoute_methodRoute(t *testing.T) {
 
 	url2, _ := common.NewURL(context.TODO(), "consumer://1.1.1.1/com.foo.BarService?methods=getFoo")
 	rule2 := base64.URLEncoding.EncodeToString([]byte("methods=getFoo & host!=1.1.1.1 => host = 1.2.3.4"))
-	router2, _ := NewConditionRouterFactory().GetRouter(getRouteUrl(rule2))
+	router2, _ := NewConditionRouterFactory().Router(getRouteUrl(rule2))
 	matchWhen, _ = router2.(*ConditionRouter).MatchWhen(url2, inv)
 	assert.Equal(t, false, matchWhen)
 
 	url3, _ := common.NewURL(context.TODO(), "consumer://1.1.1.1/com.foo.BarService?methods=getFoo")
 	rule3 := base64.URLEncoding.EncodeToString([]byte("methods=getFoo & host=1.1.1.1 => host = 1.2.3.4"))
-	router3, _ := NewConditionRouterFactory().GetRouter(getRouteUrl(rule3))
+	router3, _ := NewConditionRouterFactory().Router(getRouteUrl(rule3))
 	matchWhen, _ = router3.(*ConditionRouter).MatchWhen(url3, inv)
 	assert.Equal(t, true, matchWhen)
 
@@ -214,7 +214,7 @@ func TestRoute_ReturnFalse(t *testing.T) {
 	rule := base64.URLEncoding.EncodeToString([]byte("host = " + LocalIp() + " => false"))
 	curl, _ := common.NewURL(context.TODO(), "consumer://"+LocalIp()+"/com.foo.BarService")
 
-	router, _ := NewConditionRouterFactory().GetRouter(getRouteUrl(rule))
+	router, _ := NewConditionRouterFactory().Router(getRouteUrl(rule))
 	fileredInvokers := router.(*ConditionRouter).Route(invokers, curl, inv)
 	assert.Equal(t, 0, len(fileredInvokers))
 }
@@ -225,7 +225,7 @@ func TestRoute_ReturnEmpty(t *testing.T) {
 	rule := base64.URLEncoding.EncodeToString([]byte("host = " + LocalIp() + " => "))
 	curl, _ := common.NewURL(context.TODO(), "consumer://"+LocalIp()+"/com.foo.BarService")
 
-	router, _ := NewConditionRouterFactory().GetRouter(getRouteUrl(rule))
+	router, _ := NewConditionRouterFactory().Router(getRouteUrl(rule))
 	fileredInvokers := router.(*ConditionRouter).Route(invokers, curl, inv)
 	assert.Equal(t, 0, len(fileredInvokers))
 }
@@ -235,7 +235,7 @@ func TestRoute_ReturnAll(t *testing.T) {
 	rule := base64.URLEncoding.EncodeToString([]byte("host = " + LocalIp() + " => " + " host = " + LocalIp()))
 	curl, _ := common.NewURL(context.TODO(), "consumer://"+LocalIp()+"/com.foo.BarService")
 
-	router, _ := NewConditionRouterFactory().GetRouter(getRouteUrl(rule))
+	router, _ := NewConditionRouterFactory().Router(getRouteUrl(rule))
 	fileredInvokers := router.(*ConditionRouter).Route(invokers, curl, inv)
 	assert.Equal(t, invokers, fileredInvokers)
 }
@@ -252,7 +252,7 @@ func TestRoute_HostFilter(t *testing.T) {
 	rule := base64.URLEncoding.EncodeToString([]byte("host = " + LocalIp() + " => " + " host = " + LocalIp()))
 	curl, _ := common.NewURL(context.TODO(), "consumer://"+LocalIp()+"/com.foo.BarService")
 
-	router, _ := NewConditionRouterFactory().GetRouter(getRouteUrl(rule))
+	router, _ := NewConditionRouterFactory().Router(getRouteUrl(rule))
 	fileredInvokers := router.(*ConditionRouter).Route(invokers, curl, inv)
 	assert.Equal(t, 2, len(fileredInvokers))
 	assert.Equal(t, invoker2, fileredInvokers[0])
@@ -270,7 +270,7 @@ func TestRoute_Empty_HostFilter(t *testing.T) {
 	rule := base64.URLEncoding.EncodeToString([]byte(" => " + " host = " + LocalIp()))
 	curl, _ := common.NewURL(context.TODO(), "consumer://"+LocalIp()+"/com.foo.BarService")
 
-	router, _ := NewConditionRouterFactory().GetRouter(getRouteUrl(rule))
+	router, _ := NewConditionRouterFactory().Router(getRouteUrl(rule))
 	fileredInvokers := router.(*ConditionRouter).Route(invokers, curl, inv)
 	assert.Equal(t, 2, len(fileredInvokers))
 	assert.Equal(t, invoker2, fileredInvokers[0])
@@ -288,7 +288,7 @@ func TestRoute_False_HostFilter(t *testing.T) {
 	rule := base64.URLEncoding.EncodeToString([]byte("true => " + " host = " + LocalIp()))
 	curl, _ := common.NewURL(context.TODO(), "consumer://"+LocalIp()+"/com.foo.BarService")
 
-	router, _ := NewConditionRouterFactory().GetRouter(getRouteUrl(rule))
+	router, _ := NewConditionRouterFactory().Router(getRouteUrl(rule))
 	fileredInvokers := router.(*ConditionRouter).Route(invokers, curl, inv)
 	assert.Equal(t, 2, len(fileredInvokers))
 	assert.Equal(t, invoker2, fileredInvokers[0])
@@ -306,7 +306,7 @@ func TestRoute_Placeholder(t *testing.T) {
 	rule := base64.URLEncoding.EncodeToString([]byte("host = " + LocalIp() + " => " + " host = $host"))
 	curl, _ := common.NewURL(context.TODO(), "consumer://"+LocalIp()+"/com.foo.BarService")
 
-	router, _ := NewConditionRouterFactory().GetRouter(getRouteUrl(rule))
+	router, _ := NewConditionRouterFactory().Router(getRouteUrl(rule))
 	fileredInvokers := router.(*ConditionRouter).Route(invokers, curl, inv)
 	assert.Equal(t, 2, len(fileredInvokers))
 	assert.Equal(t, invoker2, fileredInvokers[0])
@@ -324,7 +324,7 @@ func TestRoute_NoForce(t *testing.T) {
 	rule := base64.URLEncoding.EncodeToString([]byte("host = " + LocalIp() + " => " + " host = 1.2.3.4"))
 	curl, _ := common.NewURL(context.TODO(), "consumer://"+LocalIp()+"/com.foo.BarService")
 
-	router, _ := NewConditionRouterFactory().GetRouter(getRouteUrlWithNoForce(rule))
+	router, _ := NewConditionRouterFactory().Router(getRouteUrlWithNoForce(rule))
 	fileredInvokers := router.(*ConditionRouter).Route(invokers, curl, inv)
 	assert.Equal(t, invokers, fileredInvokers)
 }
@@ -340,7 +340,7 @@ func TestRoute_Force(t *testing.T) {
 	rule := base64.URLEncoding.EncodeToString([]byte("host = " + LocalIp() + " => " + " host = 1.2.3.4"))
 	curl, _ := common.NewURL(context.TODO(), "consumer://"+LocalIp()+"/com.foo.BarService")
 
-	router, _ := NewConditionRouterFactory().GetRouter(getRouteUrlWithForce(rule, "true"))
+	router, _ := NewConditionRouterFactory().Router(getRouteUrlWithForce(rule, "true"))
 	fileredInvokers := router.(*ConditionRouter).Route(invokers, curl, inv)
 	assert.Equal(t, 0, len(fileredInvokers))
 }
