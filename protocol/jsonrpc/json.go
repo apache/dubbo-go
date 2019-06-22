@@ -192,6 +192,9 @@ func (c *jsonClientCodec) Read(streamBytes []byte, x interface{}) error {
 		return perrors.New(c.rsp.Error.Error())
 	}
 
+	if c.rsp.Result == nil {
+		return nil
+	}
 	return perrors.WithStack(json.Unmarshal(*c.rsp.Result, x))
 }
 

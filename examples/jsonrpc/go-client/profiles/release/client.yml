@@ -32,6 +32,8 @@ registries :
 references:
   "UserProvider":
     protocol : "jsonrpc"
+#    version : "2.0"
+#    group: "as"
     interface : "com.ikurento.user.UserProvider"
     cluster: "failover"
     methods :

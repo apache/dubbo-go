@@ -19,7 +19,6 @@ package directory
 
 import (
 	"context"
-	"github.com/apache/dubbo-go/remoting"
 	"net/url"
 	"strconv"
 	"testing"
@@ -38,6 +37,7 @@ import (
 	"github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 	"github.com/apache/dubbo-go/registry"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 func TestSubscribe(t *testing.T) {
@@ -51,7 +51,7 @@ func TestSubscribe_Delete(t *testing.T) {
 	registryDirectory, mockRegistry := normalRegistryDir()
 	time.Sleep(1e9)
 	assert.Len(t, registryDirectory.cacheInvokers, 3)
-	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.Del, Service: *common.NewURLWithOptions("TEST0", common.WithProtocol("dubbo"))})
+	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.Del, Service: *common.NewURLWithOptions(common.WithPath("TEST0"), common.WithProtocol("dubbo"))})
 	time.Sleep(1e9)
 	assert.Len(t, registryDirectory.cacheInvokers, 2)
 }
@@ -74,14 +74,14 @@ func TestSubscribe_Group(t *testing.T) {
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
 	registryDirectory, _ := NewRegistryDirectory(&regurl, mockRegistry)
 
-	go registryDirectory.Subscribe(*common.NewURLWithOptions("testservice"))
+	go registryDirectory.Subscribe(*common.NewURLWithOptions(common.WithPath("testservice")))
 
 	//for group1
 	urlmap := url.Values{}
 	urlmap.Set(constant.GROUP_KEY, "group1")
 	urlmap.Set(constant.CLUSTER_KEY, "failover") //to test merge url
 	for i := 0; i < 3; i++ {
-		mockRegistry.(*registry.MockRegistry).MockEvent(&registry.ServiceEvent{Action: remoting.Add, Service: *common.NewURLWithOptions("TEST"+strconv.FormatInt(int64(i), 10), common.WithProtocol("dubbo"),
+		mockRegistry.(*registry.MockRegistry).MockEvent(&registry.ServiceEvent{Action: remoting.Add, Service: *common.NewURLWithOptions(common.WithPath("TEST"+strconv.FormatInt(int64(i), 10)), common.WithProtocol("dubbo"),
 			common.WithParams(urlmap))})
 	}
 	//for group2
@@ -89,7 +89,7 @@ func TestSubscribe_Group(t *testing.T) {
 	urlmap2.Set(constant.GROUP_KEY, "group2")
 	urlmap2.Set(constant.CLUSTER_KEY, "failover") //to test merge url
 	for i := 0; i < 3; i++ {
-		mockRegistry.(*registry.MockRegistry).MockEvent(&registry.ServiceEvent{Action: remoting.Add, Service: *common.NewURLWithOptions("TEST"+strconv.FormatInt(int64(i), 10), common.WithProtocol("dubbo"),
+		mockRegistry.(*registry.MockRegistry).MockEvent(&registry.ServiceEvent{Action: remoting.Add, Service: *common.NewURLWithOptions(common.WithPath("TEST"+strconv.FormatInt(int64(i), 10)), common.WithProtocol("dubbo"),
 			common.WithParams(urlmap2))})
 	}
 
@@ -127,9 +127,9 @@ func normalRegistryDir() (*registryDirectory, *registry.MockRegistry) {
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
 	registryDirectory, _ := NewRegistryDirectory(&url, mockRegistry)
 
-	go registryDirectory.Subscribe(*common.NewURLWithOptions("testservice"))
+	go registryDirectory.Subscribe(*common.NewURLWithOptions(common.WithPath("testservice")))
 	for i := 0; i < 3; i++ {
-		mockRegistry.(*registry.MockRegistry).MockEvent(&registry.ServiceEvent{Action: remoting.Add, Service: *common.NewURLWithOptions("TEST"+strconv.FormatInt(int64(i), 10), common.WithProtocol("dubbo"))})
+		mockRegistry.(*registry.MockRegistry).MockEvent(&registry.ServiceEvent{Action: remoting.Add, Service: *common.NewURLWithOptions(common.WithPath("TEST"+strconv.FormatInt(int64(i), 10)), common.WithProtocol("dubbo"))})
 	}
 	return registryDirectory, mockRegistry.(*registry.MockRegistry)
 }

@@ -100,7 +100,7 @@ func (c *HTTPClient) NewRequest(service common.URL, method string, args interfac
 		ID:       atomic.AddInt64(&c.ID, 1),
 		group:    service.GetParam(constant.GROUP_KEY, ""),
 		protocol: service.Protocol,
-		version:  service.GetParam(constant.VERSION_KEY, constant.DEFAULT_VERSION),
+		version:  service.GetParam(constant.VERSION_KEY, ""),
 		service:  service.Path,
 		method:   method,
 		args:     args,
@@ -136,7 +136,7 @@ func (c *HTTPClient) Call(ctx context.Context, service common.URL, req *Request,
 		return perrors.WithStack(err)
 	}
 
-	rspBody, err := c.Do(service.Location, service.Params.Get("interface"), httpHeader, reqBody)
+	rspBody, err := c.Do(service.Location, service.Path, httpHeader, reqBody)
 	if err != nil {
 		return perrors.WithStack(err)
 	}

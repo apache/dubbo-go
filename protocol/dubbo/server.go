@@ -31,7 +31,6 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/protocol"
 )
 
 var srvConf *ServerConfig
@@ -76,17 +75,18 @@ func GetServerConfig() ServerConfig {
 }
 
 type Server struct {
-	conf      ServerConfig
-	tcpServer getty.Server
-	exporter  protocol.Exporter
+	conf       ServerConfig
+	tcpServer  getty.Server
+	rpcHandler *RpcServerHandler
 }
 
-func NewServer(exporter protocol.Exporter) *Server {
+func NewServer() *Server {
 
 	s := &Server{
-		exporter: exporter,
-		conf:     *srvConf,
+		conf: *srvConf,
 	}
+
+	s.rpcHandler = NewRpcServerHandler(s.conf.SessionNumber, s.conf.sessionTimeout)
 
 	return s
 }
@@ -116,8 +116,8 @@ func (s *Server) newSession(session getty.Session) error {
 
 	session.SetName(conf.GettySessionParam.SessionName)
 	session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
-	session.SetPkgHandler(NewRpcServerPackageHandler())
-	session.SetEventListener(NewRpcServerHandler(s.exporter, conf.SessionNumber, conf.sessionTimeout))
+	session.SetPkgHandler(rpcServerPkgHandler)
+	session.SetEventListener(s.rpcHandler)
 	session.SetRQLen(conf.GettySessionParam.PkgRQSize)
 	session.SetWQLen(conf.GettySessionParam.PkgWQSize)
 	session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
