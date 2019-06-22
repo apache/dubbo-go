@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
-	"strings"
 	"sync"
 	"time"
 )
@@ -39,7 +38,7 @@ type gettyRPCClient struct {
 	once     sync.Once
 	protocol string
 	addr     string
-	created  int64 // 为0，则说明没有被创建或者被销毁了
+	created  int64 // zero, not create or be destroyed
 
 	pool *gettyRPCClientPool
 
@@ -225,13 +224,13 @@ func (c *gettyRPCClient) close() error {
 	c.once.Do(func() {
 		// delete @c from client pool
 		c.pool.remove(c)
+		c.gettyClient.Close()
+		c.gettyClient = nil
 		for _, s := range c.sessions {
 			logger.Infof("close client session{%s, last active:%s, request number:%d}",
 				s.session.Stat(), s.session.GetActive().String(), s.reqNum)
 			s.session.Close()
 		}
-		c.gettyClient.Close()
-		c.gettyClient = nil
 		c.sessions = c.sessions[:0]
 
 		c.created = 0
@@ -336,14 +335,4 @@ func (p *gettyRPCClientPool) remove(conn *gettyRPCClient) {
 			}
 		}
 	}
-}
-
-func GenerateEndpointAddr(protocol, addr string) string {
-	var builder strings.Builder
-
-	builder.WriteString(protocol)
-	builder.WriteString("://")
-	builder.WriteString(addr)
-
-	return builder.String()
 }

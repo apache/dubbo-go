@@ -59,17 +59,25 @@ func TestLoad(t *testing.T) {
 	doInit()
 	doinit()
 
-	SetConsumerService(&MockService{})
-	SetProviderService(&MockService{})
+	ms := &MockService{}
+	SetConsumerService(ms)
+	SetProviderService(ms)
 
 	extension.SetProtocol("registry", GetProtocol)
 	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
 	extension.SetProxyFactory("default", proxy_factory.NewDefaultProxyFactory)
 	consumerConfig.References[0].Registries = []ConfigRegistry{"shanghai_reg1"}
 
-	refConfigs, svcConfigs := Load()
-	assert.NotEqual(t, 0, len(refConfigs))
-	assert.NotEqual(t, 0, len(svcConfigs))
+	refLen, svcLen := Load()
+	assert.NotEqual(t, 0, refLen)
+	assert.NotEqual(t, 0, svcLen)
+
+	assert.Equal(t, ms, GetRPCService(ms.Service()))
+	ms2 := &struct {
+		MockService
+	}{}
+	RPCService(ms2)
+	assert.NotEqual(t, ms2, GetRPCService(ms2.Service()))
 
 	conServices = map[string]common.RPCService{}
 	proServices = map[string]common.RPCService{}
