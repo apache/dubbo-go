@@ -26,11 +26,11 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/logger"
 	hessian "github.com/dubbogo/hessian2"
 )
 
 import (
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	_ "github.com/apache/dubbo-go/protocol/dubbo"
 	_ "github.com/apache/dubbo-go/registry/protocol"
@@ -58,8 +58,8 @@ func main() {
 	hessian.RegisterPOJO(&User{})
 	// ------------
 
-	_, proMap := config.Load()
-	if proMap == nil {
+	_, proLen := config.Load()
+	if proLen == 0 {
 		panic("proMap is nil")
 	}
 

@@ -19,6 +19,7 @@ package proxy
 
 import (
 	"reflect"
+	"sync"
 )
 
 import (
@@ -34,6 +35,8 @@ type Proxy struct {
 	invoke      protocol.Invoker
 	callBack    interface{}
 	attachments map[string]string
+
+	once sync.Once
 }
 
 var typError = reflect.Zero(reflect.TypeOf((*error)(nil)).Elem()).Type()
@@ -78,23 +81,31 @@ func (p *Proxy) Implement(v common.RPCService) {
 				methodName = "$echo"
 			}
 
-			start := 0
-			end := len(in)
-			if in[0].Type().String() == "context.Context" {
-				start += 1
-			}
-			if len(outs) == 1 {
-				end -= 1
-				reply = in[len(in)-1]
-			} else {
+			if len(outs) == 2 {
 				if outs[0].Kind() == reflect.Ptr {
 					reply = reflect.New(outs[0].Elem())
 				} else {
 					reply = reflect.New(outs[0])
 				}
+			} else {
+				reply = valueOf
 			}
 
-			if v, ok := in[start].Interface().([]interface{}); ok && end-start == 1 {
+			start := 0
+			end := len(in)
+			if end > 0 {
+				if in[0].Type().String() == "context.Context" {
+					start += 1
+				}
+				if len(outs) == 1 && in[end-1].Type().Kind() == reflect.Ptr {
+					end -= 1
+					reply = in[len(in)-1]
+				}
+			}
+
+			if end-start <= 0 {
+				inArr = []interface{}{}
+			} else if v, ok := in[start].Interface().([]interface{}); ok && end-start == 1 {
 				inArr = v
 			} else {
 				inArr = make([]interface{}, end-start)
@@ -134,7 +145,6 @@ func (p *Proxy) Implement(v common.RPCService) {
 		}
 		f := valueOfElem.Field(i)
 		if f.Kind() == reflect.Func && f.IsValid() && f.CanSet() {
-			inNum := t.Type.NumIn()
 			outNum := t.Type.NumOut()
 
 			if outNum != 1 && outNum != 2 {
@@ -149,12 +159,6 @@ func (p *Proxy) Implement(v common.RPCService) {
 				continue
 			}
 
-			// reply must be Ptr when outNum == 1
-			if outNum == 1 && t.Type.In(inNum-1).Kind() != reflect.Ptr {
-				logger.Warnf("reply type of method %q is not a pointer", t.Name)
-				continue
-			}
-
 			var funcOuts = make([]reflect.Type, outNum)
 			for i := 0; i < outNum; i++ {
 				funcOuts[i] = t.Type.Out(i)
@@ -166,7 +170,9 @@ func (p *Proxy) Implement(v common.RPCService) {
 		}
 	}
 
-	p.rpc = v
+	p.once.Do(func() {
+		p.rpc = v
+	})
 
 }
 

@@ -19,19 +19,25 @@ package dubbo
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 	"reflect"
 	"sync"
 	"time"
+)
 
+import (
 	"github.com/dubbogo/getty"
+	"github.com/dubbogo/hessian2"
+	perrors "github.com/pkg/errors"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
-	hessian "github.com/dubbogo/hessian2"
-	perrors "github.com/pkg/errors"
 )
 
 // todo: WritePkg_Timeout will entry *.yml
@@ -82,6 +88,9 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 	if p.Header.Type&hessian.PackageHeartbeat != 0x00 {
 		logger.Debugf("get rpc heartbeat response{header: %#v, body: %#v}", p.Header, p.Body)
+		if p.Err != nil {
+			logger.Errorf("rpc heartbeat response{error: %#v}", p.Err)
+		}
 		return
 	}
 	logger.Debugf("get rpc response{header: %#v, body: %#v}", p.Header, p.Body)
@@ -126,16 +135,14 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 ////////////////////////////////////////////
 
 type RpcServerHandler struct {
-	exporter       protocol.Exporter
 	maxSessionNum  int
 	sessionTimeout time.Duration
 	sessionMap     map[getty.Session]*rpcSession
 	rwlock         sync.RWMutex
 }
 
-func NewRpcServerHandler(exporter protocol.Exporter, maxSessionNum int, sessionTimeout time.Duration) *RpcServerHandler {
+func NewRpcServerHandler(maxSessionNum int, sessionTimeout time.Duration) *RpcServerHandler {
 	return &RpcServerHandler{
-		exporter:       exporter,
 		maxSessionNum:  maxSessionNum,
 		sessionTimeout: sessionTimeout,
 		sessionMap:     make(map[getty.Session]*rpcSession),
@@ -199,19 +206,35 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	// not twoway
 	if p.Header.Type&hessian.PackageRequest_TwoWay == 0x00 {
 		twoway = false
-		h.reply(session, p, hessian.PackageResponse)
 	}
 
-	invoker := h.exporter.GetInvoker()
+	group := p.Body.(map[string]interface{})["attachments"].(map[interface{}]interface{})[constant.GROUP_KEY]
+	if group == nil {
+		group = ""
+	}
+	u := common.NewURLWithOptions(common.WithPath(p.Service.Path), common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.GROUP_KEY, group.(string)),
+		common.WithParamsValue(constant.INTERFACE_KEY, p.Service.Interface),
+		common.WithParamsValue(constant.VERSION_KEY, p.Service.Version))
+	exporter, _ := dubboProtocol.ExporterMap().Load(u.ServiceKey())
+	if exporter == nil {
+		err := fmt.Errorf("don't have this exporter, key: %s", u.ServiceKey())
+		logger.Errorf(err.Error())
+		p.Header.ResponseStatus = hessian.Response_OK
+		p.Body = err
+		h.reply(session, p, hessian.PackageResponse)
+		return
+	}
+	invoker := exporter.(protocol.Exporter).GetInvoker()
 	if invoker != nil {
 		result := invoker.Invoke(invocation.NewRPCInvocationForProvider(p.Service.Method, p.Body.(map[string]interface{})["args"].([]interface{}), map[string]string{
-			constant.PATH_KEY: p.Service.Path,
-			//attachments[constant.GROUP_KEY] = url.GetParam(constant.GROUP_KEY, "")
+			constant.PATH_KEY:      p.Service.Path,
+			constant.GROUP_KEY:     group.(string),
 			constant.INTERFACE_KEY: p.Service.Interface,
 			constant.VERSION_KEY:   p.Service.Version,
 		}))
 		if err := result.Error(); err != nil {
-			p.Header.ResponseStatus = hessian.Response_SERVER_ERROR
+			p.Header.ResponseStatus = hessian.Response_OK
 			p.Body = err
 			h.reply(session, p, hessian.PackageResponse)
 			return
@@ -260,15 +283,15 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 
 	defer func() {
 		if e := recover(); e != nil {
-			req.Header.ResponseStatus = hessian.Response_BAD_REQUEST
+			req.Header.ResponseStatus = hessian.Response_SERVER_ERROR
 			if err, ok := e.(error); ok {
-				logger.Errorf("callService panic: %#v", err)
-				req.Body = e.(error)
+				logger.Errorf("callService panic: %+v", perrors.WithStack(err))
+				req.Body = perrors.WithStack(err)
 			} else if err, ok := e.(string); ok {
-				logger.Errorf("callService panic: %#v", perrors.New(err))
+				logger.Errorf("callService panic: %+v", perrors.New(err))
 				req.Body = perrors.New(err)
 			} else {
-				logger.Errorf("callService panic: %#v", e)
+				logger.Errorf("callService panic: %+v, this is impossible.", e)
 				req.Body = e
 			}
 		}
@@ -277,7 +300,7 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 	svcIf := req.Body.(map[string]interface{})["service"]
 	if svcIf == nil {
 		logger.Errorf("service not found!")
-		req.Header.ResponseStatus = hessian.Response_SERVICE_NOT_FOUND
+		req.Header.ResponseStatus = hessian.Response_BAD_REQUEST
 		req.Body = perrors.New("service not found")
 		return
 	}
@@ -285,7 +308,7 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 	method := svc.Method()[req.Service.Method]
 	if method == nil {
 		logger.Errorf("method not found!")
-		req.Header.ResponseStatus = hessian.Response_SERVICE_NOT_FOUND
+		req.Header.ResponseStatus = hessian.Response_BAD_REQUEST
 		req.Body = perrors.New("method not found")
 		return
 	}
@@ -301,13 +324,21 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 		in = append(in, reflect.ValueOf(argv))
 	} else {
 		for i := 0; i < len(argv.([]interface{})); i++ {
-			in = append(in, reflect.ValueOf(argv.([]interface{})[i]))
+			t := reflect.ValueOf(argv.([]interface{})[i])
+			if !t.IsValid() {
+				at := method.ArgsType()[i]
+				if at.Kind() == reflect.Ptr {
+					at = at.Elem()
+				}
+				t = reflect.New(at)
+			}
+			in = append(in, t)
 		}
 	}
 
 	// prepare replyv
 	var replyv reflect.Value
-	if method.ReplyType() == nil {
+	if method.ReplyType() == nil && len(method.ArgsType()) > 0 {
 		replyv = reflect.New(method.ArgsType()[len(method.ArgsType())-1].Elem())
 		in = append(in, replyv)
 	}
@@ -322,10 +353,14 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 		retErr = returnValues[1].Interface()
 	}
 	if retErr != nil {
-		req.Header.ResponseStatus = hessian.Response_SERVER_ERROR
-		req.Body = retErr.(error)
+		req.Header.ResponseStatus = hessian.Response_OK
+		req.Body = retErr
 	} else {
-		req.Body = replyv.Interface()
+		if replyv.IsValid() && (replyv.Kind() != reflect.Ptr || replyv.Kind() == reflect.Ptr && replyv.Elem().IsValid()) {
+			req.Body = replyv.Interface()
+		} else {
+			req.Body = nil
+		}
 	}
 }
 

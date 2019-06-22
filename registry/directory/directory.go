@@ -23,7 +23,6 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/logger"
 	perrors "github.com/pkg/errors"
 )
 
@@ -32,9 +31,11 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 	"github.com/apache/dubbo-go/registry"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 const (
@@ -130,10 +131,10 @@ func (dir *registryDirectory) update(res *registry.ServiceEvent) {
 func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 
 	switch res.Action {
-	case registry.ServiceAdd:
+	case remoting.Add:
 		//dir.cacheService.Add(res.Path, dir.serviceTTL)
 		dir.cacheInvoker(res.Service)
-	case registry.ServiceDel:
+	case remoting.Del:
 		//dir.cacheService.Del(res.Path, dir.serviceTTL)
 		dir.uncacheInvoker(res.Service)
 		logger.Infof("selector delete service url{%s}", res.Service)
@@ -170,7 +171,9 @@ func (dir *registryDirectory) toGroupInvokers() []protocol.Invoker {
 	}
 	if len(groupInvokersMap) == 1 {
 		//len is 1 it means no group setting ,so do not need cluster again
-		groupInvokersList = groupInvokersMap[""]
+		for _, invokers := range groupInvokersMap {
+			groupInvokersList = invokers
+		}
 	} else {
 		for _, invokers := range groupInvokersMap {
 			staticDir := directory.NewStaticDirectory(invokers)
