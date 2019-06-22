@@ -18,7 +18,6 @@
 package zookeeper
 
 import (
-	"github.com/samuel/go-zookeeper/zk"
 	"strings"
 	"sync"
 	"time"
@@ -33,6 +32,7 @@ import (
 	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/remoting"
 	"github.com/apache/dubbo-go/remoting/zookeeper"
+	"github.com/samuel/go-zookeeper/zk"
 )
 
 const ZkClient = "zk config_center"
