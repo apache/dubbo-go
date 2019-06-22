@@ -51,8 +51,23 @@ public class Consumer {
             System.out.println("[" + new SimpleDateFormat("HH:mm:ss").format(new Date()) + "] " +
                      " UserInfo, Id:" + user2.getId() + ", name:" + user2.getName() + ", sex:" + user2.getSex().toString()
                      + ", age:" + user2.getAge() + ", time:" + user2.getTime().toString());
+            User user3 = userProvider.getUser(1);
+            System.out.println("[" + new SimpleDateFormat("HH:mm:ss").format(new Date()) + "] " +
+                     " UserInfo, Id:" + user3.getId() + ", name:" + user3.getName() + ", sex:" + user3.getSex().toString()
+                     + ", age:" + user3.getAge() + ", time:" + user3.getTime().toString());
+            userProvider.GetUser3();
+            System.out.println("GetUser3 succ");
+
+            User user9 = userProvider.GetUser1("A003");
         } catch (Exception e) {
+            System.out.println("*************exception***********");
             e.printStackTrace();
+        }
+        try {
+            userProvider.GetErr("A003");
+        } catch (Throwable t) {
+            System.out.println("*************exception***********");
+            t.printStackTrace();
         }
     }
 

@@ -32,6 +32,9 @@ public class UserProviderImpl implements UserProvider {
     public User GetUser(String userId) {
         return new User(userId, "zhangsan", 18);
     }
+    public User GetErr(String userId) throws Exception {
+        throw new Exception("exception");
+    }
     public User GetUser0(String userId, String name) {
             return new User(userId, name, 18);
     }
@@ -51,6 +54,9 @@ public class UserProviderImpl implements UserProvider {
         }
 
         return userList;
+    }
+
+    public void GetUser3() {
     }
 
     public Map<String, User> GetUserMap(List<String> userIdList) {

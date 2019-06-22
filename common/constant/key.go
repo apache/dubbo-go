@@ -44,6 +44,7 @@ const (
 	WEIGHT_KEY           = "weight"
 	WARMUP_KEY           = "warmup"
 	RETRIES_KEY          = "retries"
+	BEAN_NAME            = "bean.name"
 )
 
 const (
@@ -69,4 +70,9 @@ const (
 	METHOD_KEY       = "method"
 	METHOD_KEYS      = "methods"
 	RULE_KEY         = "rule"
+)
+
+const (
+	CONFIG_NAMESPACE_KEY = "config.namespace"
+	CONFIG_TIMEOUT_KET   = "config.timeout"
 )

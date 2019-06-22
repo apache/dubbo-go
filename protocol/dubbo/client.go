@@ -25,7 +25,7 @@ import (
 
 import (
 	"github.com/dubbogo/getty"
-	hessian "github.com/dubbogo/hessian2"
+	"github.com/dubbogo/hessian2"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
 	"gopkg.in/yaml.v2"
@@ -201,6 +201,13 @@ func (c *Client) AsyncCall(addr string, svcUrl common.URL, method string, args i
 	return perrors.WithStack(c.call(CT_TwoWay, addr, svcUrl, method, args, reply, callback, copts))
 }
 
+func (c *Client) GetPendingResponse(seq SequenceType) *PendingResponse {
+	c.pendingLock.RLock()
+	defer c.pendingLock.RUnlock()
+
+	return c.pendingResponses[SequenceType(seq)]
+}
+
 func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string,
 	args, reply interface{}, callback AsyncCallback, opts CallOptions) error {
 
@@ -215,7 +222,7 @@ func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string
 	p.Service.Path = strings.TrimPrefix(svcUrl.Path, "/")
 	p.Service.Target = svcUrl.GetParam(constant.INTERFACE_KEY, "")
 	p.Service.Interface = svcUrl.GetParam(constant.INTERFACE_KEY, "")
-	p.Service.Version = svcUrl.GetParam(constant.VERSION_KEY, constant.DEFAULT_VERSION)
+	p.Service.Version = svcUrl.GetParam(constant.VERSION_KEY, "")
 	p.Service.Method = method
 	p.Service.Timeout = opts.RequestTimeout
 	if opts.SerialID == 0 {
@@ -257,7 +264,7 @@ func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string
 	}
 
 	select {
-	case <-getty.GetTimeWheel().After(opts.ResponseTimeout):
+	case <-time.After(opts.ResponseTimeout):
 		err = errClientReadTimeout
 		c.removePendingResponse(SequenceType(rsp.seq))
 	case <-rsp.done:

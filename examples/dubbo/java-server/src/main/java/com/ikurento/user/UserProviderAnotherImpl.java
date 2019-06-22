@@ -35,7 +35,11 @@ public class UserProviderAnotherImpl implements UserProvider {
     public User GetUser0(String userId, String name) {
                 return new User(userId, name, 48);
     }
-
+    public void GetUser3() {
+    }
+    public User GetErr(String userId) throws Exception {
+        throw new Exception("exception");
+    }
     public List<User> GetUsers(ArrayList<String> userIdList) {
         Iterator it = userIdList.iterator();
         List<User> userList = new ArrayList<User>();

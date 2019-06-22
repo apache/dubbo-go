@@ -25,7 +25,7 @@ import (
 )
 
 import (
-	hessian "github.com/dubbogo/hessian2"
+	"github.com/dubbogo/hessian2"
 	perrors "github.com/pkg/errors"
 )
 
@@ -74,7 +74,7 @@ func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 }
 
 func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
-	codec := hessian.NewHessianCodec(bufio.NewReader(buf))
+	codec := hessian.NewHessianCodec(bufio.NewReaderSize(buf, buf.Len()))
 
 	// read header
 	err := codec.ReadHeader(&p.Header)
@@ -83,20 +83,17 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 	}
 
 	if len(opts) != 0 { // for client
-		if client, ok := opts[0].(*Client); ok {
-
-			r := client.pendingResponses[SequenceType(p.Header.ID)]
-			if r == nil {
-				return perrors.Errorf("pendingResponses[%v] = nil", p.Header.ID)
-			}
-			p.Body = client.pendingResponses[SequenceType(p.Header.ID)].reply
-		} else {
-			return perrors.Errorf("opts[0] is not *Client")
+		client, ok := opts[0].(*Client)
+		if !ok {
+			return perrors.Errorf("opts[0] is not of type *Client")
 		}
-	}
 
-	if p.Header.Type&hessian.PackageHeartbeat != 0x00 {
-		return nil
+		pendingRsp := client.GetPendingResponse(SequenceType(p.Header.ID))
+		if pendingRsp == nil {
+			return perrors.Errorf("client.GetPendingResponse(%v) = nil", p.Header.ID)
+		} else {
+			p.Body = &hessian.Response{RspObj: pendingRsp.reply}
+		}
 	}
 
 	// read body
