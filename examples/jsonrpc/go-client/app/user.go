@@ -27,8 +27,10 @@ import (
 	"github.com/apache/dubbo-go/config"
 )
 
+var userProvider = new(UserProvider)
+
 func init() {
-	config.SetConsumerService(new(UserProvider))
+	config.SetConsumerService(userProvider)
 }
 
 type JsonRPCUser struct {
@@ -52,7 +54,8 @@ type UserProvider struct {
 	GetUser0 func(id string, name string) (JsonRPCUser, error)
 	GetUser1 func(ctx context.Context, req []interface{}, rsp *JsonRPCUser) error
 	GetUser2 func(ctx context.Context, req []interface{}, rsp *JsonRPCUser) error `dubbo:"getUser"`
-	Echo     func(ctx context.Context, req interface{}) (interface{}, error)      // Echo represent EchoFilter will be used
+	GetUser3 func() error
+	Echo     func(ctx context.Context, req interface{}) (interface{}, error) // Echo represent EchoFilter will be used
 }
 
 func (u *UserProvider) Service() string {

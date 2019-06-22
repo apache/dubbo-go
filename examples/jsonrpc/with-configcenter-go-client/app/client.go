@@ -27,15 +27,17 @@ import (
 )
 
 import (
-	_ "github.com/apache/dubbo-go/cluster/cluster_impl"
-	_ "github.com/apache/dubbo-go/cluster/loadbalance"
 	"github.com/apache/dubbo-go/common/logger"
 	_ "github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/config"
-	_ "github.com/apache/dubbo-go/config_center/zookeeper"
-	_ "github.com/apache/dubbo-go/filter/impl"
 	_ "github.com/apache/dubbo-go/protocol/jsonrpc"
 	_ "github.com/apache/dubbo-go/registry/protocol"
+
+	_ "github.com/apache/dubbo-go/filter/impl"
+
+	_ "github.com/apache/dubbo-go/cluster/cluster_impl"
+	_ "github.com/apache/dubbo-go/cluster/loadbalance"
+	_ "github.com/apache/dubbo-go/config_center/zookeeper"
 	_ "github.com/apache/dubbo-go/registry/zookeeper"
 )
 
@@ -48,13 +50,10 @@ var (
 // 		export APP_LOG_CONF_FILE="xxx"
 func main() {
 
-	conMap, _ := config.Load()
-	if conMap == nil {
-		panic("conMap is nil")
-	}
+	config.Load()
 
 	println("\n\n\necho")
-	res, err := conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).Echo(context.TODO(), "OK")
+	res, err := userProvider.Echo(context.TODO(), "OK")
 	if err != nil {
 		println("echo - error: %v", err)
 	} else {
@@ -65,21 +64,21 @@ func main() {
 
 	println("\n\n\nstart to test jsonrpc")
 	user := &JsonRPCUser{}
-	err = conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser(context.TODO(), []interface{}{"A003"}, user)
+	err = userProvider.GetUser(context.TODO(), []interface{}{"A003"}, user)
 	if err != nil {
 		panic(err)
 	}
 	println("response result: %v", user)
 
 	println("\n\n\nstart to test jsonrpc - GetUser0")
-	ret, err := conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser0("A003", "Moorse")
+	ret, err := userProvider.GetUser0("A003", "Moorse")
 	if err != nil {
 		panic(err)
 	}
 	println("response result: %v", ret)
 
 	println("\n\n\nstart to test jsonrpc - GetUsers")
-	ret1, err := conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUsers([]interface{}{[]interface{}{"A002", "A003"}})
+	ret1, err := userProvider.GetUsers([]interface{}{[]interface{}{"A002", "A003"}})
 	if err != nil {
 		panic(err)
 	}
@@ -87,15 +86,21 @@ func main() {
 
 	println("\n\n\nstart to test jsonrpc - getUser")
 	user = &JsonRPCUser{}
-	err = conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser2(context.TODO(), []interface{}{1}, user)
+	err = userProvider.GetUser2(context.TODO(), []interface{}{1}, user)
 	if err != nil {
-		println("getUser - error: %v", err)
-	} else {
-		println("response result: %v", user)
+		panic(err)
 	}
+	println("response result: %v", user)
+
+	println("\n\n\nstart to test jsonrpc - GetUser3")
+	err = userProvider.GetUser3()
+	if err != nil {
+		panic(err)
+	}
+	println("succ!")
 
 	println("\n\n\nstart to test jsonrpc illegal method")
-	err = conMap["com.ikurento.user.UserProvider"].GetRPCService().(*UserProvider).GetUser1(context.TODO(), []interface{}{"A003"}, user)
+	err = userProvider.GetUser1(context.TODO(), []interface{}{"A003"}, user)
 	if err != nil {
 		panic(err)
 	}

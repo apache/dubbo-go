@@ -25,6 +25,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/version"
@@ -56,8 +57,7 @@ func init() {
 }
 
 // Dubbo Init
-func Load() (map[string]*ReferenceConfig, map[string]*ServiceConfig) {
-
+func Load() {
 	var refMap map[string]*ReferenceConfig
 	var srvMap map[string]*ServiceConfig
 
@@ -71,6 +71,7 @@ func Load() (map[string]*ReferenceConfig, map[string]*ServiceConfig) {
 		refMap = make(map[string]*ReferenceConfig)
 		for _, ref := range consumerConfig.References {
 			rpcService := GetConsumerService(ref.InterfaceName)
+
 			if rpcService == nil {
 				logger.Warnf("%s is not exsist!", ref.InterfaceName)
 				continue
@@ -78,6 +79,7 @@ func Load() (map[string]*ReferenceConfig, map[string]*ServiceConfig) {
 			ref.Refer()
 			ref.Implement(rpcService)
 			refMap[ref.InterfaceName] = ref
+
 		}
 		//wait for invoker is available, if wait over default 3s, then panic
 		var count int
@@ -131,6 +133,14 @@ func Load() (map[string]*ReferenceConfig, map[string]*ServiceConfig) {
 			srvMap[svs.InterfaceName] = svs
 		}
 	}
+}
 
-	return refMap, srvMap
+// get rpc service for consumer
+func GetRPCService(name string) common.RPCService {
+	return consumerConfig.References[name].GetRPCService()
+}
+
+// create rpc service for consumer
+func RPCService(service common.RPCService) {
+	providerConfig.Services[service.Service()].Implement(service)
 }
