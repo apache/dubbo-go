@@ -16,6 +16,6 @@ type ConditionRouterFactory struct {
 func NewConditionRouterFactory() cluster.RouterFactory {
 	return ConditionRouterFactory{}
 }
-func (c ConditionRouterFactory) GetRouter(url common.URL) (cluster.Router, error) {
+func (c ConditionRouterFactory) Router(url common.URL) (cluster.Router, error) {
 	return newConditionRouter(url)
 }
