@@ -12,7 +12,11 @@ public interface UserProvider {
 
     List<User> GetUsers(List<String> userIdList);
 
+    void GetUser3();
+
     User GetUser0(String userId, String name);
+
+	User GetErr(String userId) throws Exception;
 
     Map<String, User> GetUserMap(List<String> userIdList);
 

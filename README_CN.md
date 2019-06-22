@@ -1,6 +1,6 @@
-# Go for Apache Dubbo [English](./README.md) #
+# Apache Dubbo-go [English](./README.md) #
 
-[![Build Status](https://travis-ci.com/apache/dubbo-go.svg?branch=master)](https://travis-ci.com/apache/dubbo-go)
+[![Build Status](https://travis-ci.org/apache/dubbo-go.svg?branch=master)](https://travis-ci.org/apache/dubbo-go)
 [![codecov](https://codecov.io/gh/apache/dubbo-go/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/dubbo-go)
 
 ---
@@ -31,13 +31,13 @@ Apache License, Version 2.0
 - Codec: JsonRPC v2(√), Hessian v2(√)
 - Registry: ZooKeeper(√)
 - Cluster Strategy: Failover(√)
-- Load Balance: Random(√)
+- Load Balance: Random(√), RoundRobin(√), LeastActive(√)
 - Filter: Echo Health Check(√)
 
 开发中列表:
 
 - Cluster Strategy: Failfast/Failsafe/Failback/Forking
-- Load Balance: RoundRobin/LeastActive/ConsistentHash
+- Load Balance: ConsistentHash
 - Filter: TokenFilter/AccessLogFilter/CountFilter/ActiveLimitFilter/ExecuteLimitFilter/GenericFilter/TpsLimitFilter
 - Registry: etcd/k8s/consul
 

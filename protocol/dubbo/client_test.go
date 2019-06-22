@@ -18,28 +18,22 @@
 package dubbo
 
 import (
+	"bytes"
 	"context"
 	"sync"
 	"testing"
 	"time"
+)
 
-	hessian "github.com/dubbogo/hessian2"
-
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/protocol"
+import (
+	"github.com/dubbogo/hessian2"
 	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
-type (
-	User struct {
-		Id   string `json:"id"`
-		Name string `json:"name"`
-	}
-
-	UserProvider struct {
-		user map[string]User
-	}
+import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/protocol"
 )
 
 func TestClient_CallOneway(t *testing.T) {
@@ -69,34 +63,52 @@ func TestClient_Call(t *testing.T) {
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
 
 	user := &User{}
+	//err := c.Call("127.0.0.1:20000", url, "GetBigPkg", []interface{}{nil}, user)
+	//assert.NoError(t, err)
+	//assert.NotEqual(t, "", user.Id)
+	//assert.NotEqual(t, "", user.Name)
+
+	user = &User{}
 	err := c.Call("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"}, user)
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "1", Name: "username"}, *user)
 
 	user = &User{}
-	err = c.Call("127.0.0.1:20000", url, "GetUser0", []interface{}{"1", "username"}, user)
+	err = c.Call("127.0.0.1:20000", url, "GetUser0", []interface{}{"1", nil, "username"}, user)
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "1", Name: "username"}, *user)
 
-	user = &User{}
-	err = c.Call("127.0.0.1:20000", url, "GetUser1", []interface{}{"1", "username"}, user)
-	assert.EqualError(t, err, "java exception:error")
+	err = c.Call("127.0.0.1:20000", url, "GetUser1", []interface{}{}, user)
+	assert.NoError(t, err)
+
+	err = c.Call("127.0.0.1:20000", url, "GetUser2", []interface{}{}, user)
+	assert.EqualError(t, err, "error")
 
 	user2 := []interface{}{}
-	err = c.Call("127.0.0.1:20000", url, "GetUser2", []interface{}{"1", "username"}, &user2)
+	err = c.Call("127.0.0.1:20000", url, "GetUser3", []interface{}{}, &user2)
 	assert.NoError(t, err)
 	assert.Equal(t, &User{Id: "1", Name: "username"}, user2[0])
 
 	user2 = []interface{}{}
-	err = c.Call("127.0.0.1:20000", url, "GetUser3", []interface{}{[]interface{}{"1", "username"}}, &user2)
+	err = c.Call("127.0.0.1:20000", url, "GetUser4", []interface{}{[]interface{}{"1", "username"}}, &user2)
 	assert.NoError(t, err)
 	assert.Equal(t, &User{Id: "1", Name: "username"}, user2[0])
 
 	user3 := map[interface{}]interface{}{}
-	err = c.Call("127.0.0.1:20000", url, "GetUser4", []interface{}{map[interface{}]interface{}{"id": "1", "name": "username"}}, &user3)
+	err = c.Call("127.0.0.1:20000", url, "GetUser5", []interface{}{map[interface{}]interface{}{"id": "1", "name": "username"}}, &user3)
 	assert.NoError(t, err)
 	assert.NotNil(t, user3)
 	assert.Equal(t, &User{Id: "1", Name: "username"}, user3["key"])
+
+	user = &User{}
+	err = c.Call("127.0.0.1:20000", url, "GetUser6", []interface{}{0}, user)
+	assert.NoError(t, err)
+	assert.Equal(t, User{Id: "", Name: ""}, *user)
+
+	user = &User{}
+	err = c.Call("127.0.0.1:20000", url, "GetUser6", []interface{}{1}, user)
+	assert.NoError(t, err)
+	assert.Equal(t, User{Id: "1", Name: ""}, *user)
 
 	// destroy
 	proto.Destroy()
@@ -133,7 +145,7 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 
 	methods, err := common.ServiceMap.Register("dubbo", &UserProvider{})
 	assert.NoError(t, err)
-	assert.Equal(t, "GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4", methods)
+	assert.Equal(t, "GetBigPkg,GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4,GetUser5,GetUser6", methods)
 
 	// config
 	SetClientConf(ClientConfig{
@@ -152,10 +164,10 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 			TcpWBufSize:      65536,
 			PkgRQSize:        1024,
 			PkgWQSize:        512,
-			TcpReadTimeout:   "1s",
+			TcpReadTimeout:   "4s",
 			TcpWriteTimeout:  "5s",
 			WaitTimeout:      "1s",
-			MaxMsgLen:        1024,
+			MaxMsgLen:        10240000000,
 			SessionName:      "client",
 		},
 	})
@@ -176,7 +188,7 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 			TcpReadTimeout:   "1s",
 			TcpWriteTimeout:  "5s",
 			WaitTimeout:      "1s",
-			MaxMsgLen:        1024,
+			MaxMsgLen:        10240000000,
 			SessionName:      "server",
 		}})
 	assert.NoError(t, srvConf.CheckValidity())
@@ -196,32 +208,70 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 	return proto, url
 }
 
+//////////////////////////////////
+// provider
+//////////////////////////////////
+
+type (
+	User struct {
+		Id   string `json:"id"`
+		Name string `json:"name"`
+	}
+
+	UserProvider struct {
+		user map[string]User
+	}
+)
+
+// size:4801228
+func (u *UserProvider) GetBigPkg(ctx context.Context, req []interface{}, rsp *User) error {
+	argBuf := new(bytes.Buffer)
+	for i := 0; i < 4000; i++ {
+		argBuf.WriteString("击鼓其镗，踊跃用兵。土国城漕，我独南行。从孙子仲，平陈与宋。不我以归，忧心有忡。爰居爰处？爰丧其马？于以求之？于林之下。死生契阔，与子成说。执子之手，与子偕老。于嗟阔兮，不我活兮。于嗟洵兮，不我信兮。")
+		argBuf.WriteString("击鼓其镗，踊跃用兵。土国城漕，我独南行。从孙子仲，平陈与宋。不我以归，忧心有忡。爰居爰处？爰丧其马？于以求之？于林之下。死生契阔，与子成说。执子之手，与子偕老。于嗟阔兮，不我活兮。于嗟洵兮，不我信兮。")
+	}
+	rsp.Id = argBuf.String()
+	rsp.Name = argBuf.String()
+	return nil
+}
+
 func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User) error {
 	rsp.Id = req[0].(string)
 	rsp.Name = req[1].(string)
 	return nil
 }
 
-func (u *UserProvider) GetUser0(id string, name string) (User, error) {
+func (u *UserProvider) GetUser0(id string, k *User, name string) (User, error) {
 	return User{Id: id, Name: name}, nil
 }
 
-func (u *UserProvider) GetUser1(ctx context.Context, req []interface{}, rsp *User) error {
-	return perrors.New("error")
-}
-
-func (u *UserProvider) GetUser2(ctx context.Context, req []interface{}, rsp *[]interface{}) error {
-	*rsp = append(*rsp, User{Id: req[0].(string), Name: req[1].(string)})
+func (u *UserProvider) GetUser1() error {
 	return nil
 }
 
-func (u *UserProvider) GetUser3(ctx context.Context, req []interface{}) ([]interface{}, error) {
+func (u *UserProvider) GetUser2() error {
+	return perrors.New("error")
+}
+
+func (u *UserProvider) GetUser3(rsp *[]interface{}) error {
+	*rsp = append(*rsp, User{Id: "1", Name: "username"})
+	return nil
+}
+
+func (u *UserProvider) GetUser4(ctx context.Context, req []interface{}) ([]interface{}, error) {
 
 	return []interface{}{User{Id: req[0].([]interface{})[0].(string), Name: req[0].([]interface{})[1].(string)}}, nil
 }
 
-func (u *UserProvider) GetUser4(ctx context.Context, req []interface{}) (map[interface{}]interface{}, error) {
+func (u *UserProvider) GetUser5(ctx context.Context, req []interface{}) (map[interface{}]interface{}, error) {
 	return map[interface{}]interface{}{"key": User{Id: req[0].(map[interface{}]interface{})["id"].(string), Name: req[0].(map[interface{}]interface{})["name"].(string)}}, nil
+}
+
+func (u *UserProvider) GetUser6(id int64) (*User, error) {
+	if id == 0 {
+		return nil, nil
+	}
+	return &User{Id: "1"}, nil
 }
 
 func (u *UserProvider) Service() string {

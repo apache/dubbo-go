@@ -77,7 +77,7 @@ func (refconfig *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) erro
 }
 
 func (refconfig *ReferenceConfig) Refer() {
-	url := common.NewURLWithOptions(refconfig.InterfaceName, common.WithProtocol(refconfig.Protocol), common.WithParams(refconfig.getUrlMap()))
+	url := common.NewURLWithOptions(common.WithPath(refconfig.InterfaceName), common.WithProtocol(refconfig.Protocol), common.WithParams(refconfig.getUrlMap()))
 
 	//1. user specified URL, could be peer-to-peer address, or register center's address.
 	if refconfig.Url != "" {
@@ -92,7 +92,7 @@ func (refconfig *ReferenceConfig) Refer() {
 				refconfig.urls = append(refconfig.urls, &serviceUrl)
 			} else {
 				if serviceUrl.Path == "" {
-					serviceUrl.Path = refconfig.InterfaceName + "/"
+					serviceUrl.Path = "/" + refconfig.InterfaceName
 				}
 				// merge url need to do
 				newUrl := common.MergeUrl(serviceUrl, url)
