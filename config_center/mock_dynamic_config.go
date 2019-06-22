@@ -25,11 +25,12 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
-type MockDynamicConfigurationFactory struct {
-}
+type MockDynamicConfigurationFactory struct{}
 
-var once sync.Once
-var dynamicConfiguration *mockDynamicConfiguration
+var (
+	once                 sync.Once
+	dynamicConfiguration *mockDynamicConfiguration
+)
 
 func (f *MockDynamicConfigurationFactory) GetDynamicConfiguration(url *common.URL) (DynamicConfiguration, error) {
 	var err error

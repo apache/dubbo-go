@@ -34,9 +34,10 @@ type Environment struct {
 	externalConfigMap sync.Map
 }
 
-var instance *Environment
-
-var once sync.Once
+var (
+	instance *Environment
+	once     sync.Once
+)
 
 func GetEnvInstance() *Environment {
 	once.Do(func() {
@@ -82,9 +83,9 @@ func (conf *InmemoryConfiguration) GetProperty(key string) (bool, string) {
 	v, ok := conf.store.Load(key)
 	if ok {
 		return true, v.(string)
-	} else {
-		return false, ""
 	}
+	return false, ""
+
 }
 
 func (conf *InmemoryConfiguration) GetSubProperty(subKey string) map[string]struct{} {

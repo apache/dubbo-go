@@ -1,8 +1,10 @@
 package config_center
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+)
+import (
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDefaultConfigurationParser_Parser(t *testing.T) {
