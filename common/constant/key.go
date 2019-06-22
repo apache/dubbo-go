@@ -68,14 +68,11 @@ const (
 	OWNER_KEY        = "owner"
 	ENVIRONMENT_KEY  = "environment"
 )
-<<<<<<< HEAD
 
 const (
 	CONFIG_NAMESPACE_KEY = "config.namespace"
 	CONFIG_TIMEOUT_KET   = "config.timeout"
-=======
-const (
-	METHOD_KEY  = "method"
-	METHOD_KEYS = "methods"
->>>>>>> Add routing-related features
+	METHOD_KEY           = "method"
+	METHOD_KEYS          = "methods"
+	RULE_KEY             = "rule"
 )
