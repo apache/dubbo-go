@@ -89,7 +89,7 @@ func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 
 		case e := <-l.events:
 			logger.Debugf("got zk event %s", e)
-			if e.ConfigType == remoting.Del && !l.valid() {
+			if e.ConfigType == remoting.EventTypeDel && !l.valid() {
 				logger.Warnf("update @result{%s}. But its connection to registry is invalid", e.Value)
 				continue
 			}
