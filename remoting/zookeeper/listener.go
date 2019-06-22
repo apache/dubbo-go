@@ -69,14 +69,14 @@ func (l *ZkEventListener) ListenServiceNodeEvent(zkPath string, listener ...remo
 				logger.Warnf("zk.ExistW(key{%s}) = event{EventNodeDataChanged}", zkPath)
 				if len(listener) > 0 {
 					content, _, _ := l.client.Conn.Get(zkEvent.Path)
-					listener[0].DataChange(remoting.Event{Path: zkEvent.Path, Action: remoting.Mod, Content: string(content)})
+					listener[0].DataChange(remoting.Event{Path: zkEvent.Path, Action: remoting.EvnetTypeUpdate, Content: string(content)})
 				}
 
 			case zk.EventNodeCreated:
 				logger.Warnf("zk.ExistW(key{%s}) = event{EventNodeCreated}", zkPath)
 				if len(listener) > 0 {
 					content, _, _ := l.client.Conn.Get(zkEvent.Path)
-					listener[0].DataChange(remoting.Event{Path: zkEvent.Path, Action: remoting.Add, Content: string(content)})
+					listener[0].DataChange(remoting.Event{Path: zkEvent.Path, Action: remoting.EventTypeAdd, Content: string(content)})
 				}
 			case zk.EventNotWatching:
 				logger.Warnf("zk.ExistW(key{%s}) = event{EventNotWatching}", zkPath)
@@ -125,7 +125,7 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 			logger.Errorf("Get new node path {%v} 's content error,message is  {%v}", newNode, perrors.WithStack(err))
 		}
 
-		if !listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.Add, Content: string(content)}) {
+		if !listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeAdd, Content: string(content)}) {
 			continue
 		}
 		// listen l service node
@@ -133,7 +133,7 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 			logger.Infof("delete zkNode{%s}", node)
 			if l.ListenServiceNodeEvent(node, listener) {
 				logger.Infof("delete content{%s}", n)
-				listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.Del})
+				listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeDel})
 			}
 			logger.Warnf("listenSelf(zk path{%s}) goroutine exit now", zkPath)
 		}(newNode)
@@ -153,7 +153,7 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 			logger.Errorf("NewURL(i{%s}) = error{%v}", n, perrors.WithStack(err))
 			continue
 		}
-		listener.DataChange(remoting.Event{Path: oldNode, Action: remoting.Del})
+		listener.DataChange(remoting.Event{Path: oldNode, Action: remoting.EventTypeDel})
 	}
 }
 
@@ -212,13 +212,13 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 				logger.Errorf("Get new node path {%v} 's content error,message is  {%v}", dubboPath, perrors.WithStack(err))
 			}
 			logger.Infof("Get children!{%s}", dubboPath)
-			if !listener.DataChange(remoting.Event{Path: dubboPath, Action: remoting.Add, Content: string(content)}) {
+			if !listener.DataChange(remoting.Event{Path: dubboPath, Action: remoting.EventTypeAdd, Content: string(content)}) {
 				continue
 			}
 			logger.Infof("listen dubbo service key{%s}", dubboPath)
 			go func(zkPath string) {
 				if l.ListenServiceNodeEvent(dubboPath) {
-					listener.DataChange(remoting.Event{Path: dubboPath, Action: remoting.Del})
+					listener.DataChange(remoting.Event{Path: dubboPath, Action: remoting.EventTypeDel})
 				}
 				logger.Warnf("listenSelf(zk path{%s}) goroutine exit now", zkPath)
 			}(dubboPath)
@@ -246,7 +246,7 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 
 //
 //func (l *ZkEventListener) listenFileEvent(zkPath string, listener remoting.DataListener) {
-//	l.wg.Add(1)
+//	l.wg.EventTypeAdd(1)
 //	defer l.wg.Done()
 //
 //	var (
@@ -347,13 +347,13 @@ func (l *ZkEventListener) ListenServiceEvent(zkPath string, listener remoting.Da
 		if err != nil {
 			logger.Errorf("Get new node path {%v} 's content error,message is  {%v}", dubboPath, perrors.WithStack(err))
 		}
-		if !listener.DataChange(remoting.Event{Path: dubboPath, Action: remoting.Add, Content: string(content)}) {
+		if !listener.DataChange(remoting.Event{Path: dubboPath, Action: remoting.EventTypeAdd, Content: string(content)}) {
 			continue
 		}
 		logger.Infof("listen dubbo service key{%s}", dubboPath)
 		go func(zkPath string) {
 			if l.ListenServiceNodeEvent(dubboPath) {
-				listener.DataChange(remoting.Event{Path: dubboPath, Action: remoting.Del})
+				listener.DataChange(remoting.Event{Path: dubboPath, Action: remoting.EventTypeDel})
 			}
 			logger.Warnf("listenSelf(zk path{%s}) goroutine exit now", zkPath)
 		}(dubboPath)

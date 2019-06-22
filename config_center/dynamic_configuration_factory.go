@@ -17,7 +17,9 @@
 
 package config_center
 
-import "github.com/apache/dubbo-go/common"
+import (
+	"github.com/apache/dubbo-go/common"
+)
 
 type DynamicConfigurationFactory interface {
 	GetDynamicConfiguration(*common.URL) (DynamicConfiguration, error)
