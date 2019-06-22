@@ -97,7 +97,7 @@ func (s *Server) handlePkg(conn net.Conn) {
 			ContentLength: int64(len(body)),
 			Body:          ioutil.NopCloser(bytes.NewReader(body)),
 		}
-		rsp.Header.Del("Content-Protocol")
+		rsp.Header.Del("Content-Type")
 		rsp.Header.Del("Content-Length")
 		rsp.Header.Del("Timeout")
 
@@ -136,10 +136,10 @@ func (s *Server) handlePkg(conn net.Conn) {
 		reqHeader["HttpMethod"] = r.Method
 
 		httpTimeout := s.timeout
-		contentType := reqHeader["Content-Protocol"]
+		contentType := reqHeader["Content-Type"]
 		if contentType != "application/json" && contentType != "application/json-rpc" {
 			setTimeout(conn, httpTimeout)
-			r.Header.Set("Content-Protocol", "text/plain")
+			r.Header.Set("Content-Type", "text/plain")
 			if errRsp := sendErrorResp(r.Header, []byte(perrors.WithStack(err).Error())); errRsp != nil {
 				logger.Warnf("sendErrorResp(header:%#v, error:%v) = error:%s",
 					r.Header, perrors.WithStack(err), errRsp)
@@ -254,7 +254,7 @@ func serveRequest(ctx context.Context,
 			ContentLength: int64(len(body)),
 			Body:          ioutil.NopCloser(bytes.NewReader(body)),
 		}
-		rsp.Header.Del("Content-Protocol")
+		rsp.Header.Del("Content-Type")
 		rsp.Header.Del("Content-Length")
 		rsp.Header.Del("Timeout")
 		for k, v := range header {
@@ -278,7 +278,7 @@ func serveRequest(ctx context.Context,
 			ContentLength: int64(len(body)),
 			Body:          ioutil.NopCloser(bytes.NewReader(body)),
 		}
-		rsp.Header.Del("Content-Protocol")
+		rsp.Header.Del("Content-Type")
 		rsp.Header.Del("Content-Length")
 		rsp.Header.Del("Timeout")
 		for k, v := range header {
@@ -424,7 +424,7 @@ func serveRequest(ctx context.Context,
 		ContentLength: int64(len(rspStream)),
 		Body:          ioutil.NopCloser(bytes.NewReader(rspStream)),
 	}
-	delete(header, "Content-Protocol")
+	delete(header, "Content-Type")
 	delete(header, "Content-Length")
 	delete(header, "Timeout")
 	for k, v := range header {
