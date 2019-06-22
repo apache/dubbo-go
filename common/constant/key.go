@@ -75,7 +75,4 @@ const (
 const (
 	CONFIG_NAMESPACE_KEY = "config.namespace"
 	CONFIG_TIMEOUT_KET   = "config.timeout"
-	METHOD_KEY           = "method"
-	METHOD_KEYS          = "methods"
-	RULE_KEY             = "rule"
 )
