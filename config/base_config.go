@@ -78,8 +78,10 @@ func (c *BaseConfig) prepareEnvironment() error {
 }
 
 func getKeyPrefix(val reflect.Value, id reflect.Value) string {
-	var prefix string
-	var idStr string
+	var (
+		prefix string
+		idStr  string
+	)
 	if id.Kind() == reflect.String {
 		idStr = id.Interface().(string)
 	}

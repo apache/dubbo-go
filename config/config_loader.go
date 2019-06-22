@@ -58,8 +58,10 @@ func init() {
 
 // Dubbo Init
 func Load() {
-	var refMap map[string]*ReferenceConfig
-	var srvMap map[string]*ServiceConfig
+	var (
+		refMap map[string]*ReferenceConfig
+		srvMap map[string]*ServiceConfig
+	)
 
 	// reference config
 	if consumerConfig == nil {

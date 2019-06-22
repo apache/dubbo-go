@@ -34,5 +34,4 @@ func GetConfigCenterFactory(name string) config_center.DynamicConfigurationFacto
 		panic("config center for " + name + " is not existing, make sure you have import the package.")
 	}
 	return configCenterFactories[name]()
-
 }

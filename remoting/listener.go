@@ -44,9 +44,9 @@ func (c ConfigChangeEvent) String() string {
 type EventType int
 
 const (
-	Add = iota
-	Del
-	Mod
+	EventTypeAdd = iota
+	EventTypeDel
+	EvnetTypeUpdate
 )
 
 var serviceEventTypeStrings = [...]string{
