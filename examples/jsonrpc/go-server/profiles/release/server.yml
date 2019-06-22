@@ -37,6 +37,7 @@ services:
        retries: 1
        loadbalance: "random"
 
+
 protocols:
   #-   name: "dubbo"
   #    ip : "127.0.0.1"

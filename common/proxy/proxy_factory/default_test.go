@@ -22,21 +22,24 @@ import (
 )
 
 import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_GetProxy(t *testing.T) {
 	proxyFactory := NewDefaultProxyFactory()
-	url := common.NewURLWithOptions("testservice")
+	url := common.NewURLWithOptions()
 	proxy := proxyFactory.GetProxy(protocol.NewBaseInvoker(*url), url)
 	assert.NotNil(t, proxy)
 }
 
 func Test_GetInvoker(t *testing.T) {
 	proxyFactory := NewDefaultProxyFactory()
-	url := common.NewURLWithOptions("testservice")
+	url := common.NewURLWithOptions()
 	invoker := proxyFactory.GetInvoker(*url)
 	assert.True(t, invoker.IsAvailable())
 }

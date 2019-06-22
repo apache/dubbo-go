@@ -26,6 +26,7 @@ registries :
 
 
 services:
+
   "UserProvider":
     protocol : "dubbo"
     # 相当于dubbo.xml中的interface
