@@ -29,7 +29,7 @@ type RouterFactory interface {
 }
 
 type Router interface {
-	Route([]protocol.Invoker, common.URL, protocol.Invocation) ([]protocol.Invoker, error)
+	Route([]protocol.Invoker, common.URL, protocol.Invocation) []protocol.Invoker
 	CompareTo(router Router) int
 }
 
