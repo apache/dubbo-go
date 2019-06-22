@@ -40,6 +40,12 @@ type RPCService interface {
 	Version() string
 }
 
+// for lowercase func
+// func MethodMapper() map[string][string] {
+//     return map[string][string]{}
+// }
+const METHOD_MAPPER = "MethodMapper"
+
 var (
 	// Precompute the reflect type for error. Can't use error directly
 	// because Typeof takes an empty interface value. This is annoying.
@@ -210,20 +216,26 @@ func isExportedOrBuiltinType(t reflect.Type) bool {
 // suitableMethods returns suitable Rpc methods of typ
 func suitableMethods(typ reflect.Type) (string, map[string]*MethodType) {
 	methods := make(map[string]*MethodType)
-	mts := ""
+	var mts []string
 	logger.Debugf("[%s] NumMethod is %d", typ.String(), typ.NumMethod())
+	method, ok := typ.MethodByName(METHOD_MAPPER)
+	var methodMapper map[string]string
+	if ok && method.Type.NumIn() == 1 && method.Type.NumOut() == 1 && method.Type.Out(0).String() == "map[string]string" {
+		methodMapper = method.Func.Call([]reflect.Value{reflect.New(typ.Elem())})[0].Interface().(map[string]string)
+	}
+
 	for m := 0; m < typ.NumMethod(); m++ {
-		method := typ.Method(m)
+		method = typ.Method(m)
 		if mt := suiteMethod(method); mt != nil {
-			methods[method.Name] = mt
-			if m == 0 {
-				mts += method.Name
-			} else {
-				mts += "," + method.Name
+			methodName, ok := methodMapper[method.Name]
+			if !ok {
+				methodName = method.Name
 			}
+			methods[methodName] = mt
+			mts = append(mts, methodName)
 		}
 	}
-	return mts, methods
+	return strings.Join(mts, ","), methods
 }
 
 // suiteMethod returns a suitable Rpc methodType
@@ -256,12 +268,7 @@ func suiteMethod(method reflect.Method) *MethodType {
 	}
 
 	// replyType
-	if outNum == 1 {
-		if mtype.In(inNum-1).Kind() != reflect.Ptr {
-			logger.Errorf("reply type of method %q is not a pointer %v", mname, replyType)
-			return nil
-		}
-	} else {
+	if outNum == 2 {
 		replyType = mtype.Out(0)
 		if !isExportedOrBuiltinType(replyType) {
 			logger.Errorf("reply type of method %s not exported{%v}", mname, replyType)
@@ -272,7 +279,7 @@ func suiteMethod(method reflect.Method) *MethodType {
 	index := 1
 
 	// ctxType
-	if mtype.In(1).String() == "context.Context" {
+	if inNum > 1 && mtype.In(1).String() == "context.Context" {
 		ctxType = mtype.In(1)
 		index = 2
 	}

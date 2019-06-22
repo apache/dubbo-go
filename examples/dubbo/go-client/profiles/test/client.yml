@@ -33,6 +33,8 @@ registries :
 references:
   "UserProvider":
     protocol : "dubbo"
+#    version: "2.0"
+#    group: "as"
     interface : "com.ikurento.user.UserProvider"
     cluster: "failover"
     methods :

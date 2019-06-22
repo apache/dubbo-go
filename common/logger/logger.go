@@ -56,7 +56,7 @@ func init() {
 	logConfFile := os.Getenv(constant.APP_LOG_CONF_FILE)
 	err := InitLog(logConfFile)
 	if err != nil {
-		log.Printf("[InitLog] error: %v", err)
+		log.Printf("[InitLog] warn: %v", err)
 	}
 }
 
@@ -110,7 +110,7 @@ func InitLogger(conf *zap.Config) {
 	} else {
 		zapLoggerConfig = *conf
 	}
-	zapLogger, _ := zapLoggerConfig.Build()
+	zapLogger, _ := zapLoggerConfig.Build(zap.AddCallerSkip(1))
 	logger = zapLogger.Sugar()
 }
 

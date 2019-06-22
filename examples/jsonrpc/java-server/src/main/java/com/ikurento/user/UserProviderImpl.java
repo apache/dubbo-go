@@ -78,7 +78,8 @@ public class UserProviderImpl implements UserProvider {
     public Map<String, User> queryAll() {
         return userMap;
     }
-
+    public void GetUser3() {
+    }
 
     public User getUser(int userCode) {
         return new User(String.valueOf(userCode), "userCode get", 48);

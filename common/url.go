@@ -18,6 +18,7 @@
 package common
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"math"
@@ -128,16 +129,14 @@ func WithPort(port string) option {
 	}
 }
 
-//func WithPath(path string) option {
-//	return func(url *URL) {
-//		url.Path = path
-//	}
-//}
-
-func NewURLWithOptions(service string, opts ...option) *URL {
-	url := &URL{
-		Path: "/" + service,
+func WithPath(path string) option {
+	return func(url *URL) {
+		url.Path = "/" + strings.TrimPrefix(path, "/")
 	}
+}
+
+func NewURLWithOptions(opts ...option) *URL {
+	url := &URL{}
 	for _, opt := range opts {
 		opt(url)
 	}
@@ -212,31 +211,26 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (URL, error) 
 	return s, nil
 }
 
-//
-//func (c URL) Key() string {
-//	return fmt.Sprintf(
-//		"%s://%s:%s@%s:%s/%s",
-//		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path)
-//}
-
 func (c URL) URLEqual(url URL) bool {
 	c.Ip = ""
 	c.Port = ""
 	url.Ip = ""
 	url.Port = ""
-	if c.Key() != url.Key() {
+	cGroup := c.GetParam(constant.GROUP_KEY, "")
+	urlGroup := url.GetParam(constant.GROUP_KEY, "")
+	cKey := c.Key()
+	urlKey := url.Key()
+
+	if cGroup == constant.ANY_VALUE {
+		cKey = strings.Replace(cKey, "group=*", "group="+urlGroup, 1)
+	} else if urlGroup == constant.ANY_VALUE {
+		urlKey = strings.Replace(urlKey, "group=*", "group="+cGroup, 1)
+	}
+	if cKey != urlKey {
 		return false
 	}
 	return true
 }
-
-//func (c SubURL) String() string {
-//	return fmt.Sprintf(
-//		"DefaultServiceURL{protocol:%s, Location:%s, Path:%s, Ip:%s, Port:%s, "+
-//			"Timeout:%s, Version:%s, Group:%s,  Params:%+v}",
-//		c.protocol, c.Location, c.Path, c.Ip, c.Port,
-//		c.Timeout, c.Version, c.Group, c.Params)
-//}
 
 func (c URL) String() string {
 	buildString := fmt.Sprintf(
@@ -248,10 +242,33 @@ func (c URL) String() string {
 
 func (c URL) Key() string {
 	buildString := fmt.Sprintf(
-		"%s://%s:%s@%s:%s/%s?group=%s&version=%s",
-		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/")), c.GetParam(constant.GROUP_KEY, ""), c.GetParam(constant.VERSION_KEY, constant.DEFAULT_VERSION))
-
+		"%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s",
+		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GROUP_KEY, ""), c.GetParam(constant.VERSION_KEY, ""))
 	return buildString
+	//return c.ServiceKey()
+}
+
+func (c URL) ServiceKey() string {
+	intf := c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
+	if intf == "" {
+		return ""
+	}
+	buf := &bytes.Buffer{}
+	group := c.GetParam(constant.GROUP_KEY, "")
+	if group != "" {
+		buf.WriteString(group)
+		buf.WriteString("/")
+	}
+
+	buf.WriteString(intf)
+
+	version := c.GetParam(constant.VERSION_KEY, "")
+	if version != "" && version != "0.0.0" {
+		buf.WriteString(":")
+		buf.WriteString(version)
+	}
+
+	return buf.String()
 }
 
 func (c URL) Context() context.Context {
@@ -259,11 +276,11 @@ func (c URL) Context() context.Context {
 }
 
 func (c URL) Service() string {
-	service := strings.TrimPrefix(c.Path, "/")
+	service := c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
 	if service != "" {
 		return service
 	} else if c.SubURL != nil {
-		service = strings.TrimPrefix(c.SubURL.Path, "/")
+		service = c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
 		if service != "" { //if url.path is "" then return suburl's path, special for registry Url
 			return service
 		}

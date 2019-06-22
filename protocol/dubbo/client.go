@@ -222,7 +222,7 @@ func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string
 	p.Service.Path = strings.TrimPrefix(svcUrl.Path, "/")
 	p.Service.Target = svcUrl.GetParam(constant.INTERFACE_KEY, "")
 	p.Service.Interface = svcUrl.GetParam(constant.INTERFACE_KEY, "")
-	p.Service.Version = svcUrl.GetParam(constant.VERSION_KEY, constant.DEFAULT_VERSION)
+	p.Service.Version = svcUrl.GetParam(constant.VERSION_KEY, "")
 	p.Service.Method = method
 	p.Service.Timeout = opts.RequestTimeout
 	if opts.SerialID == 0 {

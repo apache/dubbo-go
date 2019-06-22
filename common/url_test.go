@@ -24,15 +24,18 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/constant"
 )
 
 func TestNewURLWithOptions(t *testing.T) {
 	methods := []string{"Methodone,methodtwo"}
 	params := url.Values{}
 	params.Set("key", "value")
-	u := NewURLWithOptions("com.test.Service",
+	u := NewURLWithOptions(WithPath("com.test.Service"),
 		WithUsername("username"),
 		WithPassword("password"),
 		WithProtocol("testprotocol"),
