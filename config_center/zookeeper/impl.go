@@ -24,6 +24,7 @@ import (
 )
 import (
 	perrors "github.com/pkg/errors"
+	"github.com/samuel/go-zookeeper/zk"
 )
 import (
 	"github.com/apache/dubbo-go/common"
@@ -32,7 +33,6 @@ import (
 	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/remoting"
 	"github.com/apache/dubbo-go/remoting/zookeeper"
-	"github.com/samuel/go-zookeeper/zk"
 )
 
 const ZkClient = "zk config_center"
