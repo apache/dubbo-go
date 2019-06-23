@@ -18,18 +18,17 @@
 package router
 
 import (
-	"fmt"
-	"github.com/apache/dubbo-go/cluster"
-	"github.com/apache/dubbo-go/common/logger"
-	"net"
 	"reflect"
 	"regexp"
 	"strings"
 
+	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/protocol"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -69,8 +68,10 @@ func (c ConditionRouter) CompareTo(r cluster.Router) int {
 }
 
 func newConditionRouter(url common.URL) (*ConditionRouter, error) {
-	var whenRule string
-	var thenRule string
+	var (
+		whenRule string
+		thenRule string
+	)
 	rule, err := url.GetParameterAndDecoded(constant.RULE_KEY)
 	if err != nil || rule == "" {
 		return nil, perrors.Errorf("Illegal route rule!")
@@ -100,22 +101,6 @@ func newConditionRouter(url common.URL) (*ConditionRouter, error) {
 		when,
 		then,
 	}, nil
-}
-
-func LocalIp() string {
-	addrs, err := net.InterfaceAddrs()
-	if err != nil {
-		fmt.Println(err)
-	}
-	var ip = "localhost"
-	for _, address := range addrs {
-		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-			if ipnet.IP.To4() != nil {
-				ip = ipnet.IP.String()
-			}
-		}
-	}
-	return ip
 }
 
 func (c *ConditionRouter) Route(invokers []protocol.Invoker, url common.URL, invocation protocol.Invocation) []protocol.Invoker {
@@ -156,7 +141,7 @@ func (c *ConditionRouter) Route(invokers []protocol.Invoker, url common.URL, inv
 	if len(result) > 0 {
 		return result
 	} else if c.Force {
-		logger.Warnf("The route result is empty and force execute. consumer: %s, service: %s, router: %s", LocalIp(), url.Service())
+		logger.Warnf("The route result is empty and force execute. consumer: %s, service: %s, router: %s", utils.GetLocalIP(), url.Service())
 		return result
 	}
 	return invokers
@@ -241,7 +226,7 @@ func (c *ConditionRouter) MatchThen(url common.URL, param common.URL) (bool, err
 //MatchCondition MatchCondition
 func MatchCondition(pairs map[string]MatchPair, url *common.URL, param *common.URL, invocation protocol.Invocation) (bool, error) {
 	sample := url.ToMap()
-	if len(sample) == 0 {
+	if sample == nil {
 		return true, perrors.Errorf("")
 	}
 	result := false
