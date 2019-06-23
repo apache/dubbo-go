@@ -400,6 +400,9 @@ func (c URL) ToMap() map[string]string {
 	if c.Path != "" {
 		paramsMap["path"] = c.Path
 	}
+	if len(paramsMap) == 0 {
+		return nil
+	}
 	return paramsMap
 }
 
