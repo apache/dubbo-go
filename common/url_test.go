@@ -117,6 +117,18 @@ func TestURL_GetParamInt(t *testing.T) {
 	assert.Equal(t, int64(1), v)
 }
 
+func TestURL_GetParamBool(t *testing.T) {
+	params := url.Values{}
+	params.Set("force", "true")
+	u := URL{baseUrl: baseUrl{Params: params}}
+	v := u.GetParamBool("force", false)
+	assert.Equal(t, true, v)
+
+	u = URL{}
+	v = u.GetParamBool("force", false)
+	assert.Equal(t, false, v)
+}
+
 func TestURL_GetMethodParamInt(t *testing.T) {
 	params := url.Values{}
 	params.Set("methods.GetValue.timeout", "3")
