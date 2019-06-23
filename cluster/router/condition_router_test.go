@@ -26,8 +26,10 @@ import (
 
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
+
 	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
@@ -147,22 +149,23 @@ func TestRoute_matchWhen(t *testing.T) {
 }
 func TestRoute_matchFilter(t *testing.T) {
 	url1, _ := common.NewURL(context.TODO(), "dubbo://10.20.3.3:20880/com.foo.BarService?default.serialization=fastjson")
-	url2, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", LocalIp()))
-	url3, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", LocalIp()))
+	url2, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", utils.GetLocalIP()))
+	url3, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", utils.GetLocalIP()))
+	localIP, _ := utils.GetLocalIP()
 	invokers := []protocol.Invoker{NewMockInvoker(url1, 1), NewMockInvoker(url2, 2), NewMockInvoker(url3, 3)}
-	rule1 := base64.URLEncoding.EncodeToString([]byte("host = " + LocalIp() + " => " + " host = 10.20.3.3"))
-	rule2 := base64.URLEncoding.EncodeToString([]byte("host = " + LocalIp() + " => " + " host = 10.20.3.* & host != 10.20.3.3"))
-	rule3 := base64.URLEncoding.EncodeToString([]byte("host = " + LocalIp() + " => " + " host = 10.20.3.3  & host != 10.20.3.3"))
-	rule4 := base64.URLEncoding.EncodeToString([]byte("host = " + LocalIp() + " => " + " host = 10.20.3.2,10.20.3.3,10.20.3.4"))
-	rule5 := base64.URLEncoding.EncodeToString([]byte("host = " + LocalIp() + " => " + " host != 10.20.3.3"))
-	rule6 := base64.URLEncoding.EncodeToString([]byte("host = " + LocalIp() + " => " + " serialization = fastjson"))
+	rule1 := base64.URLEncoding.EncodeToString([]byte("host = " + localIP + " => " + " host = 10.20.3.3"))
+	rule2 := base64.URLEncoding.EncodeToString([]byte("host = " + localIP + " => " + " host = 10.20.3.* & host != 10.20.3.3"))
+	rule3 := base64.URLEncoding.EncodeToString([]byte("host = " + localIP + " => " + " host = 10.20.3.3  & host != 10.20.3.3"))
+	rule4 := base64.URLEncoding.EncodeToString([]byte("host = " + localIP + " => " + " host = 10.20.3.2,10.20.3.3,10.20.3.4"))
+	rule5 := base64.URLEncoding.EncodeToString([]byte("host = " + localIP + " => " + " host != 10.20.3.3"))
+	rule6 := base64.URLEncoding.EncodeToString([]byte("host = " + localIP + " => " + " serialization = fastjson"))
 	router1, _ := NewConditionRouterFactory().Router(getRouteUrl(rule1))
 	router2, _ := NewConditionRouterFactory().Router(getRouteUrl(rule2))
 	router3, _ := NewConditionRouterFactory().Router(getRouteUrl(rule3))
 	router4, _ := NewConditionRouterFactory().Router(getRouteUrl(rule4))
 	router5, _ := NewConditionRouterFactory().Router(getRouteUrl(rule5))
 	router6, _ := NewConditionRouterFactory().Router(getRouteUrl(rule6))
-	cUrl, _ := common.NewURL(context.TODO(), "consumer://"+LocalIp()+"/com.foo.BarService")
+	cUrl, _ := common.NewURL(context.TODO(), "consumer://"+localIP+"/com.foo.BarService")
 
 	fileredInvokers1 := router1.Route(invokers, cUrl, &invocation.RPCInvocation{})
 	fileredInvokers2 := router2.Route(invokers, cUrl, &invocation.RPCInvocation{})
@@ -209,31 +212,34 @@ func TestRoute_methodRoute(t *testing.T) {
 
 func TestRoute_ReturnFalse(t *testing.T) {
 	url, _ := common.NewURL(context.TODO(), "")
+	localIP, _ := utils.GetLocalIP()
 	invokers := []protocol.Invoker{NewMockInvoker(url, 1), NewMockInvoker(url, 2), NewMockInvoker(url, 3)}
 	inv := &invocation.RPCInvocation{}
-	rule := base64.URLEncoding.EncodeToString([]byte("host = " + LocalIp() + " => false"))
-	curl, _ := common.NewURL(context.TODO(), "consumer://"+LocalIp()+"/com.foo.BarService")
+	rule := base64.URLEncoding.EncodeToString([]byte("host = " + localIP + " => false"))
+	curl, _ := common.NewURL(context.TODO(), "consumer://"+localIP+"/com.foo.BarService")
 
 	router, _ := NewConditionRouterFactory().Router(getRouteUrl(rule))
 	fileredInvokers := router.(*ConditionRouter).Route(invokers, curl, inv)
 	assert.Equal(t, 0, len(fileredInvokers))
 }
 func TestRoute_ReturnEmpty(t *testing.T) {
+	localIP, _ := utils.GetLocalIP()
 	url, _ := common.NewURL(context.TODO(), "")
 	invokers := []protocol.Invoker{NewMockInvoker(url, 1), NewMockInvoker(url, 2), NewMockInvoker(url, 3)}
 	inv := &invocation.RPCInvocation{}
-	rule := base64.URLEncoding.EncodeToString([]byte("host = " + LocalIp() + " => "))
-	curl, _ := common.NewURL(context.TODO(), "consumer://"+LocalIp()+"/com.foo.BarService")
+	rule := base64.URLEncoding.EncodeToString([]byte("host = " + localIP + " => "))
+	curl, _ := common.NewURL(context.TODO(), "consumer://"+localIP+"/com.foo.BarService")
 
 	router, _ := NewConditionRouterFactory().Router(getRouteUrl(rule))
 	fileredInvokers := router.(*ConditionRouter).Route(invokers, curl, inv)
 	assert.Equal(t, 0, len(fileredInvokers))
 }
 func TestRoute_ReturnAll(t *testing.T) {
+	localIP, _ := utils.GetLocalIP()
 	invokers := []protocol.Invoker{&MockInvoker{}, &MockInvoker{}, &MockInvoker{}}
 	inv := &invocation.RPCInvocation{}
-	rule := base64.URLEncoding.EncodeToString([]byte("host = " + LocalIp() + " => " + " host = " + LocalIp()))
-	curl, _ := common.NewURL(context.TODO(), "consumer://"+LocalIp()+"/com.foo.BarService")
+	rule := base64.URLEncoding.EncodeToString([]byte("host = " + localIP + " => " + " host = " + localIP))
+	curl, _ := common.NewURL(context.TODO(), "consumer://"+localIP+"/com.foo.BarService")
 
 	router, _ := NewConditionRouterFactory().Router(getRouteUrl(rule))
 	fileredInvokers := router.(*ConditionRouter).Route(invokers, curl, inv)
@@ -242,15 +248,16 @@ func TestRoute_ReturnAll(t *testing.T) {
 
 func TestRoute_HostFilter(t *testing.T) {
 	url1, _ := common.NewURL(context.TODO(), "dubbo://10.20.3.3:20880/com.foo.BarService")
-	url2, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", LocalIp()))
-	url3, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", LocalIp()))
+	url2, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", utils.GetLocalIP()))
+	url3, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", utils.GetLocalIP()))
 	invoker1 := NewMockInvoker(url1, 1)
 	invoker2 := NewMockInvoker(url2, 2)
 	invoker3 := NewMockInvoker(url3, 3)
 	invokers := []protocol.Invoker{invoker1, invoker2, invoker3}
 	inv := &invocation.RPCInvocation{}
-	rule := base64.URLEncoding.EncodeToString([]byte("host = " + LocalIp() + " => " + " host = " + LocalIp()))
-	curl, _ := common.NewURL(context.TODO(), "consumer://"+LocalIp()+"/com.foo.BarService")
+	localIP, _ := utils.GetLocalIP()
+	rule := base64.URLEncoding.EncodeToString([]byte("host = " + localIP + " => " + " host = " + localIP))
+	curl, _ := common.NewURL(context.TODO(), "consumer://"+localIP+"/com.foo.BarService")
 
 	router, _ := NewConditionRouterFactory().Router(getRouteUrl(rule))
 	fileredInvokers := router.(*ConditionRouter).Route(invokers, curl, inv)
@@ -260,15 +267,16 @@ func TestRoute_HostFilter(t *testing.T) {
 }
 func TestRoute_Empty_HostFilter(t *testing.T) {
 	url1, _ := common.NewURL(context.TODO(), "dubbo://10.20.3.3:20880/com.foo.BarService")
-	url2, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", LocalIp()))
-	url3, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", LocalIp()))
+	url2, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", utils.GetLocalIP()))
+	url3, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", utils.GetLocalIP()))
 	invoker1 := NewMockInvoker(url1, 1)
 	invoker2 := NewMockInvoker(url2, 2)
 	invoker3 := NewMockInvoker(url3, 3)
 	invokers := []protocol.Invoker{invoker1, invoker2, invoker3}
 	inv := &invocation.RPCInvocation{}
-	rule := base64.URLEncoding.EncodeToString([]byte(" => " + " host = " + LocalIp()))
-	curl, _ := common.NewURL(context.TODO(), "consumer://"+LocalIp()+"/com.foo.BarService")
+	localIP, _ := utils.GetLocalIP()
+	rule := base64.URLEncoding.EncodeToString([]byte(" => " + " host = " + localIP))
+	curl, _ := common.NewURL(context.TODO(), "consumer://"+localIP+"/com.foo.BarService")
 
 	router, _ := NewConditionRouterFactory().Router(getRouteUrl(rule))
 	fileredInvokers := router.(*ConditionRouter).Route(invokers, curl, inv)
@@ -278,15 +286,16 @@ func TestRoute_Empty_HostFilter(t *testing.T) {
 }
 func TestRoute_False_HostFilter(t *testing.T) {
 	url1, _ := common.NewURL(context.TODO(), "dubbo://10.20.3.3:20880/com.foo.BarService")
-	url2, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", LocalIp()))
-	url3, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", LocalIp()))
+	url2, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", utils.GetLocalIP()))
+	url3, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", utils.GetLocalIP()))
 	invoker1 := NewMockInvoker(url1, 1)
 	invoker2 := NewMockInvoker(url2, 2)
 	invoker3 := NewMockInvoker(url3, 3)
 	invokers := []protocol.Invoker{invoker1, invoker2, invoker3}
 	inv := &invocation.RPCInvocation{}
-	rule := base64.URLEncoding.EncodeToString([]byte("true => " + " host = " + LocalIp()))
-	curl, _ := common.NewURL(context.TODO(), "consumer://"+LocalIp()+"/com.foo.BarService")
+	localIP, _ := utils.GetLocalIP()
+	rule := base64.URLEncoding.EncodeToString([]byte("true => " + " host = " + localIP))
+	curl, _ := common.NewURL(context.TODO(), "consumer://"+localIP+"/com.foo.BarService")
 
 	router, _ := NewConditionRouterFactory().Router(getRouteUrl(rule))
 	fileredInvokers := router.(*ConditionRouter).Route(invokers, curl, inv)
@@ -296,15 +305,16 @@ func TestRoute_False_HostFilter(t *testing.T) {
 }
 func TestRoute_Placeholder(t *testing.T) {
 	url1, _ := common.NewURL(context.TODO(), "dubbo://10.20.3.3:20880/com.foo.BarService")
-	url2, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", LocalIp()))
-	url3, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", LocalIp()))
+	url2, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", utils.GetLocalIP()))
+	url3, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", utils.GetLocalIP()))
 	invoker1 := NewMockInvoker(url1, 1)
 	invoker2 := NewMockInvoker(url2, 2)
 	invoker3 := NewMockInvoker(url3, 3)
 	invokers := []protocol.Invoker{invoker1, invoker2, invoker3}
 	inv := &invocation.RPCInvocation{}
-	rule := base64.URLEncoding.EncodeToString([]byte("host = " + LocalIp() + " => " + " host = $host"))
-	curl, _ := common.NewURL(context.TODO(), "consumer://"+LocalIp()+"/com.foo.BarService")
+	localIP, _ := utils.GetLocalIP()
+	rule := base64.URLEncoding.EncodeToString([]byte("host = " + localIP + " => " + " host = $host"))
+	curl, _ := common.NewURL(context.TODO(), "consumer://"+localIP+"/com.foo.BarService")
 
 	router, _ := NewConditionRouterFactory().Router(getRouteUrl(rule))
 	fileredInvokers := router.(*ConditionRouter).Route(invokers, curl, inv)
@@ -314,15 +324,16 @@ func TestRoute_Placeholder(t *testing.T) {
 }
 func TestRoute_NoForce(t *testing.T) {
 	url1, _ := common.NewURL(context.TODO(), "dubbo://10.20.3.3:20880/com.foo.BarService")
-	url2, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", LocalIp()))
-	url3, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", LocalIp()))
+	url2, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", utils.GetLocalIP()))
+	url3, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", utils.GetLocalIP()))
 	invoker1 := NewMockInvoker(url1, 1)
 	invoker2 := NewMockInvoker(url2, 2)
 	invoker3 := NewMockInvoker(url3, 3)
 	invokers := []protocol.Invoker{invoker1, invoker2, invoker3}
 	inv := &invocation.RPCInvocation{}
-	rule := base64.URLEncoding.EncodeToString([]byte("host = " + LocalIp() + " => " + " host = 1.2.3.4"))
-	curl, _ := common.NewURL(context.TODO(), "consumer://"+LocalIp()+"/com.foo.BarService")
+	localIP, _ := utils.GetLocalIP()
+	rule := base64.URLEncoding.EncodeToString([]byte("host = " + localIP + " => " + " host = 1.2.3.4"))
+	curl, _ := common.NewURL(context.TODO(), "consumer://"+localIP+"/com.foo.BarService")
 
 	router, _ := NewConditionRouterFactory().Router(getRouteUrlWithNoForce(rule))
 	fileredInvokers := router.(*ConditionRouter).Route(invokers, curl, inv)
@@ -330,15 +341,16 @@ func TestRoute_NoForce(t *testing.T) {
 }
 func TestRoute_Force(t *testing.T) {
 	url1, _ := common.NewURL(context.TODO(), "dubbo://10.20.3.3:20880/com.foo.BarService")
-	url2, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", LocalIp()))
-	url3, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", LocalIp()))
+	url2, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", utils.GetLocalIP()))
+	url3, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", utils.GetLocalIP()))
 	invoker1 := NewMockInvoker(url1, 1)
 	invoker2 := NewMockInvoker(url2, 2)
 	invoker3 := NewMockInvoker(url3, 3)
 	invokers := []protocol.Invoker{invoker1, invoker2, invoker3}
 	inv := &invocation.RPCInvocation{}
-	rule := base64.URLEncoding.EncodeToString([]byte("host = " + LocalIp() + " => " + " host = 1.2.3.4"))
-	curl, _ := common.NewURL(context.TODO(), "consumer://"+LocalIp()+"/com.foo.BarService")
+	localIP, _ := utils.GetLocalIP()
+	rule := base64.URLEncoding.EncodeToString([]byte("host = " + localIP + " => " + " host = 1.2.3.4"))
+	curl, _ := common.NewURL(context.TODO(), "consumer://"+localIP+"/com.foo.BarService")
 
 	router, _ := NewConditionRouterFactory().Router(getRouteUrlWithForce(rule, "true"))
 	fileredInvokers := router.(*ConditionRouter).Route(invokers, curl, inv)
