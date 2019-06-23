@@ -39,6 +39,7 @@ const (
 	PRIORITY     = "priority"
 )
 
+//ConditionRouter condition router struct
 type ConditionRouter struct {
 	Pattern       string
 	Url           common.URL
@@ -48,6 +49,7 @@ type ConditionRouter struct {
 	ThenCondition map[string]MatchPair
 }
 
+//CompareTo
 func (c ConditionRouter) CompareTo(r cluster.Router) int {
 	var result int
 	router, ok := r.(*ConditionRouter)
