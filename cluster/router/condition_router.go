@@ -85,7 +85,6 @@ func newConditionRouter(url common.URL) (*ConditionRouter, error) {
 	if err != nil {
 		return nil, perrors.Errorf("%s", "")
 	}
-
 	t, err := parseRule(thenRule)
 	if err != nil {
 		return nil, perrors.Errorf("%s", "")
@@ -148,14 +147,12 @@ func (c *ConditionRouter) Route(invokers []protocol.Invoker, url common.URL, inv
 }
 
 func parseRule(rule string) (map[string]MatchPair, error) {
-
 	condition := make(map[string]MatchPair)
 	if rule == "" {
 		return condition, nil
 	}
 	var pair MatchPair
 	values := utils.NewSet()
-
 	reg := regexp.MustCompile(`([&!=,]*)\s*([^&!=,\s]+)`)
 	var startIndex = 0
 	if indexTuple := reg.FindIndex([]byte(rule)); len(indexTuple) > 0 {
@@ -165,7 +162,6 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 	for _, groups := range matches {
 		separator := string(groups[1])
 		content := string(groups[2])
-
 		switch separator {
 		case "":
 			pair = MatchPair{
@@ -205,10 +201,7 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 
 		}
 	}
-
 	return condition, nil
-	//var pair MatchPair
-
 }
 
 //
@@ -254,7 +247,6 @@ func MatchCondition(pairs map[string]MatchPair, url *common.URL, param *common.U
 				result = true
 			}
 		}
-
 	}
 	return result, nil
 }
@@ -272,7 +264,6 @@ type MatchPair struct {
 }
 
 func (pair MatchPair) isMatch(value string, param *common.URL) bool {
-
 	if !pair.Matches.Empty() && pair.Mismatches.Empty() {
 
 		for match := range pair.Matches.Items {
@@ -304,7 +295,6 @@ func (pair MatchPair) isMatch(value string, param *common.URL) bool {
 		}
 		return false
 	}
-
 	return false
 }
 
@@ -333,6 +323,5 @@ func isMatchGlobPattern(pattern string, value string, param *common.URL) bool {
 		prefix := pattern[0:1]
 		suffix := pattern[i+1:]
 		return strings.HasPrefix(value, prefix) && strings.HasSuffix(value, suffix)
-
 	}
 }
