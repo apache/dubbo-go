@@ -227,7 +227,7 @@ func (c *ConditionRouter) MatchThen(url common.URL, param common.URL) (bool, err
 func MatchCondition(pairs map[string]MatchPair, url *common.URL, param *common.URL, invocation protocol.Invocation) (bool, error) {
 	sample := url.ToMap()
 	if sample == nil {
-		return true, perrors.Errorf("")
+		return true, perrors.Errorf("url is not allowed be nil")
 	}
 	result := false
 	for key, matchPair := range pairs {
