@@ -123,6 +123,7 @@ func (c *ConditionRouter) Route(invokers []protocol.Invoker, url common.URL, inv
 	if len(c.ThenCondition) == 0 {
 		return result
 	}
+	localIP, _ := utils.GetLocalIP()
 	for _, invoker := range invokers {
 		isMatchThen, err := c.MatchThen(invoker.GetUrl(), url)
 		if err != nil {
@@ -140,7 +141,7 @@ func (c *ConditionRouter) Route(invokers []protocol.Invoker, url common.URL, inv
 	if len(result) > 0 {
 		return result
 	} else if c.Force {
-		logger.Warnf("The route result is empty and force execute. consumer: %s, service: %s, router: %s", utils.GetLocalIP(), url.Service())
+		logger.Warnf("The route result is empty and force execute. consumer: %s, service: %s, router: %s", localIP, url.Service())
 		return result
 	}
 	return invokers
