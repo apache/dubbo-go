@@ -10,8 +10,7 @@ func init() {
 	extension.SetRouterFactory("condition", NewConditionRouterFactory)
 }
 
-type ConditionRouterFactory struct {
-}
+type ConditionRouterFactory struct{}
 
 func NewConditionRouterFactory() cluster.RouterFactory {
 	return ConditionRouterFactory{}
