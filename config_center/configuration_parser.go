@@ -12,8 +12,7 @@ type ConfigurationParser interface {
 }
 
 //for support properties file in config center
-type DefaultConfigurationParser struct {
-}
+type DefaultConfigurationParser struct{}
 
 func (parser *DefaultConfigurationParser) Parse(content string) (map[string]string, error) {
 	properties, err := properties.LoadString(content)

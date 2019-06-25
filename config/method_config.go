@@ -16,7 +16,9 @@
  */
 package config
 
-import "github.com/apache/dubbo-go/common/constant"
+import (
+	"github.com/apache/dubbo-go/common/constant"
+)
 
 type MethodConfig struct {
 	InterfaceId   string
