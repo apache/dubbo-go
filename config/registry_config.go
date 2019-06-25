@@ -30,7 +30,8 @@ import (
 )
 
 type RegistryConfig struct {
-	Protocol   string `required:"true" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	Protocol string `required:"true" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	//I changed "type" to "protocol" ,the same as "protocol" field in java class RegistryConfig
 	TimeoutStr string `yaml:"timeout" default:"5s" json:"timeout,omitempty" property:"timeout"` // unit: second
 	Group      string `yaml:"group" json:"group,omitempty" property:"group"`
 	//for registry
