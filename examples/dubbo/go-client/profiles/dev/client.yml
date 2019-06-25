@@ -18,6 +18,7 @@ application_config:
 
 registries :
   "hangzhouzk":
+    # 对应java配置中address属性的zookeeper <dubbo:registry address="zookeeper://127.0.0.1:2181"/>
     protocol: "zookeeper"
     timeout	: "3s"
     address: "127.0.0.1:2181"
