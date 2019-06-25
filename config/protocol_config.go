@@ -17,8 +17,10 @@
 package config
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
 	"strings"
+)
+import (
+	"github.com/apache/dubbo-go/common/constant"
 )
 
 type ProtocolConfig struct {
