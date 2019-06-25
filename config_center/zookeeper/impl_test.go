@@ -19,13 +19,17 @@ package zookeeper
 import (
 	"context"
 	"fmt"
+	"sync"
+	"testing"
+)
+import (
+	"github.com/samuel/go-zookeeper/zk"
+	"github.com/stretchr/testify/assert"
+)
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/remoting"
-	"github.com/samuel/go-zookeeper/zk"
-	"github.com/stretchr/testify/assert"
-	"sync"
-	"testing"
 )
 
 func initZkData(group string, t *testing.T) (*zk.TestCluster, *zookeeperDynamicConfiguration) {
