@@ -152,7 +152,9 @@ func (s *Server) handlePkg(conn net.Conn) {
 			timeout, err := time.ParseDuration(reqHeader["Timeout"])
 			if err == nil {
 				httpTimeout = timeout
-				ctx, _ = context.WithTimeout(ctx, httpTimeout)
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, httpTimeout)
+				defer cancel()
 			}
 			delete(reqHeader, "Timeout")
 		}
