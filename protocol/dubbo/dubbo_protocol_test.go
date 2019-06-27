@@ -48,7 +48,7 @@ func TestDubboProtocol_Export(t *testing.T) {
 	eq := exporter.GetInvoker().GetUrl().URLEqual(url)
 	assert.True(t, eq)
 
-	// second service: the same path and the diferent version
+	// second service: the same path and the different version
 	url2, err := common.NewURL(context.Background(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&"+
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&"+
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&"+
