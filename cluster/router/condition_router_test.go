@@ -54,24 +54,24 @@ func (bi *MockInvoker) GetUrl() common.URL {
 	return bi.url
 }
 
-func getRouteUrl(rule string) common.URL {
+func getRouteUrl(rule string) *common.URL {
 	url, _ := common.NewURL(context.TODO(), "condition://0.0.0.0/com.foo.BarService")
 	url.AddParam("rule", rule)
 	url.AddParam("force", "true")
-	return url
+	return &url
 }
 
-func getRouteUrlWithForce(rule, force string) common.URL {
+func getRouteUrlWithForce(rule, force string) *common.URL {
 	url, _ := common.NewURL(context.TODO(), "condition://0.0.0.0/com.foo.BarService")
 	url.AddParam("rule", rule)
 	url.AddParam("force", force)
-	return url
+	return &url
 }
 
-func getRouteUrlWithNoForce(rule string) common.URL {
+func getRouteUrlWithNoForce(rule string) *common.URL {
 	url, _ := common.NewURL(context.TODO(), "condition://0.0.0.0/com.foo.BarService")
 	url.AddParam("rule", rule)
-	return url
+	return &url
 }
 
 func (bi *MockInvoker) IsAvailable() bool {
