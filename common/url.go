@@ -293,13 +293,13 @@ func (c URL) GetParam(s string, d string) string {
 	}
 	return r
 }
-func (c URL) GetParameterAndDecoded(key string) (string, error) {
+func (c URL) GetParamAndDecoded(key string) (string, error) {
 	ruleDec, err := base64.URLEncoding.DecodeString(c.GetParam(key, ""))
 	value := string(ruleDec)
 	return value, err
 }
 
-func (c URL) GetRawParameter(key string) string {
+func (c URL) GetRawParam(key string) string {
 	if "protocol" == key {
 		return c.Protocol
 	}

@@ -22,7 +22,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
@@ -33,9 +32,9 @@ import (
 )
 
 const (
-	RoutePattern = `([&!=,]*)\\s*([^&!=,\\s]+)`
-	FORCE        = "force"
-	PRIORITY     = "priority"
+	ROUTE_PATTERN = `([&!=,]*)\\s*([^&!=,\\s]+)`
+	FORCE         = "force"
+	PRIORITY      = "priority"
 )
 
 //ConditionRouter condition router struct
@@ -48,39 +47,30 @@ type ConditionRouter struct {
 	ThenCondition map[string]MatchPair
 }
 
-//CompareTo
-func (c ConditionRouter) CompareTo(r cluster.Router) int {
-	var result int
-	router, ok := r.(*ConditionRouter)
-	if r == nil || !ok {
-		return 1
-	}
-	if c.Priority == router.Priority {
-		result = strings.Compare(c.Url.String(), router.Url.String())
-	} else {
-		if c.Priority > router.Priority {
-			result = 1
-		} else {
-			result = -1
-		}
-	}
-	return result
-}
-
 func newConditionRouter(url common.URL) (*ConditionRouter, error) {
 	var (
 		whenRule string
 		thenRule string
+		when     map[string]MatchPair
+		then     map[string]MatchPair
 	)
-	rule, err := url.GetParameterAndDecoded(constant.RULE_KEY)
+	rule, err := url.GetParamAndDecoded(constant.RULE_KEY)
 	if err != nil || rule == "" {
 		return nil, perrors.Errorf("Illegal route rule!")
 	}
 	rule = strings.Replace(rule, "consumer.", "", -1)
 	rule = strings.Replace(rule, "provider.", "", -1)
 	i := strings.Index(rule, "=>")
-	whenRule = strings.Trim(If(i < 0, "", rule[0:i]).(string), " ")
-	thenRule = strings.Trim(If(i < 0, rule, rule[i+2:]).(string), " ")
+	if i > 0 {
+		whenRule = rule[0:i]
+	}
+	if i < 0 {
+		thenRule = rule
+	} else {
+		thenRule = rule[i+2:]
+	}
+	whenRule = strings.Trim(whenRule, " ")
+	thenRule = strings.Trim(thenRule, " ")
 	w, err := parseRule(whenRule)
 	if err != nil {
 		return nil, perrors.Errorf("%s", "")
@@ -89,11 +79,18 @@ func newConditionRouter(url common.URL) (*ConditionRouter, error) {
 	if err != nil {
 		return nil, perrors.Errorf("%s", "")
 	}
-	when := If(whenRule == "" || "true" == whenRule, make(map[string]MatchPair), w).(map[string]MatchPair)
-	then := If(thenRule == "" || "false" == thenRule, make(map[string]MatchPair), t).(map[string]MatchPair)
-
+	if whenRule == "" || "true" == whenRule {
+		when = make(map[string]MatchPair)
+	} else {
+		when = w
+	}
+	if thenRule == "" || "false" == thenRule {
+		when = make(map[string]MatchPair)
+	} else {
+		then = t
+	}
 	return &ConditionRouter{
-		RoutePattern,
+		ROUTE_PATTERN,
 		url,
 		url.GetParamInt(PRIORITY, 0),
 		url.GetParamBool(FORCE, false),
@@ -141,7 +138,8 @@ func (c *ConditionRouter) Route(invokers []protocol.Invoker, url common.URL, inv
 	if len(result) > 0 {
 		return result
 	} else if c.Force {
-		logger.Warnf("The route result is empty and force execute. consumer: %s, service: %s, router: %s", localIP, url.Service())
+		rule, _ := url.GetParamAndDecoded(constant.RULE_KEY)
+		logger.Warnf("The route result is empty and force execute. consumer: %s, service: %s, router: %s", localIP, url.Service(), rule)
 		return result
 	}
 	return invokers
@@ -301,7 +299,7 @@ func (pair MatchPair) isMatch(value string, param *common.URL) bool {
 
 func isMatchGlobPattern(pattern string, value string, param *common.URL) bool {
 	if param != nil && strings.HasPrefix(pattern, "$") {
-		pattern = param.GetRawParameter(pattern[1:])
+		pattern = param.GetRawParam(pattern[1:])
 	}
 	if "*" == pattern {
 		return true
