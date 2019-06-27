@@ -21,4 +21,4 @@ classes
 vendor/
 
 logs/
-
+.vscode/

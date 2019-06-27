@@ -40,14 +40,14 @@ const (
 //ConditionRouter condition router struct
 type ConditionRouter struct {
 	Pattern       string
-	Url           common.URL
+	Url           *common.URL
 	Priority      int64
 	Force         bool
 	WhenCondition map[string]MatchPair
 	ThenCondition map[string]MatchPair
 }
 
-func newConditionRouter(url common.URL) (*ConditionRouter, error) {
+func newConditionRouter(url *common.URL) (*ConditionRouter, error) {
 	var (
 		whenRule string
 		thenRule string
