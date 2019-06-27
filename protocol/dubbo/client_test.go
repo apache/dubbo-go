@@ -40,7 +40,7 @@ func TestClient_CallOneway(t *testing.T) {
 	proto, url := InitTest(t)
 
 	c := &Client{
-		pendingResponses: make(map[SequenceType]*PendingResponse),
+		pendingResponses: new(sync.Map),
 		conf:             *clientConf,
 	}
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
@@ -57,7 +57,7 @@ func TestClient_Call(t *testing.T) {
 	proto, url := InitTest(t)
 
 	c := &Client{
-		pendingResponses: make(map[SequenceType]*PendingResponse),
+		pendingResponses: new(sync.Map),
 		conf:             *clientConf,
 	}
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
@@ -118,7 +118,7 @@ func TestClient_AsyncCall(t *testing.T) {
 	proto, url := InitTest(t)
 
 	c := &Client{
-		pendingResponses: make(map[SequenceType]*PendingResponse),
+		pendingResponses: new(sync.Map),
 		conf:             *clientConf,
 	}
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))

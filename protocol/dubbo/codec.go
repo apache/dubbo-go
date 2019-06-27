@@ -40,9 +40,9 @@ const (
 type CallType int32
 
 const (
-	CT_UNKOWN CallType = 0
-	CT_OneWay CallType = 1
-	CT_TwoWay CallType = 2
+	CT_UNKNOWN CallType = 0
+	CT_OneWay  CallType = 1
+	CT_TwoWay  CallType = 2
 )
 
 ////////////////////////////////////////////
