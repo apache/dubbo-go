@@ -50,7 +50,7 @@ func (lb *leastActiveLoadBalance) Select(invokers []protocol.Invoker, invocation
 	var (
 		leastActive  int32 = -1                 // The least active value of all invokers
 		totalWeight  int64 = 0                  // The number of invokers having the same least active value (LEAST_ACTIVE)
-		firstWeight  int64 = 0                  // Initial value, used for comparision
+		firstWeight  int64 = 0                  // Initial value, used for comparison
 		leastIndexes       = make([]int, count) // The index of invokers having the same least active value (LEAST_ACTIVE)
 		leastCount         = 0                  // The number of invokers having the same least active value (LEAST_ACTIVE)
 		sameWeight         = true               // Every invoker has the same weight value?
