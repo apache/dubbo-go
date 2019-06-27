@@ -15,30 +15,26 @@
  * limitations under the License.
  */
 
-package constant
+package cluster_impl
 
-const (
-	DEFAULT_WEIGHT = 100     //
-	DEFAULT_WARMUP = 10 * 60 // in java here is 10*60*1000 because of System.currentTimeMillis() is measured in milliseconds & in go time.Unix() is second
+import (
+	"github.com/apache/dubbo-go/cluster"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/protocol"
 )
 
-const (
-	DEFAULT_LOADBALANCE    = "random"
-	DEFAULT_RETRIES        = 2
-	DEFAULT_PROTOCOL       = "dubbo"
-	DEFAULT_REG_TIMEOUT    = "10s"
-	DEFAULT_CLUSTER        = "failover"
-	DEFAULT_FAILBACK_TIMES = 3
-	DEFAULT_FAILBACK_TASKS = 100
-)
+type failsafeCluster struct{}
 
-const (
-	DEFAULT_KEY               = "default"
-	DEFAULT_SERVICE_FILTERS   = "echo"
-	DEFAULT_REFERENCE_FILTERS = ""
-	ECHO                      = "$echo"
-)
+const failsafe = "failsafe"
 
-const (
-	ANY_VALUE = "*"
-)
+func init() {
+	extension.SetCluster(failsafe, NewFailsafeCluster)
+}
+
+func NewFailsafeCluster() cluster.Cluster {
+	return &failsafeCluster{}
+}
+
+func (cluster *failsafeCluster) Join(directory cluster.Directory) protocol.Invoker {
+	return newFailsafeClusterInvoker(directory)
+}
