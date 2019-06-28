@@ -82,6 +82,11 @@ func init() {
 
 func SetClientConf(c ClientConfig) {
 	clientConf = &c
+	err := clientConf.CheckValidity()
+	if err != nil {
+		logger.Warnf("[ClientConfig CheckValidity] error: %v", err)
+		return
+	}
 }
 
 func GetClientConf() ClientConfig {
