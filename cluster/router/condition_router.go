@@ -18,6 +18,7 @@
 package router
 
 import (
+	"github.com/apache/dubbo-go/gostd/container"
 	"reflect"
 	"regexp"
 	"strings"
@@ -151,7 +152,7 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 		return condition, nil
 	}
 	var pair MatchPair
-	values := utils.NewSet()
+	values := container.NewSet()
 	reg := regexp.MustCompile(`([&!=,]*)\s*([^&!=,\s]+)`)
 	var startIndex = 0
 	if indexTuple := reg.FindIndex([]byte(rule)); len(indexTuple) > 0 {
@@ -164,8 +165,8 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 		switch separator {
 		case "":
 			pair = MatchPair{
-				Matches:    utils.NewSet(),
-				Mismatches: utils.NewSet(),
+				Matches:    container.NewSet(),
+				Mismatches: container.NewSet(),
 			}
 			condition[content] = pair
 		case "&":
@@ -173,8 +174,8 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 				pair = r
 			} else {
 				pair = MatchPair{
-					Matches:    utils.NewSet(),
-					Mismatches: utils.NewSet(),
+					Matches:    container.NewSet(),
+					Mismatches: container.NewSet(),
 				}
 				condition[content] = pair
 			}
@@ -258,8 +259,8 @@ func If(b bool, t, f interface{}) interface{} {
 }
 
 type MatchPair struct {
-	Matches    *utils.HashSet
-	Mismatches *utils.HashSet
+	Matches    *container.HashSet
+	Mismatches *container.HashSet
 }
 
 func (pair MatchPair) isMatch(value string, param *common.URL) bool {
