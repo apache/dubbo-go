@@ -82,6 +82,11 @@ func init() {
 
 func SetClientConf(c ClientConfig) {
 	clientConf = &c
+	err := clientConf.CheckValidity()
+	if err != nil {
+		logger.Warnf("[ClientConfig CheckValidity] error: %v", err)
+		return
+	}
 }
 
 func GetClientConf() ClientConfig {
@@ -148,14 +153,13 @@ type Client struct {
 	pool     *gettyRPCClientPool
 	sequence atomic.Uint64
 
-	pendingLock      sync.RWMutex
-	pendingResponses map[SequenceType]*PendingResponse
+	pendingResponses *sync.Map
 }
 
 func NewClient() *Client {
 
 	c := &Client{
-		pendingResponses: make(map[SequenceType]*PendingResponse),
+		pendingResponses: new(sync.Map),
 		conf:             *clientConf,
 	}
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
@@ -199,13 +203,6 @@ func (c *Client) AsyncCall(addr string, svcUrl common.URL, method string, args i
 	}
 
 	return perrors.WithStack(c.call(CT_TwoWay, addr, svcUrl, method, args, reply, callback, copts))
-}
-
-func (c *Client) GetPendingResponse(seq SequenceType) *PendingResponse {
-	c.pendingLock.RLock()
-	defer c.pendingLock.RUnlock()
-
-	return c.pendingResponses[SequenceType(seq)]
 }
 
 func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string,
@@ -330,20 +327,16 @@ func (c *Client) transfer(session getty.Session, pkg *DubboPackage,
 }
 
 func (c *Client) addPendingResponse(pr *PendingResponse) {
-	c.pendingLock.Lock()
-	defer c.pendingLock.Unlock()
-	c.pendingResponses[SequenceType(pr.seq)] = pr
+	c.pendingResponses.Store(SequenceType(pr.seq), pr)
 }
 
 func (c *Client) removePendingResponse(seq SequenceType) *PendingResponse {
-	c.pendingLock.Lock()
-	defer c.pendingLock.Unlock()
 	if c.pendingResponses == nil {
 		return nil
 	}
-	if presp, ok := c.pendingResponses[seq]; ok {
-		delete(c.pendingResponses, seq)
-		return presp
+	if presp, ok := c.pendingResponses.Load(seq); ok {
+		c.pendingResponses.Delete(seq)
+		return presp.(*PendingResponse)
 	}
 	return nil
 }
