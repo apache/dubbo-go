@@ -57,10 +57,7 @@ func main() {
 	hessian.RegisterJavaEnum(Gender(WOMAN))
 	hessian.RegisterPOJO(&User{})
 
-	conLen, _ := config.Load()
-	if conLen == 0 {
-		panic("conMap is nil")
-	}
+	config.Load()
 
 	println("\n\n\necho")
 	res, err := userProvider.Echo(context.TODO(), "OK")
