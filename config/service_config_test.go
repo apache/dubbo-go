@@ -112,7 +112,8 @@ func Test_Export(t *testing.T) {
 	doinit()
 	extension.SetProtocol("registry", GetProtocol)
 
-	for _, service := range providerConfig.Services {
+	for i := 0; i < len(providerConfig.Services); i++ {
+		service := providerConfig.Services[i]
 		service.Implement(&MockService{})
 		service.Export()
 		assert.Condition(t, func() bool {
