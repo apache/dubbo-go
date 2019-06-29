@@ -18,7 +18,6 @@
 package router
 
 import (
-	"github.com/apache/dubbo-go/gostd/container"
 	"reflect"
 	"regexp"
 	"strings"
@@ -27,6 +26,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/utils"
+	"github.com/apache/dubbo-go/gostd/container"
 	"github.com/apache/dubbo-go/protocol"
 
 	perrors "github.com/pkg/errors"
