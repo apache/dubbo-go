@@ -19,6 +19,7 @@ package zookeeper
 
 import (
 	"context"
+	"strings"
 )
 import (
 	perrors "github.com/pkg/errors"
@@ -33,10 +34,10 @@ import (
 
 type RegistryDataListener struct {
 	interestedURL []*common.URL
-	listener      *RegistryConfigurationListener
+	listener      remoting.ConfigurationListener
 }
 
-func NewRegistryDataListener(listener *RegistryConfigurationListener) *RegistryDataListener {
+func NewRegistryDataListener(listener remoting.ConfigurationListener) *RegistryDataListener {
 	return &RegistryDataListener{listener: listener, interestedURL: []*common.URL{}}
 }
 func (l *RegistryDataListener) AddInterestedURL(url *common.URL) {
@@ -44,9 +45,11 @@ func (l *RegistryDataListener) AddInterestedURL(url *common.URL) {
 }
 
 func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
-	serviceURL, err := common.NewURL(context.TODO(), eventType.Content)
+	//截取最后一位
+	url := eventType.Path[strings.Index(eventType.Path, "/providers/")+len("/providers/"):]
+	serviceURL, err := common.NewURL(context.TODO(), url)
 	if err != nil {
-		logger.Errorf("Listen NewURL(r{%s}) = error{%v}", eventType.Content, err)
+		logger.Errorf("Listen NewURL(r{%s}) = error{%v}", url, err)
 		return false
 	}
 	for _, v := range l.interestedURL {
@@ -86,7 +89,7 @@ func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 
 		case e := <-l.events:
 			logger.Debugf("got zk event %s", e)
-			if e.ConfigType == remoting.Del && !l.valid() {
+			if e.ConfigType == remoting.EventTypeDel && !l.valid() {
 				logger.Warnf("update @result{%s}. But its connection to registry is invalid", e.Value)
 				continue
 			}

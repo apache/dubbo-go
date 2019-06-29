@@ -58,10 +58,7 @@ func main() {
 	hessian.RegisterPOJO(&User{})
 	// ------------
 
-	_, proLen := config.Load()
-	if proLen == 0 {
-		panic("proMap is nil")
-	}
+	config.Load()
 
 	initSignal()
 }
