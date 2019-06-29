@@ -37,44 +37,40 @@ var regProtocol protocol.Protocol
 
 func doInit() {
 	consumerConfig = &ConsumerConfig{
-		ApplicationConfig: ApplicationConfig{
+		ApplicationConfig: &ApplicationConfig{
 			Organization: "dubbo_org",
 			Name:         "dubbo",
 			Module:       "module",
 			Version:      "2.6.0",
 			Owner:        "dubbo",
 			Environment:  "test"},
-		Registries: []RegistryConfig{
-			{
-				Id:         "shanghai_reg1",
-				Type:       "mock",
+		Registries: map[string]*RegistryConfig{
+			"shanghai_reg1": {
+				Protocol:   "mock",
 				TimeoutStr: "2s",
 				Group:      "shanghai_idc",
 				Address:    "127.0.0.1:2181",
 				Username:   "user1",
 				Password:   "pwd1",
 			},
-			{
-				Id:         "shanghai_reg2",
-				Type:       "mock",
+			"shanghai_reg2": {
+				Protocol:   "mock",
 				TimeoutStr: "2s",
 				Group:      "shanghai_idc",
 				Address:    "127.0.0.2:2181",
 				Username:   "user1",
 				Password:   "pwd1",
 			},
-			{
-				Id:         "hangzhou_reg1",
-				Type:       "mock",
+			"hangzhou_reg1": {
+				Protocol:   "mock",
 				TimeoutStr: "2s",
 				Group:      "hangzhou_idc",
 				Address:    "127.0.0.3:2181",
 				Username:   "user1",
 				Password:   "pwd1",
 			},
-			{
-				Id:         "hangzhou_reg2",
-				Type:       "mock",
+			"hangzhou_reg2": {
+				Protocol:   "mock",
 				TimeoutStr: "2s",
 				Group:      "hangzhou_idc",
 				Address:    "127.0.0.4:2181",
@@ -82,21 +78,16 @@ func doInit() {
 				Password:   "pwd1",
 			},
 		},
-		References: []ReferenceConfig{
-			{
+		References: map[string]*ReferenceConfig{
+			"MockService": {
 				InterfaceName: "MockService",
 				Protocol:      "mock",
-				Registries:    []ConfigRegistry{"shanghai_reg1", "shanghai_reg2", "hangzhou_reg1", "hangzhou_reg2"},
 				Cluster:       "failover",
 				Loadbalance:   "random",
 				Retries:       3,
 				Group:         "huadong_idc",
 				Version:       "1.0.0",
-				Methods: []struct {
-					Name        string `yaml:"name"  json:"name,omitempty"`
-					Retries     int64  `yaml:"retries"  json:"retries,omitempty"`
-					Loadbalance string `yaml:"loadbalance"  json:"loadbalance,omitempty"`
-				}{
+				Methods: []*MethodConfig{
 					{
 						Name:        "GetUser",
 						Retries:     2,
@@ -130,7 +121,6 @@ func Test_Refer(t *testing.T) {
 	doInit()
 	extension.SetProtocol("registry", GetProtocol)
 	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
-	consumerConfig.References[0].Registries = []ConfigRegistry{"shanghai_reg1"}
 
 	for _, reference := range consumerConfig.References {
 		reference.Refer()
@@ -142,7 +132,8 @@ func Test_Refer(t *testing.T) {
 func Test_ReferP2P(t *testing.T) {
 	doInit()
 	extension.SetProtocol("dubbo", GetProtocol)
-	consumerConfig.References[0].Url = "dubbo://127.0.0.1:20000"
+	m := consumerConfig.References["MockService"]
+	m.Url = "dubbo://127.0.0.1:20000"
 
 	for _, reference := range consumerConfig.References {
 		reference.Refer()
@@ -154,7 +145,8 @@ func Test_ReferP2P(t *testing.T) {
 func Test_ReferMultiP2P(t *testing.T) {
 	doInit()
 	extension.SetProtocol("dubbo", GetProtocol)
-	consumerConfig.References[0].Url = "dubbo://127.0.0.1:20000;dubbo://127.0.0.2:20000"
+	m := consumerConfig.References["MockService"]
+	m.Url = "dubbo://127.0.0.1:20000;dubbo://127.0.0.2:20000"
 
 	for _, reference := range consumerConfig.References {
 		reference.Refer()
@@ -168,7 +160,8 @@ func Test_ReferMultiP2PWithReg(t *testing.T) {
 	doInit()
 	extension.SetProtocol("dubbo", GetProtocol)
 	extension.SetProtocol("registry", GetProtocol)
-	consumerConfig.References[0].Url = "dubbo://127.0.0.1:20000;registry://127.0.0.2:20000"
+	m := consumerConfig.References["MockService"]
+	m.Url = "dubbo://127.0.0.1:20000;registry://127.0.0.2:20000"
 
 	for _, reference := range consumerConfig.References {
 		reference.Refer()

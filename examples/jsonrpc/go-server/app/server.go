@@ -48,10 +48,7 @@ var (
 // 		export APP_LOG_CONF_FILE="xxx"
 func main() {
 
-	_, proLen := config.Load()
-	if proLen == 0 {
-		panic("proMap is nil")
-	}
+	config.Load()
 
 	initSignal()
 }
