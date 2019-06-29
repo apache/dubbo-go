@@ -22,10 +22,12 @@ import (
 	"sync"
 	"testing"
 )
+
 import (
 	"github.com/samuel/go-zookeeper/zk"
 	"github.com/stretchr/testify/assert"
 )
+
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/config_center"
