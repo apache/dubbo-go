@@ -193,18 +193,6 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (URL, error) 
 			return s, perrors.Errorf("net.SplitHostPort(Url.Host{%s}), error{%v}", s.Location, err)
 		}
 	}
-	//
-	//timeoutStr := s.Params.Get("timeout")
-	//if len(timeoutStr) == 0 {
-	//	timeoutStr = s.Params.Get("default.timeout")
-	//}
-	//if len(timeoutStr) != 0 {
-	//	timeout, err := strconv.Atoi(timeoutStr)
-	//	if err == nil && timeout != 0 {
-	//		s.Timeout = time.Duration(timeout * 1e6) // timeout unit is millisecond
-	//	}
-	//}
-	//fmt.Println(s.String())
 	for _, opt := range opts {
 		opt(&s)
 	}

@@ -18,7 +18,6 @@ package config
 
 import (
 	"context"
-	"github.com/apache/dubbo-go/common/constant"
 	"io/ioutil"
 	"path"
 )
@@ -27,7 +26,9 @@ import (
 	perrors "github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
+
 import (
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 )
 
