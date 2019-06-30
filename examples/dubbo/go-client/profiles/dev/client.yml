@@ -1,43 +1,39 @@
 # dubbo client yaml configure file
 
-# client
-request_timeout : "100ms"
-# connect timeout
-connect_timeout : "100ms"
+
 check: true
+# client
+request_timeout : "3s"
+# connect timeout
+connect_timeout : "3s"
+
 # application config
 application_config:
-    organization : "ikurento.com"
-    name  : "BDTService"
-    module : "dubbogo user-info client"
-    version : "0.0.1"
-    owner : "ZX"
-    environment : "dev"
+  organization : "ikurento.com"
+  name  : "BDTService"
+  module : "dubbogo user-info client"
+  version : "0.0.1"
+  owner : "ZX"
+  environment : "dev"
 
 registries :
-  - id: "hangzhouzk"
-    type: "zookeeper"
+  "hangzhouzk":
+    # 对应java配置中address属性的zookeeper <dubbo:registry address="zookeeper://127.0.0.1:2181"/>
+    protocol: "zookeeper"
     timeout	: "3s"
     address: "127.0.0.1:2181"
     username: ""
     password: ""
-
-  - id: "shanghaizk"
-    type: "zookeeper"
+  "shanghaizk":
+    protocol: "zookeeper"
     timeout	: "3s"
     address: "127.0.0.1:2182"
     username: ""
     password: ""
 
 references:
-  - registries :
-    - "hangzhouzk"
-#    - "shanghaizk"
-
+  "UserProvider":
     protocol : "dubbo"
-#    version: "2.0"
-#    group: "as"
-  #  url: "dubbo://127.0.0.1:20000"
     interface : "com.ikurento.user.UserProvider"
     cluster: "failover"
     methods :
