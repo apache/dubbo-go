@@ -49,10 +49,7 @@ var (
 // 		export APP_LOG_CONF_FILE="xxx"
 func main() {
 
-	conLen, _ := config.Load()
-	if conLen == 0 {
-		panic("conMap is nil")
-	}
+	config.Load()
 
 	println("\n\n\necho")
 	res, err := userProvider.Echo(context.TODO(), "OK")
