@@ -40,12 +40,12 @@ Working List:
 - Load Balance: ConsistentHash
 - Filter: TokenFilter/AccessLogFilter/CountFilter/ActiveLimitFilter/ExecuteLimitFilter/GenericFilter/TpsLimitFilter
 - Registry: etcd/k8s/consul
+- Routing Rule (dubbo v2.6.x)
+- Dynamic Configuration Center & Metadata Center (dubbo v2.7.x)
+- Metrics (dubbo v2.7.x)
 
 Todo List:
 
-- routing rule (dubbo v2.6.x)
-- metrics (dubbo v2.7.x) waiting dubbo's quota
-- dynamic configuration center & metadata center (dubbo v2.7.x)
 - tracing (dubbo ecosystem)
 
 You can know more about dubbo-go by its [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap).
