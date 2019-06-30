@@ -30,7 +30,7 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
-type ZkClientContainer interface {
+type zkClientFacade interface {
 	ZkClient() *ZookeeperClient
 	SetZkClient(*ZookeeperClient)
 	ZkClientLock() *sync.Mutex
@@ -40,7 +40,7 @@ type ZkClientContainer interface {
 	common.Node
 }
 
-func HandleClientRestart(r ZkClientContainer) {
+func HandleClientRestart(r zkClientFacade) {
 	var (
 		err error
 
