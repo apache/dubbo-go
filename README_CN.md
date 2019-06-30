@@ -40,12 +40,12 @@ Apache License, Version 2.0
 - Load Balance: ConsistentHash
 - Filter: TokenFilter/AccessLogFilter/CountFilter/ActiveLimitFilter/ExecuteLimitFilter/GenericFilter/TpsLimitFilter
 - Registry: etcd/k8s/consul
+- Routing Rule (dubbo v2.6.x)
+- Metrics (dubbo v2.7.x)
+- Dynamic Configuration Center & Metadata Center (dubbo v2.7.x)
 
 任务列表:
 
-- routing rule (dubbo v2.6.x)
-- metrics (dubbo v2.7.x) waiting dubbo's quota
-- dynamic configuration center & metadata center (dubbo v2.7.x)
 - tracing (dubbo ecosystem)
 
 你可以通过访问 [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap) 知道更多关于 dubbo-go 的信息
