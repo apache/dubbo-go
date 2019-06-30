@@ -62,8 +62,11 @@ About dubbo-go benchmarking report, please refer to [dubbo benchmarking report](
 
 ## [User List](https://github.com/apache/dubbo-go/issues/2)
 
+If you are using [apache/dubbo-go](github.com/apache/dubbo-go) and think that it helps you or want do some contributions to it, please add your company to to [the user list](https://github.com/apache/dubbo-go/issues/2) to let us know your needs.
+
 ![ctrip](https://pic.c-ctrip.com/common/c_logo2013.png)
 
 ## Stargazers
 
 [![Stargazers over time](https://starchart.cc/apache/dubbo-go.svg)](https://starchart.cc/apache/dubbo-go)
+If you are using , please add your company here to tell us your scenario to make Nacos better.
