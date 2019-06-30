@@ -68,6 +68,11 @@ func init() {
 
 func SetServerConfig(s ServerConfig) {
 	srvConf = &s
+	err := srvConf.CheckValidity()
+	if err != nil {
+		logger.Warnf("[ServerConfig CheckValidity] error: %v", err)
+		return
+	}
 }
 
 func GetServerConfig() ServerConfig {
