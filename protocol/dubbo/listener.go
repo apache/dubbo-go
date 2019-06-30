@@ -190,7 +190,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 	p, ok := pkg.(*DubboPackage)
 	if !ok {
-		logger.Errorf("illegal packge{%#v}", pkg)
+		logger.Errorf("illegal package{%#v}", pkg)
 		return
 	}
 	p.Header.ResponseStatus = hessian.Response_OK
