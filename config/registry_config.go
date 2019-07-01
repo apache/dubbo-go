@@ -21,6 +21,7 @@ import (
 	"context"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 import (
@@ -44,17 +45,20 @@ func (*RegistryConfig) Prefix() string {
 	return constant.RegistryConfigPrefix
 }
 
-func loadRegistries(targetRegistries []string, registries map[string]*RegistryConfig, roleType common.RoleType) []*common.URL {
+func loadRegistries(targetRegistries string, registries map[string]*RegistryConfig, roleType common.RoleType) []*common.URL {
 	var urls []*common.URL
+	trSlice := strings.Split(targetRegistries, ",")
+
 	for k, registryConf := range registries {
 		target := false
 
 		// if user not config targetRegistries,default load all
-		if len(targetRegistries) == 0 {
+		// Notice:If s does not contain sep and sep is not empty, SplitAfter returns a slice of length 1 whose only element is s.
+		if len(trSlice) == 0 || (len(trSlice) == 1 && trSlice[0] == "") {
 			target = true
 		} else {
 			// else if user config targetRegistries
-			for _, tr := range targetRegistries {
+			for _, tr := range trSlice {
 				if tr == k {
 					target = true
 					break
