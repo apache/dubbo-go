@@ -67,6 +67,9 @@ const (
 	APP_VERSION_KEY  = "app.version"
 	OWNER_KEY        = "owner"
 	ENVIRONMENT_KEY  = "environment"
+	METHOD_KEY       = "method"
+	METHOD_KEYS      = "methods"
+	RULE_KEY         = "rule"
 )
 
 const (
