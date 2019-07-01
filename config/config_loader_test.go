@@ -83,7 +83,34 @@ func TestLoad(t *testing.T) {
 	consumerConfig = nil
 	providerConfig = nil
 }
+func TestWithNoRegLoad(t *testing.T) {
+	doInit()
+	doinit()
+	providerConfig.Services["MockService"].Registries = []string{}
+	consumerConfig.References["MockService"].Registries = []string{}
+	ms := &MockService{}
+	SetConsumerService(ms)
+	SetProviderService(ms)
 
+	extension.SetProtocol("registry", GetProtocol)
+	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
+	extension.SetProxyFactory("default", proxy_factory.NewDefaultProxyFactory)
+
+	Load()
+
+	assert.Equal(t, ms, GetRPCService(ms.Service()))
+	ms2 := &struct {
+		MockService
+	}{}
+	RPCService(ms2)
+	assert.NotEqual(t, ms2, GetRPCService(ms2.Service()))
+
+	conServices = map[string]common.RPCService{}
+	proServices = map[string]common.RPCService{}
+	common.ServiceMap.UnRegister("mock", "MockService")
+	consumerConfig = nil
+	providerConfig = nil
+}
 func TestConfigLoaderWithConfigCenter(t *testing.T) {
 	extension.SetConfigCenterFactory("mock", func() config_center.DynamicConfigurationFactory {
 		return &config_center.MockDynamicConfigurationFactory{}
