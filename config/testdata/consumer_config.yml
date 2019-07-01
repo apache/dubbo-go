@@ -35,9 +35,7 @@ registries :
 
 references:
   "UserProvider":
-    registries:
-      - "hangzhouzk"
-      - "shanghaizk"
+    registry: "hangzhouzk,shanghaizk"
     filter: ""
     protocol : "dubbo"
     interface : "com.ikurento.user.UserProvider"
