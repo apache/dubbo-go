@@ -69,4 +69,3 @@ If you are using [apache/dubbo-go](github.com/apache/dubbo-go) and think that it
 ## Stargazers
 
 [![Stargazers over time](https://starchart.cc/apache/dubbo-go.svg)](https://starchart.cc/apache/dubbo-go)
-If you are using , please add your company here to tell us your scenario to make Nacos better.
