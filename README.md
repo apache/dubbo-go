@@ -26,26 +26,30 @@ If you wanna know more about dubbo-go, please visit this reference [Project Arch
 
 Finished List:
 
-- Role: Consumer(√), Provider(√)
-- Transport: HTTP(√), TCP(√)
-- Codec: JsonRPC v2(√), Hessian v2(√)
-- Registry: ZooKeeper(√)
-- Cluster Strategy: Failover(√)
-- Load Balance: Random(√), RoundRobin(√), LeastActive(√)
-- Filter: Echo Health Check(√)
+- Role: Consumer, Provider
+- Transport: HTTP, TCP
+- Codec: JsonRPC v2, Hessian v2
+- Registry: ZooKeeper
+- Routing: Rule(dubbo v2.6.x)
+- Configure Center: Zookeeper
+- Cluster Strategy: Failover
+- Load Balance: Random, RoundRobin, LeastActive
+- Filter: Echo Health Check
 
 Working List:
 
 - Cluster Strategy: Failfast/Failsafe/Failback/Forking
 - Load Balance: ConsistentHash
 - Filter: TokenFilter/AccessLogFilter/CountFilter/ActiveLimitFilter/ExecuteLimitFilter/GenericFilter/TpsLimitFilter
-- Registry: etcd/k8s/consul
-- Routing Rule (dubbo v2.6.x)
+- Registry: etcd/k8s/consul/nacos
+- Configure Center: apollo
 - Dynamic Configuration Center & Metadata Center (dubbo v2.7.x)
-- Metrics (dubbo v2.7.x)
+- Metrics: Promethus(dubbo v2.7.x)
 
 Todo List:
 
+- Registry: kubernetes
+- Routing: istio
 - tracing (dubbo ecosystem)
 
 You can know more about dubbo-go by its [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap).
