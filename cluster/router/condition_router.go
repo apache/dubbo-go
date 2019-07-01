@@ -21,14 +21,18 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/gostd/container"
 	"github.com/apache/dubbo-go/protocol"
+)
 
+import (
 	perrors "github.com/pkg/errors"
 )
 
@@ -56,7 +60,7 @@ func newConditionRouter(url *common.URL) (*ConditionRouter, error) {
 		then     map[string]MatchPair
 	)
 	rule, err := url.GetParamAndDecoded(constant.RULE_KEY)
-	if err != nil || rule == "" {
+	if err != nil || len(rule) == 0 {
 		return nil, perrors.Errorf("Illegal route rule!")
 	}
 	rule = strings.Replace(rule, "consumer.", "", -1)
@@ -80,13 +84,13 @@ func newConditionRouter(url *common.URL) (*ConditionRouter, error) {
 	if err != nil {
 		return nil, perrors.Errorf("%s", "")
 	}
-	if whenRule == "" || "true" == whenRule {
-		when = make(map[string]MatchPair)
+	if len(whenRule) == 0 || "true" == whenRule {
+		when = make(map[string]MatchPair, 16)
 	} else {
 		when = w
 	}
-	if thenRule == "" || "false" == thenRule {
-		when = make(map[string]MatchPair)
+	if len(thenRule) == 0 || "false" == thenRule {
+		when = make(map[string]MatchPair, 16)
 	} else {
 		then = t
 	}
@@ -147,8 +151,8 @@ func (c *ConditionRouter) Route(invokers []protocol.Invoker, url common.URL, inv
 }
 
 func parseRule(rule string) (map[string]MatchPair, error) {
-	condition := make(map[string]MatchPair)
-	if rule == "" {
+	condition := make(map[string]MatchPair, 16)
+	if len(rule) == 0 {
 		return condition, nil
 	}
 	var pair MatchPair
@@ -230,11 +234,11 @@ func MatchCondition(pairs map[string]MatchPair, url *common.URL, param *common.U
 			sampleValue = invocation.MethodName()
 		} else {
 			sampleValue = sample[key]
-			if sampleValue == "" {
+			if len(sampleValue) == 0 {
 				sampleValue = sample[constant.PREFIX_DEFAULT_KEY+key]
 			}
 		}
-		if sampleValue != "" {
+		if len(sampleValue) > 0 {
 			if !matchPair.isMatch(sampleValue, param) {
 				return false, nil
 			} else {
@@ -249,13 +253,6 @@ func MatchCondition(pairs map[string]MatchPair, url *common.URL, param *common.U
 		}
 	}
 	return result, nil
-}
-
-func If(b bool, t, f interface{}) interface{} {
-	if b {
-		return t
-	}
-	return f
 }
 
 type MatchPair struct {
@@ -305,10 +302,10 @@ func isMatchGlobPattern(pattern string, value string, param *common.URL) bool {
 	if "*" == pattern {
 		return true
 	}
-	if pattern == "" && value == "" {
+	if len(pattern) == 0 && len(value) == 0 {
 		return true
 	}
-	if pattern == "" || value == "" {
+	if len(pattern) == 0 || len(value) == 0 {
 		return false
 	}
 	i := strings.LastIndex(pattern, "*")
