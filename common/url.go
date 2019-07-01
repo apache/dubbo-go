@@ -20,6 +20,7 @@ package common
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"math"
 	"net"
@@ -275,10 +276,50 @@ func (c URL) Service() string {
 	}
 	return ""
 }
+
+func (c *URL) AddParam(key string, value string) {
+	c.Params.Add(key, value)
+}
+
 func (c URL) GetParam(s string, d string) string {
 	var r string
 	if r = c.Params.Get(s); r == "" {
 		r = d
+	}
+	return r
+}
+func (c URL) GetParamAndDecoded(key string) (string, error) {
+	ruleDec, err := base64.URLEncoding.DecodeString(c.GetParam(key, ""))
+	value := string(ruleDec)
+	return value, err
+}
+
+func (c URL) GetRawParam(key string) string {
+	switch key {
+	case "protocol":
+		return c.Protocol
+	case "username":
+		return c.Username
+	case "host":
+		return strings.Split(c.Location, ":")[0]
+	case "password":
+		return c.Password
+	case "port":
+		return c.Port
+	case "path":
+		return c.Path
+	default:
+		return c.Params.Get(key)
+	}
+}
+
+// GetParamBool
+func (c URL) GetParamBool(s string, d bool) bool {
+
+	var r bool
+	var err error
+	if r, err = strconv.ParseBool(c.Params.Get(s)); err != nil {
+		return d
 	}
 	return r
 }
@@ -316,6 +357,45 @@ func (c URL) GetMethodParam(method string, key string, d string) string {
 		r = d
 	}
 	return r
+}
+
+// ToMap transfer URL to Map
+func (c URL) ToMap() map[string]string {
+
+	paramsMap := make(map[string]string)
+
+	for k, v := range c.Params {
+		paramsMap[k] = v[0]
+	}
+	if c.Protocol != "" {
+		paramsMap["protocol"] = c.Protocol
+	}
+	if c.Username != "" {
+		paramsMap["username"] = c.Username
+	}
+	if c.Password != "" {
+		paramsMap["password"] = c.Password
+	}
+	if c.Location != "" {
+		paramsMap["host"] = strings.Split(c.Location, ":")[0]
+		var port string
+		if strings.Contains(c.Location, ":") {
+			port = strings.Split(c.Location, ":")[1]
+		} else {
+			port = "0"
+		}
+		paramsMap["port"] = port
+	}
+	if c.Protocol != "" {
+		paramsMap["protocol"] = c.Protocol
+	}
+	if c.Path != "" {
+		paramsMap["path"] = c.Path
+	}
+	if len(paramsMap) == 0 {
+		return nil
+	}
+	return paramsMap
 }
 
 // configuration  > reference config >service config

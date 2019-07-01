@@ -19,6 +19,7 @@ package common
 
 import (
 	"context"
+	"encoding/base64"
 	"net/url"
 	"testing"
 )
@@ -142,6 +143,54 @@ func TestURL_GetParamInt(t *testing.T) {
 	u = URL{}
 	v = u.GetParamInt("key", 1)
 	assert.Equal(t, int64(1), v)
+}
+
+func TestURL_GetParamBool(t *testing.T) {
+	params := url.Values{}
+	params.Set("force", "true")
+	u := URL{baseUrl: baseUrl{Params: params}}
+	v := u.GetParamBool("force", false)
+	assert.Equal(t, true, v)
+
+	u = URL{}
+	v = u.GetParamBool("force", false)
+	assert.Equal(t, false, v)
+}
+
+func TestURL_GetParamAndDecoded(t *testing.T) {
+	rule := "host = 2.2.2.2,1.1.1.1,3.3.3.3 & host !=1.1.1.1 => host = 1.2.3.4"
+	params := url.Values{}
+	params.Set("rule", base64.URLEncoding.EncodeToString([]byte(rule)))
+	u := URL{baseUrl: baseUrl{Params: params}}
+	v, _ := u.GetParamAndDecoded("rule")
+	assert.Equal(t, rule, v)
+}
+func TestURL_GetRawParam(t *testing.T) {
+	u, _ := NewURL(context.TODO(), "condition://0.0.0.0:8080/com.foo.BarService?serialization=fastjson")
+	u.Username = "test"
+	u.Password = "test"
+	assert.Equal(t, "condition", u.GetRawParam("protocol"))
+	assert.Equal(t, "0.0.0.0", u.GetRawParam("host"))
+	assert.Equal(t, "8080", u.GetRawParam("port"))
+	assert.Equal(t, "test", u.GetRawParam("username"))
+	assert.Equal(t, "test", u.GetRawParam("password"))
+	assert.Equal(t, "/com.foo.BarService", u.GetRawParam("path"))
+	assert.Equal(t, "fastjson", u.GetRawParam("serialization"))
+}
+func TestURL_ToMap(t *testing.T) {
+	u, _ := NewURL(context.TODO(), "condition://0.0.0.0:8080/com.foo.BarService?serialization=fastjson")
+	u.Username = "test"
+	u.Password = "test"
+
+	m := u.ToMap()
+	assert.Equal(t, 7, len(m))
+	assert.Equal(t, "condition", m["protocol"])
+	assert.Equal(t, "0.0.0.0", m["host"])
+	assert.Equal(t, "8080", m["port"])
+	assert.Equal(t, "test", m["username"])
+	assert.Equal(t, "test", m["password"])
+	assert.Equal(t, "/com.foo.BarService", m["path"])
+	assert.Equal(t, "fastjson", m["serialization"])
 }
 
 func TestURL_GetMethodParamInt(t *testing.T) {
