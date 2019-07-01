@@ -26,26 +26,30 @@ Apache License, Version 2.0
 
 实现列表:
 
-- Role: Consumer(√), Provider(√)
-- Transport: HTTP(√), TCP(√)
-- Codec: JsonRPC v2(√), Hessian v2(√)
-- Registry: ZooKeeper(√)
-- Cluster Strategy: Failover(√)
-- Load Balance: Random(√), RoundRobin(√), LeastActive(√)
-- Filter: Echo Health Check(√)
+- Role: Consumer, Provider
+- Transport: HTTP, TCP
+- Codec: JsonRPC v2, Hessian v2
+- Registry: ZooKeeper
+- Routing: Rule(dubbo v2.6.x)
+- Configure Center: Zookeeper
+- Cluster Strategy: Failover
+- Load Balance: Random, RoundRobin, LeastActive
+- Filter: Echo Health Check
 
 开发中列表:
 
 - Cluster Strategy: Failfast/Failsafe/Failback/Forking
 - Load Balance: ConsistentHash
 - Filter: TokenFilter/AccessLogFilter/CountFilter/ActiveLimitFilter/ExecuteLimitFilter/GenericFilter/TpsLimitFilter
-- Registry: etcd/k8s/consul
-- Routing Rule (dubbo v2.6.x)
-- Metrics (dubbo v2.7.x)
+- Registry: etcd/k8s/consul/nacos
+- Configure Center: apollo
 - Dynamic Configuration Center & Metadata Center (dubbo v2.7.x)
+- Metrics: Promethus(dubbo v2.7.x)
 
 任务列表:
 
+- Registry: kubernetes
+- Routing: istio
 - tracing (dubbo ecosystem)
 
 你可以通过访问 [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap) 知道更多关于 dubbo-go 的信息
