@@ -22,7 +22,8 @@ public interface UserProvider {
 	User GetUser(String userId);
 	User GetErr(String userId) throws Exception;
 	User GetUser1(String userId);
-
+    User getUser(int usercode);
+    void GetUser3();
 	List<User> GetUsers(List<String> userIdList);
 	User GetUser0(String userId, String name);
 }

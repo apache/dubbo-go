@@ -38,25 +38,25 @@ import (
 type ReferenceConfig struct {
 	context       context.Context
 	pxy           *proxy.Proxy
-	InterfaceName string           `required:"true"  yaml:"interface"  json:"interface,omitempty"`
-	Check         *bool            `yaml:"check"  json:"check,omitempty"`
-	Url           string           `yaml:"url"  json:"url,omitempty"`
-	Filter        string           `yaml:"filter" json:"filter,omitempty"`
-	Protocol      string           `yaml:"protocol"  json:"protocol,omitempty"`
-	Registries    []ConfigRegistry `required:"true"  yaml:"registries"  json:"registries,omitempty"`
-	Cluster       string           `yaml:"cluster"  json:"cluster,omitempty"`
-	Loadbalance   string           `yaml:"loadbalance"  json:"loadbalance,omitempty"`
-	Retries       int64            `yaml:"retries"  json:"retries,omitempty"`
-	Group         string           `yaml:"group"  json:"group,omitempty"`
-	Version       string           `yaml:"version"  json:"version,omitempty"`
-	Methods       []struct {
-		Name        string `yaml:"name"  json:"name,omitempty"`
-		Retries     int64  `yaml:"retries"  json:"retries,omitempty"`
-		Loadbalance string `yaml:"loadbalance"  json:"loadbalance,omitempty"`
-	} `yaml:"methods"  json:"methods,omitempty"`
-	async   bool `yaml:"async"  json:"async,omitempty"`
-	invoker protocol.Invoker
-	urls    []*common.URL
+	InterfaceName string `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
+	Check         *bool  `yaml:"check"  json:"check,omitempty" property:"check"`
+	Url           string `yaml:"url"  json:"url,omitempty" property:"url"`
+	Filter        string `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	Protocol      string `yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	//Registries    []ConfigRegistry `required:"true"  yaml:"registries"  json:"registries,omitempty" property:"registries"`
+	Cluster     string          `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
+	Loadbalance string          `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
+	Retries     int64           `yaml:"retries"  json:"retries,omitempty" property:"retries"`
+	Group       string          `yaml:"group"  json:"group,omitempty" property:"group"`
+	Version     string          `yaml:"version"  json:"version,omitempty" property:"version"`
+	Methods     []*MethodConfig `yaml:"methods"  json:"methods,omitempty" property:"methods"`
+	async       bool            `yaml:"async"  json:"async,omitempty" property:"async"`
+	invoker     protocol.Invoker
+	urls        []*common.URL
+}
+
+func (c *ReferenceConfig) Prefix() string {
+	return constant.ReferenceConfigPrefix + c.InterfaceName + "."
 }
 
 type ConfigRegistry string
@@ -77,7 +77,7 @@ func (refconfig *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) erro
 }
 
 func (refconfig *ReferenceConfig) Refer() {
-	url := common.NewURLWithOptions(refconfig.InterfaceName, common.WithProtocol(refconfig.Protocol), common.WithParams(refconfig.getUrlMap()))
+	url := common.NewURLWithOptions(common.WithPath(refconfig.InterfaceName), common.WithProtocol(refconfig.Protocol), common.WithParams(refconfig.getUrlMap()))
 
 	//1. user specified URL, could be peer-to-peer address, or register center's address.
 	if refconfig.Url != "" {
@@ -102,7 +102,7 @@ func (refconfig *ReferenceConfig) Refer() {
 		}
 	} else {
 		//2. assemble SubURL from register center's configuration模式
-		refconfig.urls = loadRegistries(refconfig.Registries, consumerConfig.Registries, common.CONSUMER)
+		refconfig.urls = loadRegistries(consumerConfig.Registries, common.CONSUMER)
 
 		//set url to regUrls
 		for _, regUrl := range refconfig.urls {

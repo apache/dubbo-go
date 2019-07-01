@@ -11,14 +11,13 @@ application_config:
   environment : "dev"
 
 registries :
-  - id: "hangzhouzk"
+  "hangzhouzk":
     type: "zookeeper"
     timeout	: "3s"
     address: "127.0.0.1:2181"
     username: ""
     password: ""
-
-  - id: "shanghaizk"
+  "shanghaizk":
     type: "zookeeper"
     timeout	: "3s"
     address: "127.0.0.1:2182"
@@ -27,9 +26,7 @@ registries :
 
 
 services:
-  - registries:
-      - "hangzhouzk"
-      - "shanghaizk"
+  "UserProvider":
     filter: ""
     protocol : "dubbo"
     # equivalent to interface of dubbo.xml
@@ -43,7 +40,8 @@ services:
         loadbalance: "random"
 
 protocols:
-  -   name: "dubbo"
+    "dubbo":
+      name: "dubbo"
       # while using dubbo protocol, ip cannot is 127.0.0.1, because client of java-dubbo will get 'connection refuse'
       ip : "127.0.0.1"
       port : 20000

@@ -40,7 +40,6 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
@@ -58,19 +57,17 @@ const (
 )
 
 type Server struct {
-	exporter protocol.Exporter
-	done     chan struct{}
-	once     sync.Once
+	done chan struct{}
+	once sync.Once
 
 	sync.RWMutex
 	wg      sync.WaitGroup
 	timeout time.Duration
 }
 
-func NewServer(exporter protocol.Exporter) *Server {
+func NewServer() *Server {
 	return &Server{
-		exporter: exporter,
-		done:     make(chan struct{}),
+		done: make(chan struct{}),
 	}
 }
 
@@ -155,13 +152,15 @@ func (s *Server) handlePkg(conn net.Conn) {
 			timeout, err := time.ParseDuration(reqHeader["Timeout"])
 			if err == nil {
 				httpTimeout = timeout
-				ctx, _ = context.WithTimeout(ctx, httpTimeout)
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, httpTimeout)
+				defer cancel()
 			}
 			delete(reqHeader, "Timeout")
 		}
 		setTimeout(conn, httpTimeout)
 
-		if err := serveRequest(ctx, reqHeader, reqBody, conn, s.exporter); err != nil {
+		if err := serveRequest(ctx, reqHeader, reqBody, conn); err != nil {
 			if errRsp := sendErrorResp(r.Header, []byte(perrors.WithStack(err).Error())); errRsp != nil {
 				logger.Warnf("sendErrorResp(header:%#v, error:%v) = error:%s",
 					r.Header, perrors.WithStack(err), errRsp)
@@ -249,8 +248,7 @@ func (s *Server) Stop() {
 }
 
 func serveRequest(ctx context.Context,
-	header map[string]string, body []byte, conn net.Conn, exporter protocol.Exporter) error {
-
+	header map[string]string, body []byte, conn net.Conn) error {
 	sendErrorResp := func(header map[string]string, body []byte) error {
 		rsp := &http.Response{
 			Header:        make(http.Header),
@@ -309,27 +307,26 @@ func serveRequest(ctx context.Context,
 
 		return perrors.New("server cannot decode request: " + err.Error())
 	}
-	serviceName := header["Path"]
+	path := header["Path"]
 	methodName := codec.req.Method
-	if len(serviceName) == 0 || len(methodName) == 0 {
+	if len(path) == 0 || len(methodName) == 0 {
 		codec.ReadBody(nil)
-		return perrors.New("service/method request ill-formed: " + serviceName + "/" + methodName)
+		return perrors.New("service/method request ill-formed: " + path + "/" + methodName)
 	}
 
 	// read body
-	var args interface{}
+	var args []interface{}
 	if err = codec.ReadBody(&args); err != nil {
 		return perrors.WithStack(err)
 	}
 	logger.Debugf("args: %v", args)
 
 	// exporter invoke
-	invoker := exporter.GetInvoker()
+	exporter, _ := jsonrpcProtocol.ExporterMap().Load(path)
+	invoker := exporter.(*JsonrpcExporter).GetInvoker()
 	if invoker != nil {
-		result := invoker.Invoke(invocation.NewRPCInvocationForProvider(methodName, args.([]interface{}), map[string]string{
-			//attachments[constant.PATH_KEY] = url.Path
-			//attachments[constant.GROUP_KEY] = url.GetParam(constant.GROUP_KEY, "")
-			//attachments[constant.INTERFACE_KEY] = url.GetParam(constant.INTERFACE_KEY, "")
+		result := invoker.Invoke(invocation.NewRPCInvocationForProvider(methodName, args, map[string]string{
+			constant.PATH_KEY:    path,
 			constant.VERSION_KEY: codec.req.Version,
 		}))
 		if err := result.Error(); err != nil {
@@ -351,7 +348,7 @@ func serveRequest(ctx context.Context,
 			}
 		}
 	}
-
+	serviceName := invoker.GetUrl().Service()
 	// get method
 	svc := common.ServiceMap.GetService(JSONRPC, serviceName)
 	if svc == nil {
@@ -371,14 +368,22 @@ func serveRequest(ctx context.Context,
 	if (len(method.ArgsType()) == 1 || len(method.ArgsType()) == 2 && method.ReplyType() == nil) && method.ArgsType()[0].String() == "[]interface {}" {
 		in = append(in, reflect.ValueOf(args))
 	} else {
-		for i := 0; i < len(args.([]interface{})); i++ {
-			in = append(in, reflect.ValueOf(args.([]interface{})[i]))
+		for i := 0; i < len(args); i++ {
+			t := reflect.ValueOf(args[i])
+			if !t.IsValid() {
+				at := method.ArgsType()[i]
+				if at.Kind() == reflect.Ptr {
+					at = at.Elem()
+				}
+				t = reflect.New(at)
+			}
+			in = append(in, t)
 		}
 	}
 
 	// prepare replyv
 	var replyv reflect.Value
-	if method.ReplyType() == nil {
+	if method.ReplyType() == nil && len(method.ArgsType()) > 0 {
 		replyv = reflect.New(method.ArgsType()[len(method.ArgsType())-1].Elem())
 		in = append(in, replyv)
 	}
@@ -401,7 +406,10 @@ func serveRequest(ctx context.Context,
 
 	// write response
 	code := 200
-	rspReply := replyv.Interface()
+	var rspReply interface{}
+	if replyv.IsValid() && (replyv.Kind() != reflect.Ptr || replyv.Kind() == reflect.Ptr && replyv.Elem().IsValid()) {
+		rspReply = replyv.Interface()
+	}
 	if len(errMsg) != 0 {
 		code = 500
 		rspReply = invalidRequest

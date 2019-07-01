@@ -19,6 +19,7 @@ package dubbo
 
 import (
 	"context"
+	"github.com/apache/dubbo-go/common/constant"
 	"testing"
 )
 
@@ -34,24 +35,36 @@ import (
 func TestDubboProtocol_Export(t *testing.T) {
 	// Export
 	proto := GetProtocol()
+	srvConf = &ServerConfig{}
 	url, err := common.NewURL(context.Background(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&"+
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&"+
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&"+
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&"+
 		"side=provider&timeout=3000&timestamp=1556509797245")
 	assert.NoError(t, err)
-	srvConf = &ServerConfig{}
 	exporter := proto.Export(protocol.NewBaseInvoker(url))
 
 	// make sure url
 	eq := exporter.GetInvoker().GetUrl().URLEqual(url)
 	assert.True(t, eq)
 
+	// second service: the same path and the different version
+	url2, err := common.NewURL(context.Background(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&"+
+		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&"+
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&"+
+		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&"+
+		"side=provider&timeout=3000&timestamp=1556509797245", common.WithParamsValue(constant.VERSION_KEY, "v1.1"))
+	assert.NoError(t, err)
+	exporter2 := proto.Export(protocol.NewBaseInvoker(url2))
+	// make sure url
+	eq2 := exporter2.GetInvoker().GetUrl().URLEqual(url2)
+	assert.True(t, eq2)
+
 	// make sure exporterMap after 'Unexport'
-	_, ok := proto.(*DubboProtocol).ExporterMap().Load(url.Key())
+	_, ok := proto.(*DubboProtocol).ExporterMap().Load(url.ServiceKey())
 	assert.True(t, ok)
 	exporter.Unexport()
-	_, ok = proto.(*DubboProtocol).ExporterMap().Load(url.Key())
+	_, ok = proto.(*DubboProtocol).ExporterMap().Load(url.ServiceKey())
 	assert.False(t, ok)
 
 	// make sure serverMap after 'Destroy'
