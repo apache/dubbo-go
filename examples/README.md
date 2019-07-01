@@ -19,19 +19,19 @@ sh build.sh
 ```
 
 go server
+
+* sh ./assembly/\[os]/\[environment].sh
 ```bash
 cd dubbo/go-server
-#linux, mac windows represent the os
-#release, dev and test represent the environment
-sh ./assembly/linux/release.sh
+# $ARCH = [linux, mac, windows] and $ENV = [dev, release, test]
+sh ./assembly/$ARCH/$ENV.sh
 ```
 
 go client
 ```bash
 cd dubbo/go-client
-#linux, mac windows represent the os
-#release, dev and test represent the environment
-sh ./assembly/linux/release.sh
+# $ARCH = [linux, mac, windows] and $ENV = [dev, release, test]
+sh ./assembly/$ARCH/$ENV.sh
 ```
 
 #### Run by these command:
@@ -53,8 +53,6 @@ sh ./bin/server.sh start
 ```
 
 go server
-> It must not listen on IP 127.0.0.1 when called by java-client.
-> You should change IP in dubbo/go-server/target/linux/user_info_server-0.3.1-20190517-0930-release/conf/server.yml
 ```bash
 cd dubbo/go-server/target/linux/user_info_server-0.3.1-20190517-0930-release
 #conf suffix appoint config file, 
@@ -66,10 +64,10 @@ sh ./bin/load.sh start [conf suffix]
 go client
 ```bash
 cd dubbo/go-client/target/linux/user_info_client-0.3.1-20190517-0921-release
-#conf suffix appoint config file, 
-#such as client_zookeeper.yml when "sh ./bin/load.sh start is zookeeper", 
-#default client.yml
-sh ./bin/load_user_info_client.sh start [conf suffix]
+# $SUFFIX is a suffix of config file,
+# such as client_zookeeper.yml when $SUFFIX = zookeeper", 
+# if $SUFFIX = "", config file is client.yml
+sh ./bin/load_user_info_client.sh start $SUFFIX
 ```
 
 ## jsonrpc

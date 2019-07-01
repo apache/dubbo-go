@@ -10,15 +10,14 @@ application_config:
     environment : "dev"
 
 registries :
-  - id: "hangzhouzk"
-    type: "zookeeper"
+  "hangzhouzk":
+    protocol: "zookeeper"
     timeout	: "3s"
     address: "127.0.0.1:2181"
     username: ""
     password: ""
-
-  - id: "shanghaizk"
-    type: "zookeeper"
+  "shanghaizk":
+    protocol: "zookeeper"
     timeout	: "3s"
     address: "127.0.0.1:2182"
     username: ""
@@ -26,9 +25,7 @@ registries :
 
 
 services:
- - registries:
-   - "hangzhouzk"
-   - "shanghaizk"
+ "UserProvider":
    protocol : "jsonrpc"
      # 相当于dubbo.xml中的interface
    interface : "com.ikurento.user.UserProvider"
@@ -44,7 +41,8 @@ protocols:
   #-   name: "dubbo"
   #    ip : "127.0.0.1"
   #    port : 20000
-  -   name: "jsonrpc"
+  "jsonrpc1":
+      name: "jsonrpc"
       ip: "127.0.0.1"
       port: 20001
 

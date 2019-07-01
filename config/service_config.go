@@ -43,28 +43,27 @@ import (
 
 type ServiceConfig struct {
 	context       context.Context
-	Filter        string           `yaml:"filter" json:"filter,omitempty"`
-	Protocol      string           `required:"true"  yaml:"protocol"  json:"protocol,omitempty"` //multi protocol support, split by ','
-	InterfaceName string           `required:"true"  yaml:"interface"  json:"interface,omitempty"`
-	Registries    []ConfigRegistry `required:"true"  yaml:"registries"  json:"registries,omitempty"`
-	Cluster       string           `default:"failover" yaml:"cluster"  json:"cluster,omitempty"`
-	Loadbalance   string           `default:"random" yaml:"loadbalance"  json:"loadbalance,omitempty"`
-	Group         string           `yaml:"group"  json:"group,omitempty"`
-	Version       string           `yaml:"version"  json:"version,omitempty"`
-	Methods       []struct {
-		Name        string `yaml:"name"  json:"name,omitempty"`
-		Retries     int64  `yaml:"retries"  json:"retries,omitempty"`
-		Loadbalance string `yaml:"loadbalance"  json:"loadbalance,omitempty"`
-		Weight      int64  `yaml:"weight"  json:"weight,omitempty"`
-	} `yaml:"methods"  json:"methods,omitempty"`
-	Warmup        string `yaml:"warmup"  json:"warmup,omitempty"`
-	Retries       int64  `yaml:"retries"  json:"retries,omitempty"`
+	Filter        string           `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	Protocol      string           `required:"true"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"` //multi protocol support, split by ','
+	InterfaceName string           `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
+	Registries    []ConfigRegistry `required:"true"  yaml:"registries"  json:"registries,omitempty"  property:"registries"`
+	Cluster       string           `default:"failover" yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
+	Loadbalance   string           `default:"random" yaml:"loadbalance"  json:"loadbalance,omitempty"  property:"loadbalance"`
+	Group         string           `yaml:"group"  json:"group,omitempty" property:"group"`
+	Version       string           `yaml:"version"  json:"version,omitempty" property:"version" `
+	Methods       []*MethodConfig  `yaml:"methods"  json:"methods,omitempty" property:"methods"`
+	Warmup        string           `yaml:"warmup"  json:"warmup,omitempty"  property:"warmup"`
+	Retries       int64            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
 	unexported    *atomic.Bool
 	exported      *atomic.Bool
 	rpcService    common.RPCService
 	exporters     []protocol.Exporter
 	cacheProtocol protocol.Protocol
 	cacheMutex    sync.Mutex
+}
+
+func (c *ServiceConfig) Prefix() string {
+	return constant.ServiceConfigPrefix + c.InterfaceName + "."
 }
 
 func NewServiceConfig() *ServiceConfig {
@@ -89,7 +88,7 @@ func (srvconfig *ServiceConfig) Export() error {
 		return nil
 	}
 
-	regUrls := loadRegistries(srvconfig.Registries, providerConfig.Registries, common.PROVIDER)
+	regUrls := loadRegistries(providerConfig.Registries, common.PROVIDER)
 	urlMap := srvconfig.getUrlMap()
 
 	for _, proto := range loadProtocol(srvconfig.Protocol, providerConfig.Protocols) {
@@ -104,7 +103,7 @@ func (srvconfig *ServiceConfig) Export() error {
 		//if contextPath == "" {
 		//	contextPath = providerConfig.Path
 		//}
-		url := common.NewURLWithOptions(srvconfig.InterfaceName,
+		url := common.NewURLWithOptions(common.WithPath(srvconfig.InterfaceName),
 			common.WithProtocol(proto.Name),
 			common.WithIp(proto.Ip),
 			common.WithPort(proto.Port),

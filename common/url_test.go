@@ -24,15 +24,18 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/constant"
 )
 
 func TestNewURLWithOptions(t *testing.T) {
 	methods := []string{"Methodone,methodtwo"}
 	params := url.Values{}
 	params.Set("key", "value")
-	u := NewURLWithOptions("com.test.Service",
+	u := NewURLWithOptions(WithPath("com.test.Service"),
 		WithUsername("username"),
 		WithPassword("password"),
 		WithProtocol("testprotocol"),
@@ -57,6 +60,33 @@ func TestURL(t *testing.T) {
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&"+
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&"+
 		"side=provider&timeout=3000&timestamp=1556509797245")
+	assert.NoError(t, err)
+
+	assert.Equal(t, "/com.ikurento.user.UserProvider", u.Path)
+	assert.Equal(t, "127.0.0.1:20000", u.Location)
+	assert.Equal(t, "dubbo", u.Protocol)
+	assert.Equal(t, "127.0.0.1", u.Ip)
+	assert.Equal(t, "20000", u.Port)
+	assert.Equal(t, URL{}.Methods, u.Methods)
+	assert.Equal(t, "", u.Username)
+	assert.Equal(t, "", u.Password)
+	assert.Equal(t, "anyhost=true&application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-"+
+		"provider-golang-1.0.0&environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%"+
+		"2C&module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&side=provider&timeout=3000&t"+
+		"imestamp=1556509797245", u.Params.Encode())
+
+	assert.Equal(t, "dubbo://:@127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&application=BDTServi"+
+		"ce&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&environment=dev&interface=com.ikure"+
+		"nto.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&module=dubbogo+user-info+server&org=ikurento.com&owner="+
+		"ZX&pid=1447&revision=0.0.1&side=provider&timeout=3000&timestamp=1556509797245", u.String())
+}
+
+func TestURLWithoutSchema(t *testing.T) {
+	u, err := NewURL(context.TODO(), "@127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&"+
+		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&"+
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&"+
+		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&"+
+		"side=provider&timeout=3000&timestamp=1556509797245", WithProtocol("dubbo"))
 	assert.NoError(t, err)
 
 	assert.Equal(t, "/com.ikurento.user.UserProvider", u.Path)

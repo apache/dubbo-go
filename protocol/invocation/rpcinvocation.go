@@ -48,7 +48,7 @@ func NewRPCInvocationForConsumer(methodName string, parameterTypes []reflect.Typ
 	attachments[constant.PATH_KEY] = url.Path
 	attachments[constant.GROUP_KEY] = url.GetParam(constant.GROUP_KEY, "")
 	attachments[constant.INTERFACE_KEY] = url.GetParam(constant.INTERFACE_KEY, "")
-	attachments[constant.VERSION_KEY] = url.GetParam(constant.VERSION_KEY, constant.DEFAULT_VERSION)
+	attachments[constant.VERSION_KEY] = url.GetParam(constant.VERSION_KEY, "")
 
 	return &RPCInvocation{
 		methodName:     methodName,

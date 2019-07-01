@@ -17,11 +17,23 @@
 
 package config
 
+import "github.com/apache/dubbo-go/common/constant"
+
 type ApplicationConfig struct {
-	Organization string `yaml:"organization"  json:"organization,omitempty"`
-	Name         string `yaml:"name" json:"name,omitempty"`
-	Module       string `yaml:"module" json:"module,omitempty"`
-	Version      string `yaml:"version" json:"version,omitempty"`
-	Owner        string `yaml:"owner" json:"owner,omitempty"`
-	Environment  string `yaml:"environment" json:"environment,omitempty"`
+	Organization string `yaml:"organization"  json:"organization,omitempty" property:"organization"`
+	Name         string `yaml:"name" json:"name,omitempty" property:"name"`
+	Module       string `yaml:"module" json:"module,omitempty" property:"module"`
+	Version      string `yaml:"version" json:"version,omitempty" property:"version"`
+	Owner        string `yaml:"owner" json:"owner,omitempty" property:"owner"`
+	Environment  string `yaml:"environment" json:"environment,omitempty" property:"environment"`
+}
+
+func (*ApplicationConfig) Prefix() string {
+	return constant.DUBBO + ".application."
+}
+func (c *ApplicationConfig) Id() string {
+	return ""
+}
+func (c *ApplicationConfig) SetId(id string) {
+
 }

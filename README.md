@@ -40,12 +40,12 @@ Working List:
 - Load Balance: ConsistentHash
 - Filter: TokenFilter/AccessLogFilter/CountFilter/ActiveLimitFilter/ExecuteLimitFilter/GenericFilter/TpsLimitFilter
 - Registry: etcd/k8s/consul
+- Routing Rule (dubbo v2.6.x)
+- Dynamic Configuration Center & Metadata Center (dubbo v2.7.x)
+- Metrics (dubbo v2.7.x)
 
 Todo List:
 
-- routing rule (dubbo v2.6.x)
-- metrics (dubbo v2.7.x) waiting dubbo's quota
-- dynamic configuration center & metadata center (dubbo v2.7.x)
 - tracing (dubbo ecosystem)
 
 You can know more about dubbo-go by its [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap).
@@ -61,6 +61,8 @@ Benchmark project please refer to [go-for-apache-dubbo-benchmark](https://github
 About dubbo-go benchmarking report, please refer to [dubbo benchmarking report](https://github.com/apache/dubbo-go/wiki/pressure-test-report-for-dubbo) & [jsonrpc benchmarking report](https://github.com/apache/dubbo-go/wiki/pressure-test-report-for-jsonrpc)
 
 ## [User List](https://github.com/apache/dubbo-go/issues/2)
+
+If you are using [apache/dubbo-go](github.com/apache/dubbo-go) and think that it helps you or want do some contributions to it, please add your company to to [the user list](https://github.com/apache/dubbo-go/issues/2) to let us know your needs.
 
 ![ctrip](https://pic.c-ctrip.com/common/c_logo2013.png)
 
