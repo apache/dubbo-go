@@ -30,7 +30,7 @@
 	<dubbo:protocol id="dubbo" name="dubbo" host="127.0.0.1" port="20010" />
 	<dubbo:protocol id="jsonrpc" name="jsonrpc" host="127.0.0.1" port="10010" />
 	<!-- 声明需要暴露的服务接口 -->
-	<dubbo:service registry="ikurento,ikurento2" timeout="3000" interface="com.ikurento.user.UserProvider" ref="demoService"/>
+	<dubbo:service registry="ikurento" timeout="3000" interface="com.ikurento.user.UserProvider" ref="demoService"/>
 	<dubbo:service registry="ikurento" timeout="3000" interface="com.ikurento.user.UserProvider" ref="otherService" version="2.0"/>
 	<dubbo:service registry="ikurento" timeout="3000" interface="com.ikurento.user.UserProvider" ref="otherService" group="as" version="2.0"/>
 

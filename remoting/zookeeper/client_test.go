@@ -48,23 +48,6 @@ func verifyEventStateOrder(t *testing.T, c <-chan zk.Event, expectedStates []zk.
 	}
 }
 
-func verifyEventOrder(t *testing.T, c <-chan zk.Event, expectedEvent []zk.EventType, source string) {
-	for _, e := range expectedEvent {
-		for {
-			event, ok := <-c
-			if !ok {
-				t.Fatalf("unexpected channel close for %s", source)
-			}
-
-			if event.Type != e {
-				t.Fatalf("mismatched state order from %s, expected %v, received %v", source, event, event.Type)
-			}
-
-			break
-		}
-	}
-}
-
 //func Test_newZookeeperClient(t *testing.T) {
 //	ts, err := zk.StartTestCluster(1, nil, nil)
 //	if err != nil {

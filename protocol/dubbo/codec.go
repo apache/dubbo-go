@@ -40,9 +40,9 @@ const (
 type CallType int32
 
 const (
-	CT_UNKOWN CallType = 0
-	CT_OneWay CallType = 1
-	CT_TwoWay CallType = 2
+	CT_UNKNOWN CallType = 0
+	CT_OneWay  CallType = 1
+	CT_TwoWay  CallType = 2
 )
 
 ////////////////////////////////////////////
@@ -88,11 +88,11 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 			return perrors.Errorf("opts[0] is not of type *Client")
 		}
 
-		pendingRsp := client.GetPendingResponse(SequenceType(p.Header.ID))
-		if pendingRsp == nil {
+		pendingRsp, ok := client.pendingResponses.Load(SequenceType(p.Header.ID))
+		if !ok {
 			return perrors.Errorf("client.GetPendingResponse(%v) = nil", p.Header.ID)
 		} else {
-			p.Body = &hessian.Response{RspObj: pendingRsp.reply}
+			p.Body = &hessian.Response{RspObj: pendingRsp.(*PendingResponse).reply}
 		}
 	}
 

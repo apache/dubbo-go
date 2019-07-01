@@ -31,6 +31,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/proxy/proxy_factory"
+	"github.com/apache/dubbo-go/config_center"
 )
 
 func TestConfigLoader(t *testing.T) {
@@ -59,21 +60,58 @@ func TestLoad(t *testing.T) {
 	doInit()
 	doinit()
 
-	SetConsumerService(&MockService{})
-	SetProviderService(&MockService{})
+	ms := &MockService{}
+	SetConsumerService(ms)
+	SetProviderService(ms)
 
 	extension.SetProtocol("registry", GetProtocol)
 	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
 	extension.SetProxyFactory("default", proxy_factory.NewDefaultProxyFactory)
-	consumerConfig.References[0].Registries = []ConfigRegistry{"shanghai_reg1"}
 
-	refConfigs, svcConfigs := Load()
-	assert.NotEqual(t, 0, len(refConfigs))
-	assert.NotEqual(t, 0, len(svcConfigs))
+	Load()
+
+	assert.Equal(t, ms, GetRPCService(ms.Service()))
+	ms2 := &struct {
+		MockService
+	}{}
+	RPCService(ms2)
+	assert.NotEqual(t, ms2, GetRPCService(ms2.Service()))
 
 	conServices = map[string]common.RPCService{}
 	proServices = map[string]common.RPCService{}
 	common.ServiceMap.UnRegister("mock", "MockService")
 	consumerConfig = nil
 	providerConfig = nil
+}
+
+func TestConfigLoaderWithConfigCenter(t *testing.T) {
+	extension.SetConfigCenterFactory("mock", func() config_center.DynamicConfigurationFactory {
+		return &config_center.MockDynamicConfigurationFactory{}
+	})
+
+	conPath, err := filepath.Abs("./testdata/consumer_config_with_configcenter.yml")
+	assert.NoError(t, err)
+	proPath, err := filepath.Abs("./testdata/provider_config.yml")
+	assert.NoError(t, err)
+
+	assert.Nil(t, consumerConfig)
+	assert.Equal(t, ConsumerConfig{}, GetConsumerConfig())
+	assert.Nil(t, providerConfig)
+	assert.Equal(t, ProviderConfig{}, GetProviderConfig())
+
+	err = consumerInit(conPath)
+	configCenterRefreshConsumer()
+	assert.NoError(t, err)
+	err = providerInit(proPath)
+	configCenterRefreshProvider()
+	assert.NoError(t, err)
+
+	assert.NotNil(t, consumerConfig)
+	assert.NotEqual(t, ConsumerConfig{}, GetConsumerConfig())
+	assert.NotNil(t, providerConfig)
+	assert.NotEqual(t, ProviderConfig{}, GetProviderConfig())
+
+	assert.Equal(t, "BDTService", consumerConfig.ApplicationConfig.Name)
+	assert.Equal(t, "127.0.0.1:2181", consumerConfig.Registries["hangzhouzk"].Address)
+
 }
