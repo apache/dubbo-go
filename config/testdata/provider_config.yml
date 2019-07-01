@@ -27,6 +27,9 @@ registries :
 
 services:
   "UserProvider":
+    registries:
+      - "hangzhouzk"
+      - "shanghaizk"
     filter: ""
     protocol : "dubbo"
     # equivalent to interface of dubbo.xml

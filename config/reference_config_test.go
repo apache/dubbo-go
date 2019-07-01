@@ -80,6 +80,7 @@ func doInit() {
 		},
 		References: map[string]*ReferenceConfig{
 			"MockService": {
+				Registries:    []string{"shanghai_reg1", "shanghai_reg2", "hangzhou_reg1", "hangzhou_reg2"},
 				InterfaceName: "MockService",
 				Protocol:      "mock",
 				Cluster:       "failover",
