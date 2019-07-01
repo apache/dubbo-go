@@ -69,12 +69,32 @@ func NewRPCInvocationForProvider(methodName string, arguments []interface{}, att
 	}
 }
 
-func NewRPCInvocationForUT(methodName string, parameterTypes []reflect.Type, arguments []interface{}) *RPCInvocation {
-	return &RPCInvocation{
-		methodName:     methodName,
-		arguments:      arguments,
-		parameterTypes: parameterTypes,
+type option func(invo *RPCInvocation)
+
+func WithMethodName(methodName string) option {
+	return func(invo *RPCInvocation) {
+		invo.methodName = methodName
 	}
+}
+
+func WithParameterTypes(parameterTypes []reflect.Type) option {
+	return func(invo *RPCInvocation) {
+		invo.parameterTypes = parameterTypes
+	}
+}
+
+func WithArguments(arguments []interface{}) option {
+	return func(invo *RPCInvocation) {
+		invo.arguments = arguments
+	}
+}
+
+func NewRPCInvocationWithOptions(opts ...option) *RPCInvocation {
+	invo := &RPCInvocation{}
+	for _, opt := range opts {
+		opt(invo)
+	}
+	return invo
 }
 
 func (r *RPCInvocation) MethodName() string {

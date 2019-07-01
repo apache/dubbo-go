@@ -300,25 +300,22 @@ func (c URL) GetParamAndDecoded(key string) (string, error) {
 }
 
 func (c URL) GetRawParam(key string) string {
-	if "protocol" == key {
+	switch key {
+	case "protocol":
 		return c.Protocol
-	}
-	if "username" == key {
+	case "username":
 		return c.Username
-	}
-	if "host" == key {
+	case "host":
 		return strings.Split(c.Location, ":")[0]
-	}
-	if "password" == key {
+	case "password":
 		return c.Password
-	}
-	if "port" == key {
+	case "port":
 		return c.Port
-	}
-	if "path" == key {
+	case "path":
 		return c.Path
+	default:
+		return c.Params.Get(key)
 	}
-	return c.Params.Get(key)
 }
 
 // GetParamBool

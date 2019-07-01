@@ -23,13 +23,17 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
+)
 
+import (
 	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
@@ -176,7 +180,7 @@ func TestRoute_matchFilter(t *testing.T) {
 }
 
 func TestRoute_methodRoute(t *testing.T) {
-	inv := invocation.NewRPCInvocationForUT("getFoo", []reflect.Type{}, []interface{}{})
+	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("getFoo"), invocation.WithParameterTypes([]reflect.Type{}), invocation.WithArguments([]interface{}{}))
 	rule := base64.URLEncoding.EncodeToString([]byte("host !=4.4.4.* & host = 2.2.2.2,1.1.1.1,3.3.3.3 => host = 1.2.3.4"))
 	router, _ := NewConditionRouterFactory().Router(getRouteUrl(rule))
 	url, _ := common.NewURL(context.TODO(), "consumer://1.1.1.1/com.foo.BarService?methods=setFoo,getFoo,findFoo")
