@@ -15,32 +15,23 @@
  * limitations under the License.
  */
 
-package constant
+package router
 
-const (
-	DUBBO = "dubbo"
-)
-const (
-	DEFAULT_WEIGHT = 100     //
-	DEFAULT_WARMUP = 10 * 60 // in java here is 10*60*1000 because of System.currentTimeMillis() is measured in milliseconds & in go time.Unix() is second
+import (
+	"github.com/apache/dubbo-go/cluster"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/extension"
 )
 
-const (
-	DEFAULT_LOADBALANCE = "random"
-	DEFAULT_RETRIES     = 2
-	DEFAULT_PROTOCOL    = "dubbo"
-	DEFAULT_REG_TIMEOUT = "10s"
-	DEFAULT_CLUSTER     = "failover"
-)
+func init() {
+	extension.SetRouterFactory("condition", NewConditionRouterFactory)
+}
 
-const (
-	DEFAULT_KEY               = "default"
-	PREFIX_DEFAULT_KEY        = "default."
-	DEFAULT_SERVICE_FILTERS   = "echo"
-	DEFAULT_REFERENCE_FILTERS = ""
-	ECHO                      = "$echo"
-)
+type ConditionRouterFactory struct{}
 
-const (
-	ANY_VALUE = "*"
-)
+func NewConditionRouterFactory() cluster.RouterFactory {
+	return ConditionRouterFactory{}
+}
+func (c ConditionRouterFactory) Router(url *common.URL) (cluster.Router, error) {
+	return newConditionRouter(url)
+}
