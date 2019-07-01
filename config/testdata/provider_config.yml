@@ -12,13 +12,13 @@ application_config:
 
 registries :
   "hangzhouzk":
-    type: "zookeeper"
+    protocol: "zookeeper"
     timeout	: "3s"
     address: "127.0.0.1:2181"
     username: ""
     password: ""
   "shanghaizk":
-    type: "zookeeper"
+    protocol: "zookeeper"
     timeout	: "3s"
     address: "127.0.0.1:2182"
     username: ""
