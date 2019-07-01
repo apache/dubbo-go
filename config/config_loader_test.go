@@ -86,8 +86,8 @@ func TestLoad(t *testing.T) {
 func TestWithNoRegLoad(t *testing.T) {
 	doInit()
 	doinit()
-	providerConfig.Services["MockService"].Registries = []string{}
-	consumerConfig.References["MockService"].Registries = []string{}
+	providerConfig.Services["MockService"].Registry = ""
+	consumerConfig.References["MockService"].Registry = ""
 	ms := &MockService{}
 	SetConsumerService(ms)
 	SetProviderService(ms)
