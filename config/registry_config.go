@@ -44,22 +44,35 @@ func (*RegistryConfig) Prefix() string {
 	return constant.RegistryConfigPrefix
 }
 
-func loadRegistries(registries map[string]*RegistryConfig, roleType common.RoleType) []*common.URL {
+func loadRegistries(targetRegistries []string, registries map[string]*RegistryConfig, roleType common.RoleType) []*common.URL {
 	var urls []*common.URL
 	for k, registryConf := range registries {
+		target := false
+		//if user config targetRegistries
+		for _, tr := range targetRegistries {
+			if tr == k {
+				target = true
+				break
+			}
+		}
+		//else if user not config targetRegistries,default load all
+		if len(targetRegistries) == 0 {
+			target = true
+		}
+		if target {
+			url, err := common.NewURL(
+				context.TODO(),
+				constant.REGISTRY_PROTOCOL+"://"+registryConf.Address,
+				common.WithParams(registryConf.getUrlMap(roleType)),
+				common.WithUsername(registryConf.Username),
+				common.WithPassword(registryConf.Password),
+			)
 
-		url, err := common.NewURL(
-			context.TODO(),
-			constant.REGISTRY_PROTOCOL+"://"+registryConf.Address,
-			common.WithParams(registryConf.getUrlMap(roleType)),
-			common.WithUsername(registryConf.Username),
-			common.WithPassword(registryConf.Password),
-		)
-
-		if err != nil {
-			logger.Errorf("The registry id:%s url is invalid ,and will skip the registry, error: %#v", k, err)
-		} else {
-			urls = append(urls, &url)
+			if err != nil {
+				logger.Errorf("The registry id:%s url is invalid ,and will skip the registry, error: %#v", k, err)
+			} else {
+				urls = append(urls, &url)
+			}
 		}
 
 	}
