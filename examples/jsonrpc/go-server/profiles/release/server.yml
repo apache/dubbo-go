@@ -26,8 +26,10 @@ registries :
 
 services:
  "UserProvider":
+   # 可以指定多个registry，使用逗号隔开;不指定默认向所有注册中心注册
+   registry: "hangzhouzk"
    protocol : "jsonrpc"
-     # 相当于dubbo.xml中的interface
+  # 相当于dubbo.xml中的interface
    interface : "com.ikurento.user.UserProvider"
    loadbalance: "random"
    warmup: "100"
@@ -36,7 +38,6 @@ services:
      - name: "GetUser"
        retries: 1
        loadbalance: "random"
-
 
 protocols:
   #-   name: "dubbo"
