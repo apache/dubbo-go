@@ -35,6 +35,7 @@ const (
 
 const (
 	DEFAULT_KEY               = "default"
+	PREFIX_DEFAULT_KEY        = "default."
 	DEFAULT_SERVICE_FILTERS   = "echo"
 	DEFAULT_REFERENCE_FILTERS = ""
 	ECHO                      = "$echo"
