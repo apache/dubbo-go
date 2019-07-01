@@ -5,6 +5,9 @@ config_center:
   address: "127.0.0.1"
 references:
   "UserProvider":
+    registries:
+      - "hangzhouzk"
+      - "shanghaizk"
     filter: ""
     protocol : "dubbo"
     interface : "com.ikurento.user.UserProvider"
