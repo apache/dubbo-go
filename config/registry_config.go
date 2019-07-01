@@ -53,7 +53,8 @@ func loadRegistries(targetRegistries string, registries map[string]*RegistryConf
 		target := false
 
 		// if user not config targetRegistries,default load all
-		// Notice:If s does not contain sep and sep is not empty, SplitAfter returns a slice of length 1 whose only element is s.
+		// Notice:in func "func Split(s, sep string) []string"  comment : if s does not contain sep and sep is not empty, SplitAfter returns a slice of length 1 whose only element is s.
+		// So we have to add the condition when targetRegistries string is not set (it will be "" when not set)
 		if len(trSlice) == 0 || (len(trSlice) == 1 && trSlice[0] == "") {
 			target = true
 		} else {
