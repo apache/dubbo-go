@@ -321,10 +321,10 @@ func (r *zkRegistry) register(c common.URL) error {
 		}
 
 		urlPath = c.Path
-		if r.zkPath[urlPath] != 0 {
-			urlPath += strconv.Itoa(r.zkPath[urlPath])
-		}
-		r.zkPath[urlPath]++
+		//if r.zkPath[urlPath] != 0 {
+		//	urlPath += strconv.Itoa(r.zkPath[urlPath])
+		//}
+		//r.zkPath[urlPath]++
 		rawURL = fmt.Sprintf("%s://%s%s?%s", c.Protocol, host, urlPath, params.Encode())
 		encodedURL = url.QueryEscape(rawURL)
 
