@@ -48,17 +48,20 @@ func loadRegistries(targetRegistries []string, registries map[string]*RegistryCo
 	var urls []*common.URL
 	for k, registryConf := range registries {
 		target := false
-		//if user config targetRegistries
-		for _, tr := range targetRegistries {
-			if tr == k {
-				target = true
-				break
-			}
-		}
-		//else if user not config targetRegistries,default load all
+
+		// if user not config targetRegistries,default load all
 		if len(targetRegistries) == 0 {
 			target = true
+		} else {
+			// else if user config targetRegistries
+			for _, tr := range targetRegistries {
+				if tr == k {
+					target = true
+					break
+				}
+			}
 		}
+
 		if target {
 			url, err := common.NewURL(
 				context.TODO(),
