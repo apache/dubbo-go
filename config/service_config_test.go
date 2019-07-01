@@ -31,44 +31,40 @@ import (
 
 func doinit() {
 	providerConfig = &ProviderConfig{
-		ApplicationConfig: ApplicationConfig{
+		ApplicationConfig: &ApplicationConfig{
 			Organization: "dubbo_org",
 			Name:         "dubbo",
 			Module:       "module",
 			Version:      "2.6.0",
 			Owner:        "dubbo",
 			Environment:  "test"},
-		Registries: []RegistryConfig{
-			{
-				Id:         "shanghai_reg1",
-				Type:       "mock",
+		Registries: map[string]*RegistryConfig{
+			"shanghai_reg1": {
+				Protocol:   "mock",
 				TimeoutStr: "2s",
 				Group:      "shanghai_idc",
 				Address:    "127.0.0.1:2181",
 				Username:   "user1",
 				Password:   "pwd1",
 			},
-			{
-				Id:         "shanghai_reg2",
-				Type:       "mock",
+			"shanghai_reg2": {
+				Protocol:   "mock",
 				TimeoutStr: "2s",
 				Group:      "shanghai_idc",
 				Address:    "127.0.0.2:2181",
 				Username:   "user1",
 				Password:   "pwd1",
 			},
-			{
-				Id:         "hangzhou_reg1",
-				Type:       "mock",
+			"hangzhou_reg1": {
+				Protocol:   "mock",
 				TimeoutStr: "2s",
 				Group:      "hangzhou_idc",
 				Address:    "127.0.0.3:2181",
 				Username:   "user1",
 				Password:   "pwd1",
 			},
-			{
-				Id:         "hangzhou_reg2",
-				Type:       "mock",
+			"hangzhou_reg2": {
+				Protocol:   "mock",
 				TimeoutStr: "2s",
 				Group:      "hangzhou_idc",
 				Address:    "127.0.0.4:2181",
@@ -76,8 +72,8 @@ func doinit() {
 				Password:   "pwd1",
 			},
 		},
-		Services: []ServiceConfig{
-			{
+		Services: map[string]*ServiceConfig{
+			"MockService": {
 				InterfaceName: "MockService",
 				Protocol:      "mock",
 				Registries:    []ConfigRegistry{"shanghai_reg1", "shanghai_reg2", "hangzhou_reg1", "hangzhou_reg2"},
@@ -86,12 +82,7 @@ func doinit() {
 				Retries:       3,
 				Group:         "huadong_idc",
 				Version:       "1.0.0",
-				Methods: []struct {
-					Name        string `yaml:"name"  json:"name,omitempty"`
-					Retries     int64  `yaml:"retries"  json:"retries,omitempty"`
-					Loadbalance string `yaml:"loadbalance"  json:"loadbalance,omitempty"`
-					Weight      int64  `yaml:"weight"  json:"weight,omitempty"`
-				}{
+				Methods: []*MethodConfig{
 					{
 						Name:        "GetUser",
 						Retries:     2,
@@ -107,12 +98,11 @@ func doinit() {
 				},
 			},
 		},
-		Protocols: []ProtocolConfig{
-			{
-				Name:        "mock",
-				Ip:          "127.0.0.1",
-				Port:        "20000",
-				ContextPath: "/xxx",
+		Protocols: map[string]*ProtocolConfig{
+			"mock": {
+				Name: "mock",
+				Ip:   "127.0.0.1",
+				Port: "20000",
 			},
 		},
 	}
@@ -122,7 +112,8 @@ func Test_Export(t *testing.T) {
 	doinit()
 	extension.SetProtocol("registry", GetProtocol)
 
-	for _, service := range providerConfig.Services {
+	for i := range providerConfig.Services {
+		service := providerConfig.Services[i]
 		service.Implement(&MockService{})
 		service.Export()
 		assert.Condition(t, func() bool {

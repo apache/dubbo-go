@@ -19,6 +19,8 @@ package dubbo
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 	"reflect"
 	"sync"
 	"time"
@@ -133,16 +135,14 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 ////////////////////////////////////////////
 
 type RpcServerHandler struct {
-	exporter       protocol.Exporter
 	maxSessionNum  int
 	sessionTimeout time.Duration
 	sessionMap     map[getty.Session]*rpcSession
 	rwlock         sync.RWMutex
 }
 
-func NewRpcServerHandler(exporter protocol.Exporter, maxSessionNum int, sessionTimeout time.Duration) *RpcServerHandler {
+func NewRpcServerHandler(maxSessionNum int, sessionTimeout time.Duration) *RpcServerHandler {
 	return &RpcServerHandler{
-		exporter:       exporter,
 		maxSessionNum:  maxSessionNum,
 		sessionTimeout: sessionTimeout,
 		sessionMap:     make(map[getty.Session]*rpcSession),
@@ -190,7 +190,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 	p, ok := pkg.(*DubboPackage)
 	if !ok {
-		logger.Errorf("illegal packge{%#v}", pkg)
+		logger.Errorf("illegal package{%#v}", pkg)
 		return
 	}
 	p.Header.ResponseStatus = hessian.Response_OK
@@ -208,11 +208,28 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 		twoway = false
 	}
 
-	invoker := h.exporter.GetInvoker()
+	group := p.Body.(map[string]interface{})["attachments"].(map[interface{}]interface{})[constant.GROUP_KEY]
+	if group == nil {
+		group = ""
+	}
+	u := common.NewURLWithOptions(common.WithPath(p.Service.Path), common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.GROUP_KEY, group.(string)),
+		common.WithParamsValue(constant.INTERFACE_KEY, p.Service.Interface),
+		common.WithParamsValue(constant.VERSION_KEY, p.Service.Version))
+	exporter, _ := dubboProtocol.ExporterMap().Load(u.ServiceKey())
+	if exporter == nil {
+		err := fmt.Errorf("don't have this exporter, key: %s", u.ServiceKey())
+		logger.Errorf(err.Error())
+		p.Header.ResponseStatus = hessian.Response_OK
+		p.Body = err
+		h.reply(session, p, hessian.PackageResponse)
+		return
+	}
+	invoker := exporter.(protocol.Exporter).GetInvoker()
 	if invoker != nil {
 		result := invoker.Invoke(invocation.NewRPCInvocationForProvider(p.Service.Method, p.Body.(map[string]interface{})["args"].([]interface{}), map[string]string{
-			constant.PATH_KEY: p.Service.Path,
-			//attachments[constant.GROUP_KEY] = url.GetParam(constant.GROUP_KEY, "")
+			constant.PATH_KEY:      p.Service.Path,
+			constant.GROUP_KEY:     group.(string),
 			constant.INTERFACE_KEY: p.Service.Interface,
 			constant.VERSION_KEY:   p.Service.Version,
 		}))
@@ -268,13 +285,13 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 		if e := recover(); e != nil {
 			req.Header.ResponseStatus = hessian.Response_SERVER_ERROR
 			if err, ok := e.(error); ok {
-				logger.Errorf("callService panic: %#v", err)
+				logger.Errorf("callService panic: %+v", perrors.WithStack(err))
 				req.Body = perrors.WithStack(err)
 			} else if err, ok := e.(string); ok {
-				logger.Errorf("callService panic: %#v", perrors.New(err))
+				logger.Errorf("callService panic: %+v", perrors.New(err))
 				req.Body = perrors.New(err)
 			} else {
-				logger.Errorf("callService panic: %#v, this is impossible.", e)
+				logger.Errorf("callService panic: %+v, this is impossible.", e)
 				req.Body = e
 			}
 		}
@@ -307,13 +324,21 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 		in = append(in, reflect.ValueOf(argv))
 	} else {
 		for i := 0; i < len(argv.([]interface{})); i++ {
-			in = append(in, reflect.ValueOf(argv.([]interface{})[i]))
+			t := reflect.ValueOf(argv.([]interface{})[i])
+			if !t.IsValid() {
+				at := method.ArgsType()[i]
+				if at.Kind() == reflect.Ptr {
+					at = at.Elem()
+				}
+				t = reflect.New(at)
+			}
+			in = append(in, t)
 		}
 	}
 
 	// prepare replyv
 	var replyv reflect.Value
-	if method.ReplyType() == nil {
+	if method.ReplyType() == nil && len(method.ArgsType()) > 0 {
 		replyv = reflect.New(method.ArgsType()[len(method.ArgsType())-1].Elem())
 		in = append(in, replyv)
 	}
@@ -331,7 +356,11 @@ func (h *RpcServerHandler) callService(req *DubboPackage, ctx context.Context) {
 		req.Header.ResponseStatus = hessian.Response_OK
 		req.Body = retErr
 	} else {
-		req.Body = replyv.Interface()
+		if replyv.IsValid() && (replyv.Kind() != reflect.Ptr || replyv.Kind() == reflect.Ptr && replyv.Elem().IsValid()) {
+			req.Body = replyv.Interface()
+		} else {
+			req.Body = nil
+		}
 	}
 }
 

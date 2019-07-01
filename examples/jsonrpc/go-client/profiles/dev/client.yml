@@ -16,26 +16,24 @@ application_config:
     environment : "dev"
 
 registries :
-  - id: "hangzhouzk"
-    type: "zookeeper"
+  "hangzhouzk":
+    protocol: "zookeeper"
     timeout	: "3s"
     address: "127.0.0.1:2181"
     username: ""
     password: ""
-
-  - id: "shanghaizk"
-    type: "zookeeper"
+  "shanghaizk":
+    protocol: "zookeeper"
     timeout	: "3s"
     address: "127.0.0.1:2182"
     username: ""
     password: ""
 
 references:
-  - registries :
-    - "hangzhouzk"
-    - "shanghaizk"
-
+  "UserProvider":
     protocol : "jsonrpc"
+#    version : "2.0"
+#    group: "as"
     interface : "com.ikurento.user.UserProvider"
     cluster: "failover"
     methods :
