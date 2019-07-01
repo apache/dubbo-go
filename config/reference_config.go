@@ -43,7 +43,7 @@ type ReferenceConfig struct {
 	Url           string          `yaml:"url"  json:"url,omitempty" property:"url"`
 	Filter        string          `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	Protocol      string          `yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	Registries    []string        `yaml:"registries"  json:"registries,omitempty"  property:"registries"`
+	Registry      string          `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
 	Cluster       string          `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
 	Loadbalance   string          `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
 	Retries       int64           `yaml:"retries"  json:"retries,omitempty" property:"retries"`
@@ -100,7 +100,7 @@ func (refconfig *ReferenceConfig) Refer() {
 		}
 	} else {
 		//2. assemble SubURL from register center's configuration模式
-		refconfig.urls = loadRegistries(refconfig.Registries, consumerConfig.Registries, common.CONSUMER)
+		refconfig.urls = loadRegistries(refconfig.Registry, consumerConfig.Registries, common.CONSUMER)
 
 		//set url to regUrls
 		for _, regUrl := range refconfig.urls {

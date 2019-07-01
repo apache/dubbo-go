@@ -46,7 +46,7 @@ type ServiceConfig struct {
 	Filter        string          `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	Protocol      string          `required:"true"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"` //multi protocol support, split by ','
 	InterfaceName string          `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
-	Registries    []string        `yaml:"registries"  json:"registries,omitempty"  property:"registries"`
+	Registry      string          `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
 	Cluster       string          `default:"failover" yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
 	Loadbalance   string          `default:"random" yaml:"loadbalance"  json:"loadbalance,omitempty"  property:"loadbalance"`
 	Group         string          `yaml:"group"  json:"group,omitempty" property:"group"`
@@ -88,7 +88,7 @@ func (srvconfig *ServiceConfig) Export() error {
 		return nil
 	}
 
-	regUrls := loadRegistries(srvconfig.Registries, providerConfig.Registries, common.PROVIDER)
+	regUrls := loadRegistries(srvconfig.Registry, providerConfig.Registries, common.PROVIDER)
 	urlMap := srvconfig.getUrlMap()
 
 	for _, proto := range loadProtocol(srvconfig.Protocol, providerConfig.Protocols) {

@@ -76,7 +76,7 @@ func doinit() {
 			"MockService": {
 				InterfaceName: "MockService",
 				Protocol:      "mock",
-				Registries:    []string{"shanghai_reg1", "shanghai_reg2", "hangzhou_reg1", "hangzhou_reg2"},
+				Registry:      "shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2",
 				Cluster:       "failover",
 				Loadbalance:   "random",
 				Retries:       3,
