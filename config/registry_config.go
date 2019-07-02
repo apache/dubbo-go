@@ -37,8 +37,8 @@ type RegistryConfig struct {
 	Group      string `yaml:"group" json:"group,omitempty" property:"group"`
 	//for registry
 	Address  string `yaml:"address" json:"address,omitempty" property:"address"`
-	Username string `yaml:"username" json:"address,omitempty" property:"username"`
-	Password string `yaml:"password" json:"address,omitempty"  property:"password"`
+	Username string `yaml:"username" json:"username,omitempty" property:"username"`
+	Password string `yaml:"password" json:"password,omitempty"  property:"password"`
 }
 
 func (*RegistryConfig) Prefix() string {
