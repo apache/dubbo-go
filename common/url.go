@@ -199,10 +199,6 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (URL, error) 
 	return s, nil
 }
 
-func NewURLFromString(url string) URL {
-
-}
-
 func (c URL) URLEqual(url URL) bool {
 	c.Ip = ""
 	c.Port = ""
