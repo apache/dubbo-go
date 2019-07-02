@@ -63,13 +63,13 @@ func TestClient_Call(t *testing.T) {
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
 
 	user := &User{}
-	//err := c.Call("127.0.0.1:20000", url, "GetBigPkg", []interface{}{nil}, user)
-	//assert.NoError(t, err)
-	//assert.NotEqual(t, "", user.Id)
-	//assert.NotEqual(t, "", user.Name)
+	err := c.Call("127.0.0.1:20000", url, "GetBigPkg", []interface{}{nil}, user)
+	assert.NoError(t, err)
+	assert.NotEqual(t, "", user.Id)
+	assert.NotEqual(t, "", user.Name)
 
 	user = &User{}
-	err := c.Call("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"}, user)
+	err = c.Call("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"}, user)
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "1", Name: "username"}, *user)
 
@@ -195,11 +195,11 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 
 	// Export
 	proto := GetProtocol()
-	url, err := common.NewURL(context.Background(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&"+
+	url, err := common.NewURL(context.Background(), "dubbo://127.0.0.1:20000/UserProvider?anyhost=true&"+
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&"+
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&"+
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&"+
-		"side=provider&timeout=3000&timestamp=1556509797245")
+		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
 	assert.NoError(t, err)
 	proto.Export(protocol.NewBaseInvoker(url))
 
@@ -274,12 +274,8 @@ func (u *UserProvider) GetUser6(id int64) (*User, error) {
 	return &User{Id: "1"}, nil
 }
 
-func (u *UserProvider) Service() string {
-	return "com.ikurento.user.UserProvider"
-}
-
-func (u *UserProvider) Version() string {
-	return ""
+func (u *UserProvider) Reference() string {
+	return "UserProvider"
 }
 
 func (u User) JavaClassName() string {
