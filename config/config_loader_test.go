@@ -54,6 +54,7 @@ func TestConfigLoader(t *testing.T) {
 	assert.NotEqual(t, ConsumerConfig{}, GetConsumerConfig())
 	assert.NotNil(t, providerConfig)
 	assert.NotEqual(t, ProviderConfig{}, GetProviderConfig())
+	assert.Equal(t, "soa.com.ikurento.user.UserProvider", GetConsumerConfig().References["UserProvider"].Params["serviceid"])
 }
 
 func TestLoad(t *testing.T) {
