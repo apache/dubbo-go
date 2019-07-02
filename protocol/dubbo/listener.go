@@ -208,12 +208,8 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 		twoway = false
 	}
 
-	group := p.Body.(map[string]interface{})["attachments"].(map[interface{}]interface{})[constant.GROUP_KEY]
-	if group == nil {
-		group = ""
-	}
 	u := common.NewURLWithOptions(common.WithPath(p.Service.Path), common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.GROUP_KEY, group.(string)),
+		common.WithParamsValue(constant.GROUP_KEY, p.Service.Group),
 		common.WithParamsValue(constant.INTERFACE_KEY, p.Service.Interface),
 		common.WithParamsValue(constant.VERSION_KEY, p.Service.Version))
 	exporter, _ := dubboProtocol.ExporterMap().Load(u.ServiceKey())
@@ -229,7 +225,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	if invoker != nil {
 		result := invoker.Invoke(invocation.NewRPCInvocationForProvider(p.Service.Method, p.Body.(map[string]interface{})["args"].([]interface{}), map[string]string{
 			constant.PATH_KEY:      p.Service.Path,
-			constant.GROUP_KEY:     group.(string),
+			constant.GROUP_KEY:     p.Service.Group,
 			constant.INTERFACE_KEY: p.Service.Interface,
 			constant.VERSION_KEY:   p.Service.Version,
 		}))
