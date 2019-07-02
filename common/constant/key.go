@@ -29,6 +29,7 @@ const (
 	SERVICE_KEY   = "service"
 	METHODS_KEY   = "methods"
 	TIMEOUT_KEY   = "timeout"
+	BEAN_NAME_KEY = "bean.name"
 )
 
 const (
@@ -44,7 +45,6 @@ const (
 	WEIGHT_KEY           = "weight"
 	WARMUP_KEY           = "warmup"
 	RETRIES_KEY          = "retries"
-	BEAN_NAME            = "bean.name"
 )
 
 const (
