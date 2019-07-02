@@ -37,8 +37,11 @@ import (
 // listen the service information change in consul
 // registry.
 type consulListener struct {
+	// Registry url.
+	registryUrl common.URL
+
 	// Consumer url.
-	common.URL
+	consumerUrl common.URL
 
 	// Consul watcher.
 	plan *watch.Plan
@@ -75,22 +78,25 @@ type consulListener struct {
 	wg sync.WaitGroup
 }
 
-func newConsulListener(url common.URL) (*consulListener, error) {
+func newConsulListener(registryUrl common.URL, consumerUrl common.URL) (*consulListener, error) {
 	params := make(map[string]interface{})
 	params["type"] = "service"
-	params["service"] = url.Service()
+	params["service"] = consumerUrl.Service()
+	params["tag"] = "dubbo"
+	params["passingonly"] = true
 	plan, err := watch.Parse(params)
 	if err != nil {
 		return nil, err
 	}
 
 	listener := &consulListener{
-		URL:     url,
-		plan:    plan,
-		urls:    make([]common.URL, 0),
-		eventCh: make(chan *registry.ServiceEvent, 1),
-		errCh:   make(chan error, 1),
-		running: true,
+		registryUrl: registryUrl,
+		consumerUrl: consumerUrl,
+		plan:        plan,
+		urls:        make([]common.URL, 0),
+		eventCh:     make(chan *registry.ServiceEvent, 1),
+		errCh:       make(chan error, 1),
+		running:     true,
 	}
 
 	// Set handler to consul watcher, and
@@ -117,7 +123,7 @@ func (l *consulListener) run() {
 	}()
 
 	if l.running {
-		err := l.plan.Run(l.URL.Location)
+		err := l.plan.Run(l.registryUrl.Location)
 		if err != nil {
 			l.errCh <- err
 		}
@@ -151,7 +157,7 @@ func (l *consulListener) handler(idx uint64, raw interface{}) {
 		newUrls = append(newUrls, url)
 	}
 
-	for url = range l.urls {
+	for _, url = range l.urls {
 		ok = in(url, newUrls)
 		if !ok {
 			event := &registry.ServiceEvent{Action: remoting.EventTypeDel, Service: url}
@@ -159,7 +165,7 @@ func (l *consulListener) handler(idx uint64, raw interface{}) {
 		}
 	}
 
-	for url = range newUrls {
+	for _, url = range newUrls {
 		ok = in(url, l.urls)
 		if !ok {
 			event := &registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: url}
