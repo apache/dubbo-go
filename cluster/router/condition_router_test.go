@@ -26,16 +26,16 @@ import (
 )
 
 import (
+	perrors "github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
-)
-
-import (
-	perrors "github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
 )
 
 type MockInvoker struct {
