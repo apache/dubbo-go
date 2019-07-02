@@ -1,11 +1,30 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package consul
 
 import (
+	"context"
 	"strconv"
 	"crypto/md5"
 )
 
 import (
+	perrors "github.com/pkg/errors"
 	consul "github.com/hashicorp/consul/api"
 )
 
@@ -51,7 +70,23 @@ func buildService(url common.URL) (*consul.AgentServiceRegistration, error) {
 	return service, nil
 }
 
-func retrieveURL(service *consul.ServiceEntry) common.URL {
-	url := service.Service.Meta["url"]
-	return common.NewURLFromString(url)
+func retrieveURL(service *consul.ServiceEntry) (common.URL, error) {
+	url, ok := service.Service.Meta["url"]
+	if !ok {
+		return common.URL{}, perrors.New("retrieve url fails with no url key in service meta")
+	}
+	url1, err := common.NewURL(context.Background(), url)
+	if err != nil {
+		return common.URL{}, perrors.WithStack(err)
+	}
+	return url1, nil
+}
+
+func in(url common.URL, urls []common.URL) bool {
+	for _, url1 := range urls {
+		if url.URLEqual(url1) {
+			return true
+		}
+	}
+	return false
 }
