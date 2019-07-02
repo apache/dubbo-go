@@ -22,7 +22,6 @@ import (
 )
 
 import (
-	perrors "github.com/pkg/errors"
 	consul "github.com/hashicorp/consul/api"
 )
 
@@ -74,7 +73,7 @@ func (r *consulRegistry) Register(url common.URL) error {
 	if role == common.PROVIDER {
 		err = r.register(url)
 		if err != nil {
-			return perrors.WithStack(err)
+			return err
 		}
 	}
 	return nil
@@ -86,6 +85,23 @@ func (r *consulRegistry) register(url common.URL) error {
 		return err
 	}
 	return r.client.Agent().ServiceRegister(service)
+}
+
+func (r *consulRegistry) Unregister(url common.URL) error {
+	var err error
+
+	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
+	if role == common.PROVIDER {
+		err = r.unregister(url)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *consulRegistry) unregister(url common.URL) error {
+	return r.client.Agent().ServiceDeregister(buildId(url))
 }
 
 func (r *consulRegistry) Subscribe(url common.URL) (registry.Listener, error) {
@@ -105,7 +121,7 @@ func (r *consulRegistry) Subscribe(url common.URL) (registry.Listener, error) {
 }
 
 func (r *consulRegistry) subscribe(url common.URL) (registry.Listener, error) {
-	listener, err := newConsulListener(url)
+	listener, err := newConsulListener(*r.URL, url)
 	return listener, err
 }
 
