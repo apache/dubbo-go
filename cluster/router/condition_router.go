@@ -24,16 +24,16 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/container"
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/utils"
-	"github.com/apache/dubbo-go/gostd/container"
 	"github.com/apache/dubbo-go/protocol"
-)
-
-import (
-	perrors "github.com/pkg/errors"
 )
 
 const (
