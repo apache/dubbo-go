@@ -19,8 +19,10 @@ package consul
 
 import (
 	"context"
-	"strconv"
 	"crypto/md5"
+	"strconv"
+	"encoding/hex"
+	"fmt"
 )
 
 import (
@@ -30,10 +32,12 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/utils"
 )
 
 func buildId(url common.URL) string {
-	return string(md5.Sum([]byte(url.String()))[:])
+	t := md5.Sum([]byte(url.String()))
+	return hex.EncodeToString(t[:])
 }
 
 func buildService(url common.URL) (*consul.AgentServiceRegistration, error) {
@@ -42,21 +46,38 @@ func buildService(url common.URL) (*consul.AgentServiceRegistration, error) {
 	// id
 	id := buildId(url)
 
+	// address
+	if url.Ip == "" {
+		url.Ip, _ = utils.GetLocalIP()
+	}
+
 	// port
 	port, err := strconv.Atoi(url.Port)
 	if err != nil {
 		return nil, err
 	}
 
+	// tcp
+	tcp := fmt.Sprintf("%s:%d", url.Ip, port)
+
 	// tags
 	tags := make([]string, 0)
 	for k := range url.Params {
 		tags = append(tags, k + "=" + url.Params.Get(k))
 	}
+	tags = append(tags, "dubbo")
 
 	// meta
 	meta := make(map[string]string)
 	meta["url"] = url.String()
+
+	// check
+	check := &consul.AgentServiceCheck{
+		TCP:                            tcp,
+		Interval:                       url.GetParam("consul-check-interval", "10s"),
+		Timeout:                        url.GetParam("consul-check-timeout", "1s"),
+		DeregisterCriticalServiceAfter: url.GetParam("consul-deregister-critical-service-after", "20s"),
+	}
 
 	service := &consul.AgentServiceRegistration{
 		Name:    url.Service(),
@@ -65,6 +86,7 @@ func buildService(url common.URL) (*consul.AgentServiceRegistration, error) {
 		Port:    port,
 		Tags:    tags,
 		Meta:    meta,
+		Check:   check,
 	}
 
 	return service, nil
