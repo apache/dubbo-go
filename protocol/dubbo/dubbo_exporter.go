@@ -39,9 +39,9 @@ func NewDubboExporter(key string, invoker protocol.Invoker, exporterMap *sync.Ma
 }
 
 func (de *DubboExporter) Unexport() {
-	service := de.GetInvoker().GetUrl().GetParam(constant.INTERFACE_KEY, "")
+	serviceId := de.GetInvoker().GetUrl().GetParam(constant.BEAN_NAME_KEY, "")
 	de.BaseExporter.Unexport()
-	err := common.ServiceMap.UnRegister(DUBBO, service)
+	err := common.ServiceMap.UnRegister(DUBBO, serviceId)
 	if err != nil {
 		logger.Errorf("[DubboExporter.Unexport] error: %v", err)
 	}

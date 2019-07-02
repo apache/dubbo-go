@@ -34,10 +34,16 @@ import (
 
 type Gender hessian.JavaEnum
 
-var userProvider = new(UserProvider)
+var (
+	userProvider  = new(UserProvider)
+	userProvider1 = new(UserProvider1)
+	userProvider2 = new(UserProvider2)
+)
 
 func init() {
 	config.SetConsumerService(userProvider)
+	config.SetConsumerService(userProvider1)
+	config.SetConsumerService(userProvider2)
 }
 
 const (
@@ -108,10 +114,36 @@ type UserProvider struct {
 	Echo     func(ctx context.Context, req interface{}) (interface{}, error) // Echo represent EchoFilter will be used
 }
 
-func (u *UserProvider) Service() string {
-	return "com.ikurento.user.UserProvider"
+func (u *UserProvider) Reference() string {
+	return "UserProvider"
 }
 
-func (u *UserProvider) Version() string {
-	return ""
+type UserProvider1 struct {
+	GetUsers func(req []interface{}) ([]interface{}, error)
+	GetErr   func(ctx context.Context, req []interface{}, rsp *User) error
+	GetUser  func(ctx context.Context, req []interface{}, rsp *User) error
+	GetUser0 func(id string, name string) (User, error)
+	GetUser1 func(ctx context.Context, req []interface{}, rsp *User) error
+	GetUser2 func(ctx context.Context, req []interface{}, rsp *User) error `dubbo:"getUser"`
+	GetUser3 func() error
+	Echo     func(ctx context.Context, req interface{}) (interface{}, error) // Echo represent EchoFilter will be used
+}
+
+func (u *UserProvider1) Reference() string {
+	return "UserProvider1"
+}
+
+type UserProvider2 struct {
+	GetUsers func(req []interface{}) ([]interface{}, error)
+	GetErr   func(ctx context.Context, req []interface{}, rsp *User) error
+	GetUser  func(ctx context.Context, req []interface{}, rsp *User) error
+	GetUser0 func(id string, name string) (User, error)
+	GetUser1 func(ctx context.Context, req []interface{}, rsp *User) error
+	GetUser2 func(ctx context.Context, req []interface{}, rsp *User) error `dubbo:"getUser"`
+	GetUser3 func() error
+	Echo     func(ctx context.Context, req interface{}) (interface{}, error) // Echo represent EchoFilter will be used
+}
+
+func (u *UserProvider2) Reference() string {
+	return "UserProvider2"
 }
