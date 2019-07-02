@@ -179,13 +179,16 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 				}
 				if f.Kind() == reflect.Map {
 
-					//initiate config
-					s := reflect.New(f.Type().Elem().Elem())
-					prefix := s.MethodByName("Prefix").Call(nil)[0].String()
-					m := config.GetSubProperty(prefix)
-					for k := range m {
-						f.SetMapIndex(reflect.ValueOf(k), reflect.New(f.Type().Elem().Elem()))
+					if f.Type().Elem().Kind() == reflect.Ptr {
+						//initiate config
+						s := reflect.New(f.Type().Elem().Elem())
+						prefix := s.MethodByName("Prefix").Call(nil)[0].String()
+						m := config.GetSubProperty(prefix)
+						for k := range m {
+							f.SetMapIndex(reflect.ValueOf(k), reflect.New(f.Type().Elem().Elem()))
+						}
 					}
+
 					//iter := f.MapRange()
 
 					for _, k := range f.MapKeys() {
