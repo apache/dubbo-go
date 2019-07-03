@@ -27,9 +27,9 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/registry"
 )
 
 func init() {
@@ -47,7 +47,7 @@ type consulRegistry struct {
 
 	// Done field represents whether
 	// consul registry is closed.
-	done   chan struct{}
+	done chan struct{}
 }
 
 func newConsulRegistry(url *common.URL) (registry.Registry, error) {
@@ -107,7 +107,7 @@ func (r *consulRegistry) unregister(url common.URL) error {
 func (r *consulRegistry) Subscribe(url common.URL) (registry.Listener, error) {
 	var (
 		listener registry.Listener
-		err 	 error
+		err      error
 	)
 
 	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
@@ -131,7 +131,7 @@ func (r *consulRegistry) GetUrl() common.URL {
 
 func (r *consulRegistry) IsAvailable() bool {
 	select {
-	case <- r.done:
+	case <-r.done:
 		return false
 	default:
 		return true
