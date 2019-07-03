@@ -57,7 +57,9 @@ func TestJsonrpcInvoker_Invoke(t *testing.T) {
 
 	jsonInvoker := NewJsonrpcInvoker(url, client)
 	user := &User{}
-	res := jsonInvoker.Invoke(invocation.NewRPCInvocationForConsumer("GetUser", nil, []interface{}{"1", "username"}, user, nil, url, nil))
+	res := jsonInvoker.Invoke(invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUser"), invocation.WithArguments([]interface{}{"1", "username"}),
+		invocation.WithReply(user)))
+
 	assert.NoError(t, res.Error())
 	assert.Equal(t, User{Id: "1", Name: "username"}, *res.Result().(*User))
 
