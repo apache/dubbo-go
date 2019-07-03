@@ -24,7 +24,7 @@ import (
 import (
 	perrors "github.com/pkg/errors"
 	consul "github.com/hashicorp/consul/api"
-	"github.com/hashicorp/consul/watch"
+	"github.com/hashicorp/consul/api/watch"
 )
 
 import (
