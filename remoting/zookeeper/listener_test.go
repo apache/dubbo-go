@@ -18,7 +18,6 @@
 package zookeeper
 
 import (
-	"fmt"
 	"testing"
 	"time"
 )
@@ -27,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 import (
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/remoting"
 )
 
@@ -108,10 +108,10 @@ type mockDataListener struct {
 }
 
 func (m *mockDataListener) DataChange(eventType remoting.Event) bool {
-	fmt.Println(eventType)
+	logger.Info(eventType)
 	m.eventList = append(m.eventList, eventType)
 	if eventType.Content == m.changedData {
-		m.client.Wait.Done()
+		m.client.Close()
 	}
 	return true
 }
