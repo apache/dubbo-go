@@ -20,14 +20,14 @@ package consul
 import (
 	"context"
 	"crypto/md5"
-	"strconv"
 	"encoding/hex"
 	"fmt"
+	"strconv"
 )
 
 import (
-	perrors "github.com/pkg/errors"
 	consul "github.com/hashicorp/consul/api"
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -63,7 +63,7 @@ func buildService(url common.URL) (*consul.AgentServiceRegistration, error) {
 	// tags
 	tags := make([]string, 0)
 	for k := range url.Params {
-		tags = append(tags, k + "=" + url.Params.Get(k))
+		tags = append(tags, k+"="+url.Params.Get(k))
 	}
 	tags = append(tags, "dubbo")
 
