@@ -4,6 +4,7 @@ require (
 	github.com/dubbogo/getty v1.0.7
 	github.com/dubbogo/gost v1.0.0
 	github.com/dubbogo/hessian2 v1.0.2
+	github.com/hashicorp/consul/api v1.1.0
 	github.com/magiconair/properties v1.8.1
 	github.com/pkg/errors v0.8.1
 	github.com/samuel/go-zookeeper v0.0.0-20180130194729-c4fab1ac1bec
