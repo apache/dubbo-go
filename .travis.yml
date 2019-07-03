@@ -11,7 +11,7 @@ install: true
 
 script:
   - go fmt ./... && [[ -z `git status -s` ]]
-  - go mod vendor && go test ./... -v -coverprofile=coverage.txt -covermode=atomic
+  - go mod vendor && go test ./... -coverprofile=coverage.txt -covermode=atomic
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
