@@ -43,17 +43,17 @@ import (
 
 type ServiceConfig struct {
 	context       context.Context
-	Filter        string           `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	Protocol      string           `required:"true"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"` //multi protocol support, split by ','
-	InterfaceName string           `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
-	Registries    []ConfigRegistry `required:"true"  yaml:"registries"  json:"registries,omitempty"  property:"registries"`
-	Cluster       string           `default:"failover" yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
-	Loadbalance   string           `default:"random" yaml:"loadbalance"  json:"loadbalance,omitempty"  property:"loadbalance"`
-	Group         string           `yaml:"group"  json:"group,omitempty" property:"group"`
-	Version       string           `yaml:"version"  json:"version,omitempty" property:"version" `
-	Methods       []*MethodConfig  `yaml:"methods"  json:"methods,omitempty" property:"methods"`
-	Warmup        string           `yaml:"warmup"  json:"warmup,omitempty"  property:"warmup"`
-	Retries       int64            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
+	Filter        string          `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	Protocol      string          `required:"true"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"` //multi protocol support, split by ','
+	InterfaceName string          `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
+	Registry      string          `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
+	Cluster       string          `default:"failover" yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
+	Loadbalance   string          `default:"random" yaml:"loadbalance"  json:"loadbalance,omitempty"  property:"loadbalance"`
+	Group         string          `yaml:"group"  json:"group,omitempty" property:"group"`
+	Version       string          `yaml:"version"  json:"version,omitempty" property:"version" `
+	Methods       []*MethodConfig `yaml:"methods"  json:"methods,omitempty" property:"methods"`
+	Warmup        string          `yaml:"warmup"  json:"warmup,omitempty"  property:"warmup"`
+	Retries       int64           `yaml:"retries"  json:"retries,omitempty" property:"retries"`
 	unexported    *atomic.Bool
 	exported      *atomic.Bool
 	rpcService    common.RPCService
@@ -88,7 +88,7 @@ func (srvconfig *ServiceConfig) Export() error {
 		return nil
 	}
 
-	regUrls := loadRegistries(providerConfig.Registries, common.PROVIDER)
+	regUrls := loadRegistries(srvconfig.Registry, providerConfig.Registries, common.PROVIDER)
 	urlMap := srvconfig.getUrlMap()
 
 	for _, proto := range loadProtocol(srvconfig.Protocol, providerConfig.Protocols) {
