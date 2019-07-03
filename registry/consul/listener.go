@@ -22,9 +22,9 @@ import (
 )
 
 import (
-	perrors "github.com/pkg/errors"
 	consul "github.com/hashicorp/consul/api"
 	"github.com/hashicorp/consul/api/watch"
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -181,9 +181,9 @@ func (l *consulListener) handler(idx uint64, raw interface{}) {
 
 func (l *consulListener) Next() (*registry.ServiceEvent, error) {
 	select {
-	case event := <- l.eventCh:
+	case event := <-l.eventCh:
 		return event, nil
-	case err := <- l.errCh:
+	case err := <-l.errCh:
 		return nil, err
 	}
 }

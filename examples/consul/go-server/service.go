@@ -25,7 +25,7 @@ func init() {
 	config.SetProviderService(new(DubboService))
 }
 
-type DubboService struct {}
+type DubboService struct{}
 
 func (s *DubboService) SayHello(message string) (string, error) {
 	return "hello " + message, nil
