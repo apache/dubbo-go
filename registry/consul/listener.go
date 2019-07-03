@@ -118,9 +118,8 @@ func newConsulListener(registryUrl common.URL, consumerUrl common.URL) (*consulL
 // run will close with panic, so use recover to cover
 // this case.
 func (l *consulListener) run() {
-	defer func() {
-		recover()
-	}()
+	defer l.wg.Done()
+	defer func() { recover() }()
 
 	if l.running {
 		err := l.plan.Run(l.registryUrl.Location)
