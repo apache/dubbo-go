@@ -18,25 +18,11 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"strconv"
 	"time"
 )
 
-import (
-	perrors "github.com/pkg/errors"
-)
-
-import (
-	"github.com/apache/dubbo-go/config"
-)
-
 type Gender int
-
-func init() {
-	config.SetProviderService(new(UserProvider))
-}
 
 const (
 	MAN = iota
@@ -61,10 +47,6 @@ type (
 		Birth int    `json:"time"`
 		Sex   string `json:"sex"`
 	}
-
-	UserProvider struct {
-		user map[string]User
-	}
 )
 
 var (
@@ -75,103 +57,20 @@ var (
 		sex:   Gender(MAN),
 	}
 
-	userMap = UserProvider{user: make(map[string]User)}
+	userMap = make(map[string]User)
 )
 
 func init() {
 	DefaultUser.Sex = DefaultUser.sex.String()
-	userMap.user["A000"] = DefaultUser
-	userMap.user["A001"] = User{Id: "001", Name: "ZhangSheng", Age: 18, sex: MAN}
-	userMap.user["A002"] = User{Id: "002", Name: "Lily", Age: 20, sex: WOMAN}
-	userMap.user["A003"] = User{Id: "113", Name: "Moorse", Age: 30, sex: MAN}
-	for k, v := range userMap.user {
+	userMap["A000"] = DefaultUser
+	userMap["A001"] = User{Id: "001", Name: "ZhangSheng", Age: 18, sex: MAN}
+	userMap["A002"] = User{Id: "002", Name: "Lily", Age: 20, sex: WOMAN}
+	userMap["A003"] = User{Id: "113", Name: "Moorse", Age: 30, sex: MAN}
+	for k, v := range userMap {
 		v.Birth = int(time.Now().AddDate(-1*v.Age, 0, 0).Unix())
-		v.Sex = userMap.user[k].sex.String()
-		userMap.user[k] = v
+		v.Sex = userMap[k].sex.String()
+		userMap[k] = v
 	}
-}
-
-func (u *UserProvider) getUser(userId string) (*User, error) {
-	if user, ok := userMap.user[userId]; ok {
-		return &user, nil
-	}
-
-	return nil, fmt.Errorf("invalid user id:%s", userId)
-}
-
-func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User) error {
-	var (
-		err  error
-		user *User
-	)
-
-	println("req:%#v", req)
-	user, err = u.getUser(req[0].(string))
-	if err == nil {
-		*rsp = *user
-		println("rsp:%#v", rsp)
-	}
-	return err
-}
-
-func (u *UserProvider) GetUser0(id string, name string) (User, error) {
-	var err error
-
-	println("id:%s, name:%s", id, name)
-	user, err := u.getUser(id)
-	if err != nil {
-		return User{}, err
-	}
-	if user.Name != name {
-		return User{}, perrors.New("name is not " + user.Name)
-	}
-	return *user, err
-}
-
-func (u *UserProvider) GetUser2(ctx context.Context, req []interface{}, rsp *User) error {
-	var err error
-
-	println("req:%#v", req)
-	rsp.Id = strconv.FormatFloat(req[0].(float64), 'f', 0, 64)
-	rsp.Sex = Gender(MAN).String()
-	return err
-}
-
-func (u *UserProvider) GetUser3() error {
-	return nil
-}
-
-func (u *UserProvider) GetUsers(req []interface{}) ([]User, error) {
-	var err error
-
-	println("req:%s", req)
-	t := req[0].([]interface{})
-	user, err := u.getUser(t[0].(string))
-	if err != nil {
-		return nil, err
-	}
-	println("user:%v", user)
-	user1, err := u.getUser(t[1].(string))
-	if err != nil {
-		return nil, err
-	}
-	println("user1:%v", user1)
-
-	return []User{*user, *user1}, err
-}
-
-func (s *UserProvider) MethodMapper() map[string]string {
-	return map[string]string{
-		"GetUser2": "getUser",
-	}
-}
-
-func (u *UserProvider) Service() string {
-	return "com.ikurento.user.UserProvider"
-}
-
-func (u *UserProvider) Version() string {
-	return ""
 }
 
 func println(format string, args ...interface{}) {

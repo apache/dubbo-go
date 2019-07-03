@@ -146,12 +146,8 @@ func (u *UserProvider) GetUsers(req []interface{}) ([]User, error) {
 	return []User{*user, *user1}, err
 }
 
-func (u *UserProvider) Service() string {
-	return "com.ikurento.user.UserProvider"
-}
-
-func (u *UserProvider) Version() string {
-	return ""
+func (u *UserProvider) Reference() string {
+	return "UserProvider"
 }
 
 func println(format string, args ...interface{}) {
