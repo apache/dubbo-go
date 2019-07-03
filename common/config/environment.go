@@ -63,32 +63,40 @@ func (env *Environment) UpdateExternalConfigMap(externalMap map[string]string) {
 func (env *Environment) Configuration() *list.List {
 	list := list.New()
 	memConf := newInmemoryConfiguration()
-	memConf.setProperties(env.externalConfigMap)
+	memConf.setProperties(&(env.externalConfigMap))
 	list.PushBack(memConf)
 	return list
 }
 
 type InmemoryConfiguration struct {
-	store sync.Map
+	store *sync.Map
 }
 
 func newInmemoryConfiguration() *InmemoryConfiguration {
 	return &InmemoryConfiguration{}
 }
-func (conf *InmemoryConfiguration) setProperties(p sync.Map) {
+func (conf *InmemoryConfiguration) setProperties(p *sync.Map) {
 	conf.store = p
 }
 
 func (conf *InmemoryConfiguration) GetProperty(key string) (bool, string) {
+	if conf.store == nil {
+		return false, ""
+	}
+
 	v, ok := conf.store.Load(key)
 	if ok {
 		return true, v.(string)
 	}
-	return false, ""
 
+	return false, ""
 }
 
 func (conf *InmemoryConfiguration) GetSubProperty(subKey string) map[string]struct{} {
+	if conf.store == nil {
+		return nil
+	}
+
 	properties := make(map[string]struct{})
 	conf.store.Range(func(key, value interface{}) bool {
 		if idx := strings.Index(key.(string), subKey); idx >= 0 {
@@ -100,5 +108,6 @@ func (conf *InmemoryConfiguration) GetSubProperty(subKey string) map[string]stru
 		}
 		return true
 	})
+
 	return properties
 }
