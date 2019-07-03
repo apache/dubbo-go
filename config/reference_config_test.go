@@ -80,6 +80,9 @@ func doInit() {
 		},
 		References: map[string]*ReferenceConfig{
 			"MockService": {
+				Params: map[string]string{
+					"serviceid": "soa.mock",
+				},
 				Registry:      "shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2",
 				InterfaceName: "com.MockService",
 				Protocol:      "mock",
@@ -125,6 +128,7 @@ func Test_Refer(t *testing.T) {
 
 	for _, reference := range consumerConfig.References {
 		reference.Refer()
+		assert.Equal(t, "soa.mock", reference.Params["serviceid"])
 		assert.NotNil(t, reference.invoker)
 		assert.NotNil(t, reference.pxy)
 	}
