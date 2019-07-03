@@ -18,7 +18,6 @@
 package zookeeper
 
 import (
-	"fmt"
 	"testing"
 	"time"
 )
@@ -28,6 +27,7 @@ import (
 )
 import (
 	"github.com/apache/dubbo-go/remoting"
+	"github.com/apache/dubbo-go/common/logger"
 )
 
 func initZkData(t *testing.T) (*zk.TestCluster, *ZookeeperClient, <-chan zk.Event) {
@@ -108,7 +108,7 @@ type mockDataListener struct {
 }
 
 func (m *mockDataListener) DataChange(eventType remoting.Event) bool {
-	fmt.Println(eventType)
+	logger.Info(eventType)
 	m.eventList = append(m.eventList, eventType)
 	if eventType.Content == m.changedData {
 		m.client.Close()
