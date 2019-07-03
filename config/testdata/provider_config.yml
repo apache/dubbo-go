@@ -33,6 +33,8 @@ services:
     # equivalent to interface of dubbo.xml
     interface : "com.ikurento.user.UserProvider"
     loadbalance: "random"
+    version: "1.0"
+    group: "as"
     warmup: "100"
     cluster: "failover"
     methods:

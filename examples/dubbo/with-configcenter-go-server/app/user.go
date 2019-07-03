@@ -25,12 +25,13 @@ import (
 )
 
 import (
+	hessian "github.com/dubbogo/hessian2"
+	"github.com/dubbogo/hessian2/java_exception"
 	perrors "github.com/pkg/errors"
 )
 
 import (
 	"github.com/apache/dubbo-go/config"
-	hessian "github.com/dubbogo/hessian2"
 )
 
 type Gender hessian.JavaEnum
@@ -146,7 +147,7 @@ func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User
 }
 
 func (u *UserProvider) GetErr(ctx context.Context, req []interface{}, rsp *User) error {
-	return hessian.NewThrowable("exception")
+	return java_exception.NewThrowable("exception")
 }
 
 func (u *UserProvider) GetUser0(id string, name string) (User, error) {
@@ -182,12 +183,8 @@ func (u *UserProvider) GetUsers(req []interface{}) ([]interface{}, error) {
 	return []interface{}{user, user1}, err
 }
 
-func (u *UserProvider) Service() string {
-	return "com.ikurento.user.UserProvider"
-}
-
-func (u *UserProvider) Version() string {
-	return ""
+func (u *UserProvider) Reference() string {
+	return "UserProvider"
 }
 
 func println(format string, args ...interface{}) {
