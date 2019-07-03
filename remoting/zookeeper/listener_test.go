@@ -26,8 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 import (
-	"github.com/apache/dubbo-go/remoting"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 func initZkData(t *testing.T) (*zk.TestCluster, *ZookeeperClient, <-chan zk.Event) {
