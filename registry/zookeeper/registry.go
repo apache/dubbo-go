@@ -421,7 +421,7 @@ func (r *zkRegistry) getListener(conf common.URL) (*RegistryConfigurationListene
 	//注册到dataconfig的interested
 	r.dataListener.AddInterestedURL(&conf)
 
-	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/providers", conf.Service()), r.dataListener)
+	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+conf.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY), conf.Service()), r.dataListener)
 
 	return zkListener, nil
 }
