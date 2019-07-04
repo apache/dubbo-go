@@ -44,7 +44,8 @@ func TestDubboInvoker_Invoke(t *testing.T) {
 	invoker := NewDubboInvoker(url, c)
 	user := &User{}
 
-	inv := invocation.NewRPCInvocationForConsumer("GetUser", nil, []interface{}{"1", "username"}, user, nil, url, nil)
+	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUser"), invocation.WithArguments([]interface{}{"1", "username"}),
+		invocation.WithReply(user))
 
 	// Call
 	res := invoker.Invoke(inv)
