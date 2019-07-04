@@ -59,7 +59,7 @@ func main() {
 		println("res: %v", res)
 	}
 
-	time.Sleep(3e9)
+	time.Sleep(10e9)
 
 	println("\n\n\nstart to test jsonrpc")
 	user := &JsonRPCUser{}
