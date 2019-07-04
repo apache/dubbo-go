@@ -85,6 +85,7 @@ func (dir *registryDirectory) Subscribe(url common.URL) {
 	for {
 		if !dir.registry.IsAvailable() {
 			logger.Warnf("event listener game over.")
+			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
 			return
 		}
 
@@ -233,4 +234,13 @@ func (dir *registryDirectory) Destroy() {
 		}
 		dir.cacheInvokers = []protocol.Invoker{}
 	})
+}
+
+type referenceConfigurationListener struct {
+	directory *registryDirectory
+	url       *common.URL
+}
+
+func (l *referenceConfigurationListener) Process(event *remoting.ConfigChangeEvent) {
+	//l.directory.refreshInvokers(event)
 }

@@ -22,13 +22,18 @@ const (
 )
 
 const (
-	GROUP_KEY     = "group"
-	VERSION_KEY   = "version"
-	INTERFACE_KEY = "interface"
-	PATH_KEY      = "path"
-	SERVICE_KEY   = "service"
-	METHODS_KEY   = "methods"
-	TIMEOUT_KEY   = "timeout"
+	GROUP_KEY              = "group"
+	VERSION_KEY            = "version"
+	INTERFACE_KEY          = "interface"
+	PATH_KEY               = "path"
+	SERVICE_KEY            = "service"
+	METHODS_KEY            = "methods"
+	TIMEOUT_KEY            = "timeout"
+	CATEGORY_KEY           = "category"
+	CHECK_KEY              = "check"
+	ENABLED_KEY            = "enabled"
+	SIDE_KEY               = "side"
+	OVERRIDE_PROVIDERS_KEY = "providerAddresses"
 )
 
 const (
@@ -73,8 +78,10 @@ const (
 )
 
 const (
-	CONFIG_NAMESPACE_KEY = "config.namespace"
-	CONFIG_TIMEOUT_KET   = "config.timeout"
+	CONFIG_NAMESPACE_KEY  = "config.namespace"
+	CONFIG_TIMEOUT_KET    = "config.timeout"
+	CONFIG_VERSION_KEY    = "configVersion"
+	COMPATIBLE_CONFIG_KEY = "compatible_config"
 )
 const (
 	RegistryConfigPrefix  = "dubbo.registries."
