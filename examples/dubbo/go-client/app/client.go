@@ -63,7 +63,7 @@ func main() {
 	test1()
 	println("\n\ntest2")
 	test2()
-	println("\n\ngeneric")
+	println("\n\ntest3")
 	test3()
 	initSignal()
 }
@@ -295,11 +295,13 @@ func test3() {
 	genericConfig.Registry = "hangzhouzk"
 	genericConfig.Protocol = dubbo.DUBBO
 	genericConfig.LoadGenericReferenceConfig("getUser-generic")
+
 	time.Sleep(3 * time.Second)
 	resp, err := genericConfig.GetService().Invoke([]interface{}{"GetUser", []string{"java.lang.String"}, []hessian.Object{"A003"}})
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("get resp:", resp)
+	println("res: %v\n", resp)
+	println("succ!")
 
 }
