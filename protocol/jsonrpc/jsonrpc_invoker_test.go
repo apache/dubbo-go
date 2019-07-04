@@ -41,11 +41,11 @@ func TestJsonrpcInvoker_Invoke(t *testing.T) {
 
 	// Export
 	proto := GetProtocol()
-	url, err := common.NewURL(context.Background(), "jsonrpc://127.0.0.1:20001/com.ikurento.user.UserProvider?anyhost=true&"+
+	url, err := common.NewURL(context.Background(), "jsonrpc://127.0.0.1:20001/UserProvider?anyhost=true&"+
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&"+
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&"+
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&"+
-		"side=provider&timeout=3000&timestamp=1556509797245")
+		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
 	assert.NoError(t, err)
 	proto.Export(protocol.NewBaseInvoker(url))
 	time.Sleep(time.Second * 2)
@@ -57,7 +57,9 @@ func TestJsonrpcInvoker_Invoke(t *testing.T) {
 
 	jsonInvoker := NewJsonrpcInvoker(url, client)
 	user := &User{}
-	res := jsonInvoker.Invoke(invocation.NewRPCInvocationForConsumer("GetUser", nil, []interface{}{"1", "username"}, user, nil, url, nil))
+	res := jsonInvoker.Invoke(invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUser"), invocation.WithArguments([]interface{}{"1", "username"}),
+		invocation.WithReply(user)))
+
 	assert.NoError(t, res.Error())
 	assert.Equal(t, User{Id: "1", Name: "username"}, *res.Result().(*User))
 
