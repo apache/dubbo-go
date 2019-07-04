@@ -23,12 +23,8 @@ import (
 
 type MockService struct{}
 
-func (*MockService) Service() string {
+func (*MockService) Reference() string {
 	return "MockService"
-}
-
-func (*MockService) Version() string {
-	return "1.0"
 }
 
 func (*MockService) GetUser(ctx context.Context, itf []interface{}, str *struct{}) error {

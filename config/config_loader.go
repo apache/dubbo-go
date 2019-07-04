@@ -71,16 +71,17 @@ func Load() {
 			logger.Errorf("[consumer config center refresh] %#v", err)
 		}
 		refMap = make(map[string]*ReferenceConfig)
-		for _, ref := range consumerConfig.References {
-			rpcService := GetConsumerService(ref.InterfaceName)
+		for key, ref := range consumerConfig.References {
+			rpcService := GetConsumerService(key)
 
 			if rpcService == nil {
-				logger.Warnf("%s is not exsist!", ref.InterfaceName)
+				logger.Warnf("%s is not exsist!", key)
 				continue
 			}
+			ref.id = key
 			ref.Refer()
 			ref.Implement(rpcService)
-			refMap[ref.InterfaceName] = ref
+			refMap[key] = ref
 
 		}
 		//wait for invoker is available, if wait over default 3s, then panic
@@ -122,17 +123,18 @@ func Load() {
 			logger.Errorf("[provider config center refresh] %#v", err)
 		}
 		srvMap = make(map[string]*ServiceConfig)
-		for _, svs := range providerConfig.Services {
-			rpcService := GetProviderService(svs.InterfaceName)
+		for key, svs := range providerConfig.Services {
+			rpcService := GetProviderService(key)
 			if rpcService == nil {
-				logger.Warnf("%s is not exsist!", svs.InterfaceName)
+				logger.Warnf("%s is not exsist!", key)
 				continue
 			}
+			svs.id = key
 			svs.Implement(rpcService)
 			if err := svs.Export(); err != nil {
-				panic(fmt.Sprintf("service %s export failed! ", svs.InterfaceName))
+				panic(fmt.Sprintf("service %s export failed! ", key))
 			}
-			srvMap[svs.InterfaceName] = svs
+			srvMap[key] = svs
 		}
 	}
 }
@@ -144,5 +146,5 @@ func GetRPCService(name string) common.RPCService {
 
 // create rpc service for consumer
 func RPCService(service common.RPCService) {
-	providerConfig.Services[service.Service()].Implement(service)
+	providerConfig.Services[service.Reference()].Implement(service)
 }
