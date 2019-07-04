@@ -26,6 +26,7 @@ import (
 
 import (
 	"github.com/dubbogo/hessian2"
+	"github.com/dubbogo/hessian2/java_exception"
 	perrors "github.com/pkg/errors"
 )
 
@@ -172,7 +173,7 @@ func (u *UserProvider) GetUser3() error {
 }
 
 func (u *UserProvider) GetErr(ctx context.Context, req []interface{}, rsp *User) error {
-	return hessian.NewThrowable("exception")
+	return java_exception.NewThrowable("exception")
 }
 
 func (u *UserProvider) GetUsers(req []interface{}) ([]interface{}, error) {
