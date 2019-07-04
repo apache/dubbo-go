@@ -217,7 +217,6 @@ func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string
 
 	p := &DubboPackage{}
 	p.Service.Path = strings.TrimPrefix(svcUrl.Path, "/")
-	p.Service.Target = svcUrl.GetParam(constant.INTERFACE_KEY, "")
 	p.Service.Interface = svcUrl.GetParam(constant.INTERFACE_KEY, "")
 	p.Service.Version = svcUrl.GetParam(constant.VERSION_KEY, "")
 	p.Service.Method = method
