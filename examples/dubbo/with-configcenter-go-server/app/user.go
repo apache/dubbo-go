@@ -20,6 +20,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/dubbogo/hessian2/java_exception"
 	"strconv"
 	"time"
 )
@@ -146,7 +147,7 @@ func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User
 }
 
 func (u *UserProvider) GetErr(ctx context.Context, req []interface{}, rsp *User) error {
-	return hessian.NewThrowable("exception")
+	return java_exception.NewThrowable("exception")
 }
 
 func (u *UserProvider) GetUser0(id string, name string) (User, error) {
