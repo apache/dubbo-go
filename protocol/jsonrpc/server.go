@@ -325,7 +325,7 @@ func serveRequest(ctx context.Context,
 	exporter, _ := jsonrpcProtocol.ExporterMap().Load(path)
 	invoker := exporter.(*JsonrpcExporter).GetInvoker()
 	if invoker != nil {
-		result := invoker.Invoke(invocation.NewRPCInvocationForProvider(methodName, args, map[string]string{
+		result := invoker.Invoke(invocation.NewRPCInvocation(methodName, args, map[string]string{
 			constant.PATH_KEY:    path,
 			constant.VERSION_KEY: codec.req.Version,
 		}))
@@ -348,15 +348,14 @@ func serveRequest(ctx context.Context,
 			}
 		}
 	}
-	serviceName := invoker.GetUrl().Service()
 	// get method
-	svc := common.ServiceMap.GetService(JSONRPC, serviceName)
+	svc := common.ServiceMap.GetService(JSONRPC, path)
 	if svc == nil {
-		return perrors.New("cannot find svc " + serviceName)
+		return perrors.New("cannot find svc " + path)
 	}
 	method := svc.Method()[methodName]
 	if method == nil {
-		return perrors.New("cannot find method " + methodName + " of svc " + serviceName)
+		return perrors.New("cannot find method " + methodName + " of svc " + path)
 	}
 
 	in := []reflect.Value{svc.Rcvr()}
