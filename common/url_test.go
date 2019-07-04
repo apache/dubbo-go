@@ -232,3 +232,13 @@ func TestMergeUrl(t *testing.T) {
 	assert.Equal(t, "1", mergedUrl.GetParam("test2", ""))
 	assert.Equal(t, "1", mergedUrl.GetParam("test3", ""))
 }
+
+func TestURL_SetParams(t *testing.T) {
+	u1, err := NewURL(context.TODO(), "dubbo://:@127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&configVersion=1.0")
+	assert.NoError(t, err)
+	params := url.Values{}
+	params.Set("key", "3")
+	u1.SetParams(params)
+	assert.Equal(t, "3", u1.Params.Get("key"))
+	assert.Equal(t, "2.6.0", u1.Params.Get("version"))
+}

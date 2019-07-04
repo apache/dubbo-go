@@ -22,6 +22,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+
 	"math"
 	"net"
 	"net/url"
@@ -30,6 +31,7 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/container"
 	perrors "github.com/pkg/errors"
 )
 
@@ -231,8 +233,8 @@ func (c URL) String() string {
 
 func (c URL) Key() string {
 	buildString := fmt.Sprintf(
-		"%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s",
-		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GROUP_KEY, ""), c.GetParam(constant.VERSION_KEY, ""))
+		"%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s&category_key=%s",
+		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GROUP_KEY, ""), c.GetParam(constant.VERSION_KEY, ""), c.GetParam(constant.CATEGORY_KEY, ""))
 	return buildString
 	//return c.ServiceKey()
 }
@@ -357,6 +359,18 @@ func (c URL) GetMethodParam(method string, key string, d string) string {
 		r = d
 	}
 	return r
+}
+func (c *URL) RemoveParams(set *container.HashSet) {
+	for k, _ := range set.Items {
+		s := k.(string)
+		delete(c.Params, s)
+	}
+}
+func (c *URL) SetParams(m url.Values) {
+
+	for k, _ := range m {
+		c.Params.Set(k, m.Get(k))
+	}
 }
 
 // ToMap transfer URL to Map
