@@ -51,19 +51,19 @@ var (
 // 		export APP_LOG_CONF_FILE="xxx"
 func main() {
 
-	//hessian.RegisterJavaEnum(Gender(MAN))
-	//hessian.RegisterJavaEnum(Gender(WOMAN))
-	//hessian.RegisterPOJO(&User{})
-	//
-	//config.Load()
+	hessian.RegisterJavaEnum(Gender(MAN))
+	hessian.RegisterJavaEnum(Gender(WOMAN))
+	hessian.RegisterPOJO(&User{})
 
-	//println("\n\ntest")
-	//test()
-	//println("\n\ntest1")
-	//test1()
-	//println("\n\ntest2")
-	//test2()
-	//println("\n\ngeneric")
+	config.Load()
+
+	println("\n\ntest")
+	test()
+	println("\n\ntest1")
+	test1()
+	println("\n\ntest2")
+	test2()
+	println("\n\ngeneric")
 	test3()
 	initSignal()
 }
