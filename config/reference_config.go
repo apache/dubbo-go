@@ -61,8 +61,8 @@ func (c *ReferenceConfig) Prefix() string {
 	return constant.ReferenceConfigPrefix + c.InterfaceName + "."
 }
 
-func NewReferenceConfig(ctx context.Context) *ReferenceConfig {
-	return &ReferenceConfig{context: ctx}
+func NewReferenceConfig(id string, ctx context.Context) *ReferenceConfig {
+	return &ReferenceConfig{id: id, context: ctx}
 }
 
 func (refconfig *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -109,7 +109,6 @@ func (refconfig *ReferenceConfig) Refer() {
 			regUrl.SubURL = url
 		}
 	}
-
 	if len(refconfig.urls) == 1 {
 		refconfig.invoker = extension.GetProtocol(refconfig.urls[0].Protocol).Refer(*refconfig.urls[0])
 	} else {
