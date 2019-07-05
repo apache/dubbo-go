@@ -61,8 +61,8 @@ func (c *ReferenceConfig) Prefix() string {
 	return constant.ReferenceConfigPrefix + c.InterfaceName + "."
 }
 
-func NewReferenceConfig(id string, ctx context.Context) *ReferenceConfig {
-	return &ReferenceConfig{id: id, context: ctx}
+func NewReferenceConfig(ctx context.Context) *ReferenceConfig {
+	return &ReferenceConfig{context: ctx}
 }
 
 func (refconfig *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
