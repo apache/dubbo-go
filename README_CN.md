@@ -58,6 +58,10 @@ Apache License, Version 2.0
 
 这个子目录下的例子展示了如何使用 dubbo-go 。请仔细阅读 [examples/README.md](https://github.com/apache/dubbo-go/blob/develop/examples/README.md) 学习如何处理配置并编译程序。
 
+## 如何贡献
+
+如果您愿意给 [Apache/dubbo-go](https://github.com/apache/dubbo-go) 贡献代码或者文档，我们都热烈欢迎。具体请参考 [contribution intro](https://github.com/apache/dubbo-go/blob/master/cg.md)。
+
 ## 性能测试 ##
 
 性能测试项目是 [go-for-apache-dubbo-benchmark](https://github.com/dubbogo/go-for-apache-dubbo-benchmark)
