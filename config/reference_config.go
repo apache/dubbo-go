@@ -178,3 +178,12 @@ func (refconfig *ReferenceConfig) getUrlMap() url.Values {
 	return urlMap
 
 }
+func (refconfig *ReferenceConfig) Load(id string) {
+	//gr.Filter = "genericConsumer" //todo: add genericConsumer filter
+	genericService := NewGenericService(refconfig.id)
+	SetConsumerService(genericService)
+	refconfig.id = id
+	refconfig.Refer()
+	refconfig.Implement(genericService)
+	return
+}
