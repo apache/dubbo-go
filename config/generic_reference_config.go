@@ -2,16 +2,18 @@ package config
 
 import (
 	"context"
-	"github.com/apache/dubbo-go/common/logger"
+	"errors"
 )
+
+const GenericReferKey = "GenericReferKey"
 
 type GenericService struct {
 	Invoke       func(req []interface{}) (interface{}, error) `dubbo:"$invoke"`
 	referenceStr string
 }
 
-func NewGenericService(reference string) *GenericService {
-	return &GenericService{referenceStr: reference}
+func NewGenericService(referenceStr string) *GenericService {
+	return &GenericService{referenceStr: GenericReferKey}
 }
 
 func (u *GenericService) Reference() string {
@@ -19,6 +21,7 @@ func (u *GenericService) Reference() string {
 }
 
 type GenericConsumerConfig struct {
+	ID             string
 	Protocol       string
 	Registry       string
 	Version        string
@@ -30,27 +33,9 @@ type GenericConsumerConfig struct {
 	genericService *GenericService
 }
 
-func (gConfig *GenericConsumerConfig) LoadGenericReferenceConfig(key string) {
-	gConfig.genericService = NewGenericService(key)
-	SetConsumerService(gConfig.genericService)
-	gConfig.NewGenericReferenceConfig(key)
+func (gConfig *GenericConsumerConfig) Load() (err error) {
 
-	rpcService := GetConsumerService(key)
-	if rpcService == nil {
-		logger.Warnf("%s is not exsist!", key)
-		return
-	}
-
-	gConfig.ref.id = key
-	gConfig.ref.Refer()
-	gConfig.ref.Implement(rpcService)
-
-}
-func (gConfig *GenericConsumerConfig) GetService() *GenericService {
-	return gConfig.genericService
-}
-func (gConfig *GenericConsumerConfig) NewGenericReferenceConfig(id string) {
-	gr := NewReferenceConfig(id, context.TODO())
+	gr := NewReferenceConfig(context.TODO())
 	//gr.Filter = "genericConsumer" //todo: add genericConsumer filter
 	gr.Registry = gConfig.Registry
 	gr.Protocol = gConfig.Protocol
@@ -60,4 +45,20 @@ func (gConfig *GenericConsumerConfig) NewGenericReferenceConfig(id string) {
 	gr.Cluster = gConfig.Cluster
 	gr.Methods = append(gr.Methods, &MethodConfig{Name: "$invoke", Retries: gConfig.Retries})
 	gConfig.ref = gr
+	gConfig.genericService = NewGenericService(gConfig.ID)
+	SetConsumerService(gConfig.genericService)
+	rpcService := GetConsumerService(GenericReferKey)
+	if rpcService == nil {
+		err = errors.New("get rpcService err,GenericReferKey not Set ")
+		return
+	}
+
+	gConfig.ref.id = gConfig.ID
+	gConfig.ref.Refer()
+	gConfig.ref.Implement(rpcService)
+	return
+
+}
+func (gConfig *GenericConsumerConfig) GetGenericService() *GenericService {
+	return gConfig.genericService
 }
