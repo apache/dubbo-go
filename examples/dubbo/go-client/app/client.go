@@ -20,19 +20,21 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/apache/dubbo-go/protocol/dubbo"
-	hessian "github.com/dubbogo/hessian2"
+
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+)
+import (
+	hessian "github.com/dubbogo/hessian2"
 )
 
 import (
 	"github.com/apache/dubbo-go/common/logger"
 	_ "github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/config"
-	_ "github.com/apache/dubbo-go/protocol/dubbo"
+	"github.com/apache/dubbo-go/protocol/dubbo"
 	_ "github.com/apache/dubbo-go/registry/protocol"
 
 	_ "github.com/apache/dubbo-go/filter/impl"
@@ -288,16 +290,18 @@ func test2() {
 	println("error: %v", err)
 }
 func test3() {
-	println("\n\n\nstart to generic invoke")
-	var genericConfig config.GenericConsumerConfig
-	genericConfig.InterfaceName = "com.ikurento.user.UserProvider"
-	genericConfig.Cluster = "failover"
-	genericConfig.Registry = "hangzhouzk"
-	genericConfig.Protocol = dubbo.DUBBO
-	genericConfig.LoadGenericReferenceConfig("getUser-generic")
+	var genericConfig = config.GenericConsumerConfig{
+		ID:            "UserProviderGer", //GetService的唯一标识不可缺少
+		InterfaceName: "com.ikurento.user.UserProvider",
+		Cluster:       "failover",
+		Registry:      "hangzhouzk",
+		Protocol:      dubbo.DUBBO,
+	}
+	genericConfig.Load()
 
 	time.Sleep(3 * time.Second)
-	resp, err := genericConfig.GetService().Invoke([]interface{}{"GetUser", []string{"java.lang.String"}, []hessian.Object{"A003"}})
+	println("\n\n\nstart to generic invoke")
+	resp, err := genericConfig.GetGenericService().Invoke([]interface{}{"GetUser", []string{"java.lang.String"}, []hessian.Object{"A003"}})
 	if err != nil {
 		panic(err)
 	}
