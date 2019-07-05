@@ -290,18 +290,18 @@ func test2() {
 	println("error: %v", err)
 }
 func test3() {
-	var genericConfig = config.GenericConsumerConfig{
-		ID:            "UserProviderGer", //GetService的唯一标识不可缺少
+	var appName = "UserProviderGer"
+	var referenceConfig = config.ReferenceConfig{
 		InterfaceName: "com.ikurento.user.UserProvider",
 		Cluster:       "failover",
 		Registry:      "hangzhouzk",
 		Protocol:      dubbo.DUBBO,
 	}
-	genericConfig.Load()
+	referenceConfig.Load(appName) //appName是GetService的唯一标识不可缺少
 
 	time.Sleep(3 * time.Second)
 	println("\n\n\nstart to generic invoke")
-	resp, err := genericConfig.GetGenericService().Invoke([]interface{}{"GetUser", []string{"java.lang.String"}, []hessian.Object{"A003"}})
+	resp, err := referenceConfig.GetRPCService().(*config.GenericService).Invoke([]interface{}{"GetUser", []string{"java.lang.String"}, []hessian.Object{"A003"}})
 	if err != nil {
 		panic(err)
 	}
