@@ -68,8 +68,12 @@ func (c *ServiceConfig) Prefix() string {
 	return constant.ServiceConfigPrefix + c.InterfaceName + "."
 }
 
-func NewServiceConfig() *ServiceConfig {
+// The only way to get a new ServiceConfig
+func NewServiceConfig(id string, context context.Context) *ServiceConfig {
+
 	return &ServiceConfig{
+		context:    context,
+		id:         id,
 		unexported: atomic.NewBool(false),
 		exported:   atomic.NewBool(false),
 	}
