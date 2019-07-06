@@ -55,7 +55,6 @@ protocols:
 protocol_conf:
   dubbo:
     session_number: 700
-    fail_fast_timeout: "5s"
     session_timeout: "20s"
     getty_session_param:
       compress_encoding: false
