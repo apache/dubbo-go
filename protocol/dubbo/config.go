@@ -48,20 +48,10 @@ type (
 
 	// Config holds supported types by the multiconfig package
 	ServerConfig struct {
-		// local address
-		//AppName     string   `default:"rpc-server" yaml:"app_name" json:"app_name,omitempty"`
-		//Host        string   `default:"127.0.0.1" yaml:"host" json:"host,omitempty"`
-		//Ports       []string `yaml:"ports" json:"ports,omitempty"` // `default:["10000"]`
-		//ProfilePort int      `default:"10086" yaml:"profile_port" json:"profile_port,omitempty"`
-
 		// session
 		SessionTimeout string `default:"60s" yaml:"session_timeout" json:"session_timeout,omitempty"`
 		sessionTimeout time.Duration
 		SessionNumber  int `default:"1000" yaml:"session_number" json:"session_number,omitempty"`
-
-		// app
-		FailFastTimeout string `default:"5s" yaml:"fail_fast_timeout" json:"fail_fast_timeout,omitempty"`
-		failFastTimeout time.Duration
 
 		// session tcp parameters
 		GettySessionParam GettySessionParam `required:"true" yaml:"getty_session_param" json:"getty_session_param,omitempty"`
@@ -69,11 +59,6 @@ type (
 
 	// Config holds supported types by the multiconfig package
 	ClientConfig struct {
-		// local address
-		//AppName     string `default:"rpc-client" yaml:"app_name" json:"app_name,omitempty"`
-		//Host        string `default:"127.0.0.1" yaml:"host" json:"host,omitempty"`
-		//ProfilePort int    `default:"10086" yaml:"profile_port" json:"profile_port,omitempty"`
-
 		ReconnectInterval int `default:"0" yaml:"reconnect_interval" json:"reconnect_interval,omitempty"`
 
 		// session pool
@@ -86,10 +71,6 @@ type (
 		// session
 		SessionTimeout string `default:"60s" yaml:"session_timeout" json:"session_timeout,omitempty"`
 		sessionTimeout time.Duration
-
-		// app
-		FailFastTimeout string `default:"5s" yaml:"fail_fast_timeout" json:"fail_fast_timeout,omitempty"`
-		failFastTimeout time.Duration
 
 		// Connection Pool
 		PoolSize int `default:"2" yaml:"pool_size" json:"pool_size,omitempty"`
@@ -125,16 +106,14 @@ func (c *GettySessionParam) CheckValidity() error {
 func (c *ClientConfig) CheckValidity() error {
 	var err error
 
+	c.ReconnectInterval = c.ReconnectInterval * 1e6
+
 	if c.heartbeatPeriod, err = time.ParseDuration(c.HeartbeatPeriod); err != nil {
 		return perrors.WithMessagef(err, "time.ParseDuration(HeartbeatPeroid{%#v})", c.HeartbeatPeriod)
 	}
 
 	if c.sessionTimeout, err = time.ParseDuration(c.SessionTimeout); err != nil {
 		return perrors.WithMessagef(err, "time.ParseDuration(SessionTimeout{%#v})", c.SessionTimeout)
-	}
-
-	if c.failFastTimeout, err = time.ParseDuration(c.FailFastTimeout); err != nil {
-		return perrors.WithMessagef(err, "time.ParseDuration(FailFastTimeout{%#v})", c.FailFastTimeout)
 	}
 
 	return perrors.WithStack(c.GettySessionParam.CheckValidity())
@@ -145,10 +124,6 @@ func (c *ServerConfig) CheckValidity() error {
 
 	if c.sessionTimeout, err = time.ParseDuration(c.SessionTimeout); err != nil {
 		return perrors.WithMessagef(err, "time.ParseDuration(SessionTimeout{%#v})", c.SessionTimeout)
-	}
-
-	if c.failFastTimeout, err = time.ParseDuration(c.FailFastTimeout); err != nil {
-		return perrors.WithMessagef(err, "time.ParseDuration(FailFastTimeout{%#v})", c.FailFastTimeout)
 	}
 
 	return perrors.WithStack(c.GettySessionParam.CheckValidity())
