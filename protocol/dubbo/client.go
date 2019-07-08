@@ -207,7 +207,7 @@ func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string
 	}
 
 	select {
-	case <-time.After(c.opts.RequestTimeout):
+	case <-getty.GetTimeWheel().After(c.opts.RequestTimeout):
 		err = errClientReadTimeout
 		c.removePendingResponse(SequenceType(rsp.seq))
 	case <-rsp.done:
