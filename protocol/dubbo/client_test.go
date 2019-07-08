@@ -42,6 +42,10 @@ func TestClient_CallOneway(t *testing.T) {
 	c := &Client{
 		pendingResponses: new(sync.Map),
 		conf:             *clientConf,
+		opts: Options{
+			ConnectTimeout: 3e9,
+			RequestTimeout: 6e9,
+		},
 	}
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
 
@@ -59,6 +63,10 @@ func TestClient_Call(t *testing.T) {
 	c := &Client{
 		pendingResponses: new(sync.Map),
 		conf:             *clientConf,
+		opts: Options{
+			ConnectTimeout: 3e9,
+			RequestTimeout: 10e9,
+		},
 	}
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
 
@@ -120,6 +128,10 @@ func TestClient_AsyncCall(t *testing.T) {
 	c := &Client{
 		pendingResponses: new(sync.Map),
 		conf:             *clientConf,
+		opts: Options{
+			ConnectTimeout: 3e9,
+			RequestTimeout: 6e9,
+		},
 	}
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
 
@@ -152,7 +164,6 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 		ConnectionNum:   2,
 		HeartbeatPeriod: "5s",
 		SessionTimeout:  "20s",
-		FailFastTimeout: "5s",
 		PoolTTL:         600,
 		PoolSize:        64,
 		GettySessionParam: GettySessionParam{
@@ -173,9 +184,8 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 	})
 	assert.NoError(t, clientConf.CheckValidity())
 	SetServerConfig(ServerConfig{
-		SessionNumber:   700,
-		SessionTimeout:  "20s",
-		FailFastTimeout: "5s",
+		SessionNumber:  700,
+		SessionTimeout: "20s",
 		GettySessionParam: GettySessionParam{
 			CompressEncoding: false,
 			TcpNoDelay:       true,
