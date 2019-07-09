@@ -31,10 +31,6 @@ func (s *DubboService) SayHello(message string) (string, error) {
 	return "hello " + message, nil
 }
 
-func (s *DubboService) Service() string {
-	return "dubbo.DubboService"
-}
-
-func (s *DubboService) Version() string {
-	return ""
+func (s *DubboService) Reference() string {
+	return "DubboService"
 }

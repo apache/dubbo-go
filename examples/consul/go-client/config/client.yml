@@ -25,7 +25,7 @@ registries :
     password: ""
 
 references:
-  "UserProvider":
+  "DubboService":
     protocol : "dubbo"
     interface : "dubbo.DubboService"
     cluster: "failover"

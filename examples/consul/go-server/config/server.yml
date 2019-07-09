@@ -19,7 +19,7 @@ registries :
     password: ""
 
 services:
-  "UserProvider":
+  "DubboService":
     protocol : "dubbo"
     interface : "dubbo.DubboService"
     loadbalance: "random"

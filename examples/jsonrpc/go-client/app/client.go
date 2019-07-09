@@ -51,6 +51,45 @@ func main() {
 
 	config.Load()
 
+	println("\n\ntest")
+	test()
+	println("\n\ntest1")
+	test1()
+	println("\n\ntest2")
+	test2()
+
+	initSignal()
+}
+
+func initSignal() {
+	signals := make(chan os.Signal, 1)
+	// It is not possible to block SIGKILL or syscall.SIGSTOP
+	signal.Notify(signals, os.Interrupt, os.Kill, syscall.SIGHUP,
+		syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
+	for {
+		sig := <-signals
+		logger.Infof("get signal %s", sig.String())
+		switch sig {
+		case syscall.SIGHUP:
+		// reload()
+		default:
+			go time.AfterFunc(time.Duration(survivalTimeout), func() {
+				logger.Warnf("app exit now by force...")
+				os.Exit(1)
+			})
+
+			// 要么fastFailTimeout时间内执行完毕下面的逻辑然后程序退出，要么执行上面的超时函数程序强行退出
+			fmt.Println("app exit now...")
+			return
+		}
+	}
+}
+
+func println(format string, args ...interface{}) {
+	fmt.Printf("\033[32;40m"+format+"\033[0m\n", args...)
+}
+
+func test() {
 	println("\n\n\necho")
 	res, err := userProvider.Echo(context.TODO(), "OK")
 	if err != nil {
@@ -100,37 +139,120 @@ func main() {
 
 	println("\n\n\nstart to test jsonrpc illegal method")
 	err = userProvider.GetUser1(context.TODO(), []interface{}{"A003"}, user)
+	if err == nil {
+		panic("err is nil")
+	}
+	println("error: %v", err)
+}
+
+func test1() {
+	println("\n\n\necho")
+	res, err := userProvider1.Echo(context.TODO(), "OK")
+	if err != nil {
+		println("echo - error: %v", err)
+	} else {
+		println("res: %v", res)
+	}
+
+	time.Sleep(3e9)
+
+	println("\n\n\nstart to test jsonrpc")
+	user := &JsonRPCUser{}
+	err = userProvider1.GetUser(context.TODO(), []interface{}{"A003"}, user)
 	if err != nil {
 		panic(err)
 	}
+	println("response result: %v", user)
 
-	initSignal()
-}
-
-func initSignal() {
-	signals := make(chan os.Signal, 1)
-	// It is not possible to block SIGKILL or syscall.SIGSTOP
-	signal.Notify(signals, os.Interrupt, os.Kill, syscall.SIGHUP,
-		syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
-	for {
-		sig := <-signals
-		logger.Infof("get signal %s", sig.String())
-		switch sig {
-		case syscall.SIGHUP:
-		// reload()
-		default:
-			go time.AfterFunc(time.Duration(survivalTimeout)*time.Second, func() {
-				logger.Warnf("app exit now by force...")
-				os.Exit(1)
-			})
-
-			// 要么fastFailTimeout时间内执行完毕下面的逻辑然后程序退出，要么执行上面的超时函数程序强行退出
-			fmt.Println("app exit now...")
-			return
-		}
+	println("\n\n\nstart to test jsonrpc - GetUser0")
+	ret, err := userProvider1.GetUser0("A003", "Moorse")
+	if err != nil {
+		panic(err)
 	}
+	println("response result: %v", ret)
+
+	println("\n\n\nstart to test jsonrpc - GetUsers")
+	ret1, err := userProvider1.GetUsers([]interface{}{[]interface{}{"A002", "A003"}})
+	if err != nil {
+		panic(err)
+	}
+	println("response result: %v", ret1)
+
+	println("\n\n\nstart to test jsonrpc - getUser")
+	user = &JsonRPCUser{}
+	err = userProvider1.GetUser2(context.TODO(), []interface{}{1}, user)
+	if err != nil {
+		panic(err)
+	}
+	println("response result: %v", user)
+
+	println("\n\n\nstart to test jsonrpc - GetUser3")
+	err = userProvider1.GetUser3()
+	if err != nil {
+		panic(err)
+	}
+	println("succ!")
+
+	println("\n\n\nstart to test jsonrpc illegal method")
+	err = userProvider1.GetUser1(context.TODO(), []interface{}{"A003"}, user)
+	if err == nil {
+		panic("err is nil")
+	}
+	println("error: %v", err)
 }
 
-func println(format string, args ...interface{}) {
-	fmt.Printf("\033[32;40m"+format+"\033[0m\n", args...)
+func test2() {
+	println("\n\n\necho")
+	res, err := userProvider2.Echo(context.TODO(), "OK")
+	if err != nil {
+		println("echo - error: %v", err)
+	} else {
+		println("res: %v", res)
+	}
+
+	time.Sleep(3e9)
+
+	println("\n\n\nstart to test jsonrpc")
+	user := &JsonRPCUser{}
+	err = userProvider2.GetUser(context.TODO(), []interface{}{"A003"}, user)
+	if err != nil {
+		panic(err)
+	}
+	println("response result: %v", user)
+
+	println("\n\n\nstart to test jsonrpc - GetUser0")
+	ret, err := userProvider2.GetUser0("A003", "Moorse")
+	if err != nil {
+		panic(err)
+	}
+	println("response result: %v", ret)
+
+	println("\n\n\nstart to test jsonrpc - GetUsers")
+	ret1, err := userProvider2.GetUsers([]interface{}{[]interface{}{"A002", "A003"}})
+	if err != nil {
+		panic(err)
+	}
+	println("response result: %v", ret1)
+
+	println("\n\n\nstart to test jsonrpc - getUser")
+	user = &JsonRPCUser{}
+	err = userProvider2.GetUser2(context.TODO(), []interface{}{1}, user)
+	if err != nil {
+		panic(err)
+	}
+	println("response result: %v", user)
+
+	println("\n\n\nstart to test jsonrpc - GetUser3")
+	err = userProvider2.GetUser3()
+	if err != nil {
+		panic(err)
+	}
+	println("succ!")
+
+	println("\n\n\nstart to test jsonrpc illegal method")
+	err = userProvider2.GetUser1(context.TODO(), []interface{}{"A003"}, user)
+	if err == nil {
+		panic("err is nil")
+	}
+	println("error: %v", err)
 }

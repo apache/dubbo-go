@@ -43,6 +43,7 @@ import (
 
 type ServiceConfig struct {
 	context       context.Context
+	id            string
 	Filter        string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	Protocol      string            `required:"true"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"` //multi protocol support, split by ','
 	InterfaceName string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
@@ -67,8 +68,12 @@ func (c *ServiceConfig) Prefix() string {
 	return constant.ServiceConfigPrefix + c.InterfaceName + "."
 }
 
-func NewServiceConfig() *ServiceConfig {
+// The only way to get a new ServiceConfig
+func NewServiceConfig(id string, context context.Context) *ServiceConfig {
+
 	return &ServiceConfig{
+		context:    context,
+		id:         id,
 		unexported: atomic.NewBool(false),
 		exported:   atomic.NewBool(false),
 	}
@@ -100,15 +105,12 @@ func (srvconfig *ServiceConfig) Export() error {
 			logger.Errorf(err.Error())
 			return err
 		}
-		//contextPath := proto.ContextPath
-		//if contextPath == "" {
-		//	contextPath = providerConfig.Path
-		//}
-		url := common.NewURLWithOptions(common.WithPath(srvconfig.InterfaceName),
+		url := common.NewURLWithOptions(common.WithPath(srvconfig.id),
 			common.WithProtocol(proto.Name),
 			common.WithIp(proto.Ip),
 			common.WithPort(proto.Port),
 			common.WithParams(urlMap),
+			common.WithParamsValue(constant.BEAN_NAME_KEY, srvconfig.id),
 			common.WithMethods(strings.Split(methods, ",")))
 
 		if len(regUrls) > 0 {

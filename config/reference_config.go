@@ -38,6 +38,7 @@ import (
 type ReferenceConfig struct {
 	context       context.Context
 	pxy           *proxy.Proxy
+	id            string
 	InterfaceName string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
 	Check         *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
 	Url           string            `yaml:"url"  json:"url,omitempty" property:"url"`
@@ -60,8 +61,9 @@ func (c *ReferenceConfig) Prefix() string {
 	return constant.ReferenceConfigPrefix + c.InterfaceName + "."
 }
 
-func NewReferenceConfig(ctx context.Context) *ReferenceConfig {
-	return &ReferenceConfig{context: ctx}
+// The only way to get a new ReferenceConfig
+func NewReferenceConfig(id string, ctx context.Context) *ReferenceConfig {
+	return &ReferenceConfig{id: id, context: ctx}
 }
 
 func (refconfig *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -76,7 +78,7 @@ func (refconfig *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) erro
 }
 
 func (refconfig *ReferenceConfig) Refer() {
-	url := common.NewURLWithOptions(common.WithPath(refconfig.InterfaceName), common.WithProtocol(refconfig.Protocol), common.WithParams(refconfig.getUrlMap()))
+	url := common.NewURLWithOptions(common.WithPath(refconfig.id), common.WithProtocol(refconfig.Protocol), common.WithParams(refconfig.getUrlMap()))
 
 	//1. user specified URL, could be peer-to-peer address, or register center's address.
 	if refconfig.Url != "" {
