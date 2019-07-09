@@ -35,13 +35,30 @@ references:
     # 可以指定多个registry，使用逗号隔开;不指定默认向所有注册中心注册
     registry: "hangzhouzk"
     protocol : "dubbo"
-#    version: "2.0"
-#    group: "as"
     interface : "com.ikurento.user.UserProvider"
     cluster: "failover"
     methods :
-      - name: "GetUser"
-        retries: 3
+    - name: "GetUser"
+      retries: 3
+  "UserProvider1":
+    registry: "hangzhouzk"
+    protocol: "dubbo"
+    version: "2.0"
+    interface: "com.ikurento.user.UserProvider"
+    cluster: "failover"
+    methods:
+    - name: "GetUser"
+      retries: 3
+  "UserProvider2":
+    registry: "hangzhouzk"
+    protocol: "dubbo"
+    version: "2.0"
+    group: "as"
+    interface: "com.ikurento.user.UserProvider"
+    cluster: "failover"
+    methods:
+    - name: "GetUser"
+      retries: 3
 
 protocol_conf:
   dubbo:
@@ -49,7 +66,6 @@ protocol_conf:
     connection_number: 2
     heartbeat_period: "5s"
     session_timeout: "20s"
-    fail_fast_timeout: "5s"
     pool_size: 64
     pool_ttl: 600
     getty_session_param:

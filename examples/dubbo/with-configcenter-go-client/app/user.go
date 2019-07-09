@@ -108,10 +108,6 @@ type UserProvider struct {
 	Echo     func(ctx context.Context, req interface{}) (interface{}, error) // Echo represent EchoFilter will be used
 }
 
-func (u *UserProvider) Service() string {
-	return "com.ikurento.user.UserProvider"
-}
-
-func (u *UserProvider) Version() string {
-	return ""
+func (u *UserProvider) Reference() string {
+	return "UserProvider"
 }

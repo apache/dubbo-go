@@ -74,7 +74,7 @@ func doinit() {
 		},
 		Services: map[string]*ServiceConfig{
 			"MockService": {
-				InterfaceName: "MockService",
+				InterfaceName: "com.MockService",
 				Protocol:      "mock",
 				Registry:      "shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2",
 				Cluster:       "failover",
