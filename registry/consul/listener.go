@@ -126,13 +126,15 @@ func (l *consulListener) run() {
 		}
 	}()
 
-	select {
-	case <-l.done:
-		return
-	default:
-		err := l.plan.Run(l.registryUrl.Location)
-		if err != nil {
-			l.errCh <- err
+	for {
+		select {
+		case <-l.done:
+			return
+		default:
+			err := l.plan.Run(l.registryUrl.Location)
+			if err != nil {
+				l.errCh <- err
+			}
 		}
 	}
 }
