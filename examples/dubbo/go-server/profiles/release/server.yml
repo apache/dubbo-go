@@ -39,6 +39,31 @@ services:
       - name: "GetUser"
         retries: 1
         loadbalance: "random"
+  "UserProvider1":
+    registry: "hangzhouzk"
+    protocol: "dubbo"
+    version: "2.0"
+    interface: "com.ikurento.user.UserProvider"
+    loadbalance: "random"
+    warmup: "100"
+    cluster: "failover"
+    methods:
+    - name: "GetUser"
+      retries: 1
+      loadbalance: "random"
+  "UserProvider2":
+    registry: "hangzhouzk"
+    protocol: "dubbo"
+    version: "2.0"
+    group: "as"
+    interface: "com.ikurento.user.UserProvider"
+    loadbalance: "random"
+    warmup: "100"
+    cluster: "failover"
+    methods:
+    - name: "GetUser"
+      retries: 1
+      loadbalance: "random"
 
 protocols:
   "dubbo1":
@@ -50,7 +75,6 @@ protocols:
 protocol_conf:
   dubbo:
     session_number: 700
-    fail_fast_timeout: "5s"
     session_timeout: "20s"
     getty_session_param:
       compress_encoding: false
