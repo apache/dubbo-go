@@ -125,7 +125,8 @@ func ValidateZookeeperClient(container zkClientFacade, opts ...Option) error {
 				url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), err.Error())
 			return perrors.WithMessagef(err, "newZookeeperClient(address:%+v)", url.Location)
 		}
-		newClient, err := newZookeeperClient(opions.zkName, []string{url.Location}, timeout)
+		zkAddresses := strings.Split(url.Location, ",")
+		newClient, err := newZookeeperClient(opions.zkName, zkAddresses, timeout)
 		if err != nil {
 			logger.Warnf("newZookeeperClient(name{%s}, zk addresss{%v}, timeout{%d}) = error{%v}",
 				opions.zkName, url.Location, timeout.String(), err)
