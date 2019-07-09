@@ -68,11 +68,13 @@ func loadRegistries(targetRegistries string, registries map[string]*RegistryConf
 		}
 
 		if target {
-			var url common.URL
-			var err error
+			var (
+				url common.URL
+				err error
+			)
 			if addresses := strings.Split(registryConf.Address, ","); len(addresses) > 1 {
 				url, err = common.NewURL(
-					context.TODO(),
+					context.Background(),
 					constant.REGISTRY_PROTOCOL+"://"+addresses[0],
 					common.WithParams(registryConf.getUrlMap(roleType)),
 					common.WithUsername(registryConf.Username),
@@ -81,7 +83,7 @@ func loadRegistries(targetRegistries string, registries map[string]*RegistryConf
 				)
 			} else {
 				url, err = common.NewURL(
-					context.TODO(),
+					context.Background(),
 					constant.REGISTRY_PROTOCOL+"://"+registryConf.Address,
 					common.WithParams(registryConf.getUrlMap(roleType)),
 					common.WithUsername(registryConf.Username),
