@@ -119,3 +119,7 @@ func SetLogger(log Logger) {
 	logger = log
 	getty.SetLogger(logger)
 }
+
+func GetLogger() Logger {
+	return logger
+}
