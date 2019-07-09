@@ -37,5 +37,9 @@
 	<!-- dubbo:reference id="userProvider" protocol="dubbo" interface="com.ikurento.user.UserProvider">
             <dubbo:parameter key="heartbeat" value="10000"/ -->
     </dubbo:reference>
+	<dubbo:reference id="userProvider1" protocol="jsonrpc" version="2.0" interface="com.ikurento.user.UserProvider">
+	</dubbo:reference>
+	<dubbo:reference id="userProvider2" protocol="jsonrpc" version="2.0" group="as" interface="com.ikurento.user.UserProvider">
+	</dubbo:reference>
 
 </beans>

@@ -61,6 +61,7 @@ func (*ConsumerConfig) Prefix() string {
 func SetConsumerConfig(c ConsumerConfig) {
 	consumerConfig = &c
 }
+
 func GetConsumerConfig() ConsumerConfig {
 	if consumerConfig == nil {
 		logger.Warnf("consumerConfig is nil!")
@@ -69,7 +70,7 @@ func GetConsumerConfig() ConsumerConfig {
 	return *consumerConfig
 }
 
-func consumerInit(confConFile string) error {
+func ConsumerInit(confConFile string) error {
 	if confConFile == "" {
 		return perrors.Errorf("application configure(consumer) file name is nil")
 	}

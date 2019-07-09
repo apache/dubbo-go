@@ -31,10 +31,6 @@ type DubboService struct {
 	SayHello func(req interface{}) (string, error)
 }
 
-func (s *DubboService) Service() string {
-	return "dubbo.DubboService"
-}
-
-func (s *DubboService) Version() string {
-	return ""
+func (s *DubboService) Reference() string {
+	return "DubboService"
 }

@@ -33,9 +33,12 @@
 	<dubbo:protocol id="jsonrpc" name="jsonrpc" />
 
 	<!-- 声明需要使用的服务接口 -->
-	<!--<dubbo:reference id="userProvider" protocol="jsonrpc" interface="com.ikurento.user.UserProvider">-->
 	<dubbo:reference registry="ikurento" check="false" id="userProvider" protocol="dubbo" interface="com.ikurento.user.UserProvider">
 		<!--<dubbo:parameter key="heartbeat" value="10000"/ -->
     </dubbo:reference>
 
+	<dubbo:reference registry="ikurento" check="false" id="userProvider1" protocol="dubbo" version="2.0" interface="com.ikurento.user.UserProvider">
+	</dubbo:reference>
+	<dubbo:reference registry="ikurento" check="false" id="userProvider2" protocol="dubbo" version="2.0" group="as" interface="com.ikurento.user.UserProvider">
+	</dubbo:reference>
 </beans>

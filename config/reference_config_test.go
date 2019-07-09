@@ -84,7 +84,7 @@ func doInit() {
 					"serviceid": "soa.mock",
 				},
 				Registry:      "shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2",
-				InterfaceName: "MockService",
+				InterfaceName: "com.MockService",
 				Protocol:      "mock",
 				Cluster:       "failover",
 				Loadbalance:   "random",
@@ -147,6 +147,7 @@ func Test_ReferP2P(t *testing.T) {
 	}
 	consumerConfig = nil
 }
+
 func Test_ReferMultiP2P(t *testing.T) {
 	doInit()
 	extension.SetProtocol("dubbo", GetProtocol)
