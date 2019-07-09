@@ -65,12 +65,11 @@ type consulListener struct {
 	// upstream.
 	errCh chan error
 
-	// Running field represents whether consul
+	// Done field represents whether consul
 	// listener has been closed. When closing
-	// listener, this field will be set to
-	// false, and will notify consul watcher
-	// to close.
-	running bool
+	// listener, this field will be closed,
+	// and will notify consul watcher to close.
+	done chan struct{}
 
 	// After listener notifies consul watcher
 	// to close, listener will call wg.wait to
@@ -97,7 +96,7 @@ func newConsulListener(registryUrl common.URL, consumerUrl common.URL) (*consulL
 		urls:        make([]common.URL, 0),
 		eventCh:     make(chan *registry.ServiceEvent, 1),
 		errCh:       make(chan error, 1),
-		running:     true,
+		done:        make(chan struct{}, 1),
 	}
 
 	// Set handler to consul watcher, and
@@ -111,7 +110,7 @@ func newConsulListener(registryUrl common.URL, consumerUrl common.URL) (*consulL
 
 // Wrap the consul watcher run api. There are three
 // conditions that will finish the run:
-//   - set running to false
+//   - close done
 //   - call plan.Stop
 //   - close eventCh and errCh
 // If run meets first two conditions, it will close
@@ -127,7 +126,10 @@ func (l *consulListener) run() {
 		}
 	}()
 
-	if l.running {
+	select {
+	case <-l.done:
+		return
+	default:
 		err := l.plan.Run(l.registryUrl.Location)
 		if err != nil {
 			l.errCh <- err
@@ -194,7 +196,7 @@ func (l *consulListener) Next() (*registry.ServiceEvent, error) {
 }
 
 func (l *consulListener) Close() {
-	l.running = false
+	close(l.done)
 	l.plan.Stop()
 	close(l.eventCh)
 	close(l.errCh)
