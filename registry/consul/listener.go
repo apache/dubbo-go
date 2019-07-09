@@ -29,6 +29,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting"
 )
@@ -119,7 +120,12 @@ func newConsulListener(registryUrl common.URL, consumerUrl common.URL) (*consulL
 // this case.
 func (l *consulListener) run() {
 	defer l.wg.Done()
-	defer func() { recover() }()
+	defer func() {
+		p := recover()
+		if p != nil {
+			logger.Warnf("consul listener finish with panic %v", p)
+		}
+	}()
 
 	if l.running {
 		err := l.plan.Run(l.registryUrl.Location)
