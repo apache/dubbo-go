@@ -112,7 +112,7 @@ func (r *consulRegistry) Subscribe(url common.URL) (registry.Listener, error) {
 
 	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
 	if role == common.CONSUMER {
-		listener, err = r.subscribe(url)
+		listener, err = r.getListener(url)
 		if err != nil {
 			return nil, err
 		}
@@ -120,7 +120,7 @@ func (r *consulRegistry) Subscribe(url common.URL) (registry.Listener, error) {
 	return listener, nil
 }
 
-func (r *consulRegistry) subscribe(url common.URL) (registry.Listener, error) {
+func (r *consulRegistry) getListener(url common.URL) (registry.Listener, error) {
 	listener, err := newConsulListener(*r.URL, url)
 	return listener, err
 }
