@@ -136,6 +136,11 @@ func WithPath(path string) option {
 	}
 }
 
+func WithLocation(location string) option {
+	return func(url *URL) {
+		url.Location = location
+	}
+}
 func NewURLWithOptions(opts ...option) *URL {
 	url := &URL{}
 	for _, opt := range opts {
