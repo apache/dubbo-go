@@ -45,9 +45,9 @@ func TestConfigLoader(t *testing.T) {
 	assert.Nil(t, providerConfig)
 	assert.Equal(t, ProviderConfig{}, GetProviderConfig())
 
-	err = consumerInit(conPath)
+	err = ConsumerInit(conPath)
 	assert.NoError(t, err)
-	err = providerInit(proPath)
+	err = ProviderInit(proPath)
 	assert.NoError(t, err)
 
 	assert.NotNil(t, consumerConfig)
@@ -129,10 +129,10 @@ func TestConfigLoaderWithConfigCenter(t *testing.T) {
 	assert.Nil(t, providerConfig)
 	assert.Equal(t, ProviderConfig{}, GetProviderConfig())
 
-	err = consumerInit(conPath)
+	err = ConsumerInit(conPath)
 	configCenterRefreshConsumer()
 	assert.NoError(t, err)
-	err = providerInit(proPath)
+	err = ProviderInit(proPath)
 	configCenterRefreshProvider()
 	assert.NoError(t, err)
 

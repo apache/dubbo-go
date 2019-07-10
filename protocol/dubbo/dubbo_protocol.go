@@ -21,6 +21,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
 	"sync"
 )
@@ -63,7 +64,10 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 }
 
 func (dp *DubboProtocol) Refer(url common.URL) protocol.Invoker {
-	invoker := NewDubboInvoker(url, NewClient())
+	invoker := NewDubboInvoker(url, NewClient(Options{
+		ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
+		RequestTimeout: config.GetConsumerConfig().RequestTimeout,
+	}))
 	dp.SetInvokers(invoker)
 	logger.Infof("Refer service: %s", url.String())
 	return invoker
