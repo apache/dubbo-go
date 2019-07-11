@@ -85,22 +85,23 @@ func (s *TestService1) Version() string {
 func TestServiceMap_Register(t *testing.T) {
 	// lowercase
 	s0 := &testService{}
-	methods, err := ServiceMap.Register("testporotocol", s0)
+	// methods, err := ServiceMap.Register("testporotocol", s0)
+	_, err := ServiceMap.Register("testporotocol", s0)
 	assert.EqualError(t, err, "type testService is not exported")
 
 	// succ
 	s := &TestService{}
-	methods, err = ServiceMap.Register("testporotocol", s)
+	methods, err := ServiceMap.Register("testporotocol", s)
 	assert.NoError(t, err)
 	assert.Equal(t, "MethodOne,MethodThree,methodTwo", methods)
 
 	// repeat
-	methods, err = ServiceMap.Register("testporotocol", s)
+	_, err = ServiceMap.Register("testporotocol", s)
 	assert.EqualError(t, err, "service already defined: com.test.Path")
 
 	// no method
 	s1 := &TestService1{}
-	methods, err = ServiceMap.Register("testporotocol", s1)
+	_, err = ServiceMap.Register("testporotocol", s1)
 	assert.EqualError(t, err, "type com.test.Path1 has no exported methods of suitable type")
 
 	ServiceMap = &serviceMap{
