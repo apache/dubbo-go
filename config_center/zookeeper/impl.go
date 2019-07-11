@@ -69,7 +69,7 @@ func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfigu
 
 	err = c.client.Create(c.rootPath)
 	c.listener.ListenServiceEvent(c.rootPath, c.cacheListener)
-	return c, nil
+	return c, err
 
 }
 
@@ -95,7 +95,7 @@ func newMockZookeeperDynamicConfiguration(url *common.URL, opts ...zookeeper.Opt
 
 	err = c.client.Create(c.rootPath)
 	go c.listener.ListenServiceEvent(c.rootPath, c.cacheListener)
-	return tc, c, nil
+	return tc, c, err
 
 }
 
