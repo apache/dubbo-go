@@ -91,7 +91,7 @@ func TestServiceMap_Register(t *testing.T) {
 
 	// succ
 	s := &TestService{}
-	methods, err = ServiceMap.Register("testporotocol", s)
+	methods, err := ServiceMap.Register("testporotocol", s)
 	assert.NoError(t, err)
 	assert.Equal(t, "MethodOne,MethodThree,methodTwo", methods)
 
