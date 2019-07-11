@@ -68,7 +68,7 @@ func TestClient_Call(t *testing.T) {
 	//assert.NotEqual(t, "", user.Id)
 	//assert.NotEqual(t, "", user.Name)
 
-    user := &User{}
+	user := &User{}
 	err := c.Call("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"}, user)
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "1", Name: "username"}, *user)
