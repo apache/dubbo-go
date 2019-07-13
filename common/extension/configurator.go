@@ -37,3 +37,14 @@ func GetConfigurator(name string, url *common.URL) cluster.Configurator {
 	return configurator[name](url)
 
 }
+func SetDefaultConfigurator(v func(url *common.URL) cluster.Configurator) {
+	configurator["default"] = v
+}
+
+func GetDefaultConfigurator(url *common.URL) cluster.Configurator {
+	if configurator["default"] == nil {
+		panic("config center for default is not existing, make sure you have import the package.")
+	}
+	return configurator["default"](url)
+
+}

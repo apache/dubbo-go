@@ -32,6 +32,7 @@ import (
 
 import (
 	"github.com/dubbogo/gost/container"
+	"github.com/jinzhu/copier"
 	perrors "github.com/pkg/errors"
 )
 
@@ -220,9 +221,26 @@ func (c URL) URLEqual(url URL) bool {
 	if cKey != urlKey {
 		return false
 	}
+	if url.GetParam(constant.ENABLED_KEY, "true") != "true" && url.GetParam(constant.ENABLED_KEY, "") != constant.ANY_VALUE {
+		return false
+	}
+	//TODO :may need add interface key any value condition
+	if !isMatchCategory(url.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY), c.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY)) {
+		return false
+	}
 	return true
 }
-
+func isMatchCategory(category1 string, category2 string) bool {
+	if len(category2) == 0 {
+		return category1 == constant.DEFAULT_CATEGORY
+	} else if strings.Contains(category2, constant.ANY_VALUE) {
+		return true
+	} else if strings.Contains(category2, constant.REMOVE_VALUE_PREFIX) {
+		return !strings.Contains(category2, constant.REMOVE_VALUE_PREFIX+category1)
+	} else {
+		strings.Contains(category2, category1)
+	}
+}
 func (c URL) String() string {
 	buildString := fmt.Sprintf(
 		"%s://%s:%s@%s:%s%s?",
@@ -459,4 +477,9 @@ func MergeUrl(serviceUrl URL, referenceUrl *URL) URL {
 	}
 
 	return mergedUrl
+}
+func (c *URL) Clone() *URL {
+	newUrl := &URL{}
+	copier.Copy(newUrl, c)
+	return newUrl
 }

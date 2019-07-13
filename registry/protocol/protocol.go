@@ -18,6 +18,7 @@
 package protocol
 
 import (
+	"github.com/apache/dubbo-go/cluster"
 	"sync"
 )
 
@@ -71,6 +72,7 @@ func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 		protocol := registryUrl.GetParam(constant.REGISTRY_KEY, "")
 		registryUrl.Protocol = protocol
 	}
+
 	var reg registry.Registry
 
 	if regI, loaded := proto.registries.Load(registryUrl.Key()); !loaded {
@@ -90,7 +92,7 @@ func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 	if err != nil {
 		logger.Errorf("consumer service %v register registry %v error, error message is %s", serviceUrl.String(), registryUrl.String(), err.Error())
 	}
-	go directory.Subscribe(*serviceUrl)
+	go directory.Subscribe(serviceUrl)
 
 	//new cluster invoker
 	cluster := extension.GetCluster(serviceUrl.GetParam(constant.CLUSTER_KEY, constant.DEFAULT_CLUSTER))
@@ -101,9 +103,10 @@ func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 }
 
 func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
-	registryUrl := proto.getRegistryUrl(invoker)
-	providerUrl := proto.getProviderUrl(invoker)
+	registryUrl := getRegistryUrl(invoker)
+	providerUrl := getProviderUrl(invoker)
 
+	overriderUrl := getSubscribedOverrideUrl(&providerUrl)
 	var reg registry.Registry
 
 	if regI, loaded := proto.registries.Load(registryUrl.Key()); !loaded {
@@ -131,8 +134,73 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 		logger.Infof("The exporter has not been cached, and will return a new  exporter!")
 	}
 
+	// Deprecated! subscribe to override rules in 2.6.x or before.
+	overrideSubscribeListener := &overrideSubscribeListener{url: overriderUrl, originInvoker: invoker, protocol: proto}
+	reg.Subscribe(overriderUrl, overrideSubscribeListener)
 	return cachedExporter.(protocol.Exporter)
 
+}
+func (proto *registryProtocol) reExport(invoker protocol.Invoker, newUrl *common.URL) {
+	key := getProviderUrl(invoker).Key()
+	if oldExporter, loaded := proto.bounds.Load(key); loaded {
+		wrappedNewInvoker := newWrappedInvoker(invoker, *newUrl)
+		//TODO:MAY not safe
+		oldExporter.(protocol.Exporter).Unexport()
+		proto.bounds.Delete(key)
+
+		proto.Export(wrappedNewInvoker)
+		//TODO:  unregister & unsubscribe
+
+	}
+}
+func (proto *registryProtocol) overrideWithConfig(providerUrl *common.URL, listener *overrideSubscribeListener) {
+
+}
+
+type overrideSubscribeListener struct {
+	url           *common.URL
+	originInvoker protocol.Invoker
+	protocol      *registryProtocol
+	configurator  cluster.Configurator
+}
+
+func (nl *overrideSubscribeListener) Notify(event *registry.ServiceEvent) {
+	if isMatched(&(event.Service), nl.url) {
+		nl.configurator = extension.GetDefaultConfigurator(&(event.Service))
+		nl.doOverrideIfNecessary()
+	}
+}
+func (nl *overrideSubscribeListener) doOverrideIfNecessary() {
+	providerUrl := getProviderUrl(nl.originInvoker)
+	key := providerUrl.Key()
+	if exporter, ok := nl.protocol.bounds.Load(key); ok {
+		currentUrl := exporter.(protocol.Exporter).GetInvoker().GetUrl()
+		nl.configurator.Configure(&providerUrl)
+		if currentUrl.String() == providerUrl.String() {
+			newRegUrl := nl.originInvoker.GetUrl()
+			setProviderUrl(&newRegUrl, &providerUrl)
+			nl.protocol.reExport(nl.originInvoker, &newRegUrl)
+		}
+	}
+}
+
+func isMatched(url *common.URL, subscribedUrl *common.URL) bool {
+	// Compatible with the 2.6.x
+	if len(url.GetParam(constant.CATEGORY_KEY, "")) == 0 && url.Protocol == constant.OVERRIDE_PROTOCOL {
+		url.AddParam(constant.CATEGORY_KEY, constant.CONFIGURATORS_CATEGORY)
+	}
+	if subscribedUrl.URLEqual(*url) {
+		return true
+	}
+	return false
+
+}
+func getSubscribedOverrideUrl(providerUrl *common.URL) *common.URL {
+	newUrl := providerUrl.Clone()
+	newUrl.Protocol = constant.PROVIDER_PROTOCOL
+	newUrl.Params.Add(constant.CATEGORY_KEY, constant.CONFIGURATORS_CATEGORY)
+	newUrl.Params.Add(constant.CHECK_KEY, "false")
+	return newUrl
 }
 
 func (proto *registryProtocol) Destroy() {
@@ -158,7 +226,7 @@ func (proto *registryProtocol) Destroy() {
 	})
 }
 
-func (*registryProtocol) getRegistryUrl(invoker protocol.Invoker) common.URL {
+func getRegistryUrl(invoker protocol.Invoker) common.URL {
 	//here add * for return a new url
 	url := invoker.GetUrl()
 	//if the protocol == registry ,set protocol the registry value in url.params
@@ -169,9 +237,12 @@ func (*registryProtocol) getRegistryUrl(invoker protocol.Invoker) common.URL {
 	return url
 }
 
-func (*registryProtocol) getProviderUrl(invoker protocol.Invoker) common.URL {
+func getProviderUrl(invoker protocol.Invoker) common.URL {
 	url := invoker.GetUrl()
 	return *url.SubURL
+}
+func setProviderUrl(regURL *common.URL, providerURL *common.URL) {
+	regURL.SubURL = providerURL
 }
 
 func GetProtocol() protocol.Protocol {
