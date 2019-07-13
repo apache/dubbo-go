@@ -81,39 +81,17 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry, opts ...O
 }
 
 //subscibe from registry
-func (dir *registryDirectory) Subscribe(url common.URL) {
-	for {
-		if !dir.registry.IsAvailable() {
-			logger.Warnf("event listener game over.")
-			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
-			return
-		}
+func (dir *registryDirectory) Subscribe(url *common.URL) {
+	notifyListener := &notifyListener{dir}
+	dir.registry.Subscribe(url, notifyListener)
+}
 
-		listener, err := dir.registry.Subscribe(url)
-		if err != nil {
-			if !dir.registry.IsAvailable() {
-				logger.Warnf("event listener game over.")
-				return
-			}
-			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
-			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
-			continue
-		}
+type notifyListener struct {
+	dir *registryDirectory
+}
 
-		for {
-			if serviceEvent, err := listener.Next(); err != nil {
-				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
-				listener.Close()
-				time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
-				return
-			} else {
-				logger.Infof("update begin, service event: %v", serviceEvent.String())
-				go dir.update(serviceEvent)
-			}
-
-		}
-
-	}
+func (nl *notifyListener) Notify(event *registry.ServiceEvent) {
+	go nl.dir.update(event)
 }
 
 //subscribe service from registry , and update the cacheServices
