@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	extension.SetConfigurator("override", newConfigurator)
+	extension.SetDefaultConfigurator(newConfigurator)
 }
 func newConfigurator(url *common.URL) cluster.Configurator {
 	return &overrideConfigurator{configuratorUrl: url}

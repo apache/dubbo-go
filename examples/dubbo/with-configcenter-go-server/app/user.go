@@ -31,6 +31,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/config"
 	hessian "github.com/dubbogo/hessian2"
+	"github.com/dubbogo/hessian2/java_exception"
 )
 
 type Gender hessian.JavaEnum
@@ -146,7 +147,7 @@ func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User
 }
 
 func (u *UserProvider) GetErr(ctx context.Context, req []interface{}, rsp *User) error {
-	return hessian.NewThrowable("exception")
+	return java_exception.NewThrowable("exception")
 }
 
 func (u *UserProvider) GetUser0(id string, name string) (User, error) {

@@ -46,8 +46,9 @@ const (
 )
 
 const (
-	ANY_VALUE     = "*"
-	ANYHOST_VALUE = "0.0.0.0"
+	ANY_VALUE           = "*"
+	ANYHOST_VALUE       = "0.0.0.0"
+	REMOVE_VALUE_PREFIX = "-"
 )
 
 const (

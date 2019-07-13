@@ -58,7 +58,6 @@ type ServiceConfig struct {
 	unexported    *atomic.Bool
 	exported      *atomic.Bool
 	rpcService    common.RPCService
-	exporters     []protocol.Exporter
 	cacheProtocol protocol.Protocol
 	cacheMutex    sync.Mutex
 }
@@ -127,7 +126,6 @@ func (srvconfig *ServiceConfig) Export() error {
 				if exporter == nil {
 					panic(perrors.New(fmt.Sprintf("Registry protocol new exporter error,registry is {%v},url is {%v}", regUrl, url)))
 				}
-				srvconfig.exporters = append(srvconfig.exporters, exporter)
 			}
 		} else {
 			invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*url)
@@ -135,7 +133,6 @@ func (srvconfig *ServiceConfig) Export() error {
 			if exporter == nil {
 				panic(perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error,url is {%v}", url)))
 			}
-			srvconfig.exporters = append(srvconfig.exporters, exporter)
 		}
 
 	}
