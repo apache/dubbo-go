@@ -42,7 +42,7 @@ func TestJsonClientCodec_Write(t *testing.T) {
 	assert.Equal(t, "{\"jsonrpc\":\"2.0\",\"method\":\"GetUser\",\"params\":[\"args\",2],\"id\":1}\n", string(data))
 
 	cd.Args = 1
-	data, err = codec.Write(cd)
+	_, err = codec.Write(cd)
 	assert.EqualError(t, err, "unsupported param type: int")
 }
 
