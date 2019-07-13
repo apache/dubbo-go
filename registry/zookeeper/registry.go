@@ -45,7 +45,8 @@ import (
 )
 
 const (
-	RegistryZkClient = "zk registry"
+	RegistryZkClient  = "zk registry"
+	RegistryConnDelay = 3
 )
 
 var (
@@ -211,7 +212,6 @@ func (r *zkRegistry) Register(conf common.URL) error {
 	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
 	switch role {
 	case common.CONSUMER:
-		ok = false
 		r.cltLock.Lock()
 		_, ok = r.services[conf.Key()]
 		r.cltLock.Unlock()
@@ -232,7 +232,6 @@ func (r *zkRegistry) Register(conf common.URL) error {
 	case common.PROVIDER:
 
 		// 检验服务是否已经注册过
-		ok = false
 		r.cltLock.Lock()
 		// 注意此处与consumerZookeeperRegistry的差异，consumer用的是conf.Path，
 		// 因为consumer要提供watch功能给selector使用, provider允许注册同一个service的多个group or version
@@ -390,11 +389,46 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 	return nil
 }
 
-func (r *zkRegistry) Subscribe(conf common.URL) (registry.Listener, error) {
+func (r *zkRegistry) subscribe(conf *common.URL) (registry.Listener, error) {
 	return r.getListener(conf)
 }
 
-func (r *zkRegistry) getListener(conf common.URL) (*RegistryConfigurationListener, error) {
+//subscibe from registry
+func (r *zkRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
+	for {
+		if !r.IsAvailable() {
+			logger.Warnf("event listener game over.")
+			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
+			return
+		}
+
+		listener, err := r.subscribe(url)
+		if err != nil {
+			if !r.IsAvailable() {
+				logger.Warnf("event listener game over.")
+				return
+			}
+			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
+			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
+			continue
+		}
+
+		for {
+			if serviceEvent, err := listener.Next(); err != nil {
+				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
+				listener.Close()
+				time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
+				return
+			} else {
+				logger.Infof("update begin, service event: %v", serviceEvent.String())
+				notifyListener.Notify(serviceEvent)
+			}
+
+		}
+
+	}
+}
+func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListener, error) {
 	var (
 		zkListener *RegistryConfigurationListener
 	)
@@ -419,7 +453,7 @@ func (r *zkRegistry) getListener(conf common.URL) (*RegistryConfigurationListene
 	}
 
 	//注册到dataconfig的interested
-	r.dataListener.AddInterestedURL(&conf)
+	r.dataListener.AddInterestedURL(conf)
 
 	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+conf.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY), conf.Service()), r.dataListener)
 
