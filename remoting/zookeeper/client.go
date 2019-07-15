@@ -299,25 +299,25 @@ func (z *ZookeeperClient) UnregisterEvent(zkPath string, event *chan struct{}) {
 		return
 	}
 	z.Lock()
-	a, ok := z.eventRegistry[zkPath]
+	defer z.Unlock()
+	infoList, ok := z.eventRegistry[zkPath]
 	if !ok {
 		return
 	}
-	for i, e := range a {
+	for i, e := range infoList {
 		if e == event {
-			arr := a
-			a = append(arr[:i], arr[i+1:]...)
+			arr := infoList
+			infoList = append(arr[:i], arr[i+1:]...)
 			logger.Debugf("zkClient{%s} unregister event{path:%s, event:%p}", z.name, zkPath, event)
 		}
 	}
 	logger.Debugf("after zkClient{%s} unregister event{path:%s, event:%p}, array length %d",
-		z.name, zkPath, event, len(a))
-	if len(a) == 0 {
+		z.name, zkPath, event, len(infoList))
+	if len(infoList) == 0 {
 		delete(z.eventRegistry, zkPath)
 	} else {
-		z.eventRegistry[zkPath] = a
+		z.eventRegistry[zkPath] = infoList
 	}
-	z.Unlock()
 }
 
 func (z *ZookeeperClient) Done() <-chan struct{} {
