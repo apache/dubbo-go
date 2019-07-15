@@ -301,26 +301,27 @@ func (z *ZookeeperClient) UnregisterEvent(zkPath string, event *chan struct{}) {
 	}
 
 	z.Lock()
-	for {
-		a, ok := z.eventRegistry[zkPath]
-		if !ok {
-			break
-		}
-		for i, e := range a {
-			if e == event {
-				arr := a
-				a = append(arr[:i], arr[i+1:]...)
-				logger.Debugf("zkClient{%s} unregister event{path:%s, event:%p}", z.name, zkPath, event)
-			}
-		}
-		logger.Debugf("after zkClient{%s} unregister event{path:%s, event:%p}, array length %d",
-			z.name, zkPath, event, len(a))
-		if len(a) == 0 {
-			delete(z.eventRegistry, zkPath)
-		} else {
-			z.eventRegistry[zkPath] = a
+	//for {
+	a, ok := z.eventRegistry[zkPath]
+	if !ok {
+		return
+		//break
+	}
+	for i, e := range a {
+		if e == event {
+			arr := a
+			a = append(arr[:i], arr[i+1:]...)
+			logger.Debugf("zkClient{%s} unregister event{path:%s, event:%p}", z.name, zkPath, event)
 		}
 	}
+	logger.Debugf("after zkClient{%s} unregister event{path:%s, event:%p}, array length %d",
+		z.name, zkPath, event, len(a))
+	if len(a) == 0 {
+		delete(z.eventRegistry, zkPath)
+	} else {
+		z.eventRegistry[zkPath] = a
+	}
+	//}
 	z.Unlock()
 }
 
