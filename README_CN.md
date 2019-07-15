@@ -54,9 +54,22 @@ Apache License, Version 2.0
 
 你可以通过访问 [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap) 知道更多关于 dubbo-go 的信息
 
+## 文档
+
+移步[这里](https://dubbogo.github.io/dubbo-go-website/)
+
 ## 快速开始 ##
 
 这个子目录下的例子展示了如何使用 dubbo-go 。请仔细阅读 [examples/README.md](https://github.com/apache/dubbo-go/blob/develop/examples/README.md) 学习如何处理配置并编译程序。
+
+## 运行单测
+
+```bash
+go test ./...
+
+# 覆盖率
+go test ./... -coverprofile=coverage.txt -covermode=atomic
+```
 
 ## 如何贡献
 
