@@ -298,7 +298,6 @@ func (z *ZookeeperClient) UnregisterEvent(zkPath string, event *chan struct{}) {
 	if zkPath == "" {
 		return
 	}
-
 	z.Lock()
 	a, ok := z.eventRegistry[zkPath]
 	if !ok {
@@ -318,7 +317,6 @@ func (z *ZookeeperClient) UnregisterEvent(zkPath string, event *chan struct{}) {
 	} else {
 		z.eventRegistry[zkPath] = a
 	}
-
 	z.Unlock()
 }
 
