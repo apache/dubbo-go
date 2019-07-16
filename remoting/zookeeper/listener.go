@@ -18,13 +18,13 @@
 package zookeeper
 
 import (
-	gxtime "github.com/dubbogo/gost/time"
 	"path"
 	"sync"
 	"time"
 )
 
 import (
+	gxtime "github.com/dubbogo/gost/time"
 	perrors "github.com/pkg/errors"
 	"github.com/samuel/go-zookeeper/zk"
 )
