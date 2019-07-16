@@ -24,7 +24,7 @@ import (
 )
 
 import (
-	gxtime "github.com/dubbogo/gost/time"
+	"github.com/dubbogo/getty"
 	perrors "github.com/pkg/errors"
 	"github.com/samuel/go-zookeeper/zk"
 )
@@ -32,10 +32,6 @@ import (
 import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/remoting"
-)
-
-var (
-	wheel = gxtime.NewWheel(gxtime.TimeSecondDuration(ConnDelay), MaxFailTimes+1) // wheel longest span is 2 minute
 )
 
 type ZkEventListener struct {
@@ -193,7 +189,7 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 			}
 			l.client.RegisterEvent(zkPath, &event)
 			select {
-			case <-wheel.After(timeSecondDuration(failTimes * ConnDelay)):
+			case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)):
 				l.client.UnregisterEvent(zkPath, &event)
 				continue
 			case <-l.client.Done():
