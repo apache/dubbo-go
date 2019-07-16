@@ -35,7 +35,7 @@ import (
 )
 
 var (
-	wheel = gxtime.NewWheel(gxtime.TimeSecondDuration(3), 16) // wheel longest span is 2 minute
+	wheel = gxtime.NewWheel(gxtime.TimeSecondDuration(ConnDelay), MaxFailTimes+1) // wheel longest span is 2 minute
 )
 
 type ZkEventListener struct {
