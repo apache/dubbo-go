@@ -18,6 +18,7 @@
 package zookeeper
 
 import (
+	gxtime "github.com/dubbogo/gost/time"
 	"path"
 	"sync"
 	"time"
@@ -31,6 +32,10 @@ import (
 import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/remoting"
+)
+
+var (
+	wheel = gxtime.NewWheel(gxtime.TimeSecondDuration(3), 12) // wheel longest span is 2 minute
 )
 
 type ZkEventListener struct {
@@ -188,7 +193,7 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 			}
 			l.client.RegisterEvent(zkPath, &event)
 			select {
-			case <-time.After(timeSecondDuration(failTimes * ConnDelay)):
+			case <-wheel.After(timeSecondDuration(failTimes * ConnDelay)):
 				l.client.UnregisterEvent(zkPath, &event)
 				continue
 			case <-l.client.Done():
