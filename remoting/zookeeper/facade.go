@@ -70,7 +70,7 @@ LOOP:
 				case <-r.GetDone():
 					logger.Warnf("(ZkProviderRegistry)reconnectZkRegistry goroutine exit now...")
 					break LOOP
-				case <-time.After(time.Duration(1e9 * failTimes * ConnDelay)): // 防止疯狂重连zk
+				case <-wheel.After(time.Duration(1e9 * failTimes * ConnDelay)): // 防止疯狂重连zk
 				}
 				err = ValidateZookeeperClient(r, WithZkName(zkName))
 				logger.Infof("ZkProviderRegistry.validateZookeeperClient(zkAddr{%s}) = error{%#v}",
