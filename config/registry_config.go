@@ -68,13 +68,28 @@ func loadRegistries(targetRegistries string, registries map[string]*RegistryConf
 		}
 
 		if target {
-			url, err := common.NewURL(
-				context.TODO(),
-				constant.REGISTRY_PROTOCOL+"://"+registryConf.Address,
-				common.WithParams(registryConf.getUrlMap(roleType)),
-				common.WithUsername(registryConf.Username),
-				common.WithPassword(registryConf.Password),
+			var (
+				url common.URL
+				err error
 			)
+			if addresses := strings.Split(registryConf.Address, ","); len(addresses) > 1 {
+				url, err = common.NewURL(
+					context.Background(),
+					constant.REGISTRY_PROTOCOL+"://"+addresses[0],
+					common.WithParams(registryConf.getUrlMap(roleType)),
+					common.WithUsername(registryConf.Username),
+					common.WithPassword(registryConf.Password),
+					common.WithLocation(registryConf.Address),
+				)
+			} else {
+				url, err = common.NewURL(
+					context.Background(),
+					constant.REGISTRY_PROTOCOL+"://"+registryConf.Address,
+					common.WithParams(registryConf.getUrlMap(roleType)),
+					common.WithUsername(registryConf.Username),
+					common.WithPassword(registryConf.Password),
+				)
+			}
 
 			if err != nil {
 				logger.Errorf("The registry id:%s url is invalid ,and will skip the registry, error: %#v", k, err)
