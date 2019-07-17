@@ -12,15 +12,13 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-
 const (
-	HYSTRIX="hystrix"
-	TIMEOUT_KEY="timeout"
-	MAXCONCURRENTREQUESTS_KEY="maxconcurrentrequests"
-	SLEEPWINDOW_KEY="sleepwindow"
-	ERRORPERCENTTHRESHOLD_KEY="errorpercentthreshold"
+	HYSTRIX                   = "hystrix"
+	TIMEOUT_KEY               = "timeout"
+	MAXCONCURRENTREQUESTS_KEY = "maxconcurrentrequests"
+	SLEEPWINDOW_KEY           = "sleepwindow"
+	ERRORPERCENTTHRESHOLD_KEY = "errorpercentthreshold"
 )
-
 
 var (
 	//Timeout
@@ -29,36 +27,34 @@ var (
 	//SleepWindow
 	//ErrorPercentThreshold
 	isConfigLoaded = false
-	conf = &HystrixFilterConfig{}
+	conf           = &HystrixFilterConfig{}
 	//
-
-
 
 )
 
-func init(){
-	extension.SetFilter(HYSTRIX,GetHystrixFilter)
+func init() {
+	extension.SetFilter(HYSTRIX, GetHystrixFilter)
 }
+
 type HystrixFilter struct {
-
 }
 
-func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result{
+func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 
-	cmdName := fmt.Sprintf("%s&method=%s",invoker.GetUrl().Key(),invocation.MethodName())
+	cmdName := fmt.Sprintf("%s&method=%s", invoker.GetUrl().Key(), invocation.MethodName())
 
-	_,ifNew,err := hystrix.GetCircuit(cmdName)
-	if err != nil{
-		logger.Errorf("[Hystrix Filter]Errors occurred getting circuit for %s , will invoke without hystrix, error is: ",cmdName,err)
+	_, ifNew, err := hystrix.GetCircuit(cmdName)
+	if err != nil {
+		logger.Errorf("[Hystrix Filter]Errors occurred getting circuit for %s , will invoke without hystrix, error is: ", cmdName, err)
 		return invoker.Invoke(invocation)
 	}
 
 	// Do the configuration if the circuit breaker is created for the first time
 	if ifNew {
-		hystrix.ConfigureCommand(cmdName,getConfig(invoker.GetUrl().Service(),invocation.MethodName()))
+		hystrix.ConfigureCommand(cmdName, getConfig(invoker.GetUrl().Service(), invocation.MethodName()))
 	}
 
-	logger.Infof("[Hystrix Filter]Using hystrix filter: %s",cmdName)
+	logger.Infof("[Hystrix Filter]Using hystrix filter: %s", cmdName)
 	var result protocol.Result
 	_ = hystrix.Do(cmdName, func() error {
 		result = invoker.Invoke(invocation)
@@ -75,51 +71,50 @@ func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 	return result
 }
 
-func (hf *HystrixFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result{
+func (hf *HystrixFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }
-func GetHystrixFilter() filter.Filter{
+func GetHystrixFilter() filter.Filter {
 	//When first called, load the config in
-	if !isConfigLoaded{
-		if err:=initHystrixConfig();err!=nil{
-			logger.Warnf("[Hystrix Filter]Config load failed, error is: %v , will use default",err)
+	if !isConfigLoaded {
+		if err := initHystrixConfig(); err != nil {
+			logger.Warnf("[Hystrix Filter]Config load failed, error is: %v , will use default", err)
 		}
-		isConfigLoaded=true
+		isConfigLoaded = true
 	}
-
 
 	return &HystrixFilter{}
 }
 
-func getConfig(service string, method string) hystrix.CommandConfig{
+func getConfig(service string, method string) hystrix.CommandConfig {
 
 	//Find method level config
-	getConf:=conf.Configs[conf.Services[service].Methods[method]]
-	if getConf!=nil{
-		logger.Infof("[Hystrix Filter]Found method-level config for %s - %s",service,method)
+	getConf := conf.Configs[conf.Services[service].Methods[method]]
+	if getConf != nil {
+		logger.Infof("[Hystrix Filter]Found method-level config for %s - %s", service, method)
 		return *getConf
 	}
 	//Find service level config
-	getConf=conf.Configs[conf.Services[service].ServiceConfig]
-	if getConf!=nil{
-		logger.Infof("[Hystrix Filter]Found service-level config for %s - %s",service,method)
+	getConf = conf.Configs[conf.Services[service].ServiceConfig]
+	if getConf != nil {
+		logger.Infof("[Hystrix Filter]Found service-level config for %s - %s", service, method)
 		return *getConf
 	}
 	//Find default config
-	getConf=conf.Configs[conf.Default]
-	if getConf!=nil{
-		logger.Infof("[Hystrix Filter]Found global default config for %s - %s",service,method)
+	getConf = conf.Configs[conf.Default]
+	if getConf != nil {
+		logger.Infof("[Hystrix Filter]Found global default config for %s - %s", service, method)
 		return *getConf
 	}
-	getConf=&hystrix.CommandConfig{}
-	logger.Infof("[Hystrix Filter]No config found for %s - %s, using default",service,method)
+	getConf = &hystrix.CommandConfig{}
+	logger.Infof("[Hystrix Filter]No config found for %s - %s, using default", service, method)
 	return *getConf
 
 }
 
-func initHystrixConfig() error{
+func initHystrixConfig() error {
 	filterConfig := config.GetConsumerConfig().FilterConf.(map[interface{}]interface{})[HYSTRIX]
-	if filterConfig ==nil{
+	if filterConfig == nil {
 		return perrors.Errorf("no config for hystrix")
 	}
 	hystrixConfByte, err := yaml.Marshal(filterConfig)
@@ -133,14 +128,12 @@ func initHystrixConfig() error{
 	return nil
 }
 
-
 type HystrixFilterConfig struct {
-	Configs map[string] *hystrix.CommandConfig
-	Default string
-	Services map[string] ServiceHystrixConfig
+	Configs  map[string]*hystrix.CommandConfig
+	Default  string
+	Services map[string]ServiceHystrixConfig
 }
-type ServiceHystrixConfig struct{
-	ServiceConfig string	`yaml:"service_config,omitempty"`
-	Methods map[string]string
+type ServiceHystrixConfig struct {
+	ServiceConfig string `yaml:"service_config,omitempty"`
+	Methods       map[string]string
 }
-
