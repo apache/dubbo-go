@@ -113,11 +113,11 @@ func initHystrixConfig() error {
 	}
 	hystrixConfByte, err := yaml.Marshal(filterConfig)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	err = yaml.Unmarshal(hystrixConfByte, conf)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	return nil
 }
