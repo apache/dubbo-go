@@ -13,23 +13,17 @@ import (
 )
 
 const (
-	HYSTRIX                   = "hystrix"
-	TIMEOUT_KEY               = "timeout"
-	MAXCONCURRENTREQUESTS_KEY = "maxconcurrentrequests"
-	SLEEPWINDOW_KEY           = "sleepwindow"
-	ERRORPERCENTTHRESHOLD_KEY = "errorpercentthreshold"
+	HYSTRIX = "hystrix"
 )
 
 var (
-	//Timeout
-	//MaxConcurrentRequests
-	//RequestVolumeThreshold
-	//SleepWindow
-	//ErrorPercentThreshold
 	isConfigLoaded = false
 	conf           = &HystrixFilterConfig{}
-	//
-
+	//timeout
+	//maxconcurrentrequests
+	//requestvolumethreshold
+	//sleepwindow
+	//errorpercentthreshold
 )
 
 func init() {
@@ -43,7 +37,7 @@ func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 
 	cmdName := fmt.Sprintf("%s&method=%s", invoker.GetUrl().Key(), invocation.MethodName())
 
-	_, ifNew, err := hystrix.GetCircuit(cmdName)
+	cb, ifNew, err := hystrix.GetCircuit(cmdName)
 	if err != nil {
 		logger.Errorf("[Hystrix Filter]Errors occurred getting circuit for %s , will invoke without hystrix, error is: ", cmdName, err)
 		return invoker.Invoke(invocation)
@@ -60,8 +54,8 @@ func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 		result = invoker.Invoke(invocation)
 		return nil
 	}, func(err error) error {
-
 		//failure logic
+		logger.Debugf("[Hystrix Filter]Invoke failed, circuit breaker open: %v",cb.IsOpen())
 		result = &protocol.RPCResult{}
 		result.SetError(err)
 		return nil
