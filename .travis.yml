@@ -5,8 +5,7 @@ go:
   - "1.12"
 
 env:
-  - GO111MODULE=on
-  - CONSUL_VERSION=0.9.2
+  - CONSUL_VERSION=0.9.2 GO111MODULE=on
 
 before_install:
   - curl -sLo consul.zip https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_amd64.zip
