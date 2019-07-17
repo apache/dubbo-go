@@ -14,10 +14,8 @@ before_install:
   - mv consul ~/bin
   - export PATH="~/bin:$PATH"
 
-install: true
-
 script:
-  - consul --help
+  - env | grep GO111MODULE
   - go fmt ./... && [[ -z `git status -s` ]]
   - go mod vendor && go test ./... -coverprofile=coverage.txt -covermode=atomic
 
