@@ -296,7 +296,7 @@ func test3() {
 		Registry:      "hangzhouzk",
 		Protocol:      dubbo.DUBBO,
 	}
-	referenceConfig.Load(appName) //appName是GetService的唯一标识不可缺少
+	referenceConfig.Load(appName) //appName is the unique identification of RPCService
 
 	time.Sleep(3 * time.Second)
 	println("\n\n\nstart to generic invoke")
