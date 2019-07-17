@@ -5,13 +5,11 @@ import (
 	"github.com/afex/hystrix-go/hystrix"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/filter"
 	"github.com/apache/dubbo-go/protocol"
 	perrors "github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
-	"os"
-	"path"
 )
 
 
@@ -21,7 +19,6 @@ const (
 	MAXCONCURRENTREQUESTS_KEY="maxconcurrentrequests"
 	SLEEPWINDOW_KEY="sleepwindow"
 	ERRORPERCENTTHRESHOLD_KEY="errorpercentthreshold"
-	CONF_HYSTRIXFILTER_FILE_PATH="CONF_HYSTRIXFILTER_FILE_PATH"
 )
 
 
@@ -32,11 +29,9 @@ var (
 	//SleepWindow
 	//ErrorPercentThreshold
 	isConfigLoaded = false
-
+	conf = &HystrixFilterConfig{}
 	//
-	methodLevelConfigMap = make(map[string]hystrix.CommandConfig)
-	serviceLevelConfigMap = make(map[string]hystrix.CommandConfig)
-	defaultConfig hystrix.CommandConfig
+
 
 
 )
@@ -60,9 +55,7 @@ func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 
 	// Do the configuration if the circuit breaker is created for the first time
 	if ifNew {
-		hystrix.ConfigureCommand(cmdName,hystrix.CommandConfig{
-
-		})
+		hystrix.ConfigureCommand(cmdName,getConfig(invoker.GetUrl().Service(),invocation.MethodName()))
 	}
 
 	logger.Infof("[Hystrix Filter]Using hystrix filter: %s",cmdName)
@@ -91,7 +84,6 @@ func GetHystrixFilter() filter.Filter{
 		if err:=initHystrixConfig();err!=nil{
 			logger.Warnf("[Hystrix Filter]Config load failed, error is: %v , will use default",err)
 		}
-
 		isConfigLoaded=true
 	}
 
@@ -99,35 +91,56 @@ func GetHystrixFilter() filter.Filter{
 	return &HystrixFilter{}
 }
 
+func getConfig(service string, method string) hystrix.CommandConfig{
 
+	//Find method level config
+	getConf:=conf.Configs[conf.Services[service].Methods[method]]
+	if getConf!=nil{
+		logger.Infof("[Hystrix Filter]Found method-level config for %s - %s",service,method)
+		return *getConf
+	}
+	//Find service level config
+	getConf=conf.Configs[conf.Services[service].ServiceConfig]
+	if getConf!=nil{
+		logger.Infof("[Hystrix Filter]Found service-level config for %s - %s",service,method)
+		return *getConf
+	}
+	//Find default config
+	getConf=conf.Configs[conf.Default]
+	if getConf!=nil{
+		logger.Infof("[Hystrix Filter]Found global default config for %s - %s",service,method)
+		return *getConf
+	}
+	getConf=&hystrix.CommandConfig{}
+	logger.Infof("[Hystrix Filter]No config found for %s - %s, using default",service,method)
+	return *getConf
 
+}
+
+func initHystrixConfig() error{
+	filterConfig := config.GetConsumerConfig().FilterConf.(map[interface{}]interface{})[HYSTRIX]
+	if filterConfig ==nil{
+		return perrors.Errorf("no config for hystrix")
+	}
+	hystrixConfByte, err := yaml.Marshal(filterConfig)
+	if err != nil {
+		panic(err)
+	}
+	err = yaml.Unmarshal(hystrixConfByte, conf)
+	if err != nil {
+		panic(err)
+	}
+	return nil
+}
 
 
 type HystrixFilterConfig struct {
-	Configs map[string] hystrix.CommandConfig
+	Configs map[string] *hystrix.CommandConfig
 	Default string
 	Services map[string] ServiceHystrixConfig
 }
 type ServiceHystrixConfig struct{
 	ServiceConfig string	`yaml:"service_config,omitempty"`
 	Methods map[string]string
-}
-func initHystrixConfig() error{
-	confHystrixFile := os.Getenv(CONF_HYSTRIXFILTER_FILE_PATH)
-	if confHystrixFile==""{
-		return perrors.Errorf("hystrix filter config file is nil")
-	}
-	if path.Ext(confHystrixFile) != ".yml"{
-		return perrors.Errorf("hystrix filter config file suffix must be .yml")
-	}
-	confStream, err := ioutil.ReadFile(confHystrixFile)
-	if err != nil {
-		return perrors.Errorf("ioutil.ReadFile(file:%s) = error:%v", confHystrixFile, perrors.WithStack(err))
-	}
-	hystrixConfig:=&HystrixFilterConfig{}
-	if err = yaml.Unmarshal(confStream,hystrixConfig);err!=nil{
-		return perrors.Errorf("yaml.Unmarshal() = error:%v", perrors.WithStack(err))
-	}
-	return nil
 }
 
