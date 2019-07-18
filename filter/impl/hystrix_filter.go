@@ -15,12 +15,16 @@ import (
 const (
 	HYSTRIX = "hystrix"
 )
+type HystrixFallback interface {
+	FallbackFunc(err error, invoker protocol.Invoker, invocation protocol.Invocation, cb hystrix.CircuitBreaker) protocol.Result
+}
 
-type CallBackFunction func(err error, invoker protocol.Invoker, invocation protocol.Invocation, cb hystrix.CircuitBreaker) protocol.Result
+
+
 
 var (
 	isConfigLoaded = false
-	fallback       = make(map[string]CallBackFunction)
+	fallback       = make(map[string]HystrixFallback)
 	conf           = &HystrixFilterConfig{}
 	//Timeout
 	//MaxConcurrentRequests
@@ -34,7 +38,7 @@ func init() {
 }
 
 type HystrixFilter struct {
-	fallbackFunc CallBackFunction
+	fallback HystrixFallback
 }
 
 func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
@@ -49,7 +53,7 @@ func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 
 	// Do the configuration if the circuit breaker is created for the first time
 
-	if ifNew || hf.fallbackFunc == nil {
+	if ifNew || hf.fallback == nil {
 		filterConf := getConfig(invoker.GetUrl().Service(), invocation.MethodName())
 		if ifNew {
 			hystrix.ConfigureCommand(cmdName, hystrix.CommandConfig{
@@ -60,8 +64,8 @@ func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 				RequestVolumeThreshold: filterConf.RequestVolumeThreshold,
 			})
 		}
-		if hf.fallbackFunc == nil {
-			hf.fallbackFunc = getHystrixFallback(filterConf.Fallback)
+		if hf.fallback == nil {
+			hf.fallback = getHystrixFallback(filterConf.Fallback)
 		}
 	}
 
@@ -73,7 +77,7 @@ func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 	}, func(err error) error {
 		//failure logic
 		logger.Debugf("[Hystrix Filter]Invoke failed, circuit breaker open: %v", cb.IsOpen())
-		result = hf.fallbackFunc(err, invoker, invocation, *cb)
+		result = hf.fallback.FallbackFunc(err, invoker, invocation, *cb)
 
 		//If user try to return nil in the customized fallback func, it will cause panic
 		//So check here
@@ -151,17 +155,17 @@ func RefreshHystrix() error {
 	return initHystrixConfig()
 }
 
-func SetHystrixFallback(name string, fallbackFunc CallBackFunction) {
-	fallback[name] = fallbackFunc
+func SetHystrixFallback(name string, fallbackImpl HystrixFallback) {
+	fallback[name] = fallbackImpl
 }
 
-func getHystrixFallback(name string) CallBackFunction {
-	fallbackFunc := fallback[name]
-	if fallbackFunc == nil {
+func getHystrixFallback(name string) HystrixFallback {
+	fallbackImpl := fallback[name]
+	if fallbackImpl == nil {
 		logger.Warnf("[Hystrix Filter]Fallback func not found: %s", name)
-		fallbackFunc = defaultHystrixFallback
+		fallbackImpl =& DefaultHystrixFallback{}
 	}
-	return fallbackFunc
+	return fallbackImpl
 }
 
 type CommandConfigWithFallback struct {
