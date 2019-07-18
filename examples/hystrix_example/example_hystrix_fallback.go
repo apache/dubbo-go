@@ -9,9 +9,10 @@ import "github.com/afex/hystrix-go/hystrix"
 const EXAMPLE_FALLBACK_NAME = "exampleFallback"
 
 //Example for hystrix fallback function
-//The 3 parameters:
+//The 4 parameters:
 //The error that caused the fallback;
-//The result to return in the invoker;
+//The invoker that the filter receives;
+//The invocation that should be invoked;
 //The copy of circuit breaker for this invocation, for getting its status
 func ExampleHystrixFallback(err error, invoker protocol.Invoker, invocation protocol.Invocation, cb hystrix.CircuitBreaker) protocol.Result {
 	result := &protocol.RPCResult{}
