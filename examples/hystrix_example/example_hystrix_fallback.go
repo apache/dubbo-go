@@ -13,13 +13,15 @@ const EXAMPLE_FALLBACK_NAME = "exampleFallback"
 //The error that caused the fallback;
 //The result to return in the invoker;
 //The copy of circuit breaker for this invocation, for getting its status
-func ExampleHystrixFallback(err error, result protocol.Result, cb hystrix.CircuitBreaker) {
+func ExampleHystrixFallback(err error, invoker protocol.Invoker, invocation protocol.Invocation, cb hystrix.CircuitBreaker) protocol.Result {
+	result := &protocol.RPCResult{}
 	if cb.IsOpen() {
 		result.SetError(nil)
 		result.SetResult("Mock OK")
 	} else {
 		result.SetError(err)
 	}
+	return result
 }
 
 //Add the fallback function to the map
