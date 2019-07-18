@@ -65,22 +65,23 @@ filter_conf:
     configs:
       "Default":
         timeout : 1000
-        maxconcurrentrequests : 10
-        sleepwindow : 5000
-        errorpercentthreshold : 50
-        requestvolumethreshold: 20
+        max_concurrent_requests : 10
+        sleep_window : 5000
+        error_percent_threshold : 50
+        request_volume_threshold: 20
       "userp":
         timeout: 800
-        maxconcurrentrequests: 8
-        sleepwindow: 4
-        errorpercentthreshold: 45
-        requestvolumethreshold: 15
+        max_concurrent_requests: 8
+        sleep_window: 4
+        error_percent_threshold: 45
+        request_volume_threshold: 15
       "userp_m":
         timeout : 1200
-        maxconcurrentrequests : 12
-        sleepwindow : 6000
-        errorpercentthreshold : 60
-        requestvolumethreshold: 30
+        max_concurrent_requests : 12
+        sleep_window : 6000
+        error_percent_threshold : 60
+        request_volume_threshold: 30
+        fallback: "exampleFallback"
     default: "Default"
     services:
       "com.ikurento.user.UserProvider":

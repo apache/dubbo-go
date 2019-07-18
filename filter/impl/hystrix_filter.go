@@ -18,12 +18,13 @@ const (
 
 var (
 	isConfigLoaded = false
+	fallback       = make(map[string]func(err error, res protocol.Result, cb hystrix.CircuitBreaker))
 	conf           = &HystrixFilterConfig{}
-	//timeout
-	//maxconcurrentrequests
-	//requestvolumethreshold
-	//sleepwindow
-	//errorpercentthreshold
+	//Timeout
+	//MaxConcurrentRequests
+	//RequestVolumeThreshold
+	//SleepWindow
+	//ErrorPercentThreshold
 )
 
 func init() {
@@ -31,6 +32,7 @@ func init() {
 }
 
 type HystrixFilter struct {
+	fallbackFunc func(err error, res protocol.Result, cb hystrix.CircuitBreaker)
 }
 
 func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
@@ -44,8 +46,21 @@ func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 	}
 
 	// Do the configuration if the circuit breaker is created for the first time
-	if ifNew {
-		hystrix.ConfigureCommand(cmdName, getConfig(invoker.GetUrl().Service(), invocation.MethodName()))
+
+	if ifNew || hf.fallbackFunc == nil {
+		filterConf := getConfig(invoker.GetUrl().Service(), invocation.MethodName())
+		if ifNew {
+			hystrix.ConfigureCommand(cmdName, hystrix.CommandConfig{
+				Timeout:                filterConf.Timeout,
+				MaxConcurrentRequests:  filterConf.MaxConcurrentRequests,
+				SleepWindow:            filterConf.SleepWindow,
+				ErrorPercentThreshold:  filterConf.ErrorPercentThreshold,
+				RequestVolumeThreshold: filterConf.RequestVolumeThreshold,
+			})
+		}
+		if hf.fallbackFunc == nil {
+			hf.fallbackFunc = getHystrixFallback(filterConf.Fallback)
+		}
 	}
 
 	logger.Infof("[Hystrix Filter]Using hystrix filter: %s", cmdName)
@@ -55,9 +70,9 @@ func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 		return nil
 	}, func(err error) error {
 		//failure logic
-		logger.Debugf("[Hystrix Filter]Invoke failed, circuit breaker open: %v",cb.IsOpen())
+		logger.Debugf("[Hystrix Filter]Invoke failed, circuit breaker open: %v", cb.IsOpen())
 		result = &protocol.RPCResult{}
-		result.SetError(err)
+		hf.fallbackFunc(err, result, *cb)
 		return nil
 		//failure logic
 
@@ -80,7 +95,7 @@ func GetHystrixFilter() filter.Filter {
 	return &HystrixFilter{}
 }
 
-func getConfig(service string, method string) hystrix.CommandConfig {
+func getConfig(service string, method string) CommandConfigWithFallback {
 
 	//Find method level config
 	getConf := conf.Configs[conf.Services[service].Methods[method]]
@@ -100,7 +115,7 @@ func getConfig(service string, method string) hystrix.CommandConfig {
 		logger.Infof("[Hystrix Filter]Found global default config for %s - %s", service, method)
 		return *getConf
 	}
-	getConf = &hystrix.CommandConfig{}
+	getConf = &CommandConfigWithFallback{}
 	logger.Infof("[Hystrix Filter]No config found for %s - %s, using default", service, method)
 	return *getConf
 
@@ -122,12 +137,41 @@ func initHystrixConfig() error {
 	return nil
 }
 
+//For sake of dynamic config
+func RefreshHystrix() error {
+	conf = &HystrixFilterConfig{}
+	hystrix.Flush()
+	return initHystrixConfig()
+}
+
+func SetHystrixFallback(name string, fallbackFunc func(err error, res protocol.Result, cb hystrix.CircuitBreaker)) {
+	fallback[name] = fallbackFunc
+}
+
+func getHystrixFallback(name string) func(err error, res protocol.Result, cb hystrix.CircuitBreaker) {
+	fallbackFunc := fallback[name]
+	if fallbackFunc == nil {
+		logger.Warnf("[Hystrix Filter]Fallback func not found: %s", name)
+		fallbackFunc = defalutHystrixFallback
+	}
+	return fallbackFunc
+}
+
+type CommandConfigWithFallback struct {
+	Timeout                int    `yaml:"timeout"`
+	MaxConcurrentRequests  int    `yaml:"max_concurrent_requests"`
+	RequestVolumeThreshold int    `yaml:"service_config"`
+	SleepWindow            int    `yaml:"sleep_window"`
+	ErrorPercentThreshold  int    `yaml:"error_percent_threshold"`
+	Fallback               string `yaml:"fallback"`
+}
+
 type HystrixFilterConfig struct {
-	Configs  map[string]*hystrix.CommandConfig
+	Configs  map[string]*CommandConfigWithFallback
 	Default  string
 	Services map[string]ServiceHystrixConfig
 }
 type ServiceHystrixConfig struct {
-	ServiceConfig string `yaml:"service_config,omitempty"`
+	ServiceConfig string `yaml:"service_config"`
 	Methods       map[string]string
 }
