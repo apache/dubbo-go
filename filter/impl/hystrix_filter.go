@@ -159,7 +159,7 @@ func getHystrixFallback(name string) CallBackFunction {
 	fallbackFunc := fallback[name]
 	if fallbackFunc == nil {
 		logger.Warnf("[Hystrix Filter]Fallback func not found: %s", name)
-		fallbackFunc = defalutHystrixFallback
+		fallbackFunc = defaultHystrixFallback
 	}
 	return fallbackFunc
 }
