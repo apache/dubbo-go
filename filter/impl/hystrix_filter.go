@@ -16,9 +16,11 @@ const (
 	HYSTRIX = "hystrix"
 )
 
+type CallBackFunction func(err error, invoker protocol.Invoker, invocation protocol.Invocation, cb hystrix.CircuitBreaker) protocol.Result
+
 var (
 	isConfigLoaded = false
-	fallback       = make(map[string]func(err error, res protocol.Result, cb hystrix.CircuitBreaker))
+	fallback       = make(map[string]CallBackFunction)
 	conf           = &HystrixFilterConfig{}
 	//Timeout
 	//MaxConcurrentRequests
@@ -32,7 +34,7 @@ func init() {
 }
 
 type HystrixFilter struct {
-	fallbackFunc func(err error, res protocol.Result, cb hystrix.CircuitBreaker)
+	fallbackFunc CallBackFunction
 }
 
 func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
@@ -71,8 +73,7 @@ func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 	}, func(err error) error {
 		//failure logic
 		logger.Debugf("[Hystrix Filter]Invoke failed, circuit breaker open: %v", cb.IsOpen())
-		result = &protocol.RPCResult{}
-		hf.fallbackFunc(err, result, *cb)
+		result = hf.fallbackFunc(err, invoker, invocation, *cb)
 		return nil
 		//failure logic
 
@@ -144,11 +145,11 @@ func RefreshHystrix() error {
 	return initHystrixConfig()
 }
 
-func SetHystrixFallback(name string, fallbackFunc func(err error, res protocol.Result, cb hystrix.CircuitBreaker)) {
+func SetHystrixFallback(name string, fallbackFunc CallBackFunction) {
 	fallback[name] = fallbackFunc
 }
 
-func getHystrixFallback(name string) func(err error, res protocol.Result, cb hystrix.CircuitBreaker) {
+func getHystrixFallback(name string) CallBackFunction {
 	fallbackFunc := fallback[name]
 	if fallbackFunc == nil {
 		logger.Warnf("[Hystrix Filter]Fallback func not found: %s", name)
@@ -160,7 +161,7 @@ func getHystrixFallback(name string) func(err error, res protocol.Result, cb hys
 type CommandConfigWithFallback struct {
 	Timeout                int    `yaml:"timeout"`
 	MaxConcurrentRequests  int    `yaml:"max_concurrent_requests"`
-	RequestVolumeThreshold int    `yaml:"service_config"`
+	RequestVolumeThreshold int    `yaml:"request_volume_threshold"`
 	SleepWindow            int    `yaml:"sleep_window"`
 	ErrorPercentThreshold  int    `yaml:"error_percent_threshold"`
 	Fallback               string `yaml:"fallback"`
