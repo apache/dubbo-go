@@ -36,11 +36,13 @@ import (
 )
 
 //To avoid import cycle
-const(
+const (
 	MOCK = "mock"
 )
+
 type MockFilter struct {
 }
+
 func (mf *MockFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return invoker.Invoke(invocation)
 }
@@ -49,12 +51,12 @@ func (mf *MockFilter) OnResponse(result protocol.Result, invoker protocol.Invoke
 	return result
 }
 
-func GetFilter()filter.Filter{
+func GetFilter() filter.Filter {
 	return &MockFilter{}
 }
 
-func init(){
-	extension.SetFilter(MOCK,GetFilter)
+func init() {
+	extension.SetFilter(MOCK, GetFilter)
 }
 
 func TestProtocolFilterWrapper_Export(t *testing.T) {
