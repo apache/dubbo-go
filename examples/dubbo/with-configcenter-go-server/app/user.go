@@ -25,13 +25,13 @@ import (
 )
 
 import (
+	hessian "github.com/dubbogo/hessian2"
+	"github.com/dubbogo/hessian2/java_exception"
 	perrors "github.com/pkg/errors"
 )
 
 import (
 	"github.com/apache/dubbo-go/config"
-	hessian "github.com/dubbogo/hessian2"
-	"github.com/dubbogo/hessian2/java_exception"
 )
 
 type Gender hessian.JavaEnum
@@ -183,12 +183,8 @@ func (u *UserProvider) GetUsers(req []interface{}) ([]interface{}, error) {
 	return []interface{}{user, user1}, err
 }
 
-func (u *UserProvider) Service() string {
-	return "com.ikurento.user.UserProvider"
-}
-
-func (u *UserProvider) Version() string {
-	return ""
+func (u *UserProvider) Reference() string {
+	return "UserProvider"
 }
 
 func println(format string, args ...interface{}) {
