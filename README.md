@@ -30,7 +30,6 @@ Finished List:
 - Transport: HTTP, TCP
 - Codec: JsonRPC v2, Hessian v2
 - Registry: ZooKeeper
-- Routing: Rule(dubbo v2.6.x)
 - Configure Center: Zookeeper
 - Cluster Strategy: Failover
 - Load Balance: Random, RoundRobin, LeastActive
