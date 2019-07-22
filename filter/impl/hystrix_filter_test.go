@@ -2,7 +2,6 @@ package impl
 
 import (
 	"github.com/afex/hystrix-go/hystrix"
-	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/dubbo"
 	"github.com/apache/dubbo-go/protocol/invocation"
@@ -12,24 +11,47 @@ import (
 	"time"
 )
 
-func TestInitHystrixConfig(t *testing.T) {
-	//Use the example config file
-	config.Load()
-	err := initHystrixConfig()
-	assert.Nil(t, err, err)
-	assert.NotNil(t, conf, "Conf should not be nil")
-	assert.Equal(t, "Default", conf.Default)
-	configsIn := conf.Configs["Default"]
-	assert.NotNil(t, configsIn, "Configs should not be nil")
-	assert.Equal(t, 20, configsIn.RequestVolumeThreshold)
-	assert.Equal(t, configsIn.ErrorPercentThreshold, 50)
-	assert.Equal(t, 5000, configsIn.SleepWindow)
-	assert.Equal(t, 1000, configsIn.Timeout)
-	serviceConfigIn := conf.Services["com.ikurento.user.UserProvider"]
-	assert.NotNil(t, serviceConfigIn, "Service configs should not be nil")
-	assert.Equal(t, "userp", serviceConfigIn.ServiceConfig)
-	assert.NotNil(t, serviceConfigIn.Methods, "Method configs should not be nil")
-	assert.Equal(t, "userp_m", serviceConfigIn.Methods["GetUser"])
+func init(){
+	mockInitHystrixConfig()
+}
+
+func mockInitHystrixConfig(){
+	//Mock config
+	conf=&HystrixFilterConfig{
+		make(map[string]*CommandConfigWithFallback),
+		"Default",
+		make(map[string]ServiceHystrixConfig),
+	}
+	conf.Configs["Default"]= &CommandConfigWithFallback{
+		1000,
+		10,
+		20,
+		5000,
+		50,
+		"",
+	}
+	conf.Configs["userp"]=&CommandConfigWithFallback{
+		2000,
+		8,
+		15,
+		5000,
+		45,
+		"",
+	}
+	conf.Configs["userp_m"]=&CommandConfigWithFallback{
+		1200,
+		12,
+		5,
+		6000,
+		60,
+		"",
+	}
+	conf.Services["com.ikurento.user.UserProvider"]=ServiceHystrixConfig{
+		"userp",
+		map[string] string{
+			"GetUser":"userp_m",
+		},
+	}
 
 }
 
@@ -45,15 +67,7 @@ func (m *MockFallback) FallbackFunc(err error, invoker protocol.Invoker, invocat
 	return &protocol.RPCResult{Rest: "MOCK"}
 }
 
-func TestRefreshHystrix(t *testing.T) {
-	err := RefreshHystrix()
-	assert.NoError(t, err)
-	assert.NotNil(t, conf, "Conf should not be nil")
-	assert.Equal(t, "Default", conf.Default)
-}
-
 func TestGetConfig_1(t *testing.T) {
-	_ = initHystrixConfig()
 	configGot := getConfig("com.ikurento.user.UserProvider", "GetUser")
 	assert.NotNil(t, configGot)
 	assert.Equal(t, 1200, configGot.Timeout)
@@ -65,19 +79,17 @@ func TestGetConfig_1(t *testing.T) {
 }
 
 func TestGetConfig_2(t *testing.T) {
-	_ = initHystrixConfig()
 	configGot := getConfig("com.ikurento.user.UserProvider", "GetUser0")
 	assert.NotNil(t, configGot)
-	assert.Equal(t, 800, configGot.Timeout)
+	assert.Equal(t, 2000, configGot.Timeout)
 	assert.Equal(t, 8, configGot.MaxConcurrentRequests)
-	assert.Equal(t, 4, configGot.SleepWindow)
+	assert.Equal(t, 4000, configGot.SleepWindow)
 	assert.Equal(t, 45, configGot.ErrorPercentThreshold)
 	assert.Equal(t, 15, configGot.RequestVolumeThreshold)
 	assert.Equal(t, "", configGot.Fallback)
 }
 
 func TestGetConfig_3(t *testing.T) {
-	_ = initHystrixConfig()
 	//This should use default
 	configGot := getConfig("Mock.Service", "GetMock")
 	assert.NotNil(t, configGot)
@@ -94,7 +106,7 @@ func TestGetHystrixFallback(t *testing.T) {
 	fallbackGot := getHystrixFallback("mock")
 	assert.NotNil(t, fallbackGot)
 	fallbackGot = getHystrixFallback("notExist")
-	assert.Nil(t, fallbackGot)
+	assert.IsType(t,&DefaultHystrixFallback{},fallbackGot)
 }
 
 func TestDefaultHystrixFallback_FallbackFunc(t *testing.T) {
