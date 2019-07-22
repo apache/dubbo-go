@@ -34,7 +34,7 @@ func mockInitHystrixConfig(){
 		2000,
 		8,
 		15,
-		5000,
+		4000,
 		45,
 		"",
 	}
@@ -44,7 +44,8 @@ func mockInitHystrixConfig(){
 		5,
 		6000,
 		60,
-		"",
+		"exampleFallback",
+
 	}
 	conf.Services["com.ikurento.user.UserProvider"]=ServiceHystrixConfig{
 		"userp",
