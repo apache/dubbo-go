@@ -1,4 +1,4 @@
-package hystrix_example
+package main
 
 import (
 	"github.com/apache/dubbo-go/filter/impl"
