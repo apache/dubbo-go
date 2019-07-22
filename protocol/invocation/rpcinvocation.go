@@ -22,8 +22,6 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
 )
 
@@ -41,51 +39,11 @@ type RPCInvocation struct {
 	invoker        protocol.Invoker
 }
 
-func NewRPCInvocationForConsumer(methodName string, parameterTypes []reflect.Type, arguments []interface{},
-	reply interface{}, callBack interface{}, url common.URL, invoker protocol.Invoker) *RPCInvocation {
-
-	attachments := map[string]string{}
-	attachments[constant.PATH_KEY] = url.Path
-	attachments[constant.GROUP_KEY] = url.GetParam(constant.GROUP_KEY, "")
-	attachments[constant.INTERFACE_KEY] = url.GetParam(constant.INTERFACE_KEY, "")
-	attachments[constant.VERSION_KEY] = url.GetParam(constant.VERSION_KEY, "")
-
-	return &RPCInvocation{
-		methodName:     methodName,
-		parameterTypes: parameterTypes,
-		arguments:      arguments,
-		reply:          reply,
-		callBack:       callBack,
-		attachments:    attachments,
-		invoker:        invoker,
-	}
-}
-
-func NewRPCInvocationForProvider(methodName string, arguments []interface{}, attachments map[string]string) *RPCInvocation {
+func NewRPCInvocation(methodName string, arguments []interface{}, attachments map[string]string) *RPCInvocation {
 	return &RPCInvocation{
 		methodName:  methodName,
 		arguments:   arguments,
 		attachments: attachments,
-	}
-}
-
-type option func(invo *RPCInvocation)
-
-func WithMethodName(methodName string) option {
-	return func(invo *RPCInvocation) {
-		invo.methodName = methodName
-	}
-}
-
-func WithParameterTypes(parameterTypes []reflect.Type) option {
-	return func(invo *RPCInvocation) {
-		invo.parameterTypes = parameterTypes
-	}
-}
-
-func WithArguments(arguments []interface{}) option {
-	return func(invo *RPCInvocation) {
-		invo.arguments = arguments
 	}
 }
 
@@ -147,14 +105,58 @@ func (r *RPCInvocation) SetInvoker() protocol.Invoker {
 	return r.invoker
 }
 
-func (r *RPCInvocation) SetCallBack(c interface{}) {
-	r.callBack = c
-}
-
 func (r *RPCInvocation) CallBack() interface{} {
 	return r.callBack
 }
 
-func (r *RPCInvocation) SetMethod(method string) {
-	r.methodName = method
+func (r *RPCInvocation) SetCallBack(c interface{}) {
+	r.callBack = c
+}
+
+///////////////////////////
+// option
+///////////////////////////
+
+type option func(invo *RPCInvocation)
+
+func WithMethodName(methodName string) option {
+	return func(invo *RPCInvocation) {
+		invo.methodName = methodName
+	}
+}
+
+func WithParameterTypes(parameterTypes []reflect.Type) option {
+	return func(invo *RPCInvocation) {
+		invo.parameterTypes = parameterTypes
+	}
+}
+
+func WithArguments(arguments []interface{}) option {
+	return func(invo *RPCInvocation) {
+		invo.arguments = arguments
+	}
+}
+
+func WithReply(reply interface{}) option {
+	return func(invo *RPCInvocation) {
+		invo.reply = reply
+	}
+}
+
+func WithCallBack(callBack interface{}) option {
+	return func(invo *RPCInvocation) {
+		invo.callBack = callBack
+	}
+}
+
+func WithAttachments(attachments map[string]string) option {
+	return func(invo *RPCInvocation) {
+		invo.attachments = attachments
+	}
+}
+
+func WithInvoker(invoker protocol.Invoker) option {
+	return func(invo *RPCInvocation) {
+		invo.invoker = invoker
+	}
 }

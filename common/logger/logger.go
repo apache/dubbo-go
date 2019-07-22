@@ -85,8 +85,6 @@ func InitLog(logConfFile string) error {
 
 	InitLogger(conf)
 
-	// set getty log
-	getty.SetLogger(logger)
 	return nil
 }
 
@@ -112,9 +110,16 @@ func InitLogger(conf *zap.Config) {
 	}
 	zapLogger, _ := zapLoggerConfig.Build(zap.AddCallerSkip(1))
 	logger = zapLogger.Sugar()
+
+	// set getty log
+	getty.SetLogger(logger)
 }
 
 func SetLogger(log Logger) {
 	logger = log
 	getty.SetLogger(logger)
+}
+
+func GetLogger() Logger {
+	return logger
 }
