@@ -43,17 +43,19 @@ import (
 
 type ServiceConfig struct {
 	context       context.Context
-	Filter        string          `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	Protocol      string          `required:"true"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"` //multi protocol support, split by ','
-	InterfaceName string          `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
-	Registry      string          `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
-	Cluster       string          `default:"failover" yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
-	Loadbalance   string          `default:"random" yaml:"loadbalance"  json:"loadbalance,omitempty"  property:"loadbalance"`
-	Group         string          `yaml:"group"  json:"group,omitempty" property:"group"`
-	Version       string          `yaml:"version"  json:"version,omitempty" property:"version" `
-	Methods       []*MethodConfig `yaml:"methods"  json:"methods,omitempty" property:"methods"`
-	Warmup        string          `yaml:"warmup"  json:"warmup,omitempty"  property:"warmup"`
-	Retries       int64           `yaml:"retries"  json:"retries,omitempty" property:"retries"`
+	id            string
+	Filter        string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	Protocol      string            `required:"true"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"` //multi protocol support, split by ','
+	InterfaceName string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
+	Registry      string            `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
+	Cluster       string            `default:"failover" yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
+	Loadbalance   string            `default:"random" yaml:"loadbalance"  json:"loadbalance,omitempty"  property:"loadbalance"`
+	Group         string            `yaml:"group"  json:"group,omitempty" property:"group"`
+	Version       string            `yaml:"version"  json:"version,omitempty" property:"version" `
+	Methods       []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
+	Warmup        string            `yaml:"warmup"  json:"warmup,omitempty"  property:"warmup"`
+	Retries       int64             `yaml:"retries"  json:"retries,omitempty" property:"retries"`
+	Params        map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
 	unexported    *atomic.Bool
 	exported      *atomic.Bool
 	rpcService    common.RPCService
@@ -66,8 +68,12 @@ func (c *ServiceConfig) Prefix() string {
 	return constant.ServiceConfigPrefix + c.InterfaceName + "."
 }
 
-func NewServiceConfig() *ServiceConfig {
+// The only way to get a new ServiceConfig
+func NewServiceConfig(id string, context context.Context) *ServiceConfig {
+
 	return &ServiceConfig{
+		context:    context,
+		id:         id,
 		unexported: atomic.NewBool(false),
 		exported:   atomic.NewBool(false),
 	}
@@ -99,15 +105,12 @@ func (srvconfig *ServiceConfig) Export() error {
 			logger.Errorf(err.Error())
 			return err
 		}
-		//contextPath := proto.ContextPath
-		//if contextPath == "" {
-		//	contextPath = providerConfig.Path
-		//}
-		url := common.NewURLWithOptions(common.WithPath(srvconfig.InterfaceName),
+		url := common.NewURLWithOptions(common.WithPath(srvconfig.id),
 			common.WithProtocol(proto.Name),
 			common.WithIp(proto.Ip),
 			common.WithPort(proto.Port),
 			common.WithParams(urlMap),
+			common.WithParamsValue(constant.BEAN_NAME_KEY, srvconfig.id),
 			common.WithMethods(strings.Split(methods, ",")))
 
 		if len(regUrls) > 0 {
@@ -148,6 +151,10 @@ func (srvconfig *ServiceConfig) Implement(s common.RPCService) {
 
 func (srvconfig *ServiceConfig) getUrlMap() url.Values {
 	urlMap := url.Values{}
+	//first set user params
+	for k, v := range srvconfig.Params {
+		urlMap.Set(k, v)
+	}
 	urlMap.Set(constant.INTERFACE_KEY, srvconfig.InterfaceName)
 	urlMap.Set(constant.TIMESTAMP_KEY, strconv.FormatInt(time.Now().Unix(), 10))
 	urlMap.Set(constant.CLUSTER_KEY, srvconfig.Cluster)

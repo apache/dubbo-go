@@ -35,8 +35,8 @@ func Test_refresh(t *testing.T) {
 	c := &BaseConfig{}
 	mockMap := map[string]string{}
 	mockMap["dubbo.registries.shanghai_reg1.protocol"] = "mock100"
-	mockMap["dubbo.reference.MockService.MockService.retries"] = "10"
-	mockMap["dubbo.MockService.MockService.GetUser.retries"] = "10"
+	mockMap["dubbo.reference.com.MockService.MockService.retries"] = "10"
+	mockMap["dubbo.com.MockService.MockService.GetUser.retries"] = "10"
 	mockMap["dubbo.consumer.check"] = "false"
 	mockMap["dubbo.application.name"] = "dubbo"
 
@@ -88,7 +88,7 @@ func Test_refresh(t *testing.T) {
 		},
 		References: map[string]*ReferenceConfig{
 			"MockService": {
-				InterfaceName: "MockService",
+				InterfaceName: "com.MockService",
 				Protocol:      "mock",
 				Cluster:       "failover",
 				Loadbalance:   "random",
@@ -98,13 +98,14 @@ func Test_refresh(t *testing.T) {
 				Methods: []*MethodConfig{
 					{
 						InterfaceId:   "MockService",
-						InterfaceName: "MockService",
+						InterfaceName: "com.MockService",
 						Name:          "GetUser",
 						Retries:       2,
 						Loadbalance:   "random",
 					},
-					{InterfaceId: "MockService",
-						InterfaceName: "MockService",
+					{
+						InterfaceId:   "MockService",
+						InterfaceName: "com.MockService",
 						Name:          "GetUser1",
 						Retries:       2,
 						Loadbalance:   "random",
@@ -128,8 +129,8 @@ func Test_refreshProvider(t *testing.T) {
 	c := &BaseConfig{}
 	mockMap := map[string]string{}
 	mockMap["dubbo.registries.shanghai_reg1.protocol"] = "mock100"
-	mockMap["dubbo.service.MockService.MockService.retries"] = "10"
-	mockMap["dubbo.MockService.MockService.GetUser.retries"] = "10"
+	mockMap["dubbo.service.com.MockService.MockService.retries"] = "10"
+	mockMap["dubbo.com.MockService.MockService.GetUser.retries"] = "10"
 	mockMap["dubbo.consumer.check"] = "false"
 	mockMap["dubbo.application.name"] = "dubbo"
 	mockMap["dubbo.protocols.jsonrpc1.name"] = "jsonrpc"
@@ -183,7 +184,7 @@ func Test_refreshProvider(t *testing.T) {
 		},
 		Services: map[string]*ServiceConfig{
 			"MockService": {
-				InterfaceName: "MockService",
+				InterfaceName: "com.MockService",
 				Protocol:      "mock",
 				Cluster:       "failover",
 				Loadbalance:   "random",
@@ -193,13 +194,13 @@ func Test_refreshProvider(t *testing.T) {
 				Methods: []*MethodConfig{
 					{
 						InterfaceId:   "MockService",
-						InterfaceName: "MockService",
+						InterfaceName: "com.MockService",
 						Name:          "GetUser",
 						Retries:       2,
 						Loadbalance:   "random",
 					},
 					{InterfaceId: "MockService",
-						InterfaceName: "MockService",
+						InterfaceName: "com.MockService",
 						Name:          "GetUser1",
 						Retries:       2,
 						Loadbalance:   "random",

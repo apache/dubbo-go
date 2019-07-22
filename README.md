@@ -53,11 +53,22 @@ Todo List:
 
 You can know more about dubbo-go by its [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap).
 
+## Document
 
+Move [here](https://dubbogo.github.io/dubbo-go-website/)
 
 ## Quick Start
 
 The subdirectory examples shows how to use dubbo-go. Please read the [examples/README.md](https://github.com/apache/dubbo-go/blob/develop/examples/README.md) carefully to learn how to dispose the configuration and compile the program.
+
+## Running unit tests
+
+```bash
+go test ./...
+
+# coverage
+go test ./... -coverprofile=coverage.txt -covermode=atomic
+```
 
 ## Contributing
 
