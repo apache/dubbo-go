@@ -15,12 +15,10 @@ import (
 const (
 	HYSTRIX = "hystrix"
 )
+
 type HystrixFallback interface {
 	FallbackFunc(err error, invoker protocol.Invoker, invocation protocol.Invocation, cb hystrix.CircuitBreaker) protocol.Result
 }
-
-
-
 
 var (
 	isConfigLoaded = false
@@ -73,7 +71,7 @@ func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 	var result protocol.Result
 	_ = hystrix.Do(cmdName, func() error {
 		result = invoker.Invoke(invocation)
-		return nil
+		return result.Error()
 	}, func(err error) error {
 		//failure logic
 		logger.Debugf("[Hystrix Filter]Invoke failed, circuit breaker open: %v", cb.IsOpen())
@@ -81,7 +79,7 @@ func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 
 		//If user try to return nil in the customized fallback func, it will cause panic
 		//So check here
-		if result == nil{
+		if result == nil {
 			result = &protocol.RPCResult{}
 		}
 		return nil
@@ -163,7 +161,7 @@ func getHystrixFallback(name string) HystrixFallback {
 	fallbackImpl := fallback[name]
 	if fallbackImpl == nil {
 		logger.Warnf("[Hystrix Filter]Fallback func not found: %s", name)
-		fallbackImpl =& DefaultHystrixFallback{}
+		fallbackImpl = &DefaultHystrixFallback{}
 	}
 	return fallbackImpl
 }
