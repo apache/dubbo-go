@@ -8,7 +8,6 @@ import "github.com/afex/hystrix-go/hystrix"
 
 const EXAMPLE_FALLBACK_NAME = "exampleFallback"
 
-
 type ExampleHystrixFallback struct {
 }
 
@@ -18,7 +17,7 @@ type ExampleHystrixFallback struct {
 //The invoker that the filter receives;
 //The invocation that should be invoked;
 //The copy of circuit breaker for this invocation, for getting its status
-func(f *ExampleHystrixFallback) FallbackFunc (err error, invoker protocol.Invoker, invocation protocol.Invocation, cb hystrix.CircuitBreaker) protocol.Result {
+func (f *ExampleHystrixFallback) FallbackFunc(err error, invoker protocol.Invoker, invocation protocol.Invocation, cb hystrix.CircuitBreaker) protocol.Result {
 	result := &protocol.RPCResult{}
 	if cb.IsOpen() {
 		result.SetError(nil)
@@ -28,7 +27,6 @@ func(f *ExampleHystrixFallback) FallbackFunc (err error, invoker protocol.Invoke
 	}
 	return result
 }
-
 
 //Add the fallback function to the map
 //The name MUST be the same as in your config file
