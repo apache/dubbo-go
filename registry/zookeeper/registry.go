@@ -211,7 +211,6 @@ func (r *zkRegistry) Register(conf common.URL) error {
 	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
 	switch role {
 	case common.CONSUMER:
-		ok = false
 		r.cltLock.Lock()
 		_, ok = r.services[conf.Key()]
 		r.cltLock.Unlock()
@@ -232,7 +231,6 @@ func (r *zkRegistry) Register(conf common.URL) error {
 	case common.PROVIDER:
 
 		// 检验服务是否已经注册过
-		ok = false
 		r.cltLock.Lock()
 		// 注意此处与consumerZookeeperRegistry的差异，consumer用的是conf.Path，
 		// 因为consumer要提供watch功能给selector使用, provider允许注册同一个service的多个group or version
