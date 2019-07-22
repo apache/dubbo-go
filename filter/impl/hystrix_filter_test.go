@@ -106,13 +106,6 @@ func TestDefaultHystrixFallback_FallbackFunc(t *testing.T) {
 
 }
 
-type (
-	User struct {
-		Id   string `json:"id"`
-		Name string `json:"name"`
-	}
-)
-
 type testMockSuccessInvoker struct {
 	protocol.BaseInvoker
 }
