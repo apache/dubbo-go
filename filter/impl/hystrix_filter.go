@@ -74,7 +74,7 @@ func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 		return result.Error()
 	}, func(err error) error {
 		//failure logic
-		logger.Debugf("[Hystrix Filter]Invoke failed, circuit breaker open: %v", cb.IsOpen())
+		logger.Debugf("[Hystrix Filter]Invoke failed, error is: %v, circuit breaker open: %v",err, cb.IsOpen())
 		result = hf.fallback.FallbackFunc(err, invoker, invocation, *cb)
 
 		//If user try to return nil in the customized fallback func, it will cause panic
