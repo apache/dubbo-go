@@ -131,6 +131,9 @@ func getConfig(service string, method string) CommandConfigWithFallback {
 }
 
 func initHystrixConfig() error {
+	if config.GetConsumerConfig().FilterConf == nil{
+		return perrors.Errorf("no config for hystrix")
+	}
 	filterConfig := config.GetConsumerConfig().FilterConf.(map[interface{}]interface{})[HYSTRIX]
 	if filterConfig == nil {
 		return perrors.Errorf("no config for hystrix")
