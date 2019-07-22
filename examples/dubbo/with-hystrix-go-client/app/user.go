@@ -115,3 +115,7 @@ func (u *UserProvider) Service() string {
 func (u *UserProvider) Version() string {
 	return ""
 }
+
+func (u *UserProvider) Reference() string {
+	return "UserProvider"
+}
