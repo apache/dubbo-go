@@ -1,12 +1,12 @@
-  # dubbo client yaml configure file
+# dubbo client yaml configure file
 
-filter: ""
 
-# client
-request_timeout : "100ms"
-# connect timeout
-connect_timeout : "100ms"
 check: true
+# client
+request_timeout : "3s"
+# connect timeout
+connect_timeout : "3s"
+
 # application config
 application_config:
   organization : "ikurento.com"
@@ -14,7 +14,7 @@ application_config:
   module : "dubbogo user-info client"
   version : "0.0.1"
   owner : "ZX"
-  environment : "dev"
+  environment : "test"
 
 registries :
   "hangzhouzk":
@@ -23,13 +23,20 @@ registries :
     address: "127.0.0.1:2181"
     username: ""
     password: ""
-
+  "shanghaizk":
+    protocol: "zookeeper"
+    timeout	: "3s"
+    address: "127.0.0.1:2182"
+    username: ""
+    password: ""
 
 references:
   "UserProvider":
+    # 可以指定多个registry，使用逗号隔开;不指定默认向所有注册中心注册
     registry: "hangzhouzk"
-    filter: "hystrix"
     protocol : "dubbo"
+#    version: "2.0"
+#    group: "as"
     interface : "com.ikurento.user.UserProvider"
     cluster: "failover"
     methods :
@@ -57,7 +64,7 @@ protocol_conf:
       tcp_read_timeout: "1s"
       tcp_write_timeout: "5s"
       wait_timeout: "1s"
-      max_msg_len: 1024
+      max_msg_len: 10240
       session_name: "client"
 
 filter_conf:
@@ -70,9 +77,9 @@ filter_conf:
         error_percent_threshold : 50
         request_volume_threshold: 20
       "userp":
-        timeout: 800
+        timeout: 1200
         max_concurrent_requests: 8
-        sleep_window: 4
+        sleep_window: 4000
         error_percent_threshold: 45
         request_volume_threshold: 15
       "userp_m":
