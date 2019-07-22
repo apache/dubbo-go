@@ -11,18 +11,18 @@ import (
 	"time"
 )
 
-func init(){
+func init() {
 	mockInitHystrixConfig()
 }
 
-func mockInitHystrixConfig(){
+func mockInitHystrixConfig() {
 	//Mock config
-	conf=&HystrixFilterConfig{
+	conf = &HystrixFilterConfig{
 		make(map[string]*CommandConfigWithFallback),
 		"Default",
 		make(map[string]ServiceHystrixConfig),
 	}
-	conf.Configs["Default"]= &CommandConfigWithFallback{
+	conf.Configs["Default"] = &CommandConfigWithFallback{
 		1000,
 		10,
 		20,
@@ -30,7 +30,7 @@ func mockInitHystrixConfig(){
 		50,
 		"",
 	}
-	conf.Configs["userp"]=&CommandConfigWithFallback{
+	conf.Configs["userp"] = &CommandConfigWithFallback{
 		2000,
 		8,
 		15,
@@ -38,19 +38,18 @@ func mockInitHystrixConfig(){
 		45,
 		"",
 	}
-	conf.Configs["userp_m"]=&CommandConfigWithFallback{
+	conf.Configs["userp_m"] = &CommandConfigWithFallback{
 		1200,
 		12,
 		5,
 		6000,
 		60,
 		"exampleFallback",
-
 	}
-	conf.Services["com.ikurento.user.UserProvider"]=ServiceHystrixConfig{
+	conf.Services["com.ikurento.user.UserProvider"] = ServiceHystrixConfig{
 		"userp",
-		map[string] string{
-			"GetUser":"userp_m",
+		map[string]string{
+			"GetUser": "userp_m",
 		},
 	}
 
@@ -107,7 +106,7 @@ func TestGetHystrixFallback(t *testing.T) {
 	fallbackGot := getHystrixFallback("mock")
 	assert.NotNil(t, fallbackGot)
 	fallbackGot = getHystrixFallback("notExist")
-	assert.IsType(t,&DefaultHystrixFallback{},fallbackGot)
+	assert.IsType(t, &DefaultHystrixFallback{}, fallbackGot)
 }
 
 func TestDefaultHystrixFallback_FallbackFunc(t *testing.T) {
