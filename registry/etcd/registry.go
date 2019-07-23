@@ -72,6 +72,8 @@ func newETCDV3Registry(url *common.URL) (registry.Registry, error) {
 		return nil, errors.Annotate(err, "block connect to etcd server")
 	}
 
+	rawClient.ActiveConnection()
+
 	rootCtx, cancel := context.WithCancel(context.Background())
 	client, err := etcd.NewClient(rawClient, etcd.WithTTL(time.Second), etcd.WithContext(rootCtx))
 	if err != nil {
