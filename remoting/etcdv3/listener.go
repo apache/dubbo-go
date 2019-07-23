@@ -1,29 +1,14 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-package zookeeper
+package etcdv3
 
 import (
-	"path"
+	"gx/ipfs/QmZErC2Ay6WuGi96CPg316PwitdwgLo6RxZRqVjJjRj2MR/go-path"
+	pathlib "path"
 	"sync"
 	"time"
 )
 
 import (
+	"github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/dubbogo/getty"
 	perrors "github.com/pkg/errors"
 	"github.com/samuel/go-zookeeper/zk"
@@ -34,66 +19,78 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
-type ZkEventListener struct {
-	client      *ZookeeperClient
+type EventListener struct {
+	client      *Client
 	pathMapLock sync.Mutex
 	pathMap     map[string]struct{}
 	wg          sync.WaitGroup
 }
 
-func NewZkEventListener(client *ZookeeperClient) *ZkEventListener {
-	return &ZkEventListener{
+func NewEventListener(client *Client) *EventListener {
+	return &EventListener{
 		client:  client,
 		pathMap: make(map[string]struct{}),
 	}
 }
-func (l *ZkEventListener) SetClient(client *ZookeeperClient) {
+func (l *EventListener) SetClient(client *Client) {
 	l.client = client
 }
-func (l *ZkEventListener) ListenServiceNodeEvent(zkPath string, listener ...remoting.DataListener) bool {
+
+// this method will return true when spec path deleted,
+// this method will return false when deep layer connection lose
+func (l *EventListener) ListenServiceNodeEvent(path string, listener ...remoting.DataListener) bool {
 	l.wg.Add(1)
 	defer l.wg.Done()
-	var zkEvent zk.Event
 	for {
-		keyEventCh, err := l.client.ExistW(zkPath)
+		keyEventCh, err := l.client.ExistW(path)
 		if err != nil {
-			logger.Warnf("existW{key:%s} = error{%v}", zkPath, err)
+			logger.Warnf("existW{key:%s} = error{%v}", path, err)
 			return false
 		}
 
 		select {
-		case zkEvent = <-keyEventCh:
-			logger.Warnf("get a zookeeper zkEvent{type:%s, server:%s, path:%s, state:%d-%s, err:%s}",
-				zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, StateToString(zkEvent.State), zkEvent.Err)
-			switch zkEvent.Type {
-			case zk.EventNodeDataChanged:
-				logger.Warnf("zk.ExistW(key{%s}) = event{EventNodeDataChanged}", zkPath)
-				if len(listener) > 0 {
-					content, _, _ := l.client.Conn.Get(zkEvent.Path)
-					listener[0].DataChange(remoting.Event{Path: zkEvent.Path, Action: remoting.EvnetTypeUpdate, Content: string(content)})
-				}
+		// client watch ctx stop
+		// server stopped
+		case <-l.client.cs.ctx.Done():
+			return false
 
-			case zk.EventNodeCreated:
-				logger.Warnf("zk.ExistW(key{%s}) = event{EventNodeCreated}", zkPath)
-				if len(listener) > 0 {
-					content, _, _ := l.client.Conn.Get(zkEvent.Path)
-					listener[0].DataChange(remoting.Event{Path: zkEvent.Path, Action: remoting.EventTypeAdd, Content: string(content)})
-				}
-			case zk.EventNotWatching:
-				logger.Warnf("zk.ExistW(key{%s}) = event{EventNotWatching}", zkPath)
-			case zk.EventNodeDeleted:
-				logger.Warnf("zk.ExistW(key{%s}) = event{EventNodeDeleted}", zkPath)
-				return true
-			}
+		// client stopped
 		case <-l.client.Done():
 			return false
+
+		// etcd event stream
+		case e := <-keyEventCh:
+
+			if e.Err() != nil{
+				logger.Warnf("get a etcd event {err: %s}", e.Err())
+			}
+			for _, event := range e.Events{
+				logger.Warnf("get a etcd Event{type:%s,  path:%s,}",
+					event.Type.String(), event.Kv.Key )
+				switch event.Type {
+				case mvccpb.PUT:
+					if len(listener) > 0 {
+						if event.IsCreate(){
+							logger.Warnf("etcdV3.ExistW(key{%s}) = event{EventNodeDataCreated}", event.Kv.Key)
+							listener[0].DataChange(remoting.Event{Path: string(event.Kv.Key), Action: remoting.EventTypeAdd, Content: string(event.Kv.Value)})
+						}else{
+							logger.Warnf("etcdV3.ExistW(key{%s}) = event{EventNodeDataChanged}", event.Kv.Key)
+							listener[0].DataChange(remoting.Event{Path: string(event.Kv.Key), Action: remoting.EvnetTypeUpdate, Content: string(event.Kv.Value)})
+						}
+					}
+				case mvccpb.DELETE:
+					logger.Warnf("etcdV3.ExistW(key{%s}) = event{EventNodeDeleted}", event.Kv.Key)
+					return true
+				}
+			}
 		}
 	}
 
 	return false
 }
 
-func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, listener remoting.DataListener) {
+
+func (l *EventListener) handleNodeEvent(path string, children []string, listener remoting.DataListener) {
 	contains := func(s []string, e string) bool {
 		for _, a := range s {
 			if a == e {
@@ -104,9 +101,9 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 		return false
 	}
 
-	newChildren, err := l.client.GetChildren(zkPath)
+	newChildren, err := l.client.GetChildren(path)
 	if err != nil {
-		logger.Errorf("path{%s} child nodes changed, zk.Children() = error{%v}", zkPath, perrors.WithStack(err))
+		logger.Errorf("path{%s} child nodes changed, etcdV3.Children() = error{%v}", path, perrors.WithStack(err))
 		return
 	}
 
@@ -119,7 +116,7 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 			continue
 		}
 
-		newNode = path.Join(zkPath, n)
+		newNode = pathlib.Join(path, n)
 		logger.Infof("add zkNode{%s}", newNode)
 		content, _, err := l.client.Conn.Get(newNode)
 		if err != nil {
