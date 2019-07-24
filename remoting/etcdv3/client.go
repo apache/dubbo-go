@@ -2,13 +2,13 @@ package etcdv3
 
 import (
 	"context"
+	"fmt"
 	"path"
 	"sync"
 	"time"
 )
 
 import (
-	"github.com/AlexStocks/goext/database/etcd"
 	"github.com/juju/errors"
 	perrors "github.com/pkg/errors"
 	"go.etcd.io/etcd/clientv3"
@@ -24,10 +24,11 @@ import (
 const (
 	ConnDelay    = 3
 	MaxFailTimes = 15
+	RegistryETCDV3Client = "etcd registry"
 )
 
 var (
-	ErrNilETCDV3ClientConn = errors.New("etcdv3client{conn} is nil")
+	ErrNilETCDV3ClientConn = errors.New("etcd clientset {conn} is nil") // full describe the ERR
 	ErrKVPairNotFound      = errors.New("k/v pair not found")
 )
 
@@ -36,7 +37,7 @@ type clientSet struct {
 	lock sync.RWMutex // protect all element in
 
 	// clientSet
-	gxClient  *gxetcd.Client
+	//gxClient  *gxetcd.Client
 	rawClient *clientv3.Client
 
 	// client controller used to change client behave
@@ -60,17 +61,17 @@ func newClientSet(endpoints []string, timeout time.Duration, c *Client) error {
 		DialOptions: []grpc.DialOption{grpc.WithBlock()},
 	})
 	if err != nil {
-		return errors.Annotate(err, "block connect to etcd server")
+		return errors.Annotate(err, "new raw client block connect to server")
 	}
 
 	// share context
-	gxClient, err := gxetcd.NewClient(client, gxetcd.WithTTL(time.Second), gxetcd.WithContext(rootCtx))
-	if err != nil {
-		return errors.Annotate(err, "new etcd client")
-	}
+	//gxClient, err := gxetcd.NewClient(client, gxetcd.WithTTL(time.Second), gxetcd.WithContext(rootCtx))
+	//if err != nil {
+	//	return errors.Annotate(err, "new gxetcd client")
+	//}
 
 	out := &clientSet{
-		gxClient:             gxClient,
+		//gxClient:             gxClient,
 		rawClient:            client,
 		ctx:                  rootCtx,
 		cancel:               cancel,
@@ -92,12 +93,20 @@ func newClientSet(endpoints []string, timeout time.Duration, c *Client) error {
 func (c *clientSet) maintenanceStatus() error {
 
 	c.c.Wait.Add(1)
-	aliveResp, err := c.gxClient.KeepAlive()
+
+	lease, err := c.rawClient.Grant(c.ctx, int64(time.Second.Seconds()))
 	if err != nil {
-		return errors.Annotatef(err, "etcd keep alive")
+		return errors.Annotatef(err, "grant lease")
 	}
+
+	keepAlive, err := c.rawClient.KeepAlive(c.ctx, lease.ID)
+	if err != nil || keepAlive == nil {
+		c.rawClient.Revoke(c.ctx, lease.ID)
+		return errors.Annotate(err, "keep alive lease")
+	}
+
 	// start maintenance the connection status
-	go c.maintenanceStatusLoop(aliveResp)
+	go c.maintenanceStatusLoop(keepAlive)
 	return nil
 }
 
@@ -105,7 +114,7 @@ func (c *clientSet) maintenanceStatusLoop(aliveResp <-chan *clientv3.LeaseKeepAl
 
 	defer func() {
 		c.c.Wait.Done()
-		logger.Infof("etcd {path:%v, name:%s} connection goroutine game over.", c.c.endpoints, c.c.name)
+		logger.Infof("etcdv3 clientset {endpoints:%v, name:%s} connection goroutine game over.", c.c.endpoints, c.c.name)
 	}()
 
 	// get signal, will start maintenanceStatusLoop
@@ -118,7 +127,7 @@ func (c *clientSet) maintenanceStatusLoop(aliveResp <-chan *clientv3.LeaseKeepAl
 			return
 		case <-c.ctx.Done():
 			// client context exit
-			logger.Warn("etcd clientSet context done")
+			logger.Warn("etcdv3 clientset context done")
 			return
 		case msg, ok := <-aliveResp:
 			// etcd connection lose
@@ -126,7 +135,7 @@ func (c *clientSet) maintenanceStatusLoop(aliveResp <-chan *clientv3.LeaseKeepAl
 			// if clientSet.Client is nil, it will panic
 			if !ok {
 
-				logger.Warnf("etcd server stop at term: %#v", msg)
+				logger.Warnf("etcdv3 server stop at term: %#v", msg)
 
 				c.c.Lock() // hold the c.Client lock
 				c.c.cs.clean()
@@ -213,8 +222,23 @@ func (c *clientSet) getChildrenW(k string) ([]string, []string, clientv3.WatchCh
 		return nil, nil, nil, ErrNilETCDV3ClientConn
 	}
 
-	wc := c.rawClient.Watch(c.ctx, k, clientv3.WithPrefix())
+	wc,err := c.watchWithPrefix(k)
+	if err != nil{
+		return nil, nil, nil,errors.Annotate(err, "watch with prefix")
+	}
 	return kList, vList, wc, nil
+}
+
+func (c *clientSet) watchWithPrefix(prefix string) (clientv3.WatchChan, error) {
+
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	if c.rawClient == nil {
+		return nil, ErrNilETCDV3ClientConn
+	}
+
+	return c.rawClient.Watch(c.ctx, prefix, clientv3.WithPrefix()), nil
 }
 
 func (c *clientSet) watch(k string) (clientv3.WatchChan, error) {
@@ -228,7 +252,7 @@ func (c *clientSet) watch(k string) (clientv3.WatchChan, error) {
 
 	_, err := c.get(k)
 	if err != nil {
-		return nil, errors.Annotatef(err, "watch pre check key %s", k)
+		return nil, errors.Annotatef(err, "pre check key %s", k)
 	}
 
 	return c.rawClient.Watch(c.ctx, k), nil
@@ -296,11 +320,10 @@ func (c *clientSet) keepAliveKV(k string, v string) error {
 // this method will hold clientset lock
 func (c *clientSet) clean() {
 	c.lock.Lock()
-	if c.gxClient != nil {
+	if c.rawClient != nil {
 
-		// close gx client, it will close raw etcdv3 client
-		c.gxClient.Close()
-		c.gxClient = nil
+		// close raw etcdv3 client
+		c.rawClient.Close()
 		c.rawClient = nil
 
 		// cancel all context
@@ -373,8 +396,6 @@ func ValidateClient(container clientFacade, opts ...Option) error {
 		opt(options)
 	}
 
-	err = nil
-
 	lock := container.ClientLock()
 	url := container.GetUrl()
 
@@ -388,13 +409,13 @@ func ValidateClient(container clientFacade, opts ...Option) error {
 		if err != nil {
 			logger.Errorf("timeout config %v is invalid ,err is %v",
 				url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), err.Error())
-			return errors.Annotatef(err, "newETCDV3Client(address:%+v)", url.Location)
+			return errors.Annotate(err, "timeout parse")
 		}
 		newClient, err := newClient(options.name, []string{url.Location}, timeout)
 		if err != nil {
-			logger.Warnf("newETCDV3Client(name{%s}, etcd addresss{%v}, timeout{%d}) = error{%v}",
+			logger.Warnf("new client (name{%s}, etcd addresss{%v}, timeout{%d}) = error{%v}",
 				options.name, url.Location, timeout.String(), err)
-			return errors.Annotatef(err, "newETCDV3Client(address:%+v)", url.Location)
+			return errors.Annotatef(err, "new client (address:%+v)", url.Location)
 		}
 		container.SetClient(newClient)
 	}
@@ -403,12 +424,12 @@ func ValidateClient(container clientFacade, opts ...Option) error {
 
 		err = newClientSet(container.Client().endpoints, container.Client().timeout, container.Client())
 		if err != nil {
-			return errors.Annotate(err, "new client set")
+			return errors.Annotate(err, "new clientset")
 		}
 		container.Client().cs.startMaintenanceChan <- struct{}{}
 	}
 
-	return errors.Annotatef(err, "newETCDV3Client(address:%+v)", url.PrimitiveURL)
+	return nil
 }
 
 func newClient(name string, endpoints []string, timeout time.Duration) (*Client, error) {
@@ -427,7 +448,7 @@ func newClient(name string, endpoints []string, timeout time.Duration) (*Client,
 
 	err = newClientSet(endpoints, timeout, out)
 	if err != nil {
-		return nil, errors.Annotate(err, "new client set")
+		return nil, errors.Annotate(err, "new clientset")
 	}
 
 	// start maintenanceChan
@@ -445,19 +466,25 @@ func (c *Client) stop() bool {
 
 	return false
 }
-func (c *Client) RegisterEvent(key string, wc chan clientv3.WatchResponse) {
+
+func (c *Client) RegisterEvent(key string, wc chan clientv3.WatchResponse) error {
 
 	if key == "" || wc == nil {
-		return
+		return errors.New(fmt.Sprintf("key is %s, wc is %v", key, wc))
+	}
+
+	wcc, err := c.cs.watch(key)
+	if err != nil {
+		return errors.Annotatef(err, "clientset watch %s", key)
 	}
 
 	c.Lock()
 	a := c.eventRegistry[key]
 	a = append(a, wc)
 	c.eventRegistry[key] = a
+	c.Unlock()
 
 	go func() {
-		wcc := c.cs.rawClient.Watch(c.cs.ctx, key)
 		for msg := range wcc {
 			wc <- msg
 		}
@@ -465,8 +492,8 @@ func (c *Client) RegisterEvent(key string, wc chan clientv3.WatchResponse) {
 		close(wc)
 	}()
 
-	logger.Debugf("etcdClient{%s} register event{path:%s, ptr:%p}", c.name, key, wc)
-	c.Unlock()
+	logger.Debugf("etcdv3 client{%s} register event{key:%s, ptr:%p}", c.name, key, wc)
+	return nil
 }
 
 func (c *Client) UnregisterEvent(key string, event chan clientv3.WatchResponse) {
@@ -485,10 +512,10 @@ func (c *Client) UnregisterEvent(key string, event chan clientv3.WatchResponse) 
 		if e == event {
 			arr := infoList
 			infoList = append(arr[:i], arr[i+1:]...)
-			logger.Debugf("etcdClient{%s} unregister event{path:%s, event:%p}", c.name, key, event)
+			logger.Debugf("etcdv3 client{%s} unregister event{key:%s, event:%p}", c.name, key, event)
 		}
 	}
-	logger.Debugf("after etcdClient{%s} unregister event{path:%s, event:%p}, array length %d",
+	logger.Debugf("after etcdv3 client{%s} unregister event{key:%s, event:%p}, array length %d",
 		c.name, key, event, len(infoList))
 	if len(infoList) == 0 {
 		delete(c.eventRegistry, key)
@@ -531,7 +558,7 @@ func (c *Client) Close() {
 		c.cs = nil
 	}
 	c.Unlock()
-	logger.Warnf("etcd client{name:%s, etcd addr:%s} exit now.", c.name, c.endpoints)
+	logger.Warnf("etcdv3 client{name:%s, etcdv3 addr:%s} exit now.", c.name, c.endpoints)
 }
 
 func (c *Client) Create(k string, v string) error {
@@ -543,7 +570,7 @@ func (c *Client) Create(k string, v string) error {
 		err = c.cs.put(k, v)
 	}
 	c.Unlock()
-	return errors.Annotatef(err, "etcd client put key %s value %s", k, v)
+	return errors.Annotatef(err, "clientset put key %s value %s", k, v)
 }
 
 func (c *Client) Delete(key string) error {
@@ -554,7 +581,7 @@ func (c *Client) Delete(key string) error {
 		err = c.cs.delete(key)
 	}
 	c.Unlock()
-	return errors.Annotatef(err, "etcd client delete (basePath:%s)", key)
+	return errors.Annotatef(err, "clientset delete (key:%s)", key)
 }
 
 func (c *Client) RegisterTemp(basePath string, node string) (string, error) {
@@ -566,40 +593,39 @@ func (c *Client) RegisterTemp(basePath string, node string) (string, error) {
 		err = c.cs.keepAliveKV(completePath, "")
 	}
 	c.Unlock()
-	logger.Debugf("etcdClient{%s} create a tmp node:%s\n", c.name, completePath)
+	logger.Debugf("etcdv3 client{%s} create a tmp node:%s\n", c.name, completePath)
 
 	if err != nil {
-		return "", errors.Annotatef(err, "etcd client create tmp k %s", completePath)
+		return "", errors.Annotatef(err, "client create tmp key %s", completePath)
 	}
 
 	return completePath, nil
 }
 
-func (c *Client) GetChildrenW(path string) ([]string, clientv3.WatchChan, error) {
+func (c *Client) WatchChildren(key string) ([]string, []string, clientv3.WatchChan, error) {
 
 	var (
-		children []string
-		err      error
-		wc       clientv3.WatchChan
+		err            error
+		childrenKeys   []string
+		childrenValues []string
+		wc             clientv3.WatchChan
 	)
+
 	err = ErrNilETCDV3ClientConn
 	c.Lock()
 	if c.cs != nil {
-		children, _, wc, err = c.cs.getChildrenW(path)
+		childrenKeys, childrenValues, wc, err = c.cs.getChildrenW(key)
 	}
 	c.Unlock()
 	if err != nil {
-		if errors.Cause(err) == ErrKVPairNotFound {
-			return nil, nil, errors.Annotatef(err,"path{%s} has none children", path)
-		}
-		logger.Errorf("etcdv3.ChildrenW(path{%s}) = error(%v)", path, err)
-		return nil, nil, errors.Annotatef(err, "etcdv3.ChildrenW(path:%s)", path)
+		logger.Errorf("etcdv3 client Children(key{%s}) = error(%v)", key, perrors.WithStack(err))
+		return nil, nil, nil, errors.Annotatef(err, "client ChildrenW(key:%s)", key)
 	}
 
-	return children, wc, nil
+	return childrenKeys, childrenValues, wc, nil
 }
 
-func (c *Client) GetChildren(path string) ([]string, error) {
+func (c *Client) GetChildren(key string) ([]string, error) {
 	var (
 		err      error
 		children []string
@@ -608,20 +634,20 @@ func (c *Client) GetChildren(path string) ([]string, error) {
 	err = ErrNilETCDV3ClientConn
 	c.Lock()
 	if c.cs != nil {
-		children, _, err = c.cs.getChildren(path)
+		children, _, err = c.cs.getChildren(key)
 	}
 	c.Unlock()
 	if err != nil {
 		if errors.Cause(err) == ErrKVPairNotFound {
-			return nil, errors.Annotatef(err,"path{%s} has none children", path)
+			return nil, errors.Annotatef(err, "key{%s} has none children", key)
 		}
-		logger.Errorf("clientv3.Children(path{%s}) = error(%v)", path, perrors.WithStack(err))
-		return nil, errors.Annotatef(err, "clientv3.Children(path:%s)", path)
+		logger.Errorf("clientv3.Children(key{%s}) = error(%v)", key, perrors.WithStack(err))
+		return nil, errors.Annotatef(err, "client GetChildren(key:%s)", key)
 	}
 	return children, nil
 }
 
-func (c *Client) ExistW(path string) (clientv3.WatchChan, error) {
+func (c *Client) WatchExist(key string) (clientv3.WatchChan, error) {
 
 	var (
 		err = ErrNilETCDV3ClientConn
@@ -630,25 +656,25 @@ func (c *Client) ExistW(path string) (clientv3.WatchChan, error) {
 
 	c.Lock()
 	if c.cs != nil {
-		_, err = c.cs.watch(path)
+		out, err = c.cs.watch(key)
 	}
 	c.Unlock()
 	if err != nil {
 		if errors.Cause(err) == ErrKVPairNotFound {
-			return nil, errors.Annotatef(err, "path{%s} not exist", path)
+			return nil, errors.Annotatef(err, "key{%s} not exist", key)
 		}
-		return nil, errors.Annotatef(err, "clientv3.ExistW(path:%s)", path)
+		return nil, errors.Annotatef(err, "client WatchExist(key:%s)", key)
 	}
 
 	return out, nil
 }
 
-func (c *Client) GetContent(path string) ([]byte, error) {
+func (c *Client) GetContent(key string) ([]byte, error) {
 
 	c.Lock()
-	value, err := c.cs.get(path)
+	value, err := c.cs.get(key)
 	if err != nil {
-		return nil, errors.Annotatef(err, "client set get: %s", path)
+		return nil, errors.Annotatef(err, "clientset get(key: %s)", key)
 	}
 	c.Unlock()
 

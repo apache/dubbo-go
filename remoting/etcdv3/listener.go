@@ -1,17 +1,14 @@
 package etcdv3
 
 import (
-	"gx/ipfs/QmZErC2Ay6WuGi96CPg316PwitdwgLo6RxZRqVjJjRj2MR/go-path"
-	pathlib "path"
 	"sync"
 	"time"
+
+	"go.etcd.io/etcd/clientv3"
 )
 
 import (
 	"github.com/coreos/etcd/mvcc/mvccpb"
-	"github.com/dubbogo/getty"
-	perrors "github.com/pkg/errors"
-	"github.com/samuel/go-zookeeper/zk"
 )
 
 import (
@@ -20,31 +17,32 @@ import (
 )
 
 type EventListener struct {
-	client      *Client
-	pathMapLock sync.Mutex
-	pathMap     map[string]struct{}
-	wg          sync.WaitGroup
+	client     *Client
+	keyMapLock sync.Mutex
+	keyMap     map[string]struct{}
+	wg         sync.WaitGroup
 }
 
 func NewEventListener(client *Client) *EventListener {
 	return &EventListener{
-		client:  client,
-		pathMap: make(map[string]struct{}),
+		client: client,
+		keyMap: make(map[string]struct{}),
 	}
 }
 func (l *EventListener) SetClient(client *Client) {
 	l.client = client
 }
 
-// this method will return true when spec path deleted,
+// Listen on a spec key
+// this method will return true when spec key deleted,
 // this method will return false when deep layer connection lose
-func (l *EventListener) ListenServiceNodeEvent(path string, listener ...remoting.DataListener) bool {
+func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.DataListener) bool {
 	l.wg.Add(1)
 	defer l.wg.Done()
 	for {
-		keyEventCh, err := l.client.ExistW(path)
+		keyEventCh, err := l.client.WatchExist(key)
 		if err != nil {
-			logger.Warnf("existW{key:%s} = error{%v}", path, err)
+			logger.Warnf("WatchExist{key:%s} = error{%v}", key, err)
 			return false
 		}
 
@@ -61,25 +59,12 @@ func (l *EventListener) ListenServiceNodeEvent(path string, listener ...remoting
 		// etcd event stream
 		case e := <-keyEventCh:
 
-			if e.Err() != nil{
-				logger.Warnf("get a etcd event {err: %s}", e.Err())
+			if e.Err() != nil {
+				logger.Errorf("get a etcdv3 event {err: %s}", e.Err())
+				continue
 			}
-			for _, event := range e.Events{
-				logger.Warnf("get a etcd Event{type:%s,  path:%s,}",
-					event.Type.String(), event.Kv.Key )
-				switch event.Type {
-				case mvccpb.PUT:
-					if len(listener) > 0 {
-						if event.IsCreate(){
-							logger.Warnf("etcdV3.ExistW(key{%s}) = event{EventNodeDataCreated}", event.Kv.Key)
-							listener[0].DataChange(remoting.Event{Path: string(event.Kv.Key), Action: remoting.EventTypeAdd, Content: string(event.Kv.Value)})
-						}else{
-							logger.Warnf("etcdV3.ExistW(key{%s}) = event{EventNodeDataChanged}", event.Kv.Key)
-							listener[0].DataChange(remoting.Event{Path: string(event.Kv.Key), Action: remoting.EvnetTypeUpdate, Content: string(event.Kv.Value)})
-						}
-					}
-				case mvccpb.DELETE:
-					logger.Warnf("etcdV3.ExistW(key{%s}) = event{EventNodeDeleted}", event.Kv.Key)
+			for _, event := range e.Events {
+				if l.handleEvents(event, listener...) {
 					return true
 				}
 			}
@@ -89,285 +74,120 @@ func (l *EventListener) ListenServiceNodeEvent(path string, listener ...remoting
 	return false
 }
 
+// return true mean the event type is DELETE
+// return false mean the event type is CREATE || UPDATE
+func (l *EventListener) handleEvents(event *clientv3.Event, listeners ...remoting.DataListener) bool {
 
-func (l *EventListener) handleNodeEvent(path string, children []string, listener remoting.DataListener) {
-	contains := func(s []string, e string) bool {
-		for _, a := range s {
-			if a == e {
-				return true
+	logger.Warnf("get a etcdv3 Event {type: %s, key: %s}", event.Type, event.Kv.Key)
+
+	switch event.Type {
+	// the etcdv3 event just include PUT && DELETE
+	case mvccpb.PUT:
+		for _, listener := range listeners {
+			switch event.IsCreate() {
+			case true:
+				logger.Warnf("etcdv3.ExistW(key{%s}) = event{EventNodeDataCreated}", event.Kv.Key)
+				listener.DataChange(remoting.Event{
+					Path:    string(event.Kv.Key),
+					Action:  remoting.EventTypeAdd,
+					Content: string(event.Kv.Value),
+				})
+			case false:
+				logger.Warnf("etcdv3.ExistW(key{%s}) = event{EventNodeDataChanged}", event.Kv.Key)
+				listener.DataChange(remoting.Event{
+					Path:    string(event.Kv.Key),
+					Action:  remoting.EvnetTypeUpdate,
+					Content: string(event.Kv.Value),
+				})
 			}
 		}
-
 		return false
+	case mvccpb.DELETE:
+		logger.Warnf("etcdv3.ExistW(key{%s}) = event{EventNodeDeleted}", event.Kv.Key)
+		return true
 	}
 
-	newChildren, err := l.client.GetChildren(path)
-	if err != nil {
-		logger.Errorf("path{%s} child nodes changed, etcdV3.Children() = error{%v}", path, perrors.WithStack(err))
-		return
-	}
-
-	// a node was added -- listen the new node
-	var (
-		newNode string
-	)
-	for _, n := range newChildren {
-		if contains(children, n) {
-			continue
-		}
-
-		newNode = pathlib.Join(path, n)
-		logger.Infof("add zkNode{%s}", newNode)
-		content, _, err := l.client.Conn.Get(newNode)
-		if err != nil {
-			logger.Errorf("Get new node path {%v} 's content error,message is  {%v}", newNode, perrors.WithStack(err))
-		}
-
-		if !listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeAdd, Content: string(content)}) {
-			continue
-		}
-		// listen l service node
-		go func(node, childNode string) {
-			logger.Infof("delete zkNode{%s}", node)
-			if l.ListenServiceNodeEvent(node, listener) {
-				logger.Infof("delete content{%s}", childNode)
-				listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeDel})
-			}
-			logger.Warnf("listenSelf(zk path{%s}) goroutine exit now", zkPath)
-		}(newNode, n)
-	}
-
-	// old node was deleted
-	var oldNode string
-	for _, n := range children {
-		if contains(newChildren, n) {
-			continue
-		}
-
-		oldNode = path.Join(zkPath, n)
-		logger.Warnf("delete zkPath{%s}", oldNode)
-
-		if err != nil {
-			logger.Errorf("NewURL(i{%s}) = error{%v}", n, perrors.WithStack(err))
-			continue
-		}
-		listener.DataChange(remoting.Event{Path: oldNode, Action: remoting.EventTypeDel})
-	}
+	panic("unreachable")
 }
 
-func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataListener) {
+// Listen on a set of key with spec prefix
+func (l *EventListener) ListenServiceNodeEventWithPrefix(prefix string, listener ...remoting.DataListener) {
+
 	l.wg.Add(1)
 	defer l.wg.Done()
-
-	var (
-		failTimes int
-		event     chan struct{}
-		zkEvent   zk.Event
-	)
-	event = make(chan struct{}, 4)
-	defer close(event)
 	for {
-		// get current children for a zkPath
-		children, childEventCh, err := l.client.GetChildrenW(zkPath)
+		_, _, wc, err := l.client.WatchChildren(prefix)
 		if err != nil {
-			failTimes++
-			if MaxFailTimes <= failTimes {
-				failTimes = MaxFailTimes
-			}
-			logger.Warnf("listenDirEvent(path{%s}) = error{%v}", zkPath, err)
-			// clear the event channel
-		CLEAR:
-			for {
-				select {
-				case <-event:
-				default:
-					break CLEAR
-				}
-			}
-			l.client.RegisterEvent(zkPath, &event)
-			select {
-			case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)):
-				l.client.UnregisterEvent(zkPath, &event)
-				continue
-			case <-l.client.Done():
-				l.client.UnregisterEvent(zkPath, &event)
-				logger.Warnf("client.done(), listen(path{%s}) goroutine exit now...", zkPath)
-				return
-			case <-event:
-				logger.Infof("get zk.EventNodeDataChange notify event")
-				l.client.UnregisterEvent(zkPath, &event)
-				l.handleZkNodeEvent(zkPath, nil, listener)
-				continue
-			}
+			logger.Warnf("listenDirEvent(key{%s}) = error{%v}", prefix, err)
 		}
-		failTimes = 0
-		for _, c := range children {
 
-			// listen l service node
-			dubboPath := path.Join(zkPath, c)
-			content, _, err := l.client.Conn.Get(dubboPath)
-			if err != nil {
-				logger.Errorf("Get new node path {%v} 's content error,message is  {%v}", dubboPath, perrors.WithStack(err))
-			}
-			logger.Infof("Get children!{%s}", dubboPath)
-			if !listener.DataChange(remoting.Event{Path: dubboPath, Action: remoting.EventTypeAdd, Content: string(content)}) {
-				continue
-			}
-			logger.Infof("listen dubbo service key{%s}", dubboPath)
-			go func(zkPath string) {
-				if l.ListenServiceNodeEvent(dubboPath) {
-					listener.DataChange(remoting.Event{Path: dubboPath, Action: remoting.EventTypeDel})
-				}
-				logger.Warnf("listenSelf(zk path{%s}) goroutine exit now", zkPath)
-			}(dubboPath)
-
-			//liten sub path recursive
-			go func(zkPath string, listener remoting.DataListener) {
-				l.listenDirEvent(zkPath, listener)
-				logger.Warnf("listenDirEvent(zkPath{%s}) goroutine exit now", zkPath)
-			}(dubboPath, listener)
-		}
 		select {
-		case zkEvent = <-childEventCh:
-			logger.Warnf("get a zookeeper zkEvent{type:%s, server:%s, path:%s, state:%d-%s, err:%s}",
-				zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, StateToString(zkEvent.State), zkEvent.Err)
-			if zkEvent.Type != zk.EventNodeChildrenChanged {
+
+		// client watch ctx stop
+		// server stopped
+		case <-l.client.cs.ctx.Done():
+			logger.Warn("etcd listener service node with prefix etcd server stopped")
+			return
+
+		// client stopped
+		case <-l.client.Done():
+			logger.Warn("etcdv3 client stopped")
+			return
+
+			// etcd event stream
+		case e := <-wc:
+			if e.Err() != nil {
+				logger.Errorf("get a etcdv3 event {err: %s}", e.Err())
 				continue
 			}
-			l.handleZkNodeEvent(zkEvent.Path, children, listener)
-		case <-l.client.Done():
-			logger.Warnf("client.done(), listen(path{%s}) goroutine exit now...", zkPath)
-			return
+			for _, event := range e.Events {
+				l.handleEvents(event, listener...)
+			}
 		}
 	}
 }
-
-//
-//func (l *ZkEventListener) listenFileEvent(zkPath string, listener remoting.DataListener) {
-//	l.wg.EventTypeAdd(1)
-//	defer l.wg.Done()
-//
-//	var (
-//		failTimes int
-//		event     chan struct{}
-//		zkEvent   zk.Event
-//	)
-//	event = make(chan struct{}, 4)
-//	defer close(event)
-//	for {
-//		// get current children for a zkPath
-//		content,_, eventCh, err := l.client.Conn.GetW(zkPath)
-//		if err != nil {
-//			failTimes++
-//			if MaxFailTimes <= failTimes {
-//				failTimes = MaxFailTimes
-//			}
-//			logger.Errorf("listenFileEvent(path{%s}) = error{%v}", zkPath, err)
-//			// clear the event channel
-//		CLEAR:
-//			for {
-//				select {
-//				case <-event:
-//				default:
-//					break CLEAR
-//				}
-//			}
-//			l.client.RegisterEvent(zkPath, &event)
-//			select {
-//			case <-time.After(timeSecondDuration(failTimes * ConnDelay)):
-//				l.client.UnregisterEvent(zkPath, &event)
-//				continue
-//			case <-l.client.Done():
-//				l.client.UnregisterEvent(zkPath, &event)
-//				logger.Warnf("client.done(), listen(path{%s}) goroutine exit now...", zkPath)
-//				return
-//			case <-event:
-//				logger.Infof("get zk.EventNodeDataChange notify event")
-//				l.client.UnregisterEvent(zkPath, &event)
-//				l.handleZkNodeEvent(zkPath, nil, listener)
-//				continue
-//			}
-//		}
-//		failTimes = 0
-//
-//		select {
-//		case zkEvent = <-eventCh:
-//			logger.Warnf("get a zookeeper zkEvent{type:%s, server:%s, path:%s, state:%d-%s, err:%s}",
-//				zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, StateToString(zkEvent.State), zkEvent.Err)
-//
-//			l.handleZkNodeEvent(zkEvent.Path, children, listener)
-//		case <-l.client.Done():
-//			logger.Warnf("client.done(), listen(path{%s}) goroutine exit now...", zkPath)
-//			return
-//		}
-//	}
-//}
 
 func timeSecondDuration(sec int) time.Duration {
 	return time.Duration(sec) * time.Second
 }
 
-// this func is invoked by ZkConsumerRegistry::Registe/ZkConsumerRegistry::get/ZkConsumerRegistry::getListener
+// this func is invoked by etcdv3 ConsumerRegistry::Registe/ etcdv3 ConsumerRegistry::get/etcdv3 ConsumerRegistry::getListener
 // registry.go:Listen -> listenServiceEvent -> listenDirEvent -> ListenServiceNodeEvent
 //                            |
 //                            --------> ListenServiceNodeEvent
-func (l *ZkEventListener) ListenServiceEvent(zkPath string, listener remoting.DataListener) {
-	var (
-		err       error
-		dubboPath string
-		children  []string
-	)
+func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataListener) {
 
-	l.pathMapLock.Lock()
-	_, ok := l.pathMap[zkPath]
-	l.pathMapLock.Unlock()
+	l.keyMapLock.Lock()
+	_, ok := l.keyMap[key]
+	l.keyMapLock.Unlock()
 	if ok {
-		logger.Warnf("@zkPath %s has already been listened.", zkPath)
+		logger.Warnf("etcdv3 key %s has already been listened.", key)
 		return
 	}
 
-	l.pathMapLock.Lock()
-	l.pathMap[zkPath] = struct{}{}
-	l.pathMapLock.Unlock()
+	l.keyMapLock.Lock()
+	l.keyMap[key] = struct{}{}
+	l.keyMapLock.Unlock()
 
-	logger.Infof("listen dubbo provider path{%s} event and wait to get all provider zk nodes", zkPath)
-	children, err = l.client.GetChildren(zkPath)
-	if err != nil {
-		children = nil
-		logger.Warnf("fail to get children of zk path{%s}", zkPath)
-	}
+	logger.Infof("listen dubbo provider key{%s} event and wait to get all provider etcdv3 nodes", key)
+	go func(key string, listener remoting.DataListener) {
+		l.ListenServiceNodeEventWithPrefix(key, listener)
+		logger.Warnf("listenDirEvent(key{%s}) goroutine exit now", key)
+	}(key, listener)
 
-	for _, c := range children {
-
-		// listen l service node
-		dubboPath = path.Join(zkPath, c)
-		content, _, err := l.client.Conn.Get(dubboPath)
-		if err != nil {
-			logger.Errorf("Get new node path {%v} 's content error,message is  {%v}", dubboPath, perrors.WithStack(err))
+	logger.Infof("listen dubbo service key{%s}", key)
+	go func(key string) {
+		if l.ListenServiceNodeEvent(key) {
+			listener.DataChange(remoting.Event{Path: key, Action: remoting.EventTypeDel})
 		}
-		if !listener.DataChange(remoting.Event{Path: dubboPath, Action: remoting.EventTypeAdd, Content: string(content)}) {
-			continue
-		}
-		logger.Infof("listen dubbo service key{%s}", dubboPath)
-		go func(zkPath string) {
-			if l.ListenServiceNodeEvent(dubboPath) {
-				listener.DataChange(remoting.Event{Path: dubboPath, Action: remoting.EventTypeDel})
-			}
-			logger.Warnf("listenSelf(zk path{%s}) goroutine exit now", zkPath)
-		}(dubboPath)
-	}
-
-	logger.Infof("listen dubbo path{%s}", zkPath)
-	go func(zkPath string, listener remoting.DataListener) {
-		l.listenDirEvent(zkPath, listener)
-		logger.Warnf("listenDirEvent(zkPath{%s}) goroutine exit now", zkPath)
-	}(zkPath, listener)
+		logger.Warnf("listenSelf(etcd key{%s}) goroutine exit now", key)
+	}(key)
 }
 
-func (l *ZkEventListener) valid() bool {
-	return l.client.ZkConnValid()
+func (l *EventListener) valid() bool {
+	return l.client.Valid()
 }
 
-func (l *ZkEventListener) Close() {
+func (l *EventListener) Close() {
 	l.wg.Wait()
 }

@@ -54,7 +54,7 @@ func (l *configurationListener) Process(configType *remoting.ConfigChangeEvent) 
 func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
-		case <-l.registry.ctx.Done():
+		case <-l.registry.done:
 			logger.Warnf("listener's etcd client connection is broken, so etcd event listener exit now.")
 			return nil, errors.New("listener stopped")
 
@@ -62,7 +62,7 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 			logger.Debugf("got etcd event %s", e)
 			if e.ConfigType == remoting.EventTypeDel {
 				select {
-				case <-l.registry.ctx.Done():
+				case <-l.registry.done:
 					logger.Warnf("update @result{%s}. But its connection to registry is invalid", e.Value)
 				default:
 				}
@@ -76,4 +76,5 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 	}
 }
 func (l *configurationListener) Close() {
+	l.registry.wg.Done()
 }
