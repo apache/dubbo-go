@@ -105,7 +105,7 @@ func init() {
 	userMap.user["A000"] = DefaultUser
 	userMap.user["A001"] = User{Id: "001", Name: "ZhangSheng", Age: 18, Sex: Gender(MAN)}
 	userMap.user["A002"] = User{Id: "002", Name: "Lily", Age: 20, Sex: Gender(WOMAN)}
-	userMap.user["A003"] = User{Id: "113", Name: "Moorse", Age: 30, Sex: Gender(WOMAN)}
+	userMap.user["A003"] = User{Id: "113", Name: "ScottWang", Age: 30, Sex: Gender(WOMAN)}
 	for k, v := range userMap.user {
 		v.Time = time.Now()
 		userMap.user[k] = v
