@@ -18,15 +18,9 @@ application_config:
 
 registries :
   "hangzhouzk":
-    protocol: "zookeeper"
+    protocol: "etcdv3"
     timeout	: "3s"
-    address: "127.0.0.1:2181"
-    username: ""
-    password: ""
-  "shanghaizk":
-    protocol: "zookeeper"
-    timeout	: "3s"
-    address: "127.0.0.1:2182"
+    address: "127.0.0.1:2379"
     username: ""
     password: ""
 
