@@ -1,9 +1,7 @@
 package etcd
 
 import (
-	"context"
 	"fmt"
-	"github.com/apache/dubbo-go/remoting"
 	"net/url"
 	"os"
 	"path"
@@ -12,16 +10,16 @@ import (
 	"sync"
 	"time"
 
-	etcd "github.com/AlexStocks/goext/database/etcd"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/registry"
+	"github.com/apache/dubbo-go/remoting/etcdv3"
 	"github.com/apache/dubbo-go/version"
 	"github.com/juju/errors"
-	"go.etcd.io/etcd/clientv3"
+	perrors "github.com/pkg/errors"
 )
 
 var (
@@ -32,23 +30,62 @@ var (
 func init() {
 	processID = fmt.Sprintf("%d", os.Getpid())
 	localIP, _ = utils.GetLocalIP()
-	extension.SetRegistry("etcd", newETCDV3Registry)
+	extension.SetRegistry("etcdv3", newETCDV3Registry)
 }
 
 type etcdV3Registry struct {
 	*common.URL
 	birth int64 // time of file birth, seconds since Epoch; 0 if unknown
 
-	ctx    context.Context
-	cancel context.CancelFunc
+	cltLock  sync.Mutex
+	client   *etcdv3.Client
+	services map[string]common.URL // service name + protocol -> service config
 
-	rawClient *clientv3.Client
-	client    *etcd.Client
-
-	dataListener   remoting.DataListener
-	configListener remoting.ConfigurationListener
+	listenerLock   sync.Mutex
+	listener       *etcdv3.EventListener
+	dataListener   *dataListener
+	configListener *configurationListener
 
 	servicesCache sync.Map // service name + protocol -> service config
+
+	wg   sync.WaitGroup // wg+done for zk restart
+	done chan struct{}
+}
+
+func (r *etcdV3Registry) Client() *etcdv3.Client {
+	return r.client
+}
+func (r *etcdV3Registry) SetClient(client *etcdv3.Client) {
+	r.client = client
+}
+func (r *etcdV3Registry) ClientLock() *sync.Mutex {
+	return &r.cltLock
+}
+func (r *etcdV3Registry) WaitGroup() *sync.WaitGroup {
+	return &r.wg
+}
+func (r *etcdV3Registry) GetDone() chan struct{} {
+	return r.done
+}
+func (r *etcdV3Registry) RestartCallBack() bool {
+
+	services := []common.URL{}
+	for _, confIf := range r.services {
+		services = append(services, confIf)
+	}
+
+	flag := true
+	for _, confIf := range services {
+		err := r.Register(confIf)
+		if err != nil {
+			logger.Errorf("(ZkProviderRegistry)register(conf{%#v}) = error{%#v}",
+				confIf, perrors.WithStack(err))
+			flag = false
+			break
+		}
+		logger.Infof("success to re-register service :%v", confIf.Key())
+	}
+	return flag
 }
 
 func newETCDV3Registry(url *common.URL) (registry.Registry, error) {
@@ -63,56 +100,24 @@ func newETCDV3Registry(url *common.URL) (registry.Registry, error) {
 	logger.Infof("etcd address is: %v", url.Location)
 	logger.Infof("time-out is: %v", timeout.String())
 
-	rawClient, err := clientv3.New(clientv3.Config{
-		Endpoints:   []string{url.Location},
-		DialTimeout: timeout,
-		//DialOptions: []grpc.DialOption{grpc.WithBlock()},
-	})
-	if err != nil {
-		return nil, errors.Annotate(err, "block connect to etcd server")
+	r := &etcdV3Registry{
+		URL:   url,
+		birth: time.Now().UnixNano(),
+		done:  make(chan struct{}),
 	}
 
-	rawClient.ActiveConnection()
-
-	rootCtx, cancel := context.WithCancel(context.Background())
-	client, err := etcd.NewClient(rawClient, etcd.WithTTL(time.Second), etcd.WithContext(rootCtx))
-	if err != nil {
-		return nil, errors.Annotate(err, "new etcd client")
+	if err := etcdv3.ValidateClient(r, etcdv3.WithName(etcdv3.RegistryETCDV3Client)); err != nil {
+		return nil, err
 	}
 
-	r := etcdV3Registry{
-		URL:           url,
-		ctx:           rootCtx,
-		cancel:        cancel,
-		rawClient:     rawClient,
-		client:        client,
-		servicesCache: sync.Map{},
-	}
+	r.wg.Add(1)
+	go etcdv3.HandleClientRestart(r)
 
-	go r.keepAlive()
-	return &r, nil
-}
+	r.listener = etcdv3.NewEventListener(r.client)
+	r.configListener = NewConfigurationListener(r)
+	r.dataListener = NewRegistryDataListener(r.configListener)
 
-func (r *etcdV3Registry) keepAlive() error {
-
-	resp, err := r.client.KeepAlive()
-	if err != nil {
-		return errors.Annotate(err, "keep alive")
-	}
-	go func() {
-		for {
-			select {
-			case _, ok := <-resp:
-				if !ok {
-					logger.Errorf("etcd server stop")
-					r.cancel()
-					return
-				}
-
-			}
-		}
-	}()
-	return nil
+	return r, nil
 }
 
 func (r *etcdV3Registry) GetUrl() common.URL {
@@ -122,7 +127,7 @@ func (r *etcdV3Registry) GetUrl() common.URL {
 func (r *etcdV3Registry) IsAvailable() bool {
 
 	select {
-	case <-r.ctx.Done():
+	case <-r.done:
 		return false
 	default:
 		return true
@@ -130,20 +135,21 @@ func (r *etcdV3Registry) IsAvailable() bool {
 }
 
 func (r *etcdV3Registry) Destroy() {
+
+	if r.configListener != nil {
+		r.configListener.Close()
+	}
 	r.stop()
 }
 
 func (r *etcdV3Registry) stop() {
 
+	close(r.done)
+
 	// close current client
-	r.rawClient.Close()
+	r.client.Close()
 
-	// cancel ctx
-	r.cancel()
-
-	r.rawClient = nil
-	r.ctx = nil
-	r.cancel = nil
+	r.client = nil
 	r.servicesCache.Range(func(key, value interface{}) bool {
 		r.servicesCache.Delete(key)
 		return true
@@ -180,24 +186,12 @@ func (r *etcdV3Registry) Register(svc common.URL) error {
 	return nil
 }
 
-func (r *etcdV3Registry) createKVIfNotExist(k string, v string) error {
-
-	_, err := r.rawClient.Txn(r.ctx).
-		If(clientv3.Compare(clientv3.Version(k), "<", 1)).
-		Then(clientv3.OpPut(k, v)).
-		Commit()
-	if err != nil {
-		return errors.Annotatef(err, "etcd create k %s v %s", k, v)
-	}
-	return nil
-}
-
 func (r *etcdV3Registry) createDirIfNotExist(k string) error {
 
 	var tmpPath string
 	for _, str := range strings.Split(k, "/")[1:] {
 		tmpPath = path.Join(tmpPath, "/", str)
-		if err := r.createKVIfNotExist(tmpPath, ""); err != nil {
+		if err := r.client.Create(tmpPath, ""); err != nil {
 			return errors.Annotatef(err, "create path %s in etcd", tmpPath)
 		}
 	}
@@ -226,7 +220,7 @@ func (r *etcdV3Registry) registerConsumer(svc common.URL) error {
 
 	encodedURL := url.QueryEscape(fmt.Sprintf("consumer://%s%s?%s", localIP, svc.Path, params.Encode()))
 	dubboPath := fmt.Sprintf("/dubbo/%s/%s", svc.Service(), (common.RoleType(common.CONSUMER)).String())
-	if err := r.createKVIfNotExist(path.Join(dubboPath, encodedURL), ""); err != nil {
+	if err := r.client.Create(path.Join(dubboPath, encodedURL), ""); err != nil {
 		return errors.Annotatef(err, "create k/v in etcd (path:%s, url:%s)", dubboPath, encodedURL)
 	}
 
@@ -279,7 +273,7 @@ func (r *etcdV3Registry) registerProvider(svc common.URL) error {
 	encodedURL = url.QueryEscape(fmt.Sprintf("%s://%s%s?%s", svc.Protocol, host, urlPath, params.Encode()))
 	dubboPath = fmt.Sprintf("/dubbo/%s/%s", svc.Service(), (common.RoleType(common.PROVIDER)).String())
 
-	if err := r.createKVIfNotExist(path.Join(dubboPath, encodedURL), ""); err != nil {
+	if err := r.client.Create(path.Join(dubboPath, encodedURL), ""); err != nil {
 		return errors.Annotatef(err, "create k/v in etcd (path:%s, url:%s)", dubboPath, encodedURL)
 	}
 
@@ -288,8 +282,33 @@ func (r *etcdV3Registry) registerProvider(svc common.URL) error {
 
 func (r *etcdV3Registry) Subscribe(svc common.URL) (registry.Listener, error) {
 
+	var (
+		configListener *configurationListener
+	)
 
-	logger.Infof("subscribe svc: %s", svc)
+	r.listenerLock.Lock()
+	configListener = r.configListener
+	r.listenerLock.Unlock()
+	if r.listener == nil {
+		r.cltLock.Lock()
+		client := r.client
+		r.cltLock.Unlock()
+		if client == nil {
+			return nil, perrors.New("zk connection broken")
+		}
 
-	return nil, nil
+		// new client & listener
+		listener := etcdv3.NewEventListener(r.client)
+
+		r.listenerLock.Lock()
+		r.listener = listener
+		r.listenerLock.Unlock()
+	}
+
+	//注册到dataconfig的interested
+	r.dataListener.AddInterestedURL(&svc)
+
+	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/providers", svc.Service()), r.dataListener)
+
+	return configListener, nil
 }
