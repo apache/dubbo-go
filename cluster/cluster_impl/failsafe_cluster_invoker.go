@@ -18,16 +18,20 @@
 package cluster_impl
 
 import (
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
 )
 
+/**
+ * When invoke fails, log the error message and ignore this error by returning an empty Result.
+ * Usually used to write audit logs and other operations
+ *
+ * <a href="http://en.wikipedia.org/wiki/Fail-safe">Fail-safe</a>
+ *
+ */
 type failsafeClusterInvoker struct {
 	baseClusterInvoker
 }
@@ -39,28 +43,24 @@ func newFailsafeClusterInvoker(directory cluster.Directory) protocol.Invoker {
 }
 
 func (invoker *failsafeClusterInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
-
 	invokers := invoker.directory.List(invocation)
-	err := invoker.checkInvokers(invokers, invocation)
 
+	err := invoker.checkInvokers(invokers, invocation)
 	if err != nil {
 		return &protocol.RPCResult{}
 	}
 
 	url := invokers[0].GetUrl()
-
 	methodName := invocation.MethodName()
 	//Get the service loadbalance config
 	lb := url.GetParam(constant.LOADBALANCE_KEY, constant.DEFAULT_LOADBALANCE)
-
 	//Get the service method loadbalance config if have
 	if v := url.GetMethodParam(methodName, constant.LOADBALANCE_KEY, ""); v != "" {
 		lb = v
 	}
 	loadbalance := extension.GetLoadbalance(lb)
 
-	invoked := []protocol.Invoker{}
-
+	invoked := make([]protocol.Invoker, 0)
 	var result protocol.Result
 
 	ivk := invoker.doSelect(loadbalance, invocation, invokers, invoked)
@@ -69,9 +69,8 @@ func (invoker *failsafeClusterInvoker) Invoke(invocation protocol.Invocation) pr
 	result = ivk.Invoke(invocation)
 	if result.Error() != nil {
 		// ignore
-		perrors.Errorf("Failsafe ignore exception: %v.", result.Error().Error())
+		logger.Errorf("Failsafe ignore exception: %v.\n", result.Error().Error())
 		return &protocol.RPCResult{}
 	}
 	return result
-
 }
