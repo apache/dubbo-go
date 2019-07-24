@@ -18,6 +18,8 @@ package impl
 
 import (
 	"fmt"
+	"regexp"
+	"sync"
 )
 import (
 	"github.com/afex/hystrix-go/hystrix"
@@ -33,17 +35,17 @@ import (
 )
 
 const (
-	HYSTRIX = "hystrix"
+	HYSTRIX_CONSUMER = "hystrix_consumer"
+	HYSTRIX_PROVIDER = "hystrix_provider"
+	HYSTRIX          = "hystrix"
 )
 
-type HystrixFallback interface {
-	FallbackFunc(err error, invoker protocol.Invoker, invocation protocol.Invocation, cb hystrix.CircuitBreaker) protocol.Result
-}
-
 var (
-	isConfigLoaded = false
-	fallback       = make(map[string]HystrixFallback)
-	conf           = &HystrixFilterConfig{}
+	isConsumerConfigLoaded = false
+	isProviderConfigLoaded = false
+	confConsumer           = &HystrixFilterConfig{}
+	confProvider           = &HystrixFilterConfig{}
+	configLoadMutex        = sync.RWMutex{}
 	//Timeout
 	//MaxConcurrentRequests
 	//RequestVolumeThreshold
@@ -52,59 +54,89 @@ var (
 )
 
 func init() {
-	extension.SetFilter(HYSTRIX, GetHystrixFilter)
+	extension.SetFilter(HYSTRIX_CONSUMER, GetHystrixFilterConsumer)
+	extension.SetFilter(HYSTRIX_PROVIDER, GetHystrixFilterProvider)
+}
+
+type HystrixFilterError struct {
+	err                error
+	circuitBreakerOpen bool
+}
+
+func (hfError *HystrixFilterError) Error() string {
+	return hfError.err.Error()
+}
+
+func (hfError *HystrixFilterError) CbOpen() bool {
+	return hfError.circuitBreakerOpen
+}
+func NewHystrixFilterError(err error, cbOpen bool) error {
+	return &HystrixFilterError{
+		err:                err,
+		circuitBreakerOpen: cbOpen,
+	}
 }
 
 type HystrixFilter struct {
-	fallback HystrixFallback
+	COrP     bool //true for consumer
+	res      []*regexp.Regexp
+	ifNewMap sync.Map
 }
 
 func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 
 	cmdName := fmt.Sprintf("%s&method=%s", invoker.GetUrl().Key(), invocation.MethodName())
 
-	cb, ifNew, err := hystrix.GetCircuit(cmdName)
+	// Do the configuration if the circuit breaker is created for the first time
+	if _, load := hf.ifNewMap.LoadOrStore(cmdName, true); !load {
+		configLoadMutex.Lock()
+		filterConf := getConfig(invoker.GetUrl().Service(), invocation.MethodName(), hf.COrP)
+		for _, ptn := range filterConf.Error {
+			reg, err := regexp.Compile(ptn)
+			if err != nil {
+				logger.Warnf("[Hystrix Filter]Errors occurred parsing error omit regexp: %s, %v", ptn, err)
+			} else {
+				hf.res = append(hf.res, reg)
+			}
+		}
+		hystrix.ConfigureCommand(cmdName, hystrix.CommandConfig{
+			Timeout:                filterConf.Timeout,
+			MaxConcurrentRequests:  filterConf.MaxConcurrentRequests,
+			SleepWindow:            filterConf.SleepWindow,
+			ErrorPercentThreshold:  filterConf.ErrorPercentThreshold,
+			RequestVolumeThreshold: filterConf.RequestVolumeThreshold,
+		})
+		configLoadMutex.Unlock()
+	}
+	configLoadMutex.RLock()
+	cb, _, err := hystrix.GetCircuit(cmdName)
+	configLoadMutex.RUnlock()
 	if err != nil {
 		logger.Errorf("[Hystrix Filter]Errors occurred getting circuit for %s , will invoke without hystrix, error is: ", cmdName, err)
 		return invoker.Invoke(invocation)
 	}
-
-	// Do the configuration if the circuit breaker is created for the first time
-
-	if ifNew || hf.fallback == nil {
-		filterConf := getConfig(invoker.GetUrl().Service(), invocation.MethodName())
-		if ifNew {
-			hystrix.ConfigureCommand(cmdName, hystrix.CommandConfig{
-				Timeout:                filterConf.Timeout,
-				MaxConcurrentRequests:  filterConf.MaxConcurrentRequests,
-				SleepWindow:            filterConf.SleepWindow,
-				ErrorPercentThreshold:  filterConf.ErrorPercentThreshold,
-				RequestVolumeThreshold: filterConf.RequestVolumeThreshold,
-			})
-		}
-		if hf.fallback == nil {
-			hf.fallback = getHystrixFallback(filterConf.Fallback)
-		}
-	}
-
 	logger.Infof("[Hystrix Filter]Using hystrix filter: %s", cmdName)
 	var result protocol.Result
 	_ = hystrix.Do(cmdName, func() error {
 		result = invoker.Invoke(invocation)
-		return result.Error()
-	}, func(err error) error {
-		//failure logic
-		logger.Debugf("[Hystrix Filter]Invoke failed, error is: %v, circuit breaker open: %v", err, cb.IsOpen())
-		result = hf.fallback.FallbackFunc(err, invoker, invocation, *cb)
-
-		//If user try to return nil in the customized fallback func, it will cause panic
-		//So check here
-		if result == nil {
-			result = &protocol.RPCResult{}
+		err := result.Error()
+		if err != nil {
+			result.SetError(NewHystrixFilterError(err, cb.IsOpen()))
+			for _, reg := range hf.res {
+				if reg.MatchString(err.Error()) {
+					logger.Debugf("[Hystrix Filter]Error in invocation but omitted in circuit breaker: %v", err)
+					return nil
+				}
+			}
 		}
-		return nil
-		//failure logic
-
+		return err
+	}, func(err error) error {
+		//Return error and circuit breaker's status, so that it can be handled by previous filters.
+		logger.Debugf("[Hystrix Filter]Enter fallback, error is: %v, circuit breaker open: %v", err, cb.IsOpen())
+		result = &protocol.RPCResult{}
+		result.SetResult(nil)
+		result.SetError(NewHystrixFilterError(err, cb.IsOpen()))
+		return err
 	})
 	return result
 }
@@ -112,21 +144,38 @@ func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 func (hf *HystrixFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }
-func GetHystrixFilter() filter.Filter {
+func GetHystrixFilterConsumer() filter.Filter {
 	//When first called, load the config in
-	if !isConfigLoaded {
-		if err := initHystrixConfig(); err != nil {
-			logger.Warnf("[Hystrix Filter]Config load failed, error is: %v , will use default", err)
+	if !isConsumerConfigLoaded {
+		if err := initHystrixConfigConsumer(); err != nil {
+			logger.Warnf("[Hystrix Filter]Config load failed for consumer, error is: %v , will use default", err)
 		}
-		isConfigLoaded = true
+		isConsumerConfigLoaded = true
 	}
 
-	return &HystrixFilter{}
+	return &HystrixFilter{COrP: true}
 }
 
-func getConfig(service string, method string) CommandConfigWithFallback {
+func GetHystrixFilterProvider() filter.Filter {
+	if !isProviderConfigLoaded {
+		if err := initHystrixConfigProvider(); err != nil {
+			logger.Warnf("[Hystrix Filter]Config load failed for provider, error is: %v , will use default", err)
+		}
+		isProviderConfigLoaded = true
+	}
+
+	return &HystrixFilter{COrP: false}
+}
+
+func getConfig(service string, method string, cOrP bool) CommandConfigWithError {
 
 	//Find method level config
+	var conf *HystrixFilterConfig
+	if cOrP {
+		conf = confConsumer
+	} else {
+		conf = confProvider
+	}
 	getConf := conf.Configs[conf.Services[service].Methods[method]]
 	if getConf != nil {
 		logger.Infof("[Hystrix Filter]Found method-level config for %s - %s", service, method)
@@ -144,13 +193,13 @@ func getConfig(service string, method string) CommandConfigWithFallback {
 		logger.Infof("[Hystrix Filter]Found global default config for %s - %s", service, method)
 		return *getConf
 	}
-	getConf = &CommandConfigWithFallback{}
+	getConf = &CommandConfigWithError{}
 	logger.Infof("[Hystrix Filter]No config found for %s - %s, using default", service, method)
 	return *getConf
 
 }
 
-func initHystrixConfig() error {
+func initHystrixConfigConsumer() error {
 	if config.GetConsumerConfig().FilterConf == nil {
 		return perrors.Errorf("no config for hystrix")
 	}
@@ -162,7 +211,25 @@ func initHystrixConfig() error {
 	if err != nil {
 		return err
 	}
-	err = yaml.Unmarshal(hystrixConfByte, conf)
+	err = yaml.Unmarshal(hystrixConfByte, confConsumer)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func initHystrixConfigProvider() error {
+	if config.GetProviderConfig().FilterConf == nil {
+		return perrors.Errorf("no config for hystrix")
+	}
+	filterConfig := config.GetConsumerConfig().FilterConf.(map[interface{}]interface{})[HYSTRIX]
+	if filterConfig == nil {
+		return perrors.Errorf("no config for hystrix")
+	}
+	hystrixConfByte, err := yaml.Marshal(filterConfig)
+	if err != nil {
+		return err
+	}
+	err = yaml.Unmarshal(hystrixConfByte, confProvider)
 	if err != nil {
 		return err
 	}
@@ -170,36 +237,23 @@ func initHystrixConfig() error {
 }
 
 //For sake of dynamic config
-func RefreshHystrix() error {
-	conf = &HystrixFilterConfig{}
-	hystrix.Flush()
-	return initHystrixConfig()
-}
+//func RefreshHystrix() error {
+//	conf = &HystrixFilterConfig{}
+//	hystrix.Flush()
+//	return initHystrixConfig()
+//}
 
-func SetHystrixFallback(name string, fallbackImpl HystrixFallback) {
-	fallback[name] = fallbackImpl
-}
-
-func getHystrixFallback(name string) HystrixFallback {
-	fallbackImpl := fallback[name]
-	if fallbackImpl == nil {
-		logger.Warnf("[Hystrix Filter]Fallback func not found: %s", name)
-		fallbackImpl = &DefaultHystrixFallback{}
-	}
-	return fallbackImpl
-}
-
-type CommandConfigWithFallback struct {
-	Timeout                int    `yaml:"timeout"`
-	MaxConcurrentRequests  int    `yaml:"max_concurrent_requests"`
-	RequestVolumeThreshold int    `yaml:"request_volume_threshold"`
-	SleepWindow            int    `yaml:"sleep_window"`
-	ErrorPercentThreshold  int    `yaml:"error_percent_threshold"`
-	Fallback               string `yaml:"fallback"`
+type CommandConfigWithError struct {
+	Timeout                int      `yaml:"timeout"`
+	MaxConcurrentRequests  int      `yaml:"max_concurrent_requests"`
+	RequestVolumeThreshold int      `yaml:"request_volume_threshold"`
+	SleepWindow            int      `yaml:"sleep_window"`
+	ErrorPercentThreshold  int      `yaml:"error_percent_threshold"`
+	Error                  []string `yaml:"error_omit"`
 }
 
 type HystrixFilterConfig struct {
-	Configs  map[string]*CommandConfigWithFallback
+	Configs  map[string]*CommandConfigWithError
 	Default  string
 	Services map[string]ServiceHystrixConfig
 }
