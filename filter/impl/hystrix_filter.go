@@ -46,40 +46,39 @@ var (
 	confConsumer           = &HystrixFilterConfig{}
 	confProvider           = &HystrixFilterConfig{}
 	configLoadMutex        = sync.RWMutex{}
-	//Timeout
-	//MaxConcurrentRequests
-	//RequestVolumeThreshold
-	//SleepWindow
-	//ErrorPercentThreshold
 )
 
+//The filter in the server end of dubbo-go can't get the invoke result for now,
+//this filter ONLY works in CLIENT end (consumer side) temporarily
+//Only after the callService logic is integrated into the filter chain of server end can this filter be used,
+//which will be done soon
 func init() {
 	extension.SetFilter(HYSTRIX_CONSUMER, GetHystrixFilterConsumer)
 	extension.SetFilter(HYSTRIX_PROVIDER, GetHystrixFilterProvider)
 }
 
 type HystrixFilterError struct {
-	err                error
-	circuitBreakerOpen bool
+	err           error
+	failByHystrix bool
 }
 
 func (hfError *HystrixFilterError) Error() string {
 	return hfError.err.Error()
 }
 
-func (hfError *HystrixFilterError) CbOpen() bool {
-	return hfError.circuitBreakerOpen
+func (hfError *HystrixFilterError) FailByHystrix() bool {
+	return hfError.failByHystrix
 }
-func NewHystrixFilterError(err error, cbOpen bool) error {
+func NewHystrixFilterError(err error, failByHystrix bool) error {
 	return &HystrixFilterError{
-		err:                err,
-		circuitBreakerOpen: cbOpen,
+		err:           err,
+		failByHystrix: failByHystrix,
 	}
 }
 
 type HystrixFilter struct {
 	COrP     bool //true for consumer
-	res      []*regexp.Regexp
+	res      map[string][]*regexp.Regexp
 	ifNewMap sync.Map
 }
 
@@ -96,7 +95,10 @@ func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 			if err != nil {
 				logger.Warnf("[Hystrix Filter]Errors occurred parsing error omit regexp: %s, %v", ptn, err)
 			} else {
-				hf.res = append(hf.res, reg)
+				if hf.res == nil {
+					hf.res = make(map[string][]*regexp.Regexp)
+				}
+				hf.res[invocation.MethodName()] = append(hf.res[invocation.MethodName()], reg)
 			}
 		}
 		hystrix.ConfigureCommand(cmdName, hystrix.CommandConfig{
@@ -109,7 +111,7 @@ func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 		configLoadMutex.Unlock()
 	}
 	configLoadMutex.RLock()
-	cb, _, err := hystrix.GetCircuit(cmdName)
+	_, _, err := hystrix.GetCircuit(cmdName)
 	configLoadMutex.RUnlock()
 	if err != nil {
 		logger.Errorf("[Hystrix Filter]Errors occurred getting circuit for %s , will invoke without hystrix, error is: ", cmdName, err)
@@ -121,21 +123,22 @@ func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 		result = invoker.Invoke(invocation)
 		err := result.Error()
 		if err != nil {
-			result.SetError(NewHystrixFilterError(err, cb.IsOpen()))
-			for _, reg := range hf.res {
+			result.SetError(NewHystrixFilterError(err, false))
+			for _, reg := range hf.res[invocation.MethodName()] {
 				if reg.MatchString(err.Error()) {
-					logger.Debugf("[Hystrix Filter]Error in invocation but omitted in circuit breaker: %v", err)
+					logger.Debugf("[Hystrix Filter]Error in invocation but omitted in circuit breaker: %v; %s", err, cmdName)
 					return nil
 				}
 			}
 		}
 		return err
 	}, func(err error) error {
-		//Return error and circuit breaker's status, so that it can be handled by previous filters.
-		logger.Debugf("[Hystrix Filter]Enter fallback, error is: %v, circuit breaker open: %v", err, cb.IsOpen())
+		//Return error and if it is caused by hystrix logic, so that it can be handled by previous filters.
+		_, ok := err.(hystrix.CircuitError)
+		logger.Debugf("[Hystrix Filter]Hystrix health check counted, error is: %v, failed by hystrix: %v; %s", err, ok, cmdName)
 		result = &protocol.RPCResult{}
 		result.SetResult(nil)
-		result.SetError(NewHystrixFilterError(err, cb.IsOpen()))
+		result.SetError(NewHystrixFilterError(err, ok))
 		return err
 	})
 	return result
@@ -249,8 +252,16 @@ type CommandConfigWithError struct {
 	RequestVolumeThreshold int      `yaml:"request_volume_threshold"`
 	SleepWindow            int      `yaml:"sleep_window"`
 	ErrorPercentThreshold  int      `yaml:"error_percent_threshold"`
-	Error                  []string `yaml:"error_omit"`
+	Error                  []string `yaml:"error_whitelist"`
 }
+
+//Config:
+//- Timeout: how long to wait for command to complete, in milliseconds
+//- MaxConcurrentRequests: how many commands of the same type can run at the same time
+//- RequestVolumeThreshold: the minimum number of requests needed before a circuit can be tripped due to health
+//- SleepWindow: how long, in milliseconds, to wait after a circuit opens before testing for recovery
+//- ErrorPercentThreshold: it causes circuits to open once the rolling measure of errors exceeds this percent of requests
+//See hystrix doc
 
 type HystrixFilterConfig struct {
 	Configs  map[string]*CommandConfigWithError
