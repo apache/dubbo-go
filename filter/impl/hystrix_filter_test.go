@@ -34,6 +34,12 @@ func init() {
 	mockInitHystrixConfig()
 }
 
+func TestNewHystrixFilterError(t *testing.T) {
+	get := NewHystrixFilterError(errors.New("test"), true)
+	assert.True(t, get.(*HystrixFilterError).FailByHystrix())
+	assert.Equal(t, "test", get.Error())
+}
+
 func mockInitHystrixConfig() {
 	//Mock config
 	confConsumer = &HystrixFilterConfig{
@@ -51,7 +57,7 @@ func mockInitHystrixConfig() {
 	}
 	confConsumer.Configs["userp"] = &CommandConfigWithError{
 		2000,
-		8,
+		64,
 		15,
 		4000,
 		45,
@@ -59,7 +65,7 @@ func mockInitHystrixConfig() {
 	}
 	confConsumer.Configs["userp_m"] = &CommandConfigWithError{
 		1200,
-		12,
+		64,
 		5,
 		6000,
 		60,
@@ -85,7 +91,7 @@ func TestGetConfig_1(t *testing.T) {
 	configGot := getConfig("com.ikurento.user.UserProvider", "GetUser", true)
 	assert.NotNil(t, configGot)
 	assert.Equal(t, 1200, configGot.Timeout)
-	assert.Equal(t, 12, configGot.MaxConcurrentRequests)
+	assert.Equal(t, 64, configGot.MaxConcurrentRequests)
 	assert.Equal(t, 6000, configGot.SleepWindow)
 	assert.Equal(t, 60, configGot.ErrorPercentThreshold)
 	assert.Equal(t, 5, configGot.RequestVolumeThreshold)
@@ -95,7 +101,7 @@ func TestGetConfig_2(t *testing.T) {
 	configGot := getConfig("com.ikurento.user.UserProvider", "GetUser0", true)
 	assert.NotNil(t, configGot)
 	assert.Equal(t, 2000, configGot.Timeout)
-	assert.Equal(t, 8, configGot.MaxConcurrentRequests)
+	assert.Equal(t, 64, configGot.MaxConcurrentRequests)
 	assert.Equal(t, 4000, configGot.SleepWindow)
 	assert.Equal(t, 45, configGot.ErrorPercentThreshold)
 	assert.Equal(t, 15, configGot.RequestVolumeThreshold)
@@ -186,4 +192,15 @@ func TestHystricFilter_Invoke_CircuitBreak_Omit_Exception(t *testing.T) {
 
 	assert.False(t, lastRest)
 
+}
+
+func TestGetHystrixFilterConsumer(t *testing.T) {
+	get := GetHystrixFilterConsumer()
+	assert.NotNil(t, get)
+	assert.True(t, get.(*HystrixFilter).COrP)
+}
+func TestGetHystrixFilterProvider(t *testing.T) {
+	get := GetHystrixFilterProvider()
+	assert.NotNil(t, get)
+	assert.False(t, get.(*HystrixFilter).COrP)
 }
