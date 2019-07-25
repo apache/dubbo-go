@@ -35,6 +35,7 @@ references:
   "UserProvider":
     # 可以指定多个registry，使用逗号隔开;不指定默认向所有注册中心注册
     registry: "hangzhouzk"
+    filter: "example_fallback,hystrix_consumer"
     protocol : "dubbo"
     interface : "com.ikurento.user.UserProvider"
     cluster: "failover"
@@ -71,26 +72,27 @@ filter_conf:
     configs:
       "Default":
         timeout : 1000
-        max_concurrent_requests : 10
+        max_concurrent_requests : 25
         sleep_window : 5000
         error_percent_threshold : 50
         request_volume_threshold: 20
       "userp":
-        timeout: 1200
-        max_concurrent_requests: 8
+        timeout: 2000
+        max_concurrent_requests: 512
         sleep_window: 4000
-        error_percent_threshold: 45
-        request_volume_threshold: 15
+        error_percent_threshold: 35
+        request_volume_threshold: 6
       "userp_m":
         timeout : 1200
-        max_concurrent_requests : 12
+        max_concurrent_requests : 512
         sleep_window : 6000
         error_percent_threshold : 60
-        request_volume_threshold: 30
-        fallback: "exampleFallback"
+        request_volume_threshold: 16
+        error_whitelist: [".*exception.*"]
     default: "Default"
     services:
       "com.ikurento.user.UserProvider":
         service_config: "userp"
         methods:
           "GetUser": "userp_m"
+          "GetUser1": "userp_m"
