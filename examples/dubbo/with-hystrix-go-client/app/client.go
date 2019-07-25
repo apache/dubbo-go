@@ -56,70 +56,53 @@ func main() {
 	hessian.RegisterJavaEnum(Gender(MAN))
 	hessian.RegisterJavaEnum(Gender(WOMAN))
 	hessian.RegisterPOJO(&User{})
+	getUserChan := make(chan string, 32)
+	getErrChan := make(chan string, 32)
+	getUser1Chan := make(chan string, 32)
 
 	config.Load()
-
-	println("\n\n\necho")
-	res, err := userProvider.Echo(context.TODO(), "OK")
-	if err != nil {
-		panic(err)
+	logger.Debugf("[Start to test GetUser]")
+	for i := 0; i < 32; i++ {
+		go func() {
+			user := &User{}
+			err := userProvider.GetUser(context.TODO(), []interface{}{"A003"}, user)
+			getUserChan <- fmt.Sprintf("Result: %s ; Error: %v", user.Name, err)
+		}()
 	}
-	println("res: %v\n", res)
+	time.Sleep(time.Second * 4)
 
-	time.Sleep(3e9)
-
-	println("\n\n\nstart to test dubbo")
-	user := &User{}
-	err = userProvider.GetUser(context.TODO(), []interface{}{"A003"}, user)
-	if err != nil {
-		panic(err)
+	logger.Debugf("[Start to test GetErr, without error whitelist]")
+	for i := 0; i < 32; i++ {
+		go func() {
+			user := &User{}
+			err := userProvider.GetErr(context.TODO(), []interface{}{"A003"}, user)
+			getErrChan <- fmt.Sprintf("Result: %s ; Error: %v", user.Name, err)
+		}()
 	}
-	println("response result: %v", user)
+	time.Sleep(time.Second * 4)
 
-	println("\n\n\nstart to test dubbo - GetUser0")
-	ret, err := userProvider.GetUser0("A003", "Moorse")
-	if err != nil {
-		panic(err)
+	logger.Debugf("[Start to test illegal method GetUser1, with error whitelist]")
+	for i := 0; i < 32; i++ {
+		go func() {
+			user := &User{}
+			err := userProvider.GetUser1(context.TODO(), []interface{}{"A003"}, user)
+			getUser1Chan <- fmt.Sprintf("Result: %s ; Error: %v", user.Name, err)
+		}()
 	}
-	println("response result: %v", ret)
-
-	println("\n\n\nstart to test dubbo - GetUsers")
-	ret1, err := userProvider.GetUsers([]interface{}{[]interface{}{"A002", "A003"}})
-	if err != nil {
-		panic(err)
+	time.Sleep(time.Second * 4)
+	for i := 1; i < 32; i++ {
+		resGot := <-getUserChan
+		logger.Infof("[GetUser] %v", resGot)
 	}
-	println("response result: %v", ret1)
-
-	println("\n\n\nstart to test dubbo - getUser")
-	user = &User{}
-	var i int32 = 1
-	err = userProvider.GetUser2(context.TODO(), []interface{}{i}, user)
-	if err != nil {
-		panic(err)
+	for i := 1; i < 32; i++ {
+		resGot := <-getErrChan
+		logger.Infof("[GetErr] %v", resGot)
 	}
-	println("response result: %v", user)
-
-	println("\n\n\nstart to test dubbo - GetUser3")
-	err = userProvider.GetUser3()
-	if err != nil {
-		panic(err)
+	for i := 1; i < 32; i++ {
+		resGot := <-getUser1Chan
+		logger.Infof("[GetUser1] %v", resGot)
 	}
-	println("succ!")
-
-	println("\n\n\nstart to test dubbo - getErr")
-	user = &User{}
-	err = userProvider.GetErr(context.TODO(), []interface{}{"A003"}, user)
-	if err != nil {
-		println("getErr - error: %v", err)
-	}
-
-	println("\n\n\nstart to test dubbo illegal method")
-	err = userProvider.GetUser1(context.TODO(), []interface{}{"A003"}, user)
-	if err != nil {
-		panic(err)
-	}
-
-	initSignal()
+	//initSignal()
 }
 
 func initSignal() {
@@ -144,8 +127,4 @@ func initSignal() {
 			return
 		}
 	}
-}
-
-func println(format string, args ...interface{}) {
-	fmt.Printf("\033[32;40m"+format+"\033[0m\n", args...)
 }
