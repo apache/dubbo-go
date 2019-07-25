@@ -17,6 +17,7 @@
 package impl
 
 import (
+	"github.com/afex/hystrix-go/hystrix"
 	"regexp"
 	"testing"
 	"time"
@@ -49,10 +50,10 @@ func mockInitHystrixConfig() {
 	}
 	confConsumer.Configs["Default"] = &CommandConfigWithError{
 		1000,
-		500,
-		18,
+		600,
+		5,
 		5000,
-		50,
+		5,
 		nil,
 	}
 	confConsumer.Configs["userp"] = &CommandConfigWithError{
@@ -88,6 +89,7 @@ func TestGetHystrixFilter(t *testing.T) {
 }
 
 func TestGetConfig_1(t *testing.T) {
+	mockInitHystrixConfig()
 	configGot := getConfig("com.ikurento.user.UserProvider", "GetUser", true)
 	assert.NotNil(t, configGot)
 	assert.Equal(t, 1200, configGot.Timeout)
@@ -98,6 +100,7 @@ func TestGetConfig_1(t *testing.T) {
 }
 
 func TestGetConfig_2(t *testing.T) {
+	mockInitHystrixConfig()
 	configGot := getConfig("com.ikurento.user.UserProvider", "GetUser0", true)
 	assert.NotNil(t, configGot)
 	assert.Equal(t, 2000, configGot.Timeout)
@@ -108,6 +111,7 @@ func TestGetConfig_2(t *testing.T) {
 }
 
 func TestGetConfig_3(t *testing.T) {
+	mockInitHystrixConfig()
 	//This should use default
 	configGot := getConfig("Mock.Service", "GetMock", true)
 	assert.NotNil(t, configGot)
@@ -155,6 +159,8 @@ func TestHystrixFilter_Invoke_Fail(t *testing.T) {
 }
 
 func TestHystricFilter_Invoke_CircuitBreak(t *testing.T) {
+	mockInitHystrixConfig()
+	hystrix.Flush()
 	hf := &HystrixFilter{COrP: true}
 	resChan := make(chan protocol.Result, 50)
 	for i := 0; i < 50; i++ {
@@ -174,6 +180,8 @@ func TestHystricFilter_Invoke_CircuitBreak(t *testing.T) {
 }
 
 func TestHystricFilter_Invoke_CircuitBreak_Omit_Exception(t *testing.T) {
+	mockInitHystrixConfig()
+	hystrix.Flush()
 	reg, _ := regexp.Compile(".*exception.*")
 	regs := []*regexp.Regexp{reg}
 	hf := &HystrixFilter{res: map[string][]*regexp.Regexp{"": regs}, COrP: true}
