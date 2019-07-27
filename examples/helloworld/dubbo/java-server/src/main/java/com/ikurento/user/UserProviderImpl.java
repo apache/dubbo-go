@@ -8,7 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class UserProviderImpl implements UserProvider {
-    // private static final Logger logger = LoggerFactory.getLogger(getClass()); // 只输出到dubbo的log(logs/server.log)
     private static final Logger LOG = LoggerFactory.getLogger("UserLogger"); // 输出到user-server.log
     Map<String, User> userMap = new HashMap<String, User>();
 
