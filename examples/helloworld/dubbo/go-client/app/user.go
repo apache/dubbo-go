@@ -19,7 +19,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"time"
 )
 
@@ -31,34 +30,18 @@ import (
 	"github.com/apache/dubbo-go/config"
 )
 
-type Gender hessian.JavaEnum
-
-var (
-	userProvider = new(UserProvider)
-)
+var userProvider = new(UserProvider)
 
 func init() {
 	config.SetConsumerService(userProvider)
-
+	hessian.RegisterPOJO(&User{})
 }
 
 type User struct {
-	// !!! Cannot define lowercase names of variable
 	Id   string
 	Name string
 	Age  int32
 	Time time.Time
-}
-
-func (u User) String() string {
-	return fmt.Sprintf(
-		"User{Id:%s, Name:%s, Age:%d, Time:%s}",
-		u.Id, u.Name, u.Age, u.Time,
-	)
-}
-
-func (User) JavaClassName() string {
-	return "com.ikurento.user.User"
 }
 
 type UserProvider struct {
@@ -67,4 +50,8 @@ type UserProvider struct {
 
 func (u *UserProvider) Reference() string {
 	return "UserProvider"
+}
+
+func (User) JavaClassName() string {
+	return "com.ikurento.user.User"
 }
