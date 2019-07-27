@@ -53,7 +53,7 @@ func init() {
 
 func (u User) String() string {
 	return fmt.Sprintf(
-		"User{Id:%s, Name:%s, Age:%d, Time:%s, Sex:%s}",
+		"User{Id:%s, Name:%s, Age:%d, Time:%s}",
 		u.Id, u.Name, u.Age, u.Time,
 	)
 }
