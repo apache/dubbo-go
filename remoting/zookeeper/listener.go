@@ -24,6 +24,7 @@ import (
 )
 
 import (
+	"github.com/dubbogo/getty"
 	perrors "github.com/pkg/errors"
 	"github.com/samuel/go-zookeeper/zk"
 )
@@ -188,7 +189,7 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 			}
 			l.client.RegisterEvent(zkPath, &event)
 			select {
-			case <-time.After(timeSecondDuration(failTimes * ConnDelay)):
+			case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)):
 				l.client.UnregisterEvent(zkPath, &event)
 				continue
 			case <-l.client.Done():
