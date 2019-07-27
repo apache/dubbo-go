@@ -26,10 +26,6 @@ import (
 )
 
 import (
-	hessian "github.com/dubbogo/hessian2"
-)
-
-import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	_ "github.com/apache/dubbo-go/protocol/dubbo"
@@ -51,10 +47,6 @@ var (
 // 		export CONF_PROVIDER_FILE_PATH="xxx"
 // 		export APP_LOG_CONF_FILE="xxx"
 func main() {
-
-	// ------for hessian2------
-	hessian.RegisterPOJO(&User{})
-	// ------------
 
 	config.Load()
 
