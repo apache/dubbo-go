@@ -56,9 +56,9 @@ protocol_conf:
   dubbo:
     session_number: 700
     session_timeout: "20s"
-    gr_pool_size: 100
-    queue_len: 0
-    queue_number: 0
+    gr_pool_size: 1000
+    queue_len: 128
+    queue_number: 10
     getty_session_param:
       compress_encoding: false
       tcp_no_delay: true
