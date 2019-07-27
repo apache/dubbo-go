@@ -108,16 +108,19 @@ func WithParams(params url.Values) option {
 		url.Params = params
 	}
 }
+
 func WithParamsValue(key, val string) option {
 	return func(url *URL) {
 		url.Params.Set(key, val)
 	}
 }
+
 func WithProtocol(proto string) option {
 	return func(url *URL) {
 		url.Protocol = proto
 	}
 }
+
 func WithIp(ip string) option {
 	return func(url *URL) {
 		url.Ip = ip
@@ -141,6 +144,7 @@ func WithLocation(location string) option {
 		url.Location = location
 	}
 }
+
 func NewURLWithOptions(opts ...option) *URL {
 	url := &URL{}
 	for _, opt := range opts {
