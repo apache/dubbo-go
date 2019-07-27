@@ -18,50 +18,42 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"time"
 )
 
-type (
-	User struct {
-		// !!! Cannot define lowercase names of variable
-		Id   string
-		Name string
-		Age  int32
-		Time time.Time
-	}
+import (
+	"github.com/dubbogo/hessian2"
 )
 
-var (
-	DefaultUser = User{
-		Id: "0", Name: "Alex Stocks", Age: 31,
-	}
-
-	userMap = make(map[string]User)
+import (
+	"github.com/apache/dubbo-go/config"
 )
 
 func init() {
-	userMap["A000"] = DefaultUser
-	userMap["A001"] = User{Id: "001", Name: "ZhangSheng", Age: 18}
-	userMap["A002"] = User{Id: "002", Name: "Lily", Age: 20}
-	userMap["A003"] = User{Id: "113", Name: "Moorse", Age: 30}
-	for k, v := range userMap {
-		v.Time = time.Now()
-		userMap[k] = v
-	}
+	config.SetProviderService(new(UserProvider))
+	// ------for hessian2------
+	hessian.RegisterPOJO(&User{})
 }
 
-func (u User) String() string {
-	return fmt.Sprintf(
-		"User{Id:%s, Name:%s, Age:%d, Time:%s}",
-		u.Id, u.Name, u.Age, u.Time,
-	)
+type User struct {
+	Id   string
+	Name string
+	Age  int32
+	Time time.Time
+}
+
+type UserProvider struct {
+}
+
+func (u *UserProvider) GetUser(ctx context.Context, req []interface{}) (*User, error) {
+	return &User{"A001", "Alex Stocks", 18, time.Now()}, nil
+}
+
+func (u *UserProvider) Reference() string {
+	return "UserProvider"
 }
 
 func (u User) JavaClassName() string {
 	return "com.ikurento.user.User"
-}
-
-func println(format string, args ...interface{}) {
-	fmt.Printf("\033[32;40m"+format+"\033[0m\n", args...)
 }

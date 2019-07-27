@@ -20,12 +20,7 @@ package main
 import (
 	"context"
 	"fmt"
-
 	"time"
-)
-
-import (
-	"github.com/dubbogo/hessian2"
 )
 
 import (
@@ -41,28 +36,19 @@ import (
 	_ "github.com/apache/dubbo-go/registry/zookeeper"
 )
 
-var (
-	survivalTimeout int = 10e9
-)
-
 // they are necessary:
 // 		export CONF_CONSUMER_FILE_PATH="xxx"
 // 		export APP_LOG_CONF_FILE="xxx"
 func main() {
 
-	hessian.RegisterPOJO(&User{})
 	config.Load()
 	time.Sleep(3e9)
 
 	println("\n\n\nstart to test dubbo")
 	user := &User{}
-	err := userProvider.GetUser(context.TODO(), []interface{}{"A003"}, user)
+	err := userProvider.GetUser(context.TODO(), []interface{}{"A001"}, user)
 	if err != nil {
 		panic(err)
 	}
-	println("response result: %v", user)
-}
-
-func println(format string, args ...interface{}) {
-	fmt.Printf("\033[32;40m"+format+"\033[0m\n", args...)
+	fmt.Printf("response result: %v\n", user)
 }

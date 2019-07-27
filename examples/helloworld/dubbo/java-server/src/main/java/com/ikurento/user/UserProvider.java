@@ -4,8 +4,6 @@ package com.ikurento.user;
 
 public interface UserProvider {
 
-
-
     User GetUser(String userId); // the first alpha is Upper case to compatible with golang.
 
 }
