@@ -46,8 +46,6 @@ type etcdV3Registry struct {
 	dataListener   *dataListener
 	configListener *configurationListener
 
-	servicesCache sync.Map // service name + protocol -> service config
-
 	wg   sync.WaitGroup // wg+done for zk restart
 	done chan struct{}
 }
@@ -104,6 +102,7 @@ func newETCDV3Registry(url *common.URL) (registry.Registry, error) {
 		URL:   url,
 		birth: time.Now().UnixNano(),
 		done:  make(chan struct{}),
+		services: make(map[string]common.URL),
 	}
 
 	if err := etcdv3.ValidateClient(r, etcdv3.WithName(etcdv3.RegistryETCDV3Client)); err != nil {
@@ -136,6 +135,9 @@ func (r *etcdV3Registry) IsAvailable() bool {
 
 func (r *etcdV3Registry) Destroy() {
 
+
+	logger.Warn("destory be call")
+
 	if r.configListener != nil {
 		r.configListener.Close()
 	}
@@ -150,10 +152,10 @@ func (r *etcdV3Registry) stop() {
 	r.client.Close()
 
 	r.client = nil
-	r.servicesCache.Range(func(key, value interface{}) bool {
-		r.servicesCache.Delete(key)
-		return true
-	}) // empty service catalog
+
+	r.cltLock.Lock()
+	r.services = nil
+	r.cltLock.Unlock()
 }
 
 func (r *etcdV3Registry) Register(svc common.URL) error {
@@ -163,9 +165,11 @@ func (r *etcdV3Registry) Register(svc common.URL) error {
 		return errors.Annotate(err, "get registry role")
 	}
 
-	if _, ok := r.servicesCache.Load(svc.Key()); ok {
+	r.cltLock.Lock()
+	if _, ok := r.services[svc.Key()]; ok {
 		return errors.New(fmt.Sprintf("Path{%s} has been registered", svc.Path))
 	}
+	r.cltLock.Unlock()
 
 	switch role {
 	case common.PROVIDER:
@@ -182,7 +186,9 @@ func (r *etcdV3Registry) Register(svc common.URL) error {
 		return errors.New(fmt.Sprintf("unknown role %d", role))
 	}
 
-	r.servicesCache.Store(svc.Key(), svc)
+	r.cltLock.Lock()
+	r.services[svc.Key()] = svc
+	r.cltLock.Unlock()
 	return nil
 }
 
@@ -206,10 +212,10 @@ func (r *etcdV3Registry) registerConsumer(svc common.URL) error {
 		logger.Errorf("etcd client create path %s: %v", consumersNode, err)
 		return errors.Annotate(err, "etcd create consumer nodes")
 	}
-	providersNode := fmt.Sprintf("/dubbo/%s/%s", svc.Service(), common.DubboNodes[common.PROVIDER])
-	if err := r.createDirIfNotExist(providersNode); err != nil {
-		return errors.Annotate(err, "create provider node")
-	}
+	//providersNode := fmt.Sprintf("/dubbo/%s/%s", svc.Service(), common.DubboNodes[common.PROVIDER])
+	//if err := r.createDirIfNotExist(providersNode); err != nil {
+	//	return errors.Annotate(err, "create provider node")
+	//}
 
 	params := url.Values{}
 
