@@ -2,12 +2,12 @@ package etcdv3
 
 import (
 	"context"
-
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting"
 	"github.com/juju/errors"
+	"strings"
 )
 
 type dataListener struct {
@@ -24,14 +24,17 @@ func (l *dataListener) AddInterestedURL(url *common.URL) {
 }
 
 func (l *dataListener) DataChange(eventType remoting.Event) bool {
-	serviceURL, err := common.NewURL(context.TODO(), eventType.Content)
+
+	url := eventType.Path[strings.Index(eventType.Path, "/providers/")+len("/providers/"):]
+	serviceURL, err := common.NewURL(context.TODO(), url)
 	if err != nil {
-		logger.Errorf("Listen NewURL(r{%s}) = error{%v}", eventType.Content, err)
+		logger.Errorf("Listen NewURL(r{%s}) = error{%v}", eventType.Path, err)
 		return false
 	}
+
 	for _, v := range l.interestedURL {
 		if serviceURL.URLEqual(*v) {
-			l.listener.Process(&remoting.ConfigChangeEvent{Value: serviceURL, ConfigType: eventType.Action})
+			l.listener.Process(&remoting.ConfigChangeEvent{Key: eventType.Path,Value: serviceURL, ConfigType: eventType.Action})
 			return true
 		}
 	}
@@ -59,7 +62,7 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 			return nil, errors.New("listener stopped")
 
 		case e := <-l.events:
-			logger.Debugf("got etcd event %s", e)
+			logger.Warnf("got etcd event %#s", e)
 			if e.ConfigType == remoting.EventTypeDel {
 				select {
 				case <-l.registry.done:
