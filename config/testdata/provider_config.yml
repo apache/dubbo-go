@@ -56,9 +56,12 @@ protocol_conf:
   dubbo:
     session_number: 700
     session_timeout: "20s"
-    gr_pool_size: 1000
-    queue_len: 128
-    queue_number: 10
+    # gr_pool_size is recommended to be set to [cpu core number] * 10
+    gr_pool_size: 120
+    # queue_len is recommended to be set to 64 or 128
+    queue_len: 64
+    # queue_number is recommended to be set to gr_pool_size / 20
+    queue_number: 6
     getty_session_param:
       compress_encoding: false
       tcp_no_delay: true
