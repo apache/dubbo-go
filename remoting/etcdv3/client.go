@@ -250,10 +250,10 @@ func (c *clientSet) watch(k string) (clientv3.WatchChan, error) {
 		return nil, ErrNilETCDV3ClientConn
 	}
 
-	_, err := c.get(k)
-	if err != nil {
-		return nil, errors.Annotatef(err, "pre check key %s", k)
-	}
+	//_, err := c.get(k)
+	//if err != nil {
+	//	return nil, errors.Annotatef(err, "pre check key %s", k)
+	//}
 
 	return c.rawClient.Watch(c.ctx, k), nil
 }
@@ -625,26 +625,27 @@ func (c *Client) WatchChildren(key string) ([]string, []string, clientv3.WatchCh
 	return childrenKeys, childrenValues, wc, nil
 }
 
-func (c *Client) GetChildren(key string) ([]string, error) {
+func (c *Client) GetChildren(key string) ([]string, []string, error) {
 	var (
 		err      error
-		children []string
+		childrenKeyList []string
+		childrenValueList []string
 	)
 
 	err = ErrNilETCDV3ClientConn
 	c.Lock()
 	if c.cs != nil {
-		children, _, err = c.cs.getChildren(key)
+		childrenKeyList, childrenValueList, err = c.cs.getChildren(key)
 	}
 	c.Unlock()
 	if err != nil {
 		if errors.Cause(err) == ErrKVPairNotFound {
-			return nil, errors.Annotatef(err, "key{%s} has none children", key)
+			return nil, nil, errors.Annotatef(err, "key{%s} has none children", key)
 		}
 		logger.Errorf("clientv3.Children(key{%s}) = error(%v)", key, perrors.WithStack(err))
-		return nil, errors.Annotatef(err, "client GetChildren(key:%s)", key)
+		return nil, nil, errors.Annotatef(err, "client GetChildren(key:%s)", key)
 	}
-	return children, nil
+	return childrenKeyList,childrenValueList, nil
 }
 
 func (c *Client) WatchExist(key string) (clientv3.WatchChan, error) {

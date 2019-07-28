@@ -9,6 +9,7 @@ import (
 
 import (
 	"github.com/coreos/etcd/mvcc/mvccpb"
+	"github.com/juju/errors"
 )
 
 import (
@@ -40,7 +41,7 @@ func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.
 	l.wg.Add(1)
 	defer l.wg.Done()
 	for {
-		keyEventCh, err := l.client.WatchExist(key)
+		wc, err := l.client.WatchExist(key)
 		if err != nil {
 			logger.Warnf("WatchExist{key:%s} = error{%v}", key, err)
 			return false
@@ -56,8 +57,8 @@ func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.
 		case <-l.client.Done():
 			return false
 
-		// etcd event stream
-		case e := <-keyEventCh:
+		// handle etcd events
+		case e := <-wc:
 
 			if e.Err() != nil {
 				logger.Errorf("get a etcdv3 event {err: %s}", e.Err())
@@ -65,6 +66,7 @@ func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.
 			}
 			for _, event := range e.Events {
 				if l.handleEvents(event, listener...) {
+					// if event is delete
 					return true
 				}
 			}
@@ -157,6 +159,8 @@ func timeSecondDuration(sec int) time.Duration {
 //                            --------> ListenServiceNodeEvent
 func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataListener) {
 
+
+
 	l.keyMapLock.Lock()
 	_, ok := l.keyMap[key]
 	l.keyMapLock.Unlock()
@@ -168,6 +172,26 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 	l.keyMapLock.Lock()
 	l.keyMap[key] = struct{}{}
 	l.keyMapLock.Unlock()
+
+
+
+	keyList, valueList, err := l.client.GetChildren(key)
+	if err != nil {
+		logger.Errorf("Get new node path {%v} 's content error,message is  {%v}", key, errors.Annotate(err, "get children"))
+	}
+
+	logger.Infof("get key children list %s, keys %v values %v", key, keyList, valueList)
+
+	for i, k := range keyList{
+		logger.Warnf("get children list key -> %s", k)
+		if !listener.DataChange(remoting.Event{
+			Path: k,
+			Action: remoting.EventTypeAdd,
+			Content: valueList[i],
+		}) {
+			continue
+		}
+	}
 
 	logger.Infof("listen dubbo provider key{%s} event and wait to get all provider etcdv3 nodes", key)
 	go func(key string, listener remoting.DataListener) {
