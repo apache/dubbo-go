@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/dubbogo/getty"
+	"github.com/dubbogo/gost/sync"
 	"gopkg.in/yaml.v2"
 )
 
@@ -33,7 +34,10 @@ import (
 	"github.com/apache/dubbo-go/config"
 )
 
-var srvConf *ServerConfig
+var (
+	srvConf   *ServerConfig
+	srvGrpool *gxsync.TaskPool
+)
 
 func init() {
 
@@ -64,6 +68,7 @@ func init() {
 	}
 
 	srvConf = conf
+	SetServerGrpool()
 }
 
 func SetServerConfig(s ServerConfig) {
@@ -73,10 +78,18 @@ func SetServerConfig(s ServerConfig) {
 		logger.Warnf("[ServerConfig CheckValidity] error: %v", err)
 		return
 	}
+	SetServerGrpool()
 }
 
 func GetServerConfig() ServerConfig {
 	return *srvConf
+}
+
+func SetServerGrpool() {
+	if srvConf.GrPoolSize > 1 {
+		srvGrpool = gxsync.NewTaskPool(gxsync.WithTaskPoolTaskPoolSize(srvConf.GrPoolSize), gxsync.WithTaskPoolTaskQueueLength(srvConf.QueueLen),
+			gxsync.WithTaskPoolTaskQueueNumber(srvConf.QueueNumber))
+	}
 }
 
 type Server struct {
@@ -123,13 +136,14 @@ func (s *Server) newSession(session getty.Session) error {
 	session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
 	session.SetPkgHandler(rpcServerPkgHandler)
 	session.SetEventListener(s.rpcHandler)
-	session.SetRQLen(conf.GettySessionParam.PkgRQSize)
 	session.SetWQLen(conf.GettySessionParam.PkgWQSize)
 	session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
 	session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
 	session.SetCronPeriod((int)(conf.sessionTimeout.Nanoseconds() / 1e6))
 	session.SetWaitTime(conf.GettySessionParam.waitTimeout)
 	logger.Debugf("app accepts new session:%s\n", session.Stat())
+
+	session.SetTaskPool(srvGrpool)
 
 	return nil
 }
