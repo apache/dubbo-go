@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"go.etcd.io/etcd/clientv3"
+	"github.com/coreos/etcd/clientv3"
 )
 
 import (
@@ -30,9 +30,6 @@ func NewEventListener(client *Client) *EventListener {
 		keyMap: make(map[string]struct{}),
 	}
 }
-func (l *EventListener) SetClient(client *Client) {
-	l.client = client
-}
 
 // Listen on a spec key
 // this method will return true when spec key deleted,
@@ -41,27 +38,33 @@ func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.
 	l.wg.Add(1)
 	defer l.wg.Done()
 	for {
-		wc, err := l.client.WatchExist(key)
+		wc, err := l.client.Watch(key)
 		if err != nil {
 			logger.Warnf("WatchExist{key:%s} = error{%v}", key, err)
 			return false
 		}
 
 		select {
-		// client watch ctx stop
-		// server stopped
-		case <-l.client.cs.ctx.Done():
-			return false
 
 		// client stopped
 		case <-l.client.Done():
+			logger.Warnf("etcd client stopped")
+			return false
+
+		// client ctx stop
+		case <-l.client.ctx.Done():
+			logger.Warnf("etcd client ctx cancel")
 			return false
 
 		// handle etcd events
-		case e := <-wc:
+		case e, ok := <-wc:
+			if !ok {
+				logger.Warnf("etcd watch-chan closed")
+				return false
+			}
 
 			if e.Err() != nil {
-				logger.Errorf("get a etcdv3 event {err: %s}", e.Err())
+				logger.Errorf("etcd watch ERR {err: %s}", e.Err())
 				continue
 			}
 			for _, event := range e.Events {
@@ -80,7 +83,7 @@ func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.
 // return false mean the event type is CREATE || UPDATE
 func (l *EventListener) handleEvents(event *clientv3.Event, listeners ...remoting.DataListener) bool {
 
-	logger.Warnf("get a etcdv3 Event {type: %s, key: %s}", event.Type, event.Kv.Key)
+	logger.Infof("got a etcd event {type: %s, key: %s}", event.Type, event.Kv.Key)
 
 	switch event.Type {
 	// the etcdv3 event just include PUT && DELETE
@@ -88,14 +91,14 @@ func (l *EventListener) handleEvents(event *clientv3.Event, listeners ...remotin
 		for _, listener := range listeners {
 			switch event.IsCreate() {
 			case true:
-				logger.Warnf("etcdv3.ExistW(key{%s}) = event{EventNodeDataCreated}", event.Kv.Key)
+				logger.Infof("etcd get event (key{%s}) = event{EventNodeDataCreated}", event.Kv.Key)
 				listener.DataChange(remoting.Event{
 					Path:    string(event.Kv.Key),
 					Action:  remoting.EventTypeAdd,
 					Content: string(event.Kv.Value),
 				})
 			case false:
-				logger.Warnf("etcdv3.ExistW(key{%s}) = event{EventNodeDataChanged}", event.Kv.Key)
+				logger.Infof("etcd get event (key{%s}) = event{EventNodeDataChanged}", event.Kv.Key)
 				listener.DataChange(remoting.Event{
 					Path:    string(event.Kv.Key),
 					Action:  remoting.EvnetTypeUpdate,
@@ -105,7 +108,7 @@ func (l *EventListener) handleEvents(event *clientv3.Event, listeners ...remotin
 		}
 		return false
 	case mvccpb.DELETE:
-		logger.Warnf("etcdv3.ExistW(key{%s}) = event{EventNodeDeleted}", event.Kv.Key)
+		logger.Warnf("etcd get event (key{%s}) = event{EventNodeDeleted}", event.Kv.Key)
 		return true
 	}
 
@@ -118,28 +121,33 @@ func (l *EventListener) ListenServiceNodeEventWithPrefix(prefix string, listener
 	l.wg.Add(1)
 	defer l.wg.Done()
 	for {
-		_, _, wc, err := l.client.WatchChildren(prefix)
+		wc, err := l.client.WatchWithPrefix(prefix)
 		if err != nil {
 			logger.Warnf("listenDirEvent(key{%s}) = error{%v}", prefix, err)
 		}
 
 		select {
 
-		// client watch ctx stop
-		// server stopped
-		case <-l.client.cs.ctx.Done():
-			logger.Warn("etcd listener service node with prefix etcd server stopped")
-			return
-
 		// client stopped
 		case <-l.client.Done():
-			logger.Warn("etcdv3 client stopped")
+			logger.Warnf("etcd client stopped")
+			return
+
+			// client ctx stop
+		case <-l.client.ctx.Done():
+			logger.Warnf("etcd client ctx cancel")
 			return
 
 			// etcd event stream
-		case e := <-wc:
+		case e, ok := <-wc:
+
+			if !ok {
+				logger.Warnf("etcd watch-chan closed")
+				return
+			}
+
 			if e.Err() != nil {
-				logger.Errorf("get a etcdv3 event {err: %s}", e.Err())
+				logger.Errorf("etcd watch ERR {err: %s}", e.Err())
 				continue
 			}
 			for _, event := range e.Events {
@@ -159,8 +167,6 @@ func timeSecondDuration(sec int) time.Duration {
 //                            --------> ListenServiceNodeEvent
 func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataListener) {
 
-
-
 	l.keyMapLock.Lock()
 	_, ok := l.keyMap[key]
 	l.keyMapLock.Unlock()
@@ -173,20 +179,18 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 	l.keyMap[key] = struct{}{}
 	l.keyMapLock.Unlock()
 
-
-
-	keyList, valueList, err := l.client.GetChildren(key)
+	keyList, valueList, err := l.client.getChildren(key)
 	if err != nil {
 		logger.Errorf("Get new node path {%v} 's content error,message is  {%v}", key, errors.Annotate(err, "get children"))
 	}
 
 	logger.Infof("get key children list %s, keys %v values %v", key, keyList, valueList)
 
-	for i, k := range keyList{
+	for i, k := range keyList {
 		logger.Warnf("get children list key -> %s", k)
 		if !listener.DataChange(remoting.Event{
-			Path: k,
-			Action: remoting.EventTypeAdd,
+			Path:    k,
+			Action:  remoting.EventTypeAdd,
 			Content: valueList[i],
 		}) {
 			continue
@@ -206,10 +210,6 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 		}
 		logger.Warnf("listenSelf(etcd key{%s}) goroutine exit now", key)
 	}(key)
-}
-
-func (l *EventListener) valid() bool {
-	return l.client.Valid()
 }
 
 func (l *EventListener) Close() {
