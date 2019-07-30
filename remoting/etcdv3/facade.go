@@ -26,7 +26,7 @@ type clientFacade interface {
 func HandleClientRestart(r clientFacade) {
 
 	var (
-		err error
+		err       error
 		failTimes int
 	)
 
@@ -43,6 +43,8 @@ LOOP:
 			r.Client().Close()
 			clientName := r.Client().name
 			endpoints := r.Client().endpoints
+			timeout := r.Client().timeout
+			heartbeat := r.Client().heartbeat
 			r.SetClient(nil)
 			r.ClientLock().Unlock()
 
@@ -55,7 +57,12 @@ LOOP:
 					break LOOP
 				case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)): // 防止疯狂重连etcd
 				}
-				err = ValidateClient(r, WithName(clientName), WithEndpoints(endpoints...))
+				err = ValidateClient(r,
+					WithName(clientName),
+					WithEndpoints(endpoints...),
+					WithTimeout(timeout),
+					WithHeartbeat(heartbeat),
+				)
 				logger.Infof("ETCDV3ProviderRegistry.validateETCDV3Client(etcd Addr{%s}) = error{%#v}",
 					endpoints, perrors.WithStack(err))
 				if err == nil {
@@ -71,4 +78,3 @@ LOOP:
 		}
 	}
 }
-
