@@ -309,7 +309,7 @@ func (z *ZookeeperClient) UnregisterEvent(zkPath string, event *chan struct{}) {
 		if e == event {
 			arr := infoList
 			infoList = append(arr[:i], arr[i+1:]...)
-			logger.Debugf("zkClient{%s} unregister event{path:%s, event:%p}", z.name, zkPath, event)
+			logger.Infof("zkClient{%s} unregister event{path:%s, event:%p}", z.name, zkPath, event)
 		}
 	}
 	logger.Debugf("after zkClient{%s} unregister event{path:%s, event:%p}, array length %d",
