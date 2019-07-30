@@ -19,16 +19,16 @@ package impl
 
 import (
 	"github.com/stretchr/testify/assert"
+	"reflect"
 )
 import (
-	"fmt"
 	"testing"
 )
 
 func Test_struct2MapAll(t *testing.T) {
 	var testData struct {
 		AaAa string `m:"aaAa"`
-		BaBa string `m:"baBa"`
+		BaBa string
 		CaCa struct {
 			AaAa string
 			BaBa string `m:"baBa"`
@@ -45,8 +45,11 @@ func Test_struct2MapAll(t *testing.T) {
 	testData.CaCa.XxYy.xxXx = "3"
 	testData.CaCa.XxYy.Xx = "3"
 	m := struct2MapAll(testData)
-	fmt.Printf("%v", m)
-	expect := `map[aaAa:1 baBa:1 caCa:map[aaAa:2 baBa:2 xxYy:map[xx:3]]]`
-	get := fmt.Sprintf("%v", m)
-	assert.Equal(t, expect, get)
+	assert.Equal(t, "1", m["aaAa"].(string))
+	assert.Equal(t, "1", m["baBa"].(string))
+	assert.Equal(t, "2", m["caCa"].(map[string]interface{})["aaAa"].(string))
+	assert.Equal(t, "3", m["caCa"].(map[string]interface{})["xxYy"].(map[string]interface{})["xx"].(string))
+
+	assert.Equal(t, reflect.Map, reflect.TypeOf(m["caCa"]).Kind())
+	assert.Equal(t, reflect.Map, reflect.TypeOf(m["caCa"].(map[string]interface{})["xxYy"]).Kind())
 }
