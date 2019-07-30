@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package impl
 
 import (
@@ -26,13 +43,12 @@ func (ef *GenericFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 	if invocation.MethodName() == constant.GENERIC {
 		var newArguments = invocation.Arguments()
 		for i := range newArguments {
-			newArguments[i] = Struct2MapAll(newArguments[i])
+			newArguments[i] = struct2MapAll(newArguments[i])
 		}
 		newInvocation := invocation2.NewRPCInvocation(invocation.MethodName(), newArguments, invocation.Attachments())
 		return invoker.Invoke(newInvocation)
 	}
 	return invoker.Invoke(invocation)
-
 }
 
 func (ef *GenericFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
@@ -42,7 +58,7 @@ func (ef *GenericFilter) OnResponse(result protocol.Result, invoker protocol.Inv
 func GetGenericFilter() filter.Filter {
 	return &GenericFilter{}
 }
-func Struct2MapAll(obj interface{}) map[string]interface{} {
+func struct2MapAll(obj interface{}) map[string]interface{} {
 	t := reflect.TypeOf(obj)
 	v := reflect.ValueOf(obj)
 	result := make(map[string]interface{})
@@ -50,9 +66,7 @@ func Struct2MapAll(obj interface{}) map[string]interface{} {
 		for i := 0; i < t.NumField(); i++ {
 			if v.Field(i).Kind() == reflect.Struct {
 				if v.Field(i).CanInterface() {
-					result[headerAtoa(t.Field(i).Name)] = Struct2MapAll(v.Field(i).Interface())
-				} else {
-					println("not in to map,field:" + t.Field(i).Name)
+					result[headerAtoa(t.Field(i).Name)] = struct2MapAll(v.Field(i).Interface())
 				}
 			} else {
 				if v.Field(i).CanInterface() {
@@ -61,8 +75,6 @@ func Struct2MapAll(obj interface{}) map[string]interface{} {
 					} else {
 						result[tagName] = v.Field(i).Interface()
 					}
-				} else {
-					println("not in to map,field:" + t.Field(i).Name)
 				}
 			}
 		}
