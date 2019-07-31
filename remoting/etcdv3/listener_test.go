@@ -85,4 +85,3 @@ func (m *mockDataListener) DataChange(eventType remoting.Event) bool {
 	}
 	return true
 }
-
