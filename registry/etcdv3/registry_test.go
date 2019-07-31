@@ -105,7 +105,6 @@ func Test_ConsumerDestory(t *testing.T) {
 
 func Test_ProviderDestory(t *testing.T) {
 
-
 	startETCDServer(t)
 	defer stopETCDServer(t)
 
@@ -118,5 +117,3 @@ func Test_ProviderDestory(t *testing.T) {
 	reg.Destroy()
 	assert.Equal(t, false, reg.IsAvailable())
 }
-
-

@@ -11,38 +11,35 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
+func startETCDServer(t *testing.T) {
 
-func startETCDServer(t *testing.T){
-
-	cmd := exec.Command("./load.sh",  "start")
+	cmd := exec.Command("./load.sh", "start")
 	//cmd := exec.Command("pwd")
-	cmd.Stdout= os.Stdout
+	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
 	cmd.Dir = "../../remoting/etcdv3/single"
 
-	if err := cmd.Run(); err != nil{
+	if err := cmd.Run(); err != nil {
 		t.Fatal(err)
 	}
 
 }
 
-func stopETCDServer(t *testing.T){
+func stopETCDServer(t *testing.T) {
 
-	cmd := exec.Command("./load.sh",  "stop")
+	cmd := exec.Command("./load.sh", "stop")
 	//cmd := exec.Command("pwd")
-	cmd.Stdout= os.Stdout
+	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
 	cmd.Dir = "../../remoting/etcdv3/single"
 
-	if err := cmd.Run(); err != nil{
+	if err := cmd.Run(); err != nil {
 		t.Fatal(err)
 	}
 
 }
-
 
 func Test_DataChange(t *testing.T) {
-
 
 	startETCDServer(t)
 	defer stopETCDServer(t)
