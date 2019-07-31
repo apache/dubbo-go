@@ -7,8 +7,8 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go-hessian2/java_exception"
 	"github.com/apache/dubbo-go/config"
-	"github.com/dubbogo/hessian2/java_exception"
 	perrors "github.com/pkg/errors"
 )
 
