@@ -19,9 +19,9 @@ package impl
 
 import (
 	"github.com/stretchr/testify/assert"
-	"reflect"
 )
 import (
+	"reflect"
 	"testing"
 )
 

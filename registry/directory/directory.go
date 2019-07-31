@@ -116,7 +116,7 @@ func (dir *registryDirectory) Subscribe(url common.URL) {
 }
 
 //subscribe service from registry , and update the cacheServices
-func (dir *registryDirectory) update(res *registry.ServiceEvent) {
+func (dir *registryDirectory) /**/ update(res *registry.ServiceEvent) {
 	if res == nil {
 		return
 	}
