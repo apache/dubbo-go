@@ -18,13 +18,15 @@
 package impl
 
 import (
+	"reflect"
+	"strings"
+)
+import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/filter"
 	"github.com/apache/dubbo-go/protocol"
 	invocation2 "github.com/apache/dubbo-go/protocol/invocation"
-	"reflect"
-	"strings"
 )
 
 const (

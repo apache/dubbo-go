@@ -55,7 +55,7 @@ type ReferenceConfig struct {
 	Params        map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
 	invoker       protocol.Invoker
 	urls          []*common.URL
-	Generic       bool
+	Generic       bool `yaml:"generic"  json:"generic,omitempty" property:"generic"`
 }
 
 func (c *ReferenceConfig) Prefix() string {
@@ -157,6 +157,7 @@ func (refconfig *ReferenceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.RETRIES_KEY, strconv.FormatInt(refconfig.Retries, 10))
 	urlMap.Set(constant.GROUP_KEY, refconfig.Group)
 	urlMap.Set(constant.VERSION_KEY, refconfig.Version)
+	urlMap.Set(constant.GENERIC_KEY, strconv.FormatBool(refconfig.Generic))
 	//getty invoke async or sync
 	urlMap.Set(constant.ASYNC_KEY, strconv.FormatBool(refconfig.async))
 
@@ -183,8 +184,7 @@ func (refconfig *ReferenceConfig) getUrlMap() url.Values {
 	return urlMap
 
 }
-func (refconfig *ReferenceConfig) Load(id string) {
-	//gr.Filter = "genericConsumer" //todo: add genericConsumer filter
+func (refconfig *ReferenceConfig) GenericLoad(id string) {
 	genericService := NewGenericService(refconfig.id)
 	SetConsumerService(genericService)
 	refconfig.id = id
