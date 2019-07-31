@@ -5,8 +5,11 @@ import (
 	"path"
 	"sync"
 	"time"
-
+)
+import (
 	"github.com/apache/dubbo-go/common/logger"
+)
+import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/juju/errors"
 	"go.etcd.io/etcd/clientv3/concurrency"
@@ -198,13 +201,14 @@ func (c *Client) maintenanceStatus() error {
 		return errors.Annotate(err, "new session with server")
 	}
 
+	// must add wg before go maintenance status goroutine
+	c.Wait.Add(1)
 	go c.maintenanceStatusLoop(s)
 	return nil
 }
 
 func (c *Client) maintenanceStatusLoop(s *concurrency.Session) {
 
-	c.Wait.Add(1)
 	defer func() {
 		c.Wait.Done()
 		logger.Infof("etcd client {endpoints:%v, name:%s} maintenance goroutine game over.", c.endpoints, c.name)
@@ -426,6 +430,16 @@ func (c *Client) GetChildrenKVList(k string) ([]string, []string, error) {
 		return nil, nil, errors.Annotatef(err, "get key children (key %s)", k)
 	}
 	return kList, vList, nil
+}
+
+func (c *Client) Get(k string) (string, error) {
+
+	v, err := c.get(k)
+	if err != nil {
+		return "", errors.Annotatef(err, "get key value (key %s)", k)
+	}
+
+	return v, nil
 }
 
 func (c *Client) Watch(k string) (clientv3.WatchChan, error) {

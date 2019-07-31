@@ -9,7 +9,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -18,6 +20,9 @@ import (
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting/etcdv3"
 	"github.com/apache/dubbo-go/version"
+)
+
+import (
 	"github.com/juju/errors"
 	perrors "github.com/pkg/errors"
 )
@@ -46,7 +51,7 @@ type etcdV3Registry struct {
 	dataListener   *dataListener
 	configListener *configurationListener
 
-	wg   sync.WaitGroup // wg+done for zk restart
+	wg   sync.WaitGroup // wg+done for etcd client restart
 	done chan struct{}
 }
 
@@ -76,7 +81,7 @@ func (r *etcdV3Registry) RestartCallBack() bool {
 	for _, confIf := range services {
 		err := r.Register(confIf)
 		if err != nil {
-			logger.Errorf("(ZkProviderRegistry)register(conf{%#v}) = error{%#v}",
+			logger.Errorf("(etcdV3ProviderRegistry)register(conf{%#v}) = error{%#v}",
 				confIf, perrors.WithStack(err))
 			flag = false
 			break
@@ -99,13 +104,17 @@ func newETCDV3Registry(url *common.URL) (registry.Registry, error) {
 	logger.Infof("time-out is: %v", timeout.String())
 
 	r := &etcdV3Registry{
-		URL:   url,
-		birth: time.Now().UnixNano(),
-		done:  make(chan struct{}),
+		URL:      url,
+		birth:    time.Now().UnixNano(),
+		done:     make(chan struct{}),
 		services: make(map[string]common.URL),
 	}
 
-	if err := etcdv3.ValidateClient(r, etcdv3.WithName(etcdv3.RegistryETCDV3Client)); err != nil {
+	if err := etcdv3.ValidateClient(r,
+		etcdv3.WithName(etcdv3.RegistryETCDV3Client),
+		etcdv3.WithTimeout(timeout),
+		etcdv3.WithEndpoints(url.Location),
+	); err != nil {
 		return nil, err
 	}
 
@@ -134,9 +143,6 @@ func (r *etcdV3Registry) IsAvailable() bool {
 }
 
 func (r *etcdV3Registry) Destroy() {
-
-
-	logger.Warn("destory be call")
 
 	if r.configListener != nil {
 		r.configListener.Close()
@@ -212,10 +218,10 @@ func (r *etcdV3Registry) registerConsumer(svc common.URL) error {
 		logger.Errorf("etcd client create path %s: %v", consumersNode, err)
 		return errors.Annotate(err, "etcd create consumer nodes")
 	}
-	//providersNode := fmt.Sprintf("/dubbo/%s/%s", svc.Service(), common.DubboNodes[common.PROVIDER])
-	//if err := r.createDirIfNotExist(providersNode); err != nil {
-	//	return errors.Annotate(err, "create provider node")
-	//}
+	providersNode := fmt.Sprintf("/dubbo/%s/%s", svc.Service(), common.DubboNodes[common.PROVIDER])
+	if err := r.createDirIfNotExist(providersNode); err != nil {
+		return errors.Annotate(err, "create provider node")
+	}
 
 	params := url.Values{}
 
@@ -300,7 +306,7 @@ func (r *etcdV3Registry) Subscribe(svc common.URL) (registry.Listener, error) {
 		client := r.client
 		r.cltLock.Unlock()
 		if client == nil {
-			return nil, perrors.New("zk connection broken")
+			return nil, perrors.New("etcd client broken")
 		}
 
 		// new client & listener
@@ -313,7 +319,6 @@ func (r *etcdV3Registry) Subscribe(svc common.URL) (registry.Listener, error) {
 
 	//注册到dataconfig的interested
 	r.dataListener.AddInterestedURL(&svc)
-
 	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/providers", svc.Service()), r.dataListener)
 
 	return configListener, nil

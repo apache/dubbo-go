@@ -3,18 +3,17 @@ package etcdv3
 import (
 	"sync"
 	"time"
-
-	"github.com/coreos/etcd/clientv3"
-)
-
-import (
-	"github.com/coreos/etcd/mvcc/mvccpb"
-	"github.com/juju/errors"
 )
 
 import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/remoting"
+)
+
+import (
+	"github.com/coreos/etcd/clientv3"
+	"github.com/coreos/etcd/mvcc/mvccpb"
+	"github.com/juju/errors"
 )
 
 type EventListener struct {
@@ -187,7 +186,7 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 	logger.Infof("get key children list %s, keys %v values %v", key, keyList, valueList)
 
 	for i, k := range keyList {
-		logger.Warnf("get children list key -> %s", k)
+		logger.Infof("got children list key -> %s", k)
 		if !listener.DataChange(remoting.Event{
 			Path:    k,
 			Action:  remoting.EventTypeAdd,
