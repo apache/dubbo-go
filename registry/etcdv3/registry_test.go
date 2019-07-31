@@ -35,9 +35,6 @@ func initRegistry(t *testing.T) *etcdV3Registry {
 
 func Test_Register(t *testing.T) {
 
-	startETCDServer(t)
-	defer stopETCDServer(t)
-
 	url, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 
 	reg := initRegistry(t)
@@ -51,9 +48,6 @@ func Test_Register(t *testing.T) {
 }
 
 func Test_Subscribe(t *testing.T) {
-
-	startETCDServer(t)
-	defer stopETCDServer(t)
 
 	regurl, _ := common.NewURL(context.TODO(), "registry://127.0.0.1:1111", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
 	url, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
@@ -84,9 +78,6 @@ func Test_Subscribe(t *testing.T) {
 
 func Test_ConsumerDestory(t *testing.T) {
 
-	startETCDServer(t)
-	defer stopETCDServer(t)
-
 	url, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 
 	reg := initRegistry(t)
@@ -104,9 +95,6 @@ func Test_ConsumerDestory(t *testing.T) {
 }
 
 func Test_ProviderDestory(t *testing.T) {
-
-	startETCDServer(t)
-	defer stopETCDServer(t)
 
 	reg := initRegistry(t)
 	url, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
