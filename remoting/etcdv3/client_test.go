@@ -55,6 +55,7 @@ func initClient(t *testing.T) *Client {
 	if err != nil {
 		t.Fatal(err)
 	}
+	c.CleanKV()
 	return c
 }
 
@@ -79,7 +80,7 @@ func TestClient_Create(t *testing.T) {
 	tests := tests
 
 	c := initClient(t)
-	c.Close()
+	defer c.Close()
 
 	for _, tc := range tests {
 
@@ -110,7 +111,7 @@ func TestClient_Delete(t *testing.T) {
 	tests := tests
 
 	c := initClient(t)
-	c.Close()
+	defer c.Close()
 
 	for _, tc := range tests {
 

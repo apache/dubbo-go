@@ -56,14 +56,14 @@ func (r *mockFacade) IsAvailable() bool {
 func Test_Fascade(t *testing.T) {
 
 	c := initClient(t)
-	defer c.Close()
 
-	url, err := common.NewURL(context.Background(), "mock://127.0.0.1")
+	url, err := common.NewURL(context.Background(), "mock://127.0.0.1:2379")
 	if err != nil {
 		t.Fatal(err)
 	}
 	mock := &mockFacade{client: c, URL: &url}
 	go HandleClientRestart(mock)
+	c.Close()
 
 	time.Sleep(2 * time.Second)
 }
