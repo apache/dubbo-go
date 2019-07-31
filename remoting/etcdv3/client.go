@@ -157,10 +157,8 @@ func (c *Client) clean() {
 	// cancel ctx for raw client
 	c.cancel()
 
-	// clean ctx cancel raw client
+	// clean raw client
 	c.rawClient = nil
-	c.ctx = nil
-	c.cancel = nil
 }
 
 func (c *Client) stop() bool {
@@ -288,6 +286,23 @@ func (c *Client) get(k string) (string, error) {
 	}
 
 	return string(resp.Kvs[0].Value), nil
+}
+
+func (c *Client) CleanKV()error{
+
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	if c.rawClient == nil {
+		return  ErrNilETCDV3Client
+	}
+
+	_, err := c.rawClient.Delete(c.ctx, "", clientv3.WithPrefix())
+	if err != nil {
+		return  err
+	}
+
+	return nil
 }
 
 func (c *Client) getChildren(k string) ([]string, []string, error) {
