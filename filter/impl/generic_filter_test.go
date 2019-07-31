@@ -18,11 +18,11 @@
 package impl
 
 import (
-	"github.com/stretchr/testify/assert"
-)
-import (
 	"reflect"
 	"testing"
+)
+import (
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_struct2MapAll(t *testing.T) {

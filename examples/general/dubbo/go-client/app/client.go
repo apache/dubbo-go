@@ -297,7 +297,7 @@ func test3() {
 		Protocol:      dubbo.DUBBO,
 		Generic:       true,
 	}
-	referenceConfig.Load(appName) //appName is the unique identification of RPCService
+	referenceConfig.GenericLoad(appName) //appName is the unique identification of RPCService
 
 	time.Sleep(3 * time.Second)
 	println("\n\n\nstart to generic invoke")
