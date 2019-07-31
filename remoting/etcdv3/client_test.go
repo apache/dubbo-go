@@ -1,6 +1,8 @@
 package etcdv3
 
 import (
+	"os"
+	"os/exec"
 	"path"
 	"reflect"
 	"strings"
@@ -57,6 +59,18 @@ func initClient(t *testing.T) *Client {
 	}
 	c.CleanKV()
 	return c
+}
+
+func Test_StartEtcdServer(t *testing.T){
+	cmd := exec.Command("./load.sh",  "start")
+	cmd.Stdout= os.Stdout
+	cmd.Stderr = os.Stdout
+	cmd.Dir = "./single"
+
+	if err := cmd.Run(); err != nil{
+		t.Fatal(err)
+	}
+
 }
 
 func Test_newClient(t *testing.T) {

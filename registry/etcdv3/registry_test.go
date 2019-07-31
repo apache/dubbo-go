@@ -2,6 +2,8 @@ package etcdv3
 
 import (
 	"context"
+	"os"
+	"os/exec"
 	"strconv"
 	"testing"
 	"time"
@@ -103,3 +105,19 @@ func Test_ProviderDestory(t *testing.T) {
 	reg.Destroy()
 	assert.Equal(t, false, reg.IsAvailable())
 }
+
+
+func Test_StopEtcdServer(t *testing.T){
+
+	cmd := exec.Command("./load.sh",  "stop")
+	//cmd := exec.Command("pwd")
+	cmd.Stdout= os.Stdout
+	cmd.Stderr = os.Stdout
+	cmd.Dir = "../../remoting/etcdv3/single"
+
+	if err := cmd.Run(); err != nil{
+		t.Fatal(err)
+	}
+
+}
+

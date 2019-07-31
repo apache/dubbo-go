@@ -1,6 +1,8 @@
 package etcdv3
 
 import (
+	"os"
+	"os/exec"
 	"testing"
 	"time"
 
@@ -81,4 +83,16 @@ func (m *mockDataListener) DataChange(eventType remoting.Event) bool {
 		m.rc <- eventType
 	}
 	return true
+}
+
+func Test_StopEtcdServer(t *testing.T){
+	cmd := exec.Command("./load.sh",  "stop")
+	cmd.Stdout= os.Stdout
+	cmd.Stderr = os.Stdout
+	cmd.Dir = "./single"
+
+	if err := cmd.Run(); err != nil{
+		t.Fatal(err)
+	}
+
 }
