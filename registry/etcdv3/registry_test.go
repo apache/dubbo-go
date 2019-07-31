@@ -28,7 +28,9 @@ func initRegistry(t *testing.T) *etcdV3Registry {
 		t.Fatal(err)
 	}
 
-	return reg.(*etcdV3Registry)
+	out := reg.(*etcdV3Registry)
+	out.client.CleanKV()
+	return out
 }
 
 func Test_Register(t *testing.T) {
