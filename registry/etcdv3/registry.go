@@ -157,7 +157,6 @@ func (r *etcdV3Registry) stop() {
 	// close current client
 	r.client.Close()
 
-
 	r.cltLock.Lock()
 	r.client = nil
 	r.services = nil

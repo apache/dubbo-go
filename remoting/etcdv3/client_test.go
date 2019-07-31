@@ -61,25 +61,25 @@ func initClient(t *testing.T) *Client {
 	return c
 }
 
-func startETCDServer(t *testing.T){
+func startETCDServer(t *testing.T) {
 
-	cmd := exec.Command("./load.sh",  "start")
-	cmd.Stdout= os.Stdout
+	cmd := exec.Command("./load.sh", "start")
+	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
 	cmd.Dir = "./single"
 
-	if err := cmd.Run(); err != nil{
+	if err := cmd.Run(); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func stopETCDServer(t *testing.T){
-	cmd := exec.Command("./load.sh",  "stop")
-	cmd.Stdout= os.Stdout
+func stopETCDServer(t *testing.T) {
+	cmd := exec.Command("./load.sh", "stop")
+	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
 	cmd.Dir = "./single"
 
-	if err := cmd.Run(); err != nil{
+	if err := cmd.Run(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -342,7 +342,6 @@ func TestClient_Valid(t *testing.T) {
 }
 
 func TestClient_Done(t *testing.T) {
-
 
 	startETCDServer(t)
 	defer stopETCDServer(t)
