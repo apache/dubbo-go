@@ -32,9 +32,6 @@ var changedData = `
 
 func TestListener(t *testing.T) {
 
-	startETCDServer(t)
-	defer stopETCDServer(t)
-
 	var tests = []struct {
 		input struct {
 			k string

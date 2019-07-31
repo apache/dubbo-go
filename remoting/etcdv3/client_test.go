@@ -61,7 +61,14 @@ func initClient(t *testing.T) *Client {
 	return c
 }
 
-func startETCDServer(t *testing.T) {
+func TestMain(m *testing.M) {
+
+	startETCDServer()
+	m.Run()
+	stopETCDServer()
+}
+
+func startETCDServer() {
 
 	cmd := exec.Command("./load.sh", "start")
 	cmd.Stdout = os.Stdout
@@ -69,26 +76,23 @@ func startETCDServer(t *testing.T) {
 	cmd.Dir = "./single"
 
 	if err := cmd.Run(); err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
 }
 
-func stopETCDServer(t *testing.T) {
+func stopETCDServer() {
 	cmd := exec.Command("./load.sh", "stop")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
 	cmd.Dir = "./single"
 
 	if err := cmd.Run(); err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
 
 }
 
 func Test_newClient(t *testing.T) {
-
-	startETCDServer(t)
-	defer stopETCDServer(t)
 
 	c := initClient(t)
 	defer c.Close()
@@ -100,17 +104,11 @@ func Test_newClient(t *testing.T) {
 
 func TestClient_Close(t *testing.T) {
 
-	startETCDServer(t)
-	defer stopETCDServer(t)
-
 	c := initClient(t)
 	c.Close()
 }
 
 func TestClient_Create(t *testing.T) {
-
-	startETCDServer(t)
-	defer stopETCDServer(t)
 
 	tests := tests
 
@@ -142,9 +140,6 @@ func TestClient_Create(t *testing.T) {
 }
 
 func TestClient_Delete(t *testing.T) {
-
-	startETCDServer(t)
-	defer stopETCDServer(t)
 
 	tests := tests
 
@@ -178,9 +173,6 @@ func TestClient_Delete(t *testing.T) {
 }
 
 func TestClient_GetChildrenKVList(t *testing.T) {
-
-	startETCDServer(t)
-	defer stopETCDServer(t)
 
 	tests := tests
 
@@ -219,9 +211,6 @@ func TestClient_GetChildrenKVList(t *testing.T) {
 }
 
 func TestClient_Watch(t *testing.T) {
-
-	startETCDServer(t)
-	defer stopETCDServer(t)
 
 	tests := tests
 
@@ -275,9 +264,6 @@ func TestClient_Watch(t *testing.T) {
 
 func TestClient_RegisterTemp(t *testing.T) {
 
-	startETCDServer(t)
-	defer stopETCDServer(t)
-
 	c := initClient(t)
 	observeC := initClient(t)
 
@@ -322,9 +308,6 @@ func TestClient_RegisterTemp(t *testing.T) {
 
 func TestClient_Valid(t *testing.T) {
 
-	startETCDServer(t)
-	defer stopETCDServer(t)
-
 	c := initClient(t)
 
 	if c.Valid() != true {
@@ -342,9 +325,6 @@ func TestClient_Valid(t *testing.T) {
 }
 
 func TestClient_Done(t *testing.T) {
-
-	startETCDServer(t)
-	defer stopETCDServer(t)
 
 	c := initClient(t)
 
