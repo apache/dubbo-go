@@ -2,11 +2,11 @@ package etcdv3
 
 import (
 	"testing"
+	"time"
 
 	"github.com/apache/dubbo-go/remoting"
 	"github.com/stretchr/testify/assert"
 )
-
 
 var changedData = `
 	dubbo.consumer.request_timeout=3s
@@ -29,10 +29,11 @@ var changedData = `
 	dubbo.service.com.ikurento.user.UserProvider.warmup=100
 	dubbo.service.com.ikurento.user.UserProvider.cluster=failover
 `
+
 func TestListener(t *testing.T) {
 
-	var tests = []struct{
-		input struct{
+	var tests = []struct {
+		input struct {
 			k string
 			v string
 		}
@@ -47,31 +48,37 @@ func TestListener(t *testing.T) {
 	defer c.Close()
 
 	listener := NewEventListener(c)
-	dataListener := &mockDataListener{client: c, changedData: changedData}
+	dataListener := &mockDataListener{client: c, changedData: changedData, rc: make(chan remoting.Event)}
 	listener.ListenServiceEvent("/dubbo", dataListener)
 
-
-	for _, tc := range tests{
+	// NOTICE:  direct listen will lose create msg
+	time.Sleep(time.Second)
+	for _, tc := range tests {
 
 		k := tc.input.k
 		v := tc.input.v
-		if err := c.Create(k, v); err != nil{
+		if err := c.Create(k, v); err != nil {
 			t.Fatal(err)
 		}
+
 	}
-	assert.Equal(t, changedData, dataListener.eventList[0].Content)
+	msg := <-dataListener.rc
+	assert.Equal(t, changedData, msg.Content)
+
 }
 
 type mockDataListener struct {
 	eventList   []remoting.Event
 	client      *Client
 	changedData string
+
+	rc chan remoting.Event
 }
 
 func (m *mockDataListener) DataChange(eventType remoting.Event) bool {
 	m.eventList = append(m.eventList, eventType)
 	if eventType.Content == m.changedData {
-		//m.client.Close()
+		m.rc <- eventType
 	}
 	return true
 }
