@@ -2,15 +2,18 @@ package etcdv3
 
 import (
 	"sync"
-)
-import (
-	"github.com/dubbogo/getty"
-	perrors "github.com/pkg/errors"
+	"time"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
+)
+
+import (
+	"github.com/dubbogo/getty"
+	perrors "github.com/pkg/errors"
 )
 
 type clientFacade interface {
@@ -40,11 +43,10 @@ LOOP:
 			// re-register all services
 		case <-r.Client().Done():
 			r.ClientLock().Lock()
+			clientName := RegistryETCDV3Client
+			timeout, _ := time.ParseDuration(r.GetUrl().GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
+			endpoint := r.GetUrl().Location
 			r.Client().Close()
-			clientName := r.Client().name
-			endpoints := r.Client().endpoints
-			timeout := r.Client().timeout
-			heartbeat := r.Client().heartbeat
 			r.SetClient(nil)
 			r.ClientLock().Unlock()
 
@@ -59,12 +61,11 @@ LOOP:
 				}
 				err = ValidateClient(r,
 					WithName(clientName),
-					WithEndpoints(endpoints...),
+					WithEndpoints(endpoint),
 					WithTimeout(timeout),
-					WithHeartbeat(heartbeat),
 				)
 				logger.Infof("ETCDV3ProviderRegistry.validateETCDV3Client(etcd Addr{%s}) = error{%#v}",
-					endpoints, perrors.WithStack(err))
+					endpoint, perrors.WithStack(err))
 				if err == nil {
 					if r.RestartCallBack() {
 						break
