@@ -42,6 +42,8 @@ start() {
         --initial-cluster-token ${cluster_name} \
         --initial-cluster etcd_node0=http://${peer0_ip}:${peer0_peer_port} \
         --initial-cluster-state new  >> ${log_dir}/${name}.log 2>&1 &
+
+    sleep 5
     PID=`ps aux | grep -w  "name=${name}" | grep ${!client_port} | grep -v grep | awk '{print $2}'`
     if [ "$PID" != "" ];
     then
