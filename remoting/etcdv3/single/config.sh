@@ -35,8 +35,6 @@ usage() {
 
 start() {
     ./etcd --name=${name} \
-        --data-dir=${data_dir} \
-        --wal-dir=${wal_dir} \
         --initial-advertise-peer-urls http://${!ip}:${!peer_port} \
         --listen-peer-urls http://${!ip}:${!peer_port} \
         --listen-client-urls http://${!ip}:${!client_port},http://127.0.0.1:${!client_port} \
