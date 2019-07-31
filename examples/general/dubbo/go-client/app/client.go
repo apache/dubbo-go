@@ -295,6 +295,7 @@ func test3() {
 		Cluster:       "failover",
 		Registry:      "hangzhouzk",
 		Protocol:      dubbo.DUBBO,
+		Generic:       true,
 	}
 	referenceConfig.Load(appName) //appName is the unique identification of RPCService
 
