@@ -22,7 +22,7 @@ peer0_peer_port=2380
 
 export ETCDCTL_API=3
 etcd_endpoints="http://${peer0_ip}:${peer0_client_port}"
-ctl="etcdctl --endpoints=$etcd_endpoints"
+ctl="./etcdctl --endpoints=$etcd_endpoints"
 
 usage() {
     echo "Usage: $0 start"
