@@ -34,7 +34,6 @@ type (
 		keepAlivePeriod  time.Duration
 		TcpRBufSize      int    `default:"262144" yaml:"tcp_r_buf_size" json:"tcp_r_buf_size,omitempty"`
 		TcpWBufSize      int    `default:"65536" yaml:"tcp_w_buf_size" json:"tcp_w_buf_size,omitempty"`
-		PkgRQSize        int    `default:"1024" yaml:"pkg_rq_size" json:"pkg_rq_size,omitempty"`
 		PkgWQSize        int    `default:"1024" yaml:"pkg_wq_size" json:"pkg_wq_size,omitempty"`
 		TcpReadTimeout   string `default:"1s" yaml:"tcp_read_timeout" json:"tcp_read_timeout,omitempty"`
 		tcpReadTimeout   time.Duration
@@ -52,6 +51,11 @@ type (
 		SessionTimeout string `default:"60s" yaml:"session_timeout" json:"session_timeout,omitempty"`
 		sessionTimeout time.Duration
 		SessionNumber  int `default:"1000" yaml:"session_number" json:"session_number,omitempty"`
+
+		// grpool
+		GrPoolSize  int `default:"0" yaml:"gr_pool_size" json:"gr_pool_size,omitempty"`
+		QueueLen    int `default:"0" yaml:"queue_len" json:"queue_len,omitempty"`
+		QueueNumber int `default:"0" yaml:"queue_number" json:"queue_number,omitempty"`
 
 		// session tcp parameters
 		GettySessionParam GettySessionParam `required:"true" yaml:"getty_session_param" json:"getty_session_param,omitempty"`
@@ -75,6 +79,11 @@ type (
 		// Connection Pool
 		PoolSize int `default:"2" yaml:"pool_size" json:"pool_size,omitempty"`
 		PoolTTL  int `default:"180" yaml:"pool_ttl" json:"pool_ttl,omitempty"`
+
+		// grpool
+		GrPoolSize  int `default:"0" yaml:"gr_pool_size" json:"gr_pool_size,omitempty"`
+		QueueLen    int `default:"0" yaml:"queue_len" json:"queue_len,omitempty"`
+		QueueNumber int `default:"0" yaml:"queue_number" json:"queue_number,omitempty"`
 
 		// session tcp parameters
 		GettySessionParam GettySessionParam `required:"true" yaml:"getty_session_param" json:"getty_session_param,omitempty"`

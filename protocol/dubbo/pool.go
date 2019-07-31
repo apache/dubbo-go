@@ -111,13 +111,14 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 	session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
 	session.SetPkgHandler(NewRpcClientPackageHandler(c.pool.rpcClient))
 	session.SetEventListener(NewRpcClientHandler(c))
-	session.SetRQLen(conf.GettySessionParam.PkgRQSize)
 	session.SetWQLen(conf.GettySessionParam.PkgWQSize)
 	session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
 	session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
 	session.SetCronPeriod((int)(conf.heartbeatPeriod.Nanoseconds() / 1e6))
 	session.SetWaitTime(conf.GettySessionParam.waitTimeout)
 	logger.Debugf("client new session:%s\n", session.Stat())
+
+	session.SetTaskPool(clientGrpool)
 
 	return nil
 }
