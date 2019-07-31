@@ -55,6 +55,9 @@ func (r *mockFacade) IsAvailable() bool {
 
 func Test_Fascade(t *testing.T) {
 
+	startETCDServer(t)
+	defer stopETCDServer(t)
+
 	c := initClient(t)
 
 	url, err := common.NewURL(context.Background(), "mock://127.0.0.1:2379")
