@@ -12,9 +12,9 @@
 cluster_name="etcd-test-cluster"
 name_prefix="etcd_node"
 
-data_dir=./data/
-wal_dir=./wal/
-log_dir=./log/
+data_dir=.
+wal_dir=.
+log_dir=.
 
 peer0_ip="127.0.0.1"
 peer0_client_port=2379
