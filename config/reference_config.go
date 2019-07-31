@@ -55,6 +55,7 @@ type ReferenceConfig struct {
 	Params        map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
 	invoker       protocol.Invoker
 	urls          []*common.URL
+	Generic       bool
 }
 
 func (c *ReferenceConfig) Prefix() string {
@@ -170,7 +171,10 @@ func (refconfig *ReferenceConfig) getUrlMap() url.Values {
 
 	//filter
 	urlMap.Set(constant.REFERENCE_FILTER_KEY, mergeValue(consumerConfig.Filter, refconfig.Filter, constant.DEFAULT_REFERENCE_FILTERS))
-	urlMap.Set(constant.REFERENCE_FILTER_KEY, mergeValue(consumerConfig.Filter, refconfig.Filter, constant.GENERIC_REFERENCE_FILTERS))
+	if refconfig.Generic {
+		urlMap.Set(constant.REFERENCE_FILTER_KEY, mergeValue(consumerConfig.Filter, refconfig.Filter, constant.GENERIC_REFERENCE_FILTERS))
+	}
+
 	for _, v := range refconfig.Methods {
 		urlMap.Set("methods."+v.Name+"."+constant.LOADBALANCE_KEY, v.Loadbalance)
 		urlMap.Set("methods."+v.Name+"."+constant.RETRIES_KEY, strconv.FormatInt(v.Retries, 10))
