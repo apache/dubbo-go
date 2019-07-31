@@ -23,7 +23,7 @@ import (
 )
 
 import (
-	hessian "github.com/dubbogo/hessian2"
+	hessian "github.com/apache/dubbo-go-hessian2"
 )
 
 import (
