@@ -288,18 +288,18 @@ func (c *Client) get(k string) (string, error) {
 	return string(resp.Kvs[0].Value), nil
 }
 
-func (c *Client) CleanKV()error{
+func (c *Client) CleanKV() error {
 
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
 	if c.rawClient == nil {
-		return  ErrNilETCDV3Client
+		return ErrNilETCDV3Client
 	}
 
 	_, err := c.rawClient.Delete(c.ctx, "", clientv3.WithPrefix())
 	if err != nil {
-		return  err
+		return err
 	}
 
 	return nil

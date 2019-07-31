@@ -2,12 +2,29 @@ package etcdv3
 
 import (
 	"context"
+	"os"
+	"os/exec"
 	"testing"
 )
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/remoting"
 )
+
+
+func Test_StartEtcdServer(t *testing.T){
+
+	cmd := exec.Command("./load.sh",  "start")
+	//cmd := exec.Command("pwd")
+	cmd.Stdout= os.Stdout
+	cmd.Stderr = os.Stdout
+	cmd.Dir = "../../remoting/etcdv3/single"
+
+	if err := cmd.Run(); err != nil{
+		t.Fatal(err)
+	}
+
+}
 
 func Test_DataChange(t *testing.T) {
 	listener := NewRegistryDataListener(&MockDataListener{})
