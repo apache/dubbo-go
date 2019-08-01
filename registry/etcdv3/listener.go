@@ -1,0 +1,88 @@
+package etcdv3
+
+import (
+	"context"
+	"strings"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/registry"
+	"github.com/apache/dubbo-go/remoting"
+)
+
+import (
+	"github.com/juju/errors"
+)
+
+type dataListener struct {
+	interestedURL []*common.URL
+	listener      remoting.ConfigurationListener
+}
+
+func NewRegistryDataListener(listener remoting.ConfigurationListener) *dataListener {
+	return &dataListener{listener: listener, interestedURL: []*common.URL{}}
+}
+
+func (l *dataListener) AddInterestedURL(url *common.URL) {
+	l.interestedURL = append(l.interestedURL, url)
+}
+
+func (l *dataListener) DataChange(eventType remoting.Event) bool {
+
+	url := eventType.Path[strings.Index(eventType.Path, "/providers/")+len("/providers/"):]
+	serviceURL, err := common.NewURL(context.TODO(), url)
+	if err != nil {
+		logger.Warnf("Listen NewURL(r{%s}) = error{%v}", eventType.Path, err)
+		return false
+	}
+
+	for _, v := range l.interestedURL {
+		if serviceURL.URLEqual(*v) {
+			l.listener.Process(&remoting.ConfigChangeEvent{Key: eventType.Path, Value: serviceURL, ConfigType: eventType.Action})
+			return true
+		}
+	}
+
+	return false
+}
+
+type configurationListener struct {
+	registry *etcdV3Registry
+	events   chan *remoting.ConfigChangeEvent
+}
+
+func NewConfigurationListener(reg *etcdV3Registry) *configurationListener {
+	// add a new waiter
+	reg.wg.Add(1)
+	return &configurationListener{registry: reg, events: make(chan *remoting.ConfigChangeEvent, 32)}
+}
+func (l *configurationListener) Process(configType *remoting.ConfigChangeEvent) {
+	l.events <- configType
+}
+
+func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
+	for {
+		select {
+		case <-l.registry.done:
+			logger.Warnf("listener's etcd client connection is broken, so etcd event listener exit now.")
+			return nil, errors.New("listener stopped")
+
+		case e := <-l.events:
+			logger.Warnf("got etcd event %#s", e)
+			if e.ConfigType == remoting.EventTypeDel {
+				select {
+				case <-l.registry.done:
+					logger.Warnf("update @result{%s}. But its connection to registry is invalid", e.Value)
+				default:
+				}
+				continue
+			}
+			return &registry.ServiceEvent{Action: e.ConfigType, Service: e.Value.(common.URL)}, nil
+		}
+	}
+}
+func (l *configurationListener) Close() {
+	l.registry.wg.Done()
+}
