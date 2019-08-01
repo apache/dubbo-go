@@ -3,7 +3,6 @@ package etcdv3
 import (
 	"context"
 	"sync"
-	"testing"
 	"time"
 
 	"github.com/apache/dubbo-go/common"
@@ -53,9 +52,10 @@ func (r *mockFacade) IsAvailable() bool {
 	return true
 }
 
-func Test_Fascade(t *testing.T) {
+func (suite *ClientTestSuite) TestFacade() {
 
-	c := initClient(t)
+	c := suite.client
+	t := suite.T()
 
 	url, err := common.NewURL(context.Background(), "mock://127.0.0.1:2379")
 	if err != nil {

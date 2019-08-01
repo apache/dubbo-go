@@ -1,7 +1,6 @@
 package etcdv3
 
 import (
-	"testing"
 	"time"
 
 	"github.com/apache/dubbo-go/remoting"
@@ -30,7 +29,7 @@ var changedData = `
 	dubbo.service.com.ikurento.user.UserProvider.cluster=failover
 `
 
-func TestListener(t *testing.T) {
+func (suite *ClientTestSuite) TestListener() {
 
 	var tests = []struct {
 		input struct {
@@ -44,8 +43,8 @@ func TestListener(t *testing.T) {
 		}{k: "/dubbo", v: changedData}},
 	}
 
-	c := initClient(t)
-	defer c.Close()
+	c := suite.client
+	t := suite.T()
 
 	listener := NewEventListener(c)
 	dataListener := &mockDataListener{client: c, changedData: changedData, rc: make(chan remoting.Event)}
@@ -64,7 +63,6 @@ func TestListener(t *testing.T) {
 	}
 	msg := <-dataListener.rc
 	assert.Equal(t, changedData, msg.Content)
-
 }
 
 type mockDataListener struct {
