@@ -22,7 +22,7 @@ peer0_peer_port=2380
 
 export ETCDCTL_API=3
 etcd_endpoints="http://${peer0_ip}:${peer0_client_port}"
-ctl="./etcdctl --endpoints=$etcd_endpoints"
+ctl="etcdctl --endpoints=$etcd_endpoints"
 
 usage() {
     echo "Usage: $0 start"
@@ -34,7 +34,7 @@ usage() {
 }
 
 start() {
-    ./etcd --name=${name} \
+    etcd --name=${name} \
         --initial-advertise-peer-urls http://${!ip}:${!peer_port} \
         --listen-peer-urls http://${!ip}:${!peer_port} \
         --listen-client-urls http://${!ip}:${!client_port},http://127.0.0.1:${!client_port} \
@@ -43,7 +43,7 @@ start() {
         --initial-cluster etcd_node0=http://${peer0_ip}:${peer0_peer_port} \
         --initial-cluster-state new  >> ${log_dir}/${name}.log 2>&1 &
 
-    sleep 2
+    sleep 5
     PID=`ps aux | grep -w  "name=${name}" | grep ${!client_port} | grep -v grep | awk '{print $2}'`
     if [ "$PID" != "" ];
     then
