@@ -1,6 +1,7 @@
 package etcdv3
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -10,17 +11,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/suite"
+
 	"github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/juju/errors"
 	"google.golang.org/grpc/connectivity"
-)
-
-// etcd connect config
-var (
-	name      = "test"
-	timeout   = time.Second
-	heartbeat = 1
-	endpoints = []string{"localhost:2379"}
 )
 
 // tests dataset
@@ -51,69 +46,111 @@ var tests = []struct {
 // test dataset prefix
 const prefix = "name"
 
-func initClient(t *testing.T) *Client {
+type ClientTestSuite struct {
+	suite.Suite
 
-	c, err := newClient(name, endpoints, timeout, heartbeat)
-	if err != nil {
-		t.Fatal(err)
+	etcdConfig struct {
+		name      string
+		endpoints []string
+		timeout   time.Duration
+		heartbeat int
 	}
-	c.CleanKV()
-	return c
+
+	client *Client
 }
 
-func TestMain(m *testing.M) {
-
-	startETCDServer()
-	m.Run()
-	stopETCDServer()
-}
-
-func startETCDServer() {
+// start etcd server
+func (suite *ClientTestSuite) SetupSuite() {
 
 	cmd := exec.Command("./load.sh", "start")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
 	cmd.Dir = "./single"
-
 	if err := cmd.Run(); err != nil {
-		panic(err)
+		suite.T().Fatal(err)
 	}
 }
 
-func stopETCDServer() {
+// stop etcd server
+func (suite *ClientTestSuite) TearDownSuite() {
+
 	cmd := exec.Command("./load.sh", "stop")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
 	cmd.Dir = "./single"
-
 	if err := cmd.Run(); err != nil {
-		panic(err)
+		suite.T().Fatal(err)
 	}
-
 }
 
-func Test_newClient(t *testing.T) {
+func (suite *ClientTestSuite) setUpClient() *Client {
+	c, err := newClient(suite.etcdConfig.name,
+		suite.etcdConfig.endpoints,
+		suite.etcdConfig.timeout,
+		suite.etcdConfig.heartbeat)
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+	return c
+}
 
-	c := initClient(t)
+// set up a client for suite
+func (suite *ClientTestSuite) SetupTest() {
+	c := suite.setUpClient()
+	c.CleanKV()
+	suite.client = c
+	return
+}
+
+func (suite *ClientTestSuite) TestClientClose() {
+
+	fmt.Println("called client close")
+
+	c := suite.client
+	t := suite.T()
+
 	defer c.Close()
-
 	if c.rawClient.ActiveConnection().GetState() != connectivity.Ready {
-		t.Fatal(c.rawClient.ActiveConnection().GetState())
+		t.Fatal(suite.client.rawClient.ActiveConnection().GetState())
 	}
 }
 
-func TestClient_Close(t *testing.T) {
+func (suite *ClientTestSuite) TestClientValid() {
 
-	c := initClient(t)
+	fmt.Println("called client valid")
+
+	c := suite.client
+	t := suite.T()
+
+	if c.Valid() != true {
+		t.Fatal("client is not valid")
+	}
 	c.Close()
+	if suite.client.Valid() != false {
+		t.Fatal("client is valid")
+	}
 }
 
-func TestClient_Create(t *testing.T) {
+func (suite *ClientTestSuite) TestClientDone() {
+
+	c := suite.client
+
+	go func() {
+		time.Sleep(2 * time.Second)
+		c.Close()
+	}()
+
+	c.Wait.Wait()
+}
+
+func (suite *ClientTestSuite) TestClientCreateKV() {
 
 	tests := tests
 
-	c := initClient(t)
-	defer c.Close()
+	c := suite.client
+	t := suite.T()
+
+	defer suite.client.Close()
 
 	for _, tc := range tests {
 
@@ -131,19 +168,18 @@ func TestClient_Create(t *testing.T) {
 		}
 
 		if value != expect {
-
 			t.Fatalf("expect %v but get %v", expect, value)
 		}
 
 	}
-
 }
 
-func TestClient_Delete(t *testing.T) {
+func (suite *ClientTestSuite) TestClientDeleteKV() {
 
 	tests := tests
+	c := suite.client
+	t := suite.T()
 
-	c := initClient(t)
 	defer c.Close()
 
 	for _, tc := range tests {
@@ -172,12 +208,12 @@ func TestClient_Delete(t *testing.T) {
 
 }
 
-func TestClient_GetChildrenKVList(t *testing.T) {
+func (suite *ClientTestSuite) TestClientGetChildrenKVList() {
 
 	tests := tests
 
-	c := initClient(t)
-	defer c.Close()
+	c := suite.client
+	t := suite.T()
 
 	var expectKList []string
 	var expectVList []string
@@ -210,12 +246,12 @@ func TestClient_GetChildrenKVList(t *testing.T) {
 
 }
 
-func TestClient_Watch(t *testing.T) {
+func (suite *ClientTestSuite) TestClientWatch() {
 
 	tests := tests
 
-	c := initClient(t)
-	defer c.Close()
+	c := suite.client
+	t := suite.T()
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -230,10 +266,6 @@ func TestClient_Watch(t *testing.T) {
 		}
 
 		for e := range wc {
-
-			if e.Err() != nil {
-				t.Fatal(err)
-			}
 
 			for _, event := range e.Events {
 				t.Logf("type IsCreate %v k %s v %s", event.IsCreate(), event.Kv.Key, event.Kv.Value)
@@ -262,10 +294,11 @@ func TestClient_Watch(t *testing.T) {
 
 }
 
-func TestClient_RegisterTemp(t *testing.T) {
+func (suite *ClientTestSuite) TestClientRegisterTemp() {
 
-	c := initClient(t)
-	observeC := initClient(t)
+	c := suite.client
+	observeC := suite.setUpClient()
+	t := suite.T()
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -281,9 +314,6 @@ func TestClient_RegisterTemp(t *testing.T) {
 
 			for _, event := range e.Events {
 
-				if e.Err() != nil {
-					t.Fatal(e.Err())
-				}
 				if event.Type == mvccpb.DELETE {
 					t.Logf("complete key (%s) is delete", completePath)
 					wg.Done()
@@ -306,32 +336,18 @@ func TestClient_RegisterTemp(t *testing.T) {
 	wg.Wait()
 }
 
-func TestClient_Valid(t *testing.T) {
-
-	c := initClient(t)
-
-	if c.Valid() != true {
-		t.Fatal("client is not valid")
-	}
-
-	c.Close()
-
-	if c.Valid() != false {
-
-		t.Fatal("client is valid")
-
-	}
-
-}
-
-func TestClient_Done(t *testing.T) {
-
-	c := initClient(t)
-
-	go func() {
-		time.Sleep(2 * time.Second)
-		c.Close()
-	}()
-
-	c.Wait.Wait()
+func TestClientSuite(t *testing.T) {
+	suite.Run(t, &ClientTestSuite{
+		etcdConfig: struct {
+			name      string
+			endpoints []string
+			timeout   time.Duration
+			heartbeat int
+		}{
+			name:      "test",
+			endpoints: []string{"localhost:2379"},
+			timeout:   time.Second,
+			heartbeat: 1,
+		},
+	})
 }
