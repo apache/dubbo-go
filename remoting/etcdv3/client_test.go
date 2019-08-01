@@ -3,6 +3,7 @@ package etcdv3
 import (
 	"fmt"
 	"go.etcd.io/etcd/embed"
+	"net/url"
 	"path"
 	"reflect"
 	"strings"
@@ -65,7 +66,13 @@ func (suite *ClientTestSuite) SetupSuite() {
 
 	t := suite.T()
 
+	DefaultListenPeerURLs   := "http://localhost:2382"
+	DefaultListenClientURLs := "http://localhost:2381"
+	lpurl, _ := url.Parse(DefaultListenPeerURLs)
+	lcurl, _ := url.Parse(DefaultListenClientURLs)
 	cfg := embed.NewConfig()
+	cfg.LPUrls = []url.URL{*lpurl}
+	cfg.LCUrls = []url.URL{*lcurl}
 	cfg.Dir = "/tmp/default.etcd"
 	e, err := embed.StartEtcd(cfg)
 	if err != nil {
@@ -350,7 +357,7 @@ func TestClientSuite(t *testing.T) {
 			heartbeat int
 		}{
 			name:      "test",
-			endpoints: []string{"localhost:2379"},
+			endpoints: []string{"localhost:2381"},
 			timeout:   time.Second,
 			heartbeat: 1,
 		},
