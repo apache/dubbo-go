@@ -2,8 +2,7 @@ package etcdv3
 
 import (
 	"fmt"
-	"os"
-	"os/exec"
+	"go.etcd.io/etcd/embed"
 	"path"
 	"reflect"
 	"strings"
@@ -56,31 +55,37 @@ type ClientTestSuite struct {
 		heartbeat int
 	}
 
+	etcd  *embed.Etcd
+
 	client *Client
 }
 
 // start etcd server
 func (suite *ClientTestSuite) SetupSuite() {
 
-	cmd := exec.Command("./load.sh", "start")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stdout
-	cmd.Dir = "./single"
-	if err := cmd.Run(); err != nil {
-		suite.T().Fatal(err)
+	t := suite.T()
+
+	cfg := embed.NewConfig()
+	cfg.Dir = "/tmp/default.etcd"
+	e, err := embed.StartEtcd(cfg)
+	if err != nil {
+		t.Fatal(err)
 	}
+	select {
+	case <-e.Server.ReadyNotify():
+		t.Log("Server is ready!")
+	case <-time.After(60 * time.Second):
+		e.Server.Stop() // trigger a shutdown
+		t.Logf("Server took too long to start!")
+	}
+
+	suite.etcd = e
+	return
 }
 
 // stop etcd server
 func (suite *ClientTestSuite) TearDownSuite() {
-
-	cmd := exec.Command("./load.sh", "stop")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stdout
-	cmd.Dir = "./single"
-	if err := cmd.Run(); err != nil {
-		suite.T().Fatal(err)
-	}
+	suite.etcd.Close()
 }
 
 func (suite *ClientTestSuite) setUpClient() *Client {
