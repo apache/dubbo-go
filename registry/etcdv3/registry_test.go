@@ -33,7 +33,9 @@ func initRegistry(t *testing.T) *etcdV3Registry {
 	return out
 }
 
-func Test_Register(t *testing.T) {
+func (suite *RegistryTestSuite) TestRegister() {
+
+	t := suite.T()
 
 	url, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 
@@ -47,8 +49,9 @@ func Test_Register(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func Test_Subscribe(t *testing.T) {
+func (suite *RegistryTestSuite) TestSubscribe() {
 
+	t := suite.T()
 	regurl, _ := common.NewURL(context.TODO(), "registry://127.0.0.1:1111", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
 	url, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 
@@ -76,8 +79,9 @@ func Test_Subscribe(t *testing.T) {
 	assert.Regexp(t, ".*ServiceEvent{Action{add}.*", serviceEvent.String())
 }
 
-func Test_ConsumerDestory(t *testing.T) {
+func (suite *RegistryTestSuite) TestConsumerDestory() {
 
+	t := suite.T()
 	url, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 
 	reg := initRegistry(t)
@@ -94,8 +98,9 @@ func Test_ConsumerDestory(t *testing.T) {
 
 }
 
-func Test_ProviderDestory(t *testing.T) {
+func (suite *RegistryTestSuite) TestProviderDestory() {
 
+	t := suite.T()
 	reg := initRegistry(t)
 	url, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 	reg.Register(url)
