@@ -44,7 +44,7 @@ func Test_struct2MapAll(t *testing.T) {
 	testData.CaCa.AaAa = "2"
 	testData.CaCa.XxYy.xxXx = "3"
 	testData.CaCa.XxYy.Xx = "3"
-	m := struct2MapAll(testData)
+	m := struct2MapAll(testData).(map[string]interface{})
 	assert.Equal(t, "1", m["aaAa"].(string))
 	assert.Equal(t, "1", m["baBa"].(string))
 	assert.Equal(t, "2", m["caCa"].(map[string]interface{})["aaAa"].(string))
