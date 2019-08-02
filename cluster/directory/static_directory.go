@@ -18,8 +18,11 @@
 package directory
 
 import (
+	"fmt"
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
+	"reflect"
 )
 
 type staticDirectory struct {
@@ -52,9 +55,21 @@ func (dir *staticDirectory) IsAvailable() bool {
 	return true
 }
 
-func (dir *staticDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
-	//TODO:Here should add router
-	return dir.invokers
+func (dir *staticDirectory) List(invocation protocol.Invocation) ([]protocol.Invoker, error) {
+	if dir.destroyed.Load() {
+		//todo err full
+		return nil, fmt.Errorf("directory already destroyed .url: %s", dir.GetUrl().String())
+	}
+	invokers := dir.invokers
+	localRouters := dir.routers
+	if len(localRouters) > 0 {
+		for _, router := range localRouters {
+			if reflect.ValueOf(router.Url()).IsNil() || router.Url().GetParamBool(constant.RUNTIME_KEY, false) {
+				invokers = router.Route(invokers, *dir.ConsumerUrl, invocation)
+			}
+		}
+	}
+	return invokers, nil
 }
 
 func (dir *staticDirectory) Destroy() {
