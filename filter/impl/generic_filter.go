@@ -18,9 +18,11 @@
 package impl
 
 import (
-	hessian "github.com/apache/dubbo-go-hessian2"
 	"reflect"
 	"strings"
+)
+import (
+	hessian "github.com/apache/dubbo-go-hessian2"
 )
 import (
 	"github.com/apache/dubbo-go/common/constant"
@@ -59,6 +61,7 @@ func (ef *GenericFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 			newParams,
 		}
 		newInvocation := invocation2.NewRPCInvocation(invocation.MethodName(), newArguments, invocation.Attachments())
+		newInvocation.SetReply(invocation.Reply())
 		return invoker.Invoke(newInvocation)
 	}
 	return invoker.Invoke(invocation)
@@ -71,15 +74,15 @@ func (ef *GenericFilter) OnResponse(result protocol.Result, invoker protocol.Inv
 func GetGenericFilter() filter.Filter {
 	return &GenericFilter{}
 }
-func struct2MapAll(obj interface{}) map[string]interface{} {
+func struct2MapAll(obj interface{}) interface{} {
 	result := make(map[string]interface{})
 	if obj == nil {
-		return result
+		return obj
 	}
 	t := reflect.TypeOf(obj)
 	v := reflect.ValueOf(obj)
 
-	if reflect.TypeOf(obj).Kind() == reflect.Struct {
+	if t.Kind() == reflect.Struct {
 		for i := 0; i < t.NumField(); i++ {
 			if v.Field(i).Kind() == reflect.Struct {
 				if v.Field(i).CanInterface() {
@@ -95,8 +98,10 @@ func struct2MapAll(obj interface{}) map[string]interface{} {
 				}
 			}
 		}
+		return result
+	} else {
+		return obj
 	}
-	return result
 }
 func headerAtoa(a string) (b string) {
 	b = strings.ToLower(a[:1]) + a[1:]
