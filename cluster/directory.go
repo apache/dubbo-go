@@ -25,5 +25,5 @@ import (
 // Extension - Directory
 type Directory interface {
 	common.Node
-	List(invocation protocol.Invocation) []protocol.Invoker
+	List(invocation protocol.Invocation) ([]protocol.Invoker, error)
 }
