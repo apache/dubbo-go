@@ -44,13 +44,19 @@ type GenericFilter struct{}
 
 func (ef *GenericFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	if invocation.MethodName() == constant.GENERIC && len(invocation.Arguments()) == 3 {
-		var (
-			oldArguments = invocation.Arguments()
-		)
+		oldArguments := invocation.Arguments()
+		var newParams []hessian.Object
+		if oldParams, ok := oldArguments[2].([]interface{}); ok {
+			for i := range oldParams {
+				newParams = append(newParams, hessian.Object(struct2MapAll(oldParams[i])))
+			}
+		} else {
+			return invoker.Invoke(invocation)
+		}
 		newArguments := []interface{}{
 			oldArguments[0],
 			oldArguments[1],
-			hessian.Object(struct2MapAll(oldArguments[2])),
+			newParams,
 		}
 		newInvocation := invocation2.NewRPCInvocation(invocation.MethodName(), newArguments, invocation.Attachments())
 		return invoker.Invoke(newInvocation)
