@@ -34,7 +34,7 @@ func newRegistryAwareClusterInvoker(directory cluster.Directory) protocol.Invoke
 }
 
 func (invoker *registryAwareClusterInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
-	invokers := invoker.directory.List(invocation)
+	invokers, _ := invoker.directory.List(invocation)
 	//First, pick the invoker (XXXClusterInvoker) that comes from the local registry, distinguish by a 'default' key.
 	for _, invoker := range invokers {
 		if invoker.IsAvailable() && invoker.GetUrl().GetParam(constant.REGISTRY_DEFAULT_KEY, "false") == "true" {

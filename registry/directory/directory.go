@@ -18,12 +18,17 @@
 package directory
 
 import (
+	"fmt"
+	"github.com/apache/dubbo-go/common/utils"
+	"github.com/apache/dubbo-go/version"
+	"reflect"
 	"sync"
 	"time"
 )
 
 import (
 	perrors "github.com/pkg/errors"
+	"go.uber.org/atomic"
 )
 
 import (
@@ -53,6 +58,8 @@ type registryDirectory struct {
 	cacheInvokers    []protocol.Invoker
 	listenerLock     sync.Mutex
 	serviceType      string
+	serviceKey       string
+	forbidden        atomic.Bool
 	registry         registry.Registry
 	cacheInvokersMap *sync.Map //use sync.map
 	//cacheInvokersMap map[string]protocol.Invoker
@@ -207,9 +214,27 @@ func (dir *registryDirectory) cacheInvoker(url common.URL) {
 }
 
 //select the protocol invokers from the directory
-func (dir *registryDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
-	//TODO:router
-	return dir.cacheInvokers
+func (dir *registryDirectory) List(invocation protocol.Invocation) ([]protocol.Invoker, error) {
+	if dir.Destroyed() {
+		return nil, fmt.Errorf("directory already destroyed .url: %s", dir.GetUrl().String())
+	}
+	if dir.forbidden.Load() {
+		//todo error
+		localIP, _ := utils.GetLocalIP()
+		return nil, fmt.Errorf("no provider available from registry %s for service %s on consumer %s use dubbo version %s, please check status of providers(disabled, not registered or in blacklist)", dir.GetUrl().Location, dir.ConsumerUrl.ServiceKey(), localIP, version.Version)
+	}
+
+	invokers := dir.cacheInvokers
+	localRouters := dir.Routers()
+	if len(localRouters) > 0 {
+		for _, router := range localRouters {
+			if reflect.ValueOf(router.Url()).IsNil() || router.Url().GetParamBool(constant.RUNTIME_KEY, false) {
+				invokers = router.Route(invokers, *dir.ConsumerUrl, invocation)
+			}
+		}
+	}
+	return invokers, nil
+
 }
 
 func (dir *registryDirectory) IsAvailable() bool {

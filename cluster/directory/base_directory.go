@@ -18,19 +18,20 @@
 package directory
 
 import (
-	"sync"
-)
-import (
+	"github.com/apache/dubbo-go/cluster"
 	"go.uber.org/atomic"
+	"sync"
 )
 import (
 	"github.com/apache/dubbo-go/common"
 )
 
 type BaseDirectory struct {
-	url       *common.URL
-	destroyed *atomic.Bool
-	mutex     sync.Mutex
+	url         *common.URL
+	ConsumerUrl *common.URL
+	destroyed   *atomic.Bool
+	routers     []cluster.Router
+	mutex       sync.Mutex
 }
 
 func NewBaseDirectory(url *common.URL) BaseDirectory {
@@ -39,8 +40,17 @@ func NewBaseDirectory(url *common.URL) BaseDirectory {
 		destroyed: atomic.NewBool(false),
 	}
 }
+func (dir *BaseDirectory) Destroyed() bool {
+	return dir.destroyed.Load()
+}
 func (dir *BaseDirectory) GetUrl() common.URL {
 	return *dir.url
+}
+func (dir *BaseDirectory) SetRouters(routers []cluster.Router) {
+	dir.routers = routers
+}
+func (dir *BaseDirectory) Routers() []cluster.Router {
+	return dir.routers
 }
 
 func (dir *BaseDirectory) Destroy(doDestroy func()) {
