@@ -73,6 +73,7 @@ const (
 	METHOD_KEY       = "method"
 	METHOD_KEYS      = "methods"
 	RULE_KEY         = "rule"
+	RUNTIME_KEY      = "runtime"
 )
 
 const (

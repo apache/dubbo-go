@@ -30,12 +30,6 @@ type RouterFactory interface {
 
 type Router interface {
 	Route([]protocol.Invoker, common.URL, protocol.Invocation) []protocol.Invoker
-}
-
-type RouterChain struct {
-	routers []Router
-}
-
-func NewRouterChain(url common.URL) {
-
+	Priority() int64
+	Url() common.URL
 }
