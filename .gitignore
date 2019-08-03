@@ -22,3 +22,4 @@ vendor/
 
 logs/
 .vscode/
+coverage.txt
