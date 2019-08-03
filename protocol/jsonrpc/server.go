@@ -25,7 +25,6 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
-	"reflect"
 	"runtime"
 	"runtime/debug"
 	"sync"
@@ -330,13 +329,16 @@ func serveRequest(ctx context.Context,
 			constant.VERSION_KEY: codec.req.Version,
 		}))
 		if err := result.Error(); err != nil {
-			if errRsp := sendErrorResp(header, []byte(err.Error())); errRsp != nil {
+			rspStream, err := codec.Write(err.Error(), invalidRequest)
+			if err != nil {
+				return perrors.WithStack(err)
+			}
+			if errRsp := sendErrorResp(header, rspStream); errRsp != nil {
 				logger.Warnf("Exporter: sendErrorResp(header:%#v, error:%v) = error:%s",
 					header, err, errRsp)
-				return perrors.WithStack(errRsp)
 			}
-		}
-		if res := result.Result(); res != nil {
+		} else {
+			res := result.Result()
 			rspStream, err := codec.Write("", res)
 			if err != nil {
 				return perrors.WithStack(err)
@@ -344,102 +346,9 @@ func serveRequest(ctx context.Context,
 			if errRsp := sendResp(header, rspStream); errRsp != nil {
 				logger.Warnf("Exporter: sendResp(header:%#v, error:%v) = error:%s",
 					header, err, errRsp)
-				return perrors.WithStack(errRsp)
 			}
 		}
 	}
-	// get method
-	svc := common.ServiceMap.GetService(JSONRPC, path)
-	if svc == nil {
-		return perrors.New("cannot find svc " + path)
-	}
-	method := svc.Method()[methodName]
-	if method == nil {
-		return perrors.New("cannot find method " + methodName + " of svc " + path)
-	}
 
-	in := []reflect.Value{svc.Rcvr()}
-	if method.CtxType() != nil {
-		in = append(in, method.SuiteContext(ctx))
-	}
-
-	// prepare argv
-	if (len(method.ArgsType()) == 1 || len(method.ArgsType()) == 2 && method.ReplyType() == nil) && method.ArgsType()[0].String() == "[]interface {}" {
-		in = append(in, reflect.ValueOf(args))
-	} else {
-		for i := 0; i < len(args); i++ {
-			t := reflect.ValueOf(args[i])
-			if !t.IsValid() {
-				at := method.ArgsType()[i]
-				if at.Kind() == reflect.Ptr {
-					at = at.Elem()
-				}
-				t = reflect.New(at)
-			}
-			in = append(in, t)
-		}
-	}
-
-	// prepare replyv
-	var replyv reflect.Value
-	if method.ReplyType() == nil && len(method.ArgsType()) > 0 {
-		replyv = reflect.New(method.ArgsType()[len(method.ArgsType())-1].Elem())
-		in = append(in, replyv)
-	}
-
-	returnValues := method.Method().Func.Call(in)
-
-	var (
-		retErr interface{}
-		errMsg string
-	)
-	if len(returnValues) == 1 {
-		retErr = returnValues[0].Interface()
-	} else {
-		replyv = returnValues[0]
-		retErr = returnValues[1].Interface()
-	}
-	if retErr != nil {
-		errMsg = retErr.(error).Error()
-	}
-
-	// write response
-	code := 200
-	var rspReply interface{}
-	if replyv.IsValid() && (replyv.Kind() != reflect.Ptr || replyv.Kind() == reflect.Ptr && replyv.Elem().IsValid()) {
-		rspReply = replyv.Interface()
-	}
-	if len(errMsg) != 0 {
-		code = 500
-		rspReply = invalidRequest
-	}
-	rspStream, err := codec.Write(errMsg, rspReply)
-	if err != nil {
-		return perrors.WithStack(err)
-	}
-	rsp := &http.Response{
-		StatusCode:    code,
-		ProtoMajor:    1,
-		ProtoMinor:    1,
-		Header:        make(http.Header),
-		ContentLength: int64(len(rspStream)),
-		Body:          ioutil.NopCloser(bytes.NewReader(rspStream)),
-	}
-	delete(header, "Content-Type")
-	delete(header, "Content-Length")
-	delete(header, "Timeout")
-	for k, v := range header {
-		rsp.Header.Set(k, v)
-	}
-
-	rspBuf := bytes.NewBuffer(make([]byte, DefaultHTTPRspBufferSize))
-	rspBuf.Reset()
-	if err = rsp.Write(rspBuf); err != nil {
-		logger.Warnf("rsp.Write(rsp:%#v) = error:%s", rsp, err)
-		return nil
-	}
-	if _, err = rspBuf.WriteTo(conn); err != nil {
-		logger.Warnf("rspBuf.WriteTo(conn:%#v) = error:%s", conn, err)
-	}
 	return nil
 }
