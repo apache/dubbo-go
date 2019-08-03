@@ -184,27 +184,6 @@
 			<artifactId>cache-api</artifactId>
 			<version>0.4</version>
 		</dependency>
-
-		<!-- Dubbo Nacos registry dependency -->
-		<dependency>
-			<groupId>com.alibaba</groupId>
-			<artifactId>dubbo-registry-nacos</artifactId>
-			<version>0.0.1</version>
-		</dependency>
-
-		<!-- Dubbo dependency -->
-		<dependency>
-			<groupId>com.alibaba</groupId>
-			<artifactId>dubbo</artifactId>
-			<version>2.6.5</version>
-		</dependency>
-
-		<!-- Alibaba Spring Context extension -->
-		<dependency>
-			<groupId>com.alibaba.spring</groupId>
-			<artifactId>spring-context-support</artifactId>
-			<version>1.0.2</version>
-		</dependency>
 	</dependencies>
 	<build>
 		<plugins>
@@ -233,10 +212,10 @@
 			</plugin>
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
-                <configuration>
-                    <descriptor>src/main/assembly/assembly.xml</descriptor>
-                </configuration>
-                <executions>
+				<configuration>
+					<descriptor>src/main/assembly/assembly.xml</descriptor>
+				</configuration>
+				<executions>
 					<execution>
 						<id>make-assembly</id>
 						<phase>package</phase>
@@ -245,7 +224,7 @@
 						</goals>
 					</execution>
 				</executions>
-            </plugin>
+			</plugin>
 		</plugins>
 	</build>
 </project>
