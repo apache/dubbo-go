@@ -14,7 +14,7 @@ import (
 )
 
 func Test_Register(t *testing.T) {
-	regurl, _ := common.NewURL(context.TODO(), "registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)), common.WithParamsValue(constant.NACOS_LOG_DIR_KEY, "/Users/lizhipeng/data"))
+	regurl, _ := common.NewURL(context.TODO(), "registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
 	urlMap := url.Values{}
 	urlMap.Set(constant.GROUP_KEY, "guangzhou-idc")
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
@@ -43,7 +43,7 @@ func Test_Register(t *testing.T) {
 }
 
 func TestNacosRegistry_Subscribe(t *testing.T) {
-	regurl, _ := common.NewURL(context.TODO(), "registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)), common.WithParamsValue(constant.NACOS_LOG_DIR_KEY, "/Users/lizhipeng/data"))
+	regurl, _ := common.NewURL(context.TODO(), "registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
 	urlMap := url.Values{}
 	urlMap.Set(constant.GROUP_KEY, "guangzhou-idc")
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
@@ -81,7 +81,7 @@ func TestNacosRegistry_Subscribe(t *testing.T) {
 }
 
 func TestNacosRegistry_Subscribe_del(t *testing.T) {
-	regurl, _ := common.NewURL(context.TODO(), "registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)), common.WithParamsValue(constant.NACOS_LOG_DIR_KEY, "/Users/lizhipeng/data"))
+	regurl, _ := common.NewURL(context.TODO(), "registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
 	urlMap := url.Values{}
 	urlMap.Set(constant.GROUP_KEY, "guangzhou-idc")
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
@@ -147,7 +147,7 @@ func TestNacosRegistry_Subscribe_del(t *testing.T) {
 }
 
 func TestNacosListener_Close(t *testing.T) {
-	regurl, _ := common.NewURL(context.TODO(), "registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)), common.WithParamsValue(constant.NACOS_LOG_DIR_KEY, "/Users/lizhipeng/data"))
+	regurl, _ := common.NewURL(context.TODO(), "registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
 	urlMap := url.Values{}
 	urlMap.Set(constant.GROUP_KEY, "guangzhou-idc")
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
