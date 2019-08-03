@@ -23,9 +23,18 @@ func Test_Register(t *testing.T) {
 	urlMap.Set(constant.CLUSTER_KEY, "mock")
 	url, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParams(urlMap), common.WithMethods([]string{"GetUser", "AddUser"}))
 
-	reg, _ := newNacosRegistry(&regurl)
-	err := reg.Register(url)
+	reg, err := newNacosRegistry(&regurl)
 	assert.Nil(t, err)
+	if err != nil {
+		fmt.Printf("new nacos registry error:%s \n", err.Error())
+		return
+	}
+	err = reg.Register(url)
+	assert.Nil(t, err)
+	if err != nil {
+		fmt.Printf("register error:%s \n", err.Error())
+		return
+	}
 	nacosReg := reg.(*nacosRegistry)
 	service, _ := nacosReg.namingClient.GetService(vo.GetServiceParam{ServiceName: "providers:com.ikurento.user.UserProvider:1.0.0:guangzhou-idc"})
 	data, _ := json.Marshal(service)
@@ -48,6 +57,7 @@ func TestNacosRegistry_Subscribe(t *testing.T) {
 	err := reg.Register(url)
 	assert.Nil(t, err)
 	if err != nil {
+		fmt.Printf("new nacos registry error:%s \n", err.Error())
 		return
 	}
 
@@ -56,11 +66,13 @@ func TestNacosRegistry_Subscribe(t *testing.T) {
 	listener, err := reg2.Subscribe(url)
 	assert.Nil(t, err)
 	if err != nil {
+		fmt.Printf("subscribe error:%s \n", err.Error())
 		return
 	}
 	serviceEvent, _ := listener.Next()
 	assert.NoError(t, err)
 	if err != nil {
+		fmt.Printf("listener error:%s \n", err.Error())
 		return
 	}
 	fmt.Printf("serviceEvent:%+v \n", serviceEvent)
@@ -84,11 +96,13 @@ func TestNacosRegistry_Subscribe_del(t *testing.T) {
 	err := reg.Register(url1)
 	assert.Nil(t, err)
 	if err != nil {
+		fmt.Printf("register1 error:%s \n", err.Error())
 		return
 	}
 	err = reg.Register(url2)
 	assert.Nil(t, err)
 	if err != nil {
+		fmt.Printf("register2 error:%s \n", err.Error())
 		return
 	}
 
@@ -97,12 +111,14 @@ func TestNacosRegistry_Subscribe_del(t *testing.T) {
 	listener, err := reg2.Subscribe(url1)
 	assert.Nil(t, err)
 	if err != nil {
+		fmt.Printf("subscribe error:%s \n", err.Error())
 		return
 	}
 
 	serviceEvent1, _ := listener.Next()
 	assert.NoError(t, err)
 	if err != nil {
+		fmt.Printf("listener1 error:%s \n", err.Error())
 		return
 	}
 	fmt.Printf("serviceEvent1:%+v \n", serviceEvent1)
@@ -111,6 +127,7 @@ func TestNacosRegistry_Subscribe_del(t *testing.T) {
 	serviceEvent2, _ := listener.Next()
 	assert.NoError(t, err)
 	if err != nil {
+		fmt.Printf("listener2 error:%s \n", err.Error())
 		return
 	}
 	fmt.Printf("serviceEvent2:%+v \n", serviceEvent2)
@@ -143,6 +160,7 @@ func TestNacosListener_Close(t *testing.T) {
 	listener, err := reg.Subscribe(url1)
 	assert.Nil(t, err)
 	if err != nil {
+		fmt.Printf("subscribe error:%s \n", err.Error())
 		return
 	}
 	listener.Close()
