@@ -33,6 +33,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/protocol"
 )
 
@@ -70,8 +71,13 @@ func TestClient_Call(t *testing.T) {
 	}
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
 
-	user := &User{}
-	err := c.Call("127.0.0.1:20000", url, "GetBigPkg", []interface{}{nil}, user)
+	var (
+		user *User
+		err  error
+	)
+
+	user = &User{}
+	err = c.Call("127.0.0.1:20000", url, "GetBigPkg", []interface{}{nil}, user)
 	assert.NoError(t, err)
 	assert.NotEqual(t, "", user.Id)
 	assert.NotEqual(t, "", user.Name)
@@ -209,7 +215,9 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&"+
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
 	assert.NoError(t, err)
-	proto.Export(protocol.NewBaseInvoker(url))
+	proto.Export(&proxy_factory.ProxyInvoker{
+		BaseInvoker: *protocol.NewBaseInvoker(url),
+	})
 
 	time.Sleep(time.Second * 2)
 
