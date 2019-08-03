@@ -32,13 +32,13 @@ Apache License, Version 2.0
 - Registry: ZooKeeper
 - Routing: Rule(dubbo v2.6.x)
 - Configure Center: Zookeeper
-- Cluster Strategy: Failover
-- Load Balance: Random, RoundRobin, LeastActive
+- Cluster Strategy: Failover/[Failfast](https://github.com/apache/dubbo-go/pull/140)/[Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136)
+- Load Balance: Random/[RoundRobin](https://github.com/apache/dubbo-go/pull/66)/[LeastActive](https://github.com/apache/dubbo-go/pull/65)
 - Filter: Echo Health Check
 
 开发中列表:
 
-- Cluster Strategy: Failfast/Failsafe/Failback/Forking
+- Cluster Strategy: Forking
 - Load Balance: ConsistentHash
 - Filter: TokenFilter/AccessLogFilter/CountFilter/ActiveLimitFilter/ExecuteLimitFilter/GenericFilter/TpsLimitFilter
 - Registry: etcd/k8s/consul/nacos
