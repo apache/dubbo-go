@@ -23,7 +23,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	hessian "github.com/dubbogo/hessian2"
+	hessian "github.com/apache/dubbo-go-hessian2"
 )
 
 func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
