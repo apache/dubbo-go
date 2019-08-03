@@ -84,3 +84,14 @@ const (
 	ProviderConfigPrefix  = "dubbo.provider."
 	ConsumerConfigPrefix  = "dubbo.consumer."
 )
+
+const (
+	NACOS_DEFAULT_ROLETYPE       = 3
+	NACOS_CACHE_DIR_KEY          = "cacheDir"
+	NACOS_LOG_DIR_KEY            = "logDir"
+	NACOS_ENDPOINT               = "endpoint"
+	NACOS_SERVICE_NAME_SEPARATOR = ":"
+	NACOS_CATEGORY_KEY           = "category"
+	NACOS_PROTOCOL_KEY           = "protocol"
+	NACOS_PATH_KEY               = "path"
+)
