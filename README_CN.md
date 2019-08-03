@@ -40,7 +40,7 @@ Apache License, Version 2.0
 
 - Cluster Strategy: Forking
 - Load Balance: ConsistentHash
-- Filter: TokenFilter/AccessLogFilter/CountFilter/ActiveLimitFilter/ExecuteLimitFilter/GenericFilter/TpsLimitFilter
+- Filter: TokenFilter/AccessLogFilter/CountFilter/ExecuteLimitFilter/TpsLimitFilter
 - Registry: etcd/k8s/consul/nacos
 - Configure Center: apollo
 - Dynamic Configuration Center & Metadata Center (dubbo v2.7.x)
