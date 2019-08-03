@@ -2,10 +2,11 @@ module github.com/apache/dubbo-go
 
 require (
 	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190802083043-4cd0c391755e // indirect
+	github.com/apache/dubbo-go-hessian2 v1.2.5-0.20190731020727-1697039810c8
 	github.com/buger/jsonparser v0.0.0-20181115193947-bf1c66bbce23 // indirect
-	github.com/dubbogo/getty v1.1.2-0.20190703052458-5e72c69fddc7
+	github.com/dubbogo/getty v1.2.2
 	github.com/dubbogo/gost v1.1.1
-	github.com/dubbogo/hessian2 v1.2.0
+	github.com/dubbogo/hessian2 v1.2.4
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
 	github.com/go-errors/errors v1.0.1 // indirect
 	github.com/golang/mock v1.3.1 // indirect
@@ -19,7 +20,7 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/samuel/go-zookeeper v0.0.0-20180130194729-c4fab1ac1bec
 	github.com/stretchr/testify v1.3.0
-	github.com/tebeka/strftime v0.0.0-20140926081919-3f9c7761e312 // indirect
+	github.com/tebeka/strftime v0.1.3 // indirect
 	github.com/toolkits/concurrent v0.0.0-20150624120057-a4371d70e3e3 // indirect
 	go.uber.org/atomic v1.4.0
 	go.uber.org/zap v1.10.0
