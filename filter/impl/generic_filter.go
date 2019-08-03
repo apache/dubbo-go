@@ -85,17 +85,15 @@ func struct2MapAll(obj interface{}) interface{} {
 		for i := 0; i < t.NumField(); i++ {
 			if v.Field(i).Kind() == reflect.Struct {
 				if v.Field(i).CanInterface() {
-					result[headerAtoa(t.Field(i).Name)] = struct2MapAll(v.Field(i).Interface())
+					setInMap(result, t.Field(i), struct2MapAll(v.Field(i).Interface()))
 				}
 			} else if v.Field(i).Kind() == reflect.Slice {
-				result[headerAtoa(t.Field(i).Name)] = struct2MapAll(v.Field(i).Interface())
+				if v.Field(i).CanInterface() {
+					setInMap(result, t.Field(i), struct2MapAll(v.Field(i).Interface()))
+				}
 			} else {
 				if v.Field(i).CanInterface() {
-					if tagName := t.Field(i).Tag.Get("m"); tagName == "" {
-						result[headerAtoa(t.Field(i).Name)] = v.Field(i).Interface()
-					} else {
-						result[tagName] = v.Field(i).Interface()
-					}
+					setInMap(result, t.Field(i), v.Field(i).Interface())
 				}
 			}
 		}
@@ -111,6 +109,15 @@ func struct2MapAll(obj interface{}) interface{} {
 	} else {
 		return obj
 	}
+}
+func setInMap(m map[string]interface{}, structField reflect.StructField, value interface{}) (result map[string]interface{}) {
+	result = m
+	if tagName := structField.Tag.Get("m"); tagName == "" {
+		result[headerAtoa(structField.Name)] = value
+	} else {
+		result[tagName] = value
+	}
+	return
 }
 func headerAtoa(a string) (b string) {
 	b = strings.ToLower(a[:1]) + a[1:]
