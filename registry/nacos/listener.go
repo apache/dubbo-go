@@ -146,6 +146,9 @@ func getSubscribeName(url common.URL) string {
 }
 
 func (nl *nacosListener) startListen() error {
+	if nl.namingClient == nil {
+		return perrors.New("nacos naming client stopped")
+	}
 	serviceName := getSubscribeName(nl.listenUrl)
 	nl.subscribeParam = &vo.SubscribeParam{ServiceName: serviceName, SubscribeCallback: nl.Callback}
 	return nl.namingClient.Subscribe(nl.subscribeParam)
