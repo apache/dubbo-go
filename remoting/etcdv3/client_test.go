@@ -56,7 +56,7 @@ type ClientTestSuite struct {
 		heartbeat int
 	}
 
-	etcd  *embed.Etcd
+	etcd *embed.Etcd
 
 	client *Client
 }
@@ -66,7 +66,7 @@ func (suite *ClientTestSuite) SetupSuite() {
 
 	t := suite.T()
 
-	DefaultListenPeerURLs   := "http://localhost:2382"
+	DefaultListenPeerURLs := "http://localhost:2382"
 	DefaultListenClientURLs := "http://localhost:2381"
 	lpurl, _ := url.Parse(DefaultListenPeerURLs)
 	lcurl, _ := url.Parse(DefaultListenClientURLs)
