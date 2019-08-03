@@ -2,6 +2,7 @@ module github.com/apache/dubbo-go
 
 require (
 	github.com/apache/dubbo-go-hessian2 v1.2.5-0.20190731020727-1697039810c8
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dubbogo/getty v1.2.2
 	github.com/dubbogo/gost v1.1.1
 	github.com/magiconair/properties v1.8.1
