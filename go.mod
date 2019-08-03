@@ -1,6 +1,7 @@
 module github.com/apache/dubbo-go
 
 require (
+	github.com/Workiva/go-datastructures v1.0.50
 	github.com/apache/dubbo-go-hessian2 v1.2.5-0.20190731020727-1697039810c8
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dubbogo/getty v1.2.0
