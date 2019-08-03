@@ -53,3 +53,37 @@ func Test_struct2MapAll(t *testing.T) {
 	assert.Equal(t, reflect.Map, reflect.TypeOf(m["caCa"]).Kind())
 	assert.Equal(t, reflect.Map, reflect.TypeOf(m["caCa"].(map[string]interface{})["xxYy"]).Kind())
 }
+
+type testStruct struct {
+	AaAa string
+	BaBa string `m:"baBa"`
+	XxYy struct {
+		xxXx string `m:"xxXx"`
+		Xx   string `m:"xx"`
+	} `m:"xxYy"`
+}
+
+func Test_struct2MapAll_Slice(t *testing.T) {
+	var testData struct {
+		AaAa string `m:"aaAa"`
+		BaBa string
+		CaCa []testStruct `m:"caCa"`
+	}
+	testData.AaAa = "1"
+	testData.BaBa = "1"
+	var tmp testStruct
+	tmp.BaBa = "2"
+	tmp.AaAa = "2"
+	tmp.XxYy.xxXx = "3"
+	tmp.XxYy.Xx = "3"
+	testData.CaCa = append(testData.CaCa, tmp)
+	m := struct2MapAll(testData).(map[string]interface{})
+
+	assert.Equal(t, "1", m["aaAa"].(string))
+	assert.Equal(t, "1", m["baBa"].(string))
+	assert.Equal(t, "2", m["caCa"].([]interface{})[0].(map[string]interface{})["aaAa"].(string))
+	assert.Equal(t, "3", m["caCa"].([]interface{})[0].(map[string]interface{})["xxYy"].(map[string]interface{})["xx"].(string))
+
+	assert.Equal(t, reflect.Slice, reflect.TypeOf(m["caCa"]).Kind())
+	assert.Equal(t, reflect.Map, reflect.TypeOf(m["caCa"].([]interface{})[0].(map[string]interface{})["xxYy"]).Kind())
+}

@@ -75,19 +75,20 @@ func GetGenericFilter() filter.Filter {
 	return &GenericFilter{}
 }
 func struct2MapAll(obj interface{}) interface{} {
-	result := make(map[string]interface{})
 	if obj == nil {
 		return obj
 	}
 	t := reflect.TypeOf(obj)
 	v := reflect.ValueOf(obj)
-
 	if t.Kind() == reflect.Struct {
+		result := make(map[string]interface{})
 		for i := 0; i < t.NumField(); i++ {
 			if v.Field(i).Kind() == reflect.Struct {
 				if v.Field(i).CanInterface() {
 					result[headerAtoa(t.Field(i).Name)] = struct2MapAll(v.Field(i).Interface())
 				}
+			} else if v.Field(i).Kind() == reflect.Slice {
+				result[headerAtoa(t.Field(i).Name)] = struct2MapAll(v.Field(i).Interface())
 			} else {
 				if v.Field(i).CanInterface() {
 					if tagName := t.Field(i).Tag.Get("m"); tagName == "" {
@@ -99,6 +100,14 @@ func struct2MapAll(obj interface{}) interface{} {
 			}
 		}
 		return result
+	} else if t.Kind() == reflect.Slice {
+		value := reflect.ValueOf(obj)
+		var newTemps []interface{}
+		for i := 0; i < value.Len(); i++ {
+			newTemp := struct2MapAll(value.Index(i).Interface())
+			newTemps = append(newTemps, newTemp)
+		}
+		return newTemps
 	} else {
 		return obj
 	}
