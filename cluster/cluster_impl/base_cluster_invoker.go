@@ -25,6 +25,8 @@ import (
 import (
 	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/version"
@@ -115,12 +117,24 @@ func (invoker *baseClusterInvoker) doSelect(lb cluster.LoadBalance, invocation p
 }
 
 func isInvoked(selectedInvoker protocol.Invoker, invoked []protocol.Invoker) bool {
-	if len(invoked) > 0 {
-		for _, i := range invoked {
-			if i == selectedInvoker {
-				return true
-			}
+	for _, i := range invoked {
+		if i == selectedInvoker {
+			return true
 		}
 	}
 	return false
+}
+
+func getLoadBalance(invoker protocol.Invoker, invocation protocol.Invocation) cluster.LoadBalance {
+	url := invoker.GetUrl()
+
+	methodName := invocation.MethodName()
+	//Get the service loadbalance config
+	lb := url.GetParam(constant.LOADBALANCE_KEY, constant.DEFAULT_LOADBALANCE)
+
+	//Get the service method loadbalance config if have
+	if v := url.GetMethodParam(methodName, constant.LOADBALANCE_KEY, ""); len(v) > 0 {
+		lb = v
+	}
+	return extension.GetLoadbalance(lb)
 }
