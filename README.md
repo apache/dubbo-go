@@ -31,13 +31,13 @@ Finished List:
 - Codec: JsonRPC v2, Hessian v2
 - Registry: ZooKeeper
 - Configure Center: Zookeeper
-- Cluster Strategy: Failover
-- Load Balance: Random, RoundRobin, LeastActive
+- Cluster Strategy: Failover/[Failfast](https://github.com/apache/dubbo-go/pull/140)/[Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136)
+- Load Balance: Random/[RoundRobin](https://github.com/apache/dubbo-go/pull/66)/[LeastActive](https://github.com/apache/dubbo-go/pull/65)
 - Filter: Echo Health Check
 
 Working List:
 
-- Cluster Strategy: Failfast/Failsafe/Failback/Forking
+- Cluster Strategy: Forking
 - Load Balance: ConsistentHash
 - Filter: TokenFilter/AccessLogFilter/CountFilter/ActiveLimitFilter/ExecuteLimitFilter/GenericFilter/TpsLimitFilter
 - Registry: etcd/k8s/consul/nacos
