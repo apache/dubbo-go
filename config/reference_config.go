@@ -171,10 +171,11 @@ func (refconfig *ReferenceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.ENVIRONMENT_KEY, consumerConfig.ApplicationConfig.Environment)
 
 	//filter
-	urlMap.Set(constant.REFERENCE_FILTER_KEY, mergeValue(consumerConfig.Filter, refconfig.Filter, constant.DEFAULT_REFERENCE_FILTERS))
+	var defaultReferenceFilter = constant.DEFAULT_REFERENCE_FILTERS
 	if refconfig.Generic {
-		urlMap.Set(constant.REFERENCE_FILTER_KEY, mergeValue(consumerConfig.Filter, refconfig.Filter, constant.GENERIC_REFERENCE_FILTERS))
+		defaultReferenceFilter = defaultReferenceFilter + constant.DEFAULT_REFERENCE_FILTERS
 	}
+	urlMap.Set(constant.REFERENCE_FILTER_KEY, mergeValue(consumerConfig.Filter, refconfig.Filter, defaultReferenceFilter))
 
 	for _, v := range refconfig.Methods {
 		urlMap.Set("methods."+v.Name+"."+constant.LOADBALANCE_KEY, v.Loadbalance)

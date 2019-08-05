@@ -301,7 +301,7 @@ func test3() {
 
 	time.Sleep(3 * time.Second)
 	println("\n\n\nstart to generic invoke")
-	resp, err := referenceConfig.GetRPCService().(*config.GenericService).Invoke([]interface{}{"GetUser", []string{"java.lang.String"}, "A003"})
+	resp, err := referenceConfig.GetRPCService().(*config.GenericService).Invoke([]interface{}{"GetUser", []string{"java.lang.String"}, []interface{}{"A003"}})
 	if err != nil {
 		panic(err)
 	}
