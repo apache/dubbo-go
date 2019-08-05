@@ -14,35 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package config
 
-package constant
+type GenericService struct {
+	Invoke       func(req []interface{}) (interface{}, error) `dubbo:"$invoke"`
+	referenceStr string
+}
 
-const (
-	DUBBO = "dubbo"
-)
-const (
-	DEFAULT_WEIGHT = 100     //
-	DEFAULT_WARMUP = 10 * 60 // in java here is 10*60*1000 because of System.currentTimeMillis() is measured in milliseconds & in go time.Unix() is second
-)
+func NewGenericService(referenceStr string) *GenericService {
+	return &GenericService{referenceStr: referenceStr}
+}
 
-const (
-	DEFAULT_LOADBALANCE = "random"
-	DEFAULT_RETRIES     = 2
-	DEFAULT_PROTOCOL    = "dubbo"
-	DEFAULT_REG_TIMEOUT = "10s"
-	DEFAULT_CLUSTER     = "failover"
-)
-
-const (
-	DEFAULT_KEY               = "default"
-	PREFIX_DEFAULT_KEY        = "default."
-	DEFAULT_SERVICE_FILTERS   = "echo"
-	DEFAULT_REFERENCE_FILTERS = ""
-	GENERIC_REFERENCE_FILTERS = "generic"
-	GENERIC                   = "$invoke"
-	ECHO                      = "$echo"
-)
-
-const (
-	ANY_VALUE = "*"
-)
+func (u *GenericService) Reference() string {
+	return u.referenceStr
+}
