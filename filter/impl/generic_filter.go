@@ -81,7 +81,7 @@ func struct2MapAll(obj interface{}) interface{} {
 	t := reflect.TypeOf(obj)
 	v := reflect.ValueOf(obj)
 	if t.Kind() == reflect.Struct {
-		result := make(map[string]interface{})
+		result := make(map[string]interface{}, t.NumField())
 		for i := 0; i < t.NumField(); i++ {
 			if v.Field(i).Kind() == reflect.Struct {
 				if v.Field(i).CanInterface() {
@@ -100,7 +100,7 @@ func struct2MapAll(obj interface{}) interface{} {
 		return result
 	} else if t.Kind() == reflect.Slice {
 		value := reflect.ValueOf(obj)
-		var newTemps []interface{}
+		var newTemps = make([]interface{}, 0, value.Len())
 		for i := 0; i < value.Len(); i++ {
 			newTemp := struct2MapAll(value.Index(i).Interface())
 			newTemps = append(newTemps, newTemp)
