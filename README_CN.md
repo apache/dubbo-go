@@ -26,29 +26,29 @@ Apache License, Version 2.0
 
 实现列表:
 
-- Role: Consumer, Provider
-- Transport: HTTP, TCP
-- Codec: JsonRPC v2, Hessian v2
-- Registry: ZooKeeper
-- Routing: Rule(dubbo v2.6.x)
-- Configure Center: Zookeeper
-- Cluster Strategy: Failover/[Failfast](https://github.com/apache/dubbo-go/pull/140)/[Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136)
-- Load Balance: Random/[RoundRobin](https://github.com/apache/dubbo-go/pull/66)/[LeastActive](https://github.com/apache/dubbo-go/pull/65)
-- Filter: Echo Health Check
+- 角色端: Consumer, Provider
+- 传输协议: HTTP, TCP
+- 序列化协议: JsonRPC v2, Hessian v2
+- 注册中心: ZooKeeper
+- 配置中心: Zookeeper
+- 集群策略: Failover/[Failfast](https://github.com/apache/dubbo-go/pull/140)/[Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136)
+- 负载均衡策略: Random/[RoundRobin](https://github.com/apache/dubbo-go/pull/66)/[LeastActive](https://github.com/apache/dubbo-go/pull/65)
+- 过滤器: Echo Health Check
+- 其他功能支持: [泛化调用](https://github.com/apache/dubbo-go/pull/122)/启动时检查/服务直连/多服务协议/多注册中心/多服务版本/服务分组
 
 开发中列表:
 
-- Cluster Strategy: Forking
-- Load Balance: ConsistentHash
-- Filter: TokenFilter/AccessLogFilter/CountFilter/ExecuteLimitFilter/TpsLimitFilter
-- Registry: etcd/k8s/consul/nacos
-- Configure Center: apollo
-- Dynamic Configuration Center & Metadata Center (dubbo v2.7.x)
+- 集群策略: Forking
+- 负载均衡策略: ConsistentHash
+- 过滤器: TokenFilter/AccessLogFilter/CountFilter/ExecuteLimitFilter/TpsLimitFilter
+- 注册中心: etcd/k8s/consul/nacos
+- 配置中心: apollo
+- 动态配置中心 & 元数据中心 (dubbo v2.7.x)
 - Metrics: Promethus(dubbo v2.7.x)
 
 任务列表:
 
-- Registry: kubernetes
+- 注册中心: kubernetes
 - Routing: istio
 - tracing (dubbo ecosystem)
 
