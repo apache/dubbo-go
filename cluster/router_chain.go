@@ -2,7 +2,6 @@ package cluster
 
 import (
 	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/protocol"
 	"sort"
 )
@@ -14,21 +13,22 @@ type RouterChain struct {
 }
 
 func NewRouterChain(url common.URL) *RouterChain {
-	var builtinRouters []Router
-	factories := extension.GetRouterFactorys()
-	for _, factory := range factories {
-		router, _ := factory.Router(&url)
-		builtinRouters = append(builtinRouters, router)
-	}
-	var routers []Router
-	copy(routers, builtinRouters)
-	sort.Slice(routers, func(i, j int) bool {
-		return routers[i].Priority() < routers[j].Priority()
-	})
-	return &RouterChain{
-		builtinRouters: routers,
-		routers:        routers,
-	}
+	//var builtinRouters []Router
+	//factories := extension.GetRouterFactories()
+	//for _, factory := range factories {
+	//	router, _ := factory.Router(&url)
+	//	builtinRouters = append(builtinRouters, router)
+	//}
+	//var routers []Router
+	//copy(routers, builtinRouters)
+	//sort.Slice(routers, func(i, j int) bool {
+	//	return routers[i].Priority() < routers[j].Priority()
+	//})
+	//return &RouterChain{
+	//	builtinRouters: routers,
+	//	routers:        routers,
+	//}
+	return nil
 }
 
 func (r RouterChain) AddRouters(routers []Router) {
