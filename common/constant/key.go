@@ -74,6 +74,7 @@ const (
 	METHOD_KEYS      = "methods"
 	RULE_KEY         = "rule"
 	RUNTIME_KEY      = "runtime"
+	BACKUP_KEY       = "backup"
 )
 
 const (

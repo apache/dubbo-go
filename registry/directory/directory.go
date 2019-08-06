@@ -19,8 +19,6 @@ package directory
 
 import (
 	"fmt"
-	"github.com/apache/dubbo-go/common/utils"
-	"github.com/apache/dubbo-go/version"
 	"reflect"
 	"sync"
 	"time"
@@ -37,10 +35,12 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting"
+	"github.com/apache/dubbo-go/version"
 )
 
 const (
@@ -131,7 +131,11 @@ func (dir *registryDirectory) update(res *registry.ServiceEvent) {
 	logger.Debugf("registry update, result{%s}", res)
 
 	logger.Debugf("update service name: %s!", res.Service)
+	//todo
+	_ = dir.GetUrl()
 
+	if len(dir.Routers()) > 0 {
+	}
 	dir.refreshInvokers(res)
 }
 
@@ -228,6 +232,7 @@ func (dir *registryDirectory) List(invocation protocol.Invocation) ([]protocol.I
 	localRouters := dir.Routers()
 	if len(localRouters) > 0 {
 		for _, router := range localRouters {
+			//todo nil error
 			if reflect.ValueOf(router.Url()).IsNil() || router.Url().GetParamBool(constant.RUNTIME_KEY, false) {
 				invokers = router.Route(invokers, *dir.ConsumerUrl, invocation)
 			}
