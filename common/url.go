@@ -242,6 +242,28 @@ func (c URL) Key() string {
 	//return c.ServiceKey()
 }
 
+//todo
+func (c URL) GetBackupUrls() []URL {
+	var urls []URL
+	var host string
+	urls = append(urls, c)
+	backups := strings.Split(c.GetParam(constant.BACKUP_KEY, ""), "")
+	for _, address := range backups {
+		index := strings.LastIndex(address, ":")
+		port := c.Port
+		if index > 0 {
+			host = address[:index]
+			port = address[index+1:]
+		} else {
+			host = string(append([]byte(host), []byte(port)...))
+		}
+		//todo
+		newURL, _ := NewURL(c.ctx, address)
+		urls = append(urls, newURL)
+	}
+	return urls
+}
+
 func (c URL) ServiceKey() string {
 	intf := c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
 	if intf == "" {
