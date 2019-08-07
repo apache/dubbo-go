@@ -142,7 +142,7 @@ func (invoker *failbackClusterInvoker) Invoke(invocation protocol.Invocation) pr
 	}
 	loadbalance := extension.GetLoadbalance(lb)
 
-	invoked := make([]protocol.Invoker, 0)
+	invoked := make([]protocol.Invoker, 0, len(invokers))
 	var result protocol.Result
 
 	ivk := invoker.doSelect(loadbalance, invocation, invokers, invoked)

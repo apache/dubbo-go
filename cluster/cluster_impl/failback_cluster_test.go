@@ -161,7 +161,7 @@ func Test_FailbackRetryFailed(t *testing.T) {
 
 	invoker.EXPECT().Destroy().Return()
 	clusterInvoker.Destroy()
-	// after destory, the tasklist will be empty
+	// after destroy, the taskList will be empty
 	assert.Equal(t, int64(0), clusterInvoker.taskList.Len())
 }
 
