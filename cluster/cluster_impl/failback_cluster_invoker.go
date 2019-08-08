@@ -131,7 +131,6 @@ func (invoker *failbackClusterInvoker) Invoke(invocation protocol.Invocation) pr
 		return &protocol.RPCResult{}
 	}
 	url := invokers[0].GetUrl()
-
 	methodName := invocation.MethodName()
 	//Get the service loadbalance config
 	lb := url.GetParam(constant.LOADBALANCE_KEY, constant.DEFAULT_LOADBALANCE)
