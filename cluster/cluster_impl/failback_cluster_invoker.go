@@ -146,7 +146,6 @@ func (invoker *failbackClusterInvoker) Invoke(invocation protocol.Invocation) pr
 	var result protocol.Result
 
 	ivk := invoker.doSelect(loadbalance, invocation, invokers, invoked)
-	invoked = append(invoked, ivk)
 	//DO INVOKE
 	result = ivk.Invoke(invocation)
 	if result.Error() != nil {
