@@ -175,7 +175,9 @@ func (invoker *failbackClusterInvoker) Destroy() {
 	invoker.baseClusterInvoker.Destroy()
 
 	// stop ticker
-	invoker.ticker.Stop()
+	if invoker.ticker != nil {
+		invoker.ticker.Stop()
+	}
 
 	_ = invoker.taskList.Dispose()
 }
