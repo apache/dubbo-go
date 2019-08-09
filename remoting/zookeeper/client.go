@@ -125,7 +125,8 @@ func ValidateZookeeperClient(container zkClientFacade, opts ...Option) error {
 				url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), err.Error())
 			return perrors.WithMessagef(err, "newZookeeperClient(address:%+v)", url.Location)
 		}
-		newClient, err := newZookeeperClient(opions.zkName, []string{url.Location}, timeout)
+		zkAddresses := strings.Split(url.Location, ",")
+		newClient, err := newZookeeperClient(opions.zkName, zkAddresses, timeout)
 		if err != nil {
 			logger.Warnf("newZookeeperClient(name{%s}, zk addresss{%v}, timeout{%d}) = error{%v}",
 				opions.zkName, url.Location, timeout.String(), err)
@@ -308,7 +309,7 @@ func (z *ZookeeperClient) UnregisterEvent(zkPath string, event *chan struct{}) {
 		if e == event {
 			arr := infoList
 			infoList = append(arr[:i], arr[i+1:]...)
-			logger.Debugf("zkClient{%s} unregister event{path:%s, event:%p}", z.name, zkPath, event)
+			logger.Infof("zkClient{%s} unregister event{path:%s, event:%p}", z.name, zkPath, event)
 		}
 	}
 	logger.Debugf("after zkClient{%s} unregister event{path:%s, event:%p}, array length %d",

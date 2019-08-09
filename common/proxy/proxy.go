@@ -116,7 +116,9 @@ func (p *Proxy) Implement(v common.RPCService) {
 				}
 			}
 
-			inv = invocation_impl.NewRPCInvocationForConsumer(methodName, nil, inArr, reply.Interface(), p.callBack, common.URL{}, nil)
+			inv = invocation_impl.NewRPCInvocationWithOptions(invocation_impl.WithMethodName(methodName),
+				invocation_impl.WithArguments(inArr), invocation_impl.WithReply(reply.Interface()),
+				invocation_impl.WithCallBack(p.callBack))
 
 			for k, value := range p.attachments {
 				inv.SetAttachments(k, value)
