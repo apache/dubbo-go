@@ -26,7 +26,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go-hessian2"
+	hessian "github.com/apache/dubbo-go-hessian2"
 	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
@@ -42,6 +42,10 @@ func TestClient_CallOneway(t *testing.T) {
 	c := &Client{
 		pendingResponses: new(sync.Map),
 		conf:             *clientConf,
+		opts: Options{
+			ConnectTimeout: 3e9,
+			RequestTimeout: 6e9,
+		},
 	}
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
 
@@ -59,17 +63,21 @@ func TestClient_Call(t *testing.T) {
 	c := &Client{
 		pendingResponses: new(sync.Map),
 		conf:             *clientConf,
+		opts: Options{
+			ConnectTimeout: 3e9,
+			RequestTimeout: 10e9,
+		},
 	}
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
 
-	// user := &User{}
-	//err := c.Call("127.0.0.1:20000", url, "GetBigPkg", []interface{}{nil}, user)
-	//assert.NoError(t, err)
-	//assert.NotEqual(t, "", user.Id)
-	//assert.NotEqual(t, "", user.Name)
-
 	user := &User{}
-	err := c.Call("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"}, user)
+	err := c.Call("127.0.0.1:20000", url, "GetBigPkg", []interface{}{nil}, user)
+	assert.NoError(t, err)
+	assert.NotEqual(t, "", user.Id)
+	assert.NotEqual(t, "", user.Name)
+
+	user = &User{}
+	err = c.Call("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"}, user)
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "1", Name: "username"}, *user)
 
@@ -120,6 +128,10 @@ func TestClient_AsyncCall(t *testing.T) {
 	c := &Client{
 		pendingResponses: new(sync.Map),
 		conf:             *clientConf,
+		opts: Options{
+			ConnectTimeout: 3e9,
+			RequestTimeout: 6e9,
+		},
 	}
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
 
@@ -152,7 +164,6 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 		ConnectionNum:   2,
 		HeartbeatPeriod: "5s",
 		SessionTimeout:  "20s",
-		FailFastTimeout: "5s",
 		PoolTTL:         600,
 		PoolSize:        64,
 		GettySessionParam: GettySessionParam{
@@ -162,7 +173,6 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 			KeepAlivePeriod:  "120s",
 			TcpRBufSize:      262144,
 			TcpWBufSize:      65536,
-			PkgRQSize:        1024,
 			PkgWQSize:        512,
 			TcpReadTimeout:   "4s",
 			TcpWriteTimeout:  "5s",
@@ -173,9 +183,8 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 	})
 	assert.NoError(t, clientConf.CheckValidity())
 	SetServerConfig(ServerConfig{
-		SessionNumber:   700,
-		SessionTimeout:  "20s",
-		FailFastTimeout: "5s",
+		SessionNumber:  700,
+		SessionTimeout: "20s",
 		GettySessionParam: GettySessionParam{
 			CompressEncoding: false,
 			TcpNoDelay:       true,
@@ -183,7 +192,6 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 			KeepAlivePeriod:  "120s",
 			TcpRBufSize:      262144,
 			TcpWBufSize:      65536,
-			PkgRQSize:        1024,
 			PkgWQSize:        512,
 			TcpReadTimeout:   "1s",
 			TcpWriteTimeout:  "5s",
@@ -195,11 +203,11 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 
 	// Export
 	proto := GetProtocol()
-	url, err := common.NewURL(context.Background(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&"+
+	url, err := common.NewURL(context.Background(), "dubbo://127.0.0.1:20000/UserProvider?anyhost=true&"+
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&"+
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&"+
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&"+
-		"side=provider&timeout=3000&timestamp=1556509797245")
+		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
 	assert.NoError(t, err)
 	proto.Export(protocol.NewBaseInvoker(url))
 
@@ -274,12 +282,8 @@ func (u *UserProvider) GetUser6(id int64) (*User, error) {
 	return &User{Id: "1"}, nil
 }
 
-func (u *UserProvider) Service() string {
-	return "com.ikurento.user.UserProvider"
-}
-
-func (u *UserProvider) Version() string {
-	return ""
+func (u *UserProvider) Reference() string {
+	return "UserProvider"
 }
 
 func (u User) JavaClassName() string {

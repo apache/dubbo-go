@@ -26,6 +26,7 @@ import (
 import (
 	"github.com/apache/dubbo-go-hessian2"
 	"github.com/dubbogo/getty"
+	"github.com/dubbogo/gost/sync"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
 	"gopkg.in/yaml.v2"
@@ -45,7 +46,8 @@ var (
 	errClientClosed      = perrors.New("client closed")
 	errClientReadTimeout = perrors.New("client read timeout")
 
-	clientConf *ClientConfig
+	clientConf   *ClientConfig
+	clientGrpool *gxsync.TaskPool
 )
 
 func init() {
@@ -78,6 +80,7 @@ func init() {
 	}
 
 	clientConf = conf
+	setClientGrpool()
 }
 
 func SetClientConf(c ClientConfig) {
@@ -87,59 +90,29 @@ func SetClientConf(c ClientConfig) {
 		logger.Warnf("[ClientConfig CheckValidity] error: %v", err)
 		return
 	}
+	setClientGrpool()
 }
 
 func GetClientConf() ClientConfig {
 	return *clientConf
 }
 
-type CallOptions struct {
-	// request timeout
-	RequestTimeout time.Duration
-	// response timeout
-	ResponseTimeout time.Duration
-	// serial ID
-	SerialID SerialID
-	Meta     map[interface{}]interface{}
+func setClientGrpool() {
+	if clientConf.GrPoolSize > 1 {
+		clientGrpool = gxsync.NewTaskPool(gxsync.WithTaskPoolTaskPoolSize(clientConf.GrPoolSize), gxsync.WithTaskPoolTaskQueueLength(clientConf.QueueLen),
+			gxsync.WithTaskPoolTaskQueueNumber(clientConf.QueueNumber))
+	}
 }
 
-type CallOption func(*CallOptions)
-
-//func WithCallRequestTimeout(d time.Duration) CallOption {
-//	return func(o *CallOptions) {
-//		o.RequestTimeout = d
-//	}
-//}
-//
-//func WithCallResponseTimeout(d time.Duration) CallOption {
-//	return func(o *CallOptions) {
-//		o.ResponseTimeout = d
-//	}
-//}
-//
-//func WithCallSerialID(s SerialID) CallOption {
-//	return func(o *CallOptions) {
-//		o.SerialID = s
-//	}
-//}
-//
-//func WithCallMeta_All(callMeta map[interface{}]interface{}) CallOption {
-//	return func(o *CallOptions) {
-//		o.Meta = callMeta
-//	}
-//}
-
-//func WithCallMeta(k, v interface{}) CallOption {
-//	return func(o *CallOptions) {
-//		if o.Meta == nil {
-//			o.Meta = make(map[interface{}]interface{})
-//		}
-//		o.Meta[k] = v
-//	}
-//}
+type Options struct {
+	// connect timeout
+	ConnectTimeout time.Duration
+	// request timeout
+	RequestTimeout time.Duration
+}
 
 type CallResponse struct {
-	Opts      CallOptions
+	Opts      Options
 	Cause     error
 	Start     time.Time // invoke(call) start time == write start time
 	ReadStart time.Time // read start time, write duration = ReadStart - Start
@@ -149,6 +122,7 @@ type CallResponse struct {
 type AsyncCallback func(response CallResponse)
 
 type Client struct {
+	opts     Options
 	conf     ClientConfig
 	pool     *gettyRPCClientPool
 	sequence atomic.Uint64
@@ -156,9 +130,18 @@ type Client struct {
 	pendingResponses *sync.Map
 }
 
-func NewClient() *Client {
+func NewClient(opt Options) *Client {
+
+	switch {
+	case opt.ConnectTimeout == 0:
+		opt.ConnectTimeout = 3e9
+		fallthrough
+	case opt.RequestTimeout == 0:
+		opt.RequestTimeout = 3e9
+	}
 
 	c := &Client{
+		opts:             opt,
 		pendingResponses: new(sync.Map),
 		conf:             *clientConf,
 	}
@@ -168,64 +151,38 @@ func NewClient() *Client {
 }
 
 // call one way
-func (c *Client) CallOneway(addr string, svcUrl common.URL, method string, args interface{}, opts ...CallOption) error {
-	var copts CallOptions
+func (c *Client) CallOneway(addr string, svcUrl common.URL, method string, args interface{}) error {
 
-	for _, o := range opts {
-		o(&copts)
-	}
-
-	return perrors.WithStack(c.call(CT_OneWay, addr, svcUrl, method, args, nil, nil, copts))
+	return perrors.WithStack(c.call(CT_OneWay, addr, svcUrl, method, args, nil, nil))
 }
 
 // if @reply is nil, the transport layer will get the response without notify the invoker.
-func (c *Client) Call(addr string, svcUrl common.URL, method string, args, reply interface{}, opts ...CallOption) error {
-	var copts CallOptions
-
-	for _, o := range opts {
-		o(&copts)
-	}
+func (c *Client) Call(addr string, svcUrl common.URL, method string, args, reply interface{}) error {
 
 	ct := CT_TwoWay
 	if reply == nil {
 		ct = CT_OneWay
 	}
 
-	return perrors.WithStack(c.call(ct, addr, svcUrl, method, args, reply, nil, copts))
+	return perrors.WithStack(c.call(ct, addr, svcUrl, method, args, reply, nil))
 }
 
 func (c *Client) AsyncCall(addr string, svcUrl common.URL, method string, args interface{},
-	callback AsyncCallback, reply interface{}, opts ...CallOption) error {
+	callback AsyncCallback, reply interface{}) error {
 
-	var copts CallOptions
-	for _, o := range opts {
-		o(&copts)
-	}
-
-	return perrors.WithStack(c.call(CT_TwoWay, addr, svcUrl, method, args, reply, callback, copts))
+	return perrors.WithStack(c.call(CT_TwoWay, addr, svcUrl, method, args, reply, callback))
 }
 
 func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string,
-	args, reply interface{}, callback AsyncCallback, opts CallOptions) error {
-
-	if opts.RequestTimeout == 0 {
-		opts.RequestTimeout = c.conf.GettySessionParam.tcpWriteTimeout
-	}
-	if opts.ResponseTimeout == 0 {
-		opts.ResponseTimeout = c.conf.GettySessionParam.tcpReadTimeout
-	}
+	args, reply interface{}, callback AsyncCallback) error {
 
 	p := &DubboPackage{}
 	p.Service.Path = strings.TrimPrefix(svcUrl.Path, "/")
 	p.Service.Interface = svcUrl.GetParam(constant.INTERFACE_KEY, "")
 	p.Service.Version = svcUrl.GetParam(constant.VERSION_KEY, "")
 	p.Service.Method = method
-	p.Service.Timeout = opts.RequestTimeout
-	if opts.SerialID == 0 {
-		p.Header.SerialID = byte(S_Dubbo)
-	} else {
-		p.Header.SerialID = byte(opts.SerialID)
-	}
+	p.Service.Timeout = c.opts.RequestTimeout
+	p.Header.SerialID = byte(S_Dubbo)
 	p.Body = args
 
 	var rsp *PendingResponse
@@ -234,7 +191,6 @@ func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string
 		rsp = NewPendingResponse()
 		rsp.reply = reply
 		rsp.callback = callback
-		rsp.opts = opts
 	} else {
 		p.Header.Type = hessian.PackageRequest
 	}
@@ -245,13 +201,15 @@ func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string
 		conn    *gettyRPCClient
 	)
 	conn, session, err = c.selectSession(addr)
-	if err != nil || session == nil {
-		logger.Warnf("%s, %v", errSessionNotExist.Error(), err)
+	if err != nil {
+		return perrors.WithStack(err)
+	}
+	if session == nil {
 		return errSessionNotExist
 	}
 	defer c.pool.release(conn, err)
 
-	if err = c.transfer(session, p, rsp, opts); err != nil {
+	if err = c.transfer(session, p, rsp); err != nil {
 		return perrors.WithStack(err)
 	}
 
@@ -260,7 +218,7 @@ func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string
 	}
 
 	select {
-	case <-time.After(opts.ResponseTimeout):
+	case <-getty.GetTimeWheel().After(c.opts.RequestTimeout):
 		err = errClientReadTimeout
 		c.removePendingResponse(SequenceType(rsp.seq))
 	case <-rsp.done:
@@ -286,11 +244,11 @@ func (c *Client) selectSession(addr string) (*gettyRPCClient, getty.Session, err
 }
 
 func (c *Client) heartbeat(session getty.Session) error {
-	return c.transfer(session, nil, NewPendingResponse(), CallOptions{})
+	return c.transfer(session, nil, NewPendingResponse())
 }
 
 func (c *Client) transfer(session getty.Session, pkg *DubboPackage,
-	rsp *PendingResponse, opts CallOptions) error {
+	rsp *PendingResponse) error {
 
 	var (
 		sequence uint64
@@ -313,7 +271,7 @@ func (c *Client) transfer(session getty.Session, pkg *DubboPackage,
 		c.addPendingResponse(rsp)
 	}
 
-	err = session.WritePkg(pkg, opts.RequestTimeout)
+	err = session.WritePkg(pkg, c.opts.RequestTimeout)
 	if err != nil {
 		c.removePendingResponse(SequenceType(rsp.seq))
 	} else if rsp != nil { // cond2

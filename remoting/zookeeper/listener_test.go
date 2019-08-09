@@ -18,6 +18,7 @@
 package zookeeper
 
 import (
+	"sync"
 	"testing"
 	"time"
 )
@@ -86,32 +87,36 @@ func TestListener(t *testing.T) {
 	dubbo.service.com.ikurento.user.UserProvider.warmup=100
 	dubbo.service.com.ikurento.user.UserProvider.cluster=failover
 `
-
+	var wait sync.WaitGroup
 	ts, client, event := initZkData(t)
 	defer ts.Stop()
 	client.Wait.Add(1)
+	wait.Add(1)
 	go client.HandleZkEvent(event)
 	listener := NewZkEventListener(client)
-	dataListener := &mockDataListener{client: client, changedData: changedData}
+	dataListener := &mockDataListener{client: client, changedData: changedData, wait: &wait}
 	listener.ListenServiceEvent("/dubbo", dataListener)
 
 	_, err := client.Conn.Set("/dubbo/dubbo.properties", []byte(changedData), 1)
 	assert.NoError(t, err)
-	client.Wait.Wait()
+	wait.Wait()
 	assert.Equal(t, changedData, dataListener.eventList[1].Content)
+	client.Close()
+
 }
 
 type mockDataListener struct {
 	eventList   []remoting.Event
 	client      *ZookeeperClient
 	changedData string
+	wait        *sync.WaitGroup
 }
 
 func (m *mockDataListener) DataChange(eventType remoting.Event) bool {
 	logger.Info(eventType)
 	m.eventList = append(m.eventList, eventType)
 	if eventType.Content == m.changedData {
-		m.client.Close()
+		m.wait.Done()
 	}
 	return true
 }
