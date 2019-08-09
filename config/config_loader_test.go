@@ -45,15 +45,16 @@ func TestConfigLoader(t *testing.T) {
 	assert.Nil(t, providerConfig)
 	assert.Equal(t, ProviderConfig{}, GetProviderConfig())
 
-	err = consumerInit(conPath)
+	err = ConsumerInit(conPath)
 	assert.NoError(t, err)
-	err = providerInit(proPath)
+	err = ProviderInit(proPath)
 	assert.NoError(t, err)
 
 	assert.NotNil(t, consumerConfig)
 	assert.NotEqual(t, ConsumerConfig{}, GetConsumerConfig())
 	assert.NotNil(t, providerConfig)
 	assert.NotEqual(t, ProviderConfig{}, GetProviderConfig())
+	assert.Equal(t, "soa.com.ikurento.user.UserProvider", GetConsumerConfig().References["UserProvider"].Params["serviceid"])
 }
 
 func TestLoad(t *testing.T) {
@@ -70,12 +71,12 @@ func TestLoad(t *testing.T) {
 
 	Load()
 
-	assert.Equal(t, ms, GetRPCService(ms.Service()))
+	assert.Equal(t, ms, GetRPCService(ms.Reference()))
 	ms2 := &struct {
 		MockService
 	}{}
 	RPCService(ms2)
-	assert.NotEqual(t, ms2, GetRPCService(ms2.Service()))
+	assert.NotEqual(t, ms2, GetRPCService(ms2.Reference()))
 
 	conServices = map[string]common.RPCService{}
 	proServices = map[string]common.RPCService{}
@@ -83,6 +84,7 @@ func TestLoad(t *testing.T) {
 	consumerConfig = nil
 	providerConfig = nil
 }
+
 func TestWithNoRegLoad(t *testing.T) {
 	doInit()
 	doinit()
@@ -98,12 +100,12 @@ func TestWithNoRegLoad(t *testing.T) {
 
 	Load()
 
-	assert.Equal(t, ms, GetRPCService(ms.Service()))
+	assert.Equal(t, ms, GetRPCService(ms.Reference()))
 	ms2 := &struct {
 		MockService
 	}{}
 	RPCService(ms2)
-	assert.NotEqual(t, ms2, GetRPCService(ms2.Service()))
+	assert.NotEqual(t, ms2, GetRPCService(ms2.Reference()))
 
 	conServices = map[string]common.RPCService{}
 	proServices = map[string]common.RPCService{}
@@ -111,6 +113,7 @@ func TestWithNoRegLoad(t *testing.T) {
 	consumerConfig = nil
 	providerConfig = nil
 }
+
 func TestConfigLoaderWithConfigCenter(t *testing.T) {
 	extension.SetConfigCenterFactory("mock", func() config_center.DynamicConfigurationFactory {
 		return &config_center.MockDynamicConfigurationFactory{}
@@ -126,10 +129,10 @@ func TestConfigLoaderWithConfigCenter(t *testing.T) {
 	assert.Nil(t, providerConfig)
 	assert.Equal(t, ProviderConfig{}, GetProviderConfig())
 
-	err = consumerInit(conPath)
+	err = ConsumerInit(conPath)
 	configCenterRefreshConsumer()
 	assert.NoError(t, err)
-	err = providerInit(proPath)
+	err = ProviderInit(proPath)
 	configCenterRefreshProvider()
 	assert.NoError(t, err)
 

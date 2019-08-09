@@ -62,16 +62,18 @@ func newGettyRPCClientConn(pool *gettyRPCClientPool, protocol, addr string) (*ge
 			getty.WithReconnectInterval(pool.rpcClient.conf.ReconnectInterval),
 		),
 	}
-	c.gettyClient.RunEventLoop(c.newSession)
+	go c.gettyClient.RunEventLoop(c.newSession)
 	idx := 1
+	times := int(pool.rpcClient.opts.ConnectTimeout / 1e6)
 	for {
 		idx++
 		if c.isAvailable() {
 			break
 		}
 
-		if idx > 5000 {
-			return nil, perrors.New(fmt.Sprintf("failed to create client connection to %s in 5 seconds", addr))
+		if idx > times {
+			c.gettyClient.Close()
+			return nil, perrors.New(fmt.Sprintf("failed to create client connection to %s in %f seconds", addr, float32(times)/1000))
 		}
 		time.Sleep(1e6)
 	}
@@ -109,13 +111,14 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 	session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
 	session.SetPkgHandler(NewRpcClientPackageHandler(c.pool.rpcClient))
 	session.SetEventListener(NewRpcClientHandler(c))
-	session.SetRQLen(conf.GettySessionParam.PkgRQSize)
 	session.SetWQLen(conf.GettySessionParam.PkgWQSize)
 	session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
 	session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
 	session.SetCronPeriod((int)(conf.heartbeatPeriod.Nanoseconds() / 1e6))
 	session.SetWaitTime(conf.GettySessionParam.waitTimeout)
 	logger.Debugf("client new session:%s\n", session.Stat())
+
+	session.SetTaskPool(clientGrpool)
 
 	return nil
 }
@@ -166,7 +169,9 @@ func (c *gettyRPCClient) removeSession(session getty.Session) {
 	}
 	logger.Infof("after remove session{%s}, left session number:%d", session.Stat(), len(c.sessions))
 	if len(c.sessions) == 0 {
+		c.pool.Lock()
 		c.close() // -> pool.remove(c)
+		c.pool.Unlock()
 	}
 }
 
@@ -193,8 +198,8 @@ func (c *gettyRPCClient) getClientRpcSession(session getty.Session) (rpcSession,
 		err        error
 		rpcSession rpcSession
 	)
-	c.lock.Lock()
-	defer c.lock.Unlock()
+	c.lock.RLock()
+	defer c.lock.RUnlock()
 	if c.sessions == nil {
 		return rpcSession, errClientClosed
 	}
@@ -241,11 +246,11 @@ func (c *gettyRPCClient) close() error {
 
 type gettyRPCClientPool struct {
 	rpcClient *Client
-	size      int   // []*gettyRPCClient数组的size
-	ttl       int64 // 每个gettyRPCClient的有效期时间. pool对象会在getConn时执行ttl检查
+	size      int   // size of []*gettyRPCClient
+	ttl       int64 // ttl of every gettyRPCClient, it is checked when getConn
 
 	sync.Mutex
-	conns []*gettyRPCClient // 从[]*gettyRPCClient 可见key是连接地址，而value是对应这个地址的连接数组
+	conns []*gettyRPCClient
 }
 
 func newGettyRPCClientConnPool(rpcClient *Client, size int, ttl time.Duration) *gettyRPCClientPool {
@@ -270,7 +275,6 @@ func (p *gettyRPCClientPool) close() {
 func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPCClient, error) {
 
 	p.Lock()
-	defer p.Unlock()
 	if p.conns == nil {
 		return nil, errClientPoolClosed
 	}
@@ -287,10 +291,11 @@ func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPC
 		}
 		conn.created = now //update created time
 
+		p.Unlock()
 		return conn, nil
 	}
-
 	// create new conn
+	p.Unlock()
 	return newGettyRPCClientConn(p, protocol, addr)
 }
 
