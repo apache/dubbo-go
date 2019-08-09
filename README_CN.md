@@ -56,7 +56,7 @@ Apache License, Version 2.0
 
 ## 文档
 
-移步[这里](https://dubbogo.github.io/dubbo-go-website/)
+TODO
 
 ## 快速开始 ##
 
