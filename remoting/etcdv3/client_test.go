@@ -2,7 +2,6 @@ package etcdv3
 
 import (
 	"fmt"
-	"go.etcd.io/etcd/embed"
 	"net/url"
 	"path"
 	"reflect"
@@ -10,11 +9,13 @@ import (
 	"sync"
 	"testing"
 	"time"
+)
 
-	"github.com/stretchr/testify/suite"
-
+import (
 	"github.com/coreos/etcd/mvcc/mvccpb"
-	"github.com/juju/errors"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/suite"
+	"go.etcd.io/etcd/embed"
 	"google.golang.org/grpc/connectivity"
 )
 

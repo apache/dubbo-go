@@ -2,9 +2,14 @@ package etcdv3
 
 import (
 	"time"
+)
 
-	"github.com/apache/dubbo-go/remoting"
+import (
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/remoting"
 )
 
 var changedData = `

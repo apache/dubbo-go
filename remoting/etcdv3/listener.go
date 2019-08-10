@@ -6,14 +6,14 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/remoting"
+	"github.com/coreos/etcd/clientv3"
+	"github.com/coreos/etcd/mvcc/mvccpb"
+	"github.com/pkg/errors"
 )
 
 import (
-	"github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/mvcc/mvccpb"
-	"github.com/juju/errors"
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 type EventListener struct {
@@ -109,6 +109,9 @@ func (l *EventListener) handleEvents(event *clientv3.Event, listeners ...remotin
 	case mvccpb.DELETE:
 		logger.Warnf("etcd get event (key{%s}) = event{EventNodeDeleted}", event.Kv.Key)
 		return true
+
+	default:
+		return false
 	}
 
 	panic("unreachable")
@@ -180,7 +183,7 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 
 	keyList, valueList, err := l.client.getChildren(key)
 	if err != nil {
-		logger.Errorf("Get new node path {%v} 's content error,message is  {%v}", key, errors.Annotate(err, "get children"))
+		logger.Errorf("Get new node path {%v} 's content error,message is  {%v}", key, errors.WithMessage(err, "get children"))
 	}
 
 	logger.Infof("get key children list %s, keys %v values %v", key, keyList, valueList)

@@ -4,11 +4,17 @@ import (
 	"context"
 	"testing"
 	"time"
+)
 
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/remoting"
+import (
+	"github.com/dubbogo/getty"
 	"github.com/stretchr/testify/suite"
 	"go.etcd.io/etcd/embed"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 type RegistryTestSuite struct {
@@ -30,7 +36,7 @@ func (suite *RegistryTestSuite) SetupSuite() {
 	select {
 	case <-e.Server.ReadyNotify():
 		t.Log("Server is ready!")
-	case <-time.After(60 * time.Second):
+	case <-getty.GetTimeWheel().After(60 * time.Second):
 		e.Server.Stop() // trigger a shutdown
 		t.Logf("Server took too long to start!")
 	}
@@ -60,9 +66,6 @@ func TestRegistrySuite(t *testing.T) {
 	suite.Run(t, &RegistryTestSuite{})
 }
 
-type MockDataListener struct {
-}
+type MockDataListener struct{}
 
-func (*MockDataListener) Process(configType *remoting.ConfigChangeEvent) {
-
-}
+func (*MockDataListener) Process(configType *remoting.ConfigChangeEvent) {}
