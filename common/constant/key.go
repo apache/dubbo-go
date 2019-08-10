@@ -86,6 +86,7 @@ const (
 )
 
 const (
+	NACOS_KEY                    = "nacos"
 	NACOS_DEFAULT_ROLETYPE       = 3
 	NACOS_CACHE_DIR_KEY          = "cacheDir"
 	NACOS_LOG_DIR_KEY            = "logDir"
