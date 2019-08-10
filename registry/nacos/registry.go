@@ -29,7 +29,7 @@ var (
 
 func init() {
 	localIP, _ = utils.GetLocalIP()
-	extension.SetRegistry("nacos", newNacosRegistry)
+	extension.SetRegistry(constant.NACOS_KEY, newNacosRegistry)
 }
 
 type nacosRegistry struct {
@@ -41,13 +41,13 @@ func getNacosConfig(url *common.URL) (map[string]interface{}, error) {
 	if url == nil {
 		return nil, perrors.New("url is empty!")
 	}
-	if url.Location == "" {
+	if len(url.Location) == 0 {
 		return nil, perrors.New("url.location is empty!")
 	}
-	configMap := make(map[string]interface{})
+	configMap := make(map[string]interface{}, 2)
 
-	var serverConfigs []nacosConstant.ServerConfig
 	addresses := strings.Split(url.Location, ",")
+	serverConfigs := make([]nacosConstant.ServerConfig, 0, len(addresses))
 	for _, addr := range addresses {
 		ip, portStr, err := net.SplitHostPort(addr)
 		if err != nil {
@@ -119,17 +119,17 @@ func appendParam(target *bytes.Buffer, url common.URL, key string) {
 
 func createRegisterParam(url common.URL, serviceName string) vo.RegisterInstanceParam {
 	category := getCategory(url)
-	params := map[string]string{}
+	params := make(map[string]string, len(url.Params)+3)
 	for k, _ := range url.Params {
 		params[k] = url.Params.Get(k)
 	}
 	params[constant.NACOS_CATEGORY_KEY] = category
 	params[constant.NACOS_PROTOCOL_KEY] = url.Protocol
 	params[constant.NACOS_PATH_KEY] = url.Path
-	if url.Ip == "" {
+	if len(url.Ip) == 0 {
 		url.Ip = localIP
 	}
-	if url.Port == "" || url.Port == "0" {
+	if len(url.Port) == 0 || url.Port == "0" {
 		url.Port = "80"
 	}
 	port, _ := strconv.Atoi(url.Port)
@@ -154,7 +154,7 @@ func (nr *nacosRegistry) Register(url common.URL) error {
 		return err
 	}
 	if !isRegistry {
-		return perrors.New("registry to  nacos failed")
+		return perrors.New("registry [" + serviceName + "] to  nacos failed")
 	}
 	return nil
 }
