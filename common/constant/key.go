@@ -48,6 +48,9 @@ const (
 	RETRIES_KEY          = "retries"
 	BEAN_NAME            = "bean.name"
 	FAIL_BACK_TASKS_KEY  = "failbacktasks"
+	FORKS_KEY            = "forks"
+	DEFAULT_FORKS        = 2
+	DEFAULT_TIMEOUT      = 1000
 )
 
 const (
