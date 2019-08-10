@@ -12,6 +12,10 @@ import (
 )
 
 import (
+	"github.com/pkg/errors"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -20,11 +24,6 @@ import (
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting/etcdv3"
 	"github.com/apache/dubbo-go/version"
-)
-
-import (
-	"github.com/juju/errors"
-	perrors "github.com/pkg/errors"
 )
 
 var (
@@ -82,7 +81,7 @@ func (r *etcdV3Registry) RestartCallBack() bool {
 		err := r.Register(confIf)
 		if err != nil {
 			logger.Errorf("(etcdV3ProviderRegistry)register(conf{%#v}) = error{%#v}",
-				confIf, perrors.WithStack(err))
+				confIf, errors.WithStack(err))
 			flag = false
 			break
 		}
@@ -97,7 +96,7 @@ func newETCDV3Registry(url *common.URL) (registry.Registry, error) {
 	if err != nil {
 		logger.Errorf("timeout config %v is invalid ,err is %v",
 			url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), err.Error())
-		return nil, errors.Annotatef(err, "new etcd registry(address:%+v)", url.Location)
+		return nil, errors.WithMessagef(err, "new etcd registry(address:%+v)", url.Location)
 	}
 
 	logger.Infof("etcd address is: %v", url.Location)
@@ -167,7 +166,7 @@ func (r *etcdV3Registry) Register(svc common.URL) error {
 
 	role, err := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
 	if err != nil {
-		return errors.Annotate(err, "get registry role")
+		return errors.WithMessage(err, "get registry role")
 	}
 
 	r.cltLock.Lock()
@@ -180,12 +179,12 @@ func (r *etcdV3Registry) Register(svc common.URL) error {
 	case common.PROVIDER:
 		logger.Debugf("(provider register )Register(conf{%#v})", svc)
 		if err := r.registerProvider(svc); err != nil {
-			return errors.Annotate(err, "register provider")
+			return errors.WithMessage(err, "register provider")
 		}
 	case common.CONSUMER:
 		logger.Debugf("(consumer register )Register(conf{%#v})", svc)
 		if err := r.registerConsumer(svc); err != nil {
-			return errors.Annotate(err, "register consumer")
+			return errors.WithMessage(err, "register consumer")
 		}
 	default:
 		return errors.New(fmt.Sprintf("unknown role %d", role))
@@ -203,7 +202,7 @@ func (r *etcdV3Registry) createDirIfNotExist(k string) error {
 	for _, str := range strings.Split(k, "/")[1:] {
 		tmpPath = path.Join(tmpPath, "/", str)
 		if err := r.client.Create(tmpPath, ""); err != nil {
-			return errors.Annotatef(err, "create path %s in etcd", tmpPath)
+			return errors.WithMessagef(err, "create path %s in etcd", tmpPath)
 		}
 	}
 
@@ -215,11 +214,11 @@ func (r *etcdV3Registry) registerConsumer(svc common.URL) error {
 	consumersNode := fmt.Sprintf("/dubbo/%s/%s", svc.Service(), common.DubboNodes[common.CONSUMER])
 	if err := r.createDirIfNotExist(consumersNode); err != nil {
 		logger.Errorf("etcd client create path %s: %v", consumersNode, err)
-		return errors.Annotate(err, "etcd create consumer nodes")
+		return errors.WithMessage(err, "etcd create consumer nodes")
 	}
 	providersNode := fmt.Sprintf("/dubbo/%s/%s", svc.Service(), common.DubboNodes[common.PROVIDER])
 	if err := r.createDirIfNotExist(providersNode); err != nil {
-		return errors.Annotate(err, "create provider node")
+		return errors.WithMessage(err, "create provider node")
 	}
 
 	params := url.Values{}
@@ -232,7 +231,7 @@ func (r *etcdV3Registry) registerConsumer(svc common.URL) error {
 	encodedURL := url.QueryEscape(fmt.Sprintf("consumer://%s%s?%s", localIP, svc.Path, params.Encode()))
 	dubboPath := fmt.Sprintf("/dubbo/%s/%s", svc.Service(), (common.RoleType(common.CONSUMER)).String())
 	if err := r.client.Create(path.Join(dubboPath, encodedURL), ""); err != nil {
-		return errors.Annotatef(err, "create k/v in etcd (path:%s, url:%s)", dubboPath, encodedURL)
+		return errors.WithMessagef(err, "create k/v in etcd (path:%s, url:%s)", dubboPath, encodedURL)
 	}
 
 	return nil
@@ -252,7 +251,7 @@ func (r *etcdV3Registry) registerProvider(svc common.URL) error {
 
 	providersNode := fmt.Sprintf("/dubbo/%s/%s", svc.Service(), common.DubboNodes[common.PROVIDER])
 	if err := r.createDirIfNotExist(providersNode); err != nil {
-		return errors.Annotate(err, "create provider node")
+		return errors.WithMessage(err, "create provider node")
 	}
 
 	params := url.Values{}
@@ -285,7 +284,7 @@ func (r *etcdV3Registry) registerProvider(svc common.URL) error {
 	dubboPath = fmt.Sprintf("/dubbo/%s/%s", svc.Service(), (common.RoleType(common.PROVIDER)).String())
 
 	if err := r.client.Create(path.Join(dubboPath, encodedURL), ""); err != nil {
-		return errors.Annotatef(err, "create k/v in etcd (path:%s, url:%s)", dubboPath, encodedURL)
+		return errors.WithMessagef(err, "create k/v in etcd (path:%s, url:%s)", dubboPath, encodedURL)
 	}
 
 	return nil
@@ -305,7 +304,7 @@ func (r *etcdV3Registry) Subscribe(svc common.URL) (registry.Listener, error) {
 		client := r.client
 		r.cltLock.Unlock()
 		if client == nil {
-			return nil, perrors.New("etcd client broken")
+			return nil, errors.New("etcd client broken")
 		}
 
 		// new client & listener
