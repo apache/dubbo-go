@@ -13,7 +13,7 @@ import (
 
 import (
 	"github.com/coreos/etcd/mvcc/mvccpb"
-	"github.com/pkg/errors"
+	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/suite"
 	"go.etcd.io/etcd/embed"
 	"google.golang.org/grpc/connectivity"
@@ -210,7 +210,7 @@ func (suite *ClientTestSuite) TestClientDeleteKV() {
 		}
 
 		_, err := c.Get(k)
-		if errors.Cause(err) == expect {
+		if perrors.Cause(err) == expect {
 			continue
 		}
 

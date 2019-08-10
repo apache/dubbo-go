@@ -8,7 +8,7 @@ import (
 import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
-	"github.com/pkg/errors"
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -183,20 +183,18 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 
 	keyList, valueList, err := l.client.getChildren(key)
 	if err != nil {
-		logger.Errorf("Get new node path {%v} 's content error,message is  {%v}", key, errors.WithMessage(err, "get children"))
+		logger.Errorf("Get new node path {%v} 's content error,message is  {%v}", key, perrors.WithMessage(err, "get children"))
 	}
 
 	logger.Infof("get key children list %s, keys %v values %v", key, keyList, valueList)
 
 	for i, k := range keyList {
 		logger.Infof("got children list key -> %s", k)
-		if !listener.DataChange(remoting.Event{
+		listener.DataChange(remoting.Event{
 			Path:    k,
 			Action:  remoting.EventTypeAdd,
 			Content: valueList[i],
-		}) {
-			continue
-		}
+		})
 	}
 
 	logger.Infof("listen dubbo provider key{%s} event and wait to get all provider etcdv3 nodes", key)
