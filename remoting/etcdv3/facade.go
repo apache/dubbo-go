@@ -6,22 +6,22 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/logger"
+	"github.com/dubbogo/getty"
+	"github.com/pkg/errors"
 )
 
 import (
-	"github.com/dubbogo/getty"
-	perrors "github.com/pkg/errors"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
 )
 
 type clientFacade interface {
 	Client() *Client
 	SetClient(*Client)
 	ClientLock() *sync.Mutex
-	WaitGroup() *sync.WaitGroup //for wait group control, zk client listener & zk client container
-	GetDone() chan struct{}     //for zk client control
+	WaitGroup() *sync.WaitGroup //for wait group control, etcd client listener & etcd client container
+	GetDone() chan struct{}     //for etcd client control
 	RestartCallBack() bool
 	common.Node
 }
@@ -50,7 +50,7 @@ LOOP:
 			r.SetClient(nil)
 			r.ClientLock().Unlock()
 
-			// 接zk，直至成功
+			// 接etcd，直至成功
 			failTimes = 0
 			for {
 				select {
@@ -65,7 +65,7 @@ LOOP:
 					WithTimeout(timeout),
 				)
 				logger.Infof("ETCDV3ProviderRegistry.validateETCDV3Client(etcd Addr{%s}) = error{%#v}",
-					endpoint, perrors.WithStack(err))
+					endpoint, errors.WithStack(err))
 				if err == nil {
 					if r.RestartCallBack() {
 						break
