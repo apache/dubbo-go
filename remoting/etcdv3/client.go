@@ -6,14 +6,16 @@ import (
 	"sync"
 	"time"
 )
-import (
-	"github.com/apache/dubbo-go/common/logger"
-)
+
 import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/clientv3/concurrency"
-	"github.com/juju/errors"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/logger"
 )
 
 const (
@@ -78,7 +80,7 @@ func ValidateClient(container clientFacade, opts ...Option) error {
 		if err != nil {
 			logger.Warnf("new etcd client (name{%s}, etcd addresses{%v}, timeout{%d}) = error{%v}",
 				options.name, options.endpoints, options.timeout, err)
-			return errors.Annotatef(err, "new client (address:%+v)", options.endpoints)
+			return errors.WithMessagef(err, "new client (address:%+v)", options.endpoints)
 		}
 		container.SetClient(newClient)
 	}
@@ -90,7 +92,7 @@ func ValidateClient(container clientFacade, opts ...Option) error {
 		if err != nil {
 			logger.Warnf("new etcd client (name{%s}, etcd addresses{%v}, timeout{%d}) = error{%v}",
 				options.name, options.endpoints, options.timeout, err)
-			return errors.Annotatef(err, "new client (address:%+v)", options.endpoints)
+			return errors.WithMessagef(err, "new client (address:%+v)", options.endpoints)
 		}
 		container.SetClient(newClient)
 	}
@@ -125,7 +127,7 @@ func newClient(name string, endpoints []string, timeout time.Duration, heartbeat
 		DialOptions: []grpc.DialOption{grpc.WithBlock()},
 	})
 	if err != nil {
-		return nil, errors.Annotate(err, "new raw client block connect to server")
+		return nil, errors.WithMessage(err, "new raw client block connect to server")
 	}
 
 	c := &Client{
@@ -143,7 +145,7 @@ func newClient(name string, endpoints []string, timeout time.Duration, heartbeat
 	}
 
 	if err := c.maintenanceStatus(); err != nil {
-		return nil, errors.Annotate(err, "client maintenance status")
+		return nil, errors.WithMessage(err, "client maintenance status")
 	}
 	return c, nil
 }
@@ -196,7 +198,7 @@ func (c *Client) maintenanceStatus() error {
 
 	s, err := concurrency.NewSession(c.rawClient, concurrency.WithTTL(c.heartbeat))
 	if err != nil {
-		return errors.Annotate(err, "new session with server")
+		return errors.WithMessage(err, "new session with server")
 	}
 
 	// must add wg before go maintenance status goroutine
@@ -222,6 +224,8 @@ func (c *Client) maintenanceStatusLoop(s *concurrency.Session) {
 			c.lock.Lock()
 			// when etcd server stopped, cancel ctx, stop all watchers
 			c.clean()
+		    // when connection lose, stop client, trigger reconnect to etcd
+		    c.stop()
 			c.lock.Unlock()
 			return
 		}
@@ -371,18 +375,18 @@ func (c *Client) keepAliveKV(k string, v string) error {
 
 	lease, err := c.rawClient.Grant(c.ctx, int64(time.Second.Seconds()))
 	if err != nil {
-		return errors.Annotatef(err, "grant lease")
+		return errors.WithMessage(err, "grant lease")
 	}
 
 	keepAlive, err := c.rawClient.KeepAlive(c.ctx, lease.ID)
 	if err != nil || keepAlive == nil {
 		c.rawClient.Revoke(c.ctx, lease.ID)
-		return errors.Annotate(err, "keep alive lease")
+		return errors.WithMessage(err, "keep alive lease")
 	}
 
 	_, err = c.rawClient.Put(c.ctx, k, v, clientv3.WithLease(lease.ID))
 	if err != nil {
-		return errors.Annotate(err, "put k/v with lease")
+		return errors.WithMessage(err, "put k/v with lease")
 	}
 	return nil
 }
@@ -411,7 +415,7 @@ func (c *Client) Create(k string, v string) error {
 
 	err := c.put(k, v)
 	if err != nil {
-		return errors.Annotatef(err, "put k/v (key: %s value %s)", k, v)
+		return errors.WithMessagef(err, "put k/v (key: %s value %s)", k, v)
 	}
 	return nil
 }
@@ -420,7 +424,7 @@ func (c *Client) Delete(k string) error {
 
 	err := c.delete(k)
 	if err != nil {
-		return errors.Annotatef(err, "delete k/v (key %s)", k)
+		return errors.WithMessagef(err, "delete k/v (key %s)", k)
 	}
 
 	return nil
@@ -432,7 +436,7 @@ func (c *Client) RegisterTemp(basePath string, node string) (string, error) {
 
 	err := c.keepAliveKV(completeKey, "")
 	if err != nil {
-		return "", errors.Annotatef(err, "keepalive kv (key %s)", completeKey)
+		return "", errors.WithMessagef(err, "keepalive kv (key %s)", completeKey)
 	}
 
 	return completeKey, nil
@@ -442,7 +446,7 @@ func (c *Client) GetChildrenKVList(k string) ([]string, []string, error) {
 
 	kList, vList, err := c.getChildren(k)
 	if err != nil {
-		return nil, nil, errors.Annotatef(err, "get key children (key %s)", k)
+		return nil, nil, errors.WithMessagef(err, "get key children (key %s)", k)
 	}
 	return kList, vList, nil
 }
@@ -451,7 +455,7 @@ func (c *Client) Get(k string) (string, error) {
 
 	v, err := c.get(k)
 	if err != nil {
-		return "", errors.Annotatef(err, "get key value (key %s)", k)
+		return "", errors.WithMessagef(err, "get key value (key %s)", k)
 	}
 
 	return v, nil
@@ -461,7 +465,7 @@ func (c *Client) Watch(k string) (clientv3.WatchChan, error) {
 
 	wc, err := c.watch(k)
 	if err != nil {
-		return nil, errors.Annotatef(err, "watch prefix (key %s)", k)
+		return nil, errors.WithMessagef(err, "watch prefix (key %s)", k)
 	}
 	return wc, nil
 }
@@ -470,7 +474,7 @@ func (c *Client) WatchWithPrefix(prefix string) (clientv3.WatchChan, error) {
 
 	wc, err := c.watchWithPrefix(prefix)
 	if err != nil {
-		return nil, errors.Annotatef(err, "watch prefix (key %s)", prefix)
+		return nil, errors.WithMessagef(err, "watch prefix (key %s)", prefix)
 	}
 	return wc, nil
 }
