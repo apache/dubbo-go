@@ -81,8 +81,13 @@ func generateUrl(instance model.Instance) *common.URL {
 	for k, v := range instance.Metadata {
 		urlMap.Set(k, v)
 	}
-	return common.NewURLWithOptions(common.WithIp(instance.Ip), common.WithPort(strconv.Itoa(int(instance.Port))),
-		common.WithProtocol(protocol), common.WithParams(urlMap), common.WithPath(path))
+	return common.NewURLWithOptions(
+		common.WithIp(instance.Ip),
+		common.WithPort(strconv.Itoa(int(instance.Port))),
+		common.WithProtocol(protocol),
+		common.WithParams(urlMap),
+		common.WithPath(path),
+	)
 }
 
 func (nl *nacosListener) Callback(services []model.SubscribeService, err error) {
