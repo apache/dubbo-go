@@ -30,6 +30,7 @@ const (
 	METHODS_KEY   = "methods"
 	TIMEOUT_KEY   = "timeout"
 	BEAN_NAME_KEY = "bean.name"
+	GENERIC_KEY   = "generic"
 )
 
 const (
@@ -45,6 +46,8 @@ const (
 	WEIGHT_KEY           = "weight"
 	WARMUP_KEY           = "warmup"
 	RETRIES_KEY          = "retries"
+	BEAN_NAME            = "bean.name"
+	FAIL_BACK_TASKS_KEY  = "failbacktasks"
 )
 
 const (

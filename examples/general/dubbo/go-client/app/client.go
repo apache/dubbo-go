@@ -25,16 +25,15 @@ import (
 	"syscall"
 	"time"
 )
-
 import (
-	"github.com/apache/dubbo-go-hessian2"
+	hessian "github.com/apache/dubbo-go-hessian2"
 )
 
 import (
 	"github.com/apache/dubbo-go/common/logger"
 	_ "github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/config"
-	_ "github.com/apache/dubbo-go/protocol/dubbo"
+	"github.com/apache/dubbo-go/protocol/dubbo"
 	_ "github.com/apache/dubbo-go/registry/protocol"
 
 	_ "github.com/apache/dubbo-go/filter/impl"
@@ -65,7 +64,8 @@ func main() {
 	test1()
 	println("\n\ntest2")
 	test2()
-
+	println("\n\ntest3")
+	test3()
 	initSignal()
 }
 
@@ -287,4 +287,25 @@ func test2() {
 		panic("err is nil")
 	}
 	println("error: %v", err)
+}
+func test3() {
+	var appName = "UserProviderGer"
+	var referenceConfig = config.ReferenceConfig{
+		InterfaceName: "com.ikurento.user.UserProvider",
+		Cluster:       "failover",
+		Registry:      "hangzhouzk",
+		Protocol:      dubbo.DUBBO,
+		Generic:       true,
+	}
+	referenceConfig.GenericLoad(appName) //appName is the unique identification of RPCService
+
+	time.Sleep(3 * time.Second)
+	println("\n\n\nstart to generic invoke")
+	resp, err := referenceConfig.GetRPCService().(*config.GenericService).Invoke([]interface{}{"GetUser", []string{"java.lang.String"}, []interface{}{"A003"}})
+	if err != nil {
+		panic(err)
+	}
+	println("res: %v\n", resp)
+	println("succ!")
+
 }
