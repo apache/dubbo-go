@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-import(
+import (
 	"github.com/apache/dubbo-go/common"
 )
 

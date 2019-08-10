@@ -224,8 +224,8 @@ func (c *Client) maintenanceStatusLoop(s *concurrency.Session) {
 			c.lock.Lock()
 			// when etcd server stopped, cancel ctx, stop all watchers
 			c.clean()
-		    // when connection lose, stop client, trigger reconnect to etcd
-		    c.stop()
+			// when connection lose, stop client, trigger reconnect to etcd
+			c.stop()
 			c.lock.Unlock()
 			return
 		}

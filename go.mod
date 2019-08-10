@@ -1,7 +1,7 @@
 module github.com/apache/dubbo-go
 
 require (
-	github.com/Workiva/go-datastructures v1.0.50 // indirect
+	github.com/Workiva/go-datastructures v1.0.50
 	github.com/apache/dubbo-go-hessian2 v1.2.5-0.20190731020727-1697039810c8
 	github.com/coreos/bbolt v1.3.3 // indirect
 	github.com/coreos/etcd v3.3.13+incompatible
@@ -12,7 +12,8 @@ require (
 	github.com/dubbogo/getty v1.2.2
 	github.com/dubbogo/gost v1.1.1
 	github.com/gogo/protobuf v1.2.1 // indirect
-	github.com/golang/mock v1.3.1 // indirect
+	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6 // indirect
+	github.com/golang/mock v1.3.1
 	github.com/google/btree v1.0.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
@@ -28,6 +29,7 @@ require (
 	github.com/stretchr/testify v1.3.0
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5 // indirect
 	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
+	go.etcd.io/bbolt v1.3.3 // indirect
 	go.etcd.io/etcd v3.3.13+incompatible
 	go.uber.org/atomic v1.4.0
 	go.uber.org/zap v1.10.0
