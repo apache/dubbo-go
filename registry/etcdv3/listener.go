@@ -6,7 +6,7 @@ import (
 )
 
 import (
-	"github.com/pkg/errors"
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -32,7 +32,7 @@ func (l *dataListener) AddInterestedURL(url *common.URL) {
 func (l *dataListener) DataChange(eventType remoting.Event) bool {
 
 	url := eventType.Path[strings.Index(eventType.Path, "/providers/")+len("/providers/"):]
-	serviceURL, err := common.NewURL(context.TODO(), url)
+	serviceURL, err := common.NewURL(context.Background(), url)
 	if err != nil {
 		logger.Warnf("Listen NewURL(r{%s}) = error{%v}", eventType.Path, err)
 		return false
@@ -67,10 +67,10 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 		select {
 		case <-l.registry.done:
 			logger.Warnf("listener's etcd client connection is broken, so etcd event listener exit now.")
-			return nil, errors.New("listener stopped")
+			return nil, perrors.New("listener stopped")
 
 		case e := <-l.events:
-			logger.Warnf("got etcd event %#s", e)
+			logger.Infof("got etcd event %#s", e)
 			if e.ConfigType == remoting.EventTypeDel {
 				select {
 				case <-l.registry.done:

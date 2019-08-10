@@ -7,7 +7,7 @@ import (
 
 import (
 	"github.com/dubbogo/getty"
-	"github.com/pkg/errors"
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -50,22 +50,23 @@ LOOP:
 			r.SetClient(nil)
 			r.ClientLock().Unlock()
 
-			// 接etcd，直至成功
+			// try to connect to etcd,
 			failTimes = 0
 			for {
 				select {
 				case <-r.GetDone():
 					logger.Warnf("(ETCDV3ProviderRegistry)reconnectETCDRegistry goroutine exit now...")
 					break LOOP
-				case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)): // 防止疯狂重连etcd
+				case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)): // avoid connect frequent
 				}
-				err = ValidateClient(r,
+				err = ValidateClient(
+					r,
 					WithName(clientName),
 					WithEndpoints(endpoint),
 					WithTimeout(timeout),
 				)
 				logger.Infof("ETCDV3ProviderRegistry.validateETCDV3Client(etcd Addr{%s}) = error{%#v}",
-					endpoint, errors.WithStack(err))
+					endpoint, perrors.WithStack(err))
 				if err == nil {
 					if r.RestartCallBack() {
 						break
