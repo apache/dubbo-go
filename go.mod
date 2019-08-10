@@ -1,11 +1,14 @@
 module github.com/apache/dubbo-go
 
 require (
+	github.com/Workiva/go-datastructures v1.0.50
 	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190802083043-4cd0c391755e // indirect
 	github.com/apache/dubbo-go-hessian2 v1.2.5-0.20190731020727-1697039810c8
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/buger/jsonparser v0.0.0-20181115193947-bf1c66bbce23 // indirect
 	github.com/dubbogo/getty v1.2.2
 	github.com/dubbogo/gost v1.1.1
+	github.com/golang/mock v1.3.1
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
 	github.com/go-errors/errors v1.0.1 // indirect
 	github.com/golang/mock v1.3.1 // indirect
