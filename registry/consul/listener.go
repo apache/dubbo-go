@@ -93,7 +93,7 @@ func newConsulListener(registryUrl common.URL, consumerUrl common.URL) (*consulL
 		registryUrl: registryUrl,
 		consumerUrl: consumerUrl,
 		plan:        plan,
-		urls:        make([]common.URL, 8),
+		urls:        make([]common.URL, 0, 8),
 		eventCh:     make(chan *registry.ServiceEvent),
 		errCh:       make(chan error),
 		done:        make(chan struct{}),
@@ -154,8 +154,8 @@ func (l *consulListener) handler(idx uint64, raw interface{}) {
 		l.errCh <- err
 		return
 	}
-	newUrls := make([]common.URL, 8)
-	events := make([]*registry.ServiceEvent, 8)
+	newUrls := make([]common.URL, 0, 8)
+	events := make([]*registry.ServiceEvent, 0, 8)
 
 	for _, service = range services {
 		url, err = retrieveURL(service)

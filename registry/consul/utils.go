@@ -61,7 +61,7 @@ func buildService(url common.URL) (*consul.AgentServiceRegistration, error) {
 	tcp := fmt.Sprintf("%s:%d", url.Ip, port)
 
 	// tags
-	tags := make([]string, 8)
+	tags := make([]string, 0, 8)
 	for k := range url.Params {
 		tags = append(tags, k+"="+url.Params.Get(k))
 	}
