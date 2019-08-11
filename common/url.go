@@ -243,8 +243,8 @@ func (c URL) Key() string {
 }
 
 //todo
-func (c URL) GetBackupUrls() []URL {
-	var urls []URL
+func (c *URL) GetBackupUrls() []*URL {
+	var urls []*URL
 	var host string
 	urls = append(urls, c)
 	backups := strings.Split(c.GetParam(constant.BACKUP_KEY, ""), "")
@@ -255,10 +255,18 @@ func (c URL) GetBackupUrls() []URL {
 			host = address[:index]
 			port = address[index+1:]
 		} else {
-			host = string(append([]byte(host), []byte(port)...))
+			host = address
 		}
 		//todo
-		newURL, _ := NewURL(c.ctx, address)
+		newURL := NewURLWithOptions(
+			WithProtocol(c.Protocol),
+			WithPath(c.Path),
+			WithIp(host),
+			WithUsername(c.Username),
+			WithPassword(c.Password),
+			WithPort(port),
+			WithParams(c.Params))
+
 		urls = append(urls, newURL)
 	}
 	return urls
