@@ -24,8 +24,9 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go-hessian2"
 	"github.com/dubbogo/getty"
-	"github.com/dubbogo/hessian2"
+	"github.com/dubbogo/gost/sync"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
 	"gopkg.in/yaml.v2"
@@ -45,7 +46,8 @@ var (
 	errClientClosed      = perrors.New("client closed")
 	errClientReadTimeout = perrors.New("client read timeout")
 
-	clientConf *ClientConfig
+	clientConf   *ClientConfig
+	clientGrpool *gxsync.TaskPool
 )
 
 func init() {
@@ -78,6 +80,7 @@ func init() {
 	}
 
 	clientConf = conf
+	setClientGrpool()
 }
 
 func SetClientConf(c ClientConfig) {
@@ -87,10 +90,18 @@ func SetClientConf(c ClientConfig) {
 		logger.Warnf("[ClientConfig CheckValidity] error: %v", err)
 		return
 	}
+	setClientGrpool()
 }
 
 func GetClientConf() ClientConfig {
 	return *clientConf
+}
+
+func setClientGrpool() {
+	if clientConf.GrPoolSize > 1 {
+		clientGrpool = gxsync.NewTaskPool(gxsync.WithTaskPoolTaskPoolSize(clientConf.GrPoolSize), gxsync.WithTaskPoolTaskQueueLength(clientConf.QueueLen),
+			gxsync.WithTaskPoolTaskQueueNumber(clientConf.QueueNumber))
+	}
 }
 
 type Options struct {
