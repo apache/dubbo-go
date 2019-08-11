@@ -79,7 +79,7 @@ type consulListener struct {
 }
 
 func newConsulListener(registryUrl common.URL, consumerUrl common.URL) (*consulListener, error) {
-	params := make(map[string]interface{})
+	params := make(map[string]interface{}, 8)
 	params["type"] = "service"
 	params["service"] = consumerUrl.Service()
 	params["tag"] = "dubbo"
@@ -93,10 +93,10 @@ func newConsulListener(registryUrl common.URL, consumerUrl common.URL) (*consulL
 		registryUrl: registryUrl,
 		consumerUrl: consumerUrl,
 		plan:        plan,
-		urls:        make([]common.URL, 0),
-		eventCh:     make(chan *registry.ServiceEvent, 1),
-		errCh:       make(chan error, 1),
-		done:        make(chan struct{}, 1),
+		urls:        make([]common.URL, 8),
+		eventCh:     make(chan *registry.ServiceEvent),
+		errCh:       make(chan error),
+		done:        make(chan struct{}),
 	}
 
 	// Set handler to consul watcher, and
@@ -118,12 +118,12 @@ func newConsulListener(registryUrl common.URL, consumerUrl common.URL) (*consulL
 // run will close with panic, so use recover to cover
 // this case.
 func (l *consulListener) run() {
-	defer l.wg.Done()
 	defer func() {
 		p := recover()
 		if p != nil {
 			logger.Warnf("consul listener finish with panic %v", p)
 		}
+		l.wg.Done()
 	}()
 
 	for {
@@ -154,8 +154,8 @@ func (l *consulListener) handler(idx uint64, raw interface{}) {
 		l.errCh <- err
 		return
 	}
-	newUrls := make([]common.URL, 0)
-	events := make([]*registry.ServiceEvent, 0)
+	newUrls := make([]common.URL, 8)
+	events := make([]*registry.ServiceEvent, 8)
 
 	for _, service = range services {
 		url, err = retrieveURL(service)

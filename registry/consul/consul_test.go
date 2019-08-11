@@ -100,7 +100,7 @@ func newServer(host string, port int) *Server {
 
 	server := &Server{
 		listener: listener,
-		done:     make(chan struct{}, 1),
+		done:     make(chan struct{}),
 	}
 
 	server.wg.Add(1)
