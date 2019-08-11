@@ -63,18 +63,24 @@ const (
 )
 
 const (
-	APPLICATION_KEY  = "application"
-	ORGANIZATION_KEY = "organization"
-	NAME_KEY         = "name"
-	MODULE_KEY       = "module"
-	APP_VERSION_KEY  = "app.version"
-	OWNER_KEY        = "owner"
-	ENVIRONMENT_KEY  = "environment"
-	METHOD_KEY       = "method"
-	METHOD_KEYS      = "methods"
-	RULE_KEY         = "rule"
-	RUNTIME_KEY      = "runtime"
-	BACKUP_KEY       = "backup"
+	APPLICATION_KEY    = "application"
+	ORGANIZATION_KEY   = "organization"
+	NAME_KEY           = "name"
+	MODULE_KEY         = "module"
+	APP_VERSION_KEY    = "app.version"
+	OWNER_KEY          = "owner"
+	ENVIRONMENT_KEY    = "environment"
+	METHOD_KEY         = "method"
+	METHOD_KEYS        = "methods"
+	RULE_KEY           = "rule"
+	RUNTIME_KEY        = "runtime"
+	BACKUP_KEY         = "backup"
+	ROUTERS_CATEGORY   = "routers"
+	ROUTE_PROTOCOL     = "route"
+	CATEGORY_KEY       = "category"
+	PROVIDERS_CATEGORY = "providers"
+	EMPTY_PROTOCOL     = "empty"
+	ROUTER_KEY         = "router"
 )
 
 const (
