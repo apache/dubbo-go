@@ -25,10 +25,10 @@ import (
 
 type forkingCluster struct{}
 
-const fork = "fork"
+const forking = "forking"
 
 func init() {
-	extension.SetCluster(fork, NewForkingCluster)
+	extension.SetCluster(forking, NewForkingCluster)
 }
 
 func NewForkingCluster() cluster.Cluster {
