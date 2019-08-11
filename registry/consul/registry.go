@@ -60,7 +60,7 @@ func newConsulRegistry(url *common.URL) (registry.Registry, error) {
 	r := &consulRegistry{
 		URL:    url,
 		client: client,
-		done:   make(chan struct{}, 1),
+		done:   make(chan struct{}),
 	}
 
 	return r, nil
