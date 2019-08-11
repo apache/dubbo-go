@@ -20,6 +20,7 @@ package directory
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 )
@@ -30,6 +31,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/cluster/directory"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
@@ -101,22 +103,23 @@ func (dir *registryDirectory) Subscribe(url common.URL) {
 				logger.Warnf("event listener game over.")
 				return
 			}
+
 			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
 			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
 			continue
 		}
 
 		for {
-			if serviceEvent, err := listener.Next(); err != nil {
+			serviceEvent, err := listener.Next()
+			if err != nil {
 				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
 				listener.Close()
 				time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
 				return
-			} else {
-				logger.Infof("update begin, service event: %v", serviceEvent.String())
-				go dir.update(serviceEvent)
 			}
 
+			logger.Infof("update begin, service event: %v", serviceEvent.String())
+			go dir.update(serviceEvent)
 		}
 
 	}
@@ -132,9 +135,22 @@ func (dir *registryDirectory) update(res *registry.ServiceEvent) {
 
 	logger.Debugf("update service name: %s!", res.Service)
 	//todo
-	_ = dir.GetUrl()
+	url := dir.GetUrl()
+	var urls []*common.URL
 
-	if len(dir.Routers()) > 0 {
+	for _, v := range url.GetBackupUrls() {
+		p := v.Protocol
+
+		category := v.GetParam(constant.CATEGORY_KEY, constant.PROVIDERS_CATEGORY)
+		if strings.EqualFold(category, constant.ROUTERS_CATEGORY) || strings.EqualFold(constant.ROUTE_PROTOCOL, p) {
+			urls = append(urls, v)
+		}
+	}
+	if len(urls) > 0 {
+		routers := toRouters(urls)
+		if len(routers) > 0 {
+			dir.SetRouters(routers)
+		}
 	}
 	dir.refreshInvokers(res)
 }
@@ -222,8 +238,8 @@ func (dir *registryDirectory) List(invocation protocol.Invocation) ([]protocol.I
 	if dir.Destroyed() {
 		return nil, fmt.Errorf("directory already destroyed .url: %s", dir.GetUrl().String())
 	}
+
 	if dir.forbidden.Load() {
-		//todo error
 		localIP, _ := utils.GetLocalIP()
 		return nil, fmt.Errorf("no provider available from registry %s for service %s on consumer %s use dubbo version %s, please check status of providers(disabled, not registered or in blacklist)", dir.GetUrl().Location, dir.ConsumerUrl.ServiceKey(), localIP, version.Version)
 	}
@@ -238,6 +254,7 @@ func (dir *registryDirectory) List(invocation protocol.Invocation) ([]protocol.I
 			}
 		}
 	}
+
 	return invokers, nil
 
 }
@@ -263,4 +280,35 @@ func (dir *registryDirectory) Destroy() {
 		}
 		dir.cacheInvokers = []protocol.Invoker{}
 	})
+}
+
+func toRouters(urls []*common.URL) []cluster.Router {
+	var routers = []cluster.Router{}
+	if len(urls) == 0 {
+		return routers
+	}
+	for _, url := range urls {
+		if strings.EqualFold(constant.EMPTY_PROTOCOL, url.Protocol) {
+			continue
+		}
+		routerType := url.GetParam(constant.ROUTER_KEY, "")
+		if len(routerType) > 0 {
+			url = common.NewURLWithOptions(
+				common.WithProtocol(routerType),
+				common.WithPath(url.Path),
+				common.WithIp(url.Ip),
+				common.WithUsername(url.Username),
+				common.WithPassword(url.Password),
+				common.WithPort(url.Port),
+				common.WithParams(url.Params))
+			routerFactory := extension.GetRouterFactory(url.Protocol)
+			router, err := routerFactory.Router(url)
+			if err != nil {
+				logger.Errorf("convert router url to router error, url:%s", url.String())
+				continue
+			}
+			routers = append(routers, router)
+		}
+	}
+	return routers
 }
