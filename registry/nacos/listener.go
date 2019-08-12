@@ -24,21 +24,21 @@ import (
 )
 
 type nacosListener struct {
-	namingClient    naming_client.INamingClient
-	listenUrl       common.URL
-	events          chan *remoting.ConfigChangeEvent
-	hostMapInstance map[string]model.Instance
-	cacheLock       sync.Mutex
-	done            chan struct{}
-	subscribeParam  *vo.SubscribeParam
+	namingClient   naming_client.INamingClient
+	listenUrl      common.URL
+	events         chan *remoting.ConfigChangeEvent
+	instanceMap    map[string]model.Instance
+	cacheLock      sync.Mutex
+	done           chan struct{}
+	subscribeParam *vo.SubscribeParam
 }
 
 func NewNacosListener(url common.URL, namingClient naming_client.INamingClient) (*nacosListener, error) {
 	listener := &nacosListener{
 		namingClient: namingClient,
 		listenUrl:    url, events: make(chan *remoting.ConfigChangeEvent, 32),
-		hostMapInstance: map[string]model.Instance{},
-		done:            make(chan struct{}),
+		instanceMap: map[string]model.Instance{},
+		done:        make(chan struct{}),
 	}
 	err := listener.startListen()
 	return listener, err
@@ -111,7 +111,7 @@ func (nl *nacosListener) Callback(services []model.SubscribeService, err error) 
 		host := services[i].Ip + ":" + strconv.Itoa(int(services[i].Port))
 		instance := generateInstance(services[i])
 		newInstanceMap[host] = instance
-		if old, ok := nl.hostMapInstance[host]; !ok {
+		if old, ok := nl.instanceMap[host]; !ok {
 			//instance is not exsit in cache,add it to cache
 			addInstances = append(addInstances, instance)
 		} else {
@@ -122,14 +122,14 @@ func (nl *nacosListener) Callback(services []model.SubscribeService, err error) 
 		}
 	}
 
-	for host, inst := range nl.hostMapInstance {
+	for host, inst := range nl.instanceMap {
 		if _, ok := newInstanceMap[host]; !ok {
 			//cache  instance is not exsit in  new instance list, remove it from  cache
 			delInstances = append(delInstances, inst)
 		}
 	}
 
-	nl.hostMapInstance = newInstanceMap
+	nl.instanceMap = newInstanceMap
 
 	for i := range addInstances {
 		newUrl := generateUrl(addInstances[i])
