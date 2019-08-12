@@ -23,10 +23,11 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go-hessian2"
+	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/dubbogo/getty"
 	perrors "github.com/pkg/errors"
 )
+
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
