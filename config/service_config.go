@@ -163,6 +163,7 @@ func (srvconfig *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.RETRIES_KEY, strconv.FormatInt(srvconfig.Retries, 10))
 	urlMap.Set(constant.GROUP_KEY, srvconfig.Group)
 	urlMap.Set(constant.VERSION_KEY, srvconfig.Version)
+	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
 	//application info
 	urlMap.Set(constant.APPLICATION_KEY, providerConfig.ApplicationConfig.Name)
 	urlMap.Set(constant.ORGANIZATION_KEY, providerConfig.ApplicationConfig.Organization)
