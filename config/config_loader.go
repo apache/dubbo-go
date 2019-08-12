@@ -66,6 +66,10 @@ func Load() {
 			logger.Errorf("[consumer config center refresh] %#v", err)
 		}
 		for key, ref := range consumerConfig.References {
+			if ref.Generic {
+				genericService := NewGenericService(key)
+				SetConsumerService(genericService)
+			}
 			rpcService := GetConsumerService(key)
 
 			if rpcService == nil {

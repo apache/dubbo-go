@@ -17,11 +17,11 @@
 package impl
 
 import (
-	"github.com/afex/hystrix-go/hystrix"
 	"regexp"
 	"testing"
 )
 import (
+	"github.com/afex/hystrix-go/hystrix"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
@@ -48,28 +48,28 @@ func mockInitHystrixConfig() {
 		make(map[string]ServiceHystrixConfig),
 	}
 	confConsumer.Configs["Default"] = &CommandConfigWithError{
-		1000,
-		600,
-		5,
-		5000,
-		5,
-		nil,
+		Timeout:                1000,
+		MaxConcurrentRequests:  600,
+		RequestVolumeThreshold: 5,
+		SleepWindow:            5000,
+		ErrorPercentThreshold:  5,
+		Error:                  nil,
 	}
 	confConsumer.Configs["userp"] = &CommandConfigWithError{
-		2000,
-		64,
-		15,
-		4000,
-		45,
-		nil,
+		Timeout:                2000,
+		MaxConcurrentRequests:  64,
+		RequestVolumeThreshold: 15,
+		SleepWindow:            4000,
+		ErrorPercentThreshold:  45,
+		Error:                  nil,
 	}
 	confConsumer.Configs["userp_m"] = &CommandConfigWithError{
-		1200,
-		64,
-		5,
-		6000,
-		60,
-		[]string{
+		Timeout:                1200,
+		MaxConcurrentRequests:  64,
+		RequestVolumeThreshold: 5,
+		SleepWindow:            6000,
+		ErrorPercentThreshold:  60,
+		Error: []string{
 			"exception",
 		},
 	}
