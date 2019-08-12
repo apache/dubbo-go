@@ -41,11 +41,11 @@ const (
 )
 
 var (
-	isConsumerConfigLoaded = false
-	isProviderConfigLoaded = false
-	confConsumer           = &HystrixFilterConfig{}
-	confProvider           = &HystrixFilterConfig{}
-	configLoadMutex        = sync.RWMutex{}
+	confConsumer       = &HystrixFilterConfig{}
+	confProvider       = &HystrixFilterConfig{}
+	configLoadMutex    = sync.RWMutex{}
+	consumerConfigOnce sync.Once
+	providerConfigOnce sync.Once
 )
 
 //The filter in the server end of dubbo-go can't get the invoke result for now,
@@ -149,29 +149,24 @@ func (hf *HystrixFilter) OnResponse(result protocol.Result, invoker protocol.Inv
 }
 func GetHystrixFilterConsumer() filter.Filter {
 	//When first called, load the config in
-	if !isConsumerConfigLoaded {
+	consumerConfigOnce.Do(func() {
 		if err := initHystrixConfigConsumer(); err != nil {
 			logger.Warnf("[Hystrix Filter]Config load failed for consumer, error is: %v , will use default", err)
 		}
-		isConsumerConfigLoaded = true
-	}
-
+	})
 	return &HystrixFilter{COrP: true}
 }
 
 func GetHystrixFilterProvider() filter.Filter {
-	if !isProviderConfigLoaded {
+	providerConfigOnce.Do(func() {
 		if err := initHystrixConfigProvider(); err != nil {
 			logger.Warnf("[Hystrix Filter]Config load failed for provider, error is: %v , will use default", err)
 		}
-		isProviderConfigLoaded = true
-	}
-
+	})
 	return &HystrixFilter{COrP: false}
 }
 
 func getConfig(service string, method string, cOrP bool) CommandConfigWithError {
-
 	//Find method level config
 	var conf *HystrixFilterConfig
 	if cOrP {
