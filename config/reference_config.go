@@ -158,6 +158,7 @@ func (refconfig *ReferenceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.GROUP_KEY, refconfig.Group)
 	urlMap.Set(constant.VERSION_KEY, refconfig.Version)
 	urlMap.Set(constant.GENERIC_KEY, strconv.FormatBool(refconfig.Generic))
+	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
 	//getty invoke async or sync
 	urlMap.Set(constant.ASYNC_KEY, strconv.FormatBool(refconfig.async))
 
