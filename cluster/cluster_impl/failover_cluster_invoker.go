@@ -24,7 +24,6 @@ import (
 import (
 	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/version"
@@ -48,17 +47,11 @@ func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) pr
 	if err != nil {
 		return &protocol.RPCResult{Err: err}
 	}
-	url := invokers[0].GetUrl()
+
+	loadbalance := getLoadBalance(invokers[0], invocation)
 
 	methodName := invocation.MethodName()
-	//Get the service loadbalance config
-	lb := url.GetParam(constant.LOADBALANCE_KEY, constant.DEFAULT_LOADBALANCE)
-
-	//Get the service method loadbalance config if have
-	if v := url.GetMethodParam(methodName, constant.LOADBALANCE_KEY, ""); v != "" {
-		lb = v
-	}
-	loadbalance := extension.GetLoadbalance(lb)
+	url := invokers[0].GetUrl()
 
 	//get reties
 	retries := url.GetParamInt(constant.RETRIES_KEY, constant.DEFAULT_RETRIES)

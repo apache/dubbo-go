@@ -22,6 +22,7 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
+//go:generate mockgen -source invoker.go -destination mock/mock_invoker.go  -self_package github.com/apache/dubbo-go/protocol/mock --package mock  Invoker
 // Extension - Invoker
 type Invoker interface {
 	common.Node
