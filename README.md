@@ -29,7 +29,7 @@ Finished List:
 - Role: Consumer, Provider
 - Transport: HTTP, TCP
 - Codec: JsonRPC v2, Hessian v2
-- Registry: ZooKeeper/etcd/nacos
+- Registry: ZooKeeper/[etcd](https://github.com/apache/dubbo-go/pull/148)/[nacos](https://github.com/apache/dubbo-go/pull/151)
 - Configure Center: Zookeeper
 - Cluster Strategy: Failover/[Failfast](https://github.com/apache/dubbo-go/pull/140)/[Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136)/Available/Broadcast
 - Load Balance: Random/[RoundRobin](https://github.com/apache/dubbo-go/pull/66)/[LeastActive](https://github.com/apache/dubbo-go/pull/65)
