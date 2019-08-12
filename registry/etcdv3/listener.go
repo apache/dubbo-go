@@ -70,7 +70,7 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 			return nil, perrors.New("listener stopped")
 
 		case e := <-l.events:
-			logger.Infof("got etcd event %#s", e)
+			logger.Infof("got etcd event %#v", e)
 			if e.ConfigType == remoting.EventTypeDel {
 				select {
 				case <-l.registry.done:
