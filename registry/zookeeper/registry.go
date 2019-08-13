@@ -230,10 +230,11 @@ func (r *zkRegistry) Register(conf common.URL) error {
 
 	case common.PROVIDER:
 
-		// 检验服务是否已经注册过
+		// Check if the service has been registered
 		r.cltLock.Lock()
-		// 注意此处与consumerZookeeperRegistry的差异，consumer用的是conf.Path，
-		// 因为consumer要提供watch功能给selector使用, provider允许注册同一个service的多个group or version
+		// Note the difference between consumer and consumerZookeeperRegistry (consumer use conf.Path).
+		// Because the consumer wants to provide monitoring functions for the selector,
+		// the provider allows multiple groups or versions of the same service to be registered.
 		_, ok = r.services[conf.Key()]
 		r.cltLock.Unlock()
 		if ok {
@@ -298,7 +299,8 @@ func (r *zkRegistry) register(c common.URL) error {
 		}
 		params.Add("anyhost", "true")
 
-		// dubbo java consumer来启动找provider url时，因为category不匹配，会找不到provider，导致consumer启动不了,所以使用consumers&providers
+		// Dubbo java consumer to start looking for the provider url,because the category does not match,
+		// the provider will not find, causing the consumer can not start, so we use consumers.
 		// DubboRole               = [...]string{"consumer", "", "", "provider"}
 		// params.Add("category", (RoleType(PROVIDER)).Role())
 		params.Add("category", (common.RoleType(common.PROVIDER)).String())
@@ -320,7 +322,7 @@ func (r *zkRegistry) register(c common.URL) error {
 		rawURL = fmt.Sprintf("%s://%s%s?%s", c.Protocol, host, c.Path, params.Encode())
 		encodedURL = url.QueryEscape(rawURL)
 
-		// 把自己注册service providers
+		// Print your own registration service providers.
 		dubboPath = fmt.Sprintf("/dubbo/%s/%s", c.Service(), (common.RoleType(common.PROVIDER)).String())
 		logger.Debugf("provider path:%s, url:%s", dubboPath, rawURL)
 
@@ -416,7 +418,7 @@ func (r *zkRegistry) getListener(conf common.URL) (*RegistryConfigurationListene
 		r.listenerLock.Unlock()
 	}
 
-	//注册到dataconfig的interested
+	//Interested register to dataconfig.
 	r.dataListener.AddInterestedURL(&conf)
 
 	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/providers", conf.Service()), r.dataListener)
@@ -428,7 +430,7 @@ func (r *zkRegistry) closeRegisters() {
 	r.cltLock.Lock()
 	defer r.cltLock.Unlock()
 	logger.Infof("begin to close provider zk client")
-	// 先关闭旧client，以关闭tmp node
+	// Close the old client first to close the tmp node.
 	r.client.Close()
 	r.client = nil
 	r.services = nil

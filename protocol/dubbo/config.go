@@ -34,7 +34,6 @@ type (
 		keepAlivePeriod  time.Duration
 		TcpRBufSize      int    `default:"262144" yaml:"tcp_r_buf_size" json:"tcp_r_buf_size,omitempty"`
 		TcpWBufSize      int    `default:"65536" yaml:"tcp_w_buf_size" json:"tcp_w_buf_size,omitempty"`
-		PkgRQSize        int    `default:"1024" yaml:"pkg_rq_size" json:"pkg_rq_size,omitempty"`
 		PkgWQSize        int    `default:"1024" yaml:"pkg_wq_size" json:"pkg_wq_size,omitempty"`
 		TcpReadTimeout   string `default:"1s" yaml:"tcp_read_timeout" json:"tcp_read_timeout,omitempty"`
 		tcpReadTimeout   time.Duration
@@ -48,20 +47,15 @@ type (
 
 	// Config holds supported types by the multiconfig package
 	ServerConfig struct {
-		// local address
-		//AppName     string   `default:"rpc-server" yaml:"app_name" json:"app_name,omitempty"`
-		//Host        string   `default:"127.0.0.1" yaml:"host" json:"host,omitempty"`
-		//Ports       []string `yaml:"ports" json:"ports,omitempty"` // `default:["10000"]`
-		//ProfilePort int      `default:"10086" yaml:"profile_port" json:"profile_port,omitempty"`
-
 		// session
 		SessionTimeout string `default:"60s" yaml:"session_timeout" json:"session_timeout,omitempty"`
 		sessionTimeout time.Duration
 		SessionNumber  int `default:"1000" yaml:"session_number" json:"session_number,omitempty"`
 
-		// app
-		FailFastTimeout string `default:"5s" yaml:"fail_fast_timeout" json:"fail_fast_timeout,omitempty"`
-		failFastTimeout time.Duration
+		// grpool
+		GrPoolSize  int `default:"0" yaml:"gr_pool_size" json:"gr_pool_size,omitempty"`
+		QueueLen    int `default:"0" yaml:"queue_len" json:"queue_len,omitempty"`
+		QueueNumber int `default:"0" yaml:"queue_number" json:"queue_number,omitempty"`
 
 		// session tcp parameters
 		GettySessionParam GettySessionParam `required:"true" yaml:"getty_session_param" json:"getty_session_param,omitempty"`
@@ -69,11 +63,6 @@ type (
 
 	// Config holds supported types by the multiconfig package
 	ClientConfig struct {
-		// local address
-		//AppName     string `default:"rpc-client" yaml:"app_name" json:"app_name,omitempty"`
-		//Host        string `default:"127.0.0.1" yaml:"host" json:"host,omitempty"`
-		//ProfilePort int    `default:"10086" yaml:"profile_port" json:"profile_port,omitempty"`
-
 		ReconnectInterval int `default:"0" yaml:"reconnect_interval" json:"reconnect_interval,omitempty"`
 
 		// session pool
@@ -87,13 +76,14 @@ type (
 		SessionTimeout string `default:"60s" yaml:"session_timeout" json:"session_timeout,omitempty"`
 		sessionTimeout time.Duration
 
-		// app
-		FailFastTimeout string `default:"5s" yaml:"fail_fast_timeout" json:"fail_fast_timeout,omitempty"`
-		failFastTimeout time.Duration
-
 		// Connection Pool
 		PoolSize int `default:"2" yaml:"pool_size" json:"pool_size,omitempty"`
 		PoolTTL  int `default:"180" yaml:"pool_ttl" json:"pool_ttl,omitempty"`
+
+		// grpool
+		GrPoolSize  int `default:"0" yaml:"gr_pool_size" json:"gr_pool_size,omitempty"`
+		QueueLen    int `default:"0" yaml:"queue_len" json:"queue_len,omitempty"`
+		QueueNumber int `default:"0" yaml:"queue_number" json:"queue_number,omitempty"`
 
 		// session tcp parameters
 		GettySessionParam GettySessionParam `required:"true" yaml:"getty_session_param" json:"getty_session_param,omitempty"`
@@ -125,16 +115,14 @@ func (c *GettySessionParam) CheckValidity() error {
 func (c *ClientConfig) CheckValidity() error {
 	var err error
 
+	c.ReconnectInterval = c.ReconnectInterval * 1e6
+
 	if c.heartbeatPeriod, err = time.ParseDuration(c.HeartbeatPeriod); err != nil {
 		return perrors.WithMessagef(err, "time.ParseDuration(HeartbeatPeroid{%#v})", c.HeartbeatPeriod)
 	}
 
 	if c.sessionTimeout, err = time.ParseDuration(c.SessionTimeout); err != nil {
 		return perrors.WithMessagef(err, "time.ParseDuration(SessionTimeout{%#v})", c.SessionTimeout)
-	}
-
-	if c.failFastTimeout, err = time.ParseDuration(c.FailFastTimeout); err != nil {
-		return perrors.WithMessagef(err, "time.ParseDuration(FailFastTimeout{%#v})", c.FailFastTimeout)
 	}
 
 	return perrors.WithStack(c.GettySessionParam.CheckValidity())
@@ -145,10 +133,6 @@ func (c *ServerConfig) CheckValidity() error {
 
 	if c.sessionTimeout, err = time.ParseDuration(c.SessionTimeout); err != nil {
 		return perrors.WithMessagef(err, "time.ParseDuration(SessionTimeout{%#v})", c.SessionTimeout)
-	}
-
-	if c.failFastTimeout, err = time.ParseDuration(c.FailFastTimeout); err != nil {
-		return perrors.WithMessagef(err, "time.ParseDuration(FailFastTimeout{%#v})", c.FailFastTimeout)
 	}
 
 	return perrors.WithStack(c.GettySessionParam.CheckValidity())

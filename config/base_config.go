@@ -107,7 +107,8 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 				setBaseValue := func(f reflect.Value) {
 					ok, value := config.GetProperty(getKeyPrefix(val, id) + key)
 					if ok {
-						if f.Kind() == reflect.Int64 {
+						switch f.Kind() {
+						case reflect.Int64:
 							x, err := strconv.Atoi(value)
 							if err != nil {
 								logger.Errorf("Dynamic change the configuration in struct {%v} field {%v} error ,error message is {%v}",
@@ -120,21 +121,16 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 										val.Type().Name(), val.Type().Field(i).Name, perrors.Errorf("the int64 value {%v} from config center is  overflow", int64(x)))
 								}
 							}
-
-						}
-
-						if f.Kind() == reflect.String {
+						case reflect.String:
 							f.SetString(value)
-						}
-						if f.Kind() == reflect.Bool {
+						case reflect.Bool:
 							x, err := strconv.ParseBool(value)
 							if err != nil {
 								logger.Errorf("Dynamic change the configuration in struct {%v} field {%v} error ,error message is {%v}",
 									val.Type().Name(), val.Type().Field(i).Name, err)
 							}
 							f.SetBool(x)
-						}
-						if f.Kind() == reflect.Float64 {
+						case reflect.Float64:
 							x, err := strconv.ParseFloat(value, 64)
 							if err != nil {
 								logger.Errorf("Dynamic change the configuration in struct {%v} field {%v} error ,error message is {%v}",
@@ -147,7 +143,10 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 										val.Type().Name(), val.Type().Field(i).Name, perrors.Errorf("the float64 value {%v} from config center is  overflow", x))
 								}
 							}
+						default:
+							logger.Warnf("The kind of field {%v} is not supported ", f.Kind().String())
 						}
+
 					}
 
 				}
@@ -180,25 +179,32 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 				}
 				if f.Kind() == reflect.Map {
 
-					//initiate config
-					s := reflect.New(f.Type().Elem().Elem())
-					prefix := s.MethodByName("Prefix").Call(nil)[0].String()
-					m := config.GetSubProperty(prefix)
-					for k := range m {
-						f.SetMapIndex(reflect.ValueOf(k), reflect.New(f.Type().Elem().Elem()))
+					if f.Type().Elem().Kind() == reflect.Ptr {
+						//initiate config
+						s := reflect.New(f.Type().Elem().Elem())
+						prefix := s.MethodByName("Prefix").Call(nil)[0].String()
+						m := config.GetSubProperty(prefix)
+						for k := range m {
+							f.SetMapIndex(reflect.ValueOf(k), reflect.New(f.Type().Elem().Elem()))
+						}
 					}
+
 					//iter := f.MapRange()
 
 					for _, k := range f.MapKeys() {
 						v := f.MapIndex(k)
-						if v.Kind() == reflect.Ptr {
+						switch v.Kind() {
+						case reflect.Ptr:
 							if v.Elem().Kind() == reflect.Struct {
 								setFieldValue(v.Elem(), k, config)
 							} else {
 								setBaseValue(v.Elem())
 							}
+						case reflect.Int64, reflect.String, reflect.Bool, reflect.Float64:
+							setBaseValue(v)
+						default:
+							logger.Warnf("The kind of field {%v} is not supported ", v.Kind().String())
 						}
-
 					}
 				}
 

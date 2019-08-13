@@ -29,6 +29,8 @@ const (
 	SERVICE_KEY   = "service"
 	METHODS_KEY   = "methods"
 	TIMEOUT_KEY   = "timeout"
+	BEAN_NAME_KEY = "bean.name"
+	GENERIC_KEY   = "generic"
 )
 
 const (
