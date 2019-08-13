@@ -17,12 +17,12 @@ import com.alibaba.dubbo.rpc.service.EchoService;
 import java.util.List;
 
 public class Consumer {
-    //定义一个私有变量 （Spring中要求）
+    // Define a private variable (Required in Spring)
     private UserProvider userProvider;
     private UserProvider userProvider1;
     private UserProvider userProvider2;
 
-    //Spring注入（Spring中要求）
+    // Spring DI (Required in Spring)
     public void setUserProvider(UserProvider u) {
         this.userProvider = u;
     }
@@ -33,7 +33,7 @@ public class Consumer {
         this.userProvider2 = u;
     }
 
-    //启动consumer的入口函数(在配置文件中指定)
+    // Start the entry function for consumer (Specified in the configuration file)
     public void start() throws Exception {
         System.out.println("\n\ntest");
         testGetUser();
