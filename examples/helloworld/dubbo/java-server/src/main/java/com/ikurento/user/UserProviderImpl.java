@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class UserProviderImpl implements UserProvider {
-    private static final Logger LOG = LoggerFactory.getLogger("UserLogger"); // è¾“å‡ºåˆ°user-server.log
+    private static final Logger LOG = LoggerFactory.getLogger("UserLogger"); // Output to userˆ°user-server.log
 
     public User GetUser(String userId) {
         return new User(userId, "zhangsan", 18);
