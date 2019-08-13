@@ -86,7 +86,7 @@ func initSignal() {
 				os.Exit(1)
 			})
 
-			// 要么fastFailTimeout时间内执行完毕下面的逻辑然后程序退出，要么执行上面的超时函数程序强行退出
+			// The program exits normally or timeout forcibly exits.
 			fmt.Println("app exit now...")
 			return
 		}
