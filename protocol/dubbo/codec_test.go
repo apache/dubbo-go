@@ -20,10 +20,11 @@ package dubbo
 import (
 	"testing"
 	"time"
+)
 
-	"github.com/stretchr/testify/assert"
-
+import (
 	hessian "github.com/apache/dubbo-go-hessian2"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
@@ -49,6 +50,7 @@ func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
 	// request
 	pkg.Header.Type = hessian.PackageRequest
 	pkg.Service.Interface = "Service"
+	pkg.Service.Path = "path"
 	pkg.Service.Version = "2.6"
 	pkg.Service.Method = "Method"
 	pkg.Service.Timeout = time.Second
@@ -63,10 +65,10 @@ func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
 	assert.Equal(t, byte(S_Dubbo), pkgres.Header.SerialID)
 	assert.Equal(t, int64(10086), pkgres.Header.ID)
 	assert.Equal(t, "2.5.4", pkgres.Body.([]interface{})[0])
-	assert.Equal(t, "", pkgres.Body.([]interface{})[1])
+	assert.Equal(t, "path", pkgres.Body.([]interface{})[1])
 	assert.Equal(t, "2.6", pkgres.Body.([]interface{})[2])
 	assert.Equal(t, "Method", pkgres.Body.([]interface{})[3])
 	assert.Equal(t, "Ljava/lang/String;", pkgres.Body.([]interface{})[4])
 	assert.Equal(t, []interface{}{"a"}, pkgres.Body.([]interface{})[5])
-	assert.Equal(t, map[interface{}]interface{}{"interface": "Service", "path": "", "group": "", "timeout": "1000"}, pkgres.Body.([]interface{})[6])
+	assert.Equal(t, map[interface{}]interface{}{"group": "", "interface": "Service", "path": "path", "timeout": "1000"}, pkgres.Body.([]interface{})[6])
 }
