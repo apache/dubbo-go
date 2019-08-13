@@ -84,7 +84,7 @@ func (invoker *baseClusterInvoker) checkWhetherDestroyed() error {
 }
 
 func (invoker *baseClusterInvoker) doSelect(lb cluster.LoadBalance, invocation protocol.Invocation, invokers []protocol.Invoker, invoked []protocol.Invoker) protocol.Invoker {
-	//todo:ticky connect 粘纸连接
+	//todo:sticky connect
 	if len(invokers) == 1 {
 		return invokers[0]
 	}
