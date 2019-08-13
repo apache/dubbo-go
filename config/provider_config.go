@@ -63,7 +63,7 @@ func GetProviderConfig() ProviderConfig {
 	return *providerConfig
 }
 
-func providerInit(confProFile string) error {
+func ProviderInit(confProFile string) error {
 	if len(confProFile) == 0 {
 		return perrors.Errorf("application configure(provider) file name is nil")
 	}

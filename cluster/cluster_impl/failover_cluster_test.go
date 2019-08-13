@@ -143,8 +143,7 @@ func Test_FailoverInvoke2(t *testing.T) {
 	urlParams.Set(constant.RETRIES_KEY, "2")
 	urlParams.Set("methods.test."+constant.RETRIES_KEY, "3")
 
-	ivc := &invocation.RPCInvocation{}
-	ivc.SetMethod("test")
+	ivc := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("test"))
 	result := normalInvoke(t, 3, urlParams, ivc)
 	assert.NoError(t, result.Error())
 	count = 0

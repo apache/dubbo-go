@@ -29,9 +29,9 @@ Finished List:
 - Role: Consumer, Provider
 - Transport: HTTP, TCP
 - Codec: JsonRPC v2, Hessian v2
-- Registry: ZooKeeper
+- Registry: ZooKeeper/[etcd](https://github.com/apache/dubbo-go/pull/148)/[nacos](https://github.com/apache/dubbo-go/pull/151)
 - Configure Center: Zookeeper
-- Cluster Strategy: Failover/[Failfast](https://github.com/apache/dubbo-go/pull/140)/[Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136)
+- Cluster Strategy: Failover/[Failfast](https://github.com/apache/dubbo-go/pull/140)/[Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136)/Available/Broadcast
 - Load Balance: Random/[RoundRobin](https://github.com/apache/dubbo-go/pull/66)/[LeastActive](https://github.com/apache/dubbo-go/pull/65)
 - Filter: Echo Health Check
 - Other feature: [generic invoke](https://github.com/apache/dubbo-go/pull/122)/start check/connecting certain provider/multi-protocols/multi-registries/multi-versions/service group
@@ -41,7 +41,7 @@ Working List:
 - Cluster Strategy: Forking
 - Load Balance: ConsistentHash
 - Filter: TokenFilter/AccessLogFilter/CountFilter/ExecuteLimitFilter/TpsLimitFilter
-- Registry: etcd/k8s/consul/nacos
+- Registry: k8s/consul
 - Configure Center: apollo
 - Dynamic Configuration Center & Metadata Center (dubbo v2.7.x)
 - Metrics: Promethus(dubbo v2.7.x)
@@ -54,11 +54,22 @@ Todo List:
 
 You can know more about dubbo-go by its [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap).
 
+## Document
 
+TODO
 
 ## Quick Start
 
 The subdirectory examples shows how to use dubbo-go. Please read the [examples/README.md](https://github.com/apache/dubbo-go/blob/develop/examples/README.md) carefully to learn how to dispose the configuration and compile the program.
+
+## Running unit tests
+
+```bash
+go test ./...
+
+# coverage
+go test ./... -coverprofile=coverage.txt -covermode=atomic
+```
 
 ## Contributing
 
