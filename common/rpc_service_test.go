@@ -39,11 +39,8 @@ func (s *TestService) MethodTwo(arg1, arg2, arg3 interface{}) (interface{}, erro
 func (s *TestService) MethodThree() error {
 	return nil
 }
-func (s *TestService) Service() string {
+func (s *TestService) Reference() string {
 	return "com.test.Path"
-}
-func (s *TestService) Version() string {
-	return ""
 }
 func (s *TestService) MethodMapper() map[string]string {
 	return map[string]string{
@@ -65,21 +62,15 @@ func (s *testService) Method3(ctx context.Context, args []interface{}, rsp *stru
 func (s *testService) Method4(ctx context.Context, args []interface{}, rsp *struct{}) *testService {
 	return nil
 }
-func (s *testService) Service() string {
+func (s *testService) Reference() string {
 	return "com.test.Path"
-}
-func (s *testService) Version() string {
-	return ""
 }
 
 type TestService1 struct {
 }
 
-func (s *TestService1) Service() string {
+func (s *TestService1) Reference() string {
 	return "com.test.Path1"
-}
-func (s *TestService1) Version() string {
-	return ""
 }
 
 func TestServiceMap_Register(t *testing.T) {
@@ -181,7 +172,7 @@ func TestSuiteMethod(t *testing.T) {
 
 	// wrong number of in return
 	s1 := &testService{}
-	method, ok = reflect.TypeOf(s1).MethodByName("Version")
+	method, ok = reflect.TypeOf(s1).MethodByName("Reference")
 	assert.True(t, ok)
 	methodType = suiteMethod(method)
 	assert.Nil(t, methodType)

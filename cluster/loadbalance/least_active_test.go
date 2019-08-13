@@ -43,8 +43,7 @@ func TestLeastActiveByWeight(t *testing.T) {
 		invokers = append(invokers, protocol.NewBaseInvoker(url))
 	}
 
-	inv := new(invocation.RPCInvocation)
-	inv.SetMethod("test")
+	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("test"))
 	protocol.BeginCount(invokers[2].GetUrl(), inv.MethodName())
 
 	loop = 10000

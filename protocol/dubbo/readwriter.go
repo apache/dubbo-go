@@ -27,6 +27,7 @@ import (
 	"github.com/dubbogo/getty"
 	perrors "github.com/pkg/errors"
 )
+
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
@@ -140,11 +141,17 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 				attachments = req[6].(map[interface{}]interface{})
 			}
 			pkg.Service.Interface = attachments[constant.INTERFACE_KEY].(string)
+			if pkg.Service.Path == "" && attachments[constant.PATH_KEY] != nil {
+				pkg.Service.Path = attachments[constant.PATH_KEY].(string)
+			}
+			if attachments[constant.GROUP_KEY] != nil {
+				pkg.Service.Group = attachments[constant.GROUP_KEY].(string)
+			}
 			pkg.Body = map[string]interface{}{
 				"dubboVersion": dubboVersion,
 				"argsTypes":    argsTypes,
 				"args":         args,
-				"service":      common.ServiceMap.GetService(DUBBO, pkg.Service.Interface),
+				"service":      common.ServiceMap.GetService(DUBBO, pkg.Service.Path), // path as a key
 				"attachments":  attachments,
 			}
 		}
