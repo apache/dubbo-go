@@ -23,7 +23,6 @@ import (
 	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting/etcdv3"
-	"github.com/apache/dubbo-go/version"
 )
 
 var (
@@ -229,7 +228,7 @@ func (r *etcdV3Registry) registerConsumer(svc common.URL) error {
 	params.Add("protocol", svc.Protocol)
 
 	params.Add("category", (common.RoleType(common.CONSUMER)).String())
-	params.Add("dubbo", "dubbogo-consumer-"+version.Version)
+	params.Add("dubbo", "dubbogo-consumer-"+constant.Version)
 
 	encodedURL := url.QueryEscape(fmt.Sprintf("consumer://%s%s?%s", localIP, svc.Path, params.Encode()))
 	dubboPath := fmt.Sprintf("/dubbo/%s/%s", svc.Service(), (common.RoleType(common.CONSUMER)).String())
@@ -266,7 +265,7 @@ func (r *etcdV3Registry) registerProvider(svc common.URL) error {
 	params.Add("ip", localIP)
 	params.Add("anyhost", "true")
 	params.Add("category", (common.RoleType(common.PROVIDER)).String())
-	params.Add("dubbo", "dubbo-provider-golang-"+version.Version)
+	params.Add("dubbo", "dubbo-provider-golang-"+constant.Version)
 	params.Add("side", (common.RoleType(common.PROVIDER)).Role())
 
 	if len(svc.Methods) == 0 {
