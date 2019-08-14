@@ -91,6 +91,7 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 		if p.Err != nil {
 			logger.Errorf("rpc heartbeat response{error: %#v}", p.Err)
 		}
+		h.conn.pool.rpcClient.removePendingResponse(SequenceType(p.Header.ID))
 		return
 	}
 	logger.Debugf("get rpc response{header: %#v, body: %#v}", p.Header, p.Body)
