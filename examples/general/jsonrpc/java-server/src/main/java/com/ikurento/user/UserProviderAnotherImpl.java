@@ -9,8 +9,8 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 public class UserProviderAnotherImpl implements UserProvider {
-    // private static final Logger logger = LoggerFactory.getLogger(getClass()); // 只输出到dubbo的log(logs/server.log)
-    private static final Logger logger = LoggerFactory.getLogger("userLogger"); // 输出到user-server.log
+    // private static final Logger logger = LoggerFactory.getLogger(getClass()); // Only output to dubbo's log(logs/server.log)
+    private static final Logger logger = LoggerFactory.getLogger("userLogger"); // Output to user-server.log
 
     private Map<String, User> userMap = new HashMap<String, User>();
 
