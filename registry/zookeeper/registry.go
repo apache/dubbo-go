@@ -41,7 +41,6 @@ import (
 	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting/zookeeper"
-	"github.com/apache/dubbo-go/version"
 )
 
 const (
@@ -304,7 +303,7 @@ func (r *zkRegistry) register(c common.URL) error {
 		// DubboRole               = [...]string{"consumer", "", "", "provider"}
 		// params.Add("category", (RoleType(PROVIDER)).Role())
 		params.Add("category", (common.RoleType(common.PROVIDER)).String())
-		params.Add("dubbo", "dubbo-provider-golang-"+version.Version)
+		params.Add("dubbo", "dubbo-provider-golang-"+constant.Version)
 
 		params.Add("side", (common.RoleType(common.PROVIDER)).Role())
 
@@ -347,7 +346,7 @@ func (r *zkRegistry) register(c common.URL) error {
 		params.Add("protocol", c.Protocol)
 
 		params.Add("category", (common.RoleType(common.CONSUMER)).String())
-		params.Add("dubbo", "dubbogo-consumer-"+version.Version)
+		params.Add("dubbo", "dubbogo-consumer-"+constant.Version)
 
 		rawURL = fmt.Sprintf("consumer://%s%s?%s", localIP, c.Path, params.Encode())
 		encodedURL = url.QueryEscape(rawURL)
