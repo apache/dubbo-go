@@ -231,8 +231,9 @@ func (r *zkRegistry) Register(conf common.URL) error {
 
 		// Check if the service has been registered
 		r.cltLock.Lock()
-		// 注意此处与consumerZookeeperRegistry的差异，consumer用的是conf.Path，
-		// 因为consumer要提供watch功能给selector使用, provider允许注册同一个service的多个group or constant
+		// Note the difference between consumer and consumerZookeeperRegistry (consumer use conf.Path).
+		// Because the consumer wants to provide monitoring functions for the selector,
+		// the provider allows multiple groups or versions of the same service to be registered.
 		_, ok = r.services[conf.Key()]
 		r.cltLock.Unlock()
 		if ok {
@@ -297,7 +298,8 @@ func (r *zkRegistry) register(c common.URL) error {
 		}
 		params.Add("anyhost", "true")
 
-		// dubbo java consumer来启动找provider url时，因为category不匹配，会找不到provider，导致consumer启动不了,所以使用consumers&providers
+		// Dubbo java consumer to start looking for the provider url,because the category does not match,
+		// the provider will not find, causing the consumer can not start, so we use consumers.
 		// DubboRole               = [...]string{"consumer", "", "", "provider"}
 		// params.Add("category", (RoleType(PROVIDER)).Role())
 		params.Add("category", (common.RoleType(common.PROVIDER)).String())
