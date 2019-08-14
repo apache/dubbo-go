@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
- package version
+package constant
 
- const (
-	Version = "2.6.0"
-	Name    = "dubbogo"
-	DATE    = "2019/05/06"
+const (
+    Version = "2.6.0"
+    Name    = "dubbogo"
+    DATE    = "2019/05/06"
 )
