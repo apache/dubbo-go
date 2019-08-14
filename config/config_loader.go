@@ -28,7 +28,6 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/version"
 )
 
 var (
@@ -94,7 +93,7 @@ func Load() {
 						checkok = false
 						count++
 						if count > maxWait {
-							panic(fmt.Sprintf("Failed to check the status of the service %v . No provider available for the service to the consumer use dubbo version %v", refconfig.InterfaceName, version.Version))
+							panic(fmt.Sprintf("Failed to check the status of the service %v . No provider available for the service to the consumer use dubbo constant %v", refconfig.InterfaceName, constant.Version))
 						}
 						time.Sleep(time.Second * 1)
 						break
