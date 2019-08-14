@@ -26,7 +26,6 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/version"
 )
 
 type failoverClusterInvoker struct {
