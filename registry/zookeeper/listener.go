@@ -45,7 +45,7 @@ func (l *RegistryDataListener) AddInterestedURL(url *common.URL) {
 }
 
 func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
-	//截取最后一位
+	// Intercept the last bit
 	url := eventType.Path[strings.Index(eventType.Path, "/providers/")+len("/providers/"):]
 	serviceURL, err := common.NewURL(context.TODO(), url)
 	if err != nil {
