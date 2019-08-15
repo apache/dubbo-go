@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package version
+package constant
 
 const (
 	Version = "2.6.0"
