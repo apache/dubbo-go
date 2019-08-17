@@ -50,7 +50,7 @@ const (
 
 var (
 	DubboNodes = [...]string{"consumers", "configurators", "routers", "providers"}
-	DubboRole  = [...]string{"consumer", "", "", "provider"}
+	DubboRole  = [...]string{"consumer", "", "routers", "provider"}
 )
 
 type RoleType int

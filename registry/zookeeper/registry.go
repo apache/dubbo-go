@@ -80,7 +80,6 @@ type zkRegistry struct {
 	configListener *RegistryConfigurationListener
 	//for provider
 	zkPath map[string]int // key = protocol://ip:port/interface
-
 }
 
 func newZkRegistry(url *common.URL) (registry.Registry, error) {
@@ -225,7 +224,7 @@ func (r *zkRegistry) Register(conf common.URL) error {
 		r.cltLock.Lock()
 		r.services[conf.Key()] = conf
 		r.cltLock.Unlock()
-		logger.Debugf("(consumerZkConsumerRegistry)Register(conf{%#v})", conf)
+		logger.Debugf("(ZkConsumerRegistry)Register(conf{%#v})", conf)
 
 	case common.PROVIDER:
 
@@ -250,6 +249,25 @@ func (r *zkRegistry) Register(conf common.URL) error {
 		r.cltLock.Unlock()
 
 		logger.Debugf("(ZkProviderRegistry)Register(conf{%#v})", conf)
+
+	case common.ROUTER:
+
+		key := conf.String()
+		r.cltLock.Lock()
+		_, ok = r.services[key]
+		r.cltLock.Unlock()
+		if ok {
+			return perrors.Errorf("Path{%s} has been registered", conf.Path)
+		}
+		err = r.register(conf)
+		if err != nil {
+			return perrors.WithMessagef(err, "register(conf:%+v)", conf)
+		}
+		r.cltLock.Lock()
+		r.services[conf.Key()] = conf
+		r.cltLock.Unlock()
+		logger.Debugf("(ZkRouterRegistry)Register(conf{%#v})", conf)
+
 	}
 
 	return nil
@@ -353,6 +371,23 @@ func (r *zkRegistry) register(c common.URL) error {
 
 		dubboPath = fmt.Sprintf("/dubbo/%s/%s", c.Service(), (common.RoleType(common.CONSUMER)).String())
 		logger.Debugf("consumer path:%s, url:%s", dubboPath, rawURL)
+
+	case common.ROUTER:
+		//todo
+		dubboPath = fmt.Sprintf("/dubbo/%s/%s", c.Service(), common.DubboNodes[common.ROUTER])
+		r.cltLock.Lock()
+		err = r.client.Create(dubboPath)
+		r.cltLock.Unlock()
+		if err != nil {
+			logger.Errorf("zkClient.create(path{%s}) = error{%v}", dubboPath, perrors.WithStack(err))
+			return perrors.WithStack(err)
+		}
+		params.Add("protocol", c.Protocol)
+		params.Add("category", (common.RoleType(common.ROUTER)).String())
+
+		rawURL = fmt.Sprintf("%s://%s%s?%s", c.Protocol, c.Location, c.Path, params.Encode())
+		encodedURL = url.QueryEscape(rawURL)
+		logger.Debugf("router path:%s, url:%s", dubboPath, rawURL)
 
 	default:
 		return perrors.Errorf("@c{%v} type is not referencer or provider", c)
