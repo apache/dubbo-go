@@ -9,7 +9,7 @@ env:
 install: true
 
 before_script:
-  - wget -P "remoting/zookeeper/zookeeper-4unittest/contrib/fatjar" http://urlForYourJar.jar
+  - wget -P "remoting/zookeeper/zookeeper-4unittest/contrib/fatjar" https://github.com/dubbogo/resources/raw/master/zookeeper-4unitest/contrib/fatjar/zookeeper-3.4.9-fatjar.jar
 script:
   - go fmt ./... && [[ -z `git status -s` ]]
   - go mod vendor && go test ./... -coverprofile=coverage.txt -covermode=atomic
