@@ -134,24 +134,7 @@ func (dir *registryDirectory) update(res *registry.ServiceEvent) {
 	logger.Debugf("registry update, result{%s}", res)
 
 	logger.Debugf("update service name: %s!", res.Service)
-	//todo
-	url := dir.GetUrl()
-	var urls []*common.URL
 
-	for _, v := range url.GetBackupUrls() {
-		p := v.Protocol
-
-		category := v.GetParam(constant.CATEGORY_KEY, constant.PROVIDERS_CATEGORY)
-		if strings.EqualFold(category, constant.ROUTERS_CATEGORY) || strings.EqualFold(constant.ROUTE_PROTOCOL, p) {
-			urls = append(urls, v)
-		}
-	}
-	if len(urls) > 0 {
-		routers := toRouters(urls)
-		if len(routers) > 0 {
-			dir.SetRouters(routers)
-		}
-	}
 	dir.refreshInvokers(res)
 }
 
@@ -159,6 +142,23 @@ func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 
 	switch res.Action {
 	case remoting.EventTypeAdd:
+		url := dir.GetUrl()
+		var urls []*common.URL
+
+		for _, v := range url.GetBackupUrls() {
+			p := v.Protocol
+
+			category := v.GetParam(constant.CATEGORY_KEY, constant.PROVIDERS_CATEGORY)
+			if strings.EqualFold(category, constant.ROUTERS_CATEGORY) || strings.EqualFold(constant.ROUTE_PROTOCOL, p) {
+				urls = append(urls, v)
+			}
+		}
+		if len(urls) > 0 {
+			routers := toRouters(urls)
+			if len(routers) > 0 {
+				dir.SetRouters(routers)
+			}
+		}
 		//dir.cacheService.EventTypeAdd(res.Path, dir.serviceTTL)
 		dir.cacheInvoker(res.Service)
 	case remoting.EventTypeDel:
