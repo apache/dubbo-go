@@ -8,7 +8,7 @@ env:
 
 install: true
 
-before_start:
+before_script:
   - wget -P "remoting/zookeeper/zookeeper-4unittest/contrib/fatjar" http://urlForYourJar.jar
 script:
   - go fmt ./... && [[ -z `git status -s` ]]
