@@ -65,7 +65,7 @@ func (invoker *baseClusterInvoker) checkInvokers(invokers []protocol.Invoker, in
 	if len(invokers) == 0 {
 		ip, _ := utils.GetLocalIP()
 		return perrors.Errorf("Failed to invoke the method %v. No provider available for the service %v from "+
-			"registry %v on the consumer %v using the dubbo version %v. Please check if the providers have been started and registered.",
+			"registry %v on the consumer %v using the dubbo version %v .Please check if the providers have been started and registered.",
 			invocation.MethodName(), invoker.directory.GetUrl().SubURL.Key(), invoker.directory.GetUrl().String(), ip, constant.Version)
 	}
 	return nil
