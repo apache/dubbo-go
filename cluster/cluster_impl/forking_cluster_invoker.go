@@ -30,6 +30,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
 )
 
@@ -75,7 +76,10 @@ func (invoker *forkingClusterInvoker) Invoke(invocation protocol.Invocation) pro
 	for _, ivk := range selected {
 		go func(k protocol.Invoker) {
 			result := k.Invoke(invocation)
-			resultQ.Put(result)
+			err := resultQ.Put(result)
+			if err != nil {
+				logger.Errorf("resultQ put failed with exception: %v.\n", err)
+			}
 		}(ivk)
 	}
 
