@@ -17,7 +17,9 @@
 
 package consul
 
-import "github.com/stretchr/testify/assert"
+import (
+	"github.com/stretchr/testify/assert"
+)
 
 func (suite *ConsulRegistryTestSuite) testNewProviderRegistry() {
 	providerRegistryUrl := newProviderRegistryUrl(registryHost, registryPort)
