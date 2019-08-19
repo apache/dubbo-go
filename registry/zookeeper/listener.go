@@ -46,10 +46,15 @@ func (l *RegistryDataListener) AddInterestedURL(url *common.URL) {
 
 func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 	// Intercept the last bit
-	url := eventType.Path[strings.Index(eventType.Path, "/providers/")+len("/providers/"):]
+	index := strings.Index(eventType.Path, "/providers/")
+	if index == -1 {
+		logger.Warn("Listen with no url, event.path={%v}", eventType.Path)
+		return false
+	}
+	url := eventType.Path[index+len("/providers/"):]
 	serviceURL, err := common.NewURL(context.TODO(), url)
 	if err != nil {
-		logger.Errorf("Listen NewURL(r{%s}) = error{%v}", url, err)
+		logger.Errorf("Listen NewURL(r{%s}) = error{%v} eventType.Path={%v}", url, err, eventType.Path)
 		return false
 	}
 	for _, v := range l.interestedURL {
