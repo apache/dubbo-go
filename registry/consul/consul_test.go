@@ -19,15 +19,20 @@ package consul
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/url"
+	"os"
 	"strconv"
 	"sync"
+	"testing"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/hashicorp/consul/agent"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -125,28 +130,38 @@ func (server *Server) close() {
 	server.wg.Wait()
 }
 
-//func TestSomething(t *testing.T) {
-//	providerRegistryUrl := newProviderRegistryUrl(registryHost, registryPort)
-//	consumerRegistryUrl := newConsumerRegistryUrl(registryHost, registryPort)
-//	providerUrl := newProviderUrl(providerHost, providerPort, service, protocol)
-//	consumerUrl := newConsumerUrl(consumerHost, consumerPort, service, protocol)
-//
-//	cb := func(c *testutil.TestServerConfig) { c.Ports.HTTP = registryPort }
-//	consulServer, _ := testutil.NewTestServerConfig(cb)
-//	defer consulServer.Stop()
-//	providerRegistry, err := newConsulRegistry(providerRegistryUrl)
-//	assert.NoError(t, err)
-//	consumerRegistry, err := newConsulRegistry(consumerRegistryUrl)
-//	assert.NoError(t, err)
-//
-//	server := newServer(providerHost, providerPort)
-//	defer server.close()
-//	err = providerRegistry.Register(providerUrl)
-//	assert.NoError(t, err)
-//
-//	listener, err := consumerRegistry.Subscribe(consumerUrl)
-//	assert.NoError(t, err)
-//	event, err := listener.Next()
-//	assert.NoError(t, err)
-//	assert.True(t, providerUrl.URLEqual(event.Service))
-//}
+func TestSomething(t *testing.T) {
+	providerRegistryUrl := newProviderRegistryUrl(registryHost, registryPort)
+	consumerRegistryUrl := newConsumerRegistryUrl(registryHost, registryPort)
+	providerUrl := newProviderUrl(providerHost, providerPort, service, protocol)
+	consumerUrl := newConsumerUrl(consumerHost, consumerPort, service, protocol)
+
+	dataDir, _ := ioutil.TempDir("./", "agent")
+	defer os.RemoveAll(dataDir)
+
+	hcl := `
+		ports { 
+			http = ` + strconv.Itoa(registryPort) + `
+		}
+		data_dir = "` + dataDir + `"
+	`
+	consulServer := &agent.TestAgent{Name: t.Name(), DataDir: dataDir, HCL: hcl}
+	consulServer.Start(t)
+	defer consulServer.Shutdown()
+
+	providerRegistry, err := newConsulRegistry(providerRegistryUrl)
+	assert.NoError(t, err)
+	consumerRegistry, err := newConsulRegistry(consumerRegistryUrl)
+	assert.NoError(t, err)
+
+	server := newServer(providerHost, providerPort)
+	defer server.close()
+	err = providerRegistry.Register(providerUrl)
+	assert.NoError(t, err)
+
+	listener, err := consumerRegistry.Subscribe(consumerUrl)
+	assert.NoError(t, err)
+	event, err := listener.Next()
+	assert.NoError(t, err)
+	assert.True(t, providerUrl.URLEqual(event.Service))
+}

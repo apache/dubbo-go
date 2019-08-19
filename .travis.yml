@@ -6,14 +6,6 @@ go:
 env:
   - GO111MODULE=on CONSUL_VERSION=0.9.2
 
-before_install:
-  - curl -sLo consul.zip https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_amd64.zip
-  - unzip consul.zip
-  - rm consul.zip
-  - mkdir -p ~/bin
-  - mv consul ~/bin
-  - export PATH="~/bin:$PATH"
-
 install: true
 
 script:
