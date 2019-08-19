@@ -209,7 +209,7 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 			// listen l service node
 			dubboPath := path.Join(zkPath, c)
 
-			//Add to save into the path map to avoid duplicate listen
+			//Save the path to avoid listen repeatly
 			l.pathMapLock.Lock()
 			_, ok := l.pathMap[dubboPath]
 			l.pathMapLock.Unlock()
