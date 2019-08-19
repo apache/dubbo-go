@@ -208,6 +208,20 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 
 			// listen l service node
 			dubboPath := path.Join(zkPath, c)
+
+			//Add to save into the path map to avoid duplicate listen
+			l.pathMapLock.Lock()
+			_, ok := l.pathMap[dubboPath]
+			l.pathMapLock.Unlock()
+			if ok {
+				logger.Warnf("@zkPath %s has already been listened.", zkPath)
+				continue
+			}
+
+			l.pathMapLock.Lock()
+			l.pathMap[dubboPath] = struct{}{}
+			l.pathMapLock.Unlock()
+
 			content, _, err := l.client.Conn.Get(dubboPath)
 			if err != nil {
 				logger.Errorf("Get new node path {%v} 's content error,message is  {%v}", dubboPath, perrors.WithStack(err))
