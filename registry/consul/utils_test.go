@@ -31,8 +31,11 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/registry"
+)
+
+import (
 	"github.com/hashicorp/consul/agent"
-	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -130,38 +133,48 @@ func (server *Server) close() {
 	server.wg.Wait()
 }
 
-func TestSomething(t *testing.T) {
-	providerRegistryUrl := newProviderRegistryUrl(registryHost, registryPort)
-	consumerRegistryUrl := newConsumerRegistryUrl(registryHost, registryPort)
-	providerUrl := newProviderUrl(providerHost, providerPort, service, protocol)
-	consumerUrl := newConsumerUrl(consumerHost, consumerPort, service, protocol)
+type ConsulRegistryTestSuite struct {
+	t                *testing.T
+	dataDir          string
+	consulAgent      *agent.TestAgent
+	providerRegistry registry.Registry
+	consumerRegistry registry.Registry
+	listener         registry.Listener
+	providerUrl      common.URL
+	server           *Server
+}
 
+func newConsulRegistryTestSuite(t *testing.T) *ConsulRegistryTestSuite {
 	dataDir, _ := ioutil.TempDir("./", "agent")
-	defer os.RemoveAll(dataDir)
-
 	hcl := `
 		ports { 
 			http = ` + strconv.Itoa(registryPort) + `
 		}
 		data_dir = "` + dataDir + `"
 	`
-	consulServer := &agent.TestAgent{Name: t.Name(), DataDir: dataDir, HCL: hcl}
-	consulServer.Start(t)
-	defer consulServer.Shutdown()
+	consulAgent := &agent.TestAgent{Name: t.Name(), DataDir: dataDir, HCL: hcl}
+	consulAgent.Start(t)
 
-	providerRegistry, err := newConsulRegistry(providerRegistryUrl)
-	assert.NoError(t, err)
-	consumerRegistry, err := newConsulRegistry(consumerRegistryUrl)
-	assert.NoError(t, err)
+	suite := &ConsulRegistryTestSuite{
+		t:           t,
+		dataDir:     dataDir,
+		consulAgent: consulAgent,
+	}
+	return suite
+}
 
-	server := newServer(providerHost, providerPort)
-	defer server.close()
-	err = providerRegistry.Register(providerUrl)
-	assert.NoError(t, err)
+func (suite *ConsulRegistryTestSuite) close() {
+	suite.server.close()
+	suite.consulAgent.Shutdown()
+	os.RemoveAll(suite.dataDir)
+}
 
-	listener, err := consumerRegistry.Subscribe(consumerUrl)
-	assert.NoError(t, err)
-	event, err := listener.Next()
-	assert.NoError(t, err)
-	assert.True(t, providerUrl.URLEqual(event.Service))
+func TestConsulRegistry(t *testing.T) {
+	suite := newConsulRegistryTestSuite(t)
+	defer suite.close()
+	suite.testNewProviderRegistry()
+	suite.testSubscribe()
+	suite.testNewConsumerRegistry()
+	suite.testRegister()
+	suite.testListener()
 }
