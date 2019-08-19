@@ -381,7 +381,11 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 	}
 	zkPath, err = r.client.RegisterTemp(root, node)
 	if err != nil {
-		logger.Warnf("RegisterTempNode(root{%s}, node{%s}) = error{%v}", root, node, perrors.WithStack(err))
+		if strings.Contains(err.Error(), "node already exists") {
+			logger.Warnf("RegisterTempNode(root{%s}, node{%s}) = error{%v}", root, node, perrors.WithStack(err))
+		} else {
+			logger.Errorf("RegisterTempNode(root{%s}, node{%s}) = error{%v}", root, node, perrors.WithStack(err))
+		}
 		return perrors.WithMessagef(err, "RegisterTempNode(root{%s}, node{%s})", root, node)
 	}
 	logger.Debugf("create a zookeeper node:%s", zkPath)
