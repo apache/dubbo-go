@@ -29,13 +29,13 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/registry"
+	"github.com/hashicorp/consul/agent"
 )
 
 import (
-	"github.com/hashicorp/consul/agent"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/registry"
 )
 
 var (
