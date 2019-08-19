@@ -6,6 +6,10 @@
 ---
 Apache Dubbo Go Implementation.
 
+![Apache Dubbo-go](./dubbogo.png "Apache Dubbo-go")
+
+Apache/Dubbo-go image, licensed under [Creative Commons 3.0 Attributions license](https://creativecommons.org/licenses/by/3.0/).
+
 ## License
 
 Apache License, Version 2.0
@@ -29,7 +33,7 @@ Finished List:
 - Role: Consumer, Provider
 - Transport: HTTP, TCP
 - Codec: JsonRPC v2, Hessian v2
-- Registry: ZooKeeper
+- Registry: ZooKeeper/[etcd](https://github.com/apache/dubbo-go/pull/148)/[nacos](https://github.com/apache/dubbo-go/pull/151)
 - Configure Center: Zookeeper
 - Cluster Strategy: Failover/[Failfast](https://github.com/apache/dubbo-go/pull/140)/[Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136)/Available/Broadcast
 - Load Balance: Random/[RoundRobin](https://github.com/apache/dubbo-go/pull/66)/[LeastActive](https://github.com/apache/dubbo-go/pull/65)
@@ -41,7 +45,7 @@ Working List:
 - Cluster Strategy: Forking
 - Load Balance: ConsistentHash
 - Filter: TokenFilter/AccessLogFilter/CountFilter/ExecuteLimitFilter/TpsLimitFilter
-- Registry: etcd/k8s/consul/nacos
+- Registry: k8s/consul
 - Configure Center: apollo
 - Dynamic Configuration Center & Metadata Center (dubbo v2.7.x)
 - Metrics: Promethus(dubbo v2.7.x)
