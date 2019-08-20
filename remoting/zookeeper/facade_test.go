@@ -75,7 +75,7 @@ func (r *mockFacade) IsAvailable() bool {
 	return true
 }
 
-func Test_Fascade(t *testing.T) {
+func Test_Facade(t *testing.T) {
 	ts, z, event, err := NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
 	defer ts.Stop()
