@@ -47,6 +47,7 @@ references:
     params:
       "serviceid":
         "soa.com.ikurento.user.UserProvider"
+      "forks": 5
 
 protocol_conf:
   dubbo:
