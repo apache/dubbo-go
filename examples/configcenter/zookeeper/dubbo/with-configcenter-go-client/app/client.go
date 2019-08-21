@@ -140,7 +140,7 @@ func initSignal() {
 				os.Exit(1)
 			})
 
-			// The program exits normally or timeout forcibly exits.//
+			// The program exits normally or timeout forcibly exits.
 			fmt.Println("app exit now...")
 			return
 		}
