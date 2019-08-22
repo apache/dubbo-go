@@ -12,7 +12,7 @@ Examples for consul registry. Before running examples below, make sure that cons
 ## go-server
 
 ```
-$ cd examples/dubbo/consul/go-server
+$ cd examples/consul/go-server
 $ export CONF_PROVIDER_FILE_PATH="config/server.yml"
 $ export APP_LOG_CONF_FILE="config/log.yml"
 $ go run .
@@ -21,7 +21,7 @@ $ go run .
 ## go-client
 
 ```
-$ cd examples/dubbo/consul/go-client
+$ cd examples/consul/go-client
 $ export CONF_CONSUMER_FILE_PATH="config/client.yml"
 $ export APP_LOG_CONF_FILE="config/log.yml"
 $ go run .
@@ -30,7 +30,7 @@ $ go run .
 ## java-server
 
 ```
-$ cd examples/dubbo/consul/java-server
+$ cd examples/consul/java-server
 $ mvn clean package
 $ java -jar target/java-server-1.0.0.jar
 ```
@@ -38,7 +38,7 @@ $ java -jar target/java-server-1.0.0.jar
 ## java-client
 
 ```
-$ cd examples/dubbo/consul/java-client
+$ cd examples/consul/java-client
 $ mvn clean package
 $ java -jar target/java-client-1.0.0.jar
 ```
