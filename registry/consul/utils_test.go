@@ -36,6 +36,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/registry"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 var (
@@ -89,18 +90,46 @@ func newConsumerUrl(host string, port int, service string, protocol string) comm
 	return *url1
 }
 
-type Server struct {
+type testConsulAgent struct {
+	dataDir   string
+	testAgent *agent.TestAgent
+}
+
+func newConsulAgent(t *testing.T, port int) *testConsulAgent {
+	dataDir, _ := ioutil.TempDir("./", "agent")
+	hcl := `
+		ports { 
+			http = ` + strconv.Itoa(port) + `
+		}
+		data_dir = "` + dataDir + `"
+	`
+	testAgent := &agent.TestAgent{Name: t.Name(), DataDir: dataDir, HCL: hcl}
+	testAgent.Start(t)
+
+	consulAgent := &testConsulAgent{
+		dataDir:   dataDir,
+		testAgent: testAgent,
+	}
+	return consulAgent
+}
+
+func (consulAgent *testConsulAgent) close() {
+	consulAgent.testAgent.Shutdown()
+	os.RemoveAll(consulAgent.dataDir)
+}
+
+type testServer struct {
 	listener net.Listener
 	wg       sync.WaitGroup
 	done     chan struct{}
 }
 
-func newServer(host string, port int) *Server {
+func newServer(host string, port int) *testServer {
 	addr := fmt.Sprintf("%s:%d", host, port)
 	tcpAddr, _ := net.ResolveTCPAddr("tcp", addr)
 	listener, _ := net.ListenTCP("tcp", tcpAddr)
 
-	server := &Server{
+	server := &testServer{
 		listener: listener,
 		done:     make(chan struct{}),
 	}
@@ -110,7 +139,7 @@ func newServer(host string, port int) *Server {
 	return server
 }
 
-func (server *Server) serve() {
+func (server *testServer) serve() {
 	defer server.wg.Done()
 	for {
 		select {
@@ -127,54 +156,71 @@ func (server *Server) serve() {
 	}
 }
 
-func (server *Server) close() {
+func (server *testServer) close() {
 	close(server.done)
 	server.listener.Close()
 	server.wg.Wait()
 }
 
-type ConsulRegistryTestSuite struct {
+type consulRegistryTestSuite struct {
 	t                *testing.T
-	dataDir          string
-	consulAgent      *agent.TestAgent
 	providerRegistry registry.Registry
 	consumerRegistry registry.Registry
 	listener         registry.Listener
 	providerUrl      common.URL
-	server           *Server
+	consumerUrl      common.URL
 }
 
-func newConsulRegistryTestSuite(t *testing.T) *ConsulRegistryTestSuite {
-	dataDir, _ := ioutil.TempDir("./", "agent")
-	hcl := `
-		ports { 
-			http = ` + strconv.Itoa(registryPort) + `
-		}
-		data_dir = "` + dataDir + `"
-	`
-	consulAgent := &agent.TestAgent{Name: t.Name(), DataDir: dataDir, HCL: hcl}
-	consulAgent.Start(t)
-
-	suite := &ConsulRegistryTestSuite{
-		t:           t,
-		dataDir:     dataDir,
-		consulAgent: consulAgent,
-	}
+func newConsulRegistryTestSuite(t *testing.T) *consulRegistryTestSuite {
+	suite := &consulRegistryTestSuite{t: t}
 	return suite
 }
 
-func (suite *ConsulRegistryTestSuite) close() {
-	suite.server.close()
-	suite.consulAgent.Shutdown()
-	os.RemoveAll(suite.dataDir)
+func (suite *consulRegistryTestSuite) close() {
+	suite.listener.Close()
+	suite.providerRegistry.Destroy()
+	suite.consumerRegistry.Destroy()
+}
+
+// register -> subscribe -> unregister
+func test1(t *testing.T) {
+	consulAgent := newConsulAgent(t, registryPort)
+	defer consulAgent.close()
+
+	server := newServer(providerHost, providerPort)
+	defer server.close()
+
+	suite := newConsulRegistryTestSuite(t)
+	defer suite.close()
+
+	suite.testNewProviderRegistry()
+	suite.testRegister()
+	suite.testNewConsumerRegistry()
+	suite.testSubscribe()
+	suite.testListener(remoting.EventTypeAdd)
+	suite.testUnregister()
+	suite.testListener(remoting.EventTypeDel)
+}
+
+// subscribe -> register
+func test2(t *testing.T) {
+	consulAgent := newConsulAgent(t, registryPort)
+	defer consulAgent.close()
+
+	server := newServer(providerHost, providerPort)
+	defer server.close()
+
+	suite := newConsulRegistryTestSuite(t)
+	defer suite.close()
+
+	suite.testNewConsumerRegistry()
+	suite.testSubscribe()
+	suite.testNewProviderRegistry()
+	suite.testRegister()
+	suite.testListener(remoting.EventTypeAdd)
 }
 
 func TestConsulRegistry(t *testing.T) {
-	suite := newConsulRegistryTestSuite(t)
-	defer suite.close()
-	suite.testNewProviderRegistry()
-	suite.testSubscribe()
-	suite.testNewConsumerRegistry()
-	suite.testRegister()
-	suite.testListener()
+	t.Run("test1", test1)
+	t.Run("test2", test2)
 }
