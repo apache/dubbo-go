@@ -21,31 +21,36 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func (suite *ConsulRegistryTestSuite) testNewProviderRegistry() {
+func (suite *consulRegistryTestSuite) testNewProviderRegistry() {
 	providerRegistryUrl := newProviderRegistryUrl(registryHost, registryPort)
 	providerRegistry, err := newConsulRegistry(providerRegistryUrl)
 	assert.NoError(suite.t, err)
 	suite.providerRegistry = providerRegistry
 }
 
-func (suite *ConsulRegistryTestSuite) testSubscribe() {
-	server := newServer(providerHost, providerPort)
-	suite.server = server
-	providerUrl := newProviderUrl(providerHost, providerPort, service, protocol)
-	suite.providerUrl = providerUrl
-	err := suite.providerRegistry.Register(providerUrl)
-	assert.NoError(suite.t, err)
-}
-
-func (suite *ConsulRegistryTestSuite) testNewConsumerRegistry() {
+func (suite *consulRegistryTestSuite) testNewConsumerRegistry() {
 	consumerRegistryUrl := newConsumerRegistryUrl(registryHost, registryPort)
 	consumerRegistry, err := newConsulRegistry(consumerRegistryUrl)
 	assert.NoError(suite.t, err)
 	suite.consumerRegistry = consumerRegistry
 }
 
-func (suite *ConsulRegistryTestSuite) testRegister() {
+func (suite *consulRegistryTestSuite) testRegister() {
+	providerUrl := newProviderUrl(providerHost, providerPort, service, protocol)
+	suite.providerUrl = providerUrl
+	err := suite.providerRegistry.Register(providerUrl)
+	assert.NoError(suite.t, err)
+}
+
+func (suite *consulRegistryTestSuite) testUnregister() {
+	consulProviderRegistry, _ := suite.providerRegistry.(*consulRegistry)
+	err := consulProviderRegistry.Unregister(suite.providerUrl)
+	assert.NoError(suite.t, err)
+}
+
+func (suite *consulRegistryTestSuite) testSubscribe() {
 	consumerUrl := newConsumerUrl(consumerHost, consumerPort, service, protocol)
+	suite.consumerUrl = consumerUrl
 	listener, err := suite.consumerRegistry.Subscribe(consumerUrl)
 	assert.NoError(suite.t, err)
 	suite.listener = listener
