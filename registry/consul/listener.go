@@ -94,8 +94,8 @@ func newConsulListener(registryUrl common.URL, consumerUrl common.URL) (*consulL
 		consumerUrl: consumerUrl,
 		plan:        plan,
 		urls:        make([]common.URL, 0, 8),
-		eventCh:     make(chan *registry.ServiceEvent),
-		errCh:       make(chan error),
+		eventCh:     make(chan *registry.ServiceEvent, 32),
+		errCh:       make(chan error, 32),
 		done:        make(chan struct{}),
 	}
 
