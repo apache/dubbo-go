@@ -21,8 +21,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func (suite *ConsulRegistryTestSuite) testListener() {
+import (
+	"github.com/apache/dubbo-go/remoting"
+)
+
+func (suite *consulRegistryTestSuite) testListener(action remoting.EventType) {
 	event, err := suite.listener.Next()
 	assert.NoError(suite.t, err)
+	assert.Equal(suite.t, action, event.Action)
 	assert.True(suite.t, suite.providerUrl.URLEqual(event.Service))
 }
