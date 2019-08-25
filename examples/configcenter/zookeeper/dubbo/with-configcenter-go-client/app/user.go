@@ -83,7 +83,7 @@ type User struct {
 	Name string
 	Age  int32
 	Time time.Time
-	Sex  Gender // 注意此处，java enum Object <--> go string
+	Sex  Gender // notice: java enum Object <--> go string
 }
 
 func (u User) String() string {
