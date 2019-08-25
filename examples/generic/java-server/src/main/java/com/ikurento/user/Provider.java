@@ -14,11 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.ikurento.user;
 
-package version
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-const (
-	Version = "2.6.0"
-	Name    = "dubbogo"
-	DATE    = "2019/05/06"
-)
+public class Provider {
+
+    /**
+     * To get ipv6 address to work, add
+     * System.setProperty("java.net.preferIPv6Addresses", "true");
+     * before running your application.
+     */
+    public static void main(String[] args) throws Exception {
+        ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(new String[]{"META-INF/spring/dubbo.provider.xml"});
+        context.start();
+        System.in.read(); // press any key to exit
+    }
+}
