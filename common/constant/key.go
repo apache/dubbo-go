@@ -48,6 +48,9 @@ const (
 	RETRIES_KEY          = "retries"
 	BEAN_NAME            = "bean.name"
 	FAIL_BACK_TASKS_KEY  = "failbacktasks"
+	FORKS_KEY            = "forks"
+	DEFAULT_FORKS        = 2
+	DEFAULT_TIMEOUT      = 1000
 )
 
 const (
@@ -86,4 +89,16 @@ const (
 	ProtocolConfigPrefix  = "dubbo.protocols."
 	ProviderConfigPrefix  = "dubbo.provider."
 	ConsumerConfigPrefix  = "dubbo.consumer."
+)
+
+const (
+	NACOS_KEY                    = "nacos"
+	NACOS_DEFAULT_ROLETYPE       = 3
+	NACOS_CACHE_DIR_KEY          = "cacheDir"
+	NACOS_LOG_DIR_KEY            = "logDir"
+	NACOS_ENDPOINT               = "endpoint"
+	NACOS_SERVICE_NAME_SEPARATOR = ":"
+	NACOS_CATEGORY_KEY           = "category"
+	NACOS_PROTOCOL_KEY           = "protocol"
+	NACOS_PATH_KEY               = "path"
 )
