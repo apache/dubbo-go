@@ -120,7 +120,7 @@ func appendParam(target *bytes.Buffer, url common.URL, key string) {
 func createRegisterParam(url common.URL, serviceName string) vo.RegisterInstanceParam {
 	category := getCategory(url)
 	params := make(map[string]string, len(url.Params)+3)
-	for k, _ := range url.Params {
+	for k := range url.Params {
 		params[k] = url.Params.Get(k)
 	}
 	params[constant.NACOS_CATEGORY_KEY] = category
