@@ -64,11 +64,13 @@ func (t RoleType) Role() string {
 }
 
 type baseUrl struct {
-	Protocol     string
-	Location     string // ip+port
-	Ip           string
-	Port         string
-	Params       url.Values
+	Protocol string
+	Location string // ip+port
+	Ip       string
+	Port     string
+	//url.Values is not safe map, add to avoid concurrent map read and map write error
+	paramsLock   sync.RWMutex
+	Params   url.Values
 	PrimitiveURL string
 	ctx          context.Context
 }
@@ -288,9 +290,13 @@ func (c *URL) AddParam(key string, value string) {
 
 func (c URL) GetParam(s string, d string) string {
 	var r string
-	if r = c.Params.Get(s); r == "" {
+
+	c.paramsLock.RLock()
+	if r = c.Params.Get(s); len(r) == 0 {
 		r = d
 	}
+	c.paramsLock.RUnlock()
+
 	return r
 }
 func (c URL) GetParamAndDecoded(key string) (string, error) {
