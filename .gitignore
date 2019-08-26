@@ -17,9 +17,9 @@ coverage.txt
 target/
 classes
 
-
-# Gopkg.lock
+# go mod, go test
 vendor/
+coverage.txt
 
 logs/
 .vscode/
