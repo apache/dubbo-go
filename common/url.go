@@ -71,7 +71,7 @@ type baseUrl struct {
 	Port     string
 	Params   url.Values
 	//url.Values is not safe map, add to avoid concurrent map read and map write error
-	paramsLock   sync.Mutex
+	paramsLock   sync.RWMutex
 	PrimitiveURL string
 	ctx          context.Context
 }
@@ -293,11 +293,11 @@ func (c *URL) AddParam(key string, value string) {
 
 func (c URL) GetParam(s string, d string) string {
 	var r string
-	c.paramsLock.Lock()
+	c.paramsLock.RLock()
 	if r = c.Params.Get(s); r == "" {
 		r = d
 	}
-	c.paramsLock.Unlock()
+	c.paramsLock.RUnlock()
 	return r
 }
 func (c URL) GetParamAndDecoded(key string) (string, error) {
