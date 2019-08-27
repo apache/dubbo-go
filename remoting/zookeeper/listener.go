@@ -259,67 +259,6 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 	}
 }
 
-//
-//func (l *ZkEventListener) listenFileEvent(zkPath string, listener remoting.DataListener) {
-//	l.wg.EventTypeAdd(1)
-//	defer l.wg.Done()
-//
-//	var (
-//		failTimes int
-//		event     chan struct{}
-//		zkEvent   zk.Event
-//	)
-//	event = make(chan struct{}, 4)
-//	defer close(event)
-//	for {
-//		// get current children for a zkPath
-//		content,_, eventCh, err := l.client.Conn.GetW(zkPath)
-//		if err != nil {
-//			failTimes++
-//			if MaxFailTimes <= failTimes {
-//				failTimes = MaxFailTimes
-//			}
-//			logger.Errorf("listenFileEvent(path{%s}) = error{%v}", zkPath, err)
-//			// clear the event channel
-//		CLEAR:
-//			for {
-//				select {
-//				case <-event:
-//				default:
-//					break CLEAR
-//				}
-//			}
-//			l.client.RegisterEvent(zkPath, &event)
-//			select {
-//			case <-time.After(timeSecondDuration(failTimes * ConnDelay)):
-//				l.client.UnregisterEvent(zkPath, &event)
-//				continue
-//			case <-l.client.Done():
-//				l.client.UnregisterEvent(zkPath, &event)
-//				logger.Warnf("client.done(), listen(path{%s}) goroutine exit now...", zkPath)
-//				return
-//			case <-event:
-//				logger.Infof("get zk.EventNodeDataChange notify event")
-//				l.client.UnregisterEvent(zkPath, &event)
-//				l.handleZkNodeEvent(zkPath, nil, listener)
-//				continue
-//			}
-//		}
-//		failTimes = 0
-//
-//		select {
-//		case zkEvent = <-eventCh:
-//			logger.Warnf("get a zookeeper zkEvent{type:%s, server:%s, path:%s, state:%d-%s, err:%s}",
-//				zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, StateToString(zkEvent.State), zkEvent.Err)
-//
-//			l.handleZkNodeEvent(zkEvent.Path, children, listener)
-//		case <-l.client.Done():
-//			logger.Warnf("client.done(), listen(path{%s}) goroutine exit now...", zkPath)
-//			return
-//		}
-//	}
-//}
-
 func timeSecondDuration(sec int) time.Duration {
 	return time.Duration(sec) * time.Second
 }

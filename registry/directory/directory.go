@@ -55,7 +55,6 @@ type registryDirectory struct {
 	serviceType      string
 	registry         registry.Registry
 	cacheInvokersMap *sync.Map //use sync.map
-	//cacheInvokersMap map[string]protocol.Invoker
 	Options
 }
 
@@ -80,7 +79,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry, opts ...O
 	}, nil
 }
 
-//subscibe from registry
+//subscribe from registry
 func (dir *registryDirectory) Subscribe(url common.URL) {
 	for {
 		if !dir.registry.IsAvailable() {
