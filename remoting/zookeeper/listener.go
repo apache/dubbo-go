@@ -24,6 +24,7 @@ import (
 )
 
 import (
+	"github.com/dubbogo/getty"
 	perrors "github.com/pkg/errors"
 	"github.com/samuel/go-zookeeper/zk"
 )
@@ -129,14 +130,14 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 			continue
 		}
 		// listen l service node
-		go func(node, childNode string) {
+		go func(node string) {
 			logger.Infof("delete zkNode{%s}", node)
 			if l.ListenServiceNodeEvent(node, listener) {
-				logger.Infof("delete content{%s}", childNode)
+				logger.Infof("delete content{%s}", node)
 				listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeDel})
 			}
 			logger.Warnf("listenSelf(zk path{%s}) goroutine exit now", zkPath)
-		}(newNode, n)
+		}(newNode)
 	}
 
 	// old node was deleted
@@ -188,7 +189,7 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 			}
 			l.client.RegisterEvent(zkPath, &event)
 			select {
-			case <-time.After(timeSecondDuration(failTimes * ConnDelay)):
+			case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)):
 				l.client.UnregisterEvent(zkPath, &event)
 				continue
 			case <-l.client.Done():
@@ -207,6 +208,20 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 
 			// listen l service node
 			dubboPath := path.Join(zkPath, c)
+
+			//Save the path to avoid listen repeatly
+			l.pathMapLock.Lock()
+			_, ok := l.pathMap[dubboPath]
+			l.pathMapLock.Unlock()
+			if ok {
+				logger.Warnf("@zkPath %s has already been listened.", zkPath)
+				continue
+			}
+
+			l.pathMapLock.Lock()
+			l.pathMap[dubboPath] = struct{}{}
+			l.pathMapLock.Unlock()
+
 			content, _, err := l.client.Conn.Get(dubboPath)
 			if err != nil {
 				logger.Errorf("Get new node path {%v} 's content error,message is  {%v}", dubboPath, perrors.WithStack(err))

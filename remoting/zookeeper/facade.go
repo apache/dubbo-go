@@ -19,9 +19,9 @@ package zookeeper
 
 import (
 	"sync"
-	"time"
 )
 import (
+	"github.com/dubbogo/getty"
 	perrors "github.com/pkg/errors"
 )
 
@@ -63,14 +63,14 @@ LOOP:
 			r.SetZkClient(nil)
 			r.ZkClientLock().Unlock()
 
-			// 接zk，直至成功
+			// Connect zk until success.
 			failTimes = 0
 			for {
 				select {
 				case <-r.GetDone():
 					logger.Warnf("(ZkProviderRegistry)reconnectZkRegistry goroutine exit now...")
 					break LOOP
-				case <-time.After(time.Duration(1e9 * failTimes * ConnDelay)): // 防止疯狂重连zk
+				case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)): // Prevent crazy reconnection zk.
 				}
 				err = ValidateZookeeperClient(r, WithZkName(zkName))
 				logger.Infof("ZkProviderRegistry.validateZookeeperClient(zkAddr{%s}) = error{%#v}",

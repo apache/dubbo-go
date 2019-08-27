@@ -34,11 +34,11 @@ import (
 func TestEchoFilter_Invoke(t *testing.T) {
 	filter := GetFilter()
 	result := filter.Invoke(protocol.NewBaseInvoker(common.URL{}),
-		invocation.NewRPCInvocationForProvider("$echo", []interface{}{"OK"}, nil))
+		invocation.NewRPCInvocation("$echo", []interface{}{"OK"}, nil))
 	assert.Equal(t, "OK", result.Result())
 
 	result = filter.Invoke(protocol.NewBaseInvoker(common.URL{}),
-		invocation.NewRPCInvocationForProvider("MethodName", []interface{}{"OK"}, nil))
+		invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, nil))
 	assert.Nil(t, result.Error())
 	assert.Nil(t, result.Result())
 }

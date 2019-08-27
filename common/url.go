@@ -28,6 +28,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 import (
@@ -67,11 +68,13 @@ func (t RoleType) Role() string {
 }
 
 type baseUrl struct {
-	Protocol     string
-	Location     string // ip+port
-	Ip           string
-	Port         string
-	Params       url.Values
+	Protocol string
+	Location string // ip+port
+	Ip       string
+	Port     string
+	Params   url.Values
+	//url.Values is not safe map, add to avoid concurrent map read and map write error
+	paramsLock   sync.Mutex
 	PrimitiveURL string
 	ctx          context.Context
 }
@@ -139,6 +142,11 @@ func WithPath(path string) option {
 	}
 }
 
+func WithLocation(location string) option {
+	return func(url *URL) {
+		url.Location = location
+	}
+}
 func NewURLWithOptions(opts ...option) *URL {
 	url := &URL{}
 	for _, opt := range opts {
@@ -238,7 +246,7 @@ func isMatchCategory(category1 string, category2 string) bool {
 	} else if strings.Contains(category2, constant.REMOVE_VALUE_PREFIX) {
 		return !strings.Contains(category2, constant.REMOVE_VALUE_PREFIX+category1)
 	} else {
-		strings.Contains(category2, category1)
+		return strings.Contains(category2, category1)
 	}
 }
 func (c URL) String() string {
@@ -298,14 +306,18 @@ func (c URL) Service() string {
 }
 
 func (c *URL) AddParam(key string, value string) {
+	c.paramsLock.Lock()
 	c.Params.Add(key, value)
+	c.paramsLock.Unlock()
 }
 
 func (c URL) GetParam(s string, d string) string {
 	var r string
+	c.paramsLock.Lock()
 	if r = c.Params.Get(s); r == "" {
 		r = d
 	}
+	c.paramsLock.Unlock()
 	return r
 }
 func (c URL) GetParamAndDecoded(key string) (string, error) {
