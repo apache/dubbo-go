@@ -36,8 +36,7 @@ import (
 
 // rpc service interface
 type RPCService interface {
-	Service() string // Path InterfaceName
-	Version() string
+	Reference() string // rpc service id or reference id
 }
 
 // for lowercase func
@@ -149,7 +148,7 @@ func (sm *serviceMap) Register(protocol string, rcvr RPCService) (string, error)
 		return "", perrors.New(s)
 	}
 
-	sname = rcvr.Service()
+	sname = rcvr.Reference()
 	if server := sm.GetService(protocol, sname); server != nil {
 		return "", perrors.New("service already defined: " + sname)
 	}
@@ -172,8 +171,8 @@ func (sm *serviceMap) Register(protocol string, rcvr RPCService) (string, error)
 	return strings.TrimSuffix(methods, ","), nil
 }
 
-func (sm *serviceMap) UnRegister(protocol, serviceName string) error {
-	if protocol == "" || serviceName == "" {
+func (sm *serviceMap) UnRegister(protocol, serviceId string) error {
+	if protocol == "" || serviceId == "" {
 		return perrors.New("protocol or serviceName is nil")
 	}
 	sm.mutex.RLock()
@@ -182,16 +181,16 @@ func (sm *serviceMap) UnRegister(protocol, serviceName string) error {
 		sm.mutex.RUnlock()
 		return perrors.New("no services for " + protocol)
 	}
-	_, ok = svcs[serviceName]
+	_, ok = svcs[serviceId]
 	if !ok {
 		sm.mutex.RUnlock()
-		return perrors.New("no service for " + serviceName)
+		return perrors.New("no service for " + serviceId)
 	}
 	sm.mutex.RUnlock()
 
 	sm.mutex.Lock()
 	defer sm.mutex.Unlock()
-	delete(svcs, serviceName)
+	delete(svcs, serviceId)
 	delete(sm.serviceMap, protocol)
 
 	return nil

@@ -5,6 +5,9 @@
 
 ---
 Apache Dubbo Go 语言实现
+![Apache Dubbo-go](./dubbogo.png "Apache Dubbo-go")
+
+Apache/Dubbo-go image, licensed under [Creative Commons 3.0 Attributions license](https://creativecommons.org/licenses/by/3.0/).
 
 ## 证书 ##
 
@@ -26,37 +29,50 @@ Apache License, Version 2.0
 
 实现列表:
 
-- Role: Consumer, Provider
-- Transport: HTTP, TCP
-- Codec: JsonRPC v2, Hessian v2
-- Registry: ZooKeeper
-- Routing: Rule(dubbo v2.6.x)
-- Configure Center: Zookeeper
-- Cluster Strategy: Failover
-- Load Balance: Random, RoundRobin, LeastActive
-- Filter: Echo Health Check
+- 角色端: Consumer, Provider
+- 传输协议: HTTP, TCP
+- 序列化协议: JsonRPC v2, Hessian v2
+- 注册中心: ZooKeeper/[etcd](https://github.com/apache/dubbo-go/pull/148)/[nacos](https://github.com/apache/dubbo-go/pull/151)
+- 配置中心: Zookeeper
+- 集群策略: Failover/[Failfast](https://github.com/apache/dubbo-go/pull/140)/[Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136)/Available/Broadcast
+- 负载均衡策略: Random/[RoundRobin](https://github.com/apache/dubbo-go/pull/66)/[LeastActive](https://github.com/apache/dubbo-go/pull/65)
+- 过滤器: Echo Health Check
+- 其他功能支持: [泛化调用](https://github.com/apache/dubbo-go/pull/122)/启动时检查/服务直连/多服务协议/多注册中心/多服务版本/服务分组
 
 开发中列表:
 
-- Cluster Strategy: Failfast/Failsafe/Failback/Forking
-- Load Balance: ConsistentHash
-- Filter: TokenFilter/AccessLogFilter/CountFilter/ActiveLimitFilter/ExecuteLimitFilter/GenericFilter/TpsLimitFilter
-- Registry: etcd/k8s/consul/nacos
-- Configure Center: apollo
-- Dynamic Configuration Center & Metadata Center (dubbo v2.7.x)
+- 集群策略: Forking
+- 负载均衡策略: ConsistentHash
+- 过滤器: TokenFilter/AccessLogFilter/CountFilter/ExecuteLimitFilter/TpsLimitFilter
+- 注册中心: etcd/k8s/consul/nacos
+- 配置中心: apollo
+- 动态配置中心 & 元数据中心 (dubbo v2.7.x)
 - Metrics: Promethus(dubbo v2.7.x)
 
 任务列表:
 
-- Registry: kubernetes
+- 注册中心: kubernetes
 - Routing: istio
 - tracing (dubbo ecosystem)
 
 你可以通过访问 [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap) 知道更多关于 dubbo-go 的信息
 
+## 文档
+
+TODO
+
 ## 快速开始 ##
 
 这个子目录下的例子展示了如何使用 dubbo-go 。请仔细阅读 [examples/README.md](https://github.com/apache/dubbo-go/blob/develop/examples/README.md) 学习如何处理配置并编译程序。
+
+## 运行单测
+
+```bash
+go test ./...
+
+# 覆盖率
+go test ./... -coverprofile=coverage.txt -covermode=atomic
+```
 
 ## 如何贡献
 

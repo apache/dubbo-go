@@ -196,7 +196,7 @@ func (r *zookeeperDynamicConfiguration) closeConfigs() {
 	r.cltLock.Lock()
 	defer r.cltLock.Unlock()
 	logger.Infof("begin to close provider zk client")
-	// 先关闭旧client，以关闭tmp node
+	// Close the old client first to close the tmp node
 	r.client.Close()
 	r.client = nil
 }
