@@ -70,7 +70,7 @@ type baseUrl struct {
 	Port     string
 	//url.Values is not safe map, add to avoid concurrent map read and map write error
 	paramsLock   sync.RWMutex
-	Params   url.Values
+	Params       url.Values
 	PrimitiveURL string
 	ctx          context.Context
 }
