@@ -1,5 +1,4 @@
 package com.ikurento.user;
-//ref: https://github.com/JoeCao/dubbo_jsonrpc_example/tree/master/dubbo_server/src/main/java/com/ofpay/demo/api
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
