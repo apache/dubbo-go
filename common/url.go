@@ -142,7 +142,11 @@ func WithLocation(location string) option {
 	}
 }
 func NewURLWithOptions(opts ...option) *URL {
-	url := &URL{}
+	url := &URL{
+		baseUrl: baseUrl{
+			Params: make(url.Values, 0),
+		},
+	}
 	for _, opt := range opts {
 		opt(url)
 	}

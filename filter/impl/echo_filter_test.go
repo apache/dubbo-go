@@ -32,7 +32,7 @@ import (
 )
 
 func TestEchoFilter_Invoke(t *testing.T) {
-	filter := GetFilter()
+	filter := GetEchoFilter()
 	result := filter.Invoke(protocol.NewBaseInvoker(common.URL{}),
 		invocation.NewRPCInvocation("$echo", []interface{}{"OK"}, nil))
 	assert.Equal(t, "OK", result.Result())

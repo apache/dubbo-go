@@ -36,6 +36,7 @@ const (
 const (
 	SERVICE_FILTER_KEY   = "service.filter"
 	REFERENCE_FILTER_KEY = "reference.filter"
+	TOKEN_KEY            = "token"
 )
 
 const (
