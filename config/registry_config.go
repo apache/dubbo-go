@@ -36,9 +36,10 @@ type RegistryConfig struct {
 	TimeoutStr string `yaml:"timeout" default:"5s" json:"timeout,omitempty" property:"timeout"` // unit: second
 	Group      string `yaml:"group" json:"group,omitempty" property:"group"`
 	//for registry
-	Address  string `yaml:"address" json:"address,omitempty" property:"address"`
-	Username string `yaml:"username" json:"username,omitempty" property:"username"`
-	Password string `yaml:"password" json:"password,omitempty"  property:"password"`
+	Address  string            `yaml:"address" json:"address,omitempty" property:"address"`
+	Username string            `yaml:"username" json:"username,omitempty" property:"username"`
+	Password string            `yaml:"password" json:"password,omitempty"  property:"password"`
+	Params   map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
 }
 
 func (*RegistryConfig) Prefix() string {
@@ -68,13 +69,28 @@ func loadRegistries(targetRegistries string, registries map[string]*RegistryConf
 		}
 
 		if target {
-			url, err := common.NewURL(
-				context.TODO(),
-				constant.REGISTRY_PROTOCOL+"://"+registryConf.Address,
-				common.WithParams(registryConf.getUrlMap(roleType)),
-				common.WithUsername(registryConf.Username),
-				common.WithPassword(registryConf.Password),
+			var (
+				url common.URL
+				err error
 			)
+			if addresses := strings.Split(registryConf.Address, ","); len(addresses) > 1 {
+				url, err = common.NewURL(
+					context.Background(),
+					constant.REGISTRY_PROTOCOL+"://"+addresses[0],
+					common.WithParams(registryConf.getUrlMap(roleType)),
+					common.WithUsername(registryConf.Username),
+					common.WithPassword(registryConf.Password),
+					common.WithLocation(registryConf.Address),
+				)
+			} else {
+				url, err = common.NewURL(
+					context.Background(),
+					constant.REGISTRY_PROTOCOL+"://"+registryConf.Address,
+					common.WithParams(registryConf.getUrlMap(roleType)),
+					common.WithUsername(registryConf.Username),
+					common.WithPassword(registryConf.Password),
+				)
+			}
 
 			if err != nil {
 				logger.Errorf("The registry id:%s url is invalid ,and will skip the registry, error: %#v", k, err)
@@ -94,6 +110,8 @@ func (regconfig *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values 
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(int(roleType)))
 	urlMap.Set(constant.REGISTRY_KEY, regconfig.Protocol)
 	urlMap.Set(constant.REGISTRY_TIMEOUT_KEY, regconfig.TimeoutStr)
-
+	for k, v := range regconfig.Params {
+		urlMap.Set(k, v)
+	}
 	return urlMap
 }

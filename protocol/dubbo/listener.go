@@ -27,8 +27,8 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go-hessian2"
 	"github.com/dubbogo/getty"
-	"github.com/dubbogo/hessian2"
 	perrors "github.com/pkg/errors"
 )
 
@@ -91,6 +91,7 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 		if p.Err != nil {
 			logger.Errorf("rpc heartbeat response{error: %#v}", p.Err)
 		}
+		h.conn.pool.rpcClient.removePendingResponse(SequenceType(p.Header.ID))
 		return
 	}
 	logger.Debugf("get rpc response{header: %#v, body: %#v}", p.Header, p.Body)
@@ -208,12 +209,8 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 		twoway = false
 	}
 
-	group := p.Body.(map[string]interface{})["attachments"].(map[interface{}]interface{})[constant.GROUP_KEY]
-	if group == nil {
-		group = ""
-	}
 	u := common.NewURLWithOptions(common.WithPath(p.Service.Path), common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.GROUP_KEY, group.(string)),
+		common.WithParamsValue(constant.GROUP_KEY, p.Service.Group),
 		common.WithParamsValue(constant.INTERFACE_KEY, p.Service.Interface),
 		common.WithParamsValue(constant.VERSION_KEY, p.Service.Version))
 	exporter, _ := dubboProtocol.ExporterMap().Load(u.ServiceKey())
@@ -227,9 +224,9 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	}
 	invoker := exporter.(protocol.Exporter).GetInvoker()
 	if invoker != nil {
-		result := invoker.Invoke(invocation.NewRPCInvocationForProvider(p.Service.Method, p.Body.(map[string]interface{})["args"].([]interface{}), map[string]string{
+		result := invoker.Invoke(invocation.NewRPCInvocation(p.Service.Method, p.Body.(map[string]interface{})["args"].([]interface{}), map[string]string{
 			constant.PATH_KEY:      p.Service.Path,
-			constant.GROUP_KEY:     group.(string),
+			constant.GROUP_KEY:     p.Service.Group,
 			constant.INTERFACE_KEY: p.Service.Interface,
 			constant.VERSION_KEY:   p.Service.Version,
 		}))

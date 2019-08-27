@@ -125,7 +125,8 @@ func ValidateZookeeperClient(container zkClientFacade, opts ...Option) error {
 				url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), err.Error())
 			return perrors.WithMessagef(err, "newZookeeperClient(address:%+v)", url.Location)
 		}
-		newClient, err := newZookeeperClient(opions.zkName, []string{url.Location}, timeout)
+		zkAddresses := strings.Split(url.Location, ",")
+		newClient, err := newZookeeperClient(opions.zkName, zkAddresses, timeout)
 		if err != nil {
 			logger.Warnf("newZookeeperClient(name{%s}, zk addresss{%v}, timeout{%d}) = error{%v}",
 				opions.zkName, url.Location, timeout.String(), err)
@@ -298,29 +299,26 @@ func (z *ZookeeperClient) UnregisterEvent(zkPath string, event *chan struct{}) {
 	if zkPath == "" {
 		return
 	}
-
 	z.Lock()
-	for {
-		a, ok := z.eventRegistry[zkPath]
-		if !ok {
-			break
-		}
-		for i, e := range a {
-			if e == event {
-				arr := a
-				a = append(arr[:i], arr[i+1:]...)
-				logger.Debugf("zkClient{%s} unregister event{path:%s, event:%p}", z.name, zkPath, event)
-			}
-		}
-		logger.Debugf("after zkClient{%s} unregister event{path:%s, event:%p}, array length %d",
-			z.name, zkPath, event, len(a))
-		if len(a) == 0 {
-			delete(z.eventRegistry, zkPath)
-		} else {
-			z.eventRegistry[zkPath] = a
+	defer z.Unlock()
+	infoList, ok := z.eventRegistry[zkPath]
+	if !ok {
+		return
+	}
+	for i, e := range infoList {
+		if e == event {
+			arr := infoList
+			infoList = append(arr[:i], arr[i+1:]...)
+			logger.Infof("zkClient{%s} unregister event{path:%s, event:%p}", z.name, zkPath, event)
 		}
 	}
-	z.Unlock()
+	logger.Debugf("after zkClient{%s} unregister event{path:%s, event:%p}, array length %d",
+		z.name, zkPath, event, len(infoList))
+	if len(infoList) == 0 {
+		delete(z.eventRegistry, zkPath)
+	} else {
+		z.eventRegistry[zkPath] = infoList
+	}
 }
 
 func (z *ZookeeperClient) Done() <-chan struct{} {

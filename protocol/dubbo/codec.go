@@ -25,7 +25,7 @@ import (
 )
 
 import (
-	"github.com/dubbogo/hessian2"
+	"github.com/apache/dubbo-go-hessian2"
 	perrors "github.com/pkg/errors"
 )
 
@@ -112,7 +112,6 @@ type PendingResponse struct {
 	readStart time.Time
 	callback  AsyncCallback
 	reply     interface{}
-	opts      CallOptions
 	done      chan struct{}
 }
 
@@ -125,7 +124,6 @@ func NewPendingResponse() *PendingResponse {
 
 func (r PendingResponse) GetCallResponse() CallResponse {
 	return CallResponse{
-		Opts:      r.opts,
 		Cause:     r.err,
 		Start:     r.start,
 		ReadStart: r.readStart,
