@@ -38,13 +38,18 @@ func TestDubboInvoker_Invoke(t *testing.T) {
 	c := &Client{
 		pendingResponses: new(sync.Map),
 		conf:             *clientConf,
+		opts: Options{
+			ConnectTimeout: 3e9,
+			RequestTimeout: 6e9,
+		},
 	}
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
 
 	invoker := NewDubboInvoker(url, c)
 	user := &User{}
 
-	inv := invocation.NewRPCInvocationForConsumer("GetUser", nil, []interface{}{"1", "username"}, user, nil, url, nil)
+	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUser"), invocation.WithArguments([]interface{}{"1", "username"}),
+		invocation.WithReply(user))
 
 	// Call
 	res := invoker.Invoke(inv)

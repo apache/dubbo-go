@@ -28,7 +28,6 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/version"
 )
 
 var (
@@ -46,11 +45,11 @@ func init() {
 
 	confConFile = os.Getenv(constant.CONF_CONSUMER_FILE_PATH)
 	confProFile = os.Getenv(constant.CONF_PROVIDER_FILE_PATH)
-	if errCon := consumerInit(confConFile); errCon != nil {
+	if errCon := ConsumerInit(confConFile); errCon != nil {
 		log.Printf("[consumerInit] %#v", errCon)
 		consumerConfig = nil
 	}
-	if errPro := providerInit(confProFile); errPro != nil {
+	if errPro := ProviderInit(confProFile); errPro != nil {
 		log.Printf("[providerInit] %#v", errPro)
 		providerConfig = nil
 	}
@@ -58,11 +57,6 @@ func init() {
 
 // Dubbo Init
 func Load() {
-	var (
-		refMap map[string]*ReferenceConfig
-		srvMap map[string]*ServiceConfig
-	)
-
 	// reference config
 	if consumerConfig == nil {
 		logger.Warnf("consumerConfig is nil!")
@@ -70,18 +64,20 @@ func Load() {
 		if err := configCenterRefreshConsumer(); err != nil {
 			logger.Errorf("[consumer config center refresh] %#v", err)
 		}
-		refMap = make(map[string]*ReferenceConfig)
-		for _, ref := range consumerConfig.References {
-			rpcService := GetConsumerService(ref.InterfaceName)
+		for key, ref := range consumerConfig.References {
+			if ref.Generic {
+				genericService := NewGenericService(key)
+				SetConsumerService(genericService)
+			}
+			rpcService := GetConsumerService(key)
 
 			if rpcService == nil {
-				logger.Warnf("%s is not exsist!", ref.InterfaceName)
+				logger.Warnf("%s is not exsist!", key)
 				continue
 			}
+			ref.id = key
 			ref.Refer()
 			ref.Implement(rpcService)
-			refMap[ref.InterfaceName] = ref
-
 		}
 		//wait for invoker is available, if wait over default 3s, then panic
 		var count int
@@ -97,7 +93,7 @@ func Load() {
 						checkok = false
 						count++
 						if count > maxWait {
-							panic(fmt.Sprintf("Failed to check the status of the service %v . No provider available for the service to the consumer use dubbo version %v", refconfig.InterfaceName, version.Version))
+							panic(fmt.Sprintf("Failed to check the status of the service %v . No provider available for the service to the consumer use dubbo version %v", refconfig.InterfaceName, constant.Version))
 						}
 						time.Sleep(time.Second * 1)
 						break
@@ -121,18 +117,17 @@ func Load() {
 		if err := configCenterRefreshProvider(); err != nil {
 			logger.Errorf("[provider config center refresh] %#v", err)
 		}
-		srvMap = make(map[string]*ServiceConfig)
-		for _, svs := range providerConfig.Services {
-			rpcService := GetProviderService(svs.InterfaceName)
+		for key, svs := range providerConfig.Services {
+			rpcService := GetProviderService(key)
 			if rpcService == nil {
-				logger.Warnf("%s is not exsist!", svs.InterfaceName)
+				logger.Warnf("%s is not exsist!", key)
 				continue
 			}
+			svs.id = key
 			svs.Implement(rpcService)
 			if err := svs.Export(); err != nil {
-				panic(fmt.Sprintf("service %s export failed! ", svs.InterfaceName))
+				panic(fmt.Sprintf("service %s export failed! ", key))
 			}
-			srvMap[svs.InterfaceName] = svs
 		}
 	}
 }
@@ -144,5 +139,5 @@ func GetRPCService(name string) common.RPCService {
 
 // create rpc service for consumer
 func RPCService(service common.RPCService) {
-	providerConfig.Services[service.Service()].Implement(service)
+	consumerConfig.References[service.Reference()].Implement(service)
 }

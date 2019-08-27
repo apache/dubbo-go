@@ -43,20 +43,14 @@ type TestService struct {
 	Echo        func(interface{}, *interface{}) error
 }
 
-func (s *TestService) Service() string {
+func (s *TestService) Reference() string {
 	return "com.test.Path"
-}
-func (s *TestService) Version() string {
-	return ""
 }
 
 type TestServiceInt int
 
-func (s *TestServiceInt) Service() string {
+func (s *TestServiceInt) Reference() string {
 	return "com.test.TestServiceInt"
-}
-func (s *TestServiceInt) Version() string {
-	return ""
 }
 
 func TestProxy_Implement(t *testing.T) {

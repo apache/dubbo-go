@@ -52,6 +52,7 @@ const (
 var serviceEventTypeStrings = [...]string{
 	"add",
 	"delete",
+	"update",
 }
 
 func (t EventType) String() string {
