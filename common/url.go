@@ -27,6 +27,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 import (
