@@ -146,7 +146,6 @@ func (c *HTTPClient) Call(ctx context.Context, service common.URL, req *Request,
 
 // !!The high level of complexity and the likelihood that the fasthttp client has not been extensively used
 // in production means that you would need to expect a very large benefit to justify the adoption of fasthttp today.
-// from: http://big-elephants.com/2016-12/fasthttp-client/
 func (c *HTTPClient) Do(addr, path string, httpHeader http.Header, body []byte) ([]byte, error) {
 	u := url.URL{Host: strings.TrimSuffix(addr, ":"), Path: path}
 	httpReq, err := http.NewRequest("POST", u.String(), bytes.NewBuffer(body))

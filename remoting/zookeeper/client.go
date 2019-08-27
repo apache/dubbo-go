@@ -65,7 +65,7 @@ func StateToString(state zk.State) string {
 	case zk.StateConnectedReadOnly:
 		return "zookeeper connect readonly"
 	case zk.StateSaslAuthenticated:
-		return "zookeeper sasl authenticaed"
+		return "zookeeper sasl authenticated"
 	case zk.StateExpired:
 		return "zookeeper connection expired"
 	case zk.StateConnected:
@@ -118,7 +118,7 @@ func ValidateZookeeperClient(container zkClientFacade, opts ...Option) error {
 	defer lock.Unlock()
 
 	if container.ZkClient() == nil {
-		//in dubbp ,every registry only connect one node ,so this is []string{r.Address}
+		//in dubbo ,every registry only connect one node ,so this is []string{r.Address}
 		timeout, err := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
 		if err != nil {
 			logger.Errorf("timeout config %v is invalid ,err is %v",
@@ -128,7 +128,7 @@ func ValidateZookeeperClient(container zkClientFacade, opts ...Option) error {
 		zkAddresses := strings.Split(url.Location, ",")
 		newClient, err := newZookeeperClient(opions.zkName, zkAddresses, timeout)
 		if err != nil {
-			logger.Warnf("newZookeeperClient(name{%s}, zk addresss{%v}, timeout{%d}) = error{%v}",
+			logger.Warnf("newZookeeperClient(name{%s}, zk address{%v}, timeout{%d}) = error{%v}",
 				opions.zkName, url.Location, timeout.String(), err)
 			return perrors.WithMessagef(err, "newZookeeperClient(address:%+v)", url.Location)
 		}
