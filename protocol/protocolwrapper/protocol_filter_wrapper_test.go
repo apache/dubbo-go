@@ -18,8 +18,6 @@
 package protocolwrapper
 
 import (
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/filter"
 	"net/url"
 	"testing"
 )
@@ -29,6 +27,8 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/filter"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
