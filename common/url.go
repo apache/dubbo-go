@@ -286,7 +286,9 @@ func (c URL) Service() string {
 }
 
 func (c *URL) AddParam(key string, value string) {
+	c.paramsLock.Lock()
 	c.Params.Add(key, value)
+	c.paramsLock.Unlock()
 }
 
 func (c URL) GetParam(s string, d string) string {

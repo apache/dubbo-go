@@ -233,7 +233,7 @@ func (r *zkRegistry) Register(conf common.URL) error {
 		r.cltLock.Lock()
 		// Note the difference between consumer and consumerZookeeperRegistry (consumer use conf.Path).
 		// Because the consumer wants to provide monitoring functions for the selector,
-		// the provider allows multiple groups or constants of the same service to be registered.
+		// the provider allows multiple groups or versions of the same service to be registered.
 		_, ok = r.services[conf.Key()]
 		r.cltLock.Unlock()
 		if ok {
@@ -381,7 +381,11 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 	}
 	zkPath, err = r.client.RegisterTemp(root, node)
 	if err != nil {
-		logger.Errorf("RegisterTempNode(root{%s}, node{%s}) = error{%v}", root, node, perrors.WithStack(err))
+		if err == zk.ErrNodeExists {
+			logger.Warnf("RegisterTempNode(root{%s}, node{%s}) = error{%v}", root, node, perrors.WithStack(err))
+		} else {
+			logger.Errorf("RegisterTempNode(root{%s}, node{%s}) = error{%v}", root, node, perrors.WithStack(err))
+		}
 		return perrors.WithMessagef(err, "RegisterTempNode(root{%s}, node{%s})", root, node)
 	}
 	logger.Debugf("create a zookeeper node:%s", zkPath)

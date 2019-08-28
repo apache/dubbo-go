@@ -80,7 +80,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry, opts ...O
 	}, nil
 }
 
-//subscibe from registry
+//subscribe from registry
 func (dir *registryDirectory) Subscribe(url common.URL) {
 	for {
 		if !dir.registry.IsAvailable() {
