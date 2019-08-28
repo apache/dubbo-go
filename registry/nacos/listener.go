@@ -147,7 +147,7 @@ func (nl *nacosListener) Callback(services []model.SubscribeService, err error) 
 	for i := range updateInstances {
 		newUrl := generateUrl(updateInstances[i])
 		if newUrl != nil {
-			nl.process(&remoting.ConfigChangeEvent{Value: *newUrl, ConfigType: remoting.EvnetTypeUpdate})
+			nl.process(&remoting.ConfigChangeEvent{Value: *newUrl, ConfigType: remoting.EventTypeUpdate})
 		}
 	}
 }
