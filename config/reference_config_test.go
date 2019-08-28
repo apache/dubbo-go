@@ -20,8 +20,6 @@ package config
 import (
 	"sync"
 	"testing"
-
-
 )
 
 import (
@@ -30,8 +28,8 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/cluster/cluster_impl"
-	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/protocol"
 )
