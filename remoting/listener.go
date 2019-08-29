@@ -46,7 +46,7 @@ type EventType int
 const (
 	EventTypeAdd = iota
 	EventTypeDel
-	EvnetTypeUpdate
+	EventTypeUpdate
 )
 
 var serviceEventTypeStrings = [...]string{
