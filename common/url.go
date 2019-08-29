@@ -27,6 +27,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 import (
@@ -64,10 +65,12 @@ func (t RoleType) Role() string {
 }
 
 type baseUrl struct {
-	Protocol     string
-	Location     string // ip+port
-	Ip           string
-	Port         string
+	Protocol string
+	Location string // ip+port
+	Ip       string
+	Port     string
+	//url.Values is not safe map, add to avoid concurrent map read and map write error
+	paramsLock   sync.RWMutex
 	Params       url.Values
 	PrimitiveURL string
 	ctx          context.Context
@@ -283,14 +286,18 @@ func (c URL) Service() string {
 }
 
 func (c *URL) AddParam(key string, value string) {
+	c.paramsLock.Lock()
 	c.Params.Add(key, value)
+	c.paramsLock.Unlock()
 }
 
 func (c URL) GetParam(s string, d string) string {
 	var r string
-	if r = c.Params.Get(s); r == "" {
+	c.paramsLock.RLock()
+	if r = c.Params.Get(s); len(r) == 0 {
 		r = d
 	}
+	c.paramsLock.RUnlock()
 	return r
 }
 func (c URL) GetParamAndDecoded(key string) (string, error) {
