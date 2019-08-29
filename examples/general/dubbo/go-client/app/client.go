@@ -33,6 +33,7 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 	_ "github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/config"
+	_ "github.com/apache/dubbo-go/protocol/dubbo"
 	_ "github.com/apache/dubbo-go/registry/protocol"
 
 	_ "github.com/apache/dubbo-go/filter/impl"
@@ -63,6 +64,9 @@ func main() {
 	test1()
 	println("\n\ntest2")
 	test2()
+
+	println("\n\ntest0")
+	test0()
 	initSignal()
 }
 
@@ -92,6 +96,30 @@ func initSignal() {
 
 func println(format string, args ...interface{}) {
 	fmt.Printf("\033[32;40m"+format+"\033[0m\n", args...)
+}
+
+func test0() {
+	var appName = "UserProvider"
+	var referenceConfig = config.ReferenceConfig{
+		InterfaceName: "com.ikurento.user.UserProvider",
+		Cluster:       "failover",
+		Registry:      "hangzhouzk",
+		Protocol:      dubbo.DUBBO,
+		Generic:       false,
+		Group:         "as",
+		Version:       "2.0",
+	}
+	referenceConfig.GenericLoad(appName) //appName is the unique identification of RPCService
+
+	time.Sleep(3 * time.Second)
+	println("\n\n\nstart to generic invoke")
+	resp, err := referenceConfig.GetRPCService().(*config.GenericService).Invoke([]interface{}{"GetUser", []string{"java.lang.String"}, []interface{}{"A003"}})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("res: %+v\n", resp)
+	println("succ!")
+
 }
 
 func test() {

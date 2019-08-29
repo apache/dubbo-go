@@ -19,10 +19,14 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
 import (
+	"github.com/apache/dubbo-go/common/logger"
 	_ "github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol/dubbo"
@@ -47,8 +51,37 @@ func main() {
 	test()
 	println("\n\ntest2")
 	test2()
-
+	initSignal()
 }
+
+func println(format string, args ...interface{}) {
+	fmt.Printf("\033[32;40m"+format+"\033[0m\n", args...)
+}
+
+func initSignal() {
+	signals := make(chan os.Signal, 1)
+	// It is not possible to block SIGKILL or syscall.SIGSTOP
+	signal.Notify(signals, os.Interrupt, os.Kill, syscall.SIGHUP,
+		syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
+	for {
+		sig := <-signals
+		logger.Infof("get signal %s", sig.String())
+		switch sig {
+		case syscall.SIGHUP:
+			// reload()
+		default:
+			go time.AfterFunc(time.Duration(survivalTimeout), func() {
+				logger.Warnf("app exit now by force...")
+				os.Exit(1)
+			})
+
+			// The program exits normally or timeout forcibly exits.
+			fmt.Println("app exit now...")
+			return
+		}
+	}
+}
+
 func test() {
 	var appName = "UserProviderGer"
 	var referenceConfig = config.ReferenceConfig{

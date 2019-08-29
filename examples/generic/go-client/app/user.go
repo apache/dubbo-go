@@ -55,3 +55,7 @@ type User struct {
 	Time time.Time
 	Sex  Gender // 注意此处，java enum Object <--> go string
 }
+
+func (User) JavaClassName() string {
+	return "com.ikurento.user.User"
+}

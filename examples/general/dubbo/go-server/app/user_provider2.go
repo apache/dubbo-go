@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-)
 
-import (
 	"github.com/apache/dubbo-go-hessian2/java_exception"
 	"github.com/apache/dubbo-go/config"
 	perrors "github.com/pkg/errors"

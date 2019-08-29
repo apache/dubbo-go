@@ -26,6 +26,7 @@ import (
 )
 
 import (
+	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	_ "github.com/apache/dubbo-go/protocol/dubbo"
@@ -48,6 +49,7 @@ var (
 // 		export APP_LOG_CONF_FILE="xxx"
 func main() {
 
+	hessian.RegisterPOJO(&User{})
 	config.Load()
 
 	initSignal()

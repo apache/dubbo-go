@@ -24,3 +24,8 @@ vendor/
 logs/
 .vscode/
 coverage.txt
+
+# maven
+.classpath
+.project
+.settings/

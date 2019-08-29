@@ -19,14 +19,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"time"
-)
 
-import (
-	"github.com/apache/dubbo-go-hessian2"
-)
-
-import (
+	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/apache/dubbo-go/config"
 )
 
@@ -47,7 +43,10 @@ type UserProvider struct {
 }
 
 func (u *UserProvider) GetUser(ctx context.Context, req []interface{}) (*User, error) {
-	return &User{"A001", "Alex Stocks", 18, time.Now()}, nil
+	println("req:%#v", req)
+	rsp := User{"A001", "Alex Stocks", 18, time.Now()}
+	println("rsp:%#v", rsp)
+	return &rsp, nil
 }
 
 func (u *UserProvider) Reference() string {
@@ -56,4 +55,8 @@ func (u *UserProvider) Reference() string {
 
 func (u User) JavaClassName() string {
 	return "com.ikurento.user.User"
+}
+
+func println(format string, args ...interface{}) {
+	fmt.Printf("\033[32;40m"+format+"\033[0m\n", args...)
 }
