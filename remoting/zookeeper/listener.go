@@ -70,7 +70,7 @@ func (l *ZkEventListener) ListenServiceNodeEvent(zkPath string, listener ...remo
 				logger.Warnf("zk.ExistW(key{%s}) = event{EventNodeDataChanged}", zkPath)
 				if len(listener) > 0 {
 					content, _, _ := l.client.Conn.Get(zkEvent.Path)
-					listener[0].DataChange(remoting.Event{Path: zkEvent.Path, Action: remoting.EvnetTypeUpdate, Content: string(content)})
+					listener[0].DataChange(remoting.Event{Path: zkEvent.Path, Action: remoting.EventTypeUpdate, Content: string(content)})
 				}
 
 			case zk.EventNodeCreated:
