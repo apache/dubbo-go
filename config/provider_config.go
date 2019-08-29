@@ -46,6 +46,7 @@ type ProviderConfig struct {
 	Services          map[string]*ServiceConfig  `yaml:"services" json:"services,omitempty" property:"services"`
 	Protocols         map[string]*ProtocolConfig `yaml:"protocols" json:"protocols,omitempty" property:"protocols"`
 	ProtocolConf      interface{}                `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf" `
+	FilterConf        interface{}                `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf" `
 }
 
 func (*ProviderConfig) Prefix() string {
