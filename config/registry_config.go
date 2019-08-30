@@ -36,9 +36,10 @@ type RegistryConfig struct {
 	TimeoutStr string `yaml:"timeout" default:"5s" json:"timeout,omitempty" property:"timeout"` // unit: second
 	Group      string `yaml:"group" json:"group,omitempty" property:"group"`
 	//for registry
-	Address  string `yaml:"address" json:"address,omitempty" property:"address"`
-	Username string `yaml:"username" json:"username,omitempty" property:"username"`
-	Password string `yaml:"password" json:"password,omitempty"  property:"password"`
+	Address  string            `yaml:"address" json:"address,omitempty" property:"address"`
+	Username string            `yaml:"username" json:"username,omitempty" property:"username"`
+	Password string            `yaml:"password" json:"password,omitempty"  property:"password"`
+	Params   map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
 }
 
 func (*RegistryConfig) Prefix() string {
@@ -109,6 +110,8 @@ func (regconfig *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values 
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(int(roleType)))
 	urlMap.Set(constant.REGISTRY_KEY, regconfig.Protocol)
 	urlMap.Set(constant.REGISTRY_TIMEOUT_KEY, regconfig.TimeoutStr)
-
+	for k, v := range regconfig.Params {
+		urlMap.Set(k, v)
+	}
 	return urlMap
 }
