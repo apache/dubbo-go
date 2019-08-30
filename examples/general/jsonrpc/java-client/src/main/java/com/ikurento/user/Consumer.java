@@ -1,12 +1,19 @@
-// *****************************************************
-// DESC    : dubbo consumer
-// AUTHOR  : writtey by 包增辉(https://github.com/baozh)
-// VERSION : 1.0
-// LICENCE : Apache License 2.0
-// EMAIL   : alexstocks@foxmail.com
-// MOD     : 2016-10-19 17:03
-// FILE    : Consumer.java
-// ******************************************************
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package com.ikurento.user;
 
@@ -17,12 +24,12 @@ import com.alibaba.dubbo.rpc.service.EchoService;
 import java.util.List;
 
 public class Consumer {
-    //定义一个私有变量 （Spring中要求）
+    // Define a private variable (Required in Spring)
     private UserProvider userProvider;
     private UserProvider userProvider1;
     private UserProvider userProvider2;
 
-    //Spring注入（Spring中要求）
+    // Spring DI (Required in Spring)
     public void setUserProvider(UserProvider u) {
         this.userProvider = u;
     }
@@ -33,7 +40,7 @@ public class Consumer {
         this.userProvider2 = u;
     }
 
-    //启动consumer的入口函数(在配置文件中指定)
+    // Start the entry function for consumer (Specified in the configuration file)
     public void start() throws Exception {
         System.out.println("\n\ntest");
         testGetUser();

@@ -83,11 +83,7 @@ func struct2MapAll(obj interface{}) interface{} {
 	if t.Kind() == reflect.Struct {
 		result := make(map[string]interface{}, t.NumField())
 		for i := 0; i < t.NumField(); i++ {
-			if v.Field(i).Kind() == reflect.Struct {
-				if v.Field(i).CanInterface() {
-					setInMap(result, t.Field(i), struct2MapAll(v.Field(i).Interface()))
-				}
-			} else if v.Field(i).Kind() == reflect.Slice {
+			if v.Field(i).Kind() == reflect.Struct || v.Field(i).Kind() == reflect.Slice || v.Field(i).Kind() == reflect.Map {
 				if v.Field(i).CanInterface() {
 					setInMap(result, t.Field(i), struct2MapAll(v.Field(i).Interface()))
 				}
@@ -106,6 +102,18 @@ func struct2MapAll(obj interface{}) interface{} {
 			newTemps = append(newTemps, newTemp)
 		}
 		return newTemps
+	} else if t.Kind() == reflect.Map {
+		var newTempMap = make(map[string]interface{}, v.Len())
+		iter := v.MapRange()
+		for iter.Next() {
+			mapK := iter.Key().String()
+			if !iter.Value().CanInterface() {
+				continue
+			}
+			mapV := iter.Value().Interface()
+			newTempMap[mapK] = struct2MapAll(mapV)
+		}
+		return newTempMap
 	} else {
 		return obj
 	}

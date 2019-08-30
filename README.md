@@ -6,6 +6,10 @@
 ---
 Apache Dubbo Go Implementation.
 
+![Apache Dubbo-go](./dubbogo.png "Apache Dubbo-go")
+
+Apache/Dubbo-go image, licensed under [Creative Commons 3.0 Attributions license](https://creativecommons.org/licenses/by/3.0/).
+
 ## License
 
 Apache License, Version 2.0
@@ -29,18 +33,18 @@ Finished List:
 - Role: Consumer, Provider
 - Transport: HTTP, TCP
 - Codec: JsonRPC v2, Hessian v2
-- Registry: ZooKeeper
+- Registry: ZooKeeper/[etcd v3](https://github.com/apache/dubbo-go/pull/148)/[nacos](https://github.com/apache/dubbo-go/pull/151)/[consul](https://github.com/apache/dubbo-go/pull/121)
 - Configure Center: Zookeeper
-- Cluster Strategy: Failover
-- Load Balance: Random, RoundRobin, LeastActive
-- Filter: Echo Health Check
+- Cluster Strategy: Failover/[Failfast](https://github.com/apache/dubbo-go/pull/140)/[Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136)/[Available](https://github.com/apache/dubbo-go/pull/155)/[Broadcast](https://github.com/apache/dubbo-go/pull/158)/[Forking](https://github.com/apache/dubbo-go/pull/161)
+- Load Balance: Random/[RoundRobin](https://github.com/apache/dubbo-go/pull/66)/[LeastActive](https://github.com/apache/dubbo-go/pull/65)
+- Filter: Echo Health Check/[Circuit break and service downgrade](https://github.com/apache/dubbo-go/pull/133)
+- Other feature: [generic invoke](https://github.com/apache/dubbo-go/pull/122)/start check/connecting certain provider/multi-protocols/multi-registries/multi-versions/service group
 
 Working List:
 
-- Cluster Strategy: Failfast/Failsafe/Failback/Forking
 - Load Balance: ConsistentHash
-- Filter: TokenFilter/AccessLogFilter/CountFilter/ActiveLimitFilter/ExecuteLimitFilter/GenericFilter/TpsLimitFilter
-- Registry: etcd/k8s/consul/nacos
+- Filter: TokenFilter/AccessLogFilter/CountFilter/ExecuteLimitFilter/TpsLimitFilter
+- Registry: k8s
 - Configure Center: apollo
 - Dynamic Configuration Center & Metadata Center (dubbo v2.7.x)
 - Metrics: Promethus(dubbo v2.7.x)
@@ -55,7 +59,7 @@ You can know more about dubbo-go by its [roadmap](https://github.com/apache/dubb
 
 ## Document
 
-Move [here](https://dubbogo.github.io/dubbo-go-website/)
+TODO
 
 ## Quick Start
 
