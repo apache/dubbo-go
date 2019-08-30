@@ -70,9 +70,11 @@ type ProxyInvoker struct {
 func (pi *ProxyInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	result := &protocol.RPCResult{}
 
+	url := pi.GetUrl().SubURL
+
 	methodName := invocation.MethodName()
-	proto := pi.GetUrl().Protocol
-	path := strings.TrimPrefix(pi.GetUrl().Path, "/")
+	proto := url.Protocol
+	path := strings.TrimPrefix(url.Path, "/")
 	args := invocation.Arguments()
 
 	// get service
