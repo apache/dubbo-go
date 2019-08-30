@@ -29,6 +29,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/cluster/cluster_impl"
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/protocol"
 )
@@ -82,6 +83,7 @@ func doInit() {
 			"MockService": {
 				Params: map[string]string{
 					"serviceid": "soa.mock",
+					"forks":     "5",
 				},
 				Registry:      "shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2",
 				InterfaceName: "com.MockService",
@@ -186,6 +188,23 @@ func Test_Implement(t *testing.T) {
 		reference.Implement(&MockService{})
 		assert.NotNil(t, reference.GetRPCService())
 
+	}
+	consumerConfig = nil
+}
+
+func Test_Forking(t *testing.T) {
+	doInit()
+	extension.SetProtocol("dubbo", GetProtocol)
+	extension.SetProtocol("registry", GetProtocol)
+	m := consumerConfig.References["MockService"]
+	m.Url = "dubbo://127.0.0.1:20000;registry://127.0.0.2:20000"
+
+	for _, reference := range consumerConfig.References {
+		reference.Refer()
+		forks := int(reference.invoker.GetUrl().GetParamInt(constant.FORKS_KEY, constant.DEFAULT_FORKS))
+		assert.Equal(t, 5, forks)
+		assert.NotNil(t, reference.pxy)
+		assert.NotNil(t, reference.Cluster)
 	}
 	consumerConfig = nil
 }

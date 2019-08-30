@@ -26,11 +26,13 @@ const (
 )
 
 const (
-	DEFAULT_LOADBALANCE = "random"
-	DEFAULT_RETRIES     = 2
-	DEFAULT_PROTOCOL    = "dubbo"
-	DEFAULT_REG_TIMEOUT = "10s"
-	DEFAULT_CLUSTER     = "failover"
+	DEFAULT_LOADBALANCE    = "random"
+	DEFAULT_RETRIES        = 2
+	DEFAULT_PROTOCOL       = "dubbo"
+	DEFAULT_REG_TIMEOUT    = "10s"
+	DEFAULT_CLUSTER        = "failover"
+	DEFAULT_FAILBACK_TIMES = 3
+	DEFAULT_FAILBACK_TASKS = 100
 )
 
 const (

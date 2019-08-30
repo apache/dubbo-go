@@ -30,7 +30,9 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/filter/impl"
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/filter"
+	//"github.com/apache/dubbo-go/filter/impl"
 	"github.com/apache/dubbo-go/protocol"
 )
 
@@ -40,7 +42,7 @@ func TestProtocolFilterWrapper_Export(t *testing.T) {
 
 	u := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.SERVICE_FILTER_KEY, impl.ECHO))
+		common.WithParamsValue(constant.SERVICE_FILTER_KEY, "echo"))
 	exporter := filtProto.Export(protocol.NewBaseInvoker(*u))
 	_, ok := exporter.GetInvoker().(*FilterInvoker)
 	assert.True(t, ok)
@@ -52,8 +54,35 @@ func TestProtocolFilterWrapper_Refer(t *testing.T) {
 
 	u := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.REFERENCE_FILTER_KEY, impl.ECHO))
+		common.WithParamsValue(constant.REFERENCE_FILTER_KEY, "echo"))
 	invoker := filtProto.Refer(*u)
 	_, ok := invoker.(*FilterInvoker)
 	assert.True(t, ok)
+}
+
+//the same as echo filter, for test
+func init() {
+	extension.SetFilter("echo", GetFilter)
+}
+
+type EchoFilterForTest struct{}
+
+func (ef *EchoFilterForTest) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	logger.Infof("invoking echo filter.")
+	logger.Debugf("%v,%v", invocation.MethodName(), len(invocation.Arguments()))
+	if invocation.MethodName() == constant.ECHO && len(invocation.Arguments()) == 1 {
+		return &protocol.RPCResult{
+			Rest: invocation.Arguments()[0],
+		}
+	}
+
+	return invoker.Invoke(invocation)
+}
+
+func (ef *EchoFilterForTest) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	return result
+}
+
+func GetFilter() filter.Filter {
+	return &EchoFilterForTest{}
 }
