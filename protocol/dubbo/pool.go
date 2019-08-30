@@ -352,7 +352,7 @@ func (p *gettyRPCClientPool) remove(conn *gettyRPCClient) {
 	}
 }
 
-func (p *gettyRPCClientPool)safeRemove(conn *gettyRPCClient) {
+func (p *gettyRPCClientPool) safeRemove(conn *gettyRPCClient) {
 	p.Lock()
 	defer p.Unlock()
 
