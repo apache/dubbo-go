@@ -294,7 +294,6 @@ func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPC
 		return conn, nil
 	}
 	// create new conn
-
 	return newGettyRPCClientConn(p, protocol, addr)
 }
 
