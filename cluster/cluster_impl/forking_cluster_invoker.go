@@ -47,13 +47,13 @@ func newForkingClusterInvoker(directory cluster.Directory) protocol.Invoker {
 func (invoker *forkingClusterInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	err := invoker.checkWhetherDestroyed()
 	if err != nil {
-		return &protocol.RPCResult{Err: err}
+		return protocol.NewErrorRpcResult(err)
 	}
 
 	invokers := invoker.directory.List(invocation)
 	err = invoker.checkInvokers(invokers, invocation)
 	if err != nil {
-		return &protocol.RPCResult{Err: err}
+		return protocol.NewErrorRpcResult(err)
 	}
 
 	var selected []protocol.Invoker
@@ -85,15 +85,15 @@ func (invoker *forkingClusterInvoker) Invoke(invocation protocol.Invocation) pro
 
 	rsps, err := resultQ.Poll(1, time.Millisecond*time.Duration(timeouts))
 	if err != nil {
-		return &protocol.RPCResult{
-			Err: errors.New(fmt.Sprintf("failed to forking invoke provider %v, but no luck to perform the invocation. Last error is: %s", selected, err.Error()))}
+		return protocol.NewErrorRpcResult(
+			errors.New(fmt.Sprintf("failed to forking invoke provider %v, but no luck to perform the invocation. Last error is: %s", selected, err.Error())))
 	}
 	if len(rsps) == 0 {
-		return &protocol.RPCResult{Err: errors.New(fmt.Sprintf("failed to forking invoke provider %v, but no resp", selected))}
+		return protocol.NewErrorRpcResult(errors.New(fmt.Sprintf("failed to forking invoke provider %v, but no resp", selected)))
 	}
 	result, ok := rsps[0].(protocol.Result)
 	if !ok {
-		return &protocol.RPCResult{Err: errors.New(fmt.Sprintf("failed to forking invoke provider %v, but not legal resp", selected))}
+		return protocol.NewErrorRpcResult(errors.New(fmt.Sprintf("failed to forking invoke provider %v, but not legal resp", selected)))
 	}
 	return result
 }

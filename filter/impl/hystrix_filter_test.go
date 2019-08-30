@@ -126,10 +126,7 @@ type testMockSuccessInvoker struct {
 }
 
 func (iv *testMockSuccessInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
-	return &protocol.RPCResult{
-		Rest: "Sucess",
-		Err:  nil,
-	}
+	return protocol.NewRpcResult("Success").SetError(nil)
 }
 
 type testMockFailInvoker struct {
@@ -137,9 +134,7 @@ type testMockFailInvoker struct {
 }
 
 func (iv *testMockFailInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
-	return &protocol.RPCResult{
-		Err: errors.Errorf("exception"),
-	}
+	return protocol.NewErrorRpcResult(errors.Errorf("exception"))
 }
 
 func TestHystrixFilter_Invoke_Success(t *testing.T) {

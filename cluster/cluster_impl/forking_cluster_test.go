@@ -68,7 +68,7 @@ func Test_ForkingInvokeSuccess(t *testing.T) {
 
 	invokers := make([]*mock.MockInvoker, 0)
 
-	mockResult := &protocol.RPCResult{Rest: rest{tried: 0, success: true}}
+	mockResult := protocol.NewRpcResult(rest{tried: 0, success: true})
 	forkingUrl.AddParam(constant.FORKS_KEY, strconv.Itoa(3))
 	//forkingUrl.AddParam(constant.TIMEOUT_KEY, strconv.Itoa(constant.DEFAULT_TIMEOUT))
 
@@ -98,7 +98,7 @@ func Test_ForkingInvokeTimeout(t *testing.T) {
 
 	invokers := make([]*mock.MockInvoker, 0)
 
-	mockResult := &protocol.RPCResult{Rest: rest{tried: 0, success: true}}
+	mockResult := protocol.NewRpcResult(rest{tried: 0, success: true})
 	forkingUrl.AddParam(constant.FORKS_KEY, strconv.Itoa(3))
 
 	var wg sync.WaitGroup
@@ -129,7 +129,7 @@ func Test_ForkingInvokeHalfTimeout(t *testing.T) {
 
 	invokers := make([]*mock.MockInvoker, 0)
 
-	mockResult := &protocol.RPCResult{Rest: rest{tried: 0, success: true}}
+	mockResult := protocol.NewRpcResult(rest{tried: 0, success: true})
 	forkingUrl.AddParam(constant.FORKS_KEY, strconv.Itoa(3))
 
 	var wg sync.WaitGroup

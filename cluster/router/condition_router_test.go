@@ -102,7 +102,7 @@ func (bi *MockInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	} else {
 		err = perrors.New("error")
 	}
-	result := &protocol.RPCResult{Err: err, Rest: rest{tried: count, success: success}}
+	result := protocol.NewRpcResult(rest{tried: count, success: success}).SetError(err)
 	return result
 }
 

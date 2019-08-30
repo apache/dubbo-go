@@ -66,21 +66,30 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	}
 	if async {
 		if callBack, ok := inv.CallBack().(func(response CallResponse)); ok {
-			result.Err = di.client.AsyncCall(url.Location, url, inv.MethodName(), inv.Arguments(), callBack, inv.Reply())
+			err := di.client.AsyncCall(url.Location, url, inv.MethodName(), inv.Arguments(), callBack, inv.Reply())
+			if err != nil {
+				result.SetResult(err)
+			}
 		} else {
-			result.Err = di.client.CallOneway(url.Location, url, inv.MethodName(), inv.Arguments())
+			err := di.client.CallOneway(url.Location, url, inv.MethodName(), inv.Arguments())
+			if err != nil {
+				result.SetResult(err)
+			}
 		}
 	} else {
 		if inv.Reply() == nil {
-			result.Err = Err_No_Reply
+			result.SetError(Err_No_Reply)
 		} else {
-			result.Err = di.client.Call(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Reply())
+			err := di.client.Call(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Reply())
+			if err != nil {
+				result.SetError(err)
+			}
 		}
 	}
-	if result.Err == nil {
-		result.Rest = inv.Reply()
+	if result.Error() == nil {
+		result.SetResult(inv.Reply())
 	}
-	logger.Debugf("result.Err: %v, result.Rest: %v", result.Err, result.Rest)
+	logger.Debugf("result.Err: %v, result.Rest: %v", result.Error(), result.Result())
 
 	return &result
 }

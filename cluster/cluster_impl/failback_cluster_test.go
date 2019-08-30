@@ -69,7 +69,7 @@ func Test_FailbackSuceess(t *testing.T) {
 
 	invoker.EXPECT().GetUrl().Return(failbackUrl).Times(1)
 
-	mockResult := &protocol.RPCResult{Rest: rest{tried: 0, success: true}}
+	mockResult := protocol.NewRpcResult(rest{tried: 0, success: true})
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
 
 	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
@@ -87,14 +87,14 @@ func Test_FailbackRetryOneSuccess(t *testing.T) {
 	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()
 
 	// failed at first
-	mockFailedResult := &protocol.RPCResult{Err: perrors.New("error")}
+	mockFailedResult := protocol.NewErrorRpcResult(perrors.New("error"))
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockFailedResult)
 
 	// success second
 	var wg sync.WaitGroup
 	wg.Add(1)
 	now := time.Now()
-	mockSuccResult := &protocol.RPCResult{Rest: rest{tried: 0, success: true}}
+	mockSuccResult := protocol.NewRpcResult(rest{tried: 0, success: true})
 	invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(func(invocation protocol.Invocation) protocol.Result {
 		delta := time.Since(now).Nanoseconds() / int64(time.Second)
 		assert.True(t, delta >= 5)
@@ -129,7 +129,7 @@ func Test_FailbackRetryFailed(t *testing.T) {
 
 	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()
 
-	mockFailedResult := &protocol.RPCResult{Err: perrors.New("error")}
+	mockFailedResult := protocol.NewErrorRpcResult(perrors.New("error"))
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockFailedResult)
 
 	//
@@ -177,7 +177,7 @@ func Test_FailbackRetryFailed10Times(t *testing.T) {
 	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()
 
 	// 10 task should failed firstly.
-	mockFailedResult := &protocol.RPCResult{Err: perrors.New("error")}
+	mockFailedResult := protocol.NewErrorRpcResult(perrors.New("error"))
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockFailedResult).Times(10)
 
 	// 10 task should retry and failed.
@@ -218,7 +218,7 @@ func Test_FailbackOutOfLimit(t *testing.T) {
 
 	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()
 
-	mockFailedResult := &protocol.RPCResult{Err: perrors.New("error")}
+	mockFailedResult := protocol.NewErrorRpcResult(perrors.New("error"))
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockFailedResult).Times(11)
 
 	// reached limit

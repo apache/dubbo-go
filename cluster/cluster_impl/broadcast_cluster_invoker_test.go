@@ -65,7 +65,7 @@ func Test_BroadcastInvokeSuccess(t *testing.T) {
 
 	invokers := make([]*mock.MockInvoker, 0)
 
-	mockResult := &protocol.RPCResult{Rest: rest{tried: 0, success: true}}
+	mockResult := protocol.NewRpcResult(rest{tried: 0, success: true})
 	for i := 0; i < 3; i++ {
 		invoker := mock.NewMockInvoker(ctrl)
 		invokers = append(invokers, invoker)
@@ -84,8 +84,8 @@ func Test_BroadcastInvokeFailed(t *testing.T) {
 
 	invokers := make([]*mock.MockInvoker, 0)
 
-	mockResult := &protocol.RPCResult{Rest: rest{tried: 0, success: true}}
-	mockFailedResult := &protocol.RPCResult{Err: errors.New("just failed")}
+	mockResult := protocol.NewRpcResult(rest{tried: 0, success: true})
+	mockFailedResult := protocol.NewErrorRpcResult(errors.New("just failed"))
 	for i := 0; i < 10; i++ {
 		invoker := mock.NewMockInvoker(ctrl)
 		invokers = append(invokers, invoker)
@@ -105,5 +105,5 @@ func Test_BroadcastInvokeFailed(t *testing.T) {
 	clusterInvoker := registerBroadcast(t, invokers...)
 
 	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
-	assert.Equal(t, mockFailedResult.Err, result.Error())
+	assert.Equal(t, mockFailedResult.Error(), result.Error())
 }

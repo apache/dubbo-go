@@ -37,11 +37,11 @@ func (invoker *broadcastClusterInvoker) Invoke(invocation protocol.Invocation) p
 	invokers := invoker.directory.List(invocation)
 	err := invoker.checkInvokers(invokers, invocation)
 	if err != nil {
-		return &protocol.RPCResult{Err: err}
+		return protocol.NewErrorRpcResult(err)
 	}
 	err = invoker.checkWhetherDestroyed()
 	if err != nil {
-		return &protocol.RPCResult{Err: err}
+		return protocol.NewErrorRpcResult(err)
 	}
 
 	var result protocol.Result
@@ -53,7 +53,7 @@ func (invoker *broadcastClusterInvoker) Invoke(invocation protocol.Invocation) p
 		}
 	}
 	if err != nil {
-		return &protocol.RPCResult{Err: err}
+		return protocol.NewErrorRpcResult(err)
 	}
 	return result
 }

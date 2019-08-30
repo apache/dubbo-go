@@ -55,11 +55,14 @@ func (ji *JsonrpcInvoker) Invoke(invocation protocol.Invocation) protocol.Result
 		"X-Services": url.Path,
 		"X-Method":   inv.MethodName(),
 	})
-	result.Err = ji.client.Call(ctx, url, req, inv.Reply())
-	if result.Err == nil {
-		result.Rest = inv.Reply()
+
+	error := ji.client.Call(ctx, url, req, inv.Reply())
+	if error == nil {
+		result.SetResult(inv.Reply())
+	}else {
+		result.SetError(error)
 	}
-	logger.Debugf("result.Err: %v, result.Rest: %v", result.Err, result.Rest)
+	logger.Debugf("result.Err: %v, result.Rest: %v", result.Error(), result.Result())
 
 	return &result
 }

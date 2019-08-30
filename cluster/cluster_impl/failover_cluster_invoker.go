@@ -44,7 +44,7 @@ func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) pr
 	err := invoker.checkInvokers(invokers, invocation)
 
 	if err != nil {
-		return &protocol.RPCResult{Err: err}
+		return protocol.NewErrorRpcResult(err)
 	}
 
 	loadbalance := getLoadBalance(invokers[0], invocation)
@@ -68,12 +68,12 @@ func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) pr
 		if i > 0 {
 			err := invoker.checkWhetherDestroyed()
 			if err != nil {
-				return &protocol.RPCResult{Err: err}
+				return protocol.NewErrorRpcResult(err)
 			}
 			invokers = invoker.directory.List(invocation)
 			err = invoker.checkInvokers(invokers, invocation)
 			if err != nil {
-				return &protocol.RPCResult{Err: err}
+				return protocol.NewErrorRpcResult(err)
 			}
 		}
 		ivk := invoker.doSelect(loadbalance, invocation, invokers, invoked)
@@ -88,8 +88,8 @@ func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) pr
 		}
 	}
 	ip, _ := utils.GetLocalIP()
-	return &protocol.RPCResult{Err: perrors.Errorf("Failed to invoke the method %v in the service %v. Tried %v times of "+
+	return protocol.NewErrorRpcResult(perrors.Errorf("Failed to invoke the method %v in the service %v. Tried %v times of "+
 		"the providers %v (%v/%v)from the registry %v on the consumer %v using the dubbo version %v. Last error is %v.",
 		methodName, invoker.GetUrl().Service(), retries, providers, len(providers), len(invokers), invoker.directory.GetUrl(), ip, constant.Version, result.Error().Error(),
-	)}
+	))
 }

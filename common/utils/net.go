@@ -25,60 +25,33 @@ import (
 	perrors "github.com/pkg/errors"
 )
 
-var (
-	privateBlocks []*net.IPNet
-)
+var localIp = ""
 
 func init() {
-	for _, b := range []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"} {
-		if _, block, err := net.ParseCIDR(b); err == nil {
-			privateBlocks = append(privateBlocks, block)
-		}
-	}
+	initLocalIp()
 }
 
-// ref: https://stackoverflow.com/questions/23558425/how-do-i-get-the-local-ip-address-in-go
-func GetLocalIP() (string, error) {
-	ifs, err := net.Interfaces()
+func initLocalIp() (string, error) {
+	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		return "", perrors.WithStack(err)
 	}
 
-	var ipAddr []byte
-	for _, i := range ifs {
-		addrs, err := i.Addrs()
-		if err != nil {
-			return "", perrors.WithStack(err)
-		}
-		var ip net.IP
-		for _, addr := range addrs {
-			switch v := addr.(type) {
-			case *net.IPNet:
-				ip = v.IP
-			case *net.IPAddr:
-				ip = v.IP
-			}
-
-			if !ip.IsLoopback() && ip.To4() != nil && isPrivateIP(ip.String()) {
-				ipAddr = ip
-				break
+	for _, addr := range addrs {
+		if ipNet, ok := addr.(*net.IPNet); ok && !ipNet.IP.IsLoopback() {
+			if ipNet.IP.To4() != nil {
+				localIp = ipNet.IP.String()
 			}
 		}
 	}
 
-	if ipAddr == nil {
+	if localIp == "" {
 		return "", perrors.Errorf("can not get local IP")
 	}
 
-	return net.IP(ipAddr).String(), nil
+	return localIp, nil
 }
 
-func isPrivateIP(ipAddr string) bool {
-	ip := net.ParseIP(ipAddr)
-	for _, priv := range privateBlocks {
-		if priv.Contains(ip) {
-			return true
-		}
-	}
-	return false
+func GetLocalIP() (string, error) {
+	return localIp, nil
 }

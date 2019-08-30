@@ -36,14 +36,14 @@ func (invoker *failfastClusterInvoker) Invoke(invocation protocol.Invocation) pr
 	invokers := invoker.directory.List(invocation)
 	err := invoker.checkInvokers(invokers, invocation)
 	if err != nil {
-		return &protocol.RPCResult{Err: err}
+		return protocol.NewErrorRpcResult(err)
 	}
 
 	loadbalance := getLoadBalance(invokers[0], invocation)
 
 	err = invoker.checkWhetherDestroyed()
 	if err != nil {
-		return &protocol.RPCResult{Err: err}
+		return protocol.NewErrorRpcResult(err)
 	}
 
 	ivk := invoker.doSelect(loadbalance, invocation, invokers, nil)

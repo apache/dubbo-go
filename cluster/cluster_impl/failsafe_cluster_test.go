@@ -66,7 +66,7 @@ func Test_FailSafeInvokeSuccess(t *testing.T) {
 
 	invoker.EXPECT().GetUrl().Return(failsafeUrl)
 
-	mockResult := &protocol.RPCResult{Rest: rest{tried: 0, success: true}}
+	mockResult := protocol.NewRpcResult(rest{tried: 0, success: true})
 
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
 	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
@@ -85,7 +85,7 @@ func Test_FailSafeInvokeFail(t *testing.T) {
 
 	invoker.EXPECT().GetUrl().Return(failsafeUrl)
 
-	mockResult := &protocol.RPCResult{Err: perrors.New("error")}
+	mockResult := protocol.NewErrorRpcResult(perrors.New("error"))
 
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
 	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})

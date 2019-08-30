@@ -18,13 +18,13 @@
 package protocol
 
 type Result interface {
-	SetError(error)
+	SetError(error) Result
 	Error() error
-	SetResult(interface{})
+	SetResult(interface{}) Result
 	Result() interface{}
-	SetAttachments(map[string]string)
+	SetAttachments(map[string]string) Result
 	Attachments() map[string]string
-	AddAttachment(string, string)
+	AddAttachment(string, string) Result
 	Attachment(string, string) string
 }
 
@@ -33,41 +33,57 @@ type Result interface {
 /////////////////////////////
 
 type RPCResult struct {
-	Attrs map[string]string
-	Err   error
-	Rest  interface{}
+	attrs map[string]string
+	err   error
+	rest  interface{}
 }
 
-func (r *RPCResult) SetError(err error) {
-	r.Err = err
+func NewErrorRpcResult(err error) *RPCResult {
+	result := &RPCResult{}
+	result.err = err
+	return result
+}
+
+func NewRpcResult(rest interface{}) *RPCResult {
+	result := &RPCResult{}
+	result.rest = rest
+	return result
+}
+
+func (r *RPCResult) SetError(err error) Result {
+	r.err = err
+	return r
 }
 
 func (r *RPCResult) Error() error {
-	return r.Err
+	return r.err
 }
 
-func (r *RPCResult) SetResult(rest interface{}) {
-	r.Rest = rest
+func (r *RPCResult) SetResult(rest interface{}) Result {
+	r.rest = rest
+	return r
 }
 
 func (r *RPCResult) Result() interface{} {
-	return r.Rest
+	return r.rest
 }
 
-func (r *RPCResult) SetAttachments(attr map[string]string) {
-	r.Attrs = attr
+func (r *RPCResult) SetAttachments(attr map[string]string) Result {
+	r.attrs = attr
+	return r
 }
 
 func (r *RPCResult) Attachments() map[string]string {
-	return r.Attrs
+	return r.attrs
 }
 
-func (r *RPCResult) AddAttachment(key, value string) {
-	r.Attrs[key] = value
+func (r *RPCResult) AddAttachment(key, value string) Result {
+	r.attrs[key] = value
+	return r
 }
 
 func (r *RPCResult) Attachment(key, defaultValue string) string {
-	v, ok := r.Attrs[key]
+	v, ok := r.attrs[key]
 	if !ok {
 		v = defaultValue
 	}

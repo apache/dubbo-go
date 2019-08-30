@@ -62,7 +62,7 @@ func TestAvailableClusterInvokerSuccess(t *testing.T) {
 	invoker := mock.NewMockInvoker(ctrl)
 	clusterInvoker := registerAvailable(t, invoker)
 
-	mockResult := &protocol.RPCResult{Rest: rest{tried: 0, success: true}}
+	mockResult := protocol.NewRpcResult(rest{tried: 0, success: true})
 	invoker.EXPECT().IsAvailable().Return(true)
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
 

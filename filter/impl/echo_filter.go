@@ -42,9 +42,7 @@ func (ef *EchoFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invoc
 	logger.Infof("invoking echo filter.")
 	logger.Debugf("%v,%v", invocation.MethodName(), len(invocation.Arguments()))
 	if invocation.MethodName() == constant.ECHO && len(invocation.Arguments()) == 1 {
-		return &protocol.RPCResult{
-			Rest: invocation.Arguments()[0],
-		}
+		return protocol.NewRpcResult(invocation.Arguments()[0])
 	}
 
 	return invoker.Invoke(invocation)

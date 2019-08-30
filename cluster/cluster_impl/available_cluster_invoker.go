@@ -18,14 +18,8 @@ limitations under the License.
 package cluster_impl
 
 import (
+	"errors"
 	"fmt"
-)
-
-import (
-	"github.com/pkg/errors"
-)
-
-import (
 	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/protocol"
 )
@@ -44,12 +38,12 @@ func (invoker *availableClusterInvoker) Invoke(invocation protocol.Invocation) p
 	invokers := invoker.directory.List(invocation)
 	err := invoker.checkInvokers(invokers, invocation)
 	if err != nil {
-		return &protocol.RPCResult{Err: err}
+		return protocol.NewErrorRpcResult(err)
 	}
 
 	err = invoker.checkWhetherDestroyed()
 	if err != nil {
-		return &protocol.RPCResult{Err: err}
+		return protocol.NewErrorRpcResult(err)
 	}
 
 	for _, ivk := range invokers {
@@ -57,5 +51,5 @@ func (invoker *availableClusterInvoker) Invoke(invocation protocol.Invocation) p
 			return ivk.Invoke(invocation)
 		}
 	}
-	return &protocol.RPCResult{Err: errors.New(fmt.Sprintf("no provider available in %v", invokers))}
+	return protocol.NewErrorRpcResult(errors.New(fmt.Sprintf("no provider available in %v", invokers)))
 }
