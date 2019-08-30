@@ -200,3 +200,6 @@ func (ivk *wrappedInvoker) GetUrl() common.URL {
 func (ivk *wrappedInvoker) getInvoker() protocol.Invoker {
 	return ivk.invoker
 }
+func (ivk *wrappedInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+	return ivk.invoker.Invoke(invocation)
+}
