@@ -220,12 +220,13 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 				logger.Errorf("OnMessage panic: %+v, this is impossible.", e)
 				p.Body = e
 			}
+
+			if !twoway {
+				return
+			}
+			h.reply(session, p, hessian.PackageResponse)
 		}
 
-		if !twoway {
-			return
-		}
-		h.reply(session, p, hessian.PackageResponse)
 	}()
 
 	u := common.NewURLWithOptions(common.WithPath(p.Service.Path), common.WithParams(url.Values{}),
