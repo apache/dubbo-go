@@ -18,11 +18,11 @@
 package config_center
 
 import (
+	"github.com/apache/dubbo-go/config_center/parser"
 	"sync"
 )
 import (
 	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/remoting"
 )
 
 type MockDynamicConfigurationFactory struct{}
@@ -36,7 +36,7 @@ func (f *MockDynamicConfigurationFactory) GetDynamicConfiguration(url *common.UR
 	var err error
 	once.Do(func() {
 		dynamicConfiguration = &mockDynamicConfiguration{}
-		dynamicConfiguration.SetParser(&DefaultConfigurationParser{})
+		dynamicConfiguration.SetParser(&parser.DefaultConfigurationParser{})
 		dynamicConfiguration.content = `
 	dubbo.consumer.request_timeout=5s
 	dubbo.consumer.connect_timeout=5s
@@ -67,14 +67,14 @@ func (f *MockDynamicConfigurationFactory) GetDynamicConfiguration(url *common.UR
 }
 
 type mockDynamicConfiguration struct {
-	parser  ConfigurationParser
+	parser  parser.ConfigurationParser
 	content string
 }
 
-func (c *mockDynamicConfiguration) AddListener(key string, listener remoting.ConfigurationListener, opions ...Option) {
+func (c *mockDynamicConfiguration) AddListener(key string, listener ConfigurationListener, opions ...Option) {
 }
 
-func (c *mockDynamicConfiguration) RemoveListener(key string, listener remoting.ConfigurationListener, opions ...Option) {
+func (c *mockDynamicConfiguration) RemoveListener(key string, listener ConfigurationListener, opions ...Option) {
 }
 
 func (c *mockDynamicConfiguration) GetConfig(key string, opts ...Option) (string, error) {
@@ -87,9 +87,9 @@ func (c *mockDynamicConfiguration) GetConfigs(key string, opts ...Option) (strin
 	return c.GetConfig(key, opts...)
 }
 
-func (c *mockDynamicConfiguration) Parser() ConfigurationParser {
+func (c *mockDynamicConfiguration) Parser() parser.ConfigurationParser {
 	return c.parser
 }
-func (c *mockDynamicConfiguration) SetParser(p ConfigurationParser) {
+func (c *mockDynamicConfiguration) SetParser(p parser.ConfigurationParser) {
 	c.parser = p
 }

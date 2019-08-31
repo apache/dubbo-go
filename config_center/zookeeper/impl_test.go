@@ -19,6 +19,7 @@ package zookeeper
 import (
 	"context"
 	"fmt"
+	"github.com/apache/dubbo-go/config_center/parser"
 	"sync"
 	"testing"
 )
@@ -37,7 +38,7 @@ import (
 func initZkData(group string, t *testing.T) (*zk.TestCluster, *zookeeperDynamicConfiguration) {
 	regurl, _ := common.NewURL(context.TODO(), "registry://127.0.0.1:1111")
 	ts, reg, err := newMockZookeeperDynamicConfiguration(&regurl)
-	reg.SetParser(&config_center.DefaultConfigurationParser{})
+	reg.SetParser(&parser.DefaultConfigurationParser{})
 
 	assert.NoError(t, err)
 

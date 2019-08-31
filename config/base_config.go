@@ -60,6 +60,7 @@ func (c *BaseConfig) prepareEnvironment() error {
 
 	factory := extension.GetConfigCenterFactory(c.ConfigCenterConfig.Protocol)
 	dynamicConfig, err := factory.GetDynamicConfiguration(c.configCenterUrl)
+	config.GetEnvInstance().SetDynamicConfiguration(dynamicConfig)
 	if err != nil {
 		logger.Errorf("Get dynamic configuration error , error message is %v", err)
 		return perrors.WithStack(err)

@@ -19,6 +19,8 @@ package protocol
 
 import (
 	"context"
+	"github.com/apache/dubbo-go/config_center"
+
 	"testing"
 )
 
@@ -29,13 +31,23 @@ import (
 import (
 	cluster "github.com/apache/dubbo-go/cluster/cluster_impl"
 	"github.com/apache/dubbo-go/common"
+	commonConfig "github.com/apache/dubbo-go/common/config"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/config_center/configurator"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 	"github.com/apache/dubbo-go/registry"
 )
 
+func init() {
+	extension.SetDefaultConfigurator(configurator.NewMockConfigurator)
+	config.SetProviderConfig(config.ProviderConfig{ApplicationConfig: &config.ApplicationConfig{Name: "mock"}})
+	factory := &config_center.MockDynamicConfigurationFactory{}
+	dc, _ := factory.GetDynamicConfiguration(&common.URL{})
+	commonConfig.GetEnvInstance().SetDynamicConfiguration(dc)
+}
 func referNormal(t *testing.T, regProtocol *registryProtocol) {
 	extension.SetProtocol("registry", GetProtocol)
 	extension.SetRegistry("mock", registry.NewMockRegistry)
@@ -108,6 +120,7 @@ func exporterNormal(t *testing.T, regProtocol *registryProtocol) {
 }
 
 func TestExporter(t *testing.T) {
+
 	regProtocol := newRegistryProtocol()
 	exporterNormal(t, regProtocol)
 }

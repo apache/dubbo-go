@@ -1,19 +1,23 @@
 package configurator
 
 import (
-	"github.com/apache/dubbo-go/cluster"
+	"strings"
+)
+import (
+	"github.com/dubbogo/gost/container"
+)
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/utils"
-	"github.com/dubbogo/gost/container"
-	"strings"
+	"github.com/apache/dubbo-go/config_center"
 )
 
 func init() {
 	extension.SetDefaultConfigurator(newConfigurator)
 }
-func newConfigurator(url *common.URL) cluster.Configurator {
+func newConfigurator(url *common.URL) config_center.Configurator {
 	return &overrideConfigurator{configuratorUrl: url}
 }
 
