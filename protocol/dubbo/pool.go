@@ -275,6 +275,7 @@ func (p *gettyRPCClientPool) close() {
 func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPCClient, error) {
 
 	p.Lock()
+	defer p.Unlock()
 	if p.conns == nil {
 		return nil, errClientPoolClosed
 	}
@@ -291,11 +292,9 @@ func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPC
 		}
 		conn.created = now //update created time
 
-		p.Unlock()
 		return conn, nil
 	}
 	// create new conn
-	p.Unlock()
 	return newGettyRPCClientConn(p, protocol, addr)
 }
 
