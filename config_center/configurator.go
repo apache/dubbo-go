@@ -1,6 +1,8 @@
-package cluster
+package config_center
 
-import "github.com/apache/dubbo-go/common"
+import (
+	"github.com/apache/dubbo-go/common"
+)
 
 type Configurator interface {
 	GetUrl() *common.URL

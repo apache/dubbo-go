@@ -74,7 +74,7 @@ func TestSubscribe_Group(t *testing.T) {
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
 	registryDirectory, _ := NewRegistryDirectory(&regurl, mockRegistry)
 
-	go registryDirectory.Subscribe(*common.NewURLWithOptions(common.WithPath("testservice")))
+	go registryDirectory.Subscribe(common.NewURLWithOptions(common.WithPath("testservice")))
 
 	//for group1
 	urlmap := url.Values{}
@@ -127,7 +127,7 @@ func normalRegistryDir() (*registryDirectory, *registry.MockRegistry) {
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
 	registryDirectory, _ := NewRegistryDirectory(&url, mockRegistry)
 
-	go registryDirectory.Subscribe(*common.NewURLWithOptions(common.WithPath("testservice")))
+	go registryDirectory.Subscribe(common.NewURLWithOptions(common.WithPath("testservice")))
 	for i := 0; i < 3; i++ {
 		mockRegistry.(*registry.MockRegistry).MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: *common.NewURLWithOptions(common.WithPath("TEST"+strconv.FormatInt(int64(i), 10)), common.WithProtocol("dubbo"))})
 	}

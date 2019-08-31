@@ -19,6 +19,7 @@ package config
 
 import (
 	"container/list"
+	"github.com/apache/dubbo-go/config_center"
 	"strings"
 	"sync"
 )
@@ -29,9 +30,10 @@ import (
 // We just have config center configuration which can override configuration in consumer.yaml & provider.yaml.
 // But for add these features in future ,I finish the environment struct following Environment class in java.
 type Environment struct {
-	configCenterFirst bool
-	externalConfigs   sync.Map
-	externalConfigMap sync.Map
+	configCenterFirst    bool
+	externalConfigs      sync.Map
+	externalConfigMap    sync.Map
+	dynamicConfiguration config_center.DynamicConfiguration
 }
 
 var (
@@ -66,6 +68,14 @@ func (env *Environment) Configuration() *list.List {
 	memConf.setProperties(&(env.externalConfigMap))
 	list.PushBack(memConf)
 	return list
+}
+
+func (env *Environment) SetDynamicConfiguration(dc config_center.DynamicConfiguration) {
+	env.dynamicConfiguration = dc
+}
+
+func (env *Environment) GetDynamicConfiguration() config_center.DynamicConfiguration {
+	return env.dynamicConfiguration
 }
 
 type InmemoryConfiguration struct {

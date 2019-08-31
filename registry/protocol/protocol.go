@@ -18,7 +18,8 @@
 package protocol
 
 import (
-	"github.com/apache/dubbo-go/cluster"
+	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/config_center"
 	"sync"
 )
 
@@ -43,7 +44,10 @@ type registryProtocol struct {
 	registries sync.Map
 	//To solve the problem of RMI repeated exposure port conflicts, the services that have been exposed are no longer exposed.
 	//providerurl <--> exporter
-	bounds sync.Map
+	bounds                        sync.Map
+	overrideListeners             sync.Map
+	serviceConfigurationListeners sync.Map
+	providerConfigurationListener *providerConfigurationListener
 }
 
 func init() {
@@ -51,9 +55,13 @@ func init() {
 }
 
 func newRegistryProtocol() *registryProtocol {
+	overrideListeners := sync.Map{}
 	return &registryProtocol{
-		registries: sync.Map{},
-		bounds:     sync.Map{},
+		overrideListeners:             overrideListeners,
+		registries:                    sync.Map{},
+		bounds:                        sync.Map{},
+		serviceConfigurationListeners: sync.Map{},
+		providerConfigurationListener: newProviderConfigurationListener(&overrideListeners),
 	}
 }
 func getRegistry(regUrl *common.URL) registry.Registry {
@@ -107,6 +115,14 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 	providerUrl := getProviderUrl(invoker)
 
 	overriderUrl := getSubscribedOverrideUrl(&providerUrl)
+	// Deprecated! subscribe to override rules in 2.6.x or before.
+	overrideSubscribeListener := newOverrideSubscribeListener(overriderUrl, invoker, proto)
+	proto.overrideListeners.Store(overriderUrl, overrideSubscribeListener)
+	proto.providerConfigurationListener.OverrideUrl(&providerUrl)
+	serviceConfigurationListener := newServiceConfigurationListener(overrideSubscribeListener, &providerUrl)
+	proto.serviceConfigurationListeners.Store(providerUrl.ServiceKey(), serviceConfigurationListener)
+	serviceConfigurationListener.OverrideUrl(&providerUrl)
+
 	var reg registry.Registry
 
 	if regI, loaded := proto.registries.Load(registryUrl.Key()); !loaded {
@@ -134,8 +150,6 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 		logger.Infof("The exporter has not been cached, and will return a new  exporter!")
 	}
 
-	// Deprecated! subscribe to override rules in 2.6.x or before.
-	overrideSubscribeListener := &overrideSubscribeListener{url: overriderUrl, originInvoker: invoker, protocol: proto}
 	reg.Subscribe(overriderUrl, overrideSubscribeListener)
 	return cachedExporter.(protocol.Exporter)
 
@@ -161,9 +175,12 @@ type overrideSubscribeListener struct {
 	url           *common.URL
 	originInvoker protocol.Invoker
 	protocol      *registryProtocol
-	configurator  cluster.Configurator
+	configurator  config_center.Configurator
 }
 
+func newOverrideSubscribeListener(overriderUrl *common.URL, invoker protocol.Invoker, proto *registryProtocol) *overrideSubscribeListener {
+	return &overrideSubscribeListener{url: overriderUrl, originInvoker: invoker, protocol: proto}
+}
 func (nl *overrideSubscribeListener) Notify(event *registry.ServiceEvent) {
 	if isMatched(&(event.Service), nl.url) {
 		nl.configurator = extension.GetDefaultConfigurator(&(event.Service))
@@ -175,7 +192,19 @@ func (nl *overrideSubscribeListener) doOverrideIfNecessary() {
 	key := providerUrl.Key()
 	if exporter, ok := nl.protocol.bounds.Load(key); ok {
 		currentUrl := exporter.(protocol.Exporter).GetInvoker().GetUrl()
+		// Compatible with the 2.6.x
 		nl.configurator.Configure(&providerUrl)
+		// provider application level  management in 2.7.x
+		for _, v := range nl.protocol.providerConfigurationListener.Configurators() {
+			v.Configure(&providerUrl)
+		}
+		// provider service level  management in 2.7.x
+		if serviceListener, ok := nl.protocol.serviceConfigurationListeners.Load(providerUrl.ServiceKey()); ok {
+			for _, v := range serviceListener.(*serviceConfigurationListener).Configurators() {
+				v.Configure(&providerUrl)
+			}
+		}
+
 		if currentUrl.String() == providerUrl.String() {
 			newRegUrl := nl.originInvoker.GetUrl()
 			setProviderUrl(&newRegUrl, &providerUrl)
@@ -270,4 +299,43 @@ func (ivk *wrappedInvoker) GetUrl() common.URL {
 }
 func (ivk *wrappedInvoker) getInvoker() protocol.Invoker {
 	return ivk.invoker
+}
+
+type providerConfigurationListener struct {
+	registry.BaseConfigurationListener
+	overrideListeners *sync.Map
+}
+
+func newProviderConfigurationListener(overrideListeners *sync.Map) *providerConfigurationListener {
+	listener := &providerConfigurationListener{}
+	listener.overrideListeners = overrideListeners
+	//TODO:error handler
+	_ = listener.BaseConfigurationListener.InitWith(config.GetProviderConfig().ApplicationConfig.Name+constant.CONFIGURATORS_SUFFIX, listener, extension.GetDefaultConfiguratorFunc())
+	return listener
+}
+
+func (listener *providerConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
+	listener.BaseConfigurationListener.Process(event)
+	listener.overrideListeners.Range(func(key, value interface{}) bool {
+		value.(*overrideSubscribeListener).doOverrideIfNecessary()
+		return true
+	})
+}
+
+type serviceConfigurationListener struct {
+	registry.BaseConfigurationListener
+	overrideListener *overrideSubscribeListener
+	providerUrl      *common.URL
+}
+
+func newServiceConfigurationListener(overrideListener *overrideSubscribeListener, providerUrl *common.URL) *serviceConfigurationListener {
+	listener := &serviceConfigurationListener{overrideListener: overrideListener, providerUrl: providerUrl}
+	//TODO:error handler
+	_ = listener.BaseConfigurationListener.InitWith(providerUrl.EncodedServiceKey()+constant.CONFIGURATORS_SUFFIX, listener, extension.GetDefaultConfiguratorFunc())
+	return &serviceConfigurationListener{overrideListener: overrideListener, providerUrl: providerUrl}
+}
+
+func (listener *serviceConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
+	listener.BaseConfigurationListener.Process(event)
+	listener.overrideListener.doOverrideIfNecessary()
 }

@@ -288,6 +288,11 @@ func (c URL) ServiceKey() string {
 	return buf.String()
 }
 
+func (c *URL) EncodedServiceKey() string {
+	serviceKey := c.ServiceKey()
+	return strings.Replace(serviceKey, "/", "*", 1)
+}
+
 func (c URL) Context() context.Context {
 	return c.ctx
 }

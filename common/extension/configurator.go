@@ -18,33 +18,39 @@
 package extension
 
 import (
-	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/config_center"
 )
 
 var (
-	configurator = make(map[string]func(url *common.URL) cluster.Configurator)
+	configurator = make(map[string]func(url *common.URL) config_center.Configurator)
 )
 
-func SetConfigurator(name string, v func(url *common.URL) cluster.Configurator) {
+func SetConfigurator(name string, v func(url *common.URL) config_center.Configurator) {
 	configurator[name] = v
 }
 
-func GetConfigurator(name string, url *common.URL) cluster.Configurator {
+func GetConfigurator(name string, url *common.URL) config_center.Configurator {
 	if configurator[name] == nil {
 		panic("config center for " + name + " is not existing, make sure you have import the package.")
 	}
 	return configurator[name](url)
 
 }
-func SetDefaultConfigurator(v func(url *common.URL) cluster.Configurator) {
+func SetDefaultConfigurator(v func(url *common.URL) config_center.Configurator) {
 	configurator["default"] = v
 }
 
-func GetDefaultConfigurator(url *common.URL) cluster.Configurator {
+func GetDefaultConfigurator(url *common.URL) config_center.Configurator {
 	if configurator["default"] == nil {
 		panic("config center for default is not existing, make sure you have import the package.")
 	}
 	return configurator["default"](url)
 
+}
+func GetDefaultConfiguratorFunc() func(url *common.URL) config_center.Configurator {
+	if configurator["default"] == nil {
+		panic("config center for default is not existing, make sure you have import the package.")
+	}
+	return configurator["default"]
 }
