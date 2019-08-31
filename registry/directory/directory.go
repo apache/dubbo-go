@@ -32,6 +32,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 	"github.com/apache/dubbo-go/registry"
@@ -219,6 +220,6 @@ type referenceConfigurationListener struct {
 	url       *common.URL
 }
 
-func (l *referenceConfigurationListener) Process(event *remoting.ConfigChangeEvent) {
+func (l *referenceConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
 	//l.directory.refreshInvokers(event)
 }

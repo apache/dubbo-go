@@ -34,8 +34,8 @@ const (
 	ENABLED_KEY            = "enabled"
 	SIDE_KEY               = "side"
 	OVERRIDE_PROVIDERS_KEY = "providerAddresses"
-	BEAN_NAME_KEY = "bean.name"
-	GENERIC_KEY   = "generic"
+	BEAN_NAME_KEY          = "bean.name"
+	GENERIC_KEY            = "generic"
 )
 
 const (
@@ -96,6 +96,10 @@ const (
 	ProtocolConfigPrefix  = "dubbo.protocols."
 	ProviderConfigPrefix  = "dubbo.provider."
 	ConsumerConfigPrefix  = "dubbo.consumer."
+)
+
+const (
+	CONFIGURATORS_SUFFIX = ".configurators"
 )
 
 const (
