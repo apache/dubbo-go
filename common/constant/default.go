@@ -22,6 +22,7 @@ const (
 	PROVIDER_PROTOCOL = "provider"
 	//compatible with 2.6.x
 	OVERRIDE_PROTOCOL = "override"
+	EMPTY_PROTOCOL    = "empty"
 )
 
 const (
@@ -56,6 +57,8 @@ const (
 )
 
 const (
-	CONFIGURATORS_CATEGORY = "configurators"
-	DEFAULT_CATEGORY       = "providers"
+	CONFIGURATORS_CATEGORY             = "configurators"
+	DEFAULT_CATEGORY                   = "providers"
+	DYNAMIC_CONFIGURATORS_CATEGORY     = "dynamicconfigurators"
+	APP_DYNAMIC_CONFIGURATORS_CATEGORY = "appdynamicconfigurators"
 )

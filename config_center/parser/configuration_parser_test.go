@@ -1,4 +1,4 @@
-package config_center
+package parser
 
 import (
 	"testing"
