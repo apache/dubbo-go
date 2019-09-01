@@ -42,7 +42,6 @@ import (
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting"
-	"github.com/apache/dubbo-go/version"
 )
 
 const (
@@ -147,18 +146,19 @@ func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 
 		for _, v := range url.GetBackupUrls() {
 			p := v.Protocol
-
 			category := v.GetParam(constant.CATEGORY_KEY, constant.PROVIDERS_CATEGORY)
 			if strings.EqualFold(category, constant.ROUTERS_CATEGORY) || strings.EqualFold(constant.ROUTE_PROTOCOL, p) {
 				urls = append(urls, v)
 			}
 		}
+
 		if len(urls) > 0 {
 			routers := toRouters(urls)
 			if len(routers) > 0 {
 				dir.SetRouters(routers)
 			}
 		}
+
 		//dir.cacheService.EventTypeAdd(res.Path, dir.serviceTTL)
 		dir.cacheInvoker(res.Service)
 	case remoting.EventTypeDel:
@@ -241,7 +241,7 @@ func (dir *registryDirectory) List(invocation protocol.Invocation) ([]protocol.I
 
 	if dir.forbidden.Load() {
 		localIP, _ := utils.GetLocalIP()
-		return nil, fmt.Errorf("no provider available from registry %s for service %s on consumer %s use dubbo version %s, please check status of providers(disabled, not registered or in blacklist)", dir.GetUrl().Location, dir.ConsumerUrl.ServiceKey(), localIP, version.Version)
+		return nil, fmt.Errorf("no provider available from registry %s for service %s on consumer %s use dubbo version %s, please check status of providers(disabled, not registered or in blacklist)", dir.GetUrl().Location, dir.ConsumerUrl.ServiceKey(), localIP, constant.Version)
 	}
 
 	invokers := dir.cacheInvokers
@@ -249,7 +249,7 @@ func (dir *registryDirectory) List(invocation protocol.Invocation) ([]protocol.I
 	if len(localRouters) > 0 {
 		for _, router := range localRouters {
 			//todo nil error
-			if reflect.ValueOf(router.Url()).IsNil() || router.Url().GetParamBool(constant.RUNTIME_KEY, false) {
+			if reflect.ValueOf(router.Url()).IsValid() || router.Url().GetParamBool(constant.RUNTIME_KEY, false) {
 				invokers = router.Route(invokers, *dir.ConsumerUrl, invocation)
 			}
 		}
