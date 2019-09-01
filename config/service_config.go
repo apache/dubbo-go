@@ -56,6 +56,7 @@ type ServiceConfig struct {
 	Warmup        string            `yaml:"warmup"  json:"warmup,omitempty"  property:"warmup"`
 	Retries       int64             `yaml:"retries"  json:"retries,omitempty" property:"retries"`
 	Params        map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
+	Token         string            `yaml:"token" json:"token,omitempty" property:"token"`
 	unexported    *atomic.Bool
 	exported      *atomic.Bool
 	rpcService    common.RPCService
@@ -111,38 +112,60 @@ func (srvconfig *ServiceConfig) Export() error {
 			common.WithPort(proto.Port),
 			common.WithParams(urlMap),
 			common.WithParamsValue(constant.BEAN_NAME_KEY, srvconfig.id),
-			common.WithMethods(strings.Split(methods, ",")))
+			common.WithMethods(strings.Split(methods, ",")),
+			common.WithToken(srvconfig.Token))
 
-		if len(regUrls) > 0 {
-			for _, regUrl := range regUrls {
-				regUrl.SubURL = url
+		scope := url.GetParam(constant.SCOPE_KEY, "")
+		if scope != "remote" {
+			srvconfig.exportLocal(url)
+		}
 
-				srvconfig.cacheMutex.Lock()
-				if srvconfig.cacheProtocol == nil {
-					logger.Infof(fmt.Sprintf("First load the registry protocol , url is {%v}!", url))
-					srvconfig.cacheProtocol = extension.GetProtocol("registry")
+		if scope != "local" {
+			if len(regUrls) > 0 {
+				for _, regUrl := range regUrls {
+					regUrl.SubURL = url
+
+					srvconfig.cacheMutex.Lock()
+					if srvconfig.cacheProtocol == nil {
+						logger.Infof(fmt.Sprintf("First load the registry protocol , url is {%v}!", url))
+						srvconfig.cacheProtocol = extension.GetProtocol("registry")
+					}
+					srvconfig.cacheMutex.Unlock()
+
+					invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*regUrl)
+					exporter := srvconfig.cacheProtocol.Export(invoker)
+					if exporter == nil {
+						panic(perrors.New(fmt.Sprintf("Registry protocol new exporter error,registry is {%v},url is {%v}", regUrl, url)))
+					}
+					srvconfig.exporters = append(srvconfig.exporters, exporter)
 				}
-				srvconfig.cacheMutex.Unlock()
-
-				invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*regUrl)
-				exporter := srvconfig.cacheProtocol.Export(invoker)
+			} else {
+				invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*url)
+				exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 				if exporter == nil {
-					panic(perrors.New(fmt.Sprintf("Registry protocol new exporter error,registry is {%v},url is {%v}", regUrl, url)))
+					panic(perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error,url is {%v}", url)))
 				}
 				srvconfig.exporters = append(srvconfig.exporters, exporter)
 			}
-		} else {
-			invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*url)
-			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
-			if exporter == nil {
-				panic(perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error,url is {%v}", url)))
-			}
-			srvconfig.exporters = append(srvconfig.exporters, exporter)
 		}
 
 	}
 	return nil
 
+}
+
+func (srvconfig *ServiceConfig) exportLocal(url *common.URL) {
+	if constant.LOCAL_PROTOCOL != url.Protocol {
+		local := common.Copy(*url)
+		local.Protocol = constant.LOCAL_PROTOCOL
+		local.Ip = constant.LOCALHOST_VALUE
+		local.Port = "0"
+
+		invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*local)
+		exporter := extension.GetProtocol(constant.DUBBO).Export(invoker)
+		srvconfig.exporters = append(srvconfig.exporters, exporter)
+		logger.Infof("Export dubbo service " + srvconfig.InterfaceName + " to local registry");
+	}
 }
 
 func (srvconfig *ServiceConfig) Implement(s common.RPCService) {

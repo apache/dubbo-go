@@ -30,7 +30,6 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 func TestJsonrpcInvoker_Invoke(t *testing.T) {
@@ -57,8 +56,8 @@ func TestJsonrpcInvoker_Invoke(t *testing.T) {
 
 	jsonInvoker := NewJsonrpcInvoker(url, client)
 	user := &User{}
-	res := jsonInvoker.Invoke(invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUser"), invocation.WithArguments([]interface{}{"1", "username"}),
-		invocation.WithReply(user)))
+	res := jsonInvoker.Invoke(protocol.NewRPCInvocationWithOptions(protocol.WithMethodName("GetUser"), protocol.WithArguments([]interface{}{"1", "username"}),
+		protocol.WithReply(user)))
 
 	assert.NoError(t, res.Error())
 	assert.Equal(t, User{Id: "1", Name: "username"}, *res.Result().(*User))

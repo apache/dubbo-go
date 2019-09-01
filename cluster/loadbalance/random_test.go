@@ -34,7 +34,6 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 func Test_RandomlbSelect(t *testing.T) {
@@ -44,14 +43,14 @@ func Test_RandomlbSelect(t *testing.T) {
 
 	url, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", 0))
 	invokers = append(invokers, protocol.NewBaseInvoker(url))
-	i := randomlb.Select(invokers, &invocation.RPCInvocation{})
+	i := randomlb.Select(invokers, &protocol.RPCInvocation{})
 	assert.True(t, i.GetUrl().URLEqual(url))
 
 	for i := 1; i < 10; i++ {
 		url, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		invokers = append(invokers, protocol.NewBaseInvoker(url))
 	}
-	randomlb.Select(invokers, &invocation.RPCInvocation{})
+	randomlb.Select(invokers, &protocol.RPCInvocation{})
 }
 
 func Test_RandomlbSelectWeight(t *testing.T) {
@@ -67,7 +66,7 @@ func Test_RandomlbSelectWeight(t *testing.T) {
 	urlParams.Set("methods.test."+constant.WEIGHT_KEY, "10000000000000")
 	urll, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://192.168.1.100:20000/com.ikurento.user.UserProvider"), common.WithParams(urlParams))
 	invokers = append(invokers, protocol.NewBaseInvoker(urll))
-	ivc := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("test"))
+	ivc := protocol.NewRPCInvocationWithOptions(protocol.WithMethodName("test"))
 
 	var selectedInvoker []protocol.Invoker
 	var selected float64
@@ -98,7 +97,7 @@ func Test_RandomlbSelectWarmup(t *testing.T) {
 	urlParams.Set(constant.REMOTE_TIMESTAMP_KEY, strconv.FormatInt(time.Now().Add(time.Minute*(-9)).Unix(), 10))
 	urll, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://192.168.1.100:20000/com.ikurento.user.UserProvider"), common.WithParams(urlParams))
 	invokers = append(invokers, protocol.NewBaseInvoker(urll))
-	ivc := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("test"))
+	ivc := protocol.NewRPCInvocationWithOptions(protocol.WithMethodName("test"))
 
 	var selectedInvoker []protocol.Invoker
 	var selected float64

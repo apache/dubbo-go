@@ -37,7 +37,6 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/apache/dubbo-go/protocol/mock"
 )
 
@@ -87,7 +86,7 @@ func Test_ForkingInvokeSuccess(t *testing.T) {
 
 	clusterInvoker := registerForking(t, invokers...)
 
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(&protocol.RPCInvocation{})
 	assert.Equal(t, mockResult, result)
 	wg.Wait()
 }
@@ -117,7 +116,7 @@ func Test_ForkingInvokeTimeout(t *testing.T) {
 
 	clusterInvoker := registerForking(t, invokers...)
 
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(&protocol.RPCInvocation{})
 	assert.NotNil(t, result)
 	assert.NotNil(t, result.Error())
 	wg.Wait()
@@ -156,7 +155,7 @@ func Test_ForkingInvokeHalfTimeout(t *testing.T) {
 
 	clusterInvoker := registerForking(t, invokers...)
 
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(&protocol.RPCInvocation{})
 	assert.Equal(t, mockResult, result)
 	wg.Wait()
 }

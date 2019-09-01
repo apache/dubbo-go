@@ -29,7 +29,6 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/filter"
 	"github.com/apache/dubbo-go/protocol"
-	invocation2 "github.com/apache/dubbo-go/protocol/invocation"
 )
 
 const (
@@ -60,7 +59,7 @@ func (ef *GenericFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 			oldArguments[1],
 			newParams,
 		}
-		newInvocation := invocation2.NewRPCInvocation(invocation.MethodName(), newArguments, invocation.Attachments())
+		newInvocation := protocol.NewRPCInvocation(invocation.MethodName(), newArguments, invocation.Attachments())
 		newInvocation.SetReply(invocation.Reply())
 		return invoker.Invoke(newInvocation)
 	}

@@ -21,6 +21,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/apache/dubbo-go/protocol"
 )
 
 import (
@@ -151,39 +153,38 @@ func NewClient(opt Options) *Client {
 }
 
 // call one way
-func (c *Client) CallOneway(addr string, svcUrl common.URL, method string, args interface{}) error {
+func (c *Client) CallOneway(addr string, svcUrl common.URL, invocation *protocol.RPCInvocation) error {
 
-	return perrors.WithStack(c.call(CT_OneWay, addr, svcUrl, method, args, nil, nil))
+	return perrors.WithStack(c.call(CT_OneWay, addr, svcUrl, invocation, nil, nil))
 }
 
 // if @reply is nil, the transport layer will get the response without notify the invoker.
-func (c *Client) Call(addr string, svcUrl common.URL, method string, args, reply interface{}) error {
+func (c *Client) Call(addr string, svcUrl common.URL, invocation *protocol.RPCInvocation, reply interface{}) error {
 
 	ct := CT_TwoWay
 	if reply == nil {
 		ct = CT_OneWay
 	}
 
-	return perrors.WithStack(c.call(ct, addr, svcUrl, method, args, reply, nil))
+	return perrors.WithStack(c.call(ct, addr, svcUrl, invocation, reply, nil))
 }
 
-func (c *Client) AsyncCall(addr string, svcUrl common.URL, method string, args interface{},
+func (c *Client) AsyncCall(addr string, svcUrl common.URL, invocation *protocol.RPCInvocation,
 	callback AsyncCallback, reply interface{}) error {
 
-	return perrors.WithStack(c.call(CT_TwoWay, addr, svcUrl, method, args, reply, callback))
+	return perrors.WithStack(c.call(CT_TwoWay, addr, svcUrl, invocation, reply, callback))
 }
 
-func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string,
-	args, reply interface{}, callback AsyncCallback) error {
+func (c *Client) call(ct CallType, addr string, svcUrl common.URL, invocation *protocol.RPCInvocation, reply interface{}, callback AsyncCallback) error {
 
 	p := &DubboPackage{}
 	p.Service.Path = strings.TrimPrefix(svcUrl.Path, "/")
 	p.Service.Interface = svcUrl.GetParam(constant.INTERFACE_KEY, "")
 	p.Service.Version = svcUrl.GetParam(constant.VERSION_KEY, "")
-	p.Service.Method = method
+	p.Service.Method = invocation.MethodName()
 	p.Service.Timeout = c.opts.RequestTimeout
 	p.Header.SerialID = byte(S_Dubbo)
-	p.Body = args
+	p.Body = hessian.NewRequest(invocation.Arguments(), invocation.Attachments())
 
 	var rsp *PendingResponse
 	if ct != CT_OneWay {

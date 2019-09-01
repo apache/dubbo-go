@@ -28,17 +28,16 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 func TestEchoFilter_Invoke(t *testing.T) {
 	filter := GetEchoFilter()
 	result := filter.Invoke(protocol.NewBaseInvoker(common.URL{}),
-		invocation.NewRPCInvocation("$echo", []interface{}{"OK"}, nil))
+		protocol.NewRPCInvocation("$echo", []interface{}{"OK"}, nil))
 	assert.Equal(t, "OK", result.Result())
 
 	result = filter.Invoke(protocol.NewBaseInvoker(common.URL{}),
-		invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, nil))
+		protocol.NewRPCInvocation("MethodName", []interface{}{"OK"}, nil))
 	assert.Nil(t, result.Error())
 	assert.Nil(t, result.Result())
 }

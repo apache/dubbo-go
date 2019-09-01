@@ -30,7 +30,6 @@ import (
 	"github.com/apache/dubbo-go/cluster/directory"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 func Test_RegAwareInvokeSuccess(t *testing.T) {
@@ -45,7 +44,7 @@ func Test_RegAwareInvokeSuccess(t *testing.T) {
 
 	staticDir := directory.NewStaticDirectory(invokers)
 	clusterInvoker := regAwareCluster.Join(staticDir)
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(&protocol.RPCInvocation{})
 	assert.NoError(t, result.Error())
 	count = 0
 }
@@ -62,7 +61,7 @@ func TestDestroy(t *testing.T) {
 	staticDir := directory.NewStaticDirectory(invokers)
 	clusterInvoker := regAwareCluster.Join(staticDir)
 	assert.Equal(t, true, clusterInvoker.IsAvailable())
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(&protocol.RPCInvocation{})
 	assert.NoError(t, result.Error())
 	count = 0
 	clusterInvoker.Destroy()

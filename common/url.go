@@ -28,6 +28,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"github.com/satori/go.uuid"
 )
 
 import (
@@ -88,62 +89,6 @@ type URL struct {
 
 type option func(*URL)
 
-func WithUsername(username string) option {
-	return func(url *URL) {
-		url.Username = username
-	}
-}
-
-func WithPassword(pwd string) option {
-	return func(url *URL) {
-		url.Password = pwd
-	}
-}
-
-func WithMethods(methods []string) option {
-	return func(url *URL) {
-		url.Methods = methods
-	}
-}
-
-func WithParams(params url.Values) option {
-	return func(url *URL) {
-		url.Params = params
-	}
-}
-func WithParamsValue(key, val string) option {
-	return func(url *URL) {
-		url.Params.Set(key, val)
-	}
-}
-func WithProtocol(proto string) option {
-	return func(url *URL) {
-		url.Protocol = proto
-	}
-}
-func WithIp(ip string) option {
-	return func(url *URL) {
-		url.Ip = ip
-	}
-}
-
-func WithPort(port string) option {
-	return func(url *URL) {
-		url.Port = port
-	}
-}
-
-func WithPath(path string) option {
-	return func(url *URL) {
-		url.Path = "/" + strings.TrimPrefix(path, "/")
-	}
-}
-
-func WithLocation(location string) option {
-	return func(url *URL) {
-		url.Location = location
-	}
-}
 func NewURLWithOptions(opts ...option) *URL {
 	url := &URL{
 		baseUrl: baseUrl{
@@ -210,6 +155,95 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (URL, error) 
 		opt(&s)
 	}
 	return s, nil
+}
+
+func Copy(src URL) *URL {
+	params := make(url.Values, 0)
+	for k, v := range src.Params {
+		params[k] = v
+	}
+	dst := &URL{
+		baseUrl: baseUrl{
+			Protocol: src.Protocol,
+			Ip: src.Ip,
+			Location: src.Ip + ":" + src.Port,
+			Port: src.Port,
+			Params: params,
+		},
+		Username: src.Username,
+		Password: src.Password,
+		Path: src.Path,
+	}
+	return dst
+}
+
+func WithUsername(username string) option {
+	return func(url *URL) {
+		url.Username = username
+	}
+}
+
+func WithPassword(pwd string) option {
+	return func(url *URL) {
+		url.Password = pwd
+	}
+}
+
+func WithMethods(methods []string) option {
+	return func(url *URL) {
+		url.Methods = methods
+	}
+}
+
+func WithParams(params url.Values) option {
+	return func(url *URL) {
+		url.Params = params
+	}
+}
+func WithParamsValue(key, val string) option {
+	return func(url *URL) {
+		url.Params.Set(key, val)
+	}
+}
+func WithProtocol(proto string) option {
+	return func(url *URL) {
+		url.Protocol = proto
+	}
+}
+func WithIp(ip string) option {
+	return func(url *URL) {
+		url.Ip = ip
+	}
+}
+
+func WithPort(port string) option {
+	return func(url *URL) {
+		url.Port = port
+	}
+}
+
+func WithPath(path string) option {
+	return func(url *URL) {
+		url.Path = "/" + strings.TrimPrefix(path, "/")
+	}
+}
+
+func WithLocation(location string) option {
+	return func(url *URL) {
+		url.Location = location
+	}
+}
+
+func WithToken(token string) option {
+	return func(url *URL) {
+		if len(token) > 0 {
+			value := token
+			if strings.ToLower(token) == "true" || strings.ToLower(token) == "default" {
+				value = uuid.NewV4().String()
+			}
+			url.Params.Set(constant.TOKEN_KEY, value)
+		}
+	}
 }
 
 func (c URL) URLEqual(url URL) bool {

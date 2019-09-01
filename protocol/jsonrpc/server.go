@@ -30,6 +30,8 @@ import (
 	"runtime/debug"
 	"sync"
 	"time"
+
+	"github.com/apache/dubbo-go/protocol"
 )
 
 import (
@@ -40,7 +42,6 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 var (
@@ -325,7 +326,7 @@ func serveRequest(ctx context.Context,
 	exporter, _ := jsonrpcProtocol.ExporterMap().Load(path)
 	invoker := exporter.(*JsonrpcExporter).GetInvoker()
 	if invoker != nil {
-		result := invoker.Invoke(invocation.NewRPCInvocation(methodName, args, map[string]string{
+		result := invoker.Invoke(protocol.NewRPCInvocation(methodName, args, map[string]string{
 			constant.PATH_KEY:    path,
 			constant.VERSION_KEY: codec.req.Version,
 		}))

@@ -29,7 +29,6 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 func TestTokenFilter_Invoke(t *testing.T) {
@@ -39,7 +38,7 @@ func TestTokenFilter_Invoke(t *testing.T) {
 	attch := make(map[string]string, 0)
 	attch[constant.TOKEN_KEY] = "ori_key"
 	result := filter.Invoke(protocol.NewBaseInvoker(*url),
-		invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, attch))
+		protocol.NewRPCInvocation("MethodName", []interface{}{"OK"}, attch))
 	assert.Nil(t, result.Error())
 	assert.Nil(t, result.Result())
 }
@@ -51,7 +50,7 @@ func TestTokenFilter_InvokeEmptyToken(t *testing.T) {
 	attch := make(map[string]string, 0)
 	attch[constant.TOKEN_KEY] = "ori_key"
 	result := filter.Invoke(protocol.NewBaseInvoker(url),
-		invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, attch))
+		protocol.NewRPCInvocation("MethodName", []interface{}{"OK"}, attch))
 	assert.Nil(t, result.Error())
 	assert.Nil(t, result.Result())
 }
@@ -62,7 +61,7 @@ func TestTokenFilter_InvokeEmptyAttach(t *testing.T) {
 	url := common.NewURLWithOptions(common.WithParamsValue(constant.TOKEN_KEY, "ori_key"))
 	attch := make(map[string]string, 0)
 	result := filter.Invoke(protocol.NewBaseInvoker(*url),
-		invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, attch))
+		protocol.NewRPCInvocation("MethodName", []interface{}{"OK"}, attch))
 	assert.NotNil(t, result.Error())
 }
 
@@ -73,6 +72,6 @@ func TestTokenFilter_InvokeNotEqual(t *testing.T) {
 	attch := make(map[string]string, 0)
 	attch[constant.TOKEN_KEY] = "err_key"
 	result := filter.Invoke(protocol.NewBaseInvoker(*url),
-		invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, attch))
+		protocol.NewRPCInvocation("MethodName", []interface{}{"OK"}, attch))
 	assert.NotNil(t, result.Error())
 }

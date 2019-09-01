@@ -18,7 +18,12 @@
 package protocol
 
 import (
+	"fmt"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 )
 
@@ -34,16 +39,33 @@ type Invoker interface {
 /////////////////////////////
 
 type BaseInvoker struct {
-	url       common.URL
-	available bool
-	destroyed bool
+	url        common.URL
+	attachment map[string]string
+	available  bool
+	destroyed  bool
 }
 
+var (
+	attachmentKey = []string{constant.INTERFACE_KEY, constant.GROUP_KEY, constant.TOKEN_KEY, constant.TIMEOUT_KEY}
+)
+
 func NewBaseInvoker(url common.URL) *BaseInvoker {
+	v := url.GetParam(constant.TOKEN_KEY, "")
+	fmt.Printf("NewBaseInvoker token: %s", v)
+
+	// server端, 在 url.SubUrl 的 baseUrl 是有的
+	attachment := make(map[string]string, 0)
+	for _, k := range attachmentKey {
+		if v = url.GetParam(k, ""); len(v) > 0 {
+			attachment[k] = v
+		}
+	}
+
 	return &BaseInvoker{
-		url:       url,
-		available: true,
-		destroyed: false,
+		url:        url,
+		attachment: attachment,
+		available:  true,
+		destroyed:  false,
 	}
 }
 
@@ -60,6 +82,17 @@ func (bi *BaseInvoker) IsDestroyed() bool {
 }
 
 func (bi *BaseInvoker) Invoke(invocation Invocation) Result {
+	if len(bi.attachment) > 0 {
+		rpcInvocation := invocation.(*RPCInvocation)
+		for k, v := range bi.attachment {
+			rpcInvocation.SetAttachments(k, v)
+		}
+	}
+
+	return bi.DoInvoke(invocation)
+}
+
+func (bi *BaseInvoker) DoInvoke(invocation Invocation) Result {
 	return &RPCResult{}
 }
 

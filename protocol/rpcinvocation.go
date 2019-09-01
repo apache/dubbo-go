@@ -15,14 +15,10 @@
  * limitations under the License.
  */
 
-package invocation
+package protocol
 
 import (
 	"reflect"
-)
-
-import (
-	"github.com/apache/dubbo-go/protocol"
 )
 
 /////////////////////////////
@@ -36,7 +32,7 @@ type RPCInvocation struct {
 	reply          interface{}
 	callBack       interface{}
 	attachments    map[string]string
-	invoker        protocol.Invoker
+	invoker        Invoker
 }
 
 func NewRPCInvocation(methodName string, arguments []interface{}, attachments map[string]string) *RPCInvocation {
@@ -97,11 +93,11 @@ func (r *RPCInvocation) SetAttachments(key string, value string) {
 	r.attachments[key] = value
 }
 
-func (r *RPCInvocation) Invoker() protocol.Invoker {
+func (r *RPCInvocation) Invoker() Invoker {
 	return r.invoker
 }
 
-func (r *RPCInvocation) SetInvoker() protocol.Invoker {
+func (r *RPCInvocation) SetInvoker() Invoker {
 	return r.invoker
 }
 
@@ -155,7 +151,7 @@ func WithAttachments(attachments map[string]string) option {
 	}
 }
 
-func WithInvoker(invoker protocol.Invoker) option {
+func WithInvoker(invoker Invoker) option {
 	return func(invo *RPCInvocation) {
 		invo.invoker = invoker
 	}

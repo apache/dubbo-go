@@ -34,7 +34,6 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/apache/dubbo-go/protocol/mock"
 )
 
@@ -69,7 +68,7 @@ func Test_FailfastInvokeSuccess(t *testing.T) {
 	mockResult := &protocol.RPCResult{Rest: rest{tried: 0, success: true}}
 
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(&protocol.RPCInvocation{})
 
 	assert.NoError(t, result.Error())
 	res := result.Result().(rest)
@@ -89,7 +88,7 @@ func Test_FailfastInvokeFail(t *testing.T) {
 	mockResult := &protocol.RPCResult{Err: perrors.New("error")}
 
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(&protocol.RPCInvocation{})
 
 	assert.NotNil(t, result.Error())
 	assert.Equal(t, "error", result.Error().Error())

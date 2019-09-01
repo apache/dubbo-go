@@ -34,7 +34,6 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/apache/dubbo-go/protocol/mock"
 )
 
@@ -74,7 +73,7 @@ func Test_BroadcastInvokeSuccess(t *testing.T) {
 
 	clusterInvoker := registerBroadcast(t, invokers...)
 
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(&protocol.RPCInvocation{})
 	assert.Equal(t, mockResult, result)
 }
 
@@ -104,6 +103,6 @@ func Test_BroadcastInvokeFailed(t *testing.T) {
 
 	clusterInvoker := registerBroadcast(t, invokers...)
 
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(&protocol.RPCInvocation{})
 	assert.Equal(t, mockFailedResult.Err, result.Error())
 }

@@ -23,6 +23,8 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/apache/dubbo-go/protocol"
 )
 
 import (
@@ -34,7 +36,6 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting"
@@ -113,7 +114,7 @@ func Test_List(t *testing.T) {
 	registryDirectory, _ := normalRegistryDir()
 
 	time.Sleep(1e9)
-	assert.Len(t, registryDirectory.List(&invocation.RPCInvocation{}), 3)
+	assert.Len(t, registryDirectory.List(&protocol.RPCInvocation{}), 3)
 	assert.Equal(t, true, registryDirectory.IsAvailable())
 
 }

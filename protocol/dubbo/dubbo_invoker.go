@@ -18,6 +18,7 @@
 package dubbo
 
 import (
+	"fmt"
 	"strconv"
 	"sync"
 )
@@ -31,7 +32,6 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
-	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 )
 
 var Err_No_Reply = perrors.New("request need @reply")
@@ -49,14 +49,16 @@ func NewDubboInvoker(url common.URL, client *Client) *DubboInvoker {
 	}
 }
 
-func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
-
+func (di *DubboInvoker) DoInvoke(invocation protocol.Invocation) protocol.Result {
 	var (
 		err    error
 		result protocol.RPCResult
 	)
 
-	inv := invocation.(*invocation_impl.RPCInvocation)
+	inv := invocation.(*protocol.RPCInvocation)
+
+	fmt.Printf("invocation: %v", *inv)
+
 	url := di.GetUrl()
 	// async
 	async, err := strconv.ParseBool(inv.AttachmentsByKey(constant.ASYNC_KEY, "false"))
@@ -66,15 +68,15 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	}
 	if async {
 		if callBack, ok := inv.CallBack().(func(response CallResponse)); ok {
-			result.Err = di.client.AsyncCall(url.Location, url, inv.MethodName(), inv.Arguments(), callBack, inv.Reply())
+			result.Err = di.client.AsyncCall(url.Location, url, inv, callBack, inv.Reply())
 		} else {
-			result.Err = di.client.CallOneway(url.Location, url, inv.MethodName(), inv.Arguments())
+			result.Err = di.client.CallOneway(url.Location, url, inv)
 		}
 	} else {
 		if inv.Reply() == nil {
 			result.Err = Err_No_Reply
 		} else {
-			result.Err = di.client.Call(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Reply())
+			result.Err = di.client.Call(url.Location, url, inv, inv.Reply())
 		}
 	}
 	if result.Err == nil {

@@ -22,15 +22,26 @@ const (
 )
 
 const (
-	GROUP_KEY     = "group"
-	VERSION_KEY   = "version"
-	INTERFACE_KEY = "interface"
-	PATH_KEY      = "path"
-	SERVICE_KEY   = "service"
-	METHODS_KEY   = "methods"
-	TIMEOUT_KEY   = "timeout"
-	BEAN_NAME_KEY = "bean.name"
-	GENERIC_KEY   = "generic"
+	GROUP_KEY           = "group"
+	VERSION_KEY         = "version"
+	INTERFACE_KEY       = "interface"
+	PATH_KEY            = "path"
+	SERVICE_KEY         = "service"
+	METHODS_KEY         = "methods"
+	TIMEOUT_KEY         = "timeout"
+	CONNECT_TIMEOUT_KEY = "connect.timeout"
+	BEAN_NAME_KEY       = "bean.name"
+	GENERIC_KEY         = "generic"
+)
+
+const (
+	LOCAL_PROTOCOL = "injvm"
+
+	SCOPE_KEY    = "scope"
+	SCOPE_LOCAL  = "local"
+	SCOPE_REMOTE = "remote"
+
+	LOCALHOST_VALUE = "127.0.0.1"
 )
 
 const (
@@ -40,18 +51,19 @@ const (
 )
 
 const (
-	TIMESTAMP_KEY        = "timestamp"
-	REMOTE_TIMESTAMP_KEY = "remote.timestamp"
-	CLUSTER_KEY          = "cluster"
-	LOADBALANCE_KEY      = "loadbalance"
-	WEIGHT_KEY           = "weight"
-	WARMUP_KEY           = "warmup"
-	RETRIES_KEY          = "retries"
-	BEAN_NAME            = "bean.name"
-	FAIL_BACK_TASKS_KEY  = "failbacktasks"
-	FORKS_KEY            = "forks"
-	DEFAULT_FORKS        = 2
-	DEFAULT_TIMEOUT      = 1000
+	TIMESTAMP_KEY           = "timestamp"
+	REMOTE_TIMESTAMP_KEY    = "remote.timestamp"
+	CLUSTER_KEY             = "cluster"
+	LOADBALANCE_KEY         = "loadbalance"
+	WEIGHT_KEY              = "weight"
+	WARMUP_KEY              = "warmup"
+	RETRIES_KEY             = "retries"
+	BEAN_NAME               = "bean.name"
+	FAIL_BACK_TASKS_KEY     = "failbacktasks"
+	FORKS_KEY               = "forks"
+	DEFAULT_FORKS           = 2
+	DEFAULT_TIMEOUT         = 1000
+	DEFAULT_CONNECT_TIMEOUT = 3000
 )
 
 const (

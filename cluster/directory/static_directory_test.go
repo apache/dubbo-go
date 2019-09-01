@@ -30,7 +30,6 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 func Test_StaticDirList(t *testing.T) {
@@ -41,7 +40,7 @@ func Test_StaticDirList(t *testing.T) {
 	}
 
 	staticDir := NewStaticDirectory(invokers)
-	assert.Len(t, staticDir.List(&invocation.RPCInvocation{}), 10)
+	assert.Len(t, staticDir.List(&protocol.RPCInvocation{}), 10)
 }
 
 func Test_StaticDirDestroy(t *testing.T) {
