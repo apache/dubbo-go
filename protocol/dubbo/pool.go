@@ -300,7 +300,7 @@ func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPC
 		p.conns = p.conns[:len(p.conns)-1]
 
 		if d := now - conn.getActive(); d > p.ttl {
-			if closeErr := conn.safeClose(); closeErr != nil {
+			if closeErr := conn.safeClose(); closeErr == nil {
 				p.remove(conn)
 			}
 			continue
@@ -331,7 +331,7 @@ func (p *gettyRPCClientPool) release(conn *gettyRPCClient, err error) {
 	}
 
 	if len(p.conns) >= p.size {
-		if closeErr := conn.safeClose(); closeErr != nil {
+		if closeErr := conn.safeClose(); closeErr == nil {
 			// delete @conn from client pool
 			p.remove(conn)
 		}
