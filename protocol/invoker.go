@@ -51,7 +51,7 @@ var (
 
 func NewBaseInvoker(url common.URL) *BaseInvoker {
 	v := url.GetParam(constant.TOKEN_KEY, "")
-	fmt.Printf("NewBaseInvoker token: %s", v)
+	fmt.Printf("NewBaseInvoker token: %s \n", v)
 
 	// server端, 在 url.SubUrl 的 baseUrl 是有的
 	attachment := make(map[string]string, 0)

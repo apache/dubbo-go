@@ -18,6 +18,7 @@ limitations under the License.
 package impl
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -43,6 +44,7 @@ func init() {
 type TokenFilter struct{}
 
 func (tf *TokenFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	fmt.Printf("token filter with invocation: %s \n", invocation)
 	invokerTkn := invoker.GetUrl().GetParam(constant.TOKEN_KEY, "")
 	if len(invokerTkn) > 0 {
 		attachs := invocation.Attachments()
