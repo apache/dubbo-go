@@ -250,6 +250,13 @@ func (c *gettyRPCClient) close() error {
 	return closeErr
 }
 
+func (c *gettyRPCClient) safeClose() error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	return c.close()
+}
+
 type gettyRPCClientPool struct {
 	rpcClient *Client
 	size      int   // size of []*gettyRPCClient
@@ -270,11 +277,11 @@ func newGettyRPCClientConnPool(rpcClient *Client, size int, ttl time.Duration) *
 
 func (p *gettyRPCClientPool) close() {
 	p.Lock()
-	defer p.Unlock()
 	conns := p.conns
 	p.conns = nil
+	p.Unlock()
 	for _, conn := range conns {
-		conn.close()
+		conn.safeClose()
 	}
 }
 
@@ -293,7 +300,7 @@ func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPC
 		p.conns = p.conns[:len(p.conns)-1]
 
 		if d := now - conn.getActive(); d > p.ttl {
-			if closeErr := conn.close(); closeErr != nil {
+			if closeErr := conn.safeClose(); closeErr != nil {
 				p.remove(conn)
 			}
 			continue
@@ -311,20 +318,20 @@ func (p *gettyRPCClientPool) release(conn *gettyRPCClient, err error) {
 		return
 	}
 
-	p.Lock()
-	defer p.Unlock()
-
 	if err != nil {
-		conn.close()
+		conn.safeClose()
 		return
 	}
+
+	p.Lock()
+	defer p.Unlock()
 
 	if p.conns == nil {
 		return
 	}
 
 	if len(p.conns) >= p.size {
-		if closeErr := conn.close(); closeErr != nil {
+		if closeErr := conn.safeClose(); closeErr != nil {
 			// delete @conn from client pool
 			p.remove(conn)
 		}
