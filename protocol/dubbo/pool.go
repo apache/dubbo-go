@@ -235,8 +235,6 @@ func (c *gettyRPCClient) isAvailable() bool {
 func (c *gettyRPCClient) close() error {
 	closeErr := perrors.Errorf("close gettyRPCClient{%#v} again", c)
 	c.once.Do(func() {
-		c.lock.Lock()
-		defer c.lock.Unlock()
 		c.gettyClient.Close()
 		c.gettyClient = nil
 		for _, s := range c.sessions {
@@ -272,9 +270,9 @@ func newGettyRPCClientConnPool(rpcClient *Client, size int, ttl time.Duration) *
 
 func (p *gettyRPCClientPool) close() {
 	p.Lock()
+	defer p.Unlock()
 	conns := p.conns
 	p.conns = nil
-	p.Unlock()
 	for _, conn := range conns {
 		conn.close()
 	}
@@ -312,13 +310,15 @@ func (p *gettyRPCClientPool) release(conn *gettyRPCClient, err error) {
 	if conn == nil || conn.getActive() == 0 {
 		return
 	}
+
+	p.Lock()
+	defer p.Unlock()
+
 	if err != nil {
 		conn.close()
 		return
 	}
 
-	p.Lock()
-	defer p.Unlock()
 	if p.conns == nil {
 		return
 	}
