@@ -49,13 +49,18 @@ func NewDubboInvoker(url common.URL, client *Client) *DubboInvoker {
 	}
 }
 
-func (di *DubboInvoker) DoInvoke(invocation protocol.Invocation) protocol.Result {
+func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	var (
 		err    error
 		result protocol.RPCResult
 	)
 
 	inv := invocation.(*protocol.RPCInvocation)
+	if len(di.BaseInvoker.Attachment()) > 0 {
+		for k, v := range di.BaseInvoker.Attachment() {
+			inv.SetAttachments(k, v)
+		}
+	}
 
 	fmt.Printf("invocation: %v", *inv)
 

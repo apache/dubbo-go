@@ -24,6 +24,10 @@ import (
 )
 
 import (
+	hessian "github.com/apache/dubbo-go-hessian2"
+)
+
+import (
 	_ "github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/config"
 	_ "github.com/apache/dubbo-go/protocol/dubbo"
@@ -40,9 +44,9 @@ var userProvider *UserProvider
 var demoProvider *DemoProvider
 
 func init() {
-	//userProvider = new(UserProvider)
-	//config.SetConsumerService(userProvider)
-	//hessian.RegisterPOJO(&User{})
+	userProvider = new(UserProvider)
+	config.SetConsumerService(userProvider)
+	hessian.RegisterPOJO(&User{})
 
 	demoProvider = new(DemoProvider)
 	config.SetConsumerService(demoProvider)
@@ -68,7 +72,7 @@ func (User) JavaClassName() string {
 }
 
 type DemoProvider struct {
-	SayHello func(ctx context.Context, req []interface{}, rsp string) error
+	SayHello func(ctx context.Context, req interface{}, rsp string) error `dubbo:"sayHello"`
 }
 
 func (u *DemoProvider) Reference() string {
@@ -84,18 +88,19 @@ func main() {
 	time.Sleep(3e9)
 
 	println("\n\n\nstart to test dubbo")
-	//user := &User{}
-	//err := userProvider.GetUser(context.TODO(), []interface{}{"A001"}, user)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//fmt.Printf("response result: %v\n", user)
 
-	var result string
-	err := demoProvider.SayHello(context.Background(), []interface{}{"world"}, result)
+	user := &User{}
+	err := userProvider.GetUser(context.TODO(), []interface{}{"A001"}, user)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("demoProvider result: %v\n", result)
+	fmt.Printf("response result: %v\n", user)
+
+	//var result string
+	//err := demoProvider.SayHello(context.Background(), "world", result)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//fmt.Printf("demoProvider result: %v\n", result)
 
 }

@@ -31,6 +31,20 @@ services:
       retries: 1
       loadbalance: "random"
     token: "1234"
+  "DemoProvider":
+    # 可以指定多个registry，使用逗号隔开;不指定默认向所有注册中心注册
+    registry: "demoZk"
+    protocol : "dubbo"
+    # 相当于dubbo.xml中的interface
+    interface : "org.apache.dubbo.demo.DemoService"
+    loadbalance: "random"
+    warmup: "100"
+    cluster: "failover"
+    methods:
+      - name: "sayHello"
+        retries: 1
+        loadbalance: "random"
+    token: "1234"
 
 protocols:
   "dubbo":

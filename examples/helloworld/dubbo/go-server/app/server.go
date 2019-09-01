@@ -50,6 +50,7 @@ var (
 
 func init() {
 	config.SetProviderService(new(UserProvider))
+	config.SetProviderService(new(DemoProvider))
 	// ------for hessian2------
 	hessian.RegisterPOJO(&User{})
 }
@@ -67,7 +68,7 @@ type UserProvider struct {
 func (u *UserProvider) GetUser(ctx context.Context, req []interface{}) (*User, error) {
 	// attachments
 	// arguments
-
+	fmt.Printf("invoke GetUser \n")
 	return &User{"A001", "Alex Stocks", 18, time.Now()}, nil
 }
 
@@ -77,6 +78,18 @@ func (u *UserProvider) Reference() string {
 
 func (u User) JavaClassName() string {
 	return "com.ikurento.user.User"
+}
+
+type DemoProvider struct {
+}
+
+func (d *DemoProvider) SayHello(ctx context.Context, req interface{}) (string, error) {
+	fmt.Printf("invoke sayHello \n")
+	return "wahaha", nil
+}
+
+func (u *DemoProvider) Reference() string {
+	return "DemoProvider"
 }
 
 // they are necessary:

@@ -32,6 +32,7 @@ const (
 	CONNECT_TIMEOUT_KEY = "connect.timeout"
 	BEAN_NAME_KEY       = "bean.name"
 	GENERIC_KEY         = "generic"
+	TOKEN_KEY           = "token"
 )
 
 const (

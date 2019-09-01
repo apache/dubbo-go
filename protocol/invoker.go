@@ -73,6 +73,10 @@ func (bi *BaseInvoker) GetUrl() common.URL {
 	return bi.url
 }
 
+func (bi *BaseInvoker) Attachment() map[string]string {
+	return bi.attachment
+}
+
 func (bi *BaseInvoker) IsAvailable() bool {
 	return bi.available
 }
@@ -82,17 +86,6 @@ func (bi *BaseInvoker) IsDestroyed() bool {
 }
 
 func (bi *BaseInvoker) Invoke(invocation Invocation) Result {
-	if len(bi.attachment) > 0 {
-		rpcInvocation := invocation.(*RPCInvocation)
-		for k, v := range bi.attachment {
-			rpcInvocation.SetAttachments(k, v)
-		}
-	}
-
-	return bi.DoInvoke(invocation)
-}
-
-func (bi *BaseInvoker) DoInvoke(invocation Invocation) Result {
 	return &RPCResult{}
 }
 

@@ -50,6 +50,7 @@ func (tf *TokenFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invo
 		attachs := invocation.Attachments()
 		if len(attachs) > 0 {
 			remoteTkn, exist := attachs[constant.TOKEN_KEY]
+			fmt.Printf("url token: %s, invocation token: %s \n", invokerTkn, remoteTkn)
 			if exist && strings.EqualFold(invokerTkn, remoteTkn) {
 				return invoker.Invoke(invocation)
 			}
