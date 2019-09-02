@@ -18,16 +18,19 @@
 package proxy_factory
 
 import (
-	"github.com/apache/dubbo-go/common/logger"
-	perrors "github.com/pkg/errors"
 	"reflect"
 	"strings"
+)
+
+import (
+	perrors "github.com/pkg/errors"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/proxy"
 	"github.com/apache/dubbo-go/protocol"
 )
