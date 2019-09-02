@@ -16,3 +16,44 @@
  */
 
 package main
+
+import (
+	"context"
+	"time"
+)
+
+import (
+	"github.com/apache/dubbo-go-hessian2"
+)
+
+import (
+	"github.com/apache/dubbo-go/config"
+)
+
+func init() {
+	config.SetProviderService(new(UserProvider))
+	// ------for hessian2------
+	hessian.RegisterPOJO(&User{})
+}
+
+type User struct {
+	Id   string
+	Name string
+	Age  int32
+	Time time.Time
+}
+
+type UserProvider struct {
+}
+
+func (u *UserProvider) GetUser(ctx context.Context, req []interface{}) (*User, error) {
+	return &User{"A001", "Alex Stocks", 18, time.Now()}, nil
+}
+
+func (u *UserProvider) Reference() string {
+	return "UserProvider"
+}
+
+func (u User) JavaClassName() string {
+	return "com.ikurento.user.User"
+}

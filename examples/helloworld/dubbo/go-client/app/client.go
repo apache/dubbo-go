@@ -24,10 +24,6 @@ import (
 )
 
 import (
-	hessian "github.com/apache/dubbo-go-hessian2"
-)
-
-import (
 	_ "github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/config"
 	_ "github.com/apache/dubbo-go/protocol/dubbo"
@@ -40,45 +36,6 @@ import (
 	_ "github.com/apache/dubbo-go/registry/zookeeper"
 )
 
-var userProvider *UserProvider
-var demoProvider *DemoProvider
-
-func init() {
-	userProvider = new(UserProvider)
-	config.SetConsumerService(userProvider)
-	hessian.RegisterPOJO(&User{})
-
-	demoProvider = new(DemoProvider)
-	config.SetConsumerService(demoProvider)
-}
-
-type User struct {
-	Id   string
-	Name string
-	Age  int32
-	Time time.Time
-}
-
-type UserProvider struct {
-	GetUser func(ctx context.Context, req []interface{}, rsp *User) error
-}
-
-func (u *UserProvider) Reference() string {
-	return "UserProvider"
-}
-
-func (User) JavaClassName() string {
-	return "com.ikurento.user.User"
-}
-
-type DemoProvider struct {
-	SayHello func(ctx context.Context, req interface{}, rsp *User) error `dubbo:"sayHello"`
-}
-
-func (u *DemoProvider) Reference() string {
-	return "DemoProvider"
-}
-
 // they are necessary:
 // 		export CONF_CONSUMER_FILE_PATH="xxx"
 // 		export APP_LOG_CONF_FILE="xxx"
@@ -88,19 +45,10 @@ func main() {
 	time.Sleep(3e9)
 
 	println("\n\n\nstart to test dubbo")
-
-	//user := &User{}
-	//err := userProvider.GetUser(context.TODO(), []interface{}{"A001"}, user)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//fmt.Printf("response result: %v\n", user)
-	//
-	result := &User{}
-	err := demoProvider.SayHello(context.Background(), "world", result)
+	user := &User{}
+	err := userProvider.GetUser(context.TODO(), []interface{}{"A001"}, user)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("demoProvider result: %v\n", result)
-
+	fmt.Printf("response result: %v\n", user)
 }

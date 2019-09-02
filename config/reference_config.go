@@ -80,7 +80,6 @@ func (refconfig *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) erro
 
 func (refconfig *ReferenceConfig) Refer() {
 	url := common.NewURLWithOptions(common.WithPath(refconfig.id), common.WithProtocol(refconfig.Protocol), common.WithParams(refconfig.getUrlMap()))
-	// map
 
 	//1. user specified URL, could be peer-to-peer address, or register center's address.
 	if refconfig.Url != "" {

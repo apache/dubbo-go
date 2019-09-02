@@ -224,7 +224,6 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	invoker := exporter.(protocol.Exporter).GetInvoker()
 	if invoker != nil {
 		reqAttch := p.Body.(map[string]interface{})["attachments"]
-		fmt.Printf("attach: %v\n", reqAttch)
 		absAttach := reqAttch.(map[interface{}]interface{})
 
 		attach := map[string]string{
@@ -247,7 +246,6 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 			}
 		}
 		result := invoker.Invoke(protocol.NewRPCInvocation(p.Service.Method, p.Body.(map[string]interface{})["args"].([]interface{}), attach))
-		fmt.Printf("listener result: %v\n", result)
 		if err := result.Error(); err != nil {
 			p.Header.ResponseStatus = hessian.Response_OK
 			p.Body = err

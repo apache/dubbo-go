@@ -18,16 +18,11 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-)
-
-import (
-	"github.com/apache/dubbo-go-hessian2"
 )
 
 import (
@@ -47,58 +42,6 @@ import (
 var (
 	survivalTimeout = int(3e9)
 )
-
-func init() {
-	config.SetProviderService(new(UserProvider))
-	config.SetProviderService(new(DemoProvider))
-	// ------for hessian2------
-	hessian.RegisterPOJO(&User{})
-}
-
-type User struct {
-	Id   string
-	Name string
-	Age  int32
-	Time time.Time
-}
-
-type UserProvider struct {
-}
-
-func (u *UserProvider) GetUser(ctx context.Context, req []interface{}) (*User, error) {
-	// attachments
-	// arguments
-	fmt.Printf("invoke GetUser \n")
-	return &User{"A001", "Alex Stocks", 18, time.Now()}, nil
-}
-
-func (u *UserProvider) Reference() string {
-	return "UserProvider"
-}
-
-func (u User) JavaClassName() string {
-	return "com.ikurento.user.User"
-}
-
-type DemoProvider struct {
-}
-
-func (d *DemoProvider) SayHello(ctx context.Context, req interface{}) (*User, error) {
-	fmt.Printf("invoke sayHello \n")
-	//val := "wahaha"
-	return &User{"A001", "Alex Stocks", 18, time.Now()}, nil
-	//return &val, nil
-}
-
-func (u *DemoProvider) Reference() string {
-	return "DemoProvider"
-}
-
-func (u *DemoProvider) MethodMapper() map[string]string {
-    return map[string]string{
-    	"SayHello": "sayHello",
-    }
-}
 
 // they are necessary:
 // 		export CONF_PROVIDER_FILE_PATH="xxx"
