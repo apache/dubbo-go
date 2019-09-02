@@ -20,8 +20,6 @@ package impl
 import (
 	"reflect"
 	"strings"
-
-	invocation2 "github.com/apache/dubbo-go/protocol/invocation"
 )
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
@@ -31,6 +29,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/filter"
 	"github.com/apache/dubbo-go/protocol"
+	invocation2 "github.com/apache/dubbo-go/protocol/invocation"
 )
 
 const (

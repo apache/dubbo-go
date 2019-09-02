@@ -24,8 +24,6 @@ import (
 	"reflect"
 	"sync"
 	"time"
-
-	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 import (
@@ -39,6 +37,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 // todo: WritePkg_Timeout will entry *.yml

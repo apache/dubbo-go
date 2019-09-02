@@ -21,8 +21,6 @@ import (
 	"context"
 	"fmt"
 	"testing"
-
-	"github.com/apache/dubbo-go/protocol/invocation"
 )
 import (
 	"github.com/stretchr/testify/assert"
@@ -32,6 +30,7 @@ import (
 	"github.com/apache/dubbo-go/cluster/directory"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 func Test_RegAwareInvokeSuccess(t *testing.T) {

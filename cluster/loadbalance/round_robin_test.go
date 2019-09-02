@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strconv"
 	"testing"
-
-	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 import (
@@ -16,6 +14,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 func TestRoundRobinSelect(t *testing.T) {

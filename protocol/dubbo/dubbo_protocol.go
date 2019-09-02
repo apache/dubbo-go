@@ -20,7 +20,9 @@ package dubbo
 import (
 	"sync"
 	"time"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"

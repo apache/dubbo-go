@@ -23,8 +23,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 import (
@@ -36,6 +34,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 func TestClient_CallOneway(t *testing.T) {

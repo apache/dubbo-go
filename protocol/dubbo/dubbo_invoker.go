@@ -20,8 +20,6 @@ package dubbo
 import (
 	"strconv"
 	"sync"
-
-	invocation2 "github.com/apache/dubbo-go/protocol/invocation"
 )
 
 import (
@@ -33,6 +31,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
+	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 )
 
 var Err_No_Reply = perrors.New("request need @reply")
@@ -56,7 +55,7 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 		result protocol.RPCResult
 	)
 
-	inv := invocation.(*invocation2.RPCInvocation)
+	inv := invocation.(*invocation_impl.RPCInvocation)
 	if len(di.BaseInvoker.Attachment()) > 0 {
 		for k, v := range di.BaseInvoker.Attachment() {
 			inv.SetAttachments(k, v)

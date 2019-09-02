@@ -22,8 +22,6 @@ import (
 	"fmt"
 	"net/url"
 	"testing"
-
-	"github.com/apache/dubbo-go/protocol/invocation"
 )
 import (
 	perrors "github.com/pkg/errors"
@@ -38,6 +36,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 /////////////////////////////

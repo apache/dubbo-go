@@ -22,7 +22,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"github.com/satori/go.uuid"
 	"math"
 	"net"
 	"net/url"
@@ -33,6 +32,7 @@ import (
 
 import (
 	perrors "github.com/pkg/errors"
+	"github.com/satori/go.uuid"
 )
 
 import (
