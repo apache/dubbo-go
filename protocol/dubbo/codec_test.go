@@ -70,5 +70,5 @@ func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
 	assert.Equal(t, "Method", pkgres.Body.([]interface{})[3])
 	assert.Equal(t, "Ljava/lang/String;", pkgres.Body.([]interface{})[4])
 	assert.Equal(t, []interface{}{"a"}, pkgres.Body.([]interface{})[5])
-	assert.Equal(t, map[interface{}]interface{}{"group": "", "interface": "Service", "path": "path", "timeout": "1000"}, pkgres.Body.([]interface{})[6])
+	assert.Equal(t, map[string]string{"group": "", "interface": "Service", "path": "path", "timeout": "1000"}, pkgres.Body.([]interface{})[6])
 }

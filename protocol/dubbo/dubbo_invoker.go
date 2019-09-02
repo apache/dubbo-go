@@ -56,6 +56,10 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 		result protocol.RPCResult
 	)
 
+	if invocation.Attachments() != nil {
+		invocation.Attachments()[constant.DUBBO_VERSION_KEY] = constant.DUBBO_VERSION
+	}
+
 	inv := invocation.(*invocation_impl.RPCInvocation)
 	url := di.GetUrl()
 	// async
@@ -66,15 +70,15 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	}
 	if async {
 		if callBack, ok := inv.CallBack().(func(response CallResponse)); ok {
-			result.Err = di.client.AsyncCall(url.Location, url, inv.MethodName(), inv.Arguments(), callBack, inv.Reply())
+			result.Err = di.client.AsyncCall(url.Location, url, inv.MethodName(), inv.Arguments(), callBack, inv.Reply(), inv.Attachments())
 		} else {
-			result.Err = di.client.CallOneway(url.Location, url, inv.MethodName(), inv.Arguments())
+			result.Err = di.client.CallOneway(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments())
 		}
 	} else {
 		if inv.Reply() == nil {
 			result.Err = Err_No_Reply
 		} else {
-			result.Err = di.client.Call(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Reply())
+			result.Err = di.client.Call(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Reply(), inv.Attachments())
 		}
 	}
 	if result.Err == nil {
