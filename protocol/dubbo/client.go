@@ -151,30 +151,30 @@ func NewClient(opt Options) *Client {
 }
 
 // call one way
-func (c *Client) CallOneway(addr string, svcUrl common.URL, method string, args interface{}) error {
+func (c *Client) CallOneway(addr string, svcUrl common.URL, method string, args interface{}, atta map[string]string) error {
 
-	return perrors.WithStack(c.call(CT_OneWay, addr, svcUrl, method, args, nil, nil))
+	return perrors.WithStack(c.call(CT_OneWay, addr, svcUrl, method, args, nil, nil, atta))
 }
 
 // if @reply is nil, the transport layer will get the response without notify the invoker.
-func (c *Client) Call(addr string, svcUrl common.URL, method string, args, reply interface{}) error {
+func (c *Client) Call(addr string, svcUrl common.URL, method string, args, reply interface{}, atta map[string]string) error {
 
 	ct := CT_TwoWay
 	if reply == nil {
 		ct = CT_OneWay
 	}
 
-	return perrors.WithStack(c.call(ct, addr, svcUrl, method, args, reply, nil))
+	return perrors.WithStack(c.call(ct, addr, svcUrl, method, args, reply, nil, atta))
 }
 
 func (c *Client) AsyncCall(addr string, svcUrl common.URL, method string, args interface{},
-	callback AsyncCallback, reply interface{}) error {
+	callback AsyncCallback, reply interface{}, atta map[string]string) error {
 
-	return perrors.WithStack(c.call(CT_TwoWay, addr, svcUrl, method, args, reply, callback))
+	return perrors.WithStack(c.call(CT_TwoWay, addr, svcUrl, method, args, reply, callback, atta))
 }
 
 func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string,
-	args, reply interface{}, callback AsyncCallback) error {
+	args, reply interface{}, callback AsyncCallback, atta map[string]string) error {
 
 	p := &DubboPackage{}
 	p.Service.Path = strings.TrimPrefix(svcUrl.Path, "/")
@@ -183,7 +183,7 @@ func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string
 	p.Service.Method = method
 	p.Service.Timeout = c.opts.RequestTimeout
 	p.Header.SerialID = byte(S_Dubbo)
-	p.Body = args
+	p.Body = hessian.NewRequest(args, atta)
 
 	var rsp *PendingResponse
 	if ct != CT_OneWay {
@@ -259,6 +259,7 @@ func (c *Client) transfer(session getty.Session, pkg *DubboPackage,
 
 	if pkg == nil {
 		pkg = &DubboPackage{}
+		pkg.Body = hessian.NewRequest([]interface{}{}, nil)
 		pkg.Body = []interface{}{}
 		pkg.Header.Type = hessian.PackageHeartbeat
 		pkg.Header.SerialID = byte(S_Dubbo)
