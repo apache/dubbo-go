@@ -83,13 +83,21 @@ func (u User) JavaClassName() string {
 type DemoProvider struct {
 }
 
-func (d *DemoProvider) SayHello(ctx context.Context, req interface{}) (string, error) {
+func (d *DemoProvider) SayHello(ctx context.Context, req interface{}) (*User, error) {
 	fmt.Printf("invoke sayHello \n")
-	return "wahaha", nil
+	//val := "wahaha"
+	return &User{"A001", "Alex Stocks", 18, time.Now()}, nil
+	//return &val, nil
 }
 
 func (u *DemoProvider) Reference() string {
 	return "DemoProvider"
+}
+
+func (u *DemoProvider) MethodMapper() map[string]string {
+    return map[string]string{
+    	"SayHello": "sayHello",
+    }
 }
 
 // they are necessary:

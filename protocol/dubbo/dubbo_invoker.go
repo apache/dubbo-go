@@ -62,7 +62,7 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 		}
 	}
 
-	fmt.Printf("invocation: %v", *inv)
+	fmt.Printf("dubbo invoker invocation: %v \n", *inv)
 
 	url := di.GetUrl()
 	// async

@@ -72,7 +72,7 @@ func (User) JavaClassName() string {
 }
 
 type DemoProvider struct {
-	SayHello func(ctx context.Context, req interface{}, rsp string) error `dubbo:"sayHello"`
+	SayHello func(ctx context.Context, req interface{}, rsp *User) error `dubbo:"sayHello"`
 }
 
 func (u *DemoProvider) Reference() string {
@@ -89,18 +89,18 @@ func main() {
 
 	println("\n\n\nstart to test dubbo")
 
-	user := &User{}
-	err := userProvider.GetUser(context.TODO(), []interface{}{"A001"}, user)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("response result: %v\n", user)
-
-	//var result string
-	//err := demoProvider.SayHello(context.Background(), "world", result)
+	//user := &User{}
+	//err := userProvider.GetUser(context.TODO(), []interface{}{"A001"}, user)
 	//if err != nil {
 	//	panic(err)
 	//}
-	//fmt.Printf("demoProvider result: %v\n", result)
+	//fmt.Printf("response result: %v\n", user)
+	//
+	result := &User{}
+	err := demoProvider.SayHello(context.Background(), "world", result)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("demoProvider result: %v\n", result)
 
 }

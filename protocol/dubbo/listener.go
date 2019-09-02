@@ -223,12 +223,31 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	}
 	invoker := exporter.(protocol.Exporter).GetInvoker()
 	if invoker != nil {
-		result := invoker.Invoke(protocol.NewRPCInvocation(p.Service.Method, p.Body.(map[string]interface{})["args"].([]interface{}), map[string]string{
+		reqAttch := p.Body.(map[string]interface{})["attachments"]
+		fmt.Printf("attach: %v\n", reqAttch)
+		absAttach := reqAttch.(map[interface{}]interface{})
+
+		attach := map[string]string{
 			constant.PATH_KEY:      p.Service.Path,
 			constant.GROUP_KEY:     p.Service.Group,
 			constant.INTERFACE_KEY: p.Service.Interface,
 			constant.VERSION_KEY:   p.Service.Version,
-		}))
+		}
+		for k, v := range absAttach {
+			kStr, ok := k.(string)
+			if !ok {
+				logger.Error("unknow attach key: %v and val: %v", k, v)
+				continue
+			}
+
+			if vStr, ok := v.(string); ok {
+				attach[kStr] = vStr
+			} else {
+				logger.Error("unknow attach key: %v and val: %v", k, v)
+			}
+		}
+		result := invoker.Invoke(protocol.NewRPCInvocation(p.Service.Method, p.Body.(map[string]interface{})["args"].([]interface{}), attach))
+		fmt.Printf("listener result: %v\n", result)
 		if err := result.Error(); err != nil {
 			p.Header.ResponseStatus = hessian.Response_OK
 			p.Body = err

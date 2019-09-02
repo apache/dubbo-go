@@ -18,6 +18,7 @@
 package dubbo
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -185,6 +186,7 @@ func (c *Client) call(ct CallType, addr string, svcUrl common.URL, invocation *p
 	p.Service.Timeout = c.opts.RequestTimeout
 	p.Header.SerialID = byte(S_Dubbo)
 	p.Body = hessian.NewRequest(invocation.Arguments(), invocation.Attachments())
+	fmt.Printf("client body : %v\n", p.Body)
 
 	var rsp *PendingResponse
 	if ct != CT_OneWay {
