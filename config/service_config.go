@@ -164,7 +164,7 @@ func (srvconfig *ServiceConfig) exportLocal(url *common.URL) {
 		invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*local)
 		exporter := extension.GetProtocol(constant.DUBBO).Export(invoker)
 		srvconfig.exporters = append(srvconfig.exporters, exporter)
-		logger.Infof("Export dubbo service " + srvconfig.InterfaceName + " to local registry");
+		logger.Infof("Export dubbo service " + srvconfig.InterfaceName + " to local registry")
 	}
 }
 

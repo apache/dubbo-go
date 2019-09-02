@@ -22,13 +22,13 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"github.com/satori/go.uuid"
 	"math"
 	"net"
 	"net/url"
 	"strconv"
 	"strings"
 	"sync"
-	"github.com/satori/go.uuid"
 )
 
 import (
@@ -165,14 +165,14 @@ func Copy(src URL) *URL {
 	dst := &URL{
 		baseUrl: baseUrl{
 			Protocol: src.Protocol,
-			Ip: src.Ip,
+			Ip:       src.Ip,
 			Location: src.Ip + ":" + src.Port,
-			Port: src.Port,
-			Params: params,
+			Port:     src.Port,
+			Params:   params,
 		},
 		Username: src.Username,
 		Password: src.Password,
-		Path: src.Path,
+		Path:     src.Path,
 	}
 	return dst
 }
