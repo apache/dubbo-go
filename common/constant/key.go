@@ -36,16 +36,6 @@ const (
 )
 
 const (
-	LOCAL_PROTOCOL = "injvm"
-
-	SCOPE_KEY    = "scope"
-	SCOPE_LOCAL  = "local"
-	SCOPE_REMOTE = "remote"
-
-	LOCALHOST_VALUE = "127.0.0.1"
-)
-
-const (
 	SERVICE_FILTER_KEY   = "service.filter"
 	REFERENCE_FILTER_KEY = "reference.filter"
 )
