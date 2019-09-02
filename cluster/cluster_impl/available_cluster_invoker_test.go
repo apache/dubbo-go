@@ -21,6 +21,8 @@ import (
 	"context"
 	"strings"
 	"testing"
+
+	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 import (
@@ -65,7 +67,7 @@ func TestAvailableClusterInvokerSuccess(t *testing.T) {
 	invoker.EXPECT().IsAvailable().Return(true)
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
 
-	result := clusterInvoker.Invoke(&protocol.RPCInvocation{})
+	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
 
 	assert.Equal(t, mockResult, result)
 }
@@ -79,7 +81,7 @@ func TestAvailableClusterInvokerNoAvail(t *testing.T) {
 
 	invoker.EXPECT().IsAvailable().Return(false)
 
-	result := clusterInvoker.Invoke(&protocol.RPCInvocation{})
+	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
 
 	assert.NotNil(t, result.Error())
 	assert.True(t, strings.Contains(result.Error().Error(), "no provider available"))

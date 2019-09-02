@@ -21,6 +21,8 @@ import (
 	"context"
 	"fmt"
 	"testing"
+
+	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 import (
@@ -39,14 +41,14 @@ func TestLeastActiveSelect(t *testing.T) {
 
 	url, _ := common.NewURL(context.TODO(), "dubbo://192.168.1.0:20000/org.apache.demo.HelloService")
 	invokers = append(invokers, protocol.NewBaseInvoker(url))
-	i := loadBalance.Select(invokers, &protocol.RPCInvocation{})
+	i := loadBalance.Select(invokers, &invocation.RPCInvocation{})
 	assert.True(t, i.GetUrl().URLEqual(url))
 
 	for i := 1; i < 10; i++ {
 		url, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://192.168.1.%v:20000/org.apache.demo.HelloService", i))
 		invokers = append(invokers, protocol.NewBaseInvoker(url))
 	}
-	loadBalance.Select(invokers, &protocol.RPCInvocation{})
+	loadBalance.Select(invokers, &invocation.RPCInvocation{})
 }
 
 func TestLeastActiveByWeight(t *testing.T) {
@@ -59,7 +61,7 @@ func TestLeastActiveByWeight(t *testing.T) {
 		invokers = append(invokers, protocol.NewBaseInvoker(url))
 	}
 
-	inv := protocol.NewRPCInvocationWithOptions(protocol.WithMethodName("test"))
+	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("test"))
 	protocol.BeginCount(invokers[2].GetUrl(), inv.MethodName())
 
 	loop = 10000

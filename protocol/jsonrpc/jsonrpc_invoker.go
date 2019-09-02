@@ -19,6 +19,8 @@ package jsonrpc
 
 import (
 	"context"
+
+	invocation2 "github.com/apache/dubbo-go/protocol/invocation"
 )
 
 import (
@@ -46,7 +48,7 @@ func (ji *JsonrpcInvoker) Invoke(invocation protocol.Invocation) protocol.Result
 		result protocol.RPCResult
 	)
 
-	inv := invocation.(*protocol.RPCInvocation)
+	inv := invocation.(*invocation2.RPCInvocation)
 	url := ji.GetUrl()
 	req := ji.client.NewRequest(url, inv.MethodName(), inv.Arguments())
 	ctx := context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{

@@ -20,6 +20,8 @@ package dubbo
 import (
 	"strconv"
 	"sync"
+
+	invocation2 "github.com/apache/dubbo-go/protocol/invocation"
 )
 
 import (
@@ -54,7 +56,7 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 		result protocol.RPCResult
 	)
 
-	inv := invocation.(*protocol.RPCInvocation)
+	inv := invocation.(*invocation2.RPCInvocation)
 	if len(di.BaseInvoker.Attachment()) > 0 {
 		for k, v := range di.BaseInvoker.Attachment() {
 			inv.SetAttachments(k, v)

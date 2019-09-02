@@ -23,7 +23,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 import (
@@ -154,13 +154,13 @@ func NewClient(opt Options) *Client {
 }
 
 // call one way
-func (c *Client) CallOneway(addr string, svcUrl common.URL, invocation *protocol.RPCInvocation) error {
+func (c *Client) CallOneway(addr string, svcUrl common.URL, invocation *invocation.RPCInvocation) error {
 
 	return perrors.WithStack(c.call(CT_OneWay, addr, svcUrl, invocation, nil, nil))
 }
 
 // if @reply is nil, the transport layer will get the response without notify the invoker.
-func (c *Client) Call(addr string, svcUrl common.URL, invocation *protocol.RPCInvocation, reply interface{}) error {
+func (c *Client) Call(addr string, svcUrl common.URL, invocation *invocation.RPCInvocation, reply interface{}) error {
 
 	ct := CT_TwoWay
 	if reply == nil {
@@ -170,13 +170,13 @@ func (c *Client) Call(addr string, svcUrl common.URL, invocation *protocol.RPCIn
 	return perrors.WithStack(c.call(ct, addr, svcUrl, invocation, reply, nil))
 }
 
-func (c *Client) AsyncCall(addr string, svcUrl common.URL, invocation *protocol.RPCInvocation,
+func (c *Client) AsyncCall(addr string, svcUrl common.URL, invocation *invocation.RPCInvocation,
 	callback AsyncCallback, reply interface{}) error {
 
 	return perrors.WithStack(c.call(CT_TwoWay, addr, svcUrl, invocation, reply, callback))
 }
 
-func (c *Client) call(ct CallType, addr string, svcUrl common.URL, invocation *protocol.RPCInvocation, reply interface{}, callback AsyncCallback) error {
+func (c *Client) call(ct CallType, addr string, svcUrl common.URL, invocation *invocation.RPCInvocation, reply interface{}, callback AsyncCallback) error {
 
 	p := &DubboPackage{}
 	p.Service.Path = strings.TrimPrefix(svcUrl.Path, "/")

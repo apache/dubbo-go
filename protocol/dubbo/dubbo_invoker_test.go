@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 import (
@@ -49,8 +49,8 @@ func TestDubboInvoker_Invoke(t *testing.T) {
 	invoker := NewDubboInvoker(url, c)
 	user := &User{}
 
-	inv := protocol.NewRPCInvocationWithOptions(protocol.WithMethodName("GetUser"), protocol.WithArguments([]interface{}{"1", "username"}),
-		protocol.WithReply(user))
+	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUser"), invocation.WithArguments([]interface{}{"1", "username"}),
+		invocation.WithReply(user))
 
 	// Call
 	res := invoker.Invoke(inv)

@@ -24,6 +24,8 @@ import (
 	"reflect"
 	"sync"
 	"time"
+
+	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 import (
@@ -245,7 +247,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 				logger.Error("unknow attach key: %v and val: %v", k, v)
 			}
 		}
-		result := invoker.Invoke(protocol.NewRPCInvocation(p.Service.Method, p.Body.(map[string]interface{})["args"].([]interface{}), attach))
+		result := invoker.Invoke(invocation.NewRPCInvocation(p.Service.Method, p.Body.(map[string]interface{})["args"].([]interface{}), attach))
 		if err := result.Error(); err != nil {
 			p.Header.ResponseStatus = hessian.Response_OK
 			p.Body = err

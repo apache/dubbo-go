@@ -20,6 +20,8 @@ package cluster_impl
 import (
 	"context"
 	"testing"
+
+	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 import (
@@ -68,7 +70,7 @@ func Test_FailSafeInvokeSuccess(t *testing.T) {
 	mockResult := &protocol.RPCResult{Rest: rest{tried: 0, success: true}}
 
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
-	result := clusterInvoker.Invoke(&protocol.RPCInvocation{})
+	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
 
 	assert.NoError(t, result.Error())
 	res := result.Result().(rest)
@@ -87,7 +89,7 @@ func Test_FailSafeInvokeFail(t *testing.T) {
 	mockResult := &protocol.RPCResult{Err: perrors.New("error")}
 
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
-	result := clusterInvoker.Invoke(&protocol.RPCInvocation{})
+	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
 
 	assert.NoError(t, result.Error())
 	assert.Nil(t, result.Result())

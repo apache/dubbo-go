@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 	"testing"
+
+	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 import (
@@ -23,14 +25,14 @@ func TestRoundRobinSelect(t *testing.T) {
 
 	url, _ := common.NewURL(context.TODO(), "dubbo://192.168.1.0:20000/org.apache.demo.HelloService")
 	invokers = append(invokers, protocol.NewBaseInvoker(url))
-	i := loadBalance.Select(invokers, &protocol.RPCInvocation{})
+	i := loadBalance.Select(invokers, &invocation.RPCInvocation{})
 	assert.True(t, i.GetUrl().URLEqual(url))
 
 	for i := 1; i < 10; i++ {
 		url, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://192.168.1.%v:20000/org.apache.demo.HelloService", i))
 		invokers = append(invokers, protocol.NewBaseInvoker(url))
 	}
-	loadBalance.Select(invokers, &protocol.RPCInvocation{})
+	loadBalance.Select(invokers, &invocation.RPCInvocation{})
 }
 
 func TestRoundRobinByWeight(t *testing.T) {
@@ -47,7 +49,7 @@ func TestRoundRobinByWeight(t *testing.T) {
 	selected := make(map[protocol.Invoker]int)
 
 	for i := 1; i <= loop; i++ {
-		invoker := loadBalance.Select(invokers, &protocol.RPCInvocation{})
+		invoker := loadBalance.Select(invokers, &invocation.RPCInvocation{})
 		selected[invoker]++
 	}
 

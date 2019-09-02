@@ -20,6 +20,8 @@ package proxy
 import (
 	"reflect"
 	"sync"
+
+	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 import (
@@ -72,7 +74,7 @@ func (p *Proxy) Implement(v common.RPCService) {
 		return func(in []reflect.Value) []reflect.Value {
 			var (
 				err   error
-				inv   *protocol.RPCInvocation
+				inv   *invocation.RPCInvocation
 				inArr []interface{}
 				reply reflect.Value
 			)
@@ -115,9 +117,9 @@ func (p *Proxy) Implement(v common.RPCService) {
 				}
 			}
 
-			inv = protocol.NewRPCInvocationWithOptions(protocol.WithMethodName(methodName),
-				protocol.WithArguments(inArr), protocol.WithReply(reply.Interface()),
-				protocol.WithCallBack(p.callBack))
+			inv = invocation.NewRPCInvocationWithOptions(invocation.WithMethodName(methodName),
+				invocation.WithArguments(inArr), invocation.WithReply(reply.Interface()),
+				invocation.WithCallBack(p.callBack))
 
 			for k, value := range p.attachments {
 				inv.SetAttachments(k, value)

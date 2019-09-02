@@ -39,6 +39,16 @@ import (
 	_ "github.com/apache/dubbo-go/registry/zookeeper"
 )
 
+import (
+	"github.com/apache/dubbo-go-hessian2"
+)
+
+func init() {
+	config.SetProviderService(new(UserProvider))
+	// ------for hessian2------
+	hessian.RegisterPOJO(&User{})
+}
+
 var (
 	survivalTimeout = int(3e9)
 )

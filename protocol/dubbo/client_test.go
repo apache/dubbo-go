@@ -23,6 +23,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 import (
@@ -50,7 +52,7 @@ func TestClient_CallOneway(t *testing.T) {
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
 
 	//user := &User{}
-	err := c.CallOneway("127.0.0.1:20000", url, protocol.NewRPCInvocation("GetUser", []interface{}{"1", "username"}, nil))
+	err := c.CallOneway("127.0.0.1:20000", url, invocation.NewRPCInvocation("GetUser", []interface{}{"1", "username"}, nil))
 	assert.NoError(t, err)
 
 	// destroy
@@ -71,50 +73,50 @@ func TestClient_Call(t *testing.T) {
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
 
 	user := &User{}
-	err := c.Call("127.0.0.1:20000", url, protocol.NewRPCInvocation("GetBigPkg", []interface{}{nil}, nil), user)
+	err := c.Call("127.0.0.1:20000", url, invocation.NewRPCInvocation("GetBigPkg", []interface{}{nil}, nil), user)
 	assert.NoError(t, err)
 	assert.NotEqual(t, "", user.Id)
 	assert.NotEqual(t, "", user.Name)
 
 	user = &User{}
-	err = c.Call("127.0.0.1:20000", url, protocol.NewRPCInvocation("GetUser", []interface{}{"1", "username"}, nil), user)
+	err = c.Call("127.0.0.1:20000", url, invocation.NewRPCInvocation("GetUser", []interface{}{"1", "username"}, nil), user)
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "1", Name: "username"}, *user)
 
 	user = &User{}
-	err = c.Call("127.0.0.1:20000", url, protocol.NewRPCInvocation("GetUser0", []interface{}{"1", nil, "username"}, nil), user)
+	err = c.Call("127.0.0.1:20000", url, invocation.NewRPCInvocation("GetUser0", []interface{}{"1", nil, "username"}, nil), user)
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "1", Name: "username"}, *user)
 
-	err = c.Call("127.0.0.1:20000", url, protocol.NewRPCInvocation("GetUser1", []interface{}{}, nil), user)
+	err = c.Call("127.0.0.1:20000", url, invocation.NewRPCInvocation("GetUser1", []interface{}{}, nil), user)
 	assert.NoError(t, err)
 
-	err = c.Call("127.0.0.1:20000", url, protocol.NewRPCInvocation("GetUser2", []interface{}{}, nil), user)
+	err = c.Call("127.0.0.1:20000", url, invocation.NewRPCInvocation("GetUser2", []interface{}{}, nil), user)
 	assert.EqualError(t, err, "error")
 
 	user2 := []interface{}{}
-	err = c.Call("127.0.0.1:20000", url, protocol.NewRPCInvocation("GetUser3", []interface{}{}, nil), &user2)
+	err = c.Call("127.0.0.1:20000", url, invocation.NewRPCInvocation("GetUser3", []interface{}{}, nil), &user2)
 	assert.NoError(t, err)
 	assert.Equal(t, &User{Id: "1", Name: "username"}, user2[0])
 
 	user2 = []interface{}{}
-	err = c.Call("127.0.0.1:20000", url, protocol.NewRPCInvocation("GetUser4", []interface{}{[]interface{}{"1", "username"}}, nil), &user2)
+	err = c.Call("127.0.0.1:20000", url, invocation.NewRPCInvocation("GetUser4", []interface{}{[]interface{}{"1", "username"}}, nil), &user2)
 	assert.NoError(t, err)
 	assert.Equal(t, &User{Id: "1", Name: "username"}, user2[0])
 
 	user3 := map[interface{}]interface{}{}
-	err = c.Call("127.0.0.1:20000", url, protocol.NewRPCInvocation("GetUser5", []interface{}{map[interface{}]interface{}{"id": "1", "name": "username"}}, nil), &user3)
+	err = c.Call("127.0.0.1:20000", url, invocation.NewRPCInvocation("GetUser5", []interface{}{map[interface{}]interface{}{"id": "1", "name": "username"}}, nil), &user3)
 	assert.NoError(t, err)
 	assert.NotNil(t, user3)
 	assert.Equal(t, &User{Id: "1", Name: "username"}, user3["key"])
 
 	user = &User{}
-	err = c.Call("127.0.0.1:20000", url, protocol.NewRPCInvocation("GetUser6", []interface{}{0}, nil), user)
+	err = c.Call("127.0.0.1:20000", url, invocation.NewRPCInvocation("GetUser6", []interface{}{0}, nil), user)
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "", Name: ""}, *user)
 
 	user = &User{}
-	err = c.Call("127.0.0.1:20000", url, protocol.NewRPCInvocation("GetUser6", []interface{}{1}, nil), user)
+	err = c.Call("127.0.0.1:20000", url, invocation.NewRPCInvocation("GetUser6", []interface{}{1}, nil), user)
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "1", Name: ""}, *user)
 
@@ -138,7 +140,7 @@ func TestClient_AsyncCall(t *testing.T) {
 	user := &User{}
 	lock := sync.Mutex{}
 	lock.Lock()
-	err := c.AsyncCall("127.0.0.1:20000", url, protocol.NewRPCInvocation("GetUser", []interface{}{"1", "username"}, nil), func(response CallResponse) {
+	err := c.AsyncCall("127.0.0.1:20000", url, invocation.NewRPCInvocation("GetUser", []interface{}{"1", "username"}, nil), func(response CallResponse) {
 		assert.Equal(t, User{Id: "1", Name: "username"}, *response.Reply.(*User))
 		lock.Unlock()
 	}, user)

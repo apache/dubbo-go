@@ -9,7 +9,7 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
+ * distributed under the Lic/Users/snow_young/go/src/github.com/apache/dubbo-go/registry/directory/directory.goense is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -21,6 +21,8 @@ import (
 	"context"
 	"testing"
 	"time"
+
+	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 import (
@@ -56,8 +58,8 @@ func TestJsonrpcInvoker_Invoke(t *testing.T) {
 
 	jsonInvoker := NewJsonrpcInvoker(url, client)
 	user := &User{}
-	res := jsonInvoker.Invoke(protocol.NewRPCInvocationWithOptions(protocol.WithMethodName("GetUser"), protocol.WithArguments([]interface{}{"1", "username"}),
-		protocol.WithReply(user)))
+	res := jsonInvoker.Invoke(invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUser"), invocation.WithArguments([]interface{}{"1", "username"}),
+		invocation.WithReply(user)))
 
 	assert.NoError(t, res.Error())
 	assert.Equal(t, User{Id: "1", Name: "username"}, *res.Result().(*User))

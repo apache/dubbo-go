@@ -22,6 +22,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 import (
@@ -71,7 +73,7 @@ func Test_FailbackSuceess(t *testing.T) {
 	mockResult := &protocol.RPCResult{Rest: rest{tried: 0, success: true}}
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
 
-	result := clusterInvoker.Invoke(&protocol.RPCInvocation{})
+	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
 	assert.Equal(t, mockResult, result)
 }
 
@@ -101,7 +103,7 @@ func Test_FailbackRetryOneSuccess(t *testing.T) {
 		return mockSuccResult
 	})
 
-	result := clusterInvoker.Invoke(&protocol.RPCInvocation{})
+	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
 	assert.Nil(t, result.Error())
 	assert.Nil(t, result.Result())
 	assert.Equal(t, 0, len(result.Attachments()))
@@ -149,7 +151,7 @@ func Test_FailbackRetryFailed(t *testing.T) {
 	}
 
 	// first call should failed.
-	result := clusterInvoker.Invoke(&protocol.RPCInvocation{})
+	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
 	assert.Nil(t, result.Error())
 	assert.Nil(t, result.Result())
 	assert.Equal(t, 0, len(result.Attachments()))
@@ -191,7 +193,7 @@ func Test_FailbackRetryFailed10Times(t *testing.T) {
 	}).Times(10)
 
 	for i := 0; i < 10; i++ {
-		result := clusterInvoker.Invoke(&protocol.RPCInvocation{})
+		result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
 		assert.Nil(t, result.Error())
 		assert.Nil(t, result.Result())
 		assert.Equal(t, 0, len(result.Attachments()))
@@ -221,14 +223,14 @@ func Test_FailbackOutOfLimit(t *testing.T) {
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockFailedResult).Times(11)
 
 	// reached limit
-	result := clusterInvoker.Invoke(&protocol.RPCInvocation{})
+	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
 	assert.Nil(t, result.Error())
 	assert.Nil(t, result.Result())
 	assert.Equal(t, 0, len(result.Attachments()))
 
 	// all will be out of limit
 	for i := 0; i < 10; i++ {
-		result := clusterInvoker.Invoke(&protocol.RPCInvocation{})
+		result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
 		assert.Nil(t, result.Error())
 		assert.Nil(t, result.Result())
 		assert.Equal(t, 0, len(result.Attachments()))

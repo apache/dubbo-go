@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"net/url"
 	"testing"
+
+	"github.com/apache/dubbo-go/protocol/invocation"
 )
 import (
 	perrors "github.com/pkg/errors"
@@ -98,7 +100,7 @@ func (bi *MockInvoker) Destroy() {
 
 var count int
 
-func normalInvoke(t *testing.T, successCount int, urlParam url.Values, invocations ...*protocol.RPCInvocation) protocol.Result {
+func normalInvoke(t *testing.T, successCount int, urlParam url.Values, invocations ...*invocation.RPCInvocation) protocol.Result {
 	extension.SetLoadbalance("random", loadbalance.NewRandomLoadBalance)
 	failoverCluster := NewFailoverCluster()
 
@@ -113,7 +115,7 @@ func normalInvoke(t *testing.T, successCount int, urlParam url.Values, invocatio
 	if len(invocations) > 0 {
 		return clusterInvoker.Invoke(invocations[0])
 	}
-	return clusterInvoker.Invoke(&protocol.RPCInvocation{})
+	return clusterInvoker.Invoke(&invocation.RPCInvocation{})
 }
 func Test_FailoverInvokeSuccess(t *testing.T) {
 	urlParams := url.Values{}
@@ -142,7 +144,7 @@ func Test_FailoverInvoke2(t *testing.T) {
 	urlParams.Set(constant.RETRIES_KEY, "2")
 	urlParams.Set("methods.test."+constant.RETRIES_KEY, "3")
 
-	ivc := protocol.NewRPCInvocationWithOptions(protocol.WithMethodName("test"))
+	ivc := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("test"))
 	result := normalInvoke(t, 3, urlParams, ivc)
 	assert.NoError(t, result.Error())
 	count = 0
@@ -161,7 +163,7 @@ func Test_FailoverDestroy(t *testing.T) {
 	staticDir := directory.NewStaticDirectory(invokers)
 	clusterInvoker := failoverCluster.Join(staticDir)
 	assert.Equal(t, true, clusterInvoker.IsAvailable())
-	result := clusterInvoker.Invoke(&protocol.RPCInvocation{})
+	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
 	assert.NoError(t, result.Error())
 	count = 0
 	clusterInvoker.Destroy()
