@@ -23,7 +23,7 @@ import (
 )
 
 import (
-	hessian "github.com/apache/dubbo-go-hessian2"
+	"github.com/apache/dubbo-go-hessian2"
 	"github.com/dubbogo/getty"
 	perrors "github.com/pkg/errors"
 )
@@ -118,7 +118,7 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 		if len(req) > 0 {
 			var dubboVersion, argsTypes string
 			var args []interface{}
-			var attachments map[interface{}]interface{}
+			var attachments map[string]string
 			if req[0] != nil {
 				dubboVersion = req[0].(string)
 			}
@@ -138,14 +138,14 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 				args = req[5].([]interface{})
 			}
 			if req[6] != nil {
-				attachments = req[6].(map[interface{}]interface{})
+				attachments = req[6].(map[string]string)
 			}
-			pkg.Service.Interface = attachments[constant.INTERFACE_KEY].(string)
-			if pkg.Service.Path == "" && attachments[constant.PATH_KEY] != nil {
-				pkg.Service.Path = attachments[constant.PATH_KEY].(string)
+			pkg.Service.Interface = attachments[constant.INTERFACE_KEY]
+			if pkg.Service.Path == "" && attachments[constant.PATH_KEY] != "" {
+				pkg.Service.Path = attachments[constant.PATH_KEY]
 			}
-			if attachments[constant.GROUP_KEY] != nil {
-				pkg.Service.Group = attachments[constant.GROUP_KEY].(string)
+			if attachments[constant.GROUP_KEY] != "" {
+				pkg.Service.Group = attachments[constant.GROUP_KEY]
 			}
 			pkg.Body = map[string]interface{}{
 				"dubboVersion": dubboVersion,

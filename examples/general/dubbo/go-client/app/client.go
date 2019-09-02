@@ -95,18 +95,18 @@ func println(format string, args ...interface{}) {
 }
 
 func test() {
-	//println("\n\n\necho")
-	//res, err := userProvider.Echo(context.TODO(), "OK")
-	//if err != nil {
-	//	panic(err)
-	//}
-	//println("res: %v\n", res)
+	println("\n\n\necho")
+	res, err := userProvider.Echo(context.TODO(), "OK")
+	if err != nil {
+		panic(err)
+	}
+	println("res: %v\n", res)
 
 	time.Sleep(3e9)
 
 	println("\n\n\nstart to test dubbo")
 	user := &User{}
-	err := userProvider.GetUser(context.TODO(), []interface{}{"A003"}, user)
+	err = userProvider.GetUser(context.TODO(), []interface{}{"A003"}, user)
 	if err != nil {
 		panic(err)
 	}
