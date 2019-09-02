@@ -4,8 +4,7 @@ require (
 	github.com/Workiva/go-datastructures v1.0.50
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
 	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190802083043-4cd0c391755e // indirect
-	github.com/apache/dubbo-go-hessian2 v1.2.5-0.20190731020727-1697039810c8
-	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
+	github.com/apache/dubbo-go-hessian2 v1.2.5-0.20190902124655-28e15207c962
 	github.com/buger/jsonparser v0.0.0-20181115193947-bf1c66bbce23 // indirect
 	github.com/coreos/bbolt v1.3.3 // indirect
 	github.com/coreos/etcd v3.3.13+incompatible
@@ -48,5 +47,3 @@ require (
 	google.golang.org/grpc v1.22.1
 	gopkg.in/yaml.v2 v2.2.2
 )
-
-replace github.com/apache/dubbo-go-hessian2 v1.2.5-0.20190731020727-1697039810c8 => ./../hessian2
