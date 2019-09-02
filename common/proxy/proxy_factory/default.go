@@ -69,8 +69,9 @@ type ProxyInvoker struct {
 
 func (pi *ProxyInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	result := &protocol.RPCResult{}
+	result.SetAttachments(invocation.Attachments())
 
-	url := pi.GetUrl().SubURL
+	url := pi.GetUrl()
 
 	methodName := invocation.MethodName()
 	proto := url.Protocol

@@ -244,19 +244,15 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	}
 	invoker := exporter.(protocol.Exporter).GetInvoker()
 	if invoker != nil {
-		result := invoker.Invoke(invocation.NewRPCInvocation(p.Service.Method, p.Body.(map[string]interface{})["args"].([]interface{}), map[string]string{
-			constant.PATH_KEY:      p.Service.Path,
-			constant.GROUP_KEY:     p.Service.Group,
-			constant.INTERFACE_KEY: p.Service.Interface,
-			constant.VERSION_KEY:   p.Service.Version,
-		}))
+		result := invoker.Invoke(invocation.NewRPCInvocation(p.Service.Method, p.Body.(map[string]interface{})["args"].([]interface{}),
+			p.Body.(map[string]interface{})["attachments"].(map[string]string)))
 		if err := result.Error(); err != nil {
 			p.Header.ResponseStatus = hessian.Response_OK
-			p.Body = err
+			p.Body = hessian.NewResponse(nil, err, result.Attachments())
 		} else {
 			res := result.Result()
 			p.Header.ResponseStatus = hessian.Response_OK
-			p.Body = res
+			p.Body = hessian.NewResponse(res, nil, result.Attachments())
 		}
 	}
 
