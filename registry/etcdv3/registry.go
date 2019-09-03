@@ -34,7 +34,7 @@ const Name = "etcdv3"
 
 func init() {
 	processID = fmt.Sprintf("%d", os.Getpid())
-	localIP, _ = utils.GetLocalIP()
+	localIP = utils.GetLocalIP()
 	extension.SetRegistry(Name, newETCDV3Registry)
 }
 

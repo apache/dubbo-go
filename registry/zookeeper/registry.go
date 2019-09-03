@@ -54,7 +54,7 @@ var (
 
 func init() {
 	processID = fmt.Sprintf("%d", os.Getpid())
-	localIP, _ = utils.GetLocalIP()
+	localIP = utils.GetLocalIP()
 	//plugins.PluggableRegistries["zookeeper"] = newZkRegistry
 	extension.SetRegistry("zookeeper", newZkRegistry)
 }

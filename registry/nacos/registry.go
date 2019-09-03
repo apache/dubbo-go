@@ -28,7 +28,7 @@ var (
 )
 
 func init() {
-	localIP, _ = utils.GetLocalIP()
+	localIP = utils.GetLocalIP()
 	extension.SetRegistry(constant.NACOS_KEY, newNacosRegistry)
 }
 

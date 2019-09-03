@@ -26,7 +26,7 @@ import (
 )
 
 func TestGetLocalIP(t *testing.T) {
-	ip, err := GetLocalIP()
-	assert.NoError(t, err)
+	ip := GetLocalIP()
+	assert.NotEmpty(t, ip, "get local ip error")
 	t.Log(ip)
 }

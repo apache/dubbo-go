@@ -48,7 +48,7 @@ func buildService(url common.URL) (*consul.AgentServiceRegistration, error) {
 
 	// address
 	if url.Ip == "" {
-		url.Ip, _ = utils.GetLocalIP()
+		url.Ip = utils.GetLocalIP()
 	}
 
 	// port

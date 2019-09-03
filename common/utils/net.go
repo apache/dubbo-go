@@ -18,11 +18,8 @@
 package utils
 
 import (
+	"github.com/apache/dubbo-go/common/logger"
 	"net"
-)
-
-import (
-	perrors "github.com/pkg/errors"
 )
 
 var localIp = ""
@@ -31,10 +28,10 @@ func init() {
 	initLocalIp()
 }
 
-func initLocalIp() (string, error) {
+func initLocalIp() {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		return "", perrors.WithStack(err)
+		logger.Error("init local error", err)
 	}
 
 	for _, addr := range addrs {
@@ -46,12 +43,10 @@ func initLocalIp() (string, error) {
 	}
 
 	if localIp == "" {
-		return "", perrors.Errorf("can not get local IP")
+		logger.Error("can not get local IP")
 	}
-
-	return localIp, nil
 }
 
-func GetLocalIP() (string, error) {
-	return localIp, nil
+func GetLocalIP() string {
+	return localIp
 }

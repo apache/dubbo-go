@@ -126,7 +126,7 @@ func (c *ConditionRouter) Route(invokers []protocol.Invoker, url common.URL, inv
 	if len(c.ThenCondition) == 0 {
 		return result
 	}
-	localIP, _ := utils.GetLocalIP()
+	localIP := utils.GetLocalIP()
 	for _, invoker := range invokers {
 		isMatchThen, err := c.MatchThen(invoker.GetUrl(), url)
 		if err != nil {
