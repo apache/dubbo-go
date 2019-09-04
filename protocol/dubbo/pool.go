@@ -39,7 +39,7 @@ type gettyRPCClient struct {
 	once     sync.Once
 	protocol string
 	addr     string
-	created  int64 // zero, not create or be destroyed
+	active  int64 // zero, not create or be destroyed
 
 	pool *gettyRPCClientPool
 
@@ -85,11 +85,11 @@ func newGettyRPCClientConn(pool *gettyRPCClientPool, protocol, addr string) (*ge
 }
 
 func (c *gettyRPCClient) updateActive(active int64) {
-	atomic.StoreInt64(&c.created, active)
+	atomic.StoreInt64(&c.active, active)
 }
 
 func (c *gettyRPCClient) getActive() int64 {
-	return atomic.LoadInt64(&c.created)
+	return atomic.LoadInt64(&c.active)
 }
 
 func (c *gettyRPCClient) newSession(session getty.Session) error {
@@ -305,7 +305,7 @@ func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPC
 			}
 			continue
 		}
-		conn.updateActive(now) //update created time
+		conn.updateActive(now) //update active time
 
 		return conn, nil
 	}
