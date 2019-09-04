@@ -39,7 +39,7 @@ type gettyRPCClient struct {
 	once     sync.Once
 	protocol string
 	addr     string
-	active  int64 // zero, not create or be destroyed
+	active   int64 // zero, not create or be destroyed
 
 	pool *gettyRPCClientPool
 
@@ -154,6 +154,9 @@ func (c *gettyRPCClient) addSession(session getty.Session) {
 	}
 
 	c.lock.Lock()
+	if c.sessions == nil {
+		c.sessions = make([]*rpcSession, 0, 16)
+	}
 	c.sessions = append(c.sessions, &rpcSession{session: session})
 	c.lock.Unlock()
 }
@@ -271,7 +274,7 @@ func newGettyRPCClientConnPool(rpcClient *Client, size int, ttl time.Duration) *
 		rpcClient: rpcClient,
 		size:      size,
 		ttl:       int64(ttl.Seconds()),
-		conns:     []*gettyRPCClient{},
+		conns:     make([]*gettyRPCClient, 0, 16),
 	}
 }
 
@@ -300,9 +303,8 @@ func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPC
 		p.conns = p.conns[:len(p.conns)-1]
 
 		if d := now - conn.getActive(); d > p.ttl {
-			if closeErr := conn.safeClose(); closeErr == nil {
-				p.remove(conn)
-			}
+			p.remove(conn)
+			conn.safeClose()
 			continue
 		}
 		conn.updateActive(now) //update active time
@@ -331,10 +333,9 @@ func (p *gettyRPCClientPool) release(conn *gettyRPCClient, err error) {
 	}
 
 	if len(p.conns) >= p.size {
-		if closeErr := conn.safeClose(); closeErr == nil {
-			// delete @conn from client pool
-			p.remove(conn)
-		}
+		// delete @conn from client pool
+		p.remove(conn)
+		conn.safeClose()
 		return
 	}
 	p.conns = append(p.conns, conn)
