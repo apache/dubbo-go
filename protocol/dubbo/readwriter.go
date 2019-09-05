@@ -63,7 +63,7 @@ func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface
 	}
 
 	pkg.Err = pkg.Body.(*hessian.Response).Exception
-	pkg.Body = pkg.Body.(*hessian.Response).RspObj
+	pkg.Body = NewResponse(pkg.Body.(*hessian.Response).RspObj, pkg.Body.(*hessian.Response).Attachments)
 
 	return pkg, hessian.HEADER_LENGTH + pkg.Header.BodyLen, nil
 }
