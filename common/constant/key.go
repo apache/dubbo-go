@@ -36,6 +36,7 @@ const (
 	OVERRIDE_PROVIDERS_KEY = "providerAddresses"
 	BEAN_NAME_KEY          = "bean.name"
 	GENERIC_KEY            = "generic"
+	CLASSIFIER_KEY         = "classifier"
 )
 
 const (

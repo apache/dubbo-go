@@ -2,6 +2,7 @@ package etcdv3
 
 import (
 	"context"
+	"github.com/apache/dubbo-go/config_center"
 	"testing"
 	"time"
 )
@@ -68,4 +69,4 @@ func TestRegistrySuite(t *testing.T) {
 
 type MockDataListener struct{}
 
-func (*MockDataListener) Process(configType *remoting.ConfigChangeEvent) {}
+func (*MockDataListener) Process(configType *config_center.ConfigChangeEvent) {}

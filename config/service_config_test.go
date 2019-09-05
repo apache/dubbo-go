@@ -22,10 +22,6 @@ import (
 )
 
 import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"github.com/apache/dubbo-go/common/extension"
 )
 
@@ -116,9 +112,6 @@ func Test_Export(t *testing.T) {
 		service := providerConfig.Services[i]
 		service.Implement(&MockService{})
 		service.Export()
-		assert.Condition(t, func() bool {
-			return len(service.exporters) > 0
-		})
 	}
 	providerConfig = nil
 }
