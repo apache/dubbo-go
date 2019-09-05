@@ -19,7 +19,6 @@ package zookeeper
 import (
 	"context"
 	"fmt"
-	"github.com/apache/dubbo-go/config_center/parser"
 	"sync"
 	"testing"
 )
@@ -32,7 +31,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/config_center"
-	"github.com/apache/dubbo-go/remoting"
+	"github.com/apache/dubbo-go/config_center/parser"
 )
 
 func initZkData(group string, t *testing.T) (*zk.TestCluster, *zookeeperDynamicConfiguration) {
@@ -162,7 +161,7 @@ type mockDataListener struct {
 	event string
 }
 
-func (l *mockDataListener) Process(configType *remoting.ConfigChangeEvent) {
+func (l *mockDataListener) Process(configType *config_center.ConfigChangeEvent) {
 	fmt.Println("process!!!!!")
 	l.wg.Done()
 	l.event = configType.Key

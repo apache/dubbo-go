@@ -73,7 +73,7 @@ func initSignal() {
 		case syscall.SIGHUP:
 			// reload()
 		default:
-			go time.AfterFunc(time.Duration(float64(survivalTimeout)*float64(time.Second)), func() {
+			time.AfterFunc(time.Duration(float64(survivalTimeout)*float64(time.Second)), func() {
 				logger.Warnf("app exit now by force...")
 				os.Exit(1)
 			})

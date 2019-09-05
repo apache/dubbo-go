@@ -19,9 +19,9 @@ package protocol
 
 import (
 	"context"
-	"github.com/apache/dubbo-go/config_center"
-
+	"github.com/apache/dubbo-go/remoting"
 	"testing"
+	"time"
 )
 
 import (
@@ -31,10 +31,11 @@ import (
 import (
 	cluster "github.com/apache/dubbo-go/cluster/cluster_impl"
 	"github.com/apache/dubbo-go/common"
-	commonConfig "github.com/apache/dubbo-go/common/config"
+	common_cfg "github.com/apache/dubbo-go/common/config"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/config_center/configurator"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
@@ -44,9 +45,6 @@ import (
 func init() {
 	extension.SetDefaultConfigurator(configurator.NewMockConfigurator)
 	config.SetProviderConfig(config.ProviderConfig{ApplicationConfig: &config.ApplicationConfig{Name: "mock"}})
-	factory := &config_center.MockDynamicConfigurationFactory{}
-	dc, _ := factory.GetDynamicConfiguration(&common.URL{})
-	commonConfig.GetEnvInstance().SetDynamicConfiguration(dc)
 }
 func referNormal(t *testing.T, regProtocol *registryProtocol) {
 	extension.SetProtocol("registry", GetProtocol)
@@ -104,12 +102,12 @@ func TestOneRegRefer(t *testing.T) {
 	assert.Equal(t, count, 1)
 }
 
-func exporterNormal(t *testing.T, regProtocol *registryProtocol) {
+func exporterNormal(t *testing.T, regProtocol *registryProtocol) *common.URL {
 	extension.SetProtocol("registry", GetProtocol)
 	extension.SetRegistry("mock", registry.NewMockRegistry)
 	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
 	url, _ := common.NewURL(context.TODO(), "mock://127.0.0.1:1111")
-	suburl, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000//", common.WithParamsValue(constant.CLUSTER_KEY, "mock"))
+	suburl, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService", common.WithParamsValue(constant.CLUSTER_KEY, "mock"))
 
 	url.SubURL = &suburl
 	invoker := protocol.NewBaseInvoker(url)
@@ -117,6 +115,7 @@ func exporterNormal(t *testing.T, regProtocol *registryProtocol) {
 
 	assert.IsType(t, &protocol.BaseExporter{}, exporter)
 	assert.Equal(t, exporter.GetInvoker().GetUrl().String(), suburl.String())
+	return &url
 }
 
 func TestExporter(t *testing.T) {
@@ -198,4 +197,28 @@ func TestDestry(t *testing.T) {
 		return true
 	})
 	assert.Equal(t, count2, 0)
+}
+
+func TestExportWithOverrideListener(t *testing.T) {
+	extension.SetDefaultConfigurator(configurator.NewMockConfigurator)
+	ccUrl, _ := common.NewURL(context.TODO(), "mock://127.0.0.1:1111")
+	dc, _ := (&config_center.MockDynamicConfigurationFactory{}).GetDynamicConfiguration(&ccUrl)
+	common_cfg.GetEnvInstance().SetDynamicConfiguration(dc)
+	regProtocol := newRegistryProtocol()
+	url := exporterNormal(t, regProtocol)
+	var reg *registry.MockRegistry
+	if regI, loaded := regProtocol.registries.Load(url.Key()); loaded {
+		reg = regI.(*registry.MockRegistry)
+	} else {
+		assert.Fail(t, "regProtocol.registries.Load can not be loaded")
+		return
+	}
+	overrideUrl, _ := common.NewURL(context.Background(), "override://0:0:0:0/org.apache.dubbo-go.mockService?cluster=mock1")
+	event := &registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: overrideUrl}
+	reg.MockEvent(event)
+	time.Sleep(1e9)
+	newUrl := url.SubURL.Clone()
+	newUrl.Params.Set(constant.CLUSTER_KEY, "mock1")
+	v2, _ := regProtocol.bounds.Load(getCacheKey(newUrl))
+	assert.NotNil(t, v2)
 }

@@ -32,11 +32,11 @@ Apache License, Version 2.0
 - 角色端: Consumer, Provider
 - 传输协议: HTTP, TCP
 - 序列化协议: JsonRPC v2, Hessian v2
-- 注册中心: ZooKeeper/[etcd](https://github.com/apache/dubbo-go/pull/148)/[nacos](https://github.com/apache/dubbo-go/pull/151)
+- 注册中心: ZooKeeper/[etcd v3](https://github.com/apache/dubbo-go/pull/148)/[nacos](https://github.com/apache/dubbo-go/pull/151)/[consul](https://github.com/apache/dubbo-go/pull/121)
 - 配置中心: Zookeeper
-- 集群策略: Failover/[Failfast](https://github.com/apache/dubbo-go/pull/140)/[Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136)/Available/Broadcast
+- 集群策略: Failover/[Failfast](https://github.com/apache/dubbo-go/pull/140)/[Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136)/[Available](https://github.com/apache/dubbo-go/pull/155)/[Broadcast](https://github.com/apache/dubbo-go/pull/158)/[Forking](https://github.com/apache/dubbo-go/pull/161)
 - 负载均衡策略: Random/[RoundRobin](https://github.com/apache/dubbo-go/pull/66)/[LeastActive](https://github.com/apache/dubbo-go/pull/65)
-- 过滤器: Echo Health Check
+- 过滤器: Echo Health Check/[服务熔断&降级](https://github.com/apache/dubbo-go/pull/133)
 - 其他功能支持: [泛化调用](https://github.com/apache/dubbo-go/pull/122)/启动时检查/服务直连/多服务协议/多注册中心/多服务版本/服务分组
 
 开发中列表:
@@ -44,7 +44,7 @@ Apache License, Version 2.0
 - 集群策略: Forking
 - 负载均衡策略: ConsistentHash
 - 过滤器: TokenFilter/AccessLogFilter/CountFilter/ExecuteLimitFilter/TpsLimitFilter
-- 注册中心: etcd/k8s/consul/nacos
+- 注册中心: k8s
 - 配置中心: apollo
 - 动态配置中心 & 元数据中心 (dubbo v2.7.x)
 - Metrics: Promethus(dubbo v2.7.x)

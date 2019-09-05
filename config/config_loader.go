@@ -36,8 +36,8 @@ var (
 	maxWait        = 3
 )
 
-// loaded comsumer & provider config from xxx.yml, and log config from xxx.xml
-// Namely: dubbo.comsumer.xml & dubbo.provider.xml in java dubbo
+// loaded consumer & provider config from xxx.yml, and log config from xxx.xml
+// Namely: dubbo.consumer.xml & dubbo.provider.xml in java dubbo
 func init() {
 	var (
 		confConFile, confProFile string
@@ -70,9 +70,8 @@ func Load() {
 				SetConsumerService(genericService)
 			}
 			rpcService := GetConsumerService(key)
-
 			if rpcService == nil {
-				logger.Warnf("%s is not exsist!", key)
+				logger.Warnf("%s does not exist!", key)
 				continue
 			}
 			ref.id = key
@@ -99,7 +98,7 @@ func Load() {
 						break
 					}
 					if refconfig.invoker == nil {
-						logger.Warnf("The interface %s invoker not exsist , may you should check your interface config.", refconfig.InterfaceName)
+						logger.Warnf("The interface %s invoker not exist , may you should check your interface config.", refconfig.InterfaceName)
 					}
 				}
 			}
@@ -120,7 +119,7 @@ func Load() {
 		for key, svs := range providerConfig.Services {
 			rpcService := GetProviderService(key)
 			if rpcService == nil {
-				logger.Warnf("%s is not exsist!", key)
+				logger.Warnf("%s does not exist!", key)
 				continue
 			}
 			svs.id = key
