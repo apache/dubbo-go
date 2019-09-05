@@ -49,12 +49,13 @@ func TestDubboInvoker_Invoke(t *testing.T) {
 	user := &User{}
 
 	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUser"), invocation.WithArguments([]interface{}{"1", "username"}),
-		invocation.WithReply(user))
+		invocation.WithReply(user), invocation.WithAttachments(map[string]string{"test_key": "test_value"}))
 
 	// Call
 	res := invoker.Invoke(inv)
 	assert.NoError(t, res.Error())
 	assert.Equal(t, User{Id: "1", Name: "username"}, *res.Result().(*User))
+	assert.Equal(t, "test_value", res.Attachments()["test_key"]) // test attachments for request/response
 
 	// CallOneway
 	inv.SetAttachments(constant.ASYNC_KEY, "true")
@@ -65,7 +66,7 @@ func TestDubboInvoker_Invoke(t *testing.T) {
 	lock := sync.Mutex{}
 	lock.Lock()
 	inv.SetCallBack(func(response CallResponse) {
-		assert.Equal(t, User{Id: "1", Name: "username"}, *response.Reply.(*User))
+		assert.Equal(t, User{Id: "1", Name: "username"}, *response.Reply.(*Response).reply.(*User))
 		lock.Unlock()
 	})
 	res = invoker.Invoke(inv)
@@ -75,7 +76,7 @@ func TestDubboInvoker_Invoke(t *testing.T) {
 	inv.SetAttachments(constant.ASYNC_KEY, "false")
 	inv.SetReply(nil)
 	res = invoker.Invoke(inv)
-	assert.EqualError(t, res.Error(), "request need @reply")
+	assert.EqualError(t, res.Error(), "request need @response")
 
 	// destroy
 	lock.Lock()
