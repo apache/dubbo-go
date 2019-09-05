@@ -1,13 +1,19 @@
-#!/us1r/bin/env bash
-# ******************************************************
-# DESC    :
-# AUTHOR  : Alex Stocks
-# VERSION : 1.0
-# LICENCE : Apache License 2.0
-# EMAIL   : alexstocks@foxmail.com
-# MOD     : 2017-10-09 21:52
-# FILE    : to debug user info dubbo server
-# ******************************************************
+#!/usr/bin/env bash
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 # jdb -classpath /Users/alex/tmp/us/conf:/Users/alex/tmp/us/lib/*:/Users/alex/test/java/dubbo/2.5.4/dubbo-remoting/dubbo-remoting-api/src/main/java/ com.alibaba.dubbo.container.Main
 jdb -classpath /Users/alex/tmp/us/conf:/Users/alex/tmp/us/lib/* -sourcepath /Users/alex/test/java/dubbo/2.5.4/dubbo-remoting/dubbo-remoting-api/src/main/java/:/Users/alex/tmp/java-server/src/main/java com.alibaba.dubbo.container.Main

@@ -2,6 +2,7 @@ package nacos
 
 import (
 	"bytes"
+	"github.com/apache/dubbo-go/common/logger"
 	"net"
 	"strconv"
 	"strings"
@@ -25,6 +26,10 @@ import (
 
 var (
 	localIP = ""
+)
+
+const (
+	RegistryConnDelay = 3
 )
 
 func init() {
@@ -120,7 +125,7 @@ func appendParam(target *bytes.Buffer, url common.URL, key string) {
 func createRegisterParam(url common.URL, serviceName string) vo.RegisterInstanceParam {
 	category := getCategory(url)
 	params := make(map[string]string, len(url.Params)+3)
-	for k, _ := range url.Params {
+	for k := range url.Params {
 		params[k] = url.Params.Get(k)
 	}
 	params[constant.NACOS_CATEGORY_KEY] = category
@@ -159,10 +164,45 @@ func (nr *nacosRegistry) Register(url common.URL) error {
 	return nil
 }
 
-func (nr *nacosRegistry) Subscribe(conf common.URL) (registry.Listener, error) {
-	return NewNacosListener(conf, nr.namingClient)
+func (nr *nacosRegistry) subscribe(conf *common.URL) (registry.Listener, error) {
+	return NewNacosListener(*conf, nr.namingClient)
 }
 
+//subscibe from registry
+func (r *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
+	for {
+		if !r.IsAvailable() {
+			logger.Warnf("event listener game over.")
+			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
+			return
+		}
+
+		listener, err := r.subscribe(url)
+		if err != nil {
+			if !r.IsAvailable() {
+				logger.Warnf("event listener game over.")
+				return
+			}
+			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
+			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
+			continue
+		}
+
+		for {
+			if serviceEvent, err := listener.Next(); err != nil {
+				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
+				listener.Close()
+				time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
+				return
+			} else {
+				logger.Infof("update begin, service event: %v", serviceEvent.String())
+				notifyListener.Notify(serviceEvent)
+			}
+
+		}
+
+	}
+}
 func (nr *nacosRegistry) GetUrl() common.URL {
 	return *nr.URL
 }

@@ -72,9 +72,9 @@ type baseUrl struct {
 	Location string // ip+port
 	Ip       string
 	Port     string
-	Params   url.Values
 	//url.Values is not safe map, add to avoid concurrent map read and map write error
-	paramsLock   sync.Mutex
+	paramsLock   sync.RWMutex
+	Params       url.Values
 	PrimitiveURL string
 	ctx          context.Context
 }
@@ -114,16 +114,19 @@ func WithParams(params url.Values) option {
 		url.Params = params
 	}
 }
+
 func WithParamsValue(key, val string) option {
 	return func(url *URL) {
 		url.Params.Set(key, val)
 	}
 }
+
 func WithProtocol(proto string) option {
 	return func(url *URL) {
 		url.Protocol = proto
 	}
 }
+
 func WithIp(ip string) option {
 	return func(url *URL) {
 		url.Ip = ip
@@ -147,6 +150,7 @@ func WithLocation(location string) option {
 		url.Location = location
 	}
 }
+
 func NewURLWithOptions(opts ...option) *URL {
 	url := &URL{}
 	for _, opt := range opts {
@@ -259,8 +263,8 @@ func (c URL) String() string {
 
 func (c URL) Key() string {
 	buildString := fmt.Sprintf(
-		"%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s&category_key=%s",
-		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GROUP_KEY, ""), c.GetParam(constant.VERSION_KEY, ""), c.GetParam(constant.CATEGORY_KEY, ""))
+		"%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s",
+		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GROUP_KEY, ""), c.GetParam(constant.VERSION_KEY, ""))
 	return buildString
 	//return c.ServiceKey()
 }
@@ -318,11 +322,11 @@ func (c *URL) AddParam(key string, value string) {
 
 func (c URL) GetParam(s string, d string) string {
 	var r string
-	c.paramsLock.Lock()
-	if r = c.Params.Get(s); r == "" {
+	c.paramsLock.RLock()
+	if r = c.Params.Get(s); len(r) == 0 {
 		r = d
 	}
-	c.paramsLock.Unlock()
+	c.paramsLock.RUnlock()
 	return r
 }
 func (c URL) GetParamAndDecoded(key string) (string, error) {
@@ -498,5 +502,9 @@ func MergeUrl(serviceUrl URL, referenceUrl *URL) URL {
 func (c *URL) Clone() *URL {
 	newUrl := &URL{}
 	copier.Copy(newUrl, c)
+	newUrl.Params = url.Values{}
+	for k, v := range c.Params {
+		newUrl.Params[k] = v
+	}
 	return newUrl
 }
