@@ -17,10 +17,15 @@ coverage.txt
 target/
 classes
 
-
-# Gopkg.lock
+# go mod, go test
 vendor/
+coverage.txt
 
 logs/
 .vscode/
 coverage.txt
+
+# unit test
+remoting/zookeeper/zookeeper-4unittest/
+config_center/zookeeper/zookeeper-4unittest/
+registry/zookeeper/zookeeper-4unittest/

@@ -21,16 +21,22 @@ type BaseConfigurationListener struct {
 func (bcl *BaseConfigurationListener) Configurators() []config_center.Configurator {
 	return bcl.configurators
 }
-func (bcl *BaseConfigurationListener) InitWith(key string, listener config_center.ConfigurationListener, f func(url *common.URL) config_center.Configurator) error {
+func (bcl *BaseConfigurationListener) InitWith(key string, listener config_center.ConfigurationListener, f func(url *common.URL) config_center.Configurator) {
 	bcl.dynamicConfiguration = config.GetEnvInstance().GetDynamicConfiguration()
+	if bcl.dynamicConfiguration == nil {
+		//set configurators to empty
+		bcl.configurators = []config_center.Configurator{}
+		return
+	}
 	bcl.defaultConfiguratorFunc = f
 	bcl.dynamicConfiguration.AddListener(key, listener)
 	if rawConfig, err := bcl.dynamicConfiguration.GetConfig(key, config_center.WithGroup(constant.DUBBO)); err != nil {
-		return err
+		//set configurators to empty
+		bcl.configurators = []config_center.Configurator{}
+		return
 	} else if len(rawConfig) > 0 {
 		bcl.genConfiguratorFromRawRule(rawConfig)
 	}
-	return nil
 }
 
 func (bcl *BaseConfigurationListener) Process(event *config_center.ConfigChangeEvent) {

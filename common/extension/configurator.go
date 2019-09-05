@@ -32,7 +32,7 @@ func SetConfigurator(name string, v func(url *common.URL) config_center.Configur
 
 func GetConfigurator(name string, url *common.URL) config_center.Configurator {
 	if configurator[name] == nil {
-		panic("config center for " + name + " is not existing, make sure you have import the package.")
+		panic("configurator for " + name + " is not existing, make sure you have import the package.")
 	}
 	return configurator[name](url)
 
@@ -43,14 +43,14 @@ func SetDefaultConfigurator(v func(url *common.URL) config_center.Configurator) 
 
 func GetDefaultConfigurator(url *common.URL) config_center.Configurator {
 	if configurator["default"] == nil {
-		panic("config center for default is not existing, make sure you have import the package.")
+		panic("configurator for default is not existing, make sure you have import the package.")
 	}
 	return configurator["default"](url)
 
 }
 func GetDefaultConfiguratorFunc() func(url *common.URL) config_center.Configurator {
 	if configurator["default"] == nil {
-		panic("config center for default is not existing, make sure you have import the package.")
+		panic("configurator for default is not existing, make sure you have import the package.")
 	}
 	return configurator["default"]
 }

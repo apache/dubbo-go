@@ -20,6 +20,8 @@ package protocol
 import (
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/config_center"
+	"github.com/apache/dubbo-go/remoting"
+	"strings"
 	"sync"
 )
 
@@ -54,6 +56,12 @@ func init() {
 	extension.SetProtocol("registry", GetProtocol)
 }
 
+func getCacheKey(url *common.URL) string {
+	newUrl := url.Clone()
+	newUrl.Params.Del("dynamic")
+	newUrl.Params.Del("enabled")
+	return newUrl.String()
+}
 func newRegistryProtocol() *registryProtocol {
 	overrideListeners := sync.Map{}
 	return &registryProtocol{
@@ -114,31 +122,31 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 	registryUrl := getRegistryUrl(invoker)
 	providerUrl := getProviderUrl(invoker)
 
-	overriderUrl := getSubscribedOverrideUrl(&providerUrl)
+	overriderUrl := getSubscribedOverrideUrl(providerUrl)
 	// Deprecated! subscribe to override rules in 2.6.x or before.
 	overrideSubscribeListener := newOverrideSubscribeListener(overriderUrl, invoker, proto)
 	proto.overrideListeners.Store(overriderUrl, overrideSubscribeListener)
-	proto.providerConfigurationListener.OverrideUrl(&providerUrl)
-	serviceConfigurationListener := newServiceConfigurationListener(overrideSubscribeListener, &providerUrl)
+	proto.providerConfigurationListener.OverrideUrl(providerUrl)
+	serviceConfigurationListener := newServiceConfigurationListener(overrideSubscribeListener, providerUrl)
 	proto.serviceConfigurationListeners.Store(providerUrl.ServiceKey(), serviceConfigurationListener)
-	serviceConfigurationListener.OverrideUrl(&providerUrl)
+	serviceConfigurationListener.OverrideUrl(providerUrl)
 
 	var reg registry.Registry
 
 	if regI, loaded := proto.registries.Load(registryUrl.Key()); !loaded {
-		reg = getRegistry(&registryUrl)
+		reg = getRegistry(registryUrl)
 		proto.registries.Store(registryUrl.Key(), reg)
 	} else {
 		reg = regI.(registry.Registry)
 	}
 
-	err := reg.Register(providerUrl)
+	err := reg.Register(*providerUrl)
 	if err != nil {
 		logger.Errorf("provider service %v register registry %v error, error message is %s", providerUrl.Key(), registryUrl.Key(), err.Error())
 		return nil
 	}
 
-	key := providerUrl.Key()
+	key := getCacheKey(providerUrl)
 	logger.Infof("The cached exporter keys is %v !", key)
 	cachedExporter, loaded := proto.bounds.Load(key)
 	if loaded {
@@ -155,20 +163,16 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 
 }
 func (proto *registryProtocol) reExport(invoker protocol.Invoker, newUrl *common.URL) {
-	key := getProviderUrl(invoker).Key()
+	url := getProviderUrl(invoker)
+	key := getCacheKey(url)
 	if oldExporter, loaded := proto.bounds.Load(key); loaded {
-		wrappedNewInvoker := newWrappedInvoker(invoker, *newUrl)
-		//TODO:MAY not safe
+		wrappedNewInvoker := newWrappedInvoker(invoker, newUrl)
 		oldExporter.(protocol.Exporter).Unexport()
 		proto.bounds.Delete(key)
-
 		proto.Export(wrappedNewInvoker)
 		//TODO:  unregister & unsubscribe
 
 	}
-}
-func (proto *registryProtocol) overrideWithConfig(providerUrl *common.URL, listener *overrideSubscribeListener) {
-
 }
 
 type overrideSubscribeListener struct {
@@ -182,47 +186,79 @@ func newOverrideSubscribeListener(overriderUrl *common.URL, invoker protocol.Inv
 	return &overrideSubscribeListener{url: overriderUrl, originInvoker: invoker, protocol: proto}
 }
 func (nl *overrideSubscribeListener) Notify(event *registry.ServiceEvent) {
-	if isMatched(&(event.Service), nl.url) {
+	if isMatched(&(event.Service), nl.url) && event.Action == remoting.EventTypeAdd {
 		nl.configurator = extension.GetDefaultConfigurator(&(event.Service))
 		nl.doOverrideIfNecessary()
 	}
 }
 func (nl *overrideSubscribeListener) doOverrideIfNecessary() {
 	providerUrl := getProviderUrl(nl.originInvoker)
-	key := providerUrl.Key()
+	key := getCacheKey(providerUrl)
 	if exporter, ok := nl.protocol.bounds.Load(key); ok {
 		currentUrl := exporter.(protocol.Exporter).GetInvoker().GetUrl()
 		// Compatible with the 2.6.x
-		nl.configurator.Configure(&providerUrl)
+		nl.configurator.Configure(providerUrl)
 		// provider application level  management in 2.7.x
 		for _, v := range nl.protocol.providerConfigurationListener.Configurators() {
-			v.Configure(&providerUrl)
+			v.Configure(providerUrl)
 		}
 		// provider service level  management in 2.7.x
 		if serviceListener, ok := nl.protocol.serviceConfigurationListeners.Load(providerUrl.ServiceKey()); ok {
 			for _, v := range serviceListener.(*serviceConfigurationListener).Configurators() {
-				v.Configure(&providerUrl)
+				v.Configure(providerUrl)
 			}
 		}
 
-		if currentUrl.String() == providerUrl.String() {
+		if currentUrl.String() != providerUrl.String() {
 			newRegUrl := nl.originInvoker.GetUrl()
-			setProviderUrl(&newRegUrl, &providerUrl)
+			setProviderUrl(&newRegUrl, providerUrl)
 			nl.protocol.reExport(nl.originInvoker, &newRegUrl)
 		}
 	}
 }
 
-func isMatched(url *common.URL, subscribedUrl *common.URL) bool {
+func isMatched(providerUrl *common.URL, consumerUrl *common.URL) bool {
 	// Compatible with the 2.6.x
-	if len(url.GetParam(constant.CATEGORY_KEY, "")) == 0 && url.Protocol == constant.OVERRIDE_PROTOCOL {
-		url.AddParam(constant.CATEGORY_KEY, constant.CONFIGURATORS_CATEGORY)
+	if len(providerUrl.GetParam(constant.CATEGORY_KEY, "")) == 0 && providerUrl.Protocol == constant.OVERRIDE_PROTOCOL {
+		providerUrl.AddParam(constant.CATEGORY_KEY, constant.CONFIGURATORS_CATEGORY)
 	}
-	if subscribedUrl.URLEqual(*url) {
-		return true
-	}
-	return false
+	consumerInterface := consumerUrl.GetParam(constant.INTERFACE_KEY, consumerUrl.Path)
+	providerInterface := providerUrl.GetParam(constant.INTERFACE_KEY, providerUrl.Path)
 
+	if !(constant.ANY_VALUE == consumerInterface || constant.ANY_VALUE == providerInterface || providerInterface == consumerInterface) {
+		return false
+	}
+
+	if !isMatchCategory(providerUrl.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY),
+		consumerUrl.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY)) {
+		return false
+	}
+
+	if !providerUrl.GetParamBool(constant.ENABLED_KEY, true) && consumerUrl.GetParam(constant.ENABLED_KEY, "") != constant.ANY_VALUE {
+		return false
+	}
+	consumerGroup := consumerUrl.GetParam(constant.GROUP_KEY, "")
+	consumerVersion := consumerUrl.GetParam(constant.VERSION_KEY, "")
+	consumerClassifier := consumerUrl.GetParam(constant.CLASSIFIER_KEY, "")
+
+	providerGroup := providerUrl.GetParam(constant.GROUP_KEY, "")
+	providerVersion := providerUrl.GetParam(constant.VERSION_KEY, "")
+	providerClassifier := providerUrl.GetParam(constant.CLASSIFIER_KEY, "")
+	//todo: public static boolean isContains(String values, String value) {
+	//        return isNotEmpty(values) && isContains(COMMA_SPLIT_PATTERN.split(values), value);
+	//    }
+	return (consumerGroup == constant.ANY_VALUE || consumerGroup == providerGroup || strings.Contains(consumerGroup, providerGroup)) && (consumerVersion == constant.ANY_VALUE || consumerVersion == providerVersion) && (consumerClassifier == "" || consumerClassifier == constant.ANY_VALUE || consumerClassifier == providerClassifier)
+}
+func isMatchCategory(category string, categories string) bool {
+	if categories == "" {
+		return category == constant.DEFAULT_CATEGORY
+	} else if strings.Contains(categories, constant.ANY_VALUE) {
+		return true
+	} else if strings.Contains(categories, constant.REMOVE_VALUE_PREFIX) {
+		return !strings.Contains(categories, constant.REMOVE_VALUE_PREFIX+category)
+	} else {
+		return strings.Contains(categories, category)
+	}
 }
 func getSubscribedOverrideUrl(providerUrl *common.URL) *common.URL {
 	newUrl := providerUrl.Clone()
@@ -255,7 +291,7 @@ func (proto *registryProtocol) Destroy() {
 	})
 }
 
-func getRegistryUrl(invoker protocol.Invoker) common.URL {
+func getRegistryUrl(invoker protocol.Invoker) *common.URL {
 	//here add * for return a new url
 	url := invoker.GetUrl()
 	//if the protocol == registry ,set protocol the registry value in url.params
@@ -263,12 +299,13 @@ func getRegistryUrl(invoker protocol.Invoker) common.URL {
 		protocol := url.GetParam(constant.REGISTRY_KEY, "")
 		url.Protocol = protocol
 	}
-	return url
+	return &url
 }
 
-func getProviderUrl(invoker protocol.Invoker) common.URL {
+func getProviderUrl(invoker protocol.Invoker) *common.URL {
 	url := invoker.GetUrl()
-	return *url.SubURL
+	//be careful params maps in url is map type
+	return url.SubURL.Clone()
 }
 func setProviderUrl(regURL *common.URL, providerURL *common.URL) {
 	regURL.SubURL = providerURL
@@ -283,11 +320,11 @@ func GetProtocol() protocol.Protocol {
 
 type wrappedInvoker struct {
 	invoker protocol.Invoker
-	url     common.URL
+	url     *common.URL
 	protocol.BaseInvoker
 }
 
-func newWrappedInvoker(invoker protocol.Invoker, url common.URL) *wrappedInvoker {
+func newWrappedInvoker(invoker protocol.Invoker, url *common.URL) *wrappedInvoker {
 	return &wrappedInvoker{
 		invoker:     invoker,
 		url:         url,
@@ -295,7 +332,7 @@ func newWrappedInvoker(invoker protocol.Invoker, url common.URL) *wrappedInvoker
 	}
 }
 func (ivk *wrappedInvoker) GetUrl() common.URL {
-	return ivk.url
+	return *ivk.url
 }
 func (ivk *wrappedInvoker) getInvoker() protocol.Invoker {
 	return ivk.invoker
@@ -310,7 +347,7 @@ func newProviderConfigurationListener(overrideListeners *sync.Map) *providerConf
 	listener := &providerConfigurationListener{}
 	listener.overrideListeners = overrideListeners
 	//TODO:error handler
-	_ = listener.BaseConfigurationListener.InitWith(config.GetProviderConfig().ApplicationConfig.Name+constant.CONFIGURATORS_SUFFIX, listener, extension.GetDefaultConfiguratorFunc())
+	listener.BaseConfigurationListener.InitWith(config.GetProviderConfig().ApplicationConfig.Name+constant.CONFIGURATORS_SUFFIX, listener, extension.GetDefaultConfiguratorFunc())
 	return listener
 }
 
@@ -331,7 +368,7 @@ type serviceConfigurationListener struct {
 func newServiceConfigurationListener(overrideListener *overrideSubscribeListener, providerUrl *common.URL) *serviceConfigurationListener {
 	listener := &serviceConfigurationListener{overrideListener: overrideListener, providerUrl: providerUrl}
 	//TODO:error handler
-	_ = listener.BaseConfigurationListener.InitWith(providerUrl.EncodedServiceKey()+constant.CONFIGURATORS_SUFFIX, listener, extension.GetDefaultConfiguratorFunc())
+	listener.BaseConfigurationListener.InitWith(providerUrl.EncodedServiceKey()+constant.CONFIGURATORS_SUFFIX, listener, extension.GetDefaultConfiguratorFunc())
 	return &serviceConfigurationListener{overrideListener: overrideListener, providerUrl: providerUrl}
 }
 
