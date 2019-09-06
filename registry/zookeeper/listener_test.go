@@ -19,10 +19,13 @@ package zookeeper
 
 import (
 	"context"
+	"testing"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/remoting"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func Test_DataChange(t *testing.T) {
