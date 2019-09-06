@@ -20,6 +20,7 @@ package config_center
 import (
 	"time"
 )
+
 import (
 	"github.com/apache/dubbo-go/config_center/parser"
 )

@@ -19,9 +19,12 @@ package config
 
 import (
 	"container/list"
-	"github.com/apache/dubbo-go/config_center"
 	"strings"
 	"sync"
+)
+
+import (
+	"github.com/apache/dubbo-go/config_center"
 )
 
 // There is dubbo.properties file and application level config center configuration which higner than normal config center in java. So in java the

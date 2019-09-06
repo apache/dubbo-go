@@ -18,13 +18,16 @@
 package registry
 
 import (
-	"github.com/apache/dubbo-go/common/logger"
-	"go.uber.org/atomic"
 	"time"
 )
 
 import (
+	"go.uber.org/atomic"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/logger"
 )
 
 type MockRegistry struct {
