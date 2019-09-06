@@ -18,6 +18,7 @@ package config
 
 import (
 	"encoding/base64"
+	"github.com/apache/dubbo-go/cluster/directory"
 	"io/ioutil"
 	"os"
 	"path"
@@ -79,10 +80,11 @@ func RouterInit(confRouterFile string) error {
 	}
 
 	logger.Debugf("provider config{%#v}\n", providerConfig)
+	directory.RouterUrlSet.Add(initRouterUrl())
 	return nil
 }
 
-func GetRouterUrl() *common.URL {
+func initRouterUrl() *common.URL {
 	mutex.Lock()
 	if routerConfig == nil {
 		confRouterFile := os.Getenv(constant.CONF_ROUTER_FILE_PATH)
