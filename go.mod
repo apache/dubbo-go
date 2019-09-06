@@ -28,7 +28,6 @@ require (
 	github.com/lestrrat/go-file-rotatelogs v0.0.0-20180223000712-d3151e2a480f // indirect
 	github.com/lestrrat/go-strftime v0.0.0-20180220042222-ba3bf9c1d042 // indirect
 	github.com/magiconair/properties v1.8.1
-	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/nacos-group/nacos-sdk-go v0.0.0-20190723125407-0242d42e3dbb
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.1.0 // indirect
@@ -46,3 +45,5 @@ require (
 	google.golang.org/grpc v1.22.1
 	gopkg.in/yaml.v2 v2.2.2
 )
+
+go 1.13
