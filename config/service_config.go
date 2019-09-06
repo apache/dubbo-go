@@ -111,7 +111,6 @@ func (srvconfig *ServiceConfig) Export() error {
 			common.WithParams(urlMap),
 			common.WithParamsValue(constant.BEAN_NAME_KEY, srvconfig.id),
 			common.WithMethods(strings.Split(methods, ",")))
-
 		if len(regUrls) > 0 {
 			for _, regUrl := range regUrls {
 				regUrl.SubURL = url

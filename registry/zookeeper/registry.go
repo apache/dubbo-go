@@ -81,7 +81,6 @@ type zkRegistry struct {
 	configListener *RegistryConfigurationListener
 	//for provider
 	zkPath map[string]int // key = protocol://ip:port/interface
-
 }
 
 func newZkRegistry(url *common.URL) (registry.Registry, error) {
@@ -459,8 +458,9 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 
 	//Interested register to dataconfig.
 	r.dataListener.AddInterestedURL(conf)
-
-	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+conf.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY), conf.Service()), r.dataListener)
+	for _, v := range strings.Split(conf.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY), ",") {
+		go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+v, conf.Service()), r.dataListener)
+	}
 
 	return zkListener, nil
 }

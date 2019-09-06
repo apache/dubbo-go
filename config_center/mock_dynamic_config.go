@@ -18,24 +18,27 @@
 package config_center
 
 import (
-	"github.com/apache/dubbo-go/config_center/parser"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/remoting"
+	"gopkg.in/yaml.v2"
 	"sync"
 )
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/config_center/parser"
 )
 
 type MockDynamicConfigurationFactory struct{}
 
 var (
 	once                 sync.Once
-	dynamicConfiguration *mockDynamicConfiguration
+	dynamicConfiguration *MockDynamicConfiguration
 )
 
 func (f *MockDynamicConfigurationFactory) GetDynamicConfiguration(url *common.URL) (DynamicConfiguration, error) {
 	var err error
 	once.Do(func() {
-		dynamicConfiguration = &mockDynamicConfiguration{}
+		dynamicConfiguration = &MockDynamicConfiguration{listener: map[string]ConfigurationListener{}}
 		dynamicConfiguration.SetParser(&parser.DefaultConfigurationParser{})
 		dynamicConfiguration.content = `
 	dubbo.consumer.request_timeout=5s
@@ -66,30 +69,74 @@ func (f *MockDynamicConfigurationFactory) GetDynamicConfiguration(url *common.UR
 
 }
 
-type mockDynamicConfiguration struct {
-	parser  parser.ConfigurationParser
-	content string
+type MockDynamicConfiguration struct {
+	parser   parser.ConfigurationParser
+	content  string
+	listener map[string]ConfigurationListener
 }
 
-func (c *mockDynamicConfiguration) AddListener(key string, listener ConfigurationListener, opions ...Option) {
+func (c *MockDynamicConfiguration) AddListener(key string, listener ConfigurationListener, opions ...Option) {
+	c.listener[key] = listener
 }
 
-func (c *mockDynamicConfiguration) RemoveListener(key string, listener ConfigurationListener, opions ...Option) {
+func (c *MockDynamicConfiguration) RemoveListener(key string, listener ConfigurationListener, opions ...Option) {
 }
 
-func (c *mockDynamicConfiguration) GetConfig(key string, opts ...Option) (string, error) {
+func (c *MockDynamicConfiguration) GetConfig(key string, opts ...Option) (string, error) {
 
 	return c.content, nil
 }
 
 //For zookeeper, getConfig and getConfigs have the same meaning.
-func (c *mockDynamicConfiguration) GetConfigs(key string, opts ...Option) (string, error) {
+func (c *MockDynamicConfiguration) GetConfigs(key string, opts ...Option) (string, error) {
 	return c.GetConfig(key, opts...)
 }
 
-func (c *mockDynamicConfiguration) Parser() parser.ConfigurationParser {
+func (c *MockDynamicConfiguration) Parser() parser.ConfigurationParser {
 	return c.parser
 }
-func (c *mockDynamicConfiguration) SetParser(p parser.ConfigurationParser) {
+func (c *MockDynamicConfiguration) SetParser(p parser.ConfigurationParser) {
 	c.parser = p
+}
+
+func (c *MockDynamicConfiguration) MockServiceConfigEvent() {
+	config := &parser.ConfiguratorConfig{
+		ConfigVersion: "2.7.1",
+		Scope:         parser.GeneralType,
+		Key:           "org.apache.dubbo-go.mockService",
+		Enabled:       true,
+		Configs: []parser.ConfigItem{
+			{Type: parser.GeneralType,
+				Enabled:    true,
+				Addresses:  []string{"0.0.0.0"},
+				Services:   []string{"org.apache.dubbo-go.mockService"},
+				Side:       "provider",
+				Parameters: map[string]string{"cluster": "mock1"},
+			},
+		},
+	}
+	value, _ := yaml.Marshal(config)
+	key := "group*org.apache.dubbo-go.mockService:1.0.0" + constant.CONFIGURATORS_SUFFIX
+	c.listener[key].Process(&ConfigChangeEvent{Key: key, Value: string(value), ConfigType: remoting.EventTypeAdd})
+}
+
+func (c *MockDynamicConfiguration) MockApplicationConfigEvent() {
+	config := &parser.ConfiguratorConfig{
+		ConfigVersion: "2.7.1",
+		Scope:         parser.ScopeApplication,
+		Key:           "org.apache.dubbo-go.mockService",
+		Enabled:       true,
+		Configs: []parser.ConfigItem{
+			{Type: parser.ScopeApplication,
+				Enabled:    true,
+				Addresses:  []string{"0.0.0.0"},
+				Services:   []string{"org.apache.dubbo-go.mockService"},
+				Side:       "provider",
+				Parameters: map[string]string{"cluster": "mock1"},
+			},
+		},
+	}
+	value, _ := yaml.Marshal(config)
+	key := "test-application" + constant.CONFIGURATORS_SUFFIX
+	c.listener[key].Process(&ConfigChangeEvent{Key: key, Value: string(value), ConfigType: remoting.EventTypeAdd})
 }
