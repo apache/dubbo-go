@@ -21,6 +21,7 @@ import (
 	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/config"
 	"go.uber.org/atomic"
 	"sync"
 )
@@ -34,6 +35,7 @@ type BaseDirectory struct {
 	destroyed   *atomic.Bool
 	routers     []cluster.Router
 	mutex       sync.Mutex
+	once        sync.Once
 }
 
 func NewBaseDirectory(url *common.URL) BaseDirectory {
@@ -65,6 +67,14 @@ func (dir *BaseDirectory) SetRouters(routers []cluster.Router) {
 	dir.routers = routers
 }
 func (dir *BaseDirectory) Routers() []cluster.Router {
+	dir.once.Do(func() {
+		factory := extension.GetRouterFactory(dir.GetUrl().Protocol)
+		router, err := factory.Router(config.GetRouterUrl())
+		if err == nil {
+			dir.routers = append(dir.routers, router)
+		}
+	})
+
 	return dir.routers
 }
 
