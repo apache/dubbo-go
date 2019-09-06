@@ -116,8 +116,9 @@ type PendingResponse struct {
 
 func NewPendingResponse() *PendingResponse {
 	return &PendingResponse{
-		start: time.Now(),
-		done:  make(chan struct{}),
+		start:    time.Now(),
+		response: &Response{},
+		done:     make(chan struct{}),
 	}
 }
 
