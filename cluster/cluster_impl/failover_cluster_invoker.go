@@ -19,6 +19,7 @@ package cluster_impl
 
 import (
 	perrors "github.com/pkg/errors"
+	"strconv"
 )
 
 import (
@@ -53,16 +54,20 @@ func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) pr
 	url := invokers[0].GetUrl()
 
 	//get reties
-	retries := url.GetParamInt(constant.RETRIES_KEY, constant.DEFAULT_RETRIES)
+	retriesConfig := url.GetParam(constant.RETRIES_KEY, constant.DEFAULT_RETRIES)
 
 	//Get the service method loadbalance config if have
-	if v := url.GetMethodParamInt(methodName, constant.RETRIES_KEY, 0); v != 0 {
-		retries = v
+	if v := url.GetMethodParam(methodName, constant.RETRIES_KEY, ""); len(v) != 0 {
+		retriesConfig = v
+	}
+	retries, err := strconv.Atoi(retriesConfig)
+	if err != nil || retries < 0 {
+		retries = constant.DEFAULT_RETRIES_INT
 	}
 	invoked := []protocol.Invoker{}
 	providers := []string{}
 	var result protocol.Result
-	for i := int64(0); i < retries; i++ {
+	for i := 0; i <= retries; i++ {
 		//Reselect before retry to avoid a change of candidate `invokers`.
 		//NOTE: if `invokers` changed, then `invoked` also lose accuracy.
 		if i > 0 {
