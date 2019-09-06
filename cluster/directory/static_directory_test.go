@@ -41,7 +41,7 @@ func Test_StaticDirList(t *testing.T) {
 	}
 
 	staticDir := NewStaticDirectory(invokers)
-	list, _ := staticDir.List(&invocation.RPCInvocation{})
+	list := staticDir.List(&invocation.RPCInvocation{})
 
 	assert.Len(t, list, 10)
 }
