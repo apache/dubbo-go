@@ -19,7 +19,6 @@ package protocol
 
 import (
 	"context"
-	"github.com/apache/dubbo-go/remoting"
 	"testing"
 	"time"
 )
@@ -40,6 +39,7 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 	"github.com/apache/dubbo-go/registry"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 func init() {
