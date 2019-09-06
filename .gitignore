@@ -4,6 +4,7 @@
 *.dll
 *.so
 *.dylib
+*.jar
 
 # Test binary, build with `go test -c`
 *.test
@@ -24,3 +25,8 @@ coverage.txt
 logs/
 .vscode/
 coverage.txt
+
+# unit test
+remoting/zookeeper/zookeeper-4unittest/
+config_center/zookeeper/zookeeper-4unittest/
+registry/zookeeper/zookeeper-4unittest/
