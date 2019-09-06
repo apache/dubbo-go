@@ -22,15 +22,16 @@ const (
 )
 
 const (
-	GROUP_KEY     = "group"
-	VERSION_KEY   = "version"
-	INTERFACE_KEY = "interface"
-	PATH_KEY      = "path"
-	SERVICE_KEY   = "service"
-	METHODS_KEY   = "methods"
-	TIMEOUT_KEY   = "timeout"
-	BEAN_NAME_KEY = "bean.name"
-	GENERIC_KEY   = "generic"
+	GROUP_KEY      = "group"
+	VERSION_KEY    = "version"
+	INTERFACE_KEY  = "interface"
+	PATH_KEY       = "path"
+	SERVICE_KEY    = "service"
+	METHODS_KEY    = "methods"
+	TIMEOUT_KEY    = "timeout"
+	BEAN_NAME_KEY  = "bean.name"
+	GENERIC_KEY    = "generic"
+	PATH_SEPARATOR = "/"
 )
 
 const (
@@ -48,6 +49,7 @@ const (
 	RETRIES_KEY          = "retries"
 	BEAN_NAME            = "bean.name"
 	FAIL_BACK_TASKS_KEY  = "failbacktasks"
+	ANYHOST_VALUE        = "0.0.0.0"
 )
 
 const (
@@ -94,6 +96,7 @@ const (
 	ProtocolConfigPrefix  = "dubbo.protocols."
 	ProviderConfigPrefix  = "dubbo.provider."
 	ConsumerConfigPrefix  = "dubbo.consumer."
+	RouterConfigPrefix    = "dubbo.router."
 )
 
 const (

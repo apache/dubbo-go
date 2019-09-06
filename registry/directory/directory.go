@@ -18,7 +18,6 @@
 package directory
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 	"sync"
@@ -37,7 +36,6 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 	"github.com/apache/dubbo-go/registry"
@@ -234,28 +232,18 @@ func (dir *registryDirectory) cacheInvoker(url common.URL) {
 }
 
 //select the protocol invokers from the directory
-func (dir *registryDirectory) List(invocation protocol.Invocation) ([]protocol.Invoker, error) {
-	if dir.Destroyed() {
-		return nil, fmt.Errorf("directory already destroyed .url: %s", dir.GetUrl().String())
-	}
-
-	if dir.forbidden.Load() {
-		localIP, _ := utils.GetLocalIP()
-		return nil, fmt.Errorf("no provider available from registry %s for service %s on consumer %s use dubbo version %s, please check status of providers(disabled, not registered or in blacklist)", dir.GetUrl().Location, dir.ConsumerUrl.ServiceKey(), localIP, constant.Version)
-	}
-
+func (dir *registryDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
 	invokers := dir.cacheInvokers
 	localRouters := dir.Routers()
 	if len(localRouters) > 0 {
 		for _, router := range localRouters {
-			//todo nil error
 			if reflect.ValueOf(router.Url()).IsValid() || router.Url().GetParamBool(constant.RUNTIME_KEY, false) {
 				invokers = router.Route(invokers, *dir.ConsumerUrl, invocation)
 			}
 		}
 	}
 
-	return invokers, nil
+	return invokers
 
 }
 
