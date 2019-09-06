@@ -19,9 +19,11 @@ package configurator
 import (
 	"strings"
 )
+
 import (
 	"github.com/dubbogo/gost/container"
 )
+
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"

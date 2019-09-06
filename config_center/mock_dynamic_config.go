@@ -18,14 +18,18 @@
 package config_center
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/remoting"
-	"gopkg.in/yaml.v2"
 	"sync"
 )
+
+import (
+	"gopkg.in/yaml.v2"
+)
+
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/config_center/parser"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 type MockDynamicConfigurationFactory struct{}
