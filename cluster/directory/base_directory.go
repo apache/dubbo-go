@@ -42,6 +42,9 @@ func NewBaseDirectory(url *common.URL) BaseDirectory {
 func (dir *BaseDirectory) GetUrl() common.URL {
 	return *dir.url
 }
+func (dir *BaseDirectory) GetDirectoryUrl() *common.URL {
+	return dir.url
+}
 
 func (dir *BaseDirectory) Destroy(doDestroy func()) {
 	if dir.destroyed.CAS(false, true) {

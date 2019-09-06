@@ -23,6 +23,7 @@ const (
 	//compatible with 2.6.x
 	OVERRIDE_PROTOCOL = "override"
 	EMPTY_PROTOCOL    = "empty"
+	ROUTER_PROTOCOL   = "router"
 )
 
 const (
@@ -58,7 +59,9 @@ const (
 
 const (
 	CONFIGURATORS_CATEGORY             = "configurators"
-	DEFAULT_CATEGORY                   = "providers"
+	ROUTER_CATEGORY                    = "category"
+	DEFAULT_CATEGORY                   = PROVIDER_CATEGORY
 	DYNAMIC_CONFIGURATORS_CATEGORY     = "dynamicconfigurators"
 	APP_DYNAMIC_CONFIGURATORS_CATEGORY = "appdynamicconfigurators"
+	PROVIDER_CATEGORY                  = "providers"
 )
