@@ -242,7 +242,6 @@ func (dir *registryDirectory) List(invocation protocol.Invocation) []protocol.In
 			}
 		}
 	}
-
 	return invokers
 
 }
