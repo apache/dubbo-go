@@ -36,6 +36,7 @@ type DynamicConfiguration interface {
 	AddListener(string, remoting.ConfigurationListener, ...Option)
 	RemoveListener(string, remoting.ConfigurationListener, ...Option)
 	GetConfig(string, ...Option) (string, error)
+	SetConfig(string, string, string) error
 	GetConfigs(string, ...Option) (string, error)
 }
 
