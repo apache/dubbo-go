@@ -47,7 +47,7 @@ type ReferenceConfig struct {
 	Registry      string            `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
 	Cluster       string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
 	Loadbalance   string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
-	Retries       int64             `yaml:"retries"  json:"retries,omitempty" property:"retries"`
+	Retries       string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
 	Group         string            `yaml:"group"  json:"group,omitempty" property:"group"`
 	Version       string            `yaml:"version"  json:"version,omitempty" property:"version"`
 	Methods       []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
@@ -154,7 +154,7 @@ func (refconfig *ReferenceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.TIMESTAMP_KEY, strconv.FormatInt(time.Now().Unix(), 10))
 	urlMap.Set(constant.CLUSTER_KEY, refconfig.Cluster)
 	urlMap.Set(constant.LOADBALANCE_KEY, refconfig.Loadbalance)
-	urlMap.Set(constant.RETRIES_KEY, strconv.FormatInt(refconfig.Retries, 10))
+	urlMap.Set(constant.RETRIES_KEY, refconfig.Retries)
 	urlMap.Set(constant.GROUP_KEY, refconfig.Group)
 	urlMap.Set(constant.VERSION_KEY, refconfig.Version)
 	urlMap.Set(constant.GENERIC_KEY, strconv.FormatBool(refconfig.Generic))
@@ -180,7 +180,7 @@ func (refconfig *ReferenceConfig) getUrlMap() url.Values {
 
 	for _, v := range refconfig.Methods {
 		urlMap.Set("methods."+v.Name+"."+constant.LOADBALANCE_KEY, v.Loadbalance)
-		urlMap.Set("methods."+v.Name+"."+constant.RETRIES_KEY, strconv.FormatInt(v.Retries, 10))
+		urlMap.Set("methods."+v.Name+"."+constant.RETRIES_KEY, v.Retries)
 	}
 
 	return urlMap
