@@ -137,7 +137,7 @@ func appItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.URL, e
 			urlStr = urlStr + config.ConfigVersion
 			url, err := common.NewURL(context.Background(), urlStr)
 			if err != nil {
-				perrors.WithStack(err)
+				return nil, perrors.WithStack(err)
 			}
 			urls = append(urls, &url)
 		}
@@ -213,19 +213,19 @@ const (
 )
 
 type ConfiguratorConfig struct {
-	ConfigVersion string
-	Scope         string
-	Key           string
-	Enabled       bool
-	Configs       []ConfigItem
+	ConfigVersion string       `yaml:"configVersion"`
+	Scope         string       `yaml:"scope"`
+	Key           string       `yaml:"key"`
+	Enabled       bool         `yaml:"enabled"`
+	Configs       []ConfigItem `yaml:"configs"`
 }
 type ConfigItem struct {
-	Type              string
-	Enabled           bool
-	Addresses         []string
-	ProviderAddresses []string
-	Services          []string
-	Applications      []string
-	Parameters        map[string]string
-	Side              string
+	Type              string            `yaml:"type"`
+	Enabled           bool              `yaml:"enabled"`
+	Addresses         []string          `yaml:"addresses"`
+	ProviderAddresses []string          `yaml:"providerAddresses"`
+	Services          []string          `yaml:"services"`
+	Applications      []string          `yaml:"applications"`
+	Parameters        map[string]string `yaml:"parameters"`
+	Side              string            `yaml:"side"`
 }

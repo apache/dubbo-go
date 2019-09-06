@@ -97,8 +97,8 @@ func (refconfig *ReferenceConfig) Refer() {
 					serviceUrl.Path = "/" + refconfig.id
 				}
 				// merge url need to do
-				newUrl := common.MergeUrl(serviceUrl, url)
-				refconfig.urls = append(refconfig.urls, &newUrl)
+				newUrl := common.MergeUrl(&serviceUrl, url)
+				refconfig.urls = append(refconfig.urls, newUrl)
 			}
 
 		}

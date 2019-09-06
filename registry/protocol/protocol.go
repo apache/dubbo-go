@@ -18,9 +18,6 @@
 package protocol
 
 import (
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/config_center"
-	"github.com/apache/dubbo-go/remoting"
 	"strings"
 	"sync"
 )
@@ -30,10 +27,14 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/config_center"
+	_ "github.com/apache/dubbo-go/config_center/configurator"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 	"github.com/apache/dubbo-go/registry"
 	directory2 "github.com/apache/dubbo-go/registry/directory"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 var (
@@ -43,13 +44,14 @@ var (
 type registryProtocol struct {
 	invokers []protocol.Invoker
 	// Registry  Map<RegistryAddress, Registry>
-	registries sync.Map
+	registries *sync.Map
 	//To solve the problem of RMI repeated exposure port conflicts, the services that have been exposed are no longer exposed.
 	//providerurl <--> exporter
-	bounds                        sync.Map
-	overrideListeners             sync.Map
-	serviceConfigurationListeners sync.Map
+	bounds                        *sync.Map
+	overrideListeners             *sync.Map
+	serviceConfigurationListeners *sync.Map
 	providerConfigurationListener *providerConfigurationListener
+	once                          sync.Once
 }
 
 func init() {
@@ -63,13 +65,9 @@ func getCacheKey(url *common.URL) string {
 	return newUrl.String()
 }
 func newRegistryProtocol() *registryProtocol {
-	overrideListeners := sync.Map{}
 	return &registryProtocol{
-		overrideListeners:             overrideListeners,
-		registries:                    sync.Map{},
-		bounds:                        sync.Map{},
-		serviceConfigurationListeners: sync.Map{},
-		providerConfigurationListener: newProviderConfigurationListener(&overrideListeners),
+		registries: &sync.Map{},
+		bounds:     &sync.Map{},
 	}
 }
 func getRegistry(regUrl *common.URL) registry.Registry {
@@ -79,6 +77,11 @@ func getRegistry(regUrl *common.URL) registry.Registry {
 		panic(err.Error())
 	}
 	return reg
+}
+func (proto *registryProtocol) initConfigurationListeners() {
+	proto.overrideListeners = &sync.Map{}
+	proto.serviceConfigurationListeners = &sync.Map{}
+	proto.providerConfigurationListener = newProviderConfigurationListener(proto.overrideListeners)
 }
 func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 
@@ -119,6 +122,10 @@ func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 }
 
 func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
+
+	proto.once.Do(func() {
+		proto.initConfigurationListeners()
+	})
 	registryUrl := getRegistryUrl(invoker)
 	providerUrl := getProviderUrl(invoker)
 
@@ -197,14 +204,17 @@ func (nl *overrideSubscribeListener) doOverrideIfNecessary() {
 	if exporter, ok := nl.protocol.bounds.Load(key); ok {
 		currentUrl := exporter.(protocol.Exporter).GetInvoker().GetUrl()
 		// Compatible with the 2.6.x
-		nl.configurator.Configure(providerUrl)
+		if nl.configurator != nil {
+			nl.configurator.Configure(providerUrl)
+		}
 		// provider application level  management in 2.7.x
 		for _, v := range nl.protocol.providerConfigurationListener.Configurators() {
 			v.Configure(providerUrl)
 		}
 		// provider service level  management in 2.7.x
 		if serviceListener, ok := nl.protocol.serviceConfigurationListeners.Load(providerUrl.ServiceKey()); ok {
-			for _, v := range serviceListener.(*serviceConfigurationListener).Configurators() {
+			listener := serviceListener.(*serviceConfigurationListener)
+			for _, v := range listener.Configurators() {
 				v.Configure(providerUrl)
 			}
 		}
@@ -247,7 +257,10 @@ func isMatched(providerUrl *common.URL, consumerUrl *common.URL) bool {
 	//todo: public static boolean isContains(String values, String value) {
 	//        return isNotEmpty(values) && isContains(COMMA_SPLIT_PATTERN.split(values), value);
 	//    }
-	return (consumerGroup == constant.ANY_VALUE || consumerGroup == providerGroup || strings.Contains(consumerGroup, providerGroup)) && (consumerVersion == constant.ANY_VALUE || consumerVersion == providerVersion) && (consumerClassifier == "" || consumerClassifier == constant.ANY_VALUE || consumerClassifier == providerClassifier)
+	return (consumerGroup == constant.ANY_VALUE || consumerGroup == providerGroup ||
+		strings.Contains(consumerGroup, providerGroup)) && (consumerVersion == constant.ANY_VALUE ||
+		consumerVersion == providerVersion) && (len(consumerClassifier) == 0 || consumerClassifier == constant.ANY_VALUE ||
+		consumerClassifier == providerClassifier)
 }
 func isMatchCategory(category string, categories string) bool {
 	if categories == "" {
@@ -346,8 +359,7 @@ type providerConfigurationListener struct {
 func newProviderConfigurationListener(overrideListeners *sync.Map) *providerConfigurationListener {
 	listener := &providerConfigurationListener{}
 	listener.overrideListeners = overrideListeners
-	//TODO:error handler
-	listener.BaseConfigurationListener.InitWith(config.GetProviderConfig().ApplicationConfig.Name+constant.CONFIGURATORS_SUFFIX, listener, extension.GetDefaultConfiguratorFunc())
+	listener.InitWith(config.GetProviderConfig().ApplicationConfig.Name+constant.CONFIGURATORS_SUFFIX, listener, extension.GetDefaultConfiguratorFunc())
 	return listener
 }
 
@@ -367,9 +379,8 @@ type serviceConfigurationListener struct {
 
 func newServiceConfigurationListener(overrideListener *overrideSubscribeListener, providerUrl *common.URL) *serviceConfigurationListener {
 	listener := &serviceConfigurationListener{overrideListener: overrideListener, providerUrl: providerUrl}
-	//TODO:error handler
-	listener.BaseConfigurationListener.InitWith(providerUrl.EncodedServiceKey()+constant.CONFIGURATORS_SUFFIX, listener, extension.GetDefaultConfiguratorFunc())
-	return &serviceConfigurationListener{overrideListener: overrideListener, providerUrl: providerUrl}
+	listener.InitWith(providerUrl.EncodedServiceKey()+constant.CONFIGURATORS_SUFFIX, listener, extension.GetDefaultConfiguratorFunc())
+	return listener
 }
 
 func (listener *serviceConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
