@@ -98,16 +98,16 @@ func initRouterUrl() *common.URL {
 
 	url := common.NewURLWithOptions(
 		common.WithProtocol(constant.ROUTE_PROTOCOL),
-		common.WithIp(constant.ANYHOST_VALUE),
-		common.WithParamsValue("enabled", strconv.FormatBool(routerConfig.Enabled)),
-		common.WithParamsValue("dynamic", strconv.FormatBool(routerConfig.Dynamic)),
-		common.WithParamsValue("force", strconv.FormatBool(routerConfig.Force)),
-		common.WithParamsValue("runtime", strconv.FormatBool(routerConfig.Runtime)),
-		common.WithParamsValue("priority", strconv.Itoa(routerConfig.Priority)),
-		common.WithParamsValue("scope", routerConfig.Scope),
-		common.WithParamsValue(constant.RULE_KEY, base64.URLEncoding.EncodeToString([]byte(rule))),
-		common.WithParamsValue("router", "condition"),
-		common.WithParamsValue(constant.CATEGORY_KEY, constant.ROUTERS_CATEGORY))
+		common.WithIp(constant.ANYHOST_VALUE))
+	url.AddParam("enabled", strconv.FormatBool(routerConfig.Enabled))
+	url.AddParam("dynamic", strconv.FormatBool(routerConfig.Dynamic))
+	url.AddParam("force", strconv.FormatBool(routerConfig.Force))
+	url.AddParam("runtime", strconv.FormatBool(routerConfig.Runtime))
+	url.AddParam("priority", strconv.Itoa(routerConfig.Priority))
+	url.AddParam("scope", routerConfig.Scope)
+	url.AddParam(constant.RULE_KEY, base64.URLEncoding.EncodeToString([]byte(rule)))
+	url.AddParam("router", "condition")
+	url.AddParam(constant.CATEGORY_KEY, constant.ROUTERS_CATEGORY)
 
 	return url
 }
