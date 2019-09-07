@@ -18,8 +18,11 @@
 package cluster_impl
 
 import (
-	perrors "github.com/pkg/errors"
 	"strconv"
+)
+
+import (
+	perrors "github.com/pkg/errors"
 )
 
 import (
