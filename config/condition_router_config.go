@@ -99,6 +99,7 @@ func initRouterUrl() *common.URL {
 	url := common.NewURLWithOptions(
 		common.WithProtocol(constant.ROUTE_PROTOCOL),
 		common.WithIp(constant.ANYHOST_VALUE))
+	url.Params = make(map[string][]string)
 	url.AddParam("enabled", strconv.FormatBool(routerConfig.Enabled))
 	url.AddParam("dynamic", strconv.FormatBool(routerConfig.Dynamic))
 	url.AddParam("force", strconv.FormatBool(routerConfig.Force))
