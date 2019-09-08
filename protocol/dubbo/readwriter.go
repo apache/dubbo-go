@@ -141,10 +141,10 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 				attachments = req[6].(map[string]string)
 			}
 			pkg.Service.Interface = attachments[constant.INTERFACE_KEY]
-			if pkg.Service.Path == "" && attachments[constant.PATH_KEY] != "" {
+			if len(pkg.Service.Path) == 0 && len(attachments[constant.PATH_KEY]) != 0 {
 				pkg.Service.Path = attachments[constant.PATH_KEY]
 			}
-			if attachments[constant.GROUP_KEY] != "" {
+			if len(attachments[constant.GROUP_KEY]) != 0 {
 				pkg.Service.Group = attachments[constant.GROUP_KEY]
 			}
 			pkg.Body = map[string]interface{}{
