@@ -161,7 +161,13 @@ func normalRegistryDir(noMockEvent ...bool) (*registryDirectory, *registry.MockR
 	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
 
 	url, _ := common.NewURL(context.TODO(), "mock://127.0.0.1:1111")
-	suburl, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithParamsValue(constant.GROUP_KEY, "group"), common.WithParamsValue(constant.VERSION_KEY, "1.0.0"))
+	suburl, _ := common.NewURL(
+		context.TODO(),
+		"dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
+		common.WithParamsValue(constant.GROUP_KEY, "group"),
+		common.WithParamsValue(constant.VERSION_KEY, "1.0.0"),
+	)
 	url.SubURL = &suburl
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
 	registryDirectory, _ := NewRegistryDirectory(&url, mockRegistry)
@@ -169,7 +175,15 @@ func normalRegistryDir(noMockEvent ...bool) (*registryDirectory, *registry.MockR
 	go registryDirectory.Subscribe(&suburl)
 	if len(noMockEvent) == 0 {
 		for i := 0; i < 3; i++ {
-			mockRegistry.(*registry.MockRegistry).MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: *common.NewURLWithOptions(common.WithPath("TEST"+strconv.FormatInt(int64(i), 10)), common.WithProtocol("dubbo"))})
+			mockRegistry.(*registry.MockRegistry).MockEvent(
+				&registry.ServiceEvent{
+					Action: remoting.EventTypeAdd,
+					Service: *common.NewURLWithOptions(
+						common.WithPath("TEST"+strconv.FormatInt(int64(i), 10)),
+						common.WithProtocol("dubbo"),
+					),
+				},
+			)
 		}
 	}
 	return registryDirectory, mockRegistry.(*registry.MockRegistry)

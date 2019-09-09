@@ -402,7 +402,6 @@ func (r *zkRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyLi
 	for {
 		if !r.IsAvailable() {
 			logger.Warnf("event listener game over.")
-			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
 			return
 		}
 

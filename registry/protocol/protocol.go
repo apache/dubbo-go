@@ -104,12 +104,14 @@ func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 	//new registry directory for store service url from registry
 	directory, err := directory2.NewRegistryDirectory(&registryUrl, reg)
 	if err != nil {
-		logger.Errorf("consumer service %v  create registry directory  error, error message is %s, and will return nil invoker!", serviceUrl.String(), err.Error())
+		logger.Errorf("consumer service %v  create registry directory  error, error message is %s, and will return nil invoker!",
+			serviceUrl.String(), err.Error())
 		return nil
 	}
 	err = reg.Register(*serviceUrl)
 	if err != nil {
-		logger.Errorf("consumer service %v register registry %v error, error message is %s", serviceUrl.String(), registryUrl.String(), err.Error())
+		logger.Errorf("consumer service %v register registry %v error, error message is %s",
+			serviceUrl.String(), registryUrl.String(), err.Error())
 	}
 	go directory.Subscribe(serviceUrl)
 
@@ -149,7 +151,8 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 
 	err := reg.Register(*providerUrl)
 	if err != nil {
-		logger.Errorf("provider service %v register registry %v error, error message is %s", providerUrl.Key(), registryUrl.Key(), err.Error())
+		logger.Errorf("provider service %v register registry %v error, error message is %s",
+			providerUrl.Key(), registryUrl.Key(), err.Error())
 		return nil
 	}
 
@@ -229,13 +232,16 @@ func (nl *overrideSubscribeListener) doOverrideIfNecessary() {
 
 func isMatched(providerUrl *common.URL, consumerUrl *common.URL) bool {
 	// Compatible with the 2.6.x
-	if len(providerUrl.GetParam(constant.CATEGORY_KEY, "")) == 0 && providerUrl.Protocol == constant.OVERRIDE_PROTOCOL {
+	if len(providerUrl.GetParam(constant.CATEGORY_KEY, "")) == 0 &&
+		providerUrl.Protocol == constant.OVERRIDE_PROTOCOL {
 		providerUrl.AddParam(constant.CATEGORY_KEY, constant.CONFIGURATORS_CATEGORY)
 	}
 	consumerInterface := consumerUrl.GetParam(constant.INTERFACE_KEY, consumerUrl.Path)
 	providerInterface := providerUrl.GetParam(constant.INTERFACE_KEY, providerUrl.Path)
 
-	if !(constant.ANY_VALUE == consumerInterface || constant.ANY_VALUE == providerInterface || providerInterface == consumerInterface) {
+	if !(constant.ANY_VALUE == consumerInterface ||
+		constant.ANY_VALUE == providerInterface ||
+		providerInterface == consumerInterface) {
 		return false
 	}
 
@@ -244,7 +250,8 @@ func isMatched(providerUrl *common.URL, consumerUrl *common.URL) bool {
 		return false
 	}
 
-	if !providerUrl.GetParamBool(constant.ENABLED_KEY, true) && consumerUrl.GetParam(constant.ENABLED_KEY, "") != constant.ANY_VALUE {
+	if !providerUrl.GetParamBool(constant.ENABLED_KEY, true) &&
+		consumerUrl.GetParam(constant.ENABLED_KEY, "") != constant.ANY_VALUE {
 		return false
 	}
 	consumerGroup := consumerUrl.GetParam(constant.GROUP_KEY, "")
@@ -259,11 +266,11 @@ func isMatched(providerUrl *common.URL, consumerUrl *common.URL) bool {
 	//    }
 	return (consumerGroup == constant.ANY_VALUE || consumerGroup == providerGroup ||
 		strings.Contains(consumerGroup, providerGroup)) && (consumerVersion == constant.ANY_VALUE ||
-		consumerVersion == providerVersion) && (len(consumerClassifier) == 0 || consumerClassifier == constant.ANY_VALUE ||
-		consumerClassifier == providerClassifier)
+		consumerVersion == providerVersion) && (len(consumerClassifier) == 0 ||
+		consumerClassifier == constant.ANY_VALUE || consumerClassifier == providerClassifier)
 }
 func isMatchCategory(category string, categories string) bool {
-	if categories == "" {
+	if len(categories) == 0 {
 		return category == constant.DEFAULT_CATEGORY
 	} else if strings.Contains(categories, constant.ANY_VALUE) {
 		return true
@@ -359,7 +366,11 @@ type providerConfigurationListener struct {
 func newProviderConfigurationListener(overrideListeners *sync.Map) *providerConfigurationListener {
 	listener := &providerConfigurationListener{}
 	listener.overrideListeners = overrideListeners
-	listener.InitWith(config.GetProviderConfig().ApplicationConfig.Name+constant.CONFIGURATORS_SUFFIX, listener, extension.GetDefaultConfiguratorFunc())
+	listener.InitWith(
+		config.GetProviderConfig().ApplicationConfig.Name+constant.CONFIGURATORS_SUFFIX,
+		listener,
+		extension.GetDefaultConfiguratorFunc(),
+	)
 	return listener
 }
 
@@ -379,7 +390,11 @@ type serviceConfigurationListener struct {
 
 func newServiceConfigurationListener(overrideListener *overrideSubscribeListener, providerUrl *common.URL) *serviceConfigurationListener {
 	listener := &serviceConfigurationListener{overrideListener: overrideListener, providerUrl: providerUrl}
-	listener.InitWith(providerUrl.EncodedServiceKey()+constant.CONFIGURATORS_SUFFIX, listener, extension.GetDefaultConfiguratorFunc())
+	listener.InitWith(
+		providerUrl.EncodedServiceKey()+constant.CONFIGURATORS_SUFFIX,
+		listener,
+		extension.GetDefaultConfiguratorFunc(),
+	)
 	return listener
 }
 
