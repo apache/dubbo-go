@@ -2,12 +2,12 @@ package nacos
 
 import (
 	"bytes"
-	"github.com/apache/dubbo-go/common/logger"
 	"net"
 	"strconv"
 	"strings"
 	"time"
 )
+
 import (
 	"github.com/nacos-group/nacos-sdk-go/clients"
 	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
@@ -20,6 +20,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/registry"
 )
@@ -173,7 +174,6 @@ func (r *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Notif
 	for {
 		if !r.IsAvailable() {
 			logger.Warnf("event listener game over.")
-			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
 			return
 		}
 

@@ -35,6 +35,11 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
+const (
+	ScopeApplication = "application"
+	GeneralType      = "general"
+)
+
 type ConfigurationParser interface {
 	Parse(string) (map[string]string, error)
 	ParseToUrls(content string) ([]*common.URL, error)
@@ -42,6 +47,25 @@ type ConfigurationParser interface {
 
 //for support properties file in config center
 type DefaultConfigurationParser struct{}
+
+type ConfiguratorConfig struct {
+	ConfigVersion string       `yaml:"configVersion"`
+	Scope         string       `yaml:"scope"`
+	Key           string       `yaml:"key"`
+	Enabled       bool         `yaml:"enabled"`
+	Configs       []ConfigItem `yaml:"configs"`
+}
+
+type ConfigItem struct {
+	Type              string            `yaml:"type"`
+	Enabled           bool              `yaml:"enabled"`
+	Addresses         []string          `yaml:"addresses"`
+	ProviderAddresses []string          `yaml:"providerAddresses"`
+	Services          []string          `yaml:"services"`
+	Applications      []string          `yaml:"applications"`
+	Parameters        map[string]string `yaml:"parameters"`
+	Side              string            `yaml:"side"`
+}
 
 func (parser *DefaultConfigurationParser) Parse(content string) (map[string]string, error) {
 	properties, err := properties.LoadString(content)
@@ -224,27 +248,4 @@ func getEnabledString(item ConfigItem, config ConfiguratorConfig) string {
 		retStr = retStr + strconv.FormatBool(item.Enabled)
 	}
 	return retStr
-}
-
-const (
-	ScopeApplication = "application"
-	GeneralType      = "general"
-)
-
-type ConfiguratorConfig struct {
-	ConfigVersion string       `yaml:"configVersion"`
-	Scope         string       `yaml:"scope"`
-	Key           string       `yaml:"key"`
-	Enabled       bool         `yaml:"enabled"`
-	Configs       []ConfigItem `yaml:"configs"`
-}
-type ConfigItem struct {
-	Type              string            `yaml:"type"`
-	Enabled           bool              `yaml:"enabled"`
-	Addresses         []string          `yaml:"addresses"`
-	ProviderAddresses []string          `yaml:"providerAddresses"`
-	Services          []string          `yaml:"services"`
-	Applications      []string          `yaml:"applications"`
-	Parameters        map[string]string `yaml:"parameters"`
-	Side              string            `yaml:"side"`
 }

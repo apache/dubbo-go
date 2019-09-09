@@ -256,7 +256,11 @@ type referenceConfigurationListener struct {
 
 func newReferenceConfigurationListener(dir *registryDirectory, url *common.URL) *referenceConfigurationListener {
 	listener := &referenceConfigurationListener{directory: dir, url: url}
-	listener.InitWith(url.EncodedServiceKey()+constant.CONFIGURATORS_SUFFIX, listener, extension.GetDefaultConfiguratorFunc())
+	listener.InitWith(
+		url.EncodedServiceKey()+constant.CONFIGURATORS_SUFFIX,
+		listener,
+		extension.GetDefaultConfiguratorFunc(),
+	)
 	return listener
 }
 
@@ -273,7 +277,11 @@ type consumerConfigurationListener struct {
 
 func newConsumerConfigurationListener(dir *registryDirectory) *consumerConfigurationListener {
 	listener := &consumerConfigurationListener{directory: dir}
-	listener.InitWith(config.GetConsumerConfig().ApplicationConfig.Name+constant.CONFIGURATORS_SUFFIX, listener, extension.GetDefaultConfiguratorFunc())
+	listener.InitWith(
+		config.GetConsumerConfig().ApplicationConfig.Name+constant.CONFIGURATORS_SUFFIX,
+		listener,
+		extension.GetDefaultConfiguratorFunc(),
+	)
 	return listener
 }
 func (l *consumerConfigurationListener) addNotifyListener(listener registry.NotifyListener) {
