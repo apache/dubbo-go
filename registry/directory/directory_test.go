@@ -144,15 +144,28 @@ func Test_MergeOverrideUrl(t *testing.T) {
 		common.WithParamsValue(constant.GROUP_KEY, "group"),
 		common.WithParamsValue(constant.VERSION_KEY, "1.0.0"))
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerUrl})
-	overrideUrl, _ := common.NewURL(context.TODO(), "override://0.0.0.0:20000/org.apache.dubbo-go.mockService",
-		common.WithParamsValue(constant.CLUSTER_KEY, "mock1"),
-		common.WithParamsValue(constant.GROUP_KEY, "group"),
-		common.WithParamsValue(constant.VERSION_KEY, "1.0.0"))
-	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: overrideUrl})
-	time.Sleep(1e9)
-	assert.Len(t, registryDirectory.cacheInvokers, 1)
-	if len(registryDirectory.cacheInvokers) > 0 {
-		assert.Equal(t, "mock1", registryDirectory.cacheInvokers[0].GetUrl().GetParam(constant.CLUSTER_KEY, ""))
+Loop1:
+	for {
+		if len(registryDirectory.cacheInvokers) > 0 {
+			overrideUrl, _ := common.NewURL(context.TODO(), "override://0.0.0.0:20000/org.apache.dubbo-go.mockService",
+				common.WithParamsValue(constant.CLUSTER_KEY, "mock1"),
+				common.WithParamsValue(constant.GROUP_KEY, "group"),
+				common.WithParamsValue(constant.VERSION_KEY, "1.0.0"))
+			mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: overrideUrl})
+		Loop2:
+			for {
+				if len(registryDirectory.cacheInvokers) > 0 {
+					if "mock1" == registryDirectory.cacheInvokers[0].GetUrl().GetParam(constant.CLUSTER_KEY, "") {
+						assert.Len(t, registryDirectory.cacheInvokers, 1)
+						assert.True(t, true)
+						break Loop2
+					} else {
+						time.Sleep(500 * time.Millisecond)
+					}
+				}
+			}
+			break Loop1
+		}
 	}
 
 }
