@@ -150,7 +150,6 @@ func (r *consulRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 			if serviceEvent, err := listener.Next(); err != nil {
 				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
 				listener.Close()
-				time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
 				return
 			} else {
 				logger.Infof("update begin, service event: %v", serviceEvent.String())
