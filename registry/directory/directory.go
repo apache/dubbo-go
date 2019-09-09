@@ -117,8 +117,10 @@ func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 		if url.Protocol == constant.OVERRIDE_PROTOCOL ||
 			url.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY) == constant.CONFIGURATORS_CATEGORY {
 			dir.configurators = append(dir.configurators, extension.GetDefaultConfigurator(url))
+			url = nil
 		} else if url.Protocol == constant.ROUTER_PROTOCOL || //2.for router
 			url.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY) == constant.ROUTER_CATEGORY {
+			url = nil
 			//TODO: router
 		}
 	}
@@ -198,11 +200,18 @@ func (dir *registryDirectory) cacheInvoker(url *common.URL) {
 	if url.Protocol == referenceUrl.Protocol || referenceUrl.Protocol == "" {
 		newUrl := common.MergeUrl(url, referenceUrl)
 		dir.overrideUrl(newUrl)
-		if _, ok := dir.cacheInvokersMap.Load(newUrl.Key()); !ok {
-			logger.Debugf("service will be added in cache invokers: invokers key is  %s!", url.Key())
+		if cacheInvoker, ok := dir.cacheInvokersMap.Load(newUrl.Key()); !ok {
+			logger.Infof("service will be added in cache invokers: invokers url is  %s!", newUrl)
 			newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(*newUrl)
 			if newInvoker != nil {
 				dir.cacheInvokersMap.Store(newUrl.Key(), newInvoker)
+			}
+		} else {
+			logger.Infof("service will be updated in cache invokers: new invoker url is %s, old invoker url is %s", newUrl, cacheInvoker.(protocol.Invoker).GetUrl())
+			newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(*newUrl)
+			if newInvoker != nil {
+				dir.cacheInvokersMap.Store(newUrl.Key(), newInvoker)
+				cacheInvoker.(protocol.Invoker).Destroy()
 			}
 		}
 	}
