@@ -22,7 +22,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-
 	"math"
 	"net"
 	"net/url"
@@ -254,9 +253,16 @@ func isMatchCategory(category1 string, category2 string) bool {
 	}
 }
 func (c URL) String() string {
-	buildString := fmt.Sprintf(
-		"%s://%s:%s@%s:%s%s?",
-		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path)
+	var buildString string
+	if len(c.Username) == 0 && len(c.Password) == 0 {
+		buildString = fmt.Sprintf(
+			"%s://%s:%s%s?",
+			c.Protocol, c.Ip, c.Port, c.Path)
+	} else {
+		buildString = fmt.Sprintf(
+			"%s://%s:%s@%s:%s%s?",
+			c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path)
+	}
 	buildString += c.Params.Encode()
 	return buildString
 }

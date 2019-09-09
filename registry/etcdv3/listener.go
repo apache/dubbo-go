@@ -41,7 +41,13 @@ func (l *dataListener) DataChange(eventType remoting.Event) bool {
 
 	for _, v := range l.interestedURL {
 		if serviceURL.URLEqual(*v) {
-			l.listener.Process(&config_center.ConfigChangeEvent{Key: eventType.Path, Value: serviceURL, ConfigType: eventType.Action})
+			l.listener.Process(
+				&config_center.ConfigChangeEvent{
+					Key:        eventType.Path,
+					Value:      serviceURL,
+					ConfigType: eventType.Action,
+				},
+			)
 			return true
 		}
 	}
