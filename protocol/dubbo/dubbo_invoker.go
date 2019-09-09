@@ -56,10 +56,6 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 		result protocol.RPCResult
 	)
 
-	if invocation.Attachments() != nil {
-		invocation.Attachments()[constant.DUBBO_VERSION_KEY] = constant.DUBBO_VERSION
-	}
-
 	inv := invocation.(*invocation_impl.RPCInvocation)
 	url := di.GetUrl()
 	// async
