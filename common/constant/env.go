@@ -21,6 +21,4 @@ const (
 	CONF_CONSUMER_FILE_PATH        = "CONF_CONSUMER_FILE_PATH"
 	CONF_PROVIDER_FILE_PATH        = "CONF_PROVIDER_FILE_PATH"
 	APP_LOG_CONF_FILE       string = "APP_LOG_CONF_FILE"
-	DUBBO_VERSION_KEY              = "dubbo"
-	DUBBO_VERSION                  = "2.0.2"
 )
