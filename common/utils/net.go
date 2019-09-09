@@ -31,7 +31,7 @@ func init() {
 func initLocalIp() {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		logger.Error("init local error", err)
+		logger.Error("[utils][initLocalIp] error", err)
 	}
 
 	for _, addr := range addrs {
@@ -42,8 +42,8 @@ func initLocalIp() {
 		}
 	}
 
-	if localIp == "" {
-		logger.Error("can not get local IP")
+	if len(localIp) == 0 {
+		logger.Error("[utils][initLocalIp] can not get local IP")
 	}
 }
 

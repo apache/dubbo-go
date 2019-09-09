@@ -62,7 +62,7 @@ func (ji *JsonrpcInvoker) Invoke(invocation protocol.Invocation) protocol.Result
 	} else {
 		result.SetError(error)
 	}
-	logger.Debugf("result.Err: %v, result.Rest: %v", result.Error(), result.Result())
+	logger.Debugf("[JsonrpcInvoker][Invoke] result.Err: %v, result.Rest: %v", result.Error(), result.Result())
 
 	return &result
 }
