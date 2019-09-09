@@ -58,6 +58,7 @@ func newFailbackClusterInvoker(directory cluster.Directory) protocol.Invoker {
 	retriesConfig := invoker.GetUrl().GetParam(constant.RETRIES_KEY, constant.DEFAULT_FAILBACK_TIMES)
 	retries, err := strconv.Atoi(retriesConfig)
 	if err != nil || retries < 0 {
+		logger.Error("Your retries config is invalid,pls do a check. And will use the default fail back times configuration instead.")
 		retries = constant.DEFAULT_FAILBACK_TIMES_INT
 	}
 
