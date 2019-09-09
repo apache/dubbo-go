@@ -22,11 +22,15 @@ import (
 	"github.com/apache/dubbo-go/config_center"
 )
 
+const DefaultKey = "default"
+
+type getConfiguratorFunc func(url *common.URL) config_center.Configurator
+
 var (
-	configurator = make(map[string]func(url *common.URL) config_center.Configurator)
+	configurator = make(map[string]getConfiguratorFunc)
 )
 
-func SetConfigurator(name string, v func(url *common.URL) config_center.Configurator) {
+func SetConfigurator(name string, v getConfiguratorFunc) {
 	configurator[name] = v
 }
 
@@ -37,20 +41,20 @@ func GetConfigurator(name string, url *common.URL) config_center.Configurator {
 	return configurator[name](url)
 
 }
-func SetDefaultConfigurator(v func(url *common.URL) config_center.Configurator) {
-	configurator["default"] = v
+func SetDefaultConfigurator(v getConfiguratorFunc) {
+	configurator[DefaultKey] = v
 }
 
 func GetDefaultConfigurator(url *common.URL) config_center.Configurator {
-	if configurator["default"] == nil {
+	if configurator[DefaultKey] == nil {
 		panic("configurator for default is not existing, make sure you have import the package.")
 	}
-	return configurator["default"](url)
+	return configurator[DefaultKey](url)
 
 }
-func GetDefaultConfiguratorFunc() func(url *common.URL) config_center.Configurator {
-	if configurator["default"] == nil {
+func GetDefaultConfiguratorFunc() getConfiguratorFunc {
+	if configurator[DefaultKey] == nil {
 		panic("configurator for default is not existing, make sure you have import the package.")
 	}
-	return configurator["default"]
+	return configurator[DefaultKey]
 }

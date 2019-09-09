@@ -52,7 +52,11 @@ func referNormal(t *testing.T, regProtocol *registryProtocol) {
 	extension.SetCluster("mock", cluster.NewMockCluster)
 
 	url, _ := common.NewURL(context.TODO(), "mock://127.0.0.1:1111")
-	suburl, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000//", common.WithParamsValue(constant.CLUSTER_KEY, "mock"))
+	suburl, _ := common.NewURL(
+		context.TODO(),
+		"dubbo://127.0.0.1:20000//",
+		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
+	)
 
 	url.SubURL = &suburl
 
@@ -62,7 +66,9 @@ func referNormal(t *testing.T, regProtocol *registryProtocol) {
 }
 
 func TestRefer(t *testing.T) {
-	config.SetConsumerConfig(config.ConsumerConfig{ApplicationConfig: &config.ApplicationConfig{Name: "test-application"}})
+	config.SetConsumerConfig(
+		config.ConsumerConfig{
+			ApplicationConfig: &config.ApplicationConfig{Name: "test-application"}})
 	regProtocol := newRegistryProtocol()
 	referNormal(t, regProtocol)
 }
@@ -71,7 +77,11 @@ func TestMultiRegRefer(t *testing.T) {
 	regProtocol := newRegistryProtocol()
 	referNormal(t, regProtocol)
 	url2, _ := common.NewURL(context.TODO(), "mock://127.0.0.1:2222")
-	suburl2, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000//", common.WithParamsValue(constant.CLUSTER_KEY, "mock"))
+	suburl2, _ := common.NewURL(
+		context.TODO(),
+		"dubbo://127.0.0.1:20000//",
+		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
+	)
 
 	url2.SubURL = &suburl2
 
@@ -89,7 +99,11 @@ func TestOneRegRefer(t *testing.T) {
 	referNormal(t, regProtocol)
 
 	url2, _ := common.NewURL(context.TODO(), "mock://127.0.0.1:1111")
-	suburl2, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000//", common.WithParamsValue(constant.CLUSTER_KEY, "mock"))
+	suburl2, _ := common.NewURL(
+		context.TODO(),
+		"dubbo://127.0.0.1:20000//",
+		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
+	)
 
 	url2.SubURL = &suburl2
 
@@ -107,7 +121,13 @@ func exporterNormal(t *testing.T, regProtocol *registryProtocol) *common.URL {
 	extension.SetRegistry("mock", registry.NewMockRegistry)
 	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
 	url, _ := common.NewURL(context.TODO(), "mock://127.0.0.1:1111")
-	suburl, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithParamsValue(constant.GROUP_KEY, "group"), common.WithParamsValue(constant.VERSION_KEY, "1.0.0"))
+	suburl, _ := common.NewURL(
+		context.TODO(),
+		"dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
+		common.WithParamsValue(constant.GROUP_KEY, "group"),
+		common.WithParamsValue(constant.VERSION_KEY, "1.0.0"),
+	)
 
 	url.SubURL = &suburl
 	invoker := protocol.NewBaseInvoker(url)
@@ -129,7 +149,11 @@ func TestMultiRegAndMultiProtoExporter(t *testing.T) {
 	exporterNormal(t, regProtocol)
 
 	url2, _ := common.NewURL(context.TODO(), "mock://127.0.0.1:2222")
-	suburl2, _ := common.NewURL(context.TODO(), "jsonrpc://127.0.0.1:20000//", common.WithParamsValue(constant.CLUSTER_KEY, "mock"))
+	suburl2, _ := common.NewURL(
+		context.TODO(),
+		"jsonrpc://127.0.0.1:20000//",
+		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
+	)
 
 	url2.SubURL = &suburl2
 	invoker2 := protocol.NewBaseInvoker(url2)
@@ -155,7 +179,13 @@ func TestOneRegAndProtoExporter(t *testing.T) {
 	exporterNormal(t, regProtocol)
 
 	url2, _ := common.NewURL(context.TODO(), "mock://127.0.0.1:1111")
-	suburl2, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithParamsValue(constant.GROUP_KEY, "group"), common.WithParamsValue(constant.VERSION_KEY, "1.0.0"))
+	suburl2, _ := common.NewURL(
+		context.TODO(),
+		"dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
+		common.WithParamsValue(constant.GROUP_KEY, "group"),
+		common.WithParamsValue(constant.VERSION_KEY, "1.0.0"),
+	)
 
 	url2.SubURL = &suburl2
 	invoker2 := protocol.NewBaseInvoker(url2)
@@ -211,7 +241,10 @@ func TestExportWithOverrideListener(t *testing.T) {
 		assert.Fail(t, "regProtocol.registries.Load can not be loaded")
 		return
 	}
-	overrideUrl, _ := common.NewURL(context.Background(), "override://0:0:0:0/org.apache.dubbo-go.mockService?cluster=mock1&&group=group&&version=1.0.0")
+	overrideUrl, _ := common.NewURL(
+		context.Background(),
+		"override://0:0:0:0/org.apache.dubbo-go.mockService?cluster=mock1&&group=group&&version=1.0.0",
+	)
 	event := &registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: overrideUrl}
 	reg.MockEvent(event)
 	time.Sleep(1e9)
