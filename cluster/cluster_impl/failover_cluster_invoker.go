@@ -28,6 +28,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/protocol"
 )
@@ -65,6 +66,7 @@ func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) pr
 	}
 	retries, err := strconv.Atoi(retriesConfig)
 	if err != nil || retries < 0 {
+		logger.Error("Your retries config is invalid,pls do a check. And will use the default retries configuration instead.")
 		retries = constant.DEFAULT_RETRIES_INT
 	}
 	invoked := []protocol.Invoker{}
