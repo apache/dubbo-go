@@ -41,8 +41,9 @@ type BaseDirectory struct {
 
 func NewBaseDirectory(url *common.URL) BaseDirectory {
 	return BaseDirectory{
-		url:       url,
-		destroyed: atomic.NewBool(false),
+		url:         url,
+		ConsumerUrl: url,
+		destroyed:   atomic.NewBool(false),
 	}
 }
 func (dir *BaseDirectory) Destroyed() bool {
