@@ -21,7 +21,7 @@ references:
     cluster: "failover"
     methods :
       - name: "SayHello"
-        retries: 3
+        retries: "3"
 
 protocol_conf:
   dubbo:
