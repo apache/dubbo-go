@@ -18,6 +18,7 @@ package config
 
 import (
 	"encoding/base64"
+	"fmt"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -82,6 +83,7 @@ func RouterInit(confRouterFile string) error {
 
 	logger.Debugf("provider config{%#v}\n", routerConfig)
 	directory.RouterUrlSet.Add(initRouterUrl())
+	fmt.Println("=====", directory.RouterUrlSet.Size())
 	return nil
 }
 
