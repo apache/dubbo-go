@@ -79,19 +79,19 @@ func doinit() {
 				Registry:      "shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2",
 				Cluster:       "failover",
 				Loadbalance:   "random",
-				Retries:       3,
+				Retries:       "3",
 				Group:         "huadong_idc",
 				Version:       "1.0.0",
 				Methods: []*MethodConfig{
 					{
 						Name:        "GetUser",
-						Retries:     2,
+						Retries:     "2",
 						Loadbalance: "random",
 						Weight:      200,
 					},
 					{
 						Name:        "GetUser1",
-						Retries:     2,
+						Retries:     "2",
 						Loadbalance: "random",
 						Weight:      200,
 					},
