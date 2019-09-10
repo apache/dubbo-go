@@ -431,7 +431,7 @@ func MergeUrl(serviceUrl URL, referenceUrl *URL) URL {
 	mergeNormalParam(mergedUrl, referenceUrl, methodConfigMergeFcn, []string{constant.LOADBALANCE_KEY, constant.CLUSTER_KEY, constant.RETRIES_KEY})
 
 	//remote timestamp
-	if v := serviceUrl.Params.Get(constant.TIMESTAMP_KEY); v != "" {
+	if v := serviceUrl.Params.Get(constant.TIMESTAMP_KEY); len(v) > 0 {
 		mergedUrl.Params.Set(constant.REMOTE_TIMESTAMP_KEY, v)
 		mergedUrl.Params.Set(constant.TIMESTAMP_KEY, referenceUrl.Params.Get(constant.TIMESTAMP_KEY))
 	}
@@ -448,11 +448,11 @@ func MergeUrl(serviceUrl URL, referenceUrl *URL) URL {
 
 func mergeNormalParam(mergedUrl URL, referenceUrl *URL, methodConfigMergeFcn []func(method string), paramKeys []string) {
 	for _, paramKey := range paramKeys {
-		if v := referenceUrl.Params.Get(paramKey); v != "" {
+		if v := referenceUrl.Params.Get(paramKey); len(v) > 0 {
 			mergedUrl.Params.Set(paramKey, v)
 		}
 		methodConfigMergeFcn = append(methodConfigMergeFcn, func(method string) {
-			if v := referenceUrl.Params.Get(method + "." + paramKey); v != "" {
+			if v := referenceUrl.Params.Get(method + "." + paramKey); len(v) > 0 {
 				mergedUrl.Params.Set(method+"."+paramKey, v)
 			}
 		})
