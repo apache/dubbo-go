@@ -91,12 +91,13 @@ const (
 	COMPATIBLE_CONFIG_KEY = "compatible_config"
 )
 const (
-	RegistryConfigPrefix  = "dubbo.registries."
-	ReferenceConfigPrefix = "dubbo.reference."
-	ServiceConfigPrefix   = "dubbo.service."
-	ProtocolConfigPrefix  = "dubbo.protocols."
-	ProviderConfigPrefix  = "dubbo.provider."
-	ConsumerConfigPrefix  = "dubbo.consumer."
+	RegistryConfigPrefix       = "dubbo.registries."
+	SingleRegistryConfigPrefix = "dubbo.registry."
+	ReferenceConfigPrefix      = "dubbo.reference."
+	ServiceConfigPrefix        = "dubbo.service."
+	ProtocolConfigPrefix       = "dubbo.protocols."
+	ProviderConfigPrefix       = "dubbo.provider."
+	ConsumerConfigPrefix       = "dubbo.consumer."
 )
 
 const (

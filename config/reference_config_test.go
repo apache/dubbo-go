@@ -36,7 +36,7 @@ import (
 
 var regProtocol protocol.Protocol
 
-func doInit() {
+func doInitConsumer() {
 	consumerConfig = &ConsumerConfig{
 		ApplicationConfig: &ApplicationConfig{
 			Organization: "dubbo_org",
@@ -110,8 +110,53 @@ func doInit() {
 	}
 }
 
+func doInitConsumerWithSingleRegistry() {
+	consumerConfig = &ConsumerConfig{
+		ApplicationConfig: &ApplicationConfig{
+			Organization: "dubbo_org",
+			Name:         "dubbo",
+			Module:       "module",
+			Version:      "2.6.0",
+			Owner:        "dubbo",
+			Environment:  "test"},
+		Registry: &RegistryConfig{
+			Address:  "mock://27.0.0.1:2181",
+			Username: "user1",
+			Password: "pwd1",
+		},
+		Registries: map[string]*RegistryConfig{},
+		References: map[string]*ReferenceConfig{
+			"MockService": {
+				Params: map[string]string{
+					"serviceid": "soa.mock",
+					"forks":     "5",
+				},
+				InterfaceName: "com.MockService",
+				Protocol:      "mock",
+				Cluster:       "failover",
+				Loadbalance:   "random",
+				Retries:       3,
+				Group:         "huadong_idc",
+				Version:       "1.0.0",
+				Methods: []*MethodConfig{
+					{
+						Name:        "GetUser",
+						Retries:     2,
+						Loadbalance: "random",
+					},
+					{
+						Name:        "GetUser1",
+						Retries:     2,
+						Loadbalance: "random",
+					},
+				},
+			},
+		},
+	}
+}
+
 func Test_ReferMultireg(t *testing.T) {
-	doInit()
+	doInitConsumer()
 	extension.SetProtocol("registry", GetProtocol)
 	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
 
@@ -124,7 +169,7 @@ func Test_ReferMultireg(t *testing.T) {
 }
 
 func Test_Refer(t *testing.T) {
-	doInit()
+	doInitConsumer()
 	extension.SetProtocol("registry", GetProtocol)
 	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
 
@@ -137,7 +182,7 @@ func Test_Refer(t *testing.T) {
 	consumerConfig = nil
 }
 func Test_ReferP2P(t *testing.T) {
-	doInit()
+	doInitConsumer()
 	extension.SetProtocol("dubbo", GetProtocol)
 	m := consumerConfig.References["MockService"]
 	m.Url = "dubbo://127.0.0.1:20000"
@@ -151,7 +196,7 @@ func Test_ReferP2P(t *testing.T) {
 }
 
 func Test_ReferMultiP2P(t *testing.T) {
-	doInit()
+	doInitConsumer()
 	extension.SetProtocol("dubbo", GetProtocol)
 	m := consumerConfig.References["MockService"]
 	m.Url = "dubbo://127.0.0.1:20000;dubbo://127.0.0.2:20000"
@@ -165,7 +210,7 @@ func Test_ReferMultiP2P(t *testing.T) {
 }
 
 func Test_ReferMultiP2PWithReg(t *testing.T) {
-	doInit()
+	doInitConsumer()
 	extension.SetProtocol("dubbo", GetProtocol)
 	extension.SetProtocol("registry", GetProtocol)
 	m := consumerConfig.References["MockService"]
@@ -180,7 +225,7 @@ func Test_ReferMultiP2PWithReg(t *testing.T) {
 }
 
 func Test_Implement(t *testing.T) {
-	doInit()
+	doInitConsumer()
 	extension.SetProtocol("registry", GetProtocol)
 	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
 	for _, reference := range consumerConfig.References {
@@ -193,7 +238,7 @@ func Test_Implement(t *testing.T) {
 }
 
 func Test_Forking(t *testing.T) {
-	doInit()
+	doInitConsumer()
 	extension.SetProtocol("dubbo", GetProtocol)
 	extension.SetProtocol("registry", GetProtocol)
 	m := consumerConfig.References["MockService"]
