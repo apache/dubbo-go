@@ -36,6 +36,7 @@ type Environment struct {
 	configCenterFirst    bool
 	externalConfigs      sync.Map
 	externalConfigMap    sync.Map
+	appExternalConfigMap sync.Map
 	dynamicConfiguration config_center.DynamicConfiguration
 }
 
@@ -49,6 +50,9 @@ func GetEnvInstance() *Environment {
 		instance = &Environment{configCenterFirst: true}
 	})
 	return instance
+}
+func NewEnvInstance() {
+	instance = &Environment{configCenterFirst: true}
 }
 
 //func (env *Environment) SetConfigCenterFirst() {
@@ -65,11 +69,17 @@ func (env *Environment) UpdateExternalConfigMap(externalMap map[string]string) {
 	}
 }
 
+func (env *Environment) UpdateAppExternalConfigMap(externalMap map[string]string) {
+	for k, v := range externalMap {
+		env.appExternalConfigMap.Store(k, v)
+	}
+}
+
 func (env *Environment) Configuration() *list.List {
 	list := list.New()
-	memConf := newInmemoryConfiguration()
-	memConf.setProperties(&(env.externalConfigMap))
-	list.PushBack(memConf)
+	// The sequence would be: SystemConfiguration -> ExternalConfiguration -> AppExternalConfiguration -> AbstractConfig -> PropertiesConfiguration
+	list.PushFront(newInmemoryConfiguration(&(env.externalConfigMap)))
+	list.PushFront(newInmemoryConfiguration(&(env.appExternalConfigMap)))
 	return list
 }
 
@@ -85,11 +95,8 @@ type InmemoryConfiguration struct {
 	store *sync.Map
 }
 
-func newInmemoryConfiguration() *InmemoryConfiguration {
-	return &InmemoryConfiguration{}
-}
-func (conf *InmemoryConfiguration) setProperties(p *sync.Map) {
-	conf.store = p
+func newInmemoryConfiguration(p *sync.Map) *InmemoryConfiguration {
+	return &InmemoryConfiguration{store: p}
 }
 
 func (conf *InmemoryConfiguration) GetProperty(key string) (bool, string) {
