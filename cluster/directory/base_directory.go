@@ -71,7 +71,7 @@ func (dir *BaseDirectory) Routers() []cluster.Router {
 	var routers []cluster.Router
 	rs := RouterUrlSet.Values()
 	for _, r := range rs {
-		factory := extension.GetRouterFactory(dir.GetUrl().Protocol)
+		factory := extension.GetRouterFactory(r.(*common.URL).GetParam("router", "condition"))
 		router, err := factory.Router(r.(*common.URL))
 		if err == nil {
 			dir.routers = append(dir.routers, router)
