@@ -236,6 +236,7 @@ func (dir *registryDirectory) cacheInvoker(url common.URL) {
 func (dir *registryDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
 	invokers := dir.cacheInvokers
 	localRouters := dir.Routers()
+
 	fmt.Println("========", len(localRouters))
 	if len(localRouters) > 0 {
 		for _, router := range localRouters {
