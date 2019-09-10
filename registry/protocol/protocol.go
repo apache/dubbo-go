@@ -26,6 +26,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 	"github.com/apache/dubbo-go/registry"
@@ -183,20 +184,17 @@ func GetProtocol() protocol.Protocol {
 
 type wrappedInvoker struct {
 	invoker protocol.Invoker
-	url     common.URL
 	protocol.BaseInvoker
 }
 
 func newWrappedInvoker(invoker protocol.Invoker, url common.URL) *wrappedInvoker {
 	return &wrappedInvoker{
 		invoker:     invoker,
-		url:         url,
-		BaseInvoker: *protocol.NewBaseInvoker(common.URL{}),
+		BaseInvoker: *protocol.NewBaseInvoker(url),
 	}
 }
-func (ivk *wrappedInvoker) GetUrl() common.URL {
-	return ivk.url
-}
-func (ivk *wrappedInvoker) getInvoker() protocol.Invoker {
-	return ivk.invoker
+func (ivk *wrappedInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+	// get right url
+	ivk.invoker.(*proxy_factory.ProxyInvoker).BaseInvoker = *protocol.NewBaseInvoker(ivk.GetUrl())
+	return ivk.invoker.Invoke(invocation)
 }
