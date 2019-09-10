@@ -42,6 +42,7 @@ type ProviderConfig struct {
 	ProxyFactory string `yaml:"proxy_factory" default:"default" json:"proxy_factory,omitempty" property:"proxy_factory"`
 
 	ApplicationConfig *ApplicationConfig         `yaml:"application_config" json:"application_config,omitempty" property:"application_config"`
+	Registry          *RegistryConfig            `yaml:"registry" json:"registry,omitempty" property:"registry"`
 	Registries        map[string]*RegistryConfig `yaml:"registries" json:"registries,omitempty" property:"registries"`
 	Services          map[string]*ServiceConfig  `yaml:"services" json:"services,omitempty" property:"services"`
 	Protocols         map[string]*ProtocolConfig `yaml:"protocols" json:"protocols,omitempty" property:"protocols"`

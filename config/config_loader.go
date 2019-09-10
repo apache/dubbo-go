@@ -54,6 +54,11 @@ func init() {
 		providerConfig = nil
 	}
 }
+func checkRegistries(registries map[string]*RegistryConfig, singleRegistry *RegistryConfig) {
+	if len(registries) == 0 && singleRegistry != nil {
+		registries[constant.DEFAULT_KEY] = singleRegistry
+	}
+}
 
 // Dubbo Init
 func Load() {
@@ -64,6 +69,7 @@ func Load() {
 		if err := configCenterRefreshConsumer(); err != nil {
 			logger.Errorf("[consumer config center refresh] %#v", err)
 		}
+		checkRegistries(consumerConfig.Registries, consumerConfig.Registry)
 		for key, ref := range consumerConfig.References {
 			if ref.Generic {
 				genericService := NewGenericService(key)
@@ -116,6 +122,7 @@ func Load() {
 		if err := configCenterRefreshProvider(); err != nil {
 			logger.Errorf("[provider config center refresh] %#v", err)
 		}
+		checkRegistries(providerConfig.Registries, providerConfig.Registry)
 		for key, svs := range providerConfig.Services {
 			rpcService := GetProviderService(key)
 			if rpcService == nil {

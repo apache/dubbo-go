@@ -32,7 +32,9 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
-type MockDynamicConfigurationFactory struct{}
+type MockDynamicConfigurationFactory struct {
+	Content string
+}
 
 var (
 	once                 sync.Once
@@ -44,6 +46,7 @@ func (f *MockDynamicConfigurationFactory) GetDynamicConfiguration(url *common.UR
 	once.Do(func() {
 		dynamicConfiguration = &MockDynamicConfiguration{listener: map[string]ConfigurationListener{}}
 		dynamicConfiguration.SetParser(&parser.DefaultConfigurationParser{})
+
 		dynamicConfiguration.content = `
 	dubbo.consumer.request_timeout=5s
 	dubbo.consumer.connect_timeout=5s
@@ -69,6 +72,9 @@ func (f *MockDynamicConfigurationFactory) GetDynamicConfiguration(url *common.UR
 	dubbo.protocols.jsonrpc1.port=20001
 `
 	})
+	if len(f.Content) != 0 {
+		dynamicConfiguration.content = f.Content
+	}
 	return dynamicConfiguration, err
 
 }
