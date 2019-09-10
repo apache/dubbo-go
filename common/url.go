@@ -418,11 +418,11 @@ func (c URL) ToMap() map[string]string {
 //  in this function we should merge the reference local url config into the service url from registry.
 //TODO configuration merge, in the future , the configuration center's config should merge too.
 func MergeUrl(serviceUrl URL, referenceUrl *URL) URL {
-	mergedUrl := serviceUrl
+	mergedUrl := *referenceUrl
 	var methodConfigMergeFcn = []func(method string){}
 	//iterator the referenceUrl if serviceUrl not have the key ,merge in
 
-	for k, v := range referenceUrl.Params {
+	for k, v := range serviceUrl.Params {
 		if _, ok := mergedUrl.Params[k]; !ok {
 			mergedUrl.Params.Set(k, v[0])
 		}
