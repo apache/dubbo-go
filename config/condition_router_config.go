@@ -75,12 +75,12 @@ func RouterInit(confRouterFile string) error {
 		return perrors.Errorf("ioutil.ReadFile(file:%s) = error:%v", confRouterFile, perrors.WithStack(err))
 	}
 	routerConfig = &ConditionRouterConfig{}
-	err = yaml.Unmarshal(confFileStream, providerConfig)
+	err = yaml.Unmarshal(confFileStream, routerConfig)
 	if err != nil {
 		return perrors.Errorf("yaml.Unmarshal() = error:%v", perrors.WithStack(err))
 	}
 
-	logger.Debugf("provider config{%#v}\n", providerConfig)
+	logger.Debugf("provider config{%#v}\n", routerConfig)
 	directory.RouterUrlSet.Add(initRouterUrl())
 	return nil
 }
