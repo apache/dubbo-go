@@ -37,6 +37,7 @@ type BaseDirectory struct {
 	destroyed   *atomic.Bool
 	routers     []cluster.Router
 	mutex       sync.Mutex
+	once        sync.Once
 }
 
 func NewBaseDirectory(url *common.URL) BaseDirectory {
@@ -70,17 +71,23 @@ func (dir *BaseDirectory) SetRouters(routers []cluster.Router) {
 }
 func (dir *BaseDirectory) Routers() []cluster.Router {
 	var routers []cluster.Router
-	rs := RouterUrlSet.Values()
-	for _, r := range rs {
-		factory := extension.GetRouterFactory(r.(*common.URL).GetParam("router", "condition"))
-		router, err := factory.Router(r.(*common.URL))
-		if err == nil {
-			dir.routers = append(dir.routers, router)
-		}
+	dir.once.Do(func() {
+		rs := RouterUrlSet.Values()
+		for _, r := range rs {
+			factory := extension.GetRouterFactory(r.(*common.URL).GetParam("router", "condition"))
+			router, err := factory.Router(r.(*common.URL))
+			if err == nil {
+				dir.routers = append(dir.routers, router)
+			}
 
-		routers = append(routers, router)
+			routers = append(routers, router)
+		}
+	})
+	if len(routers) > 0 {
+		return append(dir.routers, routers...)
+
 	}
-	return append(dir.routers, routers...)
+	return dir.routers
 }
 
 func (dir *BaseDirectory) Destroy(doDestroy func()) {
