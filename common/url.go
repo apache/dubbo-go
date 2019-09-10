@@ -427,25 +427,8 @@ func MergeUrl(serviceUrl URL, referenceUrl *URL) URL {
 			mergedUrl.Params.Set(k, v[0])
 		}
 	}
-	//loadBalance strategy config
-	if v := referenceUrl.Params.Get(constant.LOADBALANCE_KEY); v != "" {
-		mergedUrl.Params.Set(constant.LOADBALANCE_KEY, v)
-	}
-	methodConfigMergeFcn = append(methodConfigMergeFcn, func(method string) {
-		if v := referenceUrl.Params.Get(method + "." + constant.LOADBALANCE_KEY); v != "" {
-			mergedUrl.Params.Set(method+"."+constant.LOADBALANCE_KEY, v)
-		}
-	})
-
-	//cluster strategy config
-	if v := referenceUrl.Params.Get(constant.CLUSTER_KEY); v != "" {
-		mergedUrl.Params.Set(constant.CLUSTER_KEY, v)
-	}
-	methodConfigMergeFcn = append(methodConfigMergeFcn, func(method string) {
-		if v := referenceUrl.Params.Get(method + "." + constant.CLUSTER_KEY); v != "" {
-			mergedUrl.Params.Set(method+"."+constant.CLUSTER_KEY, v)
-		}
-	})
+	//loadBalance,cluster,retries strategy config
+	mergeNormalParam(mergedUrl, referenceUrl, methodConfigMergeFcn, []string{constant.LOADBALANCE_KEY, constant.CLUSTER_KEY, constant.RETRIES_KEY})
 
 	//remote timestamp
 	if v := serviceUrl.Params.Get(constant.TIMESTAMP_KEY); v != "" {
@@ -461,4 +444,18 @@ func MergeUrl(serviceUrl URL, referenceUrl *URL) URL {
 	}
 
 	return mergedUrl
+}
+
+func mergeNormalParam(mergedUrl URL, referenceUrl *URL, methodConfigMergeFcn []func(method string), paramKeys []string) {
+	for _, paramKey := range paramKeys {
+		if v := referenceUrl.Params.Get(paramKey); v != "" {
+			mergedUrl.Params.Set(paramKey, v)
+		}
+		methodConfigMergeFcn = append(methodConfigMergeFcn, func(method string) {
+			if v := referenceUrl.Params.Get(method + "." + paramKey); v != "" {
+				mergedUrl.Params.Set(method+"."+paramKey, v)
+			}
+		})
+	}
+
 }
