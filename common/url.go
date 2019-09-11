@@ -331,8 +331,6 @@ func (c URL) GetParamAndDecoded(key string) (string, error) {
 }
 
 func (c URL) GetRawParam(key string) string {
-	c.paramsLock.RLock()
-	defer c.paramsLock.RUnlock()
 	switch key {
 	case "protocol":
 		return c.Protocol
@@ -347,7 +345,7 @@ func (c URL) GetRawParam(key string) string {
 	case "path":
 		return c.Path
 	default:
-		return c.params.Get(key)
+		return c.GetParam(key, "")
 	}
 }
 
@@ -356,9 +354,7 @@ func (c URL) GetParamBool(s string, d bool) bool {
 
 	var r bool
 	var err error
-	c.paramsLock.RLock()
-	defer c.paramsLock.RUnlock()
-	if r, err = strconv.ParseBool(c.params.Get(s)); err != nil {
+	if r, err = strconv.ParseBool(c.GetParam(s, "")); err != nil {
 		return d
 	}
 	return r
@@ -367,9 +363,8 @@ func (c URL) GetParamBool(s string, d bool) bool {
 func (c URL) GetParamInt(s string, d int64) int64 {
 	var r int
 	var err error
-	c.paramsLock.RLock()
-	defer c.paramsLock.RUnlock()
-	if r, err = strconv.Atoi(c.params.Get(s)); r == 0 || err != nil {
+
+	if r, err = strconv.Atoi(c.GetParam(s, "")); r == 0 || err != nil {
 		return d
 	}
 	return int64(r)
@@ -380,7 +375,7 @@ func (c URL) GetMethodParamInt(method string, key string, d int64) int64 {
 	var err error
 	c.paramsLock.RLock()
 	defer c.paramsLock.RUnlock()
-	if r, err = strconv.Atoi(c.params.Get("methods." + method + "." + key)); r == 0 || err != nil {
+	if r, err = strconv.Atoi(c.GetParam("methods."+method+"."+key, "")); r == 0 || err != nil {
 		return d
 	}
 	return int64(r)
@@ -397,7 +392,7 @@ func (c URL) GetMethodParamInt64(method string, key string, d int64) int64 {
 
 func (c URL) GetMethodParam(method string, key string, d string) string {
 	var r string
-	if r = c.params.Get("methods." + method + "." + key); r == "" {
+	if r = c.GetParam("methods."+method+"."+key, ""); r == "" {
 		r = d
 	}
 	return r
