@@ -419,7 +419,7 @@ func (c URL) ToMap() map[string]string {
 //TODO configuration merge, in the future , the configuration center's config should merge too.
 func MergeUrl(serviceUrl URL, referenceUrl *URL) URL {
 	mergedUrl := serviceUrl
-	var methodConfigMergeFcn = []func(method string){}
+
 	//iterator the referenceUrl if serviceUrl not have the key ,merge in
 
 	for k, v := range referenceUrl.Params {
@@ -428,7 +428,7 @@ func MergeUrl(serviceUrl URL, referenceUrl *URL) URL {
 		}
 	}
 	//loadBalance,cluster,retries strategy config
-	mergeNormalParam(mergedUrl, referenceUrl, methodConfigMergeFcn, []string{constant.LOADBALANCE_KEY, constant.CLUSTER_KEY, constant.RETRIES_KEY})
+	methodConfigMergeFcn := mergeNormalParam(mergedUrl, referenceUrl, []string{constant.LOADBALANCE_KEY, constant.CLUSTER_KEY, constant.RETRIES_KEY})
 
 	//remote timestamp
 	if v := serviceUrl.Params.Get(constant.TIMESTAMP_KEY); len(v) > 0 {
@@ -446,7 +446,8 @@ func MergeUrl(serviceUrl URL, referenceUrl *URL) URL {
 	return mergedUrl
 }
 
-func mergeNormalParam(mergedUrl URL, referenceUrl *URL, methodConfigMergeFcn []func(method string), paramKeys []string) {
+func mergeNormalParam(mergedUrl URL, referenceUrl *URL, paramKeys []string) []func(method string) {
+	var methodConfigMergeFcn = []func(method string){}
 	for _, paramKey := range paramKeys {
 		if v := referenceUrl.Params.Get(paramKey); len(v) > 0 {
 			mergedUrl.Params.Set(paramKey, v)
@@ -457,5 +458,5 @@ func mergeNormalParam(mergedUrl URL, referenceUrl *URL, methodConfigMergeFcn []f
 			}
 		})
 	}
-
+	return methodConfigMergeFcn
 }
