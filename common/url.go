@@ -419,7 +419,7 @@ func (c URL) ToMap() map[string]string {
 //TODO configuration merge, in the future , the configuration center's config should merge too.
 func MergeUrl(serviceUrl URL, referenceUrl *URL) URL {
 	mergedUrl := serviceUrl
-	var methodConfigMergeFcn = []func(method string){}
+
 	//iterator the referenceUrl if serviceUrl not have the key ,merge in
 
 	for k, v := range referenceUrl.Params {
@@ -427,28 +427,11 @@ func MergeUrl(serviceUrl URL, referenceUrl *URL) URL {
 			mergedUrl.Params.Set(k, v[0])
 		}
 	}
-	//loadBalance strategy config
-	if v := referenceUrl.Params.Get(constant.LOADBALANCE_KEY); v != "" {
-		mergedUrl.Params.Set(constant.LOADBALANCE_KEY, v)
-	}
-	methodConfigMergeFcn = append(methodConfigMergeFcn, func(method string) {
-		if v := referenceUrl.Params.Get(method + "." + constant.LOADBALANCE_KEY); v != "" {
-			mergedUrl.Params.Set(method+"."+constant.LOADBALANCE_KEY, v)
-		}
-	})
-
-	//cluster strategy config
-	if v := referenceUrl.Params.Get(constant.CLUSTER_KEY); v != "" {
-		mergedUrl.Params.Set(constant.CLUSTER_KEY, v)
-	}
-	methodConfigMergeFcn = append(methodConfigMergeFcn, func(method string) {
-		if v := referenceUrl.Params.Get(method + "." + constant.CLUSTER_KEY); v != "" {
-			mergedUrl.Params.Set(method+"."+constant.CLUSTER_KEY, v)
-		}
-	})
+	//loadBalance,cluster,retries strategy config
+	methodConfigMergeFcn := mergeNormalParam(mergedUrl, referenceUrl, []string{constant.LOADBALANCE_KEY, constant.CLUSTER_KEY, constant.RETRIES_KEY})
 
 	//remote timestamp
-	if v := serviceUrl.Params.Get(constant.TIMESTAMP_KEY); v != "" {
+	if v := serviceUrl.Params.Get(constant.TIMESTAMP_KEY); len(v) > 0 {
 		mergedUrl.Params.Set(constant.REMOTE_TIMESTAMP_KEY, v)
 		mergedUrl.Params.Set(constant.TIMESTAMP_KEY, referenceUrl.Params.Get(constant.TIMESTAMP_KEY))
 	}
@@ -461,4 +444,19 @@ func MergeUrl(serviceUrl URL, referenceUrl *URL) URL {
 	}
 
 	return mergedUrl
+}
+
+func mergeNormalParam(mergedUrl URL, referenceUrl *URL, paramKeys []string) []func(method string) {
+	var methodConfigMergeFcn = []func(method string){}
+	for _, paramKey := range paramKeys {
+		if v := referenceUrl.Params.Get(paramKey); len(v) > 0 {
+			mergedUrl.Params.Set(paramKey, v)
+		}
+		methodConfigMergeFcn = append(methodConfigMergeFcn, func(method string) {
+			if v := referenceUrl.Params.Get(method + "." + paramKey); len(v) > 0 {
+				mergedUrl.Params.Set(method+"."+paramKey, v)
+			}
+		})
+	}
+	return methodConfigMergeFcn
 }
