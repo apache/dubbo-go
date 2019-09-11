@@ -52,6 +52,7 @@ type ConsumerConfig struct {
 	Registries   map[string]*RegistryConfig  `yaml:"registries" json:"registries,omitempty" property:"registries"`
 	References   map[string]*ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
 	ProtocolConf interface{}                 `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
+	FilterConf   interface{}                 `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf" `
 }
 
 func (*ConsumerConfig) Prefix() string {
