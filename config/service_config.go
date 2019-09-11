@@ -57,6 +57,7 @@ type ServiceConfig struct {
 	Warmup        string            `yaml:"warmup"  json:"warmup,omitempty"  property:"warmup"`
 	Retries       string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
 	Params        map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
+	Token         string            `yaml:"token" json:"token,omitempty" property:"token"`
 	unexported    *atomic.Bool
 	exported      *atomic.Bool
 	rpcService    common.RPCService
@@ -122,7 +123,10 @@ func (srvconfig *ServiceConfig) Export() error {
 			common.WithPort(proto.Port),
 			common.WithParams(urlMap),
 			common.WithParamsValue(constant.BEAN_NAME_KEY, srvconfig.id),
-			common.WithMethods(strings.Split(methods, ",")))
+			common.WithMethods(strings.Split(methods, ",")),
+			common.WithToken(srvconfig.Token),
+		)
+
 		if len(regUrls) > 0 {
 			for _, regUrl := range regUrls {
 				regUrl.SubURL = url

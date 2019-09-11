@@ -37,6 +37,7 @@ const (
 	BEAN_NAME_KEY          = "bean.name"
 	GENERIC_KEY            = "generic"
 	CLASSIFIER_KEY         = "classifier"
+	TOKEN_KEY              = "token"
 )
 
 const (
