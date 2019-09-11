@@ -69,7 +69,7 @@ func TestSubscribe_Group(t *testing.T) {
 
 	regurl, _ := common.NewURL(context.TODO(), "mock://127.0.0.1:1111")
 	suburl, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000")
-	suburl.Params.Set(constant.CLUSTER_KEY, "mock")
+	suburl.SetParam(constant.CLUSTER_KEY, "mock")
 	regurl.SubURL = &suburl
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
 	registryDirectory, _ := NewRegistryDirectory(&regurl, mockRegistry)
