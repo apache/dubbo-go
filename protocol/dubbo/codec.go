@@ -91,9 +91,8 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 		pendingRsp, ok := client.pendingResponses.Load(SequenceType(p.Header.ID))
 		if !ok {
 			return perrors.Errorf("client.GetPendingResponse(%v) = nil", p.Header.ID)
-		} else {
-			p.Body = &hessian.Response{RspObj: pendingRsp.(*PendingResponse).reply}
 		}
+		p.Body = &hessian.Response{RspObj: pendingRsp.(*PendingResponse).response.reply}
 	}
 
 	// read body
@@ -111,14 +110,15 @@ type PendingResponse struct {
 	start     time.Time
 	readStart time.Time
 	callback  AsyncCallback
-	reply     interface{}
+	response  *Response
 	done      chan struct{}
 }
 
 func NewPendingResponse() *PendingResponse {
 	return &PendingResponse{
-		start: time.Now(),
-		done:  make(chan struct{}),
+		start:    time.Now(),
+		response: &Response{},
+		done:     make(chan struct{}),
 	}
 }
 
@@ -127,6 +127,6 @@ func (r PendingResponse) GetCallResponse() CallResponse {
 		Cause:     r.err,
 		Start:     r.start,
 		ReadStart: r.readStart,
-		Reply:     r.reply,
+		Reply:     r.response,
 	}
 }
