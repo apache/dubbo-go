@@ -26,6 +26,10 @@ import (
 )
 
 import (
+	"github.com/creasty/defaults"
+)
+
+import (
 	"github.com/apache/dubbo-go/cluster/directory"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
@@ -68,6 +72,7 @@ func NewReferenceConfig(id string, ctx context.Context) *ReferenceConfig {
 }
 
 func (refconfig *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+
 	type rf ReferenceConfig
 	raw := rf{} // Put your defaults here
 	if err := unmarshal(&raw); err != nil {
@@ -75,6 +80,10 @@ func (refconfig *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) erro
 	}
 
 	*refconfig = ReferenceConfig(raw)
+	if err := defaults.Set(refconfig); err != nil {
+		return err
+	}
+
 	return nil
 }
 

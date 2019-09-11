@@ -17,6 +17,10 @@
 package config
 
 import (
+	"github.com/creasty/defaults"
+)
+
+import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
@@ -35,4 +39,15 @@ func (c *MethodConfig) Prefix() string {
 	} else {
 		return constant.DUBBO + "." + c.InterfaceName + "." + c.Name + "."
 	}
+}
+
+func (c *MethodConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	if err := defaults.Set(c); err != nil {
+		return err
+	}
+	type plain MethodConfig
+	if err := unmarshal((*plain)(c)); err != nil {
+		return err
+	}
+	return nil
 }
