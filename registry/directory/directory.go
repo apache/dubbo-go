@@ -114,16 +114,13 @@ func (dir *registryDirectory) Subscribe(url common.URL) {
 	}
 }
 
-//subscribe service from registry , and update the cacheServices
+//subscribe service from registry, and update the cacheServices
 func (dir *registryDirectory) update(res *registry.ServiceEvent) {
 	if res == nil {
 		return
 	}
-
 	logger.Debugf("registry update, result{%s}", res)
-
 	logger.Debugf("update service name: %s!", res.Service)
-
 	dir.refreshInvokers(res)
 }
 
@@ -149,7 +146,6 @@ func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 }
 
 func (dir *registryDirectory) toGroupInvokers() []protocol.Invoker {
-
 	newInvokersList := []protocol.Invoker{}
 	groupInvokersMap := make(map[string][]protocol.Invoker)
 	groupInvokersList := []protocol.Invoker{}

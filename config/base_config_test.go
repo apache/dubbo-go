@@ -92,7 +92,7 @@ func Test_refresh(t *testing.T) {
 				Protocol:      "mock",
 				Cluster:       "failover",
 				Loadbalance:   "random",
-				Retries:       3,
+				Retries:       "3",
 				Group:         "huadong_idc",
 				Version:       "1.0.0",
 				Methods: []*MethodConfig{
@@ -100,14 +100,14 @@ func Test_refresh(t *testing.T) {
 						InterfaceId:   "MockService",
 						InterfaceName: "com.MockService",
 						Name:          "GetUser",
-						Retries:       2,
+						Retries:       "2",
 						Loadbalance:   "random",
 					},
 					{
 						InterfaceId:   "MockService",
 						InterfaceName: "com.MockService",
 						Name:          "GetUser1",
-						Retries:       2,
+						Retries:       "2",
 						Loadbalance:   "random",
 					},
 				},
@@ -118,9 +118,9 @@ func Test_refresh(t *testing.T) {
 	c.SetFatherConfig(father)
 	c.fresh()
 	assert.Equal(t, "mock100", father.Registries["shanghai_reg1"].Protocol)
-	assert.Equal(t, int64(10), father.References["MockService"].Retries)
+	assert.Equal(t, "10", father.References["MockService"].Retries)
 
-	assert.Equal(t, int64(10), father.References["MockService"].Methods[0].Retries)
+	assert.Equal(t, "10", father.References["MockService"].Methods[0].Retries)
 	assert.Equal(t, &[]bool{false}[0], father.Check)
 	assert.Equal(t, "dubbo", father.ApplicationConfig.Name)
 }
@@ -188,7 +188,7 @@ func Test_refreshProvider(t *testing.T) {
 				Protocol:      "mock",
 				Cluster:       "failover",
 				Loadbalance:   "random",
-				Retries:       3,
+				Retries:       "3",
 				Group:         "huadong_idc",
 				Version:       "1.0.0",
 				Methods: []*MethodConfig{
@@ -196,13 +196,13 @@ func Test_refreshProvider(t *testing.T) {
 						InterfaceId:   "MockService",
 						InterfaceName: "com.MockService",
 						Name:          "GetUser",
-						Retries:       2,
+						Retries:       "2",
 						Loadbalance:   "random",
 					},
 					{InterfaceId: "MockService",
 						InterfaceName: "com.MockService",
 						Name:          "GetUser1",
-						Retries:       2,
+						Retries:       "2",
 						Loadbalance:   "random",
 					},
 				},
@@ -213,9 +213,9 @@ func Test_refreshProvider(t *testing.T) {
 	c.SetFatherConfig(father)
 	c.fresh()
 	assert.Equal(t, "mock100", father.Registries["shanghai_reg1"].Protocol)
-	assert.Equal(t, int64(10), father.Services["MockService"].Retries)
+	assert.Equal(t, "10", father.Services["MockService"].Retries)
 
-	assert.Equal(t, int64(10), father.Services["MockService"].Methods[0].Retries)
+	assert.Equal(t, "10", father.Services["MockService"].Methods[0].Retries)
 	assert.Equal(t, "dubbo", father.ApplicationConfig.Name)
 	assert.Equal(t, "20001", father.Protocols["jsonrpc1"].Port)
 }

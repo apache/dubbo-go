@@ -20,8 +20,6 @@ package config
 import (
 	"sync"
 	"testing"
-
-	"github.com/apache/dubbo-go/common/constant"
 )
 
 import (
@@ -31,6 +29,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/cluster/cluster_impl"
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/protocol"
 )
@@ -91,18 +90,18 @@ func doInit() {
 				Protocol:      "mock",
 				Cluster:       "failover",
 				Loadbalance:   "random",
-				Retries:       3,
+				Retries:       "3",
 				Group:         "huadong_idc",
 				Version:       "1.0.0",
 				Methods: []*MethodConfig{
 					{
 						Name:        "GetUser",
-						Retries:     2,
+						Retries:     "2",
 						Loadbalance: "random",
 					},
 					{
 						Name:        "GetUser1",
-						Retries:     2,
+						Retries:     "2",
 						Loadbalance: "random",
 					},
 				},

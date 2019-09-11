@@ -64,11 +64,11 @@ func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
 	assert.Equal(t, hessian.PackageRequest, pkgres.Header.Type)
 	assert.Equal(t, byte(S_Dubbo), pkgres.Header.SerialID)
 	assert.Equal(t, int64(10086), pkgres.Header.ID)
-	assert.Equal(t, "2.5.4", pkgres.Body.([]interface{})[0])
+	assert.Equal(t, "2.0.2", pkgres.Body.([]interface{})[0])
 	assert.Equal(t, "path", pkgres.Body.([]interface{})[1])
 	assert.Equal(t, "2.6", pkgres.Body.([]interface{})[2])
 	assert.Equal(t, "Method", pkgres.Body.([]interface{})[3])
 	assert.Equal(t, "Ljava/lang/String;", pkgres.Body.([]interface{})[4])
 	assert.Equal(t, []interface{}{"a"}, pkgres.Body.([]interface{})[5])
-	assert.Equal(t, map[interface{}]interface{}{"group": "", "interface": "Service", "path": "path", "timeout": "1000"}, pkgres.Body.([]interface{})[6])
+	assert.Equal(t, map[string]string{"dubbo": "2.0.2", "group": "", "interface": "Service", "path": "path", "timeout": "1000", "version": "2.6"}, pkgres.Body.([]interface{})[6])
 }
