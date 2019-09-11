@@ -25,6 +25,10 @@ import (
 )
 
 import (
+	"github.com/creasty/defaults"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
@@ -40,6 +44,17 @@ type RegistryConfig struct {
 	Username string            `yaml:"username" json:"username,omitempty" property:"username"`
 	Password string            `yaml:"password" json:"password,omitempty"  property:"password"`
 	Params   map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
+}
+
+func (c *RegistryConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	if err := defaults.Set(c); err != nil {
+		return err
+	}
+	type plain RegistryConfig
+	if err := unmarshal((*plain)(c)); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (*RegistryConfig) Prefix() string {

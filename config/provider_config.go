@@ -23,6 +23,7 @@ import (
 )
 
 import (
+	"github.com/creasty/defaults"
 	perrors "github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
@@ -48,6 +49,17 @@ type ProviderConfig struct {
 	Protocols         map[string]*ProtocolConfig `yaml:"protocols" json:"protocols,omitempty" property:"protocols"`
 	ProtocolConf      interface{}                `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf" `
 	FilterConf        interface{}                `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf" `
+}
+
+func (c *ProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	if err := defaults.Set(c); err != nil {
+		return err
+	}
+	type plain ProviderConfig
+	if err := unmarshal((*plain)(c)); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (*ProviderConfig) Prefix() string {

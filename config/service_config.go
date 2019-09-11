@@ -28,6 +28,7 @@ import (
 )
 
 import (
+	"github.com/creasty/defaults"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
 )
@@ -65,6 +66,17 @@ type ServiceConfig struct {
 
 func (c *ServiceConfig) Prefix() string {
 	return constant.ServiceConfigPrefix + c.InterfaceName + "."
+}
+
+func (c *ServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	if err := defaults.Set(c); err != nil {
+		return err
+	}
+	type plain ServiceConfig
+	if err := unmarshal((*plain)(c)); err != nil {
+		return err
+	}
+	return nil
 }
 
 // The only way to get a new ServiceConfig
