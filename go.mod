@@ -35,6 +35,7 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.1.0 // indirect
 	github.com/samuel/go-zookeeper v0.0.0-20180130194729-c4fab1ac1bec
+	github.com/satori/go.uuid v1.2.0
 	github.com/smartystreets/goconvey v0.0.0-20190710185942-9d28bd7c0945 // indirect
 	github.com/soheilhy/cmux v0.1.4 // indirect
 	github.com/stretchr/testify v1.3.0
