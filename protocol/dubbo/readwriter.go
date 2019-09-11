@@ -140,9 +140,13 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 			if req[6] != nil {
 				attachments = req[6].(map[interface{}]interface{})
 			}
-			pkg.Service.Interface = attachments[constant.INTERFACE_KEY].(string)
 			if pkg.Service.Path == "" && attachments[constant.PATH_KEY] != nil {
 				pkg.Service.Path = attachments[constant.PATH_KEY].(string)
+			}
+			if _, ok := attachments[constant.INTERFACE_KEY]; ok {
+				pkg.Service.Interface = attachments[constant.INTERFACE_KEY].(string)
+			} else {
+				pkg.Service.Interface = pkg.Service.Path
 			}
 			if attachments[constant.GROUP_KEY] != nil {
 				pkg.Service.Group = attachments[constant.GROUP_KEY].(string)
