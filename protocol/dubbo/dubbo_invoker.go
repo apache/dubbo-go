@@ -36,16 +36,29 @@ import (
 
 var Err_No_Reply = perrors.New("request need @response")
 
+var (
+	attachmentKey = []string{constant.INTERFACE_KEY, constant.GROUP_KEY, constant.TOKEN_KEY, constant.TIMEOUT_KEY}
+)
+
 type DubboInvoker struct {
 	protocol.BaseInvoker
 	client      *Client
+	attachment  map[string]string
 	destroyLock sync.Mutex
 }
 
 func NewDubboInvoker(url common.URL, client *Client) *DubboInvoker {
+	attachment := make(map[string]string, 0)
+	for _, k := range attachmentKey {
+		if v := url.GetParam(k, ""); len(v) > 0 {
+			attachment[k] = v
+		}
+	}
+
 	return &DubboInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
+		attachment:  attachment,
 	}
 }
 
@@ -57,6 +70,11 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	)
 
 	inv := invocation.(*invocation_impl.RPCInvocation)
+	if len(di.attachment) > 0 {
+		for k, v := range di.attachment {
+			inv.SetAttachments(k, v)
+		}
+	}
 	url := di.GetUrl()
 	// async
 	async, err := strconv.ParseBool(inv.AttachmentsByKey(constant.ASYNC_KEY, "false"))
