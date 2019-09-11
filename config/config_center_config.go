@@ -22,6 +22,10 @@ import (
 	"time"
 )
 
+import (
+	"github.com/creasty/defaults"
+)
+
 type ConfigCenterConfig struct {
 	context       context.Context
 	Protocol      string `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
@@ -34,4 +38,15 @@ type ConfigCenterConfig struct {
 	AppConfigFile string `yaml:"app_config_file"  json:"app_config_file,omitempty"`
 	TimeoutStr    string `yaml:"timeout"  json:"timeout,omitempty"`
 	timeout       time.Duration
+}
+
+func (c *ConfigCenterConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	if err := defaults.Set(c); err != nil {
+		return err
+	}
+	type plain ConfigCenterConfig
+	if err := unmarshal((*plain)(c)); err != nil {
+		return err
+	}
+	return nil
 }

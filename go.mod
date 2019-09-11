@@ -11,6 +11,7 @@ require (
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f // indirect
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
+	github.com/creasty/defaults v1.3.0
 	github.com/dubbogo/getty v1.2.2
 	github.com/dubbogo/gost v1.1.1
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect

@@ -24,6 +24,7 @@ import (
 )
 
 import (
+	"github.com/creasty/defaults"
 	perrors "github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
@@ -56,6 +57,17 @@ type ConsumerConfig struct {
 	References   map[string]*ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
 	ProtocolConf interface{}                 `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
 	FilterConf   interface{}                 `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf" `
+}
+
+func (c *ConsumerConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	if err := defaults.Set(c); err != nil {
+		return err
+	}
+	type plain ConsumerConfig
+	if err := unmarshal((*plain)(c)); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (*ConsumerConfig) Prefix() string {
