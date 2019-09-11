@@ -222,11 +222,13 @@ func TestMergeUrl(t *testing.T) {
 	referenceUrlParams.Set(constant.CLUSTER_KEY, "random")
 	referenceUrlParams.Set(constant.RETRIES_KEY, "1")
 	referenceUrlParams.Set("test3", "1")
+	referenceUrlParams.Set("methods.testMethod."+constant.RETRIES_KEY, "1")
 	serviceUrlParams := url.Values{}
 	serviceUrlParams.Set("test2", "1")
 	serviceUrlParams.Set(constant.CLUSTER_KEY, "roundrobin")
 	serviceUrlParams.Set(constant.RETRIES_KEY, "2")
-	referenceUrl, _ := NewURL(context.TODO(), "mock1://127.0.0.1:1111", WithParams(referenceUrlParams))
+	serviceUrlParams.Set("methods.testMethod."+constant.RETRIES_KEY, "2")
+	referenceUrl, _ := NewURL(context.TODO(), "mock1://127.0.0.1:1111", WithParams(referenceUrlParams), WithMethods([]string{"testMethod"}))
 	serviceUrl, _ := NewURL(context.TODO(), "mock2://127.0.0.1:20000", WithParams(serviceUrlParams))
 
 	mergedUrl := MergeUrl(serviceUrl, &referenceUrl)
@@ -234,4 +236,5 @@ func TestMergeUrl(t *testing.T) {
 	assert.Equal(t, "1", mergedUrl.GetParam("test2", ""))
 	assert.Equal(t, "1", mergedUrl.GetParam("test3", ""))
 	assert.Equal(t, "1", mergedUrl.GetParam(constant.RETRIES_KEY, ""))
+	assert.Equal(t, "1", mergedUrl.GetParam("methods.testMethod."+constant.RETRIES_KEY, ""))
 }
