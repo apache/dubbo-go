@@ -15,7 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 APP_NAME="APPLICATION_NAME"
 APP_ARGS=""
 SLEEP_INTERVAL=5

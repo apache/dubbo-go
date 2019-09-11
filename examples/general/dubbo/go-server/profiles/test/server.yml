@@ -37,7 +37,7 @@ services:
     cluster: "failover"
     methods:
     - name: "GetUser"
-      retries: 1
+      retries: "1"
       loadbalance: "random"
   "UserProvider1":
     registry: "hangzhouzk"
@@ -49,7 +49,7 @@ services:
     cluster: "failover"
     methods:
     - name: "GetUser"
-      retries: 1
+      retries: "1"
       loadbalance: "random"
   "UserProvider2":
     registry: "hangzhouzk"
@@ -62,7 +62,7 @@ services:
     cluster: "failover"
     methods:
     - name: "GetUser"
-      retries: 1
+      retries: "1"
       loadbalance: "random"
 
 protocols:

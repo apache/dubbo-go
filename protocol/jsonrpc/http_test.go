@@ -32,6 +32,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/protocol"
 )
 
@@ -60,7 +61,9 @@ func TestHTTPClient_Call(t *testing.T) {
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&"+
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
 	assert.NoError(t, err)
-	proto.Export(protocol.NewBaseInvoker(url))
+	proto.Export(&proxy_factory.ProxyInvoker{
+		BaseInvoker: *protocol.NewBaseInvoker(url),
+	})
 	time.Sleep(time.Second * 2)
 
 	client := NewHTTPClient(&HTTPOptions{})
