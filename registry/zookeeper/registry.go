@@ -80,7 +80,6 @@ type zkRegistry struct {
 	configListener *RegistryConfigurationListener
 	//for provider
 	zkPath map[string]int // key = protocol://ip:port/interface
-
 }
 
 func newZkRegistry(url *common.URL) (registry.Registry, error) {
@@ -271,9 +270,11 @@ func (r *zkRegistry) register(c common.URL) error {
 		return perrors.WithStack(err)
 	}
 	params = url.Values{}
-	for k, v := range c.Params {
-		params[k] = v
-	}
+
+	c.RangeParams(func(key, value string) bool {
+		params[key] = []string{value}
+		return true
+	})
 
 	params.Add("pid", processID)
 	params.Add("ip", localIP)
