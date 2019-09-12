@@ -1,4 +1,4 @@
-application_config:
+application:
   organization : "ikurento.com"
   name : "BDTService"
   module : "dubbogo user-info server"
