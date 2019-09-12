@@ -109,14 +109,10 @@ func (c *BaseConfig) prepareEnvironment() error {
 	return nil
 }
 
-func getKeyPrefix(val reflect.Value, id reflect.Value) []string {
+func getKeyPrefix(val reflect.Value) []string {
 	var (
 		prefix string
-		idStr  string
 	)
-	if id.Kind() == reflect.String {
-		idStr = id.Interface().(string)
-	}
 
 	if val.CanAddr() {
 		prefix = val.Addr().MethodByName("Prefix").Call(nil)[0].String()
@@ -126,11 +122,9 @@ func getKeyPrefix(val reflect.Value, id reflect.Value) []string {
 	var retPrefixs []string
 
 	for _, pfx := range strings.Split(prefix, "|") {
-		if idStr != "" {
-			retPrefixs = append(retPrefixs, pfx+idStr+".")
-		} else {
-			retPrefixs = append(retPrefixs, pfx)
-		}
+
+		retPrefixs = append(retPrefixs, pfx)
+
 	}
 	return retPrefixs
 
@@ -150,14 +144,37 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 			f := val.Field(i)
 			if f.IsValid() {
 				setBaseValue := func(f reflect.Value) {
-					var ok bool
-					var value string
-					prefixs := getKeyPrefix(val, id)
+
+					var (
+						ok    bool
+						value string
+						idStr string
+					)
+
+					prefixs := getKeyPrefix(val)
+
+					if id.Kind() == reflect.String {
+						idStr = id.Interface().(string)
+					}
+
 					for _, pfx := range prefixs {
-						ok, value = config.GetProperty(pfx + key)
+
+						if len(pfx) > 0 {
+							if len(idStr) > 0 {
+								ok, value = config.GetProperty(pfx + idStr + "." + key)
+							}
+							if len(value) == 0 || !ok {
+								ok, value = config.GetProperty(pfx + key)
+							}
+
+						} else {
+							ok, value = config.GetProperty(key)
+						}
+
 						if ok {
 							break
 						}
+
 					}
 					if ok {
 						switch f.Kind() {
