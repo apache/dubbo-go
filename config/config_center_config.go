@@ -35,7 +35,7 @@ type ConfigCenterConfig struct {
 	Username      string `yaml:"username" json:"username,omitempty"`
 	Password      string `yaml:"password" json:"password,omitempty"`
 	ConfigFile    string `default:"dubbo.properties" yaml:"config_file"  json:"config_file,omitempty"`
-	AppConfigFile string `yaml:"app_config_file"  json:"app_config_file,omitempty"`
+	AppConfigFile string `default:"dubbo.properties" yaml:"app_config_file"  json:"app_config_file,omitempty"`
 	TimeoutStr    string `yaml:"timeout"  json:"timeout,omitempty"`
 	timeout       time.Duration
 }
