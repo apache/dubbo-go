@@ -62,9 +62,12 @@ func buildService(url common.URL) (*consul.AgentServiceRegistration, error) {
 
 	// tags
 	tags := make([]string, 0, 8)
-	for k := range url.Params {
-		tags = append(tags, k+"="+url.Params.Get(k))
-	}
+
+	url.RangeParams(func(key, value string) bool {
+		tags = append(tags, key+"="+value)
+		return true
+	})
+
 	tags = append(tags, "dubbo")
 
 	// meta
