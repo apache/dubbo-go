@@ -71,7 +71,7 @@ type baseUrl struct {
 	Port     string
 	//url.Values is not safe map, add to avoid concurrent map read and map write error
 	paramsLock   sync.RWMutex
-	Params       url.Values
+	params       url.Values
 	PrimitiveURL string
 	ctx          context.Context
 }
@@ -108,13 +108,13 @@ func WithMethods(methods []string) option {
 
 func WithParams(params url.Values) option {
 	return func(url *URL) {
-		url.Params = params
+		url.params = params
 	}
 }
 
 func WithParamsValue(key, val string) option {
 	return func(url *URL) {
-		url.Params.Set(key, val)
+		url.SetParam(key, val)
 	}
 }
 
@@ -189,7 +189,7 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (URL, error) 
 		return s, perrors.Errorf("url.Parse(url string{%s}),  error{%v}", rawUrlString, err)
 	}
 
-	s.Params, err = url.ParseQuery(serviceUrl.RawQuery)
+	s.params, err = url.ParseQuery(serviceUrl.RawQuery)
 	if err != nil {
 		return s, perrors.Errorf("url.ParseQuery(raw url string{%s}),  error{%v}", serviceUrl.RawQuery, err)
 	}
@@ -237,7 +237,9 @@ func (c URL) String() string {
 	buildString := fmt.Sprintf(
 		"%s://%s:%s@%s:%s%s?",
 		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path)
-	buildString += c.Params.Encode()
+	c.paramsLock.RLock()
+	buildString += c.params.Encode()
+	c.paramsLock.RUnlock()
 	return buildString
 }
 
@@ -291,20 +293,38 @@ func (c URL) Service() string {
 
 func (c *URL) AddParam(key string, value string) {
 	c.paramsLock.Lock()
-	c.Params.Add(key, value)
+	c.params.Add(key, value)
 	c.paramsLock.Unlock()
+}
+
+func (c *URL) SetParam(key string, value string) {
+	c.paramsLock.Lock()
+	c.params.Set(key, value)
+	c.paramsLock.Unlock()
+}
+
+func (c *URL) RangeParams(f func(key, value string) bool) {
+	c.paramsLock.RLock()
+	defer c.paramsLock.RUnlock()
+	for k, v := range c.params {
+		if !f(k, v[0]) {
+			break
+		}
+	}
 }
 
 func (c URL) GetParam(s string, d string) string {
 	var r string
 	c.paramsLock.RLock()
-	if r = c.Params.Get(s); len(r) == 0 {
+	if r = c.params.Get(s); len(r) == 0 {
 		r = d
 	}
 	c.paramsLock.RUnlock()
 	return r
 }
 func (c URL) GetParamAndDecoded(key string) (string, error) {
+	c.paramsLock.RLock()
+	defer c.paramsLock.RUnlock()
 	ruleDec, err := base64.URLEncoding.DecodeString(c.GetParam(key, ""))
 	value := string(ruleDec)
 	return value, err
@@ -325,7 +345,7 @@ func (c URL) GetRawParam(key string) string {
 	case "path":
 		return c.Path
 	default:
-		return c.Params.Get(key)
+		return c.GetParam(key, "")
 	}
 }
 
@@ -334,7 +354,7 @@ func (c URL) GetParamBool(s string, d bool) bool {
 
 	var r bool
 	var err error
-	if r, err = strconv.ParseBool(c.Params.Get(s)); err != nil {
+	if r, err = strconv.ParseBool(c.GetParam(s, "")); err != nil {
 		return d
 	}
 	return r
@@ -343,7 +363,8 @@ func (c URL) GetParamBool(s string, d bool) bool {
 func (c URL) GetParamInt(s string, d int64) int64 {
 	var r int
 	var err error
-	if r, err = strconv.Atoi(c.Params.Get(s)); r == 0 || err != nil {
+
+	if r, err = strconv.Atoi(c.GetParam(s, "")); r == 0 || err != nil {
 		return d
 	}
 	return int64(r)
@@ -352,7 +373,9 @@ func (c URL) GetParamInt(s string, d int64) int64 {
 func (c URL) GetMethodParamInt(method string, key string, d int64) int64 {
 	var r int
 	var err error
-	if r, err = strconv.Atoi(c.Params.Get("methods." + method + "." + key)); r == 0 || err != nil {
+	c.paramsLock.RLock()
+	defer c.paramsLock.RUnlock()
+	if r, err = strconv.Atoi(c.GetParam("methods."+method+"."+key, "")); r == 0 || err != nil {
 		return d
 	}
 	return int64(r)
@@ -369,7 +392,7 @@ func (c URL) GetMethodParamInt64(method string, key string, d int64) int64 {
 
 func (c URL) GetMethodParam(method string, key string, d string) string {
 	var r string
-	if r = c.Params.Get("methods." + method + "." + key); r == "" {
+	if r = c.GetParam("methods."+method+"."+key, ""); r == "" {
 		r = d
 	}
 	return r
@@ -380,9 +403,11 @@ func (c URL) ToMap() map[string]string {
 
 	paramsMap := make(map[string]string)
 
-	for k, v := range c.Params {
-		paramsMap[k] = v[0]
-	}
+	c.RangeParams(func(key, value string) bool {
+		paramsMap[key] = value
+		return true
+	})
+
 	if c.Protocol != "" {
 		paramsMap["protocol"] = c.Protocol
 	}
@@ -421,19 +446,19 @@ func MergeUrl(serviceUrl URL, referenceUrl *URL) URL {
 	mergedUrl := serviceUrl
 
 	//iterator the referenceUrl if serviceUrl not have the key ,merge in
-
-	for k, v := range referenceUrl.Params {
-		if _, ok := mergedUrl.Params[k]; !ok {
-			mergedUrl.Params.Set(k, v[0])
+	referenceUrl.RangeParams(func(key, value string) bool {
+		if v := mergedUrl.GetParam(key, ""); len(v) == 0 {
+			mergedUrl.SetParam(key, value)
 		}
-	}
+		return true
+	})
 	//loadBalance,cluster,retries strategy config
 	methodConfigMergeFcn := mergeNormalParam(mergedUrl, referenceUrl, []string{constant.LOADBALANCE_KEY, constant.CLUSTER_KEY, constant.RETRIES_KEY})
 
 	//remote timestamp
-	if v := serviceUrl.Params.Get(constant.TIMESTAMP_KEY); len(v) > 0 {
-		mergedUrl.Params.Set(constant.REMOTE_TIMESTAMP_KEY, v)
-		mergedUrl.Params.Set(constant.TIMESTAMP_KEY, referenceUrl.Params.Get(constant.TIMESTAMP_KEY))
+	if v := serviceUrl.GetParam(constant.TIMESTAMP_KEY, ""); len(v) > 0 {
+		mergedUrl.SetParam(constant.REMOTE_TIMESTAMP_KEY, v)
+		mergedUrl.SetParam(constant.TIMESTAMP_KEY, referenceUrl.GetParam(constant.TIMESTAMP_KEY, ""))
 	}
 
 	//finally execute methodConfigMergeFcn
@@ -449,12 +474,12 @@ func MergeUrl(serviceUrl URL, referenceUrl *URL) URL {
 func mergeNormalParam(mergedUrl URL, referenceUrl *URL, paramKeys []string) []func(method string) {
 	var methodConfigMergeFcn = []func(method string){}
 	for _, paramKey := range paramKeys {
-		if v := referenceUrl.Params.Get(paramKey); len(v) > 0 {
-			mergedUrl.Params.Set(paramKey, v)
+		if v := referenceUrl.GetParam(paramKey, ""); len(v) > 0 {
+			mergedUrl.SetParam(paramKey, v)
 		}
 		methodConfigMergeFcn = append(methodConfigMergeFcn, func(method string) {
-			if v := referenceUrl.Params.Get(method + "." + paramKey); len(v) > 0 {
-				mergedUrl.Params.Set(method+"."+paramKey, v)
+			if v := referenceUrl.GetParam(method+"."+paramKey, ""); len(v) > 0 {
+				mergedUrl.SetParam(method+"."+paramKey, v)
 			}
 		})
 	}
