@@ -47,7 +47,7 @@ type ReferenceConfig struct {
 	Check         *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
 	Url           string            `yaml:"url"  json:"url,omitempty" property:"url"`
 	Filter        string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	Protocol      string            `yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	Protocol      string            `default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
 	Registry      string            `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
 	Cluster       string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
 	Loadbalance   string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
