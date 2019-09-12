@@ -117,14 +117,14 @@ func normalInvoke(t *testing.T, successCount int, urlParam url.Values, invocatio
 }
 func Test_FailoverInvokeSuccess(t *testing.T) {
 	urlParams := url.Values{}
-	result := normalInvoke(t, 2, urlParams)
+	result := normalInvoke(t, 3, urlParams)
 	assert.NoError(t, result.Error())
 	count = 0
 }
 
 func Test_FailoverInvokeFail(t *testing.T) {
 	urlParams := url.Values{}
-	result := normalInvoke(t, 3, urlParams)
+	result := normalInvoke(t, 4, urlParams)
 	assert.Errorf(t, result.Error(), "error")
 	count = 0
 }
@@ -132,7 +132,7 @@ func Test_FailoverInvokeFail(t *testing.T) {
 func Test_FailoverInvoke1(t *testing.T) {
 	urlParams := url.Values{}
 	urlParams.Set(constant.RETRIES_KEY, "3")
-	result := normalInvoke(t, 3, urlParams)
+	result := normalInvoke(t, 4, urlParams)
 	assert.NoError(t, result.Error())
 	count = 0
 }
@@ -143,7 +143,7 @@ func Test_FailoverInvoke2(t *testing.T) {
 	urlParams.Set("methods.test."+constant.RETRIES_KEY, "3")
 
 	ivc := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("test"))
-	result := normalInvoke(t, 3, urlParams, ivc)
+	result := normalInvoke(t, 4, urlParams, ivc)
 	assert.NoError(t, result.Error())
 	count = 0
 }

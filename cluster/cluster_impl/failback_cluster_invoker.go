@@ -18,6 +18,7 @@
 package cluster_impl
 
 import (
+	"strconv"
 	"sync"
 	"time"
 )
@@ -54,15 +55,18 @@ func newFailbackClusterInvoker(directory cluster.Directory) protocol.Invoker {
 	invoker := &failbackClusterInvoker{
 		baseClusterInvoker: newBaseClusterInvoker(directory),
 	}
-	retriesConfig := invoker.GetUrl().GetParamInt(constant.RETRIES_KEY, constant.DEFAULT_FAILBACK_TIMES)
-	if retriesConfig <= 0 {
-		retriesConfig = constant.DEFAULT_FAILBACK_TIMES
+	retriesConfig := invoker.GetUrl().GetParam(constant.RETRIES_KEY, constant.DEFAULT_FAILBACK_TIMES)
+	retries, err := strconv.Atoi(retriesConfig)
+	if err != nil || retries < 0 {
+		logger.Error("Your retries config is invalid,pls do a check. And will use the default fail back times configuration instead.")
+		retries = constant.DEFAULT_FAILBACK_TIMES_INT
 	}
+
 	failbackTasksConfig := invoker.GetUrl().GetParamInt(constant.FAIL_BACK_TASKS_KEY, constant.DEFAULT_FAILBACK_TASKS)
 	if failbackTasksConfig <= 0 {
 		failbackTasksConfig = constant.DEFAULT_FAILBACK_TASKS
 	}
-	invoker.maxRetries = retriesConfig
+	invoker.maxRetries = int64(retries)
 	invoker.failbackTasks = failbackTasksConfig
 	return invoker
 }

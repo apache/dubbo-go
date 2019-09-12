@@ -34,7 +34,7 @@ import (
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 )
 
-var Err_No_Reply = perrors.New("request need @reply")
+var Err_No_Reply = perrors.New("request need @response")
 
 type DubboInvoker struct {
 	protocol.BaseInvoker
@@ -64,23 +64,24 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 		logger.Errorf("ParseBool - error: %v", err)
 		async = false
 	}
+	response := NewResponse(inv.Reply(), nil)
 	if async {
 		if callBack, ok := inv.CallBack().(func(response CallResponse)); ok {
-			err := di.client.AsyncCall(url.Location, url, inv.MethodName(), inv.Arguments(), callBack, inv.Reply())
+			err := di.client.AsyncCall(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), callBack, response)
 			if err != nil {
-				result.SetResult(err)
+				result.SetError(err)
 			}
 		} else {
-			err := di.client.CallOneway(url.Location, url, inv.MethodName(), inv.Arguments())
+			err := di.client.CallOneway(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()))
 			if err != nil {
-				result.SetResult(err)
+				result.SetError(err)
 			}
 		}
 	} else {
 		if inv.Reply() == nil {
 			result.SetError(Err_No_Reply)
 		} else {
-			err := di.client.Call(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Reply())
+			err := di.client.Call(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), response)
 			if err != nil {
 				result.SetError(err)
 			}
@@ -88,6 +89,7 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	}
 	if result.Error() == nil {
 		result.SetResult(inv.Reply())
+		result.SetAttachments(response.atta)
 	}
 	logger.Debugf("result.Err: %v, result.Rest: %v", result.Error(), result.Result())
 
