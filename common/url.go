@@ -305,12 +305,12 @@ func (c *URL) SetParam(key string, value string) {
 
 func (c *URL) RangeParams(f func(key, value string) bool) {
 	c.paramsLock.RLock()
+	defer c.paramsLock.RUnlock()
 	for k, v := range c.params {
 		if !f(k, v[0]) {
 			break
 		}
 	}
-	c.paramsLock.RUnlock()
 }
 
 func (c URL) GetParam(s string, d string) string {
