@@ -213,10 +213,12 @@ func TestConfigLoaderWithConfigCenterSingleRegistry(t *testing.T) {
 	assert.Equal(t, ProviderConfig{}, GetProviderConfig())
 
 	err = ConsumerInit(conPath)
+	checkApplicationName(consumerConfig.ApplicationConfig)
 	configCenterRefreshConsumer()
 	checkRegistries(consumerConfig.Registries, consumerConfig.Registry)
 	assert.NoError(t, err)
 	err = ProviderInit(proPath)
+	checkApplicationName(providerConfig.ApplicationConfig)
 	configCenterRefreshProvider()
 	checkRegistries(providerConfig.Registries, providerConfig.Registry)
 	assert.NoError(t, err)

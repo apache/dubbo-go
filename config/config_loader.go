@@ -60,12 +60,21 @@ func checkRegistries(registries map[string]*RegistryConfig, singleRegistry *Regi
 	}
 }
 
+func checkApplicationName(config *ApplicationConfig) {
+	if len(config.Name) == 0 {
+		errMsg := "application config must not be nil, pls check your configuration"
+		logger.Errorf(errMsg)
+		panic(errMsg)
+	}
+}
+
 // Dubbo Init
 func Load() {
 	// reference config
 	if consumerConfig == nil {
 		logger.Warnf("consumerConfig is nil!")
 	} else {
+		checkApplicationName(consumerConfig.ApplicationConfig)
 		if err := configCenterRefreshConsumer(); err != nil {
 			logger.Errorf("[consumer config center refresh] %#v", err)
 		}
@@ -98,7 +107,9 @@ func Load() {
 						checkok = false
 						count++
 						if count > maxWait {
-							panic(fmt.Sprintf("Failed to check the status of the service %v . No provider available for the service to the consumer use dubbo version %v", refconfig.InterfaceName, constant.Version))
+							errMsg := fmt.Sprintf("Failed to check the status of the service %v . No provider available for the service to the consumer use dubbo version %v", refconfig.InterfaceName, constant.Version)
+							logger.Error(errMsg)
+							panic(errMsg)
 						}
 						time.Sleep(time.Second * 1)
 						break
@@ -119,6 +130,7 @@ func Load() {
 	if providerConfig == nil {
 		logger.Warnf("providerConfig is nil!")
 	} else {
+		checkApplicationName(providerConfig.ApplicationConfig)
 		if err := configCenterRefreshProvider(); err != nil {
 			logger.Errorf("[provider config center refresh] %#v", err)
 		}
