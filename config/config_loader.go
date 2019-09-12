@@ -61,7 +61,7 @@ func checkRegistries(registries map[string]*RegistryConfig, singleRegistry *Regi
 }
 
 func checkApplicationName(config *ApplicationConfig) {
-	if len(config.Name) == 0 {
+	if config == nil || len(config.Name) == 0 {
 		errMsg := "application config must not be nil, pls check your configuration"
 		logger.Errorf(errMsg)
 		panic(errMsg)
