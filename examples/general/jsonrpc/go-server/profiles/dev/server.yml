@@ -1,7 +1,7 @@
 # dubbo server yaml configure file
 
 # application config
-application_config:
+application:
   organization : "ikurento.com"
   name : "BDTService"
   module : "dubbogo user-info server"
