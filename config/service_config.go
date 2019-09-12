@@ -46,7 +46,7 @@ type ServiceConfig struct {
 	context       context.Context
 	id            string
 	Filter        string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	Protocol      string            `required:"true"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"` //multi protocol support, split by ','
+	Protocol      string            `default:"dubbo"  required:"true"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"` //multi protocol support, split by ','
 	InterfaceName string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
 	Registry      string            `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
 	Cluster       string            `default:"failover" yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
