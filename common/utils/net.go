@@ -18,8 +18,11 @@
 package utils
 
 import (
-	"github.com/apache/dubbo-go/common/logger"
 	"net"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/logger"
 )
 
 var localIp = ""

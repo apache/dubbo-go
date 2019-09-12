@@ -18,8 +18,14 @@ limitations under the License.
 package cluster_impl
 
 import (
-	"errors"
 	"fmt"
+)
+
+import (
+	"github.com/pkg/errors"
+)
+
+import (
 	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/protocol"
 )
