@@ -42,7 +42,7 @@ type ConsumerConfig struct {
 	BaseConfig `yaml:",inline"`
 	Filter     string `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	// application
-	ApplicationConfig *ApplicationConfig `yaml:"application_config" json:"application_config,omitempty" property:"application_config"`
+	ApplicationConfig *ApplicationConfig `yaml:"application" json:"application,omitempty" property:"application"`
 	// client
 	Connect_Timeout string `default:"100ms"  yaml:"connect_timeout" json:"connect_timeout,omitempty" property:"connect_timeout"`
 	ConnectTimeout  time.Duration

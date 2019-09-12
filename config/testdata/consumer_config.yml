@@ -8,7 +8,7 @@ request_timeout : "100ms"
 connect_timeout : "100ms"
 check: true
 # application config
-application_config:
+application:
   organization : "ikurento.com"
   name  : "BDTService"
   module : "dubbogo user-info client"
