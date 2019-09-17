@@ -43,22 +43,13 @@ var (
 type DubboInvoker struct {
 	protocol.BaseInvoker
 	client      *Client
-	attachment  map[string]string
 	destroyLock sync.Mutex
 }
 
 func NewDubboInvoker(url common.URL, client *Client) *DubboInvoker {
-	attachment := make(map[string]string, 0)
-	for _, k := range attachmentKey {
-		if v := url.GetParam(k, ""); len(v) > 0 {
-			attachment[k] = v
-		}
-	}
-
 	return &DubboInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
-		attachment:  attachment,
 	}
 }
 
@@ -70,8 +61,8 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	)
 
 	inv := invocation.(*invocation_impl.RPCInvocation)
-	if len(di.attachment) > 0 {
-		for k, v := range di.attachment {
+	for _, k := range attachmentKey {
+		if v := di.GetUrl().GetParam(k, ""); len(v) > 0 {
 			inv.SetAttachments(k, v)
 		}
 	}
