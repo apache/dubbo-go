@@ -32,10 +32,12 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/config_center"
+	_ "github.com/apache/dubbo-go/config_center/configurator"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 	"github.com/apache/dubbo-go/registry"
-	"github.com/apache/dubbo-go/remoting"
 )
 
 const (
@@ -50,11 +52,15 @@ type Option func(*Options)
 
 type registryDirectory struct {
 	directory.BaseDirectory
-	cacheInvokers    []protocol.Invoker
-	listenerLock     sync.Mutex
-	serviceType      string
-	registry         registry.Registry
-	cacheInvokersMap *sync.Map //use sync.map
+	cacheInvokers                  []protocol.Invoker
+	listenerLock                   sync.Mutex
+	serviceType                    string
+	registry                       registry.Registry
+	cacheInvokersMap               *sync.Map //use sync.map
+	cacheOriginUrl                 *common.URL
+	configurators                  []config_center.Configurator
+	consumerConfigurationListener  *consumerConfigurationListener
+	referenceConfigurationListener *referenceConfigurationListener
 	Options
 }
 
@@ -69,49 +75,27 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry, opts ...O
 	if url.SubURL == nil {
 		return nil, perrors.Errorf("url is invalid, suburl can not be nil")
 	}
-	return &registryDirectory{
+	dir := &registryDirectory{
 		BaseDirectory:    directory.NewBaseDirectory(url),
 		cacheInvokers:    []protocol.Invoker{},
 		cacheInvokersMap: &sync.Map{},
 		serviceType:      url.SubURL.Service(),
 		registry:         registry,
 		Options:          options,
-	}, nil
+	}
+	dir.consumerConfigurationListener = newConsumerConfigurationListener(dir)
+	return dir, nil
 }
 
-//subscribe from registry
-func (dir *registryDirectory) Subscribe(url common.URL) {
-	for {
-		if !dir.registry.IsAvailable() {
-			logger.Warnf("event listener game over.")
-			return
-		}
+//subscibe from registry
+func (dir *registryDirectory) Subscribe(url *common.URL) {
+	dir.consumerConfigurationListener.addNotifyListener(dir)
+	dir.referenceConfigurationListener = newReferenceConfigurationListener(dir, url)
+	dir.registry.Subscribe(url, dir)
+}
 
-		listener, err := dir.registry.Subscribe(url)
-		if err != nil {
-			if !dir.registry.IsAvailable() {
-				logger.Warnf("event listener game over.")
-				return
-			}
-			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
-			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
-			continue
-		}
-
-		for {
-			if serviceEvent, err := listener.Next(); err != nil {
-				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
-				listener.Close()
-				time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
-				return
-			} else {
-				logger.Infof("update begin, service event: %v", serviceEvent.String())
-				go dir.update(serviceEvent)
-			}
-
-		}
-
-	}
+func (dir *registryDirectory) Notify(event *registry.ServiceEvent) {
+	go dir.update(event)
 }
 
 //subscribe service from registry, and update the cacheServices
@@ -125,21 +109,35 @@ func (dir *registryDirectory) update(res *registry.ServiceEvent) {
 }
 
 func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
-
-	switch res.Action {
-	case remoting.EventTypeAdd:
-		//dir.cacheService.EventTypeAdd(res.Path, dir.serviceTTL)
-		dir.cacheInvoker(res.Service)
-	case remoting.EventTypeDel:
-		//dir.cacheService.EventTypeDel(res.Path, dir.serviceTTL)
-		dir.uncacheInvoker(res.Service)
-		logger.Infof("selector delete service url{%s}", res.Service)
-	default:
-		return
+	var url *common.URL
+	//judge is override or others
+	if res != nil {
+		url = &res.Service
+		//1.for override url in 2.6.x
+		if url.Protocol == constant.OVERRIDE_PROTOCOL ||
+			url.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY) == constant.CONFIGURATORS_CATEGORY {
+			dir.configurators = append(dir.configurators, extension.GetDefaultConfigurator(url))
+			url = nil
+		} else if url.Protocol == constant.ROUTER_PROTOCOL || //2.for router
+			url.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY) == constant.ROUTER_CATEGORY {
+			url = nil
+			//TODO: router
+		}
 	}
-
+	//
+	//switch res.Action {
+	//case remoting.EventTypeAdd:
+	//	//dir.cacheService.EventTypeAdd(res.Path, dir.serviceTTL)
+	//	dir.cacheInvoker(&res.Service)
+	//case remoting.EventTypeDel:
+	//	//dir.cacheService.EventTypeDel(res.Path, dir.serviceTTL)
+	//	dir.uncacheInvoker(&res.Service)
+	//	logger.Infof("selector delete service url{%s}", res.Service)
+	//default:
+	//	return
+	//}
+	dir.cacheInvoker(url)
 	newInvokers := dir.toGroupInvokers()
-
 	dir.listenerLock.Lock()
 	defer dir.listenerLock.Unlock()
 	dir.cacheInvokers = newInvokers
@@ -180,22 +178,40 @@ func (dir *registryDirectory) toGroupInvokers() []protocol.Invoker {
 	return groupInvokersList
 }
 
-func (dir *registryDirectory) uncacheInvoker(url common.URL) {
+func (dir *registryDirectory) uncacheInvoker(url *common.URL) {
 	logger.Debugf("service will be deleted in cache invokers: invokers key is  %s!", url.Key())
 	dir.cacheInvokersMap.Delete(url.Key())
 }
 
-func (dir *registryDirectory) cacheInvoker(url common.URL) {
-	referenceUrl := dir.GetUrl().SubURL
+func (dir *registryDirectory) cacheInvoker(url *common.URL) {
+	dir.overrideUrl(dir.GetDirectoryUrl())
+	referenceUrl := dir.GetDirectoryUrl().SubURL
+
+	if url == nil && dir.cacheOriginUrl != nil {
+		url = dir.cacheOriginUrl
+	} else {
+		dir.cacheOriginUrl = url
+	}
+	if url == nil {
+		logger.Error("URL is nil ,pls check if service url is subscribe successfully!")
+		return
+	}
 	//check the url's protocol is equal to the protocol which is configured in reference config or referenceUrl is not care about protocol
 	if url.Protocol == referenceUrl.Protocol || referenceUrl.Protocol == "" {
-		url = common.MergeUrl(url, referenceUrl)
-
-		if _, ok := dir.cacheInvokersMap.Load(url.Key()); !ok {
-			logger.Debugf("service will be added in cache invokers: invokers key is  %s!", url.Key())
-			newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(url)
+		newUrl := common.MergeUrl(url, referenceUrl)
+		dir.overrideUrl(newUrl)
+		if cacheInvoker, ok := dir.cacheInvokersMap.Load(newUrl.Key()); !ok {
+			logger.Infof("service will be added in cache invokers: invokers url is  %s!", newUrl)
+			newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(*newUrl)
 			if newInvoker != nil {
-				dir.cacheInvokersMap.Store(url.Key(), newInvoker)
+				dir.cacheInvokersMap.Store(newUrl.Key(), newInvoker)
+			}
+		} else {
+			logger.Infof("service will be updated in cache invokers: new invoker url is %s, old invoker url is %s", newUrl, cacheInvoker.(protocol.Invoker).GetUrl())
+			newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(*newUrl)
+			if newInvoker != nil {
+				dir.cacheInvokersMap.Store(newUrl.Key(), newInvoker)
+				cacheInvoker.(protocol.Invoker).Destroy()
 			}
 		}
 	}
@@ -228,4 +244,59 @@ func (dir *registryDirectory) Destroy() {
 		}
 		dir.cacheInvokers = []protocol.Invoker{}
 	})
+}
+func (dir *registryDirectory) overrideUrl(targetUrl *common.URL) {
+	doOverrideUrl(dir.configurators, targetUrl)
+	doOverrideUrl(dir.consumerConfigurationListener.Configurators(), targetUrl)
+	doOverrideUrl(dir.referenceConfigurationListener.Configurators(), targetUrl)
+}
+
+func doOverrideUrl(configurators []config_center.Configurator, targetUrl *common.URL) {
+	for _, v := range configurators {
+		v.Configure(targetUrl)
+	}
+}
+
+type referenceConfigurationListener struct {
+	registry.BaseConfigurationListener
+	directory *registryDirectory
+	url       *common.URL
+}
+
+func newReferenceConfigurationListener(dir *registryDirectory, url *common.URL) *referenceConfigurationListener {
+	listener := &referenceConfigurationListener{directory: dir, url: url}
+	listener.InitWith(
+		url.EncodedServiceKey()+constant.CONFIGURATORS_SUFFIX,
+		listener,
+		extension.GetDefaultConfiguratorFunc(),
+	)
+	return listener
+}
+
+func (l *referenceConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
+	l.BaseConfigurationListener.Process(event)
+	l.directory.refreshInvokers(nil)
+}
+
+type consumerConfigurationListener struct {
+	registry.BaseConfigurationListener
+	listeners []registry.NotifyListener
+	directory *registryDirectory
+}
+
+func newConsumerConfigurationListener(dir *registryDirectory) *consumerConfigurationListener {
+	listener := &consumerConfigurationListener{directory: dir}
+	listener.InitWith(
+		config.GetConsumerConfig().ApplicationConfig.Name+constant.CONFIGURATORS_SUFFIX,
+		listener,
+		extension.GetDefaultConfiguratorFunc(),
+	)
+	return listener
+}
+func (l *consumerConfigurationListener) addNotifyListener(listener registry.NotifyListener) {
+	l.listeners = append(l.listeners, listener)
+}
+func (l *consumerConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
+	l.BaseConfigurationListener.Process(event)
+	l.directory.refreshInvokers(nil)
 }

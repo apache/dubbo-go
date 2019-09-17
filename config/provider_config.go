@@ -23,6 +23,7 @@ import (
 )
 
 import (
+	"github.com/creasty/defaults"
 	perrors "github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
@@ -41,12 +42,24 @@ type ProviderConfig struct {
 	Filter       string `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	ProxyFactory string `yaml:"proxy_factory" default:"default" json:"proxy_factory,omitempty" property:"proxy_factory"`
 
-	ApplicationConfig *ApplicationConfig         `yaml:"application_config" json:"application_config,omitempty" property:"application_config"`
+	ApplicationConfig *ApplicationConfig         `yaml:"application" json:"application,omitempty" property:"application"`
+	Registry          *RegistryConfig            `yaml:"registry" json:"registry,omitempty" property:"registry"`
 	Registries        map[string]*RegistryConfig `yaml:"registries" json:"registries,omitempty" property:"registries"`
 	Services          map[string]*ServiceConfig  `yaml:"services" json:"services,omitempty" property:"services"`
 	Protocols         map[string]*ProtocolConfig `yaml:"protocols" json:"protocols,omitempty" property:"protocols"`
 	ProtocolConf      interface{}                `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf" `
 	FilterConf        interface{}                `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf" `
+}
+
+func (c *ProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	if err := defaults.Set(c); err != nil {
+		return err
+	}
+	type plain ProviderConfig
+	if err := unmarshal((*plain)(c)); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (*ProviderConfig) Prefix() string {

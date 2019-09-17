@@ -19,17 +19,24 @@ package consul
 
 import (
 	"strconv"
+	"time"
 )
 
 import (
 	consul "github.com/hashicorp/consul/api"
+	perrors "github.com/pkg/errors"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/registry"
+)
+
+const (
+	RegistryConnDelay = 3
 )
 
 func init() {
@@ -104,7 +111,7 @@ func (r *consulRegistry) unregister(url common.URL) error {
 	return r.client.Agent().ServiceDeregister(buildId(url))
 }
 
-func (r *consulRegistry) Subscribe(url common.URL) (registry.Listener, error) {
+func (r *consulRegistry) subscribe(url *common.URL) (registry.Listener, error) {
 	var (
 		listener registry.Listener
 		err      error
@@ -112,12 +119,46 @@ func (r *consulRegistry) Subscribe(url common.URL) (registry.Listener, error) {
 
 	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
 	if role == common.CONSUMER {
-		listener, err = r.getListener(url)
+		listener, err = r.getListener(*url)
 		if err != nil {
 			return nil, err
 		}
 	}
 	return listener, nil
+}
+
+//subscibe from registry
+func (r *consulRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
+	for {
+		if !r.IsAvailable() {
+			logger.Warnf("event listener game over.")
+			return
+		}
+
+		listener, err := r.subscribe(url)
+		if err != nil {
+			if !r.IsAvailable() {
+				logger.Warnf("event listener game over.")
+				return
+			}
+			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
+			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
+			continue
+		}
+
+		for {
+			if serviceEvent, err := listener.Next(); err != nil {
+				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
+				listener.Close()
+				return
+			} else {
+				logger.Infof("update begin, service event: %v", serviceEvent.String())
+				notifyListener.Notify(serviceEvent)
+			}
+
+		}
+
+	}
 }
 
 func (r *consulRegistry) getListener(url common.URL) (registry.Listener, error) {

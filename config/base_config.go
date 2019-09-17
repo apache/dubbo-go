@@ -20,10 +20,13 @@ import (
 	"context"
 	"reflect"
 	"strconv"
+	"strings"
 )
+
 import (
 	perrors "github.com/pkg/errors"
 )
+
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/config"
@@ -60,6 +63,7 @@ func (c *BaseConfig) prepareEnvironment() error {
 
 	factory := extension.GetConfigCenterFactory(c.ConfigCenterConfig.Protocol)
 	dynamicConfig, err := factory.GetDynamicConfiguration(c.configCenterUrl)
+	config.GetEnvInstance().SetDynamicConfiguration(dynamicConfig)
 	if err != nil {
 		logger.Errorf("Get dynamic configuration error , error message is %v", err)
 		return perrors.WithStack(err)
@@ -69,43 +73,109 @@ func (c *BaseConfig) prepareEnvironment() error {
 		logger.Errorf("Get config content in dynamic configuration error , error message is %v", err)
 		return perrors.WithStack(err)
 	}
+	var appGroup string
+	var appContent string
+	if providerConfig != nil && providerConfig.ApplicationConfig != nil &&
+		reflect.ValueOf(c.fatherConfig).Elem().Type().Name() == "ProviderConfig" {
+		appGroup = providerConfig.ApplicationConfig.Name
+	} else if consumerConfig != nil && consumerConfig.ApplicationConfig != nil &&
+		reflect.ValueOf(c.fatherConfig).Elem().Type().Name() == "ConsumerConfig" {
+		appGroup = consumerConfig.ApplicationConfig.Name
+	}
+
+	if len(appGroup) != 0 {
+		configFile := c.ConfigCenterConfig.AppConfigFile
+		if len(configFile) == 0 {
+			configFile = c.ConfigCenterConfig.ConfigFile
+		}
+		appContent, err = dynamicConfig.GetConfig(configFile, config_center.WithGroup(appGroup))
+	}
+	//global config file
 	mapContent, err := dynamicConfig.Parser().Parse(content)
 	if err != nil {
 		return perrors.WithStack(err)
 	}
 	config.GetEnvInstance().UpdateExternalConfigMap(mapContent)
+
+	//appGroup config file
+	if len(appContent) != 0 {
+		appMapConent, err := dynamicConfig.Parser().Parse(appContent)
+		if err != nil {
+			return perrors.WithStack(err)
+		}
+		config.GetEnvInstance().UpdateAppExternalConfigMap(appMapConent)
+	}
+
 	return nil
 }
 
-func getKeyPrefix(val reflect.Value, id reflect.Value) string {
+func getKeyPrefix(val reflect.Value) []string {
 	var (
 		prefix string
-		idStr  string
 	)
-	if id.Kind() == reflect.String {
-		idStr = id.Interface().(string)
-	}
 
 	if val.CanAddr() {
 		prefix = val.Addr().MethodByName("Prefix").Call(nil)[0].String()
 	} else {
 		prefix = val.MethodByName("Prefix").Call(nil)[0].String()
 	}
+	var retPrefixs []string
 
-	if idStr != "" {
-		return prefix + idStr + "."
-	} else {
-		return prefix
+	for _, pfx := range strings.Split(prefix, "|") {
+
+		retPrefixs = append(retPrefixs, pfx)
+
 	}
-}
+	return retPrefixs
 
+}
+func getPtrElement(v reflect.Value) reflect.Value {
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+		if v.Kind() == reflect.Ptr {
+			return getPtrElement(v)
+		}
+	}
+	return v
+}
 func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryConfiguration) {
 	for i := 0; i < val.NumField(); i++ {
 		if key := val.Type().Field(i).Tag.Get("property"); key != "-" && key != "" {
 			f := val.Field(i)
 			if f.IsValid() {
 				setBaseValue := func(f reflect.Value) {
-					ok, value := config.GetProperty(getKeyPrefix(val, id) + key)
+
+					var (
+						ok    bool
+						value string
+						idStr string
+					)
+
+					prefixs := getKeyPrefix(val)
+
+					if id.Kind() == reflect.String {
+						idStr = id.Interface().(string)
+					}
+
+					for _, pfx := range prefixs {
+
+						if len(pfx) > 0 {
+							if len(idStr) > 0 {
+								ok, value = config.GetProperty(pfx + idStr + "." + key)
+							}
+							if len(value) == 0 || !ok {
+								ok, value = config.GetProperty(pfx + key)
+							}
+
+						} else {
+							ok, value = config.GetProperty(key)
+						}
+
+						if ok {
+							break
+						}
+
+					}
 					if ok {
 						switch f.Kind() {
 						case reflect.Int64:
@@ -151,12 +221,12 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 
 				}
 
-				setBaseValue(f)
 				if f.Kind() == reflect.Ptr {
-					if f.Elem().Kind() == reflect.Struct {
-						setFieldValue(f.Elem(), reflect.Value{}, config)
+					f = getPtrElement(f)
+					if f.Kind() == reflect.Struct {
+						setFieldValue(f, reflect.Value{}, config)
 					} else {
-						setBaseValue(f.Elem())
+						setBaseValue(f)
 					}
 				}
 
@@ -167,10 +237,11 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 					for i := 0; i < f.Len(); i++ {
 						e := f.Index(i)
 						if e.Kind() == reflect.Ptr {
-							if e.Elem().Kind() == reflect.Struct {
-								setFieldValue(e.Elem(), reflect.Value{}, config)
+							e = getPtrElement(e)
+							if e.Kind() == reflect.Struct {
+								setFieldValue(e, reflect.Value{}, config)
 							} else {
-								setBaseValue(e.Elem())
+								setBaseValue(e)
 							}
 						}
 
@@ -183,10 +254,16 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 						//initiate config
 						s := reflect.New(f.Type().Elem().Elem())
 						prefix := s.MethodByName("Prefix").Call(nil)[0].String()
-						m := config.GetSubProperty(prefix)
-						for k := range m {
-							f.SetMapIndex(reflect.ValueOf(k), reflect.New(f.Type().Elem().Elem()))
+						for _, pfx := range strings.Split(prefix, "|") {
+							m := config.GetSubProperty(pfx)
+							if m != nil {
+								for k := range m {
+									f.SetMapIndex(reflect.ValueOf(k), reflect.New(f.Type().Elem().Elem()))
+								}
+							}
+
 						}
+
 					}
 
 					//iter := f.MapRange()
@@ -195,10 +272,11 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 						v := f.MapIndex(k)
 						switch v.Kind() {
 						case reflect.Ptr:
-							if v.Elem().Kind() == reflect.Struct {
-								setFieldValue(v.Elem(), k, config)
+							v = getPtrElement(v)
+							if v.Kind() == reflect.Struct {
+								setFieldValue(v, k, config)
 							} else {
-								setBaseValue(v.Elem())
+								setBaseValue(v)
 							}
 						case reflect.Int64, reflect.String, reflect.Bool, reflect.Float64:
 							setBaseValue(v)
@@ -207,6 +285,7 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 						}
 					}
 				}
+				setBaseValue(f)
 
 			}
 		}
@@ -214,8 +293,13 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 }
 func (c *BaseConfig) fresh() {
 	configList := config.GetEnvInstance().Configuration()
-	config := configList.Front().Value.(*config.InmemoryConfiguration)
+	for element := configList.Front(); element != nil; element = element.Next() {
+		config := element.Value.(*config.InmemoryConfiguration)
+		c.freshInternalConfig(config)
+	}
+}
 
+func (c *BaseConfig) freshInternalConfig(config *config.InmemoryConfiguration) {
 	//reflect to init struct
 	tp := reflect.ValueOf(c.fatherConfig).Elem().Type()
 	initializeStruct(tp, reflect.ValueOf(c.fatherConfig).Elem())

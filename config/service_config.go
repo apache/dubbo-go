@@ -28,6 +28,7 @@ import (
 )
 
 import (
+	"github.com/creasty/defaults"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
 )
@@ -45,7 +46,7 @@ type ServiceConfig struct {
 	context       context.Context
 	id            string
 	Filter        string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	Protocol      string            `required:"true"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"` //multi protocol support, split by ','
+	Protocol      string            `default:"dubbo"  required:"true"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"` //multi protocol support, split by ','
 	InterfaceName string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
 	Registry      string            `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
 	Cluster       string            `default:"failover" yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
@@ -59,13 +60,23 @@ type ServiceConfig struct {
 	unexported    *atomic.Bool
 	exported      *atomic.Bool
 	rpcService    common.RPCService
-	exporters     []protocol.Exporter
 	cacheProtocol protocol.Protocol
 	cacheMutex    sync.Mutex
 }
 
 func (c *ServiceConfig) Prefix() string {
 	return constant.ServiceConfigPrefix + c.InterfaceName + "."
+}
+
+func (c *ServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	if err := defaults.Set(c); err != nil {
+		return err
+	}
+	type plain ServiceConfig
+	if err := unmarshal((*plain)(c)); err != nil {
+		return err
+	}
+	return nil
 }
 
 // The only way to get a new ServiceConfig
@@ -112,7 +123,6 @@ func (srvconfig *ServiceConfig) Export() error {
 			common.WithParams(urlMap),
 			common.WithParamsValue(constant.BEAN_NAME_KEY, srvconfig.id),
 			common.WithMethods(strings.Split(methods, ",")))
-
 		if len(regUrls) > 0 {
 			for _, regUrl := range regUrls {
 				regUrl.SubURL = url
@@ -129,7 +139,6 @@ func (srvconfig *ServiceConfig) Export() error {
 				if exporter == nil {
 					panic(perrors.New(fmt.Sprintf("Registry protocol new exporter error,registry is {%v},url is {%v}", regUrl, url)))
 				}
-				srvconfig.exporters = append(srvconfig.exporters, exporter)
 			}
 		} else {
 			invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*url)
@@ -137,7 +146,6 @@ func (srvconfig *ServiceConfig) Export() error {
 			if exporter == nil {
 				panic(perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error,url is {%v}", url)))
 			}
-			srvconfig.exporters = append(srvconfig.exporters, exporter)
 		}
 
 	}

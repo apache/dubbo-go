@@ -20,8 +20,9 @@ package config_center
 import (
 	"time"
 )
+
 import (
-	"github.com/apache/dubbo-go/remoting"
+	"github.com/apache/dubbo-go/config_center/parser"
 )
 
 //////////////////////////////////////////
@@ -31,10 +32,10 @@ const DEFAULT_GROUP = "dubbo"
 const DEFAULT_CONFIG_TIMEOUT = "10s"
 
 type DynamicConfiguration interface {
-	Parser() ConfigurationParser
-	SetParser(ConfigurationParser)
-	AddListener(string, remoting.ConfigurationListener, ...Option)
-	RemoveListener(string, remoting.ConfigurationListener, ...Option)
+	Parser() parser.ConfigurationParser
+	SetParser(parser.ConfigurationParser)
+	AddListener(string, ConfigurationListener, ...Option)
+	RemoveListener(string, ConfigurationListener, ...Option)
 	GetConfig(string, ...Option) (string, error)
 	GetConfigs(string, ...Option) (string, error)
 }
