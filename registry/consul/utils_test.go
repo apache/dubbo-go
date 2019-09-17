@@ -165,7 +165,7 @@ func (server *testServer) close() {
 type consulRegistryTestSuite struct {
 	t                *testing.T
 	providerRegistry registry.Registry
-	consumerRegistry registry.Registry
+	consumerRegistry *consulRegistry
 	listener         registry.Listener
 	providerUrl      common.URL
 	consumerUrl      common.URL

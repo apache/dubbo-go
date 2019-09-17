@@ -31,6 +31,8 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/container"
+	"github.com/jinzhu/copier"
 	perrors "github.com/pkg/errors"
 )
 
@@ -230,13 +232,37 @@ func (c URL) URLEqual(url URL) bool {
 	if cKey != urlKey {
 		return false
 	}
+	if url.GetParam(constant.ENABLED_KEY, "true") != "true" && url.GetParam(constant.ENABLED_KEY, "") != constant.ANY_VALUE {
+		return false
+	}
+	//TODO :may need add interface key any value condition
+	if !isMatchCategory(url.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY), c.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY)) {
+		return false
+	}
 	return true
 }
-
+func isMatchCategory(category1 string, category2 string) bool {
+	if len(category2) == 0 {
+		return category1 == constant.DEFAULT_CATEGORY
+	} else if strings.Contains(category2, constant.ANY_VALUE) {
+		return true
+	} else if strings.Contains(category2, constant.REMOVE_VALUE_PREFIX) {
+		return !strings.Contains(category2, constant.REMOVE_VALUE_PREFIX+category1)
+	} else {
+		return strings.Contains(category2, category1)
+	}
+}
 func (c URL) String() string {
-	buildString := fmt.Sprintf(
-		"%s://%s:%s@%s:%s%s?",
-		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path)
+	var buildString string
+	if len(c.Username) == 0 && len(c.Password) == 0 {
+		buildString = fmt.Sprintf(
+			"%s://%s:%s%s?",
+			c.Protocol, c.Ip, c.Port, c.Path)
+	} else {
+		buildString = fmt.Sprintf(
+			"%s://%s:%s@%s:%s%s?",
+			c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path)
+	}
 	c.paramsLock.RLock()
 	buildString += c.params.Encode()
 	c.paramsLock.RUnlock()
@@ -272,6 +298,11 @@ func (c URL) ServiceKey() string {
 	}
 
 	return buf.String()
+}
+
+func (c *URL) EncodedServiceKey() string {
+	serviceKey := c.ServiceKey()
+	return strings.Replace(serviceKey, "/", "*", 1)
 }
 
 func (c URL) Context() context.Context {
@@ -322,6 +353,11 @@ func (c URL) GetParam(s string, d string) string {
 	c.paramsLock.RUnlock()
 	return r
 }
+
+func (c URL) GetParams() url.Values {
+	return c.params
+}
+
 func (c URL) GetParamAndDecoded(key string) (string, error) {
 	c.paramsLock.RLock()
 	defer c.paramsLock.RUnlock()
@@ -398,6 +434,21 @@ func (c URL) GetMethodParam(method string, key string, d string) string {
 	return r
 }
 
+func (c *URL) RemoveParams(set *container.HashSet) {
+	c.paramsLock.Lock()
+	defer c.paramsLock.Unlock()
+	for k := range set.Items {
+		s := k.(string)
+		delete(c.params, s)
+	}
+}
+
+func (c *URL) SetParams(m url.Values) {
+	for k := range m {
+		c.SetParam(k, m.Get(k))
+	}
+}
+
 // ToMap transfer URL to Map
 func (c URL) ToMap() map[string]string {
 
@@ -442,8 +493,9 @@ func (c URL) ToMap() map[string]string {
 // configuration  > reference config >service config
 //  in this function we should merge the reference local url config into the service url from registry.
 //TODO configuration merge, in the future , the configuration center's config should merge too.
-func MergeUrl(serviceUrl URL, referenceUrl *URL) URL {
-	mergedUrl := serviceUrl
+
+func MergeUrl(serviceUrl *URL, referenceUrl *URL) *URL {
+	mergedUrl := serviceUrl.Clone()
 
 	//iterator the referenceUrl if serviceUrl not have the key ,merge in
 	referenceUrl.RangeParams(func(key, value string) bool {
@@ -470,8 +522,18 @@ func MergeUrl(serviceUrl URL, referenceUrl *URL) URL {
 
 	return mergedUrl
 }
+func (c *URL) Clone() *URL {
+	newUrl := &URL{}
+	copier.Copy(newUrl, c)
+	newUrl.params = url.Values{}
+	c.RangeParams(func(key, value string) bool {
+		newUrl.SetParam(key, value)
+		return true
+	})
+	return newUrl
+}
 
-func mergeNormalParam(mergedUrl URL, referenceUrl *URL, paramKeys []string) []func(method string) {
+func mergeNormalParam(mergedUrl *URL, referenceUrl *URL, paramKeys []string) []func(method string) {
 	var methodConfigMergeFcn = []func(method string){}
 	for _, paramKey := range paramKeys {
 		if v := referenceUrl.GetParam(paramKey, ""); len(v) > 0 {

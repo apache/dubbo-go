@@ -1,0 +1,76 @@
+# dubbo server yaml configure file
+
+filter: ""
+# application config
+application:
+  organization : "ikurento.com"
+  name : "BDTService"
+  module : "dubbogo user-info server"
+  version : "0.0.1"
+  owner : "ZX"
+  environment : "dev"
+
+registries :
+  "hangzhouzk":
+    protocol: "zookeeper"
+    timeout	: "3s"
+    address: "127.0.0.1:2181"
+    username: ""
+    password: ""
+  "shanghaizk":
+    protocol: "zookeeper"
+    timeout	: "3s"
+    address: "127.0.0.1:2182"
+    username: ""
+    password: ""
+
+
+services:
+  "UserProvider":
+    registry: "hangzhouzk,shanghaizk"
+    filter: ""
+    # equivalent to interface of dubbo.xml
+    interface : "com.ikurento.user.UserProvider"
+    loadbalance: "random"
+    version: "1.0"
+    group: "as"
+    warmup: "100"
+    cluster: "failover"
+    methods:
+      - name: "GetUser"
+        retries: 1
+        loadbalance: "random"
+
+protocols:
+    "dubbo":
+      name: "dubbo"
+      # while using dubbo protocol, ip cannot is 127.0.0.1, because client of java-dubbo will get 'connection refuse'
+      ip : "127.0.0.1"
+      port : 20000
+  #-   name: "jsonrpc"
+  #    ip: "127.0.0.1"
+  #    port: 20001
+
+protocol_conf:
+  dubbo:
+    session_number: 700
+    session_timeout: "20s"
+    # gr_pool_size is recommended to be set to [cpu core number] * 10
+    gr_pool_size: 120
+    # queue_len is recommended to be set to 64 or 128
+    queue_len: 64
+    # queue_number is recommended to be set to gr_pool_size / 20
+    queue_number: 6
+    getty_session_param:
+      compress_encoding: false
+      tcp_no_delay: true
+      tcp_keep_alive: true
+      keep_alive_period: "120s"
+      tcp_r_buf_size: 262144
+      tcp_w_buf_size: 65536
+      pkg_wq_size: 512
+      tcp_read_timeout: "1s"
+      tcp_write_timeout: "5s"
+      wait_timeout: "1s"
+      max_msg_len: 1024
+      session_name: "server"

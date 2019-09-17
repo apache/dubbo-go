@@ -32,7 +32,7 @@ func (suite *consulRegistryTestSuite) testNewConsumerRegistry() {
 	consumerRegistryUrl := newConsumerRegistryUrl(registryHost, registryPort)
 	consumerRegistry, err := newConsulRegistry(consumerRegistryUrl)
 	assert.NoError(suite.t, err)
-	suite.consumerRegistry = consumerRegistry
+	suite.consumerRegistry = consumerRegistry.(*consulRegistry)
 }
 
 func (suite *consulRegistryTestSuite) testRegister() {
@@ -51,7 +51,7 @@ func (suite *consulRegistryTestSuite) testUnregister() {
 func (suite *consulRegistryTestSuite) testSubscribe() {
 	consumerUrl := newConsumerUrl(consumerHost, consumerPort, service, protocol)
 	suite.consumerUrl = consumerUrl
-	listener, err := suite.consumerRegistry.Subscribe(consumerUrl)
+	listener, err := suite.consumerRegistry.subscribe(&consumerUrl)
 	assert.NoError(suite.t, err)
 	suite.listener = listener
 }

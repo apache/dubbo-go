@@ -23,15 +23,21 @@ import (
 	"sync"
 )
 
+import (
+	"github.com/apache/dubbo-go/config_center"
+)
+
 // There is dubbo.properties file and application level config center configuration which higner than normal config center in java. So in java the
 // configuration sequence will be config center > application level config center > dubbo.properties > spring bean configuration.
 // But in go, neither the dubbo.properties file or application level config center configuration will not support for the time being.
 // We just have config center configuration which can override configuration in consumer.yaml & provider.yaml.
 // But for add these features in future ,I finish the environment struct following Environment class in java.
 type Environment struct {
-	configCenterFirst bool
-	externalConfigs   sync.Map
-	externalConfigMap sync.Map
+	configCenterFirst    bool
+	externalConfigs      sync.Map
+	externalConfigMap    sync.Map
+	appExternalConfigMap sync.Map
+	dynamicConfiguration config_center.DynamicConfiguration
 }
 
 var (
@@ -44,6 +50,9 @@ func GetEnvInstance() *Environment {
 		instance = &Environment{configCenterFirst: true}
 	})
 	return instance
+}
+func NewEnvInstance() {
+	instance = &Environment{configCenterFirst: true}
 }
 
 //func (env *Environment) SetConfigCenterFirst() {
@@ -60,23 +69,34 @@ func (env *Environment) UpdateExternalConfigMap(externalMap map[string]string) {
 	}
 }
 
+func (env *Environment) UpdateAppExternalConfigMap(externalMap map[string]string) {
+	for k, v := range externalMap {
+		env.appExternalConfigMap.Store(k, v)
+	}
+}
+
 func (env *Environment) Configuration() *list.List {
 	list := list.New()
-	memConf := newInmemoryConfiguration()
-	memConf.setProperties(&(env.externalConfigMap))
-	list.PushBack(memConf)
+	// The sequence would be: SystemConfiguration -> ExternalConfiguration -> AppExternalConfiguration -> AbstractConfig -> PropertiesConfiguration
+	list.PushFront(newInmemoryConfiguration(&(env.externalConfigMap)))
+	list.PushFront(newInmemoryConfiguration(&(env.appExternalConfigMap)))
 	return list
+}
+
+func (env *Environment) SetDynamicConfiguration(dc config_center.DynamicConfiguration) {
+	env.dynamicConfiguration = dc
+}
+
+func (env *Environment) GetDynamicConfiguration() config_center.DynamicConfiguration {
+	return env.dynamicConfiguration
 }
 
 type InmemoryConfiguration struct {
 	store *sync.Map
 }
 
-func newInmemoryConfiguration() *InmemoryConfiguration {
-	return &InmemoryConfiguration{}
-}
-func (conf *InmemoryConfiguration) setProperties(p *sync.Map) {
-	conf.store = p
+func newInmemoryConfiguration(p *sync.Map) *InmemoryConfiguration {
+	return &InmemoryConfiguration{store: p}
 }
 
 func (conf *InmemoryConfiguration) GetProperty(key string) (bool, string) {
