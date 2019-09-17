@@ -90,18 +90,18 @@ func doInitConsumer() {
 				Protocol:      "mock",
 				Cluster:       "failover",
 				Loadbalance:   "random",
-				Retries:       3,
+				Retries:       "3",
 				Group:         "huadong_idc",
 				Version:       "1.0.0",
 				Methods: []*MethodConfig{
 					{
 						Name:        "GetUser",
-						Retries:     2,
+						Retries:     "2",
 						Loadbalance: "random",
 					},
 					{
 						Name:        "GetUser1",
-						Retries:     2,
+						Retries:     "2",
 						Loadbalance: "random",
 					},
 				},
@@ -135,18 +135,18 @@ func doInitConsumerWithSingleRegistry() {
 				Protocol:      "mock",
 				Cluster:       "failover",
 				Loadbalance:   "random",
-				Retries:       3,
+				Retries:       "3",
 				Group:         "huadong_idc",
 				Version:       "1.0.0",
 				Methods: []*MethodConfig{
 					{
 						Name:        "GetUser",
-						Retries:     2,
+						Retries:     "2",
 						Loadbalance: "random",
 					},
 					{
 						Name:        "GetUser1",
-						Retries:     2,
+						Retries:     "2",
 						Loadbalance: "random",
 					},
 				},

@@ -88,17 +88,24 @@ func (c *overrideConfigurator) configureIfMatch(host string, url *common.URL) {
 				conditionKeys.Add(constant.SIDE_KEY)
 				conditionKeys.Add(constant.CONFIG_VERSION_KEY)
 				conditionKeys.Add(constant.COMPATIBLE_CONFIG_KEY)
-				for k, _ := range c.configuratorUrl.Params {
-					value := c.configuratorUrl.Params.Get(k)
+				returnUrl := false
+				c.configuratorUrl.RangeParams(func(k, v string) bool {
+					value := c.configuratorUrl.GetParam(k, "")
 					if strings.HasPrefix(k, "~") || k == constant.APPLICATION_KEY || k == constant.SIDE_KEY {
 						conditionKeys.Add(k)
-						if len(value) != 0 && value != constant.ANY_VALUE && value != c.configuratorUrl.Params.Get(strings.TrimPrefix(k, "~")) {
-							return
+						if len(value) != 0 && value != constant.ANY_VALUE && value != url.GetParam(strings.TrimPrefix(k, "~"), "") {
+							returnUrl = true
+							return false
 						}
 					}
+					return true
+				})
+				if returnUrl {
+					return
 				}
-				c.configuratorUrl.RemoveParams(conditionKeys)
-				url.SetParams(c.configuratorUrl.Params)
+				configUrl := c.configuratorUrl.Clone()
+				configUrl.RemoveParams(conditionKeys)
+				url.SetParams(configUrl.GetParams())
 			}
 		}
 	}

@@ -23,7 +23,7 @@ services:
     cluster: "failover"
     methods:
       - name: "SayHello"
-        retries: 1
+        retries: "1"
         loadbalance: "random"
 
 protocols:

@@ -33,6 +33,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/protocol"
 )
 
@@ -50,7 +51,7 @@ func TestClient_CallOneway(t *testing.T) {
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
 
 	//user := &User{}
-	err := c.CallOneway("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"})
+	err := c.CallOneway(NewRequest("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"}, nil))
 	assert.NoError(t, err)
 
 	// destroy
@@ -70,51 +71,56 @@ func TestClient_Call(t *testing.T) {
 	}
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
 
-	user := &User{}
-	err := c.Call("127.0.0.1:20000", url, "GetBigPkg", []interface{}{nil}, user)
+	var (
+		user *User
+		err  error
+	)
+
+	user = &User{}
+	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetBigPkg", []interface{}{nil}, nil), NewResponse(user, nil))
 	assert.NoError(t, err)
 	assert.NotEqual(t, "", user.Id)
 	assert.NotEqual(t, "", user.Name)
 
 	user = &User{}
-	err = c.Call("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"}, user)
+	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"}, nil), NewResponse(user, nil))
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "1", Name: "username"}, *user)
 
 	user = &User{}
-	err = c.Call("127.0.0.1:20000", url, "GetUser0", []interface{}{"1", nil, "username"}, user)
+	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser0", []interface{}{"1", nil, "username"}, nil), NewResponse(user, nil))
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "1", Name: "username"}, *user)
 
-	err = c.Call("127.0.0.1:20000", url, "GetUser1", []interface{}{}, user)
+	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser1", []interface{}{}, nil), NewResponse(user, nil))
 	assert.NoError(t, err)
 
-	err = c.Call("127.0.0.1:20000", url, "GetUser2", []interface{}{}, user)
+	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser2", []interface{}{}, nil), NewResponse(user, nil))
 	assert.EqualError(t, err, "error")
 
 	user2 := []interface{}{}
-	err = c.Call("127.0.0.1:20000", url, "GetUser3", []interface{}{}, &user2)
+	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser3", []interface{}{}, nil), NewResponse(&user2, nil))
 	assert.NoError(t, err)
 	assert.Equal(t, &User{Id: "1", Name: "username"}, user2[0])
 
 	user2 = []interface{}{}
-	err = c.Call("127.0.0.1:20000", url, "GetUser4", []interface{}{[]interface{}{"1", "username"}}, &user2)
+	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser4", []interface{}{[]interface{}{"1", "username"}}, nil), NewResponse(&user2, nil))
 	assert.NoError(t, err)
 	assert.Equal(t, &User{Id: "1", Name: "username"}, user2[0])
 
 	user3 := map[interface{}]interface{}{}
-	err = c.Call("127.0.0.1:20000", url, "GetUser5", []interface{}{map[interface{}]interface{}{"id": "1", "name": "username"}}, &user3)
+	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser5", []interface{}{map[interface{}]interface{}{"id": "1", "name": "username"}}, nil), NewResponse(&user3, nil))
 	assert.NoError(t, err)
 	assert.NotNil(t, user3)
 	assert.Equal(t, &User{Id: "1", Name: "username"}, user3["key"])
 
 	user = &User{}
-	err = c.Call("127.0.0.1:20000", url, "GetUser6", []interface{}{0}, user)
+	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser6", []interface{}{0}, nil), NewResponse(user, nil))
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "", Name: ""}, *user)
 
 	user = &User{}
-	err = c.Call("127.0.0.1:20000", url, "GetUser6", []interface{}{1}, user)
+	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser6", []interface{}{1}, nil), NewResponse(user, nil))
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "1", Name: ""}, *user)
 
@@ -138,10 +144,10 @@ func TestClient_AsyncCall(t *testing.T) {
 	user := &User{}
 	lock := sync.Mutex{}
 	lock.Lock()
-	err := c.AsyncCall("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"}, func(response CallResponse) {
-		assert.Equal(t, User{Id: "1", Name: "username"}, *response.Reply.(*User))
+	err := c.AsyncCall(NewRequest("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"}, nil), func(response CallResponse) {
+		assert.Equal(t, User{Id: "1", Name: "username"}, *response.Reply.(*Response).reply.(*User))
 		lock.Unlock()
-	}, user)
+	}, NewResponse(user, nil))
 	assert.NoError(t, err)
 	assert.Equal(t, User{}, *user)
 
@@ -209,7 +215,9 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&"+
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
 	assert.NoError(t, err)
-	proto.Export(protocol.NewBaseInvoker(url))
+	proto.Export(&proxy_factory.ProxyInvoker{
+		BaseInvoker: *protocol.NewBaseInvoker(url),
+	})
 
 	time.Sleep(time.Second * 2)
 

@@ -28,7 +28,7 @@ type MethodConfig struct {
 	InterfaceId   string
 	InterfaceName string
 	Name          string `yaml:"name"  json:"name,omitempty" property:"name"`
-	Retries       int64  `yaml:"retries"  json:"retries,omitempty" property:"retries"`
+	Retries       string `yaml:"retries"  json:"retries,omitempty" property:"retries"`
 	Loadbalance   string `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
 	Weight        int64  `yaml:"weight"  json:"weight,omitempty" property:"weight"`
 }
