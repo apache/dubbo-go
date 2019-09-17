@@ -33,9 +33,9 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 	_ "github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/config"
-	_ "github.com/apache/dubbo-go/registry/protocol"
-
 	_ "github.com/apache/dubbo-go/filter/impl"
+	_ "github.com/apache/dubbo-go/protocol/dubbo"
+	_ "github.com/apache/dubbo-go/registry/protocol"
 
 	_ "github.com/apache/dubbo-go/cluster/cluster_impl"
 	_ "github.com/apache/dubbo-go/cluster/loadbalance"
@@ -168,7 +168,7 @@ func test1() {
 
 	time.Sleep(3e9)
 
-	println("\n\n\nstart to test dubbo")
+	println("\n\n\nstart to test1 dubbo")
 	user := &User{}
 	err = userProvider1.GetUser(context.TODO(), []interface{}{"A003"}, user)
 	if err != nil {
@@ -176,7 +176,7 @@ func test1() {
 	}
 	println("response result: %v", user)
 
-	println("\n\n\nstart to test dubbo - GetUser0")
+	println("\n\n\nstart to test1 dubbo - GetUser0")
 	ret, err := userProvider1.GetUser0("A003", "Moorse")
 	if err != nil {
 		panic(err)
@@ -190,7 +190,7 @@ func test1() {
 	}
 	println("response result: %v", ret1)
 
-	println("\n\n\nstart to test dubbo - getUser")
+	println("\n\n\nstart to test1 dubbo - getUser")
 	user = &User{}
 	var i int32 = 1
 	err = userProvider1.GetUser2(context.TODO(), []interface{}{i}, user)
@@ -206,7 +206,7 @@ func test1() {
 	}
 	println("succ!")
 
-	println("\n\n\nstart to test dubbo - getErr")
+	println("\n\n\nstart to test1 dubbo - getErr")
 	user = &User{}
 	err = userProvider1.GetErr(context.TODO(), []interface{}{"A003"}, user)
 	if err == nil {
@@ -214,7 +214,7 @@ func test1() {
 	}
 	println("getErr - error: %v", err)
 
-	println("\n\n\nstart to test dubbo illegal method")
+	println("\n\n\nstart to test1 dubbo illegal method")
 	err = userProvider1.GetUser1(context.TODO(), []interface{}{"A003"}, user)
 	if err == nil {
 		panic("err is nil")
@@ -232,7 +232,7 @@ func test2() {
 
 	time.Sleep(3e9)
 
-	println("\n\n\nstart to test dubbo")
+	println("\n\n\nstart to test2 dubbo")
 	user := &User{}
 	err = userProvider2.GetUser(context.TODO(), []interface{}{"A003"}, user)
 	if err != nil {
@@ -240,21 +240,21 @@ func test2() {
 	}
 	println("response result: %v", user)
 
-	println("\n\n\nstart to test dubbo - GetUser0")
+	println("\n\n\nstart to test2 dubbo - GetUser0")
 	ret, err := userProvider2.GetUser0("A003", "Moorse")
 	if err != nil {
 		panic(err)
 	}
 	println("response result: %v", ret)
 
-	println("\n\n\nstart to test dubbo - GetUsers")
+	println("\n\n\nstart to test2 dubbo - GetUsers")
 	ret1, err := userProvider2.GetUsers([]interface{}{[]interface{}{"A002", "A003"}})
 	if err != nil {
 		panic(err)
 	}
 	println("response result: %v", ret1)
 
-	println("\n\n\nstart to test dubbo - getUser")
+	println("\n\n\nstart to test2 dubbo - getUser")
 	user = &User{}
 	var i int32 = 1
 	err = userProvider2.GetUser2(context.TODO(), []interface{}{i}, user)
@@ -263,14 +263,14 @@ func test2() {
 	}
 	println("response result: %v", user)
 
-	println("\n\n\nstart to test dubbo - GetUser3")
+	println("\n\n\nstart to test2 dubbo - GetUser3")
 	err = userProvider2.GetUser3()
 	if err != nil {
 		panic(err)
 	}
 	println("succ!")
 
-	println("\n\n\nstart to test dubbo - getErr")
+	println("\n\n\nstart to test2 dubbo - getErr")
 	user = &User{}
 	err = userProvider2.GetErr(context.TODO(), []interface{}{"A003"}, user)
 	if err == nil {
@@ -278,7 +278,7 @@ func test2() {
 	}
 	println("getErr - error: %v", err)
 
-	println("\n\n\nstart to test dubbo illegal method")
+	println("\n\n\nstart to test2 dubbo illegal method")
 	err = userProvider2.GetUser1(context.TODO(), []interface{}{"A003"}, user)
 	if err == nil {
 		panic("err is nil")

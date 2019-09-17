@@ -5,9 +5,6 @@
 
 ---
 Apache Dubbo Go 语言实现
-![Apache Dubbo-go](./dubbogo.png "Apache Dubbo-go")
-
-Apache/Dubbo-go image, licensed under [Creative Commons 3.0 Attributions license](https://creativecommons.org/licenses/by/3.0/).
 
 ## 证书 ##
 

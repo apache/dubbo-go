@@ -66,7 +66,7 @@ func TestNacosRegistry_Subscribe(t *testing.T) {
 		return
 	}
 
-	regurl.Params.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
+	regurl.SetParam(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
 	reg2, _ := newNacosRegistry(&regurl)
 	listener, err := reg2.(*nacosRegistry).subscribe(&url)
 	assert.Nil(t, err)
@@ -111,7 +111,7 @@ func TestNacosRegistry_Subscribe_del(t *testing.T) {
 		return
 	}
 
-	regurl.Params.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
+	regurl.SetParam(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
 	reg2, _ := newNacosRegistry(&regurl)
 	listener, err := reg2.(*nacosRegistry).subscribe(&url1)
 	assert.Nil(t, err)
