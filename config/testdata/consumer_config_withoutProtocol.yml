@@ -75,3 +75,4 @@ protocol_conf:
       wait_timeout: "1s"
       max_msg_len: 1024
       session_name: "client"
+

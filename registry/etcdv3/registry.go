@@ -260,10 +260,11 @@ func (r *etcdV3Registry) registerProvider(svc common.URL) error {
 	}
 
 	params := url.Values{}
-	for k, v := range svc.Params {
-		params[k] = v
-	}
 
+	svc.RangeParams(func(key, value string) bool {
+		params[key] = []string{value}
+		return true
+	})
 	params.Add("pid", processID)
 	params.Add("ip", localIP)
 	params.Add("anyhost", "true")

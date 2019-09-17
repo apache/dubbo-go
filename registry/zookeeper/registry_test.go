@@ -60,7 +60,7 @@ func Test_Subscribe(t *testing.T) {
 	}
 
 	//consumer register
-	regurl.Params.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
+	regurl.SetParam(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
 	_, reg2, _ := newMockZkRegistry(&regurl, zookeeper.WithTestCluster(ts))
 
 	reg2.Register(url)

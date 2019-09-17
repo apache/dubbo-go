@@ -23,10 +23,15 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/container"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/config_center"
 	_ "github.com/apache/dubbo-go/config_center/configurator"
@@ -60,10 +65,11 @@ func init() {
 
 func getCacheKey(url *common.URL) string {
 	newUrl := url.Clone()
-	newUrl.Params.Del("dynamic")
-	newUrl.Params.Del("enabled")
+	delKeys := container.NewSet("dynamic", "enabled")
+	newUrl.RemoveParams(delKeys)
 	return newUrl.String()
 }
+
 func newRegistryProtocol() *registryProtocol {
 	return &registryProtocol{
 		registries: &sync.Map{},
@@ -283,8 +289,8 @@ func isMatchCategory(category string, categories string) bool {
 func getSubscribedOverrideUrl(providerUrl *common.URL) *common.URL {
 	newUrl := providerUrl.Clone()
 	newUrl.Protocol = constant.PROVIDER_PROTOCOL
-	newUrl.Params.Add(constant.CATEGORY_KEY, constant.CONFIGURATORS_CATEGORY)
-	newUrl.Params.Add(constant.CHECK_KEY, "false")
+	newUrl.SetParam(constant.CATEGORY_KEY, constant.CONFIGURATORS_CATEGORY)
+	newUrl.SetParam(constant.CHECK_KEY, "false")
 	return newUrl
 }
 
@@ -340,22 +346,20 @@ func GetProtocol() protocol.Protocol {
 
 type wrappedInvoker struct {
 	invoker protocol.Invoker
-	url     *common.URL
 	protocol.BaseInvoker
 }
 
 func newWrappedInvoker(invoker protocol.Invoker, url *common.URL) *wrappedInvoker {
 	return &wrappedInvoker{
 		invoker:     invoker,
-		url:         url,
-		BaseInvoker: *protocol.NewBaseInvoker(common.URL{}),
+		BaseInvoker: *protocol.NewBaseInvoker(*url),
 	}
 }
-func (ivk *wrappedInvoker) GetUrl() common.URL {
-	return *ivk.url
-}
-func (ivk *wrappedInvoker) getInvoker() protocol.Invoker {
-	return ivk.invoker
+
+func (ivk *wrappedInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+	// get right url
+	ivk.invoker.(*proxy_factory.ProxyInvoker).BaseInvoker = *protocol.NewBaseInvoker(ivk.GetUrl())
+	return ivk.invoker.Invoke(invocation)
 }
 
 type providerConfigurationListener struct {
