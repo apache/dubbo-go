@@ -1,0 +1,78 @@
+# dubbo client yaml configure file
+
+filter: ""
+
+# client
+request_timeout : "100ms"
+# connect timeout
+connect_timeout : "100ms"
+check: true
+# application config
+application:
+  organization : "ikurento.com"
+  name  : "BDTService"
+  module : "dubbogo user-info client"
+  version : "0.0.1"
+  owner : "ZX"
+  environment : "dev"
+
+registries :
+
+  "hangzhouzk":
+    protocol: "zookeeper"
+    timeout	: "3s"
+    address: "127.0.0.1:2181"
+    username: ""
+    password: ""
+  "shanghaizk":
+    protocol: "zookeeper"
+    timeout	: "3s"
+    address: "127.0.0.1:2182"
+    username: ""
+    password: ""
+
+references:
+  "UserProvider":
+    registry: "hangzhouzk,shanghaizk"
+    filter: ""
+    version: "1.0"
+    group: "as"
+    interface : "com.ikurento.user.UserProvider"
+    url: "dubbo://127.0.0.1:20000/UserProvider"
+    cluster: "failover"
+    methods :
+      - name: "GetUser"
+        retries: 3
+    params:
+      "serviceid":
+        "soa.com.ikurento.user.UserProvider"
+      "forks": 5
+
+protocol_conf:
+  dubbo:
+    reconnect_interval: 0
+    connection_number: 2
+    heartbeat_period: "5s"
+    session_timeout: "20s"
+    pool_size: 64
+    pool_ttl: 600
+    # gr_pool_size is recommended to be set to [cpu core number] * 100
+    gr_pool_size: 1200
+    # queue_len is recommended to be set to 64 or 128
+    queue_len: 64
+    # queue_number is recommended to be set to gr_pool_size / 20
+    queue_number: 60
+    getty_session_param:
+      compress_encoding: false
+      tcp_no_delay: true
+      tcp_keep_alive: true
+      keep_alive_period: "120s"
+      tcp_r_buf_size: 262144
+      tcp_w_buf_size: 65536
+      pkg_wq_size: 512
+      tcp_read_timeout: "1s"
+      tcp_write_timeout: "5s"
+      wait_timeout: "1s"
+      max_msg_len: 1024
+      session_name: "client"
+

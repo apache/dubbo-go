@@ -20,9 +20,13 @@ import (
 	"fmt"
 	"testing"
 )
+
+import (
+	"github.com/stretchr/testify/assert"
+)
+
 import (
 	"github.com/apache/dubbo-go/common"
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_loadRegistries(t *testing.T) {

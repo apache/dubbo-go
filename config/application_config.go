@@ -17,7 +17,13 @@
 
 package config
 
-import "github.com/apache/dubbo-go/common/constant"
+import (
+	"github.com/creasty/defaults"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/constant"
+)
 
 type ApplicationConfig struct {
 	Organization string `yaml:"organization"  json:"organization,omitempty" property:"organization"`
@@ -36,4 +42,14 @@ func (c *ApplicationConfig) Id() string {
 }
 func (c *ApplicationConfig) SetId(id string) {
 
+}
+func (c *ApplicationConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	if err := defaults.Set(c); err != nil {
+		return err
+	}
+	type plain ApplicationConfig
+	if err := unmarshal((*plain)(c)); err != nil {
+		return err
+	}
+	return nil
 }
