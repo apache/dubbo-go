@@ -33,11 +33,11 @@ import (
 )
 
 const (
-	token = "token"
+	TOKEN = "token"
 )
 
 func init() {
-	extension.SetFilter(token, GetTokenFilter)
+	extension.SetFilter(TOKEN, GetTokenFilter)
 }
 
 type TokenFilter struct{}
@@ -46,13 +46,11 @@ func (tf *TokenFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invo
 	invokerTkn := invoker.GetUrl().GetParam(constant.TOKEN_KEY, "")
 	if len(invokerTkn) > 0 {
 		attachs := invocation.Attachments()
-		if len(attachs) > 0 {
-			remoteTkn, exist := attachs[constant.TOKEN_KEY]
-			if exist && strings.EqualFold(invokerTkn, remoteTkn) {
-				return invoker.Invoke(invocation)
-			}
+		remoteTkn, exist := attachs[constant.TOKEN_KEY]
+		if exist && strings.EqualFold(invokerTkn, remoteTkn) {
+			return invoker.Invoke(invocation)
 		}
-		return &protocol.RPCResult{Err: perrors.Errorf("Invalid token! Forbid invoke remote service %s method %s ",
+		return &protocol.RPCResult{Err: perrors.Errorf("Invalid token! Forbid invoke remote service %v method %s ",
 			invoker, invocation.MethodName())}
 	}
 
