@@ -59,7 +59,7 @@ func init() {
 		return
 	}
 	dubboConf := protocolConf.(map[interface{}]interface{})[DUBBO]
-	if protocolConf == nil {
+	if dubboConf == nil {
 		logger.Warnf("dubboConf is nil")
 		return
 	}
