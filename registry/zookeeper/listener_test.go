@@ -23,9 +23,13 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/remoting"
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/config_center"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 func Test_DataChange(t *testing.T) {
@@ -39,5 +43,5 @@ func Test_DataChange(t *testing.T) {
 type MockDataListener struct {
 }
 
-func (*MockDataListener) Process(configType *remoting.ConfigChangeEvent) {
+func (*MockDataListener) Process(configType *config_center.ConfigChangeEvent) {
 }

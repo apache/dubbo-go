@@ -19,6 +19,7 @@ package config
 import (
 	"strings"
 )
+
 import (
 	"github.com/apache/dubbo-go/common/constant"
 )

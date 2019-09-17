@@ -31,13 +31,13 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/config_center"
-	"github.com/apache/dubbo-go/remoting"
+	"github.com/apache/dubbo-go/config_center/parser"
 )
 
 func initZkData(group string, t *testing.T) (*zk.TestCluster, *zookeeperDynamicConfiguration) {
 	regurl, _ := common.NewURL(context.TODO(), "registry://127.0.0.1:1111")
 	ts, reg, err := newMockZookeeperDynamicConfiguration(&regurl)
-	reg.SetParser(&config_center.DefaultConfigurationParser{})
+	reg.SetParser(&parser.DefaultConfigurationParser{})
 
 	assert.NoError(t, err)
 
@@ -161,7 +161,7 @@ type mockDataListener struct {
 	event string
 }
 
-func (l *mockDataListener) Process(configType *remoting.ConfigChangeEvent) {
+func (l *mockDataListener) Process(configType *config_center.ConfigChangeEvent) {
 	fmt.Println("process!!!!!")
 	l.wg.Done()
 	l.event = configType.Key
