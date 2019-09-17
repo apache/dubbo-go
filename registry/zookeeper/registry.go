@@ -271,9 +271,11 @@ func (r *zkRegistry) register(c common.URL) error {
 		return perrors.WithStack(err)
 	}
 	params = url.Values{}
-	for k, v := range c.Params {
-		params[k] = v
-	}
+
+	c.RangeParams(func(key, value string) bool {
+		params.Add(key, value)
+		return true
+	})
 
 	params.Add("pid", processID)
 	params.Add("ip", localIP)

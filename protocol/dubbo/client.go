@@ -59,7 +59,7 @@ func init() {
 		return
 	}
 	dubboConf := protocolConf.(map[interface{}]interface{})[DUBBO]
-	if protocolConf == nil {
+	if dubboConf == nil {
 		logger.Warnf("dubboConf is nil")
 		return
 	}
@@ -150,46 +150,74 @@ func NewClient(opt Options) *Client {
 	return c
 }
 
-// call one way
-func (c *Client) CallOneway(addr string, svcUrl common.URL, method string, args interface{}) error {
-
-	return perrors.WithStack(c.call(CT_OneWay, addr, svcUrl, method, args, nil, nil))
+type Request struct {
+	addr   string
+	svcUrl common.URL
+	method string
+	args   interface{}
+	atta   map[string]string
 }
 
-// if @reply is nil, the transport layer will get the response without notify the invoker.
-func (c *Client) Call(addr string, svcUrl common.URL, method string, args, reply interface{}) error {
+func NewRequest(addr string, svcUrl common.URL, method string, args interface{}, atta map[string]string) *Request {
+	return &Request{
+		addr:   addr,
+		svcUrl: svcUrl,
+		method: method,
+		args:   args,
+		atta:   atta,
+	}
+}
+
+type Response struct {
+	reply interface{}
+	atta  map[string]string
+}
+
+func NewResponse(reply interface{}, atta map[string]string) *Response {
+	return &Response{
+		reply: reply,
+		atta:  atta,
+	}
+}
+
+// call one way
+func (c *Client) CallOneway(request *Request) error {
+
+	return perrors.WithStack(c.call(CT_OneWay, request, NewResponse(nil, nil), nil))
+}
+
+// if @response is nil, the transport layer will get the response without notify the invoker.
+func (c *Client) Call(request *Request, response *Response) error {
 
 	ct := CT_TwoWay
-	if reply == nil {
+	if response.reply == nil {
 		ct = CT_OneWay
 	}
 
-	return perrors.WithStack(c.call(ct, addr, svcUrl, method, args, reply, nil))
+	return perrors.WithStack(c.call(ct, request, response, nil))
 }
 
-func (c *Client) AsyncCall(addr string, svcUrl common.URL, method string, args interface{},
-	callback AsyncCallback, reply interface{}) error {
+func (c *Client) AsyncCall(request *Request, callback AsyncCallback, response *Response) error {
 
-	return perrors.WithStack(c.call(CT_TwoWay, addr, svcUrl, method, args, reply, callback))
+	return perrors.WithStack(c.call(CT_TwoWay, request, response, callback))
 }
 
-func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string,
-	args, reply interface{}, callback AsyncCallback) error {
+func (c *Client) call(ct CallType, request *Request, response *Response, callback AsyncCallback) error {
 
 	p := &DubboPackage{}
-	p.Service.Path = strings.TrimPrefix(svcUrl.Path, "/")
-	p.Service.Interface = svcUrl.GetParam(constant.INTERFACE_KEY, "")
-	p.Service.Version = svcUrl.GetParam(constant.VERSION_KEY, "")
-	p.Service.Method = method
+	p.Service.Path = strings.TrimPrefix(request.svcUrl.Path, "/")
+	p.Service.Interface = request.svcUrl.GetParam(constant.INTERFACE_KEY, "")
+	p.Service.Version = request.svcUrl.GetParam(constant.VERSION_KEY, "")
+	p.Service.Method = request.method
 	p.Service.Timeout = c.opts.RequestTimeout
 	p.Header.SerialID = byte(S_Dubbo)
-	p.Body = args
+	p.Body = hessian.NewRequest(request.args, request.atta)
 
 	var rsp *PendingResponse
 	if ct != CT_OneWay {
 		p.Header.Type = hessian.PackageRequest_TwoWay
 		rsp = NewPendingResponse()
-		rsp.reply = reply
+		rsp.response = response
 		rsp.callback = callback
 	} else {
 		p.Header.Type = hessian.PackageRequest
@@ -200,7 +228,7 @@ func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string
 		session getty.Session
 		conn    *gettyRPCClient
 	)
-	conn, session, err = c.selectSession(addr)
+	conn, session, err = c.selectSession(request.addr)
 	if err != nil {
 		return perrors.WithStack(err)
 	}
@@ -259,6 +287,7 @@ func (c *Client) transfer(session getty.Session, pkg *DubboPackage,
 
 	if pkg == nil {
 		pkg = &DubboPackage{}
+		pkg.Body = hessian.NewRequest([]interface{}{}, nil)
 		pkg.Body = []interface{}{}
 		pkg.Header.Type = hessian.PackageHeartbeat
 		pkg.Header.SerialID = byte(S_Dubbo)

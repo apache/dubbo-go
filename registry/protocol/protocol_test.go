@@ -249,7 +249,7 @@ func TestExportWithOverrideListener(t *testing.T) {
 	reg.MockEvent(event)
 	time.Sleep(1e9)
 	newUrl := url.SubURL.Clone()
-	newUrl.Params.Set(constant.CLUSTER_KEY, "mock1")
+	newUrl.SetParam(constant.CLUSTER_KEY, "mock1")
 	v2, _ := regProtocol.bounds.Load(getCacheKey(newUrl))
 	assert.NotNil(t, v2)
 }
@@ -268,7 +268,7 @@ func TestExportWithServiceConfig(t *testing.T) {
 	dc.(*config_center.MockDynamicConfiguration).MockServiceConfigEvent()
 
 	newUrl := url.SubURL.Clone()
-	newUrl.Params.Set(constant.CLUSTER_KEY, "mock1")
+	newUrl.SetParam(constant.CLUSTER_KEY, "mock1")
 	v2, _ := regProtocol.bounds.Load(getCacheKey(newUrl))
 	assert.NotNil(t, v2)
 }
@@ -287,7 +287,7 @@ func TestExportWithApplicationConfig(t *testing.T) {
 	dc.(*config_center.MockDynamicConfiguration).MockApplicationConfigEvent()
 
 	newUrl := url.SubURL.Clone()
-	newUrl.Params.Set(constant.CLUSTER_KEY, "mock1")
+	newUrl.SetParam(constant.CLUSTER_KEY, "mock1")
 	v2, _ := regProtocol.bounds.Load(getCacheKey(newUrl))
 	assert.NotNil(t, v2)
 }

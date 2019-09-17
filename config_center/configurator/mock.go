@@ -36,6 +36,6 @@ func (c *mockConfigurator) GetUrl() *common.URL {
 
 func (c *mockConfigurator) Configure(url *common.URL) {
 	if cluster := c.GetUrl().GetParam(constant.CLUSTER_KEY, ""); cluster != "" {
-		url.Params.Set(constant.CLUSTER_KEY, cluster)
+		url.SetParam(constant.CLUSTER_KEY, cluster)
 	}
 }

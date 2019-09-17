@@ -63,7 +63,7 @@ func (suite *RegistryTestSuite) TestSubscribe() {
 	}
 
 	//consumer register
-	regurl.Params.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
+	regurl.SetParam(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
 	reg2 := initRegistry(t)
 
 	reg2.Register(url)
