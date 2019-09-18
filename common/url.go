@@ -34,6 +34,7 @@ import (
 	"github.com/dubbogo/gost/container"
 	"github.com/jinzhu/copier"
 	perrors "github.com/pkg/errors"
+	"github.com/satori/go.uuid"
 )
 
 import (
@@ -147,6 +148,18 @@ func WithPath(path string) option {
 func WithLocation(location string) option {
 	return func(url *URL) {
 		url.Location = location
+	}
+}
+
+func WithToken(token string) option {
+	return func(url *URL) {
+		if len(token) > 0 {
+			value := token
+			if strings.ToLower(token) == "true" || strings.ToLower(token) == "default" {
+				value = uuid.NewV4().String()
+			}
+			url.SetParam(constant.TOKEN_KEY, value)
+		}
 	}
 }
 
