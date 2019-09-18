@@ -27,7 +27,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/coconfig/service_config.gommon/extension"
+	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/filter"
 	"github.com/apache/dubbo-go/protocol"
 )
