@@ -38,7 +38,6 @@ func init() {
 	}
 }
 
-// ref: https://stackoverflow.com/questions/23558425/how-do-i-get-the-local-ip-address-in-go
 func GetLocalIP() (string, error) {
 	faces, err := net.Interfaces()
 	if err != nil {
