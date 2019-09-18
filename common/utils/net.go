@@ -47,17 +47,7 @@ func GetLocalIP() (string, error) {
 
 	var addr net.IP
 	for _, face := range faces {
-		if face.Flags&net.FlagUp == 0 {
-			// interface down
-			continue
-		}
-
-		if face.Flags&net.FlagLoopback != 0 {
-			// loopback interface
-			continue
-		}
-
-		if strings.Contains(strings.ToLower(face.Name), "docker") {
+		if !isValidNetworkInterface(face) {
 			continue
 		}
 
@@ -114,4 +104,22 @@ func getValidIPv4(addrs []net.Addr) (net.IP, bool) {
 		return ip, true
 	}
 	return nil, false
+}
+
+func isValidNetworkInterface(face net.Interface) bool {
+	if face.Flags&net.FlagUp == 0 {
+		// interface down
+		return false
+	}
+
+	if face.Flags&net.FlagLoopback != 0 {
+		// loopback interface
+		return false
+	}
+
+	if strings.Contains(strings.ToLower(face.Name), "docker") {
+		return false
+	}
+
+	return true
 }
