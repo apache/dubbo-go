@@ -10,7 +10,6 @@
 - Allow user set custom params for registry<https://github.com/apache/dubbo-go/pull/117>；
 - Support zookeeper config center<https://github.com/apache/dubbo-go/pull/99>；
 - Failsafe/Failback  Cluster Strategy<https://github.com/apache/dubbo-go/pull/136>;
-- Support TokenFilter<https://github.com/apache/dubbo-go/pull/202>;
 
 ### Enhancement
 
