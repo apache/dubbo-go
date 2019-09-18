@@ -30,6 +30,7 @@ services:
     - name: "GetUser"
       retries: "1"
       loadbalance: "random"
+    token: "true"
 
 protocols:
   "dubbo":
