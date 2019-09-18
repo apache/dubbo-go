@@ -45,7 +45,7 @@ func GetLocalIP() (string, error) {
 		return "", perrors.WithStack(err)
 	}
 
-	var privateIpv4Addr, ipv4Addr net.IP
+	var addr net.IP
 	for _, face := range faces {
 		if face.Flags&net.FlagUp == 0 {
 			// interface down
@@ -67,22 +67,18 @@ func GetLocalIP() (string, error) {
 		}
 
 		if ipv4, ok := getValidIPv4(addrs); ok {
-			ipv4Addr = ipv4
+			addr = ipv4
 			if isPrivateIP(ipv4) {
-				privateIpv4Addr = ipv4
+				return ipv4.String(), nil
 			}
 		}
 	}
 
-	if ipv4Addr == nil {
+	if addr == nil {
 		return "", perrors.Errorf("can not get local IP")
 	}
 
-	if privateIpv4Addr == nil {
-		return ipv4Addr.String(), nil
-	}
-
-	return privateIpv4Addr.String(), nil
+	return addr.String(), nil
 }
 
 func isPrivateIP(ip net.IP) bool {
