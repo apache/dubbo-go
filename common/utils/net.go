@@ -44,7 +44,6 @@ func GetLocalIP() (string, error) {
 		return "", perrors.WithStack(err)
 	}
 
-	//var ipAddr []byte
 	var ipAddr, ipAddr2 net.IP
 	for _, i := range ifs {
 		addrs, err := i.Addrs()
