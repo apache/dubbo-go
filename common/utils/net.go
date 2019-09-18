@@ -19,6 +19,7 @@ package utils
 
 import (
 	"net"
+	"strings"
 )
 
 import (
@@ -39,38 +40,49 @@ func init() {
 
 // ref: https://stackoverflow.com/questions/23558425/how-do-i-get-the-local-ip-address-in-go
 func GetLocalIP() (string, error) {
-	ifs, err := net.Interfaces()
+	faces, err := net.Interfaces()
 	if err != nil {
 		return "", perrors.WithStack(err)
 	}
 
-	var ipAddr []byte
-	for _, i := range ifs {
-		addrs, err := i.Addrs()
+	var privateIpv4Addr, ipv4Addr net.IP
+	for _, face := range faces {
+		if face.Flags&net.FlagUp == 0 {
+			// interface down
+			continue
+		}
+
+		if face.Flags&net.FlagLoopback != 0 {
+			// loopback interface
+			continue
+		}
+
+		if strings.Contains(strings.ToLower(face.Name), "docker") {
+			continue
+		}
+
+		addrs, err := face.Addrs()
 		if err != nil {
 			return "", perrors.WithStack(err)
 		}
-		var ip net.IP
-		for _, addr := range addrs {
-			switch v := addr.(type) {
-			case *net.IPNet:
-				ip = v.IP
-			case *net.IPAddr:
-				ip = v.IP
-			}
 
-			if !ip.IsLoopback() && ip.To4() != nil && isPrivateIP(ip.String()) {
-				ipAddr = ip
-				break
+		if ipv4, ok := getValidIPv4(addrs); ok {
+			ipv4Addr = ipv4
+			if isPrivateIP(ipv4.String()) {
+				privateIpv4Addr = ipv4
 			}
 		}
 	}
 
-	if ipAddr == nil {
+	if ipv4Addr == nil {
 		return "", perrors.Errorf("can not get local IP")
 	}
 
-	return net.IP(ipAddr).String(), nil
+	if privateIpv4Addr == nil {
+		return ipv4Addr.String(), nil
+	}
+
+	return privateIpv4Addr.String(), nil
 }
 
 func isPrivateIP(ipAddr string) bool {
@@ -81,4 +93,30 @@ func isPrivateIP(ipAddr string) bool {
 		}
 	}
 	return false
+}
+
+func getValidIPv4(addrs []net.Addr) (net.IP, bool) {
+	for _, addr := range addrs {
+		var ip net.IP
+
+		switch v := addr.(type) {
+		case *net.IPNet:
+			ip = v.IP
+		case *net.IPAddr:
+			ip = v.IP
+		}
+
+		if ip == nil || ip.IsLoopback() {
+			continue
+		}
+
+		ip = ip.To4()
+		if ip == nil {
+			// not an valid ipv4 address
+			continue
+		}
+
+		return ip, true
+	}
+	return nil, false
 }
