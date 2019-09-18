@@ -44,7 +44,8 @@ func GetLocalIP() (string, error) {
 		return "", perrors.WithStack(err)
 	}
 
-	var ipAddr []byte
+	//var ipAddr []byte
+	var ipAddr, ipAddr2 net.IP
 	for _, i := range ifs {
 		addrs, err := i.Addrs()
 		if err != nil {
@@ -59,18 +60,24 @@ func GetLocalIP() (string, error) {
 				ip = v.IP
 			}
 
-			if !ip.IsLoopback() && ip.To4() != nil && isPrivateIP(ip.String()) {
-				ipAddr = ip
-				break
+			if !ip.IsLoopback() && ip.To4() != nil {
+				ipAddr2 = ip
+				if isPrivateIP(ip.String()) {
+					ipAddr = ip
+				}
 			}
 		}
 	}
 
-	if ipAddr == nil {
+	if ipAddr2 == nil {
 		return "", perrors.Errorf("can not get local IP")
 	}
 
-	return net.IP(ipAddr).String(), nil
+	if ipAddr == nil {
+		ipAddr = ipAddr2
+	}
+
+	return ipAddr.String(), nil
 }
 
 func isPrivateIP(ipAddr string) bool {
