@@ -68,7 +68,7 @@ func GetLocalIP() (string, error) {
 
 		if ipv4, ok := getValidIPv4(addrs); ok {
 			ipv4Addr = ipv4
-			if isPrivateIP(ipv4.String()) {
+			if isPrivateIP(ipv4) {
 				privateIpv4Addr = ipv4
 			}
 		}
@@ -85,8 +85,7 @@ func GetLocalIP() (string, error) {
 	return privateIpv4Addr.String(), nil
 }
 
-func isPrivateIP(ipAddr string) bool {
-	ip := net.ParseIP(ipAddr)
+func isPrivateIP(ip net.IP) bool {
 	for _, priv := range privateBlocks {
 		if priv.Contains(ip) {
 			return true
