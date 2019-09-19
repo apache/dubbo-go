@@ -111,31 +111,21 @@ func (r *consulRegistry) unregister(url common.URL) error {
 	return r.client.Agent().ServiceDeregister(buildId(url))
 }
 
-func (r *consulRegistry) subscribe(url *common.URL) (registry.Listener, error) {
-	var (
-		listener registry.Listener
-		err      error
-	)
-
+func (r *consulRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
 	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
 	if role == common.CONSUMER {
-		listener, err = r.getListener(*url)
-		if err != nil {
-			return nil, err
-		}
+		r.subscribe(url, notifyListener)
 	}
-	return listener, nil
 }
 
-//subscibe from registry
-func (r *consulRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
+func (r *consulRegistry) subscribe(url *common.URL, notifyListener registry.NotifyListener) {
 	for {
 		if !r.IsAvailable() {
 			logger.Warnf("event listener game over.")
 			return
 		}
 
-		listener, err := r.subscribe(url)
+		listener, err := r.getListener(*url)
 		if err != nil {
 			if !r.IsAvailable() {
 				logger.Warnf("event listener game over.")
@@ -155,9 +145,7 @@ func (r *consulRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 				logger.Infof("update begin, service event: %v", serviceEvent.String())
 				notifyListener.Notify(serviceEvent)
 			}
-
 		}
-
 	}
 }
 
