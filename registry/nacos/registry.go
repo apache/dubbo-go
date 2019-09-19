@@ -172,15 +172,15 @@ func (nr *nacosRegistry) subscribe(conf *common.URL) (registry.Listener, error) 
 	return NewNacosListener(*conf, nr.namingClient)
 }
 
-//subscibe from registry
-func (r *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
+//subscribe from registry
+func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
 	for {
-		if !r.IsAvailable() {
+		if !nr.IsAvailable() {
 			logger.Warnf("event listener game over.")
 			return
 		}
 
-		listener, err := r.subscribe(url)
+		listener, err := nr.subscribe(url)
 		if err != nil {
 			if !r.IsAvailable() {
 				logger.Warnf("event listener game over.")
@@ -205,6 +205,7 @@ func (r *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Notif
 
 	}
 }
+
 func (nr *nacosRegistry) GetUrl() common.URL {
 	return *nr.URL
 }

@@ -40,10 +40,6 @@ import (
 	"github.com/apache/dubbo-go/registry"
 )
 
-const (
-	RegistryConnDelay = 3
-)
-
 type Options struct {
 	serviceTTL time.Duration
 }
@@ -87,7 +83,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry, opts ...O
 	return dir, nil
 }
 
-//subscibe from registry
+//subscribe from registry
 func (dir *registryDirectory) Subscribe(url *common.URL) {
 	dir.consumerConfigurationListener.addNotifyListener(dir)
 	dir.referenceConfigurationListener = newReferenceConfigurationListener(dir, url)
@@ -245,6 +241,7 @@ func (dir *registryDirectory) Destroy() {
 		dir.cacheInvokers = []protocol.Invoker{}
 	})
 }
+
 func (dir *registryDirectory) overrideUrl(targetUrl *common.URL) {
 	doOverrideUrl(dir.configurators, targetUrl)
 	doOverrideUrl(dir.consumerConfigurationListener.Configurators(), targetUrl)
@@ -293,9 +290,11 @@ func newConsumerConfigurationListener(dir *registryDirectory) *consumerConfigura
 	)
 	return listener
 }
+
 func (l *consumerConfigurationListener) addNotifyListener(listener registry.NotifyListener) {
 	l.listeners = append(l.listeners, listener)
 }
+
 func (l *consumerConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
 	l.BaseConfigurationListener.Process(event)
 	l.directory.refreshInvokers(nil)
