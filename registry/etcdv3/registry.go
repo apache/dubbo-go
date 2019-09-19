@@ -330,7 +330,7 @@ func (r *etcdV3Registry) subscribe(svc *common.URL) (registry.Listener, error) {
 	return configListener, nil
 }
 
-//subscibe from registry
+//subscribe from registry
 func (r *etcdV3Registry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
 	for {
 		if !r.IsAvailable() {
