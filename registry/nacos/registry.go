@@ -182,7 +182,7 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 
 		listener, err := nr.subscribe(url)
 		if err != nil {
-			if !r.IsAvailable() {
+			if !nr.IsAvailable() {
 				logger.Warnf("event listener game over.")
 				return
 			}

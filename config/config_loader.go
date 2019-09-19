@@ -54,6 +54,7 @@ func init() {
 		providerConfig = nil
 	}
 }
+
 func checkRegistries(registries map[string]*RegistryConfig, singleRegistry *RegistryConfig) {
 	if len(registries) == 0 && singleRegistry != nil {
 		registries[constant.DEFAULT_KEY] = singleRegistry
