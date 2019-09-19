@@ -19,6 +19,7 @@ package utils
 
 import (
 	"net"
+	"strings"
 )
 
 import (
@@ -37,48 +38,87 @@ func init() {
 	}
 }
 
-// ref: https://stackoverflow.com/questions/23558425/how-do-i-get-the-local-ip-address-in-go
 func GetLocalIP() (string, error) {
-	ifs, err := net.Interfaces()
+	faces, err := net.Interfaces()
 	if err != nil {
 		return "", perrors.WithStack(err)
 	}
 
-	var ipAddr []byte
-	for _, i := range ifs {
-		addrs, err := i.Addrs()
+	var addr net.IP
+	for _, face := range faces {
+		if !isValidNetworkInterface(face) {
+			continue
+		}
+
+		addrs, err := face.Addrs()
 		if err != nil {
 			return "", perrors.WithStack(err)
 		}
-		var ip net.IP
-		for _, addr := range addrs {
-			switch v := addr.(type) {
-			case *net.IPNet:
-				ip = v.IP
-			case *net.IPAddr:
-				ip = v.IP
-			}
 
-			if !ip.IsLoopback() && ip.To4() != nil && isPrivateIP(ip.String()) {
-				ipAddr = ip
-				break
+		if ipv4, ok := getValidIPv4(addrs); ok {
+			addr = ipv4
+			if isPrivateIP(ipv4) {
+				return ipv4.String(), nil
 			}
 		}
 	}
 
-	if ipAddr == nil {
+	if addr == nil {
 		return "", perrors.Errorf("can not get local IP")
 	}
 
-	return net.IP(ipAddr).String(), nil
+	return addr.String(), nil
 }
 
-func isPrivateIP(ipAddr string) bool {
-	ip := net.ParseIP(ipAddr)
+func isPrivateIP(ip net.IP) bool {
 	for _, priv := range privateBlocks {
 		if priv.Contains(ip) {
 			return true
 		}
 	}
 	return false
+}
+
+func getValidIPv4(addrs []net.Addr) (net.IP, bool) {
+	for _, addr := range addrs {
+		var ip net.IP
+
+		switch v := addr.(type) {
+		case *net.IPNet:
+			ip = v.IP
+		case *net.IPAddr:
+			ip = v.IP
+		}
+
+		if ip == nil || ip.IsLoopback() {
+			continue
+		}
+
+		ip = ip.To4()
+		if ip == nil {
+			// not an valid ipv4 address
+			continue
+		}
+
+		return ip, true
+	}
+	return nil, false
+}
+
+func isValidNetworkInterface(face net.Interface) bool {
+	if face.Flags&net.FlagUp == 0 {
+		// interface down
+		return false
+	}
+
+	if face.Flags&net.FlagLoopback != 0 {
+		// loopback interface
+		return false
+	}
+
+	if strings.Contains(strings.ToLower(face.Name), "docker") {
+		return false
+	}
+
+	return true
 }
