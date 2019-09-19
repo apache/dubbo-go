@@ -51,7 +51,7 @@ func (suite *consulRegistryTestSuite) testUnregister() {
 func (suite *consulRegistryTestSuite) testSubscribe() {
 	consumerUrl := newConsumerUrl(consumerHost, consumerPort, service, protocol)
 	suite.consumerUrl = consumerUrl
-	listener, err := suite.consumerRegistry.subscribe(&consumerUrl)
+	listener, err := suite.consumerRegistry.getListener(consumerUrl)
 	assert.NoError(suite.t, err)
 	suite.listener = listener
 }
