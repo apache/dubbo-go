@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+	http://code.alibabatech.com/schema/dubbo http://code.alibabatech.com/schema/dubbo/dubbo.xsd">
+
+
+	<!-- 消费方应用名，用于计算依赖关系，不是匹配条件，不要与提供方一样 -->
+	<dubbo:application name="user-info-client" />
+	<!-- 连接到哪个本地注册中心 -->
+	<dubbo:registry id="ikurento"  address="zookeeper://127.0.0.1:2181" />
+	<!-- dubbo.registry.address from dubbo.properties -->
+	<!-- dubbo:registry address="${dubbo.registry.address}" / -->
+
+	<!-- 用dubbo协议在20880端口暴露服务 -->
+	<dubbo:protocol id="dubbo" name="dubbo" />
+	<dubbo:protocol id="jsonrpc" name="jsonrpc" />
+
+	<!-- 声明需要使用的服务接口 -->
+	<dubbo:reference id="userProvider" protocol="jsonrpc" interface="com.ikurento.user.UserProvider">
+	<!-- dubbo:reference id="userProvider" protocol="dubbo" interface="com.ikurento.user.UserProvider">
+            <dubbo:parameter key="heartbeat" value="10000"/ -->
+    </dubbo:reference>
+	<dubbo:reference id="userProvider1" protocol="jsonrpc" version="2.0" interface="com.ikurento.user.UserProvider">
+	</dubbo:reference>
+	<dubbo:reference id="userProvider2" protocol="jsonrpc" version="2.0" group="as" interface="com.ikurento.user.UserProvider">
+	</dubbo:reference>
+
+</beans>

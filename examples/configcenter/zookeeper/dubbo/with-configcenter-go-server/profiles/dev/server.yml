@@ -1,0 +1,39 @@
+# dubbo server yaml configure file
+
+
+config_center:
+  protocol: "zookeeper"
+  address: "127.0.0.1:2181"
+  group: "dubbo"
+  config_file: "dubbo.properties"
+
+services:
+  "UserProvider":
+    protocol : "dubbo"
+    # 相当于dubbo.xml中的interface
+    interface : "com.ikurento.user.UserProvider"
+    loadbalance: "random"
+    warmup: "100"
+    cluster: "failover"
+    methods:
+      - name: "GetUser"
+        retries: "1"
+        loadbalance: "random"
+
+protocol_conf:
+  dubbo:
+    session_number: 700
+    session_timeout: "20s"
+    getty_session_param:
+      compress_encoding: false
+      tcp_no_delay: true
+      tcp_keep_alive: true
+      keep_alive_period: "120s"
+      tcp_r_buf_size: 262144
+      tcp_w_buf_size: 65536
+      pkg_wq_size: 512
+      tcp_read_timeout: "1s"
+      tcp_write_timeout: "5s"
+      wait_timeout: "1s"
+      max_msg_len: 1024
+      session_name: "server"

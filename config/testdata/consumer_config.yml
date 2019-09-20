@@ -43,10 +43,11 @@ references:
     cluster: "failover"
     methods :
       - name: "GetUser"
-        retries: 3
+        retries: "3"
     params:
       "serviceid":
         "soa.com.ikurento.user.UserProvider"
+      "forks": 5
 
 protocol_conf:
   dubbo:
@@ -56,6 +57,12 @@ protocol_conf:
     session_timeout: "20s"
     pool_size: 64
     pool_ttl: 600
+    # gr_pool_size is recommended to be set to [cpu core number] * 100
+    gr_pool_size: 1200
+    # queue_len is recommended to be set to 64 or 128
+    queue_len: 64
+    # queue_number is recommended to be set to gr_pool_size / 20
+    queue_number: 60
     getty_session_param:
       compress_encoding: false
       tcp_no_delay: true
@@ -63,7 +70,6 @@ protocol_conf:
       keep_alive_period: "120s"
       tcp_r_buf_size: 262144
       tcp_w_buf_size: 65536
-      pkg_rq_size: 1024
       pkg_wq_size: 512
       tcp_read_timeout: "1s"
       tcp_write_timeout: "5s"
