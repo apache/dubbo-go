@@ -26,11 +26,15 @@ const (
 )
 
 const (
-	DEFAULT_LOADBALANCE = "random"
-	DEFAULT_RETRIES     = 2
-	DEFAULT_PROTOCOL    = "dubbo"
-	DEFAULT_REG_TIMEOUT = "10s"
-	DEFAULT_CLUSTER     = "failover"
+	DEFAULT_LOADBALANCE        = "random"
+	DEFAULT_RETRIES            = "2"
+	DEFAULT_RETRIES_INT        = 2
+	DEFAULT_PROTOCOL           = "dubbo"
+	DEFAULT_REG_TIMEOUT        = "10s"
+	DEFAULT_CLUSTER            = "failover"
+	DEFAULT_FAILBACK_TIMES     = "3"
+	DEFAULT_FAILBACK_TIMES_INT = 3
+	DEFAULT_FAILBACK_TASKS     = 100
 )
 
 const (
@@ -38,6 +42,8 @@ const (
 	PREFIX_DEFAULT_KEY        = "default."
 	DEFAULT_SERVICE_FILTERS   = "echo"
 	DEFAULT_REFERENCE_FILTERS = ""
+	GENERIC_REFERENCE_FILTERS = "generic"
+	GENERIC                   = "$invoke"
 	ECHO                      = "$echo"
 )
 

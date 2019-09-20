@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+	http://code.alibabatech.com/schema/dubbo http://code.alibabatech.com/schema/dubbo/dubbo.xsd">
+
+	<!-- 应用名 -->
+	<dubbo:application name="user-info-server"/>
+	<!-- 连接到哪个本地注册中心 -->
+	<dubbo:registry id="ikurento"  address="zookeeper://127.0.0.1:2181" />
+	<dubbo:registry id="ikurento2"  address="zookeeper://127.0.0.1:2182" />
+	<!-- 用dubbo协议在20880端口暴露服务 -->
+    <!-- dubbo:protocol host="127.0.0.1" / -->
+	<dubbo:protocol id="dubbo" name="dubbo" host="127.0.0.1" port="20010" />
+	<dubbo:protocol id="jsonrpc" name="jsonrpc" host="127.0.0.1" port="10010" />
+	<!-- 声明需要暴露的服务接口 -->
+	<dubbo:service id="aaa" registry="ikurento" timeout="3000" interface="com.ikurento.user.UserProvider" ref="demoService"/>
+	<dubbo:service id="bbb" registry="ikurento" timeout="3000" interface="com.ikurento.user.UserProvider" ref="otherService" version="2.0"/>
+	<dubbo:service id="ccc" registry="ikurento" timeout="3000" interface="com.ikurento.user.UserProvider" ref="otherService" group="as" version="2.0"/>
+
+	<bean id="demoService" class="com.ikurento.user.UserProviderImpl" />
+	<bean id="otherService" class="com.ikurento.user.UserProviderAnotherImpl"/>
+
+</beans>

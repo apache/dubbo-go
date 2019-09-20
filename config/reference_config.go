@@ -47,7 +47,7 @@ type ReferenceConfig struct {
 	Registry      string            `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
 	Cluster       string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
 	Loadbalance   string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
-	Retries       int64             `yaml:"retries"  json:"retries,omitempty" property:"retries"`
+	Retries       string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
 	Group         string            `yaml:"group"  json:"group,omitempty" property:"group"`
 	Version       string            `yaml:"version"  json:"version,omitempty" property:"version"`
 	Methods       []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
@@ -55,6 +55,7 @@ type ReferenceConfig struct {
 	Params        map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
 	invoker       protocol.Invoker
 	urls          []*common.URL
+	Generic       bool `yaml:"generic"  json:"generic,omitempty" property:"generic"`
 }
 
 func (c *ReferenceConfig) Prefix() string {
@@ -93,7 +94,7 @@ func (refconfig *ReferenceConfig) Refer() {
 				refconfig.urls = append(refconfig.urls, &serviceUrl)
 			} else {
 				if serviceUrl.Path == "" {
-					serviceUrl.Path = "/" + refconfig.InterfaceName
+					serviceUrl.Path = "/" + refconfig.id
 				}
 				// merge url need to do
 				newUrl := common.MergeUrl(serviceUrl, url)
@@ -110,7 +111,6 @@ func (refconfig *ReferenceConfig) Refer() {
 			regUrl.SubURL = url
 		}
 	}
-
 	if len(refconfig.urls) == 1 {
 		refconfig.invoker = extension.GetProtocol(refconfig.urls[0].Protocol).Refer(*refconfig.urls[0])
 	} else {
@@ -154,9 +154,11 @@ func (refconfig *ReferenceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.TIMESTAMP_KEY, strconv.FormatInt(time.Now().Unix(), 10))
 	urlMap.Set(constant.CLUSTER_KEY, refconfig.Cluster)
 	urlMap.Set(constant.LOADBALANCE_KEY, refconfig.Loadbalance)
-	urlMap.Set(constant.RETRIES_KEY, strconv.FormatInt(refconfig.Retries, 10))
+	urlMap.Set(constant.RETRIES_KEY, refconfig.Retries)
 	urlMap.Set(constant.GROUP_KEY, refconfig.Group)
 	urlMap.Set(constant.VERSION_KEY, refconfig.Version)
+	urlMap.Set(constant.GENERIC_KEY, strconv.FormatBool(refconfig.Generic))
+	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
 	//getty invoke async or sync
 	urlMap.Set(constant.ASYNC_KEY, strconv.FormatBool(refconfig.async))
 
@@ -170,13 +172,25 @@ func (refconfig *ReferenceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.ENVIRONMENT_KEY, consumerConfig.ApplicationConfig.Environment)
 
 	//filter
-	urlMap.Set(constant.REFERENCE_FILTER_KEY, mergeValue(consumerConfig.Filter, refconfig.Filter, constant.DEFAULT_REFERENCE_FILTERS))
+	var defaultReferenceFilter = constant.DEFAULT_REFERENCE_FILTERS
+	if refconfig.Generic {
+		defaultReferenceFilter = constant.GENERIC_REFERENCE_FILTERS + defaultReferenceFilter
+	}
+	urlMap.Set(constant.REFERENCE_FILTER_KEY, mergeValue(consumerConfig.Filter, refconfig.Filter, defaultReferenceFilter))
 
 	for _, v := range refconfig.Methods {
 		urlMap.Set("methods."+v.Name+"."+constant.LOADBALANCE_KEY, v.Loadbalance)
-		urlMap.Set("methods."+v.Name+"."+constant.RETRIES_KEY, strconv.FormatInt(v.Retries, 10))
+		urlMap.Set("methods."+v.Name+"."+constant.RETRIES_KEY, v.Retries)
 	}
 
 	return urlMap
 
+}
+func (refconfig *ReferenceConfig) GenericLoad(id string) {
+	genericService := NewGenericService(refconfig.id)
+	SetConsumerService(genericService)
+	refconfig.id = id
+	refconfig.Refer()
+	refconfig.Implement(genericService)
+	return
 }
