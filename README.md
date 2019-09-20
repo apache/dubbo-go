@@ -31,7 +31,7 @@ Finished List:
 - Transport: HTTP, TCP
 - Codec: JsonRPC v2, Hessian v2
 - Registry: ZooKeeper/[etcd v3](https://github.com/apache/dubbo-go/pull/148)/[nacos](https://github.com/apache/dubbo-go/pull/151)/[consul](https://github.com/apache/dubbo-go/pull/121)
-- Configure Center: Zookeeper
+- Dynamic Configure Center & Service Management Configurator: Zookeeper
 - Cluster Strategy: Failover/[Failfast](https://github.com/apache/dubbo-go/pull/140)/[Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136)/[Available](https://github.com/apache/dubbo-go/pull/155)/[Broadcast](https://github.com/apache/dubbo-go/pull/158)/[Forking](https://github.com/apache/dubbo-go/pull/161)
 - Load Balance: Random/[RoundRobin](https://github.com/apache/dubbo-go/pull/66)/[LeastActive](https://github.com/apache/dubbo-go/pull/65)
 - Filter: Echo Health Check/[Circuit break and service downgrade](https://github.com/apache/dubbo-go/pull/133)/[TokenFilter](https://github.com/apache/dubbo-go/pull/202)
@@ -43,7 +43,7 @@ Working List:
 - Filter: AccessLogFilter/CountFilter/ExecuteLimitFilter/TpsLimitFilter
 - Registry: k8s
 - Configure Center: apollo
-- Dynamic Configuration Center & Metadata Center (dubbo v2.7.x)
+- Metadata Center (dubbo v2.7.x)
 - Metrics: Promethus(dubbo v2.7.x)
 
 Todo List:
@@ -65,6 +65,8 @@ The subdirectory examples shows how to use dubbo-go. Please read the [examples/R
 ## Running unit tests
 
 ```bash
+sh ./before_ut.sh
+
 go test ./...
 
 # coverage
