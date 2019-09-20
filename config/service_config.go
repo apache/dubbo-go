@@ -54,7 +54,7 @@ type ServiceConfig struct {
 	Version       string            `yaml:"version"  json:"version,omitempty" property:"version" `
 	Methods       []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
 	Warmup        string            `yaml:"warmup"  json:"warmup,omitempty"  property:"warmup"`
-	Retries       int64             `yaml:"retries"  json:"retries,omitempty" property:"retries"`
+	Retries       string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
 	Params        map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
 	unexported    *atomic.Bool
 	exported      *atomic.Bool
@@ -160,9 +160,10 @@ func (srvconfig *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.CLUSTER_KEY, srvconfig.Cluster)
 	urlMap.Set(constant.LOADBALANCE_KEY, srvconfig.Loadbalance)
 	urlMap.Set(constant.WARMUP_KEY, srvconfig.Warmup)
-	urlMap.Set(constant.RETRIES_KEY, strconv.FormatInt(srvconfig.Retries, 10))
+	urlMap.Set(constant.RETRIES_KEY, srvconfig.Retries)
 	urlMap.Set(constant.GROUP_KEY, srvconfig.Group)
 	urlMap.Set(constant.VERSION_KEY, srvconfig.Version)
+	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
 	//application info
 	urlMap.Set(constant.APPLICATION_KEY, providerConfig.ApplicationConfig.Name)
 	urlMap.Set(constant.ORGANIZATION_KEY, providerConfig.ApplicationConfig.Organization)
@@ -177,7 +178,7 @@ func (srvconfig *ServiceConfig) getUrlMap() url.Values {
 
 	for _, v := range srvconfig.Methods {
 		urlMap.Set("methods."+v.Name+"."+constant.LOADBALANCE_KEY, v.Loadbalance)
-		urlMap.Set("methods."+v.Name+"."+constant.RETRIES_KEY, strconv.FormatInt(v.Retries, 10))
+		urlMap.Set("methods."+v.Name+"."+constant.RETRIES_KEY, v.Retries)
 		urlMap.Set("methods."+v.Name+"."+constant.WEIGHT_KEY, strconv.FormatInt(v.Weight, 10))
 	}
 

@@ -19,7 +19,6 @@ package dubbo
 
 import (
 	"context"
-	"github.com/apache/dubbo-go/common/constant"
 	"testing"
 )
 
@@ -29,6 +28,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
 )
 
