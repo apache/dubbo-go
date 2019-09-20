@@ -18,16 +18,19 @@
 package cluster_impl
 
 import (
+	"strconv"
+)
+
+import (
 	perrors "github.com/pkg/errors"
 )
 
 import (
 	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/version"
 )
 
 type failoverClusterInvoker struct {
@@ -48,29 +51,28 @@ func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) pr
 	if err != nil {
 		return &protocol.RPCResult{Err: err}
 	}
-	url := invokers[0].GetUrl()
+
+	loadbalance := getLoadBalance(invokers[0], invocation)
 
 	methodName := invocation.MethodName()
-	//Get the service loadbalance config
-	lb := url.GetParam(constant.LOADBALANCE_KEY, constant.DEFAULT_LOADBALANCE)
-
-	//Get the service method loadbalance config if have
-	if v := url.GetMethodParam(methodName, constant.LOADBALANCE_KEY, ""); v != "" {
-		lb = v
-	}
-	loadbalance := extension.GetLoadbalance(lb)
+	url := invokers[0].GetUrl()
 
 	//get reties
-	retries := url.GetParamInt(constant.RETRIES_KEY, constant.DEFAULT_RETRIES)
+	retriesConfig := url.GetParam(constant.RETRIES_KEY, constant.DEFAULT_RETRIES)
 
 	//Get the service method loadbalance config if have
-	if v := url.GetMethodParamInt(methodName, constant.RETRIES_KEY, 0); v != 0 {
-		retries = v
+	if v := url.GetMethodParam(methodName, constant.RETRIES_KEY, ""); len(v) != 0 {
+		retriesConfig = v
+	}
+	retries, err := strconv.Atoi(retriesConfig)
+	if err != nil || retries < 0 {
+		logger.Error("Your retries config is invalid,pls do a check. And will use the default retries configuration instead.")
+		retries = constant.DEFAULT_RETRIES_INT
 	}
 	invoked := []protocol.Invoker{}
 	providers := []string{}
 	var result protocol.Result
-	for i := int64(0); i < retries; i++ {
+	for i := 0; i <= retries; i++ {
 		//Reselect before retry to avoid a change of candidate `invokers`.
 		//NOTE: if `invokers` changed, then `invoked` also lose accuracy.
 		if i > 0 {
@@ -98,6 +100,6 @@ func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) pr
 	ip, _ := utils.GetLocalIP()
 	return &protocol.RPCResult{Err: perrors.Errorf("Failed to invoke the method %v in the service %v. Tried %v times of "+
 		"the providers %v (%v/%v)from the registry %v on the consumer %v using the dubbo version %v. Last error is %v.",
-		methodName, invoker.GetUrl().Service(), retries, providers, len(providers), len(invokers), invoker.directory.GetUrl(), ip, version.Version, result.Error().Error(),
+		methodName, invoker.GetUrl().Service(), retries, providers, len(providers), len(invokers), invoker.directory.GetUrl(), ip, constant.Version, result.Error().Error(),
 	)}
 }
