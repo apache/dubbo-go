@@ -246,8 +246,13 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	}
 	invoker := exporter.(protocol.Exporter).GetInvoker()
 	if invoker != nil {
-		result := invoker.Invoke(invocation.NewRPCInvocation(p.Service.Method, p.Body.(map[string]interface{})["args"].([]interface{}),
-			p.Body.(map[string]interface{})["attachments"].(map[string]string)))
+		attachments := p.Body.(map[string]interface{})["attachments"].(map[string]string)
+		attachments[constant.LOCAL_ADDR] = session.LocalAddr()
+		attachments[constant.REMOTE_ADDR] = session.RemoteAddr()
+
+		args := p.Body.(map[string]interface{})["args"].([]interface{})
+		inv := invocation.NewRPCInvocation(p.Service.Method, args, attachments)
+		result := invoker.Invoke(inv)
 		if err := result.Error(); err != nil {
 			p.Header.ResponseStatus = hessian.Response_OK
 			p.Body = hessian.NewResponse(nil, err, result.Attachments())

@@ -38,6 +38,8 @@ const (
 	GENERIC_KEY            = "generic"
 	CLASSIFIER_KEY         = "classifier"
 	TOKEN_KEY              = "token"
+	LOCAL_ADDR             = "local-addr"
+	REMOTE_ADDR            = "remote-addr"
 )
 
 const (
