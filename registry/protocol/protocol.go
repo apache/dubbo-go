@@ -174,7 +174,7 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 		logger.Infof("The exporter has not been cached, and will return a new  exporter!")
 	}
 
-	reg.Subscribe(overriderUrl, overrideSubscribeListener)
+	go reg.Subscribe(overriderUrl, overrideSubscribeListener)
 	return cachedExporter.(protocol.Exporter)
 
 }
