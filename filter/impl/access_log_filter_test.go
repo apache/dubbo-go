@@ -19,12 +19,19 @@ package impl
 
 import (
 	"context"
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/invocation"
+	"testing"
+)
+
+import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"testing"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 func TestAccessLogFilter_Invoke_Not_Config(t *testing.T) {
@@ -39,7 +46,7 @@ func TestAccessLogFilter_Invoke_Not_Config(t *testing.T) {
 	invoker := protocol.NewBaseInvoker(url)
 
 	attach := make(map[string]string, 10)
-	inv := invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, attach)
+	inv := invocation.NewRPCInvocation("MethodName", []interface{}{"OK", "Hello"}, attach)
 
 	accessLogFilter := GetAccessLogFilter()
 	result := accessLogFilter.Invoke(invoker, inv)
@@ -58,9 +65,18 @@ func TestAccessLogFilter_Invoke_Default_Config(t *testing.T) {
 	invoker := protocol.NewBaseInvoker(url)
 
 	attach := make(map[string]string, 10)
-	inv := invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, attach)
+	attach[constant.VERSION_KEY] = "1.0"
+	attach[constant.GROUP_KEY] = "MyGroup"
+	inv := invocation.NewRPCInvocation("MethodName", []interface{}{"OK", "Hello"}, attach)
 
 	accessLogFilter := GetAccessLogFilter()
 	result := accessLogFilter.Invoke(invoker, inv)
 	assert.Nil(t, result.Error())
+}
+
+func TestAccessLogFilter_OnResponse(t *testing.T) {
+	result := &protocol.RPCResult{}
+	accessLogFilter := GetAccessLogFilter()
+	response := accessLogFilter.OnResponse(result, nil, nil)
+	assert.Equal(t, result, response)
 }

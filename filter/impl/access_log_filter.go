@@ -18,19 +18,22 @@
 package impl
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/filter"
-	"github.com/apache/dubbo-go/protocol"
 	"os"
 	"reflect"
 	"strings"
 	"time"
 )
 
+import (
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/filter"
+	"github.com/apache/dubbo-go/protocol"
+)
+
 const (
-	//usd in URL.
+	//used in URL.
 	AccessLogKey      = "accesslog"
 	FileDateFormat    = "2006-01-02"
 	MessageDateLayout = "2006-01-02 15:04:05"
@@ -72,7 +75,7 @@ func (ef *AccessLogFilter) logIntoChannel(accessLogData AccessLogData) {
 }
 
 func (ef *AccessLogFilter) buildAccessLogData(invoker protocol.Invoker, invocation protocol.Invocation) map[string]string {
-	dataMap := make(map[string]string)
+	dataMap := make(map[string]string, 16)
 	attachments := invocation.Attachments()
 	dataMap[constant.INTERFACE_KEY] = attachments[constant.INTERFACE_KEY]
 	dataMap[constant.METHOD_KEY] = invocation.MethodName()
@@ -86,15 +89,15 @@ func (ef *AccessLogFilter) buildAccessLogData(invoker protocol.Invoker, invocati
 		builder := strings.Builder{}
 		// todo(after the paramTypes were set to the invocation. we should change this implementation)
 		typeBuilder := strings.Builder{}
-		first := true
-		for _, arg := range invocation.Arguments() {
-			if first {
-				first = false
-			} else {
-				builder.WriteString(",")
-				typeBuilder.WriteString(",")
-			}
+
+		builder.WriteString(reflect.ValueOf(invocation.Arguments()[0]).String())
+		typeBuilder.WriteString(reflect.TypeOf(invocation.Arguments()[0]).Name())
+		for idx := 1; idx < len(invocation.Arguments()); idx++ {
+			arg := invocation.Arguments()[idx]
+			builder.WriteString(",")
 			builder.WriteString(reflect.ValueOf(arg).String())
+
+			typeBuilder.WriteString(",")
 			typeBuilder.WriteString(reflect.TypeOf(arg).Name())
 		}
 		dataMap[Arguments] = builder.String()
@@ -112,19 +115,20 @@ func (ef *AccessLogFilter) writeLogToFile(data AccessLogData) {
 	accessLog := data.accessLog
 	if isDefault(accessLog) {
 		logger.Info(data.toLogMessage())
-	} else {
-		logFile, err := ef.openLogFile(accessLog)
-		if err != nil {
-			logger.Warnf("Can not open 	the access log file: %s, %v", accessLog, err)
-			return
-		}
-		logger.Debugf("Append log to %s", accessLog)
-		message := data.toLogMessage()
-		message = message + "\n"
-		_, err = logFile.WriteString(message)
-		if err != nil {
-			logger.Warnf("Can not write the log into access log file: %s, %v", accessLog, err)
-		}
+		return
+	}
+
+	logFile, err := ef.openLogFile(accessLog)
+	if err != nil {
+		logger.Warnf("Can not open 	the access log file: %s, %v", accessLog, err)
+		return
+	}
+	logger.Debugf("Append log to %s", accessLog)
+	message := data.toLogMessage()
+	message = message + "\n"
+	_, err = logFile.WriteString(message)
+	if err != nil {
+		logger.Warnf("Can not write the log into access log file: %s, %v", accessLog, err)
 	}
 }
 
@@ -146,9 +150,8 @@ func (ef *AccessLogFilter) openLogFile(accessLog string) (*os.File, error) {
 		if err != nil {
 			logger.Warnf("Can not rename access log file: %s, %v", fileInfo.Name(), err)
 			return nil, err
-		} else {
-			logFile, err = os.OpenFile(accessLog, os.O_CREATE|os.O_APPEND|os.O_RDWR, LogFileMode)
 		}
+		logFile, err = os.OpenFile(accessLog, os.O_CREATE|os.O_APPEND|os.O_RDWR, LogFileMode)
 	}
 	return logFile, err
 }
