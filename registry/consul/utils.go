@@ -26,13 +26,13 @@ import (
 )
 
 import (
+	gxnet "github.com/dubbogo/gost/net"
 	consul "github.com/hashicorp/consul/api"
 	perrors "github.com/pkg/errors"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/utils"
 )
 
 func buildId(url common.URL) string {
@@ -48,7 +48,7 @@ func buildService(url common.URL) (*consul.AgentServiceRegistration, error) {
 
 	// address
 	if url.Ip == "" {
-		url.Ip, _ = utils.GetLocalIP()
+		url.Ip, _ = gxnet.GetLocalIP()
 	}
 
 	// port
