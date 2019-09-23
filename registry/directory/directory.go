@@ -38,6 +38,7 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 	"github.com/apache/dubbo-go/registry"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 const (
@@ -124,18 +125,18 @@ func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 			//TODO: router
 		}
 	}
-	//
-	//switch res.Action {
-	//case remoting.EventTypeAdd:
-	//	//dir.cacheService.EventTypeAdd(res.Path, dir.serviceTTL)
-	//	dir.cacheInvoker(&res.Service)
-	//case remoting.EventTypeDel:
-	//	//dir.cacheService.EventTypeDel(res.Path, dir.serviceTTL)
-	//	dir.uncacheInvoker(&res.Service)
-	//	logger.Infof("selector delete service url{%s}", res.Service)
-	//default:
-	//	return
-	//}
+
+	switch res.Action {
+	case remoting.EventTypeAdd, remoting.EventTypeUpdate:
+		//dir.cacheService.EventTypeAdd(res.Path, dir.serviceTTL)
+		dir.cacheInvoker(&res.Service)
+	case remoting.EventTypeDel:
+		//dir.cacheService.EventTypeDel(res.Path, dir.serviceTTL)
+		dir.uncacheInvoker(&res.Service)
+		logger.Infof("selector delete service url{%s}", res.Service)
+	default:
+		return
+	}
 	dir.cacheInvoker(url)
 	newInvokers := dir.toGroupInvokers()
 	dir.listenerLock.Lock()
