@@ -90,6 +90,57 @@ type (
 	}
 )
 
+func GetDefaultClientConfig() ClientConfig {
+	return ClientConfig{
+		ReconnectInterval: 0,
+		ConnectionNum:     16,
+		HeartbeatPeriod:   "5s",
+		SessionTimeout:    "20s",
+		PoolSize:          64,
+		PoolTTL:           600,
+		GrPoolSize:        1200,
+		QueueLen:          64,
+		QueueNumber:       60,
+		GettySessionParam: GettySessionParam{
+			CompressEncoding: false,
+			TcpNoDelay:       true,
+			TcpKeepAlive:     true,
+			KeepAlivePeriod:  "120s",
+			TcpRBufSize:      262144,
+			TcpWBufSize:      65536,
+			PkgWQSize:        512,
+			TcpReadTimeout:   "1s",
+			TcpWriteTimeout:  "5s",
+			WaitTimeout:      "1s",
+			MaxMsgLen:        2014,
+			SessionName:      "client",
+		}}
+}
+
+func GetDefaultServerConfig() ServerConfig {
+	return ServerConfig{
+		SessionTimeout: "20s",
+		SessionNumber:  700,
+		GrPoolSize:     120,
+		QueueNumber:    6,
+		QueueLen:       64,
+		GettySessionParam: GettySessionParam{
+			CompressEncoding: false,
+			TcpNoDelay:       true,
+			TcpKeepAlive:     true,
+			KeepAlivePeriod:  "120s",
+			TcpRBufSize:      262144,
+			TcpWBufSize:      65536,
+			PkgWQSize:        512,
+			TcpReadTimeout:   "1s",
+			TcpWriteTimeout:  "5s",
+			WaitTimeout:      "1s",
+			MaxMsgLen:        1024,
+			SessionName:      "server",
+		},
+	}
+}
+
 func (c *GettySessionParam) CheckValidity() error {
 	var err error
 
