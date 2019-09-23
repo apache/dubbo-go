@@ -42,32 +42,35 @@ var (
 func init() {
 
 	// load clientconfig from provider_config
-	protocolConf := config.GetProviderConfig().ProtocolConf
+	// default use dubbo
+	providerConfig := config.GetProviderConfig()
+	if providerConfig.ApplicationConfig == nil {
+		return
+	}
+	protocolConf := providerConfig.ProtocolConf
+	defaultServerConfig := GetDefaultServerConfig()
 	if protocolConf == nil {
-		logger.Warnf("protocol_conf is nil")
-		return
-	}
-	dubboConf := protocolConf.(map[interface{}]interface{})[DUBBO]
-	if dubboConf == nil {
-		logger.Warnf("dubboConf is nil")
-		return
-	}
+		logger.Info("protocol_conf default use dubbo config")
+	} else {
+		dubboConf := protocolConf.(map[interface{}]interface{})[DUBBO]
+		if dubboConf == nil {
+			logger.Warnf("dubboConf is nil")
+			return
+		}
 
-	dubboConfByte, err := yaml.Marshal(dubboConf)
-	if err != nil {
+		dubboConfByte, err := yaml.Marshal(dubboConf)
+		if err != nil {
+			panic(err)
+		}
+		err = yaml.Unmarshal(dubboConfByte, &defaultServerConfig)
+		if err != nil {
+			panic(err)
+		}
+	}
+	srvConf = &defaultServerConfig
+	if err := srvConf.CheckValidity(); err != nil {
 		panic(err)
 	}
-	conf := &ServerConfig{}
-	err = yaml.Unmarshal(dubboConfByte, conf)
-	if err != nil {
-		panic(err)
-	}
-
-	if err := conf.CheckValidity(); err != nil {
-		panic(err)
-	}
-
-	srvConf = conf
 	SetServerGrpool()
 }
 
