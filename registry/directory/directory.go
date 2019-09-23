@@ -124,20 +124,19 @@ func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 			url = nil
 			//TODO: router
 		}
+		switch res.Action {
+		case remoting.EventTypeAdd, remoting.EventTypeUpdate:
+			//dir.cacheService.EventTypeAdd(res.Path, dir.serviceTTL)
+			dir.cacheInvoker(url)
+		case remoting.EventTypeDel:
+			//dir.cacheService.EventTypeDel(res.Path, dir.serviceTTL)
+			dir.uncacheInvoker(url)
+			logger.Infof("selector delete service url{%s}", res.Service)
+		default:
+			return
+		}
 	}
 
-	switch res.Action {
-	case remoting.EventTypeAdd, remoting.EventTypeUpdate:
-		//dir.cacheService.EventTypeAdd(res.Path, dir.serviceTTL)
-		dir.cacheInvoker(&res.Service)
-	case remoting.EventTypeDel:
-		//dir.cacheService.EventTypeDel(res.Path, dir.serviceTTL)
-		dir.uncacheInvoker(&res.Service)
-		logger.Infof("selector delete service url{%s}", res.Service)
-	default:
-		return
-	}
-	dir.cacheInvoker(url)
 	newInvokers := dir.toGroupInvokers()
 	dir.listenerLock.Lock()
 	defer dir.listenerLock.Unlock()
