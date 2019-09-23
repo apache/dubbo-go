@@ -72,6 +72,9 @@ func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) pr
 	invoked := []protocol.Invoker{}
 	providers := []string{}
 	var result protocol.Result
+	if retries > len(invokers) {
+		retries = len(invokers)
+	}
 	for i := 0; i <= retries; i++ {
 		//Reselect before retry to avoid a change of candidate `invokers`.
 		//NOTE: if `invokers` changed, then `invoked` also lose accuracy.
@@ -87,6 +90,9 @@ func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) pr
 			}
 		}
 		ivk := invoker.doSelect(loadbalance, invocation, invokers, invoked)
+		if ivk == nil {
+			continue
+		}
 		invoked = append(invoked, ivk)
 		//DO INVOKE
 		result = ivk.Invoke(invocation)
