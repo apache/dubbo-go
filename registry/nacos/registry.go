@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 )
+
 import (
 	"github.com/nacos-group/nacos-sdk-go/clients"
 	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
@@ -19,12 +20,17 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/registry"
 )
 
 var (
 	localIP = ""
+)
+
+const (
+	RegistryConnDelay = 3
 )
 
 func init() {
@@ -162,8 +168,42 @@ func (nr *nacosRegistry) Register(url common.URL) error {
 	return nil
 }
 
-func (nr *nacosRegistry) Subscribe(conf common.URL) (registry.Listener, error) {
-	return NewNacosListener(conf, nr.namingClient)
+func (nr *nacosRegistry) subscribe(conf *common.URL) (registry.Listener, error) {
+	return NewNacosListener(*conf, nr.namingClient)
+}
+
+//subscribe from registry
+func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
+	for {
+		if !nr.IsAvailable() {
+			logger.Warnf("event listener game over.")
+			return
+		}
+
+		listener, err := nr.subscribe(url)
+		if err != nil {
+			if !nr.IsAvailable() {
+				logger.Warnf("event listener game over.")
+				return
+			}
+			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
+			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
+			continue
+		}
+
+		for {
+			if serviceEvent, err := listener.Next(); err != nil {
+				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
+				listener.Close()
+				return
+			} else {
+				logger.Infof("update begin, service event: %v", serviceEvent.String())
+				notifyListener.Notify(serviceEvent)
+			}
+
+		}
+
+	}
 }
 
 func (nr *nacosRegistry) GetUrl() common.URL {
