@@ -12,6 +12,7 @@ import (
 )
 
 import (
+	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 )
 
@@ -20,7 +21,6 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting/etcdv3"
 )
@@ -37,7 +37,7 @@ const (
 
 func init() {
 	processID = fmt.Sprintf("%d", os.Getpid())
-	localIP, _ = utils.GetLocalIP()
+	localIP, _ = gxnet.GetLocalIP()
 	extension.SetRegistry(Name, newETCDV3Registry)
 }
 
