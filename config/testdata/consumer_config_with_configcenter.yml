@@ -1,5 +1,7 @@
 # dubbo client yaml configure file
 
+application:
+  name: "BDTService"
 config_center:
   protocol: "mock"
   address: "127.0.0.1"

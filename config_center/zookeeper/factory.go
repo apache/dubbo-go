@@ -20,10 +20,12 @@ package zookeeper
 import (
 	"sync"
 )
+
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/config_center"
+	"github.com/apache/dubbo-go/config_center/parser"
 )
 
 func init() {
@@ -44,7 +46,7 @@ func (f *zookeeperDynamicConfigurationFactory) GetDynamicConfiguration(url *comm
 	if err != nil {
 		return nil, err
 	}
-	dynamicConfiguration.SetParser(&config_center.DefaultConfigurationParser{})
+	dynamicConfiguration.SetParser(&parser.DefaultConfigurationParser{})
 	return dynamicConfiguration, err
 
 }
