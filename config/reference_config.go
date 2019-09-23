@@ -26,6 +26,10 @@ import (
 )
 
 import (
+	"github.com/creasty/defaults"
+)
+
+import (
 	"github.com/apache/dubbo-go/cluster/directory"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
@@ -43,7 +47,7 @@ type ReferenceConfig struct {
 	Check         *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
 	Url           string            `yaml:"url"  json:"url,omitempty" property:"url"`
 	Filter        string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	Protocol      string            `yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	Protocol      string            `default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
 	Registry      string            `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
 	Cluster       string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
 	Loadbalance   string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
@@ -68,6 +72,7 @@ func NewReferenceConfig(id string, ctx context.Context) *ReferenceConfig {
 }
 
 func (refconfig *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+
 	type rf ReferenceConfig
 	raw := rf{} // Put your defaults here
 	if err := unmarshal(&raw); err != nil {
@@ -75,6 +80,10 @@ func (refconfig *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) erro
 	}
 
 	*refconfig = ReferenceConfig(raw)
+	if err := defaults.Set(refconfig); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -97,8 +106,8 @@ func (refconfig *ReferenceConfig) Refer() {
 					serviceUrl.Path = "/" + refconfig.id
 				}
 				// merge url need to do
-				newUrl := common.MergeUrl(serviceUrl, url)
-				refconfig.urls = append(refconfig.urls, &newUrl)
+				newUrl := common.MergeUrl(&serviceUrl, url)
+				refconfig.urls = append(refconfig.urls, newUrl)
 			}
 
 		}

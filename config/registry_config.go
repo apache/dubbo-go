@@ -25,6 +25,10 @@ import (
 )
 
 import (
+	"github.com/creasty/defaults"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
@@ -42,8 +46,19 @@ type RegistryConfig struct {
 	Params   map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
 }
 
+func (c *RegistryConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	if err := defaults.Set(c); err != nil {
+		return err
+	}
+	type plain RegistryConfig
+	if err := unmarshal((*plain)(c)); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (*RegistryConfig) Prefix() string {
-	return constant.RegistryConfigPrefix
+	return constant.RegistryConfigPrefix + "|" + constant.SingleRegistryConfigPrefix
 }
 
 func loadRegistries(targetRegistries string, registries map[string]*RegistryConfig, roleType common.RoleType) []*common.URL {
@@ -73,27 +88,22 @@ func loadRegistries(targetRegistries string, registries map[string]*RegistryConf
 				url common.URL
 				err error
 			)
-			if addresses := strings.Split(registryConf.Address, ","); len(addresses) > 1 {
-				url, err = common.NewURL(
-					context.Background(),
-					constant.REGISTRY_PROTOCOL+"://"+addresses[0],
-					common.WithParams(registryConf.getUrlMap(roleType)),
-					common.WithUsername(registryConf.Username),
-					common.WithPassword(registryConf.Password),
-					common.WithLocation(registryConf.Address),
-				)
-			} else {
-				url, err = common.NewURL(
-					context.Background(),
-					constant.REGISTRY_PROTOCOL+"://"+registryConf.Address,
-					common.WithParams(registryConf.getUrlMap(roleType)),
-					common.WithUsername(registryConf.Username),
-					common.WithPassword(registryConf.Password),
-				)
-			}
+
+			addresses := strings.Split(registryConf.Address, ",")
+			address := addresses[0]
+			address = traslateRegistryConf(address, registryConf)
+			url, err = common.NewURL(
+				context.Background(),
+				constant.REGISTRY_PROTOCOL+"://"+address,
+				common.WithParams(registryConf.getUrlMap(roleType)),
+				common.WithUsername(registryConf.Username),
+				common.WithPassword(registryConf.Password),
+				common.WithLocation(registryConf.Address),
+			)
 
 			if err != nil {
-				logger.Errorf("The registry id:%s url is invalid ,and will skip the registry, error: %#v", k, err)
+				logger.Errorf("The registry id:%s url is invalid , error: %#v", k, err)
+				panic(err)
 			} else {
 				urls = append(urls, &url)
 			}
@@ -114,4 +124,18 @@ func (regconfig *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values 
 		urlMap.Set(k, v)
 	}
 	return urlMap
+}
+
+func traslateRegistryConf(address string, registryConf *RegistryConfig) string {
+	if strings.Contains(address, "://") {
+		translatedUrl, err := url.Parse(address)
+		if err != nil {
+			logger.Errorf("The registry  url is invalid , error: %#v", err)
+			panic(err)
+		}
+		address = translatedUrl.Host
+		registryConf.Protocol = translatedUrl.Scheme
+		registryConf.Address = strings.Replace(registryConf.Address, translatedUrl.Scheme+"://", "", -1)
+	}
+	return address
 }

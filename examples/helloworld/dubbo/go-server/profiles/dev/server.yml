@@ -2,7 +2,7 @@
 
 
 # application config
-application_config:
+application:
   organization : "ikurento.com"
   name : "BDTService"
   module : "dubbogo user-info server"
@@ -30,6 +30,7 @@ services:
     - name: "GetUser"
       retries: "1"
       loadbalance: "random"
+    token: "true"
 
 protocols:
   "dubbo":
