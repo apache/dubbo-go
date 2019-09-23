@@ -37,6 +37,8 @@ github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190802083043-4cd0c391755e/go.mod
 github.com/aliyun/aliyun-oss-go-sdk v0.0.0-20190307165228-86c17b95fcd5/go.mod h1:T/Aws4fEfogEE9v+HPhhw+CntffsBHJ8nXQCwKr0/g8=
 github.com/apache/dubbo-go-hessian2 v1.2.5-0.20190921023740-335b8c601359 h1:ti5HOgxW/aKonsBe4Sj/W3+RMq4Jxl/EAAblROneggg=
 github.com/apache/dubbo-go-hessian2 v1.2.5-0.20190921023740-335b8c601359/go.mod h1:LWnndnrFXZmJLAzoyNAPNHSIJ1KOHVkTSsHgC3YYWlo=
+github.com/apache/dubbo-go-hessian2 v1.2.5-0.20190923055845-e3dd5d131df5 h1:p85EqnwOfcqqayW7OPREn0YJxIPIuEmuBJPezzhtO/M=
+github.com/apache/dubbo-go-hessian2 v1.2.5-0.20190923055845-e3dd5d131df5/go.mod h1:LWnndnrFXZmJLAzoyNAPNHSIJ1KOHVkTSsHgC3YYWlo=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e h1:QEF07wC0T1rKkctt1RINW/+RMTVmiwxETico2l3gxJA=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
 github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmVTwzkszR9V5SSuryQ31EELlFMUz1kKyl939pY=
