@@ -23,7 +23,7 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/container"
+	"github.com/dubbogo/gost/container/gxset"
 )
 
 import (
@@ -65,7 +65,7 @@ func init() {
 
 func getCacheKey(url *common.URL) string {
 	newUrl := url.Clone()
-	delKeys := container.NewSet("dynamic", "enabled")
+	delKeys := gxset.NewSet("dynamic", "enabled")
 	newUrl.RemoveParams(delKeys)
 	return newUrl.String()
 }
