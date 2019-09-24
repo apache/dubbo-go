@@ -25,8 +25,8 @@ registries :
     username: ""
     password: ""
 
-# special your filter. for example, you wish to use the access log filter
-filter: "accesslog"
+# config your filter. for example, you wish to use the access log filter
+#filter: "accesslog"
 
 services:
   "UserProvider":
@@ -39,8 +39,8 @@ services:
     warmup: "100"
     cluster: "failover"
 
-#    config the path to access log file. The value can be "true" or "default" which means that the access log will be log in general log file (which config in log.yml)
-    accesslog: "/path/to/your/accesslog/file"
+     # config the path to access log file. The value can be "true" or "default" which means that the access log will be log in general log file (which config in log.yml)
+#    accesslog: "/path/to/your/accesslog/file"
 
     methods:
     - name: "GetUser"
