@@ -60,6 +60,7 @@ const (
 	FORKS_KEY            = "forks"
 	DEFAULT_FORKS        = 2
 	DEFAULT_TIMEOUT      = 1000
+	ACCESS_LOG_KEY       = "accesslog"
 )
 
 const (
