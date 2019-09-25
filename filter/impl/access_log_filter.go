@@ -53,10 +53,8 @@ func init() {
  * you should config "accesslog" in service's config to tell the filter where store the access log.
  * for example:
  * "UserProvider":
-    # 可以指定多个registry，使用逗号隔开;不指定默认向所有注册中心注册
     registry: "hangzhouzk"
     protocol : "dubbo"
-    # 相当于dubbo.xml中的interface
     interface : "com.ikurento.user.UserProvider"
     ... # other configuration
     accesslog: "/your/path/to/store/the/log/", # it should be the path of file.
