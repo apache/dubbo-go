@@ -53,15 +53,15 @@ func init() {
  * you should config "accesslog" in service's config to tell the filter where store the access log.
  * for example:
  * "UserProvider":
-    registry: "hangzhouzk"
-    protocol : "dubbo"
-    interface : "com.ikurento.user.UserProvider"
-    ... # other configuration
-    accesslog: "/your/path/to/store/the/log/", # it should be the path of file.
-
+ *   registry: "hangzhouzk"
+ *   protocol : "dubbo"
+ *   interface : "com.ikurento.user.UserProvider"
+ *   ... # other configuration
+ *   accesslog: "/your/path/to/store/the/log/", # it should be the path of file.
+ *
  * the value of "accesslog" can be "true" or "default" too.
  * If the value is one of them, the access log will be record in log file which defined in log.yml
-*/
+ */
 type AccessLogFilter struct {
 	logChan chan AccessLogData
 }
