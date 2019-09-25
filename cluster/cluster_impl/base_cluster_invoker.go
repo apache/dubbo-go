@@ -18,6 +18,7 @@
 package cluster_impl
 
 import (
+	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
 )
@@ -27,7 +28,6 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/protocol"
 )
 
@@ -63,7 +63,7 @@ func (invoker *baseClusterInvoker) IsAvailable() bool {
 //check invokers availables
 func (invoker *baseClusterInvoker) checkInvokers(invokers []protocol.Invoker, invocation protocol.Invocation) error {
 	if len(invokers) == 0 {
-		ip, _ := utils.GetLocalIP()
+		ip, _ := gxnet.GetLocalIP()
 		return perrors.Errorf("Failed to invoke the method %v. No provider available for the service %v from "+
 			"registry %v on the consumer %v using the dubbo version %v .Please check if the providers have been started and registered.",
 			invocation.MethodName(), invoker.directory.GetUrl().SubURL.Key(), invoker.directory.GetUrl().String(), ip, constant.Version)
@@ -75,7 +75,7 @@ func (invoker *baseClusterInvoker) checkInvokers(invokers []protocol.Invoker, in
 //check cluster invoker is destroyed or not
 func (invoker *baseClusterInvoker) checkWhetherDestroyed() error {
 	if invoker.destroyed.Load() {
-		ip, _ := utils.GetLocalIP()
+		ip, _ := gxnet.GetLocalIP()
 		return perrors.Errorf("Rpc cluster invoker for %v on consumer %v use dubbo version %v is now destroyed! can not invoke any more. ",
 			invoker.directory.GetUrl().Service(), ip, constant.Version)
 	}
