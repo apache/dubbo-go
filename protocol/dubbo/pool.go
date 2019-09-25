@@ -32,6 +32,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 )
 
@@ -74,7 +75,8 @@ func newGettyRPCClientConn(pool *gettyRPCClientPool, protocol, addr string) (*ge
 
 		if idx > times {
 			c.gettyClient.Close()
-			return nil, perrors.New(fmt.Sprintf("failed to create client connection to %s in %f seconds", addr, float32(times)/1000))
+			logger.Errorf("failed to create client connection to %s in %f seconds", addr, float32(times)/1000)
+			return nil, common.ErrClientCreateConnTimeout
 		}
 		time.Sleep(1e6)
 	}
@@ -212,10 +214,10 @@ func (c *gettyRPCClient) getClientRpcSession(session getty.Session) (rpcSession,
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 	if c.sessions == nil {
-		return rpcSession, errClientClosed
+		return rpcSession, common.ErrClientClosed
 	}
 
-	err = errSessionNotExist
+	err = common.ErrSessionNotExist
 	for _, s := range c.sessions {
 		if s.session == session {
 			rpcSession = *s
