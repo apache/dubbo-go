@@ -40,12 +40,6 @@ import (
 )
 
 var (
-	errInvalidCodecType  = perrors.New("illegal CodecType")
-	errInvalidAddress    = perrors.New("remote address invalid or empty")
-	errSessionNotExist   = perrors.New("session not exist")
-	errClientClosed      = perrors.New("client closed")
-	errClientReadTimeout = perrors.New("client read timeout")
-
 	clientConf   *ClientConfig
 	clientGrpool *gxsync.TaskPool
 )
@@ -233,7 +227,7 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 		return perrors.WithStack(err)
 	}
 	if session == nil {
-		return errSessionNotExist
+		return common.ErrSessionNotExist
 	}
 	defer c.pool.release(conn, err)
 
@@ -247,7 +241,7 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 
 	select {
 	case <-getty.GetTimeWheel().After(c.opts.RequestTimeout):
-		err = errClientReadTimeout
+		err = common.ErrClientReadTimeout
 		c.removePendingResponse(SequenceType(rsp.seq))
 	case <-rsp.done:
 		err = rsp.err

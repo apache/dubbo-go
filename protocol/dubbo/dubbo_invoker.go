@@ -23,18 +23,12 @@ import (
 )
 
 import (
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 )
-
-var Err_No_Reply = perrors.New("request need @response")
 
 var (
 	attachmentKey = []string{constant.INTERFACE_KEY, constant.GROUP_KEY, constant.TOKEN_KEY, constant.TIMEOUT_KEY}
@@ -82,7 +76,7 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 		}
 	} else {
 		if inv.Reply() == nil {
-			result.Err = Err_No_Reply
+			result.Err = common.ErrNoReply
 		} else {
 			result.Err = di.client.Call(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), response)
 		}

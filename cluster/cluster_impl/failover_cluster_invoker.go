@@ -28,6 +28,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/cluster"
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
@@ -96,7 +97,7 @@ func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) pr
 		invoked = append(invoked, ivk)
 		//DO INVOKE
 		result = ivk.Invoke(invocation)
-		if result.Error() != nil {
+		if result.Error() != nil && isRetry(result.Error()) {
 			providers = append(providers, ivk.GetUrl().Key())
 			continue
 		} else {
@@ -108,4 +109,12 @@ func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) pr
 		"the providers %v (%v/%v)from the registry %v on the consumer %v using the dubbo version %v. Last error is %v.",
 		methodName, invoker.GetUrl().Service(), retries, providers, len(providers), len(invokers), invoker.directory.GetUrl(), ip, constant.Version, result.Error().Error(),
 	)}
+}
+func isRetry(err error) bool {
+	switch err {
+	case common.ErrInvalidAddress, common.ErrSessionNotExist, common.ErrClientReadTimeout, common.ErrClientCreateConnTimeout:
+		return true
+	default:
+		return false
+	}
 }

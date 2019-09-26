@@ -24,7 +24,6 @@ import (
 	"testing"
 )
 import (
-	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -84,7 +83,7 @@ func (bi *MockInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	if count >= bi.successCount {
 		success = true
 	} else {
-		err = perrors.New("error")
+		err = common.ErrClientReadTimeout
 	}
 	result := &protocol.RPCResult{Err: err, Rest: rest{tried: count, success: success}}
 
