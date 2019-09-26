@@ -25,7 +25,6 @@ registries :
     username: ""
     password: ""
 
-
 services:
   "UserProvider":
     # 可以指定多个registry，使用逗号隔开;不指定默认向所有注册中心注册
@@ -36,6 +35,10 @@ services:
     loadbalance: "random"
     warmup: "100"
     cluster: "failover"
+
+     # config the path to access log file. The value can be "true" or "default" which means that the access log will be log in general log file (which config in log.yml)
+#    accesslog: "/path/to/your/accesslog/file"
+
     methods:
     - name: "GetUser"
       retries: "1"
