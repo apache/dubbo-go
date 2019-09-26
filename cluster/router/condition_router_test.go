@@ -147,6 +147,7 @@ func TestRoute_matchWhen(t *testing.T) {
 
 func TestRoute_matchFilter(t *testing.T) {
 	localIP, _ := gxnet.GetLocalIP()
+	t.Logf("The local ip is %s", localIP)
 	url1, _ := common.NewURL(context.TODO(), "dubbo://10.20.3.3:20880/com.foo.BarService?default.serialization=fastjson")
 	url2, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", localIP))
 	url3, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", localIP))
