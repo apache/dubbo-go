@@ -31,7 +31,7 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/container"
+	"github.com/dubbogo/gost/container/gxset"
 	"github.com/jinzhu/copier"
 	perrors "github.com/pkg/errors"
 	"github.com/satori/go.uuid"
@@ -447,7 +447,7 @@ func (c URL) GetMethodParam(method string, key string, d string) string {
 	return r
 }
 
-func (c *URL) RemoveParams(set *container.HashSet) {
+func (c *URL) RemoveParams(set *gxset.HashSet) {
 	c.paramsLock.Lock()
 	defer c.paramsLock.Unlock()
 	for k := range set.Items {

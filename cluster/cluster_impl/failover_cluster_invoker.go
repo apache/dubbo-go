@@ -22,6 +22,7 @@ import (
 )
 
 import (
+	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 )
 
@@ -29,7 +30,6 @@ import (
 	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/protocol"
 )
 
@@ -72,6 +72,9 @@ func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) pr
 	invoked := []protocol.Invoker{}
 	providers := []string{}
 	var result protocol.Result
+	if retries > len(invokers) {
+		retries = len(invokers)
+	}
 	for i := 0; i <= retries; i++ {
 		//Reselect before retry to avoid a change of candidate `invokers`.
 		//NOTE: if `invokers` changed, then `invoked` also lose accuracy.
@@ -87,6 +90,9 @@ func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) pr
 			}
 		}
 		ivk := invoker.doSelect(loadbalance, invocation, invokers, invoked)
+		if ivk == nil {
+			continue
+		}
 		invoked = append(invoked, ivk)
 		//DO INVOKE
 		result = ivk.Invoke(invocation)
@@ -97,7 +103,7 @@ func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) pr
 			return result
 		}
 	}
-	ip, _ := utils.GetLocalIP()
+	ip, _ := gxnet.GetLocalIP()
 	return &protocol.RPCResult{Err: perrors.Errorf("Failed to invoke the method %v in the service %v. Tried %v times of "+
 		"the providers %v (%v/%v)from the registry %v on the consumer %v using the dubbo version %v. Last error is %v.",
 		methodName, invoker.GetUrl().Service(), retries, providers, len(providers), len(invokers), invoker.directory.GetUrl(), ip, constant.Version, result.Error().Error(),
