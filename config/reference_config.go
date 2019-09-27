@@ -27,6 +27,7 @@ import (
 
 import (
 	"github.com/creasty/defaults"
+	gxstrings "github.com/dubbogo/gost/strings"
 )
 
 import (
@@ -35,7 +36,6 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/proxy"
-	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/protocol"
 )
 
@@ -92,7 +92,7 @@ func (refconfig *ReferenceConfig) Refer() {
 
 	//1. user specified URL, could be peer-to-peer address, or register center's address.
 	if refconfig.Url != "" {
-		urlStrings := utils.RegSplit(refconfig.Url, "\\s*[;]+\\s*")
+		urlStrings := gxstrings.RegSplit(refconfig.Url, "\\s*[;]+\\s*")
 		for _, urlStr := range urlStrings {
 			serviceUrl, err := common.NewURL(context.Background(), urlStr)
 			if err != nil {
