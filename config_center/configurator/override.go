@@ -21,14 +21,14 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/container"
+	"github.com/dubbogo/gost/container/gxset"
+	gxnet "github.com/dubbogo/gost/net"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/config_center"
 )
 
@@ -59,7 +59,7 @@ func (c *overrideConfigurator) Configure(url *common.URL) {
 		currentSide := url.GetParam(constant.SIDE_KEY, "")
 		configuratorSide := c.configuratorUrl.GetParam(constant.SIDE_KEY, "")
 		if currentSide == configuratorSide && common.DubboRole[common.CONSUMER] == currentSide && c.configuratorUrl.Port == "0" {
-			localIP, _ := utils.GetLocalIP()
+			localIP, _ := gxnet.GetLocalIP()
 			c.configureIfMatch(localIP, url)
 		} else if currentSide == configuratorSide && common.DubboRole[common.PROVIDER] == currentSide && c.configuratorUrl.Port == url.Port {
 			c.configureIfMatch(url.Ip, url)
@@ -78,7 +78,7 @@ func (c *overrideConfigurator) configureIfMatch(host string, url *common.URL) {
 			configApp := c.configuratorUrl.GetParam(constant.APPLICATION_KEY, c.configuratorUrl.Username)
 			currentApp := url.GetParam(constant.APPLICATION_KEY, url.Username)
 			if len(configApp) == 0 || constant.ANY_VALUE == configApp || configApp == currentApp {
-				conditionKeys := container.NewSet()
+				conditionKeys := gxset.NewSet()
 				conditionKeys.Add(constant.CATEGORY_KEY)
 				conditionKeys.Add(constant.CHECK_KEY)
 				conditionKeys.Add(constant.ENABLED_KEY)
@@ -122,7 +122,7 @@ func (c *overrideConfigurator) configureDeprecated(url *common.URL) {
 		// 1.If it is a consumer ip address, the intention is to control a specific consumer instance, it must takes effect at the consumer side, any provider received this override url should ignore;
 		// 2.If the ip is 0.0.0.0, this override url can be used on consumer, and also can be used on provider
 		if url.GetParam(constant.SIDE_KEY, "") == common.DubboRole[common.CONSUMER] {
-			localIP, _ := utils.GetLocalIP()
+			localIP, _ := gxnet.GetLocalIP()
 			c.configureIfMatch(localIP, url)
 		} else {
 			c.configureIfMatch(constant.ANYHOST_VALUE, url)
