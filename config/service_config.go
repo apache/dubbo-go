@@ -58,6 +58,7 @@ type ServiceConfig struct {
 	Retries       string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
 	Params        map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
 	Token         string            `yaml:"token" json:"token,omitempty" property:"token"`
+	AccessLog     string            `yaml:"accesslog" json:"accesslog,omitempty" property:"accesslog"`
 	unexported    *atomic.Bool
 	exported      *atomic.Bool
 	rpcService    common.RPCService
@@ -187,6 +188,9 @@ func (srvconfig *ServiceConfig) getUrlMap() url.Values {
 
 	//filter
 	urlMap.Set(constant.SERVICE_FILTER_KEY, mergeValue(providerConfig.Filter, srvconfig.Filter, constant.DEFAULT_SERVICE_FILTERS))
+
+	//filter special config
+	urlMap.Set(constant.ACCESS_LOG_KEY, srvconfig.AccessLog)
 
 	for _, v := range srvconfig.Methods {
 		urlMap.Set("methods."+v.Name+"."+constant.LOADBALANCE_KEY, v.Loadbalance)
