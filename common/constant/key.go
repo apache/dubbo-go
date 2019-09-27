@@ -38,6 +38,8 @@ const (
 	GENERIC_KEY            = "generic"
 	CLASSIFIER_KEY         = "classifier"
 	TOKEN_KEY              = "token"
+	LOCAL_ADDR             = "local-addr"
+	REMOTE_ADDR            = "remote-addr"
 )
 
 const (
@@ -58,6 +60,7 @@ const (
 	FORKS_KEY            = "forks"
 	DEFAULT_FORKS        = 2
 	DEFAULT_TIMEOUT      = 1000
+	ACCESS_LOG_KEY       = "accesslog"
 )
 
 const (
