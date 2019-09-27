@@ -24,7 +24,8 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/container"
+	"github.com/dubbogo/gost/container/gxset"
+	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 )
 
@@ -32,7 +33,6 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/protocol"
 )
 
@@ -126,7 +126,7 @@ func (c *ConditionRouter) Route(invokers []protocol.Invoker, url common.URL, inv
 	if len(c.ThenCondition) == 0 {
 		return result
 	}
-	localIP, _ := utils.GetLocalIP()
+	localIP, _ := gxnet.GetLocalIP()
 	for _, invoker := range invokers {
 		isMatchThen, err := c.MatchThen(invoker.GetUrl(), url)
 		if err != nil {
@@ -157,7 +157,7 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 		return condition, nil
 	}
 	var pair MatchPair
-	values := container.NewSet()
+	values := gxset.NewSet()
 	reg := regexp.MustCompile(`([&!=,]*)\s*([^&!=,\s]+)`)
 	var startIndex = 0
 	if indexTuple := reg.FindIndex([]byte(rule)); len(indexTuple) > 0 {
@@ -170,8 +170,8 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 		switch separator {
 		case "":
 			pair = MatchPair{
-				Matches:    container.NewSet(),
-				Mismatches: container.NewSet(),
+				Matches:    gxset.NewSet(),
+				Mismatches: gxset.NewSet(),
 			}
 			condition[content] = pair
 		case "&":
@@ -179,8 +179,8 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 				pair = r
 			} else {
 				pair = MatchPair{
-					Matches:    container.NewSet(),
-					Mismatches: container.NewSet(),
+					Matches:    gxset.NewSet(),
+					Mismatches: gxset.NewSet(),
 				}
 				condition[content] = pair
 			}
@@ -257,8 +257,8 @@ func MatchCondition(pairs map[string]MatchPair, url *common.URL, param *common.U
 }
 
 type MatchPair struct {
-	Matches    *container.HashSet
-	Mismatches *container.HashSet
+	Matches    *gxset.HashSet
+	Mismatches *gxset.HashSet
 }
 
 func (pair MatchPair) isMatch(value string, param *common.URL) bool {
