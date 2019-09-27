@@ -23,7 +23,7 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/container"
+	"github.com/dubbogo/gost/container/gxset"
 )
 
 import (
@@ -65,7 +65,7 @@ func init() {
 
 func getCacheKey(url *common.URL) string {
 	newUrl := url.Clone()
-	delKeys := container.NewSet("dynamic", "enabled")
+	delKeys := gxset.NewSet("dynamic", "enabled")
 	newUrl.RemoveParams(delKeys)
 	return newUrl.String()
 }
@@ -174,7 +174,7 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 		logger.Infof("The exporter has not been cached, and will return a new  exporter!")
 	}
 
-	reg.Subscribe(overriderUrl, overrideSubscribeListener)
+	go reg.Subscribe(overriderUrl, overrideSubscribeListener)
 	return cachedExporter.(protocol.Exporter)
 
 }
