@@ -98,9 +98,9 @@ func GetDefaultClientConfig() ClientConfig {
 		SessionTimeout:    "20s",
 		PoolSize:          64,
 		PoolTTL:           600,
-		GrPoolSize:        1200,
+		GrPoolSize:        200,
 		QueueLen:          64,
-		QueueNumber:       60,
+		QueueNumber:       10,
 		GettySessionParam: GettySessionParam{
 			CompressEncoding: false,
 			TcpNoDelay:       true,
@@ -112,7 +112,7 @@ func GetDefaultClientConfig() ClientConfig {
 			TcpReadTimeout:   "1s",
 			TcpWriteTimeout:  "5s",
 			WaitTimeout:      "1s",
-			MaxMsgLen:        2014,
+			MaxMsgLen:        102400,
 			SessionName:      "client",
 		}}
 }
@@ -135,7 +135,7 @@ func GetDefaultServerConfig() ServerConfig {
 			TcpReadTimeout:   "1s",
 			TcpWriteTimeout:  "5s",
 			WaitTimeout:      "1s",
-			MaxMsgLen:        1024,
+			MaxMsgLen:        102400,
 			SessionName:      "server",
 		},
 	}
