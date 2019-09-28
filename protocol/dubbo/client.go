@@ -53,33 +53,35 @@ var (
 func init() {
 
 	// load clientconfig from consumer_config
+	// default use dubbo
+	consumerConfig := config.GetConsumerConfig()
+	if consumerConfig.ApplicationConfig == nil {
+		return
+	}
 	protocolConf := config.GetConsumerConfig().ProtocolConf
+	defaultClientConfig := GetDefaultClientConfig()
 	if protocolConf == nil {
-		logger.Warnf("protocol_conf is nil")
-		return
+		logger.Info("protocol_conf default use dubbo config")
+	} else {
+		dubboConf := protocolConf.(map[interface{}]interface{})[DUBBO]
+		if dubboConf == nil {
+			logger.Warnf("dubboConf is nil")
+			return
+		}
+		dubboConfByte, err := yaml.Marshal(dubboConf)
+		if err != nil {
+			panic(err)
+		}
+		err = yaml.Unmarshal(dubboConfByte, &defaultClientConfig)
+		if err != nil {
+			panic(err)
+		}
 	}
-	dubboConf := protocolConf.(map[interface{}]interface{})[DUBBO]
-	if dubboConf == nil {
-		logger.Warnf("dubboConf is nil")
-		return
-	}
-
-	dubboConfByte, err := yaml.Marshal(dubboConf)
-	if err != nil {
-		panic(err)
-	}
-	conf := &ClientConfig{}
-	err = yaml.Unmarshal(dubboConfByte, conf)
-	if err != nil {
-		panic(err)
-	}
-
-	if err := conf.CheckValidity(); err != nil {
+	clientConf = &defaultClientConfig
+	if err := clientConf.CheckValidity(); err != nil {
 		logger.Warnf("[CheckValidity] error: %v", err)
 		return
 	}
-
-	clientConf = conf
 	setClientGrpool()
 }
 
