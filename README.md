@@ -60,7 +60,7 @@ TODO
 
 ## Quick Start
 
-The subdirectory examples shows how to use dubbo-go. Please read the [examples/README.md](https://github.com/apache/dubbo-go/blob/develop/examples/README.md) carefully to learn how to dispose the configuration and compile the program.
+[dubbogo-samples](https://github.com/dubbogo/dubbogo-samples) shows how to use dubbo-go. Please read the [dubbogo-samples/README.md](https://github.com/dubbogo/dubbogo-samples/blob/master/README.md) carefully to learn how to dispose the configuration and compile the program.
 
 ## Running unit tests
 
