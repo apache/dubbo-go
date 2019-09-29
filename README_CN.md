@@ -73,7 +73,7 @@ go test ./... -coverprofile=coverage.txt -covermode=atomic
 
 ## 如何贡献
 
-如果您愿意给 [Apache/dubbo-go](https://github.com/apache/dubbo-go) 贡献代码或者文档，我们都热烈欢迎。具体请参考 [contribution intro](https://github.com/apache/dubbo-go/blob/master/cg.md)。
+如果您愿意给 [Apache/dubbo-go](https://github.com/apache/dubbo-go) 贡献代码或者文档，我们都热烈欢迎。具体请参考 [contribution intro](https://github.com/apache/dubbo-go/blob/master/contributing.md)。
 
 ## 性能测试 ##
 
