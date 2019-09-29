@@ -67,13 +67,11 @@ TODO
 ### 准备
 
 Mac/Linux
-
 ```bash
 sh ./before_ut.sh
 ```
 
 Windows
-
 ```bash
 before_ut.bat
 ```
