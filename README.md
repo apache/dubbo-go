@@ -67,13 +67,11 @@ The subdirectory examples shows how to use dubbo-go. Please read the [examples/R
 ### Prepare
 
 Mac/Linux
-
 ```bash
 sh ./before_ut.sh
 ```
 
 Windows
-
 ```bash
 before_ut.bat
 ```
