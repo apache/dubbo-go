@@ -64,12 +64,23 @@ TODO
 
 ## 运行单测
 
+### 准备
+
+Mac/Linux
 ```bash
 sh ./before_ut.sh
+```
 
+Windows
+```bash
+before_ut.bat
+```
+
+# 执行
+```bash
 go test ./...
 
-# 覆盖率
+# coverage
 go test ./... -coverprofile=coverage.txt -covermode=atomic
 ```
 
