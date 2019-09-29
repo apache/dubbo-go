@@ -64,9 +64,20 @@ The subdirectory examples shows how to use dubbo-go. Please read the [examples/R
 
 ## Running unit tests
 
+### Prepare
+
+Mac/Linux
 ```bash
 sh ./before_ut.sh
+```
 
+Windows
+```bash
+before_ut.bat
+```
+
+# Run
+```bash
 go test ./...
 
 # coverage
