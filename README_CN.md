@@ -60,7 +60,7 @@ TODO
 
 ## 快速开始 ##
 
-这个子目录下的例子展示了如何使用 dubbo-go 。请仔细阅读 [examples/README.md](https://github.com/apache/dubbo-go/blob/develop/examples/README.md) 学习如何处理配置并编译程序。
+[dubbogo-samples](https://github.com/dubbogo/dubbogo-samples)这个项目的事例展示了如何使用 dubbo-go 。请仔细阅读 [dubbogo-samples/README.md](https://github.com/dubbogo/dubbogo-samples/blob/master/README.md) 学习如何处理配置并编译程序。
 
 ## 运行单测
 
