@@ -22,14 +22,10 @@ import (
 )
 
 import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"github.com/apache/dubbo-go/common/extension"
 )
 
-func doinit() {
+func doInitProvider() {
 	providerConfig = &ProviderConfig{
 		ApplicationConfig: &ApplicationConfig{
 			Organization: "dubbo_org",
@@ -79,19 +75,69 @@ func doinit() {
 				Registry:      "shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2",
 				Cluster:       "failover",
 				Loadbalance:   "random",
-				Retries:       3,
+				Retries:       "3",
 				Group:         "huadong_idc",
 				Version:       "1.0.0",
 				Methods: []*MethodConfig{
 					{
 						Name:        "GetUser",
-						Retries:     2,
+						Retries:     "2",
 						Loadbalance: "random",
 						Weight:      200,
 					},
 					{
 						Name:        "GetUser1",
-						Retries:     2,
+						Retries:     "2",
+						Loadbalance: "random",
+						Weight:      200,
+					},
+				},
+			},
+		},
+		Protocols: map[string]*ProtocolConfig{
+			"mock": {
+				Name: "mock",
+				Ip:   "127.0.0.1",
+				Port: "20000",
+			},
+		},
+	}
+}
+
+func doInitProviderWithSingleRegistry() {
+	providerConfig = &ProviderConfig{
+		ApplicationConfig: &ApplicationConfig{
+			Organization: "dubbo_org",
+			Name:         "dubbo",
+			Module:       "module",
+			Version:      "2.6.0",
+			Owner:        "dubbo",
+			Environment:  "test"},
+		Registry: &RegistryConfig{
+			Address:  "mock://127.0.0.1:2181",
+			Username: "user1",
+			Password: "pwd1",
+		},
+		Registries: map[string]*RegistryConfig{},
+		Services: map[string]*ServiceConfig{
+			"MockService": {
+				InterfaceName: "com.MockService",
+				Protocol:      "mock",
+				Cluster:       "failover",
+				Loadbalance:   "random",
+				Retries:       "3",
+				Group:         "huadong_idc",
+				Version:       "1.0.0",
+				Methods: []*MethodConfig{
+					{
+						Name:        "GetUser",
+						Retries:     "2",
+						Loadbalance: "random",
+						Weight:      200,
+					},
+					{
+						Name:        "GetUser1",
+						Retries:     "2",
 						Loadbalance: "random",
 						Weight:      200,
 					},
@@ -109,16 +155,13 @@ func doinit() {
 }
 
 func Test_Export(t *testing.T) {
-	doinit()
+	doInitProvider()
 	extension.SetProtocol("registry", GetProtocol)
 
 	for i := range providerConfig.Services {
 		service := providerConfig.Services[i]
 		service.Implement(&MockService{})
 		service.Export()
-		assert.Condition(t, func() bool {
-			return len(service.exporters) > 0
-		})
 	}
 	providerConfig = nil
 }

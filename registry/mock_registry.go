@@ -18,11 +18,16 @@
 package registry
 
 import (
+	"time"
+)
+
+import (
 	"go.uber.org/atomic"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/logger"
 )
 
 type MockRegistry struct {
@@ -53,8 +58,42 @@ func (r *MockRegistry) GetUrl() common.URL {
 	return common.URL{}
 }
 
-func (r *MockRegistry) Subscribe(common.URL) (Listener, error) {
+func (r *MockRegistry) subscribe(*common.URL) (Listener, error) {
 	return r.listener, nil
+}
+func (r *MockRegistry) Subscribe(url *common.URL, notifyListener NotifyListener) {
+	go func() {
+		for {
+			if !r.IsAvailable() {
+				logger.Warnf("event listener game over.")
+				time.Sleep(time.Duration(3) * time.Second)
+				return
+			}
+
+			listener, err := r.subscribe(url)
+			if err != nil {
+				if !r.IsAvailable() {
+					logger.Warnf("event listener game over.")
+					return
+				}
+				time.Sleep(time.Duration(3) * time.Second)
+				continue
+			}
+
+			for {
+				if serviceEvent, err := listener.Next(); err != nil {
+					listener.Close()
+					time.Sleep(time.Duration(3) * time.Second)
+					return
+				} else {
+					logger.Infof("update begin, service event: %v", serviceEvent.String())
+					notifyListener.Notify(serviceEvent)
+				}
+
+			}
+
+		}
+	}()
 }
 
 type listener struct {

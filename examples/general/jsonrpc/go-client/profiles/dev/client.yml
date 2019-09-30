@@ -7,7 +7,7 @@ request_timeout : "3s"
 connect_timeout : "3s"
 
 # application config
-application_config:
+application:
   organization : "ikurento.com"
   name  : "BDTService"
   module : "dubbogo user-info client"
@@ -38,7 +38,7 @@ references:
     cluster: "failover"
     methods :
     - name: "GetUser"
-      retries: 3
+      retries: "3"
   "UserProvider1":
     registry: "hangzhouzk"
     protocol: "jsonrpc"
@@ -47,7 +47,7 @@ references:
     cluster: "failover"
     methods:
     - name: "GetUser"
-      retries: 3
+      retries: "3"
   "UserProvider2":
     registry: "hangzhouzk"
     protocol: "jsonrpc"
@@ -57,4 +57,4 @@ references:
     cluster: "failover"
     methods:
     - name: "GetUser"
-      retries: 3
+      retries: "3"

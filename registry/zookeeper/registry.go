@@ -44,7 +44,8 @@ import (
 )
 
 const (
-	RegistryZkClient = "zk registry"
+	RegistryZkClient  = "zk registry"
+	RegistryConnDelay = 3
 )
 
 var (
@@ -80,7 +81,6 @@ type zkRegistry struct {
 	configListener *RegistryConfigurationListener
 	//for provider
 	zkPath map[string]int // key = protocol://ip:port/interface
-
 }
 
 func newZkRegistry(url *common.URL) (registry.Registry, error) {
@@ -271,9 +271,11 @@ func (r *zkRegistry) register(c common.URL) error {
 		return perrors.WithStack(err)
 	}
 	params = url.Values{}
-	for k, v := range c.Params {
-		params[k] = v
-	}
+
+	c.RangeParams(func(key, value string) bool {
+		params.Add(key, value)
+		return true
+	})
 
 	params.Add("pid", processID)
 	params.Add("ip", localIP)
@@ -393,11 +395,44 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 	return nil
 }
 
-func (r *zkRegistry) Subscribe(conf common.URL) (registry.Listener, error) {
+func (r *zkRegistry) subscribe(conf *common.URL) (registry.Listener, error) {
 	return r.getListener(conf)
 }
 
-func (r *zkRegistry) getListener(conf common.URL) (*RegistryConfigurationListener, error) {
+//subscibe from registry
+func (r *zkRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
+	for {
+		if !r.IsAvailable() {
+			logger.Warnf("event listener game over.")
+			return
+		}
+
+		listener, err := r.subscribe(url)
+		if err != nil {
+			if !r.IsAvailable() {
+				logger.Warnf("event listener game over.")
+				return
+			}
+			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
+			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
+			continue
+		}
+
+		for {
+			if serviceEvent, err := listener.Next(); err != nil {
+				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
+				listener.Close()
+				return
+			} else {
+				logger.Infof("update begin, service event: %v", serviceEvent.String())
+				notifyListener.Notify(serviceEvent)
+			}
+
+		}
+
+	}
+}
+func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListener, error) {
 	var (
 		zkListener *RegistryConfigurationListener
 	)
@@ -422,9 +457,10 @@ func (r *zkRegistry) getListener(conf common.URL) (*RegistryConfigurationListene
 	}
 
 	//Interested register to dataconfig.
-	r.dataListener.AddInterestedURL(&conf)
-
-	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/providers", conf.Service()), r.dataListener)
+	r.dataListener.AddInterestedURL(conf)
+	for _, v := range strings.Split(conf.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY), ",") {
+		go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+v, conf.Service()), r.dataListener)
+	}
 
 	return zkListener, nil
 }

@@ -2,7 +2,7 @@
 
 
 # application config
-application_config:
+application:
   organization : "ikurento.com"
   name : "BDTService"
   module : "dubbogo user-info server"
@@ -38,7 +38,7 @@ services:
     cluster: "failover"
     methods:
     - name: "GetUser"
-      retries: 1
+      retries: "1"
       loadbalance: "random"
   "UserProvider1":
     registry: "hangzhouzk"
@@ -50,7 +50,7 @@ services:
     cluster: "failover"
     methods:
     - name: "GetUser"
-      retries: 1
+      retries: "1"
       loadbalance: "random"
   "UserProvider2":
     registry: "hangzhouzk"
@@ -63,7 +63,7 @@ services:
     cluster: "failover"
     methods:
     - name: "GetUser"
-      retries: 1
+      retries: "1"
       loadbalance: "random"
 
 protocols:

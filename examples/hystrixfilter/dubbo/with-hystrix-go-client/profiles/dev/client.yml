@@ -1,0 +1,98 @@
+# dubbo client yaml configure file
+
+
+check: true
+# client
+request_timeout : "3s"
+# connect timeout
+connect_timeout : "3s"
+
+# application config
+application:
+  organization : "ikurento.com"
+  name  : "BDTService"
+  module : "dubbogo user-info client"
+  version : "0.0.1"
+  owner : "ZX"
+  environment : "dev"
+
+registries :
+  "hangzhouzk":
+    # 对应java配置中address属性的zookeeper <dubbo:registry address="zookeeper://127.0.0.1:2181"/>
+    protocol: "zookeeper"
+    timeout	: "3s"
+    address: "127.0.0.1:2181"
+    username: ""
+    password: ""
+  "shanghaizk":
+    protocol: "zookeeper"
+    timeout	: "3s"
+    address: "127.0.0.1:2182"
+    username: ""
+    password: ""
+
+references:
+  "UserProvider":
+    # 可以指定多个registry，使用逗号隔开;不指定默认向所有注册中心注册
+    registry: "hangzhouzk"
+    filter: "example_fallback,hystrix_consumer"
+    protocol : "dubbo"
+    interface : "com.ikurento.user.UserProvider"
+    cluster: "failover"
+    methods :
+      - name: "GetUser"
+        retries: "3"
+
+protocol_conf:
+  dubbo:
+    reconnect_interval: 0
+    connection_number: 2
+    heartbeat_period: "5s"
+    session_timeout: "20s"
+    fail_fast_timeout: "5s"
+    pool_size: 64
+    pool_ttl: 600
+    getty_session_param:
+      compress_encoding: false
+      tcp_no_delay: true
+      tcp_keep_alive: true
+      keep_alive_period: "120s"
+      tcp_r_buf_size: 262144
+      tcp_w_buf_size: 65536
+      pkg_rq_size: 1024
+      pkg_wq_size: 512
+      tcp_read_timeout: "1s"
+      tcp_write_timeout: "5s"
+      wait_timeout: "1s"
+      max_msg_len: 10240
+      session_name: "client"
+
+filter_conf:
+  hystrix:
+    configs:
+      "Default":
+        timeout : 1000
+        max_concurrent_requests : 25
+        sleep_window : 5000
+        error_percent_threshold : 50
+        request_volume_threshold: 20
+      "userp":
+        timeout: 2000
+        max_concurrent_requests: 512
+        sleep_window: 4000
+        error_percent_threshold: 35
+        request_volume_threshold: 6
+      "userp_m":
+        timeout : 1200
+        max_concurrent_requests : 512
+        sleep_window : 6000
+        error_percent_threshold : 60
+        request_volume_threshold: 16
+        error_whitelist: [".*exception.*"]
+    default: "Default"
+    services:
+      "com.ikurento.user.UserProvider":
+        service_config: "userp"
+        methods:
+          "GetUser": "userp_m"
+          "GetUser1": "userp_m"

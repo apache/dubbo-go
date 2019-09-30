@@ -17,6 +17,10 @@
 package config
 
 import (
+	"github.com/creasty/defaults"
+)
+
+import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
@@ -24,7 +28,7 @@ type MethodConfig struct {
 	InterfaceId   string
 	InterfaceName string
 	Name          string `yaml:"name"  json:"name,omitempty" property:"name"`
-	Retries       int64  `yaml:"retries"  json:"retries,omitempty" property:"retries"`
+	Retries       string `yaml:"retries"  json:"retries,omitempty" property:"retries"`
 	Loadbalance   string `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
 	Weight        int64  `yaml:"weight"  json:"weight,omitempty" property:"weight"`
 }
@@ -35,4 +39,15 @@ func (c *MethodConfig) Prefix() string {
 	} else {
 		return constant.DUBBO + "." + c.InterfaceName + "." + c.Name + "."
 	}
+}
+
+func (c *MethodConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	if err := defaults.Set(c); err != nil {
+		return err
+	}
+	type plain MethodConfig
+	if err := unmarshal((*plain)(c)); err != nil {
+		return err
+	}
+	return nil
 }
