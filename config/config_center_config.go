@@ -22,15 +22,31 @@ import (
 	"time"
 )
 
+import (
+	"github.com/creasty/defaults"
+)
+
 type ConfigCenterConfig struct {
-	context    context.Context
-	Protocol   string `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
-	Address    string `yaml:"address" json:"address,omitempty"`
-	Cluster    string `yaml:"cluster" json:"cluster,omitempty"`
-	Group      string `default:"dubbo" yaml:"group" json:"group,omitempty"`
-	Username   string `yaml:"username" json:"username,omitempty"`
-	Password   string `yaml:"password" json:"password,omitempty"`
-	ConfigFile string `default:"dubbo.properties" yaml:"config_file"  json:"config_file,omitempty"`
-	TimeoutStr string `yaml:"timeout"  json:"timeout,omitempty"`
-	timeout    time.Duration
+	context       context.Context
+	Protocol      string `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
+	Address       string `yaml:"address" json:"address,omitempty"`
+	Cluster       string `yaml:"cluster" json:"cluster,omitempty"`
+	Group         string `default:"dubbo" yaml:"group" json:"group,omitempty"`
+	Username      string `yaml:"username" json:"username,omitempty"`
+	Password      string `yaml:"password" json:"password,omitempty"`
+	ConfigFile    string `default:"dubbo.properties" yaml:"config_file"  json:"config_file,omitempty"`
+	AppConfigFile string `default:"dubbo.properties" yaml:"app_config_file"  json:"app_config_file,omitempty"`
+	TimeoutStr    string `yaml:"timeout"  json:"timeout,omitempty"`
+	timeout       time.Duration
+}
+
+func (c *ConfigCenterConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	if err := defaults.Set(c); err != nil {
+		return err
+	}
+	type plain ConfigCenterConfig
+	if err := unmarshal((*plain)(c)); err != nil {
+		return err
+	}
+	return nil
 }
