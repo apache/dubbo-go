@@ -77,9 +77,9 @@ If you are willing to do some code contributions and document contributions to [
 
 ## Benchmark
 
-Benchmark project please refer to [go-for-apache-dubbo-benchmark](https://github.com/dubbogo/go-for-apache-dubbo-benchmark)
+Benchmark project [dubbo-go-benchmark](https://github.com/dubbogo/dubbo-go-benchmark).
 
-About dubbo-go benchmarking report, please refer to [dubbo benchmarking report](https://github.com/apache/dubbo-go/wiki/pressure-test-report-for-dubbo) & [jsonrpc benchmarking report](https://github.com/apache/dubbo-go/wiki/pressure-test-report-for-jsonrpc)
+About dubbo-go benchmarking report, please refer to [dubbo benchmarking report](https://github.com/apache/dubbo-go/wiki/pressure-test-report-for-dubbo) & [jsonrpc benchmarking report](https://github.com/apache/dubbo-go/wiki/pressure-test-report-for-jsonrpc).
 
 ## [User List](https://github.com/apache/dubbo-go/issues/2)
 
