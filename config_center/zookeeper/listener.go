@@ -21,7 +21,9 @@ import (
 	"strings"
 	"sync"
 )
+
 import (
+	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/remoting"
 )
 
@@ -33,21 +35,21 @@ type CacheListener struct {
 func NewCacheListener(rootPath string) *CacheListener {
 	return &CacheListener{rootPath: rootPath}
 }
-func (l *CacheListener) AddListener(key string, listener remoting.ConfigurationListener) {
+func (l *CacheListener) AddListener(key string, listener config_center.ConfigurationListener) {
 
 	// reference from https://stackoverflow.com/questions/34018908/golang-why-dont-we-have-a-set-datastructure
 	// make a map[your type]struct{} like set in java
-	listeners, loaded := l.keyListeners.LoadOrStore(key, map[remoting.ConfigurationListener]struct{}{listener: struct{}{}})
+	listeners, loaded := l.keyListeners.LoadOrStore(key, map[config_center.ConfigurationListener]struct{}{listener: struct{}{}})
 	if loaded {
-		listeners.(map[remoting.ConfigurationListener]struct{})[listener] = struct{}{}
+		listeners.(map[config_center.ConfigurationListener]struct{})[listener] = struct{}{}
 		l.keyListeners.Store(key, listeners)
 	}
 }
 
-func (l *CacheListener) RemoveListener(key string, listener remoting.ConfigurationListener) {
+func (l *CacheListener) RemoveListener(key string, listener config_center.ConfigurationListener) {
 	listeners, loaded := l.keyListeners.Load(key)
 	if loaded {
-		delete(listeners.(map[remoting.ConfigurationListener]struct{}), listener)
+		delete(listeners.(map[config_center.ConfigurationListener]struct{}), listener)
 	}
 }
 
@@ -59,8 +61,8 @@ func (l *CacheListener) DataChange(event remoting.Event) bool {
 	key := l.pathToKey(event.Path)
 	if key != "" {
 		if listeners, ok := l.keyListeners.Load(key); ok {
-			for listener := range listeners.(map[remoting.ConfigurationListener]struct{}) {
-				listener.Process(&remoting.ConfigChangeEvent{Key: key, Value: event.Content, ConfigType: event.Action})
+			for listener := range listeners.(map[config_center.ConfigurationListener]struct{}) {
+				listener.Process(&config_center.ConfigChangeEvent{Key: key, Value: event.Content, ConfigType: event.Action})
 			}
 			return true
 		}

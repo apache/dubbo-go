@@ -23,7 +23,7 @@ import (
 )
 
 import (
-	hessian "github.com/apache/dubbo-go-hessian2"
+	"github.com/apache/dubbo-go-hessian2"
 	"github.com/dubbogo/getty"
 	perrors "github.com/pkg/errors"
 )
@@ -63,7 +63,7 @@ func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface
 	}
 
 	pkg.Err = pkg.Body.(*hessian.Response).Exception
-	pkg.Body = pkg.Body.(*hessian.Response).RspObj
+	pkg.Body = NewResponse(pkg.Body.(*hessian.Response).RspObj, pkg.Body.(*hessian.Response).Attachments)
 
 	return pkg, hessian.HEADER_LENGTH + pkg.Header.BodyLen, nil
 }
@@ -118,7 +118,7 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 		if len(req) > 0 {
 			var dubboVersion, argsTypes string
 			var args []interface{}
-			var attachments map[interface{}]interface{}
+			var attachments map[string]string
 			if req[0] != nil {
 				dubboVersion = req[0].(string)
 			}
@@ -138,14 +138,18 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 				args = req[5].([]interface{})
 			}
 			if req[6] != nil {
-				attachments = req[6].(map[interface{}]interface{})
+				attachments = req[6].(map[string]string)
 			}
-			pkg.Service.Interface = attachments[constant.INTERFACE_KEY].(string)
-			if pkg.Service.Path == "" && attachments[constant.PATH_KEY] != nil {
-				pkg.Service.Path = attachments[constant.PATH_KEY].(string)
+			if pkg.Service.Path == "" && len(attachments[constant.PATH_KEY]) > 0 {
+				pkg.Service.Path = attachments[constant.PATH_KEY]
 			}
-			if attachments[constant.GROUP_KEY] != nil {
-				pkg.Service.Group = attachments[constant.GROUP_KEY].(string)
+			if _, ok := attachments[constant.INTERFACE_KEY]; ok {
+				pkg.Service.Interface = attachments[constant.INTERFACE_KEY]
+			} else {
+				pkg.Service.Interface = pkg.Service.Path
+			}
+			if len(attachments[constant.GROUP_KEY]) > 0 {
+				pkg.Service.Group = attachments[constant.GROUP_KEY]
 			}
 			pkg.Body = map[string]interface{}{
 				"dubboVersion": dubboVersion,

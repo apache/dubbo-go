@@ -21,12 +21,15 @@ import (
 	"context"
 	"strings"
 )
+
 import (
 	perrors "github.com/pkg/errors"
 )
+
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting"
 	zk "github.com/apache/dubbo-go/remoting/zookeeper"
@@ -34,10 +37,10 @@ import (
 
 type RegistryDataListener struct {
 	interestedURL []*common.URL
-	listener      remoting.ConfigurationListener
+	listener      config_center.ConfigurationListener
 }
 
-func NewRegistryDataListener(listener remoting.ConfigurationListener) *RegistryDataListener {
+func NewRegistryDataListener(listener config_center.ConfigurationListener) *RegistryDataListener {
 	return &RegistryDataListener{listener: listener, interestedURL: []*common.URL{}}
 }
 func (l *RegistryDataListener) AddInterestedURL(url *common.URL) {
@@ -59,7 +62,7 @@ func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 	}
 	for _, v := range l.interestedURL {
 		if serviceURL.URLEqual(*v) {
-			l.listener.Process(&remoting.ConfigChangeEvent{Value: serviceURL, ConfigType: eventType.Action})
+			l.listener.Process(&config_center.ConfigChangeEvent{Value: serviceURL, ConfigType: eventType.Action})
 			return true
 		}
 	}
@@ -70,14 +73,14 @@ func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 type RegistryConfigurationListener struct {
 	client   *zk.ZookeeperClient
 	registry *zkRegistry
-	events   chan *remoting.ConfigChangeEvent
+	events   chan *config_center.ConfigChangeEvent
 }
 
 func NewRegistryConfigurationListener(client *zk.ZookeeperClient, reg *zkRegistry) *RegistryConfigurationListener {
 	reg.wg.Add(1)
-	return &RegistryConfigurationListener{client: client, registry: reg, events: make(chan *remoting.ConfigChangeEvent, 32)}
+	return &RegistryConfigurationListener{client: client, registry: reg, events: make(chan *config_center.ConfigChangeEvent, 32)}
 }
-func (l *RegistryConfigurationListener) Process(configType *remoting.ConfigChangeEvent) {
+func (l *RegistryConfigurationListener) Process(configType *config_center.ConfigChangeEvent) {
 	l.events <- configType
 }
 

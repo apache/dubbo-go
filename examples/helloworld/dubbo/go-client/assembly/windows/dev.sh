@@ -19,7 +19,7 @@
 
 set -e
 
-export GOOS=linux
+export GOOS=windows
 export GOARCH=amd64
 
 export PROFILE="dev"

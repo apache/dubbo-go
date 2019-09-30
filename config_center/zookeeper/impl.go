@@ -22,16 +22,18 @@ import (
 	"sync"
 	"time"
 )
+
 import (
 	perrors "github.com/pkg/errors"
 	"github.com/samuel/go-zookeeper/zk"
 )
+
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config_center"
-	"github.com/apache/dubbo-go/remoting"
+	"github.com/apache/dubbo-go/config_center/parser"
 	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
@@ -48,7 +50,7 @@ type zookeeperDynamicConfiguration struct {
 	listenerLock  sync.Mutex
 	listener      *zookeeper.ZkEventListener
 	cacheListener *CacheListener
-	parser        config_center.ConfigurationParser
+	parser        parser.ConfigurationParser
 }
 
 func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfiguration, error) {
@@ -99,11 +101,11 @@ func newMockZookeeperDynamicConfiguration(url *common.URL, opts ...zookeeper.Opt
 
 }
 
-func (c *zookeeperDynamicConfiguration) AddListener(key string, listener remoting.ConfigurationListener, opions ...config_center.Option) {
+func (c *zookeeperDynamicConfiguration) AddListener(key string, listener config_center.ConfigurationListener, opions ...config_center.Option) {
 	c.cacheListener.AddListener(key, listener)
 }
 
-func (c *zookeeperDynamicConfiguration) RemoveListener(key string, listener remoting.ConfigurationListener, opions ...config_center.Option) {
+func (c *zookeeperDynamicConfiguration) RemoveListener(key string, listener config_center.ConfigurationListener, opions ...config_center.Option) {
 	c.cacheListener.RemoveListener(key, listener)
 }
 
@@ -143,10 +145,10 @@ func (c *zookeeperDynamicConfiguration) GetConfigs(key string, opts ...config_ce
 	return c.GetConfig(key, opts...)
 }
 
-func (c *zookeeperDynamicConfiguration) Parser() config_center.ConfigurationParser {
+func (c *zookeeperDynamicConfiguration) Parser() parser.ConfigurationParser {
 	return c.parser
 }
-func (c *zookeeperDynamicConfiguration) SetParser(p config_center.ConfigurationParser) {
+func (c *zookeeperDynamicConfiguration) SetParser(p parser.ConfigurationParser) {
 	c.parser = p
 }
 

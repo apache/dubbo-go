@@ -8,7 +8,7 @@ request_timeout : "3s"
 connect_timeout : "3s"
 
 # application config
-application_config:
+application:
   organization : "ikurento.com"
   name  : "BDTService"
   module : "dubbogo genric client"

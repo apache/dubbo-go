@@ -43,7 +43,8 @@ func (ef *EchoFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invoc
 	logger.Debugf("%v,%v", invocation.MethodName(), len(invocation.Arguments()))
 	if invocation.MethodName() == constant.ECHO && len(invocation.Arguments()) == 1 {
 		return &protocol.RPCResult{
-			Rest: invocation.Arguments()[0],
+			Rest:  invocation.Arguments()[0],
+			Attrs: invocation.Attachments(),
 		}
 	}
 
