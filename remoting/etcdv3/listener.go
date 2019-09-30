@@ -100,7 +100,7 @@ func (l *EventListener) handleEvents(event *clientv3.Event, listeners ...remotin
 				logger.Infof("etcd get event (key{%s}) = event{EventNodeDataChanged}", event.Kv.Key)
 				listener.DataChange(remoting.Event{
 					Path:    string(event.Kv.Key),
-					Action:  remoting.EvnetTypeUpdate,
+					Action:  remoting.EventTypeUpdate,
 					Content: string(event.Kv.Value),
 				})
 			}

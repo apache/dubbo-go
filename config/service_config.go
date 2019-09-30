@@ -28,6 +28,7 @@ import (
 )
 
 import (
+	"github.com/creasty/defaults"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
 )
@@ -45,7 +46,7 @@ type ServiceConfig struct {
 	context       context.Context
 	id            string
 	Filter        string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	Protocol      string            `required:"true"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"` //multi protocol support, split by ','
+	Protocol      string            `default:"dubbo"  required:"true"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"` //multi protocol support, split by ','
 	InterfaceName string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
 	Registry      string            `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
 	Cluster       string            `default:"failover" yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
@@ -54,18 +55,29 @@ type ServiceConfig struct {
 	Version       string            `yaml:"version"  json:"version,omitempty" property:"version" `
 	Methods       []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
 	Warmup        string            `yaml:"warmup"  json:"warmup,omitempty"  property:"warmup"`
-	Retries       int64             `yaml:"retries"  json:"retries,omitempty" property:"retries"`
+	Retries       string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
 	Params        map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
+	Token         string            `yaml:"token" json:"token,omitempty" property:"token"`
 	unexported    *atomic.Bool
 	exported      *atomic.Bool
 	rpcService    common.RPCService
-	exporters     []protocol.Exporter
 	cacheProtocol protocol.Protocol
 	cacheMutex    sync.Mutex
 }
 
 func (c *ServiceConfig) Prefix() string {
 	return constant.ServiceConfigPrefix + c.InterfaceName + "."
+}
+
+func (c *ServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	if err := defaults.Set(c); err != nil {
+		return err
+	}
+	type plain ServiceConfig
+	if err := unmarshal((*plain)(c)); err != nil {
+		return err
+	}
+	return nil
 }
 
 // The only way to get a new ServiceConfig
@@ -111,7 +123,9 @@ func (srvconfig *ServiceConfig) Export() error {
 			common.WithPort(proto.Port),
 			common.WithParams(urlMap),
 			common.WithParamsValue(constant.BEAN_NAME_KEY, srvconfig.id),
-			common.WithMethods(strings.Split(methods, ",")))
+			common.WithMethods(strings.Split(methods, ",")),
+			common.WithToken(srvconfig.Token),
+		)
 
 		if len(regUrls) > 0 {
 			for _, regUrl := range regUrls {
@@ -129,7 +143,6 @@ func (srvconfig *ServiceConfig) Export() error {
 				if exporter == nil {
 					panic(perrors.New(fmt.Sprintf("Registry protocol new exporter error,registry is {%v},url is {%v}", regUrl, url)))
 				}
-				srvconfig.exporters = append(srvconfig.exporters, exporter)
 			}
 		} else {
 			invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*url)
@@ -137,7 +150,6 @@ func (srvconfig *ServiceConfig) Export() error {
 			if exporter == nil {
 				panic(perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error,url is {%v}", url)))
 			}
-			srvconfig.exporters = append(srvconfig.exporters, exporter)
 		}
 
 	}
@@ -160,7 +172,7 @@ func (srvconfig *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.CLUSTER_KEY, srvconfig.Cluster)
 	urlMap.Set(constant.LOADBALANCE_KEY, srvconfig.Loadbalance)
 	urlMap.Set(constant.WARMUP_KEY, srvconfig.Warmup)
-	urlMap.Set(constant.RETRIES_KEY, strconv.FormatInt(srvconfig.Retries, 10))
+	urlMap.Set(constant.RETRIES_KEY, srvconfig.Retries)
 	urlMap.Set(constant.GROUP_KEY, srvconfig.Group)
 	urlMap.Set(constant.VERSION_KEY, srvconfig.Version)
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
@@ -178,7 +190,7 @@ func (srvconfig *ServiceConfig) getUrlMap() url.Values {
 
 	for _, v := range srvconfig.Methods {
 		urlMap.Set("methods."+v.Name+"."+constant.LOADBALANCE_KEY, v.Loadbalance)
-		urlMap.Set("methods."+v.Name+"."+constant.RETRIES_KEY, strconv.FormatInt(v.Retries, 10))
+		urlMap.Set("methods."+v.Name+"."+constant.RETRIES_KEY, v.Retries)
 		urlMap.Set("methods."+v.Name+"."+constant.WEIGHT_KEY, strconv.FormatInt(v.Weight, 10))
 	}
 

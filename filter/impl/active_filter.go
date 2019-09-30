@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-// @author yiji@apache.org
 package impl
 
 import (

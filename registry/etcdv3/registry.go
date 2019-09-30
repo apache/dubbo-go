@@ -30,7 +30,10 @@ var (
 	localIP   = ""
 )
 
-const Name = "etcdv3"
+const (
+	Name              = "etcdv3"
+	RegistryConnDelay = 3
+)
 
 func init() {
 	processID = fmt.Sprintf("%d", os.Getpid())
@@ -257,10 +260,11 @@ func (r *etcdV3Registry) registerProvider(svc common.URL) error {
 	}
 
 	params := url.Values{}
-	for k, v := range svc.Params {
-		params[k] = v
-	}
 
+	svc.RangeParams(func(key, value string) bool {
+		params[key] = []string{value}
+		return true
+	})
 	params.Add("pid", processID)
 	params.Add("ip", localIP)
 	params.Add("anyhost", "true")
@@ -292,7 +296,7 @@ func (r *etcdV3Registry) registerProvider(svc common.URL) error {
 	return nil
 }
 
-func (r *etcdV3Registry) Subscribe(svc common.URL) (registry.Listener, error) {
+func (r *etcdV3Registry) subscribe(svc *common.URL) (registry.Listener, error) {
 
 	var (
 		configListener *configurationListener
@@ -318,8 +322,44 @@ func (r *etcdV3Registry) Subscribe(svc common.URL) (registry.Listener, error) {
 	}
 
 	//register the svc to dataListener
-	r.dataListener.AddInterestedURL(&svc)
-	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/providers", svc.Service()), r.dataListener)
+	r.dataListener.AddInterestedURL(svc)
+	for _, v := range strings.Split(svc.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY), ",") {
+		go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+v, svc.Service()), r.dataListener)
+	}
 
 	return configListener, nil
+}
+
+//subscibe from registry
+func (r *etcdV3Registry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
+	for {
+		if !r.IsAvailable() {
+			logger.Warnf("event listener game over.")
+			return
+		}
+
+		listener, err := r.subscribe(url)
+		if err != nil {
+			if !r.IsAvailable() {
+				logger.Warnf("event listener game over.")
+				return
+			}
+			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
+			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
+			continue
+		}
+
+		for {
+			if serviceEvent, err := listener.Next(); err != nil {
+				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
+				listener.Close()
+				return
+			} else {
+				logger.Infof("update begin, service event: %v", serviceEvent.String())
+				notifyListener.Notify(serviceEvent)
+			}
+
+		}
+
+	}
 }

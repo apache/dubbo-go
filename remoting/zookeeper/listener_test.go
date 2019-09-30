@@ -117,6 +117,8 @@ func (m *mockDataListener) DataChange(eventType remoting.Event) bool {
 	m.eventList = append(m.eventList, eventType)
 	if eventType.Content == m.changedData {
 		m.wait.Done()
+		m.client.Close()
+
 	}
 	return true
 }

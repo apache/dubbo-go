@@ -1,0 +1,52 @@
+application:
+  organization : "ikurento.com"
+  name : "BDTService"
+  module : "dubbogo user-info server"
+  version : "0.0.1"
+  owner : "ZX"
+  environment : "test"
+
+registries :
+  "consul":
+    protocol: "consul"
+    timeout	: "3s"
+    address: "127.0.0.1:8500"
+    username: ""
+    password: ""
+
+services:
+  "DubboService":
+    protocol : "dubbo"
+    interface : "dubbo.DubboService"
+    loadbalance: "random"
+    warmup: "100"
+    cluster: "failover"
+    methods:
+      - name: "SayHello"
+        retries: "1"
+        loadbalance: "random"
+
+protocols:
+  "dubbo1":
+      name: "dubbo"
+      port: 20000
+
+protocol_conf:
+  dubbo:
+    session_number: 700
+    fail_fast_timeout: "5s"
+    session_timeout: "20s"
+    getty_session_param:
+      compress_encoding: false
+      tcp_no_delay: true
+      tcp_keep_alive: true
+      keep_alive_period: "120s"
+      tcp_r_buf_size: 262144
+      tcp_w_buf_size: 65536
+      pkg_rq_size: 1024
+      pkg_wq_size: 512
+      tcp_read_timeout: "1s"
+      tcp_write_timeout: "5s"
+      wait_timeout: "1s"
+      max_msg_len: 1024
+      session_name: "server"

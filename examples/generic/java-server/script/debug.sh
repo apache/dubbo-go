@@ -15,7 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 # jdb -classpath /Users/alex/tmp/us/conf:/Users/alex/tmp/us/lib/*:/Users/alex/test/java/dubbo/2.5.4/dubbo-remoting/dubbo-remoting-api/src/main/java/ com.alibaba.dubbo.container.Main
 jdb -classpath /Users/alex/tmp/us/conf:/Users/alex/tmp/us/lib/* -sourcepath /Users/alex/test/java/dubbo/2.5.4/dubbo-remoting/dubbo-remoting-api/src/main/java/:/Users/alex/tmp/java-server/src/main/java com.alibaba.dubbo.container.Main
 # jdb stop at com.alibaba.dubbo.remoting.exchange.codec.ExchangeCodec:76
