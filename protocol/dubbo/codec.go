@@ -88,11 +88,15 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 			return perrors.Errorf("opts[0] is not of type *Client")
 		}
 
-		pendingRsp, ok := client.pendingResponses.Load(SequenceType(p.Header.ID))
-		if !ok {
-			return perrors.Errorf("client.GetPendingResponse(%v) = nil", p.Header.ID)
+		if p.Header.Type&hessian.PackageRequest != 0x00 {
+			p.Body = make([]interface{}, 7)
+		} else {
+			pendingRsp, ok := client.pendingResponses.Load(SequenceType(p.Header.ID))
+			if !ok {
+				return perrors.Errorf("client.GetPendingResponse(%v) = nil", p.Header.ID)
+			}
+			p.Body = &hessian.Response{RspObj: pendingRsp.(*PendingResponse).response.reply}
 		}
-		p.Body = &hessian.Response{RspObj: pendingRsp.(*PendingResponse).response.reply}
 	}
 
 	// read body
