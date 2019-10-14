@@ -18,6 +18,7 @@
 package impl
 
 import (
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/filter"
 	"github.com/apache/dubbo-go/protocol"
@@ -28,19 +29,37 @@ const (
 )
 
 func init() {
-	extension.SetFilter(TpsLimitFilterKey, GetAccessLogFilter)
+	extension.SetFilter(TpsLimitFilterKey, GetTpsLimitFilter)
 }
 
 /**
- *
+ * if you wish to use the TpsLimiter, please add the configuration into your service provider configuration:
+ * for example:
+ * "UserProvider":
+ *   registry: "hangzhouzk"
+ *   protocol : "dubbo"
+ *   interface : "com.ikurento.user.UserProvider"
+ *   ... # other configuration
+ *   tps.limiter: "method-service", # it should be the name of limiter. if the value is 'default',
+ *                                  # the MethodServiceTpsLimiterImpl will be used.
+ *   tps.limit.rejected.handler: "default", # optional, or the name of the implementation
+ *   if the value of 'tps.limiter' is nil or empty string, the tps filter will do nothing
  */
 type TpsLimitFilter struct {
 	
 }
 
 func (t TpsLimitFilter) Invoke(invoker protocol.Invoker,invocation protocol.Invocation) protocol.Result {
-	invoker.GetUrl()
-	invoker.IsAvailable()
+	url := invoker.GetUrl()
+	tpsLimiter := url.GetParam(constant.TPS_LIMITER_KEY, "")
+	rejectedExeHandler := url.GetParam(constant.TPS_REJECTED_EXECUTION_HANDLER_KEY, constant.DEFAULT_KEY)
+	if len(tpsLimiter) > 0 {
+		allow := extension.GetTpsLimiter(tpsLimiter).IsAllowable(invoker.GetUrl(), invocation)
+		if allow {
+			return invoker.Invoke(invocation)
+		}
+		return extension.GetTpsRejectedExecutionHandler(rejectedExeHandler).RejectedExecution(url, invocation)
+	}
 	return invoker.Invoke(invocation)
 }
 
@@ -49,6 +68,5 @@ func (t TpsLimitFilter) OnResponse(result protocol.Result, invoker protocol.Invo
 }
 
 func GetTpsLimitFilter() filter.Filter {
-	var tpsLimitFilter = TpsLimitFilter{}
-	return tpsLimitFilter
+	return &TpsLimitFilter{}
 }
