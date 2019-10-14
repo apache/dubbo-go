@@ -14,22 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package impl
+package filter
 
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
 )
 
-type FixedWindowTpsLimiterImpl struct {
-
-}
-
-func (limiter FixedWindowTpsLimiterImpl) IsAllowable(common.URL, protocol.Invocation) {
-	panic("implement me")
-}
-
-func NewInstance() TpsLimiter {
-	return FixedWindowTpsLimiterImpl{}
+type RejectedExecutionHandler interface {
+	RejectedExecution(url common.URL, invocation protocol.Invocation) protocol.Result
 }

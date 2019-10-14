@@ -16,3 +16,82 @@
  */
 
 package impl
+
+import (
+	"net/url"
+	"testing"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/filter"
+	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/invocation"
+)
+
+func TestTpsLimitFilter_Invoke_With_No_TpsLimiter(t *testing.T) {
+	tpsFilter := GetTpsLimitFilter()
+	invokeUrl := common.NewURLWithOptions(
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.TPS_LIMITER_KEY, ""))
+	attch := make(map[string]string, 0)
+
+	result := tpsFilter.Invoke(protocol.NewBaseInvoker(*invokeUrl),
+		invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, attch))
+	assert.Nil(t, result.Error())
+	assert.Nil(t, result.Result())
+
+}
+
+func TestGenericFilter_Invoke_With_Default_TpsLimiter(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockLimiter := filter.NewMockTpsLimiter(ctrl)
+	mockLimiter.EXPECT().IsAllowable(gomock.Any(), gomock.Any()).Return(true).Times(1)
+	extension.SetTpsLimiter(constant.DEFAULT_KEY, func() filter.TpsLimiter {
+		return mockLimiter
+	})
+
+	tpsFilter := GetTpsLimitFilter()
+	invokeUrl := common.NewURLWithOptions(
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.TPS_LIMITER_KEY, constant.DEFAULT_KEY))
+	attch := make(map[string]string, 0)
+
+	result := tpsFilter.Invoke(protocol.NewBaseInvoker(*invokeUrl),
+		invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, attch))
+	assert.Nil(t, result.Error())
+	assert.Nil(t, result.Result())
+}
+
+func TestGenericFilter_Invoke_With_Default_TpsLimiter_Not_Allow(t *testing.T)  {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockLimiter := filter.NewMockTpsLimiter(ctrl)
+	mockLimiter.EXPECT().IsAllowable(gomock.Any(), gomock.Any()).Return(false).Times(1)
+	extension.SetTpsLimiter(constant.DEFAULT_KEY, func() filter.TpsLimiter {
+		return mockLimiter
+	})
+
+	mockResult := &protocol.RPCResult{}
+	mockRejectedHandler := filter.NewMockRejectedExecutionHandler(ctrl)
+	mockRejectedHandler.EXPECT().RejectedExecution(gomock.Any(), gomock.Any()).Return(mockResult).Times(1)
+
+	extension.SetTpsRejectedExecutionHandler(constant.DEFAULT_KEY, func() filter.RejectedExecutionHandler {
+		return mockRejectedHandler
+	})
+
+	tpsFilter := GetTpsLimitFilter()
+	invokeUrl := common.NewURLWithOptions(
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.TPS_LIMITER_KEY, constant.DEFAULT_KEY))
+	attch := make(map[string]string, 0)
+
+	result := tpsFilter.Invoke(protocol.NewBaseInvoker(*invokeUrl),
+		invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, attch))
+	assert.Nil(t, result.Error())
+	assert.Nil(t, result.Result())
+}
