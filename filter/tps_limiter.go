@@ -15,13 +15,25 @@
  * limitations under the License.
  */
 
-package impl
+package filter
 
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
 )
-
+/*
+ * please register your implementation by invoking SetTpsLimiter
+ * The usage, for example:
+ * "UserProvider":
+ *   registry: "hangzhouzk"
+ *   protocol : "dubbo"
+ *   interface : "com.ikurento.user.UserProvider"
+ *   ... # other configuration
+ *   tps.limiter: "the name of limiter",
+ */
 type TpsLimiter interface {
-	IsAllowable(common.URL, protocol.Invocation)
+	IsAllowable(common.URL, protocol.Invocation) bool
 }
+
+
+
