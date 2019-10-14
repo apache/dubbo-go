@@ -46,8 +46,8 @@ func init() {
  *   interface : "com.ikurento.user.UserProvider"
  *   ... # other configuration
  *   tps.limiter: "method-service" # the name of MethodServiceTpsLimiterImpl. It's the default limiter too.
- *   tps.interval: 5000 # interval, the time unit is ms
- *   tps.rate: 300 # the max value in the interval. <0 means that the service will not be limited.
+ *   tps.limit.interval: 5000 # interval, the time unit is ms
+ *   tps.limit.rate: 300 # the max value in the interval. <0 means that the service will not be limited.
  *   methods:
  *    - name: "GetUser"
  *      tps.interval: 3000
@@ -61,66 +61,66 @@ type MethodServiceTpsLimiterImpl struct {
 
 func (limiter MethodServiceTpsLimiterImpl) IsAllowable(url common.URL, invocation protocol.Invocation) bool {
 
-	serviceLimitRate, err:= strconv.ParseInt(url.GetParam(constant.TPS_LIMIT_RATE_KEY,
-		constant.DEFAULT_TPS_LIMIT_RATE), 0, 0)
+	methodConfigPrefix := "methods." + invocation.MethodName() + "."
 
-	if err != nil {
-		panic(fmt.Sprintf("Can not parse the %s for url %s, please check your configuration!",
-			constant.TPS_LIMIT_RATE_KEY, url.String()))
-	}
-	methodLimitRateConfig := invocation.AttachmentsByKey(constant.TPS_LIMIT_RATE_KEY, "")
-
-	// both method-level and service-level don't have the configuration of tps limit
-	if serviceLimitRate < 0 && len(methodLimitRateConfig) <= 0 {
-		return true
-	}
-
-	limitRate := serviceLimitRate
-	// the method has tps limit configuration
-	if len(methodLimitRateConfig) >0 {
-		limitRate, err = strconv.ParseInt(methodLimitRateConfig, 0, 0)
-		if err != nil {
-			panic(fmt.Sprintf("Can not parse the %s for invocation %s # %s, please check your configuration!",
-				constant.TPS_LIMIT_RATE_KEY, url.ServiceKey(), invocation.MethodName()))
-		}
-	}
-
-	// 1. the serviceLimitRate < 0 and methodRateConfig is empty string
-	// 2. the methodLimitRate < 0
-	if limitRate < 0{
-		return true
-	}
-
-	serviceInterval, err := strconv.ParseInt(url.GetParam(constant.TPS_LIMIT_INTERVAL_KEY,
-		constant.DEFAULT_TPS_LIMIT_INTERVAL), 0, 0)
-
-	if err != nil || serviceInterval <= 0{
-		panic(fmt.Sprintf("The %s must be positive, please check your configuration!",
-			constant.TPS_LIMIT_INTERVAL_KEY))
-	}
-	limitInterval := serviceInterval
-	methodIntervalConfig := invocation.AttachmentsByKey(constant.TPS_LIMIT_INTERVAL_KEY, "")
-	// there is the interval configuration of method-level
-	if len(methodIntervalConfig) > 0 {
-		limitInterval, err = strconv.ParseInt(methodIntervalConfig, 0, 0)
-		if err != nil || limitInterval <= 0{
-			panic(fmt.Sprintf("The %s for invocation %s # %s must be positive, please check your configuration!",
-				constant.TPS_LIMIT_INTERVAL_KEY, url.ServiceKey(), invocation.MethodName()))
-		}
-	}
+	methodLimitRateConfig := url.GetParam(methodConfigPrefix+constant.TPS_LIMIT_RATE_KEY, "")
+	methodIntervalConfig := url.GetParam(methodConfigPrefix+constant.TPS_LIMIT_INTERVAL_KEY, "")
 
 	limitTarget := url.ServiceKey()
 
 	// method-level tps limit
-	if len(methodIntervalConfig) > 0 || len(methodLimitRateConfig) >0  {
+	if len(methodIntervalConfig) > 0 || len(methodLimitRateConfig) > 0 {
 		limitTarget = limitTarget + "#" + invocation.MethodName()
 	}
 
-	limitStrategyConfig := invocation.AttachmentsByKey(constant.TPS_LIMIT_STRATEGY_KEY,
+	limitState, found := limiter.tpsState.Load(limitTarget)
+	if found {
+		return limitState.(filter.TpsLimitStrategy).IsAllowable()
+	}
+
+	limitRate := getLimitConfig(methodLimitRateConfig, url, invocation,
+		constant.TPS_LIMIT_RATE_KEY,
+		constant.DEFAULT_TPS_LIMIT_RATE)
+
+	if limitRate < 0 {
+		return true
+	}
+
+	limitInterval := getLimitConfig(methodIntervalConfig, url, invocation,
+		constant.TPS_LIMIT_INTERVAL_KEY,
+		constant.DEFAULT_TPS_LIMIT_INTERVAL)
+	if limitInterval <= 0{
+		panic(fmt.Sprintf("The interval must be positive, please check your configuration! url: %s", url.String()))
+	}
+
+	limitStrategyConfig := url.GetParam(methodConfigPrefix+constant.TPS_LIMIT_STRATEGY_KEY,
 		url.GetParam(constant.TPS_LIMIT_STRATEGY_KEY, constant.DEFAULT_KEY))
 	limitStateCreator := extension.GetTpsLimitStrategyCreator(limitStrategyConfig)
-	limitState, _ := limiter.tpsState.LoadOrStore(limitTarget, limitStateCreator(int(limitRate), int(limitInterval)))
+	limitState, _ = limiter.tpsState.LoadOrStore(limitTarget, limitStateCreator(int(limitRate), int(limitInterval)))
 	return limitState.(filter.TpsLimitStrategy).IsAllowable()
+}
+
+func getLimitConfig(methodLevelConfig string,
+	url common.URL,
+	invocation protocol.Invocation,
+	configKey string,
+	defaultVal string) int64 {
+
+	if len(methodLevelConfig) > 0 {
+		result, err := strconv.ParseInt(methodLevelConfig, 0, 0)
+		if err != nil {
+			panic(fmt.Sprintf("The %s for invocation %s # %s must be positive, please check your configuration!",
+				configKey, url.ServiceKey(), invocation.MethodName()))
+		}
+		return result
+	}
+
+	result, err := strconv.ParseInt(url.GetParam(configKey, defaultVal), 0, 0)
+
+	if err != nil {
+		panic(fmt.Sprintf("Cannot parse the configuration %s, please check your configuration!", configKey))
+	}
+	return result
 }
 
 var methodServiceTpsLimiterInstance *MethodServiceTpsLimiterImpl
