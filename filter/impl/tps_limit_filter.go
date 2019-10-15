@@ -46,10 +46,9 @@ func init() {
  *   if the value of 'tps.limiter' is nil or empty string, the tps filter will do nothing
  */
 type TpsLimitFilter struct {
-	
 }
 
-func (t TpsLimitFilter) Invoke(invoker protocol.Invoker,invocation protocol.Invocation) protocol.Result {
+func (t TpsLimitFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	url := invoker.GetUrl()
 	tpsLimiter := url.GetParam(constant.TPS_LIMITER_KEY, "")
 	rejectedExeHandler := url.GetParam(constant.TPS_REJECTED_EXECUTION_HANDLER_KEY, constant.DEFAULT_KEY)
