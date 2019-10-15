@@ -20,10 +20,14 @@ package impl
 import (
 	"net/url"
 	"testing"
+)
 
+import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -67,7 +71,7 @@ func TestGenericFilter_Invoke_With_Default_TpsLimiter(t *testing.T) {
 	assert.Nil(t, result.Result())
 }
 
-func TestGenericFilter_Invoke_With_Default_TpsLimiter_Not_Allow(t *testing.T)  {
+func TestGenericFilter_Invoke_With_Default_TpsLimiter_Not_Allow(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockLimiter := filter.NewMockTpsLimiter(ctrl)

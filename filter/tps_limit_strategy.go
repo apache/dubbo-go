@@ -16,10 +16,10 @@
  */
 
 package filter
+
 /*
  * please register your implementation by invoking SetTpsLimitStrategy
  */
 type TpsLimitStrategy interface {
 	IsAllowable() bool
 }
-

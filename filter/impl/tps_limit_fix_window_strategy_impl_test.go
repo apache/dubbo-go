@@ -15,23 +15,29 @@
  * limitations under the License.
  */
 
-package filter
+package impl
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/protocol"
+	"testing"
+	"time"
 )
 
-/*
- * please register your implementation by invoking SetTpsLimiter
- * The usage, for example:
- * "UserProvider":
- *   registry: "hangzhouzk"
- *   protocol : "dubbo"
- *   interface : "com.ikurento.user.UserProvider"
- *   ... # other configuration
- *   tps.limiter: "the name of limiter",
- */
-type TpsLimiter interface {
-	IsAllowable(common.URL, protocol.Invocation) bool
+import (
+	"github.com/coreos/etcd/pkg/testutil"
+)
+
+func TestFixedWindowTpsLimitStrategyImpl_IsAllowable(t *testing.T) {
+	strategy := NewFixedWindowTpsLimitStrategyImpl(2, 60000)
+	testutil.AssertTrue(t, strategy.IsAllowable())
+	testutil.AssertTrue(t, strategy.IsAllowable())
+	testutil.AssertFalse(t, strategy.IsAllowable())
+
+	strategy = NewFixedWindowTpsLimitStrategyImpl(2, 2000)
+	testutil.AssertTrue(t, strategy.IsAllowable())
+	testutil.AssertTrue(t, strategy.IsAllowable())
+	testutil.AssertFalse(t, strategy.IsAllowable())
+	time.Sleep(time.Duration(2100 * 1000))
+	testutil.AssertTrue(t, strategy.IsAllowable())
+	testutil.AssertTrue(t, strategy.IsAllowable())
+	testutil.AssertFalse(t, strategy.IsAllowable())
 }
