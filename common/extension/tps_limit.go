@@ -20,8 +20,8 @@ package extension
 import "github.com/apache/dubbo-go/filter"
 
 var (
-	tpsLimitStrategy = make(map[string]func(rate int, interval int) filter.TpsLimitStrategy)
-	tpsLimiter = make(map[string]func() filter.TpsLimiter)
+	tpsLimitStrategy            = make(map[string]func(rate int, interval int) filter.TpsLimitStrategy)
+	tpsLimiter                  = make(map[string]func() filter.TpsLimiter)
 	tpsRejectedExecutionHandler = make(map[string]func() filter.RejectedExecutionHandler)
 )
 
@@ -51,7 +51,7 @@ func GetTpsLimitStrategyCreator(name string) func(rate int, interval int) filter
 	return creator
 }
 
-func SetTpsRejectedExecutionHandler(name string, creator func() filter.RejectedExecutionHandler)  {
+func SetTpsRejectedExecutionHandler(name string, creator func() filter.RejectedExecutionHandler) {
 	tpsRejectedExecutionHandler[name] = creator
 }
 

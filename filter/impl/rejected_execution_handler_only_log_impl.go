@@ -19,9 +19,13 @@ package impl
 
 import (
 	"sync"
+)
 
+import (
 	"github.com/prometheus/common/log"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -29,7 +33,7 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-const HandlerName  = "log"
+const HandlerName = "log"
 
 func init() {
 	extension.SetTpsRejectedExecutionHandler(HandlerName, GetOnlyRejectedExecutionHandler)
@@ -41,15 +45,14 @@ var onlyLogHandlerOnce sync.Once
 
 /**
  * This implementation only logs the invocation info.
- * it always return nil.
+ * it always return en error inside the result.
  */
 type OnlyLogRejectedExecutionHandler struct {
-
 }
 
 func (handler *OnlyLogRejectedExecutionHandler) RejectedExecution(url common.URL, invocation protocol.Invocation) protocol.Result {
-	log.Warnf("The invocation was rejected. url: %s", url.String())
-	return nil
+	log.Errorf("The invocation was rejected due to over rate limitation. url: %s", url.String())
+	return &protocol.RPCResult{}
 }
 
 func GetOnlyRejectedExecutionHandler() filter.RejectedExecutionHandler {
@@ -58,4 +61,3 @@ func GetOnlyRejectedExecutionHandler() filter.RejectedExecutionHandler {
 	})
 	return onlyLogHandlerInstance
 }
-

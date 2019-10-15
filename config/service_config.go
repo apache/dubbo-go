@@ -209,9 +209,9 @@ func (srvconfig *ServiceConfig) getUrlMap() url.Values {
 		urlMap.Set(prefix+constant.RETRIES_KEY, v.Retries)
 		urlMap.Set(prefix+constant.WEIGHT_KEY, strconv.FormatInt(v.Weight, 10))
 
-		urlMap.Set(prefix+constant.TPS_LIMIT_STRATEGY_KEY, srvconfig.TpsLimitStrategy)
-		urlMap.Set(prefix+constant.TPS_LIMIT_INTERVAL_KEY, srvconfig.TpsLimitInterval)
-		urlMap.Set(prefix+constant.TPS_LIMIT_RATE_KEY, srvconfig.TpsLimitRate)
+		urlMap.Set(prefix+constant.TPS_LIMIT_STRATEGY_KEY, v.TpsLimitStrategy)
+		urlMap.Set(prefix+constant.TPS_LIMIT_INTERVAL_KEY, v.TpsLimitInterval)
+		urlMap.Set(prefix+constant.TPS_LIMIT_RATE_KEY, v.TpsLimitRate)
 	}
 
 	return urlMap

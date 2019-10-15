@@ -20,9 +20,13 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+)
 
+import (
 	"github.com/modern-go/concurrent"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -45,15 +49,63 @@ func init() {
  *   protocol : "dubbo"
  *   interface : "com.ikurento.user.UserProvider"
  *   ... # other configuration
- *   tps.limiter: "method-service" # the name of MethodServiceTpsLimiterImpl. It's the default limiter too.
+ *   tps.limiter: "method-service" or "default" # the name of MethodServiceTpsLimiterImpl. It's the default limiter too.
  *   tps.limit.interval: 5000 # interval, the time unit is ms
  *   tps.limit.rate: 300 # the max value in the interval. <0 means that the service will not be limited.
  *   methods:
  *    - name: "GetUser"
  *      tps.interval: 3000
- *      tps.rate: 20, # in this case, this configuration in service-level will be ignored.
+ *      tps.limit.rate: 20, # in this case, this configuration in service-level will be ignored.
  *    - name: "UpdateUser"
- *      tps.rate: -1, # If the rate<0, the method will be ignored
+ *      tps.limit.rate: -1, # If the rate<0, the method will be ignored
+ *
+ *
+ * More examples:
+ * case1:
+ * "UserProvider":
+ *   registry: "hangzhouzk"
+ *   protocol : "dubbo"
+ *   interface : "com.ikurento.user.UserProvider"
+ *   ... # other configuration
+ *   tps.limiter: "method-service" or "default" # the name of MethodServiceTpsLimiterImpl. It's the default limiter too.
+ *   tps.limit.interval: 5000 # interval, the time unit is ms
+ *   tps.limit.rate: 300 # the max value in the interval. <0 means that the service will not be limited.
+ *   methods:
+ *    - name: "GetUser"
+ *    - name: "UpdateUser"
+ *      tps.limit.rate: -1,
+ * in this case, the method UpdateUser will be ignored,
+ * which means that only GetUser will be limited by service-level configuration.
+ *
+ * case2:
+ * "UserProvider":
+ *   registry: "hangzhouzk"
+ *   protocol : "dubbo"
+ *   interface : "com.ikurento.user.UserProvider"
+ *   ... # other configuration
+ *   tps.limiter: "method-service" or "default" # the name of MethodServiceTpsLimiterImpl. It's the default limiter too.
+ *   tps.limit.interval: 5000 # interval, the time unit is ms
+ *   tps.limit.rate: 300 # the max value in the interval. <0 means that the service will not be limited.
+ *   methods:
+ *    - name: "GetUser"
+ *    - name: "UpdateUser"
+ *      tps.limit.rate: 30,
+ * In this case, the GetUser will be limited by service-level configuration(300 times in 5000ms),
+ * but UpdateUser will be limited by its configuration (30 times in 60000ms)
+ *
+ * case3:
+ * "UserProvider":
+ *   registry: "hangzhouzk"
+ *   protocol : "dubbo"
+ *   interface : "com.ikurento.user.UserProvider"
+ *   ... # other configuration
+ *   tps.limiter: "method-service" or "default" # the name of MethodServiceTpsLimiterImpl. It's the default limiter too.
+ *   methods:
+ *    - name: "GetUser"
+ *    - name: "UpdateUser"
+ *      tps.limit.rate: 70,
+ *      tps.limit.interval: 40000
+ * In this case, only UpdateUser will be limited by its configuration (70 times in 40000ms)
  */
 type MethodServiceTpsLimiterImpl struct {
 	tpsState *concurrent.Map
@@ -89,7 +141,7 @@ func (limiter MethodServiceTpsLimiterImpl) IsAllowable(url common.URL, invocatio
 	limitInterval := getLimitConfig(methodIntervalConfig, url, invocation,
 		constant.TPS_LIMIT_INTERVAL_KEY,
 		constant.DEFAULT_TPS_LIMIT_INTERVAL)
-	if limitInterval <= 0{
+	if limitInterval <= 0 {
 		panic(fmt.Sprintf("The interval must be positive, please check your configuration! url: %s", url.String()))
 	}
 
