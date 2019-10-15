@@ -22,8 +22,8 @@ import (
 	"testing"
 )
 import (
-	"github.com/coreos/etcd/pkg/testutil"
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 )
 
 import (
@@ -34,51 +34,57 @@ import (
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
-const methodName = "hello"
-
-var methodConfigPrefix = "methods." + methodName + "."
-var invoc = invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]string, 0))
-
 func TestMethodServiceTpsLimiterImpl_IsAllowable_Only_Service_Level(t *testing.T) {
+	methodName := "hello"
+	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]string, 0))
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.INTERFACE_KEY, methodName),
 		common.WithParamsValue(constant.TPS_LIMIT_RATE_KEY, "20"))
 
 	mockStrategyImpl := filter.NewMockTpsLimitStrategy(ctrl)
 	mockStrategyImpl.EXPECT().IsAllowable().Return(true).Times(1)
 	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, func(rate int, interval int) filter.TpsLimitStrategy {
-		testutil.AssertEqual(t, 20, rate)
-		testutil.AssertEqual(t, 60000, interval)
+		assert.Equal(t, 20, rate)
+		assert.Equal(t, 60000, interval)
 		return mockStrategyImpl
 	})
 
 	limiter := GetMethodServiceTpsLimiter()
 	result := limiter.IsAllowable(*invokeUrl, invoc)
-	testutil.AssertTrue(t, result)
+	assert.True(t, result)
 }
 
 func TestMethodServiceTpsLimiterImpl_IsAllowable_No_Config(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	methodName := "hello1"
+	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]string, 0))
+	// ctrl := gomock.NewController(t)
+	// defer ctrl.Finish()
 
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.INTERFACE_KEY, methodName),
 		common.WithParamsValue(constant.TPS_LIMIT_RATE_KEY, ""))
 
 	limiter := GetMethodServiceTpsLimiter()
 	result := limiter.IsAllowable(*invokeUrl, invoc)
-	testutil.AssertTrue(t, result)
+	assert.True(t, result)
 }
 
 func TestMethodServiceTpsLimiterImpl_IsAllowable_Method_Level_Override(t *testing.T) {
+	methodName := "hello2"
+	methodConfigPrefix := "methods." + methodName + "."
+	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]string, 0))
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.INTERFACE_KEY, methodName),
 		common.WithParamsValue(constant.TPS_LIMIT_RATE_KEY, "20"),
 		common.WithParamsValue(constant.TPS_LIMIT_INTERVAL_KEY, "3000"),
 		common.WithParamsValue(constant.TPS_LIMIT_STRATEGY_KEY, "invalid"),
@@ -90,22 +96,26 @@ func TestMethodServiceTpsLimiterImpl_IsAllowable_Method_Level_Override(t *testin
 	mockStrategyImpl := filter.NewMockTpsLimitStrategy(ctrl)
 	mockStrategyImpl.EXPECT().IsAllowable().Return(true).Times(1)
 	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, func(rate int, interval int) filter.TpsLimitStrategy {
-		testutil.AssertEqual(t, 40, rate)
-		testutil.AssertEqual(t, 7000, interval)
+		assert.Equal(t, 40, rate)
+		assert.Equal(t, 7000, interval)
 		return mockStrategyImpl
 	})
 
 	limiter := GetMethodServiceTpsLimiter()
 	result := limiter.IsAllowable(*invokeUrl, invoc)
-	testutil.AssertTrue(t, result)
+	assert.True(t, result)
 }
 
 func TestMethodServiceTpsLimiterImpl_IsAllowable_Both_Method_And_Service(t *testing.T) {
+	methodName := "hello3"
+	methodConfigPrefix := "methods." + methodName + "."
+	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]string, 0))
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.INTERFACE_KEY, methodName),
 		common.WithParamsValue(constant.TPS_LIMIT_RATE_KEY, "20"),
 		common.WithParamsValue(constant.TPS_LIMIT_INTERVAL_KEY, "3000"),
 		common.WithParamsValue(methodConfigPrefix+constant.TPS_LIMIT_RATE_KEY, "40"),
@@ -114,12 +124,12 @@ func TestMethodServiceTpsLimiterImpl_IsAllowable_Both_Method_And_Service(t *test
 	mockStrategyImpl := filter.NewMockTpsLimitStrategy(ctrl)
 	mockStrategyImpl.EXPECT().IsAllowable().Return(true).Times(1)
 	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, func(rate int, interval int) filter.TpsLimitStrategy {
-		testutil.AssertEqual(t, 40, rate)
-		testutil.AssertEqual(t, 3000, interval)
+		assert.Equal(t, 40, rate)
+		assert.Equal(t, 3000, interval)
 		return mockStrategyImpl
 	})
 
 	limiter := GetMethodServiceTpsLimiter()
 	result := limiter.IsAllowable(*invokeUrl, invoc)
-	testutil.AssertTrue(t, result)
+	assert.True(t, result)
 }
