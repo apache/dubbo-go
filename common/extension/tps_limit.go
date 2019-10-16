@@ -17,7 +17,9 @@
 
 package extension
 
-import "github.com/apache/dubbo-go/filter"
+import (
+	"github.com/apache/dubbo-go/filter"
+)
 
 var (
 	tpsLimitStrategy            = make(map[string]func(rate int, interval int) filter.TpsLimitStrategy)
@@ -30,8 +32,8 @@ func SetTpsLimiter(name string, creator func() filter.TpsLimiter) {
 }
 
 func GetTpsLimiter(name string) filter.TpsLimiter {
-	var creator = tpsLimiter[name]
-	if creator == nil {
+	creator, ok := tpsLimiter[name]
+	if !ok {
 		panic("TpsLimiter for " + name + " is not existing, make sure you have import the package " +
 			"and you have register it by invoking extension.SetTpsLimiter.")
 	}
@@ -43,8 +45,8 @@ func SetTpsLimitStrategy(name string, creator func(rate int, interval int) filte
 }
 
 func GetTpsLimitStrategyCreator(name string) func(rate int, interval int) filter.TpsLimitStrategy {
-	var creator = tpsLimitStrategy[name]
-	if creator == nil {
+	creator, ok := tpsLimitStrategy[name]
+	if !ok {
 		panic("TpsLimitStrategy for " + name + " is not existing, make sure you have import the package " +
 			"and you have register it by invoking extension.SetTpsLimitStrategy.")
 	}
@@ -56,8 +58,8 @@ func SetTpsRejectedExecutionHandler(name string, creator func() filter.RejectedE
 }
 
 func GetTpsRejectedExecutionHandler(name string) filter.RejectedExecutionHandler {
-	var creator = tpsRejectedExecutionHandler[name]
-	if creator() == nil {
+	creator, ok := tpsRejectedExecutionHandler[name]
+	if !ok {
 		panic("TpsRejectedExecutionHandler for " + name + " is not existing, make sure you have import the package " +
 			"and you have register it by invoking extension.SetTpsRejectedExecutionHandler.")
 	}
