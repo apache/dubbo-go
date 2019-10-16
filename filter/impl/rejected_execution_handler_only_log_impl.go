@@ -36,8 +36,8 @@ import (
 const HandlerName = "log"
 
 func init() {
-	extension.SetTpsRejectedExecutionHandler(HandlerName, GetOnlyRejectedExecutionHandler)
-	extension.SetTpsRejectedExecutionHandler(constant.DEFAULT_KEY, GetOnlyRejectedExecutionHandler)
+	extension.SetTpsRejectedExecutionHandler(HandlerName, GetOnlyLogRejectedExecutionHandler)
+	extension.SetTpsRejectedExecutionHandler(constant.DEFAULT_KEY, GetOnlyLogRejectedExecutionHandler)
 }
 
 var onlyLogHandlerInstance *OnlyLogRejectedExecutionHandler
@@ -55,7 +55,7 @@ func (handler *OnlyLogRejectedExecutionHandler) RejectedExecution(url common.URL
 	return &protocol.RPCResult{}
 }
 
-func GetOnlyRejectedExecutionHandler() filter.RejectedExecutionHandler {
+func GetOnlyLogRejectedExecutionHandler() filter.RejectedExecutionHandler {
 	onlyLogHandlerOnce.Do(func() {
 		onlyLogHandlerInstance = &OnlyLogRejectedExecutionHandler{}
 	})
