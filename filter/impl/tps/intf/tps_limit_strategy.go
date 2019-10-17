@@ -15,29 +15,22 @@
  * limitations under the License.
  */
 
-package impl
+package intf
 
-import (
-	"testing"
-	"time"
-)
-
-import (
-	"github.com/coreos/etcd/pkg/testutil"
-)
-
-func TestThreadSafeFixedWindowTpsLimitStrategyImpl_IsAllowable(t *testing.T) {
-	strategy := NewThreadSafeFixedWindowTpsLimitStrategyImpl(2, 60000)
-	testutil.AssertTrue(t, strategy.IsAllowable())
-	testutil.AssertTrue(t, strategy.IsAllowable())
-	testutil.AssertFalse(t, strategy.IsAllowable())
-
-	strategy = NewThreadSafeFixedWindowTpsLimitStrategyImpl(2, 2000)
-	testutil.AssertTrue(t, strategy.IsAllowable())
-	testutil.AssertTrue(t, strategy.IsAllowable())
-	testutil.AssertFalse(t, strategy.IsAllowable())
-	time.Sleep(time.Duration(2100 * 1000))
-	testutil.AssertTrue(t, strategy.IsAllowable())
-	testutil.AssertTrue(t, strategy.IsAllowable())
-	testutil.AssertFalse(t, strategy.IsAllowable())
+/*
+ * please register your implementation by invoking SetTpsLimitStrategy
+ * "UserProvider":
+ *   registry: "hangzhouzk"
+ *   protocol : "dubbo"
+ *   interface : "com.ikurento.user.UserProvider"
+ *   ... # other configuration
+ *   tps.limiter: "method-service" # the name of limiter
+ *   tps.limit.strategy: "name of implementation" # service-level
+ *   methods:
+ *    - name: "GetUser"
+ *      tps.interval: 3000
+ *      tps.limit.strategy: "name of implementation" # method-level
+ */
+type TpsLimitStrategy interface {
+	IsAllowable() bool
 }

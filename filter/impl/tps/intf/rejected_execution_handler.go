@@ -14,24 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package filter
+package intf
 
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
 )
 
-/*
- * please register your implementation by invoking SetTpsLimiter
- * The usage, for example:
+/**
+ * This implementation only logs the invocation info.
+ * it always return en error inside the result.
  * "UserProvider":
  *   registry: "hangzhouzk"
  *   protocol : "dubbo"
  *   interface : "com.ikurento.user.UserProvider"
  *   ... # other configuration
- *   tps.limiter: "the name of limiter",
+ *   tps.limiter: "method-service" # the name of limiter
+ *   tps.limit.rejected.handler: "name of handler"
+ *   methods:
+ *    - name: "GetUser"
  */
-type TpsLimiter interface {
-	IsAllowable(common.URL, protocol.Invocation) bool
+type RejectedExecutionHandler interface {
+	RejectedExecution(url common.URL, invocation protocol.Invocation) protocol.Result
 }

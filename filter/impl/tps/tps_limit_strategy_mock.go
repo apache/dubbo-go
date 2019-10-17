@@ -18,7 +18,7 @@
 // Source: tps_limit_strategy.go
 
 // Package filter is a generated GoMock package.
-package filter
+package tps
 
 import (
 	gomock "github.com/golang/mock/gomock"

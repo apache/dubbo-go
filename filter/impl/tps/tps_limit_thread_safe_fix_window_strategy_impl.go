@@ -15,76 +15,51 @@
  * limitations under the License.
  */
 
-package impl
+package tps
 
 import (
-	"container/list"
 	"sync"
-	"time"
 )
 
 import (
 	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/filter"
+	"github.com/apache/dubbo-go/filter/impl/tps/intf"
 )
 
 func init() {
-	extension.SetTpsLimitStrategy("slidingWindow", NewSlidingWindowTpsLimitStrategyImpl)
+	extension.SetTpsLimitStrategy("threadSafeFixedWindow", NewThreadSafeFixedWindowTpsLimitStrategyImpl)
 }
 
 /**
- * it's thread-safe.
+ * it's the thread-safe implementation.
+ * Also, it's a thread-safe decorator of FixedWindowTpsLimitStrategyImpl
  * "UserProvider":
  *   registry: "hangzhouzk"
  *   protocol : "dubbo"
  *   interface : "com.ikurento.user.UserProvider"
  *   ... # other configuration
  *   tps.limiter: "method-service" # the name of limiter
- *   tps.limit.strategy: "slidingWindow" # service-level
+ *   tps.limit.strategy: "threadSafeFixedWindow" # service-level
  *   methods:
  *    - name: "GetUser"
  *      tps.interval: 3000
- *      tps.limit.strategy: "slidingWindow" # method-level
+ *      tps.limit.strategy: "threadSafeFixedWindow" # method-level
  */
-type SlidingWindowTpsLimitStrategyImpl struct {
-	rate     int
-	interval int64
-	mutex    *sync.Mutex
-	queue    *list.List
+type ThreadSafeFixedWindowTpsLimitStrategyImpl struct {
+	mutex       *sync.Mutex
+	fixedWindow *FixedWindowTpsLimitStrategyImpl
 }
 
-func (impl *SlidingWindowTpsLimitStrategyImpl) IsAllowable() bool {
+func (impl *ThreadSafeFixedWindowTpsLimitStrategyImpl) IsAllowable() bool {
 	impl.mutex.Lock()
 	defer impl.mutex.Unlock()
-	// quick path
-	size := impl.queue.Len()
-	current := time.Now().UnixNano()
-	if size < impl.rate {
-		impl.queue.PushBack(current)
-		return true
-	}
-
-	// slow path
-	boundary := current - impl.interval
-
-	timestamp := impl.queue.Front()
-	// remove the element that out of the window
-	for timestamp != nil && timestamp.Value.(int64) < boundary {
-		impl.queue.Remove(timestamp)
-		timestamp = impl.queue.Front()
-	}
-	if impl.queue.Len() < impl.rate {
-		impl.queue.PushBack(current)
-		return true
-	}
-	return false
+	return impl.fixedWindow.IsAllowable()
 }
 
-func NewSlidingWindowTpsLimitStrategyImpl(rate int, interval int) filter.TpsLimitStrategy {
-	return &SlidingWindowTpsLimitStrategyImpl{
-		rate:     rate,
-		interval: int64(interval * 1000),
-		mutex:    &sync.Mutex{},
-		queue:    list.New(),
+func NewThreadSafeFixedWindowTpsLimitStrategyImpl(rate int, interval int) intf.TpsLimitStrategy {
+	fixedWindowStrategy := NewFixedWindowTpsLimitStrategyImpl(rate, interval).(*FixedWindowTpsLimitStrategyImpl)
+	return &ThreadSafeFixedWindowTpsLimitStrategyImpl{
+		fixedWindow: fixedWindowStrategy,
+		mutex:       &sync.Mutex{},
 	}
 }

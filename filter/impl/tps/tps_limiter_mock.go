@@ -18,7 +18,7 @@
 // Source: tps_limiter.go
 
 // Package filter is a generated GoMock package.
-package filter
+package tps
 
 import (
 	common "github.com/apache/dubbo-go/common"
