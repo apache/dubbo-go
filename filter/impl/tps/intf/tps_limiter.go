@@ -15,21 +15,23 @@
  * limitations under the License.
  */
 
-package impl
+package intf
 
-import (
-	"net/url"
-	"testing"
-)
 import (
 	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/protocol"
 )
 
-func TestOnlyLogRejectedExecutionHandler_RejectedExecution(t *testing.T) {
-	handler := GetOnlyLogRejectedExecutionHandler()
-	invokeUrl := common.NewURLWithOptions(
-		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.INTERFACE_KEY, "methodName"))
-	handler.RejectedExecution(*invokeUrl, nil)
+/*
+ * please register your implementation by invoking SetTpsLimiter
+ * The usage, for example:
+ * "UserProvider":
+ *   registry: "hangzhouzk"
+ *   protocol : "dubbo"
+ *   interface : "com.ikurento.user.UserProvider"
+ *   ... # other configuration
+ *   tps.limiter: "the name of limiter",
+ */
+type TpsLimiter interface {
+	IsAllowable(common.URL, protocol.Invocation) bool
 }

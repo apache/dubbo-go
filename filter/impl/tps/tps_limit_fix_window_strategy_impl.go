@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package impl
+package tps
 
 import (
 	"sync/atomic"
@@ -24,7 +24,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/filter"
+	"github.com/apache/dubbo-go/filter/impl/tps/intf"
 )
 
 const (
@@ -75,7 +75,7 @@ func (impl *FixedWindowTpsLimitStrategyImpl) IsAllowable() bool {
 	return atomic.AddInt32(&impl.count, 1) <= impl.rate
 }
 
-func NewFixedWindowTpsLimitStrategyImpl(rate int, interval int) filter.TpsLimitStrategy {
+func NewFixedWindowTpsLimitStrategyImpl(rate int, interval int) intf.TpsLimitStrategy {
 	return &FixedWindowTpsLimitStrategyImpl{
 		rate:      int32(rate),
 		interval:  int64(interval * 1000), // convert to ns

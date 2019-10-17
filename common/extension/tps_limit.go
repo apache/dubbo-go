@@ -18,20 +18,20 @@
 package extension
 
 import (
-	"github.com/apache/dubbo-go/filter"
+	"github.com/apache/dubbo-go/filter/impl/tps/intf"
 )
 
 var (
-	tpsLimitStrategy            = make(map[string]func(rate int, interval int) filter.TpsLimitStrategy)
-	tpsLimiter                  = make(map[string]func() filter.TpsLimiter)
-	tpsRejectedExecutionHandler = make(map[string]func() filter.RejectedExecutionHandler)
+	tpsLimitStrategy            = make(map[string]func(rate int, interval int) intf.TpsLimitStrategy)
+	tpsLimiter                  = make(map[string]func() intf.TpsLimiter)
+	tpsRejectedExecutionHandler = make(map[string]func() intf.RejectedExecutionHandler)
 )
 
-func SetTpsLimiter(name string, creator func() filter.TpsLimiter) {
+func SetTpsLimiter(name string, creator func() intf.TpsLimiter) {
 	tpsLimiter[name] = creator
 }
 
-func GetTpsLimiter(name string) filter.TpsLimiter {
+func GetTpsLimiter(name string) intf.TpsLimiter {
 	creator, ok := tpsLimiter[name]
 	if !ok {
 		panic("TpsLimiter for " + name + " is not existing, make sure you have import the package " +
@@ -40,11 +40,11 @@ func GetTpsLimiter(name string) filter.TpsLimiter {
 	return creator()
 }
 
-func SetTpsLimitStrategy(name string, creator func(rate int, interval int) filter.TpsLimitStrategy) {
+func SetTpsLimitStrategy(name string, creator func(rate int, interval int) intf.TpsLimitStrategy) {
 	tpsLimitStrategy[name] = creator
 }
 
-func GetTpsLimitStrategyCreator(name string) func(rate int, interval int) filter.TpsLimitStrategy {
+func GetTpsLimitStrategyCreator(name string) func(rate int, interval int) intf.TpsLimitStrategy {
 	creator, ok := tpsLimitStrategy[name]
 	if !ok {
 		panic("TpsLimitStrategy for " + name + " is not existing, make sure you have import the package " +
@@ -53,11 +53,11 @@ func GetTpsLimitStrategyCreator(name string) func(rate int, interval int) filter
 	return creator
 }
 
-func SetTpsRejectedExecutionHandler(name string, creator func() filter.RejectedExecutionHandler) {
+func SetTpsRejectedExecutionHandler(name string, creator func() intf.RejectedExecutionHandler) {
 	tpsRejectedExecutionHandler[name] = creator
 }
 
-func GetTpsRejectedExecutionHandler(name string) filter.RejectedExecutionHandler {
+func GetTpsRejectedExecutionHandler(name string) intf.RejectedExecutionHandler {
 	creator, ok := tpsRejectedExecutionHandler[name]
 	if !ok {
 		panic("TpsRejectedExecutionHandler for " + name + " is not existing, make sure you have import the package " +

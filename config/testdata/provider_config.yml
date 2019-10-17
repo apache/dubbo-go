@@ -29,6 +29,15 @@ services:
   "UserProvider":
     registry: "hangzhouzk,shanghaizk"
     filter: ""
+    # the name of limiter
+    tps.limiter: "default"
+    # the time unit of interval is ms
+    tps.limit.interval: 60000
+    tps.limit.rate: 200
+    # the name of strategy
+    tps.limit.strategy: "slidingWindow"
+    # the name of RejectedExecutionHandler
+    tps.limit.rejected.handler: "default"
     protocol : "dubbo"
     # equivalent to interface of dubbo.xml
     interface : "com.ikurento.user.UserProvider"

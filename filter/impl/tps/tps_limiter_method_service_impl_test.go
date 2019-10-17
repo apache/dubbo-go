@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package impl
+package tps
 
 import (
 	"net/url"
@@ -30,7 +30,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/filter"
+	"github.com/apache/dubbo-go/filter/impl/tps/intf"
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
@@ -46,9 +46,9 @@ func TestMethodServiceTpsLimiterImpl_IsAllowable_Only_Service_Level(t *testing.T
 		common.WithParamsValue(constant.INTERFACE_KEY, methodName),
 		common.WithParamsValue(constant.TPS_LIMIT_RATE_KEY, "20"))
 
-	mockStrategyImpl := filter.NewMockTpsLimitStrategy(ctrl)
+	mockStrategyImpl := NewMockTpsLimitStrategy(ctrl)
 	mockStrategyImpl.EXPECT().IsAllowable().Return(true).Times(1)
-	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, func(rate int, interval int) filter.TpsLimitStrategy {
+	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, func(rate int, interval int) intf.TpsLimitStrategy {
 		assert.Equal(t, 20, rate)
 		assert.Equal(t, 60000, interval)
 		return mockStrategyImpl
@@ -93,9 +93,9 @@ func TestMethodServiceTpsLimiterImpl_IsAllowable_Method_Level_Override(t *testin
 		common.WithParamsValue(methodConfigPrefix+constant.TPS_LIMIT_STRATEGY_KEY, "default"),
 	)
 
-	mockStrategyImpl := filter.NewMockTpsLimitStrategy(ctrl)
+	mockStrategyImpl := NewMockTpsLimitStrategy(ctrl)
 	mockStrategyImpl.EXPECT().IsAllowable().Return(true).Times(1)
-	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, func(rate int, interval int) filter.TpsLimitStrategy {
+	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, func(rate int, interval int) intf.TpsLimitStrategy {
 		assert.Equal(t, 40, rate)
 		assert.Equal(t, 7000, interval)
 		return mockStrategyImpl
@@ -121,9 +121,9 @@ func TestMethodServiceTpsLimiterImpl_IsAllowable_Both_Method_And_Service(t *test
 		common.WithParamsValue(methodConfigPrefix+constant.TPS_LIMIT_RATE_KEY, "40"),
 	)
 
-	mockStrategyImpl := filter.NewMockTpsLimitStrategy(ctrl)
+	mockStrategyImpl := NewMockTpsLimitStrategy(ctrl)
 	mockStrategyImpl.EXPECT().IsAllowable().Return(true).Times(1)
-	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, func(rate int, interval int) filter.TpsLimitStrategy {
+	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, func(rate int, interval int) intf.TpsLimitStrategy {
 		assert.Equal(t, 40, rate)
 		assert.Equal(t, 3000, interval)
 		return mockStrategyImpl
