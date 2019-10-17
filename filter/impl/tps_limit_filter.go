@@ -21,6 +21,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/filter"
+	_ "github.com/apache/dubbo-go/filter/impl/tps"
 	"github.com/apache/dubbo-go/protocol"
 )
 
