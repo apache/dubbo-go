@@ -23,21 +23,21 @@ import (
 )
 
 import (
-	"github.com/coreos/etcd/pkg/testutil"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFixedWindowTpsLimitStrategyImpl_IsAllowable(t *testing.T) {
 	strategy := NewFixedWindowTpsLimitStrategyImpl(2, 60000)
-	testutil.AssertTrue(t, strategy.IsAllowable())
-	testutil.AssertTrue(t, strategy.IsAllowable())
-	testutil.AssertFalse(t, strategy.IsAllowable())
+	assert.True(t, strategy.IsAllowable())
+	assert.True(t, strategy.IsAllowable())
+	assert.False(t, strategy.IsAllowable())
 
 	strategy = NewFixedWindowTpsLimitStrategyImpl(2, 2000)
-	testutil.AssertTrue(t, strategy.IsAllowable())
-	testutil.AssertTrue(t, strategy.IsAllowable())
-	testutil.AssertFalse(t, strategy.IsAllowable())
+	assert.True(t, strategy.IsAllowable())
+	assert.True(t, strategy.IsAllowable())
+	assert.False(t, strategy.IsAllowable())
 	time.Sleep(time.Duration(2100 * 1000))
-	testutil.AssertTrue(t, strategy.IsAllowable())
-	testutil.AssertTrue(t, strategy.IsAllowable())
-	testutil.AssertFalse(t, strategy.IsAllowable())
+	assert.True(t, strategy.IsAllowable())
+	assert.True(t, strategy.IsAllowable())
+	assert.False(t, strategy.IsAllowable())
 }
