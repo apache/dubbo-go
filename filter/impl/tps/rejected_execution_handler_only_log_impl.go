@@ -15,21 +15,18 @@
  * limitations under the License.
  */
 
-package impl
+package tps
 
 import (
 	"sync"
 )
 
 import (
-	"github.com/prometheus/common/log"
-)
-
-import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/filter"
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/filter/impl/tps/intf"
 	"github.com/apache/dubbo-go/protocol"
 )
 
@@ -46,16 +43,25 @@ var onlyLogHandlerOnce sync.Once
 /**
  * This implementation only logs the invocation info.
  * it always return en error inside the result.
+ * "UserProvider":
+ *   registry: "hangzhouzk"
+ *   protocol : "dubbo"
+ *   interface : "com.ikurento.user.UserProvider"
+ *   ... # other configuration
+ *   tps.limiter: "method-service" # the name of limiter
+ *   tps.limit.rejected.handler: "default" or "log"
+ *   methods:
+ *    - name: "GetUser"
  */
 type OnlyLogRejectedExecutionHandler struct {
 }
 
 func (handler *OnlyLogRejectedExecutionHandler) RejectedExecution(url common.URL, invocation protocol.Invocation) protocol.Result {
-	log.Errorf("The invocation was rejected due to over rate limitation. url: %s", url.String())
+	logger.Errorf("The invocation was rejected due to over rate limitation. url: %s", url.String())
 	return &protocol.RPCResult{}
 }
 
-func GetOnlyLogRejectedExecutionHandler() filter.RejectedExecutionHandler {
+func GetOnlyLogRejectedExecutionHandler() intf.RejectedExecutionHandler {
 	onlyLogHandlerOnce.Do(func() {
 		onlyLogHandlerInstance = &OnlyLogRejectedExecutionHandler{}
 	})

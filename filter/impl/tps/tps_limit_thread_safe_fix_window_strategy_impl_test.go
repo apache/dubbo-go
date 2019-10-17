@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package impl
+package tps
 
 import (
 	"testing"
@@ -23,23 +23,21 @@ import (
 )
 
 import (
-	"go.etcd.io/etcd/pkg/testutil"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestSlidingWindowTpsLimitStrategyImpl_IsAllowable(t *testing.T) {
-	strategy := NewSlidingWindowTpsLimitStrategyImpl(2, 60000)
-	testutil.AssertTrue(t, strategy.IsAllowable())
-	testutil.AssertTrue(t, strategy.IsAllowable())
-	testutil.AssertFalse(t, strategy.IsAllowable())
-	time.Sleep(time.Duration(2100 * 1000))
-	testutil.AssertFalse(t, strategy.IsAllowable())
+func TestThreadSafeFixedWindowTpsLimitStrategyImpl_IsAllowable(t *testing.T) {
+	strategy := NewThreadSafeFixedWindowTpsLimitStrategyImpl(2, 60000)
+	assert.True(t, strategy.IsAllowable())
+	assert.True(t, strategy.IsAllowable())
+	assert.False(t, strategy.IsAllowable())
 
-	strategy = NewSlidingWindowTpsLimitStrategyImpl(2, 2000)
-	testutil.AssertTrue(t, strategy.IsAllowable())
-	testutil.AssertTrue(t, strategy.IsAllowable())
-	testutil.AssertFalse(t, strategy.IsAllowable())
+	strategy = NewThreadSafeFixedWindowTpsLimitStrategyImpl(2, 2000)
+	assert.True(t, strategy.IsAllowable())
+	assert.True(t, strategy.IsAllowable())
+	assert.False(t, strategy.IsAllowable())
 	time.Sleep(time.Duration(2100 * 1000))
-	testutil.AssertTrue(t, strategy.IsAllowable())
-	testutil.AssertTrue(t, strategy.IsAllowable())
-	testutil.AssertFalse(t, strategy.IsAllowable())
+	assert.True(t, strategy.IsAllowable())
+	assert.True(t, strategy.IsAllowable())
+	assert.False(t, strategy.IsAllowable())
 }
