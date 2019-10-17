@@ -14,30 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package tps
 
 import (
-	"testing"
-	"time"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/protocol"
 )
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-func TestFixedWindowTpsLimitStrategyImpl_IsAllowable(t *testing.T) {
-	strategy := NewFixedWindowTpsLimitStrategyImpl(2, 60000)
-	assert.True(t, strategy.IsAllowable())
-	assert.True(t, strategy.IsAllowable())
-	assert.False(t, strategy.IsAllowable())
-
-	strategy = NewFixedWindowTpsLimitStrategyImpl(2, 2000)
-	assert.True(t, strategy.IsAllowable())
-	assert.True(t, strategy.IsAllowable())
-	assert.False(t, strategy.IsAllowable())
-	time.Sleep(time.Duration(2100 * 1000))
-	assert.True(t, strategy.IsAllowable())
-	assert.True(t, strategy.IsAllowable())
-	assert.False(t, strategy.IsAllowable())
+/**
+ * This implementation only logs the invocation info.
+ * it always return en error inside the result.
+ * "UserProvider":
+ *   registry: "hangzhouzk"
+ *   protocol : "dubbo"
+ *   interface : "com.ikurento.user.UserProvider"
+ *   ... # other configuration
+ *   tps.limiter: "method-service" # the name of limiter
+ *   tps.limit.rejected.handler: "name of handler"
+ *   methods:
+ *    - name: "GetUser"
+ */
+type RejectedExecutionHandler interface {
+	RejectedExecution(url common.URL, invocation protocol.Invocation) protocol.Result
 }
