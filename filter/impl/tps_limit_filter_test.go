@@ -32,7 +32,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/filter/impl/tps"
-	"github.com/apache/dubbo-go/filter/impl/tps/intf"
+	"github.com/apache/dubbo-go/filter/impl/tps/impl"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
@@ -54,9 +54,9 @@ func TestTpsLimitFilter_Invoke_With_No_TpsLimiter(t *testing.T) {
 func TestGenericFilter_Invoke_With_Default_TpsLimiter(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockLimiter := tps.NewMockTpsLimiter(ctrl)
+	mockLimiter := impl.NewMockTpsLimiter(ctrl)
 	mockLimiter.EXPECT().IsAllowable(gomock.Any(), gomock.Any()).Return(true).Times(1)
-	extension.SetTpsLimiter(constant.DEFAULT_KEY, func() intf.TpsLimiter {
+	extension.SetTpsLimiter(constant.DEFAULT_KEY, func() tps.TpsLimiter {
 		return mockLimiter
 	})
 
@@ -75,17 +75,17 @@ func TestGenericFilter_Invoke_With_Default_TpsLimiter(t *testing.T) {
 func TestGenericFilter_Invoke_With_Default_TpsLimiter_Not_Allow(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockLimiter := tps.NewMockTpsLimiter(ctrl)
+	mockLimiter := impl.NewMockTpsLimiter(ctrl)
 	mockLimiter.EXPECT().IsAllowable(gomock.Any(), gomock.Any()).Return(false).Times(1)
-	extension.SetTpsLimiter(constant.DEFAULT_KEY, func() intf.TpsLimiter {
+	extension.SetTpsLimiter(constant.DEFAULT_KEY, func() tps.TpsLimiter {
 		return mockLimiter
 	})
 
 	mockResult := &protocol.RPCResult{}
-	mockRejectedHandler := tps.NewMockRejectedExecutionHandler(ctrl)
+	mockRejectedHandler := impl.NewMockRejectedExecutionHandler(ctrl)
 	mockRejectedHandler.EXPECT().RejectedExecution(gomock.Any(), gomock.Any()).Return(mockResult).Times(1)
 
-	extension.SetTpsRejectedExecutionHandler(constant.DEFAULT_KEY, func() intf.RejectedExecutionHandler {
+	extension.SetTpsRejectedExecutionHandler(constant.DEFAULT_KEY, func() tps.RejectedExecutionHandler {
 		return mockRejectedHandler
 	})
 

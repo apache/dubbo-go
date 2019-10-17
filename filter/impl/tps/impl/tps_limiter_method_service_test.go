@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package tps
+package impl
 
 import (
 	"net/url"
@@ -30,7 +30,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/filter/impl/tps/intf"
+	"github.com/apache/dubbo-go/filter/impl/tps"
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
@@ -48,7 +48,7 @@ func TestMethodServiceTpsLimiterImpl_IsAllowable_Only_Service_Level(t *testing.T
 
 	mockStrategyImpl := NewMockTpsLimitStrategy(ctrl)
 	mockStrategyImpl.EXPECT().IsAllowable().Return(true).Times(1)
-	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, func(rate int, interval int) intf.TpsLimitStrategy {
+	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, func(rate int, interval int) tps.TpsLimitStrategy {
 		assert.Equal(t, 20, rate)
 		assert.Equal(t, 60000, interval)
 		return mockStrategyImpl
@@ -95,7 +95,7 @@ func TestMethodServiceTpsLimiterImpl_IsAllowable_Method_Level_Override(t *testin
 
 	mockStrategyImpl := NewMockTpsLimitStrategy(ctrl)
 	mockStrategyImpl.EXPECT().IsAllowable().Return(true).Times(1)
-	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, func(rate int, interval int) intf.TpsLimitStrategy {
+	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, func(rate int, interval int) tps.TpsLimitStrategy {
 		assert.Equal(t, 40, rate)
 		assert.Equal(t, 7000, interval)
 		return mockStrategyImpl
@@ -123,7 +123,7 @@ func TestMethodServiceTpsLimiterImpl_IsAllowable_Both_Method_And_Service(t *test
 
 	mockStrategyImpl := NewMockTpsLimitStrategy(ctrl)
 	mockStrategyImpl.EXPECT().IsAllowable().Return(true).Times(1)
-	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, func(rate int, interval int) intf.TpsLimitStrategy {
+	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, func(rate int, interval int) tps.TpsLimitStrategy {
 		assert.Equal(t, 40, rate)
 		assert.Equal(t, 3000, interval)
 		return mockStrategyImpl
