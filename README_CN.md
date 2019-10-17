@@ -30,7 +30,7 @@ Apache License, Version 2.0
 - 传输协议: HTTP, TCP
 - 序列化协议: JsonRPC v2, Hessian v2
 - 注册中心: ZooKeeper/[etcd v3](https://github.com/apache/dubbo-go/pull/148)/[nacos](https://github.com/apache/dubbo-go/pull/151)/[consul](https://github.com/apache/dubbo-go/pull/121)
-- 配置中心: Zookeeper
+- 动态配置中心与服务治理配置器（config center）: Zookeeper
 - 集群策略: Failover/[Failfast](https://github.com/apache/dubbo-go/pull/140)/[Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136)/[Available](https://github.com/apache/dubbo-go/pull/155)/[Broadcast](https://github.com/apache/dubbo-go/pull/158)/[Forking](https://github.com/apache/dubbo-go/pull/161)
 - 负载均衡策略: Random/[RoundRobin](https://github.com/apache/dubbo-go/pull/66)/[LeastActive](https://github.com/apache/dubbo-go/pull/65)
 - 过滤器: Echo Health Check/[服务熔断&降级](https://github.com/apache/dubbo-go/pull/133)/[TokenFilter](https://github.com/apache/dubbo-go/pull/202)/[AccessLogFilter](https://github.com/apache/dubbo-go/pull/214)
@@ -43,7 +43,7 @@ Apache License, Version 2.0
 - 过滤器: CountFilter/ExecuteLimitFilter/TpsLimitFilter
 - 注册中心: k8s
 - 配置中心: apollo
-- 动态配置中心 & 元数据中心 (dubbo v2.7.x)
+- 元数据中心 (dubbo v2.7.x)
 - Metrics: Promethus(dubbo v2.7.x)
 
 任务列表:
@@ -64,10 +64,23 @@ TODO
 
 ## 运行单测
 
+### 准备
+
+Mac/Linux
+```bash
+sh ./before_ut.sh
+```
+
+Windows
+```bash
+before_ut.bat
+```
+
+# 执行
 ```bash
 go test ./...
 
-# 覆盖率
+# coverage
 go test ./... -coverprofile=coverage.txt -covermode=atomic
 ```
 
