@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package tps
+package impl
 
 import (
 	"testing"
@@ -26,13 +26,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestThreadSafeFixedWindowTpsLimitStrategyImpl_IsAllowable(t *testing.T) {
-	strategy := NewThreadSafeFixedWindowTpsLimitStrategyImpl(2, 60000)
+func TestFixedWindowTpsLimitStrategyImpl_IsAllowable(t *testing.T) {
+	strategy := NewFixedWindowTpsLimitStrategyImpl(2, 60000)
 	assert.True(t, strategy.IsAllowable())
 	assert.True(t, strategy.IsAllowable())
 	assert.False(t, strategy.IsAllowable())
 
-	strategy = NewThreadSafeFixedWindowTpsLimitStrategyImpl(2, 2000)
+	strategy = NewFixedWindowTpsLimitStrategyImpl(2, 2000)
 	assert.True(t, strategy.IsAllowable())
 	assert.True(t, strategy.IsAllowable())
 	assert.False(t, strategy.IsAllowable())

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package tps
+package impl
 
 import (
 	"sync"
@@ -26,7 +26,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/filter/impl/tps/intf"
+	"github.com/apache/dubbo-go/filter/impl/tps"
 	"github.com/apache/dubbo-go/protocol"
 )
 
@@ -61,7 +61,7 @@ func (handler *OnlyLogRejectedExecutionHandler) RejectedExecution(url common.URL
 	return &protocol.RPCResult{}
 }
 
-func GetOnlyLogRejectedExecutionHandler() intf.RejectedExecutionHandler {
+func GetOnlyLogRejectedExecutionHandler() tps.RejectedExecutionHandler {
 	onlyLogHandlerOnce.Do(func() {
 		onlyLogHandlerInstance = &OnlyLogRejectedExecutionHandler{}
 	})

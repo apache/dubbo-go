@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package tps
+package impl
 
 import (
 	"container/list"
@@ -25,7 +25,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/filter/impl/tps/intf"
+	"github.com/apache/dubbo-go/filter/impl/tps"
 )
 
 func init() {
@@ -80,7 +80,7 @@ func (impl *SlidingWindowTpsLimitStrategyImpl) IsAllowable() bool {
 	return false
 }
 
-func NewSlidingWindowTpsLimitStrategyImpl(rate int, interval int) intf.TpsLimitStrategy {
+func NewSlidingWindowTpsLimitStrategyImpl(rate int, interval int) tps.TpsLimitStrategy {
 	return &SlidingWindowTpsLimitStrategyImpl{
 		rate:     rate,
 		interval: int64(interval * 1000),
