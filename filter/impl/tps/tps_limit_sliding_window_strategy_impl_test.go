@@ -14,13 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package filter
+
+package tps
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/protocol"
+	"testing"
+	"time"
 )
 
-type RejectedExecutionHandler interface {
-	RejectedExecution(url common.URL, invocation protocol.Invocation) protocol.Result
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+func TestSlidingWindowTpsLimitStrategyImpl_IsAllowable(t *testing.T) {
+	strategy := NewSlidingWindowTpsLimitStrategyImpl(2, 60000)
+	assert.True(t, strategy.IsAllowable())
+	assert.True(t, strategy.IsAllowable())
+	assert.False(t, strategy.IsAllowable())
+	time.Sleep(time.Duration(2100 * 1000))
+	assert.False(t, strategy.IsAllowable())
+
+	strategy = NewSlidingWindowTpsLimitStrategyImpl(2, 2000)
+	assert.True(t, strategy.IsAllowable())
+	assert.True(t, strategy.IsAllowable())
+	assert.False(t, strategy.IsAllowable())
+	time.Sleep(time.Duration(2100 * 1000))
+	assert.True(t, strategy.IsAllowable())
+	assert.True(t, strategy.IsAllowable())
+	assert.False(t, strategy.IsAllowable())
 }

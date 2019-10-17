@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package impl
+package tps
 
 import (
 	"testing"

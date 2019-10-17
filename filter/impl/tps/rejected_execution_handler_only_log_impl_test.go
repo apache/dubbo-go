@@ -15,11 +15,21 @@
  * limitations under the License.
  */
 
-package filter
+package tps
 
-/*
- * please register your implementation by invoking SetTpsLimitStrategy
- */
-type TpsLimitStrategy interface {
-	IsAllowable() bool
+import (
+	"net/url"
+	"testing"
+)
+import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+)
+
+func TestOnlyLogRejectedExecutionHandler_RejectedExecution(t *testing.T) {
+	handler := GetOnlyLogRejectedExecutionHandler()
+	invokeUrl := common.NewURLWithOptions(
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.INTERFACE_KEY, "methodName"))
+	handler.RejectedExecution(*invokeUrl, nil)
 }
