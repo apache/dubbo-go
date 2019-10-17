@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tps
+package impl
 
 import (
 	"fmt"
@@ -30,7 +30,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/filter/impl/tps/intf"
+	"github.com/apache/dubbo-go/filter/impl/tps"
 	"github.com/apache/dubbo-go/protocol"
 )
 
@@ -127,7 +127,7 @@ func (limiter MethodServiceTpsLimiterImpl) IsAllowable(url common.URL, invocatio
 
 	limitState, found := limiter.tpsState.Load(limitTarget)
 	if found {
-		return limitState.(intf.TpsLimitStrategy).IsAllowable()
+		return limitState.(tps.TpsLimitStrategy).IsAllowable()
 	}
 
 	limitRate := getLimitConfig(methodLimitRateConfig, url, invocation,
@@ -149,7 +149,7 @@ func (limiter MethodServiceTpsLimiterImpl) IsAllowable(url common.URL, invocatio
 		url.GetParam(constant.TPS_LIMIT_STRATEGY_KEY, constant.DEFAULT_KEY))
 	limitStateCreator := extension.GetTpsLimitStrategyCreator(limitStrategyConfig)
 	limitState, _ = limiter.tpsState.LoadOrStore(limitTarget, limitStateCreator(int(limitRate), int(limitInterval)))
-	return limitState.(intf.TpsLimitStrategy).IsAllowable()
+	return limitState.(tps.TpsLimitStrategy).IsAllowable()
 }
 
 func getLimitConfig(methodLevelConfig string,
@@ -178,7 +178,7 @@ func getLimitConfig(methodLevelConfig string,
 var methodServiceTpsLimiterInstance *MethodServiceTpsLimiterImpl
 var methodServiceTpsLimiterOnce sync.Once
 
-func GetMethodServiceTpsLimiter() intf.TpsLimiter {
+func GetMethodServiceTpsLimiter() tps.TpsLimiter {
 	methodServiceTpsLimiterOnce.Do(func() {
 		methodServiceTpsLimiterInstance = &MethodServiceTpsLimiterImpl{
 			tpsState: concurrent.NewMap(),

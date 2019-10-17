@@ -18,28 +18,20 @@
 package tps
 
 import (
-	"testing"
-	"time"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/protocol"
 )
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-func TestSlidingWindowTpsLimitStrategyImpl_IsAllowable(t *testing.T) {
-	strategy := NewSlidingWindowTpsLimitStrategyImpl(2, 60000)
-	assert.True(t, strategy.IsAllowable())
-	assert.True(t, strategy.IsAllowable())
-	assert.False(t, strategy.IsAllowable())
-	time.Sleep(time.Duration(2100 * 1000))
-	assert.False(t, strategy.IsAllowable())
-
-	strategy = NewSlidingWindowTpsLimitStrategyImpl(2, 2000)
-	assert.True(t, strategy.IsAllowable())
-	assert.True(t, strategy.IsAllowable())
-	assert.False(t, strategy.IsAllowable())
-	time.Sleep(time.Duration(2100 * 1000))
-	assert.True(t, strategy.IsAllowable())
-	assert.True(t, strategy.IsAllowable())
-	assert.False(t, strategy.IsAllowable())
+/*
+ * please register your implementation by invoking SetTpsLimiter
+ * The usage, for example:
+ * "UserProvider":
+ *   registry: "hangzhouzk"
+ *   protocol : "dubbo"
+ *   interface : "com.ikurento.user.UserProvider"
+ *   ... # other configuration
+ *   tps.limiter: "the name of limiter",
+ */
+type TpsLimiter interface {
+	IsAllowable(common.URL, protocol.Invocation) bool
 }

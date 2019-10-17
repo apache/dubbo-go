@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package tps
+package impl
 
 import (
 	"sync"
@@ -23,7 +23,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/filter/impl/tps/intf"
+	"github.com/apache/dubbo-go/filter/impl/tps"
 )
 
 func init() {
@@ -56,7 +56,7 @@ func (impl *ThreadSafeFixedWindowTpsLimitStrategyImpl) IsAllowable() bool {
 	return impl.fixedWindow.IsAllowable()
 }
 
-func NewThreadSafeFixedWindowTpsLimitStrategyImpl(rate int, interval int) intf.TpsLimitStrategy {
+func NewThreadSafeFixedWindowTpsLimitStrategyImpl(rate int, interval int) tps.TpsLimitStrategy {
 	fixedWindowStrategy := NewFixedWindowTpsLimitStrategyImpl(rate, interval).(*FixedWindowTpsLimitStrategyImpl)
 	return &ThreadSafeFixedWindowTpsLimitStrategyImpl{
 		fixedWindow: fixedWindowStrategy,
