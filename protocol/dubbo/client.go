@@ -210,6 +210,7 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 	p.Service.Path = strings.TrimPrefix(request.svcUrl.Path, "/")
 	p.Service.Interface = request.svcUrl.GetParam(constant.INTERFACE_KEY, "")
 	p.Service.Version = request.svcUrl.GetParam(constant.VERSION_KEY, "")
+	p.Service.Group = request.svcUrl.GetParam(constant.GROUP_KEY, "")
 	p.Service.Method = request.method
 	p.Service.Timeout = c.opts.RequestTimeout
 	p.Header.SerialID = byte(S_Dubbo)
