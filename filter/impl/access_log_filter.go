@@ -132,7 +132,7 @@ func (ef *AccessLogFilter) writeLogToFile(data AccessLogData) {
 
 	logFile, err := ef.openLogFile(accessLog)
 	if err != nil {
-		logger.Warnf("Can not open 	the access log file: %s, %v", accessLog, err)
+		logger.Warnf("Can not open the access log file: %s, %v", accessLog, err)
 		return
 	}
 	logger.Debugf("Append log to %s", accessLog)
