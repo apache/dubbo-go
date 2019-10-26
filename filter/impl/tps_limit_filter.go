@@ -20,7 +20,9 @@ package impl
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/filter"
+	_ "github.com/apache/dubbo-go/filter/common/impl"
 	_ "github.com/apache/dubbo-go/filter/impl/tps/impl"
 	"github.com/apache/dubbo-go/protocol"
 )
@@ -58,7 +60,8 @@ func (t TpsLimitFilter) Invoke(invoker protocol.Invoker, invocation protocol.Inv
 		if allow {
 			return invoker.Invoke(invocation)
 		}
-		return extension.GetTpsRejectedExecutionHandler(rejectedExeHandler).RejectedExecution(url, invocation)
+		logger.Errorf("The invocation was rejected due to over the tps limitation, url: %s ", url.String())
+		return extension.GetRejectedExecutionHandler(rejectedExeHandler).RejectedExecution(url, invocation)
 	}
 	return invoker.Invoke(invocation)
 }

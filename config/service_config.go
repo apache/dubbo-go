@@ -43,32 +43,35 @@ import (
 )
 
 type ServiceConfig struct {
-	context                 context.Context
-	id                      string
-	Filter                  string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	Protocol                string            `default:"dubbo"  required:"true"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"` // multi protocol support, split by ','
-	InterfaceName           string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
-	Registry                string            `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
-	Cluster                 string            `default:"failover" yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
-	Loadbalance             string            `default:"random" yaml:"loadbalance"  json:"loadbalance,omitempty"  property:"loadbalance"`
-	Group                   string            `yaml:"group"  json:"group,omitempty" property:"group"`
-	Version                 string            `yaml:"version"  json:"version,omitempty" property:"version" `
-	Methods                 []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
-	Warmup                  string            `yaml:"warmup"  json:"warmup,omitempty"  property:"warmup"`
-	Retries                 string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
-	Params                  map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
-	Token                   string            `yaml:"token" json:"token,omitempty" property:"token"`
-	AccessLog               string            `yaml:"accesslog" json:"accesslog,omitempty" property:"accesslog"`
-	TpsLimiter              string            `yaml:"tps.limiter" json:"tps.limiter,omitempty" property:"tps.limiter"`
-	TpsLimitInterval        string            `yaml:"tps.limit.interval" json:"tps.limit.interval,omitempty" property:"tps.limit.interval"`
-	TpsLimitRate            string            `yaml:"tps.limit.rate" json:"tps.limit.rate,omitempty" property:"tps.limit.rate"`
-	TpsLimitStrategy        string            `yaml:"tps.limit.strategy" json:"tps.limit.strategy,omitempty" property:"tps.limit.strategy"`
-	TpsLimitRejectedHandler string            `yaml:"tps.limit.rejected.handler" json:"tps.limit.rejected.handler,omitempty" property:"tps.limit.rejected.handler"`
-	unexported              *atomic.Bool
-	exported                *atomic.Bool
-	rpcService              common.RPCService
-	cacheProtocol           protocol.Protocol
-	cacheMutex              sync.Mutex
+	context                     context.Context
+	id                          string
+	Filter                      string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	Protocol                    string            `default:"dubbo"  required:"true"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"` // multi protocol support, split by ','
+	InterfaceName               string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
+	Registry                    string            `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
+	Cluster                     string            `default:"failover" yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
+	Loadbalance                 string            `default:"random" yaml:"loadbalance"  json:"loadbalance,omitempty"  property:"loadbalance"`
+	Group                       string            `yaml:"group"  json:"group,omitempty" property:"group"`
+	Version                     string            `yaml:"version"  json:"version,omitempty" property:"version" `
+	Methods                     []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
+	Warmup                      string            `yaml:"warmup"  json:"warmup,omitempty"  property:"warmup"`
+	Retries                     string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
+	Params                      map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
+	Token                       string            `yaml:"token" json:"token,omitempty" property:"token"`
+	AccessLog                   string            `yaml:"accesslog" json:"accesslog,omitempty" property:"accesslog"`
+	TpsLimiter                  string            `yaml:"tps.limiter" json:"tps.limiter,omitempty" property:"tps.limiter"`
+	TpsLimitInterval            string            `yaml:"tps.limit.interval" json:"tps.limit.interval,omitempty" property:"tps.limit.interval"`
+	TpsLimitRate                string            `yaml:"tps.limit.rate" json:"tps.limit.rate,omitempty" property:"tps.limit.rate"`
+	TpsLimitStrategy            string            `yaml:"tps.limit.strategy" json:"tps.limit.strategy,omitempty" property:"tps.limit.strategy"`
+	TpsLimitRejectedHandler     string            `yaml:"tps.limit.rejected.handler" json:"tps.limit.rejected.handler,omitempty" property:"tps.limit.rejected.handler"`
+	ExecuteLimit                string            `yaml:"execute.limit" json:"execute.limit,omitempty" property:"execute.limit"`
+	ExecuteLimitRejectedHandler string            `yaml:"execute.limit.rejected.handler" json:"execute.limit.rejected.handler,omitempty" property:"execute.limit.rejected.handler"`
+
+	unexported    *atomic.Bool
+	exported      *atomic.Bool
+	rpcService    common.RPCService
+	cacheProtocol protocol.Protocol
+	cacheMutex    sync.Mutex
 }
 
 func (c *ServiceConfig) Prefix() string {
@@ -203,6 +206,10 @@ func (srvconfig *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.TPS_LIMITER_KEY, srvconfig.TpsLimiter)
 	urlMap.Set(constant.TPS_REJECTED_EXECUTION_HANDLER_KEY, srvconfig.TpsLimitRejectedHandler)
 
+	// execute limit filter
+	urlMap.Set(constant.EXECUTE_LIMIT_KEY, srvconfig.ExecuteLimit)
+	urlMap.Set(constant.EXECUTE_REJECTED_EXECUTION_HANDLER_KEY, srvconfig.ExecuteLimitRejectedHandler)
+
 	for _, v := range srvconfig.Methods {
 		prefix := "methods." + v.Name + "."
 		urlMap.Set(prefix+constant.LOADBALANCE_KEY, v.Loadbalance)
@@ -212,6 +219,10 @@ func (srvconfig *ServiceConfig) getUrlMap() url.Values {
 		urlMap.Set(prefix+constant.TPS_LIMIT_STRATEGY_KEY, v.TpsLimitStrategy)
 		urlMap.Set(prefix+constant.TPS_LIMIT_INTERVAL_KEY, v.TpsLimitInterval)
 		urlMap.Set(prefix+constant.TPS_LIMIT_RATE_KEY, v.TpsLimitRate)
+
+		urlMap.Set(constant.EXECUTE_LIMIT_KEY, v.ExecuteLimit)
+		urlMap.Set(constant.EXECUTE_REJECTED_EXECUTION_HANDLER_KEY, v.ExecuteLimitRejectedHandler)
+
 	}
 
 	return urlMap
