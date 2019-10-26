@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tps
+package common
 
 import (
 	"github.com/apache/dubbo-go/common"
@@ -22,17 +22,8 @@ import (
 )
 
 /**
- * This implementation only logs the invocation info.
- * it always return en error inside the result.
- * "UserProvider":
- *   registry: "hangzhouzk"
- *   protocol : "dubbo"
- *   interface : "com.ikurento.user.UserProvider"
- *   ... # other configuration
- *   tps.limiter: "method-service" # the name of limiter
- *   tps.limit.rejected.handler: "name of handler"
- *   methods:
- *    - name: "GetUser"
+ * If the invocation cannot pass any validation in filter, like ExecuteLimit and TpsLimit,
+ * the implementation will be used.
  */
 type RejectedExecutionHandler interface {
 	RejectedExecution(url common.URL, invocation protocol.Invocation) protocol.Result

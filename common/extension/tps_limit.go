@@ -22,9 +22,8 @@ import (
 )
 
 var (
-	tpsLimitStrategy            = make(map[string]func(rate int, interval int) tps.TpsLimitStrategy)
-	tpsLimiter                  = make(map[string]func() tps.TpsLimiter)
-	tpsRejectedExecutionHandler = make(map[string]func() tps.RejectedExecutionHandler)
+	tpsLimitStrategy = make(map[string]func(rate int, interval int) tps.TpsLimitStrategy)
+	tpsLimiter       = make(map[string]func() tps.TpsLimiter)
 )
 
 func SetTpsLimiter(name string, creator func() tps.TpsLimiter) {
@@ -51,17 +50,4 @@ func GetTpsLimitStrategyCreator(name string) func(rate int, interval int) tps.Tp
 			"and you have register it by invoking extension.SetTpsLimitStrategy.")
 	}
 	return creator
-}
-
-func SetTpsRejectedExecutionHandler(name string, creator func() tps.RejectedExecutionHandler) {
-	tpsRejectedExecutionHandler[name] = creator
-}
-
-func GetTpsRejectedExecutionHandler(name string) tps.RejectedExecutionHandler {
-	creator, ok := tpsRejectedExecutionHandler[name]
-	if !ok {
-		panic("TpsRejectedExecutionHandler for " + name + " is not existing, make sure you have import the package " +
-			"and you have register it by invoking extension.SetTpsRejectedExecutionHandler.")
-	}
-	return creator()
 }
