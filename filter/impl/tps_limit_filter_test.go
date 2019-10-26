@@ -20,6 +20,9 @@ package impl
 import (
 	"net/url"
 	"testing"
+
+	common2 "github.com/apache/dubbo-go/filter/common"
+	impl2 "github.com/apache/dubbo-go/filter/common/impl"
 )
 
 import (
@@ -82,10 +85,10 @@ func TestGenericFilter_Invoke_With_Default_TpsLimiter_Not_Allow(t *testing.T) {
 	})
 
 	mockResult := &protocol.RPCResult{}
-	mockRejectedHandler := impl.NewMockRejectedExecutionHandler(ctrl)
+	mockRejectedHandler := impl2.NewMockRejectedExecutionHandler(ctrl)
 	mockRejectedHandler.EXPECT().RejectedExecution(gomock.Any(), gomock.Any()).Return(mockResult).Times(1)
 
-	extension.SetTpsRejectedExecutionHandler(constant.DEFAULT_KEY, func() tps.RejectedExecutionHandler {
+	extension.SetRejectedExecutionHandler(constant.DEFAULT_KEY, func() common2.RejectedExecutionHandler {
 		return mockRejectedHandler
 	})
 
