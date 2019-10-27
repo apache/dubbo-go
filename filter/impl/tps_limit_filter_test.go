@@ -20,9 +20,6 @@ package impl
 import (
 	"net/url"
 	"testing"
-
-	common2 "github.com/apache/dubbo-go/filter/common"
-	impl2 "github.com/apache/dubbo-go/filter/common/impl"
 )
 
 import (
@@ -34,6 +31,8 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	common2 "github.com/apache/dubbo-go/filter/common"
+	impl2 "github.com/apache/dubbo-go/filter/common/impl"
 	"github.com/apache/dubbo-go/filter/impl/tps"
 	"github.com/apache/dubbo-go/filter/impl/tps/impl"
 	"github.com/apache/dubbo-go/protocol"

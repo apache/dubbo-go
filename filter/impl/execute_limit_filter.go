@@ -90,7 +90,7 @@ func (ef *ExecuteLimitFilter) Invoke(invoker protocol.Invoker, invocation protoc
 
 	limitRate, err := strconv.ParseInt(limitRateConfig, 0, 0)
 	if err != nil {
-		logger.Error("The configuration of execute.limit is invalid: %s", limitRateConfig)
+		logger.Errorf("The configuration of execute.limit is invalid: %s", limitRateConfig)
 		return &protocol.RPCResult{}
 	}
 
@@ -98,13 +98,12 @@ func (ef *ExecuteLimitFilter) Invoke(invoker protocol.Invoker, invocation protoc
 		return invoker.Invoke(invocation)
 	}
 
-	state, loaded := ef.executeState.LoadOrStore(limitTarget, &ExecuteState{
+	state, _ := ef.executeState.LoadOrStore(limitTarget, &ExecuteState{
 		concurrentCount: 0,
 	})
 
 	concurrentCount := state.(*ExecuteState).increase()
 	defer state.(*ExecuteState).decrease()
-	logger.Debugf("The execution count is %d, loaded: %t, target: %s", concurrentCount, loaded, limitTarget)
 	if concurrentCount > limitRate {
 		logger.Errorf("The invocation was rejected due to over the execute limitation, url: %s ", url.String())
 		rejectedHandlerConfig := url.GetParam(methodConfigPrefix+constant.EXECUTE_REJECTED_EXECUTION_HANDLER_KEY,
