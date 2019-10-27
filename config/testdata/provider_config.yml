@@ -29,7 +29,6 @@ services:
   "UserProvider":
     registry: "hangzhouzk,shanghaizk"
     filter: ""
-
     # the name of limiter
     tps.limiter: "default"
     # the time unit of interval is ms
@@ -39,13 +38,11 @@ services:
     tps.limit.strategy: "slidingWindow"
     # the name of RejectedExecutionHandler
     tps.limit.rejected.handler: "default"
-
     # the concurrent request limitation of this service
     # if the value < 0, it will not be limited.
     execute.limit: "200"
     # the name of RejectedExecutionHandler
     execute.limit.rejected.handler: "default"
-
     protocol : "dubbo"
     # equivalent to interface of dubbo.xml
     interface : "com.ikurento.user.UserProvider"
@@ -58,11 +55,11 @@ services:
       - name: "GetUser"
         retries: 1
         loadbalance: "random"
-          # the concurrent request limitation of this method
-          # if the value < 0, it will not be limited.
-          execute.limit: "200"
-          # the name of RejectedExecutionHandler
-          execute.limit.rejected.handler: "default"
+        # the concurrent request limitation of this method
+        # if the value < 0, it will not be limited.
+        execute.limit: "200"
+        # the name of RejectedExecutionHandler
+        execute.limit.rejected.handler: "default"
 
 protocols:
     "dubbo":
