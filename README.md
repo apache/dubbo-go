@@ -40,7 +40,6 @@ Finished List:
 Working List:
 
 - Load Balance: ConsistentHash
-- Filter: CountFilter
 - Registry: k8s
 - Configure Center: apollo
 - Metadata Center (dubbo v2.7.x)

@@ -40,7 +40,6 @@ Apache License, Version 2.0
 
 - 集群策略: Forking
 - 负载均衡策略: ConsistentHash
-- 过滤器: CountFilter
 - 注册中心: k8s
 - 配置中心: apollo
 - 元数据中心 (dubbo v2.7.x)
