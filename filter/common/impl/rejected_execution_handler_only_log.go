@@ -19,8 +19,6 @@ package impl
 
 import (
 	"sync"
-
-	common2 "github.com/apache/dubbo-go/filter/common"
 )
 
 import (
@@ -28,6 +26,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	filterCommon "github.com/apache/dubbo-go/filter/common"
 	"github.com/apache/dubbo-go/protocol"
 )
 
@@ -62,7 +61,7 @@ func (handler *OnlyLogRejectedExecutionHandler) RejectedExecution(url common.URL
 	return &protocol.RPCResult{}
 }
 
-func GetOnlyLogRejectedExecutionHandler() common2.RejectedExecutionHandler {
+func GetOnlyLogRejectedExecutionHandler() filterCommon.RejectedExecutionHandler {
 	onlyLogHandlerOnce.Do(func() {
 		onlyLogHandlerInstance = &OnlyLogRejectedExecutionHandler{}
 	})
