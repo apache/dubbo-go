@@ -22,8 +22,11 @@ import (
 )
 
 /**
- * If the invocation cannot pass any validation in filter, like ExecuteLimit and TpsLimit,
+ * If the invocation cannot pass any validation in filter, like ExecuteLimitFilter and TpsLimitFilter,
  * the implementation will be used.
+ * The common case is that sometimes you want to return the default value when the request was rejected.
+ * Or you want to be warned if any request was rejected.
+ * In such situation, implement this interface and register it by invoking extension.SetRejectedExecutionHandler.
  */
 type RejectedExecutionHandler interface {
 	RejectedExecution(url common.URL, invocation protocol.Invocation) protocol.Result
