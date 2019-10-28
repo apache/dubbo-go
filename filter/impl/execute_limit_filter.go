@@ -58,12 +58,14 @@ func init() {
  *    - name: "UpdateUser"
  *      execute.limit: -1, # If the rate<0, the method will be ignored
  *    - name: "DeleteUser"
- *      execute.limit.rejected.handle: "customHandler"
+ *      execute.limit.rejected.handle: "customHandler" # Using the custom handler to do something when the request was rejected.
  *    - name: "AddUser"
  * From the example, the configuration in service-level is 200, and the configuration of method GetUser is 20.
  * it means that, the GetUser will be counted separately.
  * The configuration of method UpdateUser is -1, so the invocation for it will not be counted.
  * So the method DeleteUser and method AddUser will be limited by service-level configuration.
+ * Sometimes we want to do something, like log the request or return default value when the request is over limitation.
+ * Then you can implement the RejectedExecutionHandler interface and register it by invoking SetRejectedExecutionHandler.
  */
 type ExecuteLimitFilter struct {
 	executeState *concurrent.Map
