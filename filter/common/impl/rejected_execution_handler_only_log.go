@@ -26,15 +26,15 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/filter/impl/tps"
+	filterCommon "github.com/apache/dubbo-go/filter/common"
 	"github.com/apache/dubbo-go/protocol"
 )
 
 const HandlerName = "log"
 
 func init() {
-	extension.SetTpsRejectedExecutionHandler(HandlerName, GetOnlyLogRejectedExecutionHandler)
-	extension.SetTpsRejectedExecutionHandler(constant.DEFAULT_KEY, GetOnlyLogRejectedExecutionHandler)
+	extension.SetRejectedExecutionHandler(HandlerName, GetOnlyLogRejectedExecutionHandler)
+	extension.SetRejectedExecutionHandler(constant.DEFAULT_KEY, GetOnlyLogRejectedExecutionHandler)
 }
 
 var onlyLogHandlerInstance *OnlyLogRejectedExecutionHandler
@@ -57,11 +57,11 @@ type OnlyLogRejectedExecutionHandler struct {
 }
 
 func (handler *OnlyLogRejectedExecutionHandler) RejectedExecution(url common.URL, invocation protocol.Invocation) protocol.Result {
-	logger.Errorf("The invocation was rejected due to over rate limitation. url: %s", url.String())
+	logger.Errorf("The invocation was rejected. url: %s", url.String())
 	return &protocol.RPCResult{}
 }
 
-func GetOnlyLogRejectedExecutionHandler() tps.RejectedExecutionHandler {
+func GetOnlyLogRejectedExecutionHandler() filterCommon.RejectedExecutionHandler {
 	onlyLogHandlerOnce.Do(func() {
 		onlyLogHandlerInstance = &OnlyLogRejectedExecutionHandler{}
 	})
