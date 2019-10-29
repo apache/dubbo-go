@@ -3,11 +3,8 @@ module github.com/apache/dubbo-go
 require (
 	github.com/Workiva/go-datastructures v1.0.50
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
-	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
-	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
 	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190802083043-4cd0c391755e // indirect
-	github.com/apache/dubbo-go-hessian2 v1.2.5-0.20190923055845-e3dd5d131df5
-	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
+	github.com/apache/dubbo-go-hessian2 v1.3.1-0.20191029001541-894e45c9aaaa
 	github.com/buger/jsonparser v0.0.0-20181115193947-bf1c66bbce23 // indirect
 	github.com/coreos/bbolt v1.3.3 // indirect
 	github.com/coreos/etcd v3.3.13+incompatible
@@ -38,11 +35,11 @@ require (
 	github.com/nacos-group/nacos-sdk-go v0.0.0-20190723125407-0242d42e3dbb
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.1.0 // indirect
-	github.com/prometheus/common v0.6.0
 	github.com/samuel/go-zookeeper v0.0.0-20180130194729-c4fab1ac1bec
 	github.com/satori/go.uuid v1.2.0
 	github.com/smartystreets/goconvey v0.0.0-20190710185942-9d28bd7c0945 // indirect
 	github.com/soheilhy/cmux v0.1.4 // indirect
+	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/stretchr/testify v1.4.0
 	github.com/tebeka/strftime v0.1.3 // indirect
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5 // indirect
@@ -53,5 +50,6 @@ require (
 	go.uber.org/atomic v1.4.0
 	go.uber.org/zap v1.10.0
 	google.golang.org/grpc v1.22.1
-	gopkg.in/yaml.v2 v2.2.2
+	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
+	gopkg.in/yaml.v2 v2.2.4
 )
