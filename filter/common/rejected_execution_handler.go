@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tps
+package common
 
 import (
 	"github.com/apache/dubbo-go/common"
@@ -22,17 +22,11 @@ import (
 )
 
 /**
- * This implementation only logs the invocation info.
- * it always return en error inside the result.
- * "UserProvider":
- *   registry: "hangzhouzk"
- *   protocol : "dubbo"
- *   interface : "com.ikurento.user.UserProvider"
- *   ... # other configuration
- *   tps.limiter: "method-service" # the name of limiter
- *   tps.limit.rejected.handler: "name of handler"
- *   methods:
- *    - name: "GetUser"
+ * If the invocation cannot pass any validation in filter, like ExecuteLimitFilter and TpsLimitFilter,
+ * the implementation will be used.
+ * The common case is that sometimes you want to return the default value when the request was rejected.
+ * Or you want to be warned if any request was rejected.
+ * In such situation, implement this interface and register it by invoking extension.SetRejectedExecutionHandler.
  */
 type RejectedExecutionHandler interface {
 	RejectedExecution(url common.URL, invocation protocol.Invocation) protocol.Result
