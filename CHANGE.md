@@ -8,7 +8,7 @@
 - Support dynamic config center which compatible with dubbo 2.6.x & 2.7.x and commit the zookeeper impl<https://github.com/apache/dubbo-go/pull/194>
 - Add service token authorization support<https://github.com/apache/dubbo-go/pull/202>
 - Add accessLogFilter support<https://github.com/apache/dubbo-go/pull/214>
-- Delete example in dubbo-go project<https://github.com/apache/dubbo-go/pull/228>
+- Move example in dubbo-go project away<https://github.com/apache/dubbo-go/pull/228>
 - Add tps limit support<https://github.com/apache/dubbo-go/pull/237>
 - Add execute limit support<https://github.com/apache/dubbo-go/pull/246>
 
