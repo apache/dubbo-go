@@ -4,13 +4,19 @@
 
 ### New Features
 
-- Move callService to invoker & support attachments<https://github.com/apache/dubbo-go/pull/193>
-- Support dynamic config center which compatible with dubbo 2.6.x & 2.7.x and commit the zookeeper impl<https://github.com/apache/dubbo-go/pull/194>
+- Add etcdv3 registry support<https://github.com/apache/dubbo-go/pull/148>
+- Add nacos registry support<https://github.com/apache/dubbo-go/pull/151>
+- Add fail fast cluster support<https://github.com/apache/dubbo-go/pull/140>
+- Add available cluster support<https://github.com/apache/dubbo-go/pull/155>
+- Add broadcast cluster support<https://github.com/apache/dubbo-go/pull/158>
+- Add forking cluster support<https://github.com/apache/dubbo-go/pull/161>
 - Add service token authorization support<https://github.com/apache/dubbo-go/pull/202>
-- Add accessLogFilter support<https://github.com/apache/dubbo-go/pull/214>
-- Move example in dubbo-go project away<https://github.com/apache/dubbo-go/pull/228>
+- Add accessLog filter support<https://github.com/apache/dubbo-go/pull/214>
 - Add tps limit support<https://github.com/apache/dubbo-go/pull/237>
 - Add execute limit support<https://github.com/apache/dubbo-go/pull/246>
+- Move callService to invoker & support attachments<https://github.com/apache/dubbo-go/pull/193>
+- Move example in dubbo-go project away<https://github.com/apache/dubbo-go/pull/228>
+- Support dynamic config center which compatible with dubbo 2.6.x & 2.7.x and commit the zookeeper impl<https://github.com/apache/dubbo-go/pull/194>
 
 ### Enhancement
 
@@ -18,6 +24,9 @@
 - Remove client from pool before closing it<https://github.com/apache/dubbo-go/pull/190>
 - Enhance the logic for fetching the local address<https://github.com/apache/dubbo-go/pull/209>
 - Add protocol_conf default values<https://github.com/apache/dubbo-go/pull/221>
+- Add task pool for getty<https://github.com/apache/dubbo-go/pull/141>
+- Update getty: remove read queue<https://github.com/apache/dubbo-go/pull/137>
+- Clean heartbeat from PendingResponse<https://github.com/apache/dubbo-go/pull/166>
 
 ### Bugfixes
 
@@ -26,6 +35,8 @@
 - Fix url params unsafe map<https://github.com/apache/dubbo-go/pull/201>
 - Read protocol config by map key in config yaml instead of protocol name<https://github.com/apache/dubbo-go/pull/218>
 - Fix dubbo group issues #238<https://github.com/apache/dubbo-go/pull/243>/<https://github.com/apache/dubbo-go/pull/244>
+- Fix bug in reference_config<https://github.com/apache/dubbo-go/pull/157>
+- Fix high memory bug in zookeeper listener<https://github.com/apache/dubbo-go/pull/168>
 
 ## 1.1.0
 
