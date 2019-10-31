@@ -33,10 +33,10 @@ import (
 )
 
 const (
-	apolloEnvKey         = "env";
-	apolloAddrKey        = "apollo.meta";
-	apolloClusterKey     = "apollo.cluster";
-	apolloProtocolPrefix = "http://";
+	apolloEnvKey         = "env"
+	apolloAddrKey        = "apollo.meta"
+	apolloClusterKey     = "apollo.cluster"
+	apolloProtocolPrefix = "http://"
 )
 
 type apolloDynamicConfiguration struct {
@@ -51,7 +51,7 @@ func newApolloDynamicConfiguration(url *common.URL) (*apolloDynamicConfiguration
 	c := &apolloDynamicConfiguration{
 		url: url,
 	}
-	configEnv := url.GetParam(apolloEnvKey, "");
+	configEnv := url.GetParam(apolloEnvKey, "")
 	configAddr := c.getAddressWithProtocolPrefix(url)
 	configCluster := url.GetParam(constant.CONFIG_GROUP_KEY, "")
 	if len(configEnv) != 0 {
@@ -81,22 +81,28 @@ func newApolloDynamicConfiguration(url *common.URL) (*apolloDynamicConfiguration
 	return c, nil
 }
 
-func (c *apolloDynamicConfiguration) start() {
-	for event := range agollo.ListenChangeEvent() {
-		for name, change := range event.Changes {
-			cfgChangeEvent := &config_center.ConfigChangeEvent{
-				Key:        name,
-				Value:      change.NewValue,
-				ConfigType: c.getChangeType(change.ChangeType),
-			}
-			c.listeners.Range(func(key, value interface{}) bool {
-				for listener, _ := range value.(apolloListener).listeners {
-					listener.Process(cfgChangeEvent)
-				}
-				return true
-			})
+type apolloChangeListener struct {
+	c *apolloDynamicConfiguration
+}
+
+func (a *apolloChangeListener) OnChange(event *agollo.ChangeEvent) {
+	for name, change := range event.Changes {
+		cfgChangeEvent := &config_center.ConfigChangeEvent{
+			Key:        name,
+			Value:      change.NewValue,
+			ConfigType: a.c.getChangeType(change.ChangeType),
 		}
+		a.c.listeners.Range(func(key, value interface{}) bool {
+			for listener, _ := range value.(apolloListener).listeners {
+				listener.Process(cfgChangeEvent)
+			}
+			return true
+		})
 	}
+}
+
+func (c *apolloDynamicConfiguration) start() {
+	agollo.AddChangeListener(&apolloChangeListener{})
 }
 
 func (c *apolloDynamicConfiguration) getChangeType(change agollo.ConfigChangeType) remoting.EventType {
