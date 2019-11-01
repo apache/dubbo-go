@@ -2,6 +2,7 @@ package kuberentes
 
 import (
 	"context"
+	"k8s.io/kubernetes/cmd/kubeadm/app/phases/etcd"
 	"os"
 	"sync"
 
@@ -27,7 +28,7 @@ const (
 )
 
 var (
-	ErrNilKubernetesClient = perrors.New("kubernetes raw client is nil") // full describe the ERR
+	ErrKubernetesClientAlreadyClosed = perrors.New("kubernetes client already be closed")
 )
 
 type Client struct {
@@ -38,14 +39,14 @@ type Client struct {
 	// the kubernetes interface
 	rawClient kubernetes.Interface
 
-	podName   string
-	nameSpace string
-	// protect the store && currentPod
-	lock  sync.RWMutex
-	// k is pod name
-	store map[string]*v1.Pod
-
+	// current pod config
+	currentPodName   string
 	currentPod *v1.Pod
+
+	ns string
+
+	// the memory store
+	store Store
 
 	// protect the maintenanceStatus loop
 	wg sync.WaitGroup
@@ -65,6 +66,8 @@ func getCurrentPodName() (string, error) {
 	return v, nil
 }
 
+// newClient
+// new a client for registry
 func newClient(namespace string) (*Client, error) {
 
 	cfg, err := rest.InClusterConfig()
@@ -77,30 +80,69 @@ func newClient(namespace string) (*Client, error) {
 		return nil, perrors.WithMessage(err, "new kubernetes client by in cluster config")
 	}
 
-	podName, err := getCurrentPodName()
+	currentPodName, err := getCurrentPodName()
 	if err != nil {
 		return nil, perrors.WithMessage(err, "get pod name")
 	}
 
-	// read the current pod status
-	currentPod, err := rawClient.CoreV1().Pods(namespace).Get(podName, metav1.GetOptions{})
-	if err != nil {
-		return nil, perrors.WithMessagef(err, "get pod (%s) in namespace (%s)", podName, namespace)
-	}
-
-	logger.Info("init kubernetes registry success")
 	ctx, cancel := context.WithCancel(context.Background())
+
 	c := &Client{
+		currentPodName: currentPodName,
+		ns: namespace,
 		cfg:        cfg,
 		rawClient:  rawClient,
 		ctx:        ctx,
-		currentPod: currentPod,
+		store:      newStore(ctx),
 		cancel:     cancel,
 	}
 
+	// read the current pod status
+	currentPods, err := rawClient.CoreV1().Pods(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, perrors.WithMessagef(err, "list pods  in namespace (%s)",  namespace)
+	}
+
+	// init the store by current pods
+	c.initStore(currentPods)
+
+	// start kubernetes watch loop
+	if err := c.maintenanceStatus(); err != nil{
+		return nil, perrors.WithMessage(err, "maintenance the kubernetes status")
+	}
+
+	logger.Info("init kubernetes registry success")
 	return c, nil
 }
 
+
+// initStore
+// init the store
+func (c *Client) initStore(pods *v1.PodList){
+	for _, pod := range pods.Items{
+		c.store[pod.Name] = &pod
+	}
+}
+
+// maintenanceStatus
+// try to watch kubernetes pods
+func (c *Client) maintenanceStatus() error {
+
+	wc, err := c.rawClient.CoreV1().Pods(c.ns).Watch(metav1.ListOptions{
+		Watch: true,
+	})
+	if err != nil {
+		return perrors.WithMessagef(err, "watch  the namespace (%s) pods", c.ns)
+	}
+
+	// add wg, grace close the client
+	c.wg.Add(1)
+	go c.maintenanceStatusLoop(wc)
+	return nil
+}
+
+// maintenanceStatus
+// try to notify
 func (c *Client) maintenanceStatusLoop(wc watch.Interface) {
 
 	defer func() {
@@ -114,46 +156,54 @@ func (c *Client) maintenanceStatusLoop(wc watch.Interface) {
 
 		select {
 		case <-c.ctx.Done():
+			// the client stopped
+			logger.Info("the client stopped")
 			return
+		default:
+			// get one element from result-chan
+			event, ok := <-wc.ResultChan()
+			if !ok {
+				logger.Info("watch result chan be stopped")
+				return
+			}
+			go c.handleWatchedEvent(event)
+		}
+	}
+}
 
+
+func (c *Client) handleWatchedEvent(event watch.Event) {
+
+	p, ok := event.Object.(*v1.Pod)
+	if !ok {
+		// not a pod info, drop it
+		return
+	}
+
+	for ak, av := range p.GetAnnotations() {
+
+		// not dubbo interest pod
+		if ak != DubboAnnotationKey {
+			return
+		}
+
+		o :=  Object{
+			K: ,
+		}
+		switch event.Type{
+		case watch.Added:
+			o.EventType = Create
+		case watch.Modified:
+			o.EventType = Update
+		case watch.Deleted:
+			o.EventType = Delete
+		case watch.Error:
+			logger.Warnf("kubernetes watch api report err (%#v)", event)
+			return
 		default:
 		}
-
-		event, ok := <-wc.ResultChan()
-		if !ok{
-			logger.Info("watch result chan be stopped")
-			return
-		}
-
-		p,  ok := event.Object.(*v1.Pod)
-		if !ok{
-			continue
-		}
-
-		for ak, av := range p.GetAnnotations(){
-			// not dubbo interest event
-			if ak != DubboAnnotationKey{
-				continue
-			}
-		}
+		c.store.Put(&o)
 	}
 }
 
-func (c *Client) handleKubernetesWatchedEvent(event watch.Event){
-
-
-}
-
-func (c *Client) maintenanceStatus() error {
-
-	wc, err := c.rawClient.CoreV1().Pods(c.nameSpace).Watch(metav1.ListOptions{})
-	if err != nil {
-		return perrors.WithMessagef(err, "watch  the namespace (%s) pods", c.nameSpace)
-	}
-
-	// add wg, grace close the client
-	c.wg.Add(1)
-	go c.maintenanceStatusLoop(wc)
-	return nil
-}
 func (c *Client) Create(k, value string) {}
