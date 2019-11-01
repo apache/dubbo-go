@@ -18,6 +18,8 @@ limitations under the License.
 package apollo
 
 import (
+	"fmt"
+	"github.com/go-errors/errors"
 	"os"
 	"strconv"
 	"strings"
@@ -37,6 +39,7 @@ const (
 	apolloAddrKey        = "apollo.meta"
 	apolloClusterKey     = "apollo.cluster"
 	apolloProtocolPrefix = "http://"
+	apolloConfigFormat = "%s.%s"
 )
 
 type apolloDynamicConfiguration struct {
@@ -68,7 +71,7 @@ func newApolloDynamicConfiguration(url *common.URL) (*apolloDynamicConfiguration
 	readyConfig := &agollo.AppConfig{
 		AppId:         appId,
 		Cluster:       configCluster,
-		NamespaceName: namespace,
+		NamespaceName: getNamespaceName(namespace,agollo.YML),
 		Ip:            configAddr,
 	}
 
@@ -76,9 +79,7 @@ func newApolloDynamicConfiguration(url *common.URL) (*apolloDynamicConfiguration
 		return readyConfig, nil
 	})
 
-	agollo.Start()
-
-	return c, nil
+	return c, agollo.Start()
 }
 
 type apolloChangeListener struct {
@@ -142,6 +143,10 @@ func (c *apolloDynamicConfiguration) RemoveListener(key string, listener config_
 	}
 }
 
+func getNamespaceName(namespace string,configFileFormat agollo.ConfigFileFormat ) string{
+	return fmt.Sprintf(apolloConfigFormat, namespace, configFileFormat)
+}
+
 func (c *apolloDynamicConfiguration) GetConfig(key string, opts ...config_center.Option) (string, error) {
 	k := &config_center.Options{}
 	for _, opt := range opts {
@@ -149,20 +154,13 @@ func (c *apolloDynamicConfiguration) GetConfig(key string, opts ...config_center
 	}
 	group := k.Group
 	if len(group) != 0 && c.url.GetParam(constant.CONFIG_GROUP_KEY, config_center.DEFAULT_GROUP) != group {
-		readyConfig := &agollo.AppConfig{
-			AppId:         c.appConf.AppId,
-			Cluster:       c.appConf.Cluster,
-			NamespaceName: "application",
-			Ip:            c.appConf.Ip,
+		namespace := c.url.GetParam(constant.CONFIG_GROUP_KEY, config_center.DEFAULT_GROUP)
+		fileNamespace := getNamespaceName(namespace, agollo.Properties)
+		config := agollo.GetConfig(fileNamespace)
+		if config==nil{
+			return "",errors.New(fmt.Sprintf("nothiing in namespace:%s ",fileNamespace))
 		}
-
-		agollo.InitCustomConfig(func() (*agollo.AppConfig, error) {
-			return readyConfig, nil
-		})
-
-		agollo.Start()
-		//Config config = ConfigService.getAppConfig();
-		//return config.getProperty(key, null);
+		return config.GetContent(),nil
 	}
 	return agollo.GetStringValue(key, ""), nil
 }
