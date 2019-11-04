@@ -495,12 +495,13 @@ func Test_startApolloConfigCenter(t *testing.T) {
 	c := &BaseConfig{ConfigCenterConfig: &ConfigCenterConfig{
 		Protocol:   "apollo",
 		Address:    "106.12.25.204:8080",
-		Group:      "mockDubbo",
-		ConfigFile: "mockDubbo.properties",
+		Group:      "testApplication_yang",
+		Cluster:      "dev",
+		ConfigFile: "mockDubbog.properties",
 	}}
 	err := c.startConfigCenter(context.Background())
 	assert.NoError(t, err)
-	b, v := config.GetEnvInstance().Configuration().Back().Value.(*config.InmemoryConfiguration).GetProperty("dubbo.application.organization")
+	b, v := config.GetEnvInstance().Configuration().Back().Value.(*config.InmemoryConfiguration).GetProperty("application.organization")
 	assert.True(t, b)
 	assert.Equal(t, "ikurento.com", v)
 }
