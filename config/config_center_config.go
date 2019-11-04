@@ -19,6 +19,8 @@ package config
 
 import (
 	"context"
+	"github.com/apache/dubbo-go/common/constant"
+	"net/url"
 	"time"
 )
 
@@ -49,4 +51,12 @@ func (c *ConfigCenterConfig) UnmarshalYAML(unmarshal func(interface{}) error) er
 		return err
 	}
 	return nil
+}
+
+func (c *ConfigCenterConfig) GetUrlMap() url.Values {
+	urlMap := url.Values{}
+	urlMap.Set(constant.CONFIG_NAMESPACE_KEY, c.ConfigFile)
+	urlMap.Set(constant.CONFIG_GROUP_KEY, c.Group)
+	urlMap.Set(constant.CONFIG_CLUSTER_KEY, c.Cluster)
+	return urlMap
 }

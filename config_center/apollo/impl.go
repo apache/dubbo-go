@@ -20,7 +20,6 @@ package apollo
 import (
 	"fmt"
 	"github.com/go-errors/errors"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -35,9 +34,6 @@ import (
 )
 
 const (
-	apolloEnvKey         = "env"
-	apolloAddrKey        = "apollo.meta"
-	apolloClusterKey     = "apollo.cluster"
 	apolloProtocolPrefix = "http://"
 	apolloConfigFormat = "%s.%s"
 )
@@ -54,24 +50,15 @@ func newApolloDynamicConfiguration(url *common.URL) (*apolloDynamicConfiguration
 	c := &apolloDynamicConfiguration{
 		url: url,
 	}
-	configEnv := url.GetParam(apolloEnvKey, "")
 	configAddr := c.getAddressWithProtocolPrefix(url)
-	configCluster := url.GetParam(constant.CONFIG_GROUP_KEY, "")
-	if len(configEnv) != 0 {
-		os.Setenv(apolloEnvKey, configEnv)
-	}
+	configCluster := url.GetParam(constant.CONFIG_CLUSTER_KEY, "")
 
-	key := os.Getenv(apolloEnvKey)
-	if len(key) != 0 || constant.ANYHOST_VALUE == configAddr {
-		configAddr = key
-	}
-
-	appId := os.Getenv("app.id")
-	namespace := url.GetParam(constant.CONFIG_NAMESPACE_KEY, config_center.DEFAULT_GROUP)
+	appId :=  url.GetParam(constant.CONFIG_GROUP_KEY, config_center.DEFAULT_GROUP)
+	namespaces := url.GetParam(constant.CONFIG_NAMESPACE_KEY, getProperties(config_center.DEFAULT_GROUP))
 	readyConfig := &agollo.AppConfig{
 		AppId:         appId,
 		Cluster:       configCluster,
-		NamespaceName: getNamespaceName(namespace,agollo.YML),
+		NamespaceName:	namespaces,
 		Ip:            configAddr,
 	}
 
@@ -127,7 +114,7 @@ func (c *apolloDynamicConfiguration) AddListener(key string, listener config_cen
 
 	key = k.Group + key
 	l, _ := c.listeners.LoadOrStore(key, NewApolloListener())
-	l.(apolloListener).AddListener(listener)
+	l.(*apolloListener).AddListener(listener)
 }
 
 func (c *apolloDynamicConfiguration) RemoveListener(key string, listener config_center.ConfigurationListener, opts ...config_center.Option) {
@@ -139,8 +126,12 @@ func (c *apolloDynamicConfiguration) RemoveListener(key string, listener config_
 	key = k.Group + key
 	l, ok := c.listeners.Load(key)
 	if ok {
-		l.(apolloListener).RemoveListener(listener)
+		l.(*apolloListener).RemoveListener(listener)
 	}
+}
+
+func getProperties(namespace string) string{
+	return getNamespaceName(namespace,agollo.Properties)
 }
 
 func getNamespaceName(namespace string,configFileFormat agollo.ConfigFileFormat ) string{
@@ -152,21 +143,16 @@ func (c *apolloDynamicConfiguration) GetConfig(key string, opts ...config_center
 	for _, opt := range opts {
 		opt(k)
 	}
-	group := k.Group
-	if len(group) != 0 && c.url.GetParam(constant.CONFIG_GROUP_KEY, config_center.DEFAULT_GROUP) != group {
-		namespace := c.url.GetParam(constant.CONFIG_GROUP_KEY, config_center.DEFAULT_GROUP)
-		fileNamespace := getNamespaceName(namespace, agollo.Properties)
-		config := agollo.GetConfig(fileNamespace)
-		if config==nil{
-			return "",errors.New(fmt.Sprintf("nothiing in namespace:%s ",fileNamespace))
-		}
-		return config.GetContent(),nil
+	namespace := c.url.GetParam(constant.CONFIG_NAMESPACE_KEY, getProperties(config_center.DEFAULT_GROUP))
+	config := agollo.GetConfig(namespace)
+	if config==nil{
+		return "",errors.New(fmt.Sprintf("nothiing in namespace:%s ",namespace))
 	}
-	return agollo.GetStringValue(key, ""), nil
+	return config.GetContent(agollo.Properties),nil
 }
 
 func (c *apolloDynamicConfiguration) getAddressWithProtocolPrefix(url *common.URL) string {
-	address := ""
+	address := url.Location
 	converted := address
 	if len(address) != 0 {
 		parts := strings.Split(address, ",")
