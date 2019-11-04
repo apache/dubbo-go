@@ -28,6 +28,20 @@ const (
 	Delete
 )
 
+func (e eventType) String() string {
+
+	switch e {
+	case Create:
+		return "CREATE"
+	case Update:
+		return "UPDATE"
+	case Delete:
+		return "DELETE"
+	default:
+		return "UNKNOWN"
+	}
+}
+
 // Object
 // object is element in store
 type Object struct {

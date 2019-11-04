@@ -5,7 +5,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"os"
+	"runtime/debug"
 	"sync"
+	"time"
+
+	"k8s.io/apimachinery/pkg/fields"
 )
 import (
 	perrors "github.com/pkg/errors"
@@ -27,7 +31,15 @@ const (
 	podNameKey   = "HOSTNAME"
 	nameSpaceKey = "NAMESPACE"
 	// all pod annotation key
-	DubboAnnotationKey = "DUBBO"
+	DubboIOAnnotationKey = "dubbo.io/annotation"
+
+	DubboIOLabelKey   = "dubbo.io/label"
+	DubboIOLabelValue = "dubbo.io-value"
+)
+
+var (
+	ErrDubboLabelAlreadyExist       = perrors.New("dubbo label already exist")
+	ErrDubboAnnotationsAlreadyExist = perrors.New("dubbo annotations already exist")
 )
 
 type Client struct {
@@ -109,14 +121,18 @@ func newClient(namespace string) (*Client, error) {
 		cancel:         cancel,
 	}
 
-	// read the current pod status
-	currentPods, err := rawClient.CoreV1().Pods(namespace).List(metav1.ListOptions{})
+	currentPod, err := c.initCurrentPod()
 	if err != nil {
-		return nil, perrors.WithMessagef(err, "list pods  in namespace (%s)", namespace)
+		return nil, perrors.WithMessage(err, "init current pod")
 	}
 
+	// record current status
+	c.currentPod = currentPod
+
 	// init the store by current pods
-	c.initStore(currentPods)
+	if err := c.initStore(); err != nil {
+		return nil, perrors.WithMessage(err, "init store")
+	}
 
 	// start kubernetes watch loop
 	if err := c.maintenanceStatus(); err != nil {
@@ -127,40 +143,83 @@ func newClient(namespace string) (*Client, error) {
 	return c, nil
 }
 
-// initStore
-// init the store
-func (c *Client) initStore(pods *v1.PodList) {
-	for _, pod := range pods.Items {
-		if pod.Name == c.currentPodName {
-			c.currentPod = &pod
+// initCurrentPod
+// 1. get current pod
+// 2. give the dubbo-label for this pod
+func (c *Client) initCurrentPod() (*v1.Pod, error) {
+
+	// read the current pod status
+	currentPod, err := c.rawClient.CoreV1().Pods(c.ns).Get(c.currentPodName, metav1.GetOptions{})
+	if err != nil {
+		return nil, perrors.WithMessagef(err, "get current (%s) pod in namespace (%s)", c.currentPodName, c.ns)
+	}
+
+	oldPod, newPod, err := c.assembleDUBBOLabel(currentPod)
+	if err != nil {
+		if err != ErrDubboLabelAlreadyExist {
+			return nil, perrors.WithMessage(err, "assemble dubbo label")
 		}
+		// current pod don't have label
+	}
+
+	p, err := c.getPatch(oldPod, newPod)
+	if err != nil {
+		return nil, perrors.WithMessage(err, "get patch")
+	}
+
+	currentPod, err = c.patchCurrentPod(p)
+	if err != nil {
+		return nil, perrors.WithMessage(err, "patch to current pod")
+	}
+
+	return currentPod, nil
+}
+
+// initStore
+// 1. get all with dubbo label pods
+// 2. put every element to store
+func (c *Client) initStore() error {
+
+	pods, err := c.rawClient.CoreV1().Pods(c.ns).List(metav1.ListOptions{
+		LabelSelector: fields.OneTermEqualSelector(DubboIOLabelKey, DubboIOLabelValue).String(),
+	})
+	if err != nil {
+		return perrors.WithMessagef(err, "list pods  in namespace (%s)", c.ns)
+	}
+
+	for _, pod := range pods.Items {
+		logger.Debugf("got the pod (name: %s), (label: %v), (annotations: %v)", pod.Name, pod.GetLabels(), pod.GetAnnotations())
 		c.handleWatchedPodEvent(&pod, watch.Added)
 	}
+
+	return nil
 }
 
 // maintenanceStatus
 // try to watch kubernetes pods
 func (c *Client) maintenanceStatus() error {
 
-	wc, err := c.rawClient.CoreV1().Pods(c.ns).Watch(metav1.ListOptions{
-		Watch: true,
+	c.wg.Add(1)
+
+	// try once
+	_, err := c.rawClient.CoreV1().Pods(c.ns).Watch(metav1.ListOptions{
+		LabelSelector: fields.OneTermEqualSelector(DubboIOLabelKey, DubboIOLabelValue).String(),
+		Watch:         true,
 	})
 	if err != nil {
-		return perrors.WithMessagef(err, "watch  the namespace (%s) pods", c.ns)
+		return perrors.WithMessagef(err, "try to watch the namespace (%s) pods", c.ns)
 	}
 
 	// add wg, grace close the client
-	c.wg.Add(1)
-	go c.maintenanceStatusLoop(wc)
+	go c.maintenanceStatusLoop()
 	return nil
 }
 
 // maintenanceStatus
 // try to notify
-func (c *Client) maintenanceStatusLoop(wc watch.Interface) {
+func (c *Client) maintenanceStatusLoop() {
 
 	defer func() {
-		wc.Stop()
 		// notify other goroutine, this loop over
 		c.wg.Done()
 		logger.Info("maintenanceStatusLoop goroutine game over")
@@ -168,33 +227,56 @@ func (c *Client) maintenanceStatusLoop(wc watch.Interface) {
 
 	for {
 
+		wc, err := c.rawClient.CoreV1().Pods(c.ns).Watch(metav1.ListOptions{
+			LabelSelector: fields.OneTermEqualSelector(DubboIOLabelKey, DubboIOLabelValue).String(),
+			Watch:         true,
+		})
+		if err != nil {
+			logger.Warnf("watch the namespace (%s) pods: %v, retry after 2 seconds", c.ns, err)
+			time.Sleep(2 * time.Second)
+			continue
+		}
+
 		select {
 		case <-c.ctx.Done():
 			// the client stopped
 			logger.Info("the kubernetes client stopped")
 			return
+
 		default:
-			// get one element from result-chan
-			event, ok := <-wc.ResultChan()
-			if !ok {
-				logger.Info("watch result chan be stopped")
-				return
-			}
 
-			if event.Type == watch.Error {
-				// watched a error event
-				logger.Warnf("kubernetes watch api report err (%#v)", event)
-				return
-			}
+			for {
+				select {
+				// double check ctx
+				case <-c.ctx.Done():
+					logger.Info("the kubernetes client stopped")
 
-			// check event object type
-			p, ok := event.Object.(*v1.Pod)
-			if !ok {
-				// not a pod
-				continue
-			}
+					// get one element from result-chan
+				case event, ok := <-wc.ResultChan():
+					if !ok {
+						wc.Stop()
+						logger.Info("kubernetes watch chan die, create new")
+						goto onceWatch
+					}
 
-			go c.handleWatchedPodEvent(p, event.Type)
+					if event.Type == watch.Error {
+						// watched a error event
+						logger.Warnf("kubernetes watch api report err (%#v)", event)
+						continue
+					}
+
+					// check event object type
+					p, ok := event.Object.(*v1.Pod)
+					if !ok {
+						// not a pod
+						continue
+					}
+
+					// handle the watched pod
+					go c.handleWatchedPodEvent(p, event.Type)
+				}
+			}
+		onceWatch:
 		}
 	}
 }
@@ -206,7 +288,7 @@ func (c *Client) handleWatchedPodEvent(p *v1.Pod, eventType watch.EventType) {
 	for ak, av := range p.GetAnnotations() {
 
 		// not dubbo interest annotation
-		if ak != DubboAnnotationKey {
+		if ak != DubboIOAnnotationKey {
 			continue
 		}
 
@@ -230,6 +312,8 @@ func (c *Client) handleWatchedPodEvent(p *v1.Pod, eventType watch.EventType) {
 				logger.Errorf("no valid kubernetes event-type (%s) ", eventType)
 				return
 			}
+
+			logger.Debugf("prepare to put object (%#v) to kuberentes-store", o)
 
 			if err := c.store.Put(o); err != nil {
 				logger.Errorf("put (%#v) to cache store: %v ", o, err)
@@ -274,6 +358,17 @@ func (c *Client) marshalRecord(ol []*Object) (string, error) {
 	return base64.URLEncoding.EncodeToString(msg), nil
 }
 
+// readCurrentPod
+// read the current pod status from kubernetes api
+func (c *Client) readCurrentPod() (*v1.Pod, error) {
+
+	currentPod, err := c.rawClient.CoreV1().Pods(c.ns).Get(c.currentPodName, metav1.GetOptions{})
+	if err != nil {
+		return nil, perrors.WithMessagef(err, "get current (%s) pod in namespace (%s)", c.currentPodName, c.ns)
+	}
+	return currentPod, nil
+}
+
 // Create
 // create k/v pair in storage
 func (c *Client) Create(k, v string) error {
@@ -284,7 +379,12 @@ func (c *Client) Create(k, v string) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	oldPod, newPod, err := c.assemble(k, v)
+	currentPod, err := c.readCurrentPod()
+	if err != nil {
+		return perrors.WithMessage(err, "read current pod")
+	}
+
+	oldPod, newPod, err := c.assembleDUBBOAnnotations(k, v, currentPod)
 	if err != nil {
 		return perrors.WithMessage(err, "assemble")
 	}
@@ -294,63 +394,83 @@ func (c *Client) Create(k, v string) error {
 		return perrors.WithMessage(err, "get patch")
 	}
 
-	_, err = c.rawClient.CoreV1().Pods(c.ns).Patch(c.currentPodName, types.StrategicMergePatchType, patchBytes)
+	updatedPod, err := c.patchCurrentPod(patchBytes)
 	if err != nil {
-		return perrors.WithMessage(err, "patch in kubernetes pod ")
+		return perrors.WithMessage(err, "patch current pod")
 	}
 
+	c.currentPod = updatedPod
+	// not update the store, the store should be write by the  maintenanceStatusLoop
 	return nil
 }
 
-// assemble
-// accord the current pod && (k,v) assemble the old-pod, new-pod
-func (c *Client) assemble(k string, v string) (oldPod *v1.Pod, newPod *v1.Pod, err error) {
+// patch current pod
+// write new meta for current pod
+func (c *Client) patchCurrentPod(patch []byte) (*v1.Pod, error) {
 
-	currentPod, err := c.rawClient.CoreV1().Pods(c.ns).Get(c.currentPodName, metav1.GetOptions{})
+	updatedPod, err := c.rawClient.CoreV1().Pods(c.ns).Patch(c.currentPodName, types.StrategicMergePatchType, patch)
 	if err != nil {
-		return nil, nil, perrors.WithMessage(err, "get current pod from kubernetes")
+		return nil, perrors.WithMessage(err, "patch in kubernetes pod ")
 	}
+	return updatedPod, nil
+}
 
-	// refresh currentPod
-	c.currentPod = currentPod
+// assemble the dubbo kubernete label
+// every dubbo instance should be labeled spec {"dubbo.io/label":"dubbo.io/label-value"} label
+func (c *Client) assembleDUBBOLabel(currentPod *v1.Pod) (oldPod *v1.Pod, newPod *v1.Pod, err error) {
 
-	oldAnnotations := c.currentPod.GetAnnotations()
-	var oldDubboAnnotation string
-	for k, v := range oldAnnotations {
-		if k == DubboAnnotationKey {
-			oldDubboAnnotation = v
+	oldPod = &v1.Pod{}
+	newPod = &v1.Pod{}
+
+	oldPod.Labels = make(map[string]string)
+	newPod.Labels = make(map[string]string)
+
+	if currentPod.GetLabels() != nil {
+
+		if currentPod.GetLabels()[DubboIOLabelKey] == DubboIOLabelValue {
+			// already have label
+			err = ErrDubboLabelAlreadyExist
+			return
 		}
 	}
 
-	ol, err := c.unmarshalRecord(oldDubboAnnotation)
+	// copy current pod labels to oldPod && newPod
+	for k, v := range currentPod.GetLabels() {
+		oldPod.Labels[k] = v
+		newPod.Labels[k] = v
+	}
+	// assign new label for current pod
+	newPod.Labels[DubboIOLabelKey] = DubboIOLabelValue
+	return
+}
+
+// assemble the dubbo kubernetes annotations
+// accord the current pod && (k,v) assemble the old-pod, new-pod
+func (c *Client) assembleDUBBOAnnotations(k, v string, currentPod *v1.Pod) (oldPod *v1.Pod, newPod *v1.Pod, err error) {
+
+	oldPod = &v1.Pod{}
+	newPod = &v1.Pod{}
+	oldPod.Annotations = make(map[string]string)
+	newPod.Annotations = make(map[string]string)
+
+	for k, v := range currentPod.GetAnnotations() {
+		oldPod.Annotations[k] = v
+		newPod.Annotations[k] = v
+	}
+
+	al, err := c.unmarshalRecord(oldPod.GetAnnotations()[DubboIOAnnotationKey])
 	if err != nil {
-		return nil, nil, perrors.WithMessage(err, "unmarshal dubbo record")
+		err = perrors.WithMessage(err, "unmarshal record")
+		return
 	}
 
-	ol = append(ol, &Object{
-		Key:   k,
-		Value: v,
-	})
-
-	newV, err := c.marshalRecord(ol)
+	newAnnotations, err := c.marshalRecord(append(al, &Object{Key: k, Value: v}))
 	if err != nil {
-		return nil, nil, perrors.WithMessage(err, "marshal dubbo record")
+		err = perrors.WithMessage(err, "marshal record")
+		return
 	}
 
-	newAnnotations := make(map[string]string)
-	for k, v := range oldAnnotations {
-		// set the old
-		newAnnotations[k] = v
-	}
-
-	newAnnotations[DubboAnnotationKey] = newV
-	newP := &v1.Pod{}
-	newP.Annotations = newAnnotations
-	newPod = newP
-
-	oldP := &v1.Pod{}
-	oldP.Annotations = oldAnnotations
-	oldPod = oldP
+	newPod.Annotations[DubboIOAnnotationKey] = newAnnotations
 	return
 }
 
@@ -398,6 +518,8 @@ func (c *Client) GetChildren(k string) ([]string, []string, error) {
 // Watch
 // watch on spec key
 func (c *Client) Watch(k string) (<-chan *Object, error) {
+
+	debug.PrintStack()
 
 	w, err := c.store.Watch(k, false)
 	if err != nil {

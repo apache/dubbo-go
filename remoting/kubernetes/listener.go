@@ -69,7 +69,7 @@ func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.
 // return false mean the event type is CREATE || UPDATE
 func (l *EventListener) handleEvents(event *Object, listeners ...remoting.DataListener) bool {
 
-	logger.Infof("got a kubernetes-store event {type: %s, key: %s}", event.EventType, event.Key)
+	logger.Infof("got a kubernetes-store event {type: %d, key: %s}", event.EventType, event.Key)
 
 	switch event.EventType {
 	case Create:

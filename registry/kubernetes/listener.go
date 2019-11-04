@@ -32,7 +32,12 @@ func (l *dataListener) AddInterestedURL(url *common.URL) {
 
 func (l *dataListener) DataChange(eventType remoting.Event) bool {
 
-	url := eventType.Path[strings.Index(eventType.Path, "/providers/")+len("/providers/"):]
+	index := strings.Index(eventType.Path, "/providers/")
+	if index == -1 {
+		logger.Warn("Listen with no url, event.path={%v}", eventType.Path)
+		return false
+	}
+	url := eventType.Path[index+len("/providers/"):]
 	serviceURL, err := common.NewURL(context.Background(), url)
 	if err != nil {
 		logger.Warnf("Listen NewURL(r{%s}) = error{%v}", eventType.Path, err)
@@ -56,11 +61,11 @@ func (l *dataListener) DataChange(eventType remoting.Event) bool {
 }
 
 type configurationListener struct {
-	registry *etcdV3Registry
+	registry *kubernetesRegistry
 	events   chan *config_center.ConfigChangeEvent
 }
 
-func NewConfigurationListener(reg *etcdV3Registry) *configurationListener {
+func NewConfigurationListener(reg *kubernetesRegistry) *configurationListener {
 	// add a new waiter
 	reg.wg.Add(1)
 	return &configurationListener{registry: reg, events: make(chan *config_center.ConfigChangeEvent, 32)}
@@ -73,11 +78,11 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
 		case <-l.registry.done:
-			logger.Warnf("listener's etcd client connection is broken, so etcd event listener exit now.")
+			logger.Warnf("listener's kubernetes client connection is broken, so kubernetes event listener exit now.")
 			return nil, perrors.New("listener stopped")
 
 		case e := <-l.events:
-			logger.Infof("got etcd event %#v", e)
+			logger.Infof("got kubernetes event %#v", e)
 			if e.ConfigType == remoting.EventTypeDel {
 				select {
 				case <-l.registry.done:
