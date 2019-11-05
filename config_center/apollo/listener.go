@@ -19,10 +19,23 @@ package apollo
 
 import (
 	"github.com/apache/dubbo-go/config_center"
+	"github.com/zouyx/agollo"
 )
 
 type apolloListener struct {
 	listeners map[config_center.ConfigurationListener]struct{}
+}
+
+func (a *apolloListener) OnChange(changeEvent *agollo.ChangeEvent) {
+	for key, change := range changeEvent.Changes {
+		for listener := range a.listeners {
+			listener.Process(&config_center.ConfigChangeEvent{
+				ConfigType: getChangeType(change.ChangeType),
+				Key:        key,
+				Value:      change.NewValue,
+			})
+		}
+	}
 }
 
 func NewApolloListener() *apolloListener {
@@ -34,6 +47,7 @@ func NewApolloListener() *apolloListener {
 func (al *apolloListener) AddListener(l config_center.ConfigurationListener) {
 	if _, ok := al.listeners[l]; !ok {
 		al.listeners[l] = struct{}{}
+		agollo.AddChangeListener(al)
 	}
 }
 
