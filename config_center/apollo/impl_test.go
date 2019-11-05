@@ -38,7 +38,6 @@ const (
 	mockNamespace        = "mockDubbog.properties"
 	mockNotifyRes        = `[{"namespaceName":"mockDubbog","notificationId":53050,"messages":{"details":{"testApplication_yang+default+mockDubbog":53050}}}]`
 	mockServiceConfigRes = `[{"appName":"APOLLO-CONFIGSERVICE","instanceId":"instance-300408ep:apollo-configservice:8080","homepageUrl":"http://localhost:8080"}]`
-
 )
 
 var (
