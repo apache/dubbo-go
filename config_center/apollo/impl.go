@@ -26,7 +26,7 @@ import (
 
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/config_center"
+	. "github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/config_center/parser"
 	"github.com/apache/dubbo-go/remoting"
 
@@ -38,7 +38,7 @@ const (
 	apolloConfigFormat   = "%s.%s"
 )
 
-type apolloDynamicConfiguration struct {
+type apolloConfiguration struct {
 	url *common.URL
 
 	listeners sync.Map
@@ -46,15 +46,15 @@ type apolloDynamicConfiguration struct {
 	parser    parser.ConfigurationParser
 }
 
-func newApolloDynamicConfiguration(url *common.URL) (*apolloDynamicConfiguration, error) {
-	c := &apolloDynamicConfiguration{
+func newApolloConfiguration(url *common.URL) (*apolloConfiguration, error) {
+	c := &apolloConfiguration{
 		url: url,
 	}
 	configAddr := c.getAddressWithProtocolPrefix(url)
 	configCluster := url.GetParam(constant.CONFIG_CLUSTER_KEY, "")
 
-	appId := url.GetParam(constant.CONFIG_GROUP_KEY, config_center.DEFAULT_GROUP)
-	namespaces := url.GetParam(constant.CONFIG_NAMESPACE_KEY, getProperties(config_center.DEFAULT_GROUP))
+	appId := url.GetParam(constant.CONFIG_GROUP_KEY, DEFAULT_GROUP)
+	namespaces := url.GetParam(constant.CONFIG_NAMESPACE_KEY, getProperties(DEFAULT_GROUP))
 	readyConfig := &agollo.AppConfig{
 		AppId:         appId,
 		Cluster:       configCluster,
@@ -82,8 +82,8 @@ func getChangeType(change agollo.ConfigChangeType) remoting.EventType {
 	}
 }
 
-func (c *apolloDynamicConfiguration) AddListener(key string, listener config_center.ConfigurationListener, opts ...config_center.Option) {
-	k := &config_center.Options{}
+func (c *apolloConfiguration) AddListener(key string, listener ConfigurationListener, opts ...Option) {
+	k := &Options{}
 	for _, opt := range opts {
 		opt(k)
 	}
@@ -93,8 +93,8 @@ func (c *apolloDynamicConfiguration) AddListener(key string, listener config_cen
 	l.(*apolloListener).AddListener(listener)
 }
 
-func (c *apolloDynamicConfiguration) RemoveListener(key string, listener config_center.ConfigurationListener, opts ...config_center.Option) {
-	k := &config_center.Options{}
+func (c *apolloConfiguration) RemoveListener(key string, listener ConfigurationListener, opts ...Option) {
+	k := &Options{}
 	for _, opt := range opts {
 		opt(k)
 	}
@@ -114,12 +114,12 @@ func getNamespaceName(namespace string, configFileFormat agollo.ConfigFileFormat
 	return fmt.Sprintf(apolloConfigFormat, namespace, configFileFormat)
 }
 
-func (c *apolloDynamicConfiguration) GetConfig(key string, opts ...config_center.Option) (string, error) {
-	k := &config_center.Options{}
+func (c *apolloConfiguration) GetConfig(key string, opts ...Option) (string, error) {
+	k := &Options{}
 	for _, opt := range opts {
 		opt(k)
 	}
-	namespace := c.url.GetParam(constant.CONFIG_NAMESPACE_KEY, getProperties(config_center.DEFAULT_GROUP))
+	namespace := c.url.GetParam(constant.CONFIG_NAMESPACE_KEY, getProperties(DEFAULT_GROUP))
 	config := agollo.GetConfig(namespace)
 	if config == nil {
 		return "", errors.New(fmt.Sprintf("nothiing in namespace:%s ", namespace))
@@ -127,7 +127,7 @@ func (c *apolloDynamicConfiguration) GetConfig(key string, opts ...config_center
 	return config.GetContent(agollo.Properties), nil
 }
 
-func (c *apolloDynamicConfiguration) getAddressWithProtocolPrefix(url *common.URL) string {
+func (c *apolloConfiguration) getAddressWithProtocolPrefix(url *common.URL) string {
 	address := url.Location
 	converted := address
 	if len(address) != 0 {
@@ -145,13 +145,13 @@ func (c *apolloDynamicConfiguration) getAddressWithProtocolPrefix(url *common.UR
 	return converted
 }
 
-func (c *apolloDynamicConfiguration) Parser() parser.ConfigurationParser {
+func (c *apolloConfiguration) Parser() parser.ConfigurationParser {
 	return c.parser
 }
-func (c *apolloDynamicConfiguration) SetParser(p parser.ConfigurationParser) {
+func (c *apolloConfiguration) SetParser(p parser.ConfigurationParser) {
 	c.parser = p
 }
 
-func (c *apolloDynamicConfiguration) GetConfigs(key string, opts ...config_center.Option) (string, error) {
+func (c *apolloConfiguration) GetConfigs(key string, opts ...Option) (string, error) {
 	return c.GetConfig(key, opts...)
 }
