@@ -35,7 +35,7 @@ import (
 
 const (
 	apolloProtocolPrefix = "http://"
-	apolloConfigFormat = "%s.%s"
+	apolloConfigFormat   = "%s.%s"
 )
 
 type apolloDynamicConfiguration struct {
@@ -53,12 +53,12 @@ func newApolloDynamicConfiguration(url *common.URL) (*apolloDynamicConfiguration
 	configAddr := c.getAddressWithProtocolPrefix(url)
 	configCluster := url.GetParam(constant.CONFIG_CLUSTER_KEY, "")
 
-	appId :=  url.GetParam(constant.CONFIG_GROUP_KEY, config_center.DEFAULT_GROUP)
+	appId := url.GetParam(constant.CONFIG_GROUP_KEY, config_center.DEFAULT_GROUP)
 	namespaces := url.GetParam(constant.CONFIG_NAMESPACE_KEY, getProperties(config_center.DEFAULT_GROUP))
 	readyConfig := &agollo.AppConfig{
 		AppId:         appId,
 		Cluster:       configCluster,
-		NamespaceName:	namespaces,
+		NamespaceName: namespaces,
 		Ip:            configAddr,
 	}
 
@@ -130,11 +130,11 @@ func (c *apolloDynamicConfiguration) RemoveListener(key string, listener config_
 	}
 }
 
-func getProperties(namespace string) string{
-	return getNamespaceName(namespace,agollo.Properties)
+func getProperties(namespace string) string {
+	return getNamespaceName(namespace, agollo.Properties)
 }
 
-func getNamespaceName(namespace string,configFileFormat agollo.ConfigFileFormat ) string{
+func getNamespaceName(namespace string, configFileFormat agollo.ConfigFileFormat) string {
 	return fmt.Sprintf(apolloConfigFormat, namespace, configFileFormat)
 }
 
@@ -145,10 +145,10 @@ func (c *apolloDynamicConfiguration) GetConfig(key string, opts ...config_center
 	}
 	namespace := c.url.GetParam(constant.CONFIG_NAMESPACE_KEY, getProperties(config_center.DEFAULT_GROUP))
 	config := agollo.GetConfig(namespace)
-	if config==nil{
-		return "",errors.New(fmt.Sprintf("nothiing in namespace:%s ",namespace))
+	if config == nil {
+		return "", errors.New(fmt.Sprintf("nothiing in namespace:%s ", namespace))
 	}
-	return config.GetContent(agollo.Properties),nil
+	return config.GetContent(agollo.Properties), nil
 }
 
 func (c *apolloDynamicConfiguration) getAddressWithProtocolPrefix(url *common.URL) string {
