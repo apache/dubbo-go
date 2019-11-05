@@ -39,7 +39,7 @@ func createDynamicConfigurationFactory() DynamicConfigurationFactory {
 type apolloConfigurationFactory struct{}
 
 var (
-	once sync.Once
+	once                 sync.Once
 	dynamicConfiguration *apolloConfiguration
 )
 
