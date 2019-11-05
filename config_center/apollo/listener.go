@@ -40,5 +40,3 @@ func (al *apolloListener) AddListener(l config_center.ConfigurationListener) {
 func (al *apolloListener) RemoveListener(l config_center.ConfigurationListener) {
 	delete(al.listeners, l)
 }
-
-
