@@ -91,7 +91,13 @@ func runMockConfigServer(handlerMap map[string]func(http.ResponseWriter, *http.R
 }
 
 func Test_GetConfig(t *testing.T) {
-	initMockApollo(t)
+	configuration := initMockApollo(t)
+	configs, err := configuration.GetConfig(mockNamespace, config_center.WithGroup("dubbo"))
+	assert.NoError(t, err)
+	configuration.SetParser(&parser.DefaultConfigurationParser{})
+	mapContent, err := configuration.Parser().Parse(configs)
+	assert.NoError(t, err)
+	assert.Equal(t, "ikurento.com", mapContent["application.organization"])
 }
 
 func initMockApollo(t *testing.T) *apolloDynamicConfiguration {
@@ -108,12 +114,6 @@ func initMockApollo(t *testing.T) *apolloDynamicConfiguration {
 	assert.NoError(t, err)
 	configuration, err := newApolloDynamicConfiguration(&url)
 	assert.NoError(t, err)
-	configs, err := configuration.GetConfig(mockNamespace, config_center.WithGroup("dubbo"))
-	assert.NoError(t, err)
-	configuration.SetParser(&parser.DefaultConfigurationParser{})
-	mapContent, err := configuration.Parser().Parse(configs)
-	assert.NoError(t, err)
-	assert.Equal(t, "ikurento.com", mapContent["application.organization"])
 	return configuration
 }
 
