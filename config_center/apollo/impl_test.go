@@ -100,7 +100,7 @@ func Test_GetConfig(t *testing.T) {
 	assert.Equal(t, "ikurento.com", mapContent["application.organization"])
 }
 
-func initMockApollo(t *testing.T) *apolloDynamicConfiguration {
+func initMockApollo(t *testing.T) *apolloConfiguration {
 	c := &config.BaseConfig{ConfigCenterConfig: &config.ConfigCenterConfig{
 		Protocol:   "apollo",
 		Address:    "106.12.25.204:8080",
@@ -112,7 +112,7 @@ func initMockApollo(t *testing.T) *apolloDynamicConfiguration {
 	apolloUrl := strings.ReplaceAll(apollo.URL, "http", "apollo")
 	url, err := common.NewURL(context.TODO(), apolloUrl, common.WithParams(c.ConfigCenterConfig.GetUrlMap()))
 	assert.NoError(t, err)
-	configuration, err := newApolloDynamicConfiguration(&url)
+	configuration, err := newApolloConfiguration(&url)
 	assert.NoError(t, err)
 	return configuration
 }
