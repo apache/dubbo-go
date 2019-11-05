@@ -69,31 +69,7 @@ func newApolloDynamicConfiguration(url *common.URL) (*apolloDynamicConfiguration
 	return c, agollo.Start()
 }
 
-type apolloChangeListener struct {
-	c *apolloDynamicConfiguration
-}
-
-func (a *apolloChangeListener) OnChange(event *agollo.ChangeEvent) {
-	for name, change := range event.Changes {
-		cfgChangeEvent := &config_center.ConfigChangeEvent{
-			Key:        name,
-			Value:      change.NewValue,
-			ConfigType: a.c.getChangeType(change.ChangeType),
-		}
-		a.c.listeners.Range(func(key, value interface{}) bool {
-			for listener, _ := range value.(apolloListener).listeners {
-				listener.Process(cfgChangeEvent)
-			}
-			return true
-		})
-	}
-}
-
-func (c *apolloDynamicConfiguration) start() {
-	agollo.AddChangeListener(&apolloChangeListener{})
-}
-
-func (c *apolloDynamicConfiguration) getChangeType(change agollo.ConfigChangeType) remoting.EventType {
+func getChangeType(change agollo.ConfigChangeType) remoting.EventType {
 	switch change {
 	case agollo.ADDED:
 		return remoting.EventTypeAdd
@@ -102,7 +78,7 @@ func (c *apolloDynamicConfiguration) getChangeType(change agollo.ConfigChangeTyp
 	case agollo.MODIFIED:
 		return remoting.EventTypeUpdate
 	default:
-		panic("unknow type: " + strconv.Itoa(int(change)))
+		panic("unknown type: " + strconv.Itoa(int(change)))
 	}
 }
 
