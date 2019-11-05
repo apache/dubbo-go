@@ -50,4 +50,3 @@ func (f *apolloDynamicConfigurationFactory) GetDynamicConfiguration(url *common.
 	return dynamicConfiguration, err
 
 }
-
