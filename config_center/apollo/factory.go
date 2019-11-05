@@ -24,24 +24,29 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/config_center"
+	. "github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/config_center/parser"
 )
 
 func init() {
-	extension.SetConfigCenterFactory("apollo", func() config_center.DynamicConfigurationFactory { return &apolloDynamicConfigurationFactory{} })
+	extension.SetConfigCenterFactory("apollo", createDynamicConfigurationFactory)
 }
 
-type apolloDynamicConfigurationFactory struct {
+func createDynamicConfigurationFactory() DynamicConfigurationFactory {
+	return &apolloConfigurationFactory{}
 }
 
-var once sync.Once
-var dynamicConfiguration *apolloDynamicConfiguration
+type apolloConfigurationFactory struct{}
 
-func (f *apolloDynamicConfigurationFactory) GetDynamicConfiguration(url *common.URL) (config_center.DynamicConfiguration, error) {
+var (
+	once sync.Once
+	dynamicConfiguration *apolloConfiguration
+)
+
+func (f *apolloConfigurationFactory) GetDynamicConfiguration(url *common.URL) (DynamicConfiguration, error) {
 	var err error
 	once.Do(func() {
-		dynamicConfiguration, err = newApolloDynamicConfiguration(url)
+		dynamicConfiguration, err = newApolloConfiguration(url)
 	})
 	if err != nil {
 		return nil, err
