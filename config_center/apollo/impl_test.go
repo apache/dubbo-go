@@ -175,11 +175,11 @@ func Test_GetConfig(t *testing.T) {
 
 func initMockApollo(t *testing.T) *apolloConfiguration {
 	c := &config.BaseConfig{ConfigCenterConfig: &config.ConfigCenterConfig{
-		Protocol:   "apollo",
-		Address:    "106.12.25.204:8080",
-		Group:      "testApplication_yang",
-		Cluster:    "dev",
-		ConfigFile: "mockDubbog.properties",
+		Protocol:  "apollo",
+		Address:   "106.12.25.204:8080",
+		Group:     "testApplication_yang",
+		Cluster:   "dev",
+		Namespace: "mockDubbog.properties",
 	}}
 	apollo := initApollo()
 	apolloUrl := strings.ReplaceAll(apollo.URL, "http", "apollo")
