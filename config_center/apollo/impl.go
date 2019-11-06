@@ -19,17 +19,24 @@ package apollo
 
 import (
 	"fmt"
-	"github.com/go-errors/errors"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
+)
+import (
+	"github.com/go-errors/errors"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	. "github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/config_center/parser"
 	"github.com/apache/dubbo-go/remoting"
+)
 
+import (
 	"github.com/zouyx/agollo"
 )
 
@@ -131,6 +138,8 @@ func (c *apolloConfiguration) getAddressWithProtocolPrefix(url *common.URL) stri
 	address := url.Location
 	converted := address
 	if len(address) != 0 {
+		reg := regexp.MustCompile("\\s+")
+		address = reg.ReplaceAllString(address, "")
 		parts := strings.Split(address, ",")
 		addrs := make([]string, 0)
 		for _, part := range parts {
