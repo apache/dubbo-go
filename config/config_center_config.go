@@ -19,12 +19,12 @@ package config
 
 import (
 	"context"
-	"github.com/apache/dubbo-go/common/constant"
 	"net/url"
 	"time"
 )
 
 import (
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/creasty/defaults"
 )
 
