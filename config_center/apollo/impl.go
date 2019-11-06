@@ -24,8 +24,10 @@ import (
 	"strings"
 	"sync"
 )
+
 import (
 	"github.com/go-errors/errors"
+	"github.com/zouyx/agollo"
 )
 
 import (
@@ -34,10 +36,6 @@ import (
 	. "github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/config_center/parser"
 	"github.com/apache/dubbo-go/remoting"
-)
-
-import (
-	"github.com/zouyx/agollo"
 )
 
 const (
@@ -126,10 +124,9 @@ func (c *apolloConfiguration) GetConfig(key string, opts ...Option) (string, err
 	for _, opt := range opts {
 		opt(k)
 	}
-	namespace := c.url.GetParam(constant.CONFIG_NAMESPACE_KEY, getProperties(DEFAULT_GROUP))
-	config := agollo.GetConfig(namespace)
+	config := agollo.GetConfig(key)
 	if config == nil {
-		return "", errors.New(fmt.Sprintf("nothiing in namespace:%s ", namespace))
+		return "", errors.New(fmt.Sprintf("nothiing in namespace:%s ", key))
 	}
 	return config.GetContent(agollo.Properties), nil
 }
