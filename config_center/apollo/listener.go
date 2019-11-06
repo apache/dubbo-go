@@ -19,6 +19,9 @@ package apollo
 
 import (
 	"github.com/apache/dubbo-go/config_center"
+)
+
+import (
 	"github.com/zouyx/agollo"
 )
 
