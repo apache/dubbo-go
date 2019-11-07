@@ -173,6 +173,15 @@ func Test_GetConfig(t *testing.T) {
 	assert.Equal(t, "ikurento.com", mapContent["application.organization"])
 }
 
+func Test_GetConfigItem(t *testing.T) {
+	configuration := initMockApollo(t)
+	configs, err := configuration.GetConfig("application.organization")
+	assert.NoError(t, err)
+	configuration.SetParser(&parser.DefaultConfigurationParser{})
+	assert.NoError(t, err)
+	assert.Equal(t, "ikurento.com", configs)
+}
+
 func initMockApollo(t *testing.T) *apolloConfiguration {
 	c := &config.BaseConfig{ConfigCenterConfig: &config.ConfigCenterConfig{
 		Protocol:  "apollo",
