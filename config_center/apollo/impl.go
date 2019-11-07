@@ -60,7 +60,7 @@ func newApolloConfiguration(url *common.URL) (*apolloConfiguration, error) {
 
 	appId := url.GetParam(constant.CONFIG_GROUP_KEY, DEFAULT_GROUP)
 	namespaces := url.GetParam(constant.CONFIG_NAMESPACE_KEY, getProperties(DEFAULT_GROUP))
-	readyConfig := &agollo.AppConfig{
+	c.appConf = &agollo.AppConfig{
 		AppId:         appId,
 		Cluster:       configCluster,
 		NamespaceName: namespaces,
@@ -68,7 +68,7 @@ func newApolloConfiguration(url *common.URL) (*apolloConfiguration, error) {
 	}
 
 	agollo.InitCustomConfig(func() (*agollo.AppConfig, error) {
-		return readyConfig, nil
+		return c.appConf, nil
 	})
 
 	return c, agollo.Start()
@@ -124,11 +124,27 @@ func (c *apolloConfiguration) GetConfig(key string, opts ...Option) (string, err
 	for _, opt := range opts {
 		opt(k)
 	}
-	config := agollo.GetConfig(key)
+	/**
+	 * when group is not null, we are getting startup configs(config file) from Config Center, for example:
+	 * key=dubbo.propertie
+	 */
+	if len(k.Group) != 0 {
+		config := agollo.GetConfig(key)
+		if config == nil {
+			return "", errors.New(fmt.Sprintf("nothiing in namespace:%s ", key))
+		}
+		return config.GetContent(agollo.Properties), nil
+	}
+
+	/**
+	 * when group is null, we are fetching governance rules(config item) from Config Center, for example:
+	 * namespace=use default, key =application.organization
+	 */
+	config := agollo.GetConfig(c.appConf.NamespaceName)
 	if config == nil {
 		return "", errors.New(fmt.Sprintf("nothiing in namespace:%s ", key))
 	}
-	return config.GetContent(agollo.Properties), nil
+	return config.GetStringValue(key, ""), nil
 }
 
 func (c *apolloConfiguration) getAddressWithProtocolPrefix(url *common.URL) string {
