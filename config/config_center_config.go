@@ -24,11 +24,11 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
+	"github.com/creasty/defaults"
 )
 
 import (
-	"github.com/creasty/defaults"
+	"github.com/apache/dubbo-go/common/constant"
 )
 
 type ConfigCenterConfig struct {
