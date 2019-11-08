@@ -149,6 +149,7 @@ func Load() {
 			}
 		}
 	}
+	GracefulShutdownInit()
 }
 
 // get rpc service for consumer
