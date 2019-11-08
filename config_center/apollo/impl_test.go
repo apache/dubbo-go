@@ -27,15 +27,15 @@ import (
 )
 
 import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/config_center/parser"
 	"github.com/apache/dubbo-go/remoting"
-)
-
-import (
-	"github.com/stretchr/testify/assert"
 )
 
 const (
