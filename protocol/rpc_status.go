@@ -73,3 +73,17 @@ func beginCount0(rpcStatus *RpcStatus) {
 func endCount0(rpcStatus *RpcStatus) {
 	atomic.AddInt32(&rpcStatus.active, -1)
 }
+
+func GetTotalActive() int32 {
+	var result int32 = 0
+	methodStatistics.Range(func(_, value interface{}) bool {
+		statics := value.(*sync.Map)
+		statics.Range(func(_, value interface{}) bool {
+			rpcStatus := value.(*RpcStatus)
+			result = result + rpcStatus.active
+			return true
+		})
+		return true
+	})
+	return result
+}
