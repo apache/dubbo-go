@@ -18,8 +18,11 @@ limitations under the License.
 package apollo
 
 import (
-	"github.com/apache/dubbo-go/config_center/parser"
 	"sync"
+)
+
+import (
+	"github.com/apache/dubbo-go/config_center/parser"
 )
 
 import (
