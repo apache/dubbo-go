@@ -18,11 +18,11 @@ limitations under the License.
 package apollo
 
 import (
-	"github.com/apache/dubbo-go/config_center"
+	"github.com/zouyx/agollo"
 )
 
 import (
-	"github.com/zouyx/agollo"
+	"github.com/apache/dubbo-go/config_center"
 )
 
 type apolloListener struct {
