@@ -26,7 +26,7 @@ import (
 )
 
 import (
-	"github.com/go-errors/errors"
+	"github.com/pkg/errors"
 	"github.com/zouyx/agollo"
 )
 
