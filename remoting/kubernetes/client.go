@@ -202,13 +202,15 @@ func (c *Client) maintenanceStatus() error {
 	c.wg.Add(1)
 
 	// try once
-	_, err := c.rawClient.CoreV1().Pods(c.ns).Watch(metav1.ListOptions{
+	watcher, err := c.rawClient.CoreV1().Pods(c.ns).Watch(metav1.ListOptions{
 		LabelSelector: fields.OneTermEqualSelector(DubboIOLabelKey, DubboIOLabelValue).String(),
 		Watch:         true,
 	})
 	if err != nil {
 		return perrors.WithMessagef(err, "try to watch the namespace (%s) pods", c.ns)
 	}
+
+	watcher.Stop()
 
 	// add wg, grace close the client
 	go c.maintenanceStatusLoop()
@@ -225,11 +227,14 @@ func (c *Client) maintenanceStatusLoop() {
 		logger.Info("maintenanceStatusLoop goroutine game over")
 	}()
 
+	var lastResourceVersion string
+
 	for {
 
 		wc, err := c.rawClient.CoreV1().Pods(c.ns).Watch(metav1.ListOptions{
-			LabelSelector: fields.OneTermEqualSelector(DubboIOLabelKey, DubboIOLabelValue).String(),
-			Watch:         true,
+			LabelSelector:   fields.OneTermEqualSelector(DubboIOLabelKey, DubboIOLabelValue).String(),
+			Watch:           true,
+			ResourceVersion: lastResourceVersion,
 		})
 		if err != nil {
 			logger.Warnf("watch the namespace (%s) pods: %v, retry after 2 seconds", c.ns, err)
@@ -264,6 +269,18 @@ func (c *Client) maintenanceStatusLoop() {
 						logger.Warnf("kubernetes watch api report err (%#v)", event)
 						continue
 					}
+
+					type resourceVersionGetter interface {
+						GetResourceVersion() string
+					}
+
+					o, ok := event.Object.(resourceVersionGetter)
+					if !ok {
+						continue
+					}
+
+					// record the last resource version avoid to sync all pod
+					lastResourceVersion = o.GetResourceVersion()
 
 					// check event object type
 					p, ok := event.Object.(*v1.Pod)
