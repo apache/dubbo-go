@@ -57,6 +57,7 @@ type ConsumerConfig struct {
 	References   map[string]*ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
 	ProtocolConf interface{}                 `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
 	FilterConf   interface{}                 `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf" `
+	ShutdownConfig *ShutdownConfig `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf" `
 }
 
 func (c *ConsumerConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {

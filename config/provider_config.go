@@ -44,11 +44,12 @@ type ProviderConfig struct {
 
 	ApplicationConfig *ApplicationConfig         `yaml:"application" json:"application,omitempty" property:"application"`
 	Registry          *RegistryConfig            `yaml:"registry" json:"registry,omitempty" property:"registry"`
-	Registries        map[string]*RegistryConfig `yaml:"registries" json:"registries,omitempty" property:"registries"`
-	Services          map[string]*ServiceConfig  `yaml:"services" json:"services,omitempty" property:"services"`
-	Protocols         map[string]*ProtocolConfig `yaml:"protocols" json:"protocols,omitempty" property:"protocols"`
-	ProtocolConf      interface{}                `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf" `
-	FilterConf        interface{}                `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf" `
+	Registries     map[string]*RegistryConfig `yaml:"registries" json:"registries,omitempty" property:"registries"`
+	Services       map[string]*ServiceConfig  `yaml:"services" json:"services,omitempty" property:"services"`
+	Protocols      map[string]*ProtocolConfig `yaml:"protocols" json:"protocols,omitempty" property:"protocols"`
+	ProtocolConf   interface{}                `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf" `
+	FilterConf     interface{}                `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf" `
+	ShutdownConfig *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf" `
 }
 
 func (c *ProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -106,6 +107,7 @@ func ProviderInit(confProFile string) error {
 	}
 
 	logger.Debugf("provider config{%#v}\n", providerConfig)
+
 	return nil
 }
 
