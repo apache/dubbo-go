@@ -18,6 +18,7 @@ limitations under the License.
 package apollo
 
 import (
+	"github.com/apache/dubbo-go/config_center/parser"
 	"sync"
 )
 
@@ -25,7 +26,6 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
 	. "github.com/apache/dubbo-go/config_center"
-	"github.com/apache/dubbo-go/config_center/parser"
 )
 
 func init() {
@@ -47,11 +47,11 @@ func (f *apolloConfigurationFactory) GetDynamicConfiguration(url *common.URL) (D
 	var err error
 	once.Do(func() {
 		dynamicConfiguration, err = newApolloConfiguration(url)
+		if err != nil {
+			return
+		}
+		dynamicConfiguration.SetParser(&parser.DefaultConfigurationParser{})
 	})
-	if err != nil {
-		return nil, err
-	}
-	dynamicConfiguration.SetParser(&parser.DefaultConfigurationParser{})
 	return dynamicConfiguration, err
 
 }
