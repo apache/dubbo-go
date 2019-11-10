@@ -20,7 +20,7 @@ package config
 import (
 	"os"
 	"os/signal"
-	"strconv"
+	"runtime/debug"
 	"sync"
 	"syscall"
 	"time"
@@ -28,7 +28,6 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/protocol"
 )
 
 /*
@@ -56,44 +55,96 @@ func GracefulShutdownInit() {
 		syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGILL, syscall.SIGTRAP,
 		syscall.SIGABRT, syscall.SIGEMT, syscall.SIGSYS,
 	)
-	for {
-		sig := <-signals
 
-		gracefulShutdownOnce.Do(func() {
-			logger.Infof("get signal %s, application is shutdown", sig.String())
+	go func() {
+		select {
+		case sig := <-signals:
+			logger.Infof("get signal %s, application will shutdown.", sig.String())
+			// gracefulShutdownOnce.Do(func() {
+			BeforeShutdown()
 
-			destroyAllRegistries()
-			// waiting for a short time so that the clients have enough time to get the notification that server shutdowns
-			// The value of configuration depends on how long the clients will get notification.
-			waitAndAcceptNewRequests()
-
-			// after this step, the new request will be rejected because the server is shutdown.
-			destroyProviderProtocols()
-
-			//
-
-
-			logger.Infof("Execute the custom callbacks.")
-			customCallbacks := extension.GetAllCustomShutdownCallbacks()
-			for callback := customCallbacks.Front(); callback != nil; callback = callback.Next() {
-				callback.Value.(func())()
+			switch sig {
+			// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
+			case syscall.SIGQUIT, syscall.SIGILL, syscall.SIGTRAP,
+				syscall.SIGABRT, syscall.SIGEMT, syscall.SIGSYS:
+				debug.WriteHeapDump(os.Stdout.Fd())
+			default:
+				time.AfterFunc(totalTimeout(), func() {
+					logger.Warn("Shutdown gracefully timeout, application will shutdown immediately. ")
+					os.Exit(0)
+				})
 			}
-		})
+			os.Exit(0)
+		}
+	}()
+}
+
+func totalTimeout() time.Duration {
+	var providerShutdown time.Duration = 0
+	if providerConfig != nil && providerConfig.ShutdownConfig != nil {
+		providerShutdown = providerConfig.ShutdownConfig.GetTimeout()
+	}
+
+	var consumerShutdown time.Duration = 0
+	if consumerConfig != nil && consumerConfig.ShutdownConfig != nil {
+		consumerShutdown = consumerConfig.ShutdownConfig.GetTimeout()
+	}
+
+	var timeout = providerShutdown
+	if consumerShutdown > providerShutdown {
+		timeout = consumerShutdown
+	}
+	return timeout
+}
+
+func BeforeShutdown() {
+
+	destroyAllRegistries()
+	// waiting for a short time so that the clients have enough time to get the notification that server shutdowns
+	// The value of configuration depends on how long the clients will get notification.
+	waitAndAcceptNewRequests()
+
+	// reject the new request, but keeping waiting for accepting requests
+	waitForReceivingRequests()
+
+	// If this application is not the provider, it will do nothing
+	destroyProviderProtocols()
+
+	// waiting for accepted requests to be processed.
+
+	// after this step, the response from other providers will be rejected.
+	// If this application is not the consumer, it will do nothing
+	destroyConsumerProtocols()
+
+	logger.Infof("Execute the custom callbacks.")
+	customCallbacks := extension.GetAllCustomShutdownCallbacks()
+	for callback := customCallbacks.Front(); callback != nil; callback = callback.Next() {
+		callback.Value.(func())()
 	}
 }
 
 func destroyAllRegistries() {
+	logger.Infof("Graceful shutdown --- Destroy all registries. ")
 	registryProtocol := extension.GetProtocol(constant.REGISTRY_KEY)
 	registryProtocol.Destroy()
 }
 
 func destroyConsumerProtocols() {
+	logger.Info("Graceful shutdown --- Destroy consumer's protocols. ")
 	if consumerConfig == nil || consumerConfig.ProtocolConf == nil {
 		return
 	}
 	destroyProtocols(consumerConfig.ProtocolConf)
 }
+
+/**
+ * destroy the provider's protocol.
+ * if the protocol is consumer's protocol too, we will keep it.
+ */
 func destroyProviderProtocols() {
+
+	logger.Info("Graceful shutdown --- Destroy provider's protocols. ")
+
 	if providerConfig == nil || providerConfig.ProtocolConf == nil {
 		return
 	}
@@ -103,82 +154,53 @@ func destroyProviderProtocols() {
 func destroyProtocols(protocolConf interface{}) {
 	protocols := protocolConf.(map[interface{}]interface{})
 	for name, _ := range protocols {
-		protocol := extension.GetProtocol(name.(string))
-		protocol.Destroy()
+		extension.GetProtocol(name.(string)).Destroy()
 	}
 }
 
 func waitAndAcceptNewRequests() {
 
+	logger.Info("Graceful shutdown --- Keep waiting and accept new requests for a short time. ")
 	if providerConfig == nil || providerConfig.ShutdownConfig == nil {
 		return
 	}
-	shutdownConfig := providerConfig.ShutdownConfig
 
-	timeout, err := strconv.ParseInt(shutdownConfig.AcceptNewRequestsTimeout, 0, 0)
-	if err != nil {
-		logger.Errorf("The timeout configuration of keeping accept new requests is invalid. Go next step!", err)
-		return
-	}
+	timeout := providerConfig.ShutdownConfig.GetStepTimeout()
 
-	// ignore this phase
+	// ignore this step
 	if timeout < 0 {
 		return
 	}
-
-	var duration = time.Duration(timeout) * time.Millisecond
-
-	time.Sleep(duration)
+	time.Sleep(timeout)
 }
 
-/**
- * this method will wait a short time until timeout or all requests have been processed.
- * this implementation use the active filter, so you need to add the filter into your application configuration
- * for example:
- * server.yml or client.yml
- *
- * filter: "active",
- *
- * see the ActiveFilter for more detail.
- * We use the bigger value between consumer's config and provider's config
- * if the application is both consumer and provider.
- * This method's behavior is a little bit complicated.
- */
-func waitForProcessingRequest()  {
-	var timeout int64 = 0
-	if providerConfig != nil && providerConfig.ShutdownConfig != nil {
-		timeout = waitingProcessedTimeout(providerConfig.ShutdownConfig)
-	}
-
-	if consumerConfig != nil && consumerConfig.ShutdownConfig != nil {
-		consumerTimeout := waitingProcessedTimeout(consumerConfig.ShutdownConfig)
-		if consumerTimeout > timeout {
-			timeout = consumerTimeout
-		}
-	}
-	if timeout <= 0{
+// for provider. It will wait for processing receiving requests
+func waitForReceivingRequests() {
+	logger.Info("Graceful shutdown --- Keep waiting until accepting requests finish or timeout. ")
+	if providerConfig == nil || providerConfig.ShutdownConfig == nil {
+		// ignore this step
 		return
 	}
+	waitingProcessedTimeout(providerConfig.ShutdownConfig)
+}
 
-	timeout = timeout * time.Millisecond.Nanoseconds()
+// for consumer. It will wait for the response of sending requests
+func waitForSendingRequests()  {
+	logger.Info("Graceful shutdown --- Keep waiting until sending requests getting response or timeout ")
+	if consumerConfig == nil || consumerConfig.ShutdownConfig == nil {
+		// ignore this step
+		return
+	}
+}
 
+func waitingProcessedTimeout(shutdownConfig *ShutdownConfig) {
+	timeout := shutdownConfig.GetStepTimeout()
+	if timeout <= 0 {
+		return
+	}
 	start := time.Now().UnixNano()
-
-	for time.Now().UnixNano() - start < timeout && protocol.GetTotalActive() > 0  {
+	for time.Now().UnixNano()-start < timeout.Nanoseconds() && !shutdownConfig.RequestsFinished {
 		// sleep 10 ms and then we check it again
 		time.Sleep(10 * time.Millisecond)
 	}
-}
-
-func waitingProcessedTimeout(shutdownConfig *ShutdownConfig) int64 {
-	if len(shutdownConfig.WaitingProcessRequestsTimeout) <=0 {
-		return 0
-	}
-	config, err := strconv.ParseInt(shutdownConfig.WaitingProcessRequestsTimeout, 0, 0)
-	if err != nil {
-		logger.Errorf("The configuration of shutdownConfig.WaitingProcessRequestsTimeout is invalid: %s",
-			shutdownConfig.WaitingProcessRequestsTimeout)
-		return 0
-	}
-	return config
 }

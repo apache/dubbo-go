@@ -173,9 +173,14 @@ func (r *zkRegistry) GetUrl() common.URL {
 }
 
 func (r *zkRegistry) Destroy() {
-	if r.configListener != nil {
-		r.configListener.Close()
-	}
+	/**
+	 * Don't r.listener.Close()
+	 * here we don't close the listener because
+	 * the listener will be close in Subscribe().
+	 * We can not close it here. If we do that,
+	 * a negative count error of r.wg will occur because
+	 * we close the listener twice.
+	 */
 	close(r.done)
 	r.wg.Wait()
 	r.closeRegisters()
