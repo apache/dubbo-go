@@ -109,7 +109,7 @@ func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 	}
 }
 func (l *RegistryConfigurationListener) Close() {
-	l.registry.wg.Done()
+	l.client.Close()
 }
 
 func (l *RegistryConfigurationListener) valid() bool {
