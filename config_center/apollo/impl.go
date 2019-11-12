@@ -80,10 +80,8 @@ func getChangeType(change agollo.ConfigChangeType) remoting.EventType {
 		return remoting.EventTypeAdd
 	case agollo.DELETED:
 		return remoting.EventTypeDel
-	case agollo.MODIFIED:
-		return remoting.EventTypeUpdate
 	default:
-		panic("unknown type: " + strconv.Itoa(int(change)))
+		return remoting.EventTypeUpdate
 	}
 }
 
