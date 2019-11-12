@@ -291,3 +291,8 @@ func TestExportWithApplicationConfig(t *testing.T) {
 	v2, _ := regProtocol.bounds.Load(getCacheKey(newUrl))
 	assert.NotNil(t, v2)
 }
+
+func TestGetProtocol(t *testing.T) {
+	singleton := GetProtocol()
+	assert.True(t, singleton == GetProtocol())
+}
