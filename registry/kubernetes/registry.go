@@ -84,7 +84,7 @@ func (r *kubernetesRegistry) RestartCallBack() bool {
 	for _, confIf := range services {
 		err := r.Register(confIf)
 		if err != nil {
-			logger.Errorf("(etcdV3ProviderRegistry)register(conf{%#v}) = error{%#v}",
+			logger.Errorf("(kubernetesProviderRegistry)register(conf{%#v}) = error{%#v}",
 				confIf, perrors.WithStack(err))
 			flag = false
 			break
@@ -222,7 +222,7 @@ func (r *kubernetesRegistry) registerConsumer(svc common.URL) error {
 	encodedURL := url.QueryEscape(fmt.Sprintf("consumer://%s%s?%s", localIP, svc.Path, params.Encode()))
 	dubboPath := fmt.Sprintf("/dubbo/%s/%s", svc.Service(), (common.RoleType(common.CONSUMER)).String())
 	if err := r.client.Create(path.Join(dubboPath, encodedURL), ""); err != nil {
-		return perrors.WithMessagef(err, "create k/v in etcd (path:%s, url:%s)", dubboPath, encodedURL)
+		return perrors.WithMessagef(err, "create k/v in kubernetes (path:%s, url:%s)", dubboPath, encodedURL)
 	}
 
 	return nil
