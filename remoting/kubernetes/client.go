@@ -242,6 +242,8 @@ func (c *Client) maintenanceStatusLoop() {
 			continue
 		}
 
+		logger.Infof("the old kubernetes client broken, collect the resource status from resource version (%s)", lastResourceVersion)
+
 		select {
 		case <-c.ctx.Done():
 			// the client stopped
@@ -281,6 +283,7 @@ func (c *Client) maintenanceStatusLoop() {
 
 					// record the last resource version avoid to sync all pod
 					lastResourceVersion = o.GetResourceVersion()
+					logger.Infof("kuberentes get the current resource version %v", lastResourceVersion)
 
 					// check event object type
 					p, ok := event.Object.(*v1.Pod)
