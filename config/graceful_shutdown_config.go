@@ -21,6 +21,7 @@ import (
 	"time"
 )
 import (
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 )
 
@@ -53,6 +54,10 @@ type ShutdownConfig struct {
 	// true -> all requests had been processed. In provider side it means that all requests are returned response to clients
 	// In consumer side, it means that all requests getting response from servers
 	RequestsFinished bool
+}
+
+func (config *ShutdownConfig) Prefix() string {
+	return constant.ShutdownConfigPrefix
 }
 
 func (config *ShutdownConfig) GetTimeout() time.Duration {
