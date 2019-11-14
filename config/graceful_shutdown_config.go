@@ -20,10 +20,10 @@ package config
 import (
 	"strconv"
 	"time"
-
+)
+import (
 	"github.com/apache/dubbo-go/common/logger"
 )
-
 const (
 	defaultTimeout  = 60 * time.Second
 	defaultStepTimeout = 10 * time.Second
