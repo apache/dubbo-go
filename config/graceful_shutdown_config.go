@@ -18,16 +18,17 @@
 package config
 
 import (
-	"strconv"
 	"time"
 )
 import (
 	"github.com/apache/dubbo-go/common/logger"
 )
+
 const (
-	defaultTimeout  = 60 * time.Second
+	defaultTimeout     = 60 * time.Second
 	defaultStepTimeout = 10 * time.Second
 )
+
 type ShutdownConfig struct {
 	/*
 	 * Total timeout. Even though we don't release all resources,
@@ -35,7 +36,7 @@ type ShutdownConfig struct {
 	 * default value is 60 * 1000 ms = 1 minutes
 	 * In general, it should be bigger than 3 * StepTimeout.
 	 */
-	Timeout string `yaml:"timeout" json:"timeout,omitempty" property:"timeout"`
+	Timeout string `default:"60s" yaml:"timeout" json:"timeout,omitempty" property:"timeout"`
 	/*
 	 * the timeout on each step. You should evaluate the response time of request
 	 * and the time that client noticed that server shutdown.
@@ -43,7 +44,7 @@ type ShutdownConfig struct {
 	 * and the 99.9% requests will return response in 2s, so the StepTimeout will be bigger than(10+2) * 1000ms,
 	 * maybe (10 + 2*3) * 1000ms is a good choice.
 	 */
-	StepTimeout string `yaml:"step_timeout" json:"step.timeout,omitempty" property:"step.timeout"`
+	StepTimeout string `default:"10s" yaml:"step_timeout" json:"step.timeout,omitempty" property:"step.timeout"`
 	// when we try to shutdown the application, we will reject the new requests. In most cases, you don't need to configure this.
 	RejectRequestHandler string `yaml:"reject_handler" json:"reject_handler,omitempty" property:"reject_handler"`
 	// true -> new request will be rejected.
@@ -55,21 +56,21 @@ type ShutdownConfig struct {
 }
 
 func (config *ShutdownConfig) GetTimeout() time.Duration {
-	result, err := strconv.ParseInt(config.Timeout, 0, 0)
+	result, err := time.ParseDuration(config.Timeout)
 	if err != nil {
 		logger.Errorf("The Timeout configuration is invalid: %s, and we will use the default value: %s",
 			config.Timeout, defaultTimeout.String(), err)
 		return defaultTimeout
 	}
-	return time.Millisecond * time.Duration(result)
+	return result
 }
 
 func (config *ShutdownConfig) GetStepTimeout() time.Duration {
-	result, err := strconv.ParseInt(config.StepTimeout, 0, 0)
+	result, err := time.ParseDuration(config.StepTimeout)
 	if err != nil {
 		logger.Errorf("The StepTimeout configuration is invalid: %s, and we will use the default value: %s",
 			config.Timeout, defaultStepTimeout.String(), err)
 		return defaultStepTimeout
 	}
-	return time.Millisecond * time.Duration(result)
+	return result
 }

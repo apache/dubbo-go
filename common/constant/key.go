@@ -71,8 +71,8 @@ const (
 	EXECUTE_LIMIT_KEY                      = "execute.limit"
 	DEFAULT_EXECUTE_LIMIT                  = "-1"
 	EXECUTE_REJECTED_EXECUTION_HANDLER_KEY = "execute.limit.rejected.handler"
-	PROVIDER_SHUTDOWN_FILTER = "pshutdown"
-	CONSUMER_SHUTDOWN_FILTER = "cshutdown"
+	PROVIDER_SHUTDOWN_FILTER               = "pshutdown"
+	CONSUMER_SHUTDOWN_FILTER               = "cshutdown"
 )
 
 const (

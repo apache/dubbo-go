@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	customShutdownCallbacks     = list.New()
+	customShutdownCallbacks = list.New()
 )
 
 /**
@@ -44,7 +44,7 @@ var (
  * the benefit of that mechanism is low.
  * And it may introduce much complication for another users.
  */
-func AddCustomShutdownCallback(callback func())  {
+func AddCustomShutdownCallback(callback func()) {
 	customShutdownCallbacks.PushBack(callback)
 }
 
