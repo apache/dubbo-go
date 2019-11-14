@@ -43,7 +43,7 @@ const (
 	mockCluster   = "dev"
 	mockNamespace = "mockDubbog.properties"
 	mockNotifyRes = `[{
-	"namespaceName": "mockDubbog",
+	"namespaceName": "mockDubbog.properties",
 	"notificationId": 53050,
 	"messages": {
 		"details": {
