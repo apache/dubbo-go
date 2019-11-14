@@ -116,7 +116,7 @@ func BeforeShutdown() {
 	// If this application is not the consumer, it will do nothing
 	destroyConsumerProtocols()
 
-	logger.Infof("Execute the custom callbacks.")
+	logger.Infof("Graceful shutdown --- Execute the custom callbacks.")
 	customCallbacks := extension.GetAllCustomShutdownCallbacks()
 	for callback := customCallbacks.Front(); callback != nil; callback = callback.Next() {
 		callback.Value.(func())()
@@ -152,12 +152,12 @@ func destroyProviderProtocols() {
 		return
 	}
 
-	consumerProtocol := make(map[string]interface{}, 0)
+	consumerProtocol := make(map[interface{}]interface{}, 0)
 	if consumerConfig != nil && consumerConfig.ProtocolConf != nil {
-		consumerProtocol = consumerConfig.ProtocolConf.(map[string]interface{})
+		consumerProtocol = consumerConfig.ProtocolConf.(map[interface{}]interface{})
 	}
 
-	protocols := providerConfig.ProtocolConf.(map[string]interface{})
+	protocols := providerConfig.ProtocolConf.(map[interface{}]interface{})
 	for name, _ := range protocols {
 		_, found := consumerProtocol[name]
 
@@ -165,7 +165,7 @@ func destroyProviderProtocols() {
 		if found {
 			continue
 		}
-		extension.GetProtocol(name).Destroy()
+		extension.GetProtocol(name.(string)).Destroy()
 	}
 }
 
@@ -202,6 +202,7 @@ func waitForSendingRequests() {
 		// ignore this step
 		return
 	}
+	waitingProcessedTimeout(consumerConfig.ShutdownConfig)
 }
 
 func waitingProcessedTimeout(shutdownConfig *ShutdownConfig) {

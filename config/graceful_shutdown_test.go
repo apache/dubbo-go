@@ -19,12 +19,16 @@ package config
 
 import (
 	"testing"
-
+)
+import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/protocol"
 )
 
+func TestGracefulShutdownInit(t *testing.T) {
+	GracefulShutdownInit()
+}
 
 func TestBeforeShutdown(t *testing.T) {
 	extension.SetProtocol("registry", func() protocol.Protocol {
@@ -34,23 +38,57 @@ func TestBeforeShutdown(t *testing.T) {
 		return &mockRegistryProtocol{}
 	})
 
+	extension.SetProtocol("mock", func() protocol.Protocol {
+		return &mockRegistryProtocol{}
+	})
+
+
+
 	protocolConfigs := make(map[interface{}]interface{})
 	protocolConfigs[constant.DUBBO] = "aaa"
-	providerConfig = &ProviderConfig{
-		ShutdownConfig: &ShutdownConfig{
-			Timeout:                       "1",
-			AcceptNewRequestsTimeout:      "1",
-			WaitingProcessRequestsTimeout: "1",
-		},
-		ProtocolConf: protocolConfigs,
-	}
+
+	// without configuration
+	BeforeShutdown()
+
 	consumerConfig = &ConsumerConfig{
 		ProtocolConf: protocolConfigs,
 		ShutdownConfig: &ShutdownConfig{
-			Timeout:                       "1",
-			AcceptNewRequestsTimeout:      "1",
-			WaitingProcessRequestsTimeout: "1",
+			Timeout:     "1",
+			StepTimeout: "1000",
 		},
 	}
+
+	providerProtocols := make(map[interface{}]interface{})
+	providerProtocols[constant.DUBBO] = "aaa"
+
+	providerProtocols["mock"] = "aaa"
+
+	providerConfig = &ProviderConfig{
+		ShutdownConfig: &ShutdownConfig{
+			Timeout:     "1",
+			StepTimeout: "1000",
+		},
+		ProtocolConf: providerProtocols,
+	}
+	// test destroy protocol
+	BeforeShutdown()
+
+	providerConfig = &ProviderConfig{
+		ShutdownConfig: &ShutdownConfig{
+			Timeout:     "1",
+			StepTimeout: "-1",
+		},
+		ProtocolConf: protocolConfigs,
+	}
+
+	consumerConfig = &ConsumerConfig{
+		ProtocolConf: protocolConfigs,
+		ShutdownConfig: &ShutdownConfig{
+			Timeout:     "1",
+			StepTimeout: "-1",
+		},
+	}
+
+	// test ignore steps
 	BeforeShutdown()
 }
