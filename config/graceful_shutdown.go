@@ -21,10 +21,11 @@ import (
 	"os"
 	"os/signal"
 	"runtime/debug"
-	"sync"
 	"syscall"
 	"time"
+)
 
+import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
@@ -45,7 +46,6 @@ import (
  * So this signal will be ignored.
  *
  */
-var gracefulShutdownOnce = sync.Once{}
 
 func GracefulShutdownInit() {
 
