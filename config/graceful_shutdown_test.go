@@ -42,8 +42,6 @@ func TestBeforeShutdown(t *testing.T) {
 		return &mockRegistryProtocol{}
 	})
 
-
-
 	protocolConfigs := make(map[interface{}]interface{})
 	protocolConfigs[constant.DUBBO] = "aaa"
 
@@ -54,7 +52,7 @@ func TestBeforeShutdown(t *testing.T) {
 		ProtocolConf: protocolConfigs,
 		ShutdownConfig: &ShutdownConfig{
 			Timeout:     "1",
-			StepTimeout: "1000",
+			StepTimeout: "1s",
 		},
 	}
 
@@ -66,7 +64,7 @@ func TestBeforeShutdown(t *testing.T) {
 	providerConfig = &ProviderConfig{
 		ShutdownConfig: &ShutdownConfig{
 			Timeout:     "1",
-			StepTimeout: "1000",
+			StepTimeout: "1s",
 		},
 		ProtocolConf: providerProtocols,
 	}
@@ -76,7 +74,7 @@ func TestBeforeShutdown(t *testing.T) {
 	providerConfig = &ProviderConfig{
 		ShutdownConfig: &ShutdownConfig{
 			Timeout:     "1",
-			StepTimeout: "-1",
+			StepTimeout: "-1s",
 		},
 		ProtocolConf: protocolConfigs,
 	}
@@ -85,7 +83,7 @@ func TestBeforeShutdown(t *testing.T) {
 		ProtocolConf: protocolConfigs,
 		ShutdownConfig: &ShutdownConfig{
 			Timeout:     "1",
-			StepTimeout: "-1",
+			StepTimeout: "-1s",
 		},
 	}
 
