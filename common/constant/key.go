@@ -114,6 +114,7 @@ const (
 	ProtocolConfigPrefix       = "dubbo.protocols."
 	ProviderConfigPrefix       = "dubbo.provider."
 	ConsumerConfigPrefix       = "dubbo.consumer."
+	ShutdownConfigPrefix       = "dubbo.shutdown."
 )
 
 const (
