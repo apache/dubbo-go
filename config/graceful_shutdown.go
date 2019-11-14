@@ -79,24 +79,6 @@ func GracefulShutdownInit() {
 	}()
 }
 
-func totalTimeout() time.Duration {
-	var providerShutdown time.Duration = 0
-	if providerConfig != nil && providerConfig.ShutdownConfig != nil {
-		providerShutdown = providerConfig.ShutdownConfig.GetTimeout()
-	}
-
-	var consumerShutdown time.Duration = 0
-	if consumerConfig != nil && consumerConfig.ShutdownConfig != nil {
-		consumerShutdown = consumerConfig.ShutdownConfig.GetTimeout()
-	}
-
-	var timeout = providerShutdown
-	if consumerShutdown > providerShutdown {
-		timeout = consumerShutdown
-	}
-	return timeout
-}
-
 func BeforeShutdown() {
 
 	destroyAllRegistries()
@@ -104,6 +86,7 @@ func BeforeShutdown() {
 	// The value of configuration depends on how long the clients will get notification.
 	waitAndAcceptNewRequests()
 
+	time.Sleep(1 * time.Minute)
 	// reject the new request, but keeping waiting for accepting requests
 	waitForReceivingRequests()
 
@@ -116,7 +99,7 @@ func BeforeShutdown() {
 	// If this application is not the consumer, it will do nothing
 	destroyConsumerProtocols()
 
-	logger.Infof("Graceful shutdown --- Execute the custom callbacks.")
+	logger.Info("Graceful shutdown --- Execute the custom callbacks.")
 	customCallbacks := extension.GetAllCustomShutdownCallbacks()
 	for callback := customCallbacks.Front(); callback != nil; callback = callback.Next() {
 		callback.Value.(func())()
@@ -124,7 +107,7 @@ func BeforeShutdown() {
 }
 
 func destroyAllRegistries() {
-	logger.Infof("Graceful shutdown --- Destroy all registries. ")
+	logger.Info("Graceful shutdown --- Destroy all registries. ")
 	registryProtocol := extension.GetProtocol(constant.REGISTRY_KEY)
 	registryProtocol.Destroy()
 }
@@ -215,4 +198,22 @@ func waitingProcessedTimeout(shutdownConfig *ShutdownConfig) {
 		// sleep 10 ms and then we check it again
 		time.Sleep(10 * time.Millisecond)
 	}
+}
+
+func totalTimeout() time.Duration {
+	var providerShutdown time.Duration = 0
+	if providerConfig != nil && providerConfig.ShutdownConfig != nil {
+		providerShutdown = providerConfig.ShutdownConfig.GetTimeout()
+	}
+
+	var consumerShutdown time.Duration = 0
+	if consumerConfig != nil && consumerConfig.ShutdownConfig != nil {
+		consumerShutdown = consumerConfig.ShutdownConfig.GetTimeout()
+	}
+
+	var timeout = providerShutdown
+	if consumerShutdown > providerShutdown {
+		timeout = consumerShutdown
+	}
+	return timeout
 }
