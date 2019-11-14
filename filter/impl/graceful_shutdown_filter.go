@@ -19,7 +19,9 @@ package impl
 
 import (
 	"sync/atomic"
+)
 
+import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
@@ -34,7 +36,9 @@ func init() {
 		activeCount:    0,
 		shutdownConfig: config.GetConsumerConfig().ShutdownConfig,
 	}
-	var providerFilter = &gracefulShutdownFilter{activeCount: 0}
+	var providerFilter = &gracefulShutdownFilter{activeCount: 0,
+		shutdownConfig: config.GetProviderConfig().ShutdownConfig,
+	}
 
 	extension.SetFilter(constant.CONSUMER_SHUTDOWN_FILTER, func() filter.Filter {
 		return consumerFiler
@@ -62,7 +66,7 @@ func (gf *gracefulShutdownFilter) Invoke(invoker protocol.Invoker, invocation pr
 func (gf *gracefulShutdownFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	atomic.AddInt32(&gf.activeCount, -1)
 	// although this isn't thread safe, it won't be a problem if the gf.rejectNewRequest() is true.
-	if gf.activeCount <= 0 {
+	if gf.shutdownConfig != nil && gf.activeCount <= 0 {
 		gf.shutdownConfig.RequestsFinished = true
 	}
 	return result
