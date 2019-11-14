@@ -7,6 +7,9 @@ config_center:
   address: 106.12.25.204:8080
   group: testApplication_yang
   cluster: dev
+  # 'config_file' is not necessary ,default : dubbo.properties
+  # but if you want to change config file ,just open this item
+#  config_file: mockDubbog
 
 # application config required
 application:
