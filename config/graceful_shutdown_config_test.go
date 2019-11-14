@@ -39,8 +39,8 @@ func TestShutdownConfig_GetTimeout(t *testing.T) {
 	assert.Equal(t, 10*time.Second, config.GetStepTimeout())
 
 	config = ShutdownConfig{
-		Timeout:     "34",
-		StepTimeout: "79",
+		Timeout:     "34ms",
+		StepTimeout: "79ms",
 	}
 
 	assert.Equal(t, 34*time.Millisecond, config.GetTimeout())
