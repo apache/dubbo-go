@@ -110,9 +110,9 @@ func BeforeShutdown() {
 	// If this application is not the provider, it will do nothing
 	destroyProviderProtocols()
 
-	// waiting for accepted requests to be processed.
+	// reject sending the new request, and waiting for response of sending requests
+	waitForSendingRequests()
 
-	// after this step, the response from other providers will be rejected.
 	// If this application is not the consumer, it will do nothing
 	destroyConsumerProtocols()
 
@@ -134,7 +134,10 @@ func destroyConsumerProtocols() {
 	if consumerConfig == nil || consumerConfig.ProtocolConf == nil {
 		return
 	}
-	destroyProtocols(consumerConfig.ProtocolConf)
+	protocols := consumerConfig.ProtocolConf.(map[interface{}]interface{})
+	for name, _ := range protocols {
+		extension.GetProtocol(name.(string)).Destroy()
+	}
 }
 
 /**
@@ -148,13 +151,21 @@ func destroyProviderProtocols() {
 	if providerConfig == nil || providerConfig.ProtocolConf == nil {
 		return
 	}
-	destroyProtocols(providerConfig.ProtocolConf)
-}
 
-func destroyProtocols(protocolConf interface{}) {
-	protocols := protocolConf.(map[interface{}]interface{})
+	consumerProtocol := make(map[string]interface{}, 0)
+	if consumerConfig != nil && consumerConfig.ProtocolConf != nil {
+		consumerProtocol = consumerConfig.ProtocolConf.(map[string]interface{})
+	}
+
+	protocols := providerConfig.ProtocolConf.(map[string]interface{})
 	for name, _ := range protocols {
-		extension.GetProtocol(name.(string)).Destroy()
+		_, found := consumerProtocol[name]
+
+		// the protocol is the consumer's protocol, we can not destroy it.
+		if found {
+			continue
+		}
+		extension.GetProtocol(name).Destroy()
 	}
 }
 
@@ -185,7 +196,7 @@ func waitForReceivingRequests() {
 }
 
 // for consumer. It will wait for the response of sending requests
-func waitForSendingRequests()  {
+func waitForSendingRequests() {
 	logger.Info("Graceful shutdown --- Keep waiting until sending requests getting response or timeout ")
 	if consumerConfig == nil || consumerConfig.ShutdownConfig == nil {
 		// ignore this step
