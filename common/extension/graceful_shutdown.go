@@ -22,8 +22,6 @@ import (
 )
 
 var (
-	// SystemShutdownCallbackNames = []string{"registry"}
-	// systemShutdownCallbacks     = make(map[string]func())
 	customShutdownCallbacks     = list.New()
 )
 
