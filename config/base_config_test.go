@@ -29,6 +29,7 @@ import (
 	"github.com/apache/dubbo-go/common/config"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/config_center"
+	_ "github.com/apache/dubbo-go/config_center/apollo"
 )
 
 func Test_refresh(t *testing.T) {
