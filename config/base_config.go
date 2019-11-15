@@ -47,7 +47,7 @@ type BaseConfig struct {
 }
 
 func (c *BaseConfig) startConfigCenter(ctx context.Context) error {
-	url, err := common.NewURL(ctx, c.ConfigCenterConfig.Address, common.WithProtocol(c.ConfigCenterConfig.Protocol))
+	url, err := common.NewURL(ctx, c.ConfigCenterConfig.Address, common.WithProtocol(c.ConfigCenterConfig.Protocol), common.WithParams(c.ConfigCenterConfig.GetUrlMap()))
 	if err != nil {
 		return err
 	}

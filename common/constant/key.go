@@ -100,6 +100,9 @@ const (
 
 const (
 	CONFIG_NAMESPACE_KEY  = "config.namespace"
+	CONFIG_GROUP_KEY      = "config.group"
+	CONFIG_CLUSTER_KEY    = "config.cluster"
+	CONFIG_CHECK_KEY      = "config.check"
 	CONFIG_TIMEOUT_KET    = "config.timeout"
 	CONFIG_VERSION_KEY    = "configVersion"
 	COMPATIBLE_CONFIG_KEY = "compatible_config"

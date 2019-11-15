@@ -19,11 +19,16 @@ package config
 
 import (
 	"context"
+	"net/url"
 	"time"
 )
 
 import (
 	"github.com/creasty/defaults"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/constant"
 )
 
 type ConfigCenterConfig struct {
@@ -35,6 +40,7 @@ type ConfigCenterConfig struct {
 	Username      string `yaml:"username" json:"username,omitempty"`
 	Password      string `yaml:"password" json:"password,omitempty"`
 	ConfigFile    string `default:"dubbo.properties" yaml:"config_file"  json:"config_file,omitempty"`
+	Namespace     string `default:"dubbo.properties" yaml:"namespace"  json:"namespace,omitempty"`
 	AppConfigFile string `default:"dubbo.properties" yaml:"app_config_file"  json:"app_config_file,omitempty"`
 	TimeoutStr    string `yaml:"timeout"  json:"timeout,omitempty"`
 	timeout       time.Duration
@@ -49,4 +55,12 @@ func (c *ConfigCenterConfig) UnmarshalYAML(unmarshal func(interface{}) error) er
 		return err
 	}
 	return nil
+}
+
+func (c *ConfigCenterConfig) GetUrlMap() url.Values {
+	urlMap := url.Values{}
+	urlMap.Set(constant.CONFIG_NAMESPACE_KEY, c.Namespace)
+	urlMap.Set(constant.CONFIG_GROUP_KEY, c.Group)
+	urlMap.Set(constant.CONFIG_CLUSTER_KEY, c.Cluster)
+	return urlMap
 }
