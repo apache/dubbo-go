@@ -42,6 +42,7 @@ import (
  *
  * So the signals SIGKILL, SIGSTOP, SIGHUP, SIGINT, SIGTERM, SIGQUIT, SIGILL, SIGTRAP, SIGABRT, SIGSTKFLT, SIGEMT, SIGSYS
  * should be processed.
+ * syscall.SIGEMT cannot be found in CI
  * It's seems that the Unix/Linux does not have the signal SIGSTKFLT. https://github.com/golang/go/issues/33381
  * So this signal will be ignored.
  *
@@ -53,7 +54,7 @@ func GracefulShutdownInit() {
 
 	signal.Notify(signals, os.Interrupt, os.Kill, syscall.SIGKILL, syscall.SIGSTOP,
 		syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGILL, syscall.SIGTRAP,
-		syscall.SIGABRT, syscall.SIGEMT, syscall.SIGSYS,
+		syscall.SIGABRT, syscall.SIGSYS,
 	)
 
 	go func() {
@@ -66,7 +67,7 @@ func GracefulShutdownInit() {
 			switch sig {
 			// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
 			case syscall.SIGQUIT, syscall.SIGILL, syscall.SIGTRAP,
-				syscall.SIGABRT, syscall.SIGEMT, syscall.SIGSYS:
+				syscall.SIGABRT, syscall.SIGSYS:
 				debug.WriteHeapDump(os.Stdout.Fd())
 			default:
 				time.AfterFunc(totalTimeout(), func() {
