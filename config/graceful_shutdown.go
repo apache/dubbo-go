@@ -26,6 +26,10 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/container/gxset"
+)
+
+import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
@@ -60,7 +64,7 @@ func GracefulShutdownInit() {
 	go func() {
 		select {
 		case sig := <-signals:
-			logger.Infof("get signal %s, application will shutdown.", sig.String())
+			logger.Infof("get signal %s, application will shutdown.", sig)
 			// gracefulShutdownOnce.Do(func() {
 			BeforeShutdown()
 
@@ -87,18 +91,20 @@ func BeforeShutdown() {
 	// The value of configuration depends on how long the clients will get notification.
 	waitAndAcceptNewRequests()
 
-	time.Sleep(1 * time.Minute)
 	// reject the new request, but keeping waiting for accepting requests
 	waitForReceivingRequests()
 
+	// we fetch the protocols from Consumer.References. Consumer.ProtocolConfig doesn't contains all protocol, like jsonrpc
+	consumerProtocols := getConsumerProtocols()
+
 	// If this application is not the provider, it will do nothing
-	destroyProviderProtocols()
+	destroyProviderProtocols(consumerProtocols)
 
 	// reject sending the new request, and waiting for response of sending requests
 	waitForSendingRequests()
 
 	// If this application is not the consumer, it will do nothing
-	destroyConsumerProtocols()
+	destroyConsumerProtocols(consumerProtocols)
 
 	logger.Info("Graceful shutdown --- Execute the custom callbacks.")
 	customCallbacks := extension.GetAllCustomShutdownCallbacks()
@@ -113,13 +119,9 @@ func destroyAllRegistries() {
 	registryProtocol.Destroy()
 }
 
-func destroyConsumerProtocols() {
+func destroyConsumerProtocols(consumerProtocols *gxset.HashSet) {
 	logger.Info("Graceful shutdown --- Destroy consumer's protocols. ")
-	if consumerConfig == nil || consumerConfig.ProtocolConf == nil {
-		return
-	}
-	protocols := consumerConfig.ProtocolConf.(map[interface{}]interface{})
-	for name, _ := range protocols {
+	for name := range consumerProtocols.Items {
 		extension.GetProtocol(name.(string)).Destroy()
 	}
 }
@@ -128,7 +130,7 @@ func destroyConsumerProtocols() {
  * destroy the provider's protocol.
  * if the protocol is consumer's protocol too, we will keep it.
  */
-func destroyProviderProtocols() {
+func destroyProviderProtocols(consumerProtocols *gxset.HashSet) {
 
 	logger.Info("Graceful shutdown --- Destroy provider's protocols. ")
 
@@ -136,17 +138,11 @@ func destroyProviderProtocols() {
 		return
 	}
 
-	consumerProtocol := make(map[interface{}]interface{}, 0)
-	if consumerConfig != nil && consumerConfig.ProtocolConf != nil {
-		consumerProtocol = consumerConfig.ProtocolConf.(map[interface{}]interface{})
-	}
-
 	protocols := providerConfig.ProtocolConf.(map[interface{}]interface{})
-	for name, _ := range protocols {
-		_, found := consumerProtocol[name]
+	for name := range protocols {
 
-		// the protocol is the consumer's protocol, we can not destroy it.
-		if found {
+		// the protocol is the consumer's protocol too, we can not destroy it.
+		if consumerProtocols.Contains(name) {
 			continue
 		}
 		extension.GetProtocol(name.(string)).Destroy()
@@ -194,20 +190,21 @@ func waitingProcessedTimeout(shutdownConfig *ShutdownConfig) {
 	if timeout <= 0 {
 		return
 	}
-	start := time.Now().UnixNano()
-	for time.Now().UnixNano()-start < timeout.Nanoseconds() && !shutdownConfig.RequestsFinished {
+	start := time.Now()
+
+	for time.Now().After(start.Add(timeout)) && !shutdownConfig.RequestsFinished {
 		// sleep 10 ms and then we check it again
 		time.Sleep(10 * time.Millisecond)
 	}
 }
 
 func totalTimeout() time.Duration {
-	var providerShutdown time.Duration = 0
+	var providerShutdown time.Duration
 	if providerConfig != nil && providerConfig.ShutdownConfig != nil {
 		providerShutdown = providerConfig.ShutdownConfig.GetTimeout()
 	}
 
-	var consumerShutdown time.Duration = 0
+	var consumerShutdown time.Duration
 	if consumerConfig != nil && consumerConfig.ShutdownConfig != nil {
 		consumerShutdown = consumerConfig.ShutdownConfig.GetTimeout()
 	}
@@ -217,4 +214,19 @@ func totalTimeout() time.Duration {
 		timeout = consumerShutdown
 	}
 	return timeout
+}
+
+/*
+ * we can not get the protocols from consumerConfig because some protocol don't have configuration, like jsonrpc.
+ */
+func getConsumerProtocols() *gxset.HashSet {
+	result := gxset.NewSet()
+	if consumerConfig == nil || consumerConfig.References == nil {
+		return result
+	}
+
+	for _, reference := range consumerConfig.References {
+		result.Add(reference.Protocol)
+	}
+	return result
 }
