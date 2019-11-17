@@ -20,6 +20,7 @@ package config
 import (
 	"testing"
 )
+
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -42,7 +43,7 @@ func TestBeforeShutdown(t *testing.T) {
 		return &mockRegistryProtocol{}
 	})
 
-	protocolConfigs := make(map[interface{}]interface{})
+	protocolConfigs := make(map[interface{}]interface{}, 16)
 	protocolConfigs[constant.DUBBO] = "aaa"
 
 	// without configuration
@@ -56,7 +57,7 @@ func TestBeforeShutdown(t *testing.T) {
 		},
 	}
 
-	providerProtocols := make(map[interface{}]interface{})
+	providerProtocols := make(map[interface{}]interface{}, 16)
 	providerProtocols[constant.DUBBO] = "aaa"
 
 	providerProtocols["mock"] = "aaa"

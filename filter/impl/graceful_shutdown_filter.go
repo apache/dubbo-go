@@ -33,10 +33,9 @@ import (
 
 func init() {
 	var consumerFiler = &gracefulShutdownFilter{
-		activeCount:    0,
 		shutdownConfig: config.GetConsumerConfig().ShutdownConfig,
 	}
-	var providerFilter = &gracefulShutdownFilter{activeCount: 0,
+	var providerFilter = &gracefulShutdownFilter{
 		shutdownConfig: config.GetProviderConfig().ShutdownConfig,
 	}
 

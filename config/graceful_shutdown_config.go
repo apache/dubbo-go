@@ -20,6 +20,7 @@ package config
 import (
 	"time"
 )
+
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
@@ -63,7 +64,7 @@ func (config *ShutdownConfig) Prefix() string {
 func (config *ShutdownConfig) GetTimeout() time.Duration {
 	result, err := time.ParseDuration(config.Timeout)
 	if err != nil {
-		logger.Errorf("The Timeout configuration is invalid: %s, and we will use the default value: %s",
+		logger.Errorf("The Timeout configuration is invalid: %s, and we will use the default value: %s, err: %v",
 			config.Timeout, defaultTimeout.String(), err)
 		return defaultTimeout
 	}
@@ -73,8 +74,8 @@ func (config *ShutdownConfig) GetTimeout() time.Duration {
 func (config *ShutdownConfig) GetStepTimeout() time.Duration {
 	result, err := time.ParseDuration(config.StepTimeout)
 	if err != nil {
-		logger.Errorf("The StepTimeout configuration is invalid: %s, and we will use the default value: %s",
-			config.Timeout, defaultStepTimeout.String(), err)
+		logger.Errorf("The StepTimeout configuration is invalid: %s, and we will use the default value: %s, err: %v",
+			config.StepTimeout, defaultStepTimeout.String(), err)
 		return defaultStepTimeout
 	}
 	return result
