@@ -200,6 +200,10 @@ func (r *zkRegistry) RestartCallBack() bool {
 		}
 		logger.Infof("success to re-register service :%v", confIf.Key())
 	}
+	r.listener = zookeeper.NewZkEventListener(r.client)
+	r.configListener = NewRegistryConfigurationListener(r.client, r)
+	r.dataListener = NewRegistryDataListener(r.configListener)
+
 	return flag
 }
 
@@ -422,15 +426,18 @@ func (r *zkRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyLi
 		for {
 			if serviceEvent, err := listener.Next(); err != nil {
 				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
+				if err.Error() == "listener stopped" {
+					break
+				}
 				listener.Close()
-				return
+				break
 			} else {
 				logger.Infof("update begin, service event: %v", serviceEvent.String())
 				notifyListener.Notify(serviceEvent)
 			}
 
 		}
-
+		time.Sleep(1e9)
 	}
 }
 
