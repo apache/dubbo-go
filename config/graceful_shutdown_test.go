@@ -43,31 +43,37 @@ func TestBeforeShutdown(t *testing.T) {
 		return &mockRegistryProtocol{}
 	})
 
-	protocolConfigs := make(map[interface{}]interface{}, 16)
-	protocolConfigs[constant.DUBBO] = "aaa"
+	// protocolConfigs := make(map[interface{}]interface{}, 16)
+	consumerReferences := map[string]*ReferenceConfig{}
+	consumerReferences[constant.DUBBO] = &ReferenceConfig{
+		Protocol: constant.DUBBO,
+	}
 
 	// without configuration
 	BeforeShutdown()
 
 	consumerConfig = &ConsumerConfig{
-		ProtocolConf: protocolConfigs,
+		References: consumerReferences,
 		ShutdownConfig: &ShutdownConfig{
 			Timeout:     "1",
 			StepTimeout: "1s",
-		},
+		}}
+
+	providerProtocols := map[string]*ProtocolConfig{}
+	providerProtocols[constant.DUBBO] = &ProtocolConfig{
+		Name: constant.DUBBO,
 	}
 
-	providerProtocols := make(map[interface{}]interface{}, 16)
-	providerProtocols[constant.DUBBO] = "aaa"
-
-	providerProtocols["mock"] = "aaa"
+	providerProtocols["mock"] = &ProtocolConfig{
+		Name: "mock",
+	}
 
 	providerConfig = &ProviderConfig{
 		ShutdownConfig: &ShutdownConfig{
 			Timeout:     "1",
 			StepTimeout: "1s",
 		},
-		ProtocolConf: providerProtocols,
+		Protocols: providerProtocols,
 	}
 	// test destroy protocol
 	BeforeShutdown()
@@ -77,11 +83,11 @@ func TestBeforeShutdown(t *testing.T) {
 			Timeout:     "1",
 			StepTimeout: "-1s",
 		},
-		ProtocolConf: protocolConfigs,
+		Protocols: providerProtocols,
 	}
 
 	consumerConfig = &ConsumerConfig{
-		ProtocolConf: protocolConfigs,
+		References: consumerReferences,
 		ShutdownConfig: &ShutdownConfig{
 			Timeout:     "1",
 			StepTimeout: "-1s",

@@ -134,18 +134,17 @@ func destroyProviderProtocols(consumerProtocols *gxset.HashSet) {
 
 	logger.Info("Graceful shutdown --- Destroy provider's protocols. ")
 
-	if providerConfig == nil || providerConfig.ProtocolConf == nil {
+	if providerConfig == nil || providerConfig.Protocols == nil {
 		return
 	}
 
-	protocols := providerConfig.ProtocolConf.(map[interface{}]interface{})
-	for name := range protocols {
+	for _, protocol := range providerConfig.Protocols {
 
 		// the protocol is the consumer's protocol too, we can not destroy it.
-		if consumerProtocols.Contains(name) {
+		if consumerProtocols.Contains(protocol.Name) {
 			continue
 		}
-		extension.GetProtocol(name.(string)).Destroy()
+		extension.GetProtocol(protocol.Name).Destroy()
 	}
 }
 
