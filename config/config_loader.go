@@ -149,6 +149,8 @@ func Load() {
 			}
 		}
 	}
+	// init the shutdown callback
+	GracefulShutdownInit()
 }
 
 // get rpc service for consumer
