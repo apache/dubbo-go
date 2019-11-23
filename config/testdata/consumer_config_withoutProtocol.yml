@@ -48,6 +48,10 @@ references:
         "soa.com.ikurento.user.UserProvider"
       "forks": 5
 
+shutdown_conf:
+  timeout: 60s
+  step_timeout: 10s
+
 protocol_conf:
   dubbo:
     reconnect_interval: 0
