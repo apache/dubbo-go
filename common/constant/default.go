@@ -46,8 +46,8 @@ const (
 const (
 	DEFAULT_KEY               = "default"
 	PREFIX_DEFAULT_KEY        = "default."
-	DEFAULT_SERVICE_FILTERS   = "echo,token,accesslog,tps,execute"
-	DEFAULT_REFERENCE_FILTERS = ""
+	DEFAULT_SERVICE_FILTERS   = "echo,token,accesslog,tps,execute,pshutdown"
+	DEFAULT_REFERENCE_FILTERS = "cshutdown"
 	GENERIC_REFERENCE_FILTERS = "generic"
 	GENERIC                   = "$invoke"
 	ECHO                      = "$echo"
