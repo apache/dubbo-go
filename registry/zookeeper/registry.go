@@ -406,7 +406,9 @@ func (r *zkRegistry) subscribe(conf *common.URL) (registry.Listener, error) {
 
 //subscribe from registry
 func (r *zkRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
+	n := 0
 	for {
+		n++
 		if !r.IsAvailable() {
 			logger.Warnf("event listener game over.")
 			return
@@ -422,12 +424,10 @@ func (r *zkRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyLi
 			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
 			continue
 		}
-		n := 0
-		for {
-			n++
+		for i := 0; ; i++ {
 			if serviceEvent, err := listener.Next(); err != nil {
 				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
-				if n == 1 {
+				if i == 0 {
 					listener.Close()
 					break
 				}
