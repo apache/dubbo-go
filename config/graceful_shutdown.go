@@ -21,7 +21,6 @@ import (
 	"os"
 	"os/signal"
 	"runtime/debug"
-	"syscall"
 	"time"
 )
 
@@ -66,18 +65,18 @@ func GracefulShutdownInit() {
 			// gracefulShutdownOnce.Do(func() {
 			BeforeShutdown()
 
-			switch sig {
 			// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
-			// syscall.SIGSYS will be ignored. It's not supported in windows platform.
-			case syscall.SIGQUIT, syscall.SIGILL, syscall.SIGTRAP,
-				syscall.SIGABRT:
-				debug.WriteHeapDump(os.Stdout.Fd())
-			default:
-				time.AfterFunc(totalTimeout(), func() {
-					logger.Warn("Shutdown gracefully timeout, application will shutdown immediately. ")
-					os.Exit(0)
-				})
+			for _, dumpSignal := range DumpHeapShutdownSignals {
+				if sig == dumpSignal {
+					debug.WriteHeapDump(os.Stdout.Fd())
+				}
 			}
+
+			time.AfterFunc(totalTimeout(), func() {
+				logger.Warn("Shutdown gracefully timeout, application will shutdown immediately. ")
+				os.Exit(0)
+			})
+
 			os.Exit(0)
 		}
 	}()
