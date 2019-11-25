@@ -46,6 +46,8 @@ import (
 const (
 	RegistryZkClient  = "zk registry"
 	RegistryConnDelay = 3
+
+	MaxWaitInterval = time.Duration(3e9)
 )
 
 var (
@@ -403,6 +405,13 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 func (r *zkRegistry) subscribe(conf *common.URL) (registry.Listener, error) {
 	return r.getListener(conf)
 }
+func sleepWait(n int) {
+	wait := time.Duration((n + 1) * 2e8)
+	if wait > MaxWaitInterval {
+		wait = MaxWaitInterval
+	}
+	time.Sleep(wait)
+}
 
 //subscribe from registry
 func (r *zkRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
@@ -424,13 +433,10 @@ func (r *zkRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyLi
 			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
 			continue
 		}
-		for i := 0; ; i++ {
+		r.wg.Add(1)
+		for {
 			if serviceEvent, err := listener.Next(); err != nil {
-				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
-				if i == 0 {
-					listener.Close()
-					break
-				}
+				listener.Close()
 				break
 			} else {
 				logger.Infof("update begin, service event: %v", serviceEvent.String())
@@ -438,7 +444,6 @@ func (r *zkRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyLi
 			}
 
 		}
-		logger.Infof("wait for get subscribe listener, key{%v}", url.Key())
 		sleepWait(n)
 	}
 }
@@ -493,11 +498,4 @@ func (r *zkRegistry) IsAvailable() bool {
 	default:
 		return true
 	}
-}
-func sleepWait(n int) {
-	wait := time.Duration(200*n) * time.Millisecond
-	if wait > 3*time.Second {
-		wait = 3 * time.Second
-	}
-	time.Sleep(wait)
 }
