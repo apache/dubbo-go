@@ -77,7 +77,6 @@ type RegistryConfigurationListener struct {
 }
 
 func NewRegistryConfigurationListener(client *zk.ZookeeperClient, reg *zkRegistry) *RegistryConfigurationListener {
-	reg.wg.Add(1)
 	return &RegistryConfigurationListener{client: client, registry: reg, events: make(chan *config_center.ConfigChangeEvent, 32)}
 }
 func (l *RegistryConfigurationListener) Process(configType *config_center.ConfigChangeEvent) {
