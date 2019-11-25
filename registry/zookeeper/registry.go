@@ -46,8 +46,7 @@ import (
 const (
 	RegistryZkClient  = "zk registry"
 	RegistryConnDelay = 3
-
-	MaxWaitInterval = time.Duration(3e9)
+	MaxWaitInterval   = time.Duration(3e9)
 )
 
 var (
