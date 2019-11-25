@@ -66,8 +66,8 @@ type HTTPOptions struct {
 }
 
 var defaultHTTPOptions = HTTPOptions{
-	HandshakeTimeout: 3e9,
-	HTTPTimeout:      3e9,
+	HandshakeTimeout: 3 * time.Second,
+	HTTPTimeout:      3 * time.Second,
 }
 
 type HTTPClient struct {
@@ -115,7 +115,7 @@ func (c *HTTPClient) Call(ctx context.Context, service common.URL, req *Request,
 
 	reqTimeout := c.options.HTTPTimeout
 	if reqTimeout <= 0 {
-		reqTimeout = 1e8
+		reqTimeout = 100 * time.Millisecond
 	}
 	httpHeader.Set("Timeout", reqTimeout.String())
 	if md, ok := ctx.Value(constant.DUBBOGO_CTX_KEY).(map[string]string); ok {
