@@ -26,7 +26,9 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+)
 
+import (
 	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -39,17 +41,19 @@ const (
 	HashArguments  = "hash.arguments"
 )
 
-var selectors = make(map[string]*ConsistentHashSelector)
-var re = regexp.MustCompile(constant.COMMA_SPLIT_PATTERN)
+var (
+	selectors = make(map[string]*ConsistentHashSelector)
+	re        = regexp.MustCompile(constant.COMMA_SPLIT_PATTERN)
+)
 
 func init() {
-	extension.SetLoadbalance(ConsistentHash, NewConsistentHash)
+	extension.SetLoadbalance(ConsistentHash, NewConsistentHashLoadBalance)
 }
 
 type ConsistentHashLoadBalance struct {
 }
 
-func NewConsistentHash() cluster.LoadBalance {
+func NewConsistentHashLoadBalance() cluster.LoadBalance {
 	return &ConsistentHashLoadBalance{}
 }
 
@@ -62,14 +66,14 @@ func (lb *ConsistentHashLoadBalance) Select(invokers []protocol.Invoker, invocat
 	for _, invoker := range invokers {
 		b, err := json.Marshal(invoker)
 		if err != nil {
-			panic(fmt.Sprintf("parse json failed:%s", err.Error()))
+			return nil
 		}
 		bs = append(bs, b...)
 	}
 	hashCode := crc32.ChecksumIEEE(bs)
 	selector, ok := selectors[key]
 	if !ok || selector.hashCode != hashCode {
-		selectors[key] = NewConsistentHashSelector(invokers, methodName, hashCode)
+		selectors[key] = newConsistentHashSelector(invokers, methodName, hashCode)
 		selector = selectors[key]
 	}
 	return selector.Select(invocation)
@@ -97,11 +101,8 @@ type ConsistentHashSelector struct {
 	argumentIndex   []int
 }
 
-func NewConsistentHashSelector(invokers []protocol.Invoker, methodName string,
+func newConsistentHashSelector(invokers []protocol.Invoker, methodName string,
 	hashCode uint32) *ConsistentHashSelector {
-	if len(invokers) == 0 {
-		panic("none of invokers")
-	}
 
 	selector := &ConsistentHashSelector{}
 	selector.virtualInvokers = make(map[uint32]protocol.Invoker)
@@ -112,7 +113,7 @@ func NewConsistentHashSelector(invokers []protocol.Invoker, methodName string,
 	for _, index := range indices {
 		i, err := strconv.Atoi(index)
 		if err != nil {
-			panic(err)
+			return nil
 		}
 		selector.argumentIndex = append(selector.argumentIndex, i)
 	}
