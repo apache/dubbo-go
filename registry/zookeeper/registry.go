@@ -432,7 +432,7 @@ func (r *zkRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyLi
 			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
 			continue
 		}
-		r.wg.Add(1)
+
 		for {
 			if serviceEvent, err := listener.Next(); err != nil {
 				listener.Close()
