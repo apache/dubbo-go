@@ -20,9 +20,13 @@ package loadbalance
 import (
 	"context"
 	"testing"
+)
 
+import (
 	"github.com/stretchr/testify/suite"
+)
 
+import (
 	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
@@ -43,7 +47,7 @@ func (s *consistentHashSelectorSuite) SetupTest() {
 	url, _ := common.NewURL(context.TODO(),
 		"dubbo://192.168.1.0:20000/org.apache.demo.HelloService?methods.echo.hash.arguments=0,1")
 	invokers = append(invokers, protocol.NewBaseInvoker(url))
-	s.selector = NewConsistentHashSelector(invokers, "echo", 999944)
+	s.selector = newConsistentHashSelector(invokers, "echo", 999944)
 }
 
 func (s *consistentHashSelectorSuite) TestToKey() {
@@ -92,7 +96,7 @@ func (s *consistentHashLoadBalanceSuite) SetupTest() {
 	s.invoker3 = protocol.NewBaseInvoker(s.url3)
 
 	s.invokers = append(s.invokers, s.invoker1, s.invoker2, s.invoker3)
-	s.lb = NewConsistentHash()
+	s.lb = NewConsistentHashLoadBalance()
 }
 
 func (s *consistentHashLoadBalanceSuite) TestSelect() {
