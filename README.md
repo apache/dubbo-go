@@ -27,29 +27,66 @@ If you wanna know more about dubbo-go, please visit this reference [Project Arch
 
 Finished List:
 
-- Role: Consumer, Provider
-- Transport: HTTP, TCP
-- Codec: JsonRPC v2, Hessian v2
-- Registry: ZooKeeper/[etcd v3](https://github.com/apache/dubbo-go/pull/148)/[nacos](https://github.com/apache/dubbo-go/pull/151)/[consul](https://github.com/apache/dubbo-go/pull/121)
-- Dynamic Configure Center & Service Management Configurator: Zookeeper
-- Cluster Strategy: Failover/[Failfast](https://github.com/apache/dubbo-go/pull/140)/[Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136)/[Available](https://github.com/apache/dubbo-go/pull/155)/[Broadcast](https://github.com/apache/dubbo-go/pull/158)/[Forking](https://github.com/apache/dubbo-go/pull/161)
-- Load Balance: Random/[RoundRobin](https://github.com/apache/dubbo-go/pull/66)/[LeastActive](https://github.com/apache/dubbo-go/pull/65)
-- Filter: Echo Health Check/[Circuit break and service downgrade](https://github.com/apache/dubbo-go/pull/133)/[TokenFilter](https://github.com/apache/dubbo-go/pull/202)/[AccessLogFilter](https://github.com/apache/dubbo-go/pull/214)/[TpsLimitFilter](https://github.com/apache/dubbo-go/pull/237)/[ExecuteLimitFilter](https://github.com/apache/dubbo-go/pull/246)
-- Other feature: [generic invoke](https://github.com/apache/dubbo-go/pull/122)/start check/connecting certain provider/multi-protocols/multi-registries/multi-versions/service group
+- Role
+    * Consumer
+    * Provider
+
+- Transport
+    * HTTP
+    * TCP
+
+- Codec
+    * JsonRPC V2
+    * Hessian V2
+    
+- Registry
+    * ZooKeeper
+    * [etcd v3](https://github.com/apache/dubbo-go/pull/148)
+    * [nacos](https://github.com/apache/dubbo-go/pull/151)
+    * [consul](https://github.com/apache/dubbo-go/pull/121)
+    
+- Dynamic Configure Center & Service Management Configurator
+    * Zookeeper
+    * [apollo](https://github.com/apache/dubbo-go/pull/250)
+
+- Cluster Strategy
+    * Failover
+    * [Failfast](https://github.com/apache/dubbo-go/pull/140)
+    * [Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136)
+    * [Available](https://github.com/apache/dubbo-go/pull/155)
+    * [Broadcast](https://github.com/apache/dubbo-go/pull/158)
+    * [Forking](https://github.com/apache/dubbo-go/pull/161)
+    
+- Load Balance
+    * Random
+    * [RoundRobin](https://github.com/apache/dubbo-go/pull/66)
+    * [LeastActive](https://github.com/apache/dubbo-go/pull/65)
+    
+- Filter
+    * Echo Health Check
+    * [Circuit break and service downgrade](https://github.com/apache/dubbo-go/pull/133)
+    * [TokenFilter](https://github.com/apache/dubbo-go/pull/202)
+    * [AccessLogFilter](https://github.com/apache/dubbo-go/pull/214)
+    * [TpsLimitFilter](https://github.com/apache/dubbo-go/pull/237)
+    * [ExecuteLimitFilter](https://github.com/apache/dubbo-go/pull/246)
+    
+- Invoke
+    * [generic invoke](https://github.com/apache/dubbo-go/pull/122)
+    
+- Others:
+    * start check
+    * connecting certain provider
+    * multi-protocols
+    * multi-registries
+    * multi-versions
+    * service group
 
 Working List:
 
 - Load Balance: ConsistentHash
 - Registry: k8s
-- Configure Center: apollo
 - Metadata Center (dubbo v2.7.x)
-- Metrics: Promethus(dubbo v2.7.x)
-
-Todo List:
-
-- Registry: kubernetes
-- Routing: istio
-- tracing (dubbo ecosystem)
+- Metrics: Opentracing/Promethus(dubbo v2.7.x)
 
 You can know more about dubbo-go by its [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap).
 
