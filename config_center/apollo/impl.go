@@ -57,7 +57,7 @@ func newApolloConfiguration(url *common.URL) (*apolloConfiguration, error) {
 	configAddr := c.getAddressWithProtocolPrefix(url)
 	configCluster := url.GetParam(constant.CONFIG_CLUSTER_KEY, "")
 
-	appId := url.GetParam(constant.CONFIG_GROUP_KEY, DEFAULT_GROUP)
+	appId := url.GetParam(constant.CONFIG_APP_ID_KEY, "")
 	namespaces := url.GetParam(constant.CONFIG_NAMESPACE_KEY, getProperties(DEFAULT_GROUP))
 	c.appConf = &agollo.AppConfig{
 		AppId:         appId,

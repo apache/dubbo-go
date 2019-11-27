@@ -42,6 +42,7 @@ type ConfigCenterConfig struct {
 	ConfigFile    string `default:"dubbo.properties" yaml:"config_file"  json:"config_file,omitempty"`
 	Namespace     string `default:"dubbo.properties" yaml:"namespace"  json:"namespace,omitempty"`
 	AppConfigFile string `default:"dubbo.properties" yaml:"app_config_file"  json:"app_config_file,omitempty"`
+	AppId         string `default:"dubbo" yaml:"app_id"  json:"app_id,omitempty"`
 	TimeoutStr    string `yaml:"timeout"  json:"timeout,omitempty"`
 	timeout       time.Duration
 }
