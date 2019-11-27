@@ -165,7 +165,7 @@ func runMockConfigServer(handlerMap map[string]func(http.ResponseWriter, *http.R
 
 func Test_GetConfig(t *testing.T) {
 	configuration := initMockApollo(t)
-	configs, err := configuration.GetConfig(mockNamespace, config_center.WithGroup("dubbo"))
+	configs, err := configuration.GetProperties(mockNamespace, config_center.WithGroup("dubbo"))
 	assert.NoError(t, err)
 	configuration.SetParser(&parser.DefaultConfigurationParser{})
 	mapContent, err := configuration.Parser().Parse(configs)
@@ -175,7 +175,7 @@ func Test_GetConfig(t *testing.T) {
 
 func Test_GetConfigItem(t *testing.T) {
 	configuration := initMockApollo(t)
-	configs, err := configuration.GetConfig("application.organization")
+	configs, err := configuration.GetInternalProperty("application.organization")
 	assert.NoError(t, err)
 	configuration.SetParser(&parser.DefaultConfigurationParser{})
 	assert.NoError(t, err)
@@ -186,7 +186,7 @@ func initMockApollo(t *testing.T) *apolloConfiguration {
 	c := &config.BaseConfig{ConfigCenterConfig: &config.ConfigCenterConfig{
 		Protocol:  "apollo",
 		Address:   "106.12.25.204:8080",
-		Group:     "testApplication_yang",
+		AppId:     "testApplication_yang",
 		Cluster:   "dev",
 		Namespace: "mockDubbog.properties",
 	}}
