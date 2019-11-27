@@ -92,7 +92,7 @@ func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 			return nil, perrors.New("listener stopped")
 
 		case <-l.registry.done:
-			logger.Warnf("zk consumer register has quit, so zk event listener exit asap now.")
+			logger.Warnf("zk consumer register has quit, so zk event listener exit now.")
 			return nil, perrors.New("listener stopped")
 
 		case e := <-l.events:
@@ -109,7 +109,13 @@ func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 	}
 }
 func (l *RegistryConfigurationListener) Close() {
-	l.registry.wg.Done()
+	if l.registry.IsAvailable() {
+		/**
+		 * if the registry is not available, it means that the registry has been destroy
+		 * so we don't need to call Done(), or it will cause the negative count panic for registry.wg
+		 */
+		l.registry.wg.Done()
+	}
 }
 
 func (l *RegistryConfigurationListener) valid() bool {
