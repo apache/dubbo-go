@@ -40,6 +40,7 @@ func Test_refresh(t *testing.T) {
 	mockMap["dubbo.com.MockService.MockService.GetUser.retries"] = "10"
 	mockMap["dubbo.consumer.check"] = "false"
 	mockMap["dubbo.application.name"] = "dubbo"
+	mockMap["dubbo.shutdown.timeout"] = "12s"
 
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
 
@@ -113,6 +114,13 @@ func Test_refresh(t *testing.T) {
 					},
 				},
 			},
+		},
+		ShutdownConfig: &ShutdownConfig{
+			Timeout:              "12s",
+			StepTimeout:          "2s",
+			RejectRequestHandler: "mock",
+			RejectRequest:        false,
+			RequestsFinished:     false,
 		},
 	}
 

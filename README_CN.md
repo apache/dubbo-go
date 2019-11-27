@@ -26,32 +26,68 @@ Apache License, Version 2.0
 
 实现列表:
 
-- 角色端: Consumer, Provider
-- 传输协议: HTTP, TCP
-- 序列化协议: JsonRPC v2, Hessian v2
-- 注册中心: ZooKeeper/[etcd v3](https://github.com/apache/dubbo-go/pull/148)/[nacos](https://github.com/apache/dubbo-go/pull/151)/[consul](https://github.com/apache/dubbo-go/pull/121)
-- 动态配置中心与服务治理配置器（config center）: Zookeeper
-- 集群策略: Failover/[Failfast](https://github.com/apache/dubbo-go/pull/140)/[Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136)/[Available](https://github.com/apache/dubbo-go/pull/155)/[Broadcast](https://github.com/apache/dubbo-go/pull/158)/[Forking](https://github.com/apache/dubbo-go/pull/161)
-- 负载均衡策略: Random/[RoundRobin](https://github.com/apache/dubbo-go/pull/66)/[LeastActive](https://github.com/apache/dubbo-go/pull/65)
-- 过滤器: Echo Health Check/[服务熔断&降级](https://github.com/apache/dubbo-go/pull/133)/[TokenFilter](https://github.com/apache/dubbo-go/pull/202)/[AccessLogFilter](https://github.com/apache/dubbo-go/pull/214)/[TpsLimitFilter](https://github.com/apache/dubbo-go/pull/237)[ExecuteLimitFilter](https://github.com/apache/dubbo-go/pull/246)
-- 其他功能支持: [泛化调用](https://github.com/apache/dubbo-go/pull/122)/启动时检查/服务直连/多服务协议/多注册中心/多服务版本/服务分组
+- 角色端
+    * Consumer
+    * Provider
+    
+- 传输协议
+    * HTTP
+    * TCP
+
+- 序列化协议
+    * JsonRPC V2
+    * Hessian V2
+    
+- 注册中心
+    * ZooKeeper
+    * [etcd v3](https://github.com/apache/dubbo-go/pull/148)
+    * [nacos](https://github.com/apache/dubbo-go/pull/151)
+    * [consul](https://github.com/apache/dubbo-go/pull/121)
+    
+- 动态配置中心与服务治理配置器
+    * Zookeeper
+    * [apollo](https://github.com/apache/dubbo-go/pull/250)
+    
+- 集群策略
+    * Failover
+    * [Failfast](https://github.com/apache/dubbo-go/pull/140)
+    * [Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136)
+    * [Available](https://github.com/apache/dubbo-go/pull/155)
+    * [Broadcast](https://github.com/apache/dubbo-go/pull/158)
+    * [Forking](https://github.com/apache/dubbo-go/pull/161)
+   
+- 负载均衡策略
+    * Random
+    * [RoundRobin](https://github.com/apache/dubbo-go/pull/66)
+    * [LeastActive](https://github.com/apache/dubbo-go/pull/65)
+    
+- 过滤器
+    * Echo Health Check
+    * [服务熔断&降级](https://github.com/apache/dubbo-go/pull/133)
+    * [TokenFilter](https://github.com/apache/dubbo-go/pull/202)
+    * [AccessLogFilter](https://github.com/apache/dubbo-go/pull/214)
+    * [TpsLimitFilter](https://github.com/apache/dubbo-go/pull/237)
+    * [ExecuteLimitFilter](https://github.com/apache/dubbo-go/pull/246)
+    
+- 调用
+    * [泛化调用](https://github.com/apache/dubbo-go/pull/122)
+    
+- 其他功能支持:
+    * 启动时检查
+    * 服务直连
+    * 多服务协议
+    * 多注册中心
+    * 多服务版本
+    * 服务分组
 
 开发中列表:
 
-- 集群策略: Forking
 - 负载均衡策略: ConsistentHash
 - 注册中心: k8s
-- 配置中心: apollo
 - 元数据中心 (dubbo v2.7.x)
-- Metrics: Promethus(dubbo v2.7.x)
+- Metrics: Opentracing/Promethus(dubbo v2.7.x)
 
-任务列表:
-
-- 注册中心: kubernetes
-- Routing: istio
-- tracing (dubbo ecosystem)
-
-你可以通过访问 [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap) 知道更多关于 dubbo-go 的信息
+你可以通过访问 [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap) 知道更多关于 dubbo-go 的信息。
 
 ## 文档
 
