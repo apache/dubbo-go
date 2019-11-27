@@ -36,8 +36,9 @@ type DynamicConfiguration interface {
 	SetParser(parser.ConfigurationParser)
 	AddListener(string, ConfigurationListener, ...Option)
 	RemoveListener(string, ConfigurationListener, ...Option)
-	GetConfig(string, ...Option) (string, error)
-	GetConfigs(string, ...Option) (string, error)
+	GetProperties(string, ...Option) (string, error)
+	GetRule(string, ...Option) (string, error)
+	GetInternalProperty(string, ...Option) (string, error)
 }
 
 type Options struct {
