@@ -108,6 +108,18 @@ func (c *MockDynamicConfiguration) Parser() parser.ConfigurationParser {
 func (c *MockDynamicConfiguration) SetParser(p parser.ConfigurationParser) {
 	c.parser = p
 }
+func (c *MockDynamicConfiguration) GetProperties(key string, opts ...Option) (string, error) {
+	return c.content, nil
+}
+
+//For zookeeper, getConfig and getConfigs have the same meaning.
+func (c *MockDynamicConfiguration) GetInternalProperty(key string, opts ...Option) (string, error) {
+	return c.GetProperties(key, opts...)
+}
+
+func (c *MockDynamicConfiguration) GetRule(key string, opts ...Option) (string, error) {
+	return c.GetProperties(key, opts...)
+}
 
 func (c *MockDynamicConfiguration) MockServiceConfigEvent() {
 	config := &parser.ConfiguratorConfig{
