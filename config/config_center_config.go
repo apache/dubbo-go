@@ -63,5 +63,6 @@ func (c *ConfigCenterConfig) GetUrlMap() url.Values {
 	urlMap.Set(constant.CONFIG_NAMESPACE_KEY, c.Namespace)
 	urlMap.Set(constant.CONFIG_GROUP_KEY, c.Group)
 	urlMap.Set(constant.CONFIG_CLUSTER_KEY, c.Cluster)
+	urlMap.Set(constant.CONFIG_APP_ID_KEY, c.AppId)
 	return urlMap
 }

@@ -109,7 +109,7 @@ func (c *zookeeperDynamicConfiguration) RemoveListener(key string, listener conf
 	c.cacheListener.RemoveListener(key, listener)
 }
 
-func (c *zookeeperDynamicConfiguration) GetConfig(key string, opts ...config_center.Option) (string, error) {
+func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config_center.Option) (string, error) {
 
 	tmpOpts := &config_center.Options{}
 	for _, opt := range opts {
@@ -141,8 +141,12 @@ func (c *zookeeperDynamicConfiguration) GetConfig(key string, opts ...config_cen
 }
 
 //For zookeeper, getConfig and getConfigs have the same meaning.
-func (c *zookeeperDynamicConfiguration) GetConfigs(key string, opts ...config_center.Option) (string, error) {
-	return c.GetConfig(key, opts...)
+func (c *zookeeperDynamicConfiguration) GetInternalProperty(key string, opts ...config_center.Option) (string, error) {
+	return c.GetProperties(key, opts...)
+}
+
+func (c *zookeeperDynamicConfiguration) GetRule(key string, opts ...config_center.Option) (string, error) {
+	return c.GetProperties(key, opts...)
 }
 
 func (c *zookeeperDynamicConfiguration) Parser() parser.ConfigurationParser {
