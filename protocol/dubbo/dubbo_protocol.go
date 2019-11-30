@@ -66,7 +66,7 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	return exporter
 }
 
-func (dp *DubboProtocol) Refer(url common.URL) protocol.Invoker {
+func (dp *DubboProtocol) Refer(url common.URL, impl interface{}) protocol.Invoker {
 	invoker := NewDubboInvoker(url, NewClient(Options{
 		ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
 		RequestTimeout: config.GetConsumerConfig().RequestTimeout,

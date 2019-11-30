@@ -65,7 +65,7 @@ func (jp *JsonrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	return exporter
 }
 
-func (jp *JsonrpcProtocol) Refer(url common.URL) protocol.Invoker {
+func (jp *JsonrpcProtocol) Refer(url common.URL, impl interface{}) protocol.Invoker {
 	invoker := NewJsonrpcInvoker(url, NewHTTPClient(&HTTPOptions{
 		HandshakeTimeout: config.GetConsumerConfig().ConnectTimeout,
 		HTTPTimeout:      config.GetConsumerConfig().RequestTimeout,
