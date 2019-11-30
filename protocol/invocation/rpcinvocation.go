@@ -30,13 +30,14 @@ import (
 /////////////////////////////
 // todo: is it necessary to separate fields of consumer(provider) from RPCInvocation
 type RPCInvocation struct {
-	methodName     string
-	parameterTypes []reflect.Type
-	arguments      []interface{}
-	reply          interface{}
-	callBack       interface{}
-	attachments    map[string]string
-	invoker        protocol.Invoker
+	methodName      string
+	parameterTypes  []reflect.Type
+	parameterValues []reflect.Value
+	arguments       []interface{}
+	reply           interface{}
+	callBack        interface{}
+	attachments     map[string]string
+	invoker         protocol.Invoker
 }
 
 func NewRPCInvocation(methodName string, arguments []interface{}, attachments map[string]string) *RPCInvocation {
@@ -61,6 +62,10 @@ func (r *RPCInvocation) MethodName() string {
 
 func (r *RPCInvocation) ParameterTypes() []reflect.Type {
 	return r.parameterTypes
+}
+
+func (r *RPCInvocation) ParameterValues() []reflect.Value {
+	return r.parameterValues
 }
 
 func (r *RPCInvocation) Arguments() []interface{} {
@@ -128,6 +133,12 @@ func WithMethodName(methodName string) option {
 func WithParameterTypes(parameterTypes []reflect.Type) option {
 	return func(invo *RPCInvocation) {
 		invo.parameterTypes = parameterTypes
+	}
+}
+
+func WithParameterValues(parameterValues []reflect.Value) option {
+	return func(invo *RPCInvocation) {
+		invo.parameterValues = parameterValues
 	}
 }
 
