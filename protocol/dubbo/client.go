@@ -136,10 +136,10 @@ func NewClient(opt Options) *Client {
 
 	switch {
 	case opt.ConnectTimeout == 0:
-		opt.ConnectTimeout = 3e9
+		opt.ConnectTimeout = 3 * time.Second
 		fallthrough
 	case opt.RequestTimeout == 0:
-		opt.RequestTimeout = 3e9
+		opt.RequestTimeout = 3 * time.Second
 	}
 
 	c := &Client{
