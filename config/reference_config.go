@@ -183,7 +183,7 @@ func (refconfig *ReferenceConfig) getUrlMap() url.Values {
 	//filter
 	var defaultReferenceFilter = constant.DEFAULT_REFERENCE_FILTERS
 	if refconfig.Generic {
-		defaultReferenceFilter = constant.GENERIC_REFERENCE_FILTERS + defaultReferenceFilter
+		defaultReferenceFilter = constant.GENERIC_REFERENCE_FILTERS + "," + defaultReferenceFilter
 	}
 	urlMap.Set(constant.REFERENCE_FILTER_KEY, mergeValue(consumerConfig.Filter, refconfig.Filter, defaultReferenceFilter))
 
