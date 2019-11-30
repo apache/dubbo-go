@@ -33,6 +33,7 @@ import (
 type RPCInvocation struct {
 	methodName     string
 	parameterTypes []reflect.Type
+	parameterValues []reflect.Value
 	arguments      []interface{}
 	reply          interface{}
 	callBack       interface{}
@@ -63,6 +64,10 @@ func (r *RPCInvocation) MethodName() string {
 
 func (r *RPCInvocation) ParameterTypes() []reflect.Type {
 	return r.parameterTypes
+}
+
+func (r *RPCInvocation) ParameterValues() []reflect.Value {
+	return r.parameterValues
 }
 
 func (r *RPCInvocation) Arguments() []interface{} {
@@ -134,6 +139,12 @@ func WithMethodName(methodName string) option {
 func WithParameterTypes(parameterTypes []reflect.Type) option {
 	return func(invo *RPCInvocation) {
 		invo.parameterTypes = parameterTypes
+	}
+}
+
+func WithParameterValues(parameterValues []reflect.Value) option {
+	return func(invo *RPCInvocation) {
+		invo.parameterValues = parameterValues
 	}
 }
 
