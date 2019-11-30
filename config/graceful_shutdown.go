@@ -21,7 +21,6 @@ import (
 	"os"
 	"os/signal"
 	"runtime/debug"
-	"syscall"
 	"time"
 )
 
@@ -49,17 +48,15 @@ import (
  * syscall.SIGEMT cannot be found in CI
  * It's seems that the Unix/Linux does not have the signal SIGSTKFLT. https://github.com/golang/go/issues/33381
  * So this signal will be ignored.
- *
+ * The signals are different on different platforms.
+ * We define them by using 'package build' feature https://golang.org/pkg/go/build/
  */
 
 func GracefulShutdownInit() {
 
 	signals := make(chan os.Signal, 1)
 
-	signal.Notify(signals, os.Interrupt, os.Kill, syscall.SIGKILL, syscall.SIGSTOP,
-		syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGILL, syscall.SIGTRAP,
-		syscall.SIGABRT, syscall.SIGSYS,
-	)
+	signal.Notify(signals, ShutdownSignals...)
 
 	go func() {
 		select {
@@ -68,17 +65,18 @@ func GracefulShutdownInit() {
 			// gracefulShutdownOnce.Do(func() {
 			BeforeShutdown()
 
-			switch sig {
 			// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
-			case syscall.SIGQUIT, syscall.SIGILL, syscall.SIGTRAP,
-				syscall.SIGABRT, syscall.SIGSYS:
-				debug.WriteHeapDump(os.Stdout.Fd())
-			default:
-				time.AfterFunc(totalTimeout(), func() {
-					logger.Warn("Shutdown gracefully timeout, application will shutdown immediately. ")
-					os.Exit(0)
-				})
+			for _, dumpSignal := range DumpHeapShutdownSignals {
+				if sig == dumpSignal {
+					debug.WriteHeapDump(os.Stdout.Fd())
+				}
 			}
+
+			time.AfterFunc(totalTimeout(), func() {
+				logger.Warn("Shutdown gracefully timeout, application will shutdown immediately. ")
+				os.Exit(0)
+			})
+
 			os.Exit(0)
 		}
 	}()
