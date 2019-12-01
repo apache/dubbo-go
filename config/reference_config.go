@@ -60,6 +60,7 @@ type ReferenceConfig struct {
 	invoker       protocol.Invoker
 	urls          []*common.URL
 	Generic       bool `yaml:"generic"  json:"generic,omitempty" property:"generic"`
+	Sticky        bool `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
 }
 
 func (c *ReferenceConfig) Prefix() string {
@@ -175,6 +176,7 @@ func (refconfig *ReferenceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
 	//getty invoke async or sync
 	urlMap.Set(constant.ASYNC_KEY, strconv.FormatBool(refconfig.Async))
+	urlMap.Set(constant.STICKY_KEY, strconv.FormatBool(refconfig.Sticky))
 
 	//application info
 	urlMap.Set(constant.APPLICATION_KEY, consumerConfig.ApplicationConfig.Name)
@@ -195,6 +197,7 @@ func (refconfig *ReferenceConfig) getUrlMap() url.Values {
 	for _, v := range refconfig.Methods {
 		urlMap.Set("methods."+v.Name+"."+constant.LOADBALANCE_KEY, v.Loadbalance)
 		urlMap.Set("methods."+v.Name+"."+constant.RETRIES_KEY, v.Retries)
+		urlMap.Set("methods."+v.Name+"."+constant.STICKY_KEY, strconv.FormatBool(v.Sticky))
 	}
 
 	return urlMap
