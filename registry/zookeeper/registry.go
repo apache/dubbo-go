@@ -435,6 +435,7 @@ func (r *zkRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyLi
 
 		for {
 			if serviceEvent, err := listener.Next(); err != nil {
+				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
 				listener.Close()
 				break
 			} else {
@@ -454,8 +455,8 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 
 	r.listenerLock.Lock()
 	if r.configListener.isClosed {
-		return nil, perrors.New("configListener already been closed")
 		r.listenerLock.Unlock()
+		return nil, perrors.New("configListener already been closed")
 	}
 	zkListener = r.configListener
 	r.listenerLock.Unlock()
