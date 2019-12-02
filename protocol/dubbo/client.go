@@ -107,6 +107,7 @@ func setClientGrpool() {
 }
 
 type Options struct {
+	common.Options
 	// connect timeout
 	ConnectTimeout time.Duration
 	// request timeout
@@ -114,14 +115,10 @@ type Options struct {
 }
 
 type CallResponse struct {
-	Opts      Options
-	Cause     error
-	Start     time.Time // invoke(call) start time == write start time
-	ReadStart time.Time // read start time, write duration = ReadStart - Start
-	Reply     interface{}
+	common.CallResponse
 }
 
-type AsyncCallback func(response CallResponse)
+type AsyncCallback func(response common.CallResponse)
 
 type Client struct {
 	opts     Options
