@@ -36,8 +36,13 @@ type DynamicConfiguration interface {
 	SetParser(parser.ConfigurationParser)
 	AddListener(string, ConfigurationListener, ...Option)
 	RemoveListener(string, ConfigurationListener, ...Option)
+	//GetProperties get properties file
 	GetProperties(string, ...Option) (string, error)
+
+	//GetRule get Router rule properties file
 	GetRule(string, ...Option) (string, error)
+
+	//GetInternalProperty get value by key in Default properties file(dubbo.properties)
 	GetInternalProperty(string, ...Option) (string, error)
 }
 

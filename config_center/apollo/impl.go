@@ -129,10 +129,6 @@ func (c *apolloConfiguration) GetRule(key string, opts ...Option) (string, error
 }
 
 func (c *apolloConfiguration) GetProperties(key string, opts ...Option) (string, error) {
-	k := &Options{}
-	for _, opt := range opts {
-		opt(k)
-	}
 	/**
 	 * when group is not null, we are getting startup configs(config file) from Config Center, for example:
 	 * key=dubbo.propertie
