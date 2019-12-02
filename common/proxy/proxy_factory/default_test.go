@@ -33,7 +33,7 @@ import (
 func Test_GetProxy(t *testing.T) {
 	proxyFactory := NewDefaultProxyFactory()
 	url := common.NewURLWithOptions()
-	proxy := proxyFactory.GetProxy(protocol.NewBaseInvoker(*url), url)
+	proxy := proxyFactory.GetProxy(protocol.NewBaseInvoker(*url), nil, url)
 	assert.NotNil(t, proxy)
 }
 
