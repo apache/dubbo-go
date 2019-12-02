@@ -22,6 +22,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 	"unicode"
 	"unicode/utf8"
 )
@@ -37,6 +38,26 @@ import (
 // rpc service interface
 type RPCService interface {
 	Reference() string // rpc service id or reference id
+}
+
+// callback interface for async
+type AsyncCallbackService interface {
+	CallBack(response CallResponse) // callback
+}
+
+type Options struct {
+	// connect timeout
+	ConnectTimeout time.Duration
+	// request timeout
+	RequestTimeout time.Duration
+}
+
+type CallResponse struct {
+	Opts      Options
+	Cause     error
+	Start     time.Time // invoke(call) start time == write start time
+	ReadStart time.Time // read start time, write duration = ReadStart - Start
+	Reply     interface{}
 }
 
 // for lowercase func
