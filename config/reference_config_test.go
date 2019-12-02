@@ -93,6 +93,7 @@ func doInitConsumer() {
 				Retries:       "3",
 				Group:         "huadong_idc",
 				Version:       "1.0.0",
+				Async:         true,
 				Methods: []*MethodConfig{
 					{
 						Name:        "GetUser",
