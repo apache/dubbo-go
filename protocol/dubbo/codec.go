@@ -26,6 +26,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go-hessian2"
+	"github.com/apache/dubbo-go/common"
 	perrors "github.com/pkg/errors"
 )
 
@@ -122,8 +123,8 @@ func NewPendingResponse() *PendingResponse {
 	}
 }
 
-func (r PendingResponse) GetCallResponse() CallResponse {
-	return CallResponse{
+func (r PendingResponse) GetCallResponse() common.CallResponse {
+	return common.CallResponse{
 		Cause:     r.err,
 		Start:     r.start,
 		ReadStart: r.readStart,
