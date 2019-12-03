@@ -34,9 +34,9 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
-/////////////////////////
+// ///////////////////////
 // consumerConfig
-/////////////////////////
+// ///////////////////////
 
 type ConsumerConfig struct {
 	BaseConfig `yaml:",inline"`
@@ -58,6 +58,7 @@ type ConsumerConfig struct {
 	ProtocolConf   interface{}                 `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
 	FilterConf     interface{}                 `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf" `
 	ShutdownConfig *ShutdownConfig             `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf" `
+	MetricManager  string                      `yaml:"metric_manager" json:"metric_manager,omitempty" property:"metric_manager"`
 }
 
 func (c *ConsumerConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -106,9 +107,9 @@ func ConsumerInit(confConFile string) error {
 		return perrors.Errorf("yaml.Unmarshal() = error:%v", perrors.WithStack(err))
 	}
 
-	//set method interfaceId & interfaceName
+	// set method interfaceId & interfaceName
 	for k, v := range consumerConfig.References {
-		//set id for reference
+		// set id for reference
 		for _, n := range consumerConfig.References[k].Methods {
 			n.InterfaceName = v.InterfaceName
 			n.InterfaceId = k
@@ -129,7 +130,7 @@ func ConsumerInit(confConFile string) error {
 }
 
 func configCenterRefreshConsumer() error {
-	//fresh it
+	// fresh it
 	var err error
 	if consumerConfig.ConfigCenterConfig != nil {
 		consumerConfig.SetFatherConfig(consumerConfig)

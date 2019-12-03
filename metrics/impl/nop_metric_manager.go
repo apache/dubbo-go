@@ -16,3 +16,43 @@
  */
 
 package impl
+
+import (
+	"time"
+
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/metrics"
+)
+
+func init() {
+	extension.SetMetricManager(constant.DEFAULT_KEY, newNopMetricManager())
+}
+
+type NopMetricManager struct {
+
+}
+
+func (manager *NopMetricManager) GetFastCompass(name string, metricName metrics.MetricName) metrics.FastCompass {
+	return &NopFastCompass{}
+}
+
+func newNopMetricManager() metrics.MetricManager {
+	return &NopMetricManager{}
+}
+
+type NopFastCompass struct {
+
+}
+
+func (compass *NopFastCompass) record(duration int64, subCategory string) {
+}
+
+func (compass *NopFastCompass) LastUpdateTime() int64 {
+	return time.Now().UnixNano()/time.Millisecond.Nanoseconds()
+}
+
+
+
+
+

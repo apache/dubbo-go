@@ -15,13 +15,24 @@
  * limitations under the License.
  */
 
-package metrics
+package extension
 
-/*
- * It's the same as Metric interface in Java dubbo.
- * It's a tag interface indicating that a class is Metric
- */
-type Metric interface {
-	// return the last update time in millisecond
-	LastUpdateTime() int64
+var (
+	// can not declare the map as map[string]*MetricManager which causes cycle dependency
+	metricManagerMap = make(map[string]interface{}, 4)
+)
+
+// the manager should be a pointer of MetricManager.
+func SetMetricManager(name string, manager interface{}) {
+	metricManagerMap[name] = manager
 }
+
+func GetMetricManager(name string) interface{} {
+	manager, found := metricManagerMap[name]
+	if !found {
+		panic("Can not find the metric manager with name: " + name +
+			", please check that the MetricManager had registered by invoking SetMetricManager. ")
+	}
+	return manager
+}
+

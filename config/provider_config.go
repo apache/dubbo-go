@@ -33,9 +33,9 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
-/////////////////////////
+// ///////////////////////
 // providerConfig
-/////////////////////////
+// ///////////////////////
 
 type ProviderConfig struct {
 	BaseConfig   `yaml:",inline"`
@@ -49,7 +49,8 @@ type ProviderConfig struct {
 	Protocols         map[string]*ProtocolConfig `yaml:"protocols" json:"protocols,omitempty" property:"protocols"`
 	ProtocolConf      interface{}                `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf" `
 	FilterConf        interface{}                `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf" `
-	ShutdownConfig    *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf" `
+	ShutdownConfig    *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
+	MetricManager     string                     `yaml:"metric_manager" json:"metric_manager,omitempty" property:"metric_manager"`
 }
 
 func (c *ProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -97,9 +98,9 @@ func ProviderInit(confProFile string) error {
 		return perrors.Errorf("yaml.Unmarshal() = error:%v", perrors.WithStack(err))
 	}
 
-	//set method interfaceId & interfaceName
+	// set method interfaceId & interfaceName
 	for k, v := range providerConfig.Services {
-		//set id for reference
+		// set id for reference
 		for _, n := range providerConfig.Services[k].Methods {
 			n.InterfaceName = v.InterfaceName
 			n.InterfaceId = k
@@ -112,7 +113,7 @@ func ProviderInit(confProFile string) error {
 }
 
 func configCenterRefreshProvider() error {
-	//fresh it
+	// fresh it
 	if providerConfig.ConfigCenterConfig != nil {
 		providerConfig.fatherConfig = providerConfig
 		if err := providerConfig.startConfigCenter(context.Background()); err != nil {

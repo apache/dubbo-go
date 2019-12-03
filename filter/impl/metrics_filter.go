@@ -26,6 +26,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/filter"
 	"github.com/apache/dubbo-go/metrics"
+	_ "github.com/apache/dubbo-go/metrics/impl"
 	"github.com/apache/dubbo-go/protocol"
 )
 
@@ -35,7 +36,7 @@ const (
 	errorKey = "error"
 	
 	providerSide = "provider"
-	consumerSide = "consumer"
+	groupName = "dubbo"
 )
 
 func init() {
@@ -85,12 +86,14 @@ func (mf *metricsFilter) report(invoker protocol.Invoker, invocation protocol.In
 		global = metrics.NewMetricName(constant.DubboConsumer, nil, metrics.Major)
 		method = metrics.NewMetricName(constant.DubboConsumer, tags, metrics.Normal)
 	}
-	
+	mf.setCompassQuantity(result, durationInMs, global, method)
 }
 
 func (mf *metricsFilter) setCompassQuantity(result string, duration int64, metricsNames ...metrics.MetricName)  {
+	manager := metrics.GetMetricManager()
 	for _, metricName := range metricsNames {
-
+		compass := manager.GetFastCompass(groupName, metricName)
+		compass.Record(duration, result)
 	}
 }
 

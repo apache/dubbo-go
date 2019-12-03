@@ -19,4 +19,5 @@ package metrics
 
 type FastCompass interface {
 	Metric
+	Record(duration int64, subCategory string)
 }
