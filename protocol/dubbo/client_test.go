@@ -144,7 +144,7 @@ func TestClient_AsyncCall(t *testing.T) {
 	user := &User{}
 	lock := sync.Mutex{}
 	lock.Lock()
-	err := c.AsyncCall(NewRequest("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"}, nil), func(response CallResponse) {
+	err := c.AsyncCall(NewRequest("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"}, nil), func(response common.CallResponse) {
 		assert.Equal(t, User{Id: "1", Name: "username"}, *response.Reply.(*Response).reply.(*User))
 		lock.Unlock()
 	}, NewResponse(user, nil))
