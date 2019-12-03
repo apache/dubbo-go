@@ -21,6 +21,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/apache/dubbo-go/common"
 )
 
 import (
@@ -65,7 +67,7 @@ func TestDubboInvoker_Invoke(t *testing.T) {
 	// AsyncCall
 	lock := sync.Mutex{}
 	lock.Lock()
-	inv.SetCallBack(func(response CallResponse) {
+	inv.SetCallBack(func(response common.CallResponse) {
 		assert.Equal(t, User{Id: "1", Name: "username"}, *response.Reply.(*Response).reply.(*User))
 		lock.Unlock()
 	})
