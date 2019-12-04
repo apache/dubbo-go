@@ -44,7 +44,7 @@ func GetProviderService(name string) common.RPCService {
 	return proServices[name]
 }
 
-func GetCallback(name string) func(common.CallResponse) {
+func GetCallback(name string) func(response common.CallbackResponse) {
 	service := GetConsumerService(name)
 	if sv, ok := service.(common.AsyncCallbackService); ok {
 		return sv.CallBack

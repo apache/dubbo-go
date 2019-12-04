@@ -110,7 +110,7 @@ type PendingResponse struct {
 	err       error
 	start     time.Time
 	readStart time.Time
-	callback  AsyncCallback
+	callback  common.AsyncCallback
 	response  *Response
 	done      chan struct{}
 }
@@ -123,8 +123,8 @@ func NewPendingResponse() *PendingResponse {
 	}
 }
 
-func (r PendingResponse) GetCallResponse() common.CallResponse {
-	return common.CallResponse{
+func (r PendingResponse) GetCallResponse() common.CallbackResponse {
+	return AsyncCallbackResponse{
 		Cause:     r.err,
 		Start:     r.start,
 		ReadStart: r.readStart,
