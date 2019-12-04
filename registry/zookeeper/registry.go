@@ -46,6 +46,7 @@ import (
 const (
 	RegistryZkClient  = "zk registry"
 	RegistryConnDelay = 3
+	MaxWaitInterval   = time.Duration(3e9)
 )
 
 var (
@@ -200,6 +201,10 @@ func (r *zkRegistry) RestartCallBack() bool {
 		}
 		logger.Infof("success to re-register service :%v", confIf.Key())
 	}
+	r.listener = zookeeper.NewZkEventListener(r.client)
+	r.configListener = NewRegistryConfigurationListener(r.client, r)
+	r.dataListener = NewRegistryDataListener(r.configListener)
+
 	return flag
 }
 
@@ -399,10 +404,19 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 func (r *zkRegistry) subscribe(conf *common.URL) (registry.Listener, error) {
 	return r.getListener(conf)
 }
+func sleepWait(n int) {
+	wait := time.Duration((n + 1) * 2e8)
+	if wait > MaxWaitInterval {
+		wait = MaxWaitInterval
+	}
+	time.Sleep(wait)
+}
 
 //subscribe from registry
 func (r *zkRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
+	n := 0
 	for {
+		n++
 		if !r.IsAvailable() {
 			logger.Warnf("event listener game over.")
 			return
@@ -423,14 +437,14 @@ func (r *zkRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyLi
 			if serviceEvent, err := listener.Next(); err != nil {
 				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
 				listener.Close()
-				return
+				break
 			} else {
 				logger.Infof("update begin, service event: %v", serviceEvent.String())
 				notifyListener.Notify(serviceEvent)
 			}
 
 		}
-
+		sleepWait(n)
 	}
 }
 
@@ -440,6 +454,10 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 	)
 
 	r.listenerLock.Lock()
+	if r.configListener.isClosed {
+		r.listenerLock.Unlock()
+		return nil, perrors.New("configListener already been closed")
+	}
 	zkListener = r.configListener
 	r.listenerLock.Unlock()
 	if r.listener == nil {
