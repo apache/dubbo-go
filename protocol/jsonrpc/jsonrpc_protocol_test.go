@@ -80,7 +80,7 @@ func TestJsonrpcProtocol_Refer(t *testing.T) {
 		RequestTimeout: 5 * time.Second,
 	}
 	config.SetConsumerConfig(con)
-	invoker := proto.Refer(url)
+	invoker := proto.Refer(url, nil)
 
 	// make sure url
 	eq := invoker.GetUrl().URLEqual(url)

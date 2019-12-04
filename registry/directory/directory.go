@@ -58,10 +58,11 @@ type registryDirectory struct {
 	configurators                  []config_center.Configurator
 	consumerConfigurationListener  *consumerConfigurationListener
 	referenceConfigurationListener *referenceConfigurationListener
+	impl                           interface{}
 	Options
 }
 
-func NewRegistryDirectory(url *common.URL, registry registry.Registry, opts ...Option) (*registryDirectory, error) {
+func NewRegistryDirectory(url *common.URL, impl interface{}, registry registry.Registry, opts ...Option) (*registryDirectory, error) {
 	options := Options{
 		//default 300s
 		serviceTTL: time.Duration(300e9),
@@ -79,6 +80,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry, opts ...O
 		serviceType:      url.SubURL.Service(),
 		registry:         registry,
 		Options:          options,
+		impl:             impl,
 	}
 	dir.consumerConfigurationListener = newConsumerConfigurationListener(dir)
 	return dir, nil
@@ -112,11 +114,11 @@ func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 		url = &res.Service
 		//1.for override url in 2.6.x
 		if url.Protocol == constant.OVERRIDE_PROTOCOL ||
-			url.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY) == constant.CONFIGURATORS_CATEGORY {
+				url.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY) == constant.CONFIGURATORS_CATEGORY {
 			dir.configurators = append(dir.configurators, extension.GetDefaultConfigurator(url))
 			url = nil
 		} else if url.Protocol == constant.ROUTER_PROTOCOL || //2.for router
-			url.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY) == constant.ROUTER_CATEGORY {
+				url.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY) == constant.ROUTER_CATEGORY {
 			url = nil
 			//TODO: router
 		}
@@ -198,13 +200,13 @@ func (dir *registryDirectory) cacheInvoker(url *common.URL) {
 		dir.overrideUrl(newUrl)
 		if cacheInvoker, ok := dir.cacheInvokersMap.Load(newUrl.Key()); !ok {
 			logger.Infof("service will be added in cache invokers: invokers url is  %s!", newUrl)
-			newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(*newUrl)
+			newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(*newUrl, dir.impl)
 			if newInvoker != nil {
 				dir.cacheInvokersMap.Store(newUrl.Key(), newInvoker)
 			}
 		} else {
 			logger.Infof("service will be updated in cache invokers: new invoker url is %s, old invoker url is %s", newUrl, cacheInvoker.(protocol.Invoker).GetUrl())
-			newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(*newUrl)
+			newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(*newUrl, dir.impl)
 			if newInvoker != nil {
 				dir.cacheInvokersMap.Store(newUrl.Key(), newInvoker)
 				cacheInvoker.(protocol.Invoker).Destroy()

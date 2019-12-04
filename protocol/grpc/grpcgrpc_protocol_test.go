@@ -18,47 +18,42 @@ limitations under the License.
 package grpc
 
 import (
-  "net"
-
-  "google.golang.org/grpc"
-
-  "github.com/apache/dubbo-go/common"
+	"fmt"
+	"reflect"
+	"testing"
 )
 
-type Server struct {
-  grpcServer *grpc.Server
+type A struct {
+	info string
 }
 
-func NewServer() *Server {
-
-  return nil
+func (a *A) newObj() *A {
+	return &A {
+	}
 }
 
-func (s *Server) Start(url common.URL) {
-  var (
-    addr string
-    err  error
-  )
-  addr = url.Location
-  lis, err := net.Listen("tcp", addr)
-  if err != nil {
-    panic(err)
-  }
-  server := grpc.NewServer()
-
-  s.grpcServer = server
-  //
-  // grpc-go 必须提前注册
-  // ServiceDesc 这个信息需要有
-  // 需要找一个方法。
-  //server.RegisterService()
-
-  // 想个办法注册下
-  if err = server.Serve(lis); err != nil {
-    panic(err)
-  }
+func (a *A) print() {
+	fmt.Printf("info: %v\n", a.info)
 }
 
-func (s *Server) Stop() {
-   s.grpcServer.Stop()
+type B interface {
+	//print()
+	print2()
 }
+
+func TestA(t *testing.T) {
+	a := (*A)(nil).newObj()
+	a.info = "this is a new info"
+	a.print()
+
+	btype := reflect.TypeOf((*B)(nil))
+	if reflect.TypeOf(a).Implements(btype.Elem()) {
+		fmt.Printf("判断成功\n")
+	} else {
+		fmt.Printf("判断失败\n")
+	}
+
+
+
+}
+

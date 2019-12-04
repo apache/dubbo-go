@@ -18,7 +18,11 @@ limitations under the License.
 package grpc
 
 import (
+	"context"
+	"reflect"
 	"sync"
+
+	"google.golang.org/grpc/connectivity"
 
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
@@ -26,8 +30,8 @@ import (
 
 type GrpcInvoker struct {
 	protocol.BaseInvoker
-	client   *Client
 	quitOnce sync.Once
+	client   *Client
 }
 
 func NewGrpcInvoker(url common.URL, client *Client) *GrpcInvoker {
@@ -42,7 +46,33 @@ func (gi *GrpcInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 		result protocol.RPCResult
 	)
 
+	methodName := invocation.MethodName()
+	in := []reflect.Value{gi.client.invoker}
+
+	ctx := context.Background()
+	in = append(in, reflect.ValueOf(ctx))
+	for _, i := range invocation.Arguments() {
+		in = append(in, reflect.ValueOf(i))
+	}
+
+	method := reflect.ValueOf(gi.client.invoker).MethodByName(methodName)
+	res := method.Call(in)
+
+	result.Rest = res[0]
+	// check err
+	if !res[1].IsNil() {
+		result.Err = res[1].Interface().(error)
+	}
+
 	return &result
+}
+
+func (gi *GrpcInvoker) IsAvailable() bool {
+	return gi.IsAvailable() && gi.client.GetState() != connectivity.Shutdown
+}
+
+func (gi *GrpcInvoker) IsDestroyed() bool {
+	return gi.IsDestroyed() && gi.client.GetState() == connectivity.Shutdown
 }
 
 func (gi *GrpcInvoker) Destroy() {
@@ -50,7 +80,7 @@ func (gi *GrpcInvoker) Destroy() {
 		gi.BaseInvoker.Destroy()
 
 		if gi.client != nil {
-			gi.client.Close()
+			_ = gi.client.Close()
 		}
 	})
 }

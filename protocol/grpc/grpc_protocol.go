@@ -18,67 +18,68 @@ limitations under the License.
 package grpc
 
 import (
-  "sync"
+	"sync"
 
-  "github.com/apache/dubbo-go/common"
-  "github.com/apache/dubbo-go/common/extension"
-  "github.com/apache/dubbo-go/common/logger"
-  "github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/protocol"
 )
 
 const GRPC = "grpc"
 
 func init() {
-  extension.SetProtocol(GRPC, GetProtocol)
+	extension.SetProtocol(GRPC, GetProtocol)
 }
 
 var grpcProtocol *GrpcProtocol
 
 type GrpcProtocol struct {
-  protocol.BaseProtocol
-  serverMap  map[string]*Server
-  serverLock sync.Mutex
+	protocol.BaseProtocol
+	serverMap  map[string]*Server
+	serverLock sync.Mutex
 }
 
 func NewGRPCProtocol() *GrpcProtocol {
-  return nil
+	return nil
 }
 
+// 缺少一个 type 信息, 无法进行binding
 func (gp *GrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
-  url := invoker.GetUrl()
-  serviceKey := url.ServiceKey()
-  exporter := NewGrpcExporter(serviceKey, invoker, gp.ExporterMap())
-  gp.SetExporterMap(serviceKey, exporter)
-  logger.Infof("Export service: %s", url.String())
-  gp.openServer(url)
-  return exporter
+	url := invoker.GetUrl()
+	serviceKey := url.ServiceKey()
+	exporter := NewGrpcExporter(serviceKey, invoker, gp.ExporterMap())
+	gp.SetExporterMap(serviceKey, exporter)
+	logger.Infof("Export service: %s", url.String())
+	gp.openServer(url)
+	return exporter
 }
 
 func (gp *GrpcProtocol) openServer(url common.URL) {
-  return
+	return
 }
 
-func (gp *GrpcProtocol) Refer(url common.URL) protocol.Invoker {
-  invoker := NewGrpcInvoker(url, NewClient())
-  gp.SetInvokers(invoker)
-  logger.Infof("Refer service: %s", url.String())
-  return invoker
+func (gp *GrpcProtocol) Refer(url common.URL, impl interface{}) protocol.Invoker {
+	invoker := NewGrpcInvoker(url, NewClient(impl))
+	gp.SetInvokers(invoker)
+	logger.Infof("Refer service: %s", url.String())
+	return invoker
 }
 
 func (gp *GrpcProtocol) Destroy() {
-  logger.Infof("GrpcProtocol destroy.")
+	logger.Infof("GrpcProtocol destroy.")
 
-  gp.BaseProtocol.Destroy()
+	gp.BaseProtocol.Destroy()
 
-  for key, server := range gp.serverMap {
-    delete(gp.serverMap, key)
-    server.Stop()
-  }
+	for key, server := range gp.serverMap {
+		delete(gp.serverMap, key)
+		server.Stop()
+	}
 }
 
 func GetProtocol() protocol.Protocol {
-  if grpcProtocol == nil {
-    grpcProtocol = NewGRPCProtocol()
-  }
-  return grpcProtocol
+	if grpcProtocol == nil {
+		grpcProtocol = NewGRPCProtocol()
+	}
+	return grpcProtocol
 }

@@ -18,17 +18,47 @@ limitations under the License.
 package grpc
 
 import (
-	"github.com/go-kit/kit/transport/grpc"
+	"reflect"
+
+	"google.golang.org/grpc"
+)
+
+func init() {
+
+}
+
+type dubboGrpcCli interface {
+	getDubboStub(conn grpc.ClientConn)
+}
+
+var (
+	cliType = reflect.TypeOf((*dubboGrpcCli)(nil))
 )
 
 type Client struct {
-	grpc.Client
+	*grpc.ClientConn
+	invoker reflect.Value
 }
 
-func NewClient() *Client {
-	return &Client{}
-}
+func NewClient(impl interface{}) *Client {
 
-func (c *Client) Close() {
+	conn, err := grpc.Dial("addresss", grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		panic(err)
+	}
 
+	if reflect.TypeOf(impl).Implements(cliType.Elem()) {
+		panic(err)
+	}
+
+	in := []reflect.Value{}
+	in = append(in, reflect.ValueOf(conn))
+	method, _ := cliType.MethodByName("getDubboStub")
+	res := method.Func.Call(in)
+	invoker := res[0].Interface()
+
+	return &Client{
+		ClientConn: conn,
+		invoker:    reflect.ValueOf(invoker),
+	}
 }

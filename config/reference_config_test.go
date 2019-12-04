@@ -267,7 +267,7 @@ func newRegistryProtocol() protocol.Protocol {
 
 type mockRegistryProtocol struct{}
 
-func (*mockRegistryProtocol) Refer(url common.URL) protocol.Invoker {
+func (*mockRegistryProtocol) Refer(url common.URL, impl interface{}) protocol.Invoker {
 	return protocol.NewBaseInvoker(url)
 }
 
