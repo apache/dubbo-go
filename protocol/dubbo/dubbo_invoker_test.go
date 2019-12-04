@@ -67,8 +67,9 @@ func TestDubboInvoker_Invoke(t *testing.T) {
 	// AsyncCall
 	lock := sync.Mutex{}
 	lock.Lock()
-	inv.SetCallBack(func(response common.CallResponse) {
-		assert.Equal(t, User{Id: "1", Name: "username"}, *response.Reply.(*Response).reply.(*User))
+	inv.SetCallBack(func(response common.CallbackResponse) {
+		r := response.(AsyncCallbackResponse)
+		assert.Equal(t, User{Id: "1", Name: "username"}, *r.Reply.(*Response).reply.(*User))
 		lock.Unlock()
 	})
 	res = invoker.Invoke(inv)
