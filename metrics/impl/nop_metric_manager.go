@@ -45,11 +45,12 @@ type NopFastCompass struct {
 
 }
 
-func (compass *NopFastCompass) record(duration int64, subCategory string) {
+func (compass *NopFastCompass) Record(duration int64, subCategory string) {
 }
 
+
 func (compass *NopFastCompass) LastUpdateTime() int64 {
-	return time.Now().UnixNano()/time.Millisecond.Nanoseconds()
+	return time.Now().UnixNano()/1e6
 }
 
 

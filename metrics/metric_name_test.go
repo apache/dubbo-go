@@ -17,26 +17,14 @@
 
 package metrics
 
-var (
-	emptyTags = make(map[string]string, 0)
-)
-type MetricName struct {
-	key   string
-	tags  map[string]string
-	level MetricLevel
-}
+import (
+	"testing"
 
-/*
- * It will return an instance of MetricName. You should know that the return value is not a pointer,
- * which means that if the key too long or the tags has too many key-value pair, the cost of memory will be expensive.
- */
-func NewMetricName(key string, tags map[string]string, level MetricLevel) MetricName {
-	if tags == nil {
-		tags = emptyTags
-	}
-	return MetricName{
-		key:   key,
-		tags:  tags,
-		level: level,
-	}
+	"github.com/stretchr/testify/assert"
+)
+
+func TestNewMetricName(t *testing.T) {
+	mn := NewMetricName("my-key", nil, Minor)
+	assert.NotNil(t, mn)
+	assert.NotNil(t, mn.tags)
 }
