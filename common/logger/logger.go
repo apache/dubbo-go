@@ -40,6 +40,11 @@ var (
 	logger Logger
 )
 
+type DubboLogger struct {
+	Logger
+	dynamicLevel zap.AtomicLevel
+}
+
 type Logger interface {
 	Info(args ...interface{})
 	Warn(args ...interface{})
@@ -109,7 +114,8 @@ func InitLogger(conf *zap.Config) {
 		zapLoggerConfig = *conf
 	}
 	zapLogger, _ := zapLoggerConfig.Build(zap.AddCallerSkip(1))
-	logger = zapLogger.Sugar()
+	//logger = zapLogger.Sugar()
+	logger = &DubboLogger{Logger: zapLogger.Sugar(), dynamicLevel: zapLoggerConfig.Level}
 
 	// set getty log
 	getty.SetLogger(logger)
@@ -122,4 +128,23 @@ func SetLogger(log Logger) {
 
 func GetLogger() Logger {
 	return logger
+}
+
+func SetLoggerLevel(level string) bool {
+	if l, ok := logger.(OpsLogger); ok {
+		l.SetLoggerLevel(level)
+		return true
+	}
+	return false
+}
+
+type OpsLogger interface {
+	Logger
+	SetLoggerLevel(level string)
+}
+
+func (dl *DubboLogger) SetLoggerLevel(level string) {
+	l := new(zapcore.Level)
+	l.Set(level)
+	dl.dynamicLevel.SetLevel(*l)
 }
