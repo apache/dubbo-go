@@ -15,28 +15,40 @@
  * limitations under the License.
  */
 
-package extension
+package metrics
 
 import (
-	"github.com/apache/dubbo-go/metrics"
+	"time"
 )
 
 var (
-	// can not declare the map as map[string]*MetricManager which causes cycle dependency
-	metricManagerMap = make(map[string]metrics.MetricManager, 4)
+	DefaultClock = &UserTimeClock{
+		startNanoTime: time.Now().UnixNano(),
+	}
 )
 
-// the manager should be a pointer of MetricManager.
-func SetMetricManager(name string, manager metrics.MetricManager) {
-	metricManagerMap[name] = manager
+/**
+ * An abstraction for how time passes.
+ */
+type Clock interface {
+	// return the current time tick in nanoseconds
+	GetTick() int64
+
+	// return the current time in milliseconds
+	GetTime() int64
 }
 
-func GetMetricManager(name string) metrics.MetricManager {
-	manager, found := metricManagerMap[name]
-	if !found {
-		panic("Can not find the metric manager with name: " + name +
-			", please check that the MetricManager had registered by invoking SetMetricManager. ")
-	}
-	return manager
+type UserTimeClock struct {
+	Clock
+	startNanoTime int64
 }
+
+func (uc *UserTimeClock) GetTick() int64 {
+	return time.Now().UnixNano() - uc.startNanoTime
+}
+
+func (uc *UserTimeClock) GetTime() int64 {
+	return time.Now().UnixNano()/1e6
+}
+
 

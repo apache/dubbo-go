@@ -15,28 +15,43 @@
  * limitations under the License.
  */
 
-package extension
+package impl
 
 import (
-	"github.com/apache/dubbo-go/metrics"
+	"sync/atomic"
 )
 
-var (
-	// can not declare the map as map[string]*MetricManager which causes cycle dependency
-	metricManagerMap = make(map[string]metrics.MetricManager, 4)
-)
-
-// the manager should be a pointer of MetricManager.
-func SetMetricManager(name string, manager metrics.MetricManager) {
-	metricManagerMap[name] = manager
+type counterImpl struct {
+	count int64
 }
 
-func GetMetricManager(name string) metrics.MetricManager {
-	manager, found := metricManagerMap[name]
-	if !found {
-		panic("Can not find the metric manager with name: " + name +
-			", please check that the MetricManager had registered by invoking SetMetricManager. ")
-	}
-	return manager
+
+
+/**
+ * Implementation notes:
+ * Recording the last updated time for each update is very expensive.
+ * so we return 0
+ */
+func (c *counterImpl) LastUpdateTime() int64 {
+	return 0
 }
 
+func (c *counterImpl) GetCount() int64 {
+	return c.count
+}
+
+func (c *counterImpl) Inc() {
+	atomic.AddInt64(&c.count, 1)
+}
+
+func (c *counterImpl) IncN(n int64) {
+	atomic.AddInt64(&c.count, n)
+}
+
+func (c *counterImpl) Dec() {
+	atomic.AddInt64(&c.count, -1)
+}
+
+func (c *counterImpl) DecN(n int64) {
+	atomic.AddInt64(&c.count, -n)
+}

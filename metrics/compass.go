@@ -17,7 +17,50 @@
 
 package metrics
 
+import (
+	"time"
+)
+
+type FastCompassResult map[string]map[int64]int64
+
+/**
+ * This interface will be used to record the qps, rt and error code.
+ * Specially, it's designed for high concurrency environment
+ */
 type FastCompass interface {
 	Metric
-	Record(duration int64, subCategory string)
+
+	// record a method invocation with execution time and sub-categories
+	Record(duration time.Duration, subCategory string)
+
+	// return method count per bucket per category
+	GetMethodCountPerCategory() FastCompassResult
+	/* return method count per bucket per category since starTime
+	 * sometimes the startTime is not the real time but the logic time
+	 * it comes from Clock interface's
+	 */
+	GetMethodCountPerCategorySince(startTime int64) FastCompassResult
+
+
+	// return method execution time per bucket per category
+	GetMethodRtPerCategory() FastCompassResult
+	/*
+	 * return method execution time per bucket per category since starTime
+	 * sometimes the startTime is not the real time but the logic time
+	 * it comes from Clock interface's
+	 */
+	GetMethodRtPerCategorySince(startTime int64) FastCompassResult
+
+
+
+	// return method execution time and count per bucket per category
+	GetCountAndRtPerCategory() FastCompassResult
+	/*
+	 * return method execution time and count per bucket per category since startTime
+	 * sometimes the startTime is not the real time but the logic time
+	 * it comes from Clock interface's
+	 */
+	GetCountAndRtPerCategorySince(startTime int64) FastCompassResult
+
+	GetBucketInterval() int32
 }

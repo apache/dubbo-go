@@ -15,28 +15,37 @@
  * limitations under the License.
  */
 
-package extension
+package metrics
 
 import (
-	"github.com/apache/dubbo-go/metrics"
+	"time"
 )
 
-var (
-	// can not declare the map as map[string]*MetricManager which causes cycle dependency
-	metricManagerMap = make(map[string]metrics.MetricManager, 4)
-)
+type BucketCounter interface {
+	/**
+	 * update the counter to the given bucket
+	 * it's same as UpdateN(1L)
+	 */
+	Update()
 
-// the manager should be a pointer of MetricManager.
-func SetMetricManager(name string, manager metrics.MetricManager) {
-	metricManagerMap[name] = manager
+	/**
+	 * update the counter to the given bucket
+	 */
+	UpdateN(n int64)
+
+	/**
+	 * Return the bucket count, keyed by timestamp
+	 */
+	GetBucketCounts() map[int64]int64
+
+	/**
+	 * Return the bucket count, keyed by timestamp, since (including) the startTime.
+	 */
+	GetBucketCountsSince(startTime time.Time) map[int64]int64
+
+	/**
+	 * Get the interval of the bucket
+	 * @return the interval of the bucket
+	 */
+	GetBucketInterval()
 }
-
-func GetMetricManager(name string) metrics.MetricManager {
-	manager, found := metricManagerMap[name]
-	if !found {
-		panic("Can not find the metric manager with name: " + name +
-			", please check that the MetricManager had registered by invoking SetMetricManager. ")
-	}
-	return manager
-}
-

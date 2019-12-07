@@ -15,28 +15,23 @@
  * limitations under the License.
  */
 
-package extension
+package impl
 
 import (
-	"github.com/apache/dubbo-go/metrics"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-var (
-	// can not declare the map as map[string]*MetricManager which causes cycle dependency
-	metricManagerMap = make(map[string]metrics.MetricManager, 4)
-)
-
-// the manager should be a pointer of MetricManager.
-func SetMetricManager(name string, manager metrics.MetricManager) {
-	metricManagerMap[name] = manager
+func Test_counterImpl(t *testing.T) {
+	instance := &counterImpl{}
+	assert.Equal(t, int64(0), instance.GetCount())
+	instance.Inc()
+	assert.Equal(t, int64(1), instance.GetCount())
+	instance.IncN(3)
+	assert.Equal(t, int64(4), instance.GetCount())
+	instance.Dec()
+	assert.Equal(t, int64(3), instance.GetCount())
+	instance.DecN(2)
+	assert.Equal(t, int64(1), instance.GetCount())
 }
-
-func GetMetricManager(name string) metrics.MetricManager {
-	manager, found := metricManagerMap[name]
-	if !found {
-		panic("Can not find the metric manager with name: " + name +
-			", please check that the MetricManager had registered by invoking SetMetricManager. ")
-	}
-	return manager
-}
-

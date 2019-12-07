@@ -41,6 +41,7 @@ type multiConfiger interface {
 
 type BaseConfig struct {
 	ConfigCenterConfig *ConfigCenterConfig `yaml:"config_center" json:"config_center,omitempty"`
+	MetricConfig *MetricConfig            `yaml:"metric_config" json:"metric_config,omitempty"`
 	configCenterUrl    *common.URL
 	prefix             string
 	fatherConfig       interface{}

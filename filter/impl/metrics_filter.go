@@ -24,6 +24,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/filter"
 	"github.com/apache/dubbo-go/metrics"
 	_ "github.com/apache/dubbo-go/metrics/impl"
@@ -32,11 +33,11 @@ import (
 
 const (
 	metricsFilterName = "metrics"
-	successKey = "success"
-	errorKey = "error"
-	
+	successKey        = "success"
+	errorKey          = "error"
+
 	providerSide = "provider"
-	groupName = "dubbo"
+	groupName    = "dubbo"
 )
 
 func init() {
@@ -44,6 +45,7 @@ func init() {
 }
 
 type metricsFilter struct {
+	metricManger metrics.MetricManager
 }
 
 func (mf *metricsFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
@@ -51,7 +53,7 @@ func (mf *metricsFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 	result := invoker.Invoke(invocation)
 	end := time.Now()
 
-	duration := end.Sub(start).Nanoseconds()/time.Millisecond.Nanoseconds()
+	duration := end.Sub(start)
 
 	status := successKey
 	if result.Error() != nil {
@@ -72,7 +74,7 @@ func (mf *metricsFilter) OnResponse(result protocol.Result, invoker protocol.Inv
 	return result
 }
 
-func (mf *metricsFilter) report(invoker protocol.Invoker, invocation protocol.Invocation, durationInMs int64, result string) {
+func (mf *metricsFilter) report(invoker protocol.Invoker, invocation protocol.Invocation, duration time.Duration, result string) {
 	serviceName := invoker.GetUrl().Service()
 	methodName := invocation.MethodName()
 	tags := make(map[string]string, 4)
@@ -86,17 +88,18 @@ func (mf *metricsFilter) report(invoker protocol.Invoker, invocation protocol.In
 		global = metrics.NewMetricName(constant.DubboConsumer, nil, metrics.Major)
 		method = metrics.NewMetricName(constant.DubboConsumer, tags, metrics.Normal)
 	}
-	mf.setCompassQuantity(result, durationInMs, global, method)
+	mf.setCompassQuantity(result, duration, global, method)
 }
 
-func (mf *metricsFilter) setCompassQuantity(result string, duration int64, metricsNames ...metrics.MetricName)  {
-	manager := metrics.GetMetricManager()
+func (mf *metricsFilter) setCompassQuantity(result string, duration time.Duration, metricsNames ...metrics.MetricName) {
 	for _, metricName := range metricsNames {
-		compass := manager.GetFastCompass(groupName, metricName)
+		compass := mf.metricManger.GetFastCompass(groupName, metricName)
 		compass.Record(duration, result)
 	}
 }
 
 func newMetricsFilter() filter.Filter {
-	return &metricsFilter{}
+	return &metricsFilter{
+		metricManger: extension.GetMetricManager(config.GetMetricConfig().GetMetricManagerName()),
+	}
 }

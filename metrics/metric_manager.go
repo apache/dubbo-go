@@ -17,25 +17,7 @@
 
 package metrics
 
-import (
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/config"
-)
-
 type MetricManager interface {
 	GetFastCompass(name string, metricName MetricName) FastCompass
 }
 
-func GetMetricManager() MetricManager {
-	providerConfig := config.GetProviderConfig()
-	managerName := providerConfig.MetricManager
-	if len(managerName) <= 0 {
-		managerName = config.GetConsumerConfig().MetricManager
-	}
-
-	if len(managerName) <= 0 {
-		managerName = constant.DEFAULT_KEY
-	}
-	return extension.GetMetricManager(managerName).(MetricManager)
-}

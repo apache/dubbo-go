@@ -15,28 +15,32 @@
  * limitations under the License.
  */
 
-package extension
+package metrics
 
-import (
-	"github.com/apache/dubbo-go/metrics"
-)
+/**
+ * An incrementing and decrementing counter metric.
+ * see com.alibaba.metrics.Counter
+ */
+type Counter interface {
+	Metric
+	Counting
+	/**
+	 * Increment the counter by one.
+	 */
+	Inc()
 
-var (
-	// can not declare the map as map[string]*MetricManager which causes cycle dependency
-	metricManagerMap = make(map[string]metrics.MetricManager, 4)
-)
+	/**
+	 * Increment the counter by {@code n}.
+	 */
+	IncN(n int64)
 
-// the manager should be a pointer of MetricManager.
-func SetMetricManager(name string, manager metrics.MetricManager) {
-	metricManagerMap[name] = manager
+	/**
+	 * Decrement the counter by one.
+	 */
+	Dec()
+
+	/**
+	 * Decrement the counter by {@code n}.
+	 */
+	DecN(n int64)
 }
-
-func GetMetricManager(name string) metrics.MetricManager {
-	manager, found := metricManagerMap[name]
-	if !found {
-		panic("Can not find the metric manager with name: " + name +
-			", please check that the MetricManager had registered by invoking SetMetricManager. ")
-	}
-	return manager
-}
-
