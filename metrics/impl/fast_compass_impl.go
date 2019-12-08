@@ -59,50 +59,71 @@ const (
  * we can use one int64 to record both the total count and total number
  */
 type FastCompassImpl struct {
-	maxSubCategoryCount int32
-	bucketInterval int32
-	numberOfBuckets int32
+	maxSubCategoryCount int
+	bucketInterval int
+	numberOfBuckets int
 	clock metrics.Clock
 	maxCategoryCount int32
-	subCategories sync.Map
+
+	subCategoriesMutex sync.Mutex
+	subCategories map[string]metrics.BucketCounter
 }
 
-func (f FastCompassImpl) LastUpdateTime() int64 {
+func (fc *FastCompassImpl) LastUpdateTime() int64 {
 	panic("implement me")
 }
 
-func (f FastCompassImpl) Record(duration time.Duration, subCategory string) {
+func (fc *FastCompassImpl) Record(duration time.Duration, subCategory string) {
 	if duration < 0 || len(subCategory) <= 0{
 		return
 	}
+	fc.subCategoriesMutex.Lock()
+	defer fc.subCategoriesMutex.Unlock()
+
+	bucketCounter, found := fc.subCategories[subCategory]
+	if !found {
+		if len(fc.subCategories) >= fc.maxSubCategoryCount {
+			// do nothing
+			return
+		}
+		bucketCounter = newBucketCounterImpl(
+			fc.bucketInterval,
+			fc.numberOfBuckets,
+			metrics.DefaultClock,
+			false)
+		fc.subCategories[subCategory] = bucketCounter
+	}
+
+	bucketCounter.UpdateN(countBase + duration.Nanoseconds()/1e6)
+
 }
 
-func (f FastCompassImpl) GetMethodCountPerCategory() metrics.FastCompassResult {
+func (fc *FastCompassImpl) GetMethodCountPerCategory() metrics.FastCompassResult {
 	panic("implement me")
 }
 
-func (f FastCompassImpl) GetMethodCountPerCategorySince(startTime int64) metrics.FastCompassResult {
+func (fc *FastCompassImpl) GetMethodCountPerCategorySince(startTime int64) metrics.FastCompassResult {
 	panic("implement me")
 }
 
-func (f FastCompassImpl) GetMethodRtPerCategory() metrics.FastCompassResult {
+func (fc *FastCompassImpl) GetMethodRtPerCategory() metrics.FastCompassResult {
 	panic("implement me")
 }
 
-func (f FastCompassImpl) GetMethodRtPerCategorySince(startTime int64) metrics.FastCompassResult {
+func (fc *FastCompassImpl) GetMethodRtPerCategorySince(startTime int64) metrics.FastCompassResult {
 	panic("implement me")
 }
 
-func (f FastCompassImpl) GetCountAndRtPerCategory() metrics.FastCompassResult {
+func (fc *FastCompassImpl) GetCountAndRtPerCategory() metrics.FastCompassResult {
 	panic("implement me")
 }
 
-func (f FastCompassImpl) GetCountAndRtPerCategorySince(startTime int64) metrics.FastCompassResult {
+func (fc *FastCompassImpl) GetCountAndRtPerCategorySince(startTime int64) metrics.FastCompassResult {
 	panic("implement me")
 }
 
-func (f FastCompassImpl) GetBucketInterval() int32 {
-	panic("implement me")
+func (fc *FastCompassImpl) GetBucketInterval() int {
+	return fc.bucketInterval
 }
 
 var (

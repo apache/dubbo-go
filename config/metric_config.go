@@ -33,7 +33,7 @@ type MetricConfig struct {
 	/**
 	 * the max sub category count, it's same with com.alibaba.metrics.maxSubCategoryCount
 	 */
-	MaxSubCategoryCount int32 `default:"20" yaml:"manager" json:"manager,omitempty"`
+	MaxSubCategoryCount int `default:"20" yaml:"manager" json:"manager,omitempty"`
 }
 
 func (mc *MetricConfig) GetMetricManagerName() string {
@@ -43,7 +43,7 @@ func (mc *MetricConfig) GetMetricManagerName() string {
 	return mc.Manager
 }
 
-func (mc *MetricConfig) GetMaxSubCategoryCount() int32 {
+func (mc *MetricConfig) GetMaxSubCategoryCount() int {
 	if mc.MaxSubCategoryCount <=0 {
 		return defaultMaxSubCategoryCount
 	}

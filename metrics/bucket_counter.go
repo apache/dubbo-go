@@ -17,11 +17,8 @@
 
 package metrics
 
-import (
-	"time"
-)
-
 type BucketCounter interface {
+	Counter
 	/**
 	 * update the counter to the given bucket
 	 * it's same as UpdateN(1L)
@@ -41,11 +38,10 @@ type BucketCounter interface {
 	/**
 	 * Return the bucket count, keyed by timestamp, since (including) the startTime.
 	 */
-	GetBucketCountsSince(startTime time.Time) map[int64]int64
+	GetBucketCountsSince(startTime int64) map[int64]int64
 
 	/**
 	 * Get the interval of the bucket
-	 * @return the interval of the bucket
 	 */
-	GetBucketInterval()
+	GetBucketInterval() int
 }

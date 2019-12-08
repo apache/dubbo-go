@@ -19,6 +19,8 @@ package impl
 
 import (
 	"sync/atomic"
+
+	"github.com/apache/dubbo-go/metrics"
 )
 
 type counterImpl struct {
@@ -54,4 +56,8 @@ func (c *counterImpl) Dec() {
 
 func (c *counterImpl) DecN(n int64) {
 	atomic.AddInt64(&c.count, -n)
+}
+
+func newCounter() metrics.Counter {
+	return &counterImpl{}
 }
