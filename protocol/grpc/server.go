@@ -18,7 +18,9 @@ limitations under the License.
 package grpc
 
 import (
+	"fmt"
 	"net"
+	"reflect"
 )
 
 import (
@@ -27,6 +29,9 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/protocol"
 )
 
 type Server struct {
@@ -34,11 +39,15 @@ type Server struct {
 }
 
 func NewServer() *Server {
-
-	return nil
+	return &Server{}
 }
 
-// TODO: unimplemented
+type DubboGrpcService interface {
+	SetProxyImpl(impl protocol.Invoker)
+	GetProxyImpl() protocol.Invoker
+	ServiceDesc() *grpc.ServiceDesc
+}
+
 func (s *Server) Start(url common.URL) {
 	var (
 		addr string
@@ -51,12 +60,34 @@ func (s *Server) Start(url common.URL) {
 	}
 	server := grpc.NewServer()
 
+	key := url.GetParam(constant.BEAN_NAME_KEY, "")
+	service := config.GetProviderService(key)
+
+	ds, ok := service.(DubboGrpcService)
+	if !ok {
+		panic("illegal service type registered")
+	}
+
+	m, ok := reflect.TypeOf(service).MethodByName("SetProxyImpl")
+	if !ok {
+		panic("method SetProxyImpl is necessary for grpc service")
+	}
+
+	exporter, _ := grpcProtocol.ExporterMap().Load(url.ServiceKey())
+	if exporter == nil {
+		panic(fmt.Sprintf("no exporter found for servicekey: %v", url.ServiceKey()))
+	}
+	invoker := exporter.(protocol.Exporter).GetInvoker()
+	if invoker == nil {
+		panic(fmt.Sprintf("no invoker found for servicekey: %v", url.ServiceKey()))
+	}
+	in := []reflect.Value{reflect.ValueOf(service)}
+	in = append(in, reflect.ValueOf(invoker))
+	m.Func.Call(in)
+
+	server.RegisterService(ds.ServiceDesc(), service)
+
 	s.grpcServer = server
-	// grpc-go 必须提前注册
-	// ServiceDesc 这个信息需要有
-	// 需要找一个方法。
-	//server.RegisterService()
-	// 想个办法注册下
 	if err = server.Serve(lis); err != nil {
 		panic(err)
 	}

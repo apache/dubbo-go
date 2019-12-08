@@ -45,6 +45,7 @@ type GrpcProtocol struct {
 func NewGRPCProtocol() *GrpcProtocol {
 	return &GrpcProtocol{
 		BaseProtocol: protocol.NewBaseProtocol(),
+		serverMap:    make(map[string]*Server),
 	}
 }
 
@@ -60,7 +61,22 @@ func (gp *GrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 }
 
 func (gp *GrpcProtocol) openServer(url common.URL) {
-	return
+	_, ok := gp.serverMap[url.Location]
+	if !ok {
+		_, ok := gp.ExporterMap().Load(url.ServiceKey())
+		if !ok {
+			panic("[GrpcProtocol]" + url.Key() + "is not existing")
+		}
+
+		gp.serverLock.Lock()
+		_, ok = gp.serverMap[url.Location]
+		if !ok {
+			srv := NewServer()
+			gp.serverMap[url.Location] = srv
+			srv.Start(url)
+		}
+		gp.serverLock.Unlock()
+	}
 }
 
 func (gp *GrpcProtocol) Refer(url common.URL, impl interface{}) protocol.Invoker {
