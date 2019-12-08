@@ -18,15 +18,18 @@
 package impl
 
 import (
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/apache/dubbo-go/metrics"
 )
 
 func TestFastCompassImpl_Record(t *testing.T) {
 	mc := &ManualClock{}
-	fastCompass := newFastCompass(60, 10, mc, 10)
+	fastCompass := newFastCompassForTest(60, 10, mc, 10)
 	fastCompass.Record(10*time.Millisecond, "success")
 	fastCompass.Record(20*time.Millisecond, "error")
 	fastCompass.Record(15*time.Millisecond, "success")
@@ -67,9 +70,21 @@ func TestFastCompassImpl_Record(t *testing.T) {
 
 func TestFastCompassImpl_MaxCategoryCount(t *testing.T) {
 	mc := &ManualClock{}
-	fastCompass := newFastCompass(60, 10, mc, 2)
+	fastCompass := newFastCompassForTest(60, 10, mc, 2)
 	fastCompass.Record(10*time.Millisecond, "success")
 	fastCompass.Record(20*time.Millisecond, "error1")
 	fastCompass.Record(15*time.Millisecond, "error2")
 	assert.Equal(t, 2, len(fastCompass.GetMethodCountPerCategory()))
+}
+
+func newFastCompassForTest(bucketInterval int, numOfBuckets int,
+	clock metrics.Clock, maxSubCategoryCount int) metrics.FastCompass {
+	return &FastCompassImpl{
+		maxSubCategoryCount: maxSubCategoryCount,
+		bucketInterval:      bucketInterval,
+		numberOfBuckets:     numOfBuckets,
+		clock:               clock,
+		subCategoriesMutex:  sync.Mutex{},
+		subCategories:       make(map[string]metrics.BucketCounter),
+	}
 }

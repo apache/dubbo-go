@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/metrics"
 )
 
@@ -152,14 +153,15 @@ func (fc *FastCompassImpl) GetBucketInterval() int {
 	return fc.bucketInterval
 }
 
-func newFastCompass(bucketInterval int, numOfBuckets int,
-	clock metrics.Clock, maxSubCategoryCount int) metrics.FastCompass {
+func newFastCompass(bucketInterval int) metrics.FastCompass {
 	return &FastCompassImpl{
-		maxSubCategoryCount: maxSubCategoryCount,
+		maxSubCategoryCount: config.GetMetricConfig().GetMaxSubCategoryCount(),
 		bucketInterval:      bucketInterval,
-		numberOfBuckets:     numOfBuckets,
-		clock:               clock,
+		numberOfBuckets:     defaultBucketCount,
+		clock:               metrics.DefaultClock,
 		subCategoriesMutex:  sync.Mutex{},
 		subCategories:       make(map[string]metrics.BucketCounter),
 	}
 }
+
+

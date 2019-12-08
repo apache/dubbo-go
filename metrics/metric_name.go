@@ -17,14 +17,37 @@
 
 package metrics
 
+import (
+	"sync"
+)
+
 var (
 	emptyTags = make(map[string]string, 0)
 )
 
 type MetricName struct {
-	key   string
-	tags  map[string]string
-	level MetricLevel
+	key         string
+	tags        map[string]string
+	Level       MetricLevel
+	hashKeyOnce sync.Once
+	hashKey     string
+}
+
+/**
+ * sometimes we try to use the MetricName as the map's key.
+ * However the tags in MetricName is slice so that we can't use the MetricName like: map[MetricName]XXX
+ * So I define this method, it will generate a string to be the key.
+ * It's similar to com.alibaba.metrics.MetricName#hashCode in Java dubbo
+ * It means that, the HashKey consist of key and tags, but Level will be ignored.
+ */
+func (mn *MetricName) HashKey() string {
+	mn.hashKeyOnce.Do(func() {
+		mn.hashKey = mn.key + "-"
+		for key,value:= range mn.tags {
+			mn.hashKey += key + ":" + value
+		}
+	})
+	return mn.hashKey
 }
 
 /*
@@ -38,6 +61,6 @@ func NewMetricName(key string, tags map[string]string, level MetricLevel) Metric
 	return MetricName{
 		key:   key,
 		tags:  tags,
-		level: level,
+		Level: level,
 	}
 }

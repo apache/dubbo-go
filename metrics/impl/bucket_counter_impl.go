@@ -46,6 +46,7 @@ type BucketCounterImpl struct {
 
 	/**
 	 * interval must be 1s, 5s, 10s, 30s, 60s
+	 * see Interval
 	 */
 	interval int
 
@@ -144,6 +145,7 @@ func (bci *BucketCounterImpl) alignTimestamp(timestmp int64) int64 {
 }
 
 // interval should be one of 1s, 5s, 10s, 30s, 60s
+// see Interval
 func newBucketCounterImpl(interval int, numbOfBuckets int,
 	clock metrics.Clock, updateTotalCount bool) metrics.BucketCounter {
 	buckets := newBucketDequeue(numbOfBuckets)

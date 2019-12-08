@@ -15,25 +15,23 @@
  * limitations under the License.
  */
 
-package impl
+package metrics
 
-import (
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/metrics"
+/**
+ * enum points that which interval's value will be allow
+ * In theory, we can handle any interval' value. But it's not a good choice.
+ * so I define this enum.
+ * for now, if you use another value, like 8s, it works fine too.
+ *
+ * Those value from java dubbo
+ * the unit is second
+ */
+type Interval int
+
+const (
+	Sec_1 Interval = 1
+	Sec_5 Interval = 5
+	Sec_10 Interval = 10
+	Sec_30 Interval = 30
+	Sec_60 Interval = 60
 )
-
-func init() {
-	extension.SetMetricManager(constant.DEFAULT_KEY, newNopMetricManager())
-}
-
-type NopMetricManager struct {
-}
-
-func (manager *NopMetricManager) GetFastCompass(name string, metricName metrics.MetricName) metrics.FastCompass {
-	return &FastCompassImpl{}
-}
-
-func newNopMetricManager() metrics.MetricManager {
-	return &NopMetricManager{}
-}

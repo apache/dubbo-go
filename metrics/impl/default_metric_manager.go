@@ -15,21 +15,32 @@
  * limitations under the License.
  */
 
-package metrics
+package impl
 
-/*
- * it's the same as dubbo in Java
- */
-type MetricLevel int
-
-const (
-	Trivial MetricLevel = iota
-
-	Minor
-
-	Normal
-
-	Major
-
-	Critical
+import (
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/metrics"
 )
+
+func init() {
+	extension.SetMetricManager(constant.DEFAULT_KEY, newDefaultMetricManager())
+}
+
+type DefaultMetricManager struct {
+
+}
+
+func (d DefaultMetricManager) GetFastCompass(name string, metricName metrics.MetricName) metrics.FastCompass {
+	interval := config.GetMetricConfig().GetLevelInterval(int(metricName.Level))
+	return newFastCompass(interval)
+}
+
+
+func newDefaultMetricManager() metrics.MetricManager {
+
+}
+
+
+

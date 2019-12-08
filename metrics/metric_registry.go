@@ -17,19 +17,10 @@
 
 package metrics
 
-/*
- * it's the same as dubbo in Java
+/**
+ * A registry of metric instances.
+ * see com.alibaba.metrics.MetricRegistry
  */
-type MetricLevel int
-
-const (
-	Trivial MetricLevel = iota
-
-	Minor
-
-	Normal
-
-	Major
-
-	Critical
-)
+type MetricRegistry interface {
+	MetricSet
+}

@@ -15,21 +15,6 @@
  * limitations under the License.
  */
 
-package metrics
+package prometheus
 
-/*
- * it's the same as dubbo in Java
- */
-type MetricLevel int
 
-const (
-	Trivial MetricLevel = iota
-
-	Minor
-
-	Normal
-
-	Major
-
-	Critical
-)

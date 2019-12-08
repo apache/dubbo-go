@@ -17,19 +17,12 @@
 
 package metrics
 
-/*
- * it's the same as dubbo in Java
+/**
+ * It's the abstraction of metrics
+ * see com.alibaba.metrics.MetricSet
  */
-type MetricLevel int
-
-const (
-	Trivial MetricLevel = iota
-
-	Minor
-
-	Normal
-
-	Major
-
-	Critical
-)
+type MetricSet interface {
+	Metric
+	// the key is MetricName.HashKey()
+	GetMetrics() map[string]Metric
+}
