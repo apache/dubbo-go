@@ -27,8 +27,6 @@ type counterImpl struct {
 	count int64
 }
 
-
-
 /**
  * Implementation notes:
  * Recording the last updated time for each update is very expensive.

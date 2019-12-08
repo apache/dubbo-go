@@ -37,16 +37,15 @@ const (
 	 * The base number of count that is added to total rt,
 	 * to derive a number which will be added to
 	 */
-	countBase   int64 = 1 << 38
+	countBase int64 = 1 << 38
 
 	/*
 	 * The base number is used to do BITWISE AND operation with the value of int64
 	 * to derive the total number of execution time
 	 */
-	rtBitwiseAndBase = (1 << 38) -1
+	rtBitwiseAndBase = (1 << 38) - 1
 
 	defaultBucketCount = 10
-
 )
 
 /**
@@ -60,13 +59,13 @@ const (
  */
 type FastCompassImpl struct {
 	maxSubCategoryCount int
-	bucketInterval int
-	numberOfBuckets int
-	clock metrics.Clock
-	maxCategoryCount int32
+	bucketInterval      int
+	numberOfBuckets     int
+	clock               metrics.Clock
+	maxCategoryCount    int32
 
 	subCategoriesMutex sync.Mutex
-	subCategories map[string]metrics.BucketCounter
+	subCategories      map[string]metrics.BucketCounter
 }
 
 func (fc *FastCompassImpl) LastUpdateTime() int64 {
@@ -74,7 +73,7 @@ func (fc *FastCompassImpl) LastUpdateTime() int64 {
 }
 
 func (fc *FastCompassImpl) Record(duration time.Duration, subCategory string) {
-	if duration < 0 || len(subCategory) <= 0{
+	if duration < 0 || len(subCategory) <= 0 {
 		return
 	}
 	fc.subCategoriesMutex.Lock()

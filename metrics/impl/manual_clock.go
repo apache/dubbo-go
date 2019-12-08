@@ -15,8 +15,28 @@
  * limitations under the License.
  */
 
-package metrics
+package impl
 
-type MetricManager interface {
-	GetFastCompass(name string, metricName MetricName) FastCompass
+import (
+	"sync"
+	"sync/atomic"
+	"time"
+)
+
+// usually, this struct is used to support test
+type ManualClock struct {
+	tickInNanos int64
+	mutex       sync.Mutex
+}
+
+func (mc *ManualClock) GetTick() int64 {
+	return mc.tickInNanos
+}
+
+func (mc *ManualClock) GetTime() int64 {
+	return mc.tickInNanos / 1e6
+}
+
+func (mc *ManualClock) Add(duration time.Duration) {
+	atomic.AddInt64(&mc.tickInNanos, duration.Nanoseconds())
 }

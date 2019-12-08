@@ -48,7 +48,5 @@ func (uc *UserTimeClock) GetTick() int64 {
 }
 
 func (uc *UserTimeClock) GetTime() int64 {
-	return time.Now().UnixNano()/1e6
+	return time.Now().UnixNano() / 1e6
 }
-
-

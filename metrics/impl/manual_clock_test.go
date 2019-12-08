@@ -15,8 +15,17 @@
  * limitations under the License.
  */
 
-package metrics
+package impl
 
-type MetricManager interface {
-	GetFastCompass(name string, metricName MetricName) FastCompass
+import (
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestManualClock_Add(t *testing.T) {
+	mc := ManualClock{}
+	mc.Add(12 * time.Second)
+	assert.Equal(t, int64(12000), mc.GetTime())
 }

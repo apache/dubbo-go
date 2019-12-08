@@ -41,7 +41,6 @@ type FastCompass interface {
 	 */
 	GetMethodCountPerCategorySince(startTime int64) FastCompassResult
 
-
 	// return method execution time per bucket per category
 	GetMethodRtPerCategory() FastCompassResult
 	/*
@@ -50,8 +49,6 @@ type FastCompass interface {
 	 * it comes from Clock interface's
 	 */
 	GetMethodRtPerCategorySince(startTime int64) FastCompassResult
-
-
 
 	// return method execution time and count per bucket per category
 	GetCountAndRtPerCategory() FastCompassResult

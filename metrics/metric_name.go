@@ -20,6 +20,7 @@ package metrics
 var (
 	emptyTags = make(map[string]string, 0)
 )
+
 type MetricName struct {
 	key   string
 	tags  map[string]string

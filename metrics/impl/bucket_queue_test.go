@@ -39,7 +39,7 @@ func Test_bucketDequeue_addLast(t *testing.T) {
 	assert.Equal(t, 4, len(queue.queue))
 	assert.Equal(t, third, queue.peek())
 
-	fourth:= &bucket{}
+	fourth := &bucket{}
 	queue.addLast(fourth)
 	assert.Equal(t, 4, len(queue.queue))
 	assert.Equal(t, fourth, queue.peek())
@@ -64,32 +64,32 @@ func Test_bucketDequeue_getBucketList(t *testing.T) {
 	bq := newBucketDequeue(5)
 	bq.queue[0] = &bucket{
 		timestamp: 1000,
-		count: 70,
+		count:     70,
 	}
 
 	bq.queue[1] = &bucket{
 		timestamp: 1001,
-		count: 80,
+		count:     80,
 	}
 
 	bq.queue[2] = &bucket{
 		timestamp: 1002,
-		count: 90,
+		count:     90,
 	}
 
 	bq.queue[3] = &bucket{
 		timestamp: 957,
-		count: 40,
+		count:     40,
 	}
 
 	bq.queue[4] = &bucket{
 		timestamp: 958,
-		count: 50,
+		count:     50,
 	}
 
 	bq.queue[5] = &bucket{
 		timestamp: 959,
-		count: 60,
+		count:     60,
 	}
 
 	bq.current = 1
@@ -100,7 +100,6 @@ func Test_bucketDequeue_getBucketList(t *testing.T) {
 	assert.Equal(t, int64(959), result[2].timestamp)
 	assert.Equal(t, int64(958), result[3].timestamp)
 	assert.Equal(t, int64(957), result[4].timestamp)
-
 
 	/*
 	 * Example2:
@@ -114,32 +113,32 @@ func Test_bucketDequeue_getBucketList(t *testing.T) {
 
 	bq.queue[0] = &bucket{
 		timestamp: 1000,
-		count: 70,
+		count:     70,
 	}
 
 	bq.queue[1] = &bucket{
 		timestamp: 955,
-		count: 20,
+		count:     20,
 	}
 
 	bq.queue[2] = &bucket{
 		timestamp: 956,
-		count: 30,
+		count:     30,
 	}
 
 	bq.queue[3] = &bucket{
 		timestamp: 957,
-		count: 40,
+		count:     40,
 	}
 
 	bq.queue[4] = &bucket{
 		timestamp: 958,
-		count: 50,
+		count:     50,
 	}
 
 	bq.queue[5] = &bucket{
 		timestamp: 959,
-		count: 60,
+		count:     60,
 	}
 
 	bq.current = 5

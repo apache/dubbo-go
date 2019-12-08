@@ -32,6 +32,12 @@ type bucket struct {
 	count int64
 }
 
+func newBucket() *bucket {
+	return &bucket{
+		timestamp: -1,
+	}
+}
+
 /*
  * The simple deque implementation for bucket.
  */
@@ -47,7 +53,7 @@ func newBucketDequeue(n int) *bucketDequeue {
 	}
 	// init the buckets.
 	for i := 0; i < n+1; i++ {
-		result.queue[i] = &bucket{}
+		result.queue[i] = newBucket()
 	}
 	return result
 }
@@ -75,22 +81,20 @@ func (bq *bucketDequeue) addLast(bk *bucket) {
  * the result of example 1 is [10:01, 10:00, 09:59, 09:58, 09:57]
  * the result of example 2 is [09:59, 09:58, 09:57, 09:56, 09:55]
  */
-func (bq *bucketDequeue) getBucketList() []*bucket{
+func (bq *bucketDequeue) getBucketList() []*bucket {
 	// notice that when we create the queue, we created make(xx, n+1), so we need to sub 1
-	length := len(bq.queue) -1
+	length := len(bq.queue) - 1
 	startPos := bq.current
 	result := make([]*bucket, 0, length)
 	startTs := bq.queue[bq.current].timestamp
 
-	for i := startPos; i>=0 && startPos - i < length; i-- {
+	for i := startPos; i >= 0 && startPos-i < length; i-- {
 		result = append(result, bq.queue[i])
 	}
 
-
-
-	for i:=length; i > startPos + 1 ; i-- {
+	for i := length; i > startPos+1; i-- {
 		value := bq.queue[i]
-		if value.timestamp < startTs {
+		if value.timestamp <= startTs {
 			// the current index isn't modified
 			result = append(result, value)
 		}

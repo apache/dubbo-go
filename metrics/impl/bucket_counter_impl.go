@@ -24,8 +24,6 @@ import (
 	"github.com/apache/dubbo-go/metrics"
 )
 
-
-
 /**
  * Record the accurate number of events within each given time interval, one for each bucket.
  * see com.alibaba.metrics.BucketCounterImpl
@@ -104,19 +102,17 @@ func (bci *BucketCounterImpl) UpdateN(n int64) {
 	if currentTs > oldBucket.timestamp {
 		// we should create a new bucket
 		newBucket := &bucket{timestamp: currentTs}
-		if atomic.CompareAndSwapPointer(
-			(*unsafe.Pointer)(unsafe.Pointer(bci.latestBucket)),
-			unsafe.Pointer(oldBucket),
-			unsafe.Pointer(newBucket)) {
+		up := (*unsafe.Pointer)(unsafe.Pointer(&bci.latestBucket))
+		if atomic.CompareAndSwapPointer(up, unsafe.Pointer(oldBucket), unsafe.Pointer(newBucket)) {
+			// only one goroutine can success
 			bci.buckets.addLast(newBucket)
 			oldBucket = newBucket
 		} else {
 			// it means that other goroutine had build a new bucket.
 			oldBucket = bci.latestBucket
 		}
-
-		atomic.AddInt64(&oldBucket.count, n)
 	}
+	atomic.AddInt64(&oldBucket.count, n)
 }
 
 func (bci *BucketCounterImpl) GetBucketCounts() map[int64]int64 {
@@ -124,11 +120,12 @@ func (bci *BucketCounterImpl) GetBucketCounts() map[int64]int64 {
 }
 
 func (bci *BucketCounterImpl) GetBucketCountsSince(startTime int64) map[int64]int64 {
+
+	currentTs := bci.alignTimestamp(bci.clock.GetTime())
 	bucketList := bci.buckets.getBucketList()
 	result := make(map[int64]int64, len(bucketList))
-	currentTs := bci.alignTimestamp(bci.clock.GetTime())
 	for _, value := range bucketList {
-		bkTimestampInMs := 1e3 *value.timestamp
+		bkTimestampInMs := 1e3 * value.timestamp
 		if bkTimestampInMs >= startTime && value.timestamp <= currentTs {
 			result[bkTimestampInMs] = value.count
 		}
@@ -146,6 +143,7 @@ func (bci *BucketCounterImpl) alignTimestamp(timestmp int64) int64 {
 	return timestmp / int64(1e3) / int64(bci.interval) * int64(bci.interval)
 }
 
+// interval should be one of 1s, 5s, 10s, 30s, 60s
 func newBucketCounterImpl(interval int, numbOfBuckets int,
 	clock metrics.Clock, updateTotalCount bool) metrics.BucketCounter {
 	buckets := newBucketDequeue(numbOfBuckets)
