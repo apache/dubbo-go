@@ -23,6 +23,10 @@ import (
 
 type FastCompassResult map[string]map[int64]int64
 
+func NewFastCompassResult(expected int) FastCompassResult {
+	return make(map[string]map[int64]int64, expected)
+}
+
 /**
  * This interface will be used to record the qps, rt and error code.
  * Specially, it's designed for high concurrency environment

@@ -21,7 +21,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/metrics"
 )
 
@@ -32,7 +31,7 @@ const (
 	 * and the lower part is used to record the total method execution time.
 	 * The max number of count per collecting interval will be 2 ^ (64 -38 -1) = 33554432
 	 */
-	countOffset int64 = 38
+	countOffset uint64 = 38
 	/*
 	 * The base number of count that is added to total rt,
 	 * to derive a number which will be added to
@@ -62,7 +61,6 @@ type FastCompassImpl struct {
 	bucketInterval      int
 	numberOfBuckets     int
 	clock               metrics.Clock
-	maxCategoryCount    int32
 
 	subCategoriesMutex sync.Mutex
 	subCategories      map[string]metrics.BucketCounter
@@ -76,9 +74,9 @@ func (fc *FastCompassImpl) Record(duration time.Duration, subCategory string) {
 	if duration < 0 || len(subCategory) <= 0 {
 		return
 	}
+
 	fc.subCategoriesMutex.Lock()
 	defer fc.subCategoriesMutex.Unlock()
-
 	bucketCounter, found := fc.subCategories[subCategory]
 	if !found {
 		if len(fc.subCategories) >= fc.maxSubCategoryCount {
@@ -88,53 +86,80 @@ func (fc *FastCompassImpl) Record(duration time.Duration, subCategory string) {
 		bucketCounter = newBucketCounterImpl(
 			fc.bucketInterval,
 			fc.numberOfBuckets,
-			metrics.DefaultClock,
+			fc.clock,
 			false)
 		fc.subCategories[subCategory] = bucketCounter
 	}
 
 	bucketCounter.UpdateN(countBase + duration.Nanoseconds()/1e6)
-
 }
 
 func (fc *FastCompassImpl) GetMethodCountPerCategory() metrics.FastCompassResult {
-	panic("implement me")
+	return fc.GetMethodCountPerCategorySince(0)
 }
 
 func (fc *FastCompassImpl) GetMethodCountPerCategorySince(startTime int64) metrics.FastCompassResult {
-	panic("implement me")
+	result := metrics.NewFastCompassResult(len(fc.subCategories))
+	for key, value := range fc.subCategories {
+		bkCnt := value.GetBucketCountsSince(startTime)
+		methodBucketCount := make(map[int64]int64, len(bkCnt))
+		for timestamp, count := range bkCnt {
+			// It's impossible for count to be negative
+			methodBucketCount[timestamp] = int64(uint64(count) >> countOffset)
+		}
+		result[key] = methodBucketCount
+	}
+	return result
 }
 
 func (fc *FastCompassImpl) GetMethodRtPerCategory() metrics.FastCompassResult {
-	panic("implement me")
+	return fc.GetMethodRtPerCategorySince(0)
 }
 
 func (fc *FastCompassImpl) GetMethodRtPerCategorySince(startTime int64) metrics.FastCompassResult {
-	panic("implement me")
+	result := metrics.NewFastCompassResult(len(fc.subCategories))
+	for key, value := range fc.subCategories {
+		bkCnt := value.GetBucketCountsSince(startTime)
+		methodBucketCount := make(map[int64]int64, len(bkCnt))
+		for timestamp, count := range bkCnt {
+			// It's impossible for count to be negative
+			methodBucketCount[timestamp] = int64(uint64(count) & rtBitwiseAndBase)
+		}
+		result[key] = methodBucketCount
+	}
+	return result
 }
 
 func (fc *FastCompassImpl) GetCountAndRtPerCategory() metrics.FastCompassResult {
-	panic("implement me")
+	return fc.GetCountAndRtPerCategorySince(0)
 }
 
 func (fc *FastCompassImpl) GetCountAndRtPerCategorySince(startTime int64) metrics.FastCompassResult {
-	panic("implement me")
+	result := metrics.NewFastCompassResult(len(fc.subCategories))
+	for key, value := range fc.subCategories {
+		bkCnt := value.GetBucketCountsSince(startTime)
+		methodBucketCount := make(map[int64]int64, len(bkCnt))
+		for timestamp, count := range bkCnt {
+			// It's impossible for count to be negative
+			methodBucketCount[timestamp] = count
+		}
+		result[key] = methodBucketCount
+	}
+	return result
 }
 
 func (fc *FastCompassImpl) GetBucketInterval() int {
 	return fc.bucketInterval
 }
 
-var (
-	fastCompassInstance *FastCompassImpl
-	fastCompassInitOnce sync.Once
-)
-
-func GetFastCompassImpl() metrics.FastCompass {
-	fastCompassInitOnce.Do(func() {
-		fastCompassInstance = &FastCompassImpl{
-			maxSubCategoryCount: config.GetMetricConfig().GetMaxSubCategoryCount(),
-		}
-	})
-	return fastCompassInstance
+func newFastCompass(bucketInterval int, numOfBuckets int,
+	clock metrics.Clock, maxSubCategoryCount int) metrics.FastCompass {
+	return &FastCompassImpl{
+		maxSubCategoryCount: maxSubCategoryCount,
+		bucketInterval:      bucketInterval,
+		numberOfBuckets:     numOfBuckets,
+		clock:               clock,
+		subCategoriesMutex:  sync.Mutex{},
+		subCategories:       make(map[string]metrics.BucketCounter),
+	}
 }
