@@ -25,7 +25,6 @@ import (
 )
 
 type NopFastCompass struct {
-
 }
 
 func (n NopFastCompass) LastUpdateTime() int64 {
@@ -65,7 +64,7 @@ func (n NopFastCompass) GetBucketInterval() time.Duration {
 
 var (
 	nopFastCompassInstance *NopFastCompass
-	nopFastCompassOnce sync.Once
+	nopFastCompassOnce     sync.Once
 )
 
 func GetNopFastCompass() metrics.FastCompass {
@@ -74,5 +73,3 @@ func GetNopFastCompass() metrics.FastCompass {
 	})
 	return nopFastCompassInstance
 }
-
-

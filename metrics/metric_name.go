@@ -26,24 +26,28 @@ var (
 )
 
 type MetricName struct {
-	key         string
-	tags        map[string]string
+	Key         string
+	Tags        map[string]string
 	Level       MetricLevel
 	hashKeyOnce sync.Once
 	hashKey     string
 }
 
 /**
- * sometimes we try to use the MetricName as the map's key.
- * However the tags in MetricName is slice so that we can't use the MetricName like: map[MetricName]XXX
- * So I define this method, it will generate a string to be the key.
+ * sometimes we try to use the MetricName as the map's Key.
+ * However the Tags in MetricName is slice so that we can't use the MetricName like: map[MetricName]XXX
+ * So I define this method, it will generate a string to be the Key.
  * It's similar to com.alibaba.metrics.MetricName#hashCode in Java dubbo
- * It means that, the HashKey consist of key and tags, but Level will be ignored.
+ * It means that, the HashKey consist of Key and Tags, but Level will be ignored.
  */
 func (mn *MetricName) HashKey() string {
 	mn.hashKeyOnce.Do(func() {
-		mn.hashKey = mn.key + "-"
-		for key,value:= range mn.tags {
+		mn.hashKey = mn.Key
+		if len(mn.Tags) <= 0 {
+			return
+		}
+		mn.hashKey += "-"
+		for key, value := range mn.Tags {
 			mn.hashKey += key + ":" + value
 		}
 	})
@@ -52,15 +56,15 @@ func (mn *MetricName) HashKey() string {
 
 /*
  * It will return an instance of MetricName. You should know that the return value is not a pointer,
- * which means that if the key too long or the tags has too many key-value pair, the cost of memory will be expensive.
+ * which means that if the Key too long or the Tags has too many key-value pair, the cost of memory will be expensive.
  */
-func NewMetricName(key string, tags map[string]string, level MetricLevel) MetricName {
+func NewMetricName(key string, tags map[string]string, level MetricLevel) *MetricName {
 	if tags == nil {
 		tags = emptyTags
 	}
-	return MetricName{
-		key:   key,
-		tags:  tags,
+	return &MetricName{
+		Key:   key,
+		Tags:  tags,
 		Level: level,
 	}
 }

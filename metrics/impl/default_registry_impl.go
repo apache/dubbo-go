@@ -34,24 +34,32 @@ type MetricRegistryImpl struct {
 	maxMetricCount int
 }
 
-func (mri *MetricRegistryImpl) LastUpdateTime() int64 {
-	panic("implement me")
-}
-
-func (mri *MetricRegistryImpl) GetMetrics() map[string]metrics.Metric {
-	result := make(map[string]metrics.Metric, mri.metricsCount)
+func (mri *MetricRegistryImpl) GetMetrics() map[string]*metrics.MetricNameToMetricEntry {
+	result := make(map[string]*metrics.MetricNameToMetricEntry, mri.metricsCount)
 	mri.metricsMap.Range(func(key, value interface{}) bool {
-		result[key.(string)] = value.(metrics.Metric)
+		result[key.(string)] = value.(*metrics.MetricNameToMetricEntry)
 		return true
 	})
 	return result
 }
 
-func (mri *MetricRegistryImpl) GetFastCompass(name metrics.MetricName) metrics.FastCompass {
+func (mri *MetricRegistryImpl) LastUpdateTime() int64 {
+	result := int64(0)
+	mri.metricsMap.Range(func(_, value interface{}) bool {
+		entry := value.(*metrics.MetricNameToMetricEntry)
+		if result < entry.Metric.LastUpdateTime() {
+			result = entry.Metric.LastUpdateTime()
+		}
+		return true
+	})
+	return result
+}
+
+func (mri *MetricRegistryImpl) GetFastCompass(name *metrics.MetricName) metrics.FastCompass {
 	result, found := mri.metricsMap.Load(name.HashKey())
 	// fast path
 	if found {
-		return result.(metrics.FastCompass)
+		return result.(*metrics.MetricNameToMetricEntry).Metric.(metrics.FastCompass)
 	}
 
 	// slow path
@@ -63,19 +71,20 @@ func (mri *MetricRegistryImpl) GetFastCompass(name metrics.MetricName) metrics.F
 		newFastCmps = newFastCompass(config.GetMetricConfig().GetLevelInterval(int(name.Level)))
 	}
 
-	result, loaded := mri.metricsMap.LoadOrStore(name.HashKey(), newFastCmps)
+	result, loaded := mri.metricsMap.LoadOrStore(name.HashKey(), &metrics.MetricNameToMetricEntry{
+		MetricName: name,
+		Metric:     newFastCmps,
+	})
 	if !loaded {
 		// we store the new metric
 		atomic.AddInt32(&mri.metricsCount, 1)
 	}
-	return result.(metrics.FastCompass)
+	return result.(*metrics.MetricNameToMetricEntry).Metric.(metrics.FastCompass)
 }
 
-func NewMetricRegistry() metrics.MetricRegistry {
+func NewMetricRegistry(maxMetricCount int) metrics.MetricRegistry {
 	return &MetricRegistryImpl{
-		maxMetricCount: config.GetMetricConfig().GetMaxMetricCountPerRegistry(),
+		maxMetricCount: maxMetricCount,
+		metricsMap:     sync.Map{},
 	}
 }
-
-
-

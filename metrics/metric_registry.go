@@ -24,5 +24,5 @@ package metrics
 type MetricRegistry interface {
 	MetricSet
 
-	GetFastCompass(name MetricName) FastCompass
+	GetFastCompass(name *MetricName) FastCompass
 }

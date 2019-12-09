@@ -24,8 +24,8 @@ import (
 )
 
 const (
-	defaultMaxSubCategoryCount = 20
-	defaultGlobalInterval      = 60 * time.Second
+	defaultMaxSubCategoryCount       = 20
+	defaultGlobalInterval            = 60 * time.Second
 	defaultMaxMetricCountPerRegistry = 5000
 )
 
@@ -64,7 +64,7 @@ type MetricConfig struct {
 }
 
 func (mc *MetricConfig) GetMaxMetricCountPerRegistry() int {
-	if mc.MaxMetricCountPerRegistry <=0 {
+	if mc.MaxMetricCountPerRegistry <= 0 {
 		return defaultMaxMetricCountPerRegistry
 	}
 	return mc.MaxMetricCountPerRegistry

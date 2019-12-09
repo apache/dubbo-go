@@ -170,5 +170,3 @@ func newFastCompass(duration time.Duration) metrics.FastCompass {
 		subCategories:       make(map[string]metrics.BucketCounter),
 	}
 }
-
-

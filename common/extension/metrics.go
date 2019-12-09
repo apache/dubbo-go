@@ -39,4 +39,3 @@ func GetMetricManager(name string) metrics.MetricManager {
 	}
 	return manager
 }
-

@@ -18,8 +18,7 @@
 package metrics
 
 type MetricManager interface {
-
-	GetFastCompass(groupName string, metricName MetricName) FastCompass
+	GetFastCompass(groupName string, metricName *MetricName) FastCompass
 	// whether enable the manager record or report the metrics
 	IsEnable() bool
 	SetEnable(enable bool)

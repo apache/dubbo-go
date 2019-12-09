@@ -15,6 +15,30 @@
  * limitations under the License.
  */
 
-package prometheus
+package impl
 
+import (
+	"testing"
 
+	"github.com/stretchr/testify/assert"
+
+	"github.com/apache/dubbo-go/metrics"
+)
+
+func TestDefaultMetricManager_GetFastCompass(t *testing.T) {
+	manager := newDefaultMetricManager()
+	assert.True(t, manager.IsEnable())
+	manager.SetEnable(false)
+	assert.False(t, manager.IsEnable())
+
+	groupName := "TestGroup"
+	name := metrics.NewMetricName("Test", nil, metrics.Minor)
+	fastCompass := manager.GetFastCompass(groupName, name)
+	assert.Equal(t, GetNopFastCompass(), fastCompass)
+
+	manager.SetEnable(true)
+	fastCompass = manager.GetFastCompass(groupName, name)
+	fastCompass1 := manager.GetFastCompass(groupName, name)
+	assert.Equal(t, fastCompass, fastCompass1)
+
+}

@@ -23,6 +23,12 @@ package metrics
  */
 type MetricSet interface {
 	Metric
-	// the key is MetricName.HashKey()
-	GetMetrics() map[string]Metric
+	// the Key is MetricName.HashKey()
+	GetMetrics() map[string]*MetricNameToMetricEntry
+}
+
+// due to the MetricName can not be used as map's Key, so we need to maintains this struct.
+type MetricNameToMetricEntry struct {
+	Metric     Metric
+	MetricName *MetricName
 }

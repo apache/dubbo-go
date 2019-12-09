@@ -18,9 +18,9 @@
 package constant
 
 const (
-	DubboProvider = "dubbo.provider"
+	DubboProvider       = "dubbo.provider"
 	DubboProviderMethod = "dubbo.provider.method"
 
-	DubboConsumer = "dubbo.consumer"
+	DubboConsumer       = "dubbo.consumer"
 	DubboConsumerMethod = "dubbo.consumer.method"
 )

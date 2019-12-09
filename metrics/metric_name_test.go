@@ -24,7 +24,14 @@ import (
 )
 
 func TestNewMetricName(t *testing.T) {
-	mn := NewMetricName("my-key", nil, Minor)
+	mn := NewMetricName("my-Key", nil, Minor)
 	assert.NotNil(t, mn)
-	assert.NotNil(t, mn.tags)
+	assert.NotNil(t, mn.Tags)
+}
+
+func TestMetricName_HashKey(t *testing.T) {
+	name := NewMetricName("Test", nil, Minor)
+	assert.Equal(t, "Test", name.HashKey())
+	name = NewMetricName("Test", map[string]string{"A": "B"}, Minor)
+	assert.Equal(t, "Test-A:B", name.HashKey())
 }

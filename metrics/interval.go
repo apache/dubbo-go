@@ -33,7 +33,7 @@ type Interval time.Duration
 
 const (
 	Sec_1  = Interval(1 * time.Second)
-	Sec_5 = Interval(5 * time.Second)
+	Sec_5  = Interval(5 * time.Second)
 	Sec_10 = Interval(5 * time.Second)
 	Sec_30 = Interval(5 * time.Second)
 	Sec_60 = Interval(5 * time.Second)

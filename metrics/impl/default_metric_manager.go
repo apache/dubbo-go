@@ -22,6 +22,7 @@ import (
 
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/metrics"
 )
 
@@ -36,7 +37,7 @@ func init() {
 type DefaultMetricManager struct {
 	// group name -> MetricRegistry
 	metricRegistryMap sync.Map
-	enable bool
+	enable            bool
 }
 
 func (d *DefaultMetricManager) IsEnable() bool {
@@ -47,7 +48,7 @@ func (d *DefaultMetricManager) SetEnable(enable bool) {
 	d.enable = enable
 }
 
-func (d *DefaultMetricManager) GetFastCompass(groupName string, metricName metrics.MetricName) metrics.FastCompass {
+func (d *DefaultMetricManager) GetFastCompass(groupName string, metricName *metrics.MetricName) metrics.FastCompass {
 	if !d.enable {
 		return GetNopFastCompass()
 	}
@@ -61,7 +62,8 @@ func (d *DefaultMetricManager) getMetricRegistry(group string) metrics.MetricReg
 	if load {
 		return result.(metrics.MetricRegistry)
 	}
-	result, _=  d.metricRegistryMap.LoadOrStore(group, NewMetricRegistry())
+	result, _ = d.metricRegistryMap.LoadOrStore(group,
+		NewMetricRegistry(config.GetMetricConfig().GetMaxMetricCountPerRegistry()))
 	return result.(metrics.MetricRegistry)
 }
 
@@ -70,6 +72,3 @@ func newDefaultMetricManager() metrics.MetricManager {
 		enable: true,
 	}
 }
-
-
-
