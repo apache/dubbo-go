@@ -20,7 +20,9 @@ package impl
 import (
 	"strings"
 	"time"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -80,7 +82,7 @@ func (mf *metricsFilter) report(invoker protocol.Invoker, invocation protocol.In
 	tags := make(map[string]string, 4)
 	tags[constant.SERVICE_KEY] = serviceName
 	tags[constant.METHOD_KEY] = methodName
-	var global, method metrics.MetricName
+	var global, method *metrics.MetricName
 	if isProvider(invoker.GetUrl()) {
 		global = metrics.NewMetricName(constant.DubboProvider, nil, metrics.Major)
 		method = metrics.NewMetricName(constant.DubboProviderMethod, tags, metrics.Normal)
@@ -91,7 +93,7 @@ func (mf *metricsFilter) report(invoker protocol.Invoker, invocation protocol.In
 	mf.setCompassQuantity(result, duration, global, method)
 }
 
-func (mf *metricsFilter) setCompassQuantity(result string, duration time.Duration, metricsNames ...metrics.MetricName) {
+func (mf *metricsFilter) setCompassQuantity(result string, duration time.Duration, metricsNames ...*metrics.MetricName) {
 	for _, metricName := range metricsNames {
 		compass := mf.metricManger.GetFastCompass(groupName, metricName)
 		compass.Record(duration, result)

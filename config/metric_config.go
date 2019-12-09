@@ -19,7 +19,9 @@ package config
 
 import (
 	"time"
+)
 
+import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
