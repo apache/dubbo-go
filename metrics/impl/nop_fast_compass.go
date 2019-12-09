@@ -20,7 +20,9 @@ package impl
 import (
 	"sync"
 	"time"
+)
 
+import (
 	"github.com/apache/dubbo-go/metrics"
 )
 

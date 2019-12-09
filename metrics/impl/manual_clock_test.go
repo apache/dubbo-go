@@ -20,7 +20,9 @@ package impl
 import (
 	"testing"
 	"time"
+)
 
+import (
 	"github.com/stretchr/testify/assert"
 )
 

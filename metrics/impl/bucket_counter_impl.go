@@ -21,7 +21,9 @@ import (
 	"sync/atomic"
 	"time"
 	"unsafe"
+)
 
+import (
 	"github.com/apache/dubbo-go/metrics"
 )
 

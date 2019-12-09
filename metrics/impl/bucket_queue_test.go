@@ -19,8 +19,10 @@ package impl
 
 import (
 	"testing"
+)
 
-	"github.com/bmizerany/assert"
+import (
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_bucketDequeue_addLast(t *testing.T) {

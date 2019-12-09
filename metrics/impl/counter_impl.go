@@ -19,7 +19,9 @@ package impl
 
 import (
 	"sync/atomic"
+)
 
+import (
 	"github.com/apache/dubbo-go/metrics"
 )
 
