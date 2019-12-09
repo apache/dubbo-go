@@ -65,3 +65,19 @@ func TestInitLog(t *testing.T) {
 	Warnf("%s", "warn")
 	Errorf("%s", "error")
 }
+
+func TestSetLevel(t *testing.T) {
+	err := InitLog("./log.yml")
+	assert.NoError(t, err)
+	Debug("debug")
+	Info("info")
+
+	assert.True(t, SetLoggerLevel("info"))
+	Debug("debug")
+	Info("info")
+
+	SetLogger(GetLogger().(*DubboLogger).Logger)
+	assert.False(t, SetLoggerLevel("debug"))
+	Debug("debug")
+	Info("info")
+}
