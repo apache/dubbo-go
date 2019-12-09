@@ -79,7 +79,7 @@ func (impl *FixedWindowTpsLimitStrategyImpl) IsAllowable() bool {
 func NewFixedWindowTpsLimitStrategyImpl(rate int, interval int) tps.TpsLimitStrategy {
 	return &FixedWindowTpsLimitStrategyImpl{
 		rate:      int32(rate),
-		interval:  int64(interval * 1000), // convert to ns
+		interval:  int64(interval) * int64(time.Millisecond), // convert to ns
 		count:     0,
 		timestamp: time.Now().UnixNano(),
 	}
