@@ -36,7 +36,7 @@ func TestFixedWindowTpsLimitStrategyImpl_IsAllowable(t *testing.T) {
 	assert.True(t, strategy.IsAllowable())
 	assert.True(t, strategy.IsAllowable())
 	assert.False(t, strategy.IsAllowable())
-	time.Sleep(time.Duration(2100 * 1000))
+	time.Sleep(2100 * time.Millisecond)
 	assert.True(t, strategy.IsAllowable())
 	assert.True(t, strategy.IsAllowable())
 	assert.False(t, strategy.IsAllowable())
