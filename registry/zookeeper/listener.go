@@ -74,11 +74,12 @@ type RegistryConfigurationListener struct {
 	client   *zk.ZookeeperClient
 	registry *zkRegistry
 	events   chan *config_center.ConfigChangeEvent
+	isClosed bool
 }
 
 func NewRegistryConfigurationListener(client *zk.ZookeeperClient, reg *zkRegistry) *RegistryConfigurationListener {
 	reg.wg.Add(1)
-	return &RegistryConfigurationListener{client: client, registry: reg, events: make(chan *config_center.ConfigChangeEvent, 32)}
+	return &RegistryConfigurationListener{client: client, registry: reg, events: make(chan *config_center.ConfigChangeEvent, 32), isClosed: false}
 }
 func (l *RegistryConfigurationListener) Process(configType *config_center.ConfigChangeEvent) {
 	l.events <- configType
@@ -114,6 +115,7 @@ func (l *RegistryConfigurationListener) Close() {
 		 * if the registry is not available, it means that the registry has been destroy
 		 * so we don't need to call Done(), or it will cause the negative count panic for registry.wg
 		 */
+		l.isClosed = true
 		l.registry.wg.Done()
 	}
 }
