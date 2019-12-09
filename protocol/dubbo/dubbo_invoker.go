@@ -42,8 +42,8 @@ var (
 
 type DubboInvoker struct {
 	protocol.BaseInvoker
-	client      *Client
-	destroyLock sync.Mutex
+	client   *Client
+	quitOnce sync.Once
 }
 
 func NewDubboInvoker(url common.URL, client *Client) *DubboInvoker {
@@ -97,19 +97,11 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 }
 
 func (di *DubboInvoker) Destroy() {
-	if di.IsDestroyed() {
-		return
-	}
-	di.destroyLock.Lock()
-	defer di.destroyLock.Unlock()
+	di.quitOnce.Do(func() {
+		di.BaseInvoker.Destroy()
 
-	if di.IsDestroyed() {
-		return
-	}
-
-	di.BaseInvoker.Destroy()
-
-	if di.client != nil {
-		di.client.Close() // close client
-	}
+		if di.client != nil {
+			di.client.Close()
+		}
+	})
 }
