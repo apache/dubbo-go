@@ -83,7 +83,7 @@ func (impl *SlidingWindowTpsLimitStrategyImpl) IsAllowable() bool {
 func NewSlidingWindowTpsLimitStrategyImpl(rate int, interval int) tps.TpsLimitStrategy {
 	return &SlidingWindowTpsLimitStrategyImpl{
 		rate:     rate,
-		interval: int64(interval * 1000),
+		interval: int64(interval) * int64(time.Millisecond),
 		mutex:    &sync.Mutex{},
 		queue:    list.New(),
 	}
