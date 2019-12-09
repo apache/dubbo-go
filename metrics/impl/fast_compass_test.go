@@ -29,7 +29,7 @@ import (
 
 func TestFastCompassImpl_Record(t *testing.T) {
 	mc := &ManualClock{}
-	fastCompass := newFastCompassForTest(60, 10, mc, 10)
+	fastCompass := newFastCompassForTest(60*time.Second, 10, mc, 10)
 	fastCompass.Record(10*time.Millisecond, "success")
 	fastCompass.Record(20*time.Millisecond, "error")
 	fastCompass.Record(15*time.Millisecond, "success")
@@ -70,14 +70,14 @@ func TestFastCompassImpl_Record(t *testing.T) {
 
 func TestFastCompassImpl_MaxCategoryCount(t *testing.T) {
 	mc := &ManualClock{}
-	fastCompass := newFastCompassForTest(60, 10, mc, 2)
+	fastCompass := newFastCompassForTest(60*time.Second, 10, mc, 2)
 	fastCompass.Record(10*time.Millisecond, "success")
 	fastCompass.Record(20*time.Millisecond, "error1")
 	fastCompass.Record(15*time.Millisecond, "error2")
 	assert.Equal(t, 2, len(fastCompass.GetMethodCountPerCategory()))
 }
 
-func newFastCompassForTest(bucketInterval int, numOfBuckets int,
+func newFastCompassForTest(bucketInterval time.Duration, numOfBuckets int,
 	clock metrics.Clock, maxSubCategoryCount int) metrics.FastCompass {
 	return &FastCompassImpl{
 		maxSubCategoryCount: maxSubCategoryCount,

@@ -49,7 +49,7 @@ const (
 )
 
 /**
- * The default implementation of FastCompass
+ * The default implementation of GetFastCompass
  * All the data will be saved in memory.
  * It's the go-version of com.alibaba.metrics.FastCompassImpl In java
  *
@@ -59,7 +59,7 @@ const (
  */
 type FastCompassImpl struct {
 	maxSubCategoryCount int
-	bucketInterval      int
+	bucketInterval      time.Duration
 	numberOfBuckets     int
 	clock               metrics.Clock
 
@@ -68,7 +68,14 @@ type FastCompassImpl struct {
 }
 
 func (fc *FastCompassImpl) LastUpdateTime() int64 {
-	panic("implement me")
+	result := int64(0)
+	for _, value := range fc.subCategories {
+		updatedTime := value.LastUpdateTime()
+		if result < updatedTime {
+			result = updatedTime
+		}
+	}
+	return result
 }
 
 func (fc *FastCompassImpl) Record(duration time.Duration, subCategory string) {
@@ -149,14 +156,14 @@ func (fc *FastCompassImpl) GetCountAndRtPerCategorySince(startTime int64) metric
 	return result
 }
 
-func (fc *FastCompassImpl) GetBucketInterval() int {
+func (fc *FastCompassImpl) GetBucketInterval() time.Duration {
 	return fc.bucketInterval
 }
 
-func newFastCompass(bucketInterval int) metrics.FastCompass {
+func newFastCompass(duration time.Duration) metrics.FastCompass {
 	return &FastCompassImpl{
 		maxSubCategoryCount: config.GetMetricConfig().GetMaxSubCategoryCount(),
-		bucketInterval:      bucketInterval,
+		bucketInterval:      duration,
 		numberOfBuckets:     defaultBucketCount,
 		clock:               metrics.DefaultClock,
 		subCategoriesMutex:  sync.Mutex{},

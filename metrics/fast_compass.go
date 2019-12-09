@@ -63,5 +63,5 @@ type FastCompass interface {
 	 */
 	GetCountAndRtPerCategorySince(startTime int64) FastCompassResult
 
-	GetBucketInterval() int
+	GetBucketInterval() time.Duration
 }

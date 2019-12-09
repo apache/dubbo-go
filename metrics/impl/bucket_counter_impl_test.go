@@ -29,7 +29,7 @@ import (
 )
 
 func TestBucketCounterImpl_SlowUpdated(t *testing.T) {
-	bucketCounter := newBucketCounterImpl(1, 5, metrics.DefaultClock, true)
+	bucketCounter := newBucketCounterImpl(1 * time.Second, 5, metrics.DefaultClock, true)
 	for i := 0; i < 10; i++ {
 		bucketCounter.Update()
 	}
@@ -57,7 +57,7 @@ func TestBucketCounterImpl_SlowUpdated(t *testing.T) {
 }
 
 func TestBucketCounterImpl_SingleRoutineUpdate(t *testing.T) {
-	bci := newBucketCounterImpl(1, 5, metrics.DefaultClock, true)
+	bci := newBucketCounterImpl(1* time.Second, 5, metrics.DefaultClock, true)
 	for k := 0; k <= 7; k++ {
 		for i := 0; i < k*10; i++ {
 			bci.Update()
@@ -79,7 +79,7 @@ func TestBucketCounterImpl_SingleRoutineUpdate(t *testing.T) {
 }
 
 func TestBucketCounterImpl_LatestIndexAtFirst(t *testing.T) {
-	bci := newBucketCounterImpl(1, 5, metrics.DefaultClock, true)
+	bci := newBucketCounterImpl(1* time.Second, 5, metrics.DefaultClock, true)
 	for k := 0; k <= 6; k++ {
 		for i := 0; i < k*10; i++ {
 			bci.Update()
@@ -102,7 +102,7 @@ func TestBucketCounterImpl_LatestIndexAtFirst(t *testing.T) {
 
 func TestBucketCounterImpl_MultiGoroutineUpdate(t *testing.T) {
 	wg := sync.WaitGroup{}
-	bci := newBucketCounterImpl(1, 15, metrics.DefaultClock, true)
+	bci := newBucketCounterImpl(1* time.Second, 15, metrics.DefaultClock, true)
 	for i := 0; i < 80; i++ {
 		wg.Add(1)
 		go func() {
@@ -141,7 +141,7 @@ func TestBucketCounterImpl_MultiGoroutineUpdate(t *testing.T) {
 
 func TestBucketCounterImpl_10sInterval(t *testing.T) {
 	mc := &ManualClock{}
-	bci := newBucketCounterImpl(10, 5, mc, true)
+	bci := newBucketCounterImpl(10* time.Second, 5, mc, true)
 	for k := 0; k <= 7; k++ {
 		for i := 0; i < k*10; i++ {
 			bci.Update()
@@ -167,7 +167,7 @@ func TestBucketCounterImpl_10sInterval(t *testing.T) {
 
 func TestBucketCounterImpl_QueryWithStartTime(t *testing.T) {
 	mc := &ManualClock{}
-	bci := newBucketCounterImpl(10, 5, mc, true)
+	bci := newBucketCounterImpl(10* time.Second, 5, mc, true)
 	for k := 1; k <= 7; k++ {
 		for i := 0; i < k*10; i++ {
 			bci.Update()
@@ -193,7 +193,7 @@ func TestBucketCounterImpl_QueryWithStartTime(t *testing.T) {
 
 func TestBucketCounterImpl_QueryWith0(t *testing.T) {
 	mc := &ManualClock{}
-	bci := newBucketCounterImpl(10, 10, mc, true)
+	bci := newBucketCounterImpl(10* time.Second, 10, mc, true)
 	for k := 1; k <= 5; k++ {
 		for i := 0; i < k*100; i++ {
 			bci.Update()
@@ -229,7 +229,7 @@ func TestBucketCounterImpl_QueryWith0(t *testing.T) {
 
 func TestBucketCounterImpl_AccurateQuery(t *testing.T) {
 	mc := &ManualClock{}
-	bci := newBucketCounterImpl(10, 10, mc, true)
+	bci := newBucketCounterImpl(10* time.Second, 10, mc, true)
 	mc.Add(10 * time.Second)
 	bci.IncN(100)
 	assert.Equal(t, int64(100), bci.GetBucketCounts()[10000])
@@ -237,7 +237,7 @@ func TestBucketCounterImpl_AccurateQuery(t *testing.T) {
 
 func TestBucketCounterImpl_UpdateTotal(t *testing.T) {
 	mc := &ManualClock{}
-	bci := newBucketCounterImpl(10, 10, mc, true)
+	bci := newBucketCounterImpl(10* time.Second, 10, mc, true)
 	bci.Update()
 	bci.Update()
 	assert.Equal(t, int64(2), bci.GetCount())
@@ -245,7 +245,7 @@ func TestBucketCounterImpl_UpdateTotal(t *testing.T) {
 
 func TestBucketCounterImpl_NotUpdateTotal(t *testing.T) {
 	mc := &ManualClock{}
-	bci := newBucketCounterImpl(10, 10, mc, false)
+	bci := newBucketCounterImpl(10* time.Second, 10, mc, false)
 	bci.Update()
 	bci.Update()
 	assert.Equal(t, int64(0), bci.GetCount())
@@ -253,7 +253,7 @@ func TestBucketCounterImpl_NotUpdateTotal(t *testing.T) {
 
 func TestBucketCounterImpl_AlignTime(t *testing.T) {
 	bci := BucketCounterImpl{
-		interval: 1,
+		interval: 1 * time.Second,
 	}
 	var origin int64 = 1575796315755
 	assert.Equal(t, int64(1575796315), bci.alignTimestamp(origin))

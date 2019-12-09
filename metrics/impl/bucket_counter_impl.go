@@ -19,6 +19,7 @@ package impl
 
 import (
 	"sync/atomic"
+	"time"
 	"unsafe"
 
 	"github.com/apache/dubbo-go/metrics"
@@ -45,10 +46,9 @@ type BucketCounterImpl struct {
 	clock metrics.Clock
 
 	/**
-	 * interval must be 1s, 5s, 10s, 30s, 60s
-	 * see Interval
+	 * interval
 	 */
-	interval int
+	interval time.Duration
 
 	/**
 	 * The time stamp this object has been initialized.
@@ -134,19 +134,19 @@ func (bci *BucketCounterImpl) GetBucketCountsSince(startTime int64) map[int64]in
 	return result
 }
 
-func (bci *BucketCounterImpl) GetBucketInterval() int {
+func (bci *BucketCounterImpl) GetBucketInterval() time.Duration {
 	return bci.interval
 }
 
 // it will align the timestmp to N*interval and then convert the timestmp to seconds
 // for example: if the timestmp is 11000ms, and the interval is 5s, the result will be 11000/1000 /5 *5 = 10
 func (bci *BucketCounterImpl) alignTimestamp(timestmp int64) int64 {
-	return timestmp / int64(1e3) / int64(bci.interval) * int64(bci.interval)
+	return timestmp / int64(1e3) / int64(bci.interval.Seconds()) * int64(bci.interval.Seconds())
 }
 
 // interval should be one of 1s, 5s, 10s, 30s, 60s
 // see Interval
-func newBucketCounterImpl(interval int, numbOfBuckets int,
+func newBucketCounterImpl(interval time.Duration, numbOfBuckets int,
 	clock metrics.Clock, updateTotalCount bool) metrics.BucketCounter {
 	buckets := newBucketDequeue(numbOfBuckets)
 	return &BucketCounterImpl{

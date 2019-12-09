@@ -17,6 +17,10 @@
 
 package metrics
 
+import (
+	"time"
+)
+
 type BucketCounter interface {
 	Counter
 	/**
@@ -43,5 +47,5 @@ type BucketCounter interface {
 	/**
 	 * Get the interval of the bucket
 	 */
-	GetBucketInterval() int
+	GetBucketInterval() time.Duration
 }

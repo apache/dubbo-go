@@ -15,26 +15,26 @@
  * limitations under the License.
  */
 
-package metrics
+package impl
 
 import (
-	"time"
+	"github.com/apache/dubbo-go/metrics"
 )
 
-/**
- * enum points that which interval's value will be allow
- * In theory, we can handle any interval' value. But it's not a good choice.
- * so I define this enum.
- * for now, if you use another value, like 8s, it works fine too.
- *
- * Those value from java dubbo
- */
-type Interval time.Duration
+type NopMetricManager struct {
+	fastCompass metrics.FastCompass
+}
 
-const (
-	Sec_1  = Interval(1 * time.Second)
-	Sec_5 = Interval(5 * time.Second)
-	Sec_10 = Interval(5 * time.Second)
-	Sec_30 = Interval(5 * time.Second)
-	Sec_60 = Interval(5 * time.Second)
-)
+func (n NopMetricManager) GetFastCompass(name string, metricName metrics.MetricName) metrics.FastCompass {
+	return GetNopFastCompass()
+}
+
+func NewNopMetricManager() metrics.MetricManager{
+	return &NopMetricManager{}
+}
+
+
+
+
+
+

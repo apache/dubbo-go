@@ -18,12 +18,15 @@
 package config
 
 import (
+	"time"
+
 	"github.com/apache/dubbo-go/common/constant"
 )
 
 const (
 	defaultMaxSubCategoryCount = 20
-	defaultGlobalInterval      = 60
+	defaultGlobalInterval      = 60 * time.Second
+	defaultMaxMetricCountPerRegistry = 5000
 )
 
 type MetricConfig struct {
@@ -34,36 +37,53 @@ type MetricConfig struct {
 	/**
 	 * the max sub category count, it's same with com.alibaba.metrics.maxSubCategoryCount
 	 */
-	MaxSubCategoryCount int `default:"20" yaml:"max_subcategory_count" json:"max_subcategory_count,omitempty"`
+	MaxSubCategoryCount int `yaml:"max_subcategory_count" json:"max_subcategory_count,omitempty"`
 
 	/**
 	 * the interval of collecting data, or report data, and so on...
 	 * the unit is second
 	 * see Interval
-	 * default value is 60(s)
+	 * default value is 60s
+	 * it should >= 1s
 	 */
-	GlobalInterval int `default:"60" yaml:"global_interval" json:"global_interval,omitempty"`
+	GlobalInterval time.Duration `yaml:"global_interval" json:"global_interval,omitempty"`
 
 	/**
 	 * MetricLevel -> interval
 	 * we will use this map to find out the interval of the MetricLevel.
+	 * it should >= 1s
 	 */
-	LevelInterval map[int]int `yaml:"level_interval" json:"level_interval,omitempty"`
+	LevelInterval map[int]time.Duration `yaml:"level_interval" json:"level_interval,omitempty"`
+
+	/**
+	 * The max metric count per registry.
+	 * the default value is 5000
+	 * com.alibaba.metrics.maxMetricCountPerRegistry
+	 */
+	MaxMetricCountPerRegistry int `yaml:"max_metric_count_per_registry" json:"max_metric_count_per_registry,omitempty"`
 }
 
-func (mc *MetricConfig) GetLevelInterval(metricLevel int) int {
+func (mc *MetricConfig) GetMaxMetricCountPerRegistry() int {
+	if mc.MaxMetricCountPerRegistry <=0 {
+		return defaultMaxMetricCountPerRegistry
+	}
+	return mc.MaxMetricCountPerRegistry
+}
+
+// if the user configures the value for this metric level and the value >= 1s, the configured value will be returned.s
+func (mc *MetricConfig) GetLevelInterval(metricLevel int) time.Duration {
 	if mc.LevelInterval == nil {
 		return mc.GetGlobalInterval()
 	}
 	result, found := mc.LevelInterval[metricLevel]
-	if found {
+	if found && result >= time.Second {
 		return result
 	}
 	return mc.GetGlobalInterval()
 }
 
-func (mc *MetricConfig) GetGlobalInterval() int {
-	if mc.GlobalInterval <= 0 {
+func (mc *MetricConfig) GetGlobalInterval() time.Duration {
+	if mc.GlobalInterval <= time.Second {
 		return defaultGlobalInterval
 	}
 	return mc.GlobalInterval
