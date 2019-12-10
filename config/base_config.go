@@ -69,7 +69,7 @@ func (c *BaseConfig) prepareEnvironment() error {
 		logger.Errorf("Get dynamic configuration error , error message is %v", err)
 		return perrors.WithStack(err)
 	}
-	content, err := dynamicConfig.GetConfig(c.ConfigCenterConfig.ConfigFile, config_center.WithGroup(c.ConfigCenterConfig.Group))
+	content, err := dynamicConfig.GetProperties(c.ConfigCenterConfig.ConfigFile, config_center.WithGroup(c.ConfigCenterConfig.Group))
 	if err != nil {
 		logger.Errorf("Get config content in dynamic configuration error , error message is %v", err)
 		return perrors.WithStack(err)
@@ -89,7 +89,7 @@ func (c *BaseConfig) prepareEnvironment() error {
 		if len(configFile) == 0 {
 			configFile = c.ConfigCenterConfig.ConfigFile
 		}
-		appContent, err = dynamicConfig.GetConfig(configFile, config_center.WithGroup(appGroup))
+		appContent, err = dynamicConfig.GetProperties(configFile, config_center.WithGroup(appGroup))
 	}
 	//global config file
 	mapContent, err := dynamicConfig.Parser().Parse(content)
