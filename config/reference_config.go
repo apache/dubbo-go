@@ -140,10 +140,13 @@ func (refconfig *ReferenceConfig) Refer() {
 		}
 	}
 
-	callback := GetCallback(refconfig.id)
-
 	//create proxy
-	refconfig.pxy = extension.GetProxyFactory(consumerConfig.ProxyFactory).GetProxy(refconfig.invoker, callback, url)
+	if refconfig.Async {
+		refconfig.pxy = extension.GetProxyFactory(consumerConfig.ProxyFactory).GetProxy(refconfig.invoker, url)
+	} else {
+		callback := GetCallback(refconfig.id)
+		refconfig.pxy = extension.GetProxyFactory(consumerConfig.ProxyFactory).GetAsyncProxy(refconfig.invoker, callback, url)
+	}
 }
 
 // @v is service provider implemented RPCService

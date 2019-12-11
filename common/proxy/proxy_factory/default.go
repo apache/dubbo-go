@@ -54,12 +54,17 @@ type DefaultProxyFactory struct {
 func NewDefaultProxyFactory(options ...proxy.Option) proxy.ProxyFactory {
 	return &DefaultProxyFactory{}
 }
-func (factory *DefaultProxyFactory) GetProxy(invoker protocol.Invoker, callBack interface{}, url *common.URL) *proxy.Proxy {
+func (factory *DefaultProxyFactory) GetProxy(invoker protocol.Invoker, url *common.URL) *proxy.Proxy {
+	return factory.GetAsyncProxy(invoker, nil, url)
+}
+
+func (factory *DefaultProxyFactory) GetAsyncProxy(invoker protocol.Invoker, callBack interface{}, url *common.URL) *proxy.Proxy {
 	//create proxy
 	attachments := map[string]string{}
 	attachments[constant.ASYNC_KEY] = url.GetParam(constant.ASYNC_KEY, "false")
 	return proxy.NewProxy(invoker, callBack, attachments)
 }
+
 func (factory *DefaultProxyFactory) GetInvoker(url common.URL) protocol.Invoker {
 	return &ProxyInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
