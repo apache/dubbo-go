@@ -55,8 +55,7 @@ func (mn *MetricName) HashKey() string {
 }
 
 /*
- * It will return an instance of MetricName. You should know that the return value is not a pointer,
- * which means that if the Key too long or the Tags has too many key-value pair, the cost of memory will be expensive.
+ * It will return an instance of MetricName.
  */
 func NewMetricName(key string, tags map[string]string, level MetricLevel) *MetricName {
 	if tags == nil {

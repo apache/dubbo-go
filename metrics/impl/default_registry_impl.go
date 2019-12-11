@@ -20,10 +20,11 @@ package impl
 import (
 	"sync"
 	"sync/atomic"
+
+	"github.com/apache/dubbo-go/config"
 )
 
 import (
-	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/metrics"
 )
 
@@ -65,12 +66,12 @@ func (mri *MetricRegistryImpl) GetFastCompass(name *metrics.MetricName) metrics.
 	}
 
 	// slow path
-	newFastCmps := GetNopFastCompass()
+	newFastCmps := newFastCompass(config.GetMetricConfig().GetLevelInterval(int(name.Level)))
 
 	// because the metricsCount increase monotonically, so the check and do something works well
-	if int(mri.metricsCount) < mri.maxMetricCount {
-		// we are not over the limitation of max metric count per registry
-		newFastCmps = newFastCompass(config.GetMetricConfig().GetLevelInterval(int(name.Level)))
+	if int(mri.metricsCount) >= mri.maxMetricCount {
+		// we are over the limitation of max metric count per registry
+		newFastCmps = GetNopFastCompass()
 	}
 
 	result, loaded := mri.metricsMap.LoadOrStore(name.HashKey(), &metrics.MetricNameToMetricEntry{
