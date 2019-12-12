@@ -27,14 +27,15 @@ import (
 )
 
 func TestSlidingWindowTpsLimitStrategyImpl_IsAllowable(t *testing.T) {
-	strategy := NewSlidingWindowTpsLimitStrategyImpl(2, 60000)
+	creator := &slidingWindowStrategyCreator{}
+	strategy := creator.Create(2, 60000)
 	assert.True(t, strategy.IsAllowable())
 	assert.True(t, strategy.IsAllowable())
 	assert.False(t, strategy.IsAllowable())
 	time.Sleep(2100 * time.Millisecond)
 	assert.False(t, strategy.IsAllowable())
 
-	strategy = NewSlidingWindowTpsLimitStrategyImpl(2, 2000)
+	strategy = creator.Create(2, 2000)
 	assert.True(t, strategy.IsAllowable())
 	assert.True(t, strategy.IsAllowable())
 	assert.False(t, strategy.IsAllowable())
