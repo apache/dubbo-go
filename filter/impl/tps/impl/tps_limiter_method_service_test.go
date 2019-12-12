@@ -48,10 +48,12 @@ func TestMethodServiceTpsLimiterImpl_IsAllowable_Only_Service_Level(t *testing.T
 
 	mockStrategyImpl := NewMockTpsLimitStrategy(ctrl)
 	mockStrategyImpl.EXPECT().IsAllowable().Return(true).Times(1)
-	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, func(rate int, interval int) tps.TpsLimitStrategy {
-		assert.Equal(t, 20, rate)
-		assert.Equal(t, 60000, interval)
-		return mockStrategyImpl
+
+	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, &mockStrategyCreator{
+		rate:     40,
+		interval: 60000,
+		t:        t,
+		strategy: mockStrategyImpl,
 	})
 
 	limiter := GetMethodServiceTpsLimiter()
@@ -95,10 +97,12 @@ func TestMethodServiceTpsLimiterImpl_IsAllowable_Method_Level_Override(t *testin
 
 	mockStrategyImpl := NewMockTpsLimitStrategy(ctrl)
 	mockStrategyImpl.EXPECT().IsAllowable().Return(true).Times(1)
-	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, func(rate int, interval int) tps.TpsLimitStrategy {
-		assert.Equal(t, 40, rate)
-		assert.Equal(t, 7000, interval)
-		return mockStrategyImpl
+
+	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, &mockStrategyCreator{
+		rate:     40,
+		interval: 7000,
+		t:        t,
+		strategy: mockStrategyImpl,
 	})
 
 	limiter := GetMethodServiceTpsLimiter()
@@ -123,13 +127,28 @@ func TestMethodServiceTpsLimiterImpl_IsAllowable_Both_Method_And_Service(t *test
 
 	mockStrategyImpl := NewMockTpsLimitStrategy(ctrl)
 	mockStrategyImpl.EXPECT().IsAllowable().Return(true).Times(1)
-	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, func(rate int, interval int) tps.TpsLimitStrategy {
-		assert.Equal(t, 40, rate)
-		assert.Equal(t, 3000, interval)
-		return mockStrategyImpl
+
+	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, &mockStrategyCreator{
+		rate:     40,
+		interval: 3000,
+		t:        t,
+		strategy: mockStrategyImpl,
 	})
 
 	limiter := GetMethodServiceTpsLimiter()
 	result := limiter.IsAllowable(*invokeUrl, invoc)
 	assert.True(t, result)
+}
+
+type mockStrategyCreator struct {
+	rate     int
+	interval int
+	t        *testing.T
+	strategy tps.TpsLimitStrategy
+}
+
+func (creator *mockStrategyCreator) Create(rate int, interval int) tps.TpsLimitStrategy {
+	assert.Equal(creator.t, creator.rate, rate)
+	assert.Equal(creator.t, creator.interval, interval)
+	return creator.strategy
 }
