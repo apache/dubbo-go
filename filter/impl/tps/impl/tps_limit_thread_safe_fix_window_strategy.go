@@ -27,7 +27,9 @@ import (
 )
 
 func init() {
-	extension.SetTpsLimitStrategy("threadSafeFixedWindow", NewThreadSafeFixedWindowTpsLimitStrategyImpl)
+	extension.SetTpsLimitStrategy("threadSafeFixedWindow", &threadSafeFixedWindowStrategyCreator{
+		fixedWindowStrategyCreator: &fixedWindowStrategyCreator{},
+	})
 }
 
 /**
@@ -56,8 +58,12 @@ func (impl *ThreadSafeFixedWindowTpsLimitStrategyImpl) IsAllowable() bool {
 	return impl.fixedWindow.IsAllowable()
 }
 
-func NewThreadSafeFixedWindowTpsLimitStrategyImpl(rate int, interval int) tps.TpsLimitStrategy {
-	fixedWindowStrategy := NewFixedWindowTpsLimitStrategyImpl(rate, interval).(*FixedWindowTpsLimitStrategyImpl)
+type threadSafeFixedWindowStrategyCreator struct {
+	fixedWindowStrategyCreator *fixedWindowStrategyCreator
+}
+
+func (creator *threadSafeFixedWindowStrategyCreator) Create(rate int, interval int) tps.TpsLimitStrategy {
+	fixedWindowStrategy := creator.fixedWindowStrategyCreator.Create(rate, interval).(*FixedWindowTpsLimitStrategyImpl)
 	return &ThreadSafeFixedWindowTpsLimitStrategyImpl{
 		fixedWindow: fixedWindowStrategy,
 		mutex:       &sync.Mutex{},
