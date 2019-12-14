@@ -36,6 +36,7 @@ type MethodConfig struct {
 	TpsLimitStrategy            string `yaml:"tps.limit.strategy" json:"tps.limit.strategy,omitempty" property:"tps.limit.strategy"`
 	ExecuteLimit                string `yaml:"execute.limit" json:"execute.limit,omitempty" property:"execute.limit"`
 	ExecuteLimitRejectedHandler string `yaml:"execute.limit.rejected.handler" json:"execute.limit.rejected.handler,omitempty" property:"execute.limit.rejected.handler"`
+	RequestTimeout              string `yaml:"request_timeout"  json:"request_timeout,omitempty" property:"request_timeout"`
 }
 
 func (c *MethodConfig) Prefix() string {
