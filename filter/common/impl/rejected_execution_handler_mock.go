@@ -21,10 +21,16 @@
 package impl
 
 import (
+	reflect "reflect"
+)
+
+import (
+	gomock "github.com/golang/mock/gomock"
+)
+
+import (
 	common "github.com/apache/dubbo-go/common"
 	protocol "github.com/apache/dubbo-go/protocol"
-	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 )
 
 // MockRejectedExecutionHandler is a mock of RejectedExecutionHandler interface

@@ -33,8 +33,9 @@ const (
 )
 
 func init() {
-	extension.SetTpsLimitStrategy(FixedWindowKey, NewFixedWindowTpsLimitStrategyImpl)
-	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, NewFixedWindowTpsLimitStrategyImpl)
+	creator := &fixedWindowStrategyCreator{}
+	extension.SetTpsLimitStrategy(FixedWindowKey, creator)
+	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, creator)
 }
 
 /**
@@ -76,7 +77,9 @@ func (impl *FixedWindowTpsLimitStrategyImpl) IsAllowable() bool {
 	return atomic.AddInt32(&impl.count, 1) <= impl.rate
 }
 
-func NewFixedWindowTpsLimitStrategyImpl(rate int, interval int) tps.TpsLimitStrategy {
+type fixedWindowStrategyCreator struct{}
+
+func (creator *fixedWindowStrategyCreator) Create(rate int, interval int) tps.TpsLimitStrategy {
 	return &FixedWindowTpsLimitStrategyImpl{
 		rate:      int32(rate),
 		interval:  int64(interval) * int64(time.Millisecond), // convert to ns
