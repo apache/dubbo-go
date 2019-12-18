@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	tpsLimitStrategy = make(map[string]func(rate int, interval int) tps.TpsLimitStrategy)
+	tpsLimitStrategy = make(map[string]tps.TpsLimitStrategyCreator)
 	tpsLimiter       = make(map[string]func() tps.TpsLimiter)
 )
 
@@ -39,11 +39,11 @@ func GetTpsLimiter(name string) tps.TpsLimiter {
 	return creator()
 }
 
-func SetTpsLimitStrategy(name string, creator func(rate int, interval int) tps.TpsLimitStrategy) {
+func SetTpsLimitStrategy(name string, creator tps.TpsLimitStrategyCreator) {
 	tpsLimitStrategy[name] = creator
 }
 
-func GetTpsLimitStrategyCreator(name string) func(rate int, interval int) tps.TpsLimitStrategy {
+func GetTpsLimitStrategyCreator(name string) tps.TpsLimitStrategyCreator {
 	creator, ok := tpsLimitStrategy[name]
 	if !ok {
 		panic("TpsLimitStrategy for " + name + " is not existing, make sure you have import the package " +
