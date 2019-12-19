@@ -81,6 +81,7 @@ func doInitConsumer() {
 		},
 		References: map[string]*ReferenceConfig{
 			"MockService": {
+				id: "MockProvider",
 				Params: map[string]string{
 					"serviceid": "soa.mock",
 					"forks":     "5",
@@ -107,6 +108,26 @@ func doInitConsumer() {
 				},
 			},
 		},
+	}
+}
+
+var mockProvider = new(MockProvider)
+
+type MockProvider struct {
+}
+
+func (m *MockProvider) Reference() string {
+	return "MockProvider"
+}
+
+func (m *MockProvider) CallBack(res common.CallbackResponse) {
+}
+
+func doInitConsumerAsync() {
+	doInitConsumer()
+	SetConsumerService(mockProvider)
+	for _, v := range consumerConfig.References {
+		v.Async = true
 	}
 }
 
@@ -181,6 +202,22 @@ func Test_Refer(t *testing.T) {
 	}
 	consumerConfig = nil
 }
+
+func Test_ReferAsync(t *testing.T) {
+	doInitConsumerAsync()
+	extension.SetProtocol("registry", GetProtocol)
+	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
+
+	for _, reference := range consumerConfig.References {
+		reference.Refer()
+		assert.Equal(t, "soa.mock", reference.Params["serviceid"])
+		assert.NotNil(t, reference.invoker)
+		assert.NotNil(t, reference.pxy)
+		assert.NotNil(t, reference.pxy.GetCallback())
+	}
+	consumerConfig = nil
+}
+
 func Test_ReferP2P(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("dubbo", GetProtocol)

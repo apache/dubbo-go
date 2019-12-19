@@ -21,6 +21,7 @@ import (
 	"sync/atomic"
 	"time"
 )
+
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -32,8 +33,9 @@ const (
 )
 
 func init() {
-	extension.SetTpsLimitStrategy(FixedWindowKey, NewFixedWindowTpsLimitStrategyImpl)
-	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, NewFixedWindowTpsLimitStrategyImpl)
+	creator := &fixedWindowStrategyCreator{}
+	extension.SetTpsLimitStrategy(FixedWindowKey, creator)
+	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, creator)
 }
 
 /**
@@ -75,10 +77,12 @@ func (impl *FixedWindowTpsLimitStrategyImpl) IsAllowable() bool {
 	return atomic.AddInt32(&impl.count, 1) <= impl.rate
 }
 
-func NewFixedWindowTpsLimitStrategyImpl(rate int, interval int) tps.TpsLimitStrategy {
+type fixedWindowStrategyCreator struct{}
+
+func (creator *fixedWindowStrategyCreator) Create(rate int, interval int) tps.TpsLimitStrategy {
 	return &FixedWindowTpsLimitStrategyImpl{
 		rate:      int32(rate),
-		interval:  int64(interval * 1000), // convert to ns
+		interval:  int64(interval) * int64(time.Millisecond), // convert to ns
 		count:     0,
 		timestamp: time.Now().UnixNano(),
 	}

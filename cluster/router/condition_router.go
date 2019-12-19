@@ -156,10 +156,13 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 	if len(rule) == 0 {
 		return condition, nil
 	}
-	var pair MatchPair
+
+	var (
+		pair       MatchPair
+		startIndex int
+	)
 	values := gxset.NewSet()
 	reg := regexp.MustCompile(`([&!=,]*)\s*([^&!=,\s]+)`)
-	var startIndex = 0
 	if indexTuple := reg.FindIndex([]byte(rule)); len(indexTuple) > 0 {
 		startIndex = indexTuple[0]
 	}
@@ -227,7 +230,7 @@ func MatchCondition(pairs map[string]MatchPair, url *common.URL, param *common.U
 	if sample == nil {
 		return true, perrors.Errorf("url is not allowed be nil")
 	}
-	result := false
+	var result bool
 	for key, matchPair := range pairs {
 		var sampleValue string
 
