@@ -33,7 +33,7 @@ func SetFilter(name string, v func() filter.Filter) {
 
 func GetFilter(name string) filter.Filter {
 	if filters[name] == nil {
-		panic("filter for " + name + " is not existing, make sure you have import the package.")
+		panic("filter for " + name + " is not existing, make sure you have imported the package.")
 	}
 	return filters[name]()
 }
