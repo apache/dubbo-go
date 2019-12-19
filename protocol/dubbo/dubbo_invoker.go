@@ -75,7 +75,7 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	}
 	response := NewResponse(inv.Reply(), nil)
 	if async {
-		if callBack, ok := inv.CallBack().(func(response CallResponse)); ok {
+		if callBack, ok := inv.CallBack().(func(response common.CallbackResponse)); ok {
 			result.Err = di.client.AsyncCall(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), callBack, response)
 		} else {
 			result.Err = di.client.CallOneway(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()))
