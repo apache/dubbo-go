@@ -134,14 +134,14 @@ func serviceItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.UR
 				newUrlStr = newUrlStr + v
 				url, err := common.NewURL(context.Background(), newUrlStr)
 				if err != nil {
-					perrors.WithStack(err)
+					return nil, perrors.WithStack(err)
 				}
 				urls = append(urls, &url)
 			}
 		} else {
 			url, err := common.NewURL(context.Background(), urlStr)
 			if err != nil {
-				perrors.WithStack(err)
+				return nil, perrors.WithStack(err)
 			}
 			urls = append(urls, &url)
 		}
