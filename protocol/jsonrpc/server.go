@@ -44,7 +44,7 @@ import (
 
 var (
 	// A value sent as a placeholder for the server's response value when the server
-	// receives an invalid request. It is never decoded by the client since the Response
+	// receives an invalid request. It is never decoded by the client since the response
 	// contains an error when it is used.
 	invalidRequest = struct{}{}
 )

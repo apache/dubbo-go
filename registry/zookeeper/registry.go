@@ -274,7 +274,9 @@ func (r *zkRegistry) register(c common.URL) error {
 	params = url.Values{}
 
 	c.RangeParams(func(key, value string) bool {
-		params.Add(key, value)
+		if (value != "") {
+			params.Add(key, value)
+		}
 		return true
 	})
 
@@ -283,6 +285,7 @@ func (r *zkRegistry) register(c common.URL) error {
 	//params.Add("timeout", fmt.Sprintf("%d", int64(r.Timeout)/1e6))
 
 	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
+	escapedService := url.QueryEscape(c.Service())
 	switch role {
 
 	case common.PROVIDER:
@@ -291,7 +294,8 @@ func (r *zkRegistry) register(c common.URL) error {
 			return perrors.Errorf("conf{Path:%s, Methods:%s}", c.Path, c.Methods)
 		}
 		// 先创建服务下面的provider node
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", c.Service(), common.DubboNodes[common.PROVIDER])
+		// NOTE: 这里service name同样需要url encode
+		dubboPath = fmt.Sprintf("/dubbo/%s/%s", escapedService, common.DubboNodes[common.PROVIDER])
 		r.cltLock.Lock()
 		err = r.client.Create(dubboPath)
 		r.cltLock.Unlock()
@@ -322,14 +326,14 @@ func (r *zkRegistry) register(c common.URL) error {
 		}
 
 		rawURL = fmt.Sprintf("%s://%s%s?%s", c.Protocol, host, c.Path, params.Encode())
-		encodedURL = url.QueryEscape(rawURL)
+		rawPath := fmt.Sprintf("%s://%s%s", c.Protocol, host, c.Path)
+		encodedURL = fmt.Sprintf("%s?%s", url.QueryEscape(rawPath), params.Encode())
 
 		// Print your own registration service providers.
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", c.Service(), (common.RoleType(common.PROVIDER)).String())
-		logger.Debugf("provider path:%s, url:%s", dubboPath, rawURL)
+		dubboPath = fmt.Sprintf("/dubbo/%s/%s", escapedService, (common.RoleType(common.PROVIDER)).String())
 
 	case common.CONSUMER:
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", c.Service(), common.DubboNodes[common.CONSUMER])
+		dubboPath = fmt.Sprintf("/dubbo/%s/%s", escapedService, common.DubboNodes[common.CONSUMER])
 		r.cltLock.Lock()
 		err = r.client.Create(dubboPath)
 		r.cltLock.Unlock()
@@ -337,7 +341,7 @@ func (r *zkRegistry) register(c common.URL) error {
 			logger.Errorf("zkClient.create(path{%s}) = error{%v}", dubboPath, perrors.WithStack(err))
 			return perrors.WithStack(err)
 		}
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", c.Service(), common.DubboNodes[common.PROVIDER])
+		dubboPath = fmt.Sprintf("/dubbo/%s/%s", escapedService, common.DubboNodes[common.PROVIDER])
 		r.cltLock.Lock()
 		err = r.client.Create(dubboPath)
 		r.cltLock.Unlock()
@@ -351,11 +355,11 @@ func (r *zkRegistry) register(c common.URL) error {
 		params.Add("category", (common.RoleType(common.CONSUMER)).String())
 		params.Add("dubbo", "dubbogo-consumer-"+constant.Version)
 
-		rawURL = fmt.Sprintf("consumer://%s%s?%s", localIP, c.Path, params.Encode())
-		encodedURL = url.QueryEscape(rawURL)
+		rawPath := fmt.Sprintf("consumer://%s%s", localIP, c.Path)
+		encodedURL = fmt.Sprintf("%s?%s", url.QueryEscape(rawPath), params.Encode())
+		rawURL = rawPath + "?" + params.Encode()
 
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", c.Service(), (common.RoleType(common.CONSUMER)).String())
-		logger.Debugf("consumer path:%s, url:%s", dubboPath, rawURL)
+		dubboPath = fmt.Sprintf("/dubbo/%s/%s", escapedService, (common.RoleType(common.CONSUMER)).String())
 
 	default:
 		return perrors.Errorf("@c{%v} type is not referencer or provider", c)
@@ -461,7 +465,8 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 	//Interested register to dataconfig.
 	r.dataListener.AddInterestedURL(conf)
 	for _, v := range strings.Split(conf.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY), ",") {
-		go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+v, conf.Service()), r.dataListener)
+		u := common.URL{Path: fmt.Sprintf("/dubbo/%s/"+v, url.QueryEscape(conf.Service()))}
+		go r.listener.ListenServiceEvent(u.Path, r.dataListener)
 	}
 
 	return zkListener, nil

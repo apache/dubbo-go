@@ -87,6 +87,9 @@ type (
 
 		// session tcp parameters
 		GettySessionParam GettySessionParam `required:"true" yaml:"getty_session_param" json:"getty_session_param,omitempty"`
+
+		// serialization
+		Serialization string `default:"hessian2" yaml:"serialization" json:"serialization"`
 	}
 )
 
@@ -101,6 +104,7 @@ func GetDefaultClientConfig() ClientConfig {
 		GrPoolSize:        200,
 		QueueLen:          64,
 		QueueNumber:       10,
+		Serialization: 		"hessian2",
 		GettySessionParam: GettySessionParam{
 			CompressEncoding: false,
 			TcpNoDelay:       true,

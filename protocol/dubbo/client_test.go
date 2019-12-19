@@ -198,8 +198,8 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 			KeepAlivePeriod:  "120s",
 			TcpRBufSize:      262144,
 			TcpWBufSize:      65536,
-			PkgWQSize:        512,
-			TcpReadTimeout:   "1s",
+			PkgWQSize:        8192,
+			TcpReadTimeout:   "10s",
 			TcpWriteTimeout:  "5s",
 			WaitTimeout:      "1s",
 			MaxMsgLen:        10240000000,
@@ -242,7 +242,7 @@ type (
 // size:4801228
 func (u *UserProvider) GetBigPkg(ctx context.Context, req []interface{}, rsp *User) error {
 	argBuf := new(bytes.Buffer)
-	for i := 0; i < 4000; i++ {
+	for i := 0; i < 4; i++ {
 		argBuf.WriteString("击鼓其镗，踊跃用兵。土国城漕，我独南行。从孙子仲，平陈与宋。不我以归，忧心有忡。爰居爰处？爰丧其马？于以求之？于林之下。死生契阔，与子成说。执子之手，与子偕老。于嗟阔兮，不我活兮。于嗟洵兮，不我信兮。")
 		argBuf.WriteString("击鼓其镗，踊跃用兵。土国城漕，我独南行。从孙子仲，平陈与宋。不我以归，忧心有忡。爰居爰处？爰丧其马？于以求之？于林之下。死生契阔，与子成说。执子之手，与子偕老。于嗟阔兮，不我活兮。于嗟洵兮，不我信兮。")
 	}

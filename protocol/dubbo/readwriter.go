@@ -18,7 +18,6 @@
 package dubbo
 
 import (
-	"bytes"
 	"reflect"
 )
 
@@ -29,8 +28,8 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 )
 
@@ -47,40 +46,52 @@ func NewRpcClientPackageHandler(client *Client) *RpcClientPackageHandler {
 }
 
 func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
-	pkg := &DubboPackage{}
-
-	buf := bytes.NewBuffer(data)
-	err := pkg.Unmarshal(buf, p.client)
-	if err != nil {
+	pkg := NewClientResponsePackage(data)
+	if err := pkg.ReadHeader(); err != nil  {
 		originErr := perrors.Cause(err)
 		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
 			return nil, 0, nil
 		}
-
-		logger.Errorf("pkg.Unmarshal(ss:%+v, len(@data):%d) = error:%+v", ss, len(data), err)
-
+		logger.Errorf("[RpcClientPackageHandler.Read] ss:%+v, len(@data):%d) = error:%+v ", ss, len(data), err)
 		return nil, 0, perrors.WithStack(err)
 	}
+	if pkg.IsHeartBeat() {
+		// heartbeat package doesn't need deserialize
+		return pkg, pkg.GetLen(), nil
+	}
 
-	pkg.Err = pkg.Body.(*hessian.Response).Exception
-	pkg.Body = NewResponse(pkg.Body.(*hessian.Response).RspObj, pkg.Body.(*hessian.Response).Attachments)
+	if err := loadSerializer(pkg); err != nil {
+		return nil, 0, err
+	}
 
-	return pkg, hessian.HEADER_LENGTH + pkg.Header.BodyLen, nil
+	// load response
+	pendingRsp, ok := p.client.pendingResponses.Load(SequenceType(pkg.GetHeader().ID))
+	if !ok {
+		return nil, 0, perrors.Errorf("client.GetPendingResopnse(%v) = nil", pkg.GetHeader().ID)
+	}
+	// set package body
+	body := NewResponsePayload(pendingRsp.(*PendingResponse).response.reply, nil, nil)
+	pkg.SetBody(body)
+	err := pkg.Unmarshal()
+	if err != nil {
+		return nil, 0, perrors.WithStack(err)
+	}
+	resp := pkg.Body.(*ResponsePayload)
+	pkg.Err = resp.Exception
+	pkg.Body = NewResponse(resp.RspObj, resp.Attachments)
+	return pkg, pkg.GetLen(), nil
 }
 
 func (p *RpcClientPackageHandler) Write(ss getty.Session, pkg interface{}) ([]byte, error) {
 	req, ok := pkg.(*DubboPackage)
 	if !ok {
-		logger.Errorf("illegal pkg:%+v\n", pkg)
 		return nil, perrors.New("invalid rpc request")
 	}
-
 	buf, err := req.Marshal()
 	if err != nil {
 		logger.Warnf("binary.Write(req{%#v}) = err{%#v}", req, perrors.WithStack(err))
 		return nil, perrors.WithStack(err)
 	}
-
 	return buf.Bytes(), nil
 }
 
@@ -92,15 +103,28 @@ var (
 	rpcServerPkgHandler = &RpcServerPackageHandler{}
 )
 
-type RpcServerPackageHandler struct{}
+type RpcServerPackageHandler struct{
+}
 
 func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
-	pkg := &DubboPackage{
-		Body: make([]interface{}, 7),
+	pkg := NewServerRequestPackage(data)
+	if err := pkg.ReadHeader(); err != nil {
+		originErr := perrors.Cause(err)
+		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
+			return nil, 0, nil
+		}
+		return nil, 0, perrors.WithStack(err)
 	}
 
-	buf := bytes.NewBuffer(data)
-	err := pkg.Unmarshal(buf)
+	if pkg.IsHeartBeat() {
+		return pkg, pkg.GetLen(), nil
+	}
+
+	if err := loadSerializer(pkg); err != nil {
+		return nil, 0, err
+	}
+
+	err := pkg.Unmarshal()
 	if err != nil {
 		originErr := perrors.Cause(err)
 		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
@@ -108,60 +132,9 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 		}
 
 		logger.Errorf("pkg.Unmarshal(ss:%+v, len(@data):%d) = error:%+v", ss, len(data), err)
-
 		return nil, 0, perrors.WithStack(err)
 	}
-
-	if pkg.Header.Type&hessian.PackageHeartbeat == 0x00 {
-		// convert params of request
-		req := pkg.Body.([]interface{}) // length of body should be 7
-		if len(req) > 0 {
-			var dubboVersion, argsTypes string
-			var args []interface{}
-			var attachments map[string]string
-			if req[0] != nil {
-				dubboVersion = req[0].(string)
-			}
-			if req[1] != nil {
-				pkg.Service.Path = req[1].(string)
-			}
-			if req[2] != nil {
-				pkg.Service.Version = req[2].(string)
-			}
-			if req[3] != nil {
-				pkg.Service.Method = req[3].(string)
-			}
-			if req[4] != nil {
-				argsTypes = req[4].(string)
-			}
-			if req[5] != nil {
-				args = req[5].([]interface{})
-			}
-			if req[6] != nil {
-				attachments = req[6].(map[string]string)
-			}
-			if pkg.Service.Path == "" && len(attachments[constant.PATH_KEY]) > 0 {
-				pkg.Service.Path = attachments[constant.PATH_KEY]
-			}
-			if _, ok := attachments[constant.INTERFACE_KEY]; ok {
-				pkg.Service.Interface = attachments[constant.INTERFACE_KEY]
-			} else {
-				pkg.Service.Interface = pkg.Service.Path
-			}
-			if len(attachments[constant.GROUP_KEY]) > 0 {
-				pkg.Service.Group = attachments[constant.GROUP_KEY]
-			}
-			pkg.Body = map[string]interface{}{
-				"dubboVersion": dubboVersion,
-				"argsTypes":    argsTypes,
-				"args":         args,
-				"service":      common.ServiceMap.GetService(DUBBO, pkg.Service.Path), // path as a key
-				"attachments":  attachments,
-			}
-		}
-	}
-
-	return pkg, hessian.HEADER_LENGTH + pkg.Header.BodyLen, nil
+	return pkg, pkg.GetLen(), nil
 }
 
 func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg interface{}) ([]byte, error) {
@@ -170,12 +143,24 @@ func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg interface{}) ([]by
 		logger.Errorf("illegal pkg:%+v\n, it is %+v", pkg, reflect.TypeOf(pkg))
 		return nil, perrors.New("invalid rpc response")
 	}
-
 	buf, err := res.Marshal()
 	if err != nil {
 		logger.Warnf("binary.Write(res{%#v}) = err{%#v}", res, perrors.WithStack(err))
 		return nil, perrors.WithStack(err)
 	}
-
 	return buf.Bytes(), nil
+}
+
+func loadSerializer(p *DubboPackage) error {
+	// Note: 如果serialID 默认为S_Hessian(S_Dubbo)
+	serialID := p.Header.SerialID
+	if serialID == 0 {
+		serialID = constant.S_Hessian2
+	}
+	serializer, err := extension.GetSerializerById(serialID)
+	if err != nil {
+		return err
+	}
+	p.SetSerializer(serializer.(Serializer))
+	return nil
 }

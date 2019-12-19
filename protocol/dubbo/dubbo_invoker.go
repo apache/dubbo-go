@@ -67,6 +67,10 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 		}
 	}
 	url := di.GetUrl()
+	// 默认hessian2解码，兼容
+	if url.GetParam("serialization", "") == "" {
+		url.SetParam("serialization", constant.HESSIAN2_SERIALIZATION)
+	}
 	// async
 	async, err := strconv.ParseBool(inv.AttachmentsByKey(constant.ASYNC_KEY, "false"))
 	if err != nil {
@@ -91,7 +95,7 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 		result.Rest = inv.Reply()
 		result.Attrs = response.atta
 	}
-	logger.Debugf("result.Err: %v, result.Rest: %v", result.Err, result.Rest)
+	logger.Debugf("result.err: %v, result.Rest: %v", result.Err, result.Rest)
 
 	return &result
 }
