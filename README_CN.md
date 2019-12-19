@@ -53,6 +53,8 @@ Apache License, Version 2.0
 
 你可以通过访问 [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap) 知道更多关于 dubbo-go 的信息
 
+![feature](https://raw.githubusercontent.com/wiki/apache/dubbo-go/arch.png)
+
 ## 文档
 
 TODO
