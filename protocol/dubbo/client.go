@@ -25,7 +25,6 @@ import (
 )
 
 import (
-	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/dubbogo/getty"
 	gxsync "github.com/dubbogo/gost/sync"
 	perrors "github.com/pkg/errors"
@@ -137,6 +136,7 @@ type Client struct {
 	sequence atomic.Uint64
 
 	pendingResponses *sync.Map
+	codec            DubboCodec
 }
 
 // NewClient ...
@@ -160,6 +160,7 @@ func NewClient(opt Options) *Client {
 		opts:             opt,
 		pendingResponses: new(sync.Map),
 		conf:             *clientConf,
+		codec:            DubboCodec{},
 	}
 	c.sequence.Store(initSequence)
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
@@ -178,6 +179,10 @@ type Request struct {
 
 // NewRequest ...
 func NewRequest(addr string, svcUrl common.URL, method string, args interface{}, atta map[string]string) *Request {
+	// NOTE: compatible with old versions
+	if svcUrl.GetParam(constant.SERIALIZATION_KEY, "") == "" {
+		svcUrl.SetParam(constant.SERIALIZATION_KEY, constant.DEFAULT_SERIALIZATION)
+	}
 	return &Request{
 		addr:   addr,
 		svcUrl: svcUrl,
@@ -225,35 +230,6 @@ func (c *Client) AsyncCall(request *Request, callback common.AsyncCallback, resp
 }
 
 func (c *Client) call(ct CallType, request *Request, response *Response, callback common.AsyncCallback) error {
-
-	p := &DubboPackage{}
-	p.Service.Path = strings.TrimPrefix(request.svcUrl.Path, "/")
-	p.Service.Interface = request.svcUrl.GetParam(constant.INTERFACE_KEY, "")
-	p.Service.Version = request.svcUrl.GetParam(constant.VERSION_KEY, "")
-	p.Service.Group = request.svcUrl.GetParam(constant.GROUP_KEY, "")
-	p.Service.Method = request.method
-
-	p.Service.Timeout = c.opts.RequestTimeout
-	var timeout = request.svcUrl.GetParam(strings.Join([]string{constant.METHOD_KEYS, request.method + constant.RETRIES_KEY}, "."), "")
-	if len(timeout) != 0 {
-		if t, err := time.ParseDuration(timeout); err == nil {
-			p.Service.Timeout = t
-		}
-	}
-
-	p.Header.SerialID = byte(S_Dubbo)
-	p.Body = hessian.NewRequest(request.args, request.atta)
-
-	var rsp *PendingResponse
-	if ct != CT_OneWay {
-		p.Header.Type = hessian.PackageRequest_TwoWay
-		rsp = NewPendingResponse()
-		rsp.response = response
-		rsp.callback = callback
-	} else {
-		p.Header.Type = hessian.PackageRequest
-	}
-
 	var (
 		err     error
 		session getty.Session
@@ -274,6 +250,37 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 		conn.close()
 	}()
 
+	var rsp *PendingResponse
+	svc := Service{}
+	header := DubboHeader{}
+	svc.Path = strings.TrimPrefix(request.svcUrl.Path, "/")
+	svc.Interface = request.svcUrl.GetParam(constant.INTERFACE_KEY, "")
+	svc.Version = request.svcUrl.GetParam(constant.VERSION_KEY, "")
+	svc.Group = request.svcUrl.GetParam(constant.GROUP_KEY, "")
+	svc.Method = request.method
+	svc.Timeout = c.opts.RequestTimeout
+	p := NewClientRequestPackage(header, svc)
+
+	serialization := request.svcUrl.GetParam(constant.SERIALIZATION_KEY, c.conf.Serialization)
+	if serialization == constant.HESSIAN2_SERIALIZATION {
+		p.Header.SerialID = constant.S_Hessian2
+	} else if serialization == constant.PROTOBUF_SERIALIZATION {
+		p.Header.SerialID = constant.S_Proto
+	}
+	p.SetBody(NewRequestPayload(request.args, request.atta))
+
+	if err := loadSerializer(p); err != nil {
+		return err
+	}
+
+	if ct != CT_OneWay {
+		p.Header.Type = PackageRequest_TwoWay
+		rsp = NewPendingResponse()
+		rsp.response = response
+		rsp.callback = callback
+	} else {
+		p.Header.Type = PackageRequest
+	}
 	if err = c.transfer(session, p, rsp); err != nil {
 		return perrors.WithStack(err)
 	}
@@ -324,13 +331,21 @@ func (c *Client) transfer(session getty.Session, pkg *DubboPackage,
 	sequence = c.sequence.Add(1)
 
 	if pkg == nil {
-		pkg = &DubboPackage{}
-		pkg.Body = hessian.NewRequest([]interface{}{}, nil)
-		pkg.Body = []interface{}{}
-		pkg.Header.Type = hessian.PackageHeartbeat
-		pkg.Header.SerialID = byte(S_Dubbo)
+		// make heartbeat package
+		header := DubboHeader{
+			Type:     PackageHeartbeat,
+			SerialID: constant.S_Hessian2,
+		}
+		pkg = NewClientRequestPackage(header, Service{})
+		// SetBody
+		reqPayload := NewRequestPayload([]interface{}{}, nil)
+		pkg.SetBody(reqPayload)
+		// set serializer
+		if err := loadSerializer(pkg); err != nil {
+			return err
+		}
 	}
-	pkg.Header.ID = int64(sequence)
+	pkg.SetID(int64(sequence))
 
 	// cond1
 	if rsp != nil {

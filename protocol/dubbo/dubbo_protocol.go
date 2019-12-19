@@ -67,7 +67,6 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	exporter := NewDubboExporter(serviceKey, invoker, dp.ExporterMap())
 	dp.SetExporterMap(serviceKey, exporter)
 	logger.Infof("Export service: %s", url.String())
-
 	// start server
 	dp.openServer(url)
 	return exporter

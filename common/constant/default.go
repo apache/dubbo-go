@@ -43,6 +43,7 @@ const (
 	DEFAULT_FAILBACK_TASKS     = 100
 	DEFAULT_REST_CLIENT        = "resty"
 	DEFAULT_REST_SERVER        = "go-restful"
+	DEFAULT_SERIALIZATION      = HESSIAN2_SERIALIZATION
 )
 
 const (

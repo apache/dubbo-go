@@ -75,6 +75,7 @@ const (
 	EXECUTE_REJECTED_EXECUTION_HANDLER_KEY = "execute.limit.rejected.handler"
 	PROVIDER_SHUTDOWN_FILTER               = "pshutdown"
 	CONSUMER_SHUTDOWN_FILTER               = "cshutdown"
+	SERIALIZATION_KEY                      = "serialization"
 )
 
 const (

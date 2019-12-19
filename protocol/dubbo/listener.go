@@ -104,17 +104,10 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 		return
 	}
 
-	if p.Header.Type&hessian.PackageHeartbeat != 0x00 {
-		if p.Header.Type&hessian.PackageResponse != 0x00 {
-			logger.Debugf("get rpc heartbeat response{header: %#v, body: %#v}", p.Header, p.Body)
-			if p.Err != nil {
-				logger.Errorf("rpc heartbeat response{error: %#v}", p.Err)
-			}
-			h.conn.pool.rpcClient.removePendingResponse(SequenceType(p.Header.ID))
-		} else {
-			logger.Debugf("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", p.Header, p.Service, p.Body)
-			p.Header.ResponseStatus = hessian.Response_OK
-			reply(session, p, hessian.PackageHeartbeat)
+	if p.Header.Type&PackageHeartbeat != 0x00 {
+		logger.Debugf("get rpc heartbeat response{header: %#v, body: %#v}", p.Header, p.Body)
+		if p.Err != nil {
+			logger.Errorf("rpc heartbeat response{error: %#v}", p.Err)
 		}
 		return
 	}
@@ -137,6 +130,7 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 	if pendingResponse.callback == nil {
 		pendingResponse.done <- struct{}{}
 	} else {
+		logger.Info("proxy service callback")
 		pendingResponse.callback(pendingResponse.GetCallResponse())
 	}
 }
@@ -228,82 +222,84 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 		logger.Errorf("illegal package{%#v}", pkg)
 		return
 	}
-	p.Header.ResponseStatus = hessian.Response_OK
+	p.SetResponseStatus(hessian.Response_OK)
+	//p.Header.ResponseStatus = hessian.Response_OK
 
 	// heartbeat
-	if p.Header.Type&hessian.PackageHeartbeat != 0x00 {
-		logger.Debugf("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", p.Header, p.Service, p.Body)
-		reply(session, p, hessian.PackageHeartbeat)
+	if p.GetHeader().Type&PackageHeartbeat != 0x00 {
+		logger.Debugf("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", p.GetHeader(), p.GetService(), p.GetBody())
+		h.reply(session, p, PackageHeartbeat)
 		return
 	}
 
 	twoway := true
 	// not twoway
-	if p.Header.Type&hessian.PackageRequest_TwoWay == 0x00 {
+	if p.GetHeader().Type&PackageRequest_TwoWay == 0x00 {
 		twoway = false
 	}
 
 	defer func() {
 		if e := recover(); e != nil {
-			p.Header.ResponseStatus = hessian.Response_SERVER_ERROR
+			p.SetResponseStatus(hessian.Response_SERVER_ERROR)
 			if err, ok := e.(error); ok {
 				logger.Errorf("OnMessage panic: %+v", perrors.WithStack(err))
-				p.Body = perrors.WithStack(err)
+				p.SetBody(perrors.WithStack(err))
 			} else if err, ok := e.(string); ok {
 				logger.Errorf("OnMessage panic: %+v", perrors.New(err))
-				p.Body = perrors.New(err)
+				p.SetBody(perrors.New(err))
 			} else {
 				logger.Errorf("OnMessage panic: %+v, this is impossible.", e)
-				p.Body = e
+				p.SetBody(e)
 			}
 
 			if !twoway {
 				return
 			}
-			reply(session, p, hessian.PackageResponse)
+			h.reply(session, p, PackageResponse)
 		}
 
 	}()
 
-	u := common.NewURLWithOptions(common.WithPath(p.Service.Path), common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.GROUP_KEY, p.Service.Group),
-		common.WithParamsValue(constant.INTERFACE_KEY, p.Service.Interface),
-		common.WithParamsValue(constant.VERSION_KEY, p.Service.Version))
+	u := common.NewURLWithOptions(common.WithPath(p.GetService().Path), common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.GROUP_KEY, p.GetService().Group),
+		common.WithParamsValue(constant.INTERFACE_KEY, p.GetService().Interface),
+		common.WithParamsValue(constant.VERSION_KEY, p.GetService().Version))
 	exporter, _ := dubboProtocol.ExporterMap().Load(u.ServiceKey())
 	if exporter == nil {
 		err := fmt.Errorf("don't have this exporter, key: %s", u.ServiceKey())
 		logger.Errorf(err.Error())
-		p.Header.ResponseStatus = hessian.Response_OK
-		p.Body = err
-		reply(session, p, hessian.PackageResponse)
+		p.SetResponseStatus(Response_OK)
+		p.SetBody(err)
+		h.reply(session, p, PackageResponse)
 		return
 	}
 	invoker := exporter.(protocol.Exporter).GetInvoker()
 	if invoker != nil {
-		attachments := p.Body.(map[string]interface{})["attachments"].(map[string]string)
+		attachments := p.GetBody().(map[string]interface{})["attachments"].(map[string]string)
 		attachments[constant.LOCAL_ADDR] = session.LocalAddr()
 		attachments[constant.REMOTE_ADDR] = session.RemoteAddr()
 
-		args := p.Body.(map[string]interface{})["args"].([]interface{})
-		inv := invocation.NewRPCInvocation(p.Service.Method, args, attachments)
+		args := p.GetBody().(map[string]interface{})["args"].([]interface{})
+		inv := invocation.NewRPCInvocation(p.GetService().Method, args, attachments)
 
 		ctx := rebuildCtx(inv)
-
 		result := invoker.Invoke(ctx, inv)
+		logger.Debugf("invoker result: %+v", result)
 		if err := result.Error(); err != nil {
-			p.Header.ResponseStatus = hessian.Response_OK
-			p.Body = hessian.NewResponse(nil, err, result.Attachments())
+			p.SetResponseStatus(Response_OK)
+			p.SetBody(&ResponsePayload{nil, err, result.Attachments()})
 		} else {
 			res := result.Result()
-			p.Header.ResponseStatus = hessian.Response_OK
-			p.Body = hessian.NewResponse(res, nil, result.Attachments())
+			p.SetResponseStatus(Response_OK)
+			p.SetBody(&ResponsePayload{res, nil, result.Attachments()})
+			//logger.Debugf("service return response %v", res)
 		}
 	}
 
 	if !twoway {
 		return
 	}
-	reply(session, p, hessian.PackageResponse)
+	h.reply(session, p, PackageResponse)
 }
 
 // OnCron ...
@@ -347,23 +343,25 @@ func rebuildCtx(inv *invocation.RPCInvocation) context.Context {
 	return ctx
 }
 
-func reply(session getty.Session, req *DubboPackage, tp hessian.PackageType) {
-	resp := &DubboPackage{
-		Header: hessian.DubboHeader{
-			SerialID:       req.Header.SerialID,
-			Type:           tp,
-			ID:             req.Header.ID,
-			ResponseStatus: req.Header.ResponseStatus,
-		},
+func (h *RpcServerHandler) reply(session getty.Session, req *DubboPackage, tp PackageType) {
+	header := DubboHeader{
+		SerialID:       req.GetHeader().SerialID,
+		Type:           tp,
+		ID:             req.GetHeader().ID,
+		BodyLen:        0,
+		ResponseStatus: req.GetHeader().ResponseStatus,
+	}
+	resp := NewServerResponsePackage(header)
+	if err := loadSerializer(resp); err != nil {
+		logger.Errorf("reply error %v", err)
+		return
 	}
 
-	if req.Header.Type&hessian.PackageRequest != 0x00 {
-		resp.Body = req.Body
-	} else {
-		resp.Body = nil
+	if req.GetHeader().Type&PackageRequest != 0x00 {
+		resp.SetBody(req.GetBody())
 	}
 
 	if err := session.WritePkg(resp, WritePkg_Timeout); err != nil {
-		logger.Errorf("WritePkg error: %#v, %#v", perrors.WithStack(err), req.Header)
+		logger.Errorf("WritePkg error: %#v, %#v", perrors.WithStack(err), req.GetHeader())
 	}
 }
