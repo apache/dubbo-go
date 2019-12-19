@@ -53,6 +53,8 @@ Todo List:
 
 You can know more about dubbo-go by its [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap).
 
+![feature](https://raw.githubusercontent.com/wiki/apache/dubbo-go/arch.png)
+
 ## Document
 
 TODO
