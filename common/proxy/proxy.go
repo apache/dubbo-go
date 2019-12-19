@@ -181,3 +181,7 @@ func (p *Proxy) Implement(v common.RPCService) {
 func (p *Proxy) Get() common.RPCService {
 	return p.rpc
 }
+
+func (p *Proxy) GetCallback() interface{} {
+	return p.callBack
+}

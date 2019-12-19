@@ -34,3 +34,7 @@ package tps
 type TpsLimitStrategy interface {
 	IsAllowable() bool
 }
+
+type TpsLimitStrategyCreator interface {
+	Create(rate int, interval int) TpsLimitStrategy
+}

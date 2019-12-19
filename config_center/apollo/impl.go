@@ -57,7 +57,7 @@ func newApolloConfiguration(url *common.URL) (*apolloConfiguration, error) {
 	configAddr := c.getAddressWithProtocolPrefix(url)
 	configCluster := url.GetParam(constant.CONFIG_CLUSTER_KEY, "")
 
-	appId := url.GetParam(constant.CONFIG_GROUP_KEY, DEFAULT_GROUP)
+	appId := url.GetParam(constant.CONFIG_APP_ID_KEY, "")
 	namespaces := url.GetParam(constant.CONFIG_NAMESPACE_KEY, getProperties(DEFAULT_GROUP))
 	c.appConf = &agollo.AppConfig{
 		AppId:         appId,
@@ -116,32 +116,28 @@ func getNamespaceName(namespace string, configFileFormat agollo.ConfigFileFormat
 	return fmt.Sprintf(apolloConfigFormat, namespace, configFileFormat)
 }
 
-func (c *apolloConfiguration) GetConfig(key string, opts ...Option) (string, error) {
-	k := &Options{}
-	for _, opt := range opts {
-		opt(k)
+func (c *apolloConfiguration) GetInternalProperty(key string, opts ...Option) (string, error) {
+	config := agollo.GetConfig(c.appConf.NamespaceName)
+	if config == nil {
+		return "", errors.New(fmt.Sprintf("nothing in namespace:%s ", key))
 	}
+	return config.GetStringValue(key, ""), nil
+}
+
+func (c *apolloConfiguration) GetRule(key string, opts ...Option) (string, error) {
+	return c.GetInternalProperty(key, opts...)
+}
+
+func (c *apolloConfiguration) GetProperties(key string, opts ...Option) (string, error) {
 	/**
 	 * when group is not null, we are getting startup configs(config file) from Config Center, for example:
 	 * key=dubbo.propertie
 	 */
-	if len(k.Group) != 0 {
-		config := agollo.GetConfig(key)
-		if config == nil {
-			return "", errors.New(fmt.Sprintf("nothiing in namespace:%s ", key))
-		}
-		return config.GetContent(agollo.Properties), nil
-	}
-
-	/**
-	 * when group is null, we are fetching governance rules(config item) from Config Center, for example:
-	 * namespace=use default, key =application.organization
-	 */
-	config := agollo.GetConfig(c.appConf.NamespaceName)
+	config := agollo.GetConfig(key)
 	if config == nil {
-		return "", errors.New(fmt.Sprintf("nothiing in namespace:%s ", key))
+		return "", errors.New(fmt.Sprintf("nothing in namespace:%s ", key))
 	}
-	return config.GetStringValue(key, ""), nil
+	return config.GetContent(agollo.Properties), nil
 }
 
 func (c *apolloConfiguration) getAddressWithProtocolPrefix(url *common.URL) string {
@@ -169,8 +165,4 @@ func (c *apolloConfiguration) Parser() parser.ConfigurationParser {
 }
 func (c *apolloConfiguration) SetParser(p parser.ConfigurationParser) {
 	c.parser = p
-}
-
-func (c *apolloConfiguration) GetConfigs(key string, opts ...Option) (string, error) {
-	return c.GetConfig(key, opts...)
 }
