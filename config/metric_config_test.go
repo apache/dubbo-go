@@ -30,6 +30,24 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
+func TestMetricConfig_GetMaxCompassAddonCount(t *testing.T) {
+	config := MetricConfig{}
+	assert.Equal(t, defaultMaxCompassAddonCount, config.GetMaxCompassAddonCount())
+	config.MaxCompassAddonCount = -1
+	assert.Equal(t, defaultMaxCompassAddonCount, config.GetMaxCompassAddonCount())
+	config.MaxCompassAddonCount = 23
+	assert.Equal(t, 23, config.GetMaxCompassAddonCount())
+}
+
+func TestMetricConfig_GetMaxCompassErrorCodeCount(t *testing.T) {
+	config := MetricConfig{}
+	assert.Equal(t, defaultMaxCompassErrorCodeCount, config.GetMaxCompassErrorCodeCount())
+	config.MaxCompassErrorCodeCount = -1
+	assert.Equal(t, defaultMaxCompassErrorCodeCount, config.GetMaxCompassErrorCodeCount())
+	config.MaxCompassErrorCodeCount = 13;
+	assert.Equal(t, 13, config.GetMaxCompassErrorCodeCount())
+}
+
 func TestMetricConfig_GetGlobalInterval(t *testing.T) {
 	config := MetricConfig{}
 	assert.Equal(t, defaultGlobalInterval, config.GetGlobalInterval())
