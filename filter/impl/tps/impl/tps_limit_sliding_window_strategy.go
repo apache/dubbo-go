@@ -29,7 +29,7 @@ import (
 )
 
 func init() {
-	extension.SetTpsLimitStrategy("slidingWindow", NewSlidingWindowTpsLimitStrategyImpl)
+	extension.SetTpsLimitStrategy("slidingWindow", &slidingWindowStrategyCreator{})
 }
 
 /**
@@ -80,10 +80,12 @@ func (impl *SlidingWindowTpsLimitStrategyImpl) IsAllowable() bool {
 	return false
 }
 
-func NewSlidingWindowTpsLimitStrategyImpl(rate int, interval int) tps.TpsLimitStrategy {
+type slidingWindowStrategyCreator struct{}
+
+func (creator *slidingWindowStrategyCreator) Create(rate int, interval int) tps.TpsLimitStrategy {
 	return &SlidingWindowTpsLimitStrategyImpl{
 		rate:     rate,
-		interval: int64(interval * 1000),
+		interval: int64(interval) * int64(time.Millisecond),
 		mutex:    &sync.Mutex{},
 		queue:    list.New(),
 	}
