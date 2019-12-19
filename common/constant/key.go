@@ -55,6 +55,7 @@ const (
 	WEIGHT_KEY                             = "weight"
 	WARMUP_KEY                             = "warmup"
 	RETRIES_KEY                            = "retries"
+	STICKY_KEY                             = "sticky"
 	BEAN_NAME                              = "bean.name"
 	FAIL_BACK_TASKS_KEY                    = "failbacktasks"
 	FORKS_KEY                              = "forks"
