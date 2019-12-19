@@ -18,6 +18,7 @@
 package zookeeper
 
 import (
+	"net/url"
 	"sync"
 	"testing"
 	"time"
@@ -121,4 +122,10 @@ func (m *mockDataListener) DataChange(eventType remoting.Event) bool {
 
 	}
 	return true
+}
+
+func TestZkPath(t *testing.T) {
+	zkPath := "io.grpc.examples.helloworld.GreeterGrpc$IGreeter"
+	zkPath = url.QueryEscape(zkPath)
+	assert.Equal(t, zkPath, "io.grpc.examples.helloworld.GreeterGrpc%24IGreeter")
 }
