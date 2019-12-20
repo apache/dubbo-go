@@ -49,8 +49,8 @@ type EWMA struct {
 	uncounted int64
 	alpha float64
 	interval int64
-	// even though this mutex is used in two method, but the race condition won't be problem.
-	mutex sync.Mutex
+	initOnce sync.Once
+	rateChannel chan float64
 }
 
 func (ewma *EWMA) Update(n int64) {
@@ -59,8 +59,14 @@ func (ewma *EWMA) Update(n int64) {
 
 func (ewma *EWMA) TickN(count int64)  {
 	instantRate := float64(count)/ float64(ewma.interval)
+	ewma.initOnce.Do(func() {
+		ewma.rate = instantRate
+		ewma.initialized = true
+	})
+
 	if ewma.initialized {
 		delta := ewma.alpha * (instantRate - ewma.rate)
+
 	}
 }
 
@@ -90,5 +96,6 @@ func newEWMA(alpha float64, interval time.Duration) *EWMA{
 	return &EWMA{
 		alpha:       alpha,
 		interval:    interval.Nanoseconds(),
+		rateChannel: make(chan float64),
 	}
 }
