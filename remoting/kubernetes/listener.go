@@ -1,0 +1,188 @@
+package kubernetes
+
+import (
+	"sync"
+	"time"
+)
+
+import (
+	perrors "github.com/pkg/errors"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/remoting"
+)
+
+type EventListener struct {
+	client     *Client
+	keyMapLock sync.Mutex
+	keyMap     map[string]struct{}
+	wg         sync.WaitGroup
+}
+
+func NewEventListener(client *Client) *EventListener {
+	return &EventListener{
+		client: client,
+		keyMap: make(map[string]struct{}),
+	}
+}
+
+// Listen on a spec key
+// this method will return true when spec key deleted,
+// this method will return false when deep layer connection lose
+func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.DataListener) bool {
+	l.wg.Add(1)
+	defer l.wg.Done()
+	for {
+		wc, err := l.client.Watch(key)
+		if err != nil {
+			logger.Warnf("watch exist{key:%s} = error{%v}", key, err)
+			return false
+		}
+
+		select {
+
+		// client stopped
+		case <-l.client.Done():
+			logger.Warnf("kubernetes client stopped")
+			return false
+
+			// handle kubernetes-store events
+		case e, ok := <-wc:
+			if !ok {
+				logger.Warnf("kubernetes-store watch-chan closed")
+				return false
+			}
+
+			if l.handleEvents(e, listener...) {
+				// if event is delete
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// return true mean the event type is DELETE
+// return false mean the event type is CREATE || UPDATE
+func (l *EventListener) handleEvents(event *Object, listeners ...remoting.DataListener) bool {
+
+	logger.Infof("got a kubernetes-store event {type: %d, key: %s}", event.EventType, event.Key)
+
+	switch event.EventType {
+	case Create:
+		for _, listener := range listeners {
+			logger.Infof("kubernetes-store get event (key{%s}) = event{EventNodeDataCreated}", event.Key)
+			listener.DataChange(remoting.Event{
+				Path:    string(event.Key),
+				Action:  remoting.EventTypeAdd,
+				Content: string(event.Value),
+			})
+		}
+		return false
+	case Update:
+		for _, listener := range listeners {
+			logger.Infof("kubernetes-store get event (key{%s}) = event{EventNodeDataChanged}", event.Key)
+			listener.DataChange(remoting.Event{
+				Path:    string(event.Key),
+				Action:  remoting.EventTypeUpdate,
+				Content: string(event.Value),
+			})
+		}
+		return false
+	case Delete:
+		logger.Warnf("kubernetes-store get event (key{%s}) = event{EventNodeDeleted}", event.Key)
+		return true
+	default:
+		return false
+	}
+}
+
+// Listen on a set of key with spec prefix
+func (l *EventListener) ListenServiceNodeEventWithPrefix(prefix string, listener ...remoting.DataListener) {
+
+	l.wg.Add(1)
+	defer l.wg.Done()
+	for {
+		wc, err := l.client.WatchWithPrefix(prefix)
+		if err != nil {
+			logger.Warnf("listenDirEvent(key{%s}) = error{%v}", prefix, err)
+		}
+
+		select {
+		// client stopped
+		case <-l.client.Done():
+			logger.Warnf("kubernetes client stopped")
+			return
+
+			// kuberentes-store event stream
+		case e, ok := <-wc:
+
+			if !ok {
+				logger.Warnf("kubernetes-store watch-chan closed")
+				return
+			}
+
+			l.handleEvents(e, listener...)
+		}
+	}
+}
+
+func timeSecondDuration(sec int) time.Duration {
+	return time.Duration(sec) * time.Second
+}
+
+// this func is invoked by kubernetes ConsumerRegistry::Registry/ kubernetes ConsumerRegistry::get/kubernetes ConsumerRegistry::getListener
+// registry.go:Listen -> listenServiceEvent -> listenDirEvent -> ListenServiceNodeEvent
+//                            |
+//                            --------> ListenServiceNodeEvent
+func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataListener) {
+
+	l.keyMapLock.Lock()
+	_, ok := l.keyMap[key]
+	l.keyMapLock.Unlock()
+	if ok {
+		logger.Warnf("kubernetes-store key %s has already been listened.", key)
+		return
+	}
+
+	l.keyMapLock.Lock()
+	l.keyMap[key] = struct{}{}
+	l.keyMapLock.Unlock()
+
+	keyList, valueList, err := l.client.GetChildren(key)
+	if err != nil {
+		logger.Errorf("Get new node path {%v} 's content error,message is  {%v}", key, perrors.WithMessage(err, "get children"))
+	}
+
+	logger.Infof("get key children list %s, keys %v values %v", key, keyList, valueList)
+
+	for i, k := range keyList {
+		logger.Infof("got children list key -> %s", k)
+		listener.DataChange(remoting.Event{
+			Path:    k,
+			Action:  remoting.EventTypeAdd,
+			Content: valueList[i],
+		})
+	}
+
+	logger.Infof("listen dubbo provider key{%s} event and wait to get all provider from kubernetes-store", key)
+	go func(key string, listener remoting.DataListener) {
+		l.ListenServiceNodeEventWithPrefix(key, listener)
+		logger.Warnf("listenDirEvent(key{%s}) goroutine exit now", key)
+	}(key, listener)
+
+	logger.Infof("listen dubbo service key{%s}", key)
+	go func(key string) {
+		if l.ListenServiceNodeEvent(key) {
+			listener.DataChange(remoting.Event{Path: key, Action: remoting.EventTypeDel})
+		}
+		logger.Warnf("listenSelf(kubernetes key{%s}) goroutine exit now", key)
+	}(key)
+}
+
+func (l *EventListener) Close() {
+	l.wg.Wait()
+}
