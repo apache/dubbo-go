@@ -289,13 +289,15 @@ func (p *gettyRPCClientPool) close() {
 }
 
 func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPCClient, error) {
-	if conn, err := p.selectGettyRpcClient(protocol, addr); err != nil {
-		return nil, err
-	} else if conn != nil {
-		return conn, nil
+	var (
+		conn *gettyRPCClient
+		err  error
+	)
+	if conn, err = p.selectGettyRpcClient(protocol, addr); err == nil && conn == nil {
+		// create new conn
+		return newGettyRPCClientConn(p, protocol, addr)
 	}
-	// create new conn
-	return newGettyRPCClientConn(p, protocol, addr)
+	return conn, err
 }
 func (p *gettyRPCClientPool) selectGettyRpcClient(protocol, addr string) (*gettyRPCClient, error) {
 	p.Lock()
