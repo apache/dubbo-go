@@ -30,6 +30,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
 )
@@ -88,9 +89,11 @@ func (s *Server) Start(url common.URL) {
 	server.RegisterService(ds.ServiceDesc(), service)
 
 	s.grpcServer = server
-	if err = server.Serve(lis); err != nil {
-		panic(err)
-	}
+	go func() {
+		if err = server.Serve(lis); err != nil {
+			logger.Errorf("server serve failed with err: %v", err)
+		}
+	}()
 }
 
 func (s *Server) Stop() {

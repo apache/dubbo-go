@@ -18,40 +18,34 @@ limitations under the License.
 package grpc
 
 import (
+	//"context"
 	"reflect"
-)
+	"testing"
 
-import (
+	"github.com/bmizerany/assert"
 	"google.golang.org/grpc"
+
+	"github.com/apache/dubbo-go/protocol/grpc/internal"
 )
 
-import (
-	"github.com/apache/dubbo-go/common"
-)
+//type GrpcGreeterImpl struct {
+//	SayHello func(ctx context.Context, in *internal.HelloRequest, out *internal.HelloReply) error
+//}
+//
+//func (u *GrpcGreeterImpl) Reference() string {
+//	return "GrpcGreeterImpl"
+//}
+//
+//func (u *GrpcGreeterImpl) GetDubboStub(cc *grpc.ClientConn) internal.GreeterClient {
+//	return internal.NewGreeterClient(cc)
+//}
 
-type Client struct {
-	*grpc.ClientConn
-	invoker reflect.Value
-}
-
-func NewClient(impl interface{}, url common.URL) *Client {
-	conn, err := grpc.Dial(url.Location, grpc.WithInsecure(), grpc.WithBlock())
-	if err != nil {
-		panic(err)
-	}
-
+func TestGetInvoker(t *testing.T) {
+	var conn *grpc.ClientConn
+	var impl *internal.GrpcGreeterImpl
 	invoker := getInvoker(impl, conn)
 
-	return &Client{
-		ClientConn: conn,
-		invoker:    reflect.ValueOf(invoker),
-	}
-}
-
-func getInvoker(impl interface{}, conn *grpc.ClientConn) interface{} {
-	in := []reflect.Value{}
-	in = append(in, reflect.ValueOf(conn))
-	method := reflect.ValueOf(impl).MethodByName("GetDubboStub")
-	res := method.Call(in)
-	return res[0].Interface()
+	i := reflect.TypeOf(invoker)
+	expected := reflect.TypeOf(internal.NewGreeterClient(nil))
+	assert.Equal(t, i, expected)
 }
