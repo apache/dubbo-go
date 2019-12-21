@@ -64,6 +64,7 @@ func TestGrpcProtocol_Export(t *testing.T) {
 
 func TestGrpcProtocol_Refer(t *testing.T) {
 	go internal.InitGrpcServer()
+	defer internal.ShutdownGrpcServer()
 	time.Sleep(time.Second)
 
 	proto := GetProtocol()

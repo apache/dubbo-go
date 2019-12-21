@@ -27,6 +27,10 @@ import (
 	"google.golang.org/grpc"
 )
 
+var (
+	s *grpc.Server
+)
+
 // server is used to implement helloworld.GreeterServer.
 type server struct {
 	UnimplementedGreeterServer
@@ -45,9 +49,16 @@ func InitGrpcServer() {
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	s := grpc.NewServer()
+	s = grpc.NewServer()
 	RegisterGreeterServer(s, &server{})
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
+}
+
+func ShutdownGrpcServer() {
+	if s == nil {
+		return
+	}
+	s.GracefulStop()
 }
