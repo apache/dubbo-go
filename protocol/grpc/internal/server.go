@@ -19,21 +19,35 @@ package internal
 
 import (
 	"context"
+	"log"
+	"net"
 )
 
 import (
 	"google.golang.org/grpc"
 )
 
-// used for dubbo-grpc biz client
-type GrpcGreeterImpl struct {
-	SayHello func(ctx context.Context, in *HelloRequest, out *HelloReply) error
+// server is used to implement helloworld.GreeterServer.
+type server struct {
+	UnimplementedGreeterServer
 }
 
-func (u *GrpcGreeterImpl) Reference() string {
-	return "GrpcGreeterImpl"
+// SayHello implements helloworld.GreeterServer
+func (s *server) SayHello(ctx context.Context, in *HelloRequest) (*HelloReply, error) {
+	log.Printf("Received: %v", in.GetName())
+	return &HelloReply{Message: "Hello " + in.GetName()}, nil
 }
 
-func (u *GrpcGreeterImpl) GetDubboStub(cc *grpc.ClientConn) GreeterClient {
-	return NewGreeterClient(cc)
+func InitGrpcServer() {
+	port := ":20000"
+
+	lis, err := net.Listen("tcp", port)
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+	s := grpc.NewServer()
+	RegisterGreeterServer(s, &server{})
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
 }
