@@ -15,43 +15,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package grpc
+package internal
 
 import (
-	"reflect"
+	"context"
 )
 
 import (
 	"google.golang.org/grpc"
 )
 
-import (
-	"github.com/apache/dubbo-go/common"
-)
-
-type Client struct {
-	*grpc.ClientConn
-	invoker reflect.Value
+type GrpcGreeterImpl struct {
+	SayHello func(ctx context.Context, in *HelloRequest, out *HelloReply) error
 }
 
-func NewClient(impl interface{}, url common.URL) *Client {
-	conn, err := grpc.Dial(url.Location, grpc.WithInsecure(), grpc.WithBlock())
-	if err != nil {
-		panic(err)
-	}
-
-	invoker := getInvoker(impl, conn)
-
-	return &Client{
-		ClientConn: conn,
-		invoker:    reflect.ValueOf(invoker),
-	}
+func (u *GrpcGreeterImpl) Reference() string {
+	return "GrpcGreeterImpl"
 }
 
-func getInvoker(impl interface{}, conn *grpc.ClientConn) interface{} {
-	in := []reflect.Value{}
-	in = append(in, reflect.ValueOf(conn))
-	method := reflect.ValueOf(impl).MethodByName("GetDubboStub")
-	res := method.Call(in)
-	return res[0].Interface()
+func (u *GrpcGreeterImpl) GetDubboStub(cc *grpc.ClientConn) GreeterClient {
+	return NewGreeterClient(cc)
 }
