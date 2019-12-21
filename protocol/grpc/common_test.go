@@ -35,14 +35,14 @@ import (
 
 // userd grpc-dubbo biz service
 func addService() {
-	config.SetProviderService(NewGreeterProvider())
+	config.SetProviderService(newGreeterProvider())
 }
 
 type greeterProvider struct {
 	*greeterProviderBase
 }
 
-func NewGreeterProvider() *greeterProvider {
+func newGreeterProvider() *greeterProvider {
 	return &greeterProvider{
 		greeterProviderBase: &greeterProviderBase{},
 	}

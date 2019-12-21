@@ -49,7 +49,6 @@ func NewGRPCProtocol() *GrpcProtocol {
 	}
 }
 
-// 缺少一个 type 信息, 无法进行binding
 func (gp *GrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetUrl()
 	serviceKey := url.ServiceKey()
