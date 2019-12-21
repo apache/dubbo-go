@@ -18,27 +18,18 @@ limitations under the License.
 package grpc
 
 import (
-	//"context"
 	"reflect"
 	"testing"
-
-	"github.com/bmizerany/assert"
-	"google.golang.org/grpc"
-
-	"github.com/apache/dubbo-go/protocol/grpc/internal"
 )
 
-//type GrpcGreeterImpl struct {
-//	SayHello func(ctx context.Context, in *internal.HelloRequest, out *internal.HelloReply) error
-//}
-//
-//func (u *GrpcGreeterImpl) Reference() string {
-//	return "GrpcGreeterImpl"
-//}
-//
-//func (u *GrpcGreeterImpl) GetDubboStub(cc *grpc.ClientConn) internal.GreeterClient {
-//	return internal.NewGreeterClient(cc)
-//}
+import (
+	"github.com/bmizerany/assert"
+	"google.golang.org/grpc"
+)
+
+import (
+	"github.com/apache/dubbo-go/protocol/grpc/internal"
+)
 
 func TestGetInvoker(t *testing.T) {
 	var conn *grpc.ClientConn
