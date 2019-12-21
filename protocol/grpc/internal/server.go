@@ -43,7 +43,7 @@ func (s *server) SayHello(ctx context.Context, in *HelloRequest) (*HelloReply, e
 }
 
 func InitGrpcServer() {
-	port := ":20000"
+	port := ":30000"
 
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
