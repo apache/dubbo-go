@@ -19,15 +19,12 @@ package grpc
 
 import (
 	"context"
-	"log"
-	"net"
 	"testing"
 	"time"
 )
 
 import (
 	"github.com/stretchr/testify/assert"
-	native_grpc "google.golang.org/grpc"
 )
 
 import (
@@ -65,33 +62,8 @@ func TestGrpcProtocol_Export(t *testing.T) {
 	assert.False(t, ok)
 }
 
-// server is used to implement helloworld.GreeterServer.
-type server struct {
-	internal.UnimplementedGreeterServer
-}
-
-// SayHello implements helloworld.GreeterServer
-func (s *server) SayHello(ctx context.Context, in *internal.HelloRequest) (*internal.HelloReply, error) {
-	log.Printf("Received: %v", in.GetName())
-	return &internal.HelloReply{Message: "Hello " + in.GetName()}, nil
-}
-
-func initGrpcServer() {
-	port := ":20000"
-
-	lis, err := net.Listen("tcp", port)
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
-	}
-	s := native_grpc.NewServer()
-	internal.RegisterGreeterServer(s, &server{})
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
-	}
-}
-
 func TestGrpcProtocol_Refer(t *testing.T) {
-	go initGrpcServer()
+	go internal.InitGrpcServer()
 	time.Sleep(time.Second)
 
 	proto := GetProtocol()
