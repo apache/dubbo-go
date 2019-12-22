@@ -338,10 +338,10 @@ func setProviderUrl(regURL *common.URL, providerURL *common.URL) {
 }
 
 func GetProtocol() protocol.Protocol {
-	if regProtocol == nil {
-		regProtocol = newRegistryProtocol()
+	if regProtocol != nil {
+		return regProtocol
 	}
-	return regProtocol
+	return newRegistryProtocol()
 }
 
 type wrappedInvoker struct {
