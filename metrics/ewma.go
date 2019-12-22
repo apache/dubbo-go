@@ -49,8 +49,12 @@ type EWMA struct {
 	uncounted int64
 	alpha float64
 	interval int64
-	initOnce sync.Once
+
+	// using channel to calculate the rate instead of using mutex
 	rateChannel chan float64
+	// only use in
+	initMutex sync.Mutex
+	initOnce sync.Once
 }
 
 func (ewma *EWMA) Update(n int64) {
@@ -59,15 +63,27 @@ func (ewma *EWMA) Update(n int64) {
 
 func (ewma *EWMA) TickN(count int64)  {
 	instantRate := float64(count)/ float64(ewma.interval)
-	ewma.initOnce.Do(func() {
-		ewma.rate = instantRate
-		ewma.initialized = true
-	})
+	delta := ewma.alpha * (instantRate - ewma.rate)
 
+	// In most case, ewma.initialized is true. So we avoid using the mutex. It's the quick path
 	if ewma.initialized {
-		delta := ewma.alpha * (instantRate - ewma.rate)
-
+		ewma.rateChannel <- delta
+		return
 	}
+
+	// lock and then init.
+	ewma.initMutex.Lock()
+	defer ewma.initMutex.Unlock()
+
+	// initialized by another thread...
+	if ewma.initialized {
+		ewma.rateChannel <- delta
+		return
+	}
+
+	// initializing
+	ewma.rate = instantRate
+	ewma.initialized = true
 }
 
 func (ewma *EWMA) Tick()  {
@@ -78,6 +94,22 @@ func (ewma *EWMA) Tick()  {
 		swapped = atomic.CompareAndSwapInt64(&ewma.uncounted, old, 0)
 	}
 	ewma.TickN(old)
+}
+
+func (ewma *EWMA) start() {
+	for {
+		delta := <- ewma.rateChannel
+		ewma.rate += delta
+	}
+
+}
+
+/**
+ * return the rate in the given time units of time
+ * for example, the timeUnit could be time.SECONDS
+ */
+func (ewma *EWMA) GetRate(timeUnit time.Duration) float64 {
+	return ewma.rate * float64(timeUnit.Nanoseconds())
 }
 
 func NewOneMinuteEWMA() *EWMA {
@@ -93,9 +125,13 @@ func NewFifteenMinutesEWMA() *EWMA {
 }
 
 func newEWMA(alpha float64, interval time.Duration) *EWMA{
-	return &EWMA{
+	result := &EWMA{
 		alpha:       alpha,
 		interval:    interval.Nanoseconds(),
+		// if we found out that the blocking channel is the bottle neck of performance,
+		// we should think about using non-blocking channel, which needs more effort to ensure the codes are right
 		rateChannel: make(chan float64),
 	}
+	go result.start()
+	return result
 }
