@@ -29,8 +29,8 @@ const (
 	defaultMaxSubCategoryCount       = 20
 	defaultGlobalInterval            = 60 * time.Second
 	defaultMaxMetricCountPerRegistry = 5000
-	defaultMaxCompassErrorCodeCount = 100
-	defaultMaxCompassAddonCount = 20
+	defaultMaxCompassErrorCodeCount  = 100
+	defaultMaxCompassAddonCount      = 20
 )
 
 type MetricConfig struct {
@@ -66,7 +66,6 @@ type MetricConfig struct {
 	 */
 	MaxMetricCountPerRegistry int `yaml:"max_metric_count_per_registry" json:"max_metric_count_per_registry,omitempty"`
 
-
 	/**
 	 * the max count of error code recorded by Compass. The default value is 100
 	 */
@@ -74,7 +73,7 @@ type MetricConfig struct {
 	MaxCompassAddonCount     int `yaml:"max_metric_count_per_registry" json:"max_metric_count_per_registry,omitempty"`
 }
 
-func (mc* MetricConfig) GetMaxCompassAddonCount() int {
+func (mc *MetricConfig) GetMaxCompassAddonCount() int {
 	if mc.MaxCompassAddonCount <= 0 {
 		return defaultMaxCompassAddonCount
 	}
@@ -82,7 +81,7 @@ func (mc* MetricConfig) GetMaxCompassAddonCount() int {
 }
 
 func (mc *MetricConfig) GetMaxCompassErrorCodeCount() int {
-	if mc.MaxCompassErrorCodeCount <=0 {
+	if mc.MaxCompassErrorCodeCount <= 0 {
 		return defaultMaxCompassErrorCodeCount
 	}
 	return mc.MaxCompassErrorCodeCount

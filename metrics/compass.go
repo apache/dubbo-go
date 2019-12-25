@@ -18,7 +18,6 @@
 package metrics
 
 type CompassContext interface {
-
 }
 
 type Compass interface {

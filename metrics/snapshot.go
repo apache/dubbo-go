@@ -21,5 +21,4 @@ package metrics
  * It's the go version of com.alibaba.metrics.Snapshot
  */
 type Snapshot interface {
-
 }

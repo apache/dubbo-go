@@ -44,7 +44,7 @@ func TestMetricConfig_GetMaxCompassErrorCodeCount(t *testing.T) {
 	assert.Equal(t, defaultMaxCompassErrorCodeCount, config.GetMaxCompassErrorCodeCount())
 	config.MaxCompassErrorCodeCount = -1
 	assert.Equal(t, defaultMaxCompassErrorCodeCount, config.GetMaxCompassErrorCodeCount())
-	config.MaxCompassErrorCodeCount = 13;
+	config.MaxCompassErrorCodeCount = 13
 	assert.Equal(t, 13, config.GetMaxCompassErrorCodeCount())
 }
 

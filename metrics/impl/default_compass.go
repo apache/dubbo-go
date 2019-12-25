@@ -24,7 +24,7 @@ import (
 	"github.com/apache/dubbo-go/metrics"
 )
 
-const tickInterval  = 5 * time.Second
+const tickInterval = 5 * time.Second
 
 type DefaultCompass struct {
 	// The count per collect interval
@@ -40,6 +40,3 @@ type DefaultCompass struct {
 func (cp *DefaultCompass) GetSnapshot() metrics.Snapshot {
 	panic("Implement me")
 }
-
-
-

@@ -18,20 +18,24 @@
 package metrics
 
 import (
+	"math"
 	"sync"
 	"sync/atomic"
 	"time"
 )
 
 const (
-	ewmaInterval = 5
+	ewmaInterval     = 5
 	secondPerMinutes = 60.0
-	oneMinute = 1
-	fiveMinutes = 5
-	fifteenMinutes = 15
-	m1Alpha = ewmaInterval / secondPerMinutes / oneMinute
-	m5Alpha = ewmaInterval / secondPerMinutes / fiveMinutes
-	m15Alpha = ewmaInterval / secondPerMinutes / fifteenMinutes
+	oneMinute        = 1
+	fiveMinutes      = 5
+	fifteenMinutes   = 15
+)
+
+var (
+	m1Alpha  = 1 - math.Exp(-ewmaInterval/secondPerMinutes/oneMinute)
+	m5Alpha  = 1 - math.Exp(-ewmaInterval/secondPerMinutes/fiveMinutes)
+	m15Alpha = 1 - math.Exp(-ewmaInterval/secondPerMinutes/fifteenMinutes)
 )
 
 /**
@@ -42,42 +46,31 @@ const (
  * http://www.teamquest.com/pdfs/whitepaper/ldavg2.pdf UNIX Load Average Part 2: Not
  *      Your Average Average
  * http://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
+ *
+ * I had try to replace mutex with channel, but fail. The TickN function needs to synchronized strictly.
  */
 type EWMA struct {
 	initialized bool
-	rate float64
-	uncounted int64
-	alpha float64
-	interval int64
+	rate        float64
+	uncounted   int64
+	alpha       float64
+	interval    int64
 
-	// using channel to calculate the rate instead of using mutex
-	rateChannel chan float64
-	// only use in
-	initMutex sync.Mutex
-	initOnce sync.Once
+	mutex sync.Mutex
 }
 
 func (ewma *EWMA) Update(n int64) {
 	atomic.AddInt64(&ewma.uncounted, n)
 }
 
-func (ewma *EWMA) TickN(count int64)  {
-	instantRate := float64(count)/ float64(ewma.interval)
-	delta := ewma.alpha * (instantRate - ewma.rate)
+func (ewma *EWMA) TickN(count int64) {
+	instantRate := float64(count) / float64(ewma.interval)
+	ewma.mutex.Lock()
+	defer ewma.mutex.Unlock()
 
-	// In most case, ewma.initialized is true. So we avoid using the mutex. It's the quick path
 	if ewma.initialized {
-		ewma.rateChannel <- delta
-		return
-	}
-
-	// lock and then init.
-	ewma.initMutex.Lock()
-	defer ewma.initMutex.Unlock()
-
-	// initialized by another thread...
-	if ewma.initialized {
-		ewma.rateChannel <- delta
+		delta := ewma.alpha * (instantRate - ewma.rate)
+		ewma.rate += delta
 		return
 	}
 
@@ -86,22 +79,14 @@ func (ewma *EWMA) TickN(count int64)  {
 	ewma.initialized = true
 }
 
-func (ewma *EWMA) Tick()  {
+func (ewma *EWMA) Tick() {
 	old := ewma.uncounted
 	// CAS
-	for swapped := atomic.CompareAndSwapInt64(&ewma.uncounted, old, 0);!swapped; {
+	for swapped := atomic.CompareAndSwapInt64(&ewma.uncounted, old, 0); !swapped; {
 		old = ewma.uncounted
 		swapped = atomic.CompareAndSwapInt64(&ewma.uncounted, old, 0)
 	}
 	ewma.TickN(old)
-}
-
-func (ewma *EWMA) start() {
-	for {
-		delta := <- ewma.rateChannel
-		ewma.rate += delta
-	}
-
 }
 
 /**
@@ -113,25 +98,21 @@ func (ewma *EWMA) GetRate(timeUnit time.Duration) float64 {
 }
 
 func NewOneMinuteEWMA() *EWMA {
-	return newEWMA(m1Alpha, ewmaInterval * time.Second)
+	return newEWMA(m1Alpha, ewmaInterval*time.Second)
 }
 
 func NewFiveMinutesEWMA() *EWMA {
-	return newEWMA(m5Alpha, ewmaInterval * time.Second)
+	return newEWMA(m5Alpha, ewmaInterval*time.Second)
 }
 
 func NewFifteenMinutesEWMA() *EWMA {
-	return newEWMA(m15Alpha, ewmaInterval * time.Second)
+	return newEWMA(m15Alpha, ewmaInterval*time.Second)
 }
 
-func newEWMA(alpha float64, interval time.Duration) *EWMA{
+func newEWMA(alpha float64, interval time.Duration) *EWMA {
 	result := &EWMA{
-		alpha:       alpha,
-		interval:    interval.Nanoseconds(),
-		// if we found out that the blocking channel is the bottle neck of performance,
-		// we should think about using non-blocking channel, which needs more effort to ensure the codes are right
-		rateChannel: make(chan float64),
+		alpha:    alpha,
+		interval: interval.Nanoseconds(),
 	}
-	go result.start()
 	return result
 }
