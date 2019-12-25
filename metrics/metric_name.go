@@ -21,6 +21,11 @@ import (
 	"sync"
 )
 
+const (
+	keyTagsSeparator  = "-"
+	keyValueSeparator = ":"
+)
+
 var (
 	emptyTags = make(map[string]string, 0)
 )
@@ -46,9 +51,10 @@ func (mn *MetricName) HashKey() string {
 		if len(mn.Tags) <= 0 {
 			return
 		}
-		mn.hashKey += "-"
+
+		mn.hashKey += keyTagsSeparator
 		for key, value := range mn.Tags {
-			mn.hashKey += key + ":" + value
+			mn.hashKey += key + keyValueSeparator + value
 		}
 	})
 	return mn.hashKey
