@@ -67,3 +67,7 @@ const (
 	APP_DYNAMIC_CONFIGURATORS_CATEGORY = "appdynamicconfigurators"
 	PROVIDER_CATEGORY                  = "providers"
 )
+
+const (
+	COMMA_SPLIT_PATTERN = "\\s*[,]+\\s*"
+)

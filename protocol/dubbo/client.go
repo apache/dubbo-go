@@ -113,15 +113,15 @@ type Options struct {
 	RequestTimeout time.Duration
 }
 
-type CallResponse struct {
+//AsyncCallbackResponse async response for dubbo
+type AsyncCallbackResponse struct {
+	common.CallbackResponse
 	Opts      Options
 	Cause     error
 	Start     time.Time // invoke(call) start time == write start time
 	ReadStart time.Time // read start time, write duration = ReadStart - Start
 	Reply     interface{}
 }
-
-type AsyncCallback func(response CallResponse)
 
 type Client struct {
 	opts     Options
@@ -199,12 +199,12 @@ func (c *Client) Call(request *Request, response *Response) error {
 	return perrors.WithStack(c.call(ct, request, response, nil))
 }
 
-func (c *Client) AsyncCall(request *Request, callback AsyncCallback, response *Response) error {
+func (c *Client) AsyncCall(request *Request, callback common.AsyncCallback, response *Response) error {
 
 	return perrors.WithStack(c.call(CT_TwoWay, request, response, callback))
 }
 
-func (c *Client) call(ct CallType, request *Request, response *Response, callback AsyncCallback) error {
+func (c *Client) call(ct CallType, request *Request, response *Response, callback common.AsyncCallback) error {
 
 	p := &DubboPackage{}
 	p.Service.Path = strings.TrimPrefix(request.svcUrl.Path, "/")
