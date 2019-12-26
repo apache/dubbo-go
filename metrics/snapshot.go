@@ -65,5 +65,5 @@ type Snapshot interface {
 	GetStdDev() float64
 
 	// Writes the values of the snapshot
-	dump(writer io.Writer)
+	Dump(writer io.Writer)
 }

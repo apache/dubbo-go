@@ -17,6 +17,11 @@
 
 package metrics
 
+const (
+	// com.alibaba.metrics.Constants.NOT_AVAILABLE
+	NotAvailable int64 = -10001
+)
+
 /*
  * It's the same as Metric interface in Java dubbo.
  * It's a tag interface indicating that a class is Metric

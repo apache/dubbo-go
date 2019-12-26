@@ -17,6 +17,82 @@
 
 package impl
 
+import (
+	"io"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/metrics"
+)
+
 type BucketSnapshot struct {
-	
+	count int64
+	value int64
+}
+
+func (b BucketSnapshot) GetValue(quantile float64) float64 {
+	return float64(metrics.NotAvailable)
+}
+
+func (b BucketSnapshot) GetValues() []int64 {
+	return []int64{0}
+}
+
+func (b BucketSnapshot) Size() int {
+	return int(b.count)
+}
+
+func (b BucketSnapshot) GetMedian() float64 {
+	return float64(metrics.NotAvailable)
+}
+
+func (b BucketSnapshot) Get75thPercentile() float64 {
+	return float64(metrics.NotAvailable)
+}
+
+func (b BucketSnapshot) Get95thPercentile() float64 {
+	return float64(metrics.NotAvailable)
+}
+
+func (b BucketSnapshot) Get98thPercentile() float64 {
+	return float64(metrics.NotAvailable)
+}
+
+func (b BucketSnapshot) Get99thPercentile() float64 {
+	return float64(metrics.NotAvailable)
+}
+
+func (b BucketSnapshot) Get999thPercentile() float64 {
+	return float64(metrics.NotAvailable)
+}
+
+func (b BucketSnapshot) GetMax() int64 {
+	return metrics.NotAvailable
+}
+
+func (b BucketSnapshot) GetMean() int64 {
+	if b.count == 0 {
+		return 0
+	}
+	return b.value / b.count
+}
+
+func (b BucketSnapshot) GetMin() int64 {
+	return metrics.NotAvailable
+}
+
+func (b BucketSnapshot) GetStdDev() float64 {
+	return float64(metrics.NotAvailable)
+}
+
+func (b BucketSnapshot) Dump(writer io.Writer) {
+	logger.Warn("This implementation will do nothing. ")
+}
+
+func NewBucketSnapshot(count int64, value int64) metrics.Snapshot {
+	return BucketSnapshot{
+		count: count,
+		value: value,
+	}
 }
