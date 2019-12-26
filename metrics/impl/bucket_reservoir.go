@@ -24,10 +24,6 @@ import (
 	"github.com/apache/dubbo-go/metrics"
 )
 
-const (
-	SecondToMilliSecond = int64(time.Second) / int64(time.Millisecond)
-)
-
 type BucketReservoir struct {
 	countPerBucket metrics.BucketCounter
 	valuePerBucket metrics.BucketCounter
@@ -65,12 +61,12 @@ func fetchValueFromMap(target map[int64]int64) int64 {
 
 func (b *BucketReservoir) alignToBucketStartTimeInMs() int64 {
 	// convert the current time to SECONDS
-	current := b.clock.GetTime() / SecondToMilliSecond
+	current := b.clock.GetTime() / secondToMsRate
 
 	intervalInSecond := int64(b.interval.Seconds())
 
 	// for example: if the current is 13s, and intervalInSecond is 5s, so the result is (13 - 5)/5 * 5 * 1000 = 5 000 ms
-	return (current - intervalInSecond) / intervalInSecond * intervalInSecond * SecondToMilliSecond
+	return (current - intervalInSecond) / intervalInSecond * intervalInSecond * secondToMsRate
 }
 
 func NewBucketReservoir(interval time.Duration, numOfBucket int, clock metrics.Clock, totalCount metrics.BucketCounter) metrics.Reservoir {

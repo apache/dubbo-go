@@ -20,16 +20,20 @@ package impl
 import (
 	"testing"
 	"time"
+)
 
+import (
 	"github.com/stretchr/testify/assert"
+)
 
+import (
 	"github.com/apache/dubbo-go/metrics"
 )
 
 func TestBucketReservoir(t *testing.T) {
 	clock := &ManualClock{}
-	totalCount := newBucketCounterImpl(5, 10, clock, true)
-	reservoir := NewBucketReservoir(5 * time.Second, 10, clock, totalCount)
+	totalCount := newBucketCounterImpl(5*time.Second, 10, clock, true)
+	reservoir := NewBucketReservoir(5*time.Second, 10, clock, totalCount)
 
 	// 1 interval
 	clock.Add(5 * time.Second)
@@ -44,7 +48,7 @@ func TestBucketReservoir(t *testing.T) {
 
 	snapshot := reservoir.GetSnapshot()
 
-	assert.Equal(t, 15, snapshot.GetMean())
+	assert.Equal(t, int64(15), snapshot.GetMean())
 	assert.Equal(t, float64(metrics.NotAvailable), snapshot.Get75thPercentile())
 	assert.Equal(t, float64(metrics.NotAvailable), snapshot.Get95thPercentile())
 	assert.Equal(t, float64(metrics.NotAvailable), snapshot.Get98thPercentile())
