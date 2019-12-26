@@ -27,6 +27,10 @@ import (
 	"github.com/apache/dubbo-go/metrics"
 )
 
+const (
+	secondToMsRate = int64(time.Second / time.Millisecond)
+)
+
 /**
  * Record the accurate number of events within each given time interval, one for each bucket.
  * see com.alibaba.metrics.BucketCounterImpl
@@ -128,7 +132,8 @@ func (bci *BucketCounterImpl) GetBucketCountsSince(startTime int64) map[int64]in
 	bucketList := bci.buckets.getBucketList()
 	result := make(map[int64]int64, len(bucketList))
 	for _, value := range bucketList {
-		bkTimestampInMs := 1e3 * value.timestamp
+
+		bkTimestampInMs := secondToMsRate * value.timestamp
 		if bkTimestampInMs >= startTime && value.timestamp <= currentTs {
 			result[bkTimestampInMs] = value.count
 		}
@@ -143,7 +148,7 @@ func (bci *BucketCounterImpl) GetBucketInterval() time.Duration {
 // it will align the timestmp to N*interval and then convert the timestmp to seconds
 // for example: if the timestmp is 11000ms, and the interval is 5s, the result will be 11000/1000 /5 *5 = 10
 func (bci *BucketCounterImpl) alignTimestamp(timestmp int64) int64 {
-	return timestmp / int64(1e3) / int64(bci.interval.Seconds()) * int64(bci.interval.Seconds())
+	return timestmp / secondToMsRate / int64(bci.interval.Seconds()) * int64(bci.interval.Seconds())
 }
 
 // interval should be one of 1s, 5s, 10s, 30s, 60s

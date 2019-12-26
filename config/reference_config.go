@@ -55,11 +55,12 @@ type ReferenceConfig struct {
 	Group         string            `yaml:"group"  json:"group,omitempty" property:"group"`
 	Version       string            `yaml:"version"  json:"version,omitempty" property:"version"`
 	Methods       []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
-	async         bool              `yaml:"async"  json:"async,omitempty" property:"async"`
+	Async         bool              `yaml:"async"  json:"async,omitempty" property:"async"`
 	Params        map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
 	invoker       protocol.Invoker
 	urls          []*common.URL
 	Generic       bool `yaml:"generic"  json:"generic,omitempty" property:"generic"`
+	Sticky        bool `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
 }
 
 func (c *ReferenceConfig) Prefix() string {
@@ -141,7 +142,12 @@ func (refconfig *ReferenceConfig) Refer() {
 	}
 
 	//create proxy
-	refconfig.pxy = extension.GetProxyFactory(consumerConfig.ProxyFactory).GetProxy(refconfig.invoker, url)
+	if refconfig.Async {
+		callback := GetCallback(refconfig.id)
+		refconfig.pxy = extension.GetProxyFactory(consumerConfig.ProxyFactory).GetAsyncProxy(refconfig.invoker, callback, url)
+	} else {
+		refconfig.pxy = extension.GetProxyFactory(consumerConfig.ProxyFactory).GetProxy(refconfig.invoker, url)
+	}
 }
 
 // @v is service provider implemented RPCService
@@ -169,7 +175,8 @@ func (refconfig *ReferenceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.GENERIC_KEY, strconv.FormatBool(refconfig.Generic))
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
 	//getty invoke async or sync
-	urlMap.Set(constant.ASYNC_KEY, strconv.FormatBool(refconfig.async))
+	urlMap.Set(constant.ASYNC_KEY, strconv.FormatBool(refconfig.Async))
+	urlMap.Set(constant.STICKY_KEY, strconv.FormatBool(refconfig.Sticky))
 
 	//application info
 	urlMap.Set(constant.APPLICATION_KEY, consumerConfig.ApplicationConfig.Name)
@@ -190,6 +197,7 @@ func (refconfig *ReferenceConfig) getUrlMap() url.Values {
 	for _, v := range refconfig.Methods {
 		urlMap.Set("methods."+v.Name+"."+constant.LOADBALANCE_KEY, v.Loadbalance)
 		urlMap.Set("methods."+v.Name+"."+constant.RETRIES_KEY, v.Retries)
+		urlMap.Set("methods."+v.Name+"."+constant.STICKY_KEY, strconv.FormatBool(v.Sticky))
 	}
 
 	return urlMap

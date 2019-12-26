@@ -20,11 +20,10 @@ package impl
 import (
 	"sync"
 	"sync/atomic"
-
-	"github.com/apache/dubbo-go/config"
 )
 
 import (
+	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/metrics"
 )
 

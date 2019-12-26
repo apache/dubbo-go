@@ -34,7 +34,7 @@ func (mc *ManualClock) GetTick() int64 {
 }
 
 func (mc *ManualClock) GetTime() int64 {
-	return mc.tickInNanos / 1e6
+	return mc.tickInNanos / int64(time.Millisecond)
 }
 
 func (mc *ManualClock) Add(duration time.Duration) {
