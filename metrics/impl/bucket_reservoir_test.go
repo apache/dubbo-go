@@ -48,12 +48,35 @@ func TestBucketReservoir(t *testing.T) {
 
 	snapshot := reservoir.GetSnapshot()
 
-	assert.Equal(t, int64(15), snapshot.GetMean())
-	assert.Equal(t, float64(metrics.NotAvailable), snapshot.Get75thPercentile())
-	assert.Equal(t, float64(metrics.NotAvailable), snapshot.Get95thPercentile())
-	assert.Equal(t, float64(metrics.NotAvailable), snapshot.Get98thPercentile())
-	assert.Equal(t, float64(metrics.NotAvailable), snapshot.Get99thPercentile())
-	assert.Equal(t, float64(metrics.NotAvailable), snapshot.Get999thPercentile())
-	assert.Equal(t, metrics.NotAvailable, snapshot.GetMax())
-	assert.Equal(t, metrics.NotAvailable, snapshot.GetMin())
+	mean, err := snapshot.GetMean()
+	assert.Equal(t, int64(15), mean)
+	assert.Nil(t, err)
+
+	per75, err := snapshot.Get75thPercentile()
+	assert.Equal(t, float64(metrics.NotAvailable), per75)
+	assert.NotNil(t, err)
+
+	per95, err := snapshot.Get95thPercentile()
+	assert.Equal(t, float64(metrics.NotAvailable), per95)
+	assert.NotNil(t, err)
+
+	per98, err := snapshot.Get98thPercentile()
+	assert.Equal(t, float64(metrics.NotAvailable), per98)
+	assert.NotNil(t, err)
+
+	per99, err := snapshot.Get99thPercentile()
+	assert.Equal(t, float64(metrics.NotAvailable), per99)
+	assert.NotNil(t, err)
+
+	per999, err := snapshot.Get999thPercentile()
+	assert.Equal(t, float64(metrics.NotAvailable), per999)
+	assert.NotNil(t, err)
+
+	max, err := snapshot.GetMax()
+	assert.Equal(t, metrics.NotAvailable, max)
+	assert.NotNil(t, err)
+
+	min, err := snapshot.GetMin()
+	assert.Equal(t, metrics.NotAvailable, min)
+	assert.NotNil(t, err)
 }

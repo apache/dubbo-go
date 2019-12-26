@@ -33,7 +33,7 @@ type BucketSnapshot struct {
 }
 
 func (b BucketSnapshot) GetValue(quantile float64) (float64, error) {
-	return float64(metrics.NotAvailable), nil
+	return float64(metrics.NotAvailable), errors.New("BucketSnapshot do not support GetValue operation")
 }
 
 func (b BucketSnapshot) GetValues() ([]int64, error) {
@@ -69,7 +69,7 @@ func (b BucketSnapshot) Get999thPercentile() (float64, error) {
 }
 
 func (b BucketSnapshot) GetMax() (int64, error) {
-	return metrics.NotAvailable, nil
+	return metrics.NotAvailable, errors.New("BucketSnapshot do not support GetMax operation")
 }
 
 func (b BucketSnapshot) GetMean() (int64, error) {
