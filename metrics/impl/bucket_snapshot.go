@@ -18,6 +18,7 @@
 package impl
 
 import (
+	"errors"
 	"io"
 )
 
@@ -31,63 +32,64 @@ type BucketSnapshot struct {
 	value int64
 }
 
-func (b BucketSnapshot) GetValue(quantile float64) float64 {
-	return float64(metrics.NotAvailable)
+func (b BucketSnapshot) GetValue(quantile float64) (float64, error) {
+	return float64(metrics.NotAvailable), nil
 }
 
-func (b BucketSnapshot) GetValues() []int64 {
-	return []int64{0}
+func (b BucketSnapshot) GetValues() ([]int64, error) {
+	return []int64{0}, errors.New("BucketSnapshot do not support GetValues operation")
 }
 
-func (b BucketSnapshot) Size() int {
-	return int(b.count)
+func (b BucketSnapshot) Size() (int, error) {
+	return int(b.count), nil
 }
 
-func (b BucketSnapshot) GetMedian() float64 {
-	return float64(metrics.NotAvailable)
+func (b BucketSnapshot) GetMedian() (float64, error) {
+	return float64(metrics.NotAvailable), errors.New("BucketSnapshot do not support GetMedian operation")
 }
 
-func (b BucketSnapshot) Get75thPercentile() float64 {
-	return float64(metrics.NotAvailable)
+func (b BucketSnapshot) Get75thPercentile() (float64, error) {
+	return float64(metrics.NotAvailable), errors.New("BucketSnapshot do not support Get75thPercentile operation")
 }
 
-func (b BucketSnapshot) Get95thPercentile() float64 {
-	return float64(metrics.NotAvailable)
+func (b BucketSnapshot) Get95thPercentile() (float64, error) {
+	return float64(metrics.NotAvailable), errors.New("BucketSnapshot do not support Get95thPercentile operation")
 }
 
-func (b BucketSnapshot) Get98thPercentile() float64 {
-	return float64(metrics.NotAvailable)
+func (b BucketSnapshot) Get98thPercentile() (float64, error) {
+	return float64(metrics.NotAvailable), errors.New("BucketSnapshot do not support Get98thPercentile operation")
 }
 
-func (b BucketSnapshot) Get99thPercentile() float64 {
-	return float64(metrics.NotAvailable)
+func (b BucketSnapshot) Get99thPercentile() (float64, error) {
+	return float64(metrics.NotAvailable), errors.New("BucketSnapshot do not support Get98thPercentile operation")
 }
 
-func (b BucketSnapshot) Get999thPercentile() float64 {
-	return float64(metrics.NotAvailable)
+func (b BucketSnapshot) Get999thPercentile() (float64, error) {
+	return float64(metrics.NotAvailable), errors.New("BucketSnapshot do not support Get999thPercentile operation")
 }
 
-func (b BucketSnapshot) GetMax() int64 {
-	return metrics.NotAvailable
+func (b BucketSnapshot) GetMax() (int64, error) {
+	return metrics.NotAvailable, nil
 }
 
-func (b BucketSnapshot) GetMean() int64 {
+func (b BucketSnapshot) GetMean() (int64, error) {
 	if b.count == 0 {
-		return 0
+		return 0, nil
 	}
-	return b.value / b.count
+	return b.value / b.count, nil
 }
 
-func (b BucketSnapshot) GetMin() int64 {
-	return metrics.NotAvailable
+func (b BucketSnapshot) GetMin() (int64, error) {
+	return metrics.NotAvailable, errors.New("BucketSnapshot do not support GetMin operation")
 }
 
-func (b BucketSnapshot) GetStdDev() float64 {
-	return float64(metrics.NotAvailable)
+func (b BucketSnapshot) GetStdDev() (float64, error) {
+	return float64(metrics.NotAvailable), errors.New("BucketSnapshot do not support GetStdDev operation")
 }
 
-func (b BucketSnapshot) Dump(writer io.Writer) {
+func (b BucketSnapshot) Dump(writer io.Writer) error {
 	logger.Warn("This implementation will do nothing. ")
+	return errors.New("BucketSnapshot do not support Dump operation")
 }
 
 func NewBucketSnapshot(count int64, value int64) metrics.Snapshot {

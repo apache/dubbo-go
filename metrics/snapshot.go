@@ -26,44 +26,44 @@ import (
  */
 type Snapshot interface {
 	// return the value at the given quantile.
-	GetValue(quantile float64) float64
+	GetValue(quantile float64) (float64, error)
 
 	// return the entire set of values in the snapshot
-	GetValues() []int64
+	GetValues() ([]int64, error)
 
 	// return the number of values in the snapshot
-	Size() int
+	Size() (int, error)
 
 	// Get the median value in the distribution
-	GetMedian() float64
+	GetMedian() (float64, error)
 
 	// Get the value at 75th percentile in the distribution
-	Get75thPercentile() float64
+	Get75thPercentile() (float64, error)
 
 	// Get the value at 95th percentile in the distribution
-	Get95thPercentile() float64
+	Get95thPercentile() (float64, error)
 
 	// Get the value at 98th percentile in the distribution
-	Get98thPercentile() float64
+	Get98thPercentile() (float64, error)
 
 	// Get the value at 99th percentile in the distribution
-	Get99thPercentile() float64
+	Get99thPercentile() (float64, error)
 
 	// Get the value at 999th percentile in the distribution
-	Get999thPercentile() float64
+	Get999thPercentile() (float64, error)
 
 	// Returns the highest value in the snapshot.
-	GetMax() int64
+	GetMax() (int64, error)
 
 	// Returns the arithmetic mean of the values in the snapshot.
-	GetMean() int64
+	GetMean() (int64, error)
 
 	// Returns the lowest value in the snapshot.
-	GetMin() int64
+	GetMin() (int64, error)
 
 	// Returns the standard deviation of the values in the snapshot.
-	GetStdDev() float64
+	GetStdDev() (float64, error)
 
 	// Writes the values of the snapshot
-	Dump(writer io.Writer)
+	Dump(writer io.Writer) error
 }
