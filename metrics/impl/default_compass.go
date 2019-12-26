@@ -68,6 +68,7 @@ type DefaultCompass struct {
 	// The number of bucket
 	numberOfBucket int
 
+	reservoir metrics.Reservoir
 }
 
 func (cp *DefaultCompass) GetSnapshot() metrics.Snapshot {

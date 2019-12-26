@@ -19,8 +19,13 @@ package impl
 
 import (
 	"time"
-
+)
+import (
 	"github.com/apache/dubbo-go/metrics"
+)
+
+const (
+	SecondToMilliSecond = int64(time.Second) / int64(time.Millisecond)
 )
 
 type BucketReservoir struct {
@@ -39,7 +44,33 @@ func (b *BucketReservoir) UpdateN(value int64) {
 }
 
 func (b *BucketReservoir) GetSnapshot() metrics.Snapshot {
-	panic("implement me")
+	startTime := b.alignToBucketStartTimeInMs()
+	valueResult := b.valuePerBucket.GetBucketCountsSince(startTime)
+	value := fetchValueFromMap(valueResult)
+
+	countResult := b.countPerBucket.GetBucketCountsSince(startTime)
+	count := fetchValueFromMap(countResult)
+
+	return NewBucketSnapshot(count, value)
+}
+
+func fetchValueFromMap(target map[int64]int64) int64 {
+	if target != nil && len(target) > 0 {
+		for _, v := range target {
+			return v
+		}
+	}
+	return 0
+}
+
+func (b *BucketReservoir) alignToBucketStartTimeInMs() int64 {
+	// convert the current time to SECONDS
+	current := b.clock.GetTime() / SecondToMilliSecond
+
+	intervalInSecond := int64(b.interval.Seconds())
+
+	// for example: if the current is 13s, and intervalInSecond is 5s, so the result is (13 - 5)/5 * 5 * 1000 = 5 000 ms
+	return (current - intervalInSecond) / intervalInSecond * intervalInSecond * SecondToMilliSecond
 }
 
 func NewBucketReservoir(interval time.Duration, numOfBucket int, clock metrics.Clock, totalCount metrics.BucketCounter) metrics.Reservoir {
