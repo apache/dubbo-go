@@ -17,8 +17,53 @@
 
 package metrics
 
+import (
+	"io"
+)
+
 /**
  * It's the go version of com.alibaba.metrics.Snapshot
  */
 type Snapshot interface {
+	// return the value at the given quantile.
+	GetValue(quantile float64) float64
+
+	// return the entire set of values in the snapshot
+	GetValues() []int64
+
+	// return the number of values in the snapshot
+	Size() int
+
+	// Get the median value in the distribution
+	GetMedian() float64
+
+	// Get the value at 75th percentile in the distribution
+	Get75thPercentile() float64
+
+	// Get the value at 95th percentile in the distribution
+	Get95thPercentile() float64
+
+	// Get the value at 98th percentile in the distribution
+	Get98thPercentile() float64
+
+	// Get the value at 99th percentile in the distribution
+	Get99thPercentile() float64
+
+	// Get the value at 999th percentile in the distribution
+	Get999thPercentile() float64
+
+	// Returns the highest value in the snapshot.
+	GetMax() int64
+
+	// Returns the arithmetic mean of the values in the snapshot.
+	GetMean() int64
+
+	// Returns the lowest value in the snapshot.
+	GetMin() int64
+
+	// Returns the standard deviation of the values in the snapshot.
+	GetStdDev() float64
+
+	// Writes the values of the snapshot
+	dump(writer io.Writer)
 }

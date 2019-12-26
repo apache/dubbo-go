@@ -35,6 +35,39 @@ type DefaultCompass struct {
 	errorCodes sync.Map
 	// The number of addon count per addon per collect interval
 	addons sync.Map
+
+	// 1min moving average
+	m1Rate metrics.EWMA
+	// 5min moving average
+	m5Rate metrics.EWMA
+	// 15min moving average
+	m15Rate metrics.EWMA
+
+	// usually, it's the real time.
+	// But it could be "logic" time, which depends on the Clock's implementation
+	startTime int64
+
+	// the last tick timestamp
+	lastTick int64
+
+	// The number of events that is not update to moving average yet
+	uncounted int64
+
+	// The clock implementation
+	clock metrics.Clock
+
+	// The max number of error code that is allowed
+	maxErrorCodeCount int
+
+	// The max number of addon that is allowed
+	maxAddonCount int
+
+	// The collect interval
+	bucketInterval int
+
+	// The number of bucket
+	numberOfBucket int
+
 }
 
 func (cp *DefaultCompass) GetSnapshot() metrics.Snapshot {
