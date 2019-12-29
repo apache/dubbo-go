@@ -81,7 +81,7 @@ func TestGenericServiceFilter_Invoke(t *testing.T) {
 	assert.Nil(t, result.Error())
 }
 
-func TestGenericServiceFilter_Response(t *testing.T) {
+func TestGenericServiceFilter_ResponseTestStruct(t *testing.T) {
 	ts := &TestStruct{
 		AaAa: "aaa",
 		BaBa: "bbb",
@@ -92,6 +92,24 @@ func TestGenericServiceFilter_Response(t *testing.T) {
 	}
 	result := &protocol.RPCResult{
 		Rest: ts,
+	}
+	aurguments := []interface{}{
+		"MethodOne",
+		nil,
+		[]hessian.Object{nil},
+	}
+	filter := GetGenericServiceFilter()
+	methodName := "$invoke"
+	rpcInvocation := invocation.NewRPCInvocation(methodName, aurguments, nil)
+	r := filter.OnResponse(result, nil, rpcInvocation)
+	assert.NotNil(t, r.Result())
+	assert.Equal(t, reflect.ValueOf(r.Result()).Kind(), reflect.Map)
+}
+
+func TestGenericServiceFilter_ResponseString(t *testing.T) {
+	str := "111"
+	result := &protocol.RPCResult{
+		Rest: str,
 	}
 	aurguments := []interface{}{
 		"MethodOne",
