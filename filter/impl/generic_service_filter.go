@@ -86,9 +86,11 @@ func (ef *GenericServiceFilter) Invoke(invoker protocol.Invoker, invocation prot
 
 func (ef *GenericServiceFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	if invocation.MethodName() == constant.GENERIC && len(invocation.Arguments()) == 3 && result.Result() != nil {
-		s := reflect.ValueOf(result.Result()).Elem().Interface()
-		r := struct2MapAll(s)
-		result.SetResult(r)
+		v := reflect.ValueOf(result.Result())
+		if v.Kind() == reflect.Ptr {
+			v = v.Elem()
+		}
+		result.SetResult(struct2MapAll(v.Interface()))
 	}
 	return result
 }
