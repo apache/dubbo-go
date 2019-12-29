@@ -64,16 +64,9 @@ func (ef *GenericServiceFilter) Invoke(invoker protocol.Invoker, invocation prot
 	// oldParams convert to newParams
 	for i := range argsType {
 		var newParam interface{}
-		if argsType[i].Kind() == reflect.Ptr {
-			newParam = reflect.New(argsType[i].Elem()).Interface()
-			err = mapstructure.Decode(oldParams[i], newParam)
-		} else if argsType[i].Kind() == reflect.Struct || argsType[i].Kind() == reflect.Slice {
-			newParam = reflect.New(argsType[i]).Interface()
-			err = mapstructure.Decode(oldParams[i], newParam)
-			newParam = reflect.ValueOf(newParam).Elem().Interface()
-		} else {
-			newParam = oldParams[i]
-		}
+		newParam = reflect.New(argsType[i]).Interface()
+		err = mapstructure.Decode(oldParams[i], newParam)
+		newParam = reflect.ValueOf(newParam).Elem().Interface()
 		if err != nil {
 			logger.Errorf("[Generic Service Filter] decode arguments map to struct wrong")
 		}
