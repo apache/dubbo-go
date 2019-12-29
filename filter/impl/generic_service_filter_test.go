@@ -121,5 +121,5 @@ func TestGenericServiceFilter_ResponseString(t *testing.T) {
 	rpcInvocation := invocation.NewRPCInvocation(methodName, aurguments, nil)
 	r := filter.OnResponse(result, nil, rpcInvocation)
 	assert.NotNil(t, r.Result())
-	assert.Equal(t, reflect.ValueOf(r.Result()).Kind(), reflect.Map)
+	assert.Equal(t, reflect.ValueOf(r.Result()).Kind(), reflect.String)
 }
