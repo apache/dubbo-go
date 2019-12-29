@@ -31,7 +31,7 @@ func TestNewUniformSnapshot(t *testing.T) {
 	assert.Equal(t, 0, size)
 	assert.Nil(t, err)
 
-	values := []int64{4, 1, 2, 3, }
+	values := []int64{4, 1, 2, 3}
 
 	snapshot = NewUniformSnapshot(values)
 	copied, err := snapshot.GetValues()
@@ -42,7 +42,7 @@ func TestNewUniformSnapshot(t *testing.T) {
 	assert.Equal(t, int64(4), copied[3])
 }
 
-func TestUniformSnapshot_GetValue(t *testing.T) {
+func TestUniformSnapshot(t *testing.T) {
 
 	snapshot := NewUniformSnapshot([]int64{5, 1, 2, 3, 4})
 
@@ -63,6 +63,50 @@ func TestUniformSnapshot_GetValue(t *testing.T) {
 	assert.NotNil(t, err)
 	value, err = snapshot.GetValue(1.0000001)
 	assert.NotNil(t, err)
+
+	// median
+	value, err = snapshot.GetMedian()
+	assert.True(t, equals(3, value, 0.0001))
+
+	// 75
+	value, err = snapshot.Get75thPercentile()
+	assert.True(t, equals(4.5, value, 0.0001))
+	assert.Nil(t, err)
+
+	// 95
+	value, err = snapshot.Get95thPercentile()
+	assert.True(t, equals(5, value, 0.001))
+	assert.Nil(t, err)
+
+	// 98
+	value, err = snapshot.Get98thPercentile()
+	assert.True(t, equals(5, value, 0.001))
+	assert.Nil(t, err)
+
+	// 99
+	value, err = snapshot.Get99thPercentile()
+	assert.True(t, equals(5, value, 0.001))
+	assert.Nil(t, err)
+
+	// 999
+	value, err = snapshot.Get999thPercentile()
+	assert.True(t, equals(5, value, 0.001))
+	assert.Nil(t, err)
+
+	value, err = snapshot.GetStdDev()
+	assert.True(t, equals(1.5811, value, 0.001))
+	assert.Nil(t, err)
+}
+
+func TestUniformSnapshot_GetValue(t *testing.T) {
+	snapshot := NewUniformSnapshot(nil)
+	min, err := snapshot.GetMin()
+	assert.Equal(t, int64(0), min)
+	assert.Nil(t, err)
+
+	max, err := snapshot.GetMax()
+	assert.Equal(t, int64(0), max)
+	assert.Nil(t, err)
 }
 
 // compare two float numbers

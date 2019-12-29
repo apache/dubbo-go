@@ -20,7 +20,6 @@ package impl
 import (
 	"errors"
 	"fmt"
-	"io"
 	"math"
 	"sort"
 )
@@ -30,7 +29,6 @@ import (
 )
 
 type UniformSnapshot struct {
-	metrics.AbstractSnapshot
 	values []int64
 }
 
@@ -39,12 +37,12 @@ func (u *UniformSnapshot) GetValue(quantile float64) (float64, error) {
 		return 0, errors.New(fmt.Sprintf("The quantile must be [0, 1]: %f", quantile))
 	}
 
-	size, _:= u.Size()
+	size, _ := u.Size()
 	if size == 0 {
 		return 0.0, nil
 	}
 
-	pos := quantile * float64(size + 1)
+	pos := quantile * float64(size+1)
 	index := int(pos)
 
 	if index < 1 {
@@ -55,10 +53,10 @@ func (u *UniformSnapshot) GetValue(quantile float64) (float64, error) {
 		return float64(u.values[size-1]), nil
 	}
 
-	lower := u.values[index - 1]
+	lower := u.values[index-1]
 	upper := u.values[index]
 
-	return float64(lower) + (pos - math.Floor(pos)) * float64(upper - lower), nil
+	return float64(lower) + (pos-math.Floor(pos))*float64(upper-lower), nil
 }
 
 func (u *UniformSnapshot) GetValues() ([]int64, error) {
@@ -73,23 +71,82 @@ func (u *UniformSnapshot) Size() (int, error) {
 }
 
 func (u *UniformSnapshot) GetMax() (int64, error) {
-	panic("implement me")
+	size, _ := u.Size()
+	if size == 0 {
+		return 0, nil
+	}
+	return u.values[size-1], nil
 }
 
-func (u *UniformSnapshot) GetMean() (int64, error) {
-	panic("implement me")
+func (u *UniformSnapshot) GetMean() (float64, error) {
+
+	size, _ := u.Size()
+	if size == 0 {
+		return 0, nil
+	}
+
+	var sum int64 = 0
+	for _, value := range u.values {
+		sum += value
+	}
+
+	return float64(sum) / float64(size), nil
 }
 
 func (u *UniformSnapshot) GetMin() (int64, error) {
-	panic("implement me")
+	size, _ := u.Size()
+	if size == 0 {
+		return 0, nil
+	}
+
+	return u.values[0], nil
 }
 
 func (u *UniformSnapshot) GetStdDev() (float64, error) {
-	panic("implement me")
+	size, _ := u.Size()
+	if size <= 1 {
+		return 0, nil
+	}
+
+	mean, _ := u.GetMean()
+	var diffSum float64 = 0
+	for _, value := range u.values {
+		diff := float64(value) - mean
+		diffSum += diff * diff
+	}
+
+	variance := diffSum / float64(size-1)
+	return math.Sqrt(variance), nil
 }
 
-func (u *UniformSnapshot) Dump(writer io.Writer) error {
-	panic("implement me")
+// Get the median value in the distribution
+func (u *UniformSnapshot) GetMedian() (float64, error) {
+	return u.GetValue(0.5)
+}
+
+// Get the value at 75th percentile in the distribution
+func (u *UniformSnapshot) Get75thPercentile() (float64, error) {
+	return u.GetValue(0.75)
+}
+
+// Get the value at 95th percentile in the distribution
+func (u *UniformSnapshot) Get95thPercentile() (float64, error) {
+	return u.GetValue(0.95)
+}
+
+// Get the value at 98th percentile in the distribution
+func (u *UniformSnapshot) Get98thPercentile() (float64, error) {
+	return u.GetValue(0.98)
+}
+
+// Get the value at 99th percentile in the distribution
+func (u *UniformSnapshot) Get99thPercentile() (float64, error) {
+	return u.GetValue(0.99)
+}
+
+// Get the value at 999th percentile in the distribution
+func (u *UniformSnapshot) Get999thPercentile() (float64, error) {
+	return u.GetValue(0.999)
 }
 
 func NewUniformSnapshot(values []int64) metrics.Snapshot {
@@ -115,5 +172,3 @@ func (p Int64Slice) Less(i, j int) bool {
 func (p Int64Slice) Swap(i, j int) {
 	p[i], p[j] = p[j], p[i]
 }
-
-

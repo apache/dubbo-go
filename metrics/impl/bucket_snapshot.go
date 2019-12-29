@@ -19,11 +19,9 @@ package impl
 
 import (
 	"errors"
-	"io"
 )
 
 import (
-	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/metrics"
 )
 
@@ -72,11 +70,11 @@ func (b BucketSnapshot) GetMax() (int64, error) {
 	return metrics.NotAvailable, errors.New("BucketSnapshot do not support GetMax operation")
 }
 
-func (b BucketSnapshot) GetMean() (int64, error) {
+func (b BucketSnapshot) GetMean() (float64, error) {
 	if b.count == 0 {
 		return 0, nil
 	}
-	return b.value / b.count, nil
+	return float64(b.value) / float64(b.count), nil
 }
 
 func (b BucketSnapshot) GetMin() (int64, error) {
@@ -85,11 +83,6 @@ func (b BucketSnapshot) GetMin() (int64, error) {
 
 func (b BucketSnapshot) GetStdDev() (float64, error) {
 	return float64(metrics.NotAvailable), errors.New("BucketSnapshot do not support GetStdDev operation")
-}
-
-func (b BucketSnapshot) Dump(writer io.Writer) error {
-	logger.Warn("This implementation will do nothing. ")
-	return errors.New("BucketSnapshot do not support Dump operation")
 }
 
 func NewBucketSnapshot(count int64, value int64) metrics.Snapshot {

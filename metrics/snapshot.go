@@ -17,10 +17,6 @@
 
 package metrics
 
-import (
-	"io"
-)
-
 /**
  * It's the go version of com.alibaba.metrics.Snapshot
  */
@@ -56,50 +52,11 @@ type Snapshot interface {
 	GetMax() (int64, error)
 
 	// Returns the arithmetic mean of the values in the snapshot.
-	GetMean() (int64, error)
+	GetMean() (float64, error)
 
 	// Returns the lowest value in the snapshot.
 	GetMin() (int64, error)
 
 	// Returns the standard deviation of the values in the snapshot.
 	GetStdDev() (float64, error)
-
-	// Writes the values of the snapshot
-	Dump(writer io.Writer) error
 }
-
-
-type AbstractSnapshot struct {
-	Snapshot
-}
-
-// Get the median value in the distribution
-func (snapshot *AbstractSnapshot) GetMedian() (float64, error) {
-	return snapshot.GetValue(0.5)
-}
-
-// Get the value at 75th percentile in the distribution
-func (snapshot *AbstractSnapshot) Get75thPercentile() (float64, error) {
-	return snapshot.GetValue(0.75)
-}
-
-// Get the value at 95th percentile in the distribution
-func (snapshot *AbstractSnapshot) Get95thPercentile() (float64, error) {
-	return snapshot.GetValue(0.95)
-}
-
-// Get the value at 98th percentile in the distribution
-func (snapshot *AbstractSnapshot) Get98thPercentile() (float64, error) {
-	return snapshot.GetValue(0.98)
-}
-
-// Get the value at 99th percentile in the distribution
-func (snapshot *AbstractSnapshot) Get99thPercentile() (float64, error) {
-	return snapshot.GetValue(0.99)
-}
-
-// Get the value at 999th percentile in the distribution
-func (snapshot *AbstractSnapshot) Get999thPercentile() (float64, error) {
-	return snapshot.GetValue(0.999)
-}
-
