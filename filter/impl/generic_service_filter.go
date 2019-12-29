@@ -69,6 +69,7 @@ func (ef *GenericServiceFilter) Invoke(invoker protocol.Invoker, invocation prot
 		newParam = reflect.ValueOf(newParam).Elem().Interface()
 		if err != nil {
 			logger.Errorf("[Generic Service Filter] decode arguments map to struct wrong")
+			return &protocol.RPCResult{}
 		}
 		newParams = append(newParams, newParam)
 	}
