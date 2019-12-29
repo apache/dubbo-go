@@ -10,6 +10,7 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 	invocation2 "github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/mitchellh/mapstructure"
+	perrors "github.com/pkg/errors"
 	"reflect"
 	"strings"
 )
@@ -46,7 +47,7 @@ func (ef *GenericServiceFilter) Invoke(invoker protocol.Invoker, invocation prot
 	// get method
 	method := svc.Method()[methodName]
 	if method == nil {
-		logger.Errorf("[Generic Service Filter] Don't have this method: %v", method)
+		logger.Errorf("[Generic Service Filter] Don't have this method: %s", methodName)
 		return &protocol.RPCResult{}
 	}
 	argsType = method.ArgsType()
@@ -54,7 +55,7 @@ func (ef *GenericServiceFilter) Invoke(invoker protocol.Invoker, invocation prot
 	if genericKey == GENERIC_SERIALIZATION_DEFAULT {
 		oldParams = invocation.Arguments()[2].([]hessian.Object)
 	} else {
-		logger.Errorf("[Generic Service Filter] Don't support this generic: %v", genericKey)
+		logger.Errorf("[Generic Service Filter] Don't support this generic: %s", genericKey)
 		return &protocol.RPCResult{}
 	}
 	if len(oldParams) != len(argsType) {
@@ -68,7 +69,7 @@ func (ef *GenericServiceFilter) Invoke(invoker protocol.Invoker, invocation prot
 		err = mapstructure.Decode(oldParams[i], newParam)
 		newParam = reflect.ValueOf(newParam).Elem().Interface()
 		if err != nil {
-			logger.Errorf("[Generic Service Filter] decode arguments map to struct wrong")
+			logger.Errorf("[Generic Service Filter] decode arguments map to struct wrong: error{%v}", perrors.WithStack(err))
 			return &protocol.RPCResult{}
 		}
 		newParams = append(newParams, newParam)
