@@ -33,6 +33,7 @@ import (
 var (
 	consumerConfig *ConsumerConfig
 	providerConfig *ProviderConfig
+	routerConfig   *ConditionRouterConfig
 	maxWait        = 3
 )
 
@@ -40,18 +41,26 @@ var (
 // Namely: dubbo.consumer.xml & dubbo.provider.xml in java dubbo
 func init() {
 	var (
-		confConFile, confProFile string
+		confConFile, confProFile, confRouterFile string
 	)
 
 	confConFile = os.Getenv(constant.CONF_CONSUMER_FILE_PATH)
 	confProFile = os.Getenv(constant.CONF_PROVIDER_FILE_PATH)
+	confRouterFile = os.Getenv(constant.CONF_ROUTER_FILE_PATH)
+
 	if errCon := ConsumerInit(confConFile); errCon != nil {
 		log.Printf("[consumerInit] %#v", errCon)
 		consumerConfig = nil
 	}
+
 	if errPro := ProviderInit(confProFile); errPro != nil {
 		log.Printf("[providerInit] %#v", errPro)
 		providerConfig = nil
+	}
+
+	if errPro := RouterInit(confRouterFile); errPro != nil {
+		log.Printf("[routerConfig] %#v", errPro)
+		routerConfig = nil
 	}
 }
 

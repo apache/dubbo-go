@@ -14,22 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package cluster
+package config
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/protocol"
+	"strings"
+	"testing"
 )
 
-// Extension - Router
+func TestString(t *testing.T) {
 
-type RouterFactory interface {
-	Router(*common.URL) (Router, error)
-}
+	s := "a1=>a2"
+	s1 := "=>a2"
+	s2 := "a1=>"
 
-type Router interface {
-	Route([]protocol.Invoker, common.URL, protocol.Invocation) []protocol.Invoker
-	Priority() int64
-	Url() common.URL
+	n := strings.SplitN(s, "=>", 2)
+	n1 := strings.SplitN(s1, "=>", 2)
+	n2 := strings.SplitN(s2, "=>", 2)
+
+	println(n[0], " ", n[1])
+	println(n1[0], " ", n1[1])
+	println(n2[0], " ", n2[1])
+
 }
