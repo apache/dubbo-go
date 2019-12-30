@@ -40,7 +40,7 @@ const (
 	TOKEN_KEY              = "token"
 	LOCAL_ADDR             = "local-addr"
 	REMOTE_ADDR            = "remote-addr"
-	PATH_SEPARATOR = "/"
+	PATH_SEPARATOR         = "/"
 )
 
 const (
@@ -75,7 +75,7 @@ const (
 	EXECUTE_REJECTED_EXECUTION_HANDLER_KEY = "execute.limit.rejected.handler"
 	PROVIDER_SHUTDOWN_FILTER               = "pshutdown"
 	CONSUMER_SHUTDOWN_FILTER               = "cshutdown"
-	ANYHOST_VALUE        = "0.0.0.0"
+	ANYHOST_VALUE                          = "0.0.0.0"
 )
 
 const (
@@ -130,7 +130,7 @@ const (
 	ProviderConfigPrefix       = "dubbo.provider."
 	ConsumerConfigPrefix       = "dubbo.consumer."
 	ShutdownConfigPrefix       = "dubbo.shutdown."
-	RouterConfigPrefix    = "dubbo.router."
+	RouterConfigPrefix         = "dubbo.router."
 )
 
 const (
