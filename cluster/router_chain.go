@@ -35,7 +35,7 @@ func NewRouterChain(url common.URL) *RouterChain {
 
 func (r RouterChain) AddRouters(routers []Router) {
 	r.routers = append(r.routers, routers...)
-	sort.Slice(r.routers, func(i, j int) bool {
+	sort.SliceStable(r.routers, func(i, j int) bool {
 		return routers[i].Priority() < routers[j].Priority()
 	})
 }

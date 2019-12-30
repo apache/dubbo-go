@@ -63,11 +63,12 @@ func (dir *staticDirectory) List(invocation protocol.Invocation) []protocol.Invo
 	localRouters := dir.routers
 	logger.Debug("========", len(localRouters))
 
-	if len(localRouters) > 0 {
-		for _, router := range localRouters {
-			if reflect.ValueOf(router.Url()).IsNil() || router.Url().GetParamBool(constant.RUNTIME_KEY, false) {
-				invokers = router.Route(invokers, *dir.ConsumerUrl, invocation)
-			}
+	if len(localRouters) == 0 {
+		return invokers
+	}
+	for _, router := range localRouters {
+		if reflect.ValueOf(router.Url()).IsNil() || router.Url().GetParamBool(constant.RUNTIME_KEY, false) {
+			return router.Route(invokers, *dir.ConsumerUrl, invocation)
 		}
 	}
 	return invokers
