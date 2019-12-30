@@ -83,7 +83,7 @@ func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) pr
 			if err != nil {
 				return &protocol.RPCResult{Err: err}
 			}
-			invokers = invoker.directory.List(invocation)
+			invokers := invoker.directory.List(invocation)
 			err = invoker.checkInvokers(invokers, invocation)
 			if err != nil {
 				return &protocol.RPCResult{Err: err}

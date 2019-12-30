@@ -44,6 +44,10 @@ type DynamicConfiguration interface {
 
 	//GetInternalProperty get value by key in Default properties file(dubbo.properties)
 	GetInternalProperty(string, ...Option) (string, error)
+
+	GetConfig(string, ...Option) (string, error)
+	SetConfig(string, string, string) error
+	GetConfigs(string, ...Option) (string, error)
 }
 
 type Options struct {
