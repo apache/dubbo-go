@@ -1,9 +1,11 @@
 package cluster
 
 import (
+	"sort"
+)
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
-	"sort"
 )
 
 type RouterChain struct {
