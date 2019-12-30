@@ -23,6 +23,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/apache/dubbo-go/cluster"
 )
 
 import (
@@ -161,6 +163,10 @@ func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 	dir.listenerLock.Lock()
 	defer dir.listenerLock.Unlock()
 	dir.cacheInvokers = newInvokers
+}
+
+func toRouters(urls []*common.URL) []cluster.Router {
+	return nil
 }
 
 func (dir *registryDirectory) toGroupInvokers() []protocol.Invoker {
