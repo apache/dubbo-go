@@ -54,7 +54,7 @@ const (
 
 var (
 	DubboNodes = [...]string{"consumers", "configurators", "routers", "providers"}
-	DubboRole  = [...]string{"consumer", "", "", "provider"}
+	DubboRole  = [...]string{"consumer", "", "routers", "provider"}
 )
 
 type RoleType int
@@ -218,7 +218,7 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (URL, error) 
 	if strings.Contains(s.Location, ":") {
 		s.Ip, s.Port, err = net.SplitHostPort(s.Location)
 		if err != nil {
-			return s, perrors.Errorf("net.SplitHostPort(Url.Host{%s}), error{%v}", s.Location, err)
+			return s, perrors.Errorf("net.SplitHostPort(url.Host{%s}), error{%v}", s.Location, err)
 		}
 	}
 	for _, opt := range opts {
@@ -290,6 +290,36 @@ func (c URL) Key() string {
 	//return c.ServiceKey()
 }
 
+//todo
+func (c *URL) GetBackupUrls() []*URL {
+	var urls []*URL
+	var host string
+	urls = append(urls, c)
+	backups := strings.Split(c.GetParam(constant.BACKUP_KEY, ""), "")
+	for _, address := range backups {
+		index := strings.LastIndex(address, ":")
+		port := c.Port
+		if index > 0 {
+			host = address[:index]
+			port = address[index+1:]
+		} else {
+			host = address
+		}
+		//todo
+		newURL := NewURLWithOptions(
+			WithProtocol(c.Protocol),
+			WithPath(c.Path),
+			WithIp(host),
+			WithUsername(c.Username),
+			WithPassword(c.Password),
+			WithPort(port),
+			WithParams(c.Params))
+
+		urls = append(urls, newURL)
+	}
+	return urls
+}
+
 func (c URL) ServiceKey() string {
 	intf := c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
 	if intf == "" {
@@ -328,7 +358,7 @@ func (c URL) Service() string {
 		return service
 	} else if c.SubURL != nil {
 		service = c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
-		if service != "" { //if url.path is "" then return suburl's path, special for registry Url
+		if service != "" { //if url.path is "" then return suburl's path, special for registry url
 			return service
 		}
 	}
