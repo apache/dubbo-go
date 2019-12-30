@@ -45,8 +45,8 @@ const (
 //ConditionRouter condition router struct
 type ConditionRouter struct {
 	Pattern       string
-	Url           *common.URL
-	Priority      int64
+	url           *common.URL
+	priority      int64
 	Force         bool
 	WhenCondition map[string]MatchPair
 	ThenCondition map[string]MatchPair
@@ -104,6 +104,14 @@ func newConditionRouter(url *common.URL) (*ConditionRouter, error) {
 	}, nil
 }
 
+func (c ConditionRouter) Priority() int64 {
+	return c.priority
+}
+
+func (c ConditionRouter) Url() common.URL {
+	return *c.url
+}
+
 //Router determine the target server list.
 func (c *ConditionRouter) Route(invokers []protocol.Invoker, url common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	if len(invokers) == 0 {
@@ -116,7 +124,7 @@ func (c *ConditionRouter) Route(invokers []protocol.Invoker, url common.URL, inv
 		for _, invo := range invokers {
 			urls = append(urls, reflect.TypeOf(invo).String())
 		}
-		logger.Warnf("Failed to execute condition router rule: %s , invokers: [%s], cause: %v", c.Url.String(), strings.Join(urls, ","), err)
+		logger.Warnf("Failed to execute condition router rule: %s , invokers: [%s], cause: %v", c.url.String(), strings.Join(urls, ","), err)
 		return invokers
 	}
 	if !isMatchWhen {
@@ -134,7 +142,7 @@ func (c *ConditionRouter) Route(invokers []protocol.Invoker, url common.URL, inv
 			for _, invo := range invokers {
 				urls = append(urls, reflect.TypeOf(invo).String())
 			}
-			logger.Warnf("Failed to execute condition router rule: %s , invokers: [%s], cause: %v", c.Url.String(), strings.Join(urls, ","), err)
+			logger.Warnf("Failed to execute condition router rule: %s , invokers: [%s], cause: %v", c.url.String(), strings.Join(urls, ","), err)
 			return invokers
 		}
 		if isMatchThen {

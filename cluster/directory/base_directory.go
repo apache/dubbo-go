@@ -18,32 +18,80 @@
 package directory
 
 import (
-	"sync"
-)
-import (
+	"github.com/apache/dubbo-go/cluster"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/dubbogo/gost/container"
 	"go.uber.org/atomic"
+	"sync"
 )
 import (
 	"github.com/apache/dubbo-go/common"
 )
 
+var RouterUrlSet = container.NewSet()
+
 type BaseDirectory struct {
-	url       *common.URL
-	destroyed *atomic.Bool
-	mutex     sync.Mutex
+	url         *common.URL
+	ConsumerUrl *common.URL
+	destroyed   *atomic.Bool
+	routers     []cluster.Router
+	mutex       sync.Mutex
+	once        sync.Once
 }
 
 func NewBaseDirectory(url *common.URL) BaseDirectory {
 	return BaseDirectory{
-		url:       url,
-		destroyed: atomic.NewBool(false),
+		url:         url,
+		ConsumerUrl: url,
+		destroyed:   atomic.NewBool(false),
 	}
+}
+func (dir *BaseDirectory) Destroyed() bool {
+	return dir.destroyed.Load()
 }
 func (dir *BaseDirectory) GetUrl() common.URL {
 	return *dir.url
 }
 func (dir *BaseDirectory) GetDirectoryUrl() *common.URL {
 	return dir.url
+}
+
+func (dir *BaseDirectory) SetRouters(routers []cluster.Router) {
+	dir.mutex.Lock()
+	defer dir.mutex.Unlock()
+
+	routerKey := dir.GetUrl().GetParam(constant.ROUTER_KEY, "")
+	if len(routerKey) > 0 {
+		factory := extension.GetRouterFactory(dir.GetUrl().Protocol)
+		url := dir.GetUrl()
+		router, err := factory.Router(&url)
+		if err == nil {
+			routers = append(routers, router)
+		}
+	}
+
+	dir.routers = routers
+}
+func (dir *BaseDirectory) Routers() []cluster.Router {
+	var routers []cluster.Router
+	dir.once.Do(func() {
+		rs := RouterUrlSet.Values()
+		for _, r := range rs {
+			factory := extension.GetRouterFactory(r.(*common.URL).GetParam("router", "condition"))
+			router, err := factory.Router(r.(*common.URL))
+			if err == nil {
+				dir.routers = append(dir.routers, router)
+			}
+
+			routers = append(routers, router)
+		}
+	})
+	if len(routers) > 0 {
+		return append(dir.routers, routers...)
+
+	}
+	return dir.routers
 }
 
 func (dir *BaseDirectory) Destroy(doDestroy func()) {
