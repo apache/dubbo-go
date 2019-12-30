@@ -84,7 +84,7 @@ func RouterInit(confRouterFile string) error {
 
 	logger.Debugf("provider config{%#v}\n", routerConfig)
 	directory.RouterUrlSet.Add(initRouterUrl())
-	fmt.Println("=====", directory.RouterUrlSet.Size())
+	logger.Debug("=====", directory.RouterUrlSet.Size())
 	return nil
 }
 
