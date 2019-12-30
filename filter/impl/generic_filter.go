@@ -51,7 +51,7 @@ func (ef *GenericFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 		if oldParams, ok := oldArguments[2].([]interface{}); ok {
 			newParams := make([]hessian.Object, len(oldParams))
 			for i := range oldParams {
-				newParams = append(newParams, hessian.Object(struct2MapAll(oldParams[i])))
+				newParams = append(newParams, 0, hessian.Object(struct2MapAll(oldParams[i])))
 			}
 			newArguments := []interface{}{
 				oldArguments[0],
