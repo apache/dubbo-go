@@ -104,11 +104,11 @@ func newConditionRouter(url *common.URL) (*ConditionRouter, error) {
 	}, nil
 }
 
-func (c ConditionRouter) Priority() int64 {
+func (c *ConditionRouter) Priority() int64 {
 	return c.priority
 }
 
-func (c ConditionRouter) Url() common.URL {
+func (c *ConditionRouter) Url() common.URL {
 	return *c.url
 }
 
