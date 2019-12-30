@@ -2,6 +2,13 @@ package impl
 
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
+	"github.com/mitchellh/mapstructure"
+	perrors "github.com/pkg/errors"
+	"reflect"
+	"strings"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -9,10 +16,6 @@ import (
 	"github.com/apache/dubbo-go/filter"
 	"github.com/apache/dubbo-go/protocol"
 	invocation2 "github.com/apache/dubbo-go/protocol/invocation"
-	"github.com/mitchellh/mapstructure"
-	perrors "github.com/pkg/errors"
-	"reflect"
-	"strings"
 )
 
 const (
@@ -29,9 +32,11 @@ type GenericServiceFilter struct{}
 func (ef *GenericServiceFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("invoking generic service filter.")
 	logger.Debugf("generic service filter methodName:%v,args:%v", invocation.MethodName(), len(invocation.Arguments()))
+
 	if invocation.MethodName() != constant.GENERIC || len(invocation.Arguments()) != 3 {
 		return invoker.Invoke(invocation)
 	}
+
 	var (
 		err        error
 		methodName string
@@ -40,6 +45,7 @@ func (ef *GenericServiceFilter) Invoke(invoker protocol.Invoker, invocation prot
 		argsType   []reflect.Type
 		oldParams  []hessian.Object
 	)
+
 	url := invoker.GetUrl()
 	methodName = invocation.Arguments()[0].(string)
 	// get service
