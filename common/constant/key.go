@@ -75,7 +75,6 @@ const (
 	EXECUTE_REJECTED_EXECUTION_HANDLER_KEY = "execute.limit.rejected.handler"
 	PROVIDER_SHUTDOWN_FILTER               = "pshutdown"
 	CONSUMER_SHUTDOWN_FILTER               = "cshutdown"
-	ANYHOST_VALUE                          = "0.0.0.0"
 )
 
 const (
@@ -105,9 +104,7 @@ const (
 	BACKUP_KEY         = "backup"
 	ROUTERS_CATEGORY   = "routers"
 	ROUTE_PROTOCOL     = "route"
-	CATEGORY_KEY       = "category"
 	PROVIDERS_CATEGORY = "providers"
-	EMPTY_PROTOCOL     = "empty"
 	ROUTER_KEY         = "router"
 )
 
