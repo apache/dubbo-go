@@ -65,7 +65,7 @@ type consulListener struct {
 	// upstream.
 	errCh chan error
 
-	// done field represents whether consul
+	// Done field represents whether consul
 	// listener has been closed. When closing
 	// listener, this field will be closed,
 	// and will notify consul watcher to close.
