@@ -118,7 +118,7 @@ type AsyncCallbackResponse struct {
 	Opts      Options
 	Cause     error
 	Start     time.Time // invoke(call) start time == write start time
-	ReadStart time.Time // read start time, write duration = readStart - Start
+	ReadStart time.Time // read start time, write duration = ReadStart - Start
 	Reply     interface{}
 }
 

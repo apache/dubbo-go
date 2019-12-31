@@ -52,7 +52,7 @@ type consulRegistry struct {
 	// Consul client.
 	client *consul.Client
 
-	// done field represents whether
+	// Done field represents whether
 	// consul registry is closed.
 	done chan struct{}
 }

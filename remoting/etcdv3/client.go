@@ -126,7 +126,7 @@ type Client struct {
 	timeout   time.Duration
 	heartbeat int
 
-	ctx       context.Context    // if etcd server connection lose, the ctx.done will be sent msg
+	ctx       context.Context    // if etcd server connection lose, the ctx.Done will be sent msg
 	cancel    context.CancelFunc // cancel the ctx,  all watcher will stopped
 	rawClient *clientv3.Client
 
