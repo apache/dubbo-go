@@ -24,7 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 )
 
 import(
