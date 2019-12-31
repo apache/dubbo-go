@@ -18,7 +18,6 @@
 package config
 
 import (
-	"fmt"
 	"github.com/apache/dubbo-go/common"
 )
 
@@ -34,7 +33,6 @@ func SetConsumerService(service common.RPCService) {
 
 // SetProService is called by init() of implement of RPCService
 func SetProviderService(service common.RPCService) {
-	fmt.Println("register service ", service.Reference())
 	proServices[service.Reference()] = service
 }
 
