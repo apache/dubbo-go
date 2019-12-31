@@ -27,16 +27,17 @@ import (
 )
 
 func TestFixedWindowTpsLimitStrategyImpl_IsAllowable(t *testing.T) {
-	strategy := NewFixedWindowTpsLimitStrategyImpl(2, 60000)
+	creator := &fixedWindowStrategyCreator{}
+	strategy := creator.Create(2, 60000)
 	assert.True(t, strategy.IsAllowable())
 	assert.True(t, strategy.IsAllowable())
 	assert.False(t, strategy.IsAllowable())
 
-	strategy = NewFixedWindowTpsLimitStrategyImpl(2, 2000)
+	strategy = creator.Create(2, 2000)
 	assert.True(t, strategy.IsAllowable())
 	assert.True(t, strategy.IsAllowable())
 	assert.False(t, strategy.IsAllowable())
-	time.Sleep(time.Duration(2100 * 1000))
+	time.Sleep(2100 * time.Millisecond)
 	assert.True(t, strategy.IsAllowable())
 	assert.True(t, strategy.IsAllowable())
 	assert.False(t, strategy.IsAllowable())

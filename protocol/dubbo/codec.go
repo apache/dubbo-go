@@ -7,12 +7,13 @@ import (
 )
 
 import (
-	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/pkg/errors"
 )
 
 import (
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go-hessian2"
+	"github.com/apache/dubbo-go/common"
 )
 
 type DubboCodec struct {
@@ -299,7 +300,7 @@ type PendingResponse struct {
 	err       error
 	start     time.Time
 	readStart time.Time
-	callback  AsyncCallback
+	callback  common.AsyncCallback
 	response  *Response
 	done      chan struct{}
 }
@@ -312,8 +313,8 @@ func NewPendingResponse() *PendingResponse {
 	}
 }
 
-func (r PendingResponse) GetCallResponse() CallResponse {
-	return CallResponse{
+func (r PendingResponse) GetCallResponse() common.CallbackResponse {
+	return AsyncCallbackResponse{
 		Cause:     r.err,
 		Start:     r.start,
 		ReadStart: r.readStart,

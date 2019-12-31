@@ -46,6 +46,7 @@ import (
 const (
 	RegistryZkClient  = "zk registry"
 	RegistryConnDelay = 3
+	MaxWaitInterval   = time.Duration(3e9)
 )
 
 var (
@@ -200,6 +201,10 @@ func (r *zkRegistry) RestartCallBack() bool {
 		}
 		logger.Infof("success to re-register service :%v", confIf.Key())
 	}
+	r.listener = zookeeper.NewZkEventListener(r.client)
+	r.configListener = NewRegistryConfigurationListener(r.client, r)
+	r.dataListener = NewRegistryDataListener(r.configListener)
+
 	return flag
 }
 
@@ -256,6 +261,10 @@ func (r *zkRegistry) Register(conf common.URL) error {
 	return nil
 }
 
+func (r *zkRegistry) service(c common.URL) string {
+	return url.QueryEscape(c.Service())
+}
+
 func (r *zkRegistry) register(c common.URL) error {
 	var (
 		err error
@@ -285,7 +294,6 @@ func (r *zkRegistry) register(c common.URL) error {
 	//params.Add("timeout", fmt.Sprintf("%d", int64(r.Timeout)/1e6))
 
 	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
-	escapedService := url.QueryEscape(c.Service())
 	switch role {
 
 	case common.PROVIDER:
@@ -294,8 +302,7 @@ func (r *zkRegistry) register(c common.URL) error {
 			return perrors.Errorf("conf{Path:%s, Methods:%s}", c.Path, c.Methods)
 		}
 		// 先创建服务下面的provider node
-		// NOTE: 这里service name同样需要url encode
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", escapedService, common.DubboNodes[common.PROVIDER])
+		dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.PROVIDER])
 		r.cltLock.Lock()
 		err = r.client.Create(dubboPath)
 		r.cltLock.Unlock()
@@ -330,10 +337,11 @@ func (r *zkRegistry) register(c common.URL) error {
 		encodedURL = fmt.Sprintf("%s?%s", url.QueryEscape(rawPath), params.Encode())
 
 		// Print your own registration service providers.
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", escapedService, (common.RoleType(common.PROVIDER)).String())
+		dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), (common.RoleType(common.PROVIDER)).String())
+		logger.Debugf("provider path:%s, url:%s", dubboPath, rawURL)
 
 	case common.CONSUMER:
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", escapedService, common.DubboNodes[common.CONSUMER])
+		dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.CONSUMER])
 		r.cltLock.Lock()
 		err = r.client.Create(dubboPath)
 		r.cltLock.Unlock()
@@ -341,7 +349,7 @@ func (r *zkRegistry) register(c common.URL) error {
 			logger.Errorf("zkClient.create(path{%s}) = error{%v}", dubboPath, perrors.WithStack(err))
 			return perrors.WithStack(err)
 		}
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", escapedService, common.DubboNodes[common.PROVIDER])
+		dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.PROVIDER])
 		r.cltLock.Lock()
 		err = r.client.Create(dubboPath)
 		r.cltLock.Unlock()
@@ -359,7 +367,8 @@ func (r *zkRegistry) register(c common.URL) error {
 		encodedURL = fmt.Sprintf("%s?%s", url.QueryEscape(rawPath), params.Encode())
 		rawURL = rawPath + "?" + params.Encode()
 
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", escapedService, (common.RoleType(common.CONSUMER)).String())
+		dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), (common.RoleType(common.CONSUMER)).String())
+		logger.Debugf("consumer path:%s, url:%s", dubboPath, rawURL)
 
 	default:
 		return perrors.Errorf("@c{%v} type is not referencer or provider", c)
@@ -403,10 +412,19 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 func (r *zkRegistry) subscribe(conf *common.URL) (registry.Listener, error) {
 	return r.getListener(conf)
 }
+func sleepWait(n int) {
+	wait := time.Duration((n + 1) * 2e8)
+	if wait > MaxWaitInterval {
+		wait = MaxWaitInterval
+	}
+	time.Sleep(wait)
+}
 
 //subscribe from registry
 func (r *zkRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
+	n := 0
 	for {
+		n++
 		if !r.IsAvailable() {
 			logger.Warnf("event listener game over.")
 			return
@@ -427,14 +445,14 @@ func (r *zkRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyLi
 			if serviceEvent, err := listener.Next(); err != nil {
 				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
 				listener.Close()
-				return
+				break
 			} else {
 				logger.Infof("update begin, service event: %v", serviceEvent.String())
 				notifyListener.Notify(serviceEvent)
 			}
 
 		}
-
+		sleepWait(n)
 	}
 }
 
@@ -444,6 +462,10 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 	)
 
 	r.listenerLock.Lock()
+	if r.configListener.isClosed {
+		r.listenerLock.Unlock()
+		return nil, perrors.New("configListener already been closed")
+	}
 	zkListener = r.configListener
 	r.listenerLock.Unlock()
 	if r.listener == nil {
@@ -465,8 +487,7 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 	//Interested register to dataconfig.
 	r.dataListener.AddInterestedURL(conf)
 	for _, v := range strings.Split(conf.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY), ",") {
-		u := common.URL{Path: fmt.Sprintf("/dubbo/%s/"+v, url.QueryEscape(conf.Service()))}
-		go r.listener.ListenServiceEvent(u.Path, r.dataListener)
+		go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+v, url.QueryEscape(conf.Service())), r.dataListener)
 	}
 
 	return zkListener, nil

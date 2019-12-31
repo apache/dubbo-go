@@ -55,6 +55,7 @@ const (
 	WEIGHT_KEY                             = "weight"
 	WARMUP_KEY                             = "warmup"
 	RETRIES_KEY                            = "retries"
+	STICKY_KEY                             = "sticky"
 	BEAN_NAME                              = "bean.name"
 	FAIL_BACK_TASKS_KEY                    = "failbacktasks"
 	FORKS_KEY                              = "forks"
@@ -72,6 +73,8 @@ const (
 	DEFAULT_EXECUTE_LIMIT                  = "-1"
 	EXECUTE_REJECTED_EXECUTION_HANDLER_KEY = "execute.limit.rejected.handler"
 	SERIALIZATION_KEY                      = "serialization"
+	PROVIDER_SHUTDOWN_FILTER               = "pshutdown"
+	CONSUMER_SHUTDOWN_FILTER               = "cshutdown"
 )
 
 const (
@@ -101,6 +104,10 @@ const (
 
 const (
 	CONFIG_NAMESPACE_KEY  = "config.namespace"
+	CONFIG_GROUP_KEY      = "config.group"
+	CONFIG_APP_ID_KEY     = "config.appId"
+	CONFIG_CLUSTER_KEY    = "config.cluster"
+	CONFIG_CHECK_KEY      = "config.check"
 	CONFIG_TIMEOUT_KET    = "config.timeout"
 	CONFIG_VERSION_KEY    = "configVersion"
 	COMPATIBLE_CONFIG_KEY = "compatible_config"
@@ -113,6 +120,7 @@ const (
 	ProtocolConfigPrefix       = "dubbo.protocols."
 	ProviderConfigPrefix       = "dubbo.provider."
 	ConsumerConfigPrefix       = "dubbo.consumer."
+	ShutdownConfigPrefix       = "dubbo.shutdown."
 )
 
 const (
