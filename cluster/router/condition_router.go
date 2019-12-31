@@ -24,7 +24,7 @@ import (
 )
 
 import (
-	gxset "github.com/dubbogo/gost/container/set"
+	"github.com/dubbogo/gost/container/gxset"
 	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 )
