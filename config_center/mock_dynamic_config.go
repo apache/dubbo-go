@@ -97,15 +97,6 @@ func (c *MockDynamicConfiguration) GetConfig(key string, opts ...Option) (string
 	return c.content, nil
 }
 
-func (c *mockDynamicConfiguration) SetConfig(group string, key string, value string) error {
-	return nil
-}
-
-//For zookeeper, getConfig and getConfigs have the same meaning.
-func (c *MockDynamicConfiguration) GetConfigs(key string, opts ...Option) (string, error) {
-	return c.GetConfig(key, opts...)
-}
-
 func (c *MockDynamicConfiguration) Parser() parser.ConfigurationParser {
 	return c.parser
 }

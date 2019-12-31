@@ -313,7 +313,7 @@ func (c *URL) GetBackupUrls() []*URL {
 			WithUsername(c.Username),
 			WithPassword(c.Password),
 			WithPort(port),
-			WithParams(c.Params))
+			WithParams(c.params))
 
 		urls = append(urls, newURL)
 	}

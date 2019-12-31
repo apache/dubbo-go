@@ -18,7 +18,6 @@ package config
 
 import (
 	"encoding/base64"
-	"fmt"
 	"io/ioutil"
 	"net/url"
 	"os"
