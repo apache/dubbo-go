@@ -20,7 +20,6 @@ package directory
 import (
 	"fmt"
 	"reflect"
-	"strings"
 	"sync"
 	"time"
 
@@ -130,29 +129,29 @@ func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 		}
 		switch res.Action {
 		case remoting.EventTypeAdd:
-			url := dir.GetUrl()
-			var urls []*common.URL
-
-			for _, v := range url.GetBackupUrls() {
-				p := v.Protocol
-				category := v.GetParam(constant.CATEGORY_KEY, constant.PROVIDERS_CATEGORY)
-				if strings.EqualFold(category, constant.ROUTERS_CATEGORY) || strings.EqualFold(constant.ROUTE_PROTOCOL, p) {
-					urls = append(urls, v)
-				}
-			}
-
-			if len(urls) > 0 {
-				routers := toRouters(urls)
-				if len(routers) > 0 {
-					dir.SetRouters(routers)
-				}
-			}
+			//dirUrl := &res.Service
+			//var urls []*common.URL
+			//
+			//for _, v := range dirUrl.GetBackupUrls() {
+			//	p := v.Protocol
+			//	category := v.GetParam(constant.CATEGORY_KEY, constant.PROVIDERS_CATEGORY)
+			//	if strings.EqualFold(category, constant.ROUTERS_CATEGORY) || strings.EqualFold(constant.ROUTE_PROTOCOL, p) {
+			//		urls = append(urls, v)
+			//	}
+			//}
+			//
+			//if len(urls) > 0 {
+			//	routers := toRouters(urls)
+			//	if len(routers) > 0 {
+			//		dir.SetRouters(routers)
+			//	}
+			//}
 
 			//dir.cacheService.EventTypeAdd(res.Path, dir.serviceTTL)
-			dir.cacheInvoker(&res.Service)
+			dir.cacheInvoker(url)
 		case remoting.EventTypeDel:
 			//dir.cacheService.EventTypeDel(res.Path, dir.serviceTTL)
-			dir.uncacheInvoker(&res.Service)
+			dir.uncacheInvoker(url)
 			logger.Infof("selector delete service url{%s}", res.Service)
 		default:
 			return
