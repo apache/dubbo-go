@@ -68,7 +68,6 @@ type PackageType int
 
 func (c *DubboCodec) ReadHeader(header *DubboHeader) error {
 	var err error
-	logger.Infof("reader size: %v", c.reader.Size())
 	if c.reader.Size() < HEADER_LENGTH {
 		return hessian.ErrHeaderNotEnough
 	}

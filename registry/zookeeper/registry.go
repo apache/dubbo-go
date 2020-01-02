@@ -331,10 +331,9 @@ func (r *zkRegistry) register(c common.URL) error {
 		} else {
 			host = c.Ip + ":" + c.Port
 		}
-
-		rawURL = fmt.Sprintf("%s://%s%s?%s", c.Protocol, host, c.Path, params.Encode())
-		rawPath := fmt.Sprintf("%s://%s%s", c.Protocol, host, c.Path)
-		encodedURL = fmt.Sprintf("%s?%s", url.QueryEscape(rawPath), params.Encode())
+		unencodedQueryStr := common.ParamsUnescapeEncode(params)
+		rawURL = fmt.Sprintf("%s://%s%s?%s", c.Protocol, host, c.Path, unencodedQueryStr)
+		encodedURL = url.QueryEscape(rawURL)
 
 		// Print your own registration service providers.
 		dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), (common.RoleType(common.PROVIDER)).String())
@@ -363,9 +362,10 @@ func (r *zkRegistry) register(c common.URL) error {
 		params.Add("category", (common.RoleType(common.CONSUMER)).String())
 		params.Add("dubbo", "dubbogo-consumer-"+constant.Version)
 
+		unescapedQueryStr := common.ParamsUnescapeEncode(params)
 		rawPath := fmt.Sprintf("consumer://%s%s", localIP, c.Path)
-		encodedURL = fmt.Sprintf("%s?%s", url.QueryEscape(rawPath), params.Encode())
-		rawURL = rawPath + "?" + params.Encode()
+		encodedURL = url.QueryEscape(fmt.Sprintf("%s?%s", rawPath, unescapedQueryStr))
+		rawURL = rawPath + "?" + unescapedQueryStr
 
 		dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), (common.RoleType(common.CONSUMER)).String())
 		logger.Debugf("consumer path:%s, url:%s", dubboPath, rawURL)
