@@ -58,6 +58,7 @@ func (ef *GenericServiceFilter) Invoke(invoker protocol.Invoker, invocation prot
 	}
 
 	var (
+		ok         bool
 		err        error
 		methodName string
 		newParams  []interface{}
@@ -79,9 +80,13 @@ func (ef *GenericServiceFilter) Invoke(invoker protocol.Invoker, invocation prot
 	argsType = method.ArgsType()
 	genericKey = invocation.AttachmentsByKey(constant.GENERIC_KEY, GENERIC_SERIALIZATION_DEFAULT)
 	if genericKey == GENERIC_SERIALIZATION_DEFAULT {
-		oldParams = invocation.Arguments()[2].([]hessian.Object)
+		oldParams, ok = invocation.Arguments()[2].([]hessian.Object)
 	} else {
 		logger.Errorf("[Generic Service Filter] Don't support this generic: %s", genericKey)
+		return &protocol.RPCResult{}
+	}
+	if !ok {
+		logger.Errorf("[Generic Service Filter] wrong serialization")
 		return &protocol.RPCResult{}
 	}
 	if len(oldParams) != len(argsType) {
@@ -89,16 +94,16 @@ func (ef *GenericServiceFilter) Invoke(invoker protocol.Invoker, invocation prot
 		return &protocol.RPCResult{}
 	}
 	// oldParams convert to newParams
+	newParams = make([]interface{}, len(oldParams))
 	for i := range argsType {
-		var newParam interface{}
-		newParam = reflect.New(argsType[i]).Interface()
+		newParam := reflect.New(argsType[i]).Interface()
 		err = mapstructure.Decode(oldParams[i], newParam)
 		newParam = reflect.ValueOf(newParam).Elem().Interface()
 		if err != nil {
 			logger.Errorf("[Generic Service Filter] decode arguments map to struct wrong: error{%v}", perrors.WithStack(err))
 			return &protocol.RPCResult{}
 		}
-		newParams = append(newParams, newParam)
+		newParams[i] = newParam
 	}
 	newInvocation := invocation2.NewRPCInvocation(methodName, newParams, invocation.Attachments())
 	newInvocation.SetReply(invocation.Reply())
