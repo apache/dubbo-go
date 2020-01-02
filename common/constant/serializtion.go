@@ -19,7 +19,7 @@ package constant
 
 const (
 	S_Hessian2 byte = 2
-	S_Proto byte = 21
+	S_Proto    byte = 21
 )
 
 const (

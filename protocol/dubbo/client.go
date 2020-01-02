@@ -311,7 +311,7 @@ func (c *Client) transfer(session getty.Session, pkg *DubboPackage,
 		}
 		pkg = NewClientRequestPackage(header, Service{})
 		// SetBody
-		reqPayload := NewRequestPayload([]interface{}{},nil)
+		reqPayload := NewRequestPayload([]interface{}{}, nil)
 		pkg.SetBody(reqPayload)
 		// set serializer
 		if err := loadSerializer(pkg); err != nil {

@@ -199,7 +199,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	//p.Header.ResponseStatus = hessian.Response_OK
 
 	// heartbeat
-	if p.GetHeader().Type &PackageHeartbeat != 0x00 {
+	if p.GetHeader().Type&PackageHeartbeat != 0x00 {
 		logger.Debugf("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", p.GetHeader(), p.GetService(), p.GetBody())
 		h.reply(session, p, PackageHeartbeat)
 		return

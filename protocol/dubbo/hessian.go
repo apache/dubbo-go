@@ -26,9 +26,9 @@ import (
 )
 
 import (
-	"github.com/pkg/errors"
 	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/apache/dubbo-go-hessian2/java_exception"
+	"github.com/pkg/errors"
 )
 
 import (
@@ -152,7 +152,6 @@ func getArgsTypeList(args []interface{}) (string, error) {
 }
 
 type HessianSerializer struct {
-
 }
 
 // 要分清楚request和response
@@ -241,7 +240,7 @@ func marshalRequest(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 		logger.Infof("request args are: %+v", request.Params)
 		return nil, errors.Errorf("@params is not of type: []interface{}")
 	}
-	types, err := getArgsTypeList(args);
+	types, err := getArgsTypeList(args)
 	if err != nil {
 		return nil, errors.Wrapf(err, " PackRequest(args:%+v)", args)
 	}
@@ -266,6 +265,7 @@ func marshalRequest(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 	return encoder.Buffer(), nil
 
 }
+
 var versionInt = make(map[string]int)
 
 // https://github.com/apache/dubbo/blob/dubbo-2.7.1/dubbo-common/src/main/java/org/apache/dubbo/common/Version.java#L96

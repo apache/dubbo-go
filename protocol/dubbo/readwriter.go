@@ -47,7 +47,7 @@ func NewRpcClientPackageHandler(client *Client) *RpcClientPackageHandler {
 
 func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
 	pkg := NewClientResponsePackage(data)
-	if err := pkg.ReadHeader(); err != nil  {
+	if err := pkg.ReadHeader(); err != nil {
 		originErr := perrors.Cause(err)
 		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
 			return nil, 0, nil
@@ -103,7 +103,7 @@ var (
 	rpcServerPkgHandler = &RpcServerPackageHandler{}
 )
 
-type RpcServerPackageHandler struct{
+type RpcServerPackageHandler struct {
 }
 
 func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {

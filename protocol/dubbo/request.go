@@ -22,7 +22,7 @@ type RequestPayload struct {
 	Attachments map[string]string
 }
 
-func NewRequestPayload(args interface{}, atta map[string]string) *RequestPayload{
+func NewRequestPayload(args interface{}, atta map[string]string) *RequestPayload {
 	if atta == nil {
 		atta = make(map[string]string)
 	}

@@ -283,7 +283,7 @@ func (r *zkRegistry) register(c common.URL) error {
 	params = url.Values{}
 
 	c.RangeParams(func(key, value string) bool {
-		if (value != "") {
+		if value != "" {
 			params.Add(key, value)
 		}
 		return true

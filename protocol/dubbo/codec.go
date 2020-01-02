@@ -28,9 +28,9 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go-hessian2"
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/logger"
 )
 
 type DubboCodec struct {
@@ -261,7 +261,6 @@ func packRequest(p DubboPackage, serializer Serializer) ([]byte, error) {
 	return byteArray, nil
 }
 
-
 func packResponse(p DubboPackage, serializer Serializer) ([]byte, error) {
 	var (
 		byteArray []byte
@@ -304,9 +303,9 @@ func packResponse(p DubboPackage, serializer Serializer) ([]byte, error) {
 
 func NewDubboCodec(reader *bufio.Reader) *DubboCodec {
 	return &DubboCodec{
-		reader:  reader,
-		pkgType: 0,
-		bodyLen: 0,
+		reader:     reader,
+		pkgType:    0,
+		bodyLen:    0,
 		headerRead: false,
 	}
 }

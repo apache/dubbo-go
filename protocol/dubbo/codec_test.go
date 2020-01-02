@@ -23,11 +23,11 @@ import (
 )
 
 import (
-	"github.com/stretchr/testify/assert"
 	"github.com/golang/protobuf/proto"
+	"github.com/stretchr/testify/assert"
 )
 
-import(
+import (
 	"github.com/apache/dubbo-go/common/constant"
 	pb "github.com/apache/dubbo-go/protocol/dubbo/proto"
 )
@@ -50,7 +50,7 @@ func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
 	pkgres.Body = []interface{}{}
 	err = pkgres.Unmarshal()
 	assert.NoError(t, err)
-	assert.Equal(t, PackageHeartbeat | PackageRequest| PackageRequest_TwoWay, pkgres.Header.Type)
+	assert.Equal(t, PackageHeartbeat|PackageRequest|PackageRequest_TwoWay, pkgres.Header.Type)
 	assert.Equal(t, constant.S_Hessian2, pkgres.Header.SerialID)
 	assert.Equal(t, int64(10086), pkgres.Header.ID)
 	assert.Equal(t, 0, len(pkgres.Body.([]interface{})))
@@ -101,7 +101,7 @@ func TestDubboPackage_Protobuf_Serialization_Request(t *testing.T) {
 	pkgres.Body = []interface{}{}
 	err = pkgres.Unmarshal()
 	assert.NoError(t, err)
-	assert.Equal(t, PackageHeartbeat | PackageRequest| PackageRequest_TwoWay, pkgres.Header.Type)
+	assert.Equal(t, PackageHeartbeat|PackageRequest|PackageRequest_TwoWay, pkgres.Header.Type)
 	assert.Equal(t, constant.S_Proto, pkgres.Header.SerialID)
 	assert.Equal(t, int64(10086), pkgres.Header.ID)
 	assert.Equal(t, 0, len(pkgres.Body.([]interface{})))
@@ -122,9 +122,9 @@ func TestDubboPackage_Protobuf_Serialization_Request(t *testing.T) {
 	err = pkgres.Unmarshal()
 	assert.NoError(t, err)
 	body, ok := pkgres.Body.(map[string]interface{})
-	assert.Equal(t, ok , true)
+	assert.Equal(t, ok, true)
 	req, ok := body["args"].([]interface{})
-	assert.Equal(t, ok , true)
+	assert.Equal(t, ok, true)
 	// protobuf的rpc参数只能是一个
 	assert.Equal(t, len(req), 1)
 	argsBytes, ok := req[0].([]byte)
@@ -136,7 +136,7 @@ func TestDubboPackage_Protobuf_Serialization_Request(t *testing.T) {
 	assert.Equal(t, sv.Value, "hello world")
 }
 
-func TestDubboCodec_Protobuf_Serialization_Response (t *testing.T) {
+func TestDubboCodec_Protobuf_Serialization_Response(t *testing.T) {
 	{
 		pkg := NewDubboPackage(nil)
 		pkg.Header.Type = PackageResponse

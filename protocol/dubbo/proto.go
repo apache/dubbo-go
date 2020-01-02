@@ -41,7 +41,7 @@ import (
 	pb "github.com/apache/dubbo-go/protocol/dubbo/proto"
 )
 
-type ProtoSerializer struct {}
+type ProtoSerializer struct{}
 
 func (p ProtoSerializer) Marshal(pkg DubboPackage) ([]byte, error) {
 	if pkg.IsHeartBeat() {
@@ -243,7 +243,7 @@ func marshalRequestProto(pkg DubboPackage) ([]byte, error) {
 	atta := make(map[string]string)
 	atta[PATH_KEY] = pkg.Service.Path
 	atta[VERSION_KEY] = pkg.Service.Version
-	if len(pkg.Service.Group)> 0 {
+	if len(pkg.Service.Group) > 0 {
 		atta[GROUP_KEY] = pkg.Service.Group
 	}
 	if len(pkg.Service.Interface) > 0 {
@@ -331,7 +331,7 @@ func writeByte(writer io.Writer, v int32) error {
 	return err
 }
 
-func readUTF(reader io.Reader, value *string)  error {
+func readUTF(reader io.Reader, value *string) error {
 	sv := &pb.StringValue{}
 	_, err := pbutil.ReadDelimited(reader, sv)
 	if err != nil {
@@ -348,6 +348,7 @@ func readObject(reader io.Reader, value proto.Message) error {
 	}
 	return nil
 }
+
 // 对应java protobuf serialize 实现
 func readByte(reader io.Reader, value *int32) error {
 	i32v := &pb.Int32Value{}
@@ -360,7 +361,7 @@ func readByte(reader io.Reader, value *int32) error {
 }
 
 //
-func readDelimitedLength(reader io.Reader, length *int) (error) {
+func readDelimitedLength(reader io.Reader, length *int) error {
 	var headerBuf [binary.MaxVarintLen32]byte
 	var bytesRead, varIntBytes int
 	var messageLength uint64

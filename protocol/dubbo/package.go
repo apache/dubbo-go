@@ -183,7 +183,7 @@ func NewServerResponsePackage(header DubboHeader) *DubboPackage {
 
 func NewDubboPackage(data *bytes.Buffer) *DubboPackage {
 	var codec *DubboCodec
-	if data == nil  {
+	if data == nil {
 		codec = NewDubboCodec(nil)
 	} else {
 		codec = NewDubboCodec(bufio.NewReaderSize(data, len(data.Bytes())))

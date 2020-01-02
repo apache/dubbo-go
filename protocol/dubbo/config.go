@@ -104,7 +104,7 @@ func GetDefaultClientConfig() ClientConfig {
 		GrPoolSize:        200,
 		QueueLen:          64,
 		QueueNumber:       10,
-		Serialization: 		"hessian2",
+		Serialization:     "hessian2",
 		GettySessionParam: GettySessionParam{
 			CompressEncoding: false,
 			TcpNoDelay:       true,

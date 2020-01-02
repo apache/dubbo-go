@@ -44,4 +44,3 @@ func EnsureResponsePayload(body interface{}) *ResponsePayload {
 	}
 	return NewResponsePayload(body, nil, nil)
 }
-
