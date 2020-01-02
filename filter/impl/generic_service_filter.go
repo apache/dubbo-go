@@ -39,7 +39,7 @@ import (
 )
 
 const (
-	GENERIC_SERVICE               = "generic-service"
+	GENERIC_SERVICE               = "generic_service"
 	GENERIC_SERIALIZATION_DEFAULT = "true"
 )
 
