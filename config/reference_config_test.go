@@ -27,7 +27,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/cluster/cluster_impl"
+	"github.com/apache/dubbo-go/cluster/cluster"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -181,7 +181,7 @@ func doInitConsumerWithSingleRegistry() {
 func Test_ReferMultireg(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("registry", GetProtocol)
-	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
+	extension.SetCluster("registryAware", cluster.NewRegistryAwareCluster)
 
 	for _, reference := range consumerConfig.References {
 		reference.Refer()
@@ -194,7 +194,7 @@ func Test_ReferMultireg(t *testing.T) {
 func Test_Refer(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("registry", GetProtocol)
-	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
+	extension.SetCluster("registryAware", cluster.NewRegistryAwareCluster)
 
 	for _, reference := range consumerConfig.References {
 		reference.Refer()
@@ -208,7 +208,7 @@ func Test_Refer(t *testing.T) {
 func Test_ReferAsync(t *testing.T) {
 	doInitConsumerAsync()
 	extension.SetProtocol("registry", GetProtocol)
-	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
+	extension.SetCluster("registryAware", cluster.NewRegistryAwareCluster)
 
 	for _, reference := range consumerConfig.References {
 		reference.Refer()
@@ -266,7 +266,7 @@ func Test_ReferMultiP2PWithReg(t *testing.T) {
 func Test_Implement(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("registry", GetProtocol)
-	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
+	extension.SetCluster("registryAware", cluster.NewRegistryAwareCluster)
 	for _, reference := range consumerConfig.References {
 		reference.Refer()
 		reference.Implement(&MockService{})

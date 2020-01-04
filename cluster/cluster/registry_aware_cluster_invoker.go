@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package cluster_impl
+package cluster
 
 import (
 	"github.com/apache/dubbo-go/cluster"

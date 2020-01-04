@@ -28,7 +28,7 @@ import (
 )
 
 import (
-	cluster "github.com/apache/dubbo-go/cluster/cluster_impl"
+	cluster "github.com/apache/dubbo-go/cluster/cluster"
 	"github.com/apache/dubbo-go/common"
 	common_cfg "github.com/apache/dubbo-go/common/config"
 	"github.com/apache/dubbo-go/common/constant"

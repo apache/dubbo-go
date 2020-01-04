@@ -30,7 +30,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/cluster/cluster_impl"
+	"github.com/apache/dubbo-go/cluster/cluster"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -70,7 +70,7 @@ func TestSubscribe_InvalidUrl(t *testing.T) {
 
 func TestSubscribe_Group(t *testing.T) {
 	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
-	extension.SetCluster("mock", cluster_impl.NewMockCluster)
+	extension.SetCluster("mock", cluster.NewMockCluster)
 
 	regurl, _ := common.NewURL(context.TODO(), "mock://127.0.0.1:1111")
 	suburl, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000")

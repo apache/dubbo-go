@@ -27,7 +27,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/cluster/cluster_impl"
+	"github.com/apache/dubbo-go/cluster/cluster"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/config"
 	"github.com/apache/dubbo-go/common/constant"
@@ -68,7 +68,7 @@ func TestLoad(t *testing.T) {
 	SetProviderService(ms)
 
 	extension.SetProtocol("registry", GetProtocol)
-	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
+	extension.SetCluster("registryAware", cluster.NewRegistryAwareCluster)
 	extension.SetProxyFactory("default", proxy_factory.NewDefaultProxyFactory)
 
 	Load()
@@ -96,7 +96,7 @@ func TestLoadWithSingleReg(t *testing.T) {
 	SetProviderService(ms)
 
 	extension.SetProtocol("registry", GetProtocol)
-	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
+	extension.SetCluster("registryAware", cluster.NewRegistryAwareCluster)
 	extension.SetProxyFactory("default", proxy_factory.NewDefaultProxyFactory)
 
 	Load()
@@ -125,7 +125,7 @@ func TestWithNoRegLoad(t *testing.T) {
 	SetProviderService(ms)
 
 	extension.SetProtocol("registry", GetProtocol)
-	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
+	extension.SetCluster("registryAware", cluster.NewRegistryAwareCluster)
 	extension.SetProxyFactory("default", proxy_factory.NewDefaultProxyFactory)
 
 	Load()

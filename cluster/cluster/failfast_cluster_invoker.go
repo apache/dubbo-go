@@ -15,26 +15,37 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster_impl
+package cluster
 
 import (
 	"github.com/apache/dubbo-go/cluster"
-	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/protocol"
 )
 
-type forkingCluster struct{}
-
-const forking = "forking"
-
-func init() {
-	extension.SetCluster(forking, NewForkingCluster)
+type failfastClusterInvoker struct {
+	baseClusterInvoker
 }
 
-func NewForkingCluster() cluster.Cluster {
-	return &forkingCluster{}
+func newFailFastClusterInvoker(directory cluster.Directory) protocol.Invoker {
+	return &failfastClusterInvoker{
+		baseClusterInvoker: newBaseClusterInvoker(directory),
+	}
 }
 
-func (cluster *forkingCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return newForkingClusterInvoker(directory)
+func (invoker *failfastClusterInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+	invokers := invoker.directory.List(invocation)
+	err := invoker.checkInvokers(invokers, invocation)
+	if err != nil {
+		return &protocol.RPCResult{Err: err}
+	}
+
+	loadbalance := getLoadBalance(invokers[0], invocation)
+
+	err = invoker.checkWhetherDestroyed()
+	if err != nil {
+		return &protocol.RPCResult{Err: err}
+	}
+
+	ivk := invoker.doSelect(loadbalance, invocation, invokers, nil)
+	return ivk.Invoke(invocation)
 }

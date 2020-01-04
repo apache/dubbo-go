@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster_impl
+package cluster
 
 import (
 	"github.com/apache/dubbo-go/cluster"
@@ -23,18 +23,18 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-type failfastCluster struct{}
+type availableCluster struct{}
 
-const failfast = "failfast"
+const available = "available"
 
 func init() {
-	extension.SetCluster(failfast, NewFailFastCluster)
+	extension.SetCluster(available, NewAvailableCluster)
 }
 
-func NewFailFastCluster() cluster.Cluster {
-	return &failfastCluster{}
+func NewAvailableCluster() cluster.Cluster {
+	return &availableCluster{}
 }
 
-func (cluster *failfastCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return newFailFastClusterInvoker(directory)
+func (cluser *availableCluster) Join(directory cluster.Directory) protocol.Invoker {
+	return NewAvailableClusterInvoker(directory)
 }

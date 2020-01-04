@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster_impl
+package cluster
 
 import (
 	"github.com/apache/dubbo-go/cluster"
@@ -23,18 +23,18 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-type availableCluster struct{}
+type forkingCluster struct{}
 
-const available = "available"
+const forking = "forking"
 
 func init() {
-	extension.SetCluster(available, NewAvailableCluster)
+	extension.SetCluster(forking, NewForkingCluster)
 }
 
-func NewAvailableCluster() cluster.Cluster {
-	return &availableCluster{}
+func NewForkingCluster() cluster.Cluster {
+	return &forkingCluster{}
 }
 
-func (cluser *availableCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return NewAvailableClusterInvoker(directory)
+func (cluster *forkingCluster) Join(directory cluster.Directory) protocol.Invoker {
+	return newForkingClusterInvoker(directory)
 }

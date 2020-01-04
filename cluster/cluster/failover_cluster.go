@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package cluster_impl
+package cluster
 
 import (
 	"github.com/apache/dubbo-go/cluster"
@@ -23,18 +23,18 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-type failbackCluster struct{}
+type failoverCluster struct{}
 
-const failback = "failback"
+const name = "failover"
 
 func init() {
-	extension.SetCluster(failback, NewFailbackCluster)
+	extension.SetCluster(name, NewFailoverCluster)
 }
 
-func NewFailbackCluster() cluster.Cluster {
-	return &failbackCluster{}
+func NewFailoverCluster() cluster.Cluster {
+	return &failoverCluster{}
 }
 
-func (cluster *failbackCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return newFailbackClusterInvoker(directory)
+func (cluster *failoverCluster) Join(directory cluster.Directory) protocol.Invoker {
+	return newFailoverClusterInvoker(directory)
 }

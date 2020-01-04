@@ -15,37 +15,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster_impl
+package cluster
 
 import (
 	"github.com/apache/dubbo-go/cluster"
+	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/protocol"
 )
 
-type failfastClusterInvoker struct {
-	baseClusterInvoker
+type failfastCluster struct{}
+
+const failfast = "failfast"
+
+func init() {
+	extension.SetCluster(failfast, NewFailFastCluster)
 }
 
-func newFailFastClusterInvoker(directory cluster.Directory) protocol.Invoker {
-	return &failfastClusterInvoker{
-		baseClusterInvoker: newBaseClusterInvoker(directory),
-	}
+func NewFailFastCluster() cluster.Cluster {
+	return &failfastCluster{}
 }
 
-func (invoker *failfastClusterInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
-	invokers := invoker.directory.List(invocation)
-	err := invoker.checkInvokers(invokers, invocation)
-	if err != nil {
-		return &protocol.RPCResult{Err: err}
-	}
-
-	loadbalance := getLoadBalance(invokers[0], invocation)
-
-	err = invoker.checkWhetherDestroyed()
-	if err != nil {
-		return &protocol.RPCResult{Err: err}
-	}
-
-	ivk := invoker.doSelect(loadbalance, invocation, invokers, nil)
-	return ivk.Invoke(invocation)
+func (cluster *failfastCluster) Join(directory cluster.Directory) protocol.Invoker {
+	return newFailFastClusterInvoker(directory)
 }

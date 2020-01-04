@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package cluster_impl
+package cluster
 
 import (
 	"github.com/apache/dubbo-go/cluster"
@@ -23,18 +23,16 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-type failoverCluster struct{}
-
-const name = "failover"
+type registryAwareCluster struct{}
 
 func init() {
-	extension.SetCluster(name, NewFailoverCluster)
+	extension.SetCluster("registryAware", NewRegistryAwareCluster)
 }
 
-func NewFailoverCluster() cluster.Cluster {
-	return &failoverCluster{}
+func NewRegistryAwareCluster() cluster.Cluster {
+	return &registryAwareCluster{}
 }
 
-func (cluster *failoverCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return newFailoverClusterInvoker(directory)
+func (cluster *registryAwareCluster) Join(directory cluster.Directory) protocol.Invoker {
+	return newRegistryAwareClusterInvoker(directory)
 }

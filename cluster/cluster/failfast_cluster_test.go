@@ -15,16 +15,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster_impl
+package cluster
 
 import (
 	"context"
-	"strings"
 	"testing"
 )
 
 import (
 	"github.com/golang/mock/gomock"
+	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,50 +39,59 @@ import (
 )
 
 var (
-	availableUrl, _ = common.NewURL(context.Background(), "dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
+	failfastUrl, _ = common.NewURL(context.TODO(), "dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
 )
 
-func registerAvailable(t *testing.T, invoker *mock.MockInvoker) protocol.Invoker {
+// registerFailfast register failfastCluster to cluster extension.
+func registerFailfast(t *testing.T, invoker *mock.MockInvoker) protocol.Invoker {
 	extension.SetLoadbalance("random", loadbalance.NewRandomLoadBalance)
-	availableCluster := NewAvailableCluster()
+	failfastCluster := NewFailFastCluster()
 
 	invokers := []protocol.Invoker{}
 	invokers = append(invokers, invoker)
-	invoker.EXPECT().GetUrl().Return(availableUrl)
+
+	invoker.EXPECT().GetUrl().Return(failfastUrl)
 
 	staticDir := directory.NewStaticDirectory(invokers)
-	clusterInvoker := availableCluster.Join(staticDir)
+	clusterInvoker := failfastCluster.Join(staticDir)
 	return clusterInvoker
 }
 
-func TestAvailableClusterInvokerSuccess(t *testing.T) {
+func Test_FailfastInvokeSuccess(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	invoker := mock.NewMockInvoker(ctrl)
-	clusterInvoker := registerAvailable(t, invoker)
+	clusterInvoker := registerFailfast(t, invoker)
+
+	invoker.EXPECT().GetUrl().Return(failfastUrl).AnyTimes()
 
 	mockResult := &protocol.RPCResult{Rest: rest{tried: 0, success: true}}
-	invoker.EXPECT().IsAvailable().Return(true)
-	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
 
+	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
 	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
 
-	assert.Equal(t, mockResult, result)
+	assert.NoError(t, result.Error())
+	res := result.Result().(rest)
+	assert.True(t, res.success)
+	assert.Equal(t, 0, res.tried)
 }
 
-func TestAvailableClusterInvokerNoAvail(t *testing.T) {
+func Test_FailfastInvokeFail(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	invoker := mock.NewMockInvoker(ctrl)
-	clusterInvoker := registerAvailable(t, invoker)
+	clusterInvoker := registerFailfast(t, invoker)
 
-	invoker.EXPECT().IsAvailable().Return(false)
+	invoker.EXPECT().GetUrl().Return(failfastUrl).AnyTimes()
 
+	mockResult := &protocol.RPCResult{Err: perrors.New("error")}
+
+	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
 	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
 
 	assert.NotNil(t, result.Error())
-	assert.True(t, strings.Contains(result.Error().Error(), "no provider available"))
+	assert.Equal(t, "error", result.Error().Error())
 	assert.Nil(t, result.Result())
 }

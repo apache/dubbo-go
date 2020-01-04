@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package cluster_impl
+package cluster
 
 import (
 	gxnet "github.com/dubbogo/gost/net"

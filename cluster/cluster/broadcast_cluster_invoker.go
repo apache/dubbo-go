@@ -15,47 +15,45 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster_impl
-
-import (
-	"fmt"
-)
-
-import (
-	"github.com/pkg/errors"
-)
+package cluster
 
 import (
 	"github.com/apache/dubbo-go/cluster"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
 )
 
-type availableClusterInvoker struct {
+type broadcastClusterInvoker struct {
 	baseClusterInvoker
 }
 
-func NewAvailableClusterInvoker(directory cluster.Directory) protocol.Invoker {
-	return &availableClusterInvoker{
+func newBroadcastClusterInvoker(directory cluster.Directory) protocol.Invoker {
+	return &broadcastClusterInvoker{
 		baseClusterInvoker: newBaseClusterInvoker(directory),
 	}
 }
 
-func (invoker *availableClusterInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+func (invoker *broadcastClusterInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	invokers := invoker.directory.List(invocation)
 	err := invoker.checkInvokers(invokers, invocation)
 	if err != nil {
 		return &protocol.RPCResult{Err: err}
 	}
-
 	err = invoker.checkWhetherDestroyed()
 	if err != nil {
 		return &protocol.RPCResult{Err: err}
 	}
 
+	var result protocol.Result
 	for _, ivk := range invokers {
-		if ivk.IsAvailable() {
-			return ivk.Invoke(invocation)
+		result = ivk.Invoke(invocation)
+		if result.Error() != nil {
+			logger.Warnf("broadcast invoker invoke err: %v when use invoker: %v\n", result.Error(), ivk)
+			err = result.Error()
 		}
 	}
-	return &protocol.RPCResult{Err: errors.New(fmt.Sprintf("no provider available in %v", invokers))}
+	if err != nil {
+		return &protocol.RPCResult{Err: err}
+	}
+	return result
 }

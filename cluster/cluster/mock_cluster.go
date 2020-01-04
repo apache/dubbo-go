@@ -15,26 +15,19 @@
  * limitations under the License.
  */
 
-package cluster_impl
+package cluster
 
 import (
 	"github.com/apache/dubbo-go/cluster"
-	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/protocol"
 )
 
-type failsafeCluster struct{}
+type mockCluster struct{}
 
-const failsafe = "failsafe"
-
-func init() {
-	extension.SetCluster(failsafe, NewFailsafeCluster)
+func NewMockCluster() cluster.Cluster {
+	return &mockCluster{}
 }
 
-func NewFailsafeCluster() cluster.Cluster {
-	return &failsafeCluster{}
-}
-
-func (cluster *failsafeCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return newFailsafeClusterInvoker(directory)
+func (cluster *mockCluster) Join(directory cluster.Directory) protocol.Invoker {
+	return protocol.NewBaseInvoker(directory.GetUrl())
 }
