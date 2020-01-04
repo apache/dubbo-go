@@ -18,10 +18,6 @@
 package zookeeper
 
 import (
-	"sync"
-)
-
-import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/config_center"
@@ -35,14 +31,8 @@ func init() {
 type zookeeperDynamicConfigurationFactory struct {
 }
 
-var once sync.Once
-var dynamicConfiguration *zookeeperDynamicConfiguration
-
 func (f *zookeeperDynamicConfigurationFactory) GetDynamicConfiguration(url *common.URL) (config_center.DynamicConfiguration, error) {
-	var err error
-	once.Do(func() {
-		dynamicConfiguration, err = newZookeeperDynamicConfiguration(url)
-	})
+	dynamicConfiguration, err := newZookeeperDynamicConfiguration(url)
 	if err != nil {
 		return nil, err
 	}

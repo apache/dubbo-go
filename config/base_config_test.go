@@ -29,6 +29,7 @@ import (
 	"github.com/apache/dubbo-go/common/config"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/config_center"
+	_ "github.com/apache/dubbo-go/config_center/apollo"
 )
 
 func Test_refresh(t *testing.T) {
@@ -39,6 +40,7 @@ func Test_refresh(t *testing.T) {
 	mockMap["dubbo.com.MockService.MockService.GetUser.retries"] = "10"
 	mockMap["dubbo.consumer.check"] = "false"
 	mockMap["dubbo.application.name"] = "dubbo"
+	mockMap["dubbo.shutdown.timeout"] = "12s"
 
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
 
@@ -112,6 +114,13 @@ func Test_refresh(t *testing.T) {
 					},
 				},
 			},
+		},
+		ShutdownConfig: &ShutdownConfig{
+			Timeout:              "12s",
+			StepTimeout:          "2s",
+			RejectRequestHandler: "mock",
+			RejectRequest:        false,
+			RequestsFinished:     false,
 		},
 	}
 
