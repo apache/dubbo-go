@@ -19,6 +19,7 @@ package invocation
 
 import (
 	"reflect"
+	"sync"
 )
 
 import (
@@ -37,6 +38,7 @@ type RPCInvocation struct {
 	callBack       interface{}
 	attachments    map[string]string
 	invoker        protocol.Invoker
+	lock           sync.RWMutex
 }
 
 func NewRPCInvocation(methodName string, arguments []interface{}, attachments map[string]string) *RPCInvocation {
@@ -80,6 +82,8 @@ func (r *RPCInvocation) Attachments() map[string]string {
 }
 
 func (r *RPCInvocation) AttachmentsByKey(key string, defaultValue string) string {
+	r.lock.RLock()
+	defer r.lock.RUnlock()
 	if r.attachments == nil {
 		return defaultValue
 	}
@@ -91,6 +95,8 @@ func (r *RPCInvocation) AttachmentsByKey(key string, defaultValue string) string
 }
 
 func (r *RPCInvocation) SetAttachments(key string, value string) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	if r.attachments == nil {
 		r.attachments = make(map[string]string)
 	}
