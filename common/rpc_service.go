@@ -39,6 +39,18 @@ type RPCService interface {
 	Reference() string // rpc service id or reference id
 }
 
+//AsyncCallbackService callback interface for async
+type AsyncCallbackService interface {
+	CallBack(response CallbackResponse) // callback
+}
+
+//CallbackResponse for different protocol
+type CallbackResponse interface {
+}
+
+//AsyncCallback async callback method
+type AsyncCallback func(response CallbackResponse)
+
 // for lowercase func
 // func MethodMapper() map[string][string] {
 //     return map[string][string]{}

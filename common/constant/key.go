@@ -48,19 +48,32 @@ const (
 )
 
 const (
-	TIMESTAMP_KEY        = "timestamp"
-	REMOTE_TIMESTAMP_KEY = "remote.timestamp"
-	CLUSTER_KEY          = "cluster"
-	LOADBALANCE_KEY      = "loadbalance"
-	WEIGHT_KEY           = "weight"
-	WARMUP_KEY           = "warmup"
-	RETRIES_KEY          = "retries"
-	BEAN_NAME            = "bean.name"
-	FAIL_BACK_TASKS_KEY  = "failbacktasks"
-	FORKS_KEY            = "forks"
-	DEFAULT_FORKS        = 2
-	DEFAULT_TIMEOUT      = 1000
-	ACCESS_LOG_KEY       = "accesslog"
+	TIMESTAMP_KEY                          = "timestamp"
+	REMOTE_TIMESTAMP_KEY                   = "remote.timestamp"
+	CLUSTER_KEY                            = "cluster"
+	LOADBALANCE_KEY                        = "loadbalance"
+	WEIGHT_KEY                             = "weight"
+	WARMUP_KEY                             = "warmup"
+	RETRIES_KEY                            = "retries"
+	STICKY_KEY                             = "sticky"
+	BEAN_NAME                              = "bean.name"
+	FAIL_BACK_TASKS_KEY                    = "failbacktasks"
+	FORKS_KEY                              = "forks"
+	DEFAULT_FORKS                          = 2
+	DEFAULT_TIMEOUT                        = 1000
+	ACCESS_LOG_KEY                         = "accesslog"
+	TPS_LIMITER_KEY                        = "tps.limiter"
+	TPS_REJECTED_EXECUTION_HANDLER_KEY     = "tps.limit.rejected.handler"
+	TPS_LIMIT_RATE_KEY                     = "tps.limit.rate"
+	DEFAULT_TPS_LIMIT_RATE                 = "-1"
+	TPS_LIMIT_INTERVAL_KEY                 = "tps.limit.interval"
+	DEFAULT_TPS_LIMIT_INTERVAL             = "60000"
+	TPS_LIMIT_STRATEGY_KEY                 = "tps.limit.strategy"
+	EXECUTE_LIMIT_KEY                      = "execute.limit"
+	DEFAULT_EXECUTE_LIMIT                  = "-1"
+	EXECUTE_REJECTED_EXECUTION_HANDLER_KEY = "execute.limit.rejected.handler"
+	PROVIDER_SHUTDOWN_FILTER               = "pshutdown"
+	CONSUMER_SHUTDOWN_FILTER               = "cshutdown"
 )
 
 const (
@@ -90,6 +103,10 @@ const (
 
 const (
 	CONFIG_NAMESPACE_KEY  = "config.namespace"
+	CONFIG_GROUP_KEY      = "config.group"
+	CONFIG_APP_ID_KEY     = "config.appId"
+	CONFIG_CLUSTER_KEY    = "config.cluster"
+	CONFIG_CHECK_KEY      = "config.check"
 	CONFIG_TIMEOUT_KET    = "config.timeout"
 	CONFIG_VERSION_KEY    = "configVersion"
 	COMPATIBLE_CONFIG_KEY = "compatible_config"
@@ -102,6 +119,7 @@ const (
 	ProtocolConfigPrefix       = "dubbo.protocols."
 	ProviderConfigPrefix       = "dubbo.provider."
 	ConsumerConfigPrefix       = "dubbo.consumer."
+	ShutdownConfigPrefix       = "dubbo.shutdown."
 )
 
 const (

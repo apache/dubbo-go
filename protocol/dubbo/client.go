@@ -113,15 +113,15 @@ type Options struct {
 	RequestTimeout time.Duration
 }
 
-type CallResponse struct {
+//AsyncCallbackResponse async response for dubbo
+type AsyncCallbackResponse struct {
+	common.CallbackResponse
 	Opts      Options
 	Cause     error
 	Start     time.Time // invoke(call) start time == write start time
 	ReadStart time.Time // read start time, write duration = ReadStart - Start
 	Reply     interface{}
 }
-
-type AsyncCallback func(response CallResponse)
 
 type Client struct {
 	opts     Options
@@ -136,10 +136,10 @@ func NewClient(opt Options) *Client {
 
 	switch {
 	case opt.ConnectTimeout == 0:
-		opt.ConnectTimeout = 3e9
+		opt.ConnectTimeout = 3 * time.Second
 		fallthrough
 	case opt.RequestTimeout == 0:
-		opt.RequestTimeout = 3e9
+		opt.RequestTimeout = 3 * time.Second
 	}
 
 	c := &Client{
@@ -199,17 +199,18 @@ func (c *Client) Call(request *Request, response *Response) error {
 	return perrors.WithStack(c.call(ct, request, response, nil))
 }
 
-func (c *Client) AsyncCall(request *Request, callback AsyncCallback, response *Response) error {
+func (c *Client) AsyncCall(request *Request, callback common.AsyncCallback, response *Response) error {
 
 	return perrors.WithStack(c.call(CT_TwoWay, request, response, callback))
 }
 
-func (c *Client) call(ct CallType, request *Request, response *Response, callback AsyncCallback) error {
+func (c *Client) call(ct CallType, request *Request, response *Response, callback common.AsyncCallback) error {
 
 	p := &DubboPackage{}
 	p.Service.Path = strings.TrimPrefix(request.svcUrl.Path, "/")
 	p.Service.Interface = request.svcUrl.GetParam(constant.INTERFACE_KEY, "")
 	p.Service.Version = request.svcUrl.GetParam(constant.VERSION_KEY, "")
+	p.Service.Group = request.svcUrl.GetParam(constant.GROUP_KEY, "")
 	p.Service.Method = request.method
 	p.Service.Timeout = c.opts.RequestTimeout
 	p.Header.SerialID = byte(S_Dubbo)

@@ -289,7 +289,17 @@ func (p *gettyRPCClientPool) close() {
 }
 
 func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPCClient, error) {
-
+	var (
+		conn *gettyRPCClient
+		err  error
+	)
+	if conn, err = p.selectGettyRpcClient(protocol, addr); err == nil && conn == nil {
+		// create new conn
+		return newGettyRPCClientConn(p, protocol, addr)
+	}
+	return conn, err
+}
+func (p *gettyRPCClientPool) selectGettyRpcClient(protocol, addr string) (*gettyRPCClient, error) {
 	p.Lock()
 	defer p.Unlock()
 	if p.conns == nil {
@@ -308,13 +318,10 @@ func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPC
 			continue
 		}
 		conn.updateActive(now) //update active time
-
 		return conn, nil
 	}
-	// create new conn
-	return newGettyRPCClientConn(p, protocol, addr)
+	return nil, nil
 }
-
 func (p *gettyRPCClientPool) release(conn *gettyRPCClient, err error) {
 	if conn == nil || conn.getActive() == 0 {
 		return

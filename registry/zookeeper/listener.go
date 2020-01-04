@@ -20,6 +20,7 @@ package zookeeper
 import (
 	"context"
 	"strings"
+	"sync"
 )
 
 import (
@@ -71,14 +72,16 @@ func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 }
 
 type RegistryConfigurationListener struct {
-	client   *zk.ZookeeperClient
-	registry *zkRegistry
-	events   chan *config_center.ConfigChangeEvent
+	client    *zk.ZookeeperClient
+	registry  *zkRegistry
+	events    chan *config_center.ConfigChangeEvent
+	isClosed  bool
+	closeOnce sync.Once
 }
 
 func NewRegistryConfigurationListener(client *zk.ZookeeperClient, reg *zkRegistry) *RegistryConfigurationListener {
 	reg.wg.Add(1)
-	return &RegistryConfigurationListener{client: client, registry: reg, events: make(chan *config_center.ConfigChangeEvent, 32)}
+	return &RegistryConfigurationListener{client: client, registry: reg, events: make(chan *config_center.ConfigChangeEvent, 32), isClosed: false}
 }
 func (l *RegistryConfigurationListener) Process(configType *config_center.ConfigChangeEvent) {
 	l.events <- configType
@@ -92,7 +95,7 @@ func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 			return nil, perrors.New("listener stopped")
 
 		case <-l.registry.done:
-			logger.Warnf("zk consumer register has quit, so zk event listener exit asap now.")
+			logger.Warnf("zk consumer register has quit, so zk event listener exit now.")
 			return nil, perrors.New("listener stopped")
 
 		case e := <-l.events:
@@ -109,7 +112,11 @@ func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 	}
 }
 func (l *RegistryConfigurationListener) Close() {
-	l.registry.wg.Done()
+	// ensure that the listener will be closed at most once.
+	l.closeOnce.Do(func() {
+		l.isClosed = true
+		l.registry.wg.Done()
+	})
 }
 
 func (l *RegistryConfigurationListener) valid() bool {

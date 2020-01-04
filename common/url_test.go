@@ -217,6 +217,18 @@ func TestURL_GetMethodParam(t *testing.T) {
 	assert.Equal(t, "1s", v)
 }
 
+func TestURL_GetMethodParamBool(t *testing.T) {
+	params := url.Values{}
+	params.Set("methods.GetValue.async", "true")
+	u := URL{baseUrl: baseUrl{params: params}}
+	v := u.GetMethodParamBool("GetValue", "async", false)
+	assert.Equal(t, true, v)
+
+	u = URL{}
+	v = u.GetMethodParamBool("GetValue2", "async", false)
+	assert.Equal(t, false, v)
+}
+
 func TestMergeUrl(t *testing.T) {
 	referenceUrlParams := url.Values{}
 	referenceUrlParams.Set(constant.CLUSTER_KEY, "random")
