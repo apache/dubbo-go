@@ -15,6 +15,10 @@ Apache License, Version 2.0
 
 [v1.0.0 - May 29, 2019 compatible with dubbo v2.6.5](https://github.com/apache/dubbo-go/releases/tag/v1.0.0)
 
+[v1.1.0 - Sep 7, 2019 the first release after transferred to apache](https://github.com/apache/dubbo-go/releases/tag/v1.1.0)
+
+[v1.2.0 - Nov 15, 2019](https://github.com/apache/dubbo-go/releases/tag/v1.2.0)
+
 ## Project Architecture ##
 
 Both extension module and layered project architecture is according to Apache Dubbo (including protocol layer, registry layer, cluster layer, config layer and so on), the advantage of this arch is as following: you can implement these layered interfaces in your own way, override the default implementation of dubbo-go by calling 'extension.SetXXX' of extension, complete your special needs without modifying the source code. At the same time, you are welcome to contribute implementation of useful extension to the community.
@@ -27,43 +31,94 @@ If you wanna know more about dubbo-go, please visit this reference [Project Arch
 
 Finished List:
 
-- Role: Consumer, Provider
-- Transport: HTTP, TCP
-- Codec: JsonRPC v2, Hessian v2
-- Registry: ZooKeeper/[etcd v3](https://github.com/apache/dubbo-go/pull/148)/[nacos](https://github.com/apache/dubbo-go/pull/151)/[consul](https://github.com/apache/dubbo-go/pull/121)
-- Configure Center: Zookeeper
-- Cluster Strategy: Failover/[Failfast](https://github.com/apache/dubbo-go/pull/140)/[Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136)/[Available](https://github.com/apache/dubbo-go/pull/155)/[Broadcast](https://github.com/apache/dubbo-go/pull/158)/[Forking](https://github.com/apache/dubbo-go/pull/161)
-- Load Balance: Random/[RoundRobin](https://github.com/apache/dubbo-go/pull/66)/[LeastActive](https://github.com/apache/dubbo-go/pull/65)
-- Filter: Echo Health Check/[Circuit break and service downgrade](https://github.com/apache/dubbo-go/pull/133)/[TokenFilter](https://github.com/apache/dubbo-go/pull/202)/[AccessLogFilter](https://github.com/apache/dubbo-go/pull/214)
-- Other feature: [generic invoke](https://github.com/apache/dubbo-go/pull/122)/start check/connecting certain provider/multi-protocols/multi-registries/multi-versions/service group
+- Role
+    * Consumer
+    * Provider
+
+- Transport
+    * HTTP
+    * TCP
+
+- Codec
+    * JsonRPC V2
+    * Hessian V2
+    
+- Registry
+    * ZooKeeper
+    * [etcd v3](https://github.com/apache/dubbo-go/pull/148)
+    * [nacos](https://github.com/apache/dubbo-go/pull/151)
+    * [consul](https://github.com/apache/dubbo-go/pull/121)
+    
+- Dynamic Configure Center & Service Management Configurator
+    * Zookeeper
+    * [apollo](https://github.com/apache/dubbo-go/pull/250)
+
+- Cluster Strategy
+    * Failover
+    * [Failfast](https://github.com/apache/dubbo-go/pull/140)
+    * [Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136)
+    * [Available](https://github.com/apache/dubbo-go/pull/155)
+    * [Broadcast](https://github.com/apache/dubbo-go/pull/158)
+    * [Forking](https://github.com/apache/dubbo-go/pull/161)
+    
+- Load Balance
+    * Random
+    * [RoundRobin](https://github.com/apache/dubbo-go/pull/66)
+    * [LeastActive](https://github.com/apache/dubbo-go/pull/65)
+    
+- Filter
+    * Echo Health Check
+    * [Circuit break and service downgrade](https://github.com/apache/dubbo-go/pull/133)
+    * [TokenFilter](https://github.com/apache/dubbo-go/pull/202)
+    * [AccessLogFilter](https://github.com/apache/dubbo-go/pull/214)
+    * [TpsLimitFilter](https://github.com/apache/dubbo-go/pull/237)
+    * [ExecuteLimitFilter](https://github.com/apache/dubbo-go/pull/246)
+    
+- Invoke
+    * [generic invoke](https://github.com/apache/dubbo-go/pull/122)
+    
+- Others:
+    * start check
+    * connecting certain provider
+    * multi-protocols
+    * multi-registries
+    * multi-versions
+    * service group
 
 Working List:
 
 - Load Balance: ConsistentHash
-- Filter: CountFilter/ExecuteLimitFilter/TpsLimitFilter
 - Registry: k8s
-- Configure Center: apollo
-- Dynamic Configuration Center & Metadata Center (dubbo v2.7.x)
-- Metrics: Promethus(dubbo v2.7.x)
-
-Todo List:
-
-- Registry: kubernetes
-- Routing: istio
-- tracing (dubbo ecosystem)
+- Metadata Center (dubbo v2.7.x)
+- Metrics: Opentracing/Promethus(dubbo v2.7.x)
 
 You can know more about dubbo-go by its [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap).
 
+![feature](https://raw.githubusercontent.com/wiki/apache/dubbo-go/arch.png)
+
 ## Document
 
-TODO
+https://dubbogo.github.io/dubbo-go-website(**Improving**)
 
 ## Quick Start
 
-[dubbogo-samples](https://github.com/dubbogo/dubbogo-samples) shows how to use dubbo-go. Please read the [dubbogo-samples/README.md](https://github.com/dubbogo/dubbogo-samples/blob/master/README.md) carefully to learn how to dispose the configuration and compile the program.
+[dubbo-samples/golang](https://github.com/dubbogo/dubbo-samples) shows how to use dubbo-go. Please read the [dubbo-samples/golang/README.md](https://github.com/dubbogo/dubbo-samples/blob/master/golang/README.md) carefully to learn how to dispose the configuration and compile the program.
 
 ## Running unit tests
 
+### Prepare
+
+Mac/Linux
+```bash
+sh ./before_ut.sh
+```
+
+Windows
+```bash
+before_ut.bat
+```
+
+# Run
 ```bash
 go test ./...
 

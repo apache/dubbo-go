@@ -18,6 +18,7 @@
 package proxy_factory
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -34,6 +35,21 @@ func Test_GetProxy(t *testing.T) {
 	proxyFactory := NewDefaultProxyFactory()
 	url := common.NewURLWithOptions()
 	proxy := proxyFactory.GetProxy(protocol.NewBaseInvoker(*url), url)
+	assert.NotNil(t, proxy)
+}
+
+type TestAsync struct {
+}
+
+func (u *TestAsync) CallBack(res common.CallbackResponse) {
+	fmt.Println("CallBack res:", res)
+}
+
+func Test_GetAsyncProxy(t *testing.T) {
+	proxyFactory := NewDefaultProxyFactory()
+	url := common.NewURLWithOptions()
+	async := &TestAsync{}
+	proxy := proxyFactory.GetAsyncProxy(protocol.NewBaseInvoker(*url), async.CallBack, url)
 	assert.NotNil(t, proxy)
 }
 

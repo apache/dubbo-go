@@ -67,7 +67,7 @@ func Test_FailbackSuceess(t *testing.T) {
 	invoker := mock.NewMockInvoker(ctrl)
 	clusterInvoker := registerFailback(t, invoker).(*failbackClusterInvoker)
 
-	invoker.EXPECT().GetUrl().Return(failbackUrl).Times(1)
+	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()
 
 	mockResult := &protocol.RPCResult{Rest: rest{tried: 0, success: true}}
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)

@@ -64,7 +64,7 @@ func Test_FailSafeInvokeSuccess(t *testing.T) {
 	invoker := mock.NewMockInvoker(ctrl)
 	clusterInvoker := register_failsafe(t, invoker)
 
-	invoker.EXPECT().GetUrl().Return(failsafeUrl)
+	invoker.EXPECT().GetUrl().Return(failsafeUrl).AnyTimes()
 
 	mockResult := &protocol.RPCResult{Rest: rest{tried: 0, success: true}}
 
@@ -83,7 +83,7 @@ func Test_FailSafeInvokeFail(t *testing.T) {
 	invoker := mock.NewMockInvoker(ctrl)
 	clusterInvoker := register_failsafe(t, invoker)
 
-	invoker.EXPECT().GetUrl().Return(failsafeUrl)
+	invoker.EXPECT().GetUrl().Return(failsafeUrl).AnyTimes()
 
 	mockResult := &protocol.RPCResult{Err: perrors.New("error")}
 
