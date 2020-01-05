@@ -18,7 +18,6 @@ package tps
 
 import (
 	"fmt"
-	"github.com/apache/dubbo-go/filter"
 	"strconv"
 	"sync"
 )
@@ -31,6 +30,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/filter"
 	"github.com/apache/dubbo-go/protocol"
 )
 
