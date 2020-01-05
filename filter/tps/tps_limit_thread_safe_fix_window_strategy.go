@@ -18,12 +18,12 @@
 package tps
 
 import (
-	"github.com/apache/dubbo-go/filter"
 	"sync"
 )
 
 import (
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/filter"
 )
 
 func init() {

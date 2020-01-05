@@ -18,11 +18,11 @@
 package tps
 
 import (
-	"github.com/apache/dubbo-go/filter"
 	"net/url"
 	"testing"
 )
 import (
+	"github.com/apache/dubbo-go/filter"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
