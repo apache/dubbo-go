@@ -18,7 +18,6 @@
 package tps
 
 import (
-	"github.com/apache/dubbo-go/filter"
 	"sync/atomic"
 	"time"
 )
@@ -26,6 +25,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/filter"
 )
 
 const (

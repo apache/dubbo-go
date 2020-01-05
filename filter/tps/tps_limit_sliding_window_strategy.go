@@ -19,13 +19,13 @@ package tps
 
 import (
 	"container/list"
-	"github.com/apache/dubbo-go/filter"
 	"sync"
 	"time"
 )
 
 import (
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/filter"
 )
 
 func init() {
