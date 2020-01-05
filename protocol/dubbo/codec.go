@@ -90,6 +90,8 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 		}
 
 		if p.Header.Type&hessian.PackageRequest != 0x00 {
+			// size of this array must be '7'
+			// https://github.com/apache/dubbo-go-hessian2/blob/master/request.go#L272
 			p.Body = make([]interface{}, 7)
 		} else {
 			pendingRsp, ok := client.pendingResponses.Load(SequenceType(p.Header.ID))
