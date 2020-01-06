@@ -22,8 +22,6 @@ import (
 	"reflect"
 	"sync"
 	"time"
-
-	"github.com/apache/dubbo-go/cluster"
 )
 
 import (
@@ -32,6 +30,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/cluster/directory"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
@@ -247,11 +246,11 @@ func (dir *registryDirectory) List(invocation protocol.Invocation) []protocol.In
 	invokers := dir.cacheInvokers
 	localRouters := dir.Routers()
 
-	fmt.Println("========", len(localRouters))
+	logger.Debug("========", len(localRouters))
 	if len(localRouters) > 0 {
 		for _, router := range localRouters {
 			if reflect.ValueOf(router.Url()).IsValid() || router.Url().GetParamBool(constant.RUNTIME_KEY, false) {
-				invokers = router.Route(invokers, *dir.ConsumerUrl, invocation)
+				invokers = router.Route(invokers, dir.GetUrl(), invocation)
 			}
 		}
 	}
