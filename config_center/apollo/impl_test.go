@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -259,4 +260,9 @@ func (l *apolloDataListener) Process(configType *config_center.ConfigChangeEvent
 	l.wg.Done()
 	l.count++
 	l.event = configType.Key
+}
+
+func TestDeleteMockJson(t *testing.T) {
+	remove := os.Remove("mockDubbog.properties.json")
+	t.Log("remove result:", remove)
 }
