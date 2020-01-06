@@ -50,7 +50,7 @@ func TestMethodServiceTpsLimiterImpl_IsAllowable_Only_Service_Level(t *testing.T
 	mockStrategyImpl.EXPECT().IsAllowable().Return(true).Times(1)
 
 	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, &mockStrategyCreator{
-		rate:     40,
+		rate:     20,
 		interval: 60000,
 		t:        t,
 		strategy: mockStrategyImpl,

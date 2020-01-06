@@ -447,6 +447,11 @@ func (c URL) GetMethodParam(method string, key string, d string) string {
 	return r
 }
 
+func (c URL) GetMethodParamBool(method string, key string, d bool) bool {
+	r := c.GetParamBool("methods."+method+"."+key, d)
+	return r
+}
+
 func (c *URL) RemoveParams(set *gxset.HashSet) {
 	c.paramsLock.Lock()
 	defer c.paramsLock.Unlock()

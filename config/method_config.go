@@ -36,6 +36,7 @@ type MethodConfig struct {
 	TpsLimitStrategy            string `yaml:"tps.limit.strategy" json:"tps.limit.strategy,omitempty" property:"tps.limit.strategy"`
 	ExecuteLimit                string `yaml:"execute.limit" json:"execute.limit,omitempty" property:"execute.limit"`
 	ExecuteLimitRejectedHandler string `yaml:"execute.limit.rejected.handler" json:"execute.limit.rejected.handler,omitempty" property:"execute.limit.rejected.handler"`
+	Sticky                      bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
 	RequestTimeout              string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
 }
 
