@@ -18,7 +18,6 @@
 package directory
 
 import (
-	"fmt"
 	"reflect"
 	"sync"
 	"time"
