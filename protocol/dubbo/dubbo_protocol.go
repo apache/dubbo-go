@@ -69,8 +69,8 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 }
 
 func (dp *DubboProtocol) Refer(url common.URL) protocol.Invoker {
-	//default
-	requestTimeout := config.GetConsumerConfig().RequestTimeout
+	//default requestTimeout
+	var requestTimeout = config.GetConsumerConfig().RequestTimeout
 
 	requestTimeoutStr := url.GetParam(constant.REQUEST_TIMEOUT, config.GetConsumerConfig().Request_Timeout)
 	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
