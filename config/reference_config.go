@@ -60,7 +60,7 @@ type ReferenceConfig struct {
 	invoker        protocol.Invoker
 	urls           []*common.URL
 	Generic        bool   `yaml:"generic"  json:"generic,omitempty" property:"generic"`
-	RequestTimeout string `yaml:"request_timeout"  json:"request_timeout,omitempty" property:"request_timeout"`
+	RequestTimeout string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
 }
 
 func (c *ReferenceConfig) Prefix() string {
@@ -169,7 +169,7 @@ func (refconfig *ReferenceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.VERSION_KEY, refconfig.Version)
 	urlMap.Set(constant.GENERIC_KEY, strconv.FormatBool(refconfig.Generic))
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
-	if refconfig.RequestTimeout != "" {
+	if len(refconfig.RequestTimeout) != 0 {
 		urlMap.Set(constant.TIMEOUT_KEY, refconfig.RequestTimeout)
 	}
 
