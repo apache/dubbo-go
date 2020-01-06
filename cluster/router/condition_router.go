@@ -134,7 +134,6 @@ func (c *ConditionRouter) Route(invokers []protocol.Invoker, url common.URL, inv
 	if len(c.ThenCondition) == 0 {
 		return result
 	}
-	localIP, _ := gxnet.GetLocalIP()
 	for _, invoker := range invokers {
 		isMatchThen, err := c.MatchThen(invoker.GetUrl(), url)
 		if err != nil {
@@ -153,6 +152,7 @@ func (c *ConditionRouter) Route(invokers []protocol.Invoker, url common.URL, inv
 		return result
 	} else if c.Force {
 		rule, _ := url.GetParamAndDecoded(constant.RULE_KEY)
+		localIP, _ := gxnet.GetLocalIP()
 		logger.Warnf("The route result is empty and force execute. consumer: %s, service: %s, router: %s", localIP, url.Service(), rule)
 		return result
 	}
@@ -222,18 +222,18 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 
 //
 func (c *ConditionRouter) MatchWhen(url common.URL, invocation protocol.Invocation) (bool, error) {
-	condition, err := MatchCondition(c.WhenCondition, &url, nil, invocation)
+	condition, err := matchCondition(c.WhenCondition, &url, nil, invocation)
 	return len(c.WhenCondition) == 0 || condition, err
 }
 
 //MatchThen MatchThen
 func (c *ConditionRouter) MatchThen(url common.URL, param common.URL) (bool, error) {
-	condition, err := MatchCondition(c.ThenCondition, &url, &param, nil)
+	condition, err := matchCondition(c.ThenCondition, &url, &param, nil)
 	return len(c.ThenCondition) > 0 && condition, err
 }
 
 //MatchCondition MatchCondition
-func MatchCondition(pairs map[string]MatchPair, url *common.URL, param *common.URL, invocation protocol.Invocation) (bool, error) {
+func matchCondition(pairs map[string]MatchPair, url *common.URL, param *common.URL, invocation protocol.Invocation) (bool, error) {
 	sample := url.ToMap()
 	if sample == nil {
 		return true, perrors.Errorf("url is not allowed be nil")
@@ -292,6 +292,7 @@ func (pair MatchPair) isMatch(value string, param *common.URL) bool {
 		return true
 	}
 	if !pair.Mismatches.Empty() && !pair.Matches.Empty() {
+		//when both mismatches and matches contain the same value, then using mismatches first
 		for mismatch := range pair.Mismatches.Items {
 			if isMatchGlobPattern(mismatch.(string), value, param) {
 				return false
@@ -305,32 +306,4 @@ func (pair MatchPair) isMatch(value string, param *common.URL) bool {
 		return false
 	}
 	return false
-}
-
-func isMatchGlobPattern(pattern string, value string, param *common.URL) bool {
-	if param != nil && strings.HasPrefix(pattern, "$") {
-		pattern = param.GetRawParam(pattern[1:])
-	}
-	if "*" == pattern {
-		return true
-	}
-	if len(pattern) == 0 && len(value) == 0 {
-		return true
-	}
-	if len(pattern) == 0 || len(value) == 0 {
-		return false
-	}
-	i := strings.LastIndex(pattern, "*")
-	switch i {
-	case -1:
-		return value == pattern
-	case len(pattern) - 1:
-		return strings.HasPrefix(value, pattern[0:i])
-	case 0:
-		return strings.HasSuffix(value, pattern[:i+1])
-	default:
-		prefix := pattern[0:1]
-		suffix := pattern[i+1:]
-		return strings.HasPrefix(value, prefix) && strings.HasSuffix(value, suffix)
-	}
 }
