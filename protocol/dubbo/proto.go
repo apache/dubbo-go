@@ -19,25 +19,25 @@ package dubbo
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
-	"github.com/apache/dubbo-go/common/constant"
 	"io"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+	"encoding/binary"
 )
 
 import (
+	"github.com/pkg/errors"
 	"github.com/golang/protobuf/proto"
 	"github.com/matttproud/golang_protobuf_extensions/pbutil"
-	"github.com/pkg/errors"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/constant"
 	pb "github.com/apache/dubbo-go/protocol/dubbo/proto"
 )
 
@@ -282,7 +282,7 @@ func marshalResponseProto(pkg DubboPackage) ([]byte, error) {
 		return nil, err
 	}
 	if response.Exception != nil {
-		// 简单处理一下异常
+		// deal with exception
 		throwable := pb.ThrowableProto{OriginalMessage: response.Exception.Error()}
 		if err := writeObject(buf, &throwable); err != nil {
 			return nil, err
@@ -349,7 +349,7 @@ func readObject(reader io.Reader, value proto.Message) error {
 	return nil
 }
 
-// 对应java protobuf serialize 实现
+// just as java protobuf serialize
 func readByte(reader io.Reader, value *int32) error {
 	i32v := &pb.Int32Value{}
 	_, err := pbutil.ReadDelimited(reader, i32v)

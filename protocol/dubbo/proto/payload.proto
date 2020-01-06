@@ -17,17 +17,17 @@
 
 syntax = "proto3";
 
-// 对应protobuf-java中StringValue
+// equivalent java StringValue
 message StringValue {
     string value = 1;
 }
 
-// 对应java中的Int32Value
+// equivalent java Int32Value
 message Int32Value {
     int32 value = 1;
 }
 
-// 对应java中的MapValue
+// equivalent java MapValue
 message Map {
     map<string, string> attachments = 1;
 }

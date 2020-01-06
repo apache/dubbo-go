@@ -199,8 +199,7 @@ func (c *DubboCodec) Read(p *DubboPackage) error {
 		rsp.Exception = errors.Errorf("java exception:%s", exception.(string))
 		return nil
 	} else if p.IsHeartBeat() {
-		// heartbeat
-		// heartbeat packag不去读取内容
+		// heartbeat no need to unmarshal contents
 		return nil
 	}
 	if c.serializer == nil {
@@ -290,7 +289,6 @@ func packResponse(p DubboPackage, serializer Serializer) ([]byte, error) {
 		return nil, err
 	}
 
-	//byteArray = encNull(byteArray) // if not, "java client" will throw exception  "unexpected end of file"
 	pkgLen := len(body)
 	if pkgLen > int(DEFAULT_LEN) { // 8M
 		return nil, errors.Errorf("Data length %d too large, max payload %d", pkgLen, DEFAULT_LEN)

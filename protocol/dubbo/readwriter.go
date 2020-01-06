@@ -152,7 +152,7 @@ func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg interface{}) ([]by
 }
 
 func loadSerializer(p *DubboPackage) error {
-	// Note: 如果serialID 默认为S_Hessian(S_Dubbo)
+	// NOTE: default serialID is S_Hessian
 	serialID := p.Header.SerialID
 	if serialID == 0 {
 		serialID = constant.S_Hessian2

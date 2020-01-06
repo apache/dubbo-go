@@ -125,7 +125,7 @@ func TestDubboPackage_Protobuf_Serialization_Request(t *testing.T) {
 	assert.Equal(t, ok, true)
 	req, ok := body["args"].([]interface{})
 	assert.Equal(t, ok, true)
-	// protobuf的rpc参数只能是一个
+	// protobuf rpc just has exact one parameter
 	assert.Equal(t, len(req), 1)
 	argsBytes, ok := req[0].([]byte)
 	assert.Equal(t, ok, true)

@@ -20,7 +20,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
-// 对应protobuf-java中StringValue
+// equivalent java StringValue
 type StringValue struct {
 	Value                string   `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -60,7 +60,7 @@ func (m *StringValue) GetValue() string {
 	return ""
 }
 
-// 对应java中的Int32Value
+// equivalent java Int32Value
 type Int32Value struct {
 	Value                int32    `protobuf:"varint,1,opt,name=value,proto3" json:"value,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -100,7 +100,7 @@ func (m *Int32Value) GetValue() int32 {
 	return 0
 }
 
-// 对应java中的MapValue
+// equivalent java MapValue
 type Map struct {
 	Attachments          map[string]string `protobuf:"bytes,1,rep,name=attachments,proto3" json:"attachments,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`

@@ -18,8 +18,11 @@
 package extension
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
 	"github.com/pkg/errors"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/constant"
 )
 
 var (

@@ -154,7 +154,6 @@ func getArgsTypeList(args []interface{}) (string, error) {
 type HessianSerializer struct {
 }
 
-// 要分清楚request和response
 func (h HessianSerializer) Marshal(p DubboPackage) ([]byte, error) {
 	encoder := hessian.NewEncoder()
 	if p.IsRequest() {
@@ -372,7 +371,6 @@ func unmarshalRequestBody(body []byte, p *DubboPackage) error {
 		buildServerSidePackageBody(p)
 		return nil
 	}
-	// 可以放到这里做成buildPackageForHessian
 	return errors.Errorf("get wrong attachments: %+v", attachments)
 }
 
@@ -451,7 +449,6 @@ func unmarshalResponseBody(body []byte, p *DubboPackage) error {
 	return nil
 }
 
-// 为什么要有这种东西
 func buildServerSidePackageBody(pkg *DubboPackage) {
 	req := pkg.GetBody().([]interface{}) // length of body should be 7
 	if len(req) > 0 {
@@ -494,7 +491,7 @@ func buildServerSidePackageBody(pkg *DubboPackage) {
 		pkg.SetService(svc)
 		pkg.SetBody(map[string]interface{}{
 			"dubboVersion": dubboVersion,
-			"argsTypes":    argsTypes, // TODO：argsType有什么用
+			"argsTypes":    argsTypes,
 			"args":         args,
 			"service":      common.ServiceMap.GetService(DUBBO, svc.Path), // path as a key
 			"attachments":  attachments,

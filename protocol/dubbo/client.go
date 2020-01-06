@@ -235,7 +235,7 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 	svc.Timeout = c.opts.RequestTimeout
 	p := NewClientRequestPackage(header, svc)
 
-	serialization := request.svcUrl.GetParam("serialization", c.conf.Serialization)
+	serialization := request.svcUrl.GetParam(constant.SERIALIZATION_KEY, c.conf.Serialization)
 	if serialization == constant.HESSIAN2_SERIALIZATION {
 		p.Header.SerialID = constant.S_Hessian2
 	} else if serialization == constant.PROTOBUF_SERIALIZATION {
