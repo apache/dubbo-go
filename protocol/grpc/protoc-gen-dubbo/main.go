@@ -28,7 +28,7 @@ import (
 	_ "github.com/golang/protobuf/protoc-gen-go/grpc"
 )
 
-import(
+import (
 	_ "github.com/apache/dubbo-go/protocol/grpc/protoc-gen-dubbo/plugin/dubbo"
 )
 
