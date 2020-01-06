@@ -55,7 +55,7 @@ type ReferenceConfig struct {
 	Group          string            `yaml:"group"  json:"group,omitempty" property:"group"`
 	Version        string            `yaml:"version"  json:"version,omitempty" property:"version"`
 	Methods        []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
-	async          bool              `yaml:"async"  json:"async,omitempty" property:"async"`
+	Async          bool              `yaml:"async"  json:"async,omitempty" property:"async"`
 	Params         map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
 	invoker        protocol.Invoker
 	urls           []*common.URL
@@ -174,7 +174,8 @@ func (refconfig *ReferenceConfig) getUrlMap() url.Values {
 		urlMap.Set(constant.TIMEOUT_KEY, refconfig.RequestTimeout)
 	}
 	//getty invoke async or sync
-	urlMap.Set(constant.ASYNC_KEY, strconv.FormatBool(refconfig.async))
+	urlMap.Set(constant.ASYNC_KEY, strconv.FormatBool(refconfig.Async))
+	urlMap.Set(constant.STICKY_KEY, strconv.FormatBool(refconfig.Sticky))
 
 	//application info
 	urlMap.Set(constant.APPLICATION_KEY, consumerConfig.ApplicationConfig.Name)
