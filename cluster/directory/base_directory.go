@@ -21,32 +21,30 @@ import (
 	"sync"
 )
 import (
-	"github.com/apache/dubbo-go/cluster"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/dubbogo/gost/container/gxset"
 	"go.uber.org/atomic"
 )
 import (
+	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/dubbogo/gost/container/gxset"
 )
 
 var RouterUrlSet = gxset.NewSet()
 
 type BaseDirectory struct {
-	url         *common.URL
-	ConsumerUrl *common.URL
-	destroyed   *atomic.Bool
-	routers     []cluster.Router
-	mutex       sync.Mutex
-	once        sync.Once
+	url       *common.URL
+	destroyed *atomic.Bool
+	routers   []cluster.Router
+	mutex     sync.Mutex
+	once      sync.Once
 }
 
 func NewBaseDirectory(url *common.URL) BaseDirectory {
 	return BaseDirectory{
-		url:         url,
-		ConsumerUrl: url,
-		destroyed:   atomic.NewBool(false),
+		url:       url,
+		destroyed: atomic.NewBool(false),
 	}
 }
 func (dir *BaseDirectory) Destroyed() bool {
