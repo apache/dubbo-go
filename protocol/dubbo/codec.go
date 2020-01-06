@@ -26,6 +26,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go-hessian2"
+	"github.com/apache/dubbo-go/common"
 	perrors "github.com/pkg/errors"
 )
 
@@ -88,11 +89,17 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 			return perrors.Errorf("opts[0] is not of type *Client")
 		}
 
-		pendingRsp, ok := client.pendingResponses.Load(SequenceType(p.Header.ID))
-		if !ok {
-			return perrors.Errorf("client.GetPendingResponse(%v) = nil", p.Header.ID)
+		if p.Header.Type&hessian.PackageRequest != 0x00 {
+			// size of this array must be '7'
+			// https://github.com/apache/dubbo-go-hessian2/blob/master/request.go#L272
+			p.Body = make([]interface{}, 7)
+		} else {
+			pendingRsp, ok := client.pendingResponses.Load(SequenceType(p.Header.ID))
+			if !ok {
+				return perrors.Errorf("client.GetPendingResponse(%v) = nil", p.Header.ID)
+			}
+			p.Body = &hessian.Response{RspObj: pendingRsp.(*PendingResponse).response.reply}
 		}
-		p.Body = &hessian.Response{RspObj: pendingRsp.(*PendingResponse).response.reply}
 	}
 
 	// read body
@@ -109,7 +116,7 @@ type PendingResponse struct {
 	err       error
 	start     time.Time
 	readStart time.Time
-	callback  AsyncCallback
+	callback  common.AsyncCallback
 	response  *Response
 	done      chan struct{}
 }
@@ -122,8 +129,8 @@ func NewPendingResponse() *PendingResponse {
 	}
 }
 
-func (r PendingResponse) GetCallResponse() CallResponse {
-	return CallResponse{
+func (r PendingResponse) GetCallResponse() common.CallbackResponse {
+	return AsyncCallbackResponse{
 		Cause:     r.err,
 		Start:     r.start,
 		ReadStart: r.readStart,
