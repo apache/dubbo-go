@@ -18,7 +18,6 @@
 package jsonrpc
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
 	"strings"
 	"sync"
 	"time"
@@ -26,6 +25,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
