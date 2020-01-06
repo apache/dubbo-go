@@ -85,11 +85,17 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 	}
 
 	if p.Header.Type&hessian.PackageHeartbeat != 0x00 {
-		logger.Debugf("get rpc heartbeat response{header: %#v, body: %#v}", p.Header, p.Body)
-		if p.Err != nil {
-			logger.Errorf("rpc heartbeat response{error: %#v}", p.Err)
+		if p.Header.Type&hessian.PackageResponse != 0x00 {
+			logger.Debugf("get rpc heartbeat response{header: %#v, body: %#v}", p.Header, p.Body)
+			if p.Err != nil {
+				logger.Errorf("rpc heartbeat response{error: %#v}", p.Err)
+			}
+			h.conn.pool.rpcClient.removePendingResponse(SequenceType(p.Header.ID))
+		} else {
+			logger.Debugf("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", p.Header, p.Service, p.Body)
+			p.Header.ResponseStatus = hessian.Response_OK
+			reply(session, p, hessian.PackageHeartbeat)
 		}
-		h.conn.pool.rpcClient.removePendingResponse(SequenceType(p.Header.ID))
 		return
 	}
 	logger.Debugf("get rpc response{header: %#v, body: %#v}", p.Header, p.Body)
@@ -199,7 +205,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	// heartbeat
 	if p.Header.Type&hessian.PackageHeartbeat != 0x00 {
 		logger.Debugf("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", p.Header, p.Service, p.Body)
-		h.reply(session, p, hessian.PackageHeartbeat)
+		reply(session, p, hessian.PackageHeartbeat)
 		return
 	}
 
@@ -226,7 +232,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 			if !twoway {
 				return
 			}
-			h.reply(session, p, hessian.PackageResponse)
+			reply(session, p, hessian.PackageResponse)
 		}
 
 	}()
@@ -241,7 +247,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 		logger.Errorf(err.Error())
 		p.Header.ResponseStatus = hessian.Response_OK
 		p.Body = err
-		h.reply(session, p, hessian.PackageResponse)
+		reply(session, p, hessian.PackageResponse)
 		return
 	}
 	invoker := exporter.(protocol.Exporter).GetInvoker()
@@ -266,7 +272,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	if !twoway {
 		return
 	}
-	h.reply(session, p, hessian.PackageResponse)
+	reply(session, p, hessian.PackageResponse)
 }
 
 func (h *RpcServerHandler) OnCron(session getty.Session) {
@@ -294,7 +300,7 @@ func (h *RpcServerHandler) OnCron(session getty.Session) {
 	}
 }
 
-func (h *RpcServerHandler) reply(session getty.Session, req *DubboPackage, tp hessian.PackageType) {
+func reply(session getty.Session, req *DubboPackage, tp hessian.PackageType) {
 	resp := &DubboPackage{
 		Header: hessian.DubboHeader{
 			SerialID:       req.Header.SerialID,

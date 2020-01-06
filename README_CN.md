@@ -14,6 +14,10 @@ Apache License, Version 2.0
 
 [v1.0.0 - 2019年5月29日 兼容dubbo v2.6.5 版本](https://github.com/apache/dubbo-go/releases/tag/v1.0.0)
 
+[v1.1.0 - 2019年9月7日 捐献给Apache之后的第一次release](https://github.com/apache/dubbo-go/releases/tag/v1.1.0)
+
+[v1.2.0 - 2019年11月15日](https://github.com/apache/dubbo-go/releases/tag/v1.2.0)
+
 ## 工程架构 ##
 
 基于dubbo的extension模块和分层的代码设计(包括 protocol layer, registry layer, cluster layer, config 等等)。我们的目标是：你可以对这些分层接口进行新的实现，并通过调用 extension 模块的“ extension.SetXXX ”方法来覆盖 dubbo-go [同 go-for-apache-dubbo ]的默认实现，以完成自己的特殊需求而无需修改源代码。同时，欢迎你为社区贡献有用的拓展实现。
@@ -89,13 +93,15 @@ Apache License, Version 2.0
 
 你可以通过访问 [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap) 知道更多关于 dubbo-go 的信息。
 
+![feature](https://raw.githubusercontent.com/wiki/apache/dubbo-go/arch.png)
+
 ## 文档
 
-TODO
+https://dubbogo.github.io/dubbo-go-website(**完善中**)
 
 ## 快速开始 ##
 
-[dubbogo-samples](https://github.com/dubbogo/dubbogo-samples)这个项目的事例展示了如何使用 dubbo-go 。请仔细阅读 [dubbogo-samples/README.md](https://github.com/dubbogo/dubbogo-samples/blob/master/README.md) 学习如何处理配置并编译程序。
+[dubbo-samples/golang](https://github.com/dubbogo/dubbo-samples)这个项目的事例展示了如何使用 dubbo-go 。请仔细阅读 [dubbo-samples/golang/README.md](https://github.com/dubbogo/dubbo-samples/blob/master/golang/README.md) 学习如何处理配置并编译程序。
 
 ## 运行单测
 
