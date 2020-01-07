@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-package impl
+package default_filters
 
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/filter"
-	_ "github.com/apache/dubbo-go/filter/common"
-	_ "github.com/apache/dubbo-go/filter/impl/tps"
+	_ "github.com/apache/dubbo-go/filter/default_filters/tps"
+	_ "github.com/apache/dubbo-go/filter/handler"
 	"github.com/apache/dubbo-go/protocol"
 )
 
