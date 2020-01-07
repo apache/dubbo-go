@@ -31,6 +31,7 @@ require (
 	github.com/lestrrat/go-file-rotatelogs v0.0.0-20180223000712-d3151e2a480f // indirect
 	github.com/lestrrat/go-strftime v0.0.0-20180220042222-ba3bf9c1d042 // indirect
 	github.com/magiconair/properties v1.8.1
+	github.com/mitchellh/mapstructure v1.1.2
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 	github.com/nacos-group/nacos-sdk-go v0.0.0-20190723125407-0242d42e3dbb
 	github.com/pkg/errors v0.8.1
