@@ -28,7 +28,8 @@ import (
 )
 
 const (
-	secondToMsRate = int64(time.Second / time.Millisecond)
+	secondToMsRate     = int64(time.Second / time.Millisecond)
+	msToNanoSecondRate = int64(time.Millisecond / time.Nanosecond)
 )
 
 /**

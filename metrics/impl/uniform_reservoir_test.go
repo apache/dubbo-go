@@ -36,7 +36,6 @@ func TestNewUniformReservoir100OutOf1000(t *testing.T) {
 	assert.Equal(t, 100, size)
 	values, _ := snapshot.GetValues()
 	for _, value := range values {
-		println(value)
 		assert.True(t, value < 1000)
 		assert.True(t, value >= 0)
 	}

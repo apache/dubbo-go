@@ -17,10 +17,34 @@
 
 package metrics
 
+import (
+	"time"
+)
+
 type CompassContext interface {
 }
 
 type Compass interface {
 	Metered
 	Sampling
+
+	// Add a record duration
+	Update(duration time.Duration)
+
+	// Add a record duration.
+	// isSuccess whether is success
+	// errorCode and addon could be empty
+	UpdateWithError(duration time.Duration, isSuccess bool, errorCode string, addon string)
+
+	// Get the success count of the invocation
+	GetSuccessCount() int64
+
+	// Get the distribution of error code
+	GetErrorCodeCounts() map[string]BucketCounter
+
+	// Get the number of occurrence of added on metric
+	GetAddonCounts() map[string]BucketCounter
+
+	// Get the success count of the invocation
+	GetBucketSuccessCount() BucketCounter
 }

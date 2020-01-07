@@ -21,4 +21,8 @@ package metrics
  * It's the go version of com.alibaba.metrics.Metered
  */
 type Metered interface {
+	Metric
+	Counting
+	GetInstantCount() map[int64]int64
+	GetInstantCountSince(startTime int64) map[int64]int64
 }

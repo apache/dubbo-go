@@ -49,7 +49,7 @@ func TestBucketReservoir(t *testing.T) {
 	snapshot := reservoir.GetSnapshot()
 
 	mean, err := snapshot.GetMean()
-	assert.Equal(t, int64(15), mean)
+	assert.Equal(t, float64(15), mean)
 	assert.Nil(t, err)
 
 	per75, err := snapshot.Get75thPercentile()

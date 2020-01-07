@@ -26,3 +26,10 @@ type Reservoir interface {
 	// Returns a snapshot of the reservoir's values.
 	GetSnapshot() Snapshot
 }
+
+type ReservoirType int
+
+const (
+	BucketReservoirType ReservoirType = iota
+	UniformReservoirType
+)

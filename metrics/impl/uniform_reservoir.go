@@ -27,9 +27,10 @@ import (
 	"github.com/apache/dubbo-go/metrics"
 )
 
-var (
+const (
 	// randomMask = ^(int64(1) << uint64(63))
-	randomMask int64 = 9223372036854775807
+	randomMask                  int64 = 9223372036854775807
+	defaultUniformReservoirSize int64 = 1024
 )
 
 // A random sampling reservoir of a stream of int64s.
