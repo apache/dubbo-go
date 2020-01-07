@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package common
+package handler
 
 import (
 	"github.com/apache/dubbo-go/filter"
