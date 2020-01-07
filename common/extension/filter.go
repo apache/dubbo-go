@@ -19,12 +19,11 @@ package extension
 
 import (
 	"github.com/apache/dubbo-go/filter"
-	"github.com/apache/dubbo-go/filter/common"
 )
 
 var (
 	filters                  = make(map[string]func() filter.Filter)
-	rejectedExecutionHandler = make(map[string]func() common.RejectedExecutionHandler)
+	rejectedExecutionHandler = make(map[string]func() filter.RejectedExecutionHandler)
 )
 
 func SetFilter(name string, v func() filter.Filter) {
@@ -38,11 +37,11 @@ func GetFilter(name string) filter.Filter {
 	return filters[name]()
 }
 
-func SetRejectedExecutionHandler(name string, creator func() common.RejectedExecutionHandler) {
+func SetRejectedExecutionHandler(name string, creator func() filter.RejectedExecutionHandler) {
 	rejectedExecutionHandler[name] = creator
 }
 
-func GetRejectedExecutionHandler(name string) common.RejectedExecutionHandler {
+func GetRejectedExecutionHandler(name string) filter.RejectedExecutionHandler {
 	creator, ok := rejectedExecutionHandler[name]
 	if !ok {
 		panic("RejectedExecutionHandler for " + name + " is not existing, make sure you have import the package " +
