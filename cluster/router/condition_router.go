@@ -42,6 +42,10 @@ const (
 	PRIORITY      = "priority"
 )
 
+var (
+	router_pattern = regexp.MustCompile(`([&!=,]*)\s*([^&!=,\s]+)`)
+)
+
 //ConditionRouter condition router struct
 type ConditionRouter struct {
 	Pattern       string
@@ -166,15 +170,10 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 	}
 
 	var (
-		pair       MatchPair
-		startIndex int
+		pair MatchPair
 	)
 	values := gxset.NewSet()
-	reg := regexp.MustCompile(`([&!=,]*)\s*([^&!=,\s]+)`)
-	if indexTuple := reg.FindIndex([]byte(rule)); len(indexTuple) > 0 {
-		startIndex = indexTuple[0]
-	}
-	matches := reg.FindAllSubmatch([]byte(rule), -1)
+	matches := router_pattern.FindAllSubmatch([]byte(rule), -1)
 	for _, groups := range matches {
 		separator := string(groups[1])
 		content := string(groups[2])
@@ -197,27 +196,38 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 			}
 		case "=":
 			if &pair == nil {
+				var startIndex = getStartIndex(rule)
 				return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex, startIndex)
 			}
 			values = pair.Matches
 			values.Add(content)
 		case "!=":
 			if &pair == nil {
+				var startIndex = getStartIndex(rule)
 				return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex, startIndex)
 			}
 			values = pair.Mismatches
 			values.Add(content)
 		case ",":
 			if values.Empty() {
+				var startIndex = getStartIndex(rule)
 				return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex, startIndex)
 			}
 			values.Add(content)
 		default:
+			var startIndex = getStartIndex(rule)
 			return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex, startIndex)
 
 		}
 	}
 	return condition, nil
+}
+
+func getStartIndex(rule string) int {
+	if indexTuple := router_pattern.FindIndex([]byte(rule)); len(indexTuple) > 0 {
+		return indexTuple[0]
+	}
+	return -1
 }
 
 //
