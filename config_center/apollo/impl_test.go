@@ -25,6 +25,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 import (
@@ -172,6 +173,7 @@ func Test_GetConfig(t *testing.T) {
 	mapContent, err := configuration.Parser().Parse(configs)
 	assert.NoError(t, err)
 	assert.Equal(t, "ikurento.com", mapContent["application.organization"])
+	deleteMockJson(t)
 }
 
 func Test_GetConfigItem(t *testing.T) {
@@ -181,6 +183,7 @@ func Test_GetConfigItem(t *testing.T) {
 	configuration.SetParser(&parser.DefaultConfigurationParser{})
 	assert.NoError(t, err)
 	assert.Equal(t, "ikurento.com", configs)
+	deleteMockJson(t)
 }
 
 func initMockApollo(t *testing.T) *apolloConfiguration {
@@ -217,6 +220,7 @@ func TestAddListener(t *testing.T) {
 	listener.wg.Wait()
 	assert.Equal(t, "registries.hangzhouzk.username", listener.event)
 	assert.Greater(t, listener.count, 0)
+	deleteMockJson(t)
 }
 
 func TestRemoveListener(t *testing.T) {
@@ -245,6 +249,7 @@ func TestRemoveListener(t *testing.T) {
 	})
 	assert.Equal(t, listenerCount, 0)
 	assert.Equal(t, listener.count, 0)
+	deleteMockJson(t)
 }
 
 type apolloDataListener struct {
@@ -262,7 +267,9 @@ func (l *apolloDataListener) Process(configType *config_center.ConfigChangeEvent
 	l.event = configType.Key
 }
 
-func TestDeleteMockJson(t *testing.T) {
+func deleteMockJson(t *testing.T) {
+	//because the file write in another goroutine,so have a break ...
+	time.Sleep(100 * time.Millisecond)
 	remove := os.Remove("mockDubbog.properties.json")
 	t.Log("remove result:", remove)
 }
