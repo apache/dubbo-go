@@ -18,19 +18,19 @@
 package extension
 
 import (
-	"github.com/apache/dubbo-go/filter/impl/tps"
+	"github.com/apache/dubbo-go/filter"
 )
 
 var (
-	tpsLimitStrategy = make(map[string]tps.TpsLimitStrategyCreator)
-	tpsLimiter       = make(map[string]func() tps.TpsLimiter)
+	tpsLimitStrategy = make(map[string]filter.TpsLimitStrategyCreator)
+	tpsLimiter       = make(map[string]func() filter.TpsLimiter)
 )
 
-func SetTpsLimiter(name string, creator func() tps.TpsLimiter) {
+func SetTpsLimiter(name string, creator func() filter.TpsLimiter) {
 	tpsLimiter[name] = creator
 }
 
-func GetTpsLimiter(name string) tps.TpsLimiter {
+func GetTpsLimiter(name string) filter.TpsLimiter {
 	creator, ok := tpsLimiter[name]
 	if !ok {
 		panic("TpsLimiter for " + name + " is not existing, make sure you have import the package " +
@@ -39,11 +39,11 @@ func GetTpsLimiter(name string) tps.TpsLimiter {
 	return creator()
 }
 
-func SetTpsLimitStrategy(name string, creator tps.TpsLimitStrategyCreator) {
+func SetTpsLimitStrategy(name string, creator filter.TpsLimitStrategyCreator) {
 	tpsLimitStrategy[name] = creator
 }
 
-func GetTpsLimitStrategyCreator(name string) tps.TpsLimitStrategyCreator {
+func GetTpsLimitStrategyCreator(name string) filter.TpsLimitStrategyCreator {
 	creator, ok := tpsLimitStrategy[name]
 	if !ok {
 		panic("TpsLimitStrategy for " + name + " is not existing, make sure you have import the package " +
