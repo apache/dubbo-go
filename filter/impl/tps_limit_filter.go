@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package filter
+package impl
 
 import (
 	"github.com/apache/dubbo-go/common/constant"
@@ -23,7 +23,7 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/filter"
 	_ "github.com/apache/dubbo-go/filter/common"
-	_ "github.com/apache/dubbo-go/filter/tps"
+	_ "github.com/apache/dubbo-go/filter/impl/tps"
 	"github.com/apache/dubbo-go/protocol"
 )
 
