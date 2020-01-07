@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package filter
+package impl
 
 import (
 	"strconv"
