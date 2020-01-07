@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package impl
+package default_filters
 
 import (
 	"reflect"
