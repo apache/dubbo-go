@@ -18,17 +18,11 @@ package config
 
 import (
 	"encoding/base64"
-	"io/ioutil"
 	"net/url"
 	"os"
-	"path"
 	"strconv"
 	"strings"
 	"sync"
-)
-import (
-	perrors "github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 )
 import (
 	"github.com/apache/dubbo-go/cluster/directory"
@@ -42,7 +36,7 @@ var (
 )
 
 /////////////////////////
-// routerConfig
+// conditionRouterConfig
 /////////////////////////
 type ConditionRouterConfig struct {
 	RawRule    string   `yaml:"rawRule"`
@@ -62,26 +56,14 @@ func (*ConditionRouterConfig) Prefix() string {
 }
 
 func RouterInit(confRouterFile string) error {
-	if len(confRouterFile) == 0 {
-		return perrors.Errorf("application configure(provider) file name is nil")
-	}
-
-	if path.Ext(confRouterFile) != ".yml" {
-		return perrors.Errorf("application configure file name{%v} suffix must be .yml", confRouterFile)
-	}
-
-	confFileStream, err := ioutil.ReadFile(confRouterFile)
-	if err != nil {
-		return perrors.Errorf("ioutil.ReadFile(file:%s) = error:%v", confRouterFile, perrors.WithStack(err))
-	}
 	routerConfig = &ConditionRouterConfig{}
+	e := loadYmlConfig(confRouterFile, routerConfig)
 
-	err = yaml.Unmarshal(confFileStream, routerConfig)
-	if err != nil {
-		return perrors.Errorf("yaml.Unmarshal() = error:%v", perrors.WithStack(err))
+	if e != nil {
+		return e
 	}
 
-	logger.Debugf("provider config{%#v}\n", routerConfig)
+	logger.Debugf("router config{%#v}\n", routerConfig)
 	directory.RouterUrlSet.Add(initRouterUrl())
 	logger.Debug("=====", directory.RouterUrlSet.Size())
 	return nil
