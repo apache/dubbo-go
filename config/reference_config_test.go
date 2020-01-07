@@ -81,10 +81,12 @@ func doInitConsumer() {
 		},
 		References: map[string]*ReferenceConfig{
 			"MockService": {
+				id: "MockProvider",
 				Params: map[string]string{
 					"serviceid": "soa.mock",
 					"forks":     "5",
 				},
+				Sticky:        false,
 				Registry:      "shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2",
 				InterfaceName: "com.MockService",
 				Protocol:      "mock",
@@ -103,10 +105,31 @@ func doInitConsumer() {
 						Name:        "GetUser1",
 						Retries:     "2",
 						Loadbalance: "random",
+						Sticky:      true,
 					},
 				},
 			},
 		},
+	}
+}
+
+var mockProvider = new(MockProvider)
+
+type MockProvider struct {
+}
+
+func (m *MockProvider) Reference() string {
+	return "MockProvider"
+}
+
+func (m *MockProvider) CallBack(res common.CallbackResponse) {
+}
+
+func doInitConsumerAsync() {
+	doInitConsumer()
+	SetConsumerService(mockProvider)
+	for _, v := range consumerConfig.References {
+		v.Async = true
 	}
 }
 
@@ -181,6 +204,22 @@ func Test_Refer(t *testing.T) {
 	}
 	consumerConfig = nil
 }
+
+func Test_ReferAsync(t *testing.T) {
+	doInitConsumerAsync()
+	extension.SetProtocol("registry", GetProtocol)
+	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
+
+	for _, reference := range consumerConfig.References {
+		reference.Refer()
+		assert.Equal(t, "soa.mock", reference.Params["serviceid"])
+		assert.NotNil(t, reference.invoker)
+		assert.NotNil(t, reference.pxy)
+		assert.NotNil(t, reference.pxy.GetCallback())
+	}
+	consumerConfig = nil
+}
+
 func Test_ReferP2P(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("dubbo", GetProtocol)
@@ -252,6 +291,24 @@ func Test_Forking(t *testing.T) {
 		assert.NotNil(t, reference.Cluster)
 	}
 	consumerConfig = nil
+}
+
+func Test_Sticky(t *testing.T) {
+	doInitConsumer()
+	extension.SetProtocol("dubbo", GetProtocol)
+	extension.SetProtocol("registry", GetProtocol)
+	m := consumerConfig.References["MockService"]
+	m.Url = "dubbo://127.0.0.1:20000;registry://127.0.0.2:20000"
+
+	reference := consumerConfig.References["MockService"]
+	reference.Refer()
+	referenceSticky := reference.invoker.GetUrl().GetParam(constant.STICKY_KEY, "false")
+	assert.Equal(t, "false", referenceSticky)
+
+	method0StickKey := reference.invoker.GetUrl().GetMethodParam(reference.Methods[0].Name, constant.STICKY_KEY, "false")
+	assert.Equal(t, "false", method0StickKey)
+	method1StickKey := reference.invoker.GetUrl().GetMethodParam(reference.Methods[1].Name, constant.STICKY_KEY, "false")
+	assert.Equal(t, "true", method1StickKey)
 }
 
 func GetProtocol() protocol.Protocol {
