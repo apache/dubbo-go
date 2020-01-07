@@ -19,6 +19,8 @@ package config
 import (
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestString(t *testing.T) {
@@ -35,4 +37,37 @@ func TestString(t *testing.T) {
 	println(n1[0], " ", n1[1])
 	println(n2[0], " ", n2[1])
 
+}
+
+func TestLoadYmlConfig(t *testing.T) {
+	routerConfig = &ConditionRouterConfig{}
+	e := loadYmlConfig("testdata/router_config.yml", routerConfig)
+	assert.Nil(t, e)
+	assert.NotNil(t, routerConfig)
+	assert.Equal(t, routerConfig.RawRule, "kkk")
+	assert.Equal(t, routerConfig.Scope, "dubbo")
+	assert.Equal(t, routerConfig.Priority, 1)
+	assert.Equal(t, routerConfig.Enabled, false)
+	assert.Equal(t, routerConfig.Dynamic, true)
+	assert.Equal(t, routerConfig.Valid, false)
+	assert.Equal(t, routerConfig.Force, true)
+	assert.Equal(t, routerConfig.Runtime, false)
+	assert.Equal(t, routerConfig.Key, "abc")
+	assert.Equal(t, len(routerConfig.Conditions), 2)
+}
+
+func TestRouterInit(t *testing.T) {
+	e := RouterInit("testdata/router_config.yml")
+	assert.Nil(t, e)
+	assert.NotNil(t, routerConfig)
+	assert.Equal(t, routerConfig.RawRule, "kkk")
+	assert.Equal(t, routerConfig.Scope, "dubbo")
+	assert.Equal(t, routerConfig.Priority, 1)
+	assert.Equal(t, routerConfig.Enabled, false)
+	assert.Equal(t, routerConfig.Dynamic, true)
+	assert.Equal(t, routerConfig.Valid, false)
+	assert.Equal(t, routerConfig.Force, true)
+	assert.Equal(t, routerConfig.Runtime, false)
+	assert.Equal(t, routerConfig.Key, "abc")
+	assert.Equal(t, len(routerConfig.Conditions), 2)
 }
