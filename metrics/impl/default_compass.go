@@ -22,8 +22,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-
 )
 
 import (
@@ -103,8 +101,6 @@ func (cp *DefaultCompass) GetErrorCodeCounts() map[string]metrics.BucketCounter 
 func (cp *DefaultCompass) GetSuccessCount() int64 {
 	return cp.successCount.GetCount()
 }
-
-
 
 func (cp *DefaultCompass) GetInstantCount() map[int64]int64 {
 	return cp.totalCount.GetBucketCounts()
