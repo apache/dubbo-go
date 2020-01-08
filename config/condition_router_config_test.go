@@ -23,6 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const testyml = "testdata/router_config.yml"
+
 func TestString(t *testing.T) {
 
 	s := "a1=>a2"
@@ -41,7 +43,7 @@ func TestString(t *testing.T) {
 
 func TestLoadYmlConfig(t *testing.T) {
 	routerConfig = &ConditionRouterConfig{}
-	e := loadYmlConfig("testdata/router_config.yml", routerConfig)
+	e := loadYmlConfig(testyml, routerConfig)
 	assert.Nil(t, e)
 	assert.NotNil(t, routerConfig)
 	assert.Equal(t, routerConfig.RawRule, "kkk")
@@ -70,4 +72,20 @@ func TestRouterInit(t *testing.T) {
 	assert.Equal(t, routerConfig.Runtime, false)
 	assert.Equal(t, routerConfig.Key, "abc")
 	assert.Equal(t, len(routerConfig.Conditions), 2)
+}
+
+func TestParseCondition(t *testing.T) {
+	s := make([]string, 2)
+	s = append(s, "a => b")
+	s = append(s, "c => d")
+	condition := parseCondition(s)
+	assert.Equal(t, "a & c => b & d", condition)
+}
+
+func TestInitRouterUrl(t *testing.T) {
+	routerConfig = &ConditionRouterConfig{}
+	loadYmlConfig(testyml, routerConfig)
+	url := initRouterUrl()
+	assert.Equal(t, url.Protocol, "route")
+	assert.Equal(t, url.Ip, "0.0.0.0")
 }
