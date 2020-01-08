@@ -212,7 +212,15 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 	p.Service.Version = request.svcUrl.GetParam(constant.VERSION_KEY, "")
 	p.Service.Group = request.svcUrl.GetParam(constant.GROUP_KEY, "")
 	p.Service.Method = request.method
+
 	p.Service.Timeout = c.opts.RequestTimeout
+	var timeout = request.svcUrl.GetParam(strings.Join([]string{constant.METHOD_KEYS, request.method + constant.RETRIES_KEY}, "."), "")
+	if len(timeout) != 0 {
+		if t, err := time.ParseDuration(timeout); err == nil {
+			p.Service.Timeout = t
+		}
+	}
+
 	p.Header.SerialID = byte(S_Dubbo)
 	p.Body = hessian.NewRequest(request.args, request.atta)
 
