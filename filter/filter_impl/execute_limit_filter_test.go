@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package default_filters
+package filter_impl
 
 import (
 	"net/url"
