@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package default_filters
+package filter_impl
 
 import (
 	"net/url"
@@ -24,7 +24,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/filter"
-	"github.com/apache/dubbo-go/filter/default_filters/tps"
+	"github.com/apache/dubbo-go/filter/filter_impl/tps"
 	common2 "github.com/apache/dubbo-go/filter/handler"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
