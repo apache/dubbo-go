@@ -40,27 +40,28 @@ import (
 )
 
 type ReferenceConfig struct {
-	context       context.Context
-	pxy           *proxy.Proxy
-	id            string
-	InterfaceName string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
-	Check         *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
-	Url           string            `yaml:"url"  json:"url,omitempty" property:"url"`
-	Filter        string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	Protocol      string            `default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	Registry      string            `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
-	Cluster       string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
-	Loadbalance   string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
-	Retries       string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
-	Group         string            `yaml:"group"  json:"group,omitempty" property:"group"`
-	Version       string            `yaml:"version"  json:"version,omitempty" property:"version"`
-	Methods       []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
-	Async         bool              `yaml:"async"  json:"async,omitempty" property:"async"`
-	Params        map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
-	invoker       protocol.Invoker
-	urls          []*common.URL
-	Generic       bool `yaml:"generic"  json:"generic,omitempty" property:"generic"`
-	Sticky        bool `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
+	context        context.Context
+	pxy            *proxy.Proxy
+	id             string
+	InterfaceName  string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
+	Check          *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
+	Url            string            `yaml:"url"  json:"url,omitempty" property:"url"`
+	Filter         string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	Protocol       string            `default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	Registry       string            `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
+	Cluster        string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
+	Loadbalance    string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
+	Retries        string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
+	Group          string            `yaml:"group"  json:"group,omitempty" property:"group"`
+	Version        string            `yaml:"version"  json:"version,omitempty" property:"version"`
+	Methods        []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
+	Async          bool              `yaml:"async"  json:"async,omitempty" property:"async"`
+	Params         map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
+	invoker        protocol.Invoker
+	urls           []*common.URL
+	Generic        bool   `yaml:"generic"  json:"generic,omitempty" property:"generic"`
+	Sticky         bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
+	RequestTimeout string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
 }
 
 func (c *ReferenceConfig) Prefix() string {
@@ -174,6 +175,9 @@ func (refconfig *ReferenceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.VERSION_KEY, refconfig.Version)
 	urlMap.Set(constant.GENERIC_KEY, strconv.FormatBool(refconfig.Generic))
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
+	if len(refconfig.RequestTimeout) != 0 {
+		urlMap.Set(constant.TIMEOUT_KEY, refconfig.RequestTimeout)
+	}
 	//getty invoke async or sync
 	urlMap.Set(constant.ASYNC_KEY, strconv.FormatBool(refconfig.Async))
 	urlMap.Set(constant.STICKY_KEY, strconv.FormatBool(refconfig.Sticky))
@@ -198,6 +202,9 @@ func (refconfig *ReferenceConfig) getUrlMap() url.Values {
 		urlMap.Set("methods."+v.Name+"."+constant.LOADBALANCE_KEY, v.Loadbalance)
 		urlMap.Set("methods."+v.Name+"."+constant.RETRIES_KEY, v.Retries)
 		urlMap.Set("methods."+v.Name+"."+constant.STICKY_KEY, strconv.FormatBool(v.Sticky))
+		if len(v.RequestTimeout) != 0 {
+			urlMap.Set("methods."+v.Name+"."+constant.TIMEOUT_KEY, v.RequestTimeout)
+		}
 	}
 
 	return urlMap
