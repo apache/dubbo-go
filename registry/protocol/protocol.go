@@ -20,6 +20,9 @@ package protocol
 import (
 	"strings"
 	"sync"
+
+	"github.com/apache/dubbo-go/cluster"
+	"github.com/apache/dubbo-go/cluster/router/router_chain"
 )
 
 import (
@@ -121,6 +124,10 @@ func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 	}
 	go directory.Subscribe(serviceUrl)
 
+	chain := router_chain.NewRouterChain(serviceUrl)
+	if chain != nil {
+		//directory.SetRouters(chain.)
+	}
 	//new cluster invoker
 	cluster := extension.GetCluster(serviceUrl.GetParam(constant.CLUSTER_KEY, constant.DEFAULT_CLUSTER))
 
