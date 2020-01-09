@@ -290,6 +290,7 @@ func (z *ZookeeperClient) RegisterEvent(zkPath string, event *chan struct{}) {
 	z.Lock()
 	a := z.eventRegistry[zkPath]
 	a = append(a, event)
+
 	z.eventRegistry[zkPath] = a
 	logger.Debugf("zkClient{%s} register event{path:%s, ptr:%p}", z.name, zkPath, event)
 	z.Unlock()
