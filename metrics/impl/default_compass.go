@@ -94,10 +94,10 @@ func (cp *DefaultCompass) GetFiveMinuteRate() float64 {
 
 func (cp *DefaultCompass) GetMeanRate() float64 {
 	count := cp.GetCount()
-	if count == 0 {
+	elapsed := cp.clock.GetTick() - cp.startTime
+	if count == 0 || elapsed <= 0 {
 		return 0
 	}
-	elapsed := cp.clock.GetTick() - cp.startTime
 	return float64(count) / float64(elapsed) * float64(time.Second.Nanoseconds())
 }
 
