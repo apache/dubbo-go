@@ -28,7 +28,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
-	"github.com/dubbogo/gost/container/gxset"
+	gxset "github.com/dubbogo/gost/container/set"
 )
 
 var RouterUrlSet = gxset.NewSet()
