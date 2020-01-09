@@ -19,6 +19,8 @@ package directory
 
 import (
 	"context"
+	"encoding/base64"
+	gxnet "github.com/dubbogo/gost/net"
 	"net/url"
 	"strconv"
 	"testing"
@@ -31,6 +33,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/cluster/cluster_impl"
+	_ "github.com/apache/dubbo-go/cluster/router"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -200,4 +203,21 @@ func normalRegistryDir(noMockEvent ...bool) (*registryDirectory, *registry.MockR
 		}
 	}
 	return registryDirectory, mockRegistry.(*registry.MockRegistry)
+}
+
+func TestToRouter(t *testing.T) {
+	localIP, _ := gxnet.GetLocalIP()
+	rule := base64.URLEncoding.EncodeToString([]byte("host = " + localIP + " => " + " host = 10.20.3.3"))
+	url, _ := common.NewURL(
+		context.TODO(),
+		"dubbo://0.0.0.0/com.foo.BarService",
+		common.WithParamsValue(constant.RULE_KEY, rule),
+		common.WithParamsValue(constant.ROUTER_KEY, "condition"),
+	)
+	urls := make([]*common.URL, 0)
+	urls = append(urls, &url)
+	routers := toRouters(urls)
+	assert.Equal(t, 1, len(routers))
+	router := routers[0]
+	assert.Equal(t, "condition", router.Url().Protocol)
 }

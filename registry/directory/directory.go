@@ -18,7 +18,9 @@
 package directory
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 )
@@ -127,23 +129,23 @@ func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 		}
 		switch res.Action {
 		case remoting.EventTypeAdd:
-			//dirUrl := &res.Service
-			//var urls []*common.URL
-			//
-			//for _, v := range dirUrl.GetBackupUrls() {
-			//	p := v.Protocol
-			//	category := v.GetParam(constant.CATEGORY_KEY, constant.PROVIDERS_CATEGORY)
-			//	if strings.EqualFold(category, constant.ROUTERS_CATEGORY) || strings.EqualFold(constant.ROUTE_PROTOCOL, p) {
-			//		urls = append(urls, v)
-			//	}
-			//}
-			//
-			//if len(urls) > 0 {
-			//	routers := toRouters(urls)
-			//	if len(routers) > 0 {
-			//		dir.SetRouters(routers)
-			//	}
-			//}
+			dirUrl := &res.Service
+			var urls []*common.URL
+
+			for _, v := range dirUrl.GetBackupUrls() {
+				p := v.Protocol
+				category := v.GetParam(constant.CATEGORY_KEY, constant.PROVIDERS_CATEGORY)
+				if strings.EqualFold(category, constant.ROUTERS_CATEGORY) || strings.EqualFold(constant.ROUTE_PROTOCOL, p) {
+					urls = append(urls, v)
+				}
+			}
+
+			if len(urls) > 0 {
+				routers := toRouters(urls)
+				if len(routers) > 0 {
+					dir.SetRouters(routers)
+				}
+			}
 
 			//dir.cacheService.EventTypeAdd(res.Path, dir.serviceTTL)
 			dir.cacheInvoker(url)
@@ -163,7 +165,34 @@ func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 }
 
 func toRouters(urls []*common.URL) []cluster.Router {
-	return nil
+	if urls == nil || len(urls) == 0 {
+		return nil
+	}
+
+	routerMap := gxset.NewSet()
+	for _, url := range urls {
+		if url.Protocol == constant.EMPTY_PROTOCOL {
+			continue
+		}
+		routerKey := url.GetParam(constant.ROUTER_KEY, "")
+		if routerKey == "" {
+			continue
+		}
+		url.Protocol = routerKey
+		factory := extension.GetRouterFactory(url.GetParam(constant.ROUTER_KEY, "condition"))
+		router, e := factory.Router(url)
+		if e != nil {
+			logger.Error("factory.Router(url){%s} , error : %s", url, e)
+		}
+		routerMap.Add(router)
+	}
+
+	routers := make([]cluster.Router, 0)
+	for _, v := range routerMap.Values() {
+		routers = append(routers, v.(cluster.Router))
+	}
+
+	return routers
 }
 
 func (dir *registryDirectory) toGroupInvokers() []protocol.Invoker {
