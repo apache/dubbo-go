@@ -19,6 +19,8 @@ package directory
 
 import (
 	"sync"
+
+	"github.com/apache/dubbo-go/cluster/router/router_chain"
 )
 import (
 	"go.uber.org/atomic"
@@ -34,11 +36,12 @@ import (
 var RouterUrlSet = gxset.NewSet()
 
 type BaseDirectory struct {
-	url       *common.URL
-	destroyed *atomic.Bool
-	routers   []cluster.Router
-	mutex     sync.Mutex
-	once      sync.Once
+	url         *common.URL
+	destroyed   *atomic.Bool
+	routers     []cluster.Router
+	mutex       sync.Mutex
+	once        sync.Once
+	routerChain *router_chain.RouterChain
 }
 
 func NewBaseDirectory(url *common.URL) BaseDirectory {

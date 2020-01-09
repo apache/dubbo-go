@@ -36,7 +36,7 @@ func GetRouterFactory(name string) cluster.RouterFactory {
 	return routers[name]()
 
 }
-func GetRouterFactorys() []cluster.RouterFactory {
+func GetRouterFactories() []cluster.RouterFactory {
 	var factorys []cluster.RouterFactory
 
 	for _, value := range routers {
