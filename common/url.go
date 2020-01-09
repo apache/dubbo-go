@@ -31,7 +31,7 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/container/gxset"
+	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/jinzhu/copier"
 	perrors "github.com/pkg/errors"
 	"github.com/satori/go.uuid"
@@ -553,7 +553,7 @@ func MergeUrl(serviceUrl *URL, referenceUrl *URL) *URL {
 		return true
 	})
 	//loadBalance,cluster,retries strategy config
-	methodConfigMergeFcn := mergeNormalParam(mergedUrl, referenceUrl, []string{constant.LOADBALANCE_KEY, constant.CLUSTER_KEY, constant.RETRIES_KEY})
+	methodConfigMergeFcn := mergeNormalParam(mergedUrl, referenceUrl, []string{constant.LOADBALANCE_KEY, constant.CLUSTER_KEY, constant.RETRIES_KEY, constant.TIMEOUT_KEY})
 
 	//remote timestamp
 	if v := serviceUrl.GetParam(constant.TIMESTAMP_KEY, ""); len(v) > 0 {
