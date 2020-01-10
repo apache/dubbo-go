@@ -60,7 +60,7 @@ func referNormal(t *testing.T, regProtocol *registryProtocol) {
 
 	url.SubURL = &suburl
 
-	invoker := regProtocol.Refer(url)
+	invoker := regProtocol.Refer(url, nil)
 	assert.IsType(t, &protocol.BaseInvoker{}, invoker)
 	assert.Equal(t, invoker.GetUrl().String(), url.String())
 }
@@ -85,7 +85,7 @@ func TestMultiRegRefer(t *testing.T) {
 
 	url2.SubURL = &suburl2
 
-	regProtocol.Refer(url2)
+	regProtocol.Refer(url2, nil)
 	var count int
 	regProtocol.registries.Range(func(key, value interface{}) bool {
 		count++
@@ -107,7 +107,7 @@ func TestOneRegRefer(t *testing.T) {
 
 	url2.SubURL = &suburl2
 
-	regProtocol.Refer(url2)
+	regProtocol.Refer(url2, nil)
 	var count int
 	regProtocol.registries.Range(func(key, value interface{}) bool {
 		count++
