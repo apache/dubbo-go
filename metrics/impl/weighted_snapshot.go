@@ -15,22 +15,40 @@
  * limitations under the License.
  */
 
-package metrics
+package impl
 
-// A statistically representative reservoir of a data stream.
-type Reservoir interface {
-	// Returns the number of values recorded.
-	Size() int
-	// Adds a new recorded value to the reservoir.
-	UpdateN(value int64)
-	// Returns a snapshot of the reservoir's values.
-	GetSnapshot() Snapshot
+import (
+	"github.com/Workiva/go-datastructures/common"
+)
+
+type WeightedSnapshot struct {
+	
 }
 
-type ReservoirType int
+type WeightedSample struct {
+	key float64
+	value int64
+	weight float64
+}
 
-const (
-	BucketReservoirType ReservoirType = iota
-	UniformReservoirType
-	ExponentiallyDecayingReservoirType
-)
+func (w *WeightedSample) Compare(other common.Comparator) int {
+	sample := other.(*WeightedSample)
+	if w.key < sample.key {
+		return -1
+	}
+
+	if w.key > sample.key {
+		return 1
+	}
+	return 0
+}
+
+func NewWeightSample(key float64, value int64, weight float64) *WeightedSample {
+	return &WeightedSample{
+		key:    0,
+		value:  0,
+		weight: 0,
+	}
+}
+
+

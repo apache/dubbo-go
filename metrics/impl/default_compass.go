@@ -18,7 +18,6 @@
 package impl
 
 import (
-	"errors"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -213,17 +212,19 @@ func (cp *DefaultCompass) tickIfNecessary() {
 
 func NewCompassWithType(reservoirType metrics.ReservoirType, clock metrics.Clock,
 	numOfBucket int, bucketInterval time.Duration,
-	maxErrorCodeCount int, maxAddonCount int) (metrics.Compass, error) {
+	maxErrorCodeCount int, maxAddonCount int) metrics.Compass {
 	totalCount := newBucketCounterImpl(bucketInterval, numOfBucket, clock, true)
 	now := clock.GetTime()
 	var reservoir metrics.Reservoir
 	switch reservoirType {
+	case metrics.ExponentiallyDecayingReservoirType:
+		reservoir = NewExponentiallyDecayingReservoir(EdrDefaultSize, EdrDefaultAlpha, clock)
 	case metrics.BucketReservoirType:
 		reservoir = NewBucketReservoir(bucketInterval, numOfBucket, clock, totalCount)
 	case metrics.UniformReservoirType:
 		reservoir = NewUniformReservoir(defaultUniformReservoirSize)
 	default:
-		return nil, errors.New("This ReservoirType could not be handled. ")
+		reservoir = NewExponentiallyDecayingReservoir(EdrDefaultSize, EdrDefaultAlpha, clock)
 	}
 
 	return &DefaultCompass{
@@ -240,7 +241,7 @@ func NewCompassWithType(reservoirType metrics.ReservoirType, clock metrics.Clock
 		successCount: newBucketCounterImpl(bucketInterval, numOfBucket, clock, true),
 		errorCodes:   make(map[string]metrics.BucketCounter, maxErrorCodeCount),
 		addons:       make(map[string]metrics.BucketCounter, maxAddonCount),
-	}, nil
+	}
 }
 
 func NewCompass(reservoir metrics.Reservoir, clock metrics.Clock,
