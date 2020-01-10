@@ -125,10 +125,9 @@ func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 		} else if url.Protocol == constant.ROUTER_PROTOCOL || //2.for router
 			url.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY) == constant.ROUTER_CATEGORY {
 			url = nil
-			//TODO: router
 		}
 		switch res.Action {
-		case remoting.EventTypeAdd:
+		case remoting.EventTypeAdd, remoting.EventTypeUpdate:
 			dirUrl := &res.Service
 			var urls []*common.URL
 
