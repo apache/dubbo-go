@@ -95,6 +95,15 @@ func TestDefaultCompass_UpdateWithError(t *testing.T) {
 
 }
 
+func TestDefaultCompass_Rate(t *testing.T) {
+	clock := &ManualClock{}
+	compass, _ := NewCompassWithType(metrics.BucketReservoirType, clock, 10, 60*time.Second, 10, 5)
+	assert.True(t, equals(0.0, compass.GetMeanRate(), 0.0001))
+	assert.True(t, equals(0.0, compass.GetOneMinuteRate(), 0.0001))
+	assert.True(t, equals(0.0, compass.GetFiveMinuteRate(), 0.0001))
+	assert.True(t, equals(0.0, compass.GetFifteenMinuteRate(), 0.0001))
+}
+
 type mockClock struct {
 	val int64
 }

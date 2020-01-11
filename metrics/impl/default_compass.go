@@ -78,6 +78,34 @@ type DefaultCompass struct {
 	reservoir metrics.Reservoir
 }
 
+func (cp *DefaultCompass) GetInstantCountInterval() time.Duration {
+	return cp.bucketInterval
+}
+
+func (cp *DefaultCompass) GetFifteenMinuteRate() float64 {
+	cp.tickIfNecessary()
+	return cp.m15Rate.GetRate(time.Second)
+}
+
+func (cp *DefaultCompass) GetFiveMinuteRate() float64 {
+	cp.tickIfNecessary()
+	return cp.m5Rate.GetRate(time.Second)
+}
+
+func (cp *DefaultCompass) GetMeanRate() float64 {
+	count := cp.GetCount()
+	elapsed := cp.clock.GetTick() - cp.startTime
+	if count == 0 || elapsed <= 0 {
+		return 0
+	}
+	return float64(count) / float64(elapsed) * float64(time.Second.Nanoseconds())
+}
+
+func (cp *DefaultCompass) GetOneMinuteRate() float64 {
+	cp.tickIfNecessary()
+	return cp.m1Rate.GetRate(time.Second)
+}
+
 func (cp *DefaultCompass) GetBucketSuccessCount() metrics.BucketCounter {
 	return cp.successCount
 }
