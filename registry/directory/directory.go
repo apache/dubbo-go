@@ -18,7 +18,6 @@
 package directory
 
 import (
-	gxset "github.com/dubbogo/gost/container/set"
 	"reflect"
 	"strings"
 	"sync"
@@ -44,6 +43,7 @@ import (
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting"
+	gxset "github.com/dubbogo/gost/container/set"
 )
 
 type Options struct {

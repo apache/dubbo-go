@@ -20,7 +20,6 @@ package directory
 import (
 	"context"
 	"encoding/base64"
-	gxnet "github.com/dubbogo/gost/net"
 	"net/url"
 	"strconv"
 	"testing"
@@ -42,6 +41,7 @@ import (
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting"
+	gxnet "github.com/dubbogo/gost/net"
 )
 
 func init() {
