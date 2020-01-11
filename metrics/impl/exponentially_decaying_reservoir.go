@@ -19,6 +19,7 @@ package impl
 
 import (
 	"math"
+	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -53,7 +54,7 @@ type ExponentiallyDecayingReservoir struct {
 	values        *skip.SkipList
 	rwMutex       sync.RWMutex
 	alpha         float64
-	size          int32
+	size          int64
 	count         int64
 	startTime     int64
 	nextScaleTime int64
@@ -69,7 +70,42 @@ func (rsv *ExponentiallyDecayingReservoir) Size() int {
 
 func (rsv *ExponentiallyDecayingReservoir) UpdateN(value int64) {
 	timestamp := currentTimeInSecond(rsv.clock.GetTime())
-	
+
+	itemWeight := rsv.weight(timestamp - rsv.startTime)
+	randSource := rand.NewSource(time.Now().UnixNano())
+	randGenerator := rand.New(randSource)
+	priority := itemWeight / randGenerator.Float64()
+
+	rsv.rwMutex.Lock()
+	defer rsv.rwMutex.Unlock()
+
+	rsv.count++
+	sample := NewWeightSample(priority, value, itemWeight)
+	if rsv.count <= rsv.size {
+		rsv.values.Insert(sample)
+		return
+	}
+
+	// replace one sample
+	samples := rsv.GetValues()
+	// there is always at least one element
+	first := samples[0]
+	if first.key >= priority {
+		// all samples' priority(key) are bigger, we just return. Doesn't need to replace
+		return
+	}
+
+	targetSample := rsv.values.Insert(sample)
+
+	if len(targetSample) == 0 {
+		// there is not any sample with the priority in the origin values. It means that we don't override any sample.
+		// so we remove first sample which is the lowest priority sample
+		rsv.values.Delete(first)
+	}
+}
+
+func (rsv *ExponentiallyDecayingReservoir) weight(t int64) float64 {
+	return math.Exp(rsv.alpha * float64(t))
 }
 
 func (rsv *ExponentiallyDecayingReservoir) rescaleIfNeeded() {
@@ -97,16 +133,16 @@ func (rsv *ExponentiallyDecayingReservoir) rescaleIfNeeded() {
  * landmark L′ (and then use this new L′ at query time). This can be done with
  * a linear pass over whatever data structure is being used."
  */
-func (rsv *ExponentiallyDecayingReservoir) rescale(now int64, next int64)  {
+func (rsv *ExponentiallyDecayingReservoir) rescale(now int64, next int64) {
 
-	if atomic.CompareAndSwapInt64(&rsv.nextScaleTime, next, now + edrRescaleThreshold) {
+	if atomic.CompareAndSwapInt64(&rsv.nextScaleTime, next, now+edrRescaleThreshold) {
 		// win the race condition, so we will lock and then rescale
 		rsv.rwMutex.Lock()
 		defer rsv.rwMutex.Unlock()
 		oldStartTime := rsv.startTime
 		rsv.startTime = currentTimeInSecond(rsv.clock.GetTime())
 
-		scalingFactor := math.Exp(-rsv.alpha * float64(rsv.startTime - oldStartTime))
+		scalingFactor := math.Exp(-rsv.alpha * float64(rsv.startTime-oldStartTime))
 
 		if scalingFactor == 0 {
 			rsv.values = skip.New(int32(0))
@@ -114,8 +150,26 @@ func (rsv *ExponentiallyDecayingReservoir) rescale(now int64, next int64)  {
 			return
 		}
 
-		// rsv.values.Iter(NewWeightSample(math.Min))
+		samples := rsv.GetValues()
+		for _, smp := range samples {
+			// recalculate the samples
+			rsv.values.Delete(smp)
+			newSmp := NewWeightSample(smp.key*scalingFactor, smp.value, smp.weight*scalingFactor)
+			rsv.values.Insert(newSmp)
+		}
+		rsv.count = int64(rsv.values.Len())
 	}
+}
+
+func (rsv *ExponentiallyDecayingReservoir) GetValues() []*WeightedSample {
+
+	// all samples' key is positive, so we create a key-0 sample to get the iterator which contains all values
+	iter := rsv.values.Iter(NewWeightSample(0, 0, 0))
+	samples := make([]*WeightedSample, 0, rsv.values.Len())
+	for iter.Next() {
+		samples = append(samples, iter.Value().(*WeightedSample))
+	}
+	return samples
 }
 
 func (rsv *ExponentiallyDecayingReservoir) GetSnapshot() metrics.Snapshot {
