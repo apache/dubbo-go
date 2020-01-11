@@ -73,6 +73,7 @@ Finished List:
     * [AccessLogFilter](https://github.com/apache/dubbo-go/pull/214)
     * [TpsLimitFilter](https://github.com/apache/dubbo-go/pull/237)
     * [ExecuteLimitFilter](https://github.com/apache/dubbo-go/pull/246)
+    * [GenericServiceFilter](https://github.com/apache/dubbo-go/pull/291)
     
 - Invoke
     * [generic invoke](https://github.com/apache/dubbo-go/pull/122)
