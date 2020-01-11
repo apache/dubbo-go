@@ -1,11 +1,4 @@
 # dubbo router yaml configure file
-rawRule: "kkk"
-scope: "dubbo"
 priority: 1
-enabled: false
-dynamic: true
-valid: false
 force: true
-runtime: false
-key: "abc"
 conditions : ["a => b","c => d"]
