@@ -20,11 +20,13 @@ package router
 import (
 	"context"
 	"testing"
-
-	"github.com/apache/dubbo-go/common"
 )
 import (
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
 )
 
 func TestIsMatchInternalPattern(t *testing.T) {

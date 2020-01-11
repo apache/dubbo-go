@@ -19,7 +19,8 @@ package config
 import (
 	"strings"
 	"testing"
-
+)
+import (
 	"github.com/stretchr/testify/assert"
 )
 
