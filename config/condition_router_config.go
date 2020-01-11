@@ -39,15 +39,8 @@ var (
 // conditionRouterConfig
 /////////////////////////
 type ConditionRouterConfig struct {
-	RawRule    string   `yaml:"rawRule"`
-	Scope      string   `yaml:"scope"`
 	Priority   int      `yaml:"priority"`
-	Enabled    bool     `yaml:"enabled" default:"true"`
-	Dynamic    bool     `yaml:"dynamic" default:"false"`
-	Valid      bool     `yaml:"valid" default:"true"`
 	Force      bool     `yaml:"force" default:"false"`
-	Runtime    bool     `yaml:"runtime" default:"true"`
-	Key        string   `yaml:"key"`
 	Conditions []string `yaml:"conditions"`
 }
 
@@ -85,12 +78,8 @@ func initRouterUrl() *common.URL {
 		common.WithProtocol(constant.ROUTE_PROTOCOL),
 		common.WithIp(constant.ANYHOST_VALUE),
 		common.WithParams(url.Values{}),
-		common.WithParamsValue("enabled", strconv.FormatBool(routerConfig.Enabled)),
-		common.WithParamsValue("dynamic", strconv.FormatBool(routerConfig.Dynamic)),
 		common.WithParamsValue("force", strconv.FormatBool(routerConfig.Force)),
-		common.WithParamsValue("runtime", strconv.FormatBool(routerConfig.Runtime)),
 		common.WithParamsValue("priority", strconv.Itoa(routerConfig.Priority)),
-		common.WithParamsValue("scope", routerConfig.Scope),
 		common.WithParamsValue(constant.RULE_KEY, base64.URLEncoding.EncodeToString([]byte(rule))),
 		common.WithParamsValue("router", "condition"),
 		common.WithParamsValue(constant.CATEGORY_KEY, constant.ROUTERS_CATEGORY))

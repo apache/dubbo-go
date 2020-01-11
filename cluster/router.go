@@ -29,7 +29,7 @@ type RouterFactory interface {
 }
 
 type Router interface {
-	Route([]protocol.Invoker, common.URL, protocol.Invocation) []protocol.Invoker
+	Route([]protocol.Invoker, *common.URL, protocol.Invocation) []protocol.Invoker
 	Priority() int64
 	Url() common.URL
 }

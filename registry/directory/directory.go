@@ -277,7 +277,7 @@ func (dir *registryDirectory) List(invocation protocol.Invocation) []protocol.In
 	if len(localRouters) > 0 {
 		for _, router := range localRouters {
 			if reflect.ValueOf(router.Url()).IsValid() || router.Url().GetParamBool(constant.RUNTIME_KEY, false) {
-				invokers = router.Route(invokers, dir.GetUrl(), invocation)
+				invokers = router.Route(invokers, dir.cacheOriginUrl, invocation)
 			}
 		}
 	}
