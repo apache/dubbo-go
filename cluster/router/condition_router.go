@@ -117,7 +117,7 @@ func (c *ConditionRouter) Url() common.URL {
 }
 
 //Router determine the target server list.
-func (c *ConditionRouter) Route(invokers []protocol.Invoker, url common.URL, invocation protocol.Invocation) []protocol.Invoker {
+func (c *ConditionRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	if len(invokers) == 0 {
 		return invokers
 	}
@@ -139,7 +139,8 @@ func (c *ConditionRouter) Route(invokers []protocol.Invoker, url common.URL, inv
 		return result
 	}
 	for _, invoker := range invokers {
-		isMatchThen, err := c.MatchThen(invoker.GetUrl(), url)
+		invokerUrl := invoker.GetUrl()
+		isMatchThen, err := c.MatchThen(&invokerUrl, url)
 		if err != nil {
 			var urls []string
 			for _, invo := range invokers {
@@ -231,14 +232,14 @@ func getStartIndex(rule string) int {
 }
 
 //
-func (c *ConditionRouter) MatchWhen(url common.URL, invocation protocol.Invocation) (bool, error) {
-	condition, err := matchCondition(c.WhenCondition, &url, nil, invocation)
+func (c *ConditionRouter) MatchWhen(url *common.URL, invocation protocol.Invocation) (bool, error) {
+	condition, err := matchCondition(c.WhenCondition, url, nil, invocation)
 	return len(c.WhenCondition) == 0 || condition, err
 }
 
 //MatchThen MatchThen
-func (c *ConditionRouter) MatchThen(url common.URL, param common.URL) (bool, error) {
-	condition, err := matchCondition(c.ThenCondition, &url, &param, nil)
+func (c *ConditionRouter) MatchThen(url *common.URL, param *common.URL) (bool, error) {
+	condition, err := matchCondition(c.ThenCondition, url, param, nil)
 	return len(c.ThenCondition) > 0 && condition, err
 }
 

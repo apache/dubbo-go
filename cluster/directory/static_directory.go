@@ -67,7 +67,8 @@ func (dir *staticDirectory) List(invocation protocol.Invocation) []protocol.Invo
 	}
 	for _, router := range localRouters {
 		if reflect.ValueOf(router.Url()).IsNil() || router.Url().GetParamBool(constant.RUNTIME_KEY, false) {
-			return router.Route(invokers, dir.GetUrl(), invocation)
+			dirUrl := dir.GetUrl()
+			return router.Route(invokers, &dirUrl, invocation)
 		}
 	}
 	return invokers

@@ -74,23 +74,17 @@ func (dir *BaseDirectory) SetRouters(routers []cluster.Router) {
 	dir.routers = routers
 }
 func (dir *BaseDirectory) Routers() []cluster.Router {
-	var routers []cluster.Router
 	dir.once.Do(func() {
 		rs := RouterUrlSet.Values()
 		for _, r := range rs {
 			factory := extension.GetRouterFactory(r.(*common.URL).GetParam("router", "condition"))
 			router, err := factory.Router(r.(*common.URL))
-			if err == nil {
-				dir.routers = append(dir.routers, router)
+			if err != nil {
+				continue
 			}
-
-			routers = append(routers, router)
+			dir.routers = append(dir.routers, router)
 		}
 	})
-	if len(routers) > 0 {
-		return append(dir.routers, routers...)
-
-	}
 	return dir.routers
 }
 
