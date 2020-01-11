@@ -173,7 +173,9 @@ func (rsv *ExponentiallyDecayingReservoir) GetValues() []*WeightedSample {
 }
 
 func (rsv *ExponentiallyDecayingReservoir) GetSnapshot() metrics.Snapshot {
-	panic("implement me")
+	rsv.rwMutex.RLock()
+	defer rsv.rwMutex.RUnlock()
+	return NewWeightedSnapshot(rsv.GetValues())
 }
 
 func currentTimeInSecond(timeInMs int64) int64 {
