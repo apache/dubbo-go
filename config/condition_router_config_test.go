@@ -46,15 +46,8 @@ func TestLoadYmlConfig(t *testing.T) {
 	e := loadYmlConfig(testyml, routerConfig)
 	assert.Nil(t, e)
 	assert.NotNil(t, routerConfig)
-	assert.Equal(t, routerConfig.RawRule, "kkk")
-	assert.Equal(t, routerConfig.Scope, "dubbo")
 	assert.Equal(t, routerConfig.Priority, 1)
-	assert.Equal(t, routerConfig.Enabled, false)
-	assert.Equal(t, routerConfig.Dynamic, true)
-	assert.Equal(t, routerConfig.Valid, false)
 	assert.Equal(t, routerConfig.Force, true)
-	assert.Equal(t, routerConfig.Runtime, false)
-	assert.Equal(t, routerConfig.Key, "abc")
 	assert.Equal(t, len(routerConfig.Conditions), 2)
 }
 
@@ -62,15 +55,8 @@ func TestRouterInit(t *testing.T) {
 	e := RouterInit("testdata/router_config.yml")
 	assert.Nil(t, e)
 	assert.NotNil(t, routerConfig)
-	assert.Equal(t, routerConfig.RawRule, "kkk")
-	assert.Equal(t, routerConfig.Scope, "dubbo")
 	assert.Equal(t, routerConfig.Priority, 1)
-	assert.Equal(t, routerConfig.Enabled, false)
-	assert.Equal(t, routerConfig.Dynamic, true)
-	assert.Equal(t, routerConfig.Valid, false)
 	assert.Equal(t, routerConfig.Force, true)
-	assert.Equal(t, routerConfig.Runtime, false)
-	assert.Equal(t, routerConfig.Key, "abc")
 	assert.Equal(t, len(routerConfig.Conditions), 2)
 }
 
