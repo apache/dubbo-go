@@ -246,7 +246,7 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 	if session == nil {
 		return errSessionNotExist
 	}
-	defer func () {
+	defer func() {
 		if err == nil {
 			c.pool.put(conn)
 			return
