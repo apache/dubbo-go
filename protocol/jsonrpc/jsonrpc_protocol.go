@@ -67,7 +67,7 @@ func (jp *JsonrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	return exporter
 }
 
-func (jp *JsonrpcProtocol) Refer(url common.URL, impl interface{}) protocol.Invoker {
+func (jp *JsonrpcProtocol) Refer(url common.URL) protocol.Invoker {
 	//default requestTimeout
 	var requestTimeout = config.GetConsumerConfig().RequestTimeout
 

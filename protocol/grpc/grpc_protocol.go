@@ -78,8 +78,8 @@ func (gp *GrpcProtocol) openServer(url common.URL) {
 	}
 }
 
-func (gp *GrpcProtocol) Refer(url common.URL, impl interface{}) protocol.Invoker {
-	invoker := NewGrpcInvoker(url, NewClient(impl, url))
+func (gp *GrpcProtocol) Refer(url common.URL) protocol.Invoker {
+	invoker := NewGrpcInvoker(url, NewClient(url))
 	gp.SetInvokers(invoker)
 	logger.Infof("Refer service: %s", url.String())
 	return invoker
