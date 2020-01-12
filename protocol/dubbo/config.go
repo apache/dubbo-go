@@ -22,8 +22,8 @@ import (
 )
 
 import (
-	perrors "github.com/pkg/errors"
 	"github.com/dubbogo/getty"
+	perrors "github.com/pkg/errors"
 )
 
 type (
