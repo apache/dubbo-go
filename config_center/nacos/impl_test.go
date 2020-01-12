@@ -51,9 +51,9 @@ func initNacosData(t *testing.T) (*nacosDynamicConfiguration, error) {
 	dubbo.protocols.myDubbo.name=dubbo
 `
 	sucess, err := (*nacosConfiguration.client.Client).PublishConfig(vo.ConfigParam{
-		DataId:   "dubbo.properties",
-		Group:    "dubbo",
-		Content:  data,
+		DataId:  "dubbo.properties",
+		Group:   "dubbo",
+		Content: data,
 	})
 	assert.NoError(t, err)
 	if !sucess {
@@ -86,9 +86,9 @@ func Test_AddListener(t *testing.T) {
 	dubbo.protocols.myDubbo.name=dubbo
 `
 	sucess, err := (*nacos.client.Client).PublishConfig(vo.ConfigParam{
-		DataId:   "dubbo.properties",
-		Group:    "dubbo",
-		Content:  data,
+		DataId:  "dubbo.properties",
+		Group:   "dubbo",
+		Content: data,
 	})
 	assert.NoError(t, err)
 	if !sucess {
@@ -99,12 +99,12 @@ func Test_AddListener(t *testing.T) {
 
 }
 
-
 func Test_RemoveListener(t *testing.T) {
 	//TODO not supported in current go_nacos_sdk version
 }
+
 type mockDataListener struct {
-	wg	sync.WaitGroup
+	wg    sync.WaitGroup
 	event string
 }
 
