@@ -97,7 +97,7 @@ func (rsv *ExponentiallyDecayingReservoir) UpdateN(value int64) {
 
 	targetSample := rsv.values.Insert(sample)
 
-	if len(targetSample) == 0 {
+	if targetSample[0] == nil {
 		// there is not any sample with the priority in the origin values. It means that we don't override any sample.
 		// so we remove first sample which is the lowest priority sample
 		rsv.values.Delete(first)
@@ -182,10 +182,12 @@ func currentTimeInSecond(timeInMs int64) int64 {
 	return timeInMs / secondToMsRate
 }
 
-func NewExponentiallyDecayingReservoir(size int32, alpha float64, clock metrics.Clock) metrics.Reservoir {
+func NewExponentiallyDecayingReservoir(size int64, alpha float64, clock metrics.Clock) metrics.Reservoir {
 	return &ExponentiallyDecayingReservoir{
 		clock:         clock,
-		values:        skip.New(int32(1)),
+		values:        skip.New(uint32(1)),
+		size: size,
+		alpha: alpha,
 		startTime:     currentTimeInSecond(clock.GetTime()),
 		nextScaleTime: clock.GetTick() + edrRescaleThreshold,
 	}
