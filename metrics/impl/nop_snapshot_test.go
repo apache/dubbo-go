@@ -18,28 +18,23 @@
 package impl
 
 import (
-	"github.com/apache/dubbo-go/metrics"
+	"testing"
 )
 
-type NopMetricManager struct {
-	fastCompass metrics.FastCompass
-}
-
-func (n *NopMetricManager) GetCompass(groupName string, metricName *metrics.MetricName) metrics.Compass {
-	return nopCompass
-}
-
-func (n *NopMetricManager) IsEnable() bool {
-	return false
-}
-
-func (n *NopMetricManager) SetEnable(enable bool) {
-}
-
-func (n *NopMetricManager) GetFastCompass(name string, metricName *metrics.MetricName) metrics.FastCompass {
-	return nopFastCompass
-}
-
-func NewNopMetricManager() metrics.MetricManager {
-	return &NopMetricManager{}
+// just for codes coverage
+func TestNopSnapshot(t *testing.T) {
+	snapshot := nopSnapshot
+	snapshot.Get75thPercentile()
+	snapshot.GetMedian()
+	snapshot.GetMean()
+	snapshot.GetMax()
+	snapshot.GetValues()
+	snapshot.GetStdDev()
+	snapshot.GetMin()
+	snapshot.Get999thPercentile()
+	snapshot.Get99thPercentile()
+	snapshot.Get98thPercentile()
+	snapshot.Get95thPercentile()
+	snapshot.Size()
+	snapshot.GetValue(12)
 }

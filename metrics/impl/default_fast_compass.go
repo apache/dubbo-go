@@ -162,11 +162,11 @@ func (fc *FastCompassImpl) GetBucketInterval() time.Duration {
 	return fc.bucketInterval
 }
 
-func newFastCompass(duration time.Duration) metrics.FastCompass {
+func newFastCompass(duration time.Duration, bucketCount int) metrics.FastCompass {
 	return &FastCompassImpl{
 		maxSubCategoryCount: config.GetMetricConfig().GetMaxSubCategoryCount(),
 		bucketInterval:      duration,
-		numberOfBuckets:     defaultBucketCount,
+		numberOfBuckets:     bucketCount,
 		clock:               metrics.DefaultClock,
 		subCategoriesMutex:  sync.Mutex{},
 		subCategories:       make(map[string]metrics.BucketCounter),

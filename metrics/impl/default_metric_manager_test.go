@@ -38,7 +38,7 @@ func TestDefaultMetricManager_GetFastCompass(t *testing.T) {
 	groupName := "TestGroup"
 	name := metrics.NewMetricName("Test", nil, metrics.Minor)
 	fastCompass := manager.GetFastCompass(groupName, name)
-	assert.Equal(t, GetNopFastCompass(), fastCompass)
+	assert.Equal(t, nopFastCompass, fastCompass)
 
 	manager.SetEnable(true)
 	fastCompass = manager.GetFastCompass(groupName, name)

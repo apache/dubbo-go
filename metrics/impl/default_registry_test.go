@@ -30,7 +30,7 @@ import (
 	"github.com/apache/dubbo-go/metrics"
 )
 
-func TestMetricRegistryImpl(t *testing.T) {
+func TestMetricRegistryImpl_GetFastCompass(t *testing.T) {
 	registry := NewMetricRegistry(2)
 	result := registry.GetMetrics()
 	assert.Equal(t, 0, len(result))
@@ -58,5 +58,11 @@ func TestMetricRegistryImpl(t *testing.T) {
 	// over max count
 	registry.GetFastCompass(metrics.NewMetricName("Test1", nil, metrics.Minor))
 	fastCompass = registry.GetFastCompass(metrics.NewMetricName("Test2", nil, metrics.Minor))
-	assert.Equal(t, GetNopFastCompass(), fastCompass)
+	assert.Equal(t, nopFastCompass, fastCompass)
+}
+
+func TestMetricRegistryImpl_GetCompass(t *testing.T) {
+	registry := NewMetricRegistry(2)
+	compass := registry.GetCompass(metrics.NewMetricName("Test1", nil, metrics.Minor))
+	assert.NotNil(t, compass)
 }

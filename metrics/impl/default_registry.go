@@ -27,7 +27,7 @@ import (
 	"github.com/apache/dubbo-go/metrics"
 )
 
-type MetricRegistryImpl struct {
+type DefaultMetricRegistry struct {
 	metricsMap sync.Map
 
 	// record the metricsCount to avoid iterate the metricsMap
@@ -36,7 +36,7 @@ type MetricRegistryImpl struct {
 	maxMetricCount int
 }
 
-func (mri *MetricRegistryImpl) GetMetrics() map[string]*metrics.MetricNameToMetricEntry {
+func (mri *DefaultMetricRegistry) GetMetrics() map[string]*metrics.MetricNameToMetricEntry {
 	result := make(map[string]*metrics.MetricNameToMetricEntry, mri.metricsCount)
 	mri.metricsMap.Range(func(key, value interface{}) bool {
 		result[key.(string)] = value.(*metrics.MetricNameToMetricEntry)
@@ -45,7 +45,7 @@ func (mri *MetricRegistryImpl) GetMetrics() map[string]*metrics.MetricNameToMetr
 	return result
 }
 
-func (mri *MetricRegistryImpl) LastUpdateTime() int64 {
+func (mri *DefaultMetricRegistry) LastUpdateTime() int64 {
 	result := int64(0)
 	mri.metricsMap.Range(func(_, value interface{}) bool {
 		entry := value.(*metrics.MetricNameToMetricEntry)
@@ -57,35 +57,64 @@ func (mri *MetricRegistryImpl) LastUpdateTime() int64 {
 	return result
 }
 
-func (mri *MetricRegistryImpl) GetFastCompass(name *metrics.MetricName) metrics.FastCompass {
+func (mri *DefaultMetricRegistry) GetCompass(name *metrics.MetricName) metrics.Compass {
+	mc := config.GetMetricConfig()
+	return mri.getMetric(
+		name,
+		func() metrics.Metric {
+			return NewCompassWithType(
+				mc.GetReservoirType(),
+				metrics.DefaultClock,
+				mc.GetBucketCount(),
+				mc.GetLevelInterval(int(name.Level)),
+				mc.GetMaxCompassAddonCount(),
+				mc.GetMaxCompassAddonCount())
+		},
+		nopCompass).(metrics.Compass)
+}
+
+func (mri *DefaultMetricRegistry) GetFastCompass(name *metrics.MetricName) metrics.FastCompass {
+	mc := config.GetMetricConfig()
+	return mri.getMetric(
+		name,
+		func() metrics.Metric {
+			return newFastCompass(mc.GetLevelInterval(int(name.Level)), mc.GetBucketCount())
+		},
+		nopFastCompass).(metrics.FastCompass)
+}
+
+func (mri *DefaultMetricRegistry) getMetric(
+	name *metrics.MetricName,
+	creator func() metrics.Metric,
+	nopMetric metrics.Metric) metrics.Metric {
 	result, found := mri.metricsMap.Load(name.HashKey())
 	// fast path
 	if found {
-		return result.(*metrics.MetricNameToMetricEntry).Metric.(metrics.FastCompass)
+		return result.(*metrics.MetricNameToMetricEntry).Metric
 	}
 
 	// slow path
-	newFastCmps := newFastCompass(config.GetMetricConfig().GetLevelInterval(int(name.Level)))
+	newMetric := creator()
 
 	// because the metricsCount increase monotonically, so the check and do something works well
 	if int(mri.metricsCount) >= mri.maxMetricCount {
 		// we are over the limitation of max metric count per registry
-		newFastCmps = GetNopFastCompass()
+		newMetric = nopMetric
 	}
 
 	result, loaded := mri.metricsMap.LoadOrStore(name.HashKey(), &metrics.MetricNameToMetricEntry{
 		MetricName: name,
-		Metric:     newFastCmps,
+		Metric:     newMetric,
 	})
 	if !loaded {
 		// we store the new metric
 		atomic.AddInt32(&mri.metricsCount, 1)
 	}
-	return result.(*metrics.MetricNameToMetricEntry).Metric.(metrics.FastCompass)
+	return result.(*metrics.MetricNameToMetricEntry).Metric
 }
 
 func NewMetricRegistry(maxMetricCount int) metrics.MetricRegistry {
-	return &MetricRegistryImpl{
+	return &DefaultMetricRegistry{
 		maxMetricCount: maxMetricCount,
 		metricsMap:     sync.Map{},
 	}

@@ -26,6 +26,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/filter"
 	"github.com/apache/dubbo-go/metrics"
@@ -46,6 +47,7 @@ func init() {
 	extension.SetFilter(metricsFilterName, newMetricsFilter)
 }
 
+// TODO(how to fetch the error code?)
 type metricsFilter struct {
 	metricManger metrics.MetricManager
 }
@@ -78,6 +80,8 @@ func (mf *metricsFilter) OnResponse(result protocol.Result, invoker protocol.Inv
 }
 
 func (mf *metricsFilter) report(invoker protocol.Invoker, invocation protocol.Invocation, duration time.Duration, result string) {
+
+	// prepare metrics
 	serviceName := invoker.GetUrl().Service()
 	methodName := invocation.MethodName()
 	tags := make(map[string]string, 4)
@@ -91,11 +95,41 @@ func (mf *metricsFilter) report(invoker protocol.Invoker, invocation protocol.In
 		global = metrics.NewMetricName(constant.DubboConsumer, nil, metrics.Major)
 		method = metrics.NewMetricName(constant.DubboConsumer, tags, metrics.Normal)
 	}
-	mf.setCompassQuantity(result, duration, global, method)
+
+	mc := config.GetMetricConfig()
+	for _, metric := range mc.GetEnableMetrics() {
+
+		switch metric {
+		case "fastCompass":
+			mf.setFastCompassQuantity(result, duration, global, method)
+			continue
+		case "compass":
+			mf.setCompassQuantity(result, duration, global, method)
+			continue
+		default:
+			logger.Errorf("The metric can not be collected: %s", metric)
+		}
+	}
 }
 
 func (mf *metricsFilter) setCompassQuantity(result string, duration time.Duration, metricsNames ...*metrics.MetricName) {
 	for _, metricName := range metricsNames {
+		// record the collector, fc => fastCompass
+		metricName.Tags["c"] = "c"
+		compass := mf.metricManger.GetCompass(groupName, metricName)
+		if result == successKey {
+			compass.Update(duration)
+		} else {
+			compass.UpdateWithError(duration, false, result, "")
+		}
+
+	}
+}
+
+func (mf *metricsFilter) setFastCompassQuantity(result string, duration time.Duration, metricsNames ...*metrics.MetricName) {
+	for _, metricName := range metricsNames {
+		// record the collector, fc => fastCompass
+		metricName.Tags["c"] = "fc"
 		compass := mf.metricManger.GetFastCompass(groupName, metricName)
 		compass.Record(duration, result)
 	}

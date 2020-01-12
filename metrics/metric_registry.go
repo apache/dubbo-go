@@ -25,4 +25,6 @@ type MetricRegistry interface {
 	MetricSet
 
 	GetFastCompass(name *MetricName) FastCompass
+
+	GetCompass(name *MetricName) Compass
 }

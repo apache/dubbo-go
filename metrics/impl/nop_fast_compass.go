@@ -18,7 +18,6 @@
 package impl
 
 import (
-	"sync"
 	"time"
 )
 
@@ -64,14 +63,4 @@ func (n NopFastCompass) GetBucketInterval() time.Duration {
 	return time.Second
 }
 
-var (
-	nopFastCompassInstance *NopFastCompass
-	nopFastCompassOnce     sync.Once
-)
-
-func GetNopFastCompass() metrics.FastCompass {
-	nopFastCompassOnce.Do(func() {
-		nopFastCompassInstance = &NopFastCompass{}
-	})
-	return nopFastCompassInstance
-}
+var nopFastCompass = &NopFastCompass{}

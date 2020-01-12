@@ -18,28 +18,49 @@
 package impl
 
 import (
-	"github.com/apache/dubbo-go/metrics"
+	"time"
 )
 
-type NopMetricManager struct {
-	fastCompass metrics.FastCompass
+type NopBucketCounter struct {
 }
 
-func (n *NopMetricManager) GetCompass(groupName string, metricName *metrics.MetricName) metrics.Compass {
-	return nopCompass
+func (nbc *NopBucketCounter) LastUpdateTime() int64 {
+	return 0
 }
 
-func (n *NopMetricManager) IsEnable() bool {
-	return false
+func (nbc *NopBucketCounter) GetCount() int64 {
+	return 0
 }
 
-func (n *NopMetricManager) SetEnable(enable bool) {
+func (nbc *NopBucketCounter) Inc() {
+
 }
 
-func (n *NopMetricManager) GetFastCompass(name string, metricName *metrics.MetricName) metrics.FastCompass {
-	return nopFastCompass
+func (nbc *NopBucketCounter) IncN(n int64) {
 }
 
-func NewNopMetricManager() metrics.MetricManager {
-	return &NopMetricManager{}
+func (nbc *NopBucketCounter) Dec() {
 }
+
+func (nbc *NopBucketCounter) DecN(n int64) {
+}
+
+func (nbc *NopBucketCounter) Update() {
+}
+
+func (nbc *NopBucketCounter) UpdateN(n int64) {
+}
+
+func (nbc *NopBucketCounter) GetBucketCounts() map[int64]int64 {
+	return make(map[int64]int64, 0)
+}
+
+func (nbc *NopBucketCounter) GetBucketCountsSince(startTime int64) map[int64]int64 {
+	return make(map[int64]int64, 0)
+}
+
+func (nbc *NopBucketCounter) GetBucketInterval() time.Duration {
+	return 0
+}
+
+var nopBucketCounter = &NopBucketCounter{}

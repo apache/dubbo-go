@@ -18,28 +18,21 @@
 package impl
 
 import (
-	"github.com/apache/dubbo-go/metrics"
+	"testing"
 )
 
-type NopMetricManager struct {
-	fastCompass metrics.FastCompass
-}
-
-func (n *NopMetricManager) GetCompass(groupName string, metricName *metrics.MetricName) metrics.Compass {
-	return nopCompass
-}
-
-func (n *NopMetricManager) IsEnable() bool {
-	return false
-}
-
-func (n *NopMetricManager) SetEnable(enable bool) {
-}
-
-func (n *NopMetricManager) GetFastCompass(name string, metricName *metrics.MetricName) metrics.FastCompass {
-	return nopFastCompass
-}
-
-func NewNopMetricManager() metrics.MetricManager {
-	return &NopMetricManager{}
+// just for codes coverage
+func TestNopBucketCounter(t *testing.T) {
+	counter := nopBucketCounter
+	counter.Update()
+	counter.UpdateN(123)
+	counter.GetCount()
+	counter.GetBucketCounts()
+	counter.GetBucketCountsSince(123)
+	counter.LastUpdateTime()
+	counter.Inc()
+	counter.IncN(12)
+	counter.DecN(123)
+	counter.Dec()
+	counter.GetBucketInterval()
 }

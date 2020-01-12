@@ -18,28 +18,26 @@
 package impl
 
 import (
-	"github.com/apache/dubbo-go/metrics"
+	"testing"
 )
 
-type NopMetricManager struct {
-	fastCompass metrics.FastCompass
-}
-
-func (n *NopMetricManager) GetCompass(groupName string, metricName *metrics.MetricName) metrics.Compass {
-	return nopCompass
-}
-
-func (n *NopMetricManager) IsEnable() bool {
-	return false
-}
-
-func (n *NopMetricManager) SetEnable(enable bool) {
-}
-
-func (n *NopMetricManager) GetFastCompass(name string, metricName *metrics.MetricName) metrics.FastCompass {
-	return nopFastCompass
-}
-
-func NewNopMetricManager() metrics.MetricManager {
-	return &NopMetricManager{}
+func TestNopCompass(t *testing.T) {
+	compass := nopCompass
+	compass.LastUpdateTime()
+	compass.GetCount()
+	compass.Update(1)
+	compass.UpdateWithError(1, true, "s", "")
+	compass.GetSnapshot()
+	compass.GetFifteenMinuteRate()
+	compass.GetFiveMinuteRate()
+	compass.GetCount()
+	compass.GetOneMinuteRate()
+	compass.GetMeanRate()
+	compass.GetBucketSuccessCount()
+	compass.GetSuccessCount()
+	compass.GetInstantCount()
+	compass.GetAddonCounts()
+	compass.GetErrorCodeCounts()
+	compass.GetInstantCountInterval()
+	compass.GetInstantCountSince(123)
 }

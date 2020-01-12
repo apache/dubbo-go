@@ -28,11 +28,21 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 func TestMetricsFilter_Invoke(t *testing.T) {
+	mc := &config.MetricConfig{
+		Enables: []string{"all"},
+	}
+	pc := config.ProviderConfig{
+		BaseConfig: config.BaseConfig{
+			MetricConfig: mc,
+		},
+	}
+	config.SetProviderConfig(pc)
 	url, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&"+
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&"+
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&"+
