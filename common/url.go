@@ -31,7 +31,7 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/container/gxset"
+	"github.com/dubbogo/gost/container/set"
 	"github.com/jinzhu/copier"
 	perrors "github.com/pkg/errors"
 	"github.com/satori/go.uuid"

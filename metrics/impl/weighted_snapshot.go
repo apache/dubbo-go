@@ -21,9 +21,13 @@ import (
 	"errors"
 	"math"
 	"sort"
+)
 
+import (
 	"github.com/Workiva/go-datastructures/common"
+)
 
+import (
 	"github.com/apache/dubbo-go/metrics"
 )
 
@@ -192,7 +196,7 @@ func NewWeightedSnapshot(samples []*WeightedSample) metrics.Snapshot {
 	}
 
 	for i := 1; i < length; i++ {
-		result.quantiles [i] = result.quantiles[i-1] + result.normalizedWeights[i-1]
+		result.quantiles[i] = result.quantiles[i-1] + result.normalizedWeights[i-1]
 	}
 	return result
 }

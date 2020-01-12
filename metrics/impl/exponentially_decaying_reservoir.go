@@ -23,9 +23,13 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+)
 
+import (
 	"github.com/Workiva/go-datastructures/slice/skip"
+)
 
+import (
 	"github.com/apache/dubbo-go/metrics"
 )
 
@@ -69,6 +73,9 @@ func (rsv *ExponentiallyDecayingReservoir) Size() int {
 }
 
 func (rsv *ExponentiallyDecayingReservoir) UpdateN(value int64) {
+
+	rsv.rescaleIfNeeded()
+
 	timestamp := currentTimeInSecond(rsv.clock.GetTime())
 
 	itemWeight := rsv.weight(timestamp - rsv.startTime)
@@ -95,12 +102,25 @@ func (rsv *ExponentiallyDecayingReservoir) UpdateN(value int64) {
 		return
 	}
 
-	targetSample := rsv.values.Insert(sample)
+	targetSample := rsv.values.Get(sample)
 
-	if targetSample[0] == nil {
+	if len(targetSample) > 0 && targetSample[0] != nil {
 		// there is not any sample with the priority in the origin values. It means that we don't override any sample.
 		// so we remove first sample which is the lowest priority sample
-		rsv.values.Delete(first)
+		ws := targetSample[0].(*WeightedSample)
+		ws.value = value
+		ws.weight = itemWeight
+
+	} else {
+		// ensure remove at least one item
+		for {
+			deleted := rsv.values.Delete(first)
+			if deleted != nil || rsv.values.Len() == 0 {
+				break
+			}
+			first = rsv.GetValues()[0]
+		}
+		rsv.values.Insert(sample)
 	}
 }
 
@@ -145,7 +165,7 @@ func (rsv *ExponentiallyDecayingReservoir) rescale(now int64, next int64) {
 		scalingFactor := math.Exp(-rsv.alpha * float64(rsv.startTime-oldStartTime))
 
 		if scalingFactor == 0 {
-			rsv.values = skip.New(int32(0))
+			rsv.values = skip.New(uint32(0))
 			rsv.count = 0
 			return
 		}
@@ -167,12 +187,14 @@ func (rsv *ExponentiallyDecayingReservoir) GetValues() []*WeightedSample {
 	iter := rsv.values.Iter(NewWeightSample(0, 0, 0))
 	samples := make([]*WeightedSample, 0, rsv.values.Len())
 	for iter.Next() {
-		samples = append(samples, iter.Value().(*WeightedSample))
+		value := iter.Value().(*WeightedSample)
+		samples = append(samples, value)
 	}
 	return samples
 }
 
 func (rsv *ExponentiallyDecayingReservoir) GetSnapshot() metrics.Snapshot {
+	rsv.rescaleIfNeeded()
 	rsv.rwMutex.RLock()
 	defer rsv.rwMutex.RUnlock()
 	return NewWeightedSnapshot(rsv.GetValues())
@@ -186,8 +208,8 @@ func NewExponentiallyDecayingReservoir(size int64, alpha float64, clock metrics.
 	return &ExponentiallyDecayingReservoir{
 		clock:         clock,
 		values:        skip.New(uint32(1)),
-		size: size,
-		alpha: alpha,
+		size:          size,
+		alpha:         alpha,
 		startTime:     currentTimeInSecond(clock.GetTime()),
 		nextScaleTime: clock.GetTick() + edrRescaleThreshold,
 	}

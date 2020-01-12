@@ -20,7 +20,10 @@ package impl
 import (
 	"math"
 	"testing"
+)
 
+import (
+	gxmath "github.com/dubbogo/gost/math"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -111,5 +114,5 @@ func TestUniformSnapshot_GetValue(t *testing.T) {
 
 // compare two float numbers
 func equals(expected float64, actual float64, delta float64) bool {
-	return math.Abs(actual-expected) < delta
+	return gxmath.DeltaCompareFloat64(expected, actual, delta)
 }

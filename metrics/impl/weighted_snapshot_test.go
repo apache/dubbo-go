@@ -20,9 +20,13 @@ package impl
 import (
 	"math"
 	"testing"
+)
 
+import (
 	"github.com/stretchr/testify/assert"
+)
 
+import (
 	"github.com/apache/dubbo-go/metrics"
 )
 
@@ -79,6 +83,8 @@ func TestWeightedSample_Quantile(t *testing.T) {
 	value, err = snapshot.Get99thPercentile()
 	assert.Nil(t, err)
 	assert.True(t, equals(5.0, value, 0.1))
+
+	// equals()
 
 	// 999
 	value, err = snapshot.Get999thPercentile()
