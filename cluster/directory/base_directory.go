@@ -28,6 +28,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
 	gxset "github.com/dubbogo/gost/container/set"
 )
 
@@ -80,6 +81,7 @@ func (dir *BaseDirectory) Routers() []cluster.Router {
 			factory := extension.GetRouterFactory(r.(*common.URL).GetParam("router", "condition"))
 			router, err := factory.Router(r.(*common.URL))
 			if err != nil {
+				logger.Errorf("router fail! error:%v", err)
 				continue
 			}
 			dir.routers = append(dir.routers, router)
