@@ -18,6 +18,8 @@ limitations under the License.
 package grpc
 
 import (
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/config"
 	"reflect"
 )
 
@@ -34,12 +36,14 @@ type Client struct {
 	invoker reflect.Value
 }
 
-func NewClient(impl interface{}, url common.URL) *Client {
+func NewClient(url common.URL) *Client {
 	conn, err := grpc.Dial(url.Location, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		panic(err)
 	}
 
+	key := url.GetParam(constant.BEAN_NAME_KEY, "")
+	impl := config.GetConsumerService(key)
 	invoker := getInvoker(impl, conn)
 
 	return &Client{

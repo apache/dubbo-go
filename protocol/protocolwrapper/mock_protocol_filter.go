@@ -36,7 +36,7 @@ func (pfw *mockProtocolFilter) Export(invoker protocol.Invoker) protocol.Exporte
 	return protocol.NewBaseExporter("key", invoker, &sync.Map{})
 }
 
-func (pfw *mockProtocolFilter) Refer(url common.URL, impl interface{}) protocol.Invoker {
+func (pfw *mockProtocolFilter) Refer(url common.URL) protocol.Invoker {
 	return protocol.NewBaseInvoker(url)
 }
 
