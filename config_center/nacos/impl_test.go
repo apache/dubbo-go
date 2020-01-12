@@ -36,7 +36,7 @@ import (
 )
 
 func initNacosData(t *testing.T) (*nacosDynamicConfiguration, error) {
-	regurl, _ := common.NewURL(context.TODO(), "registry://127.0.0.1:8848")
+	regurl, _ := common.NewURL(context.TODO(), "registry://console.nacos.io:80")
 	nacosConfiguration, err := newNacosDynamicConfiguration(&regurl)
 	if err != nil {
 		fmt.Println("error:newNacosDynamicConfiguration", err.Error())
