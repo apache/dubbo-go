@@ -90,7 +90,11 @@ func (refconfig *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) erro
 }
 
 func (refconfig *ReferenceConfig) Refer(impl interface{}) {
-	url := common.NewURLWithOptions(common.WithPath(refconfig.id), common.WithProtocol(refconfig.Protocol), common.WithParams(refconfig.getUrlMap()))
+	url := common.NewURLWithOptions(common.WithPath(refconfig.id),
+		common.WithProtocol(refconfig.Protocol),
+		common.WithParams(refconfig.getUrlMap()),
+		common.WithParamsValue(constant.BEAN_NAME_KEY, refconfig.id),
+	)
 
 	//1. user specified URL, could be peer-to-peer address, or register center's address.
 	if refconfig.Url != "" {
@@ -123,12 +127,12 @@ func (refconfig *ReferenceConfig) Refer(impl interface{}) {
 		}
 	}
 	if len(refconfig.urls) == 1 {
-		refconfig.invoker = extension.GetProtocol(refconfig.urls[0].Protocol).Refer(*refconfig.urls[0], impl)
+		refconfig.invoker = extension.GetProtocol(refconfig.urls[0].Protocol).Refer(*refconfig.urls[0])
 	} else {
 		invokers := []protocol.Invoker{}
 		var regUrl *common.URL
 		for _, u := range refconfig.urls {
-			invokers = append(invokers, extension.GetProtocol(u.Protocol).Refer(*u, impl))
+			invokers = append(invokers, extension.GetProtocol(u.Protocol).Refer(*u))
 			if u.Protocol == constant.REGISTRY_PROTOCOL {
 				regUrl = u
 			}

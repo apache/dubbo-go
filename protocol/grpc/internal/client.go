@@ -19,11 +19,16 @@ package internal
 
 import (
 	"context"
+	"github.com/apache/dubbo-go/config"
 )
 
 import (
 	"google.golang.org/grpc"
 )
+
+func init() {
+	config.SetConsumerService(&GrpcGreeterImpl{})
+}
 
 // used for dubbo-grpc biz client
 type GrpcGreeterImpl struct {
