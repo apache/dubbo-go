@@ -117,8 +117,12 @@ func (srvconfig *ServiceConfig) Export() error {
 
 	regUrls := loadRegistries(srvconfig.Registry, providerConfig.Registries, common.PROVIDER)
 	urlMap := srvconfig.getUrlMap()
-
-	for _, proto := range loadProtocol(srvconfig.Protocol, providerConfig.Protocols) {
+	protocolConfigs := loadProtocol(srvconfig.Protocol, providerConfig.Protocols)
+	if len(protocolConfigs) == 0 {
+		logger.Warnf("The service %v's '%v' protocols don't has right protocolConfigs ", srvconfig.InterfaceName, srvconfig.Protocol)
+		return nil
+	}
+	for _, proto := range protocolConfigs {
 		// registry the service reflect
 		methods, err := common.ServiceMap.Register(proto.Name, srvconfig.rpcService)
 		if err != nil {
