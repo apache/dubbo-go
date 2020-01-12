@@ -37,21 +37,21 @@ import (
 const NacosClientName = "nacos config_center"
 
 type nacosDynamicConfiguration struct {
-	url      *common.URL
-	rootPath string
-	wg       sync.WaitGroup
-	cltLock  sync.Mutex
-	done     chan struct{}
-	client   *NacosClient
+	url          *common.URL
+	rootPath     string
+	wg           sync.WaitGroup
+	cltLock      sync.Mutex
+	done         chan struct{}
+	client       *NacosClient
 	keyListeners sync.Map
 	parser       parser.ConfigurationParser
 }
 
 func newNacosDynamicConfiguration(url *common.URL) (*nacosDynamicConfiguration, error) {
 	c := &nacosDynamicConfiguration{
-		rootPath: "/" + url.GetParam(constant.CONFIG_NAMESPACE_KEY, config_center.DEFAULT_GROUP) + "/config",
-		url:      url,
-		keyListeners:sync.Map{},
+		rootPath:     "/" + url.GetParam(constant.CONFIG_NAMESPACE_KEY, config_center.DEFAULT_GROUP) + "/config",
+		url:          url,
+		keyListeners: sync.Map{},
 	}
 	err := ValidateNacosClient(c, WithNacosName(NacosClientName))
 	if err != nil {
@@ -80,8 +80,8 @@ func (n *nacosDynamicConfiguration) GetProperties(key string, opts ...config_cen
 		opt(tmpOpts)
 	}
 	content, err := (*n.client.Client).GetConfig(vo.ConfigParam{
-		DataId:   key,
-		Group:    tmpOpts.Group,
+		DataId: key,
+		Group:  tmpOpts.Group,
 	})
 	if err != nil {
 		return "", perrors.WithStack(err)

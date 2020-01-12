@@ -25,19 +25,19 @@ const (
 )
 
 type NacosClient struct {
-	name          string
-	NacosAddrs    []string
-	sync.Mutex    // for Client
-	Client        *config_client.IConfigClient
-	exit 		  chan struct{}
-	Timeout       time.Duration
+	name       string
+	NacosAddrs []string
+	sync.Mutex // for Client
+	Client     *config_client.IConfigClient
+	exit       chan struct{}
+	Timeout    time.Duration
 }
 
 type Option func(*Options)
 
 type Options struct {
 	nacosName string
-	client *NacosClient
+	client    *NacosClient
 }
 
 func WithNacosName(name string) Option {
@@ -84,19 +84,19 @@ func ValidateNacosClient(container nacosClientFacade, opts ...Option) error {
 	if container.NacosClient().Client == nil {
 		svrConfList := []nacosconst.ServerConfig{}
 		for _, nacosAddr := range container.NacosClient().NacosAddrs {
-			split := strings.Split(nacosAddr,":")
+			split := strings.Split(nacosAddr, ":")
 			port, err := strconv.ParseUint(split[1], 10, 64)
 			if err != nil {
 				continue
 			}
 			svrconf := nacosconst.ServerConfig{
 				IpAddr: split[0],
-				Port: port,
+				Port:   port,
 			}
 			svrConfList = append(svrConfList, svrconf)
 		}
 
-		client , err := clients.CreateConfigClient(map[string]interface{}{
+		client, err := clients.CreateConfigClient(map[string]interface{}{
 			"serverConfigs": svrConfList,
 			"clientConfig": nacosconst.ClientConfig{
 				TimeoutMs:           uint64(container.NacosClient().Timeout.Nanoseconds() / 1e6),
@@ -116,31 +116,31 @@ func ValidateNacosClient(container nacosClientFacade, opts ...Option) error {
 
 func newNacosClient(name string, nacosAddrs []string, timeout time.Duration) (*NacosClient, error) {
 	var (
-		err   error
-		n     *NacosClient
+		err error
+		n   *NacosClient
 	)
 
 	n = &NacosClient{
-		name:          name,
-		NacosAddrs:    nacosAddrs,
-		Timeout:       timeout,
-		exit:          make(chan struct{}),
+		name:       name,
+		NacosAddrs: nacosAddrs,
+		Timeout:    timeout,
+		exit:       make(chan struct{}),
 	}
 
 	svrConfList := []nacosconst.ServerConfig{}
 	for _, nacosAddr := range n.NacosAddrs {
-		split := strings.Split(nacosAddr,":")
+		split := strings.Split(nacosAddr, ":")
 		port, err := strconv.ParseUint(split[1], 10, 64)
 		if err != nil {
 			continue
 		}
 		svrconf := nacosconst.ServerConfig{
 			IpAddr: split[0],
-			Port: port,
+			Port:   port,
 		}
 		svrConfList = append(svrConfList, svrconf)
 	}
-	client , err := clients.CreateConfigClient(map[string]interface{}{
+	client, err := clients.CreateConfigClient(map[string]interface{}{
 		"serverConfigs": svrConfList,
 		"clientConfig": nacosconst.ClientConfig{
 			TimeoutMs:           uint64(timeout.Nanoseconds() / 1e6),
@@ -159,32 +159,32 @@ func newNacosClient(name string, nacosAddrs []string, timeout time.Duration) (*N
 
 func newMockNacosClient(name string, nacosAddrs []string, timeout time.Duration) (*NacosClient, error) {
 	var (
-		err   error
-		n     *NacosClient
+		err error
+		n   *NacosClient
 	)
 
 	n = &NacosClient{
-		name:          name,
-		NacosAddrs:    nacosAddrs,
-		Timeout:       timeout,
-		exit:          make(chan struct{}),
+		name:       name,
+		NacosAddrs: nacosAddrs,
+		Timeout:    timeout,
+		exit:       make(chan struct{}),
 	}
 
 	svrConfList := []nacosconst.ServerConfig{}
 	for _, nacosAddr := range n.NacosAddrs {
-		split := strings.Split(nacosAddr,":")
+		split := strings.Split(nacosAddr, ":")
 		port, err := strconv.ParseUint(split[1], 10, 64)
 		if err != nil {
 			continue
 		}
 		svrconf := nacosconst.ServerConfig{
 			IpAddr: split[0],
-			Port: port,
+			Port:   port,
 		}
 		svrConfList = append(svrConfList, svrconf)
 	}
 
-	client , err := clients.CreateConfigClient(map[string]interface{}{
+	client, err := clients.CreateConfigClient(map[string]interface{}{
 		"serverConfigs": svrConfList,
 		"clientConfig": nacosconst.ClientConfig{
 			TimeoutMs:           uint64(timeout.Nanoseconds() / 1e6),
