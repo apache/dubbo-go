@@ -18,8 +18,6 @@ limitations under the License.
 package grpc
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/config"
 	"reflect"
 )
 
@@ -29,6 +27,8 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/config"
 )
 
 type Client struct {
