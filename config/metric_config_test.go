@@ -30,6 +30,17 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
+func TestMetricConfig_GetEnableMetrics(t *testing.T) {
+	config := MetricConfig{}
+	assert.Equal(t, 0, len(config.GetEnableMetrics()))
+	config.Enables = []string{"compass", "all", "fastCompass"}
+	assert.Equal(t, allMetrics, config.GetEnableMetrics())
+
+	config.Enables = []string{"compass"}
+	assert.Equal(t, 1, len(config.GetEnableMetrics()))
+	assert.Equal(t, "compass", config.GetEnableMetrics()[0])
+}
+
 func TestMetricConfig_GetMaxCompassAddonCount(t *testing.T) {
 	config := MetricConfig{}
 	assert.Equal(t, defaultMaxCompassAddonCount, config.GetMaxCompassAddonCount())

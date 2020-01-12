@@ -62,7 +62,8 @@ func (mf *metricsFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 		status = errorKey
 	}
 
-	mf.report(invoker, invocation, duration, status)
+	// using goroutine to avoid blocking the main process
+	go mf.report(invoker, invocation, duration, status)
 
 	return result
 }
