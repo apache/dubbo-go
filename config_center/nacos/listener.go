@@ -39,9 +39,9 @@ func (l *nacosDynamicConfiguration) addListener(key string, listener config_cent
 	if !loaded {
 		_, cancel := context.WithCancel(context.Background())
 		(*l.client.Client).ListenConfig(vo.ConfigParam{ //TODO 这个listen接口应该要有个context的
-		//(*l.client.Client).ListenConfigWithContext(ctx, vo.ConfigParam{
-				DataId:   key,
-			Group:    "dubbo",
+			//(*l.client.Client).ListenConfigWithContext(ctx, vo.ConfigParam{
+			DataId: key,
+			Group:  "dubbo",
 			OnChange: func(namespace, group, dataId, data string) {
 				//go callback(ctx, listener, namespace, group, dataId, data)
 				go callback(context.TODO(), listener, namespace, group, dataId, data)
