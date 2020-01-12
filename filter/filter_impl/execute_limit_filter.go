@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package filter
+package filter_impl
 
 import (
 	"strconv"
@@ -32,7 +32,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/filter"
-	_ "github.com/apache/dubbo-go/filter/common"
+	_ "github.com/apache/dubbo-go/filter/handler"
 	"github.com/apache/dubbo-go/protocol"
 )
 

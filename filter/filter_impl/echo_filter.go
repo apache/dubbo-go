@@ -15,37 +15,46 @@
  * limitations under the License.
  */
 
-package filter
+package filter_impl
 
 import (
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/filter"
 	"github.com/apache/dubbo-go/protocol"
 )
 
-const active = "active"
+const (
+	ECHO = "echo"
+)
 
 func init() {
-	extension.SetFilter(active, GetActiveFilter)
+	extension.SetFilter(ECHO, GetFilter)
 }
 
-type ActiveFilter struct {
-}
+// RPCService need a Echo method in consumer, if you want to use EchoFilter
+// eg:
+//		Echo func(ctx context.Context, arg interface{}, rsp *Xxx) error
+type EchoFilter struct{}
 
-func (ef *ActiveFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	logger.Infof("invoking active filter. %v,%v", invocation.MethodName(), len(invocation.Arguments()))
+func (ef *EchoFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	logger.Infof("invoking echo filter.")
+	logger.Debugf("%v,%v", invocation.MethodName(), len(invocation.Arguments()))
+	if invocation.MethodName() == constant.ECHO && len(invocation.Arguments()) == 1 {
+		return &protocol.RPCResult{
+			Rest:  invocation.Arguments()[0],
+			Attrs: invocation.Attachments(),
+		}
+	}
 
-	protocol.BeginCount(invoker.GetUrl(), invocation.MethodName())
 	return invoker.Invoke(invocation)
 }
 
-func (ef *ActiveFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-
-	protocol.EndCount(invoker.GetUrl(), invocation.MethodName())
+func (ef *EchoFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }
 
-func GetActiveFilter() filter.Filter {
-	return &ActiveFilter{}
+func GetFilter() filter.Filter {
+	return &EchoFilter{}
 }

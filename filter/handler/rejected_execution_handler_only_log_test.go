@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package common
+package handler
 
 import (
 	"net/url"

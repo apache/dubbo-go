@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package filter
+package filter_impl
 
 import (
 	"net/url"
@@ -32,7 +32,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/filter"
-	common2 "github.com/apache/dubbo-go/filter/common"
+	common2 "github.com/apache/dubbo-go/filter/handler"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
