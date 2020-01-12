@@ -19,11 +19,14 @@ package internal
 
 import (
 	"context"
-	"github.com/apache/dubbo-go/config"
 )
 
 import (
 	"google.golang.org/grpc"
+)
+
+import (
+	"github.com/apache/dubbo-go/config"
 )
 
 func init() {
