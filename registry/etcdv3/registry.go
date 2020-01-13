@@ -287,10 +287,6 @@ func (r *etcdV3Registry) registerProvider(svc common.URL) error {
 	params.Add("dubbo", "dubbo-provider-golang-"+constant.Version)
 	params.Add("side", (common.RoleType(common.PROVIDER)).Role())
 
-	if len(svc.Methods) == 0 {
-		params.Add("methods", strings.Join(svc.Methods, ","))
-	}
-
 	logger.Debugf("provider url params:%#v", params)
 	var host string
 	if len(svc.Ip) == 0 {
