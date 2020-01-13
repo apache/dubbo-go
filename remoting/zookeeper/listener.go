@@ -18,7 +18,6 @@
 package zookeeper
 
 import (
-	"fmt"
 	"path"
 	"strings"
 	"sync"
@@ -241,7 +240,6 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 
 			//listen sub path recursive
 			go func(zkPath string, listener remoting.DataListener) {
-				fmt.Printf("zkpath: %v \n", zkPath)
 				l.listenDirEvent(zkPath, listener)
 				logger.Warnf("listenDirEvent(zkPath{%s}) goroutine exit now", zkPath)
 			}(dubboPath, listener)
