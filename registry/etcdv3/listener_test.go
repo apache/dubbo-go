@@ -19,7 +19,6 @@ package etcdv3
 
 import (
 	"context"
-	"github.com/apache/dubbo-go/config_center"
 	"testing"
 	"time"
 )
@@ -32,6 +31,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/remoting"
 )
 
@@ -46,7 +46,8 @@ func (suite *RegistryTestSuite) SetupSuite() {
 	t := suite.T()
 
 	cfg := embed.NewConfig()
-	cfg.Dir = "/tmp/default.etcd"
+	// avoid conflict with default etcd work-dir
+	cfg.Dir = "/tmp/default-dubbo-go.etcd"
 	e, err := embed.StartEtcd(cfg)
 	if err != nil {
 		t.Fatal(err)
