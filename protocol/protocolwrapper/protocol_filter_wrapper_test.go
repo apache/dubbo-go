@@ -54,7 +54,7 @@ func TestProtocolFilterWrapper_Refer(t *testing.T) {
 	u := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.REFERENCE_FILTER_KEY, "echo"))
-	invoker := filtProto.Refer(*u, nil)
+	invoker := filtProto.Refer(*u)
 	_, ok := invoker.(*FilterInvoker)
 	assert.True(t, ok)
 }

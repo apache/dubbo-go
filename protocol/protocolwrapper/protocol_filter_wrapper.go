@@ -50,11 +50,11 @@ func (pfw *ProtocolFilterWrapper) Export(invoker protocol.Invoker) protocol.Expo
 	return pfw.protocol.Export(invoker)
 }
 
-func (pfw *ProtocolFilterWrapper) Refer(url common.URL, impl interface{}) protocol.Invoker {
+func (pfw *ProtocolFilterWrapper) Refer(url common.URL) protocol.Invoker {
 	if pfw.protocol == nil {
 		pfw.protocol = extension.GetProtocol(url.Protocol)
 	}
-	return buildInvokerChain(pfw.protocol.Refer(url, impl), constant.REFERENCE_FILTER_KEY)
+	return buildInvokerChain(pfw.protocol.Refer(url), constant.REFERENCE_FILTER_KEY)
 }
 
 func (pfw *ProtocolFilterWrapper) Destroy() {

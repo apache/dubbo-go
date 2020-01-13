@@ -29,7 +29,7 @@ import (
 // Extension - protocol
 type Protocol interface {
 	Export(invoker Invoker) Exporter
-	Refer(url common.URL, impl interface{}) Invoker
+	Refer(url common.URL) Invoker
 	Destroy()
 }
 
@@ -74,7 +74,7 @@ func (bp *BaseProtocol) Export(invoker Invoker) Exporter {
 	return NewBaseExporter("base", invoker, bp.exporterMap)
 }
 
-func (bp *BaseProtocol) Refer(url common.URL, impl interface{}) Invoker {
+func (bp *BaseProtocol) Refer(url common.URL) Invoker {
 	return NewBaseInvoker(url)
 }
 

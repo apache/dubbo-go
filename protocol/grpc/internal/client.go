@@ -25,6 +25,14 @@ import (
 	"google.golang.org/grpc"
 )
 
+import (
+	"github.com/apache/dubbo-go/config"
+)
+
+func init() {
+	config.SetConsumerService(&GrpcGreeterImpl{})
+}
+
 // used for dubbo-grpc biz client
 type GrpcGreeterImpl struct {
 	SayHello func(ctx context.Context, in *HelloRequest, out *HelloReply) error
