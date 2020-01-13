@@ -19,6 +19,7 @@ package etcdv3
 
 import (
 	"context"
+	"os/exec"
 	"testing"
 	"time"
 )
@@ -67,6 +68,10 @@ func (suite *RegistryTestSuite) SetupSuite() {
 // stop etcd server
 func (suite *RegistryTestSuite) TearDownSuite() {
 	suite.etcd.Close()
+	// clean the etcd workdir
+	if err := exec.Command("rm", "-rf","/tmp/default-dubbo-go.etcd").Run(); err != nil{
+		suite.FailNow(err.Error())
+	}
 }
 
 func (suite *RegistryTestSuite) TestDataChange() {
