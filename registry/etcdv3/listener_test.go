@@ -48,7 +48,7 @@ func (suite *RegistryTestSuite) SetupSuite() {
 
 	cfg := embed.NewConfig()
 	// avoid conflict with default etcd work-dir
-	cfg.Dir = "/tmp/default-dubbo-go.etcd"
+	cfg.Dir = "/tmp/default-dubbo-go-registry.etcd"
 	e, err := embed.StartEtcd(cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -69,7 +69,7 @@ func (suite *RegistryTestSuite) SetupSuite() {
 func (suite *RegistryTestSuite) TearDownSuite() {
 	suite.etcd.Close()
 	// clean the etcd workdir
-	if err := exec.Command("rm", "-rf","/tmp/default-dubbo-go.etcd").Run(); err != nil{
+	if err := exec.Command("rm", "-rf", "/tmp/default-dubbo-go-registry.etcd").Run(); err != nil {
 		suite.FailNow(err.Error())
 	}
 }

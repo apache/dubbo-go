@@ -45,4 +45,3 @@ type MockDataListener struct {
 
 func (*MockDataListener) Process(configType *config_center.ConfigChangeEvent) {
 }
-
