@@ -20,6 +20,7 @@ package etcdv3
 import (
 	"fmt"
 	"net/url"
+	"os/exec"
 	"path"
 	"reflect"
 	"strings"
@@ -91,7 +92,7 @@ func (suite *ClientTestSuite) SetupSuite() {
 	cfg := embed.NewConfig()
 	cfg.LPUrls = []url.URL{*lpurl}
 	cfg.LCUrls = []url.URL{*lcurl}
-	cfg.Dir = "/tmp/default.etcd"
+	cfg.Dir = "/tmp/default-dubbo-go-remote.etcd"
 	e, err := embed.StartEtcd(cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -111,6 +112,9 @@ func (suite *ClientTestSuite) SetupSuite() {
 // stop etcd server
 func (suite *ClientTestSuite) TearDownSuite() {
 	suite.etcd.Close()
+	if err := exec.Command("rm", "-rf", "/tmp/default-dubbo-go-remote.etcd").Run(); err != nil {
+		suite.FailNow(err.Error())
+	}
 }
 
 func (suite *ClientTestSuite) setUpClient() *Client {
