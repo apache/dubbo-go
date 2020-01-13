@@ -64,7 +64,7 @@ func TestSubscribe(t *testing.T) {
 func TestSubscribe_InvalidUrl(t *testing.T) {
 	url, _ := common.NewURL(context.TODO(), "mock://127.0.0.1:1111")
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
-	_, err := NewRegistryDirectory(&url, nil, mockRegistry)
+	_, err := NewRegistryDirectory(&url, mockRegistry)
 	assert.Error(t, err)
 }
 
@@ -77,7 +77,7 @@ func TestSubscribe_Group(t *testing.T) {
 	suburl.SetParam(constant.CLUSTER_KEY, "mock")
 	regurl.SubURL = &suburl
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
-	registryDirectory, _ := NewRegistryDirectory(&regurl, nil, mockRegistry)
+	registryDirectory, _ := NewRegistryDirectory(&regurl, mockRegistry)
 
 	go registryDirectory.Subscribe(common.NewURLWithOptions(common.WithPath("testservice")))
 
@@ -183,7 +183,7 @@ func normalRegistryDir(noMockEvent ...bool) (*registryDirectory, *registry.MockR
 	)
 	url.SubURL = &suburl
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
-	registryDirectory, _ := NewRegistryDirectory(&url, nil, mockRegistry)
+	registryDirectory, _ := NewRegistryDirectory(&url, mockRegistry)
 
 	go registryDirectory.Subscribe(&suburl)
 	if len(noMockEvent) == 0 {

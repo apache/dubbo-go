@@ -85,7 +85,7 @@ func TestDubboProtocol_Refer(t *testing.T) {
 		"side=provider&timeout=3000&timestamp=1556509797245")
 	assert.NoError(t, err)
 	clientConf = &ClientConfig{}
-	invoker := proto.Refer(url, nil)
+	invoker := proto.Refer(url)
 
 	// make sure url
 	eq := invoker.GetUrl().URLEqual(url)
