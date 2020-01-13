@@ -35,6 +35,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 	github.com/nacos-group/nacos-sdk-go v0.0.0-20190723125407-0242d42e3dbb
 	github.com/opentracing/opentracing-go v1.1.0
+	github.com/openzipkin/zipkin-go v0.2.2
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.1.0 // indirect
 	github.com/samuel/go-zookeeper v0.0.0-20180130194729-c4fab1ac1bec
