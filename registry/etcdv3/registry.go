@@ -97,18 +97,16 @@ func (r *etcdV3Registry) RestartCallBack() bool {
 		services = append(services, confIf)
 	}
 
-	flag := true
 	for _, confIf := range services {
 		err := r.Register(confIf)
 		if err != nil {
 			logger.Errorf("(etcdV3ProviderRegistry)register(conf{%#v}) = error{%#v}",
 				confIf, perrors.WithStack(err))
-			flag = false
-			break
+			return false
 		}
 		logger.Infof("success to re-register service :%v", confIf.Key())
 	}
-	return flag
+	return true
 }
 
 func newETCDV3Registry(url *common.URL) (registry.Registry, error) {
