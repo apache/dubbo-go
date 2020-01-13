@@ -25,7 +25,7 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/container/gxset"
+	"github.com/dubbogo/gost/container/set"
 )
 
 import (

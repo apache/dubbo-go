@@ -32,4 +32,5 @@ type ReservoirType int
 const (
 	BucketReservoirType ReservoirType = iota
 	UniformReservoirType
+	ExponentiallyDecayingReservoirType
 )
