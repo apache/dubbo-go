@@ -19,10 +19,12 @@ package dubbo
 
 import (
 	"sync"
+	"time"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
@@ -67,9 +69,17 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 }
 
 func (dp *DubboProtocol) Refer(url common.URL) protocol.Invoker {
+	//default requestTimeout
+	var requestTimeout = config.GetConsumerConfig().RequestTimeout
+
+	requestTimeoutStr := url.GetParam(constant.TIMEOUT_KEY, config.GetConsumerConfig().Request_Timeout)
+	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
+		requestTimeout = t
+	}
+
 	invoker := NewDubboInvoker(url, NewClient(Options{
 		ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
-		RequestTimeout: config.GetConsumerConfig().RequestTimeout,
+		RequestTimeout: requestTimeout,
 	}))
 	dp.SetInvokers(invoker)
 	logger.Infof("Refer service: %s", url.String())

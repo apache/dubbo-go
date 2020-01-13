@@ -25,6 +25,10 @@ type NopMetricManager struct {
 	fastCompass metrics.FastCompass
 }
 
+func (n *NopMetricManager) GetCompass(groupName string, metricName *metrics.MetricName) metrics.Compass {
+	return nopCompass
+}
+
 func (n *NopMetricManager) IsEnable() bool {
 	return false
 }
@@ -33,7 +37,7 @@ func (n *NopMetricManager) SetEnable(enable bool) {
 }
 
 func (n *NopMetricManager) GetFastCompass(name string, metricName *metrics.MetricName) metrics.FastCompass {
-	return GetNopFastCompass()
+	return nopFastCompass
 }
 
 func NewNopMetricManager() metrics.MetricManager {

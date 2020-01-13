@@ -42,6 +42,14 @@ type DefaultMetricManager struct {
 	enable            bool
 }
 
+func (d *DefaultMetricManager) GetCompass(groupName string, metricName *metrics.MetricName) metrics.Compass {
+	if !d.enable {
+		return nopCompass
+	}
+	registry := d.getMetricRegistry(groupName)
+	return registry.GetCompass(metricName)
+}
+
 func (d *DefaultMetricManager) IsEnable() bool {
 	return d.enable
 }
@@ -52,7 +60,7 @@ func (d *DefaultMetricManager) SetEnable(enable bool) {
 
 func (d *DefaultMetricManager) GetFastCompass(groupName string, metricName *metrics.MetricName) metrics.FastCompass {
 	if !d.enable {
-		return GetNopFastCompass()
+		return nopFastCompass
 	}
 	registry := d.getMetricRegistry(groupName)
 	return registry.GetFastCompass(metricName)

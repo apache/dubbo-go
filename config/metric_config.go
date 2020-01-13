@@ -18,11 +18,13 @@
 package config
 
 import (
+	"strings"
 	"time"
 )
 
 import (
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/metrics"
 )
 
 const (
@@ -31,6 +33,18 @@ const (
 	defaultMaxMetricCountPerRegistry = 5000
 	defaultMaxCompassErrorCodeCount  = 100
 	defaultMaxCompassAddonCount      = 20
+	allStr                           = "all"
+	defaultReservoirType             = metrics.ExponentiallyDecayingReservoirType
+	defaultBucketCount               = 10
+)
+
+var (
+	// this is candidates for `Enables`.
+	allMetrics = []string{
+		"compass",
+		"fastCompass",
+	}
+	defaultEnables = []string{"fastCompass"}
 )
 
 type MetricConfig struct {
@@ -38,6 +52,10 @@ type MetricConfig struct {
 	 * the MetricManager's name. You can use 'default' to use the default implementation.
 	 */
 	Manager string `yaml:"manager" json:"manager,omitempty"`
+
+	// which metrics will be collected. Now we support fastCompass, compass,
+	// if Enables contains 'all', all metrics will be collected
+	Enables []string `yaml:"enables" json:"enables,omitempty"`
 	/**
 	 * the max sub category count, it's same with com.alibaba.metrics.maxSubCategoryCount
 	 */
@@ -71,6 +89,39 @@ type MetricConfig struct {
 	 */
 	MaxCompassErrorCodeCount int `yaml:"max_compass_error_code_count" json:"max_compass_error_code_count,omitempty"`
 	MaxCompassAddonCount     int `yaml:"max_metric_count_per_registry" json:"max_metric_count_per_registry,omitempty"`
+
+	// please see metrics.ReservoirType, default is ExponentiallyDecayingReservoirType = 2
+	ReservoirType int `yaml:"reservoir_type" json:"reservoir_type,omitempty"`
+
+	// bucket count
+	BucketCount int `yaml:"bucket_count" json:"bucket_count,omitempty"`
+}
+
+func (mc *MetricConfig) GetBucketCount() int {
+	if mc.BucketCount <= 0 {
+		return defaultBucketCount
+	}
+	return mc.BucketCount
+}
+
+func (mc *MetricConfig) GetReservoirType() metrics.ReservoirType {
+	if mc.ReservoirType < 0 {
+		return defaultReservoirType
+	}
+	return metrics.ReservoirType(mc.ReservoirType)
+}
+
+func (mc *MetricConfig) GetEnableMetrics() []string {
+	if len(mc.Enables) == 0 {
+		return []string{}
+	}
+
+	for _, value := range mc.Enables {
+		if strings.EqualFold(allStr, value) {
+			return allMetrics
+		}
+	}
+	return mc.Enables
 }
 
 func (mc *MetricConfig) GetMaxCompassAddonCount() int {

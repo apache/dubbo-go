@@ -31,7 +31,7 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/container/set"
+	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/jinzhu/copier"
 	perrors "github.com/pkg/errors"
 	"github.com/satori/go.uuid"
@@ -41,9 +41,9 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
-// ///////////////////////////////
+/////////////////////////////////
 // dubbo role type
-// ///////////////////////////////
+/////////////////////////////////
 
 const (
 	CONSUMER = iota
@@ -72,7 +72,7 @@ type baseUrl struct {
 	Location string // ip+port
 	Ip       string
 	Port     string
-	// url.Values is not safe map, add to avoid concurrent map read and map write error
+	//url.Values is not safe map, add to avoid concurrent map read and map write error
 	paramsLock   sync.RWMutex
 	params       url.Values
 	PrimitiveURL string
@@ -85,7 +85,7 @@ type URL struct {
 	Username string
 	Password string
 	Methods  []string
-	// special for registry
+	//special for registry
 	SubURL *URL
 }
 
@@ -191,7 +191,7 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (URL, error) 
 		return s, perrors.Errorf("url.QueryUnescape(%s),  error{%v}", urlString, err)
 	}
 
-	// rawUrlString = "//" + rawUrlString
+	//rawUrlString = "//" + rawUrlString
 	if strings.Index(rawUrlString, "//") < 0 {
 		t := URL{baseUrl: baseUrl{ctx: ctx}}
 		for _, opt := range opts {
@@ -248,7 +248,7 @@ func (c URL) URLEqual(url URL) bool {
 	if url.GetParam(constant.ENABLED_KEY, "true") != "true" && url.GetParam(constant.ENABLED_KEY, "") != constant.ANY_VALUE {
 		return false
 	}
-	// TODO :may need add interface key any value condition
+	//TODO :may need add interface key any value condition
 	if !isMatchCategory(url.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY), c.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY)) {
 		return false
 	}
@@ -287,7 +287,7 @@ func (c URL) Key() string {
 		"%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s",
 		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GROUP_KEY, ""), c.GetParam(constant.VERSION_KEY, ""))
 	return buildString
-	// return c.ServiceKey()
+	//return c.ServiceKey()
 }
 
 func (c URL) ServiceKey() string {
@@ -328,7 +328,7 @@ func (c URL) Service() string {
 		return service
 	} else if c.SubURL != nil {
 		service = c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
-		if service != "" { // if url.path is "" then return suburl's path, special for registry Url
+		if service != "" { //if url.path is "" then return suburl's path, special for registry Url
 			return service
 		}
 	}
@@ -510,28 +510,28 @@ func (c URL) ToMap() map[string]string {
 
 // configuration  > reference config >service config
 //  in this function we should merge the reference local url config into the service url from registry.
-// TODO configuration merge, in the future , the configuration center's config should merge too.
+//TODO configuration merge, in the future , the configuration center's config should merge too.
 
 func MergeUrl(serviceUrl *URL, referenceUrl *URL) *URL {
 	mergedUrl := serviceUrl.Clone()
 
-	// iterator the referenceUrl if serviceUrl not have the key ,merge in
+	//iterator the referenceUrl if serviceUrl not have the key ,merge in
 	referenceUrl.RangeParams(func(key, value string) bool {
 		if v := mergedUrl.GetParam(key, ""); len(v) == 0 {
 			mergedUrl.SetParam(key, value)
 		}
 		return true
 	})
-	// loadBalance,cluster,retries strategy config
-	methodConfigMergeFcn := mergeNormalParam(mergedUrl, referenceUrl, []string{constant.LOADBALANCE_KEY, constant.CLUSTER_KEY, constant.RETRIES_KEY})
+	//loadBalance,cluster,retries strategy config
+	methodConfigMergeFcn := mergeNormalParam(mergedUrl, referenceUrl, []string{constant.LOADBALANCE_KEY, constant.CLUSTER_KEY, constant.RETRIES_KEY, constant.TIMEOUT_KEY})
 
-	// remote timestamp
+	//remote timestamp
 	if v := serviceUrl.GetParam(constant.TIMESTAMP_KEY, ""); len(v) > 0 {
 		mergedUrl.SetParam(constant.REMOTE_TIMESTAMP_KEY, v)
 		mergedUrl.SetParam(constant.TIMESTAMP_KEY, referenceUrl.GetParam(constant.TIMESTAMP_KEY, ""))
 	}
 
-	// finally execute methodConfigMergeFcn
+	//finally execute methodConfigMergeFcn
 	for _, method := range referenceUrl.Methods {
 		for _, fcn := range methodConfigMergeFcn {
 			fcn("methods." + method)
