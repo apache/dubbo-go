@@ -16,3 +16,21 @@
  */
 
 package kubernetes
+
+import (
+	"testing"
+)
+
+func Test_Register(t *testing.T) {
+
+}
+
+func Test_Subscribe(t *testing.T) {
+}
+
+func Test_ConsumerDestory(t *testing.T) {
+
+}
+
+func Test_ProviderDestory(t *testing.T) {
+}
