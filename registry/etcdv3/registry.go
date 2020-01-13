@@ -331,7 +331,7 @@ func (r *etcdV3Registry) subscribe(svc *common.URL) (registry.Listener, error) {
 		// NOTICE:
 		// double-check the listener
 		// if r.listener already be assigned, discard the new value
-		if r.listener == nil{
+		if r.listener == nil {
 			r.listener = listener
 		}
 		r.listenerLock.Unlock()
