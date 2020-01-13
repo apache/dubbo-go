@@ -89,7 +89,7 @@ func (proto *registryProtocol) initConfigurationListeners() {
 	proto.serviceConfigurationListeners = &sync.Map{}
 	proto.providerConfigurationListener = newProviderConfigurationListener(proto.overrideListeners)
 }
-func (proto *registryProtocol) Refer(url common.URL, impl interface{}) protocol.Invoker {
+func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 
 	var registryUrl = url
 	var serviceUrl = registryUrl.SubURL
@@ -108,7 +108,7 @@ func (proto *registryProtocol) Refer(url common.URL, impl interface{}) protocol.
 	}
 
 	//new registry directory for store service url from registry
-	directory, err := directory2.NewRegistryDirectory(&registryUrl, impl, reg)
+	directory, err := directory2.NewRegistryDirectory(&registryUrl, reg)
 	if err != nil {
 		logger.Errorf("consumer service %v  create registry directory  error, error message is %s, and will return nil invoker!",
 			serviceUrl.String(), err.Error())
