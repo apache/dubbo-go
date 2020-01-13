@@ -27,4 +27,8 @@ type MetricRegistry interface {
 	GetFastCompass(name *MetricName) FastCompass
 
 	GetCompass(name *MetricName) Compass
+
+	GetCompasses() map[string]*MetricNameToMetricEntry
+
+	GetFastCompasses() map[string]*MetricNameToMetricEntry
 }

@@ -36,6 +36,34 @@ type DefaultMetricRegistry struct {
 	maxMetricCount int
 }
 
+func (mri *DefaultMetricRegistry) GetCompasses() map[string]*metrics.MetricNameToMetricEntry {
+	return mri.getMetrics(func(entry *metrics.MetricNameToMetricEntry) bool {
+		_, ok := entry.Metric.(metrics.Compass)
+		return ok
+	})
+}
+
+func (mri *DefaultMetricRegistry) GetFastCompasses() map[string]*metrics.MetricNameToMetricEntry {
+	return mri.getMetrics(func(entry *metrics.MetricNameToMetricEntry) bool {
+		_, ok := entry.Metric.(metrics.FastCompass)
+		return ok
+	})
+}
+
+func (mri *DefaultMetricRegistry) getMetrics(
+	matchType func(entry *metrics.MetricNameToMetricEntry) bool) map[string]*metrics.MetricNameToMetricEntry {
+	result := make(map[string]*metrics.MetricNameToMetricEntry, 16)
+	mri.metricsMap.Range(func(key, value interface{}) bool {
+		entry := value.(*metrics.MetricNameToMetricEntry)
+		ok := matchType(entry)
+		if ok {
+			result[key.(string)] = entry
+		}
+		return true
+	})
+	return result
+}
+
 func (mri *DefaultMetricRegistry) GetMetrics() map[string]*metrics.MetricNameToMetricEntry {
 	result := make(map[string]*metrics.MetricNameToMetricEntry, mri.metricsCount)
 	mri.metricsMap.Range(func(key, value interface{}) bool {

@@ -66,3 +66,20 @@ func TestMetricRegistryImpl_GetCompass(t *testing.T) {
 	compass := registry.GetCompass(metrics.NewMetricName("Test1", nil, metrics.Minor))
 	assert.NotNil(t, compass)
 }
+
+func TestDefaultMetricRegistry_GetCompasses(t *testing.T) {
+	registry := NewMetricRegistry(2)
+	compassMetric := metrics.NewMetricName("Test1", nil, metrics.Minor)
+	compass := registry.GetCompass(compassMetric)
+
+	fastCompassMetric := metrics.NewMetricName("Test2", nil, metrics.Minor)
+	fastCompass := registry.GetFastCompass(fastCompassMetric)
+
+	cmMap := registry.GetCompasses()
+	fcmMap := registry.GetFastCompasses()
+	assert.Equal(t, 1, len(cmMap))
+	assert.Equal(t, 1, len(fcmMap))
+
+	assert.Equal(t, compass, cmMap[compassMetric.HashKey()].Metric)
+	assert.Equal(t, fastCompass, fcmMap[fastCompassMetric.HashKey()].Metric)
+}
