@@ -35,7 +35,7 @@ const (
 
 // this should be executed before users set their own Tracer
 func init() {
-	extension.SetFilter(tracingFilterName, NewTracingFilter)
+	extension.SetFilter(tracingFilterName, newTracingFilter)
 	opentracing.SetGlobalTracer(opentracing.NoopTracer{})
 }
 
@@ -44,10 +44,10 @@ var (
 	successKey = "Success"
 )
 
-type TracingFilter struct {
+type tracingFilter struct {
 }
 
-func (tf *TracingFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (tf *tracingFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 
 	operationName := invoker.GetUrl().ServiceKey() + invocation.MethodName()
 	// withTimeout after we support the timeout between different ends.
@@ -67,17 +67,17 @@ func (tf *TracingFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 	return result
 }
 
-func (tf *TracingFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	panic("implement me")
+func (tf *tracingFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	return result
 }
 
 var (
-	tracingFilterInstance *TracingFilter
+	tracingFilterInstance *tracingFilter
 )
 
-func NewTracingFilter() filter.Filter {
+func newTracingFilter() filter.Filter {
 	if tracingFilterInstance == nil {
-		tracingFilterInstance = &TracingFilter{}
+		tracingFilterInstance = &tracingFilter{}
 	}
 	return tracingFilterInstance
 }
