@@ -21,7 +21,9 @@ import (
 	"context"
 
 	"github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/log"
 
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/filter"
 	"github.com/apache/dubbo-go/protocol"
@@ -31,22 +33,38 @@ const (
 	tracingFilterName = "tracing"
 )
 
+// this should be executed before users set their own Tracer
 func init() {
 	extension.SetFilter(tracingFilterName, NewTracingFilter)
+	opentracing.SetGlobalTracer(opentracing.NoopTracer{})
 }
+
+var (
+	errorKey   = "ErrorMsg"
+	successKey = "Success"
+)
 
 type TracingFilter struct {
 }
 
 func (tf *TracingFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 
-	// invoker.GetUrl().Context()
-
 	operationName := invoker.GetUrl().ServiceKey() + invocation.MethodName()
+	// withTimeout after we support the timeout between different ends.
+	invCtx, cancel := context.WithCancel(invocation.Context())
+	span, spanCtx := opentracing.StartSpanFromContext(invCtx, operationName)
+	invocation.SetContext(common.NewContextWith(spanCtx))
+	defer func() {
+		span.Finish()
+		cancel()
+	}()
 
-	span, ctx := opentracing.StartSpanFromContext(invocation.Context(), operationName)
-
-	defer span.Finish()
+	result := invoker.Invoke(invocation)
+	span.SetTag(successKey, result.Error() != nil)
+	if result.Error() != nil {
+		span.LogFields(log.String(errorKey, result.Error().Error()))
+	}
+	return result
 }
 
 func (tf *TracingFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
