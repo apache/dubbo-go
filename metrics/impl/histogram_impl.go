@@ -24,7 +24,7 @@ import (
 
 type HistorgramImpl struct {
 	reservoir metrics.Reservoir
-    count     metrics.BucketCounter
+	count     metrics.BucketCounter
 }
 
 func (hg *HistorgramImpl) Update(value int) {
@@ -53,10 +53,9 @@ func (hg *HistorgramImpl) GetCount() int64 {
 	return hg.count.GetCount()
 }
 
-
 func newHistogram(reservoirType metrics.ReservoirType, duration time.Duration, numberOfBucket int, clock metrics.Clock) metrics.Histogram {
 	bucketCount := newBucketCounterImpl(duration, numberOfBucket, clock, true)
-	switch (reservoirType) {
+	switch reservoirType {
 	case metrics.UniformReservoirType:
 		return &HistorgramImpl{
 			reservoir: NewUniformReservoir(1024),

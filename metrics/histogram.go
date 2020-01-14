@@ -26,14 +26,12 @@ type Histogram interface {
 	 *
 	 * @param value the length of the value
 	 */
-	 Update(value int)
+	Update(value int)
 
 	/**
 	 * Adds a recorded value.
 	 *
 	 * @param value the length of the value
 	 */
-	 UpdateN(value int64)
-
-
+	UpdateN(value int64)
 }

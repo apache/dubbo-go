@@ -45,7 +45,6 @@ func main() {
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(exporter)
 
-
 	http.Handle(*metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`<html>

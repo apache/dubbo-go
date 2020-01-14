@@ -24,15 +24,13 @@ import (
 )
 
 const (
-	groupName    = "dubbo"
+	groupName = "dubbo"
 )
-
-
 
 type Exporter struct {
 	//URI    string
-	metrics	map[string]*prometheus.Desc
-	mutex	sync.RWMutex
+	metrics map[string]*prometheus.Desc
+	mutex   sync.RWMutex
 }
 
 func newGlobalMetric(namespace string, metricName string, docString string, labels []string) *prometheus.Desc {
@@ -53,12 +51,12 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	}
 }
 
-func (e *Exporter) Collect(ch chan<- prometheus.Metric ) {
+func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 	metricsManager := new(impl.DefaultMetricManager)
 	metricsRegistry := metricsManager.GetMetricRegistry(groupName)
-	
+
 	for _, v := range metricsRegistry.GetMetrics() {
 		compassImpl := metricsRegistry.GetCompass(v.MetricName)
 		//compassImpl := metricsManager.GetCompass("dubbo", v.MetricName)
