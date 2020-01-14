@@ -18,6 +18,10 @@
 package filter_impl
 
 import (
+	"context"
+
+	"github.com/opentracing/opentracing-go"
+
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/filter"
 	"github.com/apache/dubbo-go/protocol"
@@ -26,16 +30,23 @@ import (
 const (
 	tracingFilterName = "tracing"
 )
+
 func init() {
 	extension.SetFilter(tracingFilterName, NewTracingFilter)
 }
 
 type TracingFilter struct {
-
 }
 
 func (tf *TracingFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	panic("implement me")
+
+	// invoker.GetUrl().Context()
+
+	operationName := invoker.GetUrl().ServiceKey() + invocation.MethodName()
+
+	span, ctx := opentracing.StartSpanFromContext(invocation.Context(), operationName)
+
+	defer span.Finish()
 }
 
 func (tf *TracingFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
@@ -46,7 +57,7 @@ var (
 	tracingFilterInstance *TracingFilter
 )
 
-func NewTracingFilter() filter.Filter{
+func NewTracingFilter() filter.Filter {
 	if tracingFilterInstance == nil {
 		tracingFilterInstance = &TracingFilter{}
 	}

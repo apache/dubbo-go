@@ -15,22 +15,16 @@
  * limitations under the License.
  */
 
-package protocol
+package common
 
 import (
-	"reflect"
-)
-import (
-	"github.com/apache/dubbo-go/common"
+	"context"
 )
 
-type Invocation interface {
-	MethodName() string
-	ParameterTypes() []reflect.Type
-	Arguments() []interface{}
-	Reply() interface{}
-	Attachments() map[string]string
-	AttachmentsByKey(string, string) string
-	Invoker() Invoker
-	Context() *common.Context
+type Context struct {
+	context.Context
+}
+
+func NewContext() *Context {
+	return &Context{Context: context.Background()}
 }
