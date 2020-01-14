@@ -25,6 +25,9 @@ type Context struct {
 	context.Context
 }
 
-func NewContext() *Context {
-	return &Context{Context: context.Background()}
+func NewContext() Context {
+	return NewContextWith(context.Background())
+}
+func NewContextWith(ctx context.Context) Context {
+	return Context{Context: ctx}
 }
