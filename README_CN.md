@@ -97,7 +97,7 @@ Apache License, Version 2.0
 
 ## 文档
 
-https://dubbogo.github.io/dubbo-go-website(**完善中**)
+https://dubbogo.github.io/dubbo-go-website (**完善中**)
 
 ## 快速开始 ##
 

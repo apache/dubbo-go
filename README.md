@@ -99,7 +99,7 @@ You can know more about dubbo-go by its [roadmap](https://github.com/apache/dubb
 
 ## Document
 
-https://dubbogo.github.io/dubbo-go-website(**Improving**)
+https://dubbogo.github.io/dubbo-go-website (**Improving**)
 
 ## Quick Start
 
