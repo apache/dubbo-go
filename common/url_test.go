@@ -271,3 +271,17 @@ func TestClone(t *testing.T) {
 	assert.Equal(t, u1.Protocol, "dubbo")
 	assert.Equal(t, u2.Protocol, "provider")
 }
+
+func TestColonSeparatedKey(t *testing.T) {
+	u1, _ := NewURL(context.TODO(), "dubbo://127.0.0.1:20000")
+	u1.AddParam(constant.INTERFACE_KEY, "com.ikurento.user.UserProvider")
+
+	assert.Equal(t, u1.ColonSeparatedKey(), u1.GetParam(constant.INTERFACE_KEY, "")+"::")
+	u1.AddParam(constant.VERSION_KEY, "version1")
+	assert.Equal(t, u1.ColonSeparatedKey(), u1.GetParam(constant.INTERFACE_KEY, "")+":version1:")
+	u1.AddParam(constant.GROUP_KEY, "group1")
+	assert.Equal(t, u1.ColonSeparatedKey(), u1.GetParam(constant.INTERFACE_KEY, "")+":version1:group1")
+	u1.SetParam(constant.VERSION_KEY, "")
+	assert.Equal(t, u1.ColonSeparatedKey(), u1.GetParam(constant.INTERFACE_KEY, "")+"::group1")
+
+}
