@@ -46,7 +46,7 @@ func (d *DefaultMetricManager) GetCompass(groupName string, metricName *metrics.
 	if !d.enable {
 		return nopCompass
 	}
-	registry := d.getMetricRegistry(groupName)
+	registry := d.GetMetricRegistry(groupName)
 	return registry.GetCompass(metricName)
 }
 
@@ -62,11 +62,11 @@ func (d *DefaultMetricManager) GetFastCompass(groupName string, metricName *metr
 	if !d.enable {
 		return nopFastCompass
 	}
-	registry := d.getMetricRegistry(groupName)
+	registry := d.GetMetricRegistry(groupName)
 	return registry.GetFastCompass(metricName)
 }
 
-func (d *DefaultMetricManager) getMetricRegistry(group string) metrics.MetricRegistry {
+func (d *DefaultMetricManager) GetMetricRegistry(group string) metrics.MetricRegistry {
 	// fast path, avoid creating the  MetricRegistry
 	result, load := d.metricRegistryMap.Load(group)
 	if load {
