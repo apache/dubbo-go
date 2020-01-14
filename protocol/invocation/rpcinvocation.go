@@ -41,7 +41,7 @@ type RPCInvocation struct {
 	attachments    map[string]string
 	invoker        protocol.Invoker
 	lock           sync.RWMutex
-	ctx            *common.Context
+	ctx            common.Context
 }
 
 func NewRPCInvocation(methodName string, arguments []interface{}, attachments map[string]string) *RPCInvocation {
@@ -125,11 +125,11 @@ func (r *RPCInvocation) SetCallBack(c interface{}) {
 	r.callBack = c
 }
 
-func (r *RPCInvocation) Context() *common.Context {
+func (r *RPCInvocation) Context() common.Context {
 	return r.ctx
 }
 
-func (r *RPCInvocation) SetContext(ctx *common.Context) {
+func (r *RPCInvocation) SetContext(ctx common.Context) {
 	r.ctx = ctx
 }
 

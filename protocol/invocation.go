@@ -32,5 +32,6 @@ type Invocation interface {
 	Attachments() map[string]string
 	AttachmentsByKey(string, string) string
 	Invoker() Invoker
-	Context() *common.Context
+	Context() common.Context
+	SetContext(ctx common.Context)
 }
