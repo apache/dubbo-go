@@ -15,8 +15,8 @@ func SetAuthenticator(name string, fcn func() filter.Authenticator) {
 }
 
 func GetAuthenticator(name string) filter.Authenticator {
-	if clusters[name] == nil {
-		panic("cluster for " + name + " is not existing, make sure you have import the package.")
+	if authenticators[name] == nil {
+		panic("authenticator for " + name + " is not existing, make sure you have import the package.")
 	}
 	return authenticators[name]()
 }
@@ -26,8 +26,8 @@ func SetAccesskeyStorages(name string, fcn func() filter.AccesskeyStorage) {
 }
 
 func GetAccesskeyStorages(name string) filter.AccesskeyStorage {
-	if clusters[name] == nil {
-		panic("cluster for " + name + " is not existing, make sure you have import the package.")
+	if accesskeyStorages[name] == nil {
+		panic("accesskeyStorages for " + name + " is not existing, make sure you have import the package.")
 	}
 	return accesskeyStorages[name]()
 }

@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"reflect"
 	"testing"
 )
 import (
@@ -35,7 +34,6 @@ func TestIsEmpty(t *testing.T) {
 }
 
 func TestSign(t *testing.T) {
-
 	metadata := "com.ikurento.user.UserProvider::sayHi"
 	key := "key"
 	signature := Sign(metadata, key)
@@ -44,52 +42,42 @@ func TestSign(t *testing.T) {
 }
 
 func TestSignWithParams(t *testing.T) {
-
+	metadata := "com.ikurento.user.UserProvider::sayHi"
+	key := "key"
+	params := []interface{}{
+		"a", 1, struct {
+			Name string
+			Id   int64
+		}{"YuYu", 1},
+	}
+	signature, _ := SignWithParams(params, metadata, key)
+	assert.False(t, IsEmpty(signature, false))
 }
 
 func Test_doSign(t *testing.T) {
-	type args struct {
-		bytes []byte
-		key   string
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := doSign(tt.args.bytes, tt.args.key); got != tt.want {
-				t.Errorf("doSign() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	sign := doSign([]byte("DubboGo"), "key")
+	sign1 := doSign([]byte("DubboGo"), "key")
+	sign2 := doSign([]byte("DubboGo"), "key2")
+	assert.NotNil(t, sign)
+	assert.Equal(t, sign1, sign)
+	assert.NotEqual(t, sign1, sign2)
 }
 
 func Test_toBytes(t *testing.T) {
-	type args struct {
-		data []interface{}
+	params := []interface{}{
+		"a", 1, struct {
+			Name string
+			Id   int64
+		}{"YuYu", 1},
 	}
-	tests := []struct {
-		name    string
-		args    args
-		want    []byte
-		wantErr bool
-	}{
-		// TODO: Add test cases.
+	params2 := []interface{}{
+		"a", 1, struct {
+			Name string
+			Id   int64
+		}{"YuYu", 1},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := toBytes(tt.args.data)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("toBytes() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("toBytes() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	jsonBytes, _ := toBytes(params)
+	jsonBytes2, _ := toBytes(params2)
+	assert.NotNil(t, jsonBytes)
+	assert.Equal(t, jsonBytes, jsonBytes2)
 }

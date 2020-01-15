@@ -24,7 +24,7 @@ type DefaultAuthenticator struct {
 }
 
 func (authenticator *DefaultAuthenticator) Sign(invocation protocol.Invocation, url *common.URL) error {
-	currentTimeMillis := strconv.Itoa(time.Now().Second() * 1000)
+	currentTimeMillis := strconv.Itoa(int(time.Now().Unix() * 1000))
 
 	consumer := url.GetParam(constant.APPLICATION_KEY, "")
 	accessKeyPair, err := getAccessKeyPair(invocation, url)
@@ -67,7 +67,8 @@ func (authenticator *DefaultAuthenticator) Authenticate(invocation protocol.Invo
 	requestTimestamp := invocation.AttachmentsByKey(constant.REQUEST_TIMESTAMP_KEY, "")
 	originSignature := invocation.AttachmentsByKey(constant.REQUEST_SIGNATURE_KEY, "")
 	consumer := invocation.AttachmentsByKey(constant.CONSUMER, "")
-	if IsEmpty(accessKeyId, false) || IsEmpty(consumer, false) || IsEmpty(requestTimestamp, false) || IsEmpty(originSignature, false) {
+	if IsEmpty(accessKeyId, false) || IsEmpty(consumer, false) ||
+		IsEmpty(requestTimestamp, false) || IsEmpty(originSignature, false) {
 		return errors.New("failed to authenticate, maybe consumer not enable the auth")
 	}
 
