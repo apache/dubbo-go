@@ -1,10 +1,10 @@
 package filter
 
 type AccessKeyPair struct {
-	AccessKey string
-	SecretKey string
+	AccessKey    string
+	SecretKey    string
 	ConsumerSide string
 	ProviderSide string
-	Creator string
-	Options string
+	Creator      string
+	Options      string
 }

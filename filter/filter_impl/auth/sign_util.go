@@ -1,10 +1,10 @@
 package auth
 
 import (
-	"bytes"
+	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/gob"
+	"encoding/json"
 	"errors"
 	"strings"
 )
@@ -28,17 +28,18 @@ func SignWithParams(params []interface{}, metadata, key string) (string, error) 
 }
 
 func toBytes(data []interface{}) ([]byte, error) {
-	var b bytes.Buffer
-	enc := gob.NewEncoder(&b)
-	if err := enc.Encode(data); err != nil {
+	if bytes, err := json.Marshal(data); err != nil {
 		return nil, errors.New("")
+	} else {
+		return bytes, nil
 	}
-	return b.Bytes(), nil
 }
 
 func doSign(bytes []byte, key string) string {
-	sum256 := sha256.Sum256(bytes)
-	return base64.URLEncoding.EncodeToString(sum256[:])
+	mac := hmac.New(sha256.New, []byte(key))
+	mac.Write(bytes)
+	signature := mac.Sum(nil)
+	return base64.URLEncoding.EncodeToString(signature)
 }
 
 func IsEmpty(s string, allowSpace bool) bool {
