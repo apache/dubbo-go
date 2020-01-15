@@ -8,19 +8,13 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-const (
-	ACCESS_KEY_ID_KEY = "accessKeyId"
-
-	SECRET_ACCESS_KEY_KEY = "secretAccessKey"
-)
-
 type DefaultAccesskeyStorage struct {
 }
 
 func (storage *DefaultAccesskeyStorage) GetAccesskeyPair(invocation protocol.Invocation, url *common.URL) *filter.AccessKeyPair {
 	return &filter.AccessKeyPair{
-		AccessKey: url.GetParam(ACCESS_KEY_ID_KEY, ""),
-		SecretKey: url.GetParam(SECRET_ACCESS_KEY_KEY, ""),
+		AccessKey: url.GetParam(constant.ACCESS_KEY_ID_KEY, ""),
+		SecretKey: url.GetParam(constant.SECRET_ACCESS_KEY_KEY, ""),
 	}
 }
 
