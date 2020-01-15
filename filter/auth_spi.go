@@ -13,4 +13,3 @@ type Authenticator interface {
 type AccesskeyStorage interface {
 	GetAccesskeyPair(protocol.Invocation, *common.URL) *AccessKeyPair
 }
-
