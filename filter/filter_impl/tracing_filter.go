@@ -27,7 +27,6 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/filter"
 	"github.com/apache/dubbo-go/protocol"
@@ -57,7 +56,7 @@ func (tf *tracingFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 	// withTimeout after we support the timeout between different ends.
 	invCtx, cancel := context.WithCancel(invocation.Context())
 	span, spanCtx := opentracing.StartSpanFromContext(invCtx, operationName)
-	invocation.SetContext(common.NewContextWith(spanCtx))
+	invocation.SetContext(protocol.NewContextWith(spanCtx))
 	defer func() {
 		span.Finish()
 		cancel()

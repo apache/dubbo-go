@@ -20,8 +20,6 @@ package invocation
 import (
 	"reflect"
 	"sync"
-
-	"github.com/apache/dubbo-go/common"
 )
 
 import (
@@ -41,7 +39,7 @@ type RPCInvocation struct {
 	attachments    map[string]string
 	invoker        protocol.Invoker
 	lock           sync.RWMutex
-	ctx            common.Context
+	ctx            protocol.Context
 }
 
 func NewRPCInvocation(methodName string, arguments []interface{}, attachments map[string]string) *RPCInvocation {
@@ -49,14 +47,11 @@ func NewRPCInvocation(methodName string, arguments []interface{}, attachments ma
 		methodName:  methodName,
 		arguments:   arguments,
 		attachments: attachments,
-		ctx:         common.NewContext(),
 	}
 }
 
 func NewRPCInvocationWithOptions(opts ...option) *RPCInvocation {
-	invo := &RPCInvocation{
-		ctx: common.NewContext(),
-	}
+	invo := &RPCInvocation{}
 	for _, opt := range opts {
 		opt(invo)
 	}
@@ -125,11 +120,11 @@ func (r *RPCInvocation) SetCallBack(c interface{}) {
 	r.callBack = c
 }
 
-func (r *RPCInvocation) Context() common.Context {
+func (r *RPCInvocation) Context() protocol.Context {
 	return r.ctx
 }
 
-func (r *RPCInvocation) SetContext(ctx common.Context) {
+func (r *RPCInvocation) SetContext(ctx protocol.Context) {
 	r.ctx = ctx
 }
 
