@@ -20,9 +20,6 @@ package protocol
 import (
 	"reflect"
 )
-import (
-	"github.com/apache/dubbo-go/common"
-)
 
 type Invocation interface {
 	MethodName() string
@@ -32,6 +29,6 @@ type Invocation interface {
 	Attachments() map[string]string
 	AttachmentsByKey(string, string) string
 	Invoker() Invoker
-	Context() common.Context
-	SetContext(ctx common.Context)
+	Context() Context
+	SetContext(ctx Context)
 }
