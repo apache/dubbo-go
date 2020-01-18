@@ -145,8 +145,3 @@ go test ./... -coverprofile=coverage.txt -covermode=atomic
 若你正在使用 [apache/dubbo-go](github.com/apache/dubbo-go) 且认为其有用或者向对其做改进，请忝列贵司信息于 [用户列表](https://github.com/apache/dubbo-go/issues/2)，以便我们知晓之。
 
 ![ctrip](https://pic.c-ctrip.com/common/c_logo2013.png)
-
-## Stargazers
-
-[![Stargazers over time](https://starchart.cc/apache/dubbo-go.svg)](https://starchart.cc/apache/dubbo-go)
-
