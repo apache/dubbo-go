@@ -222,10 +222,12 @@ func (r *kubernetesRegistry) registerConsumer(svc common.URL) error {
 		logger.Errorf("kubernetes client create path %s: %v", consumersNode, err)
 		return perrors.WithMessage(err, "kubernetes create consumer nodes")
 	}
-	providersNode := fmt.Sprintf("/dubbo/%s/%s", svc.Service(), common.DubboNodes[common.PROVIDER])
-	if err := r.createDirIfNotExist(providersNode); err != nil {
-		return perrors.WithMessage(err, "create provider node")
-	}
+
+	// NOTICE kubernetes && etcdv3 not need create provider metadata dir in consumer logic
+	//providersNode := fmt.Sprintf("/dubbo/%s/%s", svc.Service(), common.DubboNodes[common.PROVIDER])
+	//if err := r.createDirIfNotExist(providersNode); err != nil {
+	//	return perrors.WithMessage(err, "create provider node")
+	//}
 
 	params := url.Values{}
 
