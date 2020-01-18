@@ -63,9 +63,6 @@ func (dir *BaseDirectory) GetDirectoryUrl() *common.URL {
 }
 
 func (dir *BaseDirectory) SetRouters(routers []cluster.Router) {
-	dir.mutex.Lock()
-	defer dir.mutex.Unlock()
-
 	routerKey := dir.GetUrl().GetParam(constant.ROUTER_KEY, "")
 	if len(routerKey) > 0 {
 		factory := extension.GetRouterFactory(dir.GetUrl().Protocol)
@@ -76,6 +73,8 @@ func (dir *BaseDirectory) SetRouters(routers []cluster.Router) {
 		}
 	}
 
+	dir.mutex.Lock()
+	defer dir.mutex.Unlock()
 	dir.routers = routers
 }
 
