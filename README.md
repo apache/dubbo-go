@@ -149,8 +149,3 @@ If you are using [apache/dubbo-go](github.com/apache/dubbo-go) and think that it
 
 ![ctrip](https://pic.c-ctrip.com/common/c_logo2013.png)![Excellent Health Technology Group](https://raw.githubusercontent.com/dajiiu/photo/static/mirror/haozhuo_logo.png)
 ![ctrip](https://raw.githubusercontent.com/pantianying/go-tool/master/picture/logo_2-removebg-preview.png)
-
-## Stargazers
-
-[![Stargazers over time](https://starchart.cc/apache/dubbo-go.svg)](https://starchart.cc/apache/dubbo-go)
-
