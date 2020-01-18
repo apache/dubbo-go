@@ -89,8 +89,12 @@ func (refconfig *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) erro
 	return nil
 }
 
-func (refconfig *ReferenceConfig) Refer() {
-	url := common.NewURLWithOptions(common.WithPath(refconfig.id), common.WithProtocol(refconfig.Protocol), common.WithParams(refconfig.getUrlMap()))
+func (refconfig *ReferenceConfig) Refer(impl interface{}) {
+	url := common.NewURLWithOptions(common.WithPath(refconfig.id),
+		common.WithProtocol(refconfig.Protocol),
+		common.WithParams(refconfig.getUrlMap()),
+		common.WithParamsValue(constant.BEAN_NAME_KEY, refconfig.id),
+	)
 
 	//1. user specified URL, could be peer-to-peer address, or register center's address.
 	if refconfig.Url != "" {
@@ -214,7 +218,7 @@ func (refconfig *ReferenceConfig) GenericLoad(id string) {
 	genericService := NewGenericService(refconfig.id)
 	SetConsumerService(genericService)
 	refconfig.id = id
-	refconfig.Refer()
+	refconfig.Refer(genericService)
 	refconfig.Implement(genericService)
 	return
 }
