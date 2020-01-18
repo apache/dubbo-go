@@ -164,7 +164,7 @@ func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 }
 
 func toRouters(urls []*common.URL) []cluster.Router {
-	if urls == nil || len(urls) == 0 {
+	if len(urls) == 0 {
 		return nil
 	}
 
@@ -273,7 +273,6 @@ func (dir *registryDirectory) List(invocation protocol.Invocation) []protocol.In
 	invokers := dir.cacheInvokers
 	localRouters := dir.Routers()
 
-	logger.Debug("========", len(localRouters))
 	if len(localRouters) > 0 {
 		for _, router := range localRouters {
 			if reflect.ValueOf(router.Url()).IsValid() || router.Url().GetParamBool(constant.RUNTIME_KEY, false) {

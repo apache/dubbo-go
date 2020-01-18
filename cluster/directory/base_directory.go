@@ -32,7 +32,7 @@ import (
 	gxset "github.com/dubbogo/gost/container/set"
 )
 
-var RouterUrlSet = gxset.NewSet()
+var routerURLSet = gxset.NewSet()
 
 type BaseDirectory struct {
 	url       *common.URL
@@ -40,6 +40,10 @@ type BaseDirectory struct {
 	routers   []cluster.Router
 	mutex     sync.Mutex
 	once      sync.Once
+}
+
+func GetRouterURLSet() *gxset.HashSet {
+	return routerURLSet
 }
 
 func NewBaseDirectory(url *common.URL) BaseDirectory {
@@ -74,9 +78,10 @@ func (dir *BaseDirectory) SetRouters(routers []cluster.Router) {
 
 	dir.routers = routers
 }
+
 func (dir *BaseDirectory) Routers() []cluster.Router {
 	dir.once.Do(func() {
-		rs := RouterUrlSet.Values()
+		rs := routerURLSet.Values()
 		for _, r := range rs {
 			factory := extension.GetRouterFactory(r.(*common.URL).GetParam("router", "condition"))
 			router, err := factory.Router(r.(*common.URL))
