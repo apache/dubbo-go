@@ -216,8 +216,6 @@ func (c *Client) initStore() error {
 // try to watch kubernetes pods
 func (c *Client) maintenanceStatus() error {
 
-	c.wg.Add(1)
-
 	// try once
 	watcher, err := c.rawClient.CoreV1().Pods(c.ns).Watch(metav1.ListOptions{
 		LabelSelector: fields.OneTermEqualSelector(DubboIOLabelKey, DubboIOLabelValue).String(),
@@ -229,6 +227,7 @@ func (c *Client) maintenanceStatus() error {
 
 	watcher.Stop()
 
+	c.wg.Add(1)
 	// add wg, grace close the client
 	go c.maintenanceStatusLoop()
 	return nil
