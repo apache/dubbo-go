@@ -252,6 +252,8 @@ func serveRequest(ctx context.Context,
 		rsp := &http.Response{
 			Header:        make(http.Header),
 			StatusCode:    500,
+			ProtoMajor:    1,
+			ProtoMinor:    1,
 			ContentLength: int64(len(body)),
 			Body:          ioutil.NopCloser(bytes.NewReader(body)),
 		}
@@ -276,6 +278,8 @@ func serveRequest(ctx context.Context,
 		rsp := &http.Response{
 			Header:        make(http.Header),
 			StatusCode:    200,
+			ProtoMajor:    1,
+			ProtoMinor:    1,
 			ContentLength: int64(len(body)),
 			Body:          ioutil.NopCloser(bytes.NewReader(body)),
 		}
