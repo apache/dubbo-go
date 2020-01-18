@@ -41,7 +41,9 @@ var (
 // Namely: dubbo.consumer.xml & dubbo.provider.xml in java dubbo
 func init() {
 	var (
-		confConFile, confProFile, confRouterFile string
+		confConFile    string
+		confProFile    string
+		confRouterFile string
 	)
 
 	confConFile = os.Getenv(constant.CONF_CONSUMER_FILE_PATH)
