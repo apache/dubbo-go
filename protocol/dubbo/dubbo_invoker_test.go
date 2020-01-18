@@ -40,8 +40,8 @@ func TestDubboInvoker_Invoke(t *testing.T) {
 		pendingResponses: new(sync.Map),
 		conf:             *clientConf,
 		opts: Options{
-			ConnectTimeout: 3e9,
-			RequestTimeout: 6e9,
+			ConnectTimeout: 3 * time.Second,
+			RequestTimeout: 6 * time.Second,
 		},
 	}
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
