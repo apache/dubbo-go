@@ -290,10 +290,11 @@ func (c URL) Key() string {
 	//return c.ServiceKey()
 }
 
-//todo
 func (c *URL) GetBackupUrls() []*URL {
-	var urls []*URL
-	var host string
+	var (
+		urls []*URL
+		host string
+	)
 	urls = append(urls, c)
 	backups := strings.Split(c.GetParam(constant.BACKUP_KEY, ""), "")
 	for _, address := range backups {
@@ -305,7 +306,6 @@ func (c *URL) GetBackupUrls() []*URL {
 		} else {
 			host = address
 		}
-		//todo
 		newURL := NewURLWithOptions(
 			WithProtocol(c.Protocol),
 			WithPath(c.Path),
