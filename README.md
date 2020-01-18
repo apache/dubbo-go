@@ -46,7 +46,7 @@ Finished List:
 - Protocol
     * Dubbo
     * Jsonrpc2.0
-    * [Grpc](https://github.com/apache/dubbo-go/pull/311)
+    * [gRPC](https://github.com/apache/dubbo-go/pull/311)
     
 - Registry
     * ZooKeeper
