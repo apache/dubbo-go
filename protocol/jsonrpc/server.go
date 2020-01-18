@@ -93,6 +93,8 @@ func (s *Server) handlePkg(conn net.Conn) {
 		rsp := &http.Response{
 			Header:        header,
 			StatusCode:    500,
+			ProtoMajor:    1,
+			ProtoMinor:    1,
 			ContentLength: int64(len(body)),
 			Body:          ioutil.NopCloser(bytes.NewReader(body)),
 		}
