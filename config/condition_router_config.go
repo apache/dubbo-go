@@ -24,6 +24,7 @@ import (
 	"strings"
 	"sync"
 )
+
 import (
 	"github.com/apache/dubbo-go/cluster/directory"
 	"github.com/apache/dubbo-go/common"
@@ -57,8 +58,7 @@ func RouterInit(confRouterFile string) error {
 	}
 
 	logger.Debugf("router config{%#v}\n", routerConfig)
-	directory.RouterUrlSet.Add(initRouterUrl())
-	logger.Debug("=====", directory.RouterUrlSet.Size())
+	directory.GetRouterURLSet().Add(initRouterUrl())
 	return nil
 }
 
@@ -86,7 +86,10 @@ func initRouterUrl() *common.URL {
 }
 
 func parseCondition(conditions []string) string {
-	var when, then string
+	var (
+		when string
+		then string
+	)
 	for _, condition := range conditions {
 		condition = strings.Trim(condition, " ")
 		if strings.Contains(condition, "=>") {
