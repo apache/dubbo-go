@@ -19,6 +19,7 @@ package zookeeper
 
 import (
 	"path"
+	"strings"
 	"sync"
 	"time"
 )
@@ -273,6 +274,7 @@ func (l *ZkEventListener) ListenServiceEvent(zkPath string, listener remoting.Da
 		children  []string
 	)
 
+	zkPath = strings.ReplaceAll(zkPath, "$", "%24")
 	l.pathMapLock.Lock()
 	_, ok := l.pathMap[zkPath]
 	l.pathMapLock.Unlock()
