@@ -18,6 +18,7 @@
 package protocol
 
 import (
+	"context"
 	"reflect"
 )
 
@@ -29,6 +30,6 @@ type Invocation interface {
 	Attachments() map[string]string
 	AttachmentsByKey(string, string) string
 	Invoker() Invoker
-	Context() Context
-	SetContext(ctx Context)
+	Context() context.Context
+	SetContext(ctx context.Context)
 }
