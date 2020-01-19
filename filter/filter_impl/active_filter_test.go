@@ -50,7 +50,7 @@ func TestActiveFilter_OnResponse(t *testing.T) {
 	}
 	filter.OnResponse(result, invoker, invoc)
 	methodStatus := protocol.GetMethodStatus(url, "test")
-	urlStatus := protocol.GetUrlStatus(url)
+	urlStatus := protocol.GetURLStatus(url)
 
 	assert.Equal(t, int32(1), methodStatus.GetTotal())
 	assert.Equal(t, int32(1), urlStatus.GetTotal())
