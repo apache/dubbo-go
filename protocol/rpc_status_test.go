@@ -138,7 +138,6 @@ func TestCurrentTimeMillis(t *testing.T) {
 	assert.Equal(t, c, i)
 }
 
-
 func destroy() {
 	delete1 := func(key interface{}, value interface{}) bool {
 		methodStatistics.Delete(key)
