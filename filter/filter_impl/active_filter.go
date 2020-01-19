@@ -53,7 +53,7 @@ func (ef *ActiveFilter) OnResponse(result protocol.Result, invoker protocol.Invo
 
 	startTime, err := strconv.ParseInt(invocation.(*invocation2.RPCInvocation).AttachmentsByKey(dubbo_invoke_start_time, "0"), 10, 64)
 	if err != nil {
-		panic("as")
+		panic("parse dubbo_invoke_start_time to int64 failed")
 	}
 	elapsed := protocol.CurrentTimeMillis() - startTime
 	protocol.EndCount(invoker.GetUrl(), invocation.MethodName(), elapsed, result.Error() == nil)
