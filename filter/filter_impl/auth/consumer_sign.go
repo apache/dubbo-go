@@ -21,8 +21,8 @@ func init() {
 func (filter *ConsumerSignFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("invoking ConsumerSign filter.")
 	url := invoker.GetUrl()
-	shouldAuth := url.GetParamBool(constant.SERVICE_AUTH_KEY, false)
-	if shouldAuth {
+	shouldSign := url.GetParamBool(constant.SERVICE_AUTH_KEY, false)
+	if shouldSign {
 		authenticator := extension.GetAuthenticator(url.GetParam(constant.AUTHENTICATOR_KEY, constant.DEFAULT_AUTHENTICATOR))
 		if err := authenticator.Sign(invocation, &url); err != nil {
 			panic(fmt.Sprintf("Sign for invocation %s # %s failed", url.ServiceKey(), invocation.MethodName()))
