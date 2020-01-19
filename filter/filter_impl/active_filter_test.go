@@ -29,7 +29,7 @@ func TestActiveFilter_Invoke(t *testing.T) {
 	invoker.EXPECT().Invoke(gomock.Any()).Return(nil)
 	invoker.EXPECT().GetUrl().Return(url).Times(1)
 	filter.Invoke(invoker, invoc)
-	assert.True(t, invoc.AttachmentsByKey(dubbo_invoke_start_time, "") != "")
+	assert.True(t, invoc.AttachmentsByKey(dubboInvokeStartTime, "") != "")
 
 }
 
@@ -37,7 +37,7 @@ func TestActiveFilter_OnResponse(t *testing.T) {
 	c := protocol.CurrentTimeMillis()
 	elapsed := 100
 	invoc := invocation.NewRPCInvocation("test", []interface{}{"OK"}, map[string]string{
-		dubbo_invoke_start_time: strconv.FormatInt(c-int64(elapsed), 10),
+		dubboInvokeStartTime: strconv.FormatInt(c-int64(elapsed), 10),
 	})
 	url, _ := common.NewURL(context.TODO(), "dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
 	filter := ActiveFilter{}
