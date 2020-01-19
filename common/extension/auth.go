@@ -4,11 +4,10 @@ import (
 	"github.com/apache/dubbo-go/filter"
 )
 
-var(
+var (
 	authenticators    = make(map[string]func() filter.Authenticator)
 	accesskeyStorages = make(map[string]func() filter.AccesskeyStorage)
 )
-
 
 func SetAuthenticator(name string, fcn func() filter.Authenticator) {
 	authenticators[name] = fcn
