@@ -171,7 +171,7 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 
 	keyList, valueList, err := l.client.GetChildren(key)
 	if err != nil {
-		logger.Errorf("Get new node path {%v} 's content error,message is  {%v}", key, perrors.WithMessage(err, "get children"))
+		logger.Warnf("Get new node path {%v} 's content error,message is  {%v}", key, perrors.WithMessage(err, "get children"))
 	}
 
 	logger.Infof("get key children list %s, keys %v values %v", key, keyList, valueList)
