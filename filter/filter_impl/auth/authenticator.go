@@ -69,7 +69,7 @@ func (authenticator *DefaultAuthenticator) Authenticate(invocation protocol.Invo
 	consumer := invocation.AttachmentsByKey(constant.CONSUMER, "")
 	if IsEmpty(accessKeyId, false) || IsEmpty(consumer, false) ||
 		IsEmpty(requestTimestamp, false) || IsEmpty(originSignature, false) {
-		return errors.New("failed to authenticate, maybe consumer not enable the auth")
+		return errors.New("failed to authenticate your ak/sk, maybe the consumer has not enabled the auth")
 	}
 
 	accessKeyPair, err := getAccessKeyPair(invocation, url)
