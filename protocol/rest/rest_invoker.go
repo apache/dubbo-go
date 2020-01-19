@@ -1,31 +1,62 @@
 package rest
 
 import (
+	"fmt"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
-	"net/http"
+	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
+	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
 )
 
 type RestInvoker struct {
 	protocol.BaseInvoker
-	client *http.Client
+	client              rest_interface.RestClient
+	restMethodConfigMap map[string]*rest_interface.RestMethodConfig
 }
 
-func NewRestInvoker() *RestInvoker {
-	return &RestInvoker{}
+func NewRestInvoker(url common.URL, client rest_interface.RestClient, restMethodConfig map[string]*rest_interface.RestMethodConfig) *RestInvoker {
+	return &RestInvoker{
+		BaseInvoker:         *protocol.NewBaseInvoker(url),
+		client:              client,
+		restMethodConfigMap: restMethodConfig,
+	}
 }
 
 func (ri *RestInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
-	// TODO 首先，将本地调用和ReferRestConfig，结合在一起，到这一步完成了Service -> Rest的绑定；
-	//      第一步完成的产物是一份metadata和请求参数，本步骤将利用metadata和请求参数来构造http请求，包括参数序列化，header设定；其中参数序列化可以是Json，也可以是XML，后续可以扩展到多媒体等；
-	//      http client发送请求。该步骤要允许用户自定义其连接参数，例如超时时间等；
-	//var (
-	//	result protocol.RPCResult
-	//)
-	//req, err := http.NewRequest("method", "url", bytes.NewBuffer([]byte{}))
-	//resp, err := ri.client.Do(req)
-	//defer resp.Body.Close()
-	//body, err := ioutil.ReadAll(resp.Body)
-	//result.Rest = invocation.Reply()
-	//return &result
-	return nil
+	inv := invocation.(*invocation_impl.RPCInvocation)
+	methodConfig := ri.restMethodConfigMap[inv.MethodName()]
+	var result protocol.RPCResult
+	if methodConfig == nil {
+		logger.Errorf("[RestInvoker]Rest methodConfig:%s is nill", inv.MethodName())
+		return nil
+	}
+	pathParams := make(map[string]string)
+	queryParams := make(map[string]string)
+	bodyParams := make(map[string]interface{})
+	for key, value := range methodConfig.PathParamsMap {
+		pathParams[value] = fmt.Sprintf("%v", inv.Arguments()[key])
+	}
+	for key, value := range methodConfig.QueryParamsMap {
+		queryParams[value] = fmt.Sprintf("%v", inv.Arguments()[key])
+	}
+	for key, value := range methodConfig.BodyMap {
+		bodyParams[value] = inv.Arguments()[key]
+	}
+	req := &rest_interface.RestRequest{
+		Location:    ri.GetUrl().Location,
+		Produces:    methodConfig.Produces,
+		Consumes:    methodConfig.Consumes,
+		Method:      methodConfig.MethodType,
+		Path:        methodConfig.Path,
+		PathParams:  pathParams,
+		QueryParams: queryParams,
+		Body:        bodyParams,
+	}
+	result.Err = ri.client.Do(req, inv.Reply())
+	if result.Err == nil {
+		result.Rest = inv.Reply()
+	}
+	return &result
+
 }
