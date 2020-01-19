@@ -100,3 +100,13 @@ func getAccessKeyPair(invocation protocol.Invocation, url *common.URL) (*filter.
 func GetDefaultAuthenticator() filter.Authenticator {
 	return &DefaultAuthenticator{}
 }
+
+func doAuthWork(url *common.URL, do func(filter.Authenticator) error) error {
+
+	shouldAuth := url.GetParamBool(constant.SERVICE_AUTH_KEY, false)
+	if shouldAuth {
+		authenticator := extension.GetAuthenticator(url.GetParam(constant.AUTHENTICATOR_KEY, constant.DEFAULT_AUTHENTICATOR))
+		return do(authenticator)
+	}
+	return nil
+}
