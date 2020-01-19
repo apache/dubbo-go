@@ -19,7 +19,7 @@ func TestBeginCount(t *testing.T) {
 
 	url, _ := common.NewURL(context.TODO(), "dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
 	BeginCount(url, "test")
-	urlStatus := GetUrlStatus(url)
+	urlStatus := GetURLStatus(url)
 	methodStatus := GetMethodStatus(url, "test")
 	methodStatus1 := GetMethodStatus(url, "test1")
 	assert.Equal(t, int32(1), methodStatus.active)
@@ -33,7 +33,7 @@ func TestEndCount(t *testing.T) {
 
 	url, _ := common.NewURL(context.TODO(), "dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
 	EndCount(url, "test", 100, true)
-	urlStatus := GetUrlStatus(url)
+	urlStatus := GetURLStatus(url)
 	methodStatus := GetMethodStatus(url, "test")
 	assert.Equal(t, int32(-1), methodStatus.active)
 	assert.Equal(t, int32(-1), urlStatus.active)
@@ -54,7 +54,7 @@ func TestGetUrlStatus(t *testing.T) {
 	defer destroy()
 
 	url, _ := common.NewURL(context.TODO(), "dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
-	status := GetUrlStatus(url)
+	status := GetURLStatus(url)
 	assert.NotNil(t, status)
 	assert.Equal(t, int32(0), status.total)
 }
@@ -63,7 +63,7 @@ func Test_beginCount0(t *testing.T) {
 	defer destroy()
 
 	url, _ := common.NewURL(context.TODO(), "dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
-	status := GetUrlStatus(url)
+	status := GetURLStatus(url)
 	beginCount0(status)
 	assert.Equal(t, int32(1), status.active)
 }
@@ -73,7 +73,7 @@ func Test_All(t *testing.T) {
 
 	url, _ := common.NewURL(context.TODO(), "dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
 	request(url, "test", 100, false, true)
-	urlStatus := GetUrlStatus(url)
+	urlStatus := GetURLStatus(url)
 	methodStatus := GetMethodStatus(url, "test")
 	assert.Equal(t, int32(1), methodStatus.total)
 	assert.Equal(t, int32(1), urlStatus.total)
