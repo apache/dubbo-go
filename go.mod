@@ -17,6 +17,7 @@ require (
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
 	github.com/gin-gonic/gin v1.5.0
 	github.com/go-errors/errors v1.0.1 // indirect
+	github.com/go-resty/resty/v2 v2.1.0
 	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6 // indirect
 	github.com/golang/mock v1.3.1
 	github.com/google/btree v1.0.0 // indirect
