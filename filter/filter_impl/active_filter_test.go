@@ -54,8 +54,6 @@ func TestActiveFilter_OnResponse(t *testing.T) {
 
 	assert.Equal(t, int32(1), methodStatus.GetTotal())
 	assert.Equal(t, int32(1), urlStatus.GetTotal())
-	assert.Equal(t, int32(-1), methodStatus.GetActive())
-	assert.Equal(t, int32(-1), urlStatus.GetActive())
 	assert.Equal(t, int32(1), methodStatus.GetFailed())
 	assert.Equal(t, int32(1), urlStatus.GetFailed())
 	assert.Equal(t, int32(1), methodStatus.GetSuccessiveRequestFailureCount())
