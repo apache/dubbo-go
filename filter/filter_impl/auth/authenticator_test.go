@@ -10,10 +10,13 @@ import (
 )
 
 import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol/invocation"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestDefaultAuthenticator_Authenticate(t *testing.T) {

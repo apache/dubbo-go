@@ -47,9 +47,7 @@ func IsEmpty(s string, allowSpace bool) bool {
 		return true
 	}
 	if !allowSpace {
-		if strings.TrimSpace(s) == "" {
-			return true
-		}
+		return strings.TrimSpace(s) == ""
 	}
 	return false
 }

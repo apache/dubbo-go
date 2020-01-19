@@ -6,10 +6,13 @@ import (
 )
 
 import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	invocation2 "github.com/apache/dubbo-go/protocol/invocation"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestDefaultAccesskeyStorage_GetAccesskeyPair(t *testing.T) {
