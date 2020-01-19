@@ -55,6 +55,7 @@ func (ef *ActiveFilter) OnResponse(result protocol.Result, invoker protocol.Invo
 	if err != nil {
 		result.SetError(err)
 		logger.Errorf("parse dubbo_invoke_start_time to int64 failed")
+		return result
 	}
 	elapsed := protocol.CurrentTimeMillis() - startTime
 	protocol.EndCount(invoker.GetUrl(), invocation.MethodName(), elapsed, result.Error() == nil)
