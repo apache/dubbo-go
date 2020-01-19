@@ -71,8 +71,9 @@ type kubernetesRegistry struct {
 	dataListener   *dataListener
 	configListener *configurationListener
 
-	wg   sync.WaitGroup // wg+done for kubernetes client restart
-	done chan struct{}
+	wg        sync.WaitGroup // wg+done for kubernetes client restart
+	closeOnce sync.Once      // protect the done
+	done      chan struct{}
 }
 
 func (r *kubernetesRegistry) Client() *kubernetes.Client {
@@ -156,7 +157,10 @@ func (r *kubernetesRegistry) Destroy() {
 
 func (r *kubernetesRegistry) stop() {
 
-	close(r.done)
+	// close will be call concurrent
+	r.closeOnce.Do(func() {
+		close(r.done)
+	})
 
 	// close current client
 	r.client.Close()
