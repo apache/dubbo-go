@@ -106,6 +106,7 @@ func (ef *GenericServiceFilter) Invoke(invoker protocol.Invoker, invocation prot
 		newParams[i] = newParam
 	}
 	newInvocation := invocation2.NewRPCInvocation(methodName, newParams, invocation.Attachments())
+	newInvocation.SetContext(invocation.Context())
 	newInvocation.SetReply(invocation.Reply())
 	return invoker.Invoke(newInvocation)
 }
