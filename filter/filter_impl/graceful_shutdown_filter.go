@@ -18,6 +18,7 @@
 package filter_impl
 
 import (
+	"context"
 	"sync/atomic"
 )
 
@@ -52,16 +53,16 @@ type gracefulShutdownFilter struct {
 	shutdownConfig *config.ShutdownConfig
 }
 
-func (gf *gracefulShutdownFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (gf *gracefulShutdownFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	if gf.rejectNewRequest() {
 		logger.Info("The application is closing, new request will be rejected.")
 		return gf.getRejectHandler().RejectedExecution(invoker.GetUrl(), invocation)
 	}
 	atomic.AddInt32(&gf.activeCount, 1)
-	return invoker.Invoke(invocation)
+	return invoker.Invoke(ctx, invocation)
 }
 
-func (gf *gracefulShutdownFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (gf *gracefulShutdownFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	atomic.AddInt32(&gf.activeCount, -1)
 	// although this isn't thread safe, it won't be a problem if the gf.rejectNewRequest() is true.
 	if gf.shutdownConfig != nil && gf.activeCount <= 0 {

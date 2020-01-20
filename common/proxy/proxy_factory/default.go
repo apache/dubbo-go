@@ -18,6 +18,7 @@
 package proxy_factory
 
 import (
+	"context"
 	"reflect"
 	"strings"
 )
@@ -75,7 +76,7 @@ type ProxyInvoker struct {
 	protocol.BaseInvoker
 }
 
-func (pi *ProxyInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+func (pi *ProxyInvoker) Invoke(context context.Context, invocation protocol.Invocation) protocol.Result {
 	result := &protocol.RPCResult{}
 	result.SetAttachments(invocation.Attachments())
 
