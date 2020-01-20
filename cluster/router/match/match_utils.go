@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package router
+package match
 
 import (
 	"strings"
@@ -25,14 +25,14 @@ import (
 	"github.com/apache/dubbo-go/common"
 )
 
-func isMatchGlobPattern(pattern string, value string, param *common.URL) bool {
+func IsMatchGlobalPattern(pattern string, value string, param *common.URL) bool {
 	if param != nil && strings.HasPrefix(pattern, "$") {
 		pattern = param.GetRawParam(pattern[1:])
 	}
-	return isMatchInternalPattern(pattern, value)
+	return IsMatchInternalPattern(pattern, value)
 }
 
-func isMatchInternalPattern(pattern string, value string) bool {
+func IsMatchInternalPattern(pattern string, value string) bool {
 	if "*" == pattern {
 		return true
 	}
