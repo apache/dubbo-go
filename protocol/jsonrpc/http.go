@@ -30,6 +30,10 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/opentracing/opentracing-go"
+
+	"github.com/apache/dubbo-go/common/logger"
 )
 
 import (
@@ -121,6 +125,13 @@ func (c *HTTPClient) Call(ctx context.Context, service common.URL, req *Request,
 	if md, ok := ctx.Value(constant.DUBBOGO_CTX_KEY).(map[string]string); ok {
 		for k := range md {
 			httpHeader.Set(k, md[k])
+		}
+	}
+
+	if span := opentracing.SpanFromContext(ctx); span != nil {
+		err := opentracing.GlobalTracer().Inject(span.Context(), opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(httpHeader))
+		if err != nil {
+			logger.Errorf("Could not inject the Context into http header.")
 		}
 	}
 
