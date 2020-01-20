@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package router
+package condition
 
 import (
+	matcher "github.com/apache/dubbo-go/cluster/router/match"
 	"reflect"
 	"regexp"
 	"strings"
@@ -39,11 +40,12 @@ import (
 const (
 	ROUTE_PATTERN = `([&!=,]*)\\s*([^&!=,\\s]+)`
 	FORCE         = "force"
+	ENABLED       = "enabled"
 	PRIORITY      = "priority"
 )
 
 var (
-	router_pattern = regexp.MustCompile(`([&!=,]*)\s*([^&!=,\s]+)`)
+	routerPatternReg = regexp.MustCompile(ROUTE_PATTERN)
 )
 
 //ConditionRouter condition router struct
@@ -52,21 +54,19 @@ type ConditionRouter struct {
 	url           *common.URL
 	priority      int64
 	Force         bool
+	enabled       bool
 	WhenCondition map[string]MatchPair
 	ThenCondition map[string]MatchPair
 }
 
-func newConditionRouter(url *common.URL) (*ConditionRouter, error) {
+//NewConditionRouterWithRule
+func NewConditionRouterWithRule(rule string) (*ConditionRouter, error) {
 	var (
 		whenRule string
 		thenRule string
 		when     map[string]MatchPair
 		then     map[string]MatchPair
 	)
-	rule, err := url.GetParamAndDecoded(constant.RULE_KEY)
-	if err != nil || len(rule) == 0 {
-		return nil, perrors.Errorf("Illegal route rule!")
-	}
 	rule = strings.Replace(rule, "consumer.", "", -1)
 	rule = strings.Replace(rule, "provider.", "", -1)
 	i := strings.Index(rule, "=>")
@@ -99,13 +99,31 @@ func newConditionRouter(url *common.URL) (*ConditionRouter, error) {
 		then = t
 	}
 	return &ConditionRouter{
-		ROUTE_PATTERN,
-		url,
-		url.GetParamInt(PRIORITY, 0),
-		url.GetParamBool(FORCE, false),
-		when,
-		then,
+		Pattern:       ROUTE_PATTERN,
+		WhenCondition: when,
+		ThenCondition: then,
 	}, nil
+}
+
+//NewConditionRouter
+func NewConditionRouter(url *common.URL) (*ConditionRouter, error) {
+
+	rule, err := url.GetParamAndDecoded(constant.RULE_KEY)
+	if err != nil || len(rule) == 0 {
+		return nil, perrors.Errorf("Illegal route rule!")
+	}
+
+	router, err := NewConditionRouterWithRule(rule)
+	if err != nil {
+		return nil, err
+	}
+
+	router.url = url
+	router.priority = url.GetParamInt(PRIORITY, 0)
+	router.Force = url.GetParamBool(FORCE, false)
+	router.enabled = url.GetParamBool(ENABLED, true)
+
+	return router, nil
 }
 
 func (c *ConditionRouter) Priority() int64 {
@@ -116,8 +134,15 @@ func (c *ConditionRouter) Url() common.URL {
 	return *c.url
 }
 
+func (c *ConditionRouter) Enabled() bool {
+	return c.enabled
+}
+
 //Router determine the target server list.
 func (c *ConditionRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+	if !c.Enabled() {
+		return invokers
+	}
 	if len(invokers) == 0 {
 		return invokers
 	}
@@ -174,7 +199,7 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 		pair MatchPair
 	)
 	values := gxset.NewSet()
-	matches := router_pattern.FindAllSubmatch([]byte(rule), -1)
+	matches := routerPatternReg.FindAllSubmatch([]byte(rule), -1)
 	for _, groups := range matches {
 		separator := string(groups[1])
 		content := string(groups[2])
@@ -225,7 +250,7 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 }
 
 func getStartIndex(rule string) int {
-	if indexTuple := router_pattern.FindIndex([]byte(rule)); len(indexTuple) > 0 {
+	if indexTuple := routerPatternReg.FindIndex([]byte(rule)); len(indexTuple) > 0 {
 		return indexTuple[0]
 	}
 	return -1
@@ -287,7 +312,7 @@ func (pair MatchPair) isMatch(value string, param *common.URL) bool {
 	if !pair.Matches.Empty() && pair.Mismatches.Empty() {
 
 		for match := range pair.Matches.Items {
-			if isMatchGlobPattern(match.(string), value, param) {
+			if matcher.IsMatchGlobalPattern(match.(string), value, param) {
 				return true
 			}
 		}
@@ -296,7 +321,7 @@ func (pair MatchPair) isMatch(value string, param *common.URL) bool {
 	if !pair.Mismatches.Empty() && pair.Matches.Empty() {
 
 		for mismatch := range pair.Mismatches.Items {
-			if isMatchGlobPattern(mismatch.(string), value, param) {
+			if matcher.IsMatchGlobalPattern(mismatch.(string), value, param) {
 				return false
 			}
 		}
@@ -305,12 +330,12 @@ func (pair MatchPair) isMatch(value string, param *common.URL) bool {
 	if !pair.Mismatches.Empty() && !pair.Matches.Empty() {
 		//when both mismatches and matches contain the same value, then using mismatches first
 		for mismatch := range pair.Mismatches.Items {
-			if isMatchGlobPattern(mismatch.(string), value, param) {
+			if matcher.IsMatchGlobalPattern(mismatch.(string), value, param) {
 				return false
 			}
 		}
 		for match := range pair.Matches.Items {
-			if isMatchGlobPattern(match.(string), value, param) {
+			if matcher.IsMatchGlobalPattern(match.(string), value, param) {
 				return true
 			}
 		}

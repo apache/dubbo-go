@@ -14,35 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package router
+package condition
 
 import (
-	"github.com/apache/dubbo-go/cluster"
-	"github.com/apache/dubbo-go/cluster/router/condition"
 	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/constant"
 )
 
-func init() {
-	extension.SetRouterFactory("condition", NewConditionRouterFactory)
-	extension.SetRouterFactory("app", NewAppRouterFactory)
+const (
+	NAME                        = "APP_ROUTER"
+	APP_ROUTER_DEFAULT_PRIORITY = int64(150)
+)
+
+type AppRouter struct {
+	listenableRouter
 }
 
-type ConditionRouterFactory struct{}
-
-func NewConditionRouterFactory() cluster.RouterFactory {
-	return ConditionRouterFactory{}
-}
-func (c ConditionRouterFactory) Router(url *common.URL) (cluster.Router, error) {
-	return condition.NewConditionRouter(url)
-}
-
-type AppRouterFactory struct{}
-
-func NewAppRouterFactory() cluster.RouterFactory {
-	return AppRouterFactory{}
-}
-func (c AppRouterFactory) Router(url *common.URL) (cluster.Router, error) {
-	return condition.NewAppRouter(url)
+func NewAppRouter(url *common.URL) (*AppRouter, error) {
+	appRouter := &AppRouter{}
+	err := appRouter.newListenableRouter(url, url.GetParam(constant.APPLICATION_KEY, ""))
+	if err != nil {
+		return nil, err
+	}
+	appRouter.priority = APP_ROUTER_DEFAULT_PRIORITY
+	return appRouter, nil
 }
