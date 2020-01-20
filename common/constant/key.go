@@ -137,3 +137,7 @@ const (
 	NACOS_PROTOCOL_KEY           = "protocol"
 	NACOS_PATH_KEY               = "path"
 )
+
+const (
+	TRACING_CURRENT_SPAN_CTX = "tracing.current.span"
+)

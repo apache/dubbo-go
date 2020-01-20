@@ -50,12 +50,12 @@ func (ji *JsonrpcInvoker) Invoke(invocation protocol.Invocation) protocol.Result
 	inv := invocation.(*invocation_impl.RPCInvocation)
 	url := ji.GetUrl()
 	req := ji.client.NewRequest(url, inv.MethodName(), inv.Arguments())
-	ctx := context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
+	ctxNew := context.WithValue(invocation.Context(), constant.DUBBOGO_CTX_KEY, map[string]string{
 		"X-Proxy-Id": "dubbogo",
 		"X-Services": url.Path,
 		"X-Method":   inv.MethodName(),
 	})
-	result.Err = ji.client.Call(ctx, url, req, inv.Reply())
+	result.Err = ji.client.Call(ctxNew, url, req, inv.Reply())
 	if result.Err == nil {
 		result.Rest = inv.Reply()
 	}

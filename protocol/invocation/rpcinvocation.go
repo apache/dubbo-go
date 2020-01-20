@@ -41,7 +41,7 @@ type RPCInvocation struct {
 	attachments     map[string]string
 	invoker         protocol.Invoker
 	lock            sync.RWMutex
-	ctx            context.Context
+	ctx             context.Context
 }
 
 func NewRPCInvocation(methodName string, arguments []interface{}, attachments map[string]string) *RPCInvocation {
