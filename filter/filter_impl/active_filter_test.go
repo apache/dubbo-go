@@ -28,7 +28,7 @@ func TestActiveFilter_Invoke(t *testing.T) {
 	invoker := mock.NewMockInvoker(ctrl)
 	invoker.EXPECT().Invoke(gomock.Any()).Return(nil)
 	invoker.EXPECT().GetUrl().Return(url).Times(1)
-	filter.Invoke(context.TODO(), invoker,  invoc)
+	filter.Invoke(context.TODO(), invoker, invoc)
 	assert.True(t, invoc.AttachmentsByKey(dubboInvokeStartTime, "") != "")
 
 }
