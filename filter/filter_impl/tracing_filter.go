@@ -19,6 +19,9 @@ package filter_impl
 
 import (
 	"context"
+	"time"
+
+	"github.com/apache/dubbo-go/common/constant"
 )
 
 import (
@@ -52,16 +55,28 @@ type tracingFilter struct {
 
 func (tf *tracingFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 
-	operationName := invoker.GetUrl().ServiceKey() + invocation.MethodName()
+	operationName := invoker.GetUrl().ServiceKey() + "#" + invocation.MethodName()
+
 	// withTimeout after we support the timeout between different ends.
 	invCtx, cancel := context.WithCancel(invocation.Context())
-	span, spanCtx := opentracing.StartSpanFromContext(invCtx, operationName)
-	invocation.SetContext(spanCtx)
+
+	wiredCtx := invCtx.Value(constant.TRACING_CURRENT_SPAN_CTX)
+	var span opentracing.Span
+	if wiredCtx == nil {
+		var spanCtx context.Context
+		span, spanCtx = opentracing.StartSpanFromContext(invCtx, operationName)
+		invocation.SetContext(spanCtx)
+	} else {
+		// it means that the client passed the SpanContext in their request
+		span = opentracing.StartSpan(operationName, opentracing.ChildOf(wiredCtx.(opentracing.SpanContext)))
+	}
+
 	defer func() {
 		span.Finish()
 		cancel()
 	}()
 
+	time.Sleep(100 * time.Millisecond)
 	result := invoker.Invoke(invocation)
 	span.SetTag(successKey, result.Error() != nil)
 	if result.Error() != nil {
