@@ -18,6 +18,7 @@ limitations under the License.
 package cluster_impl
 
 import (
+	"context"
 	"fmt"
 )
 
@@ -40,7 +41,7 @@ func NewAvailableClusterInvoker(directory cluster.Directory) protocol.Invoker {
 	}
 }
 
-func (invoker *availableClusterInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+func (invoker *availableClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	invokers := invoker.directory.List(invocation)
 	err := invoker.checkInvokers(invokers, invocation)
 	if err != nil {
@@ -54,7 +55,7 @@ func (invoker *availableClusterInvoker) Invoke(invocation protocol.Invocation) p
 
 	for _, ivk := range invokers {
 		if ivk.IsAvailable() {
-			return ivk.Invoke(invocation)
+			return ivk.Invoke(ctx, invocation)
 		}
 	}
 	return &protocol.RPCResult{Err: errors.New(fmt.Sprintf("no provider available in %v", invokers))}
