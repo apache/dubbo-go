@@ -27,14 +27,17 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
+// CacheListener ...
 type CacheListener struct {
 	keyListeners sync.Map
 	rootPath     string
 }
 
+// NewCacheListener ...
 func NewCacheListener(rootPath string) *CacheListener {
 	return &CacheListener{rootPath: rootPath}
 }
+// AddListener ...
 func (l *CacheListener) AddListener(key string, listener config_center.ConfigurationListener) {
 
 	// reference from https://stackoverflow.com/questions/34018908/golang-why-dont-we-have-a-set-datastructure
@@ -46,6 +49,7 @@ func (l *CacheListener) AddListener(key string, listener config_center.Configura
 	}
 }
 
+// RemoveListener ...
 func (l *CacheListener) RemoveListener(key string, listener config_center.ConfigurationListener) {
 	listeners, loaded := l.keyListeners.Load(key)
 	if loaded {
@@ -53,6 +57,7 @@ func (l *CacheListener) RemoveListener(key string, listener config_center.Config
 	}
 }
 
+// DataChange ...
 func (l *CacheListener) DataChange(event remoting.Event) bool {
 	if event.Content == "" {
 		//meanings new node

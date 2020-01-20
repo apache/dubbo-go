@@ -30,11 +30,13 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
+// MockRegistry ...
 type MockRegistry struct {
 	listener  *listener
 	destroyed *atomic.Bool
 }
 
+// NewMockRegistry ...
 func NewMockRegistry(url *common.URL) (Registry, error) {
 	registry := &MockRegistry{
 		destroyed: atomic.NewBool(false),
@@ -43,17 +45,21 @@ func NewMockRegistry(url *common.URL) (Registry, error) {
 	registry.listener = listener
 	return registry, nil
 }
+// Register ...
 func (*MockRegistry) Register(url common.URL) error {
 	return nil
 }
 
+// Destroy ...
 func (r *MockRegistry) Destroy() {
 	if r.destroyed.CAS(false, true) {
 	}
 }
+// IsAvailable ...
 func (r *MockRegistry) IsAvailable() bool {
 	return !r.destroyed.Load()
 }
+// GetUrl ...
 func (r *MockRegistry) GetUrl() common.URL {
 	return common.URL{}
 }
@@ -61,6 +67,7 @@ func (r *MockRegistry) GetUrl() common.URL {
 func (r *MockRegistry) subscribe(*common.URL) (Listener, error) {
 	return r.listener, nil
 }
+// Subscribe ...
 func (r *MockRegistry) Subscribe(url *common.URL, notifyListener NotifyListener) {
 	go func() {
 		for {
@@ -113,6 +120,7 @@ func (*listener) Close() {
 
 }
 
+// MockEvent ...
 func (r *MockRegistry) MockEvent(event *ServiceEvent) {
 	r.listener.listenChan <- event
 }

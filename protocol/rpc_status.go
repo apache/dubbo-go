@@ -30,14 +30,17 @@ var (
 	methodStatistics sync.Map // url -> { methodName : RpcStatus}
 )
 
+// RpcStatus ...
 type RpcStatus struct {
 	active int32
 }
 
+// GetActive ...
 func (rpc *RpcStatus) GetActive() int32 {
 	return atomic.LoadInt32(&rpc.active)
 }
 
+// GetStatus ...
 func GetStatus(url common.URL, methodName string) *RpcStatus {
 	identifier := url.Key()
 	methodMap, found := methodStatistics.Load(identifier)
@@ -57,10 +60,12 @@ func GetStatus(url common.URL, methodName string) *RpcStatus {
 	return status
 }
 
+// BeginCount ...
 func BeginCount(url common.URL, methodName string) {
 	beginCount0(GetStatus(url, methodName))
 }
 
+// EndCount ...
 func EndCount(url common.URL, methodName string) {
 	endCount0(GetStatus(url, methodName))
 }

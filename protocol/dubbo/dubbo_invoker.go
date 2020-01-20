@@ -40,12 +40,14 @@ var (
 	attachmentKey = []string{constant.INTERFACE_KEY, constant.GROUP_KEY, constant.TOKEN_KEY, constant.TIMEOUT_KEY}
 )
 
+// DubboInvoker ...
 type DubboInvoker struct {
 	protocol.BaseInvoker
 	client   *Client
 	quitOnce sync.Once
 }
 
+// NewDubboInvoker ...
 func NewDubboInvoker(url common.URL, client *Client) *DubboInvoker {
 	return &DubboInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
@@ -53,6 +55,7 @@ func NewDubboInvoker(url common.URL, client *Client) *DubboInvoker {
 	}
 }
 
+// Invoke ...
 func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 
 	var (
@@ -96,6 +99,7 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	return &result
 }
 
+// Destroy ...
 func (di *DubboInvoker) Destroy() {
 	di.quitOnce.Do(func() {
 		di.BaseInvoker.Destroy()

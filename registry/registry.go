@@ -38,6 +38,7 @@ type Registry interface {
 	//mode2 : callback mode, subscribe with notify(notify listener).
 	Subscribe(*common.URL, NotifyListener)
 }
+// NotifyListener ...
 type NotifyListener interface {
 	Notify(*ServiceEvent)
 }

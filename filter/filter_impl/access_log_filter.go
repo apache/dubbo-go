@@ -66,6 +66,7 @@ type AccessLogFilter struct {
 	logChan chan AccessLogData
 }
 
+// Invoke ...
 func (ef *AccessLogFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	accessLog := invoker.GetUrl().GetParam(constant.ACCESS_LOG_KEY, "")
 	if len(accessLog) > 0 {
@@ -119,6 +120,7 @@ func (ef *AccessLogFilter) buildAccessLogData(invoker protocol.Invoker, invocati
 	return dataMap
 }
 
+// OnResponse ...
 func (ef *AccessLogFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }
@@ -172,6 +174,7 @@ func isDefault(accessLog string) bool {
 	return strings.EqualFold("true", accessLog) || strings.EqualFold("default", accessLog)
 }
 
+// GetAccessLogFilter ...
 func GetAccessLogFilter() filter.Filter {
 	accessLogFilter := &AccessLogFilter{logChan: make(chan AccessLogData, LogMaxBuffer)}
 	go func() {
@@ -182,6 +185,7 @@ func GetAccessLogFilter() filter.Filter {
 	return accessLogFilter
 }
 
+// AccessLogData ...
 type AccessLogData struct {
 	accessLog string
 	data      map[string]string

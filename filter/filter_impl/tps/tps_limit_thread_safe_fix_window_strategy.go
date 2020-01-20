@@ -52,6 +52,7 @@ type ThreadSafeFixedWindowTpsLimitStrategyImpl struct {
 	fixedWindow *FixedWindowTpsLimitStrategyImpl
 }
 
+// IsAllowable ...
 func (impl *ThreadSafeFixedWindowTpsLimitStrategyImpl) IsAllowable() bool {
 	impl.mutex.Lock()
 	defer impl.mutex.Unlock()

@@ -72,6 +72,7 @@ var (
 // info of method
 //////////////////////////
 
+// MethodType ...
 type MethodType struct {
 	method    reflect.Method
 	ctxType   reflect.Type   // request context
@@ -79,18 +80,23 @@ type MethodType struct {
 	replyType reflect.Type   // return value, otherwise it is nil
 }
 
+// Method ...
 func (m *MethodType) Method() reflect.Method {
 	return m.method
 }
+// CtxType ...
 func (m *MethodType) CtxType() reflect.Type {
 	return m.ctxType
 }
+// ArgsType ...
 func (m *MethodType) ArgsType() []reflect.Type {
 	return m.argsType
 }
+// ReplyType ...
 func (m *MethodType) ReplyType() reflect.Type {
 	return m.replyType
 }
+// SuiteContext ...
 func (m *MethodType) SuiteContext(ctx context.Context) reflect.Value {
 	if contextv := reflect.ValueOf(ctx); contextv.IsValid() {
 		return contextv
@@ -102,6 +108,7 @@ func (m *MethodType) SuiteContext(ctx context.Context) reflect.Value {
 // info of service interface
 //////////////////////////
 
+// Service ...
 type Service struct {
 	name     string
 	rcvr     reflect.Value
@@ -109,12 +116,15 @@ type Service struct {
 	methods  map[string]*MethodType
 }
 
+// Method ...
 func (s *Service) Method() map[string]*MethodType {
 	return s.methods
 }
+// RcvrType ...
 func (s *Service) RcvrType() reflect.Type {
 	return s.rcvrType
 }
+// Rcvr ...
 func (s *Service) Rcvr() reflect.Value {
 	return s.rcvr
 }

@@ -39,6 +39,7 @@ type multiConfiger interface {
 	Prefix() string
 }
 
+// BaseConfig ...
 type BaseConfig struct {
 	ConfigCenterConfig *ConfigCenterConfig `yaml:"config_center" json:"config_center,omitempty"`
 	configCenterUrl    *common.URL
@@ -308,6 +309,7 @@ func (c *BaseConfig) freshInternalConfig(config *config.InmemoryConfiguration) {
 	setFieldValue(val, reflect.Value{}, config)
 }
 
+// SetFatherConfig ...
 func (c *BaseConfig) SetFatherConfig(fatherConfig interface{}) {
 	c.fatherConfig = fatherConfig
 }

@@ -45,12 +45,14 @@ var (
 	once     sync.Once
 )
 
+// GetEnvInstance ...
 func GetEnvInstance() *Environment {
 	once.Do(func() {
 		instance = &Environment{configCenterFirst: true}
 	})
 	return instance
 }
+// NewEnvInstance ...
 func NewEnvInstance() {
 	instance = &Environment{configCenterFirst: true}
 }
@@ -63,18 +65,21 @@ func NewEnvInstance() {
 //	return env.configCenterFirst
 //}
 
+// UpdateExternalConfigMap ...
 func (env *Environment) UpdateExternalConfigMap(externalMap map[string]string) {
 	for k, v := range externalMap {
 		env.externalConfigMap.Store(k, v)
 	}
 }
 
+// UpdateAppExternalConfigMap ...
 func (env *Environment) UpdateAppExternalConfigMap(externalMap map[string]string) {
 	for k, v := range externalMap {
 		env.appExternalConfigMap.Store(k, v)
 	}
 }
 
+// Configuration ...
 func (env *Environment) Configuration() *list.List {
 	list := list.New()
 	// The sequence would be: SystemConfiguration -> ExternalConfiguration -> AppExternalConfiguration -> AbstractConfig -> PropertiesConfiguration
@@ -83,14 +88,17 @@ func (env *Environment) Configuration() *list.List {
 	return list
 }
 
+// SetDynamicConfiguration ...
 func (env *Environment) SetDynamicConfiguration(dc config_center.DynamicConfiguration) {
 	env.dynamicConfiguration = dc
 }
 
+// GetDynamicConfiguration ...
 func (env *Environment) GetDynamicConfiguration() config_center.DynamicConfiguration {
 	return env.dynamicConfiguration
 }
 
+// InmemoryConfiguration ...
 type InmemoryConfiguration struct {
 	store *sync.Map
 }
@@ -99,6 +107,7 @@ func newInmemoryConfiguration(p *sync.Map) *InmemoryConfiguration {
 	return &InmemoryConfiguration{store: p}
 }
 
+// GetProperty ...
 func (conf *InmemoryConfiguration) GetProperty(key string) (bool, string) {
 	if conf.store == nil {
 		return false, ""
@@ -112,6 +121,7 @@ func (conf *InmemoryConfiguration) GetProperty(key string) (bool, string) {
 	return false, ""
 }
 
+// GetSubProperty ...
 func (conf *InmemoryConfiguration) GetSubProperty(subKey string) map[string]struct{} {
 	if conf.store == nil {
 		return nil
