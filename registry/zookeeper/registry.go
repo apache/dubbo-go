@@ -406,6 +406,7 @@ func (r *zkRegistry) register(c common.URL) error {
 		return perrors.Errorf("@c{%v} type is not referencer or provider", c)
 	}
 
+	dubboPath = strings.ReplaceAll(dubboPath, "$", "%24")
 	err = r.registerTempZookeeperNode(dubboPath, encodedURL)
 
 	if err != nil {
