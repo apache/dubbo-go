@@ -77,7 +77,7 @@ type rest struct {
 	success bool
 }
 
-func (bi *MockInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+func (bi *MockInvoker) Invoke(c context.Context, invocation protocol.Invocation) protocol.Result {
 	count++
 	var success bool
 	var err error = nil
@@ -112,9 +112,9 @@ func normalInvoke(t *testing.T, successCount int, urlParam url.Values, invocatio
 	staticDir := directory.NewStaticDirectory(invokers)
 	clusterInvoker := failoverCluster.Join(staticDir)
 	if len(invocations) > 0 {
-		return clusterInvoker.Invoke(invocations[0])
+		return clusterInvoker.Invoke(context.TODO(), invocations[0])
 	}
-	return clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	return clusterInvoker.Invoke(context.TODO(), &invocation.RPCInvocation{})
 }
 func Test_FailoverInvokeSuccess(t *testing.T) {
 	urlParams := url.Values{}
@@ -162,7 +162,7 @@ func Test_FailoverDestroy(t *testing.T) {
 	staticDir := directory.NewStaticDirectory(invokers)
 	clusterInvoker := failoverCluster.Join(staticDir)
 	assert.Equal(t, true, clusterInvoker.IsAvailable())
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(context.TODO(), &invocation.RPCInvocation{})
 	assert.NoError(t, result.Error())
 	count = 0
 	clusterInvoker.Destroy()

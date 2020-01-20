@@ -18,6 +18,8 @@ limitations under the License.
 package cluster_impl
 
 import (
+	"context"
+
 	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
@@ -33,7 +35,7 @@ func newBroadcastClusterInvoker(directory cluster.Directory) protocol.Invoker {
 	}
 }
 
-func (invoker *broadcastClusterInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+func (invoker *broadcastClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	invokers := invoker.directory.List(invocation)
 	err := invoker.checkInvokers(invokers, invocation)
 	if err != nil {
@@ -46,7 +48,7 @@ func (invoker *broadcastClusterInvoker) Invoke(invocation protocol.Invocation) p
 
 	var result protocol.Result
 	for _, ivk := range invokers {
-		result = ivk.Invoke(invocation)
+		result = ivk.Invoke(ctx, invocation)
 		if result.Error() != nil {
 			logger.Warnf("broadcast invoker invoke err: %v when use invoker: %v\n", result.Error(), ivk)
 			err = result.Error()
