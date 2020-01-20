@@ -38,6 +38,7 @@ func init() {
 type leastActiveLoadBalance struct {
 }
 
+// NewLeastActiveLoadBalance ...
 func NewLeastActiveLoadBalance() cluster.LoadBalance {
 	return &leastActiveLoadBalance{}
 }

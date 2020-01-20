@@ -57,6 +57,7 @@ func init() {
 	extension.SetFilter(HYSTRIX_PROVIDER, GetHystrixFilterProvider)
 }
 
+// HystrixFilterError ...
 type HystrixFilterError struct {
 	err           error
 	failByHystrix bool
@@ -66,9 +67,12 @@ func (hfError *HystrixFilterError) Error() string {
 	return hfError.err.Error()
 }
 
+// FailByHystrix ...
 func (hfError *HystrixFilterError) FailByHystrix() bool {
 	return hfError.failByHystrix
 }
+
+// NewHystrixFilterError ...
 func NewHystrixFilterError(err error, failByHystrix bool) error {
 	return &HystrixFilterError{
 		err:           err,
@@ -76,12 +80,14 @@ func NewHystrixFilterError(err error, failByHystrix bool) error {
 	}
 }
 
+// HystrixFilter ...
 type HystrixFilter struct {
 	COrP     bool //true for consumer
 	res      map[string][]*regexp.Regexp
 	ifNewMap sync.Map
 }
 
+// Invoke ...
 func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 
 	cmdName := fmt.Sprintf("%s&method=%s", invoker.GetUrl().Key(), invocation.MethodName())
@@ -144,9 +150,12 @@ func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 	return result
 }
 
+// OnResponse ...
 func (hf *HystrixFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }
+
+// GetHystrixFilterConsumer ...
 func GetHystrixFilterConsumer() filter.Filter {
 	//When first called, load the config in
 	consumerConfigOnce.Do(func() {
@@ -157,6 +166,7 @@ func GetHystrixFilterConsumer() filter.Filter {
 	return &HystrixFilter{COrP: true}
 }
 
+// GetHystrixFilterProvider ...
 func GetHystrixFilterProvider() filter.Filter {
 	providerConfigOnce.Do(func() {
 		if err := initHystrixConfigProvider(); err != nil {
@@ -241,6 +251,7 @@ func initHystrixConfigProvider() error {
 //	return initHystrixConfig()
 //}
 
+// CommandConfigWithError ...
 type CommandConfigWithError struct {
 	Timeout                int      `yaml:"timeout"`
 	MaxConcurrentRequests  int      `yaml:"max_concurrent_requests"`
@@ -258,11 +269,14 @@ type CommandConfigWithError struct {
 //- ErrorPercentThreshold: it causes circuits to open once the rolling measure of errors exceeds this percent of requests
 //See hystrix doc
 
+// HystrixFilterConfig ...
 type HystrixFilterConfig struct {
 	Configs  map[string]*CommandConfigWithError
 	Default  string
 	Services map[string]ServiceHystrixConfig
 }
+
+// ServiceHystrixConfig ...
 type ServiceHystrixConfig struct {
 	ServiceConfig string `yaml:"service_config"`
 	Methods       map[string]string

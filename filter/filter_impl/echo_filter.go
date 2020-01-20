@@ -38,6 +38,7 @@ func init() {
 //		Echo func(ctx context.Context, arg interface{}, rsp *Xxx) error
 type EchoFilter struct{}
 
+// Invoke ...
 func (ef *EchoFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("invoking echo filter.")
 	logger.Debugf("%v,%v", invocation.MethodName(), len(invocation.Arguments()))
@@ -51,10 +52,12 @@ func (ef *EchoFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invoc
 	return invoker.Invoke(invocation)
 }
 
+// OnResponse ...
 func (ef *EchoFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }
 
+// GetFilter ...
 func GetFilter() filter.Filter {
 	return &EchoFilter{}
 }

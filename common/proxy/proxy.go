@@ -41,6 +41,7 @@ type Proxy struct {
 
 var typError = reflect.Zero(reflect.TypeOf((*error)(nil)).Elem()).Type()
 
+// NewProxy ...
 func NewProxy(invoke protocol.Invoker, callBack interface{}, attachments map[string]string) *Proxy {
 	return &Proxy{
 		invoke:      invoke,
@@ -178,10 +179,12 @@ func (p *Proxy) Implement(v common.RPCService) {
 
 }
 
+// Get ...
 func (p *Proxy) Get() common.RPCService {
 	return p.rpc
 }
 
+// GetCallback ...
 func (p *Proxy) GetCallback() interface{} {
 	return p.callBack
 }

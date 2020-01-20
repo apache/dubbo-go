@@ -33,6 +33,7 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
+// EventListener ...
 type EventListener struct {
 	client     *Client
 	keyMapLock sync.Mutex
@@ -40,6 +41,7 @@ type EventListener struct {
 	wg         sync.WaitGroup
 }
 
+// NewEventListener ...
 func NewEventListener(client *Client) *EventListener {
 	return &EventListener{
 		client: client,
@@ -47,6 +49,7 @@ func NewEventListener(client *Client) *EventListener {
 	}
 }
 
+// ListenServiceNodeEvent ...
 // Listen on a spec key
 // this method will return true when spec key deleted,
 // this method will return false when deep layer connection lose
@@ -229,6 +232,7 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 	}(key)
 }
 
+// Close ...
 func (l *EventListener) Close() {
 	l.wg.Wait()
 }

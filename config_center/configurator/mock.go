@@ -22,6 +22,7 @@ import (
 	"github.com/apache/dubbo-go/config_center"
 )
 
+// NewMockConfigurator ...
 func NewMockConfigurator(url *common.URL) config_center.Configurator {
 	return &mockConfigurator{configuratorUrl: url}
 }

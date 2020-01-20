@@ -21,6 +21,7 @@ import (
 	"reflect"
 )
 
+// Invocation ...
 type Invocation interface {
 	MethodName() string
 	ParameterTypes() []reflect.Type

@@ -34,6 +34,7 @@ type availableClusterInvoker struct {
 	baseClusterInvoker
 }
 
+// NewAvailableClusterInvoker ...
 func NewAvailableClusterInvoker(directory cluster.Directory) protocol.Invoker {
 	return &availableClusterInvoker{
 		baseClusterInvoker: newBaseClusterInvoker(directory),

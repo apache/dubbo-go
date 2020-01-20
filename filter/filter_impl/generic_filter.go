@@ -42,8 +42,10 @@ func init() {
 
 //  when do a generic invoke, struct need to be map
 
+// GenericFilter ...
 type GenericFilter struct{}
 
+// Invoke ...
 func (ef *GenericFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	if invocation.MethodName() == constant.GENERIC && len(invocation.Arguments()) == 3 {
 		oldArguments := invocation.Arguments()
@@ -66,10 +68,12 @@ func (ef *GenericFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 	return invoker.Invoke(invocation)
 }
 
+// OnResponse ...
 func (ef *GenericFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }
 
+// GetGenericFilter ...
 func GetGenericFilter() filter.Filter {
 	return &GenericFilter{}
 }
