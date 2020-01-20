@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package router
+package match
 
 import (
 	"context"
@@ -31,17 +31,17 @@ import (
 )
 
 func TestIsMatchInternalPattern(t *testing.T) {
-	assert.Equal(t, true, isMatchInternalPattern("*", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("", ""))
-	assert.Equal(t, false, isMatchInternalPattern("", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("value", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("v*", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("*ue", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("*e", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("v*e", "value"))
+	assert.Equal(t, true, IsMatchInternalPattern("*", "value"))
+	assert.Equal(t, true, IsMatchInternalPattern("", ""))
+	assert.Equal(t, false, IsMatchInternalPattern("", "value"))
+	assert.Equal(t, true, IsMatchInternalPattern("value", "value"))
+	assert.Equal(t, true, IsMatchInternalPattern("v*", "value"))
+	assert.Equal(t, true, IsMatchInternalPattern("*ue", "value"))
+	assert.Equal(t, true, IsMatchInternalPattern("*e", "value"))
+	assert.Equal(t, true, IsMatchInternalPattern("v*e", "value"))
 }
 
 func TestIsMatchGlobPattern(t *testing.T) {
 	url, _ := common.NewURL(context.TODO(), "dubbo://localhost:8080/Foo?key=v*e")
-	assert.Equal(t, true, isMatchGlobPattern("$key", "value", &url))
+	assert.Equal(t, true, IsMatchGlobalPattern("$key", "value", &url))
 }
