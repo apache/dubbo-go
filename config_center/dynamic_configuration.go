@@ -18,6 +18,7 @@
 package config_center
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"time"
 )
 
@@ -63,4 +64,9 @@ func WithTimeout(time time.Duration) Option {
 	return func(opt *Options) {
 		opt.Timeout = time
 	}
+}
+
+//GetRuleKey The format is '{interfaceName}:[version]:[group]'
+func GetRuleKey(url common.URL) string {
+	return url.ColonSeparatedKey()
 }
