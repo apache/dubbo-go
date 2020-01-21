@@ -139,5 +139,5 @@ const (
 )
 
 const (
-	TRACING_CURRENT_SPAN_CTX = "tracing.current.span"
+	TRACING_REMOTE_SPAN_CTX = "tracing.remote.span.ctx"
 )
