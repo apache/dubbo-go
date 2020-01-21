@@ -18,11 +18,14 @@
 package filter
 
 import (
+	"context"
+)
+import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
 // Extension - Filter
 type Filter interface {
-	Invoke(protocol.Invoker, protocol.Invocation) protocol.Result
-	OnResponse(protocol.Result, protocol.Invoker, protocol.Invocation) protocol.Result
+	Invoke(context.Context, protocol.Invoker, protocol.Invocation) protocol.Result
+	OnResponse(context.Context, protocol.Result, protocol.Invoker, protocol.Invocation) protocol.Result
 }
