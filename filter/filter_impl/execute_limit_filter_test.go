@@ -44,7 +44,7 @@ func TestExecuteLimitFilter_Invoke_Ignored(t *testing.T) {
 
 	limitFilter := GetExecuteLimitFilter()
 
-	result := limitFilter.Invoke(context.TODO(), protocol.NewBaseInvoker(*invokeUrl), invoc)
+	result := limitFilter.Invoke(context.Background(), protocol.NewBaseInvoker(*invokeUrl), invoc)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Error())
 }
@@ -61,7 +61,7 @@ func TestExecuteLimitFilter_Invoke_Configure_Error(t *testing.T) {
 
 	limitFilter := GetExecuteLimitFilter()
 
-	result := limitFilter.Invoke(context.TODO(), protocol.NewBaseInvoker(*invokeUrl), invoc)
+	result := limitFilter.Invoke(context.Background(), protocol.NewBaseInvoker(*invokeUrl), invoc)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Error())
 }
@@ -78,7 +78,7 @@ func TestExecuteLimitFilter_Invoke(t *testing.T) {
 
 	limitFilter := GetExecuteLimitFilter()
 
-	result := limitFilter.Invoke(context.TODO(), protocol.NewBaseInvoker(*invokeUrl), invoc)
+	result := limitFilter.Invoke(context.Background(), protocol.NewBaseInvoker(*invokeUrl), invoc)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Error())
 }
