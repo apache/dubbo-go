@@ -25,6 +25,7 @@ import (
 )
 
 import (
+	"github.com/opentracing/opentracing-go"
 	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
@@ -74,6 +75,7 @@ func TestHTTPClient_Call(t *testing.T) {
 		"X-Services": url.Path,
 		"X-Method":   "GetUser",
 	})
+
 	req := client.NewRequest(url, "GetUser", []interface{}{"1", "username"})
 	reply := &User{}
 	err = client.Call(ctx, url, req, reply)
@@ -147,6 +149,10 @@ func TestHTTPClient_Call(t *testing.T) {
 		"X-Services": url.Path,
 		"X-Method":   "GetUser4",
 	})
+
+	span := opentracing.StartSpan("Test-Inject-Tracing-ID")
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
 	req = client.NewRequest(url, "GetUser4", []interface{}{1})
 	reply = &User{}
 	err = client.Call(ctx, url, req, reply)
