@@ -18,6 +18,8 @@
 package filter_impl
 
 import (
+	"context"
+
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
@@ -51,22 +53,22 @@ func init() {
 type TpsLimitFilter struct {
 }
 
-func (t TpsLimitFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (t TpsLimitFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	url := invoker.GetUrl()
 	tpsLimiter := url.GetParam(constant.TPS_LIMITER_KEY, "")
 	rejectedExeHandler := url.GetParam(constant.TPS_REJECTED_EXECUTION_HANDLER_KEY, constant.DEFAULT_KEY)
 	if len(tpsLimiter) > 0 {
 		allow := extension.GetTpsLimiter(tpsLimiter).IsAllowable(invoker.GetUrl(), invocation)
 		if allow {
-			return invoker.Invoke(invocation)
+			return invoker.Invoke(ctx, invocation)
 		}
 		logger.Errorf("The invocation was rejected due to over the tps limitation, url: %s ", url.String())
 		return extension.GetRejectedExecutionHandler(rejectedExeHandler).RejectedExecution(url, invocation)
 	}
-	return invoker.Invoke(invocation)
+	return invoker.Invoke(ctx, invocation)
 }
 
-func (t TpsLimitFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (t TpsLimitFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }
 

@@ -41,5 +41,5 @@ func TestTracingFilter_Invoke(t *testing.T) {
 	inv := invocation.NewRPCInvocation("MethodName", []interface{}{"OK", "Hello"}, attach)
 
 	tf := newTracingFilter()
-	tf.Invoke(invoker, inv)
+	tf.Invoke(context.TODO(), invoker, inv)
 }

@@ -18,6 +18,7 @@ limitations under the License.
 package filter_impl
 
 import (
+	"context"
 	"net/url"
 	"testing"
 )
@@ -41,8 +42,10 @@ func TestTokenFilter_Invoke(t *testing.T) {
 		common.WithParamsValue(constant.TOKEN_KEY, "ori_key"))
 	attch := make(map[string]string, 0)
 	attch[constant.TOKEN_KEY] = "ori_key"
-	result := filter.Invoke(protocol.NewBaseInvoker(*url),
-		invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, attch))
+	result := filter.Invoke(context.TODO(),
+		protocol.NewBaseInvoker(*url),
+		invocation.NewRPCInvocation("MethodName",
+			[]interface{}{"OK"}, attch))
 	assert.Nil(t, result.Error())
 	assert.Nil(t, result.Result())
 }
@@ -53,8 +56,7 @@ func TestTokenFilter_InvokeEmptyToken(t *testing.T) {
 	url := common.URL{}
 	attch := make(map[string]string, 0)
 	attch[constant.TOKEN_KEY] = "ori_key"
-	result := filter.Invoke(protocol.NewBaseInvoker(url),
-		invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, attch))
+	result := filter.Invoke(context.TODO(), protocol.NewBaseInvoker(url), invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, attch))
 	assert.Nil(t, result.Error())
 	assert.Nil(t, result.Result())
 }
@@ -66,8 +68,7 @@ func TestTokenFilter_InvokeEmptyAttach(t *testing.T) {
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.TOKEN_KEY, "ori_key"))
 	attch := make(map[string]string, 0)
-	result := filter.Invoke(protocol.NewBaseInvoker(*url),
-		invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, attch))
+	result := filter.Invoke(context.TODO(), protocol.NewBaseInvoker(*url), invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, attch))
 	assert.NotNil(t, result.Error())
 }
 
@@ -79,7 +80,7 @@ func TestTokenFilter_InvokeNotEqual(t *testing.T) {
 		common.WithParamsValue(constant.TOKEN_KEY, "ori_key"))
 	attch := make(map[string]string, 0)
 	attch[constant.TOKEN_KEY] = "err_key"
-	result := filter.Invoke(protocol.NewBaseInvoker(*url),
-		invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, attch))
+	result := filter.Invoke(context.TODO(),
+		protocol.NewBaseInvoker(*url), invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, attch))
 	assert.NotNil(t, result.Error())
 }

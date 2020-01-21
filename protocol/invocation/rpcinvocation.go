@@ -18,7 +18,6 @@
 package invocation
 
 import (
-	"context"
 	"reflect"
 	"sync"
 )
@@ -41,7 +40,6 @@ type RPCInvocation struct {
 	attachments     map[string]string
 	invoker         protocol.Invoker
 	lock            sync.RWMutex
-	ctx             context.Context
 }
 
 func NewRPCInvocation(methodName string, arguments []interface{}, attachments map[string]string) *RPCInvocation {
@@ -49,14 +47,11 @@ func NewRPCInvocation(methodName string, arguments []interface{}, attachments ma
 		methodName:  methodName,
 		arguments:   arguments,
 		attachments: attachments,
-		ctx:         context.Background(),
 	}
 }
 
 func NewRPCInvocationWithOptions(opts ...option) *RPCInvocation {
-	invo := &RPCInvocation{
-		ctx: context.Background(),
-	}
+	invo := &RPCInvocation{}
 	for _, opt := range opts {
 		opt(invo)
 	}
@@ -127,14 +122,6 @@ func (r *RPCInvocation) CallBack() interface{} {
 
 func (r *RPCInvocation) SetCallBack(c interface{}) {
 	r.callBack = c
-}
-
-func (r *RPCInvocation) Context() context.Context {
-	return r.ctx
-}
-
-func (r *RPCInvocation) SetContext(ctx context.Context) {
-	r.ctx = ctx
 }
 
 // /////////////////////////

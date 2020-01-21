@@ -53,19 +53,15 @@ var (
 type tracingFilter struct {
 }
 
-func (tf *tracingFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (tf *tracingFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 
 	operationName := invoker.GetUrl().ServiceKey() + "#" + invocation.MethodName()
 
-	// withTimeout after we support the timeout between different ends.
-	invCtx, cancel := context.WithCancel(invocation.Context())
-
-	wiredCtx := invCtx.Value(constant.TRACING_CURRENT_SPAN_CTX)
+	wiredCtx := ctx.Value(constant.TRACING_CURRENT_SPAN_CTX)
 	var span opentracing.Span
+	var spanCtx = ctx
 	if wiredCtx == nil {
-		var spanCtx context.Context
-		span, spanCtx = opentracing.StartSpanFromContext(invCtx, operationName)
-		invocation.SetContext(spanCtx)
+		span, spanCtx = opentracing.StartSpanFromContext(ctx, operationName)
 	} else {
 		// it means that the client passed the SpanContext in their request
 		span = opentracing.StartSpan(operationName, opentracing.ChildOf(wiredCtx.(opentracing.SpanContext)))
@@ -73,11 +69,10 @@ func (tf *tracingFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 
 	defer func() {
 		span.Finish()
-		cancel()
 	}()
 
 	time.Sleep(100 * time.Millisecond)
-	result := invoker.Invoke(invocation)
+	result := invoker.Invoke(spanCtx, invocation)
 	span.SetTag(successKey, result.Error() != nil)
 	if result.Error() != nil {
 		span.LogFields(log.String(errorKey, result.Error().Error()))
@@ -85,7 +80,8 @@ func (tf *tracingFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 	return result
 }
 
-func (tf *tracingFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (tf *tracingFilter) OnResponse(ctx context.Context, result protocol.Result,
+	invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }
 
