@@ -18,6 +18,7 @@
 package filter_impl
 
 import (
+	"context"
 	"reflect"
 	"strings"
 )
@@ -44,7 +45,7 @@ func init() {
 
 type GenericFilter struct{}
 
-func (ef *GenericFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (ef *GenericFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	if invocation.MethodName() == constant.GENERIC && len(invocation.Arguments()) == 3 {
 		oldArguments := invocation.Arguments()
 
@@ -60,13 +61,13 @@ func (ef *GenericFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 			}
 			newInvocation := invocation2.NewRPCInvocation(invocation.MethodName(), newArguments, invocation.Attachments())
 			newInvocation.SetReply(invocation.Reply())
-			return invoker.Invoke(newInvocation)
+			return invoker.Invoke(ctx, newInvocation)
 		}
 	}
-	return invoker.Invoke(invocation)
+	return invoker.Invoke(ctx, invocation)
 }
 
-func (ef *GenericFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (ef *GenericFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }
 

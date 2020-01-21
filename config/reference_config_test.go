@@ -184,7 +184,7 @@ func Test_ReferMultireg(t *testing.T) {
 	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
 
 	for _, reference := range consumerConfig.References {
-		reference.Refer()
+		reference.Refer(nil)
 		assert.NotNil(t, reference.invoker)
 		assert.NotNil(t, reference.pxy)
 	}
@@ -197,7 +197,7 @@ func Test_Refer(t *testing.T) {
 	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
 
 	for _, reference := range consumerConfig.References {
-		reference.Refer()
+		reference.Refer(nil)
 		assert.Equal(t, "soa.mock", reference.Params["serviceid"])
 		assert.NotNil(t, reference.invoker)
 		assert.NotNil(t, reference.pxy)
@@ -211,7 +211,7 @@ func Test_ReferAsync(t *testing.T) {
 	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
 
 	for _, reference := range consumerConfig.References {
-		reference.Refer()
+		reference.Refer(nil)
 		assert.Equal(t, "soa.mock", reference.Params["serviceid"])
 		assert.NotNil(t, reference.invoker)
 		assert.NotNil(t, reference.pxy)
@@ -227,7 +227,7 @@ func Test_ReferP2P(t *testing.T) {
 	m.Url = "dubbo://127.0.0.1:20000"
 
 	for _, reference := range consumerConfig.References {
-		reference.Refer()
+		reference.Refer(nil)
 		assert.NotNil(t, reference.invoker)
 		assert.NotNil(t, reference.pxy)
 	}
@@ -241,7 +241,7 @@ func Test_ReferMultiP2P(t *testing.T) {
 	m.Url = "dubbo://127.0.0.1:20000;dubbo://127.0.0.2:20000"
 
 	for _, reference := range consumerConfig.References {
-		reference.Refer()
+		reference.Refer(nil)
 		assert.NotNil(t, reference.invoker)
 		assert.NotNil(t, reference.pxy)
 	}
@@ -256,7 +256,7 @@ func Test_ReferMultiP2PWithReg(t *testing.T) {
 	m.Url = "dubbo://127.0.0.1:20000;registry://127.0.0.2:20000"
 
 	for _, reference := range consumerConfig.References {
-		reference.Refer()
+		reference.Refer(nil)
 		assert.NotNil(t, reference.invoker)
 		assert.NotNil(t, reference.pxy)
 	}
@@ -268,7 +268,7 @@ func Test_Implement(t *testing.T) {
 	extension.SetProtocol("registry", GetProtocol)
 	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
 	for _, reference := range consumerConfig.References {
-		reference.Refer()
+		reference.Refer(nil)
 		reference.Implement(&MockService{})
 		assert.NotNil(t, reference.GetRPCService())
 
@@ -284,7 +284,7 @@ func Test_Forking(t *testing.T) {
 	m.Url = "dubbo://127.0.0.1:20000;registry://127.0.0.2:20000"
 
 	for _, reference := range consumerConfig.References {
-		reference.Refer()
+		reference.Refer(nil)
 		forks := int(reference.invoker.GetUrl().GetParamInt(constant.FORKS_KEY, constant.DEFAULT_FORKS))
 		assert.Equal(t, 5, forks)
 		assert.NotNil(t, reference.pxy)
@@ -301,7 +301,7 @@ func Test_Sticky(t *testing.T) {
 	m.Url = "dubbo://127.0.0.1:20000;registry://127.0.0.2:20000"
 
 	reference := consumerConfig.References["MockService"]
-	reference.Refer()
+	reference.Refer(nil)
 	referenceSticky := reference.invoker.GetUrl().GetParam(constant.STICKY_KEY, "false")
 	assert.Equal(t, "false", referenceSticky)
 
