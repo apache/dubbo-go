@@ -18,6 +18,7 @@
 package filter_impl
 
 import (
+	"context"
 	"testing"
 )
 
@@ -33,12 +34,10 @@ import (
 
 func TestEchoFilter_Invoke(t *testing.T) {
 	filter := GetFilter()
-	result := filter.Invoke(protocol.NewBaseInvoker(common.URL{}),
-		invocation.NewRPCInvocation("$echo", []interface{}{"OK"}, nil))
+	result := filter.Invoke(context.Background(), protocol.NewBaseInvoker(common.URL{}), invocation.NewRPCInvocation("$echo", []interface{}{"OK"}, nil))
 	assert.Equal(t, "OK", result.Result())
 
-	result = filter.Invoke(protocol.NewBaseInvoker(common.URL{}),
-		invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, nil))
+	result = filter.Invoke(context.Background(), protocol.NewBaseInvoker(common.URL{}), invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, nil))
 	assert.Nil(t, result.Error())
 	assert.Nil(t, result.Result())
 }

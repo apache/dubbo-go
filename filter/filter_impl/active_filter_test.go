@@ -28,7 +28,7 @@ func TestActiveFilter_Invoke(t *testing.T) {
 	invoker := mock.NewMockInvoker(ctrl)
 	invoker.EXPECT().Invoke(gomock.Any()).Return(nil)
 	invoker.EXPECT().GetUrl().Return(url).Times(1)
-	filter.Invoke(invoker, invoc)
+	filter.Invoke(context.Background(), invoker, invoc)
 	assert.True(t, invoc.AttachmentsByKey(dubboInvokeStartTime, "") != "")
 
 }
@@ -48,7 +48,7 @@ func TestActiveFilter_OnResponse(t *testing.T) {
 	result := &protocol.RPCResult{
 		Err: errors.New("test"),
 	}
-	filter.OnResponse(result, invoker, invoc)
+	filter.OnResponse(nil, result, invoker, invoc)
 	methodStatus := protocol.GetMethodStatus(url, "test")
 	urlStatus := protocol.GetURLStatus(url)
 
