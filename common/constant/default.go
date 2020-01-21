@@ -41,6 +41,7 @@ const (
 	DEFAULT_FAILBACK_TIMES     = "3"
 	DEFAULT_FAILBACK_TIMES_INT = 3
 	DEFAULT_FAILBACK_TASKS     = 100
+	DEFAULT_REST_CLIENT        = "resty"
 )
 
 const (
