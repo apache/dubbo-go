@@ -69,7 +69,7 @@ func Test_FailSafeInvokeSuccess(t *testing.T) {
 	mockResult := &protocol.RPCResult{Rest: rest{tried: 0, success: true}}
 
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(context.TODO(), &invocation.RPCInvocation{})
 
 	assert.NoError(t, result.Error())
 	res := result.Result().(rest)
@@ -88,7 +88,7 @@ func Test_FailSafeInvokeFail(t *testing.T) {
 	mockResult := &protocol.RPCResult{Err: perrors.New("error")}
 
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(context.TODO(), &invocation.RPCInvocation{})
 
 	assert.NoError(t, result.Error())
 	assert.Nil(t, result.Result())

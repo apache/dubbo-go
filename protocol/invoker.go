@@ -18,6 +18,8 @@
 package protocol
 
 import (
+	"context"
+
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 )
@@ -26,7 +28,7 @@ import (
 // Extension - Invoker
 type Invoker interface {
 	common.Node
-	Invoke(Invocation) Result
+	Invoke(context.Context, Invocation) Result
 }
 
 /////////////////////////////
@@ -59,7 +61,7 @@ func (bi *BaseInvoker) IsDestroyed() bool {
 	return bi.destroyed
 }
 
-func (bi *BaseInvoker) Invoke(invocation Invocation) Result {
+func (bi *BaseInvoker) Invoke(context context.Context, invocation Invocation) Result {
 	return &RPCResult{}
 }
 

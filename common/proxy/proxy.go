@@ -98,8 +98,10 @@ func (p *Proxy) Implement(v common.RPCService) {
 			invCtx := context.Background()
 			if end > 0 {
 				if in[0].Type().String() == "context.Context" {
-					// inVArr can not be nil
-					invCtx = in[0].Interface().(context.Context)
+					if !in[0].IsNil() {
+						// the user declared context as method's parameter
+						invCtx = in[0].Interface().(context.Context)
+					}
 					start += 1
 				}
 				if len(outs) == 1 && in[end-1].Type().Kind() == reflect.Ptr {
@@ -128,13 +130,12 @@ func (p *Proxy) Implement(v common.RPCService) {
 			inv = invocation_impl.NewRPCInvocationWithOptions(invocation_impl.WithMethodName(methodName),
 				invocation_impl.WithArguments(inIArr), invocation_impl.WithReply(reply.Interface()),
 				invocation_impl.WithCallBack(p.callBack), invocation_impl.WithParameterValues(inVArr))
-			inv.SetContext(invCtx)
 
 			for k, value := range p.attachments {
 				inv.SetAttachments(k, value)
 			}
 
-			result := p.invoke.Invoke(inv)
+			result := p.invoke.Invoke(invCtx, inv)
 
 			err = result.Error()
 			logger.Infof("[makeDubboCallProxy] result: %v, err: %v", result.Result(), err)
