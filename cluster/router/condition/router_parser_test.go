@@ -24,4 +24,12 @@ conditions:
 	assert.Nil(t, e)
 	assert.NotNil(t, rule)
 	assert.Equal(t, 2, len(rule.Conditions))
+	assert.Equal(t, "application", rule.Scope)
+	assert.True(t, rule.Runtime)
+	assert.Equal(t, false, rule.Force)
+	assert.Equal(t, testyml, rule.RawRule)
+	assert.True(t, true, rule.Valid)
+	assert.Equal(t, false, rule.Enabled)
+	assert.Equal(t, false, rule.Dynamic)
+	assert.Equal(t, "", rule.Key)
 }

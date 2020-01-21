@@ -15,21 +15,4 @@
  * limitations under the License.
  */
 
-package cluster
-
-import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/protocol"
-)
-
-// Extension - Router
-
-type RouterFactory interface {
-	Router(*common.URL) (Router, error)
-}
-
-type Router interface {
-	Route([]protocol.Invoker, *common.URL, protocol.Invocation) []protocol.Invoker
-	Priority() int64
-	Url() common.URL
-}
+package chain

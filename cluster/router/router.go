@@ -18,31 +18,27 @@
 package router
 
 import (
-	"github.com/apache/dubbo-go/cluster"
-	"github.com/apache/dubbo-go/cluster/router/condition"
 	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/protocol"
 )
 
-func init() {
-	extension.SetRouterFactory("condition", NewConditionRouterFactory)
-	extension.SetRouterFactory("app", NewAppRouterFactory)
+// Extension - Router
+type RouterFactory interface {
+	Router(*common.URL) (Router, error)
 }
 
-type ConditionRouterFactory struct{}
-
-func NewConditionRouterFactory() cluster.RouterFactory {
-	return ConditionRouterFactory{}
-}
-func (c ConditionRouterFactory) Router(url *common.URL) (cluster.Router, error) {
-	return condition.NewConditionRouter(url)
+// Extension - Router Chain
+type RouterChainFactory interface {
+	Router(*common.URL) (RouterChain, error)
 }
 
-type AppRouterFactory struct{}
-
-func NewAppRouterFactory() cluster.RouterFactory {
-	return AppRouterFactory{}
+type Router interface {
+	Route([]protocol.Invoker, *common.URL, protocol.Invocation) []protocol.Invoker
+	Priority() int64
+	Url() common.URL
 }
-func (c AppRouterFactory) Router(url *common.URL) (cluster.Router, error) {
-	return condition.NewAppRouter(url)
+
+type RouterChain interface {
+	Route([]protocol.Invoker, *common.URL, protocol.Invocation) []protocol.Invoker
+	AddRouters([]Router)
 }
