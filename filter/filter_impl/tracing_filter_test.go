@@ -23,6 +23,14 @@ import (
 )
 
 import (
+	"github.com/opentracing/opentracing-go"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/constant"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
@@ -39,7 +47,20 @@ func TestTracingFilter_Invoke(t *testing.T) {
 
 	attach := make(map[string]string, 10)
 	inv := invocation.NewRPCInvocation("MethodName", []interface{}{"OK", "Hello"}, attach)
-
+	ctx := context.Background()
 	tf := newTracingFilter()
-	tf.Invoke(context.TODO(), invoker, inv)
+
+	// do not has any span
+	tf.Invoke(ctx, invoker, inv)
+
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Test-Operation")
+	defer span.Finish()
+
+	// has previous span
+	tf.Invoke(ctx, invoker, inv)
+
+	ctx = context.Background()
+	// has remote ctx
+	ctx = context.WithValue(context.Background(), constant.TRACING_REMOTE_SPAN_CTX, span.Context())
+	tf.Invoke(ctx, invoker, inv)
 }

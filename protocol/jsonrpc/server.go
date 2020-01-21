@@ -29,11 +29,10 @@ import (
 	"runtime/debug"
 	"sync"
 	"time"
-
-	"github.com/opentracing/opentracing-go"
 )
 
 import (
+	"github.com/opentracing/opentracing-go"
 	perrors "github.com/pkg/errors"
 )
 
@@ -155,7 +154,7 @@ func (s *Server) handlePkg(conn net.Conn) {
 		spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders,
 			opentracing.HTTPHeadersCarrier(r.Header))
 		if err == nil {
-			ctx = context.WithValue(ctx, constant.TRACING_CURRENT_SPAN_CTX, spanCtx)
+			ctx = context.WithValue(ctx, constant.TRACING_REMOTE_SPAN_CTX, spanCtx)
 		}
 
 		if len(reqHeader["Timeout"]) > 0 {
