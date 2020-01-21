@@ -18,13 +18,13 @@
 package directory
 
 import (
+	"github.com/apache/dubbo-go/cluster/router"
 	"sync"
 )
 import (
 	"go.uber.org/atomic"
 )
 import (
-	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -37,7 +37,7 @@ var routerURLSet = gxset.NewSet()
 type BaseDirectory struct {
 	url       *common.URL
 	destroyed *atomic.Bool
-	routers   []cluster.Router
+	routers   []router.Router
 	mutex     sync.Mutex
 	once      sync.Once
 }
@@ -62,7 +62,7 @@ func (dir *BaseDirectory) GetDirectoryUrl() *common.URL {
 	return dir.url
 }
 
-func (dir *BaseDirectory) SetRouters(routers []cluster.Router) {
+func (dir *BaseDirectory) SetRouters(routers []router.Router) {
 	routerKey := dir.GetUrl().GetParam(constant.ROUTER_KEY, "")
 	if len(routerKey) > 0 {
 		factory := extension.GetRouterFactory(dir.GetUrl().Protocol)
@@ -78,7 +78,7 @@ func (dir *BaseDirectory) SetRouters(routers []cluster.Router) {
 	dir.routers = routers
 }
 
-func (dir *BaseDirectory) Routers() []cluster.Router {
+func (dir *BaseDirectory) Routers() []router.Router {
 	dir.once.Do(func() {
 		rs := routerURLSet.Values()
 		for _, r := range rs {
