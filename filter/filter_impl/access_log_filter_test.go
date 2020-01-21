@@ -49,7 +49,7 @@ func TestAccessLogFilter_Invoke_Not_Config(t *testing.T) {
 	inv := invocation.NewRPCInvocation("MethodName", []interface{}{"OK", "Hello"}, attach)
 
 	accessLogFilter := GetAccessLogFilter()
-	result := accessLogFilter.Invoke(context.TODO(), invoker, inv)
+	result := accessLogFilter.Invoke(context.Background(), invoker, inv)
 	assert.Nil(t, result.Error())
 }
 
@@ -70,7 +70,7 @@ func TestAccessLogFilter_Invoke_Default_Config(t *testing.T) {
 	inv := invocation.NewRPCInvocation("MethodName", []interface{}{"OK", "Hello"}, attach)
 
 	accessLogFilter := GetAccessLogFilter()
-	result := accessLogFilter.Invoke(context.TODO(), invoker, inv)
+	result := accessLogFilter.Invoke(context.Background(), invoker, inv)
 	assert.Nil(t, result.Error())
 }
 
