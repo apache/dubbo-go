@@ -130,7 +130,7 @@ func (p *Proxy) Implement(v common.RPCService) {
 				inv.SetAttachments(k, value)
 			}
 
-			result := p.invoke.Invoke(context.TODO(), inv)
+			result := p.invoke.Invoke(context.Background(), inv)
 
 			err = result.Error()
 			logger.Infof("[makeDubboCallProxy] result: %v, err: %v", result.Result(), err)
