@@ -45,7 +45,7 @@ const (
 )
 
 var (
-	routerPatternReg = regexp.MustCompile(ROUTE_PATTERN)
+	routerPatternReg = regexp.MustCompile(`([&!=,]*)\s*([^&!=,\s]+)`)
 )
 
 //ConditionRouter condition router struct

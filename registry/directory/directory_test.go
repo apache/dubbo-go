@@ -33,6 +33,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/cluster/cluster_impl"
 	_ "github.com/apache/dubbo-go/cluster/router"
+	_ "github.com/apache/dubbo-go/cluster/router/condition"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
