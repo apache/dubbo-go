@@ -18,6 +18,7 @@
 package directory
 
 import (
+	"github.com/apache/dubbo-go/cluster/router"
 	"reflect"
 	"strings"
 	"sync"
@@ -30,7 +31,6 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/cluster/directory"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
@@ -163,7 +163,7 @@ func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 	dir.cacheInvokers = newInvokers
 }
 
-func toRouters(urls []*common.URL) []cluster.Router {
+func toRouters(urls []*common.URL) []router.Router {
 	if len(urls) == 0 {
 		return nil
 	}
@@ -186,9 +186,9 @@ func toRouters(urls []*common.URL) []cluster.Router {
 		routerMap.Add(router)
 	}
 
-	routers := make([]cluster.Router, 0)
+	routers := make([]router.Router, 0)
 	for _, v := range routerMap.Values() {
-		routers = append(routers, v.(cluster.Router))
+		routers = append(routers, v.(router.Router))
 	}
 
 	return routers

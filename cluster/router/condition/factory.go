@@ -17,30 +17,31 @@
 
 package condition
 
-import "gopkg.in/yaml.v2"
+import (
+	"github.com/apache/dubbo-go/cluster/router"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/extension"
+)
 
-/* Parse
- * scope: application
- * runtime: true
- * force: false
- * conditions:
- *   - >
- *     method!=sayHello =>
- *   - >
- *     ip=127.0.0.1
- *     =>
- *     1.1.1.1
- */
-func Parse(rawRule string) (*RouterRule, error) {
-	r := &RouterRule{}
-	err := yaml.Unmarshal([]byte(rawRule), r)
-	if err != nil {
-		return r, err
-	}
-	r.RawRule = rawRule
-	if len(r.Conditions) == 0 {
-		r.Valid = false
-	}
+func init() {
+	extension.SetRouterFactory("condition", NewConditionRouterFactory)
+	extension.SetRouterFactory("app", NewAppRouterFactory)
+}
 
-	return r, nil
+type ConditionRouterFactory struct{}
+
+func NewConditionRouterFactory() router.RouterFactory {
+	return ConditionRouterFactory{}
+}
+func (c ConditionRouterFactory) Router(url *common.URL) (router.Router, error) {
+	return NewConditionRouter(url)
+}
+
+type AppRouterFactory struct{}
+
+func NewAppRouterFactory() router.RouterFactory {
+	return AppRouterFactory{}
+}
+func (c AppRouterFactory) Router(url *common.URL) (router.Router, error) {
+	return NewAppRouter(url)
 }
