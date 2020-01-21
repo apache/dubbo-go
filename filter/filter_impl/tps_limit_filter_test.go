@@ -46,7 +46,7 @@ func TestTpsLimitFilter_Invoke_With_No_TpsLimiter(t *testing.T) {
 		common.WithParamsValue(constant.TPS_LIMITER_KEY, ""))
 	attch := make(map[string]string, 0)
 
-	result := tpsFilter.Invoke(context.TODO(),
+	result := tpsFilter.Invoke(context.Background(),
 		protocol.NewBaseInvoker(*invokeUrl),
 		invocation.NewRPCInvocation("MethodName",
 			[]interface{}{"OK"}, attch))
@@ -70,7 +70,7 @@ func TestGenericFilter_Invoke_With_Default_TpsLimiter(t *testing.T) {
 		common.WithParamsValue(constant.TPS_LIMITER_KEY, constant.DEFAULT_KEY))
 	attch := make(map[string]string, 0)
 
-	result := tpsFilter.Invoke(context.TODO(),
+	result := tpsFilter.Invoke(context.Background(),
 		protocol.NewBaseInvoker(*invokeUrl),
 		invocation.NewRPCInvocation("MethodName",
 			[]interface{}{"OK"}, attch))
@@ -101,7 +101,7 @@ func TestGenericFilter_Invoke_With_Default_TpsLimiter_Not_Allow(t *testing.T) {
 		common.WithParamsValue(constant.TPS_LIMITER_KEY, constant.DEFAULT_KEY))
 	attch := make(map[string]string, 0)
 
-	result := tpsFilter.Invoke(context.TODO(),
+	result := tpsFilter.Invoke(context.Background(),
 		protocol.NewBaseInvoker(*invokeUrl), invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, attch))
 	assert.Nil(t, result.Error())
 	assert.Nil(t, result.Result())
