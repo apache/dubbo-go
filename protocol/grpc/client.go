@@ -31,11 +31,13 @@ import (
 	"github.com/apache/dubbo-go/config"
 )
 
+// Client ...
 type Client struct {
 	*grpc.ClientConn
 	invoker reflect.Value
 }
 
+// NewClient ...
 func NewClient(url common.URL) *Client {
 	conn, err := grpc.Dial(url.Location, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
