@@ -1,15 +1,18 @@
 package rest_config_reader
 
 import (
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
+	"os"
+	"path"
+)
+
+import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
 	perrors "github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
-	"os"
-	"path"
 )
 
 const (
