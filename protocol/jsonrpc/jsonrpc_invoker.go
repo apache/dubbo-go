@@ -41,7 +41,7 @@ func NewJsonrpcInvoker(url common.URL, client *HTTPClient) *JsonrpcInvoker {
 	}
 }
 
-func (ji *JsonrpcInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+func (ji *JsonrpcInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 
 	var (
 		result protocol.RPCResult
@@ -50,7 +50,7 @@ func (ji *JsonrpcInvoker) Invoke(invocation protocol.Invocation) protocol.Result
 	inv := invocation.(*invocation_impl.RPCInvocation)
 	url := ji.GetUrl()
 	req := ji.client.NewRequest(url, inv.MethodName(), inv.Arguments())
-	ctxNew := context.WithValue(invocation.Context(), constant.DUBBOGO_CTX_KEY, map[string]string{
+	ctxNew := context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
 		"X-Proxy-Id": "dubbogo",
 		"X-Services": url.Path,
 		"X-Method":   inv.MethodName(),

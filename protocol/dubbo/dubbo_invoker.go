@@ -18,6 +18,7 @@
 package dubbo
 
 import (
+	"context"
 	"strconv"
 	"sync"
 )
@@ -53,7 +54,7 @@ func NewDubboInvoker(url common.URL, client *Client) *DubboInvoker {
 	}
 }
 
-func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 
 	var (
 		err    error

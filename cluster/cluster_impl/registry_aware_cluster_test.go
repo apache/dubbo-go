@@ -45,7 +45,7 @@ func Test_RegAwareInvokeSuccess(t *testing.T) {
 
 	staticDir := directory.NewStaticDirectory(invokers)
 	clusterInvoker := regAwareCluster.Join(staticDir)
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(context.TODO(), &invocation.RPCInvocation{})
 	assert.NoError(t, result.Error())
 	count = 0
 }
@@ -62,7 +62,7 @@ func TestDestroy(t *testing.T) {
 	staticDir := directory.NewStaticDirectory(invokers)
 	clusterInvoker := regAwareCluster.Join(staticDir)
 	assert.Equal(t, true, clusterInvoker.IsAvailable())
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(context.TODO(), &invocation.RPCInvocation{})
 	assert.NoError(t, result.Error())
 	count = 0
 	clusterInvoker.Destroy()
