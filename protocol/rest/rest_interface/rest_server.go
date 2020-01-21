@@ -1,4 +1,4 @@
-package rest
+package rest_interface
 
 type RestServer interface {
 	Start()
