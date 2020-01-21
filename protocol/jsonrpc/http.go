@@ -30,24 +30,22 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
-
-	"github.com/opentracing/opentracing-go"
-
-	"github.com/apache/dubbo-go/common/logger"
 )
 
 import (
+	"github.com/opentracing/opentracing-go"
 	perrors "github.com/pkg/errors"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
 )
 
-//////////////////////////////////////////////
+// ////////////////////////////////////////////
 // Request
-//////////////////////////////////////////////
+// ////////////////////////////////////////////
 
 type Request struct {
 	ID          int64
@@ -60,9 +58,9 @@ type Request struct {
 	contentType string
 }
 
-//////////////////////////////////////////////
+// ////////////////////////////////////////////
 // HTTP Client
-//////////////////////////////////////////////
+// ////////////////////////////////////////////
 
 type HTTPOptions struct {
 	HandshakeTimeout time.Duration
@@ -131,7 +129,7 @@ func (c *HTTPClient) Call(ctx context.Context, service common.URL, req *Request,
 	if span := opentracing.SpanFromContext(ctx); span != nil {
 		err := opentracing.GlobalTracer().Inject(span.Context(), opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(httpHeader))
 		if err != nil {
-			logger.Errorf("Could not inject the Context into http header.")
+			logger.Error("Could not inject the Context into http header.")
 		}
 	}
 
