@@ -18,6 +18,7 @@
 package filter_impl
 
 import (
+	"context"
 	"net/url"
 	"testing"
 )
@@ -53,7 +54,7 @@ func TestGenericFilter_Invoke(t *testing.T) {
 	assert.Equal(t, extension.GetRejectedExecutionHandler(constant.DEFAULT_KEY),
 		shutdownFilter.getRejectHandler())
 
-	result := shutdownFilter.Invoke(protocol.NewBaseInvoker(*invokeUrl), invoc)
+	result := shutdownFilter.Invoke(context.Background(), protocol.NewBaseInvoker(*invokeUrl), invoc)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Error())
 
@@ -64,7 +65,7 @@ func TestGenericFilter_Invoke(t *testing.T) {
 	shutdownFilter.shutdownConfig = providerConfig.ShutdownConfig
 
 	assert.True(t, shutdownFilter.rejectNewRequest())
-	result = shutdownFilter.OnResponse(nil, protocol.NewBaseInvoker(*invokeUrl), invoc)
+	result = shutdownFilter.OnResponse(nil, nil, protocol.NewBaseInvoker(*invokeUrl), invoc)
 
 	rejectHandler := &common2.OnlyLogRejectedExecutionHandler{}
 	extension.SetRejectedExecutionHandler("mock", func() filter.RejectedExecutionHandler {
