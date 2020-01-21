@@ -74,7 +74,7 @@ func Test_BroadcastInvokeSuccess(t *testing.T) {
 
 	clusterInvoker := registerBroadcast(t, invokers...)
 
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 	assert.Equal(t, mockResult, result)
 }
 
@@ -104,6 +104,6 @@ func Test_BroadcastInvokeFailed(t *testing.T) {
 
 	clusterInvoker := registerBroadcast(t, invokers...)
 
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 	assert.Equal(t, mockFailedResult.Err, result.Error())
 }

@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/creasty/defaults"
+	"github.com/dubbogo/getty"
 	perrors "github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
@@ -118,6 +119,10 @@ func ConsumerInit(confConFile string) error {
 	if consumerConfig.Request_Timeout != "" {
 		if consumerConfig.RequestTimeout, err = time.ParseDuration(consumerConfig.Request_Timeout); err != nil {
 			return perrors.WithMessagef(err, "time.ParseDuration(Request_Timeout{%#v})", consumerConfig.Request_Timeout)
+		}
+		if consumerConfig.RequestTimeout >= time.Duration(getty.MaxWheelTimeSpan) {
+			return perrors.WithMessagef(err, "request_timeout %s should be less than %s",
+				consumerConfig.Request_Timeout, time.Duration(getty.MaxWheelTimeSpan))
 		}
 	}
 	if consumerConfig.Connect_Timeout != "" {
