@@ -18,21 +18,36 @@
 package extension
 
 import (
-	"github.com/apache/dubbo-go/cluster"
+	"github.com/apache/dubbo-go/cluster/router"
 )
 
 var (
-	routers = make(map[string]func() cluster.RouterFactory)
+	routers      = make(map[string]func() router.RouterFactory)
+	routerChains = make(map[string]func() router.RouterChainFactory)
 )
 
-func SetRouterFactory(name string, fun func() cluster.RouterFactory) {
+func SetRouterFactory(name string, fun func() router.RouterFactory) {
 	routers[name] = fun
 }
 
-func GetRouterFactory(name string) cluster.RouterFactory {
+func GetRouterFactory(name string) router.RouterFactory {
 	if routers[name] == nil {
 		panic("router_factory for " + name + " is not existing, make sure you have import the package.")
 	}
 	return routers[name]()
+}
 
+func SetRouterChainsFactory(name string, fun func() router.RouterChainFactory) {
+	routerChains[name] = fun
+}
+
+func GetRouterChainsFactory(name string) router.RouterChainFactory {
+	if routers[name] == nil {
+		panic("router_chain_factory for " + name + " is not existing, make sure you have import the package.")
+	}
+	return routerChains[name]()
+}
+
+func GetRouters() map[string]func() router.RouterFactory {
+	return routers
 }

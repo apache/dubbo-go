@@ -18,6 +18,15 @@
 package condition
 
 import (
+	"fmt"
+	"github.com/apache/dubbo-go/common/config"
+)
+
+import (
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config_center"
@@ -48,16 +57,20 @@ func (l *listenableRouter) newListenableRouter(url *common.URL, ruleKey string) 
 	}
 
 	routerKey := ruleKey + RULE_SUFFIX
-	//TODO: add listener
-
-	//TODO: add get rule
-	rule := "rule"
-	if rule != "" {
-		l.Process(&config_center.ConfigChangeEvent{
-			Key:        routerKey,
-			Value:      rule,
-			ConfigType: remoting.EventTypeUpdate})
+	//add listener
+	dynamicConfiguration := config.GetEnvInstance().GetDynamicConfiguration()
+	dynamicConfiguration.AddListener(routerKey, l)
+	//get rule
+	rule, err := dynamicConfiguration.GetRule(routerKey, config_center.WithGroup(config_center.DEFAULT_GROUP))
+	if len(rule) == 0 || err != nil {
+		return perrors.Errorf("get rule fail, config rule{%s},  error{%v}", rule, err)
 	}
+	l.Process(&config_center.ConfigChangeEvent{
+		Key:        routerKey,
+		Value:      rule,
+		ConfigType: remoting.EventTypeUpdate})
+
+	return nil
 }
 
 func (l *listenableRouter) Process(event *config_center.ConfigChangeEvent) {
@@ -69,7 +82,8 @@ func (l *listenableRouter) Process(event *config_center.ConfigChangeEvent) {
 	}
 	content, ok := event.Value.(string)
 	if !ok {
-		logger.Errorf("Convert event content fail,raw content:[%s] ", event.Value)
+		msg := fmt.Sprintf("Convert event content fail,raw content:[%s] ", event.Value)
+		logger.Error(msg)
 		return
 	}
 
