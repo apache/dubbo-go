@@ -31,8 +31,7 @@ type AppRouter struct {
 }
 
 func NewAppRouter(url *common.URL) (*AppRouter, error) {
-	appRouter := &AppRouter{}
-	err := appRouter.newListenableRouter(url, url.GetParam(constant.APPLICATION_KEY, ""))
+	appRouter, err := newListenableRouter(url, url.GetParam(constant.APPLICATION_KEY, ""))
 	if err != nil {
 		return nil, err
 	}

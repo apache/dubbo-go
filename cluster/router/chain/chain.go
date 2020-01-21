@@ -52,16 +52,16 @@ func (c Chain) AddRouters(routers []router.Router) {
 	c.routers = newRouters
 }
 
-func NewRouterChain(url common.URL) *Chain {
+func NewRouterChain(url *common.URL) *Chain {
 	routerFactories := extension.GetRouters()
 	if len(routerFactories) == 0 {
 		return nil
 	}
 	routers := make([]router.Router, 0)
 	for _, routerFactory := range routerFactories {
-		r, err := routerFactory().Router(&url)
-		if err != nil {
-			logger.Errorf("router chain build router fail! error:%v", err)
+		r, err := routerFactory().Router(url)
+		if r == nil || err != nil {
+			logger.Errorf("router chain build router fail! error:%s", err.Error())
 			continue
 		}
 		routers = append(routers, r)
