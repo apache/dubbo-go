@@ -66,7 +66,7 @@ func TestAvailableClusterInvokerSuccess(t *testing.T) {
 	invoker.EXPECT().IsAvailable().Return(true)
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
 
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 
 	assert.Equal(t, mockResult, result)
 }
@@ -80,7 +80,7 @@ func TestAvailableClusterInvokerNoAvail(t *testing.T) {
 
 	invoker.EXPECT().IsAvailable().Return(false)
 
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(context.TODO(), &invocation.RPCInvocation{})
 
 	assert.NotNil(t, result.Error())
 	assert.True(t, strings.Contains(result.Error().Error(), "no provider available"))
