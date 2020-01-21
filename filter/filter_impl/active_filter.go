@@ -38,9 +38,11 @@ func init() {
 	extension.SetFilter(active, GetActiveFilter)
 }
 
+// ActiveFilter ...
 type ActiveFilter struct {
 }
 
+// Invoke ...
 func (ef *ActiveFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("invoking active filter. %v,%v", invocation.MethodName(), len(invocation.Arguments()))
 
@@ -49,6 +51,7 @@ func (ef *ActiveFilter) Invoke(invoker protocol.Invoker, invocation protocol.Inv
 	return invoker.Invoke(invocation)
 }
 
+// OnResponse ...
 func (ef *ActiveFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 
 	startTime, err := strconv.ParseInt(invocation.(*invocation2.RPCInvocation).AttachmentsByKey(dubboInvokeStartTime, "0"), 10, 64)
@@ -62,6 +65,7 @@ func (ef *ActiveFilter) OnResponse(result protocol.Result, invoker protocol.Invo
 	return result
 }
 
+// GetActiveFilter ...
 func GetActiveFilter() filter.Filter {
 	return &ActiveFilter{}
 }

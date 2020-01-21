@@ -31,6 +31,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
+// ConfigCenterConfig ...
 type ConfigCenterConfig struct {
 	context       context.Context
 	Protocol      string `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
@@ -47,6 +48,7 @@ type ConfigCenterConfig struct {
 	timeout       time.Duration
 }
 
+// UnmarshalYAML ...
 func (c *ConfigCenterConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
@@ -58,6 +60,7 @@ func (c *ConfigCenterConfig) UnmarshalYAML(unmarshal func(interface{}) error) er
 	return nil
 }
 
+// GetUrlMap ...
 func (c *ConfigCenterConfig) GetUrlMap() url.Values {
 	urlMap := url.Values{}
 	urlMap.Set(constant.CONFIG_NAMESPACE_KEY, c.Namespace)

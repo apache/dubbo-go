@@ -42,6 +42,7 @@ func (s *server) SayHello(ctx context.Context, in *HelloRequest) (*HelloReply, e
 	return &HelloReply{Message: "Hello " + in.GetName()}, nil
 }
 
+// InitGrpcServer ...
 func InitGrpcServer() {
 	port := ":30000"
 
@@ -56,6 +57,7 @@ func InitGrpcServer() {
 	}
 }
 
+// ShutdownGrpcServer ...
 func ShutdownGrpcServer() {
 	if s == nil {
 		return

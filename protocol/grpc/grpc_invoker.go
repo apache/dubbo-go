@@ -35,14 +35,17 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
+// ErrNoReply ...
 var ErrNoReply = errors.New("request need @response")
 
+// GrpcInvoker ...
 type GrpcInvoker struct {
 	protocol.BaseInvoker
 	quitOnce sync.Once
 	client   *Client
 }
 
+// NewGrpcInvoker ...
 func NewGrpcInvoker(url common.URL, client *Client) *GrpcInvoker {
 	return &GrpcInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
@@ -50,6 +53,7 @@ func NewGrpcInvoker(url common.URL, client *Client) *GrpcInvoker {
 	}
 }
 
+// Invoke ...
 func (gi *GrpcInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	var (
 		result protocol.RPCResult
@@ -78,14 +82,17 @@ func (gi *GrpcInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	return &result
 }
 
+// IsAvailable ...
 func (gi *GrpcInvoker) IsAvailable() bool {
 	return gi.BaseInvoker.IsAvailable() && gi.client.GetState() != connectivity.Shutdown
 }
 
+// IsDestroyed ...
 func (gi *GrpcInvoker) IsDestroyed() bool {
 	return gi.BaseInvoker.IsDestroyed() && gi.client.GetState() == connectivity.Shutdown
 }
 
+// Destroy ...
 func (gi *GrpcInvoker) Destroy() {
 	gi.quitOnce.Do(func() {
 		gi.BaseInvoker.Destroy()
