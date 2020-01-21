@@ -1,13 +1,17 @@
 package rest
 
 import (
+	"strconv"
+	"strings"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	_ "github.com/apache/dubbo-go/protocol/rest/rest_config_reader"
 	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
-	"strconv"
-	"strings"
 )
 
 var (
@@ -30,7 +34,7 @@ func initConsumerRestConfig() {
 		return
 	}
 	for _, rc := range restConsumerConfig.RestConfigMap {
-		rc.Client = getNotEmptyStr(rc.Client, restConsumerConfig.Client, "resty")
+		rc.Client = getNotEmptyStr(rc.Client, restConsumerConfig.Client, constant.DEFAULT_REST_CLIENT)
 		rc.RestMethodConfigsMap = initMethodConfigMap(rc, restConsumerConfig.Consumes, restConsumerConfig.Produces)
 		restConsumerServiceConfigMap[rc.InterfaceName] = rc
 	}
@@ -67,9 +71,8 @@ func initMethodConfigMap(rc *rest_interface.RestConfig, consumes string, produce
 func getNotEmptyStr(args ...string) string {
 	var r string
 	for _, t := range args {
-		if len(r) == 0 {
+		if len(t) > 0 {
 			r = t
-		} else {
 			break
 		}
 	}
