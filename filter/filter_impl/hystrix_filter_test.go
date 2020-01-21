@@ -145,7 +145,7 @@ func (iv *testMockFailInvoker) Invoke(ctx context.Context, invocation protocol.I
 
 func TestHystrixFilter_Invoke_Success(t *testing.T) {
 	hf := &HystrixFilter{}
-	result := hf.Invoke(context.TODO(), &testMockSuccessInvoker{}, &invocation.RPCInvocation{})
+	result := hf.Invoke(context.Background(), &testMockSuccessInvoker{}, &invocation.RPCInvocation{})
 	assert.NotNil(t, result)
 	assert.NoError(t, result.Error())
 	assert.NotNil(t, result.Result())
@@ -153,7 +153,7 @@ func TestHystrixFilter_Invoke_Success(t *testing.T) {
 
 func TestHystrixFilter_Invoke_Fail(t *testing.T) {
 	hf := &HystrixFilter{}
-	result := hf.Invoke(context.TODO(), &testMockFailInvoker{}, &invocation.RPCInvocation{})
+	result := hf.Invoke(context.Background(), &testMockFailInvoker{}, &invocation.RPCInvocation{})
 	assert.NotNil(t, result)
 	assert.Error(t, result.Error())
 }
@@ -165,7 +165,7 @@ func TestHystricFilter_Invoke_CircuitBreak(t *testing.T) {
 	resChan := make(chan protocol.Result, 50)
 	for i := 0; i < 50; i++ {
 		go func() {
-			result := hf.Invoke(context.TODO(), &testMockFailInvoker{}, &invocation.RPCInvocation{})
+			result := hf.Invoke(context.Background(), &testMockFailInvoker{}, &invocation.RPCInvocation{})
 			resChan <- result
 		}()
 	}
@@ -190,7 +190,7 @@ func TestHystricFilter_Invoke_CircuitBreak_Omit_Exception(t *testing.T) {
 	resChan := make(chan protocol.Result, 50)
 	for i := 0; i < 50; i++ {
 		go func() {
-			result := hf.Invoke(context.TODO(), &testMockFailInvoker{}, &invocation.RPCInvocation{})
+			result := hf.Invoke(context.Background(), &testMockFailInvoker{}, &invocation.RPCInvocation{})
 			resChan <- result
 		}()
 	}

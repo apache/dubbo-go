@@ -259,7 +259,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 		args := p.Body.(map[string]interface{})["args"].([]interface{})
 		inv := invocation.NewRPCInvocation(p.Service.Method, args, attachments)
-		result := invoker.Invoke(context.TODO(), inv)
+		result := invoker.Invoke(context.Background(), inv)
 		if err := result.Error(); err != nil {
 			p.Header.ResponseStatus = hessian.Response_OK
 			p.Body = hessian.NewResponse(nil, err, result.Attachments())
