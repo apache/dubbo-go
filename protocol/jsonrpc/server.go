@@ -93,6 +93,8 @@ func (s *Server) handlePkg(conn net.Conn) {
 		rsp := &http.Response{
 			Header:        header,
 			StatusCode:    500,
+			ProtoMajor:    1,
+			ProtoMinor:    1,
 			ContentLength: int64(len(body)),
 			Body:          ioutil.NopCloser(bytes.NewReader(body)),
 		}
@@ -252,6 +254,8 @@ func serveRequest(ctx context.Context,
 		rsp := &http.Response{
 			Header:        make(http.Header),
 			StatusCode:    500,
+			ProtoMajor:    1,
+			ProtoMinor:    1,
 			ContentLength: int64(len(body)),
 			Body:          ioutil.NopCloser(bytes.NewReader(body)),
 		}
@@ -276,6 +280,8 @@ func serveRequest(ctx context.Context,
 		rsp := &http.Response{
 			Header:        make(http.Header),
 			StatusCode:    200,
+			ProtoMajor:    1,
+			ProtoMinor:    1,
 			ContentLength: int64(len(body)),
 			Body:          ioutil.NopCloser(bytes.NewReader(body)),
 		}
@@ -324,7 +330,7 @@ func serveRequest(ctx context.Context,
 	exporter, _ := jsonrpcProtocol.ExporterMap().Load(path)
 	invoker := exporter.(*JsonrpcExporter).GetInvoker()
 	if invoker != nil {
-		result := invoker.Invoke(invocation.NewRPCInvocation(methodName, args, map[string]string{
+		result := invoker.Invoke(context.Background(), invocation.NewRPCInvocation(methodName, args, map[string]string{
 			constant.PATH_KEY:    path,
 			constant.VERSION_KEY: codec.req.Version,
 		}))

@@ -18,6 +18,7 @@
 package protocolwrapper
 
 import (
+	"context"
 	"net/url"
 	"testing"
 )
@@ -66,7 +67,7 @@ func init() {
 
 type EchoFilterForTest struct{}
 
-func (ef *EchoFilterForTest) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (ef *EchoFilterForTest) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("invoking echo filter.")
 	logger.Debugf("%v,%v", invocation.MethodName(), len(invocation.Arguments()))
 	if invocation.MethodName() == constant.ECHO && len(invocation.Arguments()) == 1 {
@@ -75,10 +76,10 @@ func (ef *EchoFilterForTest) Invoke(invoker protocol.Invoker, invocation protoco
 		}
 	}
 
-	return invoker.Invoke(invocation)
+	return invoker.Invoke(ctx, invocation)
 }
 
-func (ef *EchoFilterForTest) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (ef *EchoFilterForTest) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }
 

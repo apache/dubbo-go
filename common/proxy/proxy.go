@@ -18,6 +18,7 @@
 package proxy
 
 import (
+	"context"
 	"reflect"
 	"sync"
 )
@@ -72,10 +73,11 @@ func (p *Proxy) Implement(v common.RPCService) {
 	makeDubboCallProxy := func(methodName string, outs []reflect.Type) func(in []reflect.Value) []reflect.Value {
 		return func(in []reflect.Value) []reflect.Value {
 			var (
-				err   error
-				inv   *invocation_impl.RPCInvocation
-				inArr []interface{}
-				reply reflect.Value
+				err    error
+				inv    *invocation_impl.RPCInvocation
+				inIArr []interface{}
+				inVArr []reflect.Value
+				reply  reflect.Value
 			)
 			if methodName == "Echo" {
 				methodName = "$echo"
@@ -104,27 +106,31 @@ func (p *Proxy) Implement(v common.RPCService) {
 			}
 
 			if end-start <= 0 {
-				inArr = []interface{}{}
+				inIArr = []interface{}{}
+				inVArr = []reflect.Value{}
 			} else if v, ok := in[start].Interface().([]interface{}); ok && end-start == 1 {
-				inArr = v
+				inIArr = v
+				inVArr = []reflect.Value{in[start]}
 			} else {
-				inArr = make([]interface{}, end-start)
+				inIArr = make([]interface{}, end-start)
+				inVArr = make([]reflect.Value, end-start)
 				index := 0
 				for i := start; i < end; i++ {
-					inArr[index] = in[i].Interface()
+					inIArr[index] = in[i].Interface()
+					inVArr[index] = in[i]
 					index++
 				}
 			}
 
 			inv = invocation_impl.NewRPCInvocationWithOptions(invocation_impl.WithMethodName(methodName),
-				invocation_impl.WithArguments(inArr), invocation_impl.WithReply(reply.Interface()),
-				invocation_impl.WithCallBack(p.callBack))
+				invocation_impl.WithArguments(inIArr), invocation_impl.WithReply(reply.Interface()),
+				invocation_impl.WithCallBack(p.callBack), invocation_impl.WithParameterValues(inVArr))
 
 			for k, value := range p.attachments {
 				inv.SetAttachments(k, value)
 			}
 
-			result := p.invoke.Invoke(inv)
+			result := p.invoke.Invoke(context.Background(), inv)
 
 			err = result.Error()
 			logger.Infof("[makeDubboCallProxy] result: %v, err: %v", result.Result(), err)
