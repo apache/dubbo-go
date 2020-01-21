@@ -52,6 +52,7 @@ import (
  * We define them by using 'package build' feature https://golang.org/pkg/go/build/
  */
 
+// GracefulShutdownInit ...
 func GracefulShutdownInit() {
 
 	signals := make(chan os.Signal, 1)
@@ -82,6 +83,7 @@ func GracefulShutdownInit() {
 	}()
 }
 
+// BeforeShutdown ...
 func BeforeShutdown() {
 
 	destroyAllRegistries()

@@ -31,6 +31,7 @@ func init() {
 	extension.SetCluster(forking, NewForkingCluster)
 }
 
+// NewForkingCluster ...
 func NewForkingCluster() cluster.Cluster {
 	return &forkingCluster{}
 }

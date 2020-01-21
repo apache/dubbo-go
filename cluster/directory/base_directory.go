@@ -27,25 +27,32 @@ import (
 	"github.com/apache/dubbo-go/common"
 )
 
+// BaseDirectory ...
 type BaseDirectory struct {
 	url       *common.URL
 	destroyed *atomic.Bool
 	mutex     sync.Mutex
 }
 
+// NewBaseDirectory ...
 func NewBaseDirectory(url *common.URL) BaseDirectory {
 	return BaseDirectory{
 		url:       url,
 		destroyed: atomic.NewBool(false),
 	}
 }
+
+// GetUrl ...
 func (dir *BaseDirectory) GetUrl() common.URL {
 	return *dir.url
 }
+
+// GetDirectoryUrl ...
 func (dir *BaseDirectory) GetDirectoryUrl() *common.URL {
 	return dir.url
 }
 
+// Destroy ...
 func (dir *BaseDirectory) Destroy(doDestroy func()) {
 	if dir.destroyed.CAS(false, true) {
 		dir.mutex.Lock()
@@ -54,6 +61,7 @@ func (dir *BaseDirectory) Destroy(doDestroy func()) {
 	}
 }
 
+// IsAvailable ...
 func (dir *BaseDirectory) IsAvailable() bool {
 	return !dir.destroyed.Load()
 }

@@ -25,10 +25,12 @@ var (
 	protocols = make(map[string]func() protocol.Protocol)
 )
 
+// SetProtocol ...
 func SetProtocol(name string, v func() protocol.Protocol) {
 	protocols[name] = v
 }
 
+// GetProtocol ...
 func GetProtocol(name string) protocol.Protocol {
 	if protocols[name] == nil {
 		panic("protocol for " + name + " is not existing, make sure you have import the package.")
