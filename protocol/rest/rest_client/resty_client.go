@@ -2,24 +2,22 @@ package rest_client
 
 import (
 	"context"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
-	"github.com/go-resty/resty/v2"
+	"github.com/apache/dubbo-go/common/constant"
 	"net"
 	"net/http"
 	"path"
 	"time"
 )
 
-const (
-	RESTY = "resty"
+import (
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
+	"github.com/go-resty/resty/v2"
 )
 
 func init() {
-	extension.SetRestClient(RESTY, GetRestyClient)
+	extension.SetRestClient(constant.DEFAULT_REST_CLIENT, GetRestyClient)
 }
-
-var restyClient *RestyClient
 
 type RestyClient struct {
 	client *resty.Client
@@ -27,10 +25,10 @@ type RestyClient struct {
 
 func NewRestyClient(restOption *rest_interface.RestOptions) *RestyClient {
 	if restOption.ConnectTimeout == 0 {
-		restOption.ConnectTimeout = 3
+		restOption.ConnectTimeout = 3 * time.Second
 	}
 	if restOption.RequestTimeout == 0 {
-		restOption.RequestTimeout = 3
+		restOption.RequestTimeout = 3 * time.Second
 	}
 	client := resty.New()
 	client.SetTransport(

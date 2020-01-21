@@ -2,6 +2,9 @@ package rest
 
 import (
 	"fmt"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
@@ -28,7 +31,7 @@ func (ri *RestInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	methodConfig := ri.restMethodConfigMap[inv.MethodName()]
 	var result protocol.RPCResult
 	if methodConfig == nil {
-		logger.Errorf("[RestInvoker]Rest methodConfig:%s is nill", inv.MethodName())
+		logger.Errorf("[RestInvoker]Rest methodConfig:%s is nil", inv.MethodName())
 		return nil
 	}
 	pathParams := make(map[string]string)
