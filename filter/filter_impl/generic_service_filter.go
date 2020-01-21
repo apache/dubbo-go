@@ -47,8 +47,10 @@ func init() {
 	extension.SetFilter(GENERIC_SERVICE, GetGenericServiceFilter)
 }
 
+// GenericServiceFilter ...
 type GenericServiceFilter struct{}
 
+// Invoke ...
 func (ef *GenericServiceFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("invoking generic service filter.")
 	logger.Debugf("generic service filter methodName:%v,args:%v", invocation.MethodName(), len(invocation.Arguments()))
@@ -110,6 +112,7 @@ func (ef *GenericServiceFilter) Invoke(invoker protocol.Invoker, invocation prot
 	return invoker.Invoke(newInvocation)
 }
 
+// OnResponse ...
 func (ef *GenericServiceFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	if invocation.MethodName() == constant.GENERIC && len(invocation.Arguments()) == 3 && result.Result() != nil {
 		v := reflect.ValueOf(result.Result())
@@ -121,6 +124,7 @@ func (ef *GenericServiceFilter) OnResponse(result protocol.Result, invoker proto
 	return result
 }
 
+// GetGenericServiceFilter ...
 func GetGenericServiceFilter() filter.Filter {
 	return &GenericServiceFilter{}
 }
