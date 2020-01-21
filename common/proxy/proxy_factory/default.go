@@ -105,7 +105,7 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 	in := []reflect.Value{svc.Rcvr()}
 	if method.CtxType() != nil {
-		in = append(in, method.SuiteContext(ctx)) // todo: ctx will be used later.
+		in = append(in, method.SuiteContext(ctx))
 	}
 
 	// prepare argv
