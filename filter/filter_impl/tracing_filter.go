@@ -19,9 +19,6 @@ package filter_impl
 
 import (
 	"context"
-	"time"
-
-	"github.com/apache/dubbo-go/common/constant"
 )
 
 import (
@@ -30,6 +27,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/filter"
 	"github.com/apache/dubbo-go/protocol"
@@ -50,28 +48,40 @@ var (
 	successKey = "Success"
 )
 
+// if you wish to using opentracing, please add the this filter into your filter attribute in your configure file.
+// notice that this could be used in both client-side and server-side.
 type tracingFilter struct {
 }
 
 func (tf *tracingFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-
+	var (
+		spanCtx context.Context
+		span    opentracing.Span
+	)
 	operationName := invoker.GetUrl().ServiceKey() + "#" + invocation.MethodName()
 
-	wiredCtx := ctx.Value(constant.TRACING_CURRENT_SPAN_CTX)
-	var span opentracing.Span
-	var spanCtx = ctx
-	if wiredCtx == nil {
-		span, spanCtx = opentracing.StartSpanFromContext(ctx, operationName)
-	} else {
-		// it means that the client passed the SpanContext in their request
+	wiredCtx := ctx.Value(constant.TRACING_REMOTE_SPAN_CTX)
+	preSpan := opentracing.SpanFromContext(ctx)
+
+	if preSpan != nil {
+		// it means that someone already create a span to trace, so we use the span to be the parent span
+		span = opentracing.StartSpan(operationName, opentracing.ChildOf(preSpan.Context()))
+		spanCtx = opentracing.ContextWithSpan(ctx, span)
+
+	} else if wiredCtx != nil {
+
+		// it means that there has a remote span, usually from client side. so we use this as the parent
 		span = opentracing.StartSpan(operationName, opentracing.ChildOf(wiredCtx.(opentracing.SpanContext)))
+		spanCtx = opentracing.ContextWithSpan(ctx, span)
+	} else {
+		// it means that there is not any span, so we create a span as the root span.
+		span, spanCtx = opentracing.StartSpanFromContext(ctx, operationName)
 	}
 
 	defer func() {
 		span.Finish()
 	}()
 
-	time.Sleep(100 * time.Millisecond)
 	result := invoker.Invoke(spanCtx, invocation)
 	span.SetTag(successKey, result.Error() != nil)
 	if result.Error() != nil {
