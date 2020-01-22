@@ -93,7 +93,7 @@ type rest struct {
 
 var count int
 
-func (bi *MockInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+func (bi *MockInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	count++
 	var success bool
 	var err error = nil
