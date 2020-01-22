@@ -29,10 +29,10 @@ func init() {
 
 type RouterChainFactory struct{}
 
-func (c RouterChainFactory) Router(*common.URL) (router.RouterChain, error) {
-	panic("implement me")
+func (c RouterChainFactory) Router(url *common.URL) (router.Chain, error) {
+	return NewRouterChain(url)
 }
 
-func NewRouterChainFactory() router.RouterChainFactory {
+func NewRouterChainFactory() router.ChainFactory {
 	return RouterChainFactory{}
 }
