@@ -19,6 +19,7 @@ package directory
 
 import (
 	"github.com/apache/dubbo-go/cluster/router"
+	"github.com/apache/dubbo-go/cluster/router/chain"
 	"sync"
 )
 import (
@@ -28,18 +29,21 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
 	gxset "github.com/dubbogo/gost/container/set"
 )
 
 var routerURLSet = gxset.NewSet()
 
 type BaseDirectory struct {
-	url       *common.URL
-	destroyed *atomic.Bool
-	routers   []router.Router
-	mutex     sync.Mutex
-	once      sync.Once
+	url         *common.URL
+	destroyed   *atomic.Bool
+	mutex       sync.Mutex
+	once        sync.Once
+	routerChain router.Chain
+}
+
+func (dir *BaseDirectory) RouterChain() router.Chain {
+	return dir.routerChain
 }
 
 func GetRouterURLSet() *gxset.HashSet {
@@ -48,8 +52,9 @@ func GetRouterURLSet() *gxset.HashSet {
 
 func NewBaseDirectory(url *common.URL) BaseDirectory {
 	return BaseDirectory{
-		url:       url,
-		destroyed: atomic.NewBool(false),
+		url:         url,
+		destroyed:   atomic.NewBool(false),
+		routerChain: &chain.RouterChain{},
 	}
 }
 func (dir *BaseDirectory) Destroyed() bool {
@@ -75,23 +80,7 @@ func (dir *BaseDirectory) SetRouters(routers []router.Router) {
 
 	dir.mutex.Lock()
 	defer dir.mutex.Unlock()
-	dir.routers = routers
-}
-
-func (dir *BaseDirectory) Routers() []router.Router {
-	dir.once.Do(func() {
-		rs := routerURLSet.Values()
-		for _, r := range rs {
-			factory := extension.GetRouterFactory(r.(*common.URL).GetParam("router", "condition"))
-			router, err := factory.Router(r.(*common.URL))
-			if err != nil {
-				logger.Errorf("router fail! error:%v", err)
-				continue
-			}
-			dir.routers = append(dir.routers, router)
-		}
-	})
-	return dir.routers
+	dir.routerChain.AddRouters(routers)
 }
 
 func (dir *BaseDirectory) Destroy(doDestroy func()) {
