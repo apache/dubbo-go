@@ -7,6 +7,8 @@ import (
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
+	"strings"
+	"sync"
 	"time"
 )
 
@@ -22,6 +24,10 @@ func init() {
 
 type RestProtocol struct {
 	protocol.BaseProtocol
+	serverMap  map[string]rest_interface.RestServer
+	clientMap  map[rest_interface.RestOptions]rest_interface.RestClient
+	serverLock sync.Mutex
+	clientLock sync.Mutex
 }
 
 func NewRestProtocol() *RestProtocol {
@@ -29,32 +35,76 @@ func NewRestProtocol() *RestProtocol {
 }
 
 func (rp *RestProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
-	// TODO 当用户注册一个服务的时候，根据ExporterConfig和服务实现，完成Service -> Rest的绑定。注意此处是Service -> Rest，因为此时我们是暴露服务。当收到请求的时候，恰好是暴露服务的反向，即Rest -> Service；
-	//      Server在Export的时候并不做什么事情。但是在接受到请求的时候，它需要负责执行反序列化的过程;
-	//      http server是一个抽象隔离层。它内部允许使用beego或者gin来作为web服务器，接收请求，用户可以扩展自己的实现；
-
-	return nil
+	url := invoker.GetUrl()
+	serviceKey := strings.TrimPrefix(url.Path, "/")
+	exporter := NewRestExporter(serviceKey, invoker, rp.ExporterMap())
+	restConfig := GetRestProviderServiceConfig(url.Service())
+	rp.SetExporterMap(serviceKey, exporter)
+	restServer := rp.getServer(url, restConfig)
+	restServer.Deploy(invoker, restConfig.RestMethodConfigsMap)
+	return exporter
 }
 
 func (rp *RestProtocol) Refer(url common.URL) protocol.Invoker {
 	// create rest_invoker
 	var requestTimeout = config.GetConsumerConfig().RequestTimeout
-
 	requestTimeoutStr := url.GetParam(constant.TIMEOUT_KEY, config.GetConsumerConfig().Request_Timeout)
 	connectTimeout := config.GetConsumerConfig().ConnectTimeout
 	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
 		requestTimeout = t
 	}
 	restConfig := GetRestConsumerServiceConfig(url.Service())
-	restClient := extension.GetRestClient(restConfig.Client, &rest_interface.RestOptions{RequestTimeout: requestTimeout, ConnectTimeout: connectTimeout})
-	invoker := NewRestInvoker(url, restClient, restConfig.RestMethodConfigsMap)
+	restOptions := rest_interface.RestOptions{RequestTimeout: requestTimeout, ConnectTimeout: connectTimeout}
+	restClient := rp.getClient(restOptions, restConfig)
+	invoker := NewRestInvoker(url, &restClient, restConfig.RestMethodConfigsMap)
 	rp.SetInvokers(invoker)
 	return invoker
+}
+
+func (rp *RestProtocol) getServer(url common.URL, restConfig *rest_interface.RestConfig) rest_interface.RestServer {
+	restServer, ok := rp.serverMap[url.Location]
+	if !ok {
+		_, ok := rp.ExporterMap().Load(strings.TrimPrefix(url.Path, "/"))
+		if !ok {
+			panic("[RestProtocol]" + url.Key() + "is not existing")
+		}
+		rp.serverLock.Lock()
+		restServer, ok = rp.serverMap[url.Location]
+		if !ok {
+			restServer = extension.GetNewRestServer(restConfig.Server)
+			restServer.Start(url)
+			rp.serverMap[url.Location] = restServer
+		}
+		rp.serverLock.Unlock()
+
+	}
+	return restServer
+}
+
+func (rp *RestProtocol) getClient(restOptions rest_interface.RestOptions, restConfig *rest_interface.RestConfig) rest_interface.RestClient {
+	restClient, ok := rp.clientMap[restOptions]
+	rp.clientLock.Lock()
+	if !ok {
+		restClient, ok = rp.clientMap[restOptions]
+		if !ok {
+			restClient = extension.GetNewRestClient(restConfig.Client, &restOptions)
+			rp.clientMap[restOptions] = restClient
+		}
+	}
+	rp.clientLock.Unlock()
+	return restClient
 }
 
 func (rp *RestProtocol) Destroy() {
 	// destroy rest_server
 	rp.BaseProtocol.Destroy()
+	for key, server := range rp.serverMap {
+		server.Destory()
+		delete(rp.serverMap, key)
+	}
+	for key := range rp.clientMap {
+		delete(rp.clientMap, key)
+	}
 }
 
 func GetRestProtocol() protocol.Protocol {
