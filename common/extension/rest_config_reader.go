@@ -12,7 +12,7 @@ func SetRestConfigReader(name string, fun func() rest_interface.RestConfigReader
 	restConfigReaders[name] = fun
 }
 
-func GetRestConfigReader(name string) rest_interface.RestConfigReader {
+func GetSingletonRestConfigReader(name string) rest_interface.RestConfigReader {
 	if name == "" {
 		name = "default"
 	}

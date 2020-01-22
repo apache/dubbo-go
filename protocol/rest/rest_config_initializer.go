@@ -28,7 +28,7 @@ func init() {
 
 func initConsumerRestConfig() {
 	consumerConfigType := config.GetConsumerConfig().RestConfigType
-	consumerConfigReader := extension.GetRestConfigReader(consumerConfigType)
+	consumerConfigReader := extension.GetSingletonRestConfigReader(consumerConfigType)
 	restConsumerConfig = consumerConfigReader.ReadConsumerConfig()
 	if restConsumerConfig == nil {
 		return
@@ -42,7 +42,7 @@ func initConsumerRestConfig() {
 
 func initProviderRestConfig() {
 	providerConfigType := config.GetProviderConfig().RestConfigType
-	providerConfigReader := extension.GetRestConfigReader(providerConfigType)
+	providerConfigReader := extension.GetSingletonRestConfigReader(providerConfigType)
 	restProviderConfig = providerConfigReader.ReadProviderConfig()
 	if restProviderConfig == nil {
 		return
