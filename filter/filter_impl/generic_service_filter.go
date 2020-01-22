@@ -18,6 +18,7 @@
 package filter_impl
 
 import (
+	"context"
 	"reflect"
 	"strings"
 )
@@ -49,12 +50,12 @@ func init() {
 
 type GenericServiceFilter struct{}
 
-func (ef *GenericServiceFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (ef *GenericServiceFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("invoking generic service filter.")
 	logger.Debugf("generic service filter methodName:%v,args:%v", invocation.MethodName(), len(invocation.Arguments()))
 
 	if invocation.MethodName() != constant.GENERIC || len(invocation.Arguments()) != 3 {
-		return invoker.Invoke(invocation)
+		return invoker.Invoke(ctx, invocation)
 	}
 
 	var (
@@ -107,10 +108,10 @@ func (ef *GenericServiceFilter) Invoke(invoker protocol.Invoker, invocation prot
 	}
 	newInvocation := invocation2.NewRPCInvocation(methodName, newParams, invocation.Attachments())
 	newInvocation.SetReply(invocation.Reply())
-	return invoker.Invoke(newInvocation)
+	return invoker.Invoke(ctx, newInvocation)
 }
 
-func (ef *GenericServiceFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (ef *GenericServiceFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	if invocation.MethodName() == constant.GENERIC && len(invocation.Arguments()) == 3 && result.Result() != nil {
 		v := reflect.ValueOf(result.Result())
 		if v.Kind() == reflect.Ptr {
