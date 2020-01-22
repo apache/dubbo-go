@@ -18,6 +18,7 @@ limitations under the License.
 package cluster_impl
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -44,7 +45,7 @@ func newForkingClusterInvoker(directory cluster.Directory) protocol.Invoker {
 	}
 }
 
-func (invoker *forkingClusterInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+func (invoker *forkingClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	err := invoker.checkWhetherDestroyed()
 	if err != nil {
 		return &protocol.RPCResult{Err: err}
@@ -75,7 +76,7 @@ func (invoker *forkingClusterInvoker) Invoke(invocation protocol.Invocation) pro
 	resultQ := queue.New(1)
 	for _, ivk := range selected {
 		go func(k protocol.Invoker) {
-			result := k.Invoke(invocation)
+			result := k.Invoke(ctx, invocation)
 			err := resultQ.Put(result)
 			if err != nil {
 				logger.Errorf("resultQ put failed with exception: %v.\n", err)
