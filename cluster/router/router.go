@@ -27,9 +27,9 @@ type RouterFactory interface {
 	Router(*common.URL) (Router, error)
 }
 
-// Extension - Router Chain
-type RouterChainFactory interface {
-	Router(*common.URL) (RouterChain, error)
+// ChainFactory Extension - Router Chain
+type ChainFactory interface {
+	Router(*common.URL) (Chain, error)
 }
 
 type Router interface {
@@ -38,7 +38,7 @@ type Router interface {
 	Url() common.URL
 }
 
-type RouterChain interface {
+type Chain interface {
 	Route([]protocol.Invoker, *common.URL, protocol.Invocation) []protocol.Invoker
 	AddRouters([]Router)
 }

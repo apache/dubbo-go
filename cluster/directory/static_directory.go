@@ -18,12 +18,7 @@
 package directory
 
 import (
-	"reflect"
-)
-
-import (
 	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
 )
 
@@ -59,15 +54,13 @@ func (dir *staticDirectory) IsAvailable() bool {
 
 func (dir *staticDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
 	invokers := dir.invokers
-	localRouters := dir.routers
+	routerChain := dir.RouterChain()
 
-	for _, router := range localRouters {
-		if reflect.ValueOf(router.Url()).IsNil() || router.Url().GetParamBool(constant.RUNTIME_KEY, false) {
-			dirUrl := dir.GetUrl()
-			return router.Route(invokers, &dirUrl, invocation)
-		}
+	if routerChain == nil {
+		return invokers
 	}
-	return invokers
+	dirUrl := dir.GetUrl()
+	return routerChain.Route(invokers, &dirUrl, invocation)
 }
 
 func (dir *staticDirectory) Destroy() {

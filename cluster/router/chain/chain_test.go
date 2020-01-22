@@ -62,7 +62,8 @@ conditions:
 	assert.Nil(t, err)
 	assert.NotNil(t, configuration)
 
-	chain := NewRouterChain(getRouteUrl("test-condition"))
+	chain, err := NewRouterChain(getRouteUrl("test-condition"))
+	assert.Nil(t, err)
 	assert.Equal(t, 1, len(chain.routers))
 	appRouter := chain.routers[0].(*condition.AppRouter)
 
