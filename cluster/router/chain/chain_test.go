@@ -20,10 +20,12 @@ package chain
 import (
 	"context"
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/config"
 	"github.com/apache/dubbo-go/common/extension"
 	_ "github.com/apache/dubbo-go/config_center/zookeeper"
 	"github.com/apache/dubbo-go/remoting/zookeeper"
 	"github.com/stretchr/testify/assert"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -35,17 +37,31 @@ import (
 func TestNewRouterChain(t *testing.T) {
 	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
+	err = z.Create("/dubbo/config/dubbo/test-condition.condition-router")
+	assert.NoError(t, err)
+
+	data := `enabled: true
+force: true
+runtime: false
+conditions:
+  - => host != 172.22.3.91
+`
+
+	_, err = z.Conn.Set("/dubbo/config/dubbo/test-condition.condition-router", []byte(data), 0)
+	assert.NoError(t, err)
 	defer ts.Stop()
 	defer z.Close()
 
-	t.Log(z.ZkAddrs)
+	//t.Log(z.Conn.Server())
 
-	zkUrl, _ := common.NewURL(context.TODO(), "zookeeper://127.0.0.1:2181")
+	zkUrl, _ := common.NewURL(context.TODO(), "zookeeper://127.0.0.1:"+strconv.Itoa(ts.Servers[0].Port))
 	configuration, err := extension.GetConfigCenterFactory("zookeeper").GetDynamicConfiguration(&zkUrl)
+	config.GetEnvInstance().SetDynamicConfiguration(configuration)
+
 	assert.Nil(t, err)
 	assert.NotNil(t, configuration)
 
-	chain := NewRouterChain(getRouteUrl("test"))
+	chain := NewRouterChain(getRouteUrl("test-condition"))
 	t.Log(chain.routers)
 }
 
