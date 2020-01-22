@@ -19,7 +19,6 @@ package directory
 
 import (
 	"github.com/apache/dubbo-go/cluster/router"
-	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -271,17 +270,12 @@ func (dir *registryDirectory) cacheInvoker(url *common.URL) {
 //select the protocol invokers from the directory
 func (dir *registryDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
 	invokers := dir.cacheInvokers
-	localRouters := dir.Routers()
+	routerChain := dir.RouterChain()
 
-	if len(localRouters) > 0 {
-		for _, router := range localRouters {
-			if reflect.ValueOf(router.Url()).IsValid() || router.Url().GetParamBool(constant.RUNTIME_KEY, false) {
-				invokers = router.Route(invokers, dir.cacheOriginUrl, invocation)
-			}
-		}
+	if routerChain == nil {
+		return invokers
 	}
-	return invokers
-
+	return routerChain.Route(invokers, dir.cacheOriginUrl, invocation)
 }
 
 func (dir *registryDirectory) IsAvailable() bool {

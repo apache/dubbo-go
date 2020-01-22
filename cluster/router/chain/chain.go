@@ -23,11 +23,12 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
+	perrors "github.com/pkg/errors"
 	"sort"
 )
 
 // RouterChain Router chain
-type Chain struct {
+type RouterChain struct {
 	//full list of addresses from registry, classified by method name.
 	invokers []protocol.Invoker
 	//containing all routers, reconstruct every time 'route://' urls change.
@@ -37,14 +38,14 @@ type Chain struct {
 	builtinRouters []router.Router
 }
 
-func (c Chain) Route(invoker []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+func (c RouterChain) Route(invoker []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	finalInvokers := invoker
 	for _, r := range c.routers {
 		finalInvokers = r.Route(invoker, url, invocation)
 	}
 	return finalInvokers
 }
-func (c Chain) AddRouters(routers []router.Router) {
+func (c RouterChain) AddRouters(routers []router.Router) {
 	newRouters := make([]router.Router, 0)
 	newRouters = append(newRouters, c.builtinRouters...)
 	newRouters = append(newRouters, routers...)
@@ -52,10 +53,10 @@ func (c Chain) AddRouters(routers []router.Router) {
 	c.routers = newRouters
 }
 
-func NewRouterChain(url *common.URL) *Chain {
+func NewRouterChain(url *common.URL) (*RouterChain, error) {
 	routerFactories := extension.GetRouters()
 	if len(routerFactories) == 0 {
-		return nil
+		return nil, perrors.Errorf("Illegal route rule!")
 	}
 	routers := make([]router.Router, 0)
 	for _, routerFactory := range routerFactories {
@@ -72,12 +73,12 @@ func NewRouterChain(url *common.URL) *Chain {
 
 	sortRouter(newRouters)
 
-	chain := &Chain{
+	chain := &RouterChain{
 		builtinRouters: routers,
 		routers:        newRouters,
 	}
 
-	return chain
+	return chain, nil
 }
 
 func sortRouter(routers []router.Router) {
