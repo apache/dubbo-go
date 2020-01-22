@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"context"
 	"fmt"
 )
 
@@ -18,15 +19,15 @@ type RestInvoker struct {
 	restMethodConfigMap map[string]*rest_interface.RestMethodConfig
 }
 
-func NewRestInvoker(url common.URL, client rest_interface.RestClient, restMethodConfig map[string]*rest_interface.RestMethodConfig) *RestInvoker {
+func NewRestInvoker(url common.URL, client *rest_interface.RestClient, restMethodConfig map[string]*rest_interface.RestMethodConfig) *RestInvoker {
 	return &RestInvoker{
 		BaseInvoker:         *protocol.NewBaseInvoker(url),
-		client:              client,
+		client:              *client,
 		restMethodConfigMap: restMethodConfig,
 	}
 }
 
-func (ri *RestInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+func (ri *RestInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	inv := invocation.(*invocation_impl.RPCInvocation)
 	methodConfig := ri.restMethodConfigMap[inv.MethodName()]
 	var result protocol.RPCResult

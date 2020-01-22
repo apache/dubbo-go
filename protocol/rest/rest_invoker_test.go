@@ -51,11 +51,11 @@ func TestRestInvoker_Invoke(t *testing.T) {
 		RestMethodConfigsMap: methodConfigMap,
 	}
 	restClient := rest_client.GetRestyClient(&rest_interface.RestOptions{ConnectTimeout: 5 * time.Second, RequestTimeout: 5 * time.Second})
-	invoker := NewRestInvoker(url, restClient, methodConfigMap)
+	invoker := NewRestInvoker(url, &restClient, methodConfigMap)
 	user := &User{}
 	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUser"),
 		invocation.WithArguments([]interface{}{"1", "username"}), invocation.WithReply(user))
-	invoker.Invoke(inv)
+	invoker.Invoke(context.Background(), inv)
 
 	// make sure url
 	eq := invoker.GetUrl().URLEqual(url)
