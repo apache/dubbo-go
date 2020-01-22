@@ -49,6 +49,10 @@ type listenableRouter struct {
 	priority         int64
 }
 
+func (l *listenableRouter) RouterRule() *RouterRule {
+	return l.routerRule
+}
+
 func newListenableRouter(url *common.URL, ruleKey string) (*AppRouter, error) {
 	if ruleKey == "" {
 		return nil, perrors.Errorf("newListenableRouter ruleKey is nil, can't create Listenable router")
@@ -106,6 +110,7 @@ func (l *listenableRouter) generateConditions(rule *RouterRule) {
 		return
 	}
 	l.conditionRouters = make([]*ConditionRouter, 0)
+	l.routerRule = rule
 	for _, c := range rule.Conditions {
 		router, e := NewConditionRouterWithRule(c)
 		if e != nil {

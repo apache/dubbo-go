@@ -19,6 +19,7 @@ package chain
 
 import (
 	"context"
+	"github.com/apache/dubbo-go/cluster/router/condition"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/config"
 	"github.com/apache/dubbo-go/common/extension"
@@ -40,14 +41,14 @@ func TestNewRouterChain(t *testing.T) {
 	err = z.Create("/dubbo/config/dubbo/test-condition.condition-router")
 	assert.NoError(t, err)
 
-	data := `enabled: true
+	testyml := `enabled: true
 force: true
 runtime: false
 conditions:
   - => host != 172.22.3.91
 `
 
-	_, err = z.Conn.Set("/dubbo/config/dubbo/test-condition.condition-router", []byte(data), 0)
+	_, err = z.Conn.Set("/dubbo/config/dubbo/test-condition.condition-router", []byte(testyml), 0)
 	assert.NoError(t, err)
 	defer ts.Stop()
 	defer z.Close()
@@ -62,7 +63,21 @@ conditions:
 	assert.NotNil(t, configuration)
 
 	chain := NewRouterChain(getRouteUrl("test-condition"))
-	t.Log(chain.routers)
+	assert.Equal(t, 1, len(chain.routers))
+	appRouter := chain.routers[0].(*condition.AppRouter)
+
+	assert.NotNil(t, appRouter)
+	assert.NotNil(t, appRouter.RouterRule())
+	rule := appRouter.RouterRule()
+	assert.Equal(t, "", rule.Scope)
+	assert.True(t, rule.Force)
+	assert.True(t, rule.Enabled)
+	assert.True(t, rule.Valid)
+
+	assert.Equal(t, testyml, rule.RawRule)
+	assert.Equal(t, false, rule.Runtime)
+	assert.Equal(t, false, rule.Dynamic)
+	assert.Equal(t, "", rule.Key)
 }
 
 func getRouteUrl(applicationKey string) *common.URL {
