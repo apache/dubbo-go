@@ -43,6 +43,7 @@ type clientFacade interface {
 	common.Node
 }
 
+// HandleClientRestart ...
 func HandleClientRestart(r clientFacade) {
 
 	var (

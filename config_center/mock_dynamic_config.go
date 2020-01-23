@@ -32,6 +32,7 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
+// MockDynamicConfigurationFactory ...
 type MockDynamicConfigurationFactory struct {
 	Content string
 }
@@ -41,6 +42,7 @@ var (
 	dynamicConfiguration *MockDynamicConfiguration
 )
 
+// GetDynamicConfiguration ...
 func (f *MockDynamicConfigurationFactory) GetDynamicConfiguration(url *common.URL) (DynamicConfiguration, error) {
 	var err error
 	once.Do(func() {
@@ -79,19 +81,23 @@ func (f *MockDynamicConfigurationFactory) GetDynamicConfiguration(url *common.UR
 
 }
 
+// MockDynamicConfiguration ...
 type MockDynamicConfiguration struct {
 	parser   parser.ConfigurationParser
 	content  string
 	listener map[string]ConfigurationListener
 }
 
+// AddListener ...
 func (c *MockDynamicConfiguration) AddListener(key string, listener ConfigurationListener, opions ...Option) {
 	c.listener[key] = listener
 }
 
+// RemoveListener ...
 func (c *MockDynamicConfiguration) RemoveListener(key string, listener ConfigurationListener, opions ...Option) {
 }
 
+// GetConfig ...
 func (c *MockDynamicConfiguration) GetConfig(key string, opts ...Option) (string, error) {
 
 	return c.content, nil
@@ -102,12 +108,17 @@ func (c *MockDynamicConfiguration) GetConfigs(key string, opts ...Option) (strin
 	return c.GetConfig(key, opts...)
 }
 
+// Parser ...
 func (c *MockDynamicConfiguration) Parser() parser.ConfigurationParser {
 	return c.parser
 }
+
+// SetParser ...
 func (c *MockDynamicConfiguration) SetParser(p parser.ConfigurationParser) {
 	c.parser = p
 }
+
+// GetProperties ...
 func (c *MockDynamicConfiguration) GetProperties(key string, opts ...Option) (string, error) {
 	return c.content, nil
 }
@@ -117,10 +128,12 @@ func (c *MockDynamicConfiguration) GetInternalProperty(key string, opts ...Optio
 	return c.GetProperties(key, opts...)
 }
 
+// GetRule ...
 func (c *MockDynamicConfiguration) GetRule(key string, opts ...Option) (string, error) {
 	return c.GetProperties(key, opts...)
 }
 
+// MockServiceConfigEvent ...
 func (c *MockDynamicConfiguration) MockServiceConfigEvent() {
 	config := &parser.ConfiguratorConfig{
 		ConfigVersion: "2.7.1",
@@ -142,6 +155,7 @@ func (c *MockDynamicConfiguration) MockServiceConfigEvent() {
 	c.listener[key].Process(&ConfigChangeEvent{Key: key, Value: string(value), ConfigType: remoting.EventTypeAdd})
 }
 
+// MockApplicationConfigEvent ...
 func (c *MockDynamicConfiguration) MockApplicationConfigEvent() {
 	config := &parser.ConfiguratorConfig{
 		ConfigVersion: "2.7.1",

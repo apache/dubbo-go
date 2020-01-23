@@ -47,6 +47,7 @@ import (
 // Request
 // ////////////////////////////////////////////
 
+// Request ...
 type Request struct {
 	ID          int64
 	group       string
@@ -62,6 +63,7 @@ type Request struct {
 // HTTP Client
 // ////////////////////////////////////////////
 
+// HTTPOptions ...
 type HTTPOptions struct {
 	HandshakeTimeout time.Duration
 	HTTPTimeout      time.Duration
@@ -72,11 +74,13 @@ var defaultHTTPOptions = HTTPOptions{
 	HTTPTimeout:      3 * time.Second,
 }
 
+// HTTPClient ...
 type HTTPClient struct {
 	ID      int64
 	options HTTPOptions
 }
 
+// NewHTTPClient ...
 func NewHTTPClient(opt *HTTPOptions) *HTTPClient {
 	if opt == nil {
 		opt = &defaultHTTPOptions
@@ -96,6 +100,7 @@ func NewHTTPClient(opt *HTTPOptions) *HTTPClient {
 	}
 }
 
+// NewRequest ...
 func (c *HTTPClient) NewRequest(service common.URL, method string, args interface{}) *Request {
 
 	return &Request{
@@ -109,6 +114,7 @@ func (c *HTTPClient) NewRequest(service common.URL, method string, args interfac
 	}
 }
 
+// Call ...
 func (c *HTTPClient) Call(ctx context.Context, service common.URL, req *Request, rsp interface{}) error {
 	// header
 	httpHeader := http.Header{}
