@@ -56,6 +56,7 @@ const (
 	PathPrefix               = byte('/')
 )
 
+// Server ...
 type Server struct {
 	done chan struct{}
 	once sync.Once
@@ -65,6 +66,7 @@ type Server struct {
 	timeout time.Duration
 }
 
+// NewServer ...
 func NewServer() *Server {
 	return &Server{
 		done: make(chan struct{}),
@@ -223,6 +225,7 @@ func accept(listener net.Listener, fn func(net.Conn)) error {
 	}
 }
 
+// Start ...
 func (s *Server) Start(url common.URL) {
 	listener, err := net.Listen("tcp", url.Location)
 	if err != nil {
@@ -249,6 +252,7 @@ func (s *Server) Start(url common.URL) {
 	}()
 }
 
+// Stop ...
 func (s *Server) Stop() {
 	s.once.Do(func() {
 		close(s.done)

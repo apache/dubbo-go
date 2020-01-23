@@ -40,6 +40,7 @@ const (
 	GeneralType      = "general"
 )
 
+// ConfigurationParser ...
 type ConfigurationParser interface {
 	Parse(string) (map[string]string, error)
 	ParseToUrls(content string) ([]*common.URL, error)
@@ -48,6 +49,7 @@ type ConfigurationParser interface {
 //for support properties file in config center
 type DefaultConfigurationParser struct{}
 
+// ConfiguratorConfig ...
 type ConfiguratorConfig struct {
 	ConfigVersion string       `yaml:"configVersion"`
 	Scope         string       `yaml:"scope"`
@@ -56,6 +58,7 @@ type ConfiguratorConfig struct {
 	Configs       []ConfigItem `yaml:"configs"`
 }
 
+// ConfigItem ...
 type ConfigItem struct {
 	Type              string            `yaml:"type"`
 	Enabled           bool              `yaml:"enabled"`
@@ -67,6 +70,7 @@ type ConfigItem struct {
 	Side              string            `yaml:"side"`
 }
 
+// Parse ...
 func (parser *DefaultConfigurationParser) Parse(content string) (map[string]string, error) {
 	properties, err := properties.LoadString(content)
 	if err != nil {
@@ -76,6 +80,7 @@ func (parser *DefaultConfigurationParser) Parse(content string) (map[string]stri
 	return properties.Map(), nil
 }
 
+// ParseToUrls ...
 func (parser *DefaultConfigurationParser) ParseToUrls(content string) ([]*common.URL, error) {
 	config := ConfiguratorConfig{}
 	if err := yaml.Unmarshal([]byte(content), &config); err != nil {

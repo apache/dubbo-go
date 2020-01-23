@@ -41,6 +41,7 @@ func (a *apolloListener) OnChange(changeEvent *agollo.ChangeEvent) {
 	}
 }
 
+// NewApolloListener ...
 func NewApolloListener() *apolloListener {
 	return &apolloListener{
 		listeners: make(map[config_center.ConfigurationListener]struct{}, 0),

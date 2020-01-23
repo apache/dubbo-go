@@ -56,11 +56,13 @@ var onlyLogHandlerOnce sync.Once
 type OnlyLogRejectedExecutionHandler struct {
 }
 
+// RejectedExecution ...
 func (handler *OnlyLogRejectedExecutionHandler) RejectedExecution(url common.URL, invocation protocol.Invocation) protocol.Result {
 	logger.Errorf("The invocation was rejected. url: %s", url.String())
 	return &protocol.RPCResult{}
 }
 
+// GetOnlyLogRejectedExecutionHandler ...
 func GetOnlyLogRejectedExecutionHandler() filter.RejectedExecutionHandler {
 	onlyLogHandlerOnce.Do(func() {
 		onlyLogHandlerInstance = &OnlyLogRejectedExecutionHandler{}

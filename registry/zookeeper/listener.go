@@ -36,18 +36,23 @@ import (
 	zk "github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
+// RegistryDataListener ...
 type RegistryDataListener struct {
 	interestedURL []*common.URL
 	listener      config_center.ConfigurationListener
 }
 
+// NewRegistryDataListener ...
 func NewRegistryDataListener(listener config_center.ConfigurationListener) *RegistryDataListener {
 	return &RegistryDataListener{listener: listener, interestedURL: []*common.URL{}}
 }
+
+// AddInterestedURL ...
 func (l *RegistryDataListener) AddInterestedURL(url *common.URL) {
 	l.interestedURL = append(l.interestedURL, url)
 }
 
+// DataChange ...
 func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 	// Intercept the last bit
 	index := strings.Index(eventType.Path, "/providers/")
@@ -71,6 +76,7 @@ func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 	return false
 }
 
+// RegistryConfigurationListener ...
 type RegistryConfigurationListener struct {
 	client    *zk.ZookeeperClient
 	registry  *zkRegistry
@@ -79,14 +85,18 @@ type RegistryConfigurationListener struct {
 	closeOnce sync.Once
 }
 
+// NewRegistryConfigurationListener ...
 func NewRegistryConfigurationListener(client *zk.ZookeeperClient, reg *zkRegistry) *RegistryConfigurationListener {
 	reg.wg.Add(1)
 	return &RegistryConfigurationListener{client: client, registry: reg, events: make(chan *config_center.ConfigChangeEvent, 32), isClosed: false}
 }
+
+// Process ...
 func (l *RegistryConfigurationListener) Process(configType *config_center.ConfigChangeEvent) {
 	l.events <- configType
 }
 
+// Next ...
 func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
@@ -111,6 +121,8 @@ func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 		}
 	}
 }
+
+// Close ...
 func (l *RegistryConfigurationListener) Close() {
 	// ensure that the listener will be closed at most once.
 	l.closeOnce.Do(func() {

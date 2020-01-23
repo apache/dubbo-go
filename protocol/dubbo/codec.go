@@ -50,8 +50,10 @@ const (
 // dubbo package
 ////////////////////////////////////////////
 
+// SequenceType ...
 type SequenceType int64
 
+// DubboPackage ...
 type DubboPackage struct {
 	Header  hessian.DubboHeader
 	Service hessian.Service
@@ -63,6 +65,7 @@ func (p DubboPackage) String() string {
 	return fmt.Sprintf("DubboPackage: Header-%v, Path-%v, Body-%v", p.Header, p.Service, p.Body)
 }
 
+// Marshal ...
 func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 	codec := hessian.NewHessianCodec(nil)
 
@@ -74,6 +77,7 @@ func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 	return bytes.NewBuffer(pkg), nil
 }
 
+// Unmarshal ...
 func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 	codec := hessian.NewHessianCodec(bufio.NewReaderSize(buf, buf.Len()))
 
@@ -111,6 +115,7 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 // PendingResponse
 ////////////////////////////////////////////
 
+// PendingResponse ...
 type PendingResponse struct {
 	seq       uint64
 	err       error
@@ -121,6 +126,7 @@ type PendingResponse struct {
 	done      chan struct{}
 }
 
+// NewPendingResponse ...
 func NewPendingResponse() *PendingResponse {
 	return &PendingResponse{
 		start:    time.Now(),
@@ -129,6 +135,7 @@ func NewPendingResponse() *PendingResponse {
 	}
 }
 
+// GetCallResponse ...
 func (r PendingResponse) GetCallResponse() common.CallbackResponse {
 	return AsyncCallbackResponse{
 		Cause:     r.err,

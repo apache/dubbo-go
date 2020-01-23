@@ -27,6 +27,7 @@ import (
 )
 
 type (
+	// GettySessionParam ...
 	GettySessionParam struct {
 		CompressEncoding bool   `default:"false" yaml:"compress_encoding" json:"compress_encoding,omitempty"`
 		TcpNoDelay       bool   `default:"true" yaml:"tcp_no_delay" json:"tcp_no_delay,omitempty"`
@@ -91,6 +92,7 @@ type (
 	}
 )
 
+// GetDefaultClientConfig ...
 func GetDefaultClientConfig() ClientConfig {
 	return ClientConfig{
 		ReconnectInterval: 0,
@@ -118,6 +120,7 @@ func GetDefaultClientConfig() ClientConfig {
 		}}
 }
 
+// GetDefaultServerConfig ...
 func GetDefaultServerConfig() ServerConfig {
 	return ServerConfig{
 		SessionTimeout: "180s",
@@ -142,6 +145,7 @@ func GetDefaultServerConfig() ServerConfig {
 	}
 }
 
+// CheckValidity ...
 func (c *GettySessionParam) CheckValidity() error {
 	var err error
 
@@ -164,6 +168,7 @@ func (c *GettySessionParam) CheckValidity() error {
 	return nil
 }
 
+// CheckValidity ...
 func (c *ClientConfig) CheckValidity() error {
 	var err error
 
@@ -185,6 +190,7 @@ func (c *ClientConfig) CheckValidity() error {
 	return perrors.WithStack(c.GettySessionParam.CheckValidity())
 }
 
+// CheckValidity ...
 func (c *ServerConfig) CheckValidity() error {
 	var err error
 

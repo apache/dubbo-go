@@ -38,10 +38,12 @@ import (
 // RpcClientPackageHandler
 ////////////////////////////////////////////
 
+// RpcClientPackageHandler ...
 type RpcClientPackageHandler struct {
 	client *Client
 }
 
+// NewRpcClientPackageHandler ...
 func NewRpcClientPackageHandler(client *Client) *RpcClientPackageHandler {
 	return &RpcClientPackageHandler{client: client}
 }
@@ -94,6 +96,7 @@ var (
 	rpcServerPkgHandler = &RpcServerPackageHandler{}
 )
 
+// RpcServerPackageHandler ...
 type RpcServerPackageHandler struct{}
 
 func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
