@@ -87,6 +87,7 @@ func ValidateNacosClient(container nacosClientFacade, opts ...Option) error {
 			split := strings.Split(nacosAddr, ":")
 			port, err := strconv.ParseUint(split[1], 10, 64)
 			if err != nil {
+				logger.Warnf("nacos addr port parse error ,error message is %v", err)
 				continue
 			}
 			svrconf := nacosconst.ServerConfig{
@@ -99,10 +100,10 @@ func ValidateNacosClient(container nacosClientFacade, opts ...Option) error {
 		client, err := clients.CreateConfigClient(map[string]interface{}{
 			"serverConfigs": svrConfList,
 			"clientConfig": nacosconst.ClientConfig{
-				TimeoutMs:           uint64(container.NacosClient().Timeout.Nanoseconds() / 1e6),
+				TimeoutMs:           uint64(container.NacosClient().Timeout.Milliseconds()),
 				ListenInterval:      10000,
 				NotLoadCacheAtStart: true,
-				LogDir:              "logs/nacos/log", //TODO unified log directory
+				LogDir:              "logs/nacos/log",
 			},
 		})
 		container.NacosClient().Client = &client
@@ -143,10 +144,10 @@ func newNacosClient(name string, nacosAddrs []string, timeout time.Duration) (*N
 	client, err := clients.CreateConfigClient(map[string]interface{}{
 		"serverConfigs": svrConfList,
 		"clientConfig": nacosconst.ClientConfig{
-			TimeoutMs:           uint64(timeout.Nanoseconds() / 1e6),
+			TimeoutMs:           uint64(timeout.Milliseconds()),
 			ListenInterval:      20000,
 			NotLoadCacheAtStart: true,
-			LogDir:              "logs/nacos/log", //TODO unified log directory
+			LogDir:              "logs/nacos/log",
 		},
 	})
 	n.Client = &client
@@ -154,49 +155,6 @@ func newNacosClient(name string, nacosAddrs []string, timeout time.Duration) (*N
 		return nil, perrors.WithMessagef(err, "nacos clients.CreateConfigClient(nacosAddrs:%+v)", nacosAddrs)
 	}
 
-	return n, nil
-}
-
-func newMockNacosClient(name string, nacosAddrs []string, timeout time.Duration) (*NacosClient, error) {
-	var (
-		err error
-		n   *NacosClient
-	)
-
-	n = &NacosClient{
-		name:       name,
-		NacosAddrs: nacosAddrs,
-		Timeout:    timeout,
-		exit:       make(chan struct{}),
-	}
-
-	svrConfList := []nacosconst.ServerConfig{}
-	for _, nacosAddr := range n.NacosAddrs {
-		split := strings.Split(nacosAddr, ":")
-		port, err := strconv.ParseUint(split[1], 10, 64)
-		if err != nil {
-			continue
-		}
-		svrconf := nacosconst.ServerConfig{
-			IpAddr: split[0],
-			Port:   port,
-		}
-		svrConfList = append(svrConfList, svrconf)
-	}
-
-	client, err := clients.CreateConfigClient(map[string]interface{}{
-		"serverConfigs": svrConfList,
-		"clientConfig": nacosconst.ClientConfig{
-			TimeoutMs:           uint64(timeout.Nanoseconds() / 1e6),
-			ListenInterval:      10000,
-			NotLoadCacheAtStart: true,
-			LogDir:              "logs/nacos/log", ///TODO unified log directory
-		},
-	})
-	if err != nil {
-		return nil, perrors.WithMessagef(err, "nacos clients.CreateConfigClient(nacosAddrs:%+v)", nacosAddrs)
-	}
-	n.Client = &client
 	return n, nil
 }
 
@@ -239,9 +197,7 @@ func (n *NacosClient) Close() {
 
 	n.stop()
 	n.Lock()
-	if n.Client != nil {
-		n.Client = nil
-	}
+	n.Client = nil
 	n.Unlock()
 	logger.Warnf("nacosClient{name:%s, zk addr:%s} exit now.", n.name, n.NacosAddrs)
 }

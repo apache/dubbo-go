@@ -51,7 +51,6 @@ func newNacosDynamicConfiguration(url *common.URL) (*nacosDynamicConfiguration, 
 	c := &nacosDynamicConfiguration{
 		rootPath:     "/" + url.GetParam(constant.CONFIG_NAMESPACE_KEY, config_center.DEFAULT_GROUP) + "/config",
 		url:          url,
-		keyListeners: sync.Map{},
 	}
 	err := ValidateNacosClient(c, WithNacosName(NacosClientName))
 	if err != nil {
@@ -72,7 +71,7 @@ func (n *nacosDynamicConfiguration) RemoveListener(key string, listener config_c
 	n.removeListener(key, listener)
 }
 
-// 在nacos group是dubbo DataId是key configfile 或  appconfigfile
+//nacos distinguishes configuration files based on group and dataId. defalut group = "dubbo" and dataId = key
 func (n *nacosDynamicConfiguration) GetProperties(key string, opts ...config_center.Option) (string, error) {
 
 	tmpOpts := &config_center.Options{}
