@@ -54,6 +54,7 @@ func init() {
 type TpsLimitFilter struct {
 }
 
+// Invoke ...
 func (t TpsLimitFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	url := invoker.GetUrl()
 	tpsLimiter := url.GetParam(constant.TPS_LIMITER_KEY, "")
@@ -69,10 +70,12 @@ func (t TpsLimitFilter) Invoke(ctx context.Context, invoker protocol.Invoker, in
 	return invoker.Invoke(ctx, invocation)
 }
 
+// OnResponse ...
 func (t TpsLimitFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }
 
+// GetTpsLimitFilter ...
 func GetTpsLimitFilter() filter.Filter {
 	return &TpsLimitFilter{}
 }

@@ -338,6 +338,7 @@ func setProviderUrl(regURL *common.URL, providerURL *common.URL) {
 	regURL.SubURL = providerURL
 }
 
+// GetProtocol ...
 func GetProtocol() protocol.Protocol {
 	if regProtocol != nil {
 		return regProtocol
