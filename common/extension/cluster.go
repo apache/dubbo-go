@@ -25,10 +25,12 @@ var (
 	clusters = make(map[string]func() cluster.Cluster)
 )
 
+// SetCluster ...
 func SetCluster(name string, fcn func() cluster.Cluster) {
 	clusters[name] = fcn
 }
 
+// GetCluster ...
 func GetCluster(name string) cluster.Cluster {
 	if clusters[name] == nil {
 		panic("cluster for " + name + " is not existing, make sure you have import the package.")

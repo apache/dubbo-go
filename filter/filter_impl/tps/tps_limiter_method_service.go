@@ -111,6 +111,7 @@ type MethodServiceTpsLimiterImpl struct {
 	tpsState *concurrent.Map
 }
 
+// IsAllowable ...
 func (limiter MethodServiceTpsLimiterImpl) IsAllowable(url common.URL, invocation protocol.Invocation) bool {
 
 	methodConfigPrefix := "methods." + invocation.MethodName() + "."
@@ -178,6 +179,7 @@ func getLimitConfig(methodLevelConfig string,
 var methodServiceTpsLimiterInstance *MethodServiceTpsLimiterImpl
 var methodServiceTpsLimiterOnce sync.Once
 
+// GetMethodServiceTpsLimiter ...
 func GetMethodServiceTpsLimiter() filter.TpsLimiter {
 	methodServiceTpsLimiterOnce.Do(func() {
 		methodServiceTpsLimiterInstance = &MethodServiceTpsLimiterImpl{
