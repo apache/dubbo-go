@@ -32,6 +32,7 @@ import (
 )
 
 import (
+	"github.com/opentracing/opentracing-go"
 	perrors "github.com/pkg/errors"
 )
 
@@ -151,6 +152,13 @@ func (s *Server) handlePkg(conn net.Conn) {
 		}
 
 		ctx := context.Background()
+
+		spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders,
+			opentracing.HTTPHeadersCarrier(r.Header))
+		if err == nil {
+			ctx = context.WithValue(ctx, constant.TRACING_REMOTE_SPAN_CTX, spanCtx)
+		}
+
 		if len(reqHeader["Timeout"]) > 0 {
 			timeout, err := time.ParseDuration(reqHeader["Timeout"])
 			if err == nil {
@@ -334,10 +342,9 @@ func serveRequest(ctx context.Context,
 	exporter, _ := jsonrpcProtocol.ExporterMap().Load(path)
 	invoker := exporter.(*JsonrpcExporter).GetInvoker()
 	if invoker != nil {
-		result := invoker.Invoke(invocation.NewRPCInvocation(methodName, args, map[string]string{
+		result := invoker.Invoke(ctx, invocation.NewRPCInvocation(methodName, args, map[string]string{
 			constant.PATH_KEY:    path,
-			constant.VERSION_KEY: codec.req.Version,
-		}))
+			constant.VERSION_KEY: codec.req.Version}))
 		if err := result.Error(); err != nil {
 			rspStream, err := codec.Write(err.Error(), invalidRequest)
 			if err != nil {
