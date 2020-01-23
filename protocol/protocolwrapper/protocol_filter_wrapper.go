@@ -18,6 +18,7 @@
 package protocolwrapper
 
 import (
+	"context"
 	"strings"
 )
 
@@ -110,9 +111,9 @@ func (fi *FilterInvoker) IsAvailable() bool {
 }
 
 // Invoke ...
-func (fi *FilterInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
-	result := fi.filter.Invoke(fi.next, invocation)
-	return fi.filter.OnResponse(result, fi.invoker, invocation)
+func (fi *FilterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+	result := fi.filter.Invoke(ctx, fi.next, invocation)
+	return fi.filter.OnResponse(ctx, result, fi.invoker, invocation)
 }
 
 // Destroy ...

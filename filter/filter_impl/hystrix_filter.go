@@ -17,6 +17,7 @@
 package filter_impl
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"sync"
@@ -88,8 +89,7 @@ type HystrixFilter struct {
 }
 
 // Invoke ...
-func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-
+func (hf *HystrixFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	cmdName := fmt.Sprintf("%s&method=%s", invoker.GetUrl().Key(), invocation.MethodName())
 
 	// Do the configuration if the circuit breaker is created for the first time
@@ -121,12 +121,12 @@ func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 	configLoadMutex.RUnlock()
 	if err != nil {
 		logger.Errorf("[Hystrix Filter]Errors occurred getting circuit for %s , will invoke without hystrix, error is: ", cmdName, err)
-		return invoker.Invoke(invocation)
+		return invoker.Invoke(ctx, invocation)
 	}
 	logger.Infof("[Hystrix Filter]Using hystrix filter: %s", cmdName)
 	var result protocol.Result
 	_ = hystrix.Do(cmdName, func() error {
-		result = invoker.Invoke(invocation)
+		result = invoker.Invoke(ctx, invocation)
 		err := result.Error()
 		if err != nil {
 			result.SetError(NewHystrixFilterError(err, false))
@@ -151,7 +151,7 @@ func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 }
 
 // OnResponse ...
-func (hf *HystrixFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (hf *HystrixFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }
 
@@ -225,6 +225,7 @@ func initHystrixConfigConsumer() error {
 	}
 	return nil
 }
+
 func initHystrixConfigProvider() error {
 	if config.GetProviderConfig().FilterConf == nil {
 		return perrors.Errorf("no config for hystrix")

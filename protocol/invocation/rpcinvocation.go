@@ -26,9 +26,9 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-/////////////////////////////
+// ///////////////////////////
 // Invocation Impletment of RPC
-/////////////////////////////
+// ///////////////////////////
 // todo: is it necessary to separate fields of consumer(provider) from RPCInvocation
 type RPCInvocation struct {
 	methodName      string
@@ -139,9 +139,9 @@ func (r *RPCInvocation) SetCallBack(c interface{}) {
 	r.callBack = c
 }
 
-///////////////////////////
+// /////////////////////////
 // option
-///////////////////////////
+// /////////////////////////
 
 type option func(invo *RPCInvocation)
 

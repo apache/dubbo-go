@@ -18,6 +18,7 @@
 package filter_impl
 
 import (
+	"context"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -77,7 +78,7 @@ type ExecuteState struct {
 }
 
 // Invoke ...
-func (ef *ExecuteLimitFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (ef *ExecuteLimitFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	methodConfigPrefix := "methods." + invocation.MethodName() + "."
 	url := invoker.GetUrl()
 	limitTarget := url.ServiceKey()
@@ -99,7 +100,7 @@ func (ef *ExecuteLimitFilter) Invoke(invoker protocol.Invoker, invocation protoc
 	}
 
 	if limitRate < 0 {
-		return invoker.Invoke(invocation)
+		return invoker.Invoke(ctx, invocation)
 	}
 
 	state, _ := ef.executeState.LoadOrStore(limitTarget, &ExecuteState{
@@ -115,11 +116,11 @@ func (ef *ExecuteLimitFilter) Invoke(invoker protocol.Invoker, invocation protoc
 		return extension.GetRejectedExecutionHandler(rejectedHandlerConfig).RejectedExecution(url, invocation)
 	}
 
-	return invoker.Invoke(invocation)
+	return invoker.Invoke(ctx, invocation)
 }
 
 // OnResponse ...
-func (ef *ExecuteLimitFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (ef *ExecuteLimitFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }
 
