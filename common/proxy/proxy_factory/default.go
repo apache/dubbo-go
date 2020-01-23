@@ -76,7 +76,7 @@ type ProxyInvoker struct {
 	protocol.BaseInvoker
 }
 
-func (pi *ProxyInvoker) Invoke(context context.Context, invocation protocol.Invocation) protocol.Result {
+func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	result := &protocol.RPCResult{}
 	result.SetAttachments(invocation.Attachments())
 
@@ -105,7 +105,7 @@ func (pi *ProxyInvoker) Invoke(context context.Context, invocation protocol.Invo
 
 	in := []reflect.Value{svc.Rcvr()}
 	if method.CtxType() != nil {
-		in = append(in, method.SuiteContext(nil)) // todo: ctx will be used later.
+		in = append(in, method.SuiteContext(ctx))
 	}
 
 	// prepare argv
