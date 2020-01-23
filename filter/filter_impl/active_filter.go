@@ -18,6 +18,7 @@
 package filter_impl
 
 import (
+	"context"
 	"strconv"
 )
 
@@ -43,17 +44,15 @@ type ActiveFilter struct {
 }
 
 // Invoke ...
-func (ef *ActiveFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (ef *ActiveFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("invoking active filter. %v,%v", invocation.MethodName(), len(invocation.Arguments()))
-
 	invocation.(*invocation2.RPCInvocation).SetAttachments(dubboInvokeStartTime, strconv.FormatInt(protocol.CurrentTimeMillis(), 10))
 	protocol.BeginCount(invoker.GetUrl(), invocation.MethodName())
-	return invoker.Invoke(invocation)
+	return invoker.Invoke(ctx, invocation)
 }
 
 // OnResponse ...
-func (ef *ActiveFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-
+func (ef *ActiveFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	startTime, err := strconv.ParseInt(invocation.(*invocation2.RPCInvocation).AttachmentsByKey(dubboInvokeStartTime, "0"), 10, 64)
 	if err != nil {
 		result.SetError(err)

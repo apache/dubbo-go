@@ -54,7 +54,7 @@ func NewGrpcInvoker(url common.URL, client *Client) *GrpcInvoker {
 }
 
 // Invoke ...
-func (gi *GrpcInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	var (
 		result protocol.RPCResult
 	)

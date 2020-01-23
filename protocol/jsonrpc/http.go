@@ -33,17 +33,19 @@ import (
 )
 
 import (
+	"github.com/opentracing/opentracing-go"
 	perrors "github.com/pkg/errors"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
 )
 
-//////////////////////////////////////////////
+// ////////////////////////////////////////////
 // Request
-//////////////////////////////////////////////
+// ////////////////////////////////////////////
 
 // Request ...
 type Request struct {
@@ -57,9 +59,9 @@ type Request struct {
 	contentType string
 }
 
-//////////////////////////////////////////////
+// ////////////////////////////////////////////
 // HTTP Client
-//////////////////////////////////////////////
+// ////////////////////////////////////////////
 
 // HTTPOptions ...
 type HTTPOptions struct {
@@ -127,6 +129,13 @@ func (c *HTTPClient) Call(ctx context.Context, service common.URL, req *Request,
 	if md, ok := ctx.Value(constant.DUBBOGO_CTX_KEY).(map[string]string); ok {
 		for k := range md {
 			httpHeader.Set(k, md[k])
+		}
+	}
+
+	if span := opentracing.SpanFromContext(ctx); span != nil {
+		err := opentracing.GlobalTracer().Inject(span.Context(), opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(httpHeader))
+		if err != nil {
+			logger.Error("Could not inject the Context into http header.")
 		}
 	}
 

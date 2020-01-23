@@ -18,6 +18,7 @@
 package proxy_factory
 
 import (
+	"context"
 	"reflect"
 	"strings"
 )
@@ -83,7 +84,7 @@ type ProxyInvoker struct {
 }
 
 // Invoke ...
-func (pi *ProxyInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	result := &protocol.RPCResult{}
 	result.SetAttachments(invocation.Attachments())
 
@@ -112,7 +113,7 @@ func (pi *ProxyInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 
 	in := []reflect.Value{svc.Rcvr()}
 	if method.CtxType() != nil {
-		in = append(in, method.SuiteContext(nil)) // todo: ctx will be used later.
+		in = append(in, method.SuiteContext(ctx))
 	}
 
 	// prepare argv
