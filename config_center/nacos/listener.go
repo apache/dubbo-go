@@ -26,6 +26,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/remoting"
 )
@@ -49,7 +50,8 @@ func (l *nacosDynamicConfiguration) addListener(key string, listener config_cent
 		newListener[listener] = cancel
 		l.keyListeners.Store(key, newListener)
 	} else {
-		// TODO check goroutine
+		// TODO check goroutine alive, but this version of go_nacos_sdk is not support.
+		logger.Infof("profile:%s. this profile is already listening", key)
 	}
 }
 

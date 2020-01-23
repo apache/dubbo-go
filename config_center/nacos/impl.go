@@ -49,8 +49,9 @@ type nacosDynamicConfiguration struct {
 
 func newNacosDynamicConfiguration(url *common.URL) (*nacosDynamicConfiguration, error) {
 	c := &nacosDynamicConfiguration{
-		rootPath:     "/" + url.GetParam(constant.CONFIG_NAMESPACE_KEY, config_center.DEFAULT_GROUP) + "/config",
-		url:          url,
+		rootPath: "/" + url.GetParam(constant.CONFIG_NAMESPACE_KEY, config_center.DEFAULT_GROUP) + "/config",
+		url:      url,
+		done:     make(chan struct{}),
 	}
 	err := ValidateNacosClient(c, WithNacosName(NacosClientName))
 	if err != nil {
@@ -148,7 +149,7 @@ func (n *nacosDynamicConfiguration) IsAvailable() bool {
 func (r *nacosDynamicConfiguration) closeConfigs() {
 	r.cltLock.Lock()
 	defer r.cltLock.Unlock()
-	logger.Infof("begin to close provider zk client")
+	logger.Infof("begin to close provider nacos client")
 	// Close the old client first to close the tmp node
 	r.client.Close()
 	r.client = nil
