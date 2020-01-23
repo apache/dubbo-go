@@ -18,6 +18,7 @@
 package filter_impl
 
 import (
+	"context"
 	"os"
 	"reflect"
 	"strings"
@@ -67,13 +68,13 @@ type AccessLogFilter struct {
 }
 
 // Invoke ...
-func (ef *AccessLogFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (ef *AccessLogFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	accessLog := invoker.GetUrl().GetParam(constant.ACCESS_LOG_KEY, "")
 	if len(accessLog) > 0 {
 		accessLogData := AccessLogData{data: ef.buildAccessLogData(invoker, invocation), accessLog: accessLog}
 		ef.logIntoChannel(accessLogData)
 	}
-	return invoker.Invoke(invocation)
+	return invoker.Invoke(ctx, invocation)
 }
 
 // it won't block the invocation
@@ -121,7 +122,7 @@ func (ef *AccessLogFilter) buildAccessLogData(invoker protocol.Invoker, invocati
 }
 
 // OnResponse ...
-func (ef *AccessLogFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (ef *AccessLogFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }
 
