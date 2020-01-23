@@ -31,6 +31,8 @@ type NacosClient struct {
 	Client     *config_client.IConfigClient
 	exit       chan struct{}
 	Timeout    time.Duration
+	once       sync.Once
+	onceClose  func()
 }
 
 type Option func(*Options)
@@ -108,11 +110,11 @@ func ValidateNacosClient(container nacosClientFacade, opts ...Option) error {
 		})
 		container.NacosClient().Client = &client
 		if err != nil {
-			//TODO
+			logger.Errorf("nacos create config client error:%v", err)
 		}
 	}
 
-	return perrors.WithMessagef(err, "newZookeeperClient(address:%+v)", url.PrimitiveURL)
+	return perrors.WithMessagef(err, "newNacosClient(address:%+v)", url.PrimitiveURL)
 }
 
 func newNacosClient(name string, nacosAddrs []string, timeout time.Duration) (*NacosClient, error) {
@@ -126,6 +128,9 @@ func newNacosClient(name string, nacosAddrs []string, timeout time.Duration) (*N
 		NacosAddrs: nacosAddrs,
 		Timeout:    timeout,
 		exit:       make(chan struct{}),
+		onceClose: func() {
+			close(n.exit)
+		},
 	}
 
 	svrConfList := []nacosconst.ServerConfig{}
@@ -167,7 +172,7 @@ func (n *NacosClient) stop() bool {
 	case <-n.exit:
 		return true
 	default:
-		close(n.exit)
+		n.once.Do(n.onceClose)
 	}
 
 	return false
@@ -199,5 +204,5 @@ func (n *NacosClient) Close() {
 	n.Lock()
 	n.Client = nil
 	n.Unlock()
-	logger.Warnf("nacosClient{name:%s, zk addr:%s} exit now.", n.name, n.NacosAddrs)
+	logger.Warnf("nacosClient{name:%s, nacos addr:%s} exit now.", n.name, n.NacosAddrs)
 }
