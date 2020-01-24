@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package etcdv3
+package kubernetes
 
 import (
 	"fmt"
@@ -39,7 +39,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/registry"
-	"github.com/apache/dubbo-go/remoting/etcdv3"
+	"github.com/apache/dubbo-go/remoting/kubernetes"
 )
 
 var (
@@ -48,49 +48,50 @@ var (
 )
 
 const (
-	Name              = "etcdv3"
+	Name              = "kubernetes"
 	RegistryConnDelay = 3
 )
 
 func init() {
 	processID = fmt.Sprintf("%d", os.Getpid())
 	localIP, _ = gxnet.GetLocalIP()
-	extension.SetRegistry(Name, newETCDV3Registry)
+	extension.SetRegistry(Name, newKubernetesRegistry)
 }
 
-type etcdV3Registry struct {
+type kubernetesRegistry struct {
 	*common.URL
 	birth int64 // time of file birth, seconds since Epoch; 0 if unknown
 
 	cltLock  sync.Mutex
-	client   *etcdv3.Client
+	client   *kubernetes.Client
 	services map[string]common.URL // service name + protocol -> service config
 
 	listenerLock   sync.Mutex
-	listener       *etcdv3.EventListener
+	listener       *kubernetes.EventListener
 	dataListener   *dataListener
 	configListener *configurationListener
 
-	wg   sync.WaitGroup // wg+done for etcd client restart
-	done chan struct{}
+	wg        sync.WaitGroup // wg+done for kubernetes client restart
+	closeOnce sync.Once      // protect the done
+	done      chan struct{}
 }
 
-func (r *etcdV3Registry) Client() *etcdv3.Client {
+func (r *kubernetesRegistry) Client() *kubernetes.Client {
 	return r.client
 }
-func (r *etcdV3Registry) SetClient(client *etcdv3.Client) {
+func (r *kubernetesRegistry) SetClient(client *kubernetes.Client) {
 	r.client = client
 }
-func (r *etcdV3Registry) ClientLock() *sync.Mutex {
+func (r *kubernetesRegistry) ClientLock() *sync.Mutex {
 	return &r.cltLock
 }
-func (r *etcdV3Registry) WaitGroup() *sync.WaitGroup {
+func (r *kubernetesRegistry) WaitGroup() *sync.WaitGroup {
 	return &r.wg
 }
-func (r *etcdV3Registry) GetDone() chan struct{} {
+func (r *kubernetesRegistry) GetDone() chan struct{} {
 	return r.done
 }
-func (r *etcdV3Registry) RestartCallBack() bool {
+func (r *kubernetesRegistry) RestartCallBack() bool {
 
 	services := []common.URL{}
 	for _, confIf := range r.services {
@@ -100,7 +101,7 @@ func (r *etcdV3Registry) RestartCallBack() bool {
 	for _, confIf := range services {
 		err := r.Register(confIf)
 		if err != nil {
-			logger.Errorf("(etcdV3ProviderRegistry)register(conf{%#v}) = error{%#v}",
+			logger.Errorf("(kubernetesProviderRegistry)register(conf{%#v}) = error{%#v}",
 				confIf, perrors.WithStack(err))
 			return false
 		}
@@ -109,48 +110,34 @@ func (r *etcdV3Registry) RestartCallBack() bool {
 	return true
 }
 
-func newETCDV3Registry(url *common.URL) (registry.Registry, error) {
+func newKubernetesRegistry(url *common.URL) (registry.Registry, error) {
 
-	timeout, err := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
-	if err != nil {
-		logger.Errorf("timeout config %v is invalid ,err is %v",
-			url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), err.Error())
-		return nil, perrors.WithMessagef(err, "new etcd registry(address:%+v)", url.Location)
-	}
-
-	logger.Infof("etcd address is: %v, timeout is: %s", url.Location, timeout.String())
-
-	r := &etcdV3Registry{
+	r := &kubernetesRegistry{
 		URL:      url,
 		birth:    time.Now().UnixNano(),
 		done:     make(chan struct{}),
 		services: make(map[string]common.URL),
 	}
 
-	if err := etcdv3.ValidateClient(
-		r,
-		etcdv3.WithName(etcdv3.RegistryETCDV3Client),
-		etcdv3.WithTimeout(timeout),
-		etcdv3.WithEndpoints(url.Location),
-	); err != nil {
+	if err := kubernetes.ValidateClient(r); err != nil {
 		return nil, err
 	}
 
 	r.wg.Add(1)
-	go etcdv3.HandleClientRestart(r)
+	go kubernetes.HandleClientRestart(r)
 
-	r.listener = etcdv3.NewEventListener(r.client)
+	r.listener = kubernetes.NewEventListener(r.client)
 	r.configListener = NewConfigurationListener(r)
 	r.dataListener = NewRegistryDataListener(r.configListener)
 
 	return r, nil
 }
 
-func (r *etcdV3Registry) GetUrl() common.URL {
+func (r *kubernetesRegistry) GetUrl() common.URL {
 	return *r.URL
 }
 
-func (r *etcdV3Registry) IsAvailable() bool {
+func (r *kubernetesRegistry) IsAvailable() bool {
 
 	select {
 	case <-r.done:
@@ -160,7 +147,7 @@ func (r *etcdV3Registry) IsAvailable() bool {
 	}
 }
 
-func (r *etcdV3Registry) Destroy() {
+func (r *kubernetesRegistry) Destroy() {
 
 	if r.configListener != nil {
 		r.configListener.Close()
@@ -168,9 +155,12 @@ func (r *etcdV3Registry) Destroy() {
 	r.stop()
 }
 
-func (r *etcdV3Registry) stop() {
+func (r *kubernetesRegistry) stop() {
 
-	close(r.done)
+	// close will be call concurrent
+	r.closeOnce.Do(func() {
+		close(r.done)
+	})
 
 	// close current client
 	r.client.Close()
@@ -181,7 +171,7 @@ func (r *etcdV3Registry) stop() {
 	r.cltLock.Unlock()
 }
 
-func (r *etcdV3Registry) Register(svc common.URL) error {
+func (r *kubernetesRegistry) Register(svc common.URL) error {
 
 	role, err := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
 	if err != nil {
@@ -216,30 +206,32 @@ func (r *etcdV3Registry) Register(svc common.URL) error {
 	return nil
 }
 
-func (r *etcdV3Registry) createDirIfNotExist(k string) error {
+func (r *kubernetesRegistry) createDirIfNotExist(k string) error {
 
 	var tmpPath string
 	for _, str := range strings.Split(k, "/")[1:] {
 		tmpPath = path.Join(tmpPath, "/", str)
 		if err := r.client.Create(tmpPath, ""); err != nil {
-			return perrors.WithMessagef(err, "create path %s in etcd", tmpPath)
+			return perrors.WithMessagef(err, "create path %s in kubernetes", tmpPath)
 		}
 	}
 
 	return nil
 }
 
-func (r *etcdV3Registry) registerConsumer(svc common.URL) error {
+func (r *kubernetesRegistry) registerConsumer(svc common.URL) error {
 
 	consumersNode := fmt.Sprintf("/dubbo/%s/%s", svc.Service(), common.DubboNodes[common.CONSUMER])
 	if err := r.createDirIfNotExist(consumersNode); err != nil {
-		logger.Errorf("etcd client create path %s: %v", consumersNode, err)
-		return perrors.WithMessage(err, "etcd create consumer nodes")
+		logger.Errorf("kubernetes client create path %s: %v", consumersNode, err)
+		return perrors.WithMessage(err, "kubernetes create consumer nodes")
 	}
-	providersNode := fmt.Sprintf("/dubbo/%s/%s", svc.Service(), common.DubboNodes[common.PROVIDER])
-	if err := r.createDirIfNotExist(providersNode); err != nil {
-		return perrors.WithMessage(err, "create provider node")
-	}
+
+	// NOTICE kubernetes && etcdv3 not need create provider metadata dir in consumer logic
+	//providersNode := fmt.Sprintf("/dubbo/%s/%s", svc.Service(), common.DubboNodes[common.PROVIDER])
+	//if err := r.createDirIfNotExist(providersNode); err != nil {
+	//	return perrors.WithMessage(err, "create provider node")
+	//}
 
 	params := url.Values{}
 
@@ -251,13 +243,13 @@ func (r *etcdV3Registry) registerConsumer(svc common.URL) error {
 	encodedURL := url.QueryEscape(fmt.Sprintf("consumer://%s%s?%s", localIP, svc.Path, params.Encode()))
 	dubboPath := fmt.Sprintf("/dubbo/%s/%s", svc.Service(), (common.RoleType(common.CONSUMER)).String())
 	if err := r.client.Create(path.Join(dubboPath, encodedURL), ""); err != nil {
-		return perrors.WithMessagef(err, "create k/v in etcd (path:%s, url:%s)", dubboPath, encodedURL)
+		return perrors.WithMessagef(err, "create k/v in kubernetes (path:%s, url:%s)", dubboPath, encodedURL)
 	}
 
 	return nil
 }
 
-func (r *etcdV3Registry) registerProvider(svc common.URL) error {
+func (r *kubernetesRegistry) registerProvider(svc common.URL) error {
 
 	if len(svc.Path) == 0 || len(svc.Methods) == 0 {
 		return perrors.New(fmt.Sprintf("service path %s or service method %s", svc.Path, svc.Methods))
@@ -301,13 +293,13 @@ func (r *etcdV3Registry) registerProvider(svc common.URL) error {
 	dubboPath = fmt.Sprintf("/dubbo/%s/%s", svc.Service(), (common.RoleType(common.PROVIDER)).String())
 
 	if err := r.client.Create(path.Join(dubboPath, encodedURL), ""); err != nil {
-		return perrors.WithMessagef(err, "create k/v in etcd (path:%s, url:%s)", dubboPath, encodedURL)
+		return perrors.WithMessagef(err, "create k/v in kubernetes (path:%s, url:%s)", dubboPath, encodedURL)
 	}
 
 	return nil
 }
 
-func (r *etcdV3Registry) subscribe(svc *common.URL) (registry.Listener, error) {
+func (r *kubernetesRegistry) subscribe(svc *common.URL) (registry.Listener, error) {
 
 	var (
 		configListener *configurationListener
@@ -321,11 +313,11 @@ func (r *etcdV3Registry) subscribe(svc *common.URL) (registry.Listener, error) {
 		client := r.client
 		r.cltLock.Unlock()
 		if client == nil {
-			return nil, perrors.New("etcd client broken")
+			return nil, perrors.New("kubernetes client broken")
 		}
 
 		// new client & listener
-		listener := etcdv3.NewEventListener(r.client)
+		listener := kubernetes.NewEventListener(r.client)
 
 		r.listenerLock.Lock()
 		// NOTICE:
@@ -347,7 +339,7 @@ func (r *etcdV3Registry) subscribe(svc *common.URL) (registry.Listener, error) {
 }
 
 //subscribe from registry
-func (r *etcdV3Registry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
+func (r *kubernetesRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
 	for {
 		if !r.IsAvailable() {
 			logger.Warnf("event listener game over.")

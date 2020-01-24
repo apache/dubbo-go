@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package etcdv3
+package kubernetes
 
 import (
 	"sync"
@@ -23,8 +23,6 @@ import (
 )
 
 import (
-	"github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/mvcc/mvccpb"
 	perrors "github.com/pkg/errors"
 )
 
@@ -56,7 +54,7 @@ func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.
 	for {
 		wc, err := l.client.Watch(key)
 		if err != nil {
-			logger.Warnf("WatchExist{key:%s} = error{%v}", key, err)
+			logger.Warnf("watch exist{key:%s} = error{%v}", key, err)
 			return false
 		}
 
@@ -64,30 +62,19 @@ func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.
 
 		// client stopped
 		case <-l.client.Done():
-			logger.Warnf("etcd client stopped")
+			logger.Warnf("kubernetes client stopped")
 			return false
 
-		// client ctx stop
-		case <-l.client.ctx.Done():
-			logger.Warnf("etcd client ctx cancel")
-			return false
-
-		// handle etcd events
+			// handle kubernetes-store events
 		case e, ok := <-wc:
 			if !ok {
-				logger.Warnf("etcd watch-chan closed")
+				logger.Warnf("kubernetes-store watch-chan closed")
 				return false
 			}
 
-			if e.Err() != nil {
-				logger.Errorf("etcd watch ERR {err: %s}", e.Err())
-				continue
-			}
-			for _, event := range e.Events {
-				if l.handleEvents(event, listener...) {
-					// if event is delete
-					return true
-				}
+			if l.handleEvents(e, listener...) {
+				// if event is delete
+				return true
 			}
 		}
 	}
@@ -97,41 +84,37 @@ func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.
 
 // return true mean the event type is DELETE
 // return false mean the event type is CREATE || UPDATE
-func (l *EventListener) handleEvents(event *clientv3.Event, listeners ...remoting.DataListener) bool {
+func (l *EventListener) handleEvents(event *Object, listeners ...remoting.DataListener) bool {
 
-	logger.Infof("got a etcd event {type: %s, key: %s}", event.Type, event.Kv.Key)
+	logger.Infof("got a kubernetes-store event {type: %d, key: %s}", event.EventType, event.Key)
 
-	switch event.Type {
-	// the etcdv3 event just include PUT && DELETE
-	case mvccpb.PUT:
+	switch event.EventType {
+	case Create:
 		for _, listener := range listeners {
-			switch event.IsCreate() {
-			case true:
-				logger.Infof("etcd get event (key{%s}) = event{EventNodeDataCreated}", event.Kv.Key)
-				listener.DataChange(remoting.Event{
-					Path:    string(event.Kv.Key),
-					Action:  remoting.EventTypeAdd,
-					Content: string(event.Kv.Value),
-				})
-			case false:
-				logger.Infof("etcd get event (key{%s}) = event{EventNodeDataChanged}", event.Kv.Key)
-				listener.DataChange(remoting.Event{
-					Path:    string(event.Kv.Key),
-					Action:  remoting.EventTypeUpdate,
-					Content: string(event.Kv.Value),
-				})
-			}
+			logger.Infof("kubernetes-store get event (key{%s}) = event{EventNodeDataCreated}", event.Key)
+			listener.DataChange(remoting.Event{
+				Path:    string(event.Key),
+				Action:  remoting.EventTypeAdd,
+				Content: string(event.Value),
+			})
 		}
 		return false
-	case mvccpb.DELETE:
-		logger.Warnf("etcd get event (key{%s}) = event{EventNodeDeleted}", event.Kv.Key)
+	case Update:
+		for _, listener := range listeners {
+			logger.Infof("kubernetes-store get event (key{%s}) = event{EventNodeDataChanged}", event.Key)
+			listener.DataChange(remoting.Event{
+				Path:    string(event.Key),
+				Action:  remoting.EventTypeUpdate,
+				Content: string(event.Value),
+			})
+		}
+		return false
+	case Delete:
+		logger.Warnf("kubernetes-store get event (key{%s}) = event{EventNodeDeleted}", event.Key)
 		return true
-
 	default:
 		return false
 	}
-
-	panic("unreachable")
 }
 
 // Listen on a set of key with spec prefix
@@ -146,32 +129,20 @@ func (l *EventListener) ListenServiceNodeEventWithPrefix(prefix string, listener
 		}
 
 		select {
-
 		// client stopped
 		case <-l.client.Done():
-			logger.Warnf("etcd client stopped")
+			logger.Warnf("kubernetes client stopped")
 			return
 
-			// client ctx stop
-		case <-l.client.ctx.Done():
-			logger.Warnf("etcd client ctx cancel")
-			return
-
-			// etcd event stream
+			// kuberentes-store event stream
 		case e, ok := <-wc:
 
 			if !ok {
-				logger.Warnf("etcd watch-chan closed")
+				logger.Warnf("kubernetes-store watch-chan closed")
 				return
 			}
 
-			if e.Err() != nil {
-				logger.Errorf("etcd watch ERR {err: %s}", e.Err())
-				continue
-			}
-			for _, event := range e.Events {
-				l.handleEvents(event, listener...)
-			}
+			l.handleEvents(e, listener...)
 		}
 	}
 }
@@ -180,7 +151,7 @@ func timeSecondDuration(sec int) time.Duration {
 	return time.Duration(sec) * time.Second
 }
 
-// this func is invoked by etcdv3 ConsumerRegistry::Registe/ etcdv3 ConsumerRegistry::get/etcdv3 ConsumerRegistry::getListener
+// this func is invoked by kubernetes ConsumerRegistry::Registry/ kubernetes ConsumerRegistry::get/kubernetes ConsumerRegistry::getListener
 // registry.go:Listen -> listenServiceEvent -> listenDirEvent -> ListenServiceNodeEvent
 //                            |
 //                            --------> ListenServiceNodeEvent
@@ -190,7 +161,7 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 	_, ok := l.keyMap[key]
 	l.keyMapLock.Unlock()
 	if ok {
-		logger.Warnf("etcdv3 key %s has already been listened.", key)
+		logger.Warnf("kubernetes-store key %s has already been listened.", key)
 		return
 	}
 
@@ -198,7 +169,7 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 	l.keyMap[key] = struct{}{}
 	l.keyMapLock.Unlock()
 
-	keyList, valueList, err := l.client.getChildren(key)
+	keyList, valueList, err := l.client.GetChildren(key)
 	if err != nil {
 		logger.Warnf("Get new node path {%v} 's content error,message is  {%v}", key, perrors.WithMessage(err, "get children"))
 	}
@@ -214,7 +185,7 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 		})
 	}
 
-	logger.Infof("listen dubbo provider key{%s} event and wait to get all provider etcdv3 nodes", key)
+	logger.Infof("listen dubbo provider key{%s} event and wait to get all provider from kubernetes-store", key)
 	go func(key string, listener remoting.DataListener) {
 		l.ListenServiceNodeEventWithPrefix(key, listener)
 		logger.Warnf("listenDirEvent(key{%s}) goroutine exit now", key)
@@ -225,7 +196,7 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 		if l.ListenServiceNodeEvent(key) {
 			listener.DataChange(remoting.Event{Path: key, Action: remoting.EventTypeDel})
 		}
-		logger.Warnf("listenSelf(etcd key{%s}) goroutine exit now", key)
+		logger.Warnf("listenSelf(kubernetes key{%s}) goroutine exit now", key)
 	}(key)
 }
 
