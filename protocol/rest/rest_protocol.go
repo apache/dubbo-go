@@ -31,7 +31,11 @@ type RestProtocol struct {
 }
 
 func NewRestProtocol() *RestProtocol {
-	return &RestProtocol{}
+	return &RestProtocol{
+		BaseProtocol: protocol.NewBaseProtocol(),
+		serverMap:    make(map[string]rest_interface.RestServer),
+		clientMap:    make(map[rest_interface.RestOptions]rest_interface.RestClient),
+	}
 }
 
 func (rp *RestProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
