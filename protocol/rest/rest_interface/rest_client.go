@@ -18,6 +18,7 @@ type RestRequest struct {
 	PathParams  map[string]string
 	QueryParams map[string]string
 	Body        map[string]interface{}
+	Headers     map[string]string
 }
 
 type RestClient interface {

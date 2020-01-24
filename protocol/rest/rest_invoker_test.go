@@ -18,7 +18,6 @@ type User struct {
 
 func TestRestInvoker_Invoke(t *testing.T) {
 	// Refer
-	proto := GetRestProtocol()
 	url, err := common.NewURL(context.Background(), "rest://127.0.0.1:8888/com.ikurento.user.UserProvider?anyhost=true&"+
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&"+
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&"+
@@ -57,14 +56,4 @@ func TestRestInvoker_Invoke(t *testing.T) {
 		invocation.WithArguments([]interface{}{"1", "username"}), invocation.WithReply(user))
 	invoker.Invoke(context.Background(), inv)
 
-	// make sure url
-	eq := invoker.GetUrl().URLEqual(url)
-	assert.True(t, eq)
-
-	// make sure invokers after 'Destroy'
-	invokersLen := len(proto.(*RestProtocol).Invokers())
-	assert.Equal(t, 1, invokersLen)
-	proto.Destroy()
-	invokersLen = len(proto.(*RestProtocol).Invokers())
-	assert.Equal(t, 0, invokersLen)
 }
