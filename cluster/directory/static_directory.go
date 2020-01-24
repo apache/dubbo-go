@@ -27,6 +27,7 @@ type staticDirectory struct {
 	invokers []protocol.Invoker
 }
 
+// NewStaticDirectory ...
 func NewStaticDirectory(invokers []protocol.Invoker) *staticDirectory {
 	var url common.URL
 

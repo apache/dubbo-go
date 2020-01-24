@@ -39,6 +39,7 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
+// ReferenceConfig ...
 type ReferenceConfig struct {
 	context        context.Context
 	pxy            *proxy.Proxy
@@ -64,6 +65,7 @@ type ReferenceConfig struct {
 	RequestTimeout string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
 }
 
+// Prefix ...
 func (c *ReferenceConfig) Prefix() string {
 	return constant.ReferenceConfigPrefix + c.InterfaceName + "."
 }
@@ -73,6 +75,7 @@ func NewReferenceConfig(id string, ctx context.Context) *ReferenceConfig {
 	return &ReferenceConfig{id: id, context: ctx}
 }
 
+// UnmarshalYAML ...
 func (refconfig *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 	type rf ReferenceConfig
@@ -89,6 +92,7 @@ func (refconfig *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) erro
 	return nil
 }
 
+// Refer ...
 func (refconfig *ReferenceConfig) Refer(impl interface{}) {
 	url := common.NewURLWithOptions(common.WithPath(refconfig.id),
 		common.WithProtocol(refconfig.Protocol),
@@ -160,6 +164,7 @@ func (refconfig *ReferenceConfig) Implement(v common.RPCService) {
 	refconfig.pxy.Implement(v)
 }
 
+// GetRPCService ...
 func (refconfig *ReferenceConfig) GetRPCService() common.RPCService {
 	return refconfig.pxy.Get()
 }
@@ -214,6 +219,8 @@ func (refconfig *ReferenceConfig) getUrlMap() url.Values {
 	return urlMap
 
 }
+
+// GenericLoad ...
 func (refconfig *ReferenceConfig) GenericLoad(id string) {
 	genericService := NewGenericService(refconfig.id)
 	SetConsumerService(genericService)

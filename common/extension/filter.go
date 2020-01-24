@@ -26,10 +26,12 @@ var (
 	rejectedExecutionHandler = make(map[string]func() filter.RejectedExecutionHandler)
 )
 
+// SetFilter ...
 func SetFilter(name string, v func() filter.Filter) {
 	filters[name] = v
 }
 
+// GetFilter ...
 func GetFilter(name string) filter.Filter {
 	if filters[name] == nil {
 		panic("filter for " + name + " is not existing, make sure you have imported the package.")
@@ -37,10 +39,12 @@ func GetFilter(name string) filter.Filter {
 	return filters[name]()
 }
 
+// SetRejectedExecutionHandler ...
 func SetRejectedExecutionHandler(name string, creator func() filter.RejectedExecutionHandler) {
 	rejectedExecutionHandler[name] = creator
 }
 
+// GetRejectedExecutionHandler ...
 func GetRejectedExecutionHandler(name string) filter.RejectedExecutionHandler {
 	creator, ok := rejectedExecutionHandler[name]
 	if !ok {

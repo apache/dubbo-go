@@ -23,6 +23,8 @@ import (
 )
 
 // Extension - Router
+
+// RouterFactory ...
 type RouterFactory interface {
 	Router(*common.URL) (Router, error)
 }
