@@ -41,4 +41,6 @@ type RestMethodConfig struct {
 	QueryParamsMap map[int]string
 	Body           string `yaml:"rest_body"  json:"rest_body,omitempty" property:"rest_body"`
 	BodyMap        map[int]string
+	Headers        string `yaml:"rest_headers"  json:"rest_headers,omitempty" property:"rest_headers"`
+	HeadersMap     map[int]string
 }
