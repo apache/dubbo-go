@@ -18,13 +18,19 @@
 package chain
 
 import (
+	"sort"
+)
+
+import (
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"github.com/apache/dubbo-go/cluster/router"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
-	perrors "github.com/pkg/errors"
-	"sort"
 )
 
 // RouterChain Router chain

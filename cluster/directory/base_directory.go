@@ -18,14 +18,16 @@
 package directory
 
 import (
-	"github.com/apache/dubbo-go/cluster/router"
-	"github.com/apache/dubbo-go/cluster/router/chain"
 	"sync"
 )
+
 import (
 	"go.uber.org/atomic"
 )
+
 import (
+	"github.com/apache/dubbo-go/cluster/router"
+	"github.com/apache/dubbo-go/cluster/router/chain"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
