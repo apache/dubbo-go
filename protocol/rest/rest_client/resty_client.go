@@ -58,6 +58,7 @@ func (rc *RestyClient) Do(restRequest *rest_interface.RestRequest, res interface
 		SetQueryParams(restRequest.QueryParams).
 		SetBody(restRequest.Body).
 		SetResult(res).
+		SetHeaders(restRequest.Headers).
 		Execute(restRequest.Method, "http://"+path.Join(restRequest.Location, restRequest.Path))
 	return err
 }
