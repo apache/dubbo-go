@@ -19,20 +19,23 @@ package chain
 
 import (
 	"context"
-	"github.com/apache/dubbo-go/cluster/router/condition"
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/config"
-	"github.com/apache/dubbo-go/common/extension"
-	_ "github.com/apache/dubbo-go/config_center/zookeeper"
-	"github.com/apache/dubbo-go/remoting/zookeeper"
-	"github.com/stretchr/testify/assert"
 	"strconv"
 	"testing"
 	"time"
 )
 
 import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/cluster/router/condition"
 	_ "github.com/apache/dubbo-go/cluster/router/condition"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/config"
+	"github.com/apache/dubbo-go/common/extension"
+	_ "github.com/apache/dubbo-go/config_center/zookeeper"
+	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
 func TestNewRouterChain(t *testing.T) {
