@@ -34,6 +34,7 @@ import (
 
 var routerURLSet = gxset.NewSet()
 
+// BaseDirectory ...
 type BaseDirectory struct {
 	url         *common.URL
 	destroyed   *atomic.Bool
@@ -50,6 +51,7 @@ func GetRouterURLSet() *gxset.HashSet {
 	return routerURLSet
 }
 
+// NewBaseDirectory ...
 func NewBaseDirectory(url *common.URL) BaseDirectory {
 	return BaseDirectory{
 		url:         url,
@@ -57,12 +59,17 @@ func NewBaseDirectory(url *common.URL) BaseDirectory {
 		routerChain: &chain.RouterChain{},
 	}
 }
+
 func (dir *BaseDirectory) Destroyed() bool {
 	return dir.destroyed.Load()
 }
+
+// GetUrl ...
 func (dir *BaseDirectory) GetUrl() common.URL {
 	return *dir.url
 }
+
+// GetDirectoryUrl ...
 func (dir *BaseDirectory) GetDirectoryUrl() *common.URL {
 	return dir.url
 }
@@ -83,6 +90,7 @@ func (dir *BaseDirectory) SetRouters(routers []router.Router) {
 	dir.routerChain.AddRouters(routers)
 }
 
+// Destroy ...
 func (dir *BaseDirectory) Destroy(doDestroy func()) {
 	if dir.destroyed.CAS(false, true) {
 		dir.mutex.Lock()
@@ -91,6 +99,7 @@ func (dir *BaseDirectory) Destroy(doDestroy func()) {
 	}
 }
 
+// IsAvailable ...
 func (dir *BaseDirectory) IsAvailable() bool {
 	return !dir.destroyed.Load()
 }

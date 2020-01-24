@@ -63,6 +63,7 @@ type FixedWindowTpsLimitStrategyImpl struct {
 	timestamp int64
 }
 
+// IsAllowable ...
 func (impl *FixedWindowTpsLimitStrategyImpl) IsAllowable() bool {
 
 	current := time.Now().UnixNano()
