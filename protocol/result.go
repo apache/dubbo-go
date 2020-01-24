@@ -17,6 +17,7 @@
 
 package protocol
 
+// Result ...
 type Result interface {
 	SetError(error)
 	Error() error
@@ -32,12 +33,14 @@ type Result interface {
 // Result Impletment of RPC
 /////////////////////////////
 
+// RPCResult ...
 type RPCResult struct {
 	Attrs map[string]string
 	Err   error
 	Rest  interface{}
 }
 
+// SetError ...
 func (r *RPCResult) SetError(err error) {
 	r.Err = err
 }
@@ -46,26 +49,32 @@ func (r *RPCResult) Error() error {
 	return r.Err
 }
 
+// SetResult ...
 func (r *RPCResult) SetResult(rest interface{}) {
 	r.Rest = rest
 }
 
+// Result ...
 func (r *RPCResult) Result() interface{} {
 	return r.Rest
 }
 
+// SetAttachments ...
 func (r *RPCResult) SetAttachments(attr map[string]string) {
 	r.Attrs = attr
 }
 
+// Attachments ...
 func (r *RPCResult) Attachments() map[string]string {
 	return r.Attrs
 }
 
+// AddAttachment ...
 func (r *RPCResult) AddAttachment(key, value string) {
 	r.Attrs[key] = value
 }
 
+// Attachment ...
 func (r *RPCResult) Attachment(key, defaultValue string) string {
 	v, ok := r.Attrs[key]
 	if !ok {

@@ -32,6 +32,7 @@ var (
 	serviceStatistic sync.Map // url -> RPCStatus
 )
 
+// RPCStatus ...
 type RPCStatus struct {
 	active                        int32
 	failed                        int32
@@ -45,51 +46,63 @@ type RPCStatus struct {
 	lastRequestFailedTimestamp    int64
 }
 
+// GetActive ...
 func (rpc *RPCStatus) GetActive() int32 {
 	return atomic.LoadInt32(&rpc.active)
 }
 
+// GetFailed ...
 func (rpc *RPCStatus) GetFailed() int32 {
 	return atomic.LoadInt32(&rpc.failed)
 }
 
+// GetTotal ...
 func (rpc *RPCStatus) GetTotal() int32 {
 	return atomic.LoadInt32(&rpc.total)
 }
 
+// GetTotalElapsed ...
 func (rpc *RPCStatus) GetTotalElapsed() int64 {
 	return atomic.LoadInt64(&rpc.totalElapsed)
 }
 
+// GetFailedElapsed ...
 func (rpc *RPCStatus) GetFailedElapsed() int64 {
 	return atomic.LoadInt64(&rpc.failedElapsed)
 }
 
+// GetMaxElapsed ...
 func (rpc *RPCStatus) GetMaxElapsed() int64 {
 	return atomic.LoadInt64(&rpc.maxElapsed)
 }
 
+// GetFailedMaxElapsed ...
 func (rpc *RPCStatus) GetFailedMaxElapsed() int64 {
 	return atomic.LoadInt64(&rpc.failedMaxElapsed)
 }
 
+// GetSucceededMaxElapsed ...
 func (rpc *RPCStatus) GetSucceededMaxElapsed() int64 {
 	return atomic.LoadInt64(&rpc.succeededMaxElapsed)
 }
 
+// GetLastRequestFailedTimestamp ...
 func (rpc *RPCStatus) GetLastRequestFailedTimestamp() int64 {
 	return atomic.LoadInt64(&rpc.lastRequestFailedTimestamp)
 }
 
+// GetSuccessiveRequestFailureCount ...
 func (rpc *RPCStatus) GetSuccessiveRequestFailureCount() int32 {
 	return atomic.LoadInt32(&rpc.successiveRequestFailureCount)
 }
 
+// GetURLStatus ...
 func GetURLStatus(url common.URL) *RPCStatus {
 	rpcStatus, _ := serviceStatistic.LoadOrStore(url.Key(), &RPCStatus{})
 	return rpcStatus.(*RPCStatus)
 }
 
+// GetMethodStatus ...
 func GetMethodStatus(url common.URL, methodName string) *RPCStatus {
 	identifier := url.Key()
 	methodMap, found := methodStatistics.Load(identifier)
@@ -109,11 +122,13 @@ func GetMethodStatus(url common.URL, methodName string) *RPCStatus {
 	return status
 }
 
+// BeginCount ...
 func BeginCount(url common.URL, methodName string) {
 	beginCount0(GetURLStatus(url))
 	beginCount0(GetMethodStatus(url, methodName))
 }
 
+// EndCount ...
 func EndCount(url common.URL, methodName string, elapsed int64, succeeded bool) {
 	endCount0(GetURLStatus(url), elapsed, succeeded)
 	endCount0(GetMethodStatus(url, methodName), elapsed, succeeded)
@@ -148,6 +163,7 @@ func endCount0(rpcStatus *RPCStatus, elapsed int64, succeeded bool) {
 	}
 }
 
+// CurrentTimeMillis ...
 func CurrentTimeMillis() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
 }

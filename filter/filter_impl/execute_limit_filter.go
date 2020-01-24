@@ -72,10 +72,12 @@ type ExecuteLimitFilter struct {
 	executeState *concurrent.Map
 }
 
+// ExecuteState ...
 type ExecuteState struct {
 	concurrentCount int64
 }
 
+// Invoke ...
 func (ef *ExecuteLimitFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	methodConfigPrefix := "methods." + invocation.MethodName() + "."
 	url := invoker.GetUrl()
@@ -117,6 +119,7 @@ func (ef *ExecuteLimitFilter) Invoke(ctx context.Context, invoker protocol.Invok
 	return invoker.Invoke(ctx, invocation)
 }
 
+// OnResponse ...
 func (ef *ExecuteLimitFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }
@@ -132,6 +135,7 @@ func (state *ExecuteState) decrease() {
 var executeLimitOnce sync.Once
 var executeLimitFilter *ExecuteLimitFilter
 
+// GetExecuteLimitFilter ...
 func GetExecuteLimitFilter() filter.Filter {
 	executeLimitOnce.Do(func() {
 		executeLimitFilter = &ExecuteLimitFilter{

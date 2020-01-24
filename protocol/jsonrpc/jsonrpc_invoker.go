@@ -29,11 +29,13 @@ import (
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 )
 
+// JsonrpcInvoker ...
 type JsonrpcInvoker struct {
 	protocol.BaseInvoker
 	client *HTTPClient
 }
 
+// NewJsonrpcInvoker ...
 func NewJsonrpcInvoker(url common.URL, client *HTTPClient) *JsonrpcInvoker {
 	return &JsonrpcInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
@@ -41,6 +43,7 @@ func NewJsonrpcInvoker(url common.URL, client *HTTPClient) *JsonrpcInvoker {
 	}
 }
 
+// Invoke ...
 func (ji *JsonrpcInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 
 	var (
@@ -50,7 +53,7 @@ func (ji *JsonrpcInvoker) Invoke(ctx context.Context, invocation protocol.Invoca
 	inv := invocation.(*invocation_impl.RPCInvocation)
 	url := ji.GetUrl()
 	req := ji.client.NewRequest(url, inv.MethodName(), inv.Arguments())
-	ctxNew := context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
+	ctxNew := context.WithValue(ctx, constant.DUBBOGO_CTX_KEY, map[string]string{
 		"X-Proxy-Id": "dubbogo",
 		"X-Services": url.Path,
 		"X-Method":   inv.MethodName(),

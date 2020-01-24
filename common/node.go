@@ -17,6 +17,7 @@
 
 package common
 
+// Node ...
 type Node interface {
 	GetUrl() URL
 	IsAvailable() bool

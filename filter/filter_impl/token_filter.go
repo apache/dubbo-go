@@ -41,8 +41,10 @@ func init() {
 	extension.SetFilter(TOKEN, GetTokenFilter)
 }
 
+// TokenFilter ...
 type TokenFilter struct{}
 
+// Invoke ...
 func (tf *TokenFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	invokerTkn := invoker.GetUrl().GetParam(constant.TOKEN_KEY, "")
 	if len(invokerTkn) > 0 {
@@ -58,10 +60,12 @@ func (tf *TokenFilter) Invoke(ctx context.Context, invoker protocol.Invoker, inv
 	return invoker.Invoke(ctx, invocation)
 }
 
+// OnResponse ...
 func (tf *TokenFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }
 
+// GetTokenFilter ...
 func GetTokenFilter() filter.Filter {
 	return &TokenFilter{}
 }
