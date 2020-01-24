@@ -25,7 +25,9 @@ func TestRestProtocol_Refer(t *testing.T) {
 	}
 	config.SetConsumerConfig(con)
 	configMap := make(map[string]*rest_interface.RestConfig)
-	configMap["com.ikurento.user.UserProvider"] = &rest_interface.RestConfig{}
+	configMap["com.ikurento.user.UserProvider"] = &rest_interface.RestConfig{
+		Client: "resty",
+	}
 	SetRestConsumerServiceConfigMap(configMap)
 	invoker := proto.Refer(url)
 
