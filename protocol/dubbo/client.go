@@ -256,7 +256,13 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 	if session == nil {
 		return errSessionNotExist
 	}
-	defer c.pool.release(conn, err)
+	defer func() {
+		if err == nil {
+			c.pool.put(conn)
+			return
+		}
+		conn.close()
+	}()
 
 	if err = c.transfer(session, p, rsp); err != nil {
 		return perrors.WithStack(err)
