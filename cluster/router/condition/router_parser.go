@@ -17,7 +17,9 @@
 
 package condition
 
-import "gopkg.in/yaml.v2"
+import (
+	"gopkg.in/yaml.v2"
+)
 
 /* Parse
  * scope: application

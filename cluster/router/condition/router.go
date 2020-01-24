@@ -18,23 +18,23 @@
 package condition
 
 import (
-	matcher "github.com/apache/dubbo-go/cluster/router/match"
 	"reflect"
 	"regexp"
 	"strings"
 )
 
 import (
-	gxset "github.com/dubbogo/gost/container/set"
-	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 )
 
 import (
+	matcher "github.com/apache/dubbo-go/cluster/router/match"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
+	gxset "github.com/dubbogo/gost/container/set"
+	gxnet "github.com/dubbogo/gost/net"
 )
 
 const (

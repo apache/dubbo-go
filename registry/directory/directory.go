@@ -18,7 +18,6 @@
 package directory
 
 import (
-	"github.com/apache/dubbo-go/cluster/router"
 	"strings"
 	"sync"
 	"time"
@@ -31,6 +30,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/cluster/directory"
+	"github.com/apache/dubbo-go/cluster/router"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
