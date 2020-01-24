@@ -22,8 +22,7 @@ import (
 )
 
 var (
-	routers      = make(map[string]func() router.RouterFactory)
-	routerChains = make(map[string]func() router.ChainFactory)
+	routers = make(map[string]func() router.RouterFactory)
 )
 
 func SetRouterFactory(name string, fun func() router.RouterFactory) {
@@ -35,17 +34,6 @@ func GetRouterFactory(name string) router.RouterFactory {
 		panic("router_factory for " + name + " is not existing, make sure you have import the package.")
 	}
 	return routers[name]()
-}
-
-func SetRouterChainsFactory(name string, fun func() router.ChainFactory) {
-	routerChains[name] = fun
-}
-
-func GetRouterChainsFactory(name string) router.ChainFactory {
-	if routers[name] == nil {
-		panic("router_chain_factory for " + name + " is not existing, make sure you have import the package.")
-	}
-	return routerChains[name]()
 }
 
 func GetRouters() map[string]func() router.RouterFactory {
