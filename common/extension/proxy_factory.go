@@ -25,9 +25,12 @@ var (
 	proxy_factories = make(map[string]func(...proxy.Option) proxy.ProxyFactory)
 )
 
+// SetProxyFactory ...
 func SetProxyFactory(name string, f func(...proxy.Option) proxy.ProxyFactory) {
 	proxy_factories[name] = f
 }
+
+// GetProxyFactory ...
 func GetProxyFactory(name string) proxy.ProxyFactory {
 	if name == "" {
 		name = "default"

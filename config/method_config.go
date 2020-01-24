@@ -24,6 +24,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
+// MethodConfig ...
 type MethodConfig struct {
 	InterfaceId                 string
 	InterfaceName               string
@@ -40,6 +41,7 @@ type MethodConfig struct {
 	RequestTimeout              string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
 }
 
+// Prefix ...
 func (c *MethodConfig) Prefix() string {
 	if c.InterfaceId != "" {
 		return constant.DUBBO + "." + c.InterfaceName + "." + c.InterfaceId + "." + c.Name + "."
@@ -48,6 +50,7 @@ func (c *MethodConfig) Prefix() string {
 	}
 }
 
+// UnmarshalYAML ...
 func (c *MethodConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err

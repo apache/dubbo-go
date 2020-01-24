@@ -49,6 +49,7 @@ func init() {
 
 type roundRobinLoadBalance struct{}
 
+// NewRoundRobinLoadBalance ...
 func NewRoundRobinLoadBalance() cluster.LoadBalance {
 	return &roundRobinLoadBalance{}
 }
