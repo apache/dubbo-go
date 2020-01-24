@@ -35,18 +35,10 @@ func (ri *RestInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 		logger.Errorf("[RestInvoker]Rest methodConfig:%s is nil", inv.MethodName())
 		return nil
 	}
-	pathParams := make(map[string]string)
-	queryParams := make(map[string]string)
-	bodyParams := make(map[string]interface{})
-	for key, value := range methodConfig.PathParamsMap {
-		pathParams[value] = fmt.Sprintf("%v", inv.Arguments()[key])
-	}
-	for key, value := range methodConfig.QueryParamsMap {
-		queryParams[value] = fmt.Sprintf("%v", inv.Arguments()[key])
-	}
-	for key, value := range methodConfig.BodyMap {
-		bodyParams[value] = inv.Arguments()[key]
-	}
+	pathParams := restStringMapTransform(methodConfig.PathParamsMap, inv.Arguments())
+	queryParams := restStringMapTransform(methodConfig.QueryParamsMap, inv.Arguments())
+	headers := restStringMapTransform(methodConfig.HeadersMap, inv.Arguments())
+	bodyParams := restInterfaceMapTransform(methodConfig.BodyMap, inv.Arguments())
 	req := &rest_interface.RestRequest{
 		Location:    ri.GetUrl().Location,
 		Produces:    methodConfig.Produces,
@@ -56,11 +48,27 @@ func (ri *RestInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 		PathParams:  pathParams,
 		QueryParams: queryParams,
 		Body:        bodyParams,
+		Headers:     headers,
 	}
 	result.Err = ri.client.Do(req, inv.Reply())
 	if result.Err == nil {
 		result.Rest = inv.Reply()
 	}
 	return &result
+}
 
+func restStringMapTransform(paramsMap map[int]string, args []interface{}) map[string]string {
+	resMap := make(map[string]string, len(paramsMap))
+	for key, value := range paramsMap {
+		resMap[value] = fmt.Sprintf("%v", args[key])
+	}
+	return resMap
+}
+
+func restInterfaceMapTransform(paramsMap map[int]string, args []interface{}) map[string]interface{} {
+	resMap := make(map[string]interface{}, len(paramsMap))
+	for key, value := range paramsMap {
+		resMap[value] = args[key]
+	}
+	return resMap
 }
