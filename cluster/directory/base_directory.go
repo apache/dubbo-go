@@ -49,6 +49,10 @@ func (dir *BaseDirectory) RouterChain() router.Chain {
 	return dir.routerChain
 }
 
+func (dir *BaseDirectory) SetRouterChain(routerChain router.Chain) {
+	dir.routerChain = routerChain
+}
+
 func GetRouterURLSet() *gxset.HashSet {
 	return routerURLSet
 }
