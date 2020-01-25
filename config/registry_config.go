@@ -117,15 +117,16 @@ func loadRegistries(targetRegistries string, registries map[string]*RegistryConf
 	return urls
 }
 
-func (regconfig *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
+func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 	urlMap := url.Values{}
-	urlMap.Set(constant.GROUP_KEY, regconfig.Group)
+	urlMap.Set(constant.GROUP_KEY, c.Group)
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(int(roleType)))
-	urlMap.Set(constant.REGISTRY_KEY, regconfig.Protocol)
-	urlMap.Set(constant.REGISTRY_TIMEOUT_KEY, regconfig.TimeoutStr)
-	for k, v := range regconfig.Params {
+	urlMap.Set(constant.REGISTRY_KEY, c.Protocol)
+	urlMap.Set(constant.REGISTRY_TIMEOUT_KEY, c.TimeoutStr)
+	for k, v := range c.Params {
 		urlMap.Set(k, v)
 	}
+
 	return urlMap
 }
 

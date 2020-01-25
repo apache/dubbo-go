@@ -34,19 +34,21 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
-// rpc service interface
+// RPCService: rpc service interface
 type RPCService interface {
-	Reference() string // rpc service id or reference id
+	// Reference:
+	// rpc service id or reference id
+	Reference() string
 }
 
 //AsyncCallbackService callback interface for async
 type AsyncCallbackService interface {
-	CallBack(response CallbackResponse) // callback
+	// Callback: callback
+	CallBack(response CallbackResponse)
 }
 
 //CallbackResponse for different protocol
-type CallbackResponse interface {
-}
+type CallbackResponse interface{}
 
 //AsyncCallback async callback method
 type AsyncCallback func(response CallbackResponse)
@@ -55,7 +57,10 @@ type AsyncCallback func(response CallbackResponse)
 // func MethodMapper() map[string][string] {
 //     return map[string][string]{}
 // }
-const METHOD_MAPPER = "MethodMapper"
+const (
+	// METHOD_MAPPER ...
+	METHOD_MAPPER = "MethodMapper"
+)
 
 var (
 	// Precompute the reflect type for error. Can't use error directly
@@ -63,6 +68,7 @@ var (
 	typeOfError = reflect.TypeOf((*error)(nil)).Elem()
 
 	// todo: lowerecas?
+	// ServiceMap ...
 	ServiceMap = &serviceMap{
 		serviceMap: make(map[string]map[string]*Service),
 	}

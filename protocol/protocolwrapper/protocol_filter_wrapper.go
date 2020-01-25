@@ -31,6 +31,7 @@ import (
 )
 
 const (
+	// FILTER ...
 	FILTER = "filter"
 )
 

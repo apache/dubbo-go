@@ -103,7 +103,7 @@ func (c *MockDynamicConfiguration) GetConfig(key string, opts ...Option) (string
 	return c.content, nil
 }
 
-//For zookeeper, getConfig and getConfigs have the same meaning.
+// GetConfigs: For zookeeper, getConfig and getConfigs have the same meaning.
 func (c *MockDynamicConfiguration) GetConfigs(key string, opts ...Option) (string, error) {
 	return c.GetConfig(key, opts...)
 }
@@ -123,7 +123,7 @@ func (c *MockDynamicConfiguration) GetProperties(key string, opts ...Option) (st
 	return c.content, nil
 }
 
-//For zookeeper, getConfig and getConfigs have the same meaning.
+// GetInternalProperty: For zookeeper, getConfig and getConfigs have the same meaning.
 func (c *MockDynamicConfiguration) GetInternalProperty(key string, opts ...Option) (string, error) {
 	return c.GetProperties(key, opts...)
 }
