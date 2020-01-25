@@ -49,11 +49,10 @@ func (c *TestStruct) JavaClassName() string {
 	return "com.test.testStruct"
 }
 
-type TestService struct {
-}
+type TestService struct{}
 
 // MethodOne ...
-func (ts *TestService) MethodOne(ctx context.Context, test1 *TestStruct, test2 []TestStruct,
+func (ts *TestService) MethodOne(_ context.Context, test1 *TestStruct, test2 []TestStruct,
 	test3 interface{}, test4 []interface{}, test5 *string) (*TestStruct, error) {
 	if test1 == nil {
 		return nil, errors.New("param test1 is nil")
@@ -74,7 +73,7 @@ func (ts *TestService) MethodOne(ctx context.Context, test1 *TestStruct, test2 [
 }
 
 // Reference ...
-func (s *TestService) Reference() string {
+func (*TestService) Reference() string {
 	return "com.test.Path"
 }
 

@@ -26,14 +26,16 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
-// Protocol: Extension - protocol
+// Protocol
+// Extension - protocol
 type Protocol interface {
 	Export(invoker Invoker) Exporter
 	Refer(url common.URL) Invoker
 	Destroy()
 }
 
-// Exporter: wrapping invoker
+// Exporter
+// wrapping invoker
 type Exporter interface {
 	GetInvoker() Invoker
 	Unexport()

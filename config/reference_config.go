@@ -70,7 +70,7 @@ func (c *ReferenceConfig) Prefix() string {
 	return constant.ReferenceConfigPrefix + c.InterfaceName + "."
 }
 
-// NewReferenceConfig: The only way to get a new ReferenceConfig
+// NewReferenceConfig The only way to get a new ReferenceConfig
 func NewReferenceConfig(id string, ctx context.Context) *ReferenceConfig {
 	return &ReferenceConfig{id: id, context: ctx}
 }
@@ -93,8 +93,9 @@ func (c *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error
 }
 
 // Refer ...
-func (c *ReferenceConfig) Refer(impl interface{}) {
-	url := common.NewURLWithOptions(common.WithPath(c.id),
+func (c *ReferenceConfig) Refer(_ interface{}) {
+	cfgURL := common.NewURLWithOptions(
+		common.WithPath(c.id),
 		common.WithProtocol(c.Protocol),
 		common.WithParams(c.getUrlMap()),
 		common.WithParamsValue(constant.BEAN_NAME_KEY, c.id),
@@ -109,14 +110,14 @@ func (c *ReferenceConfig) Refer(impl interface{}) {
 				panic(fmt.Sprintf("user specified URL %v refer error, error message is %v ", urlStr, err.Error()))
 			}
 			if serviceUrl.Protocol == constant.REGISTRY_PROTOCOL {
-				serviceUrl.SubURL = url
+				serviceUrl.SubURL = cfgURL
 				c.urls = append(c.urls, &serviceUrl)
 			} else {
 				if serviceUrl.Path == "" {
 					serviceUrl.Path = "/" + c.id
 				}
 				// merge url need to do
-				newUrl := common.MergeUrl(&serviceUrl, url)
+				newUrl := common.MergeUrl(&serviceUrl, cfgURL)
 				c.urls = append(c.urls, newUrl)
 			}
 
@@ -127,7 +128,7 @@ func (c *ReferenceConfig) Refer(impl interface{}) {
 
 		//set url to regUrls
 		for _, regUrl := range c.urls {
-			regUrl.SubURL = url
+			regUrl.SubURL = cfgURL
 		}
 	}
 	if len(c.urls) == 1 {
@@ -153,12 +154,13 @@ func (c *ReferenceConfig) Refer(impl interface{}) {
 	//create proxy
 	if c.Async {
 		callback := GetCallback(c.id)
-		c.pxy = extension.GetProxyFactory(consumerConfig.ProxyFactory).GetAsyncProxy(c.invoker, callback, url)
+		c.pxy = extension.GetProxyFactory(consumerConfig.ProxyFactory).GetAsyncProxy(c.invoker, callback, cfgURL)
 	} else {
-		c.pxy = extension.GetProxyFactory(consumerConfig.ProxyFactory).GetProxy(c.invoker, url)
+		c.pxy = extension.GetProxyFactory(consumerConfig.ProxyFactory).GetProxy(c.invoker, cfgURL)
 	}
 }
 
+// Implement
 // @v is service provider implemented RPCService
 func (c *ReferenceConfig) Implement(v common.RPCService) {
 	c.pxy.Implement(v)

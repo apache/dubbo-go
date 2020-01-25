@@ -35,7 +35,9 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-const name = "method-service"
+const (
+	name = "method-service"
+)
 
 func init() {
 	extension.SetTpsLimiter(constant.DEFAULT_KEY, GetMethodServiceTpsLimiter)
@@ -43,7 +45,7 @@ func init() {
 }
 
 /**
- * MethodServiceTpsLimiterImpl:
+ * MethodServiceTpsLimiterImpl
  * This implementation allows developer to config both method-level and service-level tps limiter.
  * for example:
  * "UserProvider":
