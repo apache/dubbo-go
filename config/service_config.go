@@ -42,6 +42,7 @@ import (
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 )
 
+// ServiceConfig ...
 type ServiceConfig struct {
 	context                     context.Context
 	id                          string
@@ -74,10 +75,12 @@ type ServiceConfig struct {
 	cacheMutex    sync.Mutex
 }
 
+// Prefix ...
 func (c *ServiceConfig) Prefix() string {
 	return constant.ServiceConfigPrefix + c.InterfaceName + "."
 }
 
+// UnmarshalYAML ...
 func (c *ServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
@@ -101,6 +104,7 @@ func NewServiceConfig(id string, context context.Context) *ServiceConfig {
 
 }
 
+// Export ...
 func (srvconfig *ServiceConfig) Export() error {
 	// TODO: config center start here
 
@@ -170,6 +174,7 @@ func (srvconfig *ServiceConfig) Export() error {
 
 }
 
+// Implement ...
 func (srvconfig *ServiceConfig) Implement(s common.RPCService) {
 	srvconfig.rpcService = s
 }

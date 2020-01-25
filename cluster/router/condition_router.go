@@ -259,6 +259,7 @@ func MatchCondition(pairs map[string]MatchPair, url *common.URL, param *common.U
 	return result, nil
 }
 
+// MatchPair ...
 type MatchPair struct {
 	Matches    *gxset.HashSet
 	Mismatches *gxset.HashSet

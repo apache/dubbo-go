@@ -43,12 +43,14 @@ var (
 	dubboProtocol *DubboProtocol
 )
 
+// DubboProtocol ...
 type DubboProtocol struct {
 	protocol.BaseProtocol
 	serverMap  map[string]*Server
 	serverLock sync.Mutex
 }
 
+// NewDubboProtocol ...
 func NewDubboProtocol() *DubboProtocol {
 	return &DubboProtocol{
 		BaseProtocol: protocol.NewBaseProtocol(),
@@ -56,6 +58,7 @@ func NewDubboProtocol() *DubboProtocol {
 	}
 }
 
+// Export ...
 func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetUrl()
 	serviceKey := url.ServiceKey()
@@ -68,6 +71,7 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	return exporter
 }
 
+// Refer ...
 func (dp *DubboProtocol) Refer(url common.URL) protocol.Invoker {
 	//default requestTimeout
 	var requestTimeout = config.GetConsumerConfig().RequestTimeout
@@ -86,6 +90,7 @@ func (dp *DubboProtocol) Refer(url common.URL) protocol.Invoker {
 	return invoker
 }
 
+// Destroy ...
 func (dp *DubboProtocol) Destroy() {
 	logger.Infof("DubboProtocol destroy.")
 
@@ -117,6 +122,7 @@ func (dp *DubboProtocol) openServer(url common.URL) {
 	}
 }
 
+// GetProtocol ...
 func GetProtocol() protocol.Protocol {
 	if dubboProtocol == nil {
 		dubboProtocol = NewDubboProtocol()
