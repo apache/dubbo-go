@@ -92,7 +92,7 @@ func (c *ServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
-// The only way to get a new ServiceConfig
+// NewServiceConfig: The only way to get a new ServiceConfig
 func NewServiceConfig(id string, context context.Context) *ServiceConfig {
 
 	return &ServiceConfig{
@@ -105,58 +105,58 @@ func NewServiceConfig(id string, context context.Context) *ServiceConfig {
 }
 
 // Export ...
-func (srvconfig *ServiceConfig) Export() error {
+func (c *ServiceConfig) Export() error {
 	// TODO: config center start here
 
 	// TODO:delay export
-	if srvconfig.unexported != nil && srvconfig.unexported.Load() {
-		err := perrors.Errorf("The service %v has already unexported! ", srvconfig.InterfaceName)
+	if c.unexported != nil && c.unexported.Load() {
+		err := perrors.Errorf("The service %v has already unexported! ", c.InterfaceName)
 		logger.Errorf(err.Error())
 		return err
 	}
-	if srvconfig.unexported != nil && srvconfig.exported.Load() {
-		logger.Warnf("The service %v has already exported! ", srvconfig.InterfaceName)
+	if c.unexported != nil && c.exported.Load() {
+		logger.Warnf("The service %v has already exported! ", c.InterfaceName)
 		return nil
 	}
 
-	regUrls := loadRegistries(srvconfig.Registry, providerConfig.Registries, common.PROVIDER)
-	urlMap := srvconfig.getUrlMap()
-	protocolConfigs := loadProtocol(srvconfig.Protocol, providerConfig.Protocols)
+	regUrls := loadRegistries(c.Registry, providerConfig.Registries, common.PROVIDER)
+	urlMap := c.getUrlMap()
+	protocolConfigs := loadProtocol(c.Protocol, providerConfig.Protocols)
 	if len(protocolConfigs) == 0 {
-		logger.Warnf("The service %v's '%v' protocols don't has right protocolConfigs ", srvconfig.InterfaceName, srvconfig.Protocol)
+		logger.Warnf("The service %v's '%v' protocols don't has right protocolConfigs ", c.InterfaceName, c.Protocol)
 		return nil
 	}
 	for _, proto := range protocolConfigs {
 		// registry the service reflect
-		methods, err := common.ServiceMap.Register(proto.Name, srvconfig.rpcService)
+		methods, err := common.ServiceMap.Register(proto.Name, c.rpcService)
 		if err != nil {
-			err := perrors.Errorf("The service %v  export the protocol %v error! Error message is %v .", srvconfig.InterfaceName, proto.Name, err.Error())
+			err := perrors.Errorf("The service %v  export the protocol %v error! Error message is %v .", c.InterfaceName, proto.Name, err.Error())
 			logger.Errorf(err.Error())
 			return err
 		}
-		url := common.NewURLWithOptions(common.WithPath(srvconfig.id),
+		url := common.NewURLWithOptions(common.WithPath(c.id),
 			common.WithProtocol(proto.Name),
 			common.WithIp(proto.Ip),
 			common.WithPort(proto.Port),
 			common.WithParams(urlMap),
-			common.WithParamsValue(constant.BEAN_NAME_KEY, srvconfig.id),
+			common.WithParamsValue(constant.BEAN_NAME_KEY, c.id),
 			common.WithMethods(strings.Split(methods, ",")),
-			common.WithToken(srvconfig.Token),
+			common.WithToken(c.Token),
 		)
 
 		if len(regUrls) > 0 {
 			for _, regUrl := range regUrls {
 				regUrl.SubURL = url
 
-				srvconfig.cacheMutex.Lock()
-				if srvconfig.cacheProtocol == nil {
+				c.cacheMutex.Lock()
+				if c.cacheProtocol == nil {
 					logger.Infof(fmt.Sprintf("First load the registry protocol , url is {%v}!", url))
-					srvconfig.cacheProtocol = extension.GetProtocol("registry")
+					c.cacheProtocol = extension.GetProtocol("registry")
 				}
-				srvconfig.cacheMutex.Unlock()
+				c.cacheMutex.Unlock()
 
 				invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*regUrl)
-				exporter := srvconfig.cacheProtocol.Export(invoker)
+				exporter := c.cacheProtocol.Export(invoker)
 				if exporter == nil {
 					panic(perrors.New(fmt.Sprintf("Registry protocol new exporter error,registry is {%v},url is {%v}", regUrl, url)))
 				}
@@ -175,24 +175,24 @@ func (srvconfig *ServiceConfig) Export() error {
 }
 
 // Implement ...
-func (srvconfig *ServiceConfig) Implement(s common.RPCService) {
-	srvconfig.rpcService = s
+func (c *ServiceConfig) Implement(s common.RPCService) {
+	c.rpcService = s
 }
 
-func (srvconfig *ServiceConfig) getUrlMap() url.Values {
+func (c *ServiceConfig) getUrlMap() url.Values {
 	urlMap := url.Values{}
 	// first set user params
-	for k, v := range srvconfig.Params {
+	for k, v := range c.Params {
 		urlMap.Set(k, v)
 	}
-	urlMap.Set(constant.INTERFACE_KEY, srvconfig.InterfaceName)
+	urlMap.Set(constant.INTERFACE_KEY, c.InterfaceName)
 	urlMap.Set(constant.TIMESTAMP_KEY, strconv.FormatInt(time.Now().Unix(), 10))
-	urlMap.Set(constant.CLUSTER_KEY, srvconfig.Cluster)
-	urlMap.Set(constant.LOADBALANCE_KEY, srvconfig.Loadbalance)
-	urlMap.Set(constant.WARMUP_KEY, srvconfig.Warmup)
-	urlMap.Set(constant.RETRIES_KEY, srvconfig.Retries)
-	urlMap.Set(constant.GROUP_KEY, srvconfig.Group)
-	urlMap.Set(constant.VERSION_KEY, srvconfig.Version)
+	urlMap.Set(constant.CLUSTER_KEY, c.Cluster)
+	urlMap.Set(constant.LOADBALANCE_KEY, c.Loadbalance)
+	urlMap.Set(constant.WARMUP_KEY, c.Warmup)
+	urlMap.Set(constant.RETRIES_KEY, c.Retries)
+	urlMap.Set(constant.GROUP_KEY, c.Group)
+	urlMap.Set(constant.VERSION_KEY, c.Version)
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
 	// application info
 	urlMap.Set(constant.APPLICATION_KEY, providerConfig.ApplicationConfig.Name)
@@ -204,22 +204,22 @@ func (srvconfig *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.ENVIRONMENT_KEY, providerConfig.ApplicationConfig.Environment)
 
 	// filter
-	urlMap.Set(constant.SERVICE_FILTER_KEY, mergeValue(providerConfig.Filter, srvconfig.Filter, constant.DEFAULT_SERVICE_FILTERS))
+	urlMap.Set(constant.SERVICE_FILTER_KEY, mergeValue(providerConfig.Filter, c.Filter, constant.DEFAULT_SERVICE_FILTERS))
 
 	// filter special config
-	urlMap.Set(constant.ACCESS_LOG_KEY, srvconfig.AccessLog)
+	urlMap.Set(constant.ACCESS_LOG_KEY, c.AccessLog)
 	// tps limiter
-	urlMap.Set(constant.TPS_LIMIT_STRATEGY_KEY, srvconfig.TpsLimitStrategy)
-	urlMap.Set(constant.TPS_LIMIT_INTERVAL_KEY, srvconfig.TpsLimitInterval)
-	urlMap.Set(constant.TPS_LIMIT_RATE_KEY, srvconfig.TpsLimitRate)
-	urlMap.Set(constant.TPS_LIMITER_KEY, srvconfig.TpsLimiter)
-	urlMap.Set(constant.TPS_REJECTED_EXECUTION_HANDLER_KEY, srvconfig.TpsLimitRejectedHandler)
+	urlMap.Set(constant.TPS_LIMIT_STRATEGY_KEY, c.TpsLimitStrategy)
+	urlMap.Set(constant.TPS_LIMIT_INTERVAL_KEY, c.TpsLimitInterval)
+	urlMap.Set(constant.TPS_LIMIT_RATE_KEY, c.TpsLimitRate)
+	urlMap.Set(constant.TPS_LIMITER_KEY, c.TpsLimiter)
+	urlMap.Set(constant.TPS_REJECTED_EXECUTION_HANDLER_KEY, c.TpsLimitRejectedHandler)
 
 	// execute limit filter
-	urlMap.Set(constant.EXECUTE_LIMIT_KEY, srvconfig.ExecuteLimit)
-	urlMap.Set(constant.EXECUTE_REJECTED_EXECUTION_HANDLER_KEY, srvconfig.ExecuteLimitRejectedHandler)
+	urlMap.Set(constant.EXECUTE_LIMIT_KEY, c.ExecuteLimit)
+	urlMap.Set(constant.EXECUTE_REJECTED_EXECUTION_HANDLER_KEY, c.ExecuteLimitRejectedHandler)
 
-	for _, v := range srvconfig.Methods {
+	for _, v := range c.Methods {
 		prefix := "methods." + v.Name + "."
 		urlMap.Set(prefix+constant.LOADBALANCE_KEY, v.Loadbalance)
 		urlMap.Set(prefix+constant.RETRIES_KEY, v.Retries)

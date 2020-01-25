@@ -77,7 +77,7 @@ func (g *greeterProviderBase) ServiceDesc() *native_grpc.ServiceDesc {
 		Methods: []native_grpc.MethodDesc{
 			{
 				MethodName: "SayHello",
-				Handler:    _DUBBO_Greeter_SayHello_Handler,
+				Handler:    dubboGreeterSayHelloHandler,
 			},
 		},
 		Streams:  []native_grpc.StreamDesc{},
@@ -85,7 +85,9 @@ func (g *greeterProviderBase) ServiceDesc() *native_grpc.ServiceDesc {
 	}
 }
 
-func _DUBBO_Greeter_SayHello_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor native_grpc.UnaryServerInterceptor) (interface{}, error) {
+func dubboGreeterSayHelloHandler(srv interface{}, ctx context.Context,
+	dec func(interface{}) error, interceptor native_grpc.UnaryServerInterceptor) (interface{}, error) {
+
 	in := new(internal.HelloRequest)
 	if err := dec(in); err != nil {
 		return nil, err

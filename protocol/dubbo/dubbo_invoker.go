@@ -35,8 +35,10 @@ import (
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 )
 
-// Err_No_Reply ...
-var Err_No_Reply = perrors.New("request need @response")
+var (
+	// ErrNoReply ...
+	ErrNoReply = perrors.New("request need @response")
+)
 
 var (
 	attachmentKey = []string{constant.INTERFACE_KEY, constant.GROUP_KEY, constant.TOKEN_KEY, constant.TIMEOUT_KEY}
@@ -86,7 +88,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 		}
 	} else {
 		if inv.Reply() == nil {
-			result.Err = Err_No_Reply
+			result.Err = ErrNoReply
 		} else {
 			result.Err = di.client.Call(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), response)
 		}

@@ -29,6 +29,7 @@ import (
 )
 
 const (
+	// FixedWindowKey ...
 	FixedWindowKey = "fixedWindow"
 )
 
@@ -39,6 +40,7 @@ func init() {
 }
 
 /**
+ * FixedWindowTpsLimitStrategyImpl:
  * It's the same as default implementation in Java
  * It's not a thread-safe implementation.
  * It you want to use the thread-safe implementation, please use ThreadSafeFixedWindowTpsLimitStrategyImpl

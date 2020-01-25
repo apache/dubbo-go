@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package configurator
 
 import (
@@ -31,10 +32,12 @@ type mockConfigurator struct {
 	configuratorUrl *common.URL
 }
 
+// GetUrl ...
 func (c *mockConfigurator) GetUrl() *common.URL {
 	return c.configuratorUrl
 }
 
+// Configure ...
 func (c *mockConfigurator) Configure(url *common.URL) {
 	if cluster := c.GetUrl().GetParam(constant.CLUSTER_KEY, ""); cluster != "" {
 		url.SetParam(constant.CLUSTER_KEY, cluster)
