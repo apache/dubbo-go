@@ -33,7 +33,8 @@ func init() {
 	config.SetConsumerService(&GrpcGreeterImpl{})
 }
 
-// GrpcGreeterImpl: used for dubbo-grpc biz client
+// GrpcGreeterImpl
+//used for dubbo-grpc biz client
 type GrpcGreeterImpl struct {
 	SayHello func(ctx context.Context, in *HelloRequest, out *HelloReply) error
 }

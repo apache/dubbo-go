@@ -30,23 +30,23 @@ import (
 	perrors "github.com/pkg/errors"
 )
 
-// serial ID
+//SerialID serial ID
 type SerialID byte
 
 const (
-	// S_Dubbo: dubbo serial id
+	// S_Dubbo dubbo serial id
 	S_Dubbo SerialID = 2
 )
 
-// call type
+//CallType call type
 type CallType int32
 
 const (
-	// CT_UNKNOWN: unknown call type
+	// CT_UNKNOWN unknown call type
 	CT_UNKNOWN CallType = 0
-	// CT_OneWay: call one way
+	// CT_OneWay call one way
 	CT_OneWay CallType = 1
-	// CT_TwoWay: call in request/response
+	// CT_TwoWay call in request/response
 	CT_TwoWay CallType = 2
 )
 
