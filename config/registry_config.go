@@ -34,6 +34,7 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
+// RegistryConfig ...
 type RegistryConfig struct {
 	Protocol string `required:"true" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
 	//I changed "type" to "protocol" ,the same as "protocol" field in java class RegistryConfig
@@ -46,6 +47,7 @@ type RegistryConfig struct {
 	Params   map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
 }
 
+// UnmarshalYAML ...
 func (c *RegistryConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
@@ -57,6 +59,7 @@ func (c *RegistryConfig) UnmarshalYAML(unmarshal func(interface{}) error) error 
 	return nil
 }
 
+// Prefix ...
 func (*RegistryConfig) Prefix() string {
 	return constant.RegistryConfigPrefix + "|" + constant.SingleRegistryConfigPrefix
 }

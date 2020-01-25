@@ -35,6 +35,7 @@ const (
 	VERSION        = "2.0"
 )
 
+// CodecData ...
 type CodecData struct {
 	ID     int64
 	Method string
@@ -278,12 +279,14 @@ type serverResponse struct {
 	Error   interface{}      `json:"error,omitempty"`
 }
 
+// ServerCodec ...
 type ServerCodec struct {
 	req serverRequest
 }
 
 var (
-	null    = json.RawMessage([]byte("null"))
+	null = json.RawMessage([]byte("null"))
+	// Version ...
 	Version = "2.0"
 )
 
@@ -291,6 +294,7 @@ func newServerCodec() *ServerCodec {
 	return &ServerCodec{}
 }
 
+// ReadHeader ...
 func (c *ServerCodec) ReadHeader(header map[string]string, body []byte) error {
 	if header["HttpMethod"] != "POST" {
 		return &Error{Code: -32601, Message: "Method not found"}
@@ -322,6 +326,7 @@ func (c *ServerCodec) ReadHeader(header map[string]string, body []byte) error {
 	return nil
 }
 
+// ReadBody ...
 func (c *ServerCodec) ReadBody(x interface{}) error {
 	// If x!=nil and return error e:
 	// - Write() will be called with e.Error() in r.Error
@@ -355,6 +360,7 @@ func (c *ServerCodec) ReadBody(x interface{}) error {
 	return nil
 }
 
+// NewError ...
 func NewError(code int, message string) *Error {
 	return &Error{Code: code, Message: message}
 }

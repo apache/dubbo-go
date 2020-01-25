@@ -85,6 +85,7 @@ func init() {
 	setClientGrpool()
 }
 
+// SetClientConf ...
 func SetClientConf(c ClientConfig) {
 	clientConf = &c
 	err := clientConf.CheckValidity()
@@ -95,6 +96,7 @@ func SetClientConf(c ClientConfig) {
 	setClientGrpool()
 }
 
+// GetClientConf ...
 func GetClientConf() ClientConfig {
 	return *clientConf
 }
@@ -106,6 +108,7 @@ func setClientGrpool() {
 	}
 }
 
+// Options ...
 type Options struct {
 	// connect timeout
 	ConnectTimeout time.Duration
@@ -123,6 +126,7 @@ type AsyncCallbackResponse struct {
 	Reply     interface{}
 }
 
+// Client ...
 type Client struct {
 	opts     Options
 	conf     ClientConfig
@@ -132,6 +136,7 @@ type Client struct {
 	pendingResponses *sync.Map
 }
 
+// NewClient ...
 func NewClient(opt Options) *Client {
 
 	switch {
@@ -152,6 +157,7 @@ func NewClient(opt Options) *Client {
 	return c
 }
 
+// Request ...
 type Request struct {
 	addr   string
 	svcUrl common.URL
@@ -160,6 +166,7 @@ type Request struct {
 	atta   map[string]string
 }
 
+// NewRequest ...
 func NewRequest(addr string, svcUrl common.URL, method string, args interface{}, atta map[string]string) *Request {
 	return &Request{
 		addr:   addr,
@@ -170,11 +177,13 @@ func NewRequest(addr string, svcUrl common.URL, method string, args interface{},
 	}
 }
 
+// Response ...
 type Response struct {
 	reply interface{}
 	atta  map[string]string
 }
 
+// NewResponse ...
 func NewResponse(reply interface{}, atta map[string]string) *Response {
 	return &Response{
 		reply: reply,
@@ -199,6 +208,7 @@ func (c *Client) Call(request *Request, response *Response) error {
 	return perrors.WithStack(c.call(ct, request, response, nil))
 }
 
+// AsyncCall ...
 func (c *Client) AsyncCall(request *Request, callback common.AsyncCallback, response *Response) error {
 
 	return perrors.WithStack(c.call(CT_TwoWay, request, response, callback))
@@ -246,7 +256,13 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 	if session == nil {
 		return errSessionNotExist
 	}
-	defer c.pool.release(conn, err)
+	defer func() {
+		if err == nil {
+			c.pool.put(conn)
+			return
+		}
+		conn.close()
+	}()
 
 	if err = c.transfer(session, p, rsp); err != nil {
 		return perrors.WithStack(err)
@@ -267,6 +283,7 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 	return perrors.WithStack(err)
 }
 
+// Close ...
 func (c *Client) Close() {
 	if c.pool != nil {
 		c.pool.close()

@@ -32,6 +32,7 @@ import (
 )
 
 import (
+	"github.com/opentracing/opentracing-go"
 	perrors "github.com/pkg/errors"
 )
 
@@ -55,6 +56,7 @@ const (
 	PathPrefix               = byte('/')
 )
 
+// Server ...
 type Server struct {
 	done chan struct{}
 	once sync.Once
@@ -64,6 +66,7 @@ type Server struct {
 	timeout time.Duration
 }
 
+// NewServer ...
 func NewServer() *Server {
 	return &Server{
 		done: make(chan struct{}),
@@ -149,6 +152,13 @@ func (s *Server) handlePkg(conn net.Conn) {
 		}
 
 		ctx := context.Background()
+
+		spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders,
+			opentracing.HTTPHeadersCarrier(r.Header))
+		if err == nil {
+			ctx = context.WithValue(ctx, constant.TRACING_REMOTE_SPAN_CTX, spanCtx)
+		}
+
 		if len(reqHeader["Timeout"]) > 0 {
 			timeout, err := time.ParseDuration(reqHeader["Timeout"])
 			if err == nil {
@@ -215,6 +225,7 @@ func accept(listener net.Listener, fn func(net.Conn)) error {
 	}
 }
 
+// Start ...
 func (s *Server) Start(url common.URL) {
 	listener, err := net.Listen("tcp", url.Location)
 	if err != nil {
@@ -241,6 +252,7 @@ func (s *Server) Start(url common.URL) {
 	}()
 }
 
+// Stop ...
 func (s *Server) Stop() {
 	s.once.Do(func() {
 		close(s.done)
@@ -330,10 +342,9 @@ func serveRequest(ctx context.Context,
 	exporter, _ := jsonrpcProtocol.ExporterMap().Load(path)
 	invoker := exporter.(*JsonrpcExporter).GetInvoker()
 	if invoker != nil {
-		result := invoker.Invoke(invocation.NewRPCInvocation(methodName, args, map[string]string{
+		result := invoker.Invoke(ctx, invocation.NewRPCInvocation(methodName, args, map[string]string{
 			constant.PATH_KEY:    path,
-			constant.VERSION_KEY: codec.req.Version,
-		}))
+			constant.VERSION_KEY: codec.req.Version}))
 		if err := result.Error(); err != nil {
 			rspStream, err := codec.Write(err.Error(), invalidRequest)
 			if err != nil {
