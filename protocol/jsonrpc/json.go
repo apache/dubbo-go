@@ -31,8 +31,10 @@ import (
 )
 
 const (
+	// MAX_JSONRPC_ID: max jsonrpc request/response id
 	MAX_JSONRPC_ID = 0x7FFFFFFF
-	VERSION        = "2.0"
+	// VERSION : jsonrpc version
+	VERSION = "2.0"
 )
 
 // CodecData ...
@@ -55,7 +57,7 @@ const (
 	codeServerErrorEnd   = -32000
 )
 
-// rsponse Error
+// Error: response Error
 type Error struct {
 	Code    int         `json:"code"`
 	Message string      `json:"message"`

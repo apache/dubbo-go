@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package filter_impl
 
 import (
@@ -36,9 +37,12 @@ import (
 )
 
 const (
+	// HYSTRIX_CONSUMER ...
 	HYSTRIX_CONSUMER = "hystrix_consumer"
+	// HYSTRIX_PROVIDER ...
 	HYSTRIX_PROVIDER = "hystrix_provider"
-	HYSTRIX          = "hystrix"
+	// HYSTRIX ...
+	HYSTRIX = "hystrix"
 )
 
 var (
