@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	// GRPC: module name
+	// GRPC module name
 	GRPC = "grpc"
 )
 

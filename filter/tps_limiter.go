@@ -23,7 +23,8 @@ import (
 )
 
 /*
- * TpsLimiter: please register your implementation by invoking SetTpsLimiter
+ * TpsLimiter
+ * please register your implementation by invoking SetTpsLimiter
  * The usage, for example:
  * "UserProvider":
  *   registry: "hangzhouzk"

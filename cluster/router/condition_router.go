@@ -37,7 +37,7 @@ import (
 )
 
 const (
-	//ROUTE_PATTERN: route pattern regex
+	//ROUTE_PATTERN route pattern regex
 	ROUTE_PATTERN = `([&!=,]*)\\s*([^&!=,\\s]+)`
 	// FORCE ...
 	FORCE = "force"
@@ -107,7 +107,8 @@ func newConditionRouter(url *common.URL) (*ConditionRouter, error) {
 	}, nil
 }
 
-//Route: Router determine the target server list.
+// Route
+// Router determine the target server list.
 func (c *ConditionRouter) Route(invokers []protocol.Invoker, url common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	if len(invokers) == 0 {
 		return invokers

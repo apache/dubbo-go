@@ -26,7 +26,8 @@ var (
 )
 
 /**
- * AddCustomShutdownCallback: you should not make any assumption about the order.
+ * AddCustomShutdownCallback
+ * you should not make any assumption about the order.
  * For example, if you have more than one callbacks, and you wish the order is:
  * callback1()
  * callback2()

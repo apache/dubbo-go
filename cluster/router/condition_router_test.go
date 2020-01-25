@@ -93,12 +93,12 @@ type rest struct {
 
 var count int
 
-func (bi *MockInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (bi *MockInvoker) Invoke(_ context.Context, _ protocol.Invocation) protocol.Result {
 	count++
 
 	var (
 		success bool
-		err     error = nil
+		err     error
 	)
 	if count >= bi.successCount {
 		success = true
