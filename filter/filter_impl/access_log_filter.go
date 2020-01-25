@@ -35,13 +35,19 @@ import (
 
 const (
 	//used in URL.
-	FileDateFormat    = "2006-01-02"
+	// FileDateFormat ...
+	FileDateFormat = "2006-01-02"
+	// MessageDateLayout ...
 	MessageDateLayout = "2006-01-02 15:04:05"
-	LogMaxBuffer      = 5000
-	LogFileMode       = 0600
+	// LogMaxBuffer ...
+	LogMaxBuffer = 5000
+	// LogFileMode ...
+	LogFileMode = 0600
 
 	// those fields are the data collected by this filter
-	Types     = "types"
+	// Types ...
+	Types = "types"
+	// Arguments ...
 	Arguments = "arguments"
 )
 

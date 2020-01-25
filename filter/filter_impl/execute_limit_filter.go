@@ -37,14 +37,16 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-const name = "execute"
+const (
+	name = "execute"
+)
 
 func init() {
 	extension.SetFilter(name, GetExecuteLimitFilter)
 }
 
 /**
- * The filter will limit the number of in-progress request and it's thread-safe.
+ * ExecuteLimitFilter: The filter will limit the number of in-progress request and it's thread-safe.
  * example:
  * "UserProvider":
  *   registry: "hangzhouzk"

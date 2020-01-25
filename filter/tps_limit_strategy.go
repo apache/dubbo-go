@@ -18,7 +18,7 @@
 package filter
 
 /*
- * please register your implementation by invoking SetTpsLimitStrategy
+ * TpsLimitStrategy: please register your implementation by invoking SetTpsLimitStrategy
  * "UserProvider":
  *   registry: "hangzhouzk"
  *   protocol : "dubbo"

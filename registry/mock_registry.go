@@ -92,17 +92,16 @@ func (r *MockRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 			}
 
 			for {
-				if serviceEvent, err := listener.Next(); err != nil {
+				serviceEvent, err := listener.Next()
+				if err != nil {
 					listener.Close()
 					time.Sleep(time.Duration(3) * time.Second)
 					return
-				} else {
-					logger.Infof("update begin, service event: %v", serviceEvent.String())
-					notifyListener.Notify(serviceEvent)
 				}
 
+				logger.Infof("update begin, service event: %v", serviceEvent.String())
+				notifyListener.Notify(serviceEvent)
 			}
-
 		}
 	}()
 }

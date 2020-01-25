@@ -20,7 +20,7 @@ package apollo
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
-	. "github.com/apache/dubbo-go/config_center"
+	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/config_center/parser"
 )
 
@@ -28,13 +28,13 @@ func init() {
 	extension.SetConfigCenterFactory("apollo", createDynamicConfigurationFactory)
 }
 
-func createDynamicConfigurationFactory() DynamicConfigurationFactory {
+func createDynamicConfigurationFactory() config_center.DynamicConfigurationFactory {
 	return &apolloConfigurationFactory{}
 }
 
 type apolloConfigurationFactory struct{}
 
-func (f *apolloConfigurationFactory) GetDynamicConfiguration(url *common.URL) (DynamicConfiguration, error) {
+func (f *apolloConfigurationFactory) GetDynamicConfiguration(url *common.URL) (config_center.DynamicConfiguration, error) {
 	dynamicConfiguration, err := newApolloConfiguration(url)
 	if err != nil {
 		return nil, err
