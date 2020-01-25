@@ -42,7 +42,7 @@ const (
 
 var (
 	methodWeightMap sync.Map   // [string]invokers
-	state           = COMPLETE // update lock acquired ?
+	state           = int32(COMPLETE) // update lock acquired ?
 	recyclePeriod   = 60 * time.Second.Nanoseconds()
 )
 
