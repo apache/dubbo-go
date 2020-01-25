@@ -44,9 +44,12 @@ import (
 )
 
 const (
-	RegistryZkClient  = "zk registry"
+	// RegistryZkClient: zk client name
+	RegistryZkClient = "zk registry"
+	// RegistryConnDelay: connection delay
 	RegistryConnDelay = 3
-	MaxWaitInterval   = time.Duration(3e9)
+	// MaxWaitInterval: max wait interval
+	MaxWaitInterval = 3 * time.Second
 )
 
 var (

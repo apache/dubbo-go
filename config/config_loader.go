@@ -69,7 +69,7 @@ func checkApplicationName(config *ApplicationConfig) {
 	}
 }
 
-// Dubbo Init
+// Load: Dubbo Init
 func Load() {
 	// reference config
 	if consumerConfig == nil {
@@ -153,12 +153,12 @@ func Load() {
 	GracefulShutdownInit()
 }
 
-// get rpc service for consumer
+// GetRPCService: get rpc service for consumer
 func GetRPCService(name string) common.RPCService {
 	return consumerConfig.References[name].GetRPCService()
 }
 
-// create rpc service for consumer
+// RPCService: create rpc service for consumer
 func RPCService(service common.RPCService) {
 	consumerConfig.References[service.Reference()].Implement(service)
 }

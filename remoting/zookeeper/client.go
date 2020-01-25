@@ -35,6 +35,7 @@ import (
 )
 
 const (
+	// ConnDelay: connection delay interval
 	ConnDelay    = 3
 	MaxFailTimes = 15
 )

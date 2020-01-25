@@ -34,6 +34,7 @@ import (
 )
 
 const (
+	// TOKEN ...
 	TOKEN = "token"
 )
 

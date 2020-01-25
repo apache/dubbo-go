@@ -191,13 +191,13 @@ func NewResponse(reply interface{}, atta map[string]string) *Response {
 	}
 }
 
-// call one way
+// CallOneway: call one way
 func (c *Client) CallOneway(request *Request) error {
 
 	return perrors.WithStack(c.call(CT_OneWay, request, NewResponse(nil, nil), nil))
 }
 
-// if @response is nil, the transport layer will get the response without notify the invoker.
+// Call: if @response is nil, the transport layer will get the response without notify the invoker.
 func (c *Client) Call(request *Request, response *Response) error {
 
 	ct := CT_TwoWay

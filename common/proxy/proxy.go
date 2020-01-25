@@ -51,7 +51,7 @@ func NewProxy(invoke protocol.Invoker, callBack interface{}, attachments map[str
 	}
 }
 
-// proxy implement
+// Implement: proxy implement
 // In consumer, RPCService like:
 // 		type XxxProvider struct {
 //  		Yyy func(ctx context.Context, args []interface{}, rsp *Zzz) error
