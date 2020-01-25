@@ -49,7 +49,7 @@ func NewEventListener(client *Client) *EventListener {
 	}
 }
 
-// ListenServiceNodeEvent: Listen on a spec key
+// ListenServiceNodeEvent Listen on a spec key
 // this method will return true when spec key deleted,
 // this method will return false when deep layer connection lose
 func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.DataListener) bool {
@@ -136,7 +136,7 @@ func (l *EventListener) handleEvents(event *clientv3.Event, listeners ...remotin
 	panic("unreachable")
 }
 
-// ListenServiceNodeEventWithPrefix: Listen on a set of key with spec prefix
+// ListenServiceNodeEventWithPrefix Listen on a set of key with spec prefix
 func (l *EventListener) ListenServiceNodeEventWithPrefix(prefix string, listener ...remoting.DataListener) {
 
 	l.wg.Add(1)

@@ -92,7 +92,7 @@ func (c *ServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
-// NewServiceConfig: The only way to get a new ServiceConfig
+// NewServiceConfig The only way to get a new ServiceConfig
 func NewServiceConfig(id string, context context.Context) *ServiceConfig {
 
 	return &ServiceConfig{
@@ -134,7 +134,8 @@ func (c *ServiceConfig) Export() error {
 			logger.Errorf(err.Error())
 			return err
 		}
-		url := common.NewURLWithOptions(common.WithPath(c.id),
+		ivkURL := common.NewURLWithOptions(
+			common.WithPath(c.id),
 			common.WithProtocol(proto.Name),
 			common.WithIp(proto.Ip),
 			common.WithPort(proto.Port),
@@ -146,11 +147,11 @@ func (c *ServiceConfig) Export() error {
 
 		if len(regUrls) > 0 {
 			for _, regUrl := range regUrls {
-				regUrl.SubURL = url
+				regUrl.SubURL = ivkURL
 
 				c.cacheMutex.Lock()
 				if c.cacheProtocol == nil {
-					logger.Infof(fmt.Sprintf("First load the registry protocol , url is {%v}!", url))
+					logger.Infof(fmt.Sprintf("First load the registry protocol , url is {%v}!", ivkURL))
 					c.cacheProtocol = extension.GetProtocol("registry")
 				}
 				c.cacheMutex.Unlock()
@@ -158,14 +159,14 @@ func (c *ServiceConfig) Export() error {
 				invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*regUrl)
 				exporter := c.cacheProtocol.Export(invoker)
 				if exporter == nil {
-					panic(perrors.New(fmt.Sprintf("Registry protocol new exporter error,registry is {%v},url is {%v}", regUrl, url)))
+					panic(perrors.New(fmt.Sprintf("Registry protocol new exporter error,registry is {%v},url is {%v}", regUrl, ivkURL)))
 				}
 			}
 		} else {
-			invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*url)
+			invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*ivkURL)
 			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {
-				panic(perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error,url is {%v}", url)))
+				panic(perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error,url is {%v}", ivkURL)))
 			}
 		}
 

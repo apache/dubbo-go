@@ -51,7 +51,7 @@ var (
 )
 
 const (
-	// DefaultMaxSleepTime: max sleep interval in accept
+	// DefaultMaxSleepTime max sleep interval in accept
 	DefaultMaxSleepTime = 1 * time.Second
 	// DefaultHTTPRspBufferSize ...
 	DefaultHTTPRspBufferSize = 1024
