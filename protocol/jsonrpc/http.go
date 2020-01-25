@@ -159,7 +159,7 @@ func (c *HTTPClient) Call(ctx context.Context, service common.URL, req *Request,
 	return perrors.WithStack(codec.Read(rspBody, rsp))
 }
 
-// Do:
+// Do
 // !!The high level of complexity and the likelihood that the fasthttp client has not been extensively used
 // in production means that you would need to expect a very large benefit to justify the adoption of fasthttp today.
 func (c *HTTPClient) Do(addr, path string, httpHeader http.Header, body []byte) ([]byte, error) {

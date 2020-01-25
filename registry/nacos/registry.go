@@ -47,7 +47,7 @@ var (
 )
 
 const (
-	// RegistryConnDelay: registry connection delay
+	//RegistryConnDelay registry connection delay
 	RegistryConnDelay = 3
 )
 
