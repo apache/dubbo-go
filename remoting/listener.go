@@ -34,8 +34,11 @@ type DataListener interface {
 type EventType int
 
 const (
+	// EventTypeAdd ...
 	EventTypeAdd = iota
+	// EventTypeDel ...
 	EventTypeDel
+	// EventTypeUpdate ...
 	EventTypeUpdate
 )
 

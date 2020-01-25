@@ -34,6 +34,7 @@ import (
 type SerialID byte
 
 const (
+	// S_Dubbo: dubbo serial id
 	S_Dubbo SerialID = 2
 )
 
@@ -41,9 +42,12 @@ const (
 type CallType int32
 
 const (
+	// CT_UNKNOWN: unknown call type
 	CT_UNKNOWN CallType = 0
-	CT_OneWay  CallType = 1
-	CT_TwoWay  CallType = 2
+	// CT_OneWay: call one way
+	CT_OneWay CallType = 1
+	// CT_TwoWay: call in request/response
+	CT_TwoWay CallType = 2
 )
 
 ////////////////////////////////////////////

@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package tps
 
 import (
@@ -42,6 +43,7 @@ func init() {
 }
 
 /**
+ * MethodServiceTpsLimiterImpl:
  * This implementation allows developer to config both method-level and service-level tps limiter.
  * for example:
  * "UserProvider":
