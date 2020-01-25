@@ -33,7 +33,7 @@ func init() {
 }
 
 /**
- * SlidingWindowTpsLimitStrategyImpl:
+ * SlidingWindowTpsLimitStrategyImpl
  * it's thread-safe.
  * "UserProvider":
  *   registry: "hangzhouzk"
