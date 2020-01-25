@@ -36,9 +36,12 @@ import (
 )
 
 const (
+	// ConsistentHash ...
 	ConsistentHash = "consistenthash"
-	HashNodes      = "hash.nodes"
-	HashArguments  = "hash.arguments"
+	// HashNodes ...
+	HashNodes = "hash.nodes"
+	// HashArguments ...
+	HashArguments = "hash.arguments"
 )
 
 var (

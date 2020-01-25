@@ -22,9 +22,11 @@ import (
 	"reflect"
 	"strings"
 )
+
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 )
+
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -34,6 +36,7 @@ import (
 )
 
 const (
+	// GENERIC: generic module name
 	GENERIC = "generic"
 )
 

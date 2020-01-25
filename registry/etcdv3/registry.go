@@ -48,7 +48,9 @@ var (
 )
 
 const (
-	Name              = "etcdv3"
+	// Name: module name
+	Name = "etcdv3"
+	// RegistryConnDelay ...
 	RegistryConnDelay = 3
 )
 

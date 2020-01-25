@@ -28,7 +28,10 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-const GRPC = "grpc"
+const (
+	// GRPC: module name
+	GRPC = "grpc"
+)
 
 func init() {
 	extension.SetProtocol(GRPC, GetProtocol)

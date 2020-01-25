@@ -36,8 +36,10 @@ import (
 )
 
 const (
+	// ScopeApplication ...
 	ScopeApplication = "application"
-	GeneralType      = "general"
+	// GeneralType ...
+	GeneralType = "general"
 )
 
 // ConfigurationParser ...

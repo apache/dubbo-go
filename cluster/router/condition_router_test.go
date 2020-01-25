@@ -95,13 +95,17 @@ var count int
 
 func (bi *MockInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	count++
-	var success bool
-	var err error = nil
+
+	var (
+		success bool
+		err     error = nil
+	)
 	if count >= bi.successCount {
 		success = true
 	} else {
 		err = perrors.New("error")
 	}
+
 	result := &protocol.RPCResult{Err: err, Rest: rest{tried: count, success: success}}
 	return result
 }
