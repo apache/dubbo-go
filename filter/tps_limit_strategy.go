@@ -35,6 +35,7 @@ type TpsLimitStrategy interface {
 	IsAllowable() bool
 }
 
+// TpsLimitStrategyCreator ...
 type TpsLimitStrategyCreator interface {
 	Create(rate int, interval int) TpsLimitStrategy
 }

@@ -18,9 +18,11 @@
 package dubbo
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -50,33 +52,47 @@ type rpcSession struct {
 	reqNum  int32
 }
 
+func (s *rpcSession) AddReqNum(num int32) {
+	atomic.AddInt32(&s.reqNum, num)
+}
+
+func (s *rpcSession) GetReqNum() int32 {
+	return atomic.LoadInt32(&s.reqNum)
+}
+
 ////////////////////////////////////////////
 // RpcClientHandler
 ////////////////////////////////////////////
 
+// RpcClientHandler ...
 type RpcClientHandler struct {
 	conn *gettyRPCClient
 }
 
+// NewRpcClientHandler ...
 func NewRpcClientHandler(client *gettyRPCClient) *RpcClientHandler {
 	return &RpcClientHandler{conn: client}
 }
 
+// OnOpen ...
 func (h *RpcClientHandler) OnOpen(session getty.Session) error {
 	h.conn.addSession(session)
 	return nil
 }
 
+// OnError ...
 func (h *RpcClientHandler) OnError(session getty.Session, err error) {
 	logger.Infof("session{%s} got error{%v}, will be closed.", session.Stat(), err)
 	h.conn.removeSession(session)
 }
 
+// OnClose ...
 func (h *RpcClientHandler) OnClose(session getty.Session) {
 	logger.Infof("session{%s} is closing......", session.Stat())
 	h.conn.removeSession(session)
 }
 
+// OnMessage ...
 func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 	p, ok := pkg.(*DubboPackage)
 	if !ok {
@@ -120,6 +136,7 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 	}
 }
 
+// OnCron ...
 func (h *RpcClientHandler) OnCron(session getty.Session) {
 	rpcSession, err := h.conn.getClientRpcSession(session)
 	if err != nil {
@@ -141,6 +158,7 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 // RpcServerHandler
 ////////////////////////////////////////////
 
+// RpcServerHandler ...
 type RpcServerHandler struct {
 	maxSessionNum  int
 	sessionTimeout time.Duration
@@ -148,6 +166,7 @@ type RpcServerHandler struct {
 	rwlock         sync.RWMutex
 }
 
+// NewRpcServerHandler ...
 func NewRpcServerHandler(maxSessionNum int, sessionTimeout time.Duration) *RpcServerHandler {
 	return &RpcServerHandler{
 		maxSessionNum:  maxSessionNum,
@@ -156,6 +175,7 @@ func NewRpcServerHandler(maxSessionNum int, sessionTimeout time.Duration) *RpcSe
 	}
 }
 
+// OnOpen ...
 func (h *RpcServerHandler) OnOpen(session getty.Session) error {
 	var err error
 	h.rwlock.RLock()
@@ -174,6 +194,7 @@ func (h *RpcServerHandler) OnOpen(session getty.Session) error {
 	return nil
 }
 
+// OnError ...
 func (h *RpcServerHandler) OnError(session getty.Session, err error) {
 	logger.Infof("session{%s} got error{%v}, will be closed.", session.Stat(), err)
 	h.rwlock.Lock()
@@ -181,6 +202,7 @@ func (h *RpcServerHandler) OnError(session getty.Session, err error) {
 	h.rwlock.Unlock()
 }
 
+// OnClose ...
 func (h *RpcServerHandler) OnClose(session getty.Session) {
 	logger.Infof("session{%s} is closing......", session.Stat())
 	h.rwlock.Lock()
@@ -188,6 +210,7 @@ func (h *RpcServerHandler) OnClose(session getty.Session) {
 	h.rwlock.Unlock()
 }
 
+// OnMessage ...
 func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	h.rwlock.Lock()
 	if _, ok := h.sessionMap[session]; ok {
@@ -258,7 +281,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 		args := p.Body.(map[string]interface{})["args"].([]interface{})
 		inv := invocation.NewRPCInvocation(p.Service.Method, args, attachments)
-		result := invoker.Invoke(inv)
+		result := invoker.Invoke(context.Background(), inv)
 		if err := result.Error(); err != nil {
 			p.Header.ResponseStatus = hessian.Response_OK
 			p.Body = hessian.NewResponse(nil, err, result.Attachments())
@@ -275,6 +298,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	reply(session, p, hessian.PackageResponse)
 }
 
+// OnCron ...
 func (h *RpcServerHandler) OnCron(session getty.Session) {
 	var (
 		flag   bool

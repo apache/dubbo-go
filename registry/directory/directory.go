@@ -41,10 +41,12 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
+// Options ...
 type Options struct {
 	serviceTTL time.Duration
 }
 
+// Option ...
 type Option func(*Options)
 
 type registryDirectory struct {
@@ -61,6 +63,7 @@ type registryDirectory struct {
 	Options
 }
 
+// NewRegistryDirectory ...
 func NewRegistryDirectory(url *common.URL, registry registry.Registry, opts ...Option) (*registryDirectory, error) {
 	options := Options{
 		//default 300s

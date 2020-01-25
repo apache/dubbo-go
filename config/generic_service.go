@@ -16,15 +16,18 @@
  */
 package config
 
+// GenericService ...
 type GenericService struct {
 	Invoke       func(req []interface{}) (interface{}, error) `dubbo:"$invoke"`
 	referenceStr string
 }
 
+// NewGenericService ...
 func NewGenericService(referenceStr string) *GenericService {
 	return &GenericService{referenceStr: referenceStr}
 }
 
+// Reference ...
 func (u *GenericService) Reference() string {
 	return u.referenceStr
 }
