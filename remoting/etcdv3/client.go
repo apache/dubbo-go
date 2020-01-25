@@ -36,11 +36,11 @@ import (
 )
 
 const (
-	// ConnDelay: connection dalay
+	// ConnDelay connection dalay
 	ConnDelay = 3
-	// MaxFailTimes: max failure times
+	// MaxFailTimes max failure times
 	MaxFailTimes = 15
-	// RegistryETCDV3Client: client name
+	// RegistryETCDV3Client client name
 	RegistryETCDV3Client = "etcd registry"
 )
 

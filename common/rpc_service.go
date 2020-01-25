@@ -34,7 +34,8 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
-// RPCService: rpc service interface
+// RPCService
+//rpc service interface
 type RPCService interface {
 	// Reference:
 	// rpc service id or reference id
@@ -67,8 +68,8 @@ var (
 	// because Typeof takes an empty interface value. This is annoying.
 	typeOfError = reflect.TypeOf((*error)(nil)).Elem()
 
-	// todo: lowerecas?
 	// ServiceMap ...
+	// todo: lowerecas?
 	ServiceMap = &serviceMap{
 		serviceMap: make(map[string]map[string]*Service),
 	}
@@ -232,8 +233,8 @@ func (sm *serviceMap) UnRegister(protocol, serviceId string) error {
 
 // Is this an exported - upper case - name
 func isExported(name string) bool {
-	rune, _ := utf8.DecodeRuneInString(name)
-	return unicode.IsUpper(rune)
+	s, _ := utf8.DecodeRuneInString(name)
+	return unicode.IsUpper(s)
 }
 
 // Is this type exported or a builtin?

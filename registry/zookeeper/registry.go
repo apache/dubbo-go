@@ -44,11 +44,11 @@ import (
 )
 
 const (
-	// RegistryZkClient: zk client name
+	// RegistryZkClient zk client name
 	RegistryZkClient = "zk registry"
-	// RegistryConnDelay: connection delay
+	// RegistryConnDelay connection delay
 	RegistryConnDelay = 3
-	// MaxWaitInterval: max wait interval
+	// MaxWaitInterval max wait interval
 	MaxWaitInterval = 3 * time.Second
 )
 

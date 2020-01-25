@@ -30,7 +30,10 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-const HandlerName = "log"
+const (
+	// HandlerName handler name
+	HandlerName = "log"
+)
 
 func init() {
 	extension.SetRejectedExecutionHandler(HandlerName, GetOnlyLogRejectedExecutionHandler)
@@ -41,6 +44,7 @@ var onlyLogHandlerInstance *OnlyLogRejectedExecutionHandler
 var onlyLogHandlerOnce sync.Once
 
 /**
+ * OnlyLogRejectedExecutionHandler
  * This implementation only logs the invocation info.
  * it always return en error inside the result.
  * "UserProvider":
@@ -57,7 +61,9 @@ type OnlyLogRejectedExecutionHandler struct {
 }
 
 // RejectedExecution ...
-func (handler *OnlyLogRejectedExecutionHandler) RejectedExecution(url common.URL, invocation protocol.Invocation) protocol.Result {
+func (handler *OnlyLogRejectedExecutionHandler) RejectedExecution(url common.URL,
+	_ protocol.Invocation) protocol.Result {
+
 	logger.Errorf("The invocation was rejected. url: %s", url.String())
 	return &protocol.RPCResult{}
 }
