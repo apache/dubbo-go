@@ -52,6 +52,7 @@ func (c *TestStruct) JavaClassName() string {
 type TestService struct {
 }
 
+// MethodOne ...
 func (ts *TestService) MethodOne(ctx context.Context, test1 *TestStruct, test2 []TestStruct,
 	test3 interface{}, test4 []interface{}, test5 *string) (*TestStruct, error) {
 	if test1 == nil {
@@ -72,6 +73,7 @@ func (ts *TestService) MethodOne(ctx context.Context, test1 *TestStruct, test2 [
 	return &TestStruct{}, nil
 }
 
+// Reference ...
 func (s *TestService) Reference() string {
 	return "com.test.Path"
 }

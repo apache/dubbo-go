@@ -27,6 +27,7 @@ import (
 	"github.com/apache/dubbo-go/config_center"
 )
 
+// Environment:
 // There is dubbo.properties file and application level config center configuration which higner than normal config center in java. So in java the
 // configuration sequence will be config center > application level config center > dubbo.properties > spring bean configuration.
 // But in go, neither the dubbo.properties file or application level config center configuration will not support for the time being.

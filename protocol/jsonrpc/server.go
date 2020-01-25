@@ -51,9 +51,12 @@ var (
 )
 
 const (
-	DefaultMaxSleepTime      = 1 * time.Second // accept中间最大sleep interval
+	// DefaultMaxSleepTime: max sleep interval in accept
+	DefaultMaxSleepTime = 1 * time.Second
+	// DefaultHTTPRspBufferSize ...
 	DefaultHTTPRspBufferSize = 1024
-	PathPrefix               = byte('/')
+	// PathPrefix ...
+	PathPrefix = byte('/')
 )
 
 // Server ...

@@ -47,7 +47,7 @@ type (
 		SessionName      string `default:"rpc" yaml:"session_name" json:"session_name,omitempty"`
 	}
 
-	// Config holds supported types by the multiconfig package
+	// ServerConfig: Config holds supported types by the multiconfig package
 	ServerConfig struct {
 		// session
 		SessionTimeout string `default:"60s" yaml:"session_timeout" json:"session_timeout,omitempty"`
@@ -63,7 +63,7 @@ type (
 		GettySessionParam GettySessionParam `required:"true" yaml:"getty_session_param" json:"getty_session_param,omitempty"`
 	}
 
-	// Config holds supported types by the multiconfig package
+	// ClientConfig: Config holds supported types by the multiconfig package
 	ClientConfig struct {
 		ReconnectInterval int `default:"0" yaml:"reconnect_interval" json:"reconnect_interval,omitempty"`
 

@@ -48,6 +48,7 @@ func NewApolloListener() *apolloListener {
 	}
 }
 
+// AddListener ...
 func (al *apolloListener) AddListener(l config_center.ConfigurationListener) {
 	if _, ok := al.listeners[l]; !ok {
 		al.listeners[l] = struct{}{}
@@ -55,6 +56,7 @@ func (al *apolloListener) AddListener(l config_center.ConfigurationListener) {
 	}
 }
 
+// RemoveListener ...
 func (al *apolloListener) RemoveListener(l config_center.ConfigurationListener) {
 	delete(al.listeners, l)
 }
