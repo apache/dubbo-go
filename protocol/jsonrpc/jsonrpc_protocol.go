@@ -33,7 +33,8 @@ import (
 )
 
 const (
-	// JSONRPC: module name
+	// JSONRPC
+	//module name
 	JSONRPC = "jsonrpc"
 )
 

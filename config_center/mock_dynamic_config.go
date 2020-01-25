@@ -43,7 +43,7 @@ var (
 )
 
 // GetDynamicConfiguration ...
-func (f *MockDynamicConfigurationFactory) GetDynamicConfiguration(url *common.URL) (DynamicConfiguration, error) {
+func (f *MockDynamicConfigurationFactory) GetDynamicConfiguration(_ *common.URL) (DynamicConfiguration, error) {
 	var err error
 	once.Do(func() {
 		dynamicConfiguration = &MockDynamicConfiguration{listener: map[string]ConfigurationListener{}}
@@ -89,21 +89,21 @@ type MockDynamicConfiguration struct {
 }
 
 // AddListener ...
-func (c *MockDynamicConfiguration) AddListener(key string, listener ConfigurationListener, opions ...Option) {
+func (c *MockDynamicConfiguration) AddListener(key string, listener ConfigurationListener, _ ...Option) {
 	c.listener[key] = listener
 }
 
 // RemoveListener ...
-func (c *MockDynamicConfiguration) RemoveListener(key string, listener ConfigurationListener, opions ...Option) {
+func (c *MockDynamicConfiguration) RemoveListener(_ string, _ ConfigurationListener, _ ...Option) {
 }
 
 // GetConfig ...
-func (c *MockDynamicConfiguration) GetConfig(key string, opts ...Option) (string, error) {
+func (c *MockDynamicConfiguration) GetConfig(_ string, _ ...Option) (string, error) {
 
 	return c.content, nil
 }
 
-// GetConfigs: For zookeeper, getConfig and getConfigs have the same meaning.
+// GetConfigs For zookeeper, getConfig and getConfigs have the same meaning.
 func (c *MockDynamicConfiguration) GetConfigs(key string, opts ...Option) (string, error) {
 	return c.GetConfig(key, opts...)
 }
@@ -119,11 +119,11 @@ func (c *MockDynamicConfiguration) SetParser(p parser.ConfigurationParser) {
 }
 
 // GetProperties ...
-func (c *MockDynamicConfiguration) GetProperties(key string, opts ...Option) (string, error) {
+func (c *MockDynamicConfiguration) GetProperties(_ string, _ ...Option) (string, error) {
 	return c.content, nil
 }
 
-// GetInternalProperty: For zookeeper, getConfig and getConfigs have the same meaning.
+// GetInternalProperty For zookeeper, getConfig and getConfigs have the same meaning.
 func (c *MockDynamicConfiguration) GetInternalProperty(key string, opts ...Option) (string, error) {
 	return c.GetProperties(key, opts...)
 }

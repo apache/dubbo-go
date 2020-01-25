@@ -31,6 +31,7 @@ import (
 )
 
 const (
+	// TpsLimitFilterKey key
 	TpsLimitFilterKey = "tps"
 )
 
@@ -39,6 +40,7 @@ func init() {
 }
 
 /**
+ * TpsLimitFilter
  * if you wish to use the TpsLimiter, please add the configuration into your service provider configuration:
  * for example:
  * "UserProvider":
@@ -71,7 +73,8 @@ func (t TpsLimitFilter) Invoke(ctx context.Context, invoker protocol.Invoker, in
 }
 
 // OnResponse ...
-func (t TpsLimitFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (t TpsLimitFilter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker,
+	_ protocol.Invocation) protocol.Result {
 	return result
 }
 

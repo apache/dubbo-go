@@ -29,6 +29,14 @@ type apolloListener struct {
 	listeners map[config_center.ConfigurationListener]struct{}
 }
 
+// NewApolloListener ...
+func NewApolloListener() *apolloListener {
+	return &apolloListener{
+		listeners: make(map[config_center.ConfigurationListener]struct{}, 0),
+	}
+}
+
+// OnChange ...
 func (a *apolloListener) OnChange(changeEvent *agollo.ChangeEvent) {
 	for key, change := range changeEvent.Changes {
 		for listener := range a.listeners {
@@ -41,22 +49,15 @@ func (a *apolloListener) OnChange(changeEvent *agollo.ChangeEvent) {
 	}
 }
 
-// NewApolloListener ...
-func NewApolloListener() *apolloListener {
-	return &apolloListener{
-		listeners: make(map[config_center.ConfigurationListener]struct{}, 0),
-	}
-}
-
 // AddListener ...
-func (al *apolloListener) AddListener(l config_center.ConfigurationListener) {
-	if _, ok := al.listeners[l]; !ok {
-		al.listeners[l] = struct{}{}
-		agollo.AddChangeListener(al)
+func (a *apolloListener) AddListener(l config_center.ConfigurationListener) {
+	if _, ok := a.listeners[l]; !ok {
+		a.listeners[l] = struct{}{}
+		agollo.AddChangeListener(a)
 	}
 }
 
 // RemoveListener ...
-func (al *apolloListener) RemoveListener(l config_center.ConfigurationListener) {
-	delete(al.listeners, l)
+func (a *apolloListener) RemoveListener(l config_center.ConfigurationListener) {
+	delete(a.listeners, l)
 }

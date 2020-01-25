@@ -38,7 +38,8 @@ import (
 )
 
 const (
-	// ZkClient: zookeeper client name
+	// ZkClient
+	//zookeeper client name
 	ZkClient = "zk config_center"
 )
 
@@ -137,10 +138,9 @@ func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config
 	content, _, err := c.client.GetContent(c.rootPath + "/" + key)
 	if err != nil {
 		return "", perrors.WithStack(err)
-	} else {
-		return string(content), nil
 	}
 
+	return string(content), nil
 }
 
 //For zookeeper, getConfig and getConfigs have the same meaning.
