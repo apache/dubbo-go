@@ -31,6 +31,7 @@ func init() {
 	extension.SetCluster(failback, NewFailbackCluster)
 }
 
+// NewFailbackCluster ...
 func NewFailbackCluster() cluster.Cluster {
 	return &failbackCluster{}
 }

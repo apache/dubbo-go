@@ -18,6 +18,7 @@
 package dubbo
 
 import (
+	"context"
 	"strconv"
 	"sync"
 )
@@ -34,18 +35,21 @@ import (
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 )
 
+// Err_No_Reply ...
 var Err_No_Reply = perrors.New("request need @response")
 
 var (
 	attachmentKey = []string{constant.INTERFACE_KEY, constant.GROUP_KEY, constant.TOKEN_KEY, constant.TIMEOUT_KEY}
 )
 
+// DubboInvoker ...
 type DubboInvoker struct {
 	protocol.BaseInvoker
 	client   *Client
 	quitOnce sync.Once
 }
 
+// NewDubboInvoker ...
 func NewDubboInvoker(url common.URL, client *Client) *DubboInvoker {
 	return &DubboInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
@@ -53,8 +57,8 @@ func NewDubboInvoker(url common.URL, client *Client) *DubboInvoker {
 	}
 }
 
-func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
-
+// Invoke ...
+func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	var (
 		err    error
 		result protocol.RPCResult
@@ -96,6 +100,7 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	return &result
 }
 
+// Destroy ...
 func (di *DubboInvoker) Destroy() {
 	di.quitOnce.Do(func() {
 		di.BaseInvoker.Destroy()

@@ -23,20 +23,20 @@ import (
 )
 
 import (
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
+	"github.com/opentracing/opentracing-go"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/constant"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
-func TestAccessLogFilter_Invoke_Not_Config(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+func TestTracingFilter_Invoke(t *testing.T) {
 	url, _ := common.NewURL(context.Background(),
 		"dubbo://:20000/UserProvider?app.version=0.0.1&application=BDTService&bean.name=UserProvider"+
 			"&cluster=failover&environment=dev&group=&interface=com.ikurento.user.UserProvider&loadbalance=random&methods.GetUser."+
@@ -47,36 +47,20 @@ func TestAccessLogFilter_Invoke_Not_Config(t *testing.T) {
 
 	attach := make(map[string]string, 10)
 	inv := invocation.NewRPCInvocation("MethodName", []interface{}{"OK", "Hello"}, attach)
+	ctx := context.Background()
+	tf := newTracingFilter()
 
-	accessLogFilter := GetAccessLogFilter()
-	result := accessLogFilter.Invoke(context.Background(), invoker, inv)
-	assert.Nil(t, result.Error())
-}
+	// do not has any span
+	tf.Invoke(ctx, invoker, inv)
 
-func TestAccessLogFilter_Invoke_Default_Config(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	url, _ := common.NewURL(context.Background(),
-		"dubbo://:20000/UserProvider?app.version=0.0.1&application=BDTService&bean.name=UserProvider"+
-			"&cluster=failover&accesslog=true&environment=dev&group=&interface=com.ikurento.user.UserProvider&loadbalance=random&methods.GetUser."+
-			"loadbalance=random&methods.GetUser.retries=1&methods.GetUser.weight=0&module=dubbogo+user-info+server&name="+
-			"BDTService&organization=ikurento.com&owner=ZX&registry.role=3&retries=&"+
-			"service.filter=echo%2Ctoken%2Caccesslog&timestamp=1569153406&token=934804bf-b007-4174-94eb-96e3e1d60cc7&version=&warmup=100")
-	invoker := protocol.NewBaseInvoker(url)
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Test-Operation")
+	defer span.Finish()
 
-	attach := make(map[string]string, 10)
-	attach[constant.VERSION_KEY] = "1.0"
-	attach[constant.GROUP_KEY] = "MyGroup"
-	inv := invocation.NewRPCInvocation("MethodName", []interface{}{"OK", "Hello"}, attach)
+	// has previous span
+	tf.Invoke(ctx, invoker, inv)
 
-	accessLogFilter := GetAccessLogFilter()
-	result := accessLogFilter.Invoke(context.Background(), invoker, inv)
-	assert.Nil(t, result.Error())
-}
-
-func TestAccessLogFilter_OnResponse(t *testing.T) {
-	result := &protocol.RPCResult{}
-	accessLogFilter := GetAccessLogFilter()
-	response := accessLogFilter.OnResponse(nil, result, nil, nil)
-	assert.Equal(t, result, response)
+	ctx = context.Background()
+	// has remote ctx
+	ctx = context.WithValue(context.Background(), constant.TRACING_REMOTE_SPAN_CTX, span.Context())
+	tf.Invoke(ctx, invoker, inv)
 }

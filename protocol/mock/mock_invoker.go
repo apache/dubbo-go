@@ -21,6 +21,7 @@
 package mock
 
 import (
+	"context"
 	"reflect"
 )
 
@@ -91,7 +92,7 @@ func (mr *MockInvokerMockRecorder) Destroy() *gomock.Call {
 }
 
 // Invoke mocks base method
-func (m *MockInvoker) Invoke(arg0 protocol.Invocation) protocol.Result {
+func (m *MockInvoker) Invoke(ctx context.Context, arg0 protocol.Invocation) protocol.Result {
 	ret := m.ctrl.Call(m, "Invoke", arg0)
 	ret0, _ := ret[0].(protocol.Result)
 	return ret0

@@ -49,7 +49,7 @@ func TestInvoke(t *testing.T) {
 	bizReply := &internal.HelloReply{}
 	invo := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("SayHello"),
 		invocation.WithParameterValues(args), invocation.WithReply(bizReply))
-	res := invoker.Invoke(invo)
+	res := invoker.Invoke(context.Background(), invo)
 	assert.Nil(t, res.Error())
 	assert.NotNil(t, res.Result())
 	assert.Equal(t, "Hello request name", bizReply.Message)

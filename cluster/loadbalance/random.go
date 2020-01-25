@@ -38,6 +38,7 @@ func init() {
 type randomLoadBalance struct {
 }
 
+// NewRandomLoadBalance ...
 func NewRandomLoadBalance() cluster.LoadBalance {
 	return &randomLoadBalance{}
 }

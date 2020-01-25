@@ -25,10 +25,12 @@ var (
 	loadbalances = make(map[string]func() cluster.LoadBalance)
 )
 
+// SetLoadbalance ...
 func SetLoadbalance(name string, fcn func() cluster.LoadBalance) {
 	loadbalances[name] = fcn
 }
 
+// GetLoadbalance ...
 func GetLoadbalance(name string) cluster.LoadBalance {
 	if loadbalances[name] == nil {
 		panic("loadbalance for " + name + " is not existing, make sure you have import the package.")

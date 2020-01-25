@@ -25,10 +25,12 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
+// ConfigurationListener ...
 type ConfigurationListener interface {
 	Process(*ConfigChangeEvent)
 }
 
+// ConfigChangeEvent ...
 type ConfigChangeEvent struct {
 	Key        string
 	Value      interface{}

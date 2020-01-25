@@ -36,12 +36,14 @@ func init() {
 
 var grpcProtocol *GrpcProtocol
 
+// GrpcProtocol ...
 type GrpcProtocol struct {
 	protocol.BaseProtocol
 	serverMap  map[string]*Server
 	serverLock sync.Mutex
 }
 
+// NewGRPCProtocol ...
 func NewGRPCProtocol() *GrpcProtocol {
 	return &GrpcProtocol{
 		BaseProtocol: protocol.NewBaseProtocol(),
@@ -49,6 +51,7 @@ func NewGRPCProtocol() *GrpcProtocol {
 	}
 }
 
+// Export ...
 func (gp *GrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetUrl()
 	serviceKey := url.ServiceKey()
@@ -78,6 +81,7 @@ func (gp *GrpcProtocol) openServer(url common.URL) {
 	}
 }
 
+// Refer ...
 func (gp *GrpcProtocol) Refer(url common.URL) protocol.Invoker {
 	invoker := NewGrpcInvoker(url, NewClient(url))
 	gp.SetInvokers(invoker)
@@ -85,6 +89,7 @@ func (gp *GrpcProtocol) Refer(url common.URL) protocol.Invoker {
 	return invoker
 }
 
+// Destroy ...
 func (gp *GrpcProtocol) Destroy() {
 	logger.Infof("GrpcProtocol destroy.")
 
@@ -96,6 +101,7 @@ func (gp *GrpcProtocol) Destroy() {
 	}
 }
 
+// GetProtocol ...
 func GetProtocol() protocol.Protocol {
 	if grpcProtocol == nil {
 		grpcProtocol = NewGRPCProtocol()
