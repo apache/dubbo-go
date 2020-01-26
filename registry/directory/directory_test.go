@@ -109,7 +109,7 @@ func TestSubscribe_Group(t *testing.T) {
 func Test_Destroy(t *testing.T) {
 	registryDirectory, _ := normalRegistryDir()
 
-	time.Sleep(1e9)
+	time.Sleep(3e9)
 	assert.Len(t, registryDirectory.cacheInvokers, 3)
 	assert.Equal(t, true, registryDirectory.IsAvailable())
 
@@ -121,7 +121,7 @@ func Test_Destroy(t *testing.T) {
 func Test_List(t *testing.T) {
 	registryDirectory, _ := normalRegistryDir()
 
-	time.Sleep(1e9)
+	time.Sleep(3e9)
 	assert.Len(t, registryDirectory.List(&invocation.RPCInvocation{}), 3)
 	assert.Equal(t, true, registryDirectory.IsAvailable())
 
