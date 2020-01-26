@@ -65,10 +65,10 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 		return nil, perrors.Errorf("Illegal route rule!")
 	}
 	routers := make([]router.Router, 0)
-	for _, routerFactory := range routerFactories {
+	for key, routerFactory := range routerFactories {
 		r, err := routerFactory().Router(url)
 		if r == nil || err != nil {
-			logger.Errorf("router chain build router fail! error:%s", err.Error())
+			logger.Errorf("router chain build router fail! routerFactories key:%s  error:%s", key, err.Error())
 			continue
 		}
 		routers = append(routers, r)
