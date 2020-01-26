@@ -40,7 +40,9 @@ type Proxy struct {
 	once sync.Once
 }
 
-var typError = reflect.Zero(reflect.TypeOf((*error)(nil)).Elem()).Type()
+var (
+	typError = reflect.Zero(reflect.TypeOf((*error)(nil)).Elem()).Type()
+)
 
 // NewProxy ...
 func NewProxy(invoke protocol.Invoker, callBack interface{}, attachments map[string]string) *Proxy {
@@ -51,6 +53,7 @@ func NewProxy(invoke protocol.Invoker, callBack interface{}, attachments map[str
 	}
 }
 
+// Implement
 // proxy implement
 // In consumer, RPCService like:
 // 		type XxxProvider struct {

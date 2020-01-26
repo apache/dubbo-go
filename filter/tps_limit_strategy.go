@@ -18,6 +18,7 @@
 package filter
 
 /*
+ * TpsLimitStrategy
  * please register your implementation by invoking SetTpsLimitStrategy
  * "UserProvider":
  *   registry: "hangzhouzk"

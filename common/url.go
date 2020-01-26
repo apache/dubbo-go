@@ -45,16 +45,22 @@ import (
 // dubbo role type
 /////////////////////////////////
 
+// role constant
 const (
+	// CONSUMER ...
 	CONSUMER = iota
+	// CONFIGURATOR ...
 	CONFIGURATOR
+	// ROUTER ...
 	ROUTER
+	// PROVIDER ...
 	PROVIDER
 )
 
 var (
 	// DubboNodes ...
 	DubboNodes = [...]string{"consumers", "configurators", "routers", "providers"}
+	// DubboRole ...
 	DubboRole  = [...]string{"consumer", "", "routers", "provider"}
 )
 
@@ -478,7 +484,7 @@ func (c URL) GetRawParam(key string) string {
 	}
 }
 
-// GetParamBool
+// GetParamBool ...
 func (c URL) GetParamBool(s string, d bool) bool {
 
 	var r bool

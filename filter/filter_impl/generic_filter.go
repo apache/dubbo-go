@@ -22,9 +22,11 @@ import (
 	"reflect"
 	"strings"
 )
+
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 )
+
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -34,6 +36,8 @@ import (
 )
 
 const (
+	// GENERIC
+	//generic module name
 	GENERIC = "generic"
 )
 
@@ -70,7 +74,8 @@ func (ef *GenericFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 }
 
 // OnResponse ...
-func (ef *GenericFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (ef *GenericFilter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker,
+	_ protocol.Invocation) protocol.Result {
 	return result
 }
 

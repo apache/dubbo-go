@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package config
 
 import (
@@ -43,11 +44,11 @@ type MethodConfig struct {
 
 // Prefix ...
 func (c *MethodConfig) Prefix() string {
-	if c.InterfaceId != "" {
+	if len(c.InterfaceId) != 0 {
 		return constant.DUBBO + "." + c.InterfaceName + "." + c.InterfaceId + "." + c.Name + "."
-	} else {
-		return constant.DUBBO + "." + c.InterfaceName + "." + c.Name + "."
 	}
+
+	return constant.DUBBO + "." + c.InterfaceName + "." + c.Name + "."
 }
 
 // UnmarshalYAML ...

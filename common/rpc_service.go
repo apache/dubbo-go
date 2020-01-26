@@ -34,19 +34,22 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
-// rpc service interface
+// RPCService
+//rpc service interface
 type RPCService interface {
-	Reference() string // rpc service id or reference id
+	// Reference:
+	// rpc service id or reference id
+	Reference() string
 }
 
 //AsyncCallbackService callback interface for async
 type AsyncCallbackService interface {
-	CallBack(response CallbackResponse) // callback
+	// Callback: callback
+	CallBack(response CallbackResponse)
 }
 
 //CallbackResponse for different protocol
-type CallbackResponse interface {
-}
+type CallbackResponse interface{}
 
 //AsyncCallback async callback method
 type AsyncCallback func(response CallbackResponse)
@@ -55,13 +58,17 @@ type AsyncCallback func(response CallbackResponse)
 // func MethodMapper() map[string][string] {
 //     return map[string][string]{}
 // }
-const METHOD_MAPPER = "MethodMapper"
+const (
+	// METHOD_MAPPER ...
+	METHOD_MAPPER = "MethodMapper"
+)
 
 var (
 	// Precompute the reflect type for error. Can't use error directly
 	// because Typeof takes an empty interface value. This is annoying.
 	typeOfError = reflect.TypeOf((*error)(nil)).Elem()
 
+	// ServiceMap ...
 	// todo: lowerecas?
 	ServiceMap = &serviceMap{
 		serviceMap: make(map[string]map[string]*Service),
@@ -226,8 +233,8 @@ func (sm *serviceMap) UnRegister(protocol, serviceId string) error {
 
 // Is this an exported - upper case - name
 func isExported(name string) bool {
-	rune, _ := utf8.DecodeRuneInString(name)
-	return unicode.IsUpper(rune)
+	s, _ := utf8.DecodeRuneInString(name)
+	return unicode.IsUpper(s)
 }
 
 // Is this type exported or a builtin?
