@@ -58,6 +58,7 @@ func RouterInit(confRouterFile string) error {
 	}
 
 	logger.Debugf("router config{%#v}\n", routerConfig)
+	directory.GetRouterURLSet().Add(initRouterUrl())
 	return nil
 }
 
