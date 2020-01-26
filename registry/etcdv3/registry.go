@@ -48,7 +48,9 @@ var (
 )
 
 const (
-	Name              = "etcdv3"
+	// Name module name
+	Name = "etcdv3"
+	// RegistryConnDelay ...
 	RegistryConnDelay = 3
 )
 
@@ -75,21 +77,32 @@ type etcdV3Registry struct {
 	done chan struct{}
 }
 
+// Client get the etcdv3 client
 func (r *etcdV3Registry) Client() *etcdv3.Client {
 	return r.client
 }
+
+//SetClient set the etcdv3 client
 func (r *etcdV3Registry) SetClient(client *etcdv3.Client) {
 	r.client = client
 }
+
+//
 func (r *etcdV3Registry) ClientLock() *sync.Mutex {
 	return &r.cltLock
 }
+
+//WaitGroup return the wait group handle
 func (r *etcdV3Registry) WaitGroup() *sync.WaitGroup {
 	return &r.wg
 }
+
+// GetDone return the done channel
 func (r *etcdV3Registry) GetDone() chan struct{} {
 	return r.done
 }
+
+//RestartCallBack restart callback
 func (r *etcdV3Registry) RestartCallBack() bool {
 
 	services := []common.URL{}
@@ -148,10 +161,12 @@ func newETCDV3Registry(url *common.URL) (registry.Registry, error) {
 	return r, nil
 }
 
+// GetUrl get registry url
 func (r *etcdV3Registry) GetUrl() common.URL {
 	return *r.URL
 }
 
+// IsAvailable check the register client is available
 func (r *etcdV3Registry) IsAvailable() bool {
 
 	select {
@@ -162,6 +177,7 @@ func (r *etcdV3Registry) IsAvailable() bool {
 	}
 }
 
+// Destroy destroy client
 func (r *etcdV3Registry) Destroy() {
 
 	if r.configListener != nil {
@@ -183,6 +199,7 @@ func (r *etcdV3Registry) stop() {
 	r.cltLock.Unlock()
 }
 
+// Register ...
 func (r *etcdV3Registry) Register(svc common.URL) error {
 
 	role, err := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
@@ -347,7 +364,7 @@ func (r *etcdV3Registry) subscribe(svc *common.URL) (registry.Listener, error) {
 	return configListener, nil
 }
 
-//subscribe from registry
+//Subscribe from registry
 func (r *etcdV3Registry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
 	for {
 		if !r.IsAvailable() {
@@ -367,16 +384,14 @@ func (r *etcdV3Registry) Subscribe(url *common.URL, notifyListener registry.Noti
 		}
 
 		for {
-			if serviceEvent, err := listener.Next(); err != nil {
+			serviceEvent, err := listener.Next()
+			if err != nil {
 				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
 				listener.Close()
 				return
-			} else {
-				logger.Infof("update begin, service event: %v", serviceEvent.String())
-				notifyListener.Notify(serviceEvent)
 			}
-
+			logger.Infof("update begin, service event: %v", serviceEvent.String())
+			notifyListener.Notify(serviceEvent)
 		}
-
 	}
 }

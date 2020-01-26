@@ -29,7 +29,9 @@ import (
 // ///////////////////////////
 // Invocation Impletment of RPC
 // ///////////////////////////
+
 // todo: is it necessary to separate fields of consumer(provider) from RPCInvocation
+// RPCInvocation ...
 type RPCInvocation struct {
 	methodName      string
 	parameterTypes  []reflect.Type

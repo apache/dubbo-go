@@ -20,6 +20,7 @@ package filter_impl
 import (
 	"context"
 )
+
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -29,6 +30,7 @@ import (
 )
 
 const (
+	// ECHO echo module name
 	ECHO = "echo"
 )
 
@@ -36,6 +38,7 @@ func init() {
 	extension.SetFilter(ECHO, GetFilter)
 }
 
+// EchoFilter
 // RPCService need a Echo method in consumer, if you want to use EchoFilter
 // eg:
 //		Echo func(ctx context.Context, arg interface{}, rsp *Xxx) error
@@ -56,7 +59,9 @@ func (ef *EchoFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invo
 }
 
 // OnResponse ...
-func (ef *EchoFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (ef *EchoFilter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker,
+	_ protocol.Invocation) protocol.Result {
+
 	return result
 }
 

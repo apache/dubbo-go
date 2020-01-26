@@ -35,13 +35,21 @@ import (
 
 const (
 	//used in URL.
-	FileDateFormat    = "2006-01-02"
+
+	// FileDateFormat ...
+	FileDateFormat = "2006-01-02"
+	// MessageDateLayout ...
 	MessageDateLayout = "2006-01-02 15:04:05"
-	LogMaxBuffer      = 5000
-	LogFileMode       = 0600
+	// LogMaxBuffer ...
+	LogMaxBuffer = 5000
+	// LogFileMode ...
+	LogFileMode = 0600
 
 	// those fields are the data collected by this filter
-	Types     = "types"
+
+	// Types ...
+	Types = "types"
+	// Arguments ...
 	Arguments = "arguments"
 )
 
@@ -50,6 +58,7 @@ func init() {
 }
 
 /*
+ * AccessLogFilter
  * Although the access log filter is a default filter,
  * you should config "accesslog" in service's config to tell the filter where store the access log.
  * for example:
@@ -88,7 +97,7 @@ func (ef *AccessLogFilter) logIntoChannel(accessLogData AccessLogData) {
 	}
 }
 
-func (ef *AccessLogFilter) buildAccessLogData(invoker protocol.Invoker, invocation protocol.Invocation) map[string]string {
+func (ef *AccessLogFilter) buildAccessLogData(_ protocol.Invoker, invocation protocol.Invocation) map[string]string {
 	dataMap := make(map[string]string, 16)
 	attachments := invocation.Attachments()
 	dataMap[constant.INTERFACE_KEY] = attachments[constant.INTERFACE_KEY]
@@ -122,7 +131,7 @@ func (ef *AccessLogFilter) buildAccessLogData(invoker protocol.Invoker, invocati
 }
 
 // OnResponse ...
-func (ef *AccessLogFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (ef *AccessLogFilter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker, _ protocol.Invocation) protocol.Result {
 	return result
 }
 

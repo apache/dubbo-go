@@ -36,15 +36,19 @@ import (
 )
 
 const (
-	ConnDelay            = 3
-	MaxFailTimes         = 15
+	// ConnDelay connection dalay
+	ConnDelay = 3
+	// MaxFailTimes max failure times
+	MaxFailTimes = 15
+	// RegistryETCDV3Client client name
 	RegistryETCDV3Client = "etcd registry"
 )
 
 var (
 	// ErrNilETCDV3Client ...
 	ErrNilETCDV3Client = perrors.New("etcd raw client is nil") // full describe the ERR
-	ErrKVPairNotFound  = perrors.New("k/v pair not found")
+	// ErrKVPairNotFound ...
+	ErrKVPairNotFound = perrors.New("k/v pair not found")
 )
 
 // Options ...

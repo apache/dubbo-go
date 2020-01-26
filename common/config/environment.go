@@ -27,6 +27,7 @@ import (
 	"github.com/apache/dubbo-go/config_center"
 )
 
+// Environment
 // There is dubbo.properties file and application level config center configuration which higner than normal config center in java. So in java the
 // configuration sequence will be config center > application level config center > dubbo.properties > spring bean configuration.
 // But in go, neither the dubbo.properties file or application level config center configuration will not support for the time being.
@@ -82,11 +83,11 @@ func (env *Environment) UpdateAppExternalConfigMap(externalMap map[string]string
 
 // Configuration ...
 func (env *Environment) Configuration() *list.List {
-	list := list.New()
+	cfgList := list.New()
 	// The sequence would be: SystemConfiguration -> ExternalConfiguration -> AppExternalConfiguration -> AbstractConfig -> PropertiesConfiguration
-	list.PushFront(newInmemoryConfiguration(&(env.externalConfigMap)))
-	list.PushFront(newInmemoryConfiguration(&(env.appExternalConfigMap)))
-	return list
+	cfgList.PushFront(newInmemoryConfiguration(&(env.externalConfigMap)))
+	cfgList.PushFront(newInmemoryConfiguration(&(env.appExternalConfigMap)))
+	return cfgList
 }
 
 // SetDynamicConfiguration ...

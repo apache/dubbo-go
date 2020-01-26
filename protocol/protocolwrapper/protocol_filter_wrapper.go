@@ -31,6 +31,7 @@ import (
 )
 
 const (
+	// FILTER ...
 	FILTER = "filter"
 )
 
@@ -38,6 +39,7 @@ func init() {
 	extension.SetProtocol(FILTER, GetProtocol)
 }
 
+// ProtocolFilterWrapper
 // protocol in url decide who ProtocolFilterWrapper.protocol is
 type ProtocolFilterWrapper struct {
 	protocol protocol.Protocol
@@ -76,8 +78,8 @@ func buildInvokerChain(invoker protocol.Invoker, key string) protocol.Invoker {
 	// The order of filters is from left to right, so loading from right to left
 
 	for i := len(filtNames) - 1; i >= 0; i-- {
-		filter := extension.GetFilter(filtNames[i])
-		fi := &FilterInvoker{next: next, invoker: invoker, filter: filter}
+		flt := extension.GetFilter(filtNames[i])
+		fi := &FilterInvoker{next: next, invoker: invoker, filter: flt}
 		next = fi
 	}
 

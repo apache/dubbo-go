@@ -31,7 +31,9 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
+// dubbo protocol constant
 const (
+	// DUBBO ...
 	DUBBO = "dubbo"
 )
 

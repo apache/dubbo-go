@@ -33,6 +33,7 @@ func init() {
 }
 
 /**
+ * ThreadSafeFixedWindowTpsLimitStrategyImpl
  * it's the thread-safe implementation.
  * Also, it's a thread-safe decorator of FixedWindowTpsLimitStrategyImpl
  * "UserProvider":

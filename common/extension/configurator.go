@@ -22,7 +22,10 @@ import (
 	"github.com/apache/dubbo-go/config_center"
 )
 
-const DefaultKey = "default"
+const (
+	// DefaultKey ...
+	DefaultKey = "default"
+)
 
 type getConfiguratorFunc func(url *common.URL) config_center.Configurator
 
