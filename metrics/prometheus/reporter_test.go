@@ -44,5 +44,5 @@ func TestPrometheusReporter_Report(t *testing.T) {
 	inv := invocation.NewRPCInvocation("MethodName", []interface{}{"OK", "Hello"}, attach)
 
 	ctx := context.Background()
-	reporter.Report(ctx, invoker, inv, 100*time.Millisecond)
+	reporter.Report(ctx, invoker, inv, 100*time.Millisecond, nil)
 }

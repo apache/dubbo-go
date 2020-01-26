@@ -75,7 +75,7 @@ type mockReporter struct {
 	wg sync.WaitGroup
 }
 
-func (m *mockReporter) Report(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, cost time.Duration) {
+func (m *mockReporter) Report(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, cost time.Duration, res protocol.Result) {
 	m.Called(ctx, invoker, invocation)
 	m.wg.Done()
 }
