@@ -28,6 +28,7 @@ import (
 )
 
 const (
+	// LeastActive ...
 	LeastActive = "leastactive"
 )
 
@@ -38,6 +39,7 @@ func init() {
 type leastActiveLoadBalance struct {
 }
 
+// NewLeastActiveLoadBalance ...
 func NewLeastActiveLoadBalance() cluster.LoadBalance {
 	return &leastActiveLoadBalance{}
 }
@@ -52,18 +54,18 @@ func (lb *leastActiveLoadBalance) Select(invokers []protocol.Invoker, invocation
 	}
 
 	var (
-		leastActive  int32 = -1                 // The least active value of all invokers
-		totalWeight  int64 = 0                  // The number of invokers having the same least active value (LEAST_ACTIVE)
-		firstWeight  int64 = 0                  // Initial value, used for comparison
-		leastIndexes       = make([]int, count) // The index of invokers having the same least active value (LEAST_ACTIVE)
-		leastCount         = 0                  // The number of invokers having the same least active value (LEAST_ACTIVE)
-		sameWeight         = true               // Every invoker has the same weight value?
+		leastActive  int32                = -1 // The least active value of all invokers
+		totalWeight  int64                     // The number of invokers having the same least active value (LEAST_ACTIVE)
+		firstWeight  int64                     // Initial value, used for comparison
+		leastCount   int                       // The number of invokers having the same least active value (LEAST_ACTIVE)
+		leastIndexes = make([]int, count)      // The index of invokers having the same least active value (LEAST_ACTIVE)
+		sameWeight   = true                    // Every invoker has the same weight value?
 	)
 
 	for i := 0; i < count; i++ {
 		invoker := invokers[i]
 		// Active number
-		active := protocol.GetStatus(invoker.GetUrl(), invocation.MethodName()).GetActive()
+		active := protocol.GetMethodStatus(invoker.GetUrl(), invocation.MethodName()).GetActive()
 		// current weight (maybe in warmUp)
 		weight := GetWeight(invoker, invocation)
 		// There are smaller active services

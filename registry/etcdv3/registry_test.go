@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package etcdv3
 
 import (
@@ -29,7 +46,8 @@ func initRegistry(t *testing.T) *etcdV3Registry {
 	}
 
 	out := reg.(*etcdV3Registry)
-	out.client.CleanKV()
+	err = out.client.CleanKV()
+	assert.NoError(t, err)
 	return out
 }
 
@@ -41,11 +59,12 @@ func (suite *RegistryTestSuite) TestRegister() {
 
 	reg := initRegistry(t)
 	err := reg.Register(url)
+	assert.NoError(t, err)
 	children, _, err := reg.client.GetChildrenKVList("/dubbo/com.ikurento.user.UserProvider/providers")
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Regexp(t, ".*dubbo%3A%2F%2F127.0.0.1%3A20000%2Fcom.ikurento.user.UserProvider%3Fanyhost%3Dtrue%26category%3Dproviders%26cluster%3Dmock%26dubbo%3Ddubbo-provider-golang-2.6.0%26.*provider", children)
+	assert.Regexp(t, ".*dubbo%3A%2F%2F127.0.0.1%3A20000%2Fcom.ikurento.user.UserProvider%3Fanyhost%3Dtrue%26category%3Dproviders%26cluster%3Dmock%26dubbo%3Ddubbo-provider-golang-1.3.0%26.*provider", children)
 	assert.NoError(t, err)
 }
 
@@ -63,11 +82,12 @@ func (suite *RegistryTestSuite) TestSubscribe() {
 	}
 
 	//consumer register
-	regurl.Params.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
+	regurl.SetParam(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
 	reg2 := initRegistry(t)
 
-	reg2.Register(url)
-	listener, err := reg2.Subscribe(url)
+	err = reg2.Register(url)
+	assert.NoError(t, err)
+	listener, err := reg2.subscribe(&url)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +105,7 @@ func (suite *RegistryTestSuite) TestConsumerDestory() {
 	url, _ := common.NewURL(context.Background(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 
 	reg := initRegistry(t)
-	_, err := reg.Subscribe(url)
+	_, err := reg.subscribe(&url)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +123,8 @@ func (suite *RegistryTestSuite) TestProviderDestory() {
 	t := suite.T()
 	reg := initRegistry(t)
 	url, _ := common.NewURL(context.Background(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
-	reg.Register(url)
+	err := reg.Register(url)
+	assert.NoError(t, err)
 
 	//listener.Close()
 	time.Sleep(1e9)

@@ -18,6 +18,7 @@
 package dubbo
 
 import (
+	"context"
 	"strconv"
 	"sync"
 )
@@ -34,14 +35,23 @@ import (
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 )
 
-var Err_No_Reply = perrors.New("request need @response")
+var (
+	// ErrNoReply ...
+	ErrNoReply = perrors.New("request need @response")
+)
 
+var (
+	attachmentKey = []string{constant.INTERFACE_KEY, constant.GROUP_KEY, constant.TOKEN_KEY, constant.TIMEOUT_KEY}
+)
+
+// DubboInvoker ...
 type DubboInvoker struct {
 	protocol.BaseInvoker
-	client      *Client
-	destroyLock sync.Mutex
+	client   *Client
+	quitOnce sync.Once
 }
 
+// NewDubboInvoker ...
 func NewDubboInvoker(url common.URL, client *Client) *DubboInvoker {
 	return &DubboInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
@@ -49,14 +59,19 @@ func NewDubboInvoker(url common.URL, client *Client) *DubboInvoker {
 	}
 }
 
-func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
-
+// Invoke ...
+func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	var (
 		err    error
 		result protocol.RPCResult
 	)
 
 	inv := invocation.(*invocation_impl.RPCInvocation)
+	for _, k := range attachmentKey {
+		if v := di.GetUrl().GetParam(k, ""); len(v) > 0 {
+			inv.SetAttachments(k, v)
+		}
+	}
 	url := di.GetUrl()
 	// async
 	async, err := strconv.ParseBool(inv.AttachmentsByKey(constant.ASYNC_KEY, "false"))
@@ -66,14 +81,14 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	}
 	response := NewResponse(inv.Reply(), nil)
 	if async {
-		if callBack, ok := inv.CallBack().(func(response CallResponse)); ok {
+		if callBack, ok := inv.CallBack().(func(response common.CallbackResponse)); ok {
 			result.Err = di.client.AsyncCall(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), callBack, response)
 		} else {
 			result.Err = di.client.CallOneway(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()))
 		}
 	} else {
 		if inv.Reply() == nil {
-			result.Err = Err_No_Reply
+			result.Err = ErrNoReply
 		} else {
 			result.Err = di.client.Call(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), response)
 		}
@@ -87,20 +102,13 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	return &result
 }
 
+// Destroy ...
 func (di *DubboInvoker) Destroy() {
-	if di.IsDestroyed() {
-		return
-	}
-	di.destroyLock.Lock()
-	defer di.destroyLock.Unlock()
+	di.quitOnce.Do(func() {
+		di.BaseInvoker.Destroy()
 
-	if di.IsDestroyed() {
-		return
-	}
-
-	di.BaseInvoker.Destroy()
-
-	if di.client != nil {
-		di.client.Close() // close client
-	}
+		if di.client != nil {
+			di.client.Close()
+		}
+	})
 }

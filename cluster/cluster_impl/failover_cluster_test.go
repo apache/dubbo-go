@@ -77,10 +77,12 @@ type rest struct {
 	success bool
 }
 
-func (bi *MockInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+func (bi *MockInvoker) Invoke(c context.Context, invocation protocol.Invocation) protocol.Result {
 	count++
-	var success bool
-	var err error = nil
+	var (
+		success bool
+		err     error
+	)
 	if count >= bi.successCount {
 		success = true
 	} else {
@@ -112,9 +114,9 @@ func normalInvoke(t *testing.T, successCount int, urlParam url.Values, invocatio
 	staticDir := directory.NewStaticDirectory(invokers)
 	clusterInvoker := failoverCluster.Join(staticDir)
 	if len(invocations) > 0 {
-		return clusterInvoker.Invoke(invocations[0])
+		return clusterInvoker.Invoke(context.Background(), invocations[0])
 	}
-	return clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	return clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 }
 func Test_FailoverInvokeSuccess(t *testing.T) {
 	urlParams := url.Values{}
@@ -155,14 +157,14 @@ func Test_FailoverDestroy(t *testing.T) {
 
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {
-		url, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
+		url, _ := common.NewURL(context.Background(), fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		invokers = append(invokers, NewMockInvoker(url, 1))
 	}
 
 	staticDir := directory.NewStaticDirectory(invokers)
 	clusterInvoker := failoverCluster.Join(staticDir)
 	assert.Equal(t, true, clusterInvoker.IsAvailable())
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 	assert.NoError(t, result.Error())
 	count = 0
 	clusterInvoker.Destroy()

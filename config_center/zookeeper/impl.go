@@ -22,20 +22,26 @@ import (
 	"sync"
 	"time"
 )
+
 import (
 	perrors "github.com/pkg/errors"
 	"github.com/samuel/go-zookeeper/zk"
 )
+
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config_center"
-	"github.com/apache/dubbo-go/remoting"
+	"github.com/apache/dubbo-go/config_center/parser"
 	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
-const ZkClient = "zk config_center"
+const (
+	// ZkClient
+	//zookeeper client name
+	ZkClient = "zk config_center"
+)
 
 type zookeeperDynamicConfiguration struct {
 	url      *common.URL
@@ -48,7 +54,7 @@ type zookeeperDynamicConfiguration struct {
 	listenerLock  sync.Mutex
 	listener      *zookeeper.ZkEventListener
 	cacheListener *CacheListener
-	parser        config_center.ConfigurationParser
+	parser        parser.ConfigurationParser
 }
 
 func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfiguration, error) {
@@ -99,15 +105,15 @@ func newMockZookeeperDynamicConfiguration(url *common.URL, opts ...zookeeper.Opt
 
 }
 
-func (c *zookeeperDynamicConfiguration) AddListener(key string, listener remoting.ConfigurationListener, opions ...config_center.Option) {
+func (c *zookeeperDynamicConfiguration) AddListener(key string, listener config_center.ConfigurationListener, opions ...config_center.Option) {
 	c.cacheListener.AddListener(key, listener)
 }
 
-func (c *zookeeperDynamicConfiguration) RemoveListener(key string, listener remoting.ConfigurationListener, opions ...config_center.Option) {
+func (c *zookeeperDynamicConfiguration) RemoveListener(key string, listener config_center.ConfigurationListener, opions ...config_center.Option) {
 	c.cacheListener.RemoveListener(key, listener)
 }
 
-func (c *zookeeperDynamicConfiguration) GetConfig(key string, opts ...config_center.Option) (string, error) {
+func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config_center.Option) (string, error) {
 
 	tmpOpts := &config_center.Options{}
 	for _, opt := range opts {
@@ -132,75 +138,78 @@ func (c *zookeeperDynamicConfiguration) GetConfig(key string, opts ...config_cen
 	content, _, err := c.client.GetContent(c.rootPath + "/" + key)
 	if err != nil {
 		return "", perrors.WithStack(err)
-	} else {
-		return string(content), nil
 	}
 
+	return string(content), nil
 }
 
 //For zookeeper, getConfig and getConfigs have the same meaning.
-func (c *zookeeperDynamicConfiguration) GetConfigs(key string, opts ...config_center.Option) (string, error) {
-	return c.GetConfig(key, opts...)
+func (c *zookeeperDynamicConfiguration) GetInternalProperty(key string, opts ...config_center.Option) (string, error) {
+	return c.GetProperties(key, opts...)
 }
 
-func (c *zookeeperDynamicConfiguration) Parser() config_center.ConfigurationParser {
+func (c *zookeeperDynamicConfiguration) GetRule(key string, opts ...config_center.Option) (string, error) {
+	return c.GetProperties(key, opts...)
+}
+
+func (c *zookeeperDynamicConfiguration) Parser() parser.ConfigurationParser {
 	return c.parser
 }
-func (c *zookeeperDynamicConfiguration) SetParser(p config_center.ConfigurationParser) {
+func (c *zookeeperDynamicConfiguration) SetParser(p parser.ConfigurationParser) {
 	c.parser = p
 }
 
-func (r *zookeeperDynamicConfiguration) ZkClient() *zookeeper.ZookeeperClient {
-	return r.client
+func (c *zookeeperDynamicConfiguration) ZkClient() *zookeeper.ZookeeperClient {
+	return c.client
 }
 
-func (r *zookeeperDynamicConfiguration) SetZkClient(client *zookeeper.ZookeeperClient) {
-	r.client = client
+func (c *zookeeperDynamicConfiguration) SetZkClient(client *zookeeper.ZookeeperClient) {
+	c.client = client
 }
 
-func (r *zookeeperDynamicConfiguration) ZkClientLock() *sync.Mutex {
-	return &r.cltLock
+func (c *zookeeperDynamicConfiguration) ZkClientLock() *sync.Mutex {
+	return &c.cltLock
 }
 
-func (r *zookeeperDynamicConfiguration) WaitGroup() *sync.WaitGroup {
-	return &r.wg
+func (c *zookeeperDynamicConfiguration) WaitGroup() *sync.WaitGroup {
+	return &c.wg
 }
 
-func (r *zookeeperDynamicConfiguration) GetDone() chan struct{} {
-	return r.done
+func (c *zookeeperDynamicConfiguration) GetDone() chan struct{} {
+	return c.done
 }
 
-func (r *zookeeperDynamicConfiguration) GetUrl() common.URL {
-	return *r.url
+func (c *zookeeperDynamicConfiguration) GetUrl() common.URL {
+	return *c.url
 }
 
-func (r *zookeeperDynamicConfiguration) Destroy() {
-	if r.listener != nil {
-		r.listener.Close()
+func (c *zookeeperDynamicConfiguration) Destroy() {
+	if c.listener != nil {
+		c.listener.Close()
 	}
-	close(r.done)
-	r.wg.Wait()
-	r.closeConfigs()
+	close(c.done)
+	c.wg.Wait()
+	c.closeConfigs()
 }
 
-func (r *zookeeperDynamicConfiguration) IsAvailable() bool {
+func (c *zookeeperDynamicConfiguration) IsAvailable() bool {
 	select {
-	case <-r.done:
+	case <-c.done:
 		return false
 	default:
 		return true
 	}
 }
 
-func (r *zookeeperDynamicConfiguration) closeConfigs() {
-	r.cltLock.Lock()
-	defer r.cltLock.Unlock()
+func (c *zookeeperDynamicConfiguration) closeConfigs() {
+	c.cltLock.Lock()
+	defer c.cltLock.Unlock()
 	logger.Infof("begin to close provider zk client")
 	// Close the old client first to close the tmp node
-	r.client.Close()
-	r.client = nil
+	c.client.Close()
+	c.client = nil
 }
 
-func (r *zookeeperDynamicConfiguration) RestartCallBack() bool {
+func (c *zookeeperDynamicConfiguration) RestartCallBack() bool {
 	return true
 }

@@ -18,6 +18,7 @@
 package cluster_impl
 
 import (
+	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
 )
@@ -27,7 +28,6 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/protocol"
 )
 
@@ -35,6 +35,7 @@ type baseClusterInvoker struct {
 	directory      cluster.Directory
 	availablecheck bool
 	destroyed      *atomic.Bool
+	stickyInvoker  protocol.Invoker
 }
 
 func newBaseClusterInvoker(directory cluster.Directory) baseClusterInvoker {
@@ -56,14 +57,16 @@ func (invoker *baseClusterInvoker) Destroy() {
 }
 
 func (invoker *baseClusterInvoker) IsAvailable() bool {
-	//TODO:sticky connection
+	if invoker.stickyInvoker != nil {
+		return invoker.stickyInvoker.IsAvailable()
+	}
 	return invoker.directory.IsAvailable()
 }
 
 //check invokers availables
 func (invoker *baseClusterInvoker) checkInvokers(invokers []protocol.Invoker, invocation protocol.Invocation) error {
 	if len(invokers) == 0 {
-		ip, _ := utils.GetLocalIP()
+		ip, _ := gxnet.GetLocalIP()
 		return perrors.Errorf("Failed to invoke the method %v. No provider available for the service %v from "+
 			"registry %v on the consumer %v using the dubbo version %v .Please check if the providers have been started and registered.",
 			invocation.MethodName(), invoker.directory.GetUrl().SubURL.Key(), invoker.directory.GetUrl().String(), ip, constant.Version)
@@ -75,7 +78,7 @@ func (invoker *baseClusterInvoker) checkInvokers(invokers []protocol.Invoker, in
 //check cluster invoker is destroyed or not
 func (invoker *baseClusterInvoker) checkWhetherDestroyed() error {
 	if invoker.destroyed.Load() {
-		ip, _ := utils.GetLocalIP()
+		ip, _ := gxnet.GetLocalIP()
 		return perrors.Errorf("Rpc cluster invoker for %v on consumer %v use dubbo version %v is now destroyed! can not invoke any more. ",
 			invoker.directory.GetUrl().Service(), ip, constant.Version)
 	}
@@ -83,15 +86,42 @@ func (invoker *baseClusterInvoker) checkWhetherDestroyed() error {
 }
 
 func (invoker *baseClusterInvoker) doSelect(lb cluster.LoadBalance, invocation protocol.Invocation, invokers []protocol.Invoker, invoked []protocol.Invoker) protocol.Invoker {
-	//todo:sticky connect
+
+	var selectedInvoker protocol.Invoker
+	url := invokers[0].GetUrl()
+	sticky := url.GetParamBool(constant.STICKY_KEY, false)
+	//Get the service method sticky config if have
+	sticky = url.GetMethodParamBool(invocation.MethodName(), constant.STICKY_KEY, sticky)
+
+	if invoker.stickyInvoker != nil && !isInvoked(invoker.stickyInvoker, invokers) {
+		invoker.stickyInvoker = nil
+	}
+
+	if sticky && invoker.stickyInvoker != nil && (invoked == nil || !isInvoked(invoker.stickyInvoker, invoked)) {
+		if invoker.availablecheck && invoker.stickyInvoker.IsAvailable() {
+			return invoker.stickyInvoker
+		}
+	}
+
+	selectedInvoker = invoker.doSelectInvoker(lb, invocation, invokers, invoked)
+
+	if sticky {
+		invoker.stickyInvoker = selectedInvoker
+	}
+	return selectedInvoker
+
+}
+
+func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invocation protocol.Invocation, invokers []protocol.Invoker, invoked []protocol.Invoker) protocol.Invoker {
 	if len(invokers) == 1 {
 		return invokers[0]
 	}
+
 	selectedInvoker := lb.Select(invokers, invocation)
 
 	//judge to if the selectedInvoker is invoked
 
-	if !selectedInvoker.IsAvailable() || !invoker.availablecheck || isInvoked(selectedInvoker, invoked) {
+	if (!selectedInvoker.IsAvailable() && invoker.availablecheck) || isInvoked(selectedInvoker, invoked) {
 		// do reselect
 		var reslectInvokers []protocol.Invoker
 
@@ -106,13 +136,12 @@ func (invoker *baseClusterInvoker) doSelect(lb cluster.LoadBalance, invocation p
 		}
 
 		if len(reslectInvokers) > 0 {
-			return lb.Select(reslectInvokers, invocation)
+			selectedInvoker = lb.Select(reslectInvokers, invocation)
 		} else {
 			return nil
 		}
 	}
 	return selectedInvoker
-
 }
 
 func isInvoked(selectedInvoker protocol.Invoker, invoked []protocol.Invoker) bool {

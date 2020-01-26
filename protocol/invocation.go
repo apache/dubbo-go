@@ -21,9 +21,11 @@ import (
 	"reflect"
 )
 
+// Invocation ...
 type Invocation interface {
 	MethodName() string
 	ParameterTypes() []reflect.Type
+	ParameterValues() []reflect.Value
 	Arguments() []interface{}
 	Reply() interface{}
 	Attachments() map[string]string

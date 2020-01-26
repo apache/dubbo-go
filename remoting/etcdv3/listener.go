@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package etcdv3
 
 import (
@@ -16,6 +33,7 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
+// EventListener ...
 type EventListener struct {
 	client     *Client
 	keyMapLock sync.Mutex
@@ -23,6 +41,7 @@ type EventListener struct {
 	wg         sync.WaitGroup
 }
 
+// NewEventListener ...
 func NewEventListener(client *Client) *EventListener {
 	return &EventListener{
 		client: client,
@@ -30,7 +49,7 @@ func NewEventListener(client *Client) *EventListener {
 	}
 }
 
-// Listen on a spec key
+// ListenServiceNodeEvent Listen on a spec key
 // this method will return true when spec key deleted,
 // this method will return false when deep layer connection lose
 func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.DataListener) bool {
@@ -117,7 +136,7 @@ func (l *EventListener) handleEvents(event *clientv3.Event, listeners ...remotin
 	panic("unreachable")
 }
 
-// Listen on a set of key with spec prefix
+// ListenServiceNodeEventWithPrefix Listen on a set of key with spec prefix
 func (l *EventListener) ListenServiceNodeEventWithPrefix(prefix string, listener ...remoting.DataListener) {
 
 	l.wg.Add(1)
@@ -163,7 +182,7 @@ func timeSecondDuration(sec int) time.Duration {
 	return time.Duration(sec) * time.Second
 }
 
-// this func is invoked by etcdv3 ConsumerRegistry::Registe/ etcdv3 ConsumerRegistry::get/etcdv3 ConsumerRegistry::getListener
+// ListenServiceEvent is invoked by etcdv3 ConsumerRegistry::Registe/ etcdv3 ConsumerRegistry::get/etcdv3 ConsumerRegistry::getListener
 // registry.go:Listen -> listenServiceEvent -> listenDirEvent -> ListenServiceNodeEvent
 //                            |
 //                            --------> ListenServiceNodeEvent
@@ -212,6 +231,7 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 	}(key)
 }
 
+// Close ...
 func (l *EventListener) Close() {
 	l.wg.Wait()
 }

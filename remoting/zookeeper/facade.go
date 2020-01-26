@@ -40,6 +40,7 @@ type zkClientFacade interface {
 	common.Node
 }
 
+// HandleClientRestart ...
 func HandleClientRestart(r zkClientFacade) {
 	var (
 		err error

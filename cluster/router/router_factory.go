@@ -27,11 +27,15 @@ func init() {
 	extension.SetRouterFactory("condition", NewConditionRouterFactory)
 }
 
+// ConditionRouterFactory ...
 type ConditionRouterFactory struct{}
 
+// NewConditionRouterFactory ...
 func NewConditionRouterFactory() cluster.RouterFactory {
 	return ConditionRouterFactory{}
 }
+
+// Router ...
 func (c ConditionRouterFactory) Router(url *common.URL) (cluster.Router, error) {
 	return newConditionRouter(url)
 }

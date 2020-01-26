@@ -42,7 +42,7 @@ func Test_Register(t *testing.T) {
 	defer ts.Stop()
 	err := reg.Register(url)
 	children, _ := reg.client.GetChildren("/dubbo/com.ikurento.user.UserProvider/providers")
-	assert.Regexp(t, ".*dubbo%3A%2F%2F127.0.0.1%3A20000%2Fcom.ikurento.user.UserProvider%3Fanyhost%3Dtrue%26category%3Dproviders%26cluster%3Dmock%26dubbo%3Ddubbo-provider-golang-2.6.0%26.*.serviceid%3Dsoa.mock%26.*provider", children)
+	assert.Regexp(t, ".*dubbo%3A%2F%2F127.0.0.1%3A20000%2Fcom.ikurento.user.UserProvider%3Fanyhost%3Dtrue%26category%3Dproviders%26cluster%3Dmock%26dubbo%3Ddubbo-provider-golang-1.3.0%26.*.serviceid%3Dsoa.mock%26.*provider", children)
 	assert.NoError(t, err)
 }
 
@@ -60,11 +60,11 @@ func Test_Subscribe(t *testing.T) {
 	}
 
 	//consumer register
-	regurl.Params.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
+	regurl.SetParam(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
 	_, reg2, _ := newMockZkRegistry(&regurl, zookeeper.WithTestCluster(ts))
 
 	reg2.Register(url)
-	listener, _ := reg2.Subscribe(url)
+	listener, _ := reg2.subscribe(&url)
 
 	serviceEvent, _ := listener.Next()
 	assert.NoError(t, err)
@@ -85,7 +85,7 @@ func Test_ConsumerDestory(t *testing.T) {
 	assert.NoError(t, err)
 	err = reg.Register(url)
 	assert.NoError(t, err)
-	_, err = reg.Subscribe(url)
+	_, err = reg.subscribe(&url)
 	assert.NoError(t, err)
 
 	//listener.Close()
