@@ -59,7 +59,6 @@ func TestTracingFilter_Invoke(t *testing.T) {
 	// has previous span
 	tf.Invoke(ctx, invoker, inv)
 
-	ctx = context.Background()
 	// has remote ctx
 	ctx = context.WithValue(context.Background(), constant.TRACING_REMOTE_SPAN_CTX, span.Context())
 	tf.Invoke(ctx, invoker, inv)

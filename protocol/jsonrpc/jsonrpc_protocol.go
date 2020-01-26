@@ -32,7 +32,11 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-const JSONRPC = "jsonrpc"
+const (
+	// JSONRPC
+	//module name
+	JSONRPC = "jsonrpc"
+)
 
 func init() {
 	extension.SetProtocol(JSONRPC, GetProtocol)

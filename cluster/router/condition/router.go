@@ -38,9 +38,12 @@ import (
 )
 
 const (
+	//ROUTE_PATTERN route pattern regex
 	ROUTE_PATTERN = `([&!=,]*)\\s*([^&!=,\\s]+)`
+	// FORCE ...
 	FORCE         = "force"
 	ENABLED       = "enabled"
+	// PRIORITY ...
 	PRIORITY      = "priority"
 )
 
@@ -289,15 +292,15 @@ func matchCondition(pairs map[string]MatchPair, url *common.URL, param *common.U
 		if len(sampleValue) > 0 {
 			if !matchPair.isMatch(sampleValue, param) {
 				return false, nil
-			} else {
-				result = true
 			}
+
+			result = true
 		} else {
 			if !(matchPair.Matches.Empty()) {
 				return false, nil
-			} else {
-				result = true
 			}
+
+			result = true
 		}
 	}
 	return result, nil

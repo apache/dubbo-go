@@ -36,8 +36,10 @@ import (
 )
 
 const (
+	// ScopeApplication ...
 	ScopeApplication = "application"
-	GeneralType      = "general"
+	// GeneralType ...
+	GeneralType = "general"
 )
 
 // ConfigurationParser ...
@@ -46,7 +48,7 @@ type ConfigurationParser interface {
 	ParseToUrls(content string) ([]*common.URL, error)
 }
 
-//for support properties file in config center
+// DefaultConfigurationParser for support properties file in config center
 type DefaultConfigurationParser struct{}
 
 // ConfiguratorConfig ...
@@ -72,12 +74,12 @@ type ConfigItem struct {
 
 // Parse ...
 func (parser *DefaultConfigurationParser) Parse(content string) (map[string]string, error) {
-	properties, err := properties.LoadString(content)
+	pps, err := properties.LoadString(content)
 	if err != nil {
 		logger.Errorf("Parse the content {%v} in DefaultConfigurationParser error ,error message is {%v}", content, err)
 		return nil, err
 	}
-	return properties.Map(), nil
+	return pps.Map(), nil
 }
 
 // ParseToUrls ...

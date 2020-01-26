@@ -47,6 +47,7 @@ var (
 )
 
 const (
+	//RegistryConnDelay registry connection delay
 	RegistryConnDelay = 3
 )
 
@@ -209,15 +210,15 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 		}
 
 		for {
-			if serviceEvent, err := listener.Next(); err != nil {
+			serviceEvent, err := listener.Next()
+			if err != nil {
 				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
 				listener.Close()
 				return
-			} else {
-				logger.Infof("update begin, service event: %v", serviceEvent.String())
-				notifyListener.Notify(serviceEvent)
 			}
 
+			logger.Infof("update begin, service event: %v", serviceEvent.String())
+			notifyListener.Notify(serviceEvent)
 		}
 
 	}

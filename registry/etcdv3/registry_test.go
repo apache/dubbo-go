@@ -46,7 +46,8 @@ func initRegistry(t *testing.T) *etcdV3Registry {
 	}
 
 	out := reg.(*etcdV3Registry)
-	out.client.CleanKV()
+	err = out.client.CleanKV()
+	assert.NoError(t, err)
 	return out
 }
 
@@ -58,6 +59,7 @@ func (suite *RegistryTestSuite) TestRegister() {
 
 	reg := initRegistry(t)
 	err := reg.Register(url)
+	assert.NoError(t, err)
 	children, _, err := reg.client.GetChildrenKVList("/dubbo/com.ikurento.user.UserProvider/providers")
 	if err != nil {
 		t.Fatal(err)
@@ -83,7 +85,8 @@ func (suite *RegistryTestSuite) TestSubscribe() {
 	regurl.SetParam(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
 	reg2 := initRegistry(t)
 
-	reg2.Register(url)
+	err = reg2.Register(url)
+	assert.NoError(t, err)
 	listener, err := reg2.subscribe(&url)
 	if err != nil {
 		t.Fatal(err)
@@ -120,7 +123,8 @@ func (suite *RegistryTestSuite) TestProviderDestory() {
 	t := suite.T()
 	reg := initRegistry(t)
 	url, _ := common.NewURL(context.Background(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
-	reg.Register(url)
+	err := reg.Register(url)
+	assert.NoError(t, err)
 
 	//listener.Close()
 	time.Sleep(1e9)

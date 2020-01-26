@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -40,7 +41,10 @@ import (
 )
 
 // todo: WritePkg_Timeout will entry *.yml
-const WritePkg_Timeout = 5 * time.Second
+const (
+	// WritePkg_Timeout ...
+	WritePkg_Timeout = 5 * time.Second
+)
 
 var (
 	errTooManySessions = perrors.New("too many sessions")
@@ -49,6 +53,14 @@ var (
 type rpcSession struct {
 	session getty.Session
 	reqNum  int32
+}
+
+func (s *rpcSession) AddReqNum(num int32) {
+	atomic.AddInt32(&s.reqNum, num)
+}
+
+func (s *rpcSession) GetReqNum() int32 {
+	return atomic.LoadInt32(&s.reqNum)
 }
 
 ////////////////////////////////////////////
