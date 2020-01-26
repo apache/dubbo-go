@@ -55,7 +55,7 @@ func (l *listenableRouter) RouterRule() *RouterRule {
 
 func newListenableRouter(url *common.URL, ruleKey string) (*AppRouter, error) {
 	if ruleKey == "" {
-		return nil, perrors.Errorf("newListenableRouter ruleKey is nil, can't create Listenable router")
+		return nil, perrors.Errorf("NewListenableRouter ruleKey is nil, can't create Listenable router")
 	}
 	l := &AppRouter{}
 
@@ -66,20 +66,21 @@ func newListenableRouter(url *common.URL, ruleKey string) (*AppRouter, error) {
 	//add listener
 	dynamicConfiguration := config.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration == nil {
-		return nil, perrors.Errorf("get dynamicConfiguration fail, dynamicConfiguration is nil, init config center plugin please")
+		return nil, perrors.Errorf("Get dynamicConfiguration fail, dynamicConfiguration is nil, init config center plugin please")
 	}
 
 	dynamicConfiguration.AddListener(routerKey, l)
 	//get rule
 	rule, err := dynamicConfiguration.GetRule(routerKey, config_center.WithGroup(config_center.DEFAULT_GROUP))
 	if len(rule) == 0 || err != nil {
-		return nil, perrors.Errorf("get rule fail, config rule{%s},  error{%v}", rule, err)
+		return nil, perrors.Errorf("Get rule fail, config rule{%s},  error{%v}", rule, err)
 	}
 	l.Process(&config_center.ConfigChangeEvent{
 		Key:        routerKey,
 		Value:      rule,
 		ConfigType: remoting.EventTypeUpdate})
 
+	logger.Info("Init app router success")
 	return l, nil
 }
 
