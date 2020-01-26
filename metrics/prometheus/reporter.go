@@ -22,6 +22,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/apache/dubbo-go/common/logger"
 )
 import (
 	"github.com/prometheus/client_golang/prometheus"
@@ -49,11 +51,19 @@ const (
 	consumerKey = "consumer"
 )
 
+// should initialize after loading configuration
 func init() {
-	extension.SetMetricReporter(reporterName, newPrometheus())
+	rpt := &PrometheusReporter{
+		consumerVec: newSummaryVec(consumerKey),
+		providerVec: newSummaryVec(providerKey),
+	}
+	prometheus.MustRegister(rpt.consumerVec, rpt.providerVec)
+	extension.SetMetricReporter(reporterName, rpt)
 }
 
 // it will collect the data for Prometheus
+// if you want to use this, you should initialize your prometheus.
+// https://prometheus.io/docs/guides/go-application/
 type PrometheusReporter struct {
 
 	// report the consumer-side's data
@@ -68,8 +78,12 @@ func (reporter *PrometheusReporter) Report(ctx context.Context, invoker protocol
 	var sumVec *prometheus.SummaryVec
 	if isProvider(url) {
 		sumVec = reporter.providerVec
-	} else {
+	} else if isConsumer(url) {
 		sumVec = reporter.consumerVec
+	} else {
+		logger.Warnf("The url is not the consumer's or provider's, "+
+			"so the invocation will be ignored. url: %s", url.String())
+		return
 	}
 
 	sumVec.With(prometheus.Labels{
@@ -83,21 +97,20 @@ func (reporter *PrometheusReporter) Report(ctx context.Context, invoker protocol
 	}).Observe(float64(cost.Nanoseconds() / constant.MsToNanoRate))
 }
 
+// whether this url represents the application received the request as server
 func isProvider(url common.URL) bool {
-	side := url.GetParam(constant.ROLE_KEY, "")
-	return strings.EqualFold(side, strconv.Itoa(common.PROVIDER))
+	role := url.GetParam(constant.ROLE_KEY, "")
+	return strings.EqualFold(role, strconv.Itoa(common.PROVIDER))
 }
 
-func newPrometheus() metrics.Reporter {
-	// cfg := *config.GetMetricConfig().GetPrometheusConfig()
-	result := &PrometheusReporter{
-		consumerVec: newSummaryVec(consumerKey),
-		providerVec: newSummaryVec(providerKey),
-	}
-	prometheus.MustRegister(result.consumerVec, result.providerVec)
-	return result
+// whether this url represents the application sent then request as client
+func isConsumer(url common.URL) bool {
+	role := url.GetParam(constant.ROLE_KEY, "")
+	return strings.EqualFold(role, strconv.Itoa(common.CONSUMER))
 }
 
+// create SummaryVec, the Namespace is dubbo
+// the objectives is from my experience.
 func newSummaryVec(side string) *prometheus.SummaryVec {
 
 	return prometheus.NewSummaryVec(

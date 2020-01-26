@@ -23,7 +23,7 @@ import (
 
 // This is the config struct for all metrics implementation
 type MetricConfig struct {
-	Reporters        []string          `yaml:"reporters" json:"reporters,omitempty"`
+	Reporters []string `yaml:"reporters" json:"reporters,omitempty"`
 }
 
 // parse the config from yml
@@ -46,5 +46,3 @@ func GetMetricConfig() *MetricConfig {
 	}
 	return metricConfig
 }
-
-

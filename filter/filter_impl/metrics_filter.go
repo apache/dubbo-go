@@ -72,6 +72,9 @@ func (p *metricsFilter) OnResponse(ctx context.Context, res protocol.Result, inv
 	return res
 }
 
+// the metricsFilter is singleton.
+// it's lazy initialization
+// make sure that the configuration had been loaded before invoking this method.
 func newMetricsFilter() filter.Filter {
 	if metricFilterInstance == nil {
 		reporterNames := config.GetMetricConfig().Reporters
