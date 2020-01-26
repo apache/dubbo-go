@@ -56,8 +56,6 @@ conditions:
 	defer ts.Stop()
 	defer z.Close()
 
-	//t.Log(z.Conn.Server())
-
 	zkUrl, _ := common.NewURL(context.TODO(), "zookeeper://127.0.0.1:"+strconv.Itoa(ts.Servers[0].Port))
 	configuration, err := extension.GetConfigCenterFactory("zookeeper").GetDynamicConfiguration(&zkUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
