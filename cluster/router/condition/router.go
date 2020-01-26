@@ -41,10 +41,10 @@ const (
 	//ROUTE_PATTERN route pattern regex
 	ROUTE_PATTERN = `([&!=,]*)\\s*([^&!=,\\s]+)`
 	// FORCE ...
-	FORCE         = "force"
-	ENABLED       = "enabled"
+	FORCE   = "force"
+	ENABLED = "enabled"
 	// PRIORITY ...
-	PRIORITY      = "priority"
+	PRIORITY = "priority"
 )
 
 var (
