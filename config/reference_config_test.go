@@ -36,7 +36,7 @@ import (
 
 var regProtocol protocol.Protocol
 
-func doInit() {
+func doInitConsumer() {
 	consumerConfig = &ConsumerConfig{
 		ApplicationConfig: &ApplicationConfig{
 			Organization: "dubbo_org",
@@ -81,11 +81,79 @@ func doInit() {
 		},
 		References: map[string]*ReferenceConfig{
 			"MockService": {
+				id: "MockProvider",
 				Params: map[string]string{
 					"serviceid": "soa.mock",
 					"forks":     "5",
 				},
+				Sticky:        false,
 				Registry:      "shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2",
+				InterfaceName: "com.MockService",
+				Protocol:      "mock",
+				Cluster:       "failover",
+				Loadbalance:   "random",
+				Retries:       "3",
+				Group:         "huadong_idc",
+				Version:       "1.0.0",
+				Methods: []*MethodConfig{
+					{
+						Name:        "GetUser",
+						Retries:     "2",
+						Loadbalance: "random",
+					},
+					{
+						Name:        "GetUser1",
+						Retries:     "2",
+						Loadbalance: "random",
+						Sticky:      true,
+					},
+				},
+			},
+		},
+	}
+}
+
+var mockProvider = new(MockProvider)
+
+type MockProvider struct {
+}
+
+func (m *MockProvider) Reference() string {
+	return "MockProvider"
+}
+
+func (m *MockProvider) CallBack(res common.CallbackResponse) {
+}
+
+func doInitConsumerAsync() {
+	doInitConsumer()
+	SetConsumerService(mockProvider)
+	for _, v := range consumerConfig.References {
+		v.Async = true
+	}
+}
+
+func doInitConsumerWithSingleRegistry() {
+	consumerConfig = &ConsumerConfig{
+		ApplicationConfig: &ApplicationConfig{
+			Organization: "dubbo_org",
+			Name:         "dubbo",
+			Module:       "module",
+			Version:      "2.6.0",
+			Owner:        "dubbo",
+			Environment:  "test"},
+		Registry: &RegistryConfig{
+			Address:  "mock://27.0.0.1:2181",
+			Username: "user1",
+			Password: "pwd1",
+		},
+		Registries: map[string]*RegistryConfig{},
+		References: map[string]*ReferenceConfig{
+			"MockService": {
+				Params: map[string]string{
+					"serviceid": "soa.mock",
+					"forks":     "5",
+				},
 				InterfaceName: "com.MockService",
 				Protocol:      "mock",
 				Cluster:       "failover",
@@ -111,12 +179,12 @@ func doInit() {
 }
 
 func Test_ReferMultireg(t *testing.T) {
-	doInit()
+	doInitConsumer()
 	extension.SetProtocol("registry", GetProtocol)
 	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
 
 	for _, reference := range consumerConfig.References {
-		reference.Refer()
+		reference.Refer(nil)
 		assert.NotNil(t, reference.invoker)
 		assert.NotNil(t, reference.pxy)
 	}
@@ -124,26 +192,42 @@ func Test_ReferMultireg(t *testing.T) {
 }
 
 func Test_Refer(t *testing.T) {
-	doInit()
+	doInitConsumer()
 	extension.SetProtocol("registry", GetProtocol)
 	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
 
 	for _, reference := range consumerConfig.References {
-		reference.Refer()
+		reference.Refer(nil)
 		assert.Equal(t, "soa.mock", reference.Params["serviceid"])
 		assert.NotNil(t, reference.invoker)
 		assert.NotNil(t, reference.pxy)
 	}
 	consumerConfig = nil
 }
+
+func Test_ReferAsync(t *testing.T) {
+	doInitConsumerAsync()
+	extension.SetProtocol("registry", GetProtocol)
+	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
+
+	for _, reference := range consumerConfig.References {
+		reference.Refer(nil)
+		assert.Equal(t, "soa.mock", reference.Params["serviceid"])
+		assert.NotNil(t, reference.invoker)
+		assert.NotNil(t, reference.pxy)
+		assert.NotNil(t, reference.pxy.GetCallback())
+	}
+	consumerConfig = nil
+}
+
 func Test_ReferP2P(t *testing.T) {
-	doInit()
+	doInitConsumer()
 	extension.SetProtocol("dubbo", GetProtocol)
 	m := consumerConfig.References["MockService"]
 	m.Url = "dubbo://127.0.0.1:20000"
 
 	for _, reference := range consumerConfig.References {
-		reference.Refer()
+		reference.Refer(nil)
 		assert.NotNil(t, reference.invoker)
 		assert.NotNil(t, reference.pxy)
 	}
@@ -151,13 +235,13 @@ func Test_ReferP2P(t *testing.T) {
 }
 
 func Test_ReferMultiP2P(t *testing.T) {
-	doInit()
+	doInitConsumer()
 	extension.SetProtocol("dubbo", GetProtocol)
 	m := consumerConfig.References["MockService"]
 	m.Url = "dubbo://127.0.0.1:20000;dubbo://127.0.0.2:20000"
 
 	for _, reference := range consumerConfig.References {
-		reference.Refer()
+		reference.Refer(nil)
 		assert.NotNil(t, reference.invoker)
 		assert.NotNil(t, reference.pxy)
 	}
@@ -165,14 +249,14 @@ func Test_ReferMultiP2P(t *testing.T) {
 }
 
 func Test_ReferMultiP2PWithReg(t *testing.T) {
-	doInit()
+	doInitConsumer()
 	extension.SetProtocol("dubbo", GetProtocol)
 	extension.SetProtocol("registry", GetProtocol)
 	m := consumerConfig.References["MockService"]
 	m.Url = "dubbo://127.0.0.1:20000;registry://127.0.0.2:20000"
 
 	for _, reference := range consumerConfig.References {
-		reference.Refer()
+		reference.Refer(nil)
 		assert.NotNil(t, reference.invoker)
 		assert.NotNil(t, reference.pxy)
 	}
@@ -180,11 +264,11 @@ func Test_ReferMultiP2PWithReg(t *testing.T) {
 }
 
 func Test_Implement(t *testing.T) {
-	doInit()
+	doInitConsumer()
 	extension.SetProtocol("registry", GetProtocol)
 	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
 	for _, reference := range consumerConfig.References {
-		reference.Refer()
+		reference.Refer(nil)
 		reference.Implement(&MockService{})
 		assert.NotNil(t, reference.GetRPCService())
 
@@ -193,20 +277,38 @@ func Test_Implement(t *testing.T) {
 }
 
 func Test_Forking(t *testing.T) {
-	doInit()
+	doInitConsumer()
 	extension.SetProtocol("dubbo", GetProtocol)
 	extension.SetProtocol("registry", GetProtocol)
 	m := consumerConfig.References["MockService"]
 	m.Url = "dubbo://127.0.0.1:20000;registry://127.0.0.2:20000"
 
 	for _, reference := range consumerConfig.References {
-		reference.Refer()
+		reference.Refer(nil)
 		forks := int(reference.invoker.GetUrl().GetParamInt(constant.FORKS_KEY, constant.DEFAULT_FORKS))
 		assert.Equal(t, 5, forks)
 		assert.NotNil(t, reference.pxy)
 		assert.NotNil(t, reference.Cluster)
 	}
 	consumerConfig = nil
+}
+
+func Test_Sticky(t *testing.T) {
+	doInitConsumer()
+	extension.SetProtocol("dubbo", GetProtocol)
+	extension.SetProtocol("registry", GetProtocol)
+	m := consumerConfig.References["MockService"]
+	m.Url = "dubbo://127.0.0.1:20000;registry://127.0.0.2:20000"
+
+	reference := consumerConfig.References["MockService"]
+	reference.Refer(nil)
+	referenceSticky := reference.invoker.GetUrl().GetParam(constant.STICKY_KEY, "false")
+	assert.Equal(t, "false", referenceSticky)
+
+	method0StickKey := reference.invoker.GetUrl().GetMethodParam(reference.Methods[0].Name, constant.STICKY_KEY, "false")
+	assert.Equal(t, "false", method0StickKey)
+	method1StickKey := reference.invoker.GetUrl().GetMethodParam(reference.Methods[1].Name, constant.STICKY_KEY, "false")
+	assert.Equal(t, "true", method1StickKey)
 }
 
 func GetProtocol() protocol.Protocol {

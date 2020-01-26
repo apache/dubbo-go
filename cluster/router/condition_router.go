@@ -24,7 +24,8 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/container"
+	gxset "github.com/dubbogo/gost/container/set"
+	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 )
 
@@ -32,14 +33,16 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/protocol"
 )
 
 const (
+	//ROUTE_PATTERN route pattern regex
 	ROUTE_PATTERN = `([&!=,]*)\\s*([^&!=,\\s]+)`
-	FORCE         = "force"
-	PRIORITY      = "priority"
+	// FORCE ...
+	FORCE = "force"
+	// PRIORITY ...
+	PRIORITY = "priority"
 )
 
 //ConditionRouter condition router struct
@@ -104,7 +107,8 @@ func newConditionRouter(url *common.URL) (*ConditionRouter, error) {
 	}, nil
 }
 
-//Router determine the target server list.
+// Route
+// Router determine the target server list.
 func (c *ConditionRouter) Route(invokers []protocol.Invoker, url common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	if len(invokers) == 0 {
 		return invokers
@@ -126,7 +130,7 @@ func (c *ConditionRouter) Route(invokers []protocol.Invoker, url common.URL, inv
 	if len(c.ThenCondition) == 0 {
 		return result
 	}
-	localIP, _ := utils.GetLocalIP()
+	localIP, _ := gxnet.GetLocalIP()
 	for _, invoker := range invokers {
 		isMatchThen, err := c.MatchThen(invoker.GetUrl(), url)
 		if err != nil {
@@ -156,10 +160,13 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 	if len(rule) == 0 {
 		return condition, nil
 	}
-	var pair MatchPair
-	values := container.NewSet()
+
+	var (
+		pair       MatchPair
+		startIndex int
+	)
+	values := gxset.NewSet()
 	reg := regexp.MustCompile(`([&!=,]*)\s*([^&!=,\s]+)`)
-	var startIndex = 0
 	if indexTuple := reg.FindIndex([]byte(rule)); len(indexTuple) > 0 {
 		startIndex = indexTuple[0]
 	}
@@ -170,8 +177,8 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 		switch separator {
 		case "":
 			pair = MatchPair{
-				Matches:    container.NewSet(),
-				Mismatches: container.NewSet(),
+				Matches:    gxset.NewSet(),
+				Mismatches: gxset.NewSet(),
 			}
 			condition[content] = pair
 		case "&":
@@ -179,8 +186,8 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 				pair = r
 			} else {
 				pair = MatchPair{
-					Matches:    container.NewSet(),
-					Mismatches: container.NewSet(),
+					Matches:    gxset.NewSet(),
+					Mismatches: gxset.NewSet(),
 				}
 				condition[content] = pair
 			}
@@ -209,7 +216,7 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 	return condition, nil
 }
 
-//
+//MatchWhen  MatchWhen
 func (c *ConditionRouter) MatchWhen(url common.URL, invocation protocol.Invocation) (bool, error) {
 	condition, err := MatchCondition(c.WhenCondition, &url, nil, invocation)
 	return len(c.WhenCondition) == 0 || condition, err
@@ -227,7 +234,7 @@ func MatchCondition(pairs map[string]MatchPair, url *common.URL, param *common.U
 	if sample == nil {
 		return true, perrors.Errorf("url is not allowed be nil")
 	}
-	result := false
+	var result bool
 	for key, matchPair := range pairs {
 		var sampleValue string
 
@@ -242,23 +249,24 @@ func MatchCondition(pairs map[string]MatchPair, url *common.URL, param *common.U
 		if len(sampleValue) > 0 {
 			if !matchPair.isMatch(sampleValue, param) {
 				return false, nil
-			} else {
-				result = true
 			}
+
+			result = true
 		} else {
 			if !(matchPair.Matches.Empty()) {
 				return false, nil
-			} else {
-				result = true
 			}
+
+			result = true
 		}
 	}
 	return result, nil
 }
 
+// MatchPair ...
 type MatchPair struct {
-	Matches    *container.HashSet
-	Mismatches *container.HashSet
+	Matches    *gxset.HashSet
+	Mismatches *gxset.HashSet
 }
 
 func (pair MatchPair) isMatch(value string, param *common.URL) bool {

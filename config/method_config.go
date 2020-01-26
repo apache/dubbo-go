@@ -14,25 +14,51 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package config
+
+import (
+	"github.com/creasty/defaults"
+)
 
 import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
+// MethodConfig ...
 type MethodConfig struct {
-	InterfaceId   string
-	InterfaceName string
-	Name          string `yaml:"name"  json:"name,omitempty" property:"name"`
-	Retries       string `yaml:"retries"  json:"retries,omitempty" property:"retries"`
-	Loadbalance   string `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
-	Weight        int64  `yaml:"weight"  json:"weight,omitempty" property:"weight"`
+	InterfaceId                 string
+	InterfaceName               string
+	Name                        string `yaml:"name"  json:"name,omitempty" property:"name"`
+	Retries                     string `yaml:"retries"  json:"retries,omitempty" property:"retries"`
+	Loadbalance                 string `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
+	Weight                      int64  `yaml:"weight"  json:"weight,omitempty" property:"weight"`
+	TpsLimitInterval            string `yaml:"tps.limit.interval" json:"tps.limit.interval,omitempty" property:"tps.limit.interval"`
+	TpsLimitRate                string `yaml:"tps.limit.rate" json:"tps.limit.rate,omitempty" property:"tps.limit.rate"`
+	TpsLimitStrategy            string `yaml:"tps.limit.strategy" json:"tps.limit.strategy,omitempty" property:"tps.limit.strategy"`
+	ExecuteLimit                string `yaml:"execute.limit" json:"execute.limit,omitempty" property:"execute.limit"`
+	ExecuteLimitRejectedHandler string `yaml:"execute.limit.rejected.handler" json:"execute.limit.rejected.handler,omitempty" property:"execute.limit.rejected.handler"`
+	Sticky                      bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
+	RequestTimeout              string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
 }
 
+// Prefix ...
 func (c *MethodConfig) Prefix() string {
-	if c.InterfaceId != "" {
+	if len(c.InterfaceId) != 0 {
 		return constant.DUBBO + "." + c.InterfaceName + "." + c.InterfaceId + "." + c.Name + "."
-	} else {
-		return constant.DUBBO + "." + c.InterfaceName + "." + c.Name + "."
 	}
+
+	return constant.DUBBO + "." + c.InterfaceName + "." + c.Name + "."
+}
+
+// UnmarshalYAML ...
+func (c *MethodConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	if err := defaults.Set(c); err != nil {
+		return err
+	}
+	type plain MethodConfig
+	if err := unmarshal((*plain)(c)); err != nil {
+		return err
+	}
+	return nil
 }

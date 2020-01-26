@@ -38,10 +38,12 @@ import (
 // RpcClientPackageHandler
 ////////////////////////////////////////////
 
+// RpcClientPackageHandler ...
 type RpcClientPackageHandler struct {
 	client *Client
 }
 
+// NewRpcClientPackageHandler ...
 func NewRpcClientPackageHandler(client *Client) *RpcClientPackageHandler {
 	return &RpcClientPackageHandler{client: client}
 }
@@ -62,26 +64,28 @@ func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface
 		return nil, 0, perrors.WithStack(err)
 	}
 
-	pkg.Err = pkg.Body.(*hessian.Response).Exception
-	pkg.Body = NewResponse(pkg.Body.(*hessian.Response).RspObj, pkg.Body.(*hessian.Response).Attachments)
+	if pkg.Header.Type&hessian.PackageRequest == 0x00 {
+		pkg.Err = pkg.Body.(*hessian.Response).Exception
+		pkg.Body = NewResponse(pkg.Body.(*hessian.Response).RspObj, pkg.Body.(*hessian.Response).Attachments)
+	}
 
 	return pkg, hessian.HEADER_LENGTH + pkg.Header.BodyLen, nil
 }
 
-func (p *RpcClientPackageHandler) Write(ss getty.Session, pkg interface{}) error {
+func (p *RpcClientPackageHandler) Write(ss getty.Session, pkg interface{}) ([]byte, error) {
 	req, ok := pkg.(*DubboPackage)
 	if !ok {
 		logger.Errorf("illegal pkg:%+v\n", pkg)
-		return perrors.New("invalid rpc request")
+		return nil, perrors.New("invalid rpc request")
 	}
 
 	buf, err := req.Marshal()
 	if err != nil {
 		logger.Warnf("binary.Write(req{%#v}) = err{%#v}", req, perrors.WithStack(err))
-		return perrors.WithStack(err)
+		return nil, perrors.WithStack(err)
 	}
 
-	return perrors.WithStack(ss.WriteBytes(buf.Bytes()))
+	return buf.Bytes(), nil
 }
 
 ////////////////////////////////////////////
@@ -92,6 +96,7 @@ var (
 	rpcServerPkgHandler = &RpcServerPackageHandler{}
 )
 
+// RpcServerPackageHandler ...
 type RpcServerPackageHandler struct{}
 
 func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
@@ -164,18 +169,18 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 	return pkg, hessian.HEADER_LENGTH + pkg.Header.BodyLen, nil
 }
 
-func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg interface{}) error {
+func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg interface{}) ([]byte, error) {
 	res, ok := pkg.(*DubboPackage)
 	if !ok {
 		logger.Errorf("illegal pkg:%+v\n, it is %+v", pkg, reflect.TypeOf(pkg))
-		return perrors.New("invalid rpc response")
+		return nil, perrors.New("invalid rpc response")
 	}
 
 	buf, err := res.Marshal()
 	if err != nil {
 		logger.Warnf("binary.Write(res{%#v}) = err{%#v}", res, perrors.WithStack(err))
-		return perrors.WithStack(err)
+		return nil, perrors.WithStack(err)
 	}
 
-	return perrors.WithStack(ss.WriteBytes(buf.Bytes()))
+	return buf.Bytes(), nil
 }

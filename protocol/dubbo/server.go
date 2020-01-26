@@ -42,35 +42,39 @@ var (
 func init() {
 
 	// load clientconfig from provider_config
-	protocolConf := config.GetProviderConfig().ProtocolConf
+	// default use dubbo
+	providerConfig := config.GetProviderConfig()
+	if providerConfig.ApplicationConfig == nil {
+		return
+	}
+	protocolConf := providerConfig.ProtocolConf
+	defaultServerConfig := GetDefaultServerConfig()
 	if protocolConf == nil {
-		logger.Warnf("protocol_conf is nil")
-		return
-	}
-	dubboConf := protocolConf.(map[interface{}]interface{})[DUBBO]
-	if dubboConf == nil {
-		logger.Warnf("dubboConf is nil")
-		return
-	}
+		logger.Info("protocol_conf default use dubbo config")
+	} else {
+		dubboConf := protocolConf.(map[interface{}]interface{})[DUBBO]
+		if dubboConf == nil {
+			logger.Warnf("dubboConf is nil")
+			return
+		}
 
-	dubboConfByte, err := yaml.Marshal(dubboConf)
-	if err != nil {
+		dubboConfByte, err := yaml.Marshal(dubboConf)
+		if err != nil {
+			panic(err)
+		}
+		err = yaml.Unmarshal(dubboConfByte, &defaultServerConfig)
+		if err != nil {
+			panic(err)
+		}
+	}
+	srvConf = &defaultServerConfig
+	if err := srvConf.CheckValidity(); err != nil {
 		panic(err)
 	}
-	conf := &ServerConfig{}
-	err = yaml.Unmarshal(dubboConfByte, conf)
-	if err != nil {
-		panic(err)
-	}
-
-	if err := conf.CheckValidity(); err != nil {
-		panic(err)
-	}
-
-	srvConf = conf
 	SetServerGrpool()
 }
 
+// SetServerConfig ...
 func SetServerConfig(s ServerConfig) {
 	srvConf = &s
 	err := srvConf.CheckValidity()
@@ -81,10 +85,12 @@ func SetServerConfig(s ServerConfig) {
 	SetServerGrpool()
 }
 
+// GetServerConfig ...
 func GetServerConfig() ServerConfig {
 	return *srvConf
 }
 
+// SetServerGrpool ...
 func SetServerGrpool() {
 	if srvConf.GrPoolSize > 1 {
 		srvGrpool = gxsync.NewTaskPool(gxsync.WithTaskPoolTaskPoolSize(srvConf.GrPoolSize), gxsync.WithTaskPoolTaskQueueLength(srvConf.QueueLen),
@@ -92,12 +98,14 @@ func SetServerGrpool() {
 	}
 }
 
+// Server ...
 type Server struct {
 	conf       ServerConfig
 	tcpServer  getty.Server
 	rpcHandler *RpcServerHandler
 }
 
+// NewServer ...
 func NewServer() *Server {
 
 	s := &Server{
@@ -148,6 +156,7 @@ func (s *Server) newSession(session getty.Session) error {
 	return nil
 }
 
+// Start ...
 func (s *Server) Start(url common.URL) {
 	var (
 		addr      string
@@ -164,6 +173,7 @@ func (s *Server) Start(url common.URL) {
 
 }
 
+// Stop ...
 func (s *Server) Stop() {
 	s.tcpServer.Close()
 }

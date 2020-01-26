@@ -17,35 +17,28 @@
 
 package remoting
 
-import "fmt"
+import (
+	"fmt"
+)
 
-type ConfigurationListener interface {
-	Process(*ConfigChangeEvent)
-}
-
+// DataListener ...
 type DataListener interface {
 	DataChange(eventType Event) bool //bool is return for interface implement is interesting
-}
-
-type ConfigChangeEvent struct {
-	Key        string
-	Value      interface{}
-	ConfigType EventType
-}
-
-func (c ConfigChangeEvent) String() string {
-	return fmt.Sprintf("ConfigChangeEvent{key = %v , value = %v , changeType = %v}", c.Key, c.Value, c.ConfigType)
 }
 
 //////////////////////////////////////////
 // event type
 //////////////////////////////////////////
 
+// EventType ...
 type EventType int
 
 const (
+	// EventTypeAdd ...
 	EventTypeAdd = iota
+	// EventTypeDel ...
 	EventTypeDel
+	// EventTypeUpdate ...
 	EventTypeUpdate
 )
 
@@ -63,6 +56,7 @@ func (t EventType) String() string {
 // service event
 //////////////////////////////////////////
 
+// Event ...
 type Event struct {
 	Path    string
 	Action  EventType

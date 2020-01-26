@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package nacos
 
 import (
@@ -7,7 +24,9 @@ import (
 	"strings"
 	"time"
 )
+
 import (
+	gxnet "github.com/dubbogo/gost/net"
 	"github.com/nacos-group/nacos-sdk-go/clients"
 	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
 	nacosConstant "github.com/nacos-group/nacos-sdk-go/common/constant"
@@ -19,7 +38,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/utils"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/registry"
 )
 
@@ -27,8 +46,13 @@ var (
 	localIP = ""
 )
 
+const (
+	//RegistryConnDelay registry connection delay
+	RegistryConnDelay = 3
+)
+
 func init() {
-	localIP, _ = utils.GetLocalIP()
+	localIP, _ = gxnet.GetLocalIP()
 	extension.SetRegistry(constant.NACOS_KEY, newNacosRegistry)
 }
 
@@ -119,10 +143,13 @@ func appendParam(target *bytes.Buffer, url common.URL, key string) {
 
 func createRegisterParam(url common.URL, serviceName string) vo.RegisterInstanceParam {
 	category := getCategory(url)
-	params := make(map[string]string, len(url.Params)+3)
-	for k := range url.Params {
-		params[k] = url.Params.Get(k)
-	}
+	params := make(map[string]string)
+
+	url.RangeParams(func(key, value string) bool {
+		params[key] = value
+		return true
+	})
+
 	params[constant.NACOS_CATEGORY_KEY] = category
 	params[constant.NACOS_PROTOCOL_KEY] = url.Protocol
 	params[constant.NACOS_PATH_KEY] = url.Path
@@ -159,8 +186,42 @@ func (nr *nacosRegistry) Register(url common.URL) error {
 	return nil
 }
 
-func (nr *nacosRegistry) Subscribe(conf common.URL) (registry.Listener, error) {
-	return NewNacosListener(conf, nr.namingClient)
+func (nr *nacosRegistry) subscribe(conf *common.URL) (registry.Listener, error) {
+	return NewNacosListener(*conf, nr.namingClient)
+}
+
+//subscribe from registry
+func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
+	for {
+		if !nr.IsAvailable() {
+			logger.Warnf("event listener game over.")
+			return
+		}
+
+		listener, err := nr.subscribe(url)
+		if err != nil {
+			if !nr.IsAvailable() {
+				logger.Warnf("event listener game over.")
+				return
+			}
+			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
+			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
+			continue
+		}
+
+		for {
+			serviceEvent, err := listener.Next()
+			if err != nil {
+				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
+				listener.Close()
+				return
+			}
+
+			logger.Infof("update begin, service event: %v", serviceEvent.String())
+			notifyListener.Notify(serviceEvent)
+		}
+
+	}
 }
 
 func (nr *nacosRegistry) GetUrl() common.URL {

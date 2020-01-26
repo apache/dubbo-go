@@ -18,6 +18,9 @@ limitations under the License.
 package cluster_impl
 
 import (
+	"context"
+)
+import (
 	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/protocol"
 )
@@ -32,7 +35,7 @@ func newFailFastClusterInvoker(directory cluster.Directory) protocol.Invoker {
 	}
 }
 
-func (invoker *failfastClusterInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+func (invoker *failfastClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	invokers := invoker.directory.List(invocation)
 	err := invoker.checkInvokers(invokers, invocation)
 	if err != nil {
@@ -47,5 +50,5 @@ func (invoker *failfastClusterInvoker) Invoke(invocation protocol.Invocation) pr
 	}
 
 	ivk := invoker.doSelect(loadbalance, invocation, invokers, nil)
-	return ivk.Invoke(invocation)
+	return ivk.Invoke(ctx, invocation)
 }
