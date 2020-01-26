@@ -22,8 +22,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/apache/dubbo-go/common/logger"
 )
 import (
 	"github.com/prometheus/client_golang/prometheus"
@@ -33,6 +31,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/metrics"
 	"github.com/apache/dubbo-go/protocol"
 )
