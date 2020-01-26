@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package config
 
 import (
@@ -22,10 +23,14 @@ import (
 	"path"
 	"time"
 )
+
 import (
+	"github.com/creasty/defaults"
+	"github.com/dubbogo/getty"
 	perrors "github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
+
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
@@ -35,11 +40,12 @@ import (
 // consumerConfig
 /////////////////////////
 
+// ConsumerConfig ...
 type ConsumerConfig struct {
 	BaseConfig `yaml:",inline"`
 	Filter     string `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	// application
-	ApplicationConfig *ApplicationConfig `yaml:"application_config" json:"application_config,omitempty" property:"application_config"`
+	ApplicationConfig *ApplicationConfig `yaml:"application" json:"application,omitempty" property:"application"`
 	// client
 	Connect_Timeout string `default:"100ms"  yaml:"connect_timeout" json:"connect_timeout,omitempty" property:"connect_timeout"`
 	ConnectTimeout  time.Duration
@@ -49,20 +55,37 @@ type ConsumerConfig struct {
 	ProxyFactory    string `yaml:"proxy_factory" default:"default" json:"proxy_factory,omitempty" property:"proxy_factory"`
 	Check           *bool  `yaml:"check"  json:"check,omitempty" property:"check"`
 
-	Registries   map[string]*RegistryConfig  `yaml:"registries" json:"registries,omitempty" property:"registries"`
-	References   map[string]*ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
-	ProtocolConf interface{}                 `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
-	FilterConf   interface{}                 `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf" `
+	Registry       *RegistryConfig             `yaml:"registry" json:"registry,omitempty" property:"registry"`
+	Registries     map[string]*RegistryConfig  `yaml:"registries" json:"registries,omitempty" property:"registries"`
+	References     map[string]*ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
+	ProtocolConf   interface{}                 `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
+	FilterConf     interface{}                 `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf" `
+	ShutdownConfig *ShutdownConfig             `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf" `
 }
 
+// UnmarshalYAML ...
+func (c *ConsumerConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	if err := defaults.Set(c); err != nil {
+		return err
+	}
+	type plain ConsumerConfig
+	if err := unmarshal((*plain)(c)); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Prefix ...
 func (*ConsumerConfig) Prefix() string {
 	return constant.ConsumerConfigPrefix
 }
 
+// SetConsumerConfig ...
 func SetConsumerConfig(c ConsumerConfig) {
 	consumerConfig = &c
 }
 
+// GetConsumerConfig ...
 func GetConsumerConfig() ConsumerConfig {
 	if consumerConfig == nil {
 		logger.Warnf("consumerConfig is nil!")
@@ -71,6 +94,7 @@ func GetConsumerConfig() ConsumerConfig {
 	return *consumerConfig
 }
 
+// ConsumerInit ...
 func ConsumerInit(confConFile string) error {
 	if confConFile == "" {
 		return perrors.Errorf("application configure(consumer) file name is nil")
@@ -101,6 +125,10 @@ func ConsumerInit(confConFile string) error {
 	if consumerConfig.Request_Timeout != "" {
 		if consumerConfig.RequestTimeout, err = time.ParseDuration(consumerConfig.Request_Timeout); err != nil {
 			return perrors.WithMessagef(err, "time.ParseDuration(Request_Timeout{%#v})", consumerConfig.Request_Timeout)
+		}
+		if consumerConfig.RequestTimeout >= time.Duration(getty.MaxWheelTimeSpan) {
+			return perrors.WithMessagef(err, "request_timeout %s should be less than %s",
+				consumerConfig.Request_Timeout, time.Duration(getty.MaxWheelTimeSpan))
 		}
 	}
 	if consumerConfig.Connect_Timeout != "" {

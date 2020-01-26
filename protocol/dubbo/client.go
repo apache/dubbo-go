@@ -53,36 +53,39 @@ var (
 func init() {
 
 	// load clientconfig from consumer_config
+	// default use dubbo
+	consumerConfig := config.GetConsumerConfig()
+	if consumerConfig.ApplicationConfig == nil {
+		return
+	}
 	protocolConf := config.GetConsumerConfig().ProtocolConf
+	defaultClientConfig := GetDefaultClientConfig()
 	if protocolConf == nil {
-		logger.Warnf("protocol_conf is nil")
-		return
+		logger.Info("protocol_conf default use dubbo config")
+	} else {
+		dubboConf := protocolConf.(map[interface{}]interface{})[DUBBO]
+		if dubboConf == nil {
+			logger.Warnf("dubboConf is nil")
+			return
+		}
+		dubboConfByte, err := yaml.Marshal(dubboConf)
+		if err != nil {
+			panic(err)
+		}
+		err = yaml.Unmarshal(dubboConfByte, &defaultClientConfig)
+		if err != nil {
+			panic(err)
+		}
 	}
-	dubboConf := protocolConf.(map[interface{}]interface{})[DUBBO]
-	if dubboConf == nil {
-		logger.Warnf("dubboConf is nil")
-		return
-	}
-
-	dubboConfByte, err := yaml.Marshal(dubboConf)
-	if err != nil {
-		panic(err)
-	}
-	conf := &ClientConfig{}
-	err = yaml.Unmarshal(dubboConfByte, conf)
-	if err != nil {
-		panic(err)
-	}
-
-	if err := conf.CheckValidity(); err != nil {
+	clientConf = &defaultClientConfig
+	if err := clientConf.CheckValidity(); err != nil {
 		logger.Warnf("[CheckValidity] error: %v", err)
 		return
 	}
-
-	clientConf = conf
 	setClientGrpool()
 }
 
+// SetClientConf ...
 func SetClientConf(c ClientConfig) {
 	clientConf = &c
 	err := clientConf.CheckValidity()
@@ -93,6 +96,7 @@ func SetClientConf(c ClientConfig) {
 	setClientGrpool()
 }
 
+// GetClientConf ...
 func GetClientConf() ClientConfig {
 	return *clientConf
 }
@@ -104,6 +108,7 @@ func setClientGrpool() {
 	}
 }
 
+// Options ...
 type Options struct {
 	// connect timeout
 	ConnectTimeout time.Duration
@@ -111,7 +116,9 @@ type Options struct {
 	RequestTimeout time.Duration
 }
 
-type CallResponse struct {
+//AsyncCallbackResponse async response for dubbo
+type AsyncCallbackResponse struct {
+	common.CallbackResponse
 	Opts      Options
 	Cause     error
 	Start     time.Time // invoke(call) start time == write start time
@@ -119,8 +126,7 @@ type CallResponse struct {
 	Reply     interface{}
 }
 
-type AsyncCallback func(response CallResponse)
-
+// Client ...
 type Client struct {
 	opts     Options
 	conf     ClientConfig
@@ -130,14 +136,15 @@ type Client struct {
 	pendingResponses *sync.Map
 }
 
+// NewClient ...
 func NewClient(opt Options) *Client {
 
 	switch {
 	case opt.ConnectTimeout == 0:
-		opt.ConnectTimeout = 3e9
+		opt.ConnectTimeout = 3 * time.Second
 		fallthrough
 	case opt.RequestTimeout == 0:
-		opt.RequestTimeout = 3e9
+		opt.RequestTimeout = 3 * time.Second
 	}
 
 	c := &Client{
@@ -150,6 +157,7 @@ func NewClient(opt Options) *Client {
 	return c
 }
 
+// Request ...
 type Request struct {
 	addr   string
 	svcUrl common.URL
@@ -158,6 +166,7 @@ type Request struct {
 	atta   map[string]string
 }
 
+// NewRequest ...
 func NewRequest(addr string, svcUrl common.URL, method string, args interface{}, atta map[string]string) *Request {
 	return &Request{
 		addr:   addr,
@@ -168,11 +177,13 @@ func NewRequest(addr string, svcUrl common.URL, method string, args interface{},
 	}
 }
 
+// Response ...
 type Response struct {
 	reply interface{}
 	atta  map[string]string
 }
 
+// NewResponse ...
 func NewResponse(reply interface{}, atta map[string]string) *Response {
 	return &Response{
 		reply: reply,
@@ -180,13 +191,13 @@ func NewResponse(reply interface{}, atta map[string]string) *Response {
 	}
 }
 
-// call one way
+// CallOneway call one way
 func (c *Client) CallOneway(request *Request) error {
 
 	return perrors.WithStack(c.call(CT_OneWay, request, NewResponse(nil, nil), nil))
 }
 
-// if @response is nil, the transport layer will get the response without notify the invoker.
+// Call if @response is nil, the transport layer will get the response without notify the invoker.
 func (c *Client) Call(request *Request, response *Response) error {
 
 	ct := CT_TwoWay
@@ -197,19 +208,29 @@ func (c *Client) Call(request *Request, response *Response) error {
 	return perrors.WithStack(c.call(ct, request, response, nil))
 }
 
-func (c *Client) AsyncCall(request *Request, callback AsyncCallback, response *Response) error {
+// AsyncCall ...
+func (c *Client) AsyncCall(request *Request, callback common.AsyncCallback, response *Response) error {
 
 	return perrors.WithStack(c.call(CT_TwoWay, request, response, callback))
 }
 
-func (c *Client) call(ct CallType, request *Request, response *Response, callback AsyncCallback) error {
+func (c *Client) call(ct CallType, request *Request, response *Response, callback common.AsyncCallback) error {
 
 	p := &DubboPackage{}
 	p.Service.Path = strings.TrimPrefix(request.svcUrl.Path, "/")
 	p.Service.Interface = request.svcUrl.GetParam(constant.INTERFACE_KEY, "")
 	p.Service.Version = request.svcUrl.GetParam(constant.VERSION_KEY, "")
+	p.Service.Group = request.svcUrl.GetParam(constant.GROUP_KEY, "")
 	p.Service.Method = request.method
+
 	p.Service.Timeout = c.opts.RequestTimeout
+	var timeout = request.svcUrl.GetParam(strings.Join([]string{constant.METHOD_KEYS, request.method + constant.RETRIES_KEY}, "."), "")
+	if len(timeout) != 0 {
+		if t, err := time.ParseDuration(timeout); err == nil {
+			p.Service.Timeout = t
+		}
+	}
+
 	p.Header.SerialID = byte(S_Dubbo)
 	p.Body = hessian.NewRequest(request.args, request.atta)
 
@@ -235,7 +256,13 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 	if session == nil {
 		return errSessionNotExist
 	}
-	defer c.pool.release(conn, err)
+	defer func() {
+		if err == nil {
+			c.pool.put(conn)
+			return
+		}
+		conn.close()
+	}()
 
 	if err = c.transfer(session, p, rsp); err != nil {
 		return perrors.WithStack(err)
@@ -256,6 +283,7 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 	return perrors.WithStack(err)
 }
 
+// Close ...
 func (c *Client) Close() {
 	if c.pool != nil {
 		c.pool.close()

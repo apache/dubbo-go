@@ -26,6 +26,7 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
@@ -33,7 +34,6 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/common/utils"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
@@ -93,15 +93,19 @@ type rest struct {
 
 var count int
 
-func (bi *MockInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+func (bi *MockInvoker) Invoke(_ context.Context, _ protocol.Invocation) protocol.Result {
 	count++
-	var success bool
-	var err error = nil
+
+	var (
+		success bool
+		err     error
+	)
 	if count >= bi.successCount {
 		success = true
 	} else {
 		err = perrors.New("error")
 	}
+
 	result := &protocol.RPCResult{Err: err, Rest: rest{tried: count, success: success}}
 	return result
 }
@@ -146,7 +150,8 @@ func TestRoute_matchWhen(t *testing.T) {
 }
 
 func TestRoute_matchFilter(t *testing.T) {
-	localIP, _ := utils.GetLocalIP()
+	localIP, _ := gxnet.GetLocalIP()
+	t.Logf("The local ip is %s", localIP)
 	url1, _ := common.NewURL(context.TODO(), "dubbo://10.20.3.3:20880/com.foo.BarService?default.serialization=fastjson")
 	url2, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", localIP))
 	url3, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", localIP))
@@ -204,7 +209,7 @@ func TestRoute_methodRoute(t *testing.T) {
 
 func TestRoute_ReturnFalse(t *testing.T) {
 	url, _ := common.NewURL(context.TODO(), "")
-	localIP, _ := utils.GetLocalIP()
+	localIP, _ := gxnet.GetLocalIP()
 	invokers := []protocol.Invoker{NewMockInvoker(url, 1), NewMockInvoker(url, 2), NewMockInvoker(url, 3)}
 	inv := &invocation.RPCInvocation{}
 	rule := base64.URLEncoding.EncodeToString([]byte("host = " + localIP + " => false"))
@@ -215,7 +220,7 @@ func TestRoute_ReturnFalse(t *testing.T) {
 }
 
 func TestRoute_ReturnEmpty(t *testing.T) {
-	localIP, _ := utils.GetLocalIP()
+	localIP, _ := gxnet.GetLocalIP()
 	url, _ := common.NewURL(context.TODO(), "")
 	invokers := []protocol.Invoker{NewMockInvoker(url, 1), NewMockInvoker(url, 2), NewMockInvoker(url, 3)}
 	inv := &invocation.RPCInvocation{}
@@ -227,7 +232,7 @@ func TestRoute_ReturnEmpty(t *testing.T) {
 }
 
 func TestRoute_ReturnAll(t *testing.T) {
-	localIP, _ := utils.GetLocalIP()
+	localIP, _ := gxnet.GetLocalIP()
 	invokers := []protocol.Invoker{&MockInvoker{}, &MockInvoker{}, &MockInvoker{}}
 	inv := &invocation.RPCInvocation{}
 	rule := base64.URLEncoding.EncodeToString([]byte("host = " + localIP + " => " + " host = " + localIP))
@@ -238,7 +243,7 @@ func TestRoute_ReturnAll(t *testing.T) {
 }
 
 func TestRoute_HostFilter(t *testing.T) {
-	localIP, _ := utils.GetLocalIP()
+	localIP, _ := gxnet.GetLocalIP()
 	url1, _ := common.NewURL(context.TODO(), "dubbo://10.20.3.3:20880/com.foo.BarService")
 	url2, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", localIP))
 	url3, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", localIP))
@@ -257,7 +262,7 @@ func TestRoute_HostFilter(t *testing.T) {
 }
 
 func TestRoute_Empty_HostFilter(t *testing.T) {
-	localIP, _ := utils.GetLocalIP()
+	localIP, _ := gxnet.GetLocalIP()
 	url1, _ := common.NewURL(context.TODO(), "dubbo://10.20.3.3:20880/com.foo.BarService")
 	url2, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", localIP))
 	url3, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", localIP))
@@ -276,7 +281,7 @@ func TestRoute_Empty_HostFilter(t *testing.T) {
 }
 
 func TestRoute_False_HostFilter(t *testing.T) {
-	localIP, _ := utils.GetLocalIP()
+	localIP, _ := gxnet.GetLocalIP()
 	url1, _ := common.NewURL(context.TODO(), "dubbo://10.20.3.3:20880/com.foo.BarService")
 	url2, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", localIP))
 	url3, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", localIP))
@@ -295,7 +300,7 @@ func TestRoute_False_HostFilter(t *testing.T) {
 }
 
 func TestRoute_Placeholder(t *testing.T) {
-	localIP, _ := utils.GetLocalIP()
+	localIP, _ := gxnet.GetLocalIP()
 	url1, _ := common.NewURL(context.TODO(), "dubbo://10.20.3.3:20880/com.foo.BarService")
 	url2, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", localIP))
 	url3, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", localIP))
@@ -314,7 +319,7 @@ func TestRoute_Placeholder(t *testing.T) {
 }
 
 func TestRoute_NoForce(t *testing.T) {
-	localIP, _ := utils.GetLocalIP()
+	localIP, _ := gxnet.GetLocalIP()
 	url1, _ := common.NewURL(context.TODO(), "dubbo://10.20.3.3:20880/com.foo.BarService")
 	url2, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", localIP))
 	url3, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", localIP))
@@ -331,7 +336,7 @@ func TestRoute_NoForce(t *testing.T) {
 }
 
 func TestRoute_Force(t *testing.T) {
-	localIP, _ := utils.GetLocalIP()
+	localIP, _ := gxnet.GetLocalIP()
 	url1, _ := common.NewURL(context.TODO(), "dubbo://10.20.3.3:20880/com.foo.BarService")
 	url2, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", localIP))
 	url3, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", localIP))

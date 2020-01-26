@@ -18,6 +18,7 @@
 package cluster_impl
 
 import (
+	"context"
 	"strconv"
 	"sync"
 	"time"
@@ -71,7 +72,7 @@ func newFailbackClusterInvoker(directory cluster.Directory) protocol.Invoker {
 	return invoker
 }
 
-func (invoker *failbackClusterInvoker) process() {
+func (invoker *failbackClusterInvoker) process(ctx context.Context) {
 	invoker.ticker = time.NewTicker(time.Second * 1)
 	for range invoker.ticker.C {
 		// check each timeout task and re-run
@@ -102,7 +103,7 @@ func (invoker *failbackClusterInvoker) process() {
 
 				retryInvoker := invoker.doSelect(retryTask.loadbalance, retryTask.invocation, retryTask.invokers, invoked)
 				var result protocol.Result
-				result = retryInvoker.Invoke(retryTask.invocation)
+				result = retryInvoker.Invoke(ctx, retryTask.invocation)
 				if result.Error() != nil {
 					retryTask.lastInvoker = retryInvoker
 					invoker.checkRetry(retryTask, result.Error())
@@ -126,7 +127,7 @@ func (invoker *failbackClusterInvoker) checkRetry(retryTask *retryTimerTask, err
 	}
 }
 
-func (invoker *failbackClusterInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	invokers := invoker.directory.List(invocation)
 	err := invoker.checkInvokers(invokers, invocation)
 	if err != nil {
@@ -150,11 +151,11 @@ func (invoker *failbackClusterInvoker) Invoke(invocation protocol.Invocation) pr
 
 	ivk := invoker.doSelect(loadbalance, invocation, invokers, invoked)
 	//DO INVOKE
-	result = ivk.Invoke(invocation)
+	result = ivk.Invoke(ctx, invocation)
 	if result.Error() != nil {
 		invoker.once.Do(func() {
 			invoker.taskList = queue.New(invoker.failbackTasks)
-			go invoker.process()
+			go invoker.process(ctx)
 		})
 
 		taskLen := invoker.taskList.Len()

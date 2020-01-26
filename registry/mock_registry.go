@@ -18,18 +18,25 @@
 package registry
 
 import (
+	"time"
+)
+
+import (
 	"go.uber.org/atomic"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/logger"
 )
 
+// MockRegistry ...
 type MockRegistry struct {
 	listener  *listener
 	destroyed *atomic.Bool
 }
 
+// NewMockRegistry ...
 func NewMockRegistry(url *common.URL) (Registry, error) {
 	registry := &MockRegistry{
 		destroyed: atomic.NewBool(false),
@@ -38,23 +45,65 @@ func NewMockRegistry(url *common.URL) (Registry, error) {
 	registry.listener = listener
 	return registry, nil
 }
+
+// Register ...
 func (*MockRegistry) Register(url common.URL) error {
 	return nil
 }
 
+// Destroy ...
 func (r *MockRegistry) Destroy() {
 	if r.destroyed.CAS(false, true) {
 	}
 }
+
+// IsAvailable ...
 func (r *MockRegistry) IsAvailable() bool {
 	return !r.destroyed.Load()
 }
+
+// GetUrl ...
 func (r *MockRegistry) GetUrl() common.URL {
 	return common.URL{}
 }
 
-func (r *MockRegistry) Subscribe(common.URL) (Listener, error) {
+func (r *MockRegistry) subscribe(*common.URL) (Listener, error) {
 	return r.listener, nil
+}
+
+// Subscribe ...
+func (r *MockRegistry) Subscribe(url *common.URL, notifyListener NotifyListener) {
+	go func() {
+		for {
+			if !r.IsAvailable() {
+				logger.Warnf("event listener game over.")
+				time.Sleep(time.Duration(3) * time.Second)
+				return
+			}
+
+			listener, err := r.subscribe(url)
+			if err != nil {
+				if !r.IsAvailable() {
+					logger.Warnf("event listener game over.")
+					return
+				}
+				time.Sleep(time.Duration(3) * time.Second)
+				continue
+			}
+
+			for {
+				serviceEvent, err := listener.Next()
+				if err != nil {
+					listener.Close()
+					time.Sleep(time.Duration(3) * time.Second)
+					return
+				}
+
+				logger.Infof("update begin, service event: %v", serviceEvent.String())
+				notifyListener.Notify(serviceEvent)
+			}
+		}
+	}()
 }
 
 type listener struct {
@@ -74,6 +123,7 @@ func (*listener) Close() {
 
 }
 
+// MockEvent ...
 func (r *MockRegistry) MockEvent(event *ServiceEvent) {
 	r.listener.listenChan <- event
 }

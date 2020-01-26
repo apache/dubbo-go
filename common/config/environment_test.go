@@ -19,6 +19,7 @@ package config
 import (
 	"testing"
 )
+
 import (
 	"github.com/stretchr/testify/assert"
 )
@@ -38,7 +39,7 @@ func TestEnvironment_UpdateExternalConfigMap(t *testing.T) {
 func TestEnvironment_ConfigurationAndGetProperty(t *testing.T) {
 	GetEnvInstance().UpdateExternalConfigMap(map[string]string{"1": "2"})
 	list := GetEnvInstance().Configuration()
-	ok, v := list.Front().Value.(*InmemoryConfiguration).GetProperty("1")
+	ok, v := list.Back().Value.(*InmemoryConfiguration).GetProperty("1")
 	assert.True(t, ok)
 	assert.Equal(t, "2", v)
 }

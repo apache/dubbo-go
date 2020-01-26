@@ -22,16 +22,34 @@ import (
 )
 
 var (
-	filters = make(map[string]func() filter.Filter)
+	filters                  = make(map[string]func() filter.Filter)
+	rejectedExecutionHandler = make(map[string]func() filter.RejectedExecutionHandler)
 )
 
+// SetFilter ...
 func SetFilter(name string, v func() filter.Filter) {
 	filters[name] = v
 }
 
+// GetFilter ...
 func GetFilter(name string) filter.Filter {
 	if filters[name] == nil {
-		panic("filter for " + name + " is not existing, make sure you have import the package.")
+		panic("filter for " + name + " is not existing, make sure you have imported the package.")
 	}
 	return filters[name]()
+}
+
+// SetRejectedExecutionHandler ...
+func SetRejectedExecutionHandler(name string, creator func() filter.RejectedExecutionHandler) {
+	rejectedExecutionHandler[name] = creator
+}
+
+// GetRejectedExecutionHandler ...
+func GetRejectedExecutionHandler(name string) filter.RejectedExecutionHandler {
+	creator, ok := rejectedExecutionHandler[name]
+	if !ok {
+		panic("RejectedExecutionHandler for " + name + " is not existing, make sure you have import the package " +
+			"and you have register it by invoking extension.SetRejectedExecutionHandler.")
+	}
+	return creator()
 }

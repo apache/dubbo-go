@@ -1,5 +1,7 @@
 # dubbo client yaml configure file
 
+application:
+  name: "BDTService"
 config_center:
   protocol: "mock"
   address: "127.0.0.1"
@@ -14,6 +16,10 @@ references:
     methods :
       - name: "GetUser"
         retries: "3"
+
+shutdown_conf:
+  timeout: 60s
+  step_timeout: 10s
 
 protocol_conf:
   dubbo:
