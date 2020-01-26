@@ -33,6 +33,7 @@ import (
 var (
 	consumerConfig *ConsumerConfig
 	providerConfig *ProviderConfig
+	metricConfig *MetricConfig
 	maxWait        = 3
 )
 
@@ -75,6 +76,9 @@ func Load() {
 	if consumerConfig == nil {
 		logger.Warnf("consumerConfig is nil!")
 	} else {
+
+		metricConfig = consumerConfig.MetricConfig
+
 		checkApplicationName(consumerConfig.ApplicationConfig)
 		if err := configCenterRefreshConsumer(); err != nil {
 			logger.Errorf("[consumer config center refresh] %#v", err)
@@ -131,6 +135,10 @@ func Load() {
 	if providerConfig == nil {
 		logger.Warnf("providerConfig is nil!")
 	} else {
+
+		// so, you should know that the consumer's metric config will be override
+		metricConfig = providerConfig.MetricConfig
+
 		checkApplicationName(providerConfig.ApplicationConfig)
 		if err := configCenterRefreshProvider(); err != nil {
 			logger.Errorf("[provider config center refresh] %#v", err)
