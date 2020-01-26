@@ -33,7 +33,7 @@ import (
 var (
 	consumerConfig *ConsumerConfig
 	providerConfig *ProviderConfig
-	metricConfig *MetricConfig
+	metricConfig   *MetricConfig
 	maxWait        = 3
 )
 
