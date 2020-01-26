@@ -31,10 +31,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
-	gxset "github.com/dubbogo/gost/container/set"
 )
-
-var routerURLSet = gxset.NewSet()
 
 // BaseDirectory ...
 type BaseDirectory struct {
@@ -51,10 +48,6 @@ func (dir *BaseDirectory) RouterChain() router.Chain {
 
 func (dir *BaseDirectory) SetRouterChain(routerChain router.Chain) {
 	dir.routerChain = routerChain
-}
-
-func GetRouterURLSet() *gxset.HashSet {
-	return routerURLSet
 }
 
 // NewBaseDirectory ...
