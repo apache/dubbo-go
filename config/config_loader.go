@@ -105,6 +105,7 @@ func Load() {
 			ref.Refer(rpcService)
 			ref.Implement(rpcService)
 		}
+
 		//wait for invoker is available, if wait over default 3s, then panic
 		var count int
 		checkok := true
