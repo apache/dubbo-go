@@ -61,7 +61,7 @@ func (p *metricsFilter) Invoke(ctx context.Context, invoker protocol.Invoker, in
 	duration := end.Sub(start)
 	go func() {
 		for _, reporter := range p.reporters {
-			reporter.Report(ctx, invoker, invocation, duration)
+			reporter.Report(ctx, invoker, invocation, duration, nil)
 		}
 	}()
 	return res
