@@ -15,5 +15,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// dubbo plugin for protobuf.
+// Package dubbo plugin for protobuf.
 package dubbo

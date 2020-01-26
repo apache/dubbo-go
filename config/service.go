@@ -26,12 +26,12 @@ var (
 	proServices = map[string]common.RPCService{} // service name -> service
 )
 
-// SetConService is called by init() of implement of RPCService
+// SetConsumerService is called by init() of implement of RPCService
 func SetConsumerService(service common.RPCService) {
 	conServices[service.Reference()] = service
 }
 
-// SetProService is called by init() of implement of RPCService
+// SetProviderService is called by init() of implement of RPCService
 func SetProviderService(service common.RPCService) {
 	proServices[service.Reference()] = service
 }

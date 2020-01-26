@@ -29,8 +29,12 @@ import (
 //////////////////////////////////////////
 // DynamicConfiguration
 //////////////////////////////////////////
-const DEFAULT_GROUP = "dubbo"
-const DEFAULT_CONFIG_TIMEOUT = "10s"
+const (
+	// DEFAULT_GROUP: default group
+	DEFAULT_GROUP = "dubbo"
+	// DEFAULT_CONFIG_TIMEOUT: default config timeout
+	DEFAULT_CONFIG_TIMEOUT = "10s"
+)
 
 // DynamicConfiguration ...
 type DynamicConfiguration interface {
