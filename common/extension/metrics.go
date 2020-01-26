@@ -21,7 +21,7 @@ import (
 	"github.com/apache/dubbo-go/metrics"
 )
 
-var(
+var (
 	metricReporterMap = make(map[string]metrics.Reporter, 4)
 )
 
