@@ -114,8 +114,9 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 			content, _, err := l.client.Conn.Get(zkPath)
 			if err != nil {
 				logger.Errorf("Get new node path {%v} 's content error,message is  {%v}", zkPath, perrors.WithStack(err))
+			} else {
+				listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeUpdate, Content: string(content)})
 			}
-			listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeUpdate, Content: string(content)})
 
 		} else {
 			logger.Errorf("path{%s} child nodes changed, zk.Children() = error{%v}", zkPath, perrors.WithStack(err))
