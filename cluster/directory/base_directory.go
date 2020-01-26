@@ -31,7 +31,10 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/dubbogo/gost/container/set"
 )
+
+var routerURLSet = gxset.NewSet()
 
 // BaseDirectory ...
 type BaseDirectory struct {
@@ -101,4 +104,8 @@ func (dir *BaseDirectory) Destroy(doDestroy func()) {
 // IsAvailable ...
 func (dir *BaseDirectory) IsAvailable() bool {
 	return !dir.destroyed.Load()
+}
+
+func GetRouterURLSet() *gxset.HashSet {
+	return routerURLSet
 }
