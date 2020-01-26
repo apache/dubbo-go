@@ -20,6 +20,7 @@ package protocol
 import (
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 import (
@@ -27,18 +28,82 @@ import (
 )
 
 var (
-	methodStatistics sync.Map // url -> { methodName : RpcStatus}
+	methodStatistics sync.Map // url -> { methodName : RPCStatus}
+	serviceStatistic sync.Map // url -> RPCStatus
 )
 
-type RpcStatus struct {
-	active int32
+// RPCStatus ...
+type RPCStatus struct {
+	active                        int32
+	failed                        int32
+	total                         int32
+	totalElapsed                  int64
+	failedElapsed                 int64
+	maxElapsed                    int64
+	failedMaxElapsed              int64
+	succeededMaxElapsed           int64
+	successiveRequestFailureCount int32
+	lastRequestFailedTimestamp    int64
 }
 
-func (rpc *RpcStatus) GetActive() int32 {
+// GetActive ...
+func (rpc *RPCStatus) GetActive() int32 {
 	return atomic.LoadInt32(&rpc.active)
 }
 
-func GetStatus(url common.URL, methodName string) *RpcStatus {
+// GetFailed ...
+func (rpc *RPCStatus) GetFailed() int32 {
+	return atomic.LoadInt32(&rpc.failed)
+}
+
+// GetTotal ...
+func (rpc *RPCStatus) GetTotal() int32 {
+	return atomic.LoadInt32(&rpc.total)
+}
+
+// GetTotalElapsed ...
+func (rpc *RPCStatus) GetTotalElapsed() int64 {
+	return atomic.LoadInt64(&rpc.totalElapsed)
+}
+
+// GetFailedElapsed ...
+func (rpc *RPCStatus) GetFailedElapsed() int64 {
+	return atomic.LoadInt64(&rpc.failedElapsed)
+}
+
+// GetMaxElapsed ...
+func (rpc *RPCStatus) GetMaxElapsed() int64 {
+	return atomic.LoadInt64(&rpc.maxElapsed)
+}
+
+// GetFailedMaxElapsed ...
+func (rpc *RPCStatus) GetFailedMaxElapsed() int64 {
+	return atomic.LoadInt64(&rpc.failedMaxElapsed)
+}
+
+// GetSucceededMaxElapsed ...
+func (rpc *RPCStatus) GetSucceededMaxElapsed() int64 {
+	return atomic.LoadInt64(&rpc.succeededMaxElapsed)
+}
+
+// GetLastRequestFailedTimestamp ...
+func (rpc *RPCStatus) GetLastRequestFailedTimestamp() int64 {
+	return atomic.LoadInt64(&rpc.lastRequestFailedTimestamp)
+}
+
+// GetSuccessiveRequestFailureCount ...
+func (rpc *RPCStatus) GetSuccessiveRequestFailureCount() int32 {
+	return atomic.LoadInt32(&rpc.successiveRequestFailureCount)
+}
+
+// GetURLStatus ...
+func GetURLStatus(url common.URL) *RPCStatus {
+	rpcStatus, _ := serviceStatistic.LoadOrStore(url.Key(), &RPCStatus{})
+	return rpcStatus.(*RPCStatus)
+}
+
+// GetMethodStatus ...
+func GetMethodStatus(url common.URL, methodName string) *RPCStatus {
 	identifier := url.Key()
 	methodMap, found := methodStatistics.Load(identifier)
 	if !found {
@@ -49,27 +114,56 @@ func GetStatus(url common.URL, methodName string) *RpcStatus {
 	methodActive := methodMap.(*sync.Map)
 	rpcStatus, found := methodActive.Load(methodName)
 	if !found {
-		rpcStatus = &RpcStatus{}
+		rpcStatus = &RPCStatus{}
 		methodActive.Store(methodName, rpcStatus)
 	}
 
-	status := rpcStatus.(*RpcStatus)
+	status := rpcStatus.(*RPCStatus)
 	return status
 }
 
+// BeginCount ...
 func BeginCount(url common.URL, methodName string) {
-	beginCount0(GetStatus(url, methodName))
+	beginCount0(GetURLStatus(url))
+	beginCount0(GetMethodStatus(url, methodName))
 }
 
-func EndCount(url common.URL, methodName string) {
-	endCount0(GetStatus(url, methodName))
+// EndCount ...
+func EndCount(url common.URL, methodName string, elapsed int64, succeeded bool) {
+	endCount0(GetURLStatus(url), elapsed, succeeded)
+	endCount0(GetMethodStatus(url, methodName), elapsed, succeeded)
 }
 
 // private methods
-func beginCount0(rpcStatus *RpcStatus) {
+func beginCount0(rpcStatus *RPCStatus) {
 	atomic.AddInt32(&rpcStatus.active, 1)
 }
 
-func endCount0(rpcStatus *RpcStatus) {
+func endCount0(rpcStatus *RPCStatus, elapsed int64, succeeded bool) {
 	atomic.AddInt32(&rpcStatus.active, -1)
+	atomic.AddInt32(&rpcStatus.total, 1)
+	atomic.AddInt64(&rpcStatus.totalElapsed, elapsed)
+
+	if rpcStatus.maxElapsed < elapsed {
+		atomic.StoreInt64(&rpcStatus.maxElapsed, elapsed)
+	}
+	if succeeded {
+		if rpcStatus.succeededMaxElapsed < elapsed {
+			atomic.StoreInt64(&rpcStatus.succeededMaxElapsed, elapsed)
+		}
+		atomic.StoreInt32(&rpcStatus.successiveRequestFailureCount, 0)
+	} else {
+		atomic.StoreInt64(&rpcStatus.lastRequestFailedTimestamp, time.Now().Unix())
+		atomic.AddInt32(&rpcStatus.successiveRequestFailureCount, 1)
+		atomic.AddInt32(&rpcStatus.failed, 1)
+		atomic.AddInt64(&rpcStatus.failedElapsed, elapsed)
+		if rpcStatus.failedMaxElapsed < elapsed {
+			atomic.StoreInt64(&rpcStatus.failedMaxElapsed, elapsed)
+		}
+	}
+}
+
+// CurrentTimeMillis ...
+func CurrentTimeMillis() int64 {
+	return time.Now().UnixNano() / int64(time.Millisecond)
 }

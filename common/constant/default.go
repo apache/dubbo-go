@@ -18,8 +18,14 @@
 package constant
 
 const (
-	DUBBO = "dubbo"
+	DUBBO             = "dubbo"
+	PROVIDER_PROTOCOL = "provider"
+	//compatible with 2.6.x
+	OVERRIDE_PROTOCOL = "override"
+	EMPTY_PROTOCOL    = "empty"
+	ROUTER_PROTOCOL   = "router"
 )
+
 const (
 	DEFAULT_WEIGHT = 100     //
 	DEFAULT_WARMUP = 10 * 60 // in java here is 10*60*1000 because of System.currentTimeMillis() is measured in milliseconds & in go time.Unix() is second
@@ -40,13 +46,28 @@ const (
 const (
 	DEFAULT_KEY               = "default"
 	PREFIX_DEFAULT_KEY        = "default."
-	DEFAULT_SERVICE_FILTERS   = "echo"
-	DEFAULT_REFERENCE_FILTERS = ""
+	DEFAULT_SERVICE_FILTERS   = "echo,token,accesslog,tps,generic_service,execute,pshutdown"
+	DEFAULT_REFERENCE_FILTERS = "cshutdown"
 	GENERIC_REFERENCE_FILTERS = "generic"
 	GENERIC                   = "$invoke"
 	ECHO                      = "$echo"
 )
 
 const (
-	ANY_VALUE = "*"
+	ANY_VALUE           = "*"
+	ANYHOST_VALUE       = "0.0.0.0"
+	REMOVE_VALUE_PREFIX = "-"
+)
+
+const (
+	CONFIGURATORS_CATEGORY             = "configurators"
+	ROUTER_CATEGORY                    = "category"
+	DEFAULT_CATEGORY                   = PROVIDER_CATEGORY
+	DYNAMIC_CONFIGURATORS_CATEGORY     = "dynamicconfigurators"
+	APP_DYNAMIC_CONFIGURATORS_CATEGORY = "appdynamicconfigurators"
+	PROVIDER_CATEGORY                  = "providers"
+)
+
+const (
+	COMMA_SPLIT_PATTERN = "\\s*[,]+\\s*"
 )

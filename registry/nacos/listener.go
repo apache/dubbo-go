@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package nacos
 
 import (
@@ -19,6 +36,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting"
 )
@@ -26,17 +44,18 @@ import (
 type nacosListener struct {
 	namingClient   naming_client.INamingClient
 	listenUrl      common.URL
-	events         chan *remoting.ConfigChangeEvent
+	events         chan *config_center.ConfigChangeEvent
 	instanceMap    map[string]model.Instance
 	cacheLock      sync.Mutex
 	done           chan struct{}
 	subscribeParam *vo.SubscribeParam
 }
 
+// NewNacosListener ...
 func NewNacosListener(url common.URL, namingClient naming_client.INamingClient) (*nacosListener, error) {
 	listener := &nacosListener{
 		namingClient: namingClient,
-		listenUrl:    url, events: make(chan *remoting.ConfigChangeEvent, 32),
+		listenUrl:    url, events: make(chan *config_center.ConfigChangeEvent, 32),
 		instanceMap: map[string]model.Instance{},
 		done:        make(chan struct{}),
 	}
@@ -134,20 +153,20 @@ func (nl *nacosListener) Callback(services []model.SubscribeService, err error) 
 	for i := range addInstances {
 		newUrl := generateUrl(addInstances[i])
 		if newUrl != nil {
-			nl.process(&remoting.ConfigChangeEvent{Value: *newUrl, ConfigType: remoting.EventTypeAdd})
+			nl.process(&config_center.ConfigChangeEvent{Value: *newUrl, ConfigType: remoting.EventTypeAdd})
 		}
 	}
 	for i := range delInstances {
 		newUrl := generateUrl(delInstances[i])
 		if newUrl != nil {
-			nl.process(&remoting.ConfigChangeEvent{Value: *newUrl, ConfigType: remoting.EventTypeDel})
+			nl.process(&config_center.ConfigChangeEvent{Value: *newUrl, ConfigType: remoting.EventTypeDel})
 		}
 	}
 
 	for i := range updateInstances {
 		newUrl := generateUrl(updateInstances[i])
 		if newUrl != nil {
-			nl.process(&remoting.ConfigChangeEvent{Value: *newUrl, ConfigType: remoting.EventTypeUpdate})
+			nl.process(&config_center.ConfigChangeEvent{Value: *newUrl, ConfigType: remoting.EventTypeUpdate})
 		}
 	}
 }
@@ -175,7 +194,7 @@ func (nl *nacosListener) stopListen() error {
 	return nl.namingClient.Unsubscribe(nl.subscribeParam)
 }
 
-func (nl *nacosListener) process(configType *remoting.ConfigChangeEvent) {
+func (nl *nacosListener) process(configType *config_center.ConfigChangeEvent) {
 	nl.events <- configType
 }
 

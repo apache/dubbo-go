@@ -20,38 +20,54 @@ package config_center
 import (
 	"time"
 )
+
 import (
-	"github.com/apache/dubbo-go/remoting"
+	"github.com/apache/dubbo-go/config_center/parser"
 )
 
 //////////////////////////////////////////
 // DynamicConfiguration
 //////////////////////////////////////////
-const DEFAULT_GROUP = "dubbo"
-const DEFAULT_CONFIG_TIMEOUT = "10s"
+const (
+	// DEFAULT_GROUP: default group
+	DEFAULT_GROUP = "dubbo"
+	// DEFAULT_CONFIG_TIMEOUT: default config timeout
+	DEFAULT_CONFIG_TIMEOUT = "10s"
+)
 
+// DynamicConfiguration ...
 type DynamicConfiguration interface {
-	Parser() ConfigurationParser
-	SetParser(ConfigurationParser)
-	AddListener(string, remoting.ConfigurationListener, ...Option)
-	RemoveListener(string, remoting.ConfigurationListener, ...Option)
-	GetConfig(string, ...Option) (string, error)
-	GetConfigs(string, ...Option) (string, error)
+	Parser() parser.ConfigurationParser
+	SetParser(parser.ConfigurationParser)
+	AddListener(string, ConfigurationListener, ...Option)
+	RemoveListener(string, ConfigurationListener, ...Option)
+	//GetProperties get properties file
+	GetProperties(string, ...Option) (string, error)
+
+	//GetRule get Router rule properties file
+	GetRule(string, ...Option) (string, error)
+
+	//GetInternalProperty get value by key in Default properties file(dubbo.properties)
+	GetInternalProperty(string, ...Option) (string, error)
 }
 
+// Options ...
 type Options struct {
 	Group   string
 	Timeout time.Duration
 }
 
+// Option ...
 type Option func(*Options)
 
+// WithGroup ...
 func WithGroup(group string) Option {
 	return func(opt *Options) {
 		opt.Group = group
 	}
 }
 
+// WithTimeout ...
 func WithTimeout(time time.Duration) Option {
 	return func(opt *Options) {
 		opt.Timeout = time

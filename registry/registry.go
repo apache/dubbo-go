@@ -21,17 +21,30 @@ import (
 	"github.com/apache/dubbo-go/common"
 )
 
-// Extension - Registry
+// Registry Extension - Registry
 type Registry interface {
 	common.Node
 	//used for service provider calling , register services to registry
 	//And it is also used for service consumer calling , register services cared about ,for dubbo's admin monitoring.
 	Register(url common.URL) error
 
-	//used for service consumer ,start subscribe service event from registry
-	Subscribe(common.URL) (Listener, error)
+	//When creating new registry extension,pls select one of the following modes.
+	//Will remove in dubbogo version v1.1.0
+	//mode1 : return Listener with Next function which can return subscribe service event from registry
+	//Deprecated!
+	//subscribe(common.URL) (Listener, error)
+
+	//Will relace mode1 in dubbogo version v1.1.0
+	//mode2 : callback mode, subscribe with notify(notify listener).
+	Subscribe(*common.URL, NotifyListener)
 }
 
+// NotifyListener ...
+type NotifyListener interface {
+	Notify(*ServiceEvent)
+}
+
+// Listener Deprecated!
 type Listener interface {
 	Next() (*ServiceEvent, error)
 	Close()

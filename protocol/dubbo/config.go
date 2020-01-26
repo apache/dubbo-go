@@ -22,10 +22,12 @@ import (
 )
 
 import (
+	"github.com/dubbogo/getty"
 	perrors "github.com/pkg/errors"
 )
 
 type (
+	// GettySessionParam ...
 	GettySessionParam struct {
 		CompressEncoding bool   `default:"false" yaml:"compress_encoding" json:"compress_encoding,omitempty"`
 		TcpNoDelay       bool   `default:"true" yaml:"tcp_no_delay" json:"tcp_no_delay,omitempty"`
@@ -45,7 +47,8 @@ type (
 		SessionName      string `default:"rpc" yaml:"session_name" json:"session_name,omitempty"`
 	}
 
-	// Config holds supported types by the multiconfig package
+	// ServerConfig
+	//Config holds supported types by the multiconfig package
 	ServerConfig struct {
 		// session
 		SessionTimeout string `default:"60s" yaml:"session_timeout" json:"session_timeout,omitempty"`
@@ -61,7 +64,8 @@ type (
 		GettySessionParam GettySessionParam `required:"true" yaml:"getty_session_param" json:"getty_session_param,omitempty"`
 	}
 
-	// Config holds supported types by the multiconfig package
+	// ClientConfig
+	//Config holds supported types by the multiconfig package
 	ClientConfig struct {
 		ReconnectInterval int `default:"0" yaml:"reconnect_interval" json:"reconnect_interval,omitempty"`
 
@@ -90,6 +94,60 @@ type (
 	}
 )
 
+// GetDefaultClientConfig ...
+func GetDefaultClientConfig() ClientConfig {
+	return ClientConfig{
+		ReconnectInterval: 0,
+		ConnectionNum:     16,
+		HeartbeatPeriod:   "30s",
+		SessionTimeout:    "180s",
+		PoolSize:          4,
+		PoolTTL:           600,
+		GrPoolSize:        200,
+		QueueLen:          64,
+		QueueNumber:       10,
+		GettySessionParam: GettySessionParam{
+			CompressEncoding: false,
+			TcpNoDelay:       true,
+			TcpKeepAlive:     true,
+			KeepAlivePeriod:  "180s",
+			TcpRBufSize:      262144,
+			TcpWBufSize:      65536,
+			PkgWQSize:        512,
+			TcpReadTimeout:   "1s",
+			TcpWriteTimeout:  "5s",
+			WaitTimeout:      "1s",
+			MaxMsgLen:        102400,
+			SessionName:      "client",
+		}}
+}
+
+// GetDefaultServerConfig ...
+func GetDefaultServerConfig() ServerConfig {
+	return ServerConfig{
+		SessionTimeout: "180s",
+		SessionNumber:  700,
+		GrPoolSize:     120,
+		QueueNumber:    6,
+		QueueLen:       64,
+		GettySessionParam: GettySessionParam{
+			CompressEncoding: false,
+			TcpNoDelay:       true,
+			TcpKeepAlive:     true,
+			KeepAlivePeriod:  "180s",
+			TcpRBufSize:      262144,
+			TcpWBufSize:      65536,
+			PkgWQSize:        512,
+			TcpReadTimeout:   "1s",
+			TcpWriteTimeout:  "5s",
+			WaitTimeout:      "1s",
+			MaxMsgLen:        102400,
+			SessionName:      "server",
+		},
+	}
+}
+
+// CheckValidity ...
 func (c *GettySessionParam) CheckValidity() error {
 	var err error
 
@@ -112,6 +170,7 @@ func (c *GettySessionParam) CheckValidity() error {
 	return nil
 }
 
+// CheckValidity ...
 func (c *ClientConfig) CheckValidity() error {
 	var err error
 
@@ -121,6 +180,11 @@ func (c *ClientConfig) CheckValidity() error {
 		return perrors.WithMessagef(err, "time.ParseDuration(HeartbeatPeroid{%#v})", c.HeartbeatPeriod)
 	}
 
+	if c.heartbeatPeriod >= time.Duration(getty.MaxWheelTimeSpan) {
+		return perrors.WithMessagef(err, "heartbeat_period %s should be less than %s",
+			c.HeartbeatPeriod, time.Duration(getty.MaxWheelTimeSpan))
+	}
+
 	if c.sessionTimeout, err = time.ParseDuration(c.SessionTimeout); err != nil {
 		return perrors.WithMessagef(err, "time.ParseDuration(SessionTimeout{%#v})", c.SessionTimeout)
 	}
@@ -128,11 +192,17 @@ func (c *ClientConfig) CheckValidity() error {
 	return perrors.WithStack(c.GettySessionParam.CheckValidity())
 }
 
+// CheckValidity ...
 func (c *ServerConfig) CheckValidity() error {
 	var err error
 
 	if c.sessionTimeout, err = time.ParseDuration(c.SessionTimeout); err != nil {
 		return perrors.WithMessagef(err, "time.ParseDuration(SessionTimeout{%#v})", c.SessionTimeout)
+	}
+
+	if c.sessionTimeout >= time.Duration(getty.MaxWheelTimeSpan) {
+		return perrors.WithMessagef(err, "session_timeout %s should be less than %s",
+			c.SessionTimeout, time.Duration(getty.MaxWheelTimeSpan))
 	}
 
 	return perrors.WithStack(c.GettySessionParam.CheckValidity())
