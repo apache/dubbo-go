@@ -73,7 +73,7 @@ type PrometheusReporter struct {
 }
 
 // report the duration to Prometheus
-func (reporter *PrometheusReporter) Report(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, cost time.Duration) {
+func (reporter *PrometheusReporter) Report(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, cost time.Duration, res protocol.Result) {
 	url := invoker.GetUrl()
 	var sumVec *prometheus.SummaryVec
 	if isProvider(url) {
