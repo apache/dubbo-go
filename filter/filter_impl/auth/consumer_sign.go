@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"fmt"
 )
 import (
@@ -18,7 +19,7 @@ func init() {
 	extension.SetFilter(constant.CONSUMER_SIGN_FILTER, getConsumerSignFilter)
 }
 
-func (csf *ConsumerSignFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (csf *ConsumerSignFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("invoking ConsumerSign filter.")
 	url := invoker.GetUrl()
 
@@ -29,10 +30,10 @@ func (csf *ConsumerSignFilter) Invoke(invoker protocol.Invoker, invocation proto
 		panic(fmt.Sprintf("Sign for invocation %s # %s failed", url.ServiceKey(), invocation.MethodName()))
 
 	}
-	return invoker.Invoke(invocation)
+	return invoker.Invoke(ctx, invocation)
 }
 
-func (csf *ConsumerSignFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (csf *ConsumerSignFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }
 func getConsumerSignFilter() filter.Filter {
