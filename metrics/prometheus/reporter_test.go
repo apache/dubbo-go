@@ -24,6 +24,9 @@ import (
 )
 
 import (
+	"github.com/stretchr/testify/assert"
+)
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/protocol"
@@ -43,6 +46,7 @@ func TestPrometheusReporter_Report(t *testing.T) {
 	attach := make(map[string]string, 10)
 	inv := invocation.NewRPCInvocation("MethodName", []interface{}{"OK", "Hello"}, attach)
 
+	assert.False(t, isConsumer(url))
 	ctx := context.Background()
 	reporter.Report(ctx, invoker, inv, 100*time.Millisecond, nil)
 }
