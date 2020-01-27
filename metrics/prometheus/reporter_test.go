@@ -49,4 +49,24 @@ func TestPrometheusReporter_Report(t *testing.T) {
 	assert.False(t, isConsumer(url))
 	ctx := context.Background()
 	reporter.Report(ctx, invoker, inv, 100*time.Millisecond, nil)
+
+	// consumer side
+	url, _ = common.NewURL(context.Background(),
+		"dubbo://:20000/UserProvider?app.version=0.0.1&application=BDTService&bean.name=UserProvider"+
+			"&cluster=failover&environment=dev&group=&interface=com.ikurento.user.UserProvider&loadbalance=random&methods.GetUser."+
+			"loadbalance=random&methods.GetUser.retries=1&methods.GetUser.weight=0&module=dubbogo+user-info+server&name="+
+			"BDTService&organization=ikurento.com&owner=ZX&registry.role=0&retries=&"+
+			"service.filter=echo%2Ctoken%2Caccesslog&timestamp=1569153406&token=934804bf-b007-4174-94eb-96e3e1d60cc7&version=&warmup=100")
+	invoker = protocol.NewBaseInvoker(url)
+	reporter.Report(ctx, invoker, inv, 100*time.Millisecond, nil)
+
+	// invalid role
+	url, _ = common.NewURL(context.Background(),
+		"dubbo://:20000/UserProvider?app.version=0.0.1&application=BDTService&bean.name=UserProvider"+
+			"&cluster=failover&environment=dev&group=&interface=com.ikurento.user.UserProvider&loadbalance=random&methods.GetUser."+
+			"loadbalance=random&methods.GetUser.retries=1&methods.GetUser.weight=0&module=dubbogo+user-info+server&name="+
+			"BDTService&organization=ikurento.com&owner=ZX&registry.role=9&retries=&"+
+			"service.filter=echo%2Ctoken%2Caccesslog&timestamp=1569153406&token=934804bf-b007-4174-94eb-96e3e1d60cc7&version=&warmup=100")
+	invoker = protocol.NewBaseInvoker(url)
+	reporter.Report(ctx, invoker, inv, 100*time.Millisecond, nil)
 }
