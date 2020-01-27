@@ -28,13 +28,16 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/metrics"
 	"github.com/apache/dubbo-go/protocol"
 )
 
 func TestGetMetricReporter(t *testing.T) {
 	reporter := &mockReporter{}
 	name := "mock"
-	SetMetricReporter(name, reporter)
+	SetMetricReporter(name, func() metrics.Reporter {
+		return reporter
+	})
 	res := GetMetricReporter(name)
 	assert.Equal(t, reporter, res)
 }
