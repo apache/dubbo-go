@@ -17,25 +17,9 @@
 
 package config
 
-import (
-	"github.com/creasty/defaults"
-)
-
 // This is the config struct for all metrics implementation
 type MetricConfig struct {
 	Reporters []string `yaml:"reporters" json:"reporters,omitempty"`
-}
-
-// parse the config from yml
-func (c *MetricConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	if err := defaults.Set(c); err != nil {
-		return err
-	}
-	type plain MetricConfig
-	if err := unmarshal((*plain)(c)); err != nil {
-		return err
-	}
-	return nil
 }
 
 // find the MetricConfig
