@@ -14,11 +14,6 @@ type AccessKeyPair struct {
 	Options      string `yaml:"options"   json:"options,omitempty" property:"options"`
 }
 
-type Authenticator interface {
-	Sign(protocol.Invocation, *common.URL) error
-	Authenticate(protocol.Invocation, *common.URL) error
-}
-
-type AccesskeyStorage interface {
-	GetAccesskeyPair(protocol.Invocation, *common.URL) *AccessKeyPair
+type AccessKeyStorage interface {
+	GetAccessKeyPair(protocol.Invocation, *common.URL) *AccessKeyPair
 }

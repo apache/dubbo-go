@@ -6,7 +6,7 @@ import (
 
 var (
 	authenticators    = make(map[string]func() filter.Authenticator)
-	accesskeyStorages = make(map[string]func() filter.AccesskeyStorage)
+	accesskeyStorages = make(map[string]func() filter.AccessKeyStorage)
 )
 
 func SetAuthenticator(name string, fcn func() filter.Authenticator) {
@@ -20,11 +20,11 @@ func GetAuthenticator(name string) filter.Authenticator {
 	return authenticators[name]()
 }
 
-func SetAccesskeyStorages(name string, fcn func() filter.AccesskeyStorage) {
+func SetAccesskeyStorages(name string, fcn func() filter.AccessKeyStorage) {
 	accesskeyStorages[name] = fcn
 }
 
-func GetAccesskeyStorages(name string) filter.AccesskeyStorage {
+func GetAccesskeyStorages(name string) filter.AccessKeyStorage {
 	if accesskeyStorages[name] == nil {
 		panic("accesskeyStorages for " + name + " is not existing, make sure you have import the package.")
 	}

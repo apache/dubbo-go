@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
@@ -15,7 +16,7 @@ func init() {
 	extension.SetFilter(constant.PROVIDER_AUTH_FILTER, getProviderAuthFilter)
 }
 
-func (paf *ProviderAuthFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (paf *ProviderAuthFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("invoking providerAuth filter.")
 	url := invoker.GetUrl()
 
@@ -29,10 +30,10 @@ func (paf *ProviderAuthFilter) Invoke(invoker protocol.Invoker, invocation proto
 		}
 	}
 
-	return invoker.Invoke(invocation)
+	return invoker.Invoke(ctx, invocation)
 }
 
-func (paf *ProviderAuthFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (paf *ProviderAuthFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }
 func getProviderAuthFilter() filter.Filter {
