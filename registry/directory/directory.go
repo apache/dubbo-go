@@ -138,14 +138,6 @@ func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 				urls = append(urls, v.(*common.URL))
 			}
 
-			for _, v := range dirUrl.GetBackupUrls() {
-				p := v.Protocol
-				category := v.GetParam(constant.CATEGORY_KEY, constant.PROVIDERS_CATEGORY)
-				if strings.EqualFold(category, constant.ROUTERS_CATEGORY) || strings.EqualFold(constant.ROUTE_PROTOCOL, p) {
-					urls = append(urls, v)
-				}
-			}
-
 			if len(urls) > 0 {
 				routers := toRouters(urls)
 				logger.Infof("Init file condition router success, size: %v", len(routers))

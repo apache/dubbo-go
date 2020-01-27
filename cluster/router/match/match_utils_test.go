@@ -31,14 +31,14 @@ import (
 )
 
 func TestIsMatchInternalPattern(t *testing.T) {
-	assert.Equal(t, true, IsMatchInternalPattern("*", "value"))
-	assert.Equal(t, true, IsMatchInternalPattern("", ""))
-	assert.Equal(t, false, IsMatchInternalPattern("", "value"))
-	assert.Equal(t, true, IsMatchInternalPattern("value", "value"))
-	assert.Equal(t, true, IsMatchInternalPattern("v*", "value"))
-	assert.Equal(t, true, IsMatchInternalPattern("*ue", "value"))
-	assert.Equal(t, true, IsMatchInternalPattern("*e", "value"))
-	assert.Equal(t, true, IsMatchInternalPattern("v*e", "value"))
+	assert.Equal(t, true, isMatchInternalPattern("*", "value"))
+	assert.Equal(t, true, isMatchInternalPattern("", ""))
+	assert.Equal(t, false, isMatchInternalPattern("", "value"))
+	assert.Equal(t, true, isMatchInternalPattern("value", "value"))
+	assert.Equal(t, true, isMatchInternalPattern("v*", "value"))
+	assert.Equal(t, true, isMatchInternalPattern("*ue", "value"))
+	assert.Equal(t, true, isMatchInternalPattern("*e", "value"))
+	assert.Equal(t, true, isMatchInternalPattern("v*e", "value"))
 }
 
 func TestIsMatchGlobPattern(t *testing.T) {
