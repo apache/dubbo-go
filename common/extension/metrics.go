@@ -22,21 +22,23 @@ import (
 )
 
 var (
-	metricReporterMap = make(map[string]metrics.Reporter, 4)
+	// we couldn't store the instance because the some instance may initialize before loading configuration
+	// so lazy initialization will be better.
+	metricReporterMap = make(map[string]func() metrics.Reporter, 4)
 )
 
 // set a reporter with the name
-func SetMetricReporter(name string, reporter metrics.Reporter) {
-	metricReporterMap[name] = reporter
+func SetMetricReporter(name string, reporterFunc func() metrics.Reporter) {
+	metricReporterMap[name] = reporterFunc
 }
 
 // find the reporter with name.
 // if not found, it will panic.
 // we should know that this method usually is called when system starts, so we should panic
 func GetMetricReporter(name string) metrics.Reporter {
-	reporter, found := metricReporterMap[name]
+	reporterFunc, found := metricReporterMap[name]
 	if !found {
 		panic("Cannot find the reporter with name: " + name)
 	}
-	return reporter
+	return reporterFunc()
 }

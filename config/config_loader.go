@@ -31,10 +31,11 @@ import (
 )
 
 var (
-	consumerConfig *ConsumerConfig
-	providerConfig *ProviderConfig
-	metricConfig   *MetricConfig
-	maxWait        = 3
+	consumerConfig    *ConsumerConfig
+	providerConfig    *ProviderConfig
+	metricConfig      *MetricConfig
+	applicationConfig *ApplicationConfig
+	maxWait           = 3
 )
 
 // loaded consumer & provider config from xxx.yml, and log config from xxx.xml
@@ -78,6 +79,7 @@ func Load() {
 	} else {
 
 		metricConfig = consumerConfig.MetricConfig
+		applicationConfig = consumerConfig.ApplicationConfig
 
 		checkApplicationName(consumerConfig.ApplicationConfig)
 		if err := configCenterRefreshConsumer(); err != nil {
@@ -136,8 +138,9 @@ func Load() {
 		logger.Warnf("providerConfig is nil!")
 	} else {
 
-		// so, you should know that the consumer's metric config will be override
+		// so, you should know that the consumer's config will be override
 		metricConfig = providerConfig.MetricConfig
+		applicationConfig = providerConfig.ApplicationConfig
 
 		checkApplicationName(providerConfig.ApplicationConfig)
 		if err := configCenterRefreshProvider(); err != nil {

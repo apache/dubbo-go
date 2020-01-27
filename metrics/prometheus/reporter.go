@@ -21,6 +21,7 @@ import (
 	"context"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 import (
@@ -57,21 +58,16 @@ const (
 )
 
 var (
-	labelNames = []string{serviceKey, groupKey, versionKey, methodKey, timeoutKey, remoteKey, localKey}
+	labelNames       = []string{serviceKey, groupKey, versionKey, methodKey, timeoutKey, remoteKey, localKey}
+	namespace        = config.GetApplicationConfig().Name
+	reporterInstance *PrometheusReporter
+	reporterInitOnce sync.Once
 )
 
 // should initialize after loading configuration
 func init() {
-	rpt := &PrometheusReporter{
-		consumerSummaryVec: newSummaryVec(consumerKey),
-		providerSummaryVec: newSummaryVec(providerKey),
 
-		consumerHistogramVec: newHistogramVec(consumerKey),
-		providerHistogramVec: newHistogramVec(providerKey),
-	}
-	prometheus.MustRegister(rpt.consumerSummaryVec, rpt.providerSummaryVec,
-		rpt.consumerHistogramVec, rpt.providerHistogramVec)
-	extension.SetMetricReporter(reporterName, rpt)
+	extension.SetMetricReporter(reporterName, newPrometheusReporter)
 }
 
 // it will collect the data for Prometheus
@@ -126,7 +122,7 @@ func newHistogramVec(side string) *prometheus.HistogramVec {
 	mc := config.GetMetricConfig()
 	return prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Namespace: metrics.NameSpace,
+			Namespace: namespace,
 			Subsystem: side,
 			Name:      serviceKey + histogramSuffix,
 			Help:      "This is the dubbo's histogram metrics",
@@ -150,10 +146,9 @@ func isConsumer(url common.URL) bool {
 // create SummaryVec, the Namespace is dubbo
 // the objectives is from my experience.
 func newSummaryVec(side string) *prometheus.SummaryVec {
-
 	return prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
-			Namespace: metrics.NameSpace,
+			Namespace: namespace,
 			Help:      "This is the dubbo's summary metrics",
 			Subsystem: side,
 			Name:      serviceKey + summarySuffix,
@@ -168,4 +163,21 @@ func newSummaryVec(side string) *prometheus.SummaryVec {
 		},
 		labelNames,
 	)
+}
+
+func newPrometheusReporter() metrics.Reporter {
+	if reporterInstance == nil {
+		reporterInitOnce.Do(func() {
+			reporterInstance = &PrometheusReporter{
+				consumerSummaryVec: newSummaryVec(consumerKey),
+				providerSummaryVec: newSummaryVec(providerKey),
+
+				consumerHistogramVec: newHistogramVec(consumerKey),
+				providerHistogramVec: newHistogramVec(providerKey),
+			}
+			prometheus.MustRegister(reporterInstance.consumerSummaryVec, reporterInstance.providerSummaryVec,
+				reporterInstance.consumerHistogramVec, reporterInstance.providerHistogramVec)
+		})
+	}
+	return reporterInstance
 }
