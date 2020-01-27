@@ -11,7 +11,7 @@ import (
 type DefaultAccesskeyStorage struct {
 }
 
-func (storage *DefaultAccesskeyStorage) GetAccesskeyPair(invocation protocol.Invocation, url *common.URL) *filter.AccessKeyPair {
+func (storage *DefaultAccesskeyStorage) GetAccessKeyPair(invocation protocol.Invocation, url *common.URL) *filter.AccessKeyPair {
 	return &filter.AccessKeyPair{
 		AccessKey: url.GetParam(constant.ACCESS_KEY_ID_KEY, ""),
 		SecretKey: url.GetParam(constant.SECRET_ACCESS_KEY_KEY, ""),
@@ -22,6 +22,6 @@ func init() {
 	extension.SetAccesskeyStorages(constant.DEFAULT_ACCESS_KEY_STORAGE, GetDefaultAccesskeyStorage)
 }
 
-func GetDefaultAccesskeyStorage() filter.AccesskeyStorage {
+func GetDefaultAccesskeyStorage() filter.AccessKeyStorage {
 	return &DefaultAccesskeyStorage{}
 }
