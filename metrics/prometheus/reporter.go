@@ -32,6 +32,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/metrics"
 	"github.com/apache/dubbo-go/protocol"
 )
@@ -48,15 +49,28 @@ const (
 
 	providerKey = "provider"
 	consumerKey = "consumer"
+
+	// to identify the metric's type
+	histogramSuffix = "_histogram"
+	// to identify the metric's type
+	summarySuffix = "_summary"
+)
+
+var (
+	labelNames = []string{serviceKey, groupKey, versionKey, methodKey, timeoutKey, remoteKey, localKey}
 )
 
 // should initialize after loading configuration
 func init() {
 	rpt := &PrometheusReporter{
-		consumerVec: newSummaryVec(consumerKey),
-		providerVec: newSummaryVec(providerKey),
+		consumerSummaryVec: newSummaryVec(consumerKey),
+		providerSummaryVec: newSummaryVec(providerKey),
+
+		consumerHistogramVec: newHistogramVec(consumerKey),
+		providerHistogramVec: newHistogramVec(providerKey),
 	}
-	prometheus.MustRegister(rpt.consumerVec, rpt.providerVec)
+	prometheus.MustRegister(rpt.consumerSummaryVec, rpt.providerSummaryVec,
+		rpt.consumerHistogramVec, rpt.providerHistogramVec)
 	extension.SetMetricReporter(reporterName, rpt)
 }
 
@@ -65,27 +79,35 @@ func init() {
 // https://prometheus.io/docs/guides/go-application/
 type PrometheusReporter struct {
 
-	// report the consumer-side's data
-	consumerVec *prometheus.SummaryVec
-	// report the provider-side's data
-	providerVec *prometheus.SummaryVec
+	// report the consumer-side's summary data
+	consumerSummaryVec *prometheus.SummaryVec
+	// report the provider-side's summary data
+	providerSummaryVec *prometheus.SummaryVec
+
+	// report the provider-side's histogram data
+	providerHistogramVec *prometheus.HistogramVec
+	// report the consumer-side's histogram data
+	consumerHistogramVec *prometheus.HistogramVec
 }
 
 // report the duration to Prometheus
 func (reporter *PrometheusReporter) Report(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, cost time.Duration, res protocol.Result) {
 	url := invoker.GetUrl()
 	var sumVec *prometheus.SummaryVec
+	var hisVec *prometheus.HistogramVec
 	if isProvider(url) {
-		sumVec = reporter.providerVec
+		sumVec = reporter.providerSummaryVec
+		hisVec = reporter.providerHistogramVec
 	} else if isConsumer(url) {
-		sumVec = reporter.consumerVec
+		sumVec = reporter.consumerSummaryVec
+		hisVec = reporter.consumerHistogramVec
 	} else {
 		logger.Warnf("The url is not the consumer's or provider's, "+
 			"so the invocation will be ignored. url: %s", url.String())
 		return
 	}
 
-	sumVec.With(prometheus.Labels{
+	labels := prometheus.Labels{
 		serviceKey: url.Service(),
 		groupKey:   url.GetParam(groupKey, ""),
 		versionKey: url.GetParam(versionKey, ""),
@@ -93,7 +115,24 @@ func (reporter *PrometheusReporter) Report(ctx context.Context, invoker protocol
 		timeoutKey: url.GetParam(timeoutKey, ""),
 		remoteKey:  invocation.AttachmentsByKey(constant.REMOTE_ADDR, ""),
 		localKey:   invocation.AttachmentsByKey(constant.REMOTE_ADDR, ""),
-	}).Observe(float64(cost.Nanoseconds() / constant.MsToNanoRate))
+	}
+
+	costMs := float64(cost.Nanoseconds() / constant.MsToNanoRate)
+	sumVec.With(labels).Observe(costMs)
+	hisVec.With(labels).Observe(costMs)
+}
+
+func newHistogramVec(side string) *prometheus.HistogramVec {
+	mc := config.GetMetricConfig()
+	return prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: metrics.NameSpace,
+			Subsystem: side,
+			Name:      serviceKey + histogramSuffix,
+			Help:      "This is the dubbo's histogram metrics",
+			Buckets:   mc.GetHistogramBucket(),
+		},
+		labelNames)
 }
 
 // whether this url represents the application received the request as server
@@ -115,9 +154,9 @@ func newSummaryVec(side string) *prometheus.SummaryVec {
 	return prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
 			Namespace: metrics.NameSpace,
-			Help:      "this is the dubbo's metrics",
+			Help:      "This is the dubbo's summary metrics",
 			Subsystem: side,
-			Name:      serviceKey,
+			Name:      serviceKey + summarySuffix,
 			Objectives: map[float64]float64{
 				0.5:   0.01,
 				0.75:  0.01,
@@ -127,6 +166,6 @@ func newSummaryVec(side string) *prometheus.SummaryVec {
 				0.999: 0.0001,
 			},
 		},
-		[]string{serviceKey, groupKey, versionKey, methodKey, timeoutKey, remoteKey, localKey},
+		labelNames,
 	)
 }
