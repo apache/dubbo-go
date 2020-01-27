@@ -29,10 +29,10 @@ func IsMatchGlobalPattern(pattern string, value string, param *common.URL) bool 
 	if param != nil && strings.HasPrefix(pattern, "$") {
 		pattern = param.GetRawParam(pattern[1:])
 	}
-	return IsMatchInternalPattern(pattern, value)
+	return isMatchInternalPattern(pattern, value)
 }
 
-func IsMatchInternalPattern(pattern string, value string) bool {
+func isMatchInternalPattern(pattern string, value string) bool {
 	if "*" == pattern {
 		return true
 	}

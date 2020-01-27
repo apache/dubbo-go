@@ -52,7 +52,7 @@ func (c RouterChain) Route(invoker []protocol.Invoker, url *common.URL, invocati
 	return finalInvokers
 }
 func (c RouterChain) AddRouters(routers []router.Router) {
-	newRouters := make([]router.Router, 0)
+	newRouters := make([]router.Router, 0, len(c.builtinRouters)+len(routers))
 	newRouters = append(newRouters, c.builtinRouters...)
 	newRouters = append(newRouters, routers...)
 	sortRouter(newRouters)
@@ -64,7 +64,7 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 	if len(routerFactories) == 0 {
 		return nil, perrors.Errorf("Illegal route rule!")
 	}
-	routers := make([]router.Router, 0)
+	routers := make([]router.Router, 0, len(routerFactories))
 	for key, routerFactory := range routerFactories {
 		r, err := routerFactory().Router(url)
 		if r == nil || err != nil {
