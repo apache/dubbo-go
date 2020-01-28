@@ -131,7 +131,6 @@ func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 		}
 		switch res.Action {
 		case remoting.EventTypeAdd, remoting.EventTypeUpdate:
-			dirUrl := &res.Service
 			var urls []*common.URL
 
 			for _, v := range directory.GetRouterURLSet().Values() {

@@ -55,7 +55,8 @@ const (
 var (
 	// DubboNodes ...
 	DubboNodes = [...]string{"consumers", "configurators", "routers", "providers"}
-	DubboRole  = [...]string{"consumer", "", "routers", "provider"}
+	// DubboRole dubbo service role
+	DubboRole = [...]string{"consumer", "", "routers", "provider"}
 )
 
 // RoleType ...
@@ -309,6 +310,7 @@ func (c URL) Key() string {
 	//return c.ServiceKey()
 }
 
+// ColonSeparatedKey The format is "{interface}:[version]:[group]"
 func (c *URL) ColonSeparatedKey() string {
 	intf := c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
 	if intf == "" {
@@ -327,36 +329,6 @@ func (c *URL) ColonSeparatedKey() string {
 		buf.WriteString(group)
 	}
 	return buf.String()
-}
-
-func (c *URL) GetBackupUrls() []*URL {
-	var (
-		urls []*URL
-		host string
-	)
-	urls = append(urls, c)
-	backups := strings.Split(c.GetParam(constant.BACKUP_KEY, ""), "")
-	for _, address := range backups {
-		index := strings.LastIndex(address, ":")
-		port := c.Port
-		if index > 0 {
-			host = address[:index]
-			port = address[index+1:]
-		} else {
-			host = address
-		}
-		newURL := NewURLWithOptions(
-			WithProtocol(c.Protocol),
-			WithPath(c.Path),
-			WithIp(host),
-			WithUsername(c.Username),
-			WithPassword(c.Password),
-			WithPort(port),
-			WithParams(c.params))
-
-		urls = append(urls, newURL)
-	}
-	return urls
 }
 
 // ServiceKey ...
