@@ -19,6 +19,7 @@ package chain
 
 import (
 	"sort"
+	"sync"
 )
 
 import (
@@ -42,11 +43,19 @@ type RouterChain struct {
 	// Fixed router instances: ConfigConditionRouter, TagRouter, e.g., the rule for each instance may change but the
 	// instance will never delete or recreate.
 	builtinRouters []router.Router
+
+	mutex sync.RWMutex
 }
 
 func (c RouterChain) Route(invoker []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	finalInvokers := invoker
-	for _, r := range c.routers {
+	l := len(c.routers)
+	rs := make([]router.Router, l, l)
+	c.mutex.RLock()
+	copy(rs, c.routers)
+	c.mutex.RUnlock()
+
+	for _, r := range rs {
 		finalInvokers = r.Route(invoker, url, invocation)
 	}
 	return finalInvokers
@@ -56,6 +65,8 @@ func (c RouterChain) AddRouters(routers []router.Router) {
 	newRouters = append(newRouters, c.builtinRouters...)
 	newRouters = append(newRouters, routers...)
 	sortRouter(newRouters)
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	c.routers = newRouters
 }
 

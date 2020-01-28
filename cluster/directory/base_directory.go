@@ -41,7 +41,6 @@ type BaseDirectory struct {
 	url         *common.URL
 	destroyed   *atomic.Bool
 	mutex       sync.Mutex
-	once        sync.Once
 	routerChain router.Chain
 }
 
@@ -87,8 +86,6 @@ func (dir *BaseDirectory) SetRouters(routers []router.Router) {
 		}
 	}
 
-	dir.mutex.Lock()
-	defer dir.mutex.Unlock()
 	dir.routerChain.AddRouters(routers)
 }
 
