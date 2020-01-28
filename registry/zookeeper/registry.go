@@ -391,7 +391,6 @@ func (r *zkRegistry) register(c common.URL) error {
 		logger.Debugf("consumer path:%s, url:%s", dubboPath, rawURL)
 
 	case common.ROUTER:
-		//todo
 		dubboPath = fmt.Sprintf("/dubbo/%s/%s", c.Service(), common.DubboNodes[common.ROUTER])
 		r.cltLock.Lock()
 		err = r.client.Create(dubboPath)
