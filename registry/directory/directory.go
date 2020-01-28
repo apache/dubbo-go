@@ -18,7 +18,6 @@
 package directory
 
 import (
-	"strings"
 	"sync"
 	"time"
 )
