@@ -304,7 +304,6 @@ func (r *zkRegistry) register(c common.URL) error {
 		if c.Path == "" || len(c.Methods) == 0 {
 			return perrors.Errorf("conf{Path:%s, Methods:%s}", c.Path, c.Methods)
 		}
-		// 先创建服务下面的provider node
 		dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.PROVIDER])
 		r.cltLock.Lock()
 		err = r.client.Create(dubboPath)
