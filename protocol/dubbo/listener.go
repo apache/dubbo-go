@@ -24,6 +24,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/opentracing/opentracing-go"
 )
 
 import (
@@ -284,7 +286,10 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 		args := p.Body.(map[string]interface{})["args"].([]interface{})
 		inv := invocation.NewRPCInvocation(p.Service.Method, args, attachments)
-		result := invoker.Invoke(context.Background(), inv)
+
+		ctx := h.rebuildCtx(inv)
+
+		result := invoker.Invoke(ctx, inv)
 		if err := result.Error(); err != nil {
 			p.Header.ResponseStatus = hessian.Response_OK
 			p.Body = hessian.NewResponse(nil, err, result.Attachments())
@@ -324,6 +329,19 @@ func (h *RpcServerHandler) OnCron(session getty.Session) {
 		delete(h.sessionMap, session)
 		h.rwlock.Unlock()
 		session.Close()
+	}
+}
+
+func (h *RpcServerHandler) rebuildCtx(inv *invocation.RPCInvocation) interface{} {
+	ctx := context.Background()
+	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.TextMap,
+		opentracing.TextMapCarrier(inv.Attachments()))
+	if err != nil {
+		logger.Errorf("Could not extract the span context: %v", err)
+	}
+
+	if spanCtx != nil {
+		ctx =
 	}
 }
 

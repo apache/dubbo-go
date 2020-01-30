@@ -22,6 +22,10 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/opentracing/opentracing-go"
+
+	"github.com/apache/dubbo-go/common/logger"
 )
 
 import (
@@ -80,6 +84,12 @@ func TestDubboInvoker_Invoke(t *testing.T) {
 	inv.SetReply(nil)
 	res = invoker.Invoke(context.Background(), inv)
 	assert.EqualError(t, res.Error(), "request need @response")
+
+	// testing appendCtx
+	span, ctx := opentracing.StartSpanFromContext(context.Background(), "TestOperation")
+	invoker.Invoke(ctx, inv)
+	logger.Warnf("aaaaaaa, inv: %v", inv.Attachments())
+	span.Finish()
 
 	// destroy
 	lock.Lock()
