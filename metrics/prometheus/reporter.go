@@ -56,7 +56,7 @@ const (
 )
 
 var (
-	labelNames       = []string{serviceKey, groupKey, versionKey, methodKey, timeoutKey,}
+	labelNames       = []string{serviceKey, groupKey, versionKey, methodKey, timeoutKey}
 	namespace        = config.GetApplicationConfig().Name
 	reporterInstance *PrometheusReporter
 	reporterInitOnce sync.Once
