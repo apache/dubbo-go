@@ -45,8 +45,6 @@ const (
 	versionKey   = constant.VERSION_KEY
 	methodKey    = constant.METHOD_KEY
 	timeoutKey   = constant.TIMEOUT_KEY
-	remoteKey    = "remote"
-	localKey     = "local"
 
 	providerKey = "provider"
 	consumerKey = "consumer"
@@ -58,7 +56,7 @@ const (
 )
 
 var (
-	labelNames       = []string{serviceKey, groupKey, versionKey, methodKey, timeoutKey, remoteKey, localKey}
+	labelNames       = []string{serviceKey, groupKey, versionKey, methodKey, timeoutKey,}
 	namespace        = config.GetApplicationConfig().Name
 	reporterInstance *PrometheusReporter
 	reporterInitOnce sync.Once
@@ -109,8 +107,6 @@ func (reporter *PrometheusReporter) Report(ctx context.Context, invoker protocol
 		versionKey: url.GetParam(versionKey, ""),
 		methodKey:  invocation.MethodName(),
 		timeoutKey: url.GetParam(timeoutKey, ""),
-		remoteKey:  invocation.AttachmentsByKey(constant.REMOTE_ADDR, ""),
-		localKey:   invocation.AttachmentsByKey(constant.REMOTE_ADDR, ""),
 	}
 
 	costMs := float64(cost.Nanoseconds() / constant.MsToNanoRate)
