@@ -24,13 +24,12 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/opentracing/opentracing-go"
 )
 
 import (
 	"github.com/apache/dubbo-go-hessian2"
 	"github.com/dubbogo/getty"
+	"github.com/opentracing/opentracing-go"
 	perrors "github.com/pkg/errors"
 )
 
@@ -65,9 +64,9 @@ func (s *rpcSession) GetReqNum() int32 {
 	return atomic.LoadInt32(&s.reqNum)
 }
 
-////////////////////////////////////////////
+// //////////////////////////////////////////
 // RpcClientHandler
-////////////////////////////////////////////
+// //////////////////////////////////////////
 
 // RpcClientHandler ...
 type RpcClientHandler struct {
@@ -159,9 +158,9 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 	h.conn.pool.rpcClient.heartbeat(session)
 }
 
-////////////////////////////////////////////
+// //////////////////////////////////////////
 // RpcServerHandler
-////////////////////////////////////////////
+// //////////////////////////////////////////
 
 // RpcServerHandler ...
 type RpcServerHandler struct {
@@ -287,7 +286,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 		args := p.Body.(map[string]interface{})["args"].([]interface{})
 		inv := invocation.NewRPCInvocation(p.Service.Method, args, attachments)
 
-		ctx := h.rebuildCtx(inv)
+		ctx := rebuildCtx(inv)
 
 		result := invoker.Invoke(ctx, inv)
 		if err := result.Error(); err != nil {
@@ -332,17 +331,20 @@ func (h *RpcServerHandler) OnCron(session getty.Session) {
 	}
 }
 
-func (h *RpcServerHandler) rebuildCtx(inv *invocation.RPCInvocation) interface{} {
+// rebuild the context by attachment.
+// Once we decided to transfer more context's key-value, we should change this.
+// now we only support rebuild the tracing context
+func rebuildCtx(inv *invocation.RPCInvocation) context.Context {
 	ctx := context.Background()
+
+	// actually, if user do not use any opentracing framework, it will always be error.
 	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.TextMap,
 		opentracing.TextMapCarrier(inv.Attachments()))
-	if err != nil {
-		logger.Errorf("Could not extract the span context: %v", err)
-	}
 
-	if spanCtx != nil {
-		ctx =
+	if err == nil {
+		ctx = context.WithValue(ctx, constant.TRACING_REMOTE_SPAN_CTX, spanCtx)
 	}
+	return ctx
 }
 
 func reply(session getty.Session, req *DubboPackage, tp hessian.PackageType) {
