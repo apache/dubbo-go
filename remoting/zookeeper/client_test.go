@@ -133,3 +133,12 @@ func TestRegisterTempSeq(t *testing.T) {
 	states := []zk.State{zk.StateConnecting, zk.StateConnected, zk.StateHasSession}
 	verifyEventStateOrder(t, event, states, "event channel")
 }
+
+func Test_UnregisterEvent(t *testing.T) {
+	client := &ZookeeperClient{}
+	client.eventRegistry = make(map[string][]*chan struct{})
+	array := []*chan struct{}{}
+	array = append(array, new(chan struct{}))
+	client.eventRegistry["test"] = array
+	client.UnregisterEvent("test", new(chan struct{}))
+}
