@@ -44,7 +44,7 @@ const (
 var (
 	errNilZkClientConn = perrors.New("zookeeperclient{conn} is nil")
 	errNilChildren     = perrors.Errorf("has none children")
-	errNilNode         = perrors.Errorf("has none children")
+	errNilNode         = perrors.Errorf("node does not exist")
 )
 
 // ZookeeperClient ...

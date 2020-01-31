@@ -190,7 +190,7 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 			if MaxFailTimes <= failTimes {
 				failTimes = MaxFailTimes
 			}
-			logger.Warnf("listenDirEvent(path{%s}) = error{%v}", zkPath, err)
+			logger.Infof("listenDirEvent(path{%s}) = error{%v}", zkPath, err)
 			// clear the event channel
 		CLEAR:
 			for {
