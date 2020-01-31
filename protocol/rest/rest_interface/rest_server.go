@@ -8,6 +8,6 @@ import (
 type RestServer interface {
 	Start(url common.URL)
 	Deploy(invoker protocol.Invoker, restMethodConfig map[string]*RestMethodConfig)
-	Undeploy(restMethodConfig map[string]*RestMethodConfig)
-	Destory()
+	UnDeploy(restMethodConfig map[string]*RestMethodConfig)
+	Destroy()
 }

@@ -48,7 +48,7 @@ func initProviderRestConfig() {
 		return
 	}
 	for _, rc := range restProviderConfig.RestConfigMap {
-		rc.Server = getNotEmptyStr(rc.Server, restProviderConfig.Server)
+		rc.Server = getNotEmptyStr(rc.Server, restProviderConfig.Server, constant.DEFAULT_REST_SERVER)
 		rc.RestMethodConfigsMap = initMethodConfigMap(rc, restProviderConfig.Consumes, restProviderConfig.Produces)
 		restProviderServiceConfigMap[rc.InterfaceName] = rc
 	}
@@ -96,14 +96,6 @@ func transformMethodConfig(methodConfig *rest_interface.RestMethodConfig) *rest_
 			methodConfig.QueryParamsMap = paramsMap
 		}
 	}
-	if len(methodConfig.BodyMap) == 0 && len(methodConfig.Body) > 0 {
-		paramsMap, err := parseParamsString2Map(methodConfig.Body)
-		if err != nil {
-			logger.Warnf("[Rest Config] Body Param parse error:%v", err)
-		} else {
-			methodConfig.BodyMap = paramsMap
-		}
-	}
 	return methodConfig
 }
 
@@ -130,4 +122,8 @@ func GetRestProviderServiceConfig(service string) *rest_interface.RestConfig {
 
 func SetRestConsumerServiceConfigMap(configMap map[string]*rest_interface.RestConfig) {
 	restConsumerServiceConfigMap = configMap
+}
+
+func SetRestProviderServiceConfigMap(configMap map[string]*rest_interface.RestConfig) {
+	restProviderServiceConfigMap = configMap
 }

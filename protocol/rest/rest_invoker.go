@@ -3,11 +3,11 @@ package rest
 import (
 	"context"
 	"fmt"
+	perrors "github.com/pkg/errors"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
@@ -30,15 +30,36 @@ func NewRestInvoker(url common.URL, client *rest_interface.RestClient, restMetho
 func (ri *RestInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	inv := invocation.(*invocation_impl.RPCInvocation)
 	methodConfig := ri.restMethodConfigMap[inv.MethodName()]
-	var result protocol.RPCResult
+	var (
+		result      protocol.RPCResult
+		body        interface{}
+		pathParams  map[string]string
+		queryParams map[string]string
+		headers     map[string]string
+		err         error
+	)
 	if methodConfig == nil {
-		logger.Errorf("[RestInvoker]Rest methodConfig:%s is nil", inv.MethodName())
-		return nil
+		result.Err = perrors.Errorf("[RestInvoker]Rest methodConfig:%s is nil", inv.MethodName())
+		return &result
 	}
-	pathParams := restStringMapTransform(methodConfig.PathParamsMap, inv.Arguments())
-	queryParams := restStringMapTransform(methodConfig.QueryParamsMap, inv.Arguments())
-	headers := restStringMapTransform(methodConfig.HeadersMap, inv.Arguments())
-	bodyParams := restInterfaceMapTransform(methodConfig.BodyMap, inv.Arguments())
+	if pathParams, err = restStringMapTransform(methodConfig.PathParamsMap, inv.Arguments()); err != nil {
+		result.Err = err
+		return &result
+	}
+	if queryParams, err = restStringMapTransform(methodConfig.QueryParamsMap, inv.Arguments()); err != nil {
+		result.Err = err
+		return &result
+	}
+	if headers, err = restStringMapTransform(methodConfig.HeadersMap, inv.Arguments()); err != nil {
+		result.Err = err
+		return &result
+	}
+	if len(inv.Arguments()) > methodConfig.Body && methodConfig.Body > 0 {
+		body = inv.Arguments()[methodConfig.Body]
+	} else {
+		result.Err = perrors.Errorf("[Rest Invoke] Index %v is out of bundle", methodConfig.Body)
+		return &result
+	}
 	req := &rest_interface.RestRequest{
 		Location:    ri.GetUrl().Location,
 		Produces:    methodConfig.Produces,
@@ -47,7 +68,7 @@ func (ri *RestInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 		Path:        methodConfig.Path,
 		PathParams:  pathParams,
 		QueryParams: queryParams,
-		Body:        bodyParams,
+		Body:        body,
 		Headers:     headers,
 	}
 	result.Err = ri.client.Do(req, inv.Reply())
@@ -57,18 +78,14 @@ func (ri *RestInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 	return &result
 }
 
-func restStringMapTransform(paramsMap map[int]string, args []interface{}) map[string]string {
+func restStringMapTransform(paramsMap map[int]string, args []interface{}) (map[string]string, error) {
 	resMap := make(map[string]string, len(paramsMap))
-	for key, value := range paramsMap {
-		resMap[value] = fmt.Sprintf("%v", args[key])
+	for k, v := range paramsMap {
+		if k > len(args)-1 || k < 0 {
+			resMap[v] = fmt.Sprint(args[k])
+		} else {
+			return nil, perrors.Errorf("[Rest Invoke] Index %v is out of bundle", k)
+		}
 	}
-	return resMap
-}
-
-func restInterfaceMapTransform(paramsMap map[int]string, args []interface{}) map[string]interface{} {
-	resMap := make(map[string]interface{}, len(paramsMap))
-	for key, value := range paramsMap {
-		resMap[value] = args[key]
-	}
-	return resMap
+	return resMap, nil
 }
