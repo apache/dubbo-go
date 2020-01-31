@@ -8,7 +8,7 @@ var (
 	restClients = make(map[string]func(restOptions *rest_interface.RestOptions) rest_interface.RestClient)
 )
 
-func SetRestClientFunc(name string, fun func(restOptions *rest_interface.RestOptions) rest_interface.RestClient) {
+func SetRestClient(name string, fun func(restOptions *rest_interface.RestOptions) rest_interface.RestClient) {
 	restClients[name] = fun
 }
 

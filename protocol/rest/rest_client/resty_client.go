@@ -16,7 +16,7 @@ import (
 )
 
 func init() {
-	extension.SetRestClientFunc(constant.DEFAULT_REST_CLIENT, GetRestyClient)
+	extension.SetRestClient(constant.DEFAULT_REST_CLIENT, GetRestyClient)
 }
 
 type RestyClient struct {
