@@ -56,7 +56,7 @@ func (c RouterChain) Route(invoker []protocol.Invoker, url *common.URL, invocati
 	c.mutex.RUnlock()
 
 	for _, r := range rs {
-		finalInvokers = r.Route(invoker, url, invocation)
+		finalInvokers = r.Route(finalInvokers, url, invocation)
 	}
 	return finalInvokers
 }

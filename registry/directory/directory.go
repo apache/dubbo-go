@@ -29,7 +29,6 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/cluster/directory"
-	"github.com/apache/dubbo-go/cluster/router"
 	"github.com/apache/dubbo-go/cluster/router/chain"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
@@ -42,7 +41,6 @@ import (
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting"
-	gxset "github.com/dubbogo/gost/container/set"
 )
 
 // Options ...
@@ -137,11 +135,7 @@ func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 			}
 
 			if len(urls) > 0 {
-				routers := toRouters(urls)
-				logger.Infof("Init file condition router success, size: %v", len(routers))
-				if len(routers) > 0 {
-					dir.SetRouters(routers)
-				}
+				dir.SetRouters(urls)
 			}
 
 			//dir.cacheService.EventTypeAdd(res.Path, dir.serviceTTL)
@@ -159,37 +153,6 @@ func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 	dir.listenerLock.Lock()
 	defer dir.listenerLock.Unlock()
 	dir.cacheInvokers = newInvokers
-}
-
-func toRouters(urls []*common.URL) []router.Router {
-	if len(urls) == 0 {
-		return nil
-	}
-
-	routerMap := gxset.NewSet()
-	for _, url := range urls {
-		if url.Protocol == constant.EMPTY_PROTOCOL {
-			continue
-		}
-		routerKey := url.GetParam(constant.ROUTER_KEY, "")
-		if routerKey == "" {
-			continue
-		}
-		url.Protocol = routerKey
-		factory := extension.GetRouterFactory(url.GetParam(constant.ROUTER_KEY, routerKey))
-		router, e := factory.Router(url)
-		if e != nil {
-			logger.Error("factory.Router(url){%s} , error : %s", url, e)
-		}
-		routerMap.Add(router)
-	}
-
-	routers := make([]router.Router, 0)
-	for _, v := range routerMap.Values() {
-		routers = append(routers, v.(router.Router))
-	}
-
-	return routers
 }
 
 func (dir *registryDirectory) toGroupInvokers() []protocol.Invoker {
