@@ -25,6 +25,7 @@ import (
 )
 
 import (
+	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -80,6 +81,11 @@ func TestDubboInvoker_Invoke(t *testing.T) {
 	inv.SetReply(nil)
 	res = invoker.Invoke(context.Background(), inv)
 	assert.EqualError(t, res.Error(), "request need @response")
+
+	// testing appendCtx
+	span, ctx := opentracing.StartSpanFromContext(context.Background(), "TestOperation")
+	invoker.Invoke(ctx, inv)
+	span.Finish()
 
 	// destroy
 	lock.Lock()
