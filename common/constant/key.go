@@ -78,7 +78,6 @@ const (
 
 const (
 	DUBBOGO_CTX_KEY = "dubbogo-ctx"
-	CONTEXT_KEY     = "context"
 )
 
 const (
