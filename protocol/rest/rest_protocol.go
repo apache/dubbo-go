@@ -7,6 +7,7 @@ import (
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
+	_ "github.com/apache/dubbo-go/protocol/rest/rest_server"
 	"strings"
 	"sync"
 	"time"
@@ -103,7 +104,7 @@ func (rp *RestProtocol) Destroy() {
 	// destroy rest_server
 	rp.BaseProtocol.Destroy()
 	for key, server := range rp.serverMap {
-		server.Destory()
+		server.Destroy()
 		delete(rp.serverMap, key)
 	}
 	for key := range rp.clientMap {
