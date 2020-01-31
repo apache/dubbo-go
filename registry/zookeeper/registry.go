@@ -393,8 +393,13 @@ func (r *zkRegistry) register(c common.URL) error {
 	case common.ROUTER:
 		dubboPath = fmt.Sprintf("/dubbo/%s/%s", c.Service(), common.DubboNodes[common.ROUTER])
 		r.cltLock.Lock()
-		err = r.client.Create(dubboPath)
+		client := r.client
 		r.cltLock.Unlock()
+		if client == nil {
+			logger.Errorf("zkClient.create(path{%s}) = client is null", dubboPath)
+			return perrors.WithStack(err)
+		}
+		err = client.Create(dubboPath)
 		if err != nil {
 			logger.Errorf("zkClient.create(path{%s}) = error{%v}", dubboPath, perrors.WithStack(err))
 			return perrors.WithStack(err)

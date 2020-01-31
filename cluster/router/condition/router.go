@@ -18,7 +18,6 @@
 package condition
 
 import (
-	"reflect"
 	"regexp"
 	"strings"
 )
@@ -33,8 +32,8 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
-	gxset "github.com/dubbogo/gost/container/set"
-	gxnet "github.com/dubbogo/gost/net"
+	"github.com/dubbogo/gost/container/set"
+	"github.com/dubbogo/gost/net"
 )
 
 const (
@@ -149,16 +148,7 @@ func (c *ConditionRouter) Route(invokers []protocol.Invoker, url *common.URL, in
 	if len(invokers) == 0 {
 		return invokers
 	}
-	isMatchWhen, err := c.MatchWhen(url, invocation)
-	if err != nil {
-
-		var urls []string
-		for _, invo := range invokers {
-			urls = append(urls, reflect.TypeOf(invo).String())
-		}
-		logger.Warnf("Failed to execute condition router rule: %s , invokers: [%s], cause: %v", c.url.String(), strings.Join(urls, ","), err)
-		return invokers
-	}
+	isMatchWhen := c.MatchWhen(url, invocation)
 	if !isMatchWhen {
 		return invokers
 	}
@@ -168,15 +158,7 @@ func (c *ConditionRouter) Route(invokers []protocol.Invoker, url *common.URL, in
 	}
 	for _, invoker := range invokers {
 		invokerUrl := invoker.GetUrl()
-		isMatchThen, err := c.MatchThen(&invokerUrl, url)
-		if err != nil {
-			var urls []string
-			for _, invo := range invokers {
-				urls = append(urls, reflect.TypeOf(invo).String())
-			}
-			logger.Warnf("Failed to execute condition router rule: %s , invokers: [%s], cause: %v", c.url.String(), strings.Join(urls, ","), err)
-			return invokers
-		}
+		isMatchThen := c.MatchThen(&invokerUrl, url)
 		if isMatchThen {
 			result = append(result, invoker)
 		}
@@ -260,22 +242,23 @@ func getStartIndex(rule string) int {
 }
 
 //
-func (c *ConditionRouter) MatchWhen(url *common.URL, invocation protocol.Invocation) (bool, error) {
-	condition, err := matchCondition(c.WhenCondition, url, nil, invocation)
-	return len(c.WhenCondition) == 0 || condition, err
+func (c *ConditionRouter) MatchWhen(url *common.URL, invocation protocol.Invocation) bool {
+	condition := matchCondition(c.WhenCondition, url, nil, invocation)
+	return len(c.WhenCondition) == 0 || condition
 }
 
 //MatchThen MatchThen
-func (c *ConditionRouter) MatchThen(url *common.URL, param *common.URL) (bool, error) {
-	condition, err := matchCondition(c.ThenCondition, url, param, nil)
-	return len(c.ThenCondition) > 0 && condition, err
+func (c *ConditionRouter) MatchThen(url *common.URL, param *common.URL) bool {
+	condition := matchCondition(c.ThenCondition, url, param, nil)
+	return len(c.ThenCondition) > 0 && condition
 }
 
 //MatchCondition MatchCondition
-func matchCondition(pairs map[string]MatchPair, url *common.URL, param *common.URL, invocation protocol.Invocation) (bool, error) {
+func matchCondition(pairs map[string]MatchPair, url *common.URL, param *common.URL, invocation protocol.Invocation) bool {
 	sample := url.ToMap()
 	if sample == nil {
-		return true, perrors.Errorf("url is not allowed be nil")
+		// because url.ToMap() may return nil, but it should continue to process make condition
+		sample = make(map[string]string)
 	}
 	var result bool
 	for key, matchPair := range pairs {
@@ -291,19 +274,19 @@ func matchCondition(pairs map[string]MatchPair, url *common.URL, param *common.U
 		}
 		if len(sampleValue) > 0 {
 			if !matchPair.isMatch(sampleValue, param) {
-				return false, nil
+				return false
 			}
 
 			result = true
 		} else {
 			if !(matchPair.Matches.Empty()) {
-				return false, nil
+				return false
 			}
 
 			result = true
 		}
 	}
-	return result, nil
+	return result
 }
 
 // MatchPair ...
