@@ -10,7 +10,6 @@ import (
 	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
 	"github.com/stretchr/testify/assert"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 )
@@ -95,10 +94,6 @@ func TestJsonrpcProtocol_Export(t *testing.T) {
 	fmt.Println(url.Path)
 	_, ok := proto.(*RestProtocol).ExporterMap().Load(strings.TrimPrefix(url.Path, "/"))
 	assert.True(t, ok)
-	var waitGroutp = sync.WaitGroup{}
-	waitGroutp.Add(1)
-	waitGroutp.Wait()
-	exporter.Unexport()
 	_, ok = proto.(*RestProtocol).ExporterMap().Load(strings.TrimPrefix(url.Path, "/"))
 	assert.False(t, ok)
 
