@@ -173,3 +173,42 @@ func GetRPCService(name string) common.RPCService {
 func RPCService(service common.RPCService) {
 	consumerConfig.References[service.Reference()].Implement(service)
 }
+
+// GetMetricConfig find the MetricConfig
+// if it is nil, create a new one
+func GetMetricConfig() *MetricConfig {
+	if metricConfig == nil {
+		metricConfig = &MetricConfig{}
+	}
+	return metricConfig
+}
+
+// GetApplicationConfig find the application config
+// if not, we will create one
+// Usually applicationConfig will be initialized when system start
+func GetApplicationConfig() *ApplicationConfig {
+	if applicationConfig == nil {
+		applicationConfig = &ApplicationConfig{}
+	}
+	return applicationConfig
+}
+
+// GetProviderConfig find the provider config
+// if not found, create new one
+func GetProviderConfig() ProviderConfig {
+	if providerConfig == nil {
+		logger.Warnf("providerConfig is nil!")
+		return ProviderConfig{}
+	}
+	return *providerConfig
+}
+
+// GetConsumerConfig find the consumer config
+// if not found, create new one
+func GetConsumerConfig() ConsumerConfig {
+	if consumerConfig == nil {
+		logger.Warnf("consumerConfig is nil!")
+		return ConsumerConfig{}
+	}
+	return *consumerConfig
+}

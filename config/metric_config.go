@@ -27,15 +27,6 @@ type MetricConfig struct {
 	HistogramBucket []float64 `yaml:"histogram_bucket" json:"histogram_bucket,omitempty"`
 }
 
-// find the MetricConfig
-// if it is nil, create a new one
-func GetMetricConfig() *MetricConfig {
-	if metricConfig == nil {
-		metricConfig = &MetricConfig{}
-	}
-	return metricConfig
-}
-
 // find the histogram bucket
 // if it's empty, the default value will be return
 func (mc *MetricConfig) GetHistogramBucket() []float64 {
