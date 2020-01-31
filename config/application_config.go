@@ -35,16 +35,6 @@ type ApplicationConfig struct {
 	Environment  string `yaml:"environment" json:"environment,omitempty" property:"environment"`
 }
 
-// find the application config
-// if not, we will create one
-// Usually applicationConfig will be initialized when system start
-func GetApplicationConfig() *ApplicationConfig {
-	if applicationConfig == nil {
-		applicationConfig = &ApplicationConfig{}
-	}
-	return applicationConfig
-}
-
 // Prefix ...
 func (*ApplicationConfig) Prefix() string {
 	return constant.DUBBO + ".application."
