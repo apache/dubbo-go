@@ -27,12 +27,12 @@ var (
 	metricReporterMap = make(map[string]func() metrics.Reporter, 4)
 )
 
-// set a reporter with the name
+// SetMetricReporter set a reporter with the name
 func SetMetricReporter(name string, reporterFunc func() metrics.Reporter) {
 	metricReporterMap[name] = reporterFunc
 }
 
-// find the reporter with name.
+// GetMetricReporter find the reporter with name.
 // if not found, it will panic.
 // we should know that this method usually is called when system starts, so we should panic
 func GetMetricReporter(name string) metrics.Reporter {
