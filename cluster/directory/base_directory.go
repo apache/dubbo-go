@@ -18,6 +18,7 @@
 package directory
 
 import (
+	"github.com/apache/dubbo-go/common/logger"
 	"sync"
 )
 
@@ -75,16 +76,28 @@ func (dir *BaseDirectory) GetDirectoryUrl() *common.URL {
 	return dir.url
 }
 
-func (dir *BaseDirectory) SetRouters(routers []router.Router) {
-	routerKey := dir.GetUrl().GetParam(constant.ROUTER_KEY, "")
-	if len(routerKey) > 0 {
-		factory := extension.GetRouterFactory(dir.GetUrl().Protocol)
-		url := dir.GetUrl()
-		router, err := factory.Router(&url)
-		if err == nil {
-			routers = append(routers, router)
+func (dir *BaseDirectory) SetRouters(urls []*common.URL) {
+	if len(urls) == 0 {
+		return
+	}
+
+	routers := make([]router.Router, len(urls), len(urls))
+
+	for _, url := range urls {
+		routerKey := url.GetParam(constant.ROUTER_KEY, "")
+
+		if len(routerKey) > 0 {
+			factory := extension.GetRouterFactory(url.Protocol)
+			r, err := factory.Router(url)
+			if err != nil {
+				logger.Errorf("Create router fail. router key: %s, error: %v", routerKey, url.Service(), err)
+				return
+			}
+			routers = append(routers, r)
 		}
 	}
+
+	logger.Infof("Init file condition router success, size: %v", len(routers))
 
 	dir.routerChain.AddRouters(routers)
 }
