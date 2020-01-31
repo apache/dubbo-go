@@ -55,7 +55,7 @@ type metricsFilter struct {
 	reporters []metrics.Reporter
 }
 
-// using goroutine to report the duration.
+// Invoke collect the duration of invocation and then report the duration by using goroutine
 func (p *metricsFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	start := time.Now()
 	res := invoker.Invoke(ctx, invocation)
@@ -69,12 +69,12 @@ func (p *metricsFilter) Invoke(ctx context.Context, invoker protocol.Invoker, in
 	return res
 }
 
-// do nothing and return the result
+// OnResponse do nothing and return the result
 func (p *metricsFilter) OnResponse(ctx context.Context, res protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return res
 }
 
-// the metricsFilter is singleton.
+// newMetricsFilter the metricsFilter is singleton.
 // it's lazy initialization
 // make sure that the configuration had been loaded before invoking this method.
 func newMetricsFilter() filter.Filter {

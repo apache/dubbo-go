@@ -68,6 +68,7 @@ func init() {
 	extension.SetMetricReporter(reporterName, newPrometheusReporter)
 }
 
+// PrometheusReporter
 // it will collect the data for Prometheus
 // if you want to use this, you should initialize your prometheus.
 // https://prometheus.io/docs/guides/go-application/
@@ -84,7 +85,9 @@ type PrometheusReporter struct {
 	consumerHistogramVec *prometheus.HistogramVec
 }
 
-// report the duration to Prometheus
+// Report report the duration to Prometheus
+// the role in url must be consumer or provider
+// or it will be ignored
 func (reporter *PrometheusReporter) Report(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, cost time.Duration, res protocol.Result) {
 	url := invoker.GetUrl()
 	var sumVec *prometheus.SummaryVec
@@ -139,7 +142,7 @@ func isConsumer(url common.URL) bool {
 	return strings.EqualFold(role, strconv.Itoa(common.CONSUMER))
 }
 
-// create SummaryVec, the Namespace is dubbo
+// newSummaryVec create SummaryVec, the Namespace is dubbo
 // the objectives is from my experience.
 func newSummaryVec(side string) *prometheus.SummaryVec {
 	return prometheus.NewSummaryVec(
@@ -161,6 +164,8 @@ func newSummaryVec(side string) *prometheus.SummaryVec {
 	)
 }
 
+// newPrometheusReporter create new prometheusReporter
+// it will register the metrics into prometheus
 func newPrometheusReporter() metrics.Reporter {
 	if reporterInstance == nil {
 		reporterInitOnce.Do(func() {
