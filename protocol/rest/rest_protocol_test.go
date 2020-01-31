@@ -94,6 +94,7 @@ func TestJsonrpcProtocol_Export(t *testing.T) {
 	fmt.Println(url.Path)
 	_, ok := proto.(*RestProtocol).ExporterMap().Load(strings.TrimPrefix(url.Path, "/"))
 	assert.True(t, ok)
+	exporter.Unexport()
 	_, ok = proto.(*RestProtocol).ExporterMap().Load(strings.TrimPrefix(url.Path, "/"))
 	assert.False(t, ok)
 
