@@ -13,9 +13,6 @@ import (
 	"time"
 )
 
-type User struct {
-}
-
 func TestRestInvoker_Invoke(t *testing.T) {
 	// Refer
 	url, err := common.NewURL(context.Background(), "rest://127.0.0.1:8888/com.ikurento.user.UserProvider?anyhost=true&"+
@@ -43,8 +40,7 @@ func TestRestInvoker_Invoke(t *testing.T) {
 		PathParamsMap:  nil,
 		QueryParams:    "",
 		QueryParamsMap: nil,
-		Body:           "",
-		BodyMap:        nil,
+		Body:           -1,
 	}
 	configMap["com.ikurento.user.UserProvider"] = &rest_interface.RestConfig{
 		RestMethodConfigsMap: methodConfigMap,

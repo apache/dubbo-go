@@ -17,7 +17,7 @@ type RestRequest struct {
 	Method      string
 	PathParams  map[string]string
 	QueryParams map[string]string
-	Body        map[string]interface{}
+	Body        interface{}
 	Headers     map[string]string
 }
 

@@ -8,7 +8,7 @@ var (
 	restServers = make(map[string]func() rest_interface.RestServer)
 )
 
-func SetRestServerFunc(name string, fun func() rest_interface.RestServer) {
+func SetRestServer(name string, fun func() rest_interface.RestServer) {
 	restServers[name] = fun
 }
 
