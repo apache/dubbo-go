@@ -201,6 +201,11 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 				}
 			}
 			l.client.RegisterEvent(zkPath, &event)
+			if err == errNilNode {
+				logger.Warnf("listenDirEvent(path{%s}) got errNilNode,so exit listen", zkPath)
+				l.client.UnregisterEvent(zkPath, &event)
+				return
+			}
 			select {
 			case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)):
 				l.client.UnregisterEvent(zkPath, &event)

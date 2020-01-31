@@ -44,6 +44,7 @@ const (
 var (
 	errNilZkClientConn = perrors.New("zookeeperclient{conn} is nil")
 	errNilChildren     = perrors.Errorf("has none children")
+	errNilNode         = perrors.Errorf("has none children")
 )
 
 // ZookeeperClient ...
@@ -499,19 +500,24 @@ func (z *ZookeeperClient) GetChildrenW(path string) ([]string, <-chan zk.Event, 
 
 	err = errNilZkClientConn
 	z.Lock()
-	if z.Conn != nil {
-		children, stat, event, err = z.Conn.ChildrenW(path)
-	}
+	conn := z.Conn
 	z.Unlock()
+	if conn != nil {
+		children, stat, event, err = conn.ChildrenW(path)
+	}
+
 	if err != nil {
-		if err == zk.ErrNoNode {
+		if err == zk.ErrNoChildrenForEphemerals {
 			return nil, nil, perrors.Errorf("path{%s} has none children", path)
+		}
+		if err == zk.ErrNoNode {
+			return nil, nil, errNilNode
 		}
 		logger.Errorf("zk.ChildrenW(path{%s}) = error(%v)", path, err)
 		return nil, nil, perrors.WithMessagef(err, "zk.ChildrenW(path:%s)", path)
 	}
 	if stat == nil {
-		return nil, nil, perrors.Errorf("path{%s} has none children", path)
+		return nil, nil, perrors.Errorf("path{%s} get stat is nil", path)
 	}
 	if len(children) == 0 {
 		return nil, nil, errNilChildren
