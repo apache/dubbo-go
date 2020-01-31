@@ -233,7 +233,12 @@ func TestRoute_ReturnEmpty(t *testing.T) {
 
 func TestRoute_ReturnAll(t *testing.T) {
 	localIP, _ := gxnet.GetLocalIP()
-	invokers := []protocol.Invoker{&MockInvoker{}, &MockInvoker{}, &MockInvoker{}}
+	urlString := "dubbo://" + localIP + "/com.foo.BarService"
+	dubboURL, _ := common.NewURL(context.TODO(), urlString)
+	mockInvoker1 := NewMockInvoker(dubboURL, 1)
+	mockInvoker2 := NewMockInvoker(dubboURL, 1)
+	mockInvoker3 := NewMockInvoker(dubboURL, 1)
+	invokers := []protocol.Invoker{mockInvoker1, mockInvoker2, mockInvoker3}
 	inv := &invocation.RPCInvocation{}
 	rule := base64.URLEncoding.EncodeToString([]byte("host = " + localIP + " => " + " host = " + localIP))
 	curl, _ := common.NewURL(context.TODO(), "consumer://"+localIP+"/com.foo.BarService")
