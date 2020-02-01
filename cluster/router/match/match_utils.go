@@ -25,6 +25,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 )
 
+// IsMatchGlobalPattern Match value to param content by pattern
 func IsMatchGlobalPattern(pattern string, value string, param *common.URL) bool {
 	if param != nil && strings.HasPrefix(pattern, "$") {
 		pattern = param.GetRawParam(pattern[1:])

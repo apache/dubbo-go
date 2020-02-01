@@ -37,19 +37,19 @@ var (
 	mutex sync.Mutex
 )
 
-/////////////////////////
-// conditionRouterConfig
-/////////////////////////
+// ConditionRouterConfig Condition router config map to router config file
 type ConditionRouterConfig struct {
 	Priority   int      `yaml:"priority"`
 	Force      bool     `yaml:"force" default:"false"`
 	Conditions []string `yaml:"conditions"`
 }
 
+// Prefix Return router config prefix
 func (*ConditionRouterConfig) Prefix() string {
 	return constant.RouterConfigPrefix
 }
 
+//RouterInit Load config file to init router config
 func RouterInit(confRouterFile string) error {
 	routerConfig = &ConditionRouterConfig{}
 	e := loadYmlConfig(confRouterFile, routerConfig)
@@ -59,7 +59,7 @@ func RouterInit(confRouterFile string) error {
 	}
 
 	logger.Debugf("router config{%#v}\n", routerConfig)
-	directory.GetRouterURLSet().Add(initRouterUrl())
+	directory.AddRouterURLSet(initRouterUrl())
 	return nil
 }
 

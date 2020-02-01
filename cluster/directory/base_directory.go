@@ -45,11 +45,15 @@ type BaseDirectory struct {
 	routerChain router.Chain
 }
 
+// RouterChain return router chain in directory
 func (dir *BaseDirectory) RouterChain() router.Chain {
 	return dir.routerChain
 }
 
+// SetRouterChain set router chain in directory
 func (dir *BaseDirectory) SetRouterChain(routerChain router.Chain) {
+	dir.mutex.Lock()
+	defer dir.mutex.Unlock()
 	dir.routerChain = routerChain
 }
 
@@ -62,10 +66,6 @@ func NewBaseDirectory(url *common.URL) BaseDirectory {
 	}
 }
 
-func (dir *BaseDirectory) Destroyed() bool {
-	return dir.destroyed.Load()
-}
-
 // GetUrl ...
 func (dir *BaseDirectory) GetUrl() common.URL {
 	return *dir.url
@@ -76,6 +76,7 @@ func (dir *BaseDirectory) GetDirectoryUrl() *common.URL {
 	return dir.url
 }
 
+// SetRouters convert url to routers and add them into dir.routerChain
 func (dir *BaseDirectory) SetRouters(urls []*common.URL) {
 	if len(urls) == 0 {
 		return
@@ -88,7 +89,7 @@ func (dir *BaseDirectory) SetRouters(urls []*common.URL) {
 
 		if len(routerKey) > 0 {
 			factory := extension.GetRouterFactory(url.Protocol)
-			r, err := factory.Router(url)
+			r, err := factory.NewRouter(url)
 			if err != nil {
 				logger.Errorf("Create router fail. router key: %s, error: %v", routerKey, url.Service(), err)
 				return
@@ -98,8 +99,11 @@ func (dir *BaseDirectory) SetRouters(urls []*common.URL) {
 	}
 
 	logger.Infof("Init file condition router success, size: %v", len(routers))
+	dir.mutex.Lock()
+	rc := dir.routerChain
+	dir.mutex.Unlock()
 
-	dir.routerChain.AddRouters(routers)
+	rc.AddRouters(routers)
 }
 
 // Destroy ...
@@ -116,6 +120,13 @@ func (dir *BaseDirectory) IsAvailable() bool {
 	return !dir.destroyed.Load()
 }
 
+// GetRouterURLSet return router URL
 func GetRouterURLSet() *gxset.HashSet {
 	return routerURLSet
+}
+
+// AddRouterURLSet add router URL
+// router URL will init in config/config_loader.go
+func AddRouterURLSet(url *common.URL) {
+	routerURLSet.Add(url)
 }

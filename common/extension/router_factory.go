@@ -25,10 +25,12 @@ var (
 	routers = make(map[string]func() router.RouterFactory)
 )
 
+// SetRouterFactory Set create router factory function by name
 func SetRouterFactory(name string, fun func() router.RouterFactory) {
 	routers[name] = fun
 }
 
+// GetRouterFactory Get create router factory function by name
 func GetRouterFactory(name string) router.RouterFactory {
 	if routers[name] == nil {
 		panic("router_factory for " + name + " is not existing, make sure you have import the package.")
@@ -36,6 +38,7 @@ func GetRouterFactory(name string) router.RouterFactory {
 	return routers[name]()
 }
 
-func GetRouters() map[string]func() router.RouterFactory {
+// GetRouterFactories Get all create router factory function
+func GetRouterFactories() map[string]func() router.RouterFactory {
 	return routers
 }
