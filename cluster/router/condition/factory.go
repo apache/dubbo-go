@@ -20,28 +20,35 @@ package condition
 import (
 	"github.com/apache/dubbo-go/cluster/router"
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 )
 
 func init() {
-	extension.SetRouterFactory("condition", NewConditionRouterFactory)
-	extension.SetRouterFactory("app", NewAppRouterFactory)
+	extension.SetRouterFactory(constant.ConditionRouterName, newConditionRouterFactory)
+	extension.SetRouterFactory(constant.ConditionAppRouterName, newAppRouterFactory)
 }
 
+// ConditionRouterFactory Condition router factory
 type ConditionRouterFactory struct{}
 
-func NewConditionRouterFactory() router.RouterFactory {
+func newConditionRouterFactory() router.RouterFactory {
 	return ConditionRouterFactory{}
 }
-func (c ConditionRouterFactory) Router(url *common.URL) (router.Router, error) {
+
+// NewRouter Create ConditionRouterFactory by URL
+func (c ConditionRouterFactory) NewRouter(url *common.URL) (router.Router, error) {
 	return NewConditionRouter(url)
 }
 
+// AppRouterFactory Application router factory
 type AppRouterFactory struct{}
 
-func NewAppRouterFactory() router.RouterFactory {
+func newAppRouterFactory() router.RouterFactory {
 	return AppRouterFactory{}
 }
-func (c AppRouterFactory) Router(url *common.URL) (router.Router, error) {
+
+// NewRouter Create AppRouterFactory by URL
+func (c AppRouterFactory) NewRouter(url *common.URL) (router.Router, error) {
 	return NewAppRouter(url)
 }

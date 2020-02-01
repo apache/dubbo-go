@@ -47,6 +47,7 @@ type RouterChain struct {
 	mutex sync.RWMutex
 }
 
+// Route Loop routers in RouterChain and call Route method to determine the target invokers list.
 func (c RouterChain) Route(invoker []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	finalInvokers := invoker
 	l := len(c.routers)
@@ -60,6 +61,11 @@ func (c RouterChain) Route(invoker []protocol.Invoker, url *common.URL, invocati
 	}
 	return finalInvokers
 }
+
+// AddRouters Add routers to router chain
+// New a array add builtinRouters which is not sorted in RouterChain and routers
+// Sort the array
+// Replace router array in RouterChain
 func (c RouterChain) AddRouters(routers []router.Router) {
 	newRouters := make([]router.Router, 0, len(c.builtinRouters)+len(routers))
 	newRouters = append(newRouters, c.builtinRouters...)
@@ -70,14 +76,16 @@ func (c RouterChain) AddRouters(routers []router.Router) {
 	c.routers = newRouters
 }
 
+// NewRouterChain Use url to init router chain
+// Loop routerFactories and call NewRouter method
 func NewRouterChain(url *common.URL) (*RouterChain, error) {
-	routerFactories := extension.GetRouters()
+	routerFactories := extension.GetRouterFactories()
 	if len(routerFactories) == 0 {
 		return nil, perrors.Errorf("Illegal route rule!")
 	}
 	routers := make([]router.Router, 0, len(routerFactories))
 	for key, routerFactory := range routerFactories {
-		r, err := routerFactory().Router(url)
+		r, err := routerFactory().NewRouter(url)
 		if r == nil || err != nil {
 			logger.Errorf("router chain build router fail! routerFactories key:%s  error:%s", key, err.Error())
 			continue
@@ -98,12 +106,14 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 	return chain, nil
 }
 
+// sortRouter Sort router instance by priority with stable algorithm
 func sortRouter(routers []router.Router) {
-	sort.Stable(ByPriority(routers))
+	sort.Stable(byPriority(routers))
 }
 
-type ByPriority []router.Router
+// byPriority Sort by priority
+type byPriority []router.Router
 
-func (a ByPriority) Len() int           { return len(a) }
-func (a ByPriority) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByPriority) Less(i, j int) bool { return a[i].Priority() < a[j].Priority() }
+func (a byPriority) Len() int           { return len(a) }
+func (a byPriority) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a byPriority) Less(i, j int) bool { return a[i].Priority() < a[j].Priority() }
