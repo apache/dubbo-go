@@ -37,13 +37,8 @@ import (
 )
 
 const (
-	//ROUTE_PATTERN route pattern regex
-	ROUTE_PATTERN = `([&!=,]*)\\s*([^&!=,\\s]+)`
-	// FORCE ...
-	FORCE   = "force"
-	ENABLED = "enabled"
-	// PRIORITY ...
-	PRIORITY = "priority"
+	//pattern route pattern regex
+	pattern = `([&!=,]*)\\s*([^&!=,\\s]+)`
 )
 
 var (
@@ -61,7 +56,7 @@ type ConditionRouter struct {
 	ThenCondition map[string]MatchPair
 }
 
-//NewConditionRouterWithRule
+//NewConditionRouterWithRule Init condition router by raw rule
 func NewConditionRouterWithRule(rule string) (*ConditionRouter, error) {
 	var (
 		whenRule string
@@ -101,13 +96,13 @@ func NewConditionRouterWithRule(rule string) (*ConditionRouter, error) {
 		then = t
 	}
 	return &ConditionRouter{
-		Pattern:       ROUTE_PATTERN,
+		Pattern:       pattern,
 		WhenCondition: when,
 		ThenCondition: then,
 	}, nil
 }
 
-//NewConditionRouter
+//NewConditionRouter Init condition router by URL
 func NewConditionRouter(url *common.URL) (*ConditionRouter, error) {
 
 	rule, err := url.GetParamAndDecoded(constant.RULE_KEY)
@@ -121,26 +116,31 @@ func NewConditionRouter(url *common.URL) (*ConditionRouter, error) {
 	}
 
 	router.url = url
-	router.priority = url.GetParamInt(PRIORITY, 0)
-	router.Force = url.GetParamBool(FORCE, false)
-	router.enabled = url.GetParamBool(ENABLED, true)
+	router.priority = url.GetParamInt(constant.RouterPriority, 0)
+	router.Force = url.GetParamBool(constant.RouterForce, false)
+	router.enabled = url.GetParamBool(constant.RouterEnabled, true)
 
 	return router, nil
 }
 
+// Priority Return Priority in condition router
 func (c *ConditionRouter) Priority() int64 {
 	return c.priority
 }
 
-func (c *ConditionRouter) Url() common.URL {
+// URL Return URL in condition router
+func (c *ConditionRouter) URL() common.URL {
 	return *c.url
 }
 
+// Enabled Return is condition router is enabled
+// true: enabled
+// false: disabled
 func (c *ConditionRouter) Enabled() bool {
 	return c.enabled
 }
 
-//Router determine the target server list.
+// Route Determine the target invokers list.
 func (c *ConditionRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	if !c.Enabled() {
 		return invokers
@@ -241,19 +241,19 @@ func getStartIndex(rule string) int {
 	return -1
 }
 
-//
+// MatchWhen MatchWhen
 func (c *ConditionRouter) MatchWhen(url *common.URL, invocation protocol.Invocation) bool {
 	condition := matchCondition(c.WhenCondition, url, nil, invocation)
 	return len(c.WhenCondition) == 0 || condition
 }
 
-//MatchThen MatchThen
+// MatchThen MatchThen
 func (c *ConditionRouter) MatchThen(url *common.URL, param *common.URL) bool {
 	condition := matchCondition(c.ThenCondition, url, param, nil)
 	return len(c.ThenCondition) > 0 && condition
 }
 
-//MatchCondition MatchCondition
+// MatchCondition MatchCondition
 func matchCondition(pairs map[string]MatchPair, url *common.URL, param *common.URL, invocation protocol.Invocation) bool {
 	sample := url.ToMap()
 	if sample == nil {

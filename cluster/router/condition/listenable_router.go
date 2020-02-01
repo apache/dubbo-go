@@ -19,6 +19,7 @@ package condition
 
 import (
 	"fmt"
+	"github.com/apache/dubbo-go/common/constant"
 )
 
 import (
@@ -35,9 +36,8 @@ import (
 )
 
 const (
-	ROUTER_NAME      = "LISTENABLE_ROUTER"
-	RULE_SUFFIX      = ".condition-router"
-	DEFAULT_PRIORITY = ^int64(0)
+	// Default priority for listenable router, use the maximum int64 value
+	listenableRouterDefaultPriority = ^int64(0)
 )
 
 //ListenableRouter Abstract router which listens to dynamic configuration
@@ -60,9 +60,9 @@ func newListenableRouter(url *common.URL, ruleKey string) (*AppRouter, error) {
 	l := &AppRouter{}
 
 	l.url = url
-	l.priority = DEFAULT_PRIORITY
+	l.priority = listenableRouterDefaultPriority
 
-	routerKey := ruleKey + RULE_SUFFIX
+	routerKey := ruleKey + constant.ConditionRouterRuleSuffix
 	//add listener
 	dynamicConfiguration := config.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration == nil {
@@ -124,6 +124,7 @@ func (l *listenableRouter) generateConditions(rule *RouterRule) {
 	}
 }
 
+// Route Determine the target invokers list.
 func (l *listenableRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	if len(invokers) == 0 || len(l.conditionRouters) == 0 {
 		return invokers
@@ -135,10 +136,12 @@ func (l *listenableRouter) Route(invokers []protocol.Invoker, url *common.URL, i
 	return invokers
 }
 
+// Priority Return Priority in listenable router
 func (l *listenableRouter) Priority() int64 {
 	return l.priority
 }
 
-func (l *listenableRouter) Url() common.URL {
+// URL Return URL in listenable router
+func (l *listenableRouter) URL() common.URL {
 	return *l.url
 }

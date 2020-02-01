@@ -26,16 +26,24 @@ import (
 
 // RouterFactory ...
 type RouterFactory interface {
-	Router(*common.URL) (Router, error)
+	NewRouter(*common.URL) (Router, error)
 }
 
+// Router
 type Router interface {
+	// Route Determine the target invokers list.
 	Route([]protocol.Invoker, *common.URL, protocol.Invocation) []protocol.Invoker
+	// Priority Return Priority in router
+	// 0 to ^int(0) is better
 	Priority() int64
-	Url() common.URL
+	// URL Return URL in router
+	URL() common.URL
 }
 
+// Chain
 type Chain interface {
+	// Route Determine the target invokers list with chain.
 	Route([]protocol.Invoker, *common.URL, protocol.Invocation) []protocol.Invoker
+	// AddRouters Add routers
 	AddRouters([]Router)
 }

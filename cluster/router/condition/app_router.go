@@ -23,19 +23,21 @@ import (
 )
 
 const (
-	NAME                        = "APP_ROUTER"
-	APP_ROUTER_DEFAULT_PRIORITY = int64(150)
+	// Default priority for application router
+	appRouterDefaultPriority = int64(150)
 )
 
+// AppRouter For listen application router with config center
 type AppRouter struct {
 	listenableRouter
 }
 
+// NewAppRouter Init AppRouter by url
 func NewAppRouter(url *common.URL) (*AppRouter, error) {
 	appRouter, err := newListenableRouter(url, url.GetParam(constant.APPLICATION_KEY, ""))
 	if err != nil {
 		return nil, err
 	}
-	appRouter.priority = APP_ROUTER_DEFAULT_PRIORITY
+	appRouter.priority = appRouterDefaultPriority
 	return appRouter, nil
 }

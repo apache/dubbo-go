@@ -21,7 +21,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-/* Parse
+/* Parse Router raw rule parser
+ * example :
  * scope: application
  * runtime: true
  * force: false
