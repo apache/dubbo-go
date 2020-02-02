@@ -18,12 +18,14 @@
 package dubbo
 
 import (
+	"context"
 	"sync"
 	"testing"
 	"time"
 )
 
 import (
+	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -40,8 +42,8 @@ func TestDubboInvoker_Invoke(t *testing.T) {
 		pendingResponses: new(sync.Map),
 		conf:             *clientConf,
 		opts: Options{
-			ConnectTimeout: 3e9,
-			RequestTimeout: 6e9,
+			ConnectTimeout: 3 * time.Second,
+			RequestTimeout: 6 * time.Second,
 		},
 	}
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
@@ -53,14 +55,14 @@ func TestDubboInvoker_Invoke(t *testing.T) {
 		invocation.WithReply(user), invocation.WithAttachments(map[string]string{"test_key": "test_value"}))
 
 	// Call
-	res := invoker.Invoke(inv)
+	res := invoker.Invoke(context.Background(), inv)
 	assert.NoError(t, res.Error())
 	assert.Equal(t, User{Id: "1", Name: "username"}, *res.Result().(*User))
 	assert.Equal(t, "test_value", res.Attachments()["test_key"]) // test attachments for request/response
 
 	// CallOneway
 	inv.SetAttachments(constant.ASYNC_KEY, "true")
-	res = invoker.Invoke(inv)
+	res = invoker.Invoke(context.Background(), inv)
 	assert.NoError(t, res.Error())
 
 	// AsyncCall
@@ -71,14 +73,19 @@ func TestDubboInvoker_Invoke(t *testing.T) {
 		assert.Equal(t, User{Id: "1", Name: "username"}, *r.Reply.(*Response).reply.(*User))
 		lock.Unlock()
 	})
-	res = invoker.Invoke(inv)
+	res = invoker.Invoke(context.Background(), inv)
 	assert.NoError(t, res.Error())
 
 	// Err_No_Reply
 	inv.SetAttachments(constant.ASYNC_KEY, "false")
 	inv.SetReply(nil)
-	res = invoker.Invoke(inv)
+	res = invoker.Invoke(context.Background(), inv)
 	assert.EqualError(t, res.Error(), "request need @response")
+
+	// testing appendCtx
+	span, ctx := opentracing.StartSpanFromContext(context.Background(), "TestOperation")
+	invoker.Invoke(ctx, inv)
+	span.Finish()
 
 	// destroy
 	lock.Lock()

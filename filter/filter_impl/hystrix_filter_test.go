@@ -17,14 +17,17 @@
 package filter_impl
 
 import (
+	"context"
 	"regexp"
 	"testing"
 )
+
 import (
 	"github.com/afex/hystrix-go/hystrix"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
+
 import (
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
@@ -125,9 +128,9 @@ type testMockSuccessInvoker struct {
 	protocol.BaseInvoker
 }
 
-func (iv *testMockSuccessInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+func (iv *testMockSuccessInvoker) Invoke(_ context.Context, _ protocol.Invocation) protocol.Result {
 	return &protocol.RPCResult{
-		Rest: "Sucess",
+		Rest: "Success",
 		Err:  nil,
 	}
 }
@@ -136,7 +139,7 @@ type testMockFailInvoker struct {
 	protocol.BaseInvoker
 }
 
-func (iv *testMockFailInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+func (iv *testMockFailInvoker) Invoke(_ context.Context, _ protocol.Invocation) protocol.Result {
 	return &protocol.RPCResult{
 		Err: errors.Errorf("exception"),
 	}
@@ -144,7 +147,7 @@ func (iv *testMockFailInvoker) Invoke(invocation protocol.Invocation) protocol.R
 
 func TestHystrixFilter_Invoke_Success(t *testing.T) {
 	hf := &HystrixFilter{}
-	result := hf.Invoke(&testMockSuccessInvoker{}, &invocation.RPCInvocation{})
+	result := hf.Invoke(context.Background(), &testMockSuccessInvoker{}, &invocation.RPCInvocation{})
 	assert.NotNil(t, result)
 	assert.NoError(t, result.Error())
 	assert.NotNil(t, result.Result())
@@ -152,7 +155,7 @@ func TestHystrixFilter_Invoke_Success(t *testing.T) {
 
 func TestHystrixFilter_Invoke_Fail(t *testing.T) {
 	hf := &HystrixFilter{}
-	result := hf.Invoke(&testMockFailInvoker{}, &invocation.RPCInvocation{})
+	result := hf.Invoke(context.Background(), &testMockFailInvoker{}, &invocation.RPCInvocation{})
 	assert.NotNil(t, result)
 	assert.Error(t, result.Error())
 }
@@ -164,7 +167,7 @@ func TestHystricFilter_Invoke_CircuitBreak(t *testing.T) {
 	resChan := make(chan protocol.Result, 50)
 	for i := 0; i < 50; i++ {
 		go func() {
-			result := hf.Invoke(&testMockFailInvoker{}, &invocation.RPCInvocation{})
+			result := hf.Invoke(context.Background(), &testMockFailInvoker{}, &invocation.RPCInvocation{})
 			resChan <- result
 		}()
 	}
@@ -189,7 +192,7 @@ func TestHystricFilter_Invoke_CircuitBreak_Omit_Exception(t *testing.T) {
 	resChan := make(chan protocol.Result, 50)
 	for i := 0; i < 50; i++ {
 		go func() {
-			result := hf.Invoke(&testMockFailInvoker{}, &invocation.RPCInvocation{})
+			result := hf.Invoke(context.Background(), &testMockFailInvoker{}, &invocation.RPCInvocation{})
 			resChan <- result
 		}()
 	}

@@ -26,6 +26,7 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
+// Protocol
 // Extension - protocol
 type Protocol interface {
 	Export(invoker Invoker) Exporter
@@ -33,6 +34,7 @@ type Protocol interface {
 	Destroy()
 }
 
+// Exporter
 // wrapping invoker
 type Exporter interface {
 	GetInvoker() Invoker
@@ -43,37 +45,45 @@ type Exporter interface {
 // base protocol
 /////////////////////////////
 
+// BaseProtocol ...
 type BaseProtocol struct {
 	exporterMap *sync.Map
 	invokers    []Invoker
 }
 
+// NewBaseProtocol ...
 func NewBaseProtocol() BaseProtocol {
 	return BaseProtocol{
 		exporterMap: new(sync.Map),
 	}
 }
 
+// SetExporterMap ...
 func (bp *BaseProtocol) SetExporterMap(key string, exporter Exporter) {
 	bp.exporterMap.Store(key, exporter)
 }
 
+// ExporterMap ...
 func (bp *BaseProtocol) ExporterMap() *sync.Map {
 	return bp.exporterMap
 }
 
+// SetInvokers ...
 func (bp *BaseProtocol) SetInvokers(invoker Invoker) {
 	bp.invokers = append(bp.invokers, invoker)
 }
 
+// Invokers ...
 func (bp *BaseProtocol) Invokers() []Invoker {
 	return bp.invokers
 }
 
+// Export ...
 func (bp *BaseProtocol) Export(invoker Invoker) Exporter {
 	return NewBaseExporter("base", invoker, bp.exporterMap)
 }
 
+// Refer ...
 func (bp *BaseProtocol) Refer(url common.URL) Invoker {
 	return NewBaseInvoker(url)
 }
@@ -103,12 +113,14 @@ func (bp *BaseProtocol) Destroy() {
 // base exporter
 /////////////////////////////
 
+// BaseExporter ...
 type BaseExporter struct {
 	key         string
 	invoker     Invoker
 	exporterMap *sync.Map
 }
 
+// NewBaseExporter ...
 func NewBaseExporter(key string, invoker Invoker, exporterMap *sync.Map) *BaseExporter {
 	return &BaseExporter{
 		key:         key,
@@ -117,11 +129,13 @@ func NewBaseExporter(key string, invoker Invoker, exporterMap *sync.Map) *BaseEx
 	}
 }
 
+// GetInvoker ...
 func (de *BaseExporter) GetInvoker() Invoker {
 	return de.invoker
 
 }
 
+// Unexport ...
 func (de *BaseExporter) Unexport() {
 	logger.Infof("Exporter unexport.")
 	de.invoker.Destroy()
