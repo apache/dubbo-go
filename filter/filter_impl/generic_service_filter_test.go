@@ -49,10 +49,10 @@ func (c *TestStruct) JavaClassName() string {
 	return "com.test.testStruct"
 }
 
-type TestService struct {
-}
+type TestService struct{}
 
-func (ts *TestService) MethodOne(ctx context.Context, test1 *TestStruct, test2 []TestStruct,
+// MethodOne ...
+func (ts *TestService) MethodOne(_ context.Context, test1 *TestStruct, test2 []TestStruct,
 	test3 interface{}, test4 []interface{}, test5 *string) (*TestStruct, error) {
 	if test1 == nil {
 		return nil, errors.New("param test1 is nil")
@@ -72,7 +72,8 @@ func (ts *TestService) MethodOne(ctx context.Context, test1 *TestStruct, test2 [
 	return &TestStruct{}, nil
 }
 
-func (s *TestService) Reference() string {
+// Reference ...
+func (*TestService) Reference() string {
 	return "com.test.Path"
 }
 
@@ -99,7 +100,7 @@ func TestGenericServiceFilter_Invoke(t *testing.T) {
 	rpcInvocation := invocation.NewRPCInvocation(methodName, aurguments, nil)
 	filter := GetGenericServiceFilter()
 	url, _ := common.NewURL(context.Background(), "testprotocol://127.0.0.1:20000/com.test.Path")
-	result := filter.Invoke(&proxy_factory.ProxyInvoker{BaseInvoker: *protocol.NewBaseInvoker(url)}, rpcInvocation)
+	result := filter.Invoke(context.Background(), &proxy_factory.ProxyInvoker{BaseInvoker: *protocol.NewBaseInvoker(url)}, rpcInvocation)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Error())
 }
@@ -124,7 +125,7 @@ func TestGenericServiceFilter_ResponseTestStruct(t *testing.T) {
 	filter := GetGenericServiceFilter()
 	methodName := "$invoke"
 	rpcInvocation := invocation.NewRPCInvocation(methodName, aurguments, nil)
-	r := filter.OnResponse(result, nil, rpcInvocation)
+	r := filter.OnResponse(nil, result, nil, rpcInvocation)
 	assert.NotNil(t, r.Result())
 	assert.Equal(t, reflect.ValueOf(r.Result()).Kind(), reflect.Map)
 }
@@ -142,7 +143,7 @@ func TestGenericServiceFilter_ResponseString(t *testing.T) {
 	filter := GetGenericServiceFilter()
 	methodName := "$invoke"
 	rpcInvocation := invocation.NewRPCInvocation(methodName, aurguments, nil)
-	r := filter.OnResponse(result, nil, rpcInvocation)
+	r := filter.OnResponse(nil, result, nil, rpcInvocation)
 	assert.NotNil(t, r.Result())
 	assert.Equal(t, reflect.ValueOf(r.Result()).Kind(), reflect.String)
 }

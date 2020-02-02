@@ -21,16 +21,20 @@ import (
 	"context"
 )
 
+// MockService ...
 type MockService struct{}
 
+// Reference ...
 func (*MockService) Reference() string {
 	return "MockService"
 }
 
+// GetUser ...
 func (*MockService) GetUser(ctx context.Context, itf []interface{}, str *struct{}) error {
 	return nil
 }
 
+// GetUser1 ...
 func (*MockService) GetUser1(ctx context.Context, itf []interface{}, str *struct{}) error {
 	return nil
 }

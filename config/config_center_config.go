@@ -31,6 +31,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
+// ConfigCenterConfig ...
 type ConfigCenterConfig struct {
 	context       context.Context
 	Protocol      string `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
@@ -40,13 +41,14 @@ type ConfigCenterConfig struct {
 	Username      string `yaml:"username" json:"username,omitempty"`
 	Password      string `yaml:"password" json:"password,omitempty"`
 	ConfigFile    string `default:"dubbo.properties" yaml:"config_file"  json:"config_file,omitempty"`
-	Namespace     string `default:"dubbo.properties" yaml:"namespace"  json:"namespace,omitempty"`
+	Namespace     string `default:"dubbo" yaml:"namespace"  json:"namespace,omitempty"`
 	AppConfigFile string `default:"dubbo.properties" yaml:"app_config_file"  json:"app_config_file,omitempty"`
 	AppId         string `default:"dubbo" yaml:"app_id"  json:"app_id,omitempty"`
 	TimeoutStr    string `yaml:"timeout"  json:"timeout,omitempty"`
 	timeout       time.Duration
 }
 
+// UnmarshalYAML ...
 func (c *ConfigCenterConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
@@ -58,6 +60,7 @@ func (c *ConfigCenterConfig) UnmarshalYAML(unmarshal func(interface{}) error) er
 	return nil
 }
 
+// GetUrlMap ...
 func (c *ConfigCenterConfig) GetUrlMap() url.Values {
 	urlMap := url.Values{}
 	urlMap.Set(constant.CONFIG_NAMESPACE_KEY, c.Namespace)

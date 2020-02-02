@@ -34,6 +34,7 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
+// RegistryConfig ...
 type RegistryConfig struct {
 	Protocol string `required:"true" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
 	//I changed "type" to "protocol" ,the same as "protocol" field in java class RegistryConfig
@@ -46,6 +47,7 @@ type RegistryConfig struct {
 	Params   map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
 }
 
+// UnmarshalYAML ...
 func (c *RegistryConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
@@ -57,6 +59,7 @@ func (c *RegistryConfig) UnmarshalYAML(unmarshal func(interface{}) error) error 
 	return nil
 }
 
+// Prefix ...
 func (*RegistryConfig) Prefix() string {
 	return constant.RegistryConfigPrefix + "|" + constant.SingleRegistryConfigPrefix
 }
@@ -114,15 +117,16 @@ func loadRegistries(targetRegistries string, registries map[string]*RegistryConf
 	return urls
 }
 
-func (regconfig *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
+func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 	urlMap := url.Values{}
-	urlMap.Set(constant.GROUP_KEY, regconfig.Group)
+	urlMap.Set(constant.GROUP_KEY, c.Group)
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(int(roleType)))
-	urlMap.Set(constant.REGISTRY_KEY, regconfig.Protocol)
-	urlMap.Set(constant.REGISTRY_TIMEOUT_KEY, regconfig.TimeoutStr)
-	for k, v := range regconfig.Params {
+	urlMap.Set(constant.REGISTRY_KEY, c.Protocol)
+	urlMap.Set(constant.REGISTRY_TIMEOUT_KEY, c.TimeoutStr)
+	for k, v := range c.Params {
 		urlMap.Set(k, v)
 	}
+
 	return urlMap
 }
 

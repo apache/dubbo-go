@@ -18,6 +18,7 @@
 package filter
 
 /*
+ * TpsLimitStrategy
  * please register your implementation by invoking SetTpsLimitStrategy
  * "UserProvider":
  *   registry: "hangzhouzk"
@@ -35,6 +36,7 @@ type TpsLimitStrategy interface {
 	IsAllowable() bool
 }
 
+// TpsLimitStrategyCreator ...
 type TpsLimitStrategyCreator interface {
 	Create(rate int, interval int) TpsLimitStrategy
 }

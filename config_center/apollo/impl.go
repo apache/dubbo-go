@@ -32,7 +32,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
-	. "github.com/apache/dubbo-go/config_center"
+	cc "github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/config_center/parser"
 	"github.com/apache/dubbo-go/remoting"
 )
@@ -58,7 +58,7 @@ func newApolloConfiguration(url *common.URL) (*apolloConfiguration, error) {
 	configCluster := url.GetParam(constant.CONFIG_CLUSTER_KEY, "")
 
 	appId := url.GetParam(constant.CONFIG_APP_ID_KEY, "")
-	namespaces := url.GetParam(constant.CONFIG_NAMESPACE_KEY, getProperties(DEFAULT_GROUP))
+	namespaces := getProperties(url.GetParam(constant.CONFIG_NAMESPACE_KEY, cc.DEFAULT_GROUP))
 	c.appConf = &agollo.AppConfig{
 		AppId:         appId,
 		Cluster:       configCluster,
@@ -84,8 +84,8 @@ func getChangeType(change agollo.ConfigChangeType) remoting.EventType {
 	}
 }
 
-func (c *apolloConfiguration) AddListener(key string, listener ConfigurationListener, opts ...Option) {
-	k := &Options{}
+func (c *apolloConfiguration) AddListener(key string, listener cc.ConfigurationListener, opts ...cc.Option) {
+	k := &cc.Options{}
 	for _, opt := range opts {
 		opt(k)
 	}
@@ -95,8 +95,8 @@ func (c *apolloConfiguration) AddListener(key string, listener ConfigurationList
 	l.(*apolloListener).AddListener(listener)
 }
 
-func (c *apolloConfiguration) RemoveListener(key string, listener ConfigurationListener, opts ...Option) {
-	k := &Options{}
+func (c *apolloConfiguration) RemoveListener(key string, listener cc.ConfigurationListener, opts ...cc.Option) {
+	k := &cc.Options{}
 	for _, opt := range opts {
 		opt(k)
 	}
@@ -116,7 +116,7 @@ func getNamespaceName(namespace string, configFileFormat agollo.ConfigFileFormat
 	return fmt.Sprintf(apolloConfigFormat, namespace, configFileFormat)
 }
 
-func (c *apolloConfiguration) GetInternalProperty(key string, opts ...Option) (string, error) {
+func (c *apolloConfiguration) GetInternalProperty(key string, opts ...cc.Option) (string, error) {
 	config := agollo.GetConfig(c.appConf.NamespaceName)
 	if config == nil {
 		return "", errors.New(fmt.Sprintf("nothing in namespace:%s ", key))
@@ -124,11 +124,11 @@ func (c *apolloConfiguration) GetInternalProperty(key string, opts ...Option) (s
 	return config.GetStringValue(key, ""), nil
 }
 
-func (c *apolloConfiguration) GetRule(key string, opts ...Option) (string, error) {
+func (c *apolloConfiguration) GetRule(key string, opts ...cc.Option) (string, error) {
 	return c.GetInternalProperty(key, opts...)
 }
 
-func (c *apolloConfiguration) GetProperties(key string, opts ...Option) (string, error) {
+func (c *apolloConfiguration) GetProperties(key string, opts ...cc.Option) (string, error) {
 	/**
 	 * when group is not null, we are getting startup configs(config file) from Config Center, for example:
 	 * key=dubbo.propertie

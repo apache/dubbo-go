@@ -93,15 +93,19 @@ type rest struct {
 
 var count int
 
-func (bi *MockInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+func (bi *MockInvoker) Invoke(_ context.Context, _ protocol.Invocation) protocol.Result {
 	count++
-	var success bool
-	var err error = nil
+
+	var (
+		success bool
+		err     error
+	)
 	if count >= bi.successCount {
 		success = true
 	} else {
 		err = perrors.New("error")
 	}
+
 	result := &protocol.RPCResult{Err: err, Rest: rest{tried: count, success: success}}
 	return result
 }

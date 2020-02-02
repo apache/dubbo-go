@@ -28,9 +28,14 @@ import (
 //////////////////////////////////////////
 // DynamicConfiguration
 //////////////////////////////////////////
-const DEFAULT_GROUP = "dubbo"
-const DEFAULT_CONFIG_TIMEOUT = "10s"
+const (
+	// DEFAULT_GROUP: default group
+	DEFAULT_GROUP = "dubbo"
+	// DEFAULT_CONFIG_TIMEOUT: default config timeout
+	DEFAULT_CONFIG_TIMEOUT = "10s"
+)
 
+// DynamicConfiguration ...
 type DynamicConfiguration interface {
 	Parser() parser.ConfigurationParser
 	SetParser(parser.ConfigurationParser)
@@ -46,19 +51,23 @@ type DynamicConfiguration interface {
 	GetInternalProperty(string, ...Option) (string, error)
 }
 
+// Options ...
 type Options struct {
 	Group   string
 	Timeout time.Duration
 }
 
+// Option ...
 type Option func(*Options)
 
+// WithGroup ...
 func WithGroup(group string) Option {
 	return func(opt *Options) {
 		opt.Group = group
 	}
 }
 
+// WithTimeout ...
 func WithTimeout(time time.Duration) Option {
 	return func(opt *Options) {
 		opt.Timeout = time
