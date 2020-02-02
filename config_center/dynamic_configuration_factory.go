@@ -21,6 +21,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 )
 
+// DynamicConfigurationFactory ...
 type DynamicConfigurationFactory interface {
 	GetDynamicConfiguration(*common.URL) (DynamicConfiguration, error)
 }

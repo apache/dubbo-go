@@ -33,6 +33,7 @@ func init() {
 }
 
 /**
+ * ThreadSafeFixedWindowTpsLimitStrategyImpl
  * it's the thread-safe implementation.
  * Also, it's a thread-safe decorator of FixedWindowTpsLimitStrategyImpl
  * "UserProvider":
@@ -52,6 +53,7 @@ type ThreadSafeFixedWindowTpsLimitStrategyImpl struct {
 	fixedWindow *FixedWindowTpsLimitStrategyImpl
 }
 
+// IsAllowable ...
 func (impl *ThreadSafeFixedWindowTpsLimitStrategyImpl) IsAllowable() bool {
 	impl.mutex.Lock()
 	defer impl.mutex.Unlock()

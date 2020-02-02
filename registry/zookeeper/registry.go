@@ -44,9 +44,12 @@ import (
 )
 
 const (
-	RegistryZkClient  = "zk registry"
+	// RegistryZkClient zk client name
+	RegistryZkClient = "zk registry"
+	// RegistryConnDelay connection delay
 	RegistryConnDelay = 3
-	MaxWaitInterval   = time.Duration(3e9)
+	// MaxWaitInterval max wait interval
+	MaxWaitInterval = 3 * time.Second
 )
 
 var (
@@ -113,10 +116,12 @@ func newZkRegistry(url *common.URL) (registry.Registry, error) {
 	return r, nil
 }
 
+// Options ...
 type Options struct {
 	client *zookeeper.ZookeeperClient
 }
 
+// Option ...
 type Option func(*Options)
 
 func newMockZkRegistry(url *common.URL, opts ...zookeeper.Option) (*zk.TestCluster, *zkRegistry, error) {
@@ -299,7 +304,6 @@ func (r *zkRegistry) register(c common.URL) error {
 		if c.Path == "" || len(c.Methods) == 0 {
 			return perrors.Errorf("conf{Path:%s, Methods:%s}", c.Path, c.Methods)
 		}
-		// 先创建服务下面的provider node
 		dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.PROVIDER])
 		r.cltLock.Lock()
 		err = r.client.Create(dubboPath)
@@ -370,6 +374,7 @@ func (r *zkRegistry) register(c common.URL) error {
 		return perrors.Errorf("@c{%v} type is not referencer or provider", c)
 	}
 
+	dubboPath = strings.ReplaceAll(dubboPath, "$", "%24")
 	err = r.registerTempZookeeperNode(dubboPath, encodedURL)
 
 	if err != nil {

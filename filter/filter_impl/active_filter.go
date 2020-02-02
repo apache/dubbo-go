@@ -18,34 +18,53 @@
 package filter_impl
 
 import (
+	"context"
+	"strconv"
+)
+
+import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/filter"
 	"github.com/apache/dubbo-go/protocol"
+	invocation2 "github.com/apache/dubbo-go/protocol/invocation"
 )
 
-const active = "active"
+const (
+	active               = "active"
+	dubboInvokeStartTime = "dubboInvokeStartTime"
+)
 
 func init() {
 	extension.SetFilter(active, GetActiveFilter)
 }
 
+// ActiveFilter ...
 type ActiveFilter struct {
 }
 
-func (ef *ActiveFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+// Invoke ...
+func (ef *ActiveFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("invoking active filter. %v,%v", invocation.MethodName(), len(invocation.Arguments()))
-
+	invocation.(*invocation2.RPCInvocation).SetAttachments(dubboInvokeStartTime, strconv.FormatInt(protocol.CurrentTimeMillis(), 10))
 	protocol.BeginCount(invoker.GetUrl(), invocation.MethodName())
-	return invoker.Invoke(invocation)
+	return invoker.Invoke(ctx, invocation)
 }
 
-func (ef *ActiveFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-
-	protocol.EndCount(invoker.GetUrl(), invocation.MethodName())
+// OnResponse ...
+func (ef *ActiveFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	startTime, err := strconv.ParseInt(invocation.(*invocation2.RPCInvocation).AttachmentsByKey(dubboInvokeStartTime, "0"), 10, 64)
+	if err != nil {
+		result.SetError(err)
+		logger.Errorf("parse dubbo_invoke_start_time to int64 failed")
+		return result
+	}
+	elapsed := protocol.CurrentTimeMillis() - startTime
+	protocol.EndCount(invoker.GetUrl(), invocation.MethodName(), elapsed, result.Error() == nil)
 	return result
 }
 
+// GetActiveFilter ...
 func GetActiveFilter() filter.Filter {
 	return &ActiveFilter{}
 }

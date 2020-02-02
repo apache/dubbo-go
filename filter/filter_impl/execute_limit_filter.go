@@ -18,6 +18,7 @@
 package filter_impl
 
 import (
+	"context"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -36,13 +37,16 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-const name = "execute"
+const (
+	name = "execute"
+)
 
 func init() {
 	extension.SetFilter(name, GetExecuteLimitFilter)
 }
 
 /**
+ * ExecuteLimitFilter
  * The filter will limit the number of in-progress request and it's thread-safe.
  * example:
  * "UserProvider":
@@ -71,23 +75,25 @@ type ExecuteLimitFilter struct {
 	executeState *concurrent.Map
 }
 
+// ExecuteState ...
 type ExecuteState struct {
 	concurrentCount int64
 }
 
-func (ef *ExecuteLimitFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+// Invoke ...
+func (ef *ExecuteLimitFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	methodConfigPrefix := "methods." + invocation.MethodName() + "."
-	url := invoker.GetUrl()
-	limitTarget := url.ServiceKey()
+	ivkURL := invoker.GetUrl()
+	limitTarget := ivkURL.ServiceKey()
 	limitRateConfig := constant.DEFAULT_EXECUTE_LIMIT
 
-	methodLevelConfig := url.GetParam(methodConfigPrefix+constant.EXECUTE_LIMIT_KEY, "")
+	methodLevelConfig := ivkURL.GetParam(methodConfigPrefix+constant.EXECUTE_LIMIT_KEY, "")
 	if len(methodLevelConfig) > 0 {
 		// we have the method-level configuration
 		limitTarget = limitTarget + "#" + invocation.MethodName()
 		limitRateConfig = methodLevelConfig
 	} else {
-		limitRateConfig = url.GetParam(constant.EXECUTE_LIMIT_KEY, constant.DEFAULT_EXECUTE_LIMIT)
+		limitRateConfig = ivkURL.GetParam(constant.EXECUTE_LIMIT_KEY, constant.DEFAULT_EXECUTE_LIMIT)
 	}
 
 	limitRate, err := strconv.ParseInt(limitRateConfig, 0, 0)
@@ -97,7 +103,7 @@ func (ef *ExecuteLimitFilter) Invoke(invoker protocol.Invoker, invocation protoc
 	}
 
 	if limitRate < 0 {
-		return invoker.Invoke(invocation)
+		return invoker.Invoke(ctx, invocation)
 	}
 
 	state, _ := ef.executeState.LoadOrStore(limitTarget, &ExecuteState{
@@ -107,16 +113,17 @@ func (ef *ExecuteLimitFilter) Invoke(invoker protocol.Invoker, invocation protoc
 	concurrentCount := state.(*ExecuteState).increase()
 	defer state.(*ExecuteState).decrease()
 	if concurrentCount > limitRate {
-		logger.Errorf("The invocation was rejected due to over the execute limitation, url: %s ", url.String())
-		rejectedHandlerConfig := url.GetParam(methodConfigPrefix+constant.EXECUTE_REJECTED_EXECUTION_HANDLER_KEY,
-			url.GetParam(constant.EXECUTE_REJECTED_EXECUTION_HANDLER_KEY, constant.DEFAULT_KEY))
-		return extension.GetRejectedExecutionHandler(rejectedHandlerConfig).RejectedExecution(url, invocation)
+		logger.Errorf("The invocation was rejected due to over the execute limitation, url: %s ", ivkURL.String())
+		rejectedHandlerConfig := ivkURL.GetParam(methodConfigPrefix+constant.EXECUTE_REJECTED_EXECUTION_HANDLER_KEY,
+			ivkURL.GetParam(constant.EXECUTE_REJECTED_EXECUTION_HANDLER_KEY, constant.DEFAULT_KEY))
+		return extension.GetRejectedExecutionHandler(rejectedHandlerConfig).RejectedExecution(ivkURL, invocation)
 	}
 
-	return invoker.Invoke(invocation)
+	return invoker.Invoke(ctx, invocation)
 }
 
-func (ef *ExecuteLimitFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+// OnResponse ...
+func (ef *ExecuteLimitFilter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker, _ protocol.Invocation) protocol.Result {
 	return result
 }
 
@@ -131,6 +138,7 @@ func (state *ExecuteState) decrease() {
 var executeLimitOnce sync.Once
 var executeLimitFilter *ExecuteLimitFilter
 
+// GetExecuteLimitFilter ...
 func GetExecuteLimitFilter() filter.Filter {
 	executeLimitOnce.Do(func() {
 		executeLimitFilter = &ExecuteLimitFilter{
