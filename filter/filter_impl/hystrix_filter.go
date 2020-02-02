@@ -14,9 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package filter_impl
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"sync"
@@ -35,9 +37,12 @@ import (
 )
 
 const (
+	// HYSTRIX_CONSUMER ...
 	HYSTRIX_CONSUMER = "hystrix_consumer"
+	// HYSTRIX_PROVIDER ...
 	HYSTRIX_PROVIDER = "hystrix_provider"
-	HYSTRIX          = "hystrix"
+	// HYSTRIX ...
+	HYSTRIX = "hystrix"
 )
 
 var (
@@ -57,6 +62,7 @@ func init() {
 	extension.SetFilter(HYSTRIX_PROVIDER, GetHystrixFilterProvider)
 }
 
+// HystrixFilterError ...
 type HystrixFilterError struct {
 	err           error
 	failByHystrix bool
@@ -66,9 +72,12 @@ func (hfError *HystrixFilterError) Error() string {
 	return hfError.err.Error()
 }
 
+// FailByHystrix ...
 func (hfError *HystrixFilterError) FailByHystrix() bool {
 	return hfError.failByHystrix
 }
+
+// NewHystrixFilterError ...
 func NewHystrixFilterError(err error, failByHystrix bool) error {
 	return &HystrixFilterError{
 		err:           err,
@@ -76,14 +85,15 @@ func NewHystrixFilterError(err error, failByHystrix bool) error {
 	}
 }
 
+// HystrixFilter ...
 type HystrixFilter struct {
 	COrP     bool //true for consumer
 	res      map[string][]*regexp.Regexp
 	ifNewMap sync.Map
 }
 
-func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-
+// Invoke ...
+func (hf *HystrixFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	cmdName := fmt.Sprintf("%s&method=%s", invoker.GetUrl().Key(), invocation.MethodName())
 
 	// Do the configuration if the circuit breaker is created for the first time
@@ -115,12 +125,12 @@ func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 	configLoadMutex.RUnlock()
 	if err != nil {
 		logger.Errorf("[Hystrix Filter]Errors occurred getting circuit for %s , will invoke without hystrix, error is: ", cmdName, err)
-		return invoker.Invoke(invocation)
+		return invoker.Invoke(ctx, invocation)
 	}
 	logger.Infof("[Hystrix Filter]Using hystrix filter: %s", cmdName)
 	var result protocol.Result
 	_ = hystrix.Do(cmdName, func() error {
-		result = invoker.Invoke(invocation)
+		result = invoker.Invoke(ctx, invocation)
 		err := result.Error()
 		if err != nil {
 			result.SetError(NewHystrixFilterError(err, false))
@@ -144,9 +154,12 @@ func (hf *HystrixFilter) Invoke(invoker protocol.Invoker, invocation protocol.In
 	return result
 }
 
-func (hf *HystrixFilter) OnResponse(result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+// OnResponse ...
+func (hf *HystrixFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }
+
+// GetHystrixFilterConsumer ...
 func GetHystrixFilterConsumer() filter.Filter {
 	//When first called, load the config in
 	consumerConfigOnce.Do(func() {
@@ -157,6 +170,7 @@ func GetHystrixFilterConsumer() filter.Filter {
 	return &HystrixFilter{COrP: true}
 }
 
+// GetHystrixFilterProvider ...
 func GetHystrixFilterProvider() filter.Filter {
 	providerConfigOnce.Do(func() {
 		if err := initHystrixConfigProvider(); err != nil {
@@ -215,6 +229,7 @@ func initHystrixConfigConsumer() error {
 	}
 	return nil
 }
+
 func initHystrixConfigProvider() error {
 	if config.GetProviderConfig().FilterConf == nil {
 		return perrors.Errorf("no config for hystrix")
@@ -241,6 +256,7 @@ func initHystrixConfigProvider() error {
 //	return initHystrixConfig()
 //}
 
+// CommandConfigWithError ...
 type CommandConfigWithError struct {
 	Timeout                int      `yaml:"timeout"`
 	MaxConcurrentRequests  int      `yaml:"max_concurrent_requests"`
@@ -258,11 +274,14 @@ type CommandConfigWithError struct {
 //- ErrorPercentThreshold: it causes circuits to open once the rolling measure of errors exceeds this percent of requests
 //See hystrix doc
 
+// HystrixFilterConfig ...
 type HystrixFilterConfig struct {
 	Configs  map[string]*CommandConfigWithError
 	Default  string
 	Services map[string]ServiceHystrixConfig
 }
+
+// ServiceHystrixConfig ...
 type ServiceHystrixConfig struct {
 	ServiceConfig string `yaml:"service_config"`
 	Methods       map[string]string

@@ -42,8 +42,8 @@ var (
 	failsafeUrl, _ = common.NewURL(context.TODO(), "dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
 )
 
-// register_failsafe register failsafeCluster to cluster extension.
-func register_failsafe(t *testing.T, invoker *mock.MockInvoker) protocol.Invoker {
+// registerFailsafe register failsafeCluster to cluster extension.
+func registerFailsafe(t *testing.T, invoker *mock.MockInvoker) protocol.Invoker {
 	extension.SetLoadbalance("random", loadbalance.NewRandomLoadBalance)
 	failsafeCluster := NewFailsafeCluster()
 
@@ -62,14 +62,14 @@ func Test_FailSafeInvokeSuccess(t *testing.T) {
 	defer ctrl.Finish()
 
 	invoker := mock.NewMockInvoker(ctrl)
-	clusterInvoker := register_failsafe(t, invoker)
+	clusterInvoker := registerFailsafe(t, invoker)
 
 	invoker.EXPECT().GetUrl().Return(failsafeUrl).AnyTimes()
 
 	mockResult := &protocol.RPCResult{Rest: rest{tried: 0, success: true}}
 
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 
 	assert.NoError(t, result.Error())
 	res := result.Result().(rest)
@@ -81,14 +81,14 @@ func Test_FailSafeInvokeFail(t *testing.T) {
 	defer ctrl.Finish()
 
 	invoker := mock.NewMockInvoker(ctrl)
-	clusterInvoker := register_failsafe(t, invoker)
+	clusterInvoker := registerFailsafe(t, invoker)
 
 	invoker.EXPECT().GetUrl().Return(failsafeUrl).AnyTimes()
 
 	mockResult := &protocol.RPCResult{Err: perrors.New("error")}
 
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 
 	assert.NoError(t, result.Error())
 	assert.Nil(t, result.Result())

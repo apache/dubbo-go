@@ -33,6 +33,7 @@ func init() {
 }
 
 /**
+ * SlidingWindowTpsLimitStrategyImpl
  * it's thread-safe.
  * "UserProvider":
  *   registry: "hangzhouzk"
@@ -53,6 +54,7 @@ type SlidingWindowTpsLimitStrategyImpl struct {
 	queue    *list.List
 }
 
+// IsAllowable ...
 func (impl *SlidingWindowTpsLimitStrategyImpl) IsAllowable() bool {
 	impl.mutex.Lock()
 	defer impl.mutex.Unlock()
