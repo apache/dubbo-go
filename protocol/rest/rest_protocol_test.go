@@ -116,15 +116,19 @@ func (p *UserProvider) Reference() string {
 func (p *UserProvider) GetUser(ctx context.Context, id int, age int32, name string) (*User, error) {
 	return &User{
 		Id:   id,
-		Time: time.Now(),
+		Time: nil,
 		Age:  age,
 		Name: name,
 	}, nil
 }
 
+func (p *UserProvider) GetUserOne(ctx context.Context, user *User) (*User, error) {
+	return user, nil
+}
+
 type User struct {
 	Id   int
-	Time time.Time
+	Time *time.Time
 	Age  int32
 	Name string
 }
