@@ -175,7 +175,7 @@ func (c *zookeeperDynamicConfiguration) WaitGroup() *sync.WaitGroup {
 	return &c.wg
 }
 
-func (c *zookeeperDynamicConfiguration) GetDone() chan struct{} {
+func (c *zookeeperDynamicConfiguration) Done() chan struct{} {
 	return c.done
 }
 
