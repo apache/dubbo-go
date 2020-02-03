@@ -24,21 +24,15 @@ type RestyClient struct {
 }
 
 func NewRestyClient(restOption *rest_interface.RestOptions) *RestyClient {
-	if restOption.ConnectTimeout == 0 {
-		restOption.ConnectTimeout = 3 * time.Second
-	}
-	if restOption.RequestTimeout == 0 {
-		restOption.RequestTimeout = 3 * time.Second
-	}
 	client := resty.New()
 	client.SetTransport(
 		&http.Transport{
 			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-				c, err := net.DialTimeout(network, addr, restOption.ConnectTimeout*time.Second)
+				c, err := net.DialTimeout(network, addr, restOption.ConnectTimeout)
 				if err != nil {
 					return nil, err
 				}
-				err = c.SetDeadline(time.Now().Add(restOption.RequestTimeout * time.Second))
+				err = c.SetDeadline(time.Now().Add(restOption.RequestTimeout))
 				if err != nil {
 					return nil, err
 				}
