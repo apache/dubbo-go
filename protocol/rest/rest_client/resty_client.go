@@ -19,7 +19,6 @@ package rest_client
 
 import (
 	"context"
-	"github.com/apache/dubbo-go/common/constant"
 	"net"
 	"net/http"
 	"path"
@@ -27,9 +26,13 @@ import (
 )
 
 import (
+	"github.com/go-resty/resty/v2"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
-	"github.com/go-resty/resty/v2"
 )
 
 func init() {
