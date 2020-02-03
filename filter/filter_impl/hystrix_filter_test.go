@@ -21,11 +21,13 @@ import (
 	"regexp"
 	"testing"
 )
+
 import (
 	"github.com/afex/hystrix-go/hystrix"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
+
 import (
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
@@ -126,9 +128,9 @@ type testMockSuccessInvoker struct {
 	protocol.BaseInvoker
 }
 
-func (iv *testMockSuccessInvoker) Invoke(context context.Context, invocation protocol.Invocation) protocol.Result {
+func (iv *testMockSuccessInvoker) Invoke(_ context.Context, _ protocol.Invocation) protocol.Result {
 	return &protocol.RPCResult{
-		Rest: "Sucess",
+		Rest: "Success",
 		Err:  nil,
 	}
 }
@@ -137,7 +139,7 @@ type testMockFailInvoker struct {
 	protocol.BaseInvoker
 }
 
-func (iv *testMockFailInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (iv *testMockFailInvoker) Invoke(_ context.Context, _ protocol.Invocation) protocol.Result {
 	return &protocol.RPCResult{
 		Err: errors.Errorf("exception"),
 	}

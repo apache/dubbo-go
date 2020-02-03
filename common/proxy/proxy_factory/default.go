@@ -40,6 +40,7 @@ func init() {
 	extension.SetProxyFactory("default", NewDefaultProxyFactory)
 }
 
+// DefaultProxyFactory ...
 type DefaultProxyFactory struct {
 	//delegate ProxyFactory
 }
@@ -52,13 +53,17 @@ type DefaultProxyFactory struct {
 //	}
 //}
 
+// NewDefaultProxyFactory ...
 func NewDefaultProxyFactory(options ...proxy.Option) proxy.ProxyFactory {
 	return &DefaultProxyFactory{}
 }
+
+// GetProxy ...
 func (factory *DefaultProxyFactory) GetProxy(invoker protocol.Invoker, url *common.URL) *proxy.Proxy {
 	return factory.GetAsyncProxy(invoker, nil, url)
 }
 
+// GetAsyncProxy ...
 func (factory *DefaultProxyFactory) GetAsyncProxy(invoker protocol.Invoker, callBack interface{}, url *common.URL) *proxy.Proxy {
 	//create proxy
 	attachments := map[string]string{}
@@ -66,17 +71,20 @@ func (factory *DefaultProxyFactory) GetAsyncProxy(invoker protocol.Invoker, call
 	return proxy.NewProxy(invoker, callBack, attachments)
 }
 
+// GetInvoker ...
 func (factory *DefaultProxyFactory) GetInvoker(url common.URL) protocol.Invoker {
 	return &ProxyInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 	}
 }
 
+// ProxyInvoker ...
 type ProxyInvoker struct {
 	protocol.BaseInvoker
 }
 
-func (pi *ProxyInvoker) Invoke(context context.Context, invocation protocol.Invocation) protocol.Result {
+// Invoke ...
+func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	result := &protocol.RPCResult{}
 	result.SetAttachments(invocation.Attachments())
 
@@ -105,7 +113,7 @@ func (pi *ProxyInvoker) Invoke(context context.Context, invocation protocol.Invo
 
 	in := []reflect.Value{svc.Rcvr()}
 	if method.CtxType() != nil {
-		in = append(in, method.SuiteContext(nil)) // todo: ctx will be used later.
+		in = append(in, method.SuiteContext(ctx))
 	}
 
 	// prepare argv

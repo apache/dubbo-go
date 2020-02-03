@@ -36,6 +36,7 @@ func init() {
 // service event
 //////////////////////////////////////////
 
+// ServiceEvent ...
 type ServiceEvent struct {
 	Action  remoting.EventType
 	Service common.URL

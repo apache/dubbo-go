@@ -22,9 +22,11 @@ import (
 	"reflect"
 	"strings"
 )
+
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 )
+
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -34,6 +36,8 @@ import (
 )
 
 const (
+	// GENERIC
+	//generic module name
 	GENERIC = "generic"
 )
 
@@ -43,8 +47,10 @@ func init() {
 
 //  when do a generic invoke, struct need to be map
 
+// GenericFilter ...
 type GenericFilter struct{}
 
+// Invoke ...
 func (ef *GenericFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	if invocation.MethodName() == constant.GENERIC && len(invocation.Arguments()) == 3 {
 		oldArguments := invocation.Arguments()
@@ -67,10 +73,13 @@ func (ef *GenericFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 	return invoker.Invoke(ctx, invocation)
 }
 
-func (ef *GenericFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+// OnResponse ...
+func (ef *GenericFilter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker,
+	_ protocol.Invocation) protocol.Result {
 	return result
 }
 
+// GetGenericFilter ...
 func GetGenericFilter() filter.Filter {
 	return &GenericFilter{}
 }

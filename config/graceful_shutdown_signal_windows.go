@@ -22,8 +22,12 @@ import (
 	"syscall"
 )
 
-var ShutdownSignals = []os.Signal{os.Interrupt, os.Kill, syscall.SIGKILL,
-	syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGILL, syscall.SIGTRAP,
-	syscall.SIGABRT}
+var (
+	// ShutdownSignals ...
+	ShutdownSignals = []os.Signal{os.Interrupt, os.Kill, syscall.SIGKILL,
+		syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGILL, syscall.SIGTRAP,
+		syscall.SIGABRT}
 
-var DumpHeapShutdownSignals = []os.Signal{syscall.SIGQUIT, syscall.SIGILL, syscall.SIGTRAP, syscall.SIGABRT}
+	// DumpHeapShutdownSignals ...
+	DumpHeapShutdownSignals = []os.Signal{syscall.SIGQUIT, syscall.SIGILL, syscall.SIGTRAP, syscall.SIGABRT}
+)

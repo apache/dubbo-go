@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package config
 
 import (
@@ -39,6 +40,7 @@ type multiConfiger interface {
 	Prefix() string
 }
 
+// BaseConfig ...
 type BaseConfig struct {
 	ConfigCenterConfig *ConfigCenterConfig `yaml:"config_center" json:"config_center,omitempty"`
 	configCenterUrl    *common.URL
@@ -89,6 +91,9 @@ func (c *BaseConfig) prepareEnvironment() error {
 			configFile = c.ConfigCenterConfig.ConfigFile
 		}
 		appContent, err = dynamicConfig.GetProperties(configFile, config_center.WithGroup(appGroup))
+		if err != nil {
+			return perrors.WithStack(err)
+		}
 	}
 	//global config file
 	mapContent, err := dynamicConfig.Parser().Parse(content)
@@ -294,8 +299,8 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 func (c *BaseConfig) fresh() {
 	configList := config.GetEnvInstance().Configuration()
 	for element := configList.Front(); element != nil; element = element.Next() {
-		config := element.Value.(*config.InmemoryConfiguration)
-		c.freshInternalConfig(config)
+		cfg := element.Value.(*config.InmemoryConfiguration)
+		c.freshInternalConfig(cfg)
 	}
 }
 
@@ -308,6 +313,7 @@ func (c *BaseConfig) freshInternalConfig(config *config.InmemoryConfiguration) {
 	setFieldValue(val, reflect.Value{}, config)
 }
 
+// SetFatherConfig ...
 func (c *BaseConfig) SetFatherConfig(fatherConfig interface{}) {
 	c.fatherConfig = fatherConfig
 }

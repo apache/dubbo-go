@@ -31,6 +31,7 @@ const (
 	defaultStepTimeout = 10 * time.Second
 )
 
+// ShutdownConfig ...
 type ShutdownConfig struct {
 	/*
 	 * Total timeout. Even though we don't release all resources,
@@ -57,10 +58,12 @@ type ShutdownConfig struct {
 	RequestsFinished bool
 }
 
+// Prefix ...
 func (config *ShutdownConfig) Prefix() string {
 	return constant.ShutdownConfigPrefix
 }
 
+// GetTimeout ...
 func (config *ShutdownConfig) GetTimeout() time.Duration {
 	result, err := time.ParseDuration(config.Timeout)
 	if err != nil {
@@ -71,6 +74,7 @@ func (config *ShutdownConfig) GetTimeout() time.Duration {
 	return result
 }
 
+// GetStepTimeout ...
 func (config *ShutdownConfig) GetStepTimeout() time.Duration {
 	result, err := time.ParseDuration(config.StepTimeout)
 	if err != nil {

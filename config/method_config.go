@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package config
 
 import (
@@ -24,6 +25,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
+// MethodConfig ...
 type MethodConfig struct {
 	InterfaceId                 string
 	InterfaceName               string
@@ -40,14 +42,16 @@ type MethodConfig struct {
 	RequestTimeout              string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
 }
 
+// Prefix ...
 func (c *MethodConfig) Prefix() string {
-	if c.InterfaceId != "" {
+	if len(c.InterfaceId) != 0 {
 		return constant.DUBBO + "." + c.InterfaceName + "." + c.InterfaceId + "." + c.Name + "."
-	} else {
-		return constant.DUBBO + "." + c.InterfaceName + "." + c.Name + "."
 	}
+
+	return constant.DUBBO + "." + c.InterfaceName + "." + c.Name + "."
 }
 
+// UnmarshalYAML ...
 func (c *MethodConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err

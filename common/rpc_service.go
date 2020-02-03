@@ -34,19 +34,22 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
-// rpc service interface
+// RPCService
+//rpc service interface
 type RPCService interface {
-	Reference() string // rpc service id or reference id
+	// Reference:
+	// rpc service id or reference id
+	Reference() string
 }
 
 //AsyncCallbackService callback interface for async
 type AsyncCallbackService interface {
-	CallBack(response CallbackResponse) // callback
+	// Callback: callback
+	CallBack(response CallbackResponse)
 }
 
 //CallbackResponse for different protocol
-type CallbackResponse interface {
-}
+type CallbackResponse interface{}
 
 //AsyncCallback async callback method
 type AsyncCallback func(response CallbackResponse)
@@ -55,13 +58,17 @@ type AsyncCallback func(response CallbackResponse)
 // func MethodMapper() map[string][string] {
 //     return map[string][string]{}
 // }
-const METHOD_MAPPER = "MethodMapper"
+const (
+	// METHOD_MAPPER ...
+	METHOD_MAPPER = "MethodMapper"
+)
 
 var (
 	// Precompute the reflect type for error. Can't use error directly
 	// because Typeof takes an empty interface value. This is annoying.
 	typeOfError = reflect.TypeOf((*error)(nil)).Elem()
 
+	// ServiceMap ...
 	// todo: lowerecas?
 	ServiceMap = &serviceMap{
 		serviceMap: make(map[string]map[string]*Service),
@@ -72,6 +79,7 @@ var (
 // info of method
 //////////////////////////
 
+// MethodType ...
 type MethodType struct {
 	method    reflect.Method
 	ctxType   reflect.Type   // request context
@@ -79,18 +87,27 @@ type MethodType struct {
 	replyType reflect.Type   // return value, otherwise it is nil
 }
 
+// Method ...
 func (m *MethodType) Method() reflect.Method {
 	return m.method
 }
+
+// CtxType ...
 func (m *MethodType) CtxType() reflect.Type {
 	return m.ctxType
 }
+
+// ArgsType ...
 func (m *MethodType) ArgsType() []reflect.Type {
 	return m.argsType
 }
+
+// ReplyType ...
 func (m *MethodType) ReplyType() reflect.Type {
 	return m.replyType
 }
+
+// SuiteContext ...
 func (m *MethodType) SuiteContext(ctx context.Context) reflect.Value {
 	if contextv := reflect.ValueOf(ctx); contextv.IsValid() {
 		return contextv
@@ -102,6 +119,7 @@ func (m *MethodType) SuiteContext(ctx context.Context) reflect.Value {
 // info of service interface
 //////////////////////////
 
+// Service ...
 type Service struct {
 	name     string
 	rcvr     reflect.Value
@@ -109,12 +127,17 @@ type Service struct {
 	methods  map[string]*MethodType
 }
 
+// Method ...
 func (s *Service) Method() map[string]*MethodType {
 	return s.methods
 }
+
+// RcvrType ...
 func (s *Service) RcvrType() reflect.Type {
 	return s.rcvrType
 }
+
+// Rcvr ...
 func (s *Service) Rcvr() reflect.Value {
 	return s.rcvr
 }
@@ -210,8 +233,8 @@ func (sm *serviceMap) UnRegister(protocol, serviceId string) error {
 
 // Is this an exported - upper case - name
 func isExported(name string) bool {
-	rune, _ := utf8.DecodeRuneInString(name)
-	return unicode.IsUpper(rune)
+	s, _ := utf8.DecodeRuneInString(name)
+	return unicode.IsUpper(s)
 }
 
 // Is this type exported or a builtin?
