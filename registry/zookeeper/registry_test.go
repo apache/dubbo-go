@@ -64,7 +64,7 @@ func Test_Subscribe(t *testing.T) {
 	_, reg2, _ := newMockZkRegistry(&regurl, zookeeper.WithTestCluster(ts))
 
 	reg2.Register(url)
-	listener, _ := reg2.subscribe(&url)
+	listener, _ := reg2.DoSubscribe(&url)
 
 	serviceEvent, _ := listener.Next()
 	assert.NoError(t, err)
@@ -85,7 +85,7 @@ func Test_ConsumerDestory(t *testing.T) {
 	assert.NoError(t, err)
 	err = reg.Register(url)
 	assert.NoError(t, err)
-	_, err = reg.subscribe(&url)
+	_, err = reg.DoSubscribe(&url)
 	assert.NoError(t, err)
 
 	//listener.Close()
