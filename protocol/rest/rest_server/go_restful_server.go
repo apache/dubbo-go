@@ -3,6 +3,7 @@ package rest_server
 import (
 	"context"
 	"fmt"
+	perrors "github.com/pkg/errors"
 	"net"
 	"net/http"
 	"reflect"
@@ -20,7 +21,6 @@ import (
 	"github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
 	"github.com/emicklei/go-restful/v3"
-	perrors "github.com/pkg/errors"
 )
 
 func init() {
@@ -39,14 +39,19 @@ func NewGoRestfulServer() *GoRestfulServer {
 func (grs *GoRestfulServer) Start(url common.URL) {
 	grs.container = restful.NewContainer()
 	grs.srv = &http.Server{
-		Addr:    url.Location,
 		Handler: grs.container,
 	}
 	ln, err := net.Listen("tcp", url.Location)
 	if err != nil {
 		panic(perrors.New(fmt.Sprintf("Restful Server start error:%v", err)))
 	}
-	go grs.srv.Serve(ln)
+
+	go func() {
+		err := grs.srv.Serve(ln)
+		if err != nil && err != http.ErrServerClosed {
+			logger.Errorf("[Go Restful] http.server.Serve(addr{%s}) = err{%+v}", url.Location, err)
+		}
+	}()
 }
 
 func (grs *GoRestfulServer) Deploy(invoker protocol.Invoker, restMethodConfig map[string]*rest_interface.RestMethodConfig) {
@@ -55,35 +60,37 @@ func (grs *GoRestfulServer) Deploy(invoker protocol.Invoker, restMethodConfig ma
 		// get method
 		method := svc.Method()[methodName]
 		types := method.ArgsType()
-		f := func(req *restful.Request, resp *restful.Response) {
-			var (
-				err  error
-				args []interface{}
-			)
-			args = getArgsFromRequest(req, types, config)
-			result := invoker.Invoke(context.Background(), invocation.NewRPCInvocation(methodName, args, make(map[string]string, 0)))
-			if result.Error() != nil {
-				err = resp.WriteError(http.StatusInternalServerError, result.Error())
-				if err != nil {
-					logger.Errorf("[Go Restful] WriteError error:%v", err)
-				}
-				return
-			}
-			err = resp.WriteEntity(result.Result())
-			if err != nil {
-				logger.Error("[Go Restful] WriteEntity error:%v", err)
-			}
-		}
 		ws := new(restful.WebService)
 		ws.Path(config.Path).
-			Produces(config.Produces).
-			Consumes(config.Consumes).
-			Route(ws.Method(config.MethodType).To(f))
+			Produces(strings.Split(config.Produces, ",")...).
+			Consumes(strings.Split(config.Consumes, ",")...).
+			Route(ws.Method(config.MethodType).To(getFunc(methodName, invoker, types, config)))
 		grs.container.Add(ws)
 	}
 
 }
 
+func getFunc(methodName string, invoker protocol.Invoker, types []reflect.Type, config *rest_interface.RestMethodConfig) func(req *restful.Request, resp *restful.Response) {
+	return func(req *restful.Request, resp *restful.Response) {
+		var (
+			err  error
+			args []interface{}
+		)
+		args = getArgsFromRequest(req, types, config)
+		result := invoker.Invoke(context.Background(), invocation.NewRPCInvocation(methodName, args, make(map[string]string, 0)))
+		if result.Error() != nil {
+			err = resp.WriteError(http.StatusInternalServerError, result.Error())
+			if err != nil {
+				logger.Errorf("[Go Restful] WriteError error:%v", err)
+			}
+			return
+		}
+		err = resp.WriteEntity(result.Result())
+		if err != nil {
+			logger.Error("[Go Restful] WriteEntity error:%v", err)
+		}
+	}
+}
 func (grs *GoRestfulServer) UnDeploy(restMethodConfig map[string]*rest_interface.RestMethodConfig) {
 	for _, config := range restMethodConfig {
 		ws := new(restful.WebService)
@@ -99,9 +106,9 @@ func (grs *GoRestfulServer) Destroy() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := grs.srv.Shutdown(ctx); err != nil {
-		logger.Errorf("Server Shutdown:", err)
+		logger.Errorf("[Go Restful] Server Shutdown:", err)
 	}
-	logger.Errorf("Server exiting")
+	logger.Infof("[Go Restful] Server exiting")
 }
 
 func getArgsFromRequest(req *restful.Request, types []reflect.Type, config *rest_interface.RestMethodConfig) []interface{} {
@@ -177,12 +184,22 @@ func getArgsFromRequest(req *restful.Request, types []reflect.Type, config *rest
 		args[k] = param
 	}
 
-	if config.Body > 0 && config.Body < len(types) {
+	if config.Body >= 0 && config.Body < len(types) {
 		t := types[config.Body]
-		err := req.ReadEntity(reflect.New(t))
-		if err != nil {
-			logger.Errorf("[Go restful] Read body entity error:%v", err)
+		kind := t.Kind()
+		if kind == reflect.Ptr {
+			t = t.Elem()
 		}
+		n := reflect.New(t)
+		if n.CanInterface() {
+			ni := n.Interface()
+			if err := req.ReadEntity(ni); err != nil {
+				logger.Errorf("[Go restful] Read body entity error:%v", err)
+			} else {
+				args[config.Body] = ni
+			}
+		}
+
 	}
 	for k, v := range config.HeadersMap {
 		param := req.HeaderParameter(v)

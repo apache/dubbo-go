@@ -39,7 +39,7 @@ func (ri *RestInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 		err         error
 	)
 	if methodConfig == nil {
-		result.Err = perrors.Errorf("[RestInvoker]Rest methodConfig:%s is nil", inv.MethodName())
+		result.Err = perrors.Errorf("[RestInvoker] Rest methodConfig:%s is nil", inv.MethodName())
 		return &result
 	}
 	if pathParams, err = restStringMapTransform(methodConfig.PathParamsMap, inv.Arguments()); err != nil {
@@ -54,12 +54,10 @@ func (ri *RestInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 		result.Err = err
 		return &result
 	}
-	if len(inv.Arguments()) > methodConfig.Body && methodConfig.Body > 0 {
+	if len(inv.Arguments()) > methodConfig.Body && methodConfig.Body >= 0 {
 		body = inv.Arguments()[methodConfig.Body]
-	} else {
-		result.Err = perrors.Errorf("[Rest Invoke] Index %v is out of bundle", methodConfig.Body)
-		return &result
 	}
+
 	req := &rest_interface.RestRequest{
 		Location:    ri.GetUrl().Location,
 		Produces:    methodConfig.Produces,
@@ -81,7 +79,7 @@ func (ri *RestInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 func restStringMapTransform(paramsMap map[int]string, args []interface{}) (map[string]string, error) {
 	resMap := make(map[string]string, len(paramsMap))
 	for k, v := range paramsMap {
-		if k > len(args)-1 || k < 0 {
+		if k < len(args) && k >= 0 {
 			resMap[v] = fmt.Sprint(args[k])
 		} else {
 			return nil, perrors.Errorf("[Rest Invoke] Index %v is out of bundle", k)
