@@ -20,13 +20,17 @@ package rest_server
 import (
 	"context"
 	"fmt"
-	perrors "github.com/pkg/errors"
 	"net"
 	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+)
+
+import (
+	"github.com/emicklei/go-restful/v3"
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -37,7 +41,6 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
-	"github.com/emicklei/go-restful/v3"
 )
 
 func init() {
