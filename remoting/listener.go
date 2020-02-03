@@ -21,6 +21,7 @@ import (
 	"fmt"
 )
 
+// DataListener ...
 type DataListener interface {
 	DataChange(eventType Event) bool //bool is return for interface implement is interesting
 }
@@ -29,11 +30,15 @@ type DataListener interface {
 // event type
 //////////////////////////////////////////
 
+// EventType ...
 type EventType int
 
 const (
+	// EventTypeAdd ...
 	EventTypeAdd = iota
+	// EventTypeDel ...
 	EventTypeDel
+	// EventTypeUpdate ...
 	EventTypeUpdate
 )
 
@@ -51,6 +56,7 @@ func (t EventType) String() string {
 // service event
 //////////////////////////////////////////
 
+// Event ...
 type Event struct {
 	Path    string
 	Action  EventType

@@ -24,18 +24,22 @@ import (
 
 // Extension - Router
 
+// RouterFactory ...
 type RouterFactory interface {
 	Router(*common.URL) (Router, error)
 }
 
+// Router ...
 type Router interface {
 	Route([]protocol.Invoker, common.URL, protocol.Invocation) []protocol.Invoker
 }
 
+// RouterChain ...
 type RouterChain struct {
 	routers []Router
 }
 
+// NewRouterChain ...
 func NewRouterChain(url common.URL) {
 
 }

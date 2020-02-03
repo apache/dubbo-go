@@ -36,16 +36,22 @@ import (
 )
 
 const (
-	ConnDelay            = 3
-	MaxFailTimes         = 15
+	// ConnDelay connection dalay
+	ConnDelay = 3
+	// MaxFailTimes max failure times
+	MaxFailTimes = 15
+	// RegistryETCDV3Client client name
 	RegistryETCDV3Client = "etcd registry"
 )
 
 var (
+	// ErrNilETCDV3Client ...
 	ErrNilETCDV3Client = perrors.New("etcd raw client is nil") // full describe the ERR
-	ErrKVPairNotFound  = perrors.New("k/v pair not found")
+	// ErrKVPairNotFound ...
+	ErrKVPairNotFound = perrors.New("k/v pair not found")
 )
 
+// Options ...
 type Options struct {
 	name      string
 	endpoints []string
@@ -54,30 +60,38 @@ type Options struct {
 	heartbeat int // heartbeat second
 }
 
+// Option ...
 type Option func(*Options)
 
+// WithEndpoints ...
 func WithEndpoints(endpoints ...string) Option {
 	return func(opt *Options) {
 		opt.endpoints = endpoints
 	}
 }
+
+// WithName ...
 func WithName(name string) Option {
 	return func(opt *Options) {
 		opt.name = name
 	}
 }
+
+// WithTimeout ...
 func WithTimeout(timeout time.Duration) Option {
 	return func(opt *Options) {
 		opt.timeout = timeout
 	}
 }
 
+// WithHeartbeat ...
 func WithHeartbeat(heartbeat int) Option {
 	return func(opt *Options) {
 		opt.heartbeat = heartbeat
 	}
 }
 
+// ValidateClient ...
 func ValidateClient(container clientFacade, opts ...Option) error {
 
 	options := &Options{
@@ -117,6 +131,7 @@ func ValidateClient(container clientFacade, opts ...Option) error {
 	return nil
 }
 
+// Client ...
 type Client struct {
 	lock sync.RWMutex
 
@@ -191,6 +206,7 @@ func (c *Client) stop() bool {
 	return false
 }
 
+// Close ...
 func (c *Client) Close() {
 
 	if c == nil {
@@ -309,6 +325,7 @@ func (c *Client) get(k string) (string, error) {
 	return string(resp.Kvs[0].Value), nil
 }
 
+// CleanKV ...
 func (c *Client) CleanKV() error {
 
 	c.lock.RLock()
@@ -408,10 +425,12 @@ func (c *Client) keepAliveKV(k string, v string) error {
 	return nil
 }
 
+// Done ...
 func (c *Client) Done() <-chan struct{} {
 	return c.exit
 }
 
+// Valid ...
 func (c *Client) Valid() bool {
 	select {
 	case <-c.exit:
@@ -428,6 +447,7 @@ func (c *Client) Valid() bool {
 	return true
 }
 
+// Create ...
 func (c *Client) Create(k string, v string) error {
 
 	err := c.put(k, v)
@@ -437,6 +457,7 @@ func (c *Client) Create(k string, v string) error {
 	return nil
 }
 
+// Delete ...
 func (c *Client) Delete(k string) error {
 
 	err := c.delete(k)
@@ -447,6 +468,7 @@ func (c *Client) Delete(k string) error {
 	return nil
 }
 
+// RegisterTemp ...
 func (c *Client) RegisterTemp(basePath string, node string) (string, error) {
 
 	completeKey := path.Join(basePath, node)
@@ -459,6 +481,7 @@ func (c *Client) RegisterTemp(basePath string, node string) (string, error) {
 	return completeKey, nil
 }
 
+// GetChildrenKVList ...
 func (c *Client) GetChildrenKVList(k string) ([]string, []string, error) {
 
 	kList, vList, err := c.getChildren(k)
@@ -468,6 +491,7 @@ func (c *Client) GetChildrenKVList(k string) ([]string, []string, error) {
 	return kList, vList, nil
 }
 
+// Get ...
 func (c *Client) Get(k string) (string, error) {
 
 	v, err := c.get(k)
@@ -478,6 +502,7 @@ func (c *Client) Get(k string) (string, error) {
 	return v, nil
 }
 
+// Watch ...
 func (c *Client) Watch(k string) (clientv3.WatchChan, error) {
 
 	wc, err := c.watch(k)
@@ -487,6 +512,7 @@ func (c *Client) Watch(k string) (clientv3.WatchChan, error) {
 	return wc, nil
 }
 
+// WatchWithPrefix ...
 func (c *Client) WatchWithPrefix(prefix string) (clientv3.WatchChan, error) {
 
 	wc, err := c.watchWithPrefix(prefix)

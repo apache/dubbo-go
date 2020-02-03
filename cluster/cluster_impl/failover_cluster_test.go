@@ -79,8 +79,10 @@ type rest struct {
 
 func (bi *MockInvoker) Invoke(c context.Context, invocation protocol.Invocation) protocol.Result {
 	count++
-	var success bool
-	var err error = nil
+	var (
+		success bool
+		err     error
+	)
 	if count >= bi.successCount {
 		success = true
 	} else {

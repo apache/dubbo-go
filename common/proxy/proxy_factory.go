@@ -22,10 +22,12 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
+// ProxyFactory ...
 type ProxyFactory interface {
 	GetProxy(invoker protocol.Invoker, url *common.URL) *Proxy
 	GetAsyncProxy(invoker protocol.Invoker, callBack interface{}, url *common.URL) *Proxy
 	GetInvoker(url common.URL) protocol.Invoker
 }
 
+// Option ...
 type Option func(ProxyFactory)
