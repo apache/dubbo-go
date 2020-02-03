@@ -105,7 +105,7 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 	if c.Url != "" {
 		urlStrings := gxstrings.RegSplit(c.Url, "\\s*[;]+\\s*")
 		for _, urlStr := range urlStrings {
-			serviceUrl, err := common.NewURL(context.Background(), urlStr)
+			serviceUrl, err := common.NewURL(urlStr)
 			if err != nil {
 				panic(fmt.Sprintf("user specified URL %v refer error, error message is %v ", urlStr, err.Error()))
 			}
