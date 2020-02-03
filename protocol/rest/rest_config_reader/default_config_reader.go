@@ -15,16 +15,12 @@ import (
 	perrors "github.com/pkg/errors"
 )
 
-const (
-	DEFAULT_READER = "default"
-)
-
 var (
 	defaultConfigReader *DefaultConfigReader
 )
 
 func init() {
-	extension.SetRestConfigReader(DEFAULT_READER, GetDefaultConfigReader)
+	extension.SetRestConfigReader(constant.DEFAULT_KEY, GetDefaultConfigReader)
 }
 
 type DefaultConfigReader struct {
