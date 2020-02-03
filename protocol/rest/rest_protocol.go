@@ -18,6 +18,12 @@
 package rest
 
 import (
+	"strings"
+	"sync"
+	"time"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -25,9 +31,6 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
 	_ "github.com/apache/dubbo-go/protocol/rest/rest_server"
-	"strings"
-	"sync"
-	"time"
 )
 
 var (
