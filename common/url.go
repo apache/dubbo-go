@@ -19,7 +19,6 @@ package common
 
 import (
 	"bytes"
-	"context"
 	"encoding/base64"
 	"fmt"
 	"math"
@@ -85,7 +84,6 @@ type baseUrl struct {
 	paramsLock   sync.RWMutex
 	params       url.Values
 	PrimitiveURL string
-	ctx          context.Context
 }
 
 // URL ...
@@ -194,14 +192,15 @@ func NewURLWithOptions(opts ...option) *URL {
 	return url
 }
 
-// NewURL ...
-func NewURL(ctx context.Context, urlString string, opts ...option) (URL, error) {
+// NewURL will create a new url
+// the urlString should not be empty
+func NewURL(urlString string, opts ...option) (URL, error) {
 
 	var (
 		err          error
 		rawUrlString string
 		serviceUrl   *url.URL
-		s            = URL{baseUrl: baseUrl{ctx: ctx}}
+		s            = URL{baseUrl: baseUrl{}}
 	)
 
 	// new a null instance
@@ -216,7 +215,7 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (URL, error) 
 
 	//rawUrlString = "//" + rawUrlString
 	if strings.Index(rawUrlString, "//") < 0 {
-		t := URL{baseUrl: baseUrl{ctx: ctx}}
+		t := URL{baseUrl: baseUrl{}}
 		for _, opt := range opts {
 			opt(&t)
 		}
@@ -343,11 +342,6 @@ func (c URL) ServiceKey() string {
 func (c *URL) EncodedServiceKey() string {
 	serviceKey := c.ServiceKey()
 	return strings.Replace(serviceKey, "/", "*", 1)
-}
-
-// Context ...
-func (c URL) Context() context.Context {
-	return c.ctx
 }
 
 // Service ...

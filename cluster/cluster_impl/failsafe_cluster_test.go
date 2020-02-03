@@ -39,7 +39,7 @@ import (
 )
 
 var (
-	failsafeUrl, _ = common.NewURL(context.TODO(), "dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
+	failsafeUrl, _ = common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
 )
 
 // registerFailsafe register failsafeCluster to cluster extension.
