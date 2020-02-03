@@ -104,6 +104,8 @@ func TestJsonrpcProtocol_Export(t *testing.T) {
 	proto.Destroy()
 	_, ok = proto.(*RestProtocol).serverMap[url.Location]
 	assert.False(t, ok)
+	err = common.ServiceMap.UnRegister(url.Protocol, "com.ikurento.user.UserProvider")
+	assert.NoError(t, err)
 }
 
 type UserProvider struct {

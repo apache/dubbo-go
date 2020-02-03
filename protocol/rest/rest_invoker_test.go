@@ -92,4 +92,6 @@ func TestRestInvoker_Invoke(t *testing.T) {
 	assert.Equal(t, now.Unix(), res.Result().(*User).Time.Unix())
 	assert.Equal(t, int32(23), res.Result().(*User).Age)
 	assert.Equal(t, "username", res.Result().(*User).Name)
+	err = common.ServiceMap.UnRegister(url.Protocol, "com.ikurento.user.UserProvider")
+	assert.NoError(t, err)
 }
