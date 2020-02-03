@@ -51,6 +51,7 @@ type nacosListener struct {
 	subscribeParam *vo.SubscribeParam
 }
 
+// NewNacosListener ...
 func NewNacosListener(url common.URL, namingClient naming_client.INamingClient) (*nacosListener, error) {
 	listener := &nacosListener{
 		namingClient: namingClient,

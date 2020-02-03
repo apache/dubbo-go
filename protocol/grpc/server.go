@@ -35,20 +35,24 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
+// Server ...
 type Server struct {
 	grpcServer *grpc.Server
 }
 
+// NewServer ...
 func NewServer() *Server {
 	return &Server{}
 }
 
+// DubboGrpcService ...
 type DubboGrpcService interface {
 	SetProxyImpl(impl protocol.Invoker)
 	GetProxyImpl() protocol.Invoker
 	ServiceDesc() *grpc.ServiceDesc
 }
 
+// Start ...
 func (s *Server) Start(url common.URL) {
 	var (
 		addr string
@@ -96,6 +100,7 @@ func (s *Server) Start(url common.URL) {
 	}()
 }
 
+// Stop ...
 func (s *Server) Stop() {
 	s.grpcServer.Stop()
 }

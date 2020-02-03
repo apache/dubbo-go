@@ -45,24 +45,33 @@ import (
 // dubbo role type
 /////////////////////////////////
 
+// role constant
 const (
+	// CONSUMER ...
 	CONSUMER = iota
+	// CONFIGURATOR ...
 	CONFIGURATOR
+	// ROUTER ...
 	ROUTER
+	// PROVIDER ...
 	PROVIDER
 )
 
 var (
+	// DubboNodes ...
 	DubboNodes = [...]string{"consumers", "configurators", "routers", "providers"}
-	DubboRole  = [...]string{"consumer", "", "", "provider"}
+	// DubboRole ...
+	DubboRole = [...]string{"consumer", "", "", "provider"}
 )
 
+// RoleType ...
 type RoleType int
 
 func (t RoleType) String() string {
 	return DubboNodes[t]
 }
 
+// Role ...
 func (t RoleType) Role() string {
 	return DubboRole[t]
 }
@@ -79,6 +88,7 @@ type baseUrl struct {
 	ctx          context.Context
 }
 
+// URL ...
 type URL struct {
 	baseUrl
 	Path     string // like  /com.ikurento.dubbo.UserProvider3
@@ -91,66 +101,77 @@ type URL struct {
 
 type option func(*URL)
 
+// WithUsername ...
 func WithUsername(username string) option {
 	return func(url *URL) {
 		url.Username = username
 	}
 }
 
+// WithPassword ...
 func WithPassword(pwd string) option {
 	return func(url *URL) {
 		url.Password = pwd
 	}
 }
 
+// WithMethods ...
 func WithMethods(methods []string) option {
 	return func(url *URL) {
 		url.Methods = methods
 	}
 }
 
+// WithParams ...
 func WithParams(params url.Values) option {
 	return func(url *URL) {
 		url.params = params
 	}
 }
 
+// WithParamsValue ...
 func WithParamsValue(key, val string) option {
 	return func(url *URL) {
 		url.SetParam(key, val)
 	}
 }
 
+// WithProtocol ...
 func WithProtocol(proto string) option {
 	return func(url *URL) {
 		url.Protocol = proto
 	}
 }
 
+// WithIp ...
 func WithIp(ip string) option {
 	return func(url *URL) {
 		url.Ip = ip
 	}
 }
 
+// WithPort ...
 func WithPort(port string) option {
 	return func(url *URL) {
 		url.Port = port
 	}
 }
 
+// WithPath ...
 func WithPath(path string) option {
 	return func(url *URL) {
 		url.Path = "/" + strings.TrimPrefix(path, "/")
 	}
 }
 
+// WithLocation ...
 func WithLocation(location string) option {
 	return func(url *URL) {
 		url.Location = location
 	}
 }
 
+// WithToken ...
 func WithToken(token string) option {
 	return func(url *URL) {
 		if len(token) > 0 {
@@ -163,6 +184,7 @@ func WithToken(token string) option {
 	}
 }
 
+// NewURLWithOptions ...
 func NewURLWithOptions(opts ...option) *URL {
 	url := &URL{}
 	for _, opt := range opts {
@@ -172,6 +194,7 @@ func NewURLWithOptions(opts ...option) *URL {
 	return url
 }
 
+// NewURL ...
 func NewURL(ctx context.Context, urlString string, opts ...option) (URL, error) {
 
 	var (
@@ -227,6 +250,7 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (URL, error) 
 	return s, nil
 }
 
+// URLEqual ...
 func (c URL) URLEqual(url URL) bool {
 	c.Ip = ""
 	c.Port = ""
@@ -282,6 +306,7 @@ func (c URL) String() string {
 	return buildString
 }
 
+// Key ...
 func (c URL) Key() string {
 	buildString := fmt.Sprintf(
 		"%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s",
@@ -290,6 +315,7 @@ func (c URL) Key() string {
 	//return c.ServiceKey()
 }
 
+// ServiceKey ...
 func (c URL) ServiceKey() string {
 	intf := c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
 	if intf == "" {
@@ -313,15 +339,18 @@ func (c URL) ServiceKey() string {
 	return buf.String()
 }
 
+// EncodedServiceKey ...
 func (c *URL) EncodedServiceKey() string {
 	serviceKey := c.ServiceKey()
 	return strings.Replace(serviceKey, "/", "*", 1)
 }
 
+// Context ...
 func (c URL) Context() context.Context {
 	return c.ctx
 }
 
+// Service ...
 func (c URL) Service() string {
 	service := c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
 	if service != "" {
@@ -335,18 +364,21 @@ func (c URL) Service() string {
 	return ""
 }
 
+// AddParam ...
 func (c *URL) AddParam(key string, value string) {
 	c.paramsLock.Lock()
 	c.params.Add(key, value)
 	c.paramsLock.Unlock()
 }
 
+// SetParam ...
 func (c *URL) SetParam(key string, value string) {
 	c.paramsLock.Lock()
 	c.params.Set(key, value)
 	c.paramsLock.Unlock()
 }
 
+// RangeParams ...
 func (c *URL) RangeParams(f func(key, value string) bool) {
 	c.paramsLock.RLock()
 	defer c.paramsLock.RUnlock()
@@ -357,6 +389,7 @@ func (c *URL) RangeParams(f func(key, value string) bool) {
 	}
 }
 
+// GetParam ...
 func (c URL) GetParam(s string, d string) string {
 	var r string
 	c.paramsLock.RLock()
@@ -367,10 +400,12 @@ func (c URL) GetParam(s string, d string) string {
 	return r
 }
 
+// GetParams ...
 func (c URL) GetParams() url.Values {
 	return c.params
 }
 
+// GetParamAndDecoded ...
 func (c URL) GetParamAndDecoded(key string) (string, error) {
 	c.paramsLock.RLock()
 	defer c.paramsLock.RUnlock()
@@ -379,6 +414,7 @@ func (c URL) GetParamAndDecoded(key string) (string, error) {
 	return value, err
 }
 
+// GetRawParam ...
 func (c URL) GetRawParam(key string) string {
 	switch key {
 	case "protocol":
@@ -398,7 +434,7 @@ func (c URL) GetRawParam(key string) string {
 	}
 }
 
-// GetParamBool
+// GetParamBool ...
 func (c URL) GetParamBool(s string, d bool) bool {
 
 	var r bool
@@ -409,6 +445,7 @@ func (c URL) GetParamBool(s string, d bool) bool {
 	return r
 }
 
+// GetParamInt ...
 func (c URL) GetParamInt(s string, d int64) int64 {
 	var r int
 	var err error
@@ -419,6 +456,7 @@ func (c URL) GetParamInt(s string, d int64) int64 {
 	return int64(r)
 }
 
+// GetMethodParamInt ...
 func (c URL) GetMethodParamInt(method string, key string, d int64) int64 {
 	var r int
 	var err error
@@ -430,6 +468,7 @@ func (c URL) GetMethodParamInt(method string, key string, d int64) int64 {
 	return int64(r)
 }
 
+// GetMethodParamInt64 ...
 func (c URL) GetMethodParamInt64(method string, key string, d int64) int64 {
 	r := c.GetMethodParamInt(method, key, math.MinInt64)
 	if r == math.MinInt64 {
@@ -439,6 +478,7 @@ func (c URL) GetMethodParamInt64(method string, key string, d int64) int64 {
 	return r
 }
 
+// GetMethodParam ...
 func (c URL) GetMethodParam(method string, key string, d string) string {
 	var r string
 	if r = c.GetParam("methods."+method+"."+key, ""); r == "" {
@@ -447,11 +487,13 @@ func (c URL) GetMethodParam(method string, key string, d string) string {
 	return r
 }
 
+// GetMethodParamBool ...
 func (c URL) GetMethodParamBool(method string, key string, d bool) bool {
 	r := c.GetParamBool("methods."+method+"."+key, d)
 	return r
 }
 
+// RemoveParams ...
 func (c *URL) RemoveParams(set *gxset.HashSet) {
 	c.paramsLock.Lock()
 	defer c.paramsLock.Unlock()
@@ -461,6 +503,7 @@ func (c *URL) RemoveParams(set *gxset.HashSet) {
 	}
 }
 
+// SetParams ...
 func (c *URL) SetParams(m url.Values) {
 	for k := range m {
 		c.SetParam(k, m.Get(k))
@@ -512,6 +555,7 @@ func (c URL) ToMap() map[string]string {
 //  in this function we should merge the reference local url config into the service url from registry.
 //TODO configuration merge, in the future , the configuration center's config should merge too.
 
+// MergeUrl ...
 func MergeUrl(serviceUrl *URL, referenceUrl *URL) *URL {
 	mergedUrl := serviceUrl.Clone()
 
@@ -540,6 +584,8 @@ func MergeUrl(serviceUrl *URL, referenceUrl *URL) *URL {
 
 	return mergedUrl
 }
+
+// Clone ...
 func (c *URL) Clone() *URL {
 	newUrl := &URL{}
 	copier.Copy(newUrl, c)

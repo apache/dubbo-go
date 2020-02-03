@@ -39,6 +39,7 @@ type dataListener struct {
 	listener      config_center.ConfigurationListener
 }
 
+// NewRegistryDataListener ...
 func NewRegistryDataListener(listener config_center.ConfigurationListener) *dataListener {
 	return &dataListener{listener: listener, interestedURL: []*common.URL{}}
 }
@@ -77,6 +78,7 @@ type configurationListener struct {
 	events   chan *config_center.ConfigChangeEvent
 }
 
+// NewConfigurationListener ...
 func NewConfigurationListener(reg *etcdV3Registry) *configurationListener {
 	// add a new waiter
 	reg.wg.Add(1)

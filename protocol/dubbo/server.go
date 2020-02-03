@@ -74,6 +74,7 @@ func init() {
 	SetServerGrpool()
 }
 
+// SetServerConfig ...
 func SetServerConfig(s ServerConfig) {
 	srvConf = &s
 	err := srvConf.CheckValidity()
@@ -84,10 +85,12 @@ func SetServerConfig(s ServerConfig) {
 	SetServerGrpool()
 }
 
+// GetServerConfig ...
 func GetServerConfig() ServerConfig {
 	return *srvConf
 }
 
+// SetServerGrpool ...
 func SetServerGrpool() {
 	if srvConf.GrPoolSize > 1 {
 		srvGrpool = gxsync.NewTaskPool(gxsync.WithTaskPoolTaskPoolSize(srvConf.GrPoolSize), gxsync.WithTaskPoolTaskQueueLength(srvConf.QueueLen),
@@ -95,12 +98,14 @@ func SetServerGrpool() {
 	}
 }
 
+// Server ...
 type Server struct {
 	conf       ServerConfig
 	tcpServer  getty.Server
 	rpcHandler *RpcServerHandler
 }
 
+// NewServer ...
 func NewServer() *Server {
 
 	s := &Server{
@@ -151,6 +156,7 @@ func (s *Server) newSession(session getty.Session) error {
 	return nil
 }
 
+// Start ...
 func (s *Server) Start(url common.URL) {
 	var (
 		addr      string
@@ -167,6 +173,7 @@ func (s *Server) Start(url common.URL) {
 
 }
 
+// Stop ...
 func (s *Server) Stop() {
 	s.tcpServer.Close()
 }

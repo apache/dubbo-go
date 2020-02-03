@@ -33,15 +33,18 @@ func init() {
 	config.SetConsumerService(&GrpcGreeterImpl{})
 }
 
-// used for dubbo-grpc biz client
+// GrpcGreeterImpl
+//used for dubbo-grpc biz client
 type GrpcGreeterImpl struct {
 	SayHello func(ctx context.Context, in *HelloRequest, out *HelloReply) error
 }
 
+// Reference ...
 func (u *GrpcGreeterImpl) Reference() string {
 	return "GrpcGreeterImpl"
 }
 
+// GetDubboStub ...
 func (u *GrpcGreeterImpl) GetDubboStub(cc *grpc.ClientConn) GreeterClient {
 	return NewGreeterClient(cc)
 }

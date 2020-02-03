@@ -28,6 +28,7 @@ import (
 
 type mockProtocolFilter struct{}
 
+// NewMockProtocolFilter ...
 func NewMockProtocolFilter() protocol.Protocol {
 	return &mockProtocolFilter{}
 }

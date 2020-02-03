@@ -137,3 +137,7 @@ const (
 	NACOS_PROTOCOL_KEY           = "protocol"
 	NACOS_PATH_KEY               = "path"
 )
+
+const (
+	TRACING_REMOTE_SPAN_CTX = "tracing.remote.span.ctx"
+)

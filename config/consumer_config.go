@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package config
 
 import (
@@ -39,6 +40,7 @@ import (
 // consumerConfig
 /////////////////////////
 
+// ConsumerConfig ...
 type ConsumerConfig struct {
 	BaseConfig `yaml:",inline"`
 	Filter     string `yaml:"filter" json:"filter,omitempty" property:"filter"`
@@ -62,6 +64,7 @@ type ConsumerConfig struct {
 	RestConfigType string                      `default:"default" yaml:"rest_config_type" json:"rest_config_type,omitempty" property:"rest_config_type"`
 }
 
+// UnmarshalYAML ...
 func (c *ConsumerConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
@@ -73,14 +76,17 @@ func (c *ConsumerConfig) UnmarshalYAML(unmarshal func(interface{}) error) error 
 	return nil
 }
 
+// Prefix ...
 func (*ConsumerConfig) Prefix() string {
 	return constant.ConsumerConfigPrefix
 }
 
+// SetConsumerConfig ...
 func SetConsumerConfig(c ConsumerConfig) {
 	consumerConfig = &c
 }
 
+// GetConsumerConfig ...
 func GetConsumerConfig() ConsumerConfig {
 	if consumerConfig == nil {
 		logger.Warnf("consumerConfig is nil!")
@@ -89,6 +95,7 @@ func GetConsumerConfig() ConsumerConfig {
 	return *consumerConfig
 }
 
+// ConsumerInit ...
 func ConsumerInit(confConFile string) error {
 	if confConFile == "" {
 		return perrors.Errorf("application configure(consumer) file name is nil")
