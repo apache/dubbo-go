@@ -20,6 +20,9 @@ package rest
 import (
 	"context"
 	"fmt"
+)
+
+import (
 	perrors "github.com/pkg/errors"
 )
 

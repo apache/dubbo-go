@@ -20,15 +20,21 @@ package rest
 import (
 	"context"
 	"fmt"
+	"strings"
+	"testing"
+	"time"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
 	_ "github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
-	"github.com/stretchr/testify/assert"
-	"strings"
-	"testing"
-	"time"
 )
 
 func TestRestProtocol_Refer(t *testing.T) {

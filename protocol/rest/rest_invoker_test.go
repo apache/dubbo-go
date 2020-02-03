@@ -19,6 +19,15 @@ package rest
 
 import (
 	"context"
+	"testing"
+	"time"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/config"
@@ -26,9 +35,6 @@ import (
 	"github.com/apache/dubbo-go/protocol/rest/rest_client"
 	_ "github.com/apache/dubbo-go/protocol/rest/rest_config_reader"
 	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
-	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func TestRestInvoker_Invoke(t *testing.T) {
