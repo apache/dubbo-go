@@ -24,6 +24,7 @@ import (
 
 type mockCluster struct{}
 
+// NewMockCluster ...
 func NewMockCluster() cluster.Cluster {
 	return &mockCluster{}
 }

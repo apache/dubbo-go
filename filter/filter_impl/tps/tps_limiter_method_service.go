@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package tps
 
 import (
@@ -34,7 +35,9 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-const name = "method-service"
+const (
+	name = "method-service"
+)
 
 func init() {
 	extension.SetTpsLimiter(constant.DEFAULT_KEY, GetMethodServiceTpsLimiter)
@@ -42,6 +45,7 @@ func init() {
 }
 
 /**
+ * MethodServiceTpsLimiterImpl
  * This implementation allows developer to config both method-level and service-level tps limiter.
  * for example:
  * "UserProvider":
@@ -111,6 +115,7 @@ type MethodServiceTpsLimiterImpl struct {
 	tpsState *concurrent.Map
 }
 
+// IsAllowable ...
 func (limiter MethodServiceTpsLimiterImpl) IsAllowable(url common.URL, invocation protocol.Invocation) bool {
 
 	methodConfigPrefix := "methods." + invocation.MethodName() + "."
@@ -178,6 +183,7 @@ func getLimitConfig(methodLevelConfig string,
 var methodServiceTpsLimiterInstance *MethodServiceTpsLimiterImpl
 var methodServiceTpsLimiterOnce sync.Once
 
+// GetMethodServiceTpsLimiter ...
 func GetMethodServiceTpsLimiter() filter.TpsLimiter {
 	methodServiceTpsLimiterOnce.Do(func() {
 		methodServiceTpsLimiterInstance = &MethodServiceTpsLimiterImpl{

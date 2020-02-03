@@ -22,18 +22,21 @@ import (
 )
 
 var (
-	proxy_factories = make(map[string]func(...proxy.Option) proxy.ProxyFactory)
+	proxyFactories = make(map[string]func(...proxy.Option) proxy.ProxyFactory)
 )
 
+// SetProxyFactory ...
 func SetProxyFactory(name string, f func(...proxy.Option) proxy.ProxyFactory) {
-	proxy_factories[name] = f
+	proxyFactories[name] = f
 }
+
+// GetProxyFactory ...
 func GetProxyFactory(name string) proxy.ProxyFactory {
 	if name == "" {
 		name = "default"
 	}
-	if proxy_factories[name] == nil {
+	if proxyFactories[name] == nil {
 		panic("proxy factory for " + name + " is not existing, make sure you have import the package.")
 	}
-	return proxy_factories[name]()
+	return proxyFactories[name]()
 }

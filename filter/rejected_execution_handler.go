@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package filter
 
 import (
@@ -22,6 +23,7 @@ import (
 )
 
 /**
+ * RejectedExecutionHandler
  * If the invocation cannot pass any validation in filter, like ExecuteLimitFilter and TpsLimitFilter,
  * the implementation will be used.
  * The common case is that sometimes you want to return the default value when the request was rejected.

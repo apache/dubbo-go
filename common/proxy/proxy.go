@@ -40,8 +40,11 @@ type Proxy struct {
 	once sync.Once
 }
 
-var typError = reflect.Zero(reflect.TypeOf((*error)(nil)).Elem()).Type()
+var (
+	typError = reflect.Zero(reflect.TypeOf((*error)(nil)).Elem()).Type()
+)
 
+// NewProxy ...
 func NewProxy(invoke protocol.Invoker, callBack interface{}, attachments map[string]string) *Proxy {
 	return &Proxy{
 		invoke:      invoke,
@@ -50,6 +53,7 @@ func NewProxy(invoke protocol.Invoker, callBack interface{}, attachments map[str
 	}
 }
 
+// Implement
 // proxy implement
 // In consumer, RPCService like:
 // 		type XxxProvider struct {
@@ -95,8 +99,13 @@ func (p *Proxy) Implement(v common.RPCService) {
 
 			start := 0
 			end := len(in)
+			invCtx := context.Background()
 			if end > 0 {
 				if in[0].Type().String() == "context.Context" {
+					if !in[0].IsNil() {
+						// the user declared context as method's parameter
+						invCtx = in[0].Interface().(context.Context)
+					}
 					start += 1
 				}
 				if len(outs) == 1 && in[end-1].Type().Kind() == reflect.Ptr {
@@ -130,7 +139,7 @@ func (p *Proxy) Implement(v common.RPCService) {
 				inv.SetAttachments(k, value)
 			}
 
-			result := p.invoke.Invoke(context.Background(), inv)
+			result := p.invoke.Invoke(invCtx, inv)
 
 			err = result.Error()
 			logger.Infof("[makeDubboCallProxy] result: %v, err: %v", result.Result(), err)
@@ -184,10 +193,12 @@ func (p *Proxy) Implement(v common.RPCService) {
 
 }
 
+// Get ...
 func (p *Proxy) Get() common.RPCService {
 	return p.rpc
 }
 
+// GetCallback ...
 func (p *Proxy) GetCallback() interface{} {
 	return p.callBack
 }

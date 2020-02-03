@@ -28,16 +28,19 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
+// GrpcExporter ...
 type GrpcExporter struct {
 	*protocol.BaseExporter
 }
 
+// NewGrpcExporter ...
 func NewGrpcExporter(key string, invoker protocol.Invoker, exporterMap *sync.Map) *GrpcExporter {
 	return &GrpcExporter{
 		BaseExporter: protocol.NewBaseExporter(key, invoker, exporterMap),
 	}
 }
 
+// Unexport ...
 func (gg *GrpcExporter) Unexport() {
 	serviceId := gg.GetInvoker().GetUrl().GetParam(constant.BEAN_NAME_KEY, "")
 	gg.BaseExporter.Unexport()
