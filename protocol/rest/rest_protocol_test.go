@@ -138,7 +138,7 @@ func (p *UserProvider) Reference() string {
 	return "com.ikurento.user.UserProvider"
 }
 
-func (p *UserProvider) GetUser(ctx context.Context, id int, age int32, name string) (*User, error) {
+func (p *UserProvider) GetUser(ctx context.Context, id int, age int32, name string, contentType string) (*User, error) {
 	return &User{
 		Id:   id,
 		Time: nil,
