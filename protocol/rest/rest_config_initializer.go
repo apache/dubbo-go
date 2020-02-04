@@ -50,6 +50,7 @@ func initConsumerRestConfig() {
 	if restConsumerConfig == nil {
 		return
 	}
+	restConsumerServiceConfigMap = make(map[string]*rest_interface.RestConfig, len(restConsumerConfig.RestConfigMap))
 	for _, rc := range restConsumerConfig.RestConfigMap {
 		rc.Client = getNotEmptyStr(rc.Client, restConsumerConfig.Client, constant.DEFAULT_REST_CLIENT)
 		rc.RestMethodConfigsMap = initMethodConfigMap(rc, restConsumerConfig.Consumes, restConsumerConfig.Produces)
@@ -64,6 +65,7 @@ func initProviderRestConfig() {
 	if restProviderConfig == nil {
 		return
 	}
+	restProviderServiceConfigMap = make(map[string]*rest_interface.RestConfig, len(restProviderConfig.RestConfigMap))
 	for _, rc := range restProviderConfig.RestConfigMap {
 		rc.Server = getNotEmptyStr(rc.Server, restProviderConfig.Server, constant.DEFAULT_REST_SERVER)
 		rc.RestMethodConfigsMap = initMethodConfigMap(rc, restProviderConfig.Consumes, restProviderConfig.Produces)
@@ -106,11 +108,19 @@ func transformMethodConfig(methodConfig *rest_interface.RestMethodConfig) *rest_
 		}
 	}
 	if len(methodConfig.QueryParamsMap) == 0 && len(methodConfig.QueryParams) > 0 {
-		paramsMap, err := parseParamsString2Map(methodConfig.PathParams)
+		paramsMap, err := parseParamsString2Map(methodConfig.QueryParams)
 		if err != nil {
 			logger.Warnf("[Rest Config] Argument Param parse error:%v", err)
 		} else {
 			methodConfig.QueryParamsMap = paramsMap
+		}
+	}
+	if len(methodConfig.HeadersMap) == 0 && len(methodConfig.Headers) > 0 {
+		headersMap, err := parseParamsString2Map(methodConfig.Headers)
+		if err != nil {
+			logger.Warnf("[Rest Config] Argument Param parse error:%v", err)
+		} else {
+			methodConfig.HeadersMap = headersMap
 		}
 	}
 	return methodConfig
