@@ -13,6 +13,7 @@ import (
 type DefaultAccesskeyStorage struct {
 }
 
+// GetAccessKeyPair
 // get AccessKeyPair from url by the key "accessKeyId" and "secretAccessKey"
 func (storage *DefaultAccesskeyStorage) GetAccessKeyPair(invocation protocol.Invocation, url *common.URL) *filter.AccessKeyPair {
 	return &filter.AccessKeyPair{
