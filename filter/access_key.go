@@ -14,6 +14,8 @@ type AccessKeyPair struct {
 	Options      string `yaml:"options"   json:"options,omitempty" property:"options"`
 }
 
+// This SPI Extension support us to store our AccessKeyPair or load AccessKeyPair from other
+// storage, such as filesystem.
 type AccessKeyStorage interface {
 	GetAccessKeyPair(protocol.Invocation, *common.URL) *AccessKeyPair
 }
