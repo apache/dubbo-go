@@ -26,7 +26,7 @@ import (
 import (
 	"github.com/dubbogo/getty"
 	perrors "github.com/pkg/errors"
-	"github.com/samuel/go-zookeeper/zk"
+	"github.com/dubbogo/go-zookeeper/zk"
 )
 
 import (
