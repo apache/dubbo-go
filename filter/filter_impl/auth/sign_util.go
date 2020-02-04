@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+// get a signature string with given information, such as metadata or parameters
 func Sign(metadata, key string) string {
 	return doSign([]byte(metadata), key)
 }

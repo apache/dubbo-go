@@ -12,6 +12,7 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
+// This filter is working for signing the request on consumer side
 type ConsumerSignFilter struct {
 }
 
