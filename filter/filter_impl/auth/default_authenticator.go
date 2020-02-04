@@ -25,6 +25,8 @@ func init() {
 type DefaultAuthenticator struct {
 }
 
+// Sign
+// add the signature for the invocation
 func (authenticator *DefaultAuthenticator) Sign(invocation protocol.Invocation, url *common.URL) error {
 	currentTimeMillis := strconv.Itoa(int(time.Now().Unix() * 1000))
 
@@ -45,6 +47,8 @@ func (authenticator *DefaultAuthenticator) Sign(invocation protocol.Invocation, 
 	return nil
 }
 
+// getSignature
+// get signature by the metadata and params of the invocation
 func getSignature(url *common.URL, invocation protocol.Invocation, secrectKey string, currentTime string) (string, error) {
 
 	requestString := fmt.Sprintf(constant.SIGNATURE_STRING_FORMAT,
@@ -63,6 +67,8 @@ func getSignature(url *common.URL, invocation protocol.Invocation, secrectKey st
 	return signature, nil
 }
 
+// Authenticate
+// This method verifies whether the signature sent by the requester is correct
 func (authenticator *DefaultAuthenticator) Authenticate(invocation protocol.Invocation, url *common.URL) error {
 	accessKeyId := invocation.AttachmentsByKey(constant.AK_KEY, "")
 

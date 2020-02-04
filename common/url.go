@@ -339,6 +339,8 @@ func (c URL) ServiceKey() string {
 	return buf.String()
 }
 
+// ColonSeparatedKey
+// The format is "{interface}:[version]:[group]"
 func (c *URL) ColonSeparatedKey() string {
 	intf := c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
 	if intf == "" {
