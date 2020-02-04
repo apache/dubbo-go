@@ -20,6 +20,7 @@ func init() {
 	extension.SetAuthenticator(constant.DEFAULT_AUTHENTICATOR, GetDefaultAuthenticator)
 }
 
+// DefaultAuthenticator
 // The default implemetation of Authenticator
 type DefaultAuthenticator struct {
 }

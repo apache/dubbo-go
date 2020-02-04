@@ -8,6 +8,7 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
+// DefaultAccesskeyStorage
 // The default implementation of AccesskeyStorage
 type DefaultAccesskeyStorage struct {
 }
