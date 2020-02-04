@@ -31,7 +31,7 @@ import (
 import (
 	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
-	"github.com/samuel/go-zookeeper/zk"
+	"github.com/dubbogo/go-zookeeper/zk"
 )
 
 import (
