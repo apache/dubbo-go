@@ -5,6 +5,7 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
+// Authenticator
 type Authenticator interface {
 
 	// give a sign to request

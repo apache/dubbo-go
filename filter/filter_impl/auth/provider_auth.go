@@ -9,6 +9,7 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
+// ProviderAuthFilter
 // This filter is used to verify the correctness of the signature on provider side
 type ProviderAuthFilter struct {
 }
