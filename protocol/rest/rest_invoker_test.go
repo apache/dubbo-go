@@ -58,6 +58,8 @@ func TestRestInvoker_Invoke(t *testing.T) {
 	queryParamsMap[2] = "name"
 	pathParamsMap := make(map[int]string)
 	pathParamsMap[0] = "userid"
+	headersMap := make(map[int]string)
+	headersMap[3] = "Content-Type"
 	methodConfigMap["GetUserOne"] = &rest_interface.RestMethodConfig{
 		InterfaceName:  "",
 		MethodName:     "GetUserOne",
@@ -83,6 +85,7 @@ func TestRestInvoker_Invoke(t *testing.T) {
 		QueryParams:    "",
 		QueryParamsMap: queryParamsMap,
 		Body:           -1,
+		HeadersMap:     headersMap,
 	}
 
 	configMap["com.ikurento.user.UserProvider"] = &rest_interface.RestConfig{
@@ -101,7 +104,7 @@ func TestRestInvoker_Invoke(t *testing.T) {
 	invoker := NewRestInvoker(url, &restClient, methodConfigMap)
 	user := &User{}
 	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUser"),
-		invocation.WithArguments([]interface{}{1, int32(23), "username"}), invocation.WithReply(user))
+		invocation.WithArguments([]interface{}{1, int32(23), "username", "application/json"}), invocation.WithReply(user))
 	res := invoker.Invoke(context.Background(), inv)
 	assert.NoError(t, res.Error())
 	assert.Equal(t, User{Id: 1, Age: int32(23), Name: "username"}, *res.Result().(*User))
