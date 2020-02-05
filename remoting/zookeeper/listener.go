@@ -190,7 +190,7 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 			if MaxFailTimes <= failTimes {
 				failTimes = MaxFailTimes
 			}
-			logger.Warnf("listenDirEvent(path{%s}) = error{%v}", zkPath, err)
+			logger.Infof("listenDirEvent(path{%s}) = error{%v}", zkPath, err)
 			// clear the event channel
 		CLEAR:
 			for {
@@ -201,6 +201,11 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 				}
 			}
 			l.client.RegisterEvent(zkPath, &event)
+			if err == errNilNode {
+				logger.Warnf("listenDirEvent(path{%s}) got errNilNode,so exit listen", zkPath)
+				l.client.UnregisterEvent(zkPath, &event)
+				return
+			}
 			select {
 			case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)):
 				l.client.UnregisterEvent(zkPath, &event)
