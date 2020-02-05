@@ -14,8 +14,10 @@ require (
 	github.com/creasty/defaults v1.3.0
 	github.com/dubbogo/getty v1.3.2
 	github.com/dubbogo/gost v1.5.2
+	github.com/emicklei/go-restful/v3 v3.0.0
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
 	github.com/go-errors/errors v1.0.1 // indirect
+	github.com/go-resty/resty/v2 v2.1.0
 	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6 // indirect
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.3.2
@@ -52,6 +54,7 @@ require (
 	go.etcd.io/etcd v3.3.13+incompatible
 	go.uber.org/atomic v1.4.0
 	go.uber.org/zap v1.10.0
+	golang.org/x/tools v0.0.0-20190524140312-2c0ae7006135
 	google.golang.org/grpc v1.22.1
 	gopkg.in/yaml.v2 v2.2.2
 )
