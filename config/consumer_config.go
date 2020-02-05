@@ -85,15 +85,6 @@ func SetConsumerConfig(c ConsumerConfig) {
 	consumerConfig = &c
 }
 
-// GetConsumerConfig ...
-func GetConsumerConfig() ConsumerConfig {
-	if consumerConfig == nil {
-		logger.Warnf("consumerConfig is nil!")
-		return ConsumerConfig{}
-	}
-	return *consumerConfig
-}
-
 // ConsumerInit ...
 func ConsumerInit(confConFile string) error {
 	if confConFile == "" {
