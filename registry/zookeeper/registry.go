@@ -29,9 +29,9 @@ import (
 )
 
 import (
+	"github.com/dubbogo/go-zookeeper/zk"
 	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
-	"github.com/samuel/go-zookeeper/zk"
 )
 
 import (
