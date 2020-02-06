@@ -31,7 +31,7 @@ func TestGetRestConsumerServiceConfig(t *testing.T) {
 	err := os.Setenv(constant.CONF_CONSUMER_FILE_PATH, "./rest_config_reader/testdata/consumer_config.yml")
 	assert.NoError(t, err)
 	initConsumerRestConfig()
-	serviceConfig := GetRestConsumerServiceConfig("com.ikurento.user.UserProvider")
+	serviceConfig := GetRestConsumerServiceConfig("UserProvider")
 	assert.NotEmpty(t, serviceConfig)
 }
 
@@ -39,6 +39,6 @@ func TestGetRestProviderServiceConfig(t *testing.T) {
 	err := os.Setenv(constant.CONF_PROVIDER_FILE_PATH, "./rest_config_reader/testdata/provider_config.yml")
 	assert.NoError(t, err)
 	initProviderRestConfig()
-	serviceConfig := GetRestProviderServiceConfig("com.ikurento.user.UserProvider")
+	serviceConfig := GetRestProviderServiceConfig("UserProvider")
 	assert.NotEmpty(t, serviceConfig)
 }

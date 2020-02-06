@@ -70,7 +70,7 @@ func TestRestProtocol_Refer(t *testing.T) {
 	assert.Equal(t, 0, invokersLen)
 }
 
-func TestJsonrpcProtocol_Export(t *testing.T) {
+func TestRestProtocol_Export(t *testing.T) {
 	// Export
 	proto := GetRestProtocol()
 	url, err := common.NewURL(context.Background(), "rest://127.0.0.1:8888/com.ikurento.user.UserProvider?anyhost=true&"+
