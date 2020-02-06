@@ -79,24 +79,29 @@ func (grs *GoRestfulServer) Deploy(invoker protocol.Invoker, restMethodConfig ma
 	for methodName, config := range restMethodConfig {
 		// get method
 		method := svc.Method()[methodName]
-		types := method.ArgsType()
+		argsTypes := method.ArgsType()
+		replyType := method.ReplyType()
 		ws := new(restful.WebService)
 		ws.Path(config.Path).
 			Produces(strings.Split(config.Produces, ",")...).
 			Consumes(strings.Split(config.Consumes, ",")...).
-			Route(ws.Method(config.MethodType).To(getFunc(methodName, invoker, types, config)))
+			Route(ws.Method(config.MethodType).To(getFunc(methodName, invoker, argsTypes, replyType, config)))
 		grs.container.Add(ws)
 	}
 
 }
 
-func getFunc(methodName string, invoker protocol.Invoker, types []reflect.Type, config *rest_interface.RestMethodConfig) func(req *restful.Request, resp *restful.Response) {
+func getFunc(methodName string, invoker protocol.Invoker, argsTypes []reflect.Type, replyType reflect.Type, config *rest_interface.RestMethodConfig) func(req *restful.Request, resp *restful.Response) {
 	return func(req *restful.Request, resp *restful.Response) {
 		var (
 			err  error
 			args []interface{}
 		)
-		args = getArgsFromRequest(req, types, config)
+		if (len(argsTypes) == 1 || len(argsTypes) == 2 && replyType == nil) && argsTypes[0].String() == "[]interface {}" {
+			args = getArgsInterfaceFromRequest(req, config)
+		} else {
+			args = getArgsFromRequest(req, argsTypes, config)
+		}
 		result := invoker.Invoke(context.Background(), invocation.NewRPCInvocation(methodName, args, make(map[string]string, 0)))
 		if result.Error() != nil {
 			err = resp.WriteError(http.StatusInternalServerError, result.Error())
@@ -131,9 +136,63 @@ func (grs *GoRestfulServer) Destroy() {
 	logger.Infof("[Go Restful] Server exiting")
 }
 
-func getArgsFromRequest(req *restful.Request, types []reflect.Type, config *rest_interface.RestMethodConfig) []interface{} {
-	args := make([]interface{}, len(types))
-	for i, t := range types {
+func getArgsInterfaceFromRequest(req *restful.Request, config *rest_interface.RestMethodConfig) []interface{} {
+	argsMap := make(map[int]interface{})
+	maxKey := 0
+	for k, v := range config.PathParamsMap {
+		if maxKey < k {
+			maxKey = k
+		}
+		argsMap[k] = req.PathParameter(v)
+	}
+	for k, v := range config.QueryParamsMap {
+		if maxKey < k {
+			maxKey = k
+		}
+		params := req.QueryParameters(v)
+		if len(params) == 1 {
+			argsMap[k] = params[0]
+		} else {
+			argsMap[k] = params
+		}
+	}
+	for k, v := range config.HeadersMap {
+		if maxKey < k {
+			maxKey = k
+		}
+		argsMap[k] = req.HeaderParameter(v)
+	}
+	if config.Body >= 0 {
+		if maxKey < config.Body {
+			maxKey = config.Body
+		}
+		m := make(map[string]interface{})
+		if err := req.ReadEntity(m); err != nil {
+			logger.Warnf("[Go restful] Read body entity as map[string]interface{} error:%v", perrors.WithStack(err))
+			ms := make([]map[string]interface{}, 0)
+			if err1 := req.ReadEntity(ms); err1 != nil {
+				logger.Errorf("[Go restful] Read body entity as []map[string]interface{} error:%v", perrors.WithStack(err1))
+			} else {
+				argsMap[config.Body] = m
+			}
+		} else {
+			argsMap[config.Body] = m
+		}
+	}
+
+	args := make([]interface{}, maxKey+1)
+	for k, v := range argsMap {
+		if k >= 0 {
+			args[k] = v
+		}
+	}
+	return args
+}
+
+func getArgsFromRequest(req *restful.Request, argsTypes []reflect.Type, config *rest_interface.RestMethodConfig) []interface{} {
+	argsLength := len(argsTypes)
+	args := make([]interface{}, argsLength)
+	for i, t := range argsTypes {
 		args[i] = reflect.Zero(t).Interface()
 	}
 	var (
@@ -142,11 +201,11 @@ func getArgsFromRequest(req *restful.Request, types []reflect.Type, config *rest
 		i64   int64
 	)
 	for k, v := range config.PathParamsMap {
-		if k < 0 || k >= len(types) {
+		if k < 0 || k >= argsLength {
 			logger.Errorf("[Go restful] Path param parse error, the args:%v doesn't exist", k)
 			continue
 		}
-		t := types[k]
+		t := argsTypes[k]
 		kind := t.Kind()
 		if kind == reflect.Ptr {
 			t = t.Elem()
@@ -171,11 +230,11 @@ func getArgsFromRequest(req *restful.Request, types []reflect.Type, config *rest
 		args[k] = param
 	}
 	for k, v := range config.QueryParamsMap {
-		if k < 0 || k > len(types) {
+		if k < 0 || k >= argsLength {
 			logger.Errorf("[Go restful] Query param parse error, the args:%v doesn't exist", k)
 			continue
 		}
-		t := types[k]
+		t := argsTypes[k]
 		kind := t.Kind()
 		if kind == reflect.Ptr {
 			t = t.Elem()
@@ -204,30 +263,37 @@ func getArgsFromRequest(req *restful.Request, types []reflect.Type, config *rest
 		args[k] = param
 	}
 
-	if config.Body >= 0 && config.Body < len(types) {
-		t := types[config.Body]
+	if config.Body >= 0 && config.Body < len(argsTypes) {
+		t := argsTypes[config.Body]
 		kind := t.Kind()
 		if kind == reflect.Ptr {
 			t = t.Elem()
 		}
-		n := reflect.New(t)
-		if n.CanInterface() {
-			ni := n.Interface()
-			if err := req.ReadEntity(ni); err != nil {
-				logger.Errorf("[Go restful] Read body entity error:%v", err)
-			} else {
-				args[config.Body] = ni
+		var ni interface{}
+		if t.String() == "[]interface {}" {
+			ni = make([]map[string]interface{}, 0)
+		} else if t.String() == "interface {}" {
+			ni = make(map[string]interface{})
+		} else {
+			n := reflect.New(t)
+			if n.CanInterface() {
+				ni = n.Interface()
 			}
+		}
+		if err := req.ReadEntity(ni); err != nil {
+			logger.Errorf("[Go restful] Read body entity error:%v", err)
+		} else {
+			args[config.Body] = ni
 		}
 
 	}
 	for k, v := range config.HeadersMap {
 		param := req.HeaderParameter(v)
-		if k < 0 || k >= len(types) {
+		if k < 0 || k >= argsLength {
 			logger.Errorf("[Go restful] Header param parse error, the args:%v doesn't exist", k)
 			continue
 		}
-		t := types[k]
+		t := argsTypes[k]
 		if t.Kind() == reflect.Ptr {
 			t = t.Elem()
 		}
