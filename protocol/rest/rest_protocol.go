@@ -89,9 +89,9 @@ func (rp *RestProtocol) Refer(url common.URL) protocol.Invoker {
 func (rp *RestProtocol) getServer(url common.URL, restConfig *rest_interface.RestConfig) rest_interface.RestServer {
 	restServer, ok := rp.serverMap[url.Location]
 	if !ok {
-		_, ok := rp.ExporterMap().Load(strings.TrimPrefix(url.Path, "/"))
+		_, ok := rp.ExporterMap().Load(url.ServiceKey())
 		if !ok {
-			panic("[RestProtocol]" + url.Key() + "is not existing")
+			panic("[RestProtocol]" + url.ServiceKey() + "is not existing")
 		}
 		rp.serverLock.Lock()
 		restServer, ok = rp.serverMap[url.Location]
