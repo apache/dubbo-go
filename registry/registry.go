@@ -21,6 +21,12 @@ import (
 	"github.com/apache/dubbo-go/common"
 )
 
+/*
+ * -----------------------------------NOTICE---------------------------------------------
+ * If there is no special case, you'd better inherit BaseRegistry and implement the
+ * FacadeBasedRegistry interface instead of directly implementing the Registry interface.
+ * --------------------------------------------------------------------------------------
+ */
 // Registry Extension - Registry
 type Registry interface {
 	common.Node

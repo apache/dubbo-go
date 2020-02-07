@@ -56,6 +56,17 @@ func init() {
 	localIP, _ = gxnet.GetLocalIP()
 }
 
+/*
+ * -----------------------------------NOTICE---------------------------------------------
+ * If there is no special case, you'd better inherit BaseRegistry and implement the
+ * FacadeBasedRegistry interface instead of directly implementing the Registry interface.
+ * --------------------------------------------------------------------------------------
+ */
+
+/*
+ * This interface is subclass of Registry, and it is designed for registry who want to inherit BaseRegistry.
+ * You have to implement the interface to inherit BaseRegistry.
+ */
 type FacadeBasedRegistry interface {
 	Registry
 	CreatePath(string) error
@@ -66,6 +77,9 @@ type FacadeBasedRegistry interface {
 	InitListeners()
 }
 
+/*
+ * BaseRegistry is a common logic abstract for registry. It implement Registry interface.
+ */
 type BaseRegistry struct {
 	context             context.Context
 	facadeBasedRegistry FacadeBasedRegistry
