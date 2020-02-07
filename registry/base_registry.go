@@ -218,87 +218,100 @@ func (r *BaseRegistry) register(c common.URL) error {
 	switch role {
 
 	case common.PROVIDER:
-
-		if c.Path == "" || len(c.Methods) == 0 {
-			return perrors.Errorf("conf{Path:%s, Methods:%s}", c.Path, c.Methods)
-		}
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.PROVIDER])
-		r.cltLock.Lock()
-		err = r.facadeBasedRegistry.CreatePath(dubboPath)
-		r.cltLock.Unlock()
-		if err != nil {
-			logger.Errorf("zkClient.create(path{%s}) = error{%#v}", dubboPath, perrors.WithStack(err))
-			return perrors.WithMessagef(err, "zkclient.Create(path:%s)", dubboPath)
-		}
-		params.Add("anyhost", "true")
-
-		// Dubbo java consumer to start looking for the provider url,because the category does not match,
-		// the provider will not find, causing the consumer can not start, so we use consumers.
-		// DubboRole               = [...]string{"consumer", "", "", "provider"}
-		// params.Add("category", (RoleType(PROVIDER)).Role())
-		params.Add("category", (common.RoleType(common.PROVIDER)).String())
-		params.Add("dubbo", "dubbo-provider-golang-"+constant.Version)
-
-		params.Add("side", (common.RoleType(common.PROVIDER)).Role())
-
-		if len(c.Methods) == 0 {
-			params.Add("methods", strings.Join(c.Methods, ","))
-		}
-		logger.Debugf("provider zk url params:%#v", params)
-		var host string
-		if c.Ip == "" {
-			host = localIP + ":" + c.Port
-		} else {
-			host = c.Ip + ":" + c.Port
-		}
-
-		rawURL = fmt.Sprintf("%s://%s%s?%s", c.Protocol, host, c.Path, params.Encode())
-		encodedURL = url.QueryEscape(rawURL)
-
-		// Print your own registration service providers.
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), (common.RoleType(common.PROVIDER)).String())
-		logger.Debugf("provider path:%s, url:%s", dubboPath, rawURL)
-
+		dubboPath, rawURL, err = r.providerRegistry(c, params)
 	case common.CONSUMER:
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.CONSUMER])
-		r.cltLock.Lock()
-		err = r.facadeBasedRegistry.CreatePath(dubboPath)
-		r.cltLock.Unlock()
-		if err != nil {
-			logger.Errorf("zkClient.create(path{%s}) = error{%v}", dubboPath, perrors.WithStack(err))
-			return perrors.WithStack(err)
-		}
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.PROVIDER])
-		r.cltLock.Lock()
-		err = r.facadeBasedRegistry.CreatePath(dubboPath)
-		r.cltLock.Unlock()
-		if err != nil {
-			logger.Errorf("zkClient.create(path{%s}) = error{%v}", dubboPath, perrors.WithStack(err))
-			return perrors.WithStack(err)
-		}
-
-		params.Add("protocol", c.Protocol)
-
-		params.Add("category", (common.RoleType(common.CONSUMER)).String())
-		params.Add("dubbo", "dubbogo-consumer-"+constant.Version)
-
-		rawURL = fmt.Sprintf("consumer://%s%s?%s", localIP, c.Path, params.Encode())
-		encodedURL = url.QueryEscape(rawURL)
-
-		dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), (common.RoleType(common.CONSUMER)).String())
-		logger.Debugf("consumer path:%s, url:%s", dubboPath, rawURL)
-
+		dubboPath, rawURL, err = r.consumerRegistry(c, params)
 	default:
 		return perrors.Errorf("@c{%v} type is not referencer or provider", c)
 	}
-
+	encodedURL = url.QueryEscape(rawURL)
 	dubboPath = strings.ReplaceAll(dubboPath, "$", "%24")
 	err = r.facadeBasedRegistry.DoRegister(dubboPath, encodedURL)
 
 	if err != nil {
-		return perrors.WithMessagef(err, "registerTempZookeeperNode(path:%s, url:%s)", dubboPath, rawURL)
+		return perrors.WithMessagef(err, "register Node(path:%s, url:%s)", dubboPath, rawURL)
 	}
 	return nil
+}
+
+func (r *BaseRegistry) providerRegistry(c common.URL, params url.Values) (string, string, error) {
+	var (
+		dubboPath string
+		rawURL    string
+		err       error
+	)
+	if c.Path == "" || len(c.Methods) == 0 {
+		return "", "", perrors.Errorf("conf{Path:%s, Methods:%s}", c.Path, c.Methods)
+	}
+	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.PROVIDER])
+	r.cltLock.Lock()
+	err = r.facadeBasedRegistry.CreatePath(dubboPath)
+	r.cltLock.Unlock()
+	if err != nil {
+		logger.Errorf("facadeBasedRegistry.CreatePath(path{%s}) = error{%#v}", dubboPath, perrors.WithStack(err))
+		return "", "", perrors.WithMessagef(err, "facadeBasedRegistry.CreatePath(path:%s)", dubboPath)
+	}
+	params.Add("anyhost", "true")
+
+	// Dubbo java consumer to start looking for the provider url,because the category does not match,
+	// the provider will not find, causing the consumer can not start, so we use consumers.
+	// DubboRole               = [...]string{"consumer", "", "", "provider"}
+	// params.Add("category", (RoleType(PROVIDER)).Role())
+	params.Add("category", (common.RoleType(common.PROVIDER)).String())
+	params.Add("dubbo", "dubbo-provider-golang-"+constant.Version)
+
+	params.Add("side", (common.RoleType(common.PROVIDER)).Role())
+
+	if len(c.Methods) == 0 {
+		params.Add("methods", strings.Join(c.Methods, ","))
+	}
+	logger.Debugf("provider url params:%#v", params)
+	var host string
+	if c.Ip == "" {
+		host = localIP + ":" + c.Port
+	} else {
+		host = c.Ip + ":" + c.Port
+	}
+
+	rawURL = fmt.Sprintf("%s://%s%s?%s", c.Protocol, host, c.Path, params.Encode())
+	// Print your own registration service providers.
+	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), (common.RoleType(common.PROVIDER)).String())
+	logger.Debugf("provider path:%s, url:%s", dubboPath, rawURL)
+	return dubboPath, rawURL, nil
+}
+
+func (r *BaseRegistry) consumerRegistry(c common.URL, params url.Values) (string, string, error) {
+	var (
+		dubboPath string
+		rawURL    string
+		err       error
+	)
+	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.CONSUMER])
+	r.cltLock.Lock()
+	err = r.facadeBasedRegistry.CreatePath(dubboPath)
+	r.cltLock.Unlock()
+	if err != nil {
+		logger.Errorf("facadeBasedRegistry.CreatePath(path{%s}) = error{%v}", dubboPath, perrors.WithStack(err))
+		return "", "", perrors.WithStack(err)
+	}
+	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.PROVIDER])
+	r.cltLock.Lock()
+	err = r.facadeBasedRegistry.CreatePath(dubboPath)
+	r.cltLock.Unlock()
+	if err != nil {
+		logger.Errorf("facadeBasedRegistry.CreatePath(path{%s}) = error{%v}", dubboPath, perrors.WithStack(err))
+		return "", "", perrors.WithStack(err)
+	}
+
+	params.Add("protocol", c.Protocol)
+	params.Add("category", (common.RoleType(common.CONSUMER)).String())
+	params.Add("dubbo", "dubbogo-consumer-"+constant.Version)
+
+	rawURL = fmt.Sprintf("consumer://%s%s?%s", localIP, c.Path, params.Encode())
+	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), (common.RoleType(common.CONSUMER)).String())
+
+	logger.Debugf("consumer path:%s, url:%s", dubboPath, rawURL)
+	return dubboPath, rawURL, nil
 }
 
 func sleepWait(n int) {
