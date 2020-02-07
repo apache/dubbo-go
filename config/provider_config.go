@@ -76,15 +76,6 @@ func SetProviderConfig(p ProviderConfig) {
 	providerConfig = &p
 }
 
-// GetProviderConfig ...
-func GetProviderConfig() ProviderConfig {
-	if providerConfig == nil {
-		logger.Warnf("providerConfig is nil!")
-		return ProviderConfig{}
-	}
-	return *providerConfig
-}
-
 // ProviderInit ...
 func ProviderInit(confProFile string) error {
 	if len(confProFile) == 0 {
