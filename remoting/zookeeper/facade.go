@@ -35,7 +35,7 @@ type zkClientFacade interface {
 	SetZkClient(*ZookeeperClient)
 	ZkClientLock() *sync.Mutex
 	WaitGroup() *sync.WaitGroup //for wait group control, zk client listener & zk client container
-	GetDone() chan struct{}     //for zk client control
+	Done() chan struct{}        //for zk client control
 	RestartCallBack() bool
 	common.Node
 }
@@ -52,7 +52,7 @@ func HandleClientRestart(r zkClientFacade) {
 LOOP:
 	for {
 		select {
-		case <-r.GetDone():
+		case <-r.Done():
 			logger.Warnf("(ZkProviderRegistry)reconnectZkRegistry goroutine exit now...")
 			break LOOP
 			// re-register all services
@@ -68,7 +68,7 @@ LOOP:
 			failTimes = 0
 			for {
 				select {
-				case <-r.GetDone():
+				case <-r.Done():
 					logger.Warnf("(ZkProviderRegistry)reconnectZkRegistry goroutine exit now...")
 					break LOOP
 				case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)): // Prevent crazy reconnection zk.
