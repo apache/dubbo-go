@@ -77,9 +77,7 @@ type FacadeBasedRegistry interface {
 	InitListeners()
 }
 
-/*
- * BaseRegistry is a common logic abstract for registry. It implement Registry interface.
- */
+// BaseRegistry is a common logic abstract for registry. It implement Registry interface.
 type BaseRegistry struct {
 	context             context.Context
 	facadeBasedRegistry FacadeBasedRegistry
@@ -91,6 +89,7 @@ type BaseRegistry struct {
 	services map[string]common.URL // service name + protocol -> service config, for store the service registered
 }
 
+// InitBaseRegistry for init some local variables and set BaseRegistry's subclass to it
 func (r *BaseRegistry) InitBaseRegistry(url *common.URL, facadeRegistry FacadeBasedRegistry) Registry {
 	r.URL = url
 	r.birth = time.Now().UnixNano()
@@ -100,6 +99,7 @@ func (r *BaseRegistry) InitBaseRegistry(url *common.URL, facadeRegistry FacadeBa
 	return r
 }
 
+// GetUrl for get registry's url
 func (r *BaseRegistry) GetUrl() common.URL {
 	return *r.URL
 }
@@ -116,6 +116,7 @@ func (r *BaseRegistry) Destroy() {
 	r.closeRegisters()
 }
 
+// Register implement interface registry to register
 func (r *BaseRegistry) Register(conf common.URL) error {
 	var (
 		ok  bool
@@ -148,6 +149,7 @@ func (r *BaseRegistry) service(c common.URL) string {
 	return url.QueryEscape(c.Service())
 }
 
+// RestartCallBack for reregister when reconnect
 func (r *BaseRegistry) RestartCallBack() bool {
 
 	// copy r.services
@@ -172,6 +174,7 @@ func (r *BaseRegistry) RestartCallBack() bool {
 	return flag
 }
 
+// register for register url to registry, include init params
 func (r *BaseRegistry) register(c common.URL) error {
 	var (
 		err error
@@ -213,6 +216,7 @@ func (r *BaseRegistry) register(c common.URL) error {
 	return nil
 }
 
+// providerRegistry for provider role do
 func (r *BaseRegistry) providerRegistry(c common.URL, params url.Values) (string, string, error) {
 	var (
 		dubboPath string
@@ -259,6 +263,7 @@ func (r *BaseRegistry) providerRegistry(c common.URL, params url.Values) (string
 	return dubboPath, rawURL, nil
 }
 
+// consumerRegistry for consumer role do
 func (r *BaseRegistry) consumerRegistry(c common.URL, params url.Values) (string, string, error) {
 	var (
 		dubboPath string
@@ -293,6 +298,7 @@ func (r *BaseRegistry) consumerRegistry(c common.URL, params url.Values) (string
 	return dubboPath, rawURL, nil
 }
 
+// sleepWait...
 func sleepWait(n int) {
 	wait := time.Duration((n + 1) * 2e8)
 	if wait > MaxWaitInterval {
@@ -301,7 +307,7 @@ func sleepWait(n int) {
 	time.Sleep(wait)
 }
 
-//Subscribe :subscribe from registry, event will notify by notifyListener
+// Subscribe :subscribe from registry, event will notify by notifyListener
 func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener) {
 	n := 0
 	for {
@@ -337,6 +343,7 @@ func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 	}
 }
 
+// closeRegisters close and remove registry client and reset services map
 func (r *BaseRegistry) closeRegisters() {
 	r.cltLock.Lock()
 	defer r.cltLock.Unlock()
