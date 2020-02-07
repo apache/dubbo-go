@@ -166,15 +166,11 @@ func getArgsInterfaceFromRequest(req *restful.Request, config *rest_interface.Re
 		if maxKey < config.Body {
 			maxKey = config.Body
 		}
+
 		m := make(map[string]interface{})
-		if err := req.ReadEntity(m); err != nil {
+		// TODO read as a slice
+		if err := req.ReadEntity(&m); err != nil {
 			logger.Warnf("[Go restful] Read body entity as map[string]interface{} error:%v", perrors.WithStack(err))
-			ms := make([]map[string]interface{}, 0)
-			if err1 := req.ReadEntity(ms); err1 != nil {
-				logger.Errorf("[Go restful] Read body entity as []map[string]interface{} error:%v", perrors.WithStack(err1))
-			} else {
-				argsMap[config.Body] = m
-			}
 		} else {
 			argsMap[config.Body] = m
 		}
@@ -280,13 +276,13 @@ func getArgsFromRequest(req *restful.Request, argsTypes []reflect.Type, config *
 				ni = n.Interface()
 			}
 		}
-		if err := req.ReadEntity(ni); err != nil {
+		if err := req.ReadEntity(&ni); err != nil {
 			logger.Errorf("[Go restful] Read body entity error:%v", err)
 		} else {
 			args[config.Body] = ni
 		}
-
 	}
+
 	for k, v := range config.HeadersMap {
 		param := req.HeaderParameter(v)
 		if k < 0 || k >= argsLength {
