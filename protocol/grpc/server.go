@@ -19,8 +19,13 @@ package grpc
 
 import (
 	"fmt"
+	"github.com/opentracing/opentracing-go"
 	"net"
 	"reflect"
+)
+
+import (
+	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 )
 
 import (
@@ -57,13 +62,22 @@ func (s *Server) Start(url common.URL) {
 	var (
 		addr string
 		err  error
+		server *grpc.Server
 	)
 	addr = url.Location
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		panic(err)
 	}
-	server := grpc.NewServer()
+
+	// if global trace instance was set, then server tracer instance can be get, and span context can also be get
+	if opentracing.IsGlobalTracerRegistered() {
+		tracer := opentracing.GlobalTracer()
+		server = grpc.NewServer(grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)))
+	} else {
+		server = grpc.NewServer()
+	}
+
 
 	key := url.GetParam(constant.BEAN_NAME_KEY, "")
 	service := config.GetProviderService(key)
