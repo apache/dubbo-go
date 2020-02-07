@@ -95,6 +95,7 @@ func newETCDV3Registry(url *common.URL) (registry.Registry, error) {
 	); err != nil {
 		return nil, err
 	}
+	r.WaitGroup().Add(1) //etcdv3 client start successful, then wg +1
 
 	go etcdv3.HandleClientRestart(r)
 
