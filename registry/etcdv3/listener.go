@@ -78,7 +78,7 @@ type configurationListener struct {
 	events   chan *config_center.ConfigChangeEvent
 }
 
-// NewConfigurationListener ...
+// NewConfigurationListener for listening the event of etcdv3.
 func NewConfigurationListener(reg *etcdV3Registry) *configurationListener {
 	// add a new waiter
 	reg.WaitGroup().Add(1)
