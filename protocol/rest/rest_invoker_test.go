@@ -73,6 +73,45 @@ func TestRestInvoker_Invoke(t *testing.T) {
 		QueryParamsMap: nil,
 		Body:           0,
 	}
+	methodConfigMap["GetUserTwo"] = &rest_interface.RestMethodConfig{
+		InterfaceName:  "",
+		MethodName:     "GetUserTwo",
+		Path:           "/GetUserTwo",
+		Produces:       "application/json",
+		Consumes:       "application/json",
+		MethodType:     "POST",
+		PathParams:     "",
+		PathParamsMap:  nil,
+		QueryParams:    "",
+		QueryParamsMap: nil,
+		Body:           0,
+	}
+	methodConfigMap["GetUserThree"] = &rest_interface.RestMethodConfig{
+		InterfaceName:  "",
+		MethodName:     "GetUserThree",
+		Path:           "/GetUserThree",
+		Produces:       "application/json",
+		Consumes:       "application/json",
+		MethodType:     "POST",
+		PathParams:     "",
+		PathParamsMap:  nil,
+		QueryParams:    "",
+		QueryParamsMap: nil,
+		Body:           0,
+	}
+	methodConfigMap["GetUserFour"] = &rest_interface.RestMethodConfig{
+		InterfaceName:  "",
+		MethodName:     "GetUserFour",
+		Path:           "/GetUserFour",
+		Produces:       "application/json",
+		Consumes:       "application/json",
+		MethodType:     "POST",
+		PathParams:     "",
+		PathParamsMap:  nil,
+		QueryParams:    "",
+		QueryParamsMap: nil,
+		Body:           0,
+	}
 	methodConfigMap["GetUser"] = &rest_interface.RestMethodConfig{
 		InterfaceName:  "",
 		MethodName:     "GetUser",
@@ -108,15 +147,33 @@ func TestRestInvoker_Invoke(t *testing.T) {
 	res := invoker.Invoke(context.Background(), inv)
 	assert.NoError(t, res.Error())
 	assert.Equal(t, User{Id: 1, Age: int32(23), Name: "username"}, *res.Result().(*User))
-	time.Sleep(3 * time.Second)
 	now := time.Now()
 	inv = invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUserOne"),
 		invocation.WithArguments([]interface{}{&User{1, &now, int32(23), "username"}}), invocation.WithReply(user))
 	res = invoker.Invoke(context.Background(), inv)
 	assert.NoError(t, res.Error())
+	assert.NotNil(t, res.Result())
 	assert.Equal(t, 1, res.Result().(*User).Id)
 	assert.Equal(t, now.Unix(), res.Result().(*User).Time.Unix())
 	assert.Equal(t, int32(23), res.Result().(*User).Age)
+	assert.Equal(t, "username", res.Result().(*User).Name)
+	inv = invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUserTwo"),
+		invocation.WithArguments([]interface{}{&User{1, &now, int32(23), "username"}}), invocation.WithReply(user))
+	res = invoker.Invoke(context.Background(), inv)
+	assert.NoError(t, res.Error())
+	assert.NotNil(t, res.Result())
+	assert.Equal(t, "username", res.Result().(*User).Name)
+	inv = invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUserThree"),
+		invocation.WithArguments([]interface{}{&User{1, &now, int32(23), "username"}}), invocation.WithReply(user))
+	res = invoker.Invoke(context.Background(), inv)
+	assert.NoError(t, res.Error())
+	assert.NotNil(t, res.Result())
+	assert.Equal(t, "username", res.Result().(*User).Name)
+	inv = invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUserFour"),
+		invocation.WithArguments([]interface{}{[]User{User{1, nil, int32(23), "username"}}}), invocation.WithReply(user))
+	res = invoker.Invoke(context.Background(), inv)
+	assert.NoError(t, res.Error())
+	assert.NotNil(t, res.Result())
 	assert.Equal(t, "username", res.Result().(*User).Name)
 	err = common.ServiceMap.UnRegister(url.Protocol, "com.ikurento.user.UserProvider")
 	assert.NoError(t, err)
