@@ -215,7 +215,9 @@ func getArgsFromRequest(req *restful.Request, argsTypes []reflect.Type, config *
 			}
 		} else if kind == reflect.Int64 {
 			param, err = strconv.ParseInt(req.PathParameter(v), 10, 64)
-		} else if kind != reflect.String {
+		} else if kind == reflect.String {
+			param = req.PathParameter(v)
+		} else {
 			logger.Warnf("[Go restful] Path param parse error, the args:%v of type isn't int or string", k)
 			continue
 		}
