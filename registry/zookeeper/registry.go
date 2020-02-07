@@ -78,6 +78,7 @@ func newZkRegistry(url *common.URL) (registry.Registry, error) {
 	if err != nil {
 		return nil, err
 	}
+	r.WaitGroup().Add(1) //zk client start successful, then wg +1
 
 	go zookeeper.HandleClientRestart(r)
 
@@ -112,6 +113,7 @@ func newMockZkRegistry(url *common.URL, opts ...zookeeper.Option) (*zk.TestClust
 	if err != nil {
 		return nil, nil, err
 	}
+	r.WaitGroup().Add(1) //zk client start successful, then wg +1
 	go zookeeper.HandleClientRestart(r)
 	r.InitListeners()
 	return c, r, nil
