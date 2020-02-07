@@ -64,7 +64,7 @@ func init() {
  */
 
 /*
- * This interface is subclass of Registry, and it is designed for registry who want to inherit BaseRegistry.
+ * FacadeBasedRegistry interface is subclass of Registry, and it is designed for registry who want to inherit BaseRegistry.
  * You have to implement the interface to inherit BaseRegistry.
  */
 type FacadeBasedRegistry interface {
@@ -104,7 +104,7 @@ func (r *BaseRegistry) GetUrl() common.URL {
 	return *r.URL
 }
 
-//for graceful down
+// Destroy for graceful down
 func (r *BaseRegistry) Destroy() {
 	//first step close registry's all listeners
 	r.facadeBasedRegistry.CloseListener()
@@ -122,54 +122,28 @@ func (r *BaseRegistry) Register(conf common.URL) error {
 		err error
 	)
 	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
-	switch role {
-	case common.CONSUMER:
-		r.cltLock.Lock()
-		_, ok = r.services[conf.Key()]
-		r.cltLock.Unlock()
-		if ok {
-			return perrors.Errorf("Path{%s} has been registered", conf.Path)
-		}
-
-		err = r.register(conf)
-		if err != nil {
-			return perrors.WithStack(err)
-		}
-
-		r.cltLock.Lock()
-		r.services[conf.Key()] = conf
-		r.cltLock.Unlock()
-		logger.Debugf("(consumerRegistry)Register(conf{%#v})", conf)
-
-	case common.PROVIDER:
-
-		// Check if the service has been registered
-		r.cltLock.Lock()
-		// Note the difference between consumer and consumerZookeeperRegistry (consumer use conf.Path).
-		// Because the consumer wants to provide monitoring functions for the selector,
-		// the provider allows multiple groups or versions of the same service to be registered.
-		_, ok = r.services[conf.Key()]
-		r.cltLock.Unlock()
-		if ok {
-			return perrors.Errorf("Path{%s} has been registered", conf.Key())
-		}
-
-		err = r.register(conf)
-		if err != nil {
-			return perrors.WithMessagef(err, "register(conf:%+v)", conf)
-		}
-
-		r.cltLock.Lock()
-		r.services[conf.Key()] = conf
-		r.cltLock.Unlock()
-
-		logger.Debugf("(ProviderRegistry)Register(conf{%#v})", conf)
+	// Check if the service has been registered
+	r.cltLock.Lock()
+	_, ok = r.services[conf.Key()]
+	r.cltLock.Unlock()
+	if ok {
+		return perrors.Errorf("Path{%s} has been registered", conf.Key())
 	}
+
+	err = r.register(conf)
+	if err != nil {
+		return perrors.WithMessagef(err, "register(conf:%+v)", conf)
+	}
+
+	r.cltLock.Lock()
+	r.services[conf.Key()] = conf
+	r.cltLock.Unlock()
+	logger.Debugf("(%sRegistry)Register(conf{%#v})", common.DubboRole[role], conf)
 
 	return nil
 }
 
-//get service path stored in url
+// service is for getting service path stored in url
 func (r *BaseRegistry) service(c common.URL) string {
 	return url.QueryEscape(c.Service())
 }
@@ -327,7 +301,7 @@ func sleepWait(n int) {
 	time.Sleep(wait)
 }
 
-//Subscribe from registry
+//Subscribe :subscribe from registry, event will notify by notifyListener
 func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener) {
 	n := 0
 	for {
@@ -373,7 +347,7 @@ func (r *BaseRegistry) closeRegisters() {
 	r.services = nil
 }
 
-//judge to is registry not closed by chan r.done
+// IsAvailable judge to is registry not closed by chan r.done
 func (r *BaseRegistry) IsAvailable() bool {
 	select {
 	case <-r.done:
@@ -383,12 +357,12 @@ func (r *BaseRegistry) IsAvailable() bool {
 	}
 }
 
-//open for outside add the waitgroup to add some logic before registry destroyed over(graceful down)
+// WaitGroup open for outside add the waitgroup to add some logic before registry destroyed over(graceful down)
 func (r *BaseRegistry) WaitGroup() *sync.WaitGroup {
 	return &r.wg
 }
 
-//open for outside to listen the event of registry Destroy() called.
+// Done open for outside to listen the event of registry Destroy() called.
 func (r *BaseRegistry) Done() chan struct{} {
 	return r.done
 }
