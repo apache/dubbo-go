@@ -18,7 +18,12 @@ limitations under the License.
 package grpc
 
 import (
+	"github.com/opentracing/opentracing-go"
 	"reflect"
+)
+
+import (
+	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 )
 
 import (
@@ -39,9 +44,24 @@ type Client struct {
 
 // NewClient ...
 func NewClient(url common.URL) *Client {
-	conn, err := grpc.Dial(url.Location, grpc.WithInsecure(), grpc.WithBlock())
-	if err != nil {
-		panic(err)
+	var (
+		conn *grpc.ClientConn
+		err error
+		tracer opentracing.Tracer
+	)
+   // if global trace instance was set in filter, it means trace function enabled
+	if opentracing.IsGlobalTracerRegistered() {
+		tracer = opentracing.GlobalTracer()
+		conn, err = grpc.Dial(url.Location, grpc.WithInsecure(), grpc.WithBlock(),
+			grpc.WithUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(tracer)))
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		conn, err = grpc.Dial(url.Location, grpc.WithInsecure(), grpc.WithBlock())
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	key := url.GetParam(constant.BEAN_NAME_KEY, "")
