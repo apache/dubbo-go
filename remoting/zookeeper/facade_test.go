@@ -55,7 +55,7 @@ func (r *mockFacade) WaitGroup() *sync.WaitGroup {
 	return &r.wg
 }
 
-func (r *mockFacade) GetDone() chan struct{} {
+func (r *mockFacade) Done() chan struct{} {
 	return r.done
 }
 
