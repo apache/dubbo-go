@@ -87,7 +87,7 @@ func (suite *RegistryTestSuite) TestSubscribe() {
 
 	err = reg2.Register(url)
 	assert.NoError(t, err)
-	listener, err := reg2.subscribe(&url)
+	listener, err := reg2.DoSubscribe(&url)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -105,7 +105,7 @@ func (suite *RegistryTestSuite) TestConsumerDestory() {
 	url, _ := common.NewURL(context.Background(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 
 	reg := initRegistry(t)
-	_, err := reg.subscribe(&url)
+	_, err := reg.DoSubscribe(&url)
 	if err != nil {
 		t.Fatal(err)
 	}
