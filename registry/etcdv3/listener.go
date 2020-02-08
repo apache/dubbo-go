@@ -18,7 +18,6 @@
 package etcdv3
 
 import (
-	"context"
 	"strings"
 )
 
@@ -51,7 +50,7 @@ func (l *dataListener) AddInterestedURL(url *common.URL) {
 func (l *dataListener) DataChange(eventType remoting.Event) bool {
 
 	url := eventType.Path[strings.Index(eventType.Path, "/providers/")+len("/providers/"):]
-	serviceURL, err := common.NewURL(context.Background(), url)
+	serviceURL, err := common.NewURL(url)
 	if err != nil {
 		logger.Warnf("Listen NewURL(r{%s}) = error{%v}", eventType.Path, err)
 		return false

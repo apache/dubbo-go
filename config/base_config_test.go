@@ -17,7 +17,6 @@
 package config
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -492,7 +491,7 @@ func Test_startConfigCenter(t *testing.T) {
 		Group:      "dubbo",
 		ConfigFile: "mockDubbo.properties",
 	}}
-	err := c.startConfigCenter(context.Background())
+	err := c.startConfigCenter()
 	assert.NoError(t, err)
 	b, v := config.GetEnvInstance().Configuration().Back().Value.(*config.InmemoryConfiguration).GetProperty("dubbo.application.organization")
 	assert.True(t, b)

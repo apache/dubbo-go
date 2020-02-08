@@ -18,7 +18,6 @@
 package directory
 
 import (
-	"context"
 	"fmt"
 	"testing"
 )
@@ -36,7 +35,7 @@ import (
 func Test_StaticDirList(t *testing.T) {
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {
-		url, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
+		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		invokers = append(invokers, protocol.NewBaseInvoker(url))
 	}
 
@@ -49,7 +48,7 @@ func Test_StaticDirList(t *testing.T) {
 func Test_StaticDirDestroy(t *testing.T) {
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {
-		url, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
+		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		invokers = append(invokers, protocol.NewBaseInvoker(url))
 	}
 
