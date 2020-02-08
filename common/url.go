@@ -315,27 +315,6 @@ func (c URL) Key() string {
 	//return c.ServiceKey()
 }
 
-// ColonSeparatedKey The format is "{interface}:[version]:[group]"
-func (c *URL) ColonSeparatedKey() string {
-	intf := c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
-	if intf == "" {
-		return ""
-	}
-	buf := &bytes.Buffer{}
-	buf.WriteString(intf)
-	buf.WriteString(":")
-	version := c.GetParam(constant.VERSION_KEY, "")
-	if version != "" && version != "0.0.0" {
-		buf.WriteString(version)
-	}
-	group := c.GetParam(constant.GROUP_KEY, "")
-	buf.WriteString(":")
-	if group != "" {
-		buf.WriteString(group)
-	}
-	return buf.String()
-}
-
 // ServiceKey ...
 func (c URL) ServiceKey() string {
 	intf := c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
