@@ -18,7 +18,6 @@
 package loadbalance
 
 import (
-	"context"
 	"testing"
 )
 
@@ -44,7 +43,7 @@ type consistentHashSelectorSuite struct {
 
 func (s *consistentHashSelectorSuite) SetupTest() {
 	var invokers []protocol.Invoker
-	url, _ := common.NewURL(context.TODO(),
+	url, _ := common.NewURL(
 		"dubbo://192.168.1.0:20000/org.apache.demo.HelloService?methods.echo.hash.arguments=0,1")
 	invokers = append(invokers, protocol.NewBaseInvoker(url))
 	s.selector = newConsistentHashSelector(invokers, "echo", 999944)
@@ -56,8 +55,8 @@ func (s *consistentHashSelectorSuite) TestToKey() {
 }
 
 func (s *consistentHashSelectorSuite) TestSelectForKey() {
-	url1, _ := common.NewURL(context.TODO(), "dubbo://192.168.1.0:8080")
-	url2, _ := common.NewURL(context.TODO(), "dubbo://192.168.1.0:8081")
+	url1, _ := common.NewURL("dubbo://192.168.1.0:8080")
+	url2, _ := common.NewURL("dubbo://192.168.1.0:8081")
 	s.selector.virtualInvokers = make(map[uint32]protocol.Invoker)
 	s.selector.virtualInvokers[99874] = protocol.NewBaseInvoker(url1)
 	s.selector.virtualInvokers[9999945] = protocol.NewBaseInvoker(url2)
@@ -84,11 +83,11 @@ type consistentHashLoadBalanceSuite struct {
 
 func (s *consistentHashLoadBalanceSuite) SetupTest() {
 	var err error
-	s.url1, err = common.NewURL(context.TODO(), "dubbo://192.168.1.0:8080/org.apache.demo.HelloService?methods.echo.hash.arguments=0,1")
+	s.url1, err = common.NewURL("dubbo://192.168.1.0:8080/org.apache.demo.HelloService?methods.echo.hash.arguments=0,1")
 	s.NoError(err)
-	s.url2, err = common.NewURL(context.TODO(), "dubbo://192.168.1.0:8081/org.apache.demo.HelloService?methods.echo.hash.arguments=0,1")
+	s.url2, err = common.NewURL("dubbo://192.168.1.0:8081/org.apache.demo.HelloService?methods.echo.hash.arguments=0,1")
 	s.NoError(err)
-	s.url3, err = common.NewURL(context.TODO(), "dubbo://192.168.1.0:8082/org.apache.demo.HelloService?methods.echo.hash.arguments=0,1")
+	s.url3, err = common.NewURL("dubbo://192.168.1.0:8082/org.apache.demo.HelloService?methods.echo.hash.arguments=0,1")
 	s.NoError(err)
 
 	s.invoker1 = protocol.NewBaseInvoker(s.url1)

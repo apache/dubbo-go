@@ -18,7 +18,6 @@
 package loadbalance
 
 import (
-	"context"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -42,13 +41,13 @@ func Test_RandomlbSelect(t *testing.T) {
 
 	invokers := []protocol.Invoker{}
 
-	url, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", 0))
+	url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", 0))
 	invokers = append(invokers, protocol.NewBaseInvoker(url))
 	i := randomlb.Select(invokers, &invocation.RPCInvocation{})
 	assert.True(t, i.GetUrl().URLEqual(url))
 
 	for i := 1; i < 10; i++ {
-		url, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
+		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		invokers = append(invokers, protocol.NewBaseInvoker(url))
 	}
 	randomlb.Select(invokers, &invocation.RPCInvocation{})
@@ -59,13 +58,13 @@ func Test_RandomlbSelectWeight(t *testing.T) {
 
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {
-		url, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
+		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		invokers = append(invokers, protocol.NewBaseInvoker(url))
 	}
 
 	urlParams := url.Values{}
 	urlParams.Set("methods.test."+constant.WEIGHT_KEY, "10000000000000")
-	urll, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://192.168.1.100:20000/com.ikurento.user.UserProvider"), common.WithParams(urlParams))
+	urll, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.100:20000/com.ikurento.user.UserProvider"), common.WithParams(urlParams))
 	invokers = append(invokers, protocol.NewBaseInvoker(urll))
 	ivc := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("test"))
 
@@ -80,7 +79,7 @@ func Test_RandomlbSelectWeight(t *testing.T) {
 	}
 
 	assert.Condition(t, func() bool {
-		//really is 0.9999999999999
+		// really is 0.9999999999999
 		return selected/10000 > 0.9
 	})
 }
@@ -90,13 +89,13 @@ func Test_RandomlbSelectWarmup(t *testing.T) {
 
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {
-		url, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
+		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		invokers = append(invokers, protocol.NewBaseInvoker(url))
 	}
 
 	urlParams := url.Values{}
 	urlParams.Set(constant.REMOTE_TIMESTAMP_KEY, strconv.FormatInt(time.Now().Add(time.Minute*(-9)).Unix(), 10))
-	urll, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://192.168.1.100:20000/com.ikurento.user.UserProvider"), common.WithParams(urlParams))
+	urll, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.100:20000/com.ikurento.user.UserProvider"), common.WithParams(urlParams))
 	invokers = append(invokers, protocol.NewBaseInvoker(urll))
 	ivc := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("test"))
 
