@@ -18,7 +18,6 @@
 package config
 
 import (
-	"context"
 	"io/ioutil"
 	"path"
 	"reflect"
