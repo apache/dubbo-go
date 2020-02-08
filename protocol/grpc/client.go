@@ -45,11 +45,11 @@ type Client struct {
 // NewClient ...
 func NewClient(url common.URL) *Client {
 	var (
-		conn *grpc.ClientConn
-		err error
+		conn   *grpc.ClientConn
+		err    error
 		tracer opentracing.Tracer
 	)
-   // if global trace instance was set in filter, it means trace function enabled
+	// if global trace instance was set in filter, it means trace function enabled
 	if opentracing.IsGlobalTracerRegistered() {
 		tracer = opentracing.GlobalTracer()
 		conn, err = grpc.Dial(url.Location, grpc.WithInsecure(), grpc.WithBlock(),

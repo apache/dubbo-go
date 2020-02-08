@@ -60,8 +60,8 @@ type DubboGrpcService interface {
 // Start ...
 func (s *Server) Start(url common.URL) {
 	var (
-		addr string
-		err  error
+		addr   string
+		err    error
 		server *grpc.Server
 	)
 	addr = url.Location
@@ -77,7 +77,6 @@ func (s *Server) Start(url common.URL) {
 	} else {
 		server = grpc.NewServer()
 	}
-
 
 	key := url.GetParam(constant.BEAN_NAME_KEY, "")
 	service := config.GetProviderService(key)
