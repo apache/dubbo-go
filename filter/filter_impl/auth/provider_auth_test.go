@@ -23,7 +23,7 @@ import (
 func TestProviderAuthFilter_Invoke(t *testing.T) {
 	secret := "dubbo-sk"
 	access := "dubbo-ak"
-	url, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
+	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
 	url.SetParam(constant.ACCESS_KEY_ID_KEY, access)
 	url.SetParam(constant.SECRET_ACCESS_KEY_KEY, secret)
 	parmas := []interface{}{
