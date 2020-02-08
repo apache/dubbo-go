@@ -28,4 +28,14 @@ The title format of the pull request `MUST` follow the following rules:
 
 ### 3.1 log
 
-> 1 when logging the function's input parameter, you should add '@' before input parameter name.
+>- 1 when logging the function's input parameter, you should add '@' before input parameter name.
+
+### 3.2 naming
+
+>- 1 do not use an underscore in package name, such as `filter_impl`.
+>- 2 do not use an underscore in constants, such as `DUBBO_PROTOCOL`. use 'DubboProtocol' instead.
+
+### 3.3 comment
+
+>- 1 there should be comment for every export func/var.
+>- 2 the comment should begin with function name/var name.
