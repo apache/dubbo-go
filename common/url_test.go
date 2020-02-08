@@ -272,7 +272,7 @@ func TestClone(t *testing.T) {
 }
 
 func TestColonSeparatedKey(t *testing.T) {
-	u1, _ := NewURL(context.TODO(), "dubbo://127.0.0.1:20000")
+	u1, _ := NewURL("dubbo://127.0.0.1:20000")
 	u1.AddParam(constant.INTERFACE_KEY, "com.ikurento.user.UserProvider")
 
 	assert.Equal(t, u1.ColonSeparatedKey(), u1.GetParam(constant.INTERFACE_KEY, "")+"::")
