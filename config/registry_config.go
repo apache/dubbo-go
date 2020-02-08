@@ -18,7 +18,6 @@
 package config
 
 import (
-	"context"
 	"net/url"
 	"strconv"
 	"strings"
@@ -95,9 +94,7 @@ func loadRegistries(targetRegistries string, registries map[string]*RegistryConf
 			addresses := strings.Split(registryConf.Address, ",")
 			address := addresses[0]
 			address = traslateRegistryConf(address, registryConf)
-			url, err = common.NewURL(
-				context.Background(),
-				constant.REGISTRY_PROTOCOL+"://"+address,
+			url, err = common.NewURL(constant.REGISTRY_PROTOCOL+"://"+address,
 				common.WithParams(registryConf.getUrlMap(roleType)),
 				common.WithUsername(registryConf.Username),
 				common.WithPassword(registryConf.Password),
