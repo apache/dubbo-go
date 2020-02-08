@@ -39,7 +39,7 @@ import (
 )
 
 var (
-	availableUrl, _ = common.NewURL(context.Background(), "dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
+	availableUrl, _ = common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
 )
 
 func registerAvailable(t *testing.T, invoker *mock.MockInvoker) protocol.Invoker {
