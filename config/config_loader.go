@@ -35,6 +35,7 @@ var (
 	providerConfig    *ProviderConfig
 	metricConfig      *MetricConfig
 	applicationConfig *ApplicationConfig
+	routerConfig      *ConditionRouterConfig
 	maxWait           = 3
 )
 
