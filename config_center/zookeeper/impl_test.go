@@ -17,7 +17,6 @@
 package zookeeper
 
 import (
-	"context"
 	"fmt"
 	"sync"
 	"testing"
@@ -35,7 +34,7 @@ import (
 )
 
 func initZkData(group string, t *testing.T) (*zk.TestCluster, *zookeeperDynamicConfiguration) {
-	regurl, _ := common.NewURL(context.TODO(), "registry://127.0.0.1:1111")
+	regurl, _ := common.NewURL("registry://127.0.0.1:1111")
 	ts, reg, err := newMockZookeeperDynamicConfiguration(&regurl)
 	reg.SetParser(&parser.DefaultConfigurationParser{})
 
