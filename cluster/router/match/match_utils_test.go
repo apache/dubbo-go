@@ -42,6 +42,6 @@ func TestIsMatchInternalPattern(t *testing.T) {
 }
 
 func TestIsMatchGlobPattern(t *testing.T) {
-	url, _ := common.NewURL(context.TODO(), "dubbo://localhost:8080/Foo?key=v*e")
+	url, _ := common.NewURL("dubbo://localhost:8080/Foo?key=v*e")
 	assert.Equal(t, true, IsMatchGlobalPattern("$key", "value", &url))
 }

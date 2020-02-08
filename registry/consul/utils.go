@@ -18,7 +18,6 @@
 package consul
 
 import (
-	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
@@ -100,7 +99,7 @@ func retrieveURL(service *consul.ServiceEntry) (common.URL, error) {
 	if !ok {
 		return common.URL{}, perrors.New("retrieve url fails with no url key in service meta")
 	}
-	url1, err := common.NewURL(context.Background(), url)
+	url1, err := common.NewURL(url)
 	if err != nil {
 		return common.URL{}, perrors.WithStack(err)
 	}
