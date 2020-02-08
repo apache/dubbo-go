@@ -40,8 +40,8 @@ func (c *RestConsumerConfig) UnmarshalYAML(unmarshal func(interface{}) error) er
 
 type RestProviderConfig struct {
 	Server        string                 `default:"go-restful" yaml:"rest_server" json:"rest_server,omitempty" property:"rest_server"`
-	Produces      string                 `default:"application/json" yaml:"rest_produces"  json:"rest_produces,omitempty" property:"rest_produces"`
-	Consumes      string                 `default:"application/json" yaml:"rest_consumes"  json:"rest_consumes,omitempty" property:"rest_consumes"`
+	Produces      string                 `default:"*/*" yaml:"rest_produces"  json:"rest_produces,omitempty" property:"rest_produces"`
+	Consumes      string                 `default:"*/*" yaml:"rest_consumes"  json:"rest_consumes,omitempty" property:"rest_consumes"`
 	RestConfigMap map[string]*RestConfig `yaml:"services" json:"services,omitempty" property:"services"`
 }
 
@@ -61,8 +61,8 @@ type RestConfig struct {
 	InterfaceName        string              `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
 	Url                  string              `yaml:"url"  json:"url,omitempty" property:"url"`
 	Path                 string              `yaml:"rest_path"  json:"rest_path,omitempty" property:"rest_path"`
-	Produces             string              `default:"application/json" yaml:"rest_produces"  json:"rest_produces,omitempty" property:"rest_produces"`
-	Consumes             string              `default:"application/json" yaml:"rest_consumes"  json:"rest_consumes,omitempty" property:"rest_consumes"`
+	Produces             string              `yaml:"rest_produces"  json:"rest_produces,omitempty" property:"rest_produces"`
+	Consumes             string              `yaml:"rest_consumes"  json:"rest_consumes,omitempty" property:"rest_consumes"`
 	MethodType           string              `yaml:"rest_method"  json:"rest_method,omitempty" property:"rest_method"`
 	Client               string              `yaml:"rest_client" json:"rest_client,omitempty" property:"rest_client"`
 	Server               string              `yaml:"rest_server" json:"rest_server,omitempty" property:"rest_server"`
