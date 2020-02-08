@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -22,7 +21,7 @@ import (
 func TestDefaultAuthenticator_Authenticate(t *testing.T) {
 	secret := "dubbo-sk"
 	access := "dubbo-ak"
-	testurl, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
+	testurl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
 	testurl.SetParam(constant.PARAMTER_SIGNATURE_ENABLE_KEY, "true")
 	testurl.SetParam(constant.ACCESS_KEY_ID_KEY, access)
 	testurl.SetParam(constant.SECRET_ACCESS_KEY_KEY, secret)
@@ -58,7 +57,7 @@ func TestDefaultAuthenticator_Authenticate(t *testing.T) {
 
 func TestDefaultAuthenticator_Sign(t *testing.T) {
 	authenticator := &DefaultAuthenticator{}
-	testurl, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?application=test&interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
+	testurl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?application=test&interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
 	testurl.SetParam(constant.ACCESS_KEY_ID_KEY, "akey")
 	testurl.SetParam(constant.SECRET_ACCESS_KEY_KEY, "skey")
 	testurl.SetParam(constant.PARAMTER_SIGNATURE_ENABLE_KEY, "false")
@@ -101,7 +100,7 @@ func Test_getAccessKeyPairFailed(t *testing.T) {
 }
 
 func Test_getSignatureWithinParams(t *testing.T) {
-	testurl, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
+	testurl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
 	testurl.SetParam(constant.PARAMTER_SIGNATURE_ENABLE_KEY, "true")
 	inv := invocation.NewRPCInvocation("test", []interface{}{"OK"}, map[string]string{
 		"": "",
@@ -117,7 +116,7 @@ func Test_getSignatureWithinParams(t *testing.T) {
 }
 
 func Test_getSignature(t *testing.T) {
-	testurl, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
+	testurl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
 	testurl.SetParam(constant.PARAMTER_SIGNATURE_ENABLE_KEY, "false")
 	inv := invocation.NewRPCInvocation("test", []interface{}{"OK"}, nil)
 	secret := "dubbo"
