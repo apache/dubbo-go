@@ -18,7 +18,6 @@
 package match
 
 import (
-	"context"
 	"testing"
 )
 

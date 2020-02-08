@@ -18,7 +18,6 @@
 package directory
 
 import (
-	"github.com/apache/dubbo-go/common/logger"
 	"sync"
 )
 
@@ -32,12 +31,13 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/dubbogo/gost/container/set"
 )
 
 var routerURLSet = gxset.NewSet()
 
-// BaseDirectory ...
+// BaseDirectory  Abstract implementation of Directory: Invoker list returned from this Directory's list method have been filtered by Routers
 type BaseDirectory struct {
 	url         *common.URL
 	destroyed   *atomic.Bool
@@ -57,7 +57,7 @@ func (dir *BaseDirectory) SetRouterChain(routerChain router.Chain) {
 	dir.routerChain = routerChain
 }
 
-// NewBaseDirectory ...
+// NewBaseDirectory Create BaseDirectory with URL
 func NewBaseDirectory(url *common.URL) BaseDirectory {
 	return BaseDirectory{
 		url:         url,
@@ -66,12 +66,12 @@ func NewBaseDirectory(url *common.URL) BaseDirectory {
 	}
 }
 
-// GetUrl ...
+// GetUrl Get URL
 func (dir *BaseDirectory) GetUrl() common.URL {
 	return *dir.url
 }
 
-// GetDirectoryUrl ...
+// GetDirectoryUrl Get URL instance
 func (dir *BaseDirectory) GetDirectoryUrl() *common.URL {
 	return dir.url
 }
@@ -106,7 +106,7 @@ func (dir *BaseDirectory) SetRouters(urls []*common.URL) {
 	rc.AddRouters(routers)
 }
 
-// Destroy ...
+// Destroy Destroy
 func (dir *BaseDirectory) Destroy(doDestroy func()) {
 	if dir.destroyed.CAS(false, true) {
 		dir.mutex.Lock()
@@ -115,7 +115,7 @@ func (dir *BaseDirectory) Destroy(doDestroy func()) {
 	}
 }
 
-// IsAvailable ...
+// IsAvailable Once  directory init finish, it will change to true
 func (dir *BaseDirectory) IsAvailable() bool {
 	return !dir.destroyed.Load()
 }

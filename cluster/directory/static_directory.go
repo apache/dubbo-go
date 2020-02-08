@@ -27,7 +27,7 @@ type staticDirectory struct {
 	invokers []protocol.Invoker
 }
 
-// NewStaticDirectory ...
+// NewStaticDirectory Create a new staticDirectory with invokers
 func NewStaticDirectory(invokers []protocol.Invoker) *staticDirectory {
 	var url common.URL
 
@@ -53,6 +53,7 @@ func (dir *staticDirectory) IsAvailable() bool {
 	return true
 }
 
+// List List invokers
 func (dir *staticDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
 	l := len(dir.invokers)
 	invokers := make([]protocol.Invoker, l, l)
@@ -66,6 +67,7 @@ func (dir *staticDirectory) List(invocation protocol.Invocation) []protocol.Invo
 	return routerChain.Route(invokers, &dirUrl, invocation)
 }
 
+// Destroy Destroy
 func (dir *staticDirectory) Destroy() {
 	dir.BaseDirectory.Destroy(func() {
 		for _, ivk := range dir.invokers {
