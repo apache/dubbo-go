@@ -18,7 +18,6 @@
 package chain
 
 import (
-	"context"
 	"strconv"
 	"testing"
 	"time"
@@ -56,7 +55,7 @@ conditions:
 	defer ts.Stop()
 	defer z.Close()
 
-	zkUrl, _ := common.NewURL(context.TODO(), "zookeeper://127.0.0.1:"+strconv.Itoa(ts.Servers[0].Port))
+	zkUrl, _ := common.NewURL("zookeeper://127.0.0.1:" + strconv.Itoa(ts.Servers[0].Port))
 	configuration, err := extension.GetConfigCenterFactory("zookeeper").GetDynamicConfiguration(&zkUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
 
@@ -83,7 +82,7 @@ conditions:
 }
 
 func getRouteUrl(applicationKey string) *common.URL {
-	url, _ := common.NewURL(context.TODO(), "condition://0.0.0.0/com.foo.BarService")
+	url, _ := common.NewURL("condition://0.0.0.0/com.foo.BarService")
 	url.AddParam("application", applicationKey)
 	url.AddParam("force", "true")
 	return &url
