@@ -22,6 +22,7 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/container/set"
 	"go.uber.org/atomic"
 )
 
@@ -32,7 +33,6 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/dubbogo/gost/container/set"
 )
 
 var routerURLSet = gxset.NewSet()
