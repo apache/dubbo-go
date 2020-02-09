@@ -20,7 +20,8 @@
 - [Split config center GetConfig method](https://github.com/apache/dubbo-go/pull/267)
 - [Modify closing method for dubbo protocol](https://github.com/apache/dubbo-go/pull/268)
 - [Add SetLoggerLevel method](https://github.com/apache/dubbo-go/pull/271)
-- [change the position of the lock](https://github.com/apache/dubbo-go/pull/286)
+- [Change the position of the lock](https://github.com/apache/dubbo-go/pull/286)
+- [Change zk version and add base_registry](https://github.com/apache/dubbo-go/pull/355)
 
 ### Bugfixes
     
@@ -29,6 +30,7 @@
 - [The generic filter and default reference filters lack ','](https://github.com/apache/dubbo-go/pull/260)
 - [Url encode zkpath](https://github.com/apache/dubbo-go/pull/283)
 - [Fix jsonrpc about HTTP/1.1](https://github.com/apache/dubbo-go/pull/327)
+- [Fix zk bug](https://github.com/apache/dubbo-go/pull/346)
 
 ## 1.2.0
 
