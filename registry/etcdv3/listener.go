@@ -39,6 +39,7 @@ type dataListener struct {
 	listener      config_center.ConfigurationListener
 }
 
+// NewRegistryDataListener ...
 func NewRegistryDataListener(listener config_center.ConfigurationListener) *dataListener {
 	return &dataListener{listener: listener, interestedURL: []*common.URL{}}
 }
@@ -77,9 +78,10 @@ type configurationListener struct {
 	events   chan *config_center.ConfigChangeEvent
 }
 
+// NewConfigurationListener for listening the event of etcdv3.
 func NewConfigurationListener(reg *etcdV3Registry) *configurationListener {
 	// add a new waiter
-	reg.wg.Add(1)
+	reg.WaitGroup().Add(1)
 	return &configurationListener{registry: reg, events: make(chan *config_center.ConfigChangeEvent, 32)}
 }
 func (l *configurationListener) Process(configType *config_center.ConfigChangeEvent) {
@@ -89,7 +91,7 @@ func (l *configurationListener) Process(configType *config_center.ConfigChangeEv
 func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
-		case <-l.registry.done:
+		case <-l.registry.Done():
 			logger.Warnf("listener's etcd client connection is broken, so etcd event listener exit now.")
 			return nil, perrors.New("listener stopped")
 
@@ -97,7 +99,7 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 			logger.Infof("got etcd event %#v", e)
 			if e.ConfigType == remoting.EventTypeDel {
 				select {
-				case <-l.registry.done:
+				case <-l.registry.Done():
 					logger.Warnf("update @result{%s}. But its connection to registry is invalid", e.Value)
 				default:
 				}
@@ -108,5 +110,5 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 	}
 }
 func (l *configurationListener) Close() {
-	l.registry.wg.Done()
+	l.registry.WaitGroup().Done()
 }
