@@ -339,6 +339,13 @@ func (p *gettyRPCClientPool) release(conn *gettyRPCClient, err error) {
 		return
 	}
 
+	// check whether @conn has existed in p.conns or not.
+	for i := range p.conns {
+		if p.conns[i] == conn {
+			return
+		}
+	}
+
 	if len(p.conns) >= p.size {
 		// delete @conn from client pool
 		p.remove(conn)
