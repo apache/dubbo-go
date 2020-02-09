@@ -24,7 +24,7 @@ import (
 	"time"
 )
 import (
-	"github.com/samuel/go-zookeeper/zk"
+	"github.com/dubbogo/go-zookeeper/zk"
 	"github.com/stretchr/testify/assert"
 )
 import (
@@ -55,7 +55,7 @@ func (r *mockFacade) WaitGroup() *sync.WaitGroup {
 	return &r.wg
 }
 
-func (r *mockFacade) GetDone() chan struct{} {
+func (r *mockFacade) Done() chan struct{} {
 	return r.done
 }
 
