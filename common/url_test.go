@@ -18,7 +18,6 @@
 package common
 
 import (
-	"context"
 	"encoding/base64"
 	"net/url"
 	"testing"
@@ -56,10 +55,10 @@ func TestNewURLWithOptions(t *testing.T) {
 }
 
 func TestURL(t *testing.T) {
-	u, err := NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&"+
-		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&"+
-		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&"+
-		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&"+
+	u, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
+		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245")
 	assert.NoError(t, err)
 
@@ -83,7 +82,7 @@ func TestURL(t *testing.T) {
 }
 
 func TestURLWithoutSchema(t *testing.T) {
-	u, err := NewURL(context.TODO(), "127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&"+
+	u, err := NewURL("127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&"+
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&"+
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&"+
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&"+
@@ -110,13 +109,13 @@ func TestURLWithoutSchema(t *testing.T) {
 }
 
 func TestURL_URLEqual(t *testing.T) {
-	u1, err := NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0")
+	u1, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0")
 	assert.NoError(t, err)
-	u2, err := NewURL(context.TODO(), "dubbo://127.0.0.2:20001/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0")
+	u2, err := NewURL("dubbo://127.0.0.2:20001/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0")
 	assert.NoError(t, err)
 	assert.True(t, u1.URLEqual(u2))
 
-	u3, err := NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
+	u3, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
 	assert.NoError(t, err)
 	assert.False(t, u1.URLEqual(u3))
 }
@@ -166,7 +165,7 @@ func TestURL_GetParamAndDecoded(t *testing.T) {
 	assert.Equal(t, rule, v)
 }
 func TestURL_GetRawParam(t *testing.T) {
-	u, _ := NewURL(context.TODO(), "condition://0.0.0.0:8080/com.foo.BarService?serialization=fastjson")
+	u, _ := NewURL("condition://0.0.0.0:8080/com.foo.BarService?serialization=fastjson")
 	u.Username = "test"
 	u.Password = "test"
 	assert.Equal(t, "condition", u.GetRawParam("protocol"))
@@ -178,7 +177,7 @@ func TestURL_GetRawParam(t *testing.T) {
 	assert.Equal(t, "fastjson", u.GetRawParam("serialization"))
 }
 func TestURL_ToMap(t *testing.T) {
-	u, _ := NewURL(context.TODO(), "condition://0.0.0.0:8080/com.foo.BarService?serialization=fastjson")
+	u, _ := NewURL("condition://0.0.0.0:8080/com.foo.BarService?serialization=fastjson")
 	u.Username = "test"
 	u.Password = "test"
 
@@ -239,20 +238,20 @@ func TestMergeUrl(t *testing.T) {
 	serviceUrlParams.Set("test2", "1")
 	serviceUrlParams.Set(constant.CLUSTER_KEY, "roundrobin")
 	serviceUrlParams.Set(constant.RETRIES_KEY, "2")
-	serviceUrlParams.Set("methods.testMethod."+constant.RETRIES_KEY, "2")
-	referenceUrl, _ := NewURL(context.TODO(), "mock1://127.0.0.1:1111", WithParams(referenceUrlParams), WithMethods([]string{"testMethod"}))
-	serviceUrl, _ := NewURL(context.TODO(), "mock2://127.0.0.1:20000", WithParams(serviceUrlParams))
+	serviceUrlParams.Set(constant.METHOD_KEYS+".testMethod."+constant.RETRIES_KEY, "2")
+	referenceUrl, _ := NewURL("mock1://127.0.0.1:1111", WithParams(referenceUrlParams), WithMethods([]string{"testMethod"}))
+	serviceUrl, _ := NewURL("mock2://127.0.0.1:20000", WithParams(serviceUrlParams))
 
 	mergedUrl := MergeUrl(&serviceUrl, &referenceUrl)
 	assert.Equal(t, "random", mergedUrl.GetParam(constant.CLUSTER_KEY, ""))
 	assert.Equal(t, "1", mergedUrl.GetParam("test2", ""))
 	assert.Equal(t, "1", mergedUrl.GetParam("test3", ""))
 	assert.Equal(t, "1", mergedUrl.GetParam(constant.RETRIES_KEY, ""))
-	assert.Equal(t, "1", mergedUrl.GetParam("methods.testMethod."+constant.RETRIES_KEY, ""))
+	assert.Equal(t, "2", mergedUrl.GetParam(constant.METHOD_KEYS+".testMethod."+constant.RETRIES_KEY, ""))
 }
 
 func TestURL_SetParams(t *testing.T) {
-	u1, err := NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&configVersion=1.0")
+	u1, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&configVersion=1.0")
 	assert.NoError(t, err)
 	params := url.Values{}
 	params.Set("key", "3")
@@ -262,7 +261,7 @@ func TestURL_SetParams(t *testing.T) {
 }
 
 func TestClone(t *testing.T) {
-	u1, err := NewURL(context.TODO(), "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&configVersion=1.0")
+	u1, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&configVersion=1.0")
 	assert.NoError(t, err)
 	u2 := u1.Clone()
 	assert.Equal(t, u2.Protocol, "dubbo")
@@ -270,4 +269,18 @@ func TestClone(t *testing.T) {
 	u2.Protocol = "provider"
 	assert.Equal(t, u1.Protocol, "dubbo")
 	assert.Equal(t, u2.Protocol, "provider")
+}
+
+func TestColonSeparatedKey(t *testing.T) {
+	u1, _ := NewURL("dubbo://127.0.0.1:20000")
+	u1.AddParam(constant.INTERFACE_KEY, "com.ikurento.user.UserProvider")
+
+	assert.Equal(t, u1.ColonSeparatedKey(), u1.GetParam(constant.INTERFACE_KEY, "")+"::")
+	u1.AddParam(constant.VERSION_KEY, "version1")
+	assert.Equal(t, u1.ColonSeparatedKey(), u1.GetParam(constant.INTERFACE_KEY, "")+":version1:")
+	u1.AddParam(constant.GROUP_KEY, "group1")
+	assert.Equal(t, u1.ColonSeparatedKey(), u1.GetParam(constant.INTERFACE_KEY, "")+":version1:group1")
+	u1.SetParam(constant.VERSION_KEY, "")
+	assert.Equal(t, u1.ColonSeparatedKey(), u1.GetParam(constant.INTERFACE_KEY, "")+"::group1")
+
 }

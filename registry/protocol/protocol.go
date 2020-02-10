@@ -18,12 +18,13 @@
 package protocol
 
 import (
+	"context"
 	"strings"
 	"sync"
 )
 
 import (
-	"github.com/dubbogo/gost/container/gxset"
+	gxset "github.com/dubbogo/gost/container/set"
 )
 
 import (
@@ -337,6 +338,7 @@ func setProviderUrl(regURL *common.URL, providerURL *common.URL) {
 	regURL.SubURL = providerURL
 }
 
+// GetProtocol ...
 func GetProtocol() protocol.Protocol {
 	if regProtocol != nil {
 		return regProtocol
@@ -356,10 +358,10 @@ func newWrappedInvoker(invoker protocol.Invoker, url *common.URL) *wrappedInvoke
 	}
 }
 
-func (ivk *wrappedInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+func (ivk *wrappedInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	// get right url
 	ivk.invoker.(*proxy_factory.ProxyInvoker).BaseInvoker = *protocol.NewBaseInvoker(ivk.GetUrl())
-	return ivk.invoker.Invoke(invocation)
+	return ivk.invoker.Invoke(ctx, invocation)
 }
 
 type providerConfigurationListener struct {

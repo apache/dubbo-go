@@ -27,25 +27,30 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
+// CacheListener ...
 type CacheListener struct {
 	keyListeners sync.Map
 	rootPath     string
 }
 
+// NewCacheListener ...
 func NewCacheListener(rootPath string) *CacheListener {
 	return &CacheListener{rootPath: rootPath}
 }
+
+// AddListener ...
 func (l *CacheListener) AddListener(key string, listener config_center.ConfigurationListener) {
 
 	// reference from https://stackoverflow.com/questions/34018908/golang-why-dont-we-have-a-set-datastructure
 	// make a map[your type]struct{} like set in java
-	listeners, loaded := l.keyListeners.LoadOrStore(key, map[config_center.ConfigurationListener]struct{}{listener: struct{}{}})
+	listeners, loaded := l.keyListeners.LoadOrStore(key, map[config_center.ConfigurationListener]struct{}{listener: {}})
 	if loaded {
 		listeners.(map[config_center.ConfigurationListener]struct{})[listener] = struct{}{}
 		l.keyListeners.Store(key, listeners)
 	}
 }
 
+// RemoveListener ...
 func (l *CacheListener) RemoveListener(key string, listener config_center.ConfigurationListener) {
 	listeners, loaded := l.keyListeners.Load(key)
 	if loaded {
@@ -53,6 +58,7 @@ func (l *CacheListener) RemoveListener(key string, listener config_center.Config
 	}
 }
 
+// DataChange ...
 func (l *CacheListener) DataChange(event remoting.Event) bool {
 	if event.Content == "" {
 		//meanings new node
