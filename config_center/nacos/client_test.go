@@ -2,6 +2,7 @@ package nacos
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -14,7 +15,9 @@ import (
 )
 
 func Test_newNacosClient(t *testing.T) {
-	registryUrl, _ := common.NewURL("registry://console.nacos.io:80")
+	server := mockCommonNacosServer()
+	nacosURL := strings.ReplaceAll(server.URL, "http", "registry")
+	registryUrl, _ := common.NewURL(nacosURL)
 	c := &nacosDynamicConfiguration{
 		url:  &registryUrl,
 		done: make(chan struct{}),
