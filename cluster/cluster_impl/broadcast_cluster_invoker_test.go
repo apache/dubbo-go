@@ -39,7 +39,7 @@ import (
 )
 
 var (
-	broadcastUrl, _ = common.NewURL(context.TODO(), "dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
+	broadcastUrl, _ = common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
 )
 
 func registerBroadcast(t *testing.T, mockInvokers ...*mock.MockInvoker) protocol.Invoker {
@@ -74,7 +74,7 @@ func Test_BroadcastInvokeSuccess(t *testing.T) {
 
 	clusterInvoker := registerBroadcast(t, invokers...)
 
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 	assert.Equal(t, mockResult, result)
 }
 
@@ -104,6 +104,6 @@ func Test_BroadcastInvokeFailed(t *testing.T) {
 
 	clusterInvoker := registerBroadcast(t, invokers...)
 
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 	assert.Equal(t, mockFailedResult.Err, result.Error())
 }

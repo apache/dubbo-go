@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package config
 
 import (
-	"context"
 	"io/ioutil"
 	"path"
 	"time"
@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/creasty/defaults"
+	"github.com/dubbogo/getty"
 	perrors "github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
@@ -38,6 +39,7 @@ import (
 // consumerConfig
 /////////////////////////
 
+// ConsumerConfig ...
 type ConsumerConfig struct {
 	BaseConfig `yaml:",inline"`
 	Filter     string `yaml:"filter" json:"filter,omitempty" property:"filter"`
@@ -60,6 +62,7 @@ type ConsumerConfig struct {
 	ShutdownConfig *ShutdownConfig             `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf" `
 }
 
+// UnmarshalYAML ...
 func (c *ConsumerConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
@@ -71,22 +74,17 @@ func (c *ConsumerConfig) UnmarshalYAML(unmarshal func(interface{}) error) error 
 	return nil
 }
 
+// Prefix ...
 func (*ConsumerConfig) Prefix() string {
 	return constant.ConsumerConfigPrefix
 }
 
+// SetConsumerConfig ...
 func SetConsumerConfig(c ConsumerConfig) {
 	consumerConfig = &c
 }
 
-func GetConsumerConfig() ConsumerConfig {
-	if consumerConfig == nil {
-		logger.Warnf("consumerConfig is nil!")
-		return ConsumerConfig{}
-	}
-	return *consumerConfig
-}
-
+// ConsumerInit ...
 func ConsumerInit(confConFile string) error {
 	if confConFile == "" {
 		return perrors.Errorf("application configure(consumer) file name is nil")
@@ -118,6 +116,10 @@ func ConsumerInit(confConFile string) error {
 		if consumerConfig.RequestTimeout, err = time.ParseDuration(consumerConfig.Request_Timeout); err != nil {
 			return perrors.WithMessagef(err, "time.ParseDuration(Request_Timeout{%#v})", consumerConfig.Request_Timeout)
 		}
+		if consumerConfig.RequestTimeout >= time.Duration(getty.MaxWheelTimeSpan) {
+			return perrors.WithMessagef(err, "request_timeout %s should be less than %s",
+				consumerConfig.Request_Timeout, time.Duration(getty.MaxWheelTimeSpan))
+		}
 	}
 	if consumerConfig.Connect_Timeout != "" {
 		if consumerConfig.ConnectTimeout, err = time.ParseDuration(consumerConfig.Connect_Timeout); err != nil {
@@ -133,7 +135,7 @@ func configCenterRefreshConsumer() error {
 	var err error
 	if consumerConfig.ConfigCenterConfig != nil {
 		consumerConfig.SetFatherConfig(consumerConfig)
-		if err := consumerConfig.startConfigCenter(context.Background()); err != nil {
+		if err := consumerConfig.startConfigCenter(); err != nil {
 			return perrors.Errorf("start config center error , error message is {%v}", perrors.WithStack(err))
 		}
 		consumerConfig.fresh()

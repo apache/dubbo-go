@@ -22,7 +22,8 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-// Extension - Directory
+// Directory
+//Extension - Directory
 type Directory interface {
 	common.Node
 	List(invocation protocol.Invocation) []protocol.Invoker
