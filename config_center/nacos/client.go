@@ -102,7 +102,7 @@ func ValidateNacosClient(container nacosClientFacade, opts ...Option) error {
 		client, err := clients.CreateConfigClient(map[string]interface{}{
 			"serverConfigs": svrConfList,
 			"clientConfig": nacosconst.ClientConfig{
-				TimeoutMs:           uint64(container.NacosClient().Timeout.Milliseconds()),
+				TimeoutMs:           uint64(int32(container.NacosClient().Timeout / time.Millisecond)),
 				ListenInterval:      10000,
 				NotLoadCacheAtStart: true,
 				LogDir:              "logs/nacos/log",
@@ -149,7 +149,7 @@ func newNacosClient(name string, nacosAddrs []string, timeout time.Duration) (*N
 	client, err := clients.CreateConfigClient(map[string]interface{}{
 		"serverConfigs": svrConfList,
 		"clientConfig": nacosconst.ClientConfig{
-			TimeoutMs:           uint64(timeout.Milliseconds()),
+			TimeoutMs:           uint64(timeout / time.Millisecond),
 			ListenInterval:      20000,
 			NotLoadCacheAtStart: true,
 			LogDir:              "logs/nacos/log",
