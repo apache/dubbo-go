@@ -26,24 +26,27 @@ var (
 	proServices = map[string]common.RPCService{} // service name -> service
 )
 
-// SetConService is called by init() of implement of RPCService
+// SetConsumerService is called by init() of implement of RPCService
 func SetConsumerService(service common.RPCService) {
 	conServices[service.Reference()] = service
 }
 
-// SetProService is called by init() of implement of RPCService
+// SetProviderService is called by init() of implement of RPCService
 func SetProviderService(service common.RPCService) {
 	proServices[service.Reference()] = service
 }
 
+// GetConsumerService ...
 func GetConsumerService(name string) common.RPCService {
 	return conServices[name]
 }
 
+// GetProviderService ...
 func GetProviderService(name string) common.RPCService {
 	return proServices[name]
 }
 
+// GetCallback ...
 func GetCallback(name string) func(response common.CallbackResponse) {
 	service := GetConsumerService(name)
 	if sv, ok := service.(common.AsyncCallbackService); ok {

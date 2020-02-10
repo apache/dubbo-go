@@ -30,28 +30,34 @@ import (
 	perrors "github.com/pkg/errors"
 )
 
-// serial ID
+//SerialID serial ID
 type SerialID byte
 
 const (
+	// S_Dubbo dubbo serial id
 	S_Dubbo SerialID = 2
 )
 
-// call type
+//CallType call type
 type CallType int32
 
 const (
+	// CT_UNKNOWN unknown call type
 	CT_UNKNOWN CallType = 0
-	CT_OneWay  CallType = 1
-	CT_TwoWay  CallType = 2
+	// CT_OneWay call one way
+	CT_OneWay CallType = 1
+	// CT_TwoWay call in request/response
+	CT_TwoWay CallType = 2
 )
 
 ////////////////////////////////////////////
 // dubbo package
 ////////////////////////////////////////////
 
+// SequenceType ...
 type SequenceType int64
 
+// DubboPackage ...
 type DubboPackage struct {
 	Header  hessian.DubboHeader
 	Service hessian.Service
@@ -63,6 +69,7 @@ func (p DubboPackage) String() string {
 	return fmt.Sprintf("DubboPackage: Header-%v, Path-%v, Body-%v", p.Header, p.Service, p.Body)
 }
 
+// Marshal ...
 func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 	codec := hessian.NewHessianCodec(nil)
 
@@ -74,6 +81,7 @@ func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 	return bytes.NewBuffer(pkg), nil
 }
 
+// Unmarshal ...
 func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 	codec := hessian.NewHessianCodec(bufio.NewReaderSize(buf, buf.Len()))
 
@@ -89,11 +97,17 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 			return perrors.Errorf("opts[0] is not of type *Client")
 		}
 
-		pendingRsp, ok := client.pendingResponses.Load(SequenceType(p.Header.ID))
-		if !ok {
-			return perrors.Errorf("client.GetPendingResponse(%v) = nil", p.Header.ID)
+		if p.Header.Type&hessian.PackageRequest != 0x00 {
+			// size of this array must be '7'
+			// https://github.com/apache/dubbo-go-hessian2/blob/master/request.go#L272
+			p.Body = make([]interface{}, 7)
+		} else {
+			pendingRsp, ok := client.pendingResponses.Load(SequenceType(p.Header.ID))
+			if !ok {
+				return perrors.Errorf("client.GetPendingResponse(%v) = nil", p.Header.ID)
+			}
+			p.Body = &hessian.Response{RspObj: pendingRsp.(*PendingResponse).response.reply}
 		}
-		p.Body = &hessian.Response{RspObj: pendingRsp.(*PendingResponse).response.reply}
 	}
 
 	// read body
@@ -105,6 +119,7 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 // PendingResponse
 ////////////////////////////////////////////
 
+// PendingResponse ...
 type PendingResponse struct {
 	seq       uint64
 	err       error
@@ -115,6 +130,7 @@ type PendingResponse struct {
 	done      chan struct{}
 }
 
+// NewPendingResponse ...
 func NewPendingResponse() *PendingResponse {
 	return &PendingResponse{
 		start:    time.Now(),
@@ -123,6 +139,7 @@ func NewPendingResponse() *PendingResponse {
 	}
 }
 
+// GetCallResponse ...
 func (r PendingResponse) GetCallResponse() common.CallbackResponse {
 	return AsyncCallbackResponse{
 		Cause:     r.err,

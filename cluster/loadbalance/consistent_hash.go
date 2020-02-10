@@ -36,9 +36,12 @@ import (
 )
 
 const (
+	// ConsistentHash ...
 	ConsistentHash = "consistenthash"
-	HashNodes      = "hash.nodes"
-	HashArguments  = "hash.arguments"
+	// HashNodes ...
+	HashNodes = "hash.nodes"
+	// HashArguments ...
+	HashArguments = "hash.arguments"
 )
 
 var (
@@ -50,13 +53,16 @@ func init() {
 	extension.SetLoadbalance(ConsistentHash, NewConsistentHashLoadBalance)
 }
 
+// ConsistentHashLoadBalance ...
 type ConsistentHashLoadBalance struct {
 }
 
+// NewConsistentHashLoadBalance ...
 func NewConsistentHashLoadBalance() cluster.LoadBalance {
 	return &ConsistentHashLoadBalance{}
 }
 
+// Select ...
 func (lb *ConsistentHashLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
 	methodName := invocation.MethodName()
 	key := invokers[0].GetUrl().ServiceKey() + "." + methodName
@@ -79,6 +85,7 @@ func (lb *ConsistentHashLoadBalance) Select(invokers []protocol.Invoker, invocat
 	return selector.Select(invocation)
 }
 
+// Uint32Slice ...
 type Uint32Slice []uint32
 
 func (s Uint32Slice) Len() int {
@@ -93,6 +100,7 @@ func (s Uint32Slice) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
+// ConsistentHashSelector ...
 type ConsistentHashSelector struct {
 	hashCode        uint32
 	replicaNum      int
@@ -133,6 +141,7 @@ func newConsistentHashSelector(invokers []protocol.Invoker, methodName string,
 	return selector
 }
 
+// Select ...
 func (c *ConsistentHashSelector) Select(invocation protocol.Invocation) protocol.Invoker {
 	key := c.toKey(invocation.Arguments())
 	digest := md5.Sum([]byte(key))

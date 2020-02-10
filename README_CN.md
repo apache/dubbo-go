@@ -41,6 +41,11 @@ Apache License, Version 2.0
 - 序列化协议
     * JsonRPC V2
     * Hessian V2
+
+- 协议
+    * Dubbo
+    * Jsonrpc2.0
+    * [gRPC](https://github.com/apache/dubbo-go/pull/311)
     
 - 注册中心
     * ZooKeeper
@@ -97,11 +102,11 @@ Apache License, Version 2.0
 
 ## 文档
 
-TODO
+https://dubbogo.github.io/dubbo-go-website (**完善中**)
 
 ## 快速开始 ##
 
-[dubbogo-samples](https://github.com/dubbogo/dubbogo-samples)这个项目的事例展示了如何使用 dubbo-go 。请仔细阅读 [dubbogo-samples/README.md](https://github.com/dubbogo/dubbogo-samples/blob/master/README.md) 学习如何处理配置并编译程序。
+[dubbo-samples/golang](https://github.com/dubbogo/dubbo-samples)这个项目的事例展示了如何使用 dubbo-go 。请仔细阅读 [dubbo-samples/golang/README.md](https://github.com/dubbogo/dubbo-samples/blob/master/golang/README.md) 学习如何处理配置并编译程序。
 
 ## 运行单测
 

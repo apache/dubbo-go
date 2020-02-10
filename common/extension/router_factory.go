@@ -25,10 +25,12 @@ var (
 	routers = make(map[string]func() cluster.RouterFactory)
 )
 
+// SetRouterFactory ...
 func SetRouterFactory(name string, fun func() cluster.RouterFactory) {
 	routers[name] = fun
 }
 
+// GetRouterFactory ...
 func GetRouterFactory(name string) cluster.RouterFactory {
 	if routers[name] == nil {
 		panic("router_factory for " + name + " is not existing, make sure you have import the package.")
