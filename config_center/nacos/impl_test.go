@@ -18,13 +18,15 @@ package nacos
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 )
 
 import (
-	"github.com/nacos-group/nacos-sdk-go/vo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,8 +36,46 @@ import (
 	"github.com/apache/dubbo-go/config_center/parser"
 )
 
+// run mock config server
+func runMockConfigServer(configHandler func(http.ResponseWriter, *http.Request),
+	configListenHandler func(http.ResponseWriter, *http.Request)) *httptest.Server {
+	uriHandlerMap := make(map[string]func(http.ResponseWriter, *http.Request), 0)
+
+	uriHandlerMap["/nacos/v1/cs/configs"] = configHandler
+	uriHandlerMap["/nacos/v1/cs/configs/listener"] = configListenHandler
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		uri := r.RequestURI
+		for path, handler := range uriHandlerMap {
+			if uri == path {
+				handler(w, r)
+				break
+			}
+		}
+	}))
+
+	return ts
+}
+
+func mockCommonNacosServer() *httptest.Server {
+	return runMockConfigServer(func(writer http.ResponseWriter, request *http.Request) {
+		data := `
+	dubbo.service.com.ikurento.user.UserProvider.cluster=failback
+	dubbo.service.com.ikurento.user.UserProvider.protocol=myDubbo1
+	dubbo.protocols.myDubbo.port=20000
+	dubbo.protocols.myDubbo.name=dubbo
+`
+		fmt.Fprintf(writer, "%s", data)
+	}, func(writer http.ResponseWriter, request *http.Request) {
+		data := `dubbo.properties%02dubbo%02dubbo.service.com.ikurento.user.UserProvider.cluster=failback`
+		fmt.Fprintf(writer, "%s", data)
+	})
+}
+
 func initNacosData(t *testing.T) (*nacosDynamicConfiguration, error) {
-	regurl, _ := common.NewURL("registry://console.nacos.io:80")
+	server := mockCommonNacosServer()
+	nacosURL := strings.ReplaceAll(server.URL, "http", "registry")
+	regurl, _ := common.NewURL(nacosURL)
 	nacosConfiguration, err := newNacosDynamicConfiguration(&regurl)
 	if err != nil {
 		fmt.Println("error:newNacosDynamicConfiguration", err.Error())
@@ -43,21 +83,8 @@ func initNacosData(t *testing.T) (*nacosDynamicConfiguration, error) {
 		return nil, err
 	}
 	nacosConfiguration.SetParser(&parser.DefaultConfigurationParser{})
-	data := `
-	dubbo.service.com.ikurento.user.UserProvider.cluster=failback
-	dubbo.service.com.ikurento.user.UserProvider.protocol=myDubbo1
-	dubbo.protocols.myDubbo.port=20000
-	dubbo.protocols.myDubbo.name=dubbo
-`
-	sucess, err := (*nacosConfiguration.client.Client).PublishConfig(vo.ConfigParam{
-		DataId:  "dubbo.properties",
-		Group:   "dubbo",
-		Content: data,
-	})
+
 	assert.NoError(t, err)
-	if !sucess {
-		fmt.Println("error: publishconfig error", data)
-	}
 	return nacosConfiguration, err
 }
 
@@ -76,23 +103,8 @@ func Test_AddListener(t *testing.T) {
 	listener := &mockDataListener{}
 	time.Sleep(time.Second * 2)
 	nacos.AddListener("dubbo.properties", listener)
-	listener.wg.Add(2)
+	listener.wg.Add(1)
 	fmt.Println("begin to listen")
-	data := `
-	dubbo.service.com.ikurento.user.UserProvider.cluster=failback
-	dubbo.service.com.ikurento.user.UserProvider.protocol=myDubbo
-	dubbo.protocols.myDubbo.port=20000
-	dubbo.protocols.myDubbo.name=dubbo
-`
-	sucess, err := (*nacos.client.Client).PublishConfig(vo.ConfigParam{
-		DataId:  "dubbo.properties",
-		Group:   "dubbo",
-		Content: data,
-	})
-	assert.NoError(t, err)
-	if !sucess {
-		fmt.Println("error: publishconfig error", data)
-	}
 	listener.wg.Wait()
 	fmt.Println("end", listener.event)
 
