@@ -19,13 +19,13 @@ package grpc
 
 import (
 	"fmt"
-	"github.com/opentracing/opentracing-go"
 	"net"
 	"reflect"
 )
 
 import (
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
+	"github.com/opentracing/opentracing-go"
 )
 
 import (
