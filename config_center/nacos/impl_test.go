@@ -17,7 +17,6 @@
 package nacos
 
 import (
-	"context"
 	"fmt"
 	"sync"
 	"testing"
@@ -36,7 +35,7 @@ import (
 )
 
 func initNacosData(t *testing.T) (*nacosDynamicConfiguration, error) {
-	regurl, _ := common.NewURL(context.TODO(), "registry://console.nacos.io:80")
+	regurl, _ := common.NewURL("registry://console.nacos.io:80")
 	nacosConfiguration, err := newNacosDynamicConfiguration(&regurl)
 	if err != nil {
 		fmt.Println("error:newNacosDynamicConfiguration", err.Error())
