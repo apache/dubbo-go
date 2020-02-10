@@ -39,7 +39,7 @@ import (
 )
 
 var (
-	failfastUrl, _ = common.NewURL(context.TODO(), "dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
+	failfastUrl, _ = common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
 )
 
 // registerFailfast register failfastCluster to cluster extension.
@@ -69,7 +69,7 @@ func Test_FailfastInvokeSuccess(t *testing.T) {
 	mockResult := &protocol.RPCResult{Rest: rest{tried: 0, success: true}}
 
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 
 	assert.NoError(t, result.Error())
 	res := result.Result().(rest)
@@ -89,7 +89,7 @@ func Test_FailfastInvokeFail(t *testing.T) {
 	mockResult := &protocol.RPCResult{Err: perrors.New("error")}
 
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 
 	assert.NotNil(t, result.Error())
 	assert.Equal(t, "error", result.Error().Error())

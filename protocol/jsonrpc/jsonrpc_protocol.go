@@ -20,17 +20,23 @@ package jsonrpc
 import (
 	"strings"
 	"sync"
+	"time"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
 )
 
-const JSONRPC = "jsonrpc"
+const (
+	// JSONRPC
+	//module name
+	JSONRPC = "jsonrpc"
+)
 
 func init() {
 	extension.SetProtocol(JSONRPC, GetProtocol)
@@ -38,12 +44,14 @@ func init() {
 
 var jsonrpcProtocol *JsonrpcProtocol
 
+// JsonrpcProtocol ...
 type JsonrpcProtocol struct {
 	protocol.BaseProtocol
 	serverMap  map[string]*Server
 	serverLock sync.Mutex
 }
 
+// NewJsonrpcProtocol ...
 func NewJsonrpcProtocol() *JsonrpcProtocol {
 	return &JsonrpcProtocol{
 		BaseProtocol: protocol.NewBaseProtocol(),
@@ -51,6 +59,7 @@ func NewJsonrpcProtocol() *JsonrpcProtocol {
 	}
 }
 
+// Export ...
 func (jp *JsonrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetUrl()
 	serviceKey := strings.TrimPrefix(url.Path, "/")
@@ -65,16 +74,26 @@ func (jp *JsonrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	return exporter
 }
 
+// Refer ...
 func (jp *JsonrpcProtocol) Refer(url common.URL) protocol.Invoker {
+	//default requestTimeout
+	var requestTimeout = config.GetConsumerConfig().RequestTimeout
+
+	requestTimeoutStr := url.GetParam(constant.TIMEOUT_KEY, config.GetConsumerConfig().Request_Timeout)
+	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
+		requestTimeout = t
+	}
+
 	invoker := NewJsonrpcInvoker(url, NewHTTPClient(&HTTPOptions{
 		HandshakeTimeout: config.GetConsumerConfig().ConnectTimeout,
-		HTTPTimeout:      config.GetConsumerConfig().RequestTimeout,
+		HTTPTimeout:      requestTimeout,
 	}))
 	jp.SetInvokers(invoker)
 	logger.Infof("Refer service: %s", url.String())
 	return invoker
 }
 
+// Destroy ...
 func (jp *JsonrpcProtocol) Destroy() {
 	logger.Infof("jsonrpcProtocol destroy.")
 
@@ -106,6 +125,7 @@ func (jp *JsonrpcProtocol) openServer(url common.URL) {
 	}
 }
 
+// GetProtocol ...
 func GetProtocol() protocol.Protocol {
 	if jsonrpcProtocol == nil {
 		jsonrpcProtocol = NewJsonrpcProtocol()

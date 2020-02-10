@@ -32,6 +32,7 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
+// MockDynamicConfigurationFactory ...
 type MockDynamicConfigurationFactory struct {
 	Content string
 }
@@ -41,7 +42,8 @@ var (
 	dynamicConfiguration *MockDynamicConfiguration
 )
 
-func (f *MockDynamicConfigurationFactory) GetDynamicConfiguration(url *common.URL) (DynamicConfiguration, error) {
+// GetDynamicConfiguration ...
+func (f *MockDynamicConfigurationFactory) GetDynamicConfiguration(_ *common.URL) (DynamicConfiguration, error) {
 	var err error
 	once.Do(func() {
 		dynamicConfiguration = &MockDynamicConfiguration{listener: map[string]ConfigurationListener{}}
@@ -79,48 +81,59 @@ func (f *MockDynamicConfigurationFactory) GetDynamicConfiguration(url *common.UR
 
 }
 
+// MockDynamicConfiguration ...
 type MockDynamicConfiguration struct {
 	parser   parser.ConfigurationParser
 	content  string
 	listener map[string]ConfigurationListener
 }
 
-func (c *MockDynamicConfiguration) AddListener(key string, listener ConfigurationListener, opions ...Option) {
+// AddListener ...
+func (c *MockDynamicConfiguration) AddListener(key string, listener ConfigurationListener, _ ...Option) {
 	c.listener[key] = listener
 }
 
-func (c *MockDynamicConfiguration) RemoveListener(key string, listener ConfigurationListener, opions ...Option) {
+// RemoveListener ...
+func (c *MockDynamicConfiguration) RemoveListener(_ string, _ ConfigurationListener, _ ...Option) {
 }
 
-func (c *MockDynamicConfiguration) GetConfig(key string, opts ...Option) (string, error) {
+// GetConfig ...
+func (c *MockDynamicConfiguration) GetConfig(_ string, _ ...Option) (string, error) {
 
 	return c.content, nil
 }
 
-//For zookeeper, getConfig and getConfigs have the same meaning.
+// GetConfigs For zookeeper, getConfig and getConfigs have the same meaning.
 func (c *MockDynamicConfiguration) GetConfigs(key string, opts ...Option) (string, error) {
 	return c.GetConfig(key, opts...)
 }
 
+// Parser ...
 func (c *MockDynamicConfiguration) Parser() parser.ConfigurationParser {
 	return c.parser
 }
+
+// SetParser ...
 func (c *MockDynamicConfiguration) SetParser(p parser.ConfigurationParser) {
 	c.parser = p
 }
-func (c *MockDynamicConfiguration) GetProperties(key string, opts ...Option) (string, error) {
+
+// GetProperties ...
+func (c *MockDynamicConfiguration) GetProperties(_ string, _ ...Option) (string, error) {
 	return c.content, nil
 }
 
-//For zookeeper, getConfig and getConfigs have the same meaning.
+// GetInternalProperty For zookeeper, getConfig and getConfigs have the same meaning.
 func (c *MockDynamicConfiguration) GetInternalProperty(key string, opts ...Option) (string, error) {
 	return c.GetProperties(key, opts...)
 }
 
+// GetRule ...
 func (c *MockDynamicConfiguration) GetRule(key string, opts ...Option) (string, error) {
 	return c.GetProperties(key, opts...)
 }
 
+// MockServiceConfigEvent ...
 func (c *MockDynamicConfiguration) MockServiceConfigEvent() {
 	config := &parser.ConfiguratorConfig{
 		ConfigVersion: "2.7.1",
@@ -142,6 +155,7 @@ func (c *MockDynamicConfiguration) MockServiceConfigEvent() {
 	c.listener[key].Process(&ConfigChangeEvent{Key: key, Value: string(value), ConfigType: remoting.EventTypeAdd})
 }
 
+// MockApplicationConfigEvent ...
 func (c *MockDynamicConfiguration) MockApplicationConfigEvent() {
 	config := &parser.ConfiguratorConfig{
 		ConfigVersion: "2.7.1",

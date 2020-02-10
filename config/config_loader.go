@@ -31,9 +31,11 @@ import (
 )
 
 var (
-	consumerConfig *ConsumerConfig
-	providerConfig *ProviderConfig
-	maxWait        = 3
+	consumerConfig    *ConsumerConfig
+	providerConfig    *ProviderConfig
+	metricConfig      *MetricConfig
+	applicationConfig *ApplicationConfig
+	maxWait           = 3
 )
 
 // loaded consumer & provider config from xxx.yml, and log config from xxx.xml
@@ -69,12 +71,16 @@ func checkApplicationName(config *ApplicationConfig) {
 	}
 }
 
-// Dubbo Init
+// Load Dubbo Init
 func Load() {
 	// reference config
 	if consumerConfig == nil {
 		logger.Warnf("consumerConfig is nil!")
 	} else {
+
+		metricConfig = consumerConfig.MetricConfig
+		applicationConfig = consumerConfig.ApplicationConfig
+
 		checkApplicationName(consumerConfig.ApplicationConfig)
 		if err := configCenterRefreshConsumer(); err != nil {
 			logger.Errorf("[consumer config center refresh] %#v", err)
@@ -91,7 +97,7 @@ func Load() {
 				continue
 			}
 			ref.id = key
-			ref.Refer()
+			ref.Refer(rpcService)
 			ref.Implement(rpcService)
 		}
 		//wait for invoker is available, if wait over default 3s, then panic
@@ -131,6 +137,11 @@ func Load() {
 	if providerConfig == nil {
 		logger.Warnf("providerConfig is nil!")
 	} else {
+
+		// so, you should know that the consumer's config will be override
+		metricConfig = providerConfig.MetricConfig
+		applicationConfig = providerConfig.ApplicationConfig
+
 		checkApplicationName(providerConfig.ApplicationConfig)
 		if err := configCenterRefreshProvider(); err != nil {
 			logger.Errorf("[provider config center refresh] %#v", err)
@@ -153,12 +164,51 @@ func Load() {
 	GracefulShutdownInit()
 }
 
-// get rpc service for consumer
+// GetRPCService get rpc service for consumer
 func GetRPCService(name string) common.RPCService {
 	return consumerConfig.References[name].GetRPCService()
 }
 
-// create rpc service for consumer
+// RPCService create rpc service for consumer
 func RPCService(service common.RPCService) {
 	consumerConfig.References[service.Reference()].Implement(service)
+}
+
+// GetMetricConfig find the MetricConfig
+// if it is nil, create a new one
+func GetMetricConfig() *MetricConfig {
+	if metricConfig == nil {
+		metricConfig = &MetricConfig{}
+	}
+	return metricConfig
+}
+
+// GetApplicationConfig find the application config
+// if not, we will create one
+// Usually applicationConfig will be initialized when system start
+func GetApplicationConfig() *ApplicationConfig {
+	if applicationConfig == nil {
+		applicationConfig = &ApplicationConfig{}
+	}
+	return applicationConfig
+}
+
+// GetProviderConfig find the provider config
+// if not found, create new one
+func GetProviderConfig() ProviderConfig {
+	if providerConfig == nil {
+		logger.Warnf("providerConfig is nil!")
+		return ProviderConfig{}
+	}
+	return *providerConfig
+}
+
+// GetConsumerConfig find the consumer config
+// if not found, create new one
+func GetConsumerConfig() ConsumerConfig {
+	if consumerConfig == nil {
+		logger.Warnf("consumerConfig is nil!")
+		return ConsumerConfig{}
+	}
+	return *consumerConfig
 }

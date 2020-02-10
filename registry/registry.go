@@ -21,7 +21,13 @@ import (
 	"github.com/apache/dubbo-go/common"
 )
 
-// Extension - Registry
+/*
+ * -----------------------------------NOTICE---------------------------------------------
+ * If there is no special case, you'd better inherit BaseRegistry and implement the
+ * FacadeBasedRegistry interface instead of directly implementing the Registry interface.
+ * --------------------------------------------------------------------------------------
+ */
+// Registry Extension - Registry
 type Registry interface {
 	common.Node
 	//used for service provider calling , register services to registry
@@ -38,11 +44,13 @@ type Registry interface {
 	//mode2 : callback mode, subscribe with notify(notify listener).
 	Subscribe(*common.URL, NotifyListener)
 }
+
+// NotifyListener ...
 type NotifyListener interface {
 	Notify(*ServiceEvent)
 }
 
-//Deprecated!
+// Listener Deprecated!
 type Listener interface {
 	Next() (*ServiceEvent, error)
 	Close()
