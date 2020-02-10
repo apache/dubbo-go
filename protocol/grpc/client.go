@@ -18,12 +18,12 @@ limitations under the License.
 package grpc
 
 import (
-	"github.com/opentracing/opentracing-go"
 	"reflect"
 )
 
 import (
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
+	"github.com/opentracing/opentracing-go"
 )
 
 import (
