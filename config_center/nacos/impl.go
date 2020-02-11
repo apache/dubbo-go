@@ -34,7 +34,7 @@ import (
 	"github.com/apache/dubbo-go/config_center/parser"
 )
 
-const NacosClientName = "nacos config_center"
+const nacosClientName = "nacos config_center"
 
 type nacosDynamicConfiguration struct {
 	url          *common.URL
@@ -53,7 +53,7 @@ func newNacosDynamicConfiguration(url *common.URL) (*nacosDynamicConfiguration, 
 		url:      url,
 		done:     make(chan struct{}),
 	}
-	err := ValidateNacosClient(c, WithNacosName(NacosClientName))
+	err := ValidateNacosClient(c, WithNacosName(nacosClientName))
 	if err != nil {
 		logger.Errorf("nacos client start error ,error message is %v", err)
 		return nil, err
@@ -64,10 +64,12 @@ func newNacosDynamicConfiguration(url *common.URL) (*nacosDynamicConfiguration, 
 
 }
 
+// AddListener Add listener
 func (n *nacosDynamicConfiguration) AddListener(key string, listener config_center.ConfigurationListener, opions ...config_center.Option) {
 	n.addListener(key, listener)
 }
 
+// RemoveListener Remove listener
 func (n *nacosDynamicConfiguration) RemoveListener(key string, listener config_center.ConfigurationListener, opions ...config_center.Option) {
 	n.removeListener(key, listener)
 }
@@ -79,7 +81,7 @@ func (n *nacosDynamicConfiguration) GetProperties(key string, opts ...config_cen
 	for _, opt := range opts {
 		opt(tmpOpts)
 	}
-	content, err := (*n.client.Client).GetConfig(vo.ConfigParam{
+	content, err := (*n.client.Client()).GetConfig(vo.ConfigParam{
 		DataId: key,
 		Group:  tmpOpts.Group,
 	})
@@ -91,52 +93,61 @@ func (n *nacosDynamicConfiguration) GetProperties(key string, opts ...config_cen
 
 }
 
+// GetInternalProperty Get properties value by key
 func (n *nacosDynamicConfiguration) GetInternalProperty(key string, opts ...config_center.Option) (string, error) {
 	return n.GetProperties(key, opts...)
 }
 
+// GetRule Get router rule
 func (n *nacosDynamicConfiguration) GetRule(key string, opts ...config_center.Option) (string, error) {
 	return n.GetProperties(key, opts...)
 }
 
+// Parser Get Parser
 func (n *nacosDynamicConfiguration) Parser() parser.ConfigurationParser {
 	return n.parser
 }
 
+// SetParser Set Parser
 func (n *nacosDynamicConfiguration) SetParser(p parser.ConfigurationParser) {
 	n.parser = p
 }
 
+// NacosClient Get Nacos Client
 func (n *nacosDynamicConfiguration) NacosClient() *NacosClient {
 	return n.client
 }
 
+// SetNacosClient Set Nacos Client
 func (n *nacosDynamicConfiguration) SetNacosClient(client *NacosClient) {
+	n.cltLock.Lock()
 	n.client = client
+	n.cltLock.Unlock()
 }
 
-func (n *nacosDynamicConfiguration) NacosClientLock() *sync.Mutex {
-	return &n.cltLock
-}
-
+// WaitGroup for wait group control, zk client listener & zk client container
 func (n *nacosDynamicConfiguration) WaitGroup() *sync.WaitGroup {
 	return &n.wg
 }
 
+// GetDone For nacos client control	RestartCallBack() bool
 func (n *nacosDynamicConfiguration) GetDone() chan struct{} {
 	return n.done
 }
 
+// GetUrl Get Url
 func (n *nacosDynamicConfiguration) GetUrl() common.URL {
 	return *n.url
 }
 
+// Destroy Destroy configuration instance
 func (n *nacosDynamicConfiguration) Destroy() {
 	close(n.done)
 	n.wg.Wait()
 	n.closeConfigs()
 }
 
+// IsAvailable Get available status
 func (n *nacosDynamicConfiguration) IsAvailable() bool {
 	select {
 	case <-n.done:
@@ -153,8 +164,4 @@ func (r *nacosDynamicConfiguration) closeConfigs() {
 	// Close the old client first to close the tmp node
 	r.client.Close()
 	r.client = nil
-}
-
-func (r *nacosDynamicConfiguration) RestartCallBack() bool {
-	return true
 }
