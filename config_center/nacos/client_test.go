@@ -22,7 +22,7 @@ func Test_newNacosClient(t *testing.T) {
 		url:  &registryUrl,
 		done: make(chan struct{}),
 	}
-	err := ValidateNacosClient(c, WithNacosName(NacosClientName))
+	err := ValidateNacosClient(c, WithNacosName(nacosClientName))
 	if err != nil {
 		fmt.Println("nacos client start error ,error message is", err)
 	}
