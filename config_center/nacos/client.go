@@ -19,51 +19,57 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
-const (
-	ConnDelay    = 3
-	MaxFailTimes = 15
-)
-
+// NacosClient Nacos client
 type NacosClient struct {
 	name       string
 	NacosAddrs []string
 	sync.Mutex // for Client
-	Client     *config_client.IConfigClient
+	client     *config_client.IConfigClient
 	exit       chan struct{}
 	Timeout    time.Duration
 	once       sync.Once
 	onceClose  func()
 }
 
-type Option func(*Options)
+// Client Get Client
+func (n *NacosClient) Client() *config_client.IConfigClient {
+	return n.client
+}
 
-type Options struct {
+// SetClient Set client
+func (n *NacosClient) SetClient(client *config_client.IConfigClient) {
+	n.Lock()
+	n.client = client
+	n.Unlock()
+}
+
+type option func(*options)
+
+type options struct {
 	nacosName string
 	client    *NacosClient
 }
 
-func WithNacosName(name string) Option {
-	return func(opt *Options) {
+// WithNacosName Set nacos name
+func WithNacosName(name string) option {
+	return func(opt *options) {
 		opt.nacosName = name
 	}
 }
 
-func ValidateNacosClient(container nacosClientFacade, opts ...Option) error {
+// ValidateNacosClient Validate nacos client , if null then create it
+func ValidateNacosClient(container nacosClientFacade, opts ...option) error {
 	var (
 		err error
 	)
-	opions := &Options{}
+	os := &options{}
 	for _, opt := range opts {
-		opt(opions)
+		opt(os)
 	}
 
 	err = nil
 
-	lock := container.NacosClientLock()
 	url := container.GetUrl()
-
-	lock.Lock()
-	defer lock.Unlock()
 
 	if container.NacosClient() == nil {
 		//in dubbo ,every registry only connect one node ,so this is []string{r.Address}
@@ -74,16 +80,16 @@ func ValidateNacosClient(container nacosClientFacade, opts ...Option) error {
 			return perrors.WithMessagef(err, "newNacosClient(address:%+v)", url.Location)
 		}
 		nacosAddresses := strings.Split(url.Location, ",")
-		newClient, err := newNacosClient(opions.nacosName, nacosAddresses, timeout)
+		newClient, err := newNacosClient(os.nacosName, nacosAddresses, timeout)
 		if err != nil {
 			logger.Warnf("newNacosClient(name{%s}, nacos address{%v}, timeout{%d}) = error{%v}",
-				opions.nacosName, url.Location, timeout.String(), err)
+				os.nacosName, url.Location, timeout.String(), err)
 			return perrors.WithMessagef(err, "newNacosClient(address:%+v)", url.Location)
 		}
 		container.SetNacosClient(newClient)
 	}
 
-	if container.NacosClient().Client == nil {
+	if container.NacosClient().Client() == nil {
 		svrConfList := []nacosconst.ServerConfig{}
 		for _, nacosAddr := range container.NacosClient().NacosAddrs {
 			split := strings.Split(nacosAddr, ":")
@@ -108,7 +114,8 @@ func ValidateNacosClient(container nacosClientFacade, opts ...Option) error {
 				LogDir:              "logs/nacos/log",
 			},
 		})
-		container.NacosClient().Client = &client
+
+		container.NacosClient().SetClient(&client)
 		if err != nil {
 			logger.Errorf("nacos create config client error:%v", err)
 		}
@@ -155,7 +162,7 @@ func newNacosClient(name string, nacosAddrs []string, timeout time.Duration) (*N
 			LogDir:              "logs/nacos/log",
 		},
 	})
-	n.Client = &client
+	n.SetClient(&client)
 	if err != nil {
 		return nil, perrors.WithMessagef(err, "nacos clients.CreateConfigClient(nacosAddrs:%+v)", nacosAddrs)
 	}
@@ -163,6 +170,7 @@ func newNacosClient(name string, nacosAddrs []string, timeout time.Duration) (*N
 	return n, nil
 }
 
+// Done Get nacos client exit signal
 func (n *NacosClient) Done() <-chan struct{} {
 	return n.exit
 }
@@ -178,6 +186,7 @@ func (n *NacosClient) stop() bool {
 	return false
 }
 
+// NacosClientValid Get nacos client valid status
 func (n *NacosClient) NacosClientValid() bool {
 	select {
 	case <-n.exit:
@@ -187,7 +196,7 @@ func (n *NacosClient) NacosClientValid() bool {
 
 	valid := true
 	n.Lock()
-	if n.Client == nil {
+	if n.Client() == nil {
 		valid = false
 	}
 	n.Unlock()
@@ -195,14 +204,13 @@ func (n *NacosClient) NacosClientValid() bool {
 	return valid
 }
 
+// Close Close nacos client , then set null
 func (n *NacosClient) Close() {
 	if n == nil {
 		return
 	}
 
 	n.stop()
-	n.Lock()
-	n.Client = nil
-	n.Unlock()
+	n.SetClient(nil)
 	logger.Warnf("nacosClient{name:%s, nacos addr:%s} exit now.", n.name, n.NacosAddrs)
 }

@@ -31,13 +31,18 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
+const (
+	connDelay    = 3
+	maxFailTimes = 15
+)
+
 type nacosClientFacade interface {
 	NacosClient() *NacosClient
 	SetNacosClient(*NacosClient)
-	NacosClientLock() *sync.Mutex
-	WaitGroup() *sync.WaitGroup //for wait group control, zk client listener & zk client container
-	GetDone() chan struct{}     //for nacos client control
-	RestartCallBack() bool
+	// WaitGroup for wait group control, zk client listener & zk client container
+	WaitGroup() *sync.WaitGroup
+	// GetDone For nacos client control	RestartCallBack() bool
+	GetDone() chan struct{}
 	common.Node
 }
 
@@ -45,7 +50,7 @@ func timeSecondDuration(sec int) time.Duration {
 	return time.Duration(sec) * time.Second
 }
 
-//TODO nacos HandleClientRestart
+// HandleClientRestart Restart client handler
 func HandleClientRestart(r nacosClientFacade) {
 	var (
 		err error
@@ -62,12 +67,10 @@ LOOP:
 			break LOOP
 			// re-register all services
 		case <-r.NacosClient().Done():
-			r.NacosClientLock().Lock()
 			r.NacosClient().Close()
 			nacosName := r.NacosClient().name
 			nacosAddress := r.NacosClient().NacosAddrs
 			r.SetNacosClient(nil)
-			r.NacosClientLock().Unlock()
 
 			// Connect nacos until success.
 			failTimes = 0
@@ -76,19 +79,17 @@ LOOP:
 				case <-r.GetDone():
 					logger.Warnf("(NacosProviderRegistry)reconnectZkRegistry goroutine exit now...")
 					break LOOP
-				case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)): // Prevent crazy reconnection nacos.
+				case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * connDelay)): // Prevent crazy reconnection nacos.
 				}
 				err = ValidateNacosClient(r, WithNacosName(nacosName))
 				logger.Infof("NacosProviderRegistry.validateNacosClient(nacosAddr{%s}) = error{%#v}",
 					nacosAddress, perrors.WithStack(err))
 				if err == nil {
-					if r.RestartCallBack() {
-						break
-					}
+					break
 				}
 				failTimes++
-				if MaxFailTimes <= failTimes {
-					failTimes = MaxFailTimes
+				if maxFailTimes <= failTimes {
+					failTimes = maxFailTimes
 				}
 			}
 		}
