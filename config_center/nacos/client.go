@@ -19,6 +19,8 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
+const logDir = "logs/nacos/log"
+
 // NacosClient Nacos client
 type NacosClient struct {
 	name       string
@@ -111,7 +113,7 @@ func ValidateNacosClient(container nacosClientFacade, opts ...option) error {
 				TimeoutMs:           uint64(int32(container.NacosClient().Timeout / time.Millisecond)),
 				ListenInterval:      10000,
 				NotLoadCacheAtStart: true,
-				LogDir:              "logs/nacos/log",
+				LogDir:              logDir,
 			},
 		})
 
@@ -159,7 +161,7 @@ func newNacosClient(name string, nacosAddrs []string, timeout time.Duration) (*N
 			TimeoutMs:           uint64(timeout / time.Millisecond),
 			ListenInterval:      20000,
 			NotLoadCacheAtStart: true,
-			LogDir:              "logs/nacos/log",
+			LogDir:              logDir,
 		},
 	})
 	n.SetClient(&client)
