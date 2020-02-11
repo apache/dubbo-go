@@ -31,6 +31,7 @@ func init() {
 type nacosDynamicConfigurationFactory struct {
 }
 
+// GetDynamicConfiguration Get Configuration with URL
 func (f *nacosDynamicConfigurationFactory) GetDynamicConfiguration(url *common.URL) (config_center.DynamicConfiguration, error) {
 	dynamicConfiguration, err := newNacosDynamicConfiguration(url)
 	if err != nil {
