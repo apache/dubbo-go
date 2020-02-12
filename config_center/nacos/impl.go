@@ -76,7 +76,16 @@ func (n *nacosDynamicConfiguration) RemoveListener(key string, listener config_c
 
 //nacos distinguishes configuration files based on group and dataId. defalut group = "dubbo" and dataId = key
 func (n *nacosDynamicConfiguration) GetProperties(key string, opts ...config_center.Option) (string, error) {
+	return n.GetRule(key, opts...)
+}
 
+// GetInternalProperty Get properties value by key
+func (n *nacosDynamicConfiguration) GetInternalProperty(key string, opts ...config_center.Option) (string, error) {
+	return n.GetProperties(key, opts...)
+}
+
+// GetRule Get router rule
+func (n *nacosDynamicConfiguration) GetRule(key string, opts ...config_center.Option) (string, error) {
 	tmpOpts := &config_center.Options{}
 	for _, opt := range opts {
 		opt(tmpOpts)
@@ -90,17 +99,6 @@ func (n *nacosDynamicConfiguration) GetProperties(key string, opts ...config_cen
 	} else {
 		return string(content), nil
 	}
-
-}
-
-// GetInternalProperty Get properties value by key
-func (n *nacosDynamicConfiguration) GetInternalProperty(key string, opts ...config_center.Option) (string, error) {
-	return n.GetProperties(key, opts...)
-}
-
-// GetRule Get router rule
-func (n *nacosDynamicConfiguration) GetRule(key string, opts ...config_center.Option) (string, error) {
-	return n.GetProperties(key, opts...)
 }
 
 // Parser Get Parser
