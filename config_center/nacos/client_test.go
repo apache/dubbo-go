@@ -1,7 +1,6 @@
 package nacos
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 )
@@ -23,14 +22,10 @@ func Test_newNacosClient(t *testing.T) {
 		done: make(chan struct{}),
 	}
 	err := ValidateNacosClient(c, WithNacosName(nacosClientName))
-	if err != nil {
-		fmt.Println("nacos client start error ,error message is", err)
-	}
 	assert.NoError(t, err)
 	c.wg.Add(1)
 	go HandleClientRestart(c)
 	c.client.Close()
 	<-c.client.Done()
-	fmt.Println("nacos client close done")
 	c.Destroy()
 }
