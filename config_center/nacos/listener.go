@@ -57,5 +57,6 @@ func (l *nacosDynamicConfiguration) addListener(key string, listener config_cent
 }
 
 func (l *nacosDynamicConfiguration) removeListener(key string, listener config_center.ConfigurationListener) {
-	// TODO not supported in current go_nacos_sdk version
+	// TODO: not supported in current go_nacos_sdk version
+	logger.Warn("not supported in current go_nacos_sdk version")
 }
