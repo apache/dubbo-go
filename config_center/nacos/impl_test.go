@@ -77,14 +77,10 @@ func initNacosData(t *testing.T) (*nacosDynamicConfiguration, error) {
 	nacosURL := strings.ReplaceAll(server.URL, "http", "registry")
 	regurl, _ := common.NewURL(nacosURL)
 	nacosConfiguration, err := newNacosDynamicConfiguration(&regurl)
-	if err != nil {
-		fmt.Println("error:newNacosDynamicConfiguration", err.Error())
-		assert.NoError(t, err)
-		return nil, err
-	}
+	assert.NoError(t, err)
+
 	nacosConfiguration.SetParser(&parser.DefaultConfigurationParser{})
 
-	assert.NoError(t, err)
 	return nacosConfiguration, err
 }
 
@@ -104,10 +100,7 @@ func Test_AddListener(t *testing.T) {
 	time.Sleep(time.Second * 2)
 	nacos.AddListener("dubbo.properties", listener)
 	listener.wg.Add(1)
-	fmt.Println("begin to listen")
 	listener.wg.Wait()
-	fmt.Println("end", listener.event)
-
 }
 
 func Test_RemoveListener(t *testing.T) {
@@ -120,7 +113,6 @@ type mockDataListener struct {
 }
 
 func (l *mockDataListener) Process(configType *config_center.ConfigChangeEvent) {
-	fmt.Println("process!!!!!!!!!!")
 	l.wg.Done()
 	l.event = configType.Key
 }
