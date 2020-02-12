@@ -61,15 +61,13 @@ func WithNacosName(name string) option {
 
 // ValidateNacosClient Validate nacos client , if null then create it
 func ValidateNacosClient(container nacosClientFacade, opts ...option) error {
-	var (
-		err error
-	)
+	if container == nil {
+		return perrors.Errorf("container can not be null")
+	}
 	os := &options{}
 	for _, opt := range opts {
 		opt(os)
 	}
-
-	err = nil
 
 	url := container.GetUrl()
 
@@ -123,7 +121,7 @@ func ValidateNacosClient(container nacosClientFacade, opts ...option) error {
 		}
 	}
 
-	return perrors.WithMessagef(err, "newNacosClient(address:%+v)", url.PrimitiveURL)
+	return perrors.WithMessagef(nil, "newNacosClient(address:%+v)", url.PrimitiveURL)
 }
 
 func newNacosClient(name string, nacosAddrs []string, timeout time.Duration) (*NacosClient, error) {
@@ -147,6 +145,7 @@ func newNacosClient(name string, nacosAddrs []string, timeout time.Duration) (*N
 		split := strings.Split(nacosAddr, ":")
 		port, err := strconv.ParseUint(split[1], 10, 64)
 		if err != nil {
+			logger.Warnf("convert port , source:%s , error:%v ", split[1], err)
 			continue
 		}
 		svrconf := nacosconst.ServerConfig{
