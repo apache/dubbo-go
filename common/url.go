@@ -59,7 +59,7 @@ const (
 var (
 	// DubboNodes ...
 	DubboNodes = [...]string{"consumers", "configurators", "routers", "providers"}
-	// DubboRole dubbo service role
+	// DubboRole Dubbo service role
 	DubboRole = [...]string{"consumer", "", "routers", "provider"}
 )
 

@@ -45,7 +45,7 @@ var (
 	routerPatternReg = regexp.MustCompile(`([&!=,]*)\s*([^&!=,\s]+)`)
 )
 
-//ConditionRouter condition router struct
+// ConditionRouter Condition router struct
 type ConditionRouter struct {
 	Pattern       string
 	url           *common.URL
@@ -56,7 +56,7 @@ type ConditionRouter struct {
 	ThenCondition map[string]MatchPair
 }
 
-//NewConditionRouterWithRule Init condition router by raw rule
+// NewConditionRouterWithRule Init condition router by raw rule
 func NewConditionRouterWithRule(rule string) (*ConditionRouter, error) {
 	var (
 		whenRule string
@@ -102,7 +102,7 @@ func NewConditionRouterWithRule(rule string) (*ConditionRouter, error) {
 	}, nil
 }
 
-//NewConditionRouter Init condition router by URL
+// NewConditionRouter Init condition router by URL
 func NewConditionRouter(url *common.URL) (*ConditionRouter, error) {
 
 	rule, err := url.GetParamAndDecoded(constant.RULE_KEY)
@@ -289,7 +289,7 @@ func matchCondition(pairs map[string]MatchPair, url *common.URL, param *common.U
 	return result
 }
 
-// MatchPair ...
+// MatchPair Match key pair , condition process
 type MatchPair struct {
 	Matches    *gxset.HashSet
 	Mismatches *gxset.HashSet
