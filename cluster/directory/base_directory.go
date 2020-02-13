@@ -37,7 +37,7 @@ import (
 
 var routerURLSet = gxset.NewSet()
 
-// BaseDirectory  Abstract implementation of Directory: Invoker list returned from this Directory's list method have been filtered by Routers
+// BaseDirectory Abstract implementation of Directory: Invoker list returned from this Directory's list method have been filtered by Routers
 type BaseDirectory struct {
 	url       *common.URL
 	destroyed *atomic.Bool
@@ -46,12 +46,12 @@ type BaseDirectory struct {
 	routerChain router.Chain
 }
 
-// RouterChain return router chain in directory
+// RouterChain Return router chain in directory
 func (dir *BaseDirectory) RouterChain() router.Chain {
 	return dir.routerChain
 }
 
-// SetRouterChain set router chain in directory
+// SetRouterChain Set router chain in directory
 func (dir *BaseDirectory) SetRouterChain(routerChain router.Chain) {
 	dir.mutex.Lock()
 	defer dir.mutex.Unlock()
@@ -77,7 +77,7 @@ func (dir *BaseDirectory) GetDirectoryUrl() *common.URL {
 	return dir.url
 }
 
-// SetRouters convert url to routers and add them into dir.routerChain
+// SetRouters Convert url to routers and add them into dir.routerChain
 func (dir *BaseDirectory) SetRouters(urls []*common.URL) {
 	if len(urls) == 0 {
 		return
@@ -116,18 +116,18 @@ func (dir *BaseDirectory) Destroy(doDestroy func()) {
 	}
 }
 
-// IsAvailable Once  directory init finish, it will change to true
+// IsAvailable Once directory init finish, it will change to true
 func (dir *BaseDirectory) IsAvailable() bool {
 	return !dir.destroyed.Load()
 }
 
-// GetRouterURLSet return router URL
+// GetRouterURLSet Return router URL
 func GetRouterURLSet() *gxset.HashSet {
 	return routerURLSet
 }
 
-// AddRouterURLSet add router URL
-// router URL will init in config/config_loader.go
+// AddRouterURLSet Add router URL
+// Router URL will init in config/config_loader.go
 func AddRouterURLSet(url *common.URL) {
 	routerURLSet.Add(url)
 }

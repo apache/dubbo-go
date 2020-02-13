@@ -21,7 +21,7 @@ import (
 	"github.com/apache/dubbo-go/cluster/router"
 )
 
-// RouterRule
+// RouterRule RouterRule config read from config file or config center
 type RouterRule struct {
 	router.BaseRouterRule `yaml:",inline""`
 	Conditions            []string

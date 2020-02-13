@@ -24,8 +24,9 @@ import (
 
 // Extension - Router
 
-// RouterFactory ...
+// RouterFactory Router create factory
 type RouterFactory interface {
+	// NewRouter Create router instance with URL
 	NewRouter(*common.URL) (Router, error)
 }
 
