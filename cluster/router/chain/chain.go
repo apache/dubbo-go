@@ -36,9 +36,9 @@ import (
 
 // RouterChain Router chain
 type RouterChain struct {
-	//full list of addresses from registry, classified by method name.
+	// Full list of addresses from registry, classified by method name.
 	invokers []protocol.Invoker
-	//containing all routers, reconstruct every time 'route://' urls change.
+	// Containing all routers, reconstruct every time 'route://' urls change.
 	routers []router.Router
 	// Fixed router instances: ConfigConditionRouter, TagRouter, e.g., the rule for each instance may change but the
 	// instance will never delete or recreate.
