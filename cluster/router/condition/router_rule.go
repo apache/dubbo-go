@@ -18,6 +18,10 @@
 package condition
 
 import (
+	"gopkg.in/yaml.v2"
+)
+
+import (
 	"github.com/apache/dubbo-go/cluster/router"
 )
 
@@ -25,4 +29,31 @@ import (
 type RouterRule struct {
 	router.BaseRouterRule `yaml:",inline""`
 	Conditions            []string
+}
+
+/* Parse Router raw rule parser
+ * example :
+ * scope: application
+ * runtime: true
+ * force: false
+ * conditions:
+ *   - >
+ *     method!=sayHello =>
+ *   - >
+ *     ip=127.0.0.1
+ *     =>
+ *     1.1.1.1
+ */
+func Parse(rawRule string) (*RouterRule, error) {
+	r := &RouterRule{}
+	err := yaml.Unmarshal([]byte(rawRule), r)
+	if err != nil {
+		return r, err
+	}
+	r.RawRule = rawRule
+	if len(r.Conditions) != 0 {
+		r.Valid = true
+	}
+
+	return r, nil
 }
