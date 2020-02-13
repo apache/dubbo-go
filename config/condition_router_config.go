@@ -20,7 +20,6 @@ package config
 import (
 	"encoding/base64"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -59,20 +58,11 @@ func RouterInit(confRouterFile string) error {
 	}
 
 	logger.Debugf("router config{%#v}\n", routerConfig)
-	directory.AddRouterURLSet(initRouterUrl())
+	directory.AddRouterURLSet(initRouterUrl(routerConfig))
 	return nil
 }
 
-func initRouterUrl() *common.URL {
-	mutex.Lock()
-	if routerConfig == nil {
-		confRouterFile := os.Getenv(constant.CONF_ROUTER_FILE_PATH)
-		err := RouterInit(confRouterFile)
-		if err != nil {
-			return nil
-		}
-	}
-	mutex.Unlock()
+func initRouterUrl(routerConfig *ConditionRouterConfig) *common.URL {
 	rule := parseCondition(routerConfig.Conditions)
 
 	return common.NewURLWithOptions(
