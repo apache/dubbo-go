@@ -73,7 +73,7 @@ func TestParseCondition(t *testing.T) {
 func TestInitRouterUrl(t *testing.T) {
 	routerConfig = &ConditionRouterConfig{}
 	loadYmlConfig(testyml, routerConfig)
-	url := initRouterUrl()
+	url := initRouterUrl(routerConfig)
 	assert.Equal(t, url.Protocol, "route")
 	assert.Equal(t, url.Ip, "0.0.0.0")
 }
