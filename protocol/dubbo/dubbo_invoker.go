@@ -47,6 +47,7 @@ var (
 
 // DubboInvoker ...
 type DubboInvoker struct {
+	sync.RWMutex
 	protocol.BaseInvoker
 	client   *Client
 	quitOnce sync.Once
@@ -62,6 +63,8 @@ func NewDubboInvoker(url common.URL, client *Client) *DubboInvoker {
 
 // Invoke ...
 func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+	di.RLock()
+	defer di.RUnlock()
 	var (
 		err    error
 		result protocol.RPCResult
@@ -109,11 +112,15 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 // Destroy ...
 func (di *DubboInvoker) Destroy() {
+	di.Lock()
+	defer di.Unlock()
+
 	di.quitOnce.Do(func() {
 		di.BaseInvoker.Destroy()
 
 		if di.client != nil {
 			di.client.Close()
+			di.client = nil
 		}
 	})
 }
