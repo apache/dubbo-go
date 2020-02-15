@@ -52,7 +52,7 @@ type RouterChain struct {
 func (c RouterChain) Route(invoker []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	finalInvokers := invoker
 	l := len(c.routers)
-	rs := make([]router.Router, l, math.Ceil(float64(l)*1.2))
+	rs := make([]router.Router, l, int(math.Ceil(float64(l)*1.2)))
 	c.mutex.RLock()
 	copy(rs, c.routers)
 	c.mutex.RUnlock()
