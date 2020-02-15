@@ -73,7 +73,8 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 		result protocol.RPCResult
 	)
 	if di.reqNum == -1 {
-		// Generally, this is not the case, because the invoker has been removed from the invoker list before destory
+		// Generally, the case will not happen, because the invoker has been removed
+		// from the invoker list before destroy,so no new request will enter the destroyed invoker
 		logger.Warnf("this dubboInvoker is destroyed")
 		result.Err = ErrDestroyedInvoker
 	}
