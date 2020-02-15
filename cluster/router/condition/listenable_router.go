@@ -90,7 +90,9 @@ func (l *listenableRouter) Process(event *config_center.ConfigChangeEvent) {
 	logger.Infof("Notification of condition rule, change type is:[%s] , raw rule is:[%v]", event.ConfigType, event.Value)
 	if remoting.EventTypeDel == event.ConfigType {
 		l.routerRule = nil
-		l.conditionRouters = make([]*ConditionRouter, 0)
+		if l.conditionRouters != nil {
+			l.conditionRouters = l.conditionRouters[:0]
+		}
 		return
 	}
 	content, ok := event.Value.(string)
@@ -112,7 +114,7 @@ func (l *listenableRouter) generateConditions(rule *RouterRule) {
 	if rule == nil || !rule.Valid {
 		return
 	}
-	l.conditionRouters = make([]*ConditionRouter, 0)
+	l.conditionRouters = make([]*ConditionRouter, 0, len(rule.Conditions))
 	l.routerRule = rule
 	for _, c := range rule.Conditions {
 		router, e := NewConditionRouterWithRule(c)
