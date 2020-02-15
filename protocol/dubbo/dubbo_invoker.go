@@ -21,6 +21,8 @@ import (
 	"context"
 	"strconv"
 	"sync"
+	"sync/atomic"
+	"time"
 )
 
 import (
@@ -47,10 +49,12 @@ var (
 
 // DubboInvoker ...
 type DubboInvoker struct {
-	sync.RWMutex
 	protocol.BaseInvoker
 	client   *Client
 	quitOnce sync.Once
+
+	// Used to record the number of requests
+	reqNum int64
 }
 
 // NewDubboInvoker ...
@@ -58,13 +62,16 @@ func NewDubboInvoker(url common.URL, client *Client) *DubboInvoker {
 	return &DubboInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
+		reqNum:      0,
 	}
 }
 
 // Invoke ...
 func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
-	di.RLock()
-	defer di.RUnlock()
+
+	atomic.AddInt64(&(di.reqNum), 1)
+	defer atomic.AddInt64(&(di.reqNum), -1)
+
 	var (
 		err    error
 		result protocol.RPCResult
@@ -112,16 +119,21 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 // Destroy ...
 func (di *DubboInvoker) Destroy() {
-	di.Lock()
-	defer di.Unlock()
-
 	di.quitOnce.Do(func() {
-		di.BaseInvoker.Destroy()
-
-		if di.client != nil {
-			di.client.Close()
-			di.client = nil
+		for {
+			if di.reqNum == 0 {
+				logger.Info("dubboInvoker is destroyed,url:{%s}", di.GetUrl().Key())
+				di.BaseInvoker.Destroy()
+				if di.client != nil {
+					di.client.Close()
+					di.client = nil
+				}
+				break
+			}
+			logger.Warnf("DubboInvoker is to be destroyed, wait {%v} req end,url:{%s}", di.reqNum, di.GetUrl().Key())
+			time.Sleep(1 * time.Second)
 		}
+
 	})
 }
 
