@@ -40,7 +40,8 @@ import (
 
 var (
 	// ErrNoReply ...
-	ErrNoReply = perrors.New("request need @response")
+	ErrNoReply          = perrors.New("request need @response")
+	ErrDestroyedInvoker = perrors.New("request Destroyed invoker")
 )
 
 var (
@@ -52,8 +53,7 @@ type DubboInvoker struct {
 	protocol.BaseInvoker
 	client   *Client
 	quitOnce sync.Once
-
-	// Used to record the number of requests
+	// Used to record the number of requests. -1 represent this DubboInvoker is destroyed
 	reqNum int64
 }
 
@@ -68,14 +68,17 @@ func NewDubboInvoker(url common.URL, client *Client) *DubboInvoker {
 
 // Invoke ...
 func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
-
-	atomic.AddInt64(&(di.reqNum), 1)
-	defer atomic.AddInt64(&(di.reqNum), -1)
-
 	var (
 		err    error
 		result protocol.RPCResult
 	)
+	if di.reqNum == -1 {
+		// Generally, this is not the case, because the invoker has been removed from the invoker list before destory
+		logger.Warnf("this dubboInvoker is destroyed")
+		result.Err = ErrDestroyedInvoker
+	}
+	atomic.AddInt64(&(di.reqNum), 1)
+	defer atomic.AddInt64(&(di.reqNum), -1)
 
 	inv := invocation.(*invocation_impl.RPCInvocation)
 	for _, k := range attachmentKey {
@@ -128,6 +131,7 @@ func (di *DubboInvoker) Destroy() {
 					di.client.Close()
 					di.client = nil
 				}
+				di.reqNum = -1
 				break
 			}
 			logger.Warnf("DubboInvoker is to be destroyed, wait {%v} req end,url:{%s}", di.reqNum, di.GetUrl().Key())
