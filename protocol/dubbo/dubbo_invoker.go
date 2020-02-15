@@ -77,6 +77,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
 		logger.Warnf("this dubboInvoker is destroyed")
 		result.Err = ErrDestroyedInvoker
+		return &result
 	}
 	atomic.AddInt64(&(di.reqNum), 1)
 	defer atomic.AddInt64(&(di.reqNum), -1)
