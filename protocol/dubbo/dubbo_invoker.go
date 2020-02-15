@@ -72,7 +72,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 		err    error
 		result protocol.RPCResult
 	)
-	if di.reqNum == -1 {
+	if di.reqNum < 0 {
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
 		logger.Warnf("this dubboInvoker is destroyed")
@@ -127,13 +127,13 @@ func (di *DubboInvoker) Destroy() {
 	di.quitOnce.Do(func() {
 		for {
 			if di.reqNum == 0 {
+				di.reqNum = -1
 				logger.Info("dubboInvoker is destroyed,url:{%s}", di.GetUrl().Key())
 				di.BaseInvoker.Destroy()
 				if di.client != nil {
 					di.client.Close()
 					di.client = nil
 				}
-				di.reqNum = -1
 				break
 			}
 			logger.Warnf("DubboInvoker is to be destroyed, wait {%v} req end,url:{%s}", di.reqNum, di.GetUrl().Key())
