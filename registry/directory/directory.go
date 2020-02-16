@@ -255,10 +255,11 @@ func (dir *registryDirectory) IsAvailable() bool {
 func (dir *registryDirectory) Destroy() {
 	//TODO:unregister & unsubscribe
 	dir.BaseDirectory.Destroy(func() {
-		for _, ivk := range dir.cacheInvokers {
+		invokers := dir.cacheInvokers
+		dir.cacheInvokers = []protocol.Invoker{}
+		for _, ivk := range invokers {
 			ivk.Destroy()
 		}
-		dir.cacheInvokers = []protocol.Invoker{}
 	})
 }
 
