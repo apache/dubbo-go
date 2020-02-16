@@ -33,22 +33,27 @@ func init() {
 type ConditionRouterFactory struct{}
 
 func newConditionRouterFactory() router.RouterFactory {
-	return ConditionRouterFactory{}
+	return &ConditionRouterFactory{}
 }
 
 // NewRouter Create ConditionRouterFactory by URL
-func (c ConditionRouterFactory) NewRouter(url *common.URL) (router.Router, error) {
+func (c *ConditionRouterFactory) NewRouter(url *common.URL) (router.Router, error) {
 	return NewConditionRouter(url)
+}
+
+// NewRouter Create FileRouterFactory by Content
+func (c *ConditionRouterFactory) NewFileRouter(content []byte) (router.Router, error) {
+	return NewFileConditionRouter(content)
 }
 
 // AppRouterFactory Application router factory
 type AppRouterFactory struct{}
 
 func newAppRouterFactory() router.RouterFactory {
-	return AppRouterFactory{}
+	return &AppRouterFactory{}
 }
 
 // NewRouter Create AppRouterFactory by URL
-func (c AppRouterFactory) NewRouter(url *common.URL) (router.Router, error) {
+func (c *AppRouterFactory) NewRouter(url *common.URL) (router.Router, error) {
 	return NewAppRouter(url)
 }

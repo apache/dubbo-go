@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-package config
+package condition
 
 import (
-	"strings"
 	"testing"
 )
 
@@ -26,24 +25,23 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const testyml = "testdata/router_config.yml"
+func TestLoadYmlConfig(t *testing.T) {
+	router, e := NewFileConditionRouter([]byte(`priority: 1
+force: true
+conditions :
+  - "a => b"
+  - "c => d"`))
+	assert.Nil(t, e)
+	assert.NotNil(t, router)
+	assert.Equal(t, router.routerRule.Priority, 1)
+	assert.Equal(t, router.routerRule.Force, true)
+	assert.Equal(t, len(router.routerRule.Conditions), 2)
+}
 
-func TestString(t *testing.T) {
-
-	s := "a1=>a2"
-	s1 := "=>a2"
-	s2 := "a1=>"
-
-	n := strings.SplitN(s, "=>", 2)
-	n1 := strings.SplitN(s1, "=>", 2)
-	n2 := strings.SplitN(s2, "=>", 2)
-
-	assert.Equal(t, n[0], "a1")
-	assert.Equal(t, n[1], "a2")
-
-	assert.Equal(t, n1[0], "")
-	assert.Equal(t, n1[1], "a2")
-
-	assert.Equal(t, n2[0], "a1")
-	assert.Equal(t, n2[1], "")
+func TestParseCondition(t *testing.T) {
+	s := make([]string, 2)
+	s = append(s, "a => b")
+	s = append(s, "c => d")
+	condition := parseCondition(s)
+	assert.Equal(t, "a & c => b & d", condition)
 }
