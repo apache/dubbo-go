@@ -18,11 +18,17 @@
 package extension
 
 import (
+	"sync"
+)
+
+import (
 	"github.com/apache/dubbo-go/cluster/router"
 )
 
 var (
-	routers = make(map[string]func() router.RouterFactory)
+	routers               = make(map[string]func() router.RouterFactory)
+	fileRouterFactoryOnce sync.Once
+	fileRouterFactories   = make(map[string]router.FIleRouterFactory)
 )
 
 // SetRouterFactory Set create router factory function by name
@@ -41,4 +47,21 @@ func GetRouterFactory(name string) router.RouterFactory {
 // GetRouterFactories Get all create router factory function
 func GetRouterFactories() map[string]func() router.RouterFactory {
 	return routers
+}
+
+// GetFileRouterFactories Get all create file router factory instance
+func GetFileRouterFactories() map[string]router.FIleRouterFactory {
+	l := len(routers)
+	if l == 0 {
+		return nil
+	}
+	fileRouterFactoryOnce.Do(func() {
+		for k := range routers {
+			factory := GetRouterFactory(k)
+			if fr, ok := factory.(router.FIleRouterFactory); ok {
+				fileRouterFactories[k] = fr
+			}
+		}
+	})
+	return fileRouterFactories
 }

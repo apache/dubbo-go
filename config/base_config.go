@@ -27,7 +27,6 @@ import (
 
 import (
 	perrors "github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 )
 
 import (
@@ -364,22 +363,15 @@ func initializeStruct(t reflect.Type, v reflect.Value) {
 
 }
 
-func loadYmlConfig(confRouterFile string, i interface{}) error {
+// loadYmlConfig Load yml config byte from file
+func loadYmlConfig(confRouterFile string) ([]byte, error) {
 	if len(confRouterFile) == 0 {
-		return perrors.Errorf("application configure(provider) file name is nil")
+		return nil, perrors.Errorf("application configure(provider) file name is nil")
 	}
 
 	if path.Ext(confRouterFile) != ".yml" {
-		return perrors.Errorf("application configure file name{%v} suffix must be .yml", confRouterFile)
+		return nil, perrors.Errorf("application configure file name{%v} suffix must be .yml", confRouterFile)
 	}
 
-	confFileStream, err := ioutil.ReadFile(confRouterFile)
-	if err != nil {
-		return perrors.Errorf("ioutil.ReadFile(file:%s) = error:%v", confRouterFile, perrors.WithStack(err))
-	}
-	err = yaml.Unmarshal(confFileStream, i)
-	if err != nil {
-		return perrors.Errorf("yaml.Unmarshal() = error:%v", perrors.WithStack(err))
-	}
-	return nil
+	return ioutil.ReadFile(confRouterFile)
 }
