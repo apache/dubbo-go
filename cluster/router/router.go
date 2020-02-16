@@ -30,6 +30,11 @@ type RouterFactory interface {
 	NewRouter(*common.URL) (Router, error)
 }
 
+type FIleRouterFactory interface {
+	// NewFileRouters Create file router with config file
+	NewFileRouter([]byte) (Router, error)
+}
+
 // Router
 type Router interface {
 	// Route Determine the target invokers list.
