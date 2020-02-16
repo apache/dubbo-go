@@ -35,7 +35,6 @@ var (
 	providerConfig    *ProviderConfig
 	metricConfig      *MetricConfig
 	applicationConfig *ApplicationConfig
-	routerConfig      *ConditionRouterConfig
 	maxWait           = 3
 )
 
@@ -64,7 +63,6 @@ func init() {
 
 	if errPro := RouterInit(confRouterFile); errPro != nil {
 		log.Printf("[routerConfig] %#v", errPro)
-		routerConfig = nil
 	}
 }
 
