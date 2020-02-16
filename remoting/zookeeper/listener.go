@@ -18,7 +18,6 @@
 package zookeeper
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
 	"path"
 	"strings"
 	"sync"
@@ -32,6 +31,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/remoting"
 )
