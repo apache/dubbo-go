@@ -30,6 +30,7 @@ type RouterFactory interface {
 	NewRouter(*common.URL) (Router, error)
 }
 
+// RouterFactory Router create factory use for parse config file
 type FIleRouterFactory interface {
 	// NewFileRouters Create file router with config file
 	NewFileRouter([]byte) (Router, error)
