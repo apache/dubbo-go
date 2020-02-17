@@ -195,20 +195,20 @@ func GetApplicationConfig() *ApplicationConfig {
 
 // GetProviderConfig find the provider config
 // if not found, create new one
-func GetProviderConfig() *ProviderConfig {
+func GetProviderConfig() ProviderConfig {
 	if providerConfig == nil {
 		logger.Warnf("providerConfig is nil!")
-		return &ProviderConfig{}
+		return ProviderConfig{}
 	}
-	return providerConfig
+	return *providerConfig
 }
 
 // GetConsumerConfig find the consumer config
 // if not found, create new one
-func GetConsumerConfig() *ConsumerConfig {
+func GetConsumerConfig() ConsumerConfig {
 	if consumerConfig == nil {
 		logger.Warnf("consumerConfig is nil!")
-		return &ConsumerConfig{}
+		return ConsumerConfig{}
 	}
-	return consumerConfig
+	return *consumerConfig
 }
