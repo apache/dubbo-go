@@ -43,9 +43,9 @@ func TestConfigLoader(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Nil(t, consumerConfig)
-	assert.Equal(t, &ConsumerConfig{}, GetConsumerConfig())
+	assert.Equal(t, ConsumerConfig{}, GetConsumerConfig())
 	assert.Nil(t, providerConfig)
-	assert.Equal(t, &ProviderConfig{}, GetProviderConfig())
+	assert.Equal(t, ProviderConfig{}, GetProviderConfig())
 
 	err = ConsumerInit(conPath)
 	assert.NoError(t, err)
@@ -53,9 +53,9 @@ func TestConfigLoader(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NotNil(t, consumerConfig)
-	assert.NotEqual(t, &ConsumerConfig{}, GetConsumerConfig())
+	assert.NotEqual(t, ConsumerConfig{}, GetConsumerConfig())
 	assert.NotNil(t, providerConfig)
-	assert.NotEqual(t, &ProviderConfig{}, GetProviderConfig())
+	assert.NotEqual(t, ProviderConfig{}, GetProviderConfig())
 	assert.Equal(t, "soa.com.ikurento.user.UserProvider", GetConsumerConfig().References["UserProvider"].Params["serviceid"])
 }
 
@@ -155,9 +155,9 @@ func TestConfigLoaderWithConfigCenter(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Nil(t, consumerConfig)
-	assert.Equal(t, &ConsumerConfig{}, GetConsumerConfig())
+	assert.Equal(t, ConsumerConfig{}, GetConsumerConfig())
 	assert.Nil(t, providerConfig)
-	assert.Equal(t, &ProviderConfig{}, GetProviderConfig())
+	assert.Equal(t, ProviderConfig{}, GetProviderConfig())
 
 	err = ConsumerInit(conPath)
 	configCenterRefreshConsumer()
@@ -167,9 +167,9 @@ func TestConfigLoaderWithConfigCenter(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NotNil(t, consumerConfig)
-	assert.NotEqual(t, &ConsumerConfig{}, GetConsumerConfig())
+	assert.NotEqual(t, ConsumerConfig{}, GetConsumerConfig())
 	assert.NotNil(t, providerConfig)
-	assert.NotEqual(t, &ProviderConfig{}, GetProviderConfig())
+	assert.NotEqual(t, ProviderConfig{}, GetProviderConfig())
 
 	assert.Equal(t, "BDTService", consumerConfig.ApplicationConfig.Name)
 	assert.Equal(t, "127.0.0.1:2181", consumerConfig.Registries["hangzhouzk"].Address)
@@ -208,9 +208,9 @@ func TestConfigLoaderWithConfigCenterSingleRegistry(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Nil(t, consumerConfig)
-	assert.Equal(t, &ConsumerConfig{}, GetConsumerConfig())
+	assert.Equal(t, ConsumerConfig{}, GetConsumerConfig())
 	assert.Nil(t, providerConfig)
-	assert.Equal(t, &ProviderConfig{}, GetProviderConfig())
+	assert.Equal(t, ProviderConfig{}, GetProviderConfig())
 
 	err = ConsumerInit(conPath)
 	checkApplicationName(consumerConfig.ApplicationConfig)
@@ -224,9 +224,9 @@ func TestConfigLoaderWithConfigCenterSingleRegistry(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NotNil(t, consumerConfig)
-	assert.NotEqual(t, &ConsumerConfig{}, GetConsumerConfig())
+	assert.NotEqual(t, ConsumerConfig{}, GetConsumerConfig())
 	assert.NotNil(t, providerConfig)
-	assert.NotEqual(t, &ProviderConfig{}, GetProviderConfig())
+	assert.NotEqual(t, ProviderConfig{}, GetProviderConfig())
 
 	assert.Equal(t, "BDTService", consumerConfig.ApplicationConfig.Name)
 	assert.Equal(t, "mock://127.0.0.1:2182", consumerConfig.Registries[constant.DEFAULT_KEY].Address)
