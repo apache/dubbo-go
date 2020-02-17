@@ -22,6 +22,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 import (
@@ -33,10 +34,14 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
+// FileConditionRouter Use for parse config file of condition router
 type FileConditionRouter struct {
 	listenableRouter
+	parseOnce sync.Once
+	url       common.URL
 }
 
+// NewFileConditionRouter Create file condition router instance with content ( from config file)
 func NewFileConditionRouter(content []byte) (*FileConditionRouter, error) {
 	fileRouter := &FileConditionRouter{}
 	rule, err := Parse(string(content))
@@ -53,18 +58,22 @@ func NewFileConditionRouter(content []byte) (*FileConditionRouter, error) {
 	return fileRouter, nil
 }
 
+// URL Return URL in file condition router n
 func (f *FileConditionRouter) URL() common.URL {
-	routerRule := f.routerRule
-	rule := parseCondition(routerRule.Conditions)
-	return *common.NewURLWithOptions(
-		common.WithProtocol(constant.ROUTE_PROTOCOL),
-		common.WithIp(constant.ANYHOST_VALUE),
-		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.RouterForce, strconv.FormatBool(routerRule.Force)),
-		common.WithParamsValue(constant.RouterPriority, strconv.Itoa(routerRule.Priority)),
-		common.WithParamsValue(constant.RULE_KEY, base64.URLEncoding.EncodeToString([]byte(rule))),
-		common.WithParamsValue(constant.ROUTER_KEY, "condition"),
-		common.WithParamsValue(constant.CATEGORY_KEY, constant.ROUTERS_CATEGORY))
+	f.parseOnce.Do(func() {
+		routerRule := f.routerRule
+		rule := parseCondition(routerRule.Conditions)
+		f.url = *common.NewURLWithOptions(
+			common.WithProtocol(constant.CONDITION_ROUTE_PROTOCOL),
+			common.WithIp(constant.ANYHOST_VALUE),
+			common.WithParams(url.Values{}),
+			common.WithParamsValue(constant.RouterForce, strconv.FormatBool(routerRule.Force)),
+			common.WithParamsValue(constant.RouterPriority, strconv.Itoa(routerRule.Priority)),
+			common.WithParamsValue(constant.RULE_KEY, base64.URLEncoding.EncodeToString([]byte(rule))),
+			common.WithParamsValue(constant.ROUTER_KEY, constant.CONDITION_ROUTE_PROTOCOL),
+			common.WithParamsValue(constant.CATEGORY_KEY, constant.ROUTERS_CATEGORY))
+	})
+	return f.url
 }
 
 func parseCondition(conditions []string) string {
