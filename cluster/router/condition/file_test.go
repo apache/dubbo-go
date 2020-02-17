@@ -45,3 +45,14 @@ func TestParseCondition(t *testing.T) {
 	condition := parseCondition(s)
 	assert.Equal(t, "a & c => b & d", condition)
 }
+
+func TestFileRouterURL(t *testing.T) {
+	router, e := NewFileConditionRouter([]byte(`priority: 1
+force: true
+conditions :
+  - "a => b"
+  - "c => d"`))
+	assert.Nil(t, e)
+	assert.NotNil(t, router)
+	assert.Equal(t, "condition://0.0.0.0:?category=routers&force=true&priority=1&router=condition&rule=YSAmIGMgPT4gYiAmIGQ%3D", router.URL().String())
+}
