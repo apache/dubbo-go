@@ -122,13 +122,17 @@ Windows
 before_ut.bat
 ```
 
-# 执行
+### 执行
 ```bash
 go test ./...
 
 # coverage
 go test ./... -coverprofile=coverage.txt -covermode=atomic
 ```
+
+## 编译
+
+请移步 [dubbo-samples/golang](https://github.com/dubbogo/dubbo-samples)
 
 ## 如何贡献
 
