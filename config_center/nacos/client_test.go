@@ -27,7 +27,7 @@ func Test_newNacosClient(t *testing.T) {
 	c.wg.Add(1)
 	go HandleClientRestart(c)
 	go func() {
-		time.Sleep(time.Second*10)
+		time.Sleep(time.Second)
 		c.client.Close()
 	}()
 	<-c.client.Done()
