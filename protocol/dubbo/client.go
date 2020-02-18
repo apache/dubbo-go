@@ -258,8 +258,8 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 
 	select {
 	case <-getty.GetTimeWheel().After(c.opts.RequestTimeout):
-		err = errClientReadTimeout
 		c.removePendingResponse(SequenceType(rsp.seq))
+		return perrors.WithStack(errClientReadTimeout)
 	case <-rsp.done:
 		err = rsp.err
 	}
