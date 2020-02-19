@@ -51,10 +51,10 @@ func initConsumerRestConfig() {
 		return
 	}
 	restConsumerServiceConfigMap = make(map[string]*rest_interface.RestConfig, len(restConsumerConfig.RestConfigMap))
-	for _, rc := range restConsumerConfig.RestConfigMap {
+	for key, rc := range restConsumerConfig.RestConfigMap {
 		rc.Client = getNotEmptyStr(rc.Client, restConsumerConfig.Client, constant.DEFAULT_REST_CLIENT)
 		rc.RestMethodConfigsMap = initMethodConfigMap(rc, restConsumerConfig.Consumes, restConsumerConfig.Produces)
-		restConsumerServiceConfigMap[rc.InterfaceName] = rc
+		restConsumerServiceConfigMap[strings.TrimPrefix(key, "/")] = rc
 	}
 }
 
@@ -66,10 +66,10 @@ func initProviderRestConfig() {
 		return
 	}
 	restProviderServiceConfigMap = make(map[string]*rest_interface.RestConfig, len(restProviderConfig.RestConfigMap))
-	for _, rc := range restProviderConfig.RestConfigMap {
+	for key, rc := range restProviderConfig.RestConfigMap {
 		rc.Server = getNotEmptyStr(rc.Server, restProviderConfig.Server, constant.DEFAULT_REST_SERVER)
 		rc.RestMethodConfigsMap = initMethodConfigMap(rc, restProviderConfig.Consumes, restProviderConfig.Produces)
-		restProviderServiceConfigMap[rc.InterfaceName] = rc
+		restProviderServiceConfigMap[strings.TrimPrefix(key, "/")] = rc
 	}
 }
 
@@ -139,12 +139,12 @@ func parseParamsString2Map(params string) (map[int]string, error) {
 	return m, nil
 }
 
-func GetRestConsumerServiceConfig(service string) *rest_interface.RestConfig {
-	return restConsumerServiceConfigMap[service]
+func GetRestConsumerServiceConfig(path string) *rest_interface.RestConfig {
+	return restConsumerServiceConfigMap[path]
 }
 
-func GetRestProviderServiceConfig(service string) *rest_interface.RestConfig {
-	return restProviderServiceConfigMap[service]
+func GetRestProviderServiceConfig(path string) *rest_interface.RestConfig {
+	return restProviderServiceConfigMap[path]
 }
 
 func SetRestConsumerServiceConfigMap(configMap map[string]*rest_interface.RestConfig) {
