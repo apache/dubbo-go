@@ -61,9 +61,9 @@ func NewRestProtocol() *RestProtocol {
 
 func (rp *RestProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetUrl()
-	serviceKey := strings.TrimPrefix(url.Path, "/")
+	serviceKey := url.ServiceKey()
 	exporter := NewRestExporter(serviceKey, invoker, rp.ExporterMap())
-	restConfig := GetRestProviderServiceConfig(url.Service())
+	restConfig := GetRestProviderServiceConfig(strings.TrimPrefix(url.Path, "/"))
 	rp.SetExporterMap(serviceKey, exporter)
 	restServer := rp.getServer(url, restConfig)
 	restServer.Deploy(invoker, restConfig.RestMethodConfigsMap)
@@ -78,7 +78,7 @@ func (rp *RestProtocol) Refer(url common.URL) protocol.Invoker {
 	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
 		requestTimeout = t
 	}
-	restConfig := GetRestConsumerServiceConfig(url.Service())
+	restConfig := GetRestConsumerServiceConfig(strings.TrimPrefix(url.Path, "/"))
 	restOptions := rest_interface.RestOptions{RequestTimeout: requestTimeout, ConnectTimeout: connectTimeout}
 	restClient := rp.getClient(restOptions, restConfig)
 	invoker := NewRestInvoker(url, &restClient, restConfig.RestMethodConfigsMap)
@@ -89,9 +89,9 @@ func (rp *RestProtocol) Refer(url common.URL) protocol.Invoker {
 func (rp *RestProtocol) getServer(url common.URL, restConfig *rest_interface.RestConfig) rest_interface.RestServer {
 	restServer, ok := rp.serverMap[url.Location]
 	if !ok {
-		_, ok := rp.ExporterMap().Load(strings.TrimPrefix(url.Path, "/"))
+		_, ok := rp.ExporterMap().Load(url.ServiceKey())
 		if !ok {
-			panic("[RestProtocol]" + url.Key() + "is not existing")
+			panic("[RestProtocol]" + url.ServiceKey() + "is not existing")
 		}
 		rp.serverLock.Lock()
 		restServer, ok = rp.serverMap[url.Location]

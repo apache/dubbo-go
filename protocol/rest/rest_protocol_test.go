@@ -70,7 +70,7 @@ func TestRestProtocol_Refer(t *testing.T) {
 	assert.Equal(t, 0, invokersLen)
 }
 
-func TestJsonrpcProtocol_Export(t *testing.T) {
+func TestRestProtocol_Export(t *testing.T) {
 	// Export
 	proto := GetRestProtocol()
 	url, err := common.NewURL(context.Background(), "rest://127.0.0.1:8888/com.ikurento.user.UserProvider?anyhost=true&"+
@@ -149,6 +149,28 @@ func (p *UserProvider) GetUser(ctx context.Context, id int, age int32, name stri
 
 func (p *UserProvider) GetUserOne(ctx context.Context, user *User) (*User, error) {
 	return user, nil
+}
+
+func (p *UserProvider) GetUserTwo(ctx context.Context, req []interface{}, rsp *User) error {
+	m := req[0].(map[string]interface{})
+	rsp.Name = m["Name"].(string)
+	return nil
+}
+
+func (p *UserProvider) GetUserThree(ctx context.Context, user interface{}) (*User, error) {
+	m := user.(map[string]interface{})
+
+	u := &User{}
+	u.Name = m["Name"].(string)
+	return u, nil
+}
+
+func (p *UserProvider) GetUserFour(ctx context.Context, user []interface{}, id string) (*User, error) {
+	m := user[0].(map[string]interface{})
+
+	u := &User{}
+	u.Name = m["Name"].(string)
+	return u, nil
 }
 
 type User struct {
