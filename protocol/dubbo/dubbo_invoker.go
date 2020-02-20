@@ -20,6 +20,8 @@ package dubbo
 import (
 	"strconv"
 	"sync"
+	"sync/atomic"
+	"time"
 )
 
 import (
@@ -34,7 +36,11 @@ import (
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 )
 
-var Err_No_Reply = perrors.New("request need @response")
+var (
+	// ErrNoReply ...
+	ErrNoReply          = perrors.New("request need @response")
+	ErrDestroyedInvoker = perrors.New("request Destroyed invoker")
+)
 
 var (
 	attachmentKey = []string{constant.INTERFACE_KEY, constant.GROUP_KEY, constant.TOKEN_KEY, constant.TIMEOUT_KEY}
@@ -44,12 +50,15 @@ type DubboInvoker struct {
 	protocol.BaseInvoker
 	client   *Client
 	quitOnce sync.Once
+	// Used to record the number of requests. -1 represent this DubboInvoker is destroyed
+	reqNum int64
 }
 
 func NewDubboInvoker(url common.URL, client *Client) *DubboInvoker {
 	return &DubboInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
+		reqNum:      0,
 	}
 }
 
@@ -59,6 +68,15 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 		err    error
 		result protocol.RPCResult
 	)
+	if di.reqNum < 0 {
+		// Generally, the case will not happen, because the invoker has been removed
+		// from the invoker list before destroy,so no new request will enter the destroyed invoker
+		logger.Warnf("this dubboInvoker is destroyed")
+		result.Err = ErrDestroyedInvoker
+		return &result
+	}
+	atomic.AddInt64(&(di.reqNum), 1)
+	defer atomic.AddInt64(&(di.reqNum), -1)
 
 	inv := invocation.(*invocation_impl.RPCInvocation)
 	for _, k := range attachmentKey {
@@ -82,7 +100,7 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 		}
 	} else {
 		if inv.Reply() == nil {
-			result.Err = Err_No_Reply
+			result.Err = ErrNoReply
 		} else {
 			result.Err = di.client.Call(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), response)
 		}
@@ -98,10 +116,20 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 
 func (di *DubboInvoker) Destroy() {
 	di.quitOnce.Do(func() {
-		di.BaseInvoker.Destroy()
-
-		if di.client != nil {
-			di.client.Close()
+		for {
+			if di.reqNum == 0 {
+				di.reqNum = -1
+				logger.Info("dubboInvoker is destroyed,url:{%s}", di.GetUrl().Key())
+				di.BaseInvoker.Destroy()
+				if di.client != nil {
+					di.client.Close()
+					di.client = nil
+				}
+				break
+			}
+			logger.Warnf("DubboInvoker is to be destroyed, wait {%v} req end,url:{%s}", di.reqNum, di.GetUrl().Key())
+			time.Sleep(1 * time.Second)
 		}
+
 	})
 }
