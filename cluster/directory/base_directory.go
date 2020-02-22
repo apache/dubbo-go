@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/dubbogo/gost/container/set"
+	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
 )
 
@@ -33,6 +34,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/protocol"
 )
 
 var routerURLSet = gxset.NewSet()
@@ -130,4 +132,18 @@ func GetRouterURLSet() *gxset.HashSet {
 // Router URL will init in config/config_loader.go
 func AddRouterURLSet(url *common.URL) {
 	routerURLSet.Add(url)
+}
+
+// BuildRouterChain build router chain by invokers
+func (dir *staticDirectory) BuildRouterChain(invokers []protocol.Invoker) error {
+	if len(invokers) == 0 {
+		return perrors.Errorf("invokers == null")
+	}
+	url := invokers[0].GetUrl()
+	routerChain, e := chain.NewRouterChain(&url)
+	if e != nil {
+		return e
+	}
+	dir.SetRouterChain(routerChain)
+	return nil
 }

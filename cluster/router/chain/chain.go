@@ -49,7 +49,7 @@ type RouterChain struct {
 }
 
 // Route Loop routers in RouterChain and call Route method to determine the target invokers list.
-func (c RouterChain) Route(invoker []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+func (c *RouterChain) Route(invoker []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	finalInvokers := invoker
 	l := len(c.routers)
 	rs := make([]router.Router, l, int(math.Ceil(float64(l)*1.2)))
@@ -67,7 +67,7 @@ func (c RouterChain) Route(invoker []protocol.Invoker, url *common.URL, invocati
 // New a array add builtinRouters which is not sorted in RouterChain and routers
 // Sort the array
 // Replace router array in RouterChain
-func (c RouterChain) AddRouters(routers []router.Router) {
+func (c *RouterChain) AddRouters(routers []router.Router) {
 	newRouters := make([]router.Router, 0, len(c.builtinRouters)+len(routers))
 	newRouters = append(newRouters, c.builtinRouters...)
 	newRouters = append(newRouters, routers...)
