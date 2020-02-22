@@ -21,6 +21,8 @@ import (
 	"context"
 	"strconv"
 	"sync"
+	"sync/atomic"
+	"time"
 )
 
 import (
@@ -38,7 +40,8 @@ import (
 
 var (
 	// ErrNoReply ...
-	ErrNoReply = perrors.New("request need @response")
+	ErrNoReply          = perrors.New("request need @response")
+	ErrDestroyedInvoker = perrors.New("request Destroyed invoker")
 )
 
 var (
@@ -50,6 +53,8 @@ type DubboInvoker struct {
 	protocol.BaseInvoker
 	client   *Client
 	quitOnce sync.Once
+	// Used to record the number of requests. -1 represent this DubboInvoker is destroyed
+	reqNum int64
 }
 
 // NewDubboInvoker ...
@@ -57,6 +62,7 @@ func NewDubboInvoker(url common.URL, client *Client) *DubboInvoker {
 	return &DubboInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
+		reqNum:      0,
 	}
 }
 
@@ -66,6 +72,15 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 		err    error
 		result protocol.RPCResult
 	)
+	if di.reqNum < 0 {
+		// Generally, the case will not happen, because the invoker has been removed
+		// from the invoker list before destroy,so no new request will enter the destroyed invoker
+		logger.Warnf("this dubboInvoker is destroyed")
+		result.Err = ErrDestroyedInvoker
+		return &result
+	}
+	atomic.AddInt64(&(di.reqNum), 1)
+	defer atomic.AddInt64(&(di.reqNum), -1)
 
 	inv := invocation.(*invocation_impl.RPCInvocation)
 	for _, k := range attachmentKey {
@@ -110,11 +125,21 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 // Destroy ...
 func (di *DubboInvoker) Destroy() {
 	di.quitOnce.Do(func() {
-		di.BaseInvoker.Destroy()
-
-		if di.client != nil {
-			di.client.Close()
+		for {
+			if di.reqNum == 0 {
+				di.reqNum = -1
+				logger.Info("dubboInvoker is destroyed,url:{%s}", di.GetUrl().Key())
+				di.BaseInvoker.Destroy()
+				if di.client != nil {
+					di.client.Close()
+					di.client = nil
+				}
+				break
+			}
+			logger.Warnf("DubboInvoker is to be destroyed, wait {%v} req end,url:{%s}", di.reqNum, di.GetUrl().Key())
+			time.Sleep(1 * time.Second)
 		}
+
 	})
 }
 
