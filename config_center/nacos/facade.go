@@ -49,7 +49,7 @@ type nacosClientFacade interface {
 // HandleClientRestart Restart client handler
 func HandleClientRestart(r nacosClientFacade) {
 	var (
-		err error
+		err       error
 		failTimes int
 	)
 
