@@ -28,7 +28,7 @@ func Test_newNacosClient(t *testing.T) {
 	go HandleClientRestart(c)
 	go func() {
 		// c.client.Close() and <-c.client.Done() have order requirements.
-		// If c.client.Close() is called first.It is possible that "go HandleClientRestart(c)" 
+		// If c.client.Close() is called first.It is possible that "go HandleClientRestart(c)"
 		// sets c.client to nil before calling c.client.Done().
 		time.Sleep(time.Second)
 		c.client.Close()
