@@ -286,8 +286,9 @@ func (r *BaseRegistry) consumerRegistry(c common.URL, params url.Values) (string
 
 	func() {
 		r.cltLock.Lock()
+		defer r.cltLock.Unlock()
 		err = r.facadeBasedRegistry.CreatePath(dubboPath)
-		r.cltLock.Unlock()
+
 	}()
 	if err != nil {
 		logger.Errorf("facadeBasedRegistry.CreatePath(path{%s}) = error{%v}", dubboPath, perrors.WithStack(err))
