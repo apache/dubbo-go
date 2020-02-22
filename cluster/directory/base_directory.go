@@ -83,7 +83,7 @@ func (dir *BaseDirectory) SetRouters(urls []*common.URL) {
 		return
 	}
 
-	routers := make([]router.Router, len(urls), len(urls))
+	routers := make([]router.Router, 0, len(urls))
 
 	for _, url := range urls {
 		routerKey := url.GetParam(constant.ROUTER_KEY, "")
