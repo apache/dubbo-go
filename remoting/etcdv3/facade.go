@@ -38,7 +38,7 @@ type clientFacade interface {
 	SetClient(*Client)
 	ClientLock() *sync.Mutex
 	WaitGroup() *sync.WaitGroup //for wait group control, etcd client listener & etcd client container
-	GetDone() chan struct{}     //for etcd client control
+	Done() chan struct{}        //for etcd client control
 	RestartCallBack() bool
 	common.Node
 }
@@ -55,7 +55,7 @@ func HandleClientRestart(r clientFacade) {
 LOOP:
 	for {
 		select {
-		case <-r.GetDone():
+		case <-r.Done():
 			logger.Warnf("(ETCDV3ProviderRegistry)reconnectETCDV3 goroutine exit now...")
 			break LOOP
 			// re-register all services
@@ -72,7 +72,7 @@ LOOP:
 			failTimes = 0
 			for {
 				select {
-				case <-r.GetDone():
+				case <-r.Done():
 					logger.Warnf("(ETCDV3ProviderRegistry)reconnectETCDRegistry goroutine exit now...")
 					break LOOP
 				case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)): // avoid connect frequent
