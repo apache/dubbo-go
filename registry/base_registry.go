@@ -162,7 +162,7 @@ func (r *BaseRegistry) service(c common.URL) string {
 func (r *BaseRegistry) RestartCallBack() bool {
 
 	// copy r.services
-	services := []common.URL{}
+	services := make([]common.URL, 0, len(r.services))
 	for _, confIf := range r.services {
 		services = append(services, confIf)
 	}
@@ -236,9 +236,11 @@ func (r *BaseRegistry) providerRegistry(c common.URL, params url.Values) (string
 		return "", "", perrors.Errorf("conf{Path:%s, Methods:%s}", c.Path, c.Methods)
 	}
 	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.PROVIDER])
-	r.cltLock.Lock()
-	err = r.facadeBasedRegistry.CreatePath(dubboPath)
-	r.cltLock.Unlock()
+	func() {
+		r.cltLock.Lock()
+		defer r.cltLock.Unlock()
+		err = r.facadeBasedRegistry.CreatePath(dubboPath)
+	}()
 	if err != nil {
 		logger.Errorf("facadeBasedRegistry.CreatePath(path{%s}) = error{%#v}", dubboPath, perrors.WithStack(err))
 		return "", "", perrors.WithMessagef(err, "facadeBasedRegistry.CreatePath(path:%s)", dubboPath)
@@ -260,10 +262,11 @@ func (r *BaseRegistry) providerRegistry(c common.URL, params url.Values) (string
 	logger.Debugf("provider url params:%#v", params)
 	var host string
 	if c.Ip == "" {
-		host = localIP + ":" + c.Port
+		host = localIP
 	} else {
-		host = c.Ip + ":" + c.Port
+		host = c.Ip
 	}
+	host += ":" + c.Port
 
 	rawURL = fmt.Sprintf("%s://%s%s?%s", c.Protocol, host, c.Path, params.Encode())
 	// Print your own registration service providers.
@@ -280,17 +283,24 @@ func (r *BaseRegistry) consumerRegistry(c common.URL, params url.Values) (string
 		err       error
 	)
 	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.CONSUMER])
-	r.cltLock.Lock()
-	err = r.facadeBasedRegistry.CreatePath(dubboPath)
-	r.cltLock.Unlock()
+
+	func() {
+		r.cltLock.Lock()
+		err = r.facadeBasedRegistry.CreatePath(dubboPath)
+		r.cltLock.Unlock()
+	}()
 	if err != nil {
 		logger.Errorf("facadeBasedRegistry.CreatePath(path{%s}) = error{%v}", dubboPath, perrors.WithStack(err))
 		return "", "", perrors.WithStack(err)
 	}
 	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.PROVIDER])
-	r.cltLock.Lock()
-	err = r.facadeBasedRegistry.CreatePath(dubboPath)
-	r.cltLock.Unlock()
+
+	func() {
+		r.cltLock.Lock()
+		defer r.cltLock.Unlock()
+		err = r.facadeBasedRegistry.CreatePath(dubboPath)
+	}()
+
 	if err != nil {
 		logger.Errorf("facadeBasedRegistry.CreatePath(path{%s}) = error{%v}", dubboPath, perrors.WithStack(err))
 		return "", "", perrors.WithStack(err)
