@@ -25,8 +25,8 @@ import (
 )
 
 import (
+	"github.com/dubbogo/go-zookeeper/zk"
 	perrors "github.com/pkg/errors"
-	"github.com/samuel/go-zookeeper/zk"
 )
 
 import (
@@ -506,7 +506,7 @@ func (z *ZookeeperClient) GetChildrenW(path string) ([]string, <-chan zk.Event, 
 		err      error
 		children []string
 		stat     *zk.Stat
-		event    <-chan zk.Event
+		watcher  *zk.Watcher
 	)
 
 	err = errNilZkClientConn
@@ -514,7 +514,7 @@ func (z *ZookeeperClient) GetChildrenW(path string) ([]string, <-chan zk.Event, 
 	conn := z.Conn
 	z.Unlock()
 	if conn != nil {
-		children, stat, event, err = conn.ChildrenW(path)
+		children, stat, watcher, err = conn.ChildrenW(path)
 	}
 
 	if err != nil {
@@ -534,7 +534,7 @@ func (z *ZookeeperClient) GetChildrenW(path string) ([]string, <-chan zk.Event, 
 		return nil, nil, errNilChildren
 	}
 
-	return children, event, nil
+	return children, watcher.EvtCh, nil
 }
 
 // GetChildren ...
@@ -573,9 +573,9 @@ func (z *ZookeeperClient) GetChildren(path string) ([]string, error) {
 // ExistW ...
 func (z *ZookeeperClient) ExistW(zkPath string) (<-chan zk.Event, error) {
 	var (
-		exist bool
-		err   error
-		event <-chan zk.Event
+		exist   bool
+		err     error
+		watcher *zk.Watcher
 	)
 
 	err = errNilZkClientConn
@@ -583,7 +583,7 @@ func (z *ZookeeperClient) ExistW(zkPath string) (<-chan zk.Event, error) {
 	conn := z.Conn
 	z.Unlock()
 	if conn != nil {
-		exist, _, event, err = conn.ExistsW(zkPath)
+		exist, _, watcher, err = conn.ExistsW(zkPath)
 	}
 
 	if err != nil {
@@ -595,7 +595,7 @@ func (z *ZookeeperClient) ExistW(zkPath string) (<-chan zk.Event, error) {
 		return nil, perrors.Errorf("zkClient{%s} App zk path{%s} does not exist.", z.name, zkPath)
 	}
 
-	return event, nil
+	return watcher.EvtCh, nil
 }
 
 // GetContent ...
