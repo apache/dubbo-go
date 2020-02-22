@@ -50,7 +50,6 @@ type nacosClientFacade interface {
 func HandleClientRestart(r nacosClientFacade) {
 	var (
 		err error
-
 		failTimes int
 	)
 
