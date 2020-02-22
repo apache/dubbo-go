@@ -39,7 +39,7 @@ func Test_RegAwareInvokeSuccess(t *testing.T) {
 
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {
-		url, _ := common.NewURL(context.Background(), fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
+		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		invokers = append(invokers, NewMockInvoker(url, 1))
 	}
 
@@ -55,7 +55,7 @@ func TestDestroy(t *testing.T) {
 
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {
-		url, _ := common.NewURL(context.Background(), fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
+		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		invokers = append(invokers, NewMockInvoker(url, 1))
 	}
 

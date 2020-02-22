@@ -18,7 +18,6 @@
 package parser
 
 import (
-	"context"
 	"strconv"
 	"strings"
 )
@@ -139,14 +138,14 @@ func serviceItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.UR
 				newUrlStr := urlStr
 				newUrlStr = newUrlStr + "&application"
 				newUrlStr = newUrlStr + v
-				url, err := common.NewURL(context.Background(), newUrlStr)
+				url, err := common.NewURL(newUrlStr)
 				if err != nil {
 					return nil, perrors.WithStack(err)
 				}
 				urls = append(urls, &url)
 			}
 		} else {
-			url, err := common.NewURL(context.Background(), urlStr)
+			url, err := common.NewURL(urlStr)
 			if err != nil {
 				return nil, perrors.WithStack(err)
 			}
@@ -185,7 +184,7 @@ func appItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.URL, e
 			urlStr = urlStr + constant.APP_DYNAMIC_CONFIGURATORS_CATEGORY
 			urlStr = urlStr + "&configVersion="
 			urlStr = urlStr + config.ConfigVersion
-			url, err := common.NewURL(context.Background(), urlStr)
+			url, err := common.NewURL(urlStr)
 			if err != nil {
 				return nil, perrors.WithStack(err)
 			}
