@@ -29,7 +29,6 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/cluster/directory"
-	"github.com/apache/dubbo-go/cluster/router/chain"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -178,32 +177,17 @@ func (dir *registryDirectory) toGroupInvokers() []protocol.Invoker {
 		//len is 1 it means no group setting ,so do not need cluster again
 		for _, invokers := range groupInvokersMap {
 			groupInvokersList = invokers
-			dir.buildRouterChain(invokers)
 		}
 	} else {
 		for _, invokers := range groupInvokersMap {
 			staticDir := directory.NewStaticDirectory(invokers)
 			cluster := extension.GetCluster(dir.GetUrl().SubURL.GetParam(constant.CLUSTER_KEY, constant.DEFAULT_CLUSTER))
+			staticDir.BuildRouterChain(invokers)
 			groupInvokersList = append(groupInvokersList, cluster.Join(staticDir))
-
-			dir.buildRouterChain(invokers)
 		}
 	}
 
 	return groupInvokersList
-}
-
-func (dir *registryDirectory) buildRouterChain(invokers []protocol.Invoker) error {
-	if len(invokers) == 0 {
-		return perrors.Errorf("invokers == null")
-	}
-	url := invokers[0].GetUrl()
-	routerChain, e := chain.NewRouterChain(&url)
-	if e != nil {
-		return e
-	}
-	dir.SetRouterChain(routerChain)
-	return nil
 }
 
 func (dir *registryDirectory) uncacheInvoker(url *common.URL) {
