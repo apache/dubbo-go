@@ -42,7 +42,7 @@ import (
 )
 
 var (
-	forkingUrl, _ = common.NewURL(context.TODO(), "dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
+	forkingUrl, _ = common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
 )
 
 func registerForking(t *testing.T, mockInvokers ...*mock.MockInvoker) protocol.Invoker {

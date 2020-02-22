@@ -17,7 +17,6 @@
 package apollo
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -141,7 +140,7 @@ func serviceConfigResponse(rw http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(rw, "%s", result)
 }
 
-//run mock config server
+// run mock config server
 func runMockConfigServer(handlerMap map[string]func(http.ResponseWriter, *http.Request),
 	notifyHandler func(http.ResponseWriter, *http.Request)) *httptest.Server {
 	uriHandlerMap := make(map[string]func(http.ResponseWriter, *http.Request), 0)
@@ -196,7 +195,7 @@ func initMockApollo(t *testing.T) *apolloConfiguration {
 	}}
 	apollo := initApollo()
 	apolloUrl := strings.ReplaceAll(apollo.URL, "http", "apollo")
-	url, err := common.NewURL(context.TODO(), apolloUrl, common.WithParams(c.ConfigCenterConfig.GetUrlMap()))
+	url, err := common.NewURL(apolloUrl, common.WithParams(c.ConfigCenterConfig.GetUrlMap()))
 	assert.NoError(t, err)
 	configuration, err := newApolloConfiguration(&url)
 	assert.NoError(t, err)
@@ -268,7 +267,7 @@ func (l *apolloDataListener) Process(configType *config_center.ConfigChangeEvent
 }
 
 func deleteMockJson(t *testing.T) {
-	//because the file write in another goroutine,so have a break ...
+	// because the file write in another goroutine,so have a break ...
 	time.Sleep(100 * time.Millisecond)
 	remove := os.Remove("mockDubbog.properties.json")
 	t.Log("remove result:", remove)

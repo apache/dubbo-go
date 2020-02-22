@@ -19,17 +19,19 @@ package zookeeper
 
 import (
 	"path"
+	"strings"
 	"sync"
 	"time"
 )
 
 import (
 	"github.com/dubbogo/getty"
+	"github.com/dubbogo/go-zookeeper/zk"
 	perrors "github.com/pkg/errors"
-	"github.com/samuel/go-zookeeper/zk"
 )
 
 import (
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/remoting"
 )
@@ -256,10 +258,14 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 			}(dubboPath, listener)
 
 			//listen sub path recursive
-			go func(zkPath string, listener remoting.DataListener) {
-				l.listenDirEvent(zkPath, listener)
-				logger.Warnf("listenDirEvent(zkPath{%s}) goroutine exit now", zkPath)
-			}(dubboPath, listener)
+			//if zkPath is end of "providers/ & consumers/" we do not listen children dir
+			if strings.LastIndex(zkPath, constant.PROVIDER_CATEGORY) == -1 &&
+				strings.LastIndex(zkPath, constant.CONSUMER_CATEGORY) == -1 {
+				go func(zkPath string, listener remoting.DataListener) {
+					l.listenDirEvent(zkPath, listener)
+					logger.Warnf("listenDirEvent(zkPath{%s}) goroutine exit now", zkPath)
+				}(dubboPath, listener)
+			}
 		}
 		select {
 		case zkEvent = <-childEventCh:
