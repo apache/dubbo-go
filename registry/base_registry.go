@@ -69,11 +69,20 @@ func init() {
  */
 type FacadeBasedRegistry interface {
 	Registry
+
+	// CreatePath create the path in the registry
 	CreatePath(string) error
+	// DoRegister actually do the register job
 	DoRegister(string, string) error
+	// DoSubscribe actually subscribe the URL
 	DoSubscribe(conf *common.URL) (Listener, error)
+	// CloseAndNilClient close the client and then reset the client in registry to nil
+	// you should notice that this method will be invoked inside a lock.
+	// So you should implement this method as light weighted as you can.
 	CloseAndNilClient()
+	// CloseListener close listeners
 	CloseListener()
+	// InitListeners init listeners
 	InitListeners()
 }
 
@@ -345,9 +354,9 @@ func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 
 // closeRegisters close and remove registry client and reset services map
 func (r *BaseRegistry) closeRegisters() {
+	logger.Infof("begin to close provider client")
 	r.cltLock.Lock()
 	defer r.cltLock.Unlock()
-	logger.Infof("begin to close provider client")
 	// Close and remove(set to nil) the registry client
 	r.facadeBasedRegistry.CloseAndNilClient()
 	// reset the services map
