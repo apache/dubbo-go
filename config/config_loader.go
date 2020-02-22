@@ -36,15 +36,15 @@ var (
 	metricConfig      *MetricConfig
 	applicationConfig *ApplicationConfig
 	maxWait           = 3
+	confRouterFile    string
 )
 
 // loaded consumer & provider config from xxx.yml, and log config from xxx.xml
 // Namely: dubbo.consumer.xml & dubbo.provider.xml in java dubbo
 func init() {
 	var (
-		confConFile    string
-		confProFile    string
-		confRouterFile string
+		confConFile string
+		confProFile string
 	)
 
 	confConFile = os.Getenv(constant.CONF_CONSUMER_FILE_PATH)
@@ -59,10 +59,6 @@ func init() {
 	if errPro := ProviderInit(confProFile); errPro != nil {
 		log.Printf("[providerInit] %#v", errPro)
 		providerConfig = nil
-	}
-
-	if errPro := RouterInit(confRouterFile); errPro != nil {
-		log.Printf("[routerConfig] %#v", errPro)
 	}
 }
 
@@ -82,6 +78,13 @@ func checkApplicationName(config *ApplicationConfig) {
 
 // Load Dubbo Init
 func Load() {
+	// init router
+	if confRouterFile != "" {
+		if errPro := RouterInit(confRouterFile); errPro != nil {
+			log.Printf("[routerConfig init] %#v", errPro)
+		}
+	}
+
 	// reference config
 	if consumerConfig == nil {
 		logger.Warnf("consumerConfig is nil!")
