@@ -23,8 +23,11 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/constant"
 )
 
 func TestDefaultConfigReader_ReadConsumerConfig(t *testing.T) {
