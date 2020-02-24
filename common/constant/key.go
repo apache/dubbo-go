@@ -141,3 +141,21 @@ const (
 const (
 	TRACING_REMOTE_SPAN_CTX = "tracing.remote.span.ctx"
 )
+
+const (
+	CONSUMER_SIGN_FILTER          = "sign"
+	PROVIDER_AUTH_FILTER          = "auth"
+	SERVICE_AUTH_KEY              = "auth"
+	AUTHENTICATOR_KEY             = "authenticator"
+	DEFAULT_AUTHENTICATOR         = "accesskeys"
+	DEFAULT_ACCESS_KEY_STORAGE    = "urlstorage"
+	ACCESS_KEY_STORAGE_KEY        = "accessKey.storage"
+	REQUEST_TIMESTAMP_KEY         = "timestamp"
+	REQUEST_SIGNATURE_KEY         = "signature"
+	AK_KEY                        = "ak"
+	SIGNATURE_STRING_FORMAT       = "%s#%s#%s#%s"
+	PARAMTER_SIGNATURE_ENABLE_KEY = "param.sign"
+	CONSUMER                      = "consumer"
+	ACCESS_KEY_ID_KEY             = "accessKeyId"
+	SECRET_ACCESS_KEY_KEY         = "secretAccessKey"
+)

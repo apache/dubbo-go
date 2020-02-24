@@ -24,8 +24,8 @@ import (
 )
 
 import (
+	"github.com/dubbogo/go-zookeeper/zk"
 	perrors "github.com/pkg/errors"
-	"github.com/samuel/go-zookeeper/zk"
 )
 
 import (
@@ -175,7 +175,7 @@ func (c *zookeeperDynamicConfiguration) WaitGroup() *sync.WaitGroup {
 	return &c.wg
 }
 
-func (c *zookeeperDynamicConfiguration) GetDone() chan struct{} {
+func (c *zookeeperDynamicConfiguration) Done() chan struct{} {
 	return c.done
 }
 

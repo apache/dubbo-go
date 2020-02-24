@@ -21,7 +21,7 @@ import (
 
 func TestActiveFilter_Invoke(t *testing.T) {
 	invoc := invocation.NewRPCInvocation("test", []interface{}{"OK"}, make(map[string]string, 0))
-	url, _ := common.NewURL(context.TODO(), "dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
 	filter := ActiveFilter{}
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -39,7 +39,7 @@ func TestActiveFilter_OnResponse(t *testing.T) {
 	invoc := invocation.NewRPCInvocation("test", []interface{}{"OK"}, map[string]string{
 		dubboInvokeStartTime: strconv.FormatInt(c-int64(elapsed), 10),
 	})
-	url, _ := common.NewURL(context.TODO(), "dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
 	filter := ActiveFilter{}
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

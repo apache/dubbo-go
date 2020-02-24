@@ -18,7 +18,6 @@
 package config
 
 import (
-	"context"
 	"io/ioutil"
 	"path"
 )
@@ -76,15 +75,6 @@ func SetProviderConfig(p ProviderConfig) {
 	providerConfig = &p
 }
 
-// GetProviderConfig ...
-func GetProviderConfig() ProviderConfig {
-	if providerConfig == nil {
-		logger.Warnf("providerConfig is nil!")
-		return ProviderConfig{}
-	}
-	return *providerConfig
-}
-
 // ProviderInit ...
 func ProviderInit(confProFile string) error {
 	if len(confProFile) == 0 {
@@ -123,7 +113,7 @@ func configCenterRefreshProvider() error {
 	//fresh it
 	if providerConfig.ConfigCenterConfig != nil {
 		providerConfig.fatherConfig = providerConfig
-		if err := providerConfig.startConfigCenter(context.Background()); err != nil {
+		if err := providerConfig.startConfigCenter(); err != nil {
 			return perrors.Errorf("start config center error , error message is {%v}", perrors.WithStack(err))
 		}
 		providerConfig.fresh()
