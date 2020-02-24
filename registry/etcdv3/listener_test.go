@@ -18,6 +18,7 @@
 package etcdv3
 
 import (
+	"os"
 	"testing"
 	"time"
 
@@ -47,6 +48,11 @@ func (suite *RegistryTestSuite) SetupSuite() {
 
 	cfg := embed.NewConfig()
 	cfg.Dir = "/tmp/default.etcd"
+
+	if _, err := os.Stat(cfg.Dir); err == nil {
+		os.RemoveAll(cfg.Dir)
+	}
+
 	e, err := embed.StartEtcd(cfg)
 	if err != nil {
 		t.Fatal(err)

@@ -20,6 +20,7 @@ package etcdv3
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"path"
 	"reflect"
 	"strings"
@@ -92,6 +93,11 @@ func (suite *ClientTestSuite) SetupSuite() {
 	cfg.LPUrls = []url.URL{*lpurl}
 	cfg.LCUrls = []url.URL{*lcurl}
 	cfg.Dir = "/tmp/default.etcd"
+
+	if _, err := os.Stat(cfg.Dir); err == nil {
+		os.RemoveAll(cfg.Dir)
+	}
+
 	e, err := embed.StartEtcd(cfg)
 	if err != nil {
 		t.Fatal(err)
