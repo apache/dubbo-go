@@ -24,7 +24,7 @@ import (
 	"time"
 )
 import (
-	"github.com/samuel/go-zookeeper/zk"
+	"github.com/dubbogo/go-zookeeper/zk"
 	"github.com/stretchr/testify/assert"
 )
 import (
@@ -97,12 +97,11 @@ func TestListener(t *testing.T) {
 	listener := NewZkEventListener(client)
 	dataListener := &mockDataListener{client: client, changedData: changedData, wait: &wait}
 	listener.ListenServiceEvent("/dubbo", dataListener)
-
+	time.Sleep(1 * time.Second)
 	_, err := client.Conn.Set("/dubbo/dubbo.properties", []byte(changedData), 1)
 	assert.NoError(t, err)
 	wait.Wait()
 	assert.Equal(t, changedData, dataListener.eventList[1].Content)
-	client.Close()
 
 }
 

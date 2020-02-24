@@ -41,7 +41,7 @@ import (
 )
 
 var (
-	failbackUrl, _ = common.NewURL(context.TODO(), "dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
+	failbackUrl, _ = common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
 )
 
 // registerFailback register failbackCluster to cluster extension.

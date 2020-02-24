@@ -18,7 +18,6 @@
 package config
 
 import (
-	"context"
 	"io/ioutil"
 	"path"
 	"time"
@@ -85,15 +84,6 @@ func SetConsumerConfig(c ConsumerConfig) {
 	consumerConfig = &c
 }
 
-// GetConsumerConfig ...
-func GetConsumerConfig() ConsumerConfig {
-	if consumerConfig == nil {
-		logger.Warnf("consumerConfig is nil!")
-		return ConsumerConfig{}
-	}
-	return *consumerConfig
-}
-
 // ConsumerInit ...
 func ConsumerInit(confConFile string) error {
 	if confConFile == "" {
@@ -145,7 +135,7 @@ func configCenterRefreshConsumer() error {
 	var err error
 	if consumerConfig.ConfigCenterConfig != nil {
 		consumerConfig.SetFatherConfig(consumerConfig)
-		if err := consumerConfig.startConfigCenter(context.Background()); err != nil {
+		if err := consumerConfig.startConfigCenter(); err != nil {
 			return perrors.Errorf("start config center error , error message is {%v}", perrors.WithStack(err))
 		}
 		consumerConfig.fresh()

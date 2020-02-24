@@ -24,6 +24,7 @@ import (
 )
 
 import (
+	"github.com/opentracing/opentracing-go"
 	perrors "github.com/pkg/errors"
 )
 
@@ -72,6 +73,10 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 			inv.SetAttachments(k, v)
 		}
 	}
+
+	// put the ctx into attachment
+	di.appendCtx(ctx, inv)
+
 	url := di.GetUrl()
 	// async
 	async, err := strconv.ParseBool(inv.AttachmentsByKey(constant.ASYNC_KEY, "false"))
@@ -111,4 +116,18 @@ func (di *DubboInvoker) Destroy() {
 			di.client.Close()
 		}
 	})
+}
+
+// Finally, I made the decision that I don't provide a general way to transfer the whole context
+// because it could be misused. If the context contains to many key-value pairs, the performance will be much lower.
+func (di *DubboInvoker) appendCtx(ctx context.Context, inv *invocation_impl.RPCInvocation) {
+	// inject opentracing ctx
+	currentSpan := opentracing.SpanFromContext(ctx)
+	if currentSpan != nil {
+		carrier := opentracing.TextMapCarrier(inv.Attachments())
+		err := opentracing.GlobalTracer().Inject(currentSpan.Context(), opentracing.TextMap, carrier)
+		if err != nil {
+			logger.Errorf("Could not inject the span context into attachments: %v", err)
+		}
+	}
 }
