@@ -25,8 +25,8 @@ import (
 )
 
 import (
+	"github.com/dubbogo/go-zookeeper/zk"
 	perrors "github.com/pkg/errors"
-	"github.com/samuel/go-zookeeper/zk"
 )
 
 import (
@@ -43,6 +43,8 @@ const (
 
 var (
 	errNilZkClientConn = perrors.New("zookeeperclient{conn} is nil")
+	errNilChildren     = perrors.Errorf("has none children")
+	errNilNode         = perrors.Errorf("node does not exist")
 )
 
 // ZookeeperClient ...
@@ -259,11 +261,13 @@ LOOP:
 				logger.Warnf("zk{addr:%s} state is StateDisconnected, so close the zk client{name:%s}.", z.ZkAddrs, z.name)
 				z.stop()
 				z.Lock()
-				if z.Conn != nil {
-					z.Conn.Close()
-					z.Conn = nil
-				}
+				conn := z.Conn
+				z.Conn = nil
 				z.Unlock()
+				if conn != nil {
+					conn.Close()
+				}
+
 				break LOOP
 			case (int)(zk.EventNodeDataChanged), (int)(zk.EventNodeChildrenChanged):
 				logger.Infof("zkClient{%s} get zk node changed event{path:%s}", z.name, event.Path)
@@ -378,11 +382,13 @@ func (z *ZookeeperClient) Close() {
 	z.stop()
 	z.Wait.Wait()
 	z.Lock()
-	if z.Conn != nil {
-		z.Conn.Close()
-		z.Conn = nil
-	}
+	conn := z.Conn
+	z.Conn = nil
 	z.Unlock()
+	if conn != nil {
+		conn.Close()
+	}
+
 	logger.Warnf("zkClient{name:%s, zk addr:%s} exit now.", z.name, z.ZkAddrs)
 }
 
@@ -398,10 +404,12 @@ func (z *ZookeeperClient) Create(basePath string) error {
 		tmpPath = path.Join(tmpPath, "/", str)
 		err = errNilZkClientConn
 		z.Lock()
-		if z.Conn != nil {
-			_, err = z.Conn.Create(tmpPath, []byte(""), 0, zk.WorldACL(zk.PermAll))
-		}
+		conn := z.Conn
 		z.Unlock()
+		if conn != nil {
+			_, err = conn.Create(tmpPath, []byte(""), 0, zk.WorldACL(zk.PermAll))
+		}
+
 		if err != nil {
 			if err == zk.ErrNodeExists {
 				logger.Infof("zk.create(\"%s\") exists\n", tmpPath)
@@ -423,10 +431,11 @@ func (z *ZookeeperClient) Delete(basePath string) error {
 
 	err = errNilZkClientConn
 	z.Lock()
-	if z.Conn != nil {
-		err = z.Conn.Delete(basePath, -1)
-	}
+	conn := z.Conn
 	z.Unlock()
+	if conn != nil {
+		err = conn.Delete(basePath, -1)
+	}
 
 	return perrors.WithMessagef(err, "Delete(basePath:%s)", basePath)
 }
@@ -444,10 +453,12 @@ func (z *ZookeeperClient) RegisterTemp(basePath string, node string) (string, er
 	data = []byte("")
 	zkPath = path.Join(basePath) + "/" + node
 	z.Lock()
-	if z.Conn != nil {
-		tmpPath, err = z.Conn.Create(zkPath, data, zk.FlagEphemeral, zk.WorldACL(zk.PermAll))
-	}
+	conn := z.Conn
 	z.Unlock()
+	if conn != nil {
+		tmpPath, err = conn.Create(zkPath, data, zk.FlagEphemeral, zk.WorldACL(zk.PermAll))
+	}
+
 	//if err != nil && err != zk.ErrNodeExists {
 	if err != nil {
 		logger.Warnf("conn.Create(\"%s\", zk.FlagEphemeral) = error(%v)\n", zkPath, perrors.WithStack(err))
@@ -467,15 +478,17 @@ func (z *ZookeeperClient) RegisterTempSeq(basePath string, data []byte) (string,
 
 	err = errNilZkClientConn
 	z.Lock()
-	if z.Conn != nil {
-		tmpPath, err = z.Conn.Create(
+	conn := z.Conn
+	z.Unlock()
+	if conn != nil {
+		tmpPath, err = conn.Create(
 			path.Join(basePath)+"/",
 			data,
 			zk.FlagEphemeral|zk.FlagSequence,
 			zk.WorldACL(zk.PermAll),
 		)
 	}
-	z.Unlock()
+
 	logger.Debugf("zookeeperClient.RegisterTempSeq(basePath{%s}) = tempPath{%s}", basePath, tmpPath)
 	if err != nil && err != zk.ErrNodeExists {
 		logger.Errorf("zkClient{%s} conn.Create(\"%s\", \"%s\", zk.FlagEphemeral|zk.FlagSequence) error(%v)\n",
@@ -493,30 +506,35 @@ func (z *ZookeeperClient) GetChildrenW(path string) ([]string, <-chan zk.Event, 
 		err      error
 		children []string
 		stat     *zk.Stat
-		event    <-chan zk.Event
+		watcher  *zk.Watcher
 	)
 
 	err = errNilZkClientConn
 	z.Lock()
-	if z.Conn != nil {
-		children, stat, event, err = z.Conn.ChildrenW(path)
-	}
+	conn := z.Conn
 	z.Unlock()
+	if conn != nil {
+		children, stat, watcher, err = conn.ChildrenW(path)
+	}
+
 	if err != nil {
+		if err == zk.ErrNoChildrenForEphemerals {
+			return nil, nil, errNilChildren
+		}
 		if err == zk.ErrNoNode {
-			return nil, nil, perrors.Errorf("path{%s} has none children", path)
+			return nil, nil, errNilNode
 		}
 		logger.Errorf("zk.ChildrenW(path{%s}) = error(%v)", path, err)
 		return nil, nil, perrors.WithMessagef(err, "zk.ChildrenW(path:%s)", path)
 	}
 	if stat == nil {
-		return nil, nil, perrors.Errorf("path{%s} has none children", path)
+		return nil, nil, perrors.Errorf("path{%s} get stat is nil", path)
 	}
 	if len(children) == 0 {
-		return nil, nil, perrors.Errorf("path{%s} has none children", path)
+		return nil, nil, errNilChildren
 	}
 
-	return children, event, nil
+	return children, watcher.EvtCh, nil
 }
 
 // GetChildren ...
@@ -529,10 +547,12 @@ func (z *ZookeeperClient) GetChildren(path string) ([]string, error) {
 
 	err = errNilZkClientConn
 	z.Lock()
-	if z.Conn != nil {
-		children, stat, err = z.Conn.Children(path)
-	}
+	conn := z.Conn
 	z.Unlock()
+	if conn != nil {
+		children, stat, err = conn.Children(path)
+	}
+
 	if err != nil {
 		if err == zk.ErrNoNode {
 			return nil, perrors.Errorf("path{%s} has none children", path)
@@ -544,7 +564,7 @@ func (z *ZookeeperClient) GetChildren(path string) ([]string, error) {
 		return nil, perrors.Errorf("path{%s} has none children", path)
 	}
 	if len(children) == 0 {
-		return nil, perrors.Errorf("path{%s} has none children", path)
+		return nil, errNilChildren
 	}
 
 	return children, nil
@@ -553,17 +573,19 @@ func (z *ZookeeperClient) GetChildren(path string) ([]string, error) {
 // ExistW ...
 func (z *ZookeeperClient) ExistW(zkPath string) (<-chan zk.Event, error) {
 	var (
-		exist bool
-		err   error
-		event <-chan zk.Event
+		exist   bool
+		err     error
+		watcher *zk.Watcher
 	)
 
 	err = errNilZkClientConn
 	z.Lock()
-	if z.Conn != nil {
-		exist, _, event, err = z.Conn.ExistsW(zkPath)
-	}
+	conn := z.Conn
 	z.Unlock()
+	if conn != nil {
+		exist, _, watcher, err = conn.ExistsW(zkPath)
+	}
+
 	if err != nil {
 		logger.Warnf("zkClient{%s}.ExistsW(path{%s}) = error{%v}.", z.name, zkPath, perrors.WithStack(err))
 		return nil, perrors.WithMessagef(err, "zk.ExistsW(path:%s)", zkPath)
@@ -573,7 +595,7 @@ func (z *ZookeeperClient) ExistW(zkPath string) (<-chan zk.Event, error) {
 		return nil, perrors.Errorf("zkClient{%s} App zk path{%s} does not exist.", z.name, zkPath)
 	}
 
-	return event, nil
+	return watcher.EvtCh, nil
 }
 
 // GetContent ...

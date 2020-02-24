@@ -18,7 +18,6 @@
 package config
 
 import (
-	"context"
 	"reflect"
 	"strconv"
 	"strings"
@@ -40,16 +39,21 @@ type multiConfiger interface {
 	Prefix() string
 }
 
-// BaseConfig ...
+// BaseConfig is the common configuration for provider and consumer
 type BaseConfig struct {
 	ConfigCenterConfig *ConfigCenterConfig `yaml:"config_center" json:"config_center,omitempty"`
 	configCenterUrl    *common.URL
 	prefix             string
 	fatherConfig       interface{}
+
+	MetricConfig *MetricConfig `yaml:"metrics" json:"metrics,omitempty"`
 }
 
-func (c *BaseConfig) startConfigCenter(ctx context.Context) error {
-	url, err := common.NewURL(ctx, c.ConfigCenterConfig.Address, common.WithProtocol(c.ConfigCenterConfig.Protocol), common.WithParams(c.ConfigCenterConfig.GetUrlMap()))
+// startConfigCenter will start the config center.
+// it will prepare the environment
+func (c *BaseConfig) startConfigCenter() error {
+	url, err := common.NewURL(c.ConfigCenterConfig.Address,
+		common.WithProtocol(c.ConfigCenterConfig.Protocol), common.WithParams(c.ConfigCenterConfig.GetUrlMap()))
 	if err != nil {
 		return err
 	}
