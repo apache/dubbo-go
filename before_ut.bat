@@ -20,3 +20,4 @@ curl -L https://github.com/dubbogo/resources/raw/master/zookeeper-4unitest/contr
 xcopy /f "remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/%zkJar%" "config_center/zookeeper/zookeeper-4unittest/contrib/fatjar/"
 xcopy /f "remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/%zkJar%" "registry/zookeeper/zookeeper-4unittest/contrib/fatjar/"
 xcopy /f "remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/%zkJar%" "cluster/router/chain/zookeeper-4unittest/contrib/fatjar/"
+xcopy /f "remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/%zkJar%" "cluster/router/condition/zookeeper-4unittest/contrib/fatjar/"
