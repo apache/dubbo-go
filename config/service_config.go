@@ -67,6 +67,8 @@ type ServiceConfig struct {
 	TpsLimitRejectedHandler     string            `yaml:"tps.limit.rejected.handler" json:"tps.limit.rejected.handler,omitempty" property:"tps.limit.rejected.handler"`
 	ExecuteLimit                string            `yaml:"execute.limit" json:"execute.limit,omitempty" property:"execute.limit"`
 	ExecuteLimitRejectedHandler string            `yaml:"execute.limit.rejected.handler" json:"execute.limit.rejected.handler,omitempty" property:"execute.limit.rejected.handler"`
+	Auth                        string            `yaml:"auth" json:"auth,omitempty" property:"auth"`
+	ParamSign                   string            `yaml:"param.sign" json:"param.sign,omitempty" property:"param.sign"`
 
 	unexported    *atomic.Bool
 	exported      *atomic.Bool
@@ -219,6 +221,10 @@ func (c *ServiceConfig) getUrlMap() url.Values {
 	// execute limit filter
 	urlMap.Set(constant.EXECUTE_LIMIT_KEY, c.ExecuteLimit)
 	urlMap.Set(constant.EXECUTE_REJECTED_EXECUTION_HANDLER_KEY, c.ExecuteLimitRejectedHandler)
+
+	// auth filter
+	urlMap.Set(constant.SERVICE_AUTH_KEY, c.Auth)
+	urlMap.Set(constant.PARAMTER_SIGNATURE_ENABLE_KEY, c.ParamSign)
 
 	for _, v := range c.Methods {
 		prefix := "methods." + v.Name + "."
