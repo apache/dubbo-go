@@ -33,7 +33,7 @@ Apache License, Version 2.0
 - 角色端
     * Consumer
     * Provider
-    
+
 - 传输协议
     * HTTP
     * TCP
@@ -46,17 +46,17 @@ Apache License, Version 2.0
     * Dubbo
     * Jsonrpc2.0
     * [gRPC](https://github.com/apache/dubbo-go/pull/311)
-    
+
 - 注册中心
     * ZooKeeper
     * [etcd v3](https://github.com/apache/dubbo-go/pull/148)
     * [nacos](https://github.com/apache/dubbo-go/pull/151)
     * [consul](https://github.com/apache/dubbo-go/pull/121)
-    
+
 - 动态配置中心与服务治理配置器
     * Zookeeper
     * [apollo](https://github.com/apache/dubbo-go/pull/250)
-    
+
 - 集群策略
     * Failover
     * [Failfast](https://github.com/apache/dubbo-go/pull/140)
@@ -64,12 +64,12 @@ Apache License, Version 2.0
     * [Available](https://github.com/apache/dubbo-go/pull/155)
     * [Broadcast](https://github.com/apache/dubbo-go/pull/158)
     * [Forking](https://github.com/apache/dubbo-go/pull/161)
-   
+
 - 负载均衡策略
     * Random
     * [RoundRobin](https://github.com/apache/dubbo-go/pull/66)
     * [LeastActive](https://github.com/apache/dubbo-go/pull/65)
-    
+
 - 过滤器
     * Echo Health Check
     * [服务熔断&降级](https://github.com/apache/dubbo-go/pull/133)
@@ -77,10 +77,10 @@ Apache License, Version 2.0
     * [AccessLogFilter](https://github.com/apache/dubbo-go/pull/214)
     * [TpsLimitFilter](https://github.com/apache/dubbo-go/pull/237)
     * [ExecuteLimitFilter](https://github.com/apache/dubbo-go/pull/246)
-    
+
 - 调用
     * [泛化调用](https://github.com/apache/dubbo-go/pull/122)
-    
+
 - 其他功能支持:
     * 启动时检查
     * 服务直连
@@ -145,8 +145,4 @@ go test ./... -coverprofile=coverage.txt -covermode=atomic
 若你正在使用 [apache/dubbo-go](github.com/apache/dubbo-go) 且认为其有用或者向对其做改进，请忝列贵司信息于 [用户列表](https://github.com/apache/dubbo-go/issues/2)，以便我们知晓之。
 
 ![ctrip](https://pic.c-ctrip.com/common/c_logo2013.png)
-
-## Stargazers
-
-[![Stargazers over time](https://starchart.cc/apache/dubbo-go.svg)](https://starchart.cc/apache/dubbo-go)
 
