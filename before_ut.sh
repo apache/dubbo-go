@@ -20,3 +20,4 @@ wget -P "remoting/zookeeper/zookeeper-4unittest/contrib/fatjar" https://github.c
 cp remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/zookeeper-3.4.9-fatjar.jar config_center/zookeeper/zookeeper-4unittest/contrib/fatjar/
 cp remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/zookeeper-3.4.9-fatjar.jar registry/zookeeper/zookeeper-4unittest/contrib/fatjar/
 cp remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/zookeeper-3.4.9-fatjar.jar cluster/router/chain/zookeeper-4unittest/contrib/fatjar
+cp remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/zookeeper-3.4.9-fatjar.jar cluster/router/condition/zookeeper-4unittest/contrib/fatjar
