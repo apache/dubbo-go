@@ -42,18 +42,18 @@ Finished List:
 - Codec
     * JsonRPC V2
     * Hessian V2
-    
+
 - Protocol
     * Dubbo
     * Jsonrpc2.0
     * [gRPC](https://github.com/apache/dubbo-go/pull/311)
-    
+
 - Registry
     * ZooKeeper
     * [etcd v3](https://github.com/apache/dubbo-go/pull/148)
     * [nacos](https://github.com/apache/dubbo-go/pull/151)
     * [consul](https://github.com/apache/dubbo-go/pull/121)
-    
+
 - Dynamic Configure Center & Service Management Configurator
     * Zookeeper
     * [apollo](https://github.com/apache/dubbo-go/pull/250)
@@ -65,12 +65,12 @@ Finished List:
     * [Available](https://github.com/apache/dubbo-go/pull/155)
     * [Broadcast](https://github.com/apache/dubbo-go/pull/158)
     * [Forking](https://github.com/apache/dubbo-go/pull/161)
-    
+
 - Load Balance
     * Random
     * [RoundRobin](https://github.com/apache/dubbo-go/pull/66)
     * [LeastActive](https://github.com/apache/dubbo-go/pull/65)
-    
+
 - Filter
     * Echo Health Check
     * [Circuit break and service downgrade](https://github.com/apache/dubbo-go/pull/133)
@@ -79,10 +79,10 @@ Finished List:
     * [TpsLimitFilter](https://github.com/apache/dubbo-go/pull/237)
     * [ExecuteLimitFilter](https://github.com/apache/dubbo-go/pull/246)
     * [GenericServiceFilter](https://github.com/apache/dubbo-go/pull/291)
-    
+
 - Invoke
     * [generic invoke](https://github.com/apache/dubbo-go/pull/122)
-    
+
 - Others:
     * start check
     * connecting certain provider
@@ -149,8 +149,4 @@ If you are using [apache/dubbo-go](github.com/apache/dubbo-go) and think that it
 
 ![ctrip](https://pic.c-ctrip.com/common/c_logo2013.png)![Excellent Health Technology Group](https://raw.githubusercontent.com/dajiiu/photo/static/mirror/haozhuo_logo.png)
 ![ctrip](https://raw.githubusercontent.com/pantianying/go-tool/master/picture/logo_2-removebg-preview.png)
-
-## Stargazers
-
-[![Stargazers over time](https://starchart.cc/apache/dubbo-go.svg)](https://starchart.cc/apache/dubbo-go)
 
