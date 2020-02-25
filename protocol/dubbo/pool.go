@@ -78,7 +78,7 @@ func newGettyRPCClientConn(pool *gettyRPCClientPool, protocol, addr string) (*ge
 		}
 		time.Sleep(1e6)
 	}
-	logger.Infof("client init ok")
+	logger.Debug("client init ok")
 	c.updateActive(time.Now().Unix())
 
 	return c, nil
