@@ -39,9 +39,9 @@ func RouterInit(confRouterFile string) error {
 		if e == nil {
 			url := r.URL()
 			directory.AddRouterURLSet(&url)
-			break
+			return nil
 		}
 		logger.Warnf("router config type %s create fail \n", k)
 	}
-	return nil
+	return perrors.Errorf("no file router exists for parse %s , implement router.FIleRouterFactory please.", confRouterFile)
 }
