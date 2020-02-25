@@ -45,6 +45,9 @@ type ConsumerConfig struct {
 	Filter     string `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	// application
 	ApplicationConfig *ApplicationConfig `yaml:"application" json:"application,omitempty" property:"application"`
+	// metadata-report
+	MetadataReportConfig *MetadataReportConfig `yaml:"metadata_report" json:"metadata_report,omitempty" property:"metadata_report"`
+
 	// client
 	Connect_Timeout string `default:"100ms"  yaml:"connect_timeout" json:"connect_timeout,omitempty" property:"connect_timeout"`
 	ConnectTimeout  time.Duration
@@ -151,4 +154,15 @@ func configCenterRefreshConsumer() error {
 		}
 	}
 	return err
+}
+
+// StartMetadataReport: The entry of metadata report start
+func startMetadataReport() error {
+	metadataConfig := consumerConfig.ApplicationConfig.MetadataType
+	if metadataConfig == constant.METACONFIG_REMOTE && consumerConfig.MetadataReportConfig == nil {
+		return perrors.New("No MetadataConfig found, you must specify the remote Metadata Center address when 'metadata=remote' is enabled.")
+	} else if metadataConfig == constant.METACONFIG_REMOTE && len(consumerConfig.MetadataReportConfig.Address) == 0 {
+		return perrors.New("MetadataConfig address can not be empty.")
+	}
+	return nil
 }

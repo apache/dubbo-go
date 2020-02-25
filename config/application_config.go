@@ -33,6 +33,7 @@ type ApplicationConfig struct {
 	Version      string `yaml:"version" json:"version,omitempty" property:"version"`
 	Owner        string `yaml:"owner" json:"owner,omitempty" property:"owner"`
 	Environment  string `yaml:"environment" json:"environment,omitempty" property:"environment"`
+	MetadataType string `default:"local" yaml:"metadataType" json:"metadataType,omitempty" property:"metadataType"` //field for metadata report
 }
 
 // Prefix ...

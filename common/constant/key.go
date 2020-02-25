@@ -120,6 +120,7 @@ const (
 	ProviderConfigPrefix       = "dubbo.provider."
 	ConsumerConfigPrefix       = "dubbo.consumer."
 	ShutdownConfigPrefix       = "dubbo.shutdown."
+	MetadataReportPrefix       = "dubbo.metadata-report."
 )
 
 const (
@@ -158,4 +159,11 @@ const (
 	CONSUMER                      = "consumer"
 	ACCESS_KEY_ID_KEY             = "accessKeyId"
 	SECRET_ACCESS_KEY_KEY         = "secretAccessKey"
+)
+
+// metadata report
+
+const (
+	METACONFIG_REMOTE = "remote"
+	METACONFIG_LOCAL  = "local"
 )
