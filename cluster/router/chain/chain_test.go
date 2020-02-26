@@ -18,6 +18,7 @@
 package chain
 
 import (
+	"encoding/base64"
 	"strconv"
 	"testing"
 	"time"
@@ -28,10 +29,12 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/cluster/router"
 	"github.com/apache/dubbo-go/cluster/router/condition"
 	_ "github.com/apache/dubbo-go/cluster/router/condition"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/config"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	_ "github.com/apache/dubbo-go/config_center/zookeeper"
 	"github.com/apache/dubbo-go/remoting/zookeeper"
@@ -79,6 +82,39 @@ conditions:
 	assert.Equal(t, false, rule.Runtime)
 	assert.Equal(t, false, rule.Dynamic)
 	assert.Equal(t, "", rule.Key)
+}
+
+func TestNewRouterChainURLNil(t *testing.T) {
+	chain, err := NewRouterChain(nil)
+	assert.Error(t, err)
+	assert.Nil(t, chain)
+}
+
+func TestRouterChain_AddRouters(t *testing.T) {
+	chain, err := NewRouterChain(getConditionRouteUrl("test-condition"))
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(chain.routers))
+
+	url := getConditionRouteUrl("test-condition")
+	assert.NotNil(t, url)
+	factory := extension.GetRouterFactory(url.Protocol)
+	r, err := factory.NewRouter(url)
+	assert.Nil(t, err)
+	assert.NotNil(t, r)
+
+	routers := make([]router.Router, 0)
+	routers = append(routers, r)
+	chain.AddRouters(routers)
+	assert.Equal(t, 2, len(chain.routers))
+}
+
+func getConditionRouteUrl(applicationKey string) *common.URL {
+	url, _ := common.NewURL("condition://0.0.0.0/com.foo.BarService")
+	url.AddParam("application", applicationKey)
+	url.AddParam("force", "true")
+	rule := base64.URLEncoding.EncodeToString([]byte("host = 127.0.0.1 => "))
+	url.AddParam(constant.RULE_KEY, rule)
+	return &url
 }
 
 func getRouteUrl(applicationKey string) *common.URL {
