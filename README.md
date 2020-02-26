@@ -71,6 +71,7 @@ Finished List:
     * Random
     * [RoundRobin](https://github.com/apache/dubbo-go/pull/66)
     * [LeastActive](https://github.com/apache/dubbo-go/pull/65)
+    * [ConsistentHash](https://github.com/apache/dubbo-go/pull/261)
 
 - Filter
     * Echo Health Check
@@ -94,7 +95,6 @@ Finished List:
 
 Working List:
 
-- Load Balance: ConsistentHash
 - Registry: k8s
 - Metadata Center (dubbo v2.7.x)
 - Metrics: Opentracing/Promethus(dubbo v2.7.x)
