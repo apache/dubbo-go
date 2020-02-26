@@ -1,6 +1,6 @@
 # dubbo router yaml configure file
 priority: 1
 force: true
-conditions :
+noConditions :
   - "a => b"
   - "c => d"
