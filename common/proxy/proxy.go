@@ -142,7 +142,7 @@ func (p *Proxy) Implement(v common.RPCService) {
 			result := p.invoke.Invoke(invCtx, inv)
 
 			err = result.Error()
-			logger.Infof("[makeDubboCallProxy] result: %v, err: %v", result.Result(), err)
+			logger.Debugf("[makeDubboCallProxy] result: %v, err: %v", result.Result(), err)
 			if len(outs) == 1 {
 				return []reflect.Value{reflect.ValueOf(&err).Elem()}
 			}
