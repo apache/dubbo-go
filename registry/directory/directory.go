@@ -128,10 +128,9 @@ func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 		}
 		switch res.Action {
 		case remoting.EventTypeAdd, remoting.EventTypeUpdate:
-			//dir.cacheService.EventTypeAdd(res.Path, dir.serviceTTL)
+			logger.Infof("selector add service url{%s}", res.Service)
 			oldInvoker = dir.cacheInvoker(url)
 		case remoting.EventTypeDel:
-			//dir.cacheService.EventTypeDel(res.Path, dir.serviceTTL)
 			oldInvoker = dir.uncacheInvoker(url)
 			logger.Infof("selector delete service url{%s}", res.Service)
 		default:
@@ -215,13 +214,13 @@ func (dir *registryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
 		newUrl := common.MergeUrl(url, referenceUrl)
 		dir.overrideUrl(newUrl)
 		if cacheInvoker, ok := dir.cacheInvokersMap.Load(newUrl.Key()); !ok {
-			logger.Infof("service will be added in cache invokers: invokers url is  %s!", newUrl)
+			logger.Debugf("service will be added in cache invokers: invokers url is  %s!", newUrl)
 			newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(*newUrl)
 			if newInvoker != nil {
 				dir.cacheInvokersMap.Store(newUrl.Key(), newInvoker)
 			}
 		} else {
-			logger.Infof("service will be updated in cache invokers: new invoker url is %s, old invoker url is %s", newUrl, cacheInvoker.(protocol.Invoker).GetUrl())
+			logger.Debugf("service will be updated in cache invokers: new invoker url is %s, old invoker url is %s", newUrl, cacheInvoker.(protocol.Invoker).GetUrl())
 			newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(*newUrl)
 			if newInvoker != nil {
 				dir.cacheInvokersMap.Store(newUrl.Key(), newInvoker)
