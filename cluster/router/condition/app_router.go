@@ -18,6 +18,10 @@
 package condition
 
 import (
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 )
@@ -34,6 +38,9 @@ type AppRouter struct {
 
 // NewAppRouter Init AppRouter by url
 func NewAppRouter(url *common.URL) (*AppRouter, error) {
+	if url == nil {
+		return nil, perrors.Errorf("No route URL for create app router!")
+	}
 	appRouter, err := newListenableRouter(url, url.GetParam(constant.APPLICATION_KEY, ""))
 	if err != nil {
 		return nil, err
