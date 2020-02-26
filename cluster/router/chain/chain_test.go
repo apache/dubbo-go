@@ -91,9 +91,30 @@ func TestNewRouterChainURLNil(t *testing.T) {
 }
 
 func TestRouterChain_AddRouters(t *testing.T) {
+	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
+	assert.NoError(t, err)
+	err = z.Create("/dubbo/config/dubbo/test-condition.condition-router")
+	assert.NoError(t, err)
+
+	testyml := `enabled: true
+force: true
+runtime: false
+conditions:
+  - => host != 172.22.3.91
+`
+
+	_, err = z.Conn.Set("/dubbo/config/dubbo/test-condition.condition-router", []byte(testyml), 0)
+	assert.NoError(t, err)
+	defer ts.Stop()
+	defer z.Close()
+
+	zkUrl, _ := common.NewURL("zookeeper://127.0.0.1:" + strconv.Itoa(ts.Servers[0].Port))
+	configuration, err := extension.GetConfigCenterFactory("zookeeper").GetDynamicConfiguration(&zkUrl)
+	config.GetEnvInstance().SetDynamicConfiguration(configuration)
+
 	chain, err := NewRouterChain(getConditionRouteUrl("test-condition"))
 	assert.Nil(t, err)
-	assert.Equal(t, 1, len(chain.routers))
+	assert.Equal(t, 2, len(chain.routers))
 
 	url := getConditionRouteUrl("test-condition")
 	assert.NotNil(t, url)
@@ -105,7 +126,7 @@ func TestRouterChain_AddRouters(t *testing.T) {
 	routers := make([]router.Router, 0)
 	routers = append(routers, r)
 	chain.AddRouters(routers)
-	assert.Equal(t, 2, len(chain.routers))
+	assert.Equal(t, 3, len(chain.routers))
 }
 
 func getConditionRouteUrl(applicationKey string) *common.URL {
