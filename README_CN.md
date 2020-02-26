@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/apache/dubbo-go.svg?branch=master)](https://travis-ci.org/apache/dubbo-go)
 [![codecov](https://codecov.io/gh/apache/dubbo-go/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/dubbo-go)
+[![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/apache/dubbo-go?tab=doc)
 
 ---
 Apache Dubbo Go 语言实现
@@ -69,6 +70,7 @@ Apache License, Version 2.0
     * Random
     * [RoundRobin](https://github.com/apache/dubbo-go/pull/66)
     * [LeastActive](https://github.com/apache/dubbo-go/pull/65)
+    * [ConsistentHash](https://github.com/apache/dubbo-go/pull/261)
 
 - 过滤器
     * Echo Health Check
@@ -91,7 +93,6 @@ Apache License, Version 2.0
 
 开发中列表:
 
-- 负载均衡策略: ConsistentHash
 - 注册中心: k8s
 - 元数据中心 (dubbo v2.7.x)
 - Metrics: Opentracing/Promethus(dubbo v2.7.x)
