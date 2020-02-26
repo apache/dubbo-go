@@ -104,7 +104,9 @@ func NewConditionRouterWithRule(rule string) (*ConditionRouter, error) {
 
 // NewConditionRouter Init condition router by URL
 func NewConditionRouter(url *common.URL) (*ConditionRouter, error) {
-
+	if url == nil {
+		return nil, perrors.Errorf("Illegal route URL!")
+	}
 	rule, err := url.GetParamAndDecoded(constant.RULE_KEY)
 	if err != nil || len(rule) == 0 {
 		return nil, perrors.Errorf("Illegal route rule!")

@@ -80,9 +80,12 @@ func (c *RouterChain) AddRouters(routers []router.Router) {
 // NewRouterChain Use url to init router chain
 // Loop routerFactories and call NewRouter method
 func NewRouterChain(url *common.URL) (*RouterChain, error) {
+	if url == nil {
+		return nil, perrors.Errorf("No route URL for create router chain!")
+	}
 	routerFactories := extension.GetRouterFactories()
 	if len(routerFactories) == 0 {
-		return nil, perrors.Errorf("Illegal route rule!")
+		return nil, perrors.Errorf("No routerFactory exits , create one please")
 	}
 	routers := make([]router.Router, 0, len(routerFactories))
 	for key, routerFactory := range routerFactories {
