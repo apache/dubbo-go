@@ -15,27 +15,45 @@
  * limitations under the License.
  */
 
-package router
+package condition
 
 import (
-	"github.com/apache/dubbo-go/cluster"
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/extension"
+	"gopkg.in/yaml.v2"
 )
 
-func init() {
-	extension.SetRouterFactory("condition", NewConditionRouterFactory)
+import (
+	"github.com/apache/dubbo-go/cluster/router"
+)
+
+// RouterRule RouterRule config read from config file or config center
+type RouterRule struct {
+	router.BaseRouterRule `yaml:",inline""`
+	Conditions            []string
 }
 
-// ConditionRouterFactory ...
-type ConditionRouterFactory struct{}
+/* Parse Router raw rule parser
+ * example :
+ * scope: application
+ * runtime: true
+ * force: false
+ * conditions:
+ *   - >
+ *     method!=sayHello =>
+ *   - >
+ *     ip=127.0.0.1
+ *     =>
+ *     1.1.1.1
+ */
+func Parse(rawRule string) (*RouterRule, error) {
+	r := &RouterRule{}
+	err := yaml.Unmarshal([]byte(rawRule), r)
+	if err != nil {
+		return r, err
+	}
+	r.RawRule = rawRule
+	if len(r.Conditions) != 0 {
+		r.Valid = true
+	}
 
-// NewConditionRouterFactory ...
-func NewConditionRouterFactory() cluster.RouterFactory {
-	return ConditionRouterFactory{}
-}
-
-// Router ...
-func (c ConditionRouterFactory) Router(url *common.URL) (cluster.Router, error) {
-	return newConditionRouter(url)
+	return r, nil
 }

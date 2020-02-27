@@ -15,57 +15,55 @@
  * limitations under the License.
  */
 
-package router
+package condition
 
 import (
-	"reflect"
 	"regexp"
 	"strings"
 )
 
 import (
-	gxset "github.com/dubbogo/gost/container/set"
-	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 )
 
 import (
+	matcher "github.com/apache/dubbo-go/cluster/router/match"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
+	"github.com/dubbogo/gost/container/set"
+	"github.com/dubbogo/gost/net"
 )
 
 const (
-	//ROUTE_PATTERN route pattern regex
-	ROUTE_PATTERN = `([&!=,]*)\\s*([^&!=,\\s]+)`
-	// FORCE ...
-	FORCE = "force"
-	// PRIORITY ...
-	PRIORITY = "priority"
+	//pattern route pattern regex
+	pattern = `([&!=,]*)\\s*([^&!=,\\s]+)`
 )
 
-//ConditionRouter condition router struct
+var (
+	routerPatternReg = regexp.MustCompile(`([&!=,]*)\s*([^&!=,\s]+)`)
+)
+
+// ConditionRouter Condition router struct
 type ConditionRouter struct {
 	Pattern       string
-	Url           *common.URL
-	Priority      int64
+	url           *common.URL
+	priority      int64
 	Force         bool
+	enabled       bool
 	WhenCondition map[string]MatchPair
 	ThenCondition map[string]MatchPair
 }
 
-func newConditionRouter(url *common.URL) (*ConditionRouter, error) {
+// NewConditionRouterWithRule Init condition router by raw rule
+func NewConditionRouterWithRule(rule string) (*ConditionRouter, error) {
 	var (
 		whenRule string
 		thenRule string
 		when     map[string]MatchPair
 		then     map[string]MatchPair
 	)
-	rule, err := url.GetParamAndDecoded(constant.RULE_KEY)
-	if err != nil || len(rule) == 0 {
-		return nil, perrors.Errorf("Illegal route rule!")
-	}
 	rule = strings.Replace(rule, "consumer.", "", -1)
 	rule = strings.Replace(rule, "provider.", "", -1)
 	i := strings.Index(rule, "=>")
@@ -98,31 +96,61 @@ func newConditionRouter(url *common.URL) (*ConditionRouter, error) {
 		then = t
 	}
 	return &ConditionRouter{
-		ROUTE_PATTERN,
-		url,
-		url.GetParamInt(PRIORITY, 0),
-		url.GetParamBool(FORCE, false),
-		when,
-		then,
+		Pattern:       pattern,
+		WhenCondition: when,
+		ThenCondition: then,
 	}, nil
 }
 
-// Route
-// Router determine the target server list.
-func (c *ConditionRouter) Route(invokers []protocol.Invoker, url common.URL, invocation protocol.Invocation) []protocol.Invoker {
+// NewConditionRouter Init condition router by URL
+func NewConditionRouter(url *common.URL) (*ConditionRouter, error) {
+	if url == nil {
+		return nil, perrors.Errorf("Illegal route URL!")
+	}
+	rule, err := url.GetParamAndDecoded(constant.RULE_KEY)
+	if err != nil || len(rule) == 0 {
+		return nil, perrors.Errorf("Illegal route rule!")
+	}
+
+	router, err := NewConditionRouterWithRule(rule)
+	if err != nil {
+		return nil, err
+	}
+
+	router.url = url
+	router.priority = url.GetParamInt(constant.RouterPriority, 0)
+	router.Force = url.GetParamBool(constant.RouterForce, false)
+	router.enabled = url.GetParamBool(constant.RouterEnabled, true)
+
+	return router, nil
+}
+
+// Priority Return Priority in condition router
+func (c *ConditionRouter) Priority() int64 {
+	return c.priority
+}
+
+// URL Return URL in condition router
+func (c *ConditionRouter) URL() common.URL {
+	return *c.url
+}
+
+// Enabled Return is condition router is enabled
+// true: enabled
+// false: disabled
+func (c *ConditionRouter) Enabled() bool {
+	return c.enabled
+}
+
+// Route Determine the target invokers list.
+func (c *ConditionRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+	if !c.Enabled() {
+		return invokers
+	}
 	if len(invokers) == 0 {
 		return invokers
 	}
-	isMatchWhen, err := c.MatchWhen(url, invocation)
-	if err != nil {
-
-		var urls []string
-		for _, invo := range invokers {
-			urls = append(urls, reflect.TypeOf(invo).String())
-		}
-		logger.Warnf("Failed to execute condition router rule: %s , invokers: [%s], cause: %v", c.Url.String(), strings.Join(urls, ","), err)
-		return invokers
-	}
+	isMatchWhen := c.MatchWhen(url, invocation)
 	if !isMatchWhen {
 		return invokers
 	}
@@ -130,17 +158,9 @@ func (c *ConditionRouter) Route(invokers []protocol.Invoker, url common.URL, inv
 	if len(c.ThenCondition) == 0 {
 		return result
 	}
-	localIP, _ := gxnet.GetLocalIP()
 	for _, invoker := range invokers {
-		isMatchThen, err := c.MatchThen(invoker.GetUrl(), url)
-		if err != nil {
-			var urls []string
-			for _, invo := range invokers {
-				urls = append(urls, reflect.TypeOf(invo).String())
-			}
-			logger.Warnf("Failed to execute condition router rule: %s , invokers: [%s], cause: %v", c.Url.String(), strings.Join(urls, ","), err)
-			return invokers
-		}
+		invokerUrl := invoker.GetUrl()
+		isMatchThen := c.MatchThen(&invokerUrl, url)
 		if isMatchThen {
 			result = append(result, invoker)
 		}
@@ -149,6 +169,7 @@ func (c *ConditionRouter) Route(invokers []protocol.Invoker, url common.URL, inv
 		return result
 	} else if c.Force {
 		rule, _ := url.GetParamAndDecoded(constant.RULE_KEY)
+		localIP, _ := gxnet.GetLocalIP()
 		logger.Warnf("The route result is empty and force execute. consumer: %s, service: %s, router: %s", localIP, url.Service(), rule)
 		return result
 	}
@@ -162,15 +183,10 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 	}
 
 	var (
-		pair       MatchPair
-		startIndex int
+		pair MatchPair
 	)
 	values := gxset.NewSet()
-	reg := regexp.MustCompile(`([&!=,]*)\s*([^&!=,\s]+)`)
-	if indexTuple := reg.FindIndex([]byte(rule)); len(indexTuple) > 0 {
-		startIndex = indexTuple[0]
-	}
-	matches := reg.FindAllSubmatch([]byte(rule), -1)
+	matches := routerPatternReg.FindAllSubmatch([]byte(rule), -1)
 	for _, groups := range matches {
 		separator := string(groups[1])
 		content := string(groups[2])
@@ -193,22 +209,26 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 			}
 		case "=":
 			if &pair == nil {
+				var startIndex = getStartIndex(rule)
 				return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex, startIndex)
 			}
 			values = pair.Matches
 			values.Add(content)
 		case "!=":
 			if &pair == nil {
+				var startIndex = getStartIndex(rule)
 				return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex, startIndex)
 			}
 			values = pair.Mismatches
 			values.Add(content)
 		case ",":
 			if values.Empty() {
+				var startIndex = getStartIndex(rule)
 				return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex, startIndex)
 			}
 			values.Add(content)
 		default:
+			var startIndex = getStartIndex(rule)
 			return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex, startIndex)
 
 		}
@@ -216,23 +236,31 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 	return condition, nil
 }
 
-//MatchWhen  MatchWhen
-func (c *ConditionRouter) MatchWhen(url common.URL, invocation protocol.Invocation) (bool, error) {
-	condition, err := MatchCondition(c.WhenCondition, &url, nil, invocation)
-	return len(c.WhenCondition) == 0 || condition, err
+func getStartIndex(rule string) int {
+	if indexTuple := routerPatternReg.FindIndex([]byte(rule)); len(indexTuple) > 0 {
+		return indexTuple[0]
+	}
+	return -1
 }
 
-//MatchThen MatchThen
-func (c *ConditionRouter) MatchThen(url common.URL, param common.URL) (bool, error) {
-	condition, err := MatchCondition(c.ThenCondition, &url, &param, nil)
-	return len(c.ThenCondition) > 0 && condition, err
+// MatchWhen MatchWhen
+func (c *ConditionRouter) MatchWhen(url *common.URL, invocation protocol.Invocation) bool {
+	condition := matchCondition(c.WhenCondition, url, nil, invocation)
+	return len(c.WhenCondition) == 0 || condition
 }
 
-//MatchCondition MatchCondition
-func MatchCondition(pairs map[string]MatchPair, url *common.URL, param *common.URL, invocation protocol.Invocation) (bool, error) {
+// MatchThen MatchThen
+func (c *ConditionRouter) MatchThen(url *common.URL, param *common.URL) bool {
+	condition := matchCondition(c.ThenCondition, url, param, nil)
+	return len(c.ThenCondition) > 0 && condition
+}
+
+// MatchCondition MatchCondition
+func matchCondition(pairs map[string]MatchPair, url *common.URL, param *common.URL, invocation protocol.Invocation) bool {
 	sample := url.ToMap()
 	if sample == nil {
-		return true, perrors.Errorf("url is not allowed be nil")
+		// because url.ToMap() may return nil, but it should continue to process make condition
+		sample = make(map[string]string)
 	}
 	var result bool
 	for key, matchPair := range pairs {
@@ -248,22 +276,22 @@ func MatchCondition(pairs map[string]MatchPair, url *common.URL, param *common.U
 		}
 		if len(sampleValue) > 0 {
 			if !matchPair.isMatch(sampleValue, param) {
-				return false, nil
+				return false
 			}
 
 			result = true
 		} else {
 			if !(matchPair.Matches.Empty()) {
-				return false, nil
+				return false
 			}
 
 			result = true
 		}
 	}
-	return result, nil
+	return result
 }
 
-// MatchPair ...
+// MatchPair Match key pair , condition process
 type MatchPair struct {
 	Matches    *gxset.HashSet
 	Mismatches *gxset.HashSet
@@ -273,7 +301,7 @@ func (pair MatchPair) isMatch(value string, param *common.URL) bool {
 	if !pair.Matches.Empty() && pair.Mismatches.Empty() {
 
 		for match := range pair.Matches.Items {
-			if isMatchGlobPattern(match.(string), value, param) {
+			if matcher.IsMatchGlobalPattern(match.(string), value, param) {
 				return true
 			}
 		}
@@ -282,52 +310,25 @@ func (pair MatchPair) isMatch(value string, param *common.URL) bool {
 	if !pair.Mismatches.Empty() && pair.Matches.Empty() {
 
 		for mismatch := range pair.Mismatches.Items {
-			if isMatchGlobPattern(mismatch.(string), value, param) {
+			if matcher.IsMatchGlobalPattern(mismatch.(string), value, param) {
 				return false
 			}
 		}
 		return true
 	}
 	if !pair.Mismatches.Empty() && !pair.Matches.Empty() {
+		//when both mismatches and matches contain the same value, then using mismatches first
 		for mismatch := range pair.Mismatches.Items {
-			if isMatchGlobPattern(mismatch.(string), value, param) {
+			if matcher.IsMatchGlobalPattern(mismatch.(string), value, param) {
 				return false
 			}
 		}
 		for match := range pair.Matches.Items {
-			if isMatchGlobPattern(match.(string), value, param) {
+			if matcher.IsMatchGlobalPattern(match.(string), value, param) {
 				return true
 			}
 		}
 		return false
 	}
 	return false
-}
-
-func isMatchGlobPattern(pattern string, value string, param *common.URL) bool {
-	if param != nil && strings.HasPrefix(pattern, "$") {
-		pattern = param.GetRawParam(pattern[1:])
-	}
-	if "*" == pattern {
-		return true
-	}
-	if len(pattern) == 0 && len(value) == 0 {
-		return true
-	}
-	if len(pattern) == 0 || len(value) == 0 {
-		return false
-	}
-	i := strings.LastIndex(pattern, "*")
-	switch i {
-	case -1:
-		return value == pattern
-	case len(pattern) - 1:
-		return strings.HasPrefix(value, pattern[0:i])
-	case 0:
-		return strings.HasSuffix(value, pattern[:i+1])
-	default:
-		prefix := pattern[0:1]
-		suffix := pattern[i+1:]
-		return strings.HasPrefix(value, prefix) && strings.HasSuffix(value, suffix)
-	}
 }

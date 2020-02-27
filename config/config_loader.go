@@ -36,21 +36,26 @@ var (
 	metricConfig      *MetricConfig
 	applicationConfig *ApplicationConfig
 	maxWait           = 3
+	confRouterFile    string
 )
 
 // loaded consumer & provider config from xxx.yml, and log config from xxx.xml
 // Namely: dubbo.consumer.xml & dubbo.provider.xml in java dubbo
 func init() {
 	var (
-		confConFile, confProFile string
+		confConFile string
+		confProFile string
 	)
 
 	confConFile = os.Getenv(constant.CONF_CONSUMER_FILE_PATH)
 	confProFile = os.Getenv(constant.CONF_PROVIDER_FILE_PATH)
+	confRouterFile = os.Getenv(constant.CONF_ROUTER_FILE_PATH)
+
 	if errCon := ConsumerInit(confConFile); errCon != nil {
 		log.Printf("[consumerInit] %#v", errCon)
 		consumerConfig = nil
 	}
+
 	if errPro := ProviderInit(confProFile); errPro != nil {
 		log.Printf("[providerInit] %#v", errPro)
 		providerConfig = nil
@@ -73,6 +78,13 @@ func checkApplicationName(config *ApplicationConfig) {
 
 // Load Dubbo Init
 func Load() {
+	// init router
+	if confRouterFile != "" {
+		if errPro := RouterInit(confRouterFile); errPro != nil {
+			log.Printf("[routerConfig init] %#v", errPro)
+		}
+	}
+
 	// reference config
 	if consumerConfig == nil {
 		logger.Warnf("consumerConfig is nil!")
@@ -100,6 +112,7 @@ func Load() {
 			ref.Refer(rpcService)
 			ref.Implement(rpcService)
 		}
+
 		//wait for invoker is available, if wait over default 3s, then panic
 		var count int
 		checkok := true

@@ -18,6 +18,8 @@
 package config
 
 import (
+	"io/ioutil"
+	"path"
 	"reflect"
 	"strconv"
 	"strings"
@@ -359,4 +361,17 @@ func initializeStruct(t reflect.Type, v reflect.Value) {
 		}
 	}
 
+}
+
+// loadYmlConfig Load yml config byte from file
+func loadYmlConfig(confRouterFile string) ([]byte, error) {
+	if len(confRouterFile) == 0 {
+		return nil, perrors.Errorf("application configure(provider) file name is nil")
+	}
+
+	if path.Ext(confRouterFile) != ".yml" {
+		return nil, perrors.Errorf("application configure file name{%v} suffix must be .yml", confRouterFile)
+	}
+
+	return ioutil.ReadFile(confRouterFile)
 }
