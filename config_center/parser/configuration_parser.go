@@ -109,6 +109,7 @@ func (parser *DefaultConfigurationParser) ParseToUrls(content string) ([]*common
 	}
 	return allUrls, nil
 }
+
 func serviceItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.URL, error) {
 	var addresses = item.Addresses
 	if len(addresses) == 0 {
@@ -154,6 +155,7 @@ func serviceItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.UR
 	}
 	return urls, nil
 }
+
 func appItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.URL, error) {
 	var addresses = item.Addresses
 	if len(addresses) == 0 {
@@ -246,6 +248,7 @@ func getParamString(item ConfigItem) (string, error) {
 
 	return retStr, nil
 }
+
 func getEnabledString(item ConfigItem, config ConfiguratorConfig) string {
 	retStr := "&enabled="
 	if len(item.Type) == 0 || item.Type == GeneralType {

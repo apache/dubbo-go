@@ -83,6 +83,7 @@ func (ef *GenericFilter) OnResponse(_ context.Context, result protocol.Result, _
 func GetGenericFilter() filter.Filter {
 	return &GenericFilter{}
 }
+
 func struct2MapAll(obj interface{}) interface{} {
 	if obj == nil {
 		return obj
@@ -127,6 +128,7 @@ func struct2MapAll(obj interface{}) interface{} {
 		return obj
 	}
 }
+
 func setInMap(m map[string]interface{}, structField reflect.StructField, value interface{}) (result map[string]interface{}) {
 	result = m
 	if tagName := structField.Tag.Get("m"); tagName == "" {
@@ -136,6 +138,7 @@ func setInMap(m map[string]interface{}, structField reflect.StructField, value i
 	}
 	return
 }
+
 func headerAtoa(a string) (b string) {
 	b = strings.ToLower(a[:1]) + a[1:]
 	return

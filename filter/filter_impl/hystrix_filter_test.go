@@ -213,6 +213,7 @@ func TestGetHystrixFilterConsumer(t *testing.T) {
 	assert.NotNil(t, get)
 	assert.True(t, get.(*HystrixFilter).COrP)
 }
+
 func TestGetHystrixFilterProvider(t *testing.T) {
 	get := GetHystrixFilterProvider()
 	assert.NotNil(t, get)

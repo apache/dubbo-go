@@ -141,6 +141,7 @@ func (r *zkRegistry) CloseAndNilClient() {
 	r.client.Close()
 	r.client = nil
 }
+
 func (r *zkRegistry) ZkClient() *zookeeper.ZookeeperClient {
 	return r.client
 }
