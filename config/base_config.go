@@ -138,6 +138,7 @@ func getKeyPrefix(val reflect.Value) []string {
 	return retPrefixs
 
 }
+
 func getPtrElement(v reflect.Value) reflect.Value {
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
@@ -147,6 +148,7 @@ func getPtrElement(v reflect.Value) reflect.Value {
 	}
 	return v
 }
+
 func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryConfiguration) {
 	for i := 0; i < val.NumField(); i++ {
 		if key := val.Type().Field(i).Tag.Get("property"); key != "-" && key != "" {
@@ -300,6 +302,7 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 		}
 	}
 }
+
 func (c *BaseConfig) fresh() {
 	configList := config.GetEnvInstance().Configuration()
 	for element := configList.Front(); element != nil; element = element.Next() {
