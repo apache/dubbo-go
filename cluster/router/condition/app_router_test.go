@@ -21,9 +21,6 @@ import (
 	"strconv"
 	"testing"
 	"time"
-
-	"github.com/apache/dubbo-go/config_center"
-	"github.com/apache/dubbo-go/remoting"
 )
 
 import (
@@ -35,6 +32,8 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/config"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/config_center"
+	"github.com/apache/dubbo-go/remoting"
 	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
