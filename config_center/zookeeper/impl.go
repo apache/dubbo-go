@@ -155,6 +155,7 @@ func (c *zookeeperDynamicConfiguration) GetRule(key string, opts ...config_cente
 func (c *zookeeperDynamicConfiguration) Parser() parser.ConfigurationParser {
 	return c.parser
 }
+
 func (c *zookeeperDynamicConfiguration) SetParser(p parser.ConfigurationParser) {
 	c.parser = p
 }
