@@ -55,6 +55,7 @@ func (csf *ConsumerSignFilter) Invoke(ctx context.Context, invoker protocol.Invo
 func (csf *ConsumerSignFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }
+
 func getConsumerSignFilter() filter.Filter {
 	return &ConsumerSignFilter{}
 }
