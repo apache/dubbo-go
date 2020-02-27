@@ -18,7 +18,6 @@
 package config
 
 import (
-	"github.com/apache/dubbo-go/cluster/directory"
 	"strings"
 	"testing"
 )
@@ -28,6 +27,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/cluster/directory"
 	_ "github.com/apache/dubbo-go/cluster/router/condition"
 )
 
