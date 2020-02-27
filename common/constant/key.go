@@ -40,6 +40,7 @@ const (
 	TOKEN_KEY              = "token"
 	LOCAL_ADDR             = "local-addr"
 	REMOTE_ADDR            = "remote-addr"
+	PATH_SEPARATOR         = "/"
 )
 
 const (
@@ -89,16 +90,23 @@ const (
 )
 
 const (
-	APPLICATION_KEY  = "application"
-	ORGANIZATION_KEY = "organization"
-	NAME_KEY         = "name"
-	MODULE_KEY       = "module"
-	APP_VERSION_KEY  = "app.version"
-	OWNER_KEY        = "owner"
-	ENVIRONMENT_KEY  = "environment"
-	METHOD_KEY       = "method"
-	METHOD_KEYS      = "methods"
-	RULE_KEY         = "rule"
+	APPLICATION_KEY          = "application"
+	ORGANIZATION_KEY         = "organization"
+	NAME_KEY                 = "name"
+	MODULE_KEY               = "module"
+	APP_VERSION_KEY          = "app.version"
+	OWNER_KEY                = "owner"
+	ENVIRONMENT_KEY          = "environment"
+	METHOD_KEY               = "method"
+	METHOD_KEYS              = "methods"
+	RULE_KEY                 = "rule"
+	RUNTIME_KEY              = "runtime"
+	BACKUP_KEY               = "backup"
+	ROUTERS_CATEGORY         = "routers"
+	ROUTE_PROTOCOL           = "route"
+	CONDITION_ROUTE_PROTOCOL = "condition"
+	PROVIDERS_CATEGORY       = "providers"
+	ROUTER_KEY               = "router"
 )
 
 const (
@@ -120,6 +128,7 @@ const (
 	ProviderConfigPrefix       = "dubbo.provider."
 	ConsumerConfigPrefix       = "dubbo.consumer."
 	ShutdownConfigPrefix       = "dubbo.shutdown."
+	RouterConfigPrefix         = "dubbo.router."
 )
 
 const (
@@ -140,6 +149,26 @@ const (
 
 const (
 	TRACING_REMOTE_SPAN_CTX = "tracing.remote.span.ctx"
+)
+
+// Use for router module
+const (
+	// ConditionRouterName Specify file condition router name
+	ConditionRouterName = "condition"
+	// ConditionAppRouterName Specify listenable application router name
+	ConditionAppRouterName = "app"
+	// ListenableRouterName Specify listenable router name
+	ListenableRouterName = "listenable"
+
+	// ConditionRouterRuleSuffix Specify condition router suffix
+	ConditionRouterRuleSuffix = ".condition-router"
+
+	// Force Force key in router module
+	RouterForce = "force"
+	// Enabled Enabled key in router module
+	RouterEnabled = "enabled"
+	// Priority Priority key in router module
+	RouterPriority = "priority"
 )
 
 const (
