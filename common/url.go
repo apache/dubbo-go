@@ -59,8 +59,8 @@ const (
 var (
 	// DubboNodes ...
 	DubboNodes = [...]string{"consumers", "configurators", "routers", "providers"}
-	// DubboRole ...
-	DubboRole = [...]string{"consumer", "", "", "provider"}
+	// DubboRole Dubbo service role
+	DubboRole = [...]string{"consumer", "", "routers", "provider"}
 )
 
 // RoleType ...
@@ -240,7 +240,7 @@ func NewURL(urlString string, opts ...option) (URL, error) {
 	if strings.Contains(s.Location, ":") {
 		s.Ip, s.Port, err = net.SplitHostPort(s.Location)
 		if err != nil {
-			return s, perrors.Errorf("net.SplitHostPort(Url.Host{%s}), error{%v}", s.Location, err)
+			return s, perrors.Errorf("net.SplitHostPort(url.Host{%s}), error{%v}", s.Location, err)
 		}
 	}
 	for _, opt := range opts {
@@ -373,7 +373,7 @@ func (c URL) Service() string {
 		return service
 	} else if c.SubURL != nil {
 		service = c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
-		if service != "" { //if url.path is "" then return suburl's path, special for registry Url
+		if service != "" { //if url.path is "" then return suburl's path, special for registry url
 			return service
 		}
 	}
