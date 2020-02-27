@@ -38,11 +38,11 @@ func (c *ProtocolConfig) Prefix() string {
 }
 
 func loadProtocol(protocolsIds string, protocols map[string]*ProtocolConfig) []*ProtocolConfig {
-	returnProtocols := []*ProtocolConfig{}
+	var returnProtocols []*ProtocolConfig
 	for _, v := range strings.Split(protocolsIds, ",") {
-		for k, prot := range protocols {
+		for k, protocol := range protocols {
 			if v == k {
-				returnProtocols = append(returnProtocols, prot)
+				returnProtocols = append(returnProtocols, protocol)
 			}
 		}
 
