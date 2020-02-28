@@ -101,7 +101,7 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 	)
 
 	if c.Url != "" {
-		//1. user specified URL, could be peer-to-peer address, or register center's address.
+		// 1. user specified URL, could be peer-to-peer address, or register center's address.
 		urlStrings := gxstrings.RegSplit(c.Url, "\\s*[;]+\\s*")
 		for _, urlStr := range urlStrings {
 			serviceUrl, err := common.NewURL(urlStr)
@@ -121,10 +121,10 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 			}
 		}
 	} else {
-		//2. assemble SubURL from register center's configuration模式
+		// 2. assemble SubURL from register center's configuration模式
 		c.urls = loadRegistries(c.Registry, consumerConfig.Registries, common.CONSUMER)
 
-		//set url to regUrls
+		// set url to regUrls
 		for _, regUrl := range c.urls {
 			regUrl.SubURL = cfgURL
 		}
@@ -133,7 +133,7 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 	if len(c.urls) == 1 {
 		c.invoker = extension.GetProtocol(c.urls[0].Protocol).Refer(*c.urls[0])
 	} else {
-		var invokers []protocol.Invoker
+		invokers := make([]protocol.Invoker, 0, len(c.urls))
 		var regUrl *common.URL
 		for _, u := range c.urls {
 			invokers = append(invokers, extension.GetProtocol(u.Protocol).Refer(*u))
@@ -150,7 +150,7 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 		}
 	}
 
-	//create proxy
+	// create proxy
 	if c.Async {
 		callback := GetCallback(c.id)
 		c.pxy = extension.GetProxyFactory(consumerConfig.ProxyFactory).GetAsyncProxy(c.invoker, callback, cfgURL)
