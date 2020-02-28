@@ -121,7 +121,7 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 			}
 		}
 	} else {
-		// 2. assemble SubURL from register center's configuration模式
+		// 2. assemble SubURL from register center's configuration mode
 		c.urls = loadRegistries(c.Registry, consumerConfig.Registries, common.CONSUMER)
 
 		// set url to regUrls
