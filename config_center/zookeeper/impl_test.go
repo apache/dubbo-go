@@ -77,6 +77,7 @@ func initZkData(group string, t *testing.T) (*zk.TestCluster, *zookeeperDynamicC
 
 	return ts, reg
 }
+
 func Test_GetConfig(t *testing.T) {
 	ts, reg := initZkData("dubbo", t)
 	defer ts.Stop()

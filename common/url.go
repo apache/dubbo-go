@@ -277,6 +277,7 @@ func (c URL) URLEqual(url URL) bool {
 	}
 	return true
 }
+
 func isMatchCategory(category1 string, category2 string) bool {
 	if len(category2) == 0 {
 		return category1 == constant.DEFAULT_CATEGORY
@@ -288,6 +289,7 @@ func isMatchCategory(category1 string, category2 string) bool {
 		return strings.Contains(category2, category1)
 	}
 }
+
 func (c URL) String() string {
 	var buildString string
 	if len(c.Username) == 0 && len(c.Password) == 0 {
