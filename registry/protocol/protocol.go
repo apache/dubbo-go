@@ -77,6 +77,7 @@ func newRegistryProtocol() *registryProtocol {
 		bounds:     &sync.Map{},
 	}
 }
+
 func getRegistry(regUrl *common.URL) registry.Registry {
 	reg, err := extension.GetRegistry(regUrl.Protocol, regUrl)
 	if err != nil {
@@ -85,13 +86,14 @@ func getRegistry(regUrl *common.URL) registry.Registry {
 	}
 	return reg
 }
+
 func (proto *registryProtocol) initConfigurationListeners() {
 	proto.overrideListeners = &sync.Map{}
 	proto.serviceConfigurationListeners = &sync.Map{}
 	proto.providerConfigurationListener = newProviderConfigurationListener(proto.overrideListeners)
 }
-func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 
+func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 	var registryUrl = url
 	var serviceUrl = registryUrl.SubURL
 	if registryUrl.Protocol == constant.REGISTRY_PROTOCOL {
@@ -115,6 +117,7 @@ func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 			serviceUrl.String(), err.Error())
 		return nil
 	}
+
 	err = reg.Register(*serviceUrl)
 	if err != nil {
 		logger.Errorf("consumer service %v register registry %v error, error message is %s",
@@ -131,7 +134,6 @@ func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 }
 
 func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
-
 	proto.once.Do(func() {
 		proto.initConfigurationListeners()
 	})
@@ -172,13 +174,14 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 		wrappedInvoker := newWrappedInvoker(invoker, providerUrl)
 		cachedExporter = extension.GetProtocol(protocolwrapper.FILTER).Export(wrappedInvoker)
 		proto.bounds.Store(key, cachedExporter)
-		logger.Infof("The exporter has not been cached, and will return a new  exporter!")
+		logger.Infof("The exporter has not been cached, and will return a new exporter!")
 	}
 
 	go reg.Subscribe(overriderUrl, overrideSubscribeListener)
 	return cachedExporter.(protocol.Exporter)
 
 }
+
 func (proto *registryProtocol) reExport(invoker protocol.Invoker, newUrl *common.URL) {
 	url := getProviderUrl(invoker)
 	key := getCacheKey(url)
@@ -202,12 +205,14 @@ type overrideSubscribeListener struct {
 func newOverrideSubscribeListener(overriderUrl *common.URL, invoker protocol.Invoker, proto *registryProtocol) *overrideSubscribeListener {
 	return &overrideSubscribeListener{url: overriderUrl, originInvoker: invoker, protocol: proto}
 }
+
 func (nl *overrideSubscribeListener) Notify(event *registry.ServiceEvent) {
 	if isMatched(&(event.Service), nl.url) && event.Action == remoting.EventTypeAdd {
 		nl.configurator = extension.GetDefaultConfigurator(&(event.Service))
 		nl.doOverrideIfNecessary()
 	}
 }
+
 func (nl *overrideSubscribeListener) doOverrideIfNecessary() {
 	providerUrl := getProviderUrl(nl.originInvoker)
 	key := getCacheKey(providerUrl)
@@ -276,6 +281,7 @@ func isMatched(providerUrl *common.URL, consumerUrl *common.URL) bool {
 		consumerVersion == providerVersion) && (len(consumerClassifier) == 0 ||
 		consumerClassifier == constant.ANY_VALUE || consumerClassifier == providerClassifier)
 }
+
 func isMatchCategory(category string, categories string) bool {
 	if len(categories) == 0 {
 		return category == constant.DEFAULT_CATEGORY
@@ -287,6 +293,7 @@ func isMatchCategory(category string, categories string) bool {
 		return strings.Contains(categories, category)
 	}
 }
+
 func getSubscribedOverrideUrl(providerUrl *common.URL) *common.URL {
 	newUrl := providerUrl.Clone()
 	newUrl.Protocol = constant.PROVIDER_PROTOCOL
@@ -334,6 +341,7 @@ func getProviderUrl(invoker protocol.Invoker) *common.URL {
 	//be careful params maps in url is map type
 	return url.SubURL.Clone()
 }
+
 func setProviderUrl(regURL *common.URL, providerURL *common.URL) {
 	regURL.SubURL = providerURL
 }
