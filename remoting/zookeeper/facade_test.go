@@ -70,6 +70,7 @@ func (r *mockFacade) Destroy() {
 func (r *mockFacade) RestartCallBack() bool {
 	return true
 }
+
 func (r *mockFacade) IsAvailable() bool {
 	return true
 }

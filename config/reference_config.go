@@ -77,7 +77,6 @@ func NewReferenceConfig(id string, ctx context.Context) *ReferenceConfig {
 
 // UnmarshalYAML ...
 func (c *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-
 	type rf ReferenceConfig
 	raw := rf{} // Put your defaults here
 	if err := unmarshal(&raw); err != nil {
@@ -101,8 +100,8 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 		common.WithParamsValue(constant.BEAN_NAME_KEY, c.id),
 	)
 
-	//1. user specified URL, could be peer-to-peer address, or register center's address.
 	if c.Url != "" {
+		// 1. user specified URL, could be peer-to-peer address, or register center's address.
 		urlStrings := gxstrings.RegSplit(c.Url, "\\s*[;]+\\s*")
 		for _, urlStr := range urlStrings {
 			serviceUrl, err := common.NewURL(urlStr)
@@ -120,21 +119,21 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 				newUrl := common.MergeUrl(&serviceUrl, cfgURL)
 				c.urls = append(c.urls, newUrl)
 			}
-
 		}
 	} else {
-		//2. assemble SubURL from register center's configuration模式
+		// 2. assemble SubURL from register center's configuration mode
 		c.urls = loadRegistries(c.Registry, consumerConfig.Registries, common.CONSUMER)
 
-		//set url to regUrls
+		// set url to regUrls
 		for _, regUrl := range c.urls {
 			regUrl.SubURL = cfgURL
 		}
 	}
+
 	if len(c.urls) == 1 {
 		c.invoker = extension.GetProtocol(c.urls[0].Protocol).Refer(*c.urls[0])
 	} else {
-		invokers := []protocol.Invoker{}
+		invokers := make([]protocol.Invoker, 0, len(c.urls))
 		var regUrl *common.URL
 		for _, u := range c.urls {
 			invokers = append(invokers, extension.GetProtocol(u.Protocol).Refer(*u))
@@ -151,7 +150,7 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 		}
 	}
 
-	//create proxy
+	// create proxy
 	if c.Async {
 		callback := GetCallback(c.id)
 		c.pxy = extension.GetProxyFactory(consumerConfig.ProxyFactory).GetAsyncProxy(c.invoker, callback, cfgURL)
@@ -219,7 +218,6 @@ func (c *ReferenceConfig) getUrlMap() url.Values {
 	}
 
 	return urlMap
-
 }
 
 // GenericLoad ...
