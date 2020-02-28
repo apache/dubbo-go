@@ -118,6 +118,7 @@ func normalInvoke(t *testing.T, successCount int, urlParam url.Values, invocatio
 	}
 	return clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 }
+
 func Test_FailoverInvokeSuccess(t *testing.T) {
 	urlParams := url.Values{}
 	result := normalInvoke(t, 3, urlParams)

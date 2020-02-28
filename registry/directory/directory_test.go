@@ -45,6 +45,7 @@ import (
 func init() {
 	config.SetConsumerConfig(config.ConsumerConfig{ApplicationConfig: &config.ApplicationConfig{Name: "test-application"}})
 }
+
 func TestSubscribe(t *testing.T) {
 	registryDirectory, _ := normalRegistryDir()
 
@@ -123,6 +124,7 @@ func Test_List(t *testing.T) {
 	assert.Equal(t, true, registryDirectory.IsAvailable())
 
 }
+
 func Test_MergeProviderUrl(t *testing.T) {
 	registryDirectory, mockRegistry := normalRegistryDir(true)
 	providerUrl, _ := common.NewURL("dubbo://0.0.0.0:20000/org.apache.dubbo-go.mockService",

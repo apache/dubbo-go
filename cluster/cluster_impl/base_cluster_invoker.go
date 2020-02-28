@@ -45,6 +45,7 @@ func newBaseClusterInvoker(directory cluster.Directory) baseClusterInvoker {
 		destroyed:      atomic.NewBool(false),
 	}
 }
+
 func (invoker *baseClusterInvoker) GetUrl() common.URL {
 	return invoker.directory.GetUrl()
 }
