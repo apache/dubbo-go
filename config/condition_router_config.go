@@ -30,7 +30,7 @@ import (
 //RouterInit Load config file to init router config
 func RouterInit(confRouterFile string) error {
 	fileRouterFactories := extension.GetFileRouterFactories()
-	bytes, err := loadYmlConfig(confRouterFile)
+	bytes, err := loadYMLConfig(confRouterFile)
 	if err != nil {
 		return perrors.Errorf("ioutil.ReadFile(file:%s) = error:%v", confRouterFile, perrors.WithStack(err))
 	}
