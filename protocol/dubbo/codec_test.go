@@ -25,8 +25,8 @@ import (
 
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
-	"github.com/stretchr/testify/assert"
 	perrors "github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
@@ -79,5 +79,5 @@ func TestIssue380(t *testing.T) {
 	pkg := &DubboPackage{}
 	buf := bytes.NewBuffer([]byte("hello"))
 	err := pkg.Unmarshal(buf)
-    assert.True(t, perrors.Cause(err) == hessian.ErrHeaderNotEnough)
+	assert.True(t, perrors.Cause(err) == hessian.ErrHeaderNotEnough)
 }
