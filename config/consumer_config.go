@@ -88,7 +88,7 @@ func ConsumerInit(confConFile string) error {
 	}
 
 	consumerConfig = &ConsumerConfig{}
-	err := unmarshalYMLConfig(confConFile, providerConfig)
+	err := unmarshalYMLConfig(confConFile, consumerConfig)
 	if err != nil {
 		return perrors.Errorf("yaml.Unmarshal() = error:%v", perrors.WithStack(err))
 	}
