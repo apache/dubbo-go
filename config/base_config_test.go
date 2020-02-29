@@ -522,9 +522,9 @@ func Test_initializeStruct(t *testing.T) {
 func TestUnmarshalYMLConfig(t *testing.T) {
 	conPath, err := filepath.Abs("./testdata/consumer_config_with_configcenter.yml")
 	assert.NoError(t, err)
-	consumerConfig = &ConsumerConfig{}
-	assert.NoError(t, unmarshalYMLConfig(conPath, consumerConfig))
-	assert.Equal(t, "default", consumerConfig.ProxyFactory)
-	assert.Equal(t, "dubbo.properties", consumerConfig.ConfigCenterConfig.ConfigFile)
-	assert.Equal(t, "100ms", consumerConfig.Connect_Timeout)
+	c := &ConsumerConfig{}
+	assert.NoError(t, unmarshalYMLConfig(conPath, c))
+	assert.Equal(t, "default", c.ProxyFactory)
+	assert.Equal(t, "dubbo.properties", c.ConfigCenterConfig.ConfigFile)
+	assert.Equal(t, "100ms", c.Connect_Timeout)
 }
