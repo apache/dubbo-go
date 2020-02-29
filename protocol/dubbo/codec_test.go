@@ -18,6 +18,7 @@
 package dubbo
 
 import (
+	"bytes"
 	"testing"
 	"time"
 )
@@ -25,6 +26,7 @@ import (
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/stretchr/testify/assert"
+	perrors "github.com/pkg/errors"
 )
 
 func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
@@ -71,4 +73,11 @@ func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
 	assert.Equal(t, "Ljava/lang/String;", pkgres.Body.([]interface{})[4])
 	assert.Equal(t, []interface{}{"a"}, pkgres.Body.([]interface{})[5])
 	assert.Equal(t, map[string]string{"dubbo": "2.0.2", "interface": "Service", "path": "path", "timeout": "1000", "version": "2.6"}, pkgres.Body.([]interface{})[6])
+}
+
+func TestIssue380(t *testing.T) {
+	pkg := &DubboPackage{}
+	buf := bytes.NewBuffer([]byte("hello"))
+	err := pkg.Unmarshal(buf)
+    assert.True(t, perrors.Cause(err) == hessian.ErrHeaderNotEnough)
 }
