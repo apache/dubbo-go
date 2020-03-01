@@ -56,4 +56,6 @@ require (
 	gopkg.in/yaml.v2 v2.2.2
 )
 
+replace github.com/dubbogo/gost => /Users/mindeng/git/apache-dubbo/gost
+
 go 1.13
