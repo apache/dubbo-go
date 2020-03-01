@@ -24,9 +24,9 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go-hessian2"
+	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/dubbogo/getty"
-	"github.com/dubbogo/gost/sync"
+	gxsync "github.com/dubbogo/gost/sync"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
 	"gopkg.in/yaml.v2"
@@ -274,8 +274,8 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 
 	select {
 	case <-getty.GetTimeWheel().After(c.opts.RequestTimeout):
-		err = errClientReadTimeout
 		c.removePendingResponse(SequenceType(rsp.seq))
+		return perrors.WithStack(errClientReadTimeout)
 	case <-rsp.done:
 		err = rsp.err
 	}
