@@ -31,6 +31,7 @@
 - [Url encode zkpath](https://github.com/apache/dubbo-go/pull/283)
 - [Fix jsonrpc about HTTP/1.1](https://github.com/apache/dubbo-go/pull/327)
 - [Fix zk bug](https://github.com/apache/dubbo-go/pull/346)
+- [HessianCodec failed to check package header length](https://github.com/apache/dubbo-go/pull/381)
 
 ## 1.2.0
 
