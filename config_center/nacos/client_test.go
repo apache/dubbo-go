@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-package auth
+package nacos
 
 import (
-	"net/url"
+	"strings"
 	"testing"
+	"time"
 )
 
 import (
@@ -28,18 +29,27 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	invocation2 "github.com/apache/dubbo-go/protocol/invocation"
 )
 
-func TestDefaultAccesskeyStorage_GetAccesskeyPair(t *testing.T) {
-	url := common.NewURLWithOptions(
-		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.SECRET_ACCESS_KEY_KEY, "skey"),
-		common.WithParamsValue(constant.ACCESS_KEY_ID_KEY, "akey"))
-	invocation := &invocation2.RPCInvocation{}
-	storage := GetDefaultAccesskeyStorage()
-	accesskeyPair := storage.GetAccessKeyPair(invocation, url)
-	assert.Equal(t, "skey", accesskeyPair.SecretKey)
-	assert.Equal(t, "akey", accesskeyPair.AccessKey)
+func Test_newNacosClient(t *testing.T) {
+	server := mockCommonNacosServer()
+	nacosURL := strings.ReplaceAll(server.URL, "http", "registry")
+	registryUrl, _ := common.NewURL(nacosURL)
+	c := &nacosDynamicConfiguration{
+		url:  &registryUrl,
+		done: make(chan struct{}),
+	}
+	err := ValidateNacosClient(c, WithNacosName(nacosClientName))
+	assert.NoError(t, err)
+	c.wg.Add(1)
+	go HandleClientRestart(c)
+	go func() {
+		// c.client.Close() and <-c.client.Done() have order requirements.
+		// If c.client.Close() is called first.It is possible that "go HandleClientRestart(c)"
+		// sets c.client to nil before calling c.client.Done().
+		time.Sleep(time.Second)
+		c.client.Close()
+	}()
+	<-c.client.Done()
+	c.Destroy()
 }
