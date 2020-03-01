@@ -1,4 +1,39 @@
 # Release Notes
+---
+
+## 1.3.0
+
+### New Features
+
+- [Add apollo config center support](https://github.com/apache/dubbo-go/pull/250)
+- [Gracefully shutdown](https://github.com/apache/dubbo-go/pull/255)
+- [Add consistent hash load balance support](https://github.com/apache/dubbo-go/pull/261)
+- [Add sticky connection support](https://github.com/apache/dubbo-go/pull/270)
+- [Add async call for dubbo protocol](https://github.com/apache/dubbo-go/pull/272)
+- [Add generic implement](https://github.com/apache/dubbo-go/pull/291)
+- [Add request timeout for method](https://github.com/apache/dubbo-go/pull/284)
+- [Add grpc protocol](https://github.com/apache/dubbo-go/pull/311)
+
+### Enhancement
+    
+- [The SIGSYS and SIGSTOP are not supported in windows platform](https://github.com/apache/dubbo-go/pull/262)
+- [Error should be returned when `NewURL` failed](https://github.com/apache/dubbo-go/pull/266)
+- [Split config center GetConfig method](https://github.com/apache/dubbo-go/pull/267)
+- [Modify closing method for dubbo protocol](https://github.com/apache/dubbo-go/pull/268)
+- [Add SetLoggerLevel method](https://github.com/apache/dubbo-go/pull/271)
+- [Change the position of the lock](https://github.com/apache/dubbo-go/pull/286)
+- [Change zk version and add base_registry](https://github.com/apache/dubbo-go/pull/355)
+
+### Bugfixes
+    
+- [Fix negative wait group count](https://github.com/apache/dubbo-go/pull/253)
+- [After disconnection with ZK registry, cosumer can't listen to provider changes](https://github.com/apache/dubbo-go/pull/258)
+- [The generic filter and default reference filters lack ','](https://github.com/apache/dubbo-go/pull/260)
+- [Url encode zkpath](https://github.com/apache/dubbo-go/pull/283)
+- [Fix jsonrpc about HTTP/1.1](https://github.com/apache/dubbo-go/pull/327)
+- [Fix zk bug](https://github.com/apache/dubbo-go/pull/346)
+- [HessianCodec failed to check package header length](https://github.com/apache/dubbo-go/pull/381)
+
 
 ## 1.2.0
 
