@@ -15,34 +15,29 @@
  * limitations under the License.
  */
 
-package auth
+package nacos
 
 import (
 	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/filter"
-	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/config_center"
+	"github.com/apache/dubbo-go/config_center/parser"
 )
 
-// DefaultAccesskeyStorage
-// The default implementation of AccesskeyStorage
-type DefaultAccesskeyStorage struct {
-}
-
-// GetAccessKeyPair
-// get AccessKeyPair from url by the key "accessKeyId" and "secretAccessKey"
-func (storage *DefaultAccesskeyStorage) GetAccessKeyPair(invocation protocol.Invocation, url *common.URL) *filter.AccessKeyPair {
-	return &filter.AccessKeyPair{
-		AccessKey: url.GetParam(constant.ACCESS_KEY_ID_KEY, ""),
-		SecretKey: url.GetParam(constant.SECRET_ACCESS_KEY_KEY, ""),
-	}
-}
-
 func init() {
-	extension.SetAccesskeyStorages(constant.DEFAULT_ACCESS_KEY_STORAGE, GetDefaultAccesskeyStorage)
+	extension.SetConfigCenterFactory("nacos", func() config_center.DynamicConfigurationFactory { return &nacosDynamicConfigurationFactory{} })
 }
 
-func GetDefaultAccesskeyStorage() filter.AccessKeyStorage {
-	return &DefaultAccesskeyStorage{}
+type nacosDynamicConfigurationFactory struct {
+}
+
+// GetDynamicConfiguration Get Configuration with URL
+func (f *nacosDynamicConfigurationFactory) GetDynamicConfiguration(url *common.URL) (config_center.DynamicConfiguration, error) {
+	dynamicConfiguration, err := newNacosDynamicConfiguration(url)
+	if err != nil {
+		return nil, err
+	}
+	dynamicConfiguration.SetParser(&parser.DefaultConfigurationParser{})
+	return dynamicConfiguration, err
+
 }
