@@ -258,17 +258,7 @@ LOOP:
 				z.name, event.Type, event.Server, event.Path, event.State, StateToString(event.State), event.Err)
 			switch (int)(event.State) {
 			case (int)(zk.StateDisconnected):
-				logger.Warnf("zk{addr:%s} state is StateDisconnected, so close the zk client{name:%s}.", z.ZkAddrs, z.name)
-				z.stop()
-				z.Lock()
-				conn := z.Conn
-				z.Conn = nil
-				z.Unlock()
-				if conn != nil {
-					conn.Close()
-				}
-
-				break LOOP
+				logger.Errorf("zk{addr:%s} state is StateDisconnected, zk client{name:%s}.", z.ZkAddrs, z.name)
 			case (int)(zk.EventNodeDataChanged), (int)(zk.EventNodeChildrenChanged):
 				logger.Infof("zkClient{%s} get zk node changed event{path:%s}", z.name, event.Path)
 				z.Lock()
