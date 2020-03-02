@@ -67,8 +67,6 @@ func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfigu
 		logger.Errorf("zookeeper client start error ,error message is %v", err)
 		return nil, err
 	}
-	c.wg.Add(1)
-	go zookeeper.HandleClientRestart(c)
 
 	c.listener = zookeeper.NewZkEventListener(c.client)
 	c.cacheListener = NewCacheListener(c.rootPath)
@@ -93,8 +91,6 @@ func newMockZookeeperDynamicConfiguration(url *common.URL, opts ...zookeeper.Opt
 		logger.Errorf("mock zookeeper client start error ,error message is %v", err)
 		return tc, c, err
 	}
-	c.wg.Add(1)
-	go zookeeper.HandleClientRestart(c)
 
 	c.listener = zookeeper.NewZkEventListener(c.client)
 	c.cacheListener = NewCacheListener(c.rootPath)
