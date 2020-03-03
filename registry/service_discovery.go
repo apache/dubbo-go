@@ -31,7 +31,6 @@ import (
 )
 
 type ServiceDiscovery interface {
-
 	fmt.Stringer
 
 	// ----------------- lifecycle -------------------
@@ -44,7 +43,6 @@ type ServiceDiscovery interface {
 	// If the discovery cannot be destroy, it will return an error.
 	Destroy() error
 
-
 	// ----------------- registration ----------------
 
 	// Register will register an instance of ServiceInstance to registry
@@ -55,7 +53,6 @@ type ServiceDiscovery interface {
 
 	// Unregister will unregister this instance from registry
 	Unregister(instance ServiceInstance) error
-
 
 	// ----------------- discovery -------------------
 	// GetDefaultPageSize will return the default page size
@@ -78,7 +75,6 @@ type ServiceDiscovery interface {
 
 	// Batch get all instances by the specified service names
 	GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]gxpage.Pager
-
 
 	// ----------------- event ----------------------
 	// AddListener adds a new ServiceInstancesChangedListener
