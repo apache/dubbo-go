@@ -13,11 +13,13 @@ Apache License, Version 2.0
 
 ## 发布日志 ##
 
-[v1.0.0 - 2019年5月29日 兼容dubbo v2.6.5 版本](https://github.com/apache/dubbo-go/releases/tag/v1.0.0)
+[v1.3.0 - 2020年3月1日](https://github.com/apache/dubbo-go/releases/tag/v1.3.0)
+
+[v1.2.0 - 2019年11月15日](https://github.com/apache/dubbo-go/releases/tag/v1.2.0)
 
 [v1.1.0 - 2019年9月7日 捐献给Apache之后的第一次release](https://github.com/apache/dubbo-go/releases/tag/v1.1.0)
 
-[v1.2.0 - 2019年11月15日](https://github.com/apache/dubbo-go/releases/tag/v1.2.0)
+[v1.0.0 - 2019年5月29日 兼容dubbo v2.6.5 版本](https://github.com/apache/dubbo-go/releases/tag/v1.0.0)
 
 ## 工程架构 ##
 
@@ -123,13 +125,17 @@ Windows
 before_ut.bat
 ```
 
-# 执行
+### 执行
 ```bash
 go test ./...
 
 # coverage
 go test ./... -coverprofile=coverage.txt -covermode=atomic
 ```
+
+## 编译
+
+请移步 [dubbo-samples/golang](https://github.com/dubbogo/dubbo-samples)
 
 ## 如何贡献
 

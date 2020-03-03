@@ -19,7 +19,6 @@ package zookeeper
 
 import (
 	"path"
-	"strings"
 	"sync"
 	"time"
 )
