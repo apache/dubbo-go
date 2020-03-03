@@ -124,6 +124,7 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 	pendingResponse := h.conn.pool.rpcClient.removePendingResponse(SequenceType(p.Header.ID))
 	if pendingResponse == nil {
+		logger.Errorf("failed to get pending response context for response package %s", *p)
 		return
 	}
 
