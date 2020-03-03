@@ -24,7 +24,7 @@ import (
 // EventListener is an new interface used to align with dubbo 2.7.5
 // It contains the Prioritized means that the listener has its priority
 type EventListener interface {
-	gxsort.Prioritized
+	gxsort.Prioritizer
 	// OnEvent handle this event
 	OnEvent(e Event) error
 }
@@ -38,5 +38,4 @@ type ConditionalEventListener interface {
 
 // TODO (implement ConditionalEventListener)
 type ServiceInstancesChangedListener struct {
-
 }
