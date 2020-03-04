@@ -15,6 +15,7 @@ import (
 )
 
 func TestHealthCheckRouter_Route(t *testing.T) {
+	defer protocol.CleanAllStatus()
 	consumerURL, _ := common.NewURL("dubbo://192.168.10.1/com.ikurento.user.UserProvider")
 	consumerURL.SetParam(HEALTH_ROUTE_ENABLED_KEY, "true")
 	url1, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
@@ -86,6 +87,7 @@ func contains(invokers []protocol.Invoker, invoker protocol.Invoker) bool {
 }
 
 func TestNewHealthCheckRouter(t *testing.T) {
+	defer protocol.CleanAllStatus()
 	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
 	hcr, _ := NewHealthCheckRouter(&url)
 	h := hcr.(*HealthCheckRouter)
