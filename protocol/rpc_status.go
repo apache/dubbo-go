@@ -167,3 +167,17 @@ func endCount0(rpcStatus *RPCStatus, elapsed int64, succeeded bool) {
 func CurrentTimeMillis() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
 }
+
+// Destroy is used to clean all status
+func CleanAllStatus() {
+	delete1 := func(key interface{}, value interface{}) bool {
+		methodStatistics.Delete(key)
+		return true
+	}
+	methodStatistics.Range(delete1)
+	delete2 := func(key interface{}, value interface{}) bool {
+		serviceStatistic.Delete(key)
+		return true
+	}
+	serviceStatistic.Range(delete2)
+}
