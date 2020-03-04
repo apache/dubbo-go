@@ -27,6 +27,7 @@ import (
 func init() {
 	extension.SetRouterFactory(constant.ConditionRouterName, newConditionRouterFactory)
 	extension.SetRouterFactory(constant.ConditionAppRouterName, newAppRouterFactory)
+	extension.SetRouterFactory(constant.HealthCheckRouterName, newHealthCheckRouteFactory)
 }
 
 // ConditionRouterFactory Condition router factory
