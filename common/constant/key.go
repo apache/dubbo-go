@@ -158,7 +158,7 @@ const (
 	// ConditionAppRouterName Specify listenable application router name
 	ConditionAppRouterName = "app"
 	// ListenableRouterName Specify listenable router name
-	ListenableRouterName = "listenable"
+	ListenableRouterName  = "listenable"
 	HealthCheckRouterName = "health_check"
 
 	// ConditionRouterRuleSuffix Specify condition router suffix
