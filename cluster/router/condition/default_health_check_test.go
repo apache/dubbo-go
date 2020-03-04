@@ -15,6 +15,7 @@ import (
 )
 
 func TestDefaultHealthChecker_IsHealthy(t *testing.T) {
+	defer protocol.CleanAllStatus()
 	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
 	hc := NewDefaultHealthChecker(&url).(*DefaultHealthChecker)
 	invoker := NewMockInvoker(url, 1)
@@ -49,7 +50,7 @@ func TestDefaultHealthChecker_IsHealthy(t *testing.T) {
 }
 
 func TestDefaultHealthChecker_getCircuitBreakerSleepWindowTime(t *testing.T) {
-
+	defer protocol.CleanAllStatus()
 	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
 	defaultHc := NewDefaultHealthChecker(&url).(*DefaultHealthChecker)
 	// Increase the number of failed requests
@@ -75,10 +76,10 @@ func TestDefaultHealthChecker_getCircuitBreakerSleepWindowTime(t *testing.T) {
 	request(url1, "test", 1, false, false)
 	sleepWindowTime = defaultHc.getCircuitBreakerSleepWindowTime(protocol.GetURLStatus(url1))
 	assert.True(t, sleepWindowTime > 0 && sleepWindowTime < MAX_CIRCUIT_TRIPPED_TIMEOUT)
-
 }
 
 func TestDefaultHealthChecker_getCircuitBreakerTimeout(t *testing.T) {
+	defer protocol.CleanAllStatus()
 	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
 	defaultHc := NewDefaultHealthChecker(&url).(*DefaultHealthChecker)
 	timeout := defaultHc.getCircuitBreakerTimeout(protocol.GetURLStatus(url))
@@ -97,6 +98,7 @@ func TestDefaultHealthChecker_getCircuitBreakerTimeout(t *testing.T) {
 }
 
 func TestDefaultHealthChecker_isCircuitBreakerTripped(t *testing.T) {
+	defer protocol.CleanAllStatus()
 	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
 	defaultHc := NewDefaultHealthChecker(&url).(*DefaultHealthChecker)
 	status := protocol.GetURLStatus(url)
@@ -112,6 +114,7 @@ func TestDefaultHealthChecker_isCircuitBreakerTripped(t *testing.T) {
 }
 
 func TestNewDefaultHealthChecker(t *testing.T) {
+	defer protocol.CleanAllStatus()
 	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
 	defaultHc := NewDefaultHealthChecker(&url).(*DefaultHealthChecker)
 	assert.NotNil(t, defaultHc)
