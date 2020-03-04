@@ -125,13 +125,17 @@ Windows
 before_ut.bat
 ```
 
-# 执行
+### 执行
 ```bash
 go test ./...
 
 # coverage
 go test ./... -coverprofile=coverage.txt -covermode=atomic
 ```
+
+## 编译
+
+请移步 [dubbo-samples/golang](https://github.com/dubbogo/dubbo-samples)
 
 ## 如何贡献
 
@@ -149,4 +153,4 @@ go test ./... -coverprofile=coverage.txt -covermode=atomic
 
 ![ctrip](https://pic.c-ctrip.com/common/c_logo2013.png)
 ![Excellent Health Technology Group](https://raw.githubusercontent.com/dajiiu/photo/static/mirror/haozhuo_logo.png)
-![ctrip](https://raw.githubusercontent.com/pantianying/go-tool/master/picture/logo_2-removebg-preview.png)
+![tuya](https://raw.githubusercontent.com/pantianying/go-tool/master/picture/logo_2-removebg-preview.png)
