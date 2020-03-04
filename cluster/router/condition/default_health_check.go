@@ -28,14 +28,19 @@ func init() {
 	extension.SethealthChecker(DEFAULT_HEALTH_CHECKER, NewDefaultHealthChecker)
 }
 
-// DefaultHealthChecker is the default
+// DefaultHealthChecker is the default implementation of HealthChecker, which determines the health status of
+// the invoker based on the number of successive bad request and the current active request.
 type DefaultHealthChecker struct {
+	// OutStandingRequestConutLimit
 	OutStandingRequestConutLimit int32
-	// the circuitbreaker threshold
+	// RequestSuccessiveFailureThreshold
 	RequestSuccessiveFailureThreshold int32
-	CircuitTrippedTimeoutFactor       int32
+	// RequestSuccessiveFailureThreshold
+	CircuitTrippedTimeoutFactor int32
 }
 
+// IsHealthy evaluates the healthy state on the given Invoker based on the number of successive bad request
+// and the current active request
 func (c *DefaultHealthChecker) IsHealthy(invoker protocol.Invoker) bool {
 	urlStatus := protocol.GetURLStatus(invoker.GetUrl())
 	if c.isCircuitBreakerTripped(urlStatus) || urlStatus.GetActive() > c.OutStandingRequestConutLimit {
@@ -44,6 +49,8 @@ func (c *DefaultHealthChecker) IsHealthy(invoker protocol.Invoker) bool {
 	}
 	return true
 }
+
+// isCircuitBreakerTripped determine whether the invoker is in the tripped state by the number of successive bad request
 func (c *DefaultHealthChecker) isCircuitBreakerTripped(status *protocol.RPCStatus) bool {
 	circuitBreakerTimeout := c.getCircuitBreakerTimeout(status)
 	currentTime := protocol.CurrentTimeMillis()
@@ -53,6 +60,7 @@ func (c *DefaultHealthChecker) isCircuitBreakerTripped(status *protocol.RPCStatu
 	return circuitBreakerTimeout > currentTime
 }
 
+// getCircuitBreakerTimeout get the timestamp recovered from tripped state
 func (c *DefaultHealthChecker) getCircuitBreakerTimeout(status *protocol.RPCStatus) int64 {
 	sleepWindow := c.getCircuitBreakerSleepWindowTime(status)
 	if sleepWindow <= 0 {
@@ -61,6 +69,7 @@ func (c *DefaultHealthChecker) getCircuitBreakerTimeout(status *protocol.RPCStat
 	return status.GetLastRequestFailedTimestamp() + sleepWindow
 }
 
+// getCircuitBreakerSleepWindowTime get the sleep window time of invoker
 func (c *DefaultHealthChecker) getCircuitBreakerSleepWindowTime(status *protocol.RPCStatus) int64 {
 
 	successiveFailureCount := status.GetSuccessiveRequestFailureCount()
@@ -77,6 +86,7 @@ func (c *DefaultHealthChecker) getCircuitBreakerSleepWindowTime(status *protocol
 	return int64(sleepWindow)
 }
 
+// NewDefaultHealthChecker constructs a new DefaultHealthChecker based on the url
 func NewDefaultHealthChecker(url *common.URL) router.HealthChecker {
 	return &DefaultHealthChecker{
 		OutStandingRequestConutLimit:      int32(url.GetParamInt(OUTSTANDING_REQUEST_COUNT_LIMIT_KEY, math.MaxInt32)),
