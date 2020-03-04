@@ -153,7 +153,7 @@ func endCount0(rpcStatus *RPCStatus, elapsed int64, succeeded bool) {
 		}
 		atomic.StoreInt32(&rpcStatus.successiveRequestFailureCount, 0)
 	} else {
-		atomic.StoreInt64(&rpcStatus.lastRequestFailedTimestamp, time.Now().Unix())
+		atomic.StoreInt64(&rpcStatus.lastRequestFailedTimestamp, CurrentTimeMillis())
 		atomic.AddInt32(&rpcStatus.successiveRequestFailureCount, 1)
 		atomic.AddInt32(&rpcStatus.failed, 1)
 		atomic.AddInt64(&rpcStatus.failedElapsed, elapsed)

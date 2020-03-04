@@ -57,3 +57,14 @@ func newAppRouterFactory() router.RouterFactory {
 func (c *AppRouterFactory) NewRouter(url *common.URL) (router.Router, error) {
 	return NewAppRouter(url)
 }
+
+type HealthCheckRouteFactory struct {
+}
+
+func newHealthCheckRouteFactory() router.RouterFactory {
+	return &HealthCheckRouteFactory{}
+}
+
+func (f *HealthCheckRouteFactory) NewRouter(url *common.URL) (router.Router, error) {
+	return NewHealthCheckRouter(url)
+}
