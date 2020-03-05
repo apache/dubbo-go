@@ -76,7 +76,7 @@ func TestDefaultHealthChecker_getCircuitBreakerSleepWindowTime(t *testing.T) {
 		request(url, "test", 1, false, false)
 	}
 	sleepWindowTime := defaultHc.getCircuitBreakerSleepWindowTime(protocol.GetURLStatus(url))
-	assert.True(t, sleepWindowTime == MAX_CIRCUIT_TRIPPED_TIMEOUT)
+	assert.True(t, sleepWindowTime == MAX_CIRCUIT_TRIPPED_TIMEOUT_IN_MS)
 
 	// Adjust the threshold size to 1000
 	url.SetParam(SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY, "1000")
@@ -93,7 +93,7 @@ func TestDefaultHealthChecker_getCircuitBreakerSleepWindowTime(t *testing.T) {
 	request(url1, "test", 1, false, false)
 	request(url1, "test", 1, false, false)
 	sleepWindowTime = defaultHc.getCircuitBreakerSleepWindowTime(protocol.GetURLStatus(url1))
-	assert.True(t, sleepWindowTime > 0 && sleepWindowTime < MAX_CIRCUIT_TRIPPED_TIMEOUT)
+	assert.True(t, sleepWindowTime > 0 && sleepWindowTime < MAX_CIRCUIT_TRIPPED_TIMEOUT_IN_MS)
 }
 
 func TestDefaultHealthChecker_getCircuitBreakerTimeout(t *testing.T) {
@@ -136,16 +136,16 @@ func TestNewDefaultHealthChecker(t *testing.T) {
 	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
 	defaultHc := NewDefaultHealthChecker(&url).(*DefaultHealthChecker)
 	assert.NotNil(t, defaultHc)
-	assert.Equal(t, defaultHc.OutStandingRequestConutLimit, int32(math.MaxInt32))
-	assert.Equal(t, defaultHc.RequestSuccessiveFailureThreshold, int32(DEFAULT_SUCCESSIVE_FAILED_REQUEST_MAX_DIFF))
+	assert.Equal(t, defaultHc.outStandingRequestConutLimit, int32(math.MaxInt32))
+	assert.Equal(t, defaultHc.requestSuccessiveFailureThreshold, int32(DEFAULT_SUCCESSIVE_FAILED_REQUEST_MAX_DIFF))
 
 	url1, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
 	url1.SetParam(OUTSTANDING_REQUEST_COUNT_LIMIT_KEY, "10")
 	url1.SetParam(SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY, "10")
 	nondefaultHc := NewDefaultHealthChecker(&url1).(*DefaultHealthChecker)
 	assert.NotNil(t, nondefaultHc)
-	assert.Equal(t, nondefaultHc.OutStandingRequestConutLimit, int32(10))
-	assert.Equal(t, nondefaultHc.RequestSuccessiveFailureThreshold, int32(10))
+	assert.Equal(t, nondefaultHc.outStandingRequestConutLimit, int32(10))
+	assert.Equal(t, nondefaultHc.requestSuccessiveFailureThreshold, int32(10))
 }
 
 func request(url common.URL, method string, elapsed int64, active, succeeded bool) {
