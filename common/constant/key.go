@@ -190,3 +190,16 @@ const (
 	ACCESS_KEY_ID_KEY             = "accessKeyId"
 	SECRET_ACCESS_KEY_KEY         = "secretAccessKey"
 )
+
+// HealthCheck Router
+const (
+	HEALTH_CHECKER                             = "health.checker"
+	DEFAULT_HEALTH_CHECKER                     = "default"
+	OUTSTANDING_REQUEST_COUNT_LIMIT_KEY        = "outstanding.request.limit"
+	SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY    = "successive.failed.threshold"
+	DEFAULT_SUCCESSIVE_FAILED_THRESHOLD        = 5
+	CIRCUIT_TRIPPED_TIMEOUT_FACTOR_KEY         = "circuit.tripped.timeout.factor"
+	DEFAULT_SUCCESSIVE_FAILED_REQUEST_MAX_DIFF = 5
+	DEFAULT_CIRCUIT_TRIPPED_TIMEOUT_FACTOR     = 1000
+	MAX_CIRCUIT_TRIPPED_TIMEOUT_IN_MS          = 30000
+)
