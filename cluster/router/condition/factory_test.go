@@ -366,8 +366,3 @@ func TestNewAppRouterFactory(t *testing.T) {
 	factory := newAppRouterFactory()
 	assert.NotNil(t, factory)
 }
-
-func TestHealthCheckRouteFactory(t *testing.T) {
-	factory := newHealthCheckRouteFactory()
-	assert.NotNil(t, factory)
-}

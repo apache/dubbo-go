@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package condition
+package healthcheck
 
 import (
 	"math"

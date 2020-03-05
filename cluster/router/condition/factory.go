@@ -27,7 +27,6 @@ import (
 func init() {
 	extension.SetRouterFactory(constant.ConditionRouterName, newConditionRouterFactory)
 	extension.SetRouterFactory(constant.ConditionAppRouterName, newAppRouterFactory)
-	extension.SetRouterFactory(constant.HealthCheckRouterName, newHealthCheckRouteFactory)
 }
 
 // ConditionRouterFactory Condition router factory
@@ -57,15 +56,4 @@ func newAppRouterFactory() router.RouterFactory {
 // NewRouter Create AppRouterFactory by URL
 func (c *AppRouterFactory) NewRouter(url *common.URL) (router.Router, error) {
 	return NewAppRouter(url)
-}
-
-type HealthCheckRouteFactory struct {
-}
-
-func newHealthCheckRouteFactory() router.RouterFactory {
-	return &HealthCheckRouteFactory{}
-}
-
-func (f *HealthCheckRouteFactory) NewRouter(url *common.URL) (router.Router, error) {
-	return NewHealthCheckRouter(url)
 }
