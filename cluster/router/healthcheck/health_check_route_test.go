@@ -118,9 +118,9 @@ func TestNewHealthCheckRouter(t *testing.T) {
 	assert.NotNil(t, h.checker)
 
 	dhc := h.checker.(*DefaultHealthChecker)
-	assert.Equal(t, dhc.OutStandingRequestConutLimit, int32(math.MaxInt32))
-	assert.Equal(t, dhc.RequestSuccessiveFailureThreshold, int32(DEFAULT_SUCCESSIVE_FAILED_THRESHOLD))
-	assert.Equal(t, dhc.CircuitTrippedTimeoutFactor, int32(DEFAULT_CIRCUIT_TRIPPED_TIMEOUT_FACTOR))
+	assert.Equal(t, dhc.outStandingRequestConutLimit, int32(math.MaxInt32))
+	assert.Equal(t, dhc.requestSuccessiveFailureThreshold, int32(DEFAULT_SUCCESSIVE_FAILED_THRESHOLD))
+	assert.Equal(t, dhc.circuitTrippedTimeoutFactor, int32(DEFAULT_CIRCUIT_TRIPPED_TIMEOUT_FACTOR))
 
 	url.SetParam(CIRCUIT_TRIPPED_TIMEOUT_FACTOR_KEY, "500")
 	url.SetParam(SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY, "10")
@@ -128,7 +128,7 @@ func TestNewHealthCheckRouter(t *testing.T) {
 	hcr, _ = NewHealthCheckRouter(&url)
 	h = hcr.(*HealthCheckRouter)
 	dhc = h.checker.(*DefaultHealthChecker)
-	assert.Equal(t, dhc.OutStandingRequestConutLimit, int32(1000))
-	assert.Equal(t, dhc.RequestSuccessiveFailureThreshold, int32(10))
-	assert.Equal(t, dhc.CircuitTrippedTimeoutFactor, int32(500))
+	assert.Equal(t, dhc.outStandingRequestConutLimit, int32(1000))
+	assert.Equal(t, dhc.requestSuccessiveFailureThreshold, int32(10))
+	assert.Equal(t, dhc.circuitTrippedTimeoutFactor, int32(500))
 }

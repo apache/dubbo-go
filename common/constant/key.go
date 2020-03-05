@@ -159,6 +159,7 @@ const (
 	ConditionAppRouterName = "app"
 	// ListenableRouterName Specify listenable router name
 	ListenableRouterName  = "listenable"
+	// HealthCheckRouterName Specify the name of HealthCheckRouter
 	HealthCheckRouterName = "health_check"
 
 	// ConditionRouterRuleSuffix Specify condition router suffix

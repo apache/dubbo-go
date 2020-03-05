@@ -28,7 +28,6 @@ func init() {
 	extension.SetRouterFactory(constant.HealthCheckRouterName, newHealthCheckRouteFactory)
 }
 
-
 // HealthCheckRouteFactory
 type HealthCheckRouteFactory struct {
 }
