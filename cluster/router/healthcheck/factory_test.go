@@ -30,13 +30,14 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
 )
+
 type MockInvoker struct {
-	url          common.URL
+	url common.URL
 }
 
 func NewMockInvoker(url common.URL, successCount int) *MockInvoker {
 	return &MockInvoker{
-		url:          url,
+		url: url,
 	}
 }
 
@@ -51,15 +52,12 @@ func (bi *MockInvoker) IsDestroyed() bool {
 	return true
 }
 
-
-
 func (bi *MockInvoker) Invoke(_ context.Context, _ protocol.Invocation) protocol.Result {
 	return nil
 }
 
 func (bi *MockInvoker) Destroy() {
 }
-
 
 func TestHealthCheckRouteFactory(t *testing.T) {
 	factory := newHealthCheckRouteFactory()
