@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package condition
+package healthcheck
 
 import (
 	"math"
@@ -32,6 +32,7 @@ import (
 )
 
 func TestDefaultHealthChecker_IsHealthy(t *testing.T) {
+
 	defer protocol.CleanAllStatus()
 	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
 	hc := NewDefaultHealthChecker(&url).(*DefaultHealthChecker)
