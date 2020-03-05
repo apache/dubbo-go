@@ -24,25 +24,14 @@ import (
 import (
 	"github.com/apache/dubbo-go/cluster/router"
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
 )
 
-const (
-	HEALTH_CHECKER                             = "health.checker"
-	DEFAULT_HEALTH_CHECKER                     = "default"
-	OUTSTANDING_REQUEST_COUNT_LIMIT_KEY        = "outstanding.request.limit"
-	SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY    = "successive.failed.threshold"
-	DEFAULT_SUCCESSIVE_FAILED_THRESHOLD        = 5
-	CIRCUIT_TRIPPED_TIMEOUT_FACTOR_KEY         = "circuit.tripped.timeout.factor"
-	DEFAULT_SUCCESSIVE_FAILED_REQUEST_MAX_DIFF = 5
-	DEFAULT_CIRCUIT_TRIPPED_TIMEOUT_FACTOR     = 1000
-	MAX_CIRCUIT_TRIPPED_TIMEOUT_IN_MS          = 30000
-)
-
 func init() {
-	extension.SethealthChecker(DEFAULT_HEALTH_CHECKER, NewDefaultHealthChecker)
+	extension.SethealthChecker(constant.DEFAULT_HEALTH_CHECKER, NewDefaultHealthChecker)
 }
 
 // DefaultHealthChecker is the default implementation of HealthChecker, which determines the health status of
@@ -60,7 +49,7 @@ type DefaultHealthChecker struct {
 // and the current active request
 func (c *DefaultHealthChecker) IsHealthy(invoker protocol.Invoker) bool {
 	urlStatus := protocol.GetURLStatus(invoker.GetUrl())
-	if c.isCircuitBreakerTripped(urlStatus) || urlStatus.GetActive() > c.outStandingRequestConutLimit {
+	if c.isCircuitBreakerTripped(urlStatus) || urlStatus.GetActive() > c.GetOutStandingRequestConutLimit() {
 		logger.Debugf("Invoker [%s] is currently in circuitbreaker tripped state", invoker.GetUrl().Key())
 		return false
 	}
@@ -90,24 +79,39 @@ func (c *DefaultHealthChecker) getCircuitBreakerTimeout(status *protocol.RPCStat
 func (c *DefaultHealthChecker) getCircuitBreakerSleepWindowTime(status *protocol.RPCStatus) int64 {
 
 	successiveFailureCount := status.GetSuccessiveRequestFailureCount()
-	diff := successiveFailureCount - c.requestSuccessiveFailureThreshold
+	diff := successiveFailureCount - c.GetRequestSuccessiveFailureThreshold()
 	if diff < 0 {
 		return 0
-	} else if diff > DEFAULT_SUCCESSIVE_FAILED_REQUEST_MAX_DIFF {
-		diff = DEFAULT_SUCCESSIVE_FAILED_REQUEST_MAX_DIFF
+	} else if diff > constant.DEFAULT_SUCCESSIVE_FAILED_REQUEST_MAX_DIFF {
+		diff = constant.DEFAULT_SUCCESSIVE_FAILED_REQUEST_MAX_DIFF
 	}
-	sleepWindow := (1 << diff) * DEFAULT_CIRCUIT_TRIPPED_TIMEOUT_FACTOR
-	if sleepWindow > MAX_CIRCUIT_TRIPPED_TIMEOUT_IN_MS {
-		sleepWindow = MAX_CIRCUIT_TRIPPED_TIMEOUT_IN_MS
+	sleepWindow := (1 << diff) * c.GetCircuitTrippedTimeoutFactor()
+	if sleepWindow > constant.MAX_CIRCUIT_TRIPPED_TIMEOUT_IN_MS {
+		sleepWindow = constant.MAX_CIRCUIT_TRIPPED_TIMEOUT_IN_MS
 	}
 	return int64(sleepWindow)
+}
+
+// GetOutStandingRequestConutLimit return the requestSuccessiveFailureThreshold bound to this DefaultHealthChecker
+func (c *DefaultHealthChecker) GetRequestSuccessiveFailureThreshold() int32 {
+	return c.requestSuccessiveFailureThreshold
+}
+
+// GetOutStandingRequestConutLimit return the circuitTrippedTimeoutFactor bound to this DefaultHealthChecker
+func (c *DefaultHealthChecker) GetCircuitTrippedTimeoutFactor() int32 {
+	return c.circuitTrippedTimeoutFactor
+}
+
+// GetOutStandingRequestConutLimit return the outStandingRequestConutLimit bound to this DefaultHealthChecker
+func (c *DefaultHealthChecker) GetOutStandingRequestConutLimit() int32 {
+	return c.outStandingRequestConutLimit
 }
 
 // NewDefaultHealthChecker constructs a new DefaultHealthChecker based on the url
 func NewDefaultHealthChecker(url *common.URL) router.HealthChecker {
 	return &DefaultHealthChecker{
-		outStandingRequestConutLimit:      int32(url.GetParamInt(OUTSTANDING_REQUEST_COUNT_LIMIT_KEY, math.MaxInt32)),
-		requestSuccessiveFailureThreshold: int32(url.GetParamInt(SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY, DEFAULT_SUCCESSIVE_FAILED_REQUEST_MAX_DIFF)),
-		circuitTrippedTimeoutFactor:       int32(url.GetParamInt(CIRCUIT_TRIPPED_TIMEOUT_FACTOR_KEY, DEFAULT_CIRCUIT_TRIPPED_TIMEOUT_FACTOR)),
+		outStandingRequestConutLimit:      int32(url.GetParamInt(constant.OUTSTANDING_REQUEST_COUNT_LIMIT_KEY, math.MaxInt32)),
+		requestSuccessiveFailureThreshold: int32(url.GetParamInt(constant.SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY, constant.DEFAULT_SUCCESSIVE_FAILED_REQUEST_MAX_DIFF)),
+		circuitTrippedTimeoutFactor:       int32(url.GetParamInt(constant.CIRCUIT_TRIPPED_TIMEOUT_FACTOR_KEY, constant.DEFAULT_CIRCUIT_TRIPPED_TIMEOUT_FACTOR)),
 	}
 }
