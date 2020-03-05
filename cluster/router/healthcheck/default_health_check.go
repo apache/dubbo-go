@@ -111,5 +111,3 @@ func NewDefaultHealthChecker(url *common.URL) router.HealthChecker {
 		circuitTrippedTimeoutFactor:       int32(url.GetParamInt(CIRCUIT_TRIPPED_TIMEOUT_FACTOR_KEY, DEFAULT_CIRCUIT_TRIPPED_TIMEOUT_FACTOR)),
 	}
 }
-
-
