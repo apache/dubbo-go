@@ -29,6 +29,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
@@ -119,12 +120,12 @@ func TestNewHealthCheckRouter(t *testing.T) {
 
 	dhc := h.checker.(*DefaultHealthChecker)
 	assert.Equal(t, dhc.outStandingRequestConutLimit, int32(math.MaxInt32))
-	assert.Equal(t, dhc.requestSuccessiveFailureThreshold, int32(DEFAULT_SUCCESSIVE_FAILED_THRESHOLD))
-	assert.Equal(t, dhc.circuitTrippedTimeoutFactor, int32(DEFAULT_CIRCUIT_TRIPPED_TIMEOUT_FACTOR))
+	assert.Equal(t, dhc.requestSuccessiveFailureThreshold, int32(constant.DEFAULT_SUCCESSIVE_FAILED_THRESHOLD))
+	assert.Equal(t, dhc.circuitTrippedTimeoutFactor, int32(constant.DEFAULT_CIRCUIT_TRIPPED_TIMEOUT_FACTOR))
 
-	url.SetParam(CIRCUIT_TRIPPED_TIMEOUT_FACTOR_KEY, "500")
-	url.SetParam(SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY, "10")
-	url.SetParam(OUTSTANDING_REQUEST_COUNT_LIMIT_KEY, "1000")
+	url.SetParam(constant.CIRCUIT_TRIPPED_TIMEOUT_FACTOR_KEY, "500")
+	url.SetParam(constant.SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY, "10")
+	url.SetParam(constant.OUTSTANDING_REQUEST_COUNT_LIMIT_KEY, "1000")
 	hcr, _ = NewHealthCheckRouter(&url)
 	h = hcr.(*HealthCheckRouter)
 	dhc = h.checker.(*DefaultHealthChecker)

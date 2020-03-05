@@ -20,6 +20,7 @@ package healthcheck
 import (
 	"github.com/apache/dubbo-go/cluster/router"
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
@@ -42,7 +43,7 @@ func NewHealthCheckRouter(url *common.URL) (router.Router, error) {
 	r.url = url
 	r.enabled = url.GetParamBool(HEALTH_ROUTE_ENABLED_KEY, false)
 	if r.enabled {
-		checkerName := url.GetParam(HEALTH_CHECKER, DEFAULT_HEALTH_CHECKER)
+		checkerName := url.GetParam(constant.HEALTH_CHECKER, constant.DEFAULT_HEALTH_CHECKER)
 		r.checker = extension.GetHealthChecker(checkerName, url)
 	}
 	return r, nil
