@@ -193,13 +193,22 @@ const (
 
 // HealthCheck Router
 const (
-	HEALTH_CHECKER                             = "health.checker"
-	DEFAULT_HEALTH_CHECKER                     = "default"
-	OUTSTANDING_REQUEST_COUNT_LIMIT_KEY        = "outstanding.request.limit"
-	SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY    = "successive.failed.threshold"
-	DEFAULT_SUCCESSIVE_FAILED_THRESHOLD        = 5
-	CIRCUIT_TRIPPED_TIMEOUT_FACTOR_KEY         = "circuit.tripped.timeout.factor"
+	// The key of HealthCheck SPI
+	HEALTH_CHECKER = "health.checker"
+	// The name of the default implementation of HealthChecker
+	DEFAULT_HEALTH_CHECKER = "default"
+	// The key of oustanding-request-limit
+	OUTSTANDING_REQUEST_COUNT_LIMIT_KEY = "outstanding.request.limit"
+	// The key of successive-failed-request's threshold
+	SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY = "successive.failed.threshold"
+	// The key of circuit-tripped timeout factor
+	CIRCUIT_TRIPPED_TIMEOUT_FACTOR_KEY = "circuit.tripped.timeout.factor"
+	// The default threshold of  successive-failed-request if not specfied
+	DEFAULT_SUCCESSIVE_FAILED_THRESHOLD = 5
+	// The default maximum diff between successive-failed-request's threshold and actual successive-failed-request's count
 	DEFAULT_SUCCESSIVE_FAILED_REQUEST_MAX_DIFF = 5
-	DEFAULT_CIRCUIT_TRIPPED_TIMEOUT_FACTOR     = 1000
-	MAX_CIRCUIT_TRIPPED_TIMEOUT_IN_MS          = 30000
+	// The default factor of  circuit-tripped timeout if not specfied
+	DEFAULT_CIRCUIT_TRIPPED_TIMEOUT_FACTOR = 1000
+	// The default time window of circuit-tripped  in millisecond if not specfied
+	MAX_CIRCUIT_TRIPPED_TIMEOUT_IN_MS = 30000
 )
