@@ -39,9 +39,10 @@ type HealthCheckRouter struct {
 
 // NewHealthCheckRouter construct an HealthCheckRouter via url
 func NewHealthCheckRouter(url *common.URL) (router.Router, error) {
-	r := &HealthCheckRouter{}
-	r.url = url
-	r.enabled = url.GetParamBool(HEALTH_ROUTE_ENABLED_KEY, false)
+	r := &HealthCheckRouter{
+		url:     url,
+		enabled: url.GetParamBool(HEALTH_ROUTE_ENABLED_KEY, false),
+	}
 	if r.enabled {
 		checkerName := url.GetParam(constant.HEALTH_CHECKER, constant.DEFAULT_HEALTH_CHECKER)
 		r.checker = extension.GetHealthChecker(checkerName, url)
@@ -54,7 +55,7 @@ func (r *HealthCheckRouter) Route(invokers []protocol.Invoker, url *common.URL, 
 	if !r.enabled {
 		return invokers
 	}
-	var healthyInvokers []protocol.Invoker
+	healthyInvokers := make([]protocol.Invoker, 0, len(invokers))
 	// Add healthy invoker to the list
 	for _, invoker := range invokers {
 		if r.checker.IsHealthy(invoker) {
@@ -65,9 +66,8 @@ func (r *HealthCheckRouter) Route(invokers []protocol.Invoker, url *common.URL, 
 	if len(healthyInvokers) == 0 {
 		logger.Warnf(" Now all invokers are unhealthy, so downgraded to all! Service: [%s]", url.ServiceKey())
 		return invokers
-	} else {
-		return healthyInvokers
 	}
+	return healthyInvokers
 }
 
 // Priority

@@ -37,11 +37,11 @@ func init() {
 // DefaultHealthChecker is the default implementation of HealthChecker, which determines the health status of
 // the invoker based on the number of successive bad request and the current active request.
 type DefaultHealthChecker struct {
-	// outStandingRequestConutLimit
+	// the limit of outstanding request
 	outStandingRequestConutLimit int32
-	// requestSuccessiveFailureThreshold
+	// the threshold of successive-failure-request
 	requestSuccessiveFailureThreshold int32
-	// requestSuccessiveFailureThreshold
+	// value of circuit-tripped timeout factor
 	circuitTrippedTimeoutFactor int32
 }
 
