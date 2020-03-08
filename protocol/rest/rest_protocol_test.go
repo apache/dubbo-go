@@ -19,6 +19,7 @@ package rest
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -171,6 +172,10 @@ func (p *UserProvider) GetUserFour(ctx context.Context, user []interface{}, id s
 	u := &User{}
 	u.Name = m["Name"].(string)
 	return u, nil
+}
+
+func (p *UserProvider) GetUserFive(ctx context.Context, user []interface{}) (*User, error) {
+	return nil, errors.New("test error")
 }
 
 type User struct {
