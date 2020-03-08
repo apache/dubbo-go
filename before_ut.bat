@@ -14,20 +14,24 @@
 ::  See the License for the specific language governing permissions and
 ::  limitations under the License.
 
-set zkJar=zookeeper-3.4.9-fatjar.jar
-if not exist "remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/%zkJar%" (
-   md remoting\zookeeper\zookeeper-4unittest\contrib\fatjar
-   curl -L https://github.com/dubbogo/resources/raw/master/zookeeper-4unitest/contrib/fatjar/%zkJar% -o remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/%zkJar%
+set zkJarName="zookeeper-3.4.9-fatjar.jar"
+set remoteJarUrl="https://github.com/dubbogo/resources/raw/master/zookeeper-4unitest/contrib/fatjar/%zkJarName%"
+set zkJarPath="remoting/zookeeper/zookeeper-4unittest/contrib/fatjar"
+set zkJar="%zkJarPath%/%zkJarName%"
+
+if not exist "%zkJar%" (
+   md %zkJarPath%
+   curl -L %remoteJarUrl% -o %zkJar%
 )
 
 md config_center\zookeeper\zookeeper-4unittest\contrib\fatjar
-xcopy /f "remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/%zkJar%" "config_center/zookeeper/zookeeper-4unittest/contrib/fatjar/"
+xcopy /f "%zkJar%" "config_center/zookeeper/zookeeper-4unittest/contrib/fatjar/"
 
 md registry\zookeeper\zookeeper-4unittest\contrib\fatjar
-xcopy /f "remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/%zkJar%" "registry/zookeeper/zookeeper-4unittest/contrib/fatjar/"
+xcopy /f "%zkJar%" "registry/zookeeper/zookeeper-4unittest/contrib/fatjar/"
 
 md cluster\router\chain\zookeeper-4unittest\contrib\fatjar
-xcopy /f "remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/%zkJar%" "cluster/router/chain/zookeeper-4unittest/contrib/fatjar/"
+xcopy /f "%zkJar%" "cluster/router/chain/zookeeper-4unittest/contrib/fatjar/"
 
 md cluster\router\condition\zookeeper-4unittest\contrib\fatjar
-xcopy /f "remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/%zkJar%" "cluster/router/condition/zookeeper-4unittest/contrib/fatjar/"
+xcopy /f "%zkJar%" "cluster/router/condition/zookeeper-4unittest/contrib/fatjar/"
