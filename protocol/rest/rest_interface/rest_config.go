@@ -20,10 +20,10 @@ package rest_interface
 import "github.com/creasty/defaults"
 
 type RestConsumerConfig struct {
-	Client        string                 `default:"resty" yaml:"rest_client" json:"rest_client,omitempty" property:"rest_client"`
-	Produces      string                 `default:"application/json" yaml:"rest_produces"  json:"rest_produces,omitempty" property:"rest_produces"`
-	Consumes      string                 `default:"application/json" yaml:"rest_consumes"  json:"rest_consumes,omitempty" property:"rest_consumes"`
-	RestConfigMap map[string]*RestConfig `yaml:"references" json:"references,omitempty" property:"references"`
+	Client                string                        `default:"resty" yaml:"rest_client" json:"rest_client,omitempty" property:"rest_client"`
+	Produces              string                        `default:"application/json" yaml:"rest_produces"  json:"rest_produces,omitempty" property:"rest_produces"`
+	Consumes              string                        `default:"application/json" yaml:"rest_consumes"  json:"rest_consumes,omitempty" property:"rest_consumes"`
+	RestServiceConfigsMap map[string]*RestServiceConfig `yaml:"references" json:"references,omitempty" property:"references"`
 }
 
 // UnmarshalYAML ...
@@ -39,10 +39,10 @@ func (c *RestConsumerConfig) UnmarshalYAML(unmarshal func(interface{}) error) er
 }
 
 type RestProviderConfig struct {
-	Server        string                 `default:"go-restful" yaml:"rest_server" json:"rest_server,omitempty" property:"rest_server"`
-	Produces      string                 `default:"*/*" yaml:"rest_produces"  json:"rest_produces,omitempty" property:"rest_produces"`
-	Consumes      string                 `default:"*/*" yaml:"rest_consumes"  json:"rest_consumes,omitempty" property:"rest_consumes"`
-	RestConfigMap map[string]*RestConfig `yaml:"services" json:"services,omitempty" property:"services"`
+	Server                string                        `default:"go-restful" yaml:"rest_server" json:"rest_server,omitempty" property:"rest_server"`
+	Produces              string                        `default:"*/*" yaml:"rest_produces"  json:"rest_produces,omitempty" property:"rest_produces"`
+	Consumes              string                        `default:"*/*" yaml:"rest_consumes"  json:"rest_consumes,omitempty" property:"rest_consumes"`
+	RestServiceConfigsMap map[string]*RestServiceConfig `yaml:"services" json:"services,omitempty" property:"services"`
 }
 
 // UnmarshalYAML ...
@@ -57,7 +57,7 @@ func (c *RestProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) er
 	return nil
 }
 
-type RestConfig struct {
+type RestServiceConfig struct {
 	InterfaceName        string              `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
 	Url                  string              `yaml:"url"  json:"url,omitempty" property:"url"`
 	Path                 string              `yaml:"rest_path"  json:"rest_path,omitempty" property:"rest_path"`
@@ -71,11 +71,11 @@ type RestConfig struct {
 }
 
 // UnmarshalYAML ...
-func (c *RestConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (c *RestServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
 	}
-	type plain RestConfig
+	type plain RestServiceConfig
 	if err := unmarshal((*plain)(c)); err != nil {
 		return err
 	}

@@ -32,10 +32,8 @@ import (
 )
 
 var (
-	restConsumerConfig           *rest_interface.RestConsumerConfig
-	restProviderConfig           *rest_interface.RestProviderConfig
-	restConsumerServiceConfigMap map[string]*rest_interface.RestConfig
-	restProviderServiceConfigMap map[string]*rest_interface.RestConfig
+	restConsumerServiceConfigMap map[string]*rest_interface.RestServiceConfig
+	restProviderServiceConfigMap map[string]*rest_interface.RestServiceConfig
 )
 
 func init() {
@@ -46,12 +44,12 @@ func init() {
 func initConsumerRestConfig() {
 	consumerConfigType := config.GetConsumerConfig().RestConfigType
 	consumerConfigReader := extension.GetSingletonRestConfigReader(consumerConfigType)
-	restConsumerConfig = consumerConfigReader.ReadConsumerConfig()
+	restConsumerConfig := consumerConfigReader.ReadConsumerConfig()
 	if restConsumerConfig == nil {
 		return
 	}
-	restConsumerServiceConfigMap = make(map[string]*rest_interface.RestConfig, len(restConsumerConfig.RestConfigMap))
-	for key, rc := range restConsumerConfig.RestConfigMap {
+	restConsumerServiceConfigMap = make(map[string]*rest_interface.RestServiceConfig, len(restConsumerConfig.RestServiceConfigsMap))
+	for key, rc := range restConsumerConfig.RestServiceConfigsMap {
 		rc.Client = getNotEmptyStr(rc.Client, restConsumerConfig.Client, constant.DEFAULT_REST_CLIENT)
 		rc.RestMethodConfigsMap = initMethodConfigMap(rc, restConsumerConfig.Consumes, restConsumerConfig.Produces)
 		restConsumerServiceConfigMap[strings.TrimPrefix(key, "/")] = rc
@@ -61,19 +59,19 @@ func initConsumerRestConfig() {
 func initProviderRestConfig() {
 	providerConfigType := config.GetProviderConfig().RestConfigType
 	providerConfigReader := extension.GetSingletonRestConfigReader(providerConfigType)
-	restProviderConfig = providerConfigReader.ReadProviderConfig()
+	restProviderConfig := providerConfigReader.ReadProviderConfig()
 	if restProviderConfig == nil {
 		return
 	}
-	restProviderServiceConfigMap = make(map[string]*rest_interface.RestConfig, len(restProviderConfig.RestConfigMap))
-	for key, rc := range restProviderConfig.RestConfigMap {
+	restProviderServiceConfigMap = make(map[string]*rest_interface.RestServiceConfig, len(restProviderConfig.RestServiceConfigsMap))
+	for key, rc := range restProviderConfig.RestServiceConfigsMap {
 		rc.Server = getNotEmptyStr(rc.Server, restProviderConfig.Server, constant.DEFAULT_REST_SERVER)
 		rc.RestMethodConfigsMap = initMethodConfigMap(rc, restProviderConfig.Consumes, restProviderConfig.Produces)
 		restProviderServiceConfigMap[strings.TrimPrefix(key, "/")] = rc
 	}
 }
 
-func initMethodConfigMap(rc *rest_interface.RestConfig, consumes string, produces string) map[string]*rest_interface.RestMethodConfig {
+func initMethodConfigMap(rc *rest_interface.RestServiceConfig, consumes string, produces string) map[string]*rest_interface.RestMethodConfig {
 	mcm := make(map[string]*rest_interface.RestMethodConfig, len(rc.RestMethodConfigs))
 	for _, mc := range rc.RestMethodConfigs {
 		mc.InterfaceName = rc.InterfaceName
@@ -139,18 +137,18 @@ func parseParamsString2Map(params string) (map[int]string, error) {
 	return m, nil
 }
 
-func GetRestConsumerServiceConfig(path string) *rest_interface.RestConfig {
+func GetRestConsumerServiceConfig(path string) *rest_interface.RestServiceConfig {
 	return restConsumerServiceConfigMap[path]
 }
 
-func GetRestProviderServiceConfig(path string) *rest_interface.RestConfig {
+func GetRestProviderServiceConfig(path string) *rest_interface.RestServiceConfig {
 	return restProviderServiceConfigMap[path]
 }
 
-func SetRestConsumerServiceConfigMap(configMap map[string]*rest_interface.RestConfig) {
+func SetRestConsumerServiceConfigMap(configMap map[string]*rest_interface.RestServiceConfig) {
 	restConsumerServiceConfigMap = configMap
 }
 
-func SetRestProviderServiceConfigMap(configMap map[string]*rest_interface.RestConfig) {
+func SetRestProviderServiceConfigMap(configMap map[string]*rest_interface.RestServiceConfig) {
 	restProviderServiceConfigMap = configMap
 }
