@@ -51,7 +51,7 @@ func TestRestInvoker_Invoke(t *testing.T) {
 	assert.NoError(t, err)
 	con := config.ProviderConfig{}
 	config.SetProviderConfig(con)
-	configMap := make(map[string]*rest_interface.RestConfig)
+	configMap := make(map[string]*rest_interface.RestServiceConfig)
 	methodConfigMap := make(map[string]*rest_interface.RestMethodConfig)
 	queryParamsMap := make(map[int]string)
 	queryParamsMap[1] = "age"
@@ -135,7 +135,7 @@ func TestRestInvoker_Invoke(t *testing.T) {
 		HeadersMap:     headersMap,
 	}
 
-	configMap["com.ikurento.user.UserProvider"] = &rest_interface.RestConfig{
+	configMap["com.ikurento.user.UserProvider"] = &rest_interface.RestServiceConfig{
 		Server:               "go-restful",
 		RestMethodConfigsMap: methodConfigMap,
 	}
@@ -143,8 +143,8 @@ func TestRestInvoker_Invoke(t *testing.T) {
 	proxyFactory := extension.GetProxyFactory("default")
 	proto.Export(proxyFactory.GetInvoker(url))
 	time.Sleep(5 * time.Second)
-	configMap = make(map[string]*rest_interface.RestConfig)
-	configMap["com.ikurento.user.UserProvider"] = &rest_interface.RestConfig{
+	configMap = make(map[string]*rest_interface.RestServiceConfig)
+	configMap["com.ikurento.user.UserProvider"] = &rest_interface.RestServiceConfig{
 		RestMethodConfigsMap: methodConfigMap,
 	}
 	restClient := rest_client.GetRestyClient(&rest_interface.RestOptions{ConnectTimeout: 3 * time.Second, RequestTimeout: 3 * time.Second})
@@ -165,24 +165,28 @@ func TestRestInvoker_Invoke(t *testing.T) {
 	assert.Equal(t, now.Unix(), res.Result().(*User).Time.Unix())
 	assert.Equal(t, int32(23), res.Result().(*User).Age)
 	assert.Equal(t, "username", res.Result().(*User).Name)
+	// test 1
 	inv = invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUserTwo"),
 		invocation.WithArguments([]interface{}{&User{1, &now, int32(23), "username"}}), invocation.WithReply(user))
 	res = invoker.Invoke(context.Background(), inv)
 	assert.NoError(t, res.Error())
 	assert.NotNil(t, res.Result())
 	assert.Equal(t, "username", res.Result().(*User).Name)
+	// test 2
 	inv = invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUserThree"),
 		invocation.WithArguments([]interface{}{&User{1, &now, int32(23), "username"}}), invocation.WithReply(user))
 	res = invoker.Invoke(context.Background(), inv)
 	assert.NoError(t, res.Error())
 	assert.NotNil(t, res.Result())
 	assert.Equal(t, "username", res.Result().(*User).Name)
+	// test 3
 	inv = invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUserFour"),
 		invocation.WithArguments([]interface{}{[]User{User{1, nil, int32(23), "username"}}}), invocation.WithReply(user))
 	res = invoker.Invoke(context.Background(), inv)
 	assert.NoError(t, res.Error())
 	assert.NotNil(t, res.Result())
 	assert.Equal(t, "username", res.Result().(*User).Name)
+	// test 4
 	inv = invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUserFive"), invocation.WithReply(user))
 	res = invoker.Invoke(context.Background(), inv)
 	assert.Error(t, res.Error(), "test error")

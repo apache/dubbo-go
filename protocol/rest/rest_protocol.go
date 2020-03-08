@@ -86,7 +86,7 @@ func (rp *RestProtocol) Refer(url common.URL) protocol.Invoker {
 	return invoker
 }
 
-func (rp *RestProtocol) getServer(url common.URL, restConfig *rest_interface.RestConfig) rest_interface.RestServer {
+func (rp *RestProtocol) getServer(url common.URL, restConfig *rest_interface.RestServiceConfig) rest_interface.RestServer {
 	restServer, ok := rp.serverMap[url.Location]
 	if !ok {
 		_, ok := rp.ExporterMap().Load(url.ServiceKey())
@@ -106,7 +106,7 @@ func (rp *RestProtocol) getServer(url common.URL, restConfig *rest_interface.Res
 	return restServer
 }
 
-func (rp *RestProtocol) getClient(restOptions rest_interface.RestOptions, restConfig *rest_interface.RestConfig) rest_interface.RestClient {
+func (rp *RestProtocol) getClient(restOptions rest_interface.RestOptions, restConfig *rest_interface.RestServiceConfig) rest_interface.RestClient {
 	restClient, ok := rp.clientMap[restOptions]
 	rp.clientLock.Lock()
 	if !ok {

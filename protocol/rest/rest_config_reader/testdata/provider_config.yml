@@ -24,6 +24,9 @@ registries :
     username: ""
     password: ""
 
+rest_server: "go-restful"
+rest_produces: "*/*"
+rest_consumes: "*/*"
 
 services:
   "UserProvider":
@@ -43,7 +46,7 @@ services:
     execute.limit: "200"
     # the name of RejectedExecutionHandler
     execute.limit.rejected.handler: "default"
-    protocol : "dubbo"
+    protocol : "rest"
     # equivalent to interface of dubbo.xml
     interface : "com.ikurento.user.UserProvider"
     loadbalance: "random"
@@ -51,6 +54,9 @@ services:
     group: "as"
     warmup: "100"
     cluster: "failover"
+    rest_server: "go-restful"
+    rest_produces: "*/*"
+    rest_consumes: "*/*"
     methods:
       - name: "GetUser"
         retries: 1
@@ -60,41 +66,19 @@ services:
         execute.limit: "200"
         # the name of RejectedExecutionHandler
         execute.limit.rejected.handler: "default"
+        rest_query_params: "1:userid,2:username"
+        rest_headrs: "3:age"
+        rest_path_params: "4:time,2:name"
+        rest_body: 0
+        rest_produces: "*/*"
+        rest_consumes: "*/*"
 
 protocols:
-    "dubbo":
-      name: "dubbo"
-      # while using dubbo protocol, ip cannot is 127.0.0.1, because client of java-dubbo will get 'connection refuse'
+    "rest":
+      name: "rest"
       ip : "127.0.0.1"
       port : 20000
-  #-   name: "jsonrpc"
-  #    ip: "127.0.0.1"
-  #    port: 20001
 
-shutdown_conf:
-  timeout: 60s
-  step_timeout: 10s
 
-protocol_conf:
-  dubbo:
-    session_number: 700
-    session_timeout: "20s"
-    # gr_pool_size is recommended to be set to [cpu core number] * 10
-    gr_pool_size: 120
-    # queue_len is recommended to be set to 64 or 128
-    queue_len: 64
-    # queue_number is recommended to be set to gr_pool_size / 20
-    queue_number: 6
-    getty_session_param:
-      compress_encoding: false
-      tcp_no_delay: true
-      tcp_keep_alive: true
-      keep_alive_period: "120s"
-      tcp_r_buf_size: 262144
-      tcp_w_buf_size: 65536
-      pkg_wq_size: 512
-      tcp_read_timeout: "1s"
-      tcp_write_timeout: "5s"
-      wait_timeout: "1s"
-      max_msg_len: 1024
-      session_name: "server"
+
+
