@@ -26,6 +26,10 @@ import (
 )
 
 import (
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"github.com/go-resty/resty/v2"
 )
 
@@ -65,16 +69,22 @@ func NewRestyClient(restOption *rest_interface.RestOptions) *RestyClient {
 }
 
 func (rc *RestyClient) Do(restRequest *rest_interface.RestRequest, res interface{}) error {
-	_, err := rc.client.R().
+	r, err := rc.client.R().
 		SetHeader("Content-Type", restRequest.Consumes).
 		SetHeader("Accept", restRequest.Produces).
 		SetPathParams(restRequest.PathParams).
 		SetQueryParams(restRequest.QueryParams).
+		SetHeaders(restRequest.Headers).
 		SetBody(restRequest.Body).
 		SetResult(res).
-		SetHeaders(restRequest.Headers).
 		Execute(restRequest.Method, "http://"+path.Join(restRequest.Location, restRequest.Path))
-	return err
+	if err != nil {
+		return perrors.WithStack(err)
+	}
+	if r.IsError() {
+		return perrors.New(r.String())
+	}
+	return nil
 }
 
 func GetRestyClient(restOptions *rest_interface.RestOptions) rest_interface.RestClient {
