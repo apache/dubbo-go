@@ -14,18 +14,21 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+zkJar="zookeeper-3.4.9-fatjar.jar"
 
-mkdir -p remoting/zookeeper/zookeeper-4unittest/contrib/fatjar
-wget -P "remoting/zookeeper/zookeeper-4unittest/contrib/fatjar" https://github.com/dubbogo/resources/raw/master/zookeeper-4unitest/contrib/fatjar/zookeeper-3.4.9-fatjar.jar
+if [ ! -f "remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/${zkJar}" ]; then
+    mkdir -p remoting/zookeeper/zookeeper-4unittest/contrib/fatjar
+    wget -P "remoting/zookeeper/zookeeper-4unittest/contrib/fatjar" https://github.com/dubbogo/resources/raw/master/zookeeper-4unitest/contrib/fatjar${zkJar}
+fi
 
 mkdir -p config_center/zookeeper/zookeeper-4unittest/contrib/fatjar
-cp remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/zookeeper-3.4.9-fatjar.jar config_center/zookeeper/zookeeper-4unittest/contrib/fatjar/
+cp remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/${zkJar} config_center/zookeeper/zookeeper-4unittest/contrib/fatjar/
 
 mkdir -p registry/zookeeper/zookeeper-4unittest/contrib/fatjar
-cp remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/zookeeper-3.4.9-fatjar.jar registry/zookeeper/zookeeper-4unittest/contrib/fatjar/
+cp remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/${zkJar} registry/zookeeper/zookeeper-4unittest/contrib/fatjar/
 
 mkdir -p cluster/router/chain/zookeeper-4unittest/contrib/fatjar
-cp remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/zookeeper-3.4.9-fatjar.jar cluster/router/chain/zookeeper-4unittest/contrib/fatjar
+cp remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/${zkJar} cluster/router/chain/zookeeper-4unittest/contrib/fatjar
 
 mkdir -p cluster/router/condition/zookeeper-4unittest/contrib/fatjar
-cp remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/zookeeper-3.4.9-fatjar.jar cluster/router/condition/zookeeper-4unittest/contrib/fatjar
+cp remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/${zkJar} cluster/router/condition/zookeeper-4unittest/contrib/fatjar
