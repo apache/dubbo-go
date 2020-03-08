@@ -112,6 +112,14 @@ func TestRestInvoker_Invoke(t *testing.T) {
 		QueryParamsMap: nil,
 		Body:           0,
 	}
+	methodConfigMap["GetUserFive"] = &rest_interface.RestMethodConfig{
+		InterfaceName: "",
+		MethodName:    "GetUserFive",
+		Path:          "/GetUserFive",
+		Produces:      "*/*",
+		Consumes:      "*/*",
+		MethodType:    "GET",
+	}
 	methodConfigMap["GetUser"] = &rest_interface.RestMethodConfig{
 		InterfaceName:  "",
 		MethodName:     "GetUser",
@@ -175,6 +183,10 @@ func TestRestInvoker_Invoke(t *testing.T) {
 	assert.NoError(t, res.Error())
 	assert.NotNil(t, res.Result())
 	assert.Equal(t, "username", res.Result().(*User).Name)
+	inv = invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUserFive"), invocation.WithReply(user))
+	res = invoker.Invoke(context.Background(), inv)
+	assert.Error(t, res.Error(), "test error")
+
 	err = common.ServiceMap.UnRegister(url.Protocol, "com.ikurento.user.UserProvider")
 	assert.NoError(t, err)
 }
