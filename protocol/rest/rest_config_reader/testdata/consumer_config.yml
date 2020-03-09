@@ -46,19 +46,19 @@ references:
     url: "dubbo://127.0.0.1:20000/UserProvider"
     cluster: "failover"
     timeout: "3s"
-    rest_client: "resty"
-    rest_produces: "*/*"
-    rest_consumes: "*/*"
+    rest_client: "resty1"
+    rest_produces: "application/xml"
+    rest_consumes: "application/xml"
     methods :
       - name: "GetUser"
         retries: "3"
         timeout: "5s"
         rest_query_params: "1:userid,2:username"
-        rest_headrs: "3:age"
+        rest_headers: "3:age"
         rest_path_params: "4:time,2:name"
         rest_body: 0
-        rest_produces: "*/*"
-        rest_consumes: "*/*"
+        rest_produces: "application/xml"
+        rest_consumes: "application/xml"
 
     params:
       "serviceid":
