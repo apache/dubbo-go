@@ -36,6 +36,15 @@ func TestGetRestConsumerServiceConfig(t *testing.T) {
 	initConsumerRestConfig()
 	serviceConfig := GetRestConsumerServiceConfig("UserProvider")
 	assert.NotEmpty(t, serviceConfig)
+	assert.NotEmpty(t, serviceConfig.RestMethodConfigsMap)
+	assert.NotEmpty(t, serviceConfig.RestMethodConfigsMap["GetUser"])
+	assert.Equal(t, serviceConfig.RestMethodConfigsMap["GetUser"].QueryParamsMap[1], "userid")
+	assert.Equal(t, serviceConfig.RestMethodConfigsMap["GetUser"].HeadersMap[3], "age")
+	assert.Equal(t, serviceConfig.RestMethodConfigsMap["GetUser"].PathParamsMap[4], "time")
+	assert.Equal(t, serviceConfig.RestMethodConfigsMap["GetUser"].Body, 0)
+	assert.Equal(t, serviceConfig.RestMethodConfigsMap["GetUser"].Produces, "application/xml")
+	assert.Equal(t, serviceConfig.RestMethodConfigsMap["GetUser"].Consumes, "application/xml")
+	assert.Equal(t, serviceConfig.Client, "resty1")
 }
 
 func TestGetRestProviderServiceConfig(t *testing.T) {
@@ -44,4 +53,14 @@ func TestGetRestProviderServiceConfig(t *testing.T) {
 	initProviderRestConfig()
 	serviceConfig := GetRestProviderServiceConfig("UserProvider")
 	assert.NotEmpty(t, serviceConfig)
+	assert.NotEmpty(t, serviceConfig.RestMethodConfigsMap)
+	assert.NotEmpty(t, serviceConfig.RestMethodConfigsMap["GetUser"])
+	assert.Equal(t, serviceConfig.RestMethodConfigsMap["GetUser"].QueryParamsMap[1], "userid")
+	assert.Equal(t, serviceConfig.RestMethodConfigsMap["GetUser"].HeadersMap[3], "age")
+	assert.Equal(t, serviceConfig.RestMethodConfigsMap["GetUser"].PathParamsMap[4], "time")
+	assert.Equal(t, serviceConfig.RestMethodConfigsMap["GetUser"].Body, 0)
+	assert.Equal(t, serviceConfig.RestMethodConfigsMap["GetUser"].Produces, "application/xml")
+	assert.Equal(t, serviceConfig.RestMethodConfigsMap["GetUser"].Consumes, "application/xml")
+	assert.Equal(t, serviceConfig.Server, "go-restful1")
+
 }
