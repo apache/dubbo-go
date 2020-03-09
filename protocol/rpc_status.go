@@ -153,7 +153,7 @@ func endCount0(rpcStatus *RPCStatus, elapsed int64, succeeded bool) {
 		}
 		atomic.StoreInt32(&rpcStatus.successiveRequestFailureCount, 0)
 	} else {
-		atomic.StoreInt64(&rpcStatus.lastRequestFailedTimestamp, time.Now().Unix())
+		atomic.StoreInt64(&rpcStatus.lastRequestFailedTimestamp, CurrentTimeMillis())
 		atomic.AddInt32(&rpcStatus.successiveRequestFailureCount, 1)
 		atomic.AddInt32(&rpcStatus.failed, 1)
 		atomic.AddInt64(&rpcStatus.failedElapsed, elapsed)
@@ -166,4 +166,18 @@ func endCount0(rpcStatus *RPCStatus, elapsed int64, succeeded bool) {
 // CurrentTimeMillis ...
 func CurrentTimeMillis() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
+}
+
+// Destroy is used to clean all status
+func CleanAllStatus() {
+	delete1 := func(key interface{}, value interface{}) bool {
+		methodStatistics.Delete(key)
+		return true
+	}
+	methodStatistics.Range(delete1)
+	delete2 := func(key interface{}, value interface{}) bool {
+		serviceStatistic.Delete(key)
+		return true
+	}
+	serviceStatistic.Range(delete2)
 }

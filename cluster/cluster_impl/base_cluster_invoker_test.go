@@ -18,7 +18,6 @@
 package cluster_impl
 
 import (
-	"context"
 	"fmt"
 	"testing"
 )
@@ -37,7 +36,7 @@ import (
 func Test_StickyNormal(t *testing.T) {
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {
-		url, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
+		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		url.SetParam("sticky", "true")
 		invokers = append(invokers, NewMockInvoker(url, 1))
 	}
@@ -48,10 +47,11 @@ func Test_StickyNormal(t *testing.T) {
 	result1 := base.doSelect(loadbalance.NewRandomLoadBalance(), invocation.NewRPCInvocation("getUser", nil, nil), invokers, invoked)
 	assert.Equal(t, result, result1)
 }
+
 func Test_StickyNormalWhenError(t *testing.T) {
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {
-		url, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
+		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		url.SetParam("sticky", "true")
 		invokers = append(invokers, NewMockInvoker(url, 1))
 	}

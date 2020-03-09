@@ -46,6 +46,7 @@ func Test_loadRegistries(t *testing.T) {
 	fmt.Println(urls[0])
 	assert.Equal(t, "127.0.0.2:2181,128.0.0.1:2181", urls[0].Location)
 }
+
 func Test_loadRegistries1(t *testing.T) {
 	target := "shanghai1"
 	regs := map[string]*RegistryConfig{

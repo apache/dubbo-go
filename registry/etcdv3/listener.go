@@ -18,7 +18,6 @@
 package etcdv3
 
 import (
-	"context"
 	"strings"
 )
 
@@ -51,7 +50,7 @@ func (l *dataListener) AddInterestedURL(url *common.URL) {
 func (l *dataListener) DataChange(eventType remoting.Event) bool {
 
 	url := eventType.Path[strings.Index(eventType.Path, "/providers/")+len("/providers/"):]
-	serviceURL, err := common.NewURL(context.Background(), url)
+	serviceURL, err := common.NewURL(url)
 	if err != nil {
 		logger.Warnf("Listen NewURL(r{%s}) = error{%v}", eventType.Path, err)
 		return false
@@ -84,6 +83,7 @@ func NewConfigurationListener(reg *etcdV3Registry) *configurationListener {
 	reg.WaitGroup().Add(1)
 	return &configurationListener{registry: reg, events: make(chan *config_center.ConfigChangeEvent, 32)}
 }
+
 func (l *configurationListener) Process(configType *config_center.ConfigChangeEvent) {
 	l.events <- configType
 }
@@ -109,6 +109,7 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 		}
 	}
 }
+
 func (l *configurationListener) Close() {
 	l.registry.WaitGroup().Done()
 }

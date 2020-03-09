@@ -18,7 +18,8 @@
 package config
 
 import (
-	"context"
+	"io/ioutil"
+	"path"
 	"reflect"
 	"strconv"
 	"strings"
@@ -26,6 +27,7 @@ import (
 
 import (
 	perrors "github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 )
 
 import (
@@ -50,8 +52,11 @@ type BaseConfig struct {
 	MetricConfig *MetricConfig `yaml:"metrics" json:"metrics,omitempty"`
 }
 
-func (c *BaseConfig) startConfigCenter(ctx context.Context) error {
-	url, err := common.NewURL(ctx, c.ConfigCenterConfig.Address, common.WithProtocol(c.ConfigCenterConfig.Protocol), common.WithParams(c.ConfigCenterConfig.GetUrlMap()))
+// startConfigCenter will start the config center.
+// it will prepare the environment
+func (c *BaseConfig) startConfigCenter() error {
+	url, err := common.NewURL(c.ConfigCenterConfig.Address,
+		common.WithProtocol(c.ConfigCenterConfig.Protocol), common.WithParams(c.ConfigCenterConfig.GetUrlMap()))
 	if err != nil {
 		return err
 	}
@@ -136,6 +141,7 @@ func getKeyPrefix(val reflect.Value) []string {
 	return retPrefixs
 
 }
+
 func getPtrElement(v reflect.Value) reflect.Value {
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
@@ -145,6 +151,7 @@ func getPtrElement(v reflect.Value) reflect.Value {
 	}
 	return v
 }
+
 func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryConfiguration) {
 	for i := 0; i < val.NumField(); i++ {
 		if key := val.Type().Field(i).Tag.Get("property"); key != "-" && key != "" {
@@ -298,6 +305,7 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 		}
 	}
 }
+
 func (c *BaseConfig) fresh() {
 	configList := config.GetEnvInstance().Configuration()
 	for element := configList.Front(); element != nil; element = element.Next() {
@@ -357,4 +365,26 @@ func initializeStruct(t reflect.Type, v reflect.Value) {
 		}
 	}
 
+}
+
+// loadYMLConfig Load yml config byte from file
+func loadYMLConfig(confProFile string) ([]byte, error) {
+	if len(confProFile) == 0 {
+		return nil, perrors.Errorf("application configure(provider) file name is nil")
+	}
+
+	if path.Ext(confProFile) != ".yml" {
+		return nil, perrors.Errorf("application configure file name{%v} suffix must be .yml", confProFile)
+	}
+
+	return ioutil.ReadFile(confProFile)
+}
+
+// unmarshalYMLConfig Load yml config byte from file , then unmarshal to object
+func unmarshalYMLConfig(confProFile string, out interface{}) error {
+	confFileStream, err := loadYMLConfig(confProFile)
+	if err != nil {
+		return perrors.Errorf("ioutil.ReadFile(file:%s) = error:%v", confProFile, perrors.WithStack(err))
+	}
+	return yaml.Unmarshal(confFileStream, out)
 }
