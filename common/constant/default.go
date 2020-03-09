@@ -66,6 +66,7 @@ const (
 	DYNAMIC_CONFIGURATORS_CATEGORY     = "dynamicconfigurators"
 	APP_DYNAMIC_CONFIGURATORS_CATEGORY = "appdynamicconfigurators"
 	PROVIDER_CATEGORY                  = "providers"
+	CONSUMER_CATEGORY                  = "consumers"
 )
 
 const (

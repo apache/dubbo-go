@@ -1,7 +1,6 @@
 package protocol
 
 import (
-	"context"
 	"strconv"
 	"testing"
 )
@@ -15,9 +14,9 @@ import (
 )
 
 func TestBeginCount(t *testing.T) {
-	defer destroy()
+	defer CleanAllStatus()
 
-	url, _ := common.NewURL(context.TODO(), "dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
 	BeginCount(url, "test")
 	urlStatus := GetURLStatus(url)
 	methodStatus := GetMethodStatus(url, "test")
@@ -29,9 +28,9 @@ func TestBeginCount(t *testing.T) {
 }
 
 func TestEndCount(t *testing.T) {
-	defer destroy()
+	defer CleanAllStatus()
 
-	url, _ := common.NewURL(context.TODO(), "dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
 	EndCount(url, "test", 100, true)
 	urlStatus := GetURLStatus(url)
 	methodStatus := GetMethodStatus(url, "test")
@@ -42,36 +41,36 @@ func TestEndCount(t *testing.T) {
 }
 
 func TestGetMethodStatus(t *testing.T) {
-	defer destroy()
+	defer CleanAllStatus()
 
-	url, _ := common.NewURL(context.TODO(), "dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
 	status := GetMethodStatus(url, "test")
 	assert.NotNil(t, status)
 	assert.Equal(t, int32(0), status.total)
 }
 
 func TestGetUrlStatus(t *testing.T) {
-	defer destroy()
+	defer CleanAllStatus()
 
-	url, _ := common.NewURL(context.TODO(), "dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
 	status := GetURLStatus(url)
 	assert.NotNil(t, status)
 	assert.Equal(t, int32(0), status.total)
 }
 
 func Test_beginCount0(t *testing.T) {
-	defer destroy()
+	defer CleanAllStatus()
 
-	url, _ := common.NewURL(context.TODO(), "dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
 	status := GetURLStatus(url)
 	beginCount0(status)
 	assert.Equal(t, int32(1), status.active)
 }
 
 func Test_All(t *testing.T) {
-	defer destroy()
+	defer CleanAllStatus()
 
-	url, _ := common.NewURL(context.TODO(), "dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
 	request(url, "test", 100, false, true)
 	urlStatus := GetURLStatus(url)
 	methodStatus := GetMethodStatus(url, "test")
@@ -130,23 +129,10 @@ func request(url common.URL, method string, elapsed int64, active, succeeded boo
 }
 
 func TestCurrentTimeMillis(t *testing.T) {
-	defer destroy()
+	defer CleanAllStatus()
 	c := CurrentTimeMillis()
 	assert.NotNil(t, c)
 	str := strconv.FormatInt(c, 10)
 	i, _ := strconv.ParseInt(str, 10, 64)
 	assert.Equal(t, c, i)
-}
-
-func destroy() {
-	delete1 := func(key interface{}, value interface{}) bool {
-		methodStatistics.Delete(key)
-		return true
-	}
-	methodStatistics.Range(delete1)
-	delete2 := func(key interface{}, value interface{}) bool {
-		serviceStatistic.Delete(key)
-		return true
-	}
-	serviceStatistic.Range(delete2)
 }
