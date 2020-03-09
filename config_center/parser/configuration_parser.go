@@ -18,7 +18,6 @@
 package parser
 
 import (
-	"context"
 	"strconv"
 	"strings"
 )
@@ -110,6 +109,7 @@ func (parser *DefaultConfigurationParser) ParseToUrls(content string) ([]*common
 	}
 	return allUrls, nil
 }
+
 func serviceItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.URL, error) {
 	var addresses = item.Addresses
 	if len(addresses) == 0 {
@@ -139,14 +139,14 @@ func serviceItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.UR
 				newUrlStr := urlStr
 				newUrlStr = newUrlStr + "&application"
 				newUrlStr = newUrlStr + v
-				url, err := common.NewURL(context.Background(), newUrlStr)
+				url, err := common.NewURL(newUrlStr)
 				if err != nil {
 					return nil, perrors.WithStack(err)
 				}
 				urls = append(urls, &url)
 			}
 		} else {
-			url, err := common.NewURL(context.Background(), urlStr)
+			url, err := common.NewURL(urlStr)
 			if err != nil {
 				return nil, perrors.WithStack(err)
 			}
@@ -155,6 +155,7 @@ func serviceItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.UR
 	}
 	return urls, nil
 }
+
 func appItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.URL, error) {
 	var addresses = item.Addresses
 	if len(addresses) == 0 {
@@ -185,7 +186,7 @@ func appItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.URL, e
 			urlStr = urlStr + constant.APP_DYNAMIC_CONFIGURATORS_CATEGORY
 			urlStr = urlStr + "&configVersion="
 			urlStr = urlStr + config.ConfigVersion
-			url, err := common.NewURL(context.Background(), urlStr)
+			url, err := common.NewURL(urlStr)
 			if err != nil {
 				return nil, perrors.WithStack(err)
 			}
@@ -247,6 +248,7 @@ func getParamString(item ConfigItem) (string, error) {
 
 	return retStr, nil
 }
+
 func getEnabledString(item ConfigItem, config ConfiguratorConfig) string {
 	retStr := "&enabled="
 	if len(item.Type) == 0 || item.Type == GeneralType {

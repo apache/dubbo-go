@@ -18,7 +18,6 @@
 package directory
 
 import (
-	"context"
 	"net/url"
 	"strconv"
 	"testing"
@@ -31,6 +30,8 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/cluster/cluster_impl"
+	_ "github.com/apache/dubbo-go/cluster/router"
+	_ "github.com/apache/dubbo-go/cluster/router/condition"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -44,6 +45,7 @@ import (
 func init() {
 	config.SetConsumerConfig(config.ConsumerConfig{ApplicationConfig: &config.ApplicationConfig{Name: "test-application"}})
 }
+
 func TestSubscribe(t *testing.T) {
 	registryDirectory, _ := normalRegistryDir()
 
@@ -62,7 +64,7 @@ func TestSubscribe(t *testing.T) {
 //}
 
 func TestSubscribe_InvalidUrl(t *testing.T) {
-	url, _ := common.NewURL(context.TODO(), "mock://127.0.0.1:1111")
+	url, _ := common.NewURL("mock://127.0.0.1:1111")
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
 	_, err := NewRegistryDirectory(&url, mockRegistry)
 	assert.Error(t, err)
@@ -72,8 +74,8 @@ func TestSubscribe_Group(t *testing.T) {
 	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
 	extension.SetCluster("mock", cluster_impl.NewMockCluster)
 
-	regurl, _ := common.NewURL(context.TODO(), "mock://127.0.0.1:1111")
-	suburl, _ := common.NewURL(context.TODO(), "dubbo://127.0.0.1:20000")
+	regurl, _ := common.NewURL("mock://127.0.0.1:1111")
+	suburl, _ := common.NewURL("dubbo://127.0.0.1:20000")
 	suburl.SetParam(constant.CLUSTER_KEY, "mock")
 	regurl.SubURL = &suburl
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
@@ -105,7 +107,7 @@ func TestSubscribe_Group(t *testing.T) {
 func Test_Destroy(t *testing.T) {
 	registryDirectory, _ := normalRegistryDir()
 
-	time.Sleep(1e9)
+	time.Sleep(3e9)
 	assert.Len(t, registryDirectory.cacheInvokers, 3)
 	assert.Equal(t, true, registryDirectory.IsAvailable())
 
@@ -117,14 +119,15 @@ func Test_Destroy(t *testing.T) {
 func Test_List(t *testing.T) {
 	registryDirectory, _ := normalRegistryDir()
 
-	time.Sleep(1e9)
+	time.Sleep(4e9)
 	assert.Len(t, registryDirectory.List(&invocation.RPCInvocation{}), 3)
 	assert.Equal(t, true, registryDirectory.IsAvailable())
 
 }
+
 func Test_MergeProviderUrl(t *testing.T) {
 	registryDirectory, mockRegistry := normalRegistryDir(true)
-	providerUrl, _ := common.NewURL(context.TODO(), "dubbo://0.0.0.0:20000/org.apache.dubbo-go.mockService",
+	providerUrl, _ := common.NewURL("dubbo://0.0.0.0:20000/org.apache.dubbo-go.mockService",
 		common.WithParamsValue(constant.CLUSTER_KEY, "mock1"),
 		common.WithParamsValue(constant.GROUP_KEY, "group"),
 		common.WithParamsValue(constant.VERSION_KEY, "1.0.0"))
@@ -139,7 +142,7 @@ func Test_MergeProviderUrl(t *testing.T) {
 
 func Test_MergeOverrideUrl(t *testing.T) {
 	registryDirectory, mockRegistry := normalRegistryDir(true)
-	providerUrl, _ := common.NewURL(context.TODO(), "dubbo://0.0.0.0:20000/org.apache.dubbo-go.mockService",
+	providerUrl, _ := common.NewURL("dubbo://0.0.0.0:20000/org.apache.dubbo-go.mockService",
 		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
 		common.WithParamsValue(constant.GROUP_KEY, "group"),
 		common.WithParamsValue(constant.VERSION_KEY, "1.0.0"))
@@ -147,7 +150,7 @@ func Test_MergeOverrideUrl(t *testing.T) {
 Loop1:
 	for {
 		if len(registryDirectory.cacheInvokers) > 0 {
-			overrideUrl, _ := common.NewURL(context.TODO(), "override://0.0.0.0:20000/org.apache.dubbo-go.mockService",
+			overrideUrl, _ := common.NewURL("override://0.0.0.0:20000/org.apache.dubbo-go.mockService",
 				common.WithParamsValue(constant.CLUSTER_KEY, "mock1"),
 				common.WithParamsValue(constant.GROUP_KEY, "group"),
 				common.WithParamsValue(constant.VERSION_KEY, "1.0.0"))
@@ -173,9 +176,8 @@ Loop1:
 func normalRegistryDir(noMockEvent ...bool) (*registryDirectory, *registry.MockRegistry) {
 	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
 
-	url, _ := common.NewURL(context.TODO(), "mock://127.0.0.1:1111")
+	url, _ := common.NewURL("mock://127.0.0.1:1111")
 	suburl, _ := common.NewURL(
-		context.TODO(),
 		"dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService",
 		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
 		common.WithParamsValue(constant.GROUP_KEY, "group"),
