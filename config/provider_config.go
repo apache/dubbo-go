@@ -18,19 +18,14 @@
 package config
 
 import (
-	"io/ioutil"
-	"path"
-)
-
-import (
 	"github.com/creasty/defaults"
 	perrors "github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 )
 
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/common/yaml"
 )
 
 /////////////////////////
@@ -81,21 +76,11 @@ func ProviderInit(confProFile string) error {
 	if len(confProFile) == 0 {
 		return perrors.Errorf("application configure(provider) file name is nil")
 	}
-
-	if path.Ext(confProFile) != ".yml" {
-		return perrors.Errorf("application configure file name{%v} suffix must be .yml", confProFile)
-	}
-
-	confFileStream, err := ioutil.ReadFile(confProFile)
-	if err != nil {
-		return perrors.Errorf("ioutil.ReadFile(file:%s) = error:%v", confProFile, perrors.WithStack(err))
-	}
 	providerConfig = &ProviderConfig{}
-	err = yaml.Unmarshal(confFileStream, providerConfig)
+	err := yaml.UnmarshalYMLConfig(confProFile, providerConfig)
 	if err != nil {
-		return perrors.Errorf("yaml.Unmarshal() = error:%v", perrors.WithStack(err))
+		return perrors.Errorf("unmarshalYmlConfig error %v", perrors.WithStack(err))
 	}
-
 	//set method interfaceId & interfaceName
 	for k, v := range providerConfig.Services {
 		//set id for reference
