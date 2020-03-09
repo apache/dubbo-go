@@ -15,7 +15,17 @@
 ::  limitations under the License.
 
 set zkJar=zookeeper-3.4.9-fatjar.jar
-md remoting\zookeeper\zookeeper-4unittest\contrib\fatjar config_center\zookeeper\zookeeper-4unittest\contrib\fatjar registry\zookeeper\zookeeper-4unittest\contrib\fatjar
+md remoting\zookeeper\zookeeper-4unittest\contrib\fatjar
 curl -L https://github.com/dubbogo/resources/raw/master/zookeeper-4unitest/contrib/fatjar/%zkJar% -o remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/%zkJar%
+
+md config_center\zookeeper\zookeeper-4unittest\contrib\fatjar
 xcopy /f "remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/%zkJar%" "config_center/zookeeper/zookeeper-4unittest/contrib/fatjar/"
+
+md registry\zookeeper\zookeeper-4unittest\contrib\fatjar
 xcopy /f "remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/%zkJar%" "registry/zookeeper/zookeeper-4unittest/contrib/fatjar/"
+
+md cluster\router\chain\zookeeper-4unittest\contrib\fatjar
+xcopy /f "remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/%zkJar%" "cluster/router/chain/zookeeper-4unittest/contrib/fatjar/"
+
+md cluster\router\condition\zookeeper-4unittest\contrib\fatjar
+xcopy /f "remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/%zkJar%" "cluster/router/condition/zookeeper-4unittest/contrib/fatjar/"

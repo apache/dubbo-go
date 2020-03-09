@@ -31,6 +31,7 @@ import (
 import (
 	"github.com/coreos/etcd/mvcc/mvccpb"
 	perrors "github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"go.etcd.io/etcd/embed"
 	"google.golang.org/grpc/connectivity"
@@ -171,6 +172,10 @@ func (suite *ClientTestSuite) TestClientDone() {
 	}()
 
 	c.Wait.Wait()
+
+	if c.Valid() == true {
+		suite.T().Fatal("client should be invalid then")
+	}
 }
 
 func (suite *ClientTestSuite) TestClientCreateKV() {
@@ -295,13 +300,26 @@ func (suite *ClientTestSuite) TestClientWatch() {
 			t.Fatal(err)
 		}
 
+		events := make([]mvccpb.Event, 0)
+		var eCreate, eDelete mvccpb.Event
+
 		for e := range wc {
 
 			for _, event := range e.Events {
+				events = append(events, (mvccpb.Event)(*event))
+				if event.Type == mvccpb.PUT {
+					eCreate = (mvccpb.Event)(*event)
+				}
+				if event.Type == mvccpb.DELETE {
+					eDelete = (mvccpb.Event)(*event)
+				}
 				t.Logf("type IsCreate %v k %s v %s", event.IsCreate(), event.Kv.Key, event.Kv.Value)
 			}
 		}
 
+		assert.Equal(t, 2, len(events))
+		assert.Contains(t, events, eCreate)
+		assert.Contains(t, events, eDelete)
 	}()
 
 	for _, tc := range tests {
@@ -334,25 +352,35 @@ func (suite *ClientTestSuite) TestClientRegisterTemp() {
 	wg.Add(1)
 
 	go func() {
+		defer wg.Done()
+
 		completePath := path.Join("scott", "wang")
 		wc, err := observeC.watch(completePath)
 		if err != nil {
 			t.Fatal(err)
 		}
 
+		events := make([]mvccpb.Event, 0)
+		var eCreate, eDelete mvccpb.Event
+
 		for e := range wc {
 
 			for _, event := range e.Events {
-
+				events = append(events, (mvccpb.Event)(*event))
 				if event.Type == mvccpb.DELETE {
+					eDelete = (mvccpb.Event)(*event)
 					t.Logf("complete key (%s) is delete", completePath)
-					wg.Done()
 					observeC.Close()
-					return
+					break
 				}
+				eCreate = (mvccpb.Event)(*event)
 				t.Logf("type IsCreate %v k %s v %s", event.IsCreate(), event.Kv.Key, event.Kv.Value)
 			}
 		}
+
+		assert.Equal(t, 2, len(events))
+		assert.Contains(t, events, eCreate)
+		assert.Contains(t, events, eDelete)
 	}()
 
 	_, err := c.RegisterTemp("scott", "wang")

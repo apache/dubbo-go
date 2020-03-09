@@ -19,7 +19,6 @@ package common
 
 import (
 	"bytes"
-	"context"
 	"encoding/base64"
 	"fmt"
 	"math"
@@ -60,8 +59,8 @@ const (
 var (
 	// DubboNodes ...
 	DubboNodes = [...]string{"consumers", "configurators", "routers", "providers"}
-	// DubboRole ...
-	DubboRole = [...]string{"consumer", "", "", "provider"}
+	// DubboRole Dubbo service role
+	DubboRole = [...]string{"consumer", "", "routers", "provider"}
 )
 
 // RoleType ...
@@ -85,7 +84,6 @@ type baseUrl struct {
 	paramsLock   sync.RWMutex
 	params       url.Values
 	PrimitiveURL string
-	ctx          context.Context
 }
 
 // URL ...
@@ -194,14 +192,15 @@ func NewURLWithOptions(opts ...option) *URL {
 	return url
 }
 
-// NewURL ...
-func NewURL(ctx context.Context, urlString string, opts ...option) (URL, error) {
+// NewURL will create a new url
+// the urlString should not be empty
+func NewURL(urlString string, opts ...option) (URL, error) {
 
 	var (
 		err          error
 		rawUrlString string
 		serviceUrl   *url.URL
-		s            = URL{baseUrl: baseUrl{ctx: ctx}}
+		s            = URL{baseUrl: baseUrl{}}
 	)
 
 	// new a null instance
@@ -216,7 +215,7 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (URL, error) 
 
 	//rawUrlString = "//" + rawUrlString
 	if strings.Index(rawUrlString, "//") < 0 {
-		t := URL{baseUrl: baseUrl{ctx: ctx}}
+		t := URL{baseUrl: baseUrl{}}
 		for _, opt := range opts {
 			opt(&t)
 		}
@@ -241,7 +240,7 @@ func NewURL(ctx context.Context, urlString string, opts ...option) (URL, error) 
 	if strings.Contains(s.Location, ":") {
 		s.Ip, s.Port, err = net.SplitHostPort(s.Location)
 		if err != nil {
-			return s, perrors.Errorf("net.SplitHostPort(Url.Host{%s}), error{%v}", s.Location, err)
+			return s, perrors.Errorf("net.SplitHostPort(url.Host{%s}), error{%v}", s.Location, err)
 		}
 	}
 	for _, opt := range opts {
@@ -278,6 +277,7 @@ func (c URL) URLEqual(url URL) bool {
 	}
 	return true
 }
+
 func isMatchCategory(category1 string, category2 string) bool {
 	if len(category2) == 0 {
 		return category1 == constant.DEFAULT_CATEGORY
@@ -289,6 +289,7 @@ func isMatchCategory(category1 string, category2 string) bool {
 		return strings.Contains(category2, category1)
 	}
 }
+
 func (c URL) String() string {
 	var buildString string
 	if len(c.Username) == 0 && len(c.Password) == 0 {
@@ -367,11 +368,6 @@ func (c *URL) EncodedServiceKey() string {
 	return strings.Replace(serviceKey, "/", "*", 1)
 }
 
-// Context ...
-func (c URL) Context() context.Context {
-	return c.ctx
-}
-
 // Service ...
 func (c URL) Service() string {
 	service := c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
@@ -379,7 +375,7 @@ func (c URL) Service() string {
 		return service
 	} else if c.SubURL != nil {
 		service = c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
-		if service != "" { //if url.path is "" then return suburl's path, special for registry Url
+		if service != "" { //if url.path is "" then return suburl's path, special for registry url
 			return service
 		}
 	}

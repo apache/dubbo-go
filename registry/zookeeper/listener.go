@@ -18,7 +18,6 @@
 package zookeeper
 
 import (
-	"context"
 	"strings"
 	"sync"
 )
@@ -57,11 +56,11 @@ func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 	// Intercept the last bit
 	index := strings.Index(eventType.Path, "/providers/")
 	if index == -1 {
-		logger.Warn("Listen with no url, event.path={%v}", eventType.Path)
+		logger.Warnf("Listen with no url, event.path={%v}", eventType.Path)
 		return false
 	}
 	url := eventType.Path[index+len("/providers/"):]
-	serviceURL, err := common.NewURL(context.TODO(), url)
+	serviceURL, err := common.NewURL(url)
 	if err != nil {
 		logger.Errorf("Listen NewURL(r{%s}) = error{%v} eventType.Path={%v}", url, err, eventType.Path)
 		return false
