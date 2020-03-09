@@ -52,8 +52,8 @@ func TestRestProtocol_Refer(t *testing.T) {
 		RequestTimeout: 5 * time.Second,
 	}
 	config.SetConsumerConfig(con)
-	configMap := make(map[string]*rest_interface.RestConfig)
-	configMap["com.ikurento.user.UserProvider"] = &rest_interface.RestConfig{
+	configMap := make(map[string]*rest_interface.RestServiceConfig)
+	configMap["com.ikurento.user.UserProvider"] = &rest_interface.RestServiceConfig{
 		Client: "resty",
 	}
 	SetRestConsumerServiceConfigMap(configMap)
@@ -84,7 +84,7 @@ func TestRestProtocol_Export(t *testing.T) {
 	assert.NoError(t, err)
 	con := config.ProviderConfig{}
 	config.SetProviderConfig(con)
-	configMap := make(map[string]*rest_interface.RestConfig)
+	configMap := make(map[string]*rest_interface.RestServiceConfig)
 	methodConfigMap := make(map[string]*rest_interface.RestMethodConfig)
 	queryParamsMap := make(map[int]string)
 	queryParamsMap[1] = "age"
@@ -104,7 +104,7 @@ func TestRestProtocol_Export(t *testing.T) {
 		QueryParamsMap: queryParamsMap,
 		Body:           -1,
 	}
-	configMap["com.ikurento.user.UserProvider"] = &rest_interface.RestConfig{
+	configMap["com.ikurento.user.UserProvider"] = &rest_interface.RestServiceConfig{
 		Server:               "go-restful",
 		RestMethodConfigsMap: methodConfigMap,
 	}
