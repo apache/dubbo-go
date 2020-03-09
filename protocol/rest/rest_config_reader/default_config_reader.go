@@ -18,20 +18,18 @@
 package rest_config_reader
 
 import (
-	"io/ioutil"
 	"os"
-	"path"
 )
 
 import (
 	perrors "github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 )
 
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/common/yaml"
 	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
 )
 
@@ -52,23 +50,14 @@ func NewDefaultConfigReader() *DefaultConfigReader {
 
 func (dcr *DefaultConfigReader) ReadConsumerConfig() *rest_interface.RestConsumerConfig {
 	confConFile := os.Getenv(constant.CONF_CONSUMER_FILE_PATH)
-	if confConFile == "" {
-		logger.Warnf("rest consumer configure(consumer) file name is nil")
-		return nil
-	}
-	if path.Ext(confConFile) != ".yml" {
-		logger.Warnf("rest consumer configure file name{%v} suffix must be .yml", confConFile)
-		return nil
-	}
-	confFileStream, err := ioutil.ReadFile(confConFile)
-	if err != nil {
-		logger.Warnf("ioutil.ReadFile(file:%s) = error:%v", confConFile, perrors.WithStack(err))
+	if len(confConFile) == 0 {
+		logger.Warnf("[Rest Config] rest consumer configure(consumer) file name is nil")
 		return nil
 	}
 	restConsumerConfig := &rest_interface.RestConsumerConfig{}
-	err = yaml.Unmarshal(confFileStream, restConsumerConfig)
+	err := yaml.UnmarshalYMLConfig(confConFile, restConsumerConfig)
 	if err != nil {
-		logger.Warnf("yaml.Unmarshal() = error:%v", perrors.WithStack(err))
+		logger.Errorf("[Rest Config] unmarshal Consumer RestYmlConfig error %v", perrors.WithStack(err))
 		return nil
 	}
 	return restConsumerConfig
@@ -77,26 +66,15 @@ func (dcr *DefaultConfigReader) ReadConsumerConfig() *rest_interface.RestConsume
 func (dcr *DefaultConfigReader) ReadProviderConfig() *rest_interface.RestProviderConfig {
 	confProFile := os.Getenv(constant.CONF_PROVIDER_FILE_PATH)
 	if len(confProFile) == 0 {
-		logger.Warnf("rest provider configure(provider) file name is nil")
-		return nil
-	}
-
-	if path.Ext(confProFile) != ".yml" {
-		logger.Warnf("rest provider configure file name{%v} suffix must be .yml", confProFile)
-		return nil
-	}
-	confFileStream, err := ioutil.ReadFile(confProFile)
-	if err != nil {
-		logger.Warnf("ioutil.ReadFile(file:%s) = error:%v", confProFile, perrors.WithStack(err))
+		logger.Warnf("[Rest Config] rest provider configure(provider) file name is nil")
 		return nil
 	}
 	restProviderConfig := &rest_interface.RestProviderConfig{}
-	err = yaml.Unmarshal(confFileStream, restProviderConfig)
+	err := yaml.UnmarshalYMLConfig(confProFile, restProviderConfig)
 	if err != nil {
-		logger.Warnf("yaml.Unmarshal() = error:%v", perrors.WithStack(err))
+		logger.Errorf("[Rest Config] unmarshal Provider RestYmlConfig error %v", perrors.WithStack(err))
 		return nil
 	}
-
 	return restProviderConfig
 }
 

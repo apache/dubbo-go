@@ -18,8 +18,6 @@
 package config
 
 import (
-	"io/ioutil"
-	"path"
 	"time"
 )
 
@@ -27,12 +25,12 @@ import (
 	"github.com/creasty/defaults"
 	"github.com/dubbogo/getty"
 	perrors "github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 )
 
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/common/yaml"
 )
 
 /////////////////////////
@@ -90,21 +88,11 @@ func ConsumerInit(confConFile string) error {
 	if confConFile == "" {
 		return perrors.Errorf("application configure(consumer) file name is nil")
 	}
-
-	if path.Ext(confConFile) != ".yml" {
-		return perrors.Errorf("application configure file name{%v} suffix must be .yml", confConFile)
-	}
-
-	confFileStream, err := ioutil.ReadFile(confConFile)
-	if err != nil {
-		return perrors.Errorf("ioutil.ReadFile(file:%s) = error:%v", confConFile, perrors.WithStack(err))
-	}
 	consumerConfig = &ConsumerConfig{}
-	err = yaml.Unmarshal(confFileStream, consumerConfig)
+	err := yaml.UnmarshalYMLConfig(confConFile, consumerConfig)
 	if err != nil {
-		return perrors.Errorf("yaml.Unmarshal() = error:%v", perrors.WithStack(err))
+		return perrors.Errorf("unmarshalYmlConfig error %v", perrors.WithStack(err))
 	}
-
 	//set method interfaceId & interfaceName
 	for k, v := range consumerConfig.References {
 		//set id for reference

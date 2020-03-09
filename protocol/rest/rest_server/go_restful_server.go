@@ -91,18 +91,20 @@ func (grs *GoRestfulServer) Deploy(invoker protocol.Invoker, restMethodConfig ma
 
 }
 
-func getFunc(methodName string, invoker protocol.Invoker, argsTypes []reflect.Type, replyType reflect.Type, config *rest_interface.RestMethodConfig) func(req *restful.Request, resp *restful.Response) {
+func getFunc(methodName string, invoker protocol.Invoker, argsTypes []reflect.Type,
+	replyType reflect.Type, config *rest_interface.RestMethodConfig) func(req *restful.Request, resp *restful.Response) {
 	return func(req *restful.Request, resp *restful.Response) {
 		var (
 			err  error
 			args []interface{}
 		)
-		if (len(argsTypes) == 1 || len(argsTypes) == 2 && replyType == nil) && argsTypes[0].String() == "[]interface {}" {
+		if (len(argsTypes) == 1 || len(argsTypes) == 2 && replyType == nil) &&
+			argsTypes[0].String() == "[]interface {}" {
 			args = getArgsInterfaceFromRequest(req, config)
 		} else {
 			args = getArgsFromRequest(req, argsTypes, config)
 		}
-		result := invoker.Invoke(context.Background(), invocation.NewRPCInvocation(methodName, args, make(map[string]string, 0)))
+		result := invoker.Invoke(context.Background(), invocation.NewRPCInvocation(methodName, args, make(map[string]string)))
 		if result.Error() != nil {
 			err = resp.WriteError(http.StatusInternalServerError, result.Error())
 			if err != nil {
@@ -137,7 +139,7 @@ func (grs *GoRestfulServer) Destroy() {
 }
 
 func getArgsInterfaceFromRequest(req *restful.Request, config *rest_interface.RestMethodConfig) []interface{} {
-	argsMap := make(map[int]interface{})
+	argsMap := make(map[int]interface{}, 8)
 	maxKey := 0
 	for k, v := range config.PathParamsMap {
 		if maxKey < k {
@@ -166,7 +168,6 @@ func getArgsInterfaceFromRequest(req *restful.Request, config *rest_interface.Re
 		if maxKey < config.Body {
 			maxKey = config.Body
 		}
-
 		m := make(map[string]interface{})
 		// TODO read as a slice
 		if err := req.ReadEntity(&m); err != nil {
@@ -175,7 +176,6 @@ func getArgsInterfaceFromRequest(req *restful.Request, config *rest_interface.Re
 			argsMap[config.Body] = m
 		}
 	}
-
 	args := make([]interface{}, maxKey+1)
 	for k, v := range argsMap {
 		if k >= 0 {
