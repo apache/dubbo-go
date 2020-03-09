@@ -26,11 +26,8 @@ import (
 )
 
 import (
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"github.com/go-resty/resty/v2"
+	perrors "github.com/pkg/errors"
 )
 
 import (
