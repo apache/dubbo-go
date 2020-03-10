@@ -10,17 +10,24 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func UnmarshalYMLConfig(yamlFile string, out interface{}) error {
-	if path.Ext(yamlFile) != ".yml" {
-		return perrors.Errorf("yamlFile name{%v} suffix must be .yml", yamlFile)
+// loadYMLConfig Load yml config byte from file
+func loadYMLConfig(confProFile string) ([]byte, error) {
+	if len(confProFile) == 0 {
+		return nil, perrors.Errorf("application configure(provider) file name is nil")
 	}
-	confFileStream, err := ioutil.ReadFile(yamlFile)
+
+	if path.Ext(confProFile) != ".yml" {
+		return nil, perrors.Errorf("application configure file name{%v} suffix must be .yml", confProFile)
+	}
+
+	return ioutil.ReadFile(confProFile)
+}
+
+// unmarshalYMLConfig Load yml config byte from file , then unmarshal to object
+func UnmarshalYMLConfig(confProFile string, out interface{}) error {
+	confFileStream, err := loadYMLConfig(confProFile)
 	if err != nil {
-		return perrors.Errorf("ioutil.ReadFile(file:%s) = error:%v", yamlFile, perrors.WithStack(err))
+		return perrors.Errorf("ioutil.ReadFile(file:%s) = error:%v", confProFile, perrors.WithStack(err))
 	}
-	err = yaml.Unmarshal(confFileStream, out)
-	if err != nil {
-		return perrors.Errorf("yaml.Unmarshal() = error:%v", perrors.WithStack(err))
-	}
-	return nil
+	return yaml.Unmarshal(confFileStream, out)
 }
