@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	restServers = make(map[string]func() rest_interface.RestServer)
+	restServers = make(map[string]func() rest_interface.RestServer, 8)
 )
 
 func SetRestServer(name string, fun func() rest_interface.RestServer) {
