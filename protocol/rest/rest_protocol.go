@@ -55,8 +55,8 @@ type RestProtocol struct {
 func NewRestProtocol() *RestProtocol {
 	return &RestProtocol{
 		BaseProtocol: protocol.NewBaseProtocol(),
-		serverMap:    make(map[string]rest_interface.RestServer),
-		clientMap:    make(map[rest_interface.RestOptions]rest_interface.RestClient),
+		serverMap:    make(map[string]rest_interface.RestServer, 8),
+		clientMap:    make(map[rest_interface.RestOptions]rest_interface.RestClient, 8),
 	}
 }
 
@@ -105,13 +105,13 @@ func (rp *RestProtocol) getServer(url common.URL, serverType string) rest_interf
 		panic("[RestProtocol]" + url.ServiceKey() + "is not existing")
 	}
 	rp.serverLock.Lock()
+	defer rp.serverLock.Unlock()
 	restServer, ok = rp.serverMap[url.Location]
 	if !ok {
 		restServer = extension.GetNewRestServer(serverType)
 		restServer.Start(url)
 		rp.serverMap[url.Location] = restServer
 	}
-	rp.serverLock.Unlock()
 	return restServer
 }
 
@@ -121,12 +121,12 @@ func (rp *RestProtocol) getClient(restOptions rest_interface.RestOptions, client
 		return restClient
 	}
 	rp.clientLock.Lock()
+	defer rp.clientLock.Unlock()
 	restClient, ok = rp.clientMap[restOptions]
 	if !ok {
 		restClient = extension.GetNewRestClient(clientType, &restOptions)
 		rp.clientMap[restOptions] = restClient
 	}
-	rp.clientLock.Unlock()
 	return restClient
 }
 
