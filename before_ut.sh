@@ -14,8 +14,24 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+zkJarName="zookeeper-3.4.9-fatjar.jar"
+remoteJarUrl="https://github.com/dubbogo/resources/raw/master/zookeeper-4unitest/contrib/fatjar/${zkJarName}"
+zkJarPath="remoting/zookeeper/zookeeper-4unittest/contrib/fatjar"
+zkJar="${zkJarPath}/${zkJarName}"
 
-mkdir -p remoting/zookeeper/zookeeper-4unittest/contrib/fatjar config_center/zookeeper/zookeeper-4unittest/contrib/fatjar registry/zookeeper/zookeeper-4unittest/contrib/fatjar
-wget -P "remoting/zookeeper/zookeeper-4unittest/contrib/fatjar" https://github.com/dubbogo/resources/raw/master/zookeeper-4unitest/contrib/fatjar/zookeeper-3.4.9-fatjar.jar
-cp remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/zookeeper-3.4.9-fatjar.jar config_center/zookeeper/zookeeper-4unittest/contrib/fatjar/
-cp remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/zookeeper-3.4.9-fatjar.jar registry/zookeeper/zookeeper-4unittest/contrib/fatjar/
+if [ ! -f "${zkJar}" ]; then
+    mkdir -p ${zkJarPath}
+    wget -P "${zkJarPath}" ${remoteJarUrl}
+fi
+
+mkdir -p config_center/zookeeper/zookeeper-4unittest/contrib/fatjar
+cp ${zkJar} config_center/zookeeper/zookeeper-4unittest/contrib/fatjar/
+
+mkdir -p registry/zookeeper/zookeeper-4unittest/contrib/fatjar
+cp ${zkJar} registry/zookeeper/zookeeper-4unittest/contrib/fatjar/
+
+mkdir -p cluster/router/chain/zookeeper-4unittest/contrib/fatjar
+cp ${zkJar} cluster/router/chain/zookeeper-4unittest/contrib/fatjar
+
+mkdir -p cluster/router/condition/zookeeper-4unittest/contrib/fatjar
+cp ${zkJar} cluster/router/condition/zookeeper-4unittest/contrib/fatjar

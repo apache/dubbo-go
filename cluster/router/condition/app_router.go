@@ -15,31 +15,36 @@
  * limitations under the License.
  */
 
-package cluster
+package condition
+
+import (
+	perrors "github.com/pkg/errors"
+)
 
 import (
 	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/common/constant"
 )
 
-// Extension - Router
+const (
+	// Default priority for application router
+	appRouterDefaultPriority = int64(150)
+)
 
-// RouterFactory ...
-type RouterFactory interface {
-	Router(*common.URL) (Router, error)
+// AppRouter For listen application router with config center
+type AppRouter struct {
+	listenableRouter
 }
 
-// Router ...
-type Router interface {
-	Route([]protocol.Invoker, common.URL, protocol.Invocation) []protocol.Invoker
-}
-
-// RouterChain ...
-type RouterChain struct {
-	routers []Router
-}
-
-// NewRouterChain ...
-func NewRouterChain(url common.URL) {
-
+// NewAppRouter Init AppRouter by url
+func NewAppRouter(url *common.URL) (*AppRouter, error) {
+	if url == nil {
+		return nil, perrors.Errorf("No route URL for create app router!")
+	}
+	appRouter, err := newListenableRouter(url, url.GetParam(constant.APPLICATION_KEY, ""))
+	if err != nil {
+		return nil, err
+	}
+	appRouter.priority = appRouterDefaultPriority
+	return appRouter, nil
 }

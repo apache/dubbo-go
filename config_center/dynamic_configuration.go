@@ -22,6 +22,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/config_center/parser"
 )
 
@@ -72,4 +73,9 @@ func WithTimeout(time time.Duration) Option {
 	return func(opt *Options) {
 		opt.Timeout = time
 	}
+}
+
+//GetRuleKey The format is '{interfaceName}:[version]:[group]'
+func GetRuleKey(url common.URL) string {
+	return url.ColonSeparatedKey()
 }
