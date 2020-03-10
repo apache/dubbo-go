@@ -45,7 +45,7 @@ func initConsumerRestConfig() {
 	consumerConfigType := config.GetConsumerConfig().RestConfigType
 	consumerConfigReader := extension.GetSingletonRestConfigReader(consumerConfigType)
 	restConsumerConfig := consumerConfigReader.ReadConsumerConfig()
-	if restConsumerConfig == nil {
+	if restConsumerConfig == nil || len(restConsumerConfig.RestServiceConfigsMap) == 0 {
 		return
 	}
 	restConsumerServiceConfigMap = make(map[string]*rest_interface.RestServiceConfig, len(restConsumerConfig.RestServiceConfigsMap))
@@ -60,7 +60,7 @@ func initProviderRestConfig() {
 	providerConfigType := config.GetProviderConfig().RestConfigType
 	providerConfigReader := extension.GetSingletonRestConfigReader(providerConfigType)
 	restProviderConfig := providerConfigReader.ReadProviderConfig()
-	if restProviderConfig == nil {
+	if restProviderConfig == nil || len(restProviderConfig.RestServiceConfigsMap) == 0 {
 		return
 	}
 	restProviderServiceConfigMap = make(map[string]*rest_interface.RestServiceConfig, len(restProviderConfig.RestServiceConfigsMap))
@@ -125,7 +125,7 @@ func transformMethodConfig(methodConfig *rest_interface.RestMethodConfig) *rest_
 }
 
 func parseParamsString2Map(params string) (map[int]string, error) {
-	m := make(map[int]string)
+	m := make(map[int]string, 8)
 	for _, p := range strings.Split(params, ",") {
 		pa := strings.Split(p, ":")
 		key, err := strconv.Atoi(pa[0])

@@ -40,6 +40,7 @@ const (
 	TOKEN_KEY              = "token"
 	LOCAL_ADDR             = "local-addr"
 	REMOTE_ADDR            = "remote-addr"
+	PATH_SEPARATOR         = "/"
 )
 
 const (
@@ -89,16 +90,23 @@ const (
 )
 
 const (
-	APPLICATION_KEY  = "application"
-	ORGANIZATION_KEY = "organization"
-	NAME_KEY         = "name"
-	MODULE_KEY       = "module"
-	APP_VERSION_KEY  = "app.version"
-	OWNER_KEY        = "owner"
-	ENVIRONMENT_KEY  = "environment"
-	METHOD_KEY       = "method"
-	METHOD_KEYS      = "methods"
-	RULE_KEY         = "rule"
+	APPLICATION_KEY          = "application"
+	ORGANIZATION_KEY         = "organization"
+	NAME_KEY                 = "name"
+	MODULE_KEY               = "module"
+	APP_VERSION_KEY          = "app.version"
+	OWNER_KEY                = "owner"
+	ENVIRONMENT_KEY          = "environment"
+	METHOD_KEY               = "method"
+	METHOD_KEYS              = "methods"
+	RULE_KEY                 = "rule"
+	RUNTIME_KEY              = "runtime"
+	BACKUP_KEY               = "backup"
+	ROUTERS_CATEGORY         = "routers"
+	ROUTE_PROTOCOL           = "route"
+	CONDITION_ROUTE_PROTOCOL = "condition"
+	PROVIDERS_CATEGORY       = "providers"
+	ROUTER_KEY               = "router"
 )
 
 const (
@@ -120,6 +128,7 @@ const (
 	ProviderConfigPrefix       = "dubbo.provider."
 	ConsumerConfigPrefix       = "dubbo.consumer."
 	ShutdownConfigPrefix       = "dubbo.shutdown."
+	RouterConfigPrefix         = "dubbo.router."
 )
 
 const (
@@ -140,6 +149,28 @@ const (
 
 const (
 	TRACING_REMOTE_SPAN_CTX = "tracing.remote.span.ctx"
+)
+
+// Use for router module
+const (
+	// ConditionRouterName Specify file condition router name
+	ConditionRouterName = "condition"
+	// ConditionAppRouterName Specify listenable application router name
+	ConditionAppRouterName = "app"
+	// ListenableRouterName Specify listenable router name
+	ListenableRouterName = "listenable"
+	// HealthCheckRouterName Specify the name of HealthCheckRouter
+	HealthCheckRouterName = "health_check"
+
+	// ConditionRouterRuleSuffix Specify condition router suffix
+	ConditionRouterRuleSuffix = ".condition-router"
+
+	// Force Force key in router module
+	RouterForce = "force"
+	// Enabled Enabled key in router module
+	RouterEnabled = "enabled"
+	// Priority Priority key in router module
+	RouterPriority = "priority"
 )
 
 const (
@@ -173,4 +204,26 @@ const (
 	ACCESS_KEY_ID_KEY = "accessKeyId"
 	// key of secret access key
 	SECRET_ACCESS_KEY_KEY = "secretAccessKey"
+)
+
+// HealthCheck Router
+const (
+	// The key of HealthCheck SPI
+	HEALTH_CHECKER = "health.checker"
+	// The name of the default implementation of HealthChecker
+	DEFAULT_HEALTH_CHECKER = "default"
+	// The key of oustanding-request-limit
+	OUTSTANDING_REQUEST_COUNT_LIMIT_KEY = "outstanding.request.limit"
+	// The key of successive-failed-request's threshold
+	SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY = "successive.failed.threshold"
+	// The key of circuit-tripped timeout factor
+	CIRCUIT_TRIPPED_TIMEOUT_FACTOR_KEY = "circuit.tripped.timeout.factor"
+	// The default threshold of  successive-failed-request if not specfied
+	DEFAULT_SUCCESSIVE_FAILED_THRESHOLD = 5
+	// The default maximum diff between successive-failed-request's threshold and actual successive-failed-request's count
+	DEFAULT_SUCCESSIVE_FAILED_REQUEST_MAX_DIFF = 5
+	// The default factor of  circuit-tripped timeout if not specfied
+	DEFAULT_CIRCUIT_TRIPPED_TIMEOUT_FACTOR = 1000
+	// The default time window of circuit-tripped  in millisecond if not specfied
+	MAX_CIRCUIT_TRIPPED_TIMEOUT_IN_MS = 30000
 )

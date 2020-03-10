@@ -66,6 +66,7 @@ func initZkData(t *testing.T) (*zk.TestCluster, *ZookeeperClient, <-chan zk.Even
 
 	return ts, client, event
 }
+
 func TestListener(t *testing.T) {
 	changedData := `
 	dubbo.consumer.request_timeout=3s
