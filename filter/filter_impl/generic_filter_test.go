@@ -88,6 +88,7 @@ func Test_struct2MapAll_Slice(t *testing.T) {
 	assert.Equal(t, reflect.Slice, reflect.TypeOf(m["caCa"]).Kind())
 	assert.Equal(t, reflect.Map, reflect.TypeOf(m["caCa"].([]interface{})[0].(map[string]interface{})["xxYy"]).Kind())
 }
+
 func Test_struct2MapAll_Map(t *testing.T) {
 	var testData struct {
 		AaAa string

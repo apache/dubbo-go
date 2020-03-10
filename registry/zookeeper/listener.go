@@ -56,7 +56,7 @@ func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 	// Intercept the last bit
 	index := strings.Index(eventType.Path, "/providers/")
 	if index == -1 {
-		logger.Warn("Listen with no url, event.path={%v}", eventType.Path)
+		logger.Warnf("Listen with no url, event.path={%v}", eventType.Path)
 		return false
 	}
 	url := eventType.Path[index+len("/providers/"):]

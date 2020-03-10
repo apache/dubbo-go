@@ -164,6 +164,7 @@ func TestURL_GetParamAndDecoded(t *testing.T) {
 	v, _ := u.GetParamAndDecoded("rule")
 	assert.Equal(t, rule, v)
 }
+
 func TestURL_GetRawParam(t *testing.T) {
 	u, _ := NewURL("condition://0.0.0.0:8080/com.foo.BarService?serialization=fastjson")
 	u.Username = "test"
@@ -176,6 +177,7 @@ func TestURL_GetRawParam(t *testing.T) {
 	assert.Equal(t, "/com.foo.BarService", u.GetRawParam("path"))
 	assert.Equal(t, "fastjson", u.GetRawParam("serialization"))
 }
+
 func TestURL_ToMap(t *testing.T) {
 	u, _ := NewURL("condition://0.0.0.0:8080/com.foo.BarService?serialization=fastjson")
 	u.Username = "test"
