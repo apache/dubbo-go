@@ -14,11 +14,13 @@ Apache License, Version 2.0
 
 ## Release note ##
 
-[v1.0.0 - May 29, 2019 compatible with dubbo v2.6.5](https://github.com/apache/dubbo-go/releases/tag/v1.0.0)
+[v1.3.0 - Mar 1, 2020](https://github.com/apache/dubbo-go/releases/tag/v1.3.0)
+
+[v1.2.0 - Nov 15, 2019](https://github.com/apache/dubbo-go/releases/tag/v1.2.0)
 
 [v1.1.0 - Sep 7, 2019 the first release after transferred to apache](https://github.com/apache/dubbo-go/releases/tag/v1.1.0)
 
-[v1.2.0 - Nov 15, 2019](https://github.com/apache/dubbo-go/releases/tag/v1.2.0)
+[v1.0.0 - May 29, 2019 compatible with dubbo v2.6.5](https://github.com/apache/dubbo-go/releases/tag/v1.0.0)
 
 ## Project Architecture ##
 
@@ -43,18 +45,18 @@ Finished List:
 - Codec
     * JsonRPC V2
     * Hessian V2
-    
+
 - Protocol
     * Dubbo
     * Jsonrpc2.0
     * [gRPC](https://github.com/apache/dubbo-go/pull/311)
-    
+
 - Registry
     * ZooKeeper
     * [etcd v3](https://github.com/apache/dubbo-go/pull/148)
     * [nacos](https://github.com/apache/dubbo-go/pull/151)
     * [consul](https://github.com/apache/dubbo-go/pull/121)
-    
+
 - Dynamic Configure Center & Service Management Configurator
     * Zookeeper
     * [apollo](https://github.com/apache/dubbo-go/pull/250)
@@ -66,12 +68,13 @@ Finished List:
     * [Available](https://github.com/apache/dubbo-go/pull/155)
     * [Broadcast](https://github.com/apache/dubbo-go/pull/158)
     * [Forking](https://github.com/apache/dubbo-go/pull/161)
-    
+
 - Load Balance
     * Random
     * [RoundRobin](https://github.com/apache/dubbo-go/pull/66)
     * [LeastActive](https://github.com/apache/dubbo-go/pull/65)
-    
+    * [ConsistentHash](https://github.com/apache/dubbo-go/pull/261)
+
 - Filter
     * Echo Health Check
     * [Circuit break and service downgrade](https://github.com/apache/dubbo-go/pull/133)
@@ -80,10 +83,10 @@ Finished List:
     * [TpsLimitFilter](https://github.com/apache/dubbo-go/pull/237)
     * [ExecuteLimitFilter](https://github.com/apache/dubbo-go/pull/246)
     * [GenericServiceFilter](https://github.com/apache/dubbo-go/pull/291)
-    
+
 - Invoke
     * [generic invoke](https://github.com/apache/dubbo-go/pull/122)
-    
+
 - Others:
     * start check
     * connecting certain provider
@@ -94,14 +97,13 @@ Finished List:
 
 Working List:
 
-- Load Balance: ConsistentHash
 - Registry: k8s
 - Metadata Center (dubbo v2.7.x)
 - Metrics: Opentracing/Promethus(dubbo v2.7.x)
 
 You can know more about dubbo-go by its [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap).
 
-![feature](https://raw.githubusercontent.com/wiki/apache/dubbo-go/arch.png)
+![feature](https://raw.githubusercontent.com/wiki/apache/dubbo-go/dubbo-go-arch.png)
 
 ## Document
 
@@ -125,13 +127,17 @@ Windows
 before_ut.bat
 ```
 
-# Run
+### Run
 ```bash
 go test ./...
 
 # coverage
 go test ./... -coverprofile=coverage.txt -covermode=atomic
 ```
+
+## Build
+
+Please move to [dubbo-samples/golang](https://github.com/dubbogo/dubbo-samples)
 
 ## Contributing
 
@@ -147,11 +153,6 @@ About dubbo-go benchmarking report, please refer to [dubbo benchmarking report](
 
 If you are using [apache/dubbo-go](github.com/apache/dubbo-go) and think that it helps you or want do some contributions to it, please add your company to to [the user list](https://github.com/apache/dubbo-go/issues/2) to let us know your needs.
 
-
-![ctrip](https://pic.c-ctrip.com/common/c_logo2013.png)![Excellent Health Technology Group](https://raw.githubusercontent.com/dajiiu/photo/static/mirror/haozhuo_logo.png)
-![ctrip](https://raw.githubusercontent.com/pantianying/go-tool/master/picture/logo_2-removebg-preview.png)
-
-## Stargazers
-
-[![Stargazers over time](https://starchart.cc/apache/dubbo-go.svg)](https://starchart.cc/apache/dubbo-go)
-
+![ctrip](https://pic.c-ctrip.com/common/c_logo2013.png)
+![Excellent Health Technology Group](https://raw.githubusercontent.com/dajiiu/photo/static/mirror/haozhuo_logo.png)
+![tuya](https://raw.githubusercontent.com/pantianying/go-tool/master/picture/logo_2-removebg-preview.png)

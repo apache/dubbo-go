@@ -47,6 +47,7 @@ func Test_StickyNormal(t *testing.T) {
 	result1 := base.doSelect(loadbalance.NewRandomLoadBalance(), invocation.NewRPCInvocation("getUser", nil, nil), invokers, invoked)
 	assert.Equal(t, result, result1)
 }
+
 func Test_StickyNormalWhenError(t *testing.T) {
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {
