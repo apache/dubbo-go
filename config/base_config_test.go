@@ -28,6 +28,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common/config"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/yaml"
 	"github.com/apache/dubbo-go/config_center"
 	_ "github.com/apache/dubbo-go/config_center/apollo"
 )
@@ -523,7 +524,7 @@ func TestUnmarshalYMLConfig(t *testing.T) {
 	conPath, err := filepath.Abs("./testdata/consumer_config_with_configcenter.yml")
 	assert.NoError(t, err)
 	c := &ConsumerConfig{}
-	assert.NoError(t, unmarshalYMLConfig(conPath, c))
+	assert.NoError(t, yaml.UnmarshalYMLConfig(conPath, c))
 	assert.Equal(t, "default", c.ProxyFactory)
 	assert.Equal(t, "dubbo.properties", c.ConfigCenterConfig.ConfigFile)
 	assert.Equal(t, "100ms", c.Connect_Timeout)
