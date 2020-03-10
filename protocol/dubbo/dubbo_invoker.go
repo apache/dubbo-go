@@ -128,7 +128,7 @@ func (di *DubboInvoker) Destroy() {
 		for {
 			if di.reqNum == 0 {
 				di.reqNum = -1
-				logger.Info("dubboInvoker is destroyed,url:{%s}", di.GetUrl().Key())
+				logger.Infof("dubboInvoker is destroyed,url:{%s}", di.GetUrl().Key())
 				di.BaseInvoker.Destroy()
 				if di.client != nil {
 					di.client.Close()

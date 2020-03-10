@@ -83,7 +83,13 @@ func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 
 // Unmarshal ...
 func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
-	codec := hessian.NewHessianCodec(bufio.NewReaderSize(buf, buf.Len()))
+	// fix issue https://github.com/apache/dubbo-go/issues/380
+	bufLen := buf.Len()
+	if bufLen < hessian.HEADER_LENGTH {
+		return perrors.WithStack(hessian.ErrHeaderNotEnough)
+	}
+
+	codec := hessian.NewHessianCodec(bufio.NewReaderSize(buf, bufLen))
 
 	// read header
 	err := codec.ReadHeader(&p.Header)

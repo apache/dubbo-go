@@ -99,11 +99,10 @@ func (ri *RestInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 func restStringMapTransform(paramsMap map[int]string, args []interface{}) (map[string]string, error) {
 	resMap := make(map[string]string, len(paramsMap))
 	for k, v := range paramsMap {
-		if k < len(args) && k >= 0 {
-			resMap[v] = fmt.Sprint(args[k])
-		} else {
+		if k >= len(args) || k < 0 {
 			return nil, perrors.Errorf("[Rest Invoke] Index %v is out of bundle", k)
 		}
+		resMap[v] = fmt.Sprint(args[k])
 	}
 	return resMap, nil
 }

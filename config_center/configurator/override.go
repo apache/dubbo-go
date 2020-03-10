@@ -36,6 +36,7 @@ import (
 func init() {
 	extension.SetDefaultConfigurator(newConfigurator)
 }
+
 func newConfigurator(url *common.URL) config_center.Configurator {
 	return &overrideConfigurator{configuratorUrl: url}
 }

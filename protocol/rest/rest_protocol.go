@@ -46,10 +46,10 @@ func init() {
 
 type RestProtocol struct {
 	protocol.BaseProtocol
-	serverMap  map[string]rest_interface.RestServer
-	clientMap  map[rest_interface.RestOptions]rest_interface.RestClient
 	serverLock sync.Mutex
+	serverMap  map[string]rest_interface.RestServer
 	clientLock sync.Mutex
+	clientMap  map[rest_interface.RestOptions]rest_interface.RestClient
 }
 
 func NewRestProtocol() *RestProtocol {
@@ -97,33 +97,34 @@ func (rp *RestProtocol) Refer(url common.URL) protocol.Invoker {
 
 func (rp *RestProtocol) getServer(url common.URL, serverType string) rest_interface.RestServer {
 	restServer, ok := rp.serverMap[url.Location]
-	if !ok {
-		_, ok := rp.ExporterMap().Load(url.ServiceKey())
-		if !ok {
-			panic("[RestProtocol]" + url.ServiceKey() + "is not existing")
-		}
-		rp.serverLock.Lock()
-		restServer, ok = rp.serverMap[url.Location]
-		if !ok {
-			restServer = extension.GetNewRestServer(serverType)
-			restServer.Start(url)
-			rp.serverMap[url.Location] = restServer
-		}
-		rp.serverLock.Unlock()
-
+	if ok {
+		return restServer
 	}
+	_, ok = rp.ExporterMap().Load(url.ServiceKey())
+	if !ok {
+		panic("[RestProtocol]" + url.ServiceKey() + "is not existing")
+	}
+	rp.serverLock.Lock()
+	restServer, ok = rp.serverMap[url.Location]
+	if !ok {
+		restServer = extension.GetNewRestServer(serverType)
+		restServer.Start(url)
+		rp.serverMap[url.Location] = restServer
+	}
+	rp.serverLock.Unlock()
 	return restServer
 }
 
 func (rp *RestProtocol) getClient(restOptions rest_interface.RestOptions, clientType string) rest_interface.RestClient {
 	restClient, ok := rp.clientMap[restOptions]
+	if ok {
+		return restClient
+	}
 	rp.clientLock.Lock()
+	restClient, ok = rp.clientMap[restOptions]
 	if !ok {
-		restClient, ok = rp.clientMap[restOptions]
-		if !ok {
-			restClient = extension.GetNewRestClient(clientType, &restOptions)
-			rp.clientMap[restOptions] = restClient
-		}
+		restClient = extension.GetNewRestClient(clientType, &restOptions)
+		rp.clientMap[restOptions] = restClient
 	}
 	rp.clientLock.Unlock()
 	return restClient
