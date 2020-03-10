@@ -163,6 +163,7 @@ func (c *apolloConfiguration) getAddressWithProtocolPrefix(url *common.URL) stri
 func (c *apolloConfiguration) Parser() parser.ConfigurationParser {
 	return c.parser
 }
+
 func (c *apolloConfiguration) SetParser(p parser.ConfigurationParser) {
 	c.parser = p
 }
