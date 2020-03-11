@@ -73,7 +73,9 @@ func (s *Server) Start(url common.URL) {
 	// if global trace instance was set, then server tracer instance can be get, and span context can also be get
 	if opentracing.IsGlobalTracerRegistered() {
 		tracer := opentracing.GlobalTracer()
-		server = grpc.NewServer(grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)))
+		server = grpc.NewServer(
+			grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)),
+			grpc.StreamInterceptor(otgrpc.OpenTracingStreamServerInterceptor(tracer)))
 	} else {
 		server = grpc.NewServer()
 	}
