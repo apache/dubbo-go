@@ -49,22 +49,15 @@ func NewClient(url common.URL) *Client {
 		err    error
 		tracer opentracing.Tracer
 	)
-	// if global trace instance was set in filter, it means trace function enabled
-	if opentracing.IsGlobalTracerRegistered() {
-		tracer = opentracing.GlobalTracer()
-		conn, err = grpc.Dial(url.Location, grpc.WithInsecure(), grpc.WithBlock(),
-			grpc.WithUnaryInterceptor(
-				otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())),
-			grpc.WithStreamInterceptor(
-				otgrpc.OpenTracingStreamClientInterceptor(tracer, otgrpc.LogPayloads())))
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		conn, err = grpc.Dial(url.Location, grpc.WithInsecure(), grpc.WithBlock())
-		if err != nil {
-			panic(err)
-		}
+	// if global trace instance was set , it means trace function enabled. If not , will return Nooptracer
+	tracer = opentracing.GlobalTracer()
+	conn, err = grpc.Dial(url.Location, grpc.WithInsecure(), grpc.WithBlock(),
+		grpc.WithUnaryInterceptor(
+			otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())),
+		grpc.WithStreamInterceptor(
+			otgrpc.OpenTracingStreamClientInterceptor(tracer, otgrpc.LogPayloads())))
+	if err != nil {
+		panic(err)
 	}
 
 	key := url.GetParam(constant.BEAN_NAME_KEY, "")
