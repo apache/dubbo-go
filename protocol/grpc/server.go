@@ -60,8 +60,8 @@ type DubboGrpcService interface {
 // Start ...
 func (s *Server) Start(url common.URL) {
 	var (
-		addr   string
-		err    error
+		addr string
+		err  error
 	)
 	addr = url.Location
 	lis, err := net.Listen("tcp", addr)
