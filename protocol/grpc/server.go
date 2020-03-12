@@ -73,8 +73,7 @@ func (s *Server) Start(url common.URL) {
 	// if global trace instance was set ,  then server tracer instance can be get. If not , will return Nooptracer
 	tracer := opentracing.GlobalTracer()
 	server = grpc.NewServer(
-		grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)),
-		grpc.StreamInterceptor(otgrpc.OpenTracingStreamServerInterceptor(tracer)))
+		grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)))
 
 	key := url.GetParam(constant.BEAN_NAME_KEY, "")
 	service := config.GetProviderService(key)
