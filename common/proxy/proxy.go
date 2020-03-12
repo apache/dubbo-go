@@ -140,6 +140,14 @@ func (p *Proxy) Implement(v common.RPCService) {
 				inv.SetAttachments(k, value)
 			}
 
+			// add user setAttachment
+			atm := invCtx.Value("attachment")
+			if m, ok := atm.(map[string]string); ok {
+				for k, value := range m {
+					inv.SetAttachments(k, value)
+				}
+			}
+
 			result := p.invoke.Invoke(invCtx, inv)
 
 			err = result.Error()
