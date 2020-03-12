@@ -53,9 +53,7 @@ func NewClient(url common.URL) *Client {
 	tracer = opentracing.GlobalTracer()
 	conn, err = grpc.Dial(url.Location, grpc.WithInsecure(), grpc.WithBlock(),
 		grpc.WithUnaryInterceptor(
-			otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())),
-		grpc.WithStreamInterceptor(
-			otgrpc.OpenTracingStreamClientInterceptor(tracer, otgrpc.LogPayloads())))
+			otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())))
 	if err != nil {
 		panic(err)
 	}
