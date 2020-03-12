@@ -18,7 +18,6 @@ package config
 
 import (
 	"fmt"
-	"path/filepath"
 	"reflect"
 	"testing"
 )
@@ -28,7 +27,6 @@ import (
 import (
 	"github.com/apache/dubbo-go/common/config"
 	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/yaml"
 	"github.com/apache/dubbo-go/config_center"
 	_ "github.com/apache/dubbo-go/config_center/apollo"
 )
@@ -518,14 +516,4 @@ func Test_initializeStruct(t *testing.T) {
 	assert.Condition(t, func() (success bool) {
 		return consumerConfig.References != nil
 	})
-}
-
-func TestUnmarshalYMLConfig(t *testing.T) {
-	conPath, err := filepath.Abs("./testdata/consumer_config_with_configcenter.yml")
-	assert.NoError(t, err)
-	c := &ConsumerConfig{}
-	assert.NoError(t, yaml.UnmarshalYMLConfig(conPath, c))
-	assert.Equal(t, "default", c.ProxyFactory)
-	assert.Equal(t, "dubbo.properties", c.ConfigCenterConfig.ConfigFile)
-	assert.Equal(t, "100ms", c.Connect_Timeout)
 }
