@@ -63,6 +63,7 @@ type ReferenceConfig struct {
 	Generic        bool   `yaml:"generic"  json:"generic,omitempty" property:"generic"`
 	Sticky         bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
 	RequestTimeout string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
+	ForceTag       bool   `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
 }
 
 // Prefix ...
@@ -99,7 +100,9 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 		common.WithParams(c.getUrlMap()),
 		common.WithParamsValue(constant.BEAN_NAME_KEY, c.id),
 	)
-
+	if c.ForceTag {
+		cfgURL.AddParam(constant.ForceUseTag, "true")
+	}
 	if c.Url != "" {
 		// 1. user specified URL, could be peer-to-peer address, or register center's address.
 		urlStrings := gxstrings.RegSplit(c.Url, "\\s*[;]+\\s*")
