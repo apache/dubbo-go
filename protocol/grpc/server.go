@@ -62,7 +62,6 @@ func (s *Server) Start(url common.URL) {
 	var (
 		addr   string
 		err    error
-		server *grpc.Server
 	)
 	addr = url.Location
 	lis, err := net.Listen("tcp", addr)
@@ -72,7 +71,7 @@ func (s *Server) Start(url common.URL) {
 
 	// if global trace instance was set ,  then server tracer instance can be get. If not , will return Nooptracer
 	tracer := opentracing.GlobalTracer()
-	server = grpc.NewServer(
+	server := grpc.NewServer(
 		grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)))
 
 	key := url.GetParam(constant.BEAN_NAME_KEY, "")
