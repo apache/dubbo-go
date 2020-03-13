@@ -597,18 +597,6 @@ func (c *Client) GetChildren(k string) ([]string, []string, error) {
 	return kList, vList, nil
 }
 
-// Get
-// get k's value from kubernetes-store
-func (c *Client) Get(k string) (string, error) {
-
-	objectList, err := c.store.Get(k, false)
-	if err != nil {
-		return "", perrors.WithMessagef(err, "get from store on (%s)", k)
-	}
-
-	return objectList[0].Value, nil
-}
-
 // Watch
 // watch on spec key
 func (c *Client) Watch(k string) (<-chan *Object, error) {
