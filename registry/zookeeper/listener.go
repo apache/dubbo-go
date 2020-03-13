@@ -18,8 +18,8 @@
 package zookeeper
 
 import (
-	"context"
 	"strings"
+	"sync"
 )
 
 import (
@@ -35,27 +35,32 @@ import (
 	zk "github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
+// RegistryDataListener ...
 type RegistryDataListener struct {
 	interestedURL []*common.URL
 	listener      config_center.ConfigurationListener
 }
 
+// NewRegistryDataListener ...
 func NewRegistryDataListener(listener config_center.ConfigurationListener) *RegistryDataListener {
 	return &RegistryDataListener{listener: listener, interestedURL: []*common.URL{}}
 }
+
+// AddInterestedURL ...
 func (l *RegistryDataListener) AddInterestedURL(url *common.URL) {
 	l.interestedURL = append(l.interestedURL, url)
 }
 
+// DataChange ...
 func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 	// Intercept the last bit
 	index := strings.Index(eventType.Path, "/providers/")
 	if index == -1 {
-		logger.Warn("Listen with no url, event.path={%v}", eventType.Path)
+		logger.Warnf("Listen with no url, event.path={%v}", eventType.Path)
 		return false
 	}
 	url := eventType.Path[index+len("/providers/"):]
-	serviceURL, err := common.NewURL(context.TODO(), url)
+	serviceURL, err := common.NewURL(url)
 	if err != nil {
 		logger.Errorf("Listen NewURL(r{%s}) = error{%v} eventType.Path={%v}", url, err, eventType.Path)
 		return false
@@ -70,20 +75,27 @@ func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 	return false
 }
 
+// RegistryConfigurationListener ...
 type RegistryConfigurationListener struct {
-	client   *zk.ZookeeperClient
-	registry *zkRegistry
-	events   chan *config_center.ConfigChangeEvent
+	client    *zk.ZookeeperClient
+	registry  *zkRegistry
+	events    chan *config_center.ConfigChangeEvent
+	isClosed  bool
+	closeOnce sync.Once
 }
 
+// NewRegistryConfigurationListener for listening the event of zk.
 func NewRegistryConfigurationListener(client *zk.ZookeeperClient, reg *zkRegistry) *RegistryConfigurationListener {
-	reg.wg.Add(1)
-	return &RegistryConfigurationListener{client: client, registry: reg, events: make(chan *config_center.ConfigChangeEvent, 32)}
+	reg.WaitGroup().Add(1)
+	return &RegistryConfigurationListener{client: client, registry: reg, events: make(chan *config_center.ConfigChangeEvent, 32), isClosed: false}
 }
+
+// Process ...
 func (l *RegistryConfigurationListener) Process(configType *config_center.ConfigChangeEvent) {
 	l.events <- configType
 }
 
+// Next ...
 func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
@@ -91,8 +103,8 @@ func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 			logger.Warnf("listener's zk client connection is broken, so zk event listener exit now.")
 			return nil, perrors.New("listener stopped")
 
-		case <-l.registry.done:
-			logger.Warnf("zk consumer register has quit, so zk event listener exit asap now.")
+		case <-l.registry.Done():
+			logger.Warnf("zk consumer register has quit, so zk event listener exit now.")
 			return nil, perrors.New("listener stopped")
 
 		case e := <-l.events:
@@ -108,8 +120,14 @@ func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 		}
 	}
 }
+
+// Close ...
 func (l *RegistryConfigurationListener) Close() {
-	l.registry.wg.Done()
+	// ensure that the listener will be closed at most once.
+	l.closeOnce.Do(func() {
+		l.isClosed = true
+		l.registry.WaitGroup().Done()
+	})
 }
 
 func (l *RegistryConfigurationListener) valid() bool {

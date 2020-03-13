@@ -19,17 +19,21 @@ package dubbo
 
 import (
 	"sync"
+	"time"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
 )
 
+// dubbo protocol constant
 const (
+	// DUBBO ...
 	DUBBO = "dubbo"
 )
 
@@ -41,12 +45,14 @@ var (
 	dubboProtocol *DubboProtocol
 )
 
+// DubboProtocol ...
 type DubboProtocol struct {
 	protocol.BaseProtocol
 	serverMap  map[string]*Server
 	serverLock sync.Mutex
 }
 
+// NewDubboProtocol ...
 func NewDubboProtocol() *DubboProtocol {
 	return &DubboProtocol{
 		BaseProtocol: protocol.NewBaseProtocol(),
@@ -54,6 +60,7 @@ func NewDubboProtocol() *DubboProtocol {
 	}
 }
 
+// Export ...
 func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetUrl()
 	serviceKey := url.ServiceKey()
@@ -66,16 +73,26 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	return exporter
 }
 
+// Refer ...
 func (dp *DubboProtocol) Refer(url common.URL) protocol.Invoker {
+	//default requestTimeout
+	var requestTimeout = config.GetConsumerConfig().RequestTimeout
+
+	requestTimeoutStr := url.GetParam(constant.TIMEOUT_KEY, config.GetConsumerConfig().Request_Timeout)
+	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
+		requestTimeout = t
+	}
+
 	invoker := NewDubboInvoker(url, NewClient(Options{
 		ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
-		RequestTimeout: config.GetConsumerConfig().RequestTimeout,
+		RequestTimeout: requestTimeout,
 	}))
 	dp.SetInvokers(invoker)
 	logger.Infof("Refer service: %s", url.String())
 	return invoker
 }
 
+// Destroy ...
 func (dp *DubboProtocol) Destroy() {
 	logger.Infof("DubboProtocol destroy.")
 
@@ -107,6 +124,7 @@ func (dp *DubboProtocol) openServer(url common.URL) {
 	}
 }
 
+// GetProtocol ...
 func GetProtocol() protocol.Protocol {
 	if dubboProtocol == nil {
 		dubboProtocol = NewDubboProtocol()

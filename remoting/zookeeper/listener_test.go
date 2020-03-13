@@ -18,12 +18,13 @@
 package zookeeper
 
 import (
+	"net/url"
 	"sync"
 	"testing"
 	"time"
 )
 import (
-	"github.com/samuel/go-zookeeper/zk"
+	"github.com/dubbogo/go-zookeeper/zk"
 	"github.com/stretchr/testify/assert"
 )
 import (
@@ -65,6 +66,7 @@ func initZkData(t *testing.T) (*zk.TestCluster, *ZookeeperClient, <-chan zk.Even
 
 	return ts, client, event
 }
+
 func TestListener(t *testing.T) {
 	changedData := `
 	dubbo.consumer.request_timeout=3s
@@ -96,12 +98,11 @@ func TestListener(t *testing.T) {
 	listener := NewZkEventListener(client)
 	dataListener := &mockDataListener{client: client, changedData: changedData, wait: &wait}
 	listener.ListenServiceEvent("/dubbo", dataListener)
-
+	time.Sleep(1 * time.Second)
 	_, err := client.Conn.Set("/dubbo/dubbo.properties", []byte(changedData), 1)
 	assert.NoError(t, err)
 	wait.Wait()
 	assert.Equal(t, changedData, dataListener.eventList[1].Content)
-	client.Close()
 
 }
 
@@ -121,4 +122,10 @@ func (m *mockDataListener) DataChange(eventType remoting.Event) bool {
 
 	}
 	return true
+}
+
+func TestZkPath(t *testing.T) {
+	zkPath := "io.grpc.examples.helloworld.GreeterGrpc$IGreeter"
+	zkPath = url.QueryEscape(zkPath)
+	assert.Equal(t, zkPath, "io.grpc.examples.helloworld.GreeterGrpc%24IGreeter")
 }

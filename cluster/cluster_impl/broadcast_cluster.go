@@ -31,6 +31,7 @@ func init() {
 	extension.SetCluster(broadcast, NewBroadcastCluster)
 }
 
+// NewBroadcastCluster ...
 func NewBroadcastCluster() cluster.Cluster {
 	return &broadcastCluster{}
 }

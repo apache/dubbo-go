@@ -18,7 +18,7 @@ limitations under the License.
 package cluster_impl
 
 import (
-	"errors"
+	"context"
 	"fmt"
 	"time"
 )
@@ -44,7 +44,8 @@ func newForkingClusterInvoker(directory cluster.Directory) protocol.Invoker {
 	}
 }
 
-func (invoker *forkingClusterInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+// Invoke ...
+func (invoker *forkingClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	err := invoker.checkWhetherDestroyed()
 	if err != nil {
 		return &protocol.RPCResult{Err: err}
@@ -75,7 +76,7 @@ func (invoker *forkingClusterInvoker) Invoke(invocation protocol.Invocation) pro
 	resultQ := queue.New(1)
 	for _, ivk := range selected {
 		go func(k protocol.Invoker) {
-			result := k.Invoke(invocation)
+			result := k.Invoke(ctx, invocation)
 			err := resultQ.Put(result)
 			if err != nil {
 				logger.Errorf("resultQ put failed with exception: %v.\n", err)
@@ -86,14 +87,18 @@ func (invoker *forkingClusterInvoker) Invoke(invocation protocol.Invocation) pro
 	rsps, err := resultQ.Poll(1, time.Millisecond*time.Duration(timeouts))
 	if err != nil {
 		return &protocol.RPCResult{
-			Err: errors.New(fmt.Sprintf("failed to forking invoke provider %v, but no luck to perform the invocation. Last error is: %s", selected, err.Error()))}
+			Err: fmt.Errorf("failed to forking invoke provider %v, "+
+				"but no luck to perform the invocation. Last error is: %v", selected, err),
+		}
 	}
 	if len(rsps) == 0 {
-		return &protocol.RPCResult{Err: errors.New(fmt.Sprintf("failed to forking invoke provider %v, but no resp", selected))}
+		return &protocol.RPCResult{Err: fmt.Errorf("failed to forking invoke provider %v, but no resp", selected)}
 	}
+
 	result, ok := rsps[0].(protocol.Result)
 	if !ok {
-		return &protocol.RPCResult{Err: errors.New(fmt.Sprintf("failed to forking invoke provider %v, but not legal resp", selected))}
+		return &protocol.RPCResult{Err: fmt.Errorf("failed to forking invoke provider %v, but not legal resp", selected)}
 	}
+
 	return result
 }

@@ -18,15 +18,18 @@
 package dubbo
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
 import (
 	"github.com/apache/dubbo-go-hessian2"
 	"github.com/dubbogo/getty"
+	"github.com/opentracing/opentracing-go"
 	perrors "github.com/pkg/errors"
 )
 
@@ -39,7 +42,10 @@ import (
 )
 
 // todo: WritePkg_Timeout will entry *.yml
-const WritePkg_Timeout = 5 * time.Second
+const (
+	// WritePkg_Timeout ...
+	WritePkg_Timeout = 5 * time.Second
+)
 
 var (
 	errTooManySessions = perrors.New("too many sessions")
@@ -50,33 +56,47 @@ type rpcSession struct {
 	reqNum  int32
 }
 
-////////////////////////////////////////////
-// RpcClientHandler
-////////////////////////////////////////////
+func (s *rpcSession) AddReqNum(num int32) {
+	atomic.AddInt32(&s.reqNum, num)
+}
 
+func (s *rpcSession) GetReqNum() int32 {
+	return atomic.LoadInt32(&s.reqNum)
+}
+
+// //////////////////////////////////////////
+// RpcClientHandler
+// //////////////////////////////////////////
+
+// RpcClientHandler ...
 type RpcClientHandler struct {
 	conn *gettyRPCClient
 }
 
+// NewRpcClientHandler ...
 func NewRpcClientHandler(client *gettyRPCClient) *RpcClientHandler {
 	return &RpcClientHandler{conn: client}
 }
 
+// OnOpen ...
 func (h *RpcClientHandler) OnOpen(session getty.Session) error {
 	h.conn.addSession(session)
 	return nil
 }
 
+// OnError ...
 func (h *RpcClientHandler) OnError(session getty.Session, err error) {
 	logger.Infof("session{%s} got error{%v}, will be closed.", session.Stat(), err)
 	h.conn.removeSession(session)
 }
 
+// OnClose ...
 func (h *RpcClientHandler) OnClose(session getty.Session) {
 	logger.Infof("session{%s} is closing......", session.Stat())
 	h.conn.removeSession(session)
 }
 
+// OnMessage ...
 func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 	p, ok := pkg.(*DubboPackage)
 	if !ok {
@@ -85,11 +105,17 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 	}
 
 	if p.Header.Type&hessian.PackageHeartbeat != 0x00 {
-		logger.Debugf("get rpc heartbeat response{header: %#v, body: %#v}", p.Header, p.Body)
-		if p.Err != nil {
-			logger.Errorf("rpc heartbeat response{error: %#v}", p.Err)
+		if p.Header.Type&hessian.PackageResponse != 0x00 {
+			logger.Debugf("get rpc heartbeat response{header: %#v, body: %#v}", p.Header, p.Body)
+			if p.Err != nil {
+				logger.Errorf("rpc heartbeat response{error: %#v}", p.Err)
+			}
+			h.conn.pool.rpcClient.removePendingResponse(SequenceType(p.Header.ID))
+		} else {
+			logger.Debugf("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", p.Header, p.Service, p.Body)
+			p.Header.ResponseStatus = hessian.Response_OK
+			reply(session, p, hessian.PackageHeartbeat)
 		}
-		h.conn.pool.rpcClient.removePendingResponse(SequenceType(p.Header.ID))
 		return
 	}
 	logger.Debugf("get rpc response{header: %#v, body: %#v}", p.Header, p.Body)
@@ -98,6 +124,7 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 	pendingResponse := h.conn.pool.rpcClient.removePendingResponse(SequenceType(p.Header.ID))
 	if pendingResponse == nil {
+		logger.Errorf("failed to get pending response context for response package %s", *p)
 		return
 	}
 
@@ -114,6 +141,7 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 	}
 }
 
+// OnCron ...
 func (h *RpcClientHandler) OnCron(session getty.Session) {
 	rpcSession, err := h.conn.getClientRpcSession(session)
 	if err != nil {
@@ -131,10 +159,11 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 	h.conn.pool.rpcClient.heartbeat(session)
 }
 
-////////////////////////////////////////////
+// //////////////////////////////////////////
 // RpcServerHandler
-////////////////////////////////////////////
+// //////////////////////////////////////////
 
+// RpcServerHandler ...
 type RpcServerHandler struct {
 	maxSessionNum  int
 	sessionTimeout time.Duration
@@ -142,6 +171,7 @@ type RpcServerHandler struct {
 	rwlock         sync.RWMutex
 }
 
+// NewRpcServerHandler ...
 func NewRpcServerHandler(maxSessionNum int, sessionTimeout time.Duration) *RpcServerHandler {
 	return &RpcServerHandler{
 		maxSessionNum:  maxSessionNum,
@@ -150,6 +180,7 @@ func NewRpcServerHandler(maxSessionNum int, sessionTimeout time.Duration) *RpcSe
 	}
 }
 
+// OnOpen ...
 func (h *RpcServerHandler) OnOpen(session getty.Session) error {
 	var err error
 	h.rwlock.RLock()
@@ -168,6 +199,7 @@ func (h *RpcServerHandler) OnOpen(session getty.Session) error {
 	return nil
 }
 
+// OnError ...
 func (h *RpcServerHandler) OnError(session getty.Session, err error) {
 	logger.Infof("session{%s} got error{%v}, will be closed.", session.Stat(), err)
 	h.rwlock.Lock()
@@ -175,6 +207,7 @@ func (h *RpcServerHandler) OnError(session getty.Session, err error) {
 	h.rwlock.Unlock()
 }
 
+// OnClose ...
 func (h *RpcServerHandler) OnClose(session getty.Session) {
 	logger.Infof("session{%s} is closing......", session.Stat())
 	h.rwlock.Lock()
@@ -182,6 +215,7 @@ func (h *RpcServerHandler) OnClose(session getty.Session) {
 	h.rwlock.Unlock()
 }
 
+// OnMessage ...
 func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	h.rwlock.Lock()
 	if _, ok := h.sessionMap[session]; ok {
@@ -199,7 +233,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	// heartbeat
 	if p.Header.Type&hessian.PackageHeartbeat != 0x00 {
 		logger.Debugf("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", p.Header, p.Service, p.Body)
-		h.reply(session, p, hessian.PackageHeartbeat)
+		reply(session, p, hessian.PackageHeartbeat)
 		return
 	}
 
@@ -226,7 +260,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 			if !twoway {
 				return
 			}
-			h.reply(session, p, hessian.PackageResponse)
+			reply(session, p, hessian.PackageResponse)
 		}
 
 	}()
@@ -241,7 +275,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 		logger.Errorf(err.Error())
 		p.Header.ResponseStatus = hessian.Response_OK
 		p.Body = err
-		h.reply(session, p, hessian.PackageResponse)
+		reply(session, p, hessian.PackageResponse)
 		return
 	}
 	invoker := exporter.(protocol.Exporter).GetInvoker()
@@ -252,7 +286,10 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 		args := p.Body.(map[string]interface{})["args"].([]interface{})
 		inv := invocation.NewRPCInvocation(p.Service.Method, args, attachments)
-		result := invoker.Invoke(inv)
+
+		ctx := rebuildCtx(inv)
+
+		result := invoker.Invoke(ctx, inv)
 		if err := result.Error(); err != nil {
 			p.Header.ResponseStatus = hessian.Response_OK
 			p.Body = hessian.NewResponse(nil, err, result.Attachments())
@@ -266,9 +303,10 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	if !twoway {
 		return
 	}
-	h.reply(session, p, hessian.PackageResponse)
+	reply(session, p, hessian.PackageResponse)
 }
 
+// OnCron ...
 func (h *RpcServerHandler) OnCron(session getty.Session) {
 	var (
 		flag   bool
@@ -294,7 +332,22 @@ func (h *RpcServerHandler) OnCron(session getty.Session) {
 	}
 }
 
-func (h *RpcServerHandler) reply(session getty.Session, req *DubboPackage, tp hessian.PackageType) {
+// rebuildCtx rebuild the context by attachment.
+// Once we decided to transfer more context's key-value, we should change this.
+// now we only support rebuild the tracing context
+func rebuildCtx(inv *invocation.RPCInvocation) context.Context {
+	ctx := context.Background()
+
+	// actually, if user do not use any opentracing framework, the err will not be nil.
+	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.TextMap,
+		opentracing.TextMapCarrier(inv.Attachments()))
+	if err == nil {
+		ctx = context.WithValue(ctx, constant.TRACING_REMOTE_SPAN_CTX, spanCtx)
+	}
+	return ctx
+}
+
+func reply(session getty.Session, req *DubboPackage, tp hessian.PackageType) {
 	resp := &DubboPackage{
 		Header: hessian.DubboHeader{
 			SerialID:       req.Header.SerialID,

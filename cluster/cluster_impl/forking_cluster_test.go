@@ -42,7 +42,7 @@ import (
 )
 
 var (
-	forkingUrl, _ = common.NewURL(context.TODO(), "dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
+	forkingUrl, _ = common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
 )
 
 func registerForking(t *testing.T, mockInvokers ...*mock.MockInvoker) protocol.Invoker {
@@ -87,7 +87,7 @@ func Test_ForkingInvokeSuccess(t *testing.T) {
 
 	clusterInvoker := registerForking(t, invokers...)
 
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 	assert.Equal(t, mockResult, result)
 	wg.Wait()
 }
@@ -117,7 +117,7 @@ func Test_ForkingInvokeTimeout(t *testing.T) {
 
 	clusterInvoker := registerForking(t, invokers...)
 
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 	assert.NotNil(t, result)
 	assert.NotNil(t, result.Error())
 	wg.Wait()
@@ -156,7 +156,7 @@ func Test_ForkingInvokeHalfTimeout(t *testing.T) {
 
 	clusterInvoker := registerForking(t, invokers...)
 
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 	assert.Equal(t, mockResult, result)
 	wg.Wait()
 }
