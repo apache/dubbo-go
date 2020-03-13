@@ -18,6 +18,7 @@
 package cluster_impl
 
 import (
+	"context"
 	"strconv"
 )
 
@@ -43,7 +44,7 @@ func newFailoverClusterInvoker(directory cluster.Directory) protocol.Invoker {
 	}
 }
 
-func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 
 	invokers := invoker.directory.List(invocation)
 	err := invoker.checkInvokers(invokers, invocation)
@@ -95,7 +96,7 @@ func (invoker *failoverClusterInvoker) Invoke(invocation protocol.Invocation) pr
 		}
 		invoked = append(invoked, ivk)
 		//DO INVOKE
-		result = ivk.Invoke(invocation)
+		result = ivk.Invoke(ctx, invocation)
 		if result.Error() != nil {
 			providers = append(providers, ivk.GetUrl().Key())
 			continue

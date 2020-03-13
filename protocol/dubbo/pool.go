@@ -78,7 +78,7 @@ func newGettyRPCClientConn(pool *gettyRPCClientPool, protocol, addr string) (*ge
 		}
 		time.Sleep(1e6)
 	}
-	logger.Infof("client init ok")
+	logger.Debug("client init ok")
 	c.updateActive(time.Now().Unix())
 
 	return c, nil
@@ -154,11 +154,11 @@ func (c *gettyRPCClient) addSession(session getty.Session) {
 	}
 
 	c.lock.Lock()
+	defer c.lock.Unlock()
 	if c.sessions == nil {
 		c.sessions = make([]*rpcSession, 0, 16)
 	}
 	c.sessions = append(c.sessions, &rpcSession{session: session})
-	c.lock.Unlock()
 }
 
 func (c *gettyRPCClient) removeSession(session getty.Session) {
@@ -166,21 +166,27 @@ func (c *gettyRPCClient) removeSession(session getty.Session) {
 		return
 	}
 
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	if c.sessions == nil {
-		return
-	}
-
-	for i, s := range c.sessions {
-		if s.session == session {
-			c.sessions = append(c.sessions[:i], c.sessions[i+1:]...)
-			logger.Debugf("delete session{%s}, its index{%d}", session.Stat(), i)
-			break
+	var removeFlag bool
+	func() {
+		c.lock.Lock()
+		defer c.lock.Unlock()
+		if c.sessions == nil {
+			return
 		}
-	}
-	logger.Infof("after remove session{%s}, left session number:%d", session.Stat(), len(c.sessions))
-	if len(c.sessions) == 0 {
+
+		for i, s := range c.sessions {
+			if s.session == session {
+				c.sessions = append(c.sessions[:i], c.sessions[i+1:]...)
+				logger.Debugf("delete session{%s}, its index{%d}", session.Stat(), i)
+				break
+			}
+		}
+		logger.Infof("after remove session{%s}, left session number:%d", session.Stat(), len(c.sessions))
+		if len(c.sessions) == 0 {
+			removeFlag = true
+		}
+	}()
+	if removeFlag {
 		c.pool.safeRemove(c)
 		c.close()
 	}
@@ -190,17 +196,24 @@ func (c *gettyRPCClient) updateSession(session getty.Session) {
 	if session == nil {
 		return
 	}
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	if c.sessions == nil {
-		return
-	}
 
-	for i, s := range c.sessions {
-		if s.session == session {
-			c.sessions[i].reqNum++
-			break
+	var rs *rpcSession
+	func() {
+		c.lock.RLock()
+		defer c.lock.RUnlock()
+		if c.sessions == nil {
+			return
 		}
+
+		for i, s := range c.sessions {
+			if s.session == session {
+				rs = c.sessions[i]
+				break
+			}
+		}
+	}()
+	if rs != nil {
+		rs.AddReqNum(1)
 	}
 }
 
@@ -238,26 +251,40 @@ func (c *gettyRPCClient) isAvailable() bool {
 func (c *gettyRPCClient) close() error {
 	closeErr := perrors.Errorf("close gettyRPCClient{%#v} again", c)
 	c.once.Do(func() {
-		c.gettyClient.Close()
-		c.gettyClient = nil
-		for _, s := range c.sessions {
-			logger.Infof("close client session{%s, last active:%s, request number:%d}",
-				s.session.Stat(), s.session.GetActive().String(), s.reqNum)
-			s.session.Close()
-		}
-		c.sessions = c.sessions[:0]
+		var (
+			gettyClient getty.Client
+			sessions    []*rpcSession
+		)
+		func() {
+			c.lock.Lock()
+			defer c.lock.Unlock()
+
+			gettyClient = c.gettyClient
+			c.gettyClient = nil
+
+			sessions = make([]*rpcSession, 0, len(c.sessions))
+			for _, s := range c.sessions {
+				sessions = append(sessions, s)
+			}
+			c.sessions = c.sessions[:0]
+		}()
 
 		c.updateActive(0)
+
+		go func() {
+			if gettyClient != nil {
+				gettyClient.Close()
+			}
+			for _, s := range sessions {
+				logger.Infof("close client session{%s, last active:%s, request number:%d}",
+					s.session.Stat(), s.session.GetActive().String(), s.GetReqNum())
+				s.session.Close()
+			}
+		}()
+
 		closeErr = nil
 	})
 	return closeErr
-}
-
-func (c *gettyRPCClient) safeClose() error {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-
-	return c.close()
 }
 
 type gettyRPCClientPool struct {
@@ -284,11 +311,22 @@ func (p *gettyRPCClientPool) close() {
 	p.conns = nil
 	p.Unlock()
 	for _, conn := range conns {
-		conn.safeClose()
+		conn.close()
 	}
 }
 
 func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPCClient, error) {
+	conn, err := p.get()
+	if err == nil && conn == nil {
+		// create new conn
+		rpcClientConn, err := newGettyRPCClientConn(p, protocol, addr)
+		return rpcClientConn, perrors.WithStack(err)
+	}
+	return conn, perrors.WithStack(err)
+}
+
+func (p *gettyRPCClientPool) get() (*gettyRPCClient, error) {
+	now := time.Now().Unix()
 
 	p.Lock()
 	defer p.Unlock()
@@ -296,32 +334,23 @@ func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPC
 		return nil, errClientPoolClosed
 	}
 
-	now := time.Now().Unix()
-
 	for len(p.conns) > 0 {
 		conn := p.conns[len(p.conns)-1]
 		p.conns = p.conns[:len(p.conns)-1]
 
 		if d := now - conn.getActive(); d > p.ttl {
 			p.remove(conn)
-			conn.safeClose()
+			go conn.close()
 			continue
 		}
 		conn.updateActive(now) //update active time
-
 		return conn, nil
 	}
-	// create new conn
-	return newGettyRPCClientConn(p, protocol, addr)
+	return nil, nil
 }
 
-func (p *gettyRPCClientPool) release(conn *gettyRPCClient, err error) {
+func (p *gettyRPCClientPool) put(conn *gettyRPCClient) {
 	if conn == nil || conn.getActive() == 0 {
-		return
-	}
-
-	if err != nil {
-		conn.safeClose()
 		return
 	}
 
@@ -332,10 +361,17 @@ func (p *gettyRPCClientPool) release(conn *gettyRPCClient, err error) {
 		return
 	}
 
+	// check whether @conn has existed in p.conns or not.
+	for i := range p.conns {
+		if p.conns[i] == conn {
+			return
+		}
+	}
+
 	if len(p.conns) >= p.size {
 		// delete @conn from client pool
-		p.remove(conn)
-		conn.safeClose()
+		// p.remove(conn)
+		conn.close()
 		return
 	}
 	p.conns = append(p.conns, conn)

@@ -18,6 +18,9 @@
 package cluster_impl
 
 import (
+	"context"
+)
+import (
 	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -42,7 +45,7 @@ func newFailsafeClusterInvoker(directory cluster.Directory) protocol.Invoker {
 	}
 }
 
-func (invoker *failsafeClusterInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+func (invoker *failsafeClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	invokers := invoker.directory.List(invocation)
 
 	err := invoker.checkInvokers(invokers, invocation)
@@ -65,7 +68,7 @@ func (invoker *failsafeClusterInvoker) Invoke(invocation protocol.Invocation) pr
 
 	ivk := invoker.doSelect(loadbalance, invocation, invokers, invoked)
 	//DO INVOKE
-	result = ivk.Invoke(invocation)
+	result = ivk.Invoke(ctx, invocation)
 	if result.Error() != nil {
 		// ignore
 		logger.Errorf("Failsafe ignore exception: %v.\n", result.Error().Error())

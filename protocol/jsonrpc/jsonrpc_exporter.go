@@ -28,16 +28,19 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
+// JsonrpcExporter ...
 type JsonrpcExporter struct {
 	protocol.BaseExporter
 }
 
+// NewJsonrpcExporter ...
 func NewJsonrpcExporter(key string, invoker protocol.Invoker, exporterMap *sync.Map) *JsonrpcExporter {
 	return &JsonrpcExporter{
 		BaseExporter: *protocol.NewBaseExporter(key, invoker, exporterMap),
 	}
 }
 
+// Unexport ...
 func (je *JsonrpcExporter) Unexport() {
 	serviceId := je.GetInvoker().GetUrl().GetParam(constant.BEAN_NAME_KEY, "")
 	je.BaseExporter.Unexport()

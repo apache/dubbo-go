@@ -14,10 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package config
 
 import (
-	"context"
+	"io/ioutil"
+	"path"
 	"reflect"
 	"strconv"
 	"strings"
@@ -25,6 +27,7 @@ import (
 
 import (
 	perrors "github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 )
 
 import (
@@ -39,15 +42,21 @@ type multiConfiger interface {
 	Prefix() string
 }
 
+// BaseConfig is the common configuration for provider and consumer
 type BaseConfig struct {
 	ConfigCenterConfig *ConfigCenterConfig `yaml:"config_center" json:"config_center,omitempty"`
 	configCenterUrl    *common.URL
 	prefix             string
 	fatherConfig       interface{}
+
+	MetricConfig *MetricConfig `yaml:"metrics" json:"metrics,omitempty"`
 }
 
-func (c *BaseConfig) startConfigCenter(ctx context.Context) error {
-	url, err := common.NewURL(ctx, c.ConfigCenterConfig.Address, common.WithProtocol(c.ConfigCenterConfig.Protocol))
+// startConfigCenter will start the config center.
+// it will prepare the environment
+func (c *BaseConfig) startConfigCenter() error {
+	url, err := common.NewURL(c.ConfigCenterConfig.Address,
+		common.WithProtocol(c.ConfigCenterConfig.Protocol), common.WithParams(c.ConfigCenterConfig.GetUrlMap()))
 	if err != nil {
 		return err
 	}
@@ -68,7 +77,7 @@ func (c *BaseConfig) prepareEnvironment() error {
 		logger.Errorf("Get dynamic configuration error , error message is %v", err)
 		return perrors.WithStack(err)
 	}
-	content, err := dynamicConfig.GetConfig(c.ConfigCenterConfig.ConfigFile, config_center.WithGroup(c.ConfigCenterConfig.Group))
+	content, err := dynamicConfig.GetProperties(c.ConfigCenterConfig.ConfigFile, config_center.WithGroup(c.ConfigCenterConfig.Group))
 	if err != nil {
 		logger.Errorf("Get config content in dynamic configuration error , error message is %v", err)
 		return perrors.WithStack(err)
@@ -88,7 +97,10 @@ func (c *BaseConfig) prepareEnvironment() error {
 		if len(configFile) == 0 {
 			configFile = c.ConfigCenterConfig.ConfigFile
 		}
-		appContent, err = dynamicConfig.GetConfig(configFile, config_center.WithGroup(appGroup))
+		appContent, err = dynamicConfig.GetProperties(configFile, config_center.WithGroup(appGroup))
+		if err != nil {
+			return perrors.WithStack(err)
+		}
 	}
 	//global config file
 	mapContent, err := dynamicConfig.Parser().Parse(content)
@@ -129,6 +141,7 @@ func getKeyPrefix(val reflect.Value) []string {
 	return retPrefixs
 
 }
+
 func getPtrElement(v reflect.Value) reflect.Value {
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
@@ -138,6 +151,7 @@ func getPtrElement(v reflect.Value) reflect.Value {
 	}
 	return v
 }
+
 func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryConfiguration) {
 	for i := 0; i < val.NumField(); i++ {
 		if key := val.Type().Field(i).Tag.Get("property"); key != "-" && key != "" {
@@ -291,11 +305,12 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 		}
 	}
 }
+
 func (c *BaseConfig) fresh() {
 	configList := config.GetEnvInstance().Configuration()
 	for element := configList.Front(); element != nil; element = element.Next() {
-		config := element.Value.(*config.InmemoryConfiguration)
-		c.freshInternalConfig(config)
+		cfg := element.Value.(*config.InmemoryConfiguration)
+		c.freshInternalConfig(cfg)
 	}
 }
 
@@ -308,6 +323,7 @@ func (c *BaseConfig) freshInternalConfig(config *config.InmemoryConfiguration) {
 	setFieldValue(val, reflect.Value{}, config)
 }
 
+// SetFatherConfig ...
 func (c *BaseConfig) SetFatherConfig(fatherConfig interface{}) {
 	c.fatherConfig = fatherConfig
 }
@@ -349,4 +365,26 @@ func initializeStruct(t reflect.Type, v reflect.Value) {
 		}
 	}
 
+}
+
+// loadYMLConfig Load yml config byte from file
+func loadYMLConfig(confProFile string) ([]byte, error) {
+	if len(confProFile) == 0 {
+		return nil, perrors.Errorf("application configure(provider) file name is nil")
+	}
+
+	if path.Ext(confProFile) != ".yml" {
+		return nil, perrors.Errorf("application configure file name{%v} suffix must be .yml", confProFile)
+	}
+
+	return ioutil.ReadFile(confProFile)
+}
+
+// unmarshalYMLConfig Load yml config byte from file , then unmarshal to object
+func unmarshalYMLConfig(confProFile string, out interface{}) error {
+	confFileStream, err := loadYMLConfig(confProFile)
+	if err != nil {
+		return perrors.Errorf("ioutil.ReadFile(file:%s) = error:%v", confProFile, perrors.WithStack(err))
+	}
+	return yaml.Unmarshal(confFileStream, out)
 }

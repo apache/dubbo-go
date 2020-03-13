@@ -14,17 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package config
 
+// GenericService ...
 type GenericService struct {
 	Invoke       func(req []interface{}) (interface{}, error) `dubbo:"$invoke"`
 	referenceStr string
 }
 
+// NewGenericService ...
 func NewGenericService(referenceStr string) *GenericService {
 	return &GenericService{referenceStr: referenceStr}
 }
 
+// Reference ...
 func (u *GenericService) Reference() string {
 	return u.referenceStr
 }

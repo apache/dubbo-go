@@ -39,7 +39,7 @@ import (
 )
 
 var (
-	availableUrl, _ = common.NewURL(context.Background(), "dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
+	availableUrl, _ = common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
 )
 
 func registerAvailable(t *testing.T, invoker *mock.MockInvoker) protocol.Invoker {
@@ -66,7 +66,7 @@ func TestAvailableClusterInvokerSuccess(t *testing.T) {
 	invoker.EXPECT().IsAvailable().Return(true)
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
 
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 
 	assert.Equal(t, mockResult, result)
 }
@@ -80,7 +80,7 @@ func TestAvailableClusterInvokerNoAvail(t *testing.T) {
 
 	invoker.EXPECT().IsAvailable().Return(false)
 
-	result := clusterInvoker.Invoke(&invocation.RPCInvocation{})
+	result := clusterInvoker.Invoke(context.TODO(), &invocation.RPCInvocation{})
 
 	assert.NotNil(t, result.Error())
 	assert.True(t, strings.Contains(result.Error().Error(), "no provider available"))

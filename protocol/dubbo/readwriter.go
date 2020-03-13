@@ -38,10 +38,12 @@ import (
 // RpcClientPackageHandler
 ////////////////////////////////////////////
 
+// RpcClientPackageHandler ...
 type RpcClientPackageHandler struct {
 	client *Client
 }
 
+// NewRpcClientPackageHandler ...
 func NewRpcClientPackageHandler(client *Client) *RpcClientPackageHandler {
 	return &RpcClientPackageHandler{client: client}
 }
@@ -62,8 +64,10 @@ func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface
 		return nil, 0, perrors.WithStack(err)
 	}
 
-	pkg.Err = pkg.Body.(*hessian.Response).Exception
-	pkg.Body = NewResponse(pkg.Body.(*hessian.Response).RspObj, pkg.Body.(*hessian.Response).Attachments)
+	if pkg.Header.Type&hessian.PackageRequest == 0x00 {
+		pkg.Err = pkg.Body.(*hessian.Response).Exception
+		pkg.Body = NewResponse(pkg.Body.(*hessian.Response).RspObj, pkg.Body.(*hessian.Response).Attachments)
+	}
 
 	return pkg, hessian.HEADER_LENGTH + pkg.Header.BodyLen, nil
 }
@@ -92,6 +96,7 @@ var (
 	rpcServerPkgHandler = &RpcServerPackageHandler{}
 )
 
+// RpcServerPackageHandler ...
 type RpcServerPackageHandler struct{}
 
 func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
