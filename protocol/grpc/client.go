@@ -22,6 +22,8 @@ import (
 )
 
 import (
+	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
+	"github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc"
 )
 
@@ -39,7 +41,11 @@ type Client struct {
 
 // NewClient ...
 func NewClient(url common.URL) *Client {
-	conn, err := grpc.Dial(url.Location, grpc.WithInsecure(), grpc.WithBlock())
+	// if global trace instance was set , it means trace function enabled. If not , will return Nooptracer
+	tracer := opentracing.GlobalTracer()
+	conn, err := grpc.Dial(url.Location, grpc.WithInsecure(), grpc.WithBlock(),
+		grpc.WithUnaryInterceptor(
+			otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())))
 	if err != nil {
 		panic(err)
 	}
