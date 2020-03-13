@@ -105,8 +105,14 @@ func getCurrentNameSpace() (string, error) {
 	return v, nil
 }
 
-//  new mock client
-//  new a client for  test
+// NewMockClient
+// export for registry package test
+func NewMockClient(namespace string, mockClientGenerator func() (kubernetes.Interface, error)) (*Client, error) {
+	return newMockClient(namespace, mockClientGenerator)
+}
+
+// newMockClient
+// new a client for  test
 func newMockClient(namespace string, mockClientGenerator func() (kubernetes.Interface, error)) (*Client, error) {
 
 	rawClient, err := mockClientGenerator()
