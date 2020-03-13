@@ -98,7 +98,7 @@ func (suite *RegistryTestSuite) TestSubscribe() {
 	assert.Regexp(t, ".*ServiceEvent{Action{add}.*", serviceEvent.String())
 }
 
-func (suite *RegistryTestSuite) TestConsumerDestory() {
+func (suite *RegistryTestSuite) TestConsumerDestroy() {
 
 	t := suite.T()
 	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
@@ -117,7 +117,7 @@ func (suite *RegistryTestSuite) TestConsumerDestory() {
 
 }
 
-func (suite *RegistryTestSuite) TestProviderDestory() {
+func (suite *RegistryTestSuite) TestProviderDestroy() {
 
 	t := suite.T()
 	reg := initRegistry(t)
