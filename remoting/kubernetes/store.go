@@ -76,7 +76,7 @@ type Store interface {
 	// put the object to the store
 	Put(object *Object) error
 	// if prefix is false,
-	// the len([]*Object) == 0
+	// the len([]*Object) == 1
 	Get(key string, prefix bool) ([]*Object, error)
 	// watch the spec key or key prefix
 	Watch(key string, prefix bool) (Watcher, error)
@@ -166,6 +166,16 @@ func (s *storeImpl) Put(object *Object) error {
 	if object.EventType == Delete {
 		delete(s.cache, object.Key)
 	} else {
+
+		old, ok := s.cache[object.Key]
+		if ok {
+			if old.Value == object.Value {
+				// already have this k/v pair
+				return nil
+			}
+		}
+
+		// refresh the object
 		s.cache[object.Key] = object
 	}
 

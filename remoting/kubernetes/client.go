@@ -22,14 +22,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"os"
-	"runtime/debug"
 	"sync"
 	"time"
 )
 
 import (
 	perrors "github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/types"
@@ -104,6 +103,53 @@ func getCurrentNameSpace() (string, error) {
 		return "", perrors.New("read value from env by key (NAMESPACE)")
 	}
 	return v, nil
+}
+
+//  new mock client
+//  new a client for  test
+func newMockClient(namespace string, mockClientGenerator func() (kubernetes.Interface, error)) (*Client, error) {
+
+	rawClient, err := mockClientGenerator()
+	if err != nil {
+		return nil, perrors.WithMessage(err, "call mock generator")
+	}
+
+	currentPodName, err := getCurrentPodName()
+	if err != nil {
+		return nil, perrors.WithMessage(err, "get pod name")
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	c := &Client{
+		currentPodName: currentPodName,
+		ns:             namespace,
+		rawClient:      rawClient,
+		ctx:            ctx,
+		store:          newStore(ctx),
+		cancel:         cancel,
+	}
+
+	currentPod, err := c.initCurrentPod()
+	if err != nil {
+		return nil, perrors.WithMessage(err, "init current pod")
+	}
+
+	// record current status
+	c.currentPod = currentPod
+
+	// init the store by current pods
+	if err := c.initStore(); err != nil {
+		return nil, perrors.WithMessage(err, "init store")
+	}
+
+	// start kubernetes watch loop
+	if err := c.maintenanceStatus(); err != nil {
+		return nil, perrors.WithMessage(err, "maintenance the kubernetes status")
+	}
+
+	logger.Info("init kubernetes registry success")
+	return c, nil
 }
 
 // newClient
@@ -272,6 +318,7 @@ func (c *Client) maintenanceStatusLoop() {
 				// double check ctx
 				case <-c.ctx.Done():
 					logger.Info("the kubernetes client stopped")
+					goto onceWatch
 
 					// get one element from result-chan
 				case event, ok := <-wc.ResultChan():
@@ -550,11 +597,21 @@ func (c *Client) GetChildren(k string) ([]string, []string, error) {
 	return kList, vList, nil
 }
 
+// Get
+// get k's value from kubernetes-store
+func (c *Client) Get(k string) (string, error) {
+
+	objectList, err := c.store.Get(k, false)
+	if err != nil {
+		return "", perrors.WithMessagef(err, "get from store on (%s)", k)
+	}
+
+	return objectList[0].Value, nil
+}
+
 // Watch
 // watch on spec key
 func (c *Client) Watch(k string) (<-chan *Object, error) {
-
-	debug.PrintStack()
 
 	w, err := c.store.Watch(k, false)
 	if err != nil {
