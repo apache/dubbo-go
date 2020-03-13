@@ -61,6 +61,7 @@ func init() {
 type kubernetesRegistry struct {
 	*common.URL
 	birth int64 // time of file birth, seconds since Epoch; 0 if unknown
+	registry.BaseRegistry
 
 	cltLock  sync.Mutex
 	client   *kubernetes.Client
