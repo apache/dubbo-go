@@ -24,9 +24,6 @@ import (
 import (
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 	"github.com/opentracing/opentracing-go"
-)
-
-import (
 	"google.golang.org/grpc"
 )
 
