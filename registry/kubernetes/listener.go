@@ -38,6 +38,7 @@ type dataListener struct {
 	listener      config_center.ConfigurationListener
 }
 
+// NewRegistryDataListener ...
 func NewRegistryDataListener(listener config_center.ConfigurationListener) *dataListener {
 	return &dataListener{listener: listener, interestedURL: []*common.URL{}}
 }
@@ -48,12 +49,7 @@ func (l *dataListener) AddInterestedURL(url *common.URL) {
 
 func (l *dataListener) DataChange(eventType remoting.Event) bool {
 
-	index := strings.Index(eventType.Path, "/providers/")
-	if index == -1 {
-		logger.Warn("Listen with no url, event.path={%v}", eventType.Path)
-		return false
-	}
-	url := eventType.Path[index+len("/providers/"):]
+	url := eventType.Path[strings.Index(eventType.Path, "/providers/")+len("/providers/"):]
 	serviceURL, err := common.NewURL(url)
 	if err != nil {
 		logger.Warnf("Listen NewURL(r{%s}) = error{%v}", eventType.Path, err)
@@ -81,11 +77,13 @@ type configurationListener struct {
 	events   chan *config_center.ConfigChangeEvent
 }
 
+// NewConfigurationListener for listening the event of kubernetes.
 func NewConfigurationListener(reg *kubernetesRegistry) *configurationListener {
 	// add a new waiter
-	reg.wg.Add(1)
+	reg.WaitGroup().Add(1)
 	return &configurationListener{registry: reg, events: make(chan *config_center.ConfigChangeEvent, 32)}
 }
+
 func (l *configurationListener) Process(configType *config_center.ConfigChangeEvent) {
 	l.events <- configType
 }
@@ -93,7 +91,7 @@ func (l *configurationListener) Process(configType *config_center.ConfigChangeEv
 func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
-		case <-l.registry.done:
+		case <-l.registry.Done():
 			logger.Warnf("listener's kubernetes client connection is broken, so kubernetes event listener exit now.")
 			return nil, perrors.New("listener stopped")
 
@@ -101,7 +99,7 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 			logger.Infof("got kubernetes event %#v", e)
 			if e.ConfigType == remoting.EventTypeDel {
 				select {
-				case <-l.registry.done:
+				case <-l.registry.Done():
 					logger.Warnf("update @result{%s}. But its connection to registry is invalid", e.Value)
 				default:
 				}
@@ -112,5 +110,5 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 	}
 }
 func (l *configurationListener) Close() {
-	l.registry.wg.Done()
+	l.registry.WaitGroup().Done()
 }

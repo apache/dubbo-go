@@ -18,19 +18,86 @@
 package kubernetes
 
 import (
-	"testing"
+	"time"
 )
 
-func Test_Register(t *testing.T) {
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+)
+
+func (s *KubernetesRegistryTestSuite) TestRegister() {
+
+	t := s.T()
+
+	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
+
+	err := s.registry.Register(url)
+	assert.NoError(t, err)
+	_, _, err = s.registry.client.GetChildren("/dubbo/com.ikurento.user.UserProvider/providers")
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func (s *KubernetesRegistryTestSuite) TestSubscribe() {
+
+	t := s.T()
+
+	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
+
+	listener, err := s.registry.DoSubscribe(&url)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	go func() {
+		err := s.registry.Register(url)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	serviceEvent, err := listener.Next()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("got event %s", serviceEvent)
+}
+
+func (s *KubernetesRegistryTestSuite) TestConsumerDestroy() {
+
+	t := s.T()
+	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
+
+	_, err := s.registry.DoSubscribe(&url)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	//listener.Close()
+	time.Sleep(1e9)
+	s.registry.Destroy()
+
+	assert.Equal(t, false, s.registry.IsAvailable())
 
 }
 
-func Test_Subscribe(t *testing.T) {
-}
+func (s *KubernetesRegistryTestSuite) TestProviderDestroy() {
 
-func Test_ConsumerDestory(t *testing.T) {
+	t := s.T()
 
-}
+	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
+	err := s.registry.Register(url)
+	assert.NoError(t, err)
 
-func Test_ProviderDestory(t *testing.T) {
+	//listener.Close()
+	time.Sleep(1e9)
+	s.registry.Destroy()
+	assert.Equal(t, false, s.registry.IsAvailable())
 }
