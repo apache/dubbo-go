@@ -28,7 +28,7 @@ import (
 
 func TestStore(t *testing.T) {
 
-	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	s := newStore(ctx)
