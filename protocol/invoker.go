@@ -18,27 +18,34 @@
 package protocol
 
 import (
+	"context"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 )
 
+// Invoker ...
 //go:generate mockgen -source invoker.go -destination mock/mock_invoker.go  -self_package github.com/apache/dubbo-go/protocol/mock --package mock  Invoker
 // Extension - Invoker
 type Invoker interface {
 	common.Node
-	Invoke(Invocation) Result
+	Invoke(context.Context, Invocation) Result
 }
 
 /////////////////////////////
 // base invoker
 /////////////////////////////
 
+// BaseInvoker ...
 type BaseInvoker struct {
 	url       common.URL
 	available bool
 	destroyed bool
 }
 
+// NewBaseInvoker ...
 func NewBaseInvoker(url common.URL) *BaseInvoker {
 	return &BaseInvoker{
 		url:       url,
@@ -47,22 +54,27 @@ func NewBaseInvoker(url common.URL) *BaseInvoker {
 	}
 }
 
+// GetUrl ...
 func (bi *BaseInvoker) GetUrl() common.URL {
 	return bi.url
 }
 
+// IsAvailable ...
 func (bi *BaseInvoker) IsAvailable() bool {
 	return bi.available
 }
 
+// IsDestroyed ...
 func (bi *BaseInvoker) IsDestroyed() bool {
 	return bi.destroyed
 }
 
-func (bi *BaseInvoker) Invoke(invocation Invocation) Result {
+// Invoke ...
+func (bi *BaseInvoker) Invoke(context context.Context, invocation Invocation) Result {
 	return &RPCResult{}
 }
 
+// Destroy ...
 func (bi *BaseInvoker) Destroy() {
 	logger.Infof("Destroy invoker: %s", bi.GetUrl().String())
 	bi.destroyed = true

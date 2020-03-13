@@ -18,13 +18,12 @@
 package zookeeper
 
 import (
-	"context"
 	"sync"
 	"testing"
 	"time"
 )
 import (
-	"github.com/samuel/go-zookeeper/zk"
+	"github.com/dubbogo/go-zookeeper/zk"
 	"github.com/stretchr/testify/assert"
 )
 import (
@@ -55,7 +54,7 @@ func (r *mockFacade) WaitGroup() *sync.WaitGroup {
 	return &r.wg
 }
 
-func (r *mockFacade) GetDone() chan struct{} {
+func (r *mockFacade) Done() chan struct{} {
 	return r.done
 }
 
@@ -71,6 +70,7 @@ func (r *mockFacade) Destroy() {
 func (r *mockFacade) RestartCallBack() bool {
 	return true
 }
+
 func (r *mockFacade) IsAvailable() bool {
 	return true
 }
@@ -79,7 +79,7 @@ func Test_Facade(t *testing.T) {
 	ts, z, event, err := NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
 	defer ts.Stop()
-	url, _ := common.NewURL(context.Background(), "mock://127.0.0.1")
+	url, _ := common.NewURL("mock://127.0.0.1")
 	mock := &mockFacade{client: z, URL: &url}
 	go HandleClientRestart(mock)
 	states := []zk.State{zk.StateConnecting, zk.StateConnected, zk.StateHasSession}
