@@ -17,8 +17,8 @@
 package config
 
 import (
-	"context"
 	"fmt"
+	"path/filepath"
 	"reflect"
 	"testing"
 )
@@ -29,6 +29,7 @@ import (
 	"github.com/apache/dubbo-go/common/config"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/config_center"
+	_ "github.com/apache/dubbo-go/config_center/apollo"
 )
 
 func Test_refresh(t *testing.T) {
@@ -39,6 +40,7 @@ func Test_refresh(t *testing.T) {
 	mockMap["dubbo.com.MockService.MockService.GetUser.retries"] = "10"
 	mockMap["dubbo.consumer.check"] = "false"
 	mockMap["dubbo.application.name"] = "dubbo"
+	mockMap["dubbo.shutdown.timeout"] = "12s"
 
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
 
@@ -112,6 +114,13 @@ func Test_refresh(t *testing.T) {
 					},
 				},
 			},
+		},
+		ShutdownConfig: &ShutdownConfig{
+			Timeout:              "12s",
+			StepTimeout:          "2s",
+			RejectRequestHandler: "mock",
+			RejectRequest:        false,
+			RequestsFinished:     false,
 		},
 	}
 
@@ -483,7 +492,7 @@ func Test_startConfigCenter(t *testing.T) {
 		Group:      "dubbo",
 		ConfigFile: "mockDubbo.properties",
 	}}
-	err := c.startConfigCenter(context.Background())
+	err := c.startConfigCenter()
 	assert.NoError(t, err)
 	b, v := config.GetEnvInstance().Configuration().Back().Value.(*config.InmemoryConfiguration).GetProperty("dubbo.application.organization")
 	assert.True(t, b)
@@ -508,4 +517,14 @@ func Test_initializeStruct(t *testing.T) {
 	assert.Condition(t, func() (success bool) {
 		return consumerConfig.References != nil
 	})
+}
+
+func TestUnmarshalYMLConfig(t *testing.T) {
+	conPath, err := filepath.Abs("./testdata/consumer_config_with_configcenter.yml")
+	assert.NoError(t, err)
+	c := &ConsumerConfig{}
+	assert.NoError(t, unmarshalYMLConfig(conPath, c))
+	assert.Equal(t, "default", c.ProxyFactory)
+	assert.Equal(t, "dubbo.properties", c.ConfigCenterConfig.ConfigFile)
+	assert.Equal(t, "100ms", c.Connect_Timeout)
 }

@@ -17,14 +17,13 @@
 package zookeeper
 
 import (
-	"context"
 	"fmt"
 	"sync"
 	"testing"
 )
 
 import (
-	"github.com/samuel/go-zookeeper/zk"
+	"github.com/dubbogo/go-zookeeper/zk"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,7 +34,7 @@ import (
 )
 
 func initZkData(group string, t *testing.T) (*zk.TestCluster, *zookeeperDynamicConfiguration) {
-	regurl, _ := common.NewURL(context.TODO(), "registry://127.0.0.1:1111")
+	regurl, _ := common.NewURL("registry://127.0.0.1:1111")
 	ts, reg, err := newMockZookeeperDynamicConfiguration(&regurl)
 	reg.SetParser(&parser.DefaultConfigurationParser{})
 
@@ -78,10 +77,11 @@ func initZkData(group string, t *testing.T) (*zk.TestCluster, *zookeeperDynamicC
 
 	return ts, reg
 }
+
 func Test_GetConfig(t *testing.T) {
 	ts, reg := initZkData("dubbo", t)
 	defer ts.Stop()
-	configs, err := reg.GetConfig("dubbo.properties", config_center.WithGroup("dubbo"))
+	configs, err := reg.GetProperties("dubbo.properties", config_center.WithGroup("dubbo"))
 	assert.NoError(t, err)
 	m, err := reg.Parser().Parse(configs)
 	assert.NoError(t, err)

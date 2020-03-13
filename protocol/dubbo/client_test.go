@@ -144,8 +144,9 @@ func TestClient_AsyncCall(t *testing.T) {
 	user := &User{}
 	lock := sync.Mutex{}
 	lock.Lock()
-	err := c.AsyncCall(NewRequest("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"}, nil), func(response CallResponse) {
-		assert.Equal(t, User{Id: "1", Name: "username"}, *response.Reply.(*Response).reply.(*User))
+	err := c.AsyncCall(NewRequest("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"}, nil), func(response common.CallbackResponse) {
+		r := response.(AsyncCallbackResponse)
+		assert.Equal(t, User{Id: "1", Name: "username"}, *r.Reply.(*Response).reply.(*User))
 		lock.Unlock()
 	}, NewResponse(user, nil))
 	assert.NoError(t, err)
@@ -209,10 +210,10 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 
 	// Export
 	proto := GetProtocol()
-	url, err := common.NewURL(context.Background(), "dubbo://127.0.0.1:20000/UserProvider?anyhost=true&"+
-		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&"+
-		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&"+
-		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&"+
+	url, err := common.NewURL("dubbo://127.0.0.1:20000/UserProvider?anyhost=true&" +
+		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
 	assert.NoError(t, err)
 	proto.Export(&proxy_factory.ProxyInvoker{

@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package config
 
 import (
@@ -24,25 +25,26 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
+// ProtocolConfig ...
 type ProtocolConfig struct {
 	Name string `required:"true" yaml:"name"  json:"name,omitempty" property:"name"`
 	Ip   string `required:"true" yaml:"ip"  json:"ip,omitempty" property:"ip"`
 	Port string `required:"true" yaml:"port"  json:"port,omitempty" property:"port"`
 }
 
+// Prefix ...
 func (c *ProtocolConfig) Prefix() string {
 	return constant.ProtocolConfigPrefix
 }
 
 func loadProtocol(protocolsIds string, protocols map[string]*ProtocolConfig) []*ProtocolConfig {
-	returnProtocols := []*ProtocolConfig{}
+	returnProtocols := make([]*ProtocolConfig, 0, len(protocols))
 	for _, v := range strings.Split(protocolsIds, ",") {
-		for k, prot := range protocols {
+		for k, protocol := range protocols {
 			if v == k {
-				returnProtocols = append(returnProtocols, prot)
+				returnProtocols = append(returnProtocols, protocol)
 			}
 		}
-
 	}
 	return returnProtocols
 }

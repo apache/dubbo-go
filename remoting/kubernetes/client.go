@@ -55,8 +55,7 @@ const (
 )
 
 var (
-	ErrDubboLabelAlreadyExist       = perrors.New("dubbo label already exist")
-	ErrDubboAnnotationsAlreadyExist = perrors.New("dubbo annotations already exist")
+	ErrDubboLabelAlreadyExist = perrors.New("dubbo label already exist")
 )
 
 type Client struct {

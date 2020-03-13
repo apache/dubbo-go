@@ -46,8 +46,8 @@ const (
 const (
 	DEFAULT_KEY               = "default"
 	PREFIX_DEFAULT_KEY        = "default."
-	DEFAULT_SERVICE_FILTERS   = "echo,token,accesslog,tps,execute"
-	DEFAULT_REFERENCE_FILTERS = ""
+	DEFAULT_SERVICE_FILTERS   = "echo,token,accesslog,tps,generic_service,execute,pshutdown"
+	DEFAULT_REFERENCE_FILTERS = "cshutdown"
 	GENERIC_REFERENCE_FILTERS = "generic"
 	GENERIC                   = "$invoke"
 	ECHO                      = "$echo"
@@ -66,4 +66,9 @@ const (
 	DYNAMIC_CONFIGURATORS_CATEGORY     = "dynamicconfigurators"
 	APP_DYNAMIC_CONFIGURATORS_CATEGORY = "appdynamicconfigurators"
 	PROVIDER_CATEGORY                  = "providers"
+	CONSUMER_CATEGORY                  = "consumers"
+)
+
+const (
+	COMMA_SPLIT_PATTERN = "\\s*[,]+\\s*"
 )
