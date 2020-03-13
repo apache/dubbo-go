@@ -40,8 +40,8 @@ type clientFacade interface {
 	Client() *Client
 	SetClient(*Client)
 	ClientLock() *sync.Mutex
-	WaitGroup() *sync.WaitGroup
-	GetDone() chan struct{}
+	WaitGroup() *sync.WaitGroup //for wait group control, etcd client listener & etcd client container
+	Done() chan struct{}        //for etcd client control
 	RestartCallBack() bool
 	common.Node
 }
@@ -57,7 +57,7 @@ func HandleClientRestart(r clientFacade) {
 LOOP:
 	for {
 		select {
-		case <-r.GetDone():
+		case <-r.Done():
 			logger.Warnf("(KubernetesProviderRegistry)reconnectKubernetes goroutine exit now...")
 			break LOOP
 			// re-register all services
@@ -71,7 +71,7 @@ LOOP:
 			failTimes = 0
 			for {
 				select {
-				case <-r.GetDone():
+				case <-r.Done():
 					logger.Warnf("(KubernetesProviderRegistry)reconnectKubernetes Registry goroutine exit now...")
 					break LOOP
 				case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)): // avoid connect frequent
