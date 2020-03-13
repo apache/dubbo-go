@@ -28,6 +28,7 @@ import (
 import (
 	"github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
+	k8s "k8s.io/client-go/kubernetes"
 )
 
 import (
@@ -158,5 +159,25 @@ func newKubernetesRegistry(url *common.URL) (registry.Registry, error) {
 
 	logger.Debugf("the kubernetes registry started")
 
+	return r, nil
+}
+
+func newMockKubernetesRegistry(url *common.URL, namespace string, clientGeneratorFunc func() (k8s.Interface, error)) (
+	registry.Registry,
+	error,
+) {
+
+	var err error
+
+	r := &kubernetesRegistry{}
+
+	r.InitBaseRegistry(url, r)
+	r.client, err = kubernetes.NewMockClient(namespace, clientGeneratorFunc)
+	if err != nil {
+		return nil, perrors.WithMessage(err, "new mock client")
+	}
+	r.WaitGroup().Add(1) //zk client start successful, then wg +1
+	go kubernetes.HandleClientRestart(r)
+	r.InitListeners()
 	return r, nil
 }
