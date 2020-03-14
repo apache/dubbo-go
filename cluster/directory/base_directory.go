@@ -20,39 +20,94 @@ package directory
 import (
 	"sync"
 )
+
 import (
+	"github.com/dubbogo/gost/container/set"
 	"go.uber.org/atomic"
 )
+
 import (
+	"github.com/apache/dubbo-go/cluster/router"
+	"github.com/apache/dubbo-go/cluster/router/chain"
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
 )
 
-// BaseDirectory ...
+var routerURLSet = gxset.NewSet()
+
+// BaseDirectory Abstract implementation of Directory: Invoker list returned from this Directory's list method have been filtered by Routers
 type BaseDirectory struct {
 	url       *common.URL
 	destroyed *atomic.Bool
-	mutex     sync.Mutex
+	// this mutex for change the properties in BaseDirectory, like routerChain , destroyed etc
+	mutex       sync.Mutex
+	routerChain router.Chain
 }
 
-// NewBaseDirectory ...
+// NewBaseDirectory Create BaseDirectory with URL
 func NewBaseDirectory(url *common.URL) BaseDirectory {
 	return BaseDirectory{
-		url:       url,
-		destroyed: atomic.NewBool(false),
+		url:         url,
+		destroyed:   atomic.NewBool(false),
+		routerChain: &chain.RouterChain{},
 	}
 }
 
-// GetUrl ...
+// RouterChain Return router chain in directory
+func (dir *BaseDirectory) RouterChain() router.Chain {
+	return dir.routerChain
+}
+
+// SetRouterChain Set router chain in directory
+func (dir *BaseDirectory) SetRouterChain(routerChain router.Chain) {
+	dir.mutex.Lock()
+	defer dir.mutex.Unlock()
+	dir.routerChain = routerChain
+}
+
+// GetUrl Get URL
 func (dir *BaseDirectory) GetUrl() common.URL {
 	return *dir.url
 }
 
-// GetDirectoryUrl ...
+// GetDirectoryUrl Get URL instance
 func (dir *BaseDirectory) GetDirectoryUrl() *common.URL {
 	return dir.url
 }
 
-// Destroy ...
+// SetRouters Convert url to routers and add them into dir.routerChain
+func (dir *BaseDirectory) SetRouters(urls []*common.URL) {
+	if len(urls) == 0 {
+		return
+	}
+
+	routers := make([]router.Router, 0, len(urls))
+
+	for _, url := range urls {
+		routerKey := url.GetParam(constant.ROUTER_KEY, "")
+
+		if len(routerKey) > 0 {
+			factory := extension.GetRouterFactory(url.Protocol)
+			r, err := factory.NewRouter(url)
+			if err != nil {
+				logger.Errorf("Create router fail. router key: %s, error: %v", routerKey, url.Service(), err)
+				return
+			}
+			routers = append(routers, r)
+		}
+	}
+
+	logger.Infof("Init file condition router success, size: %v", len(routers))
+	dir.mutex.Lock()
+	rc := dir.routerChain
+	dir.mutex.Unlock()
+
+	rc.AddRouters(routers)
+}
+
+// Destroy Destroy
 func (dir *BaseDirectory) Destroy(doDestroy func()) {
 	if dir.destroyed.CAS(false, true) {
 		dir.mutex.Lock()
@@ -61,7 +116,18 @@ func (dir *BaseDirectory) Destroy(doDestroy func()) {
 	}
 }
 
-// IsAvailable ...
+// IsAvailable Once directory init finish, it will change to true
 func (dir *BaseDirectory) IsAvailable() bool {
 	return !dir.destroyed.Load()
+}
+
+// GetRouterURLSet Return router URL
+func GetRouterURLSet() *gxset.HashSet {
+	return routerURLSet
+}
+
+// AddRouterURLSet Add router URL
+// Router URL will init in config/config_loader.go
+func AddRouterURLSet(url *common.URL) {
+	routerURLSet.Add(url)
 }
