@@ -33,7 +33,7 @@ import (
 func TestGetRestConsumerServiceConfig(t *testing.T) {
 	err := os.Setenv(constant.CONF_CONSUMER_FILE_PATH, "./rest/config_reader/reader_impl/testdata/consumer_config.yml")
 	assert.NoError(t, err)
-	err = ConsumerRestConfigInit()
+	err = ConsumerRestConfigInit("default")
 	assert.NoError(t, err)
 	serviceConfig := GetRestConsumerServiceConfig("UserProvider")
 	assert.NotEmpty(t, serviceConfig)
@@ -51,7 +51,7 @@ func TestGetRestConsumerServiceConfig(t *testing.T) {
 func TestGetRestProviderServiceConfig(t *testing.T) {
 	err := os.Setenv(constant.CONF_PROVIDER_FILE_PATH, "./rest/config_reader/reader_impl/testdata/provider_config.yml")
 	assert.NoError(t, err)
-	err = ProviderRestConfigInit()
+	err = ProviderRestConfigInit("default")
 	assert.NoError(t, err)
 	serviceConfig := GetRestProviderServiceConfig("UserProvider")
 	assert.NotEmpty(t, serviceConfig)
