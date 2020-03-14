@@ -71,7 +71,6 @@ func filterUsingStaticTag(invokers []protocol.Invoker, url *common.URL, invocati
 		result := make([]protocol.Invoker, 0)
 		for _, v := range invokers {
 			if v.GetUrl().GetParam(constant.Tagkey, "") == tag {
-				print("1")
 				result = append(result, v)
 			}
 		}
