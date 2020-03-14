@@ -15,26 +15,27 @@
  * limitations under the License.
  */
 
-package metadata
+package instance
+
+import (
+	"sync"
+)
 
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
-	"sync"
+	"github.com/apache/dubbo-go/metadata"
 )
 
 var (
-	instance MetadataReport
+	instance metadata.MetadataReport
 	once     sync.Once
 )
 
-// GetEnvInstance ...
-func Init(url *common.URL) {
+// GetMetadataReportInstance ...
+func GetMetadataReportInstance(url *common.URL) metadata.MetadataReport {
 	once.Do(func() {
-		instance = extension.GetMetadataReportFactory(url.Protocol).createMetadataReport(url)
+		instance = extension.GetMetadataReportFactory(url.Protocol).CreateMetadataReport(url)
 	})
-}
-
-func GetMetadataReportInstance() MetadataReport {
 	return instance
 }
