@@ -18,18 +18,18 @@
 package extension
 
 import (
-	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
+	"github.com/apache/dubbo-go/config/rest/config_reader"
 )
 
 var (
-	restConfigReaders = make(map[string]func() rest_interface.RestConfigReader)
+	restConfigReaders = make(map[string]func() config_reader.RestConfigReader)
 )
 
-func SetRestConfigReader(name string, fun func() rest_interface.RestConfigReader) {
+func SetRestConfigReader(name string, fun func() config_reader.RestConfigReader) {
 	restConfigReaders[name] = fun
 }
 
-func GetSingletonRestConfigReader(name string) rest_interface.RestConfigReader {
+func GetSingletonRestConfigReader(name string) config_reader.RestConfigReader {
 	if name == "" {
 		name = "default"
 	}

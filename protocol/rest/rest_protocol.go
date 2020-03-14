@@ -30,8 +30,10 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
-	_ "github.com/apache/dubbo-go/protocol/rest/rest_server"
+	"github.com/apache/dubbo-go/protocol/rest/client"
+	_ "github.com/apache/dubbo-go/protocol/rest/client/client_impl"
+	"github.com/apache/dubbo-go/protocol/rest/server"
+	_ "github.com/apache/dubbo-go/protocol/rest/server/server_impl"
 )
 
 var (
@@ -47,16 +49,16 @@ func init() {
 type RestProtocol struct {
 	protocol.BaseProtocol
 	serverLock sync.Mutex
-	serverMap  map[string]rest_interface.RestServer
+	serverMap  map[string]server.RestServer
 	clientLock sync.Mutex
-	clientMap  map[rest_interface.RestOptions]rest_interface.RestClient
+	clientMap  map[client.RestOptions]client.RestClient
 }
 
 func NewRestProtocol() *RestProtocol {
 	return &RestProtocol{
 		BaseProtocol: protocol.NewBaseProtocol(),
-		serverMap:    make(map[string]rest_interface.RestServer, 8),
-		clientMap:    make(map[rest_interface.RestOptions]rest_interface.RestClient, 8),
+		serverMap:    make(map[string]server.RestServer, 8),
+		clientMap:    make(map[client.RestOptions]client.RestClient, 8),
 	}
 }
 
@@ -64,7 +66,7 @@ func (rp *RestProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetUrl()
 	serviceKey := url.ServiceKey()
 	exporter := NewRestExporter(serviceKey, invoker, rp.ExporterMap())
-	restServiceConfig := GetRestProviderServiceConfig(strings.TrimPrefix(url.Path, "/"))
+	restServiceConfig := config.GetRestProviderServiceConfig(strings.TrimPrefix(url.Path, "/"))
 	if restServiceConfig == nil {
 		logger.Errorf("%s service doesn't has provider config", url.Path)
 		return nil
@@ -83,19 +85,19 @@ func (rp *RestProtocol) Refer(url common.URL) protocol.Invoker {
 	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
 		requestTimeout = t
 	}
-	restServiceConfig := GetRestConsumerServiceConfig(strings.TrimPrefix(url.Path, "/"))
+	restServiceConfig := config.GetRestConsumerServiceConfig(strings.TrimPrefix(url.Path, "/"))
 	if restServiceConfig == nil {
 		logger.Errorf("%s service doesn't has consumer config", url.Path)
 		return nil
 	}
-	restOptions := rest_interface.RestOptions{RequestTimeout: requestTimeout, ConnectTimeout: connectTimeout}
+	restOptions := client.RestOptions{RequestTimeout: requestTimeout, ConnectTimeout: connectTimeout}
 	restClient := rp.getClient(restOptions, restServiceConfig.Client)
 	invoker := NewRestInvoker(url, &restClient, restServiceConfig.RestMethodConfigsMap)
 	rp.SetInvokers(invoker)
 	return invoker
 }
 
-func (rp *RestProtocol) getServer(url common.URL, serverType string) rest_interface.RestServer {
+func (rp *RestProtocol) getServer(url common.URL, serverType string) server.RestServer {
 	restServer, ok := rp.serverMap[url.Location]
 	if ok {
 		return restServer
@@ -107,15 +109,16 @@ func (rp *RestProtocol) getServer(url common.URL, serverType string) rest_interf
 	rp.serverLock.Lock()
 	defer rp.serverLock.Unlock()
 	restServer, ok = rp.serverMap[url.Location]
-	if !ok {
-		restServer = extension.GetNewRestServer(serverType)
-		restServer.Start(url)
-		rp.serverMap[url.Location] = restServer
+	if ok {
+		return restServer
 	}
+	restServer = extension.GetNewRestServer(serverType)
+	restServer.Start(url)
+	rp.serverMap[url.Location] = restServer
 	return restServer
 }
 
-func (rp *RestProtocol) getClient(restOptions rest_interface.RestOptions, clientType string) rest_interface.RestClient {
+func (rp *RestProtocol) getClient(restOptions client.RestOptions, clientType string) client.RestClient {
 	restClient, ok := rp.clientMap[restOptions]
 	if ok {
 		return restClient
@@ -123,10 +126,11 @@ func (rp *RestProtocol) getClient(restOptions rest_interface.RestOptions, client
 	rp.clientLock.Lock()
 	defer rp.clientLock.Unlock()
 	restClient, ok = rp.clientMap[restOptions]
-	if !ok {
-		restClient = extension.GetNewRestClient(clientType, &restOptions)
-		rp.clientMap[restOptions] = restClient
+	if ok {
+		return restClient
 	}
+	restClient = extension.GetNewRestClient(clientType, &restOptions)
+	rp.clientMap[restOptions] = restClient
 	return restClient
 }
 
