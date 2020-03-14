@@ -17,7 +17,9 @@
 
 package identifier
 
-import "github.com/apache/dubbo-go/common/constant"
+import (
+	"github.com/apache/dubbo-go/common/constant"
+)
 
 type ServiceMetadataIdentifier struct {
 	revision string

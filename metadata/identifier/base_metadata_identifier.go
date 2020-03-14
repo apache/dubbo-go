@@ -56,7 +56,7 @@ func (mdi *BaseServiceMetadataIdentifier) getIdentifierKey(params ...string) str
 		joinParams(constant.KEY_SEPARATOR, params)
 }
 
-// getIdentifierKey...
+// getFilePathKey...
 func (mdi *BaseServiceMetadataIdentifier) getFilePathKey(params ...string) string {
 	path := serviceToPath(mdi.serviceInterface)
 

@@ -51,21 +51,23 @@ func (c *MetadataReportConfig) Prefix() string {
 // UnmarshalYAML ...
 func (c *MetadataReportConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
-		return err
+		return perrors.WithStack(err)
 	}
 	type plain MetadataReportConfig
 	if err := unmarshal((*plain)(c)); err != nil {
-		return err
+		return perrors.WithStack(err)
 	}
 	return nil
 }
 
 // ToUrl ...
 func (c *MetadataReportConfig) ToUrl() (*common.URL, error) {
-	urlMap := url.Values{}
+	urlMap := make(url.Values)
 
-	for k, v := range c.Params {
-		urlMap.Set(k, v)
+	if c.Params != nil {
+		for k, v := range c.Params {
+			urlMap.Set(k, v)
+		}
 	}
 
 	url, err := common.NewURL(c.Address,
@@ -75,29 +77,34 @@ func (c *MetadataReportConfig) ToUrl() (*common.URL, error) {
 		common.WithLocation(c.Address),
 		common.WithProtocol(c.Protocol),
 	)
-	if err != nil {
+	if err != nil || len(url.Protocol) == 0 {
 		return nil, perrors.New("Invalid MetadataReportConfig.")
 	}
 	url.SetParam("metadata", url.Protocol)
 	return &url, nil
 }
 
+func (c *MetadataReportConfig) IsValid() bool {
+	return len(c.Protocol) != 0
+}
+
 // StartMetadataReport: The entry of metadata report start
-func startMetadataReport() error {
-	metadataConfig := consumerConfig.ApplicationConfig.MetadataType
-	if consumerConfig.MetadataReportConfig == nil {
+func startMetadataReport(metadataType string, metadataReportConfig *MetadataReportConfig) error {
+	if metadataReportConfig == nil || metadataReportConfig.IsValid() {
 		return nil
-	} else {
-		if metadataConfig == constant.METACONFIG_REMOTE {
-			return perrors.New("No MetadataConfig found, you must specify the remote Metadata Center address when 'metadata=remote' is enabled.")
-		} else if metadataConfig == constant.METACONFIG_REMOTE && len(consumerConfig.MetadataReportConfig.Address) == 0 {
-			return perrors.New("MetadataConfig address can not be empty.")
-		}
-		if url, err := consumerConfig.MetadataReportConfig.ToUrl(); err == nil {
-			instance.GetMetadataReportInstance(url)
-		} else {
-			return perrors.New("MetadataConfig is invalid!")
-		}
 	}
+
+	if metadataType == constant.METACONFIG_REMOTE {
+		return perrors.New("No MetadataConfig found, you must specify the remote Metadata Center address when 'metadata=remote' is enabled.")
+	} else if metadataType == constant.METACONFIG_REMOTE && len(metadataReportConfig.Address) == 0 {
+		return perrors.New("MetadataConfig address can not be empty.")
+	}
+
+	if url, err := metadataReportConfig.ToUrl(); err == nil {
+		instance.GetMetadataReportInstance(url)
+	} else {
+		return perrors.New("MetadataConfig is invalid!")
+	}
+
 	return nil
 }
