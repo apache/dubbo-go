@@ -78,6 +78,14 @@ func checkApplicationName(config *ApplicationConfig) {
 
 // Load Dubbo Init
 func Load() {
+	// init rest config
+	if err := ConsumerRestConfigInit(); err != nil {
+		log.Printf("[initConsumerRestConfig] %#v", err)
+	}
+	if err := ProviderRestConfigInit(); err != nil {
+		log.Printf("[initProviderRestConfig] %#v", err)
+	}
+
 	// init router
 	if confRouterFile != "" {
 		if errPro := RouterInit(confRouterFile); errPro != nil {
