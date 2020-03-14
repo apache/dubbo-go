@@ -239,12 +239,10 @@ func getParamString(item ConfigItem) (string, error) {
 		retStr = retStr + v
 	}
 
-	if len(item.ProviderAddresses) >= 0 {
-		retStr = retStr + "&"
-		retStr = retStr + constant.OVERRIDE_PROVIDERS_KEY
-		retStr = retStr + "="
-		retStr = retStr + strings.Join(item.ProviderAddresses, ",")
-	}
+	retStr = retStr + "&"
+	retStr = retStr + constant.OVERRIDE_PROVIDERS_KEY
+	retStr = retStr + "="
+	retStr = retStr + strings.Join(item.ProviderAddresses, ",")
 
 	return retStr, nil
 }
