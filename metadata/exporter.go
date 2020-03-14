@@ -17,7 +17,9 @@
 
 package metadata
 
-import "github.com/apache/dubbo-go/common"
+import (
+	"github.com/apache/dubbo-go/common"
+)
 
 type MetadataExporter interface {
 	Export() MetadataExporter
