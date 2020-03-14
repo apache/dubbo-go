@@ -15,9 +15,11 @@
  * limitations under the License.
  */
 
-package rest_config_reader
+package reader_impl
 
 import (
+	"github.com/apache/dubbo-go/config/rest"
+	"github.com/apache/dubbo-go/config/rest/config_reader"
 	"os"
 )
 
@@ -28,9 +30,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/yaml"
-	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
 )
 
 var (
@@ -48,37 +48,35 @@ func NewDefaultConfigReader() *DefaultConfigReader {
 	return &DefaultConfigReader{}
 }
 
-func (dcr *DefaultConfigReader) ReadConsumerConfig() *rest_interface.RestConsumerConfig {
+func (dcr *DefaultConfigReader) ReadConsumerConfig() (*rest.RestConsumerConfig, error) {
 	confConFile := os.Getenv(constant.CONF_CONSUMER_FILE_PATH)
 	if len(confConFile) == 0 {
-		logger.Warnf("[Rest Config] rest consumer configure(consumer) file name is nil")
-		return nil
+		return nil, perrors.Errorf("[Rest Config] rest consumer configure(consumer) file name is nil")
 	}
-	restConsumerConfig := &rest_interface.RestConsumerConfig{}
+	restConsumerConfig := &rest.RestConsumerConfig{}
 	err := yaml.UnmarshalYMLConfig(confConFile, restConsumerConfig)
 	if err != nil {
-		logger.Errorf("[Rest Config] unmarshal Consumer RestYmlConfig error %v", perrors.WithStack(err))
-		return nil
+		return nil, perrors.Errorf("[Rest Config] unmarshal Consumer RestYmlConfig error %v", perrors.WithStack(err))
 	}
-	return restConsumerConfig
+	return restConsumerConfig, nil
 }
 
-func (dcr *DefaultConfigReader) ReadProviderConfig() *rest_interface.RestProviderConfig {
+func (dcr *DefaultConfigReader) ReadProviderConfig() (*rest.RestProviderConfig, error) {
 	confProFile := os.Getenv(constant.CONF_PROVIDER_FILE_PATH)
 	if len(confProFile) == 0 {
-		logger.Warnf("[Rest Config] rest provider configure(provider) file name is nil")
-		return nil
+		return nil, perrors.Errorf("[Rest Config] rest provider configure(provider) file name is nil")
+
 	}
-	restProviderConfig := &rest_interface.RestProviderConfig{}
+	restProviderConfig := &rest.RestProviderConfig{}
 	err := yaml.UnmarshalYMLConfig(confProFile, restProviderConfig)
 	if err != nil {
-		logger.Errorf("[Rest Config] unmarshal Provider RestYmlConfig error %v", perrors.WithStack(err))
-		return nil
+		return nil, perrors.Errorf("[Rest Config] unmarshal Provider RestYmlConfig error %v", perrors.WithStack(err))
+
 	}
-	return restProviderConfig
+	return restProviderConfig, nil
 }
 
-func GetDefaultConfigReader() rest_interface.RestConfigReader {
+func GetDefaultConfigReader() config_reader.RestConfigReader {
 	if defaultConfigReader == nil {
 		defaultConfigReader = NewDefaultConfigReader()
 	}
