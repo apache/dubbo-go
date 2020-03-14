@@ -19,12 +19,13 @@ package rest_interface
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/config/rest"
 	"github.com/apache/dubbo-go/protocol"
 )
 
 type RestServer interface {
 	Start(url common.URL)
-	Deploy(invoker protocol.Invoker, restMethodConfig map[string]*RestMethodConfig)
-	UnDeploy(restMethodConfig map[string]*RestMethodConfig)
+	Deploy(invoker protocol.Invoker, restMethodConfig map[string]*rest.RestMethodConfig)
+	UnDeploy(restMethodConfig map[string]*rest.RestMethodConfig)
 	Destroy()
 }

@@ -15,9 +15,11 @@
  * limitations under the License.
  */
 
-package rest_interface
+package config_reader
+
+import "github.com/apache/dubbo-go/config/rest"
 
 type RestConfigReader interface {
-	ReadConsumerConfig() *RestConsumerConfig
-	ReadProviderConfig() *RestProviderConfig
+	ReadConsumerConfig() (*rest.RestConsumerConfig, error)
+	ReadProviderConfig() (*rest.RestProviderConfig, error)
 }

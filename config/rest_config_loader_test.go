@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package rest
+package config
 
 import (
 	"os"
@@ -31,9 +31,10 @@ import (
 )
 
 func TestGetRestConsumerServiceConfig(t *testing.T) {
-	err := os.Setenv(constant.CONF_CONSUMER_FILE_PATH, "./rest_config_reader/testdata/consumer_config.yml")
+	err := os.Setenv(constant.CONF_CONSUMER_FILE_PATH, "./rest/config_reader/reader_impl/testdata/consumer_config.yml")
 	assert.NoError(t, err)
-	initConsumerRestConfig()
+	err = initConsumerRestConfig()
+	assert.NoError(t, err)
 	serviceConfig := GetRestConsumerServiceConfig("UserProvider")
 	assert.NotEmpty(t, serviceConfig)
 	assert.NotEmpty(t, serviceConfig.RestMethodConfigsMap)
@@ -48,9 +49,10 @@ func TestGetRestConsumerServiceConfig(t *testing.T) {
 }
 
 func TestGetRestProviderServiceConfig(t *testing.T) {
-	err := os.Setenv(constant.CONF_PROVIDER_FILE_PATH, "./rest_config_reader/testdata/provider_config.yml")
+	err := os.Setenv(constant.CONF_PROVIDER_FILE_PATH, "./rest/config_reader/reader_impl/testdata/provider_config.yml")
 	assert.NoError(t, err)
-	initProviderRestConfig()
+	err = initProviderRestConfig()
+	assert.NoError(t, err)
 	serviceConfig := GetRestProviderServiceConfig("UserProvider")
 	assert.NotEmpty(t, serviceConfig)
 	assert.NotEmpty(t, serviceConfig.RestMethodConfigsMap)

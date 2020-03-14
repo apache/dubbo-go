@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-package rest_interface
+package rest
 
 import "github.com/creasty/defaults"
 
+// RestConsumerConfig ...
 type RestConsumerConfig struct {
 	Client                string                        `default:"resty" yaml:"rest_client" json:"rest_client,omitempty" property:"rest_client"`
 	Produces              string                        `default:"application/json" yaml:"rest_produces"  json:"rest_produces,omitempty" property:"rest_produces"`
@@ -38,6 +39,7 @@ func (c *RestConsumerConfig) UnmarshalYAML(unmarshal func(interface{}) error) er
 	return nil
 }
 
+// RestProviderConfig ...
 type RestProviderConfig struct {
 	Server                string                        `default:"go-restful" yaml:"rest_server" json:"rest_server,omitempty" property:"rest_server"`
 	Produces              string                        `default:"*/*" yaml:"rest_produces"  json:"rest_produces,omitempty" property:"rest_produces"`
@@ -57,6 +59,7 @@ func (c *RestProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) er
 	return nil
 }
 
+// RestServiceConfig ...
 type RestServiceConfig struct {
 	InterfaceName        string              `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
 	Url                  string              `yaml:"url"  json:"url,omitempty" property:"url"`
@@ -82,6 +85,7 @@ func (c *RestServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) err
 	return nil
 }
 
+// RestMethodConfig ...
 type RestMethodConfig struct {
 	InterfaceName  string
 	MethodName     string `required:"true" yaml:"name"  json:"name,omitempty" property:"name"`
