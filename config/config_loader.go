@@ -78,6 +78,7 @@ func checkApplicationName(config *ApplicationConfig) {
 
 // Load Dubbo Init
 func Load() {
+
 	// init router
 	if confRouterFile != "" {
 		if errPro := RouterInit(confRouterFile); errPro != nil {
@@ -89,7 +90,10 @@ func Load() {
 	if consumerConfig == nil {
 		logger.Warnf("consumerConfig is nil!")
 	} else {
-
+		// init rest consumer config
+		if err := ConsumerRestConfigInit(consumerConfig.RestConfigType); err != nil {
+			log.Printf("[initConsumerRestConfig] %#v", err)
+		}
 		metricConfig = consumerConfig.MetricConfig
 		applicationConfig = consumerConfig.ApplicationConfig
 
@@ -150,7 +154,10 @@ func Load() {
 	if providerConfig == nil {
 		logger.Warnf("providerConfig is nil!")
 	} else {
-
+		// init rest provider config
+		if err := ProviderRestConfigInit(providerConfig.RestConfigType); err != nil {
+			log.Printf("[initProviderRestConfig] %#v", err)
+		}
 		// so, you should know that the consumer's config will be override
 		metricConfig = providerConfig.MetricConfig
 		applicationConfig = providerConfig.ApplicationConfig

@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-package rest_server
+package server_impl
 
 import (
 	"context"
 	"fmt"
+	"github.com/apache/dubbo-go/protocol/rest/server"
 	"net"
 	"net/http"
 	"reflect"
@@ -29,6 +30,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/config/rest"
 	"github.com/emicklei/go-restful/v3"
 	perrors "github.com/pkg/errors"
 )
@@ -40,7 +42,6 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
-	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
 )
 
 func init() {
@@ -74,7 +75,7 @@ func (grs *GoRestfulServer) Start(url common.URL) {
 	}()
 }
 
-func (grs *GoRestfulServer) Deploy(invoker protocol.Invoker, restMethodConfig map[string]*rest_interface.RestMethodConfig) {
+func (grs *GoRestfulServer) Deploy(invoker protocol.Invoker, restMethodConfig map[string]*rest.RestMethodConfig) {
 	svc := common.ServiceMap.GetService(invoker.GetUrl().Protocol, strings.TrimPrefix(invoker.GetUrl().Path, "/"))
 	for methodName, config := range restMethodConfig {
 		// get method
@@ -92,7 +93,7 @@ func (grs *GoRestfulServer) Deploy(invoker protocol.Invoker, restMethodConfig ma
 }
 
 func getFunc(methodName string, invoker protocol.Invoker, argsTypes []reflect.Type,
-	replyType reflect.Type, config *rest_interface.RestMethodConfig) func(req *restful.Request, resp *restful.Response) {
+	replyType reflect.Type, config *rest.RestMethodConfig) func(req *restful.Request, resp *restful.Response) {
 	return func(req *restful.Request, resp *restful.Response) {
 		var (
 			err  error
@@ -118,7 +119,7 @@ func getFunc(methodName string, invoker protocol.Invoker, argsTypes []reflect.Ty
 		}
 	}
 }
-func (grs *GoRestfulServer) UnDeploy(restMethodConfig map[string]*rest_interface.RestMethodConfig) {
+func (grs *GoRestfulServer) UnDeploy(restMethodConfig map[string]*rest.RestMethodConfig) {
 	for _, config := range restMethodConfig {
 		ws := new(restful.WebService)
 		ws.Path(config.Path)
@@ -138,7 +139,7 @@ func (grs *GoRestfulServer) Destroy() {
 	logger.Infof("[Go Restful] Server exiting")
 }
 
-func getArgsInterfaceFromRequest(req *restful.Request, config *rest_interface.RestMethodConfig) []interface{} {
+func getArgsInterfaceFromRequest(req *restful.Request, config *rest.RestMethodConfig) []interface{} {
 	argsMap := make(map[int]interface{}, 8)
 	maxKey := 0
 	for k, v := range config.PathParamsMap {
@@ -185,7 +186,7 @@ func getArgsInterfaceFromRequest(req *restful.Request, config *rest_interface.Re
 	return args
 }
 
-func getArgsFromRequest(req *restful.Request, argsTypes []reflect.Type, config *rest_interface.RestMethodConfig) []interface{} {
+func getArgsFromRequest(req *restful.Request, argsTypes []reflect.Type, config *rest.RestMethodConfig) []interface{} {
 	argsLength := len(argsTypes)
 	args := make([]interface{}, argsLength)
 	for i, t := range argsTypes {
@@ -305,6 +306,6 @@ func getArgsFromRequest(req *restful.Request, argsTypes []reflect.Type, config *
 	return args
 }
 
-func GetNewGoRestfulServer() rest_interface.RestServer {
+func GetNewGoRestfulServer() server.RestServer {
 	return NewGoRestfulServer()
 }
