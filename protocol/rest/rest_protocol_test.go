@@ -35,7 +35,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	_ "github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
+	"github.com/apache/dubbo-go/config/rest"
 )
 
 func TestRestProtocol_Refer(t *testing.T) {
@@ -52,11 +52,11 @@ func TestRestProtocol_Refer(t *testing.T) {
 		RequestTimeout: 5 * time.Second,
 	}
 	config.SetConsumerConfig(con)
-	configMap := make(map[string]*rest_interface.RestServiceConfig)
-	configMap["com.ikurento.user.UserProvider"] = &rest_interface.RestServiceConfig{
+	configMap := make(map[string]*rest.RestServiceConfig)
+	configMap["com.ikurento.user.UserProvider"] = &rest.RestServiceConfig{
 		Client: "resty",
 	}
-	SetRestConsumerServiceConfigMap(configMap)
+	config.SetRestConsumerServiceConfigMap(configMap)
 	invoker := proto.Refer(url)
 
 	// make sure url
@@ -84,14 +84,14 @@ func TestRestProtocol_Export(t *testing.T) {
 	assert.NoError(t, err)
 	con := config.ProviderConfig{}
 	config.SetProviderConfig(con)
-	configMap := make(map[string]*rest_interface.RestServiceConfig)
-	methodConfigMap := make(map[string]*rest_interface.RestMethodConfig)
+	configMap := make(map[string]*rest.RestServiceConfig)
+	methodConfigMap := make(map[string]*rest.RestMethodConfig)
 	queryParamsMap := make(map[int]string)
 	queryParamsMap[1] = "age"
 	queryParamsMap[2] = "name"
 	pathParamsMap := make(map[int]string)
 	pathParamsMap[0] = "userid"
-	methodConfigMap["GetUser"] = &rest_interface.RestMethodConfig{
+	methodConfigMap["GetUser"] = &rest.RestMethodConfig{
 		InterfaceName:  "",
 		MethodName:     "GetUser",
 		Path:           "/GetUser/{userid}",
@@ -104,11 +104,11 @@ func TestRestProtocol_Export(t *testing.T) {
 		QueryParamsMap: queryParamsMap,
 		Body:           -1,
 	}
-	configMap["com.ikurento.user.UserProvider"] = &rest_interface.RestServiceConfig{
+	configMap["com.ikurento.user.UserProvider"] = &rest.RestServiceConfig{
 		Server:               "go-restful",
 		RestMethodConfigsMap: methodConfigMap,
 	}
-	SetRestProviderServiceConfigMap(configMap)
+	config.SetRestProviderServiceConfigMap(configMap)
 	proxyFactory := extension.GetProxyFactory("default")
 	exporter := proto.Export(proxyFactory.GetInvoker(url))
 	// make sure url

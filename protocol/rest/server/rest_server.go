@@ -15,33 +15,17 @@
  * limitations under the License.
  */
 
-package rest_config_reader
+package server
 
 import (
-	"os"
-	"testing"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/config/rest"
+	"github.com/apache/dubbo-go/protocol"
 )
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
-	"github.com/apache/dubbo-go/common/constant"
-)
-
-func TestDefaultConfigReader_ReadConsumerConfig(t *testing.T) {
-	err := os.Setenv(constant.CONF_CONSUMER_FILE_PATH, "./testdata/consumer_config.yml")
-	assert.NoError(t, err)
-	reader := GetDefaultConfigReader()
-	config := reader.ReadConsumerConfig()
-	assert.NotEmpty(t, config)
-}
-
-func TestDefaultConfigReader_ReadProviderConfig(t *testing.T) {
-	err := os.Setenv(constant.CONF_PROVIDER_FILE_PATH, "./testdata/provider_config.yml")
-	assert.NoError(t, err)
-	reader := GetDefaultConfigReader()
-	config := reader.ReadProviderConfig()
-	assert.NotEmpty(t, config)
+type RestServer interface {
+	Start(url common.URL)
+	Deploy(invoker protocol.Invoker, restMethodConfig map[string]*rest.RestMethodConfig)
+	UnDeploy(restMethodConfig map[string]*rest.RestMethodConfig)
+	Destroy()
 }

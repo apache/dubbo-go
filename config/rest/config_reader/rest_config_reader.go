@@ -15,29 +15,11 @@
  * limitations under the License.
  */
 
-package rest_interface
+package config_reader
 
-import (
-	"time"
-)
+import "github.com/apache/dubbo-go/config/rest"
 
-type RestOptions struct {
-	RequestTimeout time.Duration
-	ConnectTimeout time.Duration
-}
-
-type RestRequest struct {
-	Location    string
-	Path        string
-	Produces    string
-	Consumes    string
-	Method      string
-	PathParams  map[string]string
-	QueryParams map[string]string
-	Body        interface{}
-	Headers     map[string]string
-}
-
-type RestClient interface {
-	Do(request *RestRequest, res interface{}) error
+type RestConfigReader interface {
+	ReadConsumerConfig() (*rest.RestConsumerConfig, error)
+	ReadProviderConfig() (*rest.RestProviderConfig, error)
 }
