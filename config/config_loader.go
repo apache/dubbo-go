@@ -91,7 +91,7 @@ func Load() {
 		logger.Warnf("consumerConfig is nil!")
 	} else {
 		// init rest consumer config
-		if err := ConsumerRestConfigInit(); err != nil {
+		if err := ConsumerRestConfigInit(consumerConfig.RestConfigType); err != nil {
 			log.Printf("[initConsumerRestConfig] %#v", err)
 		}
 		metricConfig = consumerConfig.MetricConfig
@@ -155,7 +155,7 @@ func Load() {
 		logger.Warnf("providerConfig is nil!")
 	} else {
 		// init rest provider config
-		if err := ProviderRestConfigInit(); err != nil {
+		if err := ProviderRestConfigInit(providerConfig.RestConfigType); err != nil {
 			log.Printf("[initProviderRestConfig] %#v", err)
 		}
 		// so, you should know that the consumer's config will be override
