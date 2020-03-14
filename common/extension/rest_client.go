@@ -18,18 +18,18 @@
 package extension
 
 import (
-	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
+	"github.com/apache/dubbo-go/protocol/rest/client"
 )
 
 var (
-	restClients = make(map[string]func(restOptions *rest_interface.RestOptions) rest_interface.RestClient, 8)
+	restClients = make(map[string]func(restOptions *client.RestOptions) client.RestClient, 8)
 )
 
-func SetRestClient(name string, fun func(restOptions *rest_interface.RestOptions) rest_interface.RestClient) {
+func SetRestClient(name string, fun func(restOptions *client.RestOptions) client.RestClient) {
 	restClients[name] = fun
 }
 
-func GetNewRestClient(name string, restOptions *rest_interface.RestOptions) rest_interface.RestClient {
+func GetNewRestClient(name string, restOptions *client.RestOptions) client.RestClient {
 	if restClients[name] == nil {
 		panic("restClient for " + name + " is not existing, make sure you have import the package.")
 	}
