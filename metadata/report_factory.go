@@ -24,5 +24,5 @@ var (
 )
 
 type MetadataReportFactory interface {
-	createMetadataReport(*common.URL) MetadataReport
+	CreateMetadataReport(*common.URL) MetadataReport
 }
