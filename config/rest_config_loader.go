@@ -70,7 +70,7 @@ func ProviderRestConfigInit() error {
 		return err
 	}
 	if restProviderConfig == nil || len(restProviderConfig.RestServiceConfigsMap) == 0 {
-		return perrors.New("Provider don't has RestServiceConfigsMap is nil")
+		return perrors.New("Provider don't has RestServiceConfigsMap")
 	}
 	restProviderServiceConfigMap = make(map[string]*rest.RestServiceConfig, len(restProviderConfig.RestServiceConfigsMap))
 	for key, rc := range restProviderConfig.RestServiceConfigsMap {
