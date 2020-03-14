@@ -24,6 +24,8 @@ import (
 )
 
 import (
+	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
+	"github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc"
 )
 
@@ -63,7 +65,11 @@ func (s *Server) Start(url common.URL) {
 	if err != nil {
 		panic(err)
 	}
-	server := grpc.NewServer()
+
+	// if global trace instance was set ,  then server tracer instance can be get. If not , will return Nooptracer
+	tracer := opentracing.GlobalTracer()
+	server := grpc.NewServer(
+		grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)))
 
 	key := url.GetParam(constant.BEAN_NAME_KEY, "")
 	service := config.GetProviderService(key)
