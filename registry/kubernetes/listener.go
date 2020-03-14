@@ -40,7 +40,7 @@ type dataListener struct {
 
 // NewRegistryDataListener ...
 func NewRegistryDataListener(listener config_center.ConfigurationListener) *dataListener {
-	return &dataListener{listener: listener, interestedURL: []*common.URL{}}
+	return &dataListener{listener: listener}
 }
 
 func (l *dataListener) AddInterestedURL(url *common.URL) {
