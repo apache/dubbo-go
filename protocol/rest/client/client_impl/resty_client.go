@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package rest_client
+package client_impl
 
 import (
 	"context"
@@ -33,7 +33,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
+	"github.com/apache/dubbo-go/protocol/rest/client"
 )
 
 func init() {
@@ -44,7 +44,7 @@ type RestyClient struct {
 	client *resty.Client
 }
 
-func NewRestyClient(restOption *rest_interface.RestOptions) *RestyClient {
+func NewRestyClient(restOption *client.RestOptions) *RestyClient {
 	client := resty.New()
 	client.SetTransport(
 		&http.Transport{
@@ -65,7 +65,7 @@ func NewRestyClient(restOption *rest_interface.RestOptions) *RestyClient {
 	}
 }
 
-func (rc *RestyClient) Do(restRequest *rest_interface.RestRequest, res interface{}) error {
+func (rc *RestyClient) Do(restRequest *client.RestRequest, res interface{}) error {
 	r, err := rc.client.R().
 		SetHeader("Content-Type", restRequest.Consumes).
 		SetHeader("Accept", restRequest.Produces).
@@ -84,6 +84,6 @@ func (rc *RestyClient) Do(restRequest *rest_interface.RestRequest, res interface
 	return nil
 }
 
-func GetRestyClient(restOptions *rest_interface.RestOptions) rest_interface.RestClient {
+func GetRestyClient(restOptions *client.RestOptions) client.RestClient {
 	return NewRestyClient(restOptions)
 }
