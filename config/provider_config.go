@@ -103,7 +103,10 @@ func ProviderInit(confProFile string) error {
 			n.InterfaceId = k
 		}
 	}
-
+	//start the metadata report if config set
+	if err := startMetadataReport(); err != nil {
+		return perrors.WithMessagef(err, "Provider start metadata report error ,error is {%#v}", err)
+	}
 	logger.Debugf("provider config{%#v}\n", providerConfig)
 
 	return nil

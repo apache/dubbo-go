@@ -164,6 +164,10 @@ const (
 // metadata report
 
 const (
-	METACONFIG_REMOTE = "remote"
-	METACONFIG_LOCAL  = "local"
+	METACONFIG_REMOTE  = "remote"
+	METACONFIG_LOCAL   = "local"
+	KEY_SEPARATOR      = ":"
+	DEFAULT_PATH_TAG   = "metadata"
+	PATH_SEPARATOR     = "/"
+	KEY_REVISON_PREFIX = "revision"
 )
