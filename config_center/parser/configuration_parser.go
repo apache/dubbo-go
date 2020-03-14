@@ -233,16 +233,10 @@ func getParamString(item ConfigItem) (string, error) {
 			"you want to change in the rule.")
 	}
 	for k, v := range params {
-		retStr = retStr + "&"
-		retStr = retStr + k
-		retStr = retStr + "="
-		retStr = retStr + v
+		retStr += "&" + k + "=" + v
 	}
 
-	retStr = retStr + "&"
-	retStr = retStr + constant.OVERRIDE_PROVIDERS_KEY
-	retStr = retStr + "="
-	retStr = retStr + strings.Join(item.ProviderAddresses, ",")
+	retStr += "&" + constant.OVERRIDE_PROVIDERS_KEY + "=" + strings.Join(item.ProviderAddresses, ",")
 
 	return retStr, nil
 }
