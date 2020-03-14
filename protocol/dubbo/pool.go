@@ -78,7 +78,7 @@ func newGettyRPCClientConn(pool *gettyRPCClientPool, protocol, addr string) (*ge
 		}
 		time.Sleep(1e6)
 	}
-	logger.Infof("client init ok")
+	logger.Debug("client init ok")
 	c.updateActive(time.Now().Unix())
 
 	return c, nil
@@ -319,9 +319,10 @@ func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPC
 	conn, err := p.get()
 	if err == nil && conn == nil {
 		// create new conn
-		return newGettyRPCClientConn(p, protocol, addr)
+		rpcClientConn, err := newGettyRPCClientConn(p, protocol, addr)
+		return rpcClientConn, perrors.WithStack(err)
 	}
-	return conn, err
+	return conn, perrors.WithStack(err)
 }
 
 func (p *gettyRPCClientPool) get() (*gettyRPCClient, error) {

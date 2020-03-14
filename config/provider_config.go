@@ -18,14 +18,8 @@
 package config
 
 import (
-	"io/ioutil"
-	"path"
-)
-
-import (
 	"github.com/creasty/defaults"
 	perrors "github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 )
 
 import (
@@ -83,16 +77,8 @@ func ProviderInit(confProFile string) error {
 		return perrors.Errorf("application configure(provider) file name is nil")
 	}
 
-	if path.Ext(confProFile) != ".yml" {
-		return perrors.Errorf("application configure file name{%v} suffix must be .yml", confProFile)
-	}
-
-	confFileStream, err := ioutil.ReadFile(confProFile)
-	if err != nil {
-		return perrors.Errorf("ioutil.ReadFile(file:%s) = error:%v", confProFile, perrors.WithStack(err))
-	}
 	providerConfig = &ProviderConfig{}
-	err = yaml.Unmarshal(confFileStream, providerConfig)
+	err := unmarshalYMLConfig(confProFile, providerConfig)
 	if err != nil {
 		return perrors.Errorf("yaml.Unmarshal() = error:%v", perrors.WithStack(err))
 	}
