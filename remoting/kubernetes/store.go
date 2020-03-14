@@ -84,7 +84,7 @@ type Store interface {
 	Done() <-chan struct{}
 }
 
-// Stopped Watcher
+// Watcher
 type Watcher interface {
 	// the watcher's id
 	ID() string
@@ -200,9 +200,7 @@ func (s *storeImpl) Put(object *Object) error {
 }
 
 // valid
-// valid the client status
-// NOTICE:
-// should protected by lock
+// valid the client status should protected by lock
 func (s *storeImpl) valid() error {
 	select {
 	case <-s.ctx.Done():

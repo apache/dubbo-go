@@ -150,7 +150,7 @@ func newKubernetesRegistry(url *common.URL) (registry.Registry, error) {
 	r.InitBaseRegistry(url, r)
 
 	if err := kubernetes.ValidateClient(r); err != nil {
-		return nil, err
+		return nil, perrors.WithStack(err)
 	}
 
 	r.WaitGroup().Add(1)
@@ -162,10 +162,11 @@ func newKubernetesRegistry(url *common.URL) (registry.Registry, error) {
 	return r, nil
 }
 
-func newMockKubernetesRegistry(url *common.URL, namespace string, clientGeneratorFunc func() (k8s.Interface, error)) (
-	registry.Registry,
-	error,
-) {
+func newMockKubernetesRegistry(
+	url *common.URL,
+	namespace string,
+	clientGeneratorFunc func() (k8s.Interface, error),
+) (registry.Registry, error) {
 
 	var err error
 
