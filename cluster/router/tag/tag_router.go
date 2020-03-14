@@ -49,6 +49,7 @@ func (c *tagRouter) isEnabled() bool {
 }
 
 func (c *tagRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+	panic("1")
 	if !c.isEnabled() {
 		return invokers
 	}
@@ -70,13 +71,14 @@ func filterUsingStaticTag(invokers []protocol.Invoker, url *common.URL, invocati
 		result := make([]protocol.Invoker, 0)
 		for _, v := range invokers {
 			if v.GetUrl().GetParam(constant.Tagkey, "") == tag {
+				print("1")
 				result = append(result, v)
 			}
 		}
 		if len(result) == 0 && !isForceUseTag(url, invocation) {
 			return invokers
 		}
-		return invokers
+		return result
 	} else {
 		return invokers
 	}
