@@ -187,14 +187,11 @@ type KubernetesRegistryTestSuite struct {
 	suite.Suite
 
 	currentPod v1.Pod
-
-	registry *kubernetesRegistry
 }
 
-func (s *KubernetesRegistryTestSuite) SetupTest() {
+func (s *KubernetesRegistryTestSuite) initRegistry() *kubernetesRegistry {
 
 	t := s.T()
-	var err error
 
 	regurl, err := common.NewURL("registry://127.0.0.1:443", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
 	if err != nil {
@@ -215,7 +212,7 @@ func (s *KubernetesRegistryTestSuite) SetupTest() {
 		t.Fatal(err)
 	}
 
-	s.registry = mock.(*kubernetesRegistry)
+	return mock.(*kubernetesRegistry)
 }
 
 func (s *KubernetesRegistryTestSuite) SetupSuite() {
@@ -241,9 +238,6 @@ func (s *KubernetesRegistryTestSuite) SetupSuite() {
 		t.Fatal(err)
 	}
 }
-
-// stop etcd server
-func (s *KubernetesRegistryTestSuite) TearDownSuite() {}
 
 func (s *KubernetesRegistryTestSuite) TestDataChange() {
 
