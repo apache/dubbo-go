@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package rest_interface
+package client
 
 import (
 	"time"

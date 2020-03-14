@@ -30,8 +30,10 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
-	_ "github.com/apache/dubbo-go/protocol/rest/rest_server"
+	"github.com/apache/dubbo-go/protocol/rest/client"
+	_ "github.com/apache/dubbo-go/protocol/rest/client/client_impl"
+	"github.com/apache/dubbo-go/protocol/rest/server"
+	_ "github.com/apache/dubbo-go/protocol/rest/server/server_impl"
 )
 
 var (
@@ -47,16 +49,16 @@ func init() {
 type RestProtocol struct {
 	protocol.BaseProtocol
 	serverLock sync.Mutex
-	serverMap  map[string]rest_interface.RestServer
+	serverMap  map[string]server.RestServer
 	clientLock sync.Mutex
-	clientMap  map[rest_interface.RestOptions]rest_interface.RestClient
+	clientMap  map[client.RestOptions]client.RestClient
 }
 
 func NewRestProtocol() *RestProtocol {
 	return &RestProtocol{
 		BaseProtocol: protocol.NewBaseProtocol(),
-		serverMap:    make(map[string]rest_interface.RestServer, 8),
-		clientMap:    make(map[rest_interface.RestOptions]rest_interface.RestClient, 8),
+		serverMap:    make(map[string]server.RestServer, 8),
+		clientMap:    make(map[client.RestOptions]client.RestClient, 8),
 	}
 }
 
@@ -88,14 +90,14 @@ func (rp *RestProtocol) Refer(url common.URL) protocol.Invoker {
 		logger.Errorf("%s service doesn't has consumer config", url.Path)
 		return nil
 	}
-	restOptions := rest_interface.RestOptions{RequestTimeout: requestTimeout, ConnectTimeout: connectTimeout}
+	restOptions := client.RestOptions{RequestTimeout: requestTimeout, ConnectTimeout: connectTimeout}
 	restClient := rp.getClient(restOptions, restServiceConfig.Client)
 	invoker := NewRestInvoker(url, &restClient, restServiceConfig.RestMethodConfigsMap)
 	rp.SetInvokers(invoker)
 	return invoker
 }
 
-func (rp *RestProtocol) getServer(url common.URL, serverType string) rest_interface.RestServer {
+func (rp *RestProtocol) getServer(url common.URL, serverType string) server.RestServer {
 	restServer, ok := rp.serverMap[url.Location]
 	if ok {
 		return restServer
@@ -116,7 +118,7 @@ func (rp *RestProtocol) getServer(url common.URL, serverType string) rest_interf
 	return restServer
 }
 
-func (rp *RestProtocol) getClient(restOptions rest_interface.RestOptions, clientType string) rest_interface.RestClient {
+func (rp *RestProtocol) getClient(restOptions client.RestOptions, clientType string) client.RestClient {
 	restClient, ok := rp.clientMap[restOptions]
 	if ok {
 		return restClient
