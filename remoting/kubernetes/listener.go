@@ -166,6 +166,12 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 	}
 
 	l.keyMapLock.Lock()
+	// double check
+	if _, ok := l.keyMap[key]; ok {
+		// another goroutine already set it
+		l.keyMapLock.Unlock()
+		return
+	}
 	l.keyMap[key] = struct{}{}
 	l.keyMapLock.Unlock()
 
