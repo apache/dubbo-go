@@ -31,16 +31,16 @@ import (
 	"github.com/apache/dubbo-go/config/rest"
 	"github.com/apache/dubbo-go/protocol"
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
-	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
+	"github.com/apache/dubbo-go/protocol/rest/client"
 )
 
 type RestInvoker struct {
 	protocol.BaseInvoker
-	client              rest_interface.RestClient
+	client              client.RestClient
 	restMethodConfigMap map[string]*rest.RestMethodConfig
 }
 
-func NewRestInvoker(url common.URL, client *rest_interface.RestClient, restMethodConfig map[string]*rest.RestMethodConfig) *RestInvoker {
+func NewRestInvoker(url common.URL, client *client.RestClient, restMethodConfig map[string]*rest.RestMethodConfig) *RestInvoker {
 	return &RestInvoker{
 		BaseInvoker:         *protocol.NewBaseInvoker(url),
 		client:              *client,
@@ -79,7 +79,7 @@ func (ri *RestInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 		body = inv.Arguments()[methodConfig.Body]
 	}
 
-	req := &rest_interface.RestRequest{
+	req := &client.RestRequest{
 		Location:    ri.GetUrl().Location,
 		Produces:    methodConfig.Produces,
 		Consumes:    methodConfig.Consumes,

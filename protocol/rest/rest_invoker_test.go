@@ -19,6 +19,8 @@ package rest
 
 import (
 	"context"
+	"github.com/apache/dubbo-go/protocol/rest/client"
+	"github.com/apache/dubbo-go/protocol/rest/client/client_impl"
 	"testing"
 	"time"
 )
@@ -34,8 +36,6 @@ import (
 	"github.com/apache/dubbo-go/config/rest"
 	_ "github.com/apache/dubbo-go/config/rest/config_reader/reader_impl"
 	"github.com/apache/dubbo-go/protocol/invocation"
-	"github.com/apache/dubbo-go/protocol/rest/rest_client"
-	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
 )
 
 func TestRestInvoker_Invoke(t *testing.T) {
@@ -148,7 +148,7 @@ func TestRestInvoker_Invoke(t *testing.T) {
 	configMap["com.ikurento.user.UserProvider"] = &rest.RestServiceConfig{
 		RestMethodConfigsMap: methodConfigMap,
 	}
-	restClient := rest_client.GetRestyClient(&rest_interface.RestOptions{ConnectTimeout: 3 * time.Second, RequestTimeout: 3 * time.Second})
+	restClient := client_impl.GetRestyClient(&client.RestOptions{ConnectTimeout: 3 * time.Second, RequestTimeout: 3 * time.Second})
 	invoker := NewRestInvoker(url, &restClient, methodConfigMap)
 	user := &User{}
 	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUser"),
