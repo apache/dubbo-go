@@ -40,9 +40,8 @@ var (
 )
 
 // initConsumerRestConfig ...
-func ConsumerRestConfigInit() error {
-	consumerConfigType := GetConsumerConfig().RestConfigType
-	consumerConfigReader := extension.GetSingletonRestConfigReader(consumerConfigType)
+func ConsumerRestConfigInit(configType string) error {
+	consumerConfigReader := extension.GetSingletonRestConfigReader(configType)
 	var restConsumerConfig *rest.RestConsumerConfig
 	var err error
 	if restConsumerConfig, err = consumerConfigReader.ReadConsumerConfig(); err != nil {
@@ -61,9 +60,8 @@ func ConsumerRestConfigInit() error {
 }
 
 // initProviderRestConfig ...
-func ProviderRestConfigInit() error {
-	providerConfigType := GetProviderConfig().RestConfigType
-	providerConfigReader := extension.GetSingletonRestConfigReader(providerConfigType)
+func ProviderRestConfigInit(configType string) error {
+	providerConfigReader := extension.GetSingletonRestConfigReader(configType)
 	var restProviderConfig *rest.RestProviderConfig
 	var err error
 	if restProviderConfig, err = providerConfigReader.ReadProviderConfig(); err != nil {
