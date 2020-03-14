@@ -51,7 +51,7 @@ func NewDefaultConfigReader() *DefaultConfigReader {
 func (dcr *DefaultConfigReader) ReadConsumerConfig() (*rest.RestConsumerConfig, error) {
 	confConFile := os.Getenv(constant.CONF_CONSUMER_FILE_PATH)
 	if len(confConFile) == 0 {
-		return nil, perrors.Errorf("[Rest Config] rest consumer configure(consumer) file name is nil")
+		return nil, nil
 	}
 	restConsumerConfig := &rest.RestConsumerConfig{}
 	err := yaml.UnmarshalYMLConfig(confConFile, restConsumerConfig)
@@ -64,8 +64,7 @@ func (dcr *DefaultConfigReader) ReadConsumerConfig() (*rest.RestConsumerConfig, 
 func (dcr *DefaultConfigReader) ReadProviderConfig() (*rest.RestProviderConfig, error) {
 	confProFile := os.Getenv(constant.CONF_PROVIDER_FILE_PATH)
 	if len(confProFile) == 0 {
-		return nil, perrors.Errorf("[Rest Config] rest provider configure(provider) file name is nil")
-
+		return nil, nil
 	}
 	restProviderConfig := &rest.RestProviderConfig{}
 	err := yaml.UnmarshalYMLConfig(confProFile, restProviderConfig)
