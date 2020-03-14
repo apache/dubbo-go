@@ -19,6 +19,8 @@ package rest
 
 import (
 	"context"
+	"github.com/apache/dubbo-go/protocol/rest/client"
+	"github.com/apache/dubbo-go/protocol/rest/client/client_impl"
 	"testing"
 	"time"
 )
@@ -31,10 +33,9 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/config/rest"
+	_ "github.com/apache/dubbo-go/config/rest/config_reader/reader_impl"
 	"github.com/apache/dubbo-go/protocol/invocation"
-	"github.com/apache/dubbo-go/protocol/rest/rest_client"
-	_ "github.com/apache/dubbo-go/protocol/rest/rest_config_reader"
-	"github.com/apache/dubbo-go/protocol/rest/rest_interface"
 )
 
 func TestRestInvoker_Invoke(t *testing.T) {
@@ -51,8 +52,8 @@ func TestRestInvoker_Invoke(t *testing.T) {
 	assert.NoError(t, err)
 	con := config.ProviderConfig{}
 	config.SetProviderConfig(con)
-	configMap := make(map[string]*rest_interface.RestServiceConfig)
-	methodConfigMap := make(map[string]*rest_interface.RestMethodConfig)
+	configMap := make(map[string]*rest.RestServiceConfig)
+	methodConfigMap := make(map[string]*rest.RestMethodConfig)
 	queryParamsMap := make(map[int]string)
 	queryParamsMap[1] = "age"
 	queryParamsMap[2] = "name"
@@ -60,7 +61,7 @@ func TestRestInvoker_Invoke(t *testing.T) {
 	pathParamsMap[0] = "userid"
 	headersMap := make(map[int]string)
 	headersMap[3] = "Content-Type"
-	methodConfigMap["GetUserOne"] = &rest_interface.RestMethodConfig{
+	methodConfigMap["GetUserOne"] = &rest.RestMethodConfig{
 		InterfaceName:  "",
 		MethodName:     "GetUserOne",
 		Path:           "/GetUserOne",
@@ -73,7 +74,7 @@ func TestRestInvoker_Invoke(t *testing.T) {
 		QueryParamsMap: nil,
 		Body:           0,
 	}
-	methodConfigMap["GetUserTwo"] = &rest_interface.RestMethodConfig{
+	methodConfigMap["GetUserTwo"] = &rest.RestMethodConfig{
 		InterfaceName:  "",
 		MethodName:     "GetUserTwo",
 		Path:           "/GetUserTwo",
@@ -86,7 +87,7 @@ func TestRestInvoker_Invoke(t *testing.T) {
 		QueryParamsMap: nil,
 		Body:           0,
 	}
-	methodConfigMap["GetUserThree"] = &rest_interface.RestMethodConfig{
+	methodConfigMap["GetUserThree"] = &rest.RestMethodConfig{
 		InterfaceName:  "",
 		MethodName:     "GetUserThree",
 		Path:           "/GetUserThree",
@@ -99,7 +100,7 @@ func TestRestInvoker_Invoke(t *testing.T) {
 		QueryParamsMap: nil,
 		Body:           0,
 	}
-	methodConfigMap["GetUserFour"] = &rest_interface.RestMethodConfig{
+	methodConfigMap["GetUserFour"] = &rest.RestMethodConfig{
 		InterfaceName:  "",
 		MethodName:     "GetUserFour",
 		Path:           "/GetUserFour",
@@ -112,7 +113,7 @@ func TestRestInvoker_Invoke(t *testing.T) {
 		QueryParamsMap: nil,
 		Body:           0,
 	}
-	methodConfigMap["GetUserFive"] = &rest_interface.RestMethodConfig{
+	methodConfigMap["GetUserFive"] = &rest.RestMethodConfig{
 		InterfaceName: "",
 		MethodName:    "GetUserFive",
 		Path:          "/GetUserFive",
@@ -120,7 +121,7 @@ func TestRestInvoker_Invoke(t *testing.T) {
 		Consumes:      "*/*",
 		MethodType:    "GET",
 	}
-	methodConfigMap["GetUser"] = &rest_interface.RestMethodConfig{
+	methodConfigMap["GetUser"] = &rest.RestMethodConfig{
 		InterfaceName:  "",
 		MethodName:     "GetUser",
 		Path:           "/GetUser/{userid}",
@@ -135,19 +136,19 @@ func TestRestInvoker_Invoke(t *testing.T) {
 		HeadersMap:     headersMap,
 	}
 
-	configMap["com.ikurento.user.UserProvider"] = &rest_interface.RestServiceConfig{
+	configMap["com.ikurento.user.UserProvider"] = &rest.RestServiceConfig{
 		Server:               "go-restful",
 		RestMethodConfigsMap: methodConfigMap,
 	}
-	SetRestProviderServiceConfigMap(configMap)
+	config.SetRestProviderServiceConfigMap(configMap)
 	proxyFactory := extension.GetProxyFactory("default")
 	proto.Export(proxyFactory.GetInvoker(url))
 	time.Sleep(5 * time.Second)
-	configMap = make(map[string]*rest_interface.RestServiceConfig)
-	configMap["com.ikurento.user.UserProvider"] = &rest_interface.RestServiceConfig{
+	configMap = make(map[string]*rest.RestServiceConfig)
+	configMap["com.ikurento.user.UserProvider"] = &rest.RestServiceConfig{
 		RestMethodConfigsMap: methodConfigMap,
 	}
-	restClient := rest_client.GetRestyClient(&rest_interface.RestOptions{ConnectTimeout: 3 * time.Second, RequestTimeout: 3 * time.Second})
+	restClient := client_impl.GetRestyClient(&client.RestOptions{ConnectTimeout: 3 * time.Second, RequestTimeout: 3 * time.Second})
 	invoker := NewRestInvoker(url, &restClient, methodConfigMap)
 	user := &User{}
 	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUser"),
