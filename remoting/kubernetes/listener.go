@@ -33,7 +33,7 @@ import (
 
 type EventListener struct {
 	client     *Client
-	keyMapLock sync.Mutex
+	keyMapLock sync.RWMutex
 	keyMap     map[string]struct{}
 	wg         sync.WaitGroup
 }
@@ -157,9 +157,9 @@ func timeSecondDuration(sec int) time.Duration {
 //                            --------> ListenServiceNodeEvent
 func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataListener) {
 
-	l.keyMapLock.Lock()
+	l.keyMapLock.RLock()
 	_, ok := l.keyMap[key]
-	l.keyMapLock.Unlock()
+	l.keyMapLock.RUnlock()
 	if ok {
 		logger.Warnf("kubernetes-store key %s has already been listened.", key)
 		return
