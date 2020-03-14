@@ -129,6 +129,11 @@ func ConsumerInit(confConFile string) error {
 			return perrors.WithMessagef(err, "time.ParseDuration(Connect_Timeout{%#v})", consumerConfig.Connect_Timeout)
 		}
 	}
+
+	//start the metadata report if config set
+	if err := startMetadataReport(); err != nil {
+		return perrors.WithMessagef(err, "Consumer start metadata report error ,error is {%#v}", err)
+	}
 	logger.Debugf("consumer config{%#v}\n", consumerConfig)
 	return nil
 }
@@ -154,15 +159,4 @@ func configCenterRefreshConsumer() error {
 		}
 	}
 	return err
-}
-
-// StartMetadataReport: The entry of metadata report start
-func startMetadataReport() error {
-	metadataConfig := consumerConfig.ApplicationConfig.MetadataType
-	if metadataConfig == constant.METACONFIG_REMOTE && consumerConfig.MetadataReportConfig == nil {
-		return perrors.New("No MetadataConfig found, you must specify the remote Metadata Center address when 'metadata=remote' is enabled.")
-	} else if metadataConfig == constant.METACONFIG_REMOTE && len(consumerConfig.MetadataReportConfig.Address) == 0 {
-		return perrors.New("MetadataConfig address can not be empty.")
-	}
-	return nil
 }

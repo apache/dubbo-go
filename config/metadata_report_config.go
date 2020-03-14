@@ -18,6 +18,7 @@
 package config
 
 import (
+	"github.com/apache/dubbo-go/metadata"
 	"net/url"
 )
 import (
@@ -32,6 +33,7 @@ import (
 
 // MethodConfig ...
 type MetadataReportConfig struct {
+	Protocol   string            `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
 	Address    string            `yaml:"address" json:"address,omitempty" property:"address"`
 	Username   string            `yaml:"username" json:"username,omitempty" property:"username"`
 	Password   string            `yaml:"password" json:"password,omitempty"  property:"password"`
@@ -70,10 +72,31 @@ func (c *MetadataReportConfig) ToUrl() (*common.URL, error) {
 		common.WithUsername(c.Username),
 		common.WithPassword(c.Password),
 		common.WithLocation(c.Address),
+		common.WithProtocol(c.Protocol),
 	)
 	if err != nil {
 		return nil, perrors.New("Invalid MetadataReportConfig.")
 	}
 	url.SetParam("metadata", url.Protocol)
 	return &url, nil
+}
+
+// StartMetadataReport: The entry of metadata report start
+func startMetadataReport() error {
+	metadataConfig := consumerConfig.ApplicationConfig.MetadataType
+	if consumerConfig.MetadataReportConfig == nil {
+		return nil
+	} else {
+		if metadataConfig == constant.METACONFIG_REMOTE {
+			return perrors.New("No MetadataConfig found, you must specify the remote Metadata Center address when 'metadata=remote' is enabled.")
+		} else if metadataConfig == constant.METACONFIG_REMOTE && len(consumerConfig.MetadataReportConfig.Address) == 0 {
+			return perrors.New("MetadataConfig address can not be empty.")
+		}
+		if url, err := consumerConfig.MetadataReportConfig.ToUrl(); err == nil {
+			metadata.Init(url)
+		} else {
+			return perrors.New("MetadataConfig is invalid!")
+		}
+	}
+	return nil
 }
