@@ -245,7 +245,7 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 			if err != nil {
 				logger.Errorf("Get new node path {%v} 's content error,message is  {%v}", dubboPath, perrors.WithStack(err))
 			}
-			logger.Infof("Get children!{%s}", dubboPath)
+			logger.Debugf("Get children!{%s}", dubboPath)
 			if !listener.DataChange(remoting.Event{Path: dubboPath, Action: remoting.EventTypeAdd, Content: string(content)}) {
 				continue
 			}

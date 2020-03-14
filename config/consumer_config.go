@@ -18,8 +18,6 @@
 package config
 
 import (
-	"io/ioutil"
-	"path"
 	"time"
 )
 
@@ -27,7 +25,6 @@ import (
 	"github.com/creasty/defaults"
 	"github.com/dubbogo/getty"
 	perrors "github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 )
 
 import (
@@ -91,16 +88,8 @@ func ConsumerInit(confConFile string) error {
 		return perrors.Errorf("application configure(consumer) file name is nil")
 	}
 
-	if path.Ext(confConFile) != ".yml" {
-		return perrors.Errorf("application configure file name{%v} suffix must be .yml", confConFile)
-	}
-
-	confFileStream, err := ioutil.ReadFile(confConFile)
-	if err != nil {
-		return perrors.Errorf("ioutil.ReadFile(file:%s) = error:%v", confConFile, perrors.WithStack(err))
-	}
 	consumerConfig = &ConsumerConfig{}
-	err = yaml.Unmarshal(confFileStream, consumerConfig)
+	err := unmarshalYMLConfig(confConFile, consumerConfig)
 	if err != nil {
 		return perrors.Errorf("yaml.Unmarshal() = error:%v", perrors.WithStack(err))
 	}
