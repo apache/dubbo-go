@@ -18,7 +18,6 @@
 package config
 
 import (
-	"log"
 	"strconv"
 	"strings"
 )
@@ -40,17 +39,8 @@ var (
 	restProviderServiceConfigMap map[string]*rest.RestServiceConfig
 )
 
-func init() {
-	if err := initConsumerRestConfig(); err != nil {
-		log.Printf("[initConsumerRestConfig] %#v", err)
-	}
-	if err := initProviderRestConfig(); err != nil {
-		log.Printf("[initProviderRestConfig] %#v", err)
-	}
-}
-
 // initConsumerRestConfig ...
-func initConsumerRestConfig() error {
+func ConsumerRestConfigInit() error {
 	consumerConfigType := GetConsumerConfig().RestConfigType
 	consumerConfigReader := extension.GetSingletonRestConfigReader(consumerConfigType)
 	var restConsumerConfig *rest.RestConsumerConfig
@@ -71,7 +61,7 @@ func initConsumerRestConfig() error {
 }
 
 // initProviderRestConfig ...
-func initProviderRestConfig() error {
+func ProviderRestConfigInit() error {
 	providerConfigType := GetProviderConfig().RestConfigType
 	providerConfigReader := extension.GetSingletonRestConfigReader(providerConfigType)
 	var restProviderConfig *rest.RestProviderConfig
