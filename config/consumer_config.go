@@ -45,8 +45,6 @@ type ConsumerConfig struct {
 	Filter     string `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	// application
 	ApplicationConfig *ApplicationConfig `yaml:"application" json:"application,omitempty" property:"application"`
-	// metadata-report
-	MetadataReportConfig *MetadataReportConfig `yaml:"metadata_report" json:"metadata_report,omitempty" property:"metadata_report"`
 
 	// client
 	Connect_Timeout string `default:"100ms"  yaml:"connect_timeout" json:"connect_timeout,omitempty" property:"connect_timeout"`
@@ -130,10 +128,6 @@ func ConsumerInit(confConFile string) error {
 		}
 	}
 
-	//start the metadata report if config set
-	if err := startMetadataReport(); err != nil {
-		return perrors.WithMessagef(err, "Consumer start metadata report error ,error is {%#v}", err)
-	}
 	logger.Debugf("consumer config{%#v}\n", consumerConfig)
 	return nil
 }
