@@ -96,14 +96,12 @@ func (c *ServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 // NewServiceConfig The only way to get a new ServiceConfig
 func NewServiceConfig(id string, context context.Context) *ServiceConfig {
-
 	return &ServiceConfig{
 		context:    context,
 		id:         id,
 		unexported: atomic.NewBool(false),
 		exported:   atomic.NewBool(false),
 	}
-
 }
 
 // Export ...
@@ -171,10 +169,8 @@ func (c *ServiceConfig) Export() error {
 				panic(perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error,url is {%v}", ivkURL)))
 			}
 		}
-
 	}
 	return nil
-
 }
 
 // Implement ...
@@ -242,5 +238,4 @@ func (c *ServiceConfig) getUrlMap() url.Values {
 	}
 
 	return urlMap
-
 }

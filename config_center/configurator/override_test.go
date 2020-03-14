@@ -40,8 +40,8 @@ func Test_configureVerison2p6(t *testing.T) {
 	assert.NoError(t, err)
 	configurator.Configure(&providerUrl)
 	assert.Equal(t, "failfast", providerUrl.GetParam(constant.CLUSTER_KEY, ""))
-
 }
+
 func Test_configureVerisonOverrideAddr(t *testing.T) {
 	url, err := common.NewURL("override://0.0.0.0:0/com.xxx.mock.userProvider?group=1&version=1&cluster=failfast&application=BDTService&providerAddresses=127.0.0.2:20001|127.0.0.3:20001")
 	assert.NoError(t, err)
@@ -52,8 +52,8 @@ func Test_configureVerisonOverrideAddr(t *testing.T) {
 	assert.NoError(t, err)
 	configurator.Configure(&providerUrl)
 	assert.Equal(t, "failover", providerUrl.GetParam(constant.CLUSTER_KEY, ""))
-
 }
+
 func Test_configureVerison2p6WithIp(t *testing.T) {
 	url, err := common.NewURL("override://127.0.0.1:20001/com.xxx.mock.userProvider?group=1&version=1&cluster=failfast&application=BDTService")
 	assert.NoError(t, err)

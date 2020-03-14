@@ -412,7 +412,7 @@ func (z *ZookeeperClient) Create(basePath string) error {
 
 		if err != nil {
 			if err == zk.ErrNodeExists {
-				logger.Infof("zk.create(\"%s\") exists\n", tmpPath)
+				logger.Debugf("zk.create(\"%s\") exists\n", tmpPath)
 			} else {
 				logger.Errorf("zk.create(\"%s\") error(%v)\n", tmpPath, perrors.WithStack(err))
 				return perrors.WithMessagef(err, "zk.Create(path:%s)", basePath)
