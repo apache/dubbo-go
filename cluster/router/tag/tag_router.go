@@ -76,8 +76,7 @@ func filterUsingStaticTag(invokers []protocol.Invoker, url *common.URL, invocati
 		if len(result) == 0 && !isForceUseTag(url, invocation) {
 			return invokers
 		}
-		panic(1)
-		return result
+		return invokers
 	} else {
 		return invokers
 	}
