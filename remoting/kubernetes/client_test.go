@@ -24,10 +24,9 @@ import (
 	"sync"
 	"testing"
 	"time"
-)
 
-import (
 	"github.com/stretchr/testify/suite"
+
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
@@ -196,8 +195,27 @@ var clientPodJsonData = `{
 type KubernetesClientTestSuite struct {
 	suite.Suite
 
-	client     *Client
 	currentPod v1.Pod
+}
+
+func (s *KubernetesClientTestSuite) initClient() *Client {
+
+	t := s.T()
+
+	client, err := newMockClient(s.currentPod.GetNamespace(), func() (kubernetes.Interface, error) {
+
+		out := fake.NewSimpleClientset()
+
+		// mock current pod
+		if _, err := out.CoreV1().Pods(s.currentPod.GetNamespace()).Create(&s.currentPod); err != nil {
+			t.Fatal(err)
+		}
+		return out, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return client
 }
 
 func (s *KubernetesClientTestSuite) SetupSuite() {
@@ -218,39 +236,19 @@ func (s *KubernetesClientTestSuite) SetupSuite() {
 	}
 }
 
-func (s *KubernetesClientTestSuite) TearDownSuite() {
-	s.client.Close()
-}
-
-func (s *KubernetesClientTestSuite) SetupTest() {
-
-	t := s.T()
-	var err error
-	s.client, err = newMockClient(s.currentPod.GetNamespace(), func() (kubernetes.Interface, error) {
-
-		out := fake.NewSimpleClientset()
-
-		// mock current pod
-		if _, err := out.CoreV1().Pods(s.currentPod.GetNamespace()).Create(&s.currentPod); err != nil {
-			t.Fatal(err)
-		}
-		return out, nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
 func (s *KubernetesClientTestSuite) TestClientValid() {
 
 	t := s.T()
 
-	if s.client.Valid() != true {
+	client := s.initClient()
+	defer client.Close()
+
+	if client.Valid() != true {
 		t.Fatal("client is not valid")
 	}
-	s.client.Close()
 
-	if s.client.Valid() != false {
+	client.Close()
+	if client.Valid() != false {
 		t.Fatal("client is valid")
 	}
 }
@@ -259,14 +257,16 @@ func (s *KubernetesClientTestSuite) TestClientDone() {
 
 	t := s.T()
 
+	client := s.initClient()
+
 	go func() {
 		time.Sleep(time.Second)
-		s.client.Close()
+		client.Close()
 	}()
 
-	<-s.client.Done()
+	<-client.Done()
 
-	if s.client.Valid() == true {
+	if client.Valid() == true {
 		t.Fatal("client should be invalid then")
 	}
 }
@@ -274,14 +274,16 @@ func (s *KubernetesClientTestSuite) TestClientDone() {
 func (s *KubernetesClientTestSuite) TestClientCreateKV() {
 
 	t := s.T()
-	defer s.client.Close()
+
+	client := s.initClient()
+	defer client.Close()
 
 	for _, tc := range tests {
 
 		k := tc.input.k
 		v := tc.input.v
 
-		if err := s.client.Create(k, v); err != nil {
+		if err := client.Create(k, v); err != nil {
 			t.Fatal(err)
 		}
 
@@ -291,7 +293,9 @@ func (s *KubernetesClientTestSuite) TestClientCreateKV() {
 func (s *KubernetesClientTestSuite) TestClientGetChildrenKVList() {
 
 	t := s.T()
-	defer s.client.Close()
+
+	client := s.initClient()
+	defer client.Close()
 
 	expect := make(map[string]string)
 	got := make(map[string]string)
@@ -305,12 +309,12 @@ func (s *KubernetesClientTestSuite) TestClientGetChildrenKVList() {
 			expect[k] = v
 		}
 
-		if err := s.client.Create(k, v); err != nil {
+		if err := client.Create(k, v); err != nil {
 			t.Fatal(err)
 		}
 	}
 
-	kList, vList, err := s.client.GetChildren(prefix)
+	kList, vList, err := client.GetChildren(prefix)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -332,6 +336,8 @@ func (s *KubernetesClientTestSuite) TestClientWatch() {
 
 	t := s.T()
 
+	client := s.initClient()
+
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
@@ -339,7 +345,7 @@ func (s *KubernetesClientTestSuite) TestClientWatch() {
 
 		defer wg.Done()
 
-		wc, err := s.client.WatchWithPrefix(prefix)
+		wc, err := client.WatchWithPrefix(prefix)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -355,12 +361,12 @@ func (s *KubernetesClientTestSuite) TestClientWatch() {
 		k := tc.input.k
 		v := tc.input.v
 
-		if err := s.client.Create(k, v); err != nil {
+		if err := client.Create(k, v); err != nil {
 			t.Fatal(err)
 		}
 	}
 
-	s.client.Close()
+	client.Close()
 	wg.Wait()
 }
 
