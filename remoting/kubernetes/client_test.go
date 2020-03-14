@@ -297,6 +297,27 @@ func (s *KubernetesClientTestSuite) TestClientGetChildrenKVList() {
 	client := s.initClient()
 	defer client.Close()
 
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+
+		wc, err := client.WatchWithPrefix(prefix)
+		if err != nil {
+			t.Fatal(err)
+		}
+		i := 0
+		for e := range wc {
+			i++
+			t.Logf("got event %v k %s v %s", e.EventType, e.Key, e.Value)
+			if i == 3 {
+				// already sync all event
+				return
+			}
+		}
+	}()
+
 	expect := make(map[string]string)
 	got := make(map[string]string)
 
@@ -314,6 +335,11 @@ func (s *KubernetesClientTestSuite) TestClientGetChildrenKVList() {
 		}
 	}
 
+	// must wait client sync all create event
+
+	wg.Wait()
+
+	// start get all children
 	kList, vList, err := client.GetChildren(prefix)
 	if err != nil {
 		t.Fatal(err)
