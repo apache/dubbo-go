@@ -64,7 +64,7 @@ func (rp *RestProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetUrl()
 	serviceKey := url.ServiceKey()
 	exporter := NewRestExporter(serviceKey, invoker, rp.ExporterMap())
-	restServiceConfig := GetRestProviderServiceConfig(strings.TrimPrefix(url.Path, "/"))
+	restServiceConfig := config.GetRestProviderServiceConfig(strings.TrimPrefix(url.Path, "/"))
 	if restServiceConfig == nil {
 		logger.Errorf("%s service doesn't has provider config", url.Path)
 		return nil
@@ -83,7 +83,7 @@ func (rp *RestProtocol) Refer(url common.URL) protocol.Invoker {
 	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
 		requestTimeout = t
 	}
-	restServiceConfig := GetRestConsumerServiceConfig(strings.TrimPrefix(url.Path, "/"))
+	restServiceConfig := config.GetRestConsumerServiceConfig(strings.TrimPrefix(url.Path, "/"))
 	if restServiceConfig == nil {
 		logger.Errorf("%s service doesn't has consumer config", url.Path)
 		return nil
@@ -107,11 +107,12 @@ func (rp *RestProtocol) getServer(url common.URL, serverType string) rest_interf
 	rp.serverLock.Lock()
 	defer rp.serverLock.Unlock()
 	restServer, ok = rp.serverMap[url.Location]
-	if !ok {
-		restServer = extension.GetNewRestServer(serverType)
-		restServer.Start(url)
-		rp.serverMap[url.Location] = restServer
+	if ok {
+		return restServer
 	}
+	restServer = extension.GetNewRestServer(serverType)
+	restServer.Start(url)
+	rp.serverMap[url.Location] = restServer
 	return restServer
 }
 
@@ -123,10 +124,11 @@ func (rp *RestProtocol) getClient(restOptions rest_interface.RestOptions, client
 	rp.clientLock.Lock()
 	defer rp.clientLock.Unlock()
 	restClient, ok = rp.clientMap[restOptions]
-	if !ok {
-		restClient = extension.GetNewRestClient(clientType, &restOptions)
-		rp.clientMap[restOptions] = restClient
+	if ok {
+		return restClient
 	}
+	restClient = extension.GetNewRestClient(clientType, &restOptions)
+	rp.clientMap[restOptions] = restClient
 	return restClient
 }
 

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package rest_config_reader
+package reader_impl
 
 import (
 	"os"
@@ -34,7 +34,8 @@ func TestDefaultConfigReader_ReadConsumerConfig(t *testing.T) {
 	err := os.Setenv(constant.CONF_CONSUMER_FILE_PATH, "./testdata/consumer_config.yml")
 	assert.NoError(t, err)
 	reader := GetDefaultConfigReader()
-	config := reader.ReadConsumerConfig()
+	config, err := reader.ReadConsumerConfig()
+	assert.Nil(t, err)
 	assert.NotEmpty(t, config)
 }
 
@@ -42,6 +43,7 @@ func TestDefaultConfigReader_ReadProviderConfig(t *testing.T) {
 	err := os.Setenv(constant.CONF_PROVIDER_FILE_PATH, "./testdata/provider_config.yml")
 	assert.NoError(t, err)
 	reader := GetDefaultConfigReader()
-	config := reader.ReadProviderConfig()
+	config, err := reader.ReadProviderConfig()
+	assert.Nil(t, err)
 	assert.NotEmpty(t, config)
 }
