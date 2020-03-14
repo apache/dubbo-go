@@ -418,7 +418,6 @@ func (c *Client) handleWatchedPodEvent(p *v1.Pod, eventType watch.EventType) {
 func (c *Client) unmarshalRecord(record string) ([]*Object, error) {
 
 	if len(record) == 0 {
-		// NOTICE:
 		// []*Object is nil.
 		return nil, nil
 	}
@@ -503,12 +502,14 @@ func (c *Client) patchCurrentPod(patch []byte) (*v1.Pod, error) {
 	return updatedPod, nil
 }
 
-// assemble the dubbo kubernete label
+// assemble the dubbo kubernetes label
 // every dubbo instance should be labeled spec {"dubbo.io/label":"dubbo.io/label-value"} label
-func (c *Client) assembleDUBBOLabel(currentPod *v1.Pod) (oldPod *v1.Pod, newPod *v1.Pod, err error) {
+func (c *Client) assembleDUBBOLabel(currentPod *v1.Pod) (*v1.Pod, *v1.Pod, error) {
 
-	oldPod = &v1.Pod{}
-	newPod = &v1.Pod{}
+	var (
+		oldPod = &v1.Pod{}
+		newPod = &v1.Pod{}
+	)
 
 	oldPod.Labels = make(map[string]string, 8)
 	newPod.Labels = make(map[string]string, 8)
@@ -517,8 +518,7 @@ func (c *Client) assembleDUBBOLabel(currentPod *v1.Pod) (oldPod *v1.Pod, newPod 
 
 		if currentPod.GetLabels()[DubboIOLabelKey] == DubboIOLabelValue {
 			// already have label
-			err = ErrDubboLabelAlreadyExist
-			return
+			return nil, nil, ErrDubboLabelAlreadyExist
 		}
 	}
 
@@ -529,7 +529,7 @@ func (c *Client) assembleDUBBOLabel(currentPod *v1.Pod) (oldPod *v1.Pod, newPod 
 	}
 	// assign new label for current pod
 	newPod.Labels[DubboIOLabelKey] = DubboIOLabelValue
-	return
+	return oldPod, newPod, nil
 }
 
 // assemble the dubbo kubernetes annotations

@@ -92,7 +92,7 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
 		case <-l.registry.Done():
-			logger.Warnf("listener's kubernetes client connection is broken, so kubernetes event listener exit now.")
+			logger.Warnf("listener's kubernetes client connection is broken, so kubernetes event listener exits now.")
 			return nil, perrors.New("listener stopped")
 
 		case e := <-l.events:
