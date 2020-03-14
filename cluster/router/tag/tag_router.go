@@ -49,7 +49,6 @@ func (c *tagRouter) isEnabled() bool {
 }
 
 func (c *tagRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
-	panic("1")
 	if !c.isEnabled() {
 		return invokers
 	}
