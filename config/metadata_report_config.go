@@ -18,9 +18,9 @@
 package config
 
 import (
-	"github.com/apache/dubbo-go/metadata"
 	"net/url"
 )
+
 import (
 	"github.com/creasty/defaults"
 	perrors "github.com/pkg/errors"
@@ -29,6 +29,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/config/instance"
 )
 
 // MethodConfig ...
@@ -93,7 +94,7 @@ func startMetadataReport() error {
 			return perrors.New("MetadataConfig address can not be empty.")
 		}
 		if url, err := consumerConfig.MetadataReportConfig.ToUrl(); err == nil {
-			metadata.Init(url)
+			instance.GetMetadataReportInstance(url)
 		} else {
 			return perrors.New("MetadataConfig is invalid!")
 		}
