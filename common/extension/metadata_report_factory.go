@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	metaDataReportFactories = make(map[string]func() metadata.MetadataReportFactory)
+	metaDataReportFactories = make(map[string]func() metadata.MetadataReportFactory, 8)
 )
 
 // SetMetadataReportFactory ...
@@ -30,7 +30,7 @@ func SetMetadataReportFactory(name string, v func() metadata.MetadataReportFacto
 	metaDataReportFactories[name] = v
 }
 
-// GetConfigCenterFactory ...
+// GetMetadataReportFactory ...
 func GetMetadataReportFactory(name string) metadata.MetadataReportFactory {
 	if metaDataReportFactories[name] == nil {
 		panic("metadata report for " + name + " is not existing, make sure you have import the package.")

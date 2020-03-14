@@ -42,6 +42,8 @@ type ProviderConfig struct {
 	BaseConfig   `yaml:",inline"`
 	Filter       string `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	ProxyFactory string `yaml:"proxy_factory" default:"default" json:"proxy_factory,omitempty" property:"proxy_factory"`
+	// metadata-report
+	MetadataReportConfig *MetadataReportConfig `yaml:"metadata_report" json:"metadata_report,omitempty" property:"metadata_report"`
 
 	ApplicationConfig *ApplicationConfig         `yaml:"application" json:"application,omitempty" property:"application"`
 	Registry          *RegistryConfig            `yaml:"registry" json:"registry,omitempty" property:"registry"`
@@ -104,8 +106,8 @@ func ProviderInit(confProFile string) error {
 		}
 	}
 	//start the metadata report if config set
-	if err := startMetadataReport(); err != nil {
-		return perrors.WithMessagef(err, "Provider start metadata report error ,error is {%#v}", err)
+	if err := startMetadataReport(providerConfig.ApplicationConfig.MetadataType, providerConfig.MetadataReportConfig); err != nil {
+		return perrors.WithMessagef(err, "Provider starts metadata report error, and the error is {%#v}", err)
 	}
 	logger.Debugf("provider config{%#v}\n", providerConfig)
 
