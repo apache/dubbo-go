@@ -19,7 +19,6 @@ package kubernetes
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"sync"
 	"testing"
@@ -43,11 +42,10 @@ func TestStore(t *testing.T) {
 			defer wg.Done()
 			w, err := s.Watch("key-1", false)
 			if err != nil {
-				fmt.Println("watch spec result", err)
-				return
+				t.Fatal(err)
 			}
 			for e := range w.ResultChan() {
-				fmt.Printf("consumer %s got %s\n", w.ID(), e.Key)
+				t.Logf("consumer %s got %s\n", w.ID(), e.Key)
 			}
 		}()
 	}
@@ -59,11 +57,10 @@ func TestStore(t *testing.T) {
 			defer wg.Done()
 			w, err := s.Watch("key", true)
 			if err != nil {
-				fmt.Println("watch prefix result", err)
-				return
+				t.Fatal(err)
 			}
 			for e := range w.ResultChan() {
-				fmt.Printf("prefix consumer %s got %s\n", w.ID(), e.Key)
+				t.Logf("prefix consumer %s got %s\n", w.ID(), e.Key)
 			}
 		}()
 	}
