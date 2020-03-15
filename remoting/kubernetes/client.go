@@ -605,26 +605,26 @@ func (c *Client) GetChildren(k string) ([]string, []string, error) {
 
 // Watch
 // watch on spec key
-func (c *Client) Watch(k string) (<-chan *Object, error) {
+func (c *Client) Watch(k string) (<-chan *Object, <-chan struct{}, error) {
 
 	w, err := c.store.Watch(k, false)
 	if err != nil {
-		return nil, perrors.WithMessagef(err, "watch on (%s)", k)
+		return nil, nil, perrors.WithMessagef(err, "watch on (%s)", k)
 	}
 
-	return w.ResultChan(), nil
+	return w.ResultChan(), w.done(), nil
 }
 
 // Watch
 // watch on spec prefix
-func (c *Client) WatchWithPrefix(prefix string) (<-chan *Object, error) {
+func (c *Client) WatchWithPrefix(prefix string) (<-chan *Object, <-chan struct{}, error) {
 
 	w, err := c.store.Watch(prefix, true)
 	if err != nil {
-		return nil, perrors.WithMessagef(err, "watch on prefix (%s)", prefix)
+		return nil, nil, perrors.WithMessagef(err, "watch on prefix (%s)", prefix)
 	}
 
-	return w.ResultChan(), nil
+	return w.ResultChan(), w.done(), nil
 }
 
 // Valid
