@@ -37,14 +37,14 @@ import (
 )
 
 func init() {
-	extension.SetRestClient(constant.DEFAULT_REST_CLIENT, GetRestyClient)
+	extension.SetRestClient(constant.DEFAULT_REST_CLIENT, NewRestyClient)
 }
 
 type RestyClient struct {
 	client *resty.Client
 }
 
-func NewRestyClient(restOption *client.RestOptions) *RestyClient {
+func NewRestyClient(restOption *client.RestOptions) client.RestClient {
 	client := resty.New()
 	client.SetTransport(
 		&http.Transport{
@@ -82,8 +82,4 @@ func (rc *RestyClient) Do(restRequest *client.RestRequest, res interface{}) erro
 		return perrors.New(r.String())
 	}
 	return nil
-}
-
-func GetRestyClient(restOptions *client.RestOptions) client.RestClient {
-	return NewRestyClient(restOptions)
 }
