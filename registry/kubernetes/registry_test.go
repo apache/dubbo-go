@@ -46,6 +46,7 @@ func (s *KubernetesRegistryTestSuite) TestRegister() {
 	if err != nil {
 		t.Fatal(err)
 	}
+	r.WaitGroup().Done()
 }
 
 func (s *KubernetesRegistryTestSuite) TestSubscribe() {
@@ -75,6 +76,8 @@ func (s *KubernetesRegistryTestSuite) TestSubscribe() {
 	}
 
 	t.Logf("got event %s", serviceEvent)
+
+	r.WaitGroup().Done()
 }
 
 func (s *KubernetesRegistryTestSuite) TestConsumerDestroy() {
@@ -85,12 +88,12 @@ func (s *KubernetesRegistryTestSuite) TestConsumerDestroy() {
 
 	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 
-	_, err := r.DoSubscribe(&url)
+	listener, err := r.DoSubscribe(&url)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	//listener.Close()
+	listener.Close()
 	time.Sleep(1e9)
 	r.Destroy()
 
@@ -108,7 +111,8 @@ func (s *KubernetesRegistryTestSuite) TestProviderDestroy() {
 	err := r.Register(url)
 	assert.NoError(t, err)
 
-	//listener.Close()
+	r.WaitGroup().Done()
+
 	time.Sleep(1e9)
 	r.Destroy()
 	assert.Equal(t, false, r.IsAvailable())
