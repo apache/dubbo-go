@@ -19,7 +19,6 @@ package kubernetes
 
 import (
 	"encoding/json"
-	"net/http"
 	"os"
 	"strings"
 	"sync"
@@ -237,7 +236,6 @@ func (s *KubernetesClientTestSuite) SetupSuite() {
 		t.Fatal(err)
 	}
 
-	go http.ListenAndServe(":6061", nil)
 }
 
 func (s *KubernetesClientTestSuite) TestReadCurrentPodName() {
