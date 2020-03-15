@@ -15,14 +15,17 @@
  * limitations under the License.
  */
 
-package constant
+package server
 
 import (
-	"time"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/rest/config"
 )
 
-var (
-	// The value will be 10^6
-	// 1ms = 10^6ns
-	MsToNanoRate = int64(time.Millisecond / time.Nanosecond)
-)
+type RestServer interface {
+	Start(url common.URL)
+	Deploy(invoker protocol.Invoker, restMethodConfig map[string]*config.RestMethodConfig)
+	UnDeploy(restMethodConfig map[string]*config.RestMethodConfig)
+	Destroy()
+}
