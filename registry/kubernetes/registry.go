@@ -23,9 +23,11 @@ import (
 	"path"
 	"strings"
 	"sync"
+	"time"
 )
 
 import (
+	"github.com/dubbogo/getty"
 	"github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 	k8s "k8s.io/client-go/kubernetes"
@@ -46,7 +48,9 @@ var (
 )
 
 const (
-	Name = "kubernetes"
+	Name         = "kubernetes"
+	ConnDelay    = 3
+	MaxFailTimes = 15
 )
 
 func init() {
@@ -57,7 +61,7 @@ func init() {
 
 type kubernetesRegistry struct {
 	registry.BaseRegistry
-	cltLock        sync.Mutex
+	cltLock        sync.RWMutex
 	client         *kubernetes.Client
 	listenerLock   sync.Mutex
 	listener       *kubernetes.EventListener
@@ -66,13 +70,15 @@ type kubernetesRegistry struct {
 }
 
 func (r *kubernetesRegistry) Client() *kubernetes.Client {
-	return r.client
+	r.cltLock.RLock()
+	client := r.client
+	r.cltLock.RUnlock()
+	return client
 }
 func (r *kubernetesRegistry) SetClient(client *kubernetes.Client) {
+	r.cltLock.Lock()
 	r.client = client
-}
-func (r *kubernetesRegistry) ClientLock() *sync.Mutex {
-	return &r.cltLock
+	r.cltLock.Unlock()
 }
 
 func (r *kubernetesRegistry) CloseAndNilClient() {
@@ -154,7 +160,7 @@ func newKubernetesRegistry(url *common.URL) (registry.Registry, error) {
 	}
 
 	r.WaitGroup().Add(1)
-	go kubernetes.HandleClientRestart(r)
+	go r.HandleClientRestart()
 	r.InitListeners()
 
 	logger.Debugf("the kubernetes registry started")
@@ -178,7 +184,56 @@ func newMockKubernetesRegistry(
 		return nil, perrors.WithMessage(err, "new mock client")
 	}
 	r.WaitGroup().Add(1) //zk client start successful, then wg +1
-	go kubernetes.HandleClientRestart(r)
+	go r.HandleClientRestart()
 	r.InitListeners()
 	return r, nil
+}
+
+func (r *kubernetesRegistry) HandleClientRestart() {
+
+	var (
+		err       error
+		failTimes int
+	)
+
+	defer r.WaitGroup()
+LOOP:
+	for {
+		select {
+		case <-r.Done():
+			logger.Warnf("(KubernetesProviderRegistry)reconnectKubernetes goroutine exit now...")
+			break LOOP
+			// re-register all services
+		case <-r.Client().Done():
+			r.Client().Close()
+			r.SetClient(nil)
+
+			// try to connect to kubernetes,
+			failTimes = 0
+			for {
+				select {
+				case <-r.Done():
+					logger.Warnf("(KubernetesProviderRegistry)reconnectKubernetes Registry goroutine exit now...")
+					break LOOP
+				case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)): // avoid connect frequent
+				}
+				err = kubernetes.ValidateClient(r)
+				logger.Infof("Kubernetes ProviderRegistry.validateKubernetesClient = error{%#v}", perrors.WithStack(err))
+
+				if err == nil {
+					if r.RestartCallBack() {
+						break
+					}
+				}
+				failTimes++
+				if MaxFailTimes <= failTimes {
+					failTimes = MaxFailTimes
+				}
+			}
+		}
+	}
+}
+
+func timeSecondDuration(sec int) time.Duration {
+	return time.Duration(sec) * time.Second
 }

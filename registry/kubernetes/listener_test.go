@@ -19,6 +19,8 @@ package kubernetes
 
 import (
 	"encoding/json"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"strconv"
 	"testing"
@@ -237,6 +239,8 @@ func (s *KubernetesRegistryTestSuite) SetupSuite() {
 	if err := os.Setenv(nameSpaceKey, s.currentPod.GetNamespace()); err != nil {
 		t.Fatal(err)
 	}
+
+	go http.ListenAndServe(":6061", nil)
 
 }
 
