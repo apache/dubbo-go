@@ -18,6 +18,7 @@
 package kubernetes
 
 import (
+	"strconv"
 	"time"
 )
 
@@ -111,4 +112,18 @@ func (s *KubernetesRegistryTestSuite) TestProviderDestroy() {
 	time.Sleep(1e9)
 	r.Destroy()
 	assert.Equal(t, false, r.IsAvailable())
+}
+
+func (s *KubernetesRegistryTestSuite) TestNewRegistry() {
+
+	t := s.T()
+
+	regUrl, err := common.NewURL("registry://127.0.0.1:443", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = newKubernetesRegistry(&regUrl)
+	if err == nil {
+		t.Fatal("not in cluster, should be a err")
+	}
 }
