@@ -17,9 +17,11 @@
 
 package config
 
+import "context"
+
 // GenericService ...
 type GenericService struct {
-	Invoke       func(req []interface{}) (interface{}, error) `dubbo:"$invoke"`
+	Invoke       func(ctx context.Context, req []interface{}) (interface{}, error) `dubbo:"$invoke"`
 	referenceStr string
 }
 
