@@ -84,8 +84,10 @@ func Load() {
 	// init other consumer config
 	conConfigType := consumerConfig.ConfigType
 	for key, value := range extension.GetDefaultConfitReader() {
-		if v, ok := conConfigType[key]; ok {
-			value = v
+		if conConfigType == nil {
+			if v, ok := conConfigType[key]; ok {
+				value = v
+			}
 		}
 		if err := extension.GetConfigReaders(value).ReadConsumerConfig(consumerConfig.fileStream); err != nil {
 			logger.Errorf("ReadConsumerConfig error: %#v for %s", perrors.WithStack(err), value)
@@ -95,10 +97,11 @@ func Load() {
 	// init other provider config
 	proConfigType := providerConfig.ConfigType
 	for key, value := range extension.GetDefaultConfitReader() {
-		if v, ok := proConfigType[key]; ok {
-			value = v
+		if proConfigType != nil {
+			if v, ok := proConfigType[key]; ok {
+				value = v
+			}
 		}
-
 		if err := extension.GetConfigReaders(value).ReadProviderConfig(providerConfig.fileStream); err != nil {
 			logger.Errorf("ReadProviderConfig error: %#v for %s", perrors.WithStack(err), value)
 		}
