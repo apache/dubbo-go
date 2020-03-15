@@ -38,11 +38,13 @@ type dataListener struct {
 	listener      config_center.ConfigurationListener
 }
 
-// NewRegistryDataListener ...
+// NewRegistryDataListener
+// new the data  listener, the interest url default len 16
 func NewRegistryDataListener(listener config_center.ConfigurationListener) *dataListener {
 	return &dataListener{listener: listener, interestedURL: make(map[string]*common.URL, 16)}
 }
 
+// AddInterestedURL
 func (l *dataListener) AddInterestedURL(url *common.URL) {
 
 	if _, ok := l.interestedURL[url.String()]; ok {
@@ -51,6 +53,8 @@ func (l *dataListener) AddInterestedURL(url *common.URL) {
 	l.interestedURL[url.String()] = url
 }
 
+// DataChange
+// notify listen, when interest event
 func (l *dataListener) DataChange(eventType remoting.Event) bool {
 
 	url := eventType.Path[strings.Index(eventType.Path, "/providers/")+len("/providers/"):]
