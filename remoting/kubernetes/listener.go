@@ -89,7 +89,7 @@ func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.
 
 // return true mean the event type is DELETE
 // return false mean the event type is CREATE || UPDATE
-func (l *EventListener) handleEvents(event *Object, listeners ...remoting.DataListener) bool {
+func (l *EventListener) handleEvents(event *WatcherEvent, listeners ...remoting.DataListener) bool {
 
 	logger.Infof("got a kubernetes-store event {type: %d, key: %s}", event.EventType, event.Key)
 
