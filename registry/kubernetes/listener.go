@@ -39,9 +39,8 @@ type dataListener struct {
 }
 
 // NewRegistryDataListener
-// new the data  listener, the interest url default len 16
 func NewRegistryDataListener(listener config_center.ConfigurationListener) *dataListener {
-	return &dataListener{listener: listener, interestedURL: make([]*common.URL, 16)}
+	return &dataListener{listener: listener}
 }
 
 // AddInterestedURL
