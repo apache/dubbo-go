@@ -19,7 +19,6 @@ package kubernetes
 
 import (
 	"sync"
-	"time"
 )
 
 import (
@@ -155,10 +154,6 @@ func (l *EventListener) ListenServiceNodeEventWithPrefix(prefix string, listener
 			l.handleEvents(e, listener...)
 		}
 	}
-}
-
-func timeSecondDuration(sec int) time.Duration {
-	return time.Duration(sec) * time.Second
 }
 
 // this func is invoked by kubernetes ConsumerRegistry::Registry/ kubernetes ConsumerRegistry::get/kubernetes ConsumerRegistry::getListener

@@ -157,7 +157,7 @@ func newMockClient(namespace string, mockClientGenerator func() (kubernetes.Inte
 		return nil, perrors.WithMessage(err, "watch pods")
 	}
 
-	logger.Info("init kubernetes registry success")
+	logger.Infof("init kubernetes registry client success @namespace = %q @Podname = %q", namespace, c.currentPod.Name)
 	return c, nil
 }
 
@@ -210,7 +210,7 @@ func newClient(namespace string) (*Client, error) {
 		return nil, perrors.WithMessage(err, "watch pods")
 	}
 
-	logger.Info("init kubernetes registry success")
+	logger.Infof("init kubernetes registry client success @namespace = %q @Podname = %q", namespace, c.currentPod.Name)
 	return c, nil
 }
 
@@ -306,7 +306,7 @@ func (c *Client) watchPodsLoop() {
 	}()
 
 	for {
-
+	onceWatch:
 		wc, err := c.rawClient.CoreV1().Pods(c.ns).Watch(metav1.ListOptions{
 			LabelSelector:   fields.OneTermEqualSelector(DubboIOLabelKey, DubboIOLabelValue).String(),
 			Watch:           true,
@@ -362,7 +362,6 @@ func (c *Client) watchPodsLoop() {
 				go c.handleWatchedPodEvent(p, event.Type)
 			}
 		}
-	onceWatch:
 	}
 }
 
@@ -398,7 +397,7 @@ func (c *Client) handleWatchedPodEvent(p *v1.Pod, eventType watch.EventType) {
 				return
 			}
 
-			logger.Debugf("prepare to put object (%#v) to kuberentes-watcherSet", o)
+			logger.Debugf("prepare to put object (%#v) to kubernetes-watcherSet", o)
 
 			if err := c.watcherSet.Put(o); err != nil {
 				logger.Errorf("put (%#v) to cache watcherSet: %v ", o, err)
@@ -454,7 +453,7 @@ func (c *Client) readCurrentPod() (*v1.Pod, error) {
 }
 
 // Create
-// create k/v pair in storage
+// create k/v pair in watcher-set
 func (c *Client) Create(k, v string) error {
 
 	// 1. accord old pod && (k, v) assemble new pod dubbo annotion v
@@ -671,26 +670,10 @@ func (c *Client) Close() {
 // validate the kubernetes client
 func ValidateClient(container clientFacade) error {
 
-	lock := container.ClientLock()
-	lock.Lock()
-	defer lock.Unlock()
+	client := container.Client()
 
 	// new Client
-	if container.Client() == nil {
-		ns, err := getCurrentNameSpace()
-		if err != nil {
-			return perrors.WithMessage(err, "get current namespace")
-		}
-		newClient, err := newClient(ns)
-		if err != nil {
-			logger.Warnf("new kubernetes client (namespace{%s}: %v)", ns, err)
-			return perrors.WithMessagef(err, "new kubernetes client (:%+v)", ns)
-		}
-		container.SetClient(newClient)
-	}
-
-	if !container.Client().Valid() {
-
+	if client == nil || client.Valid() {
 		ns, err := getCurrentNameSpace()
 		if err != nil {
 			return perrors.WithMessage(err, "get current namespace")
