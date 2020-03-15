@@ -19,14 +19,16 @@ package kubernetes
 
 import (
 	"encoding/json"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
 	"testing"
 	"time"
+)
 
+import (
 	"github.com/stretchr/testify/suite"
-
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
@@ -234,6 +236,8 @@ func (s *KubernetesClientTestSuite) SetupSuite() {
 	if err := os.Setenv(nameSpaceKey, s.currentPod.GetNamespace()); err != nil {
 		t.Fatal(err)
 	}
+
+	go http.ListenAndServe(":6061", nil)
 }
 
 func (s *KubernetesClientTestSuite) TestReadCurrentPodName() {
@@ -329,16 +333,23 @@ func (s *KubernetesClientTestSuite) TestClientGetChildrenKVList() {
 	go func() {
 		defer wg.Done()
 
-		wc, err := client.WatchWithPrefix(prefix)
+		wc, done, err := client.WatchWithPrefix(prefix)
 		if err != nil {
 			t.Fatal(err)
 		}
 		i := 0
-		for e := range wc {
-			i++
-			t.Logf("got event %v k %s v %s", e.EventType, e.Key, e.Value)
-			if i == 3 {
-				// already sync all event
+
+		for {
+			select {
+			case e := <-wc:
+				i++
+				t.Logf("got event %v k %s v %s", e.EventType, e.Key, e.Value)
+				if i == 3 {
+					// already sync all event
+					return
+				}
+			case <-done:
+				t.Log("the store watcher was stopped")
 				return
 			}
 		}
@@ -395,17 +406,22 @@ func (s *KubernetesClientTestSuite) TestClientWatchPrefix() {
 
 	go func() {
 
-		wc, err := client.WatchWithPrefix(prefix)
+		wc, done, err := client.WatchWithPrefix(prefix)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		wg.Done()
 
-		for e := range wc {
-			t.Logf("got event %v k %s v %s", e.EventType, e.Key, e.Value)
+		for {
+			select {
+			case e := <-wc:
+				t.Logf("got event %v k %s v %s", e.EventType, e.Key, e.Value)
+			case <-done:
+				t.Log("the store watcher was stopped")
+				return
+			}
 		}
-
 	}()
 
 	// must wait the watch goroutine work
@@ -446,14 +462,20 @@ func (s *KubernetesClientTestSuite) TestClientWatch() {
 
 	go func() {
 
-		wc, err := client.Watch(prefix)
+		wc, done, err := client.Watch(prefix)
 		if err != nil {
 			t.Fatal(err)
 		}
 		wg.Done()
 
-		for e := range wc {
-			t.Logf("got event %v k %s v %s", e.EventType, e.Key, e.Value)
+		for {
+			select {
+			case e := <-wc:
+				t.Logf("got event %v k %s v %s", e.EventType, e.Key, e.Value)
+			case <-done:
+				t.Log("the store watcher was stopped")
+				return
+			}
 		}
 
 	}()
