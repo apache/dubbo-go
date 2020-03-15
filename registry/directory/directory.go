@@ -24,6 +24,7 @@ import (
 
 import (
 	perrors "github.com/pkg/errors"
+	"go.uber.org/atomic"
 )
 
 import (
@@ -61,6 +62,8 @@ type registryDirectory struct {
 	consumerConfigurationListener  *consumerConfigurationListener
 	referenceConfigurationListener *referenceConfigurationListener
 	Options
+	serviceKey string
+	forbidden  atomic.Bool
 }
 
 // NewRegistryDirectory ...
@@ -124,14 +127,23 @@ func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 		} else if url.Protocol == constant.ROUTER_PROTOCOL || //2.for router
 			url.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY) == constant.ROUTER_CATEGORY {
 			url = nil
-			//TODO: router
 		}
 		switch res.Action {
 		case remoting.EventTypeAdd, remoting.EventTypeUpdate:
+			logger.Infof("selector add service url{%s}", res.Service)
+			var urls []*common.URL
+
+			for _, v := range directory.GetRouterURLSet().Values() {
+				urls = append(urls, v.(*common.URL))
+			}
+
+			if len(urls) > 0 {
+				dir.SetRouters(urls)
+			}
+
 			//dir.cacheService.EventTypeAdd(res.Path, dir.serviceTTL)
 			oldInvoker = dir.cacheInvoker(url)
 		case remoting.EventTypeDel:
-			//dir.cacheService.EventTypeDel(res.Path, dir.serviceTTL)
 			oldInvoker = dir.uncacheInvoker(url)
 			logger.Infof("selector delete service url{%s}", res.Service)
 		default:
@@ -179,6 +191,7 @@ func (dir *registryDirectory) toGroupInvokers() []protocol.Invoker {
 		for _, invokers := range groupInvokersMap {
 			staticDir := directory.NewStaticDirectory(invokers)
 			cluster := extension.GetCluster(dir.GetUrl().SubURL.GetParam(constant.CLUSTER_KEY, constant.DEFAULT_CLUSTER))
+			staticDir.BuildRouterChain(invokers)
 			groupInvokersList = append(groupInvokersList, cluster.Join(staticDir))
 		}
 	}
@@ -215,13 +228,13 @@ func (dir *registryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
 		newUrl := common.MergeUrl(url, referenceUrl)
 		dir.overrideUrl(newUrl)
 		if cacheInvoker, ok := dir.cacheInvokersMap.Load(newUrl.Key()); !ok {
-			logger.Infof("service will be added in cache invokers: invokers url is  %s!", newUrl)
+			logger.Debugf("service will be added in cache invokers: invokers url is  %s!", newUrl)
 			newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(*newUrl)
 			if newInvoker != nil {
 				dir.cacheInvokersMap.Store(newUrl.Key(), newInvoker)
 			}
 		} else {
-			logger.Infof("service will be updated in cache invokers: new invoker url is %s, old invoker url is %s", newUrl, cacheInvoker.(protocol.Invoker).GetUrl())
+			logger.Debugf("service will be updated in cache invokers: new invoker url is %s, old invoker url is %s", newUrl, cacheInvoker.(protocol.Invoker).GetUrl())
 			newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(*newUrl)
 			if newInvoker != nil {
 				dir.cacheInvokersMap.Store(newUrl.Key(), newInvoker)
@@ -234,8 +247,13 @@ func (dir *registryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
 
 //select the protocol invokers from the directory
 func (dir *registryDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
-	//TODO:router
-	return dir.cacheInvokers
+	invokers := dir.cacheInvokers
+	routerChain := dir.RouterChain()
+
+	if routerChain == nil {
+		return invokers
+	}
+	return routerChain.Route(invokers, dir.cacheOriginUrl, invocation)
 }
 
 func (dir *registryDirectory) IsAvailable() bool {
