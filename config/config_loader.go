@@ -19,16 +19,19 @@ package config
 
 import (
 	"fmt"
-	"github.com/apache/dubbo-go/common/extension"
-	perrors "github.com/pkg/errors"
 	"log"
 	"os"
 	"time"
 )
 
 import (
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 )
 
