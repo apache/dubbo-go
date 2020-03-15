@@ -19,8 +19,6 @@ package config
 
 import (
 	"bytes"
-	"fmt"
-	"strings"
 )
 
 import (
@@ -30,7 +28,6 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/yaml"
 )
@@ -53,7 +50,7 @@ type ProviderConfig struct {
 	ProtocolConf      interface{}                `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf" `
 	FilterConf        interface{}                `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf" `
 	ShutdownConfig    *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf" `
-	ConfigType        string                     `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
+	ConfigType        map[string]string          `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 }
 
 // UnmarshalYAML ...
@@ -88,6 +85,8 @@ func ProviderInit(confProFile string) error {
 	if err != nil {
 		return perrors.Errorf("unmarshalYmlConfig error %v", perrors.WithStack(err))
 	}
+
+	providerConfig.fileStream = bytes.NewBuffer(fileStream)
 	//set method interfaceId & interfaceName
 	for k, v := range providerConfig.Services {
 		//set id for reference
@@ -98,18 +97,6 @@ func ProviderInit(confProFile string) error {
 	}
 
 	logger.Debugf("provider config{%#v}\n", providerConfig)
-
-	// init other provider config
-	proConfigType := providerConfig.ConfigType
-	if len(proConfigType) > 0 {
-		for _, t := range strings.Split(proConfigType, ",") {
-			if len(t) > 0 {
-				if err = extension.GetConfigReaders(t).ReadProviderConfig(bytes.NewBuffer(fileStream)); err != nil {
-					return perrors.New(fmt.Sprintf("ReadProviderConfig error: %v for %s", perrors.WithStack(err), t))
-				}
-			}
-		}
-	}
 
 	return nil
 }
