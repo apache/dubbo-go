@@ -15,27 +15,25 @@
  * limitations under the License.
  */
 
-package router
+package extension
 
 import (
-	"github.com/apache/dubbo-go/cluster"
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/metadata"
 )
 
-func init() {
-	extension.SetRouterFactory("condition", NewConditionRouterFactory)
+var (
+	metaDataReportFactories = make(map[string]func() metadata.MetadataReportFactory, 8)
+)
+
+// SetMetadataReportFactory ...
+func SetMetadataReportFactory(name string, v func() metadata.MetadataReportFactory) {
+	metaDataReportFactories[name] = v
 }
 
-// ConditionRouterFactory ...
-type ConditionRouterFactory struct{}
-
-// NewConditionRouterFactory ...
-func NewConditionRouterFactory() cluster.RouterFactory {
-	return ConditionRouterFactory{}
-}
-
-// Router ...
-func (c ConditionRouterFactory) Router(url *common.URL) (cluster.Router, error) {
-	return newConditionRouter(url)
+// GetMetadataReportFactory ...
+func GetMetadataReportFactory(name string) metadata.MetadataReportFactory {
+	if metaDataReportFactories[name] == nil {
+		panic("metadata report for " + name + " is not existing, make sure you have import the package.")
+	}
+	return metaDataReportFactories[name]()
 }

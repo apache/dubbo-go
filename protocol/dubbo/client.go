@@ -18,6 +18,7 @@
 package dubbo
 
 import (
+	"math/rand"
 	"strings"
 	"sync"
 	"time"
@@ -83,6 +84,8 @@ func init() {
 		return
 	}
 	setClientGrpool()
+
+	rand.Seed(time.Now().UnixNano())
 }
 
 // SetClientConf ...
@@ -147,11 +150,18 @@ func NewClient(opt Options) *Client {
 		opt.RequestTimeout = 3 * time.Second
 	}
 
+	// make sure that client request sequence is an odd number
+	initSequence := uint64(rand.Int63n(time.Now().UnixNano()))
+	if initSequence%2 == 0 {
+		initSequence++
+	}
+
 	c := &Client{
 		opts:             opt,
 		pendingResponses: new(sync.Map),
 		conf:             *clientConf,
 	}
+	c.sequence.Store(initSequence)
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
 
 	return c
