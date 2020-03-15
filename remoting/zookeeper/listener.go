@@ -249,6 +249,7 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 				continue
 			}
 			logger.Infof("listen dubbo service key{%s}", dubboPath)
+			l.wg.Add(1)
 			go func(zkPath string, listener remoting.DataListener) {
 				if l.ListenServiceNodeEvent(zkPath) {
 					listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeDel})
