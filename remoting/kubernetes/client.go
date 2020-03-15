@@ -71,7 +71,7 @@ type Client struct {
 	ns string
 
 	// the memory store
-	store Store
+	store WatcherSet
 
 	// protect the wg && currentPod
 	lock sync.RWMutex
@@ -132,7 +132,7 @@ func newMockClient(namespace string, mockClientGenerator func() (kubernetes.Inte
 		ns:             namespace,
 		rawClient:      rawClient,
 		ctx:            ctx,
-		store:          newStore(ctx),
+		store:          newWatcherSet(ctx),
 		cancel:         cancel,
 	}
 
@@ -185,7 +185,7 @@ func newClient(namespace string) (*Client, error) {
 		cfg:            cfg,
 		rawClient:      rawClient,
 		ctx:            ctx,
-		store:          newStore(ctx),
+		store:          newWatcherSet(ctx),
 		cancel:         cancel,
 	}
 
@@ -415,10 +415,10 @@ func (c *Client) handleWatchedPodEvent(p *v1.Pod, eventType watch.EventType) {
 
 // unmarshalRecord
 // unmarshal the kubernetes dubbo annotation value
-func (c *Client) unmarshalRecord(record string) ([]*Object, error) {
+func (c *Client) unmarshalRecord(record string) ([]*WatcherEvent, error) {
 
 	if len(record) == 0 {
-		// []*Object is nil.
+		// []*WatcherEvent is nil.
 		return nil, nil
 	}
 
@@ -427,7 +427,7 @@ func (c *Client) unmarshalRecord(record string) ([]*Object, error) {
 		return nil, perrors.WithMessagef(err, "decode record (%s)", record)
 	}
 
-	var out []*Object
+	var out []*WatcherEvent
 	if err := json.Unmarshal(rawMsg, &out); err != nil {
 		return nil, perrors.WithMessage(err, "decode json")
 	}
@@ -436,7 +436,7 @@ func (c *Client) unmarshalRecord(record string) ([]*Object, error) {
 
 // marshalRecord
 // marshal the kubernetes dubbo annotation value
-func (c *Client) marshalRecord(ol []*Object) (string, error) {
+func (c *Client) marshalRecord(ol []*WatcherEvent) (string, error) {
 
 	msg, err := json.Marshal(ol)
 	if err != nil {
@@ -552,7 +552,7 @@ func (c *Client) assembleDUBBOAnnotations(k, v string, currentPod *v1.Pod) (oldP
 		return
 	}
 
-	newAnnotations, err := c.marshalRecord(append(al, &Object{Key: k, Value: v}))
+	newAnnotations, err := c.marshalRecord(append(al, &WatcherEvent{Key: k, Value: v}))
 	if err != nil {
 		err = perrors.WithMessage(err, "marshal record")
 		return
@@ -605,7 +605,7 @@ func (c *Client) GetChildren(k string) ([]string, []string, error) {
 
 // Watch
 // watch on spec key
-func (c *Client) Watch(k string) (<-chan *Object, <-chan struct{}, error) {
+func (c *Client) Watch(k string) (<-chan *WatcherEvent, <-chan struct{}, error) {
 
 	w, err := c.store.Watch(k, false)
 	if err != nil {
@@ -617,7 +617,7 @@ func (c *Client) Watch(k string) (<-chan *Object, <-chan struct{}, error) {
 
 // Watch
 // watch on spec prefix
-func (c *Client) WatchWithPrefix(prefix string) (<-chan *Object, <-chan struct{}, error) {
+func (c *Client) WatchWithPrefix(prefix string) (<-chan *WatcherEvent, <-chan struct{}, error) {
 
 	w, err := c.store.Watch(prefix, true)
 	if err != nil {
