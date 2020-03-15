@@ -62,7 +62,7 @@ type ConsumerConfig struct {
 	ProtocolConf   interface{}                 `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
 	FilterConf     interface{}                 `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf" `
 	ShutdownConfig *ShutdownConfig             `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf" `
-	ConfigType     string                      `default:"default" yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
+	ConfigType     string                      `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 }
 
 // UnmarshalYAML ...
