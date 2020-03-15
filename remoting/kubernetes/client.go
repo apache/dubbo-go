@@ -70,6 +70,9 @@ type Client struct {
 
 	ns string
 
+	// current resource version
+	lastResourceVersion string
+
 	// the memory watcherSet
 	watcherSet WatcherSet
 
@@ -255,6 +258,9 @@ func (c *Client) initWatchSet() error {
 		return perrors.WithMessagef(err, "list pods  in namespace (%s)", c.ns)
 	}
 
+	// set resource version
+	c.lastResourceVersion = pods.GetResourceVersion()
+
 	for _, pod := range pods.Items {
 		logger.Debugf("got the pod (name: %s), (label: %v), (annotations: %v)", pod.Name, pod.GetLabels(), pod.GetAnnotations())
 		c.handleWatchedPodEvent(&pod, watch.Added)
@@ -269,8 +275,9 @@ func (c *Client) watchPods() error {
 
 	// try once
 	watcher, err := c.rawClient.CoreV1().Pods(c.ns).Watch(metav1.ListOptions{
-		LabelSelector: fields.OneTermEqualSelector(DubboIOLabelKey, DubboIOLabelValue).String(),
-		Watch:         true,
+		LabelSelector:   fields.OneTermEqualSelector(DubboIOLabelKey, DubboIOLabelValue).String(),
+		Watch:           true,
+		ResourceVersion: c.lastResourceVersion,
 	})
 	if err != nil {
 		return perrors.WithMessagef(err, "try to watch the namespace (%s) pods", c.ns)
@@ -294,14 +301,12 @@ func (c *Client) watchPodsLoop() {
 		logger.Info("watchPodsLoop goroutine game over")
 	}()
 
-	var lastResourceVersion string
-
 	for {
 
 		wc, err := c.rawClient.CoreV1().Pods(c.ns).Watch(metav1.ListOptions{
 			LabelSelector:   fields.OneTermEqualSelector(DubboIOLabelKey, DubboIOLabelValue).String(),
 			Watch:           true,
-			ResourceVersion: lastResourceVersion,
+			ResourceVersion: c.lastResourceVersion,
 		})
 		if err != nil {
 			logger.Warnf("watch the namespace (%s) pods: %v, retry after 2 seconds", c.ns, err)
@@ -309,7 +314,7 @@ func (c *Client) watchPodsLoop() {
 			continue
 		}
 
-		logger.Infof("the old kubernetes client broken, collect the resource status from resource version (%s)", lastResourceVersion)
+		logger.Infof("the old kubernetes client broken, collect the resource status from resource version (%s)", c.lastResourceVersion)
 
 		select {
 		case <-c.ctx.Done():
@@ -350,8 +355,8 @@ func (c *Client) watchPodsLoop() {
 					}
 
 					// record the last resource version avoid to sync all pod
-					lastResourceVersion = o.GetResourceVersion()
-					logger.Infof("kuberentes get the current resource version %v", lastResourceVersion)
+					c.lastResourceVersion = o.GetResourceVersion()
+					logger.Infof("kubernetes get the current resource version %v", c.lastResourceVersion)
 
 					// check event object type
 					p, ok := event.Object.(*v1.Pod)
