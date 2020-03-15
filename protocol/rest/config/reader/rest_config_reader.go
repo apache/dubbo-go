@@ -19,7 +19,6 @@ package reader
 
 import (
 	"bytes"
-	"github.com/apache/dubbo-go/protocol/rest/config"
 	"strconv"
 	"strings"
 )
@@ -34,6 +33,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config/interfaces"
+	"github.com/apache/dubbo-go/protocol/rest/config"
 )
 
 const REST = "rest"

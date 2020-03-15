@@ -20,8 +20,6 @@ package server_impl
 import (
 	"context"
 	"fmt"
-	"github.com/apache/dubbo-go/protocol/rest/config"
-	"github.com/apache/dubbo-go/protocol/rest/server"
 	"net"
 	"net/http"
 	"reflect"
@@ -42,6 +40,8 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
+	"github.com/apache/dubbo-go/protocol/rest/config"
+	"github.com/apache/dubbo-go/protocol/rest/server"
 )
 
 func init() {
