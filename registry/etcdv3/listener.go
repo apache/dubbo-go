@@ -34,17 +34,20 @@ import (
 )
 
 type dataListener struct {
-	interestedURL []*common.URL
+	interestedURL map[string]*common.URL
 	listener      config_center.ConfigurationListener
 }
 
 // NewRegistryDataListener ...
 func NewRegistryDataListener(listener config_center.ConfigurationListener) *dataListener {
-	return &dataListener{listener: listener, interestedURL: []*common.URL{}}
+	return &dataListener{listener: listener, interestedURL: make(map[string]*common.URL, 16)}
 }
 
 func (l *dataListener) AddInterestedURL(url *common.URL) {
-	l.interestedURL = append(l.interestedURL, url)
+	if _, ok := l.interestedURL[url.String()]; ok {
+		return
+	}
+	l.interestedURL[url.String()] = url
 }
 
 func (l *dataListener) DataChange(eventType remoting.Event) bool {
@@ -56,20 +59,18 @@ func (l *dataListener) DataChange(eventType remoting.Event) bool {
 		return false
 	}
 
-	for _, v := range l.interestedURL {
-		if serviceURL.URLEqual(*v) {
-			l.listener.Process(
-				&config_center.ConfigChangeEvent{
-					Key:        eventType.Path,
-					Value:      serviceURL,
-					ConfigType: eventType.Action,
-				},
-			)
-			return true
-		}
+	if _, ok := l.interestedURL[serviceURL.String()]; !ok {
+		return false
 	}
 
-	return false
+	l.listener.Process(
+		&config_center.ConfigChangeEvent{
+			Key:        eventType.Path,
+			Value:      serviceURL,
+			ConfigType: eventType.Action,
+		},
+	)
+	return true
 }
 
 type configurationListener struct {
