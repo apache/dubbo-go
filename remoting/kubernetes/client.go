@@ -343,7 +343,7 @@ func (c *Client) watchPodsLoop() {
 
 				o, ok := event.Object.(resourceVersionGetter)
 				if !ok {
-					logger.Warnf("kubernetes response object not a versioned object")
+					logger.Warnf("kubernetes response object not a versioned object, its real type %T", event.Object)
 					continue
 				}
 
@@ -354,7 +354,7 @@ func (c *Client) watchPodsLoop() {
 				// check event object type
 				p, ok := event.Object.(*v1.Pod)
 				if !ok {
-					// not a pod
+					logger.Warnf("kubernetes response object not a Pod, its real type %T", event.Object)
 					continue
 				}
 
