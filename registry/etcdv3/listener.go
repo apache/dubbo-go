@@ -49,7 +49,12 @@ func (l *dataListener) AddInterestedURL(url *common.URL) {
 
 func (l *dataListener) DataChange(eventType remoting.Event) bool {
 
-	url := eventType.Path[strings.Index(eventType.Path, "/providers/")+len("/providers/"):]
+	index := strings.Index(eventType.Path, "/providers/")
+	if index == -1 {
+		logger.Warnf("Listen with no url, event.path={%v}", eventType.Path)
+		return false
+	}
+	url := eventType.Path[index+len("/providers/"):]
 	serviceURL, err := common.NewURL(url)
 	if err != nil {
 		logger.Warnf("Listen NewURL(r{%s}) = error{%v}", eventType.Path, err)
