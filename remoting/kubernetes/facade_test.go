@@ -24,15 +24,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 )
-import (
-	"github.com/apache/dubbo-go/common"
-)
 
 type mockFacade struct {
 	client  *Client
 	cltLock sync.Mutex
-	wg      sync.WaitGroup
-	URL     *common.URL
 	done    chan struct{}
 }
 
@@ -42,35 +37,6 @@ func (r *mockFacade) Client() *Client {
 
 func (r *mockFacade) SetClient(client *Client) {
 	r.client = client
-}
-
-func (r *mockFacade) ClientLock() *sync.Mutex {
-	return &r.cltLock
-}
-
-func (r *mockFacade) WaitGroup() *sync.WaitGroup {
-	return &r.wg
-}
-
-func (r *mockFacade) Done() chan struct{} {
-	return r.done
-}
-
-func (r *mockFacade) GetUrl() common.URL {
-	return *r.URL
-}
-
-func (r *mockFacade) Destroy() {
-	close(r.done)
-	r.wg.Wait()
-}
-
-func (r *mockFacade) RestartCallBack() bool {
-	return true
-}
-
-func (r *mockFacade) IsAvailable() bool {
-	return true
 }
 
 func (s *KubernetesClientTestSuite) Test_Facade() {
@@ -91,12 +57,12 @@ func (s *KubernetesClientTestSuite) Test_Facade() {
 		t.Fatal(err)
 	}
 
-	url, _ := common.NewURL("mock://127.0.0.1")
 	m := &mockFacade{
 		client: mockClient,
-		URL:    &url,
 	}
 
-	go HandleClientRestart(m)
+	if err := ValidateClient(m); err == nil {
+		t.Fatal("out of cluster should err")
+	}
 	mockClient.Close()
 }
