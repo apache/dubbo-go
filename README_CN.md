@@ -51,16 +51,22 @@ Apache License, Version 2.0
     * Dubbo
     * Jsonrpc2.0
     * [gRPC](https://github.com/apache/dubbo-go/pull/311)
-
+    * [RESTful](https://github.com/apache/dubbo-go/pull/352)
+    
+- 路由器
+    * [Conditional router](https://github.com/apache/dubbo-go/pull/294)
+    
 - 注册中心
     * ZooKeeper
     * [etcd v3](https://github.com/apache/dubbo-go/pull/148)
     * [nacos](https://github.com/apache/dubbo-go/pull/151)
     * [consul](https://github.com/apache/dubbo-go/pull/121)
+    * [k8s](https://github.com/apache/dubbo-go/pull/400)
 
 - 动态配置中心与服务治理配置器
     * Zookeeper
     * [apollo](https://github.com/apache/dubbo-go/pull/250)
+    * [nacos](https://github.com/apache/dubbo-go/pull/357)
 
 - 集群策略
     * Failover
@@ -86,6 +92,10 @@ Apache License, Version 2.0
 
 - 调用
     * [泛化调用](https://github.com/apache/dubbo-go/pull/122)
+    
+- 监控
+    * Opentracing API
+    * Prometheus
 
 - 其他功能支持:
     * 启动时检查
@@ -97,9 +107,8 @@ Apache License, Version 2.0
 
 开发中列表:
 
-- 注册中心: k8s
 - 元数据中心 (dubbo v2.7.x)
-- Metrics: Opentracing/Promethus(dubbo v2.7.x)
+- 服务发现 (dubbo v2.7.x)
 
 你可以通过访问 [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap) 知道更多关于 dubbo-go 的信息。
 
