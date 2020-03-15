@@ -100,24 +100,6 @@
 - [Fix bug in reference_config](https://github.com/apache/dubbo-go/pull/157)
 - [Fix high memory bug in zookeeper listener](https://github.com/apache/dubbo-go/pull/168)
 
-## 1.2.0
-
-### New Features
-
-- Add etcdv3 registry support<https://github.com/apache/dubbo-go/pull/148>
-- Add nacos registry support<https://github.com/apache/dubbo-go/pull/151>
-- Add fail fast cluster support<https://github.com/apache/dubbo-go/pull/140>
-- Add available cluster support<https://github.com/apache/dubbo-go/pull/155>
-- Add broadcast cluster support<https://github.com/apache/dubbo-go/pull/158>
-- Add forking cluster support<https://github.com/apache/dubbo-go/pull/161>
-- Add service token authorization support<https://github.com/apache/dubbo-go/pull/202>
-- Add accessLog filter support<https://github.com/apache/dubbo-go/pull/214>
-- Add tps limit support<https://github.com/apache/dubbo-go/pull/237>
-- Add execute limit support<https://github.com/apache/dubbo-go/pull/246>
-- Move callService to invoker & support attachments<https://github.com/apache/dubbo-go/pull/193>
-- Move example in dubbo-go project away<https://github.com/apache/dubbo-go/pull/228>
-- Support dynamic config center which compatible with dubbo 2.6.x & 2.7.x and commit the zookeeper impl<https://github.com/apache/dubbo-go/pull/194>
-
 ### Enhancement
 
 - Split gettyRPCClient.close and gettyRPCClientPool.remove in protocol/dubbo/pool.go<https://github.com/apache/dubbo-go/pull/186>
