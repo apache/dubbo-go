@@ -40,6 +40,7 @@ const REST = "rest"
 
 func init() {
 	extension.SetConfigReaders(REST, NewRestConfigReader)
+	extension.SetDefaultConfitReader(REST, REST)
 }
 
 type RestConfigReader struct {
