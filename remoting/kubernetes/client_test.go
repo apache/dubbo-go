@@ -347,7 +347,7 @@ func (s *KubernetesClientTestSuite) TestClientGetChildrenKVList() {
 					return
 				}
 			case <-done:
-				t.Log("the store watcher was stopped")
+				t.Log("the watcherSet watcher was stopped")
 				return
 			}
 		}
@@ -416,7 +416,7 @@ func (s *KubernetesClientTestSuite) TestClientWatchPrefix() {
 			case e := <-wc:
 				t.Logf("got event %v k %s v %s", e.EventType, e.Key, e.Value)
 			case <-done:
-				t.Log("the store watcher was stopped")
+				t.Log("the watcherSet watcher was stopped")
 				return
 			}
 		}
@@ -471,7 +471,7 @@ func (s *KubernetesClientTestSuite) TestClientWatch() {
 			case e := <-wc:
 				t.Logf("got event %v k %s v %s", e.EventType, e.Key, e.Value)
 			case <-done:
-				t.Log("the store watcher was stopped")
+				t.Log("the watcherSet watcher was stopped")
 				return
 			}
 		}
