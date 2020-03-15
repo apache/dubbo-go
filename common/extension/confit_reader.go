@@ -23,6 +23,7 @@ import (
 
 var (
 	configReaders = make(map[string]func() interfaces.ConfigReader)
+	defaults      = make(map[string]string)
 )
 
 // SetConfigReaders set a creator of config reader.
@@ -36,4 +37,14 @@ func GetConfigReaders(name string) interfaces.ConfigReader {
 		panic("config reader for " + name + " is not existing, make sure you have imported the package.")
 	}
 	return configReaders[name]()
+}
+
+// SetDefaultConfitReader set {name} to default config reader for {module}
+func SetDefaultConfitReader(module, name string) {
+	defaults[module] = name
+}
+
+// GetDefaultConfitReader
+func GetDefaultConfitReader() map[string]string {
+	return defaults
 }

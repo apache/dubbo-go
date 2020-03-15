@@ -1,6 +1,10 @@
 # dubbo server yaml configure file
 
 filter: ""
+
+config_type:
+  rest: "rest"
+
 # application config
 application:
   organization : "ikurento.com"

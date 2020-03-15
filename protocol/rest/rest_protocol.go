@@ -33,6 +33,7 @@ import (
 	"github.com/apache/dubbo-go/protocol/rest/client"
 	_ "github.com/apache/dubbo-go/protocol/rest/client/client_impl"
 	rest_config "github.com/apache/dubbo-go/protocol/rest/config"
+	_ "github.com/apache/dubbo-go/protocol/rest/config/reader"
 	"github.com/apache/dubbo-go/protocol/rest/server"
 	_ "github.com/apache/dubbo-go/protocol/rest/server/server_impl"
 )
