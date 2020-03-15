@@ -1,0 +1,6 @@
+# dubbo router yaml configure file
+priority: 1
+force: true
+conditions :
+  - "a => b"
+  - "c => d"

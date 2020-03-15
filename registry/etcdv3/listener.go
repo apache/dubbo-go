@@ -83,6 +83,7 @@ func NewConfigurationListener(reg *etcdV3Registry) *configurationListener {
 	reg.WaitGroup().Add(1)
 	return &configurationListener{registry: reg, events: make(chan *config_center.ConfigChangeEvent, 32)}
 }
+
 func (l *configurationListener) Process(configType *config_center.ConfigChangeEvent) {
 	l.events <- configType
 }
@@ -108,6 +109,7 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 		}
 	}
 }
+
 func (l *configurationListener) Close() {
 	l.registry.WaitGroup().Done()
 }

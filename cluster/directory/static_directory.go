@@ -18,6 +18,11 @@
 package directory
 
 import (
+	perrors "github.com/pkg/errors"
+)
+
+import (
+	"github.com/apache/dubbo-go/cluster/router/chain"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
 )
@@ -27,7 +32,7 @@ type staticDirectory struct {
 	invokers []protocol.Invoker
 }
 
-// NewStaticDirectory ...
+// NewStaticDirectory Create a new staticDirectory with invokers
 func NewStaticDirectory(invokers []protocol.Invoker) *staticDirectory {
 	var url common.URL
 
@@ -53,11 +58,21 @@ func (dir *staticDirectory) IsAvailable() bool {
 	return true
 }
 
+// List List invokers
 func (dir *staticDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
-	//TODO:Here should add router
-	return dir.invokers
+	l := len(dir.invokers)
+	invokers := make([]protocol.Invoker, l, l)
+	copy(invokers, dir.invokers)
+	routerChain := dir.RouterChain()
+
+	if routerChain == nil {
+		return invokers
+	}
+	dirUrl := dir.GetUrl()
+	return routerChain.Route(invokers, &dirUrl, invocation)
 }
 
+// Destroy Destroy
 func (dir *staticDirectory) Destroy() {
 	dir.BaseDirectory.Destroy(func() {
 		for _, ivk := range dir.invokers {
@@ -65,4 +80,18 @@ func (dir *staticDirectory) Destroy() {
 		}
 		dir.invokers = []protocol.Invoker{}
 	})
+}
+
+// BuildRouterChain build router chain by invokers
+func (dir *staticDirectory) BuildRouterChain(invokers []protocol.Invoker) error {
+	if len(invokers) == 0 {
+		return perrors.Errorf("invokers == null")
+	}
+	url := invokers[0].GetUrl()
+	routerChain, e := chain.NewRouterChain(&url)
+	if e != nil {
+		return e
+	}
+	dir.SetRouterChain(routerChain)
+	return nil
 }
