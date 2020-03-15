@@ -30,7 +30,7 @@ func TestStore(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	s := newStore(ctx)
+	s := newWatcherSet(ctx)
 
 	wg := sync.WaitGroup{}
 
@@ -82,7 +82,7 @@ func TestStore(t *testing.T) {
 
 	for i := 0; i < 5; i++ {
 		go func(i int) {
-			if err := s.Put(&Object{
+			if err := s.Put(&WatcherEvent{
 				Key:   "key-" + strconv.Itoa(i),
 				Value: strconv.Itoa(i),
 			}); err != nil {
