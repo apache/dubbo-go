@@ -22,9 +22,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-)
 
-import (
 	perrors "github.com/pkg/errors"
 )
 
@@ -112,14 +110,19 @@ type storeImpl struct {
 	watchers         map[uint64]*watcher
 }
 
-func (s *storeImpl) loop() {
+// on stop
+// when the store was closed
+func (s *storeImpl) onStop() {
 
 	select {
 	case <-s.ctx.Done():
+
 		// parent ctx be canceled, close the store
 		s.lock.Lock()
-		defer s.lock.Unlock()
-		for _, w := range s.watchers {
+		watchers := s.watchers
+		s.lock.Unlock()
+
+		for _, w := range watchers {
 			// stop data stream
 			close(w.ch)
 			// stop watcher
@@ -145,6 +148,7 @@ func (s *storeImpl) Done() <-chan struct{} {
 func (s *storeImpl) Put(object *Object) error {
 
 	sendMsg := func(object *Object, w *watcher) {
+
 		s.lock.Lock()
 		defer s.lock.Unlock()
 		select {
@@ -325,6 +329,6 @@ func newStore(ctx context.Context) Store {
 		cache:    map[string]*Object{},
 		watchers: map[uint64]*watcher{},
 	}
-	go s.loop()
+	go s.onStop()
 	return s
 }
