@@ -147,7 +147,7 @@ func TestRestInvoker_Invoke(t *testing.T) {
 	configMap["com.ikurento.user.UserProvider"] = &rest_config.RestServiceConfig{
 		RestMethodConfigsMap: methodConfigMap,
 	}
-	restClient := client_impl.GetRestyClient(&client.RestOptions{ConnectTimeout: 3 * time.Second, RequestTimeout: 3 * time.Second})
+	restClient := client_impl.NewRestyClient(&client.RestOptions{ConnectTimeout: 3 * time.Second, RequestTimeout: 3 * time.Second})
 	invoker := NewRestInvoker(url, &restClient, methodConfigMap)
 	user := &User{}
 	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUser"),
