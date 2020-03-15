@@ -28,19 +28,19 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/config/rest"
 	"github.com/apache/dubbo-go/protocol"
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/apache/dubbo-go/protocol/rest/client"
+	"github.com/apache/dubbo-go/protocol/rest/config"
 )
 
 type RestInvoker struct {
 	protocol.BaseInvoker
 	client              client.RestClient
-	restMethodConfigMap map[string]*rest.RestMethodConfig
+	restMethodConfigMap map[string]*config.RestMethodConfig
 }
 
-func NewRestInvoker(url common.URL, client *client.RestClient, restMethodConfig map[string]*rest.RestMethodConfig) *RestInvoker {
+func NewRestInvoker(url common.URL, client *client.RestClient, restMethodConfig map[string]*config.RestMethodConfig) *RestInvoker {
 	return &RestInvoker{
 		BaseInvoker:         *protocol.NewBaseInvoker(url),
 		client:              *client,
