@@ -395,18 +395,21 @@ func (s *KubernetesClientTestSuite) TestClientWatchPrefix() {
 
 	go func() {
 
-		defer wg.Done()
-
 		wc, err := client.WatchWithPrefix(prefix)
 		if err != nil {
 			t.Fatal(err)
 		}
+
+		wg.Done()
 
 		for e := range wc {
 			t.Logf("got event %v k %s v %s", e.EventType, e.Key, e.Value)
 		}
 
 	}()
+
+	// must wait the watch goroutine work
+	wg.Wait()
 
 	for _, tc := range tests {
 
@@ -419,7 +422,6 @@ func (s *KubernetesClientTestSuite) TestClientWatchPrefix() {
 	}
 
 	client.Close()
-	wg.Wait()
 }
 
 func (s *KubernetesClientTestSuite) TestNewClient() {
@@ -444,18 +446,20 @@ func (s *KubernetesClientTestSuite) TestClientWatch() {
 
 	go func() {
 
-		defer wg.Done()
-
 		wc, err := client.Watch(prefix)
 		if err != nil {
 			t.Fatal(err)
 		}
+		wg.Done()
 
 		for e := range wc {
 			t.Logf("got event %v k %s v %s", e.EventType, e.Key, e.Value)
 		}
 
 	}()
+
+	// must wait the watch goroutine already start the watch goroutine
+	wg.Wait()
 
 	for _, tc := range tests {
 
@@ -468,7 +472,6 @@ func (s *KubernetesClientTestSuite) TestClientWatch() {
 	}
 
 	client.Close()
-	wg.Wait()
 }
 
 func TestKubernetesClient(t *testing.T) {
