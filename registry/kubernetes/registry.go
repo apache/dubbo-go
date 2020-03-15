@@ -97,14 +97,9 @@ func (r *kubernetesRegistry) CloseListener() {
 }
 
 func (r *kubernetesRegistry) CreatePath(k string) error {
-	var tmpPath string
-	for _, str := range strings.Split(k, "/")[1:] {
-		tmpPath = path.Join(tmpPath, "/", str)
-		if err := r.client.Create(tmpPath, ""); err != nil {
-			return perrors.WithMessagef(err, "create path %s in kubernetes", tmpPath)
-		}
+	if err := r.client.Create(k, ""); err != nil {
+		return perrors.WithMessagef(err, "create path %s in kubernetes", k)
 	}
-
 	return nil
 }
 

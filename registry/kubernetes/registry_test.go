@@ -38,7 +38,11 @@ func (s *KubernetesRegistryTestSuite) TestRegister() {
 	r := s.initRegistry()
 	defer r.Destroy()
 
-	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
+	url, _ := common.NewURL(
+		"dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider",
+		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
+		common.WithMethods([]string{"GetUser", "AddUser"}),
+	)
 
 	err := r.Register(url)
 	assert.NoError(t, err)
