@@ -18,6 +18,10 @@
 package config
 
 import (
+	"bytes"
+	"fmt"
+	"github.com/apache/dubbo-go/common/extension"
+	"strings"
 	"time"
 )
 
@@ -58,7 +62,7 @@ type ConsumerConfig struct {
 	ProtocolConf   interface{}                 `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
 	FilterConf     interface{}                 `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf" `
 	ShutdownConfig *ShutdownConfig             `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf" `
-	RestConfigType string                      `default:"default" yaml:"rest_config_type" json:"rest_config_type,omitempty" property:"rest_config_type"`
+	ConfigType     string                      `default:"default" yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 }
 
 // UnmarshalYAML ...
@@ -89,7 +93,7 @@ func ConsumerInit(confConFile string) error {
 		return perrors.Errorf("application configure(consumer) file name is nil")
 	}
 	consumerConfig = &ConsumerConfig{}
-	err := yaml.UnmarshalYMLConfig(confConFile, consumerConfig)
+	fileStream, err := yaml.UnmarshalYMLConfig(confConFile, consumerConfig)
 	if err != nil {
 		return perrors.Errorf("unmarshalYmlConfig error %v", perrors.WithStack(err))
 	}
@@ -116,6 +120,19 @@ func ConsumerInit(confConFile string) error {
 		}
 	}
 	logger.Debugf("consumer config{%#v}\n", consumerConfig)
+
+	// init other consumer config
+	conConfigType := consumerConfig.ConfigType
+	if len(conConfigType) > 0 {
+		for _, t := range strings.Split(conConfigType, ",") {
+			if len(t) > 0 {
+				if err = extension.GetConfigReaders(t).ReadConsumerConfig(bytes.NewBuffer(fileStream)); err != nil {
+					return perrors.New(fmt.Sprintf("ReadConsumerConfig error: %v for %s", perrors.WithStack(err), t))
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -139,5 +156,6 @@ func configCenterRefreshConsumer() error {
 			return perrors.WithMessagef(err, "time.ParseDuration(Connect_Timeout{%#v})", consumerConfig.Connect_Timeout)
 		}
 	}
-	return err
+
+	return nil
 }
