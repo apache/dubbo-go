@@ -459,8 +459,6 @@ func (c *Client) Create(k, v string) error {
 	// 1. accord old pod && (k, v) assemble new pod dubbo annotion v
 	// 2. get patch data
 	// 3. PATCH the pod
-	c.lock.Lock()
-	defer c.lock.Unlock()
 
 	currentPod, err := c.readCurrentPod()
 	if err != nil {
@@ -482,7 +480,9 @@ func (c *Client) Create(k, v string) error {
 		return perrors.WithMessage(err, "patch current pod")
 	}
 
+	c.lock.Lock()
 	c.currentPod = updatedPod
+	c.lock.Unlock()
 	// not update the watcherSet, the watcherSet should be write by the  watchPodsLoop
 	return nil
 }
