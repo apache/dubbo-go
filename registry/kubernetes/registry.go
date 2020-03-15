@@ -87,9 +87,13 @@ func (r *kubernetesRegistry) CloseAndNilClient() {
 }
 
 func (r *kubernetesRegistry) CloseListener() {
+
+	r.cltLock.Lock()
 	if r.configListener != nil {
 		r.configListener.Close()
 	}
+	r.configListener = nil
+	r.cltLock.Unlock()
 }
 
 func (r *kubernetesRegistry) CreatePath(k string) error {
