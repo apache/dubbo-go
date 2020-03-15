@@ -100,26 +100,6 @@
 - [Fix bug in reference_config](https://github.com/apache/dubbo-go/pull/157)
 - [Fix high memory bug in zookeeper listener](https://github.com/apache/dubbo-go/pull/168)
 
-### Enhancement
-
-- Split gettyRPCClient.close and gettyRPCClientPool.remove in protocol/dubbo/pool.go<https://github.com/apache/dubbo-go/pull/186>
-- Remove client from pool before closing it<https://github.com/apache/dubbo-go/pull/190>
-- Enhance the logic for fetching the local address<https://github.com/apache/dubbo-go/pull/209>
-- Add protocol_conf default values<https://github.com/apache/dubbo-go/pull/221>
-- Add task pool for getty<https://github.com/apache/dubbo-go/pull/141>
-- Update getty: remove read queue<https://github.com/apache/dubbo-go/pull/137>
-- Clean heartbeat from PendingResponse<https://github.com/apache/dubbo-go/pull/166>
-
-### Bugfixes
-
-- GettyRPCClientPool remove deadlock<https://github.com/apache/dubbo-go/pull/183/files>
-- Fix failover cluster bug and url parameter retries change int to string type<https://github.com/apache/dubbo-go/pull/195>
-- Fix url params unsafe map<https://github.com/apache/dubbo-go/pull/201>
-- Read protocol config by map key in config yaml instead of protocol name<https://github.com/apache/dubbo-go/pull/218>
-- Fix dubbo group issues #238<https://github.com/apache/dubbo-go/pull/243>/<https://github.com/apache/dubbo-go/pull/244>
-- Fix bug in reference_config<https://github.com/apache/dubbo-go/pull/157>
-- Fix high memory bug in zookeeper listener<https://github.com/apache/dubbo-go/pull/168>
-
 ## 1.1.0
 
 ### New Features
