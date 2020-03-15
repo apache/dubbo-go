@@ -157,7 +157,7 @@ func newNacosClient(name string, nacosAddrs []string, timeout time.Duration) (*N
 		},
 	}
 
-	svrConfList := []nacosconst.ServerConfig{}
+	svrConfList := make([]nacosconst.ServerConfig, 0, len(n.NacosAddrs))
 	for _, nacosAddr := range n.NacosAddrs {
 		split := strings.Split(nacosAddr, ":")
 		port, err := strconv.ParseUint(split[1], 10, 64)
