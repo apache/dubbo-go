@@ -18,12 +18,19 @@
 package config
 
 import (
+	"bytes"
+	"fmt"
+	"strings"
+)
+
+import (
 	"github.com/creasty/defaults"
 	perrors "github.com/pkg/errors"
 )
 
 import (
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/yaml"
 )
@@ -46,7 +53,7 @@ type ProviderConfig struct {
 	ProtocolConf      interface{}                `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf" `
 	FilterConf        interface{}                `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf" `
 	ShutdownConfig    *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf" `
-	RestConfigType    string                     `default:"default" yaml:"rest_config_type" json:"rest_config_type,omitempty" property:"rest_config_type"`
+	ConfigType        string                     `default:"default" yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 }
 
 // UnmarshalYAML ...
@@ -77,7 +84,7 @@ func ProviderInit(confProFile string) error {
 		return perrors.Errorf("application configure(provider) file name is nil")
 	}
 	providerConfig = &ProviderConfig{}
-	err := yaml.UnmarshalYMLConfig(confProFile, providerConfig)
+	fileStream, err := yaml.UnmarshalYMLConfig(confProFile, providerConfig)
 	if err != nil {
 		return perrors.Errorf("unmarshalYmlConfig error %v", perrors.WithStack(err))
 	}
@@ -91,6 +98,18 @@ func ProviderInit(confProFile string) error {
 	}
 
 	logger.Debugf("provider config{%#v}\n", providerConfig)
+
+	// init other provider config
+	proConfigType := providerConfig.ConfigType
+	if len(proConfigType) > 0 {
+		for _, t := range strings.Split(proConfigType, ",") {
+			if len(t) > 0 {
+				if err = extension.GetConfigReaders(t).ReadProviderConfig(bytes.NewBuffer(fileStream)); err != nil {
+					return perrors.New(fmt.Sprintf("ReadProviderConfig error: %v for %s", perrors.WithStack(err), t))
+				}
+			}
+		}
+	}
 
 	return nil
 }
