@@ -15,9 +15,16 @@
  * limitations under the License.
  */
 
-package rest
+package config
 
-import "github.com/creasty/defaults"
+import (
+	"github.com/creasty/defaults"
+)
+
+var (
+	restConsumerServiceConfigMap map[string]*RestServiceConfig
+	restProviderServiceConfigMap map[string]*RestServiceConfig
+)
 
 // RestConsumerConfig ...
 type RestConsumerConfig struct {
@@ -113,4 +120,34 @@ func (c *RestMethodConfig) UnmarshalYAML(unmarshal func(interface{}) error) erro
 		return err
 	}
 	return nil
+}
+
+// GetRestConsumerServiceConfig ...
+func GetRestConsumerServiceConfig(path string) *RestServiceConfig {
+	return restConsumerServiceConfigMap[path]
+}
+
+// GetRestProviderServiceConfig ...
+func GetRestProviderServiceConfig(path string) *RestServiceConfig {
+	return restProviderServiceConfigMap[path]
+}
+
+// SetRestConsumerServiceConfigMap ...
+func SetRestConsumerServiceConfigMap(configMap map[string]*RestServiceConfig) {
+	restConsumerServiceConfigMap = configMap
+}
+
+// SetRestProviderServiceConfigMap ...
+func SetRestProviderServiceConfigMap(configMap map[string]*RestServiceConfig) {
+	restProviderServiceConfigMap = configMap
+}
+
+// GetRestConsumerServiceConfigMap ...
+func GetRestConsumerServiceConfigMap() map[string]*RestServiceConfig {
+	return restConsumerServiceConfigMap
+}
+
+// GetRestProviderServiceConfigMap ...
+func GetRestProviderServiceConfigMap() map[string]*RestServiceConfig {
+	return restProviderServiceConfigMap
 }
