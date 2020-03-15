@@ -174,21 +174,36 @@ const (
 )
 
 const (
-	CONSUMER_SIGN_FILTER          = "sign"
-	PROVIDER_AUTH_FILTER          = "auth"
-	SERVICE_AUTH_KEY              = "auth"
-	AUTHENTICATOR_KEY             = "authenticator"
-	DEFAULT_AUTHENTICATOR         = "accesskeys"
-	DEFAULT_ACCESS_KEY_STORAGE    = "urlstorage"
-	ACCESS_KEY_STORAGE_KEY        = "accessKey.storage"
-	REQUEST_TIMESTAMP_KEY         = "timestamp"
-	REQUEST_SIGNATURE_KEY         = "signature"
-	AK_KEY                        = "ak"
-	SIGNATURE_STRING_FORMAT       = "%s#%s#%s#%s"
+	// name of consumer sign filter
+	CONSUMER_SIGN_FILTER = "sign"
+	// name of consumer sign filter
+	PROVIDER_AUTH_FILTER = "auth"
+	// name of service filter
+	SERVICE_AUTH_KEY = "auth"
+	// key of authenticator
+	AUTHENTICATOR_KEY = "authenticator"
+	// name of default authenticator
+	DEFAULT_AUTHENTICATOR = "accesskeys"
+	// name of default url storage
+	DEFAULT_ACCESS_KEY_STORAGE = "urlstorage"
+	// key of storage
+	ACCESS_KEY_STORAGE_KEY = "accessKey.storage"
+	// key of request timestamp
+	REQUEST_TIMESTAMP_KEY = "timestamp"
+	// key of request signature
+	REQUEST_SIGNATURE_KEY = "signature"
+	// AK key
+	AK_KEY = "ak"
+	// signature format
+	SIGNATURE_STRING_FORMAT = "%s#%s#%s#%s"
+	// key whether enable signature
 	PARAMTER_SIGNATURE_ENABLE_KEY = "param.sign"
-	CONSUMER                      = "consumer"
-	ACCESS_KEY_ID_KEY             = "accessKeyId"
-	SECRET_ACCESS_KEY_KEY         = "secretAccessKey"
+	// consumer
+	CONSUMER = "consumer"
+	// key of access key id
+	ACCESS_KEY_ID_KEY = "accessKeyId"
+	// key of secret access key
+	SECRET_ACCESS_KEY_KEY = "secretAccessKey"
 )
 
 // HealthCheck Router

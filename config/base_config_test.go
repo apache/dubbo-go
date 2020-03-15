@@ -18,7 +18,6 @@ package config
 
 import (
 	"fmt"
-	"path/filepath"
 	"reflect"
 	"testing"
 )
@@ -517,14 +516,4 @@ func Test_initializeStruct(t *testing.T) {
 	assert.Condition(t, func() (success bool) {
 		return consumerConfig.References != nil
 	})
-}
-
-func TestUnmarshalYMLConfig(t *testing.T) {
-	conPath, err := filepath.Abs("./testdata/consumer_config_with_configcenter.yml")
-	assert.NoError(t, err)
-	c := &ConsumerConfig{}
-	assert.NoError(t, unmarshalYMLConfig(conPath, c))
-	assert.Equal(t, "default", c.ProxyFactory)
-	assert.Equal(t, "dubbo.properties", c.ConfigCenterConfig.ConfigFile)
-	assert.Equal(t, "100ms", c.Connect_Timeout)
 }
