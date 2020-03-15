@@ -1,7 +1,11 @@
 language: go
 
+os:
+  - linux
+  - osx
+
 go:
-  - "1.12"
+  - "1.13"
 
 env:
   - GO111MODULE=on
@@ -10,10 +14,7 @@ install: true
 
 script:
   - go fmt ./... && [[ -z `git status -s` ]]
-  - mkdir -p remoting/zookeeper/zookeeper-4unittest/contrib/fatjar config_center/zookeeper/zookeeper-4unittest/contrib/fatjar registry/zookeeper/zookeeper-4unittest/contrib/fatjar
-  - wget -P "remoting/zookeeper/zookeeper-4unittest/contrib/fatjar" https://github.com/dubbogo/resources/raw/master/zookeeper-4unitest/contrib/fatjar/zookeeper-3.4.9-fatjar.jar
-  - cp remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/zookeeper-3.4.9-fatjar.jar config_center/zookeeper/zookeeper-4unittest/contrib/fatjar/
-  - cp remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/zookeeper-3.4.9-fatjar.jar registry/zookeeper/zookeeper-4unittest/contrib/fatjar/
+  - chmod u+x before_ut.sh && ./before_ut.sh
   - go mod vendor && go test ./... -coverprofile=coverage.txt -covermode=atomic
 
 after_success:

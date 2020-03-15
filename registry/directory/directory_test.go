@@ -30,6 +30,8 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/cluster/cluster_impl"
+	_ "github.com/apache/dubbo-go/cluster/router"
+	_ "github.com/apache/dubbo-go/cluster/router/condition"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -43,6 +45,7 @@ import (
 func init() {
 	config.SetConsumerConfig(config.ConsumerConfig{ApplicationConfig: &config.ApplicationConfig{Name: "test-application"}})
 }
+
 func TestSubscribe(t *testing.T) {
 	registryDirectory, _ := normalRegistryDir()
 
@@ -104,7 +107,7 @@ func TestSubscribe_Group(t *testing.T) {
 func Test_Destroy(t *testing.T) {
 	registryDirectory, _ := normalRegistryDir()
 
-	time.Sleep(1e9)
+	time.Sleep(3e9)
 	assert.Len(t, registryDirectory.cacheInvokers, 3)
 	assert.Equal(t, true, registryDirectory.IsAvailable())
 
@@ -116,11 +119,12 @@ func Test_Destroy(t *testing.T) {
 func Test_List(t *testing.T) {
 	registryDirectory, _ := normalRegistryDir()
 
-	time.Sleep(1e9)
+	time.Sleep(4e9)
 	assert.Len(t, registryDirectory.List(&invocation.RPCInvocation{}), 3)
 	assert.Equal(t, true, registryDirectory.IsAvailable())
 
 }
+
 func Test_MergeProviderUrl(t *testing.T) {
 	registryDirectory, mockRegistry := normalRegistryDir(true)
 	providerUrl, _ := common.NewURL("dubbo://0.0.0.0:20000/org.apache.dubbo-go.mockService",
