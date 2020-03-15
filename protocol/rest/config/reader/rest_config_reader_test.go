@@ -15,10 +15,12 @@
  * limitations under the License.
  */
 
-package reader_impl
+package reader
 
 import (
-	"os"
+	"bytes"
+	"github.com/apache/dubbo-go/common/yaml"
+	"github.com/apache/dubbo-go/protocol/rest/config"
 	"testing"
 )
 
@@ -26,24 +28,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-import (
-	"github.com/apache/dubbo-go/common/constant"
-)
-
-func TestDefaultConfigReader_ReadConsumerConfig(t *testing.T) {
-	err := os.Setenv(constant.CONF_CONSUMER_FILE_PATH, "./testdata/consumer_config.yml")
+func TestRestConfigReader_ReadConsumerConfig(t *testing.T) {
+	bs, err := yaml.LoadYMLConfig("./testdata/consumer_config.yml")
 	assert.NoError(t, err)
-	reader := GetDefaultConfigReader()
-	config, err := reader.ReadConsumerConfig()
-	assert.Nil(t, err)
-	assert.NotEmpty(t, config)
+	configReader := NewRestConfigReader()
+	err = configReader.ReadConsumerConfig(bytes.NewBuffer(bs))
+	assert.NoError(t, err)
+	assert.NotEmpty(t, config.GetRestConsumerServiceConfigMap())
 }
 
-func TestDefaultConfigReader_ReadProviderConfig(t *testing.T) {
-	err := os.Setenv(constant.CONF_PROVIDER_FILE_PATH, "./testdata/provider_config.yml")
+func TestRestConfigReader_ReadProviderConfig(t *testing.T) {
+	bs, err := yaml.LoadYMLConfig("./testdata/provider_config.yml")
 	assert.NoError(t, err)
-	reader := GetDefaultConfigReader()
-	config, err := reader.ReadProviderConfig()
-	assert.Nil(t, err)
-	assert.NotEmpty(t, config)
+	configReader := NewRestConfigReader()
+	err = configReader.ReadProviderConfig(bytes.NewBuffer(bs))
+	assert.NoError(t, err)
+	assert.NotEmpty(t, config.GetRestProviderServiceConfigMap())
 }
