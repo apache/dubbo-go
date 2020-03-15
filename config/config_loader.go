@@ -97,7 +97,7 @@ func Load() {
 	} else {
 		// init other consumer config
 		conConfigType := consumerConfig.ConfigType
-		for key, value := range extension.GetDefaultConfitReader() {
+		for key, value := range extension.GetDefaultConfigReader() {
 			if conConfigType == nil {
 				if v, ok := conConfigType[key]; ok {
 					value = v
@@ -170,7 +170,7 @@ func Load() {
 	} else {
 		// init other provider config
 		proConfigType := providerConfig.ConfigType
-		for key, value := range extension.GetDefaultConfitReader() {
+		for key, value := range extension.GetDefaultConfigReader() {
 			if proConfigType != nil {
 				if v, ok := proConfigType[key]; ok {
 					value = v
