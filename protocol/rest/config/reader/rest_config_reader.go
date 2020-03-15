@@ -15,73 +15,79 @@
  * limitations under the License.
  */
 
-package config
+package reader
 
 import (
+	"bytes"
+	"github.com/apache/dubbo-go/protocol/rest/config"
 	"strconv"
 	"strings"
 )
 
 import (
 	perrors "github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 )
 
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/config/rest"
-	_ "github.com/apache/dubbo-go/config/rest/config_reader/reader_impl"
+	"github.com/apache/dubbo-go/config/interfaces"
 )
 
-var (
-	restConsumerServiceConfigMap map[string]*rest.RestServiceConfig
-	restProviderServiceConfigMap map[string]*rest.RestServiceConfig
-)
+const REST = "rest"
 
-// initConsumerRestConfig ...
-func ConsumerRestConfigInit(configType string) error {
-	consumerConfigReader := extension.GetSingletonRestConfigReader(configType)
-	var restConsumerConfig *rest.RestConsumerConfig
-	var err error
-	if restConsumerConfig, err = consumerConfigReader.ReadConsumerConfig(); err != nil {
-		return err
+func init() {
+	extension.SetConfigReaders(REST, NewRestConfigReader)
+	extension.SetDefaultConfitReader(REST, REST)
+}
+
+type RestConfigReader struct {
+}
+
+func NewRestConfigReader() interfaces.ConfigReader {
+	return &RestConfigReader{}
+}
+
+// ReadConsumerConfig read consumer config for rest protocol
+func (cr *RestConfigReader) ReadConsumerConfig(reader *bytes.Buffer) error {
+	restConsumerConfig := &config.RestConsumerConfig{}
+	err := yaml.Unmarshal(reader.Bytes(), restConsumerConfig)
+	if err != nil {
+		return perrors.Errorf("[Rest Config] unmarshal Consumer error %#v", perrors.WithStack(err))
 	}
-	if restConsumerConfig == nil || len(restConsumerConfig.RestServiceConfigsMap) == 0 {
-		return perrors.New("Consumer don't has RestServiceConfigsMap ")
-	}
-	restConsumerServiceConfigMap = make(map[string]*rest.RestServiceConfig, len(restConsumerConfig.RestServiceConfigsMap))
+
+	restConsumerServiceConfigMap := make(map[string]*config.RestServiceConfig, len(restConsumerConfig.RestServiceConfigsMap))
 	for key, rc := range restConsumerConfig.RestServiceConfigsMap {
 		rc.Client = getNotEmptyStr(rc.Client, restConsumerConfig.Client, constant.DEFAULT_REST_CLIENT)
 		rc.RestMethodConfigsMap = initMethodConfigMap(rc, restConsumerConfig.Consumes, restConsumerConfig.Produces)
 		restConsumerServiceConfigMap[strings.TrimPrefix(key, "/")] = rc
 	}
+	config.SetRestConsumerServiceConfigMap(restConsumerServiceConfigMap)
 	return nil
 }
 
-// initProviderRestConfig ...
-func ProviderRestConfigInit(configType string) error {
-	providerConfigReader := extension.GetSingletonRestConfigReader(configType)
-	var restProviderConfig *rest.RestProviderConfig
-	var err error
-	if restProviderConfig, err = providerConfigReader.ReadProviderConfig(); err != nil {
-		return err
+// ReadProviderConfig read provider config for rest protocol
+func (cr *RestConfigReader) ReadProviderConfig(reader *bytes.Buffer) error {
+	restProviderConfig := &config.RestProviderConfig{}
+	err := yaml.Unmarshal(reader.Bytes(), restProviderConfig)
+	if err != nil {
+		return perrors.Errorf("[Rest Config] unmarshal Provider error %#v", perrors.WithStack(err))
 	}
-	if restProviderConfig == nil || len(restProviderConfig.RestServiceConfigsMap) == 0 {
-		return perrors.New("Provider don't has RestServiceConfigsMap")
-	}
-	restProviderServiceConfigMap = make(map[string]*rest.RestServiceConfig, len(restProviderConfig.RestServiceConfigsMap))
+	restProviderServiceConfigMap := make(map[string]*config.RestServiceConfig, len(restProviderConfig.RestServiceConfigsMap))
 	for key, rc := range restProviderConfig.RestServiceConfigsMap {
 		rc.Server = getNotEmptyStr(rc.Server, restProviderConfig.Server, constant.DEFAULT_REST_SERVER)
 		rc.RestMethodConfigsMap = initMethodConfigMap(rc, restProviderConfig.Consumes, restProviderConfig.Produces)
 		restProviderServiceConfigMap[strings.TrimPrefix(key, "/")] = rc
 	}
+	config.SetRestProviderServiceConfigMap(restProviderServiceConfigMap)
 	return nil
 }
 
 // initProviderRestConfig ...
-func initMethodConfigMap(rc *rest.RestServiceConfig, consumes string, produces string) map[string]*rest.RestMethodConfig {
-	mcm := make(map[string]*rest.RestMethodConfig, len(rc.RestMethodConfigs))
+func initMethodConfigMap(rc *config.RestServiceConfig, consumes string, produces string) map[string]*config.RestMethodConfig {
+	mcm := make(map[string]*config.RestMethodConfig, len(rc.RestMethodConfigs))
 	for _, mc := range rc.RestMethodConfigs {
 		mc.InterfaceName = rc.InterfaceName
 		mc.Path = rc.Path + mc.Path
@@ -107,7 +113,7 @@ func getNotEmptyStr(args ...string) string {
 }
 
 // transformMethodConfig
-func transformMethodConfig(methodConfig *rest.RestMethodConfig) *rest.RestMethodConfig {
+func transformMethodConfig(methodConfig *config.RestMethodConfig) *config.RestMethodConfig {
 	if len(methodConfig.PathParamsMap) == 0 && len(methodConfig.PathParams) > 0 {
 		paramsMap, err := parseParamsString2Map(methodConfig.PathParams)
 		if err != nil {
@@ -149,24 +155,4 @@ func parseParamsString2Map(params string) (map[int]string, error) {
 		m[key] = pa[1]
 	}
 	return m, nil
-}
-
-// GetRestConsumerServiceConfig ...
-func GetRestConsumerServiceConfig(path string) *rest.RestServiceConfig {
-	return restConsumerServiceConfigMap[path]
-}
-
-// GetRestProviderServiceConfig ...
-func GetRestProviderServiceConfig(path string) *rest.RestServiceConfig {
-	return restProviderServiceConfigMap[path]
-}
-
-// SetRestConsumerServiceConfigMap ...
-func SetRestConsumerServiceConfigMap(configMap map[string]*rest.RestServiceConfig) {
-	restConsumerServiceConfigMap = configMap
-}
-
-// SetRestProviderServiceConfigMap ...
-func SetRestProviderServiceConfigMap(configMap map[string]*rest.RestServiceConfig) {
-	restProviderServiceConfigMap = configMap
 }
