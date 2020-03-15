@@ -43,7 +43,7 @@ type RegistryDataListener struct {
 
 // NewRegistryDataListener ...
 func NewRegistryDataListener(listener config_center.ConfigurationListener) *RegistryDataListener {
-	return &RegistryDataListener{listener: listener, interestedURL: make([]*common.URL, 16)}
+	return &RegistryDataListener{listener: listener}
 }
 
 // AddInterestedURL ...
