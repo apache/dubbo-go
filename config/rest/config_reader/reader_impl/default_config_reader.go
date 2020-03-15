@@ -18,8 +18,6 @@
 package reader_impl
 
 import (
-	"github.com/apache/dubbo-go/config/rest"
-	"github.com/apache/dubbo-go/config/rest/config_reader"
 	"os"
 )
 
@@ -31,6 +29,8 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/yaml"
+	"github.com/apache/dubbo-go/config/rest"
+	"github.com/apache/dubbo-go/config/rest/config_reader"
 )
 
 var (
