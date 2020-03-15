@@ -236,6 +236,32 @@ func (s *KubernetesClientTestSuite) SetupSuite() {
 	}
 }
 
+func (s *KubernetesClientTestSuite) TestReadCurrentPodName() {
+	t := s.T()
+
+	n, err := getCurrentPodName()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if n != s.currentPod.GetName() {
+		t.Fatalf("expect %s but got %s", s.currentPod.GetName(), n)
+	}
+
+}
+func (s *KubernetesClientTestSuite) TestReadCurrentNameSpace() {
+	t := s.T()
+
+	ns, err := getCurrentNameSpace()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if ns != s.currentPod.GetNamespace() {
+		t.Fatalf("expect %s but got %s", s.currentPod.GetNamespace(), ns)
+	}
+
+}
 func (s *KubernetesClientTestSuite) TestClientValid() {
 
 	t := s.T()
@@ -358,7 +384,7 @@ func (s *KubernetesClientTestSuite) TestClientGetChildrenKVList() {
 
 }
 
-func (s *KubernetesClientTestSuite) TestClientWatch() {
+func (s *KubernetesClientTestSuite) TestClientWatchPrefix() {
 
 	t := s.T()
 
@@ -372,6 +398,55 @@ func (s *KubernetesClientTestSuite) TestClientWatch() {
 		defer wg.Done()
 
 		wc, err := client.WatchWithPrefix(prefix)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		for e := range wc {
+			t.Logf("got event %v k %s v %s", e.EventType, e.Key, e.Value)
+		}
+
+	}()
+
+	for _, tc := range tests {
+
+		k := tc.input.k
+		v := tc.input.v
+
+		if err := client.Create(k, v); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	client.Close()
+	wg.Wait()
+}
+
+func (s *KubernetesClientTestSuite) TestNewClient() {
+
+	t := s.T()
+
+	_, err := newClient(s.currentPod.GetNamespace())
+	if err == nil {
+		t.Fatal("the out of cluster test should fail")
+	}
+
+}
+
+func (s *KubernetesClientTestSuite) TestClientWatch() {
+
+	t := s.T()
+
+	client := s.initClient()
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	go func() {
+
+		defer wg.Done()
+
+		wc, err := client.Watch(prefix)
 		if err != nil {
 			t.Fatal(err)
 		}
