@@ -13,7 +13,7 @@
 - [Support sign and auth for request](https://github.com/apache/dubbo-go/pull/323)
 - [Healthy instance first router](https://github.com/apache/dubbo-go/pull/389)
 - [User can add attachments for dubbo protocol](https://github.com/apache/dubbo-go/pull/398)
-- [K8s as registry](https://github.com/apache/dubbo-go/pull/289)
+- [K8s as registry](https://github.com/apache/dubbo-go/pull/400)
 - [Rest protocol](https://github.com/apache/dubbo-go/pull/352)
 
 ### Enhancement
