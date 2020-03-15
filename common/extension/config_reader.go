@@ -39,12 +39,12 @@ func GetConfigReaders(name string) interfaces.ConfigReader {
 	return configReaders[name]()
 }
 
-// SetDefaultConfitReader set {name} to default config reader for {module}
-func SetDefaultConfitReader(module, name string) {
+// SetDefaultConfigReader set {name} to default config reader for {module}
+func SetDefaultConfigReader(module, name string) {
 	defaults[module] = name
 }
 
-// GetDefaultConfitReader
-func GetDefaultConfitReader() map[string]string {
+// GetDefaultConfigReader
+func GetDefaultConfigReader() map[string]string {
 	return defaults
 }
