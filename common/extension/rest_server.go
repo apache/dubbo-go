@@ -15,14 +15,23 @@
  * limitations under the License.
  */
 
-package constant
+package extension
 
 import (
-	"time"
+	"github.com/apache/dubbo-go/protocol/rest/server"
 )
 
 var (
-	// The value will be 10^6
-	// 1ms = 10^6ns
-	MsToNanoRate = int64(time.Millisecond / time.Nanosecond)
+	restServers = make(map[string]func() server.RestServer, 8)
 )
+
+func SetRestServer(name string, fun func() server.RestServer) {
+	restServers[name] = fun
+}
+
+func GetNewRestServer(name string) server.RestServer {
+	if restServers[name] == nil {
+		panic("restServer for " + name + " is not existing, make sure you have import the package.")
+	}
+	return restServers[name]()
+}

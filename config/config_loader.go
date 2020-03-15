@@ -25,8 +25,13 @@ import (
 )
 
 import (
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 )
 
@@ -78,6 +83,7 @@ func checkApplicationName(config *ApplicationConfig) {
 
 // Load Dubbo Init
 func Load() {
+
 	// init router
 	if confRouterFile != "" {
 		if errPro := RouterInit(confRouterFile); errPro != nil {
@@ -89,6 +95,18 @@ func Load() {
 	if consumerConfig == nil {
 		logger.Warnf("consumerConfig is nil!")
 	} else {
+		// init other consumer config
+		conConfigType := consumerConfig.ConfigType
+		for key, value := range extension.GetDefaultConfigReader() {
+			if conConfigType == nil {
+				if v, ok := conConfigType[key]; ok {
+					value = v
+				}
+			}
+			if err := extension.GetConfigReaders(value).ReadConsumerConfig(consumerConfig.fileStream); err != nil {
+				logger.Errorf("ReadConsumerConfig error: %#v for %s", perrors.WithStack(err), value)
+			}
+		}
 
 		metricConfig = consumerConfig.MetricConfig
 		applicationConfig = consumerConfig.ApplicationConfig
@@ -150,6 +168,18 @@ func Load() {
 	if providerConfig == nil {
 		logger.Warnf("providerConfig is nil!")
 	} else {
+		// init other provider config
+		proConfigType := providerConfig.ConfigType
+		for key, value := range extension.GetDefaultConfigReader() {
+			if proConfigType != nil {
+				if v, ok := proConfigType[key]; ok {
+					value = v
+				}
+			}
+			if err := extension.GetConfigReaders(value).ReadProviderConfig(providerConfig.fileStream); err != nil {
+				logger.Errorf("ReadProviderConfig error: %#v for %s", perrors.WithStack(err), value)
+			}
+		}
 
 		// so, you should know that the consumer's config will be override
 		metricConfig = providerConfig.MetricConfig
