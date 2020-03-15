@@ -110,9 +110,9 @@ type storeImpl struct {
 	watchers         map[uint64]*watcher
 }
 
-// on stop
+// wait exit
 // when the store was closed
-func (s *storeImpl) onStop() {
+func (s *storeImpl) waitExit() {
 
 	select {
 	case <-s.ctx.Done():
@@ -124,7 +124,7 @@ func (s *storeImpl) onStop() {
 
 		for _, w := range watchers {
 			// stop data stream
-			close(w.ch)
+			// close(w.ch)
 			// stop watcher
 			w.stop()
 		}
@@ -149,8 +149,6 @@ func (s *storeImpl) Put(object *Object) error {
 
 	sendMsg := func(object *Object, w *watcher) {
 
-		s.lock.Lock()
-		defer s.lock.Unlock()
 		select {
 		case <-w.done():
 			// the watcher already stop
@@ -329,6 +327,6 @@ func newStore(ctx context.Context) Store {
 		cache:    map[string]*Object{},
 		watchers: map[uint64]*watcher{},
 	}
-	go s.onStop()
+	go s.waitExit()
 	return s
 }

@@ -52,7 +52,7 @@ func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.
 	l.wg.Add(1)
 	defer l.wg.Done()
 	for {
-		wc, err := l.client.Watch(key)
+		wc, done, err := l.client.Watch(key)
 		if err != nil {
 			logger.Warnf("watch exist{key:%s} = error{%v}", key, err)
 			return false
@@ -65,7 +65,12 @@ func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.
 			logger.Warnf("kubernetes client stopped")
 			return false
 
-			// handle kubernetes-store events
+		// store watcher stopped
+		case <-done:
+			logger.Warnf("kubernetes store watcher stopped")
+			return false
+
+		// handle kubernetes-store events
 		case e, ok := <-wc:
 			if !ok {
 				logger.Warnf("kubernetes-store watch-chan closed")
@@ -123,7 +128,7 @@ func (l *EventListener) ListenServiceNodeEventWithPrefix(prefix string, listener
 	l.wg.Add(1)
 	defer l.wg.Done()
 	for {
-		wc, err := l.client.WatchWithPrefix(prefix)
+		wc, done, err := l.client.WatchWithPrefix(prefix)
 		if err != nil {
 			logger.Warnf("listenDirEvent(key{%s}) = error{%v}", prefix, err)
 		}
@@ -132,6 +137,11 @@ func (l *EventListener) ListenServiceNodeEventWithPrefix(prefix string, listener
 		// client stopped
 		case <-l.client.Done():
 			logger.Warnf("kubernetes client stopped")
+			return
+
+		// watcher stopped
+		case <-done:
+			logger.Warnf("kubernetes store watcher stopped")
 			return
 
 			// kuberentes-store event stream

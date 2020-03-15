@@ -44,8 +44,15 @@ func TestStore(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			for e := range w.ResultChan() {
-				t.Logf("consumer %s got %s\n", w.ID(), e.Key)
+			for {
+				select {
+				case e := <-w.ResultChan():
+					t.Logf("consumer %s got %s\n", w.ID(), e.Key)
+
+				case <-w.done():
+					t.Logf("consumer %s stopped", w.ID())
+					return
+				}
 			}
 		}()
 	}
@@ -59,8 +66,16 @@ func TestStore(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			for e := range w.ResultChan() {
-				t.Logf("prefix consumer %s got %s\n", w.ID(), e.Key)
+
+			for {
+				select {
+				case e := <-w.ResultChan():
+					t.Logf("prefix consumer %s got %s\n", w.ID(), e.Key)
+
+				case <-w.done():
+					t.Logf("prefix consumer %s stopped", w.ID())
+					return
+				}
 			}
 		}()
 	}
