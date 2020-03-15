@@ -32,6 +32,8 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/rest/client"
 	_ "github.com/apache/dubbo-go/protocol/rest/client/client_impl"
+	rest_config "github.com/apache/dubbo-go/protocol/rest/config"
+	_ "github.com/apache/dubbo-go/protocol/rest/config/reader"
 	"github.com/apache/dubbo-go/protocol/rest/server"
 	_ "github.com/apache/dubbo-go/protocol/rest/server/server_impl"
 )
@@ -66,7 +68,7 @@ func (rp *RestProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetUrl()
 	serviceKey := url.ServiceKey()
 	exporter := NewRestExporter(serviceKey, invoker, rp.ExporterMap())
-	restServiceConfig := config.GetRestProviderServiceConfig(strings.TrimPrefix(url.Path, "/"))
+	restServiceConfig := rest_config.GetRestProviderServiceConfig(strings.TrimPrefix(url.Path, "/"))
 	if restServiceConfig == nil {
 		logger.Errorf("%s service doesn't has provider config", url.Path)
 		return nil
@@ -85,7 +87,7 @@ func (rp *RestProtocol) Refer(url common.URL) protocol.Invoker {
 	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
 		requestTimeout = t
 	}
-	restServiceConfig := config.GetRestConsumerServiceConfig(strings.TrimPrefix(url.Path, "/"))
+	restServiceConfig := rest_config.GetRestConsumerServiceConfig(strings.TrimPrefix(url.Path, "/"))
 	if restServiceConfig == nil {
 		logger.Errorf("%s service doesn't has consumer config", url.Path)
 		return nil

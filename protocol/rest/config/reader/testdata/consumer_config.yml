@@ -2,6 +2,9 @@
 
 filter: ""
 
+config_type:
+  rest: "rest"
+
 # client
 request_timeout : "100ms"
 # connect timeout
