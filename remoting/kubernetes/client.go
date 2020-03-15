@@ -70,14 +70,14 @@ type Client struct {
 
 	ns string
 
-	// the memory store
-	store WatcherSet
+	// the memory watcherSet
+	watcherSet WatcherSet
 
 	// protect the wg && currentPod
 	lock sync.RWMutex
 	// current pod status
 	currentPod *v1.Pod
-	// protect the maintenanceStatus loop && watcher
+	// protect the watchPods loop && watcher
 	wg sync.WaitGroup
 
 	// manage the  client lifecycle
@@ -132,7 +132,7 @@ func newMockClient(namespace string, mockClientGenerator func() (kubernetes.Inte
 		ns:             namespace,
 		rawClient:      rawClient,
 		ctx:            ctx,
-		store:          newWatcherSet(ctx),
+		watcherSet:     newWatcherSet(ctx),
 		cancel:         cancel,
 	}
 
@@ -144,13 +144,13 @@ func newMockClient(namespace string, mockClientGenerator func() (kubernetes.Inte
 	// record current status
 	c.currentPod = currentPod
 
-	// init the store by current pods
-	if err := c.initStore(); err != nil {
-		return nil, perrors.WithMessage(err, "init store")
+	// init the watcherSet by current pods
+	if err := c.initWatchSet(); err != nil {
+		return nil, perrors.WithMessage(err, "init watcherSet")
 	}
 
 	// start kubernetes watch loop
-	if err := c.maintenanceStatus(); err != nil {
+	if err := c.watchPods(); err != nil {
 		return nil, perrors.WithMessage(err, "maintenance the kubernetes status")
 	}
 
@@ -185,7 +185,7 @@ func newClient(namespace string) (*Client, error) {
 		cfg:            cfg,
 		rawClient:      rawClient,
 		ctx:            ctx,
-		store:          newWatcherSet(ctx),
+		watcherSet:     newWatcherSet(ctx),
 		cancel:         cancel,
 	}
 
@@ -197,13 +197,13 @@ func newClient(namespace string) (*Client, error) {
 	// record current status
 	c.currentPod = currentPod
 
-	// init the store by current pods
-	if err := c.initStore(); err != nil {
-		return nil, perrors.WithMessage(err, "init store")
+	// init the watcherSet by current pods
+	if err := c.initWatchSet(); err != nil {
+		return nil, perrors.WithMessage(err, "init watcherSet")
 	}
 
 	// start kubernetes watch loop
-	if err := c.maintenanceStatus(); err != nil {
+	if err := c.watchPods(); err != nil {
 		return nil, perrors.WithMessage(err, "maintenance the kubernetes status")
 	}
 
@@ -243,10 +243,10 @@ func (c *Client) initCurrentPod() (*v1.Pod, error) {
 	return currentPod, nil
 }
 
-// initStore
+// initWatchSet
 // 1. get all with dubbo label pods
-// 2. put every element to store
-func (c *Client) initStore() error {
+// 2. put every element to watcherSet
+func (c *Client) initWatchSet() error {
 
 	pods, err := c.rawClient.CoreV1().Pods(c.ns).List(metav1.ListOptions{
 		LabelSelector: fields.OneTermEqualSelector(DubboIOLabelKey, DubboIOLabelValue).String(),
@@ -263,9 +263,9 @@ func (c *Client) initStore() error {
 	return nil
 }
 
-// maintenanceStatus
+// watchPods
 // try to watch kubernetes pods
-func (c *Client) maintenanceStatus() error {
+func (c *Client) watchPods() error {
 
 	// try once
 	watcher, err := c.rawClient.CoreV1().Pods(c.ns).Watch(metav1.ListOptions{
@@ -280,18 +280,18 @@ func (c *Client) maintenanceStatus() error {
 
 	c.wg.Add(1)
 	// add wg, grace close the client
-	go c.maintenanceStatusLoop()
+	go c.watchPodsLoop()
 	return nil
 }
 
-// maintenanceStatus
+// watchPods
 // try to notify
-func (c *Client) maintenanceStatusLoop() {
+func (c *Client) watchPodsLoop() {
 
 	defer func() {
 		// notify other goroutine, this loop over
 		c.wg.Done()
-		logger.Info("maintenanceStatusLoop goroutine game over")
+		logger.Info("watchPodsLoop goroutine game over")
 	}()
 
 	var lastResourceVersion string
@@ -401,10 +401,10 @@ func (c *Client) handleWatchedPodEvent(p *v1.Pod, eventType watch.EventType) {
 				return
 			}
 
-			logger.Debugf("prepare to put object (%#v) to kuberentes-store", o)
+			logger.Debugf("prepare to put object (%#v) to kuberentes-watcherSet", o)
 
-			if err := c.store.Put(o); err != nil {
-				logger.Errorf("put (%#v) to cache store: %v ", o, err)
+			if err := c.watcherSet.Put(o); err != nil {
+				logger.Errorf("put (%#v) to cache watcherSet: %v ", o, err)
 				return
 			}
 
@@ -487,7 +487,7 @@ func (c *Client) Create(k, v string) error {
 	}
 
 	c.currentPod = updatedPod
-	// not update the store, the store should be write by the  maintenanceStatusLoop
+	// not update the watcherSet, the watcherSet should be write by the  watchPodsLoop
 	return nil
 }
 
@@ -584,12 +584,12 @@ func (c *Client) getPatch(oldPod, newPod *v1.Pod) ([]byte, error) {
 }
 
 // GetChildren
-// get k children list from kubernetes-store
+// get k children list from kubernetes-watcherSet
 func (c *Client) GetChildren(k string) ([]string, []string, error) {
 
-	objectList, err := c.store.Get(k, true)
+	objectList, err := c.watcherSet.Get(k, true)
 	if err != nil {
-		return nil, nil, perrors.WithMessagef(err, "get children from store on (%s)", k)
+		return nil, nil, perrors.WithMessagef(err, "get children from watcherSet on (%s)", k)
 	}
 
 	var kList []string
@@ -607,7 +607,7 @@ func (c *Client) GetChildren(k string) ([]string, []string, error) {
 // watch on spec key
 func (c *Client) Watch(k string) (<-chan *WatcherEvent, <-chan struct{}, error) {
 
-	w, err := c.store.Watch(k, false)
+	w, err := c.watcherSet.Watch(k, false)
 	if err != nil {
 		return nil, nil, perrors.WithMessagef(err, "watch on (%s)", k)
 	}
@@ -619,7 +619,7 @@ func (c *Client) Watch(k string) (<-chan *WatcherEvent, <-chan struct{}, error) 
 // watch on spec prefix
 func (c *Client) WatchWithPrefix(prefix string) (<-chan *WatcherEvent, <-chan struct{}, error) {
 
-	w, err := c.store.Watch(prefix, true)
+	w, err := c.watcherSet.Watch(prefix, true)
 	if err != nil {
 		return nil, nil, perrors.WithMessagef(err, "watch on prefix (%s)", prefix)
 	}
@@ -665,7 +665,7 @@ func (c *Client) Close() {
 	c.cancel()
 
 	// the client ctx be canceled
-	// will trigger the store watchers all stopped
+	// will trigger the watcherSet watchers all stopped
 	// so, just wait
 	c.wg.Wait()
 }

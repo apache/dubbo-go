@@ -29,8 +29,8 @@ import (
 )
 
 var (
-	ErrStoreAlreadyStopped = perrors.New("the store already be stopped")
-	ErrKVPairNotFound      = perrors.New("k/v pair not found")
+	ErrWatcherSetAlreadyStopped = perrors.New("the watcher-set already be stopped")
+	ErrKVPairNotFound           = perrors.New("k/v pair not found")
 )
 
 const (
@@ -60,7 +60,7 @@ func (e eventType) String() string {
 }
 
 // WatcherEvent
-// object is element in store
+// watch event is element in watcherSet
 type WatcherEvent struct {
 	// event-type
 	EventType eventType `json:"-"`
@@ -73,14 +73,14 @@ type WatcherEvent struct {
 // Watchable WatcherSet
 type WatcherSet interface {
 
-	// put the object to the store
+	// put the watch event to the watch set
 	Put(object *WatcherEvent) error
 	// if prefix is false,
 	// the len([]*WatcherEvent) == 1
 	Get(key string, prefix bool) ([]*WatcherEvent, error)
 	// watch the spec key or key prefix
 	Watch(key string, prefix bool) (Watcher, error)
-	// check the store status
+	// check the watcher set status
 	Done() <-chan struct{}
 }
 
@@ -96,13 +96,13 @@ type Watcher interface {
 	done() <-chan struct{}
 }
 
-// the store
+// the watch set implement
 type watcherSetImpl struct {
 
-	// Client's ctx, client die, the store will die too
+	// Client's ctx, client die, the watch set will die too
 	ctx context.Context
 
-	// protect store and watchers
+	// protect watcher-set and watchers
 	lock sync.RWMutex
 
 	// the key is dubbo-go interest meta
@@ -113,13 +113,13 @@ type watcherSetImpl struct {
 }
 
 // closeWatchers
-// when the store was closed
+// when the watcher-set was closed
 func (s *watcherSetImpl) closeWatchers() {
 
 	select {
 	case <-s.ctx.Done():
 
-		// parent ctx be canceled, close the store
+		// parent ctx be canceled, close the watch-set's watchers
 		s.lock.Lock()
 		watchers := s.watchers
 		s.lock.Unlock()
@@ -140,14 +140,14 @@ func (s *watcherSetImpl) Watch(key string, prefix bool) (Watcher, error) {
 }
 
 // Done
-// get the store status
+// get the watcher-set status
 func (s *watcherSetImpl) Done() <-chan struct{} {
 	return s.ctx.Done()
 }
 
 // Put
-// put the object to store
-func (s *watcherSetImpl) Put(object *WatcherEvent) error {
+// put the watch event to watcher-set
+func (s *watcherSetImpl) Put(watcherEvent *WatcherEvent) error {
 
 	sendMsg := func(object *WatcherEvent, w *watcher) {
 
@@ -166,39 +166,39 @@ func (s *watcherSetImpl) Put(object *WatcherEvent) error {
 		return err
 	}
 
-	// put to store
-	if object.EventType == Delete {
-		delete(s.cache, object.Key)
+	// put to watcher-set
+	if watcherEvent.EventType == Delete {
+		delete(s.cache, watcherEvent.Key)
 	} else {
 
-		old, ok := s.cache[object.Key]
+		old, ok := s.cache[watcherEvent.Key]
 		if ok {
-			if old.Value == object.Value {
+			if old.Value == watcherEvent.Value {
 				// already have this k/v pair
 				return nil
 			}
 		}
 
-		// refresh the object
-		s.cache[object.Key] = object
+		// refresh the watcherEvent
+		s.cache[watcherEvent.Key] = watcherEvent
 	}
 
 	// notify watcher
 	for _, w := range s.watchers {
 
-		if !strings.Contains(object.Key, w.interested.key) {
+		if !strings.Contains(watcherEvent.Key, w.interested.key) {
 			//  this watcher no interest in this element
 			continue
 		}
 
 		if !w.interested.prefix {
-			if object.Key == w.interested.key {
-				go sendMsg(object, w)
+			if watcherEvent.Key == w.interested.key {
+				go sendMsg(watcherEvent, w)
 			}
 			// not interest
 			continue
 		}
-		go sendMsg(object, w)
+		go sendMsg(watcherEvent, w)
 	}
 	return nil
 }
@@ -207,7 +207,7 @@ func (s *watcherSetImpl) Put(object *WatcherEvent) error {
 func (s *watcherSetImpl) valid() error {
 	select {
 	case <-s.ctx.Done():
-		return ErrStoreAlreadyStopped
+		return ErrWatcherSetAlreadyStopped
 	default:
 		return nil
 	}
@@ -227,8 +227,8 @@ func (s *watcherSetImpl) addWatcher(key string, prefix bool) (Watcher, error) {
 	s.currentWatcherId++
 
 	w := &watcher{
-		id:    s.currentWatcherId,
-		store: s,
+		id:         s.currentWatcherId,
+		watcherSet: s,
 		interested: struct {
 			key    string
 			prefix bool
@@ -241,7 +241,7 @@ func (s *watcherSetImpl) addWatcher(key string, prefix bool) (Watcher, error) {
 }
 
 // Get
-// get elements from cache
+// get elements from watcher-set
 func (s *watcherSetImpl) Get(key string, prefix bool) ([]*WatcherEvent, error) {
 
 	s.lock.RLock()
@@ -276,12 +276,12 @@ func (s *watcherSetImpl) Get(key string, prefix bool) ([]*WatcherEvent, error) {
 	return out, nil
 }
 
-// the store watcher
+// the watcher-set watcher
 type watcher struct {
 	id uint64
 
-	// the underlay store
-	store *watcherSetImpl
+	// the underlay watcherSet
+	watcherSet *watcherSetImpl
 
 	// the interest topic
 	interested struct {
