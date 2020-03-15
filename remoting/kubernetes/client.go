@@ -74,7 +74,7 @@ type Client struct {
 	store Store
 
 	// protect the wg && currentPod
-	lock sync.Mutex
+	lock sync.RWMutex
 	// current pod status
 	currentPod *v1.Pod
 	// protect the maintenanceStatus loop && watcher
@@ -636,8 +636,14 @@ func (c *Client) Valid() bool {
 	case <-c.Done():
 		return false
 	default:
-		return true
 	}
+	c.lock.RLock()
+	if c.rawClient == nil {
+		c.lock.RUnlock()
+		return false
+	}
+	c.lock.RUnlock()
+	return true
 }
 
 // Done
