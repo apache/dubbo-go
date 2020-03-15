@@ -65,15 +65,15 @@ func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.
 			logger.Warnf("kubernetes client stopped")
 			return false
 
-		// store watcher stopped
+		// watcherSet watcher stopped
 		case <-done:
-			logger.Warnf("kubernetes store watcher stopped")
+			logger.Warnf("kubernetes watcherSet watcher stopped")
 			return false
 
-		// handle kubernetes-store events
+		// handle kubernetes-watcherSet events
 		case e, ok := <-wc:
 			if !ok {
-				logger.Warnf("kubernetes-store watch-chan closed")
+				logger.Warnf("kubernetes-watcherSet watch-chan closed")
 				return false
 			}
 
@@ -91,12 +91,12 @@ func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.
 // return false mean the event type is CREATE || UPDATE
 func (l *EventListener) handleEvents(event *WatcherEvent, listeners ...remoting.DataListener) bool {
 
-	logger.Infof("got a kubernetes-store event {type: %d, key: %s}", event.EventType, event.Key)
+	logger.Infof("got a kubernetes-watcherSet event {type: %d, key: %s}", event.EventType, event.Key)
 
 	switch event.EventType {
 	case Create:
 		for _, listener := range listeners {
-			logger.Infof("kubernetes-store get event (key{%s}) = event{EventNodeDataCreated}", event.Key)
+			logger.Infof("kubernetes-watcherSet get event (key{%s}) = event{EventNodeDataCreated}", event.Key)
 			listener.DataChange(remoting.Event{
 				Path:    string(event.Key),
 				Action:  remoting.EventTypeAdd,
@@ -106,7 +106,7 @@ func (l *EventListener) handleEvents(event *WatcherEvent, listeners ...remoting.
 		return false
 	case Update:
 		for _, listener := range listeners {
-			logger.Infof("kubernetes-store get event (key{%s}) = event{EventNodeDataChanged}", event.Key)
+			logger.Infof("kubernetes-watcherSet get event (key{%s}) = event{EventNodeDataChanged}", event.Key)
 			listener.DataChange(remoting.Event{
 				Path:    string(event.Key),
 				Action:  remoting.EventTypeUpdate,
@@ -115,7 +115,7 @@ func (l *EventListener) handleEvents(event *WatcherEvent, listeners ...remoting.
 		}
 		return false
 	case Delete:
-		logger.Warnf("kubernetes-store get event (key{%s}) = event{EventNodeDeleted}", event.Key)
+		logger.Warnf("kubernetes-watcherSet get event (key{%s}) = event{EventNodeDeleted}", event.Key)
 		return true
 	default:
 		return false
@@ -141,14 +141,14 @@ func (l *EventListener) ListenServiceNodeEventWithPrefix(prefix string, listener
 
 		// watcher stopped
 		case <-done:
-			logger.Warnf("kubernetes store watcher stopped")
+			logger.Warnf("kubernetes watcherSet watcher stopped")
 			return
 
-			// kuberentes-store event stream
+			// kuberentes-watcherSet event stream
 		case e, ok := <-wc:
 
 			if !ok {
-				logger.Warnf("kubernetes-store watch-chan closed")
+				logger.Warnf("kubernetes-watcherSet watch-chan closed")
 				return
 			}
 
@@ -171,7 +171,7 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 	_, ok := l.keyMap[key]
 	l.keyMapLock.RUnlock()
 	if ok {
-		logger.Warnf("kubernetes-store key %s has already been listened.", key)
+		logger.Warnf("kubernetes-watcherSet key %s has already been listened.", key)
 		return
 	}
 
@@ -201,7 +201,7 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 		})
 	}
 
-	logger.Infof("listen dubbo provider key{%s} event and wait to get all provider from kubernetes-store", key)
+	logger.Infof("listen dubbo provider key{%s} event and wait to get all provider from kubernetes-watcherSet", key)
 	go func(key string, listener remoting.DataListener) {
 		l.ListenServiceNodeEventWithPrefix(key, listener)
 		logger.Warnf("listenDirEvent(key{%s}) goroutine exit now", key)
