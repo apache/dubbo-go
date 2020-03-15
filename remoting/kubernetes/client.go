@@ -151,7 +151,7 @@ func newMockClient(namespace string, mockClientGenerator func() (kubernetes.Inte
 
 	// start kubernetes watch loop
 	if err := c.watchPods(); err != nil {
-		return nil, perrors.WithMessage(err, "maintenance the kubernetes status")
+		return nil, perrors.WithMessage(err, "watch pods")
 	}
 
 	logger.Info("init kubernetes registry success")
@@ -204,7 +204,7 @@ func newClient(namespace string) (*Client, error) {
 
 	// start kubernetes watch loop
 	if err := c.watchPods(); err != nil {
-		return nil, perrors.WithMessage(err, "maintenance the kubernetes status")
+		return nil, perrors.WithMessage(err, "watch pods")
 	}
 
 	logger.Info("init kubernetes registry success")
