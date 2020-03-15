@@ -18,6 +18,10 @@
 package config
 
 import (
+	"bytes"
+)
+
+import (
 	"github.com/creasty/defaults"
 	perrors "github.com/pkg/errors"
 )
@@ -25,6 +29,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/common/yaml"
 )
 
 /////////////////////////
@@ -45,6 +50,7 @@ type ProviderConfig struct {
 	ProtocolConf      interface{}                `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf" `
 	FilterConf        interface{}                `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf" `
 	ShutdownConfig    *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf" `
+	ConfigType        map[string]string          `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 }
 
 // UnmarshalYAML ...
@@ -74,13 +80,13 @@ func ProviderInit(confProFile string) error {
 	if len(confProFile) == 0 {
 		return perrors.Errorf("application configure(provider) file name is nil")
 	}
-
 	providerConfig = &ProviderConfig{}
-	err := unmarshalYMLConfig(confProFile, providerConfig)
+	fileStream, err := yaml.UnmarshalYMLConfig(confProFile, providerConfig)
 	if err != nil {
-		return perrors.Errorf("yaml.Unmarshal() = error:%v", perrors.WithStack(err))
+		return perrors.Errorf("unmarshalYmlConfig error %v", perrors.WithStack(err))
 	}
 
+	providerConfig.fileStream = bytes.NewBuffer(fileStream)
 	//set method interfaceId & interfaceName
 	for k, v := range providerConfig.Services {
 		//set id for reference
