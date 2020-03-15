@@ -97,7 +97,7 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 
 		case e := <-l.events:
 			logger.Infof("got etcd event %#v", e)
-			if e.ConfigType == remoting.EventTypeDel {
+			if e.ConfigType == remoting.EventTypeDel && l.registry.client.Valid() {
 				select {
 				case <-l.registry.Done():
 					logger.Warnf("update @result{%s}. But its connection to registry is invalid", e.Value)
