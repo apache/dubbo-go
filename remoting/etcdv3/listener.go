@@ -53,7 +53,6 @@ func NewEventListener(client *Client) *EventListener {
 // this method will return true when spec key deleted,
 // this method will return false when deep layer connection lose
 func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.DataListener) bool {
-	l.wg.Add(1)
 	defer l.wg.Done()
 	for {
 		wc, err := l.client.Watch(key)
@@ -138,8 +137,6 @@ func (l *EventListener) handleEvents(event *clientv3.Event, listeners ...remotin
 
 // ListenServiceNodeEventWithPrefix Listen on a set of key with spec prefix
 func (l *EventListener) ListenServiceNodeEventWithPrefix(prefix string, listener ...remoting.DataListener) {
-
-	l.wg.Add(1)
 	defer l.wg.Done()
 	for {
 		wc, err := l.client.WatchWithPrefix(prefix)
@@ -217,12 +214,14 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 	}
 
 	logger.Infof("listen dubbo provider key{%s} event and wait to get all provider etcdv3 nodes", key)
+	l.wg.Add(1)
 	go func(key string, listener remoting.DataListener) {
 		l.ListenServiceNodeEventWithPrefix(key, listener)
 		logger.Warnf("listenDirEvent(key{%s}) goroutine exit now", key)
 	}(key, listener)
 
 	logger.Infof("listen dubbo service key{%s}", key)
+	l.wg.Add(1)
 	go func(key string) {
 		if l.ListenServiceNodeEvent(key) {
 			listener.DataChange(remoting.Event{Path: key, Action: remoting.EventTypeDel})
