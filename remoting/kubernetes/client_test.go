@@ -19,7 +19,10 @@ package kubernetes
 
 import (
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -216,10 +219,14 @@ func (s *KubernetesClientTestSuite) initClient() *Client {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	time.Sleep(time.Second)
 	return client
 }
 
 func (s *KubernetesClientTestSuite) SetupSuite() {
+
+	runtime.GOMAXPROCS(1)
 
 	t := s.T()
 
@@ -235,6 +242,8 @@ func (s *KubernetesClientTestSuite) SetupSuite() {
 	if err := os.Setenv(nameSpaceKey, s.currentPod.GetNamespace()); err != nil {
 		t.Fatal(err)
 	}
+
+	go http.ListenAndServe(":6061", nil)
 
 }
 
@@ -336,14 +345,15 @@ func (s *KubernetesClientTestSuite) TestClientGetChildrenKVList() {
 		if err != nil {
 			t.Fatal(err)
 		}
-		i := 0
+
 		wg.Done()
+		i := 0
 
 		for {
 			select {
 			case e := <-wc:
 				i++
-				t.Logf("got event %v k %s v %s", e.EventType, e.Key, e.Value)
+				fmt.Printf("got event %v k %s v %s\n", e.EventType, e.Key, e.Value)
 				if i == 3 {
 					// already sync all event
 					syncDataComplete <- struct{}{}
