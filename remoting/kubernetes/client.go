@@ -634,12 +634,8 @@ func (c *Client) Valid() bool {
 	default:
 	}
 	c.lock.RLock()
-	if c.rawClient == nil {
-		c.lock.RUnlock()
-		return false
-	}
-	c.lock.RUnlock()
-	return true
+	defer c.lock.RUnlock()
+	return c.rawClient != nil
 }
 
 // Done
