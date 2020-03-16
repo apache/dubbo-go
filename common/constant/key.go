@@ -105,6 +105,7 @@ const (
 	ROUTERS_CATEGORY         = "routers"
 	ROUTE_PROTOCOL           = "route"
 	CONDITION_ROUTE_PROTOCOL = "condition"
+	TAG_ROUTE_PROTOCOL       = "tag"
 	PROVIDERS_CATEGORY       = "providers"
 	ROUTER_KEY               = "router"
 )
