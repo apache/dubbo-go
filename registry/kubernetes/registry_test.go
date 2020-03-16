@@ -65,6 +65,7 @@ func (s *KubernetesRegistryTestSuite) TestSubscribe() {
 	if err != nil {
 		t.Fatal(err)
 	}
+	time.Sleep(1e9)
 
 	go func() {
 		err := r.Register(url)
