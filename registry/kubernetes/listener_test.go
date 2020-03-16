@@ -22,6 +22,7 @@ import (
 	"os"
 	"strconv"
 	"testing"
+	"time"
 )
 
 import (
@@ -212,6 +213,7 @@ func (s *KubernetesRegistryTestSuite) initRegistry() *kubernetesRegistry {
 		t.Fatal(err)
 	}
 
+	time.Sleep(time.Second)
 	return mock.(*kubernetesRegistry)
 }
 
