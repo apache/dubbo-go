@@ -40,7 +40,7 @@ type EventListener struct {
 func NewEventListener(client *Client) *EventListener {
 	return &EventListener{
 		client: client,
-		keyMap: make(map[string]struct{}),
+		keyMap: make(map[string]struct{}, 8),
 	}
 }
 
