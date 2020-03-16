@@ -18,7 +18,7 @@
 package etcdv3
 
 import (
-	"os/exec"
+	"os"
 	"testing"
 	"time"
 )
@@ -70,7 +70,7 @@ func (suite *RegistryTestSuite) SetupSuite() {
 func (suite *RegistryTestSuite) TearDownSuite() {
 	suite.etcd.Close()
 	// clean the etcd workdir
-	if err := exec.Command("rm", "-rf", defaultEtcdV3WorkDir).Run(); err != nil {
+	if err := os.RemoveAll(defaultEtcdV3WorkDir); err != nil {
 		suite.FailNow(err.Error())
 	}
 }
