@@ -19,7 +19,6 @@ package rest
 
 import (
 	"context"
-	"github.com/emicklei/go-restful/v3"
 	"testing"
 	"time"
 )
@@ -38,6 +37,7 @@ import (
 	"github.com/apache/dubbo-go/protocol/rest/client"
 	"github.com/apache/dubbo-go/protocol/rest/client/client_impl"
 	"github.com/apache/dubbo-go/protocol/rest/server/server_impl"
+	"github.com/emicklei/go-restful/v3"
 )
 
 func TestRestInvoker_Invoke(t *testing.T) {
