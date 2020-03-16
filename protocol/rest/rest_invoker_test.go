@@ -24,6 +24,7 @@ import (
 )
 
 import (
+	"github.com/emicklei/go-restful/v3"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -36,7 +37,6 @@ import (
 	"github.com/apache/dubbo-go/protocol/rest/client/client_impl"
 	rest_config "github.com/apache/dubbo-go/protocol/rest/config"
 	"github.com/apache/dubbo-go/protocol/rest/server/server_impl"
-	"github.com/emicklei/go-restful/v3"
 )
 
 func TestRestInvoker_Invoke(t *testing.T) {
