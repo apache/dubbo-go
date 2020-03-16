@@ -20,7 +20,6 @@ package server_impl
 import (
 	"context"
 	"fmt"
-	"github.com/apache/dubbo-go/protocol/rest/server"
 	"net"
 	"net/http"
 	"reflect"
@@ -42,11 +41,14 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
+	"github.com/apache/dubbo-go/protocol/rest/server"
 )
 
 func init() {
 	extension.SetRestServer(constant.DEFAULT_REST_SERVER, GetNewGoRestfulServer)
 }
+
+var filterSlice []restful.FilterFunction
 
 type GoRestfulServer struct {
 	srv       *http.Server
@@ -59,6 +61,11 @@ func NewGoRestfulServer() *GoRestfulServer {
 
 func (grs *GoRestfulServer) Start(url common.URL) {
 	grs.container = restful.NewContainer()
+	if len(filterSlice) > 0 {
+		for _, filter := range filterSlice {
+			grs.container.Filter(filter)
+		}
+	}
 	grs.srv = &http.Server{
 		Handler: grs.container,
 	}
@@ -308,4 +315,10 @@ func getArgsFromRequest(req *restful.Request, argsTypes []reflect.Type, config *
 
 func GetNewGoRestfulServer() server.RestServer {
 	return NewGoRestfulServer()
+}
+
+// Let user addFilter
+// addFilter should before config.Load()
+func AddGoRestfulServerFilter(filterFuc restful.FilterFunction) {
+	filterSlice = append(filterSlice, filterFuc)
 }
