@@ -135,3 +135,12 @@ func (s *KubernetesRegistryTestSuite) TestNewRegistry() {
 		t.Fatal("not in cluster, should be a err")
 	}
 }
+
+func (s *KubernetesRegistryTestSuite) TestHandleClientRestart() {
+
+	r := s.initRegistry()
+	r.WaitGroup().Add(1)
+	go r.HandleClientRestart()
+	time.Sleep(timeSecondDuration(1))
+	r.CloseAndNilClient()
+}
