@@ -27,7 +27,7 @@ import (
 
 func TestWatchSet(t *testing.T) {
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
 	s := newWatcherSet(ctx)
