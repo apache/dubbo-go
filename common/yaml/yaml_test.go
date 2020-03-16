@@ -30,7 +30,8 @@ func TestUnmarshalYMLConfig(t *testing.T) {
 	conPath, err := filepath.Abs("./testdata/config.yml")
 	assert.NoError(t, err)
 	c := &Config{}
-	assert.NoError(t, UnmarshalYMLConfig(conPath, c))
+	_, err = UnmarshalYMLConfig(conPath, c)
+	assert.NoError(t, err)
 	assert.Equal(t, "strTest", c.StrTest)
 	assert.Equal(t, 11, c.IntTest)
 	assert.Equal(t, false, c.BooleanTest)
@@ -39,8 +40,10 @@ func TestUnmarshalYMLConfig(t *testing.T) {
 
 func TestUnmarshalYMLConfig_Error(t *testing.T) {
 	c := &Config{}
-	assert.Error(t, UnmarshalYMLConfig("./testdata/config", c))
-	assert.Error(t, UnmarshalYMLConfig("", c))
+	_, err := UnmarshalYMLConfig("./testdata/config", c)
+	assert.Error(t, err)
+	_, err = UnmarshalYMLConfig("", c)
+	assert.Error(t, err)
 }
 
 type Config struct {
