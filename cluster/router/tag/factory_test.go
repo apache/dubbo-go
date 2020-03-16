@@ -18,9 +18,11 @@
 package tag
 
 import (
+	"testing"
+)
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestTagRouterFactory_NewRouter(t *testing.T) {

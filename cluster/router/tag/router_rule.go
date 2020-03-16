@@ -15,33 +15,27 @@
  * limitations under the License.
  */
 
-package config
+package tag
 
 import (
-	perrors "github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 )
 
 import (
-	"github.com/apache/dubbo-go/cluster/directory"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/cluster/router"
 )
 
-//RouterInit Load config file to init router config
-func RouterInit(confRouterFile string) error {
-	fileRouterFactories := extension.GetFileRouterFactories()
-	bytes, err := loadYMLConfig(confRouterFile)
+// RouterRule RouterRule config read from config file or config center
+type RouterRule struct {
+	router.BaseRouterRule `yaml:",inline""`
+}
+
+func Parse(rawRule string) (*RouterRule, error) {
+	r := &RouterRule{}
+	err := yaml.Unmarshal([]byte(rawRule), r)
 	if err != nil {
-		return perrors.Errorf("ioutil.ReadFile(file:%s) = error:%v", confRouterFile, perrors.WithStack(err))
+		return r, err
 	}
-	for k, factory := range fileRouterFactories {
-		r, e := factory.NewFileRouter(bytes)
-		if e == nil {
-			url := r.URL()
-			directory.AddRouterURLSet(&url)
-			return nil
-		}
-		logger.Warnf("router config type %s create fail \n", k)
-	}
-	return perrors.Errorf("no file router exists for parse %s , implement router.FIleRouterFactory please.", confRouterFile)
+	r.RawRule = rawRule
+	return r, nil
 }
