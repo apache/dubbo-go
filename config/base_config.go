@@ -18,6 +18,7 @@
 package config
 
 import (
+	"bytes"
 	"reflect"
 	"strconv"
 	"strings"
@@ -47,6 +48,8 @@ type BaseConfig struct {
 	fatherConfig       interface{}
 
 	MetricConfig *MetricConfig `yaml:"metrics" json:"metrics,omitempty"`
+
+	fileStream *bytes.Buffer
 }
 
 // startConfigCenter will start the config center.
@@ -361,5 +364,4 @@ func initializeStruct(t reflect.Type, v reflect.Value) {
 
 		}
 	}
-
 }

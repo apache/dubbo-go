@@ -14,10 +14,10 @@
 ::  See the License for the specific language governing permissions and
 ::  limitations under the License.
 
-set zkJarName="zookeeper-3.4.9-fatjar.jar"
+set zkJarName=zookeeper-3.4.9-fatjar.jar
 set remoteJarUrl="https://github.com/dubbogo/resources/raw/master/zookeeper-4unitest/contrib/fatjar/%zkJarName%"
-set zkJarPath="remoting/zookeeper/zookeeper-4unittest/contrib/fatjar"
-set zkJar="%zkJarPath%/%zkJarName%"
+set zkJarPath=remoting/zookeeper/zookeeper-4unittest/contrib/fatjar
+set zkJar=%zkJarPath%/%zkJarName%
 
 if not exist "%zkJar%" (
    md %zkJarPath%
