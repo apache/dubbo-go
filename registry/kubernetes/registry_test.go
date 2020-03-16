@@ -142,5 +142,5 @@ func (s *KubernetesRegistryTestSuite) TestHandleClientRestart() {
 	r.WaitGroup().Add(1)
 	go r.HandleClientRestart()
 	time.Sleep(timeSecondDuration(1))
-	r.CloseAndNilClient()
+	r.client.Close()
 }
