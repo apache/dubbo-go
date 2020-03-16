@@ -18,6 +18,10 @@
 package config
 
 import (
+	"bytes"
+)
+
+import (
 	"github.com/creasty/defaults"
 	perrors "github.com/pkg/errors"
 )
@@ -46,7 +50,7 @@ type ProviderConfig struct {
 	ProtocolConf      interface{}                `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf" `
 	FilterConf        interface{}                `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf" `
 	ShutdownConfig    *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf" `
-	RestConfigType    string                     `default:"default" yaml:"rest_config_type" json:"rest_config_type,omitempty" property:"rest_config_type"`
+	ConfigType        map[string]string          `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 }
 
 // UnmarshalYAML ...
@@ -77,10 +81,12 @@ func ProviderInit(confProFile string) error {
 		return perrors.Errorf("application configure(provider) file name is nil")
 	}
 	providerConfig = &ProviderConfig{}
-	err := yaml.UnmarshalYMLConfig(confProFile, providerConfig)
+	fileStream, err := yaml.UnmarshalYMLConfig(confProFile, providerConfig)
 	if err != nil {
 		return perrors.Errorf("unmarshalYmlConfig error %v", perrors.WithStack(err))
 	}
+
+	providerConfig.fileStream = bytes.NewBuffer(fileStream)
 	//set method interfaceId & interfaceName
 	for k, v := range providerConfig.Services {
 		//set id for reference
