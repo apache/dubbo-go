@@ -48,6 +48,8 @@ func init() {
 	extension.SetRestServer(constant.DEFAULT_REST_SERVER, GetNewGoRestfulServer)
 }
 
+var filterSlice []restful.FilterFunction
+
 type GoRestfulServer struct {
 	srv       *http.Server
 	container *restful.Container
@@ -59,6 +61,9 @@ func NewGoRestfulServer() *GoRestfulServer {
 
 func (grs *GoRestfulServer) Start(url common.URL) {
 	grs.container = restful.NewContainer()
+	for _, filter := range filterSlice {
+		grs.container.Filter(filter)
+	}
 	grs.srv = &http.Server{
 		Handler: grs.container,
 	}
@@ -308,4 +313,10 @@ func getArgsFromRequest(req *restful.Request, argsTypes []reflect.Type, config *
 
 func GetNewGoRestfulServer() server.RestServer {
 	return NewGoRestfulServer()
+}
+
+// Let user addFilter
+// addFilter should before config.Load()
+func AddGoRestfulServerFilter(filterFuc restful.FilterFunction) {
+	filterSlice = append(filterSlice, filterFuc)
 }
