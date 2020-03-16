@@ -25,9 +25,9 @@ import (
 	"time"
 )
 
-func TestStore(t *testing.T) {
+func TestWatchSet(t *testing.T) {
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
 	s := newWatcherSet(ctx)
