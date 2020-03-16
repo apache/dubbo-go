@@ -61,10 +61,8 @@ func NewGoRestfulServer() *GoRestfulServer {
 
 func (grs *GoRestfulServer) Start(url common.URL) {
 	grs.container = restful.NewContainer()
-	if len(filterSlice) > 0 {
-		for _, filter := range filterSlice {
-			grs.container.Filter(filter)
-		}
+	for _, filter := range filterSlice {
+		grs.container.Filter(filter)
 	}
 	grs.srv = &http.Server{
 		Handler: grs.container,
