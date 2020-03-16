@@ -90,7 +90,9 @@ func (s *KubernetesRegistryTestSuite) TestConsumerDestroy() {
 
 	r := s.initRegistry()
 
-	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
+	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider",
+		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
+		common.WithMethods([]string{"GetUser", "AddUser"}))
 
 	listener, err := r.DoSubscribe(&url)
 	if err != nil {
@@ -111,7 +113,9 @@ func (s *KubernetesRegistryTestSuite) TestProviderDestroy() {
 
 	r := s.initRegistry()
 
-	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
+	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider",
+		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
+		common.WithMethods([]string{"GetUser", "AddUser"}))
 	err := r.Register(url)
 	assert.NoError(t, err)
 
@@ -126,7 +130,8 @@ func (s *KubernetesRegistryTestSuite) TestNewRegistry() {
 
 	t := s.T()
 
-	regUrl, err := common.NewURL("registry://127.0.0.1:443", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
+	regUrl, err := common.NewURL("registry://127.0.0.1:443",
+		common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
 	if err != nil {
 		t.Fatal(err)
 	}
