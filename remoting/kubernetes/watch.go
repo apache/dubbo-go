@@ -186,6 +186,8 @@ func (s *watcherSetImpl) Put(watcherEvent *WatcherEvent) error {
 	// notify watcher
 	for _, w := range s.watchers {
 
+		w := w
+
 		if !strings.Contains(watcherEvent.Key, w.interested.key) {
 			//  this watcher no interest in this element
 			continue

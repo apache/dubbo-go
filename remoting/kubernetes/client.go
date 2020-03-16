@@ -152,6 +152,8 @@ func newMockClient(namespace string, mockClientGenerator func() (kubernetes.Inte
 		return nil, perrors.WithMessage(err, "init watcherSet")
 	}
 
+	c.lastResourceVersion = c.currentPod.GetResourceVersion()
+
 	// start kubernetes watch loop
 	if err := c.watchPods(); err != nil {
 		return nil, perrors.WithMessage(err, "watch pods")
@@ -324,7 +326,7 @@ func (c *Client) watchPodsLoop() {
 			select {
 			// double check ctx
 			case <-c.ctx.Done():
-				logger.Info("the kubernetes client stopped, resultChan len %d", len(wc.ResultChan()))
+				logger.Infof("the kubernetes client stopped, resultChan len %d", len(wc.ResultChan()))
 				return
 
 				// get one element from result-chan
@@ -358,6 +360,7 @@ func (c *Client) watchPodsLoop() {
 					continue
 				}
 
+				logger.Debugf("kubernetes got pod %#v", p)
 				// handle the watched pod
 				go c.handleWatchedPodEvent(p, event.Type)
 			}
@@ -456,10 +459,14 @@ func (c *Client) readCurrentPod() (*v1.Pod, error) {
 // create k/v pair in watcher-set
 func (c *Client) Create(k, v string) error {
 
+	// the read current pod must be lock, protect every
+	// create operation can be atomic
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	// 1. accord old pod && (k, v) assemble new pod dubbo annotion v
 	// 2. get patch data
 	// 3. PATCH the pod
-
 	currentPod, err := c.readCurrentPod()
 	if err != nil {
 		return perrors.WithMessage(err, "read current pod")
@@ -480,9 +487,8 @@ func (c *Client) Create(k, v string) error {
 		return perrors.WithMessage(err, "patch current pod")
 	}
 
-	c.lock.Lock()
 	c.currentPod = updatedPod
-	c.lock.Unlock()
+	logger.Debugf("put the @key = %s @value = %s success", k, v)
 	// not update the watcherSet, the watcherSet should be write by the  watchPodsLoop
 	return nil
 }
