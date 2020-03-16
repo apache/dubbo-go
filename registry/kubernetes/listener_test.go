@@ -237,6 +237,7 @@ func (s *KubernetesRegistryTestSuite) SetupSuite() {
 	if err := os.Setenv(nameSpaceKey, s.currentPod.GetNamespace()); err != nil {
 		t.Fatal(err)
 	}
+
 }
 
 func (s *KubernetesRegistryTestSuite) TestDataChange() {
