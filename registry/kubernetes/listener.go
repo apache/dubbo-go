@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package etcdv3
+package kubernetes
 
 import (
 	"strings"
@@ -43,10 +43,13 @@ func NewRegistryDataListener(listener config_center.ConfigurationListener) *data
 	return &dataListener{listener: listener}
 }
 
+// AddInterestedURL
 func (l *dataListener) AddInterestedURL(url *common.URL) {
 	l.interestedURL = append(l.interestedURL, url)
 }
 
+// DataChange
+// notify listen, when interest event
 func (l *dataListener) DataChange(eventType remoting.Event) bool {
 
 	index := strings.Index(eventType.Path, "/providers/")
@@ -77,12 +80,12 @@ func (l *dataListener) DataChange(eventType remoting.Event) bool {
 }
 
 type configurationListener struct {
-	registry *etcdV3Registry
+	registry *kubernetesRegistry
 	events   chan *config_center.ConfigChangeEvent
 }
 
-// NewConfigurationListener for listening the event of etcdv3.
-func NewConfigurationListener(reg *etcdV3Registry) *configurationListener {
+// NewConfigurationListener for listening the event of kubernetes.
+func NewConfigurationListener(reg *kubernetesRegistry) *configurationListener {
 	// add a new waiter
 	reg.WaitGroup().Add(1)
 	return &configurationListener{registry: reg, events: make(chan *config_center.ConfigChangeEvent, 32)}
@@ -96,12 +99,12 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
 		case <-l.registry.Done():
-			logger.Warnf("listener's etcd client connection is broken, so etcd event listener exit now.")
+			logger.Warnf("listener's kubernetes client connection is broken, so kubernetes event listener exits now.")
 			return nil, perrors.New("listener stopped")
 
 		case e := <-l.events:
-			logger.Infof("got etcd event %#v", e)
-			if e.ConfigType == remoting.EventTypeDel && l.registry.client.Valid() {
+			logger.Infof("got kubernetes event %#v", e)
+			if e.ConfigType == remoting.EventTypeDel && !l.registry.client.Valid() {
 				select {
 				case <-l.registry.Done():
 					logger.Warnf("update @result{%s}. But its connection to registry is invalid", e.Value)
@@ -113,7 +116,6 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 		}
 	}
 }
-
 func (l *configurationListener) Close() {
 	l.registry.WaitGroup().Done()
 }
