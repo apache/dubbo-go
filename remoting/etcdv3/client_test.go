@@ -18,9 +18,8 @@
 package etcdv3
 
 import (
-	"fmt"
 	"net/url"
-	"os/exec"
+	"os"
 	"path"
 	"reflect"
 	"strings"
@@ -115,7 +114,7 @@ func (suite *ClientTestSuite) SetupSuite() {
 // stop etcd server
 func (suite *ClientTestSuite) TearDownSuite() {
 	suite.etcd.Close()
-	if err := exec.Command("rm", "-rf", defaultEtcdV3WorkDir).Run(); err != nil {
+	if err := os.RemoveAll(defaultEtcdV3WorkDir); err != nil {
 		suite.FailNow(err.Error())
 	}
 }
@@ -141,8 +140,6 @@ func (suite *ClientTestSuite) SetupTest() {
 
 func (suite *ClientTestSuite) TestClientClose() {
 
-	fmt.Println("called client close")
-
 	c := suite.client
 	t := suite.T()
 
@@ -153,8 +150,6 @@ func (suite *ClientTestSuite) TestClientClose() {
 }
 
 func (suite *ClientTestSuite) TestClientValid() {
-
-	fmt.Println("called client valid")
 
 	c := suite.client
 	t := suite.T()
