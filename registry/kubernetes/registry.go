@@ -89,11 +89,12 @@ func (r *kubernetesRegistry) CloseAndNilClient() {
 func (r *kubernetesRegistry) CloseListener() {
 
 	r.cltLock.Lock()
-	if r.configListener != nil {
-		r.configListener.Close()
+	l := r.configListener
+	r.cltLock.Unlock()
+	if l != nil {
+		l.Close()
 	}
 	r.configListener = nil
-	r.cltLock.Unlock()
 }
 
 func (r *kubernetesRegistry) CreatePath(k string) error {
@@ -124,11 +125,11 @@ func (r *kubernetesRegistry) DoSubscribe(svc *common.URL) (registry.Listener, er
 			return nil, perrors.New("kubernetes client broken")
 		}
 
-		// new client & listener
-		listener := kubernetes.NewEventListener(r.client)
-
 		r.listenerLock.Lock()
-		r.listener = listener
+		if r.listener == nil {
+			// double check
+			r.listener = kubernetes.NewEventListener(r.client)
+		}
 		r.listenerLock.Unlock()
 	}
 
