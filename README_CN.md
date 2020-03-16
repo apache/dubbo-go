@@ -54,7 +54,7 @@ Apache License, Version 2.0
     * [RESTful](https://github.com/apache/dubbo-go/pull/352)
     
 - 路由器
-    * [Conditional router](https://github.com/apache/dubbo-go/pull/294)
+    * [Condition router](https://github.com/apache/dubbo-go/pull/294)
     
 - 注册中心
     * ZooKeeper
