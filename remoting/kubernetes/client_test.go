@@ -328,14 +328,16 @@ func (s *KubernetesClientTestSuite) TestClientGetChildrenKVList() {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
+	syncDataComplete := make(chan struct{})
+
 	go func() {
-		defer wg.Done()
 
 		wc, done, err := client.WatchWithPrefix(prefix)
 		if err != nil {
 			t.Fatal(err)
 		}
 		i := 0
+		wg.Done()
 
 		for {
 			select {
@@ -344,6 +346,7 @@ func (s *KubernetesClientTestSuite) TestClientGetChildrenKVList() {
 				t.Logf("got event %v k %s v %s", e.EventType, e.Key, e.Value)
 				if i == 3 {
 					// already sync all event
+					syncDataComplete <- struct{}{}
 					return
 				}
 			case <-done:
@@ -352,6 +355,9 @@ func (s *KubernetesClientTestSuite) TestClientGetChildrenKVList() {
 			}
 		}
 	}()
+
+	// wait the watch goroutine start
+	wg.Wait()
 
 	expect := make(map[string]string)
 	got := make(map[string]string)
@@ -370,9 +376,7 @@ func (s *KubernetesClientTestSuite) TestClientGetChildrenKVList() {
 		}
 	}
 
-	// must wait client sync all create event
-
-	wg.Wait()
+	<-syncDataComplete
 
 	// start get all children
 	kList, vList, err := client.GetChildren(prefix)
