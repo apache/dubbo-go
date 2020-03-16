@@ -50,7 +50,6 @@ func (s *KubernetesRegistryTestSuite) TestRegister() {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r.WaitGroup().Done()
 }
 
 func (s *KubernetesRegistryTestSuite) TestSubscribe() {
@@ -80,8 +79,6 @@ func (s *KubernetesRegistryTestSuite) TestSubscribe() {
 	}
 
 	t.Logf("got event %s", serviceEvent)
-
-	r.WaitGroup().Done()
 }
 
 func (s *KubernetesRegistryTestSuite) TestConsumerDestroy() {
@@ -94,12 +91,12 @@ func (s *KubernetesRegistryTestSuite) TestConsumerDestroy() {
 		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
 		common.WithMethods([]string{"GetUser", "AddUser"}))
 
-	listener, err := r.DoSubscribe(&url)
+	_, err := r.DoSubscribe(&url)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	listener.Close()
+	//listener.Close()
 	time.Sleep(1e9)
 	r.Destroy()
 
@@ -118,8 +115,6 @@ func (s *KubernetesRegistryTestSuite) TestProviderDestroy() {
 		common.WithMethods([]string{"GetUser", "AddUser"}))
 	err := r.Register(url)
 	assert.NoError(t, err)
-
-	r.WaitGroup().Done()
 
 	time.Sleep(1e9)
 	r.Destroy()

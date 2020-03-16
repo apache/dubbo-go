@@ -183,8 +183,6 @@ func newMockKubernetesRegistry(
 	if err != nil {
 		return nil, perrors.WithMessage(err, "new mock client")
 	}
-	r.WaitGroup().Add(1) //zk client start successful, then wg +1
-	go r.HandleClientRestart()
 	r.InitListeners()
 	return r, nil
 }
