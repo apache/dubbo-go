@@ -36,3 +36,6 @@ func newtagRouterFactory() router.RouterFactory {
 func (c *tagRouterFactory) NewRouter(url *common.URL) (router.Router, error) {
 	return NewTagRouter(url)
 }
+func (c *tagRouterFactory) NewFileRouter(content []byte) (router.Router, error) {
+	return NewFileTagRouter(content)
+}

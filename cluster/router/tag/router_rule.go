@@ -18,18 +18,24 @@
 package tag
 
 import (
-	"testing"
-)
-import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v2"
 )
 
-func TestTagRouterFactory_NewRouter(t *testing.T) {
-	u1, err := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=true")
-	assert.Nil(t, err)
-	factory := newtagRouterFactory()
-	tagRouter, e := factory.NewRouter(&u1)
-	assert.Nil(t, e)
-	assert.NotNil(t, tagRouter)
+import (
+	"github.com/apache/dubbo-go/cluster/router"
+)
+
+// RouterRule RouterRule config read from config file or config center
+type RouterRule struct {
+	router.BaseRouterRule `yaml:",inline""`
+}
+
+func Parse(rawRule string) (*RouterRule, error) {
+	r := &RouterRule{}
+	err := yaml.Unmarshal([]byte(rawRule), r)
+	if err != nil {
+		return r, err
+	}
+	r.RawRule = rawRule
+	return r, nil
 }
