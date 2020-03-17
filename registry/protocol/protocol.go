@@ -44,7 +44,7 @@ import (
 )
 
 var (
-	regProtocol *registryProtocol
+	regProtocol = newRegistryProtocol()
 )
 
 type registryProtocol struct {
@@ -348,10 +348,7 @@ func setProviderUrl(regURL *common.URL, providerURL *common.URL) {
 
 // GetProtocol ...
 func GetProtocol() protocol.Protocol {
-	if regProtocol != nil {
-		return regProtocol
-	}
-	return newRegistryProtocol()
+	return regProtocol
 }
 
 type wrappedInvoker struct {
