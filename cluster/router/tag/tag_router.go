@@ -19,6 +19,7 @@ package tag
 
 import (
 	perrors "github.com/pkg/errors"
+	"strconv"
 )
 
 import (
@@ -67,7 +68,7 @@ func (c *tagRouter) Priority() int64 {
 
 func filterUsingStaticTag(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	if tag, ok := invocation.Attachments()[constant.Tagkey]; ok {
-		result := make([]protocol.Invoker, 0)
+		result := make([]protocol.Invoker, 0, 8)
 		for _, v := range invokers {
 			if v.GetUrl().GetParam(constant.Tagkey, "") == tag {
 				result = append(result, v)
@@ -82,8 +83,8 @@ func filterUsingStaticTag(invokers []protocol.Invoker, url *common.URL, invocati
 	}
 }
 func isForceUseTag(url *common.URL, invocation protocol.Invocation) bool {
-	if invocation.AttachmentsByKey(constant.ForceUseTag, url.GetParam(constant.ForceUseTag, "false")) == "true" {
-		return true
+	if b, e := strconv.ParseBool(invocation.AttachmentsByKey(constant.ForceUseTag, url.GetParam(constant.ForceUseTag, "false"))); e == nil {
+		return b
 	}
 	return false
 }

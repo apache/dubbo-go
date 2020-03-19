@@ -19,11 +19,17 @@ package tag
 
 import (
 	"context"
+	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
-	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 type MockInvoker struct {
@@ -100,6 +106,10 @@ func TestTagRouter_Route_force(t *testing.T) {
 	inv.SetAttachments("dubbo.tag", "guangzhou")
 	invRst2 := tagRouter.Route(invokers, &u1, inv)
 	assert.Equal(t, 0, len(invRst2))
+	inv.SetAttachments("dubbo.force.tag", "false")
+	inv.SetAttachments("dubbo.tag", "guangzhou")
+	invRst3 := tagRouter.Route(invokers, &u1, inv)
+	assert.Equal(t, 3, len(invRst3))
 }
 
 func TestTagRouter_Route_noForce(t *testing.T) {
@@ -129,4 +139,7 @@ func TestTagRouter_Route_noForce(t *testing.T) {
 	inv.SetAttachments("dubbo.force.tag", "true")
 	invRst1 := tagRouter.Route(invokers, &u1, inv)
 	assert.Equal(t, 0, len(invRst1))
+	inv.SetAttachments("dubbo.force.tag", "false")
+	invRst2 := tagRouter.Route(invokers, &u1, inv)
+	assert.Equal(t, 3, len(invRst2))
 }
