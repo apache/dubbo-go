@@ -81,7 +81,7 @@ func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 	return false
 }
 
-func (l *RegistryDataListener) Close(){
+func (l *RegistryDataListener) Close() {
 	for _, listener := range l.subscribed {
 		listener.(*RegistryConfigurationListener).Close()
 	}
