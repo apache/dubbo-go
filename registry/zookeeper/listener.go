@@ -37,18 +37,19 @@ import (
 
 // RegistryDataListener ...
 type RegistryDataListener struct {
-	interestedURL []*common.URL
-	listener      config_center.ConfigurationListener
+	subscribed map[*common.URL]config_center.ConfigurationListener
+	listener   config_center.ConfigurationListener
 }
 
 // NewRegistryDataListener ...
-func NewRegistryDataListener(listener config_center.ConfigurationListener) *RegistryDataListener {
-	return &RegistryDataListener{listener: listener}
+func NewRegistryDataListener() *RegistryDataListener {
+	return &RegistryDataListener{
+		subscribed: make(map[*common.URL]config_center.ConfigurationListener)}
 }
 
-// AddInterestedURL ...
-func (l *RegistryDataListener) AddInterestedURL(url *common.URL) {
-	l.interestedURL = append(l.interestedURL, url)
+// SubscribeURL is used to set a watch listener for url
+func (l *RegistryDataListener) SubscribeURL(url *common.URL, listener config_center.ConfigurationListener) {
+	l.subscribed[url] = listener
 }
 
 // DataChange ...
@@ -65,10 +66,9 @@ func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 		logger.Errorf("Listen NewURL(r{%s}) = error{%v} eventType.Path={%v}", url, err, eventType.Path)
 		return false
 	}
-
-	for _, v := range l.interestedURL {
-		if serviceURL.URLEqual(*v) {
-			l.listener.Process(
+	for url, listener := range l.subscribed {
+		if serviceURL.URLEqual(*url) {
+			listener.Process(
 				&config_center.ConfigChangeEvent{
 					Key:        eventType.Path,
 					Value:      serviceURL,
@@ -79,6 +79,12 @@ func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 		}
 	}
 	return false
+}
+
+func (l *RegistryDataListener) Close(){
+	for _, listener := range l.subscribed {
+		listener.(*RegistryConfigurationListener).Close()
+	}
 }
 
 // RegistryConfigurationListener ...
