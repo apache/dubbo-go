@@ -20,6 +20,7 @@ package zookeeper
 import (
 	"fmt"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 )
@@ -53,12 +54,11 @@ func init() {
 
 type zkRegistry struct {
 	registry.BaseRegistry
-	client         *zookeeper.ZookeeperClient
-	listenerLock   sync.Mutex
-	listener       *zookeeper.ZkEventListener
-	dataListener   *RegistryDataListener
-	configListener *RegistryConfigurationListener
-	cltLock        sync.Mutex
+	client       *zookeeper.ZookeeperClient
+	listenerLock sync.Mutex
+	listener     *zookeeper.ZkEventListener
+	dataListener *RegistryDataListener
+	cltLock      sync.Mutex
 	//for provider
 	zkPath map[string]int // key = protocol://ip:port/interface
 }
@@ -82,8 +82,8 @@ func newZkRegistry(url *common.URL) (registry.Registry, error) {
 	go zookeeper.HandleClientRestart(r)
 
 	r.listener = zookeeper.NewZkEventListener(r.client)
-	r.configListener = NewRegistryConfigurationListener(r.client, r)
-	r.dataListener = NewRegistryDataListener(r.configListener)
+
+	r.dataListener = NewRegistryDataListener()
 
 	return r, nil
 }
@@ -120,8 +120,7 @@ func newMockZkRegistry(url *common.URL, opts ...zookeeper.Option) (*zk.TestClust
 
 func (r *zkRegistry) InitListeners() {
 	r.listener = zookeeper.NewZkEventListener(r.client)
-	r.configListener = NewRegistryConfigurationListener(r.client, r)
-	r.dataListener = NewRegistryDataListener(r.configListener)
+	r.dataListener = NewRegistryDataListener()
 }
 
 func (r *zkRegistry) CreatePath(path string) error {
@@ -154,8 +153,8 @@ func (r *zkRegistry) ZkClientLock() *sync.Mutex {
 }
 
 func (r *zkRegistry) CloseListener() {
-	if r.configListener != nil {
-		r.configListener.Close()
+	if r.dataListener != nil {
+		r.dataListener.Close()
 	}
 }
 
@@ -187,17 +186,7 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 }
 
 func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListener, error) {
-	var (
-		zkListener *RegistryConfigurationListener
-	)
-
-	r.listenerLock.Lock()
-	if r.configListener.isClosed {
-		r.listenerLock.Unlock()
-		return nil, perrors.New("configListener already been closed")
-	}
-	zkListener = r.configListener
-	r.listenerLock.Unlock()
+	zkListener := NewRegistryConfigurationListener(r.client, r)
 	if r.listener == nil {
 		r.cltLock.Lock()
 		client := r.client
@@ -215,8 +204,10 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 	}
 
 	//Interested register to dataconfig.
-	r.dataListener.AddInterestedURL(conf)
+	r.dataListener.SubscribeURL(conf, zkListener)
+
 	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, url.QueryEscape(conf.Service())), r.dataListener)
+
 
 	return zkListener, nil
 }
