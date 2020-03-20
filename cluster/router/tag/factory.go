@@ -25,17 +25,19 @@ import (
 )
 
 func init() {
-	extension.SetRouterFactory(constant.TagRouterName, newtagRouterFactory)
+	extension.SetRouterFactory(constant.TagRouterName, NewTagRouterFactory)
 }
 
 type tagRouterFactory struct{}
 
-func newtagRouterFactory() router.RouterFactory {
+func NewTagRouterFactory() router.RouterFactory {
 	return &tagRouterFactory{}
 }
+
 func (c *tagRouterFactory) NewRouter(url *common.URL) (router.Router, error) {
 	return NewTagRouter(url)
 }
+
 func (c *tagRouterFactory) NewFileRouter(content []byte) (router.Router, error) {
 	return NewFileTagRouter(content)
 }

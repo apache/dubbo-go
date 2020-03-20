@@ -80,6 +80,7 @@ func TestTagRouter_Priority(t *testing.T) {
 	p := tagRouter.Priority()
 	assert.Equal(t, int64(0), p)
 }
+
 func TestTagRouter_Route_force(t *testing.T) {
 	u1, e1 := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserConsumer?interface=com.ikurento.user.UserConsumer&group=&version=2.6.0&enabled=true&dubbo.force.tag=true")
 	assert.Nil(t, e1)
