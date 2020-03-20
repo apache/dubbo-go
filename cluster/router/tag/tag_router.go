@@ -18,8 +18,11 @@
 package tag
 
 import (
-	perrors "github.com/pkg/errors"
 	"strconv"
+)
+
+import (
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -62,6 +65,7 @@ func (c *tagRouter) Route(invokers []protocol.Invoker, url *common.URL, invocati
 func (c *tagRouter) URL() common.URL {
 	return *c.url
 }
+
 func (c *tagRouter) Priority() int64 {
 	return c.priority
 }
@@ -78,10 +82,10 @@ func filterUsingStaticTag(invokers []protocol.Invoker, url *common.URL, invocati
 			return invokers
 		}
 		return result
-	} else {
-		return invokers
 	}
+	return invokers
 }
+
 func isForceUseTag(url *common.URL, invocation protocol.Invocation) bool {
 	if b, e := strconv.ParseBool(invocation.AttachmentsByKey(constant.ForceUseTag, url.GetParam(constant.ForceUseTag, "false"))); e == nil {
 		return b
