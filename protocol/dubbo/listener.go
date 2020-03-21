@@ -144,7 +144,7 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 			session.Stat(), perrors.WithStack(err))
 		return
 	}
-	if h.conn.pool.rpcClient.conf.sessionTimeout.Nanoseconds() < time.Since(session.GetActive()).Nanoseconds() {
+	if h.conn.pool.rpcClient.conf.SessionTimeoutD.Nanoseconds() < time.Since(session.GetActive()).Nanoseconds() {
 		logger.Warnf("session{%s} timeout{%s}, reqNum{%d}",
 			session.Stat(), time.Since(session.GetActive()).String(), rpcSession.reqNum)
 		h.conn.removeSession(session) // -> h.conn.close() -> h.conn.pool.remove(h.conn)

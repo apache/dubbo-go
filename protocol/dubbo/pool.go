@@ -112,7 +112,7 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 	tcpConn.SetNoDelay(conf.GettySessionParam.TcpNoDelay)
 	tcpConn.SetKeepAlive(conf.GettySessionParam.TcpKeepAlive)
 	if conf.GettySessionParam.TcpKeepAlive {
-		tcpConn.SetKeepAlivePeriod(conf.GettySessionParam.keepAlivePeriod)
+		tcpConn.SetKeepAlivePeriod(conf.GettySessionParam.KeepAlivePeriodD)
 	}
 	tcpConn.SetReadBuffer(conf.GettySessionParam.TcpRBufSize)
 	tcpConn.SetWriteBuffer(conf.GettySessionParam.TcpWBufSize)
@@ -122,10 +122,10 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 	session.SetPkgHandler(NewRpcClientPackageHandler(c.pool.rpcClient))
 	session.SetEventListener(NewRpcClientHandler(c))
 	session.SetWQLen(conf.GettySessionParam.PkgWQSize)
-	session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
-	session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
-	session.SetCronPeriod((int)(conf.heartbeatPeriod.Nanoseconds() / 1e6))
-	session.SetWaitTime(conf.GettySessionParam.waitTimeout)
+	session.SetReadTimeout(conf.GettySessionParam.TcpReadTimeoutD)
+	session.SetWriteTimeout(conf.GettySessionParam.TcpWriteTimeoutD)
+	session.SetCronPeriod((int)(conf.HeartbeatPeriodD.Nanoseconds() / 1e6))
+	session.SetWaitTime(conf.GettySessionParam.WaitTimeoutD)
 	logger.Debugf("client new session:%s\n", session.Stat())
 
 	session.SetTaskPool(clientGrpool)
