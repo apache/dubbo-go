@@ -53,7 +53,6 @@ type DynamicConfiguration interface {
 
 	// PublishConfig will publish the config with the (key, group, value) pair
 	PublishConfig(string, string, string) error
-	
 }
 
 // Options ...

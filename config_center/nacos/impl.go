@@ -18,7 +18,6 @@
 package nacos
 
 import (
-	"errors"
 	"strings"
 	"sync"
 )
@@ -92,16 +91,16 @@ func (nacos *nacosDynamicConfiguration) PublishConfig(key string, group string, 
 	group = nacos.resolvedGroup(group)
 
 	ok, err := (*nacos.client.Client()).PublishConfig(vo.ConfigParam{
-		DataId:   key,
-		Group:    group,
-		Content:  value,
+		DataId:  key,
+		Group:   group,
+		Content: value,
 	})
 
 	if err != nil {
 		return err
 	}
 	if !ok {
-		return errors.New("publish config to Nocos failed")
+		return perrors.New("publish config to Nocos failed")
 	}
 	return nil
 }
@@ -170,7 +169,7 @@ func (nacos *nacosDynamicConfiguration) Destroy() {
 // resolvedGroup will regular the group. Now, it will replace the '/' with '-'.
 // '/' is a special character for nacos
 func (nacos *nacosDynamicConfiguration) resolvedGroup(group string) string {
-	if len(group) <=0 {
+	if len(group) <= 0 {
 		return group
 	}
 	return strings.ReplaceAll(group, "/", "-")
