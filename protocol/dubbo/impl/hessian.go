@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package dubbo
+package impl
 
 import (
 	"math"
@@ -35,7 +35,6 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 )
 
 type Object interface{}
@@ -43,7 +42,7 @@ type Object interface{}
 type HessianSerializer struct {
 }
 
-func (h HessianSerializer) Marshal(p impl.DubboPackage) ([]byte, error) {
+func (h HessianSerializer) Marshal(p DubboPackage) ([]byte, error) {
 	encoder := hessian.NewEncoder()
 	if p.IsRequest() {
 		return marshalRequest(encoder, p)
@@ -51,7 +50,7 @@ func (h HessianSerializer) Marshal(p impl.DubboPackage) ([]byte, error) {
 	return marshalResponse(encoder, p)
 }
 
-func (h HessianSerializer) Unmarshal(input []byte, p *impl.DubboPackage) error {
+func (h HessianSerializer) Unmarshal(input []byte, p *DubboPackage) error {
 	if p.IsHeartBeat() {
 		return nil
 	}
@@ -61,24 +60,24 @@ func (h HessianSerializer) Unmarshal(input []byte, p *impl.DubboPackage) error {
 	return unmarshalResponseBody(input, p)
 }
 
-func marshalResponse(encoder *hessian.Encoder, p impl.DubboPackage) ([]byte, error) {
+func marshalResponse(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 	header := p.Header
-	response := impl.EnsureResponsePayload(p.Body)
-	if header.ResponseStatus == impl.Response_OK {
+	response := EnsureResponsePayload(p.Body)
+	if header.ResponseStatus == Response_OK {
 		if p.IsHeartBeat() {
 			encoder.Encode(nil)
 		} else {
-			atta := isSupportResponseAttachment(response.Attachments[impl.DUBBO_VERSION_KEY])
+			atta := isSupportResponseAttachment(response.Attachments[DUBBO_VERSION_KEY])
 
 			var resWithException, resValue, resNullValue int32
 			if atta {
-				resWithException = impl.RESPONSE_WITH_EXCEPTION_WITH_ATTACHMENTS
-				resValue = impl.RESPONSE_VALUE_WITH_ATTACHMENTS
-				resNullValue = impl.RESPONSE_NULL_VALUE_WITH_ATTACHMENTS
+				resWithException = RESPONSE_WITH_EXCEPTION_WITH_ATTACHMENTS
+				resValue = RESPONSE_VALUE_WITH_ATTACHMENTS
+				resNullValue = RESPONSE_NULL_VALUE_WITH_ATTACHMENTS
 			} else {
-				resWithException = impl.RESPONSE_WITH_EXCEPTION
-				resValue = impl.RESPONSE_VALUE
-				resNullValue = impl.RESPONSE_NULL_VALUE
+				resWithException = RESPONSE_WITH_EXCEPTION
+				resValue = RESPONSE_VALUE
+				resNullValue = RESPONSE_NULL_VALUE
 			}
 
 			if response.Exception != nil { // throw error
@@ -114,10 +113,10 @@ func marshalResponse(encoder *hessian.Encoder, p impl.DubboPackage) ([]byte, err
 	return bs, nil
 }
 
-func marshalRequest(encoder *hessian.Encoder, p impl.DubboPackage) ([]byte, error) {
+func marshalRequest(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 	service := p.Service
-	request := impl.EnsureRequestPayload(p.Body)
-	encoder.Encode(impl.DEFAULT_DUBBO_PROTOCOL_VERSION)
+	request := EnsureRequestPayload(p.Body)
+	encoder.Encode(DEFAULT_DUBBO_PROTOCOL_VERSION)
 	encoder.Encode(service.Path)
 	encoder.Encode(service.Version)
 	encoder.Encode(service.Method)
@@ -137,16 +136,16 @@ func marshalRequest(encoder *hessian.Encoder, p impl.DubboPackage) ([]byte, erro
 		encoder.Encode(v)
 	}
 
-	request.Attachments[impl.PATH_KEY] = service.Path
-	request.Attachments[impl.VERSION_KEY] = service.Version
+	request.Attachments[PATH_KEY] = service.Path
+	request.Attachments[VERSION_KEY] = service.Version
 	if len(service.Group) > 0 {
-		request.Attachments[impl.GROUP_KEY] = service.Group
+		request.Attachments[GROUP_KEY] = service.Group
 	}
 	if len(service.Interface) > 0 {
-		request.Attachments[impl.INTERFACE_KEY] = service.Interface
+		request.Attachments[INTERFACE_KEY] = service.Interface
 	}
 	if service.Timeout != 0 {
-		request.Attachments[impl.TIMEOUT_KEY] = strconv.Itoa(int(service.Timeout / time.Millisecond))
+		request.Attachments[TIMEOUT_KEY] = strconv.Itoa(int(service.Timeout / time.Millisecond))
 	}
 
 	encoder.Encode(request.Attachments)
@@ -174,7 +173,7 @@ func isSupportResponseAttachment(version string) bool {
 	if v >= 2001000 && v <= 2060200 { // 2.0.10 ~ 2.6.2
 		return false
 	}
-	return v >= impl.LOWEST_VERSION_FOR_RESPONSE_ATTACHMENT
+	return v >= LOWEST_VERSION_FOR_RESPONSE_ATTACHMENT
 }
 
 func version2Int(version string) int {
@@ -194,7 +193,7 @@ func version2Int(version string) int {
 	return v
 }
 
-func unmarshalRequestBody(body []byte, p *impl.DubboPackage) error {
+func unmarshalRequestBody(body []byte, p *DubboPackage) error {
 	if p.Body == nil {
 		p.SetBody(make([]interface{}, 7))
 	}
@@ -255,7 +254,7 @@ func unmarshalRequestBody(body []byte, p *impl.DubboPackage) error {
 	}
 
 	if v, ok := attachments.(map[interface{}]interface{}); ok {
-		v[impl.DUBBO_VERSION_KEY] = dubboVersion
+		v[DUBBO_VERSION_KEY] = dubboVersion
 		req[6] = hessian.ToMapStringString(v)
 		buildServerSidePackageBody(p)
 		return nil
@@ -263,24 +262,24 @@ func unmarshalRequestBody(body []byte, p *impl.DubboPackage) error {
 	return errors.Errorf("get wrong attachments: %+v", attachments)
 }
 
-func unmarshalResponseBody(body []byte, p *impl.DubboPackage) error {
+func unmarshalResponseBody(body []byte, p *DubboPackage) error {
 	decoder := hessian.NewDecoder(body)
 	rspType, err := decoder.Decode()
 	if p.Body == nil {
-		p.SetBody(&impl.ResponsePayload{})
+		p.SetBody(&ResponsePayload{})
 	}
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	response := impl.EnsureResponsePayload(p.Body)
+	response := EnsureResponsePayload(p.Body)
 
 	switch rspType {
-	case impl.RESPONSE_WITH_EXCEPTION, impl.RESPONSE_WITH_EXCEPTION_WITH_ATTACHMENTS:
+	case RESPONSE_WITH_EXCEPTION, RESPONSE_WITH_EXCEPTION_WITH_ATTACHMENTS:
 		expt, err := decoder.Decode()
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		if rspType == impl.RESPONSE_WITH_EXCEPTION_WITH_ATTACHMENTS {
+		if rspType == RESPONSE_WITH_EXCEPTION_WITH_ATTACHMENTS {
 			attachments, err := decoder.Decode()
 			if err != nil {
 				return errors.WithStack(err)
@@ -300,12 +299,12 @@ func unmarshalResponseBody(body []byte, p *impl.DubboPackage) error {
 		}
 		return nil
 
-	case impl.RESPONSE_VALUE, impl.RESPONSE_VALUE_WITH_ATTACHMENTS:
+	case RESPONSE_VALUE, RESPONSE_VALUE_WITH_ATTACHMENTS:
 		rsp, err := decoder.Decode()
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		if rspType == impl.RESPONSE_VALUE_WITH_ATTACHMENTS {
+		if rspType == RESPONSE_VALUE_WITH_ATTACHMENTS {
 			attachments, err := decoder.Decode()
 			if err != nil {
 				return errors.WithStack(err)
@@ -320,8 +319,8 @@ func unmarshalResponseBody(body []byte, p *impl.DubboPackage) error {
 
 		return errors.WithStack(hessian.ReflectResponse(rsp, response.RspObj))
 
-	case impl.RESPONSE_NULL_VALUE, impl.RESPONSE_NULL_VALUE_WITH_ATTACHMENTS:
-		if rspType == impl.RESPONSE_NULL_VALUE_WITH_ATTACHMENTS {
+	case RESPONSE_NULL_VALUE, RESPONSE_NULL_VALUE_WITH_ATTACHMENTS:
+		if rspType == RESPONSE_NULL_VALUE_WITH_ATTACHMENTS {
 			attachments, err := decoder.Decode()
 			if err != nil {
 				return errors.WithStack(err)
@@ -338,13 +337,13 @@ func unmarshalResponseBody(body []byte, p *impl.DubboPackage) error {
 	return nil
 }
 
-func buildServerSidePackageBody(pkg *impl.DubboPackage) {
+func buildServerSidePackageBody(pkg *DubboPackage) {
 	req := pkg.GetBody().([]interface{}) // length of body should be 7
 	if len(req) > 0 {
 		var dubboVersion, argsTypes string
 		var args []interface{}
 		var attachments map[string]string
-		svc := impl.Service{}
+		svc := Service{}
 		if req[0] != nil {
 			dubboVersion = req[0].(string)
 		}

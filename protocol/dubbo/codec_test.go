@@ -41,14 +41,14 @@ func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
 	pkg.Header.Type = impl.PackageHeartbeat
 	pkg.Header.SerialID = constant.S_Hessian2
 	pkg.Header.ID = 10086
-	pkg.SetSerializer(HessianSerializer{})
+	pkg.SetSerializer(impl.HessianSerializer{})
 
 	// heartbeat
 	data, err := pkg.Marshal()
 	assert.NoError(t, err)
 
 	pkgres := impl.NewDubboPackage(data)
-	pkgres.SetSerializer(HessianSerializer{})
+	pkgres.SetSerializer(impl.HessianSerializer{})
 
 	pkgres.Body = []interface{}{}
 	err = pkgres.Unmarshal()
@@ -69,7 +69,7 @@ func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
 	assert.NoError(t, err)
 
 	pkgres = impl.NewDubboPackage(data)
-	pkgres.SetSerializer(HessianSerializer{})
+	pkgres.SetSerializer(impl.HessianSerializer{})
 	pkgres.Body = make([]interface{}, 7)
 	err = pkgres.Unmarshal()
 	reassembleBody := pkgres.GetBody().(map[string]interface{})
@@ -99,7 +99,7 @@ func TestDubboPackage_Protobuf_Serialization_Request(t *testing.T) {
 	assert.NoError(t, err)
 
 	pkgres := impl.NewDubboPackage(data)
-	pkgres.SetSerializer(HessianSerializer{})
+	pkgres.SetSerializer(impl.HessianSerializer{})
 
 	pkgres.Body = []interface{}{}
 	err = pkgres.Unmarshal()
