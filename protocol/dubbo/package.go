@@ -21,11 +21,25 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 	"time"
 )
 
 import (
 	"github.com/pkg/errors"
+)
+
+type PackageType int
+
+// enum part
+const (
+	PackageError              = PackageType(0x01)
+	PackageRequest            = PackageType(0x02)
+	PackageResponse           = PackageType(0x04)
+	PackageHeartbeat          = PackageType(0x08)
+	PackageRequest_TwoWay     = PackageType(0x10)
+	PackageResponse_Exception = PackageType(0x20)
+	PackageType_BitSize       = 0x2f
 )
 
 type DubboHeader struct {
@@ -99,7 +113,7 @@ func (p DubboPackage) GetBodyLen() int {
 }
 
 func (p DubboPackage) GetLen() int {
-	return HEADER_LENGTH + p.Header.BodyLen
+	return impl.HEADER_LENGTH + p.Header.BodyLen
 }
 
 func (p DubboPackage) GetBody() interface{} {
@@ -142,7 +156,7 @@ func NewClientResponsePackage(data []byte) *DubboPackage {
 	return &DubboPackage{
 		Header:  DubboHeader{},
 		Service: Service{},
-		Body:    &ResponsePayload{},
+		Body:    &impl.ResponsePayload{},
 		Err:     nil,
 		codec:   NewDubboCodec(bufio.NewReaderSize(bytes.NewBuffer(data), len(data))),
 	}

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package dubbo
+package impl
 
 type ResponsePayload struct {
 	RspObj      interface{}

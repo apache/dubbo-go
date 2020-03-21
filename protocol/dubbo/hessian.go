@@ -18,8 +18,8 @@
 package dubbo
 
 import (
+	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 	"math"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -39,117 +39,6 @@ import (
 )
 
 type Object interface{}
-
-func getArgType(v interface{}) string {
-	if v == nil {
-		return "V"
-	}
-
-	switch v.(type) {
-	// Serialized tags for base types
-	case nil:
-		return "V"
-	case bool:
-		return "Z"
-	case []bool:
-		return "[Z"
-	case byte:
-		return "B"
-	case []byte:
-		return "[B"
-	case int8:
-		return "B"
-	case []int8:
-		return "[B"
-	case int16:
-		return "S"
-	case []int16:
-		return "[S"
-	case uint16: // Equivalent to Char of Java
-		return "C"
-	case []uint16:
-		return "[C"
-	// case rune:
-	//	return "C"
-	case int:
-		return "J"
-	case []int:
-		return "[J"
-	case int32:
-		return "I"
-	case []int32:
-		return "[I"
-	case int64:
-		return "J"
-	case []int64:
-		return "[J"
-	case time.Time:
-		return "java.util.Date"
-	case []time.Time:
-		return "[Ljava.util.Date"
-	case float32:
-		return "F"
-	case []float32:
-		return "[F"
-	case float64:
-		return "D"
-	case []float64:
-		return "[D"
-	case string:
-		return "java.lang.String"
-	case []string:
-		return "[Ljava.lang.String;"
-	case []Object:
-		return "[Ljava.lang.Object;"
-	case map[interface{}]interface{}:
-		// return  "java.util.HashMap"
-		return "java.util.Map"
-
-	//  Serialized tags for complex types
-	default:
-		t := reflect.TypeOf(v)
-		if reflect.Ptr == t.Kind() {
-			t = reflect.TypeOf(reflect.ValueOf(v).Elem())
-		}
-		switch t.Kind() {
-		case reflect.Struct:
-			return "java.lang.Object"
-		case reflect.Slice, reflect.Array:
-			if t.Elem().Kind() == reflect.Struct {
-				return "[Ljava.lang.Object;"
-			}
-			// return "java.util.ArrayList"
-			return "java.util.List"
-		case reflect.Map: // Enter here, map may be map[string]int
-			return "java.util.Map"
-		default:
-			return ""
-		}
-	}
-}
-
-func getArgsTypeList(args []interface{}) (string, error) {
-	var (
-		typ   string
-		types string
-	)
-	for i := range args {
-		typ = getArgType(args[i])
-		if typ == "" {
-			return types, errors.Errorf("cat not get arg %#v type", args[i])
-		}
-		if !strings.Contains(typ, ".") {
-			types += typ
-		} else if strings.Index(typ, "[") == 0 {
-			types += strings.Replace(typ, ".", "/", -1)
-		} else {
-			// java.util.List -> Ljava/util/List;
-			types += "L" + strings.Replace(typ, ".", "/", -1) + ";"
-		}
-	}
-
-	return types, nil
-}
 
 type HessianSerializer struct {
 }
@@ -174,22 +63,22 @@ func (h HessianSerializer) Unmarshal(input []byte, p *DubboPackage) error {
 
 func marshalResponse(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 	header := p.Header
-	response := EnsureResponsePayload(p.Body)
-	if header.ResponseStatus == Response_OK {
+	response := impl.EnsureResponsePayload(p.Body)
+	if header.ResponseStatus == impl.Response_OK {
 		if p.IsHeartBeat() {
 			encoder.Encode(nil)
 		} else {
-			atta := isSupportResponseAttachment(response.Attachments[DUBBO_VERSION_KEY])
+			atta := isSupportResponseAttachment(response.Attachments[impl.DUBBO_VERSION_KEY])
 
 			var resWithException, resValue, resNullValue int32
 			if atta {
-				resWithException = RESPONSE_WITH_EXCEPTION_WITH_ATTACHMENTS
-				resValue = RESPONSE_VALUE_WITH_ATTACHMENTS
-				resNullValue = RESPONSE_NULL_VALUE_WITH_ATTACHMENTS
+				resWithException = impl.RESPONSE_WITH_EXCEPTION_WITH_ATTACHMENTS
+				resValue = impl.RESPONSE_VALUE_WITH_ATTACHMENTS
+				resNullValue = impl.RESPONSE_NULL_VALUE_WITH_ATTACHMENTS
 			} else {
-				resWithException = RESPONSE_WITH_EXCEPTION
-				resValue = RESPONSE_VALUE
-				resNullValue = RESPONSE_NULL_VALUE
+				resWithException = impl.RESPONSE_WITH_EXCEPTION
+				resValue = impl.RESPONSE_VALUE
+				resNullValue = impl.RESPONSE_NULL_VALUE
 			}
 
 			if response.Exception != nil { // throw error
@@ -227,8 +116,8 @@ func marshalResponse(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 
 func marshalRequest(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 	service := p.Service
-	request := EnsureRequestPayload(p.Body)
-	encoder.Encode(DEFAULT_DUBBO_PROTOCOL_VERSION)
+	request := impl.EnsureRequestPayload(p.Body)
+	encoder.Encode(impl.DEFAULT_DUBBO_PROTOCOL_VERSION)
 	encoder.Encode(service.Path)
 	encoder.Encode(service.Version)
 	encoder.Encode(service.Method)
@@ -239,7 +128,7 @@ func marshalRequest(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 		logger.Infof("request args are: %+v", request.Params)
 		return nil, errors.Errorf("@params is not of type: []interface{}")
 	}
-	types, err := getArgsTypeList(args)
+	types, err := hessian.GetArgsTypeList(args)
 	if err != nil {
 		return nil, errors.Wrapf(err, " PackRequest(args:%+v)", args)
 	}
@@ -248,16 +137,16 @@ func marshalRequest(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 		encoder.Encode(v)
 	}
 
-	request.Attachments[PATH_KEY] = service.Path
-	request.Attachments[VERSION_KEY] = service.Version
+	request.Attachments[impl.PATH_KEY] = service.Path
+	request.Attachments[impl.VERSION_KEY] = service.Version
 	if len(service.Group) > 0 {
-		request.Attachments[GROUP_KEY] = service.Group
+		request.Attachments[impl.GROUP_KEY] = service.Group
 	}
 	if len(service.Interface) > 0 {
-		request.Attachments[INTERFACE_KEY] = service.Interface
+		request.Attachments[impl.INTERFACE_KEY] = service.Interface
 	}
 	if service.Timeout != 0 {
-		request.Attachments[TIMEOUT_KEY] = strconv.Itoa(int(service.Timeout / time.Millisecond))
+		request.Attachments[impl.TIMEOUT_KEY] = strconv.Itoa(int(service.Timeout / time.Millisecond))
 	}
 
 	encoder.Encode(request.Attachments)
@@ -285,7 +174,7 @@ func isSupportResponseAttachment(version string) bool {
 	if v >= 2001000 && v <= 2060200 { // 2.0.10 ~ 2.6.2
 		return false
 	}
-	return v >= LOWEST_VERSION_FOR_RESPONSE_ATTACHMENT
+	return v >= impl.LOWEST_VERSION_FOR_RESPONSE_ATTACHMENT
 }
 
 func version2Int(version string) int {
@@ -366,7 +255,7 @@ func unmarshalRequestBody(body []byte, p *DubboPackage) error {
 	}
 
 	if v, ok := attachments.(map[interface{}]interface{}); ok {
-		v[DUBBO_VERSION_KEY] = dubboVersion
+		v[impl.DUBBO_VERSION_KEY] = dubboVersion
 		req[6] = hessian.ToMapStringString(v)
 		buildServerSidePackageBody(p)
 		return nil
@@ -378,20 +267,20 @@ func unmarshalResponseBody(body []byte, p *DubboPackage) error {
 	decoder := hessian.NewDecoder(body)
 	rspType, err := decoder.Decode()
 	if p.Body == nil {
-		p.SetBody(&ResponsePayload{})
+		p.SetBody(&impl.ResponsePayload{})
 	}
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	response := EnsureResponsePayload(p.Body)
+	response := impl.EnsureResponsePayload(p.Body)
 
 	switch rspType {
-	case RESPONSE_WITH_EXCEPTION, RESPONSE_WITH_EXCEPTION_WITH_ATTACHMENTS:
+	case impl.RESPONSE_WITH_EXCEPTION, impl.RESPONSE_WITH_EXCEPTION_WITH_ATTACHMENTS:
 		expt, err := decoder.Decode()
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		if rspType == RESPONSE_WITH_EXCEPTION_WITH_ATTACHMENTS {
+		if rspType == impl.RESPONSE_WITH_EXCEPTION_WITH_ATTACHMENTS {
 			attachments, err := decoder.Decode()
 			if err != nil {
 				return errors.WithStack(err)
@@ -411,12 +300,12 @@ func unmarshalResponseBody(body []byte, p *DubboPackage) error {
 		}
 		return nil
 
-	case RESPONSE_VALUE, RESPONSE_VALUE_WITH_ATTACHMENTS:
+	case impl.RESPONSE_VALUE, impl.RESPONSE_VALUE_WITH_ATTACHMENTS:
 		rsp, err := decoder.Decode()
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		if rspType == RESPONSE_VALUE_WITH_ATTACHMENTS {
+		if rspType == impl.RESPONSE_VALUE_WITH_ATTACHMENTS {
 			attachments, err := decoder.Decode()
 			if err != nil {
 				return errors.WithStack(err)
@@ -431,8 +320,8 @@ func unmarshalResponseBody(body []byte, p *DubboPackage) error {
 
 		return errors.WithStack(hessian.ReflectResponse(rsp, response.RspObj))
 
-	case RESPONSE_NULL_VALUE, RESPONSE_NULL_VALUE_WITH_ATTACHMENTS:
-		if rspType == RESPONSE_NULL_VALUE_WITH_ATTACHMENTS {
+	case impl.RESPONSE_NULL_VALUE, impl.RESPONSE_NULL_VALUE_WITH_ATTACHMENTS:
+		if rspType == impl.RESPONSE_NULL_VALUE_WITH_ATTACHMENTS {
 			attachments, err := decoder.Decode()
 			if err != nil {
 				return errors.WithStack(err)

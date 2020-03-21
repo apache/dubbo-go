@@ -20,6 +20,7 @@ package dubbo
 import (
 	"context"
 	"fmt"
+	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 	"net/url"
 	"sync"
 	"sync/atomic"
@@ -268,7 +269,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	if exporter == nil {
 		err := fmt.Errorf("don't have this exporter, key: %s", u.ServiceKey())
 		logger.Errorf(err.Error())
-		p.SetResponseStatus(Response_OK)
+		p.SetResponseStatus(impl.Response_OK)
 		p.SetBody(err)
 		h.reply(session, p, PackageResponse)
 		return
@@ -286,12 +287,12 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 		result := invoker.Invoke(ctx, inv)
 		logger.Debugf("invoker result: %+v", result)
 		if err := result.Error(); err != nil {
-			p.SetResponseStatus(Response_OK)
-			p.SetBody(&ResponsePayload{nil, err, result.Attachments()})
+			p.SetResponseStatus(impl.Response_OK)
+			p.SetBody(&impl.ResponsePayload{nil, err, result.Attachments()})
 		} else {
 			res := result.Result()
-			p.SetResponseStatus(Response_OK)
-			p.SetBody(&ResponsePayload{res, nil, result.Attachments()})
+			p.SetResponseStatus(impl.Response_OK)
+			p.SetBody(&impl.ResponsePayload{res, nil, result.Attachments()})
 			//logger.Debugf("service return response %v", res)
 		}
 	}

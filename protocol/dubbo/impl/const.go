@@ -1,4 +1,4 @@
-package dubbo
+package impl
 
 import (
 	"github.com/pkg/errors"

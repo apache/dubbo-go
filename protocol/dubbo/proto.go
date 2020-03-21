@@ -19,26 +19,27 @@ package dubbo
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
+	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 	"io"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
-	"encoding/binary"
 )
 
 import (
-	"github.com/pkg/errors"
 	"github.com/golang/protobuf/proto"
 	"github.com/matttproud/golang_protobuf_extensions/pbutil"
+	"github.com/pkg/errors"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/constant"
-	pb "github.com/apache/dubbo-go/protocol/dubbo/proto"
+	"github.com/apache/dubbo-go/common/extension"
+	pb "github.com/apache/dubbo-go/protocol/dubbo/impl/proto"
 )
 
 type ProtoSerializer struct{}
@@ -65,9 +66,9 @@ func (p ProtoSerializer) Unmarshal(data []byte, pkg *DubboPackage) error {
 
 func unmarshalResponseProto(data []byte, pkg *DubboPackage) error {
 	if pkg.Body == nil {
-		pkg.SetBody(NewResponsePayload(nil, nil, nil))
+		pkg.SetBody(impl.NewResponsePayload(nil, nil, nil))
 	}
-	response := EnsureResponsePayload(pkg.Body)
+	response := impl.EnsureResponsePayload(pkg.Body)
 	buf := bytes.NewBuffer(data)
 
 	var responseType int32
@@ -78,11 +79,11 @@ func unmarshalResponseProto(data []byte, pkg *DubboPackage) error {
 	hasAttachments := false
 	hasException := false
 	switch responseType {
-	case RESPONSE_VALUE_WITH_ATTACHMENTS:
+	case impl.RESPONSE_VALUE_WITH_ATTACHMENTS:
 		hasAttachments = true
-	case RESPONSE_WITH_EXCEPTION:
+	case impl.RESPONSE_WITH_EXCEPTION:
 		hasException = true
-	case RESPONSE_WITH_EXCEPTION_WITH_ATTACHMENTS:
+	case impl.RESPONSE_WITH_EXCEPTION_WITH_ATTACHMENTS:
 		hasAttachments = true
 		hasException = true
 	}
@@ -187,7 +188,7 @@ func unmarshalRequestProto(data []byte, pkg *DubboPackage) error {
 }
 
 func marshalRequestProto(pkg DubboPackage) ([]byte, error) {
-	request := EnsureRequestPayload(pkg.Body)
+	request := impl.EnsureRequestPayload(pkg.Body)
 	args, ok := request.Params.([]interface{})
 	buf := bytes.NewBuffer(make([]byte, 0))
 	if !ok {
@@ -198,7 +199,7 @@ func marshalRequestProto(pkg DubboPackage) ([]byte, error) {
 		return nil, errors.New("illegal protobuf service, len(arg) should equal 1")
 	}
 	// dubbo version
-	if err := writeUTF(buf, DUBBO_VERSION); err != nil {
+	if err := writeUTF(buf, impl.DUBBO_VERSION); err != nil {
 		return nil, err
 	}
 	// service path
@@ -241,16 +242,16 @@ func marshalRequestProto(pkg DubboPackage) ([]byte, error) {
 	}
 	// attachments
 	atta := make(map[string]string)
-	atta[PATH_KEY] = pkg.Service.Path
-	atta[VERSION_KEY] = pkg.Service.Version
+	atta[impl.PATH_KEY] = pkg.Service.Path
+	atta[impl.VERSION_KEY] = pkg.Service.Version
 	if len(pkg.Service.Group) > 0 {
-		atta[GROUP_KEY] = pkg.Service.Group
+		atta[impl.GROUP_KEY] = pkg.Service.Group
 	}
 	if len(pkg.Service.Interface) > 0 {
-		atta[INTERFACE_KEY] = pkg.Service.Interface
+		atta[impl.INTERFACE_KEY] = pkg.Service.Interface
 	}
 	if pkg.Service.Timeout != 0 {
-		atta[TIMEOUT_KEY] = strconv.Itoa(int(pkg.Service.Timeout / time.Millisecond))
+		atta[impl.TIMEOUT_KEY] = strconv.Itoa(int(pkg.Service.Timeout / time.Millisecond))
 	}
 	m := pb.Map{Attachments: atta}
 	if err := writeObject(buf, &m); err != nil {
@@ -260,21 +261,21 @@ func marshalRequestProto(pkg DubboPackage) ([]byte, error) {
 }
 
 func marshalResponseProto(pkg DubboPackage) ([]byte, error) {
-	response := EnsureResponsePayload(pkg.Body)
+	response := impl.EnsureResponsePayload(pkg.Body)
 	buf := bytes.NewBuffer(make([]byte, 0))
-	responseType := RESPONSE_VALUE
+	responseType := impl.RESPONSE_VALUE
 	hasAttachments := false
 	if response.Attachments != nil {
-		responseType = RESPONSE_VALUE_WITH_ATTACHMENTS
+		responseType = impl.RESPONSE_VALUE_WITH_ATTACHMENTS
 		hasAttachments = true
 	} else {
-		responseType = RESPONSE_VALUE
+		responseType = impl.RESPONSE_VALUE
 	}
 	if response.Exception != nil {
 		if hasAttachments {
-			responseType = RESPONSE_WITH_EXCEPTION_WITH_ATTACHMENTS
+			responseType = impl.RESPONSE_WITH_EXCEPTION_WITH_ATTACHMENTS
 		} else {
-			responseType = RESPONSE_WITH_EXCEPTION
+			responseType = impl.RESPONSE_WITH_EXCEPTION
 		}
 	}
 	// write response type

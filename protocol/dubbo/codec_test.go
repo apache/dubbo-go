@@ -18,6 +18,7 @@
 package dubbo
 
 import (
+	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 	"testing"
 	"time"
 )
@@ -31,7 +32,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common/constant"
-	pb "github.com/apache/dubbo-go/protocol/dubbo/proto"
+	pb "github.com/apache/dubbo-go/protocol/dubbo/impl/proto"
 )
 
 func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
@@ -171,7 +172,7 @@ func TestDubboCodec_Protobuf_Serialization_Response(t *testing.T) {
 	{
 		attas := make(map[string]string)
 		attas["k1"] = "test"
-		resp := NewResponsePayload(&pb.StringValue{Value: "attachments"}, nil, attas)
+		resp := impl.NewResponsePayload(&pb.StringValue{Value: "attachments"}, nil, attas)
 		p := NewDubboPackage(nil)
 		p.Header.Type = PackageResponse
 		p.Header.SerialID = constant.S_Proto
@@ -188,7 +189,7 @@ func TestDubboCodec_Protobuf_Serialization_Response(t *testing.T) {
 
 		resAttachment := make(map[string]string)
 		resBody := &pb.StringValue{}
-		pkgres.SetBody(NewResponsePayload(resBody, nil, resAttachment))
+		pkgres.SetBody(impl.NewResponsePayload(resBody, nil, resAttachment))
 
 		err = pkgres.Unmarshal()
 		assert.NoError(t, err)

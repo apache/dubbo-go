@@ -18,6 +18,7 @@
 package dubbo
 
 import (
+	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 	"math/rand"
 	"strings"
 	"sync"
@@ -273,7 +274,7 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 	} else if serialization == constant.PROTOBUF_SERIALIZATION {
 		p.Header.SerialID = constant.S_Proto
 	}
-	p.SetBody(NewRequestPayload(request.args, request.atta))
+	p.SetBody(impl.NewRequestPayload(request.args, request.atta))
 
 	if err := loadSerializer(p); err != nil {
 		return err
@@ -344,7 +345,7 @@ func (c *Client) transfer(session getty.Session, pkg *DubboPackage,
 		}
 		pkg = NewClientRequestPackage(header, Service{})
 		// SetBody
-		reqPayload := NewRequestPayload([]interface{}{}, nil)
+		reqPayload := impl.NewRequestPayload([]interface{}{}, nil)
 		pkg.SetBody(reqPayload)
 		// set serializer
 		if err := loadSerializer(pkg); err != nil {

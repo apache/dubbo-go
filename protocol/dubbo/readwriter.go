@@ -18,6 +18,7 @@
 package dubbo
 
 import (
+	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 	"reflect"
 )
 
@@ -72,13 +73,13 @@ func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface
 		return nil, 0, perrors.Errorf("client.GetPendingResopnse(%v) = nil", pkg.GetHeader().ID)
 	}
 	// set package body
-	body := NewResponsePayload(pendingRsp.(*PendingResponse).response.reply, nil, nil)
+	body := impl.NewResponsePayload(pendingRsp.(*PendingResponse).response.reply, nil, nil)
 	pkg.SetBody(body)
 	err := pkg.Unmarshal()
 	if err != nil {
 		return nil, 0, perrors.WithStack(err)
 	}
-	resp := pkg.Body.(*ResponsePayload)
+	resp := pkg.Body.(*impl.ResponsePayload)
 	pkg.Err = resp.Exception
 	pkg.Body = NewResponse(resp.RspObj, resp.Attachments)
 	return pkg, pkg.GetLen(), nil
