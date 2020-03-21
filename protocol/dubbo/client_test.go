@@ -20,6 +20,7 @@ package dubbo
 import (
 	"bytes"
 	"context"
+	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 	"sync"
 	"testing"
 	"time"
@@ -167,13 +168,13 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 	assert.Equal(t, "GetBigPkg,GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4,GetUser5,GetUser6", methods)
 
 	// config
-	SetClientConf(ClientConfig{
+	SetClientConf(impl.ClientConfig{
 		ConnectionNum:   2,
 		HeartbeatPeriod: "5s",
 		SessionTimeout:  "20s",
 		PoolTTL:         600,
 		PoolSize:        64,
-		GettySessionParam: GettySessionParam{
+		GettySessionParam: impl.GettySessionParam{
 			CompressEncoding: false,
 			TcpNoDelay:       true,
 			TcpKeepAlive:     true,
@@ -189,10 +190,10 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 		},
 	})
 	assert.NoError(t, clientConf.CheckValidity())
-	SetServerConfig(ServerConfig{
+	SetServerConfig(impl.ServerConfig{
 		SessionNumber:  700,
 		SessionTimeout: "20s",
-		GettySessionParam: GettySessionParam{
+		GettySessionParam: impl.GettySessionParam{
 			CompressEncoding: false,
 			TcpNoDelay:       true,
 			TcpKeepAlive:     true,

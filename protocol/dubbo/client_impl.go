@@ -45,7 +45,7 @@ type AsyncCallbackResponse struct {
 // Client ...
 type Client struct {
 	opts     Options
-	conf     ClientConfig
+	conf     impl.ClientConfig
 	pool     *gettyRPCClientPool
 	sequence atomic.Uint64
 
@@ -54,7 +54,7 @@ type Client struct {
 }
 
 // NewClient ...
-func NewClient(clientConf *ClientConfig, opt Options) *Client {
+func NewClient(clientConf *impl.ClientConfig, opt Options) *Client {
 
 	switch {
 	case opt.ConnectTimeout == 0:

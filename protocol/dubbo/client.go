@@ -18,6 +18,7 @@
 package dubbo
 
 import (
+	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 	"math/rand"
 	"time"
 )
@@ -40,7 +41,7 @@ var (
 	errClientClosed      = perrors.New("client closed")
 	errClientReadTimeout = perrors.New("client read timeout")
 
-	clientConf   *ClientConfig
+	clientConf   *impl.ClientConfig
 	clientGrpool *gxsync.TaskPool
 )
 
@@ -53,7 +54,7 @@ func init() {
 		return
 	}
 	protocolConf := config.GetConsumerConfig().ProtocolConf
-	defaultClientConfig := GetDefaultClientConfig()
+	defaultClientConfig := impl.GetDefaultClientConfig()
 	if protocolConf == nil {
 		logger.Info("protocol_conf default use dubbo config")
 	} else {
@@ -82,7 +83,7 @@ func init() {
 }
 
 // SetClientConf ...
-func SetClientConf(c ClientConfig) {
+func SetClientConf(c impl.ClientConfig) {
 	clientConf = &c
 	err := clientConf.CheckValidity()
 	if err != nil {
@@ -93,7 +94,7 @@ func SetClientConf(c ClientConfig) {
 }
 
 // GetClientConf ...
-func GetClientConf() ClientConfig {
+func GetClientConf() impl.ClientConfig {
 	return *clientConf
 }
 

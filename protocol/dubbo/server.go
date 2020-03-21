@@ -19,6 +19,7 @@ package dubbo
 
 import (
 	"fmt"
+	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 	"net"
 )
 
@@ -35,7 +36,7 @@ import (
 )
 
 var (
-	srvConf   *ServerConfig
+	srvConf   *impl.ServerConfig
 	srvGrpool *gxsync.TaskPool
 )
 
@@ -48,7 +49,7 @@ func init() {
 		return
 	}
 	protocolConf := providerConfig.ProtocolConf
-	defaultServerConfig := GetDefaultServerConfig()
+	defaultServerConfig := impl.GetDefaultServerConfig()
 	if protocolConf == nil {
 		logger.Info("protocol_conf default use dubbo config")
 	} else {
@@ -75,7 +76,7 @@ func init() {
 }
 
 // SetServerConfig ...
-func SetServerConfig(s ServerConfig) {
+func SetServerConfig(s impl.ServerConfig) {
 	srvConf = &s
 	err := srvConf.CheckValidity()
 	if err != nil {
@@ -86,7 +87,7 @@ func SetServerConfig(s ServerConfig) {
 }
 
 // GetServerConfig ...
-func GetServerConfig() ServerConfig {
+func GetServerConfig() impl.ServerConfig {
 	return *srvConf
 }
 
@@ -100,7 +101,7 @@ func SetServerGrpool() {
 
 // Server ...
 type Server struct {
-	conf       ServerConfig
+	conf       impl.ServerConfig
 	tcpServer  getty.Server
 	rpcHandler *RpcServerHandler
 }
