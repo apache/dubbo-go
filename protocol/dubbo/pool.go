@@ -19,7 +19,7 @@ package dubbo
 
 import (
 	"fmt"
-	"github.com/apache/dubbo-go/protocol/dubbo/impl"
+	"github.com/apache/dubbo-go/protocol/dubbo/impl/remoting"
 	"math/rand"
 	"net"
 	"sync"
@@ -97,7 +97,7 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 	var (
 		ok      bool
 		tcpConn *net.TCPConn
-		conf    impl.ClientConfig
+		conf    remoting.ClientConfig
 	)
 
 	conf = c.pool.rpcClient.conf

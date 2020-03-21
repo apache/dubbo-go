@@ -3,6 +3,7 @@ package dubbo
 import (
 	"bufio"
 	"bytes"
+	"github.com/apache/dubbo-go/protocol/dubbo/impl/remoting"
 
 	"math/rand"
 	"strings"
@@ -45,7 +46,7 @@ type AsyncCallbackResponse struct {
 // Client ...
 type Client struct {
 	opts     Options
-	conf     impl.ClientConfig
+	conf     remoting.ClientConfig
 	pool     *gettyRPCClientPool
 	sequence atomic.Uint64
 
@@ -54,7 +55,7 @@ type Client struct {
 }
 
 // NewClient ...
-func NewClient(clientConf *impl.ClientConfig, opt Options) *Client {
+func NewClient(clientConf *remoting.ClientConfig, opt Options) *Client {
 
 	switch {
 	case opt.ConnectTimeout == 0:
