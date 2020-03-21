@@ -177,7 +177,7 @@ func NewClientResponsePackage(data []byte) *impl.DubboPackage {
 		Service: impl.Service{},
 		Body:    &impl.ResponsePayload{},
 		Err:     nil,
-		codec:   impl.NewDubboCodec(bufio.NewReaderSize(bytes.NewBuffer(data), len(data))),
+		Codec:   impl.NewDubboCodec(bufio.NewReaderSize(bytes.NewBuffer(data), len(data))),
 	}
 }
 
@@ -188,7 +188,7 @@ func NewServerRequestPackage(data []byte) *impl.DubboPackage {
 		Service: impl.Service{},
 		Body:    make([]interface{}, 7),
 		Err:     nil,
-		codec:   impl.NewDubboCodec(bufio.NewReaderSize(bytes.NewBuffer(data), len(data))),
+		Codec:   impl.NewDubboCodec(bufio.NewReaderSize(bytes.NewBuffer(data), len(data))),
 	}
 
 }

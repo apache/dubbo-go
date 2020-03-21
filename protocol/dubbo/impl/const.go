@@ -24,7 +24,6 @@ import (
  */
 
 const (
-	// DUBBO ...
 	DUBBO = "dubbo"
 )
 
