@@ -81,7 +81,7 @@ func (dp *DubboProtocol) Refer(url common.URL) protocol.Invoker {
 		requestTimeout = t
 	}
 
-	invoker := NewDubboInvoker(url, NewClient(Options{
+	invoker := NewDubboInvoker(url, NewClient(clientConf, Options{
 		ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
 		RequestTimeout: requestTimeout,
 	}))
