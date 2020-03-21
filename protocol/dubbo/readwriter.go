@@ -18,6 +18,8 @@
 package dubbo
 
 import (
+	"bufio"
+	"bytes"
 	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 	"reflect"
 )
@@ -167,4 +169,26 @@ func loadSerializer(p *DubboPackage) error {
 	}
 	p.SetSerializer(serializer.(Serializer))
 	return nil
+}
+
+func NewClientResponsePackage(data []byte) *DubboPackage {
+	return &DubboPackage{
+		Header:  DubboHeader{},
+		Service: Service{},
+		Body:    &impl.ResponsePayload{},
+		Err:     nil,
+		codec:   NewDubboCodec(bufio.NewReaderSize(bytes.NewBuffer(data), len(data))),
+	}
+}
+
+// server side receive request package, just for deserialization
+func NewServerRequestPackage(data []byte) *DubboPackage {
+	return &DubboPackage{
+		Header:  DubboHeader{},
+		Service: Service{},
+		Body:    make([]interface{}, 7),
+		Err:     nil,
+		codec:   NewDubboCodec(bufio.NewReaderSize(bytes.NewBuffer(data), len(data))),
+	}
+
 }

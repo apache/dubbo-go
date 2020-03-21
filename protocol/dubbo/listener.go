@@ -366,3 +366,13 @@ func (h *RpcServerHandler) reply(session getty.Session, req *DubboPackage, tp Pa
 		logger.Errorf("WritePkg error: %#v, %#v", perrors.WithStack(err), req.GetHeader())
 	}
 }
+
+// server side response package, just for serialization
+func NewServerResponsePackage(header DubboHeader) *DubboPackage {
+	return &DubboPackage{
+		Header: header,
+		Body:   nil,
+		Err:    nil,
+		codec:  NewDubboCodec(nil),
+	}
+}

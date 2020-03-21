@@ -416,3 +416,14 @@ func (r PendingResponse) GetCallResponse() common.CallbackResponse {
 		Reply:     r.response,
 	}
 }
+
+// client side request package, just for serialization
+func NewClientRequestPackage(header DubboHeader, svc Service) *DubboPackage {
+	return &DubboPackage{
+		Header:  header,
+		Service: svc,
+		Body:    nil,
+		Err:     nil,
+		codec:   NewDubboCodec(nil),
+	}
+}

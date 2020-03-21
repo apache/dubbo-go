@@ -152,49 +152,6 @@ func (p *DubboPackage) SetSerializer(serializer Serializer) {
 	p.codec.SetSerializer(serializer)
 }
 
-func NewClientResponsePackage(data []byte) *DubboPackage {
-	return &DubboPackage{
-		Header:  DubboHeader{},
-		Service: Service{},
-		Body:    &impl.ResponsePayload{},
-		Err:     nil,
-		codec:   NewDubboCodec(bufio.NewReaderSize(bytes.NewBuffer(data), len(data))),
-	}
-}
-
-// server side receive request package, just for deserialization
-func NewServerRequestPackage(data []byte) *DubboPackage {
-	return &DubboPackage{
-		Header:  DubboHeader{},
-		Service: Service{},
-		Body:    make([]interface{}, 7),
-		Err:     nil,
-		codec:   NewDubboCodec(bufio.NewReaderSize(bytes.NewBuffer(data), len(data))),
-	}
-
-}
-
-// client side request package, just for serialization
-func NewClientRequestPackage(header DubboHeader, svc Service) *DubboPackage {
-	return &DubboPackage{
-		Header:  header,
-		Service: svc,
-		Body:    nil,
-		Err:     nil,
-		codec:   NewDubboCodec(nil),
-	}
-}
-
-// server side response package, just for serialization
-func NewServerResponsePackage(header DubboHeader) *DubboPackage {
-	return &DubboPackage{
-		Header: header,
-		Body:   nil,
-		Err:    nil,
-		codec:  NewDubboCodec(nil),
-	}
-}
-
 func NewDubboPackage(data *bytes.Buffer) *DubboPackage {
 	var codec *DubboCodec
 	if data == nil {
