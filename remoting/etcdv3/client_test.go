@@ -18,8 +18,8 @@
 package etcdv3
 
 import (
-	"fmt"
 	"net/url"
+	"os"
 	"path"
 	"reflect"
 	"strings"
@@ -36,6 +36,8 @@ import (
 	"go.etcd.io/etcd/embed"
 	"google.golang.org/grpc/connectivity"
 )
+
+const defaultEtcdV3WorkDir = "/tmp/default-dubbo-go-remote.etcd"
 
 // tests dataset
 var tests = []struct {
@@ -92,7 +94,7 @@ func (suite *ClientTestSuite) SetupSuite() {
 	cfg := embed.NewConfig()
 	cfg.LPUrls = []url.URL{*lpurl}
 	cfg.LCUrls = []url.URL{*lcurl}
-	cfg.Dir = "/tmp/default.etcd"
+	cfg.Dir = defaultEtcdV3WorkDir
 	e, err := embed.StartEtcd(cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -112,6 +114,9 @@ func (suite *ClientTestSuite) SetupSuite() {
 // stop etcd server
 func (suite *ClientTestSuite) TearDownSuite() {
 	suite.etcd.Close()
+	if err := os.RemoveAll(defaultEtcdV3WorkDir); err != nil {
+		suite.FailNow(err.Error())
+	}
 }
 
 func (suite *ClientTestSuite) setUpClient() *Client {
@@ -135,8 +140,6 @@ func (suite *ClientTestSuite) SetupTest() {
 
 func (suite *ClientTestSuite) TestClientClose() {
 
-	fmt.Println("called client close")
-
 	c := suite.client
 	t := suite.T()
 
@@ -147,8 +150,6 @@ func (suite *ClientTestSuite) TestClientClose() {
 }
 
 func (suite *ClientTestSuite) TestClientValid() {
-
-	fmt.Println("called client valid")
 
 	c := suite.client
 	t := suite.T()
