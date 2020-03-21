@@ -128,6 +128,12 @@ func (c *apolloConfiguration) GetRule(key string, opts ...cc.Option) (string, er
 	return c.GetInternalProperty(key, opts...)
 }
 
+// PublishConfig will publish the config with the (key, group, value) pair
+func (c *apolloConfiguration) PublishConfig(string, string, string) error {
+	// todo(@zouyx)
+	return nil
+}
+
 func (c *apolloConfiguration) GetProperties(key string, opts ...cc.Option) (string, error) {
 	/**
 	 * when group is not null, we are getting startup configs(config file) from Config Center, for example:
