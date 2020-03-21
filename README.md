@@ -52,16 +52,22 @@ Finished List:
     * Dubbo
     * Jsonrpc2.0
     * [gRPC](https://github.com/apache/dubbo-go/pull/311)
+    * [RESTful](https://github.com/apache/dubbo-go/pull/352)
+    
+- Router
+    * [Condition router](https://github.com/apache/dubbo-go/pull/294)
 
 - Registry
     * ZooKeeper
     * [etcd v3](https://github.com/apache/dubbo-go/pull/148)
     * [nacos](https://github.com/apache/dubbo-go/pull/151)
     * [consul](https://github.com/apache/dubbo-go/pull/121)
+    * [k8s](https://github.com/apache/dubbo-go/pull/400)
 
 - Dynamic Configure Center & Service Management Configurator
     * Zookeeper
     * [apollo](https://github.com/apache/dubbo-go/pull/250)
+    * [nacos](https://github.com/apache/dubbo-go/pull/357)
 
 - Cluster Strategy
     * Failover
@@ -88,6 +94,10 @@ Finished List:
 
 - Invoke
     * [generic invoke](https://github.com/apache/dubbo-go/pull/122)
+    
+- Monitor
+    * Opentracing API
+    * Prometheus
 
 - Others:
     * start check
@@ -99,13 +109,12 @@ Finished List:
 
 Working List:
 
-- Registry: k8s
 - Metadata Center (dubbo v2.7.x)
-- Metrics: Opentracing/Promethus(dubbo v2.7.x)
+- Service Discovery (dubbo v2.7.x)
 
 You can know more about dubbo-go by its [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap).
 
-![feature](https://raw.githubusercontent.com/wiki/apache/dubbo-go/dubbo-go-arch.png)
+![feature](./doc/pic/arch/dubbo-go-arch.png)
 
 ## Document
 
