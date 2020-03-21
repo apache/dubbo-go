@@ -259,6 +259,12 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 	svc.Group = request.svcUrl.GetParam(constant.GROUP_KEY, "")
 	svc.Method = request.method
 	svc.Timeout = c.opts.RequestTimeout
+	var timeout = request.svcUrl.GetParam(strings.Join([]string{constant.METHOD_KEYS, request.method + constant.RETRIES_KEY}, "."), "")
+	if len(timeout) != 0 {
+		if t, err := time.ParseDuration(timeout); err == nil {
+			svc.Timeout = t
+		}
+	}
 	p := NewClientRequestPackage(header, svc)
 
 	serialization := request.svcUrl.GetParam(constant.SERIALIZATION_KEY, c.conf.Serialization)

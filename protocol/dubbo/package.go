@@ -66,7 +66,7 @@ func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 	if p.codec == nil {
 		return nil, errors.New("codec is nil")
 	}
-	pkg, err := p.codec.Write(*p)
+	pkg, err := p.codec.Encode(*p)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -74,7 +74,7 @@ func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 }
 
 func (p *DubboPackage) Unmarshal() error {
-	return p.codec.Read(p)
+	return p.codec.Decode(p)
 }
 
 func (p DubboPackage) IsHeartBeat() bool {

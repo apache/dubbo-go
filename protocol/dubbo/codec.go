@@ -157,7 +157,7 @@ func (c *DubboCodec) EncodeHeader(p DubboPackage) []byte {
 	return bs
 }
 
-func (c *DubboCodec) Write(p DubboPackage) ([]byte, error) {
+func (c *DubboCodec) Encode(p DubboPackage) ([]byte, error) {
 	// header
 	if c.serializer == nil {
 		return nil, errors.New("serializer should not be nil")
@@ -181,7 +181,7 @@ func (c *DubboCodec) Write(p DubboPackage) ([]byte, error) {
 	}
 }
 
-func (c *DubboCodec) Read(p *DubboPackage) error {
+func (c *DubboCodec) Decode(p *DubboPackage) error {
 	if !c.headerRead {
 		if err := c.ReadHeader(&p.Header); err != nil {
 			return err

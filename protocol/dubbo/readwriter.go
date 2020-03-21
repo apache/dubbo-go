@@ -62,14 +62,8 @@ func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface
 		return pkg, pkg.GetLen(), nil
 	}
 
-<<<<<<< HEAD
-	if pkg.Header.Type&hessian.PackageRequest == 0x00 {
-		pkg.Err = pkg.Body.(*hessian.Response).Exception
-		pkg.Body = NewResponse(pkg.Body.(*hessian.Response).RspObj, pkg.Body.(*hessian.Response).Attachments)
-=======
 	if err := loadSerializer(pkg); err != nil {
 		return nil, 0, err
->>>>>>> feature: support protobuf
 	}
 
 	// load response
@@ -111,13 +105,9 @@ var (
 	rpcServerPkgHandler = &RpcServerPackageHandler{}
 )
 
-<<<<<<< HEAD
 // RpcServerPackageHandler ...
-type RpcServerPackageHandler struct{}
-=======
 type RpcServerPackageHandler struct {
 }
->>>>>>> feature: support protobuf
 
 func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
 	pkg := NewServerRequestPackage(data)
