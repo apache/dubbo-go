@@ -18,7 +18,6 @@
 package dubbo
 
 import (
-	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 	"math/rand"
 	"strings"
 	"sync"
@@ -38,6 +37,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 )
 
 var (
