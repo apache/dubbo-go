@@ -50,6 +50,10 @@ type DynamicConfiguration interface {
 
 	//GetInternalProperty get value by key in Default properties file(dubbo.properties)
 	GetInternalProperty(string, ...Option) (string, error)
+
+	// PublishConfig will publish the config with the (key, group, value) pair
+	PublishConfig(string, string, string) error
+	
 }
 
 // Options ...

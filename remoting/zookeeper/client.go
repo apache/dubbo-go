@@ -392,8 +392,16 @@ func (z *ZookeeperClient) Close() {
 	logger.Warnf("zkClient{name:%s, zk addr:%s} exit now.", z.name, z.ZkAddrs)
 }
 
-// Create ...
+// Create will create the node recursively, which means that if the parent node is absent,
+// it will create parent node first.
+// And the value for the basePath is ""
 func (z *ZookeeperClient) Create(basePath string) error {
+	return z.CreateWithValue(basePath, []byte(""))
+}
+
+// Create will create the node recursively, which means that if the parent node is absent,
+// it will create parent node first.
+func (z *ZookeeperClient) CreateWithValue(basePath string, value []byte) error {
 	var (
 		err     error
 		tmpPath string
@@ -407,7 +415,7 @@ func (z *ZookeeperClient) Create(basePath string) error {
 		conn := z.Conn
 		z.Unlock()
 		if conn != nil {
-			_, err = conn.Create(tmpPath, []byte(""), 0, zk.WorldACL(zk.PermAll))
+			_, err = conn.Create(tmpPath, value, 0, zk.WorldACL(zk.PermAll))
 		}
 
 		if err != nil {
@@ -422,6 +430,8 @@ func (z *ZookeeperClient) Create(basePath string) error {
 
 	return nil
 }
+
+
 
 // Delete ...
 func (z *ZookeeperClient) Delete(basePath string) error {
