@@ -130,8 +130,7 @@ func (c *apolloConfiguration) GetRule(key string, opts ...cc.Option) (string, er
 
 // PublishConfig will publish the config with the (key, group, value) pair
 func (c *apolloConfiguration) PublishConfig(string, string, string) error {
-	// todo(@zouyx)
-	return nil
+	return errors.New("unsupport operation")
 }
 
 func (c *apolloConfiguration) GetProperties(key string, opts ...cc.Option) (string, error) {

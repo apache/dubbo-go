@@ -40,7 +40,7 @@ import (
 const (
 	// ZkClient
 	//zookeeper client name
-	ZkClient = "zk config_center"
+	ZkClient      = "zk config_center"
 	pathSeparator = "/"
 )
 
@@ -228,7 +228,7 @@ func (c *zookeeperDynamicConfiguration) RestartCallBack() bool {
 
 func (c *zookeeperDynamicConfiguration) getPath(key string, group string) string {
 	if len(key) <= 0 {
-		return c.buildPath(group) 
+		return c.buildPath(group)
 	}
 	return c.buildPath(group) + pathSeparator + key
 }
