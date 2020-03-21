@@ -25,13 +25,52 @@ import (
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 	"github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc"
+	"gopkg.in/yaml.v2"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 )
+
+var (
+	clientConf *ClientConfig
+)
+
+func init() {
+	// load clientconfig from consumer_config
+	// default use grpc
+	consumerConfig := config.GetConsumerConfig()
+	if consumerConfig.ApplicationConfig == nil {
+		return
+	}
+	protocolConf := config.GetConsumerConfig().ProtocolConf
+	defaultClientConfig := GetDefaultClientConfig()
+	if protocolConf == nil {
+		logger.Info("protocol_conf default use dubbo config")
+	} else {
+		grpcConf := protocolConf.(map[interface{}]interface{})[GRPC]
+		if grpcConf == nil {
+			logger.Warnf("grpcConf is nil")
+			return
+		}
+		grpcConfByte, err := yaml.Marshal(grpcConf)
+		if err != nil {
+			panic(err)
+		}
+		err = yaml.Unmarshal(grpcConfByte, &defaultClientConfig)
+		if err != nil {
+			panic(err)
+		}
+	}
+	clientConf = &defaultClientConfig
+	if err := clientConf.Validate(); err != nil {
+		logger.Warnf("[CheckValidity] error: %v", err)
+		return
+	}
+}
 
 // Client ...
 type Client struct {
@@ -43,9 +82,11 @@ type Client struct {
 func NewClient(url common.URL) *Client {
 	// if global trace instance was set , it means trace function enabled. If not , will return Nooptracer
 	tracer := opentracing.GlobalTracer()
-	conn, err := grpc.Dial(url.Location, grpc.WithInsecure(), grpc.WithBlock(),
-		grpc.WithUnaryInterceptor(
-			otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())))
+	dailOpts := make([]grpc.DialOption, 0)
+	dailOpts = append(dailOpts, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithUnaryInterceptor(
+		otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())),
+		grpc.WithDefaultCallOptions(grpc.CallContentSubtype(clientConf.ContentType)))
+	conn, err := grpc.Dial(url.Location, dailOpts...)
 	if err != nil {
 		panic(err)
 	}
