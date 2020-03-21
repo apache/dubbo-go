@@ -41,6 +41,7 @@ const (
 	// ZkClient
 	//zookeeper client name
 	ZkClient = "zk config_center"
+	pathSeparator = "/"
 )
 
 type zookeeperDynamicConfiguration struct {
@@ -143,9 +144,19 @@ func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config
 	return string(content), nil
 }
 
-//For zookeeper, getConfig and getConfigs have the same meaning.
+// GetInternalProperty For zookeeper, getConfig and getConfigs have the same meaning.
 func (c *zookeeperDynamicConfiguration) GetInternalProperty(key string, opts ...config_center.Option) (string, error) {
 	return c.GetProperties(key, opts...)
+}
+
+// PublishConfig will put the value into Zk with specific path
+func (c *zookeeperDynamicConfiguration) PublishConfig(key string, group string, value string) error {
+	path := c.getPath(key, group)
+	err := c.client.CreateWithValue(path, []byte(value))
+	if err != nil {
+		return perrors.WithStack(err)
+	}
+	return nil
 }
 
 func (c *zookeeperDynamicConfiguration) GetRule(key string, opts ...config_center.Option) (string, error) {
@@ -213,4 +224,18 @@ func (c *zookeeperDynamicConfiguration) closeConfigs() {
 
 func (c *zookeeperDynamicConfiguration) RestartCallBack() bool {
 	return true
+}
+
+func (c *zookeeperDynamicConfiguration) getPath(key string, group string) string {
+	if len(key) <= 0 {
+		return c.buildPath(group) 
+	}
+	return c.buildPath(group) + pathSeparator + key
+}
+
+func (c *zookeeperDynamicConfiguration) buildPath(group string) string {
+	if len(group) <= 0 {
+		group = config_center.DEFAULT_GROUP
+	}
+	return c.rootPath + pathSeparator + group
 }
