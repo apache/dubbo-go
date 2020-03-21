@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package dubbo
+package impl
 
 import (
 	"testing"
@@ -31,35 +31,34 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 	pb "github.com/apache/dubbo-go/protocol/dubbo/impl/proto"
 )
 
 func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
-	pkg := impl.NewDubboPackage(nil)
+	pkg := NewDubboPackage(nil)
 	pkg.Body = []interface{}{"a"}
-	pkg.Header.Type = impl.PackageHeartbeat
+	pkg.Header.Type = PackageHeartbeat
 	pkg.Header.SerialID = constant.S_Hessian2
 	pkg.Header.ID = 10086
-	pkg.SetSerializer(impl.HessianSerializer{})
+	pkg.SetSerializer(HessianSerializer{})
 
 	// heartbeat
 	data, err := pkg.Marshal()
 	assert.NoError(t, err)
 
-	pkgres := impl.NewDubboPackage(data)
-	pkgres.SetSerializer(impl.HessianSerializer{})
+	pkgres := NewDubboPackage(data)
+	pkgres.SetSerializer(HessianSerializer{})
 
 	pkgres.Body = []interface{}{}
 	err = pkgres.Unmarshal()
 	assert.NoError(t, err)
-	assert.Equal(t, impl.PackageHeartbeat|impl.PackageRequest|impl.PackageRequest_TwoWay, pkgres.Header.Type)
+	assert.Equal(t, PackageHeartbeat|PackageRequest|PackageRequest_TwoWay, pkgres.Header.Type)
 	assert.Equal(t, constant.S_Hessian2, pkgres.Header.SerialID)
 	assert.Equal(t, int64(10086), pkgres.Header.ID)
 	assert.Equal(t, 0, len(pkgres.Body.([]interface{})))
 
 	// request
-	pkg.Header.Type = impl.PackageRequest
+	pkg.Header.Type = PackageRequest
 	pkg.Service.Interface = "Service"
 	pkg.Service.Path = "path"
 	pkg.Service.Version = "2.6"
@@ -68,13 +67,13 @@ func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
 	data, err = pkg.Marshal()
 	assert.NoError(t, err)
 
-	pkgres = impl.NewDubboPackage(data)
-	pkgres.SetSerializer(impl.HessianSerializer{})
+	pkgres = NewDubboPackage(data)
+	pkgres.SetSerializer(HessianSerializer{})
 	pkgres.Body = make([]interface{}, 7)
 	err = pkgres.Unmarshal()
 	reassembleBody := pkgres.GetBody().(map[string]interface{})
 	assert.NoError(t, err)
-	assert.Equal(t, impl.PackageRequest, pkgres.Header.Type)
+	assert.Equal(t, PackageRequest, pkgres.Header.Type)
 	assert.Equal(t, constant.S_Hessian2, pkgres.Header.SerialID)
 	assert.Equal(t, int64(10086), pkgres.Header.ID)
 	assert.Equal(t, "2.0.2", reassembleBody["dubboVersion"].(string))
@@ -87,30 +86,30 @@ func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
 }
 
 func TestDubboPackage_Protobuf_Serialization_Request(t *testing.T) {
-	pkg := impl.NewDubboPackage(nil)
+	pkg := NewDubboPackage(nil)
 	pkg.Body = []interface{}{"a"}
-	pkg.Header.Type = impl.PackageHeartbeat
+	pkg.Header.Type = PackageHeartbeat
 	pkg.Header.SerialID = constant.S_Proto
 	pkg.Header.ID = 10086
-	pkg.SetSerializer(impl.ProtoSerializer{})
+	pkg.SetSerializer(ProtoSerializer{})
 
 	// heartbeat
 	data, err := pkg.Marshal()
 	assert.NoError(t, err)
 
-	pkgres := impl.NewDubboPackage(data)
-	pkgres.SetSerializer(impl.HessianSerializer{})
+	pkgres := NewDubboPackage(data)
+	pkgres.SetSerializer(HessianSerializer{})
 
 	pkgres.Body = []interface{}{}
 	err = pkgres.Unmarshal()
 	assert.NoError(t, err)
-	assert.Equal(t, impl.PackageHeartbeat|impl.PackageRequest|impl.PackageRequest_TwoWay, pkgres.Header.Type)
+	assert.Equal(t, PackageHeartbeat|PackageRequest|PackageRequest_TwoWay, pkgres.Header.Type)
 	assert.Equal(t, constant.S_Proto, pkgres.Header.SerialID)
 	assert.Equal(t, int64(10086), pkgres.Header.ID)
 	assert.Equal(t, 0, len(pkgres.Body.([]interface{})))
 
 	// request
-	pkg.Header.Type = impl.PackageRequest
+	pkg.Header.Type = PackageRequest
 	pkg.Service.Interface = "Service"
 	pkg.Service.Path = "path"
 	pkg.Service.Version = "2.6"
@@ -120,8 +119,8 @@ func TestDubboPackage_Protobuf_Serialization_Request(t *testing.T) {
 	data, err = pkg.Marshal()
 	assert.NoError(t, err)
 
-	pkgres = impl.NewDubboPackage(data)
-	pkgres.SetSerializer(impl.ProtoSerializer{})
+	pkgres = NewDubboPackage(data)
+	pkgres.SetSerializer(ProtoSerializer{})
 	err = pkgres.Unmarshal()
 	assert.NoError(t, err)
 	body, ok := pkgres.Body.(map[string]interface{})
@@ -141,25 +140,25 @@ func TestDubboPackage_Protobuf_Serialization_Request(t *testing.T) {
 
 func TestDubboCodec_Protobuf_Serialization_Response(t *testing.T) {
 	{
-		pkg := impl.NewDubboPackage(nil)
-		pkg.Header.Type = impl.PackageResponse
+		pkg := NewDubboPackage(nil)
+		pkg.Header.Type = PackageResponse
 		pkg.Header.SerialID = constant.S_Proto
 		pkg.Header.ID = 10086
-		pkg.SetSerializer(impl.ProtoSerializer{})
+		pkg.SetSerializer(ProtoSerializer{})
 		pkg.SetBody(&pb.StringValue{Value: "hello world"})
 
 		// heartbeat
 		data, err := pkg.Marshal()
 		assert.NoError(t, err)
 
-		pkgres := impl.NewDubboPackage(data)
-		pkgres.SetSerializer(impl.ProtoSerializer{})
+		pkgres := NewDubboPackage(data)
+		pkgres.SetSerializer(ProtoSerializer{})
 
 		pkgres.SetBody(&pb.StringValue{})
 		err = pkgres.Unmarshal()
 
 		assert.NoError(t, err)
-		assert.Equal(t, pkgres.Header.Type, impl.PackageResponse)
+		assert.Equal(t, pkgres.Header.Type, PackageResponse)
 		assert.Equal(t, constant.S_Proto, pkgres.Header.SerialID)
 		assert.Equal(t, int64(10086), pkgres.Header.ID)
 
@@ -172,24 +171,24 @@ func TestDubboCodec_Protobuf_Serialization_Response(t *testing.T) {
 	{
 		attas := make(map[string]string)
 		attas["k1"] = "test"
-		resp := impl.NewResponsePayload(&pb.StringValue{Value: "attachments"}, nil, attas)
-		p := impl.NewDubboPackage(nil)
-		p.Header.Type = impl.PackageResponse
+		resp := NewResponsePayload(&pb.StringValue{Value: "attachments"}, nil, attas)
+		p := NewDubboPackage(nil)
+		p.Header.Type = PackageResponse
 		p.Header.SerialID = constant.S_Proto
-		p.SetSerializer(impl.ProtoSerializer{})
+		p.SetSerializer(ProtoSerializer{})
 		p.SetBody(resp)
 		data, err := p.Marshal()
 		assert.NoError(t, err)
 
-		pkgres := impl.NewDubboPackage(data)
-		pkgres.Header.Type = impl.PackageResponse
+		pkgres := NewDubboPackage(data)
+		pkgres.Header.Type = PackageResponse
 		pkgres.Header.SerialID = constant.S_Proto
 		pkgres.Header.ID = 10086
-		pkgres.SetSerializer(impl.ProtoSerializer{})
+		pkgres.SetSerializer(ProtoSerializer{})
 
 		resAttachment := make(map[string]string)
 		resBody := &pb.StringValue{}
-		pkgres.SetBody(impl.NewResponsePayload(resBody, nil, resAttachment))
+		pkgres.SetBody(NewResponsePayload(resBody, nil, resAttachment))
 
 		err = pkgres.Unmarshal()
 		assert.NoError(t, err)
@@ -200,7 +199,7 @@ func TestDubboCodec_Protobuf_Serialization_Response(t *testing.T) {
 }
 
 func TestIssue380(t *testing.T) {
-	pkg := &impl.DubboPackage{}
+	pkg := &DubboPackage{}
 	err := pkg.Unmarshal()
 	assert.True(t, perrors.Cause(err) == hessian.ErrHeaderNotEnough)
 }
