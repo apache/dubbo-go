@@ -44,7 +44,7 @@ import (
 
 type ProtoSerializer struct{}
 
-func (p ProtoSerializer) Marshal(pkg DubboPackage) ([]byte, error) {
+func (p ProtoSerializer) Marshal(pkg impl.DubboPackage) ([]byte, error) {
 	if pkg.IsHeartBeat() {
 		return []byte{byte('N')}, nil
 	}
@@ -57,14 +57,14 @@ func (p ProtoSerializer) Marshal(pkg DubboPackage) ([]byte, error) {
 	return marshalResponseProto(pkg)
 }
 
-func (p ProtoSerializer) Unmarshal(data []byte, pkg *DubboPackage) error {
+func (p ProtoSerializer) Unmarshal(data []byte, pkg *impl.DubboPackage) error {
 	if pkg.IsRequest() {
 		return unmarshalRequestProto(data, pkg)
 	}
 	return unmarshalResponseProto(data, pkg)
 }
 
-func unmarshalResponseProto(data []byte, pkg *DubboPackage) error {
+func unmarshalResponseProto(data []byte, pkg *impl.DubboPackage) error {
 	if pkg.Body == nil {
 		pkg.SetBody(impl.NewResponsePayload(nil, nil, nil))
 	}
@@ -122,7 +122,7 @@ func unmarshalResponseProto(data []byte, pkg *DubboPackage) error {
 	return nil
 }
 
-func unmarshalRequestProto(data []byte, pkg *DubboPackage) error {
+func unmarshalRequestProto(data []byte, pkg *impl.DubboPackage) error {
 	var dubboVersion string
 	var svcPath string
 	var svcVersion string
@@ -162,7 +162,7 @@ func unmarshalRequestProto(data []byte, pkg *DubboPackage) error {
 	if err := readObject(buf, m); err != nil {
 		return err
 	}
-	svc := Service{}
+	svc := impl.Service{}
 	svc.Version = svcVersion
 	svc.Method = svcMethod
 	// just as hessian
@@ -187,7 +187,7 @@ func unmarshalRequestProto(data []byte, pkg *DubboPackage) error {
 	return nil
 }
 
-func marshalRequestProto(pkg DubboPackage) ([]byte, error) {
+func marshalRequestProto(pkg impl.DubboPackage) ([]byte, error) {
 	request := impl.EnsureRequestPayload(pkg.Body)
 	args, ok := request.Params.([]interface{})
 	buf := bytes.NewBuffer(make([]byte, 0))
@@ -260,7 +260,7 @@ func marshalRequestProto(pkg DubboPackage) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func marshalResponseProto(pkg DubboPackage) ([]byte, error) {
+func marshalResponseProto(pkg impl.DubboPackage) ([]byte, error) {
 	response := impl.EnsureResponsePayload(pkg.Body)
 	buf := bytes.NewBuffer(make([]byte, 0))
 	responseType := impl.RESPONSE_VALUE

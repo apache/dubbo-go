@@ -99,13 +99,13 @@ func (h *RpcClientHandler) OnClose(session getty.Session) {
 
 // OnMessage ...
 func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
-	p, ok := pkg.(*DubboPackage)
+	p, ok := pkg.(*impl.DubboPackage)
 	if !ok {
 		logger.Errorf("illegal package")
 		return
 	}
 
-	if p.Header.Type&PackageHeartbeat != 0x00 {
+	if p.Header.Type&impl.PackageHeartbeat != 0x00 {
 		logger.Debugf("get rpc heartbeat response{header: %#v, body: %#v}", p.Header, p.Body)
 		if p.Err != nil {
 			logger.Errorf("rpc heartbeat response{error: %#v}", p.Err)
@@ -116,7 +116,7 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 	h.conn.updateSession(session)
 
-	pendingResponse := h.conn.pool.rpcClient.removePendingResponse(SequenceType(p.Header.ID))
+	pendingResponse := h.conn.pool.rpcClient.removePendingResponse(impl.SequenceType(p.Header.ID))
 	if pendingResponse == nil {
 		logger.Errorf("failed to get pending response context for response package %s", *p)
 		return
@@ -218,7 +218,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	}
 	h.rwlock.Unlock()
 
-	p, ok := pkg.(*DubboPackage)
+	p, ok := pkg.(*impl.DubboPackage)
 	if !ok {
 		logger.Errorf("illegal package{%#v}", pkg)
 		return
@@ -227,15 +227,15 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	//p.Header.ResponseStatus = hessian.Response_OK
 
 	// heartbeat
-	if p.GetHeader().Type&PackageHeartbeat != 0x00 {
+	if p.GetHeader().Type&impl.PackageHeartbeat != 0x00 {
 		logger.Debugf("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", p.GetHeader(), p.GetService(), p.GetBody())
-		h.reply(session, p, PackageHeartbeat)
+		h.reply(session, p, impl.PackageHeartbeat)
 		return
 	}
 
 	twoway := true
 	// not twoway
-	if p.GetHeader().Type&PackageRequest_TwoWay == 0x00 {
+	if p.GetHeader().Type&impl.PackageRequest_TwoWay == 0x00 {
 		twoway = false
 	}
 
@@ -256,7 +256,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 			if !twoway {
 				return
 			}
-			h.reply(session, p, PackageResponse)
+			h.reply(session, p, impl.PackageResponse)
 		}
 
 	}()
@@ -271,7 +271,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 		logger.Errorf(err.Error())
 		p.SetResponseStatus(impl.Response_OK)
 		p.SetBody(err)
-		h.reply(session, p, PackageResponse)
+		h.reply(session, p, impl.PackageResponse)
 		return
 	}
 	invoker := exporter.(protocol.Exporter).GetInvoker()
@@ -300,7 +300,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	if !twoway {
 		return
 	}
-	h.reply(session, p, PackageResponse)
+	h.reply(session, p, impl.PackageResponse)
 }
 
 // OnCron ...
@@ -344,8 +344,8 @@ func rebuildCtx(inv *invocation.RPCInvocation) context.Context {
 	return ctx
 }
 
-func (h *RpcServerHandler) reply(session getty.Session, req *DubboPackage, tp PackageType) {
-	header := DubboHeader{
+func (h *RpcServerHandler) reply(session getty.Session, req *impl.DubboPackage, tp impl.PackageType) {
+	header := impl.DubboHeader{
 		SerialID:       req.GetHeader().SerialID,
 		Type:           tp,
 		ID:             req.GetHeader().ID,
@@ -358,7 +358,7 @@ func (h *RpcServerHandler) reply(session getty.Session, req *DubboPackage, tp Pa
 		return
 	}
 
-	if req.GetHeader().Type&PackageRequest != 0x00 {
+	if req.GetHeader().Type&impl.PackageRequest != 0x00 {
 		resp.SetBody(req.GetBody())
 	}
 
@@ -368,11 +368,11 @@ func (h *RpcServerHandler) reply(session getty.Session, req *DubboPackage, tp Pa
 }
 
 // server side response package, just for serialization
-func NewServerResponsePackage(header DubboHeader) *DubboPackage {
-	return &DubboPackage{
+func NewServerResponsePackage(header impl.DubboHeader) *impl.DubboPackage {
+	return &impl.DubboPackage{
 		Header: header,
 		Body:   nil,
 		Err:    nil,
-		codec:  NewDubboCodec(nil),
+		Codec:  impl.NewDubboCodec(nil),
 	}
 }

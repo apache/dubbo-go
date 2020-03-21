@@ -15,13 +15,12 @@
  * limitations under the License.
  */
 
-package dubbo
+package impl
 
 import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 	"time"
 )
 
@@ -65,7 +64,7 @@ type DubboPackage struct {
 	Service Service
 	Body    interface{}
 	Err     error
-	codec   *DubboCodec
+	Codec   *DubboCodec
 }
 
 func (p DubboPackage) String() string {
@@ -73,14 +72,14 @@ func (p DubboPackage) String() string {
 }
 
 func (p *DubboPackage) ReadHeader() error {
-	return p.codec.ReadHeader(&p.Header)
+	return p.Codec.ReadHeader(&p.Header)
 }
 
 func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
-	if p.codec == nil {
-		return nil, errors.New("codec is nil")
+	if p.Codec == nil {
+		return nil, errors.New("Codec is nil")
 	}
-	pkg, err := p.codec.Encode(*p)
+	pkg, err := p.Codec.Encode(*p)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -88,7 +87,7 @@ func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 }
 
 func (p *DubboPackage) Unmarshal() error {
-	return p.codec.Decode(p)
+	return p.Codec.Decode(p)
 }
 
 func (p DubboPackage) IsHeartBeat() bool {
@@ -113,7 +112,7 @@ func (p DubboPackage) GetBodyLen() int {
 }
 
 func (p DubboPackage) GetLen() int {
-	return impl.HEADER_LENGTH + p.Header.BodyLen
+	return HEADER_LENGTH + p.Header.BodyLen
 }
 
 func (p DubboPackage) GetBody() interface{} {
@@ -149,7 +148,7 @@ func (p *DubboPackage) SetResponseStatus(status byte) {
 }
 
 func (p *DubboPackage) SetSerializer(serializer Serializer) {
-	p.codec.SetSerializer(serializer)
+	p.Codec.SetSerializer(serializer)
 }
 
 func NewDubboPackage(data *bytes.Buffer) *DubboPackage {
@@ -164,6 +163,6 @@ func NewDubboPackage(data *bytes.Buffer) *DubboPackage {
 		Service: Service{},
 		Body:    nil,
 		Err:     nil,
-		codec:   codec,
+		Codec:   codec,
 	}
 }

@@ -137,7 +137,7 @@ type Client struct {
 	sequence atomic.Uint64
 
 	pendingResponses *sync.Map
-	codec            DubboCodec
+	codec            impl.DubboCodec
 }
 
 // NewClient ...
@@ -161,7 +161,7 @@ func NewClient(opt Options) *Client {
 		opts:             opt,
 		pendingResponses: new(sync.Map),
 		conf:             *clientConf,
-		codec:            DubboCodec{},
+		codec:            impl.DubboCodec{},
 	}
 	c.sequence.Store(initSequence)
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
@@ -210,15 +210,15 @@ func NewResponse(reply interface{}, atta map[string]string) *Response {
 // CallOneway call one way
 func (c *Client) CallOneway(request *Request) error {
 
-	return perrors.WithStack(c.call(CT_OneWay, request, NewResponse(nil, nil), nil))
+	return perrors.WithStack(c.call(impl.CT_OneWay, request, NewResponse(nil, nil), nil))
 }
 
 // Call if @response is nil, the transport layer will get the response without notify the invoker.
 func (c *Client) Call(request *Request, response *Response) error {
 
-	ct := CT_TwoWay
+	ct := impl.CT_TwoWay
 	if response.reply == nil {
-		ct = CT_OneWay
+		ct = impl.CT_OneWay
 	}
 
 	return perrors.WithStack(c.call(ct, request, response, nil))
@@ -227,10 +227,10 @@ func (c *Client) Call(request *Request, response *Response) error {
 // AsyncCall ...
 func (c *Client) AsyncCall(request *Request, callback common.AsyncCallback, response *Response) error {
 
-	return perrors.WithStack(c.call(CT_TwoWay, request, response, callback))
+	return perrors.WithStack(c.call(impl.CT_TwoWay, request, response, callback))
 }
 
-func (c *Client) call(ct CallType, request *Request, response *Response, callback common.AsyncCallback) error {
+func (c *Client) call(ct impl.CallType, request *Request, response *Response, callback common.AsyncCallback) error {
 	var (
 		err     error
 		session getty.Session
@@ -252,8 +252,8 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 	}()
 
 	var rsp *PendingResponse
-	svc := Service{}
-	header := DubboHeader{}
+	svc := impl.Service{}
+	header := impl.DubboHeader{}
 	svc.Path = strings.TrimPrefix(request.svcUrl.Path, "/")
 	svc.Interface = request.svcUrl.GetParam(constant.INTERFACE_KEY, "")
 	svc.Version = request.svcUrl.GetParam(constant.VERSION_KEY, "")
@@ -280,25 +280,25 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 		return err
 	}
 
-	if ct != CT_OneWay {
-		p.Header.Type = PackageRequest_TwoWay
+	if ct != impl.CT_OneWay {
+		p.Header.Type = impl.PackageRequest_TwoWay
 		rsp = NewPendingResponse()
 		rsp.response = response
 		rsp.callback = callback
 	} else {
-		p.Header.Type = PackageRequest
+		p.Header.Type = impl.PackageRequest
 	}
 	if err = c.transfer(session, p, rsp); err != nil {
 		return perrors.WithStack(err)
 	}
 
-	if ct == CT_OneWay || callback != nil {
+	if ct == impl.CT_OneWay || callback != nil {
 		return nil
 	}
 
 	select {
 	case <-getty.GetTimeWheel().After(c.opts.RequestTimeout):
-		c.removePendingResponse(SequenceType(rsp.seq))
+		c.removePendingResponse(impl.SequenceType(rsp.seq))
 		return perrors.WithStack(errClientReadTimeout)
 	case <-rsp.done:
 		err = rsp.err
@@ -327,7 +327,7 @@ func (c *Client) heartbeat(session getty.Session) error {
 	return c.transfer(session, nil, NewPendingResponse())
 }
 
-func (c *Client) transfer(session getty.Session, pkg *DubboPackage,
+func (c *Client) transfer(session getty.Session, pkg *impl.DubboPackage,
 	rsp *PendingResponse) error {
 
 	var (
@@ -339,11 +339,11 @@ func (c *Client) transfer(session getty.Session, pkg *DubboPackage,
 
 	if pkg == nil {
 		// make heartbeat package
-		header := DubboHeader{
-			Type:     PackageHeartbeat,
+		header := impl.DubboHeader{
+			Type:     impl.PackageHeartbeat,
 			SerialID: constant.S_Hessian2,
 		}
-		pkg = NewClientRequestPackage(header, Service{})
+		pkg = NewClientRequestPackage(header, impl.Service{})
 		// SetBody
 		reqPayload := impl.NewRequestPayload([]interface{}{}, nil)
 		pkg.SetBody(reqPayload)
@@ -362,7 +362,7 @@ func (c *Client) transfer(session getty.Session, pkg *DubboPackage,
 
 	err = session.WritePkg(pkg, c.opts.RequestTimeout)
 	if err != nil {
-		c.removePendingResponse(SequenceType(rsp.seq))
+		c.removePendingResponse(impl.SequenceType(rsp.seq))
 	} else if rsp != nil { // cond2
 		// cond2 should not merged with cond1. cause the response package may be returned very
 		// soon and it will be handled by other goroutine.
@@ -373,10 +373,10 @@ func (c *Client) transfer(session getty.Session, pkg *DubboPackage,
 }
 
 func (c *Client) addPendingResponse(pr *PendingResponse) {
-	c.pendingResponses.Store(SequenceType(pr.seq), pr)
+	c.pendingResponses.Store(impl.SequenceType(pr.seq), pr)
 }
 
-func (c *Client) removePendingResponse(seq SequenceType) *PendingResponse {
+func (c *Client) removePendingResponse(seq impl.SequenceType) *PendingResponse {
 	if c.pendingResponses == nil {
 		return nil
 	}
@@ -418,12 +418,12 @@ func (r PendingResponse) GetCallResponse() common.CallbackResponse {
 }
 
 // client side request package, just for serialization
-func NewClientRequestPackage(header DubboHeader, svc Service) *DubboPackage {
-	return &DubboPackage{
+func NewClientRequestPackage(header impl.DubboHeader, svc impl.Service) *impl.DubboPackage {
+	return &impl.DubboPackage{
 		Header:  header,
 		Service: svc,
 		Body:    nil,
 		Err:     nil,
-		codec:   NewDubboCodec(nil),
+		Codec:   impl.NewDubboCodec(nil),
 	}
 }

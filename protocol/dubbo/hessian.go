@@ -43,7 +43,7 @@ type Object interface{}
 type HessianSerializer struct {
 }
 
-func (h HessianSerializer) Marshal(p DubboPackage) ([]byte, error) {
+func (h HessianSerializer) Marshal(p impl.DubboPackage) ([]byte, error) {
 	encoder := hessian.NewEncoder()
 	if p.IsRequest() {
 		return marshalRequest(encoder, p)
@@ -51,7 +51,7 @@ func (h HessianSerializer) Marshal(p DubboPackage) ([]byte, error) {
 	return marshalResponse(encoder, p)
 }
 
-func (h HessianSerializer) Unmarshal(input []byte, p *DubboPackage) error {
+func (h HessianSerializer) Unmarshal(input []byte, p *impl.DubboPackage) error {
 	if p.IsHeartBeat() {
 		return nil
 	}
@@ -61,7 +61,7 @@ func (h HessianSerializer) Unmarshal(input []byte, p *DubboPackage) error {
 	return unmarshalResponseBody(input, p)
 }
 
-func marshalResponse(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
+func marshalResponse(encoder *hessian.Encoder, p impl.DubboPackage) ([]byte, error) {
 	header := p.Header
 	response := impl.EnsureResponsePayload(p.Body)
 	if header.ResponseStatus == impl.Response_OK {
@@ -114,7 +114,7 @@ func marshalResponse(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 	return bs, nil
 }
 
-func marshalRequest(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
+func marshalRequest(encoder *hessian.Encoder, p impl.DubboPackage) ([]byte, error) {
 	service := p.Service
 	request := impl.EnsureRequestPayload(p.Body)
 	encoder.Encode(impl.DEFAULT_DUBBO_PROTOCOL_VERSION)
@@ -194,7 +194,7 @@ func version2Int(version string) int {
 	return v
 }
 
-func unmarshalRequestBody(body []byte, p *DubboPackage) error {
+func unmarshalRequestBody(body []byte, p *impl.DubboPackage) error {
 	if p.Body == nil {
 		p.SetBody(make([]interface{}, 7))
 	}
@@ -263,7 +263,7 @@ func unmarshalRequestBody(body []byte, p *DubboPackage) error {
 	return errors.Errorf("get wrong attachments: %+v", attachments)
 }
 
-func unmarshalResponseBody(body []byte, p *DubboPackage) error {
+func unmarshalResponseBody(body []byte, p *impl.DubboPackage) error {
 	decoder := hessian.NewDecoder(body)
 	rspType, err := decoder.Decode()
 	if p.Body == nil {
@@ -338,13 +338,13 @@ func unmarshalResponseBody(body []byte, p *DubboPackage) error {
 	return nil
 }
 
-func buildServerSidePackageBody(pkg *DubboPackage) {
+func buildServerSidePackageBody(pkg *impl.DubboPackage) {
 	req := pkg.GetBody().([]interface{}) // length of body should be 7
 	if len(req) > 0 {
 		var dubboVersion, argsTypes string
 		var args []interface{}
 		var attachments map[string]string
-		svc := Service{}
+		svc := impl.Service{}
 		if req[0] != nil {
 			dubboVersion = req[0].(string)
 		}

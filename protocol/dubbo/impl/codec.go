@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-package dubbo
+package impl
 
 import (
 	"bufio"
 	"encoding/binary"
-	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 )
 
 import (
@@ -59,43 +58,43 @@ type SequenceType int64
 
 func (c *DubboCodec) ReadHeader(header *DubboHeader) error {
 	var err error
-	if c.reader.Size() < impl.HEADER_LENGTH {
+	if c.reader.Size() < HEADER_LENGTH {
 		return hessian.ErrHeaderNotEnough
 	}
-	buf, err := c.reader.Peek(impl.HEADER_LENGTH)
+	buf, err := c.reader.Peek(HEADER_LENGTH)
 	if err != nil { // this is impossible
 		return errors.WithStack(err)
 	}
-	_, err = c.reader.Discard(impl.HEADER_LENGTH)
+	_, err = c.reader.Discard(HEADER_LENGTH)
 	if err != nil { // this is impossible
 		return errors.WithStack(err)
 	}
 
 	//// read header
-	if buf[0] != impl.MAGIC_HIGH && buf[1] != impl.MAGIC_LOW {
+	if buf[0] != MAGIC_HIGH && buf[1] != MAGIC_LOW {
 		return hessian.ErrIllegalPackage
 	}
 
 	// Header{serialization id(5 bit), event, two way, req/response}
-	if header.SerialID = buf[2] & impl.SERIAL_MASK; header.SerialID == impl.Zero {
+	if header.SerialID = buf[2] & SERIAL_MASK; header.SerialID == Zero {
 		return errors.Errorf("serialization ID:%v", header.SerialID)
 	}
 
-	flag := buf[2] & impl.FLAG_EVENT
-	if flag != impl.Zero {
+	flag := buf[2] & FLAG_EVENT
+	if flag != Zero {
 		header.Type |= PackageHeartbeat
 	}
-	flag = buf[2] & impl.FLAG_REQUEST
-	if flag != impl.Zero {
+	flag = buf[2] & FLAG_REQUEST
+	if flag != Zero {
 		header.Type |= PackageRequest
-		flag = buf[2] & impl.FLAG_TWOWAY
-		if flag != impl.Zero {
+		flag = buf[2] & FLAG_TWOWAY
+		if flag != Zero {
 			header.Type |= PackageRequest_TwoWay
 		}
 	} else {
 		header.Type |= PackageResponse
 		header.ResponseStatus = buf[3]
-		if header.ResponseStatus != impl.Response_OK {
+		if header.ResponseStatus != Response_OK {
 			header.Type |= PackageResponse_Exception
 		}
 	}
@@ -124,7 +123,7 @@ func (c *DubboCodec) EncodeHeader(p DubboPackage) []byte {
 	bs := make([]byte, 0)
 	switch header.Type {
 	case PackageHeartbeat:
-		if header.ResponseStatus == impl.Zero {
+		if header.ResponseStatus == Zero {
 			bs = append(bs, hessian.DubboRequestHeartbeatHeader[:]...)
 		} else {
 			bs = append(bs, hessian.DubboResponseHeartbeatHeader[:]...)
@@ -150,7 +149,7 @@ func (c *DubboCodec) Encode(p DubboPackage) ([]byte, error) {
 	header := p.Header
 	switch header.Type {
 	case PackageHeartbeat:
-		if header.ResponseStatus == impl.Zero {
+		if header.ResponseStatus == Zero {
 			return packRequest(p, c.serializer)
 		}
 		return packResponse(p, c.serializer)
@@ -183,7 +182,7 @@ func (c *DubboCodec) Decode(p *DubboPackage) error {
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		rsp, ok := p.Body.(*impl.ResponsePayload)
+		rsp, ok := p.Body.(*ResponsePayload)
 		if !ok {
 			return errors.Errorf("java exception:%s", exception.(string))
 		}
@@ -194,7 +193,7 @@ func (c *DubboCodec) Decode(p *DubboPackage) error {
 		return nil
 	}
 	if c.serializer == nil {
-		return errors.New("codec serializer is nil")
+		return errors.New("Codec serializer is nil")
 	}
 	return c.serializer.Unmarshal(body, p)
 }
@@ -217,16 +216,16 @@ func packRequest(p DubboPackage, serializer Serializer) ([]byte, error) {
 	// magic
 	switch header.Type {
 	case PackageHeartbeat:
-		byteArray = append(byteArray, impl.DubboRequestHeartbeatHeader[:]...)
+		byteArray = append(byteArray, DubboRequestHeartbeatHeader[:]...)
 	case PackageRequest_TwoWay:
-		byteArray = append(byteArray, impl.DubboRequestHeaderBytesTwoWay[:]...)
+		byteArray = append(byteArray, DubboRequestHeaderBytesTwoWay[:]...)
 	default:
-		byteArray = append(byteArray, impl.DubboRequestHeaderBytes[:]...)
+		byteArray = append(byteArray, DubboRequestHeaderBytes[:]...)
 	}
 
 	// serialization id, two way flag, event, request/response flag
 	// SerialID is id of serialization approach in java dubbo
-	byteArray[2] |= header.SerialID & impl.SERIAL_MASK
+	byteArray[2] |= header.SerialID & SERIAL_MASK
 	// request id
 	binary.BigEndian.PutUint64(byteArray[4:], uint64(header.ID))
 
@@ -242,8 +241,8 @@ func packRequest(p DubboPackage, serializer Serializer) ([]byte, error) {
 			return nil, err
 		}
 		pkgLen = len(body)
-		if pkgLen > int(impl.DEFAULT_LEN) { // 8M
-			return nil, errors.Errorf("Data length %d too large, max payload %d", pkgLen, impl.DEFAULT_LEN)
+		if pkgLen > int(DEFAULT_LEN) { // 8M
+			return nil, errors.Errorf("Data length %d too large, max payload %d", pkgLen, DEFAULT_LEN)
 		}
 		byteArray = append(byteArray, body...)
 	}
@@ -260,12 +259,12 @@ func packResponse(p DubboPackage, serializer Serializer) ([]byte, error) {
 
 	// magic
 	if hb {
-		byteArray = append(byteArray, impl.DubboResponseHeartbeatHeader[:]...)
+		byteArray = append(byteArray, DubboResponseHeartbeatHeader[:]...)
 	} else {
-		byteArray = append(byteArray, impl.DubboResponseHeaderBytes[:]...)
+		byteArray = append(byteArray, DubboResponseHeaderBytes[:]...)
 	}
 	// set serialID, identify serialization types, eg: fastjson->6, hessian2->2
-	byteArray[2] |= header.SerialID & impl.SERIAL_MASK
+	byteArray[2] |= header.SerialID & SERIAL_MASK
 	// response status
 	if header.ResponseStatus != 0 {
 		byteArray[3] = header.ResponseStatus
@@ -281,8 +280,8 @@ func packResponse(p DubboPackage, serializer Serializer) ([]byte, error) {
 	}
 
 	pkgLen := len(body)
-	if pkgLen > int(impl.DEFAULT_LEN) { // 8M
-		return nil, errors.Errorf("Data length %d too large, max payload %d", pkgLen, impl.DEFAULT_LEN)
+	if pkgLen > int(DEFAULT_LEN) { // 8M
+		return nil, errors.Errorf("Data length %d too large, max payload %d", pkgLen, DEFAULT_LEN)
 	}
 	// byteArray{body length}
 	binary.BigEndian.PutUint32(byteArray[12:], uint32(pkgLen))

@@ -70,7 +70,7 @@ func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface
 	}
 
 	// load response
-	pendingRsp, ok := p.client.pendingResponses.Load(SequenceType(pkg.GetHeader().ID))
+	pendingRsp, ok := p.client.pendingResponses.Load(impl.SequenceType(pkg.GetHeader().ID))
 	if !ok {
 		return nil, 0, perrors.Errorf("client.GetPendingResopnse(%v) = nil", pkg.GetHeader().ID)
 	}
@@ -88,7 +88,7 @@ func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface
 }
 
 func (p *RpcClientPackageHandler) Write(ss getty.Session, pkg interface{}) ([]byte, error) {
-	req, ok := pkg.(*DubboPackage)
+	req, ok := pkg.(*impl.DubboPackage)
 	if !ok {
 		return nil, perrors.New("invalid rpc request")
 	}
@@ -144,7 +144,7 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 }
 
 func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg interface{}) ([]byte, error) {
-	res, ok := pkg.(*DubboPackage)
+	res, ok := pkg.(*impl.DubboPackage)
 	if !ok {
 		logger.Errorf("illegal pkg:%+v\n, it is %+v", pkg, reflect.TypeOf(pkg))
 		return nil, perrors.New("invalid rpc response")
@@ -157,7 +157,7 @@ func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg interface{}) ([]by
 	return buf.Bytes(), nil
 }
 
-func loadSerializer(p *DubboPackage) error {
+func loadSerializer(p *impl.DubboPackage) error {
 	// NOTE: default serialID is S_Hessian
 	serialID := p.Header.SerialID
 	if serialID == 0 {
@@ -167,28 +167,28 @@ func loadSerializer(p *DubboPackage) error {
 	if err != nil {
 		return err
 	}
-	p.SetSerializer(serializer.(Serializer))
+	p.SetSerializer(serializer.(impl.Serializer))
 	return nil
 }
 
-func NewClientResponsePackage(data []byte) *DubboPackage {
-	return &DubboPackage{
-		Header:  DubboHeader{},
-		Service: Service{},
+func NewClientResponsePackage(data []byte) *impl.DubboPackage {
+	return &impl.DubboPackage{
+		Header:  impl.DubboHeader{},
+		Service: impl.Service{},
 		Body:    &impl.ResponsePayload{},
 		Err:     nil,
-		codec:   NewDubboCodec(bufio.NewReaderSize(bytes.NewBuffer(data), len(data))),
+		codec:   impl.NewDubboCodec(bufio.NewReaderSize(bytes.NewBuffer(data), len(data))),
 	}
 }
 
 // server side receive request package, just for deserialization
-func NewServerRequestPackage(data []byte) *DubboPackage {
-	return &DubboPackage{
-		Header:  DubboHeader{},
-		Service: Service{},
+func NewServerRequestPackage(data []byte) *impl.DubboPackage {
+	return &impl.DubboPackage{
+		Header:  impl.DubboHeader{},
+		Service: impl.Service{},
 		Body:    make([]interface{}, 7),
 		Err:     nil,
-		codec:   NewDubboCodec(bufio.NewReaderSize(bytes.NewBuffer(data), len(data))),
+		codec:   impl.NewDubboCodec(bufio.NewReaderSize(bytes.NewBuffer(data), len(data))),
 	}
 
 }
