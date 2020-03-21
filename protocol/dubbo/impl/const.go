@@ -24,6 +24,11 @@ import (
  */
 
 const (
+	// DUBBO ...
+	DUBBO = "dubbo"
+)
+
+const (
 	mask = byte(127)
 	flag = byte(128)
 )

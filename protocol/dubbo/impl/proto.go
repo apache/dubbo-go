@@ -15,13 +15,12 @@
  * limitations under the License.
  */
 
-package dubbo
+package impl
 
 import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 	"io"
 	"reflect"
 	"strconv"
@@ -44,7 +43,7 @@ import (
 
 type ProtoSerializer struct{}
 
-func (p ProtoSerializer) Marshal(pkg impl.DubboPackage) ([]byte, error) {
+func (p ProtoSerializer) Marshal(pkg DubboPackage) ([]byte, error) {
 	if pkg.IsHeartBeat() {
 		return []byte{byte('N')}, nil
 	}
@@ -57,18 +56,18 @@ func (p ProtoSerializer) Marshal(pkg impl.DubboPackage) ([]byte, error) {
 	return marshalResponseProto(pkg)
 }
 
-func (p ProtoSerializer) Unmarshal(data []byte, pkg *impl.DubboPackage) error {
+func (p ProtoSerializer) Unmarshal(data []byte, pkg *DubboPackage) error {
 	if pkg.IsRequest() {
 		return unmarshalRequestProto(data, pkg)
 	}
 	return unmarshalResponseProto(data, pkg)
 }
 
-func unmarshalResponseProto(data []byte, pkg *impl.DubboPackage) error {
+func unmarshalResponseProto(data []byte, pkg *DubboPackage) error {
 	if pkg.Body == nil {
-		pkg.SetBody(impl.NewResponsePayload(nil, nil, nil))
+		pkg.SetBody(NewResponsePayload(nil, nil, nil))
 	}
-	response := impl.EnsureResponsePayload(pkg.Body)
+	response := EnsureResponsePayload(pkg.Body)
 	buf := bytes.NewBuffer(data)
 
 	var responseType int32
@@ -79,11 +78,11 @@ func unmarshalResponseProto(data []byte, pkg *impl.DubboPackage) error {
 	hasAttachments := false
 	hasException := false
 	switch responseType {
-	case impl.RESPONSE_VALUE_WITH_ATTACHMENTS:
+	case RESPONSE_VALUE_WITH_ATTACHMENTS:
 		hasAttachments = true
-	case impl.RESPONSE_WITH_EXCEPTION:
+	case RESPONSE_WITH_EXCEPTION:
 		hasException = true
-	case impl.RESPONSE_WITH_EXCEPTION_WITH_ATTACHMENTS:
+	case RESPONSE_WITH_EXCEPTION_WITH_ATTACHMENTS:
 		hasAttachments = true
 		hasException = true
 	}
@@ -122,7 +121,7 @@ func unmarshalResponseProto(data []byte, pkg *impl.DubboPackage) error {
 	return nil
 }
 
-func unmarshalRequestProto(data []byte, pkg *impl.DubboPackage) error {
+func unmarshalRequestProto(data []byte, pkg *DubboPackage) error {
 	var dubboVersion string
 	var svcPath string
 	var svcVersion string
@@ -162,7 +161,7 @@ func unmarshalRequestProto(data []byte, pkg *impl.DubboPackage) error {
 	if err := readObject(buf, m); err != nil {
 		return err
 	}
-	svc := impl.Service{}
+	svc := Service{}
 	svc.Version = svcVersion
 	svc.Method = svcMethod
 	// just as hessian
@@ -187,8 +186,8 @@ func unmarshalRequestProto(data []byte, pkg *impl.DubboPackage) error {
 	return nil
 }
 
-func marshalRequestProto(pkg impl.DubboPackage) ([]byte, error) {
-	request := impl.EnsureRequestPayload(pkg.Body)
+func marshalRequestProto(pkg DubboPackage) ([]byte, error) {
+	request := EnsureRequestPayload(pkg.Body)
 	args, ok := request.Params.([]interface{})
 	buf := bytes.NewBuffer(make([]byte, 0))
 	if !ok {
@@ -199,7 +198,7 @@ func marshalRequestProto(pkg impl.DubboPackage) ([]byte, error) {
 		return nil, errors.New("illegal protobuf service, len(arg) should equal 1")
 	}
 	// dubbo version
-	if err := writeUTF(buf, impl.DUBBO_VERSION); err != nil {
+	if err := writeUTF(buf, DUBBO_VERSION); err != nil {
 		return nil, err
 	}
 	// service path
@@ -242,16 +241,16 @@ func marshalRequestProto(pkg impl.DubboPackage) ([]byte, error) {
 	}
 	// attachments
 	atta := make(map[string]string)
-	atta[impl.PATH_KEY] = pkg.Service.Path
-	atta[impl.VERSION_KEY] = pkg.Service.Version
+	atta[PATH_KEY] = pkg.Service.Path
+	atta[VERSION_KEY] = pkg.Service.Version
 	if len(pkg.Service.Group) > 0 {
-		atta[impl.GROUP_KEY] = pkg.Service.Group
+		atta[GROUP_KEY] = pkg.Service.Group
 	}
 	if len(pkg.Service.Interface) > 0 {
-		atta[impl.INTERFACE_KEY] = pkg.Service.Interface
+		atta[INTERFACE_KEY] = pkg.Service.Interface
 	}
 	if pkg.Service.Timeout != 0 {
-		atta[impl.TIMEOUT_KEY] = strconv.Itoa(int(pkg.Service.Timeout / time.Millisecond))
+		atta[TIMEOUT_KEY] = strconv.Itoa(int(pkg.Service.Timeout / time.Millisecond))
 	}
 	m := pb.Map{Attachments: atta}
 	if err := writeObject(buf, &m); err != nil {
@@ -260,22 +259,22 @@ func marshalRequestProto(pkg impl.DubboPackage) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func marshalResponseProto(pkg impl.DubboPackage) ([]byte, error) {
-	response := impl.EnsureResponsePayload(pkg.Body)
+func marshalResponseProto(pkg DubboPackage) ([]byte, error) {
+	response := EnsureResponsePayload(pkg.Body)
 	buf := bytes.NewBuffer(make([]byte, 0))
-	responseType := impl.RESPONSE_VALUE
+	responseType := RESPONSE_VALUE
 	hasAttachments := false
 	if response.Attachments != nil {
-		responseType = impl.RESPONSE_VALUE_WITH_ATTACHMENTS
+		responseType = RESPONSE_VALUE_WITH_ATTACHMENTS
 		hasAttachments = true
 	} else {
-		responseType = impl.RESPONSE_VALUE
+		responseType = RESPONSE_VALUE
 	}
 	if response.Exception != nil {
 		if hasAttachments {
-			responseType = impl.RESPONSE_WITH_EXCEPTION_WITH_ATTACHMENTS
+			responseType = RESPONSE_WITH_EXCEPTION_WITH_ATTACHMENTS
 		} else {
-			responseType = impl.RESPONSE_WITH_EXCEPTION
+			responseType = RESPONSE_WITH_EXCEPTION
 		}
 	}
 	// write response type

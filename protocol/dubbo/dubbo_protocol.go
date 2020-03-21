@@ -18,6 +18,7 @@
 package dubbo
 
 import (
+	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 	"sync"
 	"time"
 )
@@ -31,14 +32,8 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-// dubbo protocol constant
-const (
-	// DUBBO ...
-	DUBBO = "dubbo"
-)
-
 func init() {
-	extension.SetProtocol(DUBBO, GetProtocol)
+	extension.SetProtocol(impl.DUBBO, GetProtocol)
 }
 
 var (

@@ -92,7 +92,7 @@ func TestDubboPackage_Protobuf_Serialization_Request(t *testing.T) {
 	pkg.Header.Type = impl.PackageHeartbeat
 	pkg.Header.SerialID = constant.S_Proto
 	pkg.Header.ID = 10086
-	pkg.SetSerializer(ProtoSerializer{})
+	pkg.SetSerializer(impl.ProtoSerializer{})
 
 	// heartbeat
 	data, err := pkg.Marshal()
@@ -121,7 +121,7 @@ func TestDubboPackage_Protobuf_Serialization_Request(t *testing.T) {
 	assert.NoError(t, err)
 
 	pkgres = impl.NewDubboPackage(data)
-	pkgres.SetSerializer(ProtoSerializer{})
+	pkgres.SetSerializer(impl.ProtoSerializer{})
 	err = pkgres.Unmarshal()
 	assert.NoError(t, err)
 	body, ok := pkgres.Body.(map[string]interface{})
@@ -145,7 +145,7 @@ func TestDubboCodec_Protobuf_Serialization_Response(t *testing.T) {
 		pkg.Header.Type = impl.PackageResponse
 		pkg.Header.SerialID = constant.S_Proto
 		pkg.Header.ID = 10086
-		pkg.SetSerializer(ProtoSerializer{})
+		pkg.SetSerializer(impl.ProtoSerializer{})
 		pkg.SetBody(&pb.StringValue{Value: "hello world"})
 
 		// heartbeat
@@ -153,7 +153,7 @@ func TestDubboCodec_Protobuf_Serialization_Response(t *testing.T) {
 		assert.NoError(t, err)
 
 		pkgres := impl.NewDubboPackage(data)
-		pkgres.SetSerializer(ProtoSerializer{})
+		pkgres.SetSerializer(impl.ProtoSerializer{})
 
 		pkgres.SetBody(&pb.StringValue{})
 		err = pkgres.Unmarshal()
@@ -176,7 +176,7 @@ func TestDubboCodec_Protobuf_Serialization_Response(t *testing.T) {
 		p := impl.NewDubboPackage(nil)
 		p.Header.Type = impl.PackageResponse
 		p.Header.SerialID = constant.S_Proto
-		p.SetSerializer(ProtoSerializer{})
+		p.SetSerializer(impl.ProtoSerializer{})
 		p.SetBody(resp)
 		data, err := p.Marshal()
 		assert.NoError(t, err)
@@ -185,7 +185,7 @@ func TestDubboCodec_Protobuf_Serialization_Response(t *testing.T) {
 		pkgres.Header.Type = impl.PackageResponse
 		pkgres.Header.SerialID = constant.S_Proto
 		pkgres.Header.ID = 10086
-		pkgres.SetSerializer(ProtoSerializer{})
+		pkgres.SetSerializer(impl.ProtoSerializer{})
 
 		resAttachment := make(map[string]string)
 		resBody := &pb.StringValue{}
