@@ -431,8 +431,6 @@ func (z *ZookeeperClient) CreateWithValue(basePath string, value []byte) error {
 	return nil
 }
 
-
-
 // Delete ...
 func (z *ZookeeperClient) Delete(basePath string) error {
 	var (
