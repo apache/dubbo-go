@@ -18,7 +18,6 @@
 package dubbo
 
 import (
-	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 	"math"
 	"strconv"
 	"strings"
@@ -36,6 +35,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 )
 
 type Object interface{}
