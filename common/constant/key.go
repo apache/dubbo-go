@@ -128,6 +128,7 @@ const (
 	ProviderConfigPrefix       = "dubbo.provider."
 	ConsumerConfigPrefix       = "dubbo.consumer."
 	ShutdownConfigPrefix       = "dubbo.shutdown."
+	MetadataReportPrefix       = "dubbo.metadata-report."
 	RouterConfigPrefix         = "dubbo.router."
 )
 
@@ -204,6 +205,16 @@ const (
 	ACCESS_KEY_ID_KEY = "accessKeyId"
 	// key of secret access key
 	SECRET_ACCESS_KEY_KEY = "secretAccessKey"
+)
+
+// metadata report
+
+const (
+	METACONFIG_REMOTE  = "remote"
+	METACONFIG_LOCAL   = "local"
+	KEY_SEPARATOR      = ":"
+	DEFAULT_PATH_TAG   = "metadata"
+	KEY_REVISON_PREFIX = "revision"
 )
 
 // HealthCheck Router
