@@ -1,9 +1,10 @@
 package impl
 
 import (
-	"github.com/pkg/errors"
 	"reflect"
 	"regexp"
+
+	"github.com/pkg/errors"
 )
 
 /*

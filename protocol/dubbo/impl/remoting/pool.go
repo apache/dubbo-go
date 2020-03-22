@@ -15,26 +15,38 @@
  * limitations under the License.
  */
 
-package dubbo
+package remoting
 
 import (
 	"fmt"
-	"github.com/apache/dubbo-go/protocol/dubbo/impl/remoting"
 	"math/rand"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
-)
 
-import (
 	"github.com/dubbogo/getty"
+
+	"github.com/apache/dubbo-go/common/logger"
 	perrors "github.com/pkg/errors"
 )
 
-import (
-	"github.com/apache/dubbo-go/common/logger"
+var (
+	errTooManySessions = perrors.New("too many sessions")
 )
+
+type rpcSession struct {
+	session getty.Session
+	reqNum  int32
+}
+
+func (s *rpcSession) AddReqNum(num int32) {
+	atomic.AddInt32(&s.reqNum, num)
+}
+
+func (s *rpcSession) GetReqNum() int32 {
+	return atomic.LoadInt32(&s.reqNum)
+}
 
 type gettyRPCClient struct {
 	once     sync.Once
@@ -50,7 +62,7 @@ type gettyRPCClient struct {
 }
 
 var (
-	errClientPoolClosed = perrors.New("client pool closed")
+	errClientPoolClosed = perrors.New("client Pool closed")
 )
 
 func newGettyRPCClientConn(pool *gettyRPCClientPool, protocol, addr string) (*gettyRPCClient, error) {
@@ -60,13 +72,13 @@ func newGettyRPCClientConn(pool *gettyRPCClientPool, protocol, addr string) (*ge
 		pool:     pool,
 		gettyClient: getty.NewTCPClient(
 			getty.WithServerAddress(addr),
-			getty.WithConnectionNumber((int)(pool.rpcClient.conf.ConnectionNum)),
-			getty.WithReconnectInterval(pool.rpcClient.conf.ReconnectInterval),
+			getty.WithConnectionNumber((int)(pool.rpcClient.Conf.ConnectionNum)),
+			getty.WithReconnectInterval(pool.rpcClient.Conf.ReconnectInterval),
 		),
 	}
 	go c.gettyClient.RunEventLoop(c.newSession)
 	idx := 1
-	times := int(pool.rpcClient.opts.ConnectTimeout / 1e6)
+	times := int(pool.rpcClient.Opts.ConnectTimeout / 1e6)
 	for {
 		idx++
 		if c.isAvailable() {
@@ -97,10 +109,10 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 	var (
 		ok      bool
 		tcpConn *net.TCPConn
-		conf    remoting.ClientConfig
+		conf    ClientConfig
 	)
 
-	conf = c.pool.rpcClient.conf
+	conf = c.pool.rpcClient.Conf
 	if conf.GettySessionParam.CompressEncoding {
 		session.SetCompressType(getty.CompressZip)
 	}
@@ -297,7 +309,7 @@ type gettyRPCClientPool struct {
 	conns []*gettyRPCClient
 }
 
-func newGettyRPCClientConnPool(rpcClient *Client, size int, ttl time.Duration) *gettyRPCClientPool {
+func NewGettyRPCClientConnPool(rpcClient *Client, size int, ttl time.Duration) *gettyRPCClientPool {
 	return &gettyRPCClientPool{
 		rpcClient: rpcClient,
 		size:      size,
@@ -370,7 +382,7 @@ func (p *gettyRPCClientPool) put(conn *gettyRPCClient) {
 	}
 
 	if len(p.conns) >= p.size {
-		// delete @conn from client pool
+		// delete @conn from client Pool
 		// p.remove(conn)
 		conn.close()
 		return

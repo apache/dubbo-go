@@ -22,19 +22,14 @@ import (
 	"strconv"
 	"strings"
 	"time"
-)
 
-import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/apache/dubbo-go-hessian2/java_exception"
-	"github.com/pkg/errors"
-)
-
-import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/pkg/errors"
 )
 
 type Object interface{}

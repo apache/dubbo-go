@@ -22,9 +22,7 @@ import (
 	"bytes"
 	"fmt"
 	"time"
-)
 
-import (
 	"github.com/pkg/errors"
 )
 
@@ -87,6 +85,9 @@ func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 }
 
 func (p *DubboPackage) Unmarshal() error {
+	if p.Codec == nil {
+		return errors.New("Codec is nil")
+	}
 	return p.Codec.Decode(p)
 }
 

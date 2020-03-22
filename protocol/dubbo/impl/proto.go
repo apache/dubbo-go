@@ -26,18 +26,14 @@ import (
 	"strconv"
 	"strings"
 	"time"
-)
 
-import (
-	"github.com/golang/protobuf/proto"
-	"github.com/matttproud/golang_protobuf_extensions/pbutil"
-	"github.com/pkg/errors"
-)
-
-import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/golang/protobuf/proto"
+	"github.com/matttproud/golang_protobuf_extensions/pbutil"
+	"github.com/pkg/errors"
+
 	pb "github.com/apache/dubbo-go/protocol/dubbo/impl/proto"
 )
 

@@ -20,15 +20,9 @@ package impl
 import (
 	"bufio"
 	"encoding/binary"
-)
 
-import (
-	"github.com/pkg/errors"
-)
-
-import (
-	"github.com/apache/dubbo-go-hessian2"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/pkg/errors"
 )
 
 type DubboCodec struct {

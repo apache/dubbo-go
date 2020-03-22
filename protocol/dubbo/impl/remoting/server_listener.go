@@ -15,31 +15,17 @@
  * limitations under the License.
  */
 
-package dubbo
+package remoting
 
 import (
-	"context"
-	"fmt"
-	"github.com/apache/dubbo-go/protocol/dubbo/impl"
-	"net/url"
 	"sync"
-	"sync/atomic"
 	"time"
-)
 
-import (
-	"github.com/apache/dubbo-go-hessian2"
+	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 	"github.com/dubbogo/getty"
-	"github.com/opentracing/opentracing-go"
-	perrors "github.com/pkg/errors"
-)
 
-import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/invocation"
+	perrors "github.com/pkg/errors"
 )
 
 // todo: WritePkg_Timeout will entry *.yml
@@ -48,27 +34,9 @@ const (
 	WritePkg_Timeout = 5 * time.Second
 )
 
-var (
-	errTooManySessions = perrors.New("too many sessions")
-)
-
-type rpcSession struct {
-	session getty.Session
-	reqNum  int32
-}
-
-func (s *rpcSession) AddReqNum(num int32) {
-	atomic.AddInt32(&s.reqNum, num)
-}
-
-func (s *rpcSession) GetReqNum() int32 {
-	return atomic.LoadInt32(&s.reqNum)
-}
-
 // //////////////////////////////////////////
 // RpcClientHandler
 // //////////////////////////////////////////
-
 // RpcClientHandler ...
 type RpcClientHandler struct {
 	conn *gettyRPCClient
@@ -126,7 +94,7 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 		pendingResponse.err = p.Err
 	}
 
-	pendingResponse.response.atta = p.Body.(*Response).atta
+	pendingResponse.response.Atta = p.Body.(*Response).Atta
 
 	if pendingResponse.callback == nil {
 		pendingResponse.done <- struct{}{}
@@ -144,10 +112,10 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 			session.Stat(), perrors.WithStack(err))
 		return
 	}
-	if h.conn.pool.rpcClient.conf.SessionTimeoutD.Nanoseconds() < time.Since(session.GetActive()).Nanoseconds() {
+	if h.conn.pool.rpcClient.Conf.SessionTimeoutD.Nanoseconds() < time.Since(session.GetActive()).Nanoseconds() {
 		logger.Warnf("session{%s} timeout{%s}, reqNum{%d}",
 			session.Stat(), time.Since(session.GetActive()).String(), rpcSession.reqNum)
-		h.conn.removeSession(session) // -> h.conn.close() -> h.conn.pool.remove(h.conn)
+		h.conn.removeSession(session) // -> h.conn.close() -> h.conn.Pool.remove(h.conn)
 		return
 	}
 
@@ -158,20 +126,32 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 // RpcServerHandler
 // //////////////////////////////////////////
 
+type StubHandler interface {
+	OnPackage(session getty.Session, pkg *impl.DubboPackage)
+}
+
+type StubFunc func(session getty.Session, pkg *impl.DubboPackage)
+
+func (f StubFunc) OnPackage(session getty.Session, pkg *impl.DubboPackage) {
+	f(session, pkg)
+}
+
 // RpcServerHandler ...
 type RpcServerHandler struct {
 	maxSessionNum  int
 	sessionTimeout time.Duration
 	sessionMap     map[getty.Session]*rpcSession
 	rwlock         sync.RWMutex
+	stub           StubHandler
 }
 
 // NewRpcServerHandler ...
-func NewRpcServerHandler(maxSessionNum int, sessionTimeout time.Duration) *RpcServerHandler {
+func NewRpcServerHandler(stubHandler StubHandler, maxSessionNum int, sessionTimeout time.Duration) *RpcServerHandler {
 	return &RpcServerHandler{
 		maxSessionNum:  maxSessionNum,
 		sessionTimeout: sessionTimeout,
 		sessionMap:     make(map[getty.Session]*rpcSession),
+		stub:           stubHandler,
 	}
 }
 
@@ -261,45 +241,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 	}()
 
-	u := common.NewURLWithOptions(common.WithPath(p.GetService().Path), common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.GROUP_KEY, p.GetService().Group),
-		common.WithParamsValue(constant.INTERFACE_KEY, p.GetService().Interface),
-		common.WithParamsValue(constant.VERSION_KEY, p.GetService().Version))
-	exporter, _ := dubboProtocol.ExporterMap().Load(u.ServiceKey())
-	if exporter == nil {
-		err := fmt.Errorf("don't have this exporter, key: %s", u.ServiceKey())
-		logger.Errorf(err.Error())
-		p.SetResponseStatus(impl.Response_OK)
-		p.SetBody(err)
-		h.reply(session, p, impl.PackageResponse)
-		return
-	}
-	invoker := exporter.(protocol.Exporter).GetInvoker()
-	if invoker != nil {
-		attachments := p.GetBody().(map[string]interface{})["attachments"].(map[string]string)
-		attachments[constant.LOCAL_ADDR] = session.LocalAddr()
-		attachments[constant.REMOTE_ADDR] = session.RemoteAddr()
-
-		args := p.GetBody().(map[string]interface{})["args"].([]interface{})
-		inv := invocation.NewRPCInvocation(p.GetService().Method, args, attachments)
-
-		ctx := rebuildCtx(inv)
-		result := invoker.Invoke(ctx, inv)
-		logger.Debugf("invoker result: %+v", result)
-		if err := result.Error(); err != nil {
-			p.SetResponseStatus(impl.Response_OK)
-			p.SetBody(&impl.ResponsePayload{nil, err, result.Attachments()})
-		} else {
-			res := result.Result()
-			p.SetResponseStatus(impl.Response_OK)
-			p.SetBody(&impl.ResponsePayload{res, nil, result.Attachments()})
-			//logger.Debugf("service return response %v", res)
-		}
-	}
-
-	if !twoway {
-		return
-	}
+	h.stub.OnPackage(session, p)
 	h.reply(session, p, impl.PackageResponse)
 }
 
@@ -329,21 +271,6 @@ func (h *RpcServerHandler) OnCron(session getty.Session) {
 	}
 }
 
-// rebuildCtx rebuild the context by attachment.
-// Once we decided to transfer more context's key-value, we should change this.
-// now we only support rebuild the tracing context
-func rebuildCtx(inv *invocation.RPCInvocation) context.Context {
-	ctx := context.Background()
-
-	// actually, if user do not use any opentracing framework, the err will not be nil.
-	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.TextMap,
-		opentracing.TextMapCarrier(inv.Attachments()))
-	if err == nil {
-		ctx = context.WithValue(ctx, constant.TRACING_REMOTE_SPAN_CTX, spanCtx)
-	}
-	return ctx
-}
-
 func (h *RpcServerHandler) reply(session getty.Session, req *impl.DubboPackage, tp impl.PackageType) {
 	header := impl.DubboHeader{
 		SerialID:       req.GetHeader().SerialID,
@@ -353,8 +280,8 @@ func (h *RpcServerHandler) reply(session getty.Session, req *impl.DubboPackage, 
 		ResponseStatus: req.GetHeader().ResponseStatus,
 	}
 	resp := NewServerResponsePackage(header)
-	if err := loadSerializer(resp); err != nil {
-		logger.Errorf("reply error %v", err)
+	if err := impl.LoadSerializer(resp); err != nil {
+		logger.Errorf("Reply error %v", err)
 		return
 	}
 

@@ -15,25 +15,20 @@
  * limitations under the License.
  */
 
-package dubbo
+// TODO: zero.xu readwrite 中将client/server handler 分开
+package remoting
 
 import (
 	"bufio"
 	"bytes"
-	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 	"reflect"
-)
 
-import (
-	"github.com/apache/dubbo-go-hessian2"
+	hessian "github.com/apache/dubbo-go-hessian2"
+	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 	"github.com/dubbogo/getty"
-	perrors "github.com/pkg/errors"
-)
 
-import (
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	perrors "github.com/pkg/errors"
 )
 
 ////////////////////////////////////////////
@@ -62,7 +57,7 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 		return pkg, pkg.GetLen(), nil
 	}
 
-	if err := loadSerializer(pkg); err != nil {
+	if err := impl.LoadSerializer(pkg); err != nil {
 		return nil, 0, err
 	}
 
@@ -92,21 +87,6 @@ func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg interface{}) ([]by
 	}
 	return buf.Bytes(), nil
 }
-
-func loadSerializer(p *impl.DubboPackage) error {
-	// NOTE: default serialID is S_Hessian
-	serialID := p.Header.SerialID
-	if serialID == 0 {
-		serialID = constant.S_Hessian2
-	}
-	serializer, err := extension.GetSerializerById(serialID)
-	if err != nil {
-		return err
-	}
-	p.SetSerializer(serializer.(impl.Serializer))
-	return nil
-}
-
 
 // server side receive request package, just for deserialization
 func NewServerRequestPackage(data []byte) *impl.DubboPackage {

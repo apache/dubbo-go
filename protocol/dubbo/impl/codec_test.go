@@ -20,17 +20,11 @@ package impl
 import (
 	"testing"
 	"time"
-)
 
-import (
-	hessian "github.com/apache/dubbo-go-hessian2"
-	"github.com/golang/protobuf/proto"
-	perrors "github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/golang/protobuf/proto"
+	"github.com/stretchr/testify/assert"
+
 	pb "github.com/apache/dubbo-go/protocol/dubbo/impl/proto"
 )
 
@@ -196,10 +190,4 @@ func TestDubboCodec_Protobuf_Serialization_Response(t *testing.T) {
 		assert.Equal(t, "test", resAttachment["k1"])
 	}
 
-}
-
-func TestIssue380(t *testing.T) {
-	pkg := &DubboPackage{}
-	err := pkg.Unmarshal()
-	assert.True(t, perrors.Cause(err) == hessian.ErrHeaderNotEnough)
 }

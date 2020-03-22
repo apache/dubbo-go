@@ -19,10 +19,9 @@ package remoting
 
 import (
 	"time"
-)
 
-import (
 	"github.com/dubbogo/getty"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -62,6 +61,9 @@ type (
 
 		// session tcp parameters
 		GettySessionParam GettySessionParam `required:"true" yaml:"getty_session_param" json:"getty_session_param,omitempty"`
+
+		// serialization
+		Serialization string `default:"hessian2" yaml:"serialization" json:"serialization"`
 	}
 
 	// ClientConfig
@@ -69,7 +71,7 @@ type (
 	ClientConfig struct {
 		ReconnectInterval int `default:"0" yaml:"reconnect_interval" json:"reconnect_interval,omitempty"`
 
-		// session pool
+		// session Pool
 		ConnectionNum int `default:"16" yaml:"connection_number" json:"connection_number,omitempty"`
 
 		// heartbeat
@@ -134,6 +136,7 @@ func GetDefaultServerConfig() ServerConfig {
 		GrPoolSize:     120,
 		QueueNumber:    6,
 		QueueLen:       64,
+		Serialization:  "hessian2",
 		GettySessionParam: GettySessionParam{
 			CompressEncoding: false,
 			TcpNoDelay:       true,

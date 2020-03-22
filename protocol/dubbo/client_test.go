@@ -1,18 +1,18 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+* Licensed to the Apache Software Foundation (ASF) under one or more
+* contributor license agreements.  See the NOTICE file distributed with
+* this work for additional information regarding copyright ownership.
+* The ASF licenses this file to You under the Apache License, Version 2.0
+* (the "License"); you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
  */
 
 package dubbo
@@ -20,39 +20,35 @@ package dubbo
 import (
 	"bytes"
 	"context"
-	"github.com/apache/dubbo-go/protocol/dubbo/impl/remoting"
 	"sync"
 	"testing"
 	"time"
-)
 
-import (
 	hessian "github.com/apache/dubbo-go-hessian2"
-	perrors "github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
-)
 
-import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/dubbo/impl/remoting"
+	perrors "github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestClient_CallOneway(t *testing.T) {
 	proto, url := InitTest(t)
 
-	c := &Client{
-		pendingResponses: new(sync.Map),
-		conf:             *clientConf,
-		opts: Options{
+	c := &remoting.Client{
+		PendingResponses: new(sync.Map),
+		Conf:             *remoting.GetClientConf(),
+		Opts: remoting.Options{
 			ConnectTimeout: 3e9,
 			RequestTimeout: 6e9,
 		},
 	}
-	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
+	c.Pool = remoting.NewGettyRPCClientConnPool(c, remoting.GetClientConf().PoolSize, time.Duration(int(time.Second)*remoting.GetClientConf().PoolTTL))
 
 	//user := &User{}
-	err := c.CallOneway(NewRequest("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"}, nil))
+	err := c.CallOneway(remoting.NewRequest("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"}, nil))
 	assert.NoError(t, err)
 
 	// destroy
@@ -62,15 +58,15 @@ func TestClient_CallOneway(t *testing.T) {
 func TestClient_Call(t *testing.T) {
 	proto, url := InitTest(t)
 
-	c := &Client{
-		pendingResponses: new(sync.Map),
-		conf:             *clientConf,
-		opts: Options{
+	c := &remoting.Client{
+		PendingResponses: new(sync.Map),
+		Conf:             *remoting.GetClientConf(),
+		Opts: remoting.Options{
 			ConnectTimeout: 3e9,
 			RequestTimeout: 10e9,
 		},
 	}
-	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
+	c.Pool = remoting.NewGettyRPCClientConnPool(c, remoting.GetClientConf().PoolSize, time.Duration(int(time.Second)*remoting.GetClientConf().PoolTTL))
 
 	var (
 		user *User
@@ -78,50 +74,50 @@ func TestClient_Call(t *testing.T) {
 	)
 
 	user = &User{}
-	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetBigPkg", []interface{}{nil}, nil), NewResponse(user, nil))
+	err = c.Call(remoting.NewRequest("127.0.0.1:20000", url, "GetBigPkg", []interface{}{nil}, nil), remoting.NewResponse(user, nil))
 	assert.NoError(t, err)
 	assert.NotEqual(t, "", user.Id)
 	assert.NotEqual(t, "", user.Name)
 
 	user = &User{}
-	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"}, nil), NewResponse(user, nil))
+	err = c.Call(remoting.NewRequest("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"}, nil), remoting.NewResponse(user, nil))
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "1", Name: "username"}, *user)
 
 	user = &User{}
-	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser0", []interface{}{"1", nil, "username"}, nil), NewResponse(user, nil))
+	err = c.Call(remoting.NewRequest("127.0.0.1:20000", url, "GetUser0", []interface{}{"1", nil, "username"}, nil), remoting.NewResponse(user, nil))
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "1", Name: "username"}, *user)
 
-	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser1", []interface{}{}, nil), NewResponse(user, nil))
+	err = c.Call(remoting.NewRequest("127.0.0.1:20000", url, "GetUser1", []interface{}{}, nil), remoting.NewResponse(user, nil))
 	assert.NoError(t, err)
 
-	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser2", []interface{}{}, nil), NewResponse(user, nil))
+	err = c.Call(remoting.NewRequest("127.0.0.1:20000", url, "GetUser2", []interface{}{}, nil), remoting.NewResponse(user, nil))
 	assert.EqualError(t, err, "error")
 
 	user2 := []interface{}{}
-	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser3", []interface{}{}, nil), NewResponse(&user2, nil))
+	err = c.Call(remoting.NewRequest("127.0.0.1:20000", url, "GetUser3", []interface{}{}, nil), remoting.NewResponse(&user2, nil))
 	assert.NoError(t, err)
 	assert.Equal(t, &User{Id: "1", Name: "username"}, user2[0])
 
 	user2 = []interface{}{}
-	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser4", []interface{}{[]interface{}{"1", "username"}}, nil), NewResponse(&user2, nil))
+	err = c.Call(remoting.NewRequest("127.0.0.1:20000", url, "GetUser4", []interface{}{[]interface{}{"1", "username"}}, nil), remoting.NewResponse(&user2, nil))
 	assert.NoError(t, err)
 	assert.Equal(t, &User{Id: "1", Name: "username"}, user2[0])
 
 	user3 := map[interface{}]interface{}{}
-	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser5", []interface{}{map[interface{}]interface{}{"id": "1", "name": "username"}}, nil), NewResponse(&user3, nil))
+	err = c.Call(remoting.NewRequest("127.0.0.1:20000", url, "GetUser5", []interface{}{map[interface{}]interface{}{"id": "1", "name": "username"}}, nil), remoting.NewResponse(&user3, nil))
 	assert.NoError(t, err)
 	assert.NotNil(t, user3)
 	assert.Equal(t, &User{Id: "1", Name: "username"}, user3["key"])
 
 	user = &User{}
-	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser6", []interface{}{0}, nil), NewResponse(user, nil))
+	err = c.Call(remoting.NewRequest("127.0.0.1:20000", url, "GetUser6", []interface{}{0}, nil), remoting.NewResponse(user, nil))
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "", Name: ""}, *user)
 
 	user = &User{}
-	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser6", []interface{}{1}, nil), NewResponse(user, nil))
+	err = c.Call(remoting.NewRequest("127.0.0.1:20000", url, "GetUser6", []interface{}{1}, nil), remoting.NewResponse(user, nil))
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "1", Name: ""}, *user)
 
@@ -132,24 +128,24 @@ func TestClient_Call(t *testing.T) {
 func TestClient_AsyncCall(t *testing.T) {
 	proto, url := InitTest(t)
 
-	c := &Client{
-		pendingResponses: new(sync.Map),
-		conf:             *clientConf,
-		opts: Options{
+	c := &remoting.Client{
+		PendingResponses: new(sync.Map),
+		Conf:             *remoting.GetClientConf(),
+		Opts: remoting.Options{
 			ConnectTimeout: 3e9,
 			RequestTimeout: 6e9,
 		},
 	}
-	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
+	c.Pool = remoting.NewGettyRPCClientConnPool(c, remoting.GetClientConf().PoolSize, time.Duration(int(time.Second)*remoting.GetClientConf().PoolTTL))
 
 	user := &User{}
 	lock := sync.Mutex{}
 	lock.Lock()
-	err := c.AsyncCall(NewRequest("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"}, nil), func(response common.CallbackResponse) {
-		r := response.(AsyncCallbackResponse)
-		assert.Equal(t, User{Id: "1", Name: "username"}, *r.Reply.(*Response).reply.(*User))
+	err := c.AsyncCall(remoting.NewRequest("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"}, nil), func(response common.CallbackResponse) {
+		r := response.(remoting.AsyncCallbackResponse)
+		assert.Equal(t, User{Id: "1", Name: "username"}, *r.Reply.(*remoting.Response).Reply.(*User))
 		lock.Unlock()
-	}, NewResponse(user, nil))
+	}, remoting.NewResponse(user, nil))
 	assert.NoError(t, err)
 	assert.Equal(t, User{}, *user)
 
@@ -168,7 +164,7 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 	assert.Equal(t, "GetBigPkg,GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4,GetUser5,GetUser6", methods)
 
 	// config
-	SetClientConf(remoting.ClientConfig{
+	remoting.SetClientConf(remoting.ClientConfig{
 		ConnectionNum:   2,
 		HeartbeatPeriod: "5s",
 		SessionTimeout:  "20s",
@@ -189,8 +185,8 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 			SessionName:      "client",
 		},
 	})
-	assert.NoError(t, clientConf.CheckValidity())
-	SetServerConfig(remoting.ServerConfig{
+	assert.NoError(t, remoting.GetClientConf().CheckValidity())
+	remoting.SetServerConfig(remoting.ServerConfig{
 		SessionNumber:  700,
 		SessionTimeout: "20s",
 		GettySessionParam: remoting.GettySessionParam{
@@ -207,7 +203,7 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 			MaxMsgLen:        10240000000,
 			SessionName:      "server",
 		}})
-	assert.NoError(t, srvConf.CheckValidity())
+	assert.NoError(t, remoting.GetServerConfig().CheckValidity())
 
 	// Export
 	proto := GetProtocol()

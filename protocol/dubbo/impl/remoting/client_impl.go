@@ -1,28 +1,58 @@
-package dubbo
+package remoting
 
 import (
-	"bufio"
-	"bytes"
 	"math/rand"
 	"strings"
 	"sync"
 	"time"
-)
 
-import (
-	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/dubbogo/getty"
-	perrors "github.com/pkg/errors"
-	"go.uber.org/atomic"
-)
+	gxsync "github.com/dubbogo/gost/sync"
 
-import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol/dubbo/impl"
-	"github.com/apache/dubbo-go/protocol/dubbo/impl/remoting"
+	perrors "github.com/pkg/errors"
+	"go.uber.org/atomic"
 )
+
+var (
+	errInvalidCodecType  = perrors.New("illegal CodecType")
+	errInvalidAddress    = perrors.New("remote address invalid or empty")
+	errSessionNotExist   = perrors.New("session not exist")
+	errClientClosed      = perrors.New("client closed")
+	errClientReadTimeout = perrors.New("client read timeout")
+)
+
+// TODO: 需要移动到 业务的实现
+var (
+	clientConf   *ClientConfig
+	clientGrpool *gxsync.TaskPool
+)
+
+// SetClientConf ...
+func SetClientConf(c ClientConfig) {
+	clientConf = &c
+	err := clientConf.CheckValidity()
+	if err != nil {
+		logger.Warnf("[ClientConfig CheckValidity] error: %v", err)
+		return
+	}
+	setClientGrpool()
+}
+
+// GetClientConf ...
+func GetClientConf() *ClientConfig {
+	return clientConf
+}
+
+func setClientGrpool() {
+	if clientConf.GrPoolSize > 1 {
+		clientGrpool = gxsync.NewTaskPool(gxsync.WithTaskPoolTaskPoolSize(clientConf.GrPoolSize), gxsync.WithTaskPoolTaskQueueLength(clientConf.QueueLen),
+			gxsync.WithTaskPoolTaskQueueNumber(clientConf.QueueNumber))
+	}
+}
 
 // Options ...
 type Options struct {
@@ -44,17 +74,17 @@ type AsyncCallbackResponse struct {
 
 // Client ...
 type Client struct {
-	opts     Options
-	conf     remoting.ClientConfig
-	pool     *gettyRPCClientPool
-	sequence atomic.Uint64
+	Opts     Options
+	Conf     ClientConfig
+	Pool     *gettyRPCClientPool
+	Sequence atomic.Uint64
 
-	pendingResponses *sync.Map
+	PendingResponses *sync.Map
 	codec            impl.DubboCodec
 }
 
 // NewClient ...
-func NewClient(clientConf *remoting.ClientConfig, opt Options) *Client {
+func NewClient(opt Options) *Client {
 
 	switch {
 	case opt.ConnectTimeout == 0:
@@ -64,20 +94,20 @@ func NewClient(clientConf *remoting.ClientConfig, opt Options) *Client {
 		opt.RequestTimeout = 3 * time.Second
 	}
 
-	// make sure that client request sequence is an odd number
+	// make sure that client request Sequence is an odd number
 	initSequence := uint64(rand.Int63n(time.Now().UnixNano()))
 	if initSequence%2 == 0 {
 		initSequence++
 	}
 
 	c := &Client{
-		opts:             opt,
-		pendingResponses: new(sync.Map),
-		conf:             *clientConf,
+		Opts:             opt,
+		PendingResponses: new(sync.Map),
+		Conf:             *clientConf,
 		codec:            impl.DubboCodec{},
 	}
-	c.sequence.Store(initSequence)
-	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
+	c.Sequence.Store(initSequence)
+	c.Pool = NewGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
 
 	return c
 }
@@ -108,15 +138,15 @@ func NewRequest(addr string, svcUrl common.URL, method string, args interface{},
 
 // Response ...
 type Response struct {
-	reply interface{}
-	atta  map[string]string
+	Reply interface{}
+	Atta  map[string]string
 }
 
 // NewResponse ...
 func NewResponse(reply interface{}, atta map[string]string) *Response {
 	return &Response{
-		reply: reply,
-		atta:  atta,
+		Reply: reply,
+		Atta:  atta,
 	}
 }
 
@@ -130,7 +160,7 @@ func (c *Client) CallOneway(request *Request) error {
 func (c *Client) Call(request *Request, response *Response) error {
 
 	ct := impl.CT_TwoWay
-	if response.reply == nil {
+	if response.Reply == nil {
 		ct = impl.CT_OneWay
 	}
 
@@ -158,7 +188,7 @@ func (c *Client) call(ct impl.CallType, request *Request, response *Response, ca
 	}
 	defer func() {
 		if err == nil {
-			c.pool.put(conn)
+			c.Pool.put(conn)
 			return
 		}
 		conn.close()
@@ -172,7 +202,7 @@ func (c *Client) call(ct impl.CallType, request *Request, response *Response, ca
 	svc.Version = request.svcUrl.GetParam(constant.VERSION_KEY, "")
 	svc.Group = request.svcUrl.GetParam(constant.GROUP_KEY, "")
 	svc.Method = request.method
-	svc.Timeout = c.opts.RequestTimeout
+	svc.Timeout = c.Opts.RequestTimeout
 	var timeout = request.svcUrl.GetParam(strings.Join([]string{constant.METHOD_KEYS, request.method + constant.RETRIES_KEY}, "."), "")
 	if len(timeout) != 0 {
 		if t, err := time.ParseDuration(timeout); err == nil {
@@ -181,7 +211,7 @@ func (c *Client) call(ct impl.CallType, request *Request, response *Response, ca
 	}
 	p := NewClientRequestPackage(header, svc)
 
-	serialization := request.svcUrl.GetParam(constant.SERIALIZATION_KEY, c.conf.Serialization)
+	serialization := request.svcUrl.GetParam(constant.SERIALIZATION_KEY, c.Conf.Serialization)
 	if serialization == constant.HESSIAN2_SERIALIZATION {
 		p.Header.SerialID = constant.S_Hessian2
 	} else if serialization == constant.PROTOBUF_SERIALIZATION {
@@ -189,7 +219,7 @@ func (c *Client) call(ct impl.CallType, request *Request, response *Response, ca
 	}
 	p.SetBody(impl.NewRequestPayload(request.args, request.atta))
 
-	if err := loadSerializer(p); err != nil {
+	if err := impl.LoadSerializer(p); err != nil {
 		return err
 	}
 
@@ -210,7 +240,7 @@ func (c *Client) call(ct impl.CallType, request *Request, response *Response, ca
 	}
 
 	select {
-	case <-getty.GetTimeWheel().After(c.opts.RequestTimeout):
+	case <-getty.GetTimeWheel().After(c.Opts.RequestTimeout):
 		c.removePendingResponse(impl.SequenceType(rsp.seq))
 		return perrors.WithStack(errClientReadTimeout)
 	case <-rsp.done:
@@ -222,14 +252,14 @@ func (c *Client) call(ct impl.CallType, request *Request, response *Response, ca
 
 // Close ...
 func (c *Client) Close() {
-	if c.pool != nil {
-		c.pool.close()
+	if c.Pool != nil {
+		c.Pool.close()
 	}
-	c.pool = nil
+	c.Pool = nil
 }
 
 func (c *Client) selectSession(addr string) (*gettyRPCClient, getty.Session, error) {
-	rpcClient, err := c.pool.getGettyRpcClient(DUBBO, addr)
+	rpcClient, err := c.Pool.getGettyRpcClient(impl.DUBBO, addr)
 	if err != nil {
 		return nil, nil, perrors.WithStack(err)
 	}
@@ -248,7 +278,7 @@ func (c *Client) transfer(session getty.Session, pkg *impl.DubboPackage,
 		err      error
 	)
 
-	sequence = c.sequence.Add(1)
+	sequence = c.Sequence.Add(1)
 
 	if pkg == nil {
 		// make heartbeat package
@@ -261,7 +291,7 @@ func (c *Client) transfer(session getty.Session, pkg *impl.DubboPackage,
 		reqPayload := impl.NewRequestPayload([]interface{}{}, nil)
 		pkg.SetBody(reqPayload)
 		// set serializer
-		if err := loadSerializer(pkg); err != nil {
+		if err := impl.LoadSerializer(pkg); err != nil {
 			return err
 		}
 	}
@@ -273,7 +303,7 @@ func (c *Client) transfer(session getty.Session, pkg *impl.DubboPackage,
 		c.addPendingResponse(rsp)
 	}
 
-	err = session.WritePkg(pkg, c.opts.RequestTimeout)
+	err = session.WritePkg(pkg, c.Opts.RequestTimeout)
 	if err != nil {
 		c.removePendingResponse(impl.SequenceType(rsp.seq))
 	} else if rsp != nil { // cond2
@@ -286,15 +316,15 @@ func (c *Client) transfer(session getty.Session, pkg *impl.DubboPackage,
 }
 
 func (c *Client) addPendingResponse(pr *PendingResponse) {
-	c.pendingResponses.Store(impl.SequenceType(pr.seq), pr)
+	c.PendingResponses.Store(impl.SequenceType(pr.seq), pr)
 }
 
 func (c *Client) removePendingResponse(seq impl.SequenceType) *PendingResponse {
-	if c.pendingResponses == nil {
+	if c.PendingResponses == nil {
 		return nil
 	}
-	if presp, ok := c.pendingResponses.Load(seq); ok {
-		c.pendingResponses.Delete(seq)
+	if presp, ok := c.PendingResponses.Load(seq); ok {
+		c.PendingResponses.Delete(seq)
 		return presp.(*PendingResponse)
 	}
 	return nil
@@ -338,79 +368,5 @@ func NewClientRequestPackage(header impl.DubboHeader, svc impl.Service) *impl.Du
 		Body:    nil,
 		Err:     nil,
 		Codec:   impl.NewDubboCodec(nil),
-	}
-}
-
-////////////////////////////////////////////
-// RpcClientPackageHandler
-////////////////////////////////////////////
-
-// RpcClientPackageHandler ...
-type RpcClientPackageHandler struct {
-	client *Client
-}
-
-// NewRpcClientPackageHandler ...
-func NewRpcClientPackageHandler(client *Client) *RpcClientPackageHandler {
-	return &RpcClientPackageHandler{client: client}
-}
-
-func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
-	pkg := NewClientResponsePackage(data)
-	if err := pkg.ReadHeader(); err != nil {
-		originErr := perrors.Cause(err)
-		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
-			return nil, 0, nil
-		}
-		logger.Errorf("[RpcClientPackageHandler.Read] ss:%+v, len(@data):%d) = error:%+v ", ss, len(data), err)
-		return nil, 0, perrors.WithStack(err)
-	}
-	if pkg.IsHeartBeat() {
-		// heartbeat package doesn't need deserialize
-		return pkg, pkg.GetLen(), nil
-	}
-
-	if err := loadSerializer(pkg); err != nil {
-		return nil, 0, err
-	}
-
-	// load response
-	pendingRsp, ok := p.client.pendingResponses.Load(impl.SequenceType(pkg.GetHeader().ID))
-	if !ok {
-		return nil, 0, perrors.Errorf("client.GetPendingResopnse(%v) = nil", pkg.GetHeader().ID)
-	}
-	// set package body
-	body := impl.NewResponsePayload(pendingRsp.(*PendingResponse).response.reply, nil, nil)
-	pkg.SetBody(body)
-	err := pkg.Unmarshal()
-	if err != nil {
-		return nil, 0, perrors.WithStack(err)
-	}
-	resp := pkg.Body.(*impl.ResponsePayload)
-	pkg.Err = resp.Exception
-	pkg.Body = NewResponse(resp.RspObj, resp.Attachments)
-	return pkg, pkg.GetLen(), nil
-}
-
-func (p *RpcClientPackageHandler) Write(ss getty.Session, pkg interface{}) ([]byte, error) {
-	req, ok := pkg.(*impl.DubboPackage)
-	if !ok {
-		return nil, perrors.New("invalid rpc request")
-	}
-	buf, err := req.Marshal()
-	if err != nil {
-		logger.Warnf("binary.Write(req{%#v}) = err{%#v}", req, perrors.WithStack(err))
-		return nil, perrors.WithStack(err)
-	}
-	return buf.Bytes(), nil
-}
-
-func NewClientResponsePackage(data []byte) *impl.DubboPackage {
-	return &impl.DubboPackage{
-		Header:  impl.DubboHeader{},
-		Service: impl.Service{},
-		Body:    &impl.ResponsePayload{},
-		Err:     nil,
-		Codec:   impl.NewDubboCodec(bufio.NewReaderSize(bytes.NewBuffer(data), len(data))),
 	}
 }

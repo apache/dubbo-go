@@ -18,31 +18,13 @@
 package dubbo
 
 import (
-	"github.com/apache/dubbo-go/protocol/dubbo/impl/remoting"
 	"math/rand"
 	"time"
-)
 
-import (
-	gxsync "github.com/dubbogo/gost/sync"
-	perrors "github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
-)
-
-import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
-)
-
-var (
-	errInvalidCodecType  = perrors.New("illegal CodecType")
-	errInvalidAddress    = perrors.New("remote address invalid or empty")
-	errSessionNotExist   = perrors.New("session not exist")
-	errClientClosed      = perrors.New("client closed")
-	errClientReadTimeout = perrors.New("client read timeout")
-
-	clientConf   *remoting.ClientConfig
-	clientGrpool *gxsync.TaskPool
+	"github.com/apache/dubbo-go/protocol/dubbo/impl/remoting"
+	"gopkg.in/yaml.v2"
 )
 
 func init() {
@@ -72,35 +54,12 @@ func init() {
 			panic(err)
 		}
 	}
-	clientConf = &defaultClientConfig
+	clientConf := &defaultClientConfig
 	if err := clientConf.CheckValidity(); err != nil {
 		logger.Warnf("[CheckValidity] error: %v", err)
 		return
 	}
-	setClientGrpool()
+	remoting.SetClientConf(*clientConf)
 
 	rand.Seed(time.Now().UnixNano())
-}
-
-// SetClientConf ...
-func SetClientConf(c remoting.ClientConfig) {
-	clientConf = &c
-	err := clientConf.CheckValidity()
-	if err != nil {
-		logger.Warnf("[ClientConfig CheckValidity] error: %v", err)
-		return
-	}
-	setClientGrpool()
-}
-
-// GetClientConf ...
-func GetClientConf() remoting.ClientConfig {
-	return *clientConf
-}
-
-func setClientGrpool() {
-	if clientConf.GrPoolSize > 1 {
-		clientGrpool = gxsync.NewTaskPool(gxsync.WithTaskPoolTaskPoolSize(clientConf.GrPoolSize), gxsync.WithTaskPoolTaskQueueLength(clientConf.QueueLen),
-			gxsync.WithTaskPoolTaskQueueNumber(clientConf.QueueNumber))
-	}
 }
