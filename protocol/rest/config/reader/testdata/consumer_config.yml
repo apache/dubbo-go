@@ -1,0 +1,74 @@
+# dubbo client yaml configure file
+
+filter: ""
+
+config_type:
+  rest: "rest"
+
+# client
+request_timeout : "100ms"
+# connect timeout
+connect_timeout : "100ms"
+check: true
+rest_server: "resty"
+rest_produces: "*/*"
+rest_consumes: "*/*"
+
+# application config
+application:
+  organization : "ikurento.com"
+  name  : "BDTService"
+  module : "dubbogo user-info client"
+  version : "0.0.1"
+  owner : "ZX"
+  environment : "dev"
+
+registries :
+
+  "hangzhouzk":
+    protocol: "zookeeper"
+    timeout	: "3s"
+    address: "127.0.0.1:2181"
+    username: ""
+    password: ""
+  "shanghaizk":
+    protocol: "zookeeper"
+    timeout	: "3s"
+    address: "127.0.0.1:2182"
+    username: ""
+    password: ""
+
+references:
+  "UserProvider":
+    registry: "hangzhouzk,shanghaizk"
+    filter: ""
+    protocol : "rest"
+    version: "1.0"
+    group: "as"
+    interface : "com.ikurento.user.UserProvider"
+    url: "dubbo://127.0.0.1:20000/UserProvider"
+    cluster: "failover"
+    timeout: "3s"
+    rest_client: "resty1"
+    rest_produces: "application/xml"
+    rest_consumes: "application/xml"
+    methods :
+      - name: "GetUser"
+        retries: "3"
+        timeout: "5s"
+        rest_query_params: "1:userid,2:username"
+        rest_headers: "3:age"
+        rest_path_params: "4:time,2:name"
+        rest_body: 0
+        rest_produces: "application/xml"
+        rest_consumes: "application/xml"
+
+    params:
+      "serviceid":
+        "soa.com.ikurento.user.UserProvider"
+      "forks": 5
+
+shutdown_conf:
+  timeout: 60s
+  step_timeout: 10s
+
