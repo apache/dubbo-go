@@ -44,7 +44,8 @@ import (
 )
 
 var (
-	regProtocol = newRegistryProtocol()
+	regProtocol *registryProtocol
+	once sync.Once
 )
 
 type registryProtocol struct {
@@ -348,6 +349,9 @@ func setProviderUrl(regURL *common.URL, providerURL *common.URL) {
 
 // GetProtocol ...
 func GetProtocol() protocol.Protocol {
+	once.Do(func() {
+		regProtocol = newRegistryProtocol()
+	})
 	return regProtocol
 }
 
