@@ -18,11 +18,8 @@
 package tag
 
 import (
-	"gopkg.in/yaml.v2"
-)
-
-import (
 	"github.com/apache/dubbo-go/cluster/router"
+	"github.com/apache/dubbo-go/common/yaml"
 )
 
 // RouterRule RouterRule config read from config file or config center
@@ -30,9 +27,9 @@ type RouterRule struct {
 	router.BaseRouterRule `yaml:",inline""`
 }
 
-func Parse(rawRule string) (*RouterRule, error) {
+func getRule(rawRule string) (*RouterRule, error) {
 	r := &RouterRule{}
-	err := yaml.Unmarshal([]byte(rawRule), r)
+	err := yaml.UnmarshalYML([]byte(rawRule), r)
 	if err != nil {
 		return r, err
 	}
