@@ -15,23 +15,42 @@
  * limitations under the License.
  */
 
-package metadata
+package service
+
+import (
+	"github.com/emirpasic/gods/sets"
+)
 
 import (
 	"github.com/apache/dubbo-go/common"
-	gxset "github.com/dubbogo/gost/container/set"
+	"github.com/apache/dubbo-go/config"
 )
 
+// Metadataservice is used to define meta data related behaviors
 type MetadataService interface {
 	ServiceName() string
-	ExportURL(url *common.URL) bool
-	UnexportURL(url *common.URL) bool
+	ExportURL(url common.URL) bool
+	UnexportURL(url common.URL) bool
 	RefreshMetadata(exportedRevision string, subscribedRevision string) bool
-	SubscribeURL(url *common.URL) bool
-	UnsubscribeURL(url *common.URL) bool
-	PublishServiceDefinition(url *common.URL)
+	SubscribeURL(url common.URL) bool
+	UnsubscribeURL(url common.URL) bool
+	PublishServiceDefinition(url common.URL)
 
-	GetExportedURLs(serviceInterface string, group string, version string, protocol string) gxset.HashSet
+	GetExportedURLs(serviceInterface string, group string, version string, protocol string) sets.Set
 	GetServiceDefinition(interfaceName string, version string, group string) string
 	GetServiceDefinitionByServiceKey(serviceKey string) string
+}
+
+// BaseMetadataService: is used for the common logic for struct who will implement interface MetadataService
+type BaseMetadataService struct {
+}
+
+// ServiceName: get the service's name in meta service , which is application name
+func (mts *BaseMetadataService) ServiceName() string {
+	return config.GetApplicationConfig().Name
+}
+
+// RefreshMetadata: used for event listener's calling, to refresh metadata
+func (mts *BaseMetadataService) RefreshMetadata(exportedRevision string, subscribedRevision string) bool {
+	return true
 }
