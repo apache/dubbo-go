@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParse(t *testing.T) {
+func TestGetRule(t *testing.T) {
 	testyml := `
 scope: application
 runtime: true
@@ -36,7 +36,7 @@ conditions:
     ip=127.0.0.1
     =>
     1.1.1.1`
-	rule, e := Parse(testyml)
+	rule, e := getRule(testyml)
 
 	assert.Nil(t, e)
 	assert.NotNil(t, rule)

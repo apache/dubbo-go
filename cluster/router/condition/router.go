@@ -27,7 +27,7 @@ import (
 )
 
 import (
-	matcher "github.com/apache/dubbo-go/cluster/router/match"
+	matcher "github.com/apache/dubbo-go/cluster/router/util"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
