@@ -20,6 +20,7 @@ package config
 import (
 	"context"
 	"fmt"
+	"github.com/apache/dubbo-go/protocol/dubbo/impl/remoting"
 	"net/url"
 	"strconv"
 	"strings"
@@ -194,7 +195,8 @@ func (c *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.GROUP_KEY, c.Group)
 	urlMap.Set(constant.VERSION_KEY, c.Version)
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
-	urlMap.Set(constant.SERIALIZATION_KEY, srvconfig.Serialization)
+	// todo: move
+	urlMap.Set(constant.SERIALIZATION_KEY, remoting.GetServerConfig().Serialization)
 	// application info
 	urlMap.Set(constant.APPLICATION_KEY, providerConfig.ApplicationConfig.Name)
 	urlMap.Set(constant.ORGANIZATION_KEY, providerConfig.ApplicationConfig.Organization)
