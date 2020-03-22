@@ -41,6 +41,7 @@ const (
 	LOCAL_ADDR             = "local-addr"
 	REMOTE_ADDR            = "remote-addr"
 	DUBBO_KEY              = "dubbo"
+	RELEASE_KEY            = "release"
 	ANYHOST_KEY            = "anyhost"
 )
 
