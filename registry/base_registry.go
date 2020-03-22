@@ -245,19 +245,13 @@ func (r *BaseRegistry) providerRegistry(c common.URL, params url.Values) (string
 		logger.Errorf("facadeBasedRegistry.CreatePath(path{%s}) = error{%#v}", dubboPath, perrors.WithStack(err))
 		return "", "", perrors.WithMessagef(err, "facadeBasedRegistry.CreatePath(path:%s)", dubboPath)
 	}
-	params.Add("anyhost", "true")
+	params.Add(constant.ANYHOST_KEY, "true")
 
 	// Dubbo java consumer to start looking for the provider url,because the category does not match,
 	// the provider will not find, causing the consumer can not start, so we use consumers.
-	// DubboRole               = [...]string{"consumer", "", "", "provider"}
-	// params.Add("category", (RoleType(PROVIDER)).Role())
-	params.Add("category", (common.RoleType(common.PROVIDER)).String())
-	params.Add("dubbo", "dubbo-provider-golang-"+constant.Version)
-
-	params.Add("side", (common.RoleType(common.PROVIDER)).Role())
 
 	if len(c.Methods) == 0 {
-		params.Add("methods", strings.Join(c.Methods, ","))
+		params.Add(constant.METHODS_KEY, strings.Join(c.Methods, ","))
 	}
 	logger.Debugf("provider url params:%#v", params)
 	var host string
@@ -308,9 +302,6 @@ func (r *BaseRegistry) consumerRegistry(c common.URL, params url.Values) (string
 	}
 
 	params.Add("protocol", c.Protocol)
-	params.Add("category", (common.RoleType(common.CONSUMER)).String())
-	params.Add("dubbo", "dubbogo-consumer-"+constant.Version)
-
 	rawURL = fmt.Sprintf("consumer://%s%s?%s", localIP, c.Path, params.Encode())
 	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), (common.RoleType(common.CONSUMER)).String())
 
