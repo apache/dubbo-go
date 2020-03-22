@@ -59,7 +59,6 @@ func (l *ZkEventListener) SetClient(client *ZookeeperClient) {
 
 // ListenServiceNodeEvent ...
 func (l *ZkEventListener) ListenServiceNodeEvent(zkPath string, listener ...remoting.DataListener) bool {
-	l.wg.Add(1)
 	defer l.wg.Done()
 	var zkEvent zk.Event
 	for {
@@ -145,6 +144,7 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 			continue
 		}
 		// listen l service node
+		l.wg.Add(1)
 		go func(node string, zkPath string, listener remoting.DataListener) {
 			logger.Infof("delete zkNode{%s}", node)
 			if l.ListenServiceNodeEvent(node, listener) {
@@ -174,7 +174,6 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 }
 
 func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataListener) {
-	l.wg.Add(1)
 	defer l.wg.Done()
 
 	var (
@@ -250,6 +249,7 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 				continue
 			}
 			logger.Infof("listen dubbo service key{%s}", dubboPath)
+			l.wg.Add(1)
 			go func(zkPath string, listener remoting.DataListener) {
 				if l.ListenServiceNodeEvent(zkPath) {
 					listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeDel})
@@ -261,6 +261,7 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 			//if zkPath is end of "providers/ & consumers/" we do not listen children dir
 			if strings.LastIndex(zkPath, constant.PROVIDER_CATEGORY) == -1 &&
 				strings.LastIndex(zkPath, constant.CONSUMER_CATEGORY) == -1 {
+				l.wg.Add(1)
 				go func(zkPath string, listener remoting.DataListener) {
 					l.listenDirEvent(zkPath, listener)
 					logger.Warnf("listenDirEvent(zkPath{%s}) goroutine exit now", zkPath)
@@ -292,6 +293,7 @@ func timeSecondDuration(sec int) time.Duration {
 //                            --------> ListenServiceNodeEvent
 func (l *ZkEventListener) ListenServiceEvent(zkPath string, listener remoting.DataListener) {
 	logger.Infof("listen dubbo path{%s}", zkPath)
+	l.wg.Add(1)
 	go func(zkPath string, listener remoting.DataListener) {
 		l.listenDirEvent(zkPath, listener)
 		logger.Warnf("listenDirEvent(zkPath{%s}) goroutine exit now", zkPath)

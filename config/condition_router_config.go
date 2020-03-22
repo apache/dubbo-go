@@ -25,12 +25,13 @@ import (
 	"github.com/apache/dubbo-go/cluster/directory"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/common/yaml"
 )
 
 //RouterInit Load config file to init router config
 func RouterInit(confRouterFile string) error {
 	fileRouterFactories := extension.GetFileRouterFactories()
-	bytes, err := loadYMLConfig(confRouterFile)
+	bytes, err := yaml.LoadYMLConfig(confRouterFile)
 	if err != nil {
 		return perrors.Errorf("ioutil.ReadFile(file:%s) = error:%v", confRouterFile, perrors.WithStack(err))
 	}
