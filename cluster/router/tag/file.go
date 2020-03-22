@@ -40,7 +40,6 @@ type FileTagRouter struct {
 	routerRule *RouterRule
 	url        *common.URL
 	force      bool
-	priority   int64
 }
 
 // NewFileTagRouter Create file tag router instance with content ( from config file)
@@ -72,7 +71,7 @@ func (f *FileTagRouter) URL() common.URL {
 
 // Priority Return Priority in listenable router
 func (f *FileTagRouter) Priority() int64 {
-	return f.priority
+	return f.router.priority
 }
 
 func (f *FileTagRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
