@@ -41,6 +41,7 @@ const (
 	LOCAL_ADDR             = "local-addr"
 	REMOTE_ADDR            = "remote-addr"
 	PATH_SEPARATOR         = "/"
+	DUBBO_KEY              = "dubbo"
 )
 
 const (
