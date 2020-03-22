@@ -40,7 +40,8 @@ const (
 	TOKEN_KEY              = "token"
 	LOCAL_ADDR             = "local-addr"
 	REMOTE_ADDR            = "remote-addr"
-	PATH_SEPARATOR         = "/"
+	DUBBO_KEY              = "dubbo"
+	ANYHOST_KEY            = "anyhost"
 )
 
 const (
