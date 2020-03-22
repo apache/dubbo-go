@@ -193,6 +193,10 @@ func (c *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.GROUP_KEY, c.Group)
 	urlMap.Set(constant.VERSION_KEY, c.Version)
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
+	urlMap.Set(constant.CATEGORY_KEY, (common.RoleType(common.PROVIDER)).String())
+	urlMap.Set(constant.DUBBO_KEY, "dubbo-provider-golang-"+constant.Version)
+	urlMap.Set(constant.SIDE_KEY, (common.RoleType(common.PROVIDER)).Role())
+
 	// application info
 	urlMap.Set(constant.APPLICATION_KEY, providerConfig.ApplicationConfig.Name)
 	urlMap.Set(constant.ORGANIZATION_KEY, providerConfig.ApplicationConfig.Organization)
