@@ -15,16 +15,15 @@
  * limitations under the License.
  */
 
-package metadata
+package exporter
 
 import (
 	"github.com/apache/dubbo-go/common"
 )
 
-var (
-	MetadataReportInstance MetadataReport
-)
-
-type MetadataReportFactory interface {
-	CreateMetadataReport(*common.URL) MetadataReport
+type MetadataExporter interface {
+	Export() MetadataExporter
+	Unexport() MetadataExporter
+	GetExportedURLs() []*common.URL
+	IsExported() bool
 }
