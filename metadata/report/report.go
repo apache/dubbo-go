@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package metadata
+package report
 
 import (
 	"github.com/apache/dubbo-go/common"
