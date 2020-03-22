@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package match
+package util
 
 import (
 	"strings"

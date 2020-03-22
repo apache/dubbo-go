@@ -45,7 +45,7 @@ type FileTagRouter struct {
 // NewFileTagRouter Create file tag router instance with content ( from config file)
 func NewFileTagRouter(content []byte) (*FileTagRouter, error) {
 	fileRouter := &FileTagRouter{}
-	rule, err := Parse(string(content))
+	rule, err := getRule(string(content))
 	if err != nil {
 		return nil, perrors.Errorf("yaml.Unmarshal() failed , error:%v", perrors.WithStack(err))
 	}

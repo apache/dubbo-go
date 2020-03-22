@@ -25,13 +25,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParse(t *testing.T) {
+func TestGetRule(t *testing.T) {
 	yml := `
 scope: application
 runtime: true
 force: true
 `
-	rule, e := Parse(yml)
+	rule, e := getRule(yml)
 	assert.Nil(t, e)
 	assert.NotNil(t, rule)
 	assert.Equal(t, true, rule.Force)
