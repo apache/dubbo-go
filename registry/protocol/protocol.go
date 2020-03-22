@@ -45,7 +45,7 @@ import (
 
 var (
 	regProtocol *registryProtocol
-	once sync.Once
+	once        sync.Once
 )
 
 type registryProtocol struct {
