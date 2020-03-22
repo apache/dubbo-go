@@ -19,9 +19,10 @@ package remoting
 
 import (
 	"time"
+)
 
+import (
 	"github.com/dubbogo/getty"
-
 	perrors "github.com/pkg/errors"
 )
 

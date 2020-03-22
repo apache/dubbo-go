@@ -3,11 +3,15 @@ package remoting
 import (
 	"fmt"
 	"net"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/dubbogo/getty"
+)
 
+import (
+	"github.com/dubbogo/getty"
 	gxsync "github.com/dubbogo/gost/sync"
 )
 

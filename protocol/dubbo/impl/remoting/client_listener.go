@@ -3,13 +3,17 @@ package remoting
 import (
 	"bufio"
 	"bytes"
+)
 
+import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/dubbogo/getty"
+	perrors "github.com/pkg/errors"
+)
 
+import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol/dubbo/impl"
-	perrors "github.com/pkg/errors"
 )
 
 ////////////////////////////////////////////

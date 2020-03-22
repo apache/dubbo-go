@@ -20,12 +20,17 @@ package remoting
 import (
 	"sync"
 	"time"
+)
 
-	"github.com/apache/dubbo-go/protocol/dubbo/impl"
+import (
+	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/dubbogo/getty"
-
-	"github.com/apache/dubbo-go/common/logger"
 	perrors "github.com/pkg/errors"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 )
 
 // todo: WritePkg_Timeout will entry *.yml

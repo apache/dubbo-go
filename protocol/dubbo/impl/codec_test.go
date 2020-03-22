@@ -20,11 +20,15 @@ package impl
 import (
 	"testing"
 	"time"
+)
 
-	"github.com/apache/dubbo-go/common/constant"
+import (
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
+)
 
+import (
+	"github.com/apache/dubbo-go/common/constant"
 	pb "github.com/apache/dubbo-go/protocol/dubbo/impl/proto"
 )
 

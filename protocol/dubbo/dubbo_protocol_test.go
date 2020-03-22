@@ -19,11 +19,16 @@ package dubbo
 
 import (
 	"testing"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/dubbo/impl/remoting"
+)
+
+import (
 	"github.com/stretchr/testify/assert"
 )
 

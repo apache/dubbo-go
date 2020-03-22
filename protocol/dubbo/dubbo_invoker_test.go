@@ -22,13 +22,18 @@ import (
 	"sync"
 	"testing"
 	"time"
+)
 
+import (
+	"github.com/opentracing/opentracing-go"
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol/dubbo/impl/remoting"
 	"github.com/apache/dubbo-go/protocol/invocation"
-	"github.com/opentracing/opentracing-go"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestDubboInvoker_Invoke(t *testing.T) {

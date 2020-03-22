@@ -19,16 +19,21 @@ package remoting
 
 import (
 	"fmt"
+
 	"math/rand"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
+)
 
+import (
 	"github.com/dubbogo/getty"
-
-	"github.com/apache/dubbo-go/common/logger"
 	perrors "github.com/pkg/errors"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/logger"
 )
 
 var (

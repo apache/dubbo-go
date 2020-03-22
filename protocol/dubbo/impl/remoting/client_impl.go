@@ -5,16 +5,20 @@ import (
 	"strings"
 	"sync"
 	"time"
+)
 
+import (
 	"github.com/dubbogo/getty"
 	gxsync "github.com/dubbogo/gost/sync"
+	perrors "github.com/pkg/errors"
+	"go.uber.org/atomic"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol/dubbo/impl"
-	perrors "github.com/pkg/errors"
-	"go.uber.org/atomic"
 )
 
 var (

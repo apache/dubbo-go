@@ -23,15 +23,19 @@ import (
 	"sync"
 	"testing"
 	"time"
+)
 
+import (
 	hessian "github.com/apache/dubbo-go-hessian2"
+	perrors "github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/dubbo/impl/remoting"
-	perrors "github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestClient_CallOneway(t *testing.T) {

@@ -20,11 +20,16 @@ package dubbo
 import (
 	"math/rand"
 	"time"
+)
 
+import (
+	"gopkg.in/yaml.v2"
+)
+
+import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol/dubbo/impl/remoting"
-	"gopkg.in/yaml.v2"
 )
 
 func init() {

@@ -23,16 +23,19 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+)
 
-	"github.com/apache/dubbo-go/protocol/dubbo/impl/remoting"
+import (
 	"github.com/opentracing/opentracing-go"
+	perrors "github.com/pkg/errors"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
-	perrors "github.com/pkg/errors"
-
+	"github.com/apache/dubbo-go/protocol/dubbo/impl/remoting"
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 )
 

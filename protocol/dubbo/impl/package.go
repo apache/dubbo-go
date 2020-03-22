@@ -22,7 +22,9 @@ import (
 	"bytes"
 	"fmt"
 	"time"
+)
 
+import (
 	"github.com/pkg/errors"
 )
 

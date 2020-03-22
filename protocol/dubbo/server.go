@@ -21,7 +21,13 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+)
+import (
+	"github.com/opentracing/opentracing-go"
+	"gopkg.in/yaml.v2"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
@@ -31,8 +37,6 @@ import (
 	"github.com/apache/dubbo-go/protocol/dubbo/impl/remoting"
 	"github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/dubbogo/getty"
-	"github.com/opentracing/opentracing-go"
-	"gopkg.in/yaml.v2"
 )
 
 func init() {

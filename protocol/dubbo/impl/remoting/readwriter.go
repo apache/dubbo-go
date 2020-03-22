@@ -22,13 +22,17 @@ import (
 	"bufio"
 	"bytes"
 	"reflect"
+)
 
+import (
 	hessian "github.com/apache/dubbo-go-hessian2"
-	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 	"github.com/dubbogo/getty"
-
-	"github.com/apache/dubbo-go/common/logger"
 	perrors "github.com/pkg/errors"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 )
 
 ////////////////////////////////////////////
