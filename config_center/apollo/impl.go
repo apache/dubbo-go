@@ -25,7 +25,7 @@ import (
 )
 
 import (
-	"github.com/pkg/errors"
+	perrors "github.com/pkg/errors"
 	"github.com/zouyx/agollo"
 )
 
@@ -119,7 +119,7 @@ func getNamespaceName(namespace string, configFileFormat agollo.ConfigFileFormat
 func (c *apolloConfiguration) GetInternalProperty(key string, opts ...cc.Option) (string, error) {
 	config := agollo.GetConfig(c.appConf.NamespaceName)
 	if config == nil {
-		return "", errors.New(fmt.Sprintf("nothing in namespace:%s ", key))
+		return "", perrors.New(fmt.Sprintf("nothing in namespace:%s ", key))
 	}
 	return config.GetStringValue(key, ""), nil
 }
@@ -130,7 +130,7 @@ func (c *apolloConfiguration) GetRule(key string, opts ...cc.Option) (string, er
 
 // PublishConfig will publish the config with the (key, group, value) pair
 func (c *apolloConfiguration) PublishConfig(string, string, string) error {
-	return errors.New("unsupport operation")
+	return perrors.New("unsupport operation")
 }
 
 func (c *apolloConfiguration) GetProperties(key string, opts ...cc.Option) (string, error) {
@@ -140,7 +140,7 @@ func (c *apolloConfiguration) GetProperties(key string, opts ...cc.Option) (stri
 	 */
 	config := agollo.GetConfig(key)
 	if config == nil {
-		return "", errors.New(fmt.Sprintf("nothing in namespace:%s ", key))
+		return "", perrors.New(fmt.Sprintf("nothing in namespace:%s ", key))
 	}
 	return config.GetContent(agollo.Properties), nil
 }
