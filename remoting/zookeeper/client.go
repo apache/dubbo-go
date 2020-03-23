@@ -399,7 +399,7 @@ func (z *ZookeeperClient) Create(basePath string) error {
 	return z.CreateWithValue(basePath, []byte(""))
 }
 
-// Create will create the node recursively, which means that if the parent node is absent,
+// CreateWithValue will create the node recursively, which means that if the parent node is absent,
 // it will create parent node first.
 func (z *ZookeeperClient) CreateWithValue(basePath string, value []byte) error {
 	var (
