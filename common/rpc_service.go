@@ -71,7 +71,8 @@ var (
 	// ServiceMap ...
 	// todo: lowerecas?
 	ServiceMap = &serviceMap{
-		serviceMap: make(map[string]map[string]*Service),
+		serviceMap:   make(map[string]map[string]*Service),
+		interfaceMap: make(map[string][]*Service),
 	}
 )
 
@@ -147,8 +148,9 @@ func (s *Service) Rcvr() reflect.Value {
 //////////////////////////
 
 type serviceMap struct {
-	mutex      sync.RWMutex                   // protects the serviceMap
-	serviceMap map[string]map[string]*Service // protocol -> service name -> service
+	mutex        sync.RWMutex                   // protects the serviceMap
+	serviceMap   map[string]map[string]*Service // protocol -> service name -> service
+	interfaceMap map[string][]*Service          // interface -> service
 }
 
 func (sm *serviceMap) GetService(protocol, name string) *Service {
@@ -163,9 +165,22 @@ func (sm *serviceMap) GetService(protocol, name string) *Service {
 	return nil
 }
 
-func (sm *serviceMap) Register(protocol string, rcvr RPCService) (string, error) {
+// GetInterface get an interface defination by interface name
+func (sm *serviceMap) GetInterface(interfaceName string) []*Service {
+	sm.mutex.RLock()
+	defer sm.mutex.RUnlock()
+	if s, ok := sm.interfaceMap[interfaceName]; ok {
+		return s
+	}
+	return nil
+}
+
+func (sm *serviceMap) Register(interfaceName, protocol string, rcvr RPCService) (string, error) {
 	if sm.serviceMap[protocol] == nil {
 		sm.serviceMap[protocol] = make(map[string]*Service)
+	}
+	if sm.interfaceMap[interfaceName] == nil {
+		sm.interfaceMap[interfaceName] = make([]*Service, 0, 16)
 	}
 
 	s := new(Service)
@@ -201,12 +216,13 @@ func (sm *serviceMap) Register(protocol string, rcvr RPCService) (string, error)
 	}
 	sm.mutex.Lock()
 	sm.serviceMap[protocol][s.name] = s
+	sm.interfaceMap[interfaceName] = append(sm.interfaceMap[interfaceName], s)
 	sm.mutex.Unlock()
 
 	return strings.TrimSuffix(methods, ","), nil
 }
 
-func (sm *serviceMap) UnRegister(protocol, serviceId string) error {
+func (sm *serviceMap) UnRegister(interfaceName, protocol, serviceId string) error {
 	if protocol == "" || serviceId == "" {
 		return perrors.New("protocol or serviceName is nil")
 	}
@@ -216,15 +232,32 @@ func (sm *serviceMap) UnRegister(protocol, serviceId string) error {
 		sm.mutex.RUnlock()
 		return perrors.New("no services for " + protocol)
 	}
-	_, ok = svcs[serviceId]
+	s, ok := svcs[serviceId]
 	if !ok {
 		sm.mutex.RUnlock()
 		return perrors.New("no service for " + serviceId)
+	}
+	svrs, ok := sm.interfaceMap[interfaceName]
+	if !ok {
+		sm.mutex.RUnlock()
+		return perrors.New("no service for " + interfaceName)
+	}
+	index := -1
+	for i, svr := range svrs {
+		if svr == s {
+			index = i
+		}
 	}
 	sm.mutex.RUnlock()
 
 	sm.mutex.Lock()
 	defer sm.mutex.Unlock()
+	sm.interfaceMap[interfaceName] = make([]*Service, 0, len(svrs))
+	for i, _ := range svrs {
+		if i != index {
+			sm.interfaceMap[interfaceName] = append(sm.interfaceMap[interfaceName], svrs[i])
+		}
+	}
 	delete(svcs, serviceId)
 	delete(sm.serviceMap, protocol)
 
