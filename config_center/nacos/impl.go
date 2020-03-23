@@ -66,38 +66,38 @@ func newNacosDynamicConfiguration(url *common.URL) (*nacosDynamicConfiguration, 
 }
 
 // AddListener Add listener
-func (nacos *nacosDynamicConfiguration) AddListener(key string, listener config_center.ConfigurationListener, opions ...config_center.Option) {
-	nacos.addListener(key, listener)
+func (n *nacosDynamicConfiguration) AddListener(key string, listener config_center.ConfigurationListener, opions ...config_center.Option) {
+	n.addListener(key, listener)
 }
 
 // RemoveListener Remove listener
-func (nacos *nacosDynamicConfiguration) RemoveListener(key string, listener config_center.ConfigurationListener, opions ...config_center.Option) {
-	nacos.removeListener(key, listener)
+func (n *nacosDynamicConfiguration) RemoveListener(key string, listener config_center.ConfigurationListener, opions ...config_center.Option) {
+	n.removeListener(key, listener)
 }
 
 // GetProperties nacos distinguishes configuration files based on group and dataId. defalut group = "dubbo" and dataId = key
-func (nacos *nacosDynamicConfiguration) GetProperties(key string, opts ...config_center.Option) (string, error) {
-	return nacos.GetRule(key, opts...)
+func (n *nacosDynamicConfiguration) GetProperties(key string, opts ...config_center.Option) (string, error) {
+	return n.GetRule(key, opts...)
 }
 
 // GetInternalProperty Get properties value by key
-func (nacos *nacosDynamicConfiguration) GetInternalProperty(key string, opts ...config_center.Option) (string, error) {
-	return nacos.GetProperties(key, opts...)
+func (n *nacosDynamicConfiguration) GetInternalProperty(key string, opts ...config_center.Option) (string, error) {
+	return n.GetProperties(key, opts...)
 }
 
 // PublishConfig will publish the config with the (key, group, value) pair
-func (nacos *nacosDynamicConfiguration) PublishConfig(key string, group string, value string) error {
+func (n *nacosDynamicConfiguration) PublishConfig(key string, group string, value string) error {
 
-	group = nacos.resolvedGroup(group)
+	group = n.resolvedGroup(group)
 
-	ok, err := (*nacos.client.Client()).PublishConfig(vo.ConfigParam{
+	ok, err := (*n.client.Client()).PublishConfig(vo.ConfigParam{
 		DataId:  key,
 		Group:   group,
 		Content: value,
 	})
 
 	if err != nil {
-		return err
+		return perrors.WithStack(err)
 	}
 	if !ok {
 		return perrors.New("publish config to Nocos failed")
@@ -106,14 +106,14 @@ func (nacos *nacosDynamicConfiguration) PublishConfig(key string, group string, 
 }
 
 // GetRule Get router rule
-func (nacos *nacosDynamicConfiguration) GetRule(key string, opts ...config_center.Option) (string, error) {
+func (n *nacosDynamicConfiguration) GetRule(key string, opts ...config_center.Option) (string, error) {
 	tmpOpts := &config_center.Options{}
 	for _, opt := range opts {
 		opt(tmpOpts)
 	}
-	content, err := (*nacos.client.Client()).GetConfig(vo.ConfigParam{
+	content, err := (*n.client.Client()).GetConfig(vo.ConfigParam{
 		DataId: key,
-		Group:  nacos.resolvedGroup(tmpOpts.Group),
+		Group:  n.resolvedGroup(tmpOpts.Group),
 	})
 	if err != nil {
 		return "", perrors.WithStack(err)
@@ -123,52 +123,52 @@ func (nacos *nacosDynamicConfiguration) GetRule(key string, opts ...config_cente
 }
 
 // Parser Get Parser
-func (nacos *nacosDynamicConfiguration) Parser() parser.ConfigurationParser {
-	return nacos.parser
+func (n *nacosDynamicConfiguration) Parser() parser.ConfigurationParser {
+	return n.parser
 }
 
 // SetParser Set Parser
-func (nacos *nacosDynamicConfiguration) SetParser(p parser.ConfigurationParser) {
-	nacos.parser = p
+func (n *nacosDynamicConfiguration) SetParser(p parser.ConfigurationParser) {
+	n.parser = p
 }
 
 // NacosClient Get Nacos Client
-func (nacos *nacosDynamicConfiguration) NacosClient() *NacosClient {
-	return nacos.client
+func (n *nacosDynamicConfiguration) NacosClient() *NacosClient {
+	return n.client
 }
 
 // SetNacosClient Set Nacos Client
-func (nacos *nacosDynamicConfiguration) SetNacosClient(client *NacosClient) {
-	nacos.cltLock.Lock()
-	nacos.client = client
-	nacos.cltLock.Unlock()
+func (n *nacosDynamicConfiguration) SetNacosClient(client *NacosClient) {
+	n.cltLock.Lock()
+	n.client = client
+	n.cltLock.Unlock()
 }
 
 // WaitGroup for wait group control, zk client listener & zk client container
-func (nacos *nacosDynamicConfiguration) WaitGroup() *sync.WaitGroup {
-	return &nacos.wg
+func (n *nacosDynamicConfiguration) WaitGroup() *sync.WaitGroup {
+	return &n.wg
 }
 
 // GetDone For nacos client control	RestartCallBack() bool
-func (nacos *nacosDynamicConfiguration) GetDone() chan struct{} {
-	return nacos.done
+func (n *nacosDynamicConfiguration) GetDone() chan struct{} {
+	return n.done
 }
 
 // GetUrl Get Url
-func (nacos *nacosDynamicConfiguration) GetUrl() common.URL {
-	return *nacos.url
+func (n *nacosDynamicConfiguration) GetUrl() common.URL {
+	return *n.url
 }
 
 // Destroy Destroy configuration instance
-func (nacos *nacosDynamicConfiguration) Destroy() {
-	close(nacos.done)
-	nacos.wg.Wait()
-	nacos.closeConfigs()
+func (n *nacosDynamicConfiguration) Destroy() {
+	close(n.done)
+	n.wg.Wait()
+	n.closeConfigs()
 }
 
 // resolvedGroup will regular the group. Now, it will replace the '/' with '-'.
 // '/' is a special character for nacos
-func (nacos *nacosDynamicConfiguration) resolvedGroup(group string) string {
+func (n *nacosDynamicConfiguration) resolvedGroup(group string) string {
 	if len(group) <= 0 {
 		return group
 	}
@@ -176,21 +176,21 @@ func (nacos *nacosDynamicConfiguration) resolvedGroup(group string) string {
 }
 
 // IsAvailable Get available status
-func (nacos *nacosDynamicConfiguration) IsAvailable() bool {
+func (n *nacosDynamicConfiguration) IsAvailable() bool {
 	select {
-	case <-nacos.done:
+	case <-n.done:
 		return false
 	default:
 		return true
 	}
 }
 
-func (nacos *nacosDynamicConfiguration) closeConfigs() {
-	nacos.cltLock.Lock()
-	client := nacos.client
-	nacos.client = nil
-	nacos.cltLock.Unlock()
+func (n *nacosDynamicConfiguration) closeConfigs() {
+	n.cltLock.Lock()
+	client := n.client
+	n.client = nil
+	n.cltLock.Unlock()
 	// Close the old client first to close the tmp node
 	client.Close()
-	logger.Infof("begin to close provider nacos client")
+	logger.Infof("begin to close provider n client")
 }
