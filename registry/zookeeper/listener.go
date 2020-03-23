@@ -39,6 +39,8 @@ import (
 type RegistryDataListener struct {
 	subscribed map[*common.URL]config_center.ConfigurationListener
 	listener   config_center.ConfigurationListener
+	mutex      sync.Mutex
+	closed     bool
 }
 
 // NewRegistryDataListener ...
@@ -49,6 +51,11 @@ func NewRegistryDataListener() *RegistryDataListener {
 
 // SubscribeURL is used to set a watch listener for url
 func (l *RegistryDataListener) SubscribeURL(url *common.URL, listener config_center.ConfigurationListener) {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+	if l.closed {
+		return
+	}
 	l.subscribed[url] = listener
 }
 
@@ -64,6 +71,11 @@ func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 	serviceURL, err := common.NewURL(url)
 	if err != nil {
 		logger.Errorf("Listen NewURL(r{%s}) = error{%v} eventType.Path={%v}", url, err, eventType.Path)
+		return false
+	}
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+	if l.closed {
 		return false
 	}
 	for url, listener := range l.subscribed {
@@ -82,6 +94,8 @@ func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 }
 
 func (l *RegistryDataListener) Close() {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
 	for _, listener := range l.subscribed {
 		listener.(*RegistryConfigurationListener).Close()
 	}
