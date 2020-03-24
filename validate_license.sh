@@ -25,7 +25,5 @@ mkdir -p ${licensePath}
 wget -P "${licensePath}" ${remoteLicenseCheckerURL}
 wget -P "${licensePath}" ${remoteLicenseURL}
 
-chmod u+x ${licensePath}/license-header-checker
-
 #more usage check: https://github.com/lsm-dev/license-header-checker
-tools/license/license-header-checker -a -r -i vendor  tools/license/license.txt . go
+${licensePath}/${remoteLicenseCheckerName} -a -r -i vendor  tools/license/license.txt . go
