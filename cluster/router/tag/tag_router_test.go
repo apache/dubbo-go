@@ -32,6 +32,7 @@ import (
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
+// MockInvoker is only mock the Invoker to support test tagRouter
 type MockInvoker struct {
 	url          common.URL
 	available    bool
