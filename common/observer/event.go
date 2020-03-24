@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package registry
+package observer
 
 import (
 	"fmt"
@@ -23,25 +23,44 @@ import (
 	"time"
 )
 
-import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/remoting"
-)
-
 func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-// ////////////////////////////////////////
-// service event
-// ////////////////////////////////////////
-
-// ServiceEvent ...
-type ServiceEvent struct {
-	Action  remoting.EventType
-	Service common.URL
+// Event is align with Event interface in Java.
+// it's the top abstraction
+// Align with 2.7.5
+type Event interface {
+	fmt.Stringer
+	GetSource() interface{}
+	GetTimestamp() time.Time
 }
 
-func (e ServiceEvent) String() string {
-	return fmt.Sprintf("ServiceEvent{Action{%s}, Path{%s}}", e.Action, e.Service)
+// baseEvent is the base implementation of Event
+// You should never use it directly
+type BaseEvent struct {
+	source    interface{}
+	timestamp time.Time
+}
+
+// GetSource return the source
+func (b *BaseEvent) GetSource() interface{} {
+	return b.source
+}
+
+// GetTimestamp return the timestamp when the event is created
+func (b *BaseEvent) GetTimestamp() time.Time {
+	return b.timestamp
+}
+
+// String return a human readable string representing this event
+func (b *BaseEvent) String() string {
+	return fmt.Sprintf("baseEvent[source = %#v]", b.source)
+}
+
+func newBaseEvent(source interface{}) *BaseEvent {
+	return &BaseEvent{
+		source:    source,
+		timestamp: time.Now(),
+	}
 }

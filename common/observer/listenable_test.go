@@ -15,33 +15,16 @@
  * limitations under the License.
  */
 
-package registry
+package observer
 
 import (
-	"fmt"
-	"math/rand"
-	"time"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
-import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/remoting"
-)
+func TestListenable(t *testing.T) {
+	var b EventListener = &ServiceInstancesChangedListener{}
+	var a EventListener = &ServiceInstancesChangedListener{}
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
-// ////////////////////////////////////////
-// service event
-// ////////////////////////////////////////
-
-// ServiceEvent ...
-type ServiceEvent struct {
-	Action  remoting.EventType
-	Service common.URL
-}
-
-func (e ServiceEvent) String() string {
-	return fmt.Sprintf("ServiceEvent{Action{%s}, Path{%s}}", e.Action, e.Service)
+	assert.True(t, b == a)
 }
