@@ -15,33 +15,15 @@
  * limitations under the License.
  */
 
-package registry
+package event
 
 import (
 	"fmt"
-	"math/rand"
-	"time"
+	"github.com/apache/dubbo-go/common/observer"
 )
 
-import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/remoting"
-)
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
-// ////////////////////////////////////////
-// service event
-// ////////////////////////////////////////
-
-// ServiceEvent ...
-type ServiceEvent struct {
-	Action  remoting.EventType
-	Service common.URL
-}
-
-func (e ServiceEvent) String() string {
-	return fmt.Sprintf("ServiceEvent{Action{%s}, Path{%s}}", e.Action, e.Service)
+// ServiceInstancesChangedEvent represents service instances make some changing
+type ServiceInstancesChangedEvent struct {
+	fmt.Stringer
+	observer.BaseEvent
 }

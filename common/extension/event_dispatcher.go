@@ -15,33 +15,18 @@
  * limitations under the License.
  */
 
-package registry
+package extension
 
-import (
-	"fmt"
-	"math/rand"
-	"time"
-)
+import "github.com/apache/dubbo-go/common/observer"
 
-import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/remoting"
-)
+func GetDispatcherEvent(name string) {
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
 }
 
-// ////////////////////////////////////////
-// service event
-// ////////////////////////////////////////
+func SetDefaultDispatcherEvent() {
 
-// ServiceEvent ...
-type ServiceEvent struct {
-	Action  remoting.EventType
-	Service common.URL
 }
 
-func (e ServiceEvent) String() string {
-	return fmt.Sprintf("ServiceEvent{Action{%s}, Path{%s}}", e.Action, e.Service)
+func AddEventListener(listener observer.EventListener) {
+
 }
