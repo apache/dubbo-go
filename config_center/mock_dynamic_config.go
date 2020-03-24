@@ -81,6 +81,10 @@ func (f *MockDynamicConfigurationFactory) GetDynamicConfiguration(_ *common.URL)
 
 }
 
+func (c *MockDynamicConfiguration) PublishConfig(string, string, string) error {
+	return nil
+}
+
 // MockDynamicConfiguration ...
 type MockDynamicConfiguration struct {
 	parser   parser.ConfigurationParser
