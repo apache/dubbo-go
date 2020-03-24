@@ -46,15 +46,10 @@ type nacosClientFacade interface {
 	common.Node
 }
 
-func timeSecondDuration(sec int) time.Duration {
-	return time.Duration(sec) * time.Second
-}
-
 // HandleClientRestart Restart client handler
 func HandleClientRestart(r nacosClientFacade) {
 	var (
-		err error
-
+		err       error
 		failTimes int
 	)
 
@@ -79,7 +74,7 @@ LOOP:
 				case <-r.GetDone():
 					logger.Warnf("(NacosProviderRegistry)reconnectZkRegistry goroutine exit now...")
 					break LOOP
-				case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * connDelay)): // Prevent crazy reconnection nacos.
+				case <-getty.GetTimeWheel().After(time.Duration(failTimes*connDelay) * time.Second): // Prevent crazy reconnection nacos.
 				}
 				err = ValidateNacosClient(r, WithNacosName(nacosName))
 				logger.Infof("NacosProviderRegistry.validateNacosClient(nacosAddr{%s}) = error{%#v}",

@@ -63,7 +63,7 @@ func (suite *RegistryTestSuite) TestRegister() {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Regexp(t, ".*dubbo%3A%2F%2F127.0.0.1%3A20000%2Fcom.ikurento.user.UserProvider%3Fanyhost%3Dtrue%26category%3Dproviders%26cluster%3Dmock%26dubbo%3Ddubbo-provider-golang-1.3.0%26.*provider", children)
+	assert.Regexp(t, ".*dubbo%3A%2F%2F127.0.0.1%3A20000%2Fcom.ikurento.user.UserProvider%3Fanyhost%3Dtrue%26cluster%3Dmock", children)
 	assert.NoError(t, err)
 }
 
@@ -98,7 +98,7 @@ func (suite *RegistryTestSuite) TestSubscribe() {
 	assert.Regexp(t, ".*ServiceEvent{Action{add}.*", serviceEvent.String())
 }
 
-func (suite *RegistryTestSuite) TestConsumerDestory() {
+func (suite *RegistryTestSuite) TestConsumerDestroy() {
 
 	t := suite.T()
 	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
@@ -117,7 +117,7 @@ func (suite *RegistryTestSuite) TestConsumerDestory() {
 
 }
 
-func (suite *RegistryTestSuite) TestProviderDestory() {
+func (suite *RegistryTestSuite) TestProviderDestroy() {
 
 	t := suite.T()
 	reg := initRegistry(t)

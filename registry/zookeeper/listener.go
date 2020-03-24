@@ -43,7 +43,7 @@ type RegistryDataListener struct {
 
 // NewRegistryDataListener ...
 func NewRegistryDataListener(listener config_center.ConfigurationListener) *RegistryDataListener {
-	return &RegistryDataListener{listener: listener, interestedURL: []*common.URL{}}
+	return &RegistryDataListener{listener: listener}
 }
 
 // AddInterestedURL ...
@@ -65,13 +65,19 @@ func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 		logger.Errorf("Listen NewURL(r{%s}) = error{%v} eventType.Path={%v}", url, err, eventType.Path)
 		return false
 	}
+
 	for _, v := range l.interestedURL {
 		if serviceURL.URLEqual(*v) {
-			l.listener.Process(&config_center.ConfigChangeEvent{Value: serviceURL, ConfigType: eventType.Action})
+			l.listener.Process(
+				&config_center.ConfigChangeEvent{
+					Key:        eventType.Path,
+					Value:      serviceURL,
+					ConfigType: eventType.Action,
+				},
+			)
 			return true
 		}
 	}
-
 	return false
 }
 

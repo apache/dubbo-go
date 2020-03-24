@@ -18,6 +18,7 @@
 package config
 
 import (
+	"bytes"
 	"time"
 )
 
@@ -30,6 +31,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/common/yaml"
 )
 
 /////////////////////////
@@ -57,6 +59,7 @@ type ConsumerConfig struct {
 	ProtocolConf   interface{}                 `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
 	FilterConf     interface{}                 `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf" `
 	ShutdownConfig *ShutdownConfig             `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf" `
+	ConfigType     map[string]string           `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 }
 
 // UnmarshalYAML ...
@@ -86,13 +89,12 @@ func ConsumerInit(confConFile string) error {
 	if confConFile == "" {
 		return perrors.Errorf("application configure(consumer) file name is nil")
 	}
-
 	consumerConfig = &ConsumerConfig{}
-	err := unmarshalYMLConfig(confConFile, consumerConfig)
+	fileStream, err := yaml.UnmarshalYMLConfig(confConFile, consumerConfig)
 	if err != nil {
-		return perrors.Errorf("yaml.Unmarshal() = error:%v", perrors.WithStack(err))
+		return perrors.Errorf("unmarshalYmlConfig error %v", perrors.WithStack(err))
 	}
-
+	consumerConfig.fileStream = bytes.NewBuffer(fileStream)
 	//set method interfaceId & interfaceName
 	for k, v := range consumerConfig.References {
 		//set id for reference
@@ -116,6 +118,7 @@ func ConsumerInit(confConFile string) error {
 		}
 	}
 	logger.Debugf("consumer config{%#v}\n", consumerConfig)
+
 	return nil
 }
 
@@ -139,5 +142,6 @@ func configCenterRefreshConsumer() error {
 			return perrors.WithMessagef(err, "time.ParseDuration(Connect_Timeout{%#v})", consumerConfig.Connect_Timeout)
 		}
 	}
-	return err
+
+	return nil
 }
