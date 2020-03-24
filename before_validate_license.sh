@@ -24,6 +24,3 @@ licensePath="tools/license"
 mkdir -p ${licensePath}
 wget -P "${licensePath}" ${remoteLicenseCheckerURL}
 wget -P "${licensePath}" ${remoteLicenseURL}
-
-#more usage check: https://github.com/lsm-dev/license-header-checker
-${licensePath}/${remoteLicenseCheckerName} -a -r -i vendor  tools/license/license.txt . go
