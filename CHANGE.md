@@ -1,6 +1,35 @@
 # Release Notes
 ---
 
+## 1.4.0
+### New Features
+
+- [Condition router](https://github.com/apache/dubbo-go/pull/294)
+- [Context support](https://github.com/apache/dubbo-go/pull/330)
+- [Opentracing & transfer context end to end for jsonrpc protocol](https://github.com/apache/dubbo-go/pull/335)
+- [Opentracing & transfer context end to end for dubbo protocol](https://github.com/apache/dubbo-go/pull/344)
+- [Grpc tracing for client and server](https://github.com/apache/dubbo-go/pull/397)
+- [Nacos config center](https://github.com/apache/dubbo-go/pull/357)
+- [Prometheus support](https://github.com/apache/dubbo-go/pull/342)
+- [Support sign and auth for request](https://github.com/apache/dubbo-go/pull/323)
+- [Healthy instance first router](https://github.com/apache/dubbo-go/pull/389)
+- [User can add attachments for dubbo protocol](https://github.com/apache/dubbo-go/pull/398)
+- [K8s as registry](https://github.com/apache/dubbo-go/pull/400)
+- [Rest protocol](https://github.com/apache/dubbo-go/pull/352)
+
+### Enhancement
+
+- [Reduce the scope of lock in zk listener](https://github.com/apache/dubbo-go/pull/346)
+- [Trace error of getGettyRpcClient](https://github.com/apache/dubbo-go/pull/384)
+- [Refactor to add base_registry](https://github.com/apache/dubbo-go/pull/348)
+- [Do not listen to directory event if zkPath ends with providers/ or consumers/](https://github.com/apache/dubbo-go/pull/359)
+
+### Bugfixes
+
+- [Handle the panic when invoker was destroyed](https://github.com/apache/dubbo-go/pull/358)
+- [HessianCodec failed to check package header length](https://github.com/apache/dubbo-go/pull/381)
+
+
 ## 1.3.0
 
 ### New Features
