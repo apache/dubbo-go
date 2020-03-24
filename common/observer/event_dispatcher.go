@@ -15,27 +15,13 @@
  * limitations under the License.
  */
 
-package registry
+package observer
 
-import (
-	gxsort "github.com/dubbogo/gost/sort"
-)
-
-// EventListener is an new interface used to align with dubbo 2.7.5
-// It contains the Prioritized means that the listener has its priority
-type EventListener interface {
-	gxsort.Prioritizer
-	// OnEvent handle this event
-	OnEvent(e Event) error
-}
-
-// ConditionalEventListener only handle the event which it can handle
-type ConditionalEventListener interface {
-	EventListener
-	// Accept will make the decision whether it should handle this event
-	Accept(e Event) bool
-}
-
-// TODO (implement ConditionalEventListener)
-type ServiceInstancesChangedListener struct {
+// EventDispatcher is align with EventDispatcher interface in Java.
+// it's the top abstraction
+// Align with 2.7.5
+type EventDispatcher interface {
+	Listenable
+	// Dispatch event
+	Dispatch(event Event)
 }
