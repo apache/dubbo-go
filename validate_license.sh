@@ -14,9 +14,18 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-remoteJarUrl="https://github.com/dubbogo/resources/raw/master/tools"
+remoteLicenseCheckerPath="https://github.com/dubbogo/resources/raw/master/tools/license"
+remoteLicenseCheckerName="license-header-checker"
+remoteLicenseCheckerURL="${remoteLicenseCheckerPath}/${remoteLicenseCheckerName}"
+remoteLicenseName="license.txt"
+remoteLicenseURL="${remoteLicenseCheckerPath}/${remoteLicenseName}"
 
-wget ${remoteJarUrl}
+licensePath="tools/license"
+mkdir -p ${licensePath}
+wget -P "${licensePath}" ${remoteLicenseCheckerURL}
+wget -P "${licensePath}" ${remoteLicenseURL}
+
+chmod u+x ${licensePath}/license-header-checker
 
 #more usage check: https://github.com/lsm-dev/license-header-checker
 tools/license/license-header-checker -a -r -i vendor  tools/license/license.txt . go
