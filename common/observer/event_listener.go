@@ -15,33 +15,26 @@
  * limitations under the License.
  */
 
-package registry
+package observer
 
 import (
-	"fmt"
-	"math/rand"
-	"time"
+	gxsort "github.com/dubbogo/gost/sort"
+	"reflect"
 )
 
-import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/remoting"
-)
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
+// EventListener is an new interface used to align with dubbo 2.7.5
+// It contains the Prioritized means that the listener has its priority
+type EventListener interface {
+	gxsort.Prioritizer
+	// OnEvent handle this event
+	OnEvent(e Event) error
+	// GetEventType listen which event type
+	GetEventType() reflect.Type
 }
 
-// ////////////////////////////////////////
-// service event
-// ////////////////////////////////////////
-
-// ServiceEvent ...
-type ServiceEvent struct {
-	Action  remoting.EventType
-	Service common.URL
-}
-
-func (e ServiceEvent) String() string {
-	return fmt.Sprintf("ServiceEvent{Action{%s}, Path{%s}}", e.Action, e.Service)
+// ConditionalEventListener only handle the event which it can handle
+type ConditionalEventListener interface {
+	EventListener
+	// Accept will make the decision whether it should handle this event
+	Accept(e Event) bool
 }

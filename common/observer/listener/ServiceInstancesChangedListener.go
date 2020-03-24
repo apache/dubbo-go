@@ -15,33 +15,27 @@
  * limitations under the License.
  */
 
-package registry
+package listener
 
 import (
-	"fmt"
-	"math/rand"
-	"time"
+	"github.com/apache/dubbo-go/common/observer"
+	"github.com/apache/dubbo-go/common/observer/event"
+	"reflect"
 )
 
-import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/remoting"
-)
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
+// TODO (implement ConditionalEventListener)
+type ServiceInstancesChangedListener struct {
+	observer.EventListener
 }
 
-// ////////////////////////////////////////
-// service event
-// ////////////////////////////////////////
-
-// ServiceEvent ...
-type ServiceEvent struct {
-	Action  remoting.EventType
-	Service common.URL
+func (sicl *ServiceInstancesChangedListener) OnEvent(e observer.Event) error {
+	return nil
 }
 
-func (e ServiceEvent) String() string {
-	return fmt.Sprintf("ServiceEvent{Action{%s}, Path{%s}}", e.Action, e.Service)
+func (sicl *ServiceInstancesChangedListener) GetPriority() int {
+	return -1
+}
+
+func (sicl *ServiceInstancesChangedListener) GetEventType() reflect.Type {
+	return reflect.TypeOf(&event.ServiceInstancesChangedEvent{})
 }
