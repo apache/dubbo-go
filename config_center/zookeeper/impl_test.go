@@ -156,6 +156,18 @@ func Test_RemoveListener(t *testing.T) {
 	assert.Equal(t, "", listener.event)
 }
 
+func TestZookeeperDynamicConfiguration_PublishConfig(t *testing.T) {
+	value := "Test Data"
+	customGroup := "Custom Group"
+	ts, zk := initZkData(config_center.DEFAULT_GROUP, t)
+	defer ts.Stop()
+	err := zk.PublishConfig("myKey", customGroup, value)
+	assert.Nil(t, err)
+	result, err := zk.GetInternalProperty("myKey", config_center.WithGroup(customGroup))
+	assert.Nil(t, err)
+	assert.Equal(t, value, result)
+}
+
 type mockDataListener struct {
 	wg    sync.WaitGroup
 	event string
