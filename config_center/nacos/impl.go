@@ -23,6 +23,7 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/nacos-group/nacos-sdk-go/vo"
 	perrors "github.com/pkg/errors"
 )
@@ -103,6 +104,13 @@ func (n *nacosDynamicConfiguration) PublishConfig(key string, group string, valu
 		return perrors.New("publish config to Nocos failed")
 	}
 	return nil
+}
+
+// GetConfigKeysByGroup will return all keys with the group
+func (n *nacosDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
+	// TODO (the golang client of nacos does not support batch API)
+	// we should build a issue and then think about how to resolve this problem
+	return nil, perrors.New("unsupport operation, wait for implement")
 }
 
 // GetRule Get router rule
