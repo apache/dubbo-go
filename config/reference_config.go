@@ -185,6 +185,10 @@ func (c *ReferenceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.VERSION_KEY, c.Version)
 	urlMap.Set(constant.GENERIC_KEY, strconv.FormatBool(c.Generic))
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
+	urlMap.Set(constant.CATEGORY_KEY, (common.RoleType(common.CONSUMER)).String())
+	urlMap.Set(constant.RELEASE_KEY, "dubbo-golang-"+constant.Version)
+	urlMap.Set(constant.SIDE_KEY, (common.RoleType(common.CONSUMER)).Role())
+
 	if len(c.RequestTimeout) != 0 {
 		urlMap.Set(constant.TIMEOUT_KEY, c.RequestTimeout)
 	}
