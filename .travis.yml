@@ -13,7 +13,7 @@ install: true
 
 script:
   - go fmt ./... && [[ -z `git status -s` ]]
-  - chmod u+x before_validate_license.sh && ./before_validate_license.sh &&chmod u-x before_validate_license.sh
+  - sh before_validate_license.sh
   - chmod u+x tools/license/license-header-checker
   - tools/license/license-header-checker -v -a -r -i vendor  tools/license/license.txt . go  && [[ -z `git status -s` ]]
   - chmod u+x before_ut.sh && ./before_ut.sh
