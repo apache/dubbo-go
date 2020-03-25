@@ -23,7 +23,9 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/config_center/parser"
 )
