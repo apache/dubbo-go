@@ -20,7 +20,7 @@ remoteLicenseCheckerURL="${remoteLicenseCheckerPath}/${remoteLicenseCheckerName}
 remoteLicenseName="license.txt"
 remoteLicenseURL="${remoteLicenseCheckerPath}/${remoteLicenseName}"
 
-licensePath="tools/license"
+licensePath="/tmp/tools/license"
 mkdir -p ${licensePath}
 wget -P "${licensePath}" ${remoteLicenseCheckerURL}
 wget -P "${licensePath}" ${remoteLicenseURL}
