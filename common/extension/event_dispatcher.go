@@ -17,16 +17,42 @@
 
 package extension
 
-import "github.com/apache/dubbo-go/common/observer"
+import (
+	"github.com/apache/dubbo-go/common/observer"
+	"github.com/prometheus/common/log"
+)
 
-func GetDispatcherEvent(name string) {
+var eventListeners []observer.EventListener
 
-}
+var globalEventDispatcher observer.EventDispatcher
 
-func SetDefaultDispatcherEvent() {
+var (
+	dispatchers = make(map[string]func() observer.EventDispatcher, 8)
+)
 
+func SetEventDispatcher(name string, v func() observer.EventDispatcher) {
+	dispatchers[name] = v
 }
 
 func AddEventListener(listener observer.EventListener) {
+	eventListeners = append(eventListeners, listener)
+}
 
+// s
+func SetAndInitGlobalDispatcher(name string) {
+	if len(name) == 0 {
+		name = "direct"
+	}
+	if globalEventDispatcher != nil {
+		log.Warnf("EventDispatcher already init. It will be replaced")
+	}
+	if dispatchers[name] == nil {
+		panic("EventDispatcher for " + name + " is not existing, make sure you have import the package.")
+	}
+	globalEventDispatcher = dispatchers[name]()
+	globalEventDispatcher.AddEventListeners(eventListeners)
+}
+
+func GetGlobalDispatcher() observer.EventDispatcher {
+	return globalEventDispatcher
 }
