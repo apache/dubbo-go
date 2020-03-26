@@ -15,41 +15,18 @@
  * limitations under the License.
  */
 
-package condition
-
-import (
-	"strings"
-)
-
-import (
-	gxstrings "github.com/dubbogo/gost/strings"
-)
+package tag
 
 import (
 	"github.com/apache/dubbo-go/cluster/router"
-	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/yaml"
 )
 
 // RouterRule RouterRule config read from config file or config center
 type RouterRule struct {
 	router.BaseRouterRule `yaml:",inline""`
-	Conditions            []string
 }
 
-/* Parse Router raw rule parser
- * example :
- * scope: application
- * runtime: true
- * force: false
- * conditions:
- *   - >
- *     method!=sayHello =>
- *   - >
- *     ip=127.0.0.1
- *     =>
- *     1.1.1.1
- */
 func getRule(rawRule string) (*RouterRule, error) {
 	r := &RouterRule{}
 	err := yaml.UnmarshalYML([]byte(rawRule), r)
@@ -57,17 +34,5 @@ func getRule(rawRule string) (*RouterRule, error) {
 		return r, err
 	}
 	r.RawRule = rawRule
-	if len(r.Conditions) != 0 {
-		r.Valid = true
-	}
-
 	return r, nil
-}
-
-// isMatchGlobalPattern Match value to param content by pattern
-func isMatchGlobalPattern(pattern string, value string, param *common.URL) bool {
-	if param != nil && strings.HasPrefix(pattern, "$") {
-		pattern = param.GetRawParam(pattern[1:])
-	}
-	return gxstrings.IsMatchPattern(pattern, value)
 }
