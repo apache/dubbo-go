@@ -18,11 +18,15 @@
 package condition
 
 import (
-	"github.com/apache/dubbo-go/common"
 	"testing"
 )
+
 import (
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
 )
 
 func TestGetRule(t *testing.T) {
