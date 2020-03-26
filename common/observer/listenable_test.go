@@ -18,13 +18,14 @@
 package observer
 
 import (
+	"github.com/apache/dubbo-go/registry/listener"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestListenable(t *testing.T) {
-	var b EventListener = &ServiceInstancesChangedListener{}
-	var a EventListener = &ServiceInstancesChangedListener{}
+	var b EventListener = &listener.ServiceInstancesChangedListener{}
+	var a EventListener = &listener.ServiceInstancesChangedListener{}
 
 	assert.True(t, b == a)
 }

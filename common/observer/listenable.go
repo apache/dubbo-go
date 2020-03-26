@@ -33,16 +33,16 @@ type Listenable interface {
 
 type BaseListenable struct {
 	Listenable
-	listenersCache sync.Map
-	mutex          sync.Mutex
+	ListenersCache sync.Map
+	Mutex          sync.Mutex
 }
 
 func (bl *BaseListenable) AddEventListener(listener EventListener) {
 	eventType := listener.GetEventType()
 	var listenersSlice []EventListener
-	bl.mutex.Lock()
-	defer bl.mutex.Unlock()
-	if value, loaded := bl.listenersCache.Load(eventType); loaded {
+	bl.Mutex.Lock()
+	defer bl.Mutex.Unlock()
+	if value, loaded := bl.ListenersCache.Load(eventType); loaded {
 		listenersSlice = value.([]EventListener)
 		if !containListener(listenersSlice, listener) {
 			listenersSlice = append(listenersSlice, listener)
@@ -54,12 +54,10 @@ func (bl *BaseListenable) AddEventListener(listener EventListener) {
 	sort.Slice(listenersSlice, func(i, j int) bool {
 		return listenersSlice[i].GetPriority() < listenersSlice[j].GetPriority()
 	})
-	bl.listenersCache.Store(eventType, listenersSlice)
+	bl.ListenersCache.Store(eventType, listenersSlice)
 }
 
 func (bl *BaseListenable) AddEventListeners(listenersSlice []EventListener) {
-	bl.mutex.Lock()
-	defer bl.mutex.Unlock()
 	for _, listener := range listenersSlice {
 		bl.AddEventListener(listener)
 	}
@@ -67,9 +65,9 @@ func (bl *BaseListenable) AddEventListeners(listenersSlice []EventListener) {
 
 func (bl *BaseListenable) RemoveEventListener(listener EventListener) {
 	eventType := listener.GetEventType()
-	bl.mutex.Lock()
-	defer bl.mutex.Unlock()
-	value, loaded := bl.listenersCache.Load(eventType)
+	bl.Mutex.Lock()
+	defer bl.Mutex.Unlock()
+	value, loaded := bl.ListenersCache.Load(eventType)
 	if !loaded {
 		return
 	}
@@ -82,24 +80,20 @@ func (bl *BaseListenable) RemoveEventListener(listener EventListener) {
 }
 
 func (bl *BaseListenable) RemoveEventListeners(listenersSlice []EventListener) {
-	bl.mutex.Lock()
-	defer bl.mutex.Unlock()
 	for _, listener := range listenersSlice {
 		bl.RemoveEventListener(listener)
 	}
 }
 
 func (bl *BaseListenable) RemoveAllEventListeners() {
-	bl.mutex.Lock()
-	defer bl.mutex.Unlock()
-	bl.listenersCache = *new(sync.Map)
+	bl.Mutex.Lock()
+	defer bl.Mutex.Unlock()
+	bl.ListenersCache = *new(sync.Map)
 }
 
 func (bl *BaseListenable) GetAllEventListeners() []EventListener {
-	bl.mutex.Lock()
-	defer bl.mutex.Unlock()
 	allListenersSlice := make([]EventListener, 0, 16)
-	bl.listenersCache.Range(func(_, value interface{}) bool {
+	bl.ListenersCache.Range(func(_, value interface{}) bool {
 		listenersSlice := value.([]EventListener)
 		allListenersSlice = append(allListenersSlice, listenersSlice...)
 		return true

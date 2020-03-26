@@ -42,14 +42,13 @@ type multiConfiger interface {
 
 // BaseConfig is the common configuration for provider and consumer
 type BaseConfig struct {
-	ConfigCenterConfig *ConfigCenterConfig `yaml:"config_center" json:"config_center,omitempty"`
-	configCenterUrl    *common.URL
-	prefix             string
-	fatherConfig       interface{}
-
-	MetricConfig *MetricConfig `yaml:"metrics" json:"metrics,omitempty"`
-
-	fileStream *bytes.Buffer
+	ConfigCenterConfig  *ConfigCenterConfig `yaml:"config_center" json:"config_center,omitempty"`
+	configCenterUrl     *common.URL
+	prefix              string
+	fatherConfig        interface{}
+	eventDispatcherType string        `yaml:"direct" json:"direct,omitempty"`
+	MetricConfig        *MetricConfig `yaml:"metrics" json:"metrics,omitempty"`
+	fileStream          *bytes.Buffer
 }
 
 // startConfigCenter will start the config center.

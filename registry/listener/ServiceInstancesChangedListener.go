@@ -18,10 +18,15 @@
 package listener
 
 import (
+	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/observer"
 	"github.com/apache/dubbo-go/common/observer/event"
 	"reflect"
 )
+
+func init() {
+	extension.AddEventListener(&ServiceInstancesChangedListener{})
+}
 
 // TODO (implement ConditionalEventListener)
 type ServiceInstancesChangedListener struct {
