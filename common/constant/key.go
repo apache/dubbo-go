@@ -107,6 +107,7 @@ const (
 	ROUTERS_CATEGORY         = "routers"
 	ROUTE_PROTOCOL           = "route"
 	CONDITION_ROUTE_PROTOCOL = "condition"
+	TAG_ROUTE_PROTOCOL       = "tag"
 	PROVIDERS_CATEGORY       = "providers"
 	ROUTER_KEY               = "router"
 )
@@ -163,7 +164,8 @@ const (
 	ListenableRouterName = "listenable"
 	// HealthCheckRouterName Specify the name of HealthCheckRouter
 	HealthCheckRouterName = "health_check"
-
+	// TagRouterName Specify the name of TagRouter
+	TagRouterName = "tag"
 	// ConditionRouterRuleSuffix Specify condition router suffix
 	ConditionRouterRuleSuffix = ".condition-router"
 
@@ -173,6 +175,10 @@ const (
 	RouterEnabled = "enabled"
 	// Priority Priority key in router module
 	RouterPriority = "priority"
+
+	// ForceUseTag is the tag in attachment
+	ForceUseTag = "dubbo.force.tag"
+	Tagkey      = "dubbo.tag"
 )
 
 const (

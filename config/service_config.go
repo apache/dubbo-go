@@ -69,6 +69,7 @@ type ServiceConfig struct {
 	ExecuteLimitRejectedHandler string            `yaml:"execute.limit.rejected.handler" json:"execute.limit.rejected.handler,omitempty" property:"execute.limit.rejected.handler"`
 	Auth                        string            `yaml:"auth" json:"auth,omitempty" property:"auth"`
 	ParamSign                   string            `yaml:"param.sign" json:"param.sign,omitempty" property:"param.sign"`
+	Tag                         string            `yaml:"tag" json:"tag,omitempty" property:"tag"`
 
 	unexported    *atomic.Bool
 	exported      *atomic.Bool
@@ -144,7 +145,9 @@ func (c *ServiceConfig) Export() error {
 			common.WithMethods(strings.Split(methods, ",")),
 			common.WithToken(c.Token),
 		)
-
+		if len(c.Tag) > 0 {
+			ivkURL.AddParam(constant.Tagkey, c.Tag)
+		}
 		if len(regUrls) > 0 {
 			for _, regUrl := range regUrls {
 				regUrl.SubURL = ivkURL
