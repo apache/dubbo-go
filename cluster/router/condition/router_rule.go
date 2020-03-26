@@ -18,7 +18,16 @@
 package condition
 
 import (
+	"strings"
+)
+
+import (
+	gxstrings "github.com/dubbogo/gost/strings"
+)
+
+import (
 	"github.com/apache/dubbo-go/cluster/router"
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/yaml"
 )
 
@@ -53,4 +62,12 @@ func getRule(rawRule string) (*RouterRule, error) {
 	}
 
 	return r, nil
+}
+
+// isMatchGlobalPattern Match value to param content by pattern
+func isMatchGlobalPattern(pattern string, value string, param *common.URL) bool {
+	if param != nil && strings.HasPrefix(pattern, "$") {
+		pattern = param.GetRawParam(pattern[1:])
+	}
+	return gxstrings.IsMatchPattern(pattern, value)
 }
