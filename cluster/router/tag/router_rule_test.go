@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package match
+package tag
 
 import (
 	"testing"
@@ -25,22 +25,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-import (
-	"github.com/apache/dubbo-go/common"
-)
-
-func TestIsMatchInternalPattern(t *testing.T) {
-	assert.Equal(t, true, isMatchInternalPattern("*", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("", ""))
-	assert.Equal(t, false, isMatchInternalPattern("", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("value", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("v*", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("*ue", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("*e", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("v*e", "value"))
-}
-
-func TestIsMatchGlobPattern(t *testing.T) {
-	url, _ := common.NewURL("dubbo://localhost:8080/Foo?key=v*e")
-	assert.Equal(t, true, IsMatchGlobalPattern("$key", "value", &url))
+func TestGetRule(t *testing.T) {
+	yml := `
+scope: application
+runtime: true
+force: true
+`
+	rule, e := getRule(yml)
+	assert.Nil(t, e)
+	assert.NotNil(t, rule)
+	assert.Equal(t, true, rule.Force)
+	assert.Equal(t, true, rule.Runtime)
+	assert.Equal(t, "application", rule.Scope)
 }
