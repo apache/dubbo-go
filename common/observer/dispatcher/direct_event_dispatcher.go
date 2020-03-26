@@ -15,46 +15,42 @@
  * limitations under the License.
  */
 
-package observer
+package dispatcher
 
 import (
+	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/common/observer"
 	"reflect"
 )
 
-var directEventDispatcher *DirectEventDispatcher
+func init() {
+	extension.SetEventDispatcher("direct", NewDirectEventDispatcher)
+}
 
 // DirectEventDispatcher is align with DirectEventDispatcher interface in Java.
 // it's the top abstraction
 // Align with 2.7.5
 // Dispatcher event to listener direct
 type DirectEventDispatcher struct {
-	BaseListenable
-	EventDispatcher
+	observer.BaseListenable
+	observer.EventDispatcher
 }
 
-func NewDirectEventDispatcher() *DirectEventDispatcher {
+func NewDirectEventDispatcher() observer.EventDispatcher {
 	return &DirectEventDispatcher{}
 }
 
-func (ded *DirectEventDispatcher) Dispatch(event Event) {
+func (ded *DirectEventDispatcher) Dispatch(event observer.Event) {
 	eventType := reflect.TypeOf(event).Elem()
-	value, loaded := ded.listenersCache.Load(eventType)
+	value, loaded := ded.ListenersCache.Load(eventType)
 	if !loaded {
 		return
 	}
-	listenersSlice := value.([]EventListener)
+	listenersSlice := value.([]observer.EventListener)
 	for _, listener := range listenersSlice {
 		if err := listener.OnEvent(event); err != nil {
 			logger.Warnf("[DirectEventDispatcher] dispatch event error:%v", err)
 		}
 	}
-}
-
-// GetSingleDirectEventDispatcher ...
-func GetSingleDirectEventDispatcher() EventDispatcher {
-	if directEventDispatcher == nil {
-		directEventDispatcher = NewDirectEventDispatcher()
-	}
-	return directEventDispatcher
 }

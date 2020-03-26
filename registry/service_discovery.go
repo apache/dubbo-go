@@ -29,7 +29,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/observer/event"
-	eventlistener "github.com/apache/dubbo-go/common/observer/listener"
+	eventlistener "github.com/apache/dubbo-go/registry/listener"
 )
 
 type ServiceDiscovery interface {
