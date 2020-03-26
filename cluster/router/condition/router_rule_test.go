@@ -18,6 +18,7 @@
 package condition
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"testing"
 )
 import (
@@ -49,4 +50,9 @@ conditions:
 	assert.Equal(t, false, rule.Enabled)
 	assert.Equal(t, false, rule.Dynamic)
 	assert.Equal(t, "", rule.Key)
+}
+
+func TestIsMatchGlobPattern(t *testing.T) {
+	url, _ := common.NewURL("dubbo://localhost:8080/Foo?key=v*e")
+	assert.Equal(t, true, isMatchGlobalPattern("$key", "value", &url))
 }
