@@ -172,8 +172,8 @@ func (c *zookeeperDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxs
 		return nil, perrors.New("could not find keys with group: " + group)
 	}
 	set := gxset.NewSet()
-	for _, ele := range result {
-		set.Add(ele)
+	for _, e := range result {
+		set.Add(e)
 	}
 	return set, nil
 }
