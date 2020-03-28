@@ -15,13 +15,11 @@
  * limitations under the License.
  */
 
-package extension
+package impl
 
 import (
-	"github.com/pkg/errors"
-)
+	"fmt"
 
-import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
@@ -41,18 +39,14 @@ func SetSerializer(name string, serializer interface{}) {
 	serializers[name] = serializer
 }
 
-func GetSerializer(name string) interface{} {
-	return serializers[name]
-}
-
 func GetSerializerById(id byte) (interface{}, error) {
 	name, ok := nameMaps[id]
 	if !ok {
-		return nil, errors.Errorf("serialId %d not found", id)
+		panic(fmt.Sprintf("serialId %d not found", id))
 	}
 	serializer, ok := serializers[name]
 	if !ok {
-		return nil, errors.Errorf("serialization %s not found", name)
+		panic(fmt.Sprintf("serialization %s not found", name))
 	}
 	return serializer, nil
 }

@@ -25,6 +25,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -37,7 +38,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
 	pb "github.com/apache/dubbo-go/protocol/dubbo/impl/proto"
 )
 
@@ -156,7 +157,12 @@ func unmarshalRequestProto(data []byte, pkg *DubboPackage) error {
 		}
 		return err
 	}
-	// unmarshal attachments
+	arg := getRegisterMessage(argsType)
+	err := proto.Unmarshal(argBytes, arg.Interface().(JavaProto))
+	if err != nil {
+		panic(err)
+	}
+
 	m := &pb.Map{}
 	if err := readObject(buf, m); err != nil {
 		return err
@@ -178,7 +184,7 @@ func unmarshalRequestProto(data []byte, pkg *DubboPackage) error {
 	pkg.SetService(svc)
 	pkg.SetBody(map[string]interface{}{
 		"dubboVersion": dubboVersion,
-		"args":         []interface{}{argBytes},
+		"args":         []interface{}{arg.Interface()},
 		"service":      common.ServiceMap.GetService(DUBBO, svc.Path), // path as a key
 		"attachments":  m.Attachments,
 	})
@@ -308,7 +314,7 @@ func marshalResponseProto(pkg DubboPackage) ([]byte, error) {
 }
 
 func init() {
-	extension.SetSerializer("protobuf", ProtoSerializer{})
+	SetSerializer("protobuf", ProtoSerializer{})
 }
 
 func getJavaArgType(javaClsName string) string {
@@ -389,4 +395,57 @@ func readDelimitedLength(reader io.Reader, length *int) error {
 	}
 	*length = int(messageLength)
 	return nil
+}
+
+type JavaProto interface {
+	JavaClassName() string
+	proto.Message
+}
+
+type Register struct {
+	sync.RWMutex
+	registry map[string]reflect.Type
+}
+
+var (
+	register = Register{
+		registry: make(map[string]reflect.Type),
+	}
+)
+
+func RegisterMessage(msg JavaProto) {
+	register.Lock()
+	defer register.Unlock()
+
+	name := msg.JavaClassName()
+	name = getJavaArgType(name)
+
+	if e, ok := register.registry[name]; ok {
+		panic(fmt.Sprintf("msg: %v has been registered. existed: %v", msg.JavaClassName(), e))
+	}
+
+	register.registry[name] = typeOfMessage(msg)
+}
+
+func getRegisterMessage(sig string) reflect.Value {
+	register.Lock()
+	defer register.Unlock()
+
+	t, ok := register.registry[sig]
+	if !ok {
+		panic(fmt.Sprintf("registry dose not have for svc: %v", sig))
+	}
+	return reflect.New(t)
+}
+
+func typeOfMessage(o proto.Message) reflect.Type {
+	v := reflect.ValueOf(o)
+	switch v.Kind() {
+	case reflect.Struct:
+		return v.Type()
+	case reflect.Ptr:
+		return v.Elem().Type()
+	}
+
+	return reflect.TypeOf(o)
 }

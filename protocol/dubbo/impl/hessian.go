@@ -33,7 +33,6 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 )
 
@@ -388,5 +387,5 @@ func buildServerSidePackageBody(pkg *DubboPackage) {
 }
 
 func init() {
-	extension.SetSerializer("hessian2", HessianSerializer{})
+	SetSerializer("hessian2", HessianSerializer{})
 }

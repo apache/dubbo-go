@@ -18,7 +18,6 @@ package impl
 
 import (
 	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
 )
 
 type Serializer interface {
@@ -32,9 +31,9 @@ func LoadSerializer(p *DubboPackage) error {
 	if serialID == 0 {
 		serialID = constant.S_Hessian2
 	}
-	serializer, err := extension.GetSerializerById(serialID)
+	serializer, err := GetSerializerById(serialID)
 	if err != nil {
-		return err
+		panic(err)
 	}
 	p.SetSerializer(serializer.(Serializer))
 	return nil
