@@ -153,6 +153,7 @@ type serviceMap struct {
 	interfaceMap map[string][]*Service          // interface -> service
 }
 
+// GetService get a service defination by protocol and name
 func (sm *serviceMap) GetService(protocol, name string) *Service {
 	sm.mutex.RLock()
 	defer sm.mutex.RUnlock()
@@ -175,6 +176,7 @@ func (sm *serviceMap) GetInterface(interfaceName string) []*Service {
 	return nil
 }
 
+// Register register a service by @interfaceName and @protocol
 func (sm *serviceMap) Register(interfaceName, protocol string, rcvr RPCService) (string, error) {
 	if sm.serviceMap[protocol] == nil {
 		sm.serviceMap[protocol] = make(map[string]*Service)
@@ -222,33 +224,46 @@ func (sm *serviceMap) Register(interfaceName, protocol string, rcvr RPCService) 
 	return strings.TrimSuffix(methods, ","), nil
 }
 
+// UnRegister cancel a service by @interfaceName, @protocol and @serviceId
 func (sm *serviceMap) UnRegister(interfaceName, protocol, serviceId string) error {
 	if protocol == "" || serviceId == "" {
 		return perrors.New("protocol or serviceName is nil")
 	}
-	sm.mutex.RLock()
-	svcs, ok := sm.serviceMap[protocol]
-	if !ok {
-		sm.mutex.RUnlock()
-		return perrors.New("no services for " + protocol)
-	}
-	s, ok := svcs[serviceId]
-	if !ok {
-		sm.mutex.RUnlock()
-		return perrors.New("no service for " + serviceId)
-	}
-	svrs, ok := sm.interfaceMap[interfaceName]
-	if !ok {
-		sm.mutex.RUnlock()
-		return perrors.New("no service for " + interfaceName)
-	}
-	index := -1
-	for i, svr := range svrs {
-		if svr == s {
-			index = i
+
+	var (
+		err   error
+		index = -1
+		svcs  map[string]*Service
+		svrs  []*Service
+		ok    bool
+	)
+
+	f := func() error {
+		sm.mutex.RLock()
+		defer sm.mutex.RUnlock()
+		svcs, ok = sm.serviceMap[protocol]
+		if !ok {
+			return perrors.New("no services for " + protocol)
 		}
+		s, ok := svcs[serviceId]
+		if !ok {
+			return perrors.New("no service for " + serviceId)
+		}
+		svrs, ok = sm.interfaceMap[interfaceName]
+		if !ok {
+			return perrors.New("no service for " + interfaceName)
+		}
+		for i, svr := range svrs {
+			if svr == s {
+				index = i
+			}
+		}
+		return nil
 	}
-	sm.mutex.RUnlock()
+
+	if err = f(); err != nil {
+		return err
+	}
 
 	sm.mutex.Lock()
 	defer sm.mutex.Unlock()
