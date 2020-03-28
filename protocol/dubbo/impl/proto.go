@@ -38,7 +38,6 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/logger"
 	pb "github.com/apache/dubbo-go/protocol/dubbo/impl/proto"
 )
 
