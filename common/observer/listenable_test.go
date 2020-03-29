@@ -18,9 +18,12 @@
 package observer
 
 import (
-	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
 )
 
 func TestListenable(t *testing.T) {
