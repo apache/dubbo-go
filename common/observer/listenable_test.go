@@ -18,14 +18,44 @@
 package observer
 
 import (
-	"github.com/apache/dubbo-go/registry/listener"
 	"github.com/stretchr/testify/assert"
+	"reflect"
 	"testing"
 )
 
 func TestListenable(t *testing.T) {
-	var b EventListener = &listener.ServiceInstancesChangedListener{}
-	var a EventListener = &listener.ServiceInstancesChangedListener{}
+	el := &TestEventListener{}
+	b := &BaseListenable{}
+	b.AddEventListener(el)
+	b.AddEventListener(el)
+	al := b.GetAllEventListeners()
+	assert.Equal(t, len(al), 1)
+	assert.Equal(t, al[0].GetEventType(), reflect.TypeOf(TestEvent{}))
+	b.RemoveEventListener(el)
+	assert.Equal(t, len(b.GetAllEventListeners()), 0)
+	var ts []EventListener
+	ts = append(ts, el)
+	b.AddEventListeners(ts)
+	assert.Equal(t, len(al), 1)
 
-	assert.True(t, b == a)
+}
+
+type TestEvent struct {
+	BaseEvent
+}
+
+type TestEventListener struct {
+	EventListener
+}
+
+func (tel *TestEventListener) OnEvent(e Event) error {
+	return nil
+}
+
+func (tel *TestEventListener) GetPriority() int {
+	return -1
+}
+
+func (tel *TestEventListener) GetEventType() reflect.Type {
+	return reflect.TypeOf(TestEvent{})
 }

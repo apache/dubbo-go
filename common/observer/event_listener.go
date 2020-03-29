@@ -22,6 +22,9 @@ import (
 	"reflect"
 )
 
+// All eventListeners
+var eventListeners []EventListener
+
 // EventListener is an new interface used to align with dubbo 2.7.5
 // It contains the Prioritized means that the listener has its priority
 type EventListener interface {
@@ -37,4 +40,8 @@ type ConditionalEventListener interface {
 	EventListener
 	// Accept will make the decision whether it should handle this event
 	Accept(e Event) bool
+}
+
+func AddEventListener(listener EventListener) {
+	eventListeners = append(eventListeners, listener)
 }
