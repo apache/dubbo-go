@@ -26,18 +26,12 @@ import (
 	gxpage "github.com/dubbogo/gost/page"
 )
 
-import (
-	"github.com/apache/dubbo-go/common"
-)
+const DefaultPageSize = 100
 
 type ServiceDiscovery interface {
 	fmt.Stringer
 
 	// ----------------- lifecycle -------------------
-
-	// Initialize will initialize the service discovery instance
-	// if initialize failed, it will return the error
-	Initialize(url common.URL) error
 
 	// Destroy will destroy the service discovery.
 	// If the discovery cannot be destroy, it will return an error.
@@ -59,7 +53,7 @@ type ServiceDiscovery interface {
 	GetDefaultPageSize() int
 
 	// GetServices will return the all service names.
-	GetServices() gxset.HashSet
+	GetServices() *gxset.HashSet
 
 	// GetInstances will return all service instances with serviceName
 	GetInstances(serviceName string) []ServiceInstance
@@ -89,3 +83,5 @@ type ServiceDiscovery interface {
 	// DispatchEvent dispatches the event
 	DispatchEvent(event ServiceInstancesChangedEvent) error
 }
+
+

@@ -15,29 +15,25 @@
  * limitations under the License.
  */
 
-package registry
+package extension
 
 import (
-	gxsort "github.com/dubbogo/gost/sort"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/registry"
 )
 
-// EventListener is an new interface used to align with dubbo 2.7.5
-// It contains the Prioritized means that the listener has its priority
-type EventListener interface {
-	gxsort.Prioritizer
-	// OnEvent handle this event
-	OnEvent(e Event) error
+var(
+	discoveryCreatorMap = make(map[string]func(url *common.URL)(registry.ServiceDiscovery, error), 4)
+)
+
+func SetServiceDiscovery(name string, creator func(url *common.URL)(registry.ServiceDiscovery, error)) {
+	discoveryCreatorMap[name] = creator
 }
 
-// ConditionalEventListener only handle the event which it can handle
-type ConditionalEventListener interface {
-	EventListener
-	// Accept will make the decision whether it should handle this event
-	Accept(e Event) bool
+func GetServiceDiscovery(name string, url *common.URL) (registry.ServiceDiscovery, error) {
+	creator, ok := discoveryCreatorMap[name]
+	if !ok {
+		panic("Could not find the service discovery with name: " + name)
+	}
+	return creator(url)
 }
-
-// TODO (implement ConditionalEventListener)
-type ServiceInstancesChangedListener struct {
-	ServiceName string
-}
-
