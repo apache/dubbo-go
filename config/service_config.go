@@ -129,7 +129,7 @@ func (c *ServiceConfig) Export() error {
 	}
 	for _, proto := range protocolConfigs {
 		// registry the service reflect
-		methods, err := common.ServiceMap.Register(proto.Name, c.rpcService)
+		methods, err := common.ServiceMap.Register(c.InterfaceName, proto.Name, c.rpcService)
 		if err != nil {
 			err := perrors.Errorf("The service %v  export the protocol %v error! Error message is %v .", c.InterfaceName, proto.Name, err.Error())
 			logger.Errorf(err.Error())
