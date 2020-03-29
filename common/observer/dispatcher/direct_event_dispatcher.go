@@ -18,14 +18,13 @@
 package dispatcher
 
 import (
-	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/observer"
 	"reflect"
 )
 
 func init() {
-	extension.SetEventDispatcher("direct", NewDirectEventDispatcher)
+	observer.SetEventDispatcher("direct", NewDirectEventDispatcher)
 }
 
 // DirectEventDispatcher is align with DirectEventDispatcher interface in Java.
@@ -34,7 +33,6 @@ func init() {
 // Dispatcher event to listener direct
 type DirectEventDispatcher struct {
 	observer.BaseListenable
-	observer.EventDispatcher
 }
 
 func NewDirectEventDispatcher() observer.EventDispatcher {
