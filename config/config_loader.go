@@ -199,7 +199,7 @@ func Load() {
 			svs.id = key
 			svs.Implement(rpcService)
 			if err := svs.Export(); err != nil {
-				panic(fmt.Sprintf("service %s export failed! ", key))
+				panic(fmt.Sprintf("service %s export failed! err: %#v", key, err))
 			}
 		}
 	}
