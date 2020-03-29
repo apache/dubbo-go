@@ -18,8 +18,11 @@
 package observer
 
 import (
-	gxsort "github.com/dubbogo/gost/sort"
 	"reflect"
+)
+
+import (
+	gxsort "github.com/dubbogo/gost/sort"
 )
 
 // All eventListeners

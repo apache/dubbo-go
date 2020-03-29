@@ -17,7 +17,9 @@
 
 package observer
 
-import "github.com/prometheus/common/log"
+import (
+	"github.com/apache/dubbo-go/common/logger"
+)
 
 var globalEventDispatcher EventDispatcher
 
@@ -45,7 +47,7 @@ func SetAndInitGlobalDispatcher(name string) {
 		name = "direct"
 	}
 	if globalEventDispatcher != nil {
-		log.Warnf("EventDispatcher already init. It will be replaced")
+		logger.Warnf("EventDispatcher already init. It will be replaced")
 	}
 	if dispatchers[name] == nil {
 		panic("EventDispatcher for " + name + " is not existing, make sure you have import the package.")
@@ -54,7 +56,7 @@ func SetAndInitGlobalDispatcher(name string) {
 	globalEventDispatcher.AddEventListeners(eventListeners)
 }
 
-// GetGlobalDispatcher by name
+// GetGlobalDispatcher
 func GetGlobalDispatcher() EventDispatcher {
 	return globalEventDispatcher
 }
