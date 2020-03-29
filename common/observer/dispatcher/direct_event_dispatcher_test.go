@@ -15,31 +15,57 @@
  * limitations under the License.
  */
 
-package listener
+package dispatcher
 
 import (
+	"fmt"
 	"github.com/apache/dubbo-go/common/observer"
-	"github.com/apache/dubbo-go/common/observer/event"
 	"reflect"
+	"testing"
 )
 
-func init() {
-	observer.AddEventListener(&ServiceInstancesChangedListener{})
+func TestDirectEventDispatcher_Dispatch(t *testing.T) {
+	ded := NewDirectEventDispatcher()
+	ded.AddEventListener(&TestEventListener{})
+	ded.AddEventListener(&TestEventListener1{})
+	ded.Dispatch(&TestEvent{})
 }
 
-// TODO (implement ConditionalEventListener)
-type ServiceInstancesChangedListener struct {
+type TestEvent struct {
+	observer.BaseEvent
+}
+
+type TestEventListener struct {
+	observer.BaseListenable
 	observer.EventListener
 }
 
-func (sicl *ServiceInstancesChangedListener) OnEvent(e observer.Event) error {
+func (tel *TestEventListener) OnEvent(e observer.Event) error {
+	fmt.Println("TestEventListener")
 	return nil
 }
 
-func (sicl *ServiceInstancesChangedListener) GetPriority() int {
+func (tel *TestEventListener) GetPriority() int {
 	return -1
 }
 
-func (sicl *ServiceInstancesChangedListener) GetEventType() reflect.Type {
-	return reflect.TypeOf(&event.ServiceInstancesChangedEvent{})
+func (tel *TestEventListener) GetEventType() reflect.Type {
+	return reflect.TypeOf(TestEvent{})
+}
+
+type TestEventListener1 struct {
+	observer.EventListener
+}
+
+func (tel *TestEventListener1) OnEvent(e observer.Event) error {
+	fmt.Println("TestEventListener1")
+	return nil
+}
+
+func (tel *TestEventListener1) GetPriority() int {
+	return 1
+}
+
+func (tel *TestEventListener1) GetEventType() reflect.Type {
+	return reflect.TypeOf(TestEvent{})
 }
