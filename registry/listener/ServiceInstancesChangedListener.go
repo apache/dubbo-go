@@ -18,9 +18,12 @@
 package listener
 
 import (
+	"reflect"
+)
+
+import (
 	"github.com/apache/dubbo-go/common/observer"
 	"github.com/apache/dubbo-go/common/observer/event"
-	"reflect"
 )
 
 func init() {

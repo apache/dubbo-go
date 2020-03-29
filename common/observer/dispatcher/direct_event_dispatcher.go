@@ -18,9 +18,12 @@
 package dispatcher
 
 import (
+	"reflect"
+)
+
+import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/observer"
-	"reflect"
 )
 
 func init() {

@@ -19,6 +19,9 @@ package event
 
 import (
 	"fmt"
+)
+
+import (
 	"github.com/apache/dubbo-go/common/observer"
 )
 
