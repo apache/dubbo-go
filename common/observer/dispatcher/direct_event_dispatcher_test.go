@@ -29,6 +29,7 @@ func TestDirectEventDispatcher_Dispatch(t *testing.T) {
 	ded.AddEventListener(&TestEventListener{})
 	ded.AddEventListener(&TestEventListener1{})
 	ded.Dispatch(&TestEvent{})
+	ded.Dispatch(nil)
 }
 
 type TestEvent struct {
@@ -50,7 +51,7 @@ func (tel *TestEventListener) GetPriority() int {
 }
 
 func (tel *TestEventListener) GetEventType() reflect.Type {
-	return reflect.TypeOf(TestEvent{})
+	return reflect.TypeOf(&TestEvent{})
 }
 
 type TestEventListener1 struct {

@@ -46,7 +46,7 @@ type BaseConfig struct {
 	configCenterUrl     *common.URL
 	prefix              string
 	fatherConfig        interface{}
-	eventDispatcherType string        `yaml:"direct" json:"direct,omitempty"`
+	eventDispatcherType string        `default:"direct" yaml:"event_dispatcher_type" json:"event_dispatcher_type,omitempty"`
 	MetricConfig        *MetricConfig `yaml:"metrics" json:"metrics,omitempty"`
 	fileStream          *bytes.Buffer
 }
