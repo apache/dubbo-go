@@ -18,6 +18,7 @@
 package observer
 
 import (
+	"reflect"
 	"sort"
 	"sync"
 )
@@ -44,6 +45,9 @@ func NewBaseListenable() Listenable {
 // AddEventListener ...
 func (bl *BaseListenable) AddEventListener(listener EventListener) {
 	eventType := listener.GetEventType()
+	if eventType.Kind() == reflect.Ptr {
+		eventType = eventType.Elem()
+	}
 	var listenersSlice []EventListener
 	bl.Mutex.Lock()
 	defer bl.Mutex.Unlock()
@@ -72,6 +76,9 @@ func (bl *BaseListenable) AddEventListeners(listenersSlice []EventListener) {
 // RemoveEventListener ...
 func (bl *BaseListenable) RemoveEventListener(listener EventListener) {
 	eventType := listener.GetEventType()
+	if eventType.Kind() == reflect.Ptr {
+		eventType = eventType.Elem()
+	}
 	bl.Mutex.Lock()
 	defer bl.Mutex.Unlock()
 	value, loaded := bl.ListenersCache.Load(eventType)

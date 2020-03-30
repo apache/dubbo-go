@@ -43,6 +43,10 @@ func NewDirectEventDispatcher() observer.EventDispatcher {
 }
 
 func (ded *DirectEventDispatcher) Dispatch(event observer.Event) {
+	if event == nil {
+		logger.Warnf("[DirectEventDispatcher] dispatch event nil")
+		return
+	}
 	eventType := reflect.TypeOf(event).Elem()
 	value, loaded := ded.ListenersCache.Load(eventType)
 	if !loaded {
