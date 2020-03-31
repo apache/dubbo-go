@@ -81,29 +81,28 @@ func (grs *GoRestfulServer) Start(url common.URL) {
 }
 
 func (grs *GoRestfulServer) Deploy(invoker protocol.Invoker, restMethodConfig map[string]*config.RestMethodConfig) {
-	svc := common.ServiceMap.GetService(invoker.GetUrl().Protocol, strings.TrimPrefix(invoker.GetUrl().Path, "/"))
 	for methodName, config := range restMethodConfig {
-		// get method
-		method := svc.Method()[methodName]
-		argsTypes := method.ArgsType()
-		replyType := method.ReplyType()
 		ws := new(restful.WebService)
 		ws.Path(config.Path).
 			Produces(strings.Split(config.Produces, ",")...).
 			Consumes(strings.Split(config.Consumes, ",")...).
-			Route(ws.Method(config.MethodType).To(getFunc(methodName, invoker, argsTypes, replyType, config)))
+			Route(ws.Method(config.MethodType).To(getFunc(methodName, invoker, config)))
 		grs.container.Add(ws)
 	}
 
 }
 
-func getFunc(methodName string, invoker protocol.Invoker, argsTypes []reflect.Type,
-	replyType reflect.Type, config *config.RestMethodConfig) func(req *restful.Request, resp *restful.Response) {
+func getFunc(methodName string, invoker protocol.Invoker, config *config.RestMethodConfig) func(req *restful.Request, resp *restful.Response) {
 	return func(req *restful.Request, resp *restful.Response) {
 		var (
 			err  error
 			args []interface{}
 		)
+		svc := common.ServiceMap.GetService(invoker.GetUrl().Protocol, strings.TrimPrefix(invoker.GetUrl().Path, "/"))
+		// get method
+		method := svc.Method()[methodName]
+		argsTypes := method.ArgsType()
+		replyType := method.ReplyType()
 		if (len(argsTypes) == 1 || len(argsTypes) == 2 && replyType == nil) &&
 			argsTypes[0].String() == "[]interface {}" {
 			args = getArgsInterfaceFromRequest(req, config)
