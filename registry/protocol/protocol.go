@@ -347,7 +347,7 @@ func setProviderUrl(regURL *common.URL, providerURL *common.URL) {
 	regURL.SubURL = providerURL
 }
 
-// GetProtocol ...
+// GetProtocol return the singleton RegistryProtocol
 func GetProtocol() protocol.Protocol {
 	once.Do(func() {
 		regProtocol = newRegistryProtocol()
