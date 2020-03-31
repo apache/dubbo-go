@@ -120,8 +120,12 @@ func newMockZkRegistry(url *common.URL, opts ...zookeeper.Option) (*zk.TestClust
 
 func (r *zkRegistry) InitListeners() {
 	r.listener = zookeeper.NewZkEventListener(r.client)
-
-	r.dataListener = NewRegistryDataListener()
+	recoverd := r.dataListener.subscribed
+	newDataListener := NewRegistryDataListener()
+	for url, _ := range recoverd {
+		newDataListener.SubscribeURL(url, NewRegistryConfigurationListener(r.client, r))
+	}
+	r.dataListener = newDataListener
 }
 
 func (r *zkRegistry) CreatePath(path string) error {
@@ -174,8 +178,9 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 	}
 	zkPath, err = r.client.RegisterTemp(root, node)
 	if err != nil {
-		if err == zk.ErrNodeExists {
-			logger.Warnf("RegisterTempNode(root{%s}, node{%s}) = error{%v}", root, node, perrors.WithStack(err))
+		if perrors.Cause(err) == zk.ErrNodeExists {
+			logger.Warnf("RegisterTempNode(root{%s}, node{%s}) = error{%v}, ignore!", root, node, perrors.WithStack(err))
+			return nil
 		} else {
 			logger.Errorf("RegisterTempNode(root{%s}, node{%s}) = error{%v}", root, node, perrors.WithStack(err))
 		}
@@ -220,7 +225,6 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 	r.dataListener.SubscribeURL(conf, zkListener)
 
 	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, url.QueryEscape(conf.Service())), r.dataListener)
-
 
 
 	return zkListener, nil
