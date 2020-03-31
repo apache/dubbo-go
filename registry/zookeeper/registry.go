@@ -120,10 +120,16 @@ func newMockZkRegistry(url *common.URL, opts ...zookeeper.Option) (*zk.TestClust
 
 func (r *zkRegistry) InitListeners() {
 	r.listener = zookeeper.NewZkEventListener(r.client)
-	recoverd := r.dataListener.subscribed
 	newDataListener := NewRegistryDataListener()
-	for url, _ := range recoverd {
-		newDataListener.SubscribeURL(url, NewRegistryConfigurationListener(r.client, r))
+	// should recover if dataListener isn't nil before
+	if r.dataListener != nil {
+		recoverd := r.dataListener.subscribed
+		if recoverd != nil && len(recoverd) > 0 {
+			// recover all subscribed url
+			for url, _ := range recoverd {
+				newDataListener.SubscribeURL(url, NewRegistryConfigurationListener(r.client, r))
+			}
+		}
 	}
 	r.dataListener = newDataListener
 }
