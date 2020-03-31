@@ -78,8 +78,7 @@ func (ri *RestInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 	if len(inv.Arguments()) > methodConfig.Body && methodConfig.Body >= 0 {
 		body = inv.Arguments()[methodConfig.Body]
 	}
-
-	req := &client.RestRequest{
+	req := &client.RestClientRequest{
 		Location:    ri.GetUrl().Location,
 		Produces:    methodConfig.Produces,
 		Consumes:    methodConfig.Consumes,
