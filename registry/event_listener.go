@@ -40,4 +40,3 @@ type ConditionalEventListener interface {
 type ServiceInstancesChangedListener struct {
 	ServiceName string
 }
-
