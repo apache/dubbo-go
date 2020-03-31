@@ -35,14 +35,14 @@ import (
 	zk "github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
-// RegistryDataListener ...
+// RegistryDataListener contains all URL information subscribed by zookeeper registry
 type RegistryDataListener struct {
 	subscribed map[*common.URL]config_center.ConfigurationListener
 	mutex      sync.Mutex
 	closed     bool
 }
 
-// NewRegistryDataListener ...
+// NewRegistryDataListener constructs a new RegistryDataListener
 func NewRegistryDataListener() *RegistryDataListener {
 	return &RegistryDataListener{
 		subscribed: make(map[*common.URL]config_center.ConfigurationListener)}
@@ -58,7 +58,7 @@ func (l *RegistryDataListener) SubscribeURL(url *common.URL, listener config_cen
 	l.subscribed[url] = listener
 }
 
-// DataChange ...
+// DataChange accepts all events sent from the zookeeper server and trigger the corresponding listener for processing
 func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 	// Intercept the last bit
 	index := strings.Index(eventType.Path, "/providers/")
@@ -92,6 +92,7 @@ func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 	return false
 }
 
+// Close all RegistryConfigurationListener in subscribed
 func (l *RegistryDataListener) Close() {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
@@ -100,7 +101,7 @@ func (l *RegistryDataListener) Close() {
 	}
 }
 
-// RegistryConfigurationListener ...
+// RegistryConfigurationListener represent the processor of zookeeper watcher
 type RegistryConfigurationListener struct {
 	client    *zk.ZookeeperClient
 	registry  *zkRegistry
@@ -115,12 +116,12 @@ func NewRegistryConfigurationListener(client *zk.ZookeeperClient, reg *zkRegistr
 	return &RegistryConfigurationListener{client: client, registry: reg, events: make(chan *config_center.ConfigChangeEvent, 32), isClosed: false}
 }
 
-// Process ...
+// Process submit the ConfigChangeEvent to the event chan to notify all observer
 func (l *RegistryConfigurationListener) Process(configType *config_center.ConfigChangeEvent) {
 	l.events <- configType
 }
 
-// Next ...
+// Next will observe the registry state and events chan
 func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
@@ -146,7 +147,7 @@ func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 	}
 }
 
-// Close ...
+// Close RegistryConfigurationListener only once
 func (l *RegistryConfigurationListener) Close() {
 	// ensure that the listener will be closed at most once.
 	l.closeOnce.Do(func() {
@@ -154,7 +155,7 @@ func (l *RegistryConfigurationListener) Close() {
 		l.registry.WaitGroup().Done()
 	})
 }
-
+// valid return the true if the client conn isn't nil
 func (l *RegistryConfigurationListener) valid() bool {
 	return l.client.ZkConnValid()
 }
