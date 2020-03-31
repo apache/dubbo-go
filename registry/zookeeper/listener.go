@@ -155,6 +155,7 @@ func (l *RegistryConfigurationListener) Close() {
 		l.registry.WaitGroup().Done()
 	})
 }
+
 // valid return the true if the client conn isn't nil
 func (l *RegistryConfigurationListener) valid() bool {
 	return l.client.ZkConnValid()
