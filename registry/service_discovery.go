@@ -72,6 +72,7 @@ type ServiceDiscovery interface {
 
 	// ----------------- event ----------------------
 	// AddListener adds a new ServiceInstancesChangedListener
+	// see addServiceInstancesChangedListener in Java
 	AddListener(listener *ServiceInstancesChangedListener) error
 
 	// DispatchEventByServiceName dispatches the ServiceInstancesChangedEvent to service instance whose name is serviceName
@@ -81,7 +82,5 @@ type ServiceDiscovery interface {
 	DispatchEventForInstances(serviceName string, instances []ServiceInstance) error
 
 	// DispatchEvent dispatches the event
-	DispatchEvent(event ServiceInstancesChangedEvent) error
+	DispatchEvent(event *ServiceInstancesChangedEvent) error
 }
-
-

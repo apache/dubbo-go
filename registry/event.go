@@ -86,6 +86,22 @@ func newBaseEvent(source interface{}) *baseEvent {
 
 // ServiceInstancesChangedEvent represents service instances make some changing
 type ServiceInstancesChangedEvent struct {
-	fmt.Stringer
 	baseEvent
+	ServiceName string
+	Instances   []ServiceInstance
+}
+
+func (s *ServiceInstancesChangedEvent) String() string {
+	return fmt.Sprintf("ServiceInstancesChangedEvent[source=%s]", s.ServiceName)
+}
+
+func NewServiceInstancesChangedEvent(serviceName string, instances []ServiceInstance) *ServiceInstancesChangedEvent {
+	return &ServiceInstancesChangedEvent{
+		baseEvent: baseEvent{
+			source:    serviceName,
+			timestamp: time.Now(),
+		},
+		ServiceName: serviceName,
+		Instances:   instances,
+	}
 }
