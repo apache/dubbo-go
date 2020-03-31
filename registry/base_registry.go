@@ -178,7 +178,10 @@ func (r *BaseRegistry) RestartCallBack() bool {
 		}
 		logger.Infof("success to re-register service :%v", confIf.Key())
 	}
-	r.facadeBasedRegistry.InitListeners()
+
+	if flag {
+		r.facadeBasedRegistry.InitListeners()
+	}
 
 	return flag
 }

@@ -38,7 +38,6 @@ import (
 // RegistryDataListener ...
 type RegistryDataListener struct {
 	subscribed map[*common.URL]config_center.ConfigurationListener
-	listener   config_center.ConfigurationListener
 	mutex      sync.Mutex
 	closed     bool
 }
