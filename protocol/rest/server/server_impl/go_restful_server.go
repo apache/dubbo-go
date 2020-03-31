@@ -22,8 +22,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"reflect"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -38,8 +36,6 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/apache/dubbo-go/protocol/rest/config"
 	"github.com/apache/dubbo-go/protocol/rest/server"
 )
@@ -80,57 +76,27 @@ func (grs *GoRestfulServer) Start(url common.URL) {
 	}()
 }
 
-func (grs *GoRestfulServer) Deploy(invoker protocol.Invoker, restMethodConfig map[string]*config.RestMethodConfig) {
-	for methodName, config := range restMethodConfig {
-		ws := new(restful.WebService)
-		ws.Path(config.Path).
-			Produces(strings.Split(config.Produces, ",")...).
-			Consumes(strings.Split(config.Consumes, ",")...).
-			Route(ws.Method(config.MethodType).To(getFunc(methodName, invoker, config)))
-		grs.container.Add(ws)
+func (grs *GoRestfulServer) Deploy(restMethodConfig *config.RestMethodConfig, routeFunc func(request server.RestServerRequest, response server.RestServerResponse)) {
+	ws := new(restful.WebService)
+	rf := func(req *restful.Request, resp *restful.Response) {
+		respAdapter := NewGoRestfulResponseAdapter(resp)
+		reqAdapter := NewGoRestfulRequestAdapter(req)
+		routeFunc(reqAdapter, respAdapter)
 	}
+	ws.Path(restMethodConfig.Path).
+		Produces(strings.Split(restMethodConfig.Produces, ",")...).
+		Consumes(strings.Split(restMethodConfig.Consumes, ",")...).
+		Route(ws.Method(restMethodConfig.MethodType).To(rf))
+	grs.container.Add(ws)
 
 }
 
-func getFunc(methodName string, invoker protocol.Invoker, config *config.RestMethodConfig) func(req *restful.Request, resp *restful.Response) {
-	return func(req *restful.Request, resp *restful.Response) {
-		var (
-			err  error
-			args []interface{}
-		)
-		svc := common.ServiceMap.GetService(invoker.GetUrl().Protocol, strings.TrimPrefix(invoker.GetUrl().Path, "/"))
-		// get method
-		method := svc.Method()[methodName]
-		argsTypes := method.ArgsType()
-		replyType := method.ReplyType()
-		if (len(argsTypes) == 1 || len(argsTypes) == 2 && replyType == nil) &&
-			argsTypes[0].String() == "[]interface {}" {
-			args = getArgsInterfaceFromRequest(req, config)
-		} else {
-			args = getArgsFromRequest(req, argsTypes, config)
-		}
-		result := invoker.Invoke(context.Background(), invocation.NewRPCInvocation(methodName, args, make(map[string]string)))
-		if result.Error() != nil {
-			err = resp.WriteError(http.StatusInternalServerError, result.Error())
-			if err != nil {
-				logger.Errorf("[Go Restful] WriteError error:%v", err)
-			}
-			return
-		}
-		err = resp.WriteEntity(result.Result())
-		if err != nil {
-			logger.Error("[Go Restful] WriteEntity error:%v", err)
-		}
-	}
-}
-func (grs *GoRestfulServer) UnDeploy(restMethodConfig map[string]*config.RestMethodConfig) {
-	for _, config := range restMethodConfig {
-		ws := new(restful.WebService)
-		ws.Path(config.Path)
-		err := grs.container.Remove(ws)
-		if err != nil {
-			logger.Warnf("[Go restful] Remove web service error:%v", err)
-		}
+func (grs *GoRestfulServer) UnDeploy(restMethodConfig *config.RestMethodConfig) {
+	ws := new(restful.WebService)
+	ws.Path(restMethodConfig.Path)
+	err := grs.container.Remove(ws)
+	if err != nil {
+		logger.Warnf("[Go restful] Remove web service error:%v", err)
 	}
 }
 
@@ -143,173 +109,6 @@ func (grs *GoRestfulServer) Destroy() {
 	logger.Infof("[Go Restful] Server exiting")
 }
 
-func getArgsInterfaceFromRequest(req *restful.Request, config *config.RestMethodConfig) []interface{} {
-	argsMap := make(map[int]interface{}, 8)
-	maxKey := 0
-	for k, v := range config.PathParamsMap {
-		if maxKey < k {
-			maxKey = k
-		}
-		argsMap[k] = req.PathParameter(v)
-	}
-	for k, v := range config.QueryParamsMap {
-		if maxKey < k {
-			maxKey = k
-		}
-		params := req.QueryParameters(v)
-		if len(params) == 1 {
-			argsMap[k] = params[0]
-		} else {
-			argsMap[k] = params
-		}
-	}
-	for k, v := range config.HeadersMap {
-		if maxKey < k {
-			maxKey = k
-		}
-		argsMap[k] = req.HeaderParameter(v)
-	}
-	if config.Body >= 0 {
-		if maxKey < config.Body {
-			maxKey = config.Body
-		}
-		m := make(map[string]interface{})
-		// TODO read as a slice
-		if err := req.ReadEntity(&m); err != nil {
-			logger.Warnf("[Go restful] Read body entity as map[string]interface{} error:%v", perrors.WithStack(err))
-		} else {
-			argsMap[config.Body] = m
-		}
-	}
-	args := make([]interface{}, maxKey+1)
-	for k, v := range argsMap {
-		if k >= 0 {
-			args[k] = v
-		}
-	}
-	return args
-}
-
-func getArgsFromRequest(req *restful.Request, argsTypes []reflect.Type, config *config.RestMethodConfig) []interface{} {
-	argsLength := len(argsTypes)
-	args := make([]interface{}, argsLength)
-	for i, t := range argsTypes {
-		args[i] = reflect.Zero(t).Interface()
-	}
-	var (
-		err   error
-		param interface{}
-		i64   int64
-	)
-	for k, v := range config.PathParamsMap {
-		if k < 0 || k >= argsLength {
-			logger.Errorf("[Go restful] Path param parse error, the args:%v doesn't exist", k)
-			continue
-		}
-		t := argsTypes[k]
-		kind := t.Kind()
-		if kind == reflect.Ptr {
-			t = t.Elem()
-		}
-		if kind == reflect.Int {
-			param, err = strconv.Atoi(req.PathParameter(v))
-		} else if kind == reflect.Int32 {
-			i64, err = strconv.ParseInt(req.PathParameter(v), 10, 32)
-			if err == nil {
-				param = int32(i64)
-			}
-		} else if kind == reflect.Int64 {
-			param, err = strconv.ParseInt(req.PathParameter(v), 10, 64)
-		} else if kind == reflect.String {
-			param = req.PathParameter(v)
-		} else {
-			logger.Warnf("[Go restful] Path param parse error, the args:%v of type isn't int or string", k)
-			continue
-		}
-		if err != nil {
-			logger.Errorf("[Go restful] Path param parse error, error is %v", err)
-			continue
-		}
-		args[k] = param
-	}
-	for k, v := range config.QueryParamsMap {
-		if k < 0 || k >= argsLength {
-			logger.Errorf("[Go restful] Query param parse error, the args:%v doesn't exist", k)
-			continue
-		}
-		t := argsTypes[k]
-		kind := t.Kind()
-		if kind == reflect.Ptr {
-			t = t.Elem()
-		}
-		if kind == reflect.Slice {
-			param = req.QueryParameters(v)
-		} else if kind == reflect.String {
-			param = req.QueryParameter(v)
-		} else if kind == reflect.Int {
-			param, err = strconv.Atoi(req.QueryParameter(v))
-		} else if kind == reflect.Int32 {
-			i64, err = strconv.ParseInt(req.QueryParameter(v), 10, 32)
-			if err == nil {
-				param = int32(i64)
-			}
-		} else if kind == reflect.Int64 {
-			param, err = strconv.ParseInt(req.QueryParameter(v), 10, 64)
-		} else {
-			logger.Errorf("[Go restful] Query param parse error, the args:%v of type isn't int or string or slice", k)
-			continue
-		}
-		if err != nil {
-			logger.Errorf("[Go restful] Query param parse error, error is %v", err)
-			continue
-		}
-		args[k] = param
-	}
-
-	if config.Body >= 0 && config.Body < len(argsTypes) {
-		t := argsTypes[config.Body]
-		kind := t.Kind()
-		if kind == reflect.Ptr {
-			t = t.Elem()
-		}
-		var ni interface{}
-		if t.String() == "[]interface {}" {
-			ni = make([]map[string]interface{}, 0)
-		} else if t.String() == "interface {}" {
-			ni = make(map[string]interface{})
-		} else {
-			n := reflect.New(t)
-			if n.CanInterface() {
-				ni = n.Interface()
-			}
-		}
-		if err := req.ReadEntity(&ni); err != nil {
-			logger.Errorf("[Go restful] Read body entity error:%v", err)
-		} else {
-			args[config.Body] = ni
-		}
-	}
-
-	for k, v := range config.HeadersMap {
-		param := req.HeaderParameter(v)
-		if k < 0 || k >= argsLength {
-			logger.Errorf("[Go restful] Header param parse error, the args:%v doesn't exist", k)
-			continue
-		}
-		t := argsTypes[k]
-		if t.Kind() == reflect.Ptr {
-			t = t.Elem()
-		}
-		if t.Kind() == reflect.String {
-			args[k] = param
-		} else {
-			logger.Errorf("[Go restful] Header param parse error, the args:%v of type isn't string", k)
-		}
-	}
-
-	return args
-}
-
 func GetNewGoRestfulServer() server.RestServer {
 	return NewGoRestfulServer()
 }
@@ -318,4 +117,58 @@ func GetNewGoRestfulServer() server.RestServer {
 // addFilter should before config.Load()
 func AddGoRestfulServerFilter(filterFuc restful.FilterFunction) {
 	filterSlice = append(filterSlice, filterFuc)
+}
+
+// Go Restful Request adapt to RestServerRequest
+type GoRestfulRequestAdapter struct {
+	rawRequest *restful.Request
+}
+
+func (gra *GoRestfulRequestAdapter) PathParameter(name string) string {
+	return gra.rawRequest.PathParameter(name)
+}
+
+func (gra *GoRestfulRequestAdapter) PathParameters() map[string]string {
+	return gra.rawRequest.PathParameters()
+}
+
+func (gra *GoRestfulRequestAdapter) QueryParameter(name string) string {
+	return gra.rawRequest.QueryParameter(name)
+}
+
+func (gra *GoRestfulRequestAdapter) QueryParameters(name string) []string {
+	return gra.rawRequest.QueryParameters(name)
+}
+
+func (gra *GoRestfulRequestAdapter) BodyParameter(name string) (string, error) {
+	return gra.rawRequest.BodyParameter(name)
+}
+
+func (gra *GoRestfulRequestAdapter) HeaderParameter(name string) string {
+	return gra.rawRequest.HeaderParameter(name)
+}
+
+func (gra *GoRestfulRequestAdapter) ReadEntity(entityPointer interface{}) error {
+	return gra.rawRequest.ReadEntity(entityPointer)
+}
+
+func NewGoRestfulRequestAdapter(rawRequest *restful.Request) server.RestServerRequest {
+	return &GoRestfulRequestAdapter{rawRequest: rawRequest}
+}
+
+// Go Restful Request adapt to RestClientRequest
+type GoRestfulResponseAdapter struct {
+	rawResponse *restful.Response
+}
+
+func (grsa *GoRestfulResponseAdapter) WriteError(httpStatus int, err error) (writeErr error) {
+	return grsa.rawResponse.WriteError(httpStatus, err)
+}
+
+func (grsa *GoRestfulResponseAdapter) WriteEntity(value interface{}) error {
+	return grsa.rawResponse.WriteEntity(value)
+}
+
+func NewGoRestfulResponseAdapter(rawResponse *restful.Response) server.RestServerResponse {
+	return &GoRestfulResponseAdapter{rawResponse: rawResponse}
 }
