@@ -79,9 +79,7 @@ func (grs *GoRestfulServer) Start(url common.URL) {
 func (grs *GoRestfulServer) Deploy(restMethodConfig *config.RestMethodConfig, routeFunc func(request server.RestServerRequest, response server.RestServerResponse)) {
 	ws := new(restful.WebService)
 	rf := func(req *restful.Request, resp *restful.Response) {
-		respAdapter := NewGoRestfulResponseAdapter(resp)
-		reqAdapter := NewGoRestfulRequestAdapter(req)
-		routeFunc(reqAdapter, respAdapter)
+		routeFunc(req, resp)
 	}
 	ws.Path(restMethodConfig.Path).
 		Produces(strings.Split(restMethodConfig.Produces, ",")...).
@@ -117,58 +115,4 @@ func GetNewGoRestfulServer() server.RestServer {
 // addFilter should before config.Load()
 func AddGoRestfulServerFilter(filterFuc restful.FilterFunction) {
 	filterSlice = append(filterSlice, filterFuc)
-}
-
-// Go Restful Request adapt to RestServerRequest
-type GoRestfulRequestAdapter struct {
-	rawRequest *restful.Request
-}
-
-func (gra *GoRestfulRequestAdapter) PathParameter(name string) string {
-	return gra.rawRequest.PathParameter(name)
-}
-
-func (gra *GoRestfulRequestAdapter) PathParameters() map[string]string {
-	return gra.rawRequest.PathParameters()
-}
-
-func (gra *GoRestfulRequestAdapter) QueryParameter(name string) string {
-	return gra.rawRequest.QueryParameter(name)
-}
-
-func (gra *GoRestfulRequestAdapter) QueryParameters(name string) []string {
-	return gra.rawRequest.QueryParameters(name)
-}
-
-func (gra *GoRestfulRequestAdapter) BodyParameter(name string) (string, error) {
-	return gra.rawRequest.BodyParameter(name)
-}
-
-func (gra *GoRestfulRequestAdapter) HeaderParameter(name string) string {
-	return gra.rawRequest.HeaderParameter(name)
-}
-
-func (gra *GoRestfulRequestAdapter) ReadEntity(entityPointer interface{}) error {
-	return gra.rawRequest.ReadEntity(entityPointer)
-}
-
-func NewGoRestfulRequestAdapter(rawRequest *restful.Request) server.RestServerRequest {
-	return &GoRestfulRequestAdapter{rawRequest: rawRequest}
-}
-
-// Go Restful Request adapt to RestClientRequest
-type GoRestfulResponseAdapter struct {
-	rawResponse *restful.Response
-}
-
-func (grsa *GoRestfulResponseAdapter) WriteError(httpStatus int, err error) (writeErr error) {
-	return grsa.rawResponse.WriteError(httpStatus, err)
-}
-
-func (grsa *GoRestfulResponseAdapter) WriteEntity(value interface{}) error {
-	return grsa.rawResponse.WriteEntity(value)
-}
-
-func NewGoRestfulResponseAdapter(rawResponse *restful.Response) server.RestServerResponse {
-	return &GoRestfulResponseAdapter{rawResponse: rawResponse}
 }
