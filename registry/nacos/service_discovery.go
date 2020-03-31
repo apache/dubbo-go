@@ -165,7 +165,7 @@ func (n *nacosServiceDiscovery) GetHealthyInstancesByPage(serviceName string, of
 		i     = offset
 		count = 0
 	)
-	for ; i < len(all) && count < pageSize; {
+	for i < len(all) && count < pageSize {
 		ins := all[i]
 		if ins.IsHealthy() == healthy {
 			res = append(res, all[i])
@@ -188,25 +188,51 @@ func (n *nacosServiceDiscovery) GetRequestInstances(serviceNames []string, offse
 
 // AddListener will add a listener
 func (n *nacosServiceDiscovery) AddListener(listener *registry.ServiceInstancesChangedListener) error {
-	// return n.namingClient.Subscribe(&vo.SubscribeParam{
-	// 	ServiceName:listener.ServiceName,
-	// 	SubscribeCallback: func(services []model.SubscribeService, err error) {
-	// 		services[0].InstanceId
-	// 		n.DispatchEventForInstances()
-	// 	},
-	// })
+	return n.namingClient.Subscribe(&vo.SubscribeParam{
+		ServiceName: listener.ServiceName,
+		SubscribeCallback: func(services []model.SubscribeService, err error) {
+			if err != nil {
+				logger.Errorf("Could not handle the subscribe notification because the err is not nil."+
+					" service name: %s, err: %v", listener.ServiceName, err)
+			}
+			instances := make([]registry.ServiceInstance, 0, len(services))
+			for _, service := range services {
+				// we won't use the nacos instance id here but use our instance id
+				metadata := service.Metadata
+				id := metadata[idKey]
+
+				delete(metadata, idKey)
+
+				instances = append(instances, &registry.DefaultServiceInstance{
+					Id:          id,
+					ServiceName: service.ServiceName,
+					Host:        service.Ip,
+					Port:        int(service.Port),
+					Enable:      service.Enable,
+					Healthy:     true,
+					Metadata:    metadata,
+				})
+			}
+
+			e := n.DispatchEventForInstances(listener.ServiceName, instances)
+			if e != nil {
+				logger.Errorf("Dispatching event got exception, service name: %s, err: %v", listener.ServiceName, err)
+			}
+		},
+	})
 }
 
 func (n *nacosServiceDiscovery) DispatchEventByServiceName(serviceName string) error {
-	panic("implement me")
+	return n.DispatchEventForInstances(serviceName, n.GetInstances(serviceName))
 }
 
 func (n *nacosServiceDiscovery) DispatchEventForInstances(serviceName string, instances []registry.ServiceInstance) error {
-	panic("implement me")
+	return n.DispatchEvent(registry.NewServiceInstancesChangedEvent(serviceName, instances))
 }
 
-func (n *nacosServiceDiscovery) DispatchEvent(event registry.ServiceInstancesChangedEvent) error {
-	panic("implement me")
+func (n *nacosServiceDiscovery) DispatchEvent(event *registry.ServiceInstancesChangedEvent) error {
+	// TODO(waiting for event dispatcher, another task)
+	return nil
 }
 
 func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInstance) vo.RegisterInstanceParam {
