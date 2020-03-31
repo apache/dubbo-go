@@ -22,11 +22,11 @@ import (
 	"github.com/apache/dubbo-go/registry"
 )
 
-var(
-	discoveryCreatorMap = make(map[string]func(url *common.URL)(registry.ServiceDiscovery, error), 4)
+var (
+	discoveryCreatorMap = make(map[string]func(url *common.URL) (registry.ServiceDiscovery, error), 4)
 )
 
-func SetServiceDiscovery(name string, creator func(url *common.URL)(registry.ServiceDiscovery, error)) {
+func SetServiceDiscovery(name string, creator func(url *common.URL) (registry.ServiceDiscovery, error)) {
 	discoveryCreatorMap[name] = creator
 }
 
