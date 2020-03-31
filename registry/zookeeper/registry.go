@@ -190,9 +190,11 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 	var zkListener *RegistryConfigurationListener
 	if r.dataListener.subscribed[conf] != nil {
 
-		zkListener, err := r.dataListener.subscribed[conf].(*RegistryConfigurationListener)
-		if err != nil && zkListener.isClosed {
-			return nil, perrors.New("zk connection broken")
+		zkListener, _ := r.dataListener.subscribed[conf].(*RegistryConfigurationListener)
+		r.listenerLock.Lock()
+		if zkListener.isClosed {
+			r.listenerLock.Unlock()
+			return nil, perrors.New("configListener already been closed")
 		}
 	}
 
@@ -217,6 +219,7 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 	r.dataListener.SubscribeURL(conf, zkListener)
 
 	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, url.QueryEscape(conf.Service())), r.dataListener)
+
 
 
 	return zkListener, nil
