@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package dynamic_mapping
+package dynamic
 
 import (
 	"testing"
