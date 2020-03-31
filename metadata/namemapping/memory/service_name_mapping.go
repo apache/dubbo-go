@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package in_memory
+package memory
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
