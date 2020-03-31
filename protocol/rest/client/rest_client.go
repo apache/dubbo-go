@@ -26,7 +26,7 @@ type RestOptions struct {
 	ConnectTimeout time.Duration
 }
 
-type RestRequest struct {
+type RestClientRequest struct {
 	Location    string
 	Path        string
 	Produces    string
@@ -39,5 +39,5 @@ type RestRequest struct {
 }
 
 type RestClient interface {
-	Do(request *RestRequest, res interface{}) error
+	Do(request *RestClientRequest, res interface{}) error
 }
