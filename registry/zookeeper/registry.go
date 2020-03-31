@@ -186,7 +186,17 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 }
 
 func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListener, error) {
-	zkListener := NewRegistryConfigurationListener(r.client, r)
+
+	var zkListener *RegistryConfigurationListener
+	if r.dataListener.subscribed[conf] != nil {
+
+		zkListener, err := r.dataListener.subscribed[conf].(*RegistryConfigurationListener)
+		if err != nil && zkListener.isClosed {
+			return nil, perrors.New("zk connection broken")
+		}
+	}
+
+	zkListener = NewRegistryConfigurationListener(r.client, r)
 	if r.listener == nil {
 		r.cltLock.Lock()
 		client := r.client
