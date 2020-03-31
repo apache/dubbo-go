@@ -65,7 +65,7 @@ func NewRestyClient(restOption *client.RestOptions) client.RestClient {
 	}
 }
 
-func (rc *RestyClient) Do(restRequest *client.RestRequest, res interface{}) error {
+func (rc *RestyClient) Do(restRequest *client.RestClientRequest, res interface{}) error {
 	r, err := rc.client.R().
 		SetHeader("Content-Type", restRequest.Consumes).
 		SetHeader("Accept", restRequest.Produces).
