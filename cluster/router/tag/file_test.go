@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package condition
+package tag
 
 import (
 	"testing"
@@ -26,37 +26,37 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 )
 
-func TestGetRule(t *testing.T) {
-	testyml := `
-scope: application
-runtime: true
-force: false
-conditions:
-  - >
-    method!=sayHello =>
-  - >
-    ip=127.0.0.1
-    =>
-    1.1.1.1`
-	rule, e := getRule(testyml)
-
+func TestNewFileTagRouter(t *testing.T) {
+	router, e := NewFileTagRouter([]byte(`priority: 100
+force: true`))
 	assert.Nil(t, e)
-	assert.NotNil(t, rule)
-	assert.Equal(t, 2, len(rule.Conditions))
-	assert.Equal(t, "application", rule.Scope)
-	assert.True(t, rule.Runtime)
-	assert.Equal(t, false, rule.Force)
-	assert.Equal(t, testyml, rule.RawRule)
-	assert.True(t, true, rule.Valid)
-	assert.Equal(t, false, rule.Enabled)
-	assert.Equal(t, false, rule.Dynamic)
-	assert.Equal(t, "", rule.Key)
+	assert.NotNil(t, router)
+	assert.Equal(t, 100, router.routerRule.Priority)
+	assert.Equal(t, true, router.routerRule.Force)
 }
 
-func TestIsMatchGlobPattern(t *testing.T) {
-	url, _ := common.NewURL("dubbo://localhost:8080/Foo?key=v*e")
-	assert.Equal(t, true, isMatchGlobalPattern("$key", "value", &url))
+func TestFileTagRouter_URL(t *testing.T) {
+	router, e := NewFileTagRouter([]byte(`priority: 100
+force: true`))
+	assert.Nil(t, e)
+	assert.NotNil(t, router)
+	url := router.URL()
+	assert.NotNil(t, url)
+	force := url.GetParam(constant.ForceUseTag, "false")
+	priority := url.GetParam(constant.RouterPriority, "0")
+	assert.Equal(t, "true", force)
+	assert.Equal(t, "100", priority)
+
+}
+
+func TestFileTagRouter_Priority(t *testing.T) {
+	router, e := NewFileTagRouter([]byte(`priority: 100
+force: true`))
+	assert.Nil(t, e)
+	assert.NotNil(t, router)
+	priority := router.Priority()
+	assert.Equal(t, int64(100), priority)
 }
