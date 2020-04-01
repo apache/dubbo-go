@@ -215,6 +215,9 @@ const (
 	KEY_SEPARATOR      = ":"
 	DEFAULT_PATH_TAG   = "metadata"
 	KEY_REVISON_PREFIX = "revision"
+
+	// metadata service
+	METADATA_SERVICE_NAME = "org.apache.dubbo.metadata.MetadataService"
 )
 
 // HealthCheck Router
