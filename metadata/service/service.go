@@ -30,14 +30,15 @@ import (
 type MetadataService interface {
 	ServiceName() string
 	ExportURL(url common.URL) bool
-	UnexportURL(url common.URL) bool
+	UnexportURL(url common.URL)
 	RefreshMetadata(exportedRevision string, subscribedRevision string) bool
 	SubscribeURL(url common.URL) bool
-	UnsubscribeURL(url common.URL) bool
+	UnsubscribeURL(url common.URL)
 	PublishServiceDefinition(url common.URL)
 
 	GetExportedURLs(serviceInterface string, group string, version string, protocol string) sets.Set
-	GetServiceDefinition(interfaceName string, version string, group string) string
+	GetSubscribedURLs() sets.Set
+	GetServiceDefinition(interfaceName string, group string, version string) string
 	GetServiceDefinitionByServiceKey(serviceKey string) string
 }
 

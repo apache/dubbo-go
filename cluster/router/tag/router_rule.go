@@ -15,37 +15,24 @@
  * limitations under the License.
  */
 
-package grpc
+package tag
 
 import (
-	"sync"
+	"github.com/apache/dubbo-go/cluster/router"
+	"github.com/apache/dubbo-go/common/yaml"
 )
 
-import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/protocol"
-)
-
-// GrpcExporter ...
-type GrpcExporter struct {
-	*protocol.BaseExporter
+// RouterRule RouterRule config read from config file or config center
+type RouterRule struct {
+	router.BaseRouterRule `yaml:",inline""`
 }
 
-// NewGrpcExporter ...
-func NewGrpcExporter(key string, invoker protocol.Invoker, exporterMap *sync.Map) *GrpcExporter {
-	return &GrpcExporter{
-		BaseExporter: protocol.NewBaseExporter(key, invoker, exporterMap),
-	}
-}
-
-// Unexport ...
-func (gg *GrpcExporter) Unexport() {
-	serviceId := gg.GetInvoker().GetUrl().GetParam(constant.BEAN_NAME_KEY, "")
-	gg.BaseExporter.Unexport()
-	err := common.ServiceMap.UnRegister(GRPC, serviceId)
+func getRule(rawRule string) (*RouterRule, error) {
+	r := &RouterRule{}
+	err := yaml.UnmarshalYML([]byte(rawRule), r)
 	if err != nil {
-		logger.Errorf("[GrpcExporter.Unexport] error: %v", err)
+		return r, err
 	}
+	r.RawRule = rawRule
+	return r, nil
 }

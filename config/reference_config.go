@@ -63,6 +63,7 @@ type ReferenceConfig struct {
 	Generic        bool   `yaml:"generic"  json:"generic,omitempty" property:"generic"`
 	Sticky         bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
 	RequestTimeout string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
+	ForceTag       bool   `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
 }
 
 // Prefix ...
@@ -99,7 +100,9 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 		common.WithParams(c.getUrlMap()),
 		common.WithParamsValue(constant.BEAN_NAME_KEY, c.id),
 	)
-
+	if c.ForceTag {
+		cfgURL.AddParam(constant.ForceUseTag, "true")
+	}
 	if c.Url != "" {
 		// 1. user specified URL, could be peer-to-peer address, or register center's address.
 		urlStrings := gxstrings.RegSplit(c.Url, "\\s*[;]+\\s*")
@@ -186,7 +189,7 @@ func (c *ReferenceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.GENERIC_KEY, strconv.FormatBool(c.Generic))
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
 	urlMap.Set(constant.CATEGORY_KEY, (common.RoleType(common.CONSUMER)).String())
-	urlMap.Set(constant.DUBBO_KEY, "dubbo-consumer-golang-"+constant.Version)
+	urlMap.Set(constant.RELEASE_KEY, "dubbo-golang-"+constant.Version)
 	urlMap.Set(constant.SIDE_KEY, (common.RoleType(common.CONSUMER)).Role())
 
 	if len(c.RequestTimeout) != 0 {
