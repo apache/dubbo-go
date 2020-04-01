@@ -22,13 +22,13 @@ import (
 	"time"
 )
 
-// Some rest options
+// RestOptions
 type RestOptions struct {
 	RequestTimeout time.Duration
 	ConnectTimeout time.Duration
 }
 
-// Client request
+// RestClientRequest
 type RestClientRequest struct {
 	Header      http.Header
 	Location    string
@@ -39,7 +39,7 @@ type RestClientRequest struct {
 	Body        interface{}
 }
 
-// User can implement this client interface to send request
+// RestClient user can implement this client interface to send request
 type RestClient interface {
 	Do(request *RestClientRequest, res interface{}) error
 }
