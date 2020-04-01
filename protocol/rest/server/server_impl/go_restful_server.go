@@ -115,59 +115,59 @@ func (grs *GoRestfulServer) Destroy() {
 	logger.Infof("[Go Restful] Server exiting")
 }
 
-// Let user add the http server of go-restful
+// AddGoRestfulServerFilter let user add the http server of go-restful
 // addFilter should before config.Load()
 func AddGoRestfulServerFilter(filterFuc restful.FilterFunction) {
 	filterSlice = append(filterSlice, filterFuc)
 }
 
-// Adapter about RestServerRequest
+// GoRestfulRequestAdapter a adapter struct about RestServerRequest
 type GoRestfulRequestAdapter struct {
 	server.RestServerRequest
 	request *restful.Request
 }
 
-// A constructor of GoRestfulRequestAdapter
+// NewGoRestfulRequestAdapter a constructor of GoRestfulRequestAdapter
 func NewGoRestfulRequestAdapter(request *restful.Request) *GoRestfulRequestAdapter {
 	return &GoRestfulRequestAdapter{request: request}
 }
 
-// A adapter function of server.RestServerRequest's RawRequest
+// RawRequest a adapter function of server.RestServerRequest's RawRequest
 func (grra *GoRestfulRequestAdapter) RawRequest() *http.Request {
 	return grra.request.Request
 }
 
-// A adapter function of server.RestServerRequest's PathParameter
+// PathParameter a adapter function of server.RestServerRequest's PathParameter
 func (grra *GoRestfulRequestAdapter) PathParameter(name string) string {
 	return grra.request.PathParameter(name)
 }
 
-// A adapter function of server.RestServerRequest's QueryParameter
+// PathParameters a adapter function of server.RestServerRequest's QueryParameter
 func (grra *GoRestfulRequestAdapter) PathParameters() map[string]string {
 	return grra.request.PathParameters()
 }
 
-// A adapter function of server.RestServerRequest's QueryParameters
+// QueryParameter a adapter function of server.RestServerRequest's QueryParameters
 func (grra *GoRestfulRequestAdapter) QueryParameter(name string) string {
 	return grra.request.QueryParameter(name)
 }
 
-// A adapter function of server.RestServerRequest's QueryParameters
+// QueryParameters a adapter function of server.RestServerRequest's QueryParameters
 func (grra *GoRestfulRequestAdapter) QueryParameters(name string) []string {
 	return grra.request.QueryParameters(name)
 }
 
-// A adapter function of server.RestServerRequest's BodyParameter
+// BodyParameter a adapter function of server.RestServerRequest's BodyParameter
 func (grra *GoRestfulRequestAdapter) BodyParameter(name string) (string, error) {
 	return grra.request.BodyParameter(name)
 }
 
-// A adapter function of server.RestServerRequest's HeaderParameter
+// HeaderParameter a adapter function of server.RestServerRequest's HeaderParameter
 func (grra *GoRestfulRequestAdapter) HeaderParameter(name string) string {
 	return grra.request.HeaderParameter(name)
 }
 
-// A adapter func of server.RestServerRequest's ReadEntity
+// ReadEntity a adapter func of server.RestServerRequest's ReadEntity
 func (grra *GoRestfulRequestAdapter) ReadEntity(entityPointer interface{}) error {
 	return grra.request.ReadEntity(entityPointer)
 }
