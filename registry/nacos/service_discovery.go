@@ -70,7 +70,7 @@ func (n *nacosServiceDiscovery) Register(instance registry.ServiceInstance) erro
 // so we should unregister the instance and then register it again.
 // the error handling is hard to implement
 func (n *nacosServiceDiscovery) Update(instance registry.ServiceInstance) error {
-	// The
+	// TODO(wait for nacos support)
 	err := n.Unregister(instance)
 	if err != nil {
 		return perrors.WithStack(err)
@@ -237,6 +237,9 @@ func (n *nacosServiceDiscovery) DispatchEvent(event *registry.ServiceInstancesCh
 
 func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInstance) vo.RegisterInstanceParam {
 	metadata := instance.GetMetadata()
+	if metadata == nil {
+		metadata = make(map[string]string, 1)
+	}
 	metadata[idKey] = instance.GetId()
 	return vo.RegisterInstanceParam{
 		ServiceName: instance.GetServiceName(),
@@ -246,6 +249,7 @@ func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInst
 		Enable:      instance.IsEnable(),
 		Healthy:     instance.IsHealthy(),
 		GroupName:   n.group,
+		Ephemeral: true,
 	}
 }
 
