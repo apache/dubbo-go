@@ -40,6 +40,7 @@ func init() {
 	extension.SetRestClient(constant.DEFAULT_REST_CLIENT, NewRestyClient)
 }
 
+// A rest client implement by Resty
 type RestyClient struct {
 	client *resty.Client
 }
