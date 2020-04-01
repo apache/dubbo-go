@@ -46,13 +46,13 @@ func init() {
 
 var filterSlice []restful.FilterFunction
 
-// A rest server implement by go-restful
+// GoRestfulServer a rest server implement by go-restful
 type GoRestfulServer struct {
 	srv       *http.Server
 	container *restful.Container
 }
 
-// A constructor of GoRestfulServer
+// NewGoRestfulServer a constructor of GoRestfulServer
 func NewGoRestfulServer() server.RestServer {
 	return &GoRestfulServer{}
 }
