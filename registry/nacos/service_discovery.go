@@ -23,7 +23,9 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/model"
 	"github.com/nacos-group/nacos-sdk-go/vo"
 	perrors "github.com/pkg/errors"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -105,7 +107,7 @@ func (n *nacosServiceDiscovery) GetServices() *gxset.HashSet {
 	}
 
 	for _, e := range services {
-		res.Add(e)
+		res.Add(e.Name)
 	}
 	return res
 }
@@ -249,7 +251,7 @@ func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInst
 		Enable:      instance.IsEnable(),
 		Healthy:     instance.IsHealthy(),
 		GroupName:   n.group,
-		Ephemeral: true,
+		Ephemeral:   true,
 	}
 }
 
