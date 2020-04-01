@@ -79,7 +79,7 @@ func (grs *GoRestfulServer) Start(url common.URL) {
 func (grs *GoRestfulServer) Deploy(restMethodConfig *config.RestMethodConfig, routeFunc func(request server.RestServerRequest, response server.RestServerResponse)) {
 	ws := new(restful.WebService)
 	rf := func(req *restful.Request, resp *restful.Response) {
-		routeFunc(req, resp)
+		routeFunc(NewGoRestfulRequestAdapter(req), resp)
 	}
 	ws.Path(restMethodConfig.Path).
 		Produces(strings.Split(restMethodConfig.Produces, ",")...).
@@ -115,4 +115,46 @@ func GetNewGoRestfulServer() server.RestServer {
 // addFilter should before config.Load()
 func AddGoRestfulServerFilter(filterFuc restful.FilterFunction) {
 	filterSlice = append(filterSlice, filterFuc)
+}
+
+// Adapter about RestServerRequest
+type GoRestfulRequestAdapter struct {
+	server.RestServerRequest
+	request *restful.Request
+}
+
+func NewGoRestfulRequestAdapter(request *restful.Request) *GoRestfulRequestAdapter {
+	return &GoRestfulRequestAdapter{request: request}
+}
+
+func (grra *GoRestfulRequestAdapter) RawRequest() *http.Request {
+	return grra.request.Request
+}
+
+func (grra *GoRestfulRequestAdapter) PathParameter(name string) string {
+	return grra.request.PathParameter(name)
+}
+
+func (grra *GoRestfulRequestAdapter) PathParameters() map[string]string {
+	return grra.request.PathParameters()
+}
+
+func (grra *GoRestfulRequestAdapter) QueryParameter(name string) string {
+	return grra.request.QueryParameter(name)
+}
+
+func (grra *GoRestfulRequestAdapter) QueryParameters(name string) []string {
+	return grra.request.QueryParameters(name)
+}
+
+func (grra *GoRestfulRequestAdapter) BodyParameter(name string) (string, error) {
+	return grra.request.BodyParameter(name)
+}
+
+func (grra *GoRestfulRequestAdapter) HeaderParameter(name string) string {
+	return grra.request.HeaderParameter(name)
+}
+
+func (grra *GoRestfulRequestAdapter) ReadEntity(entityPointer interface{}) error {
+	return grra.request.ReadEntity(entityPointer)
 }
