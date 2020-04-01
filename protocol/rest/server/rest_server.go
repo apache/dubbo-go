@@ -38,33 +38,47 @@ import (
 )
 
 type RestServer interface {
+	// start rest server
 	Start(url common.URL)
+	// deploy a http api
 	Deploy(restMethodConfig *rest_config.RestMethodConfig, routeFunc func(request RestServerRequest, response RestServerResponse))
+	// unDeploy a http api
 	UnDeploy(restMethodConfig *rest_config.RestMethodConfig)
+	// destroy rest server
 	Destroy()
 }
 
 // RestServerRequest interface
 type RestServerRequest interface {
+	// Get the Ptr of http.Request
 	RawRequest() *http.Request
+	// Get the path parameter by name
 	PathParameter(name string) string
+	// Get the map of the path parameters
 	PathParameters() map[string]string
+	// Get the query parameter by name
 	QueryParameter(name string) string
+	// Get the map of query parameters
 	QueryParameters(name string) []string
+	// Get the body parameter of name
 	BodyParameter(name string) (string, error)
+	// Get the header parameter of name
 	HeaderParameter(name string) string
+	// ReadEntity checks the Accept header and reads the content into the entityPointer.
 	ReadEntity(entityPointer interface{}) error
 }
 
 // RestServerResponse interface
 type RestServerResponse interface {
-	Header() http.Header
-	Write([]byte) (int, error)
-	WriteHeader(statusCode int)
+	http.ResponseWriter
+	// WriteError writes the http status and the error string on the response. err can be nil.
+	// Return an error if writing was not succesful.
 	WriteError(httpStatus int, err error) (writeErr error)
+	// WriteEntity marshals the value using the representation denoted by the Accept Header.
 	WriteEntity(value interface{}) error
 }
 
+// A route function will be invoked by http server
 func GetRouteFunc(invoker protocol.Invoker, methodConfig *rest_config.RestMethodConfig) func(req RestServerRequest, resp RestServerResponse) {
 	return func(req RestServerRequest, resp RestServerResponse) {
 		var (
