@@ -18,6 +18,7 @@
 package client
 
 import (
+	"net/http"
 	"time"
 )
 
@@ -27,15 +28,13 @@ type RestOptions struct {
 }
 
 type RestClientRequest struct {
+	Header      http.Header
 	Location    string
 	Path        string
-	Produces    string
-	Consumes    string
 	Method      string
 	PathParams  map[string]string
 	QueryParams map[string]string
 	Body        interface{}
-	Headers     map[string]string
 }
 
 type RestClient interface {

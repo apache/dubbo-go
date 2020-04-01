@@ -46,6 +46,7 @@ type RestServer interface {
 
 // RestServerRequest interface
 type RestServerRequest interface {
+	RawRequest() *http.Request
 	PathParameter(name string) string
 	PathParameters() map[string]string
 	QueryParameter(name string) string
@@ -57,6 +58,9 @@ type RestServerRequest interface {
 
 // RestServerResponse interface
 type RestServerResponse interface {
+	Header() http.Header
+	Write([]byte) (int, error)
+	WriteHeader(statusCode int)
 	WriteError(httpStatus int, err error) (writeErr error)
 	WriteEntity(value interface{}) error
 }
