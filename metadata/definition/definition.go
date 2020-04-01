@@ -17,6 +17,10 @@
 
 package definition
 
+import (
+	"bytes"
+)
+
 type ServiceDefinition struct {
 	CanonicalName string
 	CodeSource    string
@@ -38,4 +42,26 @@ type TypeDefinition struct {
 	Enums           []string
 	Properties      map[string]TypeDefinition
 	TypeBuilderName string
+}
+
+// name...
+func ServiceDefinitionBuild() *ServiceDefinition {
+	sd := &ServiceDefinition{}
+
+	return sd
+}
+
+// ServiceDescriperBuild: build the service key, format is `group/serviceName:version` which be same as URL's service key
+func ServiceDescriperBuild(serviceName string, group string, version string) string {
+	buf := &bytes.Buffer{}
+	if group != "" {
+		buf.WriteString(group)
+		buf.WriteString("/")
+	}
+	buf.WriteString(serviceName)
+	if version != "" && version != "0.0.0" {
+		buf.WriteString(":")
+		buf.WriteString(version)
+	}
+	return buf.String()
 }
