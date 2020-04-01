@@ -20,9 +20,13 @@ package nacos
 import (
 	"strconv"
 	"testing"
+)
 
+import (
 	"github.com/stretchr/testify/assert"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -65,20 +69,6 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 		Port:        port,
 	})
 
-	// serviceDiscovry.Unregister(&registry.DefaultServiceInstance{
-	// 	Id:          id,
-	// 	ServiceName: serviceName,
-	// 	Host:        host,
-	// 	Port:        321,
-	// })
-	//
-	// serviceDiscovry.Unregister(&registry.DefaultServiceInstance{
-	// 	Id:          id,
-	// 	ServiceName: serviceName,
-	// 	Host:        "my.c",
-	// 	Port:        321,
-	// })
-
 	err := serviceDiscovry.Register(instance)
 	assert.Nil(t, err)
 
@@ -97,7 +87,6 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 	assert.Equal(t, serviceName, instance.GetServiceName())
 	assert.Equal(t, 0, len(instance.GetMetadata()))
 
-
 	instance.Metadata["a"] = "b"
 
 	err = serviceDiscovry.Update(instance)
@@ -112,6 +101,19 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 	instance = page.GetData()[0].(*registry.DefaultServiceInstance)
 	v, _ := instance.Metadata["a"]
 	assert.Equal(t, "b", v)
+
+	// test dispatcher event
+	err = serviceDiscovry.DispatchEventByServiceName(serviceName)
+	assert.Nil(t, err)
+
+	// test AddListener
+	err = serviceDiscovry.AddListener(&registry.ServiceInstancesChangedListener{})
+	assert.Nil(t, err)
+}
+
+func TestNacosServiceDiscovery_GetDefaultPageSize(t *testing.T) {
+	serviceDiscovry, _ := extension.GetServiceDiscovery(constant.NACOS_KEY, mockUrl())
+	assert.Equal(t, registry.DefaultPageSize, serviceDiscovry.GetDefaultPageSize())
 }
 
 func mockUrl() *common.URL {
