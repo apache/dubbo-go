@@ -15,37 +15,25 @@
  * limitations under the License.
  */
 
-package grpc
+package tag
 
 import (
-	"sync"
+	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/protocol"
 )
 
-// GrpcExporter ...
-type GrpcExporter struct {
-	*protocol.BaseExporter
-}
-
-// NewGrpcExporter ...
-func NewGrpcExporter(key string, invoker protocol.Invoker, exporterMap *sync.Map) *GrpcExporter {
-	return &GrpcExporter{
-		BaseExporter: protocol.NewBaseExporter(key, invoker, exporterMap),
-	}
-}
-
-// Unexport ...
-func (gg *GrpcExporter) Unexport() {
-	serviceId := gg.GetInvoker().GetUrl().GetParam(constant.BEAN_NAME_KEY, "")
-	gg.BaseExporter.Unexport()
-	err := common.ServiceMap.UnRegister(GRPC, serviceId)
-	if err != nil {
-		logger.Errorf("[GrpcExporter.Unexport] error: %v", err)
-	}
+func TestTagRouterFactory_NewRouter(t *testing.T) {
+	u1, err := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=true")
+	assert.Nil(t, err)
+	factory := NewTagRouterFactory()
+	tagRouter, e := factory.NewRouter(&u1)
+	assert.Nil(t, e)
+	assert.NotNil(t, tagRouter)
 }

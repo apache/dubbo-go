@@ -56,6 +56,7 @@ Finished List:
     
 - Router
     * [Condition router](https://github.com/apache/dubbo-go/pull/294)
+    * [Health check router](https://github.com/apache/dubbo-go/pull/389)
 
 - Registry
     * ZooKeeper
@@ -91,13 +92,21 @@ Finished List:
     * [TpsLimitFilter](https://github.com/apache/dubbo-go/pull/237)
     * [ExecuteLimitFilter](https://github.com/apache/dubbo-go/pull/246)
     * [GenericServiceFilter](https://github.com/apache/dubbo-go/pull/291)
+    * [Auth/Sign](https://github.com/apache/dubbo-go/pull/323)
+    * [Metrics filter](https://github.com/apache/dubbo-go/pull/342)
+    * [Tracing filter](https://github.com/apache/dubbo-go/pull/335)
 
 - Invoke
     * [generic invoke](https://github.com/apache/dubbo-go/pull/122)
     
 - Monitor
     * Opentracing API
-    * Prometheus
+    * [Prometheus](https://github.com/apache/dubbo-go/pull/342)
+
+- Tracing
+    * [For jsonrpc](https://github.com/apache/dubbo-go/pull/335)
+    * [For dubbo](https://github.com/apache/dubbo-go/pull/344)
+    * [For grpc](https://github.com/apache/dubbo-go/pull/397)
 
 - Others:
     * start check
