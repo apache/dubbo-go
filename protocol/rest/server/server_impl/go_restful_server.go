@@ -83,7 +83,7 @@ func (grs *GoRestfulServer) Start(url common.URL) {
 // Publish a http api in go-restful server
 // The routeFunc should be invoked when the server receive a request
 func (grs *GoRestfulServer) Deploy(restMethodConfig *config.RestMethodConfig, routeFunc func(request server.RestServerRequest, response server.RestServerResponse)) {
-	ws := new(restful.WebService)
+	ws := &restful.WebService{}
 	rf := func(req *restful.Request, resp *restful.Response) {
 		routeFunc(NewGoRestfulRequestAdapter(req), resp)
 	}
