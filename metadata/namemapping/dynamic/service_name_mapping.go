@@ -28,6 +28,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/metadata"
@@ -36,9 +37,6 @@ import (
 const (
 	defaultGroup = config_center.DEFAULT_GROUP
 	slash        = "/"
-
-	// metadata service is the admin service, should not be mapped
-	metadataService = "org.apache.dubbo.metadata.MetadataService"
 )
 
 // DynamicConfigurationServiceNameMapping is the implementation based on config center
@@ -48,7 +46,8 @@ type DynamicConfigurationServiceNameMapping struct {
 
 // Map will map the service to this application-level service
 func (d *DynamicConfigurationServiceNameMapping) Map(serviceInterface string, group string, version string, protocol string) error {
-	if metadataService == serviceInterface {
+	// metadata service is admin service, should not be mapped
+	if constant.METADATA_SERVICE_NAME == serviceInterface {
 		return perrors.New("try to map the metadata service, will be ignored")
 	}
 
@@ -56,7 +55,7 @@ func (d *DynamicConfigurationServiceNameMapping) Map(serviceInterface string, gr
 	value := time.Now().UnixNano()
 
 	err := d.dc.PublishConfig(appName,
-		d.buildGroup(serviceInterface, group, version, protocol),
+		d.buildGroup(serviceInterface),
 		strconv.FormatInt(value, 10))
 	if err != nil {
 		return perrors.WithStack(err)
@@ -67,17 +66,13 @@ func (d *DynamicConfigurationServiceNameMapping) Map(serviceInterface string, gr
 // Get will return the application-level services. If not found, the empty set will be returned.
 // if the dynamic configuration got error, the error will return
 func (d *DynamicConfigurationServiceNameMapping) Get(serviceInterface string, group string, version string, protocol string) (*gxset.HashSet, error) {
-	return d.dc.GetConfigKeysByGroup(d.buildGroup(serviceInterface, group, version, protocol))
+	return d.dc.GetConfigKeysByGroup(d.buildGroup(serviceInterface))
 }
 
 // buildGroup will return group, now it looks like defaultGroup/serviceInterface
-func (d *DynamicConfigurationServiceNameMapping) buildGroup(
-	serviceInterface string,
-	group string,
-	version string,
-	protocol string) string {
+func (d *DynamicConfigurationServiceNameMapping) buildGroup(serviceInterface string) string {
 	// the issue : https://github.com/apache/dubbo/issues/4671
-	// so other params are ignored
+	// so other params are ignored and remove, including group string, version string, protocol string
 	return defaultGroup + slash + serviceInterface
 }
 

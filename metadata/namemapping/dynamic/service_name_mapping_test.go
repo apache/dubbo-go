@@ -27,6 +27,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/config_center"
 )
@@ -41,7 +42,7 @@ func TestDynamicConfigurationServiceNameMapping(t *testing.T) {
 	config.GetApplicationConfig().Name = appName
 
 	mapping := NewServiceNameMapping(dc)
-	intf := metadataService
+	intf := constant.METADATA_SERVICE_NAME
 	group := "myGroup"
 	version := "myVersion"
 	protocol := "myProtocol"
