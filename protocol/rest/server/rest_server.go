@@ -95,6 +95,9 @@ func GetRouteFunc(invoker protocol.Invoker, methodConfig *rest_config.RestMethod
 		method := svc.Method()[methodConfig.MethodName]
 		argsTypes := method.ArgsType()
 		replyType := method.ReplyType()
+		// two ways to prepare arguments
+		// if method like this 'func1(req []interface{}, rsp *User) error'
+		// we don't have arguments type
 		if (len(argsTypes) == 1 || len(argsTypes) == 2 && replyType == nil) &&
 			argsTypes[0].String() == "[]interface {}" {
 			args, err = getArgsInterfaceFromRequest(req, methodConfig)
@@ -102,7 +105,7 @@ func GetRouteFunc(invoker protocol.Invoker, methodConfig *rest_config.RestMethod
 			args, err = getArgsFromRequest(req, argsTypes, methodConfig)
 		}
 		if err != nil {
-			logger.Errorf("[Go Restful] parsing parameters error:%v", err)
+			logger.Errorf("[Go Restful] parsing http parameters error:%v", err)
 			err = resp.WriteError(http.StatusInternalServerError, errors.New(parseParameterErrorStr))
 			if err != nil {
 				logger.Errorf("[Go Restful] WriteErrorString error:%v", err)
@@ -199,7 +202,7 @@ func assembleArgsFromHeaders(methodConfig *rest_config.RestMethodConfig, req Res
 	for k, v := range methodConfig.HeadersMap {
 		param := req.HeaderParameter(v)
 		if k < 0 || k >= argsLength {
-			return perrors.Errorf("[Go restful] Header param parse error, the args:%v doesn't exist", k)
+			return perrors.Errorf("[Go restful] Header param parse error, the index %v args of method:%v doesn't exist", k, methodConfig.MethodName)
 		}
 		t := argsTypes[k]
 		if t.Kind() == reflect.Ptr {
@@ -208,7 +211,7 @@ func assembleArgsFromHeaders(methodConfig *rest_config.RestMethodConfig, req Res
 		if t.Kind() == reflect.String {
 			args[k] = param
 		} else {
-			return perrors.Errorf("[Go restful] Header param parse error, the args:%v of type isn't string", k)
+			return perrors.Errorf("[Go restful] Header param parse error, the index %v args's type isn't string", k)
 		}
 	}
 	return nil
@@ -251,7 +254,7 @@ func assembleArgsFromQueryParams(methodConfig *rest_config.RestMethodConfig, arg
 	)
 	for k, v := range methodConfig.QueryParamsMap {
 		if k < 0 || k >= argsLength {
-			return perrors.Errorf("[Go restful] Query param parse error, the args:%v doesn't exist", k)
+			return perrors.Errorf("[Go restful] Query param parse error, the index %v args of method:%v doesn't exist", k, methodConfig.MethodName)
 		}
 		t := argsTypes[k]
 		kind := t.Kind()
@@ -272,7 +275,7 @@ func assembleArgsFromQueryParams(methodConfig *rest_config.RestMethodConfig, arg
 		} else if kind == reflect.Int64 {
 			param, err = strconv.ParseInt(req.QueryParameter(v), 10, 64)
 		} else {
-			return perrors.Errorf("[Go restful] Query param parse error, the args:%v of type isn't int or string or slice", k)
+			return perrors.Errorf("[Go restful] Query param parse error, the index %v args's type isn't int or string or slice", k)
 		}
 		if err != nil {
 			return perrors.Errorf("[Go restful] Query param parse error, error:%v", perrors.WithStack(err))
@@ -291,7 +294,7 @@ func assembleArgsFromPathParams(methodConfig *rest_config.RestMethodConfig, args
 	)
 	for k, v := range methodConfig.PathParamsMap {
 		if k < 0 || k >= argsLength {
-			return perrors.Errorf("[Go restful] Path param parse error, the args:%v doesn't exist", k)
+			return perrors.Errorf("[Go restful] Path param parse error, the index %v args of method:%v doesn't exist", k, methodConfig.MethodName)
 		}
 		t := argsTypes[k]
 		kind := t.Kind()
@@ -310,7 +313,7 @@ func assembleArgsFromPathParams(methodConfig *rest_config.RestMethodConfig, args
 		} else if kind == reflect.String {
 			param = req.PathParameter(v)
 		} else {
-			return perrors.Errorf("[Go restful] Path param parse error, the args:%v of type isn't int or string", k)
+			return perrors.Errorf("[Go restful] Path param parse error, the index %v args's type isn't int or string", k)
 		}
 		if err != nil {
 			return perrors.Errorf("[Go restful] Path param parse error, error is %v", perrors.WithStack(err))
