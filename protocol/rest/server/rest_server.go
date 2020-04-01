@@ -19,6 +19,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -37,6 +38,8 @@ import (
 	rest_config "github.com/apache/dubbo-go/protocol/rest/config"
 )
 
+const parseParameterErrorStr = "An error occurred while parsing parameters on the server"
+
 type RestServer interface {
 	// start rest server
 	Start(url common.URL)
@@ -50,19 +53,19 @@ type RestServer interface {
 
 // RestServerRequest interface
 type RestServerRequest interface {
-	// Get the Ptr of http.Request
+	// RawRequest get the Ptr of http.Request
 	RawRequest() *http.Request
-	// Get the path parameter by name
+	// PathParameter get the path parameter by name
 	PathParameter(name string) string
-	// Get the map of the path parameters
+	// PathParameters get the map of the path parameters
 	PathParameters() map[string]string
-	// Get the query parameter by name
+	// QueryParameter get the query parameter by name
 	QueryParameter(name string) string
-	// Get the map of query parameters
+	// QueryParameters get the map of query parameters
 	QueryParameters(name string) []string
-	// Get the body parameter of name
+	// BodyParameter get the body parameter of name
 	BodyParameter(name string) (string, error)
-	// Get the header parameter of name
+	// HeaderParameter get the header parameter of name
 	HeaderParameter(name string) string
 	// ReadEntity checks the Accept header and reads the content into the entityPointer.
 	ReadEntity(entityPointer interface{}) error
@@ -72,12 +75,13 @@ type RestServerRequest interface {
 type RestServerResponse interface {
 	http.ResponseWriter
 	// WriteError writes the http status and the error string on the response. err can be nil.
-	// Return an error if writing was not succesful.
+	// Return an error if writing was not successful.
 	WriteError(httpStatus int, err error) (writeErr error)
 	// WriteEntity marshals the value using the representation denoted by the Accept Header.
 	WriteEntity(value interface{}) error
 }
 
+// GetRouteFunc
 // A route function will be invoked by http server
 func GetRouteFunc(invoker protocol.Invoker, methodConfig *rest_config.RestMethodConfig) func(req RestServerRequest, resp RestServerResponse) {
 	return func(req RestServerRequest, resp RestServerResponse) {
@@ -92,9 +96,16 @@ func GetRouteFunc(invoker protocol.Invoker, methodConfig *rest_config.RestMethod
 		replyType := method.ReplyType()
 		if (len(argsTypes) == 1 || len(argsTypes) == 2 && replyType == nil) &&
 			argsTypes[0].String() == "[]interface {}" {
-			args = getArgsInterfaceFromRequest(req, methodConfig)
+			args, err = getArgsInterfaceFromRequest(req, methodConfig)
 		} else {
-			args = getArgsFromRequest(req, argsTypes, methodConfig)
+			args, err = getArgsFromRequest(req, argsTypes, methodConfig)
+		}
+		if err != nil {
+			logger.Errorf("[Go Restful] parsing parameters error:%v", err)
+			err = resp.WriteError(http.StatusInternalServerError, errors.New(parseParameterErrorStr))
+			if err != nil {
+				logger.Errorf("[Go Restful] WriteErrorString error:%v", err)
+			}
 		}
 		result := invoker.Invoke(context.Background(), invocation.NewRPCInvocation(methodConfig.MethodName, args, make(map[string]string)))
 		if result.Error() != nil {
@@ -111,9 +122,9 @@ func GetRouteFunc(invoker protocol.Invoker, methodConfig *rest_config.RestMethod
 	}
 }
 
-// when service function like GetUser(req []interface{}, rsp *User) error
+// getArgsInterfaceFromRequest when service function like GetUser(req []interface{}, rsp *User) error
 // use this method to get arguments
-func getArgsInterfaceFromRequest(req RestServerRequest, methodConfig *rest_config.RestMethodConfig) []interface{} {
+func getArgsInterfaceFromRequest(req RestServerRequest, methodConfig *rest_config.RestMethodConfig) ([]interface{}, error) {
 	argsMap := make(map[int]interface{}, 8)
 	maxKey := 0
 	for k, v := range methodConfig.PathParamsMap {
@@ -145,10 +156,10 @@ func getArgsInterfaceFromRequest(req RestServerRequest, methodConfig *rest_confi
 		}
 		m := make(map[string]interface{})
 		// TODO read as a slice
-		if err := req.ReadEntity(&m); err != nil {
-			logger.Warnf("[Go restful] Read body entity as map[string]interface{} error:%v", perrors.WithStack(err))
-		} else {
+		if err := req.ReadEntity(&m); err == nil {
 			argsMap[methodConfig.Body] = m
+		} else {
+			return nil, perrors.Errorf("[Go restful] Read body entity as map[string]interface{} error:%v", err)
 		}
 	}
 	args := make([]interface{}, maxKey+1)
@@ -157,30 +168,37 @@ func getArgsInterfaceFromRequest(req RestServerRequest, methodConfig *rest_confi
 			args[k] = v
 		}
 	}
-	return args
+	return args, nil
 }
 
-// get arguments from server.RestServerRequest
-func getArgsFromRequest(req RestServerRequest, argsTypes []reflect.Type, methodConfig *rest_config.RestMethodConfig) []interface{} {
+// getArgsFromRequest get arguments from server.RestServerRequest
+func getArgsFromRequest(req RestServerRequest, argsTypes []reflect.Type, methodConfig *rest_config.RestMethodConfig) ([]interface{}, error) {
 	argsLength := len(argsTypes)
 	args := make([]interface{}, argsLength)
 	for i, t := range argsTypes {
 		args[i] = reflect.Zero(t).Interface()
 	}
-	assembleArgsFromPathParams(methodConfig, argsLength, argsTypes, req, args)
-	assembleArgsFromQueryParams(methodConfig, argsLength, argsTypes, req, args)
-	assembleArgsFromBody(methodConfig, argsTypes, req, args)
-	assembleArgsFromHeaders(methodConfig, req, argsLength, argsTypes, args)
-	return args
+	if err := assembleArgsFromPathParams(methodConfig, argsLength, argsTypes, req, args); err != nil {
+		return nil, err
+	}
+	if err := assembleArgsFromQueryParams(methodConfig, argsLength, argsTypes, req, args); err != nil {
+		return nil, err
+	}
+	if err := assembleArgsFromBody(methodConfig, argsTypes, req, args); err != nil {
+		return nil, err
+	}
+	if err := assembleArgsFromHeaders(methodConfig, req, argsLength, argsTypes, args); err != nil {
+		return nil, err
+	}
+	return args, nil
 }
 
-// assemble arguments from headers
-func assembleArgsFromHeaders(methodConfig *rest_config.RestMethodConfig, req RestServerRequest, argsLength int, argsTypes []reflect.Type, args []interface{}) {
+// assembleArgsFromHeaders assemble arguments from headers
+func assembleArgsFromHeaders(methodConfig *rest_config.RestMethodConfig, req RestServerRequest, argsLength int, argsTypes []reflect.Type, args []interface{}) error {
 	for k, v := range methodConfig.HeadersMap {
 		param := req.HeaderParameter(v)
 		if k < 0 || k >= argsLength {
-			logger.Errorf("[Go restful] Header param parse error, the args:%v doesn't exist", k)
-			continue
+			return perrors.Errorf("[Go restful] Header param parse error, the args:%v doesn't exist", k)
 		}
 		t := argsTypes[k]
 		if t.Kind() == reflect.Ptr {
@@ -189,13 +207,14 @@ func assembleArgsFromHeaders(methodConfig *rest_config.RestMethodConfig, req Res
 		if t.Kind() == reflect.String {
 			args[k] = param
 		} else {
-			logger.Errorf("[Go restful] Header param parse error, the args:%v of type isn't string", k)
+			return perrors.Errorf("[Go restful] Header param parse error, the args:%v of type isn't string", k)
 		}
 	}
+	return nil
 }
 
-// assemble arguments from body
-func assembleArgsFromBody(methodConfig *rest_config.RestMethodConfig, argsTypes []reflect.Type, req RestServerRequest, args []interface{}) {
+// assembleArgsFromBody assemble arguments from body
+func assembleArgsFromBody(methodConfig *rest_config.RestMethodConfig, argsTypes []reflect.Type, req RestServerRequest, args []interface{}) error {
 	if methodConfig.Body >= 0 && methodConfig.Body < len(argsTypes) {
 		t := argsTypes[methodConfig.Body]
 		kind := t.Kind()
@@ -213,16 +232,17 @@ func assembleArgsFromBody(methodConfig *rest_config.RestMethodConfig, argsTypes 
 				ni = n.Interface()
 			}
 		}
-		if err := req.ReadEntity(&ni); err != nil {
-			logger.Errorf("[Go restful] Read body entity error:%v", err)
-		} else {
+		if err := req.ReadEntity(&ni); err == nil {
 			args[methodConfig.Body] = ni
+		} else {
+			return perrors.Errorf("[Go restful] Read body entity error, error is %v", perrors.WithStack(err))
 		}
 	}
+	return nil
 }
 
-// assemble arguments from query params
-func assembleArgsFromQueryParams(methodConfig *rest_config.RestMethodConfig, argsLength int, argsTypes []reflect.Type, req RestServerRequest, args []interface{}) {
+// assembleArgsFromQueryParams assemble arguments from query params
+func assembleArgsFromQueryParams(methodConfig *rest_config.RestMethodConfig, argsLength int, argsTypes []reflect.Type, req RestServerRequest, args []interface{}) error {
 	var (
 		err   error
 		param interface{}
@@ -230,8 +250,7 @@ func assembleArgsFromQueryParams(methodConfig *rest_config.RestMethodConfig, arg
 	)
 	for k, v := range methodConfig.QueryParamsMap {
 		if k < 0 || k >= argsLength {
-			logger.Errorf("[Go restful] Query param parse error, the args:%v doesn't exist", k)
-			continue
+			return perrors.Errorf("[Go restful] Query param parse error, the args:%v doesn't exist", k)
 		}
 		t := argsTypes[k]
 		kind := t.Kind()
@@ -252,19 +271,18 @@ func assembleArgsFromQueryParams(methodConfig *rest_config.RestMethodConfig, arg
 		} else if kind == reflect.Int64 {
 			param, err = strconv.ParseInt(req.QueryParameter(v), 10, 64)
 		} else {
-			logger.Errorf("[Go restful] Query param parse error, the args:%v of type isn't int or string or slice", k)
-			continue
+			return perrors.Errorf("[Go restful] Query param parse error, the args:%v of type isn't int or string or slice", k)
 		}
 		if err != nil {
-			logger.Errorf("[Go restful] Query param parse error, error is %v", err)
-			continue
+			return perrors.Errorf("[Go restful] Query param parse error, error:%v", perrors.WithStack(err))
 		}
 		args[k] = param
 	}
+	return nil
 }
 
-// assemble arguments from path params
-func assembleArgsFromPathParams(methodConfig *rest_config.RestMethodConfig, argsLength int, argsTypes []reflect.Type, req RestServerRequest, args []interface{}) {
+// assembleArgsFromPathParams assemble arguments from path params
+func assembleArgsFromPathParams(methodConfig *rest_config.RestMethodConfig, argsLength int, argsTypes []reflect.Type, req RestServerRequest, args []interface{}) error {
 	var (
 		err   error
 		param interface{}
@@ -272,8 +290,7 @@ func assembleArgsFromPathParams(methodConfig *rest_config.RestMethodConfig, args
 	)
 	for k, v := range methodConfig.PathParamsMap {
 		if k < 0 || k >= argsLength {
-			logger.Errorf("[Go restful] Path param parse error, the args:%v doesn't exist", k)
-			continue
+			return perrors.Errorf("[Go restful] Path param parse error, the args:%v doesn't exist", k)
 		}
 		t := argsTypes[k]
 		kind := t.Kind()
@@ -292,13 +309,12 @@ func assembleArgsFromPathParams(methodConfig *rest_config.RestMethodConfig, args
 		} else if kind == reflect.String {
 			param = req.PathParameter(v)
 		} else {
-			logger.Warnf("[Go restful] Path param parse error, the args:%v of type isn't int or string", k)
-			continue
+			return perrors.Errorf("[Go restful] Path param parse error, the args:%v of type isn't int or string", k)
 		}
 		if err != nil {
-			logger.Errorf("[Go restful] Path param parse error, error is %v", err)
-			continue
+			return perrors.Errorf("[Go restful] Path param parse error, error is %v", perrors.WithStack(err))
 		}
 		args[k] = param
 	}
+	return nil
 }
