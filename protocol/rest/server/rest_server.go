@@ -40,14 +40,15 @@ import (
 
 const parseParameterErrorStr = "An error occurred while parsing parameters on the server"
 
+// RestServer user can implement this server interface
 type RestServer interface {
-	// start rest server
+	// Start rest server
 	Start(url common.URL)
-	// deploy a http api
+	// Deploy a http api
 	Deploy(restMethodConfig *rest_config.RestMethodConfig, routeFunc func(request RestServerRequest, response RestServerResponse))
-	// unDeploy a http api
+	// UnDeploy a http api
 	UnDeploy(restMethodConfig *rest_config.RestMethodConfig)
-	// destroy rest server
+	// Destroy rest server
 	Destroy()
 }
 
