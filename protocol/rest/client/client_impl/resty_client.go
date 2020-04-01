@@ -66,20 +66,19 @@ func NewRestyClient(restOption *client.RestOptions) client.RestClient {
 }
 
 func (rc *RestyClient) Do(restRequest *client.RestClientRequest, res interface{}) error {
-	r, err := rc.client.R().
-		SetHeader("Content-Type", restRequest.Consumes).
-		SetHeader("Accept", restRequest.Produces).
+	req := rc.client.R()
+	req.Header = restRequest.Header
+	resp, err := req.
 		SetPathParams(restRequest.PathParams).
 		SetQueryParams(restRequest.QueryParams).
-		SetHeaders(restRequest.Headers).
 		SetBody(restRequest.Body).
 		SetResult(res).
 		Execute(restRequest.Method, "http://"+path.Join(restRequest.Location, restRequest.Path))
 	if err != nil {
 		return perrors.WithStack(err)
 	}
-	if r.IsError() {
-		return perrors.New(r.String())
+	if resp.IsError() {
+		return perrors.New(resp.String())
 	}
 	return nil
 }
