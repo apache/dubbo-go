@@ -40,11 +40,12 @@ func init() {
 	extension.SetRestClient(constant.DEFAULT_REST_CLIENT, NewRestyClient)
 }
 
-// A rest client implement by Resty
+// RestyClient a rest client implement by Resty
 type RestyClient struct {
 	client *resty.Client
 }
 
+// NewRestyClient a constructor of RestyClient
 func NewRestyClient(restOption *client.RestOptions) client.RestClient {
 	client := resty.New()
 	client.SetTransport(
@@ -66,6 +67,7 @@ func NewRestyClient(restOption *client.RestOptions) client.RestClient {
 	}
 }
 
+// Do send request by RestyClient
 func (rc *RestyClient) Do(restRequest *client.RestClientRequest, res interface{}) error {
 	req := rc.client.R()
 	req.Header = restRequest.Header
