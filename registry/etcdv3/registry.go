@@ -164,7 +164,7 @@ func (r *etcdV3Registry) DoSubscribe(svc *common.URL) (registry.Listener, error)
 
 	//register the svc to dataListener
 	r.dataListener.AddInterestedURL(svc)
-	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+constant.PROVIDER_PROTOCOL, svc.Service()), r.dataListener)
+	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, svc.Service()), r.dataListener)
 
 	return configListener, nil
 }
