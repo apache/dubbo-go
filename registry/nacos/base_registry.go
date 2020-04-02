@@ -43,6 +43,7 @@ type baseRegistry struct {
 	namingClient naming_client.INamingClient
 }
 
+// newBaseRegistry will create new instance
 func newBaseRegistry(url *common.URL) (baseRegistry, error) {
 	nacosConfig, err := getNacosConfig(url)
 	if err != nil {
@@ -59,6 +60,7 @@ func newBaseRegistry(url *common.URL) (baseRegistry, error) {
 	return registry, nil
 }
 
+// getNacosConfig will return the nacos config
 func getNacosConfig(url *common.URL) (map[string]interface{}, error) {
 	if url == nil {
 		return nil, perrors.New("url is empty!")
