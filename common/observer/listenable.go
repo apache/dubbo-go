@@ -23,6 +23,7 @@ import (
 	"sync"
 )
 
+// Listenable could add and remove the event listener
 type Listenable interface {
 	AddEventListener(listener EventListener)
 	AddEventListeners(listenersSlice []EventListener)
@@ -32,32 +33,31 @@ type Listenable interface {
 	RemoveAllEventListeners()
 }
 
+// BaseListenable base listenable
 type BaseListenable struct {
 	Listenable
 	ListenersCache sync.Map
 	Mutex          sync.Mutex
 }
 
+// NewBaseListenable a constructor of base listenable
 func NewBaseListenable() Listenable {
 	return &BaseListenable{}
 }
 
-// AddEventListener ...
+// AddEventListener add event listener
 func (bl *BaseListenable) AddEventListener(listener EventListener) {
 	eventType := listener.GetEventType()
 	if eventType.Kind() == reflect.Ptr {
 		eventType = eventType.Elem()
 	}
-	var listenersSlice []EventListener
 	bl.Mutex.Lock()
 	defer bl.Mutex.Unlock()
-	if value, loaded := bl.ListenersCache.LoadOrStore(eventType, make([]EventListener, 0, 8)); loaded {
-		listenersSlice = value.([]EventListener)
-		if containListener(listenersSlice, listener) {
-			return
-		}
-	} else {
-		listenersSlice = make([]EventListener, 0, 8)
+	value, loaded := bl.ListenersCache.LoadOrStore(eventType, make([]EventListener, 0, 8))
+	listenersSlice := value.([]EventListener)
+	// return if listenersSlice already has this listener
+	if loaded && containListener(listenersSlice, listener) {
+		return
 	}
 	listenersSlice = append(listenersSlice, listener)
 	sort.Slice(listenersSlice, func(i, j int) bool {
@@ -66,14 +66,14 @@ func (bl *BaseListenable) AddEventListener(listener EventListener) {
 	bl.ListenersCache.Store(eventType, listenersSlice)
 }
 
-// AddEventListeners ..
+// AddEventListeners add the slice of event listener
 func (bl *BaseListenable) AddEventListeners(listenersSlice []EventListener) {
 	for _, listener := range listenersSlice {
 		bl.AddEventListener(listener)
 	}
 }
 
-// RemoveEventListener ...
+// RemoveEventListener remove the event listener
 func (bl *BaseListenable) RemoveEventListener(listener EventListener) {
 	eventType := listener.GetEventType()
 	if eventType.Kind() == reflect.Ptr {
@@ -94,21 +94,21 @@ func (bl *BaseListenable) RemoveEventListener(listener EventListener) {
 	bl.ListenersCache.Store(eventType, listenersSlice)
 }
 
-// RemoveEventListeners ...
+// RemoveEventListeners remove the slice of event listener
 func (bl *BaseListenable) RemoveEventListeners(listenersSlice []EventListener) {
 	for _, listener := range listenersSlice {
 		bl.RemoveEventListener(listener)
 	}
 }
 
-// RemoveAllEventListeners ...
+// RemoveAllEventListeners remove all
 func (bl *BaseListenable) RemoveAllEventListeners() {
 	bl.Mutex.Lock()
 	defer bl.Mutex.Unlock()
-	bl.ListenersCache = *new(sync.Map)
+	bl.ListenersCache = sync.Map{}
 }
 
-// GetAllEventListeners ...
+// GetAllEventListeners get all
 func (bl *BaseListenable) GetAllEventListeners() []EventListener {
 	allListenersSlice := make([]EventListener, 0, 16)
 	bl.ListenersCache.Range(func(_, value interface{}) bool {
@@ -122,6 +122,7 @@ func (bl *BaseListenable) GetAllEventListeners() []EventListener {
 	return allListenersSlice
 }
 
+// containListener true if contain listener
 func containListener(listenersSlice []EventListener, listener EventListener) bool {
 	for _, loadListener := range listenersSlice {
 		if loadListener == listener {

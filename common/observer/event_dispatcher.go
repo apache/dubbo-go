@@ -23,6 +23,8 @@ import (
 
 var globalEventDispatcher EventDispatcher
 
+var allEventListeners []EventListener
+
 // EventDispatcher is align with EventDispatcher interface in Java.
 // it's the top abstraction
 // Align with 2.7.5
@@ -53,10 +55,15 @@ func SetAndInitGlobalDispatcher(name string) {
 		panic("EventDispatcher for " + name + " is not existing, make sure you have import the package.")
 	}
 	globalEventDispatcher = dispatchers[name]()
-	globalEventDispatcher.AddEventListeners(eventListeners)
+	globalEventDispatcher.AddEventListeners(allEventListeners)
 }
 
 // GetGlobalDispatcher
 func GetGlobalDispatcher() EventDispatcher {
 	return globalEventDispatcher
+}
+
+// AddEventListener it will be added in global event dispatcher
+func AddEventListener(listener EventListener) {
+	allEventListeners = append(allEventListeners, listener)
 }

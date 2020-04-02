@@ -19,7 +19,6 @@ package config
 
 import (
 	"fmt"
-	"github.com/apache/dubbo-go/common/observer"
 	"log"
 	"os"
 	"time"
@@ -34,6 +33,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/common/observer"
 	_ "github.com/apache/dubbo-go/common/observer/dispatcher"
 )
 
@@ -101,7 +101,7 @@ func Load() {
 	if providerConfig != nil {
 		eventDispatcherType = providerConfig.eventDispatcherType
 	}
-	// init EventDispatcher
+	// init EventDispatcher should before everything
 	observer.SetAndInitGlobalDispatcher(eventDispatcherType)
 
 	// reference config
