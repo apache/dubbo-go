@@ -42,6 +42,7 @@ type ServiceEvent struct {
 	Service common.URL
 }
 
+// String return the description of event
 func (e ServiceEvent) String() string {
 	return fmt.Sprintf("ServiceEvent{Action{%s}, Path{%s}}", e.Action, e.Service)
 }
@@ -91,10 +92,12 @@ type ServiceInstancesChangedEvent struct {
 	Instances   []ServiceInstance
 }
 
+// String return the description of the event
 func (s *ServiceInstancesChangedEvent) String() string {
 	return fmt.Sprintf("ServiceInstancesChangedEvent[source=%s]", s.ServiceName)
 }
 
+// NewServiceInstancesChangedEvent will create the ServiceInstanceChangedEvent instance
 func NewServiceInstancesChangedEvent(serviceName string, instances []ServiceInstance) *ServiceInstancesChangedEvent {
 	return &ServiceInstancesChangedEvent{
 		baseEvent: baseEvent{
