@@ -216,7 +216,7 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 
 	//Interested register to dataconfig.
 	r.dataListener.AddInterestedURL(conf)
-	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+constant.PROVIDER_PROTOCOL, url.QueryEscape(conf.Service())), r.dataListener)
+	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, url.QueryEscape(conf.Service())), r.dataListener)
 
 	return zkListener, nil
 }
