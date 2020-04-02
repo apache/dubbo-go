@@ -56,6 +56,7 @@ type nacosRegistry struct {
 	baseRegistry
 }
 
+// newNacosRegistry will create an instance
 func newNacosRegistry(url *common.URL) (registry.Registry, error) {
 	base, err := newBaseRegistry(url)
 	if err != nil {
