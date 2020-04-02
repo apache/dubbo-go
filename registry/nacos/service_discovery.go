@@ -38,6 +38,7 @@ const (
 	idKey        = "id"
 )
 
+// init will put the service discovery into extension
 func init() {
 	extension.SetServiceDiscovery(constant.NACOS_KEY, newNacosServiceDiscovery)
 }
@@ -224,19 +225,24 @@ func (n *nacosServiceDiscovery) AddListener(listener *registry.ServiceInstancesC
 	})
 }
 
+// DispatchEventByServiceName will dispatch the event for the service with the service name
 func (n *nacosServiceDiscovery) DispatchEventByServiceName(serviceName string) error {
 	return n.DispatchEventForInstances(serviceName, n.GetInstances(serviceName))
 }
 
+// DispatchEventForInstances will dispatch the event to those instances
 func (n *nacosServiceDiscovery) DispatchEventForInstances(serviceName string, instances []registry.ServiceInstance) error {
 	return n.DispatchEvent(registry.NewServiceInstancesChangedEvent(serviceName, instances))
 }
 
+// DispatchEvent will dispatch the event
 func (n *nacosServiceDiscovery) DispatchEvent(event *registry.ServiceInstancesChangedEvent) error {
 	// TODO(waiting for event dispatcher, another task)
 	return nil
 }
 
+// toRegisterInstance convert the ServiceInstance to RegisterInstanceParam
+// the Ephemeral will be true
 func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInstance) vo.RegisterInstanceParam {
 	metadata := instance.GetMetadata()
 	if metadata == nil {
@@ -255,6 +261,7 @@ func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInst
 	}
 }
 
+// toDeregisterInstance will convert the ServiceInstance to DeregisterInstanceParam
 func (n *nacosServiceDiscovery) toDeregisterInstance(instance registry.ServiceInstance) vo.DeregisterInstanceParam {
 	return vo.DeregisterInstanceParam{
 		ServiceName: instance.GetServiceName(),
@@ -264,7 +271,9 @@ func (n *nacosServiceDiscovery) toDeregisterInstance(instance registry.ServiceIn
 	}
 }
 
+// toDeregisterInstance will create new service discovery instance
 func newNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
+
 	base, err := newBaseRegistry(url)
 	if err != nil {
 		return nil, perrors.WithStack(err)
