@@ -19,9 +19,12 @@ package dispatcher
 
 import (
 	"fmt"
-	"github.com/apache/dubbo-go/common/observer"
 	"reflect"
 	"testing"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/observer"
 )
 
 func TestDirectEventDispatcher_Dispatch(t *testing.T) {

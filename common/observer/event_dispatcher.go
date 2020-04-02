@@ -51,7 +51,7 @@ func SetAndInitGlobalDispatcher(name string) {
 	if globalEventDispatcher != nil {
 		logger.Warnf("EventDispatcher already init. It will be replaced")
 	}
-	if dispatchers[name] == nil {
+	if dp, ok := dispatchers[name]; !ok || dp == nil {
 		panic("EventDispatcher for " + name + " is not existing, make sure you have import the package.")
 	}
 	globalEventDispatcher = dispatchers[name]()
