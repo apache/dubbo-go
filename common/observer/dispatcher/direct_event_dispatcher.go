@@ -38,10 +38,12 @@ type DirectEventDispatcher struct {
 	observer.BaseListenable
 }
 
+// NewDirectEventDispatcher ac constructor of DirectEventDispatcher
 func NewDirectEventDispatcher() observer.EventDispatcher {
 	return &DirectEventDispatcher{}
 }
 
+// Dispatch event directly
 func (ded *DirectEventDispatcher) Dispatch(event observer.Event) {
 	if event == nil {
 		logger.Warnf("[DirectEventDispatcher] dispatch event nil")
