@@ -25,6 +25,7 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
 	perrors "github.com/pkg/errors"
 	"github.com/zouyx/agollo"
 )
@@ -131,6 +132,11 @@ func (c *apolloConfiguration) GetRule(key string, opts ...cc.Option) (string, er
 // PublishConfig will publish the config with the (key, group, value) pair
 func (c *apolloConfiguration) PublishConfig(string, string, string) error {
 	return perrors.New("unsupport operation")
+}
+
+// GetConfigKeysByGroup will return all keys with the group
+func (c *apolloConfiguration) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
+	return nil, perrors.New("unsupport operation")
 }
 
 func (c *apolloConfiguration) GetProperties(key string, opts ...cc.Option) (string, error) {

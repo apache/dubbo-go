@@ -22,13 +22,17 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/config_center/parser"
 )
 
-//////////////////////////////////////////
+// ////////////////////////////////////////
 // DynamicConfiguration
-//////////////////////////////////////////
+// ////////////////////////////////////////
 const (
 	// DEFAULT_GROUP: default group
 	DEFAULT_GROUP = "dubbo"
@@ -42,17 +46,20 @@ type DynamicConfiguration interface {
 	SetParser(parser.ConfigurationParser)
 	AddListener(string, ConfigurationListener, ...Option)
 	RemoveListener(string, ConfigurationListener, ...Option)
-	//GetProperties get properties file
+	// GetProperties get properties file
 	GetProperties(string, ...Option) (string, error)
 
-	//GetRule get Router rule properties file
+	// GetRule get Router rule properties file
 	GetRule(string, ...Option) (string, error)
 
-	//GetInternalProperty get value by key in Default properties file(dubbo.properties)
+	// GetInternalProperty get value by key in Default properties file(dubbo.properties)
 	GetInternalProperty(string, ...Option) (string, error)
 
 	// PublishConfig will publish the config with the (key, group, value) pair
 	PublishConfig(string, string, string) error
+
+	// GetConfigKeysByGroup will return all keys with the group
+	GetConfigKeysByGroup(group string) (*gxset.HashSet, error)
 }
 
 // Options ...
@@ -78,7 +85,7 @@ func WithTimeout(time time.Duration) Option {
 	}
 }
 
-//GetRuleKey The format is '{interfaceName}:[version]:[group]'
+// GetRuleKey The format is '{interfaceName}:[version]:[group]'
 func GetRuleKey(url common.URL) string {
 	return url.ColonSeparatedKey()
 }
