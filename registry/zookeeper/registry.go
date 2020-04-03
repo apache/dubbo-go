@@ -20,7 +20,6 @@ package zookeeper
 import (
 	"fmt"
 	"net/url"
-	"strings"
 	"sync"
 	"time"
 )
