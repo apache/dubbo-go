@@ -160,11 +160,10 @@ func getArgsInterfaceFromRequest(req RestServerRequest, methodConfig *rest_confi
 		}
 		m := make(map[string]interface{})
 		// TODO read as a slice
-		if err := req.ReadEntity(&m); err == nil {
-			argsMap[methodConfig.Body] = m
-		} else {
+		if err := req.ReadEntity(&m); err != nil {
 			return nil, perrors.Errorf("[Go restful] Read body entity as map[string]interface{} error:%v", err)
 		}
+		argsMap[methodConfig.Body] = m
 	}
 	args := make([]interface{}, maxKey+1)
 	for k, v := range argsMap {
@@ -236,11 +235,10 @@ func assembleArgsFromBody(methodConfig *rest_config.RestMethodConfig, argsTypes 
 				ni = n.Interface()
 			}
 		}
-		if err := req.ReadEntity(&ni); err == nil {
-			args[methodConfig.Body] = ni
-		} else {
+		if err := req.ReadEntity(&ni); err != nil {
 			return perrors.Errorf("[Go restful] Read body entity error, error is %v", perrors.WithStack(err))
 		}
+		args[methodConfig.Body] = ni
 	}
 	return nil
 }
