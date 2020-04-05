@@ -76,7 +76,6 @@ func newZkRegistry(url *common.URL) (registry.Registry, error) {
 	if err != nil {
 		return nil, err
 	}
-	r.WaitGroup().Add(1) //zk client start successful, then wg +1
 
 	go zookeeper.HandleClientRestart(r)
 
@@ -122,11 +121,20 @@ func (r *zkRegistry) InitListeners() {
 	newDataListener := NewRegistryDataListener()
 	// should recover if dataListener isn't nil before
 	if r.dataListener != nil {
+		// close all old listener
+		oldDataListener := r.dataListener
+		oldDataListener.mutex.Lock()
+		defer oldDataListener.mutex.Unlock()
 		recoverd := r.dataListener.subscribed
 		if recoverd != nil && len(recoverd) > 0 {
 			// recover all subscribed url
-			for url, _ := range recoverd {
-				newDataListener.SubscribeURL(url, NewRegistryConfigurationListener(r.client, r))
+			for conf, oldListener := range recoverd {
+				if regConfigListener, ok := oldListener.(*RegistryConfigurationListener); ok {
+					regConfigListener.Close()
+				}
+				newDataListener.SubscribeURL(conf, NewRegistryConfigurationListener(r.client, r))
+				go r.listener.ListenServiceEvent(conf, fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, url.QueryEscape(conf.Service())), newDataListener)
+
 			}
 		}
 	}
@@ -146,6 +154,7 @@ func (r *zkRegistry) DoSubscribe(conf *common.URL) (registry.Listener, error) {
 }
 
 func (r *zkRegistry) CloseAndNilClient() {
+	logger.Info("c")
 	r.client.Close()
 	r.client = nil
 }
@@ -181,17 +190,24 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 		logger.Errorf("zk.Create(root{%s}) = err{%v}", root, perrors.WithStack(err))
 		return perrors.WithStack(err)
 	}
+
+	// try to register the node
 	zkPath, err = r.client.RegisterTemp(root, node)
 	if err != nil {
+		logger.Errorf("Register temp node(root{%s}, node{%s}) = error{%v}", root, node, perrors.WithStack(err))
 		if perrors.Cause(err) == zk.ErrNodeExists {
-			logger.Warnf("RegisterTempNode(root{%s}, node{%s}) = error{%v}, ignore!", root, node, perrors.WithStack(err))
-			return nil
-		} else {
-			logger.Errorf("RegisterTempNode(root{%s}, node{%s}) = error{%v}", root, node, perrors.WithStack(err))
+			// should delete the old node
+			logger.Info("Register temp node failed, try to delete the old and recreate  (root{%s}, node{%s}) , ignore!", root, node)
+			if err = r.client.Delete(zkPath); err == nil {
+				_, err = r.client.RegisterTemp(root, node)
+			}
+			if err != nil {
+				logger.Errorf("Recreate the temp node failed, (root{%s}, node{%s}) = error{%v}", root, node, perrors.WithStack(err))
+			}
 		}
 		return perrors.WithMessagef(err, "RegisterTempNode(root{%s}, node{%s})", root, node)
 	}
-	logger.Debugf("create a zookeeper node:%s", zkPath)
+	logger.Debugf("Create a zookeeper node:%s", zkPath)
 
 	return nil
 }
@@ -199,13 +215,20 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListener, error) {
 
 	var zkListener *RegistryConfigurationListener
+	dataListener := r.dataListener
+	dataListener.mutex.Lock()
+	defer dataListener.mutex.Unlock()
 	if r.dataListener.subscribed[conf] != nil {
 
 		zkListener, _ := r.dataListener.subscribed[conf].(*RegistryConfigurationListener)
-		r.listenerLock.Lock()
-		if zkListener.isClosed {
-			r.listenerLock.Unlock()
-			return nil, perrors.New("configListener already been closed")
+		if zkListener != nil {
+			r.listenerLock.Lock()
+			defer r.listenerLock.Unlock()
+			if zkListener.isClosed {
+				return nil, perrors.New("configListener already been closed")
+			} else {
+				return zkListener, nil
+			}
 		}
 	}
 
@@ -229,7 +252,7 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 	//Interested register to dataconfig.
 	r.dataListener.SubscribeURL(conf, zkListener)
 
-	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, url.QueryEscape(conf.Service())), r.dataListener)
+	go r.listener.ListenServiceEvent(conf, fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, url.QueryEscape(conf.Service())), r.dataListener)
 
 	return zkListener, nil
 }
