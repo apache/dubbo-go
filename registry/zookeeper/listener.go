@@ -50,8 +50,6 @@ func NewRegistryDataListener() *RegistryDataListener {
 
 // SubscribeURL is used to set a watch listener for url
 func (l *RegistryDataListener) SubscribeURL(url *common.URL, listener config_center.ConfigurationListener) {
-	l.mutex.Lock()
-	defer l.mutex.Unlock()
 	if l.closed {
 		return
 	}
@@ -95,6 +93,7 @@ func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 // Close all RegistryConfigurationListener in subscribed
 func (l *RegistryDataListener) Close() {
 	l.mutex.Lock()
+	logger.Info("Close all reg")
 	defer l.mutex.Unlock()
 	for _, listener := range l.subscribed {
 		listener.(*RegistryConfigurationListener).Close()
@@ -107,13 +106,14 @@ type RegistryConfigurationListener struct {
 	registry  *zkRegistry
 	events    chan *config_center.ConfigChangeEvent
 	isClosed  bool
+	close     chan struct{}
 	closeOnce sync.Once
 }
 
 // NewRegistryConfigurationListener for listening the event of zk.
 func NewRegistryConfigurationListener(client *zk.ZookeeperClient, reg *zkRegistry) *RegistryConfigurationListener {
 	reg.WaitGroup().Add(1)
-	return &RegistryConfigurationListener{client: client, registry: reg, events: make(chan *config_center.ConfigChangeEvent, 32), isClosed: false}
+	return &RegistryConfigurationListener{client: client, registry: reg, events: make(chan *config_center.ConfigChangeEvent, 32), isClosed: false, close: make(chan struct{}, 1)}
 }
 
 // Process submit the ConfigChangeEvent to the event chan to notify all observer
@@ -129,10 +129,11 @@ func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 			logger.Warnf("listener's zk client connection is broken, so zk event listener exit now.")
 			return nil, perrors.New("listener stopped")
 
+		case <-l.close:
+			return nil, perrors.New("listener closed")
 		case <-l.registry.Done():
 			logger.Warnf("zk consumer register has quit, so zk event listener exit now.")
 			return nil, perrors.New("listener stopped")
-
 		case e := <-l.events:
 			logger.Debugf("got zk event %s", e)
 			if e.ConfigType == remoting.EventTypeDel && !l.valid() {
@@ -152,6 +153,7 @@ func (l *RegistryConfigurationListener) Close() {
 	// ensure that the listener will be closed at most once.
 	l.closeOnce.Do(func() {
 		l.isClosed = true
+		l.close <- struct{}{}
 		l.registry.WaitGroup().Done()
 	})
 }
