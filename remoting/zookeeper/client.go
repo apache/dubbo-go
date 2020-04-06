@@ -157,7 +157,7 @@ func ValidateZookeeperClient(container zkClientFacade, opts ...Option) error {
 	}
 
 	if connected {
-		logger.Info("sdsds")
+		logger.Info("Connect to zookeeper successfully, name{%s}, zk address{%v}", opions.zkName, url.Location)
 		container.WaitGroup().Add(1) //zk client start successful, then registry wg +1
 	}
 
