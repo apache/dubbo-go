@@ -117,14 +117,10 @@ func (r *BaseRegistry) GetUrl() common.URL {
 func (r *BaseRegistry) Destroy() {
 	//first step close registry's all listeners
 	r.facadeBasedRegistry.CloseListener()
-	logger.Info("1---")
 	// then close r.done to notify other program who listen to it
 	close(r.done)
-	logger.Info("2---")
-
 	// wait waitgroup done (wait listeners outside close over)
 	r.wg.Wait()
-	logger.Info("3---")
 
 	//close registry client
 	r.closeRegisters()

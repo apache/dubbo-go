@@ -93,7 +93,6 @@ func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 // Close all RegistryConfigurationListener in subscribed
 func (l *RegistryDataListener) Close() {
 	l.mutex.Lock()
-	logger.Info("Close all reg")
 	defer l.mutex.Unlock()
 	for _, listener := range l.subscribed {
 		listener.(*RegistryConfigurationListener).Close()
@@ -126,14 +125,13 @@ func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
 		case <-l.client.Done():
-			logger.Warnf("listener's zk client connection is broken, so zk event listener exit now.")
-			return nil, perrors.New("listener stopped")
-
+			logger.Warnf("listener's zk client connection (address {%s}) is broken, so zk event listener exit now.", l.client.ZkAddrs)
+			return nil, perrors.New("zookeeper client stopped")
 		case <-l.close:
-			return nil, perrors.New("listener closed")
+			return nil, perrors.New("listener have been closed")
 		case <-l.registry.Done():
-			logger.Warnf("zk consumer register has quit, so zk event listener exit now.")
-			return nil, perrors.New("listener stopped")
+			logger.Warnf("zk consumer register has quit, so zk event listener exit now. (registry url {%v}", l.registry.BaseRegistry.URL)
+			return nil, perrors.New("zookeeper registry, (registry url{%v}) stopped")
 		case e := <-l.events:
 			logger.Debugf("got zk event %s", e)
 			if e.ConfigType == remoting.EventTypeDel && !l.valid() {
