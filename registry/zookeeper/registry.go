@@ -154,7 +154,6 @@ func (r *zkRegistry) DoSubscribe(conf *common.URL) (registry.Listener, error) {
 }
 
 func (r *zkRegistry) CloseAndNilClient() {
-	logger.Info("c")
 	r.client.Close()
 	r.client = nil
 }
