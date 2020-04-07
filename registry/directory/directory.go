@@ -43,10 +43,10 @@ import (
 )
 
 func init() {
-	extension.SetDefaultRegistryDirectory(newRegistryDirectory)
+	extension.SetDefaultRegistryDirectory(NewRegistryDirectory)
 }
 
-type registryDirectory struct {
+type RegistryDirectory struct {
 	directory.BaseDirectory
 	cacheInvokers                  []protocol.Invoker
 	listenerLock                   sync.Mutex
@@ -61,12 +61,12 @@ type registryDirectory struct {
 	forbidden                      atomic.Bool
 }
 
-// newRegistryDirectory ...
-func newRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.Directory, error) {
+// NewRegistryDirectory ...
+func NewRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.Directory, error) {
 	if url.SubURL == nil {
 		return nil, perrors.Errorf("url is invalid, suburl can not be nil")
 	}
-	dir := &registryDirectory{
+	dir := &RegistryDirectory{
 		BaseDirectory:    directory.NewBaseDirectory(url),
 		cacheInvokers:    []protocol.Invoker{},
 		cacheInvokersMap: &sync.Map{},
@@ -80,18 +80,18 @@ func newRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.
 }
 
 //subscribe from registry
-func (dir *registryDirectory) subscribe(url *common.URL) {
+func (dir *RegistryDirectory) subscribe(url *common.URL) {
 	dir.consumerConfigurationListener.addNotifyListener(dir)
 	dir.referenceConfigurationListener = newReferenceConfigurationListener(dir, url)
 	dir.registry.Subscribe(url, dir)
 }
 
-func (dir *registryDirectory) Notify(event *registry.ServiceEvent) {
+func (dir *RegistryDirectory) Notify(event *registry.ServiceEvent) {
 	go dir.update(event)
 }
 
 // update: subscribe service from registry, and update the cacheServices
-func (dir *registryDirectory) update(res *registry.ServiceEvent) {
+func (dir *RegistryDirectory) update(res *registry.ServiceEvent) {
 	if res == nil {
 		return
 	}
@@ -100,7 +100,7 @@ func (dir *registryDirectory) update(res *registry.ServiceEvent) {
 	dir.refreshInvokers(res)
 }
 
-func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
+func (dir *RegistryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 	var (
 		url        *common.URL
 		oldInvoker protocol.Invoker = nil
@@ -151,7 +151,7 @@ func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 
 }
 
-func (dir *registryDirectory) toGroupInvokers() []protocol.Invoker {
+func (dir *RegistryDirectory) toGroupInvokers() []protocol.Invoker {
 	newInvokersList := []protocol.Invoker{}
 	groupInvokersMap := make(map[string][]protocol.Invoker)
 	groupInvokersList := []protocol.Invoker{}
@@ -188,7 +188,7 @@ func (dir *registryDirectory) toGroupInvokers() []protocol.Invoker {
 }
 
 // uncacheInvoker: return abandoned Invoker,if no Invoker to be abandoned,return nil
-func (dir *registryDirectory) uncacheInvoker(url *common.URL) protocol.Invoker {
+func (dir *RegistryDirectory) uncacheInvoker(url *common.URL) protocol.Invoker {
 	logger.Debugf("service will be deleted in cache invokers: invokers key is  %s!", url.Key())
 	if cacheInvoker, ok := dir.cacheInvokersMap.Load(url.Key()); ok {
 		dir.cacheInvokersMap.Delete(url.Key())
@@ -198,7 +198,7 @@ func (dir *registryDirectory) uncacheInvoker(url *common.URL) protocol.Invoker {
 }
 
 // cacheInvoker: return abandoned Invoker,if no Invoker to be abandoned,return nil
-func (dir *registryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
+func (dir *RegistryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
 	dir.overrideUrl(dir.GetDirectoryUrl())
 	referenceUrl := dir.GetDirectoryUrl().SubURL
 
@@ -234,7 +234,7 @@ func (dir *registryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
 }
 
 // list :select the protocol invokers from the directory
-func (dir *registryDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
+func (dir *RegistryDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
 	invokers := dir.cacheInvokers
 	routerChain := dir.RouterChain()
 
@@ -244,7 +244,7 @@ func (dir *registryDirectory) List(invocation protocol.Invocation) []protocol.In
 	return routerChain.Route(invokers, dir.cacheOriginUrl, invocation)
 }
 
-func (dir *registryDirectory) IsAvailable() bool {
+func (dir *RegistryDirectory) IsAvailable() bool {
 	if !dir.BaseDirectory.IsAvailable() {
 		return dir.BaseDirectory.IsAvailable()
 	}
@@ -258,7 +258,7 @@ func (dir *registryDirectory) IsAvailable() bool {
 	return false
 }
 
-func (dir *registryDirectory) Destroy() {
+func (dir *RegistryDirectory) Destroy() {
 	//TODO:unregister & unsubscribe
 	dir.BaseDirectory.Destroy(func() {
 		invokers := dir.cacheInvokers
@@ -269,7 +269,7 @@ func (dir *registryDirectory) Destroy() {
 	})
 }
 
-func (dir *registryDirectory) overrideUrl(targetUrl *common.URL) {
+func (dir *RegistryDirectory) overrideUrl(targetUrl *common.URL) {
 	doOverrideUrl(dir.configurators, targetUrl)
 	doOverrideUrl(dir.consumerConfigurationListener.Configurators(), targetUrl)
 	doOverrideUrl(dir.referenceConfigurationListener.Configurators(), targetUrl)
@@ -283,11 +283,11 @@ func doOverrideUrl(configurators []config_center.Configurator, targetUrl *common
 
 type referenceConfigurationListener struct {
 	registry.BaseConfigurationListener
-	directory *registryDirectory
+	directory *RegistryDirectory
 	url       *common.URL
 }
 
-func newReferenceConfigurationListener(dir *registryDirectory, url *common.URL) *referenceConfigurationListener {
+func newReferenceConfigurationListener(dir *RegistryDirectory, url *common.URL) *referenceConfigurationListener {
 	listener := &referenceConfigurationListener{directory: dir, url: url}
 	listener.InitWith(
 		url.EncodedServiceKey()+constant.CONFIGURATORS_SUFFIX,
@@ -305,10 +305,10 @@ func (l *referenceConfigurationListener) Process(event *config_center.ConfigChan
 type consumerConfigurationListener struct {
 	registry.BaseConfigurationListener
 	listeners []registry.NotifyListener
-	directory *registryDirectory
+	directory *RegistryDirectory
 }
 
-func newConsumerConfigurationListener(dir *registryDirectory) *consumerConfigurationListener {
+func newConsumerConfigurationListener(dir *RegistryDirectory) *consumerConfigurationListener {
 	listener := &consumerConfigurationListener{directory: dir}
 	listener.InitWith(
 		config.GetConsumerConfig().ApplicationConfig.Name+constant.CONFIGURATORS_SUFFIX,

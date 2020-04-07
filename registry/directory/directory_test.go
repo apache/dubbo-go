@@ -66,7 +66,7 @@ func TestSubscribe(t *testing.T) {
 func TestSubscribe_InvalidUrl(t *testing.T) {
 	url, _ := common.NewURL("mock://127.0.0.1:1111")
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
-	_, err := newRegistryDirectory(&url, mockRegistry)
+	_, err := NewRegistryDirectory(&url, mockRegistry)
 	assert.Error(t, err)
 }
 
@@ -79,9 +79,9 @@ func TestSubscribe_Group(t *testing.T) {
 	suburl.SetParam(constant.CLUSTER_KEY, "mock")
 	regurl.SubURL = &suburl
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
-	dir, _ := newRegistryDirectory(&regurl, mockRegistry)
+	dir, _ := NewRegistryDirectory(&regurl, mockRegistry)
 
-	go dir.(*registryDirectory).subscribe(common.NewURLWithOptions(common.WithPath("testservice")))
+	go dir.(*RegistryDirectory).subscribe(common.NewURLWithOptions(common.WithPath("testservice")))
 	//for group1
 	urlmap := url.Values{}
 	urlmap.Set(constant.GROUP_KEY, "group1")
@@ -100,7 +100,7 @@ func TestSubscribe_Group(t *testing.T) {
 	}
 
 	time.Sleep(1e9)
-	assert.Len(t, dir.(*registryDirectory).cacheInvokers, 2)
+	assert.Len(t, dir.(*RegistryDirectory).cacheInvokers, 2)
 }
 
 func Test_Destroy(t *testing.T) {
@@ -172,7 +172,7 @@ Loop1:
 
 }
 
-func normalRegistryDir(noMockEvent ...bool) (*registryDirectory, *registry.MockRegistry) {
+func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockRegistry) {
 	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
 
 	url, _ := common.NewURL("mock://127.0.0.1:1111")
@@ -184,9 +184,9 @@ func normalRegistryDir(noMockEvent ...bool) (*registryDirectory, *registry.MockR
 	)
 	url.SubURL = &suburl
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
-	dir, _ := newRegistryDirectory(&url, mockRegistry)
+	dir, _ := NewRegistryDirectory(&url, mockRegistry)
 
-	go dir.(*registryDirectory).subscribe(&suburl)
+	go dir.(*RegistryDirectory).subscribe(&suburl)
 	if len(noMockEvent) == 0 {
 		for i := 0; i < 3; i++ {
 			mockRegistry.(*registry.MockRegistry).MockEvent(
@@ -200,5 +200,5 @@ func normalRegistryDir(noMockEvent ...bool) (*registryDirectory, *registry.MockR
 			)
 		}
 	}
-	return dir.(*registryDirectory), mockRegistry.(*registry.MockRegistry)
+	return dir.(*RegistryDirectory), mockRegistry.(*registry.MockRegistry)
 }
