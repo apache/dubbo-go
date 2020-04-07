@@ -19,7 +19,6 @@ package directory
 
 import (
 	"sync"
-	"time"
 )
 
 import (
@@ -28,6 +27,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/cluster/directory"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
@@ -42,13 +42,9 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
-// Options ...
-type Options struct {
-	serviceTTL time.Duration
+func init() {
+	extension.SetDefaultRegistryDirectory(newRegistryDirectory)
 }
-
-// Option ...
-type Option func(*Options)
 
 type registryDirectory struct {
 	directory.BaseDirectory
@@ -61,20 +57,12 @@ type registryDirectory struct {
 	configurators                  []config_center.Configurator
 	consumerConfigurationListener  *consumerConfigurationListener
 	referenceConfigurationListener *referenceConfigurationListener
-	Options
-	serviceKey string
-	forbidden  atomic.Bool
+	serviceKey                     string
+	forbidden                      atomic.Bool
 }
 
-// NewRegistryDirectory ...
-func NewRegistryDirectory(url *common.URL, registry registry.Registry, opts ...Option) (*registryDirectory, error) {
-	options := Options{
-		//default 300s
-		serviceTTL: time.Duration(300e9),
-	}
-	for _, opt := range opts {
-		opt(&options)
-	}
+// newRegistryDirectory ...
+func newRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.Directory, error) {
 	if url.SubURL == nil {
 		return nil, perrors.Errorf("url is invalid, suburl can not be nil")
 	}
@@ -84,14 +72,15 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry, opts ...O
 		cacheInvokersMap: &sync.Map{},
 		serviceType:      url.SubURL.Service(),
 		registry:         registry,
-		Options:          options,
 	}
 	dir.consumerConfigurationListener = newConsumerConfigurationListener(dir)
+
+	go dir.subscribe(url.SubURL)
 	return dir, nil
 }
 
 //subscribe from registry
-func (dir *registryDirectory) Subscribe(url *common.URL) {
+func (dir *registryDirectory) subscribe(url *common.URL) {
 	dir.consumerConfigurationListener.addNotifyListener(dir)
 	dir.referenceConfigurationListener = newReferenceConfigurationListener(dir, url)
 	dir.registry.Subscribe(url, dir)
@@ -101,7 +90,7 @@ func (dir *registryDirectory) Notify(event *registry.ServiceEvent) {
 	go dir.update(event)
 }
 
-//subscribe service from registry, and update the cacheServices
+// update: subscribe service from registry, and update the cacheServices
 func (dir *registryDirectory) update(res *registry.ServiceEvent) {
 	if res == nil {
 		return
@@ -198,7 +187,7 @@ func (dir *registryDirectory) toGroupInvokers() []protocol.Invoker {
 	return groupInvokersList
 }
 
-// uncacheInvoker return abandoned Invoker,if no Invoker to be abandoned,return nil
+// uncacheInvoker: return abandoned Invoker,if no Invoker to be abandoned,return nil
 func (dir *registryDirectory) uncacheInvoker(url *common.URL) protocol.Invoker {
 	logger.Debugf("service will be deleted in cache invokers: invokers key is  %s!", url.Key())
 	if cacheInvoker, ok := dir.cacheInvokersMap.Load(url.Key()); ok {
@@ -208,7 +197,7 @@ func (dir *registryDirectory) uncacheInvoker(url *common.URL) protocol.Invoker {
 	return nil
 }
 
-// cacheInvoker return abandoned Invoker,if no Invoker to be abandoned,return nil
+// cacheInvoker: return abandoned Invoker,if no Invoker to be abandoned,return nil
 func (dir *registryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
 	dir.overrideUrl(dir.GetDirectoryUrl())
 	referenceUrl := dir.GetDirectoryUrl().SubURL
@@ -244,7 +233,7 @@ func (dir *registryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
 	return nil
 }
 
-//select the protocol invokers from the directory
+// list :select the protocol invokers from the directory
 func (dir *registryDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
 	invokers := dir.cacheInvokers
 	routerChain := dir.RouterChain()
