@@ -39,7 +39,7 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 	"github.com/apache/dubbo-go/registry"
-	directory2 "github.com/apache/dubbo-go/registry/directory"
+	_ "github.com/apache/dubbo-go/registry/directory"
 	"github.com/apache/dubbo-go/remoting"
 )
 
@@ -111,7 +111,7 @@ func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 	}
 
 	//new registry directory for store service url from registry
-	directory, err := directory2.NewRegistryDirectory(&registryUrl, reg)
+	directory, err := extension.GetDefaultRegistryDirectory(&registryUrl, reg)
 	if err != nil {
 		logger.Errorf("consumer service %v  create registry directory  error, error message is %s, and will return nil invoker!",
 			serviceUrl.String(), err.Error())
@@ -123,7 +123,6 @@ func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 		logger.Errorf("consumer service %v register registry %v error, error message is %s",
 			serviceUrl.String(), registryUrl.String(), err.Error())
 	}
-	go directory.Subscribe(serviceUrl)
 
 	//new cluster invoker
 	cluster := extension.GetCluster(serviceUrl.GetParam(constant.CLUSTER_KEY, constant.DEFAULT_CLUSTER))
