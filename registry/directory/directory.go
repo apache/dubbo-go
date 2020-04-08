@@ -233,7 +233,7 @@ func (dir *RegistryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
 	return nil
 }
 
-// list :select the protocol invokers from the directory
+// List selected protocol invokers from the directory
 func (dir *RegistryDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
 	invokers := dir.cacheInvokers
 	routerChain := dir.RouterChain()
