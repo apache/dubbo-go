@@ -90,7 +90,7 @@ func (dir *RegistryDirectory) Notify(event *registry.ServiceEvent) {
 	go dir.update(event)
 }
 
-// update: subscribe service from registry, and update the cacheServices
+// update the cacheServices and subscribe service from registry
 func (dir *RegistryDirectory) update(res *registry.ServiceEvent) {
 	if res == nil {
 		return
@@ -187,7 +187,7 @@ func (dir *RegistryDirectory) toGroupInvokers() []protocol.Invoker {
 	return groupInvokersList
 }
 
-// uncacheInvoker: return abandoned Invoker,if no Invoker to be abandoned,return nil
+// uncacheInvoker will return abandoned Invoker,if no Invoker to be abandoned,return nil
 func (dir *RegistryDirectory) uncacheInvoker(url *common.URL) protocol.Invoker {
 	logger.Debugf("service will be deleted in cache invokers: invokers key is  %s!", url.Key())
 	if cacheInvoker, ok := dir.cacheInvokersMap.Load(url.Key()); ok {
@@ -197,7 +197,7 @@ func (dir *RegistryDirectory) uncacheInvoker(url *common.URL) protocol.Invoker {
 	return nil
 }
 
-// cacheInvoker: return abandoned Invoker,if no Invoker to be abandoned,return nil
+// cacheInvoker will return abandoned Invoker,if no Invoker to be abandoned,return nil
 func (dir *RegistryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
 	dir.overrideUrl(dir.GetDirectoryUrl())
 	referenceUrl := dir.GetDirectoryUrl().SubURL
@@ -233,7 +233,7 @@ func (dir *RegistryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
 	return nil
 }
 
-// list :select the protocol invokers from the directory
+// List selected protocol invokers from the directory
 func (dir *RegistryDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
 	invokers := dir.cacheInvokers
 	routerChain := dir.RouterChain()
