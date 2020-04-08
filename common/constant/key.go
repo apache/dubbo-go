@@ -241,3 +241,9 @@ const (
 	// The default time window of circuit-tripped  in millisecond if not specfied
 	MAX_CIRCUIT_TRIPPED_TIMEOUT_IN_MS = 30000
 )
+
+// service discovery
+
+const (
+	NACOS_GROUP = "nacos.group"
+)
