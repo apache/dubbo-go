@@ -23,10 +23,12 @@ import (
 	"github.com/apache/dubbo-go/registry"
 )
 
-var defaultRegistry func(url *common.URL, registry registry.Registry) (cluster.Directory, error)
+type registryDirectory func(url *common.URL, registry registry.Registry) (cluster.Directory, error)
+
+var defaultRegistry registryDirectory
 
 // SetDefaultRegistryDirectory ...
-func SetDefaultRegistryDirectory(v func(url *common.URL, registry registry.Registry) (cluster.Directory, error)) {
+func SetDefaultRegistryDirectory(v registryDirectory) {
 	defaultRegistry = v
 }
 
