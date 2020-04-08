@@ -20,7 +20,9 @@ package inmemory
 import (
 	"github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/page"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/registry"
@@ -34,6 +36,7 @@ func init() {
 
 	instance := &InMemoryServiceDiscovery{
 		instances: make(map[string]registry.ServiceInstance, 4),
+		listeners: make([]*registry.ServiceInstancesChangedListener, 0, 2),
 	}
 
 	extension.SetServiceDiscovery(name, func(url *common.URL) (discovery registry.ServiceDiscovery, err error) {
@@ -45,6 +48,7 @@ func init() {
 // Usually you will not use this implementation except for tests.
 type InMemoryServiceDiscovery struct {
 	instances map[string]registry.ServiceInstance
+	listeners []*registry.ServiceInstancesChangedListener
 }
 
 func (i *InMemoryServiceDiscovery) String() string {
@@ -55,6 +59,7 @@ func (i *InMemoryServiceDiscovery) String() string {
 func (i *InMemoryServiceDiscovery) Destroy() error {
 	// reset to empty
 	i.instances = make(map[string]registry.ServiceInstance, 4)
+	i.listeners = make([]*registry.ServiceInstancesChangedListener, 0, 2)
 	return nil
 }
 
@@ -100,31 +105,58 @@ func (i *InMemoryServiceDiscovery) GetInstances(serviceName string) []registry.S
 	return result
 }
 
-//
+// GetInstancesByPage will return the part of instances
 func (i *InMemoryServiceDiscovery) GetInstancesByPage(serviceName string, offset int, pageSize int) gxpage.Pager {
-	panic("implement me")
+	instances := i.GetInstances(serviceName)
+	// we can not use []registry.ServiceInstance since New(...) received []interface{} as parameter
+	result := make([]interface{}, 0, pageSize)
+	for i := offset; i < len(instances) && i < offset+pageSize; i++ {
+		result = append(result, instances[i])
+	}
+	return gxpage.New(offset, pageSize, result, len(instances))
 }
 
+// GetHealthyInstancesByPage will return the instances
 func (i *InMemoryServiceDiscovery) GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) gxpage.Pager {
-	panic("implement me")
+	instances := i.GetInstances(serviceName)
+	// we can not use []registry.ServiceInstance since New(...) received []interface{} as parameter
+	result := make([]interface{}, 0, pageSize)
+	count := 0
+	for i := offset; i < len(instances) && count < pageSize; i++ {
+		if instances[i].IsHealthy() == healthy {
+			result = append(result, instances[i])
+			count++
+		}
+	}
+	return gxpage.New(offset, pageSize, result, len(instances))
 }
 
+// GetRequestInstances will iterate the serviceName and aggregate them
 func (i *InMemoryServiceDiscovery) GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]gxpage.Pager {
-	panic("implement me")
+	res := make(map[string]gxpage.Pager, len(serviceNames))
+	for _, name := range serviceNames {
+		res[name] = i.GetInstancesByPage(name, offset, requestedSize)
+	}
+	return res
 }
 
+// AddListener will save the listener inside the memory
 func (i *InMemoryServiceDiscovery) AddListener(listener *registry.ServiceInstancesChangedListener) error {
-	panic("implement me")
+	i.listeners = append(i.listeners, listener)
+	return nil
 }
 
+// DispatchEventByServiceName will do nothing
 func (i *InMemoryServiceDiscovery) DispatchEventByServiceName(serviceName string) error {
-	panic("implement me")
+	return nil
 }
 
+// DispatchEventForInstances will do nothing
 func (i *InMemoryServiceDiscovery) DispatchEventForInstances(serviceName string, instances []registry.ServiceInstance) error {
-	panic("implement me")
+	return nil
 }
 
+// DispatchEvent will do nothing
 func (i *InMemoryServiceDiscovery) DispatchEvent(event *registry.ServiceInstancesChangedEvent) error {
-	panic("implement me")
+	return nil
 }
