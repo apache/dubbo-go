@@ -274,7 +274,9 @@ func (sm *serviceMap) UnRegister(interfaceName, protocol, serviceId string) erro
 		}
 	}
 	delete(svcs, serviceId)
-	delete(sm.serviceMap, protocol)
+	if len(sm.serviceMap) == 0 {
+		delete(sm.serviceMap, protocol)
+	}
 
 	return nil
 }
