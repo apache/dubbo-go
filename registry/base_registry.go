@@ -121,6 +121,7 @@ func (r *BaseRegistry) Destroy() {
 	close(r.done)
 	// wait waitgroup done (wait listeners outside close over)
 	r.wg.Wait()
+
 	//close registry client
 	r.closeRegisters()
 }
@@ -178,7 +179,10 @@ func (r *BaseRegistry) RestartCallBack() bool {
 		}
 		logger.Infof("success to re-register service :%v", confIf.Key())
 	}
-	r.facadeBasedRegistry.InitListeners()
+
+	if flag {
+		r.facadeBasedRegistry.InitListeners()
+	}
 
 	return flag
 }
