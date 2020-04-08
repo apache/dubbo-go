@@ -90,7 +90,7 @@ func (dir *RegistryDirectory) Notify(event *registry.ServiceEvent) {
 	go dir.update(event)
 }
 
-// update: subscribe service from registry, and update the cacheServices
+// update the cacheServices and subscribe service from registry
 func (dir *RegistryDirectory) update(res *registry.ServiceEvent) {
 	if res == nil {
 		return
