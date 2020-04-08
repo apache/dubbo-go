@@ -197,7 +197,7 @@ func (dir *RegistryDirectory) uncacheInvoker(url *common.URL) protocol.Invoker {
 	return nil
 }
 
-// cacheInvoker: return abandoned Invoker,if no Invoker to be abandoned,return nil
+// cacheInvoker will return abandoned Invoker,if no Invoker to be abandoned,return nil
 func (dir *RegistryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
 	dir.overrideUrl(dir.GetDirectoryUrl())
 	referenceUrl := dir.GetDirectoryUrl().SubURL
