@@ -38,22 +38,22 @@ import (
 
 // baseRegistry is the parent of both interface-level registry
 // and service discovery(related to application-level registry)
-type baseRegistry struct {
+type nacosBaseRegistry struct {
 	*common.URL
 	namingClient naming_client.INamingClient
 }
 
 // newBaseRegistry will create new instance
-func newBaseRegistry(url *common.URL) (baseRegistry, error) {
+func newBaseRegistry(url *common.URL) (nacosBaseRegistry, error) {
 	nacosConfig, err := getNacosConfig(url)
 	if err != nil {
-		return baseRegistry{}, err
+		return nacosBaseRegistry{}, err
 	}
 	client, err := clients.CreateNamingClient(nacosConfig)
 	if err != nil {
-		return baseRegistry{}, err
+		return nacosBaseRegistry{}, err
 	}
-	registry := baseRegistry{
+	registry := nacosBaseRegistry{
 		URL:          url,
 		namingClient: client,
 	}
