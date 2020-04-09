@@ -23,6 +23,7 @@ import (
 	"github.com/apache/dubbo-go/metadata/identifier"
 )
 
+// MetadataReport is an interface of remote metadata report
 type MetadataReport interface {
 	StoreProviderMetadata(*identifier.MetadataIdentifier, *definition.ServiceDefinition)
 	StoreConsumeretadata(*identifier.MetadataIdentifier, map[string]string)

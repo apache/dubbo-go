@@ -89,7 +89,7 @@ func TestLoad(t *testing.T) {
 
 func TestLoadWithSingleReg(t *testing.T) {
 	doInitConsumerWithSingleRegistry()
-	doInitProviderWithSingleRegistry()
+	MockInitProviderWithSingleRegistry()
 
 	ms := &MockService{}
 	SetConsumerService(ms)

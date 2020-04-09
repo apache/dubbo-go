@@ -17,11 +17,11 @@
 package inmemory
 
 import (
+	"encoding/json"
 	"sync"
 )
 
 import (
-	"github.com/apache/dubbo-go/common/logger"
 	"github.com/emirpasic/gods/sets"
 	"github.com/emirpasic/gods/sets/treeset"
 	"github.com/emirpasic/gods/utils"
@@ -30,15 +30,17 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/metadata/definition"
 	"github.com/apache/dubbo-go/metadata/service"
 )
 
-// InMemoryMetadataService is store and query the metadata info in memory when each service registry
+// MetadataService is store and query the metadata info in memory when each service registry
 type MetadataService struct {
 	service.BaseMetadataService
 	exportedServiceURLs   *sync.Map
 	subscribedServiceURLs *sync.Map
+	serviceDefinitions    *sync.Map
 	lock                  *sync.RWMutex
 }
 
@@ -47,11 +49,12 @@ func NewMetadataService() *MetadataService {
 	return &MetadataService{
 		exportedServiceURLs:   new(sync.Map),
 		subscribedServiceURLs: new(sync.Map),
+		serviceDefinitions:    new(sync.Map),
 		lock:                  new(sync.RWMutex),
 	}
 }
 
-// urlComparator: defined as utils.Comparator for treeset to compare the URL
+// urlComparator is defined as utils.Comparator for treeset to compare the URL
 func urlComparator(a, b interface{}) int {
 	url1 := a.(*common.URL)
 	url2 := b.(*common.URL)
@@ -65,7 +68,7 @@ func urlComparator(a, b interface{}) int {
 	}
 }
 
-// addURL: add URL in memory
+// addURL will add URL in memory
 func (mts *MetadataService) addURL(targetMap *sync.Map, url *common.URL) bool {
 	var (
 		urlSet interface{}
@@ -91,7 +94,7 @@ func (mts *MetadataService) addURL(targetMap *sync.Map, url *common.URL) bool {
 	return true
 }
 
-// removeURL: used to remove specified url
+// removeURL is used to remove specified url
 func (mts *MetadataService) removeURL(targetMap *sync.Map, url *common.URL) {
 	if value, loaded := targetMap.Load(url.ServiceKey()); loaded {
 		mts.lock.Lock()
@@ -105,7 +108,7 @@ func (mts *MetadataService) removeURL(targetMap *sync.Map, url *common.URL) {
 	}
 }
 
-// getAllService: return all the exportedUrlString except for metadataService
+// getAllService can return all the exportedUrlString except for metadataService
 func (mts *MetadataService) getAllService(services *sync.Map) sets.Set {
 	sets := treeset.NewWith(utils.StringComparator)
 	services.Range(func(key, value interface{}) bool {
@@ -121,7 +124,7 @@ func (mts *MetadataService) getAllService(services *sync.Map) sets.Set {
 	return sets
 }
 
-// getSpecifiedService: return specified service url by serviceKey
+// getSpecifiedService can return specified service url by serviceKey
 func (mts *MetadataService) getSpecifiedService(services *sync.Map, serviceKey string, protocol string) sets.Set {
 	targetSets := treeset.NewWith(utils.StringComparator)
 	serviceSet, loaded := services.Load(serviceKey)
@@ -136,63 +139,89 @@ func (mts *MetadataService) getSpecifiedService(services *sync.Map, serviceKey s
 	return targetSets
 }
 
-// ExportURL: store the in memory treeset
-func (mts *MetadataService) ExportURL(url common.URL) bool {
-	return mts.addURL(mts.exportedServiceURLs, &url)
+// ExportURL can store the in memory treeset
+func (mts *MetadataService) ExportURL(url common.URL) (bool, error) {
+	return mts.addURL(mts.exportedServiceURLs, &url), nil
 }
 
-// UnexportURL: remove the url store in memory treeset
-func (mts *MetadataService) UnexportURL(url common.URL) {
+// UnexportURL can remove the url store in memory treeset
+func (mts *MetadataService) UnexportURL(url common.URL) error {
 	mts.removeURL(mts.exportedServiceURLs, &url)
+	return nil
 }
 
-// SubscribeURL...
-func (mts *MetadataService) SubscribeURL(url common.URL) bool {
-	return mts.addURL(mts.subscribedServiceURLs, &url)
+// SubscribeURL can store the in memory treeset
+func (mts *MetadataService) SubscribeURL(url common.URL) (bool, error) {
+	return mts.addURL(mts.subscribedServiceURLs, &url), nil
 }
 
-// UnsubscribeURL...
-func (mts *MetadataService) UnsubscribeURL(url common.URL) {
+// UnsubscribeURL can remove the url store in memory treeset
+func (mts *MetadataService) UnsubscribeURL(url common.URL) error {
 	mts.removeURL(mts.subscribedServiceURLs, &url)
+	return nil
 }
 
 // PublishServiceDefinition: publish url's service metadata info, and write into memory
-func (MetadataService) PublishServiceDefinition(url common.URL) {
+func (mts *MetadataService) PublishServiceDefinition(url common.URL) error {
 	interfaceName := url.GetParam(constant.INTERFACE_KEY, "")
 	isGeneric := url.GetParamBool(constant.GENERIC_KEY, false)
 	if len(interfaceName) > 0 && !isGeneric {
 		//judge is consumer or provider
-		role := url.GetParam(constant.SIDE_KEY, "")
+		//side := url.GetParam(constant.SIDE_KEY, "")
 		//var service common.RPCService
-		if role == common.RoleType(common.CONSUMER).Role() {
-
-			//TODO:BOSS FANG
-		} else if role == common.RoleType(common.PROVIDER).Role() {
-			//TODO:BOSS FANG
+		service := common.ServiceMap.GetService(url.Protocol, url.GetParam(constant.BEAN_NAME_KEY, url.Service()))
+		//if side == common.RoleType(common.CONSUMER).Role() {
+		//	//TODO:generate the service definition and store it
+		//
+		//} else if side == common.RoleType(common.PROVIDER).Role() {
+		//	//TODO:generate the service definition and store it
+		//}
+		sd := definition.BuildServiceDefinition(*service, url)
+		data, err := json.Marshal(sd)
+		if err != nil {
+			logger.Errorf("publishProvider getServiceDescriptor error. providerUrl:%v , error: ", url, err)
 		}
-
+		mts.serviceDefinitions.Store(url.ServiceKey(), string(data))
+		return nil
 	}
+	logger.Errorf("publishProvider interfaceName is empty . providerUrl:%v ", url)
+	return nil
 }
 
 // GetExportedURLs get all exported urls
-func (mts *MetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) sets.Set {
+func (mts *MetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) (sets.Set, error) {
 	if serviceInterface == constant.ANY_VALUE {
-		return mts.getAllService(mts.exportedServiceURLs)
+		return mts.getAllService(mts.exportedServiceURLs), nil
 	} else {
 		serviceKey := definition.ServiceDescriperBuild(serviceInterface, group, version)
-		return mts.getSpecifiedService(mts.exportedServiceURLs, serviceKey, protocol)
+		return mts.getSpecifiedService(mts.exportedServiceURLs, serviceKey, protocol), nil
 	}
 }
 
 // GetSubscribedURLs get all subscribedUrl
-func (mts *MetadataService) GetSubscribedURLs() sets.Set {
-	return mts.getAllService(mts.subscribedServiceURLs)
+func (mts *MetadataService) GetSubscribedURLs() (sets.Set, error) {
+	return mts.getAllService(mts.subscribedServiceURLs), nil
 }
 
-func (MetadataService) GetServiceDefinition(interfaceName string, group string, version string) string {
-	panic("implement me")
+// GetServiceDefinition can get service definition by interfaceName, group and version
+func (mts *MetadataService) GetServiceDefinition(interfaceName string, group string, version string) (string, error) {
+	serviceKey := definition.ServiceDescriperBuild(interfaceName, group, version)
+	v, _ := mts.serviceDefinitions.Load(serviceKey)
+	return v.(string), nil
 }
 
-func (MetadataService) GetServiceDefinitionByServiceKey(serviceKey string) string {
-	panic("implement me")
+// GetServiceDefinition can get service definition by serviceKey
+func (mts *MetadataService) GetServiceDefinitionByServiceKey(serviceKey string) (string, error) {
+	v, _ := mts.serviceDefinitions.Load(serviceKey)
+	return v.(string), nil
+}
+
+// Version will return the version of metadata service
+func (mts *MetadataService) Version() string {
+	return "1.0.0"
+}
+
+// Version will return the version of metadata service
+func (mts *MetadataService) Reference() string {
+	return "MetadataService"
 }
