@@ -159,7 +159,7 @@ func Test_RemoveListener(t *testing.T) {
 
 func TestZookeeperDynamicConfiguration_PublishConfig(t *testing.T) {
 	value := "Test Data"
-	customGroup := "Custom Group"
+	customGroup := "Custom group"
 	key := "myKey"
 	ts, zk := initZkData(config_center.DEFAULT_GROUP, t)
 	defer ts.Stop()

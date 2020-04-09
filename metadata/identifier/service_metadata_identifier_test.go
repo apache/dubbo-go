@@ -18,22 +18,28 @@
 package identifier
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
+	"testing"
 )
 
-// ServiceMetadataIdentifier is inherit baseMetaIdentifier with service params: Revision and Protocol
-type ServiceMetadataIdentifier struct {
-	Revision string
-	Protocol string
-	BaseMetadataIdentifier
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+var serviceMetadataId = &ServiceMetadataIdentifier{
+	Revision: "1.0",
+	Protocol: "dubbo",
+	BaseMetadataIdentifier: BaseMetadataIdentifier{
+		ServiceInterface: "org.apache.pkg.mockService",
+		Version:          "1.0.0",
+		Group:            "Group",
+		Side:             "provider",
+	},
 }
 
-// getIdentifierKey...
-func (mdi *ServiceMetadataIdentifier) GetIdentifierKey() string {
-	return mdi.BaseMetadataIdentifier.getIdentifierKey(mdi.Protocol, constant.KEY_REVISON_PREFIX+mdi.Revision)
+func TestServiceGetFilePathKey(t *testing.T) {
+	assert.Equal(t, "metadata/1.0.0/Group/provider/dubbo/revision1.0", serviceMetadataId.GetFilePathKey())
 }
 
-// getIdentifierKey...
-func (mdi *ServiceMetadataIdentifier) GetFilePathKey() string {
-	return mdi.BaseMetadataIdentifier.getFilePathKey(mdi.Protocol, constant.KEY_REVISON_PREFIX+mdi.Revision)
+func TestServiceGetIdentifierKey(t *testing.T) {
+	assert.Equal(t, "org.apache.pkg.mockService:1.0.0:Group:provider:dubbo:revision1.0", serviceMetadataId.GetIdentifierKey())
 }
