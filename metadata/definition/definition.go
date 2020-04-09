@@ -19,6 +19,9 @@ package definition
 
 import (
 	"bytes"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 )
 
