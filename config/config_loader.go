@@ -200,7 +200,7 @@ func Load() {
 			svs.Implement(rpcService)
 			svs.Protocols = providerConfig.Protocols
 			if err := svs.Export(); err != nil {
-				panic(fmt.Sprintf("service %s export failed! ", key))
+				panic(fmt.Sprintf("service %s export failed! err: %#v", key, err))
 			}
 		}
 	}
