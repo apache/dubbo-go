@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-package exporter
+package service_exporter
 
 import (
 	"github.com/apache/dubbo-go/common"
 )
 
-type MetadataExporter interface {
-	Export() MetadataExporter
-	Unexport() MetadataExporter
+type MetadataServiceExporter interface {
+	Export() error
+	Unexport()
 	GetExportedURLs() []*common.URL
 	IsExported() bool
 }
