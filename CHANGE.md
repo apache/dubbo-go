@@ -8,6 +8,7 @@
 - [Context support](https://github.com/apache/dubbo-go/pull/330)
 - [Opentracing & transfer context end to end for jsonrpc protocol](https://github.com/apache/dubbo-go/pull/335)
 - [Opentracing & transfer context end to end for dubbo protocol](https://github.com/apache/dubbo-go/pull/344)
+- [Grpc tracing for client and server](https://github.com/apache/dubbo-go/pull/397)
 - [Nacos config center](https://github.com/apache/dubbo-go/pull/357)
 - [Prometheus support](https://github.com/apache/dubbo-go/pull/342)
 - [Support sign and auth for request](https://github.com/apache/dubbo-go/pull/323)
