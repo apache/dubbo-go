@@ -25,19 +25,21 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
-type BaseMetadataIdentifier interface {
-	getFilePathKey(params ...string) string
-	getIdentifierKey(params ...string) string
+// BaseMetadataIdentifier defined for describe the Metadata base identify
+type IMetadataIdentifier interface {
+	GetFilePathKey() string
+	GetIdentifierKey() string
 }
 
-type BaseServiceMetadataIdentifier struct {
-	serviceInterface string
-	version          string
-	group            string
-	side             string
+// BaseMetadataIdentifier is the base implement of BaseMetadataIdentifier interface
+type BaseMetadataIdentifier struct {
+	ServiceInterface string
+	Version          string
+	Group            string
+	Side             string
 }
 
-// joinParams...
+// joinParams will join the specified char in slice, and build as string
 func joinParams(joinChar string, params []string) string {
 	var joinedStr string
 	for _, param := range params {
@@ -47,24 +49,24 @@ func joinParams(joinChar string, params []string) string {
 	return joinedStr
 }
 
-// getIdentifierKey...
-func (mdi *BaseServiceMetadataIdentifier) getIdentifierKey(params ...string) string {
-	return mdi.serviceInterface +
-		constant.KEY_SEPARATOR + mdi.version +
-		constant.KEY_SEPARATOR + mdi.group +
-		constant.KEY_SEPARATOR + mdi.side +
+// getIdentifierKey will return string format as service:Version:Group:Side:param1:param2...
+func (mdi *BaseMetadataIdentifier) getIdentifierKey(params ...string) string {
+	return mdi.ServiceInterface +
+		constant.KEY_SEPARATOR + mdi.Version +
+		constant.KEY_SEPARATOR + mdi.Group +
+		constant.KEY_SEPARATOR + mdi.Side +
 		joinParams(constant.KEY_SEPARATOR, params)
 }
 
-// getFilePathKey...
-func (mdi *BaseServiceMetadataIdentifier) getFilePathKey(params ...string) string {
-	path := serviceToPath(mdi.serviceInterface)
+// getFilePathKey will return string format as metadata/path/Version/Group/Side/param1/param2...
+func (mdi *BaseMetadataIdentifier) getFilePathKey(params ...string) string {
+	path := serviceToPath(mdi.ServiceInterface)
 
 	return constant.DEFAULT_PATH_TAG +
 		withPathSeparator(path) +
-		withPathSeparator(mdi.version) +
-		withPathSeparator(mdi.group) +
-		withPathSeparator(mdi.side) +
+		withPathSeparator(mdi.Version) +
+		withPathSeparator(mdi.Group) +
+		withPathSeparator(mdi.Side) +
 		joinParams("/", params)
 
 }

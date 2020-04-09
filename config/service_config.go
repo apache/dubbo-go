@@ -202,6 +202,7 @@ func (c *ServiceConfig) Unexport() {
 		exporter.Unexport()
 	}
 	c.exporters = nil
+	c.exported.Store(false)
 	c.unexported.Store(true)
 }
 
