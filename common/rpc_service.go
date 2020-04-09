@@ -132,6 +132,11 @@ func (s *Service) Method() map[string]*MethodType {
 	return s.methods
 }
 
+// Method ...
+func (s *Service) Name() string {
+	return s.name
+}
+
 // RcvrType ...
 func (s *Service) RcvrType() reflect.Type {
 	return s.rcvrType

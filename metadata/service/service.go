@@ -28,30 +28,32 @@ import (
 
 // Metadataservice is used to define meta data related behaviors
 type MetadataService interface {
-	ServiceName() string
-	ExportURL(url common.URL) bool
-	UnexportURL(url common.URL)
-	RefreshMetadata(exportedRevision string, subscribedRevision string) bool
-	SubscribeURL(url common.URL) bool
-	UnsubscribeURL(url common.URL)
-	PublishServiceDefinition(url common.URL)
+	ServiceName() (string, error)
+	ExportURL(url common.URL) (bool, error)
+	UnexportURL(url common.URL) error
+	//RefreshMetadata(exportedRevision string, subscribedRevision string) bool
+	SubscribeURL(url common.URL) (bool, error)
+	UnsubscribeURL(url common.URL) error
+	PublishServiceDefinition(url common.URL) error
 
-	GetExportedURLs(serviceInterface string, group string, version string, protocol string) sets.Set
-	GetSubscribedURLs() sets.Set
-	GetServiceDefinition(interfaceName string, group string, version string) string
-	GetServiceDefinitionByServiceKey(serviceKey string) string
+	GetExportedURLs(serviceInterface string, group string, version string, protocol string) (sets.Set, error)
+	GetSubscribedURLs() (sets.Set, error)
+	GetServiceDefinition(interfaceName string, group string, version string) (string, error)
+	GetServiceDefinitionByServiceKey(serviceKey string) (string, error)
+	Version() string
+	common.RPCService
 }
 
-// BaseMetadataService: is used for the common logic for struct who will implement interface MetadataService
+// BaseMetadataService is used for the common logic for struct who will implement interface MetadataService
 type BaseMetadataService struct {
 }
 
-// ServiceName: get the service's name in meta service , which is application name
-func (mts *BaseMetadataService) ServiceName() string {
-	return config.GetApplicationConfig().Name
+// ServiceName can get the service's name in meta service , which is application name
+func (mts *BaseMetadataService) ServiceName() (string, error) {
+	return config.GetApplicationConfig().Name, nil
 }
 
-// RefreshMetadata: used for event listener's calling, to refresh metadata
-func (mts *BaseMetadataService) RefreshMetadata(exportedRevision string, subscribedRevision string) bool {
-	return true
-}
+// RefreshMetadata is used for event listener's calling, to refresh metadata
+//func (mts *BaseMetadataService) RefreshMetadata(exportedRevision string, subscribedRevision string) bool {
+//	return true
+//}
