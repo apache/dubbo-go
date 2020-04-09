@@ -15,38 +15,33 @@
  * limitations under the License.
  */
 
-package grpc
+package tag
 
 import (
-	"sync"
-)
-
-import (
+	"github.com/apache/dubbo-go/cluster/router"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/common/extension"
 )
 
-// GrpcExporter ...
-type GrpcExporter struct {
-	*protocol.BaseExporter
+func init() {
+	extension.SetRouterFactory(constant.TagRouterName, NewTagRouterFactory)
 }
 
-// NewGrpcExporter ...
-func NewGrpcExporter(key string, invoker protocol.Invoker, exporterMap *sync.Map) *GrpcExporter {
-	return &GrpcExporter{
-		BaseExporter: protocol.NewBaseExporter(key, invoker, exporterMap),
-	}
+type tagRouterFactory struct{}
+
+// NewTagRouterFactory create a tagRouterFactory
+func NewTagRouterFactory() router.RouterFactory {
+	return &tagRouterFactory{}
 }
 
-// Unexport ...
-func (gg *GrpcExporter) Unexport() {
-	serviceId := gg.GetInvoker().GetUrl().GetParam(constant.BEAN_NAME_KEY, "")
-	interfaceName := gg.GetInvoker().GetUrl().GetParam(constant.INTERFACE_KEY, "")
-	gg.BaseExporter.Unexport()
-	err := common.ServiceMap.UnRegister(interfaceName, GRPC, serviceId)
-	if err != nil {
-		logger.Errorf("[GrpcExporter.Unexport] error: %v", err)
-	}
+// NewRouter create a tagRouter by tagRouterFactory with a url
+// The url contains router configuration information
+func (c *tagRouterFactory) NewRouter(url *common.URL) (router.Router, error) {
+	return NewTagRouter(url)
+}
+
+// NewFileRouter create a tagRouter by profile content
+func (c *tagRouterFactory) NewFileRouter(content []byte) (router.Router, error) {
+	return NewFileTagRouter(content)
 }

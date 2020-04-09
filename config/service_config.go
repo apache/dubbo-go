@@ -69,6 +69,7 @@ type ServiceConfig struct {
 	ExecuteLimitRejectedHandler string            `yaml:"execute.limit.rejected.handler" json:"execute.limit.rejected.handler,omitempty" property:"execute.limit.rejected.handler"`
 	Auth                        string            `yaml:"auth" json:"auth,omitempty" property:"auth"`
 	ParamSign                   string            `yaml:"param.sign" json:"param.sign,omitempty" property:"param.sign"`
+	Tag                         string            `yaml:"tag" json:"tag,omitempty" property:"tag"`
 
 	unexported    *atomic.Bool
 	exported      *atomic.Bool
@@ -128,7 +129,7 @@ func (c *ServiceConfig) Export() error {
 	}
 	for _, proto := range protocolConfigs {
 		// registry the service reflect
-		methods, err := common.ServiceMap.Register(proto.Name, c.rpcService)
+		methods, err := common.ServiceMap.Register(c.InterfaceName, proto.Name, c.rpcService)
 		if err != nil {
 			err := perrors.Errorf("The service %v  export the protocol %v error! Error message is %v .", c.InterfaceName, proto.Name, err.Error())
 			logger.Errorf(err.Error())
@@ -144,7 +145,9 @@ func (c *ServiceConfig) Export() error {
 			common.WithMethods(strings.Split(methods, ",")),
 			common.WithToken(c.Token),
 		)
-
+		if len(c.Tag) > 0 {
+			ivkURL.AddParam(constant.Tagkey, c.Tag)
+		}
 		if len(regUrls) > 0 {
 			for _, regUrl := range regUrls {
 				regUrl.SubURL = ivkURL
@@ -193,6 +196,9 @@ func (c *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.GROUP_KEY, c.Group)
 	urlMap.Set(constant.VERSION_KEY, c.Version)
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
+	urlMap.Set(constant.RELEASE_KEY, "dubbo-golang-"+constant.Version)
+	urlMap.Set(constant.SIDE_KEY, (common.RoleType(common.PROVIDER)).Role())
+
 	// application info
 	urlMap.Set(constant.APPLICATION_KEY, providerConfig.ApplicationConfig.Name)
 	urlMap.Set(constant.ORGANIZATION_KEY, providerConfig.ApplicationConfig.Organization)

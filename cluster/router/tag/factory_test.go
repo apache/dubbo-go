@@ -15,27 +15,25 @@
  * limitations under the License.
  */
 
-package cluster_impl
+package tag
 
 import (
-	"github.com/apache/dubbo-go/cluster"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/protocol"
+	"testing"
 )
 
-type failfastCluster struct{}
+import (
+	"github.com/stretchr/testify/assert"
+)
 
-const failfast = "failfast"
+import (
+	"github.com/apache/dubbo-go/common"
+)
 
-func init() {
-	extension.SetCluster(failfast, NewFailFastCluster)
-}
-
-// NewFailFastCluster ...
-func NewFailFastCluster() cluster.Cluster {
-	return &failfastCluster{}
-}
-
-func (cluster *failfastCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return newFailFastClusterInvoker(directory)
+func TestTagRouterFactory_NewRouter(t *testing.T) {
+	u1, err := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=true")
+	assert.Nil(t, err)
+	factory := NewTagRouterFactory()
+	tagRouter, e := factory.NewRouter(&u1)
+	assert.Nil(t, e)
+	assert.NotNil(t, tagRouter)
 }
