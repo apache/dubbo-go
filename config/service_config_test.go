@@ -18,6 +18,7 @@
 package config
 
 import (
+	"go.uber.org/atomic"
 	"testing"
 )
 
@@ -92,6 +93,7 @@ func doInitProvider() {
 						Weight:      200,
 					},
 				},
+				exported: new(atomic.Bool),
 			},
 			"MockServiceNoRightProtocol": {
 				InterfaceName: "com.MockService",
@@ -116,6 +118,7 @@ func doInitProvider() {
 						Weight:      200,
 					},
 				},
+				exported: new(atomic.Bool),
 			},
 		},
 		Protocols: map[string]*ProtocolConfig{
