@@ -38,4 +38,5 @@ type ConditionalEventListener interface {
 
 // TODO (implement ConditionalEventListener)
 type ServiceInstancesChangedListener struct {
+	ServiceName string
 }
