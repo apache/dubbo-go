@@ -15,27 +15,24 @@
  * limitations under the License.
  */
 
-package cluster_impl
+package tag
 
 import (
-	"github.com/apache/dubbo-go/cluster"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/cluster/router"
+	"github.com/apache/dubbo-go/common/yaml"
 )
 
-type failfastCluster struct{}
-
-const failfast = "failfast"
-
-func init() {
-	extension.SetCluster(failfast, NewFailFastCluster)
+// RouterRule RouterRule config read from config file or config center
+type RouterRule struct {
+	router.BaseRouterRule `yaml:",inline""`
 }
 
-// NewFailFastCluster ...
-func NewFailFastCluster() cluster.Cluster {
-	return &failfastCluster{}
-}
-
-func (cluster *failfastCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return newFailFastClusterInvoker(directory)
+func getRule(rawRule string) (*RouterRule, error) {
+	r := &RouterRule{}
+	err := yaml.UnmarshalYML([]byte(rawRule), r)
+	if err != nil {
+		return r, err
+	}
+	r.RawRule = rawRule
+	return r, nil
 }

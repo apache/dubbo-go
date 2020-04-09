@@ -28,13 +28,14 @@ import (
 	"github.com/apache/dubbo-go/common/yaml"
 )
 
-//RouterInit Load config file to init router config
+// RouterInit Load config file to init router config
 func RouterInit(confRouterFile string) error {
 	fileRouterFactories := extension.GetFileRouterFactories()
 	bytes, err := yaml.LoadYMLConfig(confRouterFile)
 	if err != nil {
 		return perrors.Errorf("ioutil.ReadFile(file:%s) = error:%v", confRouterFile, perrors.WithStack(err))
 	}
+	logger.Warnf("get fileRouterFactories len{%+v})", len(fileRouterFactories))
 	for k, factory := range fileRouterFactories {
 		r, e := factory.NewFileRouter(bytes)
 		if e == nil {
@@ -42,7 +43,7 @@ func RouterInit(confRouterFile string) error {
 			directory.AddRouterURLSet(&url)
 			return nil
 		}
-		logger.Warnf("router config type %s create fail \n", k)
+		logger.Warnf("router config type %s create fail {%v}\n", k, e)
 	}
 	return perrors.Errorf("no file router exists for parse %s , implement router.FIleRouterFactory please.", confRouterFile)
 }
