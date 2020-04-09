@@ -133,7 +133,7 @@ func (s *Service) Method() map[string]*MethodType {
 	return s.methods
 }
 
-// Method ...
+// Name will return service name
 func (s *Service) Name() string {
 	return s.name
 }
