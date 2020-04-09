@@ -18,6 +18,7 @@
 package dynamic
 
 import (
+	"github.com/apache/dubbo-go/metadata/namemapping"
 	"strconv"
 	"time"
 )
@@ -31,7 +32,6 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/config_center"
-	"github.com/apache/dubbo-go/metadata"
 )
 
 const (
@@ -77,6 +77,6 @@ func (d *DynamicConfigurationServiceNameMapping) buildGroup(serviceInterface str
 }
 
 // NewServiceNameMapping will create an instance of DynamicConfigurationServiceNameMapping
-func NewServiceNameMapping(dc config_center.DynamicConfiguration) metadata.ServiceNameMapping {
+func NewServiceNameMapping(dc config_center.DynamicConfiguration) namemapping.ServiceNameMapping {
 	return &DynamicConfigurationServiceNameMapping{dc: dc}
 }
