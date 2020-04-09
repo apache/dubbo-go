@@ -19,8 +19,10 @@ package definition
 
 import (
 	"bytes"
+	"github.com/apache/dubbo-go/common"
 )
 
+// ServiceDefinition is the describer of service definition
 type ServiceDefinition struct {
 	CanonicalName string
 	CodeSource    string
@@ -28,6 +30,7 @@ type ServiceDefinition struct {
 	Types         []TypeDefinition
 }
 
+// MethodDefinition is the describer of method definition
 type MethodDefinition struct {
 	Name           string
 	ParameterTypes []string
@@ -35,6 +38,7 @@ type MethodDefinition struct {
 	Parameters     []TypeDefinition
 }
 
+// TypeDefinition is the describer of type definition
 type TypeDefinition struct {
 	Id              string
 	Type            string
@@ -44,9 +48,23 @@ type TypeDefinition struct {
 	TypeBuilderName string
 }
 
-// name...
-func ServiceDefinitionBuild() *ServiceDefinition {
-	sd := &ServiceDefinition{}
+// BuildServiceDefinition can build service definition which will be used to describe a service
+func BuildServiceDefinition(service common.Service, url common.URL) ServiceDefinition {
+	sd := ServiceDefinition{}
+	sd.CanonicalName = url.Service()
+
+	for k, m := range service.Method() {
+		var paramTypes []string
+		for _, t := range m.ArgsType() {
+			paramTypes = append(paramTypes, t.Kind().String())
+		}
+		methodD := MethodDefinition{
+			Name:           k,
+			ParameterTypes: paramTypes,
+			ReturnType:     m.ReplyType().Kind().String(),
+		}
+		sd.Methods = append(sd.Methods, methodD)
+	}
 
 	return sd
 }
