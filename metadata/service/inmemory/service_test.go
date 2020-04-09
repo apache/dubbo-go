@@ -69,27 +69,29 @@ func TestMetadataService(t *testing.T) {
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&"+
 		"side=provider&timeout=3000&timestamp=1556509797245&group=%v&version=%v&bean.name=%v", protocol, serviceName, group, version, beanName))
 	mts.ExportURL(u)
-	sets := mts.GetExportedURLs(serviceName, group, version, protocol)
+	sets, _ := mts.GetExportedURLs(serviceName, group, version, protocol)
 	assert.Equal(t, 1, sets.Size())
 	mts.SubscribeURL(u)
 
 	mts.SubscribeURL(u)
-	sets2 := mts.GetSubscribedURLs()
+	sets2, _ := mts.GetSubscribedURLs()
 	assert.Equal(t, 1, sets2.Size())
 
 	mts.UnexportURL(u)
-	sets11 := mts.GetExportedURLs(serviceName, group, version, protocol)
+	sets11, _ := mts.GetExportedURLs(serviceName, group, version, protocol)
 	assert.Equal(t, 0, sets11.Size())
 
 	mts.UnsubscribeURL(u)
-	sets22 := mts.GetSubscribedURLs()
+	sets22, _ := mts.GetSubscribedURLs()
 	assert.Equal(t, 0, sets22.Size())
 
 	userProvider := &UserProvider{}
-	common.ServiceMap.Register(protocol, userProvider)
+	common.ServiceMap.Register(serviceName, protocol, userProvider)
 	mts.PublishServiceDefinition(u)
 	expected := `{"CanonicalName":"com.ikurento.user.UserProvider","CodeSource":"","Methods":[{"Name":"GetUser","ParameterTypes":["slice"],"ReturnType":"ptr","Parameters":null}],"Types":null}`
-	assert.Equal(t, mts.GetServiceDefinition(serviceName, group, version), expected)
+	def1, _ := mts.GetServiceDefinition(serviceName, group, version)
+	assert.Equal(t, def1, expected)
 	serviceKey := definition.ServiceDescriperBuild(serviceName, group, version)
-	assert.Equal(t, mts.GetServiceDefinitionByServiceKey(serviceKey), expected)
+	def2, _ := mts.GetServiceDefinitionByServiceKey(serviceKey)
+	assert.Equal(t, def2, expected)
 }
