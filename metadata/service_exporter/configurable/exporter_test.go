@@ -18,14 +18,20 @@
 package configurable
 
 import (
+	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	_ "github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/config"
 	_ "github.com/apache/dubbo-go/filter/filter_impl"
 	"github.com/apache/dubbo-go/metadata/service/inmemory"
 	"github.com/apache/dubbo-go/protocol/dubbo"
 	_ "github.com/apache/dubbo-go/protocol/dubbo"
-	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestConfigurableExporter(t *testing.T) {
