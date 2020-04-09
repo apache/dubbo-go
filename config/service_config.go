@@ -328,6 +328,7 @@ func MockInitProviderWithSingleRegistry() {
 						Weight:      200,
 					},
 				},
+				exported: new(atomic.Bool),
 			},
 		},
 		Protocols: map[string]*ProtocolConfig{
