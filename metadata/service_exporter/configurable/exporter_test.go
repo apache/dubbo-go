@@ -18,7 +18,6 @@
 package configurable
 
 import (
-	"fmt"
 	_ "github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/config"
 	_ "github.com/apache/dubbo-go/filter/filter_impl"
@@ -53,5 +52,7 @@ func TestConfigurableExporter(t *testing.T) {
 	assert.Equal(t, false, exported.IsExported())
 	assert.NoError(t, exported.Export())
 	assert.Equal(t, true, exported.IsExported())
-	fmt.Println(exported.GetExportedURLs())
+	assert.Regexp(t, "dubbo://:20000/MetadataService*", exported.GetExportedURLs()[0].String())
+	exported.Unexport()
+	assert.Equal(t, false, exported.IsExported())
 }

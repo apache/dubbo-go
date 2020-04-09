@@ -17,17 +17,18 @@
 
 package identifier
 
+// MetadataIdentifier is inherit baseMetaIdentifier with Application name
 type MetadataIdentifier struct {
-	application string
+	Application string
 	BaseMetadataIdentifier
 }
 
 // getIdentifierKey...
-func (mdi *MetadataIdentifier) getIdentifierKey(params ...string) string {
-	return mdi.BaseMetadataIdentifier.getIdentifierKey(mdi.application)
+func (mdi *MetadataIdentifier) GetIdentifierKey() string {
+	return mdi.BaseMetadataIdentifier.getIdentifierKey(mdi.Application)
 }
 
 // getIdentifierKey...
-func (mdi *MetadataIdentifier) getFilePathKey(params ...string) string {
-	return mdi.BaseMetadataIdentifier.getFilePathKey(mdi.application)
+func (mdi *MetadataIdentifier) GetFilePathKey() string {
+	return mdi.BaseMetadataIdentifier.getFilePathKey(mdi.Application)
 }
