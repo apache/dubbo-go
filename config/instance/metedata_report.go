@@ -18,13 +18,13 @@
 package instance
 
 import (
-	"github.com/apache/dubbo-go/metadata/report"
 	"sync"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/metadata/report"
 )
 
 var (

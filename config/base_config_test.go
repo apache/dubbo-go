@@ -53,15 +53,6 @@ func Test_refresh(t *testing.T) {
 			Owner:        "dubbo",
 			Environment:  "test"},
 		Registries: map[string]*RegistryConfig{
-			//"shanghai_reg1": {
-			//	id:         "shanghai_reg1",
-			//	Protocol:   "mock",
-			//	TimeoutStr: "2s",
-			//	group:      "shanghai_idc",
-			//	Address:    "127.0.0.1:2181",
-			//	Username:   "user1",
-			//	Password:   "pwd1",
-			//},
 			"shanghai_reg2": {
 				Protocol:   "mock",
 				TimeoutStr: "2s",
@@ -156,15 +147,6 @@ func Test_appExternal_refresh(t *testing.T) {
 			Owner:        "dubbo",
 			Environment:  "test"},
 		Registries: map[string]*RegistryConfig{
-			//"shanghai_reg1": {
-			//	id:         "shanghai_reg1",
-			//	Protocol:   "mock",
-			//	TimeoutStr: "2s",
-			//	group:      "shanghai_idc",
-			//	Address:    "127.0.0.1:2181",
-			//	Username:   "user1",
-			//	Password:   "pwd1",
-			//},
 			"shanghai_reg2": {
 				Protocol:   "mock",
 				TimeoutStr: "2s",
@@ -251,15 +233,6 @@ func Test_appExternalWithoutId_refresh(t *testing.T) {
 			Owner:        "dubbo",
 			Environment:  "test"},
 		Registries: map[string]*RegistryConfig{
-			//"shanghai_reg1": {
-			//	id:         "shanghai_reg1",
-			//	Protocol:   "mock",
-			//	TimeoutStr: "2s",
-			//	group:      "shanghai_idc",
-			//	Address:    "127.0.0.1:2181",
-			//	Username:   "user1",
-			//	Password:   "pwd1",
-			//},
 			"shanghai_reg2": {
 				Protocol:   "mock",
 				TimeoutStr: "2s",
@@ -408,15 +381,6 @@ func Test_refreshProvider(t *testing.T) {
 			Owner:        "dubbo",
 			Environment:  "test"},
 		Registries: map[string]*RegistryConfig{
-			//"shanghai_reg1": {
-			//	id:         "shanghai_reg1",
-			//	Protocol:   "mock",
-			//	TimeoutStr: "2s",
-			//	group:      "shanghai_idc",
-			//	Address:    "127.0.0.1:2181",
-			//	Username:   "user1",
-			//	Password:   "pwd1",
-			//},
 			"shanghai_reg2": {
 				Protocol:   "mock",
 				TimeoutStr: "2s",

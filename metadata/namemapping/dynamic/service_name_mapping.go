@@ -18,7 +18,6 @@
 package dynamic
 
 import (
-	"github.com/apache/dubbo-go/metadata/namemapping"
 	"strconv"
 	"time"
 )
@@ -32,6 +31,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/config_center"
+	"github.com/apache/dubbo-go/metadata/namemapping"
 )
 
 const (

@@ -18,8 +18,11 @@
 package config
 
 import (
-	"go.uber.org/atomic"
 	"testing"
+)
+
+import (
+	"go.uber.org/atomic"
 )
 
 import (
