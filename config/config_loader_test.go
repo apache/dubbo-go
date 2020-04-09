@@ -82,7 +82,8 @@ func TestLoad(t *testing.T) {
 
 	conServices = map[string]common.RPCService{}
 	proServices = map[string]common.RPCService{}
-	common.ServiceMap.UnRegister("mock", "MockService")
+	err := common.ServiceMap.UnRegister("com.MockService", "mock", "MockService")
+	assert.Nil(t, err)
 	consumerConfig = nil
 	providerConfig = nil
 }
@@ -110,7 +111,7 @@ func TestLoadWithSingleReg(t *testing.T) {
 
 	conServices = map[string]common.RPCService{}
 	proServices = map[string]common.RPCService{}
-	common.ServiceMap.UnRegister("mock", "MockService")
+	common.ServiceMap.UnRegister("com.MockService", "mock", "MockService")
 	consumerConfig = nil
 	providerConfig = nil
 }
@@ -139,7 +140,7 @@ func TestWithNoRegLoad(t *testing.T) {
 
 	conServices = map[string]common.RPCService{}
 	proServices = map[string]common.RPCService{}
-	common.ServiceMap.UnRegister("mock", "MockService")
+	common.ServiceMap.UnRegister("com.MockService", "mock", "MockService")
 	consumerConfig = nil
 	providerConfig = nil
 }
