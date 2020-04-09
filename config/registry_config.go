@@ -93,7 +93,7 @@ func loadRegistries(targetRegistries string, registries map[string]*RegistryConf
 
 			addresses := strings.Split(registryConf.Address, ",")
 			address := addresses[0]
-			address = traslateRegistryConf(address, registryConf)
+			address = translateRegistryConf(address, registryConf)
 			url, err = common.NewURL(constant.REGISTRY_PROTOCOL+"://"+address,
 				common.WithParams(registryConf.getUrlMap(roleType)),
 				common.WithUsername(registryConf.Username),
@@ -127,7 +127,7 @@ func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 	return urlMap
 }
 
-func traslateRegistryConf(address string, registryConf *RegistryConfig) string {
+func translateRegistryConf(address string, registryConf *RegistryConfig) string {
 	if strings.Contains(address, "://") {
 		translatedUrl, err := url.Parse(address)
 		if err != nil {

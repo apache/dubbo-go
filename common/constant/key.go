@@ -131,6 +131,7 @@ const (
 	ProviderConfigPrefix       = "dubbo.provider."
 	ConsumerConfigPrefix       = "dubbo.consumer."
 	ShutdownConfigPrefix       = "dubbo.shutdown."
+	MetadataReportPrefix       = "dubbo.metadata-report."
 	RouterConfigPrefix         = "dubbo.router."
 )
 
@@ -214,6 +215,19 @@ const (
 	SECRET_ACCESS_KEY_KEY = "secretAccessKey"
 )
 
+// metadata report
+
+const (
+	METACONFIG_REMOTE  = "remote"
+	METACONFIG_LOCAL   = "local"
+	KEY_SEPARATOR      = ":"
+	DEFAULT_PATH_TAG   = "metadata"
+	KEY_REVISON_PREFIX = "revision"
+
+	// metadata service
+	METADATA_SERVICE_NAME = "org.apache.dubbo.metadata.MetadataService"
+)
+
 // HealthCheck Router
 const (
 	// The key of HealthCheck SPI
@@ -234,4 +248,10 @@ const (
 	DEFAULT_CIRCUIT_TRIPPED_TIMEOUT_FACTOR = 1000
 	// The default time window of circuit-tripped  in millisecond if not specfied
 	MAX_CIRCUIT_TRIPPED_TIMEOUT_IN_MS = 30000
+)
+
+// service discovery
+
+const (
+	NACOS_GROUP = "nacos.group"
 )

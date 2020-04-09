@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/dubbogo/go-zookeeper/zk"
+	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -154,6 +155,26 @@ func Test_RemoveListener(t *testing.T) {
 	assert.NoError(t, err)
 	listener.wg.Wait()
 	assert.Equal(t, "", listener.event)
+}
+
+func TestZookeeperDynamicConfiguration_PublishConfig(t *testing.T) {
+	value := "Test Data"
+	customGroup := "Custom Group"
+	key := "myKey"
+	ts, zk := initZkData(config_center.DEFAULT_GROUP, t)
+	defer ts.Stop()
+	err := zk.PublishConfig(key, customGroup, value)
+	assert.Nil(t, err)
+	result, err := zk.GetInternalProperty("myKey", config_center.WithGroup(customGroup))
+	assert.Nil(t, err)
+	assert.Equal(t, value, result)
+
+	var keys *gxset.HashSet
+	keys, err = zk.GetConfigKeysByGroup(customGroup)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, keys.Size())
+	assert.True(t, keys.Contains(key))
+
 }
 
 type mockDataListener struct {
