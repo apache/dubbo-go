@@ -26,10 +26,6 @@ import (
 	"github.com/apache/dubbo-go/common/observer/event"
 )
 
-func init() {
-	observer.AddEventListener(&ServiceInstancesChangedListener{})
-}
-
 // TODO (implement ConditionalEventListener)
 type ServiceInstancesChangedListener struct {
 	observer.EventListener
