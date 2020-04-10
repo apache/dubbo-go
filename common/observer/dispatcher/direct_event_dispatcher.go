@@ -22,12 +22,13 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/observer"
 )
 
 func init() {
-	observer.SetEventDispatcher("direct", NewDirectEventDispatcher)
+	extension.SetEventDispatcher("direct", NewDirectEventDispatcher)
 }
 
 // DirectEventDispatcher is align with DirectEventDispatcher interface in Java.
