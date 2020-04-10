@@ -33,7 +33,6 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/common/observer"
 	_ "github.com/apache/dubbo-go/common/observer/dispatcher"
 )
 
@@ -102,7 +101,7 @@ func Load() {
 		eventDispatcherType = providerConfig.eventDispatcherType
 	}
 	// init EventDispatcher should before everything
-	observer.SetAndInitGlobalDispatcher(eventDispatcherType)
+	extension.SetAndInitGlobalDispatcher(eventDispatcherType)
 
 	// reference config
 	if consumerConfig == nil {

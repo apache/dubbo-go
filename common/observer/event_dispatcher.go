@@ -17,14 +17,6 @@
 
 package observer
 
-import (
-	"github.com/apache/dubbo-go/common/logger"
-)
-
-var globalEventDispatcher EventDispatcher
-
-var allEventListeners []EventListener
-
 // EventDispatcher is align with EventDispatcher interface in Java.
 // it's the top abstraction
 // Align with 2.7.5
@@ -32,38 +24,4 @@ type EventDispatcher interface {
 	Listenable
 	// Dispatch event
 	Dispatch(event Event)
-}
-
-var (
-	dispatchers = make(map[string]func() EventDispatcher, 8)
-)
-
-// SetEventDispatcher by name
-func SetEventDispatcher(name string, v func() EventDispatcher) {
-	dispatchers[name] = v
-}
-
-// SetAndInitGlobalDispatcher
-func SetAndInitGlobalDispatcher(name string) {
-	if len(name) == 0 {
-		name = "direct"
-	}
-	if globalEventDispatcher != nil {
-		logger.Warnf("EventDispatcher already init. It will be replaced")
-	}
-	if dp, ok := dispatchers[name]; !ok || dp == nil {
-		panic("EventDispatcher for " + name + " is not existing, make sure you have import the package.")
-	}
-	globalEventDispatcher = dispatchers[name]()
-	globalEventDispatcher.AddEventListeners(allEventListeners)
-}
-
-// GetGlobalDispatcher
-func GetGlobalDispatcher() EventDispatcher {
-	return globalEventDispatcher
-}
-
-// AddEventListener it will be added in global event dispatcher
-func AddEventListener(listener EventListener) {
-	allEventListeners = append(allEventListeners, listener)
 }
