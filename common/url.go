@@ -313,7 +313,6 @@ func (c URL) Key() string {
 		"%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s",
 		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GROUP_KEY, ""), c.GetParam(constant.VERSION_KEY, ""))
 	return buildString
-	//return c.ServiceKey()
 }
 
 // ServiceKey ...
@@ -409,17 +408,19 @@ func (c *URL) RangeParams(f func(key, value string) bool) {
 
 // GetParam ...
 func (c URL) GetParam(s string, d string) string {
-	var r string
 	c.paramsLock.RLock()
-	if r = c.params.Get(s); len(r) == 0 {
+	defer c.paramsLock.RUnlock()
+	r := c.params.Get(s)
+	if len(r) == 0 {
 		r = d
 	}
-	c.paramsLock.RUnlock()
 	return r
 }
 
 // GetParams ...
 func (c URL) GetParams() url.Values {
+	c.paramsLock.RLock()
+	defer c.paramsLock.RUnlock()
 	return c.params
 }
 
@@ -454,10 +455,8 @@ func (c URL) GetRawParam(key string) string {
 
 // GetParamBool ...
 func (c URL) GetParamBool(s string, d bool) bool {
-
-	var r bool
-	var err error
-	if r, err = strconv.ParseBool(c.GetParam(s, "")); err != nil {
+	r, err := strconv.ParseBool(c.GetParam(s, ""))
+	if err != nil {
 		return d
 	}
 	return r
@@ -465,10 +464,8 @@ func (c URL) GetParamBool(s string, d bool) bool {
 
 // GetParamInt ...
 func (c URL) GetParamInt(s string, d int64) int64 {
-	var r int
-	var err error
-
-	if r, err = strconv.Atoi(c.GetParam(s, "")); r == 0 || err != nil {
+	r, err := strconv.Atoi(c.GetParam(s, ""))
+	if r == 0 || err != nil {
 		return d
 	}
 	return int64(r)
@@ -476,11 +473,10 @@ func (c URL) GetParamInt(s string, d int64) int64 {
 
 // GetMethodParamInt ...
 func (c URL) GetMethodParamInt(method string, key string, d int64) int64 {
-	var r int
-	var err error
 	c.paramsLock.RLock()
 	defer c.paramsLock.RUnlock()
-	if r, err = strconv.Atoi(c.GetParam("methods."+method+"."+key, "")); r == 0 || err != nil {
+	r, err := strconv.Atoi(c.GetParam("methods."+method+"."+key, ""))
+	if r == 0 || err != nil {
 		return d
 	}
 	return int64(r)
@@ -492,14 +488,13 @@ func (c URL) GetMethodParamInt64(method string, key string, d int64) int64 {
 	if r == math.MinInt64 {
 		return c.GetParamInt(key, d)
 	}
-
 	return r
 }
 
 // GetMethodParam ...
 func (c URL) GetMethodParam(method string, key string, d string) string {
-	var r string
-	if r = c.GetParam("methods."+method+"."+key, ""); r == "" {
+	r := c.GetParam("methods."+method+"."+key, "")
+	if r == "" {
 		r = d
 	}
 	return r
@@ -530,7 +525,6 @@ func (c *URL) SetParams(m url.Values) {
 
 // ToMap transfer URL to Map
 func (c URL) ToMap() map[string]string {
-
 	paramsMap := make(map[string]string)
 
 	c.RangeParams(func(key, value string) bool {
@@ -615,8 +609,29 @@ func (c *URL) Clone() *URL {
 	return newUrl
 }
 
+func (c *URL) CloneWithParams(reserveParams []string, methods []string) *URL {
+	params := url.Values{}
+	for _, reserveParam := range reserveParams {
+		v := c.GetParam(reserveParam, "")
+		if v != "" {
+			params.Set(reserveParam, v)
+		}
+	}
+
+	return NewURLWithOptions(
+		WithProtocol(c.Protocol),
+		WithUsername(c.Username),
+		WithPassword(c.Password),
+		WithIp(c.Ip),
+		WithPort(c.Port),
+		WithPath(c.Path),
+		WithMethods(methods),
+		WithParams(params),
+	)
+}
+
 func mergeNormalParam(mergedUrl *URL, referenceUrl *URL, paramKeys []string) []func(method string) {
-	var methodConfigMergeFcn = []func(method string){}
+	methodConfigMergeFcn := make([]func(method string), 0, len(paramKeys))
 	for _, paramKey := range paramKeys {
 		if v := referenceUrl.GetParam(paramKey, ""); len(v) > 0 {
 			mergedUrl.SetParam(paramKey, v)
