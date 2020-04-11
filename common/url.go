@@ -419,8 +419,6 @@ func (c URL) GetParam(s string, d string) string {
 
 // GetParams ...
 func (c URL) GetParams() url.Values {
-	c.paramsLock.RLock()
-	defer c.paramsLock.RUnlock()
 	return c.params
 }
 
@@ -609,7 +607,8 @@ func (c *URL) Clone() *URL {
 	return newUrl
 }
 
-func (c *URL) CloneWithParams(reserveParams []string, methods []string) *URL {
+// Copy url based on the reserved parameters' keys.
+func (c *URL) CloneWithParams(reserveParams []string) *URL {
 	params := url.Values{}
 	for _, reserveParam := range reserveParams {
 		v := c.GetParam(reserveParam, "")
@@ -625,7 +624,7 @@ func (c *URL) CloneWithParams(reserveParams []string, methods []string) *URL {
 		WithIp(c.Ip),
 		WithPort(c.Port),
 		WithPath(c.Path),
-		WithMethods(methods),
+		WithMethods(c.Methods),
 		WithParams(params),
 	)
 }
