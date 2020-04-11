@@ -280,6 +280,6 @@ func newNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error
 	}
 	return &nacosServiceDiscovery{
 		nacosBaseRegistry: base,
-		group:        url.GetParam(constant.NACOS_GROUP, defaultGroup),
+		group:             url.GetParam(constant.NACOS_GROUP, defaultGroup),
 	}, nil
 }
