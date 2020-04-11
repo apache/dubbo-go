@@ -24,7 +24,7 @@ import (
 )
 
 import (
-	gxset "github.com/dubbogo/gost/container/set"
+	"github.com/dubbogo/gost/container/set"
 )
 
 import (
@@ -44,8 +44,13 @@ import (
 )
 
 var (
-	regProtocol *registryProtocol
-	once        sync.Once
+	regProtocol   *registryProtocol
+	once          sync.Once
+	reserveParams = []string{
+		"application", "codec", "exchanger", "serialization", "cluster", "connections", "deprecated", "group",
+		"loadbalance", "mock", "path", "timeout", "token", "version", "warmup", "weight", "timestamp", "dubbo",
+		"release", "interface",
+	}
 )
 
 type registryProtocol struct {
@@ -86,6 +91,13 @@ func getRegistry(regUrl *common.URL) registry.Registry {
 		panic(err.Error())
 	}
 	return reg
+}
+
+func getUrlToRegistry(providerUrl *common.URL, registryUrl *common.URL) *common.URL {
+	if registryUrl.GetParamBool("simplified", false) {
+		return providerUrl.CloneWithParams(reserveParams, providerUrl.Methods)
+	}
+	return providerUrl
 }
 
 func (proto *registryProtocol) initConfigurationListeners() {
@@ -151,7 +163,6 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 	serviceConfigurationListener.OverrideUrl(providerUrl)
 
 	var reg registry.Registry
-
 	if regI, loaded := proto.registries.Load(registryUrl.Key()); !loaded {
 		reg = getRegistry(registryUrl)
 		proto.registries.Store(registryUrl.Key(), reg)
@@ -159,7 +170,8 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 		reg = regI.(registry.Registry)
 	}
 
-	err := reg.Register(*providerUrl)
+	registeredProviderUrl := getUrlToRegistry(providerUrl, registryUrl)
+	err := reg.Register(*registeredProviderUrl)
 	if err != nil {
 		logger.Errorf("provider service %v register registry %v error, error message is %s",
 			providerUrl.Key(), registryUrl.Key(), err.Error())
