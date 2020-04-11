@@ -102,7 +102,7 @@ func (l *listenableRouter) Process(event *config_center.ConfigChangeEvent) {
 		return
 	}
 
-	routerRule, err := Parse(content)
+	routerRule, err := getRule(content)
 	if err != nil {
 		logger.Errorf("Parse condition router rule fail,error:[%s] ", err)
 		return

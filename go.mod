@@ -14,7 +14,7 @@ require (
 	github.com/creasty/defaults v1.3.0
 	github.com/dubbogo/getty v1.3.3
 	github.com/dubbogo/go-zookeeper v1.0.0
-	github.com/dubbogo/gost v1.7.0
+	github.com/dubbogo/gost v1.8.0
 	github.com/emicklei/go-restful/v3 v3.0.0
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
 	github.com/go-errors/errors v1.0.1 // indirect
@@ -38,7 +38,7 @@ require (
 	github.com/magiconair/properties v1.8.1
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
-	github.com/nacos-group/nacos-sdk-go v0.0.0-20190723125407-0242d42e3dbb
+	github.com/nacos-group/nacos-sdk-go v0.0.0-20191128082542-fe1b325b125c
 	github.com/opentracing/opentracing-go v1.1.0
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.1.0

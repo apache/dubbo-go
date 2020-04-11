@@ -44,7 +44,7 @@ type FileConditionRouter struct {
 // NewFileConditionRouter Create file condition router instance with content ( from config file)
 func NewFileConditionRouter(content []byte) (*FileConditionRouter, error) {
 	fileRouter := &FileConditionRouter{}
-	rule, err := Parse(string(content))
+	rule, err := getRule(string(content))
 	if err != nil {
 		return nil, perrors.Errorf("yaml.Unmarshal() failed , error:%v", perrors.WithStack(err))
 	}
