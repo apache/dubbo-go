@@ -22,9 +22,10 @@ import (
 	"github.com/apache/dubbo-go/common/observer"
 )
 
-var globalEventDispatcher observer.EventDispatcher
-
-var initEventListeners []observer.EventListener
+var (
+	globalEventDispatcher observer.EventDispatcher
+	initEventListeners    []observer.EventListener
+)
 
 var (
 	dispatchers = make(map[string]func() observer.EventDispatcher, 8)
