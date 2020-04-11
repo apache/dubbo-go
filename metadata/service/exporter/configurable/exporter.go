@@ -28,6 +28,7 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/metadata/service"
+	"github.com/apache/dubbo-go/metadata/service/exporter"
 )
 
 // MetadataServiceExporter is the ConfigurableMetadataServiceExporter which implement MetadataServiceExporter interface
@@ -38,7 +39,7 @@ type MetadataServiceExporter struct {
 }
 
 // NewMetadataServiceExporter will return a service_exporter.MetadataServiceExporter with the specified  metadata service
-func NewMetadataServiceExporter(metadataService service.MetadataService) service.MetadataServiceExporter {
+func NewMetadataServiceExporter(metadataService service.MetadataService) exporter.MetadataServiceExporter {
 	return &MetadataServiceExporter{
 		metadataService: metadataService,
 	}
