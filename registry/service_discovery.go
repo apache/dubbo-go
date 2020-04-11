@@ -32,14 +32,12 @@ import (
 	eventlistener "github.com/apache/dubbo-go/registry/listener"
 )
 
+const DefaultPageSize = 100
+
 type ServiceDiscovery interface {
 	fmt.Stringer
 
 	// ----------------- lifecycle -------------------
-
-	// Initialize will initialize the service discovery instance
-	// if initialize failed, it will return the error
-	Initialize(url common.URL) error
 
 	// Destroy will destroy the service discovery.
 	// If the discovery cannot be destroy, it will return an error.
@@ -61,7 +59,7 @@ type ServiceDiscovery interface {
 	GetDefaultPageSize() int
 
 	// GetServices will return the all service names.
-	GetServices() gxset.HashSet
+	GetServices() *gxset.HashSet
 
 	// GetInstances will return all service instances with serviceName
 	GetInstances(serviceName string) []ServiceInstance
@@ -80,6 +78,7 @@ type ServiceDiscovery interface {
 
 	// ----------------- event ----------------------
 	// AddListener adds a new ServiceInstancesChangedListener
+	// see addServiceInstancesChangedListener in Java
 	AddListener(listener *eventlistener.ServiceInstancesChangedListener) error
 
 	// DispatchEventByServiceName dispatches the ServiceInstancesChangedEvent to service instance whose name is serviceName
@@ -89,5 +88,5 @@ type ServiceDiscovery interface {
 	DispatchEventForInstances(serviceName string, instances []ServiceInstance) error
 
 	// DispatchEvent dispatches the event
-	DispatchEvent(event event.ServiceInstancesChangedEvent) error
+	DispatchEvent(event *event.ServiceInstancesChangedEvent) error
 }
