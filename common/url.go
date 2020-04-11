@@ -195,7 +195,6 @@ func NewURLWithOptions(opts ...option) *URL {
 // NewURL will create a new url
 // the urlString should not be empty
 func NewURL(urlString string, opts ...option) (URL, error) {
-
 	var (
 		err          error
 		rawUrlString string
@@ -471,8 +470,6 @@ func (c URL) GetParamInt(s string, d int64) int64 {
 
 // GetMethodParamInt ...
 func (c URL) GetMethodParamInt(method string, key string, d int64) int64 {
-	c.paramsLock.RLock()
-	defer c.paramsLock.RUnlock()
 	r, err := strconv.Atoi(c.GetParam("methods."+method+"."+key, ""))
 	if r == 0 || err != nil {
 		return d
