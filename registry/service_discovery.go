@@ -26,12 +26,6 @@ import (
 	gxpage "github.com/dubbogo/gost/page"
 )
 
-import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/observer/event"
-	eventlistener "github.com/apache/dubbo-go/registry/listener"
-)
-
 const DefaultPageSize = 100
 
 type ServiceDiscovery interface {
@@ -79,7 +73,7 @@ type ServiceDiscovery interface {
 	// ----------------- event ----------------------
 	// AddListener adds a new ServiceInstancesChangedListener
 	// see addServiceInstancesChangedListener in Java
-	AddListener(listener *eventlistener.ServiceInstancesChangedListener) error
+	AddListener(listener *ServiceInstancesChangedListener) error
 
 	// DispatchEventByServiceName dispatches the ServiceInstancesChangedEvent to service instance whose name is serviceName
 	DispatchEventByServiceName(serviceName string) error
@@ -88,5 +82,5 @@ type ServiceDiscovery interface {
 	DispatchEventForInstances(serviceName string, instances []ServiceInstance) error
 
 	// DispatchEvent dispatches the event
-	DispatchEvent(event *event.ServiceInstancesChangedEvent) error
+	DispatchEvent(event *ServiceInstancesChangedEvent) error
 }
