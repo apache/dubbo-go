@@ -36,31 +36,31 @@ type Event interface {
 	GetTimestamp() time.Time
 }
 
-// baseEvent is the base implementation of Event
+// BaseEvent is the base implementation of Event
 // You should never use it directly
 type BaseEvent struct {
-	source    interface{}
-	timestamp time.Time
+	Source    interface{}
+	Timestamp time.Time
 }
 
 // GetSource return the source
 func (b *BaseEvent) GetSource() interface{} {
-	return b.source
+	return b.Source
 }
 
-// GetTimestamp return the timestamp when the event is created
+// GetTimestamp return the Timestamp when the event is created
 func (b *BaseEvent) GetTimestamp() time.Time {
-	return b.timestamp
+	return b.Timestamp
 }
 
 // String return a human readable string representing this event
 func (b *BaseEvent) String() string {
-	return fmt.Sprintf("baseEvent[source = %#v]", b.source)
+	return fmt.Sprintf("BaseEvent[source = %#v]", b.Source)
 }
 
 func newBaseEvent(source interface{}) *BaseEvent {
 	return &BaseEvent{
-		source:    source,
-		timestamp: time.Now(),
+		Source:    source,
+		Timestamp: time.Now(),
 	}
 }
