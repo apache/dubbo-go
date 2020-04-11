@@ -40,7 +40,9 @@ const (
 	TOKEN_KEY              = "token"
 	LOCAL_ADDR             = "local-addr"
 	REMOTE_ADDR            = "remote-addr"
-	PATH_SEPARATOR         = "/"
+	DUBBO_KEY              = "dubbo"
+	RELEASE_KEY            = "release"
+	ANYHOST_KEY            = "anyhost"
 )
 
 const (
@@ -105,6 +107,7 @@ const (
 	ROUTERS_CATEGORY         = "routers"
 	ROUTE_PROTOCOL           = "route"
 	CONDITION_ROUTE_PROTOCOL = "condition"
+	TAG_ROUTE_PROTOCOL       = "tag"
 	PROVIDERS_CATEGORY       = "providers"
 	ROUTER_KEY               = "router"
 )
@@ -162,7 +165,8 @@ const (
 	ListenableRouterName = "listenable"
 	// HealthCheckRouterName Specify the name of HealthCheckRouter
 	HealthCheckRouterName = "health_check"
-
+	// TagRouterName Specify the name of TagRouter
+	TagRouterName = "tag"
 	// ConditionRouterRuleSuffix Specify condition router suffix
 	ConditionRouterRuleSuffix = ".condition-router"
 
@@ -172,6 +176,10 @@ const (
 	RouterEnabled = "enabled"
 	// Priority Priority key in router module
 	RouterPriority = "priority"
+
+	// ForceUseTag is the tag in attachment
+	ForceUseTag = "dubbo.force.tag"
+	Tagkey      = "dubbo.tag"
 )
 
 const (
@@ -215,6 +223,9 @@ const (
 	KEY_SEPARATOR      = ":"
 	DEFAULT_PATH_TAG   = "metadata"
 	KEY_REVISON_PREFIX = "revision"
+
+	// metadata service
+	METADATA_SERVICE_NAME = "org.apache.dubbo.metadata.MetadataService"
 )
 
 // HealthCheck Router
@@ -237,4 +248,10 @@ const (
 	DEFAULT_CIRCUIT_TRIPPED_TIMEOUT_FACTOR = 1000
 	// The default time window of circuit-tripped  in millisecond if not specfied
 	MAX_CIRCUIT_TRIPPED_TIMEOUT_IN_MS = 30000
+)
+
+// service discovery
+
+const (
+	NACOS_GROUP = "nacos.group"
 )

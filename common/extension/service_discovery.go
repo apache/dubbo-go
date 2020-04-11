@@ -15,30 +15,31 @@
  * limitations under the License.
  */
 
-package listener
+package extension
 
 import (
-	"reflect"
+	perrors "github.com/pkg/errors"
 )
-
 import (
-	"github.com/apache/dubbo-go/common/observer"
-	"github.com/apache/dubbo-go/common/observer/event"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/registry"
 )
 
-// TODO (implement ConditionalEventListener)
-type ServiceInstancesChangedListener struct {
-	observer.EventListener
+var (
+	discoveryCreatorMap = make(map[string]func(url *common.URL) (registry.ServiceDiscovery, error), 4)
+)
+
+// SetServiceDiscovery will store the creator and name
+func SetServiceDiscovery(name string, creator func(url *common.URL) (registry.ServiceDiscovery, error)) {
+	discoveryCreatorMap[name] = creator
 }
 
-func (sicl *ServiceInstancesChangedListener) OnEvent(e observer.Event) error {
-	return nil
-}
-
-func (sicl *ServiceInstancesChangedListener) GetPriority() int {
-	return -1
-}
-
-func (sicl *ServiceInstancesChangedListener) GetEventType() reflect.Type {
-	return reflect.TypeOf(&event.ServiceInstancesChangedEvent{})
+// GetServiceDiscovery will return the registry.ServiceDiscovery
+// if not found, or initialize instance failed, it will return error.
+func GetServiceDiscovery(name string, url *common.URL) (registry.ServiceDiscovery, error) {
+	creator, ok := discoveryCreatorMap[name]
+	if !ok {
+		return nil, perrors.New("Could not find the service discovery with name: " + name)
+	}
+	return creator(url)
 }

@@ -45,6 +45,7 @@ import (
 
 var (
 	regProtocol *registryProtocol
+	once        sync.Once
 )
 
 type registryProtocol struct {
@@ -346,12 +347,12 @@ func setProviderUrl(regURL *common.URL, providerURL *common.URL) {
 	regURL.SubURL = providerURL
 }
 
-// GetProtocol ...
+// GetProtocol return the singleton RegistryProtocol
 func GetProtocol() protocol.Protocol {
-	if regProtocol != nil {
-		return regProtocol
-	}
-	return newRegistryProtocol()
+	once.Do(func() {
+		regProtocol = newRegistryProtocol()
+	})
+	return regProtocol
 }
 
 type wrappedInvoker struct {

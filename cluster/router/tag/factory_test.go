@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package match
+package tag
 
 import (
 	"testing"
@@ -29,18 +29,11 @@ import (
 	"github.com/apache/dubbo-go/common"
 )
 
-func TestIsMatchInternalPattern(t *testing.T) {
-	assert.Equal(t, true, isMatchInternalPattern("*", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("", ""))
-	assert.Equal(t, false, isMatchInternalPattern("", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("value", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("v*", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("*ue", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("*e", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("v*e", "value"))
-}
-
-func TestIsMatchGlobPattern(t *testing.T) {
-	url, _ := common.NewURL("dubbo://localhost:8080/Foo?key=v*e")
-	assert.Equal(t, true, IsMatchGlobalPattern("$key", "value", &url))
+func TestTagRouterFactory_NewRouter(t *testing.T) {
+	u1, err := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=true")
+	assert.Nil(t, err)
+	factory := NewTagRouterFactory()
+	tagRouter, e := factory.NewRouter(&u1)
+	assert.Nil(t, e)
+	assert.NotNil(t, tagRouter)
 }
