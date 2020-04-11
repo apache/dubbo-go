@@ -18,7 +18,6 @@
 package configurable
 
 import (
-	"github.com/apache/dubbo-go/metadata/service"
 	"testing"
 )
 
@@ -55,7 +54,7 @@ func TestConfigurableExporter(t *testing.T) {
 		}})
 	config.MockInitProviderWithSingleRegistry()
 	metadataService := inmemory.NewMetadataService()
-	exported := service.NewMetadataServiceExporter(metadataService)
+	exported := NewMetadataServiceExporter(metadataService)
 	assert.Equal(t, false, exported.IsExported())
 	assert.NoError(t, exported.Export())
 	assert.Equal(t, true, exported.IsExported())
