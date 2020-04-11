@@ -15,18 +15,26 @@
  * limitations under the License.
  */
 
-package event
+package tag
 
 import (
-	"fmt"
+	"testing"
 )
 
 import (
-	"github.com/apache/dubbo-go/common/observer"
+	"github.com/stretchr/testify/assert"
 )
 
-// ServiceInstancesChangedEvent represents service instances make some changing
-type ServiceInstancesChangedEvent struct {
-	fmt.Stringer
-	observer.BaseEvent
+func TestGetRule(t *testing.T) {
+	yml := `
+scope: application
+runtime: true
+force: true
+`
+	rule, e := getRule(yml)
+	assert.Nil(t, e)
+	assert.NotNil(t, rule)
+	assert.Equal(t, true, rule.Force)
+	assert.Equal(t, true, rule.Runtime)
+	assert.Equal(t, "application", rule.Scope)
 }

@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/dubbogo/go-zookeeper/zk"
+	gxset "github.com/dubbogo/gost/container/set"
 	perrors "github.com/pkg/errors"
 )
 
@@ -39,7 +40,7 @@ import (
 
 const (
 	// ZkClient
-	//zookeeper client name
+	// zookeeper client name
 	ZkClient      = "zk config_center"
 	pathSeparator = "/"
 )
@@ -75,7 +76,7 @@ func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfigu
 	c.cacheListener = NewCacheListener(c.rootPath)
 
 	err = c.client.Create(c.rootPath)
-	c.listener.ListenServiceEvent(c.rootPath, c.cacheListener)
+	c.listener.ListenServiceEvent(url, c.rootPath, c.cacheListener)
 	return c, err
 
 }
@@ -101,7 +102,7 @@ func newMockZookeeperDynamicConfiguration(url *common.URL, opts ...zookeeper.Opt
 	c.cacheListener = NewCacheListener(c.rootPath)
 
 	err = c.client.Create(c.rootPath)
-	go c.listener.ListenServiceEvent(c.rootPath, c.cacheListener)
+	go c.listener.ListenServiceEvent(url, c.rootPath, c.cacheListener)
 	return tc, c, err
 
 }
@@ -157,6 +158,24 @@ func (c *zookeeperDynamicConfiguration) PublishConfig(key string, group string, 
 		return perrors.WithStack(err)
 	}
 	return nil
+}
+
+// GetConfigKeysByGroup will return all keys with the group
+func (c *zookeeperDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
+	path := c.getPath("", group)
+	result, err := c.client.GetChildren(path)
+	if err != nil {
+		return nil, perrors.WithStack(err)
+	}
+
+	if len(result) == 0 {
+		return nil, perrors.New("could not find keys with group: " + group)
+	}
+	set := gxset.NewSet()
+	for _, e := range result {
+		set.Add(e)
+	}
+	return set, nil
 }
 
 func (c *zookeeperDynamicConfiguration) GetRule(key string, opts ...config_center.Option) (string, error) {
@@ -234,7 +253,7 @@ func (c *zookeeperDynamicConfiguration) getPath(key string, group string) string
 }
 
 func (c *zookeeperDynamicConfiguration) buildPath(group string) string {
-	if len(group) <= 0 {
+	if len(group) == 0 {
 		group = config_center.DEFAULT_GROUP
 	}
 	return c.rootPath + pathSeparator + group

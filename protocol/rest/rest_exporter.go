@@ -40,8 +40,9 @@ func NewRestExporter(key string, invoker protocol.Invoker, exporterMap *sync.Map
 
 func (re *RestExporter) Unexport() {
 	serviceId := re.GetInvoker().GetUrl().GetParam(constant.BEAN_NAME_KEY, "")
+	interfaceName := re.GetInvoker().GetUrl().GetParam(constant.INTERFACE_KEY, "")
 	re.BaseExporter.Unexport()
-	err := common.ServiceMap.UnRegister(REST, serviceId)
+	err := common.ServiceMap.UnRegister(interfaceName, REST, serviceId)
 	if err != nil {
 		logger.Errorf("[RestExporter.Unexport] error: %v", err)
 	}

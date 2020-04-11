@@ -41,3 +41,8 @@ type ConditionalEventListener interface {
 	// Accept will make the decision whether it should handle this event
 	Accept(e Event) bool
 }
+
+// TODO (implement ConditionalEventListener)
+type ServiceInstancesChangedListener struct {
+	ServiceName string
+}
