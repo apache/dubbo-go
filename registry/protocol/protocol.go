@@ -95,7 +95,7 @@ func getRegistry(regUrl *common.URL) registry.Registry {
 
 func getUrlToRegistry(providerUrl *common.URL, registryUrl *common.URL) *common.URL {
 	if registryUrl.GetParamBool("simplified", false) {
-		return providerUrl.CloneWithParams(reserveParams, providerUrl.Methods)
+		return providerUrl.CloneWithParams(reserveParams)
 	}
 	return providerUrl
 }
