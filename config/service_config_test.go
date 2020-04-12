@@ -189,3 +189,12 @@ func Test_Export(t *testing.T) {
 	}
 	providerConfig = nil
 }
+
+func Test_getRandomPorts(t *testing.T) {
+	ports := getRandomPorts(3)
+	t.Logf("len:%v", len(ports))
+
+	for _, port := range ports {
+		t.Logf("port:%v", port)
+	}
+}
