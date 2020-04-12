@@ -223,6 +223,7 @@ const (
 	KEY_SEPARATOR      = ":"
 	DEFAULT_PATH_TAG   = "metadata"
 	KEY_REVISON_PREFIX = "revision"
+	PATH_SEPARATOR     = "/"
 
 	// metadata service
 	METADATA_SERVICE_NAME = "org.apache.dubbo.metadata.MetadataService"
