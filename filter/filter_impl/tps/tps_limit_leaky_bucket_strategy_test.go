@@ -44,7 +44,6 @@ func TestLeakyBucket_IsAllowable(t *testing.T) {
 	creator := &leakyBucketStrategyCreator{}
 	bucket := creator.Create(1, 10)
 
-
 	allowed := bucket.IsAllowable(5)
 	assert.True(t, true, allowed)
 	allowed = bucket.IsAllowable(5)
