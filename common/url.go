@@ -609,7 +609,7 @@ func (c *URL) CloneWithParams(reserveParams []string) *URL {
 	params := url.Values{}
 	for _, reserveParam := range reserveParams {
 		v := c.GetParam(reserveParam, "")
-		if v != "" {
+		if len(v) != 0 {
 			params.Set(reserveParam, v)
 		}
 	}
