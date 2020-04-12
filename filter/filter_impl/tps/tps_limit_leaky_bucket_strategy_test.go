@@ -18,7 +18,6 @@
 package tps
 
 import (
-	"fmt"
 	"testing"
 	"time"
 )
@@ -28,40 +27,32 @@ import (
 )
 
 func TestLeakyBucket(t *testing.T) {
-	lb := NewLeakyBucket(10, 10)
-	start := time.Now()
-	for j := 0; j < 5; j++ {
-		for i := 0; i < 100; i++ {
-			prev := time.Now()
-			r := lb.IsAllowable()
-			if r == true {
-				fmt.Println(i, time.Now().Sub(prev), r)
-			} else {
-				fmt.Println(i, r)
-			}
-			time.Sleep(time.Millisecond)
-		}
-	}
-	fmt.Println(time.Now().Sub(start).Seconds())
+	lb := NewLeakyBucket(1, 10)
+
+	r := lb.IsAllowable(8)
+	assert.True(t, true, r)
+	r = lb.IsAllowable(5)
+	assert.False(t, false, r)
+	time.Sleep(time.Millisecond * 5)
+	r = lb.IsAllowable(5)
+	assert.True(t, true, r)
+
 }
 
 func TestLeakyBucket_IsAllowable(t *testing.T) {
+
 	creator := &leakyBucketStrategyCreator{}
-	strategy := creator.Create(2, 1000) // per request 50ms
-	//
-	assert.True(t, strategy.IsAllowable())
-	//time.Sleep(490*time.Millisecond)
-	//assert.True(t, strategy.IsAllowable())
-	//time.Sleep(1*time.Millisecond)
-	//assert.True(t, strategy.IsAllowable())
-	start := time.Now()
-	for i := 0; i < 50; i++ {
-		if strategy.IsAllowable() {
-			fmt.Println(i, "true", time.Now().Sub(start))
-		} else {
-			fmt.Println(i, "false")
-		}
-		time.Sleep(22 * time.Millisecond)
-	}
-	fmt.Println(time.Now().Sub(start).Nanoseconds() / 1e6)
+	bucket := creator.Create(1, 10)
+
+
+	allowed := bucket.IsAllowable(5)
+	assert.True(t, true, allowed)
+	allowed = bucket.IsAllowable(5)
+	assert.True(t, true, allowed)
+	allowed = bucket.IsAllowable(5)
+	assert.False(t, false, allowed)
+	time.Sleep(time.Millisecond * 5)
+	allowed = bucket.IsAllowable(5)
+	assert.True(t, true, allowed)
+
 }

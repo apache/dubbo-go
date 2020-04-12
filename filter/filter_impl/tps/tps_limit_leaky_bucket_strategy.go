@@ -23,55 +23,59 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/filter"
 )
 
-const milliSecondUnit = int64(time.Nanosecond * 1e3)
-
-type leakyBucket struct {
-	lck           *sync.Mutex
-	rate          int64     // water flow out rate
-	balance       int64     // leaky bucket allowance
-	limit         int64     // leaky bucket max limit
-	lastCkeckTime time.Time // last check time
+type LeakyBucket struct {
+	capacity              int64     // leaky bucket capacity
+	leaksIntervalInMillis int64     // leaky bucket flow out rate
+	used                  int64     // leaky bucket used amount
+	lastLeakTimestamp     time.Time // last leak timestamp
+	mu                    *sync.Mutex
 }
 
-func NewLeakyBucket(limitPerMillisecond int, balance int) *leakyBucket {
-	return &leakyBucket{
-		lck:           new(sync.Mutex),
-		rate:          int64(limitPerMillisecond),
-		balance:       int64(balance),
-		limit:         int64(balance),
-		lastCkeckTime: time.Now(),
+func NewLeakyBucket(leaksIntervalInMillis int, capacity int) *LeakyBucket {
+	return &LeakyBucket{
+		capacity:              int64(capacity),
+		leaksIntervalInMillis: int64(leaksIntervalInMillis),
+		used:                  0,
+		lastLeakTimestamp:     time.Now(),
+		mu:                    new(sync.Mutex),
 	}
 }
 
-func (lb *leakyBucket) Check() bool {
-	ok := false
-	lb.lck.Lock()
-	now := time.Now()
-	dur := now.Sub(lb.lastCkeckTime).Nanoseconds() / 1e6
-	lb.lastCkeckTime = now
-	water := dur * lb.rate // water flow out from leaky bucket during "dur" time
-	lb.balance += water    // allowance + flow water is the total amount of leaky bucket
-	if lb.balance < 0 {
-		lb.balance = 0
+func (lb *LeakyBucket) tryConsume(flowIn int) bool {
+	currentTime := time.Now()
+	pastTime := time.Now().Sub(lb.lastLeakTimestamp)
+
+	lb.mu.Lock()
+	defer lb.mu.Unlock()
+	if currentTime.Sub(lb.lastLeakTimestamp) > 0 {
+		leaks := (pastTime.Nanoseconds() / constant.MsToNanoRate) / lb.leaksIntervalInMillis
+		if leaks > 0 {
+			if lb.used <= leaks {
+				lb.used = 0
+			} else {
+				lb.used -= leaks
+			}
+		}
+		lb.lastLeakTimestamp = time.Now()
 	}
 
-	if lb.balance >= lb.limit { // allowance enough to hold the request
-		lb.balance -= lb.limit
-		ok = true
+	if lb.used+int64(flowIn) > lb.capacity {
+		return false
 	}
-	lb.lck.Unlock()
-	return ok
+	lb.used = lb.used + int64(flowIn)
+	return true
 }
 
-func (lb *leakyBucket) IsAllowable() bool {
-	return lb.Check()
+func (lb *LeakyBucket) IsAllowable(count int) bool {
+	return lb.tryConsume(count)
 }
 
 type leakyBucketStrategyCreator struct{}
 
-func (creator *leakyBucketStrategyCreator) Create(rate int, interval int) filter.TpsLimitStrategy {
+func (creator *leakyBucketStrategyCreator) Create(rate int, interval int) filter.TpsLimitLeakyBucketStrategy {
 	return NewLeakyBucket(rate, interval)
 }

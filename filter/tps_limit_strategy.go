@@ -40,3 +40,11 @@ type TpsLimitStrategy interface {
 type TpsLimitStrategyCreator interface {
 	Create(rate int, interval int) TpsLimitStrategy
 }
+
+type TpsLimitLeakyBucketStrategy interface {
+	IsAllowable(count int) bool
+}
+
+type TpsLimitLeakyBucketStrategyCreator interface {
+	Create(rate int, interval int) TpsLimitLeakyBucketStrategy
+}
