@@ -20,6 +20,7 @@ package config
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"net/url"
 	"strconv"
 	"strings"
@@ -105,6 +106,20 @@ func NewServiceConfig(id string, context context.Context) *ServiceConfig {
 	}
 }
 
+// Get Random Ports with size
+func getRandomPorts(size int) []int {
+	ports := make([]int, 0, size)
+	if size <= 0 {
+		return ports
+	}
+	startPort := int(rand.Int31n(6000) + 10000)
+
+	for i := 0; i < size; i++ {
+		ports = append(ports, startPort+i*3)
+	}
+	return ports
+}
+
 // Export ...
 func (c *ServiceConfig) Export() error {
 	// TODO: config center start here
@@ -123,11 +138,14 @@ func (c *ServiceConfig) Export() error {
 	regUrls := loadRegistries(c.Registry, providerConfig.Registries, common.PROVIDER)
 	urlMap := c.getUrlMap()
 	protocolConfigs := loadProtocol(c.Protocol, providerConfig.Protocols)
-	if len(protocolConfigs) == 0 {
+	protocolSize := len(protocolConfigs)
+	if protocolSize == 0 {
 		logger.Warnf("The service %v's '%v' protocols don't has right protocolConfigs ", c.InterfaceName, c.Protocol)
 		return nil
 	}
-	for _, proto := range protocolConfigs {
+
+	ports := getRandomPorts(protocolSize)
+	for i, proto := range protocolConfigs {
 		// registry the service reflect
 		methods, err := common.ServiceMap.Register(c.InterfaceName, proto.Name, c.rpcService)
 		if err != nil {
@@ -135,11 +153,15 @@ func (c *ServiceConfig) Export() error {
 			logger.Errorf(err.Error())
 			return err
 		}
+		port := proto.Port
+		if len(proto.Port) == 0 {
+			port = strconv.Itoa(ports[i])
+		}
 		ivkURL := common.NewURLWithOptions(
 			common.WithPath(c.id),
 			common.WithProtocol(proto.Name),
 			common.WithIp(proto.Ip),
-			common.WithPort(proto.Port),
+			common.WithPort(port),
 			common.WithParams(urlMap),
 			common.WithParamsValue(constant.BEAN_NAME_KEY, c.id),
 			common.WithMethods(strings.Split(methods, ",")),
