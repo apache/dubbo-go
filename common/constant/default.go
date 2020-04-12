@@ -73,5 +73,5 @@ const (
 
 const (
 	COMMA_SPLIT_PATTERN = "\\s*[,]+\\s*"
-	PATH_SEPARATOR      = ","
+	PATH_SEPARATOR      = "/"
 )
