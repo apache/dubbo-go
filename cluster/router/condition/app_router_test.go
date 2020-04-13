@@ -113,7 +113,7 @@ conditions:
 	assert.Nil(t, err)
 	assert.NotNil(t, appRouter)
 
-	rule, err := Parse(testYML)
+	rule, err := getRule(testYML)
 	assert.Nil(t, err)
 	appRouter.generateConditions(rule)
 

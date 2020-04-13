@@ -18,25 +18,27 @@
 package registry
 
 import (
-	gxsort "github.com/dubbogo/gost/sort"
+	"reflect"
 )
 
-// EventListener is an new interface used to align with dubbo 2.7.5
-// It contains the Prioritized means that the listener has its priority
-type EventListener interface {
-	gxsort.Prioritizer
-	// OnEvent handle this event
-	OnEvent(e Event) error
-}
-
-// ConditionalEventListener only handle the event which it can handle
-type ConditionalEventListener interface {
-	EventListener
-	// Accept will make the decision whether it should handle this event
-	Accept(e Event) bool
-}
+import (
+	"github.com/apache/dubbo-go/common/observer"
+)
 
 // TODO (implement ConditionalEventListener)
 type ServiceInstancesChangedListener struct {
 	ServiceName string
+	observer.EventListener
+}
+
+func (sicl *ServiceInstancesChangedListener) OnEvent(e observer.Event) error {
+	return nil
+}
+
+func (sicl *ServiceInstancesChangedListener) GetPriority() int {
+	return -1
+}
+
+func (sicl *ServiceInstancesChangedListener) GetEventType() reflect.Type {
+	return reflect.TypeOf(&ServiceInstancesChangedEvent{})
 }

@@ -16,6 +16,8 @@ Apache License, Version 2.0
 
 ## Release note ##
 
+[v1.4.0-rc1 - Mar 12, 2020](https://github.com/apache/dubbo-go/releases/tag/v1.4.0-rc1)
+
 [v1.3.0 - Mar 1, 2020](https://github.com/apache/dubbo-go/releases/tag/v1.3.0)
 
 [v1.2.0 - Nov 15, 2019](https://github.com/apache/dubbo-go/releases/tag/v1.2.0)
@@ -28,7 +30,7 @@ Apache License, Version 2.0
 
 Both extension module and layered project architecture is according to Apache Dubbo (including protocol layer, registry layer, cluster layer, config layer and so on), the advantage of this arch is as following: you can implement these layered interfaces in your own way, override the default implementation of dubbo-go by calling 'extension.SetXXX' of extension, complete your special needs without modifying the source code. At the same time, you are welcome to contribute implementation of useful extension to the community.
 
-![frame design](https://raw.githubusercontent.com/wiki/dubbo/dubbo-go/dubbo-go%E4%BB%A3%E7%A0%81%E5%88%86%E5%B1%82%E8%AE%BE%E8%AE%A1.png)
+![dubbo go extend](./doc/pic/arch/dubbo-go-ext.png)
 
 If you wanna know more about dubbo-go, please visit this reference [Project Architeture design](https://github.com/apache/dubbo-go/wiki/dubbo-go-V1.0-design)
 
@@ -56,6 +58,7 @@ Finished List:
     
 - Router
     * [Condition router](https://github.com/apache/dubbo-go/pull/294)
+    * [Health check router](https://github.com/apache/dubbo-go/pull/389)
 
 - Registry
     * ZooKeeper
@@ -91,13 +94,21 @@ Finished List:
     * [TpsLimitFilter](https://github.com/apache/dubbo-go/pull/237)
     * [ExecuteLimitFilter](https://github.com/apache/dubbo-go/pull/246)
     * [GenericServiceFilter](https://github.com/apache/dubbo-go/pull/291)
+    * [Auth/Sign](https://github.com/apache/dubbo-go/pull/323)
+    * [Metrics filter](https://github.com/apache/dubbo-go/pull/342)
+    * [Tracing filter](https://github.com/apache/dubbo-go/pull/335)
 
 - Invoke
     * [generic invoke](https://github.com/apache/dubbo-go/pull/122)
     
 - Monitor
     * Opentracing API
-    * Prometheus
+    * [Prometheus](https://github.com/apache/dubbo-go/pull/342)
+
+- Tracing
+    * [For jsonrpc](https://github.com/apache/dubbo-go/pull/335)
+    * [For dubbo](https://github.com/apache/dubbo-go/pull/344)
+    * [For grpc](https://github.com/apache/dubbo-go/pull/397)
 
 - Others:
     * start check

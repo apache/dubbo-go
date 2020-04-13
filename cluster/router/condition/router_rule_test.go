@@ -20,11 +20,16 @@ package condition
 import (
 	"testing"
 )
+
 import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParse(t *testing.T) {
+import (
+	"github.com/apache/dubbo-go/common"
+)
+
+func TestGetRule(t *testing.T) {
 	testyml := `
 scope: application
 runtime: true
@@ -36,7 +41,7 @@ conditions:
     ip=127.0.0.1
     =>
     1.1.1.1`
-	rule, e := Parse(testyml)
+	rule, e := getRule(testyml)
 
 	assert.Nil(t, e)
 	assert.NotNil(t, rule)
@@ -49,4 +54,9 @@ conditions:
 	assert.Equal(t, false, rule.Enabled)
 	assert.Equal(t, false, rule.Dynamic)
 	assert.Equal(t, "", rule.Key)
+}
+
+func TestIsMatchGlobPattern(t *testing.T) {
+	url, _ := common.NewURL("dubbo://localhost:8080/Foo?key=v*e")
+	assert.Equal(t, true, isMatchGlobalPattern("$key", "value", &url))
 }
