@@ -18,6 +18,7 @@
 package config
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -191,10 +192,13 @@ func Test_Export(t *testing.T) {
 }
 
 func Test_getRandomPorts(t *testing.T) {
-	ports := getRandomPorts(3)
+	size := 3
+	ports := getRandomPorts(size)
 	t.Logf("len:%v", len(ports))
 
 	for _, port := range ports {
 		t.Logf("port:%v", port)
 	}
+
+	assert.Equal(t, size, len(ports))
 }
