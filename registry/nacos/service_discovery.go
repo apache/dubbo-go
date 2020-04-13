@@ -47,7 +47,7 @@ func init() {
 // There is a problem, the go client for nacos does not support the id field.
 // we will use the metadata to store the id of ServiceInstance
 type nacosServiceDiscovery struct {
-	baseRegistry
+	nacosBaseRegistry
 	group string
 }
 
@@ -279,7 +279,7 @@ func newNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error
 		return nil, perrors.WithStack(err)
 	}
 	return &nacosServiceDiscovery{
-		baseRegistry: base,
+		nacosBaseRegistry: base,
 		group:        url.GetParam(constant.NACOS_GROUP, defaultGroup),
 	}, nil
 }
