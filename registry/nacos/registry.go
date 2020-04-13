@@ -53,7 +53,7 @@ func init() {
 }
 
 type nacosRegistry struct {
-	baseRegistry
+	nacosBaseRegistry
 }
 
 // newNacosRegistry will create an instance

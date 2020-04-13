@@ -127,12 +127,13 @@ func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 		} else if url.Protocol == constant.ROUTER_PROTOCOL || //2.for router
 			url.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY) == constant.ROUTER_CATEGORY {
 			url = nil
+
 		}
 		switch res.Action {
 		case remoting.EventTypeAdd, remoting.EventTypeUpdate:
 			logger.Infof("selector add service url{%s}", res.Service)
-			var urls []*common.URL
 
+			var urls []*common.URL
 			for _, v := range directory.GetRouterURLSet().Values() {
 				urls = append(urls, v.(*common.URL))
 			}
@@ -140,8 +141,6 @@ func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 			if len(urls) > 0 {
 				dir.SetRouters(urls)
 			}
-
-			//dir.cacheService.EventTypeAdd(res.Path, dir.serviceTTL)
 			oldInvoker = dir.cacheInvoker(url)
 		case remoting.EventTypeDel:
 			oldInvoker = dir.uncacheInvoker(url)
