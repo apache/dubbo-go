@@ -15,30 +15,50 @@
  * limitations under the License.
  */
 
-package registry
+package observer
 
 import (
 	"reflect"
+	"testing"
 )
 
 import (
-	"github.com/apache/dubbo-go/common/observer"
+	"github.com/stretchr/testify/assert"
 )
 
-// TODO (implement ConditionalEventListener)
-type ServiceInstancesChangedListener struct {
-	ServiceName string
-	observer.EventListener
+func TestListenable(t *testing.T) {
+	el := &TestEventListener{}
+	b := &BaseListenable{}
+	b.AddEventListener(el)
+	b.AddEventListener(el)
+	al := b.GetAllEventListeners()
+	assert.Equal(t, len(al), 1)
+	assert.Equal(t, al[0].GetEventType(), reflect.TypeOf(TestEvent{}))
+	b.RemoveEventListener(el)
+	assert.Equal(t, len(b.GetAllEventListeners()), 0)
+	var ts []EventListener
+	ts = append(ts, el)
+	b.AddEventListeners(ts)
+	assert.Equal(t, len(al), 1)
+
 }
 
-func (sicl *ServiceInstancesChangedListener) OnEvent(e observer.Event) error {
+type TestEvent struct {
+	BaseEvent
+}
+
+type TestEventListener struct {
+	EventListener
+}
+
+func (tel *TestEventListener) OnEvent(e Event) error {
 	return nil
 }
 
-func (sicl *ServiceInstancesChangedListener) GetPriority() int {
+func (tel *TestEventListener) GetPriority() int {
 	return -1
 }
 
-func (sicl *ServiceInstancesChangedListener) GetEventType() reflect.Type {
-	return reflect.TypeOf(&ServiceInstancesChangedEvent{})
+func (tel *TestEventListener) GetEventType() reflect.Type {
+	return reflect.TypeOf(TestEvent{})
 }
