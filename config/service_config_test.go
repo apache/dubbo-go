@@ -202,3 +202,10 @@ func Test_getRandomPorts(t *testing.T) {
 
 	assert.Equal(t, size, len(ports))
 }
+
+func Test_getRandomPort(t *testing.T) {
+	port := getRandomPort()
+	t.Logf("port:%v", port)
+
+	assert.Greater(t, port, 0)
+}
