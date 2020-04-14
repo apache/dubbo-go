@@ -20,7 +20,7 @@ package config
 import (
 	"context"
 	"fmt"
-	"math/rand"
+	"net"
 	"net/url"
 	"strconv"
 	"strings"
@@ -112,10 +112,30 @@ func getRandomPorts(size int) []int {
 	if size <= 0 {
 		return ports
 	}
-	startPort := int(rand.Int31n(6000) + 10000)
 
-	for i := 0; i < size; i++ {
-		ports = append(ports, startPort+i*3)
+	var (
+		flag bool
+		addr *net.TCPAddr
+	)
+	i := 0
+	for i < size {
+		flag = false
+		addr = nil
+		go func() {
+			listener, err := net.Listen("tcp", ":0")
+			if err != nil {
+				return
+			}
+
+			flag = true
+			addr = listener.Addr().(*net.TCPAddr)
+		}()
+		time.Sleep(50 * time.Millisecond)
+		if !flag {
+			continue
+		}
+		ports = append(ports, addr.Port)
+		i++
 	}
 	return ports
 }
