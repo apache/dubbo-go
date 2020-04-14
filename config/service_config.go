@@ -106,6 +106,11 @@ func NewServiceConfig(id string, context context.Context) *ServiceConfig {
 	}
 }
 
+// Get Random Ports with no size
+func getRandomPort() int {
+	return getRandomPorts(1)[0]
+}
+
 // Get Random Ports with size
 func getRandomPorts(size int) []int {
 	ports := make([]int, 0, size)
@@ -164,8 +169,7 @@ func (c *ServiceConfig) Export() error {
 		return nil
 	}
 
-	ports := getRandomPorts(protocolSize)
-	for i, proto := range protocolConfigs {
+	for _, proto := range protocolConfigs {
 		// registry the service reflect
 		methods, err := common.ServiceMap.Register(c.InterfaceName, proto.Name, c.rpcService)
 		if err != nil {
@@ -175,7 +179,7 @@ func (c *ServiceConfig) Export() error {
 		}
 		port := proto.Port
 		if len(proto.Port) == 0 {
-			port = strconv.Itoa(ports[i])
+			port = strconv.Itoa(getRandomPort())
 		}
 		ivkURL := common.NewURLWithOptions(
 			common.WithPath(c.id),
