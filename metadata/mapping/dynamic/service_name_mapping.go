@@ -29,27 +29,19 @@ import (
 )
 
 import (
-	env "github.com/apache/dubbo-go/common/config"
+	common_cfg "github.com/apache/dubbo-go/common/config"
 	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/config_center"
-	"github.com/apache/dubbo-go/metadata/mapping"
+	"github.com/apache/dubbo-go/metadata"
 )
 
 const (
 	defaultGroup = config_center.DEFAULT_GROUP
 	slash        = "/"
-	name         = "dynamic"
 )
 
-func init() {
-	extension.SetServiceNameMapping(name, GetServiceNameMappingInstance)
-	extension.SetServiceNameMapping(constant.DEFAULT_KEY, GetServiceNameMappingInstance)
-}
-
 // DynamicConfigurationServiceNameMapping is the implementation based on config center
-// It could be thought as singleton pattern.
 type DynamicConfigurationServiceNameMapping struct {
 	dc config_center.DynamicConfiguration
 }
@@ -87,21 +79,15 @@ func (d *DynamicConfigurationServiceNameMapping) buildGroup(serviceInterface str
 }
 
 var (
-	instance *DynamicConfigurationServiceNameMapping
-	initOnce sync.Once
+	serviceNameMappingInstance *DynamicConfigurationServiceNameMapping
+	serviceNameMappingInitOnce sync.Once
 )
 
-// newServiceNameMapping will create an instance of DynamicConfigurationServiceNameMapping
-func newServiceNameMapping(dc config_center.DynamicConfiguration) *DynamicConfigurationServiceNameMapping {
-	return &DynamicConfigurationServiceNameMapping{dc: dc}
-}
-
-// GetServiceNameMappingInstance will return the instance.
-// If the instance is not initiated, it will create one
-func GetServiceNameMappingInstance() mapping.ServiceNameMapping {
-	initOnce.Do(func() {
-		dc := env.GetEnvInstance().GetDynamicConfiguration()
-		instance = newServiceNameMapping(dc)
+// GetServiceNameMappingInstance will return an instance of DynamicConfigurationServiceNameMapping
+func GetServiceNameMappingInstance() metadata.ServiceNameMapping {
+	serviceNameMappingInitOnce.Do(func() {
+		dc := common_cfg.GetEnvInstance().GetDynamicConfiguration()
+		serviceNameMappingInstance = &DynamicConfigurationServiceNameMapping{dc: dc}
 	})
-	return instance
+	return serviceNameMappingInstance
 }

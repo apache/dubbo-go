@@ -41,7 +41,7 @@ func TestDynamicConfigurationServiceNameMapping(t *testing.T) {
 	}).GetDynamicConfiguration(nil)
 	config.GetApplicationConfig().Name = appName
 
-	mapping := newServiceNameMapping(dc)
+	mapping := &DynamicConfigurationServiceNameMapping{dc: dc}
 	intf := constant.METADATA_SERVICE_NAME
 	group := "myGroup"
 	version := "myVersion"
