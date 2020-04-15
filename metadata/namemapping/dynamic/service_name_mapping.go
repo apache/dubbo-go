@@ -19,6 +19,7 @@ package dynamic
 
 import (
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -28,6 +29,7 @@ import (
 )
 
 import (
+	common_cfg "github.com/apache/dubbo-go/common/config"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/config_center"
@@ -76,7 +78,16 @@ func (d *DynamicConfigurationServiceNameMapping) buildGroup(serviceInterface str
 	return defaultGroup + slash + serviceInterface
 }
 
-// NewServiceNameMapping will create an instance of DynamicConfigurationServiceNameMapping
-func NewServiceNameMapping(dc config_center.DynamicConfiguration) metadata.ServiceNameMapping {
-	return &DynamicConfigurationServiceNameMapping{dc: dc}
+var (
+	serviceNameMappingInstance *DynamicConfigurationServiceNameMapping
+	serviceNameMappingInitOnce sync.Once
+)
+
+// GetServiceNameMappingInstance will return an instance of DynamicConfigurationServiceNameMapping
+func GetServiceNameMappingInstance() metadata.ServiceNameMapping {
+	serviceNameMappingInitOnce.Do(func() {
+		dc := common_cfg.GetEnvInstance().GetDynamicConfiguration()
+		serviceNameMappingInstance = &DynamicConfigurationServiceNameMapping{dc: dc}
+	})
+	return serviceNameMappingInstance
 }
