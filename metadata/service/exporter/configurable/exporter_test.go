@@ -52,7 +52,7 @@ func TestConfigurableExporter(t *testing.T) {
 			MaxMsgLen:        10240000000,
 			SessionName:      "server",
 		}})
-	config.MockInitProviderWithSingleRegistry()
+	mockInitProviderWithSingleRegistry()
 	metadataService := inmemory.NewMetadataService()
 	exported := NewMetadataServiceExporter(metadataService)
 	assert.Equal(t, false, exported.IsExported())
@@ -61,4 +61,58 @@ func TestConfigurableExporter(t *testing.T) {
 	assert.Regexp(t, "dubbo://:20000/MetadataService*", exported.GetExportedURLs()[0].String())
 	exported.Unexport()
 	assert.Equal(t, false, exported.IsExported())
+}
+
+// mockInitProviderWithSingleRegistry will init a mocked providerConfig
+func mockInitProviderWithSingleRegistry() {
+	providerConfig := &config.ProviderConfig{
+		ApplicationConfig: &config.ApplicationConfig{
+			Organization: "dubbo_org",
+			Name:         "dubbo",
+			Module:       "module",
+			Version:      "2.6.0",
+			Owner:        "dubbo",
+			Environment:  "test"},
+		Registry: &config.RegistryConfig{
+			Address:  "mock://127.0.0.1:2181",
+			Username: "user1",
+			Password: "pwd1",
+		},
+		Registries: map[string]*config.RegistryConfig{},
+		Services: map[string]*config.ServiceConfig{
+			"MockService": {
+				InterfaceName: "com.MockService",
+				Protocol:      "mock",
+				Cluster:       "failover",
+				Loadbalance:   "random",
+				Retries:       "3",
+				Group:         "huadong_idc",
+				Version:       "1.0.0",
+				Methods: []*config.MethodConfig{
+					{
+						Name:        "GetUser",
+						Retries:     "2",
+						Loadbalance: "random",
+						Weight:      200,
+					},
+					{
+						Name:        "GetUser1",
+						Retries:     "2",
+						Loadbalance: "random",
+						Weight:      200,
+					},
+				},
+			},
+		},
+		Protocols: map[string]*config.ProtocolConfig{
+			"mock": {
+				Name: "mock",
+				Ip:   "127.0.0.1",
+				Port: "20000",
+			},
+		},
+	}
+	providerConfig.Services["MockService"].InitExported()
+	config.SetProviderConfig(*providerConfig)
+
 }
