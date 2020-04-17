@@ -109,6 +109,11 @@ func NewServiceConfig(id string, context context.Context) *ServiceConfig {
 	}
 }
 
+// InitExported will set exported as false atom bool
+func (c *ServiceConfig) InitExported() {
+	c.exported = atomic.NewBool(false)
+}
+
 // IsExport will return whether the service config is exported or not
 func (c *ServiceConfig) IsExport() bool {
 	return c.exported.Load()
@@ -287,56 +292,4 @@ func (c *ServiceConfig) GetExportedUrls() []*common.URL {
 		return urls
 	}
 	return nil
-}
-
-// MockInitProviderWithSingleRegistry will init a mocked providerConfig
-func MockInitProviderWithSingleRegistry() {
-	providerConfig = &ProviderConfig{
-		ApplicationConfig: &ApplicationConfig{
-			Organization: "dubbo_org",
-			Name:         "dubbo",
-			Module:       "module",
-			Version:      "2.6.0",
-			Owner:        "dubbo",
-			Environment:  "test"},
-		Registry: &RegistryConfig{
-			Address:  "mock://127.0.0.1:2181",
-			Username: "user1",
-			Password: "pwd1",
-		},
-		Registries: map[string]*RegistryConfig{},
-		Services: map[string]*ServiceConfig{
-			"MockService": {
-				InterfaceName: "com.MockService",
-				Protocol:      "mock",
-				Cluster:       "failover",
-				Loadbalance:   "random",
-				Retries:       "3",
-				Group:         "huadong_idc",
-				Version:       "1.0.0",
-				Methods: []*MethodConfig{
-					{
-						Name:        "GetUser",
-						Retries:     "2",
-						Loadbalance: "random",
-						Weight:      200,
-					},
-					{
-						Name:        "GetUser1",
-						Retries:     "2",
-						Loadbalance: "random",
-						Weight:      200,
-					},
-				},
-				exported: new(atomic.Bool),
-			},
-		},
-		Protocols: map[string]*ProtocolConfig{
-			"mock": {
-				Name: "mock",
-				Ip:   "127.0.0.1",
-				Port: "20000",
-			},
-		},
-	}
 }
