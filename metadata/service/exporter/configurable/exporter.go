@@ -71,8 +71,6 @@ func (exporter *MetadataServiceExporter) Export() error {
 // Unexport will unexport the metadataService
 func (exporter *MetadataServiceExporter) Unexport() {
 	if exporter.IsExported() {
-		exporter.lock.Lock()
-		defer exporter.lock.Unlock()
 		exporter.serviceConfig.Unexport()
 	}
 }

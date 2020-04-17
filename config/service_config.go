@@ -78,6 +78,7 @@ type ServiceConfig struct {
 	cacheProtocol protocol.Protocol
 	cacheMutex    sync.Mutex
 	exporters     []protocol.Exporter
+	exportersLock sync.Mutex
 }
 
 // Prefix ...
@@ -203,6 +204,8 @@ func (c *ServiceConfig) Unexport() {
 	if c.unexported.Load() {
 		return
 	}
+	c.exportersLock.Lock()
+	defer c.exportersLock.Unlock()
 	for _, exporter := range c.exporters {
 		exporter.Unexport()
 	}

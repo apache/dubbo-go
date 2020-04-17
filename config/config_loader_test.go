@@ -242,7 +242,7 @@ func mockInitProviderWithSingleRegistry() {
 			Organization: "dubbo_org",
 			Name:         "dubbo",
 			Module:       "module",
-			Version:      "2.6.0",
+			Version:      "1.0.0",
 			Owner:        "dubbo",
 			Environment:  "test"},
 		Registry: &RegistryConfig{
