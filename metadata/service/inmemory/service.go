@@ -47,10 +47,10 @@ type MetadataService struct {
 // NewMetadataService: initiate a metadata service
 func NewMetadataService() *MetadataService {
 	return &MetadataService{
-		exportedServiceURLs:   new(sync.Map),
-		subscribedServiceURLs: new(sync.Map),
-		serviceDefinitions:    new(sync.Map),
-		lock:                  new(sync.RWMutex),
+		exportedServiceURLs:   &sync.Map{},
+		subscribedServiceURLs: &sync.Map{},
+		serviceDefinitions:    &sync.Map{},
+		lock:                  &sync.RWMutex{},
 	}
 }
 
