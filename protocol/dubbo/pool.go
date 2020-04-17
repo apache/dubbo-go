@@ -50,9 +50,20 @@ type gettyRPCClient struct {
 
 var (
 	errClientPoolClosed = perrors.New("client pool closed")
+	// for shared tcp connection for same ip and port
+	gettyRPCClients sync.Map
 )
 
 func newGettyRPCClientConn(pool *gettyRPCClientPool, protocol, addr string) (*gettyRPCClient, error) {
+
+	if client, ok := gettyRPCClients.Load(addr); ok {
+		cl := client.(*gettyRPCClient)
+		if cl.isAvailable() {
+			return cl, nil
+		}
+		cl.gettyClient.Close()
+	}
+
 	c := &gettyRPCClient{
 		protocol: protocol,
 		addr:     addr,
@@ -63,6 +74,8 @@ func newGettyRPCClientConn(pool *gettyRPCClientPool, protocol, addr string) (*ge
 			getty.WithReconnectInterval(pool.rpcClient.conf.ReconnectInterval),
 		),
 	}
+	gettyRPCClients.Store(addr, c)
+
 	go c.gettyClient.RunEventLoop(c.newSession)
 	idx := 1
 	times := int(pool.rpcClient.opts.ConnectTimeout / 1e6)
