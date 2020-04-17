@@ -26,6 +26,7 @@ var (
 	MetadataReportInstance report.MetadataReport
 )
 
+// MetadataReportFactory interface will create metadata report
 type MetadataReportFactory interface {
 	CreateMetadataReport(*common.URL) report.MetadataReport
 }
