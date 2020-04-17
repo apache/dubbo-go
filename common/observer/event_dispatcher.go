@@ -15,30 +15,13 @@
  * limitations under the License.
  */
 
-package registry
+package observer
 
-import (
-	"reflect"
-)
-
-import (
-	"github.com/apache/dubbo-go/common/observer"
-)
-
-// TODO (implement ConditionalEventListener)
-type ServiceInstancesChangedListener struct {
-	ServiceName string
-	observer.EventListener
-}
-
-func (sicl *ServiceInstancesChangedListener) OnEvent(e observer.Event) error {
-	return nil
-}
-
-func (sicl *ServiceInstancesChangedListener) GetPriority() int {
-	return -1
-}
-
-func (sicl *ServiceInstancesChangedListener) GetEventType() reflect.Type {
-	return reflect.TypeOf(&ServiceInstancesChangedEvent{})
+// EventDispatcher is align with EventDispatcher interface in Java.
+// it's the top abstraction
+// Align with 2.7.5
+type EventDispatcher interface {
+	Listenable
+	// Dispatch event
+	Dispatch(event Event)
 }
