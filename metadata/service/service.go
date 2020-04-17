@@ -28,18 +28,27 @@ import (
 
 // Metadataservice is used to define meta data related behaviors
 type MetadataService interface {
+	// ServiceName will get the service's name in meta service , which is application name
 	ServiceName() (string, error)
+	// ExportURL will store the exported url in metadata
 	ExportURL(url common.URL) (bool, error)
+	// UnexportURL will delete the exported url in metadata
 	UnexportURL(url common.URL) error
-	//RefreshMetadata(exportedRevision string, subscribedRevision string) bool
+	// SubscribeURL will store the subscribed url in metadata
 	SubscribeURL(url common.URL) (bool, error)
+	// UnsubscribeURL will delete the subscribed url in metadata
 	UnsubscribeURL(url common.URL) error
+	// PublishServiceDefinition will generate the target url's code info
 	PublishServiceDefinition(url common.URL) error
-
+	// GetExportedURLs will get the target exported url in metadata
 	GetExportedURLs(serviceInterface string, group string, version string, protocol string) (sets.Set, error)
+	// GetExportedURLs will get the target subscribed url in metadata
 	GetSubscribedURLs() (sets.Set, error)
+	// GetServiceDefinition will get the target service info store in metadata
 	GetServiceDefinition(interfaceName string, group string, version string) (string, error)
+	// GetServiceDefinition will get the target service info store in metadata by service key
 	GetServiceDefinitionByServiceKey(serviceKey string) (string, error)
+	// Version will return the metadata service version
 	Version() string
 	common.RPCService
 }
