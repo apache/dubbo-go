@@ -61,8 +61,3 @@ type BaseMetadataService struct {
 func (mts *BaseMetadataService) ServiceName() (string, error) {
 	return config.GetApplicationConfig().Name, nil
 }
-
-// RefreshMetadata is used for event listener's calling, to refresh metadata
-//func (mts *BaseMetadataService) RefreshMetadata(exportedRevision string, subscribedRevision string) bool {
-//	return true
-//}

@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 )
 
 // ServiceDefinition is the describer of service definition
@@ -77,11 +78,11 @@ func ServiceDescriperBuild(serviceName string, group string, version string) str
 	buf := &bytes.Buffer{}
 	if group != "" {
 		buf.WriteString(group)
-		buf.WriteString("/")
+		buf.WriteString(constant.PATH_SEPARATOR)
 	}
 	buf.WriteString(serviceName)
 	if version != "" && version != "0.0.0" {
-		buf.WriteString(":")
+		buf.WriteString(constant.KEY_SEPARATOR)
 		buf.WriteString(version)
 	}
 	return buf.String()

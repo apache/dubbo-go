@@ -62,11 +62,10 @@ func (exporter *MetadataServiceExporter) Export() error {
 		err := exporter.serviceConfig.Export()
 		logger.Infof("The MetadataService exports urls : %v ", exporter.serviceConfig.GetExportedUrls())
 		return err
-	} else {
-		logger.Warnf("The MetadataService has been exported : %v ", exporter.serviceConfig.GetExportedUrls())
-		return nil
 	}
 
+	logger.Warnf("The MetadataService has been exported : %v ", exporter.serviceConfig.GetExportedUrls())
+	return nil
 }
 
 // Unexport will unexport the metadataService
