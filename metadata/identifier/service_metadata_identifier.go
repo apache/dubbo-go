@@ -28,12 +28,12 @@ type ServiceMetadataIdentifier struct {
 	BaseMetadataIdentifier
 }
 
-// getIdentifierKey...
+// getIdentifierKey will return string format as service:Version:Group:Side:Protocol:"revision"+Revision
 func (mdi *ServiceMetadataIdentifier) GetIdentifierKey() string {
 	return mdi.BaseMetadataIdentifier.getIdentifierKey(mdi.Protocol, constant.KEY_REVISON_PREFIX+mdi.Revision)
 }
 
-// getIdentifierKey...
+// getFilePathKey will return string format as metadata/path/Version/Group/Side/Protocol/"revision"+Revision
 func (mdi *ServiceMetadataIdentifier) GetFilePathKey() string {
 	return mdi.BaseMetadataIdentifier.getFilePathKey(mdi.Protocol, constant.KEY_REVISON_PREFIX+mdi.Revision)
 }
