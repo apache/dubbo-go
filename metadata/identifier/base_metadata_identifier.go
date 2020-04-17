@@ -67,7 +67,7 @@ func (mdi *BaseMetadataIdentifier) getFilePathKey(params ...string) string {
 		withPathSeparator(mdi.Version) +
 		withPathSeparator(mdi.Group) +
 		withPathSeparator(mdi.Side) +
-		joinParams("/", params)
+		joinParams(constant.PATH_SEPARATOR, params)
 
 }
 
@@ -88,7 +88,7 @@ func serviceToPath(serviceInterface string) string {
 //withPathSeparator...
 func withPathSeparator(path string) string {
 	if len(path) != 0 {
-		path = "/" + path
+		path = constant.PATH_SEPARATOR + path
 	}
 	return path
 }
