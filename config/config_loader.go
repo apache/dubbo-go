@@ -197,15 +197,19 @@ func loadProviderConfig() {
 	}
 }
 
+func initRouter() {
+	if confRouterFile != "" {
+		if err := RouterInit(confRouterFile); err != nil {
+			log.Printf("[routerConfig init] %#v", err)
+		}
+	}
+}
+
 // Load Dubbo Init
 func Load() {
 
 	// init router
-	if confRouterFile != "" {
-		if errPro := RouterInit(confRouterFile); errPro != nil {
-			log.Printf("[routerConfig init] %#v", errPro)
-		}
-	}
+	initRouter()
 
 	// reference config
 	loadConsumerConfig()
