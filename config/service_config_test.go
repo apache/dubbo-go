@@ -18,8 +18,11 @@
 package config
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+)
+import (
+	gxnet "github.com/dubbogo/gost/net"
+	"github.com/stretchr/testify/assert"
 )
 
 import (
@@ -191,21 +194,11 @@ func Test_Export(t *testing.T) {
 	providerConfig = nil
 }
 
-func Test_getRandomPorts(t *testing.T) {
-	size := 3
-	ports := getRandomPorts(size)
-	t.Logf("len:%v", len(ports))
-
-	for _, port := range ports {
-		t.Logf("port:%v", port)
-	}
-
-	assert.Equal(t, size, len(ports))
-}
-
 func Test_getRandomPort(t *testing.T) {
-	port := getRandomPort()
+	ip, err := gxnet.GetLocalIP()
+	assert.NoError(t, err)
+	port := getRandomPort(ip)
 	t.Logf("port:%v", port)
 
-	assert.Greater(t, port, 0)
+	assert.Greater(t, len(port), 0)
 }
