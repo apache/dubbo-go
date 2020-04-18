@@ -20,7 +20,7 @@ package config
 import (
 	"context"
 	"fmt"
-	"net"
+	gxnet "github.com/dubbogo/gost/net"
 	"net/url"
 	"strconv"
 	"strings"
@@ -106,43 +106,14 @@ func NewServiceConfig(id string, context context.Context) *ServiceConfig {
 	}
 }
 
-// Get Random Ports with no size
-func getRandomPort() int {
-	return getRandomPorts(1)[0]
-}
-
-// Get Random Ports with size
-func getRandomPorts(size int) []int {
-	ports := make([]int, 0, size)
-	if size <= 0 {
-		return ports
+// Get Random Port
+func getRandomPort(ip string) string {
+	tcp, err := gxnet.ListenOnTCPRandomPort(ip)
+	if err != nil {
+		panic(perrors.New(fmt.Sprintf("Get tcp port error,err is {%v}", err)))
 	}
-
-	var (
-		flag bool
-		addr *net.TCPAddr
-	)
-	i := 0
-	for i < size {
-		flag = false
-		addr = nil
-		go func() {
-			listener, err := net.Listen("tcp", ":0")
-			if err != nil {
-				return
-			}
-
-			flag = true
-			addr = listener.Addr().(*net.TCPAddr)
-		}()
-		time.Sleep(50 * time.Millisecond)
-		if !flag {
-			continue
-		}
-		ports = append(ports, addr.Port)
-		i++
-	}
-	return ports
+	defer tcp.Close()
+	return strings.Split(tcp.Addr().String(), ":")[1]
 }
 
 // Export ...
@@ -179,7 +150,7 @@ func (c *ServiceConfig) Export() error {
 		}
 		port := proto.Port
 		if len(proto.Port) == 0 {
-			port = strconv.Itoa(getRandomPort())
+			port = getRandomPort(proto.Ip)
 		}
 		ivkURL := common.NewURLWithOptions(
 			common.WithPath(c.id),
