@@ -14,7 +14,7 @@ require (
 	github.com/creasty/defaults v1.3.0
 	github.com/dubbogo/getty v1.3.4
 	github.com/dubbogo/go-zookeeper v1.0.0
-	github.com/dubbogo/gost v1.8.0
+	github.com/dubbogo/gost v1.9.0
 	github.com/emicklei/go-restful/v3 v3.0.0
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
 	github.com/go-errors/errors v1.0.1 // indirect
