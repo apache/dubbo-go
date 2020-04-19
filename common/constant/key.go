@@ -153,6 +153,10 @@ const (
 )
 
 const (
+	EUREKA_KEY = "eureka"
+)
+
+const (
 	TRACING_REMOTE_SPAN_CTX = "tracing.remote.span.ctx"
 )
 
