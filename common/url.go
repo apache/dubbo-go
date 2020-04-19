@@ -264,17 +264,19 @@ func (c URL) URLEqual(url URL) bool {
 	} else if urlGroup == constant.ANY_VALUE {
 		urlKey = strings.Replace(urlKey, "group=*", "group="+cGroup, 1)
 	}
+
+	// 1. protocol, username, password, ip, port, service name, group, version should be equal
 	if cKey != urlKey {
 		return false
 	}
+
+	// 2. if url contains enabled key, should be true, or *
 	if url.GetParam(constant.ENABLED_KEY, "true") != "true" && url.GetParam(constant.ENABLED_KEY, "") != constant.ANY_VALUE {
 		return false
 	}
+
 	//TODO :may need add interface key any value condition
-	if !isMatchCategory(url.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY), c.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY)) {
-		return false
-	}
-	return true
+	return isMatchCategory(url.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY), c.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY))
 }
 
 func isMatchCategory(category1 string, category2 string) bool {
