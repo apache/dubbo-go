@@ -24,7 +24,7 @@ import (
 )
 
 import (
-	gxset "github.com/dubbogo/gost/container/set"
+	"github.com/dubbogo/gost/container/set"
 )
 
 import (
@@ -39,12 +39,18 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 	"github.com/apache/dubbo-go/registry"
-	directory2 "github.com/apache/dubbo-go/registry/directory"
+	_ "github.com/apache/dubbo-go/registry/directory"
 	"github.com/apache/dubbo-go/remoting"
 )
 
 var (
-	regProtocol *registryProtocol
+	regProtocol   *registryProtocol
+	once          sync.Once
+	reserveParams = []string{
+		"application", "codec", "exchanger", "serialization", "cluster", "connections", "deprecated", "group",
+		"loadbalance", "mock", "path", "timeout", "token", "version", "warmup", "weight", "timestamp", "dubbo",
+		"release", "interface",
+	}
 )
 
 type registryProtocol struct {
@@ -87,6 +93,13 @@ func getRegistry(regUrl *common.URL) registry.Registry {
 	return reg
 }
 
+func getUrlToRegistry(providerUrl *common.URL, registryUrl *common.URL) *common.URL {
+	if registryUrl.GetParamBool("simplified", false) {
+		return providerUrl.CloneWithParams(reserveParams)
+	}
+	return providerUrl
+}
+
 func (proto *registryProtocol) initConfigurationListeners() {
 	proto.overrideListeners = &sync.Map{}
 	proto.serviceConfigurationListeners = &sync.Map{}
@@ -111,7 +124,7 @@ func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 	}
 
 	//new registry directory for store service url from registry
-	directory, err := directory2.NewRegistryDirectory(&registryUrl, reg)
+	directory, err := extension.GetDefaultRegistryDirectory(&registryUrl, reg)
 	if err != nil {
 		logger.Errorf("consumer service %v  create registry directory  error, error message is %s, and will return nil invoker!",
 			serviceUrl.String(), err.Error())
@@ -123,7 +136,6 @@ func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 		logger.Errorf("consumer service %v register registry %v error, error message is %s",
 			serviceUrl.String(), registryUrl.String(), err.Error())
 	}
-	go directory.Subscribe(serviceUrl)
 
 	//new cluster invoker
 	cluster := extension.GetCluster(serviceUrl.GetParam(constant.CLUSTER_KEY, constant.DEFAULT_CLUSTER))
@@ -150,7 +162,6 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 	serviceConfigurationListener.OverrideUrl(providerUrl)
 
 	var reg registry.Registry
-
 	if regI, loaded := proto.registries.Load(registryUrl.Key()); !loaded {
 		reg = getRegistry(registryUrl)
 		proto.registries.Store(registryUrl.Key(), reg)
@@ -158,7 +169,8 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 		reg = regI.(registry.Registry)
 	}
 
-	err := reg.Register(*providerUrl)
+	registeredProviderUrl := getUrlToRegistry(providerUrl, registryUrl)
+	err := reg.Register(*registeredProviderUrl)
 	if err != nil {
 		logger.Errorf("provider service %v register registry %v error, error message is %s",
 			providerUrl.Key(), registryUrl.Key(), err.Error())
@@ -346,12 +358,12 @@ func setProviderUrl(regURL *common.URL, providerURL *common.URL) {
 	regURL.SubURL = providerURL
 }
 
-// GetProtocol ...
+// GetProtocol return the singleton RegistryProtocol
 func GetProtocol() protocol.Protocol {
-	if regProtocol != nil {
-		return regProtocol
-	}
-	return newRegistryProtocol()
+	once.Do(func() {
+		regProtocol = newRegistryProtocol()
+	})
+	return regProtocol
 }
 
 type wrappedInvoker struct {

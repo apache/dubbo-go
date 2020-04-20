@@ -48,3 +48,7 @@ func UnmarshalYMLConfig(confProFile string, out interface{}) ([]byte, error) {
 	}
 	return confFileStream, yaml.Unmarshal(confFileStream, out)
 }
+
+func UnmarshalYML(data []byte, out interface{}) error {
+	return yaml.Unmarshal(data, out)
+}
