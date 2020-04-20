@@ -75,10 +75,11 @@ type ServiceConfig struct {
 	unexported    *atomic.Bool
 	exported      *atomic.Bool
 	rpcService    common.RPCService
-	cacheProtocol protocol.Protocol
 	cacheMutex    sync.Mutex
-	exporters     []protocol.Exporter
+	cacheProtocol protocol.Protocol
+
 	exportersLock sync.Mutex
+	exporters     []protocol.Exporter
 }
 
 // Prefix ...
