@@ -22,6 +22,7 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
 	"gopkg.in/yaml.v2"
 )
 
@@ -79,6 +80,16 @@ func (f *MockDynamicConfigurationFactory) GetDynamicConfiguration(_ *common.URL)
 	}
 	return dynamicConfiguration, err
 
+}
+
+// PublishConfig will publish the config with the (key, group, value) pair
+func (c *MockDynamicConfiguration) PublishConfig(string, string, string) error {
+	return nil
+}
+
+// GetConfigKeysByGroup will return all keys with the group
+func (c *MockDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
+	return gxset.NewSet(c.content), nil
 }
 
 // MockDynamicConfiguration ...
