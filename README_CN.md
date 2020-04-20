@@ -15,6 +15,8 @@ Apache License, Version 2.0
 
 ## 发布日志 ##
 
+[v1.4.0 - 2020年3月17日](https://github.com/apache/dubbo-go/releases/tag/v1.4.0)
+
 [v1.3.0 - 2020年3月1日](https://github.com/apache/dubbo-go/releases/tag/v1.3.0)
 
 [v1.2.0 - 2019年11月15日](https://github.com/apache/dubbo-go/releases/tag/v1.2.0)
@@ -55,6 +57,7 @@ Apache License, Version 2.0
     
 - 路由器
     * [Condition router](https://github.com/apache/dubbo-go/pull/294)
+    * [Health check router](https://github.com/apache/dubbo-go/pull/389)
     
 - 注册中心
     * ZooKeeper
@@ -89,13 +92,21 @@ Apache License, Version 2.0
     * [AccessLogFilter](https://github.com/apache/dubbo-go/pull/214)
     * [TpsLimitFilter](https://github.com/apache/dubbo-go/pull/237)
     * [ExecuteLimitFilter](https://github.com/apache/dubbo-go/pull/246)
+    * [Auth/Sign](https://github.com/apache/dubbo-go/pull/323)
+    * [Metrics filter](https://github.com/apache/dubbo-go/pull/342)
+    * [Tracing filter](https://github.com/apache/dubbo-go/pull/335)
 
 - 调用
     * [泛化调用](https://github.com/apache/dubbo-go/pull/122)
     
 - 监控
     * Opentracing API
-    * Prometheus
+    * [Prometheus](https://github.com/apache/dubbo-go/pull/342)
+
+- Tracing
+    * [For jsonrpc](https://github.com/apache/dubbo-go/pull/335)
+    * [For dubbo](https://github.com/apache/dubbo-go/pull/344)
+    * [For grpc](https://github.com/apache/dubbo-go/pull/397)
 
 - 其他功能支持:
     * 启动时检查
