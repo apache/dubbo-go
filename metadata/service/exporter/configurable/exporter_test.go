@@ -114,5 +114,4 @@ func mockInitProviderWithSingleRegistry() {
 	}
 	providerConfig.Services["MockService"].InitExported()
 	config.SetProviderConfig(*providerConfig)
-
 }

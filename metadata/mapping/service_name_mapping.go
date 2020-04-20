@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package namemapping
+package mapping
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"

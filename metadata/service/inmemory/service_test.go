@@ -63,11 +63,12 @@ func TestMetadataService(t *testing.T) {
 	version := "0.0.1"
 	protocol := "dubbo"
 	beanName := "UserProvider"
-	u, _ := common.NewURL(fmt.Sprintf("%v://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&"+
-		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&"+
-		"environment=dev&interface=%v&ip=192.168.56.1&methods=GetUser&"+
-		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&"+
-		"side=provider&timeout=3000&timestamp=1556509797245&group=%v&version=%v&bean.name=%v", protocol, serviceName, group, version, beanName))
+	u, _ := common.NewURL(fmt.Sprintf(`%v://127.0.0.1:20000/com.ikurento.user.UserProvider?
+			anyhost=true&application=BDTService&category=providers&default.timeout=10000&
+			dubbo=dubbo-provider-golang-1.0.0&environment=dev&interface=%v&ip=192.168.56.1&
+			methods=GetUser&module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&
+			revision=0.0.1&side=provider&timeout=3000&timestamp=1556509797245&group=%v&
+			version=%v&bean.name=%v`, protocol, serviceName, group, version, beanName))
 	mts.ExportURL(u)
 	sets, _ := mts.GetExportedURLs(serviceName, group, version, protocol)
 	assert.Equal(t, 1, sets.Size())
@@ -88,7 +89,9 @@ func TestMetadataService(t *testing.T) {
 	userProvider := &UserProvider{}
 	common.ServiceMap.Register(serviceName, protocol, userProvider)
 	mts.PublishServiceDefinition(u)
-	expected := `{"CanonicalName":"com.ikurento.user.UserProvider","CodeSource":"","Methods":[{"Name":"GetUser","ParameterTypes":["slice"],"ReturnType":"ptr","Parameters":null}],"Types":null}`
+	expected := `{"CanonicalName":"com.ikurento.user.UserProvider","CodeSource":"",
+				"Methods":[{"Name":"GetUser","ParameterTypes":["slice"],
+				"ReturnType":"ptr","Parameters":null}],"Types":null}`
 	def1, _ := mts.GetServiceDefinition(serviceName, group, version)
 	assert.Equal(t, def1, expected)
 	serviceKey := definition.ServiceDescriperBuild(serviceName, group, version)
