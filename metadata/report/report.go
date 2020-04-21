@@ -15,15 +15,22 @@
  * limitations under the License.
  */
 
-package metadata
+package report
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/metadata/definition"
+	"github.com/apache/dubbo-go/metadata/identifier"
 )
 
-type MetadataExporter interface {
-	Export() MetadataExporter
-	Unexport() MetadataExporter
-	GetExportedURLs() []*common.URL
-	IsExported() bool
+// MetadataReport is an interface of remote metadata report
+type MetadataReport interface {
+	StoreProviderMetadata(*identifier.MetadataIdentifier, *definition.ServiceDefinition)
+	StoreConsumerMetadata(*identifier.MetadataIdentifier, map[string]string)
+	SaveServiceMetadata(*identifier.ServiceMetadataIdentifier, *common.URL)
+	RemoveServiceMetadata(*identifier.ServiceMetadataIdentifier)
+	GetExportedURLs(*identifier.ServiceMetadataIdentifier) []string
+	SaveSubscribedData(*identifier.SubscriberMetadataIdentifier, []*common.URL)
+	GetSubscribedURLs(*identifier.SubscriberMetadataIdentifier) []string
+	GetServiceDefinition(*identifier.MetadataIdentifier)
 }
