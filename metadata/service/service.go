@@ -28,6 +28,7 @@ import (
 
 // Metadataservice is used to define meta data related behaviors
 type MetadataService interface {
+	common.RPCService
 	// ServiceName will get the service's name in meta service , which is application name
 	ServiceName() (string, error)
 	// ExportURL will store the exported url in metadata
@@ -50,7 +51,6 @@ type MetadataService interface {
 	GetServiceDefinitionByServiceKey(serviceKey string) (string, error)
 	// Version will return the metadata service version
 	Version() string
-	common.RPCService
 }
 
 // BaseMetadataService is used for the common logic for struct who will implement interface MetadataService
