@@ -18,7 +18,7 @@
 package service
 
 import (
-	"github.com/emirpasic/gods/sets"
+	"github.com/Workiva/go-datastructures/slice/skip"
 )
 
 import (
@@ -41,9 +41,9 @@ type MetadataService interface {
 	// PublishServiceDefinition will generate the target url's code info
 	PublishServiceDefinition(url common.URL) error
 	// GetExportedURLs will get the target exported url in metadata
-	GetExportedURLs(serviceInterface string, group string, version string, protocol string) (sets.Set, error)
+	GetExportedURLs(serviceInterface string, group string, version string, protocol string) (*skip.SkipList, error)
 	// GetExportedURLs will get the target subscribed url in metadata
-	GetSubscribedURLs() (sets.Set, error)
+	GetSubscribedURLs() (*skip.SkipList, error)
 	// GetServiceDefinition will get the target service info store in metadata
 	GetServiceDefinition(interfaceName string, group string, version string) (string, error)
 	// GetServiceDefinition will get the target service info store in metadata by service key
