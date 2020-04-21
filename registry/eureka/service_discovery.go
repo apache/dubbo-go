@@ -22,6 +22,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/registry"
+	perrors "github.com/apache/dubbo-go/vendor/github.com/pkg/errors"
 	gxset "github.com/dubbogo/gost/container/set"
 	gxpage "github.com/dubbogo/gost/page"
 	"github.com/hudl/fargo"
@@ -34,16 +35,26 @@ func init() {
 
 // eurekaServiceDiscovery is the implementation of service discovery based on eureka.
 type eurekaServiceDiscovery struct {
-	eurekaConnection fargo.EurekaConnection
+	eurekaConnection *fargo.EurekaConnection
 	group            string
+	*common.URL
 }
 
-func (e *eurekaServiceDiscovery) String() string {
-	return ""
+// toDeregisterInstance will convert the ServiceInstance to DeregisterInstanceParam
+func (e *eurekaServiceDiscovery) toDeregisterInstance(instance registry.ServiceInstance) *fargo.Instance {
+	return &fargo.Instance{
+		HomePageUrl: instance.GetServiceName(),
+		IPAddr:      instance.GetHost(),
+		Port:        instance.GetPort(),
+		App:         e.group,
+	}
 }
 
+// Destroy will close the service discovery.
+// Actually, it only marks the eurekaConnection as null and then return
 func (e *eurekaServiceDiscovery) Destroy() error {
-	panic("implement me")
+	e.eurekaConnection = nil
+	return nil
 }
 
 func (e *eurekaServiceDiscovery) Register(instance registry.ServiceInstance) error {
@@ -54,8 +65,13 @@ func (e *eurekaServiceDiscovery) Update(instance registry.ServiceInstance) error
 	panic("implement me")
 }
 
+// Unregister will unregister the instance
 func (e *eurekaServiceDiscovery) Unregister(instance registry.ServiceInstance) error {
-	panic("implement me")
+	err := e.eurekaConnection.DeregisterInstance(e.toDeregisterInstance(instance))
+	if err != nil {
+		return perrors.WithMessage(err, "Could not unregister the instance. "+instance.GetServiceName())
+	}
+	return nil
 }
 
 func (e *eurekaServiceDiscovery) GetDefaultPageSize() int {
@@ -104,7 +120,8 @@ func newEurekaServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, erro
 	config.Eureka.ServerPort = 1999
 	eurekaConnection := fargo.NewConnFromConfig(config)
 	return &eurekaServiceDiscovery{
-		eurekaConnection,
-		"",
+		eurekaConnection: &eurekaConnection,
+		URL:              url,
+		//group:            url.GetParam(constant.NACOS_GROUP, defaultGroup),
 	}, nil
 }
