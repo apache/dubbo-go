@@ -15,23 +15,30 @@
  * limitations under the License.
  */
 
-package metadata
+package identifier
 
 import (
-	"github.com/apache/dubbo-go/common"
-	gxset "github.com/dubbogo/gost/container/set"
+	"testing"
 )
 
-type MetadataService interface {
-	ServiceName() string
-	ExportURL(url *common.URL) bool
-	UnexportURL(url *common.URL) bool
-	RefreshMetadata(exportedRevision string, subscribedRevision string) bool
-	SubscribeURL(url *common.URL) bool
-	UnsubscribeURL(url *common.URL) bool
-	PublishServiceDefinition(url *common.URL)
+import (
+	"github.com/stretchr/testify/assert"
+)
 
-	GetExportedURLs(serviceInterface string, group string, version string, protocol string) gxset.HashSet
-	GetServiceDefinition(interfaceName string, version string, group string) string
-	GetServiceDefinitionByServiceKey(serviceKey string) string
+var subscribeMetadataId = &SubscriberMetadataIdentifier{
+	Revision: "1.0",
+	BaseMetadataIdentifier: BaseMetadataIdentifier{
+		ServiceInterface: "org.apache.pkg.mockService",
+		Version:          "1.0.0",
+		Group:            "Group",
+		Side:             "provider",
+	},
+}
+
+func TestSubscribeGetFilePathKey(t *testing.T) {
+	assert.Equal(t, "metadata/1.0.0/Group/provider/1.0", subscribeMetadataId.GetFilePathKey())
+}
+
+func TestSubscribeGetIdentifierKey(t *testing.T) {
+	assert.Equal(t, "org.apache.pkg.mockService:1.0.0:Group:provider:1.0", subscribeMetadataId.GetIdentifierKey())
 }
