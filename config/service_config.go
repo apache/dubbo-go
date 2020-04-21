@@ -205,12 +205,16 @@ func (c *ServiceConfig) Unexport() {
 	if c.unexported.Load() {
 		return
 	}
-	c.exportersLock.Lock()
-	defer c.exportersLock.Unlock()
-	for _, exporter := range c.exporters {
-		exporter.Unexport()
-	}
-	c.exporters = nil
+
+	func() {
+		c.exportersLock.Lock()
+		defer c.exportersLock.Unlock()
+		for _, exporter := range c.exporters {
+			exporter.Unexport()
+		}
+		c.exporters = nil
+	}()
+
 	c.exported.Store(false)
 	c.unexported.Store(true)
 }

@@ -48,22 +48,28 @@ func NewMetadataServiceExporter(metadataService service.MetadataService) exporte
 // Export will export the metadataService
 func (exporter *MetadataServiceExporter) Export() error {
 	if !exporter.IsExported() {
-		exporter.lock.Lock()
-		defer exporter.lock.Unlock()
-		exporter.serviceConfig = config.NewServiceConfig("MetadataService", context.Background())
-		exporter.serviceConfig.Protocol = constant.DEFAULT_PROTOCOL
-		exporter.serviceConfig.Protocols = map[string]*config.ProtocolConfig{
+
+		serviceConfig := config.NewServiceConfig("MetadataService", context.Background())
+		serviceConfig.Protocol = constant.DEFAULT_PROTOCOL
+		serviceConfig.Protocols = map[string]*config.ProtocolConfig{
 			constant.DEFAULT_PROTOCOL: generateMetadataProtocol(),
 		}
-		exporter.serviceConfig.InterfaceName = constant.METADATA_SERVICE_NAME
-		exporter.serviceConfig.Group = config.GetApplicationConfig().Name
-		exporter.serviceConfig.Version = exporter.metadataService.Version()
-		exporter.serviceConfig.Implement(exporter.metadataService)
-		err := exporter.serviceConfig.Export()
+		serviceConfig.InterfaceName = constant.METADATA_SERVICE_NAME
+		serviceConfig.Group = config.GetApplicationConfig().Name
+		serviceConfig.Version = exporter.metadataService.Version()
+
+		var err error
+		func() {
+			exporter.lock.Lock()
+			defer exporter.lock.Unlock()
+			exporter.serviceConfig = serviceConfig
+			exporter.serviceConfig.Implement(exporter.metadataService)
+			err = exporter.serviceConfig.Export()
+		}()
+
 		logger.Infof("The MetadataService exports urls : %v ", exporter.serviceConfig.GetExportedUrls())
 		return err
 	}
-
 	logger.Warnf("The MetadataService has been exported : %v ", exporter.serviceConfig.GetExportedUrls())
 	return nil
 }

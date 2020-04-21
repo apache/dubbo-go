@@ -18,13 +18,13 @@
 package config
 
 import (
-	"go.uber.org/atomic"
 	"path/filepath"
 	"testing"
 )
 
 import (
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/atomic"
 )
 
 import (
