@@ -26,6 +26,7 @@ const (
 	VERSION_KEY            = "version"
 	INTERFACE_KEY          = "interface"
 	PATH_KEY               = "path"
+	PROTOCOL_KEY           = "protocol"
 	SERVICE_KEY            = "service"
 	METHODS_KEY            = "methods"
 	TIMEOUT_KEY            = "timeout"

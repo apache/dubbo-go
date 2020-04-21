@@ -15,16 +15,27 @@
  * limitations under the License.
  */
 
-package metadata
+package identifier
 
 import (
-	"github.com/apache/dubbo-go/common"
+	"testing"
 )
 
-var (
-	MetadataReportInstance MetadataReport
+import (
+	"github.com/stretchr/testify/assert"
 )
 
-type MetadataReportFactory interface {
-	CreateMetadataReport(*common.URL) MetadataReport
+var baseId = &BaseMetadataIdentifier{
+	ServiceInterface: "org.apache.pkg.mockService",
+	Version:          "1.0.0",
+	Group:            "Group",
+	Side:             "provider",
+}
+
+func TestBaseGetFilePathKey(t *testing.T) {
+	assert.Equal(t, "metadata/1.0.0/Group/provider/a/b/c", baseId.getFilePathKey("a", "b", "c"))
+}
+
+func TestBaseGetIdentifierKey(t *testing.T) {
+	assert.Equal(t, "org.apache.pkg.mockService:1.0.0:Group:provider:a:b:c", baseId.getIdentifierKey("a", "b", "c"))
 }

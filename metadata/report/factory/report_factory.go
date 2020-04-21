@@ -15,18 +15,21 @@
  * limitations under the License.
  */
 
-package metadata
+package factory
 
 import (
-	gxset "github.com/dubbogo/gost/container/set"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/metadata/report"
 )
 
-// ServiceNameMapping try to build the mapping between application-level service and interface-level service.
-type ServiceNameMapping interface {
+var (
+	MetadataReportInstance report.MetadataReport
+)
 
-	// Map will map the service to this application-level service
-	Map(serviceInterface string, group string, version string, protocol string) error
+// MetadataReportFactory interface will create metadata report
+type MetadataReportFactory interface {
+	CreateMetadataReport(*common.URL) report.MetadataReport
+}
 
-	// Get will return the application-level services
-	Get(serviceInterface string, group string, version string, protocol string) (*gxset.HashSet, error)
+type BaseMetadataReportFactory struct {
 }
