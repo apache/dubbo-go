@@ -22,9 +22,8 @@ import (
 )
 
 import (
-	"github.com/emirpasic/gods/sets"
-	"github.com/emirpasic/gods/sets/treeset"
-	"github.com/emirpasic/gods/utils"
+	cm "github.com/Workiva/go-datastructures/common"
+	"github.com/Workiva/go-datastructures/slice/skip"
 )
 
 import (
@@ -54,14 +53,17 @@ func NewMetadataService() *MetadataService {
 	}
 }
 
-// urlComparator is defined as utils.Comparator for treeset to compare the URL
-func urlComparator(a, b interface{}) int {
-	url1 := a.(*common.URL)
-	url2 := b.(*common.URL)
+// comparator is defined as Comparator for skip list to compare the URL
+type comparator common.URL
+
+// Compare is defined as Comparator for skip list to compare the URL
+func (c comparator) Compare(comp cm.Comparator) int {
+	a := common.URL(c).String()
+	b := common.URL(comp.(comparator)).String()
 	switch {
-	case url1.String() > url2.String():
+	case a > b:
 		return 1
-	case url1.String() < url2.String():
+	case a < b:
 		return -1
 	default:
 		return 0
@@ -75,9 +77,10 @@ func (mts *MetadataService) addURL(targetMap *sync.Map, url *common.URL) bool {
 		loaded bool
 	)
 	logger.Debug(url.ServiceKey())
-	if urlSet, loaded = targetMap.LoadOrStore(url.ServiceKey(), treeset.NewWith(urlComparator)); loaded {
+	if urlSet, loaded = targetMap.LoadOrStore(url.ServiceKey(), skip.New(uint64(0))); loaded {
 		mts.lock.RLock()
-		if urlSet.(*treeset.Set).Contains(url) {
+		wantedUrl := urlSet.(*skip.SkipList).Get(comparator(*url))
+		if len(wantedUrl) > 0 && wantedUrl[0] != nil {
 			mts.lock.RUnlock()
 			return false
 		}
@@ -85,11 +88,12 @@ func (mts *MetadataService) addURL(targetMap *sync.Map, url *common.URL) bool {
 	}
 	mts.lock.Lock()
 	//double chk
-	if urlSet.(*treeset.Set).Contains(url) {
+	wantedUrl := urlSet.(*skip.SkipList).Get(comparator(*url))
+	if len(wantedUrl) > 0 && wantedUrl[0] != nil {
 		mts.lock.Unlock()
 		return false
 	}
-	urlSet.(*treeset.Set).Add(url)
+	urlSet.(*skip.SkipList).Insert(comparator(*url))
 	mts.lock.Unlock()
 	return true
 }
@@ -98,64 +102,65 @@ func (mts *MetadataService) addURL(targetMap *sync.Map, url *common.URL) bool {
 func (mts *MetadataService) removeURL(targetMap *sync.Map, url *common.URL) {
 	if value, loaded := targetMap.Load(url.ServiceKey()); loaded {
 		mts.lock.Lock()
-		value.(*treeset.Set).Remove(url)
+		value.(*skip.SkipList).Delete(comparator(*url))
 		mts.lock.Unlock()
 		mts.lock.RLock()
 		defer mts.lock.RUnlock()
-		if value.(*treeset.Set).Empty() {
+		if value.(*skip.SkipList).Len() == 0 {
 			targetMap.Delete(url.ServiceKey())
 		}
 	}
 }
 
 // getAllService can return all the exportedUrlString except for metadataService
-func (mts *MetadataService) getAllService(services *sync.Map) sets.Set {
-	sets := treeset.NewWith(utils.StringComparator)
+func (mts *MetadataService) getAllService(services *sync.Map) *skip.SkipList {
+	skipList := skip.New(uint64(0))
 	services.Range(func(key, value interface{}) bool {
-		urls := value.(*treeset.Set)
-		urls.Each(func(index int, value interface{}) {
-			url := value.(*common.URL)
+		urls := value.(*skip.SkipList)
+		for i := uint64(0); i < urls.Len(); i++ {
+			url := common.URL(urls.ByPosition(i).(comparator))
 			if url.GetParam(constant.INTERFACE_KEY, url.Path) != "MetadataService" {
-				sets.Add(url.String())
+				skipList.Insert(comparator(url))
 			}
-		})
+		}
 		return true
 	})
-	return sets
+	return skipList
 }
 
 // getSpecifiedService can return specified service url by serviceKey
-func (mts *MetadataService) getSpecifiedService(services *sync.Map, serviceKey string, protocol string) sets.Set {
-	targetSets := treeset.NewWith(utils.StringComparator)
-	serviceSet, loaded := services.Load(serviceKey)
+func (mts *MetadataService) getSpecifiedService(services *sync.Map, serviceKey string, protocol string) *skip.SkipList {
+	skipList := skip.New(uint64(0))
+	serviceList, loaded := services.Load(serviceKey)
 	if loaded {
-		serviceSet.(*treeset.Set).Each(func(index int, value interface{}) {
-			url := value.(*common.URL)
+		urls := serviceList.(*skip.SkipList)
+		for i := uint64(0); i < urls.Len(); i++ {
+			url := common.URL(urls.ByPosition(i).(comparator))
 			if len(protocol) == 0 || url.Protocol == protocol || url.GetParam(constant.PROTOCOL_KEY, "") == protocol {
-				targetSets.Add(value.(*common.URL).String())
+				skipList.Insert(comparator(url))
 			}
-		})
+		}
 	}
-	return targetSets
+	return skipList
 }
 
-// ExportURL can store the in memory treeset
+// ExportURL can store the in memory
 func (mts *MetadataService) ExportURL(url common.URL) (bool, error) {
 	return mts.addURL(mts.exportedServiceURLs, &url), nil
 }
 
-// UnexportURL can remove the url store in memory treeset
+// UnexportURL can remove the url store in memory
 func (mts *MetadataService) UnexportURL(url common.URL) error {
 	mts.removeURL(mts.exportedServiceURLs, &url)
 	return nil
 }
 
-// SubscribeURL can store the in memory treeset
+// SubscribeURL can store the in memory
 func (mts *MetadataService) SubscribeURL(url common.URL) (bool, error) {
 	return mts.addURL(mts.subscribedServiceURLs, &url), nil
 }
 
-// UnsubscribeURL can remove the url store in memory treeset
+// UnsubscribeURL can remove the url store in memory
 func (mts *MetadataService) UnsubscribeURL(url common.URL) error {
 	mts.removeURL(mts.subscribedServiceURLs, &url)
 	return nil
@@ -189,7 +194,7 @@ func (mts *MetadataService) PublishServiceDefinition(url common.URL) error {
 }
 
 // GetExportedURLs get all exported urls
-func (mts *MetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) (sets.Set, error) {
+func (mts *MetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) (*skip.SkipList, error) {
 	if serviceInterface == constant.ANY_VALUE {
 		return mts.getAllService(mts.exportedServiceURLs), nil
 	} else {
@@ -199,7 +204,7 @@ func (mts *MetadataService) GetExportedURLs(serviceInterface string, group strin
 }
 
 // GetSubscribedURLs get all subscribedUrl
-func (mts *MetadataService) GetSubscribedURLs() (sets.Set, error) {
+func (mts *MetadataService) GetSubscribedURLs() (*skip.SkipList, error) {
 	return mts.getAllService(mts.subscribedServiceURLs), nil
 }
 

@@ -63,38 +63,63 @@ func TestMetadataService(t *testing.T) {
 	version := "0.0.1"
 	protocol := "dubbo"
 	beanName := "UserProvider"
-	u, _ := common.NewURL(fmt.Sprintf(`%v://127.0.0.1:20000/com.ikurento.user.UserProvider?
-			anyhost=true&application=BDTService&category=providers&default.timeout=10000&
-			dubbo=dubbo-provider-golang-1.0.0&environment=dev&interface=%v&ip=192.168.56.1&
-			methods=GetUser&module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&
-			revision=0.0.1&side=provider&timeout=3000&timestamp=1556509797245&group=%v&
-			version=%v&bean.name=%v`, protocol, serviceName, group, version, beanName))
+
+	u2, err := common.NewURL(fmt.Sprintf(
+		"%v://127.0.0.1:20000/com.ikurento.user.UserProvider2?anyhost=true&"+
+			"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&"+
+			"environment=dev&interface=%v&ip=192.168.56.1&methods=GetUser&module=dubbogo+user-info+server&org=ikurento.com&"+
+			"owner=ZX&pid=1447&revision=0.0.1&side=provider&timeout=3000&timestamp=1556509797245&group=%v&version=%v&bean.name=%v",
+		protocol, serviceName, group, version, beanName))
+	assert.NoError(t, err)
+	mts.ExportURL(u2)
+
+	u3, err := common.NewURL(fmt.Sprintf(
+		"%v://127.0.0.1:20000/com.ikurento.user.UserProvider3?anyhost=true&"+
+			"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&"+
+			"environment=dev&interface=%v&ip=192.168.56.1&methods=GetUser&module=dubbogo+user-info+server&org=ikurento.com&"+
+			"owner=ZX&pid=1447&revision=0.0.1&side=provider&timeout=3000&timestamp=1556509797245&group=%v&version=%v&bean.name=%v",
+		protocol, serviceName, group, version, beanName))
+	assert.NoError(t, err)
+	mts.ExportURL(u3)
+
+	u, err := common.NewURL(fmt.Sprintf(
+		"%v://127.0.0.1:20000/com.ikurento.user.UserProvider1?anyhost=true&"+
+			"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&"+
+			"environment=dev&interface=%v&ip=192.168.56.1&methods=GetUser&module=dubbogo+user-info+server&org=ikurento.com&"+
+			"owner=ZX&pid=1447&revision=0.0.1&side=provider&timeout=3000&timestamp=1556509797245&group=%v&version=%v&bean.name=%v",
+		protocol, serviceName, group, version, beanName))
+	assert.NoError(t, err)
 	mts.ExportURL(u)
-	sets, _ := mts.GetExportedURLs(serviceName, group, version, protocol)
-	assert.Equal(t, 1, sets.Size())
+	list, _ := mts.GetExportedURLs(serviceName, group, version, protocol)
+	assert.Equal(t, uint64(3), list.Len())
+	iter := list.IterAtPosition(0)
+	for iter.Next() {
+		comparator := iter.Value()
+		fmt.Println(comparator)
+	}
 	mts.SubscribeURL(u)
 
 	mts.SubscribeURL(u)
-	sets2, _ := mts.GetSubscribedURLs()
-	assert.Equal(t, 1, sets2.Size())
+	list2, _ := mts.GetSubscribedURLs()
+	assert.Equal(t, uint64(1), list2.Len())
 
 	mts.UnexportURL(u)
-	sets11, _ := mts.GetExportedURLs(serviceName, group, version, protocol)
-	assert.Equal(t, 0, sets11.Size())
+	list3, _ := mts.GetExportedURLs(serviceName, group, version, protocol)
+	assert.Equal(t, uint64(2), list3.Len())
 
 	mts.UnsubscribeURL(u)
-	sets22, _ := mts.GetSubscribedURLs()
-	assert.Equal(t, 0, sets22.Size())
+	list4, _ := mts.GetSubscribedURLs()
+	assert.Equal(t, uint64(0), list4.Len())
 
 	userProvider := &UserProvider{}
 	common.ServiceMap.Register(serviceName, protocol, userProvider)
 	mts.PublishServiceDefinition(u)
-	expected := `{"CanonicalName":"com.ikurento.user.UserProvider","CodeSource":"",
-				"Methods":[{"Name":"GetUser","ParameterTypes":["slice"],
-				"ReturnType":"ptr","Parameters":null}],"Types":null}`
+	expected := "{\"CanonicalName\":\"com.ikurento.user.UserProvider\",\"CodeSource\":\"\"," +
+		"\"Methods\":[{\"Name\":\"GetUser\",\"ParameterTypes\":[\"slice\"],\"ReturnType\":\"ptr\"," +
+		"\"Parameters\":null}],\"Types\":null}"
 	def1, _ := mts.GetServiceDefinition(serviceName, group, version)
-	assert.Equal(t, def1, expected)
+	assert.Equal(t, expected, def1)
 	serviceKey := definition.ServiceDescriperBuild(serviceName, group, version)
 	def2, _ := mts.GetServiceDefinitionByServiceKey(serviceKey)
-	assert.Equal(t, def2, expected)
+	assert.Equal(t, expected, def2)
 }
