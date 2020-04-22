@@ -1,7 +1,7 @@
 module github.com/apache/dubbo-go
 
 require (
-	github.com/Workiva/go-datastructures v1.0.50
+	github.com/Workiva/go-datastructures v1.0.52
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
 	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190802083043-4cd0c391755e // indirect
 	github.com/apache/dubbo-go-hessian2 v1.4.0
