@@ -17,6 +17,16 @@
 
 package definition
 
+import (
+	"bytes"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+)
+
+// ServiceDefinition is the describer of service definition
 type ServiceDefinition struct {
 	CanonicalName string
 	CodeSource    string
@@ -24,6 +34,7 @@ type ServiceDefinition struct {
 	Types         []TypeDefinition
 }
 
+// MethodDefinition is the describer of method definition
 type MethodDefinition struct {
 	Name           string
 	ParameterTypes []string
@@ -31,6 +42,7 @@ type MethodDefinition struct {
 	Parameters     []TypeDefinition
 }
 
+// TypeDefinition is the describer of type definition
 type TypeDefinition struct {
 	Id              string
 	Type            string
@@ -38,4 +50,40 @@ type TypeDefinition struct {
 	Enums           []string
 	Properties      map[string]TypeDefinition
 	TypeBuilderName string
+}
+
+// BuildServiceDefinition can build service definition which will be used to describe a service
+func BuildServiceDefinition(service common.Service, url common.URL) ServiceDefinition {
+	sd := ServiceDefinition{}
+	sd.CanonicalName = url.Service()
+
+	for k, m := range service.Method() {
+		var paramTypes []string
+		for _, t := range m.ArgsType() {
+			paramTypes = append(paramTypes, t.Kind().String())
+		}
+		methodD := MethodDefinition{
+			Name:           k,
+			ParameterTypes: paramTypes,
+			ReturnType:     m.ReplyType().Kind().String(),
+		}
+		sd.Methods = append(sd.Methods, methodD)
+	}
+
+	return sd
+}
+
+// ServiceDescriperBuild: build the service key, format is `group/serviceName:version` which be same as URL's service key
+func ServiceDescriperBuild(serviceName string, group string, version string) string {
+	buf := &bytes.Buffer{}
+	if group != "" {
+		buf.WriteString(group)
+		buf.WriteString(constant.PATH_SEPARATOR)
+	}
+	buf.WriteString(serviceName)
+	if version != "" && version != "0.0.0" {
+		buf.WriteString(constant.KEY_SEPARATOR)
+		buf.WriteString(version)
+	}
+	return buf.String()
 }

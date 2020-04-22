@@ -17,18 +17,28 @@
 
 package identifier
 
-// MetadataIdentifier is inherit baseMetaIdentifier with Application name
-type MetadataIdentifier struct {
-	Application string
-	BaseMetadataIdentifier
+import (
+	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+var metadataId = &MetadataIdentifier{
+	Application: "app",
+	BaseMetadataIdentifier: BaseMetadataIdentifier{
+		ServiceInterface: "org.apache.pkg.mockService",
+		Version:          "1.0.0",
+		Group:            "Group",
+		Side:             "provider",
+	},
 }
 
-// GetIdentifierKey will return string format as service:Version:Group:Side:Application
-func (mdi *MetadataIdentifier) GetIdentifierKey() string {
-	return mdi.BaseMetadataIdentifier.getIdentifierKey(mdi.Application)
+func TestGetFilePathKey(t *testing.T) {
+	assert.Equal(t, "metadata/1.0.0/Group/provider/app", metadataId.GetFilePathKey())
 }
 
-// GetFilePathKey will return string format as metadata/path/Version/Group/Side/Application
-func (mdi *MetadataIdentifier) GetFilePathKey() string {
-	return mdi.BaseMetadataIdentifier.getFilePathKey(mdi.Application)
+func TestGetIdentifierKey(t *testing.T) {
+	assert.Equal(t, "org.apache.pkg.mockService:1.0.0:Group:provider:app", metadataId.GetIdentifierKey())
 }
