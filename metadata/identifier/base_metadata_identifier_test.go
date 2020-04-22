@@ -15,21 +15,27 @@
  * limitations under the License.
  */
 
-package metadata
+package identifier
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/metadata/definition"
-	"github.com/apache/dubbo-go/metadata/identifier"
+	"testing"
 )
 
-type MetadataReport interface {
-	StoreProviderMetadata(*identifier.MetadataIdentifier, *definition.ServiceDefinition)
-	StoreConsumeretadata(*identifier.MetadataIdentifier, map[string]string)
-	SaveServiceMetadata(*identifier.ServiceMetadataIdentifier, *common.URL)
-	RemoveServiceMetadata(*identifier.ServiceMetadataIdentifier)
-	GetExportedURLs(*identifier.ServiceMetadataIdentifier) []string
-	SaveSubscribedData(*identifier.SubscriberMetadataIdentifier, []*common.URL)
-	GetSubscribedURLs(*identifier.SubscriberMetadataIdentifier) []string
-	GetServiceDefinition(*identifier.MetadataIdentifier)
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+var baseId = &BaseMetadataIdentifier{
+	ServiceInterface: "org.apache.pkg.mockService",
+	Version:          "1.0.0",
+	Group:            "Group",
+	Side:             "provider",
+}
+
+func TestBaseGetFilePathKey(t *testing.T) {
+	assert.Equal(t, "metadata/1.0.0/Group/provider/a/b/c", baseId.getFilePathKey("a", "b", "c"))
+}
+
+func TestBaseGetIdentifierKey(t *testing.T) {
+	assert.Equal(t, "org.apache.pkg.mockService:1.0.0:Group:provider:a:b:c", baseId.getIdentifierKey("a", "b", "c"))
 }
