@@ -15,18 +15,22 @@
  * limitations under the License.
  */
 
-package metadata
+package report
 
 import (
-	gxset "github.com/dubbogo/gost/container/set"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/metadata/definition"
+	"github.com/apache/dubbo-go/metadata/identifier"
 )
 
-// ServiceNameMapping try to build the mapping between application-level service and interface-level service.
-type ServiceNameMapping interface {
-
-	// Map will map the service to this application-level service
-	Map(serviceInterface string, group string, version string, protocol string) error
-
-	// Get will return the application-level services
-	Get(serviceInterface string, group string, version string, protocol string) (*gxset.HashSet, error)
+// MetadataReport is an interface of remote metadata report
+type MetadataReport interface {
+	StoreProviderMetadata(*identifier.MetadataIdentifier, *definition.ServiceDefinition)
+	StoreConsumerMetadata(*identifier.MetadataIdentifier, map[string]string)
+	SaveServiceMetadata(*identifier.ServiceMetadataIdentifier, *common.URL)
+	RemoveServiceMetadata(*identifier.ServiceMetadataIdentifier)
+	GetExportedURLs(*identifier.ServiceMetadataIdentifier) []string
+	SaveSubscribedData(*identifier.SubscriberMetadataIdentifier, []*common.URL)
+	GetSubscribedURLs(*identifier.SubscriberMetadataIdentifier) []string
+	GetServiceDefinition(*identifier.MetadataIdentifier)
 }
