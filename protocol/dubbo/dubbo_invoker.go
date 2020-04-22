@@ -19,6 +19,7 @@ package dubbo
 
 import (
 	"context"
+	"github.com/apache/dubbo-go/remoting/getty"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -51,14 +52,14 @@ var (
 // DubboInvoker ...
 type DubboInvoker struct {
 	protocol.BaseInvoker
-	client   *Client
+	client   *getty.Client
 	quitOnce sync.Once
 	// Used to record the number of requests. -1 represent this DubboInvoker is destroyed
 	reqNum int64
 }
 
 // NewDubboInvoker ...
-func NewDubboInvoker(url common.URL, client *Client) *DubboInvoker {
+func NewDubboInvoker(url common.URL, client *getty.Client) *DubboInvoker {
 	return &DubboInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
@@ -99,18 +100,18 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 		logger.Errorf("ParseBool - error: %v", err)
 		async = false
 	}
-	response := NewResponse(inv.Reply(), nil)
+	response := getty.NewResponse(inv.Reply(), nil)
 	if async {
 		if callBack, ok := inv.CallBack().(func(response common.CallbackResponse)); ok {
-			result.Err = di.client.AsyncCall(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), callBack, response)
+			result.Err = di.client.AsyncCall(getty.NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), callBack, response)
 		} else {
-			result.Err = di.client.CallOneway(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()))
+			result.Err = di.client.CallOneway(getty.NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()))
 		}
 	} else {
 		if inv.Reply() == nil {
 			result.Err = ErrNoReply
 		} else {
-			result.Err = di.client.Call(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), response)
+			result.Err = di.client.Call(getty.NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), response)
 		}
 	}
 	if result.Err == nil {

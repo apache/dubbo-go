@@ -19,6 +19,7 @@ package dubbo
 
 import (
 	"context"
+	"github.com/apache/dubbo-go/remoting/getty"
 	"sync"
 	"testing"
 	"time"
@@ -36,20 +37,20 @@ import (
 )
 
 func TestDubboInvoker_Invoke(t *testing.T) {
-	proto, url := InitTest(t)
+	proto, url := getty.InitTest(t)
 
-	c := &Client{
+	c := &getty.Client{
 		pendingResponses: new(sync.Map),
-		conf:             *clientConf,
-		opts: Options{
+		conf:             *getty.clientConf,
+		opts: getty.Options{
 			ConnectTimeout: 3 * time.Second,
 			RequestTimeout: 6 * time.Second,
 		},
 	}
-	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
+	c.pool = getty.newGettyRPCClientConnPool(c, getty.clientConf.PoolSize, time.Duration(int(time.Second)*getty.clientConf.PoolTTL))
 
 	invoker := NewDubboInvoker(url, c)
-	user := &User{}
+	user := &getty.User{}
 
 	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUser"), invocation.WithArguments([]interface{}{"1", "username"}),
 		invocation.WithReply(user), invocation.WithAttachments(map[string]string{"test_key": "test_value"}))
@@ -57,7 +58,7 @@ func TestDubboInvoker_Invoke(t *testing.T) {
 	// Call
 	res := invoker.Invoke(context.Background(), inv)
 	assert.NoError(t, res.Error())
-	assert.Equal(t, User{Id: "1", Name: "username"}, *res.Result().(*User))
+	assert.Equal(t, getty.User{Id: "1", Name: "username"}, *res.Result().(*getty.User))
 	assert.Equal(t, "test_value", res.Attachments()["test_key"]) // test attachments for request/response
 
 	// CallOneway
@@ -69,8 +70,8 @@ func TestDubboInvoker_Invoke(t *testing.T) {
 	lock := sync.Mutex{}
 	lock.Lock()
 	inv.SetCallBack(func(response common.CallbackResponse) {
-		r := response.(AsyncCallbackResponse)
-		assert.Equal(t, User{Id: "1", Name: "username"}, *r.Reply.(*Response).reply.(*User))
+		r := response.(getty.AsyncCallbackResponse)
+		assert.Equal(t, getty.User{Id: "1", Name: "username"}, *r.Reply.(*getty.Response).reply.(*getty.User))
 		lock.Unlock()
 	})
 	res = invoker.Invoke(context.Background(), inv)

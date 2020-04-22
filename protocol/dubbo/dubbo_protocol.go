@@ -18,6 +18,10 @@
 package dubbo
 
 import (
+	"fmt"
+	hessian "github.com/apache/dubbo-go-hessian2"
+	"github.com/apache/dubbo-go/remoting"
+	"github.com/apache/dubbo-go/remoting/getty"
 	"sync"
 	"time"
 )
@@ -34,7 +38,7 @@ import (
 // dubbo protocol constant
 const (
 	// DUBBO ...
-	DUBBO = "dubbo"
+	//DUBBO = "dubbo"
 )
 
 func init() {
@@ -48,7 +52,7 @@ var (
 // DubboProtocol ...
 type DubboProtocol struct {
 	protocol.BaseProtocol
-	serverMap  map[string]*Server
+	serverMap  map[string]*getty.Server
 	serverLock sync.Mutex
 }
 
@@ -56,7 +60,7 @@ type DubboProtocol struct {
 func NewDubboProtocol() *DubboProtocol {
 	return &DubboProtocol{
 		BaseProtocol: protocol.NewBaseProtocol(),
-		serverMap:    make(map[string]*Server),
+		serverMap:    make(map[string]*getty.Server),
 	}
 }
 
@@ -83,7 +87,7 @@ func (dp *DubboProtocol) Refer(url common.URL) protocol.Invoker {
 		requestTimeout = t
 	}
 
-	invoker := NewDubboInvoker(url, NewClient(Options{
+	invoker := NewDubboInvoker(url, getty.NewClient(getty.Options{
 		ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
 		RequestTimeout: requestTimeout,
 	}))
@@ -105,6 +109,10 @@ func (dp *DubboProtocol) Destroy() {
 	}
 }
 
+func (dp *DubboProtocol) Reply(url *common.URL, invocation protocol.Invocation) protocol.Result {
+	return nil
+}
+
 func (dp *DubboProtocol) openServer(url common.URL) {
 	_, ok := dp.serverMap[url.Location]
 	if !ok {
@@ -116,7 +124,7 @@ func (dp *DubboProtocol) openServer(url common.URL) {
 		dp.serverLock.Lock()
 		_, ok = dp.serverMap[url.Location]
 		if !ok {
-			srv := NewServer()
+			srv := getty.NewServer(reply)
 			dp.serverMap[url.Location] = srv
 			srv.Start(url)
 		}
@@ -130,4 +138,43 @@ func GetProtocol() protocol.Protocol {
 		dubboProtocol = NewDubboProtocol()
 	}
 	return dubboProtocol
+}
+
+func reply(url *common.URL, invocation protocol.Invocation) protocol.Result {
+	exporter, _ := dubboProtocol.ExporterMap().Load(u.ServiceKey())
+	if exporter == nil {
+		err := fmt.Errorf("don't have this exporter, key: %s", u.ServiceKey())
+		logger.Errorf(err.Error())
+		p.Header.ResponseStatus = hessian.Response_OK
+		p.Body = err
+		reply(session, p, hessian.PackageResponse)
+		return &protocol.RPCResult{
+			Err:err,
+		}
+	}
+	invoker := exporter.(protocol.Exporter).GetInvoker()
+	if invoker != nil {
+		attachments := p.Body.(map[string]interface{})["attachments"].(map[string]string)
+		attachments[constant.LOCAL_ADDR] = session.LocalAddr()
+		attachments[constant.REMOTE_ADDR] = session.RemoteAddr()
+
+		args := p.Body.(map[string]interface{})["args"].([]interface{})
+		inv := invocation.NewRPCInvocation(p.Service.Method, args, attachments)
+
+		ctx := rebuildCtx(inv)
+
+		result := invoker.Invoke(ctx, inv)
+		if err := result.Error(); err != nil {
+			p.Header.ResponseStatus = hessian.Response_OK
+			p.Body = hessian.NewResponse(nil, err, result.Attachments())
+		} else {
+			res := result.Result()
+			p.Header.ResponseStatus = hessian.Response_OK
+			p.Body = hessian.NewResponse(res, nil, result.Attachments())
+		}
+		return result;
+	}
+	return &protocol.RPCResult{
+		Err:fmt.Errorf("don't have the invoker, key: %s", url.ServiceKey()),
+	}
 }

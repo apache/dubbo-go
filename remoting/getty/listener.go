@@ -15,11 +15,13 @@
  * limitations under the License.
  */
 
-package dubbo
+package getty
 
 import (
 	"context"
 	"fmt"
+	"github.com/apache/dubbo-go/protocol/dubbo"
+	"github.com/apache/dubbo-go/remoting"
 	"net/url"
 	"sync"
 	"sync/atomic"
@@ -63,6 +65,35 @@ func (s *rpcSession) AddReqNum(num int32) {
 func (s *rpcSession) GetReqNum() int32 {
 	return atomic.LoadInt32(&s.reqNum)
 }
+
+//type PendingResponse struct {
+//	seq       uint64
+//	err       error
+//	start     time.Time
+//	readStart time.Time
+//	callback  common.AsyncCallback
+//	response  *remoting.Response
+//	done      chan struct{}
+//}
+//
+//// NewPendingResponse ...
+//func NewPendingResponse() *PendingResponse {
+//	return &PendingResponse{
+//		start:    time.Now(),
+//		response: &remoting.Response{},
+//		done:     make(chan struct{}),
+//	}
+//}
+//
+//// GetCallResponse ...
+//func (r PendingResponse) GetCallResponse() common.CallbackResponse {
+//	return AsyncCallbackResponse{
+//		Cause:     r.err,
+//		Start:     r.start,
+//		ReadStart: r.readStart,
+//		Reply:     r.response,
+//	}
+//}
 
 // //////////////////////////////////////////
 // RpcClientHandler
@@ -167,16 +198,19 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 type RpcServerHandler struct {
 	maxSessionNum  int
 	sessionTimeout time.Duration
+	serverHandler  func(url *common.URL, invocation protocol.Invocation) protocol.Result
 	sessionMap     map[getty.Session]*rpcSession
 	rwlock         sync.RWMutex
 }
 
 // NewRpcServerHandler ...
-func NewRpcServerHandler(maxSessionNum int, sessionTimeout time.Duration) *RpcServerHandler {
+func NewRpcServerHandler(maxSessionNum int, sessionTimeout time.Duration,
+	serverhandler func(url *common.URL, invocation protocol.Invocation) protocol.Result) *RpcServerHandler {
 	return &RpcServerHandler{
 		maxSessionNum:  maxSessionNum,
 		sessionTimeout: sessionTimeout,
 		sessionMap:     make(map[getty.Session]*rpcSession),
+		serverHandler:  serverhandler,
 	}
 }
 
@@ -269,36 +303,8 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 		common.WithParamsValue(constant.GROUP_KEY, p.Service.Group),
 		common.WithParamsValue(constant.INTERFACE_KEY, p.Service.Interface),
 		common.WithParamsValue(constant.VERSION_KEY, p.Service.Version))
-	exporter, _ := dubboProtocol.ExporterMap().Load(u.ServiceKey())
-	if exporter == nil {
-		err := fmt.Errorf("don't have this exporter, key: %s", u.ServiceKey())
-		logger.Errorf(err.Error())
-		p.Header.ResponseStatus = hessian.Response_OK
-		p.Body = err
-		reply(session, p, hessian.PackageResponse)
-		return
-	}
-	invoker := exporter.(protocol.Exporter).GetInvoker()
-	if invoker != nil {
-		attachments := p.Body.(map[string]interface{})["attachments"].(map[string]string)
-		attachments[constant.LOCAL_ADDR] = session.LocalAddr()
-		attachments[constant.REMOTE_ADDR] = session.RemoteAddr()
 
-		args := p.Body.(map[string]interface{})["args"].([]interface{})
-		inv := invocation.NewRPCInvocation(p.Service.Method, args, attachments)
-
-		ctx := rebuildCtx(inv)
-
-		result := invoker.Invoke(ctx, inv)
-		if err := result.Error(); err != nil {
-			p.Header.ResponseStatus = hessian.Response_OK
-			p.Body = hessian.NewResponse(nil, err, result.Attachments())
-		} else {
-			res := result.Result()
-			p.Header.ResponseStatus = hessian.Response_OK
-			p.Body = hessian.NewResponse(res, nil, result.Attachments())
-		}
-	}
+	h.serverHandler(u, in)
 
 	if !twoway {
 		return

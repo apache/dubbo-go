@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package dubbo
+package getty
 
 import (
+	"github.com/apache/dubbo-go/remoting"
 	"math/rand"
 	"strings"
 	"sync"
@@ -51,7 +52,7 @@ var (
 	clientGrpool *gxsync.TaskPool
 )
 
-func init() {
+func Init(protocol string) {
 
 	// load clientconfig from consumer_config
 	// default use dubbo
@@ -64,7 +65,7 @@ func init() {
 	if protocolConf == nil {
 		logger.Info("protocol_conf default use dubbo config")
 	} else {
-		dubboConf := protocolConf.(map[interface{}]interface{})[DUBBO]
+		dubboConf := protocolConf.(map[interface{}]interface{})[protocol]
 		if dubboConf == nil {
 			logger.Warnf("dubboConf is nil")
 			return
@@ -116,18 +117,18 @@ type Options struct {
 	// connect timeout
 	ConnectTimeout time.Duration
 	// request timeout
-	RequestTimeout time.Duration
+	//RequestTimeout time.Duration
 }
 
 //AsyncCallbackResponse async response for dubbo
-type AsyncCallbackResponse struct {
-	common.CallbackResponse
-	Opts      Options
-	Cause     error
-	Start     time.Time // invoke(call) start time == write start time
-	ReadStart time.Time // read start time, write duration = ReadStart - Start
-	Reply     interface{}
-}
+//type AsyncCallbackResponse struct {
+//	common.CallbackResponse
+//	Opts      Options
+//	Cause     error
+//	Start     time.Time // invoke(call) start time == write start time
+//	ReadStart time.Time // read start time, write duration = ReadStart - Start
+//	Reply     interface{}
+//}
 
 // Client ...
 type Client struct {
@@ -145,9 +146,9 @@ func NewClient(opt Options) *Client {
 	switch {
 	case opt.ConnectTimeout == 0:
 		opt.ConnectTimeout = 3 * time.Second
-		fallthrough
-	case opt.RequestTimeout == 0:
-		opt.RequestTimeout = 3 * time.Second
+		//fallthrough
+		//case opt.RequestTimeout == 0:
+		//	opt.RequestTimeout = 3 * time.Second
 	}
 
 	// make sure that client request sequence is an odd number
@@ -166,6 +167,7 @@ func NewClient(opt Options) *Client {
 
 	return c
 }
+
 
 // Request ...
 type Request struct {
@@ -202,57 +204,33 @@ func NewResponse(reply interface{}, atta map[string]string) *Response {
 }
 
 // CallOneway call one way
-func (c *Client) CallOneway(request *Request) error {
+func (c *Client) CallOneway(request *remoting.Request, timeout time.Duration) error {
 
-	return perrors.WithStack(c.call(CT_OneWay, request, NewResponse(nil, nil), nil))
+	return perrors.WithStack(c.call(CT_OneWay, request, remoting.NewResponse(request.Id, request.Version), nil, timeout))
 }
 
 // Call if @response is nil, the transport layer will get the response without notify the invoker.
-func (c *Client) Call(request *Request, response *Response) error {
+func (c *Client) Call(request *remoting.Request, response *remoting.Response, timeout time.Duration) error {
 
 	ct := CT_TwoWay
 	if response.reply == nil {
 		ct = CT_OneWay
 	}
 
-	return perrors.WithStack(c.call(ct, request, response, nil))
+	return perrors.WithStack(c.call(ct, request, response, nil, timeout))
 }
 
 // AsyncCall ...
-func (c *Client) AsyncCall(request *Request, callback common.AsyncCallback, response *Response) error {
+func (c *Client) AsyncCall(request *remoting.Request, callback common.AsyncCallback, response *remoting.Response,
+	timeout time.Duration) error {
 
-	return perrors.WithStack(c.call(CT_TwoWay, request, response, callback))
+	return perrors.WithStack(c.call(CT_TwoWay, request, response, callback, timeout))
 }
 
-func (c *Client) call(ct CallType, request *Request, response *Response, callback common.AsyncCallback) error {
+func (c *Client) call(ct CallType, request *remoting.Request, response *remoting.Response, callback common.AsyncCallback,
+	timeout time.Duration) error {
 
-	p := &DubboPackage{}
-	p.Service.Path = strings.TrimPrefix(request.svcUrl.Path, "/")
-	p.Service.Interface = request.svcUrl.GetParam(constant.INTERFACE_KEY, "")
-	p.Service.Version = request.svcUrl.GetParam(constant.VERSION_KEY, "")
-	p.Service.Group = request.svcUrl.GetParam(constant.GROUP_KEY, "")
-	p.Service.Method = request.method
 
-	p.Service.Timeout = c.opts.RequestTimeout
-	var timeout = request.svcUrl.GetParam(strings.Join([]string{constant.METHOD_KEYS, request.method + constant.RETRIES_KEY}, "."), "")
-	if len(timeout) != 0 {
-		if t, err := time.ParseDuration(timeout); err == nil {
-			p.Service.Timeout = t
-		}
-	}
-
-	p.Header.SerialID = byte(S_Dubbo)
-	p.Body = hessian.NewRequest(request.args, request.atta)
-
-	var rsp *PendingResponse
-	if ct != CT_OneWay {
-		p.Header.Type = hessian.PackageRequest_TwoWay
-		rsp = NewPendingResponse()
-		rsp.response = response
-		rsp.callback = callback
-	} else {
-		p.Header.Type = hessian.PackageRequest
-	}
 
 	var (
 		err     error
@@ -274,7 +252,7 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 		conn.close()
 	}()
 
-	if err = c.transfer(session, p, rsp); err != nil {
+	if err = c.transfer(session, p, rsp, timeout); err != nil {
 		return perrors.WithStack(err)
 	}
 
@@ -283,7 +261,7 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 	}
 
 	select {
-	case <-getty.GetTimeWheel().After(c.opts.RequestTimeout):
+	case <-getty.GetTimeWheel().After(timeout):
 		c.removePendingResponse(SequenceType(rsp.seq))
 		return perrors.WithStack(errClientReadTimeout)
 	case <-rsp.done:
@@ -302,7 +280,7 @@ func (c *Client) Close() {
 }
 
 func (c *Client) selectSession(addr string) (*gettyRPCClient, getty.Session, error) {
-	rpcClient, err := c.pool.getGettyRpcClient(DUBBO, addr)
+	rpcClient, err := c.pool.getGettyRpcClient(addr)
 	if err != nil {
 		return nil, nil, perrors.WithStack(err)
 	}
@@ -310,11 +288,11 @@ func (c *Client) selectSession(addr string) (*gettyRPCClient, getty.Session, err
 }
 
 func (c *Client) heartbeat(session getty.Session) error {
-	return c.transfer(session, nil, NewPendingResponse())
+	return c.transfer(session, nil, NewPendingResponse(), 3 * time.Second)
 }
 
 func (c *Client) transfer(session getty.Session, pkg *DubboPackage,
-	rsp *PendingResponse) error {
+	rsp *PendingResponse, timeout time.Duration) error {
 
 	var (
 		sequence uint64
@@ -338,7 +316,7 @@ func (c *Client) transfer(session getty.Session, pkg *DubboPackage,
 		c.addPendingResponse(rsp)
 	}
 
-	err = session.WritePkg(pkg, c.opts.RequestTimeout)
+	err = session.WritePkg(pkg, timeout)
 	if err != nil {
 		c.removePendingResponse(SequenceType(rsp.seq))
 	} else if rsp != nil { // cond2

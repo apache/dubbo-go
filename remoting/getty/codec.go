@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package dubbo
+package getty
 
 import (
 	"bufio"
@@ -126,31 +126,31 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 ////////////////////////////////////////////
 
 // PendingResponse ...
-type PendingResponse struct {
-	seq       uint64
-	err       error
-	start     time.Time
-	readStart time.Time
-	callback  common.AsyncCallback
-	response  *Response
-	done      chan struct{}
-}
-
-// NewPendingResponse ...
-func NewPendingResponse() *PendingResponse {
-	return &PendingResponse{
-		start:    time.Now(),
-		response: &Response{},
-		done:     make(chan struct{}),
-	}
-}
-
-// GetCallResponse ...
-func (r PendingResponse) GetCallResponse() common.CallbackResponse {
-	return AsyncCallbackResponse{
-		Cause:     r.err,
-		Start:     r.start,
-		ReadStart: r.readStart,
-		Reply:     r.response,
-	}
-}
+//type PendingResponse struct {
+//	seq       uint64
+//	err       error
+//	start     time.Time
+//	readStart time.Time
+//	callback  common.AsyncCallback
+//	response  *Response
+//	done      chan struct{}
+//}
+//
+//// NewPendingResponse ...
+//func NewPendingResponse() *PendingResponse {
+//	return &PendingResponse{
+//		start:    time.Now(),
+//		response: &Response{},
+//		done:     make(chan struct{}),
+//	}
+//}
+//
+//// GetCallResponse ...
+//func (r PendingResponse) GetCallResponse() common.CallbackResponse {
+//	return AsyncCallbackResponse{
+//		Cause:     r.err,
+//		Start:     r.start,
+//		ReadStart: r.readStart,
+//		Reply:     r.response,
+//	}
+//}

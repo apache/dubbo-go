@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package dubbo
+package getty
 
 import (
 	"bytes"
@@ -160,7 +160,7 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 				"dubboVersion": dubboVersion,
 				"argsTypes":    argsTypes,
 				"args":         args,
-				"service":      common.ServiceMap.GetService(DUBBO, pkg.Service.Path), // path as a key
+				"service":      common.ServiceMap.GetService("dubbo", pkg.Service.Path), // path as a key
 				"attachments":  attachments,
 			}
 		}

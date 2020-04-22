@@ -15,10 +15,12 @@
  * limitations under the License.
  */
 
-package dubbo
+package getty
 
 import (
 	"fmt"
+	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/dubbo"
 	"net"
 )
 
@@ -52,7 +54,7 @@ func init() {
 	if protocolConf == nil {
 		logger.Info("protocol_conf default use dubbo config")
 	} else {
-		dubboConf := protocolConf.(map[interface{}]interface{})[DUBBO]
+		dubboConf := protocolConf.(map[interface{}]interface{})[dubbo.DUBBO]
 		if dubboConf == nil {
 			logger.Warnf("dubboConf is nil")
 			return
@@ -106,13 +108,13 @@ type Server struct {
 }
 
 // NewServer ...
-func NewServer() *Server {
+func NewServer(serverHandler func(url *common.URL, invocation protocol.Invocation) protocol.Result) *Server {
 
 	s := &Server{
 		conf: *srvConf,
 	}
 
-	s.rpcHandler = NewRpcServerHandler(s.conf.SessionNumber, s.conf.sessionTimeout)
+	s.rpcHandler = NewRpcServerHandler(s.conf.SessionNumber, s.conf.sessionTimeout, serverHandler)
 
 	return s
 }

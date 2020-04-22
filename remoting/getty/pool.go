@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package dubbo
+package getty
 
 import (
 	"fmt"
@@ -37,7 +37,7 @@ import (
 
 type gettyRPCClient struct {
 	once     sync.Once
-	protocol string
+	//protocol string
 	addr     string
 	active   int64 // zero, not create or be destroyed
 
@@ -52,9 +52,9 @@ var (
 	errClientPoolClosed = perrors.New("client pool closed")
 )
 
-func newGettyRPCClientConn(pool *gettyRPCClientPool, protocol, addr string) (*gettyRPCClient, error) {
+func newGettyRPCClientConn(pool *gettyRPCClientPool, addr string) (*gettyRPCClient, error) {
 	c := &gettyRPCClient{
-		protocol: protocol,
+		//protocol: protocol,
 		addr:     addr,
 		pool:     pool,
 		gettyClient: getty.NewTCPClient(
@@ -315,11 +315,11 @@ func (p *gettyRPCClientPool) close() {
 	}
 }
 
-func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPCClient, error) {
+func (p *gettyRPCClientPool) getGettyRpcClient(addr string) (*gettyRPCClient, error) {
 	conn, err := p.get()
 	if err == nil && conn == nil {
 		// create new conn
-		rpcClientConn, err := newGettyRPCClientConn(p, protocol, addr)
+		rpcClientConn, err := newGettyRPCClientConn(p, addr)
 		return rpcClientConn, perrors.WithStack(err)
 	}
 	return conn, perrors.WithStack(err)
