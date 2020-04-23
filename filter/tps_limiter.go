@@ -34,5 +34,6 @@ import (
  *   tps.limiter: "the name of limiter",
  */
 type TpsLimiter interface {
+	// IsAllowable will check whether this invocation should be enabled for further process
 	IsAllowable(common.URL, protocol.Invocation) bool
 }
