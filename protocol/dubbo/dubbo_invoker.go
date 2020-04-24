@@ -19,6 +19,8 @@ package dubbo
 
 import (
 	"context"
+	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/remoting"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -51,18 +53,26 @@ var (
 // DubboInvoker ...
 type DubboInvoker struct {
 	protocol.BaseInvoker
-	client   *Client
+	client   *remoting.ExchangeClient
 	quitOnce sync.Once
+	timeout  time.Duration
 	// Used to record the number of requests. -1 represent this DubboInvoker is destroyed
 	reqNum int64
 }
 
 // NewDubboInvoker ...
-func NewDubboInvoker(url common.URL, client *Client) *DubboInvoker {
+func NewDubboInvoker(url common.URL, client *remoting.ExchangeClient) *DubboInvoker {
+	requestTimeout := config.GetConsumerConfig().RequestTimeout
+
+	requestTimeoutStr := url.GetParam(constant.TIMEOUT_KEY, config.GetConsumerConfig().Request_Timeout)
+	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
+		requestTimeout = t
+	}
 	return &DubboInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
 		reqNum:      0,
+		timeout:     requestTimeout,
 	}
 }
 
@@ -99,23 +109,25 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 		logger.Errorf("ParseBool - error: %v", err)
 		async = false
 	}
-	response := NewResponse(inv.Reply(), nil)
+	//response := NewResponse(inv.Reply(), nil)
+	rest := &protocol.RPCResult{}
 	if async {
 		if callBack, ok := inv.CallBack().(func(response common.CallbackResponse)); ok {
-			result.Err = di.client.AsyncCall(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), callBack, response)
+			//result.Err = di.client.AsyncCall(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), callBack, response)
+			result.Err = di.client.AsyncRequest(&invocation, url, di.timeout, callBack, rest)
 		} else {
-			result.Err = di.client.CallOneway(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()))
+			result.Err = di.client.Send(&invocation, di.timeout)
 		}
 	} else {
 		if inv.Reply() == nil {
 			result.Err = ErrNoReply
 		} else {
-			result.Err = di.client.Call(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), response)
+			result.Err = di.client.Request(&invocation, url, di.timeout, rest)
 		}
 	}
 	if result.Err == nil {
 		result.Rest = inv.Reply()
-		result.Attrs = response.atta
+		result.Attrs = result.Attachments()
 	}
 	logger.Debugf("result.Err: %v, result.Rest: %v", result.Err, result.Rest)
 
