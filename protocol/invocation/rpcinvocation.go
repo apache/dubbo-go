@@ -18,6 +18,8 @@
 package invocation
 
 import (
+	"bytes"
+	"github.com/apache/dubbo-go/common/constant"
 	"reflect"
 	"sync"
 )
@@ -139,6 +141,29 @@ func (r *RPCInvocation) CallBack() interface{} {
 // SetCallBack ...
 func (r *RPCInvocation) SetCallBack(c interface{}) {
 	r.callBack = c
+}
+
+func (r *RPCInvocation) ServiceKey() string {
+	intf := r.AttachmentsByKey(constant.INTERFACE_KEY, "")
+	if intf == "" {
+		return ""
+	}
+	buf := &bytes.Buffer{}
+	group := r.AttachmentsByKey(constant.GROUP_KEY, "")
+	if group != "" {
+		buf.WriteString(group)
+		buf.WriteString("/")
+	}
+
+	buf.WriteString(intf)
+
+	version := r.AttachmentsByKey(constant.VERSION_KEY, "")
+	if version != "" && version != "0.0.0" {
+		buf.WriteString(":")
+		buf.WriteString(version)
+	}
+
+	return buf.String()
 }
 
 // /////////////////////////
