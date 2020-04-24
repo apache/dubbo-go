@@ -276,7 +276,7 @@ func (s *serviceDiscoveryRegistry) findMappedServices(url common.URL) *gxset.Has
 }
 
 func (s *serviceDiscoveryRegistry) getExportedUrls(subscribedURL common.URL, serviceInstances []registry.ServiceInstance) []common.URL {
-	filterInstances := make([]registry.ServiceInstance, len(serviceInstances), len(serviceInstances))
+	var filterInstances []registry.ServiceInstance
 	for _, s := range serviceInstances {
 		if !s.IsEnable() || !s.IsHealthy() {
 			continue
