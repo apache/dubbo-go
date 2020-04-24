@@ -18,18 +18,23 @@
 package extension
 
 import (
-	"github.com/apache/dubbo-go/metadata/mapping"
+	"github.com/apache/dubbo-go/registry/service/instance"
+	perrors "github.com/pkg/errors"
 )
 
 var (
-	nameMappings = make(map[string]func() mapping.ServiceNameMapping)
+	serviceInstanceSelectorMappings = make(map[string]func() instance.ServiceInstanceSelector)
 )
 
-func SetServiceNameMapping(name string, creator func() mapping.ServiceNameMapping) {
-	// TODO(@邓大明)
+func SetServiceInstanceSelector(name string, f func() instance.ServiceInstanceSelector) {
+	serviceInstanceSelectorMappings[name] = f
 }
 
-func GetServiceNameMapping(name string) mapping.ServiceNameMapping {
-	// TODO(@邓大明)
-	return nil
+func GetServiceInstanceSelector(name string) (instance.ServiceInstanceSelector, error) {
+	serviceInstanceSelector, ok := serviceInstanceSelectorMappings[name]
+	if !ok {
+		return nil, perrors.New("Could not find service instance selector with" +
+			"name:" + name)
+	}
+	return serviceInstanceSelector(), nil
 }

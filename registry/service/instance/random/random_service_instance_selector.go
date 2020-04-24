@@ -15,31 +15,37 @@
  * limitations under the License.
  */
 
-package extension
+package random
 
-import (
-	"github.com/apache/dubbo-go/registry"
-	perrors "github.com/pkg/errors"
-)
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/registry"
+	"github.com/apache/dubbo-go/registry/service/instance"
+	"math/rand"
+	"time"
 )
 
-var (
-	discoveryCreatorMap = make(map[string]func(url *common.URL) (registry.ServiceDiscovery, error), 4)
-)
-
-// SetServiceDiscovery will store the creator and name
-func SetServiceDiscovery(name string, creator func(url *common.URL) (registry.ServiceDiscovery, error)) {
-	discoveryCreatorMap[name] = creator
+func init() {
+	extension.SetServiceInstanceSelector("random", NewRandomServiceInstanceSelector)
 }
 
-// GetServiceDiscovery will return the registry.ServiceDiscovery
-// if not found, or initialize instance failed, it will return error.
-func GetServiceDiscovery(name string, url *common.URL) (registry.ServiceDiscovery, error) {
-	creator, ok := discoveryCreatorMap[name]
-	if !ok {
-		return nil, perrors.New("Could not find the service discovery with name: " + name)
+type RandomServiceInstanceSelector struct {
+}
+
+func NewRandomServiceInstanceSelector() instance.ServiceInstanceSelector {
+	return &RandomServiceInstanceSelector{}
+}
+
+func (r *RandomServiceInstanceSelector) Select(url common.URL, serviceInstances []registry.ServiceInstance) registry.ServiceInstance {
+	if len(serviceInstances) == 0 {
+		return nil
 	}
-	return creator(url)
+	if len(serviceInstances) == 1 {
+		return serviceInstances[0]
+	}
+	rand.Seed(time.Now().UnixNano())
+	index := rand.Intn(len(serviceInstances))
+	return serviceInstances[index]
+
 }
