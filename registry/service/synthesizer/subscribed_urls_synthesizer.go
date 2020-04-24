@@ -15,21 +15,14 @@
  * limitations under the License.
  */
 
-package extension
+package synthesizer
 
 import (
-	"github.com/apache/dubbo-go/metadata/mapping"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/registry"
 )
 
-var (
-	nameMappings = make(map[string]func() mapping.ServiceNameMapping)
-)
-
-func SetServiceNameMapping(name string, creator func() mapping.ServiceNameMapping) {
-	// TODO(@邓大明)
-}
-
-func GetServiceNameMapping(name string) mapping.ServiceNameMapping {
-	// TODO(@邓大明)
-	return nil
+type SubscribedURLsSynthesizer interface {
+	Support(subscribedURL *common.URL) bool
+	Synthesize(subscribedURL *common.URL, serviceInstances []registry.ServiceInstance) []common.URL
 }
