@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-package dubbo
-//
+package getty
+
 //import (
 //	"testing"
 //)

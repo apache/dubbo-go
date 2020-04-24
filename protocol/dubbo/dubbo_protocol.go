@@ -18,13 +18,15 @@
 package dubbo
 
 import (
+	"fmt"
+	"github.com/apache/dubbo-go/protocol/invocation"
+	"github.com/apache/dubbo-go/remoting"
+	"github.com/apache/dubbo-go/remoting/getty"
 	"sync"
-	"time"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
@@ -48,7 +50,7 @@ var (
 // DubboProtocol ...
 type DubboProtocol struct {
 	protocol.BaseProtocol
-	serverMap  map[string]*Server
+	serverMap  map[string]*remoting.ExchangeServer
 	serverLock sync.Mutex
 }
 
@@ -56,7 +58,7 @@ type DubboProtocol struct {
 func NewDubboProtocol() *DubboProtocol {
 	return &DubboProtocol{
 		BaseProtocol: protocol.NewBaseProtocol(),
-		serverMap:    make(map[string]*Server),
+		serverMap:    make(map[string]*remoting.ExchangeServer),
 	}
 }
 
@@ -76,17 +78,20 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 // Refer ...
 func (dp *DubboProtocol) Refer(url common.URL) protocol.Invoker {
 	//default requestTimeout
-	var requestTimeout = config.GetConsumerConfig().RequestTimeout
+	//var requestTimeout = config.GetConsumerConfig().RequestTimeout
+	//
+	//requestTimeoutStr := url.GetParam(constant.TIMEOUT_KEY, config.GetConsumerConfig().Request_Timeout)
+	//if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
+	//	requestTimeout = t
+	//}
 
-	requestTimeoutStr := url.GetParam(constant.TIMEOUT_KEY, config.GetConsumerConfig().Request_Timeout)
-	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
-		requestTimeout = t
-	}
-
-	invoker := NewDubboInvoker(url, NewClient(Options{
+	//invoker := NewDubboInvoker(url, NewClient(Options{
+	//	ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
+	//	RequestTimeout: requestTimeout,
+	//}))
+	invoker := NewDubboInvoker(url, remoting.NewExchangeClient(url, getty.NewClient(getty.Options{
 		ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
-		RequestTimeout: requestTimeout,
-	}))
+	}), config.GetConsumerConfig().ConnectTimeout))
 	dp.SetInvokers(invoker)
 	logger.Infof("Refer service: %s", url.String())
 	return invoker
@@ -116,9 +121,12 @@ func (dp *DubboProtocol) openServer(url common.URL) {
 		dp.serverLock.Lock()
 		_, ok = dp.serverMap[url.Location]
 		if !ok {
-			srv := NewServer()
+			handler := func(invocation *invocation.RPCInvocation) protocol.RPCResult {
+				return doHandleRequest(invocation)
+			}
+			srv := remoting.NewExchangeServer(url, handler)
 			dp.serverMap[url.Location] = srv
-			srv.Start(url)
+			srv.Start()
 		}
 		dp.serverLock.Unlock()
 	}
@@ -130,4 +138,41 @@ func GetProtocol() protocol.Protocol {
 		dubboProtocol = NewDubboProtocol()
 	}
 	return dubboProtocol
+}
+
+func doHandleRequest(rpcInvocation *invocation.RPCInvocation) protocol.RPCResult {
+	exporter, _ := dubboProtocol.ExporterMap().Load(rpcInvocation.ServiceKey())
+	result := protocol.RPCResult{}
+	if exporter == nil {
+		err := fmt.Errorf("don't have this exporter, key: %s", rpcInvocation.ServiceKey())
+		logger.Errorf(err.Error())
+		result.Err = err
+		//reply(session, p, hessian.PackageResponse)
+		return result
+	}
+	invoker := exporter.(protocol.Exporter).GetInvoker()
+	if invoker != nil {
+		//attachments := rpcInvocation.Attachments()
+		//attachments[constant.LOCAL_ADDR] = session.LocalAddr()
+		//attachments[constant.REMOTE_ADDR] = session.RemoteAddr()
+		//
+		//args := p.Body.(map[string]interface{})["args"].([]interface{})
+		//inv := invocation.NewRPCInvocation(p.Service.Method, args, attachments)
+
+		ctx := rebuildCtx(rpcInvocation)
+
+		invokeResult := invoker.Invoke(ctx, rpcInvocation)
+		if err := invokeResult.Error(); err != nil {
+			result.Err = invokeResult.Error()
+			//p.Header.ResponseStatus = hessian.Response_OK
+			//p.Body = hessian.NewResponse(nil, err, result.Attachments())
+		} else {
+			result.Rest = invokeResult.Result()
+			//p.Header.ResponseStatus = hessian.Response_OK
+			//p.Body = hessian.NewResponse(res, nil, result.Attachments())
+		}
+	} else {
+		result.Err = fmt.Errorf("don't have the invoker, key: %s", rpcInvocation.ServiceKey())
+	}
+	return result
 }
