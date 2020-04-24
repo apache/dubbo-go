@@ -22,6 +22,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/stretchr/testify/assert"
+	"net/url"
 	"testing"
 )
 
@@ -50,13 +51,19 @@ func TestRestSubscribedURLsSynthesizer_Synthesize(t *testing.T) {
 	}
 
 	var expectUrls []common.URL
-	u1, _ := common.NewURL("rest://127.0.0.1:80/org.apache.dubbo-go.mockService", common.WithParamsValue(constant.SIDE_KEY,
-		constant.PROVIDER_PROTOCOL), common.WithParamsValue(constant.APPLICATION_KEY, "test1"),
+	u1 := common.NewURLWithOptions(common.WithProtocol("rest"), common.WithIp("127.0.0.1"),
+		common.WithPort("80"), common.WithPath("org.apache.dubbo-go.mockService"),
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.SIDE_KEY, constant.PROVIDER_PROTOCOL),
+		common.WithParamsValue(constant.APPLICATION_KEY, "test1"),
 		common.WithParamsValue(constant.REGISTRY_KEY, "true"))
-	u2, _ := common.NewURL("rest://127.0.0.2:8081/org.apache.dubbo-go.mockService", common.WithParamsValue(constant.SIDE_KEY,
-		constant.PROVIDER_PROTOCOL), common.WithParamsValue(constant.APPLICATION_KEY, "test2"),
+	u2 := common.NewURLWithOptions(common.WithProtocol("rest"), common.WithIp("127.0.0.2"),
+		common.WithPort("8081"), common.WithPath("org.apache.dubbo-go.mockService"),
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.SIDE_KEY, constant.PROVIDER_PROTOCOL),
+		common.WithParamsValue(constant.APPLICATION_KEY, "test2"),
 		common.WithParamsValue(constant.REGISTRY_KEY, "true"))
-	expectUrls = append(expectUrls, u1, u2)
+	expectUrls = append(expectUrls, *u1, *u2)
 	result := syn.Synthesize(&subUrl, instances)
 	assert.Equal(t, expectUrls, result)
 }
