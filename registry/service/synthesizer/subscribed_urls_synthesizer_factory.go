@@ -15,21 +15,16 @@
  * limitations under the License.
  */
 
-package extension
-
-import (
-	"github.com/apache/dubbo-go/metadata/mapping"
-)
+package synthesizer
 
 var (
-	nameMappings = make(map[string]func() mapping.ServiceNameMapping)
+	synthesizers []SubscribedURLsSynthesizer
 )
 
-func SetServiceNameMapping(name string, creator func() mapping.ServiceNameMapping) {
-	// TODO(@邓大明)
+func AddSynthesizer(synthesizer SubscribedURLsSynthesizer) {
+	synthesizers = append(synthesizers, synthesizer)
 }
 
-func GetServiceNameMapping(name string) mapping.ServiceNameMapping {
-	// TODO(@邓大明)
-	return nil
+func GetAllSynthesizer() []SubscribedURLsSynthesizer {
+	return synthesizers
 }

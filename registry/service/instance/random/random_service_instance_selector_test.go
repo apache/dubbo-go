@@ -15,21 +15,36 @@
  * limitations under the License.
  */
 
-package extension
+package random
 
 import (
-	"github.com/apache/dubbo-go/metadata/mapping"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/registry"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
-var (
-	nameMappings = make(map[string]func() mapping.ServiceNameMapping)
-)
-
-func SetServiceNameMapping(name string, creator func() mapping.ServiceNameMapping) {
-	// TODO(@邓大明)
-}
-
-func GetServiceNameMapping(name string) mapping.ServiceNameMapping {
-	// TODO(@邓大明)
-	return nil
+func TestRandomServiceInstanceSelector_Select(t *testing.T) {
+	selector := NewRandomServiceInstanceSelector()
+	serviceInstances := []registry.ServiceInstance{
+		&registry.DefaultServiceInstance{
+			Id:          "1",
+			ServiceName: "test1",
+			Host:        "127.0.0.1:80",
+			Port:        0,
+			Enable:      false,
+			Healthy:     false,
+			Metadata:    nil,
+		},
+		&registry.DefaultServiceInstance{
+			Id:          "2",
+			ServiceName: "test2",
+			Host:        "127.0.0.1:80",
+			Port:        0,
+			Enable:      false,
+			Healthy:     false,
+			Metadata:    nil,
+		},
+	}
+	assert.NotNil(t, selector.Select(common.URL{}, serviceInstances))
 }

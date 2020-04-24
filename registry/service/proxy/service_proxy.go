@@ -15,21 +15,15 @@
  * limitations under the License.
  */
 
-package extension
+package proxy
 
 import (
-	"github.com/apache/dubbo-go/metadata/mapping"
+	"github.com/apache/dubbo-go/metadata/service"
+	"github.com/apache/dubbo-go/registry"
 )
 
-var (
-	nameMappings = make(map[string]func() mapping.ServiceNameMapping)
-)
+type BaseMetadataServiceProxy interface {
+	GetProxy(serviceInstance registry.ServiceInstance) service.MetadataService
 
-func SetServiceNameMapping(name string, creator func() mapping.ServiceNameMapping) {
-	// TODO(@邓大明)
-}
-
-func GetServiceNameMapping(name string) mapping.ServiceNameMapping {
-	// TODO(@邓大明)
-	return nil
+	CreateProxy(serviceInstance registry.ServiceInstance) service.MetadataService
 }
