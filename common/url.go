@@ -248,7 +248,7 @@ func NewURL(urlString string, opts ...option) (URL, error) {
 	return s, nil
 }
 
-// URLEqual ...
+// URLEqual judge @url and @c is equal or not.
 func (c URL) URLEqual(url URL) bool {
 	c.Ip = ""
 	c.Port = ""
@@ -316,7 +316,7 @@ func (c URL) Key() string {
 	return buildString
 }
 
-// ServiceKey ...
+// ServiceKey get a unique key of a service.
 func (c URL) ServiceKey() string {
 	intf := c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
 	if intf == "" {
