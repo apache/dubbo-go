@@ -12,7 +12,7 @@ require (
 	github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f // indirect
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
 	github.com/creasty/defaults v1.3.0
-	github.com/dubbogo/getty v1.3.4
+	github.com/dubbogo/getty v1.3.5
 	github.com/dubbogo/go-zookeeper v1.0.0
 	github.com/dubbogo/gost v1.9.0
 	github.com/emicklei/go-restful/v3 v3.0.0
@@ -32,6 +32,8 @@ require (
 	github.com/jehiah/go-strftime v0.0.0-20171201141054-1d33003b3869 // indirect
 	github.com/jinzhu/copier v0.0.0-20190625015134-976e0346caa8
 	github.com/jonboulle/clockwork v0.1.0 // indirect
+	github.com/juju/loggo v0.0.0-20190526231331-6e530bcce5d8 // indirect
+	github.com/juju/testing v0.0.0-20191001232224-ce9dec17d28b // indirect
 	github.com/lestrrat/go-envload v0.0.0-20180220120943-6ed08b54a570 // indirect
 	github.com/lestrrat/go-file-rotatelogs v0.0.0-20180223000712-d3151e2a480f // indirect
 	github.com/lestrrat/go-strftime v0.0.0-20180220042222-ba3bf9c1d042 // indirect
