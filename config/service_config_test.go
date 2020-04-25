@@ -20,10 +20,6 @@ package config
 import (
 	"testing"
 )
-import (
-	gxnet "github.com/dubbogo/gost/net"
-	"github.com/stretchr/testify/assert"
-)
 
 import (
 	"github.com/apache/dubbo-go/common/extension"
@@ -192,13 +188,4 @@ func Test_Export(t *testing.T) {
 		service.Export()
 	}
 	providerConfig = nil
-}
-
-func Test_getRandomPort(t *testing.T) {
-	ip, err := gxnet.GetLocalIP()
-	assert.NoError(t, err)
-	port := getRandomPort(ip)
-	t.Logf("port:%v", port)
-
-	assert.Greater(t, len(port), 0)
 }

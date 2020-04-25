@@ -20,7 +20,6 @@ package config
 import (
 	"context"
 	"fmt"
-	gxnet "github.com/dubbogo/gost/net"
 	"net/url"
 	"strconv"
 	"strings"
@@ -106,16 +105,6 @@ func NewServiceConfig(id string, context context.Context) *ServiceConfig {
 	}
 }
 
-// Get Random Port
-func getRandomPort(ip string) string {
-	tcp, err := gxnet.ListenOnTCPRandomPort(ip)
-	if err != nil {
-		panic(perrors.New(fmt.Sprintf("Get tcp port error,err is {%v}", err)))
-	}
-	defer tcp.Close()
-	return strings.Split(tcp.Addr().String(), ":")[1]
-}
-
 // Export ...
 func (c *ServiceConfig) Export() error {
 	// TODO: config center start here
@@ -148,15 +137,11 @@ func (c *ServiceConfig) Export() error {
 			logger.Errorf(err.Error())
 			return err
 		}
-		port := proto.Port
-		if len(proto.Port) == 0 {
-			port = getRandomPort(proto.Ip)
-		}
 		ivkURL := common.NewURLWithOptions(
 			common.WithPath(c.id),
 			common.WithProtocol(proto.Name),
 			common.WithIp(proto.Ip),
-			common.WithPort(port),
+			common.WithPort(proto.Port),
 			common.WithParams(urlMap),
 			common.WithParamsValue(constant.BEAN_NAME_KEY, c.id),
 			common.WithMethods(strings.Split(methods, ",")),
