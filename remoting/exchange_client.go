@@ -8,13 +8,29 @@ import (
 	"time"
 )
 
+var (
+	pendingResponses *sync.Map = new(sync.Map)
+)
+
 type SequenceType int64
 
 type ExchangeClient struct {
-	ConnectTimeout   time.Duration
-	address          string
-	client           Client
-	pendingResponses *sync.Map
+	ConnectTimeout time.Duration
+	address        string
+	client         Client
+}
+
+type Client interface {
+	SetExchangeClient(client *ExchangeClient)
+	SetResponseHandler(responseHandler ResponseHandler)
+	//invoke once for connection
+	Connect(url common.URL)
+	Close()
+	Request(request *Request, timeout time.Duration, callback common.AsyncCallback, response *PendingResponse) error
+}
+
+type ResponseHandler interface {
+	Handler(response *Response)
 }
 
 func NewExchangeClient(url common.URL, client Client, connectTimeout time.Duration) *ExchangeClient {
@@ -23,20 +39,23 @@ func NewExchangeClient(url common.URL, client Client, connectTimeout time.Durati
 		address:        url.Location,
 		client:         client,
 	}
+	client.SetExchangeClient(exchangeClient)
 	client.Connect(url)
+	client.SetResponseHandler(exchangeClient)
 	return exchangeClient
 }
 
 func (client *ExchangeClient) Request(invocation *protocol.Invocation, url common.URL, timeout time.Duration,
 	result *protocol.RPCResult) error {
-	requestId := int64(SequenceId())
 	request := NewRequest("2.0.2")
 	request.Data = invocation
 	request.Event = false
 	request.TwoWay = true
 
-	rsp := NewPendingResponse()
-	rsp.response = NewResponse(requestId, "2.0.2")
+	rsp := NewPendingResponse(request.Id)
+	rsp.response = NewResponse(request.Id, "2.0.2")
+	rsp.Reply = (*invocation).Reply()
+	AddPendingResponse(rsp)
 	//rsp.callback = invo
 
 	err := client.client.Request(request, timeout, nil, rsp)
@@ -44,22 +63,23 @@ func (client *ExchangeClient) Request(invocation *protocol.Invocation, url commo
 		result.Err = err
 		return err
 	}
-	result.Rest = rsp.response
+	result.Rest = rsp.response.Result
 	//result.Attrs = rsp.response.
 	return nil
 }
 
 func (client *ExchangeClient) AsyncRequest(invocation *protocol.Invocation, url common.URL, timeout time.Duration,
 	callback common.AsyncCallback, result *protocol.RPCResult) error {
-	requestId := int64(SequenceId())
 	request := NewRequest("2.0.2")
 	request.Data = invocation
 	request.Event = false
 	request.TwoWay = true
 
-	rsp := NewPendingResponse()
-	rsp.response = NewResponse(requestId, "2.0.2")
+	rsp := NewPendingResponse(request.Id)
+	rsp.response = NewResponse(request.Id, "2.0.2")
 	rsp.callback = callback
+	rsp.Reply = (*invocation).Reply()
+	AddPendingResponse(rsp)
 
 	err := client.client.Request(request, timeout, nil, rsp)
 	if err != nil {
@@ -79,7 +99,7 @@ func (client *ExchangeClient) Send(invocation *protocol.Invocation, timeout time
 	request.Event = false
 	request.TwoWay = false
 
-	rsp := NewPendingResponse()
+	rsp := NewPendingResponse(request.Id)
 	rsp.response = NewResponse(requestId, "2.0.2")
 
 	err := client.client.Request(request, timeout, nil, rsp)
@@ -96,7 +116,7 @@ func (client *ExchangeClient) Close() {
 
 func (client *ExchangeClient) Handler(response *Response) {
 
-	pendingResponse := client.removePendingResponse(SequenceType(response.Id))
+	pendingResponse := removePendingResponse(SequenceType(response.Id))
 	if pendingResponse == nil {
 		logger.Errorf("failed to get pending response context for response package %s", *response)
 		return
@@ -111,16 +131,23 @@ func (client *ExchangeClient) Handler(response *Response) {
 	}
 }
 
-func (client *ExchangeClient) addPendingResponse(pr *PendingResponse) {
-	client.pendingResponses.Store(SequenceType(pr.seq), pr)
+func AddPendingResponse(pr *PendingResponse) {
+	pendingResponses.Store(SequenceType(pr.seq), pr)
 }
 
-func (client *ExchangeClient) removePendingResponse(seq SequenceType) *PendingResponse {
-	if client.pendingResponses == nil {
+func removePendingResponse(seq SequenceType) *PendingResponse {
+	if pendingResponses == nil {
 		return nil
 	}
-	if presp, ok := client.pendingResponses.Load(seq); ok {
-		client.pendingResponses.Delete(seq)
+	if presp, ok := pendingResponses.Load(seq); ok {
+		pendingResponses.Delete(seq)
+		return presp.(*PendingResponse)
+	}
+	return nil
+}
+
+func GetPendingResponse(seq SequenceType) *PendingResponse {
+	if presp, ok := pendingResponses.Load(seq); ok {
 		return presp.(*PendingResponse)
 	}
 	return nil
