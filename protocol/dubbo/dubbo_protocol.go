@@ -39,6 +39,10 @@ const (
 	DUBBO = "dubbo"
 )
 
+var (
+	exchangeClientMap *sync.Map = new(sync.Map)
+)
+
 func init() {
 	extension.SetProtocol(DUBBO, GetProtocol)
 }
@@ -89,9 +93,7 @@ func (dp *DubboProtocol) Refer(url common.URL) protocol.Invoker {
 	//	ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
 	//	RequestTimeout: requestTimeout,
 	//}))
-	invoker := NewDubboInvoker(url, remoting.NewExchangeClient(url, getty.NewClient(getty.Options{
-		ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
-	}), config.GetConsumerConfig().ConnectTimeout))
+	invoker := NewDubboInvoker(url, getExchangeClient(url))
 	dp.SetInvokers(invoker)
 	logger.Infof("Refer service: %s", url.String())
 	return invoker
@@ -124,7 +126,7 @@ func (dp *DubboProtocol) openServer(url common.URL) {
 			handler := func(invocation *invocation.RPCInvocation) protocol.RPCResult {
 				return doHandleRequest(invocation)
 			}
-			srv := remoting.NewExchangeServer(url, handler)
+			srv := remoting.NewExchangeServer(url, getty.NewServer(url, handler))
 			dp.serverMap[url.Location] = srv
 			srv.Start()
 		}
@@ -158,8 +160,8 @@ func doHandleRequest(rpcInvocation *invocation.RPCInvocation) protocol.RPCResult
 		//
 		//args := p.Body.(map[string]interface{})["args"].([]interface{})
 		//inv := invocation.NewRPCInvocation(p.Service.Method, args, attachments)
-
-		ctx := rebuildCtx(rpcInvocation)
+		// FIXME
+		ctx := getty.RebuildCtx(rpcInvocation)
 
 		invokeResult := invoker.Invoke(ctx, rpcInvocation)
 		if err := invokeResult.Error(); err != nil {
@@ -175,4 +177,26 @@ func doHandleRequest(rpcInvocation *invocation.RPCInvocation) protocol.RPCResult
 		result.Err = fmt.Errorf("don't have the invoker, key: %s", rpcInvocation.ServiceKey())
 	}
 	return result
+}
+
+func getExchangeClient(url common.URL) *remoting.ExchangeClient {
+	clientTmp, ok := exchangeClientMap.Load(url.Location)
+	if !ok {
+		exchangeClientTmp := remoting.NewExchangeClient(url, getty.NewClient(getty.Options{
+			ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
+		}), config.GetConsumerConfig().ConnectTimeout)
+		exchangeClientMap.Store(url.Location, exchangeClientTmp)
+
+		return exchangeClientTmp
+	}
+	exchangeClient, ok := clientTmp.(*remoting.ExchangeClient)
+	if !ok {
+		exchangeClientTmp := remoting.NewExchangeClient(url, getty.NewClient(getty.Options{
+			ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
+		}), config.GetConsumerConfig().ConnectTimeout)
+		exchangeClientMap.Store(url.Location, exchangeClientTmp)
+
+		return exchangeClientTmp
+	}
+	return exchangeClient
 }

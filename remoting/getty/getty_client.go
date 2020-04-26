@@ -19,6 +19,7 @@ package getty
 
 import (
 	"github.com/apache/dubbo-go/remoting"
+	"gopkg.in/yaml.v2"
 	"math/rand"
 	"time"
 )
@@ -27,7 +28,6 @@ import (
 	"github.com/dubbogo/getty"
 	gxsync "github.com/dubbogo/gost/sync"
 	perrors "github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 )
 
 import (
@@ -47,7 +47,7 @@ var (
 	clientGrpool *gxsync.TaskPool
 )
 
-func doInit(protocol string) {
+func initClient(protocol string) {
 	if protocol == "" {
 		return
 	}
@@ -134,8 +134,9 @@ type Client struct {
 	opts            Options
 	conf            ClientConfig
 	pool            *gettyRPCClientPool
-	codec           *remoting.Codec
-	responseHandler *remoting.ResponseHandler
+	codec           remoting.Codec
+	responseHandler remoting.ResponseHandler
+	ExchangeClient  *remoting.ExchangeClient
 	//sequence atomic.Uint64
 	//pendingResponses *sync.Map
 }
@@ -149,18 +150,24 @@ func NewClient(opt Options) *Client {
 
 	c := &Client{
 		opts: opt,
-		conf: *clientConf,
 	}
-	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
-
 	return c
 }
 
+func (c *Client) SetExchangeClient(client *remoting.ExchangeClient) {
+	c.ExchangeClient = client
+}
+func (c *Client) SetResponseHandler(responseHandler remoting.ResponseHandler) {
+	c.responseHandler = responseHandler
+}
 func (c *Client) Connect(url common.URL) {
-	doInit(url.Protocol)
+	initClient(url.Protocol)
+	c.conf = *clientConf
+	// new client
+	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
 	// codec
 	c.codec = remoting.GetCodec(url.Protocol)
-	c.addr = url.Ip + ":" + url.Port
+	c.addr = url.Location
 }
 func (c *Client) Close() {
 	if c.pool != nil {
@@ -340,13 +347,13 @@ func (c *Client) heartbeat(session getty.Session) error {
 	req := remoting.NewRequest("2.0.2")
 	req.TwoWay = true
 	req.Event = true
-	resp := remoting.NewPendingResponse()
+	resp := remoting.NewPendingResponse(req.Id)
+	remoting.AddPendingResponse(resp)
 	return c.transfer(session, req, 3*time.Second, resp)
 }
 
 func (c *Client) transfer(session getty.Session, request *remoting.Request, timeout time.Duration,
 	rsp *remoting.PendingResponse) error {
-
 	//sequence = c.sequence.Add(1)
 	//
 	//if pkg == nil {

@@ -18,7 +18,6 @@
 package getty
 
 import (
-	"bytes"
 	"github.com/apache/dubbo-go/remoting"
 	"reflect"
 )
@@ -49,9 +48,8 @@ func NewRpcClientPackageHandler(client *Client) *RpcClientPackageHandler {
 
 func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
 	//pkg := &DubboPackage{}
-
-	buf := bytes.NewBuffer(data)
-	resp, length, err := (*p.client.codec).DecodeResponse(buf)
+	//p.client.ExchangeClient.GetPendingResponse(remoting.SequenceType())
+	resp, length, err := (p.client.codec).DecodeResponse(data)
 	//err := pkg.Unmarshal(buf, p.client)
 	if err != nil {
 		originErr := perrors.Cause(err)
@@ -78,7 +76,7 @@ func (p *RpcClientPackageHandler) Write(ss getty.Session, pkg interface{}) ([]by
 		return nil, perrors.New("invalid rpc request")
 	}
 
-	buf, err := (*p.client.codec).EncodeRequest(req)
+	buf, err := (p.client.codec).EncodeRequest(req)
 	if err != nil {
 		logger.Warnf("binary.Write(req{%#v}) = err{%#v}", req, perrors.WithStack(err))
 		return nil, perrors.WithStack(err)
@@ -91,18 +89,21 @@ func (p *RpcClientPackageHandler) Write(ss getty.Session, pkg interface{}) ([]by
 // RpcServerPackageHandler
 ////////////////////////////////////////////
 
-var (
-	rpcServerPkgHandler = &RpcServerPackageHandler{}
-)
+//var (
+//	rpcServerPkgHandler = &RpcServerPackageHandler{}
+//)
 
 // RpcServerPackageHandler ...
 type RpcServerPackageHandler struct {
 	server *Server
 }
 
+func NewRpcServerPackageHandler(server *Server) *RpcServerPackageHandler {
+	return &RpcServerPackageHandler{server: server}
+}
+
 func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
-	buf := bytes.NewBuffer(data)
-	req, length, err := (*p.server.codec).DecodeRequest(buf)
+	req, length, err := (p.server.codec).DecodeRequest(data)
 	//resp,len, err := (*p.).DecodeResponse(buf)
 
 	if err != nil {
@@ -126,7 +127,7 @@ func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg interface{}) ([]by
 		return nil, perrors.New("invalid rpc response")
 	}
 
-	buf, err := (*p.server.codec).EncodeResponse(res)
+	buf, err := (p.server.codec).EncodeResponse(res)
 	if err != nil {
 		logger.Warnf("binary.Write(res{%#v}) = err{%#v}", res, perrors.WithStack(err))
 		return nil, perrors.WithStack(err)

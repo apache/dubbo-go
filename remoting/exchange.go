@@ -37,11 +37,11 @@ func NewRequest(version string) *Request {
 	}
 }
 
-func (request *Request) SetHeartbeat(isHeartbeat bool) {
-	if isHeartbeat {
-
-	}
-}
+//func (request *Request) SetHeartbeat(isHeartbeat bool) {
+//	if isHeartbeat {
+//
+//	}
+//}
 
 // Response ...
 type Response struct {
@@ -52,7 +52,6 @@ type Response struct {
 	Event    bool
 	Error    error
 	Result   interface{}
-	Reply    interface{}
 }
 
 // NewResponse ...
@@ -91,12 +90,14 @@ type PendingResponse struct {
 	ReadStart time.Time
 	callback  common.AsyncCallback
 	response  *Response
+	Reply     interface{}
 	Done      chan struct{}
 }
 
 // NewPendingResponse ...
-func NewPendingResponse() *PendingResponse {
+func NewPendingResponse(id int64) *PendingResponse {
 	return &PendingResponse{
+		seq:      id,
 		start:    time.Now(),
 		response: &Response{},
 		Done:     make(chan struct{}),
@@ -112,20 +113,3 @@ func (r PendingResponse) GetCallResponse() common.CallbackResponse {
 		Reply:     r.response,
 	}
 }
-
-type Client interface {
-	//invoke once for connection
-	Connect(url common.URL)
-	Close()
-	Request(request *Request, timeout time.Duration, callback common.AsyncCallback, response *PendingResponse) error
-}
-
-type Server interface {
-	//invoke once for connection
-	Open(url common.URL)
-}
-
-type ResponseHandler interface {
-	Handler(response *Response)
-}
-
