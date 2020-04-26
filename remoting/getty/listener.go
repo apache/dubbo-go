@@ -107,7 +107,7 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 		if p.Error != nil {
 			logger.Errorf("rpc heartbeat response{error: %#v}", p.Error)
 		}
-		(*h.conn.pool.rpcClient.responseHandler).Handler(p)
+		(h.conn.pool.rpcClient.responseHandler).Handler(p)
 		//FIXME
 		//if p.Header.Type&hessian.PackageResponse != 0x00 {
 		//	logger.Debugf("get rpc heartbeat response{header: %#v, body: %#v}", p.Header, p.Body)
@@ -126,7 +126,7 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 	h.conn.updateSession(session)
 
-	(*h.conn.pool.rpcClient.responseHandler).Handler(p)
+	(h.conn.pool.rpcClient.responseHandler).Handler(p)
 
 	//
 	//pendingResponse := h.conn.pool.rpcClient.removePendingResponse(SequenceType(p.Header.ID))
@@ -239,6 +239,9 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	}
 	resp := remoting.NewResponse(req.Id, req.Version)
 	resp.Status = hessian.Response_OK
+	resp.Event = req.Event
+	resp.SerialID = req.SerialID
+	resp.Version = "2.0.2"
 
 	// heartbeat
 	if req.Event {
@@ -275,11 +278,11 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 	}()
 
-	invoc, ok := req.Data.(invocation.RPCInvocation)
+	invoc, ok := req.Data.(*invocation.RPCInvocation)
 	if !ok {
 
 	}
-	result := h.server.requestHandler(&invoc)
+	result := h.server.requestHandler(invoc)
 	if !req.TwoWay {
 		return
 	}
@@ -316,7 +319,7 @@ func (h *RpcServerHandler) OnCron(session getty.Session) {
 // rebuildCtx rebuild the context by attachment.
 // Once we decided to transfer more context's key-value, we should change this.
 // now we only support rebuild the tracing context
-func rebuildCtx(inv *invocation.RPCInvocation) context.Context {
+func RebuildCtx(inv *invocation.RPCInvocation) context.Context {
 	ctx := context.Background()
 
 	// actually, if user do not use any opentracing framework, the err will not be nil.

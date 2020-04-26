@@ -105,7 +105,7 @@ func SetServerGrpool() {
 type Server struct {
 	conf           ServerConfig
 	addr           string
-	codec          *remoting.Codec
+	codec          remoting.Codec
 	tcpServer      getty.Server
 	rpcHandler     *RpcServerHandler
 	requestHandler func(*invocation.RPCInvocation) protocol.RPCResult
@@ -114,7 +114,7 @@ type Server struct {
 // NewServer ...
 func NewServer(url common.URL, handlers func(*invocation.RPCInvocation) protocol.RPCResult) *Server {
 	//init
-	doInit(url.Protocol)
+	initServer(url.Protocol)
 
 	s := &Server{
 		conf:           *srvConf,
@@ -153,7 +153,7 @@ func (s *Server) newSession(session getty.Session) error {
 
 	session.SetName(conf.GettySessionParam.SessionName)
 	session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
-	session.SetPkgHandler(rpcServerPkgHandler)
+	session.SetPkgHandler(NewRpcServerPackageHandler(s))
 	session.SetEventListener(s.rpcHandler)
 	session.SetWQLen(conf.GettySessionParam.PkgWQSize)
 	session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
