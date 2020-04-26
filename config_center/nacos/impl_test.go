@@ -88,6 +88,34 @@ func Test_GetConfig(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestNacosDynamicConfiguration_GetConfigKeysByGroup(t *testing.T) {
+	data := `
+{
+    "PageItems": [
+        {
+            "Content": "application"
+        }
+    ]
+}
+`
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(data))
+	}))
+
+	nacosURL := strings.ReplaceAll(ts.URL, "http", "registry")
+	regurl, _ := common.NewURL(nacosURL)
+	nacosConfiguration, err := newNacosDynamicConfiguration(&regurl)
+	assert.NoError(t, err)
+
+	nacosConfiguration.SetParser(&parser.DefaultConfigurationParser{})
+
+	configs, err := nacosConfiguration.GetConfigKeysByGroup("dubbo")
+	assert.Nil(t, err)
+	assert.Equal(t, 1, configs.Size())
+	assert.True(t, configs.Contains("application"))
+
+}
+
 func TestNacosDynamicConfiguration_PublishConfig(t *testing.T) {
 	nacos, err := initNacosData(t)
 	assert.Nil(t, err)
@@ -109,7 +137,7 @@ func Test_AddListener(t *testing.T) {
 }
 
 func Test_RemoveListener(t *testing.T) {
-	//TODO not supported in current go_nacos_sdk version
+	// TODO not supported in current go_nacos_sdk version
 }
 
 type mockDataListener struct {
