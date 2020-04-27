@@ -109,7 +109,7 @@ func NewServiceConfig(id string, context context.Context) *ServiceConfig {
 
 // Get Random Port
 func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
-	l := list.New()
+	ports := list.New()
 	for _, proto := range protocolConfigs {
 		if len(proto.Port) > 0 {
 			continue
@@ -119,10 +119,10 @@ func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
 		if err != nil {
 			panic(perrors.New(fmt.Sprintf("Get tcp port error,err is {%v}", err)))
 		}
-		l.PushBack(strings.Split(tcp.Addr().String(), ":")[1])
+		ports.PushBack(strings.Split(tcp.Addr().String(), ":")[1])
 		defer tcp.Close()
 	}
-	return l
+	return ports
 }
 
 // Export ...
