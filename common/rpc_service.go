@@ -59,7 +59,6 @@ type AsyncCallback func(response CallbackResponse)
 //     return map[string][string]{}
 // }
 const (
-	// METHOD_MAPPER ...
 	METHOD_MAPPER = "MethodMapper"
 )
 
@@ -68,7 +67,7 @@ var (
 	// because Typeof takes an empty interface value. This is annoying.
 	typeOfError = reflect.TypeOf((*error)(nil)).Elem()
 
-	// ServiceMap ...
+	// ServiceMap store description of service.
 	// todo: lowerecas?
 	ServiceMap = &serviceMap{
 		serviceMap:   make(map[string]map[string]*Service),
@@ -80,7 +79,7 @@ var (
 // info of method
 //////////////////////////
 
-// MethodType ...
+// MethodType is description of service method.
 type MethodType struct {
 	method    reflect.Method
 	ctxType   reflect.Type   // request context
@@ -88,27 +87,27 @@ type MethodType struct {
 	replyType reflect.Type   // return value, otherwise it is nil
 }
 
-// Method ...
+// Method get @m.method.
 func (m *MethodType) Method() reflect.Method {
 	return m.method
 }
 
-// CtxType ...
+// CtxType get @m.ctxType.
 func (m *MethodType) CtxType() reflect.Type {
 	return m.ctxType
 }
 
-// ArgsType ...
+// ArgsType get @m.argsType.
 func (m *MethodType) ArgsType() []reflect.Type {
 	return m.argsType
 }
 
-// ReplyType ...
+// ReplyType get @m.replyType.
 func (m *MethodType) ReplyType() reflect.Type {
 	return m.replyType
 }
 
-// SuiteContext ...
+// SuiteContext tranfer @ctx to reflect.Value type or get it from @m.ctxType.
 func (m *MethodType) SuiteContext(ctx context.Context) reflect.Value {
 	if contextv := reflect.ValueOf(ctx); contextv.IsValid() {
 		return contextv
@@ -120,7 +119,7 @@ func (m *MethodType) SuiteContext(ctx context.Context) reflect.Value {
 // info of service interface
 //////////////////////////
 
-// Service ...
+// Service is description of service
 type Service struct {
 	name     string
 	rcvr     reflect.Value
@@ -128,17 +127,17 @@ type Service struct {
 	methods  map[string]*MethodType
 }
 
-// Method ...
+// Method get @s.methods.
 func (s *Service) Method() map[string]*MethodType {
 	return s.methods
 }
 
-// RcvrType ...
+// RcvrType get @s.rcvrType.
 func (s *Service) RcvrType() reflect.Type {
 	return s.rcvrType
 }
 
-// Rcvr ...
+// Rcvr get @s.rcvr.
 func (s *Service) Rcvr() reflect.Value {
 	return s.rcvr
 }
