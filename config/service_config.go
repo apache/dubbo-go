@@ -111,7 +111,7 @@ func NewServiceConfig(id string, context context.Context) *ServiceConfig {
 func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
 	l := list.New()
 	for _, proto := range protocolConfigs {
-		if proto.Port != "" {
+		if len(proto.Port) > 0 {
 			continue
 		}
 
@@ -162,7 +162,7 @@ func (c *ServiceConfig) Export() error {
 
 		port := proto.Port
 
-		if proto.Port == "" {
+		if len(proto.Port) == 0 {
 			port = nextPort.Value.(string)
 			nextPort = nextPort.Next()
 		}
