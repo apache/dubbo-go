@@ -18,6 +18,7 @@
 package config
 
 import (
+	"container/list"
 	"context"
 	"fmt"
 	"net/url"
@@ -29,6 +30,7 @@ import (
 
 import (
 	"github.com/creasty/defaults"
+	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
 )
@@ -105,6 +107,24 @@ func NewServiceConfig(id string, context context.Context) *ServiceConfig {
 	}
 }
 
+// Get Random Port
+func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
+	l := list.New()
+	for _, proto := range protocolConfigs {
+		if proto.Port != "" {
+			continue
+		}
+
+		tcp, err := gxnet.ListenOnTCPRandomPort(proto.Ip)
+		if err != nil {
+			panic(perrors.New(fmt.Sprintf("Get tcp port error,err is {%v}", err)))
+		}
+		l.PushBack(strings.Split(tcp.Addr().String(), ":")[1])
+		defer tcp.Close()
+	}
+	return l
+}
+
 // Export ...
 func (c *ServiceConfig) Export() error {
 	// TODO: config center start here
@@ -129,6 +149,8 @@ func (c *ServiceConfig) Export() error {
 		return nil
 	}
 
+	ports := getRandomPort(protocolConfigs)
+	nextPort := ports.Front()
 	for _, proto := range protocolConfigs {
 		// registry the service reflect
 		methods, err := common.ServiceMap.Register(c.InterfaceName, proto.Name, c.rpcService)
@@ -137,11 +159,17 @@ func (c *ServiceConfig) Export() error {
 			logger.Errorf(err.Error())
 			return err
 		}
+
+		port := proto.Port
+		if proto.Port == "" {
+			port = nextPort.Value.(string)
+			nextPort = nextPort.Next()
+		}
 		ivkURL := common.NewURLWithOptions(
 			common.WithPath(c.id),
 			common.WithProtocol(proto.Name),
 			common.WithIp(proto.Ip),
-			common.WithPort(proto.Port),
+			common.WithPort(port),
 			common.WithParams(urlMap),
 			common.WithParamsValue(constant.BEAN_NAME_KEY, c.id),
 			common.WithMethods(strings.Split(methods, ",")),
