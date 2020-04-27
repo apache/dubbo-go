@@ -161,6 +161,7 @@ func (c *ServiceConfig) Export() error {
 		}
 
 		port := proto.Port
+
 		if proto.Port == "" {
 			port = nextPort.Value.(string)
 			nextPort = nextPort.Next()
