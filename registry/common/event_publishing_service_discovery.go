@@ -26,7 +26,15 @@ import (
 	"github.com/apache/dubbo-go/registry"
 )
 
+// EventPublishingServiceDiscovery will enhance Service Discovery
+// Publish some event about service discovery
 type EventPublishingServiceDiscovery struct {
+	serviceDiscovery *registry.ServiceDiscovery
+}
+
+// NewEventPublishingServiceDiscovery is a constructor
+func NewEventPublishingServiceDiscovery(serviceDiscovery *registry.ServiceDiscovery) *EventPublishingServiceDiscovery {
+	return &EventPublishingServiceDiscovery{serviceDiscovery: serviceDiscovery}
 }
 
 func (epsd *EventPublishingServiceDiscovery) String() string {
