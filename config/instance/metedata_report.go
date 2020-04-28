@@ -24,16 +24,16 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/metadata"
+	"github.com/apache/dubbo-go/metadata/report"
 )
 
 var (
-	instance metadata.MetadataReport
+	instance report.MetadataReport
 	once     sync.Once
 )
 
 // GetMetadataReportInstance ...
-func GetMetadataReportInstance(url *common.URL) metadata.MetadataReport {
+func GetMetadataReportInstance(url *common.URL) report.MetadataReport {
 	once.Do(func() {
 		instance = extension.GetMetadataReportFactory(url.Protocol).CreateMetadataReport(url)
 	})
