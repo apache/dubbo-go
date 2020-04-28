@@ -237,7 +237,7 @@ func (n *nacosServiceDiscovery) DispatchEventForInstances(serviceName string, in
 
 // DispatchEvent will dispatch the event
 func (n *nacosServiceDiscovery) DispatchEvent(event *registry.ServiceInstancesChangedEvent) error {
-	// TODO(waiting for event dispatcher, another task)
+	extension.GetGlobalDispatcher().Dispatch(event)
 	return nil
 }
 
