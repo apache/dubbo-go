@@ -22,9 +22,12 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/extension"
 	gxnet "github.com/dubbogo/gost/net"
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/extension"
 )
 
 func doInitProvider() {
