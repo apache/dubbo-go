@@ -15,16 +15,13 @@
  * limitations under the License.
  */
 
-package metadata
+package observer
 
-import (
-	"github.com/apache/dubbo-go/common"
-)
-
-var (
-	MetadataReportInstance MetadataReport
-)
-
-type MetadataReportFactory interface {
-	CreateMetadataReport(*common.URL) MetadataReport
+// EventDispatcher is align with EventDispatcher interface in Java.
+// it's the top abstraction
+// Align with 2.7.5
+type EventDispatcher interface {
+	Listenable
+	// Dispatch event
+	Dispatch(event Event)
 }
