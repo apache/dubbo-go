@@ -97,36 +97,64 @@ func (e *eurekaServiceDiscovery) GetDefaultPageSize() int {
 }
 
 func (e *eurekaServiceDiscovery) GetServices() *gxset.HashSet {
-	e.eurekaConnection.SelectServiceURL()
-	services := e.eurekaConnection.ServiceUrls
 	res := gxset.NewSet()
-	for _, e := range services {
-		res.Add(e)
+	apps, err := e.eurekaConnection.GetApps()
+	if err != nil {
+		logger.Errorf("GetServices getApps fail error: %s", err)
+		return res
 	}
+	for _, application := range apps {
+		if len(application.Instances) == 0 {
+			continue
+		}
+		res.Add(strings.ToLower(application.Name))
+	}
+
 	return res
 }
 
+func parseMetadata(meta *fargo.InstanceMetadata) map[string]string {
+	returnMap := make(map[string]string, len(meta.GetMap()))
+	for key := range meta.GetMap() {
+		s, err := meta.GetString(key)
+		if err != nil {
+			logger.Errorf("Could not parse to string key: " + key)
+			continue
+		}
+		returnMap[key] = s
+	}
+	return returnMap
+}
+
 func (e *eurekaServiceDiscovery) GetInstances(serviceName string) []registry.ServiceInstance {
-	instance, err := e.eurekaConnection.GetInstance(serviceName, e.group)
+	application, err := e.eurekaConnection.GetApp(serviceName)
 	if err != nil {
 		logger.Errorf("Could not query the instances for service: " + serviceName + ", group: " + e.group)
 		return make([]registry.ServiceInstance, 0, 0)
 	}
-	res := make([]registry.ServiceInstance, 0, 1)
-	d := &registry.DefaultServiceInstance{
-		Id:          instance.Id(),
-		ServiceName: instance.App,
-		Host:        instance.IPAddr,
-		Port:        instance.Port,
-		Enable:      instance.PortEnabled,
-		Healthy:     true,
-	}
 
-	if fargo.UP != instance.Status {
-		d.Healthy = false
-	}
+	res := make([]registry.ServiceInstance, 0, len(application.Instances))
 
-	res = append(res, d)
+	for _, instance := range application.Instances {
+		d := &registry.DefaultServiceInstance{
+			Id:          instance.Id(),
+			ServiceName: instance.App,
+			Host:        instance.IPAddr,
+			Enable:      instance.PortEnabled,
+			Healthy:     true,
+			Metadata:    parseMetadata(&instance.Metadata),
+		}
+		if fargo.UP != instance.Status {
+			d.Healthy = false
+		}
+		if instance.SecurePortEnabled {
+			d.Port = instance.SecurePort
+		} else {
+			d.Port = instance.Port
+		}
+
+		res = append(res, d)
+	}
 
 	return res
 }
