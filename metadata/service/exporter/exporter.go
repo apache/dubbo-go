@@ -15,30 +15,16 @@
  * limitations under the License.
  */
 
-package registry
+package exporter
 
 import (
-	"reflect"
+	"github.com/apache/dubbo-go/common"
 )
 
-import (
-	"github.com/apache/dubbo-go/common/observer"
-)
-
-// TODO (implement ConditionalEventListener)
-type ServiceInstancesChangedListener struct {
-	ServiceName string
-	observer.EventListener
-}
-
-func (sicl *ServiceInstancesChangedListener) OnEvent(e observer.Event) error {
-	return nil
-}
-
-func (sicl *ServiceInstancesChangedListener) GetPriority() int {
-	return -1
-}
-
-func (sicl *ServiceInstancesChangedListener) GetEventType() reflect.Type {
-	return reflect.TypeOf(&ServiceInstancesChangedEvent{})
+// MetadataServiceExporter will export & unexport the metadata service,  get exported url, and return is exported or not
+type MetadataServiceExporter interface {
+	Export() error
+	Unexport()
+	GetExportedURLs() []*common.URL
+	IsExported() bool
 }

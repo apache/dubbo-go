@@ -15,23 +15,21 @@
  * limitations under the License.
  */
 
-package metadata
+package factory
 
 import (
 	"github.com/apache/dubbo-go/common"
-	gxset "github.com/dubbogo/gost/container/set"
+	"github.com/apache/dubbo-go/metadata/report"
 )
 
-type MetadataService interface {
-	ServiceName() string
-	ExportURL(url *common.URL) bool
-	UnexportURL(url *common.URL) bool
-	RefreshMetadata(exportedRevision string, subscribedRevision string) bool
-	SubscribeURL(url *common.URL) bool
-	UnsubscribeURL(url *common.URL) bool
-	PublishServiceDefinition(url *common.URL)
+var (
+	MetadataReportInstance report.MetadataReport
+)
 
-	GetExportedURLs(serviceInterface string, group string, version string, protocol string) gxset.HashSet
-	GetServiceDefinition(interfaceName string, version string, group string) string
-	GetServiceDefinitionByServiceKey(serviceKey string) string
+// MetadataReportFactory interface will create metadata report
+type MetadataReportFactory interface {
+	CreateMetadataReport(*common.URL) report.MetadataReport
+}
+
+type BaseMetadataReportFactory struct {
 }

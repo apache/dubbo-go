@@ -15,30 +15,30 @@
  * limitations under the License.
  */
 
-package registry
+package identifier
 
 import (
-	"reflect"
+	"testing"
 )
 
 import (
-	"github.com/apache/dubbo-go/common/observer"
+	"github.com/stretchr/testify/assert"
 )
 
-// TODO (implement ConditionalEventListener)
-type ServiceInstancesChangedListener struct {
-	ServiceName string
-	observer.EventListener
+var subscribeMetadataId = &SubscriberMetadataIdentifier{
+	Revision: "1.0",
+	BaseMetadataIdentifier: BaseMetadataIdentifier{
+		ServiceInterface: "org.apache.pkg.mockService",
+		Version:          "1.0.0",
+		Group:            "Group",
+		Side:             "provider",
+	},
 }
 
-func (sicl *ServiceInstancesChangedListener) OnEvent(e observer.Event) error {
-	return nil
+func TestSubscribeGetFilePathKey(t *testing.T) {
+	assert.Equal(t, "metadata/1.0.0/Group/provider/1.0", subscribeMetadataId.GetFilePathKey())
 }
 
-func (sicl *ServiceInstancesChangedListener) GetPriority() int {
-	return -1
-}
-
-func (sicl *ServiceInstancesChangedListener) GetEventType() reflect.Type {
-	return reflect.TypeOf(&ServiceInstancesChangedEvent{})
+func TestSubscribeGetIdentifierKey(t *testing.T) {
+	assert.Equal(t, "org.apache.pkg.mockService:1.0.0:Group:provider:1.0", subscribeMetadataId.GetIdentifierKey())
 }

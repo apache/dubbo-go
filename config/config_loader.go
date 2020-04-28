@@ -33,6 +33,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	_ "github.com/apache/dubbo-go/common/observer/dispatcher"
 )
 
 var (
@@ -90,6 +91,17 @@ func Load() {
 			log.Printf("[routerConfig init] %#v", errPro)
 		}
 	}
+
+	var eventDispatcherType string
+	if consumerConfig != nil {
+		eventDispatcherType = consumerConfig.eventDispatcherType
+	}
+	// notice consumerConfig.eventDispatcherType will be replaced
+	if providerConfig != nil {
+		eventDispatcherType = providerConfig.eventDispatcherType
+	}
+	// init EventDispatcher should before everything
+	extension.SetAndInitGlobalDispatcher(eventDispatcherType)
 
 	// reference config
 	if consumerConfig == nil {
@@ -198,6 +210,7 @@ func Load() {
 			}
 			svs.id = key
 			svs.Implement(rpcService)
+			svs.Protocols = providerConfig.Protocols
 			if err := svs.Export(); err != nil {
 				panic(fmt.Sprintf("service %s export failed! err: %#v", key, err))
 			}
