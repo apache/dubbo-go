@@ -116,11 +116,13 @@ func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
 		}
 
 		tcp, err := gxnet.ListenOnTCPRandomPort(proto.Ip)
+		if tcp != nil {
+			defer tcp.Close()
+		}
 		if err != nil {
 			panic(perrors.New(fmt.Sprintf("Get tcp port error,err is {%v}", err)))
 		}
 		ports.PushBack(strings.Split(tcp.Addr().String(), ":")[1])
-		defer tcp.Close()
 	}
 	return ports
 }
@@ -143,8 +145,7 @@ func (c *ServiceConfig) Export() error {
 	regUrls := loadRegistries(c.Registry, providerConfig.Registries, common.PROVIDER)
 	urlMap := c.getUrlMap()
 	protocolConfigs := loadProtocol(c.Protocol, providerConfig.Protocols)
-	protocolSize := len(protocolConfigs)
-	if protocolSize == 0 {
+	if len(protocolConfigs) == 0 {
 		logger.Warnf("The service %v's '%v' protocols don't has right protocolConfigs ", c.InterfaceName, c.Protocol)
 		return nil
 	}
