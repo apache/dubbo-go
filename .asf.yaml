@@ -1,0 +1,5 @@
+notifications:
+    commits:      commits@dubbo.apache.org
+    issues:       dev@null
+    pullrequests: dev@null
+    jira_options: link label link label
