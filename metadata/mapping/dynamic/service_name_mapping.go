@@ -19,6 +19,7 @@ package dynamic
 
 import (
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -28,7 +29,9 @@ import (
 )
 
 import (
+	env "github.com/apache/dubbo-go/common/config"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/metadata/mapping"
@@ -37,9 +40,16 @@ import (
 const (
 	defaultGroup = config_center.DEFAULT_GROUP
 	slash        = "/"
+	name         = "dynamic"
 )
 
+func init() {
+	extension.SetServiceNameMapping(name, GetServiceNameMappingInstance)
+	extension.SetServiceNameMapping(constant.DEFAULT_KEY, GetServiceNameMappingInstance)
+}
+
 // DynamicConfigurationServiceNameMapping is the implementation based on config center
+// It could be thought as singleton pattern.
 type DynamicConfigurationServiceNameMapping struct {
 	dc config_center.DynamicConfiguration
 }
@@ -76,7 +86,22 @@ func (d *DynamicConfigurationServiceNameMapping) buildGroup(serviceInterface str
 	return defaultGroup + slash + serviceInterface
 }
 
-// NewServiceNameMapping will create an instance of DynamicConfigurationServiceNameMapping
-func NewServiceNameMapping(dc config_center.DynamicConfiguration) mapping.ServiceNameMapping {
+var (
+	instance *DynamicConfigurationServiceNameMapping
+	initOnce sync.Once
+)
+
+// newServiceNameMapping will create an instance of DynamicConfigurationServiceNameMapping
+func newServiceNameMapping(dc config_center.DynamicConfiguration) *DynamicConfigurationServiceNameMapping {
 	return &DynamicConfigurationServiceNameMapping{dc: dc}
+}
+
+// GetServiceNameMappingInstance will return the instance.
+// If the instance is not initiated, it will create one
+func GetServiceNameMappingInstance() mapping.ServiceNameMapping {
+	initOnce.Do(func() {
+		dc := env.GetEnvInstance().GetDynamicConfiguration()
+		instance = newServiceNameMapping(dc)
+	})
+	return instance
 }
