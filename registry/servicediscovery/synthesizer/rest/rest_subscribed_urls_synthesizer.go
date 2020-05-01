@@ -18,18 +18,22 @@
 package rest
 
 import (
+	"net/url"
+	"strings"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/registry/servicediscovery/synthesizer"
-	"net/url"
-	"strings"
 )
 
 func init() {
 	synthesizer.AddSynthesizer(NewRestSubscribedURLsSynthesizer())
 }
 
+//SubscribedURLsSynthesizer implementation for rest protocol
 type RestSubscribedURLsSynthesizer struct {
 }
 
