@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package service
+package servicediscovery
 
 import (
 	"bytes"
@@ -29,8 +29,8 @@ import (
 	"github.com/apache/dubbo-go/metadata/service"
 	"github.com/apache/dubbo-go/metadata/service/inmemory"
 	"github.com/apache/dubbo-go/registry"
-	"github.com/apache/dubbo-go/registry/service/proxy"
-	"github.com/apache/dubbo-go/registry/service/synthesizer"
+	"github.com/apache/dubbo-go/registry/servicediscovery/proxy"
+	"github.com/apache/dubbo-go/registry/servicediscovery/synthesizer"
 	"github.com/apache/dubbo-go/remoting"
 	gxset "github.com/dubbogo/gost/container/set"
 	"strconv"
