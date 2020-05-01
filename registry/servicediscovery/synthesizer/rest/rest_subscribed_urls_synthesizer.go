@@ -21,7 +21,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/registry"
-	"github.com/apache/dubbo-go/registry/service/synthesizer"
+	"github.com/apache/dubbo-go/registry/servicediscovery/synthesizer"
 	"net/url"
 	"strings"
 )
