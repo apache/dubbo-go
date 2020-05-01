@@ -44,7 +44,7 @@ var (
 	typError = reflect.Zero(reflect.TypeOf((*error)(nil)).Elem()).Type()
 )
 
-// NewProxy ...
+// NewProxy create service proxy.
 func NewProxy(invoke protocol.Invoker, callBack interface{}, attachments map[string]string) *Proxy {
 	return &Proxy{
 		invoke:      invoke,
@@ -59,7 +59,6 @@ func NewProxy(invoke protocol.Invoker, callBack interface{}, attachments map[str
 // 		type XxxProvider struct {
 //  		Yyy func(ctx context.Context, args []interface{}, rsp *Zzz) error
 // 		}
-
 func (p *Proxy) Implement(v common.RPCService) {
 
 	// check parameters, incoming interface must be a elem's pointer.
@@ -202,12 +201,12 @@ func (p *Proxy) Implement(v common.RPCService) {
 
 }
 
-// Get ...
+// Get get rpc service instance.
 func (p *Proxy) Get() common.RPCService {
 	return p.rpc
 }
 
-// GetCallback ...
+// GetCallback get callback.
 func (p *Proxy) GetCallback() interface{} {
 	return p.callBack
 }

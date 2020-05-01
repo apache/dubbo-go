@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package service
+package servicediscovery
 
 import (
 	"bytes"
@@ -29,8 +29,8 @@ import (
 	"github.com/apache/dubbo-go/metadata/service"
 	"github.com/apache/dubbo-go/metadata/service/inmemory"
 	"github.com/apache/dubbo-go/registry"
-	"github.com/apache/dubbo-go/registry/service/proxy"
-	"github.com/apache/dubbo-go/registry/service/synthesizer"
+	"github.com/apache/dubbo-go/registry/servicediscovery/proxy"
+	"github.com/apache/dubbo-go/registry/servicediscovery/synthesizer"
 	"github.com/apache/dubbo-go/remoting"
 	gxset "github.com/dubbogo/gost/container/set"
 	"strconv"
@@ -39,13 +39,19 @@ import (
 )
 
 const (
-	SERVICE_REGISTRY_PROTOCOL = "service-discovery-registry"
+	protocolName = "service-discovery"
 )
 
 func init() {
-	extension.SetRegistry(SERVICE_REGISTRY_PROTOCOL, newServiceDiscoveryRegistry)
+	extension.SetRegistry(protocolName, newServiceDiscoveryRegistry)
 }
 
+// serviceDiscoveryRegistry is the implementation of application-level registry.
+// It's completely different from other registry implementations
+// This implementation is based on ServiceDiscovery abstraction and ServiceNameMapping
+// In order to keep compatible with interface-level registry，
+// 1. when we registry the service, we should create the mapping from service name to application name
+// 2. when we sub
 type serviceDiscoveryRegistry struct {
 	lock                             sync.RWMutex
 	url                              *common.URL
