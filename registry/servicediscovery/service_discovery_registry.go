@@ -20,7 +20,17 @@ package servicediscovery
 import (
 	"bytes"
 	"encoding/json"
+	"strconv"
+	"strings"
+	"sync"
+)
+
+import (
 	cm "github.com/Workiva/go-datastructures/common"
+	gxset "github.com/dubbogo/gost/container/set"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -32,10 +42,6 @@ import (
 	"github.com/apache/dubbo-go/registry/servicediscovery/proxy"
 	"github.com/apache/dubbo-go/registry/servicediscovery/synthesizer"
 	"github.com/apache/dubbo-go/remoting"
-	gxset "github.com/dubbogo/gost/container/set"
-	"strconv"
-	"strings"
-	"sync"
 )
 
 const (
@@ -53,14 +59,17 @@ func init() {
 // 1. when we registry the service, we should create the mapping from service name to application name
 // 2. when we sub
 type serviceDiscoveryRegistry struct {
-	lock                             sync.RWMutex
-	url                              *common.URL
-	serviceDiscovery                 registry.ServiceDiscovery
-	subscribedServices               *gxset.HashSet
-	serviceNameMapping               mapping.ServiceNameMapping
-	metaDataService                  service.MetadataService
-	registeredListeners              *gxset.HashSet
-	subscribedURLsSynthesizers       []synthesizer.SubscribedURLsSynthesizer
+	lock               sync.RWMutex
+	url                *common.URL
+	serviceDiscovery   registry.ServiceDiscovery
+	subscribedServices *gxset.HashSet
+	serviceNameMapping mapping.ServiceNameMapping
+	metaDataService    service.MetadataService
+	//cache the registered listen
+	registeredListeners *gxset.HashSet
+	//all synthesize
+	subscribedURLsSynthesizers []synthesizer.SubscribedURLsSynthesizer
+	//cache exported  urls,   serviceName->revision->[]URL
 	serviceRevisionExportedURLsCache map[string]map[string][]common.URL
 }
 
@@ -104,18 +113,22 @@ func parseServices(literalServices string) *gxset.HashSet {
 	return set
 }
 
+//GetServiceDiscovery for get serviceDiscovery of the registry
 func (s *serviceDiscoveryRegistry) GetServiceDiscovery() registry.ServiceDiscovery {
 	return s.serviceDiscovery
 }
 
+//GetUrl for get url of the registry
 func (s *serviceDiscoveryRegistry) GetUrl() common.URL {
 	return *s.url
 }
 
+//IsAvailable for make sure is't available
 func (s *serviceDiscoveryRegistry) IsAvailable() bool {
 	return true
 }
 
+//Destroy for destroy graceful down
 func (s *serviceDiscoveryRegistry) Destroy() {
 	err := s.serviceDiscovery.Destroy()
 	if err != nil {
@@ -149,6 +162,7 @@ func shouldRegister(url common.URL) bool {
 	return false
 }
 
+//Subscribe for listen the change of services that from the exported url
 func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.NotifyListener) {
 	if !shouldSubscribe(*url) {
 		return

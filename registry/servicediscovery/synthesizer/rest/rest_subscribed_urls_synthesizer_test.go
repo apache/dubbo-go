@@ -18,12 +18,18 @@
 package rest
 
 import (
+	"net/url"
+	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/registry"
-	"github.com/stretchr/testify/assert"
-	"net/url"
-	"testing"
 )
 
 func TestRestSubscribedURLsSynthesizer_Synthesize(t *testing.T) {

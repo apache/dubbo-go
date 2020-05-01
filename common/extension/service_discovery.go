@@ -18,11 +18,12 @@
 package extension
 
 import (
-	"github.com/apache/dubbo-go/registry"
 	perrors "github.com/pkg/errors"
 )
+
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/registry"
 )
 
 var (
