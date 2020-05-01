@@ -15,39 +15,15 @@
  * limitations under the License.
  */
 
-package registry
+package proxy
 
 import (
-	"reflect"
+	"github.com/apache/dubbo-go/metadata/service"
+	"github.com/apache/dubbo-go/registry"
 )
 
-import (
-	"github.com/apache/dubbo-go/common/observer"
-)
+type BaseMetadataServiceProxy interface {
+	GetProxy(serviceInstance registry.ServiceInstance) service.MetadataService
 
-type ServiceInstancesChangedListener struct {
-	ServiceName string
-	observer.ConditionalEventListener
-	ChangedNotify ChangedNotify
-}
-
-func (sicl *ServiceInstancesChangedListener) OnEvent(e ServiceInstancesChangedEvent) error {
-	sicl.ChangedNotify.Notify(e)
-	return nil
-}
-
-func (sicl *ServiceInstancesChangedListener) GetPriority() int {
-	return -1
-}
-
-func (sicl *ServiceInstancesChangedListener) GetEventType() reflect.Type {
-	return reflect.TypeOf(&ServiceInstancesChangedEvent{})
-}
-
-func (sicl *ServiceInstancesChangedListener) Accept(e ServiceInstancesChangedEvent) bool {
-	return e.ServiceName == sicl.ServiceName
-}
-
-type ChangedNotify interface {
-	Notify(e ServiceInstancesChangedEvent)
+	CreateProxy(serviceInstance registry.ServiceInstance) service.MetadataService
 }
