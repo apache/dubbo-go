@@ -22,6 +22,11 @@ import (
 )
 
 import (
+	gxnet "github.com/dubbogo/gost/net"
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"go.uber.org/atomic"
 )
 
@@ -144,4 +149,36 @@ func Test_Export(t *testing.T) {
 		service.Export()
 	}
 	providerConfig = nil
+}
+
+func Test_getRandomPort(t *testing.T) {
+	protocolConfigs := make([]*ProtocolConfig, 0, 3)
+
+	ip, err := gxnet.GetLocalIP()
+	protocolConfigs = append(protocolConfigs, &ProtocolConfig{
+		Ip: ip,
+	})
+	protocolConfigs = append(protocolConfigs, &ProtocolConfig{
+		Ip: ip,
+	})
+	protocolConfigs = append(protocolConfigs, &ProtocolConfig{
+		Ip: ip,
+	})
+	assert.NoError(t, err)
+	ports := getRandomPort(protocolConfigs)
+
+	assert.Equal(t, ports.Len(), len(protocolConfigs))
+
+	front := ports.Front()
+	for {
+		if front == nil {
+			break
+		}
+		t.Logf("port:%v", front.Value)
+		front = front.Next()
+	}
+
+	protocolConfigs = make([]*ProtocolConfig, 0, 3)
+	ports = getRandomPort(protocolConfigs)
+	assert.Equal(t, ports.Len(), len(protocolConfigs))
 }
