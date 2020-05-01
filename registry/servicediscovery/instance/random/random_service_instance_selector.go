@@ -21,7 +21,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/registry"
-	"github.com/apache/dubbo-go/registry/service/instance"
+	"github.com/apache/dubbo-go/registry/servicediscovery/instance"
 	"math/rand"
 	"time"
 )
