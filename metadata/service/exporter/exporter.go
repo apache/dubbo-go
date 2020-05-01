@@ -15,20 +15,16 @@
  * limitations under the License.
  */
 
-package identifier
+package exporter
 
-// MetadataIdentifier is inherit baseMetaIdentifier with Application name
-type MetadataIdentifier struct {
-	Application string
-	BaseMetadataIdentifier
-}
+import (
+	"github.com/apache/dubbo-go/common"
+)
 
-// GetIdentifierKey will return string format as service:Version:Group:Side:Application
-func (mdi *MetadataIdentifier) GetIdentifierKey() string {
-	return mdi.BaseMetadataIdentifier.getIdentifierKey(mdi.Application)
-}
-
-// GetFilePathKey will return string format as metadata/path/Version/Group/Side/Application
-func (mdi *MetadataIdentifier) GetFilePathKey() string {
-	return mdi.BaseMetadataIdentifier.getFilePathKey(mdi.Application)
+// MetadataServiceExporter will export & unexport the metadata service,  get exported url, and return is exported or not
+type MetadataServiceExporter interface {
+	Export() error
+	Unexport()
+	GetExportedURLs() []*common.URL
+	IsExported() bool
 }
