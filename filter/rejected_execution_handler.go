@@ -31,5 +31,7 @@ import (
  * In such situation, implement this interface and register it by invoking extension.SetRejectedExecutionHandler.
  */
 type RejectedExecutionHandler interface {
+
+	// RejectedExecution will be called if the invocation was rejected by some component.
 	RejectedExecution(url common.URL, invocation protocol.Invocation) protocol.Result
 }
