@@ -15,39 +15,36 @@
  * limitations under the License.
  */
 
-package registry
+package random
 
 import (
-	"reflect"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/registry"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
-import (
-	"github.com/apache/dubbo-go/common/observer"
-)
-
-type ServiceInstancesChangedListener struct {
-	ServiceName string
-	observer.ConditionalEventListener
-	ChangedNotify ChangedNotify
-}
-
-func (sicl *ServiceInstancesChangedListener) OnEvent(e ServiceInstancesChangedEvent) error {
-	sicl.ChangedNotify.Notify(e)
-	return nil
-}
-
-func (sicl *ServiceInstancesChangedListener) GetPriority() int {
-	return -1
-}
-
-func (sicl *ServiceInstancesChangedListener) GetEventType() reflect.Type {
-	return reflect.TypeOf(&ServiceInstancesChangedEvent{})
-}
-
-func (sicl *ServiceInstancesChangedListener) Accept(e ServiceInstancesChangedEvent) bool {
-	return e.ServiceName == sicl.ServiceName
-}
-
-type ChangedNotify interface {
-	Notify(e ServiceInstancesChangedEvent)
+func TestRandomServiceInstanceSelector_Select(t *testing.T) {
+	selector := NewRandomServiceInstanceSelector()
+	serviceInstances := []registry.ServiceInstance{
+		&registry.DefaultServiceInstance{
+			Id:          "1",
+			ServiceName: "test1",
+			Host:        "127.0.0.1:80",
+			Port:        0,
+			Enable:      false,
+			Healthy:     false,
+			Metadata:    nil,
+		},
+		&registry.DefaultServiceInstance{
+			Id:          "2",
+			ServiceName: "test2",
+			Host:        "127.0.0.1:80",
+			Port:        0,
+			Enable:      false,
+			Healthy:     false,
+			Metadata:    nil,
+		},
+	}
+	assert.NotNil(t, selector.Select(common.URL{}, serviceInstances))
 }

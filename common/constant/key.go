@@ -79,6 +79,7 @@ const (
 	EXECUTE_REJECTED_EXECUTION_HANDLER_KEY = "execute.limit.rejected.handler"
 	PROVIDER_SHUTDOWN_FILTER               = "pshutdown"
 	CONSUMER_SHUTDOWN_FILTER               = "cshutdown"
+	PID_KEY                                = "pid"
 )
 
 const (
@@ -255,5 +256,16 @@ const (
 // service discovery
 
 const (
-	NACOS_GROUP = "nacos.group"
+	NACOS_GROUP                               = "nacos.group"
+	SUBSCRIBED_SERVICE_NAMES_KEY              = "subscribed-services"
+	PROVIDER_BY                               = "provided-by"
+	EXPORTED_SERVICES_REVISION_PROPERTY_NAME  = "dubbo.exported-services.revision"
+	SERVICE_INSTANCE_SELECTOR                 = "service-instance-selector"
+	METADATA_STORAGE_TYPE_PROPERTY_NAME       = "dubbo.metadata.storage-type"
+	DEFAULT_METADATA_STORAGE_TYPE             = "local"
+	SERVICE_INSTANCE_ENDPOINTS                = "dubbo.endpoints"
+	METADATA_SERVICE_PREFIX                   = "dubbo.metadata-service."
+	METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME = METADATA_SERVICE_PREFIX + "url-params"
+	METADATA_SERVICE_URLS_PROPERTY_NAME       = METADATA_SERVICE_PREFIX + "urls"
+	SERVICE_NAME_MAPPING_KEY                  = "service-name-mapping"
 )

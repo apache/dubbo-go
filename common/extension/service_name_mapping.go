@@ -15,39 +15,21 @@
  * limitations under the License.
  */
 
-package registry
+package extension
 
 import (
-	"reflect"
+	"github.com/apache/dubbo-go/metadata/mapping"
 )
 
-import (
-	"github.com/apache/dubbo-go/common/observer"
+var (
+	nameMappings = make(map[string]func() mapping.ServiceNameMapping)
 )
 
-type ServiceInstancesChangedListener struct {
-	ServiceName string
-	observer.ConditionalEventListener
-	ChangedNotify ChangedNotify
+func SetServiceNameMapping(name string, creator func() mapping.ServiceNameMapping) {
+	// TODO(@邓大明)
 }
 
-func (sicl *ServiceInstancesChangedListener) OnEvent(e ServiceInstancesChangedEvent) error {
-	sicl.ChangedNotify.Notify(e)
+func GetServiceNameMapping(name string) mapping.ServiceNameMapping {
+	// TODO(@邓大明)
 	return nil
-}
-
-func (sicl *ServiceInstancesChangedListener) GetPriority() int {
-	return -1
-}
-
-func (sicl *ServiceInstancesChangedListener) GetEventType() reflect.Type {
-	return reflect.TypeOf(&ServiceInstancesChangedEvent{})
-}
-
-func (sicl *ServiceInstancesChangedListener) Accept(e ServiceInstancesChangedEvent) bool {
-	return e.ServiceName == sicl.ServiceName
-}
-
-type ChangedNotify interface {
-	Notify(e ServiceInstancesChangedEvent)
 }
