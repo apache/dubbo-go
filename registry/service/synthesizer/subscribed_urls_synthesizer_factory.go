@@ -15,39 +15,16 @@
  * limitations under the License.
  */
 
-package registry
+package synthesizer
 
-import (
-	"reflect"
+var (
+	synthesizers []SubscribedURLsSynthesizer
 )
 
-import (
-	"github.com/apache/dubbo-go/common/observer"
-)
-
-type ServiceInstancesChangedListener struct {
-	ServiceName string
-	observer.ConditionalEventListener
-	ChangedNotify ChangedNotify
+func AddSynthesizer(synthesizer SubscribedURLsSynthesizer) {
+	synthesizers = append(synthesizers, synthesizer)
 }
 
-func (sicl *ServiceInstancesChangedListener) OnEvent(e ServiceInstancesChangedEvent) error {
-	sicl.ChangedNotify.Notify(e)
-	return nil
-}
-
-func (sicl *ServiceInstancesChangedListener) GetPriority() int {
-	return -1
-}
-
-func (sicl *ServiceInstancesChangedListener) GetEventType() reflect.Type {
-	return reflect.TypeOf(&ServiceInstancesChangedEvent{})
-}
-
-func (sicl *ServiceInstancesChangedListener) Accept(e ServiceInstancesChangedEvent) bool {
-	return e.ServiceName == sicl.ServiceName
-}
-
-type ChangedNotify interface {
-	Notify(e ServiceInstancesChangedEvent)
+func GetAllSynthesizer() []SubscribedURLsSynthesizer {
+	return synthesizers
 }

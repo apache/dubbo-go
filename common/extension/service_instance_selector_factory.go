@@ -15,39 +15,26 @@
  * limitations under the License.
  */
 
-package registry
+package extension
 
 import (
-	"reflect"
+	"github.com/apache/dubbo-go/registry/service/instance"
+	perrors "github.com/pkg/errors"
 )
 
-import (
-	"github.com/apache/dubbo-go/common/observer"
+var (
+	serviceInstanceSelectorMappings = make(map[string]func() instance.ServiceInstanceSelector)
 )
 
-type ServiceInstancesChangedListener struct {
-	ServiceName string
-	observer.ConditionalEventListener
-	ChangedNotify ChangedNotify
+func SetServiceInstanceSelector(name string, f func() instance.ServiceInstanceSelector) {
+	serviceInstanceSelectorMappings[name] = f
 }
 
-func (sicl *ServiceInstancesChangedListener) OnEvent(e ServiceInstancesChangedEvent) error {
-	sicl.ChangedNotify.Notify(e)
-	return nil
-}
-
-func (sicl *ServiceInstancesChangedListener) GetPriority() int {
-	return -1
-}
-
-func (sicl *ServiceInstancesChangedListener) GetEventType() reflect.Type {
-	return reflect.TypeOf(&ServiceInstancesChangedEvent{})
-}
-
-func (sicl *ServiceInstancesChangedListener) Accept(e ServiceInstancesChangedEvent) bool {
-	return e.ServiceName == sicl.ServiceName
-}
-
-type ChangedNotify interface {
-	Notify(e ServiceInstancesChangedEvent)
+func GetServiceInstanceSelector(name string) (instance.ServiceInstanceSelector, error) {
+	serviceInstanceSelector, ok := serviceInstanceSelectorMappings[name]
+	if !ok {
+		return nil, perrors.New("Could not find service instance selector with" +
+			"name:" + name)
+	}
+	return serviceInstanceSelector(), nil
 }
