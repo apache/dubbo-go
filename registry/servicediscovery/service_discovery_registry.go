@@ -361,17 +361,17 @@ func (s *serviceDiscoveryRegistry) getExportedUrlsByInst(serviceInstance registr
 }
 
 func (s *serviceDiscoveryRegistry) prepareServiceRevisionExportedURLs(serviceInstances []registry.ServiceInstance) {
-	s.lock.Lock()
 	// 1. expunge stale
 	s.expungeStaleRevisionExportedURLs(serviceInstances)
 	// 2. Initialize
 	s.initRevisionExportedURLs(serviceInstances)
-	s.lock.Unlock()
 }
 
 func (s *serviceDiscoveryRegistry) expungeStaleRevisionExportedURLs(serviceInstances []registry.ServiceInstance) {
 	serviceName := serviceInstances[0].GetServiceName()
+	s.lock.Lock()
 	revisionExportedURLsMap, exist := s.serviceRevisionExportedURLsCache[serviceName]
+	s.lock.Unlock()
 	if !exist {
 		return
 	}
@@ -382,7 +382,7 @@ func (s *serviceDiscoveryRegistry) expungeStaleRevisionExportedURLs(serviceInsta
 	currentRevision := gxset.NewSet()
 	for _, s := range serviceInstances {
 		rv := getExportedServicesRevision(s)
-		if len(rv) != 0 {
+		if len(rv) > 0 {
 			currentRevision.Add(rv)
 		}
 	}
@@ -438,7 +438,9 @@ func (s *serviceDiscoveryRegistry) initRevisionExportedURLsByInst(serviceInstanc
 	}
 	serviceName := serviceInstance.GetServiceName()
 	revision := getExportedServicesRevision(serviceInstance)
+	s.lock.Lock()
 	revisionExportedURLsMap := s.serviceRevisionExportedURLsCache[serviceName]
+	s.lock.Unlock()
 	revisionExportedURLs := revisionExportedURLsMap[revision]
 	firstGet := false
 	if revisionExportedURLs == nil || len(revisionExportedURLs) == 0 {
