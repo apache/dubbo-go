@@ -235,16 +235,25 @@ func TestConfigLoaderWithConfigCenterSingleRegistry(t *testing.T) {
 
 }
 
+func TestGetBaseConfig(t *testing.T) {
+	bc := GetBaseConfig()
+	assert.NotNil(t, bc)
+	_, found := bc.GetRemoteConfig("mock")
+	assert.False(t, found)
+}
+
 // mockInitProviderWithSingleRegistry will init a mocked providerConfig
 func mockInitProviderWithSingleRegistry() {
 	providerConfig = &ProviderConfig{
-		ApplicationConfig: &ApplicationConfig{
-			Organization: "dubbo_org",
-			Name:         "dubbo",
-			Module:       "module",
-			Version:      "1.0.0",
-			Owner:        "dubbo",
-			Environment:  "test"},
+		BaseConfig: BaseConfig{
+			ApplicationConfig: &ApplicationConfig{
+				Organization: "dubbo_org",
+				Name:         "dubbo",
+				Module:       "module",
+				Version:      "1.0.0",
+				Owner:        "dubbo",
+				Environment:  "test"},
+		},
 		Registry: &RegistryConfig{
 			Address:  "mock://127.0.0.1:2181",
 			Username: "user1",
