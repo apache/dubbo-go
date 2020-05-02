@@ -24,9 +24,6 @@ import (
 import (
 	gxnet "github.com/dubbogo/gost/net"
 	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"go.uber.org/atomic"
 )
 
