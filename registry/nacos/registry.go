@@ -140,7 +140,7 @@ func (nr *nacosRegistry) subscribe(conf *common.URL) (registry.Listener, error) 
 	return NewNacosListener(*conf, nr.namingClient)
 }
 
-//subscribe from registry
+// subscribe from registry
 func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
 	for {
 		if !nr.IsAvailable() {
@@ -179,6 +179,7 @@ func (nr *nacosRegistry) GetUrl() common.URL {
 }
 
 func (nr *nacosRegistry) IsAvailable() bool {
+	// TODO
 	return true
 }
 
