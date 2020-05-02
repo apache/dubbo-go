@@ -113,6 +113,16 @@ func NewServiceConfig(id string, context context.Context) *ServiceConfig {
 	}
 }
 
+// InitExported will set exported as false atom bool
+func (c *ServiceConfig) InitExported() {
+	c.exported = atomic.NewBool(false)
+}
+
+// IsExport will return whether the service config is exported or not
+func (c *ServiceConfig) IsExport() bool {
+	return c.exported.Load()
+}
+
 // Get Random Port
 func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
 	ports := list.New()
@@ -129,16 +139,6 @@ func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
 		ports.PushBack(strings.Split(tcp.Addr().String(), ":")[1])
 	}
 	return ports
-}
-
-// InitExported will set exported as false atom bool
-func (c *ServiceConfig) InitExported() {
-	c.exported = atomic.NewBool(false)
-}
-
-// IsExport will return whether the service config is exported or not
-func (c *ServiceConfig) IsExport() bool {
-	return c.exported.Load()
 }
 
 // Export ...

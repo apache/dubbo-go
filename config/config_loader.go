@@ -102,6 +102,7 @@ func loadConsumerConfig() {
 
 	metricConfig = consumerConfig.MetricConfig
 	applicationConfig = consumerConfig.ApplicationConfig
+	extension.SetAndInitGlobalDispatcher(consumerConfig.eventDispatcherType)
 
 	extension.SetAndInitGlobalDispatcher(consumerConfig.eventDispatcherType)
 
@@ -180,6 +181,7 @@ func loadProviderConfig() {
 	// so, you should know that the consumer's config will be override
 	metricConfig = providerConfig.MetricConfig
 	applicationConfig = providerConfig.ApplicationConfig
+	extension.SetAndInitGlobalDispatcher(providerConfig.eventDispatcherType)
 
 	extension.SetAndInitGlobalDispatcher(consumerConfig.eventDispatcherType)
 
@@ -196,6 +198,7 @@ func loadProviderConfig() {
 		}
 		svs.id = key
 		svs.Implement(rpcService)
+		svs.Protocols = providerConfig.Protocols
 		if err := svs.Export(); err != nil {
 			panic(fmt.Sprintf("service %s export failed! err: %#v", key, err))
 		}
