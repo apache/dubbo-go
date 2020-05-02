@@ -33,13 +33,15 @@ import (
 
 func doInitProvider() {
 	providerConfig = &ProviderConfig{
-		ApplicationConfig: &ApplicationConfig{
-			Organization: "dubbo_org",
-			Name:         "dubbo",
-			Module:       "module",
-			Version:      "2.6.0",
-			Owner:        "dubbo",
-			Environment:  "test"},
+		BaseConfig: BaseConfig{
+			ApplicationConfig: &ApplicationConfig{
+				Organization: "dubbo_org",
+				Name:         "dubbo",
+				Module:       "module",
+				Version:      "2.6.0",
+				Owner:        "dubbo",
+				Environment:  "test"},
+		},
 		Registries: map[string]*RegistryConfig{
 			"shanghai_reg1": {
 				Protocol:   "mock",
