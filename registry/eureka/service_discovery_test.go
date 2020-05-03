@@ -21,7 +21,6 @@ import (
 	"github.com/apache/dubbo-go/registry"
 	"strconv"
 	"testing"
-	"time"
 )
 
 import (
@@ -37,18 +36,18 @@ import (
 func TestNewEurekaServiceDiscovery(t *testing.T) {
 	serviceDiscovry, err := extension.GetServiceDiscovery(constant.EUREKA_KEY, mockUrl())
 	assert.Nil(t, err)
-	assert.NotNil(t, serviceDiscovry.(*eurekaServiceDiscovery).eurekaConnection)
+	assert.NotNil(t, serviceDiscovry.(*eurekaServiceDiscovery).client)
 	err = serviceDiscovry.Destroy()
 	assert.Nil(t, err)
-	assert.Nil(t, serviceDiscovry.(*eurekaServiceDiscovery).eurekaConnection)
+	assert.Nil(t, serviceDiscovry.(*eurekaServiceDiscovery).client)
 }
 
 func TestEurekaServiceDiscovery_CRUD(t *testing.T) {
-	t.Skip()
-	serviceName := "service-name"
+	t.SkipNow()
+	serviceName := "UNKNOWN"
 	id := "id"
-	host := "host"
-	port := 123
+	host := "localhost"
+	port := 6001
 	instance := &registry.DefaultServiceInstance{
 		Id:          id,
 		ServiceName: serviceName,
@@ -63,14 +62,6 @@ func TestEurekaServiceDiscovery_CRUD(t *testing.T) {
 
 	serviceDiscovry, _ := extension.GetServiceDiscovery(constant.EUREKA_KEY, mockUrl())
 
-	// clean data for local test
-	serviceDiscovry.Unregister(&registry.DefaultServiceInstance{
-		Id:          id,
-		ServiceName: serviceName,
-		Host:        host,
-		Port:        port,
-	})
-
 	err := serviceDiscovry.Register(instance)
 	assert.Nil(t, err)
 
@@ -80,42 +71,41 @@ func TestEurekaServiceDiscovery_CRUD(t *testing.T) {
 	assert.Equal(t, 0, page.GetOffset())
 	assert.Equal(t, 10, page.GetPageSize())
 	assert.Equal(t, 1, page.GetDataSize())
-	time.Sleep(1000 * time.Second)
-
-	instance = page.GetData()[0].(*registry.DefaultServiceInstance)
-	assert.NotNil(t, instance)
-	assert.Equal(t, id, instance.GetId())
-	assert.Equal(t, host, instance.GetHost())
-	assert.Equal(t, port, instance.GetPort())
-	assert.Equal(t, serviceName, instance.GetServiceName())
-	assert.Equal(t, 0, len(instance.GetMetadata()))
-
-	instance.Metadata["a"] = "b"
-
-	err = serviceDiscovry.Update(instance)
-	assert.Nil(t, err)
-
-	pageMap := serviceDiscovry.GetRequestInstances([]string{serviceName}, 0, 1)
-	assert.Equal(t, 1, len(pageMap))
-	page = pageMap[serviceName]
-	assert.NotNil(t, page)
-	assert.Equal(t, 1, len(page.GetData()))
-
-	instance = page.GetData()[0].(*registry.DefaultServiceInstance)
-	v, _ := instance.Metadata["a"]
-	assert.Equal(t, "b", v)
+	//
+	//instance = page.GetData()[0].(*registry.DefaultServiceInstance)
+	//assert.NotNil(t, instance)
+	//assert.Equal(t, id, instance.GetId())
+	//assert.Equal(t, host, instance.GetHost())
+	//assert.Equal(t, port, instance.GetPort())
+	//assert.Equal(t, serviceName, instance.GetServiceName())
+	//assert.Equal(t, 0, len(instance.GetMetadata()))
+	//
+	//instance.Metadata["a"] = "b"
+	//
+	//err = serviceDiscovry.Update(instance)
+	//assert.Nil(t, err)
+	//
+	//pageMap := serviceDiscovry.GetRequestInstances([]string{serviceName}, 0, 1)
+	//assert.Equal(t, 1, len(pageMap))
+	//page = pageMap[serviceName]
+	//assert.NotNil(t, page)
+	//assert.Equal(t, 1, len(page.GetData()))
+	//
+	//instance = page.GetData()[0].(*registry.DefaultServiceInstance)
+	//v, _ := instance.Metadata["a"]
+	//assert.Equal(t, "b", v)
 
 	// test dispatcher event
-	err = serviceDiscovry.DispatchEventByServiceName(serviceName)
-	assert.Nil(t, err)
+	//err = serviceDiscovry.DispatchEventByServiceName(serviceName)
+	//assert.Nil(t, err)
 
 	// test AddListener
-	err = serviceDiscovry.AddListener(&registry.ServiceInstancesChangedListener{})
-	assert.Nil(t, err)
+	//err = serviceDiscovry.AddListener(&registry.ServiceInstancesChangedListener{})
+	//assert.Nil(t, err)
 }
 
 func mockUrl() *common.URL {
-	regurl, _ := common.NewURL("registry://localhost:1111", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
+	regurl, _ := common.NewURL("registry://localhost:8888", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
 	return &regurl
 }
 

@@ -24,9 +24,9 @@ import (
 )
 
 import (
+	"github.com/ArthurHlt/go-eureka-client/eureka"
 	gxset "github.com/dubbogo/gost/container/set"
 	gxpage "github.com/dubbogo/gost/page"
-	"github.com/hudl/fargo"
 	perrors "github.com/pkg/errors"
 )
 
@@ -38,6 +38,10 @@ import (
 	"github.com/apache/dubbo-go/registry"
 )
 
+const (
+	defaultGroup = "DEFAULT_GROUP"
+)
+
 // init will put the service discovery into extension
 func init() {
 	extension.SetServiceDiscovery(constant.EUREKA_KEY, newEurekaServiceDiscovery)
@@ -45,30 +49,26 @@ func init() {
 
 // eurekaServiceDiscovery is the implementation of service discovery based on eureka.
 type eurekaServiceDiscovery struct {
-	eurekaConnection *fargo.EurekaConnection
-	group            string
+	client *eureka.Client
+	group  string
 	*common.URL
 }
 
 // toDeregisterInstance will convert the ServiceInstance to DeregisterInstanceParam
-func (e *eurekaServiceDiscovery) toDeregisterInstance(instance registry.ServiceInstance) *fargo.Instance {
-	return &fargo.Instance{
-		HomePageUrl: instance.GetServiceName(),
-		IPAddr:      instance.GetHost(),
-		Port:        instance.GetPort(),
-		App:         e.group,
-	}
+func (e *eurekaServiceDiscovery) toDeregisterInstance(instance registry.ServiceInstance) *eureka.InstanceInfo {
+	return eureka.NewInstanceInfo(instance.GetServiceName(), e.group, instance.GetHost(), instance.GetPort(), 30, false)
 }
 
 // Destroy will close the service discovery.
 // Actually, it only marks the eurekaConnection as null and then return
 func (e *eurekaServiceDiscovery) Destroy() error {
-	e.eurekaConnection = nil
+	e.client = nil
 	return nil
 }
 
 func (e *eurekaServiceDiscovery) Register(instance registry.ServiceInstance) error {
-	err := e.eurekaConnection.RegisterInstance(e.toDeregisterInstance(instance))
+	instanceInfo := e.toDeregisterInstance(instance)
+	err := e.client.RegisterInstance(instanceInfo.App, instanceInfo)
 	if err != nil {
 		return perrors.WithMessage(err, "Could not unregister the instance. "+instance.GetServiceName())
 	}
@@ -85,7 +85,8 @@ func (e *eurekaServiceDiscovery) Update(instance registry.ServiceInstance) error
 
 // Unregister will unregister the instance
 func (e *eurekaServiceDiscovery) Unregister(instance registry.ServiceInstance) error {
-	err := e.eurekaConnection.DeregisterInstance(e.toDeregisterInstance(instance))
+	instanceInfo := e.toDeregisterInstance(instance)
+	err := e.client.UnregisterInstance(instanceInfo.App, instanceInfo.InstanceID)
 	if err != nil {
 		return perrors.WithMessage(err, "Could not unregister the instance. "+instance.GetServiceName())
 	}
@@ -98,12 +99,12 @@ func (e *eurekaServiceDiscovery) GetDefaultPageSize() int {
 
 func (e *eurekaServiceDiscovery) GetServices() *gxset.HashSet {
 	res := gxset.NewSet()
-	apps, err := e.eurekaConnection.GetApps()
+	apps, err := e.client.GetApplications()
 	if err != nil {
 		logger.Errorf("GetServices getApps fail error: %s", err)
 		return res
 	}
-	for _, application := range apps {
+	for _, application := range apps.Applications {
 		if len(application.Instances) == 0 {
 			continue
 		}
@@ -113,23 +114,10 @@ func (e *eurekaServiceDiscovery) GetServices() *gxset.HashSet {
 	return res
 }
 
-func parseMetadata(meta *fargo.InstanceMetadata) map[string]string {
-	returnMap := make(map[string]string, len(meta.GetMap()))
-	for key := range meta.GetMap() {
-		s, err := meta.GetString(key)
-		if err != nil {
-			logger.Errorf("Could not parse to string key: " + key)
-			continue
-		}
-		returnMap[key] = s
-	}
-	return returnMap
-}
-
 func (e *eurekaServiceDiscovery) GetInstances(serviceName string) []registry.ServiceInstance {
-	application, err := e.eurekaConnection.GetApp(serviceName)
+	application, err := e.client.GetApplication(serviceName)
 	if err != nil {
-		logger.Errorf("Could not query the instances for service: " + serviceName + ", group: " + e.group)
+		logger.Errorf("Could not query the instances for service: "+serviceName+", group: "+e.group+",err:", err)
 		return make([]registry.ServiceInstance, 0, 0)
 	}
 
@@ -137,20 +125,20 @@ func (e *eurekaServiceDiscovery) GetInstances(serviceName string) []registry.Ser
 
 	for _, instance := range application.Instances {
 		d := &registry.DefaultServiceInstance{
-			Id:          instance.Id(),
+			Id:          instance.InstanceID,
 			ServiceName: instance.App,
-			Host:        instance.IPAddr,
-			Enable:      instance.PortEnabled,
+			Host:        instance.IpAddr,
+			Enable:      true,
 			Healthy:     true,
-			Metadata:    parseMetadata(&instance.Metadata),
+			Metadata:    instance.Metadata.Map,
 		}
-		if fargo.UP != instance.Status {
+		if eureka.UP != instance.Status {
 			d.Healthy = false
 		}
-		if instance.SecurePortEnabled {
-			d.Port = instance.SecurePort
+		if instance.SecurePort != nil && instance.SecurePort.Enabled {
+			d.Port = instance.SecurePort.Port
 		} else {
-			d.Port = instance.Port
+			d.Port = instance.Port.Port
 		}
 
 		res = append(res, d)
@@ -221,13 +209,12 @@ func newEurekaServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, erro
 		if err != nil {
 			return nil, perrors.WithMessagef(err, "split [%s] ", addr)
 		}
-		serviceURLs = append(serviceURLs, fmt.Sprintf("http://%s:%s/eureka/v2", ip, portStr))
+		serviceURLs = append(serviceURLs, fmt.Sprintf("http://%s:%s/eureka", ip, portStr))
 	}
-	config := fargo.Config{}
-	config.Eureka.ServiceUrls = serviceURLs
-	eurekaConnection := fargo.NewConnFromConfig(config)
+	client := eureka.NewClient(serviceURLs)
 	return &eurekaServiceDiscovery{
-		eurekaConnection: &eurekaConnection,
-		URL:              url,
+		client: client,
+		group:  url.GetParam(constant.NACOS_GROUP, defaultGroup),
+		URL:    url,
 	}, nil
 }
