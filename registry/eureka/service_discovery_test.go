@@ -34,17 +34,16 @@ import (
 )
 
 func TestNewEurekaServiceDiscovery(t *testing.T) {
-	serviceDiscovry, err := extension.GetServiceDiscovery(constant.EUREKA_KEY, mockUrl())
+	serviceDiscovery, err := extension.GetServiceDiscovery(constant.EUREKA_KEY, mockUrl())
 	assert.Nil(t, err)
-	assert.NotNil(t, serviceDiscovry.(*eurekaServiceDiscovery).client)
-	err = serviceDiscovry.Destroy()
+	assert.NotNil(t, serviceDiscovery.(*eurekaServiceDiscovery).client)
+	err = serviceDiscovery.Destroy()
 	assert.Nil(t, err)
-	assert.Nil(t, serviceDiscovry.(*eurekaServiceDiscovery).client)
+	assert.Nil(t, serviceDiscovery.(*eurekaServiceDiscovery).client)
 }
 
 func TestEurekaServiceDiscovery_CRUD(t *testing.T) {
-	t.SkipNow()
-	serviceName := "UNKNOWN"
+	serviceName := "DEFAULT_GROUP"
 	id := "id"
 	host := "localhost"
 	port := 6001
@@ -60,32 +59,48 @@ func TestEurekaServiceDiscovery_CRUD(t *testing.T) {
 
 	// clean data
 
-	serviceDiscovry, _ := extension.GetServiceDiscovery(constant.EUREKA_KEY, mockUrl())
+	serviceDiscovery, _ := extension.GetServiceDiscovery(constant.EUREKA_KEY, mockUrl())
+	defer func() {
+		// clean data for local test
+		serviceDiscovery.Unregister(&registry.DefaultServiceInstance{
+			Id:          instance.Id,
+			ServiceName: instance.ServiceName,
+			Host:        instance.Host,
+			Port:        instance.Port,
+		})
+	}()
 
-	err := serviceDiscovry.Register(instance)
+	err := serviceDiscovery.Register(instance)
 	assert.Nil(t, err)
 
-	page := serviceDiscovry.GetHealthyInstancesByPage(serviceName, 0, 10, true)
+	page := serviceDiscovery.GetHealthyInstancesByPage(serviceName, 0, 10, true)
 	assert.NotNil(t, page)
 
 	assert.Equal(t, 0, page.GetOffset())
 	assert.Equal(t, 10, page.GetPageSize())
 	assert.Equal(t, 1, page.GetDataSize())
-	//
-	//instance = page.GetData()[0].(*registry.DefaultServiceInstance)
-	//assert.NotNil(t, instance)
-	//assert.Equal(t, id, instance.GetId())
-	//assert.Equal(t, host, instance.GetHost())
-	//assert.Equal(t, port, instance.GetPort())
-	//assert.Equal(t, serviceName, instance.GetServiceName())
-	//assert.Equal(t, 0, len(instance.GetMetadata()))
+	assert.Equal(t, 1, len(page.GetData()))
+
+	instance = page.GetData()[0].(*registry.DefaultServiceInstance)
+	assert.NotNil(t, instance)
+	assert.Equal(t, id, instance.GetId())
+	assert.Equal(t, host, instance.GetHost())
+	assert.Equal(t, port, instance.GetPort())
+	assert.Equal(t, serviceName, instance.GetServiceName())
+	assert.Equal(t, 0, len(instance.GetMetadata()))
+
+	pageMap := serviceDiscovery.GetRequestInstances([]string{serviceName}, 0, 1)
+	assert.Equal(t, 1, len(pageMap))
+	page = pageMap[serviceName]
+	assert.NotNil(t, page)
+	assert.Equal(t, 1, len(page.GetData()))
 	//
 	//instance.Metadata["a"] = "b"
 	//
-	//err = serviceDiscovry.Update(instance)
+	//err = serviceDiscovery.Update(instance)
 	//assert.Nil(t, err)
 	//
-	//pageMap := serviceDiscovry.GetRequestInstances([]string{serviceName}, 0, 1)
+	//pageMap := serviceDiscovery.GetRequestInstances([]string{serviceName}, 0, 1)
 	//assert.Equal(t, 1, len(pageMap))
 	//page = pageMap[serviceName]
 	//assert.NotNil(t, page)
@@ -96,20 +111,20 @@ func TestEurekaServiceDiscovery_CRUD(t *testing.T) {
 	//assert.Equal(t, "b", v)
 
 	// test dispatcher event
-	//err = serviceDiscovry.DispatchEventByServiceName(serviceName)
+	//err = serviceDiscovery.DispatchEventByServiceName(serviceName)
 	//assert.Nil(t, err)
 
 	// test AddListener
-	//err = serviceDiscovry.AddListener(&registry.ServiceInstancesChangedListener{})
+	//err = serviceDiscovery.AddListener(&registry.ServiceInstancesChangedListener{})
 	//assert.Nil(t, err)
 }
 
 func mockUrl() *common.URL {
-	regurl, _ := common.NewURL("registry://localhost:8888", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
+	regurl, _ := common.NewURL("registry://106.54.227.205:8080", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
 	return &regurl
 }
 
 func TestEurekaServiceDiscovery_GetDefaultPageSize(t *testing.T) {
-	serviceDiscovry, _ := extension.GetServiceDiscovery(constant.EUREKA_KEY, mockUrl())
-	assert.Equal(t, registry.DefaultPageSize, serviceDiscovry.GetDefaultPageSize())
+	serviceDiscovery, _ := extension.GetServiceDiscovery(constant.EUREKA_KEY, mockUrl())
+	assert.Equal(t, registry.DefaultPageSize, serviceDiscovery.GetDefaultPageSize())
 }

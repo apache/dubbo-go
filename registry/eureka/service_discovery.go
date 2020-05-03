@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"sync"
 )
 
 import (
@@ -51,12 +52,20 @@ func init() {
 type eurekaServiceDiscovery struct {
 	client *eureka.Client
 	group  string
+	mutex  sync.Mutex
 	*common.URL
 }
 
 // toDeregisterInstance will convert the ServiceInstance to DeregisterInstanceParam
-func (e *eurekaServiceDiscovery) toDeregisterInstance(instance registry.ServiceInstance) *eureka.InstanceInfo {
-	return eureka.NewInstanceInfo(instance.GetServiceName(), e.group, instance.GetHost(), instance.GetPort(), 30, false)
+func (e *eurekaServiceDiscovery) toRegisterInstance(instance registry.ServiceInstance) *eureka.InstanceInfo {
+	info := eureka.NewInstanceInfo(instance.GetServiceName(), e.group, instance.GetHost(), instance.GetPort(), 30, false)
+	info.InstanceID = instance.GetId()
+	if len(instance.GetMetadata()) > 0 {
+		info.Metadata = &eureka.MetaData{
+			Map: instance.GetMetadata(),
+		}
+	}
+	return info
 }
 
 // Destroy will close the service discovery.
@@ -67,7 +76,7 @@ func (e *eurekaServiceDiscovery) Destroy() error {
 }
 
 func (e *eurekaServiceDiscovery) Register(instance registry.ServiceInstance) error {
-	instanceInfo := e.toDeregisterInstance(instance)
+	instanceInfo := e.toRegisterInstance(instance)
 	err := e.client.RegisterInstance(instanceInfo.App, instanceInfo)
 	if err != nil {
 		return perrors.WithMessage(err, "Could not unregister the instance. "+instance.GetServiceName())
@@ -85,7 +94,7 @@ func (e *eurekaServiceDiscovery) Update(instance registry.ServiceInstance) error
 
 // Unregister will unregister the instance
 func (e *eurekaServiceDiscovery) Unregister(instance registry.ServiceInstance) error {
-	instanceInfo := e.toDeregisterInstance(instance)
+	instanceInfo := e.toRegisterInstance(instance)
 	err := e.client.UnregisterInstance(instanceInfo.App, instanceInfo.InstanceID)
 	if err != nil {
 		return perrors.WithMessage(err, "Could not unregister the instance. "+instance.GetServiceName())
@@ -101,7 +110,7 @@ func (e *eurekaServiceDiscovery) GetServices() *gxset.HashSet {
 	res := gxset.NewSet()
 	apps, err := e.client.GetApplications()
 	if err != nil {
-		logger.Errorf("GetServices getApps fail error: %s", err)
+		logger.Errorf("GetServices getApps fail error: %+v", err)
 		return res
 	}
 	for _, application := range apps.Applications {
@@ -117,7 +126,7 @@ func (e *eurekaServiceDiscovery) GetServices() *gxset.HashSet {
 func (e *eurekaServiceDiscovery) GetInstances(serviceName string) []registry.ServiceInstance {
 	application, err := e.client.GetApplication(serviceName)
 	if err != nil {
-		logger.Errorf("Could not query the instances for service: "+serviceName+", group: "+e.group+",err:", err)
+		logger.Errorf("Could not query the instances for service: %s, group:%s ,err:%+v ", serviceName, e.group, err)
 		return make([]registry.ServiceInstance, 0, 0)
 	}
 
