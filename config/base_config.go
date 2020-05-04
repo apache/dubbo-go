@@ -42,9 +42,10 @@ type multiConfiger interface {
 
 // BaseConfig is the common configuration for provider and consumer
 type BaseConfig struct {
-	ConfigCenterConfig *ConfigCenterConfig      `yaml:"config_center" json:"config_center,omitempty"`
-	Remotes            map[string]*RemoteConfig `yaml:"remotes" json:"remotes,omitempty"`
-	// application
+	ConfigCenterConfig *ConfigCenterConfig                `yaml:"config_center" json:"config_center,omitempty"`
+	Remotes            map[string]*RemoteConfig           `yaml:"remotes" json:"remotes,omitempty"`
+	ServiceDiscoveries map[string]*ServiceDiscoveryConfig `yaml:"service_discovery" json:"service_discovery,omitempty"`
+	// application config
 	ApplicationConfig *ApplicationConfig `yaml:"application" json:"application,omitempty" property:"application"`
 
 	configCenterUrl     *common.URL
@@ -53,6 +54,11 @@ type BaseConfig struct {
 	eventDispatcherType string        `default:"direct" yaml:"event_dispatcher_type" json:"event_dispatcher_type,omitempty"`
 	MetricConfig        *MetricConfig `yaml:"metrics" json:"metrics,omitempty"`
 	fileStream          *bytes.Buffer
+}
+
+func (c *BaseConfig) GetServiceDiscoveries(name string) (config *ServiceDiscoveryConfig, ok bool) {
+	config, ok = c.ServiceDiscoveries[name]
+	return
 }
 
 // GetRemoteConfig will return the remote's config with the name if found

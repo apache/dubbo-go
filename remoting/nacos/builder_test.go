@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-package config
+package nacos
 
 import (
-	"strings"
 	"testing"
+	"time"
 )
 
 import (
@@ -27,28 +27,24 @@ import (
 )
 
 import (
-	_ "github.com/apache/dubbo-go/cluster/router/condition"
+	"github.com/apache/dubbo-go/config"
 )
 
-const testYML = "testdata/router_config.yml"
-const errorTestYML = "testdata/router_config_error.yml"
+func TestNewNacosClient(t *testing.T) {
+	rc := &config.RemoteConfig{}
+	client, err := NewNacosClient(rc)
 
-func TestString(t *testing.T) {
+	// address is nil
+	assert.NotNil(t, err)
 
-	s := "a1=>a2"
-	s1 := "=>a2"
-	s2 := "a1=>"
+	rc.Address = "console.nacos.io:80:123"
+	client, err = NewNacosClient(rc)
+	// invalid address
+	assert.NotNil(t, err)
 
-	n := strings.SplitN(s, "=>", 2)
-	n1 := strings.SplitN(s1, "=>", 2)
-	n2 := strings.SplitN(s2, "=>", 2)
-
-	assert.Equal(t, n[0], "a1")
-	assert.Equal(t, n[1], "a2")
-
-	assert.Equal(t, n1[0], "")
-	assert.Equal(t, n1[1], "a2")
-
-	assert.Equal(t, n2[0], "a1")
-	assert.Equal(t, n2[1], "")
+	rc.Address = "console.nacos.io:80"
+	rc.Timeout = 10 * time.Second
+	client, err = NewNacosClient(rc)
+	assert.NotNil(t, client)
+	assert.Nil(t, err)
 }

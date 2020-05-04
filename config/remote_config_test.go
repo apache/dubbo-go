@@ -18,37 +18,24 @@
 package config
 
 import (
-	"strings"
 	"testing"
-)
 
-import (
 	"github.com/stretchr/testify/assert"
 )
 
-import (
-	_ "github.com/apache/dubbo-go/cluster/router/condition"
-)
+func TestRemoteConfig_GetParam(t *testing.T) {
+	rc := &RemoteConfig{
+		Params: make(map[string]string, 1),
+	}
 
-const testYML = "testdata/router_config.yml"
-const errorTestYML = "testdata/router_config_error.yml"
+	def := "default value"
+	key := "key"
+	value := rc.GetParam(key, def)
+	assert.Equal(t, def, value)
 
-func TestString(t *testing.T) {
+	actualVal := "actual value"
+	rc.Params[key] = actualVal
 
-	s := "a1=>a2"
-	s1 := "=>a2"
-	s2 := "a1=>"
-
-	n := strings.SplitN(s, "=>", 2)
-	n1 := strings.SplitN(s1, "=>", 2)
-	n2 := strings.SplitN(s2, "=>", 2)
-
-	assert.Equal(t, n[0], "a1")
-	assert.Equal(t, n[1], "a2")
-
-	assert.Equal(t, n1[0], "")
-	assert.Equal(t, n1[1], "a2")
-
-	assert.Equal(t, n2[0], "a1")
-	assert.Equal(t, n2[1], "")
+	value = rc.GetParam(key, def)
+	assert.Equal(t, actualVal, value)
 }

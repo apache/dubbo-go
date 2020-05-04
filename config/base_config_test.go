@@ -482,7 +482,7 @@ func Test_initializeStruct(t *testing.T) {
 	reflect.ValueOf(consumerConfig).Elem().Set(v.Elem())
 
 	assert.Condition(t, func() (success bool) {
-		return consumerConfig.ApplicationConfig != nil
+		return consumerConfig.Registry != nil
 	})
 	assert.Condition(t, func() (success bool) {
 		return consumerConfig.Registries != nil
