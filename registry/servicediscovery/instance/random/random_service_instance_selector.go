@@ -18,18 +18,22 @@
 package random
 
 import (
+	"math/rand"
+	"time"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/registry/servicediscovery/instance"
-	"math/rand"
-	"time"
 )
 
 func init() {
 	extension.SetServiceInstanceSelector("random", NewRandomServiceInstanceSelector)
 }
 
+//the ServiceInstanceSelector implementation based on Random algorithm
 type RandomServiceInstanceSelector struct {
 }
 
