@@ -31,7 +31,7 @@ import (
 )
 
 func TestInMemoryServiceDiscovery(t *testing.T) {
-	discovery, _ := extension.GetServiceDiscovery(name, nil)
+	discovery, _ := extension.GetServiceDiscovery(name, "in")
 	serviceName := "my-service"
 	err := discovery.Register(&registry.DefaultServiceInstance{
 		ServiceName: serviceName,

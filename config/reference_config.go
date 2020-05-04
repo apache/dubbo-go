@@ -144,6 +144,8 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 				regUrl = u
 			}
 		}
+
+		// TODO(decouple from directory, config should not depend on directory module)
 		if regUrl != nil {
 			cluster := extension.GetCluster("registryAware")
 			c.invoker = cluster.Join(directory.NewStaticDirectory(invokers))

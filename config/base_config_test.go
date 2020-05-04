@@ -45,13 +45,15 @@ func Test_refresh(t *testing.T) {
 
 	father := &ConsumerConfig{
 		Check: &[]bool{true}[0],
-		ApplicationConfig: &ApplicationConfig{
-			Organization: "dubbo_org",
-			Name:         "dubbo",
-			Module:       "module",
-			Version:      "2.6.0",
-			Owner:        "dubbo",
-			Environment:  "test"},
+		BaseConfig: BaseConfig{
+			ApplicationConfig: &ApplicationConfig{
+				Organization: "dubbo_org",
+				Name:         "dubbo",
+				Module:       "module",
+				Version:      "2.6.0",
+				Owner:        "dubbo",
+				Environment:  "test"},
+		},
 		Registries: map[string]*RegistryConfig{
 			"shanghai_reg2": {
 				Protocol:   "mock",
@@ -139,13 +141,15 @@ func Test_appExternal_refresh(t *testing.T) {
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
 	father := &ConsumerConfig{
 		Check: &[]bool{true}[0],
-		ApplicationConfig: &ApplicationConfig{
-			Organization: "dubbo_org",
-			Name:         "dubbo",
-			Module:       "module",
-			Version:      "2.6.0",
-			Owner:        "dubbo",
-			Environment:  "test"},
+		BaseConfig: BaseConfig{
+			ApplicationConfig: &ApplicationConfig{
+				Organization: "dubbo_org",
+				Name:         "dubbo",
+				Module:       "module",
+				Version:      "2.6.0",
+				Owner:        "dubbo",
+				Environment:  "test"},
+		},
 		Registries: map[string]*RegistryConfig{
 			"shanghai_reg2": {
 				Protocol:   "mock",
@@ -225,13 +229,15 @@ func Test_appExternalWithoutId_refresh(t *testing.T) {
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
 	father := &ConsumerConfig{
 		Check: &[]bool{true}[0],
-		ApplicationConfig: &ApplicationConfig{
-			Organization: "dubbo_org",
-			Name:         "dubbo",
-			Module:       "module",
-			Version:      "2.6.0",
-			Owner:        "dubbo",
-			Environment:  "test"},
+		BaseConfig: BaseConfig{
+			ApplicationConfig: &ApplicationConfig{
+				Organization: "dubbo_org",
+				Name:         "dubbo",
+				Module:       "module",
+				Version:      "2.6.0",
+				Owner:        "dubbo",
+				Environment:  "test"},
+		},
 		Registries: map[string]*RegistryConfig{
 			"shanghai_reg2": {
 				Protocol:   "mock",
@@ -310,13 +316,15 @@ func Test_refresh_singleRegistry(t *testing.T) {
 
 	father := &ConsumerConfig{
 		Check: &[]bool{true}[0],
-		ApplicationConfig: &ApplicationConfig{
-			Organization: "dubbo_org",
-			Name:         "dubbo",
-			Module:       "module",
-			Version:      "2.6.0",
-			Owner:        "dubbo",
-			Environment:  "test"},
+		BaseConfig: BaseConfig{
+			ApplicationConfig: &ApplicationConfig{
+				Organization: "dubbo_org",
+				Name:         "dubbo",
+				Module:       "module",
+				Version:      "2.6.0",
+				Owner:        "dubbo",
+				Environment:  "test"},
+		},
 		Registries: map[string]*RegistryConfig{},
 		Registry:   &RegistryConfig{},
 		References: map[string]*ReferenceConfig{
@@ -373,13 +381,15 @@ func Test_refreshProvider(t *testing.T) {
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
 
 	father := &ProviderConfig{
-		ApplicationConfig: &ApplicationConfig{
-			Organization: "dubbo_org",
-			Name:         "dubbo",
-			Module:       "module",
-			Version:      "2.6.0",
-			Owner:        "dubbo",
-			Environment:  "test"},
+		BaseConfig: BaseConfig{
+			ApplicationConfig: &ApplicationConfig{
+				Organization: "dubbo_org",
+				Name:         "dubbo",
+				Module:       "module",
+				Version:      "2.6.0",
+				Owner:        "dubbo",
+				Environment:  "test"},
+		},
 		Registries: map[string]*RegistryConfig{
 			"shanghai_reg2": {
 				Protocol:   "mock",
@@ -472,7 +482,7 @@ func Test_initializeStruct(t *testing.T) {
 	reflect.ValueOf(consumerConfig).Elem().Set(v.Elem())
 
 	assert.Condition(t, func() (success bool) {
-		return consumerConfig.ApplicationConfig != nil
+		return consumerConfig.Registry != nil
 	})
 	assert.Condition(t, func() (success bool) {
 		return consumerConfig.Registries != nil
