@@ -154,6 +154,12 @@ func (r *BaseRegistry) Register(conf common.URL) error {
 	return nil
 }
 
+// UnRegister
+func (r *BaseRegistry) UnRegister(conf common.URL) error {
+
+	return nil
+}
+
 // service is for getting service path stored in url
 func (r *BaseRegistry) service(c common.URL) string {
 	return url.QueryEscape(c.Service())
@@ -356,6 +362,11 @@ func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 		}
 		sleepWait(n)
 	}
+}
+
+// UnSubscribe :
+func (r *BaseRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListener) {
+
 }
 
 // closeRegisters close and remove registry client and reset services map

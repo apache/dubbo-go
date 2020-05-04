@@ -136,6 +136,12 @@ func (nr *nacosRegistry) Register(url common.URL) error {
 	return nil
 }
 
+// UnRegister
+func (nr *nacosRegistry) UnRegister(conf common.URL) error {
+
+	return nil
+}
+
 func (nr *nacosRegistry) subscribe(conf *common.URL) (registry.Listener, error) {
 	return NewNacosListener(*conf, nr.namingClient)
 }
@@ -172,6 +178,11 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 		}
 
 	}
+}
+
+// UnSubscribe :
+func (nr *nacosRegistry) UnSubscribe(url *common.URL, notifyListener registry.NotifyListener) {
+
 }
 
 func (nr *nacosRegistry) GetUrl() common.URL {
