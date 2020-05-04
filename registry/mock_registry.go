@@ -51,6 +51,12 @@ func (*MockRegistry) Register(url common.URL) error {
 	return nil
 }
 
+// UnRegister
+func (r *MockRegistry) UnRegister(conf common.URL) error {
+
+	return nil
+}
+
 // Destroy ...
 func (r *MockRegistry) Destroy() {
 	if r.destroyed.CAS(false, true) {
@@ -104,6 +110,11 @@ func (r *MockRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 			}
 		}
 	}()
+}
+
+// UnSubscribe :
+func (r *MockRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListener) {
+
 }
 
 type listener struct {

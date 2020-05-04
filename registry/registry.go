@@ -34,6 +34,9 @@ type Registry interface {
 	//And it is also used for service consumer calling , register services cared about ,for dubbo's admin monitoring.
 	Register(url common.URL) error
 
+	// UnRegister ...
+	UnRegister(url common.URL) error
+
 	//When creating new registry extension,pls select one of the following modes.
 	//Will remove in dubbogo version v1.1.0
 	//mode1 : return Listener with Next function which can return subscribe service event from registry
@@ -43,6 +46,9 @@ type Registry interface {
 	//Will relace mode1 in dubbogo version v1.1.0
 	//mode2 : callback mode, subscribe with notify(notify listener).
 	Subscribe(*common.URL, NotifyListener)
+
+	// UnSubscribe ...
+	UnSubscribe(*common.URL, NotifyListener)
 }
 
 // NotifyListener ...
