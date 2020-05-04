@@ -17,9 +17,22 @@
 
 package config
 
+import (
+	"time"
+)
+
 type RemoteConfig struct {
-	Address string `yaml:"address" json:"address,omitempty"`
-	Params map[string]string `yaml:"params" json:"address,omitempty"`
+	Address string            `yaml:"address" json:"address,omitempty"`
+	Timeout time.Duration     `default:"10s" yaml:"timeout" json:"timeout,omitempty"`
+	Params  map[string]string `yaml:"params" json:"address,omitempty"`
 }
 
-
+// GetParam will return the value of the key. If not found, def will be return;
+// def => default value
+func (rc *RemoteConfig) GetParam(key string, def string) string {
+	param, ok := rc.Params[key]
+	if !ok {
+		return def
+	}
+	return param
+}

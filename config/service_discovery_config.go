@@ -17,38 +17,14 @@
 
 package config
 
-import (
-	"strings"
-	"testing"
-)
-
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
-	_ "github.com/apache/dubbo-go/cluster/router/condition"
-)
-
-const testYML = "testdata/router_config.yml"
-const errorTestYML = "testdata/router_config_error.yml"
-
-func TestString(t *testing.T) {
-
-	s := "a1=>a2"
-	s1 := "=>a2"
-	s2 := "a1=>"
-
-	n := strings.SplitN(s, "=>", 2)
-	n1 := strings.SplitN(s1, "=>", 2)
-	n2 := strings.SplitN(s2, "=>", 2)
-
-	assert.Equal(t, n[0], "a1")
-	assert.Equal(t, n[1], "a2")
-
-	assert.Equal(t, n1[0], "")
-	assert.Equal(t, n1[1], "a2")
-
-	assert.Equal(t, n2[0], "a1")
-	assert.Equal(t, n2[1], "")
+// ServiceDiscoveryConfig will be used to create
+type ServiceDiscoveryConfig struct {
+	// Protocol indicate which implementation will be used.
+	// for example, if the Protocol is nacos, it means that we will use nacosServiceDiscovery
+	Protocol string
+	// Group, usually you don't need to config this field.
+	// you can use this to do some isolation
+	Group string
+	// RemoteRef is the reference point to RemoteConfig which will be used to create remotes instances.
+	RemoteRef string
 }

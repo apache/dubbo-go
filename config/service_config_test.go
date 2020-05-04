@@ -145,6 +145,7 @@ func Test_Export(t *testing.T) {
 	for i := range providerConfig.Services {
 		service := providerConfig.Services[i]
 		service.Implement(&MockService{})
+		service.Protocols = providerConfig.Protocols
 		service.Export()
 	}
 	providerConfig = nil
