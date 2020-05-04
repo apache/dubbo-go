@@ -18,10 +18,16 @@
 package random
 
 import (
+	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/registry"
-	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestRandomServiceInstanceSelector_Select(t *testing.T) {
