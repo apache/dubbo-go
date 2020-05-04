@@ -21,56 +21,23 @@ import (
 	"net"
 	"strconv"
 	"strings"
-	"time"
-)
 
-import (
 	"github.com/nacos-group/nacos-sdk-go/clients"
 	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
 	nacosConstant "github.com/nacos-group/nacos-sdk-go/common/constant"
 	perrors "github.com/pkg/errors"
-)
 
-import (
-	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/config"
 )
 
-// baseRegistry is the parent of both interface-level registry
-// and service discovery(related to application-level registry)
-type nacosBaseRegistry struct {
-	*common.URL
-	namingClient naming_client.INamingClient
-}
-
-// newBaseRegistry will create new instance
-func newBaseRegistry(url *common.URL) (nacosBaseRegistry, error) {
-	nacosConfig, err := getNacosConfig(url)
-	if err != nil {
-		return nacosBaseRegistry{}, err
-	}
-	client, err := clients.CreateNamingClient(nacosConfig)
-	if err != nil {
-		return nacosBaseRegistry{}, err
-	}
-	registry := nacosBaseRegistry{
-		URL:          url,
-		namingClient: client,
-	}
-	return registry, nil
-}
-
-// getNacosConfig will return the nacos config
-func getNacosConfig(url *common.URL) (map[string]interface{}, error) {
-	if url == nil {
-		return nil, perrors.New("url is empty!")
-	}
-	if len(url.Location) == 0 {
-		return nil, perrors.New("url.location is empty!")
+func NewNacosClient(rc *config.RemoteConfig) (naming_client.INamingClient, error) {
+	if len(rc.Address) == 0 {
+		return nil, perrors.New("nacos address is empty!")
 	}
 	configMap := make(map[string]interface{}, 2)
 
-	addresses := strings.Split(url.Location, ",")
+	addresses := strings.Split(rc.Address, ",")
 	serverConfigs := make([]nacosConstant.ServerConfig, 0, len(addresses))
 	for _, addr := range addresses {
 		ip, portStr, err := net.SplitHostPort(addr)
@@ -86,17 +53,14 @@ func getNacosConfig(url *common.URL) (map[string]interface{}, error) {
 	configMap["serverConfigs"] = serverConfigs
 
 	var clientConfig nacosConstant.ClientConfig
-	timeout, err := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
-	if err != nil {
-		return nil, err
-	}
-	clientConfig.TimeoutMs = uint64(timeout.Seconds() * 1000)
+	timeout := rc.Timeout
+	clientConfig.TimeoutMs = uint64(timeout.Nanoseconds() / constant.MsToNanoRate)
 	clientConfig.ListenInterval = 2 * clientConfig.TimeoutMs
-	clientConfig.CacheDir = url.GetParam(constant.NACOS_CACHE_DIR_KEY, "")
-	clientConfig.LogDir = url.GetParam(constant.NACOS_LOG_DIR_KEY, "")
-	clientConfig.Endpoint = url.GetParam(constant.NACOS_ENDPOINT, "")
+	clientConfig.CacheDir = rc.GetParam(constant.NACOS_CACHE_DIR_KEY, "")
+	clientConfig.LogDir = rc.GetParam(constant.NACOS_LOG_DIR_KEY, "")
+	clientConfig.Endpoint = rc.GetParam(constant.NACOS_ENDPOINT, "")
 	clientConfig.NotLoadCacheAtStart = true
 	configMap["clientConfig"] = clientConfig
 
-	return configMap, nil
+	return clients.CreateNamingClient(configMap)
 }

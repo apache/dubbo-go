@@ -66,13 +66,15 @@ func TestConfigurableExporter(t *testing.T) {
 // mockInitProviderWithSingleRegistry will init a mocked providerConfig
 func mockInitProviderWithSingleRegistry() {
 	providerConfig := &config.ProviderConfig{
-		ApplicationConfig: &config.ApplicationConfig{
-			Organization: "dubbo_org",
-			Name:         "dubbo",
-			Module:       "module",
-			Version:      "1.0.0",
-			Owner:        "dubbo",
-			Environment:  "test"},
+		BaseConfig: config.BaseConfig{
+			ApplicationConfig: &config.ApplicationConfig{
+				Organization: "dubbo_org",
+				Name:         "dubbo",
+				Module:       "module",
+				Version:      "1.0.0",
+				Owner:        "dubbo",
+				Environment:  "test"},
+		},
 		Registry: &config.RegistryConfig{
 			Address:  "mock://127.0.0.1:2181",
 			Username: "user1",
