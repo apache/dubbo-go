@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -37,12 +38,19 @@ import (
 )
 
 var (
-	consumerConfig    *ConsumerConfig
-	providerConfig    *ProviderConfig
-	metricConfig      *MetricConfig
-	applicationConfig *ApplicationConfig
-	maxWait           = 3
-	confRouterFile    string
+	consumerConfig *ConsumerConfig
+	providerConfig *ProviderConfig
+	// baseConfig = providerConfig.BaseConfig or consumerConfig
+	baseConfig *BaseConfig
+	// baseConfigOnce is used to make sure that we only create it once.
+	baseConfigOnce sync.Once
+
+	// configAccessMutex is used to make sure that BaseConfig.xxxxConfig will only be created once if needed.
+	// it should be used combine with double-check to avoid the race condition
+	configAccessMutex sync.Mutex
+
+	maxWait        = 3
+	confRouterFile string
 )
 
 // loaded consumer & provider config from xxx.yml, and log config from xxx.xml
@@ -100,12 +108,6 @@ func loadConsumerConfig() {
 		}
 	}
 
-	metricConfig = consumerConfig.MetricConfig
-	applicationConfig = consumerConfig.ApplicationConfig
-	extension.SetAndInitGlobalDispatcher(consumerConfig.eventDispatcherType)
-
-	extension.SetAndInitGlobalDispatcher(consumerConfig.eventDispatcherType)
-
 	checkApplicationName(consumerConfig.ApplicationConfig)
 	if err := configCenterRefreshConsumer(); err != nil {
 		logger.Errorf("[consumer config center refresh] %#v", err)
@@ -126,14 +128,14 @@ func loadConsumerConfig() {
 		ref.Implement(rpcService)
 	}
 
-	//wait for invoker is available, if wait over default 3s, then panic
+	// wait for invoker is available, if wait over default 3s, then panic
 	var count int
 	checkok := true
 	for {
 		for _, refconfig := range consumerConfig.References {
 			if (refconfig.Check != nil && *refconfig.Check) ||
 				(refconfig.Check == nil && consumerConfig.Check != nil && *consumerConfig.Check) ||
-				(refconfig.Check == nil && consumerConfig.Check == nil) { //default to true
+				(refconfig.Check == nil && consumerConfig.Check == nil) { // default to true
 
 				if refconfig.invoker != nil &&
 					!refconfig.invoker.IsAvailable() {
@@ -178,13 +180,6 @@ func loadProviderConfig() {
 		}
 	}
 
-	// so, you should know that the consumer's config will be override
-	metricConfig = providerConfig.MetricConfig
-	applicationConfig = providerConfig.ApplicationConfig
-	extension.SetAndInitGlobalDispatcher(providerConfig.eventDispatcherType)
-
-	extension.SetAndInitGlobalDispatcher(consumerConfig.eventDispatcherType)
-
 	checkApplicationName(providerConfig.ApplicationConfig)
 	if err := configCenterRefreshProvider(); err != nil {
 		logger.Errorf("[provider config center refresh] %#v", err)
@@ -225,6 +220,9 @@ func Load() {
 	// service config
 	loadProviderConfig()
 
+	// common part
+	extension.SetAndInitGlobalDispatcher(providerConfig.eventDispatcherType)
+
 	// init the shutdown callback
 	GracefulShutdownInit()
 }
@@ -241,39 +239,84 @@ func RPCService(service common.RPCService) {
 
 // GetMetricConfig find the MetricConfig
 // if it is nil, create a new one
+// we use double-check to reduce race condition
+// In general, it will be locked 0 or 1 time.
+// So you don't need to worry about the race condition
 func GetMetricConfig() *MetricConfig {
-	if metricConfig == nil {
-		metricConfig = &MetricConfig{}
+	if GetBaseConfig().MetricConfig == nil {
+		configAccessMutex.Lock()
+		defer configAccessMutex.Unlock()
+		if GetBaseConfig().MetricConfig == nil {
+			GetBaseConfig().MetricConfig = &MetricConfig{}
+		}
 	}
-	return metricConfig
+	return GetBaseConfig().MetricConfig
 }
 
 // GetApplicationConfig find the application config
 // if not, we will create one
 // Usually applicationConfig will be initialized when system start
+// we use double-check to reduce race condition
+// In general, it will be locked 0 or 1 time.
+// So you don't need to worry about the race condition
 func GetApplicationConfig() *ApplicationConfig {
-	if applicationConfig == nil {
-		applicationConfig = &ApplicationConfig{}
+	if GetBaseConfig().ApplicationConfig == nil {
+		configAccessMutex.Lock()
+		defer configAccessMutex.Unlock()
+		if GetBaseConfig().ApplicationConfig == nil {
+			GetBaseConfig().ApplicationConfig = &ApplicationConfig{}
+		}
 	}
-	return applicationConfig
+	return GetBaseConfig().ApplicationConfig
 }
 
 // GetProviderConfig find the provider config
 // if not found, create new one
+// we use double-check to reduce race condition
+// In general, it will be locked 0 or 1 time.
+// So you don't need to worry about the race condition
 func GetProviderConfig() ProviderConfig {
 	if providerConfig == nil {
-		logger.Warnf("providerConfig is nil!")
-		return ProviderConfig{}
+		logger.Warnf("providerConfig is nil! we will try to create one")
+		configAccessMutex.Lock()
+		defer configAccessMutex.Unlock()
+		if providerConfig == nil {
+			logger.Warnf("creating empty provider config. You should see this log only once.")
+			providerConfig = &ProviderConfig{}
+		}
 	}
 	return *providerConfig
 }
 
 // GetConsumerConfig find the consumer config
 // if not found, create new one
+// we use double-check to reduce race condition
+// In general, it will be locked 0 or 1 time.
+// So you don't need to worry about the race condition
 func GetConsumerConfig() ConsumerConfig {
 	if consumerConfig == nil {
-		logger.Warnf("consumerConfig is nil!")
-		return ConsumerConfig{}
+		logger.Warnf("consumerConfig is nil! we will try to create one")
+		configAccessMutex.Lock()
+		defer configAccessMutex.Unlock()
+		if consumerConfig == nil {
+			logger.Warnf("creating empty consumer config. You should see this log only once.")
+			consumerConfig = &ConsumerConfig{}
+		}
 	}
 	return *consumerConfig
+}
+
+func GetBaseConfig() *BaseConfig {
+	if baseConfig == nil {
+		baseConfigOnce.Do(func() {
+			baseConfig = &BaseConfig{
+				MetricConfig:       &MetricConfig{},
+				ConfigCenterConfig: &ConfigCenterConfig{},
+				Remotes:            make(map[string]*RemoteConfig, 0),
+				ApplicationConfig:  &ApplicationConfig{},
+				ServiceDiscoveries: make(map[string]*ServiceDiscoveryConfig, 0),
+			}
+		})
+	}
+	return baseConfig
 }

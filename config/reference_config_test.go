@@ -38,13 +38,15 @@ var regProtocol protocol.Protocol
 
 func doInitConsumer() {
 	consumerConfig = &ConsumerConfig{
-		ApplicationConfig: &ApplicationConfig{
-			Organization: "dubbo_org",
-			Name:         "dubbo",
-			Module:       "module",
-			Version:      "2.6.0",
-			Owner:        "dubbo",
-			Environment:  "test"},
+		BaseConfig: BaseConfig{
+			ApplicationConfig: &ApplicationConfig{
+				Organization: "dubbo_org",
+				Name:         "dubbo",
+				Module:       "module",
+				Version:      "2.6.0",
+				Owner:        "dubbo",
+				Environment:  "test"},
+		},
 		Registries: map[string]*RegistryConfig{
 			"shanghai_reg1": {
 				Protocol:   "mock",
@@ -135,13 +137,15 @@ func doInitConsumerAsync() {
 
 func doInitConsumerWithSingleRegistry() {
 	consumerConfig = &ConsumerConfig{
-		ApplicationConfig: &ApplicationConfig{
-			Organization: "dubbo_org",
-			Name:         "dubbo",
-			Module:       "module",
-			Version:      "2.6.0",
-			Owner:        "dubbo",
-			Environment:  "test"},
+		BaseConfig: BaseConfig{
+			ApplicationConfig: &ApplicationConfig{
+				Organization: "dubbo_org",
+				Name:         "dubbo",
+				Module:       "module",
+				Version:      "2.6.0",
+				Owner:        "dubbo",
+				Environment:  "test"},
+		},
 		Registry: &RegistryConfig{
 			Address:  "mock://27.0.0.1:2181",
 			Username: "user1",

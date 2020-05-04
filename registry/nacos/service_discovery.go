@@ -18,15 +18,21 @@
 package nacos
 
 import (
+	"fmt"
+	"sync"
+
 	"github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/page"
+	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
 	"github.com/nacos-group/nacos-sdk-go/model"
 	"github.com/nacos-group/nacos-sdk-go/vo"
 	perrors "github.com/pkg/errors"
+
+	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/remoting/nacos"
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
@@ -47,8 +53,12 @@ func init() {
 // There is a problem, the go client for nacos does not support the id field.
 // we will use the metadata to store the id of ServiceInstance
 type nacosServiceDiscovery struct {
-	nacosBaseRegistry
 	group string
+	// descriptor is a short string about the basic information of this instance
+	descriptor string
+
+	// namingClient is the Nacos' client
+	namingClient naming_client.INamingClient
 }
 
 // Destroy will close the service discovery.
@@ -271,15 +281,58 @@ func (n *nacosServiceDiscovery) toDeregisterInstance(instance registry.ServiceIn
 	}
 }
 
-// toDeregisterInstance will create new service discovery instance
-func newNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
+func (n *nacosServiceDiscovery) String() string {
+	return n.descriptor
+}
 
-	base, err := newBaseRegistry(url)
-	if err != nil {
-		return nil, perrors.WithStack(err)
+var (
+	// 16 would be enough. We won't use concurrentMap because in most cases, there are not race condition
+	instanceMap = make(map[string]registry.ServiceDiscovery, 16)
+	initLock    sync.Mutex
+)
+
+// newNacosServiceDiscovery will create new service discovery instance
+// use double-check pattern to reduce race condition
+func newNacosServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
+
+	instance, ok := instanceMap[name]
+	if ok {
+		return instance, nil
 	}
+
+	initLock.Lock()
+	defer initLock.Unlock()
+
+	// double check
+	instance, ok = instanceMap[name]
+	if ok {
+		return instance, nil
+	}
+
+	sdc, ok := config.GetBaseConfig().GetServiceDiscoveries(name)
+	if !ok || len(sdc.RemoteRef) == 0 {
+		return nil, perrors.New("could not init the instance because the config is invalid")
+	}
+
+	remoteConfig, ok := config.GetBaseConfig().GetRemoteConfig(sdc.RemoteRef)
+	if !ok {
+		return nil, perrors.New("could not find the remote config for name: " + sdc.RemoteRef)
+	}
+	group := sdc.Group
+	if len(group) == 0 {
+		group = defaultGroup
+	}
+
+	client, err := nacos.NewNacosClient(remoteConfig)
+	if err != nil {
+		return nil, perrors.WithMessage(err, "create nacos client failed.")
+	}
+
+	descriptor := fmt.Sprintf("nacos-service-discovery[%s]", remoteConfig.Address)
+
 	return &nacosServiceDiscovery{
-		nacosBaseRegistry: base,
-		group:             url.GetParam(constant.NACOS_GROUP, defaultGroup),
+		group:        group,
+		namingClient: client,
+		descriptor:   descriptor,
 	}, nil
 }
