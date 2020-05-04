@@ -44,7 +44,7 @@ func (suite *consulRegistryTestSuite) testRegister() {
 
 func (suite *consulRegistryTestSuite) testUnregister() {
 	consulProviderRegistry, _ := suite.providerRegistry.(*consulRegistry)
-	err := consulProviderRegistry.Unregister(suite.providerUrl)
+	err := consulProviderRegistry.UnRegister(suite.providerUrl)
 	assert.NoError(suite.t, err)
 }
 
