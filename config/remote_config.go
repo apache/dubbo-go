@@ -18,37 +18,21 @@
 package config
 
 import (
-	"strings"
-	"testing"
+	"time"
 )
 
-import (
-	"github.com/stretchr/testify/assert"
-)
+type RemoteConfig struct {
+	Address string            `yaml:"address" json:"address,omitempty"`
+	Timeout time.Duration     `default:"10s" yaml:"timeout" json:"timeout,omitempty"`
+	Params  map[string]string `yaml:"params" json:"address,omitempty"`
+}
 
-import (
-	_ "github.com/apache/dubbo-go/cluster/router/condition"
-)
-
-const testYML = "testdata/router_config.yml"
-const errorTestYML = "testdata/router_config_error.yml"
-
-func TestString(t *testing.T) {
-
-	s := "a1=>a2"
-	s1 := "=>a2"
-	s2 := "a1=>"
-
-	n := strings.SplitN(s, "=>", 2)
-	n1 := strings.SplitN(s1, "=>", 2)
-	n2 := strings.SplitN(s2, "=>", 2)
-
-	assert.Equal(t, n[0], "a1")
-	assert.Equal(t, n[1], "a2")
-
-	assert.Equal(t, n1[0], "")
-	assert.Equal(t, n1[1], "a2")
-
-	assert.Equal(t, n2[0], "a1")
-	assert.Equal(t, n2[1], "")
+// GetParam will return the value of the key. If not found, def will be return;
+// def => default value
+func (rc *RemoteConfig) GetParam(key string, def string) string {
+	param, ok := rc.Params[key]
+	if !ok {
+		return def
+	}
+	return param
 }

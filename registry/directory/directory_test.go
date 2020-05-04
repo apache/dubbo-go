@@ -43,7 +43,11 @@ import (
 )
 
 func init() {
-	config.SetConsumerConfig(config.ConsumerConfig{ApplicationConfig: &config.ApplicationConfig{Name: "test-application"}})
+	config.SetConsumerConfig(config.ConsumerConfig{
+		BaseConfig: config.BaseConfig{
+			ApplicationConfig: &config.ApplicationConfig{Name: "test-application"},
+		},
+	})
 }
 
 func TestSubscribe(t *testing.T) {

@@ -18,8 +18,10 @@
 package nacos
 
 import (
-	"strconv"
 	"testing"
+	"time"
+
+	"github.com/apache/dubbo-go/config"
 )
 
 import (
@@ -27,7 +29,6 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/observer"
@@ -35,8 +36,13 @@ import (
 	"github.com/apache/dubbo-go/registry"
 )
 
+var (
+	testName = "test"
+)
+
 func TestNacosServiceDiscovery_Destroy(t *testing.T) {
-	serviceDiscovery, err := extension.GetServiceDiscovery(constant.NACOS_KEY, mockUrl())
+	prepareData()
+	serviceDiscovery, err := extension.GetServiceDiscovery(constant.NACOS_KEY, testName)
 	assert.Nil(t, err)
 	assert.NotNil(t, serviceDiscovery)
 	err = serviceDiscovery.Destroy()
@@ -45,7 +51,7 @@ func TestNacosServiceDiscovery_Destroy(t *testing.T) {
 }
 
 func TestNacosServiceDiscovery_CRUD(t *testing.T) {
-
+	prepareData()
 	extension.SetEventDispatcher("mock", func() observer.EventDispatcher {
 		return &dispatcher.MockEventDispatcher{}
 	})
@@ -68,7 +74,7 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 
 	// clean data
 
-	serviceDiscovry, _ := extension.GetServiceDiscovery(constant.NACOS_KEY, mockUrl())
+	serviceDiscovry, _ := extension.GetServiceDiscovery(constant.NACOS_KEY, testName)
 
 	// clean data for local test
 	serviceDiscovry.Unregister(&registry.DefaultServiceInstance{
@@ -121,11 +127,19 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 }
 
 func TestNacosServiceDiscovery_GetDefaultPageSize(t *testing.T) {
-	serviceDiscovry, _ := extension.GetServiceDiscovery(constant.NACOS_KEY, mockUrl())
+	prepareData()
+	serviceDiscovry, _ := extension.GetServiceDiscovery(constant.NACOS_KEY, testName)
 	assert.Equal(t, registry.DefaultPageSize, serviceDiscovry.GetDefaultPageSize())
 }
 
-func mockUrl() *common.URL {
-	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
-	return &regurl
+func prepareData() {
+	config.GetBaseConfig().ServiceDiscoveries[testName] = &config.ServiceDiscoveryConfig{
+		Protocol:  "nacos",
+		RemoteRef: testName,
+	}
+
+	config.GetBaseConfig().Remotes[testName] = &config.RemoteConfig{
+		Address: "console.nacos.io:80",
+		Timeout: 10 * time.Second,
+	}
 }

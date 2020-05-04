@@ -24,9 +24,6 @@ import (
 import (
 	gxnet "github.com/dubbogo/gost/net"
 	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"go.uber.org/atomic"
 )
 
@@ -36,13 +33,15 @@ import (
 
 func doInitProvider() {
 	providerConfig = &ProviderConfig{
-		ApplicationConfig: &ApplicationConfig{
-			Organization: "dubbo_org",
-			Name:         "dubbo",
-			Module:       "module",
-			Version:      "2.6.0",
-			Owner:        "dubbo",
-			Environment:  "test"},
+		BaseConfig: BaseConfig{
+			ApplicationConfig: &ApplicationConfig{
+				Organization: "dubbo_org",
+				Name:         "dubbo",
+				Module:       "module",
+				Version:      "2.6.0",
+				Owner:        "dubbo",
+				Environment:  "test"},
+		},
 		Registries: map[string]*RegistryConfig{
 			"shanghai_reg1": {
 				Protocol:   "mock",
@@ -146,6 +145,7 @@ func Test_Export(t *testing.T) {
 	for i := range providerConfig.Services {
 		service := providerConfig.Services[i]
 		service.Implement(&MockService{})
+		service.Protocols = providerConfig.Protocols
 		service.Export()
 	}
 	providerConfig = nil
