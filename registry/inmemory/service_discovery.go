@@ -23,7 +23,6 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/registry"
 )
@@ -39,7 +38,7 @@ func init() {
 		listeners: make([]*registry.ServiceInstancesChangedListener, 0, 2),
 	}
 
-	extension.SetServiceDiscovery(name, func(url *common.URL) (discovery registry.ServiceDiscovery, err error) {
+	extension.SetServiceDiscovery(name, func(name string) (discovery registry.ServiceDiscovery, err error) {
 		return instance, nil
 	})
 }
