@@ -94,29 +94,6 @@ func TestEurekaServiceDiscovery_CRUD(t *testing.T) {
 	page = pageMap[serviceName]
 	assert.NotNil(t, page)
 	assert.Equal(t, 1, len(page.GetData()))
-	//
-	//instance.Metadata["a"] = "b"
-	//
-	//err = serviceDiscovery.Update(instance)
-	//assert.Nil(t, err)
-	//
-	//pageMap := serviceDiscovery.GetRequestInstances([]string{serviceName}, 0, 1)
-	//assert.Equal(t, 1, len(pageMap))
-	//page = pageMap[serviceName]
-	//assert.NotNil(t, page)
-	//assert.Equal(t, 1, len(page.GetData()))
-	//
-	//instance = page.GetData()[0].(*registry.DefaultServiceInstance)
-	//v, _ := instance.Metadata["a"]
-	//assert.Equal(t, "b", v)
-
-	// test dispatcher event
-	//err = serviceDiscovery.DispatchEventByServiceName(serviceName)
-	//assert.Nil(t, err)
-
-	// test AddListener
-	//err = serviceDiscovery.AddListener(&registry.ServiceInstancesChangedListener{})
-	//assert.Nil(t, err)
 }
 
 func mockUrl() *common.URL {
