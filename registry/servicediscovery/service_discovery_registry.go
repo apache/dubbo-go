@@ -87,7 +87,7 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 }
 
 func creatServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
-	return extension.GetServiceDiscovery(url.Protocol, url)
+	return extension.GetServiceDiscovery(url.Protocol, "TODO")
 }
 
 func parseServices(literalServices string) *gxset.HashSet {
