@@ -40,6 +40,35 @@ var (
 	testName = "test"
 )
 
+func Test_newNacosServiceDiscovery(t *testing.T) {
+	name := "nacos1"
+	_, err := newNacosServiceDiscovery(name)
+
+	// the ServiceDiscoveryConfig not found
+	assert.NotNil(t, err)
+
+	sdc := &config.ServiceDiscoveryConfig{
+		Protocol:  "nacos",
+		RemoteRef: "mock",
+	}
+	config.GetBaseConfig().ServiceDiscoveries[name] = sdc
+
+	_, err = newNacosServiceDiscovery(name)
+
+	// RemoteConfig not found
+	assert.NotNil(t, err)
+
+	config.GetBaseConfig().Remotes["mock"] = &config.RemoteConfig{
+		Address: "console.nacos.io:80",
+		Timeout: 10 * time.Second,
+	}
+
+	res, err := newNacosServiceDiscovery(name)
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+
+}
+
 func TestNacosServiceDiscovery_Destroy(t *testing.T) {
 	prepareData()
 	serviceDiscovery, err := extension.GetServiceDiscovery(constant.NACOS_KEY, testName)
