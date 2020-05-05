@@ -42,12 +42,12 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
-// Options ...
+// Options Option is configuration related  struct of serviceTTL
 type Options struct {
 	serviceTTL time.Duration
 }
 
-// Option ...
+// Option function of handling Options
 type Option func(*Options)
 
 type registryDirectory struct {
@@ -66,7 +66,7 @@ type registryDirectory struct {
 	forbidden  atomic.Bool
 }
 
-// NewRegistryDirectory ...
+// NewRegistryDirectory  Create a new RegistryDirectory
 func NewRegistryDirectory(url *common.URL, registry registry.Registry, opts ...Option) (*registryDirectory, error) {
 	options := Options{
 		//default 300s
@@ -90,18 +90,19 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry, opts ...O
 	return dir, nil
 }
 
-//subscribe from registry
+//Subscribe subscribe from registry
 func (dir *registryDirectory) Subscribe(url *common.URL) {
 	dir.consumerConfigurationListener.addNotifyListener(dir)
 	dir.referenceConfigurationListener = newReferenceConfigurationListener(dir, url)
 	dir.registry.Subscribe(url, dir)
 }
 
+//Subscribe monitor changes from registry,and update the cacheServices
 func (dir *registryDirectory) Notify(event *registry.ServiceEvent) {
 	go dir.update(event)
 }
 
-//subscribe service from registry, and update the cacheServices
+//update subscribe service from registry, and update the cacheServices
 func (dir *registryDirectory) update(res *registry.ServiceEvent) {
 	if res == nil {
 		return
@@ -245,7 +246,7 @@ func (dir *registryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
 	return nil
 }
 
-//select the protocol invokers from the directory
+//List select the protocol invokers from the directory
 func (dir *registryDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
 	invokers := dir.cacheInvokers
 	routerChain := dir.RouterChain()
@@ -256,7 +257,8 @@ func (dir *registryDirectory) List(invocation protocol.Invocation) []protocol.In
 	return routerChain.Route(invokers, dir.cacheOriginUrl, invocation)
 }
 
-func (dir *registryDirectory) IsAvailable() bool {
+//IsAvailable  whether the directory is available
+func (dir *registryDirectory) IsAvailableAvailable() bool {
 	if !dir.BaseDirectory.IsAvailable() {
 		return dir.BaseDirectory.IsAvailable()
 	}
@@ -270,6 +272,7 @@ func (dir *registryDirectory) IsAvailable() bool {
 	return false
 }
 
+//Destroy destroy method
 func (dir *registryDirectory) Destroy() {
 	//TODO:unregister & unsubscribe
 	dir.BaseDirectory.Destroy(func() {
@@ -309,6 +312,7 @@ func newReferenceConfigurationListener(dir *registryDirectory, url *common.URL) 
 	return listener
 }
 
+//Process handle events and update Invokers
 func (l *referenceConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
 	l.BaseConfigurationListener.Process(event)
 	l.directory.refreshInvokers(nil)
@@ -334,6 +338,7 @@ func (l *consumerConfigurationListener) addNotifyListener(listener registry.Noti
 	l.listeners = append(l.listeners, listener)
 }
 
+//Process handle events and update Invokers
 func (l *consumerConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
 	l.BaseConfigurationListener.Process(event)
 	l.directory.refreshInvokers(nil)
