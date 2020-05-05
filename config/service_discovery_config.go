@@ -21,10 +21,10 @@ package config
 type ServiceDiscoveryConfig struct {
 	// Protocol indicate which implementation will be used.
 	// for example, if the Protocol is nacos, it means that we will use nacosServiceDiscovery
-	Protocol string
+	Protocol string `yaml:"protocol" json:"protocol,omitempty"`
 	// Group, usually you don't need to config this field.
 	// you can use this to do some isolation
-	Group string
+	Group string `yaml:"group" json:"group,omitempty"`
 	// RemoteRef is the reference point to RemoteConfig which will be used to create remotes instances.
-	RemoteRef string
+	RemoteRef string `yaml:"remote_ref" json:"remote_ref,omitempty"`
 }
