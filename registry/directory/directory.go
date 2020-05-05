@@ -90,19 +90,19 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry, opts ...O
 	return dir, nil
 }
 
-//Subscribe subscribe from registry
+// Subscribe subscribe from registry
 func (dir *registryDirectory) Subscribe(url *common.URL) {
 	dir.consumerConfigurationListener.addNotifyListener(dir)
 	dir.referenceConfigurationListener = newReferenceConfigurationListener(dir, url)
 	dir.registry.Subscribe(url, dir)
 }
 
-//Subscribe monitor changes from registry,and update the cacheServices
+// Subscribe monitor changes from registry,and update the cacheServices
 func (dir *registryDirectory) Notify(event *registry.ServiceEvent) {
 	go dir.update(event)
 }
 
-//update subscribe service from registry, and update the cacheServices
+// update subscribe service from registry, and update the cacheServices
 func (dir *registryDirectory) update(res *registry.ServiceEvent) {
 	if res == nil {
 		return
@@ -246,7 +246,7 @@ func (dir *registryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
 	return nil
 }
 
-//List select the protocol invokers from the directory
+// List select the protocol invokers from the directory
 func (dir *registryDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
 	invokers := dir.cacheInvokers
 	routerChain := dir.RouterChain()
@@ -257,7 +257,7 @@ func (dir *registryDirectory) List(invocation protocol.Invocation) []protocol.In
 	return routerChain.Route(invokers, dir.cacheOriginUrl, invocation)
 }
 
-//IsAvailable  whether the directory is available
+// IsAvailable  whether the directory is available
 func (dir *registryDirectory) IsAvailableAvailable() bool {
 	if !dir.BaseDirectory.IsAvailable() {
 		return dir.BaseDirectory.IsAvailable()
@@ -272,7 +272,7 @@ func (dir *registryDirectory) IsAvailableAvailable() bool {
 	return false
 }
 
-//Destroy destroy method
+// Destroy destroy method
 func (dir *registryDirectory) Destroy() {
 	//TODO:unregister & unsubscribe
 	dir.BaseDirectory.Destroy(func() {
@@ -312,7 +312,7 @@ func newReferenceConfigurationListener(dir *registryDirectory, url *common.URL) 
 	return listener
 }
 
-//Process handle events and update Invokers
+// Process handle events and update Invokers
 func (l *referenceConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
 	l.BaseConfigurationListener.Process(event)
 	l.directory.refreshInvokers(nil)
@@ -338,7 +338,7 @@ func (l *consumerConfigurationListener) addNotifyListener(listener registry.Noti
 	l.listeners = append(l.listeners, listener)
 }
 
-//Process handle events and update Invokers
+// Process handle events and update Invokers
 func (l *consumerConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
 	l.BaseConfigurationListener.Process(event)
 	l.directory.refreshInvokers(nil)
