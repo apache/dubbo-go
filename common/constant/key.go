@@ -254,9 +254,7 @@ const (
 )
 
 // service discovery
-
 const (
-	NACOS_GROUP                               = "nacos.group"
 	SUBSCRIBED_SERVICE_NAMES_KEY              = "subscribed-services"
 	PROVIDER_BY                               = "provided-by"
 	EXPORTED_SERVICES_REVISION_PROPERTY_NAME  = "dubbo.exported-services.revision"
@@ -267,5 +265,10 @@ const (
 	METADATA_SERVICE_PREFIX                   = "dubbo.metadata-service."
 	METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME = METADATA_SERVICE_PREFIX + "url-params"
 	METADATA_SERVICE_URLS_PROPERTY_NAME       = METADATA_SERVICE_PREFIX + "urls"
-	SERVICE_NAME_MAPPING_KEY                  = "service-name-mapping"
+
+	// used by URL
+	// SERVICE_NAME_MAPPING_KEY indicate that which service name mapping instance will be used
+	SERVICE_NAME_MAPPING_KEY                  = "name_mapping"
+	// SERVICE_DISCOVERY_KEY indicate which service discovery instance will be used
+	SERVICE_DISCOVERY_KEY = "service_discovery"
 )
