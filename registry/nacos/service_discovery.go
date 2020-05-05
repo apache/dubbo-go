@@ -281,6 +281,7 @@ func (n *nacosServiceDiscovery) toDeregisterInstance(instance registry.ServiceIn
 	}
 }
 
+// String will return the description of the instance
 func (n *nacosServiceDiscovery) String() string {
 	return n.descriptor
 }
@@ -291,7 +292,7 @@ var (
 	initLock    sync.Mutex
 )
 
-// newNacosServiceDiscovery will create new service discovery instance
+// newNacosServiceDiscovery will try to find the instance withe name, if not found, a new one will be created.
 // use double-check pattern to reduce race condition
 func newNacosServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 
@@ -330,9 +331,12 @@ func newNacosServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 
 	descriptor := fmt.Sprintf("nacos-service-discovery[%s]", remoteConfig.Address)
 
-	return &nacosServiceDiscovery{
+	instance = &nacosServiceDiscovery{
 		group:        group,
 		namingClient: client,
 		descriptor:   descriptor,
-	}, nil
+	}
+
+	instanceMap[name] = instance
+	return instance, nil
 }
