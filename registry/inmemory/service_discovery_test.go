@@ -30,7 +30,7 @@ import (
 	"github.com/apache/dubbo-go/registry"
 )
 
-func TestFileSystemServiceDiscovery(t *testing.T) {
+func TestInMemoryServiceDiscovery(t *testing.T) {
 	discovery, _ := extension.GetServiceDiscovery(name, nil)
 	serviceName := "my-service"
 	err := discovery.Register(&registry.DefaultServiceInstance{
