@@ -15,21 +15,32 @@
  * limitations under the License.
  */
 
-package report
+package definition
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/metadata/identifier"
+	"context"
+	"time"
 )
 
-// MetadataReport is an interface of remote metadata report
-type MetadataReport interface {
-	StoreProviderMetadata(*identifier.MetadataIdentifier, string) error
-	StoreConsumerMetadata(*identifier.MetadataIdentifier, string) error
-	SaveServiceMetadata(*identifier.ServiceMetadataIdentifier, common.URL) error
-	RemoveServiceMetadata(*identifier.ServiceMetadataIdentifier) error
-	GetExportedURLs(*identifier.ServiceMetadataIdentifier) []string
-	SaveSubscribedData(*identifier.SubscriberMetadataIdentifier, []common.URL) error
-	GetSubscribedURLs(*identifier.SubscriberMetadataIdentifier) []string
-	GetServiceDefinition(*identifier.MetadataIdentifier) string
+type User struct {
+	Id   string
+	Name string
+	Age  int32
+	Time time.Time
+}
+
+type UserProvider struct {
+}
+
+func (u *UserProvider) GetUser(ctx context.Context, req []interface{}) (*User, error) {
+	rsp := User{"A001", "Alex Stocks", 18, time.Now()}
+	return &rsp, nil
+}
+
+func (u *UserProvider) Reference() string {
+	return "UserProvider"
+}
+
+func (u User) JavaClassName() string {
+	return "com.ikurento.user.User"
 }

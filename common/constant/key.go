@@ -79,6 +79,10 @@ const (
 	EXECUTE_REJECTED_EXECUTION_HANDLER_KEY = "execute.limit.rejected.handler"
 	PROVIDER_SHUTDOWN_FILTER               = "pshutdown"
 	CONSUMER_SHUTDOWN_FILTER               = "cshutdown"
+	SYNC_REPORT_KEY                        = "sync.report"
+	RETRY_PERIOD_KEY                       = "retry.period"
+	RETRY_TIMES_KEY                        = "retry.times"
+	CYCLE_REPORT_KEY                       = "cycle.report"
 )
 
 const (
