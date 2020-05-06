@@ -28,14 +28,31 @@ import (
 )
 
 var (
-	instance report.MetadataReport
-	once     sync.Once
+	instance  report.MetadataReport
+	reportUrl common.URL
+	once      sync.Once
 )
 
-// GetMetadataReportInstance ...
-func GetMetadataReportInstance(url *common.URL) report.MetadataReport {
+// InitMetadataReportInstance will create the metadata report instance by the specified metadata report url
+func InitMetadataReportInstance(url *common.URL) report.MetadataReport {
 	once.Do(func() {
 		instance = extension.GetMetadataReportFactory(url.Protocol).CreateMetadataReport(url)
+		reportUrl = *url
 	})
 	return instance
+}
+
+// GetMetadataReportInstance will return the instance
+func GetMetadataReportInstance() report.MetadataReport {
+	return instance
+}
+
+// GetMetadataReportUrl will return the report instance url
+func GetMetadataReportUrl() common.URL {
+	return reportUrl
+}
+
+// SetMetadataReportUrl will only can be used by unit test to mock url
+func SetMetadataReportUrl(url common.URL) {
+	reportUrl = url
 }

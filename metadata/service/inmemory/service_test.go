@@ -18,10 +18,8 @@
 package inmemory
 
 import (
-	"context"
 	"fmt"
 	"testing"
-	"time"
 )
 
 import (
@@ -32,29 +30,6 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/metadata/definition"
 )
-
-type User struct {
-	Id   string
-	Name string
-	Age  int32
-	Time time.Time
-}
-
-type UserProvider struct {
-}
-
-func (u *UserProvider) GetUser(ctx context.Context, req []interface{}) (*User, error) {
-	rsp := User{"A001", "Alex Stocks", 18, time.Now()}
-	return &rsp, nil
-}
-
-func (u *UserProvider) Reference() string {
-	return "UserProvider"
-}
-
-func (u User) JavaClassName() string {
-	return "com.ikurento.user.User"
-}
 
 func TestMetadataService(t *testing.T) {
 	mts := NewMetadataService()
@@ -111,7 +86,7 @@ func TestMetadataService(t *testing.T) {
 	list4, _ := mts.GetSubscribedURLs()
 	assert.Equal(t, uint64(0), list4.Len())
 
-	userProvider := &UserProvider{}
+	userProvider := &definition.UserProvider{}
 	common.ServiceMap.Register(serviceName, protocol, userProvider)
 	mts.PublishServiceDefinition(u)
 	expected := "{\"CanonicalName\":\"com.ikurento.user.UserProvider\",\"CodeSource\":\"\"," +

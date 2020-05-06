@@ -17,7 +17,6 @@
 package inmemory
 
 import (
-	"encoding/json"
 	"sync"
 )
 
@@ -53,13 +52,13 @@ func NewMetadataService() *MetadataService {
 	}
 }
 
-// comparator is defined as Comparator for skip list to compare the URL
-type comparator common.URL
+// Comparator is defined as Comparator for skip list to compare the URL
+type Comparator common.URL
 
 // Compare is defined as Comparator for skip list to compare the URL
-func (c comparator) Compare(comp cm.Comparator) int {
+func (c Comparator) Compare(comp cm.Comparator) int {
 	a := common.URL(c).String()
-	b := common.URL(comp.(comparator)).String()
+	b := common.URL(comp.(Comparator)).String()
 	switch {
 	case a > b:
 		return 1
@@ -79,7 +78,7 @@ func (mts *MetadataService) addURL(targetMap *sync.Map, url *common.URL) bool {
 	logger.Debug(url.ServiceKey())
 	if urlSet, loaded = targetMap.LoadOrStore(url.ServiceKey(), skip.New(uint64(0))); loaded {
 		mts.lock.RLock()
-		wantedUrl := urlSet.(*skip.SkipList).Get(comparator(*url))
+		wantedUrl := urlSet.(*skip.SkipList).Get(Comparator(*url))
 		if len(wantedUrl) > 0 && wantedUrl[0] != nil {
 			mts.lock.RUnlock()
 			return false
@@ -88,12 +87,12 @@ func (mts *MetadataService) addURL(targetMap *sync.Map, url *common.URL) bool {
 	}
 	mts.lock.Lock()
 	//double chk
-	wantedUrl := urlSet.(*skip.SkipList).Get(comparator(*url))
+	wantedUrl := urlSet.(*skip.SkipList).Get(Comparator(*url))
 	if len(wantedUrl) > 0 && wantedUrl[0] != nil {
 		mts.lock.Unlock()
 		return false
 	}
-	urlSet.(*skip.SkipList).Insert(comparator(*url))
+	urlSet.(*skip.SkipList).Insert(Comparator(*url))
 	mts.lock.Unlock()
 	return true
 }
@@ -102,7 +101,7 @@ func (mts *MetadataService) addURL(targetMap *sync.Map, url *common.URL) bool {
 func (mts *MetadataService) removeURL(targetMap *sync.Map, url *common.URL) {
 	if value, loaded := targetMap.Load(url.ServiceKey()); loaded {
 		mts.lock.Lock()
-		value.(*skip.SkipList).Delete(comparator(*url))
+		value.(*skip.SkipList).Delete(Comparator(*url))
 		mts.lock.Unlock()
 		mts.lock.RLock()
 		defer mts.lock.RUnlock()
@@ -118,9 +117,9 @@ func (mts *MetadataService) getAllService(services *sync.Map) *skip.SkipList {
 	services.Range(func(key, value interface{}) bool {
 		urls := value.(*skip.SkipList)
 		for i := uint64(0); i < urls.Len(); i++ {
-			url := common.URL(urls.ByPosition(i).(comparator))
+			url := common.URL(urls.ByPosition(i).(Comparator))
 			if url.GetParam(constant.INTERFACE_KEY, url.Path) != "MetadataService" {
-				skipList.Insert(comparator(url))
+				skipList.Insert(Comparator(url))
 			}
 		}
 		return true
@@ -135,9 +134,9 @@ func (mts *MetadataService) getSpecifiedService(services *sync.Map, serviceKey s
 	if loaded {
 		urls := serviceList.(*skip.SkipList)
 		for i := uint64(0); i < urls.Len(); i++ {
-			url := common.URL(urls.ByPosition(i).(comparator))
+			url := common.URL(urls.ByPosition(i).(Comparator))
 			if len(protocol) == 0 || url.Protocol == protocol || url.GetParam(constant.PROTOCOL_KEY, "") == protocol {
-				skipList.Insert(comparator(url))
+				skipList.Insert(Comparator(url))
 			}
 		}
 	}
@@ -182,9 +181,9 @@ func (mts *MetadataService) PublishServiceDefinition(url common.URL) error {
 		//	//TODO:generate the service definition and store it
 		//}
 		sd := definition.BuildServiceDefinition(*service, url)
-		data, err := json.Marshal(sd)
+		data, err := sd.ToBytes()
 		if err != nil {
-			logger.Errorf("publishProvider getServiceDescriptor error. providerUrl:%v , error: ", url, err)
+			logger.Errorf("publishProvider getServiceDescriptor error. providerUrl:%v , error:%v ", url, err)
 		}
 		mts.serviceDefinitions.Store(url.ServiceKey(), string(data))
 		return nil
@@ -221,12 +220,12 @@ func (mts *MetadataService) GetServiceDefinitionByServiceKey(serviceKey string) 
 	return v.(string), nil
 }
 
-// Version will return the version of metadata service
-func (mts *MetadataService) Version() string {
-	return "1.0.0"
+// RefreshMetadata will always return true because it will be implement by remote service
+func (mts *MetadataService) RefreshMetadata(exportedRevision string, subscribedRevision string) bool {
+	return true
 }
 
 // Version will return the version of metadata service
-func (mts *MetadataService) Reference() string {
-	return "MetadataService"
+func (mts *MetadataService) Version() string {
+	return "1.0.0"
 }
