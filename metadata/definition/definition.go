@@ -19,6 +19,8 @@ package definition
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 )
 
 import (
@@ -26,12 +28,50 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
+// ServiceDefinition is a interface of service's definition
+type ServiceDefiner interface {
+	ToBytes() ([]byte, error)
+}
+
 // ServiceDefinition is the describer of service definition
 type ServiceDefinition struct {
 	CanonicalName string
 	CodeSource    string
 	Methods       []MethodDefinition
 	Types         []TypeDefinition
+}
+
+func (def ServiceDefinition) ToBytes() ([]byte, error) {
+	return json.Marshal(def)
+
+}
+
+func (def ServiceDefinition) String() string {
+	var methodStr string
+	for _, m := range def.Methods {
+		var paramType string
+		for _, p := range m.ParameterTypes {
+			paramType = paramType + fmt.Sprintf("{type:%v}", p)
+		}
+		var param string
+		for _, d := range m.Parameters {
+			param = param + fmt.Sprintf("{id:%v,type:%v,builderName:%v}", d.Id, d.Type, d.TypeBuilderName)
+		}
+		methodStr = methodStr + fmt.Sprintf("{name:%v,parameterTypes:[%v],returnType:%v,params:[%v] }", m.Name, paramType, m.ReturnType, param)
+
+	}
+	var types string
+	for _, d := range def.Types {
+		types = types + fmt.Sprintf("{id:%v,type:%v,builderName:%v}", d.Id, d.Type, d.TypeBuilderName)
+	}
+
+	return fmt.Sprintf("{canonicalName:%v, codeSource:%v, methods:[%v], types:[%v]}", def.CanonicalName, def.CodeSource, methodStr, types)
+}
+
+// FullServiceDefinition is the describer of service definition with parameters
+type FullServiceDefinition struct {
+	ServiceDefinition
+	Params map[string]string
 }
 
 // MethodDefinition is the describer of method definition
