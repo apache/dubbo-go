@@ -82,140 +82,145 @@ func checkApplicationName(config *ApplicationConfig) {
 	}
 }
 
+func loadConsumerConfig() {
+	if consumerConfig == nil {
+		logger.Warnf("consumerConfig is nil!")
+		return
+	}
+	// init other consumer config
+	conConfigType := consumerConfig.ConfigType
+	for key, value := range extension.GetDefaultConfigReader() {
+		if conConfigType == nil {
+			if v, ok := conConfigType[key]; ok {
+				value = v
+			}
+		}
+		if err := extension.GetConfigReaders(value).ReadConsumerConfig(consumerConfig.fileStream); err != nil {
+			logger.Errorf("ReadConsumerConfig error: %#v for %s", perrors.WithStack(err), value)
+		}
+	}
+
+	metricConfig = consumerConfig.MetricConfig
+	applicationConfig = consumerConfig.ApplicationConfig
+	extension.SetAndInitGlobalDispatcher(consumerConfig.eventDispatcherType)
+
+	checkApplicationName(consumerConfig.ApplicationConfig)
+	if err := configCenterRefreshConsumer(); err != nil {
+		logger.Errorf("[consumer config center refresh] %#v", err)
+	}
+	checkRegistries(consumerConfig.Registries, consumerConfig.Registry)
+	for key, ref := range consumerConfig.References {
+		if ref.Generic {
+			genericService := NewGenericService(key)
+			SetConsumerService(genericService)
+		}
+		rpcService := GetConsumerService(key)
+		if rpcService == nil {
+			logger.Warnf("%s does not exist!", key)
+			continue
+		}
+		ref.id = key
+		ref.Refer(rpcService)
+		ref.Implement(rpcService)
+	}
+
+	//wait for invoker is available, if wait over default 3s, then panic
+	var count int
+	checkok := true
+	for {
+		for _, refconfig := range consumerConfig.References {
+			if (refconfig.Check != nil && *refconfig.Check) ||
+				(refconfig.Check == nil && consumerConfig.Check != nil && *consumerConfig.Check) ||
+				(refconfig.Check == nil && consumerConfig.Check == nil) { //default to true
+
+				if refconfig.invoker != nil &&
+					!refconfig.invoker.IsAvailable() {
+					checkok = false
+					count++
+					if count > maxWait {
+						errMsg := fmt.Sprintf("Failed to check the status of the service %v . No provider available for the service to the consumer use dubbo version %v", refconfig.InterfaceName, constant.Version)
+						logger.Error(errMsg)
+						panic(errMsg)
+					}
+					time.Sleep(time.Second * 1)
+					break
+				}
+				if refconfig.invoker == nil {
+					logger.Warnf("The interface %s invoker not exist , may you should check your interface config.", refconfig.InterfaceName)
+				}
+			}
+		}
+		if checkok {
+			break
+		}
+		checkok = true
+	}
+}
+
+func loadProviderConfig() {
+	if providerConfig == nil {
+		logger.Warnf("providerConfig is nil!")
+		return
+	}
+
+	// init other provider config
+	proConfigType := providerConfig.ConfigType
+	for key, value := range extension.GetDefaultConfigReader() {
+		if proConfigType != nil {
+			if v, ok := proConfigType[key]; ok {
+				value = v
+			}
+		}
+		if err := extension.GetConfigReaders(value).ReadProviderConfig(providerConfig.fileStream); err != nil {
+			logger.Errorf("ReadProviderConfig error: %#v for %s", perrors.WithStack(err), value)
+		}
+	}
+
+	// so, you should know that the consumer's config will be override
+	metricConfig = providerConfig.MetricConfig
+	applicationConfig = providerConfig.ApplicationConfig
+	extension.SetAndInitGlobalDispatcher(providerConfig.eventDispatcherType)
+
+	checkApplicationName(providerConfig.ApplicationConfig)
+	if err := configCenterRefreshProvider(); err != nil {
+		logger.Errorf("[provider config center refresh] %#v", err)
+	}
+	checkRegistries(providerConfig.Registries, providerConfig.Registry)
+	for key, svs := range providerConfig.Services {
+		rpcService := GetProviderService(key)
+		if rpcService == nil {
+			logger.Warnf("%s does not exist!", key)
+			continue
+		}
+		svs.id = key
+		svs.Implement(rpcService)
+		svs.Protocols = providerConfig.Protocols
+		if err := svs.Export(); err != nil {
+			panic(fmt.Sprintf("service %s export failed! err: %#v", key, err))
+		}
+	}
+}
+
+func initRouter() {
+	if confRouterFile != "" {
+		if err := RouterInit(confRouterFile); err != nil {
+			log.Printf("[routerConfig init] %#v", err)
+		}
+	}
+}
+
 // Load Dubbo Init
 func Load() {
 
 	// init router
-	if confRouterFile != "" {
-		if errPro := RouterInit(confRouterFile); errPro != nil {
-			log.Printf("[routerConfig init] %#v", errPro)
-		}
-	}
-
-	var eventDispatcherType string
-	if consumerConfig != nil {
-		eventDispatcherType = consumerConfig.eventDispatcherType
-	}
-	// notice consumerConfig.eventDispatcherType will be replaced
-	if providerConfig != nil {
-		eventDispatcherType = providerConfig.eventDispatcherType
-	}
-	// init EventDispatcher should before everything
-	extension.SetAndInitGlobalDispatcher(eventDispatcherType)
+	initRouter()
 
 	// reference config
-	if consumerConfig == nil {
-		logger.Warnf("consumerConfig is nil!")
-	} else {
-		// init other consumer config
-		conConfigType := consumerConfig.ConfigType
-		for key, value := range extension.GetDefaultConfigReader() {
-			if conConfigType == nil {
-				if v, ok := conConfigType[key]; ok {
-					value = v
-				}
-			}
-			if err := extension.GetConfigReaders(value).ReadConsumerConfig(consumerConfig.fileStream); err != nil {
-				logger.Errorf("ReadConsumerConfig error: %#v for %s", perrors.WithStack(err), value)
-			}
-		}
-
-		metricConfig = consumerConfig.MetricConfig
-		applicationConfig = consumerConfig.ApplicationConfig
-
-		checkApplicationName(consumerConfig.ApplicationConfig)
-		if err := configCenterRefreshConsumer(); err != nil {
-			logger.Errorf("[consumer config center refresh] %#v", err)
-		}
-		checkRegistries(consumerConfig.Registries, consumerConfig.Registry)
-		for key, ref := range consumerConfig.References {
-			if ref.Generic {
-				genericService := NewGenericService(key)
-				SetConsumerService(genericService)
-			}
-			rpcService := GetConsumerService(key)
-			if rpcService == nil {
-				logger.Warnf("%s does not exist!", key)
-				continue
-			}
-			ref.id = key
-			ref.Refer(rpcService)
-			ref.Implement(rpcService)
-		}
-
-		//wait for invoker is available, if wait over default 3s, then panic
-		var count int
-		checkok := true
-		for {
-			for _, refconfig := range consumerConfig.References {
-				if (refconfig.Check != nil && *refconfig.Check) ||
-					(refconfig.Check == nil && consumerConfig.Check != nil && *consumerConfig.Check) ||
-					(refconfig.Check == nil && consumerConfig.Check == nil) { //default to true
-
-					if refconfig.invoker != nil &&
-						!refconfig.invoker.IsAvailable() {
-						checkok = false
-						count++
-						if count > maxWait {
-							errMsg := fmt.Sprintf("Failed to check the status of the service %v . No provider available for the service to the consumer use dubbo version %v", refconfig.InterfaceName, constant.Version)
-							logger.Error(errMsg)
-							panic(errMsg)
-						}
-						time.Sleep(time.Second * 1)
-						break
-					}
-					if refconfig.invoker == nil {
-						logger.Warnf("The interface %s invoker not exist , may you should check your interface config.", refconfig.InterfaceName)
-					}
-				}
-			}
-			if checkok {
-				break
-			}
-			checkok = true
-		}
-	}
+	loadConsumerConfig()
 
 	// service config
-	if providerConfig == nil {
-		logger.Warnf("providerConfig is nil!")
-	} else {
-		// init other provider config
-		proConfigType := providerConfig.ConfigType
-		for key, value := range extension.GetDefaultConfigReader() {
-			if proConfigType != nil {
-				if v, ok := proConfigType[key]; ok {
-					value = v
-				}
-			}
-			if err := extension.GetConfigReaders(value).ReadProviderConfig(providerConfig.fileStream); err != nil {
-				logger.Errorf("ReadProviderConfig error: %#v for %s", perrors.WithStack(err), value)
-			}
-		}
+	loadProviderConfig()
 
-		// so, you should know that the consumer's config will be override
-		metricConfig = providerConfig.MetricConfig
-		applicationConfig = providerConfig.ApplicationConfig
-
-		checkApplicationName(providerConfig.ApplicationConfig)
-		if err := configCenterRefreshProvider(); err != nil {
-			logger.Errorf("[provider config center refresh] %#v", err)
-		}
-		checkRegistries(providerConfig.Registries, providerConfig.Registry)
-		for key, svs := range providerConfig.Services {
-			rpcService := GetProviderService(key)
-			if rpcService == nil {
-				logger.Warnf("%s does not exist!", key)
-				continue
-			}
-			svs.id = key
-			svs.Implement(rpcService)
-			svs.Protocols = providerConfig.Protocols
-			if err := svs.Export(); err != nil {
-				panic(fmt.Sprintf("service %s export failed! err: %#v", key, err))
-			}
-		}
-	}
 	// init the shutdown callback
 	GracefulShutdownInit()
 }
