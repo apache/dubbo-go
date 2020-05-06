@@ -19,6 +19,7 @@ package common
 
 import (
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/observer"
 	gxset "github.com/dubbogo/gost/container/set"
 	gxpage "github.com/dubbogo/gost/page"
 )
@@ -47,41 +48,35 @@ func (epsd *EventPublishingServiceDiscovery) String() string {
 }
 
 func (epsd *EventPublishingServiceDiscovery) Destroy() error {
-	dispatcher.Dispatch(NewServiceDiscoveryDestroyingEvent(epsd, epsd.serviceDiscovery))
-	if err := epsd.serviceDiscovery.Destroy(); err != nil {
-		dispatcher.Dispatch(NewServiceDiscoveryExceptionEvent(epsd, epsd.serviceDiscovery, err))
-		return err
+	f := func() error {
+		return epsd.serviceDiscovery.Destroy()
 	}
-	dispatcher.Dispatch(NewServiceDiscoveryDestroyedEvent(epsd, epsd.serviceDiscovery))
-	return nil
+	return epsd.executeWithEvents(NewServiceDiscoveryDestroyingEvent(epsd, epsd.serviceDiscovery),
+		f, NewServiceDiscoveryDestroyedEvent(epsd, epsd.serviceDiscovery))
 }
 
 func (epsd *EventPublishingServiceDiscovery) Register(instance registry.ServiceInstance) error {
-	dispatcher.Dispatch(NewServiceInstancePreRegisteredEvent(epsd.serviceDiscovery, instance))
-	if err := epsd.serviceDiscovery.Register(instance); err != nil {
-		dispatcher.Dispatch(NewServiceDiscoveryExceptionEvent(epsd, epsd.serviceDiscovery, err))
-		return err
+	f := func() error {
+		return epsd.serviceDiscovery.Register(instance)
 	}
-	dispatcher.Dispatch(NewServiceInstanceRegisteredEvent(epsd.serviceDiscovery, instance))
-	return nil
+	return epsd.executeWithEvents(NewServiceInstancePreRegisteredEvent(epsd.serviceDiscovery, instance),
+		f, NewServiceInstanceRegisteredEvent(epsd.serviceDiscovery, instance))
+
 }
 
 func (epsd *EventPublishingServiceDiscovery) Update(instance registry.ServiceInstance) error {
-	if err := epsd.serviceDiscovery.Update(instance); err != nil {
-		dispatcher.Dispatch(NewServiceDiscoveryExceptionEvent(epsd, epsd.serviceDiscovery, err))
-		return err
+	f := func() error {
+		return epsd.serviceDiscovery.Update(instance)
 	}
-	return nil
+	return epsd.executeWithEvents(nil, f, nil)
 }
 
 func (epsd *EventPublishingServiceDiscovery) Unregister(instance registry.ServiceInstance) error {
-	dispatcher.Dispatch(NewServiceInstancePreUnregisteredEvent(epsd.serviceDiscovery, instance))
-	if err := epsd.serviceDiscovery.Register(instance); err != nil {
-		dispatcher.Dispatch(NewServiceDiscoveryExceptionEvent(epsd, epsd.serviceDiscovery, err))
-		return err
+	f := func() error {
+		return epsd.serviceDiscovery.Register(instance)
 	}
-	dispatcher.Dispatch(NewServiceInstanceUnregisteredEvent(epsd.serviceDiscovery, instance))
-	return nil
+	return epsd.executeWithEvents(NewServiceInstancePreUnregisteredEvent(epsd.serviceDiscovery, instance),
+		f, NewServiceInstanceUnregisteredEvent(epsd.serviceDiscovery, instance))
 }
 
 func (epsd *EventPublishingServiceDiscovery) GetDefaultPageSize() int {
@@ -123,4 +118,18 @@ func (epsd *EventPublishingServiceDiscovery) DispatchEventForInstances(serviceNa
 
 func (epsd *EventPublishingServiceDiscovery) DispatchEvent(event *registry.ServiceInstancesChangedEvent) error {
 	return epsd.serviceDiscovery.DispatchEvent(event)
+}
+
+func (epsd *EventPublishingServiceDiscovery) executeWithEvents(beforeEvent observer.Event, f func() error, afterEvent observer.Event) error {
+	if beforeEvent != nil {
+		dispatcher.Dispatch(beforeEvent)
+	}
+	if err := f(); err != nil {
+		dispatcher.Dispatch(NewServiceDiscoveryExceptionEvent(epsd, epsd.serviceDiscovery, err))
+		return err
+	}
+	if afterEvent != nil {
+		dispatcher.Dispatch(afterEvent)
+	}
+	return nil
 }
