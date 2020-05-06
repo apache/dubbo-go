@@ -27,11 +27,13 @@ import (
 
 var subscribeMetadataId = &SubscriberMetadataIdentifier{
 	Revision: "1.0",
-	BaseMetadataIdentifier: BaseMetadataIdentifier{
-		ServiceInterface: "org.apache.pkg.mockService",
-		Version:          "1.0.0",
-		Group:            "Group",
-		Side:             "provider",
+	MetadataIdentifier: MetadataIdentifier{
+		BaseMetadataIdentifier: BaseMetadataIdentifier{
+			ServiceInterface: "org.apache.pkg.mockService",
+			Version:          "1.0.0",
+			Group:            "Group",
+			Side:             "provider",
+		},
 	},
 }
 
