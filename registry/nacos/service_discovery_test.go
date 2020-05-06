@@ -30,19 +30,28 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/observer"
+	"github.com/apache/dubbo-go/common/observer/dispatcher"
 	"github.com/apache/dubbo-go/registry"
 )
 
 func TestNacosServiceDiscovery_Destroy(t *testing.T) {
-	serviceDiscovry, err := extension.GetServiceDiscovery(constant.NACOS_KEY, mockUrl())
+	serviceDiscovery, err := extension.GetServiceDiscovery(constant.NACOS_KEY, mockUrl())
 	assert.Nil(t, err)
-	assert.NotNil(t, serviceDiscovry)
-	err = serviceDiscovry.Destroy()
+	assert.NotNil(t, serviceDiscovery)
+	err = serviceDiscovery.Destroy()
 	assert.Nil(t, err)
-	assert.Nil(t, serviceDiscovry.(*nacosServiceDiscovery).namingClient)
+	assert.Nil(t, serviceDiscovery.(*nacosServiceDiscovery).namingClient)
 }
 
 func TestNacosServiceDiscovery_CRUD(t *testing.T) {
+
+	extension.SetEventDispatcher("mock", func() observer.EventDispatcher {
+		return &dispatcher.MockEventDispatcher{}
+	})
+
+	extension.SetAndInitGlobalDispatcher("mock")
+
 	serviceName := "service-name"
 	id := "id"
 	host := "host"
