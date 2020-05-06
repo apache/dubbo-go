@@ -15,19 +15,27 @@
  * limitations under the License.
  */
 
-package proxy
+package extension
 
 import (
+	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/registry"
 )
 
-// ProxyFactory interface.
-type ProxyFactory interface {
-	GetProxy(invoker protocol.Invoker, url *common.URL) *Proxy
-	GetAsyncProxy(invoker protocol.Invoker, callBack interface{}, url *common.URL) *Proxy
-	GetInvoker(url common.URL) protocol.Invoker
+type registryDirectory func(url *common.URL, registry registry.Registry) (cluster.Directory, error)
+
+var defaultRegistry registryDirectory
+
+// SetDefaultRegistryDirectory ...
+func SetDefaultRegistryDirectory(v registryDirectory) {
+	defaultRegistry = v
 }
 
-// Option ...
-type Option func(ProxyFactory)
+// GetDefaultRegistryDirectory ...
+func GetDefaultRegistryDirectory(config *common.URL, registry registry.Registry) (cluster.Directory, error) {
+	if defaultRegistry == nil {
+		panic("registry directory is not existing, make sure you have import the package.")
+	}
+	return defaultRegistry(config, registry)
+}
