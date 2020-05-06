@@ -18,6 +18,7 @@
 package common
 
 import (
+	"github.com/apache/dubbo-go/common/extension"
 	gxset "github.com/dubbogo/gost/container/set"
 	gxpage "github.com/dubbogo/gost/page"
 )
@@ -26,73 +27,100 @@ import (
 	"github.com/apache/dubbo-go/registry"
 )
 
+var dispatcher = extension.GetGlobalDispatcher()
+
 // EventPublishingServiceDiscovery will enhance Service Discovery
 // Publish some event about service discovery
 type EventPublishingServiceDiscovery struct {
-	serviceDiscovery *registry.ServiceDiscovery
+	serviceDiscovery registry.ServiceDiscovery
 }
 
 // NewEventPublishingServiceDiscovery is a constructor
-func NewEventPublishingServiceDiscovery(serviceDiscovery *registry.ServiceDiscovery) *EventPublishingServiceDiscovery {
-	return &EventPublishingServiceDiscovery{serviceDiscovery: serviceDiscovery}
+func NewEventPublishingServiceDiscovery(serviceDiscovery registry.ServiceDiscovery) *EventPublishingServiceDiscovery {
+	return &EventPublishingServiceDiscovery{
+		serviceDiscovery: serviceDiscovery,
+	}
 }
 
 func (epsd *EventPublishingServiceDiscovery) String() string {
-	panic("implement me")
+	return epsd.serviceDiscovery.String()
 }
 
 func (epsd *EventPublishingServiceDiscovery) Destroy() error {
-	panic("implement me")
+	dispatcher.Dispatch(NewServiceDiscoveryDestroyingEvent(epsd, epsd.serviceDiscovery))
+	if err := epsd.serviceDiscovery.Destroy(); err != nil {
+		dispatcher.Dispatch(NewServiceDiscoveryExceptionEvent(epsd, epsd.serviceDiscovery, err))
+		return err
+	}
+	dispatcher.Dispatch(NewServiceDiscoveryDestroyedEvent(epsd, epsd.serviceDiscovery))
+	return nil
 }
 
 func (epsd *EventPublishingServiceDiscovery) Register(instance registry.ServiceInstance) error {
-	panic("implement me")
+	dispatcher.Dispatch(NewServiceInstancePreRegisteredEvent(epsd.serviceDiscovery, instance))
+	if err := epsd.serviceDiscovery.Register(instance); err != nil {
+		dispatcher.Dispatch(NewServiceDiscoveryExceptionEvent(epsd, epsd.serviceDiscovery, err))
+		return err
+	}
+	dispatcher.Dispatch(NewServiceInstanceRegisteredEvent(epsd.serviceDiscovery, instance))
+	return nil
 }
 
 func (epsd *EventPublishingServiceDiscovery) Update(instance registry.ServiceInstance) error {
-	panic("implement me")
+	if err := epsd.serviceDiscovery.Update(instance); err != nil {
+		dispatcher.Dispatch(NewServiceDiscoveryExceptionEvent(epsd, epsd.serviceDiscovery, err))
+		return err
+	}
+	return nil
 }
 
 func (epsd *EventPublishingServiceDiscovery) Unregister(instance registry.ServiceInstance) error {
-	panic("implement me")
+	dispatcher.Dispatch(NewServiceInstancePreUnregisteredEvent(epsd.serviceDiscovery, instance))
+	if err := epsd.serviceDiscovery.Register(instance); err != nil {
+		dispatcher.Dispatch(NewServiceDiscoveryExceptionEvent(epsd, epsd.serviceDiscovery, err))
+		return err
+	}
+	dispatcher.Dispatch(NewServiceInstanceUnregisteredEvent(epsd.serviceDiscovery, instance))
+	return nil
 }
 
 func (epsd *EventPublishingServiceDiscovery) GetDefaultPageSize() int {
-	panic("implement me")
+	return epsd.serviceDiscovery.GetDefaultPageSize()
 }
 
 func (epsd *EventPublishingServiceDiscovery) GetServices() *gxset.HashSet {
-	panic("implement me")
+	return epsd.serviceDiscovery.GetServices()
 }
 
 func (epsd *EventPublishingServiceDiscovery) GetInstances(serviceName string) []registry.ServiceInstance {
-	panic("implement me")
+	return epsd.serviceDiscovery.GetInstances(serviceName)
 }
 
 func (epsd *EventPublishingServiceDiscovery) GetInstancesByPage(serviceName string, offset int, pageSize int) gxpage.Pager {
-	panic("implement me")
+	return epsd.serviceDiscovery.GetInstancesByPage(serviceName, offset, pageSize)
 }
 
 func (epsd *EventPublishingServiceDiscovery) GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) gxpage.Pager {
-	panic("implement me")
+	return epsd.serviceDiscovery.GetHealthyInstancesByPage(serviceName, offset, pageSize, healthy)
 }
 
 func (epsd *EventPublishingServiceDiscovery) GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]gxpage.Pager {
-	panic("implement me")
+	return epsd.serviceDiscovery.GetRequestInstances(serviceNames, offset, requestedSize)
 }
 
 func (epsd *EventPublishingServiceDiscovery) AddListener(listener *registry.ServiceInstancesChangedListener) error {
-	panic("implement me")
+	dispatcher.AddEventListener(listener)
+	return epsd.serviceDiscovery.AddListener(listener)
 }
 
 func (epsd *EventPublishingServiceDiscovery) DispatchEventByServiceName(serviceName string) error {
-	panic("implement me")
+	return epsd.DispatchEventByServiceName(serviceName)
 }
 
 func (epsd *EventPublishingServiceDiscovery) DispatchEventForInstances(serviceName string, instances []registry.ServiceInstance) error {
-	panic("implement me")
+	return epsd.serviceDiscovery.DispatchEventForInstances(serviceName, instances)
 }
 
 func (epsd *EventPublishingServiceDiscovery) DispatchEvent(event *registry.ServiceInstancesChangedEvent) error {
-	panic("implement me")
+	return epsd.serviceDiscovery.DispatchEvent(event)
 }
