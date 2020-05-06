@@ -86,7 +86,7 @@ func (h *RpcClientHandler) OnOpen(session getty.Session) error {
 
 // OnError ...
 func (h *RpcClientHandler) OnError(session getty.Session, err error) {
-	logger.Infof("session{%s} got error{%v}, will be closed.", session.Stat(), err)
+	logger.Warnf("session{%s} got error{%v}, will be closed.", session.Stat(), err)
 	h.conn.removeSession(session)
 }
 
@@ -201,7 +201,7 @@ func (h *RpcServerHandler) OnOpen(session getty.Session) error {
 
 // OnError ...
 func (h *RpcServerHandler) OnError(session getty.Session, err error) {
-	logger.Infof("session{%s} got error{%v}, will be closed.", session.Stat(), err)
+	logger.Warnf("session{%s} got error{%v}, will be closed.", session.Stat(), err)
 	h.rwlock.Lock()
 	delete(h.sessionMap, session)
 	h.rwlock.Unlock()
