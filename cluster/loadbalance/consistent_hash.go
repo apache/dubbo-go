@@ -53,16 +53,16 @@ func init() {
 	extension.SetLoadbalance(ConsistentHash, NewConsistentHashLoadBalance)
 }
 
-// ConsistentHashLoadBalance ...
+// ConsistentHashLoadBalance Implementation of load balancing: using consistent hashing
 type ConsistentHashLoadBalance struct {
 }
 
-// NewConsistentHashLoadBalance ...
+// NewConsistentHashLoadBalance create NewConsistentHashLoadBalance
 func NewConsistentHashLoadBalance() cluster.LoadBalance {
 	return &ConsistentHashLoadBalance{}
 }
 
-// Select ...
+// Select Get invoker based on load balancing strategy
 func (lb *ConsistentHashLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
 	methodName := invocation.MethodName()
 	key := invokers[0].GetUrl().ServiceKey() + "." + methodName
@@ -85,22 +85,25 @@ func (lb *ConsistentHashLoadBalance) Select(invokers []protocol.Invoker, invocat
 	return selector.Select(invocation)
 }
 
-// Uint32Slice ...
+// Uint32Slice Slice of uint32
 type Uint32Slice []uint32
 
+// Len  Get slice length
 func (s Uint32Slice) Len() int {
 	return len(s)
 }
 
+// Less reports whether the element with index i should sort before the element with index j.
 func (s Uint32Slice) Less(i, j int) bool {
 	return s[i] < s[j]
 }
 
+// Swap swaps the elements with indexes i and j.
 func (s Uint32Slice) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-// ConsistentHashSelector ...
+// ConsistentHashSelector Implementation of Selector:get invoker based on load balancing strategy
 type ConsistentHashSelector struct {
 	hashCode        uint32
 	replicaNum      int
@@ -141,7 +144,7 @@ func newConsistentHashSelector(invokers []protocol.Invoker, methodName string,
 	return selector
 }
 
-// Select ...
+// Select Get invoker based on load balancing strategy
 func (c *ConsistentHashSelector) Select(invocation protocol.Invocation) protocol.Invoker {
 	key := c.toKey(invocation.Arguments())
 	digest := md5.Sum([]byte(key))
