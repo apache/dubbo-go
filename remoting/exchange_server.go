@@ -22,9 +22,9 @@ func NewExchangeServer(url common.URL, server Server) *ExchangeServer {
 }
 
 func (server *ExchangeServer) Start() {
-	(server.Server).Start()
+	server.Server.Start()
 }
 
 func (server *ExchangeServer) Stop() {
-	(server.Server).Stop()
+	server.Server.Stop()
 }

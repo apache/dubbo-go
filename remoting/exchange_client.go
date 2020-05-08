@@ -26,7 +26,7 @@ type Client interface {
 	SetResponseHandler(responseHandler ResponseHandler)
 	//invoke once for connection
 	//ConfigClient()
-	Connect(url common.URL)
+	Connect(url common.URL) error
 	Close()
 	Request(request *Request, timeout time.Duration, response *PendingResponse) error
 }
@@ -42,7 +42,13 @@ func NewExchangeClient(url common.URL, client Client, connectTimeout time.Durati
 		client:         client,
 	}
 	client.SetExchangeClient(exchangeClient)
-	client.Connect(url)
+	if client.Connect(url) != nil {
+		//retry for a while
+		time.Sleep(1 * time.Second)
+		if client.Connect(url) != nil {
+			return nil
+		}
+	}
 	client.SetResponseHandler(exchangeClient)
 	return exchangeClient
 }
