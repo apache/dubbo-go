@@ -19,24 +19,22 @@ package dubbo
 
 import (
 	"context"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/remoting"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
-)
 
-import (
+	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/remoting"
 	"github.com/opentracing/opentracing-go"
-	perrors "github.com/pkg/errors"
-)
 
-import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
+	perrors "github.com/pkg/errors"
+
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 )
 
@@ -111,18 +109,19 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	}
 	//response := NewResponse(inv.Reply(), nil)
 	rest := &protocol.RPCResult{}
+	timeout := di.getTimeout(inv)
 	if async {
 		if callBack, ok := inv.CallBack().(func(response common.CallbackResponse)); ok {
 			//result.Err = di.client.AsyncCall(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), callBack, response)
-			result.Err = di.client.AsyncRequest(&invocation, url, di.timeout, callBack, rest)
+			result.Err = di.client.AsyncRequest(&invocation, url, timeout, callBack, rest)
 		} else {
-			result.Err = di.client.Send(&invocation, di.timeout)
+			result.Err = di.client.Send(&invocation, timeout)
 		}
 	} else {
 		if inv.Reply() == nil {
 			result.Err = ErrNoReply
 		} else {
-			result.Err = di.client.Request(&invocation, url, di.timeout, rest)
+			result.Err = di.client.Request(&invocation, url, timeout, rest)
 		}
 	}
 	if result.Err == nil {
@@ -132,6 +131,20 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	logger.Debugf("result.Err: %v, result.Rest: %v", result.Err, result.Rest)
 
 	return &result
+}
+
+// get timeout including methodConfig
+func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) time.Duration {
+	var timeout = di.GetUrl().GetParam(strings.Join([]string{constant.METHOD_KEYS, invocation.MethodName(), constant.TIMEOUT_KEY}, "."), "")
+	if len(timeout) != 0 {
+		if t, err := time.ParseDuration(timeout); err == nil {
+			// config timeout into attachment
+			invocation.SetAttachments(constant.TIMEOUT_KEY, strconv.Itoa(int(t.Milliseconds())))
+			return t
+		}
+	}
+	invocation.SetAttachments(constant.TIMEOUT_KEY, strconv.Itoa(int(di.timeout.Milliseconds())))
+	return di.timeout
 }
 
 // Destroy ...
