@@ -177,11 +177,6 @@ func (c *DubboCodec) EncodeResponse(response *remoting.Response) (*bytes.Buffer,
 		}
 	}
 
-	//if response.Header.Type&hessian.PackageRequest != 0x00 {
-	//	resp.Body = req.Body
-	//} else {
-	//	resp.Body = nil
-	//}
 	codec := hessian.NewHessianCodec(nil)
 
 	pkg, err := codec.Write(resp.Service, resp.Header, resp.Body)
@@ -261,9 +256,7 @@ func (c *DubboCodec) decodeRequest(data []byte) (*remoting.Request, int, error) 
 				methodName = req[3].(string)
 			}
 			if req[4] != nil {
-				//argsType
-				//invocation.ParameterTypes(constant., req[1].(string))
-				//argsTypes = req[4].(string)
+				//ignore argTypes
 			}
 			if req[5] != nil {
 				args = req[5].([]interface{})
@@ -271,27 +264,9 @@ func (c *DubboCodec) decodeRequest(data []byte) (*remoting.Request, int, error) 
 			if req[6] != nil {
 				attachments = req[6].(map[string]string)
 			}
-			//if pkg.Service.Path == "" && len(attachments[constant.PATH_KEY]) > 0 {
-			//	pkg.Service.Path = attachments[constant.PATH_KEY]
-			//}
-			//if _, ok := attachments[constant.INTERFACE_KEY]; ok {
-			//	pkg.Service.Interface = attachments[constant.INTERFACE_KEY]
-			//} else {
-			//	pkg.Service.Interface = pkg.Service.Path
-			//}
-			//if len(attachments[constant.GROUP_KEY]) > 0 {
-			//	pkg.Service.Group = attachments[constant.GROUP_KEY]
-			//}
 			invoc := invocation.NewRPCInvocationWithOptions(invocation.WithAttachments(attachments),
 				invocation.WithArguments(args), invocation.WithMethodName(methodName))
 			request.Data = invoc
-			//pkg.Body = map[string]interface{}{
-			//	"dubboVersion": dubboVersion,
-			//	"argsTypes":    argsTypes,
-			//	"args":         args,
-			//	"service":      common.ServiceMap.GetService("dubbo", pkg.Service.Path), // path as a key
-			//	"attachments":  attachments,
-			//}
 		}
 	}
 	return request, hessian.HEADER_LENGTH + pkg.Header.BodyLen, nil
