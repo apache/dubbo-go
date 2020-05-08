@@ -18,18 +18,15 @@
 package getty
 
 import (
-	"github.com/apache/dubbo-go/remoting"
 	"reflect"
-)
 
-import (
-	"github.com/apache/dubbo-go-hessian2"
+	"github.com/apache/dubbo-go/remoting"
+
+	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/dubbogo/getty"
-	perrors "github.com/pkg/errors"
-)
 
-import (
 	"github.com/apache/dubbo-go/common/logger"
+	perrors "github.com/pkg/errors"
 )
 
 ////////////////////////////////////////////
@@ -49,17 +46,16 @@ func NewRpcClientPackageHandler(client *Client) *RpcClientPackageHandler {
 func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
 	//pkg := &DubboPackage{}
 	//p.client.ExchangeClient.GetPendingResponse(remoting.SequenceType())
-	resp, length, err := (p.client.codec).DecodeResponse(data)
+	resp, length, err := (p.client.codec).Decode(data)
 	//err := pkg.Unmarshal(buf, p.client)
 	if err != nil {
-		originErr := perrors.Cause(err)
-		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
+		if err == hessian.ErrHeaderNotEnough || err == hessian.ErrBodyNotEnough {
 			return nil, 0, nil
 		}
 
 		logger.Errorf("pkg.Unmarshal(ss:%+v, len(@data):%d) = error:%+v", ss, len(data), err)
 
-		return nil, length, perrors.WithStack(err)
+		return nil, length, err
 	}
 	//if pkg.Header.Type&hessian.PackageRequest == 0x00 {
 	//	pkg.Err = pkg.Body.(*hessian.Response).Exception
@@ -103,18 +99,17 @@ func NewRpcServerPackageHandler(server *Server) *RpcServerPackageHandler {
 }
 
 func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
-	req, length, err := (p.server.codec).DecodeRequest(data)
+	req, length, err := (p.server.codec).Decode(data)
 	//resp,len, err := (*p.).DecodeResponse(buf)
 
 	if err != nil {
-		originErr := perrors.Cause(err)
-		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
+		if err == hessian.ErrHeaderNotEnough || err == hessian.ErrBodyNotEnough {
 			return nil, 0, nil
 		}
 
 		logger.Errorf("pkg.Unmarshal(ss:%+v, len(@data):%d) = error:%+v", ss, len(data), err)
 
-		return nil, 0, perrors.WithStack(err)
+		return nil, 0, err
 	}
 
 	return req, length, err

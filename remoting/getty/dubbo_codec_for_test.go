@@ -1,4 +1,4 @@
-package dubbo
+package getty
 
 import (
 	"bufio"
@@ -25,7 +25,7 @@ const (
 )
 
 func init() {
-	codec := &DubboCodec{}
+	codec := &DubboTestCodec{}
 	remoting.NewCodec("dubbo", codec)
 }
 
@@ -88,15 +88,15 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, resp *remoting.Response) err
 	return perrors.WithStack(err)
 }
 
-type DubboCodec struct {
+type DubboTestCodec struct {
 }
 
-func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, error) {
+func (c *DubboTestCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, error) {
 	if request.Event {
 		return c.encodeHeartbeartReqeust(request)
 	}
 
-	invoc, ok := request.Data.(*protocol.Invocation)
+	invoc, ok := request.Data.(*invocation.RPCInvocation)
 	if !ok {
 		logger.Errorf("encode request failed for parameter type :%+v", request)
 		return nil, perrors.Errorf("encode request failed for parameter type :%+v", request)
@@ -141,7 +141,7 @@ func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, er
 
 	return bytes.NewBuffer(pkg), nil
 }
-func (c *DubboCodec) encodeHeartbeartReqeust(request *remoting.Request) (*bytes.Buffer, error) {
+func (c *DubboTestCodec) encodeHeartbeartReqeust(request *remoting.Request) (*bytes.Buffer, error) {
 	pkg := &DubboPackage{}
 	pkg.Body = []interface{}{}
 	pkg.Header.ID = request.Id
@@ -157,7 +157,7 @@ func (c *DubboCodec) encodeHeartbeartReqeust(request *remoting.Request) (*bytes.
 
 	return bytes.NewBuffer(byt), nil
 }
-func (c *DubboCodec) EncodeResponse(response *remoting.Response) (*bytes.Buffer, error) {
+func (c *DubboTestCodec) EncodeResponse(response *remoting.Response) (*bytes.Buffer, error) {
 	var ptype = hessian.PackageResponse
 	if response.IsHeartbeat() {
 		ptype = hessian.PackageHeartbeat
@@ -192,7 +192,7 @@ func (c *DubboCodec) EncodeResponse(response *remoting.Response) (*bytes.Buffer,
 
 	return bytes.NewBuffer(pkg), nil
 }
-func (c *DubboCodec) Decode(data []byte) (remoting.DecodeResult, int, error) {
+func (c *DubboTestCodec) Decode(data []byte) (remoting.DecodeResult, int, error) {
 	if c.isRequest(data) {
 		req, len, err := c.decodeRequest(data)
 		if err != nil {
@@ -207,14 +207,14 @@ func (c *DubboCodec) Decode(data []byte) (remoting.DecodeResult, int, error) {
 		return remoting.DecodeResult{IsRequest: false, Result: resp}, len, err
 	}
 }
-func (c *DubboCodec) isRequest(data []byte) bool {
+func (c *DubboTestCodec) isRequest(data []byte) bool {
 	if data[2]&byte(0x80) == 0x00 {
 		return false
 	}
 	return true
 }
 
-func (c *DubboCodec) decodeRequest(data []byte) (*remoting.Request, int, error) {
+func (c *DubboTestCodec) decodeRequest(data []byte) (*remoting.Request, int, error) {
 	pkg := &DubboPackage{
 		Body: make([]interface{}, 7),
 	}
@@ -298,7 +298,7 @@ func (c *DubboCodec) decodeRequest(data []byte) (*remoting.Request, int, error) 
 	return request, hessian.HEADER_LENGTH + pkg.Header.BodyLen, nil
 }
 
-func (c *DubboCodec) decodeResponse(data []byte) (*remoting.Response, int, error) {
+func (c *DubboTestCodec) decodeResponse(data []byte) (*remoting.Response, int, error) {
 	pkg := &DubboPackage{}
 	buf := bytes.NewBuffer(data)
 	response := &remoting.Response{}
@@ -310,7 +310,7 @@ func (c *DubboCodec) decodeResponse(data []byte) (*remoting.Response, int, error
 		}
 		logger.Errorf("pkg.Unmarshal(len(@data):%d) = error:%+v", buf.Len(), err)
 
-		return nil, 0, perrors.WithStack(err)
+		return response, 0, perrors.WithStack(err)
 	}
 	response = &remoting.Response{
 		Id: pkg.Header.ID,
