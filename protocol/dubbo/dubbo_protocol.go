@@ -18,19 +18,20 @@
 package dubbo
 
 import (
+	"context"
 	"fmt"
-	"github.com/apache/dubbo-go/protocol/invocation"
-	"github.com/apache/dubbo-go/remoting"
-	"github.com/apache/dubbo-go/remoting/getty"
 	"sync"
-)
 
-import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/invocation"
+	"github.com/apache/dubbo-go/remoting"
+	"github.com/apache/dubbo-go/remoting/getty"
+	"github.com/opentracing/opentracing-go"
 )
 
 // dubbo protocol constant
@@ -154,14 +155,8 @@ func doHandleRequest(rpcInvocation *invocation.RPCInvocation) protocol.RPCResult
 	}
 	invoker := exporter.(protocol.Exporter).GetInvoker()
 	if invoker != nil {
-		//attachments := rpcInvocation.Attachments()
-		//attachments[constant.LOCAL_ADDR] = session.LocalAddr()
-		//attachments[constant.REMOTE_ADDR] = session.RemoteAddr()
-		//
-		//args := p.Body.(map[string]interface{})["args"].([]interface{})
-		//inv := invocation.NewRPCInvocation(p.Service.Method, args, attachments)
 		// FIXME
-		ctx := getty.RebuildCtx(rpcInvocation)
+		ctx := rebuildCtx(rpcInvocation)
 
 		invokeResult := invoker.Invoke(ctx, rpcInvocation)
 		if err := invokeResult.Error(); err != nil {
@@ -199,4 +194,19 @@ func getExchangeClient(url common.URL) *remoting.ExchangeClient {
 		return exchangeClientTmp
 	}
 	return exchangeClient
+}
+
+// rebuildCtx rebuild the context by attachment.
+// Once we decided to transfer more context's key-value, we should change this.
+// now we only support rebuild the tracing context
+func rebuildCtx(inv *invocation.RPCInvocation) context.Context {
+	ctx := context.WithValue(context.Background(), "attachment", inv.Attachments())
+
+	// actually, if user do not use any opentracing framework, the err will not be nil.
+	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.TextMap,
+		opentracing.TextMapCarrier(inv.Attachments()))
+	if err == nil {
+		ctx = context.WithValue(ctx, constant.TRACING_REMOTE_SPAN_CTX, spanCtx)
+	}
+	return ctx
 }

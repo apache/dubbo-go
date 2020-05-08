@@ -1,9 +1,10 @@
 package remoting
 
 import (
+	"time"
+
 	"github.com/apache/dubbo-go/common"
 	"go.uber.org/atomic"
-	"time"
 )
 
 var (
@@ -88,7 +89,7 @@ type PendingResponse struct {
 	Err       error
 	start     time.Time
 	ReadStart time.Time
-	callback  common.AsyncCallback
+	Callback  common.AsyncCallback
 	response  *Response
 	Reply     interface{}
 	Done      chan struct{}
@@ -102,6 +103,10 @@ func NewPendingResponse(id int64) *PendingResponse {
 		response: &Response{},
 		Done:     make(chan struct{}),
 	}
+}
+
+func (r *PendingResponse) SetResponse(response *Response) {
+	r.response = response
 }
 
 // GetCallResponse ...
