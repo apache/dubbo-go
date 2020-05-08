@@ -158,7 +158,7 @@ func (c *Client) Connect(url common.URL) error {
 	c.codec = remoting.GetCodec(url.Protocol)
 	c.addr = url.Location
 	_, _, err := c.selectSession(c.addr)
-	logger.Error("try to connect server %v failed for %v", url.Location, err)
+	logger.Errorf("try to connect server %v failed for : %v", url.Location, err)
 	return err
 }
 
