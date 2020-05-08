@@ -18,17 +18,15 @@
 package common
 
 import (
+	"github.com/apache/dubbo-go/registry"
+)
+
+import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/observer"
 	gxset "github.com/dubbogo/gost/container/set"
 	gxpage "github.com/dubbogo/gost/page"
 )
-
-import (
-	"github.com/apache/dubbo-go/registry"
-)
-
-var dispatcher = extension.GetGlobalDispatcher()
 
 // EventPublishingServiceDiscovery will enhance Service Discovery
 // Publish some event about service discovery
@@ -43,10 +41,12 @@ func NewEventPublishingServiceDiscovery(serviceDiscovery registry.ServiceDiscove
 	}
 }
 
+// String
 func (epsd *EventPublishingServiceDiscovery) String() string {
 	return epsd.serviceDiscovery.String()
 }
 
+// Destroy delegate function
 func (epsd *EventPublishingServiceDiscovery) Destroy() error {
 	f := func() error {
 		return epsd.serviceDiscovery.Destroy()
@@ -55,6 +55,7 @@ func (epsd *EventPublishingServiceDiscovery) Destroy() error {
 		f, NewServiceDiscoveryDestroyedEvent(epsd, epsd.serviceDiscovery))
 }
 
+// Register delegate function
 func (epsd *EventPublishingServiceDiscovery) Register(instance registry.ServiceInstance) error {
 	f := func() error {
 		return epsd.serviceDiscovery.Register(instance)
@@ -64,6 +65,7 @@ func (epsd *EventPublishingServiceDiscovery) Register(instance registry.ServiceI
 
 }
 
+// Update delegate function
 func (epsd *EventPublishingServiceDiscovery) Update(instance registry.ServiceInstance) error {
 	f := func() error {
 		return epsd.serviceDiscovery.Update(instance)
@@ -71,9 +73,10 @@ func (epsd *EventPublishingServiceDiscovery) Update(instance registry.ServiceIns
 	return epsd.executeWithEvents(nil, f, nil)
 }
 
+// Unregister delegate function
 func (epsd *EventPublishingServiceDiscovery) Unregister(instance registry.ServiceInstance) error {
 	f := func() error {
-		return epsd.serviceDiscovery.Register(instance)
+		return epsd.serviceDiscovery.Unregister(instance)
 	}
 	return epsd.executeWithEvents(NewServiceInstancePreUnregisteredEvent(epsd.serviceDiscovery, instance),
 		f, NewServiceInstanceUnregisteredEvent(epsd.serviceDiscovery, instance))
@@ -103,8 +106,9 @@ func (epsd *EventPublishingServiceDiscovery) GetRequestInstances(serviceNames []
 	return epsd.serviceDiscovery.GetRequestInstances(serviceNames, offset, requestedSize)
 }
 
+// AddListener add event listener
 func (epsd *EventPublishingServiceDiscovery) AddListener(listener *registry.ServiceInstancesChangedListener) error {
-	dispatcher.AddEventListener(listener)
+	extension.GetGlobalDispatcher().AddEventListener(listener)
 	return epsd.serviceDiscovery.AddListener(listener)
 }
 
@@ -120,16 +124,18 @@ func (epsd *EventPublishingServiceDiscovery) DispatchEvent(event *registry.Servi
 	return epsd.serviceDiscovery.DispatchEvent(event)
 }
 
+// executeWithEvents dispatch before event and after event if return error will dispatch exception event
 func (epsd *EventPublishingServiceDiscovery) executeWithEvents(beforeEvent observer.Event, f func() error, afterEvent observer.Event) error {
+	globalDispatcher := extension.GetGlobalDispatcher()
 	if beforeEvent != nil {
-		dispatcher.Dispatch(beforeEvent)
+		globalDispatcher.Dispatch(beforeEvent)
 	}
 	if err := f(); err != nil {
-		dispatcher.Dispatch(NewServiceDiscoveryExceptionEvent(epsd, epsd.serviceDiscovery, err))
+		globalDispatcher.Dispatch(NewServiceDiscoveryExceptionEvent(epsd, epsd.serviceDiscovery, err))
 		return err
 	}
 	if afterEvent != nil {
-		dispatcher.Dispatch(afterEvent)
+		globalDispatcher.Dispatch(afterEvent)
 	}
 	return nil
 }

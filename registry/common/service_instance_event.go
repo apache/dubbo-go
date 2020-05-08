@@ -39,30 +39,46 @@ func (sie *ServiceInstanceEvent) getServiceInstance() registry.ServiceInstance {
 	return sie.serviceInstance
 }
 
-type ServiceInstancePreRegisteredEvent ServiceInstanceEvent
+// ServiceInstancePreRegisteredEvent
+// this event will be dispatched before service instance be registered
+type ServiceInstancePreRegisteredEvent struct {
+	ServiceInstanceEvent
+}
 
-type ServiceInstancePreUnregisteredEvent ServiceInstanceEvent
+// ServiceInstancePreUnregisteredEvent
+// this event will be dispatched before service instance be unregistered
+type ServiceInstancePreUnregisteredEvent struct {
+	ServiceInstanceEvent
+}
 
-type ServiceInstanceRegisteredEvent ServiceInstanceEvent
+// ServiceInstanceRegisteredEvent
+// this event will be dispatched after service instance be registered
+type ServiceInstanceRegisteredEvent struct {
+	ServiceInstanceEvent
+}
 
-type ServiceInstanceUnregisteredEvent ServiceInstanceEvent
+// ServiceInstanceRegisteredEvent
+// this event will be dispatched after service instance be unregistered
+type ServiceInstanceUnregisteredEvent struct {
+	ServiceInstanceEvent
+}
 
 // NewServiceInstancePreRegisteredEvent create a ServiceInstancePreRegisteredEvent
 func NewServiceInstancePreRegisteredEvent(source interface{}, instance registry.ServiceInstance) *ServiceInstancePreRegisteredEvent {
-	return (*ServiceInstancePreRegisteredEvent)(NewServiceInstanceEvent(source, instance))
+	return &ServiceInstancePreRegisteredEvent{*NewServiceInstanceEvent(source, instance)}
 }
 
 // NewServiceInstancePreUnregisteredEvent create a ServiceInstancePreUnregisteredEvent
 func NewServiceInstancePreUnregisteredEvent(source interface{}, instance registry.ServiceInstance) *ServiceInstancePreUnregisteredEvent {
-	return (*ServiceInstancePreUnregisteredEvent)(NewServiceInstanceEvent(source, instance))
+	return &ServiceInstancePreUnregisteredEvent{*NewServiceInstanceEvent(source, instance)}
 }
 
 // NewServiceInstanceRegisteredEvent create a ServiceInstanceRegisteredEvent
 func NewServiceInstanceRegisteredEvent(source interface{}, instance registry.ServiceInstance) *ServiceInstanceRegisteredEvent {
-	return (*ServiceInstanceRegisteredEvent)(NewServiceInstanceEvent(source, instance))
+	return &ServiceInstanceRegisteredEvent{*NewServiceInstanceEvent(source, instance)}
 }
 
 // NewServiceInstanceUnregisteredEvent create a ServiceInstanceUnregisteredEvent
 func NewServiceInstanceUnregisteredEvent(source interface{}, instance registry.ServiceInstance) *ServiceInstanceUnregisteredEvent {
-	return (*ServiceInstanceUnregisteredEvent)(NewServiceInstanceEvent(source, instance))
+	return &ServiceInstanceUnregisteredEvent{*NewServiceInstanceEvent(source, instance)}
 }

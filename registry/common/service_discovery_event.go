@@ -25,21 +25,12 @@ import (
 type ServiceDiscoveryEvent struct {
 	observer.BaseEvent
 	original registry.ServiceDiscovery
-	err      error
 }
 
-func NewServiceDiscoveryEventWithoutError(discovery registry.ServiceDiscovery, original registry.ServiceDiscovery) *ServiceDiscoveryEvent {
+func NewServiceDiscoveryEvent(discovery registry.ServiceDiscovery, original registry.ServiceDiscovery) *ServiceDiscoveryEvent {
 	return &ServiceDiscoveryEvent{
 		BaseEvent: *observer.NewBaseEvent(discovery),
 		original:  original,
-	}
-}
-
-func NewServiceDiscoveryEvent(discovery registry.ServiceDiscovery, original registry.ServiceDiscovery, err error) *ServiceDiscoveryEvent {
-	return &ServiceDiscoveryEvent{
-		BaseEvent: *observer.NewBaseEvent(discovery),
-		original:  original,
-		err:       err,
 	}
 }
 
@@ -51,37 +42,58 @@ func (sde *ServiceDiscoveryEvent) GetOriginal() registry.ServiceDiscovery {
 	return sde.original
 }
 
-type ServiceDiscoveryDestroyingEvent ServiceDiscoveryEvent
+// ServiceDiscoveryDestroyingEvent
+// this event will be dispatched before service discovery be destroyed
+type ServiceDiscoveryDestroyingEvent struct {
+	ServiceDiscoveryEvent
+}
 
-type ServiceDiscoveryExceptionEvent ServiceDiscoveryEvent
+// ServiceDiscoveryExceptionEvent
+// this event will be dispatched when the error occur in service discovery
+type ServiceDiscoveryExceptionEvent struct {
+	ServiceDiscoveryEvent
+	err error
+}
 
-type ServiceDiscoveryInitializedEvent ServiceDiscoveryEvent
+// ServiceDiscoveryInitializedEvent
+// this event will be dispatched after service discovery initialize
+type ServiceDiscoveryInitializedEvent struct {
+	ServiceDiscoveryEvent
+}
 
-type ServiceDiscoveryInitializingEvent ServiceDiscoveryEvent
+// ServiceDiscoveryInitializingEvent
+// this event will be dispatched before service discovery initialize
+type ServiceDiscoveryInitializingEvent struct {
+	ServiceDiscoveryEvent
+}
 
-type ServiceDiscoveryDestroyedEvent ServiceDiscoveryEvent
+// ServiceDiscoveryDestroyedEvent
+// this event will be dispatched after service discovery be destroyed
+type ServiceDiscoveryDestroyedEvent struct {
+	ServiceDiscoveryEvent
+}
 
 // NewServiceDiscoveryDestroyingEvent create a ServiceDiscoveryDestroyingEvent
 func NewServiceDiscoveryDestroyingEvent(discovery registry.ServiceDiscovery, original registry.ServiceDiscovery) *ServiceDiscoveryDestroyingEvent {
-	return (*ServiceDiscoveryDestroyingEvent)(NewServiceDiscoveryEventWithoutError(discovery, original))
+	return &ServiceDiscoveryDestroyingEvent{*NewServiceDiscoveryEvent(discovery, original)}
 }
 
 // NewServiceDiscoveryExceptionEvent create a ServiceDiscoveryExceptionEvent
 func NewServiceDiscoveryExceptionEvent(discovery registry.ServiceDiscovery, original registry.ServiceDiscovery, err error) *ServiceDiscoveryExceptionEvent {
-	return (*ServiceDiscoveryExceptionEvent)(NewServiceDiscoveryEvent(discovery, original, err))
+	return &ServiceDiscoveryExceptionEvent{*NewServiceDiscoveryEvent(discovery, original), err}
 }
 
 // NewServiceDiscoveryInitializedEvent create a ServiceDiscoveryInitializedEvent
 func NewServiceDiscoveryInitializedEvent(discovery registry.ServiceDiscovery, original registry.ServiceDiscovery) *ServiceDiscoveryInitializedEvent {
-	return (*ServiceDiscoveryInitializedEvent)(NewServiceDiscoveryEventWithoutError(discovery, original))
+	return &ServiceDiscoveryInitializedEvent{*NewServiceDiscoveryEvent(discovery, original)}
 }
 
 // NewServiceDiscoveryInitializingEvent create a ServiceDiscoveryInitializingEvent
 func NewServiceDiscoveryInitializingEvent(discovery registry.ServiceDiscovery, original registry.ServiceDiscovery) *ServiceDiscoveryInitializingEvent {
-	return (*ServiceDiscoveryInitializingEvent)(NewServiceDiscoveryEventWithoutError(discovery, original))
+	return &ServiceDiscoveryInitializingEvent{*NewServiceDiscoveryEvent(discovery, original)}
 }
 
 // NewServiceDiscoveryDestroyedEvent create a ServiceDiscoveryDestroyedEvent
 func NewServiceDiscoveryDestroyedEvent(discovery registry.ServiceDiscovery, original registry.ServiceDiscovery) *ServiceDiscoveryDestroyedEvent {
-	return (*ServiceDiscoveryDestroyedEvent)(NewServiceDiscoveryEventWithoutError(discovery, original))
+	return &ServiceDiscoveryDestroyedEvent{*NewServiceDiscoveryEvent(discovery, original)}
 }
