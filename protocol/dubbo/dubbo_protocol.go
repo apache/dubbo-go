@@ -94,7 +94,11 @@ func (dp *DubboProtocol) Refer(url common.URL) protocol.Invoker {
 	//	ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
 	//	RequestTimeout: requestTimeout,
 	//}))
-	invoker := NewDubboInvoker(url, getExchangeClient(url))
+	exchangeClient := getExchangeClient(url)
+	if exchangeClient == nil {
+		return nil
+	}
+	invoker := NewDubboInvoker(url, exchangeClient)
 	dp.SetInvokers(invoker)
 	logger.Infof("Refer service: %s", url.String())
 	return invoker
@@ -180,7 +184,9 @@ func getExchangeClient(url common.URL) *remoting.ExchangeClient {
 		exchangeClientTmp := remoting.NewExchangeClient(url, getty.NewClient(getty.Options{
 			ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
 		}), config.GetConsumerConfig().ConnectTimeout)
-		exchangeClientMap.Store(url.Location, exchangeClientTmp)
+		if exchangeClientTmp != nil {
+			exchangeClientMap.Store(url.Location, exchangeClientTmp)
+		}
 
 		return exchangeClientTmp
 	}
@@ -189,8 +195,9 @@ func getExchangeClient(url common.URL) *remoting.ExchangeClient {
 		exchangeClientTmp := remoting.NewExchangeClient(url, getty.NewClient(getty.Options{
 			ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
 		}), config.GetConsumerConfig().ConnectTimeout)
-		exchangeClientMap.Store(url.Location, exchangeClientTmp)
-
+		if exchangeClientTmp != nil {
+			exchangeClientMap.Store(url.Location, exchangeClientTmp)
+		}
 		return exchangeClientTmp
 	}
 	return exchangeClient

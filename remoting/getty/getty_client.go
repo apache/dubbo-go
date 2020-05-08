@@ -149,7 +149,7 @@ func (c *Client) SetResponseHandler(responseHandler remoting.ResponseHandler) {
 	c.responseHandler = responseHandler
 }
 
-func (c *Client) Connect(url common.URL) {
+func (c *Client) Connect(url common.URL) error {
 	initClient(url.Protocol)
 	c.conf = *clientConf
 	// new client
@@ -157,6 +157,9 @@ func (c *Client) Connect(url common.URL) {
 	// codec
 	c.codec = remoting.GetCodec(url.Protocol)
 	c.addr = url.Location
+	_, _, err := c.selectSession(c.addr)
+	logger.Error("try to connect server %v failed for %v", url.Location, err)
+	return err
 }
 
 func (c *Client) Close() {
@@ -225,10 +228,5 @@ func (c *Client) heartbeat(session getty.Session) error {
 
 func (c *Client) transfer(session getty.Session, request *remoting.Request, timeout time.Duration) error {
 	err := session.WritePkg(request, timeout)
-	//if rsp != nil { // cond2
-	//	// cond2 should not merged with cond1. cause the response package may be returned very
-	//	// soon and it will be handled by other goroutine.
-	//	rsp.ReadStart = time.Now()
-	//}
 	return perrors.WithStack(err)
 }

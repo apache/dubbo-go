@@ -82,7 +82,6 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, resp *remoting.Response) err
 			p.Body = &hessian.Response{RspObj: pendingRsp.Reply}
 		}
 	}
-
 	// read body
 	err = codec.ReadBody(p.Body)
 	return perrors.WithStack(err)
