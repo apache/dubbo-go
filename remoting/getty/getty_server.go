@@ -19,22 +19,18 @@ package getty
 
 import (
 	"fmt"
+	"net"
+
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/apache/dubbo-go/remoting"
-	"net"
-)
-
-import (
 	"github.com/dubbogo/getty"
-	"github.com/dubbogo/gost/sync"
-	"gopkg.in/yaml.v2"
-)
 
-import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
+	gxsync "github.com/dubbogo/gost/sync"
+	"gopkg.in/yaml.v2"
 )
 
 var (

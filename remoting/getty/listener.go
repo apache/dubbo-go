@@ -18,25 +18,20 @@
 package getty
 
 import (
-	"context"
 	"fmt"
-	"github.com/apache/dubbo-go/remoting"
 	"sync"
 	"sync/atomic"
 	"time"
-)
 
-import (
-	"github.com/apache/dubbo-go-hessian2"
-	"github.com/dubbogo/getty"
-	"github.com/opentracing/opentracing-go"
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"github.com/apache/dubbo-go/common/constant"
+
+	"github.com/apache/dubbo-go/remoting"
+
+	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol/invocation"
+	"github.com/dubbogo/getty"
+	perrors "github.com/pkg/errors"
 )
 
 // todo: WritePkg_Timeout will entry *.yml
@@ -96,37 +91,48 @@ func (h *RpcClientHandler) OnClose(session getty.Session) {
 
 // OnMessage ...
 func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
-	p, ok := pkg.(*remoting.Response)
+	result, ok := pkg.(remoting.DecodeResult)
 	if !ok {
 		logger.Errorf("illegal package")
 		return
 	}
+	// get heartbeart request from server
+	if result.IsRequest {
+		req := result.Result.(*remoting.Request)
+		if req.Event {
+			logger.Debugf("get rpc heartbeat request{%#v}", req)
+			resp := remoting.NewResponse(req.Id, req.Version)
+			resp.Status = hessian.Response_OK
+			resp.Event = req.Event
+			resp.SerialID = req.SerialID
+			resp.Version = "2.0.2"
+			reply(session, resp, hessian.PackageHeartbeat)
+			return
+		}
+		logger.Errorf("illegal request but not heartbeart. {%#v}", req)
+		return
+	}
 
+	p := result.Result.(*remoting.Response)
+	// get heartbeart
 	if p.Event {
 		logger.Debugf("get rpc heartbeat response{%#v}", p)
 		if p.Error != nil {
 			logger.Errorf("rpc heartbeat response{error: %#v}", p.Error)
 		}
-		(h.conn.pool.rpcClient.responseHandler).Handler(p)
-		//FIXME
-		//if p.Header.Type&hessian.PackageResponse != 0x00 {
-		//	logger.Debugf("get rpc heartbeat response{header: %#v, body: %#v}", p.Header, p.Body)
-		//	if p.Err != nil {
-		//		logger.Errorf("rpc heartbeat response{error: %#v}", p.Err)
-		//	}
-		//	h.conn.pool.rpcClient.removePendingResponse(SequenceType(p.Header.ID))
-		//} else {
-		//	logger.Debugf("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", p.Header, p.Service, p.Body)
-		//	p.Header.ResponseStatus = hessian.Response_OK
-		//	reply(session, p, hessian.PackageHeartbeat)
-		//}
+		h.conn.pool.rpcClient.responseHandler.Handler(p)
 		return
 	}
+	if result.IsRequest {
+		logger.Errorf("illegal package for it is response type. {%#v}", pkg)
+		return
+	}
+
 	logger.Debugf("get rpc response{%#v}", p)
 
 	h.conn.updateSession(session)
 
-	(h.conn.pool.rpcClient.responseHandler).Handler(p)
+	h.conn.pool.rpcClient.responseHandler.Handler(p)
 
 	//
 	//pendingResponse := h.conn.pool.rpcClient.removePendingResponse(SequenceType(p.Header.ID))
@@ -232,11 +238,17 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	}
 	h.rwlock.Unlock()
 
-	req, ok := pkg.(*remoting.Request)
+	decodeResult, ok := pkg.(remoting.DecodeResult)
 	if !ok {
 		logger.Errorf("illegal package{%#v}", pkg)
 		return
 	}
+	if !decodeResult.IsRequest {
+		logger.Errorf("illegal package for it is response type. {%#v}", pkg)
+		return
+	}
+	req := decodeResult.Result.(*remoting.Request)
+
 	resp := remoting.NewResponse(req.Id, req.Version)
 	resp.Status = hessian.Response_OK
 	resp.Event = req.Event
@@ -280,8 +292,13 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 	invoc, ok := req.Data.(*invocation.RPCInvocation)
 	if !ok {
-
+		panic("create invocation occur some exception for the type is not suitable one.")
+		return
 	}
+	attachments := invoc.Attachments()
+	attachments[constant.LOCAL_ADDR] = session.LocalAddr()
+	attachments[constant.REMOTE_ADDR] = session.RemoteAddr()
+
 	result := h.server.requestHandler(invoc)
 	if !req.TwoWay {
 		return
@@ -314,21 +331,6 @@ func (h *RpcServerHandler) OnCron(session getty.Session) {
 		h.rwlock.Unlock()
 		session.Close()
 	}
-}
-
-// rebuildCtx rebuild the context by attachment.
-// Once we decided to transfer more context's key-value, we should change this.
-// now we only support rebuild the tracing context
-func RebuildCtx(inv *invocation.RPCInvocation) context.Context {
-	ctx := context.Background()
-
-	// actually, if user do not use any opentracing framework, the err will not be nil.
-	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.TextMap,
-		opentracing.TextMapCarrier(inv.Attachments()))
-	if err == nil {
-		ctx = context.WithValue(ctx, constant.TRACING_REMOTE_SPAN_CTX, spanCtx)
-	}
-	return ctx
 }
 
 func reply(session getty.Session, resp *remoting.Response, tp hessian.PackageType) {

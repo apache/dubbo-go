@@ -7,8 +7,12 @@ import (
 type Codec interface {
 	EncodeRequest(request *Request) (*bytes.Buffer, error)
 	EncodeResponse(response *Response) (*bytes.Buffer, error)
-	DecodeRequest(data []byte) (*Request, int, error)
-	DecodeResponse(data []byte) (*Response, int, error)
+	Decode(data []byte) (DecodeResult, int, error)
+}
+
+type DecodeResult struct {
+	IsRequest bool
+	Result    interface{}
 }
 
 var (
