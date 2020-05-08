@@ -18,14 +18,14 @@
 package common
 
 import (
-	"github.com/apache/dubbo-go/registry"
+	gxset "github.com/dubbogo/gost/container/set"
+	gxpage "github.com/dubbogo/gost/page"
 )
 
 import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/observer"
-	gxset "github.com/dubbogo/gost/container/set"
-	gxpage "github.com/dubbogo/gost/page"
+	"github.com/apache/dubbo-go/registry"
 )
 
 // EventPublishingServiceDiscovery will enhance Service Discovery
