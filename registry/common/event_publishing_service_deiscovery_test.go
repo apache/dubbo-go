@@ -23,6 +23,8 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
+	gxpage "github.com/dubbogo/gost/page"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -32,8 +34,6 @@ import (
 	"github.com/apache/dubbo-go/common/observer"
 	dispatcher2 "github.com/apache/dubbo-go/common/observer/dispatcher"
 	"github.com/apache/dubbo-go/registry"
-	gxset "github.com/dubbogo/gost/container/set"
-	gxpage "github.com/dubbogo/gost/page"
 )
 
 func TestEventPublishingServiceDiscovery_DispatchEvent(t *testing.T) {
