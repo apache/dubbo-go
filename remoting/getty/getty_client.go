@@ -108,16 +108,6 @@ type Options struct {
 	ConnectTimeout time.Duration
 }
 
-////AsyncCallbackResponse async response for dubbo
-//type AsyncCallbackResponse struct {
-//	common.CallbackResponse
-//	Opts      Options
-//	Cause     error
-//	Start     time.Time // invoke(call) start time == write start time
-//	ReadStart time.Time // read start time, write duration = ReadStart - Start
-//	Reply     interface{}
-//}
-
 // Client ...
 type Client struct {
 	addr            string
@@ -149,6 +139,7 @@ func (c *Client) SetResponseHandler(responseHandler remoting.ResponseHandler) {
 	c.responseHandler = responseHandler
 }
 
+// init client and try to connection.
 func (c *Client) Connect(url common.URL) error {
 	initClient(url.Protocol)
 	c.conf = *clientConf
