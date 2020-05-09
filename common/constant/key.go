@@ -210,9 +210,9 @@ const (
 	// consumer
 	CONSUMER = "consumer"
 	// key of access key id
-	ACCESS_KEY_ID_KEY = "accessKeyId"
+	ACCESS_KEY_ID_KEY = ".accessKeyId"
 	// key of secret access key
-	SECRET_ACCESS_KEY_KEY = "secretAccessKey"
+	SECRET_ACCESS_KEY_KEY = ".secretAccessKey"
 )
 
 // metadata report
