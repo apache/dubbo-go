@@ -258,7 +258,7 @@ func (dir *registryDirectory) List(invocation protocol.Invocation) []protocol.In
 }
 
 // IsAvailable  whether the directory is available
-func (dir *registryDirectory) IsAvailableAvailable() bool {
+func (dir *registryDirectory) IsAvailable() bool {
 	if !dir.BaseDirectory.IsAvailable() {
 		return dir.BaseDirectory.IsAvailable()
 	}
