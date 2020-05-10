@@ -112,15 +112,15 @@ func (r *consulRegistry) unregister(url common.URL) error {
 	return r.client.Agent().ServiceDeregister(buildId(url))
 }
 
-func (r *consulRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
+func (r *consulRegistry) Subscribe(url *common.URL, notifyListener *registry.NotifyListener) {
 	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
 	if role == common.CONSUMER {
-		r.subscribe(url, notifyListener)
+		r.subscribe(url, *notifyListener)
 	}
 }
 
 // UnSubscribe :
-func (r *consulRegistry) UnSubscribe(url *common.URL, notifyListener registry.NotifyListener) {
+func (r *consulRegistry) UnSubscribe(url *common.URL, notifyListener *registry.NotifyListener) {
 
 }
 
