@@ -20,6 +20,7 @@ package zookeeper
 import (
 	"fmt"
 	"net/url"
+	"path"
 	"sync"
 	"time"
 )
@@ -149,8 +150,16 @@ func (r *zkRegistry) DoRegister(root string, node string) error {
 	return r.registerTempZookeeperNode(root, node)
 }
 
+func (r *zkRegistry) DoUnregister(root string, node string) error {
+	return r.ZkClient().Delete(path.Join(root, node))
+}
+
 func (r *zkRegistry) DoSubscribe(conf *common.URL) (registry.Listener, error) {
 	return r.getListener(conf)
+}
+
+func (r *zkRegistry) DoUnsubscribe(svc *common.URL) error {
+	return nil
 }
 
 func (r *zkRegistry) CloseAndNilClient() {
