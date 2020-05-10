@@ -230,6 +230,9 @@ func (r *BaseRegistry) unregister(c common.URL) error {
 }
 
 func (r *BaseRegistry) processURL(c common.URL, f func(string, string) error) error {
+	if f == nil {
+		panic(" Must provide a `function(string, string) error` to process URL. ")
+	}
 	var (
 		err error
 		//revision   string
