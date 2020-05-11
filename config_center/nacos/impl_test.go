@@ -132,8 +132,6 @@ func Test_AddListener(t *testing.T) {
 	listener := &mockDataListener{}
 	time.Sleep(time.Second * 2)
 	nacos.AddListener("dubbo.properties", listener)
-	listener.wg.Add(1)
-	listener.wg.Wait()
 }
 
 func Test_RemoveListener(t *testing.T) {
