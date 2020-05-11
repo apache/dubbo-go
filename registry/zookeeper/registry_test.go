@@ -57,10 +57,10 @@ func Test_UnRegister(t *testing.T) {
 	assert.Regexp(t, ".*dubbo%3A%2F%2F127.0.0.1%3A20000%2Fcom.ikurento.user.UserProvider%3Fanyhost%3Dtrue%26cluster%3Dmock%26.*.serviceid%3Dsoa.mock", children)
 	assert.NoError(t, err)
 
-	reg.UnRegister(url)
+	err = reg.UnRegister(url)
 	children, err = reg.client.GetChildren("/dubbo/com.ikurento.user.UserProvider/providers")
-	assert.Equal(t, len(children), 0)
-	assert.NoError(t, err)
+	assert.Equal(t, 0, len(children))
+	assert.Error(t, err)
 }
 
 func Test_Subscribe(t *testing.T) {
