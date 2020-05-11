@@ -56,6 +56,18 @@ func (l *RegistryDataListener) SubscribeURL(url *common.URL, listener config_cen
 	l.subscribed[url] = listener
 }
 
+// SubscribeURL is used to set a watch listener for url
+func (l *RegistryDataListener) UnSubscribeURL(url *common.URL) config_center.ConfigurationListener {
+	if l.closed {
+		return nil
+	}
+	l.mutex.Lock()
+	listener := l.subscribed[url]
+	delete(l.subscribed, url)
+	l.mutex.Unlock()
+	return listener
+}
+
 // DataChange accepts all events sent from the zookeeper server and trigger the corresponding listener for processing
 func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 	// Intercept the last bit
