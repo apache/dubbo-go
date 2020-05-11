@@ -147,7 +147,7 @@ func (nr *nacosRegistry) subscribe(conf *common.URL) (registry.Listener, error) 
 }
 
 //subscribe from registry
-func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener *registry.NotifyListener) {
+func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
 	for {
 		if !nr.IsAvailable() {
 			logger.Warnf("event listener game over.")
@@ -174,7 +174,7 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener *registry.Not
 			}
 
 			logger.Infof("update begin, service event: %v", serviceEvent.String())
-			(*notifyListener).Notify(serviceEvent)
+			notifyListener.Notify(serviceEvent)
 		}
 
 	}
