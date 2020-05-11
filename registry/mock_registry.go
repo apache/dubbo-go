@@ -78,7 +78,7 @@ func (r *MockRegistry) subscribe(*common.URL) (Listener, error) {
 }
 
 // Subscribe ...
-func (r *MockRegistry) Subscribe(url *common.URL, notifyListener *NotifyListener) {
+func (r *MockRegistry) Subscribe(url *common.URL, notifyListener NotifyListener) {
 	go func() {
 		for {
 			if !r.IsAvailable() {
@@ -106,14 +106,14 @@ func (r *MockRegistry) Subscribe(url *common.URL, notifyListener *NotifyListener
 				}
 
 				logger.Infof("update begin, service event: %v", serviceEvent.String())
-				(*notifyListener).Notify(serviceEvent)
+				notifyListener.Notify(serviceEvent)
 			}
 		}
 	}()
 }
 
 // UnSubscribe :
-func (r *MockRegistry) UnSubscribe(url *common.URL, notifyListener *NotifyListener) {
+func (r *MockRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListener) {
 
 }
 
