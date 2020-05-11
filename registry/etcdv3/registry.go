@@ -173,7 +173,7 @@ func (r *etcdV3Registry) DoSubscribe(svc *common.URL) (registry.Listener, error)
 	return configListener, nil
 }
 
-func (r *etcdV3Registry) DoUnsubscribe(svc *common.URL) error {
+func (r *etcdV3Registry) DoUnsubscribe(conf *common.URL) (registry.Listener, error) {
 	panic("DoUnsubscribe is not support in etcdV3Registry")
-	return nil
+	return nil, nil
 }

@@ -29,7 +29,6 @@ import (
 )
 
 import (
-	gxset "github.com/dubbogo/gost/container/set"
 	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 )
@@ -80,7 +79,7 @@ type FacadeBasedRegistry interface {
 	// DoSubscribe actually subscribe the URL
 	DoSubscribe(conf *common.URL) (Listener, error)
 	// DoUnsubscribe does unsubscribe the URL
-	DoUnsubscribe(svc *common.URL) error
+	DoUnsubscribe(conf *common.URL) (Listener, error)
 	// CloseAndNilClient close the client and then reset the client in registry to nil
 	// you should notice that this method will be invoked inside a lock.
 	// So you should implement this method as light weighted as you can.
@@ -96,12 +95,11 @@ type BaseRegistry struct {
 	context             context.Context
 	facadeBasedRegistry FacadeBasedRegistry
 	*common.URL
-	birth           int64          // time of file birth, seconds since Epoch; 0 if unknown
-	wg              sync.WaitGroup // wg+done for zk restart
-	done            chan struct{}
-	cltLock         sync.Mutex                //ctl lock is a lock for services map
-	services        map[string]common.URL     // service name + protocol -> service config, for store the service registered
-	serviceListener map[string]*gxset.HashSet // service name + protocol -> service listener, for store the service listener registered
+	birth    int64          // time of file birth, seconds since Epoch; 0 if unknown
+	wg       sync.WaitGroup // wg+done for zk restart
+	done     chan struct{}
+	cltLock  sync.Mutex            //ctl lock is a lock for services map
+	services map[string]common.URL // service name + protocol -> service config, for store the service registered
 }
 
 // InitBaseRegistry for init some local variables and set BaseRegistry's subclass to it
@@ -368,14 +366,17 @@ func sleepWait(n int) {
 
 // Subscribe :subscribe from registry, event will notify by notifyListener
 func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener) {
-	n := 0
+	r.processSubscribe(url, notifyListener, r.facadeBasedRegistry.DoSubscribe)
+}
 
-	r.cltLock.Lock()
-	set := r.serviceListener[url.Key()]
-	if set == nil {
-		r.serviceListener[url.Key()] = gxset.NewSet()
-	}
-	r.cltLock.Unlock()
+// UnSubscribe :
+func (r *BaseRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListener) {
+	r.processSubscribe(url, notifyListener, r.facadeBasedRegistry.DoUnsubscribe)
+}
+
+// process Subscribe or UnSubscribe
+func (r *BaseRegistry) processSubscribe(url *common.URL, notifyListener NotifyListener, f func(conf *common.URL) (Listener, error)) {
+	n := 0
 	for {
 		n++
 		if !r.IsAvailable() {
@@ -383,7 +384,7 @@ func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 			return
 		}
 
-		listener, err := r.facadeBasedRegistry.DoSubscribe(url)
+		listener, err := f(url)
 		if err != nil {
 			if !r.IsAvailable() {
 				logger.Warnf("event listener game over.")
@@ -401,27 +402,12 @@ func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 				break
 			} else {
 				logger.Infof("update begin, service event: %v", serviceEvent.String())
-				listener := notifyListener
-				listener.Notify(serviceEvent)
-				r.cltLock.Lock()
-				set := r.serviceListener[url.Key()]
-				set.Add(listener)
-				r.cltLock.Unlock()
+				notifyListener.Notify(serviceEvent)
 			}
 
 		}
 		sleepWait(n)
 	}
-}
-
-// UnSubscribe :
-func (r *BaseRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListener) {
-	////r.serviceListener[url.Key()] = notifyListener
-	//for index, configuration := range configurations {
-	//	if configuration == a2 {
-	//		configurations = append(configurations[:index], configurations[index+1:]...)
-	//	}
-	//}
 }
 
 // closeRegisters close and remove registry client and reset services map
