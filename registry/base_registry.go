@@ -367,7 +367,7 @@ func sleepWait(n int) {
 }
 
 // Subscribe :subscribe from registry, event will notify by notifyListener
-func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener *NotifyListener) {
+func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener) {
 	n := 0
 
 	r.cltLock.Lock()
@@ -401,7 +401,7 @@ func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener *NotifyListener
 				break
 			} else {
 				logger.Infof("update begin, service event: %v", serviceEvent.String())
-				listener := *notifyListener
+				listener := notifyListener
 				listener.Notify(serviceEvent)
 				r.cltLock.Lock()
 				set := r.serviceListener[url.Key()]
@@ -415,7 +415,7 @@ func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener *NotifyListener
 }
 
 // UnSubscribe :
-func (r *BaseRegistry) UnSubscribe(url *common.URL, notifyListener *NotifyListener) {
+func (r *BaseRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListener) {
 	////r.serviceListener[url.Key()] = notifyListener
 	//for index, configuration := range configurations {
 	//	if configuration == a2 {
