@@ -48,14 +48,14 @@ type Registry interface {
 
 	//Will relace mode1 in dubbogo version v1.1.0
 	//mode2 : callback mode, subscribe with notify(notify listener).
-	Subscribe(*common.URL, *NotifyListener)
+	Subscribe(*common.URL, NotifyListener)
 
 	// UnSubscribe is required to support the contract:
 	// 1. If don't subscribe, ignore it directly.
 	// 2. Unsubscribe by full URL match.
 	// url      Subscription condition, not allowed to be empty, e.g. consumer://10.20.153.10/org.apache.dubbo.foo.BarService?version=1.0.0&application=kylin
 	// listener A listener of the change event, not allowed to be empty
-	UnSubscribe(*common.URL, *NotifyListener)
+	UnSubscribe(*common.URL, NotifyListener)
 }
 
 // NotifyListener ...
