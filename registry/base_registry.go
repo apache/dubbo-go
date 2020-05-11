@@ -170,7 +170,7 @@ func (r *BaseRegistry) UnRegister(conf common.URL) error {
 	_, ok = r.services[conf.Key()]
 	r.cltLock.Unlock()
 
-	if ok {
+	if !ok {
 		return perrors.Errorf("Path{%s} has not registered", conf.Key())
 	}
 
