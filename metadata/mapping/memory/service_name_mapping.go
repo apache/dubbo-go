@@ -18,6 +18,7 @@
 package memory
 
 import (
+	"github.com/apache/dubbo-go/metadata/mapping"
 	"sync"
 )
 
@@ -28,7 +29,6 @@ import (
 import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/metadata"
 )
 
 func init() {
@@ -50,7 +50,7 @@ var (
 	nameMappingInitOnce sync.Once
 )
 
-func GetInMemoryServiceNameMappingInstance() metadata.ServiceNameMapping {
+func GetInMemoryServiceNameMappingInstance() mapping.ServiceNameMapping {
 	nameMappingInitOnce.Do(func() {
 		nameMappingInstance = &InMemoryServiceNameMapping{}
 	})
