@@ -285,16 +285,19 @@ func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationL
 		}
 	}
 
-	zkListener = r.dataListener.UnSubscribeURL(conf).(*RegistryConfigurationListener)
+	zkListener = dataListener.UnSubscribeURL(conf).(*RegistryConfigurationListener)
 	if r.listener == nil {
 		return nil, perrors.New("listener is null can not close.")
 	}
 
 	//Interested register to dataconfig.
 	r.listenerLock.Lock()
-	r.dataListener.Close()
-	r.listener.Close()
+	listener := r.listener
+	r.listener = nil
 	r.listenerLock.Unlock()
+
+	dataListener.Close()
+	listener.Close()
 
 	return zkListener, nil
 }
