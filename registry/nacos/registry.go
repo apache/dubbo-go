@@ -138,7 +138,7 @@ func (nr *nacosRegistry) Register(url common.URL) error {
 
 // UnRegister
 func (nr *nacosRegistry) UnRegister(conf common.URL) error {
-
+	panic(" UnRegister not support in nacosRegistry ")
 	return nil
 }
 
@@ -182,7 +182,7 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 
 // UnSubscribe :
 func (nr *nacosRegistry) UnSubscribe(url *common.URL, notifyListener registry.NotifyListener) {
-
+	panic(" UnSubscribe not support in nacosRegistry ")
 }
 
 func (nr *nacosRegistry) GetUrl() common.URL {
