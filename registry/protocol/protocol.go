@@ -22,9 +22,8 @@ import (
 	"strings"
 	"sync"
 )
-
 import (
-	"github.com/dubbogo/gost/container/set"
+	gxset "github.com/dubbogo/gost/container/set"
 )
 
 import (
@@ -96,8 +95,24 @@ func getRegistry(regUrl *common.URL) registry.Registry {
 func getUrlToRegistry(providerUrl *common.URL, registryUrl *common.URL) *common.URL {
 	if registryUrl.GetParamBool("simplified", false) {
 		return providerUrl.CloneWithParams(reserveParams)
+	} else {
+		return filterHideKey(providerUrl)
 	}
-	return providerUrl
+}
+
+// filterHideKey filter the parameters that do not need to be output in url(Starting with .)
+func filterHideKey(url *common.URL) *common.URL {
+
+	//be careful params maps in url is map type
+	cloneURL := url.Clone()
+	removeSet := gxset.NewSet()
+	for k, _ := range cloneURL.GetParams() {
+		if strings.HasPrefix(k, ".") {
+			removeSet.Add(k)
+		}
+	}
+	cloneURL.RemoveParams(removeSet)
+	return cloneURL
 }
 
 func (proto *registryProtocol) initConfigurationListeners() {
