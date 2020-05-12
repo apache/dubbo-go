@@ -17,19 +17,17 @@
 
 package extension
 
-import (
-	"github.com/apache/dubbo-go/metadata"
-)
+import "github.com/apache/dubbo-go/metadata/mapping"
 
 var (
-	nameMappings = make(map[string]func() metadata.ServiceNameMapping)
+	nameMappings = make(map[string]func() mapping.ServiceNameMapping)
 )
 
-func SetServiceNameMapping(name string, creator func() metadata.ServiceNameMapping) {
+func SetServiceNameMapping(name string, creator func() mapping.ServiceNameMapping) {
 	nameMappings[name] = creator
 }
 
-func GetServiceNameMapping(name string) metadata.ServiceNameMapping {
+func GetServiceNameMapping(name string) mapping.ServiceNameMapping {
 	creator, ok := nameMappings[name]
 	if !ok {
 		panic("Can not find the target service name mapping: " + name)
