@@ -18,6 +18,7 @@
 package dynamic
 
 import (
+	"github.com/apache/dubbo-go/metadata/mapping"
 	"strconv"
 	"sync"
 	"time"
@@ -33,7 +34,6 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/config_center"
-	"github.com/apache/dubbo-go/metadata"
 )
 
 const (
@@ -84,7 +84,7 @@ var (
 )
 
 // GetServiceNameMappingInstance will return an instance of DynamicConfigurationServiceNameMapping
-func GetServiceNameMappingInstance() metadata.ServiceNameMapping {
+func GetServiceNameMappingInstance() mapping.ServiceNameMapping {
 	serviceNameMappingInitOnce.Do(func() {
 		dc := common_cfg.GetEnvInstance().GetDynamicConfiguration()
 		serviceNameMappingInstance = &DynamicConfigurationServiceNameMapping{dc: dc}
