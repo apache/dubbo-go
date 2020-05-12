@@ -121,7 +121,7 @@ func (r *consulRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 
 // UnSubscribe :
 func (r *consulRegistry) UnSubscribe(url *common.URL, notifyListener registry.NotifyListener) {
-
+	panic(" UnSubscribe not support in consulRegistry ")
 }
 
 func (r *consulRegistry) subscribe(url *common.URL, notifyListener registry.NotifyListener) {
