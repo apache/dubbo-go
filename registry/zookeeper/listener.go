@@ -56,7 +56,7 @@ func (l *RegistryDataListener) SubscribeURL(url *common.URL, listener config_cen
 	l.subscribed[url] = listener
 }
 
-// SubscribeURL is used to set a watch listener for url
+// UnSubscribeURL is used to set a watch listener for url
 func (l *RegistryDataListener) UnSubscribeURL(url *common.URL) config_center.ConfigurationListener {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
