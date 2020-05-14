@@ -16,7 +16,8 @@
  */
 package getty
 
-// copy from dubbo/dubbo_codec.go
+// copy from dubbo/dubbo_codec.go .
+// it is used to unit test.
 import (
 	"bufio"
 	"bytes"
@@ -129,7 +130,8 @@ func (c *DubboTestCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer
 
 	timeout, err := strconv.Atoi(invocation.AttachmentsByKey(constant.TIMEOUT_KEY, "3000"))
 	if err != nil {
-		panic(err)
+		// it will be wrapped in readwrite.Write .
+		return nil, err
 	}
 	p.Service.Timeout = time.Duration(timeout)
 	//var timeout = request.svcUrl.GetParam(strings.Join([]string{constant.METHOD_KEYS, request.method + constant.RETRIES_KEY}, "."), "")
@@ -140,7 +142,7 @@ func (c *DubboTestCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer
 	//}
 
 	p.Header.SerialID = byte(S_Dubbo)
-	p.Header.ID = request.Id
+	p.Header.ID = request.ID
 	if request.TwoWay {
 		p.Header.Type = hessian.PackageRequest_TwoWay
 	} else {
@@ -161,7 +163,7 @@ func (c *DubboTestCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer
 func (c *DubboTestCodec) encodeHeartbeartReqeust(request *remoting.Request) (*bytes.Buffer, error) {
 	pkg := &DubboPackage{}
 	pkg.Body = []interface{}{}
-	pkg.Header.ID = request.Id
+	pkg.Header.ID = request.ID
 	pkg.Header.Type = hessian.PackageHeartbeat
 	pkg.Header.SerialID = byte(S_Dubbo)
 
@@ -183,7 +185,7 @@ func (c *DubboTestCodec) EncodeResponse(response *remoting.Response) (*bytes.Buf
 		Header: hessian.DubboHeader{
 			SerialID:       response.SerialID,
 			Type:           ptype,
-			ID:             response.Id,
+			ID:             response.ID,
 			ResponseStatus: response.Status,
 		},
 	}
@@ -249,7 +251,7 @@ func (c *DubboTestCodec) decodeRequest(data []byte) (*remoting.Request, int, err
 		return request, 0, perrors.WithStack(err)
 	}
 	request = &remoting.Request{
-		Id:       pkg.Header.ID,
+		ID:       pkg.Header.ID,
 		SerialID: pkg.Header.SerialID,
 		TwoWay:   pkg.Header.Type&hessian.PackageRequest_TwoWay != 0x00,
 		Event:    pkg.Header.Type&hessian.PackageHeartbeat != 0x00,
@@ -330,7 +332,7 @@ func (c *DubboTestCodec) decodeResponse(data []byte) (*remoting.Response, int, e
 		return response, 0, perrors.WithStack(err)
 	}
 	response = &remoting.Response{
-		Id: pkg.Header.ID,
+		ID: pkg.Header.ID,
 		//Version:  pkg.Header.,
 		SerialID: pkg.Header.SerialID,
 		Status:   pkg.Header.ResponseStatus,
