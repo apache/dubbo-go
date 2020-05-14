@@ -123,7 +123,7 @@ func testGetBigPkg(t *testing.T, c *Client) {
 	request.Data = invocation
 	request.Event = false
 	request.TwoWay = true
-	pendingResponse := remoting.NewPendingResponse(request.Id)
+	pendingResponse := remoting.NewPendingResponse(request.ID)
 	pendingResponse.Reply = user
 	remoting.AddPendingResponse(pendingResponse)
 	err = c.Request(request, 8*time.Second, pendingResponse)
@@ -145,7 +145,7 @@ func testGetUser(t *testing.T, c *Client) {
 	request.Data = invocation
 	request.Event = false
 	request.TwoWay = true
-	pendingResponse := remoting.NewPendingResponse(request.Id)
+	pendingResponse := remoting.NewPendingResponse(request.ID)
 	pendingResponse.Reply = user
 	remoting.AddPendingResponse(pendingResponse)
 	err = c.Request(request, 3*time.Second, pendingResponse)
@@ -167,8 +167,8 @@ func testGetUser0(t *testing.T, c *Client) {
 	request.Data = invocation
 	request.Event = false
 	request.TwoWay = true
-	rsp := remoting.NewPendingResponse(request.Id)
-	rsp.SetResponse(remoting.NewResponse(request.Id, "2.0.2"))
+	rsp := remoting.NewPendingResponse(request.ID)
+	rsp.SetResponse(remoting.NewResponse(request.ID, "2.0.2"))
 	remoting.AddPendingResponse(rsp)
 	rsp.Reply = user
 	err = c.Request(request, 3*time.Second, rsp)
@@ -187,7 +187,7 @@ func testGetUser1(t *testing.T, c *Client) {
 	request.Data = invocation
 	request.Event = false
 	request.TwoWay = true
-	pendingResponse := remoting.NewPendingResponse(request.Id)
+	pendingResponse := remoting.NewPendingResponse(request.ID)
 	user := &User{}
 	pendingResponse.Reply = user
 	remoting.AddPendingResponse(pendingResponse)
@@ -206,7 +206,7 @@ func testGetUser2(t *testing.T, c *Client) {
 	request.Data = invocation
 	request.Event = false
 	request.TwoWay = true
-	pendingResponse := remoting.NewPendingResponse(request.Id)
+	pendingResponse := remoting.NewPendingResponse(request.ID)
 	remoting.AddPendingResponse(pendingResponse)
 	err = c.Request(request, 3*time.Second, pendingResponse)
 	assert.EqualError(t, err, "error")
@@ -223,7 +223,7 @@ func testGetUser3(t *testing.T, c *Client) {
 	request.Data = invocation
 	request.Event = false
 	request.TwoWay = true
-	pendingResponse := remoting.NewPendingResponse(request.Id)
+	pendingResponse := remoting.NewPendingResponse(request.ID)
 	user2 := []interface{}{}
 	pendingResponse.Reply = &user2
 	remoting.AddPendingResponse(pendingResponse)
@@ -242,7 +242,7 @@ func testGetUser4(t *testing.T, c *Client) {
 	request.Data = invocation
 	request.Event = false
 	request.TwoWay = true
-	pendingResponse := remoting.NewPendingResponse(request.Id)
+	pendingResponse := remoting.NewPendingResponse(request.ID)
 	user2 := []interface{}{}
 	pendingResponse.Reply = &user2
 	remoting.AddPendingResponse(pendingResponse)
@@ -262,7 +262,7 @@ func testGetUser5(t *testing.T, c *Client) {
 	request.Data = invocation
 	request.Event = false
 	request.TwoWay = true
-	pendingResponse := remoting.NewPendingResponse(request.Id)
+	pendingResponse := remoting.NewPendingResponse(request.ID)
 	user3 := map[interface{}]interface{}{}
 	pendingResponse.Reply = &user3
 	remoting.AddPendingResponse(pendingResponse)
@@ -285,7 +285,7 @@ func testGetUser6(t *testing.T, c *Client) {
 	request.Data = invocation
 	request.Event = false
 	request.TwoWay = true
-	pendingResponse := remoting.NewPendingResponse(request.Id)
+	pendingResponse := remoting.NewPendingResponse(request.ID)
 	pendingResponse.Reply = user
 	remoting.AddPendingResponse(pendingResponse)
 	err = c.Request(request, 3*time.Second, pendingResponse)
@@ -306,7 +306,7 @@ func testGetUser61(t *testing.T, c *Client) {
 	request.Data = invocation
 	request.Event = false
 	request.TwoWay = true
-	pendingResponse := remoting.NewPendingResponse(request.Id)
+	pendingResponse := remoting.NewPendingResponse(request.ID)
 	pendingResponse.Reply = user
 	remoting.AddPendingResponse(pendingResponse)
 	err = c.Request(request, 3*time.Second, pendingResponse)
@@ -325,8 +325,8 @@ func testClient_AsyncCall(t *testing.T, svr *Server, url common.URL, client *Cli
 	request.Data = invocation
 	request.Event = false
 	request.TwoWay = true
-	rsp := remoting.NewPendingResponse(request.Id)
-	rsp.SetResponse(remoting.NewResponse(request.Id, "2.0.2"))
+	rsp := remoting.NewPendingResponse(request.ID)
+	rsp.SetResponse(remoting.NewResponse(request.ID, "2.0.2"))
 	remoting.AddPendingResponse(rsp)
 	rsp.Reply = user
 	rsp.Callback = func(response common.CallbackResponse) {

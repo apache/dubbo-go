@@ -70,7 +70,7 @@ func TestDubboInvoker_Invoke(t *testing.T) {
 		r := response.(remoting.AsyncCallbackResponse)
 		rst := *r.Reply.(*remoting.Response).Result.(*protocol.RPCResult)
 		assert.Equal(t, User{Id: "1", Name: "username"}, *(rst.Rest.(*User)))
-		//assert.Equal(t, User{Id: "1", Name: "username"}, *r.Reply.(*Response).reply.(*User))
+		//assert.Equal(t, User{ID: "1", Name: "username"}, *r.Reply.(*Response).reply.(*User))
 		lock.Unlock()
 	})
 	res = invoker.Invoke(context.Background(), inv)

@@ -26,29 +26,39 @@ import (
 )
 
 var (
+	// store requestID and response
 	pendingResponses *sync.Map = new(sync.Map)
 )
 
 type SequenceType int64
 
+// It is interface of client for network communication.
+// If you use getty as network communication, you should define GettyClient that implements this interface.
+type Client interface {
+	SetExchangeClient(client *ExchangeClient)
+	// responseHandler is used to deal with msg
+	SetResponseHandler(responseHandler ResponseHandler)
+	// connect url
+	Connect(url common.URL) error
+	// close
+	Close()
+	// send request to server.
+	Request(request *Request, timeout time.Duration, response *PendingResponse) error
+}
+
+// This is abstraction level. it is like facade.
 type ExchangeClient struct {
 	ConnectTimeout time.Duration
 	address        string
 	client         Client
 }
 
-type Client interface {
-	SetExchangeClient(client *ExchangeClient)
-	SetResponseHandler(responseHandler ResponseHandler)
-	Connect(url common.URL) error
-	Close()
-	Request(request *Request, timeout time.Duration, response *PendingResponse) error
-}
-
+// handle the message from server
 type ResponseHandler interface {
 	Handler(response *Response)
 }
 
+// create ExchangeClient
 func NewExchangeClient(url common.URL, client Client, connectTimeout time.Duration) *ExchangeClient {
 	exchangeClient := &ExchangeClient{
 		ConnectTimeout: connectTimeout,
@@ -67,6 +77,7 @@ func NewExchangeClient(url common.URL, client Client, connectTimeout time.Durati
 	return exchangeClient
 }
 
+// two way request
 func (client *ExchangeClient) Request(invocation *protocol.Invocation, url common.URL, timeout time.Duration,
 	result *protocol.RPCResult) error {
 	request := NewRequest("2.0.2")
@@ -74,8 +85,8 @@ func (client *ExchangeClient) Request(invocation *protocol.Invocation, url commo
 	request.Event = false
 	request.TwoWay = true
 
-	rsp := NewPendingResponse(request.Id)
-	rsp.response = NewResponse(request.Id, "2.0.2")
+	rsp := NewPendingResponse(request.ID)
+	rsp.response = NewResponse(request.ID, "2.0.2")
 	rsp.Reply = (*invocation).Reply()
 	AddPendingResponse(rsp)
 
@@ -88,6 +99,7 @@ func (client *ExchangeClient) Request(invocation *protocol.Invocation, url commo
 	return nil
 }
 
+// async two way request
 func (client *ExchangeClient) AsyncRequest(invocation *protocol.Invocation, url common.URL, timeout time.Duration,
 	callback common.AsyncCallback, result *protocol.RPCResult) error {
 	request := NewRequest("2.0.2")
@@ -95,8 +107,8 @@ func (client *ExchangeClient) AsyncRequest(invocation *protocol.Invocation, url 
 	request.Event = false
 	request.TwoWay = true
 
-	rsp := NewPendingResponse(request.Id)
-	rsp.response = NewResponse(request.Id, "2.0.2")
+	rsp := NewPendingResponse(request.ID)
+	rsp.response = NewResponse(request.ID, "2.0.2")
 	rsp.Callback = callback
 	rsp.Reply = (*invocation).Reply()
 	AddPendingResponse(rsp)
@@ -110,15 +122,15 @@ func (client *ExchangeClient) AsyncRequest(invocation *protocol.Invocation, url 
 	return nil
 }
 
-// oneway
+// oneway request
 func (client *ExchangeClient) Send(invocation *protocol.Invocation, timeout time.Duration) error {
 	request := NewRequest("2.0.2")
 	request.Data = invocation
 	request.Event = false
 	request.TwoWay = false
 
-	rsp := NewPendingResponse(request.Id)
-	rsp.response = NewResponse(request.Id, "2.0.2")
+	rsp := NewPendingResponse(request.ID)
+	rsp.response = NewResponse(request.ID, "2.0.2")
 
 	err := client.client.Request(request, timeout, rsp)
 	if err != nil {
@@ -127,13 +139,15 @@ func (client *ExchangeClient) Send(invocation *protocol.Invocation, timeout time
 	return nil
 }
 
+// close client
 func (client *ExchangeClient) Close() {
 	client.client.Close()
 }
 
+// handle the response from server
 func (client *ExchangeClient) Handler(response *Response) {
 
-	pendingResponse := removePendingResponse(SequenceType(response.Id))
+	pendingResponse := removePendingResponse(SequenceType(response.ID))
 	if pendingResponse == nil {
 		logger.Errorf("failed to get pending response context for response package %s", *response)
 		return
@@ -149,10 +163,12 @@ func (client *ExchangeClient) Handler(response *Response) {
 	}
 }
 
+// store response into map
 func AddPendingResponse(pr *PendingResponse) {
 	pendingResponses.Store(SequenceType(pr.seq), pr)
 }
 
+// get and remove response
 func removePendingResponse(seq SequenceType) *PendingResponse {
 	if pendingResponses == nil {
 		return nil
@@ -164,6 +180,7 @@ func removePendingResponse(seq SequenceType) *PendingResponse {
 	return nil
 }
 
+// get response
 func GetPendingResponse(seq SequenceType) *PendingResponse {
 	if presp, ok := pendingResponses.Load(seq); ok {
 		return presp.(*PendingResponse)
