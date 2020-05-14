@@ -18,11 +18,8 @@
 package config
 
 import (
-	"github.com/creasty/defaults"
-)
-
-import (
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/creasty/defaults"
 )
 
 // ApplicationConfig ...
@@ -40,7 +37,7 @@ func (*ApplicationConfig) Prefix() string {
 	return constant.DUBBO + ".application."
 }
 
-// Id ...
+// ID ...
 func (c *ApplicationConfig) Id() string {
 	return ""
 }

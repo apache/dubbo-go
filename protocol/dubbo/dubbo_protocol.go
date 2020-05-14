@@ -41,6 +41,8 @@ const (
 )
 
 var (
+	// Make the connection can be shared.
+	// It will create one connection for one address (ip+port)
 	exchangeClientMap *sync.Map = new(sync.Map)
 )
 
