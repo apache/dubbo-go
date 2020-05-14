@@ -101,7 +101,7 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 		req := result.Result.(*remoting.Request)
 		if req.Event {
 			logger.Debugf("get rpc heartbeat request{%#v}", req)
-			resp := remoting.NewResponse(req.Id, req.Version)
+			resp := remoting.NewResponse(req.ID, req.Version)
 			resp.Status = hessian.Response_OK
 			resp.Event = req.Event
 			resp.SerialID = req.SerialID
@@ -230,7 +230,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	}
 	req := decodeResult.Result.(*remoting.Request)
 
-	resp := remoting.NewResponse(req.Id, req.Version)
+	resp := remoting.NewResponse(req.ID, req.Version)
 	resp.Status = hessian.Response_OK
 	resp.Event = req.Event
 	resp.SerialID = req.SerialID

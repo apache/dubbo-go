@@ -44,6 +44,7 @@ var (
 	clientGrpool *gxsync.TaskPool
 )
 
+// it is init client for single protocol.
 func initClient(protocol string) {
 	if protocol == "" {
 		return
@@ -84,7 +85,7 @@ func initClient(protocol string) {
 	rand.Seed(time.Now().UnixNano())
 }
 
-// SetClientConf ...
+// SetClientConf:  config ClientConf
 func SetClientConf(c ClientConfig) {
 	clientConf = &c
 	err := clientConf.CheckValidity()
@@ -102,13 +103,14 @@ func setClientGrpool() {
 	}
 }
 
-// Options ...
+// Options : param config
 type Options struct {
 	// connect timeout
+	// remove request timeout, it will be calulate for every request
 	ConnectTimeout time.Duration
 }
 
-// Client ...
+// Client : some configuration for network communication.
 type Client struct {
 	addr            string
 	opts            Options
@@ -119,7 +121,7 @@ type Client struct {
 	ExchangeClient  *remoting.ExchangeClient
 }
 
-// NewClient ...
+// create client
 func NewClient(opt Options) *Client {
 	switch {
 	case opt.ConnectTimeout == 0:
@@ -153,6 +155,7 @@ func (c *Client) Connect(url common.URL) error {
 	return err
 }
 
+// close network connection
 func (c *Client) Close() {
 	if c.pool != nil {
 		c.pool.close()
@@ -160,6 +163,7 @@ func (c *Client) Close() {
 	c.pool = nil
 }
 
+// send request
 func (c *Client) Request(request *remoting.Request, timeout time.Duration, response *remoting.PendingResponse) error {
 
 	var (
@@ -212,7 +216,7 @@ func (c *Client) heartbeat(session getty.Session) error {
 	req := remoting.NewRequest("2.0.2")
 	req.TwoWay = true
 	req.Event = true
-	resp := remoting.NewPendingResponse(req.Id)
+	resp := remoting.NewPendingResponse(req.ID)
 	remoting.AddPendingResponse(resp)
 	return c.transfer(session, req, 3*time.Second)
 }

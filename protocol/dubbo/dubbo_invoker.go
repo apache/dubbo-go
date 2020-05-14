@@ -48,17 +48,19 @@ var (
 	attachmentKey = []string{constant.INTERFACE_KEY, constant.GROUP_KEY, constant.TOKEN_KEY, constant.TIMEOUT_KEY}
 )
 
-// DubboInvoker ...
+// DubboInvoker. It is implement of protocol.Invoker. One dubboInvoker refer to one service and ip.
 type DubboInvoker struct {
 	protocol.BaseInvoker
+	// the exchange layer, it is focus on network communication.
 	client   *remoting.ExchangeClient
 	quitOnce sync.Once
-	timeout  time.Duration
+	// timeout for service(interface) level.
+	timeout time.Duration
 	// Used to record the number of requests. -1 represent this DubboInvoker is destroyed
 	reqNum int64
 }
 
-// NewDubboInvoker ...
+// NewDubboInvoker constructor
 func NewDubboInvoker(url common.URL, client *remoting.ExchangeClient) *DubboInvoker {
 	requestTimeout := config.GetConsumerConfig().RequestTimeout
 
@@ -143,6 +145,7 @@ func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) ti
 			return t
 		}
 	}
+	// set timeout into invocation at method level
 	invocation.SetAttachments(constant.TIMEOUT_KEY, strconv.Itoa(int(di.timeout.Milliseconds())))
 	return di.timeout
 }

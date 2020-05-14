@@ -24,39 +24,46 @@ import (
 )
 
 var (
+	// generate request ID for global use
 	sequence atomic.Uint64
 )
 
 func init() {
+	// init request ID
 	sequence.Store(0)
 }
 
 func SequenceId() uint64 {
+	// increse 2 for every request.
 	return sequence.Add(2)
 }
 
 // Request ...
 type Request struct {
-	Id       int64
-	Version  string
+	ID int64
+	// protocol version
+	Version string
+	// serial ID
 	SerialID byte
-	Data     interface{}
-	TwoWay   bool
-	Event    bool
-	broken   bool
+	// Data
+	Data   interface{}
+	TwoWay bool
+	Event  bool
+	// it is used to judge the request is unbroken
+	// broken bool
 }
 
-// NewRequest ...
+// NewRequest
 func NewRequest(version string) *Request {
 	return &Request{
-		Id:      int64(SequenceId()),
+		ID:      int64(SequenceId()),
 		Version: version,
 	}
 }
 
 // Response ...
 type Response struct {
-	Id       int64
+	ID       int64
 	Version  string
 	SerialID byte
 	Status   uint8
@@ -65,14 +72,15 @@ type Response struct {
 	Result   interface{}
 }
 
-// NewResponse ...
+// NewResponse
 func NewResponse(id int64, version string) *Response {
 	return &Response{
-		Id:      id,
+		ID:      id,
 		Version: version,
 	}
 }
 
+// the response is heartbeat
 func (response *Response) IsHeartbeat() bool {
 	return response.Event && response.Result == nil
 }
@@ -92,6 +100,7 @@ type AsyncCallbackResponse struct {
 	Reply     interface{}
 }
 
+// the client sends requst to server, there is one pendingResponse at client side to wait the response from server
 type PendingResponse struct {
 	seq       int64
 	Err       error

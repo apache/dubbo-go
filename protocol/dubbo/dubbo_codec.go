@@ -42,10 +42,11 @@ const (
 
 func init() {
 	codec := &DubboCodec{}
+	// this is for registry dubboCodec of dubbo protocol
 	remoting.NewCodec("dubbo", codec)
 }
 
-// DubboPackage ...
+// DubboPackage.  this is for hessian encode/decode. If we refactor hessian, it will also be refactored.
 type DubboPackage struct {
 	Header  hessian.DubboHeader
 	Service hessian.Service
@@ -53,6 +54,7 @@ type DubboPackage struct {
 	Err     error
 }
 
+// String of DubboPackage
 func (p DubboPackage) String() string {
 	return fmt.Sprintf("DubboPackage: Header-%v, Path-%v, Body-%v", p.Header, p.Service, p.Body)
 }
@@ -103,9 +105,11 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, resp *remoting.Response) err
 	return perrors.WithStack(err)
 }
 
+// DubboCodec. It is implements remoting.Codec
 type DubboCodec struct {
 }
 
+// encode request for transport
 func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, error) {
 	if request.Event {
 		return c.encodeHeartbeartReqeust(request)
@@ -127,12 +131,13 @@ func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, er
 
 	timeout, err := strconv.Atoi(invocation.AttachmentsByKey(constant.TIMEOUT_KEY, "3000"))
 	if err != nil {
-		panic(err)
+		// it will be wrapped in readwrite.Write .
+		return nil, err
 	}
 	p.Service.Timeout = time.Duration(timeout)
 
 	p.Header.SerialID = byte(S_Dubbo)
-	p.Header.ID = request.Id
+	p.Header.ID = request.ID
 	if request.TwoWay {
 		p.Header.Type = hessian.PackageRequest_TwoWay
 	} else {
@@ -150,10 +155,12 @@ func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, er
 
 	return bytes.NewBuffer(pkg), nil
 }
+
+// encode heartbeart request
 func (c *DubboCodec) encodeHeartbeartReqeust(request *remoting.Request) (*bytes.Buffer, error) {
 	pkg := &DubboPackage{}
 	pkg.Body = []interface{}{}
-	pkg.Header.ID = request.Id
+	pkg.Header.ID = request.ID
 	pkg.Header.Type = hessian.PackageHeartbeat
 	pkg.Header.SerialID = byte(S_Dubbo)
 
@@ -166,6 +173,8 @@ func (c *DubboCodec) encodeHeartbeartReqeust(request *remoting.Request) (*bytes.
 
 	return bytes.NewBuffer(byt), nil
 }
+
+// encode response
 func (c *DubboCodec) EncodeResponse(response *remoting.Response) (*bytes.Buffer, error) {
 	var ptype = hessian.PackageResponse
 	if response.IsHeartbeat() {
@@ -175,7 +184,7 @@ func (c *DubboCodec) EncodeResponse(response *remoting.Response) (*bytes.Buffer,
 		Header: hessian.DubboHeader{
 			SerialID:       response.SerialID,
 			Type:           ptype,
-			ID:             response.Id,
+			ID:             response.ID,
 			ResponseStatus: response.Status,
 		},
 	}
@@ -196,19 +205,21 @@ func (c *DubboCodec) EncodeResponse(response *remoting.Response) (*bytes.Buffer,
 
 	return bytes.NewBuffer(pkg), nil
 }
+
+// Decode data, including request and response.
 func (c *DubboCodec) Decode(data []byte) (remoting.DecodeResult, int, error) {
 	if c.isRequest(data) {
 		req, len, err := c.decodeRequest(data)
 		if err != nil {
-			return remoting.DecodeResult{}, len, err
+			return remoting.DecodeResult{}, len, perrors.WithStack(err)
 		}
-		return remoting.DecodeResult{IsRequest: true, Result: req}, len, err
+		return remoting.DecodeResult{IsRequest: true, Result: req}, len, perrors.WithStack(err)
 	} else {
 		resp, len, err := c.decodeResponse(data)
 		if err != nil {
-			return remoting.DecodeResult{}, len, err
+			return remoting.DecodeResult{}, len, perrors.WithStack(err)
 		}
-		return remoting.DecodeResult{IsRequest: false, Result: resp}, len, err
+		return remoting.DecodeResult{IsRequest: false, Result: resp}, len, perrors.WithStack(err)
 	}
 }
 func (c *DubboCodec) isRequest(data []byte) bool {
@@ -218,6 +229,7 @@ func (c *DubboCodec) isRequest(data []byte) bool {
 	return true
 }
 
+// decode request
 func (c *DubboCodec) decodeRequest(data []byte) (*remoting.Request, int, error) {
 	pkg := &DubboPackage{
 		Body: make([]interface{}, 7),
@@ -236,7 +248,7 @@ func (c *DubboCodec) decodeRequest(data []byte) (*remoting.Request, int, error) 
 		return request, 0, perrors.WithStack(err)
 	}
 	request = &remoting.Request{
-		Id:       pkg.Header.ID,
+		ID:       pkg.Header.ID,
 		SerialID: pkg.Header.SerialID,
 		TwoWay:   pkg.Header.Type&hessian.PackageRequest_TwoWay != 0x00,
 		Event:    pkg.Header.Type&hessian.PackageHeartbeat != 0x00,
@@ -282,6 +294,7 @@ func (c *DubboCodec) decodeRequest(data []byte) (*remoting.Request, int, error) 
 	return request, hessian.HEADER_LENGTH + pkg.Header.BodyLen, nil
 }
 
+// decode response
 func (c *DubboCodec) decodeResponse(data []byte) (*remoting.Response, int, error) {
 	pkg := &DubboPackage{}
 	buf := bytes.NewBuffer(data)
@@ -289,6 +302,7 @@ func (c *DubboCodec) decodeResponse(data []byte) (*remoting.Response, int, error
 	err := pkg.Unmarshal(buf, response)
 	if err != nil {
 		originErr := perrors.Cause(err)
+		// if the data is very big, so the receive need much times.
 		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
 			return nil, 0, originErr
 		}
@@ -297,7 +311,7 @@ func (c *DubboCodec) decodeResponse(data []byte) (*remoting.Response, int, error
 		return nil, 0, perrors.WithStack(err)
 	}
 	response = &remoting.Response{
-		Id: pkg.Header.ID,
+		ID: pkg.Header.ID,
 		//Version:  pkg.Header.,
 		SerialID: pkg.Header.SerialID,
 		Status:   pkg.Header.ResponseStatus,
