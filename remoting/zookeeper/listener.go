@@ -316,5 +316,6 @@ func (l *ZkEventListener) valid() bool {
 
 // Close ...
 func (l *ZkEventListener) Close() {
+	close(l.client.exit)
 	l.wg.Wait()
 }

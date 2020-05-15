@@ -145,8 +145,7 @@ func (r *kubernetesRegistry) DoSubscribe(svc *common.URL) (registry.Listener, er
 }
 
 func (r *kubernetesRegistry) DoUnsubscribe(conf *common.URL) (registry.Listener, error) {
-	panic("DoUnsubscribe is not support in kubernetesRegistry")
-	return nil, nil
+	return nil, perrors.New("DoUnsubscribe is not support in kubernetesRegistry")
 }
 
 func (r *kubernetesRegistry) InitListeners() {

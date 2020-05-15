@@ -273,24 +273,24 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationListener, error) {
 
 	var zkListener *RegistryConfigurationListener
-	dataListener := r.dataListener
-	dataListener.mutex.Lock()
-	defer dataListener.mutex.Unlock()
-	if r.dataListener.subscribed[conf] != nil {
+	r.dataListener.mutex.Lock()
+	configurationListener := r.dataListener.subscribed[conf]
+	if configurationListener != nil {
 
-		zkListener, _ := r.dataListener.subscribed[conf].(*RegistryConfigurationListener)
+		zkListener, _ := configurationListener.(*RegistryConfigurationListener)
 		if zkListener != nil {
 			r.listenerLock.Lock()
-			defer r.listenerLock.Unlock()
 			if zkListener.isClosed {
+				r.listenerLock.Unlock()
 				return nil, perrors.New("configListener already been closed")
-			} else {
-				return zkListener, nil
 			}
+			r.listenerLock.Unlock()
 		}
 	}
 
-	zkListener = dataListener.UnSubscribeURL(conf).(*RegistryConfigurationListener)
+	zkListener = r.dataListener.UnSubscribeURL(conf).(*RegistryConfigurationListener)
+	r.dataListener.mutex.Unlock()
+
 	if r.listener == nil {
 		return nil, perrors.New("listener is null can not close.")
 	}
@@ -299,9 +299,8 @@ func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationL
 	r.listenerLock.Lock()
 	listener := r.listener
 	r.listener = nil
-	r.listenerLock.Unlock()
 
-	dataListener.Close()
+	r.dataListener.Close()
 	listener.Close()
 
 	return zkListener, nil
