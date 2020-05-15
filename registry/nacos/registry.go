@@ -138,8 +138,7 @@ func (nr *nacosRegistry) Register(url common.URL) error {
 
 // UnRegister
 func (nr *nacosRegistry) UnRegister(conf common.URL) error {
-	panic(" UnRegister not support in nacosRegistry ")
-	return nil
+	return perrors.New("UnRegister is not support in nacosRegistry")
 }
 
 func (nr *nacosRegistry) subscribe(conf *common.URL) (registry.Listener, error) {
@@ -147,7 +146,7 @@ func (nr *nacosRegistry) subscribe(conf *common.URL) (registry.Listener, error) 
 }
 
 //subscribe from registry
-func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
+func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) error {
 	for {
 		if !nr.IsAvailable() {
 			logger.Warnf("event listener game over.")
@@ -178,11 +177,12 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 		}
 
 	}
+	return nil
 }
 
 // UnSubscribe :
-func (nr *nacosRegistry) UnSubscribe(url *common.URL, notifyListener registry.NotifyListener) {
-	panic(" UnSubscribe not support in nacosRegistry ")
+func (nr *nacosRegistry) UnSubscribe(url *common.URL, notifyListener registry.NotifyListener) error {
+	return perrors.New("UnSubscribe not support in nacosRegistry")
 }
 
 func (nr *nacosRegistry) GetUrl() common.URL {

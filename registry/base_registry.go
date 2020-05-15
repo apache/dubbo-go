@@ -98,7 +98,7 @@ type BaseRegistry struct {
 	birth    int64          // time of file birth, seconds since Epoch; 0 if unknown
 	wg       sync.WaitGroup // wg+done for zk restart
 	done     chan struct{}
-	cltLock  sync.Mutex            //ctl lock is a lock for services map
+	cltLock  sync.RWMutex          //ctl lock is a lock for services map
 	services map[string]common.URL // service name + protocol -> service config, for store the service registered
 }
 
@@ -138,9 +138,9 @@ func (r *BaseRegistry) Register(conf common.URL) error {
 	)
 	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
 	// Check if the service has been registered
-	r.cltLock.Lock()
+	r.cltLock.RLock()
 	_, ok = r.services[conf.Key()]
-	r.cltLock.Unlock()
+	r.cltLock.RUnlock()
 	if ok {
 		return perrors.Errorf("Path{%s} has been registered", conf.Key())
 	}
@@ -165,10 +165,17 @@ func (r *BaseRegistry) UnRegister(conf common.URL) error {
 		err    error
 		oldURL common.URL
 	)
-	r.cltLock.Lock()
-	oldURL, ok = r.services[conf.Key()]
-	delete(r.services, conf.Key())
-	r.cltLock.Unlock()
+	func() {
+		r.cltLock.RLock()
+		defer r.cltLock.RUnlock()
+		oldURL, ok = r.services[conf.Key()]
+	}()
+
+	func() {
+		r.cltLock.RLock()
+		defer r.cltLock.Unlock()
+		delete(r.services, conf.Key())
+	}()
 
 	if !ok {
 		return perrors.Errorf("Path{%s} has not registered", conf.Key())
@@ -176,9 +183,11 @@ func (r *BaseRegistry) UnRegister(conf common.URL) error {
 
 	err = r.unregister(conf)
 	if err != nil {
-		r.cltLock.Lock()
-		r.services[conf.Key()] = oldURL
-		r.cltLock.Unlock()
+		func() {
+			r.cltLock.Lock()
+			defer r.cltLock.Unlock()
+			r.services[conf.Key()] = oldURL
+		}()
 		return perrors.WithMessagef(err, "register(conf:%+v)", conf)
 	}
 
@@ -366,49 +375,54 @@ func sleepWait(n int) {
 }
 
 // Subscribe :subscribe from registry, event will notify by notifyListener
-func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener) {
-	r.processNotify(url, notifyListener, r.facadeBasedRegistry.DoSubscribe)
-}
-
-// UnSubscribe :UnSubscribeURL
-func (r *BaseRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListener) {
-	r.processNotify(url, notifyListener, r.facadeBasedRegistry.DoUnsubscribe)
-}
-
-// processNotify can process notify listener when Subscribe or UnSubscribe
-func (r *BaseRegistry) processNotify(url *common.URL, notifyListener NotifyListener, f func(conf *common.URL) (Listener, error)) {
+func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener) error {
 	n := 0
 	for {
 		n++
-		if !r.IsAvailable() {
-			logger.Warnf("event listener game over.")
-			return
-		}
-
-		listener, err := f(url)
-		if err != nil {
-			if !r.IsAvailable() {
-				logger.Warnf("event listener game over.")
-				return
-			}
-			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
-			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
-			continue
-		}
-
-		for {
-			if serviceEvent, err := listener.Next(); err != nil {
-				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
-				listener.Close()
-				break
-			} else {
-				logger.Infof("update begin, service event: %v", serviceEvent.String())
-				notifyListener.Notify(serviceEvent)
-			}
-
+		err := r.processNotify(url, notifyListener, r.facadeBasedRegistry.DoSubscribe)
+		if err == nil {
+			return nil
 		}
 		sleepWait(n)
 	}
+}
+
+// UnSubscribe :UnSubscribeURL
+func (r *BaseRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListener) error {
+	return r.processNotify(url, notifyListener, r.facadeBasedRegistry.DoUnsubscribe)
+}
+
+// processNotify can process notify listener when Subscribe or UnSubscribe
+func (r *BaseRegistry) processNotify(url *common.URL, notifyListener NotifyListener, f func(conf *common.URL) (Listener, error)) error {
+
+	if !r.IsAvailable() {
+		logger.Warnf("event listener game over.")
+		return nil
+	}
+
+	listener, err := f(url)
+	if err != nil {
+		if !r.IsAvailable() {
+			logger.Warnf("event listener game over.")
+			return nil
+		}
+		logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
+		time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
+		return perrors.WithStack(err)
+	}
+
+	for {
+		if serviceEvent, err := listener.Next(); err != nil {
+			logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
+			listener.Close()
+			break
+		} else {
+			logger.Infof("update begin, service event: %v", serviceEvent.String())
+			notifyListener.Notify(serviceEvent)
+		}
+
+	}
+	return nil
 }
 
 // closeRegisters close and remove registry client and reset services map

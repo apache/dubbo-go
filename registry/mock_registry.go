@@ -78,7 +78,7 @@ func (r *MockRegistry) subscribe(*common.URL) (Listener, error) {
 }
 
 // Subscribe ...
-func (r *MockRegistry) Subscribe(url *common.URL, notifyListener NotifyListener) {
+func (r *MockRegistry) Subscribe(url *common.URL, notifyListener NotifyListener) error {
 	go func() {
 		for {
 			if !r.IsAvailable() {
@@ -110,11 +110,12 @@ func (r *MockRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 			}
 		}
 	}()
+	return nil
 }
 
 // UnSubscribe :
-func (r *MockRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListener) {
-
+func (r *MockRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListener) error {
+	return nil
 }
 
 type listener struct {
