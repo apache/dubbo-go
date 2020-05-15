@@ -180,6 +180,9 @@ const (
 	// ForceUseTag is the tag in attachment
 	ForceUseTag = "dubbo.force.tag"
 	Tagkey      = "dubbo.tag"
+
+	// Attachment key in context in invoker
+	AttachmentKey = "attachment"
 )
 
 const (

@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
@@ -140,7 +141,7 @@ func (p *Proxy) Implement(v common.RPCService) {
 			}
 
 			// add user setAttachment
-			atm := invCtx.Value("attachment")
+			atm := invCtx.Value(constant.AttachmentKey)
 			if m, ok := atm.(map[string]string); ok {
 				for k, value := range m {
 					inv.SetAttachments(k, value)
@@ -148,6 +149,9 @@ func (p *Proxy) Implement(v common.RPCService) {
 			}
 
 			result := p.invoke.Invoke(invCtx, inv)
+			if len(result.Attachments()) > 0 {
+				invCtx = context.WithValue(invCtx, constant.AttachmentKey, result.Attachments())
+			}
 
 			err = result.Error()
 			logger.Debugf("[makeDubboCallProxy] result: %v, err: %v", result.Result(), err)
