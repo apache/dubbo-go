@@ -150,14 +150,14 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 	for {
 		if !nr.IsAvailable() {
 			logger.Warnf("event listener game over.")
-			return
+			return perrors.New("nacosRegistry is not available.")
 		}
 
 		listener, err := nr.subscribe(url)
 		if err != nil {
 			if !nr.IsAvailable() {
 				logger.Warnf("event listener game over.")
-				return
+				return err
 			}
 			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
 			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
@@ -169,7 +169,7 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 			if err != nil {
 				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
 				listener.Close()
-				return
+				return err
 			}
 
 			logger.Infof("update begin, service event: %v", serviceEvent.String())
