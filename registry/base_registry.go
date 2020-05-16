@@ -138,9 +138,9 @@ func (r *BaseRegistry) Register(conf common.URL) error {
 	)
 	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
 	// Check if the service has been registered
-	r.cltLock.RLock()
+	r.cltLock.Lock()
 	_, ok = r.services[conf.Key()]
-	r.cltLock.RUnlock()
+	r.cltLock.Unlock()
 	if ok {
 		return perrors.Errorf("Path{%s} has been registered", conf.Key())
 	}
@@ -158,27 +158,28 @@ func (r *BaseRegistry) Register(conf common.URL) error {
 	return nil
 }
 
-// UnRegister
+// UnRegister implement interface registry to unregister
 func (r *BaseRegistry) UnRegister(conf common.URL) error {
 	var (
 		ok     bool
 		err    error
 		oldURL common.URL
 	)
-	func() {
-		r.cltLock.RLock()
-		defer r.cltLock.RUnlock()
-		oldURL, ok = r.services[conf.Key()]
-	}()
 
 	func() {
-		r.cltLock.RLock()
+		r.cltLock.Lock()
 		defer r.cltLock.Unlock()
+		oldURL, ok = r.services[conf.Key()]
+
+		if !ok {
+			err = perrors.Errorf("Path{%s} has not registered", conf.Key())
+		}
+
 		delete(r.services, conf.Key())
 	}()
 
-	if !ok {
-		return perrors.Errorf("Path{%s} has not registered", conf.Key())
+	if err != nil {
+		return err
 	}
 
 	err = r.unregister(conf)
