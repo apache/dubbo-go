@@ -33,7 +33,7 @@ import (
 	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"go.etcd.io/etcd/embed"
+	"github.com/coreos/etcd/embed"
 	"google.golang.org/grpc/connectivity"
 )
 
