@@ -18,10 +18,12 @@
 package nacos
 
 import (
+	"strings"
 	"sync"
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/nacos-group/nacos-sdk-go/vo"
 	perrors "github.com/pkg/errors"
 )
@@ -74,7 +76,7 @@ func (n *nacosDynamicConfiguration) RemoveListener(key string, listener config_c
 	n.removeListener(key, listener)
 }
 
-//nacos distinguishes configuration files based on group and dataId. defalut group = "dubbo" and dataId = key
+// GetProperties nacos distinguishes configuration files based on group and dataId. defalut group = "dubbo" and dataId = key
 func (n *nacosDynamicConfiguration) GetProperties(key string, opts ...config_center.Option) (string, error) {
 	return n.GetRule(key, opts...)
 }
@@ -82,6 +84,33 @@ func (n *nacosDynamicConfiguration) GetProperties(key string, opts ...config_cen
 // GetInternalProperty Get properties value by key
 func (n *nacosDynamicConfiguration) GetInternalProperty(key string, opts ...config_center.Option) (string, error) {
 	return n.GetProperties(key, opts...)
+}
+
+// PublishConfig will publish the config with the (key, group, value) pair
+func (n *nacosDynamicConfiguration) PublishConfig(key string, group string, value string) error {
+
+	group = n.resolvedGroup(group)
+
+	ok, err := (*n.client.Client()).PublishConfig(vo.ConfigParam{
+		DataId:  key,
+		Group:   group,
+		Content: value,
+	})
+
+	if err != nil {
+		return perrors.WithStack(err)
+	}
+	if !ok {
+		return perrors.New("publish config to Nocos failed")
+	}
+	return nil
+}
+
+// GetConfigKeysByGroup will return all keys with the group
+func (n *nacosDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
+	// TODO (the golang client of nacos does not support batch API)
+	// we should build a issue and then think about how to resolve this problem
+	return nil, perrors.New("unsupport operation, wait for implement")
 }
 
 // GetRule Get router rule
@@ -92,12 +121,12 @@ func (n *nacosDynamicConfiguration) GetRule(key string, opts ...config_center.Op
 	}
 	content, err := (*n.client.Client()).GetConfig(vo.ConfigParam{
 		DataId: key,
-		Group:  tmpOpts.Group,
+		Group:  n.resolvedGroup(tmpOpts.Group),
 	})
 	if err != nil {
 		return "", perrors.WithStack(err)
 	} else {
-		return string(content), nil
+		return content, nil
 	}
 }
 
@@ -145,6 +174,15 @@ func (n *nacosDynamicConfiguration) Destroy() {
 	n.closeConfigs()
 }
 
+// resolvedGroup will regular the group. Now, it will replace the '/' with '-'.
+// '/' is a special character for nacos
+func (n *nacosDynamicConfiguration) resolvedGroup(group string) string {
+	if len(group) <= 0 {
+		return group
+	}
+	return strings.ReplaceAll(group, "/", "-")
+}
+
 // IsAvailable Get available status
 func (n *nacosDynamicConfiguration) IsAvailable() bool {
 	select {
@@ -155,12 +193,12 @@ func (n *nacosDynamicConfiguration) IsAvailable() bool {
 	}
 }
 
-func (r *nacosDynamicConfiguration) closeConfigs() {
-	r.cltLock.Lock()
-	client := r.client
-	r.client = nil
-	r.cltLock.Unlock()
+func (n *nacosDynamicConfiguration) closeConfigs() {
+	n.cltLock.Lock()
+	client := n.client
+	n.client = nil
+	n.cltLock.Unlock()
 	// Close the old client first to close the tmp node
 	client.Close()
-	logger.Infof("begin to close provider nacos client")
+	logger.Infof("begin to close provider n client")
 }

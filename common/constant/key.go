@@ -131,6 +131,7 @@ const (
 	ProviderConfigPrefix       = "dubbo.provider."
 	ConsumerConfigPrefix       = "dubbo.consumer."
 	ShutdownConfigPrefix       = "dubbo.shutdown."
+	MetadataReportPrefix       = "dubbo.metadata-report."
 	RouterConfigPrefix         = "dubbo.router."
 )
 
@@ -179,6 +180,9 @@ const (
 	// ForceUseTag is the tag in attachment
 	ForceUseTag = "dubbo.force.tag"
 	Tagkey      = "dubbo.tag"
+
+	// Attachment key in context in invoker
+	AttachmentKey = "attachment"
 )
 
 const (
@@ -209,9 +213,23 @@ const (
 	// consumer
 	CONSUMER = "consumer"
 	// key of access key id
-	ACCESS_KEY_ID_KEY = "accessKeyId"
+	ACCESS_KEY_ID_KEY = ".accessKeyId"
 	// key of secret access key
-	SECRET_ACCESS_KEY_KEY = "secretAccessKey"
+	SECRET_ACCESS_KEY_KEY = ".secretAccessKey"
+)
+
+// metadata report
+
+const (
+	METACONFIG_REMOTE  = "remote"
+	METACONFIG_LOCAL   = "local"
+	KEY_SEPARATOR      = ":"
+	DEFAULT_PATH_TAG   = "metadata"
+	KEY_REVISON_PREFIX = "revision"
+	PATH_SEPARATOR     = "/"
+
+	// metadata service
+	METADATA_SERVICE_NAME = "org.apache.dubbo.metadata.MetadataService"
 )
 
 // HealthCheck Router
@@ -234,4 +252,10 @@ const (
 	DEFAULT_CIRCUIT_TRIPPED_TIMEOUT_FACTOR = 1000
 	// The default time window of circuit-tripped  in millisecond if not specfied
 	MAX_CIRCUIT_TRIPPED_TIMEOUT_IN_MS = 30000
+)
+
+// service discovery
+
+const (
+	NACOS_GROUP = "nacos.group"
 )

@@ -44,6 +44,7 @@ type ConsumerConfig struct {
 	Filter     string `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	// application
 	ApplicationConfig *ApplicationConfig `yaml:"application" json:"application,omitempty" property:"application"`
+
 	// client
 	Connect_Timeout string `default:"100ms"  yaml:"connect_timeout" json:"connect_timeout,omitempty" property:"connect_timeout"`
 	ConnectTimeout  time.Duration
@@ -117,6 +118,7 @@ func ConsumerInit(confConFile string) error {
 			return perrors.WithMessagef(err, "time.ParseDuration(Connect_Timeout{%#v})", consumerConfig.Connect_Timeout)
 		}
 	}
+
 	logger.Debugf("consumer config{%#v}\n", consumerConfig)
 
 	return nil
