@@ -42,12 +42,12 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
-// Options Option is configuration related  struct of serviceTTL
+// Options Options is configuration related struct of serviceTTL
 type Options struct {
 	serviceTTL time.Duration
 }
 
-// Option function of handling Options
+// Option Option will define a function of handling Options
 type Option func(*Options)
 
 type registryDirectory struct {
@@ -66,7 +66,7 @@ type registryDirectory struct {
 	forbidden  atomic.Bool
 }
 
-// NewRegistryDirectory  Create a new RegistryDirectory
+// NewRegistryDirectory  NewRegistryDirectory will create a new RegistryDirectory
 func NewRegistryDirectory(url *common.URL, registry registry.Registry, opts ...Option) (*registryDirectory, error) {
 	options := Options{
 		//default 300s
