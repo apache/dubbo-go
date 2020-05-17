@@ -33,17 +33,17 @@ var (
 	once      sync.Once
 )
 
-// InitMetadataReportInstance will create the metadata report instance by the specified metadata report url
-func InitMetadataReportInstance(url *common.URL) report.MetadataReport {
+// GetMetadataReportInstance will return the instance in lazy mode. Be careful the instance create will only
+// execute once.
+func GetMetadataReportInstance(selectiveUrl ...*common.URL) report.MetadataReport {
 	once.Do(func() {
-		instance = extension.GetMetadataReportFactory(url.Protocol).CreateMetadataReport(url)
-		reportUrl = *url
+		var url *common.URL
+		if len(selectiveUrl) > 0 {
+			url = selectiveUrl[0]
+			instance = extension.GetMetadataReportFactory(url.Protocol).CreateMetadataReport(url)
+			reportUrl = *url
+		}
 	})
-	return instance
-}
-
-// GetMetadataReportInstance will return the instance
-func GetMetadataReportInstance() report.MetadataReport {
 	return instance
 }
 

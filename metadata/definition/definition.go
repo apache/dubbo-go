@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 import (
@@ -43,29 +44,26 @@ type ServiceDefinition struct {
 
 func (def ServiceDefinition) ToBytes() ([]byte, error) {
 	return json.Marshal(def)
-
 }
 
 func (def ServiceDefinition) String() string {
-	var methodStr string
+	var methodStr strings.Builder
 	for _, m := range def.Methods {
-		var paramType string
+		var paramType strings.Builder
 		for _, p := range m.ParameterTypes {
-			paramType = paramType + fmt.Sprintf("{type:%v}", p)
+			paramType.WriteString(fmt.Sprintf("{type:%v}", p))
 		}
-		var param string
+		var param strings.Builder
 		for _, d := range m.Parameters {
-			param = param + fmt.Sprintf("{id:%v,type:%v,builderName:%v}", d.Id, d.Type, d.TypeBuilderName)
+			param.WriteString(fmt.Sprintf("{id:%v,type:%v,builderName:%v}", d.Id, d.Type, d.TypeBuilderName))
 		}
-		methodStr = methodStr + fmt.Sprintf("{name:%v,parameterTypes:[%v],returnType:%v,params:[%v] }", m.Name, paramType, m.ReturnType, param)
-
+		methodStr.WriteString(fmt.Sprintf("{name:%v,parameterTypes:[%v],returnType:%v,params:[%v] }", m.Name, paramType.String(), m.ReturnType, param.String()))
 	}
-	var types string
+	var types strings.Builder
 	for _, d := range def.Types {
-		types = types + fmt.Sprintf("{id:%v,type:%v,builderName:%v}", d.Id, d.Type, d.TypeBuilderName)
+		types.WriteString(fmt.Sprintf("{id:%v,type:%v,builderName:%v}", d.Id, d.Type, d.TypeBuilderName))
 	}
-
-	return fmt.Sprintf("{canonicalName:%v, codeSource:%v, methods:[%v], types:[%v]}", def.CanonicalName, def.CodeSource, methodStr, types)
+	return fmt.Sprintf("{canonicalName:%v, codeSource:%v, methods:[%v], types:[%v]}", def.CanonicalName, def.CodeSource, methodStr.String(), types.String())
 }
 
 // FullServiceDefinition is the describer of service definition with parameters

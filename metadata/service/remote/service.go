@@ -34,6 +34,9 @@ import (
 	"github.com/apache/dubbo-go/metadata/service/inmemory"
 )
 
+// version will be used by Version func
+const version = "1.0.0"
+
 // MetadataService is a implement of metadata service which will delegate the remote metadata report
 type MetadataService struct {
 	service.BaseMetadataService
@@ -145,7 +148,6 @@ func (mts *MetadataService) RefreshMetadata(exportedRevision string, subscribedR
 				logger.Errorf("Error occur when execute remote.MetadataService.RefreshMetadata, error message is %v", err)
 				result = false
 			}
-
 		}
 	}
 
@@ -174,7 +176,7 @@ func (mts *MetadataService) RefreshMetadata(exportedRevision string, subscribedR
 
 // Version will return the remote service version
 func (MetadataService) Version() string {
-	return "1.0.0"
+	return version
 }
 
 // convertUrls will convert the skip list to slice

@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/atomic"
 )
 
 import (
@@ -37,10 +38,10 @@ import (
 )
 
 func TestMetadataReport_MetadataReportRetry(t *testing.T) {
-	counter := 1
+	counter := atomic.NewInt64(1)
 
 	retry, err := newMetadataReportRetry(1, 10, func() bool {
-		counter++
+		counter.Add(1)
 		return true
 	})
 	assert.NoError(t, err)
@@ -49,16 +50,16 @@ func TestMetadataReport_MetadataReportRetry(t *testing.T) {
 	select {
 	case <-itsTime:
 		retry.scheduler.Clear()
-		assert.Equal(t, counter, 3)
+		assert.Equal(t, counter.Load(), int64(3))
 		logger.Info("over")
 	}
 }
 
 func TestMetadataReport_MetadataReportRetryWithLimit(t *testing.T) {
-	counter := 1
+	counter := atomic.NewInt64(1)
 
 	retry, err := newMetadataReportRetry(1, 1, func() bool {
-		counter++
+		counter.Add(1)
 		return true
 	})
 	assert.NoError(t, err)
@@ -67,10 +68,9 @@ func TestMetadataReport_MetadataReportRetryWithLimit(t *testing.T) {
 	select {
 	case <-itsTime:
 		retry.scheduler.Clear()
-		assert.Equal(t, counter, 2)
+		assert.Equal(t, counter.Load(), int64(2))
 		logger.Info("over")
 	}
-
 }
 
 func mockNewMetadataReport(t *testing.T) *MetadataReport {

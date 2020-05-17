@@ -202,7 +202,6 @@ func (bmr *MetadataReport) storeMetadataTask(role int, identifier *identifier.Me
 		logger.Errorf("storeProviderMetadataTask error in stage call  metadata report to StoreProviderMetadata, msg is %v", err)
 		panic(err)
 	}
-
 }
 
 // StoreConsumerMetadata will delegate to call remote metadata's sdk to store consumer side service definition
