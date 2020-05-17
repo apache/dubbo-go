@@ -29,11 +29,11 @@ import (
 )
 
 import (
+	"github.com/coreos/etcd/embed"
 	"github.com/coreos/etcd/mvcc/mvccpb"
 	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"github.com/coreos/etcd/embed"
 	"google.golang.org/grpc/connectivity"
 )
 
