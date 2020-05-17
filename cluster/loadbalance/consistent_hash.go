@@ -128,7 +128,7 @@ func newConsistentHashSelector(invokers []protocol.Invoker, methodName string,
 	return selector
 }
 
-// Select Gets invoker based on load balancing strategy
+// Select gets invoker based on load balancing strategy
 func (c *ConsistentHashSelector) Select(invocation protocol.Invocation) protocol.Invoker {
 	key := c.toKey(invocation.Arguments())
 	digest := md5.Sum([]byte(key))
