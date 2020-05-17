@@ -58,7 +58,7 @@ func (b *BaseEvent) String() string {
 	return fmt.Sprintf("BaseEvent[source = %#v]", b.Source)
 }
 
-func newBaseEvent(source interface{}) *BaseEvent {
+func NewBaseEvent(source interface{}) *BaseEvent {
 	return &BaseEvent{
 		Source:    source,
 		Timestamp: time.Now(),
