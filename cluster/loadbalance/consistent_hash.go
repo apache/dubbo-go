@@ -27,7 +27,9 @@ import (
 	"strconv"
 	"strings"
 )
-
+import (
+	gxsort "github.com/dubbogo/gost/sort"
+)
 import (
 	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/common/constant"
@@ -85,30 +87,12 @@ func (lb *ConsistentHashLoadBalance) Select(invokers []protocol.Invoker, invocat
 	return selector.Select(invocation)
 }
 
-// Uint32Slice Slice of uint32
-type Uint32Slice []uint32
-
-// Len  gets slice length
-func (s Uint32Slice) Len() int {
-	return len(s)
-}
-
-// Less reports whether the element with index i should sort before the element with index j.
-func (s Uint32Slice) Less(i, j int) bool {
-	return s[i] < s[j]
-}
-
-// Swap swaps the elements with indexes i and j.
-func (s Uint32Slice) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-// ConsistentHashSelector Implementation of Selector:get invoker based on load balancing strategy
+// ConsistentHashSelector implementation of Selector:get invoker based on load balancing strategy
 type ConsistentHashSelector struct {
 	hashCode        uint32
 	replicaNum      int
 	virtualInvokers map[uint32]protocol.Invoker
-	keys            Uint32Slice
+	keys            gxsort.Uint32Slice
 	argumentIndex   []int
 }
 
