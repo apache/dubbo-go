@@ -147,7 +147,7 @@ func NewMetadataReport() (*MetadataReport, error) {
 // retry will do metadata failed reports collection by call metadata report sdk
 func (bmr *MetadataReport) retry() bool {
 	bmr.failedReportsLock.RLock()
-	bmr.failedReportsLock.Unlock()
+	defer bmr.failedReportsLock.RUnlock()
 	return bmr.doHandlerMetadataCollection(bmr.failedReports)
 }
 
@@ -155,9 +155,8 @@ func (bmr *MetadataReport) retry() bool {
 func (bmr *MetadataReport) StoreProviderMetadata(identifier *identifier.MetadataIdentifier, definer definition.ServiceDefiner) {
 	if bmr.syncReport {
 		bmr.storeMetadataTask(common.PROVIDER, identifier, definer)
-	} else {
-		go bmr.storeMetadataTask(common.PROVIDER, identifier, definer)
 	}
+	go bmr.storeMetadataTask(common.PROVIDER, identifier, definer)
 }
 
 // storeMetadataTask will delegate to call remote metadata's sdk to store
@@ -208,9 +207,8 @@ func (bmr *MetadataReport) storeMetadataTask(role int, identifier *identifier.Me
 func (bmr *MetadataReport) StoreConsumerMetadata(identifier *identifier.MetadataIdentifier, definer map[string]string) {
 	if bmr.syncReport {
 		bmr.storeMetadataTask(common.CONSUMER, identifier, definer)
-	} else {
-		go bmr.storeMetadataTask(common.CONSUMER, identifier, definer)
 	}
+	go bmr.storeMetadataTask(common.CONSUMER, identifier, definer)
 }
 
 // SaveServiceMetadata will delegate to call remote metadata's sdk to save service metadata
@@ -218,10 +216,9 @@ func (bmr *MetadataReport) SaveServiceMetadata(identifier *identifier.ServiceMet
 	report := instance.GetMetadataReportInstance()
 	if bmr.syncReport {
 		return report.SaveServiceMetadata(identifier, url)
-	} else {
-		go report.SaveServiceMetadata(identifier, url)
-		return nil
 	}
+	go report.SaveServiceMetadata(identifier, url)
+	return nil
 }
 
 // RemoveServiceMetadata will delegate to call remote metadata's sdk to remove service metadata
@@ -229,10 +226,9 @@ func (bmr *MetadataReport) RemoveServiceMetadata(identifier *identifier.ServiceM
 	report := instance.GetMetadataReportInstance()
 	if bmr.syncReport {
 		return report.RemoveServiceMetadata(identifier)
-	} else {
-		go report.RemoveServiceMetadata(identifier)
-		return nil
 	}
+	go report.RemoveServiceMetadata(identifier)
+	return nil
 }
 
 // GetExportedURLs will delegate to call remote metadata's sdk to get exported urls
@@ -246,10 +242,9 @@ func (bmr *MetadataReport) SaveSubscribedData(identifier *identifier.SubscriberM
 	report := instance.GetMetadataReportInstance()
 	if bmr.syncReport {
 		return report.SaveSubscribedData(identifier, urls)
-	} else {
-		go report.SaveSubscribedData(identifier, urls)
-		return nil
 	}
+	go report.SaveSubscribedData(identifier, urls)
+	return nil
 }
 
 // GetSubscribedURLs will delegate to call remote metadata's sdk to get subscribed urls
