@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/config"
 )
 
@@ -66,5 +67,5 @@ func (mts *BaseMetadataService) ServiceName() (string, error) {
 
 // Version will return the version of metadata service
 func (mts *BaseMetadataService) Reference() string {
-	return "MetadataService"
+	return constant.SIMPLE_METADATA_SERVICE_NAME
 }

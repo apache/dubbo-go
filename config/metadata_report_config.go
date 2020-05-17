@@ -101,7 +101,7 @@ func startMetadataReport(metadataType string, metadataReportConfig *MetadataRepo
 	}
 
 	if url, err := metadataReportConfig.ToUrl(); err == nil {
-		instance.InitMetadataReportInstance(url)
+		instance.GetMetadataReportInstance(url)
 	} else {
 		return perrors.New("MetadataConfig is invalid!")
 	}
