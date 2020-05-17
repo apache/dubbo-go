@@ -96,7 +96,7 @@ func TestMetadataService(t *testing.T) {
 	u, err := common.NewURL(fmt.Sprintf(
 		"mock://127.0.0.1:20000/?sync.report=true"))
 	assert.NoError(t, err)
-	instance.InitMetadataReportInstance(&u)
+	instance.GetMetadataReportInstance(&u)
 	mts, err := NewMetadataService()
 	assert.NoError(t, err)
 	mts.setInMemoryMetadataService(mockInmemoryProc(t))

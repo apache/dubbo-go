@@ -33,6 +33,9 @@ import (
 	"github.com/apache/dubbo-go/metadata/service"
 )
 
+// version will be used by Version func
+const version = "1.0.0"
+
 // MetadataService is store and query the metadata info in memory when each service registry
 type MetadataService struct {
 	service.BaseMetadataService
@@ -118,7 +121,7 @@ func (mts *MetadataService) getAllService(services *sync.Map) *skip.SkipList {
 		urls := value.(*skip.SkipList)
 		for i := uint64(0); i < urls.Len(); i++ {
 			url := common.URL(urls.ByPosition(i).(Comparator))
-			if url.GetParam(constant.INTERFACE_KEY, url.Path) != "MetadataService" {
+			if url.GetParam(constant.INTERFACE_KEY, url.Path) != constant.SIMPLE_METADATA_SERVICE_NAME {
 				skipList.Insert(Comparator(url))
 			}
 		}
@@ -227,5 +230,5 @@ func (mts *MetadataService) RefreshMetadata(exportedRevision string, subscribedR
 
 // Version will return the version of metadata service
 func (mts *MetadataService) Version() string {
-	return "1.0.0"
+	return version
 }
