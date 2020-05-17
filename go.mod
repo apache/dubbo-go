@@ -14,9 +14,7 @@ require (
 	github.com/dubbogo/go-zookeeper v1.0.0
 	github.com/dubbogo/gost v1.9.0
 	github.com/emicklei/go-restful/v3 v3.0.0
-	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
 	github.com/go-co-op/gocron v0.1.1
-	github.com/go-errors/errors v1.0.1 // indirect
 	github.com/go-resty/resty/v2 v2.1.0
 	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6 // indirect
 	github.com/golang/mock v1.3.1
