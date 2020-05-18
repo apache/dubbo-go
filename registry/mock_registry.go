@@ -53,7 +53,6 @@ func (*MockRegistry) Register(url common.URL) error {
 
 // UnRegister
 func (r *MockRegistry) UnRegister(conf common.URL) error {
-
 	return nil
 }
 
