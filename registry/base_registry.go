@@ -411,7 +411,7 @@ func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 	}
 }
 
-// UnSubscribe :UnSubscribeURL
+// UnSubscribe URL
 func (r *BaseRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListener) error {
 	if !r.IsAvailable() {
 		logger.Warnf("event listener game over.")
