@@ -1,5 +1,6 @@
 sudo: required
 
+
 language: go
 go:
   - "1.13"
@@ -22,6 +23,9 @@ script:
   # start nacos registry insecure listen in [:]:8848
   - docker run -d --network host nacos/nacos-server:latest
   - go fmt ./... && [[ -z `git status -s` ]]
+  - sh before_validate_license.sh
+  - chmod u+x /tmp/tools/license/license-header-checker
+  - /tmp/tools/license/license-header-checker -v -a -r -i vendor  /tmp/tools/license/license.txt . go  && [[ -z `git status -s` ]]
   - chmod u+x before_ut.sh && ./before_ut.sh
   - go mod vendor && go test ./... -coverprofile=coverage.txt -covermode=atomic
 
