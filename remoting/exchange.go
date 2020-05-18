@@ -18,9 +18,14 @@ package remoting
 
 import (
 	"time"
+)
 
-	"github.com/apache/dubbo-go/common"
+import (
 	"go.uber.org/atomic"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
 )
 
 var (

@@ -17,9 +17,12 @@
 package remoting
 
 import (
+	"errors"
 	"sync"
 	"time"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
@@ -51,6 +54,7 @@ type ExchangeClient struct {
 	ConnectTimeout time.Duration
 	address        string
 	client         Client
+	init           bool
 }
 
 // handle the message from server
@@ -59,27 +63,46 @@ type ResponseHandler interface {
 }
 
 // create ExchangeClient
-func NewExchangeClient(url common.URL, client Client, connectTimeout time.Duration) *ExchangeClient {
+func NewExchangeClient(url common.URL, client Client, connectTimeout time.Duration, lazyInit bool) *ExchangeClient {
 	exchangeClient := &ExchangeClient{
 		ConnectTimeout: connectTimeout,
 		address:        url.Location,
 		client:         client,
 	}
 	client.SetExchangeClient(exchangeClient)
-	if client.Connect(url) != nil {
-		//retry for a while
-		time.Sleep(1 * time.Second)
-		if client.Connect(url) != nil {
+	if !lazyInit {
+		if err := exchangeClient.doInit(url); err != nil {
 			return nil
 		}
 	}
+
 	client.SetResponseHandler(exchangeClient)
 	return exchangeClient
+}
+
+func (cl *ExchangeClient) doInit(url common.URL) error {
+	if cl.init {
+		return nil
+	}
+	if cl.client.Connect(url) != nil {
+		//retry for a while
+		time.Sleep(100 * time.Millisecond)
+		if cl.client.Connect(url) != nil {
+			logger.Errorf("Failed to connect server %+v " + url.Location)
+			return errors.New("Failed to connect server " + url.Location)
+		}
+	}
+	//FIXME atomic operation
+	cl.init = true
+	return nil
 }
 
 // two way request
 func (client *ExchangeClient) Request(invocation *protocol.Invocation, url common.URL, timeout time.Duration,
 	result *protocol.RPCResult) error {
+	if er := client.doInit(url); er != nil {
+		return er
+	}
 	request := NewRequest("2.0.2")
 	request.Data = invocation
 	request.Event = false
@@ -102,6 +125,9 @@ func (client *ExchangeClient) Request(invocation *protocol.Invocation, url commo
 // async two way request
 func (client *ExchangeClient) AsyncRequest(invocation *protocol.Invocation, url common.URL, timeout time.Duration,
 	callback common.AsyncCallback, result *protocol.RPCResult) error {
+	if er := client.doInit(url); er != nil {
+		return er
+	}
 	request := NewRequest("2.0.2")
 	request.Data = invocation
 	request.Event = false
@@ -123,7 +149,10 @@ func (client *ExchangeClient) AsyncRequest(invocation *protocol.Invocation, url 
 }
 
 // oneway request
-func (client *ExchangeClient) Send(invocation *protocol.Invocation, timeout time.Duration) error {
+func (client *ExchangeClient) Send(invocation *protocol.Invocation, url common.URL, timeout time.Duration) error {
+	if er := client.doInit(url); er != nil {
+		return er
+	}
 	request := NewRequest("2.0.2")
 	request.Data = invocation
 	request.Event = false

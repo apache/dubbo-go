@@ -20,17 +20,20 @@ package getty
 import (
 	"math/rand"
 	"time"
+)
 
-	"github.com/apache/dubbo-go/remoting"
+import (
 	"github.com/dubbogo/getty"
-	"gopkg.in/yaml.v2"
-
 	gxsync "github.com/dubbogo/gost/sync"
+	perrors "github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
-	perrors "github.com/pkg/errors"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 var (
@@ -166,25 +169,26 @@ func (c *Client) Close() {
 // send request
 func (c *Client) Request(request *remoting.Request, timeout time.Duration, response *remoting.PendingResponse) error {
 
-	var (
-		err     error
-		session getty.Session
-		conn    *gettyRPCClient
-	)
-	conn, session, err = c.selectSession(c.addr)
+	//var (
+	//	err     error
+	//	session getty.Session
+	//	conn    *gettyRPCClient
+	//)
+	conn, session, err := c.selectSession(c.addr)
 	if err != nil {
 		return perrors.WithStack(err)
 	}
 	if session == nil {
 		return errSessionNotExist
 	}
-	defer func() {
-		if err == nil {
-			c.pool.put(conn)
-			return
-		}
-		conn.close()
-	}()
+	// FIXME  remove temporarily
+	//defer func() {
+	//	if err == nil {
+	//		c.pool.put(conn)
+	//		return
+	//	}
+	//	conn.close()
+	//}()
 
 	if err = c.transfer(session, request, timeout); err != nil {
 		return perrors.WithStack(err)

@@ -19,12 +19,17 @@ package dubbo
 
 import (
 	"testing"
+)
 
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/remoting/getty"
-	"github.com/stretchr/testify/assert"
 )
 
 func init() {
