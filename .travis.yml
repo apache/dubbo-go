@@ -1,11 +1,11 @@
+sudo: required
+
 language: go
-
-os:
-  - linux
-  - osx
-
 go:
   - "1.13"
+
+services:
+  - docker
 
 env:
   - GO111MODULE=on
@@ -13,6 +13,14 @@ env:
 install: true
 
 script:
+  # start etcd registry  insecure listen in [:]:2379
+  - docker run -d --network host k8s.gcr.io/etcd:3.3.10 etcd
+  # start zookeeper registry insecure listen in [:]:2181
+  - docker run -d --network host zookeeper
+  # start consul registry insecure listen in [:]:8500
+  - docker run -d --network host consul
+  # start nacos registry insecure listen in [:]:8848
+  - docker run -d --network host nacos/nacos-server:latest
   - go fmt ./... && [[ -z `git status -s` ]]
   - chmod u+x before_ut.sh && ./before_ut.sh
   - go mod vendor && go test ./... -coverprofile=coverage.txt -covermode=atomic
