@@ -19,22 +19,25 @@ package dubbo
 
 import (
 	"context"
+	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/remoting"
 	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+)
 
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/remoting"
+import (
 	"github.com/opentracing/opentracing-go"
+	perrors "github.com/pkg/errors"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
-	perrors "github.com/pkg/errors"
-
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 )
 
@@ -117,7 +120,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 			//result.Err = di.client.AsyncCall(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), callBack, response)
 			result.Err = di.client.AsyncRequest(&invocation, url, timeout, callBack, rest)
 		} else {
-			result.Err = di.client.Send(&invocation, timeout)
+			result.Err = di.client.Send(&invocation, url, timeout)
 		}
 	} else {
 		if inv.Reply() == nil {

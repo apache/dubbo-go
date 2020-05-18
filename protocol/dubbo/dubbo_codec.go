@@ -22,14 +22,19 @@ import (
 	"fmt"
 	"strconv"
 	"time"
+)
 
+import (
 	hessian "github.com/apache/dubbo-go-hessian2"
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/apache/dubbo-go/remoting"
-	perrors "github.com/pkg/errors"
 )
 
 //SerialID serial ID
@@ -43,7 +48,7 @@ const (
 func init() {
 	codec := &DubboCodec{}
 	// this is for registry dubboCodec of dubbo protocol
-	remoting.NewCodec("dubbo", codec)
+	remoting.RegistryCodec("dubbo", codec)
 }
 
 // DubboPackage.  this is for hessian encode/decode. If we refactor hessian, it will also be refactored.
@@ -88,7 +93,7 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, resp *remoting.Response) err
 	}
 
 	if resp != nil { // for client
-		if p.Header.Type&hessian.PackageRequest != 0x00 {
+		if (p.Header.Type & hessian.PackageRequest) != 0x00 {
 			// size of this array must be '7'
 			// https://github.com/apache/dubbo-go-hessian2/blob/master/request.go#L272
 			p.Body = make([]interface{}, 7)
