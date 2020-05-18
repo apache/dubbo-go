@@ -154,7 +154,9 @@ func (c *Client) Connect(url common.URL) error {
 	c.codec = remoting.GetCodec(url.Protocol)
 	c.addr = url.Location
 	_, _, err := c.selectSession(c.addr)
-	logger.Errorf("try to connect server %v failed for : %v", url.Location, err)
+	if err != nil {
+		logger.Errorf("try to connect server %v failed for : %v", url.Location, err)
+	}
 	return err
 }
 
@@ -174,7 +176,7 @@ func (c *Client) Request(request *remoting.Request, timeout time.Duration, respo
 	//	session getty.Session
 	//	conn    *gettyRPCClient
 	//)
-	conn, session, err := c.selectSession(c.addr)
+	_, session, err := c.selectSession(c.addr)
 	if err != nil {
 		return perrors.WithStack(err)
 	}
