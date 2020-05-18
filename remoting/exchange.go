@@ -48,7 +48,7 @@ type Request struct {
 	ID int64
 	// protocol version
 	Version string
-	// serial ID
+	// serial ID (ignore)
 	SerialID byte
 	// Data
 	Data   interface{}
