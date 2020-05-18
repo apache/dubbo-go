@@ -380,9 +380,32 @@ func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 	n := 0
 	for {
 		n++
-		err := r.processNotify(url, notifyListener, r.facadeBasedRegistry.DoSubscribe)
-		if err == nil {
-			return nil
+		if !r.IsAvailable() {
+			logger.Warnf("event listener game over.")
+			return perrors.New("nacosRegistry is not available.")
+		}
+
+		listener, err := r.facadeBasedRegistry.DoSubscribe(url)
+		if err != nil {
+			if !r.IsAvailable() {
+				logger.Warnf("event listener game over.")
+				return err
+			}
+			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
+			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
+			continue
+		}
+
+		for {
+			if serviceEvent, err := listener.Next(); err != nil {
+				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
+				listener.Close()
+				break
+			} else {
+				logger.Infof("update begin, service event: %v", serviceEvent.String())
+				notifyListener.Notify(serviceEvent)
+			}
+
 		}
 		sleepWait(n)
 	}
@@ -390,18 +413,12 @@ func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 
 // UnSubscribe :UnSubscribeURL
 func (r *BaseRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListener) error {
-	return r.processNotify(url, notifyListener, r.facadeBasedRegistry.DoUnsubscribe)
-}
-
-// processNotify can process notify listener when Subscribe or UnSubscribe
-func (r *BaseRegistry) processNotify(url *common.URL, notifyListener NotifyListener, f func(conf *common.URL) (Listener, error)) error {
-
 	if !r.IsAvailable() {
 		logger.Warnf("event listener game over.")
 		return nil
 	}
 
-	listener, err := f(url)
+	listener, err := r.facadeBasedRegistry.DoUnsubscribe(url)
 	if err != nil {
 		if !r.IsAvailable() {
 			logger.Warnf("event listener game over.")
