@@ -20,12 +20,17 @@ package getty
 import (
 	"context"
 	"testing"
+)
 
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/protocol/invocation"
+import (
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 // test rebuild the ctx

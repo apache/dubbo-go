@@ -21,7 +21,13 @@ import (
 	"context"
 	"fmt"
 	"sync"
+)
 
+import (
+	"github.com/opentracing/opentracing-go"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -31,7 +37,6 @@ import (
 	"github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/apache/dubbo-go/remoting"
 	"github.com/apache/dubbo-go/remoting/getty"
-	"github.com/opentracing/opentracing-go"
 )
 
 // dubbo protocol constant
@@ -138,10 +143,10 @@ func GetProtocol() protocol.Protocol {
 }
 
 func doHandleRequest(rpcInvocation *invocation.RPCInvocation) protocol.RPCResult {
-	exporter, _ := dubboProtocol.ExporterMap().Load(rpcInvocation.ServiceKey())
+	exporter, _ := dubboProtocol.ExporterMap().Load(rpcInvocation.Invoker().GetUrl().ServiceKey())
 	result := protocol.RPCResult{}
 	if exporter == nil {
-		err := fmt.Errorf("don't have this exporter, key: %s", rpcInvocation.ServiceKey())
+		err := fmt.Errorf("don't have this exporter, key: %s", rpcInvocation.Invoker().GetUrl().ServiceKey())
 		logger.Errorf(err.Error())
 		result.Err = err
 		//reply(session, p, hessian.PackageResponse)
@@ -163,7 +168,7 @@ func doHandleRequest(rpcInvocation *invocation.RPCInvocation) protocol.RPCResult
 			//p.Body = hessian.NewResponse(res, nil, result.Attachments())
 		}
 	} else {
-		result.Err = fmt.Errorf("don't have the invoker, key: %s", rpcInvocation.ServiceKey())
+		result.Err = fmt.Errorf("don't have the invoker, key: %s", rpcInvocation.Invoker().GetUrl().ServiceKey())
 	}
 	return result
 }
@@ -173,7 +178,7 @@ func getExchangeClient(url common.URL) *remoting.ExchangeClient {
 	if !ok {
 		exchangeClientTmp := remoting.NewExchangeClient(url, getty.NewClient(getty.Options{
 			ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
-		}), config.GetConsumerConfig().ConnectTimeout)
+		}), config.GetConsumerConfig().ConnectTimeout, false)
 		if exchangeClientTmp != nil {
 			exchangeClientMap.Store(url.Location, exchangeClientTmp)
 		}
@@ -184,7 +189,7 @@ func getExchangeClient(url common.URL) *remoting.ExchangeClient {
 	if !ok {
 		exchangeClientTmp := remoting.NewExchangeClient(url, getty.NewClient(getty.Options{
 			ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
-		}), config.GetConsumerConfig().ConnectTimeout)
+		}), config.GetConsumerConfig().ConnectTimeout, false)
 		if exchangeClientTmp != nil {
 			exchangeClientMap.Store(url.Location, exchangeClientTmp)
 		}

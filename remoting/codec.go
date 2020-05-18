@@ -33,14 +33,10 @@ type DecodeResult struct {
 }
 
 var (
-	codec map[string]Codec
+	codec = make(map[string]Codec, 2)
 )
 
-func init() {
-	codec = make(map[string]Codec, 2)
-}
-
-func NewCodec(protocol string, codecTmp Codec) {
+func RegistryCodec(protocol string, codecTmp Codec) {
 	codec[protocol] = codecTmp
 }
 

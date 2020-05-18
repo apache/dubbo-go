@@ -24,22 +24,22 @@ import (
 	"sync"
 	"testing"
 	"time"
+)
 
-	"github.com/apache/dubbo-go/common/proxy/proxy_factory"
-
-	"github.com/apache/dubbo-go/config"
-
-	"github.com/apache/dubbo-go/remoting"
-
-	"github.com/apache/dubbo-go/protocol/invocation"
-
+import (
 	hessian "github.com/apache/dubbo-go-hessian2"
-
-	"github.com/apache/dubbo-go/common"
-	. "github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/protocol"
 	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
+	. "github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/proxy/proxy_factory"
+	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/invocation"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 func TestRunSuite(t *testing.T) {
@@ -345,7 +345,7 @@ func testClient_AsyncCall(t *testing.T, svr *Server, url common.URL, client *Cli
 func InitTest(t *testing.T) (*Server, common.URL) {
 
 	hessian.RegisterPOJO(&User{})
-	remoting.NewCodec("dubbo", &DubboTestCodec{})
+	remoting.RegistryCodec("dubbo", &DubboTestCodec{})
 
 	methods, err := common.ServiceMap.Register("dubbo", &UserProvider{})
 	assert.NoError(t, err)

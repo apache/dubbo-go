@@ -22,16 +22,19 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+)
 
-	"github.com/apache/dubbo-go/common/constant"
-
-	"github.com/apache/dubbo-go/remoting"
-
+import (
 	hessian "github.com/apache/dubbo-go-hessian2"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/dubbogo/getty"
 	perrors "github.com/pkg/errors"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/protocol/invocation"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 // todo: WritePkg_Timeout will entry *.yml
