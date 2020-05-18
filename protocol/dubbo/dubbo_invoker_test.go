@@ -23,20 +23,23 @@ import (
 	"sync"
 	"testing"
 	"time"
+)
 
-	"github.com/apache/dubbo-go/remoting"
-
-	"github.com/apache/dubbo-go/remoting/getty"
-
+import (
 	hessian "github.com/apache/dubbo-go-hessian2"
+	"github.com/opentracing/opentracing-go"
+	perrors "github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
-	"github.com/opentracing/opentracing-go"
-	perrors "github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
+	"github.com/apache/dubbo-go/remoting"
+	"github.com/apache/dubbo-go/remoting/getty"
 )
 
 func TestDubboInvoker_Invoke(t *testing.T) {
