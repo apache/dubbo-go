@@ -115,7 +115,7 @@ func (r *etcdV3Registry) DoRegister(root string, node string) error {
 }
 
 func (r *etcdV3Registry) DoUnregister(root string, node string) error {
-	return r.client.Delete(path.Join(root, node))
+	return perrors.New("DoUnregister is not support in etcdV3Registry")
 }
 
 func (r *etcdV3Registry) CloseAndNilClient() {
