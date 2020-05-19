@@ -15,12 +15,6 @@ install: true
 
 # define ci-stage
 script:
-  # travis env
-  - echo ${TRAVIS_PULL_REQUEST}
-  - echo ${TRAVIS_PULL_REQUEST_BRANCH}
-  - echo ${TRAVIS_PULL_REQUEST_SLUG}
-  - echo ${TRAVIS_PULL_REQUEST_SHA}
-  - echo ${TRAVIS_REPO_SLUG}
   # license-check
   - echo 'start license check'
   - go fmt ./... && [[ -z `git status -s` ]]
