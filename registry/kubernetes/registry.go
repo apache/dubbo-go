@@ -108,8 +108,7 @@ func (r *kubernetesRegistry) DoRegister(root string, node string) error {
 }
 
 func (r *kubernetesRegistry) DoUnregister(root string, node string) error {
-	panic("DoUnregister is not support in kubernetesRegistry")
-	return nil
+	return perrors.New("DoUnregister is not support in kubernetesRegistry")
 }
 
 func (r *kubernetesRegistry) DoSubscribe(svc *common.URL) (registry.Listener, error) {

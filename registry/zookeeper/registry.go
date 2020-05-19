@@ -279,12 +279,9 @@ func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationL
 
 		zkListener, _ := configurationListener.(*RegistryConfigurationListener)
 		if zkListener != nil {
-			r.listenerLock.Lock()
 			if zkListener.isClosed {
-				r.listenerLock.Unlock()
 				return nil, perrors.New("configListener already been closed")
 			}
-			r.listenerLock.Unlock()
 		}
 	}
 
@@ -299,6 +296,7 @@ func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationL
 	r.listenerLock.Lock()
 	listener := r.listener
 	r.listener = nil
+	r.listenerLock.Unlock()
 
 	r.dataListener.Close()
 	listener.Close()
