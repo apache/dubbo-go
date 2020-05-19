@@ -38,9 +38,9 @@ type dataListener struct {
 	listener      config_center.ConfigurationListener
 }
 
-// NewRegistryDataListener ...
+// NewRegistryDataListener
 func NewRegistryDataListener(listener config_center.ConfigurationListener) *dataListener {
-	return &dataListener{listener: listener, interestedURL: []*common.URL{}}
+	return &dataListener{listener: listener}
 }
 
 func (l *dataListener) AddInterestedURL(url *common.URL) {
@@ -49,7 +49,12 @@ func (l *dataListener) AddInterestedURL(url *common.URL) {
 
 func (l *dataListener) DataChange(eventType remoting.Event) bool {
 
-	url := eventType.Path[strings.Index(eventType.Path, "/providers/")+len("/providers/"):]
+	index := strings.Index(eventType.Path, "/providers/")
+	if index == -1 {
+		logger.Warnf("Listen with no url, event.path={%v}", eventType.Path)
+		return false
+	}
+	url := eventType.Path[index+len("/providers/"):]
 	serviceURL, err := common.NewURL(url)
 	if err != nil {
 		logger.Warnf("Listen NewURL(r{%s}) = error{%v}", eventType.Path, err)
@@ -68,7 +73,6 @@ func (l *dataListener) DataChange(eventType remoting.Event) bool {
 			return true
 		}
 	}
-
 	return false
 }
 
@@ -97,7 +101,7 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 
 		case e := <-l.events:
 			logger.Infof("got etcd event %#v", e)
-			if e.ConfigType == remoting.EventTypeDel {
+			if e.ConfigType == remoting.EventTypeDel && l.registry.client.Valid() {
 				select {
 				case <-l.registry.Done():
 					logger.Warnf("update @result{%s}. But its connection to registry is invalid", e.Value)
