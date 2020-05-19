@@ -22,6 +22,7 @@ script:
   # start zookeeper registry insecure listen in [:]:2181
   - docker run -d --network host zookeeper
   - ROOTDIR=$(pwd)
+  - echo ${COMMITID} ${ROOTDIR}
   - cd ./test/integrate/dubbo/go-client && docker build . -t  ci-consumer --build-arg COMMITID=${COMMITID} && cd $ROOTDIR
   - cd ./test/integrate/dubbo/go-server && docker build . -t  ci-provider --build-arg COMMITID=${COMMITID} && cd $ROOTDIR
   - docker run -d --network host ci-provider
