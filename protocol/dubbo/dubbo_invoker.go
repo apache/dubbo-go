@@ -96,6 +96,9 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	defer atomic.AddInt64(&(di.reqNum), -1)
 
 	inv := invocation.(*invocation_impl.RPCInvocation)
+	// init param
+	inv.SetAttachments(constant.PATH_KEY, di.GetUrl().Path)
+	inv.SetAttachments(constant.VERSION_KEY, di.GetUrl().GetParam(constant.VERSION_KEY, ""))
 	for _, k := range attachmentKey {
 		if v := di.GetUrl().GetParam(k, ""); len(v) > 0 {
 			inv.SetAttachments(k, v)
