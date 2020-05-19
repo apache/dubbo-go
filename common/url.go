@@ -75,10 +75,10 @@ func (t RoleType) Role() string {
 }
 
 type baseUrl struct {
-	Protocol string
-	Location string // ip+port
-	Ip       string
-	Port     string
+	Protocol     string
+	Location     string // ip+port
+	Ip           string
+	Port         string
 	params       url.Values
 	PrimitiveURL string
 }
