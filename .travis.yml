@@ -1,40 +1,27 @@
-dist: trusty
-sudo: required
-
-# depend env
 language: go
-go:
-  - "1.13"
+
 os:
   - linux
-services:
-  - docker
+
+go:
+  - "1.13"
+
 env:
   - GO111MODULE=on
 
-# ci stage define
-stages:
-  - name: licensecheck
-  - name: format
-  - name: uinttest
-  - name: integratetest
+install: true
 
-jobs:
-  include:
-    - stage: licensecheck
-      script:
-        - sh before_validate_license.sh
-        - chmod u+x /tmp/tools/license/license-header-checker
-        - /tmp/tools/license/license-header-checker -v -a -r -i vendor  /tmp/tools/license/license.txt . go  && [[ -z `git status -s` ]]
-    - stage: format
-      script:
-        - go fmt ./... && [[ -z `git status -s` ]]
-        - go mod vendor
-    - stage: uinttest
-      script: go test ./... -coverprofile=coverage.txt -covermode=atomic
-    - stage: integratetest
-      script:
-        - echo "intergrate test"
+script:
+  - echo 'start license check'
+  - go fmt ./... && [[ -z `git status -s` ]]
+  - sh before_validate_license.sh
+  - chmod u+x /tmp/tools/license/license-header-checker
+  - /tmp/tools/license/license-header-checker -v -a -r -i vendor  /tmp/tools/license/license.txt . go  && [[ -z `git status -s` ]]
+  - echo 'start unit-test'
+  - chmod u+x before_ut.sh && ./before_ut.sh
+  - go mod vendor && go test ./... -coverprofile=coverage.txt -covermode=atomic
+  - echo 'start integrate-test'
+  - echo 'hello-world'
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
