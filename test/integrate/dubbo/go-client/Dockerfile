@@ -7,11 +7,15 @@ WORKDIR /go/src/github.com/apache/dubbo-go/test/integrate/dubbo/go-client
 ENV CONF_CONSUMER_FILE_PATH "client.yml"
 ENV APP_LOG_CONF_FILE "log.yml"
 
-ARG COMMITID
+ARG PR_ORIGIN_REPO
+ARG PR_ORIGIN_COMMITID
 
 ADD . /go/src/github.com/apache/dubbo-go/test/integrate/dubbo/go-client
+
 # update dubbo-go to current commit id
-RUN go get -u github.com/apache/dubbo-go@${COMMITID}
+RUN echo "github.com/apache/dubbo-go will be replace to github.com/${PR_ORIGIN_REPO}@${PR_ORIGIN_COMMITID}"
+RUN go mod edit  -replace=github.com/apache/dubbo-go=github.com/${PR_ORIGIN_REPO}@${PR_ORIGIN_COMMITID}
+
 RUN go install github.com/apache/dubbo-go/test/integrate/dubbo/go-client
 
 CMD go-client
