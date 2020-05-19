@@ -15,16 +15,15 @@ install: true
 
 # define ci-stage
 script:
-  - COMMITID=$(git rev-parse HEAD)
   # license-check
   # start zookeeper registry insecure listen in [:]:2181
   - echo 'start integrate-test'
   # start zookeeper registry insecure listen in [:]:2181
   - docker run -d --network host zookeeper
   - ROOTDIR=$(pwd)
-  - echo ${COMMITID} ${ROOTDIR}
-  - cd ./test/integrate/dubbo/go-client && docker build . -t  ci-consumer --build-arg COMMITID=${COMMITID} && cd $ROOTDIR
-  - cd ./test/integrate/dubbo/go-server && docker build . -t  ci-provider --build-arg COMMITID=${COMMITID} && cd $ROOTDIR
+  - echo ${TRAVIS_COMMIT} ${ROOTDIR}
+  - cd ./test/integrate/dubbo/go-client && docker build . -t  ci-consumer --build-arg COMMITID=${TRAVIS_COMMIT} && cd $ROOTDIR
+  - cd ./test/integrate/dubbo/go-server && docker build . -t  ci-provider --build-arg COMMITID=${TRAVIS_COMMIT} && cd $ROOTDIR
   - docker run -d --network host ci-provider
   - docker run -it --network host ci-consumer
   - exit 0
