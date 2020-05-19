@@ -56,6 +56,8 @@ func init() {
 	localIP, _ = gxnet.GetLocalIP()
 }
 
+type createPathFunc func(dubboPath string) error
+
 /*
  * -----------------------------------NOTICE---------------------------------------------
  * If there is no special case, you'd better inherit BaseRegistry and implement the
@@ -332,7 +334,7 @@ func (r *BaseRegistry) providerRegistry(c common.URL, params url.Values, createP
 }
 
 // consumerRegistry for consumer role do
-func (r *BaseRegistry) consumerRegistry(c common.URL, params url.Values, createPathFunc func(dubboPath string) error) (string, string, error) {
+func (r *BaseRegistry) consumerRegistry(c common.URL, params url.Values, f createPathFunc) (string, string, error) {
 	var (
 		dubboPath string
 		rawURL    string
@@ -340,8 +342,8 @@ func (r *BaseRegistry) consumerRegistry(c common.URL, params url.Values, createP
 	)
 	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.CONSUMER])
 
-	if createPathFunc != nil {
-		err = createPathFunc(dubboPath)
+	if f != nil {
+		err = f(dubboPath)
 	}
 	if err != nil {
 		logger.Errorf("facadeBasedRegistry.CreatePath(path{%s}) = error{%v}", dubboPath, perrors.WithStack(err))
@@ -349,8 +351,8 @@ func (r *BaseRegistry) consumerRegistry(c common.URL, params url.Values, createP
 	}
 	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.PROVIDER])
 
-	if createPathFunc != nil {
-		err = createPathFunc(dubboPath)
+	if f != nil {
+		err = f(dubboPath)
 	}
 
 	if err != nil {
