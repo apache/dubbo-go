@@ -240,7 +240,7 @@ func (r *BaseRegistry) unregister(c common.URL) error {
 	return r.processURL(c, r.facadeBasedRegistry.DoUnregister, nil)
 }
 
-func (r *BaseRegistry) processURL(c common.URL, f func(string, string) error, createPathFunc func(dubboPath string) error) error {
+func (r *BaseRegistry) processURL(c common.URL, f func(string, string) error, cpf createPathFunc) error {
 	if f == nil {
 		panic(" Must provide a `function(string, string) error` to process URL. ")
 	}
@@ -268,9 +268,9 @@ func (r *BaseRegistry) processURL(c common.URL, f func(string, string) error, cr
 	switch role {
 
 	case common.PROVIDER:
-		dubboPath, rawURL, err = r.providerRegistry(c, params, createPathFunc)
+		dubboPath, rawURL, err = r.providerRegistry(c, params, cpf)
 	case common.CONSUMER:
-		dubboPath, rawURL, err = r.consumerRegistry(c, params, createPathFunc)
+		dubboPath, rawURL, err = r.consumerRegistry(c, params, cpf)
 	default:
 		return perrors.Errorf("@c{%v} type is not referencer or provider", c)
 	}
@@ -292,7 +292,7 @@ func (r *BaseRegistry) createPath(dubboPath string) error {
 }
 
 // providerRegistry for provider role do
-func (r *BaseRegistry) providerRegistry(c common.URL, params url.Values, createPathFunc func(dubboPath string) error) (string, string, error) {
+func (r *BaseRegistry) providerRegistry(c common.URL, params url.Values, f createPathFunc) (string, string, error) {
 	var (
 		dubboPath string
 		rawURL    string
@@ -302,8 +302,8 @@ func (r *BaseRegistry) providerRegistry(c common.URL, params url.Values, createP
 		return "", "", perrors.Errorf("conf{Path:%s, Methods:%s}", c.Path, c.Methods)
 	}
 	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.PROVIDER])
-	if createPathFunc != nil {
-		err = createPathFunc(dubboPath)
+	if f != nil {
+		err = f(dubboPath)
 	}
 	if err != nil {
 		logger.Errorf("facadeBasedRegistry.CreatePath(path{%s}) = error{%#v}", dubboPath, perrors.WithStack(err))
@@ -384,7 +384,7 @@ func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 		n++
 		if !r.IsAvailable() {
 			logger.Warnf("event listener game over.")
-			return perrors.New("nacosRegistry is not available.")
+			return perrors.New("BaseRegistry is not available.")
 		}
 
 		listener, err := r.facadeBasedRegistry.DoSubscribe(url)
@@ -417,17 +417,16 @@ func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 func (r *BaseRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListener) error {
 	if !r.IsAvailable() {
 		logger.Warnf("event listener game over.")
-		return nil
+		return perrors.New("BaseRegistry is not available.")
 	}
 
 	listener, err := r.facadeBasedRegistry.DoUnsubscribe(url)
 	if err != nil {
 		if !r.IsAvailable() {
 			logger.Warnf("event listener game over.")
-			return nil
+			return perrors.New("BaseRegistry is not available.")
 		}
 		logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
-		time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
 		return perrors.WithStack(err)
 	}
 
