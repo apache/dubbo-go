@@ -1,17 +1,23 @@
-# dubbo server yaml configure file
+# dubbo client yaml configure file
 
+
+check: true
+# client
+request_timeout : "3s"
+# connect timeout
+connect_timeout : "3s"
 
 # application config
 application:
   organization : "ikurento.com"
-  name : "BDTService"
-  module : "dubbogo user-info server"
+  name  : "BDTService"
+  module : "dubbogo user-info client"
   version : "0.0.1"
   owner : "ZX"
-  environment : "test"
+  environment : "dev"
 
 registries :
-  "hangzhouzk":
+  "demoZk":
     protocol: "zookeeper"
     timeout	: "3s"
     address: "127.0.0.1:2181"
@@ -19,33 +25,26 @@ registries :
     password: ""
 
 
-
-services:
+references:
   "UserProvider":
     # 可以指定多个registry，使用逗号隔开;不指定默认向所有注册中心注册
-    registry: "hangzhouzk"
+    registry: "demoZk"
     protocol : "dubbo"
-    # 相当于dubbo.xml中的interface
     interface : "com.ikurento.user.UserProvider"
-    loadbalance: "random"
-    warmup: "100"
     cluster: "failover"
-    methods:
+    methods :
     - name: "GetUser"
-      retries: 1
-      loadbalance: "random"
-
-protocols:
-  "dubbo":
-    name: "dubbo"
-    #    ip : "127.0.0.1"
-    port: 20000
+      retries: 3
 
 
 protocol_conf:
   dubbo:
-    session_number: 700
-    session_timeout: "180s"
+    reconnect_interval: 0
+    connection_number: 2
+    heartbeat_period: "5s"
+    session_timeout: "20s"
+    pool_size: 64
+    pool_ttl: 600
     getty_session_param:
       compress_encoding: false
       tcp_no_delay: true
@@ -58,5 +57,5 @@ protocol_conf:
       tcp_read_timeout: "1s"
       tcp_write_timeout: "5s"
       wait_timeout: "1s"
-      max_msg_len: 1024000
-      session_name: "server"
+      max_msg_len: 10240
+      session_name: "client"

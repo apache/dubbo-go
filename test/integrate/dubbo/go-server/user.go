@@ -48,6 +48,7 @@ func (u *UserProvider) GetUser(ctx context.Context, req []interface{}) (*User, e
 	println("req:%#v", req)
 	rsp := User{"A001", "Alex Stocks", 18, time.Now()}
 	println("rsp:%#v", rsp)
+	close(stopC)
 	return &rsp, nil
 }
 
