@@ -69,7 +69,7 @@ func (p DubboPackage) String() string {
 	return fmt.Sprintf("DubboPackage: Header-%v, Path-%v, Body-%v", p.Header, p.Service, p.Body)
 }
 
-// Marshal ...
+// Marshal encode hessian package.
 func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 	codec := hessian.NewHessianCodec(nil)
 
@@ -81,7 +81,7 @@ func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 	return bytes.NewBuffer(pkg), nil
 }
 
-// Unmarshal ...
+// Unmarshal dncode hessian package.
 func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 	// fix issue https://github.com/apache/dubbo-go/issues/380
 	bufLen := buf.Len()
@@ -125,7 +125,7 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 // PendingResponse
 ////////////////////////////////////////////
 
-// PendingResponse ...
+// PendingResponse is a pending response.
 type PendingResponse struct {
 	seq       uint64
 	err       error
@@ -136,7 +136,7 @@ type PendingResponse struct {
 	done      chan struct{}
 }
 
-// NewPendingResponse ...
+// NewPendingResponse create a PendingResponses.
 func NewPendingResponse() *PendingResponse {
 	return &PendingResponse{
 		start:    time.Now(),
@@ -145,7 +145,7 @@ func NewPendingResponse() *PendingResponse {
 	}
 }
 
-// GetCallResponse ...
+// GetCallResponse get AsyncCallbackResponse.
 func (r PendingResponse) GetCallResponse() common.CallbackResponse {
 	return AsyncCallbackResponse{
 		Cause:     r.err,
