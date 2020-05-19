@@ -15,6 +15,14 @@ install: true
 
 # define ci-stage
 script:
+
+  # travis env
+  - echo ${TRAVIS_PULL_REQUEST}
+  - echo ${TRAVIS_PULL_REQUEST_BRANCH}
+  - echo ${TRAVIS_PULL_REQUEST_SLUG}
+  - echo ${TRAVIS_PULL_REQUEST_SHA}
+  - echo ${TRAVIS_REPO_SLUG}
+  - exit 1
   # license-check
   # start zookeeper registry insecure listen in [:]:2181
   - echo 'start integrate-test'
