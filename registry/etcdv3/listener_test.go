@@ -18,20 +18,20 @@
 package etcdv3
 
 import (
+	"os"
 	"testing"
 	"time"
-
-	"github.com/apache/dubbo-go/config_center"
 )
 
 import (
+	"github.com/coreos/etcd/embed"
 	"github.com/dubbogo/getty"
 	"github.com/stretchr/testify/suite"
-	"go.etcd.io/etcd/embed"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/remoting"
 )
 
@@ -40,13 +40,16 @@ type RegistryTestSuite struct {
 	etcd *embed.Etcd
 }
 
+const defaultEtcdV3WorkDir = "/tmp/default-dubbo-go-registry.etcd"
+
 // start etcd server
 func (suite *RegistryTestSuite) SetupSuite() {
 
 	t := suite.T()
 
 	cfg := embed.NewConfig()
-	cfg.Dir = "/tmp/default.etcd"
+	// avoid conflict with default etcd work-dir
+	cfg.Dir = defaultEtcdV3WorkDir
 	e, err := embed.StartEtcd(cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -66,6 +69,10 @@ func (suite *RegistryTestSuite) SetupSuite() {
 // stop etcd server
 func (suite *RegistryTestSuite) TearDownSuite() {
 	suite.etcd.Close()
+	// clean the etcd workdir
+	if err := os.RemoveAll(defaultEtcdV3WorkDir); err != nil {
+		suite.FailNow(err.Error())
+	}
 }
 
 func (suite *RegistryTestSuite) TestDataChange() {

@@ -15,32 +15,16 @@
  * limitations under the License.
  */
 
-package match
-
-import (
-	"testing"
-)
-
-import (
-	"github.com/stretchr/testify/assert"
-)
+package metadata
 
 import (
 	"github.com/apache/dubbo-go/common"
 )
 
-func TestIsMatchInternalPattern(t *testing.T) {
-	assert.Equal(t, true, isMatchInternalPattern("*", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("", ""))
-	assert.Equal(t, false, isMatchInternalPattern("", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("value", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("v*", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("*ue", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("*e", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("v*e", "value"))
-}
+var (
+	MetadataReportInstance MetadataReport
+)
 
-func TestIsMatchGlobPattern(t *testing.T) {
-	url, _ := common.NewURL("dubbo://localhost:8080/Foo?key=v*e")
-	assert.Equal(t, true, IsMatchGlobalPattern("$key", "value", &url))
+type MetadataReportFactory interface {
+	CreateMetadataReport(*common.URL) MetadataReport
 }

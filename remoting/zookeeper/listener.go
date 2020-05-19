@@ -18,6 +18,7 @@
 package zookeeper
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"path"
 	"strings"
 	"sync"
@@ -59,7 +60,6 @@ func (l *ZkEventListener) SetClient(client *ZookeeperClient) {
 
 // ListenServiceNodeEvent ...
 func (l *ZkEventListener) ListenServiceNodeEvent(zkPath string, listener ...remoting.DataListener) bool {
-	l.wg.Add(1)
 	defer l.wg.Done()
 	var zkEvent zk.Event
 	for {
@@ -145,6 +145,7 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 			continue
 		}
 		// listen l service node
+		l.wg.Add(1)
 		go func(node string, zkPath string, listener remoting.DataListener) {
 			logger.Infof("delete zkNode{%s}", node)
 			if l.ListenServiceNodeEvent(node, listener) {
@@ -173,8 +174,7 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 	}
 }
 
-func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataListener) {
-	l.wg.Add(1)
+func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listener remoting.DataListener) {
 	defer l.wg.Done()
 
 	var (
@@ -225,7 +225,16 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 		}
 		failTimes = 0
 		for _, c := range children {
-			// listen l service node
+
+			// Only need to compare Path when subscribing to provider
+			if strings.LastIndex(zkPath, constant.PROVIDER_CATEGORY) != -1 {
+				provider, _ := common.NewURL(c)
+				if provider.Path != conf.Path {
+					continue
+				}
+			}
+
+			//listen l service node
 			dubboPath := path.Join(zkPath, c)
 
 			//Save the path to avoid listen repeatedly
@@ -233,7 +242,7 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 			_, ok := l.pathMap[dubboPath]
 			l.pathMapLock.Unlock()
 			if ok {
-				logger.Warnf("@zkPath %s has already been listened.", zkPath)
+				logger.Warnf("@zkPath %s has already been listened.", dubboPath)
 				continue
 			}
 
@@ -250,6 +259,7 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 				continue
 			}
 			logger.Infof("listen dubbo service key{%s}", dubboPath)
+			l.wg.Add(1)
 			go func(zkPath string, listener remoting.DataListener) {
 				if l.ListenServiceNodeEvent(zkPath) {
 					listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeDel})
@@ -261,8 +271,9 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 			//if zkPath is end of "providers/ & consumers/" we do not listen children dir
 			if strings.LastIndex(zkPath, constant.PROVIDER_CATEGORY) == -1 &&
 				strings.LastIndex(zkPath, constant.CONSUMER_CATEGORY) == -1 {
+				l.wg.Add(1)
 				go func(zkPath string, listener remoting.DataListener) {
-					l.listenDirEvent(zkPath, listener)
+					l.listenDirEvent(conf, zkPath, listener)
 					logger.Warnf("listenDirEvent(zkPath{%s}) goroutine exit now", zkPath)
 				}(dubboPath, listener)
 			}
@@ -290,10 +301,11 @@ func timeSecondDuration(sec int) time.Duration {
 // registry.go:Listen -> listenServiceEvent -> listenDirEvent -> ListenServiceNodeEvent
 //                            |
 //                            --------> ListenServiceNodeEvent
-func (l *ZkEventListener) ListenServiceEvent(zkPath string, listener remoting.DataListener) {
+func (l *ZkEventListener) ListenServiceEvent(conf *common.URL, zkPath string, listener remoting.DataListener) {
 	logger.Infof("listen dubbo path{%s}", zkPath)
+	l.wg.Add(1)
 	go func(zkPath string, listener remoting.DataListener) {
-		l.listenDirEvent(zkPath, listener)
+		l.listenDirEvent(conf, zkPath, listener)
 		logger.Warnf("listenDirEvent(zkPath{%s}) goroutine exit now", zkPath)
 	}(zkPath, listener)
 }

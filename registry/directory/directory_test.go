@@ -79,10 +79,9 @@ func TestSubscribe_Group(t *testing.T) {
 	suburl.SetParam(constant.CLUSTER_KEY, "mock")
 	regurl.SubURL = &suburl
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
-	registryDirectory, _ := NewRegistryDirectory(&regurl, mockRegistry)
+	dir, _ := NewRegistryDirectory(&regurl, mockRegistry)
 
-	go registryDirectory.Subscribe(common.NewURLWithOptions(common.WithPath("testservice")))
-
+	go dir.(*RegistryDirectory).subscribe(common.NewURLWithOptions(common.WithPath("testservice")))
 	//for group1
 	urlmap := url.Values{}
 	urlmap.Set(constant.GROUP_KEY, "group1")
@@ -101,7 +100,7 @@ func TestSubscribe_Group(t *testing.T) {
 	}
 
 	time.Sleep(1e9)
-	assert.Len(t, registryDirectory.cacheInvokers, 2)
+	assert.Len(t, dir.(*RegistryDirectory).cacheInvokers, 2)
 }
 
 func Test_Destroy(t *testing.T) {
@@ -173,7 +172,7 @@ Loop1:
 
 }
 
-func normalRegistryDir(noMockEvent ...bool) (*registryDirectory, *registry.MockRegistry) {
+func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockRegistry) {
 	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
 
 	url, _ := common.NewURL("mock://127.0.0.1:1111")
@@ -185,9 +184,9 @@ func normalRegistryDir(noMockEvent ...bool) (*registryDirectory, *registry.MockR
 	)
 	url.SubURL = &suburl
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
-	registryDirectory, _ := NewRegistryDirectory(&url, mockRegistry)
+	dir, _ := NewRegistryDirectory(&url, mockRegistry)
 
-	go registryDirectory.Subscribe(&suburl)
+	go dir.(*RegistryDirectory).subscribe(&suburl)
 	if len(noMockEvent) == 0 {
 		for i := 0; i < 3; i++ {
 			mockRegistry.(*registry.MockRegistry).MockEvent(
@@ -201,5 +200,5 @@ func normalRegistryDir(noMockEvent ...bool) (*registryDirectory, *registry.MockR
 			)
 		}
 	}
-	return registryDirectory, mockRegistry.(*registry.MockRegistry)
+	return dir.(*RegistryDirectory), mockRegistry.(*registry.MockRegistry)
 }
