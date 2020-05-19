@@ -15,7 +15,6 @@ install: true
 
 # define ci-stage
 script:
-
   # travis env
   - echo ${TRAVIS_PULL_REQUEST}
   - echo ${TRAVIS_PULL_REQUEST_BRANCH}
@@ -23,16 +22,6 @@ script:
   - echo ${TRAVIS_PULL_REQUEST_SHA}
   - echo ${TRAVIS_REPO_SLUG}
   # license-check
-  # start zookeeper registry insecure listen in [:]:2181
-  - echo 'start integrate-test'
-  # start zookeeper registry insecure listen in [:]:2181
-  - docker run -d --network host zookeeper
-  - ROOTDIR=$(pwd)
-  - cd ./test/integrate/dubbo/go-client && docker build . -t  ci-consumer --build-arg PR_ORIGIN_REPO=${TRAVIS_PULL_REQUEST_SLUG} PR_ORIGIN_COMMITID=${TRAVIS_PULL_REQUEST_SHA} && cd $ROOTDIR
-  - cd ./test/integrate/dubbo/go-server && docker build . -t  ci-provider --build-arg PR_ORIGIN_REPO=${TRAVIS_PULL_REQUEST_SLUG} PR_ORIGIN_COMMITID=${TRAVIS_PULL_REQUEST_SHA} && cd $ROOTDIR
-  - docker run -d --network host ci-provider
-  - docker run -it --network host ci-consumer
-  - exit 0
   - echo 'start license check'
   - go fmt ./... && [[ -z `git status -s` ]]
   - sh before_validate_license.sh
@@ -47,8 +36,8 @@ script:
   # start zookeeper registry insecure listen in [:]:2181
   - docker run -d --network host zookeeper
   - ROOTDIR=$(pwd)
-  - cd ./test/integrate/dubbo/go-client && docker build . -t  ci-consumer --build-arg COMMITID=${COMMITID} && cd $ROOTDIR
-  - cd ./test/integrate/dubbo/go-server && docker build . -t  ci-provider --build-arg COMMITID=${COMMITID} && cd $ROOTDIR
+  - cd ./test/integrate/dubbo/go-client && docker build . -t  ci-consumer --build-arg PR_ORIGIN_REPO=${TRAVIS_PULL_REQUEST_SLUG} PR_ORIGIN_COMMITID=${TRAVIS_PULL_REQUEST_SHA} && cd $ROOTDIR
+  - cd ./test/integrate/dubbo/go-server && docker build . -t  ci-provider --build-arg PR_ORIGIN_REPO=${TRAVIS_PULL_REQUEST_SLUG} PR_ORIGIN_COMMITID=${TRAVIS_PULL_REQUEST_SHA} && cd $ROOTDIR
   - docker run -d --network host ci-provider
   - docker run -it --network host ci-consumer
 
