@@ -143,10 +143,10 @@ func GetProtocol() protocol.Protocol {
 }
 
 func doHandleRequest(rpcInvocation *invocation.RPCInvocation) protocol.RPCResult {
-	exporter, _ := dubboProtocol.ExporterMap().Load(rpcInvocation.Invoker().GetUrl().ServiceKey())
+	exporter, _ := dubboProtocol.ExporterMap().Load(rpcInvocation.ServiceKey())
 	result := protocol.RPCResult{}
 	if exporter == nil {
-		err := fmt.Errorf("don't have this exporter, key: %s", rpcInvocation.Invoker().GetUrl().ServiceKey())
+		err := fmt.Errorf("don't have this exporter, key: %s", rpcInvocation.ServiceKey())
 		logger.Errorf(err.Error())
 		result.Err = err
 		//reply(session, p, hessian.PackageResponse)
@@ -168,7 +168,7 @@ func doHandleRequest(rpcInvocation *invocation.RPCInvocation) protocol.RPCResult
 			//p.Body = hessian.NewResponse(res, nil, result.Attachments())
 		}
 	} else {
-		result.Err = fmt.Errorf("don't have the invoker, key: %s", rpcInvocation.Invoker().GetUrl().ServiceKey())
+		result.Err = fmt.Errorf("don't have the invoker, key: %s", rpcInvocation.ServiceKey())
 	}
 	return result
 }
