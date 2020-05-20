@@ -86,7 +86,7 @@ func getClient(url common.URL) *Client {
 		ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
 	})
 
-	exchangeClient := remoting.NewExchangeClient(url, client, 5*time.Second)
+	exchangeClient := remoting.NewExchangeClient(url, client, 5*time.Second, false)
 	client.SetExchangeClient(exchangeClient)
 	client.Connect(url)
 	client.SetResponseHandler(exchangeClient)
