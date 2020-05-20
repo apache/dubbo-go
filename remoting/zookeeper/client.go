@@ -118,7 +118,7 @@ func ValidateZookeeperClient(container zkClientFacade, opts ...Option) error {
 	for _, opt := range opts {
 		opt(opions)
 	}
-
+	connected := false
 	err = nil
 
 	lock := container.ZkClientLock()
@@ -143,6 +143,7 @@ func ValidateZookeeperClient(container zkClientFacade, opts ...Option) error {
 			return perrors.WithMessagef(err, "newZookeeperClient(address:%+v)", url.Location)
 		}
 		container.SetZkClient(newClient)
+		connected = true
 	}
 
 	if container.ZkClient().Conn == nil {
@@ -150,8 +151,14 @@ func ValidateZookeeperClient(container zkClientFacade, opts ...Option) error {
 		container.ZkClient().Conn, event, err = zk.Connect(container.ZkClient().ZkAddrs, container.ZkClient().Timeout)
 		if err == nil {
 			container.ZkClient().Wait.Add(1)
+			connected = true
 			go container.ZkClient().HandleZkEvent(event)
 		}
+	}
+
+	if connected {
+		logger.Info("Connect to zookeeper successfully, name{%s}, zk address{%v}", opions.zkName, url.Location)
+		container.WaitGroup().Add(1) //zk client start successful, then registry wg +1
 	}
 
 	return perrors.WithMessagef(err, "newZookeeperClient(address:%+v)", url.PrimitiveURL)
@@ -386,14 +393,23 @@ func (z *ZookeeperClient) Close() {
 	z.Conn = nil
 	z.Unlock()
 	if conn != nil {
+		logger.Warnf("zkClient Conn{name:%s, zk addr:%s} exit now.", z.name, conn.SessionID())
 		conn.Close()
 	}
 
 	logger.Warnf("zkClient{name:%s, zk addr:%s} exit now.", z.name, z.ZkAddrs)
 }
 
-// Create ...
+// Create will create the node recursively, which means that if the parent node is absent,
+// it will create parent node first.
+// And the value for the basePath is ""
 func (z *ZookeeperClient) Create(basePath string) error {
+	return z.CreateWithValue(basePath, []byte(""))
+}
+
+// CreateWithValue will create the node recursively, which means that if the parent node is absent,
+// it will create parent node first.
+func (z *ZookeeperClient) CreateWithValue(basePath string, value []byte) error {
 	var (
 		err     error
 		tmpPath string
@@ -407,7 +423,7 @@ func (z *ZookeeperClient) Create(basePath string) error {
 		conn := z.Conn
 		z.Unlock()
 		if conn != nil {
-			_, err = conn.Create(tmpPath, []byte(""), 0, zk.WorldACL(zk.PermAll))
+			_, err = conn.Create(tmpPath, value, 0, zk.WorldACL(zk.PermAll))
 		}
 
 		if err != nil {
@@ -462,7 +478,7 @@ func (z *ZookeeperClient) RegisterTemp(basePath string, node string) (string, er
 	//if err != nil && err != zk.ErrNodeExists {
 	if err != nil {
 		logger.Warnf("conn.Create(\"%s\", zk.FlagEphemeral) = error(%v)\n", zkPath, perrors.WithStack(err))
-		return "", perrors.WithStack(err)
+		return zkPath, perrors.WithStack(err)
 	}
 	logger.Debugf("zkClient{%s} create a temp zookeeper node:%s\n", z.name, tmpPath)
 

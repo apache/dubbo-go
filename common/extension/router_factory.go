@@ -28,7 +28,7 @@ import (
 var (
 	routers               = make(map[string]func() router.RouterFactory)
 	fileRouterFactoryOnce sync.Once
-	fileRouterFactories   = make(map[string]router.FIleRouterFactory)
+	fileRouterFactories   = make(map[string]router.FileRouterFactory)
 )
 
 // SetRouterFactory Set create router factory function by name
@@ -50,7 +50,7 @@ func GetRouterFactories() map[string]func() router.RouterFactory {
 }
 
 // GetFileRouterFactories Get all create file router factory instance
-func GetFileRouterFactories() map[string]router.FIleRouterFactory {
+func GetFileRouterFactories() map[string]router.FileRouterFactory {
 	l := len(routers)
 	if l == 0 {
 		return nil
@@ -58,7 +58,7 @@ func GetFileRouterFactories() map[string]router.FIleRouterFactory {
 	fileRouterFactoryOnce.Do(func() {
 		for k := range routers {
 			factory := GetRouterFactory(k)
-			if fr, ok := factory.(router.FIleRouterFactory); ok {
+			if fr, ok := factory.(router.FileRouterFactory); ok {
 				fileRouterFactories[k] = fr
 			}
 		}
