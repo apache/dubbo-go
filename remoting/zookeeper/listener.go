@@ -314,7 +314,8 @@ func (l *ZkEventListener) valid() bool {
 	return l.client.ZkConnValid()
 }
 
-// Close ...
+// Close will let client listen exit
 func (l *ZkEventListener) Close() {
+	close(l.client.exit)
 	l.wg.Wait()
 }

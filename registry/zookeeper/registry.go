@@ -20,6 +20,7 @@ package zookeeper
 import (
 	"fmt"
 	"net/url"
+	"path"
 	"sync"
 	"time"
 )
@@ -149,8 +150,21 @@ func (r *zkRegistry) DoRegister(root string, node string) error {
 	return r.registerTempZookeeperNode(root, node)
 }
 
+func (r *zkRegistry) DoUnregister(root string, node string) error {
+	r.cltLock.Lock()
+	defer r.cltLock.Unlock()
+	if !r.ZkClient().ZkConnValid() {
+		return perrors.Errorf("zk client is not valid.")
+	}
+	return r.ZkClient().Delete(path.Join(root, node))
+}
+
 func (r *zkRegistry) DoSubscribe(conf *common.URL) (registry.Listener, error) {
 	return r.getListener(conf)
+}
+
+func (r *zkRegistry) DoUnsubscribe(conf *common.URL) (registry.Listener, error) {
+	return r.getCloseListener(conf)
 }
 
 func (r *zkRegistry) CloseAndNilClient() {
@@ -252,6 +266,40 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 	r.dataListener.SubscribeURL(conf, zkListener)
 
 	go r.listener.ListenServiceEvent(conf, fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, url.QueryEscape(conf.Service())), r.dataListener)
+
+	return zkListener, nil
+}
+
+func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationListener, error) {
+
+	var zkListener *RegistryConfigurationListener
+	r.dataListener.mutex.Lock()
+	configurationListener := r.dataListener.subscribed[conf]
+	if configurationListener != nil {
+
+		zkListener, _ := configurationListener.(*RegistryConfigurationListener)
+		if zkListener != nil {
+			if zkListener.isClosed {
+				return nil, perrors.New("configListener already been closed")
+			}
+		}
+	}
+
+	zkListener = r.dataListener.UnSubscribeURL(conf).(*RegistryConfigurationListener)
+	r.dataListener.mutex.Unlock()
+
+	if r.listener == nil {
+		return nil, perrors.New("listener is null can not close.")
+	}
+
+	//Interested register to dataconfig.
+	r.listenerLock.Lock()
+	listener := r.listener
+	r.listener = nil
+	r.listenerLock.Unlock()
+
+	r.dataListener.Close()
+	listener.Close()
 
 	return zkListener, nil
 }
