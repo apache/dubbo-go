@@ -124,7 +124,7 @@ func (hf *HystrixFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 	_, _, err := hystrix.GetCircuit(cmdName)
 	configLoadMutex.RUnlock()
 	if err != nil {
-		logger.Errorf("[Hystrix Filter]Errors occurred getting circuit for %s , will invoke without hystrix, error is: ", cmdName, err)
+		logger.Errorf("[Hystrix Filter]Errors occurred getting circuit for %s , will invoke without hystrix, error is: %s", cmdName, err.Error())
 		return invoker.Invoke(ctx, invocation)
 	}
 	logger.Infof("[Hystrix Filter]Using hystrix filter: %s", cmdName)
