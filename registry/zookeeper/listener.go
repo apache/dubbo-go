@@ -37,7 +37,7 @@ import (
 
 // RegistryDataListener contains all URL information subscribed by zookeeper registry
 type RegistryDataListener struct {
-	subscribed map[*common.URL]config_center.ConfigurationListener
+	subscribed map[string]config_center.ConfigurationListener
 	mutex      sync.Mutex
 	closed     bool
 }
@@ -45,7 +45,7 @@ type RegistryDataListener struct {
 // NewRegistryDataListener constructs a new RegistryDataListener
 func NewRegistryDataListener() *RegistryDataListener {
 	return &RegistryDataListener{
-		subscribed: make(map[*common.URL]config_center.ConfigurationListener)}
+		subscribed: make(map[string]config_center.ConfigurationListener)}
 }
 
 // SubscribeURL is used to set a watch listener for url
@@ -53,7 +53,7 @@ func (l *RegistryDataListener) SubscribeURL(url *common.URL, listener config_cen
 	if l.closed {
 		return
 	}
-	l.subscribed[url] = listener
+	l.subscribed[url.Key()] = listener
 }
 
 // UnSubscribeURL is used to set a watch listener for url
@@ -61,8 +61,8 @@ func (l *RegistryDataListener) UnSubscribeURL(url *common.URL) config_center.Con
 	if l.closed {
 		return nil
 	}
-	listener := l.subscribed[url]
-	delete(l.subscribed, url)
+	listener := l.subscribed[url.Key()]
+	delete(l.subscribed, url.Key())
 	return listener
 }
 
@@ -86,7 +86,7 @@ func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 		return false
 	}
 	for url, listener := range l.subscribed {
-		if serviceURL.URLEqual(*url) {
+		if serviceURL.Key() == url {
 			listener.Process(
 				&config_center.ConfigChangeEvent{
 					Key:        eventType.Path,

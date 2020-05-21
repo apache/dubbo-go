@@ -129,12 +129,17 @@ func (r *zkRegistry) InitListeners() {
 		recoverd := r.dataListener.subscribed
 		if recoverd != nil && len(recoverd) > 0 {
 			// recover all subscribed url
-			for conf, oldListener := range recoverd {
+			for recoveredURL, oldListener := range recoverd {
 				if regConfigListener, ok := oldListener.(*RegistryConfigurationListener); ok {
 					regConfigListener.Close()
 				}
-				newDataListener.SubscribeURL(conf, NewRegistryConfigurationListener(r.client, r))
-				go r.listener.ListenServiceEvent(conf, fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, url.QueryEscape(conf.Service())), newDataListener)
+				serviceURL, err := common.NewURL(recoveredURL)
+				if err != nil {
+					logger.Errorf("Listen NewURL(r{%s}) = error{%v}", recoveredURL, err)
+					continue
+				}
+				newDataListener.SubscribeURL(&serviceURL, NewRegistryConfigurationListener(r.client, r))
+				go r.listener.ListenServiceEvent(&serviceURL, fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, url.QueryEscape(serviceURL.Service())), newDataListener)
 
 			}
 		}
@@ -231,9 +236,9 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 	dataListener := r.dataListener
 	dataListener.mutex.Lock()
 	defer dataListener.mutex.Unlock()
-	if r.dataListener.subscribed[conf] != nil {
+	if r.dataListener.subscribed[conf.Key()] != nil {
 
-		zkListener, _ := r.dataListener.subscribed[conf].(*RegistryConfigurationListener)
+		zkListener, _ := r.dataListener.subscribed[conf.Key()].(*RegistryConfigurationListener)
 		if zkListener != nil {
 			r.listenerLock.Lock()
 			defer r.listenerLock.Unlock()
@@ -274,7 +279,7 @@ func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationL
 
 	var zkListener *RegistryConfigurationListener
 	r.dataListener.mutex.Lock()
-	configurationListener := r.dataListener.subscribed[conf]
+	configurationListener := r.dataListener.subscribed[conf.Key()]
 	if configurationListener != nil {
 
 		zkListener, _ := configurationListener.(*RegistryConfigurationListener)
