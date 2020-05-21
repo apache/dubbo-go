@@ -26,7 +26,6 @@ var (
 	tpsLimiter       = make(map[string]func() filter.TpsLimiter)
 )
 
-
 // SetTpsLimiter set the TpsLimiter with name
 func SetTpsLimiter(name string, creator func() filter.TpsLimiter) {
 	tpsLimiter[name] = creator
