@@ -92,7 +92,7 @@ func (dir *BaseDirectory) SetRouters(urls []*common.URL) {
 			factory := extension.GetRouterFactory(url.Protocol)
 			r, err := factory.NewRouter(url)
 			if err != nil {
-				logger.Errorf("Create router fail. router key: %s, error: %v", routerKey, url.Service(), err)
+				logger.Errorf("Create router fail. router key: %s, url:%s, error: %s", routerKey, url.Service(), err.Error())
 				return
 			}
 			routers = append(routers, r)
