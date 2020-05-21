@@ -26,12 +26,13 @@ var (
 	tpsLimiter       = make(map[string]func() filter.TpsLimiter)
 )
 
-// SetTpsLimiter ...
+
+// SetTpsLimiter set the TpsLimiter with name
 func SetTpsLimiter(name string, creator func() filter.TpsLimiter) {
 	tpsLimiter[name] = creator
 }
 
-// GetTpsLimiter ...
+// GetTpsLimiter find the TpsLimiter with name
 func GetTpsLimiter(name string) filter.TpsLimiter {
 	creator, ok := tpsLimiter[name]
 	if !ok {
@@ -41,12 +42,12 @@ func GetTpsLimiter(name string) filter.TpsLimiter {
 	return creator()
 }
 
-// SetTpsLimitStrategy ...
+// SetTpsLimitStrategy set the TpsLimitStrategyCreator with name
 func SetTpsLimitStrategy(name string, creator filter.TpsLimitStrategyCreator) {
 	tpsLimitStrategy[name] = creator
 }
 
-// GetTpsLimitStrategyCreator ...
+// GetTpsLimitStrategyCreator find the TpsLimitStrategyCreator with name
 func GetTpsLimitStrategyCreator(name string) filter.TpsLimitStrategyCreator {
 	creator, ok := tpsLimitStrategy[name]
 	if !ok {

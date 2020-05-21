@@ -46,31 +46,31 @@ import (
 
 // role constant
 const (
-	// CONSUMER ...
+	// CONSUMER is consumer role
 	CONSUMER = iota
-	// CONFIGURATOR ...
+	// CONFIGURATOR is configurator role
 	CONFIGURATOR
-	// ROUTER ...
+	// ROUTER is router role
 	ROUTER
-	// PROVIDER ...
+	// PROVIDER is provider role
 	PROVIDER
 )
 
 var (
-	// DubboNodes ...
+	// DubboNodes Dubbo service node
 	DubboNodes = [...]string{"consumers", "configurators", "routers", "providers"}
 	// DubboRole Dubbo service role
 	DubboRole = [...]string{"consumer", "", "routers", "provider"}
 )
 
-// RoleType ...
+// RoleType
 type RoleType int
 
 func (t RoleType) String() string {
 	return DubboNodes[t]
 }
 
-// Role ...
+// Role returns role
 func (t RoleType) Role() string {
 	return DubboRole[t]
 }
@@ -86,7 +86,7 @@ type baseUrl struct {
 	PrimitiveURL string
 }
 
-// URL ...
+// URL is used to locate resourse to transfer data between nodes
 type URL struct {
 	baseUrl
 	Path     string // like  /com.ikurento.dubbo.UserProvider3
@@ -97,79 +97,81 @@ type URL struct {
 	SubURL *URL
 }
 
+// Option accepts url
+// Option will define a function of handling URL
 type option func(*URL)
 
-// WithUsername ...
+// WithUsername set username for url
 func WithUsername(username string) option {
 	return func(url *URL) {
 		url.Username = username
 	}
 }
 
-// WithPassword ...
+// WithPassword set password for url
 func WithPassword(pwd string) option {
 	return func(url *URL) {
 		url.Password = pwd
 	}
 }
 
-// WithMethods ...
+// WithMethods set methods for url
 func WithMethods(methods []string) option {
 	return func(url *URL) {
 		url.Methods = methods
 	}
 }
 
-// WithParams ...
+// WithParams set params for url
 func WithParams(params url.Values) option {
 	return func(url *URL) {
 		url.params = params
 	}
 }
 
-// WithParamsValue ...
+// WithParamsValue set params field for url
 func WithParamsValue(key, val string) option {
 	return func(url *URL) {
 		url.SetParam(key, val)
 	}
 }
 
-// WithProtocol ...
+// WithProtocol set protocol for url
 func WithProtocol(proto string) option {
 	return func(url *URL) {
 		url.Protocol = proto
 	}
 }
 
-// WithIp ...
+// WithIp set ip for url
 func WithIp(ip string) option {
 	return func(url *URL) {
 		url.Ip = ip
 	}
 }
 
-// WithPort ...
+// WithPort set port for url
 func WithPort(port string) option {
 	return func(url *URL) {
 		url.Port = port
 	}
 }
 
-// WithPath ...
+// WithPath set path for url
 func WithPath(path string) option {
 	return func(url *URL) {
 		url.Path = "/" + strings.TrimPrefix(path, "/")
 	}
 }
 
-// WithLocation ...
+// WithLocation set location for url
 func WithLocation(location string) option {
 	return func(url *URL) {
 		url.Location = location
 	}
 }
 
-// WithToken ...
+// WithToken set token for url
 func WithToken(token string) option {
 	return func(url *URL) {
 		if len(token) > 0 {
@@ -182,7 +184,7 @@ func WithToken(token string) option {
 	}
 }
 
-// NewURLWithOptions ...
+// NewURLWithOptions will create a new url with options
 func NewURLWithOptions(opts ...option) *URL {
 	url := &URL{}
 	for _, opt := range opts {
@@ -362,13 +364,13 @@ func (c *URL) ColonSeparatedKey() string {
 	return buf.String()
 }
 
-// EncodedServiceKey ...
+// EncodedServiceKey is used to encode service key
 func (c *URL) EncodedServiceKey() string {
 	serviceKey := c.ServiceKey()
 	return strings.Replace(serviceKey, "/", "*", 1)
 }
 
-// Service ...
+// Service is used to get service
 func (c URL) Service() string {
 	service := c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
 	if service != "" {
@@ -382,21 +384,21 @@ func (c URL) Service() string {
 	return ""
 }
 
-// AddParam ...
+// AddParam is used to add value for key
 func (c *URL) AddParam(key string, value string) {
 	c.paramsLock.Lock()
 	c.params.Add(key, value)
 	c.paramsLock.Unlock()
 }
 
-// SetParam ...
+// SetParam is used to set key and value
 func (c *URL) SetParam(key string, value string) {
 	c.paramsLock.Lock()
 	c.params.Set(key, value)
 	c.paramsLock.Unlock()
 }
 
-// RangeParams ...
+// RangeParams is used to range params
 func (c *URL) RangeParams(f func(key, value string) bool) {
 	c.paramsLock.RLock()
 	defer c.paramsLock.RUnlock()
@@ -407,7 +409,7 @@ func (c *URL) RangeParams(f func(key, value string) bool) {
 	}
 }
 
-// GetParam ...
+// GetParam is used to get value by key
 func (c URL) GetParam(s string, d string) string {
 	c.paramsLock.RLock()
 	defer c.paramsLock.RUnlock()
@@ -418,12 +420,12 @@ func (c URL) GetParam(s string, d string) string {
 	return r
 }
 
-// GetParams ...
+// GetParams is used to get values
 func (c URL) GetParams() url.Values {
 	return c.params
 }
 
-// GetParamAndDecoded ...
+// GetParamAndDecoded is used to get values and decode
 func (c URL) GetParamAndDecoded(key string) (string, error) {
 	c.paramsLock.RLock()
 	defer c.paramsLock.RUnlock()
@@ -432,7 +434,7 @@ func (c URL) GetParamAndDecoded(key string) (string, error) {
 	return value, err
 }
 
-// GetRawParam ...
+// GetRawParam is used to get raw param
 func (c URL) GetRawParam(key string) string {
 	switch key {
 	case "protocol":
@@ -452,7 +454,7 @@ func (c URL) GetRawParam(key string) string {
 	}
 }
 
-// GetParamBool ...
+// GetParamBool is used to judge whether key exists or not
 func (c URL) GetParamBool(s string, d bool) bool {
 	r, err := strconv.ParseBool(c.GetParam(s, ""))
 	if err != nil {
@@ -461,7 +463,7 @@ func (c URL) GetParamBool(s string, d bool) bool {
 	return r
 }
 
-// GetParamInt ...
+// GetParamInt is used to get int value by key
 func (c URL) GetParamInt(s string, d int64) int64 {
 	r, err := strconv.Atoi(c.GetParam(s, ""))
 	if r == 0 || err != nil {
@@ -470,7 +472,7 @@ func (c URL) GetParamInt(s string, d int64) int64 {
 	return int64(r)
 }
 
-// GetMethodParamInt ...
+// GetMethodParamInt is used to get int method param
 func (c URL) GetMethodParamInt(method string, key string, d int64) int64 {
 	r, err := strconv.Atoi(c.GetParam("methods."+method+"."+key, ""))
 	if r == 0 || err != nil {
@@ -479,7 +481,7 @@ func (c URL) GetMethodParamInt(method string, key string, d int64) int64 {
 	return int64(r)
 }
 
-// GetMethodParamInt64 ...
+// GetMethodParamInt64 is used to get int64 method param
 func (c URL) GetMethodParamInt64(method string, key string, d int64) int64 {
 	r := c.GetMethodParamInt(method, key, math.MinInt64)
 	if r == math.MinInt64 {
@@ -488,7 +490,7 @@ func (c URL) GetMethodParamInt64(method string, key string, d int64) int64 {
 	return r
 }
 
-// GetMethodParam ...
+// GetMethodParam is used to get method param
 func (c URL) GetMethodParam(method string, key string, d string) string {
 	r := c.GetParam("methods."+method+"."+key, "")
 	if r == "" {
@@ -497,13 +499,13 @@ func (c URL) GetMethodParam(method string, key string, d string) string {
 	return r
 }
 
-// GetMethodParamBool ...
+// GetMethodParamBool is used to judge whether method param exists or not
 func (c URL) GetMethodParamBool(method string, key string, d bool) bool {
 	r := c.GetParamBool("methods."+method+"."+key, d)
 	return r
 }
 
-// RemoveParams ...
+// RemoveParams is used to remove params
 func (c *URL) RemoveParams(set *gxset.HashSet) {
 	c.paramsLock.Lock()
 	defer c.paramsLock.Unlock()
@@ -513,7 +515,7 @@ func (c *URL) RemoveParams(set *gxset.HashSet) {
 	}
 }
 
-// SetParams ...
+// SetParams is used to set params
 func (c *URL) SetParams(m url.Values) {
 	for k := range m {
 		c.SetParam(k, m.Get(k))
@@ -564,7 +566,7 @@ func (c URL) ToMap() map[string]string {
 //  in this function we should merge the reference local url config into the service url from registry.
 //TODO configuration merge, in the future , the configuration center's config should merge too.
 
-// MergeUrl ...
+// MergeUrl is used to merge url
 func MergeUrl(serviceUrl *URL, referenceUrl *URL) *URL {
 	mergedUrl := serviceUrl.Clone()
 
@@ -594,7 +596,7 @@ func MergeUrl(serviceUrl *URL, referenceUrl *URL) *URL {
 	return mergedUrl
 }
 
-// Clone ...
+// Clone is used to clone a url
 func (c *URL) Clone() *URL {
 	newUrl := &URL{}
 	copier.Copy(newUrl, c)
