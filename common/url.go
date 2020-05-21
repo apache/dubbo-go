@@ -18,7 +18,6 @@
 package common
 
 import (
-	"bytes"
 	"encoding/base64"
 	"fmt"
 	"math"
@@ -292,20 +291,20 @@ func isMatchCategory(category1 string, category2 string) bool {
 }
 
 func (c URL) String() string {
-	var buildString string
+	var buf strings.Builder
 	if len(c.Username) == 0 && len(c.Password) == 0 {
-		buildString = fmt.Sprintf(
+		buf.WriteString(fmt.Sprintf(
 			"%s://%s:%s%s?",
-			c.Protocol, c.Ip, c.Port, c.Path)
+			c.Protocol, c.Ip, c.Port, c.Path))
 	} else {
-		buildString = fmt.Sprintf(
+		buf.WriteString(fmt.Sprintf(
 			"%s://%s:%s@%s:%s%s?",
-			c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path)
+			c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path))
 	}
 	c.paramsLock.RLock()
-	buildString += c.params.Encode()
+	buf.WriteString(c.params.Encode())
 	c.paramsLock.RUnlock()
-	return buildString
+	return buf.String()
 }
 
 // Key ...
@@ -322,7 +321,7 @@ func (c URL) ServiceKey() string {
 	if intf == "" {
 		return ""
 	}
-	buf := &bytes.Buffer{}
+	var buf strings.Builder
 	group := c.GetParam(constant.GROUP_KEY, "")
 	if group != "" {
 		buf.WriteString(group)
@@ -347,7 +346,7 @@ func (c *URL) ColonSeparatedKey() string {
 	if intf == "" {
 		return ""
 	}
-	buf := &bytes.Buffer{}
+	var buf strings.Builder
 	buf.WriteString(intf)
 	buf.WriteString(":")
 	version := c.GetParam(constant.VERSION_KEY, "")
