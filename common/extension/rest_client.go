@@ -25,10 +25,12 @@ var (
 	restClients = make(map[string]func(restOptions *client.RestOptions) client.RestClient, 8)
 )
 
+// SetRestClient set the RestClient with name
 func SetRestClient(name string, fun func(restOptions *client.RestOptions) client.RestClient) {
 	restClients[name] = fun
 }
 
+// GetNewRestClient find the RestClient with name
 func GetNewRestClient(name string, restOptions *client.RestOptions) client.RestClient {
 	if restClients[name] == nil {
 		panic("restClient for " + name + " is not existing, make sure you have import the package.")

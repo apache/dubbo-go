@@ -49,7 +49,7 @@ func AddCustomShutdownCallback(callback func()) {
 	customShutdownCallbacks.PushBack(callback)
 }
 
-// GetAllCustomShutdownCallbacks ...
+// GetAllCustomShutdownCallbacks get all custom shutdown callbacks
 func GetAllCustomShutdownCallbacks() *list.List {
 	return customShutdownCallbacks
 }
