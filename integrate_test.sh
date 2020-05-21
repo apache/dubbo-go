@@ -16,8 +16,8 @@
 
 #!/bin/bash
 
-# stop integrate test when command return !0
 set -e
+set -x
 
 echo 'start integrate-test'
 
