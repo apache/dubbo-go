@@ -51,11 +51,22 @@ echo "travis pull request repo slug -> ${TRAVIS_REPO_SLUG}"
 docker run -d --network host zookeeper
 echo "zookeeper listen in [:]2181"
 
-# fast fail
-exit 1
-
-
-cd ./test/integrate/dubbo/go-client && docker build . -t  ci-consumer --build-arg PR_ORIGIN_REPO=${TRAVIS_PULL_REQUEST_SLUG} --build-arg PR_ORIGIN_COMMITID=${TRAVIS_PULL_REQUEST_SHA} && cd ${ROOT_DIR}
-cd ./test/integrate/dubbo/go-server && docker build . -t  ci-provider --build-arg PR_ORIGIN_REPO=${TRAVIS_PULL_REQUEST_SLUG} --build-arg PR_ORIGIN_COMMITID=${TRAVIS_PULL_REQUEST_SHA} && cd ${ROOT_DIR}
-docker run -d --network host ci-provider
-docker run -it --network host ci-consumer
+if [ ${TRAVIS_PULL_REQUEST_SLUG} ]
+then
+    # this is a pull-request commit
+    # build go-client image
+    cd ./test/integrate/dubbo/go-client
+    docker build . -t  ci-consumer --build-arg PR_ORIGIN_REPO=${TRAVIS_PULL_REQUEST_SLUG} --build-arg PR_ORIGIN_COMMITID=${TRAVIS_PULL_REQUEST_SHA}
+    cd ${ROOT_DIR}
+    # build go-server image
+    cd ./test/integrate/dubbo/go-server
+    docker build . -t  ci-provider --build-arg PR_ORIGIN_REPO=${TRAVIS_PULL_REQUEST_SLUG} --build-arg PR_ORIGIN_COMMITID=${TRAVIS_PULL_REQUEST_SHA}
+    cd ${ROOT_DIR}
+    # run provider
+    docker run -d --network host ci-provider
+    # check consumer status
+    docker run -it --network host ci-consumer
+else
+    # this is merge pull-request to local-repo
+    echo ''
+fi
