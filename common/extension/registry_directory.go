@@ -27,12 +27,12 @@ type registryDirectory func(url *common.URL, registry registry.Registry) (cluste
 
 var defaultRegistry registryDirectory
 
-// SetDefaultRegistryDirectory ...
+// SetDefaultRegistryDirectory set the default registryDirectory
 func SetDefaultRegistryDirectory(v registryDirectory) {
 	defaultRegistry = v
 }
 
-// GetDefaultRegistryDirectory ...
+// GetDefaultRegistryDirectory find the registryDirectory with url and registry
 func GetDefaultRegistryDirectory(config *common.URL, registry registry.Registry) (cluster.Directory, error) {
 	if defaultRegistry == nil {
 		panic("registry directory is not existing, make sure you have import the package.")
