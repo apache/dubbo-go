@@ -23,9 +23,9 @@ echo 'start integrate-test'
 
 # set root workspace
 ROOT_DIR=$(pwd)
-
-
 echo "integrate-test root work-space -> ${ROOT_DIR}"
+
+# show all travis-env
 echo "travis current commit id  -> ${TRAVIS_COMMIT}"
 echo "travis pull request -> ${TRAVIS_PULL_REQUEST}"
 echo "travis pull request branch -> ${TRAVIS_PULL_REQUEST_BRANCH}"
