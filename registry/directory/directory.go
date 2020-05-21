@@ -61,7 +61,7 @@ type RegistryDirectory struct {
 	forbidden                      atomic.Bool
 }
 
-// NewRegistryDirectory ...
+// NewRegistryDirectory will create a new RegistryDirectory
 func NewRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.Directory, error) {
 	if url.SubURL == nil {
 		return nil, perrors.Errorf("url is invalid, suburl can not be nil")
@@ -79,13 +79,14 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.
 	return dir, nil
 }
 
-//subscribe from registry
+// subscribe from registry
 func (dir *RegistryDirectory) subscribe(url *common.URL) {
 	dir.consumerConfigurationListener.addNotifyListener(dir)
 	dir.referenceConfigurationListener = newReferenceConfigurationListener(dir, url)
 	dir.registry.Subscribe(url, dir)
 }
 
+// Notify monitor changes from registry,and update the cacheServices
 func (dir *RegistryDirectory) Notify(event *registry.ServiceEvent) {
 	go dir.update(event)
 }
@@ -244,6 +245,7 @@ func (dir *RegistryDirectory) List(invocation protocol.Invocation) []protocol.In
 	return routerChain.Route(invokers, dir.cacheOriginUrl, invocation)
 }
 
+// IsAvailable  whether the directory is available
 func (dir *RegistryDirectory) IsAvailable() bool {
 	if !dir.BaseDirectory.IsAvailable() {
 		return dir.BaseDirectory.IsAvailable()
@@ -258,6 +260,7 @@ func (dir *RegistryDirectory) IsAvailable() bool {
 	return false
 }
 
+// Destroy method
 func (dir *RegistryDirectory) Destroy() {
 	//TODO:unregister & unsubscribe
 	dir.BaseDirectory.Destroy(func() {
@@ -297,6 +300,7 @@ func newReferenceConfigurationListener(dir *RegistryDirectory, url *common.URL) 
 	return listener
 }
 
+// Process handle events and update Invokers
 func (l *referenceConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
 	l.BaseConfigurationListener.Process(event)
 	l.directory.refreshInvokers(nil)
@@ -322,6 +326,7 @@ func (l *consumerConfigurationListener) addNotifyListener(listener registry.Noti
 	l.listeners = append(l.listeners, listener)
 }
 
+// Process handles events from Configuration Center and update Invokers
 func (l *consumerConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
 	l.BaseConfigurationListener.Process(event)
 	l.directory.refreshInvokers(nil)
