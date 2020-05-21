@@ -18,7 +18,6 @@
 package zookeeper
 
 import (
-	"github.com/apache/dubbo-go/common"
 	"path"
 	"strings"
 	"sync"
@@ -32,6 +31,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/remoting"
@@ -96,8 +96,6 @@ func (l *ZkEventListener) ListenServiceNodeEvent(zkPath string, listener ...remo
 			return false
 		}
 	}
-
-	return false
 }
 
 func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, listener remoting.DataListener) {
