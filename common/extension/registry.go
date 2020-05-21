@@ -26,12 +26,12 @@ var (
 	registrys = make(map[string]func(config *common.URL) (registry.Registry, error))
 )
 
-// SetRegistry ...
+// SetRegistry set the registry extension with name
 func SetRegistry(name string, v func(config *common.URL) (registry.Registry, error)) {
 	registrys[name] = v
 }
 
-// GetRegistry ...
+// GetRegistry find the registry extension with name
 func GetRegistry(name string, config *common.URL) (registry.Registry, error) {
 	if registrys[name] == nil {
 		panic("registry for " + name + " is not existing, make sure you have import the package.")

@@ -17,7 +17,7 @@
 
 package common
 
-// Node ...
+// Node is used to process dubbo node
 type Node interface {
 	GetUrl() URL
 	IsAvailable() bool

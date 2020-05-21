@@ -35,23 +35,23 @@ import (
 )
 
 // RPCService
-//rpc service interface
+// rpc service interface
 type RPCService interface {
 	// Reference:
 	// rpc service id or reference id
 	Reference() string
 }
 
-//AsyncCallbackService callback interface for async
+// AsyncCallbackService callback interface for async
 type AsyncCallbackService interface {
 	// Callback: callback
 	CallBack(response CallbackResponse)
 }
 
-//CallbackResponse for different protocol
+// CallbackResponse for different protocol
 type CallbackResponse interface{}
 
-//AsyncCallback async callback method
+// AsyncCallback async callback method
 type AsyncCallback func(response CallbackResponse)
 
 // for lowercase func
