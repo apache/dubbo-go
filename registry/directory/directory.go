@@ -61,7 +61,7 @@ type RegistryDirectory struct {
 	forbidden                      atomic.Bool
 }
 
-// NewRegistryDirectory  NewRegistryDirectory will create a new RegistryDirectory
+// NewRegistryDirectory will create a new RegistryDirectory
 func NewRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.Directory, error) {
 	if url.SubURL == nil {
 		return nil, perrors.Errorf("url is invalid, suburl can not be nil")
@@ -79,14 +79,14 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.
 	return dir, nil
 }
 
-// Subscribe subscribe from registry
+// subscribe from registry
 func (dir *RegistryDirectory) subscribe(url *common.URL) {
 	dir.consumerConfigurationListener.addNotifyListener(dir)
 	dir.referenceConfigurationListener = newReferenceConfigurationListener(dir, url)
 	dir.registry.Subscribe(url, dir)
 }
 
-// Notify monitors changes from registry,and update the cacheServices
+// Notify monitor changes from registry,and update the cacheServices
 func (dir *RegistryDirectory) Notify(event *registry.ServiceEvent) {
 	go dir.update(event)
 }
@@ -260,7 +260,7 @@ func (dir *RegistryDirectory) IsAvailable() bool {
 	return false
 }
 
-// Destroy destroy method
+// Destroy method
 func (dir *RegistryDirectory) Destroy() {
 	//TODO:unregister & unsubscribe
 	dir.BaseDirectory.Destroy(func() {
@@ -326,7 +326,7 @@ func (l *consumerConfigurationListener) addNotifyListener(listener registry.Noti
 	l.listeners = append(l.listeners, listener)
 }
 
-// Process Process handles events from Configuration Center and update Invokers
+// Process handles events from Configuration Center and update Invokers
 func (l *consumerConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
 	l.BaseConfigurationListener.Process(event)
 	l.directory.refreshInvokers(nil)
