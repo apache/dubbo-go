@@ -18,8 +18,6 @@
 package directory
 
 import (
-	"github.com/apache/dubbo-go/protocol/mock"
-	"github.com/golang/mock/gomock"
 	"net/url"
 	"strconv"
 	"testing"
@@ -27,6 +25,7 @@ import (
 )
 
 import (
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,6 +38,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol/invocation"
+	"github.com/apache/dubbo-go/protocol/mock"
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting"
