@@ -136,7 +136,7 @@ func GetLogger() Logger {
 	return logger
 }
 
-// SetLoggerLevel used to set logger level
+// SetLoggerLevel use for set logger level
 func SetLoggerLevel(level string) bool {
 	if l, ok := logger.(OpsLogger); ok {
 		l.SetLoggerLevel(level)
@@ -145,13 +145,13 @@ func SetLoggerLevel(level string) bool {
 	return false
 }
 
-// OpsLogger used by the SetLoggerLevel
+// OpsLogger use for the SetLoggerLevel
 type OpsLogger interface {
 	Logger
 	SetLoggerLevel(level string)
 }
 
-// SetLoggerLevel used to set logger level
+// SetLoggerLevel use for set logger level
 func (dl *DubboLogger) SetLoggerLevel(level string) {
 	l := new(zapcore.Level)
 	l.Set(level)

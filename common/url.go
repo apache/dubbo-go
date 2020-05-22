@@ -86,7 +86,7 @@ type baseUrl struct {
 	PrimitiveURL string
 }
 
-// URL is used to locate resourse to transfer data between nodes
+// URL use for locate resourse to transfer data between nodes
 type URL struct {
 	baseUrl
 	Path     string // like  /com.ikurento.dubbo.UserProvider3
@@ -434,7 +434,7 @@ func (c URL) GetParamAndDecoded(key string) (string, error) {
 	return value, err
 }
 
-// GetRawParam is used to get raw param
+// GetRawParam use for get raw param
 func (c URL) GetRawParam(key string) string {
 	switch key {
 	case "protocol":
