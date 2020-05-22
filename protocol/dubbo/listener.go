@@ -143,7 +143,7 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 // OnCron ...
 func (h *RpcClientHandler) OnCron(session getty.Session) {
-	rpcSession, err := h.conn.getClientRpcSession(session)
+	clientRpcSession, err := h.conn.getClientRpcSession(session)
 	if err != nil {
 		logger.Errorf("client.getClientSession(session{%s}) = error{%v}",
 			session.Stat(), perrors.WithStack(err))
@@ -151,7 +151,7 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 	}
 	if h.conn.pool.rpcClient.conf.sessionTimeout.Nanoseconds() < time.Since(session.GetActive()).Nanoseconds() {
 		logger.Warnf("session{%s} timeout{%s}, reqNum{%d}",
-			session.Stat(), time.Since(session.GetActive()).String(), rpcSession.reqNum)
+			session.Stat(), time.Since(session.GetActive()).String(), clientRpcSession.reqNum)
 		h.conn.removeSession(session) // -> h.conn.close() -> h.conn.pool.remove(h.conn)
 		return
 	}
