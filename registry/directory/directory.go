@@ -152,9 +152,11 @@ func (dir *RegistryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 }
 
 func (dir *RegistryDirectory) toGroupInvokers() []protocol.Invoker {
-	newInvokersList := []protocol.Invoker{}
+	var (
+		err             error
+		newInvokersList []protocol.Invoker
+	)
 	groupInvokersMap := make(map[string][]protocol.Invoker)
-	groupInvokersList := []protocol.Invoker{}
 
 	dir.cacheInvokersMap.Range(func(key, value interface{}) bool {
 		newInvokersList = append(newInvokersList, value.(protocol.Invoker))
@@ -170,6 +172,7 @@ func (dir *RegistryDirectory) toGroupInvokers() []protocol.Invoker {
 			groupInvokersMap[group] = []protocol.Invoker{invoker}
 		}
 	}
+	groupInvokersList := make([]protocol.Invoker, 0, len(groupInvokersMap))
 	if len(groupInvokersMap) == 1 {
 		//len is 1 it means no group setting ,so do not need cluster again
 		for _, invokers := range groupInvokersMap {
@@ -178,9 +181,13 @@ func (dir *RegistryDirectory) toGroupInvokers() []protocol.Invoker {
 	} else {
 		for _, invokers := range groupInvokersMap {
 			staticDir := directory.NewStaticDirectory(invokers)
-			cluster := extension.GetCluster(dir.GetUrl().SubURL.GetParam(constant.CLUSTER_KEY, constant.DEFAULT_CLUSTER))
-			staticDir.BuildRouterChain(invokers)
-			groupInvokersList = append(groupInvokersList, cluster.Join(staticDir))
+			cst := extension.GetCluster(dir.GetUrl().SubURL.GetParam(constant.CLUSTER_KEY, constant.DEFAULT_CLUSTER))
+			err = staticDir.BuildRouterChain(invokers)
+			if err != nil {
+				logger.Error(err)
+				continue
+			}
+			groupInvokersList = append(groupInvokersList, cst.Join(staticDir))
 		}
 	}
 
