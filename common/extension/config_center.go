@@ -26,12 +26,12 @@ var (
 	configCenters = make(map[string]func(config *common.URL) (config_center.DynamicConfiguration, error))
 )
 
-// SetConfigCenter set the DynamicConfiguration with name
+// SetConfigCenter sets the DynamicConfiguration with name
 func SetConfigCenter(name string, v func(config *common.URL) (config_center.DynamicConfiguration, error)) {
 	configCenters[name] = v
 }
 
-// GetConfigCenter find the DynamicConfiguration with name
+// GetConfigCenter finds the DynamicConfiguration with name
 func GetConfigCenter(name string, config *common.URL) (config_center.DynamicConfiguration, error) {
 	if configCenters[name] == nil {
 		panic("config center for " + name + " is not existing, make sure you have import the package.")

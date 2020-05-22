@@ -26,13 +26,13 @@ var (
 	rejectedExecutionHandler = make(map[string]func() filter.RejectedExecutionHandler)
 )
 
-// SetFilter set the filter extension with name
+// SetFilter sets the filter extension with name
 // For example: hystrix/metrics/token/tracing/limit/...
 func SetFilter(name string, v func() filter.Filter) {
 	filters[name] = v
 }
 
-// GetFilter find the filter extension with name
+// GetFilter finds the filter extension with name
 func GetFilter(name string) filter.Filter {
 	if filters[name] == nil {
 		panic("filter for " + name + " is not existing, make sure you have imported the package.")
@@ -40,12 +40,12 @@ func GetFilter(name string) filter.Filter {
 	return filters[name]()
 }
 
-// SetRejectedExecutionHandler set the RejectedExecutionHandler with name
+// SetRejectedExecutionHandler sets the RejectedExecutionHandler with name
 func SetRejectedExecutionHandler(name string, creator func() filter.RejectedExecutionHandler) {
 	rejectedExecutionHandler[name] = creator
 }
 
-// GetRejectedExecutionHandler find the RejectedExecutionHandler with name
+// GetRejectedExecutionHandler finds the RejectedExecutionHandler with name
 func GetRejectedExecutionHandler(name string) filter.RejectedExecutionHandler {
 	creator, ok := rejectedExecutionHandler[name]
 	if !ok {
