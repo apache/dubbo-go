@@ -26,22 +26,7 @@ script:
   - chmod u+x before_ut.sh && ./before_ut.sh
   - go mod vendor && go test ./... -coverprofile=coverage.txt -covermode=atomic
   # integrate-test
-  - echo 'start integrate-test'
-  # start zookeeper registry insecure listen in [:]:2181
-  - docker run -d --network host zookeeper
-  - ROOTDIR=$(pwd)
-  - cd ./test/integrate/dubbo/go-client && docker build . -t  ci-consumer --build-arg PR_ORIGIN_REPO=${TRAVIS_PULL_REQUEST_SLUG} --build-arg PR_ORIGIN_COMMITID=${TRAVIS_PULL_REQUEST_SHA} && cd $ROOTDIR
-  - cd ./test/integrate/dubbo/go-server && docker build . -t  ci-provider --build-arg PR_ORIGIN_REPO=${TRAVIS_PULL_REQUEST_SLUG} --build-arg PR_ORIGIN_COMMITID=${TRAVIS_PULL_REQUEST_SHA} && cd $ROOTDIR
-  - docker run -d --network host ci-provider
-  - docker run -it --network host ci-consumer
-
-  # another registry instance, start it by dep
-  # start etcd registry  insecure listen in [:]:2379
-  #- docker run -d --network host k8s.gcr.io/etcd:3.3.10 etcd
-  # start consul registry insecure listen in [:]:8500
-  #- docker run -d --network host consul
-  # start nacos registry insecure listen in [:]:8848
-  #- docker run -d --network host nacos/nacos-server:latest
+  - chmod +x integrate_test.sh && ./integrate_test.sh
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
