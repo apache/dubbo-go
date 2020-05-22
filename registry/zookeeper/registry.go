@@ -129,17 +129,17 @@ func (r *zkRegistry) InitListeners() {
 		recoverd := r.dataListener.subscribed
 		if recoverd != nil && len(recoverd) > 0 {
 			// recover all subscribed url
-			for recoveredURL, oldListener := range recoverd {
-				if regConfigListener, ok := oldListener.(*RegistryConfigurationListener); ok {
+			for _, oldListener := range recoverd {
+				var (
+					regConfigListener *RegistryConfigurationListener
+					ok                bool
+				)
+
+				if regConfigListener, ok = oldListener.(*RegistryConfigurationListener); ok {
 					regConfigListener.Close()
 				}
-				serviceURL, err := common.NewURL(recoveredURL)
-				if err != nil {
-					logger.Errorf("Listen NewURL(r{%s}) = error{%v}", recoveredURL, err)
-					continue
-				}
-				newDataListener.SubscribeURL(&serviceURL, NewRegistryConfigurationListener(r.client, r))
-				go r.listener.ListenServiceEvent(&serviceURL, fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, url.QueryEscape(serviceURL.Service())), newDataListener)
+				newDataListener.SubscribeURL(regConfigListener.subscribeURL, NewRegistryConfigurationListener(r.client, r, regConfigListener.subscribeURL))
+				go r.listener.ListenServiceEvent(regConfigListener.subscribeURL, fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, url.QueryEscape(regConfigListener.subscribeURL.Service())), newDataListener)
 
 			}
 		}
@@ -236,9 +236,9 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 	dataListener := r.dataListener
 	dataListener.mutex.Lock()
 	defer dataListener.mutex.Unlock()
-	if r.dataListener.subscribed[conf.Key()] != nil {
+	if r.dataListener.subscribed[conf.ServiceKey()] != nil {
 
-		zkListener, _ := r.dataListener.subscribed[conf.Key()].(*RegistryConfigurationListener)
+		zkListener, _ := r.dataListener.subscribed[conf.ServiceKey()].(*RegistryConfigurationListener)
 		if zkListener != nil {
 			r.listenerLock.Lock()
 			defer r.listenerLock.Unlock()
@@ -250,7 +250,7 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 		}
 	}
 
-	zkListener = NewRegistryConfigurationListener(r.client, r)
+	zkListener = NewRegistryConfigurationListener(r.client, r, conf)
 	if r.listener == nil {
 		r.cltLock.Lock()
 		client := r.client
@@ -279,7 +279,7 @@ func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationL
 
 	var zkListener *RegistryConfigurationListener
 	r.dataListener.mutex.Lock()
-	configurationListener := r.dataListener.subscribed[conf.Key()]
+	configurationListener := r.dataListener.subscribed[conf.ServiceKey()]
 	if configurationListener != nil {
 
 		zkListener, _ := configurationListener.(*RegistryConfigurationListener)
