@@ -25,12 +25,12 @@ var (
 	restServers = make(map[string]func() server.RestServer, 8)
 )
 
-// SetRestServer set the RestServer with name
+// SetRestServer sets the RestServer with name
 func SetRestServer(name string, fun func() server.RestServer) {
 	restServers[name] = fun
 }
 
-// GetNewRestServer find the RestServer with name
+// GetNewRestServer finds the RestServer with name
 func GetNewRestServer(name string) server.RestServer {
 	if restServers[name] == nil {
 		panic("restServer for " + name + " is not existing, make sure you have import the package.")
