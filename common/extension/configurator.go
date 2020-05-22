@@ -61,7 +61,7 @@ func GetDefaultConfigurator(url *common.URL) config_center.Configurator {
 
 }
 
-// GetDefaultConfiguratorFunc default configurator function
+// GetDefaultConfiguratorFunc gets default configurator function
 func GetDefaultConfiguratorFunc() getConfiguratorFunc {
 	if configurator[DefaultKey] == nil {
 		panic("configurator for default is not existing, make sure you have import the package.")

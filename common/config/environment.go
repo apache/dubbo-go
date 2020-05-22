@@ -81,8 +81,8 @@ func (env *Environment) UpdateAppExternalConfigMap(externalMap map[string]string
 	}
 }
 
-// List represents a doubly linked list.
 // Configuration puts externalConfigMap and appExternalConfigMap into list
+// List represents a doubly linked list.
 func (env *Environment) Configuration() *list.List {
 	cfgList := list.New()
 	// The sequence would be: SystemConfiguration -> ExternalConfiguration -> AppExternalConfiguration -> AbstractConfig -> PropertiesConfiguration
