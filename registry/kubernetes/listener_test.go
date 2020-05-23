@@ -191,7 +191,6 @@ type KubernetesRegistryTestSuite struct {
 }
 
 func (s *KubernetesRegistryTestSuite) initRegistry() *kubernetesRegistry {
-
 	t := s.T()
 
 	regurl, err := common.NewURL("registry://127.0.0.1:443", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
@@ -204,7 +203,7 @@ func (s *KubernetesRegistryTestSuite) initRegistry() *kubernetesRegistry {
 		out := fake.NewSimpleClientset()
 
 		// mock current pod
-		if _, err := out.CoreV1().Pods(s.currentPod.GetNamespace()).Create(&s.currentPod); err != nil {
+		if _, err = out.CoreV1().Pods(s.currentPod.GetNamespace()).Create(&s.currentPod); err != nil {
 			t.Fatal(err)
 		}
 		return out, nil
