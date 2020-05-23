@@ -56,8 +56,8 @@ type registryProtocol struct {
 	invokers []protocol.Invoker
 	// Registry  Map<RegistryAddress, Registry>
 	registries *sync.Map
-	//To solve the problem of RMI repeated exposure port conflicts, the services that have been exposed are no longer exposed.
-	//providerurl <--> exporter
+	// To solve the problem of RMI repeated exposure port conflicts, the services that have been exposed are no longer exposed.
+	// providerurl <--> exporter
 	bounds                        *sync.Map
 	overrideListeners             *sync.Map
 	serviceConfigurationListeners *sync.Map
@@ -70,10 +70,8 @@ func init() {
 }
 
 func getCacheKey(url *common.URL) string {
-	newUrl := url.Clone()
 	delKeys := gxset.NewSet("dynamic", "enabled")
-	newUrl.RemoveParams(delKeys)
-	return newUrl.String()
+	return url.CloneExceptParams(delKeys).String()
 }
 
 func newRegistryProtocol() *registryProtocol {
@@ -103,16 +101,14 @@ func getUrlToRegistry(providerUrl *common.URL, registryUrl *common.URL) *common.
 // filterHideKey filter the parameters that do not need to be output in url(Starting with .)
 func filterHideKey(url *common.URL) *common.URL {
 
-	//be careful params maps in url is map type
-	cloneURL := url.Clone()
+	// be careful params maps in url is map type
 	removeSet := gxset.NewSet()
-	for k, _ := range cloneURL.GetParams() {
+	for k, _ := range url.GetParams() {
 		if strings.HasPrefix(k, ".") {
 			removeSet.Add(k)
 		}
 	}
-	cloneURL.RemoveParams(removeSet)
-	return cloneURL
+	return url.CloneExceptParams(removeSet)
 }
 
 func (proto *registryProtocol) initConfigurationListeners() {
@@ -138,7 +134,7 @@ func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 		reg = regI.(registry.Registry)
 	}
 
-	//new registry directory for store service url from registry
+	// new registry directory for store service url from registry
 	directory, err := extension.GetDefaultRegistryDirectory(&registryUrl, reg)
 	if err != nil {
 		logger.Errorf("consumer service %v  create registry directory  error, error message is %s, and will return nil invoker!",
@@ -152,7 +148,7 @@ func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 			serviceUrl.String(), registryUrl.String(), err.Error())
 	}
 
-	//new cluster invoker
+	// new cluster invoker
 	cluster := extension.GetCluster(serviceUrl.GetParam(constant.CLUSTER_KEY, constant.DEFAULT_CLUSTER))
 
 	invoker := cluster.Join(directory)
@@ -217,7 +213,7 @@ func (proto *registryProtocol) reExport(invoker protocol.Invoker, newUrl *common
 		oldExporter.(protocol.Exporter).Unexport()
 		proto.bounds.Delete(key)
 		proto.Export(wrappedNewInvoker)
-		//TODO:  unregister & unsubscribe
+		// TODO:  unregister & unsubscribe
 
 	}
 }
@@ -300,7 +296,7 @@ func isMatched(providerUrl *common.URL, consumerUrl *common.URL) bool {
 	providerGroup := providerUrl.GetParam(constant.GROUP_KEY, "")
 	providerVersion := providerUrl.GetParam(constant.VERSION_KEY, "")
 	providerClassifier := providerUrl.GetParam(constant.CLASSIFIER_KEY, "")
-	//todo: public static boolean isContains(String values, String value) {
+	// todo: public static boolean isContains(String values, String value) {
 	//        return isNotEmpty(values) && isContains(COMMA_SPLIT_PATTERN.split(values), value);
 	//    }
 	return (consumerGroup == constant.ANY_VALUE || consumerGroup == providerGroup ||
@@ -353,9 +349,9 @@ func (proto *registryProtocol) Destroy() {
 }
 
 func getRegistryUrl(invoker protocol.Invoker) *common.URL {
-	//here add * for return a new url
+	// here add * for return a new url
 	url := invoker.GetUrl()
-	//if the protocol == registry ,set protocol the registry value in url.params
+	// if the protocol == registry ,set protocol the registry value in url.params
 	if url.Protocol == constant.REGISTRY_PROTOCOL {
 		protocol := url.GetParam(constant.REGISTRY_KEY, "")
 		url.Protocol = protocol
@@ -365,7 +361,7 @@ func getRegistryUrl(invoker protocol.Invoker) *common.URL {
 
 func getProviderUrl(invoker protocol.Invoker) *common.URL {
 	url := invoker.GetUrl()
-	//be careful params maps in url is map type
+	// be careful params maps in url is map type
 	return url.SubURL.Clone()
 }
 
