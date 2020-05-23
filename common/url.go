@@ -18,7 +18,6 @@
 package common
 
 import (
-	"bytes"
 	"encoding/base64"
 	"fmt"
 	"math"
@@ -293,18 +292,18 @@ func isMatchCategory(category1 string, category2 string) bool {
 }
 
 func (c URL) String() string {
-	var buildString string
+	var buf strings.Builder
 	if len(c.Username) == 0 && len(c.Password) == 0 {
-		buildString = fmt.Sprintf(
+		buf.WriteString(fmt.Sprintf(
 			"%s://%s:%s%s?",
-			c.Protocol, c.Ip, c.Port, c.Path)
+			c.Protocol, c.Ip, c.Port, c.Path))
 	} else {
-		buildString = fmt.Sprintf(
+		buf.WriteString(fmt.Sprintf(
 			"%s://%s:%s@%s:%s%s?",
-			c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path)
+			c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path))
 	}
-	buildString += c.params.Encode()
-	return buildString
+	buf.WriteString(c.params.Encode())
+	return buf.String()
 }
 
 // Key ...
@@ -321,7 +320,7 @@ func (c URL) ServiceKey() string {
 	if intf == "" {
 		return ""
 	}
-	buf := &bytes.Buffer{}
+	var buf strings.Builder
 	group := c.GetParam(constant.GROUP_KEY, "")
 	if group != "" {
 		buf.WriteString(group)
@@ -346,7 +345,7 @@ func (c *URL) ColonSeparatedKey() string {
 	if intf == "" {
 		return ""
 	}
-	buf := &bytes.Buffer{}
+	var buf strings.Builder
 	buf.WriteString(intf)
 	buf.WriteString(":")
 	version := c.GetParam(constant.VERSION_KEY, "")
@@ -408,8 +407,6 @@ func (c *URL) RangeParams(f func(key, value string) bool) {
 
 // GetParam ...
 func (c URL) GetParam(s string, d string) string {
-	// c.paramsLock.RLock()
-	// defer c.paramsLock.RUnlock()
 	r := c.params.Get(s)
 	if len(r) == 0 {
 		r = d
@@ -424,8 +421,6 @@ func (c URL) GetParams() url.Values {
 
 // GetParamAndDecoded ...
 func (c URL) GetParamAndDecoded(key string) (string, error) {
-	// c.paramsLock.RLock()
-	// defer c.paramsLock.RUnlock()
 	ruleDec, err := base64.URLEncoding.DecodeString(c.GetParam(key, ""))
 	value := string(ruleDec)
 	return value, err
