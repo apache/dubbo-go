@@ -31,7 +31,7 @@ import (
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 )
 
-// Proxy struct
+// nolint
 type Proxy struct {
 	rpc         common.RPCService
 	invoke      protocol.Invoker
@@ -205,12 +205,12 @@ func (p *Proxy) Implement(v common.RPCService) {
 
 }
 
-// Get get rpc service instance.
+// Get gets rpc service instance.
 func (p *Proxy) Get() common.RPCService {
 	return p.rpc
 }
 
-// GetCallback get callback.
+// GetCallback gets callback.
 func (p *Proxy) GetCallback() interface{} {
 	return p.callBack
 }
