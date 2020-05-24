@@ -106,7 +106,7 @@ func TestMetadataReport_StoreProviderMetadata(t *testing.T) {
 	mtr.StoreProviderMetadata(metadataId, getMockDefinition(metadataId, t))
 }
 
-func getMockDefinition(id *identifier.MetadataIdentifier, t *testing.T) definition.ServiceDefinition {
+func getMockDefinition(id *identifier.MetadataIdentifier, t *testing.T) *definition.ServiceDefinition {
 	protocol := "dubbo"
 	beanName := "UserProvider"
 	url, err := common.NewURL(fmt.Sprintf(
