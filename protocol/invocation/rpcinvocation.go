@@ -52,6 +52,7 @@ func NewRPCInvocation(methodName string, arguments []interface{}, attachments ma
 		methodName:  methodName,
 		arguments:   arguments,
 		attachments: attachments,
+		attributes:  make(map[string]interface{}, 8),
 	}
 }
 
@@ -142,6 +143,16 @@ func (r *RPCInvocation) SetAttachments(key string, value string) {
 	r.attachments[key] = value
 }
 
+// SetAttribute. If Attributes is nil, it will be inited.
+func (r *RPCInvocation) SetAttribute(key string, value interface{}) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	if r.attributes == nil {
+		r.attributes = make(map[string]interface{})
+	}
+	r.attributes[key] = value
+}
+
 // Invoker ...
 func (r *RPCInvocation) Invoker() protocol.Invoker {
 	return r.invoker
@@ -214,6 +225,12 @@ func WithCallBack(callBack interface{}) option {
 func WithAttachments(attachments map[string]string) option {
 	return func(invo *RPCInvocation) {
 		invo.attachments = attachments
+	}
+}
+
+func WithAttributes(attributes map[string]interface{}) option {
+	return func(invo *RPCInvocation) {
+		invo.attributes = attributes
 	}
 }
 
