@@ -40,8 +40,10 @@ type RPCInvocation struct {
 	reply           interface{}
 	callBack        interface{}
 	attachments     map[string]string
-	invoker         protocol.Invoker
-	lock            sync.RWMutex
+	// Refer to dubbo 2.7.6.  It is different from attachment. It is used in internal process.
+	attributes map[string]interface{}
+	invoker    protocol.Invoker
+	lock       sync.RWMutex
 }
 
 // NewRPCInvocation ...
@@ -105,6 +107,25 @@ func (r *RPCInvocation) AttachmentsByKey(key string, defaultValue string) string
 		return defaultValue
 	}
 	value, ok := r.attachments[key]
+	if ok {
+		return value
+	}
+	return defaultValue
+}
+
+// get attributes
+func (r *RPCInvocation) Attributes() map[string]interface{} {
+	return r.attributes
+}
+
+// get attribute by key. If it is not exist, it will return default value
+func (r *RPCInvocation) AttributeByKey(key string, defaultValue interface{}) interface{} {
+	r.lock.RLock()
+	defer r.lock.RUnlock()
+	if r.attributes == nil {
+		return defaultValue
+	}
+	value, ok := r.attributes[key]
 	if ok {
 		return value
 	}
