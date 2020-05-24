@@ -87,8 +87,6 @@ func StateToString(state zk.State) string {
 	default:
 		return state.String()
 	}
-
-	return "zookeeper unknown state"
 }
 
 // Options ...
@@ -111,12 +109,10 @@ func WithZkName(name string) Option {
 
 // ValidateZookeeperClient ...
 func ValidateZookeeperClient(container zkClientFacade, opts ...Option) error {
-	var (
-		err error
-	)
-	opions := &Options{}
+	var err error
+	options := &Options{}
 	for _, opt := range opts {
-		opt(opions)
+		opt(options)
 	}
 	connected := false
 	err = nil
@@ -129,17 +125,18 @@ func ValidateZookeeperClient(container zkClientFacade, opts ...Option) error {
 
 	if container.ZkClient() == nil {
 		//in dubbo ,every registry only connect one node ,so this is []string{r.Address}
-		timeout, err := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
+		var timeout time.Duration
+		timeout, err = time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
 		if err != nil {
 			logger.Errorf("timeout config %v is invalid ,err is %v",
 				url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), err.Error())
 			return perrors.WithMessagef(err, "newZookeeperClient(address:%+v)", url.Location)
 		}
 		zkAddresses := strings.Split(url.Location, ",")
-		newClient, err := newZookeeperClient(opions.zkName, zkAddresses, timeout)
+		newClient, err := newZookeeperClient(options.zkName, zkAddresses, timeout)
 		if err != nil {
 			logger.Warnf("newZookeeperClient(name{%s}, zk address{%v}, timeout{%d}) = error{%v}",
-				opions.zkName, url.Location, timeout.String(), err)
+				options.zkName, url.Location, timeout.String(), err)
 			return perrors.WithMessagef(err, "newZookeeperClient(address:%+v)", url.Location)
 		}
 		container.SetZkClient(newClient)
@@ -157,7 +154,7 @@ func ValidateZookeeperClient(container zkClientFacade, opts ...Option) error {
 	}
 
 	if connected {
-		logger.Info("Connect to zookeeper successfully, name{%s}, zk address{%v}", opions.zkName, url.Location)
+		logger.Info("Connect to zookeeper successfully, name{%s}, zk address{%v}", options.zkName, url.Location)
 		container.WaitGroup().Add(1) //zk client start successful, then registry wg +1
 	}
 

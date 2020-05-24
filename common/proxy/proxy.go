@@ -31,7 +31,7 @@ import (
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 )
 
-// Proxy struct
+// nolint
 type Proxy struct {
 	rpc         common.RPCService
 	invoke      protocol.Invoker
