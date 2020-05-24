@@ -19,6 +19,7 @@ package delegate
 
 import (
 	"encoding/json"
+	"runtime/debug"
 	"sync"
 	"time"
 )
@@ -129,7 +130,7 @@ func NewMetadataReport() (*MetadataReport, error) {
 		scheduler := gocron.NewScheduler(time.UTC)
 		_, err := scheduler.Every(1).Day().Do(
 			func() {
-				logger.Info("start to publish all metadata.")
+				logger.Info("start to publish all metadata in metadata report %v.", url)
 				bmr.allMetadataReportsLock.RLock()
 				bmr.doHandlerMetadataCollection(bmr.allMetadataReports)
 				bmr.allMetadataReportsLock.RUnlock()
@@ -145,30 +146,30 @@ func NewMetadataReport() (*MetadataReport, error) {
 }
 
 // retry will do metadata failed reports collection by call metadata report sdk
-func (bmr *MetadataReport) retry() bool {
-	bmr.failedReportsLock.RLock()
-	defer bmr.failedReportsLock.RUnlock()
-	return bmr.doHandlerMetadataCollection(bmr.failedReports)
+func (mr *MetadataReport) retry() bool {
+	mr.failedReportsLock.RLock()
+	defer mr.failedReportsLock.RUnlock()
+	return mr.doHandlerMetadataCollection(mr.failedReports)
 }
 
 // StoreProviderMetadata will delegate to call remote metadata's sdk to store provider service definition
-func (bmr *MetadataReport) StoreProviderMetadata(identifier *identifier.MetadataIdentifier, definer definition.ServiceDefiner) {
-	if bmr.syncReport {
-		bmr.storeMetadataTask(common.PROVIDER, identifier, definer)
+func (mr *MetadataReport) StoreProviderMetadata(identifier *identifier.MetadataIdentifier, definer definition.ServiceDefiner) {
+	if mr.syncReport {
+		mr.storeMetadataTask(common.PROVIDER, identifier, definer)
 	}
-	go bmr.storeMetadataTask(common.PROVIDER, identifier, definer)
+	go mr.storeMetadataTask(common.PROVIDER, identifier, definer)
 }
 
 // storeMetadataTask will delegate to call remote metadata's sdk to store
-func (bmr *MetadataReport) storeMetadataTask(role int, identifier *identifier.MetadataIdentifier, definer interface{}) {
+func (mr *MetadataReport) storeMetadataTask(role int, identifier *identifier.MetadataIdentifier, definer interface{}) {
 	logger.Infof("store provider metadata. Identifier :%v ; definition: %v .", identifier, definer)
-	bmr.allMetadataReportsLock.Lock()
-	bmr.allMetadataReports[identifier] = definer
-	bmr.allMetadataReportsLock.Unlock()
+	mr.allMetadataReportsLock.Lock()
+	mr.allMetadataReports[identifier] = definer
+	mr.allMetadataReportsLock.Unlock()
 
-	bmr.failedReportsLock.Lock()
-	delete(bmr.failedReports, identifier)
-	bmr.failedReportsLock.Unlock()
+	mr.failedReportsLock.Lock()
+	delete(mr.failedReports, identifier)
+	mr.failedReportsLock.Unlock()
 	// data is store the json marshaled definition
 	var (
 		data []byte
@@ -177,17 +178,18 @@ func (bmr *MetadataReport) storeMetadataTask(role int, identifier *identifier.Me
 
 	defer func() {
 		if r := recover(); r != nil {
-			bmr.failedReportsLock.Lock()
-			bmr.failedReports[identifier] = definer
-			bmr.failedReportsLock.Unlock()
-			bmr.metadataReportRetry.startRetryTask()
-			logger.Errorf("Failed to put provider metadata %v in %v, cause: %v", identifier, string(data), r)
+			mr.failedReportsLock.Lock()
+			mr.failedReports[identifier] = definer
+			mr.failedReportsLock.Unlock()
+			mr.metadataReportRetry.startRetryTask()
+			logger.Errorf("Failed to put provider metadata %v in %v, cause: %v\n%s\n",
+				identifier, string(data), r, string(debug.Stack()))
 		}
 	}()
 
 	data, err = json.Marshal(definer)
 	if err != nil {
-		logger.Errorf("storeProviderMetadataTask error in stage json.Marshal, msg is %v", err)
+		logger.Errorf("storeProviderMetadataTask error in stage json.Marshal, msg is %+v", err)
 		panic(err)
 	}
 	report := instance.GetMetadataReportInstance()
@@ -198,23 +200,23 @@ func (bmr *MetadataReport) storeMetadataTask(role int, identifier *identifier.Me
 	}
 
 	if err != nil {
-		logger.Errorf("storeProviderMetadataTask error in stage call  metadata report to StoreProviderMetadata, msg is %v", err)
+		logger.Errorf("storeProviderMetadataTask error in stage call  metadata report to StoreProviderMetadata, msg is %+v", err)
 		panic(err)
 	}
 }
 
 // StoreConsumerMetadata will delegate to call remote metadata's sdk to store consumer side service definition
-func (bmr *MetadataReport) StoreConsumerMetadata(identifier *identifier.MetadataIdentifier, definer map[string]string) {
-	if bmr.syncReport {
-		bmr.storeMetadataTask(common.CONSUMER, identifier, definer)
+func (mr *MetadataReport) StoreConsumerMetadata(identifier *identifier.MetadataIdentifier, definer map[string]string) {
+	if mr.syncReport {
+		mr.storeMetadataTask(common.CONSUMER, identifier, definer)
 	}
-	go bmr.storeMetadataTask(common.CONSUMER, identifier, definer)
+	go mr.storeMetadataTask(common.CONSUMER, identifier, definer)
 }
 
 // SaveServiceMetadata will delegate to call remote metadata's sdk to save service metadata
-func (bmr *MetadataReport) SaveServiceMetadata(identifier *identifier.ServiceMetadataIdentifier, url common.URL) error {
+func (mr *MetadataReport) SaveServiceMetadata(identifier *identifier.ServiceMetadataIdentifier, url common.URL) error {
 	report := instance.GetMetadataReportInstance()
-	if bmr.syncReport {
+	if mr.syncReport {
 		return report.SaveServiceMetadata(identifier, url)
 	}
 	go report.SaveServiceMetadata(identifier, url)
@@ -222,9 +224,9 @@ func (bmr *MetadataReport) SaveServiceMetadata(identifier *identifier.ServiceMet
 }
 
 // RemoveServiceMetadata will delegate to call remote metadata's sdk to remove service metadata
-func (bmr *MetadataReport) RemoveServiceMetadata(identifier *identifier.ServiceMetadataIdentifier) error {
+func (mr *MetadataReport) RemoveServiceMetadata(identifier *identifier.ServiceMetadataIdentifier) error {
 	report := instance.GetMetadataReportInstance()
-	if bmr.syncReport {
+	if mr.syncReport {
 		return report.RemoveServiceMetadata(identifier)
 	}
 	go report.RemoveServiceMetadata(identifier)
@@ -232,15 +234,15 @@ func (bmr *MetadataReport) RemoveServiceMetadata(identifier *identifier.ServiceM
 }
 
 // GetExportedURLs will delegate to call remote metadata's sdk to get exported urls
-func (bmr *MetadataReport) GetExportedURLs(identifier *identifier.ServiceMetadataIdentifier) []string {
+func (mr *MetadataReport) GetExportedURLs(identifier *identifier.ServiceMetadataIdentifier) []string {
 	report := instance.GetMetadataReportInstance()
 	return report.GetExportedURLs(identifier)
 }
 
 // SaveSubscribedData will delegate to call remote metadata's sdk to save subscribed data
-func (bmr *MetadataReport) SaveSubscribedData(identifier *identifier.SubscriberMetadataIdentifier, urls []common.URL) error {
+func (mr *MetadataReport) SaveSubscribedData(identifier *identifier.SubscriberMetadataIdentifier, urls []common.URL) error {
 	report := instance.GetMetadataReportInstance()
-	if bmr.syncReport {
+	if mr.syncReport {
 		return report.SaveSubscribedData(identifier, urls)
 	}
 	go report.SaveSubscribedData(identifier, urls)
@@ -260,15 +262,15 @@ func (MetadataReport) GetServiceDefinition(identifier *identifier.MetadataIdenti
 }
 
 // doHandlerMetadataCollection will store metadata to metadata support with given metadataMap
-func (bmr *MetadataReport) doHandlerMetadataCollection(metadataMap map[*identifier.MetadataIdentifier]interface{}) bool {
+func (mr *MetadataReport) doHandlerMetadataCollection(metadataMap map[*identifier.MetadataIdentifier]interface{}) bool {
 	if len(metadataMap) == 0 {
 		return true
 	}
 	for e := range metadataMap {
 		if common.RoleType(common.PROVIDER).Role() == e.Side {
-			bmr.StoreProviderMetadata(e, metadataMap[e].(*definition.FullServiceDefinition))
+			mr.StoreProviderMetadata(e, metadataMap[e].(*definition.FullServiceDefinition))
 		} else if common.RoleType(common.CONSUMER).Role() == e.Side {
-			bmr.StoreConsumerMetadata(e, metadataMap[e].(map[string]string))
+			mr.StoreConsumerMetadata(e, metadataMap[e].(map[string]string))
 		}
 	}
 	return false
