@@ -19,7 +19,6 @@ package directory
 
 import (
 	"encoding/base64"
-	"fmt"
 	"testing"
 )
 
@@ -35,7 +34,7 @@ import (
 )
 
 func TestNewBaseDirectory(t *testing.T) {
-	url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider"))
+	url, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
 	directory := NewBaseDirectory(&url)
 
 	assert.NotNil(t, directory)
@@ -46,7 +45,7 @@ func TestNewBaseDirectory(t *testing.T) {
 }
 
 func TestBuildRouterChain(t *testing.T) {
-	url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider"))
+	url, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
 	directory := NewBaseDirectory(&url)
 
 	assert.NotNil(t, directory)

@@ -40,7 +40,7 @@ var (
 	logger Logger
 )
 
-// DubboLogger
+// nolint
 type DubboLogger struct {
 	Logger
 	dynamicLevel zap.AtomicLevel
@@ -67,7 +67,7 @@ func init() {
 	}
 }
 
-// InitLog used to init logger by call InitLogger
+// InitLog use for init logger by call InitLogger
 func InitLog(logConfFile string) error {
 	if logConfFile == "" {
 		InitLogger(nil)
@@ -96,7 +96,7 @@ func InitLog(logConfFile string) error {
 	return nil
 }
 
-// InitLogger used to init logger by conf
+// InitLogger use for init logger by @conf
 func InitLogger(conf *zap.Config) {
 	var zapLoggerConfig zap.Config
 	if conf == nil {
