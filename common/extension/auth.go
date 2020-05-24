@@ -26,12 +26,12 @@ var (
 	accesskeyStorages = make(map[string]func() filter.AccessKeyStorage)
 )
 
-// SetAuthenticator puts the fcn into map with name
+// SetAuthenticator puts the @fcn into map with name
 func SetAuthenticator(name string, fcn func() filter.Authenticator) {
 	authenticators[name] = fcn
 }
 
-// GetAuthenticator finds the Authenticator with name
+// GetAuthenticator finds the Authenticator with @name
 // if not found, it will panic
 func GetAuthenticator(name string) filter.Authenticator {
 	if authenticators[name] == nil {
@@ -40,12 +40,12 @@ func GetAuthenticator(name string) filter.Authenticator {
 	return authenticators[name]()
 }
 
-// SetAccesskeyStorages will set the fcn into map with this name
+// SetAccesskeyStorages will set the @fcn into map with this name
 func SetAccesskeyStorages(name string, fcn func() filter.AccessKeyStorage) {
 	accesskeyStorages[name] = fcn
 }
 
-// GetAccesskeyStorages finds the storage with the name.
+// GetAccesskeyStorages finds the storage with the @name.
 // If not found, it will panic.
 func GetAccesskeyStorages(name string) filter.AccessKeyStorage {
 	if accesskeyStorages[name] == nil {
