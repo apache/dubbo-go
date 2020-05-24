@@ -107,8 +107,8 @@ func normalInvoke(t *testing.T, successCount int, urlParam url.Values, invocatio
 
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {
-		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i), common.WithParams(urlParam))
-		invokers = append(invokers, NewMockInvoker(url, successCount))
+		newUrl, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i), common.WithParams(urlParam))
+		invokers = append(invokers, NewMockInvoker(newUrl, successCount))
 	}
 
 	staticDir := directory.NewStaticDirectory(invokers)
