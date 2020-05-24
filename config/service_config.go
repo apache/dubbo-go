@@ -119,8 +119,8 @@ func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
 		if err != nil {
 			panic(perrors.New(fmt.Sprintf("Get tcp port error,err is {%v}", err)))
 		}
-		defer tcp.Close()
 		ports.PushBack(strings.Split(tcp.Addr().String(), ":")[1])
+		tcp.Close()
 	}
 	return ports
 }
