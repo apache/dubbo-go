@@ -129,7 +129,7 @@ func configCenterRefreshConsumer() error {
 	var err error
 	if consumerConfig.ConfigCenterConfig != nil {
 		consumerConfig.SetFatherConfig(consumerConfig)
-		if err := consumerConfig.startConfigCenter(); err != nil {
+		if err = consumerConfig.startConfigCenter(); err != nil {
 			return perrors.Errorf("start config center error , error message is {%v}", perrors.WithStack(err))
 		}
 		consumerConfig.fresh()
@@ -144,6 +144,5 @@ func configCenterRefreshConsumer() error {
 			return perrors.WithMessagef(err, "time.ParseDuration(Connect_Timeout{%#v})", consumerConfig.Connect_Timeout)
 		}
 	}
-
 	return nil
 }
