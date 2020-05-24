@@ -44,31 +44,31 @@ import (
 
 // role constant
 const (
-	// CONSUMER ...
+	// CONSUMER is consumer role
 	CONSUMER = iota
-	// CONFIGURATOR ...
+	// CONFIGURATOR is configurator role
 	CONFIGURATOR
-	// ROUTER ...
+	// ROUTER is router role
 	ROUTER
-	// PROVIDER ...
+	// PROVIDER is provider role
 	PROVIDER
 )
 
 var (
-	// DubboNodes ...
+	// DubboNodes Dubbo service node
 	DubboNodes = [...]string{"consumers", "configurators", "routers", "providers"}
 	// DubboRole Dubbo service role
 	DubboRole = [...]string{"consumer", "", "routers", "provider"}
 )
 
-// RoleType ...
+// nolint
 type RoleType int
 
 func (t RoleType) String() string {
 	return DubboNodes[t]
 }
 
-// Role ...
+// Role returns role by @RoleType
 func (t RoleType) Role() string {
 	return DubboRole[t]
 }
@@ -97,79 +97,81 @@ type URL struct {
 	SubURL *URL
 }
 
+// Option accepts url
+// Option will define a function of handling URL
 type option func(*URL)
 
-// WithUsername ...
+// WithUsername sets username for url
 func WithUsername(username string) option {
 	return func(url *URL) {
 		url.Username = username
 	}
 }
 
-// WithPassword ...
+// WithPassword sets password for url
 func WithPassword(pwd string) option {
 	return func(url *URL) {
 		url.Password = pwd
 	}
 }
 
-// WithMethods ...
+// WithMethods sets methods for url
 func WithMethods(methods []string) option {
 	return func(url *URL) {
 		url.Methods = methods
 	}
 }
 
-// WithParams ...
+// WithParams sets params for url
 func WithParams(params url.Values) option {
 	return func(url *URL) {
 		url.params = params
 	}
 }
 
-// WithParamsValue ...
+// WithParamsValue sets params field for url
 func WithParamsValue(key, val string) option {
 	return func(url *URL) {
 		url.SetParam(key, val)
 	}
 }
 
-// WithProtocol ...
+// WithProtocol sets protocol for url
 func WithProtocol(proto string) option {
 	return func(url *URL) {
 		url.Protocol = proto
 	}
 }
 
-// WithIp ...
+// WithIp sets ip for url
 func WithIp(ip string) option {
 	return func(url *URL) {
 		url.Ip = ip
 	}
 }
 
-// WithPort ...
+// WithPort sets port for url
 func WithPort(port string) option {
 	return func(url *URL) {
 		url.Port = port
 	}
 }
 
-// WithPath ...
+// WithPath sets path for url
 func WithPath(path string) option {
 	return func(url *URL) {
 		url.Path = "/" + strings.TrimPrefix(path, "/")
 	}
 }
 
-// WithLocation ...
+// WithLocation sets location for url
 func WithLocation(location string) option {
 	return func(url *URL) {
 		url.Location = location
 	}
 }
 
-// WithToken ...
+// WithToken sets token for url
 func WithToken(token string) option {
 	return func(url *URL) {
 		if len(token) > 0 {
@@ -182,7 +184,7 @@ func WithToken(token string) option {
 	}
 }
 
-// NewURLWithOptions ...
+// NewURLWithOptions will create a new url with options
 func NewURLWithOptions(opts ...option) *URL {
 	url := &URL{}
 	for _, opt := range opts {
@@ -306,7 +308,7 @@ func (c URL) String() string {
 	return buf.String()
 }
 
-// Key ...
+// Key gets key
 func (c URL) Key() string {
 	buildString := fmt.Sprintf(
 		"%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s",
@@ -314,7 +316,7 @@ func (c URL) Key() string {
 	return buildString
 }
 
-// ServiceKey get a unique key of a service.
+// ServiceKey gets a unique key of a service.
 func (c URL) ServiceKey() string {
 	intf := c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
 	if intf == "" {
@@ -360,13 +362,13 @@ func (c *URL) ColonSeparatedKey() string {
 	return buf.String()
 }
 
-// EncodedServiceKey ...
+// EncodedServiceKey encode the service key
 func (c *URL) EncodedServiceKey() string {
 	serviceKey := c.ServiceKey()
 	return strings.Replace(serviceKey, "/", "*", 1)
 }
 
-// Service ...
+// Service gets service
 func (c URL) Service() string {
 	service := c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
 	if service != "" {
@@ -405,7 +407,7 @@ func (c *URL) RangeParams(f func(key, value string) bool) {
 	}
 }
 
-// GetParam ...
+// GetParam gets value by key
 func (c URL) GetParam(s string, d string) string {
 	r := c.params.Get(s)
 	if len(r) == 0 {
@@ -414,19 +416,19 @@ func (c URL) GetParam(s string, d string) string {
 	return r
 }
 
-// GetParams ...
+// GetParams gets values
 func (c URL) GetParams() url.Values {
 	return c.params
 }
 
-// GetParamAndDecoded ...
+// GetParamAndDecoded gets values and decode
 func (c URL) GetParamAndDecoded(key string) (string, error) {
 	ruleDec, err := base64.URLEncoding.DecodeString(c.GetParam(key, ""))
 	value := string(ruleDec)
 	return value, err
 }
 
-// GetRawParam ...
+// GetRawParam gets raw param
 func (c URL) GetRawParam(key string) string {
 	switch key {
 	case "protocol":
@@ -446,25 +448,25 @@ func (c URL) GetRawParam(key string) string {
 	}
 }
 
-// GetParamBool ...
-func (c URL) GetParamBool(s string, d bool) bool {
-	r, err := strconv.ParseBool(c.GetParam(s, ""))
+// GetParamBool judge whether @key exists or not
+func (c URL) GetParamBool(key string, d bool) bool {
+	r, err := strconv.ParseBool(c.GetParam(key, ""))
 	if err != nil {
 		return d
 	}
 	return r
 }
 
-// GetParamInt ...
-func (c URL) GetParamInt(s string, d int64) int64 {
-	r, err := strconv.Atoi(c.GetParam(s, ""))
+// GetParamInt gets int value by @key
+func (c URL) GetParamInt(key string, d int64) int64 {
+	r, err := strconv.Atoi(c.GetParam(key, ""))
 	if r == 0 || err != nil {
 		return d
 	}
 	return int64(r)
 }
 
-// GetMethodParamInt ...
+// GetMethodParamInt gets int method param
 func (c URL) GetMethodParamInt(method string, key string, d int64) int64 {
 	r, err := strconv.Atoi(c.GetParam("methods."+method+"."+key, ""))
 	if r == 0 || err != nil {
@@ -473,7 +475,7 @@ func (c URL) GetMethodParamInt(method string, key string, d int64) int64 {
 	return int64(r)
 }
 
-// GetMethodParamInt64 ...
+// GetMethodParamInt64 gets int64 method param
 func (c URL) GetMethodParamInt64(method string, key string, d int64) int64 {
 	r := c.GetMethodParamInt(method, key, math.MinInt64)
 	if r == math.MinInt64 {
@@ -482,7 +484,7 @@ func (c URL) GetMethodParamInt64(method string, key string, d int64) int64 {
 	return r
 }
 
-// GetMethodParam ...
+// GetMethodParam gets method param
 func (c URL) GetMethodParam(method string, key string, d string) string {
 	r := c.GetParam("methods."+method+"."+key, "")
 	if r == "" {
@@ -491,7 +493,7 @@ func (c URL) GetMethodParam(method string, key string, d string) string {
 	return r
 }
 
-// GetMethodParamBool ...
+// GetMethodParamBool judge whether @method param exists or not
 func (c URL) GetMethodParamBool(method string, key string, d bool) bool {
 	r := c.GetParamBool("methods."+method+"."+key, d)
 	return r
@@ -612,7 +614,7 @@ func (c *URL) CloneExceptParams(excludeParams *gxset.HashSet) *URL {
 	return newUrl
 }
 
-// Copy url based on the reserved parameters' keys.
+// Copy url based on the reserved parameter's keys.
 func (c *URL) CloneWithParams(reserveParams []string) *URL {
 	params := url.Values{}
 	for _, reserveParam := range reserveParams {
