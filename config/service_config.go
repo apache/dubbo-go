@@ -115,7 +115,7 @@ func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
 			continue
 		}
 
-		func(){
+		func() {
 			tcp, err := gxnet.ListenOnTCPRandomPort(proto.Ip)
 			if err != nil {
 				panic(perrors.New(fmt.Sprintf("Get tcp port error,err is {%v}", err)))
