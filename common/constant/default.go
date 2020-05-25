@@ -74,3 +74,7 @@ const (
 const (
 	COMMA_SPLIT_PATTERN = "\\s*[,]+\\s*"
 )
+
+const (
+	SIMPLE_METADATA_SERVICE_NAME = "MetadataService"
+)
