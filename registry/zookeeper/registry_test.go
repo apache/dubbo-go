@@ -126,7 +126,7 @@ func Test_UnSubscribe(t *testing.T) {
 	}
 	assert.Regexp(t, ".*ServiceEvent{Action{add}.*", serviceEvent.String())
 
-	reg2.DoUnsubscribe(&url)
+	reg2.UnSubscribe(&url, nil)
 	assert.Nil(t, reg2.listener)
 
 	defer ts.Stop()
