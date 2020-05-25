@@ -19,18 +19,17 @@ package report
 
 import (
 	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/metadata/definition"
 	"github.com/apache/dubbo-go/metadata/identifier"
 )
 
 // MetadataReport is an interface of remote metadata report
 type MetadataReport interface {
-	StoreProviderMetadata(*identifier.MetadataIdentifier, *definition.ServiceDefinition)
-	StoreConsumerMetadata(*identifier.MetadataIdentifier, map[string]string)
-	SaveServiceMetadata(*identifier.ServiceMetadataIdentifier, *common.URL)
-	RemoveServiceMetadata(*identifier.ServiceMetadataIdentifier)
+	StoreProviderMetadata(*identifier.MetadataIdentifier, string) error
+	StoreConsumerMetadata(*identifier.MetadataIdentifier, string) error
+	SaveServiceMetadata(*identifier.ServiceMetadataIdentifier, common.URL) error
+	RemoveServiceMetadata(*identifier.ServiceMetadataIdentifier) error
 	GetExportedURLs(*identifier.ServiceMetadataIdentifier) []string
-	SaveSubscribedData(*identifier.SubscriberMetadataIdentifier, []*common.URL)
+	SaveSubscribedData(*identifier.SubscriberMetadataIdentifier, []common.URL) error
 	GetSubscribedURLs(*identifier.SubscriberMetadataIdentifier) []string
-	GetServiceDefinition(*identifier.MetadataIdentifier)
+	GetServiceDefinition(*identifier.MetadataIdentifier) string
 }
