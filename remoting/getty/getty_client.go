@@ -170,12 +170,6 @@ func (c *Client) Close() {
 
 // send request
 func (c *Client) Request(request *remoting.Request, timeout time.Duration, response *remoting.PendingResponse) error {
-
-	//var (
-	//	err     error
-	//	session getty.Session
-	//	conn    *gettyRPCClient
-	//)
 	_, session, err := c.selectSession(c.addr)
 	if err != nil {
 		return perrors.WithStack(err)
@@ -183,14 +177,6 @@ func (c *Client) Request(request *remoting.Request, timeout time.Duration, respo
 	if session == nil {
 		return errSessionNotExist
 	}
-	// FIXME  remove temporarily
-	//defer func() {
-	//	if err == nil {
-	//		c.pool.put(conn)
-	//		return
-	//	}
-	//	conn.close()
-	//}()
 
 	if err = c.transfer(session, request, timeout); err != nil {
 		return perrors.WithStack(err)
