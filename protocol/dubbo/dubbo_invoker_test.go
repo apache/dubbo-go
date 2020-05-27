@@ -57,9 +57,6 @@ func TestDubboInvoker_Invoke(t *testing.T) {
 	res := invoker.Invoke(context.Background(), inv)
 	assert.NoError(t, res.Error())
 	assert.Equal(t, User{Id: "1", Name: "username"}, *res.Result().(*User))
-	//result will not contain attachment
-	// attachment in result it is useless.
-	//assert.Equal(t, "test_value", res.Attachments()["test_key"]) // test attachments for request/response
 
 	// CallOneway
 	inv.SetAttachments(constant.ASYNC_KEY, "true")
