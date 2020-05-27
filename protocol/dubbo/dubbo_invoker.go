@@ -19,8 +19,6 @@ package dubbo
 
 import (
 	"context"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/remoting"
 	"strconv"
 	"strings"
 	"sync"
@@ -37,8 +35,10 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 var (
@@ -51,7 +51,7 @@ var (
 	attachmentKey = []string{constant.INTERFACE_KEY, constant.GROUP_KEY, constant.TOKEN_KEY, constant.TIMEOUT_KEY}
 )
 
-// DubboInvoker. It is implement of protocol.Invoker. One dubboInvoker refer to one service and ip.
+// DubboInvoker is implement of protocol.Invoker. A dubboInvoker refer to one service and ip.
 type DubboInvoker struct {
 	protocol.BaseInvoker
 	// the exchange layer, it is focus on network communication.

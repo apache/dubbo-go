@@ -19,6 +19,7 @@ package config
 
 import (
 	"github.com/apache/dubbo-go/common/constant"
+
 	"github.com/creasty/defaults"
 )
 
