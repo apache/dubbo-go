@@ -62,6 +62,9 @@ func NewRPCInvocationWithOptions(opts ...option) *RPCInvocation {
 	for _, opt := range opts {
 		opt(invo)
 	}
+	if invo.attributes == nil {
+		invo.attributes = make(map[string]interface{})
+	}
 	return invo
 }
 
@@ -123,9 +126,6 @@ func (r *RPCInvocation) Attributes() map[string]interface{} {
 func (r *RPCInvocation) AttributeByKey(key string, defaultValue interface{}) interface{} {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
-	if r.attributes == nil {
-		return defaultValue
-	}
 	value, ok := r.attributes[key]
 	if ok {
 		return value
@@ -147,9 +147,6 @@ func (r *RPCInvocation) SetAttachments(key string, value string) {
 func (r *RPCInvocation) SetAttribute(key string, value interface{}) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
-	if r.attributes == nil {
-		r.attributes = make(map[string]interface{})
-	}
 	r.attributes[key] = value
 }
 
@@ -225,12 +222,6 @@ func WithCallBack(callBack interface{}) option {
 func WithAttachments(attachments map[string]string) option {
 	return func(invo *RPCInvocation) {
 		invo.attachments = attachments
-	}
-}
-
-func WithAttributes(attributes map[string]interface{}) option {
-	return func(invo *RPCInvocation) {
-		invo.attributes = attributes
 	}
 }
 
