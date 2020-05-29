@@ -40,7 +40,7 @@ func (*ApplicationConfig) Prefix() string {
 	return constant.DUBBO + ".application."
 }
 
-// ID ...
+// nolint
 func (c *ApplicationConfig) Id() string {
 	return ""
 }
