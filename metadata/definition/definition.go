@@ -19,6 +19,9 @@ package definition
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
+	"strings"
 )
 
 import (
@@ -26,12 +29,47 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
+// ServiceDefiner is a interface of service's definition
+type ServiceDefiner interface {
+	ToBytes() ([]byte, error)
+}
+
 // ServiceDefinition is the describer of service definition
 type ServiceDefinition struct {
 	CanonicalName string
 	CodeSource    string
 	Methods       []MethodDefinition
 	Types         []TypeDefinition
+}
+
+func (def *ServiceDefinition) ToBytes() ([]byte, error) {
+	return json.Marshal(def)
+}
+
+func (def *ServiceDefinition) String() string {
+	var methodStr strings.Builder
+	for _, m := range def.Methods {
+		var paramType strings.Builder
+		for _, p := range m.ParameterTypes {
+			paramType.WriteString(fmt.Sprintf("{type:%v}", p))
+		}
+		var param strings.Builder
+		for _, d := range m.Parameters {
+			param.WriteString(fmt.Sprintf("{id:%v,type:%v,builderName:%v}", d.Id, d.Type, d.TypeBuilderName))
+		}
+		methodStr.WriteString(fmt.Sprintf("{name:%v,parameterTypes:[%v],returnType:%v,params:[%v] }", m.Name, paramType.String(), m.ReturnType, param.String()))
+	}
+	var types strings.Builder
+	for _, d := range def.Types {
+		types.WriteString(fmt.Sprintf("{id:%v,type:%v,builderName:%v}", d.Id, d.Type, d.TypeBuilderName))
+	}
+	return fmt.Sprintf("{canonicalName:%v, codeSource:%v, methods:[%v], types:[%v]}", def.CanonicalName, def.CodeSource, methodStr.String(), types.String())
+}
+
+// FullServiceDefinition is the describer of service definition with parameters
+type FullServiceDefinition struct {
+	ServiceDefinition
+	Params map[string]string
 }
 
 // MethodDefinition is the describer of method definition
@@ -53,8 +91,8 @@ type TypeDefinition struct {
 }
 
 // BuildServiceDefinition can build service definition which will be used to describe a service
-func BuildServiceDefinition(service common.Service, url common.URL) ServiceDefinition {
-	sd := ServiceDefinition{}
+func BuildServiceDefinition(service common.Service, url common.URL) *ServiceDefinition {
+	sd := &ServiceDefinition{}
 	sd.CanonicalName = url.Service()
 
 	for k, m := range service.Method() {
