@@ -80,6 +80,10 @@ const (
 	PROVIDER_SHUTDOWN_FILTER               = "pshutdown"
 	CONSUMER_SHUTDOWN_FILTER               = "cshutdown"
 	PID_KEY                                = "pid"
+	SYNC_REPORT_KEY                        = "sync.report"
+	RETRY_PERIOD_KEY                       = "retry.period"
+	RETRY_TIMES_KEY                        = "retry.times"
+	CYCLE_REPORT_KEY                       = "cycle.report"
 )
 
 const (
@@ -213,9 +217,9 @@ const (
 	// consumer
 	CONSUMER = "consumer"
 	// key of access key id
-	ACCESS_KEY_ID_KEY = "accessKeyId"
+	ACCESS_KEY_ID_KEY = ".accessKeyId"
 	// key of secret access key
-	SECRET_ACCESS_KEY_KEY = "secretAccessKey"
+	SECRET_ACCESS_KEY_KEY = ".secretAccessKey"
 )
 
 // metadata report
@@ -268,7 +272,7 @@ const (
 
 	// used by URL
 	// SERVICE_NAME_MAPPING_KEY indicate that which service name mapping instance will be used
-	SERVICE_NAME_MAPPING_KEY                  = "name_mapping"
+	SERVICE_NAME_MAPPING_KEY = "name_mapping"
 	// SERVICE_DISCOVERY_KEY indicate which service discovery instance will be used
 	SERVICE_DISCOVERY_KEY = "service_discovery"
 )
