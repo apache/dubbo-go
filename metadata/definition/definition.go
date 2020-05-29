@@ -29,7 +29,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
-// ServiceDefinition is a interface of service's definition
+// ServiceDefiner is a interface of service's definition
 type ServiceDefiner interface {
 	ToBytes() ([]byte, error)
 }
@@ -42,11 +42,11 @@ type ServiceDefinition struct {
 	Types         []TypeDefinition
 }
 
-func (def ServiceDefinition) ToBytes() ([]byte, error) {
+func (def *ServiceDefinition) ToBytes() ([]byte, error) {
 	return json.Marshal(def)
 }
 
-func (def ServiceDefinition) String() string {
+func (def *ServiceDefinition) String() string {
 	var methodStr strings.Builder
 	for _, m := range def.Methods {
 		var paramType strings.Builder
@@ -91,8 +91,8 @@ type TypeDefinition struct {
 }
 
 // BuildServiceDefinition can build service definition which will be used to describe a service
-func BuildServiceDefinition(service common.Service, url common.URL) ServiceDefinition {
-	sd := ServiceDefinition{}
+func BuildServiceDefinition(service common.Service, url common.URL) *ServiceDefinition {
+	sd := &ServiceDefinition{}
 	sd.CanonicalName = url.Service()
 
 	for k, m := range service.Method() {
