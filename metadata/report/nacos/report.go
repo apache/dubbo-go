@@ -20,15 +20,30 @@ package nacos
 import (
 	"encoding/json"
 	"net/url"
+)
 
+import (
 	"github.com/nacos-group/nacos-sdk-go/clients/config_client"
 	"github.com/nacos-group/nacos-sdk-go/vo"
 	perrors "github.com/pkg/errors"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/metadata/identifier"
+	"github.com/apache/dubbo-go/metadata/report"
+	"github.com/apache/dubbo-go/metadata/report/factory"
+	"github.com/apache/dubbo-go/remoting/nacos"
 )
+
+func init() {
+	ftry := &nacosMetadataReportFactory{}
+	extension.SetMetadataReportFactory("nacos", func() factory.MetadataReportFactory {
+		return ftry
+	})
+}
 
 // nacosMetadataReport is the implementation of MetadataReport based Nacos
 type nacosMetadataReport struct {
@@ -168,4 +183,16 @@ func (n *nacosMetadataReport) getConfig(param vo.ConfigParam) string {
 		logger.Errorf("Finding the configuration failed: %v", param)
 	}
 	return cfg
+}
+
+type nacosMetadataReportFactory struct {
+}
+
+func (n *nacosMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {
+	client, err := nacos.NewNacosConfigClient(url)
+	if err != nil {
+		logger.Errorf("Could not create nacos metadata report. URL: %s", url.String())
+		return nil
+	}
+	return &nacosMetadataReport{client: client}
 }
