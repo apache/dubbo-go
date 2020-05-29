@@ -95,7 +95,7 @@ func (r *consulRegistry) register(url common.URL) error {
 	return r.client.Agent().ServiceRegister(service)
 }
 
-func (r *consulRegistry) Unregister(url common.URL) error {
+func (r *consulRegistry) UnRegister(url common.URL) error {
 	var err error
 
 	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
@@ -112,11 +112,17 @@ func (r *consulRegistry) unregister(url common.URL) error {
 	return r.client.Agent().ServiceDeregister(buildId(url))
 }
 
-func (r *consulRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
+func (r *consulRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) error {
 	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
 	if role == common.CONSUMER {
 		r.subscribe(url, notifyListener)
 	}
+	return nil
+}
+
+// UnSubscribe :
+func (r *consulRegistry) UnSubscribe(url *common.URL, notifyListener registry.NotifyListener) error {
+	return perrors.New("UnSubscribe not support in consulRegistry")
 }
 
 func (r *consulRegistry) subscribe(url *common.URL, notifyListener registry.NotifyListener) {

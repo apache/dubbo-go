@@ -287,3 +287,12 @@ func TestExportWithApplicationConfig(t *testing.T) {
 	v2, _ := regProtocol.bounds.Load(getCacheKey(newUrl))
 	assert.NotNil(t, v2)
 }
+
+func TestGetProviderUrlWithHideKey(t *testing.T) {
+	url, _ := common.NewURL("dubbo://127.0.0.1:1111?a=a1&b=b1&.c=c1&.d=d1&e=e1&protocol=registry")
+	providerUrl := getUrlToRegistry(&url, &url)
+	assert.NotContains(t, providerUrl.GetParams(), ".c")
+	assert.NotContains(t, providerUrl.GetParams(), ".d")
+	assert.Contains(t, providerUrl.GetParams(), "a")
+
+}
