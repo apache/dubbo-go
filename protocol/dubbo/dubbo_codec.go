@@ -64,7 +64,7 @@ func (p DubboPackage) String() string {
 	return fmt.Sprintf("DubboPackage: Header-%v, Path-%v, Body-%v", p.Header, p.Service, p.Body)
 }
 
-// Marshal ...
+//  nolint
 func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 	codec := hessian.NewHessianCodec(nil)
 
@@ -76,7 +76,7 @@ func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 	return bytes.NewBuffer(pkg), nil
 }
 
-// Unmarshal ...
+// nolint
 func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, resp *remoting.Response) error {
 	// fix issue https://github.com/apache/dubbo-go/issues/380
 	bufLen := buf.Len()
