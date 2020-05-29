@@ -37,7 +37,7 @@ import (
 
 // RegistryDataListener contains all URL information subscribed by zookeeper registry
 type RegistryDataListener struct {
-	subscribed map[*common.URL]config_center.ConfigurationListener
+	subscribed map[string]config_center.ConfigurationListener
 	mutex      sync.Mutex
 	closed     bool
 }
@@ -45,7 +45,7 @@ type RegistryDataListener struct {
 // NewRegistryDataListener constructs a new RegistryDataListener
 func NewRegistryDataListener() *RegistryDataListener {
 	return &RegistryDataListener{
-		subscribed: make(map[*common.URL]config_center.ConfigurationListener)}
+		subscribed: make(map[string]config_center.ConfigurationListener)}
 }
 
 // SubscribeURL is used to set a watch listener for url
@@ -53,7 +53,17 @@ func (l *RegistryDataListener) SubscribeURL(url *common.URL, listener config_cen
 	if l.closed {
 		return
 	}
-	l.subscribed[url] = listener
+	l.subscribed[url.ServiceKey()] = listener
+}
+
+// UnSubscribeURL is used to set a watch listener for url
+func (l *RegistryDataListener) UnSubscribeURL(url *common.URL) config_center.ConfigurationListener {
+	if l.closed {
+		return nil
+	}
+	listener := l.subscribed[url.ServiceKey()]
+	delete(l.subscribed, url.ServiceKey())
+	return listener
 }
 
 // DataChange accepts all events sent from the zookeeper server and trigger the corresponding listener for processing
@@ -75,8 +85,8 @@ func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 	if l.closed {
 		return false
 	}
-	for url, listener := range l.subscribed {
-		if serviceURL.URLEqual(*url) {
+	for serviceKey, listener := range l.subscribed {
+		if serviceURL.ServiceKey() == serviceKey {
 			listener.Process(
 				&config_center.ConfigChangeEvent{
 					Key:        eventType.Path,
@@ -101,18 +111,25 @@ func (l *RegistryDataListener) Close() {
 
 // RegistryConfigurationListener represent the processor of zookeeper watcher
 type RegistryConfigurationListener struct {
-	client    *zk.ZookeeperClient
-	registry  *zkRegistry
-	events    chan *config_center.ConfigChangeEvent
-	isClosed  bool
-	close     chan struct{}
-	closeOnce sync.Once
+	client       *zk.ZookeeperClient
+	registry     *zkRegistry
+	events       chan *config_center.ConfigChangeEvent
+	isClosed     bool
+	close        chan struct{}
+	closeOnce    sync.Once
+	subscribeURL *common.URL
 }
 
 // NewRegistryConfigurationListener for listening the event of zk.
-func NewRegistryConfigurationListener(client *zk.ZookeeperClient, reg *zkRegistry) *RegistryConfigurationListener {
+func NewRegistryConfigurationListener(client *zk.ZookeeperClient, reg *zkRegistry, conf *common.URL) *RegistryConfigurationListener {
 	reg.WaitGroup().Add(1)
-	return &RegistryConfigurationListener{client: client, registry: reg, events: make(chan *config_center.ConfigChangeEvent, 32), isClosed: false, close: make(chan struct{}, 1)}
+	return &RegistryConfigurationListener{
+		client:       client,
+		registry:     reg,
+		events:       make(chan *config_center.ConfigChangeEvent, 32),
+		isClosed:     false,
+		close:        make(chan struct{}, 1),
+		subscribeURL: conf}
 }
 
 // Process submit the ConfigChangeEvent to the event chan to notify all observer
