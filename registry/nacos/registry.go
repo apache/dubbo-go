@@ -136,23 +136,28 @@ func (nr *nacosRegistry) Register(url common.URL) error {
 	return nil
 }
 
+// UnRegister
+func (nr *nacosRegistry) UnRegister(conf common.URL) error {
+	return perrors.New("UnRegister is not support in nacosRegistry")
+}
+
 func (nr *nacosRegistry) subscribe(conf *common.URL) (registry.Listener, error) {
 	return NewNacosListener(*conf, nr.namingClient)
 }
 
 //subscribe from registry
-func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
+func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) error {
 	for {
 		if !nr.IsAvailable() {
 			logger.Warnf("event listener game over.")
-			return
+			return perrors.New("nacosRegistry is not available.")
 		}
 
 		listener, err := nr.subscribe(url)
 		if err != nil {
 			if !nr.IsAvailable() {
 				logger.Warnf("event listener game over.")
-				return
+				return err
 			}
 			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
 			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
@@ -164,7 +169,7 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 			if err != nil {
 				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
 				listener.Close()
-				return
+				return err
 			}
 
 			logger.Infof("update begin, service event: %v", serviceEvent.String())
@@ -172,6 +177,12 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 		}
 
 	}
+	return nil
+}
+
+// UnSubscribe :
+func (nr *nacosRegistry) UnSubscribe(url *common.URL, notifyListener registry.NotifyListener) error {
+	return perrors.New("UnSubscribe not support in nacosRegistry")
 }
 
 func (nr *nacosRegistry) GetUrl() common.URL {

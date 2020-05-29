@@ -132,7 +132,7 @@ func (mts *MetadataService) RefreshMetadata(exportedRevision string, subscribedR
 		mts.exportedRevision.Store(exportedRevision)
 		urls, err := mts.inMemoryMetadataService.GetExportedURLs(constant.ANY_VALUE, "", "", "")
 		if err != nil {
-			logger.Errorf("Error occur when execute remote.MetadataService.RefreshMetadata, error message is %v", err)
+			logger.Errorf("Error occur when execute remote.MetadataService.RefreshMetadata, error message is %+v", err)
 			result = false
 		}
 		iterator := urls.Iter(inmemory.Comparator{})
@@ -145,7 +145,7 @@ func (mts *MetadataService) RefreshMetadata(exportedRevision string, subscribedR
 			id := identifier.NewServiceMetadataIdentifier(common.URL(url))
 			id.Revision = mts.exportedRevision.Load()
 			if err := mts.delegateReport.SaveServiceMetadata(id, common.URL(url)); err != nil {
-				logger.Errorf("Error occur when execute remote.MetadataService.RefreshMetadata, error message is %v", err)
+				logger.Errorf("Error occur when execute remote.MetadataService.RefreshMetadata, error message is %+v", err)
 				result = false
 			}
 		}
@@ -155,7 +155,7 @@ func (mts *MetadataService) RefreshMetadata(exportedRevision string, subscribedR
 		mts.subscribedRevision.Store(subscribedRevision)
 		urls, err := mts.inMemoryMetadataService.GetSubscribedURLs()
 		if err != nil {
-			logger.Errorf("Error occur when execute remote.MetadataService.RefreshMetadata, error message is %v", err)
+			logger.Errorf("Error occur when execute remote.MetadataService.RefreshMetadata, error message is %v+", err)
 			result = false
 		}
 		if urls != nil && urls.Len() > 0 {
@@ -166,7 +166,7 @@ func (mts *MetadataService) RefreshMetadata(exportedRevision string, subscribedR
 				Revision: subscribedRevision,
 			}
 			if err := mts.delegateReport.SaveSubscribedData(id, convertUrls(urls)); err != nil {
-				logger.Errorf("Error occur when execute remote.MetadataService.RefreshMetadata, error message is %v", err)
+				logger.Errorf("Error occur when execute remote.MetadataService.RefreshMetadata, error message is %+v", err)
 				result = false
 			}
 		}
