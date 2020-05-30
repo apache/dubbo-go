@@ -18,6 +18,7 @@
 package identifier
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 )
 
@@ -26,6 +27,18 @@ type ServiceMetadataIdentifier struct {
 	Revision string
 	Protocol string
 	BaseMetadataIdentifier
+}
+
+func NewServiceMetadataIdentifier(url common.URL) *ServiceMetadataIdentifier {
+	return &ServiceMetadataIdentifier{
+		BaseMetadataIdentifier: BaseMetadataIdentifier{
+			ServiceInterface: url.Service(),
+			Version:          url.GetParam(constant.VERSION_KEY, ""),
+			Group:            url.GetParam(constant.GROUP_KEY, ""),
+			Side:             url.GetParam(constant.SIDE_KEY, ""),
+		},
+		Protocol: url.Protocol,
+	}
 }
 
 // GetIdentifierKey will return string format as service:Version:Group:Side:Protocol:"revision"+Revision

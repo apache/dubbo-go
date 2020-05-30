@@ -15,32 +15,32 @@
  * limitations under the License.
  */
 
-package identifier
+package definition
 
 import (
-	"testing"
+	"context"
+	"time"
 )
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-var subscribeMetadataId = &SubscriberMetadataIdentifier{
-	Revision: "1.0",
-	MetadataIdentifier: MetadataIdentifier{
-		BaseMetadataIdentifier: BaseMetadataIdentifier{
-			ServiceInterface: "org.apache.pkg.mockService",
-			Version:          "1.0.0",
-			Group:            "Group",
-			Side:             "provider",
-		},
-	},
+type User struct {
+	Id   string
+	Name string
+	Age  int32
+	Time time.Time
 }
 
-func TestSubscribeGetFilePathKey(t *testing.T) {
-	assert.Equal(t, "metadata/1.0.0/Group/provider/1.0", subscribeMetadataId.GetFilePathKey())
+type UserProvider struct {
 }
 
-func TestSubscribeGetIdentifierKey(t *testing.T) {
-	assert.Equal(t, "org.apache.pkg.mockService:1.0.0:Group:provider:1.0", subscribeMetadataId.GetIdentifierKey())
+func (u *UserProvider) GetUser(ctx context.Context, req []interface{}) (*User, error) {
+	rsp := User{"A001", "Alex Stocks", 18, time.Now()}
+	return &rsp, nil
+}
+
+func (u *UserProvider) Reference() string {
+	return "UserProvider"
+}
+
+func (u User) JavaClassName() string {
+	return "com.ikurento.user.User"
 }

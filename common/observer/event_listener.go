@@ -42,7 +42,6 @@ type ConditionalEventListener interface {
 	Accept(e Event) bool
 }
 
-// TODO (implement ConditionalEventListener)
-type ServiceInstancesChangedListener struct {
-	ServiceName string
+type ChangedNotify interface {
+	Notify(e Event)
 }
