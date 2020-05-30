@@ -18,6 +18,7 @@
 package dynamic
 
 import (
+	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/metadata/mapping"
 	"strconv"
 	"sync"
@@ -40,6 +41,10 @@ const (
 	defaultGroup = config_center.DEFAULT_GROUP
 	slash        = "/"
 )
+
+func init() {
+	extension.SetServiceNameMapping("dynamic", GetServiceNameMappingInstance)
+}
 
 // DynamicConfigurationServiceNameMapping is the implementation based on config center
 type DynamicConfigurationServiceNameMapping struct {
