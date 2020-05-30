@@ -19,12 +19,24 @@ package config
 
 import (
 	"time"
+
+	"github.com/apache/dubbo-go/common/logger"
 )
 
 type RemoteConfig struct {
-	Address string            `yaml:"address" json:"address,omitempty"`
-	Timeout time.Duration     `default:"10s" yaml:"timeout" json:"timeout,omitempty"`
-	Params  map[string]string `yaml:"params" json:"address,omitempty"`
+	Address    string            `yaml:"address" json:"address,omitempty"`
+	TimeoutStr string            `default:"5s" yaml:"timeout" json:"timeout,omitempty"`
+	Username   string            `yaml:"username" json:"username,omitempty" property:"username"`
+	Password   string            `yaml:"password" json:"password,omitempty"  property:"password"`
+	Params     map[string]string `yaml:"params" json:"address,omitempty"`
+}
+
+func (rc *RemoteConfig) Timeout() time.Duration {
+	if res, err := time.ParseDuration(rc.TimeoutStr); err == nil {
+		return res
+	}
+	logger.Errorf("Could not parse the timeout string to Duration: %s, the default value will be returned", rc.TimeoutStr)
+	return 5 * time.Second
 }
 
 // GetParam will return the value of the key. If not found, def will be return;

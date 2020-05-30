@@ -87,15 +87,15 @@ func ProviderInit(confProFile string) error {
 	}
 
 	providerConfig.fileStream = bytes.NewBuffer(fileStream)
-	//set method interfaceId & interfaceName
+	// set method interfaceId & interfaceName
 	for k, v := range providerConfig.Services {
-		//set id for reference
+		// set id for reference
 		for _, n := range providerConfig.Services[k].Methods {
 			n.InterfaceName = v.InterfaceName
 			n.InterfaceId = k
 		}
 	}
-	//start the metadata report if config set
+	// start the metadata report if config set
 	if err := startMetadataReport(providerConfig.ApplicationConfig.MetadataType, providerConfig.MetadataReportConfig); err != nil {
 		return perrors.WithMessagef(err, "Provider starts metadata report error, and the error is {%#v}", err)
 	}
@@ -105,7 +105,7 @@ func ProviderInit(confProFile string) error {
 }
 
 func configCenterRefreshProvider() error {
-	//fresh it
+	// fresh it
 	if providerConfig.ConfigCenterConfig != nil {
 		providerConfig.fatherConfig = providerConfig
 		if err := providerConfig.startConfigCenter(); err != nil {
