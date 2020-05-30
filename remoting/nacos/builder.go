@@ -21,15 +21,80 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/apache/dubbo-go/config"
+)
+
+import (
 	"github.com/nacos-group/nacos-sdk-go/clients"
+	"github.com/nacos-group/nacos-sdk-go/clients/config_client"
 	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
 	nacosConstant "github.com/nacos-group/nacos-sdk-go/common/constant"
 	perrors "github.com/pkg/errors"
-
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/config"
 )
+
+import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+)
+
+func NewNacosNamingClient(url *common.URL) (naming_client.INamingClient, error) {
+	nacosConfig, err := getNacosConfig(url)
+	if err != nil {
+		return nil, err
+	}
+	return clients.CreateNamingClient(nacosConfig)
+}
+
+func NewNacosConfigClient(url *common.URL) (config_client.IConfigClient, error) {
+	nacosConfig, err := getNacosConfig(url)
+	if err != nil {
+		return nil, err
+	}
+	return clients.CreateConfigClient(nacosConfig)
+}
+
+// getNacosConfig will return the nacos config
+func getNacosConfig(url *common.URL) (map[string]interface{}, error) {
+	if url == nil {
+		return nil, perrors.New("url is empty!")
+	}
+	if len(url.Location) == 0 {
+		return nil, perrors.New("url.location is empty!")
+	}
+	configMap := make(map[string]interface{}, 2)
+
+	addresses := strings.Split(url.Location, ",")
+	serverConfigs := make([]nacosConstant.ServerConfig, 0, len(addresses))
+	for _, addr := range addresses {
+		ip, portStr, err := net.SplitHostPort(addr)
+		if err != nil {
+			return nil, perrors.WithMessagef(err, "split [%s] ", addr)
+		}
+		port, _ := strconv.Atoi(portStr)
+		serverConfigs = append(serverConfigs, nacosConstant.ServerConfig{
+			IpAddr: ip,
+			Port:   uint64(port),
+		})
+	}
+	configMap["serverConfigs"] = serverConfigs
+
+	var clientConfig nacosConstant.ClientConfig
+	timeout, err := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
+	if err != nil {
+		return nil, err
+	}
+	clientConfig.TimeoutMs = uint64(timeout.Seconds() * 1000)
+	clientConfig.ListenInterval = 2 * clientConfig.TimeoutMs
+	clientConfig.CacheDir = url.GetParam(constant.NACOS_CACHE_DIR_KEY, "")
+	clientConfig.LogDir = url.GetParam(constant.NACOS_LOG_DIR_KEY, "")
+	clientConfig.Endpoint = url.GetParam(constant.NACOS_ENDPOINT, "")
+	clientConfig.NotLoadCacheAtStart = true
+	configMap["clientConfig"] = clientConfig
+
+	return configMap, nil
+}
 
 func NewNacosClient(rc *config.RemoteConfig) (naming_client.INamingClient, error) {
 	if len(rc.Address) == 0 {
