@@ -19,7 +19,6 @@ package nacos
 
 import (
 	"testing"
-	"time"
 )
 
 import (
@@ -43,7 +42,7 @@ func TestNewNacosClient(t *testing.T) {
 	assert.NotNil(t, err)
 
 	rc.Address = "console.nacos.io:80"
-	rc.Timeout = 10 * time.Second
+	rc.TimeoutStr = "10s"
 	client, err = NewNacosClient(rc)
 	assert.NotNil(t, client)
 	assert.Nil(t, err)
