@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/config"
 )
 
@@ -49,6 +50,8 @@ type MetadataService interface {
 	GetServiceDefinition(interfaceName string, group string, version string) (string, error)
 	// GetServiceDefinition will get the target service info store in metadata by service key
 	GetServiceDefinitionByServiceKey(serviceKey string) (string, error)
+	// RefreshMetadata will refresh the metadata
+	RefreshMetadata(exportedRevision string, subscribedRevision string) bool
 	// Version will return the metadata service version
 	Version() string
 }
@@ -60,4 +63,9 @@ type BaseMetadataService struct {
 // ServiceName can get the service's name in meta service , which is application name
 func (mts *BaseMetadataService) ServiceName() (string, error) {
 	return config.GetApplicationConfig().Name, nil
+}
+
+// Version will return the version of metadata service
+func (mts *BaseMetadataService) Reference() string {
+	return constant.SIMPLE_METADATA_SERVICE_NAME
 }

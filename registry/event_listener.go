@@ -25,34 +25,32 @@ import (
 	"github.com/apache/dubbo-go/common/observer"
 )
 
-//The Service Discovery Changed  Event Listener
+// The Service Discovery Changed  Event Listener
 type ServiceInstancesChangedListener struct {
-	ServiceName string
-	observer.ConditionalEventListener
-	ChangedNotify ChangedNotify
+	ServiceName   string
+	ChangedNotify observer.ChangedNotify
 }
 
-//On ServiceInstancesChangedEvent the service instances change event
-func (sicl *ServiceInstancesChangedListener) OnEvent(e ServiceInstancesChangedEvent) error {
-	sicl.ChangedNotify.Notify(e)
+// On ServiceInstancesChangedEvent the service instances change event
+func (lstn *ServiceInstancesChangedListener) OnEvent(e observer.Event) error {
+	lstn.ChangedNotify.Notify(e)
 	return nil
 }
 
-//get listener priority
-func (sicl *ServiceInstancesChangedListener) GetPriority() int {
+// return true if the name is the same
+func (lstn *ServiceInstancesChangedListener) Accept(e observer.Event) bool {
+	if ce, ok := e.(*ServiceInstancesChangedEvent); ok {
+		return ce.ServiceName == lstn.ServiceName
+	}
+	return false
+}
+
+// get listener priority
+func (lstn *ServiceInstancesChangedListener) GetPriority() int {
 	return -1
 }
 
-//get event type
-func (sicl *ServiceInstancesChangedListener) GetEventType() reflect.Type {
+// get event type
+func (lstn *ServiceInstancesChangedListener) GetEventType() reflect.Type {
 	return reflect.TypeOf(&ServiceInstancesChangedEvent{})
-}
-
-//If service name matches,return true or false
-func (sicl *ServiceInstancesChangedListener) Accept(e ServiceInstancesChangedEvent) bool {
-	return e.ServiceName == sicl.ServiceName
-}
-
-type ChangedNotify interface {
-	Notify(e ServiceInstancesChangedEvent)
 }
