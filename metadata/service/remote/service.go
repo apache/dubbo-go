@@ -65,7 +65,7 @@ func (mts *MetadataService) setInMemoryMetadataService(metadata *inmemory.Metada
 
 // ExportURL will be implemented by in memory service
 func (mts *MetadataService) ExportURL(url common.URL) (bool, error) {
-	return true, nil
+	return mts.inMemoryMetadataService.ExportURL(url)
 }
 
 // UnexportURL
@@ -76,13 +76,13 @@ func (mts *MetadataService) UnexportURL(url common.URL) error {
 }
 
 // SubscribeURL will be implemented by in memory service
-func (MetadataService) SubscribeURL(url common.URL) (bool, error) {
-	return true, nil
+func (mts *MetadataService) SubscribeURL(url common.URL) (bool, error) {
+	return mts.inMemoryMetadataService.SubscribeURL(url)
 }
 
 // UnsubscribeURL will be implemented by in memory service
-func (MetadataService) UnsubscribeURL(url common.URL) error {
-	return nil
+func (mts *MetadataService) UnsubscribeURL(url common.URL) error {
+	return mts.UnsubscribeURL(url)
 }
 
 // PublishServiceDefinition will call remote metadata's StoreProviderMetadata to store url info and service definition

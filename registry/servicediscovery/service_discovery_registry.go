@@ -33,9 +33,10 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/observer"
+	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/metadata/mapping"
 	"github.com/apache/dubbo-go/metadata/service"
-	"github.com/apache/dubbo-go/metadata/service/inmemory"
+	"github.com/apache/dubbo-go/metadata/service/remote"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/registry/servicediscovery/proxy"
 	"github.com/apache/dubbo-go/registry/servicediscovery/synthesizer"
@@ -76,8 +77,10 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 	subscribedServices := parseServices(url.GetParam(constant.SUBSCRIBED_SERVICE_NAMES_KEY, ""))
 	subscribedURLsSynthesizers := synthesizer.GetAllSynthesizer()
 	serviceNameMapping := extension.GetServiceNameMapping(url.GetParam(constant.SERVICE_NAME_MAPPING_KEY, ""))
-	// TODO it's need to get implement by factory
-	metaDataService := inmemory.NewMetadataService()
+	metaDataService, err := remote.NewMetadataService()
+	if err != nil {
+		return nil, perrors.WithMessage(err, "could not init metadata service")
+	}
 	return &serviceDiscoveryRegistry{
 		url:                              url,
 		serviceDiscovery:                 serviceDiscovery,
@@ -91,15 +94,26 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 }
 
 func (s *serviceDiscoveryRegistry) UnRegister(url common.URL) error {
-	panic("implement me")
+	if !shouldRegister(url) {
+		return nil
+	}
+	return s.metaDataService.UnexportURL(url)
 }
 
-func (s *serviceDiscoveryRegistry) UnSubscribe(*common.URL, registry.NotifyListener) error {
-	panic("implement me")
+func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registry.NotifyListener) error {
+	if !shouldSubscribe(*url) {
+		return nil
+	}
+	return s.metaDataService.UnsubscribeURL(*url)
 }
 
 func creatServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
-	return extension.GetServiceDiscovery(url.Protocol, "TODO")
+	sdcName := url.GetParam(constant.SERVICE_DISCOVERY_KEY, "")
+	sdc, ok := config.GetBaseConfig().GetServiceDiscoveries(sdcName)
+	if !ok {
+		return nil, perrors.Errorf("The service discovery with name: %s is not found", sdcName)
+	}
+	return extension.GetServiceDiscovery(sdc.Protocol, sdcName)
 }
 
 func parseServices(literalServices string) *gxset.HashSet {
@@ -125,6 +139,7 @@ func (s *serviceDiscoveryRegistry) GetUrl() common.URL {
 }
 
 func (s *serviceDiscoveryRegistry) IsAvailable() bool {
+	// TODO(whether available depends on metadata service and service discovery)
 	return true
 }
 
