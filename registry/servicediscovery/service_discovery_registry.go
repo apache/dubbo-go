@@ -33,6 +33,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/observer"
+	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/metadata/mapping"
 	"github.com/apache/dubbo-go/metadata/service"
 	"github.com/apache/dubbo-go/metadata/service/remote"
@@ -107,7 +108,12 @@ func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registr
 }
 
 func creatServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
-	return extension.GetServiceDiscovery(url.Protocol, "TODO")
+	sdcName := url.GetParam(constant.SERVICE_DISCOVERY_KEY, "")
+	sdc, ok := config.GetBaseConfig().GetServiceDiscoveries(sdcName)
+	if !ok {
+		return nil, perrors.Errorf("The service discovery with name: %s is not found", sdcName)
+	}
+	return extension.GetServiceDiscovery(sdc.Protocol, sdcName)
 }
 
 func parseServices(literalServices string) *gxset.HashSet {
