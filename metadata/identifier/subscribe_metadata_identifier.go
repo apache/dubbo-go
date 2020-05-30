@@ -20,7 +20,7 @@ package identifier
 // SubscriberMetadataIdentifier is inherit baseMetaIdentifier with service params: Revision
 type SubscriberMetadataIdentifier struct {
 	Revision string
-	BaseMetadataIdentifier
+	MetadataIdentifier
 }
 
 // GetIdentifierKey will return string format as service:Version:Group:Side:Revision
