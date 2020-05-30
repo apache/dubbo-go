@@ -19,7 +19,6 @@ package nacos
 
 import (
 	"testing"
-	"time"
 
 	"github.com/apache/dubbo-go/config"
 )
@@ -59,8 +58,8 @@ func Test_newNacosServiceDiscovery(t *testing.T) {
 	assert.NotNil(t, err)
 
 	config.GetBaseConfig().Remotes["mock"] = &config.RemoteConfig{
-		Address: "console.nacos.io:80",
-		Timeout: 10 * time.Second,
+		Address:    "console.nacos.io:80",
+		TimeoutStr: "10s",
 	}
 
 	res, err := newNacosServiceDiscovery(name)
@@ -168,7 +167,7 @@ func prepareData() {
 	}
 
 	config.GetBaseConfig().Remotes[testName] = &config.RemoteConfig{
-		Address: "console.nacos.io:80",
-		Timeout: 10 * time.Second,
+		Address:    "console.nacos.io:80",
+		TimeoutStr: "10s",
 	}
 }

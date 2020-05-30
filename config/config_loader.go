@@ -68,11 +68,15 @@ func init() {
 	if errCon := ConsumerInit(confConFile); errCon != nil {
 		log.Printf("[consumerInit] %#v", errCon)
 		consumerConfig = nil
+	} else {
+		baseConfig = &consumerConfig.BaseConfig
 	}
 
 	if errPro := ProviderInit(confProFile); errPro != nil {
 		log.Printf("[providerInit] %#v", errPro)
 		providerConfig = nil
+	} else {
+		baseConfig = &providerConfig.BaseConfig
 	}
 }
 
@@ -282,7 +286,7 @@ func GetProviderConfig() ProviderConfig {
 		defer configAccessMutex.Unlock()
 		if providerConfig == nil {
 			logger.Warnf("creating empty provider config. You should see this log only once.")
-			providerConfig = &ProviderConfig{}
+			return ProviderConfig{}
 		}
 	}
 	return *providerConfig
@@ -300,13 +304,14 @@ func GetConsumerConfig() ConsumerConfig {
 		defer configAccessMutex.Unlock()
 		if consumerConfig == nil {
 			logger.Warnf("creating empty consumer config. You should see this log only once.")
-			consumerConfig = &ConsumerConfig{}
+			return ConsumerConfig{}
 		}
 	}
 	return *consumerConfig
 }
 
 func GetBaseConfig() *BaseConfig {
+
 	if baseConfig == nil {
 		baseConfigOnce.Do(func() {
 			baseConfig = &BaseConfig{
