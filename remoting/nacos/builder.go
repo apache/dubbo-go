@@ -118,7 +118,7 @@ func NewNacosClient(rc *config.RemoteConfig) (naming_client.INamingClient, error
 	configMap["serverConfigs"] = serverConfigs
 
 	var clientConfig nacosConstant.ClientConfig
-	timeout := rc.Timeout
+	timeout := rc.Timeout()
 	clientConfig.TimeoutMs = uint64(timeout.Nanoseconds() / constant.MsToNanoRate)
 	clientConfig.ListenInterval = 2 * clientConfig.TimeoutMs
 	clientConfig.CacheDir = rc.GetParam(constant.NACOS_CACHE_DIR_KEY, "")
