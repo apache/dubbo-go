@@ -16,7 +16,7 @@ Apache License, Version 2.0
 
 ## Release note ##
 
-[v1.4.0-rc1 - Mar 17, 2020](https://github.com/apache/dubbo-go/releases/tag/v1.4.0-rc1)
+[v1.4.0 - Mar 17, 2020](https://github.com/apache/dubbo-go/releases/tag/v1.4.0)
 
 [v1.3.0 - Mar 1, 2020](https://github.com/apache/dubbo-go/releases/tag/v1.3.0)
 
