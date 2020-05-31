@@ -147,7 +147,7 @@ func GetDefaultServerConfig() ServerConfig {
 	}
 }
 
-// CheckValidity ...
+// CheckValidity confirm getty sessian params.
 func (c *GettySessionParam) CheckValidity() error {
 	var err error
 
@@ -170,7 +170,7 @@ func (c *GettySessionParam) CheckValidity() error {
 	return nil
 }
 
-// CheckValidity ...
+// CheckValidity confirm client params.
 func (c *ClientConfig) CheckValidity() error {
 	var err error
 
@@ -192,7 +192,7 @@ func (c *ClientConfig) CheckValidity() error {
 	return perrors.WithStack(c.GettySessionParam.CheckValidity())
 }
 
-// CheckValidity ...
+// CheckValidity confirm server params.
 func (c *ServerConfig) CheckValidity() error {
 	var err error
 

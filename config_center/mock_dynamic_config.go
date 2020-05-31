@@ -22,6 +22,7 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
 	"gopkg.in/yaml.v2"
 )
 
@@ -42,7 +43,7 @@ var (
 	dynamicConfiguration *MockDynamicConfiguration
 )
 
-// GetDynamicConfiguration ...
+// GetDynamicConfiguration returns a DynamicConfiguration
 func (f *MockDynamicConfigurationFactory) GetDynamicConfiguration(_ *common.URL) (DynamicConfiguration, error) {
 	var err error
 	once.Do(func() {
@@ -81,6 +82,16 @@ func (f *MockDynamicConfigurationFactory) GetDynamicConfiguration(_ *common.URL)
 
 }
 
+// PublishConfig will publish the config with the (key, group, value) pair
+func (c *MockDynamicConfiguration) PublishConfig(string, string, string) error {
+	return nil
+}
+
+// GetConfigKeysByGroup will return all keys with the group
+func (c *MockDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
+	return gxset.NewSet(c.content), nil
+}
+
 // MockDynamicConfiguration ...
 type MockDynamicConfiguration struct {
 	parser   parser.ConfigurationParser
@@ -88,16 +99,16 @@ type MockDynamicConfiguration struct {
 	listener map[string]ConfigurationListener
 }
 
-// AddListener ...
+// AddListener adds a listener for MockDynamicConfiguration
 func (c *MockDynamicConfiguration) AddListener(key string, listener ConfigurationListener, _ ...Option) {
 	c.listener[key] = listener
 }
 
-// RemoveListener ...
+// RemoveListener removes the listener for MockDynamicConfiguration
 func (c *MockDynamicConfiguration) RemoveListener(_ string, _ ConfigurationListener, _ ...Option) {
 }
 
-// GetConfig ...
+// GetConfig returns content of MockDynamicConfiguration
 func (c *MockDynamicConfiguration) GetConfig(_ string, _ ...Option) (string, error) {
 
 	return c.content, nil
@@ -108,17 +119,17 @@ func (c *MockDynamicConfiguration) GetConfigs(key string, opts ...Option) (strin
 	return c.GetConfig(key, opts...)
 }
 
-// Parser ...
+// Parser returns a parser of MockDynamicConfiguration
 func (c *MockDynamicConfiguration) Parser() parser.ConfigurationParser {
 	return c.parser
 }
 
-// SetParser ...
+// SetParser sets parser of MockDynamicConfiguration
 func (c *MockDynamicConfiguration) SetParser(p parser.ConfigurationParser) {
 	c.parser = p
 }
 
-// GetProperties ...
+// GetProperties gets content of MockDynamicConfiguration
 func (c *MockDynamicConfiguration) GetProperties(_ string, _ ...Option) (string, error) {
 	return c.content, nil
 }
@@ -128,7 +139,7 @@ func (c *MockDynamicConfiguration) GetInternalProperty(key string, opts ...Optio
 	return c.GetProperties(key, opts...)
 }
 
-// GetRule ...
+// GetRule gets properties of MockDynamicConfiguration
 func (c *MockDynamicConfiguration) GetRule(key string, opts ...Option) (string, error) {
 	return c.GetProperties(key, opts...)
 }

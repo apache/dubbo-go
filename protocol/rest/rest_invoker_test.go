@@ -61,7 +61,7 @@ func TestRestInvoker_Invoke(t *testing.T) {
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245")
 	assert.NoError(t, err)
-	_, err = common.ServiceMap.Register(url.Protocol, &UserProvider{})
+	_, err = common.ServiceMap.Register("UserProvider", url.Protocol, &UserProvider{})
 	assert.NoError(t, err)
 	con := config.ProviderConfig{}
 	config.SetProviderConfig(con)
@@ -206,6 +206,6 @@ func TestRestInvoker_Invoke(t *testing.T) {
 	assert.Error(t, res.Error(), "test error")
 
 	assert.Equal(t, filterNum, 12)
-	err = common.ServiceMap.UnRegister(url.Protocol, "com.ikurento.user.UserProvider")
+	err = common.ServiceMap.UnRegister("UserProvider", url.Protocol, "com.ikurento.user.UserProvider")
 	assert.NoError(t, err)
 }
