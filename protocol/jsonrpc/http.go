@@ -172,7 +172,7 @@ func (c *HTTPClient) Do(addr, path string, httpHeader http.Header, body []byte) 
 	httpReq.Close = true
 
 	reqBuf := bytes.NewBuffer(make([]byte, 0))
-	if err := httpReq.Write(reqBuf); err != nil {
+	if err = httpReq.Write(reqBuf); err != nil {
 		return nil, perrors.WithStack(err)
 	}
 
@@ -191,7 +191,7 @@ func (c *HTTPClient) Do(addr, path string, httpHeader http.Header, body []byte) 
 	}
 	setNetConnTimeout(tcpConn, c.options.HTTPTimeout)
 
-	if _, err := reqBuf.WriteTo(tcpConn); err != nil {
+	if _, err = reqBuf.WriteTo(tcpConn); err != nil {
 		return nil, perrors.WithStack(err)
 	}
 

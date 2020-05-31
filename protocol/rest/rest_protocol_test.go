@@ -80,7 +80,7 @@ func TestRestProtocol_Export(t *testing.T) {
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245")
 	assert.NoError(t, err)
-	_, err = common.ServiceMap.Register(url.Protocol, &UserProvider{})
+	_, err = common.ServiceMap.Register("UserProvider", url.Protocol, &UserProvider{})
 	assert.NoError(t, err)
 	con := config.ProviderConfig{}
 	config.SetProviderConfig(con)
@@ -128,7 +128,7 @@ func TestRestProtocol_Export(t *testing.T) {
 	proto.Destroy()
 	_, ok = proto.(*RestProtocol).serverMap[url.Location]
 	assert.False(t, ok)
-	err = common.ServiceMap.UnRegister(url.Protocol, "com.ikurento.user.UserProvider")
+	err = common.ServiceMap.UnRegister("UserProvider", url.Protocol, "com.ikurento.user.UserProvider")
 	assert.NoError(t, err)
 }
 
