@@ -29,5 +29,5 @@ type ProxyFactory interface {
 	GetInvoker(url common.URL) protocol.Invoker
 }
 
-// Option ...
+// Option will define a function of handling ProxyFactory
 type Option func(ProxyFactory)
