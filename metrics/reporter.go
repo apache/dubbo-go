@@ -20,8 +20,7 @@ package metrics
 import (
 	"context"
 	"time"
-)
-import (
+
 	"github.com/apache/dubbo-go/protocol"
 )
 
@@ -29,7 +28,7 @@ const (
 	NameSpace = "dubbo"
 )
 
-// it will be use to report the invocation's duration
+// Reporter will be used to report the invocation's duration
 type Reporter interface {
 	// report the duration of an invocation
 	Report(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation,
