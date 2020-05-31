@@ -23,12 +23,7 @@ import (
 	"strings"
 	"sync"
 	"time"
-)
-import (
-	"github.com/prometheus/client_golang/prometheus"
-)
 
-import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -36,6 +31,7 @@ import (
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/metrics"
 	"github.com/apache/dubbo-go/protocol"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
@@ -68,9 +64,8 @@ func init() {
 	extension.SetMetricReporter(reporterName, newPrometheusReporter)
 }
 
-// PrometheusReporter
-// it will collect the data for Prometheus
-// if you want to use this, you should initialize your prometheus.
+// PrometheusReporter will collect the data for Prometheus
+// if you want to use this feature, you need to initialize your prometheus.
 // https://prometheus.io/docs/guides/go-application/
 type PrometheusReporter struct {
 
@@ -85,7 +80,7 @@ type PrometheusReporter struct {
 	consumerHistogramVec *prometheus.HistogramVec
 }
 
-// Report report the duration to Prometheus
+// Report reports the duration to Prometheus
 // the role in url must be consumer or provider
 // or it will be ignored
 func (reporter *PrometheusReporter) Report(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, cost time.Duration, res protocol.Result) {
@@ -99,7 +94,7 @@ func (reporter *PrometheusReporter) Report(ctx context.Context, invoker protocol
 		sumVec = reporter.consumerSummaryVec
 		hisVec = reporter.consumerHistogramVec
 	} else {
-		logger.Warnf("The url is not the consumer's or provider's, "+
+		logger.Warnf("The url belongs neither the consumer nor the provider, "+
 			"so the invocation will be ignored. url: %s", url.String())
 		return
 	}
