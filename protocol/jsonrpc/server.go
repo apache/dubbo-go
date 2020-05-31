@@ -349,9 +349,9 @@ func serveRequest(ctx context.Context,
 			constant.PATH_KEY:    path,
 			constant.VERSION_KEY: codec.req.Version}))
 		if err := result.Error(); err != nil {
-			rspStream, err := codec.Write(err.Error(), invalidRequest)
-			if err != nil {
-				return perrors.WithStack(err)
+			rspStream, codecErr := codec.Write(err.Error(), invalidRequest)
+			if codecErr != nil {
+				return perrors.WithStack(codecErr)
 			}
 			if errRsp := sendErrorResp(header, rspStream); errRsp != nil {
 				logger.Warnf("Exporter: sendErrorResp(header:%#v, error:%v) = error:%s",

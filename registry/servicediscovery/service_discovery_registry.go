@@ -512,13 +512,14 @@ func (s *serviceDiscoveryRegistry) cloneExportedURLs(url common.URL, serviceInsa
 		templateExportURLs := s.getTemplateExportedURLs(url, serviceInstance)
 		host := serviceInstance.GetHost()
 		for _, u := range templateExportURLs {
-			u.RemoveParams(removeParamSet)
 			port := strconv.Itoa(getProtocolPort(serviceInstance, u.Protocol))
 			if u.Location != host || u.Port != port {
 				u.Port = port     // reset port
 				u.Location = host // reset host
 			}
-			clonedExportedURLs = append(clonedExportedURLs, u)
+
+			cloneUrl := u.CloneExceptParams(removeParamSet)
+			clonedExportedURLs = append(clonedExportedURLs, *cloneUrl)
 		}
 	}
 	return clonedExportedURLs

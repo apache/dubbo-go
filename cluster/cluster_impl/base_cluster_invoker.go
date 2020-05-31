@@ -87,7 +87,6 @@ func (invoker *baseClusterInvoker) checkWhetherDestroyed() error {
 }
 
 func (invoker *baseClusterInvoker) doSelect(lb cluster.LoadBalance, invocation protocol.Invocation, invokers []protocol.Invoker, invoked []protocol.Invoker) protocol.Invoker {
-
 	var selectedInvoker protocol.Invoker
 	url := invokers[0].GetUrl()
 	sticky := url.GetParamBool(constant.STICKY_KEY, false)
