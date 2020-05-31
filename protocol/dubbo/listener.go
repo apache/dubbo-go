@@ -86,7 +86,7 @@ func (h *RpcClientHandler) OnOpen(session getty.Session) error {
 
 // OnError ...
 func (h *RpcClientHandler) OnError(session getty.Session, err error) {
-	logger.Infof("session{%s} got error{%v}, will be closed.", session.Stat(), err)
+	logger.Warnf("session{%s} got error{%v}, will be closed.", session.Stat(), err)
 	h.conn.removeSession(session)
 }
 
@@ -143,7 +143,7 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 // OnCron ...
 func (h *RpcClientHandler) OnCron(session getty.Session) {
-	rpcSession, err := h.conn.getClientRpcSession(session)
+	clientRpcSession, err := h.conn.getClientRpcSession(session)
 	if err != nil {
 		logger.Errorf("client.getClientSession(session{%s}) = error{%v}",
 			session.Stat(), perrors.WithStack(err))
@@ -151,7 +151,7 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 	}
 	if h.conn.pool.rpcClient.conf.sessionTimeout.Nanoseconds() < time.Since(session.GetActive()).Nanoseconds() {
 		logger.Warnf("session{%s} timeout{%s}, reqNum{%d}",
-			session.Stat(), time.Since(session.GetActive()).String(), rpcSession.reqNum)
+			session.Stat(), time.Since(session.GetActive()).String(), clientRpcSession.reqNum)
 		h.conn.removeSession(session) // -> h.conn.close() -> h.conn.pool.remove(h.conn)
 		return
 	}
@@ -201,7 +201,7 @@ func (h *RpcServerHandler) OnOpen(session getty.Session) error {
 
 // OnError ...
 func (h *RpcServerHandler) OnError(session getty.Session, err error) {
-	logger.Infof("session{%s} got error{%v}, will be closed.", session.Stat(), err)
+	logger.Warnf("session{%s} got error{%v}, will be closed.", session.Stat(), err)
 	h.rwlock.Lock()
 	delete(h.sessionMap, session)
 	h.rwlock.Unlock()
