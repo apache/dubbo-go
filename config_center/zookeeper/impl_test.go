@@ -18,7 +18,6 @@ package zookeeper
 
 import (
 	"fmt"
-	"github.com/apache/dubbo-go/common/constant"
 	"strconv"
 	"sync"
 	"testing"
@@ -32,6 +31,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/config_center/parser"
 )
