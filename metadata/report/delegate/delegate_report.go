@@ -130,7 +130,7 @@ func NewMetadataReport() (*MetadataReport, error) {
 		scheduler := gocron.NewScheduler(time.UTC)
 		_, err := scheduler.Every(1).Day().Do(
 			func() {
-				logger.Info("start to publish all metadata in metadata report %s.", url.String())
+				logger.Infof("start to publish all metadata in metadata report %s.", url.String())
 				bmr.allMetadataReportsLock.RLock()
 				bmr.doHandlerMetadataCollection(bmr.allMetadataReports)
 				bmr.allMetadataReportsLock.RUnlock()
