@@ -36,6 +36,7 @@ const (
 )
 
 func init() {
+	// this implementation is the the default implementation of RejectedExecutionHandler
 	extension.SetRejectedExecutionHandler(HandlerName, GetOnlyLogRejectedExecutionHandler)
 	extension.SetRejectedExecutionHandler(constant.DEFAULT_KEY, GetOnlyLogRejectedExecutionHandler)
 }
@@ -56,11 +57,12 @@ var onlyLogHandlerOnce sync.Once
  *   tps.limit.rejected.handler: "default" or "log"
  *   methods:
  *    - name: "GetUser"
+ * OnlyLogRejectedExecutionHandler is designed to be singleton
  */
 type OnlyLogRejectedExecutionHandler struct {
 }
 
-// RejectedExecution ...
+// RejectedExecution will do nothing, it only log the invocation.
 func (handler *OnlyLogRejectedExecutionHandler) RejectedExecution(url common.URL,
 	_ protocol.Invocation) protocol.Result {
 
@@ -68,7 +70,7 @@ func (handler *OnlyLogRejectedExecutionHandler) RejectedExecution(url common.URL
 	return &protocol.RPCResult{}
 }
 
-// GetOnlyLogRejectedExecutionHandler ...
+// GetOnlyLogRejectedExecutionHandler will return the instance of OnlyLogRejectedExecutionHandler
 func GetOnlyLogRejectedExecutionHandler() filter.RejectedExecutionHandler {
 	onlyLogHandlerOnce.Do(func() {
 		onlyLogHandlerInstance = &OnlyLogRejectedExecutionHandler{}

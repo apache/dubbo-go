@@ -67,8 +67,8 @@ type Error struct {
 func (e *Error) Error() string {
 	buf, err := json.Marshal(e)
 	if err != nil {
-		msg, err := json.Marshal(err.Error())
-		if err != nil {
+		msg, retryErr := json.Marshal(err.Error())
+		if retryErr != nil {
 			msg = []byte("jsonrpc2.Error: json.Marshal failed")
 		}
 		return fmt.Sprintf(`{"code":%d,"message":%s}`, -32001, string(msg))
@@ -133,7 +133,7 @@ func (c *jsonClientCodec) Write(d *CodecData) ([]byte, error) {
 			}
 		case reflect.Array, reflect.Struct:
 		case reflect.Ptr:
-			switch k := reflect.TypeOf(param).Elem().Kind(); k {
+			switch ptrK := reflect.TypeOf(param).Elem().Kind(); ptrK {
 			case reflect.Map:
 				if reflect.TypeOf(param).Elem().Key().Kind() == reflect.String {
 					if reflect.ValueOf(param).Elem().IsNil() {
@@ -146,7 +146,7 @@ func (c *jsonClientCodec) Write(d *CodecData) ([]byte, error) {
 				}
 			case reflect.Array, reflect.Struct:
 			default:
-				return nil, perrors.New("unsupported param type: Ptr to " + k.String())
+				return nil, perrors.New("unsupported param type: Ptr to " + ptrK.String())
 			}
 		default:
 			return nil, perrors.New("unsupported param type: " + k.String())
