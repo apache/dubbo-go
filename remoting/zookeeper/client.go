@@ -87,8 +87,6 @@ func StateToString(state zk.State) string {
 	default:
 		return state.String()
 	}
-
-	return "zookeeper unknown state"
 }
 
 // Options ...
@@ -111,14 +109,12 @@ func WithZkName(name string) Option {
 
 // ValidateZookeeperClient ...
 func ValidateZookeeperClient(container zkClientFacade, opts ...Option) error {
-	var (
-		err error
-	)
-	opions := &Options{}
+	var err error
+	options := &Options{}
 	for _, opt := range opts {
-		opt(opions)
+		opt(options)
 	}
-
+	connected := false
 	err = nil
 
 	lock := container.ZkClientLock()
@@ -129,20 +125,22 @@ func ValidateZookeeperClient(container zkClientFacade, opts ...Option) error {
 
 	if container.ZkClient() == nil {
 		//in dubbo ,every registry only connect one node ,so this is []string{r.Address}
-		timeout, err := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
+		var timeout time.Duration
+		timeout, err = time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
 		if err != nil {
 			logger.Errorf("timeout config %v is invalid ,err is %v",
 				url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), err.Error())
 			return perrors.WithMessagef(err, "newZookeeperClient(address:%+v)", url.Location)
 		}
 		zkAddresses := strings.Split(url.Location, ",")
-		newClient, err := newZookeeperClient(opions.zkName, zkAddresses, timeout)
+		newClient, err := newZookeeperClient(options.zkName, zkAddresses, timeout)
 		if err != nil {
 			logger.Warnf("newZookeeperClient(name{%s}, zk address{%v}, timeout{%d}) = error{%v}",
-				opions.zkName, url.Location, timeout.String(), err)
+				options.zkName, url.Location, timeout.String(), err)
 			return perrors.WithMessagef(err, "newZookeeperClient(address:%+v)", url.Location)
 		}
 		container.SetZkClient(newClient)
+		connected = true
 	}
 
 	if container.ZkClient().Conn == nil {
@@ -150,8 +148,14 @@ func ValidateZookeeperClient(container zkClientFacade, opts ...Option) error {
 		container.ZkClient().Conn, event, err = zk.Connect(container.ZkClient().ZkAddrs, container.ZkClient().Timeout)
 		if err == nil {
 			container.ZkClient().Wait.Add(1)
+			connected = true
 			go container.ZkClient().HandleZkEvent(event)
 		}
+	}
+
+	if connected {
+		logger.Info("Connect to zookeeper successfully, name{%s}, zk address{%v}", options.zkName, url.Location)
+		container.WaitGroup().Add(1) //zk client start successful, then registry wg +1
 	}
 
 	return perrors.WithMessagef(err, "newZookeeperClient(address:%+v)", url.PrimitiveURL)
@@ -386,14 +390,23 @@ func (z *ZookeeperClient) Close() {
 	z.Conn = nil
 	z.Unlock()
 	if conn != nil {
+		logger.Warnf("zkClient Conn{name:%s, zk addr:%s} exit now.", z.name, conn.SessionID())
 		conn.Close()
 	}
 
 	logger.Warnf("zkClient{name:%s, zk addr:%s} exit now.", z.name, z.ZkAddrs)
 }
 
-// Create ...
+// Create will create the node recursively, which means that if the parent node is absent,
+// it will create parent node first.
+// And the value for the basePath is ""
 func (z *ZookeeperClient) Create(basePath string) error {
+	return z.CreateWithValue(basePath, []byte(""))
+}
+
+// CreateWithValue will create the node recursively, which means that if the parent node is absent,
+// it will create parent node first.
+func (z *ZookeeperClient) CreateWithValue(basePath string, value []byte) error {
 	var (
 		err     error
 		tmpPath string
@@ -407,7 +420,7 @@ func (z *ZookeeperClient) Create(basePath string) error {
 		conn := z.Conn
 		z.Unlock()
 		if conn != nil {
-			_, err = conn.Create(tmpPath, []byte(""), 0, zk.WorldACL(zk.PermAll))
+			_, err = conn.Create(tmpPath, value, 0, zk.WorldACL(zk.PermAll))
 		}
 
 		if err != nil {
@@ -462,7 +475,7 @@ func (z *ZookeeperClient) RegisterTemp(basePath string, node string) (string, er
 	//if err != nil && err != zk.ErrNodeExists {
 	if err != nil {
 		logger.Warnf("conn.Create(\"%s\", zk.FlagEphemeral) = error(%v)\n", zkPath, perrors.WithStack(err))
-		return "", perrors.WithStack(err)
+		return zkPath, perrors.WithStack(err)
 	}
 	logger.Debugf("zkClient{%s} create a temp zookeeper node:%s\n", z.name, tmpPath)
 

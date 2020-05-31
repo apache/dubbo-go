@@ -36,7 +36,7 @@ import (
 
 func TestJsonrpcInvoker_Invoke(t *testing.T) {
 
-	methods, err := common.ServiceMap.Register("jsonrpc", &UserProvider{})
+	methods, err := common.ServiceMap.Register("UserProvider", "jsonrpc", &UserProvider{})
 	assert.NoError(t, err)
 	assert.Equal(t, "GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4", methods)
 
