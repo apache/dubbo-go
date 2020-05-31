@@ -109,8 +109,8 @@ func (jp *JsonrpcProtocol) Destroy() {
 func (jp *JsonrpcProtocol) openServer(url common.URL) {
 	_, ok := jp.serverMap[url.Location]
 	if !ok {
-		_, ok := jp.ExporterMap().Load(strings.TrimPrefix(url.Path, "/"))
-		if !ok {
+		_, loadOk := jp.ExporterMap().Load(strings.TrimPrefix(url.Path, "/"))
+		if !loadOk {
 			panic("[JsonrpcProtocol]" + url.Key() + "is not existing")
 		}
 
