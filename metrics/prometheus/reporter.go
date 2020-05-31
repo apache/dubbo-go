@@ -23,7 +23,12 @@ import (
 	"strings"
 	"sync"
 	"time"
+)
+import (
+	"github.com/prometheus/client_golang/prometheus"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -31,7 +36,6 @@ import (
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/metrics"
 	"github.com/apache/dubbo-go/protocol"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
