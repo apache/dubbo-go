@@ -51,7 +51,7 @@ func init() {
 	remoting.RegistryCodec("dubbo", codec)
 }
 
-// DubboPackage.  this is for hessian encode/decode. If we refactor hessian, it will also be refactored.
+// DubboPackage is for hessian encode/decode. If we refactor hessian, it will also be refactored.
 type DubboPackage struct {
 	Header  hessian.DubboHeader
 	Service hessian.Service
@@ -227,6 +227,7 @@ func (c *DubboCodec) Decode(data []byte) (remoting.DecodeResult, int, error) {
 		return remoting.DecodeResult{IsRequest: false, Result: resp}, len, perrors.WithStack(err)
 	}
 }
+
 func (c *DubboCodec) isRequest(data []byte) bool {
 	if data[2]&byte(0x80) == 0x00 {
 		return false

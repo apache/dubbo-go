@@ -59,14 +59,16 @@ var (
 	dubboProtocol *DubboProtocol
 )
 
-// DubboProtocol ...
+// It support dubbo protocol. It implements Protocol interface for dubbo protocol.
 type DubboProtocol struct {
 	protocol.BaseProtocol
+	// It is store relationship about serviceKey(group/interface:version) and ExchangeServer
+	// The ExchangeServer is introduced to replace of Server. Because Server is depend on getty directly.
 	serverMap  map[string]*remoting.ExchangeServer
 	serverLock sync.Mutex
 }
 
-// NewDubboProtocol ...
+// nolint
 func NewDubboProtocol() *DubboProtocol {
 	return &DubboProtocol{
 		BaseProtocol: protocol.NewBaseProtocol(),
@@ -74,7 +76,7 @@ func NewDubboProtocol() *DubboProtocol {
 	}
 }
 
-// Export ...
+// nolint
 func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetUrl()
 	serviceKey := url.ServiceKey()
@@ -87,7 +89,7 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	return exporter
 }
 
-// Refer ...
+// nolint
 func (dp *DubboProtocol) Refer(url common.URL) protocol.Invoker {
 	exchangeClient := getExchangeClient(url)
 	if exchangeClient == nil {
@@ -99,7 +101,7 @@ func (dp *DubboProtocol) Refer(url common.URL) protocol.Invoker {
 	return invoker
 }
 
-// Destroy ...
+// nolint
 func (dp *DubboProtocol) Destroy() {
 	logger.Infof("DubboProtocol destroy.")
 
