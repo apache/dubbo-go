@@ -40,8 +40,10 @@ type RPCInvocation struct {
 	reply           interface{}
 	callBack        interface{}
 	attachments     map[string]string
-	invoker         protocol.Invoker
-	lock            sync.RWMutex
+	// Refer to dubbo 2.7.6.  It is different from attachment. It is used in internal process.
+	attributes map[string]interface{}
+	invoker    protocol.Invoker
+	lock       sync.RWMutex
 }
 
 // NewRPCInvocation ...
@@ -50,6 +52,7 @@ func NewRPCInvocation(methodName string, arguments []interface{}, attachments ma
 		methodName:  methodName,
 		arguments:   arguments,
 		attachments: attachments,
+		attributes:  make(map[string]interface{}, 8),
 	}
 }
 
@@ -58,6 +61,9 @@ func NewRPCInvocationWithOptions(opts ...option) *RPCInvocation {
 	invo := &RPCInvocation{}
 	for _, opt := range opts {
 		opt(invo)
+	}
+	if invo.attributes == nil {
+		invo.attributes = make(map[string]interface{})
 	}
 	return invo
 }
@@ -111,6 +117,22 @@ func (r *RPCInvocation) AttachmentsByKey(key string, defaultValue string) string
 	return defaultValue
 }
 
+// get attributes
+func (r *RPCInvocation) Attributes() map[string]interface{} {
+	return r.attributes
+}
+
+// get attribute by key. If it is not exist, it will return default value
+func (r *RPCInvocation) AttributeByKey(key string, defaultValue interface{}) interface{} {
+	r.lock.RLock()
+	defer r.lock.RUnlock()
+	value, ok := r.attributes[key]
+	if ok {
+		return value
+	}
+	return defaultValue
+}
+
 // SetAttachments ...
 func (r *RPCInvocation) SetAttachments(key string, value string) {
 	r.lock.Lock()
@@ -119,6 +141,13 @@ func (r *RPCInvocation) SetAttachments(key string, value string) {
 		r.attachments = make(map[string]string)
 	}
 	r.attachments[key] = value
+}
+
+// SetAttribute. If Attributes is nil, it will be inited.
+func (r *RPCInvocation) SetAttribute(key string, value interface{}) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	r.attributes[key] = value
 }
 
 // Invoker ...
