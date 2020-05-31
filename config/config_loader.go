@@ -276,16 +276,10 @@ func GetApplicationConfig() *ApplicationConfig {
 
 // GetProviderConfig find the provider config
 // if not found, create new one
-// we use double-check to reduce race condition
-// In general, it will be locked 0 or 1 time.
-// So you don't need to worry about the race condition
 func GetProviderConfig() ProviderConfig {
 	if providerConfig == nil {
 		logger.Warnf("providerConfig is nil! we will try to create one")
-		configAccessMutex.Lock()
-		defer configAccessMutex.Unlock()
 		if providerConfig == nil {
-			logger.Warnf("creating empty provider config. You should see this log only once.")
 			return ProviderConfig{}
 		}
 	}
@@ -299,11 +293,7 @@ func GetProviderConfig() ProviderConfig {
 // So you don't need to worry about the race condition
 func GetConsumerConfig() ConsumerConfig {
 	if consumerConfig == nil {
-		logger.Warnf("consumerConfig is nil! we will try to create one")
-		configAccessMutex.Lock()
-		defer configAccessMutex.Unlock()
 		if consumerConfig == nil {
-			logger.Warnf("creating empty consumer config. You should see this log only once.")
 			return ConsumerConfig{}
 		}
 	}
