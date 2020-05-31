@@ -25,6 +25,7 @@ import (
 )
 
 import (
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -37,6 +38,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol/invocation"
+	"github.com/apache/dubbo-go/protocol/mock"
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting"
@@ -173,7 +175,21 @@ Loop1:
 			break Loop1
 		}
 	}
+}
 
+func Test_toGroupInvokers(t *testing.T) {
+	registryDirectory, _ := normalRegistryDir()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	invoker := mock.NewMockInvoker(ctrl)
+	newUrl, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
+	invoker.EXPECT().GetUrl().Return(newUrl).AnyTimes()
+
+	registryDirectory.cacheInvokersMap.Store("group1", invoker)
+	registryDirectory.cacheInvokersMap.Store("group2", invoker)
+	registryDirectory.cacheInvokersMap.Store("group1", invoker)
+	groupInvokers := registryDirectory.toGroupInvokers()
+	assert.Len(t, groupInvokers, 2)
 }
 
 func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockRegistry) {
