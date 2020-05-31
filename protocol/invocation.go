@@ -30,5 +30,8 @@ type Invocation interface {
 	Reply() interface{}
 	Attachments() map[string]string
 	AttachmentsByKey(string, string) string
+	// Refer to dubbo 2.7.6.  It is different from attachment. It is used in internal process.
+	Attributes() map[string]interface{}
+	AttributeByKey(string, interface{}) interface{}
 	Invoker() Invoker
 }
