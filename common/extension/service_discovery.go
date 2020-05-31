@@ -28,7 +28,7 @@ var (
 	discoveryCreatorMap = make(map[string]func(name string) (registry.ServiceDiscovery, error), 4)
 )
 
-// SetServiceDiscovery will store the creator and name
+// SetServiceDiscovery will store the @creator and @name
 // protocol indicate the implementation, like nacos
 // the name like nacos-1...
 func SetServiceDiscovery(protocol string, creator func(name string) (registry.ServiceDiscovery, error)) {
