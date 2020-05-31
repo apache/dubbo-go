@@ -40,7 +40,7 @@ const (
 	DEFAULT_CONFIG_TIMEOUT = "10s"
 )
 
-// DynamicConfiguration ...
+// DynamicConfiguration for modify listener and get properties file
 type DynamicConfiguration interface {
 	Parser() parser.ConfigurationParser
 	SetParser(parser.ConfigurationParser)
@@ -71,14 +71,14 @@ type Options struct {
 // Option ...
 type Option func(*Options)
 
-// WithGroup ...
+// WithGroup assigns group to opt.Group
 func WithGroup(group string) Option {
 	return func(opt *Options) {
 		opt.Group = group
 	}
 }
 
-// WithTimeout ...
+// WithTimeout assigns time to opt.Timeout
 func WithTimeout(time time.Duration) Option {
 	return func(opt *Options) {
 		opt.Timeout = time

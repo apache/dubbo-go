@@ -170,9 +170,9 @@ func (c *ServiceConfig) Export() error {
 		// registry the service reflect
 		methods, err := common.ServiceMap.Register(c.InterfaceName, proto.Name, c.rpcService)
 		if err != nil {
-			err := perrors.Errorf("The service %v  export the protocol %v error! Error message is %v .", c.InterfaceName, proto.Name, err.Error())
-			logger.Errorf(err.Error())
-			return err
+			formatErr := perrors.Errorf("The service %v  export the protocol %v error! Error message is %v .", c.InterfaceName, proto.Name, err.Error())
+			logger.Errorf(formatErr.Error())
+			return formatErr
 		}
 
 		port := proto.Port

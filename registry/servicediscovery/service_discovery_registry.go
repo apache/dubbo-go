@@ -38,6 +38,7 @@ import (
 	"github.com/apache/dubbo-go/metadata/service"
 	"github.com/apache/dubbo-go/metadata/service/remote"
 	"github.com/apache/dubbo-go/registry"
+	registryCommon "github.com/apache/dubbo-go/registry/common"
 	"github.com/apache/dubbo-go/registry/servicediscovery/proxy"
 	"github.com/apache/dubbo-go/registry/servicediscovery/synthesizer"
 	"github.com/apache/dubbo-go/remoting"
@@ -113,7 +114,11 @@ func creatServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
 	if !ok {
 		return nil, perrors.Errorf("The service discovery with name: %s is not found", sdcName)
 	}
-	return extension.GetServiceDiscovery(sdc.Protocol, sdcName)
+	originServiceDiscovery, err := extension.GetServiceDiscovery(sdc.Protocol, sdcName)
+	if err != nil {
+		return nil, perrors.WithMessage(err, "Create service discovery fialed")
+	}
+	return registryCommon.NewEventPublishingServiceDiscovery(originServiceDiscovery), nil
 }
 
 func parseServices(literalServices string) *gxset.HashSet {
@@ -155,6 +160,7 @@ func (s *serviceDiscoveryRegistry) Register(url common.URL) error {
 		return nil
 	}
 	ok, err := s.metaDataService.ExportURL(url)
+	s.metaDataService.PublishServiceDefinition(url)
 	if err != nil {
 		logger.Errorf("The URL[%s] registry catch error:%s!", url.String(), err.Error())
 		return err
@@ -506,13 +512,14 @@ func (s *serviceDiscoveryRegistry) cloneExportedURLs(url common.URL, serviceInsa
 		templateExportURLs := s.getTemplateExportedURLs(url, serviceInstance)
 		host := serviceInstance.GetHost()
 		for _, u := range templateExportURLs {
-			u.RemoveParams(removeParamSet)
 			port := strconv.Itoa(getProtocolPort(serviceInstance, u.Protocol))
 			if u.Location != host || u.Port != port {
 				u.Port = port     // reset port
 				u.Location = host // reset host
 			}
-			clonedExportedURLs = append(clonedExportedURLs, u)
+
+			cloneUrl := u.CloneExceptParams(removeParamSet)
+			clonedExportedURLs = append(clonedExportedURLs, *cloneUrl)
 		}
 	}
 	return clonedExportedURLs
