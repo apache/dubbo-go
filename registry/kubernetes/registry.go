@@ -81,14 +81,8 @@ func (r *kubernetesRegistry) SetClient(client *kubernetes.Client) {
 }
 
 func (r *kubernetesRegistry) CloseAndNilClient() {
-	r.cltLock.Lock()
-	client := r.client
+	r.client.Close()
 	r.client = nil
-	r.cltLock.Unlock()
-	if client == nil {
-		return
-	}
-	client.Close()
 }
 
 func (r *kubernetesRegistry) CloseListener() {
