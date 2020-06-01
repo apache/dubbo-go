@@ -156,12 +156,15 @@ func (r *zkRegistry) DoRegister(root string, node string) error {
 }
 
 func (r *zkRegistry) DoUnregister(root string, node string) error {
-	r.cltLock.Lock()
-	defer r.cltLock.Unlock()
-	if !r.ZkClient().ZkConnValid() {
+	client := r.client
+	if client == nil {
+		return perrors.New("zk Client is null, can not process registerTempZookeeperNode ")
+	}
+
+	if !client.ZkConnValid() {
 		return perrors.Errorf("zk client is not valid.")
 	}
-	return r.ZkClient().Delete(path.Join(root, node))
+	return client.Delete(path.Join(root, node))
 }
 
 func (r *zkRegistry) DoSubscribe(conf *common.URL) (registry.Listener, error) {
@@ -173,8 +176,15 @@ func (r *zkRegistry) DoUnsubscribe(conf *common.URL) (registry.Listener, error) 
 }
 
 func (r *zkRegistry) CloseAndNilClient() {
-	r.client.Close()
+	r.cltLock.Lock()
+	client := r.client
 	r.client = nil
+	r.cltLock.Unlock()
+
+	if client == nil {
+		return
+	}
+	client.Close()
 }
 
 func (r *zkRegistry) ZkClient() *zookeeper.ZookeeperClient {
@@ -202,22 +212,27 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 	)
 
 	r.cltLock.Lock()
-	defer r.cltLock.Unlock()
-	err = r.client.Create(root)
+	client := r.client
+	r.cltLock.Unlock()
+	if client == nil {
+		return perrors.New("zk Client is null, can not process registerTempZookeeperNode ")
+	}
+
+	err = client.Create(root)
 	if err != nil {
 		logger.Errorf("zk.Create(root{%s}) = err{%v}", root, perrors.WithStack(err))
 		return perrors.WithStack(err)
 	}
 
 	// try to register the node
-	zkPath, err = r.client.RegisterTemp(root, node)
+	zkPath, err = client.RegisterTemp(root, node)
 	if err != nil {
 		logger.Errorf("Register temp node(root{%s}, node{%s}) = error{%v}", root, node, perrors.WithStack(err))
 		if perrors.Cause(err) == zk.ErrNodeExists {
 			// should delete the old node
 			logger.Info("Register temp node failed, try to delete the old and recreate  (root{%s}, node{%s}) , ignore!", root, node)
-			if err = r.client.Delete(zkPath); err == nil {
-				_, err = r.client.RegisterTemp(root, node)
+			if err = client.Delete(zkPath); err == nil {
+				_, err = client.RegisterTemp(root, node)
 			}
 			if err != nil {
 				logger.Errorf("Recreate the temp node failed, (root{%s}, node{%s}) = error{%v}", root, node, perrors.WithStack(err))
