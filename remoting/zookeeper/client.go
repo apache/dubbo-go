@@ -278,7 +278,7 @@ LOOP:
 				break LOOP
 			case (int)(zk.EventNodeDataChanged), (int)(zk.EventNodeChildrenChanged):
 				logger.Infof("zkClient{%s} get zk node changed event{path:%s}", z.name, event.Path)
-				z.Lock()
+				z.RLock()
 				for p, a := range z.eventRegistry {
 					if strings.HasPrefix(p, event.Path) {
 						logger.Infof("send event{state:zk.EventNodeDataChange, Path:%s} notify event to path{%s} related listener",
@@ -288,7 +288,7 @@ LOOP:
 						}
 					}
 				}
-				z.Unlock()
+				z.RUnlock()
 			case (int)(zk.StateConnecting), (int)(zk.StateConnected), (int)(zk.StateHasSession):
 				if state == (int)(zk.StateHasSession) {
 					continue
@@ -371,11 +371,11 @@ func (z *ZookeeperClient) ZkConnValid() bool {
 	}
 
 	valid := true
-	z.Lock()
+	z.RLock()
 	if z.Conn == nil {
 		valid = false
 	}
-	z.Unlock()
+	z.RUnlock()
 
 	return valid
 }
