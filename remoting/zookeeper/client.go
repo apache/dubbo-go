@@ -51,7 +51,7 @@ var (
 type ZookeeperClient struct {
 	name          string
 	ZkAddrs       []string
-	sync.Mutex    // for conn
+	sync.RWMutex  // for conn
 	Conn          *zk.Conn
 	Timeout       time.Duration
 	exit          chan struct{}
@@ -419,7 +419,9 @@ func (z *ZookeeperClient) CreateWithValue(basePath string, value []byte) error {
 	for _, str := range strings.Split(basePath, "/")[1:] {
 		tmpPath = path.Join(tmpPath, "/", str)
 		err = errNilZkClientConn
+		z.RLock()
 		conn := z.Conn
+		z.RUnlock()
 		if conn != nil {
 			_, err = conn.Create(tmpPath, value, 0, zk.WorldACL(zk.PermAll))
 		}
@@ -444,7 +446,9 @@ func (z *ZookeeperClient) Delete(basePath string) error {
 	)
 
 	err = errNilZkClientConn
+	z.RLock()
 	conn := z.Conn
+	z.RUnlock()
 	if conn != nil {
 		err = conn.Delete(basePath, -1)
 	}
@@ -464,7 +468,9 @@ func (z *ZookeeperClient) RegisterTemp(basePath string, node string) (string, er
 	err = errNilZkClientConn
 	data = []byte("")
 	zkPath = path.Join(basePath) + "/" + node
+	z.RLock()
 	conn := z.Conn
+	z.RUnlock()
 	if conn != nil {
 		tmpPath, err = conn.Create(zkPath, data, zk.FlagEphemeral, zk.WorldACL(zk.PermAll))
 	}
@@ -487,7 +493,9 @@ func (z *ZookeeperClient) RegisterTempSeq(basePath string, data []byte) (string,
 	)
 
 	err = errNilZkClientConn
+	z.RLock()
 	conn := z.Conn
+	z.RUnlock()
 	if conn != nil {
 		tmpPath, err = conn.Create(
 			path.Join(basePath)+"/",
@@ -518,7 +526,9 @@ func (z *ZookeeperClient) GetChildrenW(path string) ([]string, <-chan zk.Event, 
 	)
 
 	err = errNilZkClientConn
+	z.RLock()
 	conn := z.Conn
+	z.RUnlock()
 	if conn != nil {
 		children, stat, watcher, err = conn.ChildrenW(path)
 	}
@@ -552,7 +562,9 @@ func (z *ZookeeperClient) GetChildren(path string) ([]string, error) {
 	)
 
 	err = errNilZkClientConn
+	z.RLock()
 	conn := z.Conn
+	z.RUnlock()
 	if conn != nil {
 		children, stat, err = conn.Children(path)
 	}
@@ -583,7 +595,9 @@ func (z *ZookeeperClient) ExistW(zkPath string) (<-chan zk.Event, error) {
 	)
 
 	err = errNilZkClientConn
+	z.RLock()
 	conn := z.Conn
+	z.RUnlock()
 	if conn != nil {
 		exist, _, watcher, err = conn.ExistsW(zkPath)
 	}
