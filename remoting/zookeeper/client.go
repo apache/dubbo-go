@@ -419,9 +419,7 @@ func (z *ZookeeperClient) CreateWithValue(basePath string, value []byte) error {
 	for _, str := range strings.Split(basePath, "/")[1:] {
 		tmpPath = path.Join(tmpPath, "/", str)
 		err = errNilZkClientConn
-		z.Lock()
 		conn := z.Conn
-		z.Unlock()
 		if conn != nil {
 			_, err = conn.Create(tmpPath, value, 0, zk.WorldACL(zk.PermAll))
 		}
@@ -446,9 +444,7 @@ func (z *ZookeeperClient) Delete(basePath string) error {
 	)
 
 	err = errNilZkClientConn
-	z.Lock()
 	conn := z.Conn
-	z.Unlock()
 	if conn != nil {
 		err = conn.Delete(basePath, -1)
 	}
@@ -468,9 +464,7 @@ func (z *ZookeeperClient) RegisterTemp(basePath string, node string) (string, er
 	err = errNilZkClientConn
 	data = []byte("")
 	zkPath = path.Join(basePath) + "/" + node
-	z.Lock()
 	conn := z.Conn
-	z.Unlock()
 	if conn != nil {
 		tmpPath, err = conn.Create(zkPath, data, zk.FlagEphemeral, zk.WorldACL(zk.PermAll))
 	}
