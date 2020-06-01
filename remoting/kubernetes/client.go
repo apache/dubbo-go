@@ -392,11 +392,11 @@ func (c *Client) handleWatchedPodEvent(p *v1.Pod, eventType watch.EventType) {
 			switch eventType {
 			case watch.Added:
 				// if pod is added, the record always be create
-				o.EventType = Create
+				o.SourceObjectEventType = Create
 			case watch.Modified:
-				o.EventType = Update
+				o.SourceObjectEventType = Update
 			case watch.Deleted:
-				o.EventType = Delete
+				o.SourceObjectEventType = Delete
 			default:
 				logger.Errorf("no valid kubernetes event-type (%s) ", eventType)
 				return

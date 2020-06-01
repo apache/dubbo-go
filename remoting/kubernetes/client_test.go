@@ -353,7 +353,7 @@ func (s *KubernetesClientTestSuite) TestClientGetChildrenKVList() {
 			select {
 			case e := <-wc:
 				i++
-				fmt.Printf("got event %v k %s v %s\n", e.EventType, e.Key, e.Value)
+				fmt.Printf("got event %v k %s v %s\n", e.SourceObjectEventType, e.Key, e.Value)
 				if i == 3 {
 					// already sync all event
 					syncDataComplete <- struct{}{}
@@ -428,7 +428,7 @@ func (s *KubernetesClientTestSuite) TestClientWatchPrefix() {
 		for {
 			select {
 			case e := <-wc:
-				t.Logf("got event %v k %s v %s", e.EventType, e.Key, e.Value)
+				t.Logf("got event %v k %s v %s", e.SourceObjectEventType, e.Key, e.Value)
 			case <-done:
 				t.Log("the watcherSet watcher was stopped")
 				return
@@ -483,7 +483,7 @@ func (s *KubernetesClientTestSuite) TestClientWatch() {
 		for {
 			select {
 			case e := <-wc:
-				t.Logf("got event %v k %s v %s", e.EventType, e.Key, e.Value)
+				t.Logf("got event %v k %s v %s", e.SourceObjectEventType, e.Key, e.Value)
 			case <-done:
 				t.Log("the watcherSet watcher was stopped")
 				return
