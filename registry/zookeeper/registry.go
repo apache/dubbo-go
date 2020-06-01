@@ -204,9 +204,7 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 		zkPath string
 	)
 
-	r.cltLock.Lock()
 	client := r.client
-	r.cltLock.Unlock()
 	if client == nil {
 		return perrors.New("zk Client is null, can not process registerTempZookeeperNode ")
 	}
@@ -260,9 +258,7 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 
 	zkListener = NewRegistryConfigurationListener(r.client, r, conf)
 	if r.listener == nil {
-		r.cltLock.Lock()
 		client := r.client
-		r.cltLock.Unlock()
 		if client == nil {
 			return nil, perrors.New("zk connection broken")
 		}
