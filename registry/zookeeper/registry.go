@@ -156,15 +156,13 @@ func (r *zkRegistry) DoRegister(root string, node string) error {
 }
 
 func (r *zkRegistry) DoUnregister(root string, node string) error {
-	client := r.client
-	if client == nil {
-		return perrors.New("zk Client is null, can not process registerTempZookeeperNode ")
-	}
+	r.cltLock.Lock()
+	defer r.cltLock.Unlock()
 
-	if !client.ZkConnValid() {
+	if !r.ZkClient().ZkConnValid() {
 		return perrors.Errorf("zk client is not valid.")
 	}
-	return client.Delete(path.Join(root, node))
+	return r.ZkClient().Delete(path.Join(root, node))
 }
 
 func (r *zkRegistry) DoSubscribe(conf *common.URL) (registry.Listener, error) {
@@ -255,7 +253,9 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 
 	zkListener = NewRegistryConfigurationListener(r.client, r, conf)
 	if r.listener == nil {
+		r.cltLock.Lock()
 		client := r.client
+		r.cltLock.Unlock()
 		if client == nil {
 			return nil, perrors.New("zk connection broken")
 		}
