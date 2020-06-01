@@ -71,6 +71,7 @@ type WatcherEvent struct {
 }
 
 // Watchable WatcherSet
+// thread-safe
 type WatcherSet interface {
 
 	// put the watch event to the watch set
@@ -167,32 +168,34 @@ func (s *watcherSetImpl) Put(watcherEvent *WatcherEvent) error {
 	}
 
 	// put to watcher-set
-	if watcherEvent.EventType == Delete {
+	switch watcherEvent.EventType {
+	case Delete:
 		delete(s.cache, watcherEvent.Key)
-	} else {
-
-		old, ok := s.cache[watcherEvent.Key]
-		if ok {
-			if old.Value == watcherEvent.Value {
-				// already have this k/v pair
-				return nil
-			}
+	case Create:
+		s.cache[watcherEvent.Key] = watcherEvent
+	case Update:
+		o, ok := s.cache[watcherEvent.Key]
+		if !ok {
+			// pod update, but create new k/v pair
+			watcherEvent.EventType = Create
+			s.cache[watcherEvent.Key] = watcherEvent
+			break
 		}
-
-		// refresh the watcherEvent
+		// k/v pair already latest
+		if o.Value == watcherEvent.Value {
+			return nil
+		}
+		// update to latest status
 		s.cache[watcherEvent.Key] = watcherEvent
 	}
 
 	// notify watcher
 	for _, w := range s.watchers {
-
 		w := w
-
 		if !strings.Contains(watcherEvent.Key, w.interested.key) {
 			//  this watcher no interest in this element
 			continue
 		}
-
 		if !w.interested.prefix {
 			if watcherEvent.Key == w.interested.key {
 				go sendMsg(watcherEvent, w)
