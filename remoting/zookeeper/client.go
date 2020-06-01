@@ -487,9 +487,7 @@ func (z *ZookeeperClient) RegisterTempSeq(basePath string, data []byte) (string,
 	)
 
 	err = errNilZkClientConn
-	z.Lock()
 	conn := z.Conn
-	z.Unlock()
 	if conn != nil {
 		tmpPath, err = conn.Create(
 			path.Join(basePath)+"/",
@@ -520,9 +518,7 @@ func (z *ZookeeperClient) GetChildrenW(path string) ([]string, <-chan zk.Event, 
 	)
 
 	err = errNilZkClientConn
-	z.Lock()
 	conn := z.Conn
-	z.Unlock()
 	if conn != nil {
 		children, stat, watcher, err = conn.ChildrenW(path)
 	}
@@ -556,9 +552,7 @@ func (z *ZookeeperClient) GetChildren(path string) ([]string, error) {
 	)
 
 	err = errNilZkClientConn
-	z.Lock()
 	conn := z.Conn
-	z.Unlock()
 	if conn != nil {
 		children, stat, err = conn.Children(path)
 	}
@@ -589,9 +583,7 @@ func (z *ZookeeperClient) ExistW(zkPath string) (<-chan zk.Event, error) {
 	)
 
 	err = errNilZkClientConn
-	z.Lock()
 	conn := z.Conn
-	z.Unlock()
 	if conn != nil {
 		exist, _, watcher, err = conn.ExistsW(zkPath)
 	}
