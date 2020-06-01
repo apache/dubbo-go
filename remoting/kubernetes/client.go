@@ -65,6 +65,8 @@ type Client struct {
 	// the kubernetes interface
 	rawClient kubernetes.Interface
 
+	// WIP tag
+
 	// current pod config
 	currentPodName string
 
