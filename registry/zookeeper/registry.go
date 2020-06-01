@@ -158,7 +158,6 @@ func (r *zkRegistry) DoRegister(root string, node string) error {
 func (r *zkRegistry) DoUnregister(root string, node string) error {
 	r.cltLock.Lock()
 	defer r.cltLock.Unlock()
-
 	if !r.ZkClient().ZkConnValid() {
 		return perrors.Errorf("zk client is not valid.")
 	}
