@@ -52,20 +52,20 @@ type dubboRegistryController struct {
 	watcherSet WatcherSet
 
 	// kubernetes
-	kc                        kubernetes.Interface
+	kc                               kubernetes.Interface
 	listAndWatchStartResourceVersion uint64
-	namespacedInformerFactory map[string]informers.SharedInformerFactory
-	namespacedPodInformers    map[string]informerscorev1.PodInformer
-	queue                     workqueue.Interface //shared by namespaced informers
+	namespacedInformerFactory        map[string]informers.SharedInformerFactory
+	namespacedPodInformers           map[string]informerscorev1.PodInformer
+	queue                            workqueue.Interface //shared by namespaced informers
 }
 
 func newDubboRegistryController(ctx context.Context) (*dubboRegistryController, error) {
 
 	c := &dubboRegistryController{
-		ctx:        ctx,
-		watcherSet: newWatcherSet(ctx),
+		ctx:                       ctx,
+		watcherSet:                newWatcherSet(ctx),
 		namespacedInformerFactory: make(map[string]informers.SharedInformerFactory),
-		namespacedPodInformers: make(map[string]informerscorev1.PodInformer),
+		namespacedPodInformers:    make(map[string]informerscorev1.PodInformer),
 	}
 
 	if err := c.readConfig(); err != nil {
@@ -73,14 +73,14 @@ func newDubboRegistryController(ctx context.Context) (*dubboRegistryController, 
 	}
 
 	if err := c.init(); err != nil {
-		return nil,perrors.WithMessage(err, "dubbo registry controller init")
+		return nil, perrors.WithMessage(err, "dubbo registry controller init")
 	}
 
 	if _, err := c.initCurrentPod(); err != nil {
-		return nil,perrors.WithMessage(err, "init current pod")
+		return nil, perrors.WithMessage(err, "init current pod")
 	}
 
-	if err := c.initWatchSet(); err != nil{
+	if err := c.initWatchSet(); err != nil {
 		return nil, perrors.WithMessage(err, "init watch set")
 	}
 
@@ -93,8 +93,7 @@ func newDubboRegistryController(ctx context.Context) (*dubboRegistryController, 
 // 2. put every element to watcherSet
 func (c *dubboRegistryController) initWatchSet() error {
 
-
-	for _, ns := range c.needWatchedNamespaceList{
+	for _, ns := range c.needWatchedNamespaceList {
 
 		pods, err := c.kc.CoreV1().Pods(ns).List(metav1.ListOptions{
 			LabelSelector: fields.OneTermEqualSelector(DubboIOLabelKey, DubboIOLabelValue).String(),
@@ -105,10 +104,10 @@ func (c *dubboRegistryController) initWatchSet() error {
 
 		// set resource version
 		rv, err := strconv.ParseUint(pods.GetResourceVersion(), 10, 0)
-		if err != nil{
+		if err != nil {
 			return perrors.WithMessagef(err, "parse resource version %s", pods.GetResourceVersion())
 		}
-		if c.listAndWatchStartResourceVersion < rv{
+		if c.listAndWatchStartResourceVersion < rv {
 			c.listAndWatchStartResourceVersion = rv
 		}
 
@@ -298,7 +297,7 @@ func (c *dubboRegistryController) processNextWorkItem() bool {
 // handle watched pod event
 func (c *dubboRegistryController) handleWatchedPodEvent(p *v1.Pod, eventType watch.EventType) {
 
-	logger.Warnf("get @type = %s event from @pod = %s", eventType , p.GetName())
+	logger.Warnf("get @type = %s event from @pod = %s", eventType, p.GetName())
 
 	for ak, av := range p.GetAnnotations() {
 
