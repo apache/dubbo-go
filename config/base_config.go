@@ -40,7 +40,7 @@ type multiConfiger interface {
 	Prefix() string
 }
 
-// BaseConfig is the common configuration for provider and consumer
+// BaseConfig is the event configuration for provider and consumer
 type BaseConfig struct {
 	ConfigCenterConfig *ConfigCenterConfig                `yaml:"config_center" json:"config_center,omitempty"`
 	Remotes            map[string]*RemoteConfig           `yaml:"remote" json:"remote,omitempty"`
@@ -51,7 +51,7 @@ type BaseConfig struct {
 	configCenterUrl     *common.URL
 	prefix              string
 	fatherConfig        interface{}
-	eventDispatcherType string        `default:"direct" yaml:"event_dispatcher_type" json:"event_dispatcher_type,omitempty"`
+	EventDispatcherType string        `default:"direct" yaml:"event_dispatcher_type" json:"event_dispatcher_type,omitempty"`
 	MetricConfig        *MetricConfig `yaml:"metrics" json:"metrics,omitempty"`
 	fileStream          *bytes.Buffer
 }
@@ -376,7 +376,6 @@ func initializeStruct(t reflect.Type, v reflect.Value) {
 				default:
 				}
 			}
-
 		}
 	}
 }
