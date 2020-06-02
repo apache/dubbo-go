@@ -72,6 +72,8 @@ func newClient(namespace string) (*Client, error) {
 		controller: controller,
 	}
 
+	c.controller.Run()
+
 	return c, nil
 }
 
