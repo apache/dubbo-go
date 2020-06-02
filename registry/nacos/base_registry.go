@@ -18,15 +18,12 @@
 package nacos
 
 import (
-	"github.com/apache/dubbo-go/remoting/nacos"
-)
-
-import (
 	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/remoting/nacos"
 )
 
 // baseRegistry is the parent of both interface-level registry
