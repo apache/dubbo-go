@@ -15,18 +15,34 @@
  * limitations under the License.
  */
 
-package extension
+package event
 
-import "github.com/apache/dubbo-go/metadata/mapping"
+import (
+	"reflect"
 
-var (
-	globalNameMapping mapping.ServiceNameMapping
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/common/observer"
 )
 
-func SetGlobalServiceNameMapping(nameMapping mapping.ServiceNameMapping) {
-	globalNameMapping = nameMapping
+func init() {
+	extension.AddEventListener(&logEventListener{})
 }
 
-func GetGlobalServiceNameMapping() mapping.ServiceNameMapping {
-	return globalNameMapping
+type logEventListener struct {
+
 }
+
+func (l *logEventListener) GetPriority() int {
+	return 0
+}
+
+func (l *logEventListener) OnEvent(e observer.Event) error {
+	logger.Info("Event happen: " + e.String())
+	return nil
+}
+
+func (l *logEventListener) GetEventType() reflect.Type {
+	return nil
+}
+

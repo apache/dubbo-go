@@ -78,3 +78,7 @@ const (
 const (
 	SIMPLE_METADATA_SERVICE_NAME = "MetadataService"
 )
+
+const (
+	SERVICE_DISCOVERY_DEFAULT_GROUP = "DEFAULT_GROUP"
+)
