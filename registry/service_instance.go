@@ -17,6 +17,10 @@
 
 package registry
 
+import (
+	gxsort "github.com/dubbogo/gost/sort"
+)
+
 type ServiceInstance interface {
 
 	// GetId will return this instance's id. It should be unique.
@@ -86,4 +90,10 @@ func (d *DefaultServiceInstance) IsHealthy() bool {
 // GetMetadata will return the metadata
 func (d *DefaultServiceInstance) GetMetadata() map[string]string {
 	return d.Metadata
+}
+
+type ServiceInstanceCustomizer interface {
+	gxsort.Prioritizer
+
+	Customize(instance ServiceInstance)
 }

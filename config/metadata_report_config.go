@@ -93,7 +93,7 @@ func (c *MetadataReportConfig) IsValid() bool {
 
 // StartMetadataReport: The entry of metadata report start
 func startMetadataReport(metadataType string, metadataReportConfig *MetadataReportConfig) error {
-	if metadataReportConfig == nil || metadataReportConfig.IsValid() {
+	if metadataReportConfig == nil || !metadataReportConfig.IsValid() {
 		return nil
 	}
 

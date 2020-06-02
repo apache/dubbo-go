@@ -17,16 +17,33 @@
 
 package extension
 
-import "github.com/apache/dubbo-go/metadata/mapping"
+import (
+	"sort"
 
-var (
-	globalNameMapping mapping.ServiceNameMapping
+	"github.com/apache/dubbo-go/registry"
 )
 
-func SetGlobalServiceNameMapping(nameMapping mapping.ServiceNameMapping) {
-	globalNameMapping = nameMapping
+var (
+	customizers = make([]registry.ServiceInstanceCustomizer, 0, 8)
+)
+
+// AddCustomizers will put the customizer into slices and then sort them;
+// this method will be invoked several time, so we sort them here.
+func AddCustomizers(cus registry.ServiceInstanceCustomizer)  {
+	customizers = append(customizers, cus)
+	sort.Stable(customizerSlice(customizers))
 }
 
-func GetGlobalServiceNameMapping() mapping.ServiceNameMapping {
-	return globalNameMapping
+// GetCustomizers will return the sorted customizer
+func GetCustomizers() []registry.ServiceInstanceCustomizer {
+	return customizers
 }
+
+type customizerSlice []registry.ServiceInstanceCustomizer
+
+func (c customizerSlice) Len() int {
+	return len(c)
+}
+
+func (c customizerSlice) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
+func (c customizerSlice) Less(i, j int) bool { return c[i].GetPriority() < c[j].GetPriority() }
