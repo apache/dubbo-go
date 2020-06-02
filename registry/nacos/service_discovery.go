@@ -40,7 +40,7 @@ import (
 )
 
 const (
-	defaultGroup = "DEFAULT_GROUP"
+	defaultGroup = constant.SERVICE_DISCOVERY_DEFAULT_GROUP
 	idKey        = "id"
 )
 

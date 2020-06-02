@@ -28,7 +28,6 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/yaml"
 )
 
@@ -95,11 +94,6 @@ func ProviderInit(confProFile string) error {
 			n.InterfaceId = k
 		}
 	}
-	// start the metadata report if config set
-	if err := startMetadataReport(providerConfig.ApplicationConfig.MetadataType, providerConfig.MetadataReportConfig); err != nil {
-		return perrors.WithMessagef(err, "Provider starts metadata report error, and the error is {%#v}", err)
-	}
-	logger.Debugf("provider config{%#v}\n", providerConfig)
 
 	return nil
 }
