@@ -16,7 +16,6 @@
  */
 package grpc
 
-
 import (
 	"bytes"
 	"encoding/json"
@@ -26,6 +25,11 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc/encoding"
+)
+
+const (
+	CODEC_JSON  = "json"
+	CODEC_PROTO = "proto"
 )
 
 func init() {
@@ -43,7 +47,7 @@ type JSON struct {
 }
 
 func (_ JSON) Name() string {
-	return "json"
+	return CODEC_JSON
 }
 
 func (j JSON) Marshal(v interface{}) (out []byte, err error) {
