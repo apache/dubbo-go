@@ -43,7 +43,7 @@ type MetadataReportConfig struct {
 	Group      string            `yaml:"group" json:"group,omitempty" property:"group"`
 }
 
-// Prefix returns MetadataReportConfig prefix
+// nolint
 func (c *MetadataReportConfig) Prefix() string {
 	return constant.MetadataReportPrefix
 }
@@ -60,7 +60,7 @@ func (c *MetadataReportConfig) UnmarshalYAML(unmarshal func(interface{}) error) 
 	return nil
 }
 
-// ToUrl transforms MetadataReportConfig to url
+// nolint
 func (c *MetadataReportConfig) ToUrl() (*common.URL, error) {
 	urlMap := make(url.Values)
 

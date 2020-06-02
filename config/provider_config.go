@@ -55,7 +55,7 @@ type ProviderConfig struct {
 	ConfigType        map[string]string          `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 }
 
-// UnmarshalYAML unmarshal the ProviderConfig by @unmarshal function
+// UnmarshalYAML unmarshals the ProviderConfig by @unmarshal function
 func (c *ProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
@@ -67,7 +67,7 @@ func (c *ProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) error 
 	return nil
 }
 
-// Prefix returns ProviderConfig prefix
+// nolint
 func (*ProviderConfig) Prefix() string {
 	return constant.ProviderConfigPrefix
 }
@@ -77,7 +77,7 @@ func SetProviderConfig(p ProviderConfig) {
 	providerConfig = &p
 }
 
-// ProviderInit load config file to init provider config
+// ProviderInit loads config file to init provider config
 func ProviderInit(confProFile string) error {
 	if len(confProFile) == 0 {
 		return perrors.Errorf("application configure(provider) file name is nil")

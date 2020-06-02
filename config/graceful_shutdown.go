@@ -52,7 +52,7 @@ import (
  * We define them by using 'package build' feature https://golang.org/pkg/go/build/
  */
 
-// GracefulShutdownInit init for graceful shutdown
+// nolint
 func GracefulShutdownInit() {
 
 	signals := make(chan os.Signal, 1)
@@ -126,7 +126,7 @@ func destroyConsumerProtocols(consumerProtocols *gxset.HashSet) {
 	}
 }
 
-// destroy the provider's protocol.
+// destroyProviderProtocols destroys the provider's protocol.
 // if the protocol is consumer's protocol too, we will keep it
 func destroyProviderProtocols(consumerProtocols *gxset.HashSet) {
 

@@ -75,7 +75,7 @@ func (c *ConsumerConfig) UnmarshalYAML(unmarshal func(interface{}) error) error 
 	return nil
 }
 
-// Prefix returns ConsumerConfig prefix
+// nolint
 func (*ConsumerConfig) Prefix() string {
 	return constant.ConsumerConfigPrefix
 }
@@ -85,7 +85,7 @@ func SetConsumerConfig(c ConsumerConfig) {
 	consumerConfig = &c
 }
 
-// ConsumerInit Load config file to init consumer config
+// ConsumerInit loads config file to init consumer config
 func ConsumerInit(confConFile string) error {
 	if confConFile == "" {
 		return perrors.Errorf("application configure(consumer) file name is nil")
