@@ -199,9 +199,12 @@ func (c *dubboRegistryController) deletePod(obj interface{}) {
 }
 
 func (c *dubboRegistryController) Run() {
+
+	logger.Debugf("starting namespaced informer-factory")
 	for _, factory := range c.namespacedInformerFactory {
 		go factory.Start(c.ctx.Done())
 	}
+	logger.Debugf("finish start namespaced informer-factory")
 }
 
 func (c *dubboRegistryController) run() {
