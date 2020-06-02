@@ -47,7 +47,7 @@ type RegistryConfig struct {
 	Params     map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
 }
 
-// UnmarshalYAML unmarshal the RegistryConfig by @unmarshal function
+// UnmarshalYAML unmarshals the RegistryConfig by @unmarshal function
 func (c *RegistryConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err

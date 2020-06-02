@@ -34,8 +34,8 @@ import (
 // ConfigCenterConfig is configuration for config center
 //
 // ConfigCenter also introduced concepts of namespace and group to better manage Key-Value pairs by group,
-// those concepts are already built-in in many professional third-party configuration centers.
-// In most cases, namespace is used to isolate different tetants, while group is used to divid the key set from one tetant into groups.
+// those configs are already built-in in many professional third-party configuration centers.
+// In most cases, namespace is used to isolate different tenants, while group is used to divide the key set from one tenant into groups.
 //
 // ConfigCenter has currently supported Zookeeper, Nacos, Etcd, Consul, Apollo
 type ConfigCenterConfig struct {

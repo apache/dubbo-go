@@ -76,7 +76,7 @@ func NewReferenceConfig(id string, ctx context.Context) *ReferenceConfig {
 	return &ReferenceConfig{id: id, context: ctx}
 }
 
-// UnmarshalYAML unmarshal the ReferenceConfig by @unmarshal function
+// UnmarshalYAML unmarshals the ReferenceConfig by @unmarshal function
 func (c *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	type rf ReferenceConfig
 	raw := rf{} // Put your defaults here
