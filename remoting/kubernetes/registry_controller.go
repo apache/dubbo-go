@@ -81,6 +81,11 @@ func newDubboRegistryController(ctx context.Context) (*dubboRegistryController, 
 	return c, nil
 }
 
+// TODO
+// Wait informer sync latest status
+func (c *dubboRegistryController) waitSync() error {
+
+}
 // read dubbo-registry controller config
 // 1. read kubernetes InCluster config
 // 1. current pod name
