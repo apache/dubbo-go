@@ -134,10 +134,10 @@ func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, er
 	p.Service.Group = invocation.AttachmentsByKey(constant.GROUP_KEY, "")
 	p.Service.Method = invocation.MethodName()
 
-	timeout, err := strconv.Atoi(invocation.AttachmentsByKey(constant.TIMEOUT_KEY, "3000"))
+	timeout, err := strconv.Atoi(invocation.AttachmentsByKey(constant.TIMEOUT_KEY, strconv.Itoa(constant.DEFAULT_REMOTING_TIMEOUT)))
 	if err != nil {
 		// it will be wrapped in readwrite.Write .
-		return nil, err
+		return nil, perrors.WithStack(err)
 	}
 	p.Service.Timeout = time.Duration(timeout)
 
@@ -259,7 +259,7 @@ func (c *DubboCodec) decodeRequest(data []byte) (*remoting.Request, int, error) 
 		TwoWay:   pkg.Header.Type&hessian.PackageRequest_TwoWay != 0x00,
 		Event:    pkg.Header.Type&hessian.PackageHeartbeat != 0x00,
 	}
-	if pkg.Header.Type&hessian.PackageHeartbeat == 0x00 {
+	if (pkg.Header.Type & hessian.PackageHeartbeat) == 0x00 {
 		// convert params of request
 		req := pkg.Body.([]interface{}) // length of body should be 7
 		if len(req) > 0 {
