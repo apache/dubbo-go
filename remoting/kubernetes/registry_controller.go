@@ -61,6 +61,8 @@ func newDubboRegistryController(ctx context.Context) (*dubboRegistryController, 
 	c := &dubboRegistryController{
 		ctx:        ctx,
 		watcherSet: newWatcherSet(ctx),
+		namespacedInformerFactory: make(map[string]informers.SharedInformerFactory),
+		namespacedPodInformers: make(map[string]informerscorev1.PodInformer),
 	}
 
 	if err := c.readConfig(); err != nil {
