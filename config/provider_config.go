@@ -36,7 +36,7 @@ import (
 // providerConfig
 /////////////////////////
 
-// ProviderConfig ...
+// ProviderConfig is the default configuration of service provider
 type ProviderConfig struct {
 	BaseConfig   `yaml:",inline"`
 	Filter       string `yaml:"filter" json:"filter,omitempty" property:"filter"`
@@ -55,7 +55,7 @@ type ProviderConfig struct {
 	ConfigType        map[string]string          `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 }
 
-// UnmarshalYAML ...
+// UnmarshalYAML unmarshal the ProviderConfig by @unmarshal function
 func (c *ProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
@@ -67,17 +67,17 @@ func (c *ProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) error 
 	return nil
 }
 
-// Prefix ...
+// Prefix returns ProviderConfig prefix
 func (*ProviderConfig) Prefix() string {
 	return constant.ProviderConfigPrefix
 }
 
-// SetProviderConfig ...
+// SetProviderConfig sets provider config by @p
 func SetProviderConfig(p ProviderConfig) {
 	providerConfig = &p
 }
 
-// ProviderInit ...
+// ProviderInit load config file to init provider config
 func ProviderInit(confProFile string) error {
 	if len(confProFile) == 0 {
 		return perrors.Errorf("application configure(provider) file name is nil")
