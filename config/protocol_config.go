@@ -32,7 +32,7 @@ type ProtocolConfig struct {
 	Port string `required:"true" yaml:"port"  json:"port,omitempty" property:"port"`
 }
 
-// Prefix returns ProtocolConfig prefix
+// nolint
 func (c *ProtocolConfig) Prefix() string {
 	return constant.ProtocolConfigPrefix
 }
