@@ -18,11 +18,6 @@
 package memory
 
 import (
-	"github.com/apache/dubbo-go/metadata/mapping"
-	"sync"
-)
-
-import (
 	gxset "github.com/dubbogo/gost/container/set"
 )
 
@@ -32,7 +27,7 @@ import (
 )
 
 func init() {
-	extension.SetServiceNameMapping("in-memory", GetInMemoryServiceNameMappingInstance)
+	extension.SetGlobalServiceNameMapping(&InMemoryServiceNameMapping{})
 }
 
 type InMemoryServiceNameMapping struct{}
@@ -43,16 +38,4 @@ func (i InMemoryServiceNameMapping) Map(serviceInterface string, group string, v
 
 func (i InMemoryServiceNameMapping) Get(serviceInterface string, group string, version string, protocol string) (*gxset.HashSet, error) {
 	return gxset.NewSet(config.GetApplicationConfig().Name), nil
-}
-
-var (
-	nameMappingInstance *InMemoryServiceNameMapping
-	nameMappingInitOnce sync.Once
-)
-
-func GetInMemoryServiceNameMappingInstance() mapping.ServiceNameMapping {
-	nameMappingInitOnce.Do(func() {
-		nameMappingInstance = &InMemoryServiceNameMapping{}
-	})
-	return nameMappingInstance
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package common
+package event
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"

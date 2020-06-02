@@ -28,10 +28,10 @@ var (
 )
 
 func TestServiceDiscoveryRegistry_Register(t *testing.T) {
-	//registryURL,_:=common.NewURL("in-memory://localhost:12345",
-	//	common.WithParamsValue("registry-type","service"),
-	//	common.WithParamsValue("subscribed-services","a, b , c,d,e ,"))
-	//url,_:=common.NewURL("dubbo://192.168.0.102:20880/"+ SERVICE_INTERFACE +
+	//registryURL,_:=event.NewURL("in-memory://localhost:12345",
+	//	event.WithParamsValue("registry-type","service"),
+	//	event.WithParamsValue("subscribed-services","a, b , c,d,e ,"))
+	//url,_:=event.NewURL("dubbo://192.168.0.102:20880/"+ SERVICE_INTERFACE +
 	//	"?&application=" + GROUP +
 	//	"&interface=" + SERVICE_INTERFACE +
 	//	"&group=" + GROUP +

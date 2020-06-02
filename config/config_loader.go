@@ -218,14 +218,22 @@ func Load() {
 	// init router
 	initRouter()
 
+	// event part
+	extension.SetAndInitGlobalDispatcher(GetBaseConfig().EventDispatcherType)
+
+	// start the metadata report if config set
+	if err := startMetadataReport(providerConfig.ApplicationConfig.MetadataType, providerConfig.MetadataReportConfig); err != nil {
+		logger.Errorf("Provider starts metadata report error, and the error is {%#v}", err)
+		return
+	}
+
+	logger.Debugf("provider config{%#v}\n", providerConfig)
+
 	// reference config
 	loadConsumerConfig()
 
 	// service config
 	loadProviderConfig()
-
-	// common part
-	extension.SetAndInitGlobalDispatcher(providerConfig.eventDispatcherType)
 
 	// init the shutdown callback
 	GracefulShutdownInit()
