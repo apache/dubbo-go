@@ -15,18 +15,17 @@
  * limitations under the License.
  */
 
-package extension
+package event
 
-import "github.com/apache/dubbo-go/metadata/mapping"
+import (
+	"testing"
 
-var (
-	globalNameMapping mapping.ServiceNameMapping
+	"github.com/stretchr/testify/assert"
 )
 
-func SetGlobalServiceNameMapping(nameMapping mapping.ServiceNameMapping) {
-	globalNameMapping = nameMapping
-}
-
-func GetGlobalServiceNameMapping() mapping.ServiceNameMapping {
-	return globalNameMapping
+func TestLogEventListener(t *testing.T) {
+	l := &logEventListener{}
+	assert.Equal(t, 0, l.GetPriority())
+	assert.Nil(t, l.GetEventType())
+	assert.Nil(t, l.OnEvent(&ServiceDiscoveryDestroyedEvent{}))
 }

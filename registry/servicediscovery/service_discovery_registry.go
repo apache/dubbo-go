@@ -26,6 +26,7 @@ import (
 
 	cm "github.com/Workiva/go-datastructures/common"
 	gxset "github.com/dubbogo/gost/container/set"
+	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 
 	"github.com/apache/dubbo-go/common"
@@ -38,7 +39,7 @@ import (
 	"github.com/apache/dubbo-go/metadata/service"
 	"github.com/apache/dubbo-go/metadata/service/remote"
 	"github.com/apache/dubbo-go/registry"
-	registryCommon "github.com/apache/dubbo-go/registry/common"
+	registryCommon "github.com/apache/dubbo-go/registry/event"
 	"github.com/apache/dubbo-go/registry/servicediscovery/proxy"
 	"github.com/apache/dubbo-go/registry/servicediscovery/synthesizer"
 	"github.com/apache/dubbo-go/remoting"
@@ -77,7 +78,7 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 	}
 	subscribedServices := parseServices(url.GetParam(constant.SUBSCRIBED_SERVICE_NAMES_KEY, ""))
 	subscribedURLsSynthesizers := synthesizer.GetAllSynthesizer()
-	serviceNameMapping := extension.GetServiceNameMapping(url.GetParam(constant.SERVICE_NAME_MAPPING_KEY, ""))
+	serviceNameMapping := extension.GetGlobalServiceNameMapping()
 	metaDataService, err := remote.NewMetadataService()
 	if err != nil {
 		return nil, perrors.WithMessage(err, "could not init metadata service")
@@ -160,17 +161,52 @@ func (s *serviceDiscoveryRegistry) Register(url common.URL) error {
 		return nil
 	}
 	ok, err := s.metaDataService.ExportURL(url)
-	s.metaDataService.PublishServiceDefinition(url)
+
 	if err != nil {
 		logger.Errorf("The URL[%s] registry catch error:%s!", url.String(), err.Error())
 		return err
 	}
-	if ok {
-		logger.Infof("The URL[%s] registry successfully!", url.String())
-	} else {
+	if !ok {
 		logger.Warnf("The URL[%s] has been registry!", url.String())
 	}
-	return nil
+
+	// we try to register this instance. Dubbo do this in org.apache.dubbo.config.bootstrap.DubboBootstrap
+	// But we don't want to design a similar bootstrap class.
+	ins, err := createInstance(url)
+	if err != nil {
+		return perrors.WithMessage(err, "could not create servcie instance, please check your service url")
+	}
+	return s.serviceDiscovery.Register(ins)
+}
+
+func createInstance(url common.URL) (registry.ServiceInstance, error) {
+	appConfig := config.GetApplicationConfig()
+	port, err := strconv.ParseInt(url.Port, 10, 32)
+	if err != nil {
+		return nil, perrors.WithMessage(err, "invalid port: "+url.Port)
+	}
+
+	host := url.Ip
+	if len(host) == 0 {
+		host, err = gxnet.GetLocalIP()
+		if err != nil {
+			return nil, perrors.WithMessage(err, "could not get the local Ip")
+		}
+	}
+
+	// usually we will add more metadata
+	metadata := make(map[string]string, 8)
+	metadata[constant.METADATA_STORAGE_TYPE_PROPERTY_NAME] = appConfig.MetadataType
+
+	return &registry.DefaultServiceInstance{
+		ServiceName: appConfig.Name,
+		Host:        host,
+		Port:        int(port),
+		Id:          host + constant.KEY_SEPARATOR + url.Port,
+		Enable:      true,
+		Healthy:     true,
+		Metadata:    metadata,
+	}, nil
 }
 
 func shouldRegister(url common.URL) bool {

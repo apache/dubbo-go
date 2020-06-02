@@ -18,6 +18,8 @@
 package remote
 
 import (
+	"sync"
+
 	"github.com/Workiva/go-datastructures/slice/skip"
 	"go.uber.org/atomic"
 )
@@ -38,6 +40,7 @@ import (
 const version = "1.0.0"
 
 // MetadataService is a implement of metadata service which will delegate the remote metadata report
+// This is singleton
 type MetadataService struct {
 	service.BaseMetadataService
 	inMemoryMetadataService *inmemory.MetadataService
@@ -46,16 +49,26 @@ type MetadataService struct {
 	delegateReport          *delegate.MetadataReport
 }
 
+var (
+	metadataServiceOnce     sync.Once
+	metadataServiceInstance *MetadataService
+)
+
 // NewMetadataService will create a new remote MetadataService instance
 func NewMetadataService() (*MetadataService, error) {
-	mr, err := delegate.NewMetadataReport()
-	if err != nil {
-		return nil, err
-	}
-	return &MetadataService{
-		inMemoryMetadataService: inmemory.NewMetadataService(),
-		delegateReport:          mr,
-	}, nil
+	var err error
+	metadataServiceOnce.Do(func() {
+		var mr *delegate.MetadataReport
+		mr, err = delegate.NewMetadataReport()
+		if err != nil {
+			return
+		}
+		metadataServiceInstance = &MetadataService{
+			inMemoryMetadataService: inmemory.NewMetadataService(),
+			delegateReport:          mr,
+		}
+	})
+	return metadataServiceInstance, err
 }
 
 // setInMemoryMetadataService will replace the in memory metadata service by the specific param
@@ -90,39 +103,41 @@ func (mts *MetadataService) PublishServiceDefinition(url common.URL) error {
 	interfaceName := url.GetParam(constant.INTERFACE_KEY, "")
 	isGeneric := url.GetParamBool(constant.GENERIC_KEY, false)
 	if len(interfaceName) > 0 && !isGeneric {
-		service := common.ServiceMap.GetService(url.Protocol, url.GetParam(constant.BEAN_NAME_KEY, url.Service()))
-		sd := definition.BuildServiceDefinition(*service, url)
+		sv := common.ServiceMap.GetService(url.Protocol, url.GetParam(constant.BEAN_NAME_KEY, url.Service()))
+		sd := definition.BuildServiceDefinition(*sv, url)
 		id := &identifier.MetadataIdentifier{
 			BaseMetadataIdentifier: identifier.BaseMetadataIdentifier{
 				ServiceInterface: interfaceName,
 				Version:          url.GetParam(constant.VERSION_KEY, ""),
-				Group:            url.GetParam(constant.GROUP_KEY, ""),
+				// Group:            url.GetParam(constant.GROUP_KEY, constant.SERVICE_DISCOVERY_DEFAULT_GROUP),
+				Group: url.GetParam(constant.GROUP_KEY, "test"),
 			},
 		}
 		mts.delegateReport.StoreProviderMetadata(id, sd)
+		return nil
 	}
 	logger.Errorf("publishProvider interfaceName is empty . providerUrl:%v ", url)
 	return nil
 }
 
 // GetExportedURLs will be implemented by in memory service
-func (MetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) (*skip.SkipList, error) {
-	return nil, nil
+func (mts *MetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) (*skip.SkipList, error) {
+	return mts.inMemoryMetadataService.GetExportedURLs(serviceInterface, group, version, protocol)
 }
 
 // GetSubscribedURLs will be implemented by in memory service
-func (MetadataService) GetSubscribedURLs() (*skip.SkipList, error) {
-	return nil, nil
+func (mts *MetadataService) GetSubscribedURLs() (*skip.SkipList, error) {
+	return mts.inMemoryMetadataService.GetSubscribedURLs()
 }
 
 // GetServiceDefinition will be implemented by in memory service
-func (MetadataService) GetServiceDefinition(interfaceName string, group string, version string) (string, error) {
-	return "", nil
+func (mts *MetadataService) GetServiceDefinition(interfaceName string, group string, version string) (string, error) {
+	return mts.inMemoryMetadataService.GetServiceDefinition(interfaceName, group, version)
 }
 
 // GetServiceDefinitionByServiceKey will be implemented by in memory service
-func (MetadataService) GetServiceDefinitionByServiceKey(serviceKey string) (string, error) {
-	return "", nil
+func (mts *MetadataService) GetServiceDefinitionByServiceKey(serviceKey string) (string, error) {
+	return mts.inMemoryMetadataService.GetServiceDefinitionByServiceKey(serviceKey)
 }
 
 // RefreshMetadata will refresh the exported & subscribed metadata to remote metadata report from the inmemory metadata service

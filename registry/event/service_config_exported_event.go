@@ -15,18 +15,12 @@
  * limitations under the License.
  */
 
-package extension
+package event
 
-import "github.com/apache/dubbo-go/metadata/mapping"
-
-var (
-	globalNameMapping mapping.ServiceNameMapping
+import (
+	"github.com/apache/dubbo-go/common/observer"
 )
 
-func SetGlobalServiceNameMapping(nameMapping mapping.ServiceNameMapping) {
-	globalNameMapping = nameMapping
-}
-
-func GetGlobalServiceNameMapping() mapping.ServiceNameMapping {
-	return globalNameMapping
+type ServiceConfigExportedEvent struct {
+	observer.BaseEvent
 }
