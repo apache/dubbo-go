@@ -30,7 +30,7 @@ import (
 
 var (
 	// generate request ID for global use
-	sequence atomic.Uint64
+	sequence atomic.Int64
 )
 
 func init() {
@@ -38,12 +38,13 @@ func init() {
 	sequence.Store(0)
 }
 
-func SequenceId() uint64 {
-	// increse 2 for every request.
+func SequenceId() int64 {
+	// increse 2 for every request as the same before.
+	// We expect that the request from client to server, the requestId is even; but from server to client, the requestId is odd.
 	return sequence.Add(2)
 }
 
-// Request ...
+// this is request for transport layer
 type Request struct {
 	ID int64
 	// protocol version
@@ -54,19 +55,18 @@ type Request struct {
 	Data   interface{}
 	TwoWay bool
 	Event  bool
-	// it is used to judge the request is unbroken
-	// broken bool
 }
 
-// NewRequest
+// NewRequest aims to create Request.
+// The ID is auto increase.
 func NewRequest(version string) *Request {
 	return &Request{
-		ID:      int64(SequenceId()),
+		ID:      SequenceId(),
 		Version: version,
 	}
 }
 
-// Response ...
+// this is response for transport layer
 type Response struct {
 	ID       int64
 	Version  string
@@ -77,7 +77,7 @@ type Response struct {
 	Result   interface{}
 }
 
-// NewResponse
+// NewResponse aims to create Response
 func NewResponse(id int64, version string) *Response {
 	return &Response{
 		ID:      id,
@@ -117,7 +117,8 @@ type PendingResponse struct {
 	Done      chan struct{}
 }
 
-// NewPendingResponse ...
+// NewPendingResponse aims to create PendingResponse.
+// Id is always from ID of Request
 func NewPendingResponse(id int64) *PendingResponse {
 	return &PendingResponse{
 		seq:      id,
@@ -131,7 +132,8 @@ func (r *PendingResponse) SetResponse(response *Response) {
 	r.response = response
 }
 
-// GetCallResponse ...
+// GetCallResponse is used for callback of async.
+// It is will return AsyncCallbackResponse.
 func (r PendingResponse) GetCallResponse() common.CallbackResponse {
 	return AsyncCallbackResponse{
 		Cause:     r.Err,
