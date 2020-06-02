@@ -141,6 +141,8 @@ func (c *dubboRegistryController) init() error {
 	}
 	c.queue = workqueue.New()
 
+	c.needWatchedNamespaceList = append(c.needWatchedNamespaceList, c.namespace)
+
 	// init all watch needed pod-informer
 	for _, watchedNS := range c.needWatchedNamespaceList {
 		c.initNamespacedPodInformer(watchedNS)
@@ -249,7 +251,7 @@ func (c *dubboRegistryController) processNextWorkItem() bool {
 // handle watched pod event
 func (c *dubboRegistryController) handleWatchedPodEvent(p *v1.Pod, eventType watch.EventType) {
 
-	logger.Debugf("get @type = %s event from @pod = %s", eventType , p.GetName())
+	logger.Warnf("get @type = %s event from @pod = %s", eventType , p.GetName())
 
 	for ak, av := range p.GetAnnotations() {
 
