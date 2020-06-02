@@ -63,7 +63,7 @@ type ConsumerConfig struct {
 	ConfigType     map[string]string           `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 }
 
-// UnmarshalYAML unmarshal the ConsumerConfig by @unmarshal function
+// UnmarshalYAML unmarshals the ConsumerConfig by @unmarshal function
 func (c *ConsumerConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
