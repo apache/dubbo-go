@@ -175,12 +175,12 @@ func (mts *MetadataService) PublishServiceDefinition(url common.URL) error {
 	if len(interfaceName) > 0 && !isGeneric {
 		//judge is consumer or provider
 		//side := url.GetParam(constant.SIDE_KEY, "")
-		//var service common.RPCService
+		//var service event.RPCService
 		service := common.ServiceMap.GetService(url.Protocol, url.GetParam(constant.BEAN_NAME_KEY, url.Service()))
-		//if side == common.RoleType(common.CONSUMER).Role() {
+		//if side == event.RoleType(event.CONSUMER).Role() {
 		//	//TODO:generate the service definition and store it
 		//
-		//} else if side == common.RoleType(common.PROVIDER).Role() {
+		//} else if side == event.RoleType(event.PROVIDER).Role() {
 		//	//TODO:generate the service definition and store it
 		//}
 		sd := definition.BuildServiceDefinition(*service, url)

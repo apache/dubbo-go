@@ -27,7 +27,8 @@ import (
 	"github.com/apache/dubbo-go/config"
 )
 
-// Metadataservice is used to define meta data related behaviors
+// MetadataService is used to define meta data related behaviors
+// usually the implementation should be singleton
 type MetadataService interface {
 	common.RPCService
 	// ServiceName will get the service's name in meta service , which is application name
@@ -56,7 +57,7 @@ type MetadataService interface {
 	Version() string
 }
 
-// BaseMetadataService is used for the common logic for struct who will implement interface MetadataService
+// BaseMetadataService is used for the event logic for struct who will implement interface MetadataService
 type BaseMetadataService struct {
 }
 
