@@ -68,8 +68,8 @@ func (c *BaseConfig) startConfigCenter() error {
 	return err
 }
 
+// prepareEnvironment prepare the environment
 func (c *BaseConfig) prepareEnvironment() error {
-
 	factory := extension.GetConfigCenterFactory(c.ConfigCenterConfig.Protocol)
 	dynamicConfig, err := factory.GetDynamicConfiguration(c.configCenterUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(dynamicConfig)
@@ -323,7 +323,7 @@ func (c *BaseConfig) freshInternalConfig(config *config.InmemoryConfiguration) {
 	setFieldValue(val, reflect.Value{}, config)
 }
 
-// SetFatherConfig ...
+// SetFatherConfig sets father config by @fatherConfig
 func (c *BaseConfig) SetFatherConfig(fatherConfig interface{}) {
 	c.fatherConfig = fatherConfig
 }
