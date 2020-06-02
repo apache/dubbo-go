@@ -31,7 +31,7 @@ const (
 	defaultStepTimeout = 10 * time.Second
 )
 
-// ShutdownConfig is configuration for graceful shutdown
+// ShutdownConfig is used as configuration for graceful shutdown
 type ShutdownConfig struct {
 	/*
 	 * Total timeout. Even though we don't release all resources,
@@ -58,12 +58,12 @@ type ShutdownConfig struct {
 	RequestsFinished bool
 }
 
-// Prefix returns ShutdownConfig prefix
+// nolint
 func (config *ShutdownConfig) Prefix() string {
 	return constant.ShutdownConfigPrefix
 }
 
-// GetTimeout gets timeout in ShutdownConfig
+// nolint
 func (config *ShutdownConfig) GetTimeout() time.Duration {
 	result, err := time.ParseDuration(config.Timeout)
 	if err != nil {
@@ -74,7 +74,7 @@ func (config *ShutdownConfig) GetTimeout() time.Duration {
 	return result
 }
 
-// GetStepTimeout gets StepTimeout in ShutdownConfig
+// nolint
 func (config *ShutdownConfig) GetStepTimeout() time.Duration {
 	result, err := time.ParseDuration(config.StepTimeout)
 	if err != nil {

@@ -59,7 +59,7 @@ func (c *RegistryConfig) UnmarshalYAML(unmarshal func(interface{}) error) error 
 	return nil
 }
 
-// Prefix returns RegistryConfig prefix
+// nolint
 func (*RegistryConfig) Prefix() string {
 	return constant.RegistryConfigPrefix + "|" + constant.SingleRegistryConfigPrefix
 }

@@ -66,7 +66,7 @@ type ReferenceConfig struct {
 	ForceTag       bool   `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
 }
 
-// Prefix is ReferenceConfig prefix
+// nolint
 func (c *ReferenceConfig) Prefix() string {
 	return constant.ReferenceConfigPrefix + c.InterfaceName + "."
 }

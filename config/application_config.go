@@ -36,12 +36,12 @@ type ApplicationConfig struct {
 	MetadataType string `default:"local" yaml:"metadataType" json:"metadataType,omitempty" property:"metadataType"` //field for metadata report
 }
 
-// Prefix returns ApplicationConfig prefix
+// nolint
 func (*ApplicationConfig) Prefix() string {
 	return constant.DUBBO + ".application."
 }
 
-// UnmarshalYAML unmarshal the ApplicationConfig by @unmarshal function
+// UnmarshalYAML unmarshals the ApplicationConfig by @unmarshal function
 func (c *ApplicationConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
