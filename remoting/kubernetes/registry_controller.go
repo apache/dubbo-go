@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/apache/dubbo-go/common/logger"
@@ -31,8 +33,13 @@ const (
 // dubboRegistryController
 // work like a kubernetes controller
 type dubboRegistryController struct {
-	ctx    context.Context
-	cancel context.CancelFunc
+
+	// clone from client
+	// manage lifecycle
+	ctx context.Context
+
+	// protect patch current pod operation
+	lock sync.Mutex
 
 	// current pod config
 	needWatchedNamespaceList []string
@@ -49,7 +56,33 @@ type dubboRegistryController struct {
 	queue                     workqueue.Interface //shared by namespaced informers
 }
 
+func newDubboRegistryController(ctx context.Context) (*dubboRegistryController, error) {
+
+	c := &dubboRegistryController{
+		ctx:        ctx,
+		watcherSet: newWatcherSet(ctx),
+	}
+
+	if err := c.readConfig(); err != nil {
+		return nil, perrors.WithMessage(err, "dubbo registry controller read config")
+	}
+
+	if err := c.init(); err != nil {
+		return nil,perrors.WithMessage(err, "dubbo registry controller init")
+	}
+
+	if _, err := c.initCurrentPod(); err != nil {
+		return nil,perrors.WithMessage(err, "init current pod")
+	}
+
+	go c.run()
+	return c, nil
+}
+
 // read dubbo-registry controller config
+// 1. read kubernetes InCluster config
+// 1. current pod name
+// 2. current pod working namespace
 func (c *dubboRegistryController) readConfig() error {
 	// read in-cluster config
 	cfg, err := rest.InClusterConfig()
@@ -116,21 +149,6 @@ func (c *dubboRegistryController) init() error {
 	return nil
 }
 
-func newDubboRegistryController() error {
-
-	c := &dubboRegistryController{}
-	if err := c.readConfig(); err != nil {
-		return perrors.WithMessage(err, "dubbo registry controller read config")
-	}
-
-	if err := c.init(); err != nil {
-		return perrors.WithMessage(err, "dubbo registry controller init")
-	}
-
-	go c.run()
-	return nil
-}
-
 type kubernetesEvent struct {
 	p *v1.Pod
 	t watch.EventType
@@ -186,9 +204,6 @@ func (c *dubboRegistryController) Run() {
 	}
 }
 
-func (c *dubboRegistryController) stop() {
-	c.cancel()
-}
 func (c *dubboRegistryController) run() {
 
 	defer c.queue.ShutDown()
@@ -200,11 +215,12 @@ func (c *dubboRegistryController) run() {
 		}
 	}
 
+	logger.Infof("init kubernetes registry client success @namespace = %q @Podname = %q", c.namespace, c.name)
+
 	// start work
 	go c.work()
-	// block wait
+	// block wait context cancel
 	<-c.ctx.Done()
-
 }
 
 func (c *dubboRegistryController) work() {
@@ -289,4 +305,177 @@ func (c *dubboRegistryController) unmarshalRecord(record string) ([]*WatcherEven
 		return nil, perrors.WithMessage(err, "decode json")
 	}
 	return out, nil
+}
+
+// initCurrentPod
+// 1. get current pod
+// 2. give the dubbo-label for this pod
+func (c *dubboRegistryController) initCurrentPod() (*v1.Pod, error) {
+
+	currentPod, err := c.kc.CoreV1().Pods(c.namespace).Get(c.name, metav1.GetOptions{})
+	if err != nil {
+		return nil, perrors.WithMessagef(err, "get current (%s) pod in namespace (%s)", c.name, c.namespace)
+	}
+
+	oldPod, newPod, err := c.assembleDUBBOLabel(currentPod)
+	if err != nil {
+		if err != ErrDubboLabelAlreadyExist {
+			return nil, perrors.WithMessage(err, "assemble dubbo label")
+		}
+		// current pod don't have label
+	}
+
+	p, err := c.getPatch(oldPod, newPod)
+	if err != nil {
+		return nil, perrors.WithMessage(err, "get patch")
+	}
+
+	currentPod, err = c.patchCurrentPod(p)
+	if err != nil {
+		return nil, perrors.WithMessage(err, "patch to current pod")
+	}
+
+	return currentPod, nil
+}
+
+// patch current pod
+// write new meta for current pod
+func (c *dubboRegistryController) patchCurrentPod(patch []byte) (*v1.Pod, error) {
+
+	updatedPod, err := c.kc.CoreV1().Pods(c.namespace).Patch(c.name, types.StrategicMergePatchType, patch)
+	if err != nil {
+		return nil, perrors.WithMessage(err, "patch in kubernetes pod ")
+	}
+	return updatedPod, nil
+}
+
+// assemble the dubbo kubernetes label
+// every dubbo instance should be labeled spec {"dubbo.io/label":"dubbo.io/label-value"} label
+func (c *dubboRegistryController) assembleDUBBOLabel(currentPod *v1.Pod) (*v1.Pod, *v1.Pod, error) {
+
+	var (
+		oldPod = &v1.Pod{}
+		newPod = &v1.Pod{}
+	)
+
+	oldPod.Labels = make(map[string]string, 8)
+	newPod.Labels = make(map[string]string, 8)
+
+	if currentPod.GetLabels() != nil {
+
+		if currentPod.GetLabels()[DubboIOLabelKey] == DubboIOLabelValue {
+			// already have label
+			return nil, nil, ErrDubboLabelAlreadyExist
+		}
+	}
+
+	// copy current pod labels to oldPod && newPod
+	for k, v := range currentPod.GetLabels() {
+		oldPod.Labels[k] = v
+		newPod.Labels[k] = v
+	}
+	// assign new label for current pod
+	newPod.Labels[DubboIOLabelKey] = DubboIOLabelValue
+	return oldPod, newPod, nil
+}
+
+// assemble the dubbo kubernetes annotations
+// accord the current pod && (k,v) assemble the old-pod, new-pod
+func (c *dubboRegistryController) assembleDUBBOAnnotations(k, v string, currentPod *v1.Pod) (oldPod *v1.Pod, newPod *v1.Pod, err error) {
+
+	oldPod = &v1.Pod{}
+	newPod = &v1.Pod{}
+	oldPod.Annotations = make(map[string]string, 8)
+	newPod.Annotations = make(map[string]string, 8)
+
+	for k, v := range currentPod.GetAnnotations() {
+		oldPod.Annotations[k] = v
+		newPod.Annotations[k] = v
+	}
+
+	al, err := c.unmarshalRecord(oldPod.GetAnnotations()[DubboIOAnnotationKey])
+	if err != nil {
+		err = perrors.WithMessage(err, "unmarshal record")
+		return
+	}
+
+	newAnnotations, err := c.marshalRecord(append(al, &WatcherEvent{Key: k, Value: v}))
+	if err != nil {
+		err = perrors.WithMessage(err, "marshal record")
+		return
+	}
+
+	newPod.Annotations[DubboIOAnnotationKey] = newAnnotations
+	return
+}
+
+// getPatch
+// get the kubernetes pod patch bytes
+func (c *dubboRegistryController) getPatch(oldPod, newPod *v1.Pod) ([]byte, error) {
+
+	oldData, err := json.Marshal(oldPod)
+	if err != nil {
+		return nil, perrors.WithMessage(err, "marshal old pod")
+	}
+
+	newData, err := json.Marshal(newPod)
+	if err != nil {
+		return nil, perrors.WithMessage(err, "marshal newPod pod")
+	}
+
+	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, v1.Pod{})
+	if err != nil {
+		return nil, perrors.WithMessage(err, "create two-way-merge-patch")
+	}
+	return patchBytes, nil
+}
+
+// marshalRecord
+// marshal the kubernetes dubbo annotation value
+func (c *dubboRegistryController) marshalRecord(ol []*WatcherEvent) (string, error) {
+
+	msg, err := json.Marshal(ol)
+	if err != nil {
+		return "", perrors.WithMessage(err, "json encode object list")
+	}
+	return base64.URLEncoding.EncodeToString(msg), nil
+}
+
+func (c *dubboRegistryController) readCurrentPod() (*v1.Pod, error) {
+
+	currentPod, err := c.kc.CoreV1().Pods(c.namespace).Get(c.name, metav1.GetOptions{})
+	if err != nil {
+		return nil, perrors.WithMessagef(err, "get current (%s) pod in namespace (%s)", c.name, c.namespace)
+	}
+	return currentPod, nil
+}
+
+func (c *dubboRegistryController) addAnnotationForCurrentPod(k string, v string) error {
+
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	// 1. accord old pod && (k, v) assemble new pod dubbo annotion v
+	// 2. get patch data
+	// 3. PATCH the pod
+	currentPod, err := c.readCurrentPod()
+	if err != nil {
+		return perrors.WithMessage(err, "read current pod")
+	}
+
+	oldPod, newPod, err := c.assembleDUBBOAnnotations(k, v, currentPod)
+	if err != nil {
+		return perrors.WithMessage(err, "assemble")
+	}
+
+	patchBytes, err := c.getPatch(oldPod, newPod)
+	if err != nil {
+		return perrors.WithMessage(err, "get patch")
+	}
+
+	_, err = c.patchCurrentPod(patchBytes)
+	if err != nil {
+		return perrors.WithMessage(err, "patch current pod")
+	}
+	return nil
 }
