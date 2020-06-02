@@ -19,9 +19,11 @@ package kubernetes
 
 import (
 	"context"
+	"github.com/apache/dubbo-go/common/logger"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 import (
@@ -334,6 +336,17 @@ func newWatcherSet(ctx context.Context) WatcherSet {
 		cache:    map[string]*WatcherEvent{},
 		watchers: map[uint64]*watcher{},
 	}
+	go func(){
+
+		ticker := time.NewTicker(5*time.Second)
+		for{
+
+			select{
+			case <- ticker.C:
+			}
+			logger.Infof("store have %v", s.cache)
+		}
+	}()
 	go s.closeWatchers()
 	return s
 }
