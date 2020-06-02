@@ -249,6 +249,8 @@ func (c *dubboRegistryController) processNextWorkItem() bool {
 // handle watched pod event
 func (c *dubboRegistryController) handleWatchedPodEvent(p *v1.Pod, eventType watch.EventType) {
 
+	logger.Debugf("get @type = %s event from @pod = %s", eventType , p.GetName())
+
 	for ak, av := range p.GetAnnotations() {
 
 		// not dubbo interest annotation
