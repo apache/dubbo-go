@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 )
 
 import (
@@ -49,6 +50,7 @@ var (
 	// Make the connection can be shared.
 	// It will create one connection for one address (ip+port)
 	exchangeClientMap *sync.Map = new(sync.Map)
+	exchangeLock      *sync.Map = new(sync.Map)
 )
 
 func init() {
@@ -93,6 +95,7 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 func (dp *DubboProtocol) Refer(url common.URL) protocol.Invoker {
 	exchangeClient := getExchangeClient(url)
 	if exchangeClient == nil {
+		logger.Warnf("can't dial the server: %+v", url.Location)
 		return nil
 	}
 	invoker := NewDubboInvoker(url, exchangeClient)
@@ -178,14 +181,40 @@ func doHandleRequest(rpcInvocation *invocation.RPCInvocation) protocol.RPCResult
 func getExchangeClient(url common.URL) *remoting.ExchangeClient {
 	clientTmp, ok := exchangeClientMap.Load(url.Location)
 	if !ok {
-		exchangeClientTmp := remoting.NewExchangeClient(url, getty.NewClient(getty.Options{
-			ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
-		}), config.GetConsumerConfig().ConnectTimeout, false)
+		var exchangeClientTmp *remoting.ExchangeClient
+		func() {
+			// lock for NewExchangeClient and store into map.
+			_, loaded := exchangeLock.LoadOrStore(url.Location, 0x00)
+			// unlock
+			defer exchangeLock.Delete(url.Location)
+			if loaded {
+				// retry for 5 times.
+				for i := 0; i < 5; i++ {
+					if clientTmp, ok = exchangeClientMap.Load(url.Location); ok {
+						break
+					} else {
+						// if cannot get, sleep a while.
+						time.Sleep(time.Duration(i*100) * time.Millisecond)
+					}
+				}
+				return
+			}
+			// new ExchangeClient
+			exchangeClientTmp = remoting.NewExchangeClient(url, getty.NewClient(getty.Options{
+				ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
+			}), config.GetConsumerConfig().ConnectTimeout, false)
+			// input store
+			if exchangeClientTmp != nil {
+				exchangeClientMap.Store(url.Location, exchangeClientTmp)
+			}
+		}()
 		if exchangeClientTmp != nil {
-			exchangeClientMap.Store(url.Location, exchangeClientTmp)
+			return exchangeClientTmp
 		}
-
-		return exchangeClientTmp
+	}
+	// cannot dial the server
+	if clientTmp == nil {
+		return nil
 	}
 	exchangeClient, ok := clientTmp.(*remoting.ExchangeClient)
 	if !ok {

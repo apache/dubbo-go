@@ -51,10 +51,14 @@ type Client interface {
 
 // This is abstraction level. it is like facade.
 type ExchangeClient struct {
+	// connect server timeout
 	ConnectTimeout time.Duration
-	address        string
-	client         Client
-	init           bool
+	// to dial server address. The format: ip:port
+	address string
+	// the client that will deal with the transport. It is interface, and it will use gettyClient by default.
+	client Client
+	// the tag for init.
+	init bool
 }
 
 // handle the message from server
@@ -114,11 +118,16 @@ func (client *ExchangeClient) Request(invocation *protocol.Invocation, url commo
 	AddPendingResponse(rsp)
 
 	err := client.client.Request(request, timeout, rsp)
+	// request error
 	if err != nil {
 		result.Err = err
 		return err
 	}
-	result.Rest = rsp.response.Result
+	if resultTmp, ok := rsp.response.Result.(*protocol.RPCResult); ok {
+		result.Rest = resultTmp.Rest
+		result.Attrs = resultTmp.Attrs
+		result.Err = resultTmp.Err
+	}
 	return nil
 }
 
