@@ -14,7 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package grpc
+
+import (
+	perrors "github.com/pkg/errors"
+)
+
+
 
 type (
 	// ServerConfig
@@ -24,24 +31,31 @@ type (
 	// ClientConfig
 	ClientConfig struct {
 		// content type, more information refer by https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests
-		ContentType string `default:"application/grpc+proto" yaml:"content_type" json:"content_type,omitempty"`
+		ContentType string `default:"proto" yaml:"content_type" json:"content_type,omitempty"`
 	}
 )
 
 // GetDefaultClientConfig ...
 func GetDefaultClientConfig() ClientConfig {
 	return ClientConfig{
-		ContentType: "application/grpc+proto",
+		ContentType: "proto",
 	}
 }
 
 // GetDefaultServerConfig ...
 func GetDefaultServerConfig() ServerConfig {
-	return ServerConfig{
-	}
+	return ServerConfig{}
+}
+
+func GetCustomClientConfig() ClientConfig {
+	return ClientConfig{}
 }
 
 func (c *ClientConfig) Validate() error {
+	if c.ContentType != CODEC_JSON && c.ContentType != CODEC_PROTO {
+		return perrors.Errorf(" dubbo-go grpc codec currently only support protobuf、json, %s isn't supported,"+
+			" please check protocol content_type config", c.ContentType)
+	}
 	return nil
 }
 

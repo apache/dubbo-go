@@ -47,7 +47,8 @@ func init() {
 		return
 	}
 	protocolConf := config.GetConsumerConfig().ProtocolConf
-	defaultClientConfig := GetDefaultClientConfig()
+	customClientConfig := GetCustomClientConfig()
+
 	if protocolConf == nil {
 		logger.Info("protocol_conf default use dubbo config")
 	} else {
@@ -60,15 +61,19 @@ func init() {
 		if err != nil {
 			panic(err)
 		}
-		err = yaml.Unmarshal(grpcConfByte, &defaultClientConfig)
+		err = yaml.Unmarshal(grpcConfByte, &customClientConfig)
 		if err != nil {
 			panic(err)
 		}
 	}
-	clientConf = &defaultClientConfig
+
+	clientConf = &customClientConfig
+	if clientConf == nil || len(clientConf.ContentType) == 0 {
+		defaultClientConfig := GetDefaultClientConfig()
+		clientConf = &defaultClientConfig
+	}
 	if err := clientConf.Validate(); err != nil {
-		logger.Warnf("[CheckValidity] error: %v", err)
-		return
+		panic(err)
 	}
 }
 
@@ -82,7 +87,7 @@ type Client struct {
 func NewClient(url common.URL) *Client {
 	// if global trace instance was set , it means trace function enabled. If not , will return Nooptracer
 	tracer := opentracing.GlobalTracer()
-	dailOpts := make([]grpc.DialOption, 0)
+	dailOpts := make([]grpc.DialOption, 0, 4)
 	dailOpts = append(dailOpts, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithUnaryInterceptor(
 		otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())),
 		grpc.WithDefaultCallOptions(grpc.CallContentSubtype(clientConf.ContentType)))
