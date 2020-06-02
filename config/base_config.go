@@ -68,7 +68,6 @@ func (c *BaseConfig) startConfigCenter() error {
 	return err
 }
 
-// prepareEnvironment prepare the environment
 func (c *BaseConfig) prepareEnvironment() error {
 	factory := extension.GetConfigCenterFactory(c.ConfigCenterConfig.Protocol)
 	dynamicConfig, err := factory.GetDynamicConfiguration(c.configCenterUrl)

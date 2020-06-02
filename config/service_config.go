@@ -80,12 +80,12 @@ type ServiceConfig struct {
 	cacheMutex    sync.Mutex
 }
 
-// Prefix returns ServiceConfig prefix
+// nolint
 func (c *ServiceConfig) Prefix() string {
 	return constant.ServiceConfigPrefix + c.InterfaceName + "."
 }
 
-// UnmarshalYAML unmarshal the ServiceConfig by @unmarshal function
+// UnmarshalYAML unmarshals the ServiceConfig by @unmarshal function
 func (c *ServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err

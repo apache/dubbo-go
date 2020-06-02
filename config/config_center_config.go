@@ -54,7 +54,7 @@ type ConfigCenterConfig struct {
 	timeout       time.Duration
 }
 
-// UnmarshalYAML unmarshal the ConfigCenterConfig by @unmarshal function
+// UnmarshalYAML unmarshals the ConfigCenterConfig by @unmarshal function
 func (c *ConfigCenterConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
