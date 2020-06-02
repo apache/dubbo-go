@@ -344,7 +344,10 @@ func newWatcherSet(ctx context.Context) WatcherSet {
 			select{
 			case <- ticker.C:
 			}
-			logger.Infof("store have %v", s.cache)
+
+			for k := range s.cache{
+				logger.Infof("store have %v", k)
+			}
 		}
 	}()
 	go s.closeWatchers()
