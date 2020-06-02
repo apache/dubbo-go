@@ -25,9 +25,9 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
-// ApplicationConfig ...
+// ApplicationConfig is a configuration for current application, whether the application is a provider or a consumer
 type ApplicationConfig struct {
-	Organization string `yaml:"organization"  json:"organization,omitempty" property:"organization"`
+	Organization string `yaml:"organization" json:"organization,omitempty" property:"organization"`
 	Name         string `yaml:"name" json:"name,omitempty" property:"name"`
 	Module       string `yaml:"module" json:"module,omitempty" property:"module"`
 	Version      string `yaml:"version" json:"version,omitempty" property:"version"`
@@ -36,22 +36,12 @@ type ApplicationConfig struct {
 	MetadataType string `default:"local" yaml:"metadataType" json:"metadataType,omitempty" property:"metadataType"` //field for metadata report
 }
 
-// Prefix ...
+// Prefix returns ApplicationConfig prefix
 func (*ApplicationConfig) Prefix() string {
 	return constant.DUBBO + ".application."
 }
 
-// Id ...
-func (c *ApplicationConfig) Id() string {
-	return ""
-}
-
-// SetId ...
-func (c *ApplicationConfig) SetId(id string) {
-
-}
-
-// UnmarshalYAML ...
+// UnmarshalYAML unmarshal the ApplicationConfig by @unmarshal function
 func (c *ApplicationConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err

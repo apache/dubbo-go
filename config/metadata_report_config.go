@@ -32,7 +32,7 @@ import (
 	"github.com/apache/dubbo-go/config/instance"
 )
 
-// MethodConfig ...
+// MethodConfig is method level configuration
 type MetadataReportConfig struct {
 	Protocol   string            `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
 	Address    string            `yaml:"address" json:"address,omitempty" property:"address"`
@@ -43,12 +43,12 @@ type MetadataReportConfig struct {
 	Group      string            `yaml:"group" json:"group,omitempty" property:"group"`
 }
 
-// Prefix ...
+// Prefix returns MetadataReportConfig prefix
 func (c *MetadataReportConfig) Prefix() string {
 	return constant.MetadataReportPrefix
 }
 
-// UnmarshalYAML ...
+// UnmarshalYAML unmarshal the MetadataReportConfig by @unmarshal function
 func (c *MetadataReportConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return perrors.WithStack(err)
@@ -60,7 +60,7 @@ func (c *MetadataReportConfig) UnmarshalYAML(unmarshal func(interface{}) error) 
 	return nil
 }
 
-// ToUrl ...
+// ToUrl transforms MetadataReportConfig to url
 func (c *MetadataReportConfig) ToUrl() (*common.URL, error) {
 	urlMap := make(url.Values)
 

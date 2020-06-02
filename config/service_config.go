@@ -44,7 +44,7 @@ import (
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 )
 
-// ServiceConfig ...
+// ServiceConfig is the configuration of the service provider
 type ServiceConfig struct {
 	context                     context.Context
 	id                          string
@@ -80,12 +80,12 @@ type ServiceConfig struct {
 	cacheMutex    sync.Mutex
 }
 
-// Prefix ...
+// Prefix returns ServiceConfig prefix
 func (c *ServiceConfig) Prefix() string {
 	return constant.ServiceConfigPrefix + c.InterfaceName + "."
 }
 
-// UnmarshalYAML ...
+// UnmarshalYAML unmarshal the ServiceConfig by @unmarshal function
 func (c *ServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
