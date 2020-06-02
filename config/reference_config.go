@@ -39,7 +39,7 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-// ReferenceConfig ...
+// ReferenceConfig is the configuration of service consumer
 type ReferenceConfig struct {
 	context        context.Context
 	pxy            *proxy.Proxy
@@ -66,7 +66,7 @@ type ReferenceConfig struct {
 	ForceTag       bool   `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
 }
 
-// Prefix ...
+// Prefix is ReferenceConfig prefix
 func (c *ReferenceConfig) Prefix() string {
 	return constant.ReferenceConfigPrefix + c.InterfaceName + "."
 }
@@ -76,7 +76,7 @@ func NewReferenceConfig(id string, ctx context.Context) *ReferenceConfig {
 	return &ReferenceConfig{id: id, context: ctx}
 }
 
-// UnmarshalYAML ...
+// UnmarshalYAML unmarshal the ReferenceConfig by @unmarshal function
 func (c *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	type rf ReferenceConfig
 	raw := rf{} // Put your defaults here
@@ -168,7 +168,7 @@ func (c *ReferenceConfig) Implement(v common.RPCService) {
 	c.pxy.Implement(v)
 }
 
-// GetRPCService ...
+// GetRPCService gets RPCService from proxy
 func (c *ReferenceConfig) GetRPCService() common.RPCService {
 	return c.pxy.Get()
 }

@@ -36,17 +36,17 @@ func SetProviderService(service common.RPCService) {
 	proServices[service.Reference()] = service
 }
 
-// GetConsumerService ...
+// GetConsumerService gets ConsumerService by @name
 func GetConsumerService(name string) common.RPCService {
 	return conServices[name]
 }
 
-// GetProviderService ...
+// GetProviderService gets ProviderService by @name
 func GetProviderService(name string) common.RPCService {
 	return proServices[name]
 }
 
-// GetCallback ...
+// GetCallback gets CallbackResponse by @name
 func GetCallback(name string) func(response common.CallbackResponse) {
 	service := GetConsumerService(name)
 	if sv, ok := service.(common.AsyncCallbackService); ok {
