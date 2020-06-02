@@ -150,7 +150,7 @@ func (s *watcherSetImpl) Done() <-chan struct{} {
 // put the watch event to watcher-set
 func (s *watcherSetImpl) Put(watcherEvent *WatcherEvent) error {
 
-	sendMsg := func(object *WatcherEvent, w *watcher) {
+	blockSendMsg := func(object *WatcherEvent, w *watcher) {
 
 		select {
 		case <-w.done():
@@ -198,12 +198,12 @@ func (s *watcherSetImpl) Put(watcherEvent *WatcherEvent) error {
 		}
 		if !w.interested.prefix {
 			if watcherEvent.Key == w.interested.key {
-				go sendMsg(watcherEvent, w)
+				blockSendMsg(watcherEvent, w)
 			}
 			// not interest
 			continue
 		}
-		go sendMsg(watcherEvent, w)
+		blockSendMsg(watcherEvent, w)
 	}
 	return nil
 }
