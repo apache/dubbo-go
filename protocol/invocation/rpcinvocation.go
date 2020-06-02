@@ -18,7 +18,7 @@
 package invocation
 
 import (
-	"bytes"
+	"github.com/apache/dubbo-go/common"
 	"reflect"
 	"sync"
 )
@@ -144,26 +144,8 @@ func (r *RPCInvocation) SetCallBack(c interface{}) {
 }
 
 func (r *RPCInvocation) ServiceKey() string {
-	intf := r.AttachmentsByKey(constant.INTERFACE_KEY, "")
-	if len(intf) == 0 {
-		return ""
-	}
-	buf := &bytes.Buffer{}
-	group := r.AttachmentsByKey(constant.GROUP_KEY, "")
-	if len(group) != 0 {
-		buf.WriteString(group)
-		buf.WriteString("/")
-	}
-
-	buf.WriteString(intf)
-
-	version := r.AttachmentsByKey(constant.VERSION_KEY, "")
-	if len(version) != 0 && version != "0.0.0" {
-		buf.WriteString(":")
-		buf.WriteString(version)
-	}
-
-	return buf.String()
+	return common.ServiceKey(r.AttachmentsByKey(constant.INTERFACE_KEY, ""),
+		r.AttachmentsByKey(constant.GROUP_KEY, ""), r.AttachmentsByKey(constant.VERSION_KEY, ""))
 }
 
 // /////////////////////////
