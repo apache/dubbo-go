@@ -17,7 +17,7 @@
 
 package filter
 
-// TpsLimitStrategy ...
+// TpsLimitStrategy defines how to do the TPS limiting in method level. 
 /*
  * please register your implementation by invoking SetTpsLimitStrategy
  * "UserProvider":
@@ -37,7 +37,7 @@ type TpsLimitStrategy interface {
 	IsAllowable() bool
 }
 
-// TpsLimitStrategyCreator, the creator abstraction for TpsLimitStrategy
+// TpsLimitStrategyCreator is the creator abstraction for TpsLimitStrategy
 type TpsLimitStrategyCreator interface {
 	// Create will create an instance of TpsLimitStrategy
 	// It will be a little hard to understand this method.
