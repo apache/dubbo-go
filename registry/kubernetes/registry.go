@@ -160,7 +160,7 @@ func newKubernetesRegistry(url *common.URL) (registry.Registry, error) {
 	go r.HandleClientRestart()
 	r.InitListeners()
 
-	logger.Debugf("the kubernetes registry started")
+	logger.Debugf("kubernetes registry started")
 
 	return r, nil
 }
