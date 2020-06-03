@@ -93,7 +93,7 @@ func newDubboRegistryController(ctx context.Context, roleType common.RoleType, k
 	}
 
 	if err := c.readConfig(); err != nil {
-		return nil, perrors.WithMessage(err, "dubbo registry controller read config")
+		return nil, perrors.WithMessage(err, "read config")
 	}
 
 	if err := c.initCurrentPod(); err != nil {
@@ -107,7 +107,7 @@ func newDubboRegistryController(ctx context.Context, roleType common.RoleType, k
 	if roleType == common.CONSUMER {
 		// only consumer need list && watch
 		if err := c.initPodInformer(); err != nil {
-			return nil, perrors.WithMessage(err, "dubbo registry controller init pod informer")
+			return nil, perrors.WithMessage(err, "init pod informer")
 		}
 		go c.run()
 	}
