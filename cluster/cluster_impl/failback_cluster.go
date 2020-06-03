@@ -31,7 +31,7 @@ func init() {
 	extension.SetCluster(failback, NewFailbackCluster)
 }
 
-// NewFailbackCluster returns failback cluster instance
+// NewFailbackCluster returns a failback cluster instance
 //
 // Failure automatically restored, failed to record the background request,
 // regular retransmission. Usually used for message notification operations.
