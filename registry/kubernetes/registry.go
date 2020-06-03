@@ -19,7 +19,6 @@ package kubernetes
 
 import (
 	"fmt"
-	v1 "k8s.io/api/core/v1"
 	"os"
 	"path"
 	"sync"
@@ -30,6 +29,7 @@ import (
 	"github.com/dubbogo/getty"
 	"github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
+	v1 "k8s.io/api/core/v1"
 )
 
 import (

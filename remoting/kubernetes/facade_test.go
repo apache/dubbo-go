@@ -18,11 +18,14 @@
 package kubernetes
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
 	"strconv"
 	"sync"
 	"testing"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 )
 
 type mockFacade struct {
