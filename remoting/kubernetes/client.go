@@ -70,7 +70,7 @@ func newClient(url common.URL) (*Client, error) {
 
 	if r == common.CONSUMER {
 		// only consumer have to start informer factory
-		c.controller.Run()
+		c.controller.startALLInformers()
 	}
 	return c, nil
 }
@@ -185,8 +185,8 @@ func ValidateClient(container clientFacade) error {
 
 		newClient, err := newClient(container.GetUrl())
 		if err != nil {
-			logger.Warnf("new kubernetes client (namespace{%s}: %v)", "", err)
-			return perrors.WithMessagef(err, "new kubernetes client (:%+v)", "")
+			logger.Warnf("new kubernetes client: %v)", err)
+			return perrors.WithMessage(err, "new kubernetes client")
 		}
 		container.SetClient(newClient)
 	}
@@ -212,6 +212,6 @@ func NewMockClient(podList *v1.PodList) (*Client, error) {
 		controller: controller,
 	}
 
-	c.controller.Run()
+	c.controller.startALLInformers()
 	return c, nil
 }
