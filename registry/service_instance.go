@@ -87,11 +87,17 @@ func (d *DefaultServiceInstance) IsHealthy() bool {
 	return d.Healthy
 }
 
-// GetMetadata will return the metadata
+// GetMetadata will return the metadata, it will never return nil
 func (d *DefaultServiceInstance) GetMetadata() map[string]string {
+	if d.Metadata == nil {
+		d.Metadata = make(map[string]string, 0)
+	}
 	return d.Metadata
 }
 
+// ServiceInstanceCustomizer is an extension point which allow user using custom logic to modify instance
+// Be careful of priority. Usually you should use number between [100, 9000]
+// other number will be thought as system reserve number
 type ServiceInstanceCustomizer interface {
 	gxsort.Prioritizer
 

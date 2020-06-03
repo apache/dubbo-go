@@ -32,7 +32,6 @@ type EventListener interface {
 	// OnEvent handle this event
 	OnEvent(e Event) error
 	// GetEventType listen which event type
-	// return nil if the implementation want to listen any event
 	GetEventType() reflect.Type
 }
 
