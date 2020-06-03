@@ -18,10 +18,6 @@
 package service
 
 import (
-	"github.com/Workiva/go-datastructures/slice/skip"
-)
-
-import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/config"
@@ -44,9 +40,11 @@ type MetadataService interface {
 	// PublishServiceDefinition will generate the target url's code info
 	PublishServiceDefinition(url common.URL) error
 	// GetExportedURLs will get the target exported url in metadata
-	GetExportedURLs(serviceInterface string, group string, version string, protocol string) (*skip.SkipList, error)
+	// the url should be unique
+	GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]common.URL, error)
 	// GetExportedURLs will get the target subscribed url in metadata
-	GetSubscribedURLs() (*skip.SkipList, error)
+	// the url should be unique
+	GetSubscribedURLs() ([]common.URL, error)
 	// GetServiceDefinition will get the target service info store in metadata
 	GetServiceDefinition(interfaceName string, group string, version string) (string, error)
 	// GetServiceDefinition will get the target service info store in metadata by service key

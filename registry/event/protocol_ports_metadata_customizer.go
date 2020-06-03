@@ -18,6 +18,9 @@
 package event
 
 import (
+	"encoding/json"
+	"strconv"
+
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/metadata/service/remote"
@@ -44,9 +47,49 @@ func (p *ProtocolPortsMetadataCustomizer) Customize(instance registry.ServiceIns
 	// 4 is enough...
 	protocolMap := make(map[string]int, 4)
 
-	list, err := metadataService.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE,constant.ANY_VALUE)
-	if err != nil {
-		logger.Errorf("Could", err)
+	list, err := metadataService.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
+	if err != nil || list == nil {
+		logger.Errorf("Could not find exported urls", err)
 		return
 	}
+
+	for _, u := range list {
+		if len(u.Protocol) == 0 {
+			continue
+		}
+
+		port, err := strconv.Atoi(u.Port)
+		if err != nil {
+			logger.Errorf("Could not customize the metadata of port. ", err)
+		}
+		protocolMap[u.Protocol] = port
+	}
+
+	instance.GetMetadata()[constant.SERVICE_INSTANCE_ENDPOINTS] = endpointsStr(protocolMap)
+}
+
+func endpointsStr(protocolMap map[string]int) string {
+	if len(protocolMap) == 0 {
+		return ""
+	}
+
+	endpoints := make([]endpoint, 0, len(protocolMap))
+	for k, v := range protocolMap {
+		endpoints = append(endpoints, endpoint{
+			port:     v,
+			protocol: k,
+		})
+	}
+
+	str, err := json.Marshal(endpoints)
+	if err != nil {
+		logger.Errorf("could not convert the endpoints to json", err)
+		return ""
+	}
+	return string(str)
+}
+
+type endpoint struct {
+	port     int
+	protocol string
 }
