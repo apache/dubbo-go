@@ -19,8 +19,10 @@ package event
 
 import (
 	"github.com/apache/dubbo-go/common/observer"
+	"github.com/apache/dubbo-go/config"
 )
 
 type ServiceConfigExportedEvent struct {
 	observer.BaseEvent
+	ServiceConfig config.ServiceConfig
 }

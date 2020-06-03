@@ -17,6 +17,7 @@
 package inmemory
 
 import (
+	"sort"
 	"sync"
 )
 
@@ -89,7 +90,7 @@ func (mts *MetadataService) addURL(targetMap *sync.Map, url *common.URL) bool {
 		mts.lock.RUnlock()
 	}
 	mts.lock.Lock()
-	//double chk
+	// double chk
 	wantedUrl := urlSet.(*skip.SkipList).Get(Comparator(*url))
 	if len(wantedUrl) > 0 && wantedUrl[0] != nil {
 		mts.lock.Unlock()
@@ -115,35 +116,38 @@ func (mts *MetadataService) removeURL(targetMap *sync.Map, url *common.URL) {
 }
 
 // getAllService can return all the exportedUrlString except for metadataService
-func (mts *MetadataService) getAllService(services *sync.Map) *skip.SkipList {
-	skipList := skip.New(uint64(0))
+func (mts *MetadataService) getAllService(services *sync.Map) []common.URL {
+	// using skip list to dedup and sorting
+	res := make([]common.URL, 0)
 	services.Range(func(key, value interface{}) bool {
 		urls := value.(*skip.SkipList)
 		for i := uint64(0); i < urls.Len(); i++ {
 			url := common.URL(urls.ByPosition(i).(Comparator))
 			if url.GetParam(constant.INTERFACE_KEY, url.Path) != constant.SIMPLE_METADATA_SERVICE_NAME {
-				skipList.Insert(Comparator(url))
+				res = append(res, url)
 			}
 		}
 		return true
 	})
-	return skipList
+	sort.Sort(common.URLSlice(res))
+	return res
 }
 
 // getSpecifiedService can return specified service url by serviceKey
-func (mts *MetadataService) getSpecifiedService(services *sync.Map, serviceKey string, protocol string) *skip.SkipList {
-	skipList := skip.New(uint64(0))
+func (mts *MetadataService) getSpecifiedService(services *sync.Map, serviceKey string, protocol string) []common.URL {
+	res := make([]common.URL, 0)
 	serviceList, loaded := services.Load(serviceKey)
 	if loaded {
 		urls := serviceList.(*skip.SkipList)
 		for i := uint64(0); i < urls.Len(); i++ {
 			url := common.URL(urls.ByPosition(i).(Comparator))
 			if len(protocol) == 0 || url.Protocol == protocol || url.GetParam(constant.PROTOCOL_KEY, "") == protocol {
-				skipList.Insert(Comparator(url))
+				res = append(res, url)
 			}
 		}
+		sort.Stable(common.URLSlice(res))
 	}
-	return skipList
+	return res
 }
 
 // ExportURL can store the in memory
@@ -173,16 +177,16 @@ func (mts *MetadataService) PublishServiceDefinition(url common.URL) error {
 	interfaceName := url.GetParam(constant.INTERFACE_KEY, "")
 	isGeneric := url.GetParamBool(constant.GENERIC_KEY, false)
 	if len(interfaceName) > 0 && !isGeneric {
-		//judge is consumer or provider
-		//side := url.GetParam(constant.SIDE_KEY, "")
-		//var service event.RPCService
+		// judge is consumer or provider
+		// side := url.GetParam(constant.SIDE_KEY, "")
+		// var service event.RPCService
 		service := common.ServiceMap.GetService(url.Protocol, url.GetParam(constant.BEAN_NAME_KEY, url.Service()))
-		//if side == event.RoleType(event.CONSUMER).Role() {
+		// if side == event.RoleType(event.CONSUMER).Role() {
 		//	//TODO:generate the service definition and store it
 		//
-		//} else if side == event.RoleType(event.PROVIDER).Role() {
+		// } else if side == event.RoleType(event.PROVIDER).Role() {
 		//	//TODO:generate the service definition and store it
-		//}
+		// }
 		sd := definition.BuildServiceDefinition(*service, url)
 		data, err := sd.ToBytes()
 		if err != nil {
@@ -196,7 +200,7 @@ func (mts *MetadataService) PublishServiceDefinition(url common.URL) error {
 }
 
 // GetExportedURLs get all exported urls
-func (mts *MetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) (*skip.SkipList, error) {
+func (mts *MetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]common.URL, error) {
 	if serviceInterface == constant.ANY_VALUE {
 		return mts.getAllService(mts.exportedServiceURLs), nil
 	} else {
@@ -206,7 +210,7 @@ func (mts *MetadataService) GetExportedURLs(serviceInterface string, group strin
 }
 
 // GetSubscribedURLs get all subscribedUrl
-func (mts *MetadataService) GetSubscribedURLs() (*skip.SkipList, error) {
+func (mts *MetadataService) GetSubscribedURLs() ([]common.URL, error) {
 	return mts.getAllService(mts.subscribedServiceURLs), nil
 }
 

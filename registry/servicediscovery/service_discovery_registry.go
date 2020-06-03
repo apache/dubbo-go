@@ -399,19 +399,12 @@ func (s *serviceDiscoveryRegistry) getExportedUrlsByInst(serviceInstance registr
 	if metadataService == nil {
 		return urls
 	}
-	result, err := metadataService.GetExportedURLs("*", "", "", "")
+	result, err := metadataService.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
 	if err != nil {
 		logger.Errorf("get exported urls catch error:%s,instance:%+v", err.Error(), serviceInstance)
 		return urls
 	}
-	if result == nil {
-		logger.Errorf("get empty  exported urls,instance:%+v", serviceInstance)
-		return urls
-	}
-	for i := uint64(0); i < result.Len(); i++ {
-		urls = append(urls, common.URL(result.ByPosition(i).(comparator)))
-	}
-	return urls
+	return result
 }
 
 func (s *serviceDiscoveryRegistry) prepareServiceRevisionExportedURLs(serviceInstances []registry.ServiceInstance) {
