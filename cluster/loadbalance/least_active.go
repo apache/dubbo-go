@@ -28,6 +28,7 @@ import (
 )
 
 const (
+	// LeastActive is used to set the load balance extension
 	LeastActive = "leastactive"
 )
 
@@ -38,9 +39,9 @@ func init() {
 type leastActiveLoadBalance struct {
 }
 
-// NewLeastActiveLoadBalance returns least active load balance
+// NewLeastActiveLoadBalance returns a least active load balance.
 //
-// A random mechanism based on actives, actives means the num of requests a consumer have sent but not return yet
+// A random mechanism based on actives, actives means the number of a consumer's requests have been sent to provider but not yet got response.
 func NewLeastActiveLoadBalance() cluster.LoadBalance {
 	return &leastActiveLoadBalance{}
 }
