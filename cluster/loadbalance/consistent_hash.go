@@ -60,6 +60,8 @@ type ConsistentHashLoadBalance struct {
 }
 
 // NewConsistentHashLoadBalance creates NewConsistentHashLoadBalance
+//
+// The same parameters of the request is always sent to the same provider.
 func NewConsistentHashLoadBalance() cluster.LoadBalance {
 	return &ConsistentHashLoadBalance{}
 }
