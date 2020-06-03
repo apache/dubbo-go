@@ -100,7 +100,13 @@ type dubboRegistryController struct {
 	queue                            workqueue.Interface //shared by namespaced informers
 }
 
-func newDubboRegistryController(ctx context.Context, roleType common.RoleType, kcGetter func() (kubernetes.Interface, error)) (*dubboRegistryController, error) {
+func newDubboRegistryController(
+	ctx context.Context,
+	// different provider and consumer have behavior
+	roleType common.RoleType,
+	// used to inject mock kubernetes client
+	kcGetter func() (kubernetes.Interface, error),
+) (*dubboRegistryController, error) {
 
 	kc, err := kcGetter()
 	if err != nil {
@@ -348,7 +354,6 @@ func (c *dubboRegistryController) work() {
 
 // processNextWorkItem process work-queue elements
 func (c *dubboRegistryController) processNextWorkItem() bool {
-
 	item, shutdown := c.queue.Get()
 	if shutdown {
 		return false
@@ -365,18 +370,15 @@ func (c *dubboRegistryController) handleWatchedPodEvent(p *v1.Pod, eventType wat
 	logger.Debugf("get @type = %s event from @pod = %s", eventType, p.GetName())
 
 	for ak, av := range p.GetAnnotations() {
-
 		// not dubbo interest annotation
 		if ak != DubboIOAnnotationKey {
 			continue
 		}
-
 		ol, err := c.unmarshalRecord(av)
 		if err != nil {
 			logger.Errorf("there a pod with dubbo annotation, but unmarshal dubbo value %v", err)
 			return
 		}
-
 		for _, o := range ol {
 			switch eventType {
 			case watch.Added:
