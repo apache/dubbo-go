@@ -61,10 +61,10 @@ type dubboRegistryController struct {
 	lock sync.Mutex
 
 	// current pod config
-	needWatchedNamespaceList map[string]struct{}
-	namespace                string
-	name                     string
-	cfg                      *rest.Config
+	needWatchedNamespace map[string]struct{}
+	namespace            string
+	name                 string
+	cfg                  *rest.Config
 
 	watcherSet WatcherSet
 
@@ -81,6 +81,7 @@ func newDubboRegistryController(ctx context.Context) (*dubboRegistryController, 
 	c := &dubboRegistryController{
 		ctx:                       ctx,
 		watcherSet:                newWatcherSet(ctx),
+		needWatchedNamespace:      make(map[string]struct{}),
 		namespacedInformerFactory: make(map[string]informers.SharedInformerFactory),
 		namespacedPodInformers:    make(map[string]informerscorev1.PodInformer),
 	}
@@ -110,7 +111,7 @@ func newDubboRegistryController(ctx context.Context) (*dubboRegistryController, 
 // 2. put every element to watcherSet
 // 3. refresh watch book-mark
 func (c *dubboRegistryController) initWatchSet() error {
-	for ns := range c.needWatchedNamespaceList {
+	for ns := range c.needWatchedNamespace {
 		pods, err := c.kc.CoreV1().Pods(ns).List(metav1.ListOptions{
 			LabelSelector: fields.OneTermEqualSelector(DubboIOLabelKey, DubboIOLabelValue).String(),
 		})
@@ -162,11 +163,11 @@ func (c *dubboRegistryController) readConfig() error {
 		return perrors.New("read value from env by key (DUBBO_NAMESPACE)")
 	}
 	for _, ns := range strings.Split(needWatchedNameSpaceList, ",") {
-		c.needWatchedNamespaceList[ns] = struct{}{}
+		c.needWatchedNamespace[ns] = struct{}{}
 	}
 
 	// current work namespace should be watched
-	c.needWatchedNamespaceList[c.namespace] = struct{}{}
+	c.needWatchedNamespace[c.namespace] = struct{}{}
 	return nil
 }
 
@@ -211,7 +212,7 @@ func (c *dubboRegistryController) init() error {
 	c.queue = workqueue.New()
 
 	// init all watch needed pod-informer
-	for watchedNS := range c.needWatchedNamespaceList {
+	for watchedNS := range c.needWatchedNamespace {
 		c.initNamespacedPodInformer(watchedNS)
 	}
 
