@@ -137,8 +137,8 @@ func GetInClusterKubernetesClient() (kubernetes.Interface, error) {
 // 3. refresh watch book-mark
 func (c *dubboRegistryController) initWatchSet() error {
 
-	req, err  := labels.NewRequirement(DubboIOLabelKey, selection.In, []string{DubboIOConsumerLabelValue, DubboIOProviderLabelValue})
-	if err != nil{
+	req, err := labels.NewRequirement(DubboIOLabelKey, selection.In, []string{DubboIOConsumerLabelValue, DubboIOProviderLabelValue})
+	if err != nil {
 		return perrors.WithMessage(err, "new requirement")
 	}
 
@@ -183,8 +183,8 @@ func (c *dubboRegistryController) readConfig() error {
 
 func (c *dubboRegistryController) initNamespacedPodInformer(ns string) error {
 
-	req, err  := labels.NewRequirement(DubboIOLabelKey, selection.In, []string{DubboIOConsumerLabelValue, DubboIOProviderLabelValue})
-	if err != nil{
+	req, err := labels.NewRequirement(DubboIOLabelKey, selection.In, []string{DubboIOConsumerLabelValue, DubboIOProviderLabelValue})
+	if err != nil {
 		return perrors.WithMessage(err, "new requirement")
 	}
 
@@ -213,7 +213,7 @@ func (c *dubboRegistryController) initNamespacedPodInformer(ns string) error {
 
 func (c *dubboRegistryController) initPodInformer() error {
 
-	if c.role == common.PROVIDER{
+	if c.role == common.PROVIDER {
 		return nil
 	}
 
@@ -301,7 +301,7 @@ func (c *dubboRegistryController) Run() {
 // controller process every event in work-queue
 func (c *dubboRegistryController) run() {
 
-	if c.role == common.PROVIDER{
+	if c.role == common.PROVIDER {
 		return
 	}
 
