@@ -20,7 +20,6 @@ package remote
 import (
 	"sync"
 
-	"github.com/Workiva/go-datastructures/slice/skip"
 	"go.uber.org/atomic"
 )
 
@@ -121,12 +120,12 @@ func (mts *MetadataService) PublishServiceDefinition(url common.URL) error {
 }
 
 // GetExportedURLs will be implemented by in memory service
-func (mts *MetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) (*skip.SkipList, error) {
+func (mts *MetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]common.URL, error) {
 	return mts.inMemoryMetadataService.GetExportedURLs(serviceInterface, group, version, protocol)
 }
 
 // GetSubscribedURLs will be implemented by in memory service
-func (mts *MetadataService) GetSubscribedURLs() (*skip.SkipList, error) {
+func (mts *MetadataService) GetSubscribedURLs() ([]common.URL, error) {
 	return mts.inMemoryMetadataService.GetSubscribedURLs()
 }
 
@@ -150,16 +149,11 @@ func (mts *MetadataService) RefreshMetadata(exportedRevision string, subscribedR
 			logger.Errorf("Error occur when execute remote.MetadataService.RefreshMetadata, error message is %+v", err)
 			result = false
 		}
-		iterator := urls.Iter(inmemory.Comparator{})
-		logger.Infof("urls length = %v", urls.Len())
-		for {
-			if !iterator.Next() {
-				break
-			}
-			url := iterator.Value().(inmemory.Comparator)
-			id := identifier.NewServiceMetadataIdentifier(common.URL(url))
+		logger.Infof("urls length = %v", len(urls))
+		for _, u := range urls {
+			id := identifier.NewServiceMetadataIdentifier(u)
 			id.Revision = mts.exportedRevision.Load()
-			if err := mts.delegateReport.SaveServiceMetadata(id, common.URL(url)); err != nil {
+			if err := mts.delegateReport.SaveServiceMetadata(id, u); err != nil {
 				logger.Errorf("Error occur when execute remote.MetadataService.RefreshMetadata, error message is %+v", err)
 				result = false
 			}
@@ -173,14 +167,14 @@ func (mts *MetadataService) RefreshMetadata(exportedRevision string, subscribedR
 			logger.Errorf("Error occur when execute remote.MetadataService.RefreshMetadata, error message is %v+", err)
 			result = false
 		}
-		if urls != nil && urls.Len() > 0 {
+		if urls != nil && len(urls) > 0 {
 			id := &identifier.SubscriberMetadataIdentifier{
 				MetadataIdentifier: identifier.MetadataIdentifier{
 					Application: config.GetApplicationConfig().Name,
 				},
 				Revision: subscribedRevision,
 			}
-			if err := mts.delegateReport.SaveSubscribedData(id, convertUrls(urls)); err != nil {
+			if err := mts.delegateReport.SaveSubscribedData(id, urls); err != nil {
 				logger.Errorf("Error occur when execute remote.MetadataService.RefreshMetadata, error message is %+v", err)
 				result = false
 			}
@@ -192,21 +186,4 @@ func (mts *MetadataService) RefreshMetadata(exportedRevision string, subscribedR
 // Version will return the remote service version
 func (MetadataService) Version() string {
 	return version
-}
-
-// convertUrls will convert the skip list to slice
-func convertUrls(list *skip.SkipList) []common.URL {
-	urls := make([]common.URL, list.Len())
-	iterator := list.Iter(inmemory.Comparator{})
-	for {
-		if iterator.Value() == nil {
-			break
-		}
-		url := iterator.Value().(inmemory.Comparator)
-		urls = append(urls, common.URL(url))
-		if !iterator.Next() {
-			break
-		}
-	}
-	return urls
 }

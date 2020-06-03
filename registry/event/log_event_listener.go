@@ -30,7 +30,6 @@ func init() {
 }
 
 type logEventListener struct {
-
 }
 
 func (l *logEventListener) GetPriority() int {
@@ -43,6 +42,5 @@ func (l *logEventListener) OnEvent(e observer.Event) error {
 }
 
 func (l *logEventListener) GetEventType() reflect.Type {
-	return nil
+	return reflect.TypeOf(&observer.BaseEvent{})
 }
-

@@ -650,3 +650,17 @@ func mergeNormalParam(mergedUrl *URL, referenceUrl *URL, paramKeys []string) []f
 	}
 	return methodConfigMergeFcn
 }
+
+type URLSlice []URL
+
+func (s URLSlice) Len() int {
+	return len(s)
+}
+
+func (s URLSlice) Less(i, j int) bool {
+	return s[i].String() < s[j].String()
+}
+
+func (s URLSlice) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
