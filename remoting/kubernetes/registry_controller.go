@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -32,6 +33,22 @@ const (
 	defaultResync = 5 * time.Minute
 )
 
+const (
+	// kubernetes inject the var
+	podNameKey              = "HOSTNAME"
+	nameSpaceKey            = "NAMESPACE"
+	needWatchedNameSpaceKey = "DUBBO_NAMESPACE"
+	// all pod annotation key
+	DubboIOAnnotationKey = "dubbo.io/annotation"
+
+	DubboIOLabelKey   = "dubbo.io/label"
+	DubboIOLabelValue = "dubbo.io-value"
+)
+
+var (
+	ErrDubboLabelAlreadyExist = perrors.New("dubbo label already exist")
+)
+
 // dubboRegistryController
 // work like a kubernetes controller
 type dubboRegistryController struct {
@@ -44,7 +61,7 @@ type dubboRegistryController struct {
 	lock sync.Mutex
 
 	// current pod config
-	needWatchedNamespaceList []string
+	needWatchedNamespaceList map[string]struct{}
 	namespace                string
 	name                     string
 	cfg                      *rest.Config
@@ -76,7 +93,7 @@ func newDubboRegistryController(ctx context.Context) (*dubboRegistryController, 
 		return nil, perrors.WithMessage(err, "dubbo registry controller init")
 	}
 
-	if _, err := c.initCurrentPod(); err != nil {
+	if err := c.initCurrentPod(); err != nil {
 		return nil, perrors.WithMessage(err, "init current pod")
 	}
 
@@ -91,10 +108,9 @@ func newDubboRegistryController(ctx context.Context) (*dubboRegistryController, 
 // initWatchSet
 // 1. get all with dubbo label pods
 // 2. put every element to watcherSet
+// 3. refresh watch book-mark
 func (c *dubboRegistryController) initWatchSet() error {
-
-	for _, ns := range c.needWatchedNamespaceList {
-
+	for ns := range c.needWatchedNamespaceList {
 		pods, err := c.kc.CoreV1().Pods(ns).List(metav1.ListOptions{
 			LabelSelector: fields.OneTermEqualSelector(DubboIOLabelKey, DubboIOLabelValue).String(),
 		})
@@ -115,14 +131,9 @@ func (c *dubboRegistryController) initWatchSet() error {
 			logger.Debugf("got the pod (name: %s), (label: %v), (annotations: %v)", pod.Name, pod.GetLabels(), pod.GetAnnotations())
 			c.handleWatchedPodEvent(&pod, watch.Added)
 		}
-
 	}
-
 	return nil
 }
-
-// TODO
-// Wait informer sync latest status
 
 // read dubbo-registry controller config
 // 1. read kubernetes InCluster config
@@ -145,6 +156,17 @@ func (c *dubboRegistryController) readConfig() error {
 	if len(c.namespace) == 0 {
 		return perrors.New("read value from env by key (NAMESPACE)")
 	}
+	// read need watched namespaces list
+	needWatchedNameSpaceList := os.Getenv(needWatchedNameSpaceKey)
+	if len(needWatchedNameSpaceList) == 0 {
+		return perrors.New("read value from env by key (DUBBO_NAMESPACE)")
+	}
+	for _, ns := range strings.Split(needWatchedNameSpaceList, ",") {
+		c.needWatchedNamespaceList[ns] = struct{}{}
+	}
+
+	// current work namespace should be watched
+	c.needWatchedNamespaceList[c.namespace] = struct{}{}
 	return nil
 }
 
@@ -160,7 +182,8 @@ func (c *dubboRegistryController) initNamespacedPodInformer(ns string) {
 			}
 			labelMap, err := metav1.LabelSelectorAsMap(labelSelector)
 			if err != nil {
-				panic(err)
+				logger.Errorf("label selector ad map: %v", err)
+				return
 			}
 			options.LabelSelector = labels.SelectorFromSet(labelMap).String()
 			options.ResourceVersion = strconv.FormatUint(c.listAndWatchStartResourceVersion, 10)
@@ -187,10 +210,8 @@ func (c *dubboRegistryController) init() error {
 	}
 	c.queue = workqueue.New()
 
-	c.needWatchedNamespaceList = append(c.needWatchedNamespaceList, c.namespace)
-
 	// init all watch needed pod-informer
-	for _, watchedNS := range c.needWatchedNamespaceList {
+	for watchedNS := range c.needWatchedNamespaceList {
 		c.initNamespacedPodInformer(watchedNS)
 	}
 
@@ -266,7 +287,7 @@ func (c *dubboRegistryController) run() {
 		}
 	}
 
-	logger.Infof("kubernetes registry-controller running @namespace = %q @Podname = %q", c.namespace, c.name)
+	logger.Infof("kubernetes registry-controller running @Namespace = %q @PodName = %q", c.namespace, c.name)
 
 	// start work
 	go c.work()
@@ -363,38 +384,36 @@ func (c *dubboRegistryController) unmarshalRecord(record string) ([]*WatcherEven
 // initCurrentPod
 // 1. get current pod
 // 2. give the dubbo-label for this pod
-func (c *dubboRegistryController) initCurrentPod() (*v1.Pod, error) {
-
-	currentPod, err := c.kc.CoreV1().Pods(c.namespace).Get(c.name, metav1.GetOptions{})
+func (c *dubboRegistryController) initCurrentPod() error {
+	currentPod, err := c.readCurrentPod()
 	if err != nil {
-		return nil, perrors.WithMessagef(err, "get current (%s) pod in namespace (%s)", c.name, c.namespace)
+		return perrors.WithMessagef(err, "get current (%s) pod in namespace (%s)", c.name, c.namespace)
 	}
 
 	oldPod, newPod, err := c.assembleDUBBOLabel(currentPod)
 	if err != nil {
-		if err != ErrDubboLabelAlreadyExist {
-			return nil, perrors.WithMessage(err, "assemble dubbo label")
+		if err == ErrDubboLabelAlreadyExist {
+			return nil
 		}
-		// current pod don't have label
+		return perrors.WithMessage(err, "assemble dubbo label")
 	}
-
+	// current pod don't have label
 	p, err := c.getPatch(oldPod, newPod)
 	if err != nil {
-		return nil, perrors.WithMessage(err, "get patch")
+		return perrors.WithMessage(err, "get patch")
 	}
 
 	currentPod, err = c.patchCurrentPod(p)
 	if err != nil {
-		return nil, perrors.WithMessage(err, "patch to current pod")
+		return perrors.WithMessage(err, "patch to current pod")
 	}
 
-	return currentPod, nil
+	return nil
 }
 
 // patch current pod
 // write new meta for current pod
 func (c *dubboRegistryController) patchCurrentPod(patch []byte) (*v1.Pod, error) {
-
 	updatedPod, err := c.kc.CoreV1().Pods(c.namespace).Patch(c.name, types.StrategicMergePatchType, patch)
 	if err != nil {
 		return nil, perrors.WithMessage(err, "patch in kubernetes pod ")
@@ -404,26 +423,23 @@ func (c *dubboRegistryController) patchCurrentPod(patch []byte) (*v1.Pod, error)
 
 // assemble the dubbo kubernetes label
 // every dubbo instance should be labeled spec {"dubbo.io/label":"dubbo.io/label-value"} label
-func (c *dubboRegistryController) assembleDUBBOLabel(currentPod *v1.Pod) (*v1.Pod, *v1.Pod, error) {
-
+func (c *dubboRegistryController) assembleDUBBOLabel(p *v1.Pod) (*v1.Pod, *v1.Pod, error) {
 	var (
 		oldPod = &v1.Pod{}
 		newPod = &v1.Pod{}
 	)
-
 	oldPod.Labels = make(map[string]string, 8)
 	newPod.Labels = make(map[string]string, 8)
 
-	if currentPod.GetLabels() != nil {
-
-		if currentPod.GetLabels()[DubboIOLabelKey] == DubboIOLabelValue {
+	if p.GetLabels() != nil {
+		if p.GetLabels()[DubboIOLabelKey] == DubboIOLabelValue {
 			// already have label
 			return nil, nil, ErrDubboLabelAlreadyExist
 		}
 	}
 
 	// copy current pod labels to oldPod && newPod
-	for k, v := range currentPod.GetLabels() {
+	for k, v := range p.GetLabels() {
 		oldPod.Labels[k] = v
 		newPod.Labels[k] = v
 	}
@@ -465,7 +481,6 @@ func (c *dubboRegistryController) assembleDUBBOAnnotations(k, v string, currentP
 // getPatch
 // get the kubernetes pod patch bytes
 func (c *dubboRegistryController) getPatch(oldPod, newPod *v1.Pod) ([]byte, error) {
-
 	oldData, err := json.Marshal(oldPod)
 	if err != nil {
 		return nil, perrors.WithMessage(err, "marshal old pod")
@@ -494,8 +509,8 @@ func (c *dubboRegistryController) marshalRecord(ol []*WatcherEvent) (string, err
 	return base64.URLEncoding.EncodeToString(msg), nil
 }
 
+// read from kubernetes-env current pod status
 func (c *dubboRegistryController) readCurrentPod() (*v1.Pod, error) {
-
 	currentPod, err := c.kc.CoreV1().Pods(c.namespace).Get(c.name, metav1.GetOptions{})
 	if err != nil {
 		return nil, perrors.WithMessagef(err, "get current (%s) pod in namespace (%s)", c.name, c.namespace)
@@ -503,6 +518,7 @@ func (c *dubboRegistryController) readCurrentPod() (*v1.Pod, error) {
 	return currentPod, nil
 }
 
+// add annotation for current pod
 func (c *dubboRegistryController) addAnnotationForCurrentPod(k string, v string) error {
 
 	c.lock.Lock()

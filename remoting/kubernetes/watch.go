@@ -170,10 +170,9 @@ func (s *watcherSetImpl) Put(watcherEvent *WatcherEvent) error {
 	// put to watcher-set
 	switch watcherEvent.EventType {
 	case Delete:
+		// delete from store
 		delete(s.cache, watcherEvent.Key)
-	case Create:
-		s.cache[watcherEvent.Key] = watcherEvent
-	case Update:
+	case Update, Create:
 		o, ok := s.cache[watcherEvent.Key]
 		if !ok {
 			// pod update, but create new k/v pair
@@ -191,7 +190,6 @@ func (s *watcherSetImpl) Put(watcherEvent *WatcherEvent) error {
 
 	// notify watcher
 	for _, w := range s.watchers {
-		w := w
 		if !strings.Contains(watcherEvent.Key, w.interested.key) {
 			//  this watcher no interest in this element
 			continue
