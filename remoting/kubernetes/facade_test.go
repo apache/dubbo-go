@@ -19,10 +19,7 @@ package kubernetes
 
 import (
 	"sync"
-)
-import (
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/fake"
+	"testing"
 )
 
 type mockFacade struct {
@@ -39,24 +36,9 @@ func (r *mockFacade) SetClient(client *Client) {
 	r.client = client
 }
 
-func (s *KubernetesClientTestSuite) Test_Facade() {
+func Test_Facade(t *testing.T) {
 
-	t := s.T()
-
-	mockClient, err := newMockClient(s.currentPod.GetNamespace(), func() (kubernetes.Interface, error) {
-
-		out := fake.NewSimpleClientset()
-
-		// mock current pod
-		if _, err := out.CoreV1().Pods(s.currentPod.GetNamespace()).Create(&s.currentPod); err != nil {
-			t.Fatal(err)
-		}
-		return out, nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	mockClient := getTestClient(t)
 	m := &mockFacade{
 		client: mockClient,
 	}

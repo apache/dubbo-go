@@ -19,12 +19,14 @@ package kubernetes
 
 import (
 	"context"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
 	"sync"
 )
 
 import (
 	perrors "github.com/pkg/errors"
-	"k8s.io/client-go/kubernetes"
 )
 
 import (
@@ -43,10 +45,10 @@ type Client struct {
 
 // newClient
 // new a client for registry
-func newClient(namespace string) (*Client, error) {
+func newClient() (*Client, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
-	controller, err := newDubboRegistryController(ctx)
+	controller, err := newDubboRegistryController(ctx, GetInClusterKubernetesClient)
 	if err != nil {
 		return nil, perrors.WithMessage(err, "new dubbo-registry controller")
 	}
@@ -169,12 +171,7 @@ func ValidateClient(container clientFacade) error {
 
 	// new Client
 	if client == nil || client.Valid() {
-		//ns, err := getCurrentNameSpace()
-		//if err != nil {
-		//	return perrors.WithMessage(err, "get current namespace")
-		//}
-		//newClient, err := newClient(ns)
-		newClient, err := newClient("")
+		newClient, err := newClient()
 		if err != nil {
 			logger.Warnf("new kubernetes client (namespace{%s}: %v)", "", err)
 			return perrors.WithMessagef(err, "new kubernetes client (:%+v)", "")
@@ -187,9 +184,24 @@ func ValidateClient(container clientFacade) error {
 
 // NewMockClient
 // export for registry package test
-func NewMockClient(namespace string, mockClientGenerator func() (kubernetes.Interface, error)) (*Client, error) {
-	return nil, nil
-	//return newMockClient(namespace, mockClientGenerator)
+func NewMockClient(podList *v1.PodList) (*Client, error) {
+
+	ctx, cancel := context.WithCancel(context.Background())
+	controller, err := newDubboRegistryController(ctx, func() (kubernetes.Interface, error) {
+		return fake.NewSimpleClientset(podList), nil
+	})
+	if err != nil {
+		return nil, perrors.WithMessage(err, "new dubbo-registry controller")
+	}
+
+	c := &Client{
+		ctx:        ctx,
+		cancel:     cancel,
+		controller: controller,
+	}
+
+	c.controller.Run()
+	return c, nil
 }
 
 // newMockClient
