@@ -52,21 +52,20 @@ import (
 )
 
 const (
-	// kubernetes suggest resync
-	defaultResync = 5 * time.Minute
-)
-
-const (
-	// kubernetes inject the var
+	// kubernetes inject env var
 	podNameKey              = "HOSTNAME"
 	nameSpaceKey            = "NAMESPACE"
 	needWatchedNameSpaceKey = "DUBBO_NAMESPACE"
+
 	// all pod annotation key
 	DubboIOAnnotationKey = "dubbo.io/annotation"
-
+	// all pod label key and value pair
 	DubboIOLabelKey           = "dubbo.io/label"
 	DubboIOConsumerLabelValue = "dubbo.io.consumer"
 	DubboIOProviderLabelValue = "dubbo.io.provider"
+
+	// kubernetes suggest resync
+	defaultResync = 5 * time.Minute
 )
 
 var (
@@ -246,9 +245,9 @@ func (c *dubboRegistryController) initPodInformer() error {
 	for _, ns := range strings.Split(needWatchedNameSpaceList, ",") {
 		c.needWatchedNamespace[ns] = struct{}{}
 	}
-
 	// current work namespace should be watched
 	c.needWatchedNamespace[c.namespace] = struct{}{}
+
 	c.queue = workqueue.New()
 
 	// init all watch needed pod-informer
@@ -309,13 +308,11 @@ func (c *dubboRegistryController) deletePod(obj interface{}) {
 	})
 }
 
-func (c *dubboRegistryController) Run() {
-
+func (c *dubboRegistryController) startALLInformers() {
 	logger.Debugf("starting namespaced informer-factory")
 	for _, factory := range c.namespacedInformerFactory {
 		go factory.Start(c.ctx.Done())
 	}
-	logger.Debugf("finish start namespaced informer-factory")
 }
 
 // run
@@ -326,6 +323,7 @@ func (c *dubboRegistryController) run() {
 		return
 	}
 
+	defer logger.Warn("dubbo registry controller work stopped")
 	defer c.queue.ShutDown()
 
 	for ns, podInformer := range c.namespacedPodInformers {
@@ -344,7 +342,6 @@ func (c *dubboRegistryController) run() {
 }
 
 func (c *dubboRegistryController) work() {
-	defer logger.Warn("dubbo registry controller work stopped")
 	for c.processNextWorkItem() {
 	}
 }
@@ -365,7 +362,6 @@ func (c *dubboRegistryController) processNextWorkItem() bool {
 // handleWatchedPodEvent
 // handle watched pod event
 func (c *dubboRegistryController) handleWatchedPodEvent(p *v1.Pod, eventType watch.EventType) {
-
 	logger.Debugf("get @type = %s event from @pod = %s", eventType, p.GetName())
 
 	for ak, av := range p.GetAnnotations() {
@@ -382,7 +378,6 @@ func (c *dubboRegistryController) handleWatchedPodEvent(p *v1.Pod, eventType wat
 		}
 
 		for _, o := range ol {
-
 			switch eventType {
 			case watch.Added:
 				// if pod is added, the record always be create
@@ -396,15 +391,12 @@ func (c *dubboRegistryController) handleWatchedPodEvent(p *v1.Pod, eventType wat
 				return
 			}
 
-			logger.Debugf("putting object (%#v) to watcherSet", o)
-
+			logger.Debugf("putting @key=%s @value=%s to watcherSet", o.Key, o.Value)
 			if err := c.watcherSet.Put(o); err != nil {
 				logger.Errorf("put (%#v) to cache watcherSet: %v ", o, err)
 				return
 			}
-
 		}
-
 	}
 }
 
@@ -557,7 +549,6 @@ func (c *dubboRegistryController) getPatch(oldPod, newPod *v1.Pod) ([]byte, erro
 // marshalRecord
 // marshal the kubernetes dubbo annotation value
 func (c *dubboRegistryController) marshalRecord(ol []*WatcherEvent) (string, error) {
-
 	msg, err := json.Marshal(ol)
 	if err != nil {
 		return "", perrors.WithMessage(err, "json encode object list")

@@ -81,8 +81,6 @@ func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.
 			}
 		}
 	}
-
-	return false
 }
 
 // return true mean the event type is DELETE
