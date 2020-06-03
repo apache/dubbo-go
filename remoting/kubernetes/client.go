@@ -69,6 +69,7 @@ func newClient(url common.URL) (*Client, error) {
 	}
 
 	if r == common.CONSUMER {
+		// only consumer have to start informer factory
 		c.controller.Run()
 	}
 	return c, nil
