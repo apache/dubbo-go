@@ -64,7 +64,6 @@ type dubboRegistryController struct {
 	needWatchedNamespace map[string]struct{}
 	namespace            string
 	name                 string
-	cfg                  *rest.Config
 
 	watcherSet WatcherSet
 
@@ -76,7 +75,12 @@ type dubboRegistryController struct {
 	queue                            workqueue.Interface //shared by namespaced informers
 }
 
-func newDubboRegistryController(ctx context.Context) (*dubboRegistryController, error) {
+func newDubboRegistryController(ctx context.Context, kcGetter func() (kubernetes.Interface, error)) (*dubboRegistryController, error) {
+
+	kc, err := kcGetter()
+	if err != nil {
+		return nil, perrors.WithMessage(err, "get kubernetes client")
+	}
 
 	c := &dubboRegistryController{
 		ctx:                       ctx,
@@ -84,6 +88,7 @@ func newDubboRegistryController(ctx context.Context) (*dubboRegistryController, 
 		needWatchedNamespace:      make(map[string]struct{}),
 		namespacedInformerFactory: make(map[string]informers.SharedInformerFactory),
 		namespacedPodInformers:    make(map[string]informerscorev1.PodInformer),
+		kc:                        kc,
 	}
 
 	if err := c.readConfig(); err != nil {
@@ -106,6 +111,19 @@ func newDubboRegistryController(ctx context.Context) (*dubboRegistryController, 
 	return c, nil
 }
 
+// GetInClusterKubernetesClient
+// current pod running in kubernetes-cluster
+func GetInClusterKubernetesClient() (kubernetes.Interface, error) {
+
+	// read in-cluster config
+	cfg, err := rest.InClusterConfig()
+	if err != nil {
+		return nil, perrors.WithMessage(err, "get in-cluster config")
+	}
+
+	return kubernetes.NewForConfig(cfg)
+}
+
 // initWatchSet
 // 1. get all with dubbo label pods
 // 2. put every element to watcherSet
@@ -118,35 +136,25 @@ func (c *dubboRegistryController) initWatchSet() error {
 		if err != nil {
 			return perrors.WithMessagef(err, "list pods in namespace (%s)", ns)
 		}
-
-		// set resource version
-		rv, err := strconv.ParseUint(pods.GetResourceVersion(), 10, 0)
-		if err != nil {
-			return perrors.WithMessagef(err, "parse resource version %s", pods.GetResourceVersion())
-		}
-		if c.listAndWatchStartResourceVersion < rv {
-			c.listAndWatchStartResourceVersion = rv
-		}
-
-		for _, pod := range pods.Items {
-			logger.Debugf("got the pod (name: %s), (label: %v), (annotations: %v)", pod.Name, pod.GetLabels(), pod.GetAnnotations())
-			c.handleWatchedPodEvent(&pod, watch.Added)
+		for _, p := range pods.Items {
+			// set resource version
+			rv, err := strconv.ParseUint(p.GetResourceVersion(), 10, 0)
+			if err != nil {
+				return perrors.WithMessagef(err, "parse resource version %s", p.GetResourceVersion())
+			}
+			if c.listAndWatchStartResourceVersion < rv {
+				c.listAndWatchStartResourceVersion = rv
+			}
+			c.handleWatchedPodEvent(&p, watch.Added)
 		}
 	}
 	return nil
 }
 
 // read dubbo-registry controller config
-// 1. read kubernetes InCluster config
 // 1. current pod name
 // 2. current pod working namespace
 func (c *dubboRegistryController) readConfig() error {
-	// read in-cluster config
-	cfg, err := rest.InClusterConfig()
-	if err != nil {
-		return perrors.WithMessage(err, "get in-cluster config")
-	}
-	c.cfg = cfg
 
 	// read current pod name && namespace
 	c.name = os.Getenv(podNameKey)
@@ -203,19 +211,13 @@ func (c *dubboRegistryController) initNamespacedPodInformer(ns string) {
 }
 
 func (c *dubboRegistryController) init() error {
-	// init kubernetes client
-	var err error
-	c.kc, err = kubernetes.NewForConfig(c.cfg)
-	if err != nil {
-		return perrors.WithMessage(err, "new kubernetes client from config")
-	}
+
 	c.queue = workqueue.New()
 
 	// init all watch needed pod-informer
 	for watchedNS := range c.needWatchedNamespace {
 		c.initNamespacedPodInformer(watchedNS)
 	}
-
 	return nil
 }
 
@@ -297,7 +299,7 @@ func (c *dubboRegistryController) run() {
 }
 
 func (c *dubboRegistryController) work() {
-	defer logger.Debugf("dubbo registry controller work stopped")
+	defer logger.Warn("dubbo registry controller work stopped")
 	for c.processNextWorkItem() {
 	}
 }
@@ -319,7 +321,7 @@ func (c *dubboRegistryController) processNextWorkItem() bool {
 // handle watched pod event
 func (c *dubboRegistryController) handleWatchedPodEvent(p *v1.Pod, eventType watch.EventType) {
 
-	logger.Warnf("get @type = %s event from @pod = %s", eventType, p.GetName())
+	logger.Debugf("get @type = %s event from @pod = %s", eventType, p.GetName())
 
 	for ak, av := range p.GetAnnotations() {
 
@@ -349,7 +351,7 @@ func (c *dubboRegistryController) handleWatchedPodEvent(p *v1.Pod, eventType wat
 				return
 			}
 
-			logger.Debugf("prepare to put object (%#v) to kubernetes-watcherSet", o)
+			logger.Debugf("putting object (%#v) to watcherSet", o)
 
 			if err := c.watcherSet.Put(o); err != nil {
 				logger.Errorf("put (%#v) to cache watcherSet: %v ", o, err)
@@ -547,5 +549,10 @@ func (c *dubboRegistryController) addAnnotationForCurrentPod(k string, v string)
 	if err != nil {
 		return perrors.WithMessage(err, "patch current pod")
 	}
-	return nil
+
+	return c.watcherSet.Put(&WatcherEvent{
+		Key:       k,
+		Value:     v,
+		EventType: Create,
+	})
 }

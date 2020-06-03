@@ -19,6 +19,7 @@ package kubernetes
 
 import (
 	"fmt"
+	v1 "k8s.io/api/core/v1"
 	"os"
 	"path"
 	"sync"
@@ -29,7 +30,6 @@ import (
 	"github.com/dubbogo/getty"
 	"github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
-	k8s "k8s.io/client-go/kubernetes"
 )
 
 import (
@@ -167,8 +167,7 @@ func newKubernetesRegistry(url *common.URL) (registry.Registry, error) {
 
 func newMockKubernetesRegistry(
 	url *common.URL,
-	namespace string,
-	clientGeneratorFunc func() (k8s.Interface, error),
+	podsList *v1.PodList,
 ) (registry.Registry, error) {
 
 	var err error
@@ -176,7 +175,7 @@ func newMockKubernetesRegistry(
 	r := &kubernetesRegistry{}
 
 	r.InitBaseRegistry(url, r)
-	r.client, err = kubernetes.NewMockClient(namespace, clientGeneratorFunc)
+	r.client, err = kubernetes.NewMockClient(podsList)
 	if err != nil {
 		return nil, perrors.WithMessage(err, "new mock client")
 	}
