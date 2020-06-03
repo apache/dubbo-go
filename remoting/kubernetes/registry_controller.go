@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"github.com/apache/dubbo-go/common"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
@@ -75,7 +76,7 @@ type dubboRegistryController struct {
 	queue                            workqueue.Interface //shared by namespaced informers
 }
 
-func newDubboRegistryController(ctx context.Context, kcGetter func() (kubernetes.Interface, error)) (*dubboRegistryController, error) {
+func newDubboRegistryController(ctx context.Context, roleType common.RoleType, kcGetter func() (kubernetes.Interface, error)) (*dubboRegistryController, error) {
 
 	kc, err := kcGetter()
 	if err != nil {
@@ -95,10 +96,6 @@ func newDubboRegistryController(ctx context.Context, kcGetter func() (kubernetes
 		return nil, perrors.WithMessage(err, "dubbo registry controller read config")
 	}
 
-	if err := c.init(); err != nil {
-		return nil, perrors.WithMessage(err, "dubbo registry controller init")
-	}
-
 	if err := c.initCurrentPod(); err != nil {
 		return nil, perrors.WithMessage(err, "init current pod")
 	}
@@ -107,7 +104,13 @@ func newDubboRegistryController(ctx context.Context, kcGetter func() (kubernetes
 		return nil, perrors.WithMessage(err, "init watch set")
 	}
 
-	go c.run()
+	if roleType == common.CONSUMER {
+		// only consumer need list && watch
+		if err := c.initPodInformer(); err != nil {
+			return nil, perrors.WithMessage(err, "dubbo registry controller init pod informer")
+		}
+		go c.run()
+	}
 	return c, nil
 }
 
@@ -165,17 +168,6 @@ func (c *dubboRegistryController) readConfig() error {
 	if len(c.namespace) == 0 {
 		return perrors.New("read value from env by key (NAMESPACE)")
 	}
-	// read need watched namespaces list
-	needWatchedNameSpaceList := os.Getenv(needWatchedNameSpaceKey)
-	if len(needWatchedNameSpaceList) == 0 {
-		return perrors.New("read value from env by key (DUBBO_NAMESPACE)")
-	}
-	for _, ns := range strings.Split(needWatchedNameSpaceList, ",") {
-		c.needWatchedNamespace[ns] = struct{}{}
-	}
-
-	// current work namespace should be watched
-	c.needWatchedNamespace[c.namespace] = struct{}{}
 	return nil
 }
 
@@ -210,8 +202,19 @@ func (c *dubboRegistryController) initNamespacedPodInformer(ns string) {
 	c.namespacedPodInformers[ns] = podInformer
 }
 
-func (c *dubboRegistryController) init() error {
+func (c *dubboRegistryController) initPodInformer() error {
 
+	// read need watched namespaces list
+	needWatchedNameSpaceList := os.Getenv(needWatchedNameSpaceKey)
+	if len(needWatchedNameSpaceList) == 0 {
+		return perrors.New("read value from env by key (DUBBO_NAMESPACE)")
+	}
+	for _, ns := range strings.Split(needWatchedNameSpaceList, ",") {
+		c.needWatchedNamespace[ns] = struct{}{}
+	}
+
+	// current work namespace should be watched
+	c.needWatchedNamespace[c.namespace] = struct{}{}
 	c.queue = workqueue.New()
 
 	// init all watch needed pod-informer

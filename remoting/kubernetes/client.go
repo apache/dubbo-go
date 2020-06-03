@@ -19,9 +19,12 @@ package kubernetes
 
 import (
 	"context"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
+	"strconv"
 	"sync"
 )
 
@@ -45,10 +48,16 @@ type Client struct {
 
 // newClient
 // new a client for registry
-func newClient() (*Client, error) {
+func newClient(url common.URL) (*Client, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
-	controller, err := newDubboRegistryController(ctx, GetInClusterKubernetesClient)
+
+	// read type
+	r, err := strconv.Atoi(url.GetParams().Get(constant.ROLE_KEY))
+	if err != nil {
+		return nil, perrors.WithMessage(err, "atoi role")
+	}
+	controller, err := newDubboRegistryController(ctx, common.RoleType(r), GetInClusterKubernetesClient)
 	if err != nil {
 		return nil, perrors.WithMessage(err, "new dubbo-registry controller")
 	}
@@ -59,8 +68,9 @@ func newClient() (*Client, error) {
 		controller: controller,
 	}
 
-	c.controller.Run()
-
+	if r == common.CONSUMER {
+		c.controller.Run()
+	}
 	return c, nil
 }
 
@@ -171,7 +181,8 @@ func ValidateClient(container clientFacade) error {
 
 	// new Client
 	if client == nil || client.Valid() {
-		newClient, err := newClient()
+
+		newClient, err := newClient(container.GetUrl())
 		if err != nil {
 			logger.Warnf("new kubernetes client (namespace{%s}: %v)", "", err)
 			return perrors.WithMessagef(err, "new kubernetes client (:%+v)", "")
@@ -187,7 +198,7 @@ func ValidateClient(container clientFacade) error {
 func NewMockClient(podList *v1.PodList) (*Client, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
-	controller, err := newDubboRegistryController(ctx, func() (kubernetes.Interface, error) {
+	controller, err := newDubboRegistryController(ctx, common.CONSUMER, func() (kubernetes.Interface, error) {
 		return fake.NewSimpleClientset(podList), nil
 	})
 	if err != nil {
@@ -203,52 +214,3 @@ func NewMockClient(podList *v1.PodList) (*Client, error) {
 	c.controller.Run()
 	return c, nil
 }
-
-// newMockClient
-// new a client for  test
-//func newMockClient(namespace string, mockClientGenerator func() (kubernetes.Interface, error)) (*Client, error) {
-//
-//	rawClient, err := mockClientGenerator()
-//	if err != nil {
-//		return nil, perrors.WithMessage(err, "call mock generator")
-//	}
-//
-//	currentPodName, err := getCurrentPodName()
-//	if err != nil {
-//		return nil, perrors.WithMessage(err, "get pod name")
-//	}
-//
-//	ctx, cancel := context.WithCancel(context.Background())
-//
-//	c := &Client{
-//		currentPodName: currentPodName,
-//		ns:             namespace,
-//		rawClient:      rawClient,
-//		ctx:            ctx,
-//		watcherSet:     newWatcherSet(ctx),
-//		cancel:         cancel,
-//	}
-//
-//	currentPod, err := c.initCurrentPod()
-//	if err != nil {
-//		return nil, perrors.WithMessage(err, "init current pod")
-//	}
-//
-//	// record current status
-//	c.currentPod = currentPod
-//
-//	// init the watcherSet by current pods
-//	if err := c.initWatchSet(); err != nil {
-//		return nil, perrors.WithMessage(err, "init watcherSet")
-//	}
-//
-//	c.lastResourceVersion = c.currentPod.GetResourceVersion()
-//
-//	// start kubernetes watch loop
-//	if err := c.watchPods(); err != nil {
-//		return nil, perrors.WithMessage(err, "watch pods")
-//	}
-//
-//	logger.Infof("init kubernetes registry client success @namespace = %q @Podname = %q", namespace, c.currentPod.Name)
-//	return c, nil
-//}
