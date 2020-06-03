@@ -30,6 +30,7 @@ func init() {
 		nameMapping: extension.GetGlobalServiceNameMapping(),
 	})
 }
+
 type serviceNameMappingListener struct {
 	nameMapping mapping.ServiceNameMapping
 }

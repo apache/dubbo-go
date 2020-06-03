@@ -22,6 +22,7 @@ const (
 )
 
 const (
+	PORT_KEY               = "port"
 	GROUP_KEY              = "group"
 	VERSION_KEY            = "version"
 	INTERFACE_KEY          = "interface"
@@ -262,16 +263,17 @@ const (
 
 // service discovery
 const (
-	SUBSCRIBED_SERVICE_NAMES_KEY              = "subscribed-services"
-	PROVIDER_BY                               = "provided-by"
-	EXPORTED_SERVICES_REVISION_PROPERTY_NAME  = "dubbo.exported-services.revision"
-	SERVICE_INSTANCE_SELECTOR                 = "service-instance-selector"
-	METADATA_STORAGE_TYPE_PROPERTY_NAME       = "dubbo.metadata.storage-type"
-	DEFAULT_METADATA_STORAGE_TYPE             = "local"
-	SERVICE_INSTANCE_ENDPOINTS                = "dubbo.endpoints"
-	METADATA_SERVICE_PREFIX                   = "dubbo.metadata-service."
-	METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME = METADATA_SERVICE_PREFIX + "url-params"
-	METADATA_SERVICE_URLS_PROPERTY_NAME       = METADATA_SERVICE_PREFIX + "urls"
+	SUBSCRIBED_SERVICE_NAMES_KEY               = "subscribed-services"
+	PROVIDER_BY                                = "provided-by"
+	EXPORTED_SERVICES_REVISION_PROPERTY_NAME   = "dubbo.exported-services.revision"
+	SUBSCRIBED_SERVICES_REVISION_PROPERTY_NAME = "dubbo.subscribed-services.revision"
+	SERVICE_INSTANCE_SELECTOR                  = "service-instance-selector"
+	METADATA_STORAGE_TYPE_PROPERTY_NAME        = "dubbo.metadata.storage-type"
+	DEFAULT_METADATA_STORAGE_TYPE              = "local"
+	SERVICE_INSTANCE_ENDPOINTS                 = "dubbo.endpoints"
+	METADATA_SERVICE_PREFIX                    = "dubbo.metadata-service."
+	METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME  = METADATA_SERVICE_PREFIX + "url-params"
+	METADATA_SERVICE_URLS_PROPERTY_NAME        = METADATA_SERVICE_PREFIX + "urls"
 
 	// SERVICE_DISCOVERY_KEY indicate which service discovery instance will be used
 	SERVICE_DISCOVERY_KEY = "service_discovery"
