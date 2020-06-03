@@ -31,7 +31,7 @@ func init() {
 	extension.SetCluster(available, NewAvailableCluster)
 }
 
-// NewAvailableCluster returns cluster instance
+// NewAvailableCluster returns a cluster instance
 //
 // Obtain available service providers
 func NewAvailableCluster() cluster.Cluster {
