@@ -31,21 +31,6 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
-const (
-	// kubernetes inject the var
-	podNameKey   = "HOSTNAME"
-	nameSpaceKey = "NAMESPACE"
-	// all pod annotation key
-	DubboIOAnnotationKey = "dubbo.io/annotation"
-
-	DubboIOLabelKey   = "dubbo.io/label"
-	DubboIOLabelValue = "dubbo.io-value"
-)
-
-var (
-	ErrDubboLabelAlreadyExist = perrors.New("dubbo label already exist")
-)
-
 type Client struct {
 	lock sync.RWMutex
 
