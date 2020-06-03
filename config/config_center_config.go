@@ -31,7 +31,13 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
-// ConfigCenterConfig ...
+// ConfigCenterConfig is configuration for config center
+//
+// ConfigCenter also introduced concepts of namespace and group to better manage Key-Value pairs by group,
+// those configs are already built-in in many professional third-party configuration centers.
+// In most cases, namespace is used to isolate different tenants, while group is used to divide the key set from one tenant into groups.
+//
+// ConfigCenter has currently supported Zookeeper, Nacos, Etcd, Consul, Apollo
 type ConfigCenterConfig struct {
 	context       context.Context
 	Protocol      string `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
@@ -48,7 +54,7 @@ type ConfigCenterConfig struct {
 	timeout       time.Duration
 }
 
-// UnmarshalYAML ...
+// UnmarshalYAML unmarshals the ConfigCenterConfig by @unmarshal function
 func (c *ConfigCenterConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
@@ -60,7 +66,7 @@ func (c *ConfigCenterConfig) UnmarshalYAML(unmarshal func(interface{}) error) er
 	return nil
 }
 
-// GetUrlMap ...
+// GetUrlMap gets url map from ConfigCenterConfig
 func (c *ConfigCenterConfig) GetUrlMap() url.Values {
 	urlMap := url.Values{}
 	urlMap.Set(constant.CONFIG_NAMESPACE_KEY, c.Namespace)
