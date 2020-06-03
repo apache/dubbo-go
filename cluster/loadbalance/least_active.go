@@ -28,7 +28,6 @@ import (
 )
 
 const (
-	// LeastActive ...
 	LeastActive = "leastactive"
 )
 
@@ -39,7 +38,9 @@ func init() {
 type leastActiveLoadBalance struct {
 }
 
-// NewLeastActiveLoadBalance ...
+// NewLeastActiveLoadBalance returns least active load balance
+//
+// A random mechanism based on actives, actives means the num of requests a consumer have sent but not return yet
 func NewLeastActiveLoadBalance() cluster.LoadBalance {
 	return &leastActiveLoadBalance{}
 }

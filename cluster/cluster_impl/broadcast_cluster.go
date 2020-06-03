@@ -31,7 +31,10 @@ func init() {
 	extension.SetCluster(broadcast, NewBroadcastCluster)
 }
 
-// NewBroadcastCluster ...
+// NewBroadcastCluster returns broadcast cluster instance
+//
+// Calling all providers broadcast, one by one call, any error is reported.
+// It is usually used to notify all providers to update local resource information such as caches or logs.
 func NewBroadcastCluster() cluster.Cluster {
 	return &broadcastCluster{}
 }
