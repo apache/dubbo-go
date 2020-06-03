@@ -30,17 +30,21 @@ func init() {
 		nameMapping: extension.GetGlobalServiceNameMapping(),
 	})
 }
+
 type serviceNameMappingListener struct {
 	nameMapping mapping.ServiceNameMapping
 }
 
+// GetPriority return 3, which ensure that this listener will be invoked after log listener
 func (s *serviceNameMappingListener) GetPriority() int {
-	panic("implement me")
+	return 3
 }
 
 func (s *serviceNameMappingListener) OnEvent(e observer.Event) error {
-	// TODO
-	panic("implement me")
+	if ex, ok := e.(*ServiceConfigExportedEvent); ok {
+		sc := ex.ServiceConfig
+	}
+	return nil
 }
 
 func (s *serviceNameMappingListener) GetEventType() reflect.Type {

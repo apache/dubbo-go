@@ -29,7 +29,7 @@ var (
 
 // AddCustomizers will put the customizer into slices and then sort them;
 // this method will be invoked several time, so we sort them here.
-func AddCustomizers(cus registry.ServiceInstanceCustomizer)  {
+func AddCustomizers(cus registry.ServiceInstanceCustomizer) {
 	customizers = append(customizers, cus)
 	sort.Stable(customizerSlice(customizers))
 }
