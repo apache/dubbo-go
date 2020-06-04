@@ -18,11 +18,13 @@
 package invocation
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"reflect"
 	"sync"
 )
 
 import (
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
 )
 
@@ -139,6 +141,11 @@ func (r *RPCInvocation) CallBack() interface{} {
 // SetCallBack ...
 func (r *RPCInvocation) SetCallBack(c interface{}) {
 	r.callBack = c
+}
+
+func (r *RPCInvocation) ServiceKey() string {
+	return common.ServiceKey(r.AttachmentsByKey(constant.INTERFACE_KEY, ""),
+		r.AttachmentsByKey(constant.GROUP_KEY, ""), r.AttachmentsByKey(constant.VERSION_KEY, ""))
 }
 
 // /////////////////////////
