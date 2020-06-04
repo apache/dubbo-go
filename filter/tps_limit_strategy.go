@@ -17,7 +17,7 @@
 
 package filter
 
-// TpsLimitStrategy defines how to do the TPS limiting in method level. 
+// TpsLimitStrategy defines how to do the TPS limiting in method level.
 /*
  * please register your implementation by invoking SetTpsLimitStrategy
  * "UserProvider":
