@@ -72,7 +72,7 @@ func (t TpsLimitFilter) Invoke(ctx context.Context, invoker protocol.Invoker, in
 	return invoker.Invoke(ctx, invocation)
 }
 
-// OnResponse dummy process, return the result directly 
+// OnResponse dummy process, returns the result directly
 func (t TpsLimitFilter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker,
 	_ protocol.Invocation) protocol.Result {
 	return result
