@@ -174,6 +174,7 @@ func (n *nacosMetadataReport) getConfigAsArray(param vo.ConfigParam) []string {
 	decodeCfg, err := url.QueryUnescape(cfg)
 	if err != nil {
 		logger.Errorf("The config is invalid: %s", cfg)
+		return res
 	}
 	res = append(res, decodeCfg)
 	return res
