@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package dubbo
+package getty
 
 import (
+	"context"
 	"testing"
 )
 
@@ -55,4 +56,19 @@ func TestRebuildCtx(t *testing.T) {
 	span.Finish()
 	assert.NotNil(t, ctx)
 	assert.NotNil(t, ctx.Value(constant.TRACING_REMOTE_SPAN_CTX))
+}
+
+// rebuildCtx rebuild the context by attachment.
+// Once we decided to transfer more context's key-value, we should change this.
+// now we only support rebuild the tracing context
+func rebuildCtx(inv *invocation.RPCInvocation) context.Context {
+	ctx := context.WithValue(context.Background(), "attachment", inv.Attachments())
+
+	// actually, if user do not use any opentracing framework, the err will not be nil.
+	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.TextMap,
+		opentracing.TextMapCarrier(inv.Attachments()))
+	if err == nil {
+		ctx = context.WithValue(ctx, constant.TRACING_REMOTE_SPAN_CTX, spanCtx)
+	}
+	return ctx
 }
