@@ -90,8 +90,8 @@ func ValidateNacosClient(container nacosClientFacade, opts ...option) error {
 	url := container.GetUrl()
 	timeout, err := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
 	if err != nil {
-		logger.Errorf("timeout config %v is invalid ,err is %v",
-			url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), err.Error())
+		logger.Errorf("invalid timeout config %+v,got err %+v",
+			url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), err)
 		return perrors.WithMessagef(err, "newNacosClient(address:%+v)", url.Location)
 	}
 	nacosAddresses := strings.Split(url.Location, ",")
@@ -109,7 +109,8 @@ func ValidateNacosClient(container nacosClientFacade, opts ...option) error {
 	if container.NacosClient().Client() == nil {
 		configClient, err := initNacosConfigClient(nacosAddresses, timeout, url)
 		if err != nil {
-			logger.Errorf("nacos create config client error:%v", err)
+			logger.Errorf("initNacosConfigClient(addr:%+v,timeout:%v,url:%v) = err %+v",
+				nacosAddresses, timeout.String(), url, err)
 			return perrors.WithMessagef(err, "newNacosClient(address:%+v)", url.Location)
 		}
 		container.NacosClient().SetClient(&configClient)
@@ -137,7 +138,8 @@ func newNacosClient(name string, nacosAddrs []string, timeout time.Duration, url
 
 	configClient, err := initNacosConfigClient(nacosAddrs, timeout, url)
 	if err != nil {
-		logger.Errorf("nacos create config client error:%v", err)
+		logger.Errorf("initNacosConfigClient(addr:%+v,timeout:%v,url:%v) = err %+v",
+			nacosAddrs, timeout.String(), url, err)
 		return n, perrors.WithMessagef(err, "newNacosClient(address:%+v)", url.Location)
 	}
 	n.SetClient(&configClient)
@@ -151,7 +153,7 @@ func initNacosConfigClient(nacosAddrs []string, timeout time.Duration, url commo
 		split := strings.Split(nacosAddr, ":")
 		port, err := strconv.ParseUint(split[1], 10, 64)
 		if err != nil {
-			logger.Warnf("nacos addr port parse error ,error message is %v", err)
+			logger.Warnf("strconv.ParseUint(nacos addr port:%+v) = error %+v", split[1], err)
 			continue
 		}
 		svrconf := nacosconst.ServerConfig{
