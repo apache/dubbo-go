@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package dubbo
+package getty
 
 import (
 	"fmt"
@@ -36,10 +36,10 @@ import (
 )
 
 type gettyRPCClient struct {
-	once     sync.Once
-	protocol string
-	addr     string
-	active   int64 // zero, not create or be destroyed
+	once sync.Once
+	//protocol string
+	addr   string
+	active int64 // zero, not create or be destroyed
 
 	pool *gettyRPCClientPool
 
@@ -52,11 +52,11 @@ var (
 	errClientPoolClosed = perrors.New("client pool closed")
 )
 
-func newGettyRPCClientConn(pool *gettyRPCClientPool, protocol, addr string) (*gettyRPCClient, error) {
+func newGettyRPCClientConn(pool *gettyRPCClientPool, addr string) (*gettyRPCClient, error) {
 	c := &gettyRPCClient{
-		protocol: protocol,
-		addr:     addr,
-		pool:     pool,
+		//protocol: protocol,
+		addr: addr,
+		pool: pool,
 		gettyClient: getty.NewTCPClient(
 			getty.WithServerAddress(addr),
 			getty.WithConnectionNumber((int)(pool.rpcClient.conf.ConnectionNum)),
@@ -98,7 +98,6 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 		tcpConn *net.TCPConn
 		conf    ClientConfig
 	)
-
 	conf = c.pool.rpcClient.conf
 	if conf.GettySessionParam.CompressEncoding {
 		session.SetCompressType(getty.CompressZip)
@@ -301,7 +300,8 @@ func newGettyRPCClientConnPool(rpcClient *Client, size int, ttl time.Duration) *
 		rpcClient: rpcClient,
 		size:      size,
 		ttl:       int64(ttl.Seconds()),
-		conns:     make([]*gettyRPCClient, 0, 16),
+		// init capacity : 2
+		conns: make([]*gettyRPCClient, 0, 2),
 	}
 }
 
@@ -315,11 +315,14 @@ func (p *gettyRPCClientPool) close() {
 	}
 }
 
-func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPCClient, error) {
+func (p *gettyRPCClientPool) getGettyRpcClient(addr string) (*gettyRPCClient, error) {
 	conn, err := p.get()
 	if err == nil && conn == nil {
 		// create new conn
-		rpcClientConn, err := newGettyRPCClientConn(p, protocol, addr)
+		rpcClientConn, err := newGettyRPCClientConn(p, addr)
+		if err == nil {
+			p.put(rpcClientConn)
+		}
 		return rpcClientConn, perrors.WithStack(err)
 	}
 	return conn, perrors.WithStack(err)
@@ -333,10 +336,15 @@ func (p *gettyRPCClientPool) get() (*gettyRPCClient, error) {
 	if p.conns == nil {
 		return nil, errClientPoolClosed
 	}
-
-	for len(p.conns) > 0 {
-		conn := p.conns[len(p.conns)-1]
-		p.conns = p.conns[:len(p.conns)-1]
+	for num := len(p.conns); num > 0; {
+		var conn *gettyRPCClient
+		if num != 1 {
+			conn = p.conns[rand.Int31n(int32(num))]
+		} else {
+			conn = p.conns[0]
+		}
+		// This will recreate gettyRpcClient for remove last position
+		//p.conns = p.conns[:len(p.conns)-1]
 
 		if d := now - conn.getActive(); d > p.ttl {
 			p.remove(conn)
@@ -353,21 +361,17 @@ func (p *gettyRPCClientPool) put(conn *gettyRPCClient) {
 	if conn == nil || conn.getActive() == 0 {
 		return
 	}
-
 	p.Lock()
 	defer p.Unlock()
-
 	if p.conns == nil {
 		return
 	}
-
 	// check whether @conn has existed in p.conns or not.
 	for i := range p.conns {
 		if p.conns[i] == conn {
 			return
 		}
 	}
-
 	if len(p.conns) >= p.size {
 		// delete @conn from client pool
 		// p.remove(conn)
