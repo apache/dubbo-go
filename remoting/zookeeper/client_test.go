@@ -106,7 +106,6 @@ func TestCreateDelete(t *testing.T) {
 	assert.NoError(t, err)
 	err2 := z.Delete("/test1/test2/test3/test4")
 	assert.NoError(t, err2)
-	//verifyEventOrder(t, event, []zk.SourceObjectEventType{zk.EventNodeCreated}, "event channel")
 }
 
 func TestRegisterTemp(t *testing.T) {
