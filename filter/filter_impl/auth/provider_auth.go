@@ -55,7 +55,7 @@ func (paf *ProviderAuthFilter) Invoke(ctx context.Context, invoker protocol.Invo
 	return invoker.Invoke(ctx, invocation)
 }
 
-// OnResponse dummy process, return the result directly
+// OnResponse dummy process, returns the result directly
 func (paf *ProviderAuthFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }

@@ -23,7 +23,7 @@ import (
 )
 
 // Authenticator defines how an Authenticator works.
-// Custom Authenticator must be set by calling auth.SetAuthenticator before use. 
+// Custom Authenticator must be set by calling auth.SetAuthenticator before use.
 type Authenticator interface {
 
 	// Sign adds signature to the invocation
