@@ -384,11 +384,11 @@ func (z *ZookeeperClient) Close() {
 	z.Conn = nil
 	z.Unlock()
 	if conn != nil {
-		logger.Warnf("zkClient Conn{name:%s, zk addr:%s} exit now.", z.name, conn.SessionID())
+		logger.Infof("zkClient Conn{name:%s, zk addr:%d} exit now.", z.name, conn.SessionID())
 		conn.Close()
 	}
 
-	logger.Warnf("zkClient{name:%s, zk addr:%s} exit now.", z.name, z.ZkAddrs)
+	logger.Infof("zkClient{name:%s, zk addr:%s} exit now.", z.name, z.ZkAddrs)
 }
 
 // Create will create the node recursively, which means that if the parent node is absent,
@@ -419,9 +419,9 @@ func (z *ZookeeperClient) CreateWithValue(basePath string, value []byte) error {
 
 		if err != nil {
 			if err == zk.ErrNodeExists {
-				logger.Debugf("zk.create(\"%s\") exists\n", tmpPath)
+				logger.Debugf("zk.create(\"%s\") exists", tmpPath)
 			} else {
-				logger.Errorf("zk.create(\"%s\") error(%v)\n", tmpPath, perrors.WithStack(err))
+				logger.Errorf("zk.create(\"%s\") error(%v)", tmpPath, perrors.WithStack(err))
 				return perrors.WithMessagef(err, "zk.Create(path:%s)", basePath)
 			}
 		}
@@ -457,10 +457,10 @@ func (z *ZookeeperClient) RegisterTemp(basePath string, node string) (string, er
 	}
 
 	if err != nil {
-		logger.Warnf("conn.Create(\"%s\", zk.FlagEphemeral) = error(%v)\n", zkPath, perrors.WithStack(err))
+		logger.Warnf("conn.Create(\"%s\", zk.FlagEphemeral) = error(%v)", zkPath, perrors.WithStack(err))
 		return zkPath, perrors.WithStack(err)
 	}
-	logger.Debugf("zkClient{%s} create a temp zookeeper node:%s\n", z.name, tmpPath)
+	logger.Debugf("zkClient{%s} create a temp zookeeper node:%s", z.name, tmpPath)
 
 	return tmpPath, nil
 }
@@ -485,11 +485,11 @@ func (z *ZookeeperClient) RegisterTempSeq(basePath string, data []byte) (string,
 
 	logger.Debugf("zookeeperClient.RegisterTempSeq(basePath{%s}) = tempPath{%s}", basePath, tmpPath)
 	if err != nil && err != zk.ErrNodeExists {
-		logger.Errorf("zkClient{%s} conn.Create(\"%s\", \"%s\", zk.FlagEphemeral|zk.FlagSequence) error(%v)\n",
+		logger.Errorf("zkClient{%s} conn.Create(\"%s\", \"%s\", zk.FlagEphemeral|zk.FlagSequence) error(%v)",
 			z.name, basePath, string(data), err)
 		return "", perrors.WithStack(err)
 	}
-	logger.Debugf("zkClient{%s} create a temp zookeeper node:%s\n", z.name, tmpPath)
+	logger.Debugf("zkClient{%s} create a temp zookeeper node:%s", z.name, tmpPath)
 
 	return tmpPath, nil
 }
