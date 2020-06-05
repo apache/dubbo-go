@@ -99,7 +99,7 @@ func ValidateNacosClient(container nacosClientFacade, opts ...option) error {
 		//in dubbo ,every registry only connect one node ,so this is []string{r.Address}
 		newClient, err := newNacosClient(os.nacosName, nacosAddresses, timeout, url)
 		if err != nil {
-			logger.Warnf("newNacosClient(name{%s}, nacos address{%v}, timeout{%d}) = error{%v}",
+			logger.Errorf("newNacosClient(name{%s}, nacos address{%v}, timeout{%d}) = error{%v}",
 				os.nacosName, url.Location, timeout.String(), err)
 			return perrors.WithMessagef(err, "newNacosClient(address:%+v)", url.Location)
 		}
@@ -153,7 +153,7 @@ func initNacosConfigClient(nacosAddrs []string, timeout time.Duration, url commo
 		split := strings.Split(nacosAddr, ":")
 		port, err := strconv.ParseUint(split[1], 10, 64)
 		if err != nil {
-			logger.Warnf("strconv.ParseUint(nacos addr port:%+v) = error %+v", split[1], err)
+			logger.Errorf("strconv.ParseUint(nacos addr port:%+v) = error %+v", split[1], err)
 			continue
 		}
 		svrconf := nacosconst.ServerConfig{
@@ -221,5 +221,4 @@ func (n *NacosClient) Close() {
 
 	n.stop()
 	n.SetClient(nil)
-	logger.Warnf("nacosClient{name:%s, nacos addr:%s} exit now.", n.name, n.NacosAddrs)
 }
