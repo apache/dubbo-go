@@ -18,7 +18,6 @@
 package zookeeper
 
 import (
-	"fmt"
 	"testing"
 	"time"
 )
@@ -28,6 +27,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+import (
+	"github.com/apache/dubbo-go/common/logger"
+)
+
 func verifyEventStateOrder(t *testing.T, c <-chan zk.Event, expectedStates []zk.State, source string) {
 	for _, state := range expectedStates {
 		for {
@@ -35,7 +38,7 @@ func verifyEventStateOrder(t *testing.T, c <-chan zk.Event, expectedStates []zk.
 			if !ok {
 				t.Fatalf("unexpected channel close for %s", source)
 			}
-			fmt.Println(event)
+			logger.Debug(event)
 			if event.Type != zk.EventSession {
 				continue
 			}
