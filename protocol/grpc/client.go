@@ -42,12 +42,14 @@ var (
 func init() {
 	// load clientconfig from consumer_config
 	// default use grpc
+	defaultClientConfig := GetDefaultClientConfig()
+	clientConf = &defaultClientConfig
 	consumerConfig := config.GetConsumerConfig()
+
 	if consumerConfig.ApplicationConfig == nil {
 		return
 	}
 	protocolConf := config.GetConsumerConfig().ProtocolConf
-	customClientConfig := GetCustomClientConfig()
 
 	if protocolConf == nil {
 		logger.Info("protocol_conf default use dubbo config")
@@ -61,15 +63,13 @@ func init() {
 		if err != nil {
 			panic(err)
 		}
-		err = yaml.Unmarshal(grpcConfByte, &customClientConfig)
+		err = yaml.Unmarshal(grpcConfByte, clientConf)
 		if err != nil {
 			panic(err)
 		}
 	}
 
-	clientConf = &customClientConfig
-	if clientConf == nil || len(clientConf.ContentType) == 0 {
-		defaultClientConfig := GetDefaultClientConfig()
+	if clientConf == nil || len(clientConf.ContentSubType) == 0 {
 		clientConf = &defaultClientConfig
 	}
 	if err := clientConf.Validate(); err != nil {
@@ -90,7 +90,7 @@ func NewClient(url common.URL) *Client {
 	dailOpts := make([]grpc.DialOption, 0, 4)
 	dailOpts = append(dailOpts, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithUnaryInterceptor(
 		otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())),
-		grpc.WithDefaultCallOptions(grpc.CallContentSubtype(clientConf.ContentType)))
+		grpc.WithDefaultCallOptions(grpc.CallContentSubtype(clientConf.ContentSubType)))
 	conn, err := grpc.Dial(url.Location, dailOpts...)
 	if err != nil {
 		panic(err)
