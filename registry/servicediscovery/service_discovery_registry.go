@@ -37,9 +37,10 @@ import (
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/metadata/mapping"
 	"github.com/apache/dubbo-go/metadata/service"
+	"github.com/apache/dubbo-go/metadata/service/exporter/configurable"
 	"github.com/apache/dubbo-go/metadata/service/remote"
 	"github.com/apache/dubbo-go/registry"
-	registryCommon "github.com/apache/dubbo-go/registry/event"
+	"github.com/apache/dubbo-go/registry/event"
 	"github.com/apache/dubbo-go/registry/servicediscovery/proxy"
 	"github.com/apache/dubbo-go/registry/servicediscovery/synthesizer"
 	"github.com/apache/dubbo-go/remoting"
@@ -72,6 +73,15 @@ type serviceDiscoveryRegistry struct {
 }
 
 func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
+
+	// the metadata service is exported in DubboBootstrap of Java Dubbo
+	// but I don't want to introduce similar structure because we has less logic to do
+	// so I codes the related logic here.
+	// If necessary we need to think about moving there codes to somewhere else.
+
+	// init and expose metadata service
+	initMetadataService()
+
 	serviceDiscovery, err := creatServiceDiscovery(url)
 	if err != nil {
 		return nil, err
@@ -119,7 +129,7 @@ func creatServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
 	if err != nil {
 		return nil, perrors.WithMessage(err, "Create service discovery fialed")
 	}
-	return registryCommon.NewEventPublishingServiceDiscovery(originServiceDiscovery), nil
+	return event.NewEventPublishingServiceDiscovery(originServiceDiscovery), nil
 }
 
 func parseServices(literalServices string) *gxset.HashSet {
@@ -176,7 +186,14 @@ func (s *serviceDiscoveryRegistry) Register(url common.URL) error {
 	if err != nil {
 		return perrors.WithMessage(err, "could not create servcie instance, please check your service url")
 	}
-	return s.serviceDiscovery.Register(ins)
+	err = s.serviceDiscovery.Register(ins)
+	if err != nil {
+		return perrors.WithMessage(err, "register the service failed")
+	}
+	return s.serviceNameMapping.Map(url.GetParam(constant.INTERFACE_KEY, ""),
+		url.GetParam(constant.GROUP_KEY, ""),
+		url.GetParam(constant.Version, ""),
+		url.Protocol)
 }
 
 func createInstance(url common.URL) (registry.ServiceInstance, error) {
@@ -642,5 +659,17 @@ func (icn *InstanceChangeNotify) Notify(event observer.Event) {
 		sdr := icn.serviceDiscoveryRegistry
 		sdr.subscribe(sdr.url, icn.notify, se.ServiceName, se.Instances)
 	}
+}
 
+func initMetadataService() {
+	ms, err := extension.GetMetadataService(config.GetApplicationConfig().MetadataType)
+	if err != nil {
+		logger.Errorf("could not init metadata service", err)
+	}
+	expt := configurable.NewMetadataServiceExporter(ms)
+	err = expt.Export()
+	if err != nil {
+		logger.Errorf("could not export the metadata service", err)
+	}
+	extension.GetGlobalDispatcher().Dispatch(event.NewServiceConfigExportedEvent(expt.(*configurable.MetadataServiceExporter).ServiceConfig))
 }

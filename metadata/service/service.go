@@ -20,7 +20,6 @@ package service
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/config"
 )
 
 // MetadataService is used to define meta data related behaviors
@@ -50,18 +49,25 @@ type MetadataService interface {
 	// GetServiceDefinition will get the target service info store in metadata by service key
 	GetServiceDefinitionByServiceKey(serviceKey string) (string, error)
 	// RefreshMetadata will refresh the metadata
-	RefreshMetadata(exportedRevision string, subscribedRevision string) bool
+	RefreshMetadata(exportedRevision string, subscribedRevision string) (bool, error)
 	// Version will return the metadata service version
-	Version() string
+	Version() (string, error)
 }
 
 // BaseMetadataService is used for the event logic for struct who will implement interface MetadataService
 type BaseMetadataService struct {
+	serviceName string
+}
+
+func NewBaseMetadataService(serviceName string) BaseMetadataService {
+	return BaseMetadataService{
+		serviceName: serviceName,
+	}
 }
 
 // ServiceName can get the service's name in meta service , which is application name
 func (mts *BaseMetadataService) ServiceName() (string, error) {
-	return config.GetApplicationConfig().Name, nil
+	return mts.serviceName, nil
 }
 
 // Version will return the version of metadata service

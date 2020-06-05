@@ -44,7 +44,9 @@ import (
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 )
 
-// ServiceConfig ...
+// ServiceConfig is a newest structure to support Dubbo 2.7.5
+// But I think it's not very necessary,
+// we should think about how to reuse current ProviderConfig rather than use this
 type ServiceConfig struct {
 	context                     context.Context
 	id                          string
