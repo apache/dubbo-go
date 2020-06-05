@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package grpc
 
 import (
@@ -28,12 +29,14 @@ import (
 )
 
 const (
-	CODEC_JSON  = "json"
+	// json
+	CODEC_JSON = "json"
+	// proto
 	CODEC_PROTO = "proto"
 )
 
 func init() {
-	encoding.RegisterCodec(JSON{
+	encoding.RegisterCodec(grpcJson{
 		Marshaler: jsonpb.Marshaler{
 			EmitDefaults: true,
 			OrigName:     true,
@@ -41,16 +44,19 @@ func init() {
 	})
 }
 
-type JSON struct {
+// grpcJson ...
+type grpcJson struct {
 	jsonpb.Marshaler
 	jsonpb.Unmarshaler
 }
 
-func (_ JSON) Name() string {
+// implements grpc encoding package Codec interface method
+func (_ grpcJson) Name() string {
 	return CODEC_JSON
 }
 
-func (j JSON) Marshal(v interface{}) (out []byte, err error) {
+// implements grpc encoding package Codec interface method
+func (j grpcJson) Marshal(v interface{}) (out []byte, err error) {
 	if pm, ok := v.(proto.Message); ok {
 		b := new(bytes.Buffer)
 		err := j.Marshaler.Marshal(b, pm)
@@ -62,7 +68,8 @@ func (j JSON) Marshal(v interface{}) (out []byte, err error) {
 	return json.Marshal(v)
 }
 
-func (j JSON) Unmarshal(data []byte, v interface{}) (err error) {
+// implements grpc encoding package Codec interface method
+func (j grpcJson) Unmarshal(data []byte, v interface{}) (err error) {
 	if pm, ok := v.(proto.Message); ok {
 		b := bytes.NewBuffer(data)
 		return j.Unmarshaler.Unmarshal(b, pm)
