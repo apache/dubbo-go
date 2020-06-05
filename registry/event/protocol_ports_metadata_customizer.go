@@ -23,7 +23,6 @@ import (
 
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/metadata/service/remote"
 	"github.com/apache/dubbo-go/registry"
 )
 
@@ -38,7 +37,7 @@ func (p *ProtocolPortsMetadataCustomizer) GetPriority() int {
 
 // Customize will
 func (p *ProtocolPortsMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	metadataService, err := remote.NewMetadataService()
+	metadataService, err := getMetadataService()
 	if err != nil {
 		logger.Errorf("Could not init the MetadataService", err)
 		return

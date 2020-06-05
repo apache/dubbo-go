@@ -181,7 +181,7 @@ func (n *nacosMetadataReport) getConfigAsArray(param vo.ConfigParam) []string {
 func (n *nacosMetadataReport) getConfig(param vo.ConfigParam) string {
 	cfg, err := n.client.GetConfig(param)
 	if err != nil {
-		logger.Errorf("Finding the configuration failed: %v", param)
+		logger.Errorf("Finding the configuration failed: %v, err: %v", param, err)
 	}
 	return cfg
 }

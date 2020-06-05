@@ -20,6 +20,9 @@ package event
 import (
 	gxset "github.com/dubbogo/gost/container/set"
 	gxpage "github.com/dubbogo/gost/page"
+
+	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/metadata/service"
 )
 
 import (
@@ -138,4 +141,8 @@ func (epsd *EventPublishingServiceDiscovery) executeWithEvents(beforeEvent obser
 		globalDispatcher.Dispatch(afterEvent)
 	}
 	return nil
+}
+
+func getMetadataService() (service.MetadataService, error) {
+	return extension.GetMetadataService(config.GetApplicationConfig().MetadataType)
 }

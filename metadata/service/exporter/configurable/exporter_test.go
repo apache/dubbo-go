@@ -53,7 +53,7 @@ func TestConfigurableExporter(t *testing.T) {
 			SessionName:      "server",
 		}})
 	mockInitProviderWithSingleRegistry()
-	metadataService := inmemory.NewMetadataService()
+	metadataService, _ := inmemory.NewMetadataService()
 	exported := NewMetadataServiceExporter(metadataService)
 	assert.Equal(t, false, exported.IsExported())
 	assert.NoError(t, exported.Export())
