@@ -21,7 +21,9 @@ import (
 	"strconv"
 	"time"
 
+
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
 )
 
 import (
@@ -55,7 +57,8 @@ type DynamicConfigurationServiceNameMapping struct {
 func (d *DynamicConfigurationServiceNameMapping) Map(serviceInterface string, group string, version string, protocol string) error {
 	// metadata service is admin service, should not be mapped
 	if constant.METADATA_SERVICE_NAME == serviceInterface {
-		return perrors.New("try to map the metadata service, will be ignored")
+		logger.Info("try to map the metadata service, will be ignored")
+		return nil
 	}
 
 	appName := config.GetApplicationConfig().Name

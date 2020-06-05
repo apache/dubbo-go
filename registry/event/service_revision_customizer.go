@@ -26,7 +26,6 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/metadata/service/remote"
 	"github.com/apache/dubbo-go/registry"
 )
 
@@ -46,7 +45,7 @@ func (e *exportedServicesRevisionMetadataCustomizer) GetPriority() int {
 }
 
 func (e *exportedServicesRevisionMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	ms, err := remote.NewMetadataService()
+	ms, err := getMetadataService()
 	if err != nil {
 		logger.Errorf("could not get metadata service", err)
 		return
@@ -74,7 +73,7 @@ func (e *subscribedServicesRevisionMetadataCustomizer) GetPriority() int {
 }
 
 func (e *subscribedServicesRevisionMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	ms, err := remote.NewMetadataService()
+	ms, err := getMetadataService()
 	if err != nil {
 		logger.Errorf("could not get metadata service", err)
 		return

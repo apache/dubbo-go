@@ -97,16 +97,16 @@ func TestMetadataService(t *testing.T) {
 		"mock://127.0.0.1:20000/?sync.report=true"))
 	assert.NoError(t, err)
 	instance.GetMetadataReportInstance(&u)
-	mts, err := NewMetadataService()
+	mts, err := newMetadataService()
 	assert.NoError(t, err)
-	mts.setInMemoryMetadataService(mockInmemoryProc(t))
+	mts.(*MetadataService).setInMemoryMetadataService(mockInmemoryProc(t))
 	mts.RefreshMetadata("0.0.1", "0.0.1")
 	assert.Equal(t, 1, len(serviceMetadata))
 	assert.Equal(t, 1, len(subscribedMetadata))
 }
 
 func mockInmemoryProc(t *testing.T) *inmemory.MetadataService {
-	mts := inmemory.NewMetadataService()
+	mts, _ := inmemory.NewMetadataService()
 	serviceName := "com.ikurento.user.UserProvider"
 	group := "group1"
 	version := "0.0.1"
@@ -135,5 +135,5 @@ func mockInmemoryProc(t *testing.T) *inmemory.MetadataService {
 	serviceKey := definition.ServiceDescriperBuild(serviceName, group, version)
 	def2, _ := mts.GetServiceDefinitionByServiceKey(serviceKey)
 	assert.Equal(t, expected, def2)
-	return mts
+	return mts.(*inmemory.MetadataService)
 }

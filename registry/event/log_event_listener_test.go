@@ -26,6 +26,5 @@ import (
 func TestLogEventListener(t *testing.T) {
 	l := &logEventListener{}
 	assert.Equal(t, 0, l.GetPriority())
-	assert.Nil(t, l.GetEventType())
 	assert.Nil(t, l.OnEvent(&ServiceDiscoveryDestroyedEvent{}))
 }

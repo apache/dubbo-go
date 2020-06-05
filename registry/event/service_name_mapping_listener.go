@@ -20,6 +20,9 @@ package event
 import (
 	"reflect"
 
+	perrors "github.com/pkg/errors"
+
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/observer"
 	"github.com/apache/dubbo-go/metadata/mapping"
@@ -43,6 +46,17 @@ func (s *serviceNameMappingListener) GetPriority() int {
 func (s *serviceNameMappingListener) OnEvent(e observer.Event) error {
 	if ex, ok := e.(*ServiceConfigExportedEvent); ok {
 		sc := ex.ServiceConfig
+		urls := sc.GetExportedUrls()
+
+		for _, u := range urls {
+			err := s.nameMapping.Map(u.GetParam(constant.INTERFACE_KEY, ""),
+				u.GetParam(constant.GROUP_KEY, ""),
+				u.GetParam(constant.Version, ""),
+				u.Protocol)
+			if err != nil {
+				return perrors.WithMessage(err, "could not map the service: "+u.String())
+			}
+		}
 	}
 	return nil
 }
