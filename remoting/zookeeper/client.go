@@ -445,7 +445,6 @@ func (z *ZookeeperClient) Delete(basePath string) error {
 func (z *ZookeeperClient) RegisterTemp(basePath string, node string) (string, error) {
 	var (
 		err     error
-		data    []byte
 		zkPath  string
 		tmpPath string
 	)
