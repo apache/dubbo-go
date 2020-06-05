@@ -32,7 +32,7 @@ import (
 )
 
 func TestMetadataService(t *testing.T) {
-	mts := NewMetadataService()
+	mts, _ := NewMetadataService()
 	serviceName := "com.ikurento.user.UserProvider"
 	group := "group1"
 	version := "0.0.1"
@@ -66,25 +66,20 @@ func TestMetadataService(t *testing.T) {
 	assert.NoError(t, err)
 	mts.ExportURL(u)
 	list, _ := mts.GetExportedURLs(serviceName, group, version, protocol)
-	assert.Equal(t, uint64(3), list.Len())
-	iter := list.IterAtPosition(0)
-	for iter.Next() {
-		comparator := iter.Value()
-		fmt.Println(comparator)
-	}
+	assert.Equal(t, 3, len(list))
 	mts.SubscribeURL(u)
 
 	mts.SubscribeURL(u)
 	list2, _ := mts.GetSubscribedURLs()
-	assert.Equal(t, uint64(1), list2.Len())
+	assert.Equal(t, 1, len(list2))
 
 	mts.UnexportURL(u)
 	list3, _ := mts.GetExportedURLs(serviceName, group, version, protocol)
-	assert.Equal(t, uint64(2), list3.Len())
+	assert.Equal(t, 2, len(list3))
 
 	mts.UnsubscribeURL(u)
 	list4, _ := mts.GetSubscribedURLs()
-	assert.Equal(t, uint64(0), list4.Len())
+	assert.Equal(t, 0, len(list4))
 
 	userProvider := &definition.UserProvider{}
 	common.ServiceMap.Register(serviceName, protocol, userProvider)
