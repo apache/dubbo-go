@@ -95,6 +95,9 @@ func getNacosConfig(url *common.URL) (map[string]interface{}, error) {
 	clientConfig.CacheDir = url.GetParam(constant.NACOS_CACHE_DIR_KEY, "")
 	clientConfig.LogDir = url.GetParam(constant.NACOS_LOG_DIR_KEY, "")
 	clientConfig.Endpoint = url.GetParam(constant.NACOS_ENDPOINT, "")
+	clientConfig.Username = url.GetParam(constant.NACOS_USERNAME, "")
+	clientConfig.Password = url.GetParam(constant.NACOS_PASSWORD, "")
+	clientConfig.NamespaceId = url.GetParam(constant.NACOS_NAMESPACEID, "")
 	clientConfig.NotLoadCacheAtStart = true
 	configMap["clientConfig"] = clientConfig
 
