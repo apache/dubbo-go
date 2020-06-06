@@ -302,12 +302,11 @@ func (z *ZookeeperClient) RegisterEvent(zkPath string, event *chan struct{}) {
 	}
 
 	z.Lock()
+	defer z.Unlock()
 	a := z.eventRegistry[zkPath]
 	a = append(a, event)
-
 	z.eventRegistry[zkPath] = a
 	logger.Debugf("zkClient{%s} register event{path:%s, ptr:%p}", z.name, zkPath, event)
-	z.Unlock()
 }
 
 // UnregisterEvent ...
@@ -323,8 +322,7 @@ func (z *ZookeeperClient) UnregisterEvent(zkPath string, event *chan struct{}) {
 	}
 	for i, e := range infoList {
 		if e == event {
-			arr := infoList
-			infoList = append(arr[:i], arr[i+1:]...)
+			infoList = append(infoList[:i], infoList[i+1:]...)
 			logger.Infof("zkClient{%s} unregister event{path:%s, event:%p}", z.name, zkPath, event)
 		}
 	}

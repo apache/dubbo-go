@@ -24,7 +24,7 @@ import (
 
 import (
 	"github.com/dubbogo/go-zookeeper/zk"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -80,7 +80,7 @@ func verifyEventStateOrder(t *testing.T, c <-chan zk.Event, expectedStates []zk.
 
 func Test_newMockZookeeperClient(t *testing.T) {
 	ts, z, event, err := NewMockZookeeperClient("test", 15*time.Second)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer ts.Stop()
 	states := []zk.State{zk.StateConnecting, zk.StateConnected, zk.StateHasSession}
 	verifyEventStateOrder(t, event, states, "event channel")
@@ -90,49 +90,53 @@ func Test_newMockZookeeperClient(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	ts, z, event, _ := NewMockZookeeperClient("test", 15*time.Second)
+	ts, z, event, err := NewMockZookeeperClient("test", 15*time.Second)
+	require.NoError(t, err)
 	defer ts.Stop()
-	err := z.Create("test1/test2/test3/test4")
-	assert.NoError(t, err)
+	err = z.Create("test1/test2/test3/test4")
+	require.NoError(t, err)
 
 	states := []zk.State{zk.StateConnecting, zk.StateConnected, zk.StateHasSession}
 	verifyEventStateOrder(t, event, states, "event channel")
 }
 
 func TestCreateDelete(t *testing.T) {
-	ts, z, event, _ := NewMockZookeeperClient("test", 15*time.Second)
+	ts, z, event, err := NewMockZookeeperClient("test", 15*time.Second)
+	require.NoError(t, err)
 	defer ts.Stop()
 
 	states := []zk.State{zk.StateConnecting, zk.StateConnected, zk.StateHasSession}
 	verifyEventStateOrder(t, event, states, "event channel")
-	err := z.Create("/test1/test2/test3/test4")
-	assert.NoError(t, err)
-	err2 := z.Delete("/test1/test2/test3/test4")
-	assert.NoError(t, err2)
+	err = z.Create("/test1/test2/test3/test4")
+	require.NoError(t, err)
+	err = z.Delete("/test1/test2/test3/test4")
+	require.NoError(t, err)
 	//verifyEventOrder(t, event, []zk.EventType{zk.EventNodeCreated}, "event channel")
 }
 
 func TestRegisterTemp(t *testing.T) {
-	ts, z, event, _ := NewMockZookeeperClient("test", 15*time.Second)
+	ts, z, event, err := NewMockZookeeperClient("test", 15*time.Second)
+	require.NoError(t, err)
 	defer ts.Stop()
-	err := z.Create("/test1/test2/test3")
-	assert.NoError(t, err)
+	err = z.Create("/test1/test2/test3")
+	require.NoError(t, err)
 
 	tmpath, err := z.RegisterTemp("/test1/test2/test3", "test4")
-	assert.NoError(t, err)
-	assert.Equal(t, "/test1/test2/test3/test4", tmpath)
+	require.NoError(t, err)
+	require.Equal(t, "/test1/test2/test3/test4", tmpath)
 	states := []zk.State{zk.StateConnecting, zk.StateConnected, zk.StateHasSession}
 	verifyEventStateOrder(t, event, states, "event channel")
 }
 
 func TestRegisterTempSeq(t *testing.T) {
-	ts, z, event, _ := NewMockZookeeperClient("test", 15*time.Second)
+	ts, z, event, err := NewMockZookeeperClient("test", 15*time.Second)
+	require.NoError(t, err)
 	defer ts.Stop()
-	err := z.Create("/test1/test2/test3")
-	assert.NoError(t, err)
+	err = z.Create("/test1/test2/test3")
+	require.NoError(t, err)
 	tmpath, err := z.RegisterTempSeq("/test1/test2/test3", []byte("test"))
-	assert.NoError(t, err)
-	assert.Equal(t, "/test1/test2/test3/0000000000", tmpath)
+	require.NoError(t, err)
+	require.Equal(t, "/test1/test2/test3/0000000000", tmpath)
 	states := []zk.State{zk.StateConnecting, zk.StateConnected, zk.StateHasSession}
 	verifyEventStateOrder(t, event, states, "event channel")
 }
