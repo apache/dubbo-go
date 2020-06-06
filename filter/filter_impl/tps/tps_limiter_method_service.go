@@ -44,9 +44,8 @@ func init() {
 	extension.SetTpsLimiter(name, GetMethodServiceTpsLimiter)
 }
 
+// MethodServiceTpsLimiterImpl allows developer to config both method-level and service-level tps limiter.
 /**
- * MethodServiceTpsLimiterImpl
- * This implementation allows developer to config both method-level and service-level tps limiter.
  * for example:
  * "UserProvider":
  *   registry: "hangzhouzk"
