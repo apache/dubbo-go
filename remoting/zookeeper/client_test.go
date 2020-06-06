@@ -111,7 +111,7 @@ func TestCreateDelete(t *testing.T) {
 	require.NoError(t, err)
 	err = z.Delete("/test1/test2/test3/test4")
 	require.NoError(t, err)
-	//verifyEventOrder(t, event, []zk.EventType{zk.EventNodeCreated}, "event channel")
+	// verifyEventOrder(t, event, []zk.EventType{zk.EventNodeCreated}, "event channel")
 }
 
 func TestRegisterTemp(t *testing.T) {
