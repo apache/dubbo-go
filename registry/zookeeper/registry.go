@@ -86,12 +86,12 @@ func newZkRegistry(url *common.URL) (registry.Registry, error) {
 	return r, nil
 }
 
-// Options ...
+// nolint
 type Options struct {
 	client *zookeeper.ZookeeperClient
 }
 
-// Option ...
+// nolint
 type Option func(*Options)
 
 func newMockZkRegistry(url *common.URL, opts ...zookeeper.Option) (*zk.TestCluster, *zkRegistry, error) {
@@ -116,6 +116,7 @@ func newMockZkRegistry(url *common.URL, opts ...zookeeper.Option) (*zk.TestClust
 	return c, r, nil
 }
 
+// InitListeners init listeners of zookeeper registry center
 func (r *zkRegistry) InitListeners() {
 	r.listener = zookeeper.NewZkEventListener(r.client)
 	newDataListener := NewRegistryDataListener()
@@ -141,35 +142,43 @@ func (r *zkRegistry) InitListeners() {
 	r.dataListener = newDataListener
 }
 
+// CreatePath create the path in the registry center of zookeeper
 func (r *zkRegistry) CreatePath(path string) error {
 	return r.ZkClient().Create(path)
 }
 
+// DoRegister actually do the register job in the registry center of zookeeper
 func (r *zkRegistry) DoRegister(root string, node string) error {
 	return r.registerTempZookeeperNode(root, node)
 }
 
+// DoSubscribe actually subscribe the provider URL
 func (r *zkRegistry) DoSubscribe(conf *common.URL) (registry.Listener, error) {
 	return r.getListener(conf)
 }
 
+// CloseAndNilClient closes listeners and clear client
 func (r *zkRegistry) CloseAndNilClient() {
 	r.client.Close()
 	r.client = nil
 }
 
+// ZkClient gets zookeeper client
 func (r *zkRegistry) ZkClient() *zookeeper.ZookeeperClient {
 	return r.client
 }
 
+// SetZkClient sets zookeeper client
 func (r *zkRegistry) SetZkClient(client *zookeeper.ZookeeperClient) {
 	r.client = client
 }
 
+// ZkClientLock gets zookeeper registry control lock
 func (r *zkRegistry) ZkClientLock() *sync.Mutex {
 	return &r.cltLock
 }
 
+// CloseListener closes listeners
 func (r *zkRegistry) CloseListener() {
 	if r.dataListener != nil {
 		r.dataListener.Close()
