@@ -53,3 +53,37 @@ func Test_newNacosClient(t *testing.T) {
 	<-c.client.Done()
 	c.Destroy()
 }
+
+func Test_setNacosClient(t *testing.T) {
+	server := mockCommonNacosServer()
+	nacosURL := strings.ReplaceAll(server.URL, "http", "registry")
+	registryUrl, _ := common.NewURL(nacosURL)
+	c := &nacosDynamicConfiguration{
+		url:  &registryUrl,
+		done: make(chan struct{}),
+	}
+	var client *NacosClient
+	client = &NacosClient{
+		name:       nacosClientName,
+		NacosAddrs: []string{nacosURL},
+		Timeout:    15,
+		exit:       make(chan struct{}),
+		onceClose: func() {
+			close(client.exit)
+		},
+	}
+	c.SetNacosClient(client)
+	err := ValidateNacosClient(c, WithNacosName(nacosClientName))
+	assert.NoError(t, err)
+	c.wg.Add(1)
+	go HandleClientRestart(c)
+	go func() {
+		// c.client.Close() and <-c.client.Done() have order requirements.
+		// If c.client.Close() is called first.It is possible that "go HandleClientRestart(c)"
+		// sets c.client to nil before calling c.client.Done().
+		time.Sleep(time.Second)
+		c.client.Close()
+	}()
+	<-c.client.Done()
+	c.Destroy()
+}
