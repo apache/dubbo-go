@@ -18,6 +18,7 @@
 package nacos
 
 import (
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -36,7 +37,7 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
-const logDir = "logs/nacos/log"
+var logDir string
 
 // NacosClient Nacos client
 type NacosClient struct {
@@ -48,6 +49,15 @@ type NacosClient struct {
 	Timeout    time.Duration
 	once       sync.Once
 	onceClose  func()
+}
+
+func init() {
+	switch runtime.GOOS {
+	case "windows":
+		logDir = "logs\\nacos\\log"
+	default:
+		logDir = "logs/nacos/log"
+	}
 }
 
 // Client Get Client
