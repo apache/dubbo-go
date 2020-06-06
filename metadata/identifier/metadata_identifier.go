@@ -17,17 +17,18 @@
 
 package identifier
 
+// The MetadataIdentifier is used to store method descriptor
 type MetadataIdentifier struct {
 	application string
 	BaseMetadataIdentifier
 }
 
-// getIdentifierKey...
+// getIdentifierKey gets metadata identifier key by @mdi.application
 func (mdi *MetadataIdentifier) getIdentifierKey(params ...string) string {
 	return mdi.BaseMetadataIdentifier.getIdentifierKey(mdi.application)
 }
 
-// getIdentifierKey...
+// getIdentifierKey gets metadata file path key by @mdi.application
 func (mdi *MetadataIdentifier) getFilePathKey(params ...string) string {
 	return mdi.BaseMetadataIdentifier.getFilePathKey(mdi.application)
 }

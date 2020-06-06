@@ -37,7 +37,6 @@ type BaseServiceMetadataIdentifier struct {
 	side             string
 }
 
-// joinParams...
 func joinParams(joinChar string, params []string) string {
 	var joinedStr string
 	for _, param := range params {
@@ -47,7 +46,7 @@ func joinParams(joinChar string, params []string) string {
 	return joinedStr
 }
 
-// getIdentifierKey...
+// getIdentifierKey gets metadata identifier key by @params
 func (mdi *BaseServiceMetadataIdentifier) getIdentifierKey(params ...string) string {
 	return mdi.serviceInterface +
 		constant.KEY_SEPARATOR + mdi.version +
@@ -56,7 +55,7 @@ func (mdi *BaseServiceMetadataIdentifier) getIdentifierKey(params ...string) str
 		joinParams(constant.KEY_SEPARATOR, params)
 }
 
-// getFilePathKey...
+// getFilePathKey gets metadata file path key by @params
 func (mdi *BaseServiceMetadataIdentifier) getFilePathKey(params ...string) string {
 	path := serviceToPath(mdi.serviceInterface)
 
@@ -69,7 +68,6 @@ func (mdi *BaseServiceMetadataIdentifier) getFilePathKey(params ...string) strin
 
 }
 
-// serviceToPath...
 func serviceToPath(serviceInterface string) string {
 	if serviceInterface == constant.ANY_VALUE {
 		return ""
@@ -83,7 +81,6 @@ func serviceToPath(serviceInterface string) string {
 
 }
 
-//withPathSeparator...
 func withPathSeparator(path string) string {
 	if len(path) != 0 {
 		path = constant.PATH_SEPARATOR + path
