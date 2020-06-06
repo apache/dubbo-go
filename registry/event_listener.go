@@ -36,6 +36,7 @@ type ConditionalEventListener interface {
 	Accept(e Event) bool
 }
 
+// ServiceInstancesChangedListener is use for the Service Discovery Changed
 // TODO (implement ConditionalEventListener)
 type ServiceInstancesChangedListener struct {
 	ServiceName string
