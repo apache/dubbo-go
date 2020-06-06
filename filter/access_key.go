@@ -22,6 +22,7 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
+// AccessKeyPair stores the basic attributes for authentication.
 type AccessKeyPair struct {
 	AccessKey    string `yaml:"accessKey"   json:"accessKey,omitempty" property:"accessKey"`
 	SecretKey    string `yaml:"secretKey"   json:"secretKey,omitempty" property:"secretKey"`
@@ -31,8 +32,7 @@ type AccessKeyPair struct {
 	Options      string `yaml:"options"   json:"options,omitempty" property:"options"`
 }
 
-// AccessKeyStorage
-// This SPI Extension support us to store our AccessKeyPair or load AccessKeyPair from other
+// AccessKeyStorage supports us to store our AccessKeyPair or load AccessKeyPair from other
 // storage, such as filesystem.
 type AccessKeyStorage interface {
 	GetAccessKeyPair(protocol.Invocation, *common.URL) *AccessKeyPair
