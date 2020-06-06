@@ -17,6 +17,7 @@
 
 package registry
 
+// ServiceInstance is the model class of an instance of a service, which is used for service registration and discovery.
 type ServiceInstance interface {
 
 	// GetId will return this instance's id. It should be unique.
