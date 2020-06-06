@@ -49,14 +49,16 @@ var (
 
 // ZookeeperClient ...
 type ZookeeperClient struct {
-	name          string
-	ZkAddrs       []string
-	sync.RWMutex  // for conn
-	Conn          *zk.Conn
-	Timeout       time.Duration
-	exit          chan struct{}
-	Wait          sync.WaitGroup
-	eventRegistry map[string][]*chan struct{}
+	name         string
+	ZkAddrs      []string
+	sync.RWMutex // for conn
+	Conn         *zk.Conn
+	Timeout      time.Duration
+	exit         chan struct{}
+	Wait         sync.WaitGroup
+
+	eventRegistry     map[string][]*chan struct{}
+	eventRegistryLock sync.RWMutex
 }
 
 // StateToString ...
@@ -269,7 +271,7 @@ func (z *ZookeeperClient) HandleZkEvent(session <-chan zk.Event) {
 				return
 			case (int)(zk.EventNodeDataChanged), (int)(zk.EventNodeChildrenChanged):
 				logger.Infof("zkClient{%s} get zk node changed event{path:%s}", z.name, event.Path)
-				z.RLock()
+				z.eventRegistryLock.RLock()
 				for p, a := range z.eventRegistry {
 					if strings.HasPrefix(p, event.Path) {
 						logger.Infof("send event{state:zk.EventNodeDataChange, Path:%s} notify event to path{%s} related listener",
@@ -279,16 +281,18 @@ func (z *ZookeeperClient) HandleZkEvent(session <-chan zk.Event) {
 						}
 					}
 				}
-				z.RUnlock()
+				z.eventRegistryLock.RUnlock()
 			case (int)(zk.StateConnecting), (int)(zk.StateConnected), (int)(zk.StateHasSession):
 				if state == (int)(zk.StateHasSession) {
 					continue
 				}
+				z.eventRegistryLock.RLock()
 				if a, ok := z.eventRegistry[event.Path]; ok && 0 < len(a) {
 					for _, e := range a {
 						*e <- struct{}{}
 					}
 				}
+				z.eventRegistryLock.RUnlock()
 			}
 			state = (int)(event.State)
 		}
@@ -301,8 +305,8 @@ func (z *ZookeeperClient) RegisterEvent(zkPath string, event *chan struct{}) {
 		return
 	}
 
-	z.Lock()
-	defer z.Unlock()
+	z.eventRegistryLock.Lock()
+	defer z.eventRegistryLock.Unlock()
 	a := z.eventRegistry[zkPath]
 	a = append(a, event)
 	z.eventRegistry[zkPath] = a
@@ -314,8 +318,9 @@ func (z *ZookeeperClient) UnregisterEvent(zkPath string, event *chan struct{}) {
 	if zkPath == "" {
 		return
 	}
-	z.Lock()
-	defer z.Unlock()
+
+	z.eventRegistryLock.Lock()
+	defer z.eventRegistryLock.Unlock()
 	infoList, ok := z.eventRegistry[zkPath]
 	if !ok {
 		return
