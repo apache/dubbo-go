@@ -72,12 +72,13 @@ func initNacosData(t *testing.T) (*nacosDynamicConfiguration, error) {
 	server := mockCommonNacosServer()
 	nacosURL := strings.ReplaceAll(server.URL, "http", "registry")
 	regurl, _ := common.NewURL(nacosURL)
-	nacosConfiguration, err := newNacosDynamicConfiguration(&regurl)
+	factory := &nacosDynamicConfigurationFactory{}
+	nacosConfiguration, err := factory.GetDynamicConfiguration(&regurl)
 	assert.NoError(t, err)
 
 	nacosConfiguration.SetParser(&parser.DefaultConfigurationParser{})
 
-	return nacosConfiguration, err
+	return nacosConfiguration.(*nacosDynamicConfiguration), err
 }
 
 func Test_GetConfig(t *testing.T) {
