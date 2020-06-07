@@ -19,11 +19,12 @@ package dynamic
 
 import (
 	"strconv"
+	"sync"
 	"time"
-
 
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/metadata/mapping"
 )
 
 import (
@@ -39,16 +40,16 @@ import (
 )
 
 const (
-	defaultGroup = config_center.DEFAULT_GROUP
+	defaultGroup = "mapping"
 	slash        = "/"
 )
 
 func init() {
-	dc := common_cfg.GetEnvInstance().GetDynamicConfiguration()
-	extension.SetGlobalServiceNameMapping(&DynamicConfigurationServiceNameMapping{dc: dc})
+	extension.SetGlobalServiceNameMapping(GetNameMappingInstance)
 }
 
 // DynamicConfigurationServiceNameMapping is the implementation based on config center
+// it's a singleton
 type DynamicConfigurationServiceNameMapping struct {
 	dc config_center.DynamicConfiguration
 }
@@ -84,4 +85,15 @@ func (d *DynamicConfigurationServiceNameMapping) buildGroup(serviceInterface str
 	// the issue : https://github.com/apache/dubbo/issues/4671
 	// so other params are ignored and remove, including group string, version string, protocol string
 	return defaultGroup + slash + serviceInterface
+}
+
+var serviceNameMappingInstance *DynamicConfigurationServiceNameMapping
+var serviceNameMappingOnce sync.Once
+
+func GetNameMappingInstance() mapping.ServiceNameMapping {
+	serviceNameMappingOnce.Do(func() {
+		dc := common_cfg.GetEnvInstance().GetDynamicConfiguration()
+		serviceNameMappingInstance = &DynamicConfigurationServiceNameMapping{dc: dc}
+	})
+	return serviceNameMappingInstance
 }

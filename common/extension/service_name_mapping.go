@@ -20,13 +20,13 @@ package extension
 import "github.com/apache/dubbo-go/metadata/mapping"
 
 var (
-	globalNameMapping mapping.ServiceNameMapping
+	globalNameMappingCreator func() mapping.ServiceNameMapping
 )
 
-func SetGlobalServiceNameMapping(nameMapping mapping.ServiceNameMapping) {
-	globalNameMapping = nameMapping
+func SetGlobalServiceNameMapping(nameMappingCreator func() mapping.ServiceNameMapping) {
+	globalNameMappingCreator = nameMappingCreator
 }
 
 func GetGlobalServiceNameMapping() mapping.ServiceNameMapping {
-	return globalNameMapping
+	return globalNameMappingCreator()
 }
