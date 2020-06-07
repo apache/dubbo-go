@@ -118,6 +118,33 @@ func TestURL_URLEqual(t *testing.T) {
 	u3, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
 	assert.NoError(t, err)
 	assert.False(t, u1.URLEqual(u3))
+
+	// urlGroupAnyValue's group is *
+	urlGroupAnyValue, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0")
+	assert.NoError(t, err)
+	assert.True(t, u3.URLEqual(urlGroupAnyValue))
+
+	// test for enabled
+	urlEnabledEmpty, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0&enabled=")
+	assert.NoError(t, err)
+	assert.True(t, u3.URLEqual(urlEnabledEmpty))
+
+	urlEnabledFalse, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0&enabled=1")
+	assert.NoError(t, err)
+	assert.True(t, u3.URLEqual(urlEnabledFalse))
+
+	urlEnabledTrue, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0&enabled=true")
+	assert.NoError(t, err)
+	assert.True(t, u3.URLEqual(urlEnabledTrue))
+
+	urlEnabledAny, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0&enabled=*")
+	assert.NoError(t, err)
+	assert.True(t, u3.URLEqual(urlEnabledAny))
+
+	// test for category
+	categoryAny, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0&enabled=*&category=*")
+	assert.NoError(t, err)
+	assert.True(t, categoryAny.URLEqual(u3))
 }
 
 func TestURL_GetParam(t *testing.T) {
