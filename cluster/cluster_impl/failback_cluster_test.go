@@ -98,7 +98,7 @@ func TestFailbackRetryOneSuccess(t *testing.T) {
 	wg.Add(1)
 	now := time.Now()
 	mockSuccResult := &protocol.RPCResult{Rest: rest{tried: 0, success: true}}
-	invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(func() protocol.Result {
+	invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(func(protocol.Invocation) protocol.Result {
 		delta := time.Since(now).Nanoseconds() / int64(time.Second)
 		assert.True(t, delta >= 5)
 		wg.Done()
@@ -144,7 +144,7 @@ func TestFailbackRetryFailed(t *testing.T) {
 	// add retry call that eventually failed.
 	for i := 0; i < retries; i++ {
 		j := i + 1
-		invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(func() protocol.Result {
+		invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(func(protocol.Invocation) protocol.Result {
 			delta := time.Since(now).Nanoseconds() / int64(time.Second)
 			assert.True(t, delta >= int64(5*j))
 			wg.Done()
@@ -187,7 +187,7 @@ func TestFailbackRetryFailed10Times(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(10)
 	now := time.Now()
-	invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(func() protocol.Result {
+	invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(func(protocol.Invocation) protocol.Result {
 		delta := time.Since(now).Nanoseconds() / int64(time.Second)
 		assert.True(t, delta >= 5)
 		wg.Done()
