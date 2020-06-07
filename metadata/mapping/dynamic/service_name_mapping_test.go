@@ -48,7 +48,7 @@ func TestDynamicConfigurationServiceNameMapping(t *testing.T) {
 	protocol := "myProtocol"
 
 	err = mapping.Map(intf, group, version, protocol)
-	assert.NotNil(t, err)
+	assert.Nil(t, err)
 	intf = "MyService"
 	err = mapping.Map(intf, group, version, protocol)
 	assert.Nil(t, err)

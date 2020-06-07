@@ -15,26 +15,28 @@
  * limitations under the License.
  */
 
-package event
+package extension
 
 import (
-	"time"
+	"fmt"
 
-	"github.com/apache/dubbo-go/common/observer"
-	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/metadata/service"
 )
 
-type ServiceConfigExportedEvent struct {
-	observer.BaseEvent
-	ServiceConfig *config.ServiceConfig
+var (
+	// there will be two types: local or remote
+	metadataServiceInsMap = make(map[string]func() (service.MetadataService, error), 2)
+)
+
+func SetMetadataService(msType string, creator func() (service.MetadataService, error)) {
+	metadataServiceInsMap[msType] = creator
 }
 
-func NewServiceConfigExportedEvent(serviceConfig *config.ServiceConfig) *ServiceConfigExportedEvent {
-	return &ServiceConfigExportedEvent{
-		BaseEvent: observer.BaseEvent{
-			Source:    serviceConfig,
-			Timestamp: time.Now(),
-		},
-		ServiceConfig: serviceConfig,
+func GetMetadataService(msType string) (service.MetadataService, error) {
+	if creator, ok := metadataServiceInsMap[msType]; ok {
+		return creator()
 	}
+	panic(fmt.Sprintf("could not find the creator for metadataType: %s, please check whether you have imported relative packages, \n"+
+		"local - github.com/apache/dubbo-go/metadata/service/inmemory, \n"+
+		"remote - github.com/apache/dubbo-go/metadata/service/remote", msType))
 }

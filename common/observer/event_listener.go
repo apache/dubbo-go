@@ -27,6 +27,9 @@ import (
 
 // EventListener is an new interface used to align with dubbo 2.7.5
 // It contains the Prioritized means that the listener has its priority
+// Usually the priority of your custom implementation should be between [100, 9000]
+// the number outside the range will be though as system reserve number
+// usually implementation should be singleton
 type EventListener interface {
 	gxsort.Prioritizer
 	// OnEvent handle this event

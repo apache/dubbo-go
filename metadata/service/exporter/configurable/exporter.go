@@ -33,7 +33,7 @@ import (
 
 // MetadataServiceExporter is the ConfigurableMetadataServiceExporter which implement MetadataServiceExporter interface
 type MetadataServiceExporter struct {
-	serviceConfig   *config.ServiceConfig
+	ServiceConfig   *config.ServiceConfig
 	lock            sync.RWMutex
 	metadataService service.MetadataService
 }
@@ -56,42 +56,43 @@ func (exporter *MetadataServiceExporter) Export() error {
 		}
 		serviceConfig.InterfaceName = constant.METADATA_SERVICE_NAME
 		serviceConfig.Group = config.GetApplicationConfig().Name
-		serviceConfig.Version = exporter.metadataService.Version()
+		// now the error will always be nil
+		serviceConfig.Version, _ = exporter.metadataService.Version()
 
 		var err error
 		func() {
 			exporter.lock.Lock()
 			defer exporter.lock.Unlock()
-			exporter.serviceConfig = serviceConfig
-			exporter.serviceConfig.Implement(exporter.metadataService)
-			err = exporter.serviceConfig.Export()
+			exporter.ServiceConfig = serviceConfig
+			exporter.ServiceConfig.Implement(exporter.metadataService)
+			err = exporter.ServiceConfig.Export()
 		}()
 
-		logger.Infof("The MetadataService exports urls : %v ", exporter.serviceConfig.GetExportedUrls())
+		logger.Infof("The MetadataService exports urls : %v ", exporter.ServiceConfig.GetExportedUrls())
 		return err
 	}
-	logger.Warnf("The MetadataService has been exported : %v ", exporter.serviceConfig.GetExportedUrls())
+	logger.Warnf("The MetadataService has been exported : %v ", exporter.ServiceConfig.GetExportedUrls())
 	return nil
 }
 
 // Unexport will unexport the metadataService
 func (exporter *MetadataServiceExporter) Unexport() {
 	if exporter.IsExported() {
-		exporter.serviceConfig.Unexport()
+		exporter.ServiceConfig.Unexport()
 	}
 }
 
 // GetExportedURLs will return the urls that export use.
 // Notice！The exported url is not same as url in registry , for example it lack the ip.
 func (exporter *MetadataServiceExporter) GetExportedURLs() []*common.URL {
-	return exporter.serviceConfig.GetExportedUrls()
+	return exporter.ServiceConfig.GetExportedUrls()
 }
 
 // isExported will return is metadataServiceExporter exported or not
 func (exporter *MetadataServiceExporter) IsExported() bool {
 	exporter.lock.RLock()
 	defer exporter.lock.RUnlock()
-	return exporter.serviceConfig != nil && exporter.serviceConfig.IsExport()
+	return exporter.ServiceConfig != nil && exporter.ServiceConfig.IsExport()
 }
 
 // generateMetadataProtocol will return a default ProtocolConfig

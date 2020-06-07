@@ -44,22 +44,16 @@ func TestNacosMetadataReport_CRUD(t *testing.T) {
 	assert.Nil(t, err)
 
 	serviceMi := newServiceMetadataIdentifier()
-	serviceUrl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
+	serviceUrl, _ := common.NewURL("registry://localhost:8848", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
 
 	err = rpt.SaveServiceMetadata(serviceMi, serviceUrl)
 	assert.Nil(t, err)
-
-	exportedUrls := rpt.GetExportedURLs(serviceMi)
-	assert.Equal(t, 1, len(exportedUrls))
 
 	subMi := newSubscribeMetadataIdentifier()
 	urlList := make([]common.URL, 0, 1)
 	urlList = append(urlList, serviceUrl)
 	err = rpt.SaveSubscribedData(subMi, urlList)
 	assert.Nil(t, err)
-
-	subscribeUrl := rpt.GetSubscribedURLs(subMi)
-	assert.Equal(t, 1, len(subscribeUrl))
 
 	err = rpt.RemoveServiceMetadata(serviceMi)
 	assert.Nil(t, err)

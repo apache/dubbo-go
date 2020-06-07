@@ -19,31 +19,61 @@ package event
 
 import (
 	"reflect"
+	"sync"
 
+	perrors "github.com/pkg/errors"
+
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/observer"
 	"github.com/apache/dubbo-go/metadata/mapping"
 )
 
 func init() {
-	extension.AddEventListener(&serviceNameMappingListener{
-		nameMapping: extension.GetGlobalServiceNameMapping(),
-	})
+	extension.AddEventListener(GetCustomizableServiceInstanceListener)
 }
 
 type serviceNameMappingListener struct {
 	nameMapping mapping.ServiceNameMapping
 }
 
+// GetPriority return 3, which ensure that this listener will be invoked after log listener
 func (s *serviceNameMappingListener) GetPriority() int {
-	panic("implement me")
+	return 3
 }
 
 func (s *serviceNameMappingListener) OnEvent(e observer.Event) error {
-	// TODO
-	panic("implement me")
+	if ex, ok := e.(*ServiceConfigExportedEvent); ok {
+		sc := ex.ServiceConfig
+		urls := sc.GetExportedUrls()
+
+		for _, u := range urls {
+			err := s.nameMapping.Map(u.GetParam(constant.INTERFACE_KEY, ""),
+				u.GetParam(constant.GROUP_KEY, ""),
+				u.GetParam(constant.Version, ""),
+				u.Protocol)
+			if err != nil {
+				return perrors.WithMessage(err, "could not map the service: "+u.String())
+			}
+		}
+	}
+	return nil
 }
 
 func (s *serviceNameMappingListener) GetEventType() reflect.Type {
 	return reflect.TypeOf(&ServiceConfigExportedEvent{})
+}
+
+var (
+	serviceNameMappingListenerInstance *serviceNameMappingListener
+	serviceNameMappingListenerOnce     sync.Once
+)
+
+func GetServiceNameMappingListener() observer.EventListener {
+	serviceNameMappingListenerOnce.Do(func() {
+		serviceNameMappingListenerInstance = &serviceNameMappingListener{
+			nameMapping: extension.GetGlobalServiceNameMapping(),
+		}
+	})
+	return serviceNameMappingListenerInstance
 }

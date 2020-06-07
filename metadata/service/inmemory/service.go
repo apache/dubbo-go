@@ -19,6 +19,9 @@ package inmemory
 import (
 	"sort"
 	"sync"
+
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/config"
 )
 
 import (
@@ -34,6 +37,10 @@ import (
 	"github.com/apache/dubbo-go/metadata/service"
 )
 
+func init() {
+	extension.SetMetadataService("local", NewMetadataService)
+}
+
 // version will be used by Version func
 const version = "1.0.0"
 
@@ -46,14 +53,24 @@ type MetadataService struct {
 	lock                  *sync.RWMutex
 }
 
+var (
+	metadataServiceInstance *MetadataService
+	metadataServiceInitOnce sync.Once
+)
+
 // NewMetadataService: initiate a metadata service
-func NewMetadataService() *MetadataService {
-	return &MetadataService{
-		exportedServiceURLs:   &sync.Map{},
-		subscribedServiceURLs: &sync.Map{},
-		serviceDefinitions:    &sync.Map{},
-		lock:                  &sync.RWMutex{},
-	}
+// it should be singleton
+func NewMetadataService() (service.MetadataService, error) {
+	metadataServiceInitOnce.Do(func() {
+		metadataServiceInstance = &MetadataService{
+			BaseMetadataService:   service.NewBaseMetadataService(config.GetApplicationConfig().Name),
+			exportedServiceURLs:   &sync.Map{},
+			subscribedServiceURLs: &sync.Map{},
+			serviceDefinitions:    &sync.Map{},
+			lock:                  &sync.RWMutex{},
+		}
+	})
+	return metadataServiceInstance, nil
 }
 
 // Comparator is defined as Comparator for skip list to compare the URL
@@ -141,7 +158,7 @@ func (mts *MetadataService) getSpecifiedService(services *sync.Map, serviceKey s
 		urls := serviceList.(*skip.SkipList)
 		for i := uint64(0); i < urls.Len(); i++ {
 			url := common.URL(urls.ByPosition(i).(Comparator))
-			if len(protocol) == 0 || url.Protocol == protocol || url.GetParam(constant.PROTOCOL_KEY, "") == protocol {
+			if len(protocol) == 0 || protocol == constant.ANY_VALUE || url.Protocol == protocol || url.GetParam(constant.PROTOCOL_KEY, "") == protocol {
 				res = append(res, url)
 			}
 		}
@@ -228,11 +245,11 @@ func (mts *MetadataService) GetServiceDefinitionByServiceKey(serviceKey string) 
 }
 
 // RefreshMetadata will always return true because it will be implement by remote service
-func (mts *MetadataService) RefreshMetadata(exportedRevision string, subscribedRevision string) bool {
-	return true
+func (mts *MetadataService) RefreshMetadata(exportedRevision string, subscribedRevision string) (bool, error) {
+	return true, nil
 }
 
 // Version will return the version of metadata service
-func (mts *MetadataService) Version() string {
-	return version
+func (mts *MetadataService) Version() (string, error) {
+	return version, nil
 }

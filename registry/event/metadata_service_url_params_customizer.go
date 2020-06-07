@@ -26,7 +26,6 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/metadata/service/remote"
 	"github.com/apache/dubbo-go/registry"
 )
 
@@ -52,17 +51,18 @@ func (m *metadataServiceURLParamsMetadataCustomizer) GetPriority() int {
 }
 
 func (m *metadataServiceURLParamsMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	ms, err := remote.NewMetadataService()
+	ms, err := getMetadataService()
 	if err != nil {
 		logger.Errorf("could not find the metadata service", err)
 		return
 	}
 	serviceName := constant.METADATA_SERVICE_NAME
-	version := ms.Version()
+	// error always is nil
+	version, _ := ms.Version()
 	group := instance.GetServiceName()
 	urls, err := ms.GetExportedURLs(serviceName, group, version, constant.ANY_VALUE)
 	if err != nil || len(urls) == 0 {
-		logger.Errorf("could not find the exported urls", err)
+		logger.Info("could not find the exported urls", err)
 		return
 	}
 	ps := m.convertToParams(urls)
@@ -84,7 +84,7 @@ func (m *metadataServiceURLParamsMetadataCustomizer) convertToParams(urls []comm
 		p := make(map[string]string, len(u.GetParams()))
 		for k, v := range u.GetParams() {
 			// we will ignore that
-			if m.exceptKeys.Contains(k) || len(v) == 0 {
+			if m.exceptKeys.Contains(k) || len(v) == 0 || len(v[0]) == 0 {
 				continue
 			}
 			p[k] = v[0]

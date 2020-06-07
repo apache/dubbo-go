@@ -264,10 +264,12 @@ func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInst
 		Ip:          instance.GetHost(),
 		Port:        uint64(instance.GetPort()),
 		Metadata:    metadata,
-		Enable:      instance.IsEnable(),
-		Healthy:     instance.IsHealthy(),
-		GroupName:   n.group,
-		Ephemeral:   true,
+		// We must specify the weight since Java nacos client will ignore the instance whose weight is 0
+		Weight:    1,
+		Enable:    instance.IsEnable(),
+		Healthy:   instance.IsHealthy(),
+		GroupName: n.group,
+		Ephemeral: true,
 	}
 }
 
