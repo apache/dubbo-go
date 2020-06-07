@@ -84,7 +84,7 @@ func (m *metadataServiceURLParamsMetadataCustomizer) convertToParams(urls []comm
 		p := make(map[string]string, len(u.GetParams()))
 		for k, v := range u.GetParams() {
 			// we will ignore that
-			if m.exceptKeys.Contains(k) || len(v) == 0 {
+			if m.exceptKeys.Contains(k) || len(v) == 0 || len(v[0]) == 0 {
 				continue
 			}
 			p[k] = v[0]

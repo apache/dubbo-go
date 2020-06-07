@@ -38,7 +38,6 @@ import (
 	"github.com/apache/dubbo-go/metadata/mapping"
 	"github.com/apache/dubbo-go/metadata/service"
 	"github.com/apache/dubbo-go/metadata/service/exporter/configurable"
-	"github.com/apache/dubbo-go/metadata/service/remote"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/registry/event"
 	"github.com/apache/dubbo-go/registry/servicediscovery/proxy"
@@ -89,7 +88,7 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 	subscribedServices := parseServices(url.GetParam(constant.SUBSCRIBED_SERVICE_NAMES_KEY, ""))
 	subscribedURLsSynthesizers := synthesizer.GetAllSynthesizer()
 	serviceNameMapping := extension.GetGlobalServiceNameMapping()
-	metaDataService, err := remote.NewMetadataService()
+	metaDataService, err := extension.GetMetadataService(config.GetApplicationConfig().MetadataType)
 	if err != nil {
 		return nil, perrors.WithMessage(err, "could not init metadata service")
 	}

@@ -53,15 +53,24 @@ type MetadataService struct {
 	lock                  *sync.RWMutex
 }
 
+var (
+	metadataServiceInstance *MetadataService
+	metadataServiceInitOnce sync.Once
+)
+
 // NewMetadataService: initiate a metadata service
+// it should be singleton
 func NewMetadataService() (service.MetadataService, error) {
-	return &MetadataService{
-		BaseMetadataService: service.NewBaseMetadataService(config.GetApplicationConfig().Name),
-		exportedServiceURLs:   &sync.Map{},
-		subscribedServiceURLs: &sync.Map{},
-		serviceDefinitions:    &sync.Map{},
-		lock:                  &sync.RWMutex{},
-	}, nil
+	metadataServiceInitOnce.Do(func() {
+		metadataServiceInstance = &MetadataService{
+			BaseMetadataService:   service.NewBaseMetadataService(config.GetApplicationConfig().Name),
+			exportedServiceURLs:   &sync.Map{},
+			subscribedServiceURLs: &sync.Map{},
+			serviceDefinitions:    &sync.Map{},
+			lock:                  &sync.RWMutex{},
+		}
+	})
+	return metadataServiceInstance, nil
 }
 
 // Comparator is defined as Comparator for skip list to compare the URL
@@ -149,7 +158,7 @@ func (mts *MetadataService) getSpecifiedService(services *sync.Map, serviceKey s
 		urls := serviceList.(*skip.SkipList)
 		for i := uint64(0); i < urls.Len(); i++ {
 			url := common.URL(urls.ByPosition(i).(Comparator))
-			if len(protocol) == 0 || url.Protocol == protocol || url.GetParam(constant.PROTOCOL_KEY, "") == protocol {
+			if len(protocol) == 0 || protocol == constant.ANY_VALUE || url.Protocol == protocol || url.GetParam(constant.PROTOCOL_KEY, "") == protocol {
 				res = append(res, url)
 			}
 		}
