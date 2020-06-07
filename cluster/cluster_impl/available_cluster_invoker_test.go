@@ -19,6 +19,8 @@ package cluster_impl
 
 import (
 	"context"
+	"fmt"
+	"github.com/apache/dubbo-go/common/constant"
 	"strings"
 	"testing"
 )
@@ -39,7 +41,8 @@ import (
 )
 
 var (
-	availableUrl, _ = common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
+	availableUrl, _ = common.NewURL(fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider",
+		constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
 )
 
 func registerAvailable(invoker *mock.MockInvoker) protocol.Invoker {
