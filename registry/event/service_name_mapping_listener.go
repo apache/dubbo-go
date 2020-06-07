@@ -19,6 +19,7 @@ package event
 
 import (
 	"reflect"
+	"sync"
 
 	perrors "github.com/pkg/errors"
 
@@ -29,9 +30,7 @@ import (
 )
 
 func init() {
-	extension.AddEventListener(&serviceNameMappingListener{
-		nameMapping: extension.GetGlobalServiceNameMapping(),
-	})
+	extension.AddEventListener(GetCustomizableServiceInstanceListener)
 }
 
 type serviceNameMappingListener struct {
@@ -63,4 +62,18 @@ func (s *serviceNameMappingListener) OnEvent(e observer.Event) error {
 
 func (s *serviceNameMappingListener) GetEventType() reflect.Type {
 	return reflect.TypeOf(&ServiceConfigExportedEvent{})
+}
+
+var (
+	serviceNameMappingListenerInstance *serviceNameMappingListener
+	serviceNameMappingListenerOnce     sync.Once
+)
+
+func GetServiceNameMappingListener() observer.EventListener {
+	serviceNameMappingListenerOnce.Do(func() {
+		serviceNameMappingListenerInstance = &serviceNameMappingListener{
+			nameMapping: extension.GetGlobalServiceNameMapping(),
+		}
+	})
+	return serviceNameMappingListenerInstance
 }

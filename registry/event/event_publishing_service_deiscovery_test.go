@@ -20,6 +20,9 @@ package event
 import (
 	"reflect"
 	"testing"
+
+	"github.com/apache/dubbo-go/config"
+	_ "github.com/apache/dubbo-go/metadata/service/inmemory"
 )
 
 import (
@@ -37,13 +40,22 @@ import (
 )
 
 func TestEventPublishingServiceDiscovery_DispatchEvent(t *testing.T) {
+
+	// extension.SetMetadataService("local", inmemory.NewMetadataService)
+
+	config.GetApplicationConfig().MetadataType = "local"
+
 	dc := NewEventPublishingServiceDiscovery(&ServiceDiscoveryA{})
 	tsd := &TestServiceDiscoveryDestroyingEventListener{}
 	tsd.SetT(t)
 	tsi := &TestServiceInstancePreRegisteredEventListener{}
 	tsi.SetT(t)
-	extension.AddEventListener(tsd)
-	extension.AddEventListener(tsi)
+	extension.AddEventListener(func() observer.EventListener {
+		return tsd
+	})
+	extension.AddEventListener(func() observer.EventListener {
+		return tsi
+	})
 	extension.SetEventDispatcher("direct", dispatcher2.NewDirectEventDispatcher)
 	extension.SetAndInitGlobalDispatcher("direct")
 	err := dc.Destroy()

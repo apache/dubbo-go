@@ -49,17 +49,11 @@ func TestNacosMetadataReport_CRUD(t *testing.T) {
 	err = rpt.SaveServiceMetadata(serviceMi, serviceUrl)
 	assert.Nil(t, err)
 
-	exportedUrls := rpt.GetExportedURLs(serviceMi)
-	assert.Equal(t, 1, len(exportedUrls))
-
 	subMi := newSubscribeMetadataIdentifier()
 	urlList := make([]common.URL, 0, 1)
 	urlList = append(urlList, serviceUrl)
 	err = rpt.SaveSubscribedData(subMi, urlList)
 	assert.Nil(t, err)
-
-	subscribeUrl := rpt.GetSubscribedURLs(subMi)
-	assert.Equal(t, 1, len(subscribeUrl))
 
 	err = rpt.RemoveServiceMetadata(serviceMi)
 	assert.Nil(t, err)

@@ -19,15 +19,17 @@ package event
 
 import (
 	"reflect"
+	"sync"
 
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/observer"
 )
 
 func init() {
-	extension.AddEventListener(&customizableServiceInstanceListener{})
+	extension.AddEventListener(GetCustomizableServiceInstanceListener)
 }
 
+// customizableServiceInstanceListener is singleton
 type customizableServiceInstanceListener struct {
 }
 
@@ -52,4 +54,14 @@ func (c *customizableServiceInstanceListener) OnEvent(e observer.Event) error {
 // GetEventType will return ServiceInstancePreRegisteredEvent
 func (c *customizableServiceInstanceListener) GetEventType() reflect.Type {
 	return reflect.TypeOf(&ServiceInstancePreRegisteredEvent{})
+}
+
+var customizableServiceInstanceListenerInstance *customizableServiceInstanceListener
+var customizableServiceInstanceListenerOnce sync.Once
+
+func GetCustomizableServiceInstanceListener() observer.EventListener {
+	customizableServiceInstanceListenerOnce.Do(func() {
+		customizableServiceInstanceListenerInstance = &customizableServiceInstanceListener{}
+	})
+	return customizableServiceInstanceListenerInstance
 }

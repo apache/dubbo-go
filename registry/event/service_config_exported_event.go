@@ -31,11 +31,10 @@ type ServiceConfigExportedEvent struct {
 
 func NewServiceConfigExportedEvent(serviceConfig *config.ServiceConfig) *ServiceConfigExportedEvent {
 	return &ServiceConfigExportedEvent{
-		BaseEvent:     observer.BaseEvent{
-			Source:serviceConfig,
-			Timestamp:time.Now(),
+		BaseEvent: observer.BaseEvent{
+			Source:    serviceConfig,
+			Timestamp: time.Now(),
 		},
 		ServiceConfig: serviceConfig,
 	}
 }
-
