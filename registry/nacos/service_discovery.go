@@ -93,7 +93,7 @@ func (n *nacosServiceDiscovery) Unregister(instance registry.ServiceInstance) er
 
 // GetDefaultPageSize will return the constant registry.DefaultPageSize
 func (n *nacosServiceDiscovery) GetDefaultPageSize() int {
-	return registry.defaultPageSize
+	return defaultPageSize
 }
 
 // GetServices will return the all services
