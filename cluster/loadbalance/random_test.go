@@ -36,7 +36,7 @@ import (
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
-func Test_RandomlbSelect(t *testing.T) {
+func TestRandomlbSelect(t *testing.T) {
 	randomlb := NewRandomLoadBalance()
 
 	invokers := []protocol.Invoker{}
@@ -53,7 +53,7 @@ func Test_RandomlbSelect(t *testing.T) {
 	randomlb.Select(invokers, &invocation.RPCInvocation{})
 }
 
-func Test_RandomlbSelectWeight(t *testing.T) {
+func TestRandomlbSelectWeight(t *testing.T) {
 	randomlb := NewRandomLoadBalance()
 
 	invokers := []protocol.Invoker{}
@@ -84,7 +84,7 @@ func Test_RandomlbSelectWeight(t *testing.T) {
 	})
 }
 
-func Test_RandomlbSelectWarmup(t *testing.T) {
+func TestRandomlbSelectWarmup(t *testing.T) {
 	randomlb := NewRandomLoadBalance()
 
 	invokers := []protocol.Invoker{}
