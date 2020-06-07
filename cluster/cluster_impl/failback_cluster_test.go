@@ -20,7 +20,6 @@ package cluster_impl
 import (
 	"context"
 	"fmt"
-	"github.com/apache/dubbo-go/common/constant"
 	"sync"
 	"testing"
 	"time"
@@ -36,6 +35,7 @@ import (
 	"github.com/apache/dubbo-go/cluster/directory"
 	"github.com/apache/dubbo-go/cluster/loadbalance"
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
