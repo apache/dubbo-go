@@ -18,13 +18,16 @@
 package extension
 
 import (
+	"sync"
+
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/observer"
 )
 
 var (
 	globalEventDispatcher observer.EventDispatcher
-	initEventListeners    []observer.EventListener
+	initEventListeners    []func() observer.EventListener
+	initEventOnce         sync.Once
 )
 
 var (
@@ -48,15 +51,20 @@ func SetAndInitGlobalDispatcher(name string) {
 		panic("EventDispatcher for " + name + " is not existing, make sure you have import the package.")
 	}
 	globalEventDispatcher = dispatchers[name]()
-	globalEventDispatcher.AddEventListeners(initEventListeners)
 }
 
-// GetGlobalDispatcher
+// GetGlobalDispatcher will init all listener and then return dispatcher
 func GetGlobalDispatcher() observer.EventDispatcher {
+	initEventOnce.Do(func() {
+		// we should delay to add the listeners to avoid some listeners left
+		for _, l := range initEventListeners {
+			globalEventDispatcher.AddEventListener(l())
+		}
+	})
 	return globalEventDispatcher
 }
 
 // AddEventListener it will be added in global event dispatcher
-func AddEventListener(listener observer.EventListener) {
-	initEventListeners = append(initEventListeners, listener)
+func AddEventListener(creator func() observer.EventListener) {
+	initEventListeners = append(initEventListeners, creator)
 }

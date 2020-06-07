@@ -19,6 +19,7 @@ package event
 
 import (
 	"reflect"
+	"sync"
 
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
@@ -26,9 +27,10 @@ import (
 )
 
 func init() {
-	extension.AddEventListener(&logEventListener{})
+	extension.AddEventListener(GetLogEventListener)
 }
 
+// logEventListener is singleton
 type logEventListener struct {
 }
 
@@ -43,4 +45,14 @@ func (l *logEventListener) OnEvent(e observer.Event) error {
 
 func (l *logEventListener) GetEventType() reflect.Type {
 	return reflect.TypeOf(&observer.BaseEvent{})
+}
+
+var logEventListenerInstance *logEventListener
+var logEventListenerOnce sync.Once
+
+func GetLogEventListener() observer.EventListener {
+	logEventListenerOnce.Do(func() {
+		logEventListenerInstance = &logEventListener{}
+	})
+	return logEventListenerInstance
 }
