@@ -101,7 +101,7 @@ func (invoker *failbackClusterInvoker) process(ctx context.Context) {
 }
 
 func (invoker *failbackClusterInvoker) tryTimerTaskProc(ctx context.Context, retryTask *retryTimerTask) {
-	var invoked []protocol.Invoker
+	invoked := make([]protocol.Invoker, 0)
 	invoked = append(invoked, retryTask.lastInvoker)
 
 	retryInvoker := invoker.doSelect(retryTask.loadbalance, retryTask.invocation, retryTask.invokers, invoked)
