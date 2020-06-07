@@ -19,6 +19,7 @@ package loadbalance
 
 import (
 	"fmt"
+	"github.com/apache/dubbo-go/common/constant"
 	"strconv"
 	"testing"
 )
@@ -38,7 +39,8 @@ func TestRoundRobinSelect(t *testing.T) {
 
 	var invokers []protocol.Invoker
 
-	url, _ := common.NewURL("dubbo://192.168.1.0:20000/org.apache.demo.HelloService")
+	url, _ := common.NewURL(fmt.Sprintf("dubbo://%s:%d/org.apache.demo.HelloService",
+		constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
 	invokers = append(invokers, protocol.NewBaseInvoker(url))
 	i := loadBalance.Select(invokers, &invocation.RPCInvocation{})
 	assert.True(t, i.GetUrl().URLEqual(url))
