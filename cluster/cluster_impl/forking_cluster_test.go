@@ -81,7 +81,7 @@ func TestForkingInvokeSuccess(t *testing.T) {
 		invokers = append(invokers, invoker)
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 		invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
-			func() protocol.Result {
+			func(protocol.Invocation) protocol.Result {
 				wg.Done()
 				return mockResult
 			})
@@ -110,7 +110,7 @@ func TestForkingInvokeTimeout(t *testing.T) {
 		invokers = append(invokers, invoker)
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 		invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
-			func() protocol.Result {
+			func(protocol.Invocation) protocol.Result {
 				time.Sleep(2 * time.Second)
 				wg.Done()
 				return mockResult
@@ -142,13 +142,13 @@ func TestForkingInvokeHalfTimeout(t *testing.T) {
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 		if i == 1 {
 			invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
-				func() protocol.Result {
+				func(protocol.Invocation) protocol.Result {
 					wg.Done()
 					return mockResult
 				})
 		} else {
 			invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
-				func() protocol.Result {
+				func(protocol.Invocation) protocol.Result {
 					time.Sleep(2 * time.Second)
 					wg.Done()
 					return mockResult
