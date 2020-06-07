@@ -131,7 +131,7 @@ func TestURL_URLEqual(t *testing.T) {
 
 	urlEnabledFalse, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0&enabled=1")
 	assert.NoError(t, err)
-	assert.True(t, u3.URLEqual(urlEnabledFalse))
+	assert.False(t, u3.URLEqual(urlEnabledFalse))
 
 	urlEnabledTrue, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0&enabled=true")
 	assert.NoError(t, err)
