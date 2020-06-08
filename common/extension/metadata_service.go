@@ -36,7 +36,7 @@ func GetMetadataService(msType string) (service.MetadataService, error) {
 	if creator, ok := metadataServiceInsMap[msType]; ok {
 		return creator()
 	}
-	panic(fmt.Sprintf("could not find the creator for metadataType: %s, please check whether you have imported relative packages, \n"+
+	panic(fmt.Sprintf("could not find the metadata service creator for metadataType: %s, please check whether you have imported relative packages, \n"+
 		"local - github.com/apache/dubbo-go/metadata/service/inmemory, \n"+
 		"remote - github.com/apache/dubbo-go/metadata/service/remote", msType))
 }

@@ -55,6 +55,7 @@ type ReferenceConfig struct {
 	Retries        string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
 	Group          string            `yaml:"group"  json:"group,omitempty" property:"group"`
 	Version        string            `yaml:"version"  json:"version,omitempty" property:"version"`
+	ProvideBy      string            `yaml:"provide_by"  json:"provide_by,omitempty" property:"provide_by"`
 	Methods        []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
 	Async          bool              `yaml:"async"  json:"async,omitempty" property:"async"`
 	Params         map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
@@ -190,6 +191,7 @@ func (c *ReferenceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.VERSION_KEY, c.Version)
 	urlMap.Set(constant.GENERIC_KEY, strconv.FormatBool(c.Generic))
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
+	urlMap.Set(constant.PROVIDER_BY, c.ProvideBy)
 
 	urlMap.Set(constant.RELEASE_KEY, "dubbo-golang-"+constant.Version)
 	urlMap.Set(constant.SIDE_KEY, (common.RoleType(common.CONSUMER)).Role())

@@ -77,6 +77,7 @@ const (
 
 const (
 	SIMPLE_METADATA_SERVICE_NAME = "MetadataService"
+	DEFAULT_REVIESION            = "N/A"
 )
 
 const (

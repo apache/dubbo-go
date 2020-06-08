@@ -15,4 +15,21 @@
  * limitations under the License.
  */
 
-package proxy
+package inmemory
+
+import (
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/metadata/service"
+	"github.com/apache/dubbo-go/registry"
+)
+
+func init() {
+	factory := service.NewBaseMetadataServiceProxyFactory(createProxy)
+	extension.SetMetadataServiceProxyFactory(local, func() service.MetadataServiceProxyFactory {
+		return factory
+	})
+}
+
+func createProxy(ins registry.ServiceInstance) service.MetadataService {
+	return nil
+}

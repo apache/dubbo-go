@@ -18,8 +18,11 @@
 package service
 
 import (
+	"sync"
+
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/registry"
 )
 
 // MetadataService is used to define meta data related behaviors
@@ -73,4 +76,35 @@ func (mts *BaseMetadataService) ServiceName() (string, error) {
 // Version will return the version of metadata service
 func (mts *BaseMetadataService) Reference() string {
 	return constant.SIMPLE_METADATA_SERVICE_NAME
+}
+
+type MetadataServiceProxyFactory interface {
+	GetProxy(ins registry.ServiceInstance) MetadataService
+}
+
+type MetadataServiceProxyCreator func(ins registry.ServiceInstance) MetadataService
+
+type BaseMetadataServiceProxyFactory struct {
+	proxies sync.Map
+	creator MetadataServiceProxyCreator
+}
+
+func NewBaseMetadataServiceProxyFactory(creator MetadataServiceProxyCreator) *BaseMetadataServiceProxyFactory {
+	return &BaseMetadataServiceProxyFactory{
+		creator: creator,
+	}
+}
+
+func (b *BaseMetadataServiceProxyFactory) GetProxy(ins registry.ServiceInstance) MetadataService {
+	key := ins.GetServiceName() + "##" + getExportedServicesRevision(ins)
+	if proxy, ok := b.proxies.Load(key); ok {
+		return proxy.(MetadataService)
+	}
+	v, _ := b.proxies.LoadOrStore(key, b.creator(ins))
+	return v.(MetadataService)
+}
+
+func getExportedServicesRevision(serviceInstance registry.ServiceInstance) string {
+	metaData := serviceInstance.GetMetadata()
+	return metaData[constant.EXPORTED_SERVICES_REVISION_PROPERTY_NAME]
 }
