@@ -35,7 +35,7 @@ type MockInvoker struct {
 	url common.URL
 }
 
-func NewMockInvoker(url common.URL, successCount int) *MockInvoker {
+func NewMockInvoker(url common.URL) *MockInvoker {
 	return &MockInvoker{
 		url: url,
 	}
