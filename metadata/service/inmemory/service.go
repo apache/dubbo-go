@@ -37,12 +37,15 @@ import (
 	"github.com/apache/dubbo-go/metadata/service"
 )
 
-func init() {
-	extension.SetMetadataService("local", NewMetadataService)
-}
-
 // version will be used by Version func
-const version = "1.0.0"
+const (
+	version = "1.0.0"
+	local   = "local"
+)
+
+func init() {
+	extension.SetMetadataService(local, NewMetadataService)
+}
 
 // MetadataService is store and query the metadata info in memory when each service registry
 type MetadataService struct {

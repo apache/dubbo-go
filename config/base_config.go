@@ -45,6 +45,10 @@ type BaseConfig struct {
 	ConfigCenterConfig *ConfigCenterConfig                `yaml:"config_center" json:"config_center,omitempty"`
 	Remotes            map[string]*RemoteConfig           `yaml:"remote" json:"remote,omitempty"`
 	ServiceDiscoveries map[string]*ServiceDiscoveryConfig `yaml:"service_discovery" json:"service_discovery,omitempty"`
+
+	Registry   *RegistryConfig            `yaml:"registry" json:"registry,omitempty" property:"registry"`
+	Registries map[string]*RegistryConfig `yaml:"registries" json:"registries,omitempty" property:"registries"`
+
 	// application config
 	ApplicationConfig *ApplicationConfig `yaml:"application" json:"application,omitempty" property:"application"`
 

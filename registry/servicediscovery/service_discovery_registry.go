@@ -40,7 +40,6 @@ import (
 	"github.com/apache/dubbo-go/metadata/service/exporter/configurable"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/registry/event"
-	"github.com/apache/dubbo-go/registry/servicediscovery/proxy"
 	"github.com/apache/dubbo-go/registry/servicediscovery/synthesizer"
 	"github.com/apache/dubbo-go/remoting"
 )
@@ -407,11 +406,11 @@ func (c comparator) Compare(comp cm.Comparator) int {
 func (s *serviceDiscoveryRegistry) getExportedUrlsByInst(serviceInstance registry.ServiceInstance) []common.URL {
 	var urls []common.URL
 	metadataStorageType := getExportedStoreType(serviceInstance)
-	metadataProxy := proxy.GetMetadataServiceProxy(metadataStorageType)
-	if metadataProxy == nil {
+	proxyFactory := extension.GetMetadataServiceProxyFactory(metadataStorageType)
+	if proxyFactory == nil {
 		return urls
 	}
-	metadataService := metadataProxy.GetProxy(serviceInstance)
+	metadataService := proxyFactory.GetProxy(serviceInstance)
 	if metadataService == nil {
 		return urls
 	}
@@ -665,7 +664,14 @@ func initMetadataService() {
 	if err != nil {
 		logger.Errorf("could not init metadata service", err)
 	}
+
+	// we don't need to expose the metadata service since this is a pure consumer application
+	if !config.IsProvider() {
+		return
+	}
+
 	expt := configurable.NewMetadataServiceExporter(ms)
+
 	err = expt.Export()
 	if err != nil {
 		logger.Errorf("could not export the metadata service", err)
