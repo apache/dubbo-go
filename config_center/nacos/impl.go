@@ -125,7 +125,7 @@ func (n *nacosDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.H
 		return result, perrors.WithMessage(err, "can not find the client config")
 	}
 	for _, itm := range page.PageItems {
-		result.Add(itm.Content)
+		result.Add(itm.Appname)
 	}
 	return result, nil
 }

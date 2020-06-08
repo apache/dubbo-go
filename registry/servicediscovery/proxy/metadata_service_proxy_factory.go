@@ -17,15 +17,7 @@
 
 package proxy
 
-var (
-	serviceProxy = make(map[string]func() BaseMetadataServiceProxy)
+import (
+	"github.com/apache/dubbo-go/metadata/service"
+	"github.com/apache/dubbo-go/registry"
 )
-
-func SetMetadataServiceProxy(name string, creator func() BaseMetadataServiceProxy) {
-	//TODO
-}
-
-func GetMetadataServiceProxy(name string) BaseMetadataServiceProxy {
-	//TODO
-	return nil
-}
