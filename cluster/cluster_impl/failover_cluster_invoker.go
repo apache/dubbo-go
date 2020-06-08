@@ -45,52 +45,35 @@ func newFailoverClusterInvoker(directory cluster.Directory) protocol.Invoker {
 }
 
 func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+	var (
+		result    protocol.Result
+		invoked   []protocol.Invoker
+		providers []string
+	)
 
 	invokers := invoker.directory.List(invocation)
-	err := invoker.checkInvokers(invokers, invocation)
-
-	if err != nil {
+	if err := invoker.checkInvokers(invokers, invocation); err != nil {
 		return &protocol.RPCResult{Err: err}
 	}
 
-	loadbalance := getLoadBalance(invokers[0], invocation)
-
 	methodName := invocation.MethodName()
-	url := invokers[0].GetUrl()
+	retries := getRetries(invokers, methodName)
+	loadBalance := getLoadBalance(invokers[0], invocation)
 
-	//get reties
-	retriesConfig := url.GetParam(constant.RETRIES_KEY, constant.DEFAULT_RETRIES)
-
-	//Get the service method loadbalance config if have
-	if v := url.GetMethodParam(methodName, constant.RETRIES_KEY, ""); len(v) != 0 {
-		retriesConfig = v
-	}
-	retries, err := strconv.Atoi(retriesConfig)
-	if err != nil || retries < 0 {
-		logger.Error("Your retries config is invalid,pls do a check. And will use the default retries configuration instead.")
-		retries = constant.DEFAULT_RETRIES_INT
-	}
-	invoked := []protocol.Invoker{}
-	providers := []string{}
-	var result protocol.Result
-	if retries > len(invokers) {
-		retries = len(invokers)
-	}
 	for i := 0; i <= retries; i++ {
 		//Reselect before retry to avoid a change of candidate `invokers`.
 		//NOTE: if `invokers` changed, then `invoked` also lose accuracy.
 		if i > 0 {
-			err := invoker.checkWhetherDestroyed()
-			if err != nil {
+			if err := invoker.checkWhetherDestroyed(); err != nil {
 				return &protocol.RPCResult{Err: err}
 			}
+
 			invokers = invoker.directory.List(invocation)
-			err = invoker.checkInvokers(invokers, invocation)
-			if err != nil {
+			if err := invoker.checkInvokers(invokers, invocation); err != nil {
 				return &protocol.RPCResult{Err: err}
 			}
 		}
-		ivk := invoker.doSelect(loadbalance, invocation, invokers, invoked)
+		ivk := invoker.doSelect(loadBalance, invocation, invokers, invoked)
 		if ivk == nil {
 			continue
 		}
@@ -100,13 +83,40 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 		if result.Error() != nil {
 			providers = append(providers, ivk.GetUrl().Key())
 			continue
-		} else {
-			return result
 		}
+		return result
 	}
+
 	ip, _ := gxnet.GetLocalIP()
-	return &protocol.RPCResult{Err: perrors.Errorf("Failed to invoke the method %v in the service %v. Tried %v times of "+
-		"the providers %v (%v/%v)from the registry %v on the consumer %v using the dubbo version %v. Last error is %v.",
-		methodName, invoker.GetUrl().Service(), retries, providers, len(providers), len(invokers), invoker.directory.GetUrl(), ip, constant.Version, result.Error().Error(),
-	)}
+	invokerSvc := invoker.GetUrl().Service()
+	invokerUrl := invoker.directory.GetUrl()
+	return &protocol.RPCResult{
+		Err: perrors.Errorf("Failed to invoke the method %v in the service %v. Tried %v times of the providers %v (%v/%v)from the registry %v on the consumer %v using the dubbo version %v. Last error is %v.",
+			methodName, invokerSvc, retries, providers, len(providers), len(invokers), invokerUrl, ip, constant.Version, result.Error().Error(),
+		)}
+}
+
+func getRetries(invokers []protocol.Invoker, methodName string) int {
+	if len(invokers) <= 0 {
+		return constant.DEFAULT_RETRIES_INT
+	}
+
+	url := invokers[0].GetUrl()
+	//get reties
+	retriesConfig := url.GetParam(constant.RETRIES_KEY, constant.DEFAULT_RETRIES)
+	//Get the service method loadbalance config if have
+	if v := url.GetMethodParam(methodName, constant.RETRIES_KEY, ""); len(v) != 0 {
+		retriesConfig = v
+	}
+
+	retries, err := strconv.Atoi(retriesConfig)
+	if err != nil || retries < 0 {
+		logger.Error("Your retries config is invalid,pls do a check. And will use the default retries configuration instead.")
+		retries = constant.DEFAULT_RETRIES_INT
+	}
+
+	if retries > len(invokers) {
+		retries = len(invokers)
+	}
+	return retries
 }

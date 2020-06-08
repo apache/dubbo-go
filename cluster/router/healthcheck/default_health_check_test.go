@@ -37,7 +37,7 @@ func TestDefaultHealthChecker_IsHealthy(t *testing.T) {
 	defer protocol.CleanAllStatus()
 	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
 	hc := NewDefaultHealthChecker(&url).(*DefaultHealthChecker)
-	invoker := NewMockInvoker(url, 1)
+	invoker := NewMockInvoker(url)
 	healthy := hc.IsHealthy(invoker)
 	assert.True(t, healthy)
 
