@@ -25,11 +25,13 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
+// BaseMetadataIdentifier defined for describe the Metadata base identify
 type BaseMetadataIdentifier interface {
 	getFilePathKey(params ...string) string
 	getIdentifierKey(params ...string) string
 }
 
+// BaseMetadataIdentifier is the base implement of BaseMetadataIdentifier interface
 type BaseServiceMetadataIdentifier struct {
 	serviceInterface string
 	version          string
@@ -37,6 +39,7 @@ type BaseServiceMetadataIdentifier struct {
 	side             string
 }
 
+// joinParams will join the specified char in slice, and build as string
 func joinParams(joinChar string, params []string) string {
 	var joinedStr string
 	for _, param := range params {
@@ -46,7 +49,7 @@ func joinParams(joinChar string, params []string) string {
 	return joinedStr
 }
 
-// getIdentifierKey gets metadata identifier key by @params
+// getIdentifierKey will return string format as service:Version:Group:Side:param1:param2...
 func (mdi *BaseServiceMetadataIdentifier) getIdentifierKey(params ...string) string {
 	return mdi.serviceInterface +
 		constant.KEY_SEPARATOR + mdi.version +
@@ -55,7 +58,7 @@ func (mdi *BaseServiceMetadataIdentifier) getIdentifierKey(params ...string) str
 		joinParams(constant.KEY_SEPARATOR, params)
 }
 
-// getFilePathKey gets metadata file path key by @params
+// getFilePathKey will return string format as metadata/path/Version/Group/Side/param1/param2...
 func (mdi *BaseServiceMetadataIdentifier) getFilePathKey(params ...string) string {
 	path := serviceToPath(mdi.serviceInterface)
 
