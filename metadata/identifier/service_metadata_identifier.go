@@ -21,18 +21,19 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
+// ServiceMetadataIdentifier is inherit baseMetaIdentifier with service params: Revision and Protocol
 type ServiceMetadataIdentifier struct {
 	revision string
 	protocol string
 	BaseMetadataIdentifier
 }
 
-// getIdentifierKey gets metadata identifier key by @mdi.protocol and @mdi.revision
+// GetIdentifierKey will return string format as service:Version:Group:Side:Protocol:"revision"+Revision
 func (mdi *ServiceMetadataIdentifier) getIdentifierKey(params ...string) string {
-	return mdi.BaseMetadataIdentifier.getIdentifierKey(mdi.protocol, constant.KEY_REVISON_PREFIX, mdi.revision)
+	return mdi.BaseMetadataIdentifier.getIdentifierKey(mdi.protocol, constant.KEY_REVISON_PREFIX+mdi.revision)
 }
 
-// getFilePathKey gets metadata file path key by @mdi.protocol and @mdi.revision
+// GetFilePathKey will return string format as metadata/path/Version/Group/Side/Protocol/"revision"+Revision
 func (mdi *ServiceMetadataIdentifier) getFilePathKey(params ...string) string {
-	return mdi.BaseMetadataIdentifier.getFilePathKey(mdi.protocol, constant.KEY_REVISON_PREFIX, mdi.revision)
+	return mdi.BaseMetadataIdentifier.getFilePathKey(mdi.protocol, constant.KEY_REVISON_PREFIX+mdi.revision)
 }
