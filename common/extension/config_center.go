@@ -27,7 +27,7 @@ var (
 )
 
 // SetConfigCenter sets the DynamicConfiguration with @name
-func SetConfigCenter(name string, v func(config *common.URL) (config_center.DynamicConfiguration, error)) {
+func SetConfigCenter(name string, v func(*common.URL) (config_center.DynamicConfiguration, error)) {
 	configCenters[name] = v
 }
 
