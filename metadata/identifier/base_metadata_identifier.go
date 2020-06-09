@@ -25,7 +25,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
-// BaseMetadataIdentifier defined for describe the Metadata base identify
+// BaseMetadataIdentifier defined for description the Metadata base identify
 type BaseMetadataIdentifier interface {
 	getFilePathKey(params ...string) string
 	getIdentifierKey(params ...string) string
@@ -39,7 +39,7 @@ type BaseServiceMetadataIdentifier struct {
 	side             string
 }
 
-// joinParams will join the specified char in slice, and build as string
+// joinParams will join the specified char in slice, and return a string
 func joinParams(joinChar string, params []string) string {
 	var joinedStr string
 	for _, param := range params {
