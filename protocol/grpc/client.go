@@ -77,7 +77,7 @@ func init() {
 	}
 }
 
-// Client ...
+// Client return grpc connection and warp service stub
 type Client struct {
 	*grpc.ClientConn
 	invoker reflect.Value
