@@ -29,10 +29,8 @@ import (
 )
 
 const (
-	// json
-	CODEC_JSON = "json"
-	// proto
-	CODEC_PROTO = "proto"
+	codecJson  = "json"
+	codecProto = "proto"
 )
 
 func init() {
@@ -44,18 +42,18 @@ func init() {
 	})
 }
 
-// grpcJson ...
 type grpcJson struct {
 	jsonpb.Marshaler
 	jsonpb.Unmarshaler
 }
 
-// implements grpc encoding package Codec interface method
+// Name implements grpc encoding package Codec interface method,
+// returns the name of the Codec implementation.
 func (_ grpcJson) Name() string {
-	return CODEC_JSON
+	return codecJson
 }
 
-// implements grpc encoding package Codec interface method
+// Marshal implements grpc encoding package Codec interface method,returns the wire format of v.
 func (j grpcJson) Marshal(v interface{}) (out []byte, err error) {
 	if pm, ok := v.(proto.Message); ok {
 		b := new(bytes.Buffer)
@@ -68,7 +66,7 @@ func (j grpcJson) Marshal(v interface{}) (out []byte, err error) {
 	return json.Marshal(v)
 }
 
-// implements grpc encoding package Codec interface method
+// Unmarshal implements grpc encoding package Codec interface method,Unmarshal parses the wire format into v.
 func (j grpcJson) Unmarshal(data []byte, v interface{}) (err error) {
 	if pm, ok := v.(proto.Message); ok {
 		b := bytes.NewBuffer(data)
