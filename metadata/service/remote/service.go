@@ -38,10 +38,13 @@ import (
 )
 
 // version will be used by Version func
-const version = "1.0.0"
+const (
+	version = "1.0.0"
+	remote  = "remote"
+)
 
 func init() {
-	extension.SetMetadataService("remote", newMetadataService)
+	extension.SetMetadataService(remote, newMetadataService)
 }
 
 // MetadataService is a implement of metadata service which will delegate the remote metadata report
