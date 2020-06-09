@@ -51,6 +51,7 @@ type NacosClient struct {
 	onceClose  func()
 }
 
+// init default Nacos Log dir, it can be override when create client
 func init() {
 	switch runtime.GOOS {
 	case "windows":
@@ -97,6 +98,7 @@ func ValidateNacosClient(container nacosClientFacade, opts ...option) error {
 	}
 
 	url := container.GetUrl()
+	logDir = url.GetParam(constant.CONFIG_LOG_DIR_KEY, logDir)
 
 	if container.NacosClient() == nil {
 		//in dubbo ,every registry only connect one node ,so this is []string{r.Address}
