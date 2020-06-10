@@ -49,7 +49,7 @@ var (
 
 var (
 	attachmentKey = []string{constant.INTERFACE_KEY, constant.GROUP_KEY, constant.TOKEN_KEY, constant.TIMEOUT_KEY,
-		constant.PATH_KEY, constant.VERSION_KEY}
+		constant.VERSION_KEY}
 )
 
 // DubboInvoker is implement of protocol.Invoker. A dubboInvoker refer to one service and ip.
@@ -98,6 +98,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 	inv := invocation.(*invocation_impl.RPCInvocation)
 	// init param
+	inv.SetAttachments(constant.PATH_KEY, di.GetUrl().Path)
 	for _, k := range attachmentKey {
 		if v := di.GetUrl().GetParam(k, ""); len(v) > 0 {
 			inv.SetAttachments(k, v)
