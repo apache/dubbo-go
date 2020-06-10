@@ -416,8 +416,7 @@ func newProviderConfigurationListener(overrideListeners *sync.Map) *providerConf
 	return listener
 }
 
-// Process is Listener callback method. Listener gets notified by this method once there's any change happens on the config
-// the listener listens on.
+// Process notified once there's any change happens on the provider config
 func (listener *providerConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
 	listener.BaseConfigurationListener.Process(event)
 	listener.overrideListeners.Range(func(key, value interface{}) bool {
@@ -442,8 +441,7 @@ func newServiceConfigurationListener(overrideListener *overrideSubscribeListener
 	return listener
 }
 
-// Process is Listener callback method. Listener gets notified by this method once there's any change happens on the config
-// the listener listens on.
+// Process notified once there's any change happens on the service config
 func (listener *serviceConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
 	listener.BaseConfigurationListener.Process(event)
 	listener.overrideListener.doOverrideIfNecessary()
