@@ -33,7 +33,7 @@ import (
 
 // dubbo protocol constant
 const (
-	// DUBBO ...
+	// DUBBO is dubbo protocol name
 	DUBBO = "dubbo"
 )
 
