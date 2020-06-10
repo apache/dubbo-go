@@ -18,7 +18,7 @@
 package nacos
 
 import (
-	"runtime"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -37,7 +37,8 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
-var logDir string
+// Nacos Log dir, it can be override when creating client by config_center.log_dir
+var logDir = filepath.Join("logs", "nacos", "log")
 
 // NacosClient Nacos client
 type NacosClient struct {
@@ -49,16 +50,6 @@ type NacosClient struct {
 	Timeout    time.Duration
 	once       sync.Once
 	onceClose  func()
-}
-
-// init default Nacos Log dir, it can be override when create client
-func init() {
-	switch runtime.GOOS {
-	case "windows":
-		logDir = "logs\\nacos\\log"
-	default:
-		logDir = "logs/nacos/log"
-	}
 }
 
 // Client Get Client
