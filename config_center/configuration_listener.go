@@ -27,8 +27,7 @@ import (
 
 // ConfigurationListener for changing listener's event
 type ConfigurationListener interface {
-	// Process is Listener callback method. Listener gets notified by this method once there's any change happens on the config
-	// the listener listens on.
+	// Process notified once there's any change happens on the config
 	Process(*ConfigChangeEvent)
 }
 
