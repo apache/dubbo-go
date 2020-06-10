@@ -22,6 +22,9 @@ import (
 	gxset "github.com/dubbogo/gost/container/set"
 )
 
+// Metadata service is a built-in service around the metadata of Dubbo services,
+// whose interface is provided by Dubbo Framework and exported automatically before subscription after other services exporting,
+// which may be used for Dubbo subscribers and admin.
 type MetadataService interface {
 	ServiceName() string
 	ExportURL(url *common.URL) bool
