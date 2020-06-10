@@ -65,6 +65,7 @@ type DubboPackage struct {
 	Err     error
 }
 
+// String prints dubbo package detail include header、path、body etc.
 func (p DubboPackage) String() string {
 	return fmt.Sprintf("DubboPackage: Header-%v, Path-%v, Body-%v", p.Header, p.Service, p.Body)
 }
