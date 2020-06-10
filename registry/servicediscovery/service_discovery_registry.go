@@ -501,6 +501,10 @@ func (s *serviceDiscoveryRegistry) initRevisionExportedURLsByInst(serviceInstanc
 	serviceName := serviceInstance.GetServiceName()
 	revision := getExportedServicesRevision(serviceInstance)
 	revisionExportedURLsMap := s.serviceRevisionExportedURLsCache[serviceName]
+	if revisionExportedURLsMap == nil {
+		revisionExportedURLsMap = make(map[string][]common.URL)
+		s.serviceRevisionExportedURLsCache[serviceName] = revisionExportedURLsMap
+	}
 	revisionExportedURLs := revisionExportedURLsMap[revision]
 	firstGet := false
 	if revisionExportedURLs == nil || len(revisionExportedURLs) == 0 {
@@ -558,8 +562,8 @@ func (s *serviceDiscoveryRegistry) cloneExportedURLs(url common.URL, serviceInsa
 		for _, u := range templateExportURLs {
 			port := strconv.Itoa(getProtocolPort(serviceInstance, u.Protocol))
 			if u.Location != host || u.Port != port {
-				u.Port = port     // reset port
-				u.Location = host // reset host
+				u.Port = port                  // reset port
+				u.Location = host + ":" + port // reset host
 			}
 
 			cloneUrl := u.CloneExceptParams(removeParamSet)

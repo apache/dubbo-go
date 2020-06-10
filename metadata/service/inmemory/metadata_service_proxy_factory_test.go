@@ -15,4 +15,18 @@
  * limitations under the License.
  */
 
-package proxy
+package inmemory
+
+import (
+	"encoding/json"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestMetadataService_GetMetadataServiceUrlParams(t *testing.T) {
+	str := `{"dubbo":{"timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"20880"}}`
+	tmp := make(map[string]map[string]string)
+	err := json.Unmarshal([]byte(str), &tmp)
+	assert.Nil(t, err)
+}
