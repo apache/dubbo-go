@@ -33,13 +33,13 @@ import (
 	"github.com/apache/dubbo-go/config"
 )
 
-// Client ...
+// Client is gRPC client include client connection and invoker
 type Client struct {
 	*grpc.ClientConn
 	invoker reflect.Value
 }
 
-// NewClient ...
+// NewClient creates a new gRPC client.
 func NewClient(url common.URL) *Client {
 	// if global trace instance was set , it means trace function enabled. If not , will return Nooptracer
 	tracer := opentracing.GlobalTracer()
