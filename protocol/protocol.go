@@ -29,15 +29,20 @@ import (
 // Protocol
 // Extension - protocol
 type Protocol interface {
+	// Export service for remote invocation
 	Export(invoker Invoker) Exporter
+	// Refer a remote service
 	Refer(url common.URL) Invoker
+	// Destroy will destroy all invoker and exporter, so it only is called once.
 	Destroy()
 }
 
 // Exporter
 // wrapping invoker
 type Exporter interface {
+	// GetInvoker gets invoker.
 	GetInvoker() Invoker
+	// Unexport exported service.
 	Unexport()
 }
 
@@ -45,45 +50,45 @@ type Exporter interface {
 // base protocol
 /////////////////////////////
 
-// BaseProtocol ...
+// BaseProtocol is default protocol implement.
 type BaseProtocol struct {
 	exporterMap *sync.Map
 	invokers    []Invoker
 }
 
-// NewBaseProtocol ...
+// NewBaseProtocol creates a new BaseProtocol
 func NewBaseProtocol() BaseProtocol {
 	return BaseProtocol{
 		exporterMap: new(sync.Map),
 	}
 }
 
-// SetExporterMap ...
+// SetExporterMap set @exporter with @key to local memory.
 func (bp *BaseProtocol) SetExporterMap(key string, exporter Exporter) {
 	bp.exporterMap.Store(key, exporter)
 }
 
-// ExporterMap ...
+// ExporterMap gets exporter map.
 func (bp *BaseProtocol) ExporterMap() *sync.Map {
 	return bp.exporterMap
 }
 
-// SetInvokers ...
+// SetInvokers sets invoker into local memory
 func (bp *BaseProtocol) SetInvokers(invoker Invoker) {
 	bp.invokers = append(bp.invokers, invoker)
 }
 
-// Invokers ...
+// Invokers gets all invokers
 func (bp *BaseProtocol) Invokers() []Invoker {
 	return bp.invokers
 }
 
-// Export ...
+// Export is default export implement.
 func (bp *BaseProtocol) Export(invoker Invoker) Exporter {
 	return NewBaseExporter("base", invoker, bp.exporterMap)
 }
 
-// Refer ...
+// Refer is default refer implement.
 func (bp *BaseProtocol) Refer(url common.URL) Invoker {
 	return NewBaseInvoker(url)
 }
@@ -113,14 +118,14 @@ func (bp *BaseProtocol) Destroy() {
 // base exporter
 /////////////////////////////
 
-// BaseExporter ...
+// BaseExporter is default exporter implement.
 type BaseExporter struct {
 	key         string
 	invoker     Invoker
 	exporterMap *sync.Map
 }
 
-// NewBaseExporter ...
+// NewBaseExporter creates a new BaseExporter
 func NewBaseExporter(key string, invoker Invoker, exporterMap *sync.Map) *BaseExporter {
 	return &BaseExporter{
 		key:         key,
@@ -129,13 +134,13 @@ func NewBaseExporter(key string, invoker Invoker, exporterMap *sync.Map) *BaseEx
 	}
 }
 
-// GetInvoker ...
+// GetInvoker gets invoker
 func (de *BaseExporter) GetInvoker() Invoker {
 	return de.invoker
 
 }
 
-// Unexport ...
+// Unexport exported service.
 func (de *BaseExporter) Unexport() {
 	logger.Infof("Exporter unexport.")
 	de.invoker.Destroy()
