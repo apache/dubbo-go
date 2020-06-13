@@ -415,7 +415,14 @@ func (s *serviceDiscoveryRegistry) getExportedUrlsByInst(serviceInstance registr
 
 	ret := make([]common.URL, 0, len(result))
 	for _, ui := range result {
-		ret = append(ret, ui.(common.URL))
+
+		u, err := common.NewURL(ui.(string))
+
+		if err != nil {
+			logger.Errorf("could not parse the url string to URL structure: %s", ui.(string), err)
+			continue
+		}
+		ret = append(ret, u)
 	}
 	return ret
 }
