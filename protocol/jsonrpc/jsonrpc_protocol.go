@@ -44,14 +44,14 @@ func init() {
 
 var jsonrpcProtocol *JsonrpcProtocol
 
-// JsonrpcProtocol ...
+// JsonrpcProtocol is JSON RPC protocol.
 type JsonrpcProtocol struct {
 	protocol.BaseProtocol
 	serverMap  map[string]*Server
 	serverLock sync.Mutex
 }
 
-// NewJsonrpcProtocol ...
+// NewJsonrpcProtocol creates JSON RPC protocol
 func NewJsonrpcProtocol() *JsonrpcProtocol {
 	return &JsonrpcProtocol{
 		BaseProtocol: protocol.NewBaseProtocol(),
@@ -59,7 +59,7 @@ func NewJsonrpcProtocol() *JsonrpcProtocol {
 	}
 }
 
-// Export ...
+// Export JSON RPC service  for remote invocation
 func (jp *JsonrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetUrl()
 	serviceKey := strings.TrimPrefix(url.Path, "/")
@@ -74,7 +74,7 @@ func (jp *JsonrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	return exporter
 }
 
-// Refer ...
+// Refer a remote JSON PRC service from registry
 func (jp *JsonrpcProtocol) Refer(url common.URL) protocol.Invoker {
 	//default requestTimeout
 	var requestTimeout = config.GetConsumerConfig().RequestTimeout
@@ -93,7 +93,7 @@ func (jp *JsonrpcProtocol) Refer(url common.URL) protocol.Invoker {
 	return invoker
 }
 
-// Destroy ...
+// Destroy will destroy all invoker and exporter, so it only is called once.
 func (jp *JsonrpcProtocol) Destroy() {
 	logger.Infof("jsonrpcProtocol destroy.")
 
@@ -125,7 +125,7 @@ func (jp *JsonrpcProtocol) openServer(url common.URL) {
 	}
 }
 
-// GetProtocol ...
+// GetProtocol gets JSON RPC protocol.
 func GetProtocol() protocol.Protocol {
 	if jsonrpcProtocol == nil {
 		jsonrpcProtocol = NewJsonrpcProtocol()
