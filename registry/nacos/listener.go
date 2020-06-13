@@ -214,7 +214,7 @@ func (nl *nacosListener) Next() (*registry.ServiceEvent, error) {
 	}
 }
 
-// Close nacos registry center
+// nolint
 func (nl *nacosListener) Close() {
 	nl.stopListen()
 	close(nl.done)
