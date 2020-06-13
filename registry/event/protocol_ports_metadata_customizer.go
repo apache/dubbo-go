@@ -23,11 +23,16 @@ import (
 
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/registry"
 )
 
-// ProtocolPortsMetadataCustomizer will update
+func init() {
+	extension.AddCustomizers(&ProtocolPortsMetadataCustomizer{})
+}
+
+// ProtocolPortsMetadataCustomizer will update the endpoints
 type ProtocolPortsMetadataCustomizer struct {
 }
 
@@ -48,14 +53,15 @@ func (p *ProtocolPortsMetadataCustomizer) Customize(instance registry.ServiceIns
 	protocolMap := make(map[string]int, 4)
 
 	list, err := metadataService.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
-	if err != nil || list == nil {
+	if err != nil || len(list) == 0 {
 		logger.Errorf("Could not find exported urls", err)
 		return
 	}
 
 	for _, ui := range list {
-		u := ui.(common.URL)
-		if len(u.Protocol) == 0 {
+		u, err := common.NewURL(ui.(string))
+		if err != nil || len(u.Protocol) == 0 {
+			logger.Errorf("the url string is invalid: %s", ui.(string), err)
 			continue
 		}
 
@@ -77,8 +83,8 @@ func endpointsStr(protocolMap map[string]int) string {
 	endpoints := make([]endpoint, 0, len(protocolMap))
 	for k, v := range protocolMap {
 		endpoints = append(endpoints, endpoint{
-			port:     v,
-			protocol: k,
+			Port:     v,
+			Protocol: k,
 		})
 	}
 
@@ -91,6 +97,6 @@ func endpointsStr(protocolMap map[string]int) string {
 }
 
 type endpoint struct {
-	port     int
-	protocol string
+	Port     int    `json:"port"`
+	Protocol string `json:"protocol"`
 }
