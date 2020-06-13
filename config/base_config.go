@@ -43,8 +43,11 @@ type multiConfiger interface {
 // BaseConfig is the event configuration for provider and consumer
 type BaseConfig struct {
 	ConfigCenterConfig *ConfigCenterConfig                `yaml:"config_center" json:"config_center,omitempty"`
+
+	// since 1.5.0 version
 	Remotes            map[string]*RemoteConfig           `yaml:"remote" json:"remote,omitempty"`
 	ServiceDiscoveries map[string]*ServiceDiscoveryConfig `yaml:"service_discovery" json:"service_discovery,omitempty"`
+	MetadataReportConfig *MetadataReportConfig      `yaml:"metadata_report" json:"metadata_report,omitempty" property:"metadata_report"`
 
 	Registry   *RegistryConfig            `yaml:"registry" json:"registry,omitempty" property:"registry"`
 	Registries map[string]*RegistryConfig `yaml:"registries" json:"registries,omitempty" property:"registries"`
