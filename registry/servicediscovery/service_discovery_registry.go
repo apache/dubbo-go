@@ -56,8 +56,7 @@ func init() {
 // It's completely different from other registry implementations
 // This implementation is based on ServiceDiscovery abstraction and ServiceNameMapping
 // In order to keep compatible with interface-level registry，
-// 1. when we registry the service, we should create the mapping from service name to application name
-// 2. when we sub
+// this implementation is
 type serviceDiscoveryRegistry struct {
 	lock                             sync.RWMutex
 	url                              *common.URL
@@ -72,13 +71,7 @@ type serviceDiscoveryRegistry struct {
 
 func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 
-	// the metadata service is exported in DubboBootstrap of Java Dubbo
-	// but I don't want to introduce similar structure because we has less logic to do
-	// so I codes the related logic here.
-	// If necessary we need to think about moving there codes to somewhere else.
-
-	// init and expose metadata service
-	initMetadataService()
+	tryInitMetadataService()
 
 	serviceDiscovery, err := creatServiceDiscovery(url)
 	if err != nil {
@@ -419,7 +412,12 @@ func (s *serviceDiscoveryRegistry) getExportedUrlsByInst(serviceInstance registr
 		logger.Errorf("get exported urls catch error:%s,instance:%+v", err.Error(), serviceInstance)
 		return urls
 	}
-	return result
+
+	ret := make([]common.URL, 0, len(result))
+	for _, ui := range result {
+		ret = append(ret, ui.(common.URL))
+	}
+	return ret
 }
 
 func (s *serviceDiscoveryRegistry) prepareServiceRevisionExportedURLs(serviceInstances []registry.ServiceInstance) {
@@ -663,16 +661,20 @@ func (icn *InstanceChangeNotify) Notify(event observer.Event) {
 	}
 }
 
-func initMetadataService() {
+var exporting = false
+
+func tryInitMetadataService() {
+
 	ms, err := extension.GetMetadataService(config.GetApplicationConfig().MetadataType)
 	if err != nil {
 		logger.Errorf("could not init metadata service", err)
 	}
 
-	// we don't need to expose the metadata service since this is a pure consumer application
-	if !config.IsProvider() {
+	if !config.IsProvider() || exporting {
 		return
 	}
+
+	exporting = true
 
 	expt := configurable.NewMetadataServiceExporter(ms)
 

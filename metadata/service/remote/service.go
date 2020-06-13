@@ -132,7 +132,7 @@ func (mts *MetadataService) PublishServiceDefinition(url common.URL) error {
 }
 
 // GetExportedURLs will be implemented by in memory service
-func (mts *MetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]common.URL, error) {
+func (mts *MetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]interface{}, error) {
 	return mts.inMemoryMetadataService.GetExportedURLs(serviceInterface, group, version, protocol)
 }
 
@@ -162,9 +162,10 @@ func (mts *MetadataService) RefreshMetadata(exportedRevision string, subscribedR
 		}
 		logger.Infof("urls length = %v", len(urls))
 		for _, u := range urls {
-			id := identifier.NewServiceMetadataIdentifier(u)
+
+			id := identifier.NewServiceMetadataIdentifier(u.(common.URL))
 			id.Revision = mts.exportedRevision.Load()
-			if err := mts.delegateReport.SaveServiceMetadata(id, u); err != nil {
+			if err := mts.delegateReport.SaveServiceMetadata(id, u.(common.URL)); err != nil {
 				logger.Errorf("Error occur when execute remote.MetadataService.RefreshMetadata, error message is %+v", err)
 				return false, err
 			}
