@@ -29,7 +29,7 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
-// BaseConfigurationListener will get notified when the config it listens on changes.
+// nolint
 type BaseConfigurationListener struct {
 	configurators           []config_center.Configurator
 	dynamicConfiguration    config_center.DynamicConfiguration

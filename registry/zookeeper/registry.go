@@ -163,17 +163,17 @@ func (r *zkRegistry) CloseAndNilClient() {
 	r.client = nil
 }
 
-// ZkClient gets zookeeper client
+// nolint
 func (r *zkRegistry) ZkClient() *zookeeper.ZookeeperClient {
 	return r.client
 }
 
-// SetZkClient sets zookeeper client
+// nolint
 func (r *zkRegistry) SetZkClient(client *zookeeper.ZookeeperClient) {
 	r.client = client
 }
 
-// ZkClientLock gets zookeeper registry control lock
+// nolint
 func (r *zkRegistry) ZkClientLock() *sync.Mutex {
 	return &r.cltLock
 }
