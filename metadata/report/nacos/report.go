@@ -51,6 +51,7 @@ type nacosMetadataReport struct {
 }
 
 // StoreProviderMetadata will store the metadata
+// metadata including the basic info of the server, provider info, and other user custom info
 func (n *nacosMetadataReport) StoreProviderMetadata(providerIdentifier *identifier.MetadataIdentifier, serviceDefinitions string) error {
 	return n.storeMetadata(vo.ConfigParam{
 		DataId:  providerIdentifier.GetIdentifierKey(),
@@ -60,6 +61,7 @@ func (n *nacosMetadataReport) StoreProviderMetadata(providerIdentifier *identifi
 }
 
 // StoreConsumerMetadata will store the metadata
+// metadata including the basic info of the server, consumer info, and other user custom info
 func (n *nacosMetadataReport) StoreConsumerMetadata(consumerMetadataIdentifier *identifier.MetadataIdentifier, serviceParameterString string) error {
 	return n.storeMetadata(vo.ConfigParam{
 		DataId:  consumerMetadataIdentifier.GetIdentifierKey(),
@@ -69,6 +71,7 @@ func (n *nacosMetadataReport) StoreConsumerMetadata(consumerMetadataIdentifier *
 }
 
 // SaveServiceMetadata will store the metadata
+// metadata including the basic info of the server, service info, and other user custom info
 func (n *nacosMetadataReport) SaveServiceMetadata(metadataIdentifier *identifier.ServiceMetadataIdentifier, url common.URL) error {
 	return n.storeMetadata(vo.ConfigParam{
 		DataId:  metadataIdentifier.GetIdentifierKey(),

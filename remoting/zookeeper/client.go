@@ -51,7 +51,7 @@ var (
 type ZookeeperClient struct {
 	name          string
 	ZkAddrs       []string
-	sync.Mutex    // for conn
+	sync.RWMutex  // for conn
 	Conn          *zk.Conn
 	Timeout       time.Duration
 	exit          chan struct{}
@@ -275,7 +275,7 @@ LOOP:
 				break LOOP
 			case (int)(zk.EventNodeDataChanged), (int)(zk.EventNodeChildrenChanged):
 				logger.Infof("zkClient{%s} get zk node changed event{path:%s}", z.name, event.Path)
-				z.Lock()
+				z.RLock()
 				for p, a := range z.eventRegistry {
 					if strings.HasPrefix(p, event.Path) {
 						logger.Infof("send event{state:zk.EventNodeDataChange, Path:%s} notify event to path{%s} related listener",
@@ -285,7 +285,7 @@ LOOP:
 						}
 					}
 				}
-				z.Unlock()
+				z.RUnlock()
 			case (int)(zk.StateConnecting), (int)(zk.StateConnected), (int)(zk.StateHasSession):
 				if state == (int)(zk.StateHasSession) {
 					continue
@@ -368,11 +368,11 @@ func (z *ZookeeperClient) ZkConnValid() bool {
 	}
 
 	valid := true
-	z.Lock()
+	z.RLock()
 	if z.Conn == nil {
 		valid = false
 	}
-	z.Unlock()
+	z.RUnlock()
 
 	return valid
 }
@@ -413,15 +413,15 @@ func (z *ZookeeperClient) CreateWithValue(basePath string, value []byte) error {
 	)
 
 	logger.Debugf("zookeeperClient.Create(basePath{%s})", basePath)
+	conn := z.getConn()
+	err = errNilZkClientConn
+	if conn == nil {
+		return perrors.WithMessagef(err, "zk.Create(path:%s)", basePath)
+	}
+
 	for _, str := range strings.Split(basePath, "/")[1:] {
 		tmpPath = path.Join(tmpPath, "/", str)
-		err = errNilZkClientConn
-		z.Lock()
-		conn := z.Conn
-		z.Unlock()
-		if conn != nil {
-			_, err = conn.Create(tmpPath, value, 0, zk.WorldACL(zk.PermAll))
-		}
+		_, err = conn.Create(tmpPath, value, 0, zk.WorldACL(zk.PermAll))
 
 		if err != nil {
 			if err == zk.ErrNodeExists {
@@ -443,9 +443,7 @@ func (z *ZookeeperClient) Delete(basePath string) error {
 	)
 
 	err = errNilZkClientConn
-	z.Lock()
-	conn := z.Conn
-	z.Unlock()
+	conn := z.getConn()
 	if conn != nil {
 		err = conn.Delete(basePath, -1)
 	}
@@ -465,9 +463,7 @@ func (z *ZookeeperClient) RegisterTemp(basePath string, node string) (string, er
 	err = errNilZkClientConn
 	data = []byte("")
 	zkPath = path.Join(basePath) + "/" + node
-	z.Lock()
-	conn := z.Conn
-	z.Unlock()
+	conn := z.getConn()
 	if conn != nil {
 		tmpPath, err = conn.Create(zkPath, data, zk.FlagEphemeral, zk.WorldACL(zk.PermAll))
 	}
@@ -490,9 +486,7 @@ func (z *ZookeeperClient) RegisterTempSeq(basePath string, data []byte) (string,
 	)
 
 	err = errNilZkClientConn
-	z.Lock()
-	conn := z.Conn
-	z.Unlock()
+	conn := z.getConn()
 	if conn != nil {
 		tmpPath, err = conn.Create(
 			path.Join(basePath)+"/",
@@ -523,9 +517,7 @@ func (z *ZookeeperClient) GetChildrenW(path string) ([]string, <-chan zk.Event, 
 	)
 
 	err = errNilZkClientConn
-	z.Lock()
-	conn := z.Conn
-	z.Unlock()
+	conn := z.getConn()
 	if conn != nil {
 		children, stat, watcher, err = conn.ChildrenW(path)
 	}
@@ -559,9 +551,7 @@ func (z *ZookeeperClient) GetChildren(path string) ([]string, error) {
 	)
 
 	err = errNilZkClientConn
-	z.Lock()
-	conn := z.Conn
-	z.Unlock()
+	conn := z.getConn()
 	if conn != nil {
 		children, stat, err = conn.Children(path)
 	}
@@ -592,9 +582,7 @@ func (z *ZookeeperClient) ExistW(zkPath string) (<-chan zk.Event, error) {
 	)
 
 	err = errNilZkClientConn
-	z.Lock()
-	conn := z.Conn
-	z.Unlock()
+	conn := z.getConn()
 	if conn != nil {
 		exist, _, watcher, err = conn.ExistsW(zkPath)
 	}
@@ -614,4 +602,11 @@ func (z *ZookeeperClient) ExistW(zkPath string) (<-chan zk.Event, error) {
 // GetContent ...
 func (z *ZookeeperClient) GetContent(zkPath string) ([]byte, *zk.Stat, error) {
 	return z.Conn.Get(zkPath)
+}
+
+// getConn gets zookeeper connection safely
+func (z *ZookeeperClient) getConn() *zk.Conn {
+	z.RLock()
+	defer z.RUnlock()
+	return z.Conn
 }

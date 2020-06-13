@@ -97,13 +97,21 @@ func BuildServiceDefinition(service common.Service, url common.URL) *ServiceDefi
 
 	for k, m := range service.Method() {
 		var paramTypes []string
-		for _, t := range m.ArgsType() {
-			paramTypes = append(paramTypes, t.Kind().String())
+		if len(m.ArgsType()) > 0 {
+			for _, t := range m.ArgsType() {
+				paramTypes = append(paramTypes, t.Kind().String())
+			}
 		}
+
+		var returnType string
+		if m.ReplyType() != nil {
+			returnType = m.ReplyType().Kind().String()
+		}
+
 		methodD := MethodDefinition{
 			Name:           k,
 			ParameterTypes: paramTypes,
-			ReturnType:     m.ReplyType().Kind().String(),
+			ReturnType:     returnType,
 		}
 		sd.Methods = append(sd.Methods, methodD)
 	}

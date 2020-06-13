@@ -54,7 +54,7 @@ func (p *ProtocolPortsMetadataCustomizer) Customize(instance registry.ServiceIns
 
 	list, err := metadataService.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
 	if err != nil || len(list) == 0 {
-		logger.Errorf("Could not find exported urls", err)
+		logger.Debugf("Could not find exported urls", err)
 		return
 	}
 
