@@ -189,6 +189,7 @@ func loadProviderConfig() {
 		logger.Errorf("[provider config center refresh] %#v", err)
 	}
 	checkRegistries(providerConfig.Registries, providerConfig.Registry)
+
 	for key, svs := range providerConfig.Services {
 		rpcService := GetProviderService(key)
 		if rpcService == nil {

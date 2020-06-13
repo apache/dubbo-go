@@ -26,6 +26,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/metadata/service"
 	"github.com/apache/dubbo-go/registry"
 )
 
@@ -85,7 +86,7 @@ func (e *subscribedServicesRevisionMetadataCustomizer) Customize(instance regist
 		logger.Errorf("could not find the subscribed url", err)
 	}
 
-	revision := resolveRevision(urls)
+	revision := resolveRevision(service.ConvertURLArrToIntfArr(urls))
 	if len(revision) == 0 {
 		revision = defaultRevision
 	}
@@ -96,13 +97,14 @@ func (e *subscribedServicesRevisionMetadataCustomizer) Customize(instance regist
 // so that we could use interface + method name as identifier and ignore the method params
 // per my understanding, it's enough because Dubbo actually ignore the url params.
 // please refer org.apache.dubbo.common.URL#toParameterString(java.lang.String...)
-func resolveRevision(urls []common.URL) string {
+func resolveRevision(urls []interface{}) string {
 	if len(urls) == 0 {
 		return ""
 	}
 	candidates := make([]string, 0, len(urls))
 
-	for _, u := range urls {
+	for _, ui := range urls {
+		u := ui.(common.URL)
 		sk := u.GetParam(constant.INTERFACE_KEY, "")
 		for _, m := range u.Methods {
 			// methods are part of candidates
