@@ -44,6 +44,7 @@ type MetadataService interface {
 	// GetExportedURLs will get the target exported url in metadata
 	// the url should be unique
 	// due to dubbo-go only support return array []interface{} in RPCService, so we should declare the return type as []interface{}
+	// actually, it's []String
 	GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]interface{}, error)
 	// GetExportedURLs will get the target subscribed url in metadata
 	// the url should be unique
@@ -117,7 +118,7 @@ func ConvertURLArrToIntfArr(urls []common.URL) []interface{} {
 
 	res := make([]interface{}, 0, len(urls))
 	for _, u := range urls {
-		res = append(res, u)
+		res = append(res, u.String())
 	}
 	return res
 }
