@@ -41,7 +41,7 @@ func NewServiceMetadataIdentifier(url common.URL) *ServiceMetadataIdentifier {
 	}
 }
 
-// GetIdentifierKey will return string format as service:Version:Group:Side:Protocol:"revision"+Revision
+// GetIdentifierKey will return string format as service:Version:Group:Side:Protocol:"revision-"+Revision
 func (mdi *ServiceMetadataIdentifier) GetIdentifierKey() string {
 	return mdi.BaseMetadataIdentifier.getIdentifierKey(mdi.Protocol, constant.KEY_REVISON_PREFIX+mdi.Revision)
 }

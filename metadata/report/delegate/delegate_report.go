@@ -268,7 +268,7 @@ func (mr *MetadataReport) doHandlerMetadataCollection(metadataMap map[*identifie
 	}
 	for e := range metadataMap {
 		if common.RoleType(common.PROVIDER).Role() == e.Side {
-			mr.StoreProviderMetadata(e, metadataMap[e].(*definition.FullServiceDefinition))
+			mr.StoreProviderMetadata(e, metadataMap[e].(*definition.ServiceDefinition))
 		} else if common.RoleType(common.CONSUMER).Role() == e.Side {
 			mr.StoreConsumerMetadata(e, metadataMap[e].(map[string]string))
 		}

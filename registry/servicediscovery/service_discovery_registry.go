@@ -177,9 +177,16 @@ func (s *serviceDiscoveryRegistry) Register(url common.URL) error {
 	if err != nil {
 		return perrors.WithMessage(err, "could not create servcie instance, please check your service url")
 	}
+
+
 	err = s.serviceDiscovery.Register(ins)
 	if err != nil {
 		return perrors.WithMessage(err, "register the service failed")
+	}
+
+	err = s.metaDataService.PublishServiceDefinition(url)
+	if err != nil {
+		return perrors.WithMessage(err, "publish the service definition failed. ")
 	}
 	return s.serviceNameMapping.Map(url.GetParam(constant.INTERFACE_KEY, ""),
 		url.GetParam(constant.GROUP_KEY, ""),

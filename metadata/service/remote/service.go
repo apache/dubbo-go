@@ -121,7 +121,8 @@ func (mts *MetadataService) PublishServiceDefinition(url common.URL) error {
 				ServiceInterface: interfaceName,
 				Version:          url.GetParam(constant.VERSION_KEY, ""),
 				// Group:            url.GetParam(constant.GROUP_KEY, constant.SERVICE_DISCOVERY_DEFAULT_GROUP),
-				Group: url.GetParam(constant.GROUP_KEY, "test"),
+				Group: url.GetParam(constant.GROUP_KEY, constant.DUBBO),
+				Side: url.GetParam(constant.SIDE_KEY, "provider"),
 			},
 		}
 		mts.delegateReport.StoreProviderMetadata(id, sd)
