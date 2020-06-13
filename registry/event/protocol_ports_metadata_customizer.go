@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"strconv"
 
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/registry"
@@ -52,7 +53,8 @@ func (p *ProtocolPortsMetadataCustomizer) Customize(instance registry.ServiceIns
 		return
 	}
 
-	for _, u := range list {
+	for _, ui := range list {
+		u := ui.(common.URL)
 		if len(u.Protocol) == 0 {
 			continue
 		}

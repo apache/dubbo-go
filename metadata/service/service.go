@@ -43,7 +43,8 @@ type MetadataService interface {
 	PublishServiceDefinition(url common.URL) error
 	// GetExportedURLs will get the target exported url in metadata
 	// the url should be unique
-	GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]common.URL, error)
+	// due to dubbo-go only support return array []interface{} in RPCService, so we should declare the return type as []interface{}
+	GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]interface{}, error)
 	// GetExportedURLs will get the target subscribed url in metadata
 	// the url should be unique
 	GetSubscribedURLs() ([]common.URL, error)
@@ -107,4 +108,16 @@ func (b *BaseMetadataServiceProxyFactory) GetProxy(ins registry.ServiceInstance)
 func getExportedServicesRevision(serviceInstance registry.ServiceInstance) string {
 	metaData := serviceInstance.GetMetadata()
 	return metaData[constant.EXPORTED_SERVICES_REVISION_PROPERTY_NAME]
+}
+
+func ConvertURLArrToIntfArr(urls []common.URL) []interface{} {
+	if len(urls) == 0 {
+		return []interface{}{}
+	}
+
+	res := make([]interface{}, 0, len(urls))
+	for _, u := range urls {
+		res = append(res, u)
+	}
+	return res
 }

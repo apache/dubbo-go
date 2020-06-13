@@ -143,7 +143,7 @@ func (mts *MetadataService) getAllService(services *sync.Map) []common.URL {
 		urls := value.(*skip.SkipList)
 		for i := uint64(0); i < urls.Len(); i++ {
 			url := common.URL(urls.ByPosition(i).(Comparator))
-			if url.GetParam(constant.INTERFACE_KEY, url.Path) != constant.SIMPLE_METADATA_SERVICE_NAME {
+			if url.GetParam(constant.INTERFACE_KEY, url.Path) != constant.METADATA_SERVICE_NAME {
 				res = append(res, url)
 			}
 		}
@@ -220,12 +220,12 @@ func (mts *MetadataService) PublishServiceDefinition(url common.URL) error {
 }
 
 // GetExportedURLs get all exported urls
-func (mts *MetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]common.URL, error) {
+func (mts *MetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]interface{}, error) {
 	if serviceInterface == constant.ANY_VALUE {
-		return mts.getAllService(mts.exportedServiceURLs), nil
+		return service.ConvertURLArrToIntfArr(mts.getAllService(mts.exportedServiceURLs)), nil
 	} else {
 		serviceKey := definition.ServiceDescriperBuild(serviceInterface, group, version)
-		return mts.getSpecifiedService(mts.exportedServiceURLs, serviceKey, protocol), nil
+		return service.ConvertURLArrToIntfArr(mts.getSpecifiedService(mts.exportedServiceURLs, serviceKey, protocol)), nil
 	}
 }
 

@@ -55,6 +55,8 @@ func (exporter *MetadataServiceExporter) Export() error {
 			constant.DEFAULT_PROTOCOL: generateMetadataProtocol(),
 		}
 		serviceConfig.InterfaceName = constant.METADATA_SERVICE_NAME
+		// identify this is a golang server
+		serviceConfig.Params = map[string]string{constant.LANGUAGE_KEY: constant.GO_LANG}
 		serviceConfig.Group = config.GetApplicationConfig().Name
 		// now the error will always be nil
 		serviceConfig.Version, _ = exporter.metadataService.Version()

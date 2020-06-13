@@ -45,31 +45,31 @@ func (m *metadataServiceProxy) ServiceName() (string, error) {
 }
 
 func (m *metadataServiceProxy) ExportURL(url common.URL) (bool, error) {
-	logger.Errorf("you should never invoke this implementation")
+	logger.Error("you should never invoke this implementation")
 	return true, nil
 }
 
 func (m *metadataServiceProxy) UnexportURL(url common.URL) error {
-	logger.Errorf("you should never invoke this implementation")
+	logger.Error("you should never invoke this implementation")
 	return nil
 }
 
 func (m *metadataServiceProxy) SubscribeURL(url common.URL) (bool, error) {
-	logger.Errorf("you should never invoke this implementation")
+	logger.Error("you should never invoke this implementation")
 	return true, nil
 }
 
 func (m *metadataServiceProxy) UnsubscribeURL(url common.URL) error {
-	logger.Errorf("you should never invoke this implementation")
+	logger.Error("you should never invoke this implementation")
 	return nil
 }
 
 func (m *metadataServiceProxy) PublishServiceDefinition(url common.URL) error {
-	logger.Errorf("you should never invoke this implementation")
+	logger.Error("you should never invoke this implementation")
 	return nil
 }
 
-func (m *metadataServiceProxy) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]common.URL, error) {
+func (m *metadataServiceProxy) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]interface{}, error) {
 	urls := m.report.GetExportedURLs(&identifier.ServiceMetadataIdentifier{
 		BaseMetadataIdentifier: identifier.BaseMetadataIdentifier{
 			ServiceInterface: serviceInterface,
@@ -89,11 +89,11 @@ func (m *metadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 		}
 		res = append(res, u)
 	}
-	return res, nil
+	return service.ConvertURLArrToIntfArr(res), nil
 }
 
 func (m *metadataServiceProxy) GetSubscribedURLs() ([]common.URL, error) {
-	logger.Errorf("you should never invoke this implementation")
+	logger.Error("you should never invoke this implementation")
 	return []common.URL{}, nil
 }
 
@@ -115,7 +115,7 @@ func (m *metadataServiceProxy) GetServiceDefinitionByServiceKey(serviceKey strin
 }
 
 func (m *metadataServiceProxy) RefreshMetadata(exportedRevision string, subscribedRevision string) (bool, error) {
-	logger.Errorf("you should never invoke this implementation")
+	logger.Error("you should never invoke this implementation")
 	return true, nil
 }
 
