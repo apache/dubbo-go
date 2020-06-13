@@ -45,7 +45,7 @@ type Registry interface {
 	Subscribe(*common.URL, NotifyListener)
 }
 
-// NotifyListener is used for triggered when a service change notification is received.
+// nolint
 type NotifyListener interface {
 	// Notify supports notifications on the service interface and the dimension of the data type.
 	Notify(*ServiceEvent)
