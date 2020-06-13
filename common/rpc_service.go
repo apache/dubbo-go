@@ -343,6 +343,10 @@ func suiteMethod(method reflect.Method) *MethodType {
 		argsType           []reflect.Type
 	)
 
+	if mname == "Reference" {
+		return nil
+	}
+
 	if outNum != 1 && outNum != 2 {
 		logger.Warnf("method %s of mtype %v has wrong number of in out parameters %d; needs exactly 1/2",
 			mname, mtype.String(), outNum)

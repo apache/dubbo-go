@@ -20,34 +20,59 @@ package inmemory
 import (
 	"context"
 	"reflect"
+	"time"
 
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/metadata/service"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
+// actually it's RPC stub
+// this will only be used by client-side
+// if the metadata service is "local" metadata service in server side,
+// which means that metadata service is RPC service too.
+// so in client-side, if we want to get the metadata information,
+// we must call metadata service
+// this is the stub, or proxy
+// for now, only GetExportedURLs will be implemented
 type MetadataServiceProxy struct {
-	invkr protocol.Invoker
+	invkr        protocol.Invoker
+	golangServer bool
 }
 
-func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]common.URL, error) {
+func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]interface{}, error) {
 
 	siV := reflect.ValueOf(serviceInterface)
 	gV := reflect.ValueOf(group)
 	vV := reflect.ValueOf(version)
 	pV := reflect.ValueOf(protocol)
 
-	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("getExportedURLs"),
+	// this is a strange logic
+	// we should notice that
+	// when we call java server, the method was register as "getExportedURLs"
+	// however, if we call golang server, the method was register as "GetExportedURLs"
+	// it's so tricky...
+	methodName := "getExportedURLs"
+	if m.golangServer {
+		methodName = "GetExportedURLs"
+	}
+
+	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName(methodName),
 		invocation.WithArguments([]interface{}{siV.Interface(), gV.Interface(), vV.Interface(), pV.Interface()}),
 		invocation.WithReply(reflect.ValueOf(&[]interface{}{}).Interface()),
 		invocation.WithAttachments(map[string]string{constant.ASYNC_KEY: "false"}),
 		invocation.WithParameterValues([]reflect.Value{siV, gV, vV, pV}))
 
+	start := time.Now()
 	res := m.invkr.Invoke(context.Background(), inv)
+	end := time.Now()
+	logger.Infof("duration: ", (end.Sub(start)).String())
 	if res.Error() != nil {
 		logger.Errorf("could not get the metadata service from remote provider: %v", res.Error())
+		return []interface{}{}, nil
 	}
 
 	urlStrs := res.Result().(*[]interface{})
@@ -62,61 +87,65 @@ func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 		}
 		ret = append(ret, u)
 	}
-	return ret, nil
+	return service.ConvertURLArrToIntfArr(ret), nil
 }
 
 func (m *MetadataServiceProxy) Reference() string {
-	panic("implement me")
+	logger.Error("you should never invoke this implementation")
+	return constant.METADATA_SERVICE_NAME
 }
 
 func (m *MetadataServiceProxy) ServiceName() (string, error) {
-	panic("implement me")
+	logger.Error("you should never invoke this implementation")
+	return "", nil
 }
 
 func (m *MetadataServiceProxy) ExportURL(url common.URL) (bool, error) {
-	panic("implement me")
+	logger.Error("you should never invoke this implementation")
+	return false, nil
 }
 
 func (m *MetadataServiceProxy) UnexportURL(url common.URL) error {
-	panic("implement me")
+	logger.Error("you should never invoke this implementation")
+	return nil
 }
 
 func (m *MetadataServiceProxy) SubscribeURL(url common.URL) (bool, error) {
-	panic("implement me")
+	logger.Error("you should never invoke this implementation")
+	return false, nil
 }
 
 func (m *MetadataServiceProxy) UnsubscribeURL(url common.URL) error {
-	panic("implement me")
+	logger.Error("you should never invoke this implementation")
+	return nil
 }
 
 func (m *MetadataServiceProxy) PublishServiceDefinition(url common.URL) error {
-	panic("implement me")
+	logger.Error("you should never invoke this implementation")
+	return nil
 }
 
 func (m *MetadataServiceProxy) GetSubscribedURLs() ([]common.URL, error) {
-	panic("implement me")
+	logger.Error("you should never invoke this implementation")
+	return []common.URL{}, nil
 }
 
 func (m *MetadataServiceProxy) GetServiceDefinition(interfaceName string, group string, version string) (string, error) {
-	panic("implement me")
+	logger.Error("you should never invoke this implementation")
+	return "", nil
 }
 
 func (m *MetadataServiceProxy) GetServiceDefinitionByServiceKey(serviceKey string) (string, error) {
-	panic("implement me")
+	logger.Error("you should never invoke this implementation")
+	return "", nil
 }
 
 func (m *MetadataServiceProxy) RefreshMetadata(exportedRevision string, subscribedRevision string) (bool, error) {
-	panic("implement me")
+	logger.Error("you should never invoke this implementation")
+	return false, nil
 }
 
 func (m *MetadataServiceProxy) Version() (string, error) {
-	panic("implement me")
-}
-
-type MetadataServiceStub struct {
-	GetExportedURLs func(serviceInterface string, group string, version string, protocol string) ([]interface{}, error)
-}
-
-func (m *MetadataServiceStub) Reference() string {
-	return constant.METADATA_SERVICE_NAME
+	logger.Error("you should never invoke this implementation")
+	return "", nil
 }

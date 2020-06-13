@@ -74,13 +74,14 @@ func (m *metadataServiceURLParamsMetadataCustomizer) Customize(instance registry
 	instance.GetMetadata()[constant.METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME] = string(str)
 }
 
-func (m *metadataServiceURLParamsMetadataCustomizer) convertToParams(urls []common.URL) map[string]map[string]string {
+func (m *metadataServiceURLParamsMetadataCustomizer) convertToParams(urls []interface{}) map[string]map[string]string {
 
 	// usually there will be only one protocol
 	res := make(map[string]map[string]string, 1)
 	// those keys are useless
 
-	for _, u := range urls {
+	for _, ui := range urls {
+		u := ui.(common.URL)
 		p := make(map[string]string, len(u.GetParams()))
 		for k, v := range u.GetParams() {
 			// we will ignore that

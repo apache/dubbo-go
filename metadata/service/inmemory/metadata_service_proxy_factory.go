@@ -41,9 +41,14 @@ func createProxy(ins registry.ServiceInstance) service.MetadataService {
 		logger.Errorf("metadata service urls not found, %v", ins)
 		return nil
 	}
-	p := extension.GetProtocol(urls[0].Protocol)
-	invoker := p.Refer(*urls[0])
-	return &MetadataServiceProxy{invkr: invoker}
+
+	u := urls[0]
+	p := extension.GetProtocol(u.Protocol)
+	invoker := p.Refer(*u)
+	golang := u.GetParam(constant.LANGUAGE_KEY, "")
+	return &MetadataServiceProxy{invkr: invoker,
+		golangServer: golang == constant.GO_LANG,
+	}
 }
 
 // buildStandardMetadataServiceURL will use standard format to build the metadata service url.
