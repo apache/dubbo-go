@@ -40,8 +40,6 @@ type ProviderConfig struct {
 	BaseConfig   `yaml:",inline"`
 	Filter       string `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	ProxyFactory string `yaml:"proxy_factory" default:"default" json:"proxy_factory,omitempty" property:"proxy_factory"`
-	// metadata-report
-	MetadataReportConfig *MetadataReportConfig      `yaml:"metadata_report" json:"metadata_report,omitempty" property:"metadata_report"`
 	Services             map[string]*ServiceConfig  `yaml:"services" json:"services,omitempty" property:"services"`
 	Protocols            map[string]*ProtocolConfig `yaml:"protocols" json:"protocols,omitempty" property:"protocols"`
 	ProtocolConf         interface{}                `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf" `

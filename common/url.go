@@ -25,6 +25,8 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/apache/dubbo-go/common/logger"
 )
 
 import (
@@ -177,7 +179,11 @@ func WithToken(token string) option {
 		if len(token) > 0 {
 			value := token
 			if strings.ToLower(token) == "true" || strings.ToLower(token) == "default" {
-				value = uuid.NewV4().String()
+				u, err := uuid.NewV4()
+				if err != nil {
+					logger.Errorf("could not generator UUID: %v", err)
+				}
+				value = u.String()
 			}
 			url.SetParam(constant.TOKEN_KEY, value)
 		}
