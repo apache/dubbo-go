@@ -31,7 +31,7 @@ import (
 // ///////////////////////////
 
 // todo: is it necessary to separate fields of consumer(provider) from RPCInvocation
-// RPCInvocation is invocation implement of RPC.
+// nolint
 type RPCInvocation struct {
 	methodName      string
 	parameterTypes  []reflect.Type
