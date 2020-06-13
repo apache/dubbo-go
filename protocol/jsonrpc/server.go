@@ -59,7 +59,7 @@ const (
 	PathPrefix = byte('/')
 )
 
-// Server ...
+// Server is JSON RPC server wrapper
 type Server struct {
 	done chan struct{}
 	once sync.Once
@@ -69,7 +69,7 @@ type Server struct {
 	timeout time.Duration
 }
 
-// NewServer ...
+// NewServer creates new JSON RPC server.
 func NewServer() *Server {
 	return &Server{
 		done: make(chan struct{}),
@@ -228,7 +228,7 @@ func accept(listener net.Listener, fn func(net.Conn)) error {
 	}
 }
 
-// Start ...
+// Start JSON RPC server then ready for accept request.
 func (s *Server) Start(url common.URL) {
 	listener, err := net.Listen("tcp", url.Location)
 	if err != nil {
@@ -255,7 +255,7 @@ func (s *Server) Start(url common.URL) {
 	}()
 }
 
-// Stop ...
+// Stop JSON RPC server, just can be call once.
 func (s *Server) Stop() {
 	s.once.Do(func() {
 		close(s.done)
