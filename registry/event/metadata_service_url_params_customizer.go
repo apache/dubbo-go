@@ -81,7 +81,11 @@ func (m *metadataServiceURLParamsMetadataCustomizer) convertToParams(urls []inte
 	// those keys are useless
 
 	for _, ui := range urls {
-		u := ui.(common.URL)
+		u, err := common.NewURL(ui.(string))
+		if err != nil {
+			logger.Errorf("could not parse the string to url: %s", ui.(string), err)
+			continue
+		}
 		p := make(map[string]string, len(u.GetParams()))
 		for k, v := range u.GetParams() {
 			// we will ignore that

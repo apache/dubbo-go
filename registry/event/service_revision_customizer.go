@@ -104,12 +104,22 @@ func resolveRevision(urls []interface{}) string {
 	candidates := make([]string, 0, len(urls))
 
 	for _, ui := range urls {
-		u := ui.(common.URL)
-		sk := u.GetParam(constant.INTERFACE_KEY, "")
-		for _, m := range u.Methods {
-			// methods are part of candidates
-			candidates = append(candidates, sk+constant.KEY_SEPARATOR+m)
+		u, err := common.NewURL(ui.(string))
+		if err != nil {
+			logger.Errorf("could not parse the string to URL structure")
+			continue
 		}
+		sk := u.GetParam(constant.INTERFACE_KEY, "")
+
+		if len(u.Methods) == 0 {
+			candidates = append(candidates, sk)
+		} else {
+			for _, m := range u.Methods {
+				// methods are part of candidates
+				candidates = append(candidates, sk+constant.KEY_SEPARATOR+m)
+			}
+		}
+
 		// append url params if we need it
 	}
 	sort.Sort(sort.StringSlice(candidates))

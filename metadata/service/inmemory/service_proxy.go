@@ -25,7 +25,6 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/metadata/service"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
@@ -69,7 +68,7 @@ func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 	start := time.Now()
 	res := m.invkr.Invoke(context.Background(), inv)
 	end := time.Now()
-	logger.Infof("duration: ", (end.Sub(start)).String())
+	logger.Infof("duration: %s, result: %v", (end.Sub(start)).String(), res.Result())
 	if res.Error() != nil {
 		logger.Errorf("could not get the metadata service from remote provider: %v", res.Error())
 		return []interface{}{}, nil
@@ -77,17 +76,12 @@ func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 
 	urlStrs := res.Result().(*[]interface{})
 
-	ret := make([]common.URL, 0, len(*urlStrs))
+	ret := make([]interface{}, 0, len(*urlStrs))
 
 	for _, s := range *urlStrs {
-		u, err := common.NewURL(s.(string))
-		if err != nil {
-			logger.Errorf("could not convert the string to URL: %s", s)
-			continue
-		}
-		ret = append(ret, u)
+		ret = append(ret, s)
 	}
-	return service.ConvertURLArrToIntfArr(ret), nil
+	return ret, nil
 }
 
 func (m *MetadataServiceProxy) Reference() string {
