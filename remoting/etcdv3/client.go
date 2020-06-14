@@ -500,7 +500,7 @@ func (c *Client) Get(k string) (string, error) {
 	return v, nil
 }
 
-// Watch watchs on spec key
+// Watch watches on spec key
 func (c *Client) Watch(k string) (clientv3.WatchChan, error) {
 
 	wc, err := c.watch(k)
@@ -510,7 +510,7 @@ func (c *Client) Watch(k string) (clientv3.WatchChan, error) {
 	return wc, nil
 }
 
-// WatchWithPrefix watchs on spec prefix
+// WatchWithPrefix watches on spec prefix
 func (c *Client) WatchWithPrefix(prefix string) (clientv3.WatchChan, error) {
 
 	wc, err := c.watchWithPrefix(prefix)

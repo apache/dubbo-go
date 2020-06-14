@@ -109,7 +109,7 @@ func (c *Client) GetChildren(k string) ([]string, []string, error) {
 	return kList, vList, nil
 }
 
-// Watch watchs on spec key
+// Watch watches on spec key
 func (c *Client) Watch(k string) (<-chan *WatcherEvent, <-chan struct{}, error) {
 
 	w, err := c.controller.watcherSet.Watch(k, false)
@@ -120,7 +120,7 @@ func (c *Client) Watch(k string) (<-chan *WatcherEvent, <-chan struct{}, error) 
 	return w.ResultChan(), w.done(), nil
 }
 
-// WatchWithPrefix watchs on spec prefix
+// WatchWithPrefix watches on spec prefix
 func (c *Client) WatchWithPrefix(prefix string) (<-chan *WatcherEvent, <-chan struct{}, error) {
 
 	w, err := c.controller.watcherSet.Watch(prefix, true)
