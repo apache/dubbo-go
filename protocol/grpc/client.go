@@ -41,10 +41,21 @@ var (
 
 func init() {
 	// load clientconfig from consumer_config
-	// default use grpc
-	defaultClientConfig := GetDefaultClientConfig()
-	clientConf = &defaultClientConfig
 	consumerConfig := config.GetConsumerConfig()
+
+	clientConfig := GetClientConfig()
+	clientConf = &clientConfig
+
+	// check client config and decide whether to use the default config
+	defer func() {
+		if clientConf == nil || len(clientConf.ContentSubType) == 0 {
+			defaultClientConfig := GetDefaultClientConfig()
+			clientConf = &defaultClientConfig
+		}
+		if err := clientConf.Validate(); err != nil {
+			panic(err)
+		}
+	}()
 
 	if consumerConfig.ApplicationConfig == nil {
 		return
@@ -69,12 +80,6 @@ func init() {
 		}
 	}
 
-	if clientConf == nil || len(clientConf.ContentSubType) == 0 {
-		clientConf = &defaultClientConfig
-	}
-	if err := clientConf.Validate(); err != nil {
-		panic(err)
-	}
 }
 
 // Client return grpc connection and warp service stub
