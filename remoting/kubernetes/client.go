@@ -46,8 +46,7 @@ type Client struct {
 	controller *dubboRegistryController
 }
 
-// newClient
-// new a client for registry
+// newClient returns Client instance for registry
 func newClient(url common.URL) (*Client, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -75,8 +74,7 @@ func newClient(url common.URL) (*Client, error) {
 	return c, nil
 }
 
-// Create
-// create k/v pair in watcher-set
+// Create creates k/v pair in watcher-set
 func (c *Client) Create(k, v string) error {
 
 	// the read current pod must be lock, protect every
@@ -92,8 +90,7 @@ func (c *Client) Create(k, v string) error {
 	return nil
 }
 
-// GetChildren
-// get k children list from kubernetes-watcherSet
+// GetChildren gets k children list from kubernetes-watcherSet
 func (c *Client) GetChildren(k string) ([]string, []string, error) {
 
 	objectList, err := c.controller.watcherSet.Get(k, true)
@@ -112,8 +109,7 @@ func (c *Client) GetChildren(k string) ([]string, []string, error) {
 	return kList, vList, nil
 }
 
-// Watch
-// watch on spec key
+// Watch watchs on spec key
 func (c *Client) Watch(k string) (<-chan *WatcherEvent, <-chan struct{}, error) {
 
 	w, err := c.controller.watcherSet.Watch(k, false)
@@ -124,8 +120,7 @@ func (c *Client) Watch(k string) (<-chan *WatcherEvent, <-chan struct{}, error) 
 	return w.ResultChan(), w.done(), nil
 }
 
-// Watch
-// watch on spec prefix
+// WatchWithPrefix watchs on spec prefix
 func (c *Client) WatchWithPrefix(prefix string) (<-chan *WatcherEvent, <-chan struct{}, error) {
 
 	w, err := c.controller.watcherSet.Watch(prefix, true)
@@ -136,9 +131,7 @@ func (c *Client) WatchWithPrefix(prefix string) (<-chan *WatcherEvent, <-chan st
 	return w.ResultChan(), w.done(), nil
 }
 
-// Valid
-// Valid the client
-// if return false, the client is die
+// if returns false, the client is die
 func (c *Client) Valid() bool {
 
 	select {
@@ -151,14 +144,12 @@ func (c *Client) Valid() bool {
 	return c.controller != nil
 }
 
-// Done
-// read the client status
+// nolint
 func (c *Client) Done() <-chan struct{} {
 	return c.ctx.Done()
 }
 
-// Stop
-// read the client status
+// nolint
 func (c *Client) Close() {
 
 	select {
@@ -174,8 +165,7 @@ func (c *Client) Close() {
 	// so, just wait
 }
 
-// ValidateClient
-// validate the kubernetes client
+// ValidateClient validates the kubernetes client
 func ValidateClient(container clientFacade) error {
 
 	client := container.Client()
@@ -194,8 +184,7 @@ func ValidateClient(container clientFacade) error {
 	return nil
 }
 
-// NewMockClient
-// export for registry package test
+// NewMockClient exports for registry package test
 func NewMockClient(podList *v1.PodList) (*Client, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
