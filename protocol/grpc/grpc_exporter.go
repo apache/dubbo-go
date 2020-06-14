@@ -33,14 +33,14 @@ type GrpcExporter struct {
 	*protocol.BaseExporter
 }
 
-// NewGrpcExporter ...
+// NewGrpcExporter creates a new gRPC exporter
 func NewGrpcExporter(key string, invoker protocol.Invoker, exporterMap *sync.Map) *GrpcExporter {
 	return &GrpcExporter{
 		BaseExporter: protocol.NewBaseExporter(key, invoker, exporterMap),
 	}
 }
 
-// Unexport ...
+// Unexport and unregister gRPC service from registry and memory.
 func (gg *GrpcExporter) Unexport() {
 	serviceId := gg.GetInvoker().GetUrl().GetParam(constant.BEAN_NAME_KEY, "")
 	interfaceName := gg.GetInvoker().GetUrl().GetParam(constant.INTERFACE_KEY, "")
