@@ -35,8 +35,7 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-// ErrNoReply ...
-var ErrNoReply = errors.New("request need @response")
+var errNoReply = errors.New("request need @response")
 
 // GrpcInvoker ...
 type GrpcInvoker struct {
@@ -60,7 +59,7 @@ func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 	)
 
 	if invocation.Reply() == nil {
-		result.Err = ErrNoReply
+		result.Err = errNoReply
 	}
 
 	in := []reflect.Value{}
