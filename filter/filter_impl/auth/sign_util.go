@@ -26,12 +26,12 @@ import (
 	"strings"
 )
 
-// Sign
-// get a signature string with given information, such as metadata or parameters
+// Sign gets a signature string with given bytes
 func Sign(metadata, key string) string {
 	return doSign([]byte(metadata), key)
 }
 
+// SignWithParams returns a signature with giving params and metadata.
 func SignWithParams(params []interface{}, metadata, key string) (string, error) {
 	if params == nil || len(params) == 0 {
 		return Sign(metadata, key), nil
@@ -61,6 +61,7 @@ func doSign(bytes []byte, key string) string {
 	return base64.URLEncoding.EncodeToString(signature)
 }
 
+// IsEmpty verify whether the inputted string is empty
 func IsEmpty(s string, allowSpace bool) bool {
 	if len(s) == 0 {
 		return true
