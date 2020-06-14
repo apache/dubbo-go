@@ -17,17 +17,18 @@
 
 package identifier
 
+// MetadataIdentifier is inherit baseMetaIdentifier with Application name
 type MetadataIdentifier struct {
 	application string
 	BaseMetadataIdentifier
 }
 
-// getIdentifierKey...
+// GetIdentifierKey returns string that format is service:Version:Group:Side:Application
 func (mdi *MetadataIdentifier) getIdentifierKey(params ...string) string {
 	return mdi.BaseMetadataIdentifier.getIdentifierKey(mdi.application)
 }
 
-// getIdentifierKey...
+// GetFilePathKey returns string that format is metadata/path/Version/Group/Side/Application
 func (mdi *MetadataIdentifier) getFilePathKey(params ...string) string {
 	return mdi.BaseMetadataIdentifier.getFilePathKey(mdi.application)
 }

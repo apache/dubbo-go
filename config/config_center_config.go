@@ -46,6 +46,7 @@ type ConfigCenterConfig struct {
 	Group         string `default:"dubbo" yaml:"group" json:"group,omitempty"`
 	Username      string `yaml:"username" json:"username,omitempty"`
 	Password      string `yaml:"password" json:"password,omitempty"`
+	LogDir        string `yaml:"log_dir" json:"log_dir,omitempty"`
 	ConfigFile    string `default:"dubbo.properties" yaml:"config_file"  json:"config_file,omitempty"`
 	Namespace     string `default:"dubbo" yaml:"namespace"  json:"namespace,omitempty"`
 	AppConfigFile string `default:"dubbo.properties" yaml:"app_config_file"  json:"app_config_file,omitempty"`
@@ -73,5 +74,6 @@ func (c *ConfigCenterConfig) GetUrlMap() url.Values {
 	urlMap.Set(constant.CONFIG_GROUP_KEY, c.Group)
 	urlMap.Set(constant.CONFIG_CLUSTER_KEY, c.Cluster)
 	urlMap.Set(constant.CONFIG_APP_ID_KEY, c.AppId)
+	urlMap.Set(constant.CONFIG_LOG_DIR_KEY, c.LogDir)
 	return urlMap
 }
