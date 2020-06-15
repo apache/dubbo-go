@@ -44,8 +44,8 @@ func init() {
 var onlyLogHandlerInstance *OnlyLogRejectedExecutionHandler
 var onlyLogHandlerOnce sync.Once
 
+// OnlyLogRejectedExecutionHandler implements the RejectedExecutionHandler
 /**
- * OnlyLogRejectedExecutionHandler
  * This implementation only logs the invocation info.
  * it always return en error inside the result.
  * "UserProvider":

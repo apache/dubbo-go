@@ -29,7 +29,7 @@ func init() {
 	extension.SetCluster("registryAware", NewRegistryAwareCluster)
 }
 
-// NewRegistryAwareCluster ...
+// NewRegistryAwareCluster returns a registry aware cluster instance
 func NewRegistryAwareCluster() cluster.Cluster {
 	return &registryAwareCluster{}
 }

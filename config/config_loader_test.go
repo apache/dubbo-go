@@ -254,12 +254,14 @@ func mockInitProviderWithSingleRegistry() {
 				Owner:        "dubbo",
 				Environment:  "test"},
 		},
+
 		Registry: &RegistryConfig{
 			Address:  "mock://127.0.0.1:2181",
 			Username: "user1",
 			Password: "pwd1",
 		},
 		Registries: map[string]*RegistryConfig{},
+
 		Services: map[string]*ServiceConfig{
 			"MockService": {
 				InterfaceName: "com.MockService",

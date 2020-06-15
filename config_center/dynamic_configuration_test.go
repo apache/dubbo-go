@@ -15,30 +15,30 @@
  * limitations under the License.
  */
 
-package cluster_impl
+package config_center
 
 import (
-	"github.com/apache/dubbo-go/cluster"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/protocol"
+	"testing"
+	"time"
 )
 
-type forkingCluster struct{}
+import (
+	"github.com/stretchr/testify/assert"
+)
 
-const forking = "forking"
+import (
+	"github.com/apache/dubbo-go/common"
+)
 
-func init() {
-	extension.SetCluster(forking, NewForkingCluster)
+func TestWithTimeout(t *testing.T) {
+	fa := WithTimeout(12 * time.Second)
+	opt := &Options{}
+	fa(opt)
+	assert.Equal(t, 12*time.Second, opt.Timeout)
 }
 
-// NewForkingCluster returns a forking cluster instance.
-//
-// Multiple servers are invoked in parallel, returning as soon as one succeeds.
-// Usually it is used for real-time demanding read operations while wasting more service resources.
-func NewForkingCluster() cluster.Cluster {
-	return &forkingCluster{}
-}
-
-func (cluster *forkingCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return newForkingClusterInvoker(directory)
+func TestGetRuleKey(t *testing.T) {
+	url, err := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider?interface=test&group=groupA&version=0")
+	assert.NoError(t, err)
+	assert.Equal(t, "test:0:groupA", GetRuleKey(url))
 }

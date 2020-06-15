@@ -178,7 +178,6 @@ func (s *serviceDiscoveryRegistry) Register(url common.URL) error {
 		return perrors.WithMessage(err, "could not create servcie instance, please check your service url")
 	}
 
-
 	err = s.serviceDiscovery.Register(ins)
 	if err != nil {
 		return perrors.WithMessage(err, "register the service failed")
