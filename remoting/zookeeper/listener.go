@@ -37,7 +37,7 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
-// ZkEventListener ...
+// nolint
 type ZkEventListener struct {
 	client      *ZookeeperClient
 	pathMapLock sync.Mutex
@@ -45,7 +45,7 @@ type ZkEventListener struct {
 	wg          sync.WaitGroup
 }
 
-// NewZkEventListener ...
+// NewZkEventListener returns a EventListener instance
 func NewZkEventListener(client *ZookeeperClient) *ZkEventListener {
 	return &ZkEventListener{
 		client:  client,
@@ -53,12 +53,12 @@ func NewZkEventListener(client *ZookeeperClient) *ZkEventListener {
 	}
 }
 
-// SetClient ...
+// nolint
 func (l *ZkEventListener) SetClient(client *ZookeeperClient) {
 	l.client = client
 }
 
-// ListenServiceNodeEvent ...
+// nolint
 func (l *ZkEventListener) ListenServiceNodeEvent(zkPath string, listener ...remoting.DataListener) bool {
 	defer l.wg.Done()
 	var zkEvent zk.Event
@@ -312,7 +312,7 @@ func (l *ZkEventListener) valid() bool {
 	return l.client.ZkConnValid()
 }
 
-// Close ...
+// nolint
 func (l *ZkEventListener) Close() {
 	l.wg.Wait()
 }
