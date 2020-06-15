@@ -49,15 +49,7 @@ func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 	vV := reflect.ValueOf(version)
 	pV := reflect.ValueOf(protocol)
 
-	// this is a strange logic
-	// we should notice that
-	// when we call java server, the method was register as "getExportedURLs"
-	// however, if we call golang server, the method was register as "GetExportedURLs"
-	// it's so tricky...
-	methodName := "getExportedURLs"
-	if m.golangServer {
-		methodName = "GetExportedURLs"
-	}
+	const methodName = "getExportedURLs"
 
 	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName(methodName),
 		invocation.WithArguments([]interface{}{siV.Interface(), gV.Interface(), vV.Interface(), pV.Interface()}),
@@ -82,6 +74,10 @@ func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 		ret = append(ret, s)
 	}
 	return ret, nil
+}
+
+func (m *MetadataServiceProxy) MethodMapper() map[string]string {
+	return map[string]string{}
 }
 
 func (m *MetadataServiceProxy) Reference() string {

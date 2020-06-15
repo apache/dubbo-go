@@ -19,7 +19,9 @@ package extension
 
 import (
 	"sync"
+)
 
+import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/observer"
 )
@@ -34,12 +36,15 @@ var (
 	dispatchers = make(map[string]func() observer.EventDispatcher, 8)
 )
 
-// SetEventDispatcher by name
+// SetEventDispatcher, actually, it doesn't really init the global dispatcher
 func SetEventDispatcher(name string, v func() observer.EventDispatcher) {
 	dispatchers[name] = v
 }
 
-// SetAndInitGlobalDispatcher
+// SetAndInitGlobalDispatcher will actually init the global dispatcher
+// if there is already a global dispatcher,
+// it will be override
+// if the dispatcher with the name not found, it will panic
 func SetAndInitGlobalDispatcher(name string) {
 	if len(name) == 0 {
 		name = "direct"
@@ -47,8 +52,10 @@ func SetAndInitGlobalDispatcher(name string) {
 	if globalEventDispatcher != nil {
 		logger.Warnf("EventDispatcher already init. It will be replaced")
 	}
+
 	if dp, ok := dispatchers[name]; !ok || dp == nil {
-		panic("EventDispatcher for " + name + " is not existing, make sure you have import the package.")
+		panic("EventDispatcher for " + name + " is not found, make sure you have import the package, " +
+			"like github.com/apache/dubbo-go/common/observer/dispatcher ")
 	}
 	globalEventDispatcher = dispatchers[name]()
 }

@@ -28,6 +28,7 @@ import (
 	gxset "github.com/dubbogo/gost/container/set"
 	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
+	"go.uber.org/atomic"
 
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
@@ -674,8 +675,12 @@ func (icn *InstanceChangeNotify) Notify(event observer.Event) {
 	}
 }
 
-var exporting = false
+var (
+	exporting = &atomic.Bool{}
+)
 
+// tryInitMetadataService will try to initialize metadata service
+// TODO (move to somewhere)
 func tryInitMetadataService() {
 
 	ms, err := extension.GetMetadataService(config.GetApplicationConfig().MetadataType)
@@ -683,11 +688,16 @@ func tryInitMetadataService() {
 		logger.Errorf("could not init metadata service", err)
 	}
 
-	if !config.IsProvider() || exporting {
+	if !config.IsProvider() || exporting.Load() {
 		return
 	}
 
-	exporting = true
+	// In theory, we can use sync.Once
+	// But sync.Once is not reentrant.
+	// Now the invocation chain is createRegistry -> tryInitMetadataService -> metadataServiceExporter.export
+	// -> createRegistry -> initMetadataService...
+	// So using sync.Once will result in dead lock
+	exporting.Store(true)
 
 	expt := configurable.NewMetadataServiceExporter(ms)
 

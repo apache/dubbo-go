@@ -146,9 +146,9 @@ func loadConsumerConfig() {
 					checkok = false
 					count++
 					if count > maxWait {
-						// errMsg := fmt.Sprintf("Failed to check the status of the service %v . No provider available for the service to the consumer use dubbo version %v", refconfig.InterfaceName, constant.Version)
-						// logger.Error(errMsg)
-						// panic(errMsg)
+						errMsg := fmt.Sprintf("Failed to check the status of the service %v . No provider available for the service to the consumer use dubbo version %v", refconfig.InterfaceName, constant.Version)
+						logger.Error(errMsg)
+						panic(errMsg)
 					}
 					time.Sleep(time.Second * 1)
 					break
@@ -219,7 +219,7 @@ func Load() {
 	// init router
 	initRouter()
 
-	// event part
+	// init the global event dispatcher
 	extension.SetAndInitGlobalDispatcher(GetBaseConfig().EventDispatcherType)
 
 	// start the metadata report if config set
@@ -285,7 +285,6 @@ func GetApplicationConfig() *ApplicationConfig {
 // if not found, create new one
 func GetProviderConfig() ProviderConfig {
 	if providerConfig == nil {
-		logger.Warnf("providerConfig is nil! we will try to create one")
 		if providerConfig == nil {
 			return ProviderConfig{}
 		}
@@ -308,7 +307,6 @@ func GetConsumerConfig() ConsumerConfig {
 }
 
 func GetBaseConfig() *BaseConfig {
-
 	if baseConfig == nil {
 		baseConfigOnce.Do(func() {
 			baseConfig = &BaseConfig{
