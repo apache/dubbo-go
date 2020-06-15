@@ -25,13 +25,11 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-// DefaultAccesskeyStorage
-// The default implementation of AccesskeyStorage
+// DefaultAccesskeyStorage is the default implementation of AccesskeyStorage
 type DefaultAccesskeyStorage struct {
 }
 
-// GetAccessKeyPair
-// get AccessKeyPair from url by the key "accessKeyId" and "secretAccessKey"
+// GetAccessKeyPair retrieves AccessKeyPair from url by the key "accessKeyId" and "secretAccessKey"
 func (storage *DefaultAccesskeyStorage) GetAccessKeyPair(invocation protocol.Invocation, url *common.URL) *filter.AccessKeyPair {
 	return &filter.AccessKeyPair{
 		AccessKey: url.GetParam(constant.ACCESS_KEY_ID_KEY, ""),
@@ -43,6 +41,7 @@ func init() {
 	extension.SetAccesskeyStorages(constant.DEFAULT_ACCESS_KEY_STORAGE, GetDefaultAccesskeyStorage)
 }
 
+// GetDefaultAccesskeyStorage initiates an empty DefaultAccesskeyStorage
 func GetDefaultAccesskeyStorage() filter.AccessKeyStorage {
 	return &DefaultAccesskeyStorage{}
 }

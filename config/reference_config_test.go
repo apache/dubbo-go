@@ -47,6 +47,7 @@ func doInitConsumer() {
 				Owner:        "dubbo",
 				Environment:  "test"},
 		},
+
 		Registries: map[string]*RegistryConfig{
 			"shanghai_reg1": {
 				Protocol:   "mock",
@@ -81,6 +82,7 @@ func doInitConsumer() {
 				Password:   "pwd1",
 			},
 		},
+
 		References: map[string]*ReferenceConfig{
 			"MockService": {
 				id: "MockProvider",
@@ -146,12 +148,14 @@ func doInitConsumerWithSingleRegistry() {
 				Owner:        "dubbo",
 				Environment:  "test"},
 		},
+
 		Registry: &RegistryConfig{
 			Address:  "mock://27.0.0.1:2181",
 			Username: "user1",
 			Password: "pwd1",
 		},
 		Registries: map[string]*RegistryConfig{},
+
 		References: map[string]*ReferenceConfig{
 			"MockService": {
 				Params: map[string]string{

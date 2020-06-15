@@ -56,6 +56,7 @@ func Test_refresh(t *testing.T) {
 				Owner:        "dubbo",
 				Environment:  "test"},
 		},
+
 		Registries: map[string]*RegistryConfig{
 			"shanghai_reg2": {
 				Protocol:   "mock",
@@ -82,6 +83,7 @@ func Test_refresh(t *testing.T) {
 				Password:   "pwd1",
 			},
 		},
+
 		References: map[string]*ReferenceConfig{
 			"MockService": {
 				InterfaceName: "com.MockService",
@@ -152,6 +154,7 @@ func Test_appExternal_refresh(t *testing.T) {
 				Owner:        "dubbo",
 				Environment:  "test"},
 		},
+
 		Registries: map[string]*RegistryConfig{
 			"shanghai_reg2": {
 				Protocol:   "mock",
@@ -240,6 +243,7 @@ func Test_appExternalWithoutId_refresh(t *testing.T) {
 				Owner:        "dubbo",
 				Environment:  "test"},
 		},
+
 		Registries: map[string]*RegistryConfig{
 			"shanghai_reg2": {
 				Protocol:   "mock",
@@ -266,6 +270,7 @@ func Test_appExternalWithoutId_refresh(t *testing.T) {
 				Password:   "pwd1",
 			},
 		},
+
 		References: map[string]*ReferenceConfig{
 			"MockService": {
 				InterfaceName: "com.MockService",
@@ -319,6 +324,7 @@ func Test_refresh_singleRegistry(t *testing.T) {
 	father := &ConsumerConfig{
 		Check: &[]bool{true}[0],
 		BaseConfig: BaseConfig{
+
 			ApplicationConfig: &ApplicationConfig{
 				Organization: "dubbo_org",
 				Name:         "dubbo",
@@ -327,8 +333,10 @@ func Test_refresh_singleRegistry(t *testing.T) {
 				Owner:        "dubbo",
 				Environment:  "test"},
 		},
+
 		Registries: map[string]*RegistryConfig{},
 		Registry:   &RegistryConfig{},
+
 		References: map[string]*ReferenceConfig{
 			"MockService": {
 				InterfaceName: "com.MockService",
@@ -392,6 +400,7 @@ func Test_refreshProvider(t *testing.T) {
 				Owner:        "dubbo",
 				Environment:  "test"},
 		},
+
 		Registries: map[string]*RegistryConfig{
 			"shanghai_reg2": {
 				Protocol:   "mock",
@@ -418,6 +427,7 @@ func Test_refreshProvider(t *testing.T) {
 				Password:   "pwd1",
 			},
 		},
+
 		Services: map[string]*ServiceConfig{
 			"MockService": {
 				InterfaceName: "com.MockService",
