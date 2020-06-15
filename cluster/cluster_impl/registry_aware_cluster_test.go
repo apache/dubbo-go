@@ -33,7 +33,7 @@ import (
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
-func Test_RegAwareInvokeSuccess(t *testing.T) {
+func TestRegAwareInvokeSuccess(t *testing.T) {
 
 	regAwareCluster := NewRegistryAwareCluster()
 
