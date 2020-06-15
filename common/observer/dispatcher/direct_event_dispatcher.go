@@ -36,26 +36,31 @@ func init() {
 // Align with 2.7.5
 // Dispatcher event to listener direct
 type DirectEventDispatcher struct {
-	observer.BaseListenable
+	observer.BaseListener
 }
 
 // NewDirectEventDispatcher ac constructor of DirectEventDispatcher
 func NewDirectEventDispatcher() observer.EventDispatcher {
-	return &DirectEventDispatcher{}
+	return &DirectEventDispatcher{
+		BaseListener: observer.NewBaseListener(),
+	}
 }
 
 // Dispatch event directly
+// it lookup the listener by event's type.
+// if listener not found, it just return and do nothing
 func (ded *DirectEventDispatcher) Dispatch(event observer.Event) {
 	if event == nil {
 		logger.Warnf("[DirectEventDispatcher] dispatch event nil")
 		return
 	}
 	eventType := reflect.TypeOf(event).Elem()
-	value, loaded := ded.ListenersCache.Load(eventType)
+	ded.Mutex.RLock()
+	defer ded.Mutex.RUnlock()
+	listenersSlice, loaded := ded.ListenersCache[eventType]
 	if !loaded {
 		return
 	}
-	listenersSlice := value.([]observer.EventListener)
 	for _, listener := range listenersSlice {
 		if err := listener.OnEvent(event); err != nil {
 			logger.Warnf("[DirectEventDispatcher] dispatch event error:%v", err)

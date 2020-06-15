@@ -46,7 +46,9 @@ func TestEventPublishingServiceDiscovery_DispatchEvent(t *testing.T) {
 	config.GetApplicationConfig().MetadataType = "local"
 
 	dc := NewEventPublishingServiceDiscovery(&ServiceDiscoveryA{})
-	tsd := &TestServiceDiscoveryDestroyingEventListener{}
+	tsd := &TestServiceDiscoveryDestroyingEventListener{
+		BaseListener: observer.NewBaseListener(),
+	}
 	tsd.SetT(t)
 	tsi := &TestServiceInstancePreRegisteredEventListener{}
 	tsi.SetT(t)
@@ -68,7 +70,7 @@ func TestEventPublishingServiceDiscovery_DispatchEvent(t *testing.T) {
 
 type TestServiceDiscoveryDestroyingEventListener struct {
 	suite.Suite
-	observer.BaseListenable
+	observer.BaseListener
 }
 
 func (tel *TestServiceDiscoveryDestroyingEventListener) OnEvent(e observer.Event) error {
@@ -89,7 +91,7 @@ func (tel *TestServiceDiscoveryDestroyingEventListener) GetEventType() reflect.T
 
 type TestServiceInstancePreRegisteredEventListener struct {
 	suite.Suite
-	observer.BaseListenable
+	observer.BaseListener
 }
 
 func (tel *TestServiceInstancePreRegisteredEventListener) OnEvent(e observer.Event) error {

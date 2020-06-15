@@ -19,7 +19,9 @@ package extension
 
 import (
 	"fmt"
+)
 
+import (
 	"github.com/apache/dubbo-go/metadata/service"
 )
 
@@ -28,10 +30,13 @@ var (
 	metadataServiceInsMap = make(map[string]func() (service.MetadataService, error), 2)
 )
 
+// SetMetadataService will store the msType => creator pair
 func SetMetadataService(msType string, creator func() (service.MetadataService, error)) {
 	metadataServiceInsMap[msType] = creator
 }
 
+// GetMetadataService will create a MetadataService instance
+// it will panic if msType not found
 func GetMetadataService(msType string) (service.MetadataService, error) {
 	if creator, ok := metadataServiceInsMap[msType]; ok {
 		return creator()

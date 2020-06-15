@@ -40,7 +40,7 @@ type multiConfiger interface {
 	Prefix() string
 }
 
-// BaseConfig is the event configuration for provider and consumer
+// BaseConfig is the common configuration for provider and consumer
 type BaseConfig struct {
 	ConfigCenterConfig *ConfigCenterConfig `yaml:"config_center" json:"config_center,omitempty"`
 
@@ -60,6 +60,7 @@ type BaseConfig struct {
 	fileStream          *bytes.Buffer
 }
 
+// nolint
 func (c *BaseConfig) GetServiceDiscoveries(name string) (config *ServiceDiscoveryConfig, ok bool) {
 	config, ok = c.ServiceDiscoveries[name]
 	return
