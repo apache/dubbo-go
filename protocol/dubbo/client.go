@@ -111,7 +111,7 @@ func setClientGrpool() {
 	}
 }
 
-// Options ...
+// Options is option for create dubbo client
 type Options struct {
 	// connect timeout
 	ConnectTimeout time.Duration
