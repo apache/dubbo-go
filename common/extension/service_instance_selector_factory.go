@@ -29,10 +29,13 @@ var (
 	serviceInstanceSelectorMappings = make(map[string]func() instance.ServiceInstanceSelector)
 )
 
+// nolint
 func SetServiceInstanceSelector(name string, f func() instance.ServiceInstanceSelector) {
 	serviceInstanceSelectorMappings[name] = f
 }
 
+// GetServiceInstanceSelector will create an instance
+// it will panic if selector with the @name not found
 func GetServiceInstanceSelector(name string) (instance.ServiceInstanceSelector, error) {
 	serviceInstanceSelector, ok := serviceInstanceSelectorMappings[name]
 	if !ok {

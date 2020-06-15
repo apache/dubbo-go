@@ -19,7 +19,9 @@ package extension
 
 import (
 	"fmt"
+)
 
+import (
 	"github.com/apache/dubbo-go/metadata/service"
 )
 
@@ -27,10 +29,13 @@ var (
 	metadataServiceProxyFactoryMap = make(map[string]func() service.MetadataServiceProxyFactory)
 )
 
+// SetMetadataServiceProxyFactory store the name-creator pair
 func SetMetadataServiceProxyFactory(name string, creator func() service.MetadataServiceProxyFactory) {
 	metadataServiceProxyFactoryMap[name] = creator
 }
 
+// GetMetadataServiceProxyFactory will create an instance.
+// it will panic if the factory with name not found
 func GetMetadataServiceProxyFactory(name string) service.MetadataServiceProxyFactory {
 	if f, ok := metadataServiceProxyFactoryMap[name]; ok {
 		return f()

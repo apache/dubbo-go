@@ -25,8 +25,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-
-	"github.com/apache/dubbo-go/common/logger"
 )
 
 import (
@@ -38,6 +36,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
 )
 
 // ///////////////////////////////
@@ -182,6 +181,7 @@ func WithToken(token string) option {
 				u, err := uuid.NewV4()
 				if err != nil {
 					logger.Errorf("could not generator UUID: %v", err)
+					return
 				}
 				value = u.String()
 			}
@@ -657,16 +657,21 @@ func mergeNormalParam(mergedUrl *URL, referenceUrl *URL, paramKeys []string) []f
 	return methodConfigMergeFcn
 }
 
+// URLSlice will be used to sort URL instance
+// Instances will be order by URL.String()
 type URLSlice []URL
 
+// nolint
 func (s URLSlice) Len() int {
 	return len(s)
 }
 
+// nolint
 func (s URLSlice) Less(i, j int) bool {
 	return s[i].String() < s[j].String()
 }
 
+// nolint
 func (s URLSlice) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
