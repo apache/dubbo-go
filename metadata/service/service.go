@@ -46,6 +46,9 @@ type MetadataService interface {
 	// due to dubbo-go only support return array []interface{} in RPCService, so we should declare the return type as []interface{}
 	// actually, it's []String
 	GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]interface{}, error)
+
+	MethodMapper() map[string]string
+
 	// GetExportedURLs will get the target subscribed url in metadata
 	// the url should be unique
 	GetSubscribedURLs() ([]common.URL, error)
@@ -67,6 +70,12 @@ type BaseMetadataService struct {
 func NewBaseMetadataService(serviceName string) BaseMetadataService {
 	return BaseMetadataService{
 		serviceName: serviceName,
+	}
+}
+
+func (mts *BaseMetadataService) MethodMapper() map[string]string {
+	return map[string]string{
+		"GetExportedURLs": "getExportedURLs",
 	}
 }
 

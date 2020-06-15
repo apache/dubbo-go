@@ -92,6 +92,10 @@ func (m *metadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 	return service.ConvertURLArrToIntfArr(res), nil
 }
 
+func (m *metadataServiceProxy) MethodMapper() map[string]string {
+	return map[string]string{}
+}
+
 func (m *metadataServiceProxy) GetSubscribedURLs() ([]common.URL, error) {
 	logger.Error("you should never invoke this implementation")
 	return []common.URL{}, nil

@@ -58,6 +58,8 @@ func (b *BaseEvent) String() string {
 	return fmt.Sprintf("BaseEvent[source = %#v]", b.Source)
 }
 
+// NewBaseEvent create an BaseEvent instance
+// and the Timestamp will be current timestamp
 func NewBaseEvent(source interface{}) *BaseEvent {
 	return &BaseEvent{
 		Source:    source,
