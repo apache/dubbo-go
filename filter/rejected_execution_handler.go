@@ -26,7 +26,7 @@ import (
 /**
  * If the invocation cannot pass any validation in filter, like ExecuteLimitFilter and TpsLimitFilter,
  * the implementation will be used.
- * The event case is that sometimes you want to return the default value when the request was rejected.
+ * The common case is that sometimes you want to return the default value when the request was rejected.
  * Or you want to be warned if any request was rejected.
  * In such situation, implement this interface and register it by invoking extension.SetRejectedExecutionHandler.
  */

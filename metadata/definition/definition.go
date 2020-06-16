@@ -42,10 +42,12 @@ type ServiceDefinition struct {
 	Types         []TypeDefinition
 }
 
+// ToBytes convert ServiceDefinition to json string
 func (def *ServiceDefinition) ToBytes() ([]byte, error) {
 	return json.Marshal(def)
 }
 
+// String will iterate all methods and parameters and convert them to json string
 func (def *ServiceDefinition) String() string {
 	var methodStr strings.Builder
 	for _, m := range def.Methods {
