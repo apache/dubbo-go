@@ -188,7 +188,7 @@ If you are using [apache/dubbo-go](github.com/apache/dubbo-go) and think that it
       </td>
       <td align="center"  valign="middle">
         <a href="" target="_blank">
-          <img width="222px"  src="(https://raw.githubusercontent.com/dajiiu/photo/static/mirror/haozhuo_logo.png">
+          <img width="222px"  src="https://user-images.githubusercontent.com/52339367/84628582-80512200-af1b-11ea-945a-c6b4b9ad31f2.png">
         </a>
       </td>
       <td align="center"  valign="middle">
