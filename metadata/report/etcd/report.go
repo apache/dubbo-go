@@ -35,9 +35,8 @@ import (
 const DEFAULT_ROOT = "dubbo"
 
 func init() {
-	ftry := &etcdMetadataReportFactory{}
 	extension.SetMetadataReportFactory("etcd", func() factory.MetadataReportFactory {
-		return ftry
+		return &etcdMetadataReportFactory{}
 	})
 }
 
@@ -137,7 +136,7 @@ func (e *etcdMetadataReportFactory) CreateMetadataReport(url *common.URL) report
 	addresses := strings.Split(url.Location, ",")
 	client, err := etcdv3.NewClient(etcdv3.MetadataETCDV3Client, addresses, timeout, 1)
 	if err != nil {
-		logger.Errorf("Could not create etcd metadata report. URL: %s", url.String())
+		logger.Errorf("Could not create etcd metadata report. URL: %s,error:{%v}", url.String(), err)
 		return nil
 	}
 	group := url.GetParam(constant.GROUP_KEY, DEFAULT_ROOT)
