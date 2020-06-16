@@ -39,9 +39,9 @@ import (
 )
 
 func init() {
-	ftry := &nacosMetadataReportFactory{}
+	ins := &nacosMetadataReportFactory{}
 	extension.SetMetadataReportFactory("nacos", func() factory.MetadataReportFactory {
-		return ftry
+		return ins
 	})
 }
 

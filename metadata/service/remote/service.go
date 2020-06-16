@@ -19,15 +19,16 @@ package remote
 
 import (
 	"sync"
+)
 
+import (
 	"go.uber.org/atomic"
-
-	"github.com/apache/dubbo-go/common/extension"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/metadata/definition"

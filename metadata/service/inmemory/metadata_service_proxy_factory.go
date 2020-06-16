@@ -19,7 +19,9 @@ package inmemory
 
 import (
 	"encoding/json"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -35,6 +37,10 @@ func init() {
 	})
 }
 
+// createProxy creates an instance of MetadataServiceProxy
+// we read the metadata from ins.Metadata()
+// and then create an Invoker instance
+// also we will mark this proxy as golang's proxy
 func createProxy(ins registry.ServiceInstance) service.MetadataService {
 	urls := buildStandardMetadataServiceURL(ins)
 	if len(urls) == 0 {
@@ -45,15 +51,12 @@ func createProxy(ins registry.ServiceInstance) service.MetadataService {
 	u := urls[0]
 	p := extension.GetProtocol(u.Protocol)
 	invoker := p.Refer(*u)
-	golang := u.GetParam(constant.LANGUAGE_KEY, "")
-	return &MetadataServiceProxy{invkr: invoker,
-		golangServer: golang == constant.GO_LANG,
+	return &MetadataServiceProxy{
+		invkr: invoker,
 	}
 }
 
 // buildStandardMetadataServiceURL will use standard format to build the metadata service url.
-// Now we don't need to support spring-cloud format metadata service url.
-//
 func buildStandardMetadataServiceURL(ins registry.ServiceInstance) []*common.URL {
 	ps := getMetadataServiceUrlParams(ins)
 	res := make([]*common.URL, 0, len(ps))
