@@ -18,14 +18,20 @@
 package etcd
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/metadata/identifier"
-	"github.com/coreos/etcd/embed"
-	"github.com/stretchr/testify/assert"
 	"net/url"
 	"strconv"
 	"testing"
+)
+
+import (
+	"github.com/coreos/etcd/embed"
+	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/metadata/identifier"
 )
 
 const defaultEtcdV3WorkDir = "/tmp/default-dubbo-go-registry.etcd"
