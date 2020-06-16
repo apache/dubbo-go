@@ -19,6 +19,15 @@ package etcd
 
 import (
 	"encoding/json"
+	"strings"
+	"time"
+)
+
+import (
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -27,9 +36,6 @@ import (
 	"github.com/apache/dubbo-go/metadata/report"
 	"github.com/apache/dubbo-go/metadata/report/factory"
 	"github.com/apache/dubbo-go/remoting/etcdv3"
-	perrors "github.com/pkg/errors"
-	"strings"
-	"time"
 )
 
 const DEFAULT_ROOT = "dubbo"
