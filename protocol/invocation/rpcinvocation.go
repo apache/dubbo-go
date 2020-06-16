@@ -155,6 +155,11 @@ func (r *RPCInvocation) Invoker() protocol.Invoker {
 	return r.invoker
 }
 
+// SetInvoker ...
+func (r *RPCInvocation) SetInvoker(invoker protocol.Invoker) {
+	r.invoker = invoker
+}
+
 // CallBack sets RPC callback method.
 func (r *RPCInvocation) CallBack() interface{} {
 	return r.callBack
