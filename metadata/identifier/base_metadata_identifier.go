@@ -49,7 +49,7 @@ func joinParams(joinChar string, params []string) string {
 	return joinedStr
 }
 
-// getIdentifierKey will return string format as service:Version:Group:Side:param1:param2...
+// getIdentifierKey returns string that format is service:Version:Group:Side:param1:param2...
 func (mdi *BaseMetadataIdentifier) getIdentifierKey(params ...string) string {
 	return mdi.ServiceInterface +
 		constant.KEY_SEPARATOR + mdi.Version +
@@ -58,7 +58,7 @@ func (mdi *BaseMetadataIdentifier) getIdentifierKey(params ...string) string {
 		joinParams(constant.KEY_SEPARATOR, params)
 }
 
-// getFilePathKey will return string format as metadata/path/Version/Group/Side/param1/param2...
+// getFilePathKey returns string that format is metadata/path/Version/Group/Side/param1/param2...
 func (mdi *BaseMetadataIdentifier) getFilePathKey(params ...string) string {
 	path := serviceToPath(mdi.ServiceInterface)
 
@@ -71,7 +71,7 @@ func (mdi *BaseMetadataIdentifier) getFilePathKey(params ...string) string {
 
 }
 
-// serviceToPath...
+// serviceToPath uss URL encode to decode the @serviceInterface
 func serviceToPath(serviceInterface string) string {
 	if serviceInterface == constant.ANY_VALUE {
 		return ""
@@ -85,7 +85,7 @@ func serviceToPath(serviceInterface string) string {
 
 }
 
-//withPathSeparator...
+// withPathSeparator return "/" + @path
 func withPathSeparator(path string) string {
 	if len(path) != 0 {
 		path = constant.PATH_SEPARATOR + path

@@ -18,8 +18,6 @@
 package inmemory
 
 import (
-	"context"
-	"encoding/json"
 	"testing"
 )
 
@@ -31,21 +29,45 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/metadata/service"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/registry"
 )
 
-func TestMetadataService_GetMetadataServiceUrlParams(t *testing.T) {
-	str := `{"dubbo":{"timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"20880"}}`
-	tmp := make(map[string]map[string]string)
-	err := json.Unmarshal([]byte(str), &tmp)
+func TestMetadataServiceProxy_GetExportedURLs(t *testing.T) {
+
+	pxy := createPxy()
+	assert.NotNil(t, pxy)
+	res, err := pxy.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
 	assert.Nil(t, err)
+	assert.Len(t, res, 1)
+
 }
 
-func TestCreateProxy(t *testing.T) {
+// TestNewMetadataService: those methods are not implemented
+// when we implement them, adding UT
+func TestNewMetadataService(t *testing.T) {
+	pxy := createPxy()
+	pxy.ServiceName()
+	pxy.PublishServiceDefinition(common.URL{})
+	pxy.GetServiceDefinition(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
+	pxy.Version()
+	pxy.GetSubscribedURLs()
+	pxy.UnsubscribeURL(common.URL{})
+	pxy.GetServiceDefinitionByServiceKey("any")
+	pxy.ExportURL(common.URL{})
+	pxy.SubscribeURL(common.URL{})
+	pxy.MethodMapper()
+	pxy.UnexportURL(common.URL{})
+	pxy.RefreshMetadata(constant.ANY_VALUE, constant.ANY_VALUE)
+
+}
+
+func createPxy() service.MetadataService {
 	extension.SetProtocol("mock", func() protocol.Protocol {
 		return &mockProtocol{}
 	})
+
 	ins := &registry.DefaultServiceInstance{
 		Id:          "test-id",
 		ServiceName: "com.dubbo",
@@ -53,48 +75,8 @@ func TestCreateProxy(t *testing.T) {
 		Port:        8080,
 		Enable:      true,
 		Healthy:     true,
+		Metadata:    map[string]string{constant.METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME: `{"mock":{"timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"20880"}}`},
 	}
 
-	pxy := createProxy(ins)
-	assert.Nil(t, pxy)
-
-	ins.Metadata = map[string]string{constant.METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME: `{"mock":{"timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"20880"}}`}
-	pxy = createProxy(ins)
-	assert.NotNil(t, pxy)
-}
-
-type mockProtocol struct {
-}
-
-func (m mockProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
-	panic("implement me")
-}
-
-func (m mockProtocol) Refer(url common.URL) protocol.Invoker {
-	return &mockInvoker{}
-}
-
-func (m mockProtocol) Destroy() {
-	panic("implement me")
-}
-
-type mockInvoker struct {
-}
-
-func (m *mockInvoker) GetUrl() common.URL {
-	panic("implement me")
-}
-
-func (m *mockInvoker) IsAvailable() bool {
-	panic("implement me")
-}
-
-func (m *mockInvoker) Destroy() {
-	panic("implement me")
-}
-
-func (m *mockInvoker) Invoke(context.Context, protocol.Invocation) protocol.Result {
-	return &protocol.RPCResult{
-		Rest: &[]interface{}{"dubbo://localhost"},
-	}
+	return extension.GetMetadataServiceProxyFactory(local).GetProxy(ins)
 }

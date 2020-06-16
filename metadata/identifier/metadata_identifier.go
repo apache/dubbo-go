@@ -23,12 +23,12 @@ type MetadataIdentifier struct {
 	BaseMetadataIdentifier
 }
 
-// GetIdentifierKey will return string format as service:Version:Group:Side:Application
+// GetIdentifierKey returns string that format is service:Version:Group:Side:Application
 func (mdi *MetadataIdentifier) GetIdentifierKey() string {
 	return mdi.BaseMetadataIdentifier.getIdentifierKey(mdi.Application)
 }
 
-// GetFilePathKey will return string format as metadata/path/Version/Group/Side/Application
+// GetFilePathKey returns string that format is metadata/path/Version/Group/Side/Application
 func (mdi *MetadataIdentifier) GetFilePathKey() string {
 	return mdi.BaseMetadataIdentifier.getFilePathKey(mdi.Application)
 }

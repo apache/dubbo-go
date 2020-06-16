@@ -92,7 +92,7 @@ type FacadeBasedRegistry interface {
 	InitListeners()
 }
 
-// BaseRegistry is a event logic abstract for registry. It implement Registry interface.
+// BaseRegistry is a common logic abstract for registry. It implement Registry interface.
 type BaseRegistry struct {
 	context             context.Context
 	facadeBasedRegistry FacadeBasedRegistry

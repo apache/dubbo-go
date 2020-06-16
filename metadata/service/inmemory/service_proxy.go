@@ -21,7 +21,9 @@ import (
 	"context"
 	"reflect"
 	"time"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
@@ -36,7 +38,7 @@ import (
 // so in client-side, if we want to get the metadata information,
 // we must call metadata service
 // this is the stub, or proxy
-// for now, only GetExportedURLs will be implemented
+// for now, only GetExportedURLs need to be implemented
 type MetadataServiceProxy struct {
 	invkr        protocol.Invoker
 	golangServer bool
