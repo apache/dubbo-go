@@ -19,9 +19,6 @@ package inmemory
 import (
 	"sort"
 	"sync"
-
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/config"
 )
 
 import (
@@ -32,7 +29,9 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/metadata/definition"
 	"github.com/apache/dubbo-go/metadata/service"
 )

@@ -44,9 +44,7 @@ import (
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 )
 
-// ServiceConfig is a newest structure to support Dubbo 2.7.5
-// But I think it's not very necessary,
-// we should think about how to reuse current ProviderConfig rather than use this
+// ServiceConfig is the configuration of the service provider
 type ServiceConfig struct {
 	context                     context.Context
 	id                          string
@@ -86,12 +84,12 @@ type ServiceConfig struct {
 	exporters     []protocol.Exporter
 }
 
-// Prefix ...
+// Prefix return dubbo.service.${interface}.
 func (c *ServiceConfig) Prefix() string {
 	return constant.ServiceConfigPrefix + c.InterfaceName + "."
 }
 
-// UnmarshalYAML ...
+// UnmarshalYAML unmarshals the ServiceConfig by @unmarshal function
 func (c *ServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
@@ -143,7 +141,7 @@ func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
 	return ports
 }
 
-// Export ...
+// Export export the service
 func (c *ServiceConfig) Export() error {
 	// TODO: config center start here
 
@@ -251,7 +249,7 @@ func (c *ServiceConfig) Unexport() {
 	c.unexported.Store(true)
 }
 
-// Implement ...
+// Implement only store the @s and return
 func (c *ServiceConfig) Implement(s common.RPCService) {
 	c.rpcService = s
 }
