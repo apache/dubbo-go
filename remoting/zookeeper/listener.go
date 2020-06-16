@@ -241,7 +241,7 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 			l.pathMapLock.Unlock()
 			//When Zk disconnected, the Conn will be set to nil, so here need check the value of Conn
 			l.client.RLock()
-			if l.client.Conn == nil{
+			if l.client.Conn == nil {
 				break
 			}
 			content, _, err := l.client.Conn.Get(dubboPath)
