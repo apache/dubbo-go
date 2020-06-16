@@ -42,6 +42,8 @@ const (
 	MaxFailTimes = 15
 	// RegistryETCDV3Client client name
 	RegistryETCDV3Client = "etcd registry"
+	// metadataETCDV3Client client name
+	MetadataETCDV3Client = "etcd metadata"
 )
 
 var (
@@ -107,7 +109,7 @@ func ValidateClient(container clientFacade, opts ...Option) error {
 
 	// new Client
 	if container.Client() == nil {
-		newClient, err := newClient(options.name, options.endpoints, options.timeout, options.heartbeat)
+		newClient, err := NewClient(options.name, options.endpoints, options.timeout, options.heartbeat)
 		if err != nil {
 			logger.Warnf("new etcd client (name{%s}, etcd addresses{%v}, timeout{%d}) = error{%v}",
 				options.name, options.endpoints, options.timeout, err)
@@ -119,7 +121,7 @@ func ValidateClient(container clientFacade, opts ...Option) error {
 	// Client lose connection with etcd server
 	if container.Client().rawClient == nil {
 
-		newClient, err := newClient(options.name, options.endpoints, options.timeout, options.heartbeat)
+		newClient, err := NewClient(options.name, options.endpoints, options.timeout, options.heartbeat)
 		if err != nil {
 			logger.Warnf("new etcd client (name{%s}, etcd addresses{%v}, timeout{%d}) = error{%v}",
 				options.name, options.endpoints, options.timeout, err)
@@ -149,7 +151,7 @@ type Client struct {
 	Wait sync.WaitGroup
 }
 
-func newClient(name string, endpoints []string, timeout time.Duration, heartbeat int) (*Client, error) {
+func NewClient(name string, endpoints []string, timeout time.Duration, heartbeat int) (*Client, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	rawClient, err := clientv3.New(clientv3.Config{
