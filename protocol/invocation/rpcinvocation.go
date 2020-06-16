@@ -155,7 +155,7 @@ func (r *RPCInvocation) Invoker() protocol.Invoker {
 	return r.invoker
 }
 
-// SetInvoker ...
+// nolint
 func (r *RPCInvocation) SetInvoker(invoker protocol.Invoker) {
 	r.invoker = invoker
 }
