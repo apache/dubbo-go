@@ -57,17 +57,17 @@ type etcdV3Registry struct {
 	configListener *configurationListener
 }
 
-// Client get the etcdv3 client
+// Client gets the etcdv3 client
 func (r *etcdV3Registry) Client() *etcdv3.Client {
 	return r.client
 }
 
-//SetClient set the etcdv3 client
+// SetClient sets the etcdv3 client
 func (r *etcdV3Registry) SetClient(client *etcdv3.Client) {
 	r.client = client
 }
 
-//
+// ClientLock returns lock for client
 func (r *etcdV3Registry) ClientLock() *sync.Mutex {
 	return &r.cltLock
 }

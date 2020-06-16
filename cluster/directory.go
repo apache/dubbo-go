@@ -23,7 +23,7 @@ import (
 )
 
 // Directory
-//Extension - Directory
+// Extension - Directory
 type Directory interface {
 	common.Node
 	List(invocation protocol.Invocation) []protocol.Invoker

@@ -37,24 +37,27 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-// Server ...
+// Server is a gRPC server
 type Server struct {
 	grpcServer *grpc.Server
 }
 
-// NewServer ...
+// NewServer creates a new server
 func NewServer() *Server {
 	return &Server{}
 }
 
-// DubboGrpcService ...
+// DubboGrpcService is gRPC service
 type DubboGrpcService interface {
+	// SetProxyImpl sets proxy.
 	SetProxyImpl(impl protocol.Invoker)
+	// GetProxyImpl gets proxy.
 	GetProxyImpl() protocol.Invoker
+	// ServiceDesc gets an RPC service's specification.
 	ServiceDesc() *grpc.ServiceDesc
 }
 
-// Start ...
+// Start gRPC server with @url
 func (s *Server) Start(url common.URL) {
 	var (
 		addr string
@@ -106,7 +109,7 @@ func (s *Server) Start(url common.URL) {
 	}()
 }
 
-// Stop ...
+// Stop gRPC server
 func (s *Server) Stop() {
 	s.grpcServer.Stop()
 }
