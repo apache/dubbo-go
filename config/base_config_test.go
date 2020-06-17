@@ -21,9 +21,11 @@ import (
 	"reflect"
 	"testing"
 )
+
 import (
 	"github.com/stretchr/testify/assert"
 )
+
 import (
 	"github.com/apache/dubbo-go/common/config"
 	"github.com/apache/dubbo-go/common/extension"
@@ -45,23 +47,17 @@ func Test_refresh(t *testing.T) {
 
 	father := &ConsumerConfig{
 		Check: &[]bool{true}[0],
-		ApplicationConfig: &ApplicationConfig{
-			Organization: "dubbo_org",
-			Name:         "dubbo",
-			Module:       "module",
-			Version:      "2.6.0",
-			Owner:        "dubbo",
-			Environment:  "test"},
+		BaseConfig: BaseConfig{
+			ApplicationConfig: &ApplicationConfig{
+				Organization: "dubbo_org",
+				Name:         "dubbo",
+				Module:       "module",
+				Version:      "2.6.0",
+				Owner:        "dubbo",
+				Environment:  "test"},
+		},
+
 		Registries: map[string]*RegistryConfig{
-			//"shanghai_reg1": {
-			//	id:         "shanghai_reg1",
-			//	Protocol:   "mock",
-			//	TimeoutStr: "2s",
-			//	Group:      "shanghai_idc",
-			//	Address:    "127.0.0.1:2181",
-			//	Username:   "user1",
-			//	Password:   "pwd1",
-			//},
 			"shanghai_reg2": {
 				Protocol:   "mock",
 				TimeoutStr: "2s",
@@ -87,6 +83,7 @@ func Test_refresh(t *testing.T) {
 				Password:   "pwd1",
 			},
 		},
+
 		References: map[string]*ReferenceConfig{
 			"MockService": {
 				InterfaceName: "com.MockService",
@@ -148,23 +145,17 @@ func Test_appExternal_refresh(t *testing.T) {
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
 	father := &ConsumerConfig{
 		Check: &[]bool{true}[0],
-		ApplicationConfig: &ApplicationConfig{
-			Organization: "dubbo_org",
-			Name:         "dubbo",
-			Module:       "module",
-			Version:      "2.6.0",
-			Owner:        "dubbo",
-			Environment:  "test"},
+		BaseConfig: BaseConfig{
+			ApplicationConfig: &ApplicationConfig{
+				Organization: "dubbo_org",
+				Name:         "dubbo",
+				Module:       "module",
+				Version:      "2.6.0",
+				Owner:        "dubbo",
+				Environment:  "test"},
+		},
+
 		Registries: map[string]*RegistryConfig{
-			//"shanghai_reg1": {
-			//	id:         "shanghai_reg1",
-			//	Protocol:   "mock",
-			//	TimeoutStr: "2s",
-			//	Group:      "shanghai_idc",
-			//	Address:    "127.0.0.1:2181",
-			//	Username:   "user1",
-			//	Password:   "pwd1",
-			//},
 			"shanghai_reg2": {
 				Protocol:   "mock",
 				TimeoutStr: "2s",
@@ -243,23 +234,17 @@ func Test_appExternalWithoutId_refresh(t *testing.T) {
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
 	father := &ConsumerConfig{
 		Check: &[]bool{true}[0],
-		ApplicationConfig: &ApplicationConfig{
-			Organization: "dubbo_org",
-			Name:         "dubbo",
-			Module:       "module",
-			Version:      "2.6.0",
-			Owner:        "dubbo",
-			Environment:  "test"},
+		BaseConfig: BaseConfig{
+			ApplicationConfig: &ApplicationConfig{
+				Organization: "dubbo_org",
+				Name:         "dubbo",
+				Module:       "module",
+				Version:      "2.6.0",
+				Owner:        "dubbo",
+				Environment:  "test"},
+		},
+
 		Registries: map[string]*RegistryConfig{
-			//"shanghai_reg1": {
-			//	id:         "shanghai_reg1",
-			//	Protocol:   "mock",
-			//	TimeoutStr: "2s",
-			//	Group:      "shanghai_idc",
-			//	Address:    "127.0.0.1:2181",
-			//	Username:   "user1",
-			//	Password:   "pwd1",
-			//},
 			"shanghai_reg2": {
 				Protocol:   "mock",
 				TimeoutStr: "2s",
@@ -285,6 +270,7 @@ func Test_appExternalWithoutId_refresh(t *testing.T) {
 				Password:   "pwd1",
 			},
 		},
+
 		References: map[string]*ReferenceConfig{
 			"MockService": {
 				InterfaceName: "com.MockService",
@@ -337,15 +323,20 @@ func Test_refresh_singleRegistry(t *testing.T) {
 
 	father := &ConsumerConfig{
 		Check: &[]bool{true}[0],
-		ApplicationConfig: &ApplicationConfig{
-			Organization: "dubbo_org",
-			Name:         "dubbo",
-			Module:       "module",
-			Version:      "2.6.0",
-			Owner:        "dubbo",
-			Environment:  "test"},
+		BaseConfig: BaseConfig{
+
+			ApplicationConfig: &ApplicationConfig{
+				Organization: "dubbo_org",
+				Name:         "dubbo",
+				Module:       "module",
+				Version:      "2.6.0",
+				Owner:        "dubbo",
+				Environment:  "test"},
+		},
+
 		Registries: map[string]*RegistryConfig{},
 		Registry:   &RegistryConfig{},
+
 		References: map[string]*ReferenceConfig{
 			"MockService": {
 				InterfaceName: "com.MockService",
@@ -400,23 +391,17 @@ func Test_refreshProvider(t *testing.T) {
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
 
 	father := &ProviderConfig{
-		ApplicationConfig: &ApplicationConfig{
-			Organization: "dubbo_org",
-			Name:         "dubbo",
-			Module:       "module",
-			Version:      "2.6.0",
-			Owner:        "dubbo",
-			Environment:  "test"},
+		BaseConfig: BaseConfig{
+			ApplicationConfig: &ApplicationConfig{
+				Organization: "dubbo_org",
+				Name:         "dubbo",
+				Module:       "module",
+				Version:      "2.6.0",
+				Owner:        "dubbo",
+				Environment:  "test"},
+		},
+
 		Registries: map[string]*RegistryConfig{
-			//"shanghai_reg1": {
-			//	id:         "shanghai_reg1",
-			//	Protocol:   "mock",
-			//	TimeoutStr: "2s",
-			//	Group:      "shanghai_idc",
-			//	Address:    "127.0.0.1:2181",
-			//	Username:   "user1",
-			//	Password:   "pwd1",
-			//},
 			"shanghai_reg2": {
 				Protocol:   "mock",
 				TimeoutStr: "2s",
@@ -442,6 +427,7 @@ func Test_refreshProvider(t *testing.T) {
 				Password:   "pwd1",
 			},
 		},
+
 		Services: map[string]*ServiceConfig{
 			"MockService": {
 				InterfaceName: "com.MockService",
@@ -481,7 +467,6 @@ func Test_refreshProvider(t *testing.T) {
 }
 
 func Test_startConfigCenter(t *testing.T) {
-
 	extension.SetConfigCenterFactory("mock", func() config_center.DynamicConfigurationFactory {
 		return &config_center.MockDynamicConfigurationFactory{}
 	})
@@ -499,21 +484,21 @@ func Test_startConfigCenter(t *testing.T) {
 }
 
 func Test_initializeStruct(t *testing.T) {
-	consumerConfig := &ConsumerConfig{}
+	testConsumerConfig := &ConsumerConfig{}
 	tp := reflect.TypeOf(ConsumerConfig{})
 	v := reflect.New(tp)
 	initializeStruct(tp, v.Elem())
-	fmt.Println(reflect.ValueOf(consumerConfig).Elem().Type().String())
+	fmt.Println(reflect.ValueOf(testConsumerConfig).Elem().Type().String())
 	fmt.Println(v.Elem().Type().String())
-	reflect.ValueOf(consumerConfig).Elem().Set(v.Elem())
+	reflect.ValueOf(testConsumerConfig).Elem().Set(v.Elem())
 
 	assert.Condition(t, func() (success bool) {
-		return consumerConfig.ApplicationConfig != nil
+		return testConsumerConfig.Registry != nil
 	})
 	assert.Condition(t, func() (success bool) {
-		return consumerConfig.Registries != nil
+		return testConsumerConfig.Registries != nil
 	})
 	assert.Condition(t, func() (success bool) {
-		return consumerConfig.References != nil
+		return testConsumerConfig.References != nil
 	})
 }

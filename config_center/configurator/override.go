@@ -50,12 +50,12 @@ func (c *overrideConfigurator) GetUrl() *common.URL {
 }
 
 func (c *overrideConfigurator) Configure(url *common.URL) {
-	//remove configuratorUrl some param that can not be configured
+	// remove configuratorUrl some param that can not be configured
 	if c.configuratorUrl.GetParam(constant.ENABLED_KEY, "true") == "false" || len(c.configuratorUrl.Location) == 0 {
 		return
 	}
 
-	//branch for version 2.7.x
+	// branch for version 2.7.x
 	apiVersion := c.configuratorUrl.GetParam(constant.CONFIG_VERSION_KEY, "")
 	if len(apiVersion) != 0 {
 		currentSide := url.GetParam(constant.SIDE_KEY, "")
@@ -67,12 +67,12 @@ func (c *overrideConfigurator) Configure(url *common.URL) {
 			c.configureIfMatch(url.Ip, url)
 		}
 	} else {
-		//branch for version 2.6.x and less
+		// branch for version 2.6.x and less
 		c.configureDeprecated(url)
 	}
 }
 
-//translate from java, compatible rules in java
+// configureIfMatch translate from java, compatible rules in java
 func (c *overrideConfigurator) configureIfMatch(host string, url *common.URL) {
 	if constant.ANYHOST_VALUE == c.configuratorUrl.Ip || host == c.configuratorUrl.Ip {
 		providers := c.configuratorUrl.GetParam(constant.OVERRIDE_PROVIDERS_KEY, "")
@@ -105,8 +105,7 @@ func (c *overrideConfigurator) configureIfMatch(host string, url *common.URL) {
 				if returnUrl {
 					return
 				}
-				configUrl := c.configuratorUrl.Clone()
-				configUrl.RemoveParams(conditionKeys)
+				configUrl := c.configuratorUrl.CloneExceptParams(conditionKeys)
 				url.SetParams(configUrl.GetParams())
 			}
 		}

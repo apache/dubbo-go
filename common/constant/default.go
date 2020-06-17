@@ -43,6 +43,7 @@ const (
 	DEFAULT_FAILBACK_TASKS     = 100
 	DEFAULT_REST_CLIENT        = "resty"
 	DEFAULT_REST_SERVER        = "go-restful"
+	DEFAULT_PORT               = 20000
 )
 
 const (
@@ -58,6 +59,7 @@ const (
 const (
 	ANY_VALUE           = "*"
 	ANYHOST_VALUE       = "0.0.0.0"
+	LOCAL_HOST_VALUE    = "192.168.1.1"
 	REMOVE_VALUE_PREFIX = "-"
 )
 
@@ -73,4 +75,13 @@ const (
 
 const (
 	COMMA_SPLIT_PATTERN = "\\s*[,]+\\s*"
+)
+
+const (
+	SIMPLE_METADATA_SERVICE_NAME = "MetadataService"
+	DEFAULT_REVIESION            = "N/A"
+)
+
+const (
+	SERVICE_DISCOVERY_DEFAULT_GROUP = "DEFAULT_GROUP"
 )

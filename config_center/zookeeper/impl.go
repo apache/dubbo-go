@@ -20,11 +20,9 @@ package zookeeper
 import (
 	"strings"
 	"sync"
-	"time"
 )
 
 import (
-	"github.com/dubbogo/go-zookeeper/zk"
 	gxset "github.com/dubbogo/gost/container/set"
 	perrors "github.com/pkg/errors"
 )
@@ -76,34 +74,8 @@ func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfigu
 	c.cacheListener = NewCacheListener(c.rootPath)
 
 	err = c.client.Create(c.rootPath)
-	c.listener.ListenServiceEvent(c.rootPath, c.cacheListener)
+	c.listener.ListenServiceEvent(url, c.rootPath, c.cacheListener)
 	return c, err
-
-}
-
-func newMockZookeeperDynamicConfiguration(url *common.URL, opts ...zookeeper.Option) (*zk.TestCluster, *zookeeperDynamicConfiguration, error) {
-	c := &zookeeperDynamicConfiguration{
-		url:      url,
-		rootPath: "/" + url.GetParam(constant.CONFIG_NAMESPACE_KEY, config_center.DEFAULT_GROUP) + "/config",
-	}
-	var (
-		tc  *zk.TestCluster
-		err error
-	)
-	tc, c.client, _, err = zookeeper.NewMockZookeeperClient("test", 15*time.Second, opts...)
-	if err != nil {
-		logger.Errorf("mock zookeeper client start error ,error message is %v", err)
-		return tc, c, err
-	}
-	c.wg.Add(1)
-	go zookeeper.HandleClientRestart(c)
-
-	c.listener = zookeeper.NewZkEventListener(c.client)
-	c.cacheListener = NewCacheListener(c.rootPath)
-
-	err = c.client.Create(c.rootPath)
-	go c.listener.ListenServiceEvent(c.rootPath, c.cacheListener)
-	return tc, c, err
 
 }
 

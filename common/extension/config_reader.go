@@ -26,12 +26,12 @@ var (
 	defaults      = make(map[string]string)
 )
 
-// SetConfigReaders set a creator of config reader.
+// SetConfigReaders sets a creator of config reader with @name
 func SetConfigReaders(name string, v func() interfaces.ConfigReader) {
 	configReaders[name] = v
 }
 
-// GetConfigReaders get a config reader by name.
+// GetConfigReaders gets a config reader with @name
 func GetConfigReaders(name string) interfaces.ConfigReader {
 	if configReaders[name] == nil {
 		panic("config reader for " + name + " is not existing, make sure you have imported the package.")
@@ -39,12 +39,12 @@ func GetConfigReaders(name string) interfaces.ConfigReader {
 	return configReaders[name]()
 }
 
-// SetDefaultConfigReader set {name} to default config reader for {module}
+// SetDefaultConfigReader sets @name for @module in default config reader
 func SetDefaultConfigReader(module, name string) {
 	defaults[module] = name
 }
 
-// GetDefaultConfigReader
+// GetDefaultConfigReader gets default config reader
 func GetDefaultConfigReader() map[string]string {
 	return defaults
 }

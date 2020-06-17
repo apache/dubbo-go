@@ -36,8 +36,16 @@ import (
 	"github.com/apache/dubbo-go/config_center/parser"
 )
 
-const nacosClientName = "nacos config_center"
+const (
+	nacosClientName = "nacos config_center"
+	// the number is a little big tricky
+	// it will be used in query which looks up all keys with the target group
+	// now, one key represents one application
+	// so only a group has more than 9999 applications will failed
+	maxKeysNum = 9999
+)
 
+// nacosDynamicConfiguration is the implementation of DynamicConfiguration based on nacos
 type nacosDynamicConfiguration struct {
 	url          *common.URL
 	rootPath     string
@@ -108,9 +116,23 @@ func (n *nacosDynamicConfiguration) PublishConfig(key string, group string, valu
 
 // GetConfigKeysByGroup will return all keys with the group
 func (n *nacosDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
-	// TODO (the golang client of nacos does not support batch API)
-	// we should build a issue and then think about how to resolve this problem
-	return nil, perrors.New("unsupport operation, wait for implement")
+	group = n.resolvedGroup(group)
+	page, err := (*n.client.Client()).SearchConfig(vo.SearchConfigParm{
+		Search: "accurate",
+		Group:  group,
+		PageNo: 1,
+		// actually it's impossible for user to create 9999 application under one group
+		PageSize: maxKeysNum,
+	})
+
+	result := gxset.NewSet()
+	if err != nil {
+		return result, perrors.WithMessage(err, "can not find the client config")
+	}
+	for _, itm := range page.PageItems {
+		result.Add(itm.DataId)
+	}
+	return result, nil
 }
 
 // GetRule Get router rule

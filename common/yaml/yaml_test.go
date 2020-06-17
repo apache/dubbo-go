@@ -46,6 +46,18 @@ func TestUnmarshalYMLConfig_Error(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestUnmarshalYML(t *testing.T) {
+	c := &Config{}
+	b, err := LoadYMLConfig("./testdata/config.yml")
+	assert.NoError(t, err)
+	err = UnmarshalYML(b, c)
+	assert.NoError(t, err)
+	assert.Equal(t, "strTest", c.StrTest)
+	assert.Equal(t, 11, c.IntTest)
+	assert.Equal(t, false, c.BooleanTest)
+	assert.Equal(t, "childStrTest", c.ChildConfig.StrTest)
+}
+
 type Config struct {
 	StrTest     string      `yaml:"strTest" default:"default" json:"strTest,omitempty" property:"strTest"`
 	IntTest     int         `default:"109"  yaml:"intTest" json:"intTest,omitempty" property:"intTest"`

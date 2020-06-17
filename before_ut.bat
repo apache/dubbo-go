@@ -20,7 +20,7 @@ set zkJarPath=remoting/zookeeper/zookeeper-4unittest/contrib/fatjar
 set zkJar=%zkJarPath%/%zkJarName%
 
 if not exist "%zkJar%" (
-   md %zkJarPath%
+   md "%zkJarPath%"
    curl -L %remoteJarUrl% -o %zkJar%
 )
 
