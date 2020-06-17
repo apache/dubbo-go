@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"strings"
 	"sync"
 	"time"
 )
@@ -30,7 +29,7 @@ import (
 	"github.com/dubbogo/getty"
 	"github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
-	k8s "k8s.io/client-go/kubernetes"
+	v1 "k8s.io/api/core/v1"
 )
 
 import (
@@ -135,9 +134,7 @@ func (r *kubernetesRegistry) DoSubscribe(svc *common.URL) (registry.Listener, er
 
 	//register the svc to dataListener
 	r.dataListener.AddInterestedURL(svc)
-	for _, v := range strings.Split(svc.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY), ",") {
-		go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+v, svc.Service()), r.dataListener)
-	}
+	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, svc.Service()), r.dataListener)
 
 	return configListener, nil
 }
@@ -163,15 +160,14 @@ func newKubernetesRegistry(url *common.URL) (registry.Registry, error) {
 	go r.HandleClientRestart()
 	r.InitListeners()
 
-	logger.Debugf("the kubernetes registry started")
+	logger.Debugf("kubernetes registry started")
 
 	return r, nil
 }
 
 func newMockKubernetesRegistry(
 	url *common.URL,
-	namespace string,
-	clientGeneratorFunc func() (k8s.Interface, error),
+	podsList *v1.PodList,
 ) (registry.Registry, error) {
 
 	var err error
@@ -179,7 +175,7 @@ func newMockKubernetesRegistry(
 	r := &kubernetesRegistry{}
 
 	r.InitBaseRegistry(url, r)
-	r.client, err = kubernetes.NewMockClient(namespace, clientGeneratorFunc)
+	r.client, err = kubernetes.NewMockClient(podsList)
 	if err != nil {
 		return nil, perrors.WithMessage(err, "new mock client")
 	}

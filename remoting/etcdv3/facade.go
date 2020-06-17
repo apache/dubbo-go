@@ -43,7 +43,7 @@ type clientFacade interface {
 	common.Node
 }
 
-// HandleClientRestart ...
+// HandleClientRestart keeps the connection between client and server
 func HandleClientRestart(r clientFacade) {
 
 	var (

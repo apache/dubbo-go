@@ -42,10 +42,16 @@ import (
 	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
+const (
+	path     = "/dubbo/config/dubbo/test-condition.condition-router"
+	zkPrefix = "zookeeper://127.0.0.1:"
+	anyUrl   = "condition://0.0.0.0/com.foo.BarService"
+)
+
 func TestNewRouterChain(t *testing.T) {
 	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
-	err = z.Create("/dubbo/config/dubbo/test-condition.condition-router")
+	err = z.Create(path)
 	assert.NoError(t, err)
 
 	testyml := `enabled: true
@@ -55,12 +61,12 @@ conditions:
   - => host != 172.22.3.91
 `
 
-	_, err = z.Conn.Set("/dubbo/config/dubbo/test-condition.condition-router", []byte(testyml), 0)
+	_, err = z.Conn.Set(path, []byte(testyml), 0)
 	assert.NoError(t, err)
 	defer ts.Stop()
 	defer z.Close()
 
-	zkUrl, _ := common.NewURL("zookeeper://127.0.0.1:" + strconv.Itoa(ts.Servers[0].Port))
+	zkUrl, _ := common.NewURL(zkPrefix + strconv.Itoa(ts.Servers[0].Port))
 	configuration, err := extension.GetConfigCenterFactory("zookeeper").GetDynamicConfiguration(&zkUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
 
@@ -92,10 +98,10 @@ func TestNewRouterChainURLNil(t *testing.T) {
 	assert.NotNil(t, chain)
 }
 
-func TestRouterChain_AddRouters(t *testing.T) {
+func TestRouterChainAddRouters(t *testing.T) {
 	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
-	err = z.Create("/dubbo/config/dubbo/test-condition.condition-router")
+	err = z.Create(path)
 	assert.NoError(t, err)
 
 	testyml := `enabled: true
@@ -105,12 +111,12 @@ conditions:
   - => host != 172.22.3.91
 `
 
-	_, err = z.Conn.Set("/dubbo/config/dubbo/test-condition.condition-router", []byte(testyml), 0)
+	_, err = z.Conn.Set(path, []byte(testyml), 0)
 	assert.NoError(t, err)
 	defer ts.Stop()
 	defer z.Close()
 
-	zkUrl, _ := common.NewURL("zookeeper://127.0.0.1:" + strconv.Itoa(ts.Servers[0].Port))
+	zkUrl, _ := common.NewURL(zkPrefix + strconv.Itoa(ts.Servers[0].Port))
 	configuration, err := extension.GetConfigCenterFactory("zookeeper").GetDynamicConfiguration(&zkUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
 
@@ -131,12 +137,12 @@ conditions:
 	assert.Equal(t, 3, len(chain.routers))
 }
 
-func TestRouterChain_Route(t *testing.T) {
+func TestRouterChainRoute(t *testing.T) {
 	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
 	defer ts.Stop()
 	defer z.Close()
 
-	zkUrl, _ := common.NewURL("zookeeper://127.0.0.1:" + strconv.Itoa(ts.Servers[0].Port))
+	zkUrl, _ := common.NewURL(zkPrefix + strconv.Itoa(ts.Servers[0].Port))
 	configuration, err := extension.GetConfigCenterFactory("zookeeper").GetDynamicConfiguration(&zkUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
 
@@ -158,10 +164,10 @@ func TestRouterChain_Route(t *testing.T) {
 	assert.Equal(t, 1, len(finalInvokers))
 }
 
-func TestRouterChain_Route_AppRouter(t *testing.T) {
+func TestRouterChainRouteAppRouter(t *testing.T) {
 	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
-	err = z.Create("/dubbo/config/dubbo/test-condition.condition-router")
+	err = z.Create(path)
 	assert.NoError(t, err)
 
 	testyml := `enabled: true
@@ -171,12 +177,12 @@ conditions:
   - => host = 1.1.1.1 => host != 1.2.3.4
 `
 
-	_, err = z.Conn.Set("/dubbo/config/dubbo/test-condition.condition-router", []byte(testyml), 0)
+	_, err = z.Conn.Set(path, []byte(testyml), 0)
 	assert.NoError(t, err)
 	defer ts.Stop()
 	defer z.Close()
 
-	zkUrl, _ := common.NewURL("zookeeper://127.0.0.1:" + strconv.Itoa(ts.Servers[0].Port))
+	zkUrl, _ := common.NewURL(zkPrefix + strconv.Itoa(ts.Servers[0].Port))
 	configuration, err := extension.GetConfigCenterFactory("zookeeper").GetDynamicConfiguration(&zkUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
 
@@ -200,7 +206,7 @@ func TestRouterChain_Route_NoRoute(t *testing.T) {
 	defer ts.Stop()
 	defer z.Close()
 
-	zkUrl, _ := common.NewURL("zookeeper://127.0.0.1:" + strconv.Itoa(ts.Servers[0].Port))
+	zkUrl, _ := common.NewURL(zkPrefix + strconv.Itoa(ts.Servers[0].Port))
 	configuration, err := extension.GetConfigCenterFactory("zookeeper").GetDynamicConfiguration(&zkUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
 
@@ -223,7 +229,7 @@ func TestRouterChain_Route_NoRoute(t *testing.T) {
 }
 
 func getConditionNoRouteUrl(applicationKey string) *common.URL {
-	url, _ := common.NewURL("condition://0.0.0.0/com.foo.BarService")
+	url, _ := common.NewURL(anyUrl)
 	url.AddParam("application", applicationKey)
 	url.AddParam("force", "true")
 	rule := base64.URLEncoding.EncodeToString([]byte("host = 1.1.1.1 => host != 1.2.3.4"))
@@ -232,7 +238,7 @@ func getConditionNoRouteUrl(applicationKey string) *common.URL {
 }
 
 func getConditionRouteUrl(applicationKey string) *common.URL {
-	url, _ := common.NewURL("condition://0.0.0.0/com.foo.BarService")
+	url, _ := common.NewURL(anyUrl)
 	url.AddParam("application", applicationKey)
 	url.AddParam("force", "true")
 	rule := base64.URLEncoding.EncodeToString([]byte("host = 1.1.1.1 => host = 1.2.3.4"))
@@ -241,7 +247,7 @@ func getConditionRouteUrl(applicationKey string) *common.URL {
 }
 
 func getRouteUrl(applicationKey string) *common.URL {
-	url, _ := common.NewURL("condition://0.0.0.0/com.foo.BarService")
+	url, _ := common.NewURL(anyUrl)
 	url.AddParam("application", applicationKey)
 	url.AddParam("force", "true")
 	return &url

@@ -40,7 +40,7 @@ type zkClientFacade interface {
 	common.Node
 }
 
-// HandleClientRestart ...
+// HandleClientRestart keeps the connection between client and server
 func HandleClientRestart(r zkClientFacade) {
 	var (
 		err error
@@ -48,11 +48,11 @@ func HandleClientRestart(r zkClientFacade) {
 		failTimes int
 	)
 
-	defer r.WaitGroup().Done()
 LOOP:
 	for {
 		select {
 		case <-r.Done():
+			r.WaitGroup().Done() // dec the wg when registry is closed
 			logger.Warnf("(ZkProviderRegistry)reconnectZkRegistry goroutine exit now...")
 			break LOOP
 			// re-register all services
@@ -63,12 +63,14 @@ LOOP:
 			zkAddress := r.ZkClient().ZkAddrs
 			r.SetZkClient(nil)
 			r.ZkClientLock().Unlock()
+			r.WaitGroup().Done() // dec the wg when zk client is closed
 
 			// Connect zk until success.
 			failTimes = 0
 			for {
 				select {
 				case <-r.Done():
+					r.WaitGroup().Done() // dec the wg when registry is closed
 					logger.Warnf("(ZkProviderRegistry)reconnectZkRegistry goroutine exit now...")
 					break LOOP
 				case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)): // Prevent crazy reconnection zk.

@@ -36,11 +36,13 @@ import (
 // providerConfig
 /////////////////////////
 
-// ProviderConfig ...
+// ProviderConfig is the default configuration of service provider
 type ProviderConfig struct {
 	BaseConfig   `yaml:",inline"`
 	Filter       string `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	ProxyFactory string `yaml:"proxy_factory" default:"default" json:"proxy_factory,omitempty" property:"proxy_factory"`
+	// metadata-report
+	MetadataReportConfig *MetadataReportConfig `yaml:"metadata_report" json:"metadata_report,omitempty" property:"metadata_report"`
 
 	ApplicationConfig *ApplicationConfig         `yaml:"application" json:"application,omitempty" property:"application"`
 	Registry          *RegistryConfig            `yaml:"registry" json:"registry,omitempty" property:"registry"`
@@ -53,7 +55,7 @@ type ProviderConfig struct {
 	ConfigType        map[string]string          `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 }
 
-// UnmarshalYAML ...
+// UnmarshalYAML unmarshals the ProviderConfig by @unmarshal function
 func (c *ProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
@@ -65,17 +67,17 @@ func (c *ProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) error 
 	return nil
 }
 
-// Prefix ...
+// nolint
 func (*ProviderConfig) Prefix() string {
 	return constant.ProviderConfigPrefix
 }
 
-// SetProviderConfig ...
+// SetProviderConfig sets provider config by @p
 func SetProviderConfig(p ProviderConfig) {
 	providerConfig = &p
 }
 
-// ProviderInit ...
+// ProviderInit loads config file to init provider config
 func ProviderInit(confProFile string) error {
 	if len(confProFile) == 0 {
 		return perrors.Errorf("application configure(provider) file name is nil")
@@ -95,7 +97,10 @@ func ProviderInit(confProFile string) error {
 			n.InterfaceId = k
 		}
 	}
-
+	//start the metadata report if config set
+	if err := startMetadataReport(providerConfig.ApplicationConfig.MetadataType, providerConfig.MetadataReportConfig); err != nil {
+		return perrors.WithMessagef(err, "Provider starts metadata report error, and the error is {%#v}", err)
+	}
 	logger.Debugf("provider config{%#v}\n", providerConfig)
 
 	return nil

@@ -53,6 +53,7 @@ type gracefulShutdownFilter struct {
 	shutdownConfig *config.ShutdownConfig
 }
 
+// Invoke adds the requests count and block the new requests if application is closing
 func (gf *gracefulShutdownFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	if gf.rejectNewRequest() {
 		logger.Info("The application is closing, new request will be rejected.")
@@ -62,6 +63,7 @@ func (gf *gracefulShutdownFilter) Invoke(ctx context.Context, invoker protocol.I
 	return invoker.Invoke(ctx, invocation)
 }
 
+// OnResponse reduces the number of active processes then return the process result
 func (gf *gracefulShutdownFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	atomic.AddInt32(&gf.activeCount, -1)
 	// although this isn't thread safe, it won't be a problem if the gf.rejectNewRequest() is true.
