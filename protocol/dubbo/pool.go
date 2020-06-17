@@ -319,9 +319,7 @@ func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPC
 	conn, err := p.get()
 	if err == nil && conn == nil {
 		// create new conn
-		var rpcClientConn *gettyRPCClient
-		rpcClientConn, err = newGettyRPCClientConn(p, protocol, addr)
-		return rpcClientConn, perrors.WithStack(err)
+		conn, err = newGettyRPCClientConn(p, protocol, addr)
 	}
 	return conn, perrors.WithStack(err)
 }
