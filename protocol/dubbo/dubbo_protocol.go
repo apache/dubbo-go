@@ -33,7 +33,7 @@ import (
 
 // dubbo protocol constant
 const (
-	// DUBBO ...
+	// DUBBO is dubbo protocol name
 	DUBBO = "dubbo"
 )
 
@@ -45,14 +45,14 @@ var (
 	dubboProtocol *DubboProtocol
 )
 
-// DubboProtocol ...
+// DubboProtocol is a dubbo protocol implement.
 type DubboProtocol struct {
 	protocol.BaseProtocol
 	serverMap  map[string]*Server
 	serverLock sync.Mutex
 }
 
-// NewDubboProtocol ...
+// NewDubboProtocol create a dubbo protocol.
 func NewDubboProtocol() *DubboProtocol {
 	return &DubboProtocol{
 		BaseProtocol: protocol.NewBaseProtocol(),
@@ -60,7 +60,7 @@ func NewDubboProtocol() *DubboProtocol {
 	}
 }
 
-// Export ...
+// Export export dubbo service.
 func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetUrl()
 	serviceKey := url.ServiceKey()
@@ -73,7 +73,7 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	return exporter
 }
 
-// Refer ...
+// Refer create dubbo service reference.
 func (dp *DubboProtocol) Refer(url common.URL) protocol.Invoker {
 	//default requestTimeout
 	var requestTimeout = config.GetConsumerConfig().RequestTimeout
@@ -92,7 +92,7 @@ func (dp *DubboProtocol) Refer(url common.URL) protocol.Invoker {
 	return invoker
 }
 
-// Destroy ...
+// Destroy destroy dubbo service.
 func (dp *DubboProtocol) Destroy() {
 	logger.Infof("DubboProtocol destroy.")
 
@@ -124,7 +124,7 @@ func (dp *DubboProtocol) openServer(url common.URL) {
 	}
 }
 
-// GetProtocol ...
+// GetProtocol get a single dubbo protocol.
 func GetProtocol() protocol.Protocol {
 	if dubboProtocol == nil {
 		dubboProtocol = NewDubboProtocol()

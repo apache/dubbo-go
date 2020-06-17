@@ -103,7 +103,7 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 			return nil, perrors.New("listener stopped")
 
 		case e := <-l.events:
-			logger.Infof("got kubernetes event %#v", e)
+			logger.Debugf("got kubernetes event %#v", e)
 			if e.ConfigType == remoting.EventTypeDel && !l.registry.client.Valid() {
 				select {
 				case <-l.registry.Done():

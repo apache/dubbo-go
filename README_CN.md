@@ -29,7 +29,7 @@ Apache License, Version 2.0
 
 基于dubbo的extension模块和分层的代码设计(包括 protocol layer, registry layer, cluster layer, config 等等)。我们的目标是：你可以对这些分层接口进行新的实现，并通过调用 extension 模块的“ extension.SetXXX ”方法来覆盖 dubbo-go [同 go-for-apache-dubbo ]的默认实现，以完成自己的特殊需求而无需修改源代码。同时，欢迎你为社区贡献有用的拓展实现。
 
-![框架设计](https://raw.githubusercontent.com/wiki/dubbo/dubbo-go/dubbo-go%E4%BB%A3%E7%A0%81%E5%88%86%E5%B1%82%E8%AE%BE%E8%AE%A1.png)
+![dubbo go extend](./doc/pic/arch/dubbo-go-ext.png)
 
 关于详细设计请阅读 [code layered design](https://github.com/apache/dubbo-go/wiki/dubbo-go-V1.0-design)
 
@@ -108,6 +108,7 @@ Apache License, Version 2.0
     * [For dubbo](https://github.com/apache/dubbo-go/pull/344)
     * [For grpc](https://github.com/apache/dubbo-go/pull/397)
 
+
 - 其他功能支持:
     * 启动时检查
     * 服务直连
@@ -173,33 +174,6 @@ go test ./... -coverprofile=coverage.txt -covermode=atomic
 
 若你正在使用 [apache/dubbo-go](github.com/apache/dubbo-go) 且认为其有用或者向对其做改进，请忝列贵司信息于 [用户列表](https://github.com/apache/dubbo-go/issues/2)，以便我们知晓之。
 
-<div>
-<table>
-  <tbody>
-  <tr></tr>
-    <tr>
-      <td align="center"  valign="middle">
-        <a href="" target="_blank">
-          <img width="222px"  src="https://pic.c-ctrip.com/common/c_logo2013.png">
-        </a>
-      </td>
-      <td align="center"  valign="middle">
-        <a href="" target="_blank">
-          <img width="222px"  src="(https://raw.githubusercontent.com/dajiiu/photo/static/mirror/haozhuo_logo.png">
-        </a>
-      </td>
-      <td align="center"  valign="middle">
-        <a href="" target="_blank">
-          <img width="222px"  src="https://mosn.io/images/community/tuya.png">
-        </a>
-      </td>
-      <td align="center"  valign="middle">
-        <a href="https://github.com/mosn" target="_blank">
-          <img width="222px"  src="https://raw.githubusercontent.com/mosn/community/master/icons/png/mosn-labeled-horizontal.png">
-        </a>
-      </td>
-    </tr>
-    <tr></tr>
-  </tbody>
-</table>
-</div>
+![ctrip](https://pic.c-ctrip.com/common/c_logo2013.png)
+![Excellent Health Technology Group](https://user-images.githubusercontent.com/52339367/84628582-80512200-af1b-11ea-945a-c6b4b9ad31f2.png)
+![tuya](https://raw.githubusercontent.com/pantianying/go-tool/master/picture/logo_2-removebg-preview.png)

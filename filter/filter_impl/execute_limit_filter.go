@@ -45,9 +45,8 @@ func init() {
 	extension.SetFilter(name, GetExecuteLimitFilter)
 }
 
+// ExecuteLimitFilter  will limit the number of in-progress request and it's thread-safe.
 /**
- * ExecuteLimitFilter
- * The filter will limit the number of in-progress request and it's thread-safe.
  * example:
  * "UserProvider":
  *   registry: "hangzhouzk"
@@ -80,7 +79,7 @@ type ExecuteState struct {
 	concurrentCount int64
 }
 
-// Invoke ...
+// Invoke judges whether the current processing requests over the threshold
 func (ef *ExecuteLimitFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	methodConfigPrefix := "methods." + invocation.MethodName() + "."
 	ivkURL := invoker.GetUrl()
@@ -122,7 +121,7 @@ func (ef *ExecuteLimitFilter) Invoke(ctx context.Context, invoker protocol.Invok
 	return invoker.Invoke(ctx, invocation)
 }
 
-// OnResponse ...
+// OnResponse dummy process, returns the result directly
 func (ef *ExecuteLimitFilter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker, _ protocol.Invocation) protocol.Result {
 	return result
 }
@@ -138,7 +137,7 @@ func (state *ExecuteState) decrease() {
 var executeLimitOnce sync.Once
 var executeLimitFilter *ExecuteLimitFilter
 
-// GetExecuteLimitFilter ...
+// GetExecuteLimitFilter returns the singleton ExecuteLimitFilter instance
 func GetExecuteLimitFilter() filter.Filter {
 	executeLimitOnce.Do(func() {
 		executeLimitFilter = &ExecuteLimitFilter{

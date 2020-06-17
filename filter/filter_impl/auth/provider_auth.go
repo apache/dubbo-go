@@ -29,8 +29,7 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-// ProviderAuthFilter
-// This filter is used to verify the correctness of the signature on provider side
+// ProviderAuthFilter verifies the correctness of the signature on provider side
 type ProviderAuthFilter struct {
 }
 
@@ -38,6 +37,7 @@ func init() {
 	extension.SetFilter(constant.PROVIDER_AUTH_FILTER, getProviderAuthFilter)
 }
 
+// Invoke retrieves the configured Authenticator to verify the signature in an invocation
 func (paf *ProviderAuthFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("invoking providerAuth filter.")
 	url := invoker.GetUrl()
@@ -55,6 +55,7 @@ func (paf *ProviderAuthFilter) Invoke(ctx context.Context, invoker protocol.Invo
 	return invoker.Invoke(ctx, invocation)
 }
 
+// OnResponse dummy process, returns the result directly
 func (paf *ProviderAuthFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }
