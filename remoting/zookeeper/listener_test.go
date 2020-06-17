@@ -97,7 +97,7 @@ func TestListener(t *testing.T) {
 	go client.HandleZkEvent(event)
 	listener := NewZkEventListener(client)
 	dataListener := &mockDataListener{client: client, changedData: changedData, wait: &wait}
-	listener.ListenServiceEvent("/dubbo", dataListener)
+	listener.ListenServiceEvent(nil, "/dubbo", dataListener)
 	time.Sleep(1 * time.Second)
 	_, err := client.Conn.Set("/dubbo/dubbo.properties", []byte(changedData), 1)
 	assert.NoError(t, err)

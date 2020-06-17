@@ -30,7 +30,7 @@ Apache License, Version 2.0
 
 Both extension module and layered project architecture is according to Apache Dubbo (including protocol layer, registry layer, cluster layer, config layer and so on), the advantage of this arch is as following: you can implement these layered interfaces in your own way, override the default implementation of dubbo-go by calling 'extension.SetXXX' of extension, complete your special needs without modifying the source code. At the same time, you are welcome to contribute implementation of useful extension to the community.
 
-![frame design](https://raw.githubusercontent.com/wiki/dubbo/dubbo-go/dubbo-go%E4%BB%A3%E7%A0%81%E5%88%86%E5%B1%82%E8%AE%BE%E8%AE%A1.png)
+![dubbo go extend](./doc/pic/arch/dubbo-go-ext.png)
 
 If you wanna know more about dubbo-go, please visit this reference [Project Architeture design](https://github.com/apache/dubbo-go/wiki/dubbo-go-V1.0-design)
 
@@ -176,33 +176,6 @@ About dubbo-go benchmarking report, please refer to [dubbo benchmarking report](
 If you are using [apache/dubbo-go](github.com/apache/dubbo-go) and think that it helps you or want do some contributions to it, please add your company to to [the user list](https://github.com/apache/dubbo-go/issues/2) to let us know your needs.
 
 
-<div>
-<table>
-  <tbody>
-  <tr></tr>
-    <tr>
-      <td align="center"  valign="middle">
-        <a href="" target="_blank">
-          <img width="222px"  src="https://pic.c-ctrip.com/common/c_logo2013.png">
-        </a>
-      </td>
-      <td align="center"  valign="middle">
-        <a href="" target="_blank">
-          <img width="222px"  src="(https://raw.githubusercontent.com/dajiiu/photo/static/mirror/haozhuo_logo.png">
-        </a>
-      </td>
-      <td align="center"  valign="middle">
-        <a href="" target="_blank">
-          <img width="222px"  src="https://mosn.io/images/community/tuya.png">
-        </a>
-      </td>
-      <td align="center"  valign="middle">
-        <a href="https://github.com/mosn" target="_blank">
-          <img width="222px"  src="https://raw.githubusercontent.com/mosn/community/master/icons/png/mosn-labeled-horizontal.png">
-        </a>
-      </td>
-    </tr>
-    <tr></tr>
-  </tbody>
-</table>
-</div>
+![ctrip](https://pic.c-ctrip.com/common/c_logo2013.png)
+![Excellent Health Technology Group](https://user-images.githubusercontent.com/52339367/84628582-80512200-af1b-11ea-945a-c6b4b9ad31f2.png)
+![tuya](https://raw.githubusercontent.com/pantianying/go-tool/master/picture/logo_2-removebg-preview.png)

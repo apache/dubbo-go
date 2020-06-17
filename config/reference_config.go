@@ -39,7 +39,7 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-// ReferenceConfig ...
+// ReferenceConfig is the configuration of service consumer
 type ReferenceConfig struct {
 	context        context.Context
 	pxy            *proxy.Proxy
@@ -63,9 +63,10 @@ type ReferenceConfig struct {
 	Generic        bool   `yaml:"generic"  json:"generic,omitempty" property:"generic"`
 	Sticky         bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
 	RequestTimeout string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
+	ForceTag       bool   `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
 }
 
-// Prefix ...
+// nolint
 func (c *ReferenceConfig) Prefix() string {
 	return constant.ReferenceConfigPrefix + c.InterfaceName + "."
 }
@@ -75,7 +76,7 @@ func NewReferenceConfig(id string, ctx context.Context) *ReferenceConfig {
 	return &ReferenceConfig{id: id, context: ctx}
 }
 
-// UnmarshalYAML ...
+// UnmarshalYAML unmarshals the ReferenceConfig by @unmarshal function
 func (c *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	type rf ReferenceConfig
 	raw := rf{} // Put your defaults here
@@ -99,7 +100,9 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 		common.WithParams(c.getUrlMap()),
 		common.WithParamsValue(constant.BEAN_NAME_KEY, c.id),
 	)
-
+	if c.ForceTag {
+		cfgURL.AddParam(constant.ForceUseTag, "true")
+	}
 	if c.Url != "" {
 		// 1. user specified URL, could be peer-to-peer address, or register center's address.
 		urlStrings := gxstrings.RegSplit(c.Url, "\\s*[;]+\\s*")
@@ -165,7 +168,7 @@ func (c *ReferenceConfig) Implement(v common.RPCService) {
 	c.pxy.Implement(v)
 }
 
-// GetRPCService ...
+// GetRPCService gets RPCService from proxy
 func (c *ReferenceConfig) GetRPCService() common.RPCService {
 	return c.pxy.Get()
 }
@@ -185,6 +188,10 @@ func (c *ReferenceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.VERSION_KEY, c.Version)
 	urlMap.Set(constant.GENERIC_KEY, strconv.FormatBool(c.Generic))
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
+
+	urlMap.Set(constant.RELEASE_KEY, "dubbo-golang-"+constant.Version)
+	urlMap.Set(constant.SIDE_KEY, (common.RoleType(common.CONSUMER)).Role())
+
 	if len(c.RequestTimeout) != 0 {
 		urlMap.Set(constant.TIMEOUT_KEY, c.RequestTimeout)
 	}
