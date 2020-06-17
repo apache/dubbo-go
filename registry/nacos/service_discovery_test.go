@@ -19,8 +19,6 @@ package nacos
 
 import (
 	"testing"
-
-	"github.com/apache/dubbo-go/config"
 )
 
 import (
@@ -32,6 +30,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/observer"
 	"github.com/apache/dubbo-go/common/observer/dispatcher"
+	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/registry"
 )
 
