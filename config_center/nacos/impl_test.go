@@ -72,12 +72,13 @@ func initNacosData(t *testing.T) (*nacosDynamicConfiguration, error) {
 	server := mockCommonNacosServer()
 	nacosURL := strings.ReplaceAll(server.URL, "http", "registry")
 	regurl, _ := common.NewURL(nacosURL)
-	nacosConfiguration, err := newNacosDynamicConfiguration(&regurl)
+	factory := &nacosDynamicConfigurationFactory{}
+	nacosConfiguration, err := factory.GetDynamicConfiguration(&regurl)
 	assert.NoError(t, err)
 
 	nacosConfiguration.SetParser(&parser.DefaultConfigurationParser{})
 
-	return nacosConfiguration, err
+	return nacosConfiguration.(*nacosDynamicConfiguration), err
 }
 
 func Test_GetConfig(t *testing.T) {
@@ -86,6 +87,34 @@ func Test_GetConfig(t *testing.T) {
 	configs, err := nacos.GetProperties("dubbo.properties", config_center.WithGroup("dubbo"))
 	_, err = nacos.Parser().Parse(configs)
 	assert.NoError(t, err)
+}
+
+func TestNacosDynamicConfiguration_GetConfigKeysByGroup(t *testing.T) {
+	data := `
+{
+    "PageItems": [
+        {
+            "dataId": "application"
+        }
+    ]
+}
+`
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(data))
+	}))
+
+	nacosURL := strings.ReplaceAll(ts.URL, "http", "registry")
+	regurl, _ := common.NewURL(nacosURL)
+	nacosConfiguration, err := newNacosDynamicConfiguration(&regurl)
+	assert.NoError(t, err)
+
+	nacosConfiguration.SetParser(&parser.DefaultConfigurationParser{})
+
+	configs, err := nacosConfiguration.GetConfigKeysByGroup("dubbo")
+	assert.Nil(t, err)
+	assert.Equal(t, 1, configs.Size())
+	assert.True(t, configs.Contains("application"))
+
 }
 
 func TestNacosDynamicConfiguration_PublishConfig(t *testing.T) {
@@ -104,12 +133,10 @@ func Test_AddListener(t *testing.T) {
 	listener := &mockDataListener{}
 	time.Sleep(time.Second * 2)
 	nacos.AddListener("dubbo.properties", listener)
-	listener.wg.Add(1)
-	listener.wg.Wait()
 }
 
 func Test_RemoveListener(t *testing.T) {
-	//TODO not supported in current go_nacos_sdk version
+	// TODO not supported in current go_nacos_sdk version
 }
 
 type mockDataListener struct {

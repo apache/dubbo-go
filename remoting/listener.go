@@ -30,7 +30,7 @@ type DataListener interface {
 // event type
 //////////////////////////////////////////
 
-// EventType ...
+// SourceObjectEventType ...
 type EventType int
 
 const (

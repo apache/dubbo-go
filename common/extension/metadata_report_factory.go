@@ -18,20 +18,20 @@
 package extension
 
 import (
-	"github.com/apache/dubbo-go/metadata"
+	"github.com/apache/dubbo-go/metadata/report/factory"
 )
 
 var (
-	metaDataReportFactories = make(map[string]func() metadata.MetadataReportFactory, 8)
+	metaDataReportFactories = make(map[string]func() factory.MetadataReportFactory, 8)
 )
 
-// SetMetadataReportFactory ...
-func SetMetadataReportFactory(name string, v func() metadata.MetadataReportFactory) {
+// SetMetadataReportFactory sets the MetadataReportFactory with @name
+func SetMetadataReportFactory(name string, v func() factory.MetadataReportFactory) {
 	metaDataReportFactories[name] = v
 }
 
-// GetMetadataReportFactory ...
-func GetMetadataReportFactory(name string) metadata.MetadataReportFactory {
+// GetMetadataReportFactory finds the MetadataReportFactory with @name
+func GetMetadataReportFactory(name string) factory.MetadataReportFactory {
 	if metaDataReportFactories[name] == nil {
 		panic("metadata report for " + name + " is not existing, make sure you have import the package.")
 	}

@@ -18,26 +18,28 @@
 package client
 
 import (
+	"net/http"
 	"time"
 )
 
+// RestOptions
 type RestOptions struct {
 	RequestTimeout time.Duration
 	ConnectTimeout time.Duration
 }
 
-type RestRequest struct {
+// RestClientRequest
+type RestClientRequest struct {
+	Header      http.Header
 	Location    string
 	Path        string
-	Produces    string
-	Consumes    string
 	Method      string
 	PathParams  map[string]string
 	QueryParams map[string]string
 	Body        interface{}
-	Headers     map[string]string
 }
 
+// RestClient user can implement this client interface to send request
 type RestClient interface {
-	Do(request *RestRequest, res interface{}) error
+	Do(request *RestClientRequest, res interface{}) error
 }

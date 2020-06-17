@@ -114,6 +114,10 @@ func (r *etcdV3Registry) DoRegister(root string, node string) error {
 	return r.client.Create(path.Join(root, node), "")
 }
 
+func (r *etcdV3Registry) DoUnregister(root string, node string) error {
+	return perrors.New("DoUnregister is not support in etcdV3Registry")
+}
+
 func (r *etcdV3Registry) CloseAndNilClient() {
 	r.client.Close()
 	r.client = nil
@@ -164,9 +168,11 @@ func (r *etcdV3Registry) DoSubscribe(svc *common.URL) (registry.Listener, error)
 
 	//register the svc to dataListener
 	r.dataListener.AddInterestedURL(svc)
-	for _, v := range strings.Split(svc.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY), ",") {
-		go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+v, svc.Service()), r.dataListener)
-	}
+	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, svc.Service()), r.dataListener)
 
 	return configListener, nil
+}
+
+func (r *etcdV3Registry) DoUnsubscribe(conf *common.URL) (registry.Listener, error) {
+	return nil, perrors.New("DoUnsubscribe is not support in etcdV3Registry")
 }
