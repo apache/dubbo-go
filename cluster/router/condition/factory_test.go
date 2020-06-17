@@ -38,6 +38,8 @@ import (
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
+const anyUrl = "condition://0.0.0.0/com.foo.BarService"
+
 type MockInvoker struct {
 	url          common.URL
 	available    bool
@@ -59,21 +61,21 @@ func (bi *MockInvoker) GetUrl() common.URL {
 }
 
 func getRouteUrl(rule string) *common.URL {
-	url, _ := common.NewURL("condition://0.0.0.0/com.foo.BarService")
+	url, _ := common.NewURL(anyUrl)
 	url.AddParam("rule", rule)
 	url.AddParam("force", "true")
 	return &url
 }
 
 func getRouteUrlWithForce(rule, force string) *common.URL {
-	url, _ := common.NewURL("condition://0.0.0.0/com.foo.BarService")
+	url, _ := common.NewURL(anyUrl)
 	url.AddParam("rule", rule)
 	url.AddParam("force", force)
 	return &url
 }
 
 func getRouteUrlWithNoForce(rule string) *common.URL {
-	url, _ := common.NewURL("condition://0.0.0.0/com.foo.BarService")
+	url, _ := common.NewURL(anyUrl)
 	url.AddParam("rule", rule)
 	return &url
 }
@@ -116,7 +118,7 @@ func (bi *MockInvoker) Destroy() {
 	bi.available = false
 }
 
-func TestRoute_matchWhen(t *testing.T) {
+func TestRouteMatchWhen(t *testing.T) {
 	inv := &invocation.RPCInvocation{}
 	rule := base64.URLEncoding.EncodeToString([]byte("=> host = 1.2.3.4"))
 	router, _ := newConditionRouterFactory().NewRouter(getRouteUrl(rule))
@@ -149,7 +151,7 @@ func TestRoute_matchWhen(t *testing.T) {
 	assert.Equal(t, true, matchWhen6)
 }
 
-func TestRoute_matchFilter(t *testing.T) {
+func TestRouteMatchFilter(t *testing.T) {
 	localIP, _ := gxnet.GetLocalIP()
 	t.Logf("The local ip is %s", localIP)
 	url1, _ := common.NewURL("dubbo://10.20.3.3:20880/com.foo.BarService?default.serialization=fastjson")
@@ -184,7 +186,7 @@ func TestRoute_matchFilter(t *testing.T) {
 
 }
 
-func TestRoute_methodRoute(t *testing.T) {
+func TestRouteMethodRoute(t *testing.T) {
 	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("getFoo"), invocation.WithParameterTypes([]reflect.Type{}), invocation.WithArguments([]interface{}{}))
 	rule := base64.URLEncoding.EncodeToString([]byte("host !=4.4.4.* & host = 2.2.2.2,1.1.1.1,3.3.3.3 => host = 1.2.3.4"))
 	router, _ := newConditionRouterFactory().NewRouter(getRouteUrl(rule))
@@ -207,7 +209,7 @@ func TestRoute_methodRoute(t *testing.T) {
 
 }
 
-func TestRoute_ReturnFalse(t *testing.T) {
+func TestRouteReturnFalse(t *testing.T) {
 	url, _ := common.NewURL("")
 	localIP, _ := gxnet.GetLocalIP()
 	invokers := []protocol.Invoker{NewMockInvoker(url, 1), NewMockInvoker(url, 2), NewMockInvoker(url, 3)}
@@ -219,7 +221,7 @@ func TestRoute_ReturnFalse(t *testing.T) {
 	assert.Equal(t, 0, len(fileredInvokers))
 }
 
-func TestRoute_ReturnEmpty(t *testing.T) {
+func TestRouteReturnEmpty(t *testing.T) {
 	localIP, _ := gxnet.GetLocalIP()
 	url, _ := common.NewURL("")
 	invokers := []protocol.Invoker{NewMockInvoker(url, 1), NewMockInvoker(url, 2), NewMockInvoker(url, 3)}
@@ -231,7 +233,7 @@ func TestRoute_ReturnEmpty(t *testing.T) {
 	assert.Equal(t, 0, len(fileredInvokers))
 }
 
-func TestRoute_ReturnAll(t *testing.T) {
+func TestRouteReturnAll(t *testing.T) {
 	localIP, _ := gxnet.GetLocalIP()
 	urlString := "dubbo://" + localIP + "/com.foo.BarService"
 	dubboURL, _ := common.NewURL(urlString)
@@ -247,7 +249,7 @@ func TestRoute_ReturnAll(t *testing.T) {
 	assert.Equal(t, invokers, fileredInvokers)
 }
 
-func TestRoute_HostFilter(t *testing.T) {
+func TestRouteHostFilter(t *testing.T) {
 	localIP, _ := gxnet.GetLocalIP()
 	url1, _ := common.NewURL("dubbo://10.20.3.3:20880/com.foo.BarService")
 	url2, _ := common.NewURL(fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", localIP))
@@ -266,7 +268,7 @@ func TestRoute_HostFilter(t *testing.T) {
 	assert.Equal(t, invoker3, fileredInvokers[1])
 }
 
-func TestRoute_Empty_HostFilter(t *testing.T) {
+func TestRouteEmptyHostFilter(t *testing.T) {
 	localIP, _ := gxnet.GetLocalIP()
 	url1, _ := common.NewURL("dubbo://10.20.3.3:20880/com.foo.BarService")
 	url2, _ := common.NewURL(fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", localIP))
@@ -285,7 +287,7 @@ func TestRoute_Empty_HostFilter(t *testing.T) {
 	assert.Equal(t, invoker3, fileredInvokers[1])
 }
 
-func TestRoute_False_HostFilter(t *testing.T) {
+func TestRouteFalseHostFilter(t *testing.T) {
 	localIP, _ := gxnet.GetLocalIP()
 	url1, _ := common.NewURL("dubbo://10.20.3.3:20880/com.foo.BarService")
 	url2, _ := common.NewURL(fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", localIP))
@@ -304,7 +306,7 @@ func TestRoute_False_HostFilter(t *testing.T) {
 	assert.Equal(t, invoker3, fileredInvokers[1])
 }
 
-func TestRoute_Placeholder(t *testing.T) {
+func TestRoutePlaceholder(t *testing.T) {
 	localIP, _ := gxnet.GetLocalIP()
 	url1, _ := common.NewURL("dubbo://10.20.3.3:20880/com.foo.BarService")
 	url2, _ := common.NewURL(fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", localIP))
@@ -323,7 +325,7 @@ func TestRoute_Placeholder(t *testing.T) {
 	assert.Equal(t, invoker3, fileredInvokers[1])
 }
 
-func TestRoute_NoForce(t *testing.T) {
+func TestRouteNoForce(t *testing.T) {
 	localIP, _ := gxnet.GetLocalIP()
 	url1, _ := common.NewURL("dubbo://10.20.3.3:20880/com.foo.BarService")
 	url2, _ := common.NewURL(fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", localIP))
@@ -340,7 +342,7 @@ func TestRoute_NoForce(t *testing.T) {
 	assert.Equal(t, invokers, fileredInvokers)
 }
 
-func TestRoute_Force(t *testing.T) {
+func TestRouteForce(t *testing.T) {
 	localIP, _ := gxnet.GetLocalIP()
 	url1, _ := common.NewURL("dubbo://10.20.3.3:20880/com.foo.BarService")
 	url2, _ := common.NewURL(fmt.Sprintf("dubbo://%s:20880/com.foo.BarService", localIP))

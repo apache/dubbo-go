@@ -22,7 +22,6 @@ import (
 	"strings"
 	"sync"
 )
-
 import (
 	gxset "github.com/dubbogo/gost/container/set"
 )
@@ -39,20 +38,26 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 	"github.com/apache/dubbo-go/registry"
-	directory2 "github.com/apache/dubbo-go/registry/directory"
+	_ "github.com/apache/dubbo-go/registry/directory"
 	"github.com/apache/dubbo-go/remoting"
 )
 
 var (
-	regProtocol *registryProtocol
+	regProtocol   *registryProtocol
+	once          sync.Once
+	reserveParams = []string{
+		"application", "codec", "exchanger", "serialization", "cluster", "connections", "deprecated", "group",
+		"loadbalance", "mock", "path", "timeout", "token", "version", "warmup", "weight", "timestamp", "dubbo",
+		"release", "interface",
+	}
 )
 
 type registryProtocol struct {
 	invokers []protocol.Invoker
 	// Registry  Map<RegistryAddress, Registry>
 	registries *sync.Map
-	//To solve the problem of RMI repeated exposure port conflicts, the services that have been exposed are no longer exposed.
-	//providerurl <--> exporter
+	// To solve the problem of RMI repeated exposure port conflicts, the services that have been exposed are no longer exposed.
+	// providerurl <--> exporter
 	bounds                        *sync.Map
 	overrideListeners             *sync.Map
 	serviceConfigurationListeners *sync.Map
@@ -65,10 +70,8 @@ func init() {
 }
 
 func getCacheKey(url *common.URL) string {
-	newUrl := url.Clone()
 	delKeys := gxset.NewSet("dynamic", "enabled")
-	newUrl.RemoveParams(delKeys)
-	return newUrl.String()
+	return url.CloneExceptParams(delKeys).String()
 }
 
 func newRegistryProtocol() *registryProtocol {
@@ -85,6 +88,27 @@ func getRegistry(regUrl *common.URL) registry.Registry {
 		panic(err.Error())
 	}
 	return reg
+}
+
+func getUrlToRegistry(providerUrl *common.URL, registryUrl *common.URL) *common.URL {
+	if registryUrl.GetParamBool("simplified", false) {
+		return providerUrl.CloneWithParams(reserveParams)
+	} else {
+		return filterHideKey(providerUrl)
+	}
+}
+
+// filterHideKey filter the parameters that do not need to be output in url(Starting with .)
+func filterHideKey(url *common.URL) *common.URL {
+
+	// be careful params maps in url is map type
+	removeSet := gxset.NewSet()
+	for k, _ := range url.GetParams() {
+		if strings.HasPrefix(k, ".") {
+			removeSet.Add(k)
+		}
+	}
+	return url.CloneExceptParams(removeSet)
 }
 
 func (proto *registryProtocol) initConfigurationListeners() {
@@ -110,8 +134,8 @@ func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 		reg = regI.(registry.Registry)
 	}
 
-	//new registry directory for store service url from registry
-	directory, err := directory2.NewRegistryDirectory(&registryUrl, reg)
+	// new registry directory for store service url from registry
+	directory, err := extension.GetDefaultRegistryDirectory(&registryUrl, reg)
 	if err != nil {
 		logger.Errorf("consumer service %v  create registry directory  error, error message is %s, and will return nil invoker!",
 			serviceUrl.String(), err.Error())
@@ -123,9 +147,8 @@ func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 		logger.Errorf("consumer service %v register registry %v error, error message is %s",
 			serviceUrl.String(), registryUrl.String(), err.Error())
 	}
-	go directory.Subscribe(serviceUrl)
 
-	//new cluster invoker
+	// new cluster invoker
 	cluster := extension.GetCluster(serviceUrl.GetParam(constant.CLUSTER_KEY, constant.DEFAULT_CLUSTER))
 
 	invoker := cluster.Join(directory)
@@ -150,7 +173,6 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 	serviceConfigurationListener.OverrideUrl(providerUrl)
 
 	var reg registry.Registry
-
 	if regI, loaded := proto.registries.Load(registryUrl.Key()); !loaded {
 		reg = getRegistry(registryUrl)
 		proto.registries.Store(registryUrl.Key(), reg)
@@ -158,7 +180,8 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 		reg = regI.(registry.Registry)
 	}
 
-	err := reg.Register(*providerUrl)
+	registeredProviderUrl := getUrlToRegistry(providerUrl, registryUrl)
+	err := reg.Register(*registeredProviderUrl)
 	if err != nil {
 		logger.Errorf("provider service %v register registry %v error, error message is %s",
 			providerUrl.Key(), registryUrl.Key(), err.Error())
@@ -190,7 +213,7 @@ func (proto *registryProtocol) reExport(invoker protocol.Invoker, newUrl *common
 		oldExporter.(protocol.Exporter).Unexport()
 		proto.bounds.Delete(key)
 		proto.Export(wrappedNewInvoker)
-		//TODO:  unregister & unsubscribe
+		// TODO:  unregister & unsubscribe
 
 	}
 }
@@ -273,7 +296,7 @@ func isMatched(providerUrl *common.URL, consumerUrl *common.URL) bool {
 	providerGroup := providerUrl.GetParam(constant.GROUP_KEY, "")
 	providerVersion := providerUrl.GetParam(constant.VERSION_KEY, "")
 	providerClassifier := providerUrl.GetParam(constant.CLASSIFIER_KEY, "")
-	//todo: public static boolean isContains(String values, String value) {
+	// todo: public static boolean isContains(String values, String value) {
 	//        return isNotEmpty(values) && isContains(COMMA_SPLIT_PATTERN.split(values), value);
 	//    }
 	return (consumerGroup == constant.ANY_VALUE || consumerGroup == providerGroup ||
@@ -326,9 +349,9 @@ func (proto *registryProtocol) Destroy() {
 }
 
 func getRegistryUrl(invoker protocol.Invoker) *common.URL {
-	//here add * for return a new url
+	// here add * for return a new url
 	url := invoker.GetUrl()
-	//if the protocol == registry ,set protocol the registry value in url.params
+	// if the protocol == registry ,set protocol the registry value in url.params
 	if url.Protocol == constant.REGISTRY_PROTOCOL {
 		protocol := url.GetParam(constant.REGISTRY_KEY, "")
 		url.Protocol = protocol
@@ -338,7 +361,7 @@ func getRegistryUrl(invoker protocol.Invoker) *common.URL {
 
 func getProviderUrl(invoker protocol.Invoker) *common.URL {
 	url := invoker.GetUrl()
-	//be careful params maps in url is map type
+	// be careful params maps in url is map type
 	return url.SubURL.Clone()
 }
 
@@ -346,12 +369,12 @@ func setProviderUrl(regURL *common.URL, providerURL *common.URL) {
 	regURL.SubURL = providerURL
 }
 
-// GetProtocol ...
+// GetProtocol return the singleton RegistryProtocol
 func GetProtocol() protocol.Protocol {
-	if regProtocol != nil {
-		return regProtocol
-	}
-	return newRegistryProtocol()
+	once.Do(func() {
+		regProtocol = newRegistryProtocol()
+	})
+	return regProtocol
 }
 
 type wrappedInvoker struct {
