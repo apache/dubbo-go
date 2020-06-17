@@ -21,7 +21,7 @@ import (
 	"fmt"
 )
 
-// DataListener ...
+// DataListener defines common data listener interface
 type DataListener interface {
 	DataChange(eventType Event) bool //bool is return for interface implement is interesting
 }
@@ -30,15 +30,15 @@ type DataListener interface {
 // event type
 //////////////////////////////////////////
 
-// EventType ...
+// EventType means SourceObjectEventType
 type EventType int
 
 const (
-	// EventTypeAdd ...
+	// EventTypeAdd means add event
 	EventTypeAdd = iota
-	// EventTypeDel ...
+	// EventTypeDel means del event
 	EventTypeDel
-	// EventTypeUpdate ...
+	// EventTypeUpdate means update event
 	EventTypeUpdate
 )
 
@@ -56,7 +56,7 @@ func (t EventType) String() string {
 // service event
 //////////////////////////////////////////
 
-// Event ...
+// Event defines common elements for service event
 type Event struct {
 	Path    string
 	Action  EventType

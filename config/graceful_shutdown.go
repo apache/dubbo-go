@@ -52,7 +52,7 @@ import (
  * We define them by using 'package build' feature https://golang.org/pkg/go/build/
  */
 
-// GracefulShutdownInit ...
+// nolint
 func GracefulShutdownInit() {
 
 	signals := make(chan os.Signal, 1)
@@ -83,7 +83,7 @@ func GracefulShutdownInit() {
 	}()
 }
 
-// BeforeShutdown ...
+// BeforeShutdown provides processing flow before shutdown
 func BeforeShutdown() {
 
 	destroyAllRegistries()
@@ -126,10 +126,8 @@ func destroyConsumerProtocols(consumerProtocols *gxset.HashSet) {
 	}
 }
 
-/**
- * destroy the provider's protocol.
- * if the protocol is consumer's protocol too, we will keep it.
- */
+// destroyProviderProtocols destroys the provider's protocol.
+// if the protocol is consumer's protocol too, we will keep it
 func destroyProviderProtocols(consumerProtocols *gxset.HashSet) {
 
 	logger.Info("Graceful shutdown --- Destroy provider's protocols. ")
@@ -215,9 +213,7 @@ func totalTimeout() time.Duration {
 	return timeout
 }
 
-/*
- * we can not get the protocols from consumerConfig because some protocol don't have configuration, like jsonrpc.
- */
+// we can not get the protocols from consumerConfig because some protocol don't have configuration, like jsonrpc.
 func getConsumerProtocols() *gxset.HashSet {
 	result := gxset.NewSet()
 	if consumerConfig == nil || consumerConfig.References == nil {

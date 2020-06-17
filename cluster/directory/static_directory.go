@@ -61,7 +61,7 @@ func (dir *staticDirectory) IsAvailable() bool {
 // List List invokers
 func (dir *staticDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
 	l := len(dir.invokers)
-	invokers := make([]protocol.Invoker, l, l)
+	invokers := make([]protocol.Invoker, l)
 	copy(invokers, dir.invokers)
 	routerChain := dir.RouterChain()
 

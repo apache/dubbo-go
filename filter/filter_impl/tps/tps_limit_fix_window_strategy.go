@@ -39,8 +39,8 @@ func init() {
 	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, creator)
 }
 
+// FixedWindowTpsLimitStrategyImpl implements the TPS limit strategy base on requests count during the interval
 /**
- * FixedWindowTpsLimitStrategyImpl
  * It's the same as default implementation in Java
  * It's not a thread-safe implementation.
  * It you want to use the thread-safe implementation, please use ThreadSafeFixedWindowTpsLimitStrategyImpl
@@ -65,7 +65,8 @@ type FixedWindowTpsLimitStrategyImpl struct {
 	timestamp int64
 }
 
-// IsAllowable ...
+// IsAllowable determines if the requests over the TPS limit within the interval.
+// It is not thread-safe.
 func (impl *FixedWindowTpsLimitStrategyImpl) IsAllowable() bool {
 
 	current := time.Now().UnixNano()
@@ -82,6 +83,7 @@ func (impl *FixedWindowTpsLimitStrategyImpl) IsAllowable() bool {
 
 type fixedWindowStrategyCreator struct{}
 
+// Create returns a FixedWindowTpsLimitStrategyImpl instance with pre-configured limit rate and interval
 func (creator *fixedWindowStrategyCreator) Create(rate int, interval int) filter.TpsLimitStrategy {
 	return &FixedWindowTpsLimitStrategyImpl{
 		rate:      int32(rate),

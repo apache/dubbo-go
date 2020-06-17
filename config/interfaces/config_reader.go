@@ -19,7 +19,7 @@ package interfaces
 
 import "bytes"
 
-// ConfigReader
+// ConfigReader is used to read config from consumer or provider
 type ConfigReader interface {
 	ReadConsumerConfig(reader *bytes.Buffer) error
 	ReadProviderConfig(reader *bytes.Buffer) error
