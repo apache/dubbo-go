@@ -93,7 +93,7 @@ func (mts *MetadataService) ExportURL(url common.URL) (bool, error) {
 	return mts.inMemoryMetadataService.ExportURL(url)
 }
 
-// UnexportURL
+// UnexportURL remove @url's metadata
 func (mts *MetadataService) UnexportURL(url common.URL) error {
 	smi := identifier.NewServiceMetadataIdentifier(url)
 	smi.Revision = mts.exportedRevision.Load()
