@@ -72,8 +72,7 @@ var (
 	ErrDubboLabelAlreadyExist = perrors.New("dubbo label already exist")
 )
 
-// dubboRegistryController
-// work like a kubernetes controller
+// dubboRegistryController works like a kubernetes controller
 type dubboRegistryController struct {
 
 	// clone from client
@@ -364,8 +363,7 @@ func (c *dubboRegistryController) processNextWorkItem() bool {
 	return true
 }
 
-// handleWatchedPodEvent
-// handle watched pod event
+// handleWatchedPodEvent handles watched pod event
 func (c *dubboRegistryController) handleWatchedPodEvent(p *v1.Pod, eventType watch.EventType) {
 	logger.Debugf("get @type = %s event from @pod = %s", eventType, p.GetName())
 
@@ -402,8 +400,7 @@ func (c *dubboRegistryController) handleWatchedPodEvent(p *v1.Pod, eventType wat
 	}
 }
 
-// unmarshalRecord
-// unmarshal the kubernetes dubbo annotation value
+// unmarshalRecord unmarshals the kubernetes dubbo annotation value
 func (c *dubboRegistryController) unmarshalRecord(record string) ([]*WatcherEvent, error) {
 
 	if len(record) == 0 {
@@ -453,8 +450,7 @@ func (c *dubboRegistryController) initCurrentPod() error {
 	return nil
 }
 
-// patch current pod
-// write new meta for current pod
+// patchCurrentPod writes new meta for current pod
 func (c *dubboRegistryController) patchCurrentPod(patch []byte) (*v1.Pod, error) {
 	updatedPod, err := c.kc.CoreV1().Pods(c.namespace).Patch(c.name, types.StrategicMergePatchType, patch)
 	if err != nil {
@@ -463,7 +459,7 @@ func (c *dubboRegistryController) patchCurrentPod(patch []byte) (*v1.Pod, error)
 	return updatedPod, nil
 }
 
-// assemble the dubbo kubernetes label
+// assembleDUBBOLabel assembles the dubbo kubernetes label
 // every dubbo instance should be labeled spec {"dubbo.io/label":"dubbo.io/label-value"} label
 func (c *dubboRegistryController) assembleDUBBOLabel(p *v1.Pod) (*v1.Pod, *v1.Pod, error) {
 	var (
@@ -498,7 +494,7 @@ func (c *dubboRegistryController) assembleDUBBOLabel(p *v1.Pod) (*v1.Pod, *v1.Po
 	return oldPod, newPod, nil
 }
 
-// assemble the dubbo kubernetes annotations
+// assembleDUBBOAnnotations assembles the dubbo kubernetes annotations
 // accord the current pod && (k,v) assemble the old-pod, new-pod
 func (c *dubboRegistryController) assembleDUBBOAnnotations(k, v string, currentPod *v1.Pod) (oldPod *v1.Pod, newPod *v1.Pod, err error) {
 
@@ -528,8 +524,7 @@ func (c *dubboRegistryController) assembleDUBBOAnnotations(k, v string, currentP
 	return
 }
 
-// getPatch
-// get the kubernetes pod patch bytes
+// getPatch gets the kubernetes pod patch bytes
 func (c *dubboRegistryController) getPatch(oldPod, newPod *v1.Pod) ([]byte, error) {
 	oldData, err := json.Marshal(oldPod)
 	if err != nil {
@@ -548,8 +543,7 @@ func (c *dubboRegistryController) getPatch(oldPod, newPod *v1.Pod) ([]byte, erro
 	return patchBytes, nil
 }
 
-// marshalRecord
-// marshal the kubernetes dubbo annotation value
+// marshalRecord marshals the kubernetes dubbo annotation value
 func (c *dubboRegistryController) marshalRecord(ol []*WatcherEvent) (string, error) {
 	msg, err := json.Marshal(ol)
 	if err != nil {
@@ -558,7 +552,7 @@ func (c *dubboRegistryController) marshalRecord(ol []*WatcherEvent) (string, err
 	return base64.URLEncoding.EncodeToString(msg), nil
 }
 
-// read from kubernetes-env current pod status
+// readCurrentPod reads from kubernetes-env current pod status
 func (c *dubboRegistryController) readCurrentPod() (*v1.Pod, error) {
 	currentPod, err := c.kc.CoreV1().Pods(c.namespace).Get(c.name, metav1.GetOptions{})
 	if err != nil {
@@ -567,7 +561,7 @@ func (c *dubboRegistryController) readCurrentPod() (*v1.Pod, error) {
 	return currentPod, nil
 }
 
-// add annotation for current pod
+// addAnnotationForCurrentPod adds annotation for current pod
 func (c *dubboRegistryController) addAnnotationForCurrentPod(k string, v string) error {
 
 	c.lock.Lock()
