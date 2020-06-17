@@ -44,9 +44,9 @@ func TestHealthCheckRouter_Route(t *testing.T) {
 	hcr, _ := NewHealthCheckRouter(&consumerURL)
 
 	var invokers []protocol.Invoker
-	invoker1 := NewMockInvoker(url1, 1)
-	invoker2 := NewMockInvoker(url2, 1)
-	invoker3 := NewMockInvoker(url3, 1)
+	invoker1 := NewMockInvoker(url1)
+	invoker2 := NewMockInvoker(url2)
+	invoker3 := NewMockInvoker(url3)
 	invokers = append(invokers, invoker1, invoker2, invoker3)
 	inv := invocation.NewRPCInvocation("test", nil, nil)
 	res := hcr.Route(invokers, &consumerURL, inv)
