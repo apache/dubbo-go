@@ -18,6 +18,7 @@
 package nacos
 
 import (
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -36,7 +37,8 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
-const logDir = "logs/nacos/log"
+// Nacos Log dir, it can be override when creating client by config_center.log_dir
+var logDir = filepath.Join("logs", "nacos", "log")
 
 // NacosClient Nacos client
 type NacosClient struct {
@@ -87,6 +89,7 @@ func ValidateNacosClient(container nacosClientFacade, opts ...option) error {
 	}
 
 	url := container.GetUrl()
+	logDir = url.GetParam(constant.CONFIG_LOG_DIR_KEY, logDir)
 
 	if container.NacosClient() == nil {
 		//in dubbo ,every registry only connect one node ,so this is []string{r.Address}
