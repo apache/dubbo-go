@@ -15,20 +15,30 @@
  * limitations under the License.
  */
 
-package identifier
+package config_center
 
-// SubscriberMetadataIdentifier is inherit baseMetaIdentifier with service params: Revision
-type SubscriberMetadataIdentifier struct {
-	revision string
-	BaseMetadataIdentifier
+import (
+	"testing"
+	"time"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
+)
+
+func TestWithTimeout(t *testing.T) {
+	fa := WithTimeout(12 * time.Second)
+	opt := &Options{}
+	fa(opt)
+	assert.Equal(t, 12*time.Second, opt.Timeout)
 }
 
-// GetIdentifierKey returns string that format is service:Version:Group:Side:Revision
-func (mdi *SubscriberMetadataIdentifier) getIdentifierKey(params ...string) string {
-	return mdi.BaseMetadataIdentifier.getIdentifierKey(mdi.revision)
-}
-
-// GetFilePathKey returns string that format is metadata/path/Version/Group/Side/Revision
-func (mdi *SubscriberMetadataIdentifier) getFilePathKey(params ...string) string {
-	return mdi.BaseMetadataIdentifier.getFilePathKey(mdi.revision)
+func TestGetRuleKey(t *testing.T) {
+	url, err := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider?interface=test&group=groupA&version=0")
+	assert.NoError(t, err)
+	assert.Equal(t, "test:0:groupA", GetRuleKey(url))
 }
