@@ -42,10 +42,10 @@ func init() {
 	extension.SetFilter(TOKEN, GetTokenFilter)
 }
 
-// TokenFilter ...
+// TokenFilter will verify if the token is valid
 type TokenFilter struct{}
 
-// Invoke ...
+// Invoke verifies the incoming token with the service configured token
 func (tf *TokenFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	invokerTkn := invoker.GetUrl().GetParam(constant.TOKEN_KEY, "")
 	if len(invokerTkn) > 0 {
@@ -61,7 +61,7 @@ func (tf *TokenFilter) Invoke(ctx context.Context, invoker protocol.Invoker, inv
 	return invoker.Invoke(ctx, invocation)
 }
 
-// OnResponse ...
+// OnResponse dummy process, returns the result directly
 func (tf *TokenFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }

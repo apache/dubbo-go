@@ -19,6 +19,7 @@ package cluster_impl
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"sync"
 	"testing"
@@ -42,10 +43,11 @@ import (
 )
 
 var (
-	forkingUrl, _ = common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
+	forkingUrl, _ = common.NewURL(
+		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
 )
 
-func registerForking(t *testing.T, mockInvokers ...*mock.MockInvoker) protocol.Invoker {
+func registerForking(mockInvokers ...*mock.MockInvoker) protocol.Invoker {
 	extension.SetLoadbalance(loadbalance.RoundRobin, loadbalance.NewRoundRobinLoadBalance)
 
 	invokers := []protocol.Invoker{}
@@ -62,7 +64,7 @@ func registerForking(t *testing.T, mockInvokers ...*mock.MockInvoker) protocol.I
 	return clusterInvoker
 }
 
-func Test_ForkingInvokeSuccess(t *testing.T) {
+func TestForkingInvokeSuccess(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -79,20 +81,20 @@ func Test_ForkingInvokeSuccess(t *testing.T) {
 		invokers = append(invokers, invoker)
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 		invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
-			func(invocation protocol.Invocation) protocol.Result {
+			func(protocol.Invocation) protocol.Result {
 				wg.Done()
 				return mockResult
 			})
 	}
 
-	clusterInvoker := registerForking(t, invokers...)
+	clusterInvoker := registerForking(invokers...)
 
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 	assert.Equal(t, mockResult, result)
 	wg.Wait()
 }
 
-func Test_ForkingInvokeTimeout(t *testing.T) {
+func TestForkingInvokeTimeout(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -108,14 +110,14 @@ func Test_ForkingInvokeTimeout(t *testing.T) {
 		invokers = append(invokers, invoker)
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 		invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
-			func(invocation protocol.Invocation) protocol.Result {
+			func(protocol.Invocation) protocol.Result {
 				time.Sleep(2 * time.Second)
 				wg.Done()
 				return mockResult
 			})
 	}
 
-	clusterInvoker := registerForking(t, invokers...)
+	clusterInvoker := registerForking(invokers...)
 
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 	assert.NotNil(t, result)
@@ -123,7 +125,7 @@ func Test_ForkingInvokeTimeout(t *testing.T) {
 	wg.Wait()
 }
 
-func Test_ForkingInvokeHalfTimeout(t *testing.T) {
+func TestForkingInvokeHalfTimeout(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -140,13 +142,13 @@ func Test_ForkingInvokeHalfTimeout(t *testing.T) {
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 		if i == 1 {
 			invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
-				func(invocation protocol.Invocation) protocol.Result {
+				func(protocol.Invocation) protocol.Result {
 					wg.Done()
 					return mockResult
 				})
 		} else {
 			invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
-				func(invocation protocol.Invocation) protocol.Result {
+				func(protocol.Invocation) protocol.Result {
 					time.Sleep(2 * time.Second)
 					wg.Done()
 					return mockResult
@@ -154,7 +156,7 @@ func Test_ForkingInvokeHalfTimeout(t *testing.T) {
 		}
 	}
 
-	clusterInvoker := registerForking(t, invokers...)
+	clusterInvoker := registerForking(invokers...)
 
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 	assert.Equal(t, mockResult, result)

@@ -107,7 +107,6 @@ func (g *dubboGrpc) GenerateImports(file *generator.FileDescriptor) {
 	g.P(`dgrpc "github.com/apache/dubbo-go/protocol/grpc"`)
 	g.P(`"github.com/apache/dubbo-go/protocol/invocation"`)
 	g.P(`"github.com/apache/dubbo-go/protocol"`)
-	g.P(`"github.com/apache/dubbo-go/config"`)
 	g.P(` ) `)
 }
 
@@ -266,7 +265,7 @@ func (g *dubboGrpc) generateServerMethod(servName, fullServName string, method *
 		g.P(`invo := invocation.NewRPCInvocation("`, methName, `", args, nil)`)
 
 		g.P("if interceptor == nil {")
-		g.P("result := base.GetProxyImpl().Invoke(invo)")
+		g.P("result := base.GetProxyImpl().Invoke(context.Background(), invo)")
 		g.P("return result.Result(), result.Error()")
 		g.P("}")
 
@@ -276,7 +275,7 @@ func (g *dubboGrpc) generateServerMethod(servName, fullServName string, method *
 		g.P("}")
 
 		g.P("handler := func(ctx ", contextPkg, ".Context, req interface{}) (interface{}, error) {")
-		g.P("result := base.GetProxyImpl().Invoke(invo)")
+		g.P("result := base.GetProxyImpl().Invoke(context.Background(), invo)")
 		g.P("return result.Result(), result.Error()")
 		g.P("}")
 
