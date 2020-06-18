@@ -116,7 +116,7 @@ func newMockZkRegistry(url *common.URL, opts ...zookeeper.Option) (*zk.TestClust
 	return c, r, nil
 }
 
-// InitListeners init listeners of zookeeper registry center
+// InitListeners initializes listeners of zookeeper registry center
 func (r *zkRegistry) InitListeners() {
 	r.listener = zookeeper.NewZkEventListener(r.client)
 	newDataListener := NewRegistryDataListener()
@@ -142,7 +142,7 @@ func (r *zkRegistry) InitListeners() {
 	r.dataListener = newDataListener
 }
 
-// CreatePath create the path in the registry center of zookeeper
+// CreatePath creates the path in the registry center of zookeeper
 func (r *zkRegistry) CreatePath(path string) error {
 	return r.ZkClient().Create(path)
 }
@@ -152,7 +152,7 @@ func (r *zkRegistry) DoRegister(root string, node string) error {
 	return r.registerTempZookeeperNode(root, node)
 }
 
-// DoSubscribe actually subscribe the provider URL
+// DoSubscribe actually subscribes the provider URL
 func (r *zkRegistry) DoSubscribe(conf *common.URL) (registry.Listener, error) {
 	return r.getListener(conf)
 }

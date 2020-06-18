@@ -43,7 +43,7 @@ func NewRegistryDataListener(listener config_center.ConfigurationListener) *data
 	return &dataListener{listener: listener}
 }
 
-// AddInterestedURL add more URL of registry center to listen
+// AddInterestedURL adds the @url of registry center to the listener
 func (l *dataListener) AddInterestedURL(url *common.URL) {
 	l.interestedURL = append(l.interestedURL, url)
 }
@@ -91,7 +91,7 @@ func NewConfigurationListener(reg *kubernetesRegistry) *configurationListener {
 	return &configurationListener{registry: reg, events: make(chan *config_center.ConfigChangeEvent, 32)}
 }
 
-// Process data change event from config center of kubernetes
+// Process processes the data change event from config center of kubernetes
 func (l *configurationListener) Process(configType *config_center.ConfigChangeEvent) {
 	l.events <- configType
 }
