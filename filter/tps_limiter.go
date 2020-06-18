@@ -22,8 +22,8 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
+// TpsLimiter defines the Limiter that judge if the TPS overs the threshold
 /*
- * TpsLimiter
  * please register your implementation by invoking SetTpsLimiter
  * The usage, for example:
  * "UserProvider":

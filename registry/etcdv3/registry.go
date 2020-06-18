@@ -67,7 +67,7 @@ func (r *etcdV3Registry) SetClient(client *etcdv3.Client) {
 	r.client = client
 }
 
-// ClientLock gets registry control lock
+// ClientLock returns lock for client
 func (r *etcdV3Registry) ClientLock() *sync.Mutex {
 	return &r.cltLock
 }
