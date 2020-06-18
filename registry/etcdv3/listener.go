@@ -43,12 +43,12 @@ func NewRegistryDataListener(listener config_center.ConfigurationListener) *data
 	return &dataListener{listener: listener}
 }
 
-// AddInterestedURL add more URL of registry center to listen
+// AddInterestedURL adds a registration @url to listen
 func (l *dataListener) AddInterestedURL(url *common.URL) {
 	l.interestedURL = append(l.interestedURL, url)
 }
 
-// Process data change event from registry center of etcd
+// DataChange processes the data change event from registry center of etcd
 func (l *dataListener) DataChange(eventType remoting.Event) bool {
 
 	index := strings.Index(eventType.Path, "/providers/")

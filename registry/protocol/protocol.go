@@ -231,7 +231,7 @@ func newOverrideSubscribeListener(overriderUrl *common.URL, invoker protocol.Inv
 	return &overrideSubscribeListener{url: overriderUrl, originInvoker: invoker, protocol: proto}
 }
 
-// Notify will triggered when a service change notification is received.
+// Notify will be triggered when a service change notification is received.
 func (nl *overrideSubscribeListener) Notify(event *registry.ServiceEvent) {
 	if isMatched(&(event.Service), nl.url) && event.Action == remoting.EventTypeAdd {
 		nl.configurator = extension.GetDefaultConfigurator(&(event.Service))

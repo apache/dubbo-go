@@ -27,7 +27,7 @@ import (
 
 // ConfigurationListener for changing listener's event
 type ConfigurationListener interface {
-	// Process notified once there's any change happens on the config
+	// Process the notification event once there's any change happens on the config
 	Process(*ConfigChangeEvent)
 }
 

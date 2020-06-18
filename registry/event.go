@@ -36,7 +36,7 @@ func init() {
 // service event
 // ////////////////////////////////////////
 
-// ServiceEvent is create、update or delete event of service
+// ServiceEvent includes create, update, delete event
 type ServiceEvent struct {
 	Action  remoting.EventType
 	Service common.URL

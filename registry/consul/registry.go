@@ -163,7 +163,7 @@ func (r *consulRegistry) GetUrl() common.URL {
 	return *r.URL
 }
 
-// IsAvailable determines consul registry center whether is available
+// IsAvailable checks consul registry center whether is available
 func (r *consulRegistry) IsAvailable() bool {
 	select {
 	case <-r.done:
