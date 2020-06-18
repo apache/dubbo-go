@@ -109,7 +109,7 @@ func generateUrl(instance model.Instance) *common.URL {
 	)
 }
 
-// Callback will callback when subscribed
+// Callback will be invoked when got subscribed events.
 func (nl *nacosListener) Callback(services []model.SubscribeService, err error) {
 	if err != nil {
 		logger.Errorf("nacos subscribe callback error:%s , subscribe:%+v ", err.Error(), nl.subscribeParam)
@@ -199,7 +199,7 @@ func (nl *nacosListener) process(configType *config_center.ConfigChangeEvent) {
 	nl.events <- configType
 }
 
-// Next returns next service event once received
+// Next returns the service event from nacos.
 func (nl *nacosListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {

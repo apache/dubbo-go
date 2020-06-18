@@ -187,7 +187,7 @@ func (l *consulListener) handler(idx uint64, raw interface{}) {
 	}
 }
 
-// Next returns next service event once received
+// Next returns the service event from consul.
 func (l *consulListener) Next() (*registry.ServiceEvent, error) {
 	select {
 	case event := <-l.eventCh:
