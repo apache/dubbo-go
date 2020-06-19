@@ -123,6 +123,7 @@ func createRegisterParam(url common.URL, serviceName string) vo.RegisterInstance
 	return instance
 }
 
+// Register will register the service @url to its nacos registry center
 func (nr *nacosRegistry) Register(url common.URL) error {
 	serviceName := getServiceName(url)
 	param := createRegisterParam(url, serviceName)
@@ -140,7 +141,7 @@ func (nr *nacosRegistry) subscribe(conf *common.URL) (registry.Listener, error) 
 	return NewNacosListener(*conf, nr.namingClient)
 }
 
-//subscribe from registry
+// subscribe from registry
 func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
 	for {
 		if !nr.IsAvailable() {
@@ -174,14 +175,17 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 	}
 }
 
+// GetUrl gets its registration URL
 func (nr *nacosRegistry) GetUrl() common.URL {
 	return *nr.URL
 }
 
+// IsAvailable determines nacos registry center whether it is available
 func (nr *nacosRegistry) IsAvailable() bool {
 	return true
 }
 
+// nolint
 func (nr *nacosRegistry) Destroy() {
 	return
 }
