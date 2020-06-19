@@ -187,6 +187,7 @@ func (l *consulListener) handler(idx uint64, raw interface{}) {
 	}
 }
 
+// Next returns the service event from consul.
 func (l *consulListener) Next() (*registry.ServiceEvent, error) {
 	select {
 	case event := <-l.eventCh:
@@ -196,6 +197,7 @@ func (l *consulListener) Next() (*registry.ServiceEvent, error) {
 	}
 }
 
+// Close closes this listener
 func (l *consulListener) Close() {
 	close(l.done)
 	l.plan.Stop()

@@ -29,19 +29,19 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
-// BaseConfigurationListener ...
+// nolint
 type BaseConfigurationListener struct {
 	configurators           []config_center.Configurator
 	dynamicConfiguration    config_center.DynamicConfiguration
 	defaultConfiguratorFunc func(url *common.URL) config_center.Configurator
 }
 
-// Configurators ...
+// Configurators gets Configurator from config center
 func (bcl *BaseConfigurationListener) Configurators() []config_center.Configurator {
 	return bcl.configurators
 }
 
-// InitWith ...
+// InitWith will init BaseConfigurationListener by @key+@Listener+@f
 func (bcl *BaseConfigurationListener) InitWith(key string, listener config_center.ConfigurationListener, f func(url *common.URL) config_center.Configurator) {
 	bcl.dynamicConfiguration = config.GetEnvInstance().GetDynamicConfiguration()
 	if bcl.dynamicConfiguration == nil {
@@ -60,7 +60,7 @@ func (bcl *BaseConfigurationListener) InitWith(key string, listener config_cente
 	}
 }
 
-// Process ...
+// Process the notification event once there's any change happens on the config.
 func (bcl *BaseConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
 	logger.Infof("Notification of overriding rule, change type is: %v , raw config content is:%v", event.ConfigType, event.Value)
 	if event.ConfigType == remoting.EventTypeDel {
@@ -82,14 +82,14 @@ func (bcl *BaseConfigurationListener) genConfiguratorFromRawRule(rawConfig strin
 	return nil
 }
 
-// OverrideUrl ...
+// OverrideUrl gets existing configuration rule and overrides provider url before exporting.
 func (bcl *BaseConfigurationListener) OverrideUrl(url *common.URL) {
 	for _, v := range bcl.configurators {
 		v.Configure(url)
 	}
 }
 
-// ToConfigurators ...
+// ToConfigurators converts @urls by @f to config_center.Configurators
 func ToConfigurators(urls []*common.URL, f func(url *common.URL) config_center.Configurator) []config_center.Configurator {
 	if len(urls) == 0 {
 		return nil

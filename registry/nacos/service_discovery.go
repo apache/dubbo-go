@@ -34,8 +34,9 @@ import (
 )
 
 const (
-	defaultGroup = "DEFAULT_GROUP"
-	idKey        = "id"
+	defaultGroup    = "DEFAULT_GROUP"
+	idKey           = "id"
+	defaultPageSize = 100
 )
 
 // init will put the service discovery into extension
@@ -92,7 +93,7 @@ func (n *nacosServiceDiscovery) Unregister(instance registry.ServiceInstance) er
 
 // GetDefaultPageSize will return the constant registry.DefaultPageSize
 func (n *nacosServiceDiscovery) GetDefaultPageSize() int {
-	return registry.DefaultPageSize
+	return defaultPageSize
 }
 
 // GetServices will return the all services
