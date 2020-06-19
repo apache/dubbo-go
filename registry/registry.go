@@ -45,13 +45,16 @@ type Registry interface {
 	Subscribe(*common.URL, NotifyListener)
 }
 
-// NotifyListener ...
+// nolint
 type NotifyListener interface {
+	// Notify supports notifications on the service interface and the dimension of the data type.
 	Notify(*ServiceEvent)
 }
 
 // Listener Deprecated!
 type Listener interface {
+	// Next returns next service event once received
 	Next() (*ServiceEvent, error)
+	// Close closes this listener
 	Close()
 }
