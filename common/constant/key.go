@@ -161,6 +161,10 @@ const (
 )
 
 const (
+	ETCDV3_KEY = "etcdv3"
+)
+
+const (
 	TRACING_REMOTE_SPAN_CTX = "tracing.remote.span.ctx"
 )
 

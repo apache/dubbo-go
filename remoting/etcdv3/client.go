@@ -133,6 +133,26 @@ func ValidateClient(container clientFacade, opts ...Option) error {
 	return nil
 }
 
+//  NewServiceDiscoveryClient
+func NewServiceDiscoveryClient(opts ...Option) *Client {
+	options := &Options{
+		heartbeat: 1, // default heartbeat
+	}
+
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	newClient, err := NewClient(options.name, options.endpoints, options.timeout, options.heartbeat)
+	if err != nil {
+		logger.Warnf("new etcd client (name{%s}, etcd addresses{%v}, timeout{%d}) = error{%v}",
+			options.name, options.endpoints, options.timeout, err)
+		return nil
+	}
+
+	return newClient
+}
+
 // Client ...
 type Client struct {
 	lock sync.RWMutex
@@ -280,6 +300,28 @@ func (c *Client) put(k string, v string, opts ...clientv3.OpOption) error {
 
 	_, err := c.rawClient.Txn(c.ctx).
 		If(clientv3.Compare(clientv3.Version(k), "<", 1)).
+		Then(clientv3.OpPut(k, v, opts...)).
+		Commit()
+	if err != nil {
+		return err
+
+	}
+	return nil
+}
+
+// if k not exist will put k/v in etcd
+// if k is already exist in etcd, replace it
+func (c *Client) update(k string, v string, opts ...clientv3.OpOption) error {
+
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	if c.rawClient == nil {
+		return ErrNilETCDV3Client
+	}
+
+	_, err := c.rawClient.Txn(c.ctx).
+		If(clientv3.Compare(clientv3.Version(k), "!=", -1)).
 		Then(clientv3.OpPut(k, v, opts...)).
 		Commit()
 	if err != nil {
@@ -455,6 +497,15 @@ func (c *Client) Create(k string, v string) error {
 	err := c.put(k, v)
 	if err != nil {
 		return perrors.WithMessagef(err, "put k/v (key: %s value %s)", k, v)
+	}
+	return nil
+}
+
+// Update key value ...
+func (c *Client) Update(k, v string) error {
+	err := c.update(k, v)
+	if err != nil {
+		return perrors.WithMessagef(err, "Update k/v (key: %s value %s)", k, v)
 	}
 	return nil
 }
