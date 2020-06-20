@@ -20,7 +20,9 @@ package event
 import (
 	"encoding/json"
 	"strconv"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -41,7 +43,7 @@ func (p *ProtocolPortsMetadataCustomizer) GetPriority() int {
 	return 0
 }
 
-// Customize will
+// Customize put the the string like [{"protocol": "dubbo", "port": 123}] into instance's metadata
 func (p *ProtocolPortsMetadataCustomizer) Customize(instance registry.ServiceInstance) {
 	metadataService, err := getMetadataService()
 	if err != nil {
@@ -49,7 +51,7 @@ func (p *ProtocolPortsMetadataCustomizer) Customize(instance registry.ServiceIns
 		return
 	}
 
-	// 4 is enough...
+	// 4 is enough... we don't have many protocol
 	protocolMap := make(map[string]int, 4)
 
 	list, err := metadataService.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
@@ -75,6 +77,7 @@ func (p *ProtocolPortsMetadataCustomizer) Customize(instance registry.ServiceIns
 	instance.GetMetadata()[constant.SERVICE_INSTANCE_ENDPOINTS] = endpointsStr(protocolMap)
 }
 
+// endpointsStr convert the map to json like [{"protocol": "dubbo", "port": 123}]
 func endpointsStr(protocolMap map[string]int) string {
 	if len(protocolMap) == 0 {
 		return ""
@@ -96,6 +99,7 @@ func endpointsStr(protocolMap map[string]int) string {
 	return string(str)
 }
 
+// nolint
 type endpoint struct {
 	Port     int    `json:"port"`
 	Protocol string `json:"protocol"`
