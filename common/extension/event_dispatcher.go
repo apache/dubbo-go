@@ -50,7 +50,7 @@ func SetAndInitGlobalDispatcher(name string) {
 		name = "direct"
 	}
 	if globalEventDispatcher != nil {
-		logger.Warnf("EventDispatcher already init. It will be replaced")
+		logger.Warnf("EventDispatcher has been initialized. It will be replaced")
 	}
 
 	if dp, ok := dispatchers[name]; !ok || dp == nil {

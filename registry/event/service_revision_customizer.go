@@ -21,7 +21,9 @@ import (
 	"fmt"
 	"hash/crc32"
 	"sort"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -45,6 +47,7 @@ func (e *exportedServicesRevisionMetadataCustomizer) GetPriority() int {
 	return 1
 }
 
+// Customize calculate the revision for exported urls and then put it into instance metadata
 func (e *exportedServicesRevisionMetadataCustomizer) Customize(instance registry.ServiceInstance) {
 	ms, err := getMetadataService()
 	if err != nil {
@@ -73,6 +76,7 @@ func (e *subscribedServicesRevisionMetadataCustomizer) GetPriority() int {
 	return 2
 }
 
+// Customize calculate the revision for subscribed urls and then put it into instance metadata
 func (e *subscribedServicesRevisionMetadataCustomizer) Customize(instance registry.ServiceInstance) {
 	ms, err := getMetadataService()
 	if err != nil {
