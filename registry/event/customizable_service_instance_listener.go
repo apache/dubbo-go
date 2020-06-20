@@ -20,7 +20,9 @@ package event
 import (
 	"reflect"
 	"sync"
+)
 
+import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/observer"
 )
@@ -56,9 +58,13 @@ func (c *customizableServiceInstanceListener) GetEventType() reflect.Type {
 	return reflect.TypeOf(&ServiceInstancePreRegisteredEvent{})
 }
 
-var customizableServiceInstanceListenerInstance *customizableServiceInstanceListener
-var customizableServiceInstanceListenerOnce sync.Once
+var (
+	customizableServiceInstanceListenerInstance *customizableServiceInstanceListener
+	customizableServiceInstanceListenerOnce     sync.Once
+)
 
+// GetCustomizableServiceInstanceListener returns an instance
+// if the instance was not initialized, we create one
 func GetCustomizableServiceInstanceListener() observer.EventListener {
 	customizableServiceInstanceListenerOnce.Do(func() {
 		customizableServiceInstanceListenerInstance = &customizableServiceInstanceListener{}

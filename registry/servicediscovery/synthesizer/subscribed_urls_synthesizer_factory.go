@@ -21,10 +21,12 @@ var (
 	synthesizers []SubscribedURLsSynthesizer
 )
 
+// nolint
 func AddSynthesizer(synthesizer SubscribedURLsSynthesizer) {
 	synthesizers = append(synthesizers, synthesizer)
 }
 
+// nolint
 func GetAllSynthesizer() []SubscribedURLsSynthesizer {
 	return synthesizers
 }

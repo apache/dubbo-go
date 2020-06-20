@@ -31,13 +31,13 @@ type ServiceInstancesChangedListener struct {
 	ChangedNotify observer.ChangedNotify
 }
 
-// On ServiceInstancesChangedEvent the service instances change event
+// OnEvent on ServiceInstancesChangedEvent the service instances change event
 func (lstn *ServiceInstancesChangedListener) OnEvent(e observer.Event) error {
 	lstn.ChangedNotify.Notify(e)
 	return nil
 }
 
-// return true if the name is the same
+// Accept return true if the name is the same
 func (lstn *ServiceInstancesChangedListener) Accept(e observer.Event) bool {
 	if ce, ok := e.(*ServiceInstancesChangedEvent); ok {
 		return ce.ServiceName == lstn.ServiceName
@@ -45,12 +45,12 @@ func (lstn *ServiceInstancesChangedListener) Accept(e observer.Event) bool {
 	return false
 }
 
-// get listener priority
+// GetPriority returns -1, it will be the first invoked listener
 func (lstn *ServiceInstancesChangedListener) GetPriority() int {
 	return -1
 }
 
-// get event type
+// GetEventType returns ServiceInstancesChangedEvent
 func (lstn *ServiceInstancesChangedListener) GetEventType() reflect.Type {
 	return reflect.TypeOf(&ServiceInstancesChangedEvent{})
 }

@@ -19,7 +19,9 @@ package event
 
 import (
 	"testing"
+)
 
+import (
 	"github.com/stretchr/testify/assert"
 )
 
