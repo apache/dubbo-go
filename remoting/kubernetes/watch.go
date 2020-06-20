@@ -140,14 +140,12 @@ func (s *watcherSetImpl) Watch(key string, prefix bool) (Watcher, error) {
 	return s.addWatcher(key, prefix)
 }
 
-// Done
-// get the watcher-set status
+// Done gets the watcher-set status
 func (s *watcherSetImpl) Done() <-chan struct{} {
 	return s.ctx.Done()
 }
 
-// Put
-// put the watch event to watcher-set
+// Put puts the watch event to watcher-set
 func (s *watcherSetImpl) Put(watcherEvent *WatcherEvent) error {
 
 	blockSendMsg := func(object *WatcherEvent, w *watcher) {
@@ -243,8 +241,7 @@ func (s *watcherSetImpl) addWatcher(key string, prefix bool) (Watcher, error) {
 	return w, nil
 }
 
-// Get
-// get elements from watcher-set
+// Get gets elements from watcher-set
 func (s *watcherSetImpl) Get(key string, prefix bool) ([]*WatcherEvent, error) {
 
 	s.lock.RLock()
@@ -297,19 +294,17 @@ type watcher struct {
 	exit      chan struct{}
 }
 
-// ResultChan
+// nolint
 func (w *watcher) ResultChan() <-chan *WatcherEvent {
 	return w.ch
 }
 
-// ID
-// the watcher's id
+// nolint
 func (w *watcher) ID() string {
 	return strconv.FormatUint(w.id, 10)
 }
 
-// stop
-// stop the watcher
+// nolint
 func (w *watcher) stop() {
 
 	// double close will panic
@@ -318,14 +313,12 @@ func (w *watcher) stop() {
 	})
 }
 
-// done
-// check watcher status
+// done checks watcher status
 func (w *watcher) done() <-chan struct{} {
 	return w.exit
 }
 
-// newWatcherSet
-// new watcher set from parent context
+// newWatcherSet returns new watcher set from parent context
 func newWatcherSet(ctx context.Context) WatcherSet {
 	s := &watcherSetImpl{
 		ctx:      ctx,
