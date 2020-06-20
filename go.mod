@@ -32,7 +32,7 @@ require (
 	github.com/magiconair/properties v1.8.1
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
-	github.com/nacos-group/nacos-sdk-go v0.3.1
+	github.com/nacos-group/nacos-sdk-go v0.3.3-0.20200617023039-50c7537d6a5f
 	github.com/opentracing/opentracing-go v1.1.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.1.0
@@ -56,5 +56,3 @@ require (
 )
 
 go 1.13
-
-replace github.com/nacos-group/nacos-sdk-go => /Users/mindeng/go-workspace/src/nacos-sdk-go

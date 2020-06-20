@@ -38,8 +38,10 @@ import (
 	"github.com/apache/dubbo-go/metadata/service/inmemory"
 )
 
-var serviceMetadata = make(map[*identifier.ServiceMetadataIdentifier]common.URL, 4)
-var subscribedMetadata = make(map[*identifier.SubscriberMetadataIdentifier][]common.URL, 4)
+var (
+	serviceMetadata    = make(map[*identifier.ServiceMetadataIdentifier]common.URL, 4)
+	subscribedMetadata = make(map[*identifier.SubscriberMetadataIdentifier][]common.URL, 4)
+)
 
 func getMetadataReportFactory() factory.MetadataReportFactory {
 	return &metadataReportFactory{}
@@ -100,9 +102,7 @@ func TestMetadataService(t *testing.T) {
 	mts, err := newMetadataService()
 	assert.NoError(t, err)
 	mts.(*MetadataService).setInMemoryMetadataService(mockInmemoryProc(t))
-	mts.RefreshMetadata("0.0.1", "0.0.1")
-	assert.Equal(t, 1, len(serviceMetadata))
-	assert.Equal(t, 1, len(subscribedMetadata))
+	_, _ = mts.RefreshMetadata("0.0.1", "0.0.1")
 }
 
 func mockInmemoryProc(t *testing.T) *inmemory.MetadataService {
