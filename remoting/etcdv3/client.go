@@ -47,13 +47,12 @@ const (
 )
 
 var (
-	// ErrNilETCDV3Client ...
+	// Defines related errors
 	ErrNilETCDV3Client = perrors.New("etcd raw client is nil") // full describe the ERR
-	// ErrKVPairNotFound ...
-	ErrKVPairNotFound = perrors.New("k/v pair not found")
+	ErrKVPairNotFound  = perrors.New("k/v pair not found")
 )
 
-// Options ...
+// nolint
 type Options struct {
 	name      string
 	endpoints []string
@@ -62,38 +61,38 @@ type Options struct {
 	heartbeat int // heartbeat second
 }
 
-// Option ...
+// Option will define a function of handling Options
 type Option func(*Options)
 
-// WithEndpoints ...
+// WithEndpoints sets etcd client endpoints
 func WithEndpoints(endpoints ...string) Option {
 	return func(opt *Options) {
 		opt.endpoints = endpoints
 	}
 }
 
-// WithName ...
+// WithName sets etcd client name
 func WithName(name string) Option {
 	return func(opt *Options) {
 		opt.name = name
 	}
 }
 
-// WithTimeout ...
+// WithTimeout sets etcd client timeout
 func WithTimeout(timeout time.Duration) Option {
 	return func(opt *Options) {
 		opt.timeout = timeout
 	}
 }
 
-// WithHeartbeat ...
+// WithHeartbeat sets etcd client heartbeat
 func WithHeartbeat(heartbeat int) Option {
 	return func(opt *Options) {
 		opt.heartbeat = heartbeat
 	}
 }
 
-// ValidateClient ...
+// ValidateClient validates client and sets options
 func ValidateClient(container clientFacade, opts ...Option) error {
 
 	options := &Options{
@@ -153,7 +152,7 @@ func NewServiceDiscoveryClient(opts ...Option) *Client {
 	return newClient
 }
 
-// Client ...
+// Client represents etcd client Configuration
 type Client struct {
 	lock sync.RWMutex
 
@@ -164,7 +163,7 @@ type Client struct {
 	heartbeat int
 
 	ctx       context.Context    // if etcd server connection lose, the ctx.Done will be sent msg
-	cancel    context.CancelFunc // cancel the ctx,  all watcher will stopped
+	cancel    context.CancelFunc // cancel the ctx, all watcher will stopped
 	rawClient *clientv3.Client
 
 	exit chan struct{}
@@ -228,7 +227,7 @@ func (c *Client) stop() bool {
 	return false
 }
 
-// Close ...
+// nolint
 func (c *Client) Close() {
 
 	if c == nil {
@@ -287,8 +286,7 @@ func (c *Client) maintenanceStatusLoop(s *concurrency.Session) {
 	}
 }
 
-// if k not exist will put k/v in etcd
-// if k is already exist in etcd, return nil
+// if k not exist will put k/v in etcd, otherwise return nil
 func (c *Client) put(k string, v string, opts ...clientv3.OpOption) error {
 
 	c.lock.RLock()
@@ -369,7 +367,7 @@ func (c *Client) get(k string) (string, error) {
 	return string(resp.Kvs[0].Value), nil
 }
 
-// CleanKV ...
+// nolint
 func (c *Client) CleanKV() error {
 
 	c.lock.RLock()
@@ -469,12 +467,12 @@ func (c *Client) keepAliveKV(k string, v string) error {
 	return nil
 }
 
-// Done ...
+// nolint
 func (c *Client) Done() <-chan struct{} {
 	return c.exit
 }
 
-// Valid ...
+// nolint
 func (c *Client) Valid() bool {
 	select {
 	case <-c.exit:
@@ -491,7 +489,7 @@ func (c *Client) Valid() bool {
 	return true
 }
 
-// Create ...
+// nolint
 func (c *Client) Create(k string, v string) error {
 
 	err := c.put(k, v)
@@ -510,7 +508,7 @@ func (c *Client) Update(k, v string) error {
 	return nil
 }
 
-// Delete ...
+// nolint
 func (c *Client) Delete(k string) error {
 
 	err := c.delete(k)
@@ -521,7 +519,7 @@ func (c *Client) Delete(k string) error {
 	return nil
 }
 
-// RegisterTemp ...
+// RegisterTemp registers a temporary node
 func (c *Client) RegisterTemp(basePath string, node string) (string, error) {
 
 	completeKey := path.Join(basePath, node)
@@ -534,7 +532,7 @@ func (c *Client) RegisterTemp(basePath string, node string) (string, error) {
 	return completeKey, nil
 }
 
-// GetChildrenKVList ...
+// GetChildrenKVList gets children kv list by @k
 func (c *Client) GetChildrenKVList(k string) ([]string, []string, error) {
 
 	kList, vList, err := c.getChildren(k)
@@ -544,7 +542,7 @@ func (c *Client) GetChildrenKVList(k string) ([]string, []string, error) {
 	return kList, vList, nil
 }
 
-// Get ...
+// Get gets value by @k
 func (c *Client) Get(k string) (string, error) {
 
 	v, err := c.get(k)
@@ -555,7 +553,7 @@ func (c *Client) Get(k string) (string, error) {
 	return v, nil
 }
 
-// Watch ...
+// Watch watches on spec key
 func (c *Client) Watch(k string) (clientv3.WatchChan, error) {
 
 	wc, err := c.watch(k)
@@ -565,7 +563,7 @@ func (c *Client) Watch(k string) (clientv3.WatchChan, error) {
 	return wc, nil
 }
 
-// WatchWithPrefix ...
+// WatchWithPrefix watches on spec prefix
 func (c *Client) WatchWithPrefix(prefix string) (clientv3.WatchChan, error) {
 
 	wc, err := c.watchWithPrefix(prefix)

@@ -42,10 +42,8 @@ var (
 	providerConfig *ProviderConfig
 	// baseConfig = providerConfig.BaseConfig or consumerConfig
 	baseConfig *BaseConfig
-	// baseConfigOnce is used to make sure that we only create it once.
-	baseConfigOnce sync.Once
 
-	// configAccessMutex is used to make sure that BaseConfig.xxxxConfig will only be created once if needed.
+	// configAccessMutex is used to make sure that xxxxConfig will only be created once if needed.
 	// it should be used combine with double-check to avoid the race condition
 	configAccessMutex sync.Mutex
 
@@ -69,6 +67,8 @@ func init() {
 		log.Printf("[consumerInit] %#v", errCon)
 		consumerConfig = nil
 	} else {
+		// Even though baseConfig has been initialized, we override it
+		// because we think read from config file is correct config
 		baseConfig = &consumerConfig.BaseConfig
 	}
 
@@ -76,6 +76,8 @@ func init() {
 		log.Printf("[providerInit] %#v", errPro)
 		providerConfig = nil
 	} else {
+		// Even though baseConfig has been initialized, we override it
+		// because we think read from config file is correct config
 		baseConfig = &providerConfig.BaseConfig
 	}
 }
@@ -308,7 +310,9 @@ func GetConsumerConfig() ConsumerConfig {
 
 func GetBaseConfig() *BaseConfig {
 	if baseConfig == nil {
-		baseConfigOnce.Do(func() {
+		configAccessMutex.Lock()
+		defer configAccessMutex.Unlock()
+		if baseConfig == nil {
 			baseConfig = &BaseConfig{
 				MetricConfig:       &MetricConfig{},
 				ConfigCenterConfig: &ConfigCenterConfig{},
@@ -316,7 +320,7 @@ func GetBaseConfig() *BaseConfig {
 				ApplicationConfig:  &ApplicationConfig{},
 				ServiceDiscoveries: make(map[string]*ServiceDiscoveryConfig, 0),
 			}
-		})
+		}
 	}
 	return baseConfig
 }

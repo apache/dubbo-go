@@ -20,23 +20,24 @@ package nacos
 import (
 	"fmt"
 	"sync"
+)
 
+import (
 	"github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/page"
 	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
 	"github.com/nacos-group/nacos-sdk-go/model"
 	"github.com/nacos-group/nacos-sdk-go/vo"
 	perrors "github.com/pkg/errors"
-
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/remoting/nacos"
 )
 
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/registry"
+	"github.com/apache/dubbo-go/remoting/nacos"
 )
 
 const (
