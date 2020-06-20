@@ -26,6 +26,7 @@ require (
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
 	github.com/hashicorp/consul v1.5.3
 	github.com/hashicorp/consul/api v1.1.0
+	github.com/hashicorp/vault v0.10.3
 	github.com/jinzhu/copier v0.0.0-20190625015134-976e0346caa8
 	github.com/juju/loggo v0.0.0-20190526231331-6e530bcce5d8 // indirect
 	github.com/juju/testing v0.0.0-20191001232224-ce9dec17d28b // indirect
@@ -43,7 +44,6 @@ require (
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5 // indirect
 	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
 	github.com/zouyx/agollo v0.0.0-20191114083447-dde9fc9f35b8
-	go.etcd.io/bbolt v1.3.4 // indirect
 	go.uber.org/atomic v1.4.0
 	go.uber.org/zap v1.10.0
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect
@@ -56,5 +56,3 @@ require (
 )
 
 go 1.13
-
-replace github.com/nacos-group/nacos-sdk-go => /Users/mindeng/go-workspace/src/nacos-sdk-go
