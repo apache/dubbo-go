@@ -22,11 +22,13 @@ import (
 	"github.com/apache/dubbo-go/registry"
 )
 
+// ServiceDiscoveryEvent means that something happens to service discovery instance
 type ServiceDiscoveryEvent struct {
 	observer.BaseEvent
 	original registry.ServiceDiscovery
 }
 
+// NewServiceDiscoveryEvent returns an instance
 func NewServiceDiscoveryEvent(discovery registry.ServiceDiscovery, original registry.ServiceDiscovery) *ServiceDiscoveryEvent {
 	return &ServiceDiscoveryEvent{
 		BaseEvent: *observer.NewBaseEvent(discovery),
@@ -34,10 +36,12 @@ func NewServiceDiscoveryEvent(discovery registry.ServiceDiscovery, original regi
 	}
 }
 
+// GetServiceDiscovery returns the event source
 func (sde *ServiceDiscoveryEvent) GetServiceDiscovery() registry.ServiceDiscovery {
 	return sde.GetSource().(registry.ServiceDiscovery)
 }
 
+// GetOriginal actually I think we can remove this method.
 func (sde *ServiceDiscoveryEvent) GetOriginal() registry.ServiceDiscovery {
 	return sde.original
 }

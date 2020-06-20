@@ -20,7 +20,9 @@ package event
 import (
 	"reflect"
 	"sync"
+)
 
+import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/observer"

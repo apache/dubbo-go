@@ -111,7 +111,7 @@ func (m mockMetadataReport) StoreConsumerMetadata(*identifier.MetadataIdentifier
 }
 
 func (m mockMetadataReport) SaveServiceMetadata(*identifier.ServiceMetadataIdentifier, common.URL) error {
-	panic("implement me")
+	return nil
 }
 
 func (m mockMetadataReport) RemoveServiceMetadata(*identifier.ServiceMetadataIdentifier) error {
@@ -123,7 +123,7 @@ func (m mockMetadataReport) GetExportedURLs(*identifier.ServiceMetadataIdentifie
 }
 
 func (m mockMetadataReport) SaveSubscribedData(*identifier.SubscriberMetadataIdentifier, []common.URL) error {
-	panic("implement me")
+	return nil
 }
 
 func (m mockMetadataReport) GetSubscribedURLs(*identifier.SubscriberMetadataIdentifier) []string {
