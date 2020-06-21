@@ -19,6 +19,18 @@ package etcdv3
 
 import (
 	"fmt"
+	"sync"
+	"time"
+)
+
+import (
+	gxset "github.com/dubbogo/gost/container/set"
+	gxpage "github.com/dubbogo/gost/page"
+	"github.com/hashicorp/vault/helper/jsonutil"
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
@@ -26,12 +38,6 @@ import (
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting"
 	"github.com/apache/dubbo-go/remoting/etcdv3"
-	gxset "github.com/dubbogo/gost/container/set"
-	gxpage "github.com/dubbogo/gost/page"
-	"github.com/hashicorp/vault/helper/jsonutil"
-	perrors "github.com/pkg/errors"
-	"sync"
-	"time"
 )
 
 const (
