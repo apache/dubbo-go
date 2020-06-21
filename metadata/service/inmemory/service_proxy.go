@@ -20,7 +20,6 @@ package inmemory
 import (
 	"context"
 	"reflect"
-	"time"
 )
 
 import (
@@ -59,10 +58,7 @@ func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 		invocation.WithAttachments(map[string]string{constant.ASYNC_KEY: "false"}),
 		invocation.WithParameterValues([]reflect.Value{siV, gV, vV, pV}))
 
-	start := time.Now()
 	res := m.invkr.Invoke(context.Background(), inv)
-	end := time.Now()
-	logger.Infof("duration: %s, result: %v", (end.Sub(start)).String(), res.Result())
 	if res.Error() != nil {
 		logger.Errorf("could not get the metadata service from remote provider: %v", res.Error())
 		return []interface{}{}, nil
