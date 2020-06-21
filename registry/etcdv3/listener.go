@@ -38,15 +38,17 @@ type dataListener struct {
 	listener      config_center.ConfigurationListener
 }
 
-// NewRegistryDataListener
+// NewRegistryDataListener creates a data listener for etcd
 func NewRegistryDataListener(listener config_center.ConfigurationListener) *dataListener {
 	return &dataListener{listener: listener}
 }
 
+// AddInterestedURL adds a registration @url to listen
 func (l *dataListener) AddInterestedURL(url *common.URL) {
 	l.interestedURL = append(l.interestedURL, url)
 }
 
+// DataChange processes the data change event from registry center of etcd
 func (l *dataListener) DataChange(eventType remoting.Event) bool {
 
 	index := strings.Index(eventType.Path, "/providers/")
@@ -88,10 +90,12 @@ func NewConfigurationListener(reg *etcdV3Registry) *configurationListener {
 	return &configurationListener{registry: reg, events: make(chan *config_center.ConfigChangeEvent, 32)}
 }
 
+// Process data change event from config center of etcd
 func (l *configurationListener) Process(configType *config_center.ConfigChangeEvent) {
 	l.events <- configType
 }
 
+// Next returns next service event once received
 func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
@@ -114,6 +118,7 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 	}
 }
 
+// Close etcd registry center
 func (l *configurationListener) Close() {
 	l.registry.WaitGroup().Done()
 }
