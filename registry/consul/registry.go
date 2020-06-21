@@ -36,8 +36,7 @@ import (
 )
 
 const (
-	// RegistryConnDelay ...
-	RegistryConnDelay = 3
+	registryConnDelay = 3
 )
 
 func init() {
@@ -148,7 +147,7 @@ func (r *consulRegistry) subscribe(url *common.URL, notifyListener registry.Noti
 				return
 			}
 			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
-			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
+			time.Sleep(time.Duration(registryConnDelay) * time.Second)
 			continue
 		}
 
@@ -171,10 +170,12 @@ func (r *consulRegistry) getListener(url common.URL) (registry.Listener, error) 
 	return listener, err
 }
 
+// GetUrl get registry URL of consul registry center
 func (r *consulRegistry) GetUrl() common.URL {
 	return *r.URL
 }
 
+// IsAvailable checks consul registry center whether is available
 func (r *consulRegistry) IsAvailable() bool {
 	select {
 	case <-r.done:
@@ -184,6 +185,7 @@ func (r *consulRegistry) IsAvailable() bool {
 	}
 }
 
+// Destroy consul registry center
 func (r *consulRegistry) Destroy() {
 	close(r.done)
 }
