@@ -41,7 +41,7 @@ import (
 const DEFAULT_ROOT = "dubbo"
 
 func init() {
-	extension.SetMetadataReportFactory("etcd", func() factory.MetadataReportFactory {
+	extension.SetMetadataReportFactory(constant.ETCDV3_KEY, func() factory.MetadataReportFactory {
 		return &etcdMetadataReportFactory{}
 	})
 }
