@@ -42,7 +42,7 @@ func SetServiceDiscovery(protocol string, creator func(name string) (registry.Se
 func GetServiceDiscovery(protocol string, name string) (registry.ServiceDiscovery, error) {
 	creator, ok := discoveryCreatorMap[protocol]
 	if !ok {
-		return nil, perrors.New("Could not find the service discovery with name: " + name)
+		return nil, perrors.New("Could not find the service discovery with discovery protocol: " + protocol)
 	}
 	return creator(name)
 }
