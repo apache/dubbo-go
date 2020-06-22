@@ -84,7 +84,7 @@ type ServiceConfig struct {
 	exporters     []protocol.Exporter
 }
 
-// Prefix return dubbo.service.${interface}.
+// Prefix returns dubbo.service.${interface}.
 func (c *ServiceConfig) Prefix() string {
 	return constant.ServiceConfigPrefix + c.InterfaceName + "."
 }
@@ -141,7 +141,7 @@ func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
 	return ports
 }
 
-// Export export the service
+// Export exports the service
 func (c *ServiceConfig) Export() error {
 	// TODO: config center start here
 

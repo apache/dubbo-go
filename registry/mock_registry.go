@@ -30,13 +30,13 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
-// MockRegistry ...
+// MockRegistry is used as mock registry
 type MockRegistry struct {
 	listener  *listener
 	destroyed *atomic.Bool
 }
 
-// NewMockRegistry ...
+// NewMockRegistry creates a mock registry
 func NewMockRegistry(url *common.URL) (Registry, error) {
 	registry := &MockRegistry{
 		destroyed: atomic.NewBool(false),
@@ -46,28 +46,28 @@ func NewMockRegistry(url *common.URL) (Registry, error) {
 	return registry, nil
 }
 
-// Register ...
+// Register is used as a mock registry
 func (*MockRegistry) Register(url common.URL) error {
 	return nil
 }
 
-// UnRegister
+// nolint
 func (r *MockRegistry) UnRegister(conf common.URL) error {
 	return nil
 }
 
-// Destroy ...
+// nolint
 func (r *MockRegistry) Destroy() {
 	if r.destroyed.CAS(false, true) {
 	}
 }
 
-// IsAvailable ...
+// IsAvailable is use for determine a mock registry available
 func (r *MockRegistry) IsAvailable() bool {
 	return !r.destroyed.Load()
 }
 
-// GetUrl ...
+// nolint
 func (r *MockRegistry) GetUrl() common.URL {
 	return common.URL{}
 }
@@ -76,7 +76,7 @@ func (r *MockRegistry) subscribe(*common.URL) (Listener, error) {
 	return r.listener, nil
 }
 
-// Subscribe ...
+// nolint
 func (r *MockRegistry) Subscribe(url *common.URL, notifyListener NotifyListener) error {
 	go func() {
 		for {
@@ -134,7 +134,7 @@ func (*listener) Close() {
 
 }
 
-// MockEvent ...
+// nolint
 func (r *MockRegistry) MockEvent(event *ServiceEvent) {
 	r.listener.listenChan <- event
 }
