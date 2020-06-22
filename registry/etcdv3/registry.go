@@ -104,31 +104,37 @@ func newETCDV3Registry(url *common.URL) (registry.Registry, error) {
 	return r, nil
 }
 
+// InitListeners init listeners of etcd registry center
 func (r *etcdV3Registry) InitListeners() {
 	r.listener = etcdv3.NewEventListener(r.client)
 	r.configListener = NewConfigurationListener(r)
 	r.dataListener = NewRegistryDataListener(r.configListener)
 }
 
+// DoRegister actually do the register job in the registry center of etcd
 func (r *etcdV3Registry) DoRegister(root string, node string) error {
 	return r.client.Create(path.Join(root, node), "")
 }
 
+// nolint
 func (r *etcdV3Registry) DoUnregister(root string, node string) error {
 	return perrors.New("DoUnregister is not support in etcdV3Registry")
 }
 
+// CloseAndNilClient closes listeners and clear client
 func (r *etcdV3Registry) CloseAndNilClient() {
 	r.client.Close()
 	r.client = nil
 }
 
+// CloseListener closes listeners
 func (r *etcdV3Registry) CloseListener() {
 	if r.configListener != nil {
 		r.configListener.Close()
 	}
 }
 
+// CreatePath create the path in the registry center of etcd
 func (r *etcdV3Registry) CreatePath(k string) error {
 	var tmpPath string
 	for _, str := range strings.Split(k, "/")[1:] {
@@ -141,6 +147,7 @@ func (r *etcdV3Registry) CreatePath(k string) error {
 	return nil
 }
 
+// DoSubscribe actually subscribe the provider URL
 func (r *etcdV3Registry) DoSubscribe(svc *common.URL) (registry.Listener, error) {
 
 	var (
