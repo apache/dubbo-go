@@ -31,7 +31,11 @@ func init() {
 	extension.SetCluster(name, NewFailoverCluster)
 }
 
-// NewFailoverCluster ...
+// NewFailoverCluster returns a failover cluster instance
+//
+// Failure automatically switch, when there is a failure,
+// retry the other server (default). Usually used for read operations,
+// but retries can result in longer delays.
 func NewFailoverCluster() cluster.Cluster {
 	return &failoverCluster{}
 }

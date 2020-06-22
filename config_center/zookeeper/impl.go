@@ -20,11 +20,10 @@ package zookeeper
 import (
 	"strings"
 	"sync"
-	"time"
 )
 
 import (
-	"github.com/dubbogo/go-zookeeper/zk"
+	gxset "github.com/dubbogo/gost/container/set"
 	perrors "github.com/pkg/errors"
 )
 
@@ -39,8 +38,9 @@ import (
 
 const (
 	// ZkClient
-	//zookeeper client name
-	ZkClient = "zk config_center"
+	// zookeeper client name
+	ZkClient      = "zk config_center"
+	pathSeparator = "/"
 )
 
 type zookeeperDynamicConfiguration struct {
@@ -74,34 +74,8 @@ func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfigu
 	c.cacheListener = NewCacheListener(c.rootPath)
 
 	err = c.client.Create(c.rootPath)
-	c.listener.ListenServiceEvent(c.rootPath, c.cacheListener)
+	c.listener.ListenServiceEvent(url, c.rootPath, c.cacheListener)
 	return c, err
-
-}
-
-func newMockZookeeperDynamicConfiguration(url *common.URL, opts ...zookeeper.Option) (*zk.TestCluster, *zookeeperDynamicConfiguration, error) {
-	c := &zookeeperDynamicConfiguration{
-		url:      url,
-		rootPath: "/" + url.GetParam(constant.CONFIG_NAMESPACE_KEY, config_center.DEFAULT_GROUP) + "/config",
-	}
-	var (
-		tc  *zk.TestCluster
-		err error
-	)
-	tc, c.client, _, err = zookeeper.NewMockZookeeperClient("test", 15*time.Second, opts...)
-	if err != nil {
-		logger.Errorf("mock zookeeper client start error ,error message is %v", err)
-		return tc, c, err
-	}
-	c.wg.Add(1)
-	go zookeeper.HandleClientRestart(c)
-
-	c.listener = zookeeper.NewZkEventListener(c.client)
-	c.cacheListener = NewCacheListener(c.rootPath)
-
-	err = c.client.Create(c.rootPath)
-	go c.listener.ListenServiceEvent(c.rootPath, c.cacheListener)
-	return tc, c, err
 
 }
 
@@ -143,9 +117,37 @@ func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config
 	return string(content), nil
 }
 
-//For zookeeper, getConfig and getConfigs have the same meaning.
+// GetInternalProperty For zookeeper, getConfig and getConfigs have the same meaning.
 func (c *zookeeperDynamicConfiguration) GetInternalProperty(key string, opts ...config_center.Option) (string, error) {
 	return c.GetProperties(key, opts...)
+}
+
+// PublishConfig will put the value into Zk with specific path
+func (c *zookeeperDynamicConfiguration) PublishConfig(key string, group string, value string) error {
+	path := c.getPath(key, group)
+	err := c.client.CreateWithValue(path, []byte(value))
+	if err != nil {
+		return perrors.WithStack(err)
+	}
+	return nil
+}
+
+// GetConfigKeysByGroup will return all keys with the group
+func (c *zookeeperDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
+	path := c.getPath("", group)
+	result, err := c.client.GetChildren(path)
+	if err != nil {
+		return nil, perrors.WithStack(err)
+	}
+
+	if len(result) == 0 {
+		return nil, perrors.New("could not find keys with group: " + group)
+	}
+	set := gxset.NewSet()
+	for _, e := range result {
+		set.Add(e)
+	}
+	return set, nil
 }
 
 func (c *zookeeperDynamicConfiguration) GetRule(key string, opts ...config_center.Option) (string, error) {
@@ -213,4 +215,18 @@ func (c *zookeeperDynamicConfiguration) closeConfigs() {
 
 func (c *zookeeperDynamicConfiguration) RestartCallBack() bool {
 	return true
+}
+
+func (c *zookeeperDynamicConfiguration) getPath(key string, group string) string {
+	if len(key) == 0 {
+		return c.buildPath(group)
+	}
+	return c.buildPath(group) + pathSeparator + key
+}
+
+func (c *zookeeperDynamicConfiguration) buildPath(group string) string {
+	if len(group) == 0 {
+		group = config_center.DEFAULT_GROUP
+	}
+	return c.rootPath + pathSeparator + group
 }

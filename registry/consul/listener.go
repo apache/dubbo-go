@@ -142,7 +142,6 @@ func (l *consulListener) run() {
 func (l *consulListener) handler(idx uint64, raw interface{}) {
 	var (
 		service *consul.ServiceEntry
-		event   *registry.ServiceEvent
 		url     common.URL
 		ok      bool
 		err     error
@@ -183,7 +182,7 @@ func (l *consulListener) handler(idx uint64, raw interface{}) {
 	}
 
 	l.urls = newUrls
-	for _, event = range events {
+	for _, event := range events {
 		l.eventCh <- event
 	}
 }

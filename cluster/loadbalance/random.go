@@ -38,7 +38,9 @@ func init() {
 type randomLoadBalance struct {
 }
 
-// NewRandomLoadBalance ...
+// NewRandomLoadBalance returns a random load balance instance.
+//
+// Set random probabilities by weight, and the request will be sent to provider randomly.
 func NewRandomLoadBalance() cluster.LoadBalance {
 	return &randomLoadBalance{}
 }

@@ -57,17 +57,17 @@ type etcdV3Registry struct {
 	configListener *configurationListener
 }
 
-// Client get the etcdv3 client
+// Client gets the etcdv3 client
 func (r *etcdV3Registry) Client() *etcdv3.Client {
 	return r.client
 }
 
-//SetClient set the etcdv3 client
+// SetClient sets the etcdv3 client
 func (r *etcdV3Registry) SetClient(client *etcdv3.Client) {
 	r.client = client
 }
 
-//
+// ClientLock returns lock for client
 func (r *etcdV3Registry) ClientLock() *sync.Mutex {
 	return &r.cltLock
 }
@@ -164,9 +164,7 @@ func (r *etcdV3Registry) DoSubscribe(svc *common.URL) (registry.Listener, error)
 
 	//register the svc to dataListener
 	r.dataListener.AddInterestedURL(svc)
-	for _, v := range strings.Split(svc.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY), ",") {
-		go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+v, svc.Service()), r.dataListener)
-	}
+	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, svc.Service()), r.dataListener)
 
 	return configListener, nil
 }
