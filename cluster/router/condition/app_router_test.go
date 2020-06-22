@@ -37,6 +37,10 @@ import (
 	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
+const (
+	path = "/dubbo/config/dubbo/test-condition.condition-router"
+)
+
 func TestNewAppRouter(t *testing.T) {
 
 	testYML := `enabled: true
@@ -47,10 +51,10 @@ conditions:
 `
 	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
-	err = z.Create("/dubbo/config/dubbo/test-condition.condition-router")
+	err = z.Create(path)
 	assert.NoError(t, err)
 
-	_, err = z.Conn.Set("/dubbo/config/dubbo/test-condition.condition-router", []byte(testYML), 0)
+	_, err = z.Conn.Set(path, []byte(testYML), 0)
 	assert.NoError(t, err)
 	defer ts.Stop()
 	defer z.Close()
@@ -93,10 +97,10 @@ conditions:
 `
 	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
-	err = z.Create("/dubbo/config/dubbo/test-condition.condition-router")
+	err = z.Create(path)
 	assert.NoError(t, err)
 
-	_, err = z.Conn.Set("/dubbo/config/dubbo/test-condition.condition-router", []byte(testYML), 0)
+	_, err = z.Conn.Set(path, []byte(testYML), 0)
 	assert.NoError(t, err)
 	defer ts.Stop()
 	defer z.Close()
@@ -113,7 +117,7 @@ conditions:
 	assert.Nil(t, err)
 	assert.NotNil(t, appRouter)
 
-	rule, err := Parse(testYML)
+	rule, err := getRule(testYML)
 	assert.Nil(t, err)
 	appRouter.generateConditions(rule)
 
@@ -130,10 +134,10 @@ conditions:
 `
 	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
-	err = z.Create("/dubbo/config/dubbo/test-condition.condition-router")
+	err = z.Create(path)
 	assert.NoError(t, err)
 
-	_, err = z.Conn.Set("/dubbo/config/dubbo/test-condition.condition-router", []byte(testYML), 0)
+	_, err = z.Conn.Set(path, []byte(testYML), 0)
 	assert.NoError(t, err)
 	defer ts.Stop()
 	defer z.Close()

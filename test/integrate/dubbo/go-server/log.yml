@@ -1,0 +1,28 @@
+
+level: "debug"
+development: true
+disableCaller: false
+disableStacktrace: false
+sampling:
+encoding: "console"
+
+# encoder
+encoderConfig:
+  messageKey: "message"
+  levelKey: "level"
+  timeKey: "time"
+  nameKey: "logger"
+  callerKey: "caller"
+  stacktraceKey: "stacktrace"
+  lineEnding: ""
+  levelEncoder: "capitalColor"
+  timeEncoder: "iso8601"
+  durationEncoder: "seconds"
+  callerEncoder: "short"
+  nameEncoder: ""
+
+outputPaths:
+  - "stderr"
+errorOutputPaths:
+  - "stderr"
+initialFields:
