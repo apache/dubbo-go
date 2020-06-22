@@ -19,6 +19,18 @@ package etcdv3
 
 import (
 	"fmt"
+	"sync"
+	"time"
+)
+
+import (
+	gxset "github.com/dubbogo/gost/container/set"
+	gxpage "github.com/dubbogo/gost/page"
+	"github.com/hashicorp/vault/helper/jsonutil"
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
@@ -26,12 +38,6 @@ import (
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting"
 	"github.com/apache/dubbo-go/remoting/etcdv3"
-	gxset "github.com/dubbogo/gost/container/set"
-	gxpage "github.com/dubbogo/gost/page"
-	"github.com/hashicorp/vault/helper/jsonutil"
-	perrors "github.com/pkg/errors"
-	"sync"
-	"time"
 )
 
 const (
@@ -83,8 +89,13 @@ func (e *etcdV3ServiceDiscovery) Register(instance registry.ServiceInstance) err
 	if nil != e.client {
 		ins, err := jsonutil.EncodeJSON(instance)
 		if err == nil {
-			e.client.Create(path, string(ins))
-			e.services.Add(instance.GetServiceName())
+			err = e.client.Update(path, string(ins))
+			if err != nil {
+				logger.Errorf("cannot register the instance: %s", string(ins), err)
+			} else {
+				e.services.Add(instance.GetServiceName())
+			}
+
 		}
 	}
 
