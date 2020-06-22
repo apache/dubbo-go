@@ -19,6 +19,7 @@ package cluster_impl
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -34,6 +35,7 @@ import (
 	"github.com/apache/dubbo-go/cluster/directory"
 	"github.com/apache/dubbo-go/cluster/loadbalance"
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
@@ -41,11 +43,12 @@ import (
 )
 
 var (
-	failbackUrl, _ = common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
+	failbackUrl, _ = common.NewURL(
+		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
 )
 
 // registerFailback register failbackCluster to cluster extension.
-func registerFailback(t *testing.T, invoker *mock.MockInvoker) protocol.Invoker {
+func registerFailback(invoker *mock.MockInvoker) protocol.Invoker {
 	extension.SetLoadbalance("random", loadbalance.NewRandomLoadBalance)
 	failbackCluster := NewFailbackCluster()
 
@@ -60,12 +63,12 @@ func registerFailback(t *testing.T, invoker *mock.MockInvoker) protocol.Invoker 
 }
 
 // success firstly, failback should return origin invoke result.
-func Test_FailbackSuceess(t *testing.T) {
+func TestFailbackSuceess(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	invoker := mock.NewMockInvoker(ctrl)
-	clusterInvoker := registerFailback(t, invoker).(*failbackClusterInvoker)
+	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
 
 	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()
 
@@ -77,12 +80,12 @@ func Test_FailbackSuceess(t *testing.T) {
 }
 
 // failed firstly, success later after one retry.
-func Test_FailbackRetryOneSuccess(t *testing.T) {
+func TestFailbackRetryOneSuccess(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	invoker := mock.NewMockInvoker(ctrl)
-	clusterInvoker := registerFailback(t, invoker).(*failbackClusterInvoker)
+	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
 
 	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()
 
@@ -95,7 +98,7 @@ func Test_FailbackRetryOneSuccess(t *testing.T) {
 	wg.Add(1)
 	now := time.Now()
 	mockSuccResult := &protocol.RPCResult{Rest: rest{tried: 0, success: true}}
-	invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(func(invocation protocol.Invocation) protocol.Result {
+	invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(func(protocol.Invocation) protocol.Result {
 		delta := time.Since(now).Nanoseconds() / int64(time.Second)
 		assert.True(t, delta >= 5)
 		wg.Done()
@@ -120,12 +123,12 @@ func Test_FailbackRetryOneSuccess(t *testing.T) {
 }
 
 // failed firstly, and failed again after ech retry time.
-func Test_FailbackRetryFailed(t *testing.T) {
+func TestFailbackRetryFailed(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	invoker := mock.NewMockInvoker(ctrl)
-	clusterInvoker := registerFailback(t, invoker).(*failbackClusterInvoker)
+	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
 
 	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()
 
@@ -141,7 +144,7 @@ func Test_FailbackRetryFailed(t *testing.T) {
 	// add retry call that eventually failed.
 	for i := 0; i < retries; i++ {
 		j := i + 1
-		invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(func(invocation protocol.Invocation) protocol.Result {
+		invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(func(protocol.Invocation) protocol.Result {
 			delta := time.Since(now).Nanoseconds() / int64(time.Second)
 			assert.True(t, delta >= int64(5*j))
 			wg.Done()
@@ -166,12 +169,12 @@ func Test_FailbackRetryFailed(t *testing.T) {
 }
 
 // add 10 tasks but all failed firstly, and failed again with one retry.
-func Test_FailbackRetryFailed10Times(t *testing.T) {
+func TestFailbackRetryFailed10Times(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	invoker := mock.NewMockInvoker(ctrl)
-	clusterInvoker := registerFailback(t, invoker).(*failbackClusterInvoker)
+	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
 	clusterInvoker.maxRetries = 10
 
 	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()
@@ -184,7 +187,7 @@ func Test_FailbackRetryFailed10Times(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(10)
 	now := time.Now()
-	invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(func(invocation protocol.Invocation) protocol.Result {
+	invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(func(protocol.Invocation) protocol.Result {
 		delta := time.Since(now).Nanoseconds() / int64(time.Second)
 		assert.True(t, delta >= 5)
 		wg.Done()
@@ -208,12 +211,12 @@ func Test_FailbackRetryFailed10Times(t *testing.T) {
 	assert.Equal(t, int64(0), clusterInvoker.taskList.Len())
 }
 
-func Test_FailbackOutOfLimit(t *testing.T) {
+func TestFailbackOutOfLimit(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	invoker := mock.NewMockInvoker(ctrl)
-	clusterInvoker := registerFailback(t, invoker).(*failbackClusterInvoker)
+	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
 	clusterInvoker.failbackTasks = 1
 
 	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()

@@ -31,7 +31,10 @@ func init() {
 	extension.SetCluster(failsafe, NewFailsafeCluster)
 }
 
-// NewFailsafeCluster ...
+// NewFailsafeCluster returns a failsafe cluster instance.
+//
+// Failure of security, anomalies, directly ignored. Usually it is
+// used to write audit logs and other operations.
 func NewFailsafeCluster() cluster.Cluster {
 	return &failsafeCluster{}
 }

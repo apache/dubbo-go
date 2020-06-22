@@ -31,6 +31,7 @@ import (
 // Extension - Invoker
 type Invoker interface {
 	common.Node
+	// Invoke the invocation and return result.
 	Invoke(context.Context, Invocation) Result
 }
 
@@ -38,14 +39,14 @@ type Invoker interface {
 // base invoker
 /////////////////////////////
 
-// BaseInvoker ...
+// BaseInvoker provides default invoker implement
 type BaseInvoker struct {
 	url       common.URL
 	available bool
 	destroyed bool
 }
 
-// NewBaseInvoker ...
+// NewBaseInvoker creates a new BaseInvoker
 func NewBaseInvoker(url common.URL) *BaseInvoker {
 	return &BaseInvoker{
 		url:       url,
@@ -54,27 +55,27 @@ func NewBaseInvoker(url common.URL) *BaseInvoker {
 	}
 }
 
-// GetUrl ...
+// GetUrl gets base invoker URL
 func (bi *BaseInvoker) GetUrl() common.URL {
 	return bi.url
 }
 
-// IsAvailable ...
+// IsAvailable gets available flag
 func (bi *BaseInvoker) IsAvailable() bool {
 	return bi.available
 }
 
-// IsDestroyed ...
+// IsDestroyed gets destroyed flag
 func (bi *BaseInvoker) IsDestroyed() bool {
 	return bi.destroyed
 }
 
-// Invoke ...
+// Invoke provides default invoker implement
 func (bi *BaseInvoker) Invoke(context context.Context, invocation Invocation) Result {
 	return &RPCResult{}
 }
 
-// Destroy ...
+// Destroy changes available and destroyed flag
 func (bi *BaseInvoker) Destroy() {
 	logger.Infof("Destroy invoker: %s", bi.GetUrl().String())
 	bi.destroyed = true

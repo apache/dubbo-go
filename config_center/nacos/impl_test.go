@@ -60,12 +60,7 @@ func runMockConfigServer(configHandler func(http.ResponseWriter, *http.Request),
 
 func mockCommonNacosServer() *httptest.Server {
 	return runMockConfigServer(func(writer http.ResponseWriter, request *http.Request) {
-		data := `
-	dubbo.service.com.ikurento.user.UserProvider.cluster=failback
-	dubbo.service.com.ikurento.user.UserProvider.protocol=myDubbo1
-	dubbo.protocols.myDubbo.port=20000
-	dubbo.protocols.myDubbo.name=dubbo
-`
+		data := "true"
 		fmt.Fprintf(writer, "%s", data)
 	}, func(writer http.ResponseWriter, request *http.Request) {
 		data := `dubbo.properties%02dubbo%02dubbo.service.com.ikurento.user.UserProvider.cluster=failback`
@@ -77,12 +72,13 @@ func initNacosData(t *testing.T) (*nacosDynamicConfiguration, error) {
 	server := mockCommonNacosServer()
 	nacosURL := strings.ReplaceAll(server.URL, "http", "registry")
 	regurl, _ := common.NewURL(nacosURL)
-	nacosConfiguration, err := newNacosDynamicConfiguration(&regurl)
+	factory := &nacosDynamicConfigurationFactory{}
+	nacosConfiguration, err := factory.GetDynamicConfiguration(&regurl)
 	assert.NoError(t, err)
 
 	nacosConfiguration.SetParser(&parser.DefaultConfigurationParser{})
 
-	return nacosConfiguration, err
+	return nacosConfiguration.(*nacosDynamicConfiguration), err
 }
 
 func Test_GetConfig(t *testing.T) {
@@ -91,6 +87,16 @@ func Test_GetConfig(t *testing.T) {
 	configs, err := nacos.GetProperties("dubbo.properties", config_center.WithGroup("dubbo"))
 	_, err = nacos.Parser().Parse(configs)
 	assert.NoError(t, err)
+}
+
+func TestNacosDynamicConfiguration_PublishConfig(t *testing.T) {
+	nacos, err := initNacosData(t)
+	assert.Nil(t, err)
+	key := "myKey"
+	group := "/custom/a/b"
+	value := "MyValue"
+	err = nacos.PublishConfig(key, group, value)
+	assert.Nil(t, err)
 }
 
 func Test_AddListener(t *testing.T) {

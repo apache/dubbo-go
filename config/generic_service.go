@@ -19,18 +19,18 @@ package config
 
 import "context"
 
-// GenericService ...
+// GenericService uses for generic invoke for service call
 type GenericService struct {
 	Invoke       func(ctx context.Context, req []interface{}) (interface{}, error) `dubbo:"$invoke"`
 	referenceStr string
 }
 
-// NewGenericService ...
+// NewGenericService returns a GenericService instance
 func NewGenericService(referenceStr string) *GenericService {
 	return &GenericService{referenceStr: referenceStr}
 }
 
-// Reference ...
+// Reference gets referenceStr from GenericService
 func (u *GenericService) Reference() string {
 	return u.referenceStr
 }
