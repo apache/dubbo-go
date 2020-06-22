@@ -89,8 +89,13 @@ func (e *etcdV3ServiceDiscovery) Register(instance registry.ServiceInstance) err
 	if nil != e.client {
 		ins, err := jsonutil.EncodeJSON(instance)
 		if err == nil {
-			e.client.Create(path, string(ins))
-			e.services.Add(instance.GetServiceName())
+			err = e.client.Update(path, string(ins))
+			if err != nil {
+				logger.Errorf("cannot register the instance: %s", string(ins), err)
+			} else {
+				e.services.Add(instance.GetServiceName())
+			}
+
 		}
 	}
 

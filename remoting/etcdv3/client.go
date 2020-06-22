@@ -144,7 +144,7 @@ func NewServiceDiscoveryClient(opts ...Option) *Client {
 
 	newClient, err := NewClient(options.name, options.endpoints, options.timeout, options.heartbeat)
 	if err != nil {
-		logger.Warnf("new etcd client (name{%s}, etcd addresses{%v}, timeout{%d}) = error{%v}",
+		logger.Errorf("new etcd client (name{%s}, etcd addresses{%v}, timeout{%d}) = error{%v}",
 			options.name, options.endpoints, options.timeout, err)
 		return nil
 	}
