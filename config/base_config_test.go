@@ -21,9 +21,11 @@ import (
 	"reflect"
 	"testing"
 )
+
 import (
 	"github.com/stretchr/testify/assert"
 )
+
 import (
 	"github.com/apache/dubbo-go/common/config"
 	"github.com/apache/dubbo-go/common/extension"
@@ -481,7 +483,6 @@ func Test_refreshProvider(t *testing.T) {
 }
 
 func Test_startConfigCenter(t *testing.T) {
-
 	extension.SetConfigCenterFactory("mock", func() config_center.DynamicConfigurationFactory {
 		return &config_center.MockDynamicConfigurationFactory{}
 	})
@@ -499,21 +500,21 @@ func Test_startConfigCenter(t *testing.T) {
 }
 
 func Test_initializeStruct(t *testing.T) {
-	consumerConfig := &ConsumerConfig{}
+	testConsumerConfig := &ConsumerConfig{}
 	tp := reflect.TypeOf(ConsumerConfig{})
 	v := reflect.New(tp)
 	initializeStruct(tp, v.Elem())
-	fmt.Println(reflect.ValueOf(consumerConfig).Elem().Type().String())
+	fmt.Println(reflect.ValueOf(testConsumerConfig).Elem().Type().String())
 	fmt.Println(v.Elem().Type().String())
-	reflect.ValueOf(consumerConfig).Elem().Set(v.Elem())
+	reflect.ValueOf(testConsumerConfig).Elem().Set(v.Elem())
 
 	assert.Condition(t, func() (success bool) {
-		return consumerConfig.ApplicationConfig != nil
+		return testConsumerConfig.ApplicationConfig != nil
 	})
 	assert.Condition(t, func() (success bool) {
-		return consumerConfig.Registries != nil
+		return testConsumerConfig.Registries != nil
 	})
 	assert.Condition(t, func() (success bool) {
-		return consumerConfig.References != nil
+		return testConsumerConfig.References != nil
 	})
 }

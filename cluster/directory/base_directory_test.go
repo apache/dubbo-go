@@ -34,19 +34,20 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
+var (
+	url, _ = common.NewURL(
+		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
+	anyUrl, _ = common.NewURL(fmt.Sprintf("condition://%s/com.foo.BarService", constant.ANYHOST_VALUE))
+)
+
 func TestNewBaseDirectory(t *testing.T) {
-	url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider"))
 	directory := NewBaseDirectory(&url)
-
 	assert.NotNil(t, directory)
-
 	assert.Equal(t, url, directory.GetUrl())
 	assert.Equal(t, &url, directory.GetDirectoryUrl())
-
 }
 
 func TestBuildRouterChain(t *testing.T) {
-	url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider"))
 	directory := NewBaseDirectory(&url)
 
 	assert.NotNil(t, directory)
@@ -63,9 +64,8 @@ func TestBuildRouterChain(t *testing.T) {
 }
 
 func getRouteUrl(rule string) *common.URL {
-	url, _ := common.NewURL("condition://0.0.0.0/com.foo.BarService")
-	url.AddParam("rule", rule)
-	url.AddParam("force", "true")
-	url.AddParam(constant.ROUTER_KEY, "router")
+	anyUrl.AddParam("rule", rule)
+	anyUrl.AddParam("force", "true")
+	anyUrl.AddParam(constant.ROUTER_KEY, "router")
 	return &url
 }
