@@ -89,13 +89,12 @@ func (e *etcdV3ServiceDiscovery) Register(instance registry.ServiceInstance) err
 	if nil != e.client {
 		ins, err := jsonutil.EncodeJSON(instance)
 		if err == nil {
-			err = e.client.Update(path, string(ins))
+			err = e.client.RegisterTemp(path, string(ins))
 			if err != nil {
 				logger.Errorf("cannot register the instance: %s", string(ins), err)
 			} else {
 				e.services.Add(instance.GetServiceName())
 			}
-
 		}
 	}
 
@@ -109,7 +108,7 @@ func (e *etcdV3ServiceDiscovery) Update(instance registry.ServiceInstance) error
 	if nil != e.client {
 		ins, err := jsonutil.EncodeJSON(instance)
 		if nil == err {
-			e.client.Update(path, string(ins))
+			e.client.RegisterTemp(path, string(ins))
 			e.services.Add(instance.GetServiceName())
 		}
 	}
