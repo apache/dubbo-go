@@ -53,7 +53,7 @@ func TestAccessLogFilter_Invoke_Not_Config(t *testing.T) {
 	assert.Nil(t, result.Error())
 }
 
-func TestAccessLogFilter_Invoke_Default_Config(t *testing.T) {
+func TestAccessLogFilterInvokeDefaultConfig(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	url, _ := common.NewURL(
@@ -74,7 +74,7 @@ func TestAccessLogFilter_Invoke_Default_Config(t *testing.T) {
 	assert.Nil(t, result.Error())
 }
 
-func TestAccessLogFilter_OnResponse(t *testing.T) {
+func TestAccessLogFilterOnResponse(t *testing.T) {
 	result := &protocol.RPCResult{}
 	accessLogFilter := GetAccessLogFilter()
 	response := accessLogFilter.OnResponse(nil, result, nil, nil)
