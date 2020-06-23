@@ -32,7 +32,7 @@ import (
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
-func TestEchoFilter_Invoke(t *testing.T) {
+func TestEchoFilterInvoke(t *testing.T) {
 	filter := GetFilter()
 	result := filter.Invoke(context.Background(), protocol.NewBaseInvoker(common.URL{}), invocation.NewRPCInvocation("$echo", []interface{}{"OK"}, nil))
 	assert.Equal(t, "OK", result.Result())

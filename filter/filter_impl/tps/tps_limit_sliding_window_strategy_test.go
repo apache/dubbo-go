@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSlidingWindowTpsLimitStrategyImpl_IsAllowable(t *testing.T) {
+func TestSlidingWindowTpsLimitStrategyImplIsAllowable(t *testing.T) {
 	creator := &slidingWindowStrategyCreator{}
 	strategy := creator.Create(2, 60000)
 	assert.True(t, strategy.IsAllowable())
