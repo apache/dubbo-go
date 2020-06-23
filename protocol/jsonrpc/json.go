@@ -124,10 +124,8 @@ func (c *jsonClientCodec) Write(d *CodecData) ([]byte, error) {
 	if param != nil {
 		switch k := reflect.TypeOf(param).Kind(); k {
 		case reflect.Map:
-			if reflect.TypeOf(param).Key().Kind() == reflect.String {
-				if reflect.ValueOf(param).IsNil() {
-					param = nil
-				}
+			if reflect.TypeOf(param).Key().Kind() == reflect.String && reflect.ValueOf(param).IsNil() {
+				param = nil
 			}
 		case reflect.Slice:
 			if reflect.ValueOf(param).IsNil() {
@@ -137,10 +135,8 @@ func (c *jsonClientCodec) Write(d *CodecData) ([]byte, error) {
 		case reflect.Ptr:
 			switch ptrK := reflect.TypeOf(param).Elem().Kind(); ptrK {
 			case reflect.Map:
-				if reflect.TypeOf(param).Elem().Key().Kind() == reflect.String {
-					if reflect.ValueOf(param).Elem().IsNil() {
-						param = nil
-					}
+				if reflect.TypeOf(param).Elem().Key().Kind() == reflect.String && reflect.ValueOf(param).Elem().IsNil() {
+					param = nil
 				}
 			case reflect.Slice:
 				if reflect.ValueOf(param).Elem().IsNil() {
