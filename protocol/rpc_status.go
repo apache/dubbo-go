@@ -170,12 +170,12 @@ func CurrentTimeMillis() int64 {
 
 // Destroy is used to clean all status
 func CleanAllStatus() {
-	delete1 := func(key interface{}, value interface{}) bool {
+	delete1 := func(key, _ interface{}) bool {
 		methodStatistics.Delete(key)
 		return true
 	}
 	methodStatistics.Range(delete1)
-	delete2 := func(key interface{}, value interface{}) bool {
+	delete2 := func(key, _ interface{}) bool {
 		serviceStatistic.Delete(key)
 		return true
 	}
