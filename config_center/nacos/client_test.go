@@ -31,7 +31,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 )
 
-func Test_newNacosClient(t *testing.T) {
+func TestNewNacosClient(t *testing.T) {
 	server := mockCommonNacosServer()
 	nacosURL := strings.ReplaceAll(server.URL, "http", "registry")
 	registryUrl, _ := common.NewURL(nacosURL)
@@ -54,7 +54,7 @@ func Test_newNacosClient(t *testing.T) {
 	c.Destroy()
 }
 
-func Test_setNacosClient(t *testing.T) {
+func TestSetNacosClient(t *testing.T) {
 	server := mockCommonNacosServer()
 	nacosURL := server.Listener.Addr().String()
 	registryUrl, _ := common.NewURL(nacosURL)
@@ -88,7 +88,7 @@ func Test_setNacosClient(t *testing.T) {
 	c.Destroy()
 }
 
-func Test_newNacosClient_connectError(t *testing.T) {
+func TestNewNacosClient_connectError(t *testing.T) {
 	nacosURL := "registry://127.0.0.1:8888"
 	registryUrl, err := common.NewURL(nacosURL)
 	assert.NoError(t, err)
