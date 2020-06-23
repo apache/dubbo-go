@@ -34,7 +34,7 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-func TestJsonrpcProtocol_Export(t *testing.T) {
+func TestJsonrpcProtocolExport(t *testing.T) {
 	// Export
 	proto := GetProtocol()
 	url, err := common.NewURL("jsonrpc://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
@@ -65,7 +65,7 @@ func TestJsonrpcProtocol_Export(t *testing.T) {
 	assert.False(t, ok)
 }
 
-func TestJsonrpcProtocol_Refer(t *testing.T) {
+func TestJsonrpcProtocolRefer(t *testing.T) {
 	// Refer
 	proto := GetProtocol()
 	url, err := common.NewURL("jsonrpc://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
