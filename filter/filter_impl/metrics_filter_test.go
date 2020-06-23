@@ -38,7 +38,7 @@ import (
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
-func TestMetricsFilter_Invoke(t *testing.T) {
+func TestMetricsFilterInvoke(t *testing.T) {
 
 	// prepare the mock reporter
 	config.GetMetricConfig().Reporters = []string{"mock"}
