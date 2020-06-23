@@ -31,7 +31,7 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-func Test_GetProxy(t *testing.T) {
+func TestGetProxy(t *testing.T) {
 	proxyFactory := NewDefaultProxyFactory()
 	url := common.NewURLWithOptions()
 	proxy := proxyFactory.GetProxy(protocol.NewBaseInvoker(*url), url)
@@ -45,7 +45,7 @@ func (u *TestAsync) CallBack(res common.CallbackResponse) {
 	fmt.Println("CallBack res:", res)
 }
 
-func Test_GetAsyncProxy(t *testing.T) {
+func TestGetAsyncProxy(t *testing.T) {
 	proxyFactory := NewDefaultProxyFactory()
 	url := common.NewURLWithOptions()
 	async := &TestAsync{}
@@ -53,7 +53,7 @@ func Test_GetAsyncProxy(t *testing.T) {
 	assert.NotNil(t, proxy)
 }
 
-func Test_GetInvoker(t *testing.T) {
+func TestGetInvoker(t *testing.T) {
 	proxyFactory := NewDefaultProxyFactory()
 	url := common.NewURLWithOptions()
 	invoker := proxyFactory.GetInvoker(*url)
