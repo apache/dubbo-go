@@ -104,7 +104,7 @@ func ToConfigurators(urls []*common.URL, f func(url *common.URL) config_center.C
 		var override map[string][]string = url.GetParams()
 		delete(override, constant.ANYHOST_KEY)
 		if len(override) == 0 {
-			configurators = configurators[:0]
+			configurators = nil
 			continue
 		}
 		configurators = append(configurators, f(url))
