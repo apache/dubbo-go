@@ -44,6 +44,6 @@ func (m mockHealthChecker) IsHealthy(invoker protocol.Invoker) bool {
 	return true
 }
 
-func newMockhealthCheck(url *common.URL) router.HealthChecker {
+func newMockhealthCheck(_ *common.URL) router.HealthChecker {
 	return &mockHealthChecker{}
 }
