@@ -57,6 +57,7 @@ const (
 
 const (
 	ANY_VALUE           = "*"
+	ANYHOST_KEY         = "anyhost"
 	ANYHOST_VALUE       = "0.0.0.0"
 	REMOVE_VALUE_PREFIX = "-"
 )
