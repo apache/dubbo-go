@@ -61,8 +61,12 @@ var tests = []struct {
 	}{k: "age", v: "27"}},
 }
 
-// test dataset prefix
-const prefix = "name"
+
+const (
+	// test dataset prefix
+	prefix = "name"
+	watcherStopLog = "the watcherSet watcher was stopped"
+)
 
 var clientPodJsonData = `{
     "apiVersion": "v1",
@@ -360,7 +364,7 @@ func (s *KubernetesClientTestSuite) TestClientGetChildrenKVList() {
 					return
 				}
 			case <-done:
-				t.Log("the watcherSet watcher was stopped")
+				t.Log(watcherStopLog)
 				return
 			}
 		}
@@ -430,7 +434,7 @@ func (s *KubernetesClientTestSuite) TestClientWatchPrefix() {
 			case e := <-wc:
 				t.Logf("got event %v k %s v %s", e.EventType, e.Key, e.Value)
 			case <-done:
-				t.Log("the watcherSet watcher was stopped")
+				t.Log(watcherStopLog)
 				return
 			}
 		}
@@ -485,7 +489,7 @@ func (s *KubernetesClientTestSuite) TestClientWatch() {
 			case e := <-wc:
 				t.Logf("got event %v k %s v %s", e.EventType, e.Key, e.Value)
 			case <-done:
-				t.Log("the watcherSet watcher was stopped")
+				t.Log(watcherStopLog)
 				return
 			}
 		}
