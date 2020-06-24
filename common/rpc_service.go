@@ -68,7 +68,6 @@ var (
 	typeOfError = reflect.TypeOf((*error)(nil)).Elem()
 
 	// ServiceMap store description of service.
-	// todo: lowerecas?
 	ServiceMap = &serviceMap{
 		serviceMap:   make(map[string]map[string]*Service),
 		interfaceMap: make(map[string][]*Service),

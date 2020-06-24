@@ -30,7 +30,7 @@ var (
 )
 
 // SetServiceDiscovery will store the @creator and @name
-func SetServiceDiscovery(name string, creator func(url *common.URL) (registry.ServiceDiscovery, error)) {
+func SetServiceDiscovery(name string, creator func(_ *common.URL) (registry.ServiceDiscovery, error)) {
 	discoveryCreatorMap[name] = creator
 }
 
