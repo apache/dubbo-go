@@ -100,7 +100,13 @@ func ToConfigurators(urls []*common.URL, f func(url *common.URL) config_center.C
 			configurators = []config_center.Configurator{}
 			break
 		}
-		//TODO:anyhost_key judage
+
+		var override map[string][]string = url.GetParams()
+		delete(override, constant.ANYHOST_KEY)
+		if len(override) == 0 {
+			configurators = configurators[:0]
+			continue
+		}
 		configurators = append(configurators, f(url))
 	}
 	return configurators
