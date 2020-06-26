@@ -18,7 +18,6 @@
 package nacos
 
 import (
-	"encoding/json"
 	"net/url"
 )
 
@@ -98,26 +97,11 @@ func (n *nacosMetadataReport) GetExportedURLs(metadataIdentifier *identifier.Ser
 }
 
 // SaveSubscribedData will convert the urlList to json array and then store it
-func (n *nacosMetadataReport) SaveSubscribedData(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier, urlList []common.URL) error {
-	if len(urlList) == 0 {
-		logger.Warnf("The url list is empty")
-		return nil
-	}
-	urlStrList := make([]string, 0, len(urlList))
-
-	for _, e := range urlList {
-		urlStrList = append(urlStrList, e.String())
-	}
-
-	bytes, err := json.Marshal(urlStrList)
-
-	if err != nil {
-		return perrors.WithMessage(err, "Could not convert the array to json")
-	}
+func (n *nacosMetadataReport) SaveSubscribedData(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier, urlListStr string) error {
 	return n.storeMetadata(vo.ConfigParam{
 		DataId:  subscriberMetadataIdentifier.GetIdentifierKey(),
 		Group:   subscriberMetadataIdentifier.Group,
-		Content: string(bytes),
+		Content: urlListStr,
 	})
 }
 
