@@ -19,7 +19,6 @@ package delegate
 
 import (
 	"encoding/json"
-	perrors "github.com/pkg/errors"
 	"runtime/debug"
 	"sync"
 	"time"
@@ -27,6 +26,7 @@ import (
 
 import (
 	"github.com/go-co-op/gocron"
+	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
 )
 
