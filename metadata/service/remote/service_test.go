@@ -77,9 +77,9 @@ func (metadataReport) GetExportedURLs(*identifier.ServiceMetadataIdentifier) []s
 	return nil
 }
 
-func (mr *metadataReport) SaveSubscribedData(id *identifier.SubscriberMetadataIdentifier, urlListStr string) error {
-	logger.Infof("SaveSubscribedData, , url is %v", urlListStr)
-	subscribedMetadata[id] = urlListStr
+func (mr *metadataReport) SaveSubscribedData(id *identifier.SubscriberMetadataIdentifier, urls string) error {
+	logger.Infof("SaveSubscribedData, , url is %v", urls)
+	subscribedMetadata[id] = urls
 	return nil
 }
 
