@@ -37,7 +37,7 @@ func init() {
 }
 
 // consulMetadataReport is the implementation of
-// MetadataReport based on Consul.
+// MetadataReport based on consul.
 type consulMetadataReport struct {
 	client *consul.Client
 }
@@ -85,8 +85,8 @@ func (m *consulMetadataReport) GetExportedURLs(metadataIdentifier *identifier.Se
 }
 
 // SaveSubscribedData saves the urls.
-func (m *consulMetadataReport) SaveSubscribedData(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier, urlListStr string) error {
-	kv := &consul.KVPair{Key: subscriberMetadataIdentifier.GetIdentifierKey(), Value: []byte(urlListStr)}
+func (m *consulMetadataReport) SaveSubscribedData(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier, urls string) error {
+	kv := &consul.KVPair{Key: subscriberMetadataIdentifier.GetIdentifierKey(), Value: []byte(urls)}
 	_, err := m.client.KV().Put(kv, nil)
 	return err
 }
@@ -122,7 +122,7 @@ func (m *consulMetadataReport) GetServiceDefinition(metadataIdentifier *identifi
 type consulMetadataReportFactory struct {
 }
 
-func (m *consulMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {
+func (mf *consulMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {
 	config := &consul.Config{Address: url.Location}
 	client, err := consul.NewClient(config)
 	if err != nil {
