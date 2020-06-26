@@ -89,8 +89,6 @@ func StateToString(state zk.State) string {
 	default:
 		return state.String()
 	}
-
-	return "zookeeper unknown state"
 }
 
 // Options ...
@@ -137,7 +135,7 @@ func ValidateZookeeperClient(container zkClientFacade, opts ...Option) error {
 			return perrors.WithMessagef(err, "newZookeeperClient(address:%+v)", url.Location)
 		}
 		zkAddresses := strings.Split(url.Location, ",")
-		newClient, err := newZookeeperClient(options.zkName, zkAddresses, timeout)
+		newClient, err := NewZookeeperClient(options.zkName, zkAddresses, timeout)
 		if err != nil {
 			logger.Warnf("newZookeeperClient(name{%s}, zk address{%v}, timeout{%d}) = error{%v}",
 				options.zkName, url.Location, timeout.String(), err)
@@ -165,7 +163,7 @@ func ValidateZookeeperClient(container zkClientFacade, opts ...Option) error {
 	return perrors.WithMessagef(err, "newZookeeperClient(address:%+v)", url.PrimitiveURL)
 }
 
-func newZookeeperClient(name string, zkAddrs []string, timeout time.Duration) (*ZookeeperClient, error) {
+func NewZookeeperClient(name string, zkAddrs []string, timeout time.Duration) (*ZookeeperClient, error) {
 	var (
 		err   error
 		event <-chan zk.Event
