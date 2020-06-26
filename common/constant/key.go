@@ -160,6 +160,10 @@ const (
 )
 
 const (
+	ZOOKEEPER_KEY = "zookeeper"
+)
+
+const (
 	TRACING_REMOTE_SPAN_CTX = "tracing.remote.span.ctx"
 )
 
