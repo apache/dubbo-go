@@ -77,10 +77,7 @@ func (f *FileConditionRouter) URL() common.URL {
 }
 
 func parseCondition(conditions []string) string {
-	var (
-		when string
-		then string
-	)
+	var when, then string
 	for _, condition := range conditions {
 		condition = strings.Trim(condition, " ")
 		if strings.Contains(condition, "=>") {
@@ -101,10 +98,7 @@ func parseCondition(conditions []string) string {
 					then = provider
 				}
 			}
-
 		}
-
 	}
-
 	return strings.Join([]string{when, then}, " => ")
 }
