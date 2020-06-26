@@ -39,7 +39,7 @@ import (
 )
 
 var serviceMetadata = make(map[*identifier.ServiceMetadataIdentifier]common.URL, 4)
-var subscribedMetadata = make(map[*identifier.SubscriberMetadataIdentifier][]common.URL, 4)
+var subscribedMetadata = make(map[*identifier.SubscriberMetadataIdentifier]string, 4)
 
 func getMetadataReportFactory() factory.MetadataReportFactory {
 	return &metadataReportFactory{}
@@ -77,9 +77,9 @@ func (metadataReport) GetExportedURLs(*identifier.ServiceMetadataIdentifier) []s
 	return nil
 }
 
-func (mr *metadataReport) SaveSubscribedData(id *identifier.SubscriberMetadataIdentifier, urls []common.URL) error {
-	logger.Infof("SaveSubscribedData, , url is %v", urls)
-	subscribedMetadata[id] = urls
+func (mr *metadataReport) SaveSubscribedData(id *identifier.SubscriberMetadataIdentifier, urlListStr string) error {
+	logger.Infof("SaveSubscribedData, , url is %v", urlListStr)
+	subscribedMetadata[id] = urlListStr
 	return nil
 }
 
@@ -93,8 +93,7 @@ func (metadataReport) GetServiceDefinition(*identifier.MetadataIdentifier) strin
 
 func TestMetadataService(t *testing.T) {
 	extension.SetMetadataReportFactory("mock", getMetadataReportFactory)
-	u, err := common.NewURL(fmt.Sprintf(
-		"mock://127.0.0.1:20000/?sync.report=true"))
+	u, err := common.NewURL(fmt.Sprintf("mock://127.0.0.1:20000/?sync.report=true"))
 	assert.NoError(t, err)
 	instance.GetMetadataReportInstance(&u)
 	mts, err := NewMetadataService()
