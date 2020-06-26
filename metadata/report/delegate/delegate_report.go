@@ -19,6 +19,7 @@ package delegate
 
 import (
 	"encoding/json"
+	perrors "github.com/pkg/errors"
 	"runtime/debug"
 	"sync"
 	"time"
@@ -241,11 +242,20 @@ func (mr *MetadataReport) GetExportedURLs(identifier *identifier.ServiceMetadata
 
 // SaveSubscribedData will delegate to call remote metadata's sdk to save subscribed data
 func (mr *MetadataReport) SaveSubscribedData(identifier *identifier.SubscriberMetadataIdentifier, urls []common.URL) error {
+	urlStrList := make([]string, 0, len(urls))
+	for _, url := range urls {
+		urlStrList = append(urlStrList, url.String())
+	}
+	bytes, err := json.Marshal(urlStrList)
+	if err != nil {
+		return perrors.WithMessage(err, "Could not convert the array to json")
+	}
+
 	report := instance.GetMetadataReportInstance()
 	if mr.syncReport {
-		return report.SaveSubscribedData(identifier, urls)
+		return report.SaveSubscribedData(identifier, string(bytes))
 	}
-	go report.SaveSubscribedData(identifier, urls)
+	go report.SaveSubscribedData(identifier, string(bytes))
 	return nil
 }
 
