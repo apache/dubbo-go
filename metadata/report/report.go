@@ -29,7 +29,7 @@ type MetadataReport interface {
 	SaveServiceMetadata(*identifier.ServiceMetadataIdentifier, common.URL) error
 	RemoveServiceMetadata(*identifier.ServiceMetadataIdentifier) error
 	GetExportedURLs(*identifier.ServiceMetadataIdentifier) []string
-	SaveSubscribedData(*identifier.SubscriberMetadataIdentifier, []common.URL) error
+	SaveSubscribedData(*identifier.SubscriberMetadataIdentifier, string) error
 	GetSubscribedURLs(*identifier.SubscriberMetadataIdentifier) []string
 	GetServiceDefinition(*identifier.MetadataIdentifier) string
 }
