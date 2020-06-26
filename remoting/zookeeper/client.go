@@ -108,7 +108,7 @@ func WithZkName(name string) Option {
 }
 
 // ValidateZookeeperClient ...
-func ValidateZookeeperClient(container zkClientFacade, opts ...Option) error {
+func ValidateZookeeperClient(container ZkClientFacade, opts ...Option) error {
 	var err error
 	options := &Options{}
 	for _, opt := range opts {
@@ -602,6 +602,11 @@ func (z *ZookeeperClient) ExistW(zkPath string) (<-chan zk.Event, error) {
 // GetContent ...
 func (z *ZookeeperClient) GetContent(zkPath string) ([]byte, *zk.Stat, error) {
 	return z.Conn.Get(zkPath)
+}
+
+// GetContent ...
+func (z *ZookeeperClient) SetContent(zkPath string, content []byte, version int32) (*zk.Stat, error) {
+	return z.Conn.Set(zkPath, content, version)
 }
 
 // getConn gets zookeeper connection safely
