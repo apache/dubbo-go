@@ -45,7 +45,7 @@ func init() {
 }
 
 // nacosMetadataReport is the implementation
-// of MetadataReport based on Nacos.
+// of MetadataReport based on nacos.
 type nacosMetadataReport struct {
 	client config_client.IConfigClient
 }
@@ -94,11 +94,11 @@ func (n *nacosMetadataReport) GetExportedURLs(metadataIdentifier *identifier.Ser
 }
 
 // SaveSubscribedData saves the urls.
-func (n *nacosMetadataReport) SaveSubscribedData(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier, urlListStr string) error {
+func (n *nacosMetadataReport) SaveSubscribedData(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier, urls string) error {
 	return n.storeMetadata(vo.ConfigParam{
 		DataId:  subscriberMetadataIdentifier.GetIdentifierKey(),
 		Group:   subscriberMetadataIdentifier.Group,
-		Content: urlListStr,
+		Content: urls,
 	})
 }
 
