@@ -42,6 +42,7 @@ func TestNacosMetadataReport_CRUD(t *testing.T) {
 	providerMi := newMetadataIdentifier("server")
 	providerMeta := "provider"
 	err := rpt.StoreProviderMetadata(providerMi, providerMeta)
+	assert.Nil(t, err)
 
 	consumerMi := newMetadataIdentifier("client")
 	consumerMeta := "consumer"
@@ -50,7 +51,6 @@ func TestNacosMetadataReport_CRUD(t *testing.T) {
 
 	serviceMi := newServiceMetadataIdentifier()
 	serviceUrl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
-
 	err = rpt.SaveServiceMetadata(serviceMi, serviceUrl)
 	assert.Nil(t, err)
 
@@ -68,7 +68,6 @@ func TestNacosMetadataReport_CRUD(t *testing.T) {
 
 	err = rpt.RemoveServiceMetadata(serviceMi)
 	assert.Nil(t, err)
-
 }
 
 func newSubscribeMetadataIdentifier() *identifier.SubscriberMetadataIdentifier {
@@ -76,7 +75,6 @@ func newSubscribeMetadataIdentifier() *identifier.SubscriberMetadataIdentifier {
 		Revision:           "subscribe",
 		MetadataIdentifier: *newMetadataIdentifier("provider"),
 	}
-
 }
 
 func newServiceMetadataIdentifier() *identifier.ServiceMetadataIdentifier {
