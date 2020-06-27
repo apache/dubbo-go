@@ -33,7 +33,7 @@ func TestTagRouterFactory_NewRouter(t *testing.T) {
 	u1, err := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=true")
 	assert.Nil(t, err)
 	factory := NewTagRouterFactory()
-	tagRouter, e := factory.NewRouter(&u1)
+	tagRouter, e := factory.NewPriorityRouter(&u1)
 	assert.Nil(t, e)
 	assert.NotNil(t, tagRouter)
 }
