@@ -83,14 +83,14 @@ func (dir *BaseDirectory) SetRouters(urls []*common.URL) {
 		return
 	}
 
-	routers := make([]router.Router, 0, len(urls))
+	routers := make([]router.PriorityRouter, 0, len(urls))
 
 	for _, url := range urls {
 		routerKey := url.GetParam(constant.ROUTER_KEY, "")
 
 		if len(routerKey) > 0 {
 			factory := extension.GetRouterFactory(url.Protocol)
-			r, err := factory.NewRouter(url)
+			r, err := factory.NewPriorityRouter(url)
 			if err != nil {
 				logger.Errorf("Create router fail. router key: %s, url:%s, error: %+v", routerKey, url.Service(), err)
 				return
