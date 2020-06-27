@@ -31,17 +31,17 @@ func init() {
 type tagRouterFactory struct{}
 
 // NewTagRouterFactory create a tagRouterFactory
-func NewTagRouterFactory() router.RouterFactory {
+func NewTagRouterFactory() router.PriorityRouterFactory {
 	return &tagRouterFactory{}
 }
 
-// NewRouter create a tagRouter by tagRouterFactory with a url
+// NewPriorityRouter create a tagRouter by tagRouterFactory with a url
 // The url contains router configuration information
-func (c *tagRouterFactory) NewRouter(url *common.URL) (router.Router, error) {
+func (c *tagRouterFactory) NewPriorityRouter(url *common.URL) (router.PriorityRouter, error) {
 	return NewTagRouter(url)
 }
 
 // NewFileRouter create a tagRouter by profile content
-func (c *tagRouterFactory) NewFileRouter(content []byte) (router.Router, error) {
+func (c *tagRouterFactory) NewFileRouter(content []byte) (router.PriorityRouter, error) {
 	return NewFileTagRouter(content)
 }

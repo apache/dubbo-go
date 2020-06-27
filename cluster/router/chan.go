@@ -15,29 +15,11 @@
  * limitations under the License.
  */
 
-package healthcheck
+package router
 
-import (
-	"github.com/apache/dubbo-go/cluster/router"
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-)
-
-func init() {
-	extension.SetRouterFactory(constant.HealthCheckRouterName, newHealthCheckRouteFactory)
-}
-
-// HealthCheckRouteFactory
-type HealthCheckRouteFactory struct {
-}
-
-// newHealthCheckRouteFactory construct a new HealthCheckRouteFactory
-func newHealthCheckRouteFactory() router.PriorityRouterFactory {
-	return &HealthCheckRouteFactory{}
-}
-
-// NewPriorityRouter construct a new NewHealthCheckRouter via url
-func (f *HealthCheckRouteFactory) NewPriorityRouter(url *common.URL) (router.PriorityRouter, error) {
-	return NewHealthCheckRouter(url)
+// Chain
+type Chain interface {
+	router
+	// AddRouters Add routers
+	AddRouters([]PriorityRouter)
 }
