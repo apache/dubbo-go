@@ -33,13 +33,13 @@ import (
 	_ "github.com/apache/dubbo-go/config_center/apollo"
 )
 
-func getMockMap() map[string]string{
+func getMockMap() map[string]string {
 	baseMockMap := map[string]string{
-		"dubbo.registries.shanghai_reg1.protocol": "mock100",
+		"dubbo.registries.shanghai_reg1.protocol":             "mock100",
 		"dubbo.reference.com.MockService.MockService.retries": "10",
-		"dubbo.com.MockService.MockService.GetUser.retries": "10",
-		"dubbo.consumer.check": "false",
-		"dubbo.application.name": "dubbo",
+		"dubbo.com.MockService.MockService.GetUser.retries":   "10",
+		"dubbo.consumer.check":                                "false",
+		"dubbo.application.name":                              "dubbo",
 	}
 	return baseMockMap
 }
@@ -116,10 +116,10 @@ func TestRefresh(t *testing.T) {
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
 
 	father := &ConsumerConfig{
-		Check: &[]bool{true}[0],
+		Check:             &[]bool{true}[0],
 		ApplicationConfig: baseAppConfig,
-		Registries: baseRegistries,
-		References: baseMockRef,
+		Registries:        baseRegistries,
+		References:        baseMockRef,
 		ShutdownConfig: &ShutdownConfig{
 			Timeout:              "12s",
 			StepTimeout:          "2s",
@@ -148,10 +148,10 @@ func TestAppExternalRefresh(t *testing.T) {
 	mockMap["dubbo.consumer.check"] = "true"
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
 	father := &ConsumerConfig{
-		Check: &[]bool{true}[0],
+		Check:             &[]bool{true}[0],
 		ApplicationConfig: baseAppConfig,
-		Registries: baseRegistries,
-		References: baseMockRef,
+		Registries:        baseRegistries,
+		References:        baseMockRef,
 	}
 
 	c.SetFatherConfig(father)
@@ -174,10 +174,10 @@ func TestAppExternalWithoutIDRefresh(t *testing.T) {
 	mockMap["dubbo.consumer.check"] = "true"
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
 	father := &ConsumerConfig{
-		Check: &[]bool{true}[0],
+		Check:             &[]bool{true}[0],
 		ApplicationConfig: baseAppConfig,
-		Registries: baseRegistries,
-		References: baseMockRef,
+		Registries:        baseRegistries,
+		References:        baseMockRef,
 	}
 
 	c.SetFatherConfig(father)
@@ -202,11 +202,11 @@ func TestRefreshSingleRegistry(t *testing.T) {
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
 
 	father := &ConsumerConfig{
-		Check: &[]bool{true}[0],
+		Check:             &[]bool{true}[0],
 		ApplicationConfig: baseAppConfig,
-		Registries: map[string]*RegistryConfig{},
-		Registry:   &RegistryConfig{},
-		References: baseMockRef,
+		Registries:        map[string]*RegistryConfig{},
+		Registry:          &RegistryConfig{},
+		References:        baseMockRef,
 	}
 
 	c.SetFatherConfig(father)
@@ -232,7 +232,7 @@ func TestRefreshProvider(t *testing.T) {
 
 	father := &ProviderConfig{
 		ApplicationConfig: baseAppConfig,
-		Registries: baseRegistries,
+		Registries:        baseRegistries,
 		Services: map[string]*ServiceConfig{
 			"MockService": {
 				InterfaceName: "com.MockService",
@@ -251,7 +251,7 @@ func TestRefreshProvider(t *testing.T) {
 						Loadbalance:   "random",
 					},
 					{
-						InterfaceId: "MockService",
+						InterfaceId:   "MockService",
 						InterfaceName: "com.MockService",
 						Name:          "GetUser1",
 						Retries:       "2",
