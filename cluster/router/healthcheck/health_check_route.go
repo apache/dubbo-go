@@ -38,7 +38,7 @@ type HealthCheckRouter struct {
 }
 
 // NewHealthCheckRouter construct an HealthCheckRouter via url
-func NewHealthCheckRouter(url *common.URL) (router.Router, error) {
+func NewHealthCheckRouter(url *common.URL) (router.PriorityRouter, error) {
 	r := &HealthCheckRouter{
 		url:     url,
 		enabled: url.GetParamBool(HEALTH_ROUTE_ENABLED_KEY, false),
