@@ -18,25 +18,25 @@
 package dubbo
 
 import (
+	"context"
 	"fmt"
-	"net"
+	"net/url"
 )
-
 import (
-	"github.com/dubbogo/getty"
-	"github.com/dubbogo/gost/sync"
+	"github.com/opentracing/opentracing-go"
 	"gopkg.in/yaml.v2"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
-)
-
-var (
-	srvConf   *ServerConfig
-	srvGrpool *gxsync.TaskPool
+	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/dubbo/impl"
+	"github.com/apache/dubbo-go/protocol/dubbo/impl/remoting"
+	"github.com/apache/dubbo-go/protocol/invocation"
+	"github.com/dubbogo/getty"
 )
 
 func init() {
@@ -48,7 +48,7 @@ func init() {
 		return
 	}
 	protocolConf := providerConfig.ProtocolConf
-	defaultServerConfig := GetDefaultServerConfig()
+	defaultServerConfig := remoting.GetDefaultServerConfig()
 	if protocolConf == nil {
 		logger.Info("protocol_conf default use dubbo config")
 	} else {
@@ -67,112 +67,59 @@ func init() {
 			panic(err)
 		}
 	}
-	srvConf = &defaultServerConfig
-	if err := srvConf.CheckValidity(); err != nil {
-		panic(err)
+	remoting.SetServerConfig(defaultServerConfig)
+}
+
+// rebuildCtx rebuild the context by attachment.
+// Once we decided to transfer more context's key-value, we should change this.
+// now we only support rebuild the tracing context
+func rebuildCtx(inv *invocation.RPCInvocation) context.Context {
+	ctx := context.Background()
+
+	// actually, if user do not use any opentracing framework, the err will not be nil.
+	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.TextMap,
+		opentracing.TextMapCarrier(inv.Attachments()))
+	if err == nil {
+		ctx = context.WithValue(ctx, constant.TRACING_REMOTE_SPAN_CTX, spanCtx)
 	}
-	setServerGrpool()
+	return ctx
 }
 
-// SetServerConfig set dubbo server config.
-func SetServerConfig(s ServerConfig) {
-	srvConf = &s
-	err := srvConf.CheckValidity()
-	if err != nil {
-		logger.Warnf("[ServerConfig CheckValidity] error: %v", err)
-		return
-	}
-	setServerGrpool()
-}
+func NewStubHandler() remoting.StubHandler {
+	return remoting.StubFunc(func(session getty.Session, p *impl.DubboPackage) {
+		u := common.NewURLWithOptions(common.WithPath(p.GetService().Path), common.WithParams(url.Values{}),
+			common.WithParamsValue(constant.GROUP_KEY, p.GetService().Group),
+			common.WithParamsValue(constant.INTERFACE_KEY, p.GetService().Interface),
+			common.WithParamsValue(constant.VERSION_KEY, p.GetService().Version))
 
-// GetServerConfig get dubbo server config.
-func GetServerConfig() ServerConfig {
-	return *srvConf
-}
+		exporter, _ := dubboProtocol.ExporterMap().Load(u.ServiceKey())
+		if exporter == nil {
+			err := fmt.Errorf("don't have this exporter, key: %s", u.ServiceKey())
+			logger.Errorf(err.Error())
+			p.SetResponseStatus(impl.Response_OK)
+			p.SetBody(err)
+			return
+		}
+		invoker := exporter.(protocol.Exporter).GetInvoker()
+		if invoker != nil {
+			attachments := p.GetBody().(map[string]interface{})["attachments"].(map[string]string)
+			attachments[constant.LOCAL_ADDR] = session.LocalAddr()
+			attachments[constant.REMOTE_ADDR] = session.RemoteAddr()
 
-func setServerGrpool() {
-	if srvConf.GrPoolSize > 1 {
-		srvGrpool = gxsync.NewTaskPool(gxsync.WithTaskPoolTaskPoolSize(srvConf.GrPoolSize), gxsync.WithTaskPoolTaskQueueLength(srvConf.QueueLen),
-			gxsync.WithTaskPoolTaskQueueNumber(srvConf.QueueNumber))
-	}
-}
+			args := p.GetBody().(map[string]interface{})["args"].([]interface{})
+			inv := invocation.NewRPCInvocation(p.GetService().Method, args, attachments)
 
-// Server is dubbo protocol server.
-type Server struct {
-	conf       ServerConfig
-	tcpServer  getty.Server
-	rpcHandler *RpcServerHandler
-}
-
-// NewServer create a new Server.
-func NewServer() *Server {
-
-	s := &Server{
-		conf: *srvConf,
-	}
-
-	s.rpcHandler = NewRpcServerHandler(s.conf.SessionNumber, s.conf.sessionTimeout)
-
-	return s
-}
-
-func (s *Server) newSession(session getty.Session) error {
-	var (
-		ok      bool
-		tcpConn *net.TCPConn
-	)
-	conf := s.conf
-
-	if conf.GettySessionParam.CompressEncoding {
-		session.SetCompressType(getty.CompressZip)
-	}
-
-	if tcpConn, ok = session.Conn().(*net.TCPConn); !ok {
-		panic(fmt.Sprintf("%s, session.conn{%#v} is not tcp connection\n", session.Stat(), session.Conn()))
-	}
-
-	tcpConn.SetNoDelay(conf.GettySessionParam.TcpNoDelay)
-	tcpConn.SetKeepAlive(conf.GettySessionParam.TcpKeepAlive)
-	if conf.GettySessionParam.TcpKeepAlive {
-		tcpConn.SetKeepAlivePeriod(conf.GettySessionParam.keepAlivePeriod)
-	}
-	tcpConn.SetReadBuffer(conf.GettySessionParam.TcpRBufSize)
-	tcpConn.SetWriteBuffer(conf.GettySessionParam.TcpWBufSize)
-
-	session.SetName(conf.GettySessionParam.SessionName)
-	session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
-	session.SetPkgHandler(rpcServerPkgHandler)
-	session.SetEventListener(s.rpcHandler)
-	session.SetWQLen(conf.GettySessionParam.PkgWQSize)
-	session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
-	session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
-	session.SetCronPeriod((int)(conf.sessionTimeout.Nanoseconds() / 1e6))
-	session.SetWaitTime(conf.GettySessionParam.waitTimeout)
-	logger.Debugf("app accepts new session:%s\n", session.Stat())
-
-	session.SetTaskPool(srvGrpool)
-
-	return nil
-}
-
-// Start start dubbo server.
-func (s *Server) Start(url common.URL) {
-	var (
-		addr      string
-		tcpServer getty.Server
-	)
-
-	addr = url.Location
-	tcpServer = getty.NewTCPServer(
-		getty.WithLocalAddress(addr),
-	)
-	tcpServer.RunEventLoop(s.newSession)
-	logger.Debugf("s bind addr{%s} ok!", addr)
-	s.tcpServer = tcpServer
-
-}
-
-// Stop stop dubbo server.
-func (s *Server) Stop() {
-	s.tcpServer.Close()
+			ctx := rebuildCtx(inv)
+			result := invoker.Invoke(ctx, inv)
+			logger.Debugf("invoker result: %+v", result)
+			if err := result.Error(); err != nil {
+				p.SetResponseStatus(impl.Response_OK)
+				p.SetBody(&impl.ResponsePayload{nil, err, result.Attachments()})
+			} else {
+				res := result.Result()
+				p.SetResponseStatus(impl.Response_OK)
+				p.SetBody(&impl.ResponsePayload{res, nil, result.Attachments()})
+			}
+		}
+	})
 }

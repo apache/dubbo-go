@@ -35,6 +35,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/dubbo/impl/remoting"
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 )
 
@@ -52,14 +53,14 @@ var (
 // DubboInvoker is dubbo client invoker.
 type DubboInvoker struct {
 	protocol.BaseInvoker
-	client   *Client
+	client   *remoting.Client
 	quitOnce sync.Once
 	// Used to record the number of requests. -1 represent this DubboInvoker is destroyed
 	reqNum int64
 }
 
-// NewDubboInvoker create dubbo client invoker.
-func NewDubboInvoker(url common.URL, client *Client) *DubboInvoker {
+// NewDubboInvoker ...
+func NewDubboInvoker(url common.URL, client *remoting.Client) *DubboInvoker {
 	return &DubboInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
@@ -94,29 +95,33 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	di.appendCtx(ctx, inv)
 
 	url := di.GetUrl()
+	// default hessian2 serialization, compatible
+	if url.GetParam("serialization", "") == "" {
+		url.SetParam("serialization", constant.HESSIAN2_SERIALIZATION)
+	}
 	// async
 	async, err := strconv.ParseBool(inv.AttachmentsByKey(constant.ASYNC_KEY, "false"))
 	if err != nil {
 		logger.Errorf("ParseBool - error: %v", err)
 		async = false
 	}
-	response := NewResponse(inv.Reply(), nil)
+	response := remoting.NewResponse(inv.Reply(), nil)
 	if async {
 		if callBack, ok := inv.CallBack().(func(response common.CallbackResponse)); ok {
-			result.Err = di.client.AsyncCall(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), callBack, response)
+			result.Err = di.client.AsyncCall(remoting.NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), callBack, response)
 		} else {
-			result.Err = di.client.CallOneway(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()))
+			result.Err = di.client.CallOneway(remoting.NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()))
 		}
 	} else {
 		if inv.Reply() == nil {
 			result.Err = ErrNoReply
 		} else {
-			result.Err = di.client.Call(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), response)
+			result.Err = di.client.Call(remoting.NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), response)
 		}
 	}
 	if result.Err == nil {
 		result.Rest = inv.Reply()
-		result.Attrs = response.atta
+		result.Attrs = response.Atta
 	}
 	logger.Debugf("result.Err: %v, result.Rest: %v", result.Err, result.Rest)
 
