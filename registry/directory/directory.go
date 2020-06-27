@@ -46,6 +46,8 @@ func init() {
 	extension.SetDefaultRegistryDirectory(NewRegistryDirectory)
 }
 
+// RegistryDirectory implementation of Directory:
+// Invoker list returned from this Directory's list method have been filtered by Routers
 type RegistryDirectory struct {
 	directory.BaseDirectory
 	cacheInvokers                  []protocol.Invoker

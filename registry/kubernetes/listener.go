@@ -38,12 +38,12 @@ type dataListener struct {
 	listener      config_center.ConfigurationListener
 }
 
-// NewRegistryDataListener
+// NewRegistryDataListener creates a data listener for kubernetes
 func NewRegistryDataListener(listener config_center.ConfigurationListener) *dataListener {
 	return &dataListener{listener: listener}
 }
 
-// AddInterestedURL
+// AddInterestedURL adds the @url of registry center to the listener
 func (l *dataListener) AddInterestedURL(url *common.URL) {
 	l.interestedURL = append(l.interestedURL, url)
 }
@@ -91,10 +91,12 @@ func NewConfigurationListener(reg *kubernetesRegistry) *configurationListener {
 	return &configurationListener{registry: reg, events: make(chan *config_center.ConfigChangeEvent, 32)}
 }
 
+// Process processes the data change event from config center of kubernetes
 func (l *configurationListener) Process(configType *config_center.ConfigChangeEvent) {
 	l.events <- configType
 }
 
+// Next returns next service event once received
 func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
@@ -116,6 +118,8 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 		}
 	}
 }
+
+// Close kubernetes registry center
 func (l *configurationListener) Close() {
 	l.registry.WaitGroup().Done()
 }
