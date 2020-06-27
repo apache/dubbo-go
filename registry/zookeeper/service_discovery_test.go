@@ -18,12 +18,18 @@
 package zookeeper
 
 import (
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/registry"
-	"github.com/dubbogo/go-zookeeper/zk"
-	"github.com/stretchr/testify/assert"
 	"strconv"
 	"testing"
+)
+
+import (
+	"github.com/dubbogo/go-zookeeper/zk"
+	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/registry"
 )
 
 var testName = "test"
