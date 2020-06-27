@@ -58,8 +58,8 @@ func TestNacosMetadataReport_CRUD(t *testing.T) {
 	assert.Equal(t, 1, len(exportedUrls))
 
 	subMi := newSubscribeMetadataIdentifier()
-	urlList := []string{serviceUrl.String()}
-	bytes, _ := json.Marshal(urlList)
+	urls := []string{serviceUrl.String()}
+	bytes, _ := json.Marshal(urls)
 	err = rpt.SaveSubscribedData(subMi, string(bytes))
 	assert.Nil(t, err)
 
