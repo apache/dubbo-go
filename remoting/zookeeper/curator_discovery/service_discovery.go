@@ -19,10 +19,19 @@ package curator_discovery
 
 import (
 	"encoding/json"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/remoting/zookeeper"
-	perrors "github.com/pkg/errors"
+	"strings"
 	"sync"
+)
+
+import (
+	perrors "github.com/pkg/errors"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/remoting"
+	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
 type ServiceDiscovery struct {
@@ -30,6 +39,7 @@ type ServiceDiscovery struct {
 	mutex    *sync.Mutex
 	basePath string
 	services *sync.Map
+	listener *zookeeper.ZkEventListener
 }
 
 func NewServiceDiscovery(client *zookeeper.ZookeeperClient, basePath string) *ServiceDiscovery {
@@ -38,11 +48,12 @@ func NewServiceDiscovery(client *zookeeper.ZookeeperClient, basePath string) *Se
 		mutex:    &sync.Mutex{},
 		basePath: basePath,
 		services: &sync.Map{},
+		listener: zookeeper.NewZkEventListener(client),
 	}
 }
 
 func (sd *ServiceDiscovery) registerService(instance *ServiceInstance) error {
-	path := sd.basePath + "/" + instance.Name + "/" + instance.Id
+	path := sd.pathForInstance(instance.Name, instance.Id)
 	data, err := json.Marshal(instance)
 	if err != nil {
 		return err
@@ -55,13 +66,20 @@ func (sd *ServiceDiscovery) registerService(instance *ServiceInstance) error {
 }
 
 func (sd *ServiceDiscovery) RegisterService(instance *ServiceInstance) error {
-	sd.services.Store(instance.Id, instance)
-	return sd.registerService(instance)
+	_, loaded := sd.services.LoadOrStore(instance.Id, instance)
+	err := sd.registerService(instance)
+	if err != nil {
+		return err
+	}
+	if !loaded {
+		sd.ListenServiceInstanceEvent(instance.Name, instance.Id, sd)
+	}
+	return nil
 }
 
 func (sd *ServiceDiscovery) UpdateService(instance *ServiceInstance) error {
 	sd.services.Store(instance.Id, instance)
-	path := sd.basePath + "/" + instance.Name + "/" + instance.Id
+	path := sd.pathForInstance(instance.Name, instance.Id)
 	data, err := json.Marshal(instance)
 	if err != nil {
 		return err
@@ -73,7 +91,7 @@ func (sd *ServiceDiscovery) UpdateService(instance *ServiceInstance) error {
 	return nil
 }
 
-func (sd *ServiceDiscovery) UpdateInternalService(name, id string) {
+func (sd *ServiceDiscovery) updateInternalService(name, id string) {
 	_, ok := sd.services.Load(id)
 	if !ok {
 		return
@@ -93,7 +111,7 @@ func (sd *ServiceDiscovery) UnregisterService(instance *ServiceInstance) error {
 }
 
 func (sd *ServiceDiscovery) unregisterService(instance *ServiceInstance) error {
-	path := sd.basePath + "/" + instance.Name + "/" + instance.Id
+	path := sd.pathForInstance(instance.Name, instance.Id)
 	return sd.client.Delete(path)
 }
 
@@ -107,12 +125,13 @@ func (sd *ServiceDiscovery) ReRegisterService() {
 		if err != nil {
 			logger.Errorf("[zkServiceDiscovery] registerService{%s} error = err{%v}", instance.Id, perrors.WithStack(err))
 		}
+		sd.ListenServiceInstanceEvent(instance.Name, instance.Id, sd)
 		return true
 	})
 }
 
 func (sd *ServiceDiscovery) QueryForInstances(name string) ([]*ServiceInstance, error) {
-	ids, err := sd.client.GetChildren(sd.basePath + "/" + name)
+	ids, err := sd.client.GetChildren(sd.pathForName(name))
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +150,7 @@ func (sd *ServiceDiscovery) QueryForInstances(name string) ([]*ServiceInstance, 
 }
 
 func (sd *ServiceDiscovery) QueryForInstance(name string, id string) (*ServiceInstance, error) {
-	path := sd.basePath + "/" + name + "/" + id
+	path := sd.pathForInstance(name, id)
 	data, _, err := sd.client.GetContent(path)
 	if err != nil {
 		return nil, err
@@ -146,4 +165,34 @@ func (sd *ServiceDiscovery) QueryForInstance(name string, id string) (*ServiceIn
 
 func (sd *ServiceDiscovery) QueryForNames() ([]string, error) {
 	return sd.client.GetChildren(sd.basePath)
+}
+
+func (sd *ServiceDiscovery) ListenServiceEvent(name string, listener remoting.DataListener) {
+	sd.listener.ListenServiceEvent(nil, sd.pathForName(name), listener)
+}
+
+func (sd *ServiceDiscovery) ListenServiceInstanceEvent(name, id string, listener remoting.DataListener) {
+	sd.listener.ListenServiceEvent(nil, sd.pathForInstance(name, id), listener)
+}
+
+func (sd *ServiceDiscovery) DataChange(eventType remoting.Event) bool {
+	path := eventType.Path
+	name, id := sd.getNameAndId(path)
+	sd.updateInternalService(name, id)
+	return true
+}
+
+func (sd *ServiceDiscovery) getNameAndId(path string) (string, string) {
+	pathSlice := strings.Split(path, constant.PATH_SEPARATOR)
+	name := pathSlice[2]
+	id := pathSlice[3]
+	return name, id
+}
+
+func (sd *ServiceDiscovery) pathForInstance(name, id string) string {
+	return sd.basePath + constant.PATH_SEPARATOR + name + constant.PATH_SEPARATOR + id
+}
+
+func (sd *ServiceDiscovery) pathForName(name string) string {
+	return sd.basePath + constant.PATH_SEPARATOR + name
 }
