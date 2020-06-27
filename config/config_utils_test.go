@@ -58,6 +58,6 @@ func TestRemoveMinus(t *testing.T) {
 	strList = removeMinus([]string{"b", "a", "-c", "c"})
 	assert.Equal(t, strList, "b,a")
 
-	strList = removeMinus([]string{"c", "b", "a", "d","c", "-c", "-a", "e", "f"})
+	strList = removeMinus([]string{"c", "b", "a", "d", "c", "-c", "-a", "e", "f"})
 	assert.Equal(t, strList, "b,d,c,e,f")
 }
