@@ -89,7 +89,7 @@ func loadConsumerConfig() {
 	// init other consumer config
 	conConfigType := consumerConfig.ConfigType
 	for key, value := range extension.GetDefaultConfigReader() {
-		if conConfigType == nil {
+		if conConfigType != nil {
 			if v, ok := conConfigType[key]; ok {
 				value = v
 			}
