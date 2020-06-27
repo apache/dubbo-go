@@ -15,30 +15,23 @@
  * limitations under the License.
  */
 
-package dubbo
+package remoting
 
 import (
-	"context"
-	"fmt"
-	"net/url"
 	"sync"
 	"sync/atomic"
 	"time"
 )
 
 import (
-	"github.com/apache/dubbo-go-hessian2"
+	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/dubbogo/getty"
-	"github.com/opentracing/opentracing-go"
 	perrors "github.com/pkg/errors"
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/invocation"
+	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 )
 
 // todo: writePkg_Timeout will entry *.yml
@@ -99,23 +92,16 @@ func (h *RpcClientHandler) OnClose(session getty.Session) {
 
 // OnMessage notified when RPC client session got any message in connection
 func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
-	p, ok := pkg.(*DubboPackage)
+	p, ok := pkg.(*impl.DubboPackage)
 	if !ok {
 		logger.Errorf("illegal package")
 		return
 	}
 
-	if p.Header.Type&hessian.PackageHeartbeat != 0x00 {
-		if p.Header.Type&hessian.PackageResponse != 0x00 {
-			logger.Debugf("get rpc heartbeat response{header: %#v, body: %#v}", p.Header, p.Body)
-			if p.Err != nil {
-				logger.Errorf("rpc heartbeat response{error: %#v}", p.Err)
-			}
-			h.conn.pool.rpcClient.removePendingResponse(SequenceType(p.Header.ID))
-		} else {
-			logger.Debugf("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", p.Header, p.Service, p.Body)
-			p.Header.ResponseStatus = hessian.Response_OK
-			reply(session, p, hessian.PackageHeartbeat)
+	if p.Header.Type&impl.PackageHeartbeat != 0x00 {
+		logger.Debugf("get rpc heartbeat response{header: %#v, body: %#v}", p.Header, p.Body)
+		if p.Err != nil {
+			logger.Errorf("rpc heartbeat response{error: %#v}", p.Err)
 		}
 		return
 	}
@@ -123,7 +109,7 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 	h.conn.updateSession(session)
 
-	pendingResponse := h.conn.pool.rpcClient.removePendingResponse(SequenceType(p.Header.ID))
+	pendingResponse := h.conn.pool.rpcClient.removePendingResponse(impl.SequenceType(p.Header.ID))
 	if pendingResponse == nil {
 		logger.Errorf("failed to get pending response context for response package %s", *p)
 		return
@@ -133,27 +119,28 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 		pendingResponse.err = p.Err
 	}
 
-	pendingResponse.response.atta = p.Body.(*Response).atta
+	pendingResponse.response.Atta = p.Body.(*Response).Atta
 
 	if pendingResponse.callback == nil {
 		pendingResponse.done <- struct{}{}
 	} else {
+		logger.Info("proxy service callback")
 		pendingResponse.callback(pendingResponse.GetCallResponse())
 	}
 }
 
 // OnCron notified when RPC client session got any message in cron job
 func (h *RpcClientHandler) OnCron(session getty.Session) {
-	clientRpcSession, err := h.conn.getClientRpcSession(session)
+	rpcSession, err := h.conn.getClientRpcSession(session)
 	if err != nil {
 		logger.Errorf("client.getClientSession(session{%s}) = error{%v}",
 			session.Stat(), perrors.WithStack(err))
 		return
 	}
-	if h.conn.pool.rpcClient.conf.sessionTimeout.Nanoseconds() < time.Since(session.GetActive()).Nanoseconds() {
+	if h.conn.pool.rpcClient.Conf.SessionTimeoutD.Nanoseconds() < time.Since(session.GetActive()).Nanoseconds() {
 		logger.Warnf("session{%s} timeout{%s}, reqNum{%d}",
-			session.Stat(), time.Since(session.GetActive()).String(), clientRpcSession.reqNum)
-		h.conn.removeSession(session) // -> h.conn.close() -> h.conn.pool.remove(h.conn)
+			session.Stat(), time.Since(session.GetActive()).String(), rpcSession.reqNum)
+		h.conn.removeSession(session) // -> h.conn.close() -> h.conn.Pool.remove(h.conn)
 		return
 	}
 
@@ -164,20 +151,31 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 // RpcServerHandler
 // //////////////////////////////////////////
 
-// RpcServerHandler is handler of RPC Server
+type StubHandler interface {
+	OnPackage(session getty.Session, pkg *impl.DubboPackage)
+}
+
+type StubFunc func(session getty.Session, pkg *impl.DubboPackage)
+
+func (f StubFunc) OnPackage(session getty.Session, pkg *impl.DubboPackage) {
+	f(session, pkg)
+}
+
 type RpcServerHandler struct {
 	maxSessionNum  int
 	sessionTimeout time.Duration
 	sessionMap     map[getty.Session]*rpcSession
 	rwlock         sync.RWMutex
+	stub           StubHandler
 }
 
 // NewRpcServerHandler creates RpcServerHandler with @maxSessionNum and @sessionTimeout
-func NewRpcServerHandler(maxSessionNum int, sessionTimeout time.Duration) *RpcServerHandler {
+func NewRpcServerHandler(stubHandler StubHandler, maxSessionNum int, sessionTimeout time.Duration) *RpcServerHandler {
 	return &RpcServerHandler{
 		maxSessionNum:  maxSessionNum,
 		sessionTimeout: sessionTimeout,
 		sessionMap:     make(map[getty.Session]*rpcSession),
+		stub:           stubHandler,
 	}
 }
 
@@ -224,87 +222,51 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	}
 	h.rwlock.Unlock()
 
-	p, ok := pkg.(*DubboPackage)
+	p, ok := pkg.(*impl.DubboPackage)
 	if !ok {
 		logger.Errorf("illegal package{%#v}", pkg)
 		return
 	}
-	p.Header.ResponseStatus = hessian.Response_OK
+	p.SetResponseStatus(hessian.Response_OK)
+	//p.Header.ResponseStatus = hessian.Response_OK
 
 	// heartbeat
-	if p.Header.Type&hessian.PackageHeartbeat != 0x00 {
-		logger.Debugf("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", p.Header, p.Service, p.Body)
-		reply(session, p, hessian.PackageHeartbeat)
+	if p.GetHeader().Type&impl.PackageHeartbeat != 0x00 {
+		logger.Debugf("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", p.GetHeader(), p.GetService(), p.GetBody())
+		h.reply(session, p, impl.PackageHeartbeat)
 		return
 	}
 
 	twoway := true
 	// not twoway
-	if p.Header.Type&hessian.PackageRequest_TwoWay == 0x00 {
+	if p.GetHeader().Type&impl.PackageRequest_TwoWay == 0x00 {
 		twoway = false
 	}
 
 	defer func() {
 		if e := recover(); e != nil {
-			p.Header.ResponseStatus = hessian.Response_SERVER_ERROR
+			p.SetResponseStatus(hessian.Response_SERVER_ERROR)
 			if err, ok := e.(error); ok {
 				logger.Errorf("OnMessage panic: %+v", perrors.WithStack(err))
-				p.Body = perrors.WithStack(err)
+				p.SetBody(perrors.WithStack(err))
 			} else if err, ok := e.(string); ok {
 				logger.Errorf("OnMessage panic: %+v", perrors.New(err))
-				p.Body = perrors.New(err)
+				p.SetBody(perrors.New(err))
 			} else {
 				logger.Errorf("OnMessage panic: %+v, this is impossible.", e)
-				p.Body = e
+				p.SetBody(e)
 			}
 
 			if !twoway {
 				return
 			}
-			reply(session, p, hessian.PackageResponse)
+			h.reply(session, p, impl.PackageResponse)
 		}
 
 	}()
 
-	u := common.NewURLWithOptions(common.WithPath(p.Service.Path), common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.GROUP_KEY, p.Service.Group),
-		common.WithParamsValue(constant.INTERFACE_KEY, p.Service.Interface),
-		common.WithParamsValue(constant.VERSION_KEY, p.Service.Version))
-	exporter, _ := dubboProtocol.ExporterMap().Load(u.ServiceKey())
-	if exporter == nil {
-		err := fmt.Errorf("don't have this exporter, key: %s", u.ServiceKey())
-		logger.Errorf(err.Error())
-		p.Header.ResponseStatus = hessian.Response_OK
-		p.Body = err
-		reply(session, p, hessian.PackageResponse)
-		return
-	}
-	invoker := exporter.(protocol.Exporter).GetInvoker()
-	if invoker != nil {
-		attachments := p.Body.(map[string]interface{})["attachments"].(map[string]string)
-		attachments[constant.LOCAL_ADDR] = session.LocalAddr()
-		attachments[constant.REMOTE_ADDR] = session.RemoteAddr()
-
-		args := p.Body.(map[string]interface{})["args"].([]interface{})
-		inv := invocation.NewRPCInvocation(p.Service.Method, args, attachments)
-
-		ctx := rebuildCtx(inv)
-
-		result := invoker.Invoke(ctx, inv)
-		if err := result.Error(); err != nil {
-			p.Header.ResponseStatus = hessian.Response_OK
-			p.Body = hessian.NewResponse(nil, err, result.Attachments())
-		} else {
-			res := result.Result()
-			p.Header.ResponseStatus = hessian.Response_OK
-			p.Body = hessian.NewResponse(res, nil, result.Attachments())
-		}
-	}
-
-	if !twoway {
-		return
-	}
-	reply(session, p, hessian.PackageResponse)
+	h.stub.OnPackage(session, p)
+	h.reply(session, p, impl.PackageResponse)
 }
 
 // OnCron notified when RPC server session got any message in cron job
@@ -333,38 +295,35 @@ func (h *RpcServerHandler) OnCron(session getty.Session) {
 	}
 }
 
-// rebuildCtx rebuild the context by attachment.
-// Once we decided to transfer more context's key-value, we should change this.
-// now we only support rebuild the tracing context
-func rebuildCtx(inv *invocation.RPCInvocation) context.Context {
-	ctx := context.Background()
-
-	// actually, if user do not use any opentracing framework, the err will not be nil.
-	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.TextMap,
-		opentracing.TextMapCarrier(inv.Attachments()))
-	if err == nil {
-		ctx = context.WithValue(ctx, constant.TRACING_REMOTE_SPAN_CTX, spanCtx)
+func (h *RpcServerHandler) reply(session getty.Session, req *impl.DubboPackage, tp impl.PackageType) {
+	header := impl.DubboHeader{
+		SerialID:       req.GetHeader().SerialID,
+		Type:           tp,
+		ID:             req.GetHeader().ID,
+		BodyLen:        0,
+		ResponseStatus: req.GetHeader().ResponseStatus,
 	}
-	return ctx
-}
-
-func reply(session getty.Session, req *DubboPackage, tp hessian.PackageType) {
-	resp := &DubboPackage{
-		Header: hessian.DubboHeader{
-			SerialID:       req.Header.SerialID,
-			Type:           tp,
-			ID:             req.Header.ID,
-			ResponseStatus: req.Header.ResponseStatus,
-		},
+	resp := NewServerResponsePackage(header)
+	if err := impl.LoadSerializer(resp); err != nil {
+		logger.Errorf("Reply error %v", err)
+		return
 	}
 
-	if req.Header.Type&hessian.PackageRequest != 0x00 {
-		resp.Body = req.Body
-	} else {
-		resp.Body = nil
+	if req.GetHeader().Type&impl.PackageRequest != 0x00 {
+		resp.SetBody(req.GetBody())
 	}
 
 	if err := session.WritePkg(resp, writePkg_Timeout); err != nil {
-		logger.Errorf("WritePkg error: %#v, %#v", perrors.WithStack(err), req.Header)
+		logger.Errorf("WritePkg error: %#v, %#v", perrors.WithStack(err), req.GetHeader())
+	}
+}
+
+// server side response package, just for serialization
+func NewServerResponsePackage(header impl.DubboHeader) *impl.DubboPackage {
+	return &impl.DubboPackage{
+		Header: header,
+		Body:   nil,
+		Err:    nil,
+		Codec:  impl.NewDubboCodec(nil),
 	}
 }

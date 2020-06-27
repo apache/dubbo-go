@@ -29,9 +29,9 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/dubbo/impl/remoting"
 )
 
-// dubbo protocol constant
 const (
 	// DUBBO is dubbo protocol name
 	DUBBO = "dubbo"
@@ -48,7 +48,7 @@ var (
 // DubboProtocol is a dubbo protocol implement.
 type DubboProtocol struct {
 	protocol.BaseProtocol
-	serverMap  map[string]*Server
+	serverMap  map[string]*remoting.Server
 	serverLock sync.Mutex
 }
 
@@ -56,7 +56,7 @@ type DubboProtocol struct {
 func NewDubboProtocol() *DubboProtocol {
 	return &DubboProtocol{
 		BaseProtocol: protocol.NewBaseProtocol(),
-		serverMap:    make(map[string]*Server),
+		serverMap:    make(map[string]*remoting.Server),
 	}
 }
 
@@ -67,7 +67,6 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	exporter := NewDubboExporter(serviceKey, invoker, dp.ExporterMap())
 	dp.SetExporterMap(serviceKey, exporter)
 	logger.Infof("Export service: %s", url.String())
-
 	// start server
 	dp.openServer(url)
 	return exporter
@@ -83,7 +82,7 @@ func (dp *DubboProtocol) Refer(url common.URL) protocol.Invoker {
 		requestTimeout = t
 	}
 
-	invoker := NewDubboInvoker(url, NewClient(Options{
+	invoker := NewDubboInvoker(url, remoting.NewClient(remoting.Options{
 		ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
 		RequestTimeout: requestTimeout,
 	}))
@@ -116,7 +115,7 @@ func (dp *DubboProtocol) openServer(url common.URL) {
 		dp.serverLock.Lock()
 		_, ok = dp.serverMap[url.Location]
 		if !ok {
-			srv := NewServer()
+			srv := remoting.NewServer(NewStubHandler())
 			dp.serverMap[url.Location] = srv
 			srv.Start(url)
 		}
