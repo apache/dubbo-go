@@ -32,21 +32,22 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/protocol/dubbo/impl/remoting"
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 func TestDubboInvoker_Invoke(t *testing.T) {
 	proto, url := InitTest(t)
 
-	c := &Client{
-		pendingResponses: new(sync.Map),
-		conf:             *clientConf,
-		opts: Options{
+	c := &remoting.Client{
+		PendingResponses: new(sync.Map),
+		Conf:             *remoting.GetClientConf(),
+		Opts: remoting.Options{
 			ConnectTimeout: 3 * time.Second,
 			RequestTimeout: 6 * time.Second,
 		},
 	}
-	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
+	c.Pool = remoting.NewGettyRPCClientConnPool(c, remoting.GetClientConf().PoolSize, time.Duration(int(time.Second)*remoting.GetClientConf().PoolTTL))
 
 	invoker := NewDubboInvoker(url, c)
 	user := &User{}
@@ -69,8 +70,8 @@ func TestDubboInvoker_Invoke(t *testing.T) {
 	lock := sync.Mutex{}
 	lock.Lock()
 	inv.SetCallBack(func(response common.CallbackResponse) {
-		r := response.(AsyncCallbackResponse)
-		assert.Equal(t, User{Id: "1", Name: "username"}, *r.Reply.(*Response).reply.(*User))
+		r := response.(remoting.AsyncCallbackResponse)
+		assert.Equal(t, User{Id: "1", Name: "username"}, *r.Reply.(*remoting.Response).Reply.(*User))
 		lock.Unlock()
 	})
 	res = invoker.Invoke(context.Background(), inv)
