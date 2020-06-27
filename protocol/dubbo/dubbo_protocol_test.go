@@ -22,19 +22,21 @@ import (
 )
 
 import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/dubbo/impl/remoting"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDubboProtocol_Export(t *testing.T) {
+	srvCfg := remoting.GetDefaultServerConfig()
+	remoting.SetServerConfig(srvCfg)
 	// Export
 	proto := GetProtocol()
-	srvConf = &ServerConfig{}
 	url, err := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
@@ -75,6 +77,8 @@ func TestDubboProtocol_Export(t *testing.T) {
 }
 
 func TestDubboProtocol_Refer(t *testing.T) {
+	cliCfg := remoting.GetDefaultClientConfig()
+	remoting.SetClientConf(cliCfg)
 	// Refer
 	proto := GetProtocol()
 	url, err := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
@@ -83,7 +87,6 @@ func TestDubboProtocol_Refer(t *testing.T) {
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245")
 	assert.NoError(t, err)
-	clientConf = &ClientConfig{}
 	invoker := proto.Refer(url)
 
 	// make sure url

@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-package dubbo
+package remoting
 
 import (
 	"fmt"
+
 	"math/rand"
 	"net"
 	"sync"
@@ -49,7 +50,7 @@ type gettyRPCClient struct {
 }
 
 var (
-	errClientPoolClosed = perrors.New("client pool closed")
+	errClientPoolClosed = perrors.New("client Pool closed")
 )
 
 func newGettyRPCClientConn(pool *gettyRPCClientPool, protocol, addr string) (*gettyRPCClient, error) {
@@ -59,13 +60,13 @@ func newGettyRPCClientConn(pool *gettyRPCClientPool, protocol, addr string) (*ge
 		pool:     pool,
 		gettyClient: getty.NewTCPClient(
 			getty.WithServerAddress(addr),
-			getty.WithConnectionNumber((int)(pool.rpcClient.conf.ConnectionNum)),
-			getty.WithReconnectInterval(pool.rpcClient.conf.ReconnectInterval),
+			getty.WithConnectionNumber((int)(pool.rpcClient.Conf.ConnectionNum)),
+			getty.WithReconnectInterval(pool.rpcClient.Conf.ReconnectInterval),
 		),
 	}
 	go c.gettyClient.RunEventLoop(c.newSession)
 	idx := 1
-	times := int(pool.rpcClient.opts.ConnectTimeout / 1e6)
+	times := int(pool.rpcClient.Opts.ConnectTimeout / 1e6)
 	for {
 		idx++
 		if c.isAvailable() {
@@ -99,7 +100,7 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 		conf    ClientConfig
 	)
 
-	conf = c.pool.rpcClient.conf
+	conf = c.pool.rpcClient.Conf
 	if conf.GettySessionParam.CompressEncoding {
 		session.SetCompressType(getty.CompressZip)
 	}
@@ -111,7 +112,7 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 	tcpConn.SetNoDelay(conf.GettySessionParam.TcpNoDelay)
 	tcpConn.SetKeepAlive(conf.GettySessionParam.TcpKeepAlive)
 	if conf.GettySessionParam.TcpKeepAlive {
-		tcpConn.SetKeepAlivePeriod(conf.GettySessionParam.keepAlivePeriod)
+		tcpConn.SetKeepAlivePeriod(conf.GettySessionParam.KeepAlivePeriodD)
 	}
 	tcpConn.SetReadBuffer(conf.GettySessionParam.TcpRBufSize)
 	tcpConn.SetWriteBuffer(conf.GettySessionParam.TcpWBufSize)
@@ -121,10 +122,10 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 	session.SetPkgHandler(NewRpcClientPackageHandler(c.pool.rpcClient))
 	session.SetEventListener(NewRpcClientHandler(c))
 	session.SetWQLen(conf.GettySessionParam.PkgWQSize)
-	session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
-	session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
-	session.SetCronPeriod((int)(conf.heartbeatPeriod.Nanoseconds() / 1e6))
-	session.SetWaitTime(conf.GettySessionParam.waitTimeout)
+	session.SetReadTimeout(conf.GettySessionParam.TcpReadTimeoutD)
+	session.SetWriteTimeout(conf.GettySessionParam.TcpWriteTimeoutD)
+	session.SetCronPeriod((int)(conf.HeartbeatPeriodD.Nanoseconds() / 1e6))
+	session.SetWaitTime(conf.GettySessionParam.WaitTimeoutD)
 	logger.Debugf("client new session:%s\n", session.Stat())
 
 	session.SetTaskPool(clientGrpool)
@@ -296,7 +297,7 @@ type gettyRPCClientPool struct {
 	conns []*gettyRPCClient
 }
 
-func newGettyRPCClientConnPool(rpcClient *Client, size int, ttl time.Duration) *gettyRPCClientPool {
+func NewGettyRPCClientConnPool(rpcClient *Client, size int, ttl time.Duration) *gettyRPCClientPool {
 	return &gettyRPCClientPool{
 		rpcClient: rpcClient,
 		size:      size,
@@ -368,7 +369,7 @@ func (p *gettyRPCClientPool) put(conn *gettyRPCClient) {
 	}
 
 	if len(p.conns) >= p.size {
-		// delete @conn from client pool
+		// delete @conn from client Pool
 		// p.remove(conn)
 		conn.close()
 		return
