@@ -19,6 +19,7 @@ package curator_discovery
 
 import (
 	"encoding/json"
+	"path"
 	"strings"
 	"sync"
 )
@@ -33,6 +34,11 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
+
+type Entry struct {
+	sync.Mutex
+	instance *ServiceInstance
+}
 
 type ServiceDiscovery struct {
 	client   *zookeeper.ZookeeperClient
@@ -66,7 +72,14 @@ func (sd *ServiceDiscovery) registerService(instance *ServiceInstance) error {
 }
 
 func (sd *ServiceDiscovery) RegisterService(instance *ServiceInstance) error {
-	_, loaded := sd.services.LoadOrStore(instance.Id, instance)
+	value, loaded := sd.services.LoadOrStore(instance.Id, &Entry{})
+	entry, ok := value.(*Entry)
+	if !ok {
+		return perrors.New("[ServiceDiscovery] services value not entry")
+	}
+	entry.Lock()
+	defer entry.Unlock()
+	entry.instance = instance
 	err := sd.registerService(instance)
 	if err != nil {
 		return err
@@ -78,7 +91,17 @@ func (sd *ServiceDiscovery) RegisterService(instance *ServiceInstance) error {
 }
 
 func (sd *ServiceDiscovery) UpdateService(instance *ServiceInstance) error {
-	sd.services.Store(instance.Id, instance)
+	value, ok := sd.services.Load(instance.Id)
+	if !ok {
+		return perrors.Errorf("[ServiceDiscovery] Service{%s} not registered", instance.Id)
+	}
+	entry, ok := value.(*Entry)
+	if !ok {
+		return perrors.New("[ServiceDiscovery] services value not entry")
+	}
+	entry.Lock()
+	defer entry.Unlock()
+	entry.instance = instance
 	path := sd.pathForInstance(instance.Name, instance.Id)
 	data, err := json.Marshal(instance)
 	if err != nil {
@@ -92,7 +115,11 @@ func (sd *ServiceDiscovery) UpdateService(instance *ServiceInstance) error {
 }
 
 func (sd *ServiceDiscovery) updateInternalService(name, id string) {
-	_, ok := sd.services.Load(id)
+	value, ok := sd.services.Load(id)
+	if !ok {
+		return
+	}
+	entry, ok := value.(*Entry)
 	if !ok {
 		return
 	}
@@ -101,11 +128,23 @@ func (sd *ServiceDiscovery) updateInternalService(name, id string) {
 		logger.Infof("[zkServiceDiscovery] UpdateInternalService{%s} error = err{%v}", id, err)
 		return
 	}
-	sd.services.Store(instance.Id, instance)
+	entry.Lock()
+	entry.instance = instance
+	entry.Unlock()
 	return
 }
 
 func (sd *ServiceDiscovery) UnregisterService(instance *ServiceInstance) error {
+	value, ok := sd.services.Load(instance.Id)
+	if !ok {
+		return nil
+	}
+	entry, ok := value.(*Entry)
+	if !ok {
+		return perrors.New("[ServiceDiscovery] services value not entry")
+	}
+	entry.Lock()
+	entry.Unlock()
 	sd.services.Delete(instance.Id)
 	return sd.unregisterService(instance)
 }
@@ -117,13 +156,17 @@ func (sd *ServiceDiscovery) unregisterService(instance *ServiceInstance) error {
 
 func (sd *ServiceDiscovery) ReRegisterService() {
 	sd.services.Range(func(key, value interface{}) bool {
-		instance, ok := value.(*ServiceInstance)
+		entry, ok := value.(*Entry)
 		if !ok {
-
+			return true
 		}
+		entry.Lock()
+		instance := entry.instance
+		entry.Unlock()
 		err := sd.registerService(instance)
 		if err != nil {
 			logger.Errorf("[zkServiceDiscovery] registerService{%s} error = err{%v}", instance.Id, perrors.WithStack(err))
+			return true
 		}
 		sd.ListenServiceInstanceEvent(instance.Name, instance.Id, sd)
 		return true
@@ -172,27 +215,36 @@ func (sd *ServiceDiscovery) ListenServiceEvent(name string, listener remoting.Da
 }
 
 func (sd *ServiceDiscovery) ListenServiceInstanceEvent(name, id string, listener remoting.DataListener) {
-	sd.listener.ListenServiceEvent(nil, sd.pathForInstance(name, id), listener)
+	sd.listener.ListenServiceNodeEvent(sd.pathForInstance(name, id), listener)
 }
 
 func (sd *ServiceDiscovery) DataChange(eventType remoting.Event) bool {
 	path := eventType.Path
-	name, id := sd.getNameAndId(path)
+	name, id, err := sd.getNameAndId(path)
+	if err != nil {
+		logger.Errorf("[ServiceDiscovery] data change error = {%v}", err)
+		return true
+	}
 	sd.updateInternalService(name, id)
 	return true
 }
 
-func (sd *ServiceDiscovery) getNameAndId(path string) (string, string) {
+func (sd *ServiceDiscovery) getNameAndId(path string) (string, string, error) {
+	path = strings.TrimPrefix(path, sd.basePath)
+	path = strings.TrimPrefix(path, constant.PATH_SEPARATOR)
 	pathSlice := strings.Split(path, constant.PATH_SEPARATOR)
-	name := pathSlice[2]
-	id := pathSlice[3]
-	return name, id
+	if len(pathSlice) < 2 {
+		return "", "", perrors.Errorf("[ServiceDiscovery] path{%s} dont contain name and id", path)
+	}
+	name := pathSlice[0]
+	id := pathSlice[1]
+	return name, id, nil
 }
 
 func (sd *ServiceDiscovery) pathForInstance(name, id string) string {
-	return sd.basePath + constant.PATH_SEPARATOR + name + constant.PATH_SEPARATOR + id
+	return path.Join(sd.basePath, name, id)
 }
 
 func (sd *ServiceDiscovery) pathForName(name string) string {
-	return sd.basePath + constant.PATH_SEPARATOR + name
+	return path.Join(sd.basePath, name)
 }
