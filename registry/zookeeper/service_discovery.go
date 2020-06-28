@@ -294,7 +294,7 @@ func (zksd *zookeeperServiceDiscovery) DispatchEvent(event *registry.ServiceInst
 // to resolve event to do DispatchEventByServiceName
 func (zksd *zookeeperServiceDiscovery) DataChange(eventType remoting.Event) bool {
 	path := strings.TrimPrefix(eventType.Path, zksd.rootPath)
-	path = strings.TrimPrefix(eventType.Path, constant.PATH_SEPARATOR)
+	path = strings.TrimPrefix(path, constant.PATH_SEPARATOR)
 	// get service name in zk path
 	serviceName := strings.Split(path, constant.PATH_SEPARATOR)[0]
 	err := zksd.DispatchEventByServiceName(serviceName)
@@ -326,9 +326,18 @@ func (zksd *zookeeperServiceDiscovery) toCuratorInstance(instance registry.Servi
 func (zksd *zookeeperServiceDiscovery) toZookeeperInstance(cris *curator_discovery.ServiceInstance) registry.ServiceInstance {
 	pl, ok := cris.Payload.(map[string]interface{})
 	if !ok {
-		logger.Errorf("[zkServiceDiscovery] toZookeeperInstance{%s} payload is not map", cris.Id)
+		logger.Errorf("[zkServiceDiscovery] toZookeeperInstance{%s} payload is not map[string]interface{}", cris.Id)
+		return nil
 	}
-	md, ok := pl["metadata"].(map[string]string)
+	mdi, ok := pl["metadata"].(map[string]interface{})
+	if !ok {
+		logger.Errorf("[zkServiceDiscovery] toZookeeperInstance{%s} metadata is not map[string]interface{}", cris.Id)
+		return nil
+	}
+	md := make(map[string]string, len(mdi))
+	for k, v := range mdi {
+		md[k] = fmt.Sprint(v)
+	}
 	return &registry.DefaultServiceInstance{
 		Id:          cris.Id,
 		ServiceName: cris.Name,
