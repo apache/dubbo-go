@@ -43,6 +43,7 @@ type Entry struct {
 
 // ServiceInstance which define in curator-x-discovery, please refer to
 // https://github.com/apache/curator/blob/master/curator-x-discovery/src/main/java/org/apache/curator/x/discovery/ServiceDiscovery.java
+// It's not exactly the same as curator-x-discovery's service discovery
 type ServiceDiscovery struct {
 	client   *zookeeper.ZookeeperClient
 	mutex    *sync.Mutex
