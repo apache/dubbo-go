@@ -89,6 +89,16 @@ func TestCURDZookeeperServiceDiscovery(t *testing.T) {
 	assert.Nil(t, err)
 	tests := sd.GetInstances(testName)
 	assert.Equal(t, tests[0].GetId(), "127.0.0.1:2233")
+	err = sd.Update(&registry.DefaultServiceInstance{
+		Id:          "testId",
+		ServiceName: testName,
+		Host:        "127.0.0.1",
+		Port:        2233,
+		Enable:      true,
+		Healthy:     true,
+		Metadata:    nil,
+	})
+	assert.Nil(t, err)
 	err = sd.Unregister(&registry.DefaultServiceInstance{
 		Id:          "testId",
 		ServiceName: testName,
