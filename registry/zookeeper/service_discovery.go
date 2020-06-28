@@ -66,6 +66,7 @@ type zookeeperServiceDiscovery struct {
 	url         *common.URL
 	wg          sync.WaitGroup
 	cltLock     sync.Mutex
+	listenLock  sync.Mutex
 	done        chan struct{}
 	rootPath    string
 	listenNames []string
@@ -239,6 +240,8 @@ func (zksd *zookeeperServiceDiscovery) GetRequestInstances(serviceNames []string
 }
 
 func (zksd *zookeeperServiceDiscovery) AddListener(listener *registry.ServiceInstancesChangedListener) error {
+	zksd.listenLock.Lock()
+	defer zksd.listenLock.Unlock()
 	zksd.listenNames = append(zksd.listenNames, listener.ServiceName)
 	zksd.csd.ListenServiceEvent(listener.ServiceName, zksd)
 	return nil
@@ -258,8 +261,9 @@ func (zksd *zookeeperServiceDiscovery) DispatchEvent(event *registry.ServiceInst
 }
 
 func (zksd *zookeeperServiceDiscovery) DataChange(eventType remoting.Event) bool {
-	path := eventType.Path
-	name := strings.Split(path, "/")[2]
+	path := strings.TrimPrefix(eventType.Path, zksd.rootPath)
+	path = strings.TrimPrefix(eventType.Path, constant.PATH_SEPARATOR)
+	name := strings.Split(path, constant.PATH_SEPARATOR)[0]
 	err := zksd.DispatchEventByServiceName(name)
 	if err != nil {
 		logger.Errorf("[zkServiceDiscovery] DispatchEventByServiceName{%s} error = err{%v}", name, err)
