@@ -20,6 +20,7 @@ package cluster_impl
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 )
 
@@ -32,6 +33,7 @@ import (
 	"github.com/apache/dubbo-go/cluster/directory"
 	"github.com/apache/dubbo-go/cluster/loadbalance"
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
@@ -39,10 +41,11 @@ import (
 )
 
 var (
-	broadcastUrl, _ = common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
+	broadcastUrl, _ = common.NewURL(
+		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
 )
 
-func registerBroadcast(t *testing.T, mockInvokers ...*mock.MockInvoker) protocol.Invoker {
+func registerBroadcast(mockInvokers ...*mock.MockInvoker) protocol.Invoker {
 	extension.SetLoadbalance("random", loadbalance.NewRandomLoadBalance)
 
 	invokers := []protocol.Invoker{}
@@ -59,7 +62,7 @@ func registerBroadcast(t *testing.T, mockInvokers ...*mock.MockInvoker) protocol
 	return clusterInvoker
 }
 
-func Test_BroadcastInvokeSuccess(t *testing.T) {
+func TestBroadcastInvokeSuccess(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -72,13 +75,13 @@ func Test_BroadcastInvokeSuccess(t *testing.T) {
 		invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
 	}
 
-	clusterInvoker := registerBroadcast(t, invokers...)
+	clusterInvoker := registerBroadcast(invokers...)
 
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 	assert.Equal(t, mockResult, result)
 }
 
-func Test_BroadcastInvokeFailed(t *testing.T) {
+func TestBroadcastInvokeFailed(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -102,7 +105,7 @@ func Test_BroadcastInvokeFailed(t *testing.T) {
 		invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
 	}
 
-	clusterInvoker := registerBroadcast(t, invokers...)
+	clusterInvoker := registerBroadcast(invokers...)
 
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 	assert.Equal(t, mockFailedResult.Err, result.Error())

@@ -23,14 +23,13 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/nacos-group/nacos-sdk-go/clients"
-	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
-	nacosConstant "github.com/nacos-group/nacos-sdk-go/common/constant"
 )
 
 import (
 	gxnet "github.com/dubbogo/gost/net"
+	"github.com/nacos-group/nacos-sdk-go/clients"
+	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
+	nacosConstant "github.com/nacos-group/nacos-sdk-go/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/vo"
 	perrors "github.com/pkg/errors"
 )
@@ -118,6 +117,7 @@ func createRegisterParam(url common.URL, serviceName string) vo.RegisterInstance
 	return instance
 }
 
+// Register will register the service @url to its nacos registry center
 func (nr *nacosRegistry) Register(url common.URL) error {
 	serviceName := getServiceName(url)
 	param := createRegisterParam(url, serviceName)
@@ -180,15 +180,18 @@ func (nr *nacosRegistry) UnSubscribe(url *common.URL, notifyListener registry.No
 	return perrors.New("UnSubscribe not support in nacosRegistry")
 }
 
+// GetUrl gets its registration URL
 func (nr *nacosRegistry) GetUrl() common.URL {
 	return *nr.URL
 }
 
+// IsAvailable determines nacos registry center whether it is available
 func (nr *nacosRegistry) IsAvailable() bool {
 	// TODO
 	return true
 }
 
+// nolint
 func (nr *nacosRegistry) Destroy() {
 	return
 }

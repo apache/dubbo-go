@@ -22,6 +22,8 @@ import (
 	"github.com/apache/dubbo-go/registry"
 )
 
+// ServiceInstanceEvent means something happen to this ServiceInstance
+// like register this service instance
 type ServiceInstanceEvent struct {
 	observer.BaseEvent
 	serviceInstance registry.ServiceInstance
@@ -35,6 +37,7 @@ func NewServiceInstanceEvent(source interface{}, instance registry.ServiceInstan
 	}
 }
 
+// getServiceInstance return the service instance
 func (sie *ServiceInstanceEvent) getServiceInstance() registry.ServiceInstance {
 	return sie.serviceInstance
 }

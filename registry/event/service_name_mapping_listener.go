@@ -20,9 +20,13 @@ package event
 import (
 	"reflect"
 	"sync"
+)
 
+import (
 	perrors "github.com/pkg/errors"
+)
 
+import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/observer"
@@ -30,9 +34,12 @@ import (
 )
 
 func init() {
-	extension.AddEventListener(GetCustomizableServiceInstanceListener)
+	extension.AddEventListener(GetServiceNameMappingListener)
 }
 
+// serviceNameMappingListener listen to service name mapping event
+// usually it means that we exported some service
+// it's a singleton
 type serviceNameMappingListener struct {
 	nameMapping mapping.ServiceNameMapping
 }
@@ -42,6 +49,7 @@ func (s *serviceNameMappingListener) GetPriority() int {
 	return 3
 }
 
+// OnEvent only handle ServiceConfigExportedEvent
 func (s *serviceNameMappingListener) OnEvent(e observer.Event) error {
 	if ex, ok := e.(*ServiceConfigExportedEvent); ok {
 		sc := ex.ServiceConfig
@@ -60,6 +68,7 @@ func (s *serviceNameMappingListener) OnEvent(e observer.Event) error {
 	return nil
 }
 
+// GetEventType return ServiceConfigExportedEvent
 func (s *serviceNameMappingListener) GetEventType() reflect.Type {
 	return reflect.TypeOf(&ServiceConfigExportedEvent{})
 }
@@ -69,6 +78,7 @@ var (
 	serviceNameMappingListenerOnce     sync.Once
 )
 
+// GetServiceNameMappingListener returns an instance
 func GetServiceNameMappingListener() observer.EventListener {
 	serviceNameMappingListenerOnce.Do(func() {
 		serviceNameMappingListenerInstance = &serviceNameMappingListener{

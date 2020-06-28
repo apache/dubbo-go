@@ -19,15 +19,16 @@ package remote
 
 import (
 	"sync"
+)
 
+import (
 	"go.uber.org/atomic"
-
-	"github.com/apache/dubbo-go/common/extension"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/metadata/definition"
@@ -92,7 +93,7 @@ func (mts *MetadataService) ExportURL(url common.URL) (bool, error) {
 	return mts.inMemoryMetadataService.ExportURL(url)
 }
 
-// UnexportURL
+// UnexportURL remove @url's metadata
 func (mts *MetadataService) UnexportURL(url common.URL) error {
 	smi := identifier.NewServiceMetadataIdentifier(url)
 	smi.Revision = mts.exportedRevision.Load()
@@ -121,7 +122,8 @@ func (mts *MetadataService) PublishServiceDefinition(url common.URL) error {
 				ServiceInterface: interfaceName,
 				Version:          url.GetParam(constant.VERSION_KEY, ""),
 				// Group:            url.GetParam(constant.GROUP_KEY, constant.SERVICE_DISCOVERY_DEFAULT_GROUP),
-				Group: url.GetParam(constant.GROUP_KEY, "test"),
+				Group: url.GetParam(constant.GROUP_KEY, constant.DUBBO),
+				Side:  url.GetParam(constant.SIDE_KEY, "provider"),
 			},
 		}
 		mts.delegateReport.StoreProviderMetadata(id, sd)
@@ -161,11 +163,16 @@ func (mts *MetadataService) RefreshMetadata(exportedRevision string, subscribedR
 			return false, err
 		}
 		logger.Infof("urls length = %v", len(urls))
-		for _, u := range urls {
+		for _, ui := range urls {
 
-			id := identifier.NewServiceMetadataIdentifier(u.(common.URL))
+			u, err := common.NewURL(ui.(string))
+			if err != nil {
+				logger.Errorf("this is not valid url string: %s ", ui.(string))
+				continue
+			}
+			id := identifier.NewServiceMetadataIdentifier(u)
 			id.Revision = mts.exportedRevision.Load()
-			if err := mts.delegateReport.SaveServiceMetadata(id, u.(common.URL)); err != nil {
+			if err := mts.delegateReport.SaveServiceMetadata(id, u); err != nil {
 				logger.Errorf("Error occur when execute remote.MetadataService.RefreshMetadata, error message is %+v", err)
 				return false, err
 			}

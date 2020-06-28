@@ -19,7 +19,8 @@ package remote
 
 import (
 	"strings"
-
+)
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
@@ -92,6 +93,10 @@ func (m *metadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 	return service.ConvertURLArrToIntfArr(res), nil
 }
 
+func (m *metadataServiceProxy) MethodMapper() map[string]string {
+	return map[string]string{}
+}
+
 func (m *metadataServiceProxy) GetSubscribedURLs() ([]common.URL, error) {
 	logger.Error("you should never invoke this implementation")
 	return []common.URL{}, nil
@@ -137,7 +142,7 @@ func newMetadataServiceProxy(ins registry.ServiceInstance) service.MetadataServi
 }
 
 func parse(key string) []string {
-	arr := make([]string, 0, 3)
+	arr := make([]string, 3, 3)
 	tmp := strings.SplitN(key, "/", 2)
 	if len(tmp) > 1 {
 		arr[0] = tmp[0]

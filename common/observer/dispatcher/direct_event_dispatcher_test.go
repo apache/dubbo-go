@@ -29,7 +29,9 @@ import (
 
 func TestDirectEventDispatcher_Dispatch(t *testing.T) {
 	ded := NewDirectEventDispatcher()
-	ded.AddEventListener(&TestEventListener{})
+	ded.AddEventListener(&TestEventListener{
+		BaseListener: observer.NewBaseListener(),
+	})
 	ded.AddEventListener(&TestEventListener1{})
 	ded.Dispatch(&TestEvent{})
 	ded.Dispatch(nil)
@@ -40,7 +42,7 @@ type TestEvent struct {
 }
 
 type TestEventListener struct {
-	observer.BaseListenable
+	observer.BaseListener
 	observer.EventListener
 }
 

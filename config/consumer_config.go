@@ -38,13 +38,16 @@ import (
 // consumerConfig
 /////////////////////////
 
-// ConsumerConfig ...
+// ConsumerConfig is Consumer default configuration
 type ConsumerConfig struct {
 	BaseConfig `yaml:",inline"`
 	Filter     string `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	// client
 	Connect_Timeout string `default:"100ms"  yaml:"connect_timeout" json:"connect_timeout,omitempty" property:"connect_timeout"`
 	ConnectTimeout  time.Duration
+
+	Registry   *RegistryConfig            `yaml:"registry" json:"registry,omitempty" property:"registry"`
+	Registries map[string]*RegistryConfig `yaml:"registries" json:"registries,omitempty" property:"registries"`
 
 	Request_Timeout string `yaml:"request_timeout" default:"5s" json:"request_timeout,omitempty" property:"request_timeout"`
 	RequestTimeout  time.Duration
@@ -58,7 +61,7 @@ type ConsumerConfig struct {
 	ConfigType     map[string]string           `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 }
 
-// UnmarshalYAML ...
+// UnmarshalYAML unmarshals the ConsumerConfig by @unmarshal function
 func (c *ConsumerConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
@@ -70,17 +73,17 @@ func (c *ConsumerConfig) UnmarshalYAML(unmarshal func(interface{}) error) error 
 	return nil
 }
 
-// Prefix ...
+// nolint
 func (*ConsumerConfig) Prefix() string {
 	return constant.ConsumerConfigPrefix
 }
 
-// SetConsumerConfig ...
+// SetConsumerConfig sets consumerConfig by @c
 func SetConsumerConfig(c ConsumerConfig) {
 	consumerConfig = &c
 }
 
-// ConsumerInit ...
+// ConsumerInit loads config file to init consumer config
 func ConsumerInit(confConFile string) error {
 	if confConFile == "" {
 		return perrors.Errorf("application configure(consumer) file name is nil")

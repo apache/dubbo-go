@@ -38,9 +38,14 @@ import (
 
 const (
 	nacosClientName = "nacos config_center"
-	maxKeysNum      = 9999
+	// the number is a little big tricky
+	// it will be used in query which looks up all keys with the target group
+	// now, one key represents one application
+	// so only a group has more than 9999 applications will failed
+	maxKeysNum = 9999
 )
 
+// nacosDynamicConfiguration is the implementation of DynamicConfiguration based on nacos
 type nacosDynamicConfiguration struct {
 	url          *common.URL
 	rootPath     string
@@ -125,7 +130,7 @@ func (n *nacosDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.H
 		return result, perrors.WithMessage(err, "can not find the client config")
 	}
 	for _, itm := range page.PageItems {
-		result.Add(itm.Appname)
+		result.Add(itm.DataId)
 	}
 	return result, nil
 }

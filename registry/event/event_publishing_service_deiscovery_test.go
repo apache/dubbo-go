@@ -21,8 +21,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/apache/dubbo-go/config"
-	_ "github.com/apache/dubbo-go/metadata/service/inmemory"
+	"github.com/apache/dubbo-go/metadata/mapping"
 )
 
 import (
@@ -36,6 +35,8 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/observer"
 	dispatcher2 "github.com/apache/dubbo-go/common/observer/dispatcher"
+	"github.com/apache/dubbo-go/config"
+	_ "github.com/apache/dubbo-go/metadata/service/inmemory"
 	"github.com/apache/dubbo-go/registry"
 )
 
@@ -45,8 +46,14 @@ func TestEventPublishingServiceDiscovery_DispatchEvent(t *testing.T) {
 
 	config.GetApplicationConfig().MetadataType = "local"
 
+	extension.SetGlobalServiceNameMapping(func() mapping.ServiceNameMapping {
+		return &mockServiceNameMapping{}
+	})
+
 	dc := NewEventPublishingServiceDiscovery(&ServiceDiscoveryA{})
-	tsd := &TestServiceDiscoveryDestroyingEventListener{}
+	tsd := &TestServiceDiscoveryDestroyingEventListener{
+		BaseListener: observer.NewBaseListener(),
+	}
 	tsd.SetT(t)
 	tsi := &TestServiceInstancePreRegisteredEventListener{}
 	tsi.SetT(t)
@@ -68,7 +75,7 @@ func TestEventPublishingServiceDiscovery_DispatchEvent(t *testing.T) {
 
 type TestServiceDiscoveryDestroyingEventListener struct {
 	suite.Suite
-	observer.BaseListenable
+	observer.BaseListener
 }
 
 func (tel *TestServiceDiscoveryDestroyingEventListener) OnEvent(e observer.Event) error {
@@ -89,7 +96,7 @@ func (tel *TestServiceDiscoveryDestroyingEventListener) GetEventType() reflect.T
 
 type TestServiceInstancePreRegisteredEventListener struct {
 	suite.Suite
-	observer.BaseListenable
+	observer.BaseListener
 }
 
 func (tel *TestServiceInstancePreRegisteredEventListener) OnEvent(e observer.Event) error {
@@ -170,4 +177,15 @@ func (msd *ServiceDiscoveryA) DispatchEventForInstances(serviceName string, inst
 
 func (msd *ServiceDiscoveryA) DispatchEvent(event *registry.ServiceInstancesChangedEvent) error {
 	return nil
+}
+
+type mockServiceNameMapping struct {
+}
+
+func (m *mockServiceNameMapping) Map(serviceInterface string, group string, version string, protocol string) error {
+	return nil
+}
+
+func (m *mockServiceNameMapping) Get(serviceInterface string, group string, version string, protocol string) (*gxset.HashSet, error) {
+	return gxset.NewSet("dubbo"), nil
 }

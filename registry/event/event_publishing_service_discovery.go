@@ -20,14 +20,13 @@ package event
 import (
 	gxset "github.com/dubbogo/gost/container/set"
 	gxpage "github.com/dubbogo/gost/page"
-
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/metadata/service"
 )
 
 import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/observer"
+	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/metadata/service"
 	"github.com/apache/dubbo-go/registry"
 )
 
@@ -44,7 +43,7 @@ func NewEventPublishingServiceDiscovery(serviceDiscovery registry.ServiceDiscove
 	}
 }
 
-// String
+// String returns serviceDiscovery.String()
 func (epsd *EventPublishingServiceDiscovery) String() string {
 	return epsd.serviceDiscovery.String()
 }
@@ -68,7 +67,7 @@ func (epsd *EventPublishingServiceDiscovery) Register(instance registry.ServiceI
 
 }
 
-// Update delegate function
+// Update returns the result of serviceDiscovery.Update
 func (epsd *EventPublishingServiceDiscovery) Update(instance registry.ServiceInstance) error {
 	f := func() error {
 		return epsd.serviceDiscovery.Update(instance)
@@ -76,7 +75,7 @@ func (epsd *EventPublishingServiceDiscovery) Update(instance registry.ServiceIns
 	return epsd.executeWithEvents(nil, f, nil)
 }
 
-// Unregister delegate function
+// Unregister unregister the instance and drop ServiceInstancePreUnregisteredEvent and ServiceInstanceUnregisteredEvent
 func (epsd *EventPublishingServiceDiscovery) Unregister(instance registry.ServiceInstance) error {
 	f := func() error {
 		return epsd.serviceDiscovery.Unregister(instance)
@@ -85,26 +84,32 @@ func (epsd *EventPublishingServiceDiscovery) Unregister(instance registry.Servic
 		f, NewServiceInstanceUnregisteredEvent(epsd.serviceDiscovery, instance))
 }
 
+// GetDefaultPageSize returns the result of serviceDiscovery.GetDefaultPageSize
 func (epsd *EventPublishingServiceDiscovery) GetDefaultPageSize() int {
 	return epsd.serviceDiscovery.GetDefaultPageSize()
 }
 
+// GetServices returns the result of serviceDiscovery.GetServices
 func (epsd *EventPublishingServiceDiscovery) GetServices() *gxset.HashSet {
 	return epsd.serviceDiscovery.GetServices()
 }
 
+// GetInstances returns the result of serviceDiscovery.GetInstances
 func (epsd *EventPublishingServiceDiscovery) GetInstances(serviceName string) []registry.ServiceInstance {
 	return epsd.serviceDiscovery.GetInstances(serviceName)
 }
 
+// GetInstancesByPage returns the result of serviceDiscovery.GetInstancesByPage
 func (epsd *EventPublishingServiceDiscovery) GetInstancesByPage(serviceName string, offset int, pageSize int) gxpage.Pager {
 	return epsd.serviceDiscovery.GetInstancesByPage(serviceName, offset, pageSize)
 }
 
+// GetHealthyInstancesByPage returns the result of serviceDiscovery.GetHealthyInstancesByPage
 func (epsd *EventPublishingServiceDiscovery) GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) gxpage.Pager {
 	return epsd.serviceDiscovery.GetHealthyInstancesByPage(serviceName, offset, pageSize, healthy)
 }
 
+// GetRequestInstances returns result from serviceDiscovery.GetRequestInstances
 func (epsd *EventPublishingServiceDiscovery) GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]gxpage.Pager {
 	return epsd.serviceDiscovery.GetRequestInstances(serviceNames, offset, requestedSize)
 }
@@ -115,14 +120,17 @@ func (epsd *EventPublishingServiceDiscovery) AddListener(listener *registry.Serv
 	return epsd.serviceDiscovery.AddListener(listener)
 }
 
+// DispatchEventByServiceName pass serviceName to serviceDiscovery
 func (epsd *EventPublishingServiceDiscovery) DispatchEventByServiceName(serviceName string) error {
-	return epsd.DispatchEventByServiceName(serviceName)
+	return epsd.serviceDiscovery.DispatchEventByServiceName(serviceName)
 }
 
+// DispatchEventForInstances pass params to serviceDiscovery
 func (epsd *EventPublishingServiceDiscovery) DispatchEventForInstances(serviceName string, instances []registry.ServiceInstance) error {
 	return epsd.serviceDiscovery.DispatchEventForInstances(serviceName, instances)
 }
 
+// DispatchEvent pass the event to serviceDiscovery
 func (epsd *EventPublishingServiceDiscovery) DispatchEvent(event *registry.ServiceInstancesChangedEvent) error {
 	return epsd.serviceDiscovery.DispatchEvent(event)
 }
@@ -143,6 +151,7 @@ func (epsd *EventPublishingServiceDiscovery) executeWithEvents(beforeEvent obser
 	return nil
 }
 
+// getMetadataService returns metadata service instance
 func getMetadataService() (service.MetadataService, error) {
 	return extension.GetMetadataService(config.GetApplicationConfig().MetadataType)
 }
