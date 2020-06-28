@@ -35,11 +35,14 @@ import (
 	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
+// Entry contain a service instance
 type Entry struct {
 	sync.Mutex
 	instance *ServiceInstance
 }
 
+// ServiceInstance which define in curator-x-discovery, please refer to
+// https://github.com/apache/curator/blob/master/curator-x-discovery/src/main/java/org/apache/curator/x/discovery/ServiceDiscovery.java
 type ServiceDiscovery struct {
 	client   *zookeeper.ZookeeperClient
 	mutex    *sync.Mutex
@@ -48,6 +51,7 @@ type ServiceDiscovery struct {
 	listener *zookeeper.ZkEventListener
 }
 
+// NewServiceDiscovery the constructor of service discovery
 func NewServiceDiscovery(client *zookeeper.ZookeeperClient, basePath string) *ServiceDiscovery {
 	return &ServiceDiscovery{
 		client:   client,
@@ -58,6 +62,7 @@ func NewServiceDiscovery(client *zookeeper.ZookeeperClient, basePath string) *Se
 	}
 }
 
+// registerService register service to zookeeper
 func (sd *ServiceDiscovery) registerService(instance *ServiceInstance) error {
 	path := sd.pathForInstance(instance.Name, instance.Id)
 	data, err := json.Marshal(instance)
@@ -71,6 +76,7 @@ func (sd *ServiceDiscovery) registerService(instance *ServiceInstance) error {
 	return nil
 }
 
+// RegisterService register service to zookeeper, and ensure cache is consistent with zookeeper
 func (sd *ServiceDiscovery) RegisterService(instance *ServiceInstance) error {
 	value, loaded := sd.services.LoadOrStore(instance.Id, &Entry{})
 	entry, ok := value.(*Entry)
@@ -90,6 +96,7 @@ func (sd *ServiceDiscovery) RegisterService(instance *ServiceInstance) error {
 	return nil
 }
 
+// UpdateService update service in zookeeper, and ensure cache is consistent with zookeeper
 func (sd *ServiceDiscovery) UpdateService(instance *ServiceInstance) error {
 	value, ok := sd.services.Load(instance.Id)
 	if !ok {
@@ -114,6 +121,7 @@ func (sd *ServiceDiscovery) UpdateService(instance *ServiceInstance) error {
 	return nil
 }
 
+// updateInternalService update service in cache
 func (sd *ServiceDiscovery) updateInternalService(name, id string) {
 	value, ok := sd.services.Load(id)
 	if !ok {
@@ -123,46 +131,43 @@ func (sd *ServiceDiscovery) updateInternalService(name, id string) {
 	if !ok {
 		return
 	}
+	entry.Lock()
+	defer entry.Unlock()
 	instance, err := sd.QueryForInstance(name, id)
 	if err != nil {
 		logger.Infof("[zkServiceDiscovery] UpdateInternalService{%s} error = err{%v}", id, err)
 		return
 	}
-	entry.Lock()
 	entry.instance = instance
-	entry.Unlock()
 	return
 }
 
+// UnregisterService un-register service in zookeeper and delete service in cache
 func (sd *ServiceDiscovery) UnregisterService(instance *ServiceInstance) error {
-	value, ok := sd.services.Load(instance.Id)
+	_, ok := sd.services.Load(instance.Id)
 	if !ok {
 		return nil
 	}
-	entry, ok := value.(*Entry)
-	if !ok {
-		return perrors.New("[ServiceDiscovery] services value not entry")
-	}
-	entry.Lock()
-	entry.Unlock()
 	sd.services.Delete(instance.Id)
 	return sd.unregisterService(instance)
 }
 
+// unregisterService un-register service in zookeeper
 func (sd *ServiceDiscovery) unregisterService(instance *ServiceInstance) error {
 	path := sd.pathForInstance(instance.Name, instance.Id)
 	return sd.client.Delete(path)
 }
 
-func (sd *ServiceDiscovery) ReRegisterService() {
+// ReRegisterServices re-register all cache services to zookeeper
+func (sd *ServiceDiscovery) ReRegisterServices() {
 	sd.services.Range(func(key, value interface{}) bool {
 		entry, ok := value.(*Entry)
 		if !ok {
 			return true
 		}
 		entry.Lock()
+		defer entry.Unlock()
 		instance := entry.instance
-		entry.Unlock()
 		err := sd.registerService(instance)
 		if err != nil {
 			logger.Errorf("[zkServiceDiscovery] registerService{%s} error = err{%v}", instance.Id, perrors.WithStack(err))
@@ -173,6 +178,7 @@ func (sd *ServiceDiscovery) ReRegisterService() {
 	})
 }
 
+// QueryForInstances query instances in zookeeper by name
 func (sd *ServiceDiscovery) QueryForInstances(name string) ([]*ServiceInstance, error) {
 	ids, err := sd.client.GetChildren(sd.pathForName(name))
 	if err != nil {
@@ -192,6 +198,7 @@ func (sd *ServiceDiscovery) QueryForInstances(name string) ([]*ServiceInstance, 
 	return instances, nil
 }
 
+// QueryForInstance query instances in zookeeper by name and id
 func (sd *ServiceDiscovery) QueryForInstance(name string, id string) (*ServiceInstance, error) {
 	path := sd.pathForInstance(name, id)
 	data, _, err := sd.client.GetContent(path)
@@ -206,18 +213,22 @@ func (sd *ServiceDiscovery) QueryForInstance(name string, id string) (*ServiceIn
 	return instance, nil
 }
 
+// QueryForInstance query all service name in zookeeper
 func (sd *ServiceDiscovery) QueryForNames() ([]string, error) {
 	return sd.client.GetChildren(sd.basePath)
 }
 
+// ListenServiceEvent add a listener in a service
 func (sd *ServiceDiscovery) ListenServiceEvent(name string, listener remoting.DataListener) {
 	sd.listener.ListenServiceEvent(nil, sd.pathForName(name), listener)
 }
 
+// ListenServiceEvent add a listener in a instance
 func (sd *ServiceDiscovery) ListenServiceInstanceEvent(name, id string, listener remoting.DataListener) {
 	sd.listener.ListenServiceNodeEvent(sd.pathForInstance(name, id), listener)
 }
 
+// DataChange implement DataListener's DataChange function
 func (sd *ServiceDiscovery) DataChange(eventType remoting.Event) bool {
 	path := eventType.Path
 	name, id, err := sd.getNameAndId(path)
@@ -229,6 +240,7 @@ func (sd *ServiceDiscovery) DataChange(eventType remoting.Event) bool {
 	return true
 }
 
+// getNameAndId get service name and instance id by path
 func (sd *ServiceDiscovery) getNameAndId(path string) (string, string, error) {
 	path = strings.TrimPrefix(path, sd.basePath)
 	path = strings.TrimPrefix(path, constant.PATH_SEPARATOR)
@@ -241,10 +253,12 @@ func (sd *ServiceDiscovery) getNameAndId(path string) (string, string, error) {
 	return name, id, nil
 }
 
+// nolint
 func (sd *ServiceDiscovery) pathForInstance(name, id string) string {
 	return path.Join(sd.basePath, name, id)
 }
 
+// nolint
 func (sd *ServiceDiscovery) pathForName(name string) string {
 	return path.Join(sd.basePath, name)
 }
