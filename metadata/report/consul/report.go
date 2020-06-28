@@ -29,6 +29,10 @@ import (
 	"github.com/apache/dubbo-go/metadata/report/factory"
 )
 
+var (
+	emptyStrSlice = make([]string, 0)
+)
+
 func init() {
 	mf := &consulMetadataReportFactory{}
 	extension.SetMetadataReportFactory("consul", func() factory.MetadataReportFactory {
@@ -79,7 +83,7 @@ func (m *consulMetadataReport) GetExportedURLs(metadataIdentifier *identifier.Se
 	}
 
 	if kv == nil {
-		return []string{}
+		return emptyStrSlice
 	}
 	return []string{string(kv.Value)}
 }
@@ -100,7 +104,7 @@ func (m *consulMetadataReport) GetSubscribedURLs(subscriberMetadataIdentifier *i
 	}
 
 	if kv == nil {
-		return []string{}
+		return emptyStrSlice
 	}
 	return []string{string(kv.Value)}
 }
