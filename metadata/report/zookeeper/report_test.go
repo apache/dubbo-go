@@ -155,6 +155,7 @@ func test1(t *testing.T) {
 	suite.testGetExportedURLs()
 	suite.testRemoveServiceMetadata()
 	suite.testSaveSubscribedData(*url)
+	suite.testGetSubscribedURLs()
 	suite.testGetServiceDefinition()
 }
 
