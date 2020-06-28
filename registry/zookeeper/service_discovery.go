@@ -72,6 +72,7 @@ type zookeeperServiceDiscovery struct {
 	listenNames []string
 }
 
+// newZookeeperServiceDiscovery the constructor of newZookeeperServiceDiscovery
 func newZookeeperServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 	instance, ok := instanceMap[name]
 	if ok {
@@ -115,66 +116,85 @@ func newZookeeperServiceDiscovery(name string) (registry.ServiceDiscovery, error
 	return zksd, nil
 }
 
+// nolint
 func (zksd *zookeeperServiceDiscovery) ZkClient() *zookeeper.ZookeeperClient {
 	return zksd.client
 }
 
+// nolint
 func (zksd *zookeeperServiceDiscovery) SetZkClient(client *zookeeper.ZookeeperClient) {
 	zksd.client = client
 }
 
+// nolint
 func (zksd *zookeeperServiceDiscovery) ZkClientLock() *sync.Mutex {
 	return &zksd.cltLock
 }
 
+// nolint
 func (zksd *zookeeperServiceDiscovery) WaitGroup() *sync.WaitGroup {
 	return &zksd.wg
 }
 
+// nolint
 func (zksd *zookeeperServiceDiscovery) Done() chan struct{} {
 	return zksd.done
 }
 
+// RestartCallBack when zookeeper connection reconnect this function will be invoked.
+// try to re-register service, and listen services
 func (zksd *zookeeperServiceDiscovery) RestartCallBack() bool {
-	zksd.csd.ReRegisterService()
+	zksd.csd.ReRegisterServices()
+	zksd.listenLock.Lock()
+	defer zksd.listenLock.Unlock()
 	for _, name := range zksd.listenNames {
 		zksd.csd.ListenServiceEvent(name, zksd)
 	}
 	return true
 }
 
+// nolint
 func (zksd *zookeeperServiceDiscovery) GetUrl() common.URL {
 	return *zksd.url
 }
 
+// nolint
 func (zksd *zookeeperServiceDiscovery) String() string {
 	return fmt.Sprintf("zookeeper-service-discovery[%s]", zksd.url)
 }
 
+// Close client be closed
 func (zksd *zookeeperServiceDiscovery) Destroy() error {
 	zksd.client.Close()
 	return nil
 }
 
+// Register will register service in zookeeper, instance convert to curator's service instance
+// which define in curator-x-discovery.
 func (zksd *zookeeperServiceDiscovery) Register(instance registry.ServiceInstance) error {
 	cris := zksd.toCuratorInstance(instance)
 	return zksd.csd.RegisterService(cris)
 }
 
+// Register will update service in zookeeper, instance convert to curator's service instance
+// which define in curator-x-discovery, please refer to https://github.com/apache/curator.
 func (zksd *zookeeperServiceDiscovery) Update(instance registry.ServiceInstance) error {
 	cris := zksd.toCuratorInstance(instance)
 	return zksd.csd.UpdateService(cris)
 }
 
+// Unregister will unregister the instance in zookeeper
 func (zksd *zookeeperServiceDiscovery) Unregister(instance registry.ServiceInstance) error {
 	cris := zksd.toCuratorInstance(instance)
 	return zksd.csd.UnregisterService(cris)
 }
 
+// GetDefaultPageSize will return the constant registry.DefaultPageSize
 func (zksd *zookeeperServiceDiscovery) GetDefaultPageSize() int {
 	return registry.DefaultPageSize
 }
 
+// GetServices will return the all services in zookeeper
 func (zksd *zookeeperServiceDiscovery) GetServices() *gxset.HashSet {
 	services, err := zksd.csd.QueryForNames()
 	res := gxset.NewSet()
@@ -188,6 +208,7 @@ func (zksd *zookeeperServiceDiscovery) GetServices() *gxset.HashSet {
 	return res
 }
 
+// GetInstances will return the instances in a service
 func (zksd *zookeeperServiceDiscovery) GetInstances(serviceName string) []registry.ServiceInstance {
 	criss, err := zksd.csd.QueryForInstances(serviceName)
 	if err != nil {
@@ -202,6 +223,7 @@ func (zksd *zookeeperServiceDiscovery) GetInstances(serviceName string) []regist
 	return iss
 }
 
+// GetInstancesByPage will return the instances
 func (zksd *zookeeperServiceDiscovery) GetInstancesByPage(serviceName string, offset int, pageSize int) gxpage.Pager {
 	all := zksd.GetInstances(serviceName)
 	res := make([]interface{}, 0, pageSize)
@@ -212,6 +234,10 @@ func (zksd *zookeeperServiceDiscovery) GetInstancesByPage(serviceName string, of
 	return gxpage.New(offset, pageSize, res, len(all))
 }
 
+// GetHealthyInstancesByPage will return the instance
+// In zookeeper, all service instance's is healthy.
+// However, the healthy parameter in this method maybe false. So we can not use that API.
+// Thus, we must query all instances and then do filter
 func (zksd *zookeeperServiceDiscovery) GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) gxpage.Pager {
 	all := zksd.GetInstances(serviceName)
 	res := make([]interface{}, 0, pageSize)
@@ -231,6 +257,7 @@ func (zksd *zookeeperServiceDiscovery) GetHealthyInstancesByPage(serviceName str
 	return gxpage.New(offset, pageSize, res, len(all))
 }
 
+// GetRequestInstances will return the instances
 func (zksd *zookeeperServiceDiscovery) GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]gxpage.Pager {
 	res := make(map[string]gxpage.Pager, len(serviceNames))
 	for _, name := range serviceNames {
@@ -239,6 +266,7 @@ func (zksd *zookeeperServiceDiscovery) GetRequestInstances(serviceNames []string
 	return res
 }
 
+// AddListener ListenServiceEvent will add a data listener in service
 func (zksd *zookeeperServiceDiscovery) AddListener(listener *registry.ServiceInstancesChangedListener) error {
 	zksd.listenLock.Lock()
 	defer zksd.listenLock.Unlock()
@@ -251,26 +279,32 @@ func (zksd *zookeeperServiceDiscovery) DispatchEventByServiceName(serviceName st
 	return zksd.DispatchEventForInstances(serviceName, zksd.GetInstances(serviceName))
 }
 
+// DispatchEventForInstances dispatch ServiceInstancesChangedEvent
 func (zksd *zookeeperServiceDiscovery) DispatchEventForInstances(serviceName string, instances []registry.ServiceInstance) error {
 	return zksd.DispatchEvent(registry.NewServiceInstancesChangedEvent(serviceName, instances))
 }
 
+// nolint
 func (zksd *zookeeperServiceDiscovery) DispatchEvent(event *registry.ServiceInstancesChangedEvent) error {
 	extension.GetGlobalDispatcher().Dispatch(event)
 	return nil
 }
 
+// DataChange implement DataListener's DataChange function
+// to resolve event to do DispatchEventByServiceName
 func (zksd *zookeeperServiceDiscovery) DataChange(eventType remoting.Event) bool {
 	path := strings.TrimPrefix(eventType.Path, zksd.rootPath)
 	path = strings.TrimPrefix(eventType.Path, constant.PATH_SEPARATOR)
-	name := strings.Split(path, constant.PATH_SEPARATOR)[0]
-	err := zksd.DispatchEventByServiceName(name)
+	// get service name in zk path
+	serviceName := strings.Split(path, constant.PATH_SEPARATOR)[0]
+	err := zksd.DispatchEventByServiceName(serviceName)
 	if err != nil {
-		logger.Errorf("[zkServiceDiscovery] DispatchEventByServiceName{%s} error = err{%v}", name, err)
+		logger.Errorf("[zkServiceDiscovery] DispatchEventByServiceName{%s} error = err{%v}", serviceName, err)
 	}
 	return true
 }
 
+// toCuratorInstance convert to curator's service instance
 func (zksd *zookeeperServiceDiscovery) toCuratorInstance(instance registry.ServiceInstance) *curator_discovery.ServiceInstance {
 	id := instance.GetHost() + ":" + strconv.Itoa(instance.GetPort())
 	pl := make(map[string]interface{})
@@ -288,6 +322,7 @@ func (zksd *zookeeperServiceDiscovery) toCuratorInstance(instance registry.Servi
 	return cuis
 }
 
+// toZookeeperInstance convert to registry's service instance
 func (zksd *zookeeperServiceDiscovery) toZookeeperInstance(cris *curator_discovery.ServiceInstance) registry.ServiceInstance {
 	pl, ok := cris.Payload.(map[string]interface{})
 	if !ok {

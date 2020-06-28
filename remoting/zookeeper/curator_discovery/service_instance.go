@@ -17,6 +17,8 @@
 
 package curator_discovery
 
+// ServiceInstance which define in curator-x-discovery, please refer to
+// https://github.com/apache/curator/blob/master/curator-x-discovery/src/main/java/org/apache/curator/x/discovery/ServiceInstance.java
 type ServiceInstance struct {
 	Name                string
 	Id                  string
