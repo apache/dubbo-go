@@ -18,7 +18,10 @@
 package zookeeper
 
 import (
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/observer"
 	"strconv"
+	"sync"
 	"testing"
 )
 
@@ -75,6 +78,7 @@ func TestCURDZookeeperServiceDiscovery(t *testing.T) {
 	defer ts.Stop()
 	sd, err := newZookeeperServiceDiscovery(testName)
 	assert.Nil(t, err)
+	defer sd.Destroy()
 	md := make(map[string]string)
 	md["t1"] = "test1"
 	err = sd.Register(&registry.DefaultServiceInstance{
@@ -87,8 +91,15 @@ func TestCURDZookeeperServiceDiscovery(t *testing.T) {
 		Metadata:    md,
 	})
 	assert.Nil(t, err)
-	tests := sd.GetInstances(testName)
-	assert.Equal(t, tests[0].GetId(), "127.0.0.1:2233")
+
+	testsPager := sd.GetHealthyInstancesByPage(testName, 0, 1, true)
+	assert.Equal(t, 1, testsPager.GetDataSize())
+	assert.Equal(t, 1, testsPager.GetTotalPages())
+	test := testsPager.GetData()[0].(registry.ServiceInstance)
+	assert.Equal(t, "127.0.0.1:2233", test.GetId())
+	assert.Equal(t, "test1", test.GetMetadata()["t1"])
+
+	md["t1"] = "test12"
 	err = sd.Update(&registry.DefaultServiceInstance{
 		Id:          "testId",
 		ServiceName: testName,
@@ -96,9 +107,25 @@ func TestCURDZookeeperServiceDiscovery(t *testing.T) {
 		Port:        2233,
 		Enable:      true,
 		Healthy:     true,
-		Metadata:    nil,
+		Metadata:    md,
 	})
 	assert.Nil(t, err)
+
+	testsPager = sd.GetInstancesByPage(testName, 0, 1)
+	assert.Equal(t, 1, testsPager.GetDataSize())
+	test = testsPager.GetData()[0].(registry.ServiceInstance)
+	assert.Equal(t, "test12", test.GetMetadata()["t1"])
+
+	testsMap := sd.GetRequestInstances([]string{testName}, 0, 1)
+	assert.Equal(t, 1, len(testsMap))
+	assert.Equal(t, 1, testsMap[testName].GetDataSize())
+	test = testsMap[testName].GetData()[0].(registry.ServiceInstance)
+	assert.Equal(t, "test12", test.GetMetadata()["t1"])
+
+	names := sd.GetServices()
+	assert.Equal(t, 1, names.Size())
+	assert.Equal(t, testName, names.Values()[0])
+
 	err = sd.Unregister(&registry.DefaultServiceInstance{
 		Id:          "testId",
 		ServiceName: testName,
@@ -109,4 +136,62 @@ func TestCURDZookeeperServiceDiscovery(t *testing.T) {
 		Metadata:    nil,
 	})
 	assert.Nil(t, err)
+}
+
+func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
+	ts := prepareData(t)
+	defer ts.Stop()
+	sd, err := newZookeeperServiceDiscovery(testName)
+	assert.Nil(t, err)
+	defer sd.Destroy()
+
+	err = sd.Register(&registry.DefaultServiceInstance{
+		Id:          "testId",
+		ServiceName: testName,
+		Host:        "127.0.0.1",
+		Port:        2233,
+		Enable:      true,
+		Healthy:     true,
+		Metadata:    nil,
+	})
+	assert.Nil(t, err)
+
+	assert.Nil(t, err)
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	tn := &testNotify{
+		wg: wg,
+		t:  t,
+	}
+	sicl := &registry.ServiceInstancesChangedListener{
+		ServiceName:   testName,
+		ChangedNotify: tn,
+	}
+	extension.SetAndInitGlobalDispatcher("direct")
+	extension.GetGlobalDispatcher().AddEventListener(sicl)
+	err = sd.AddListener(sicl)
+	assert.Nil(t, err)
+
+	err = sd.Update(&registry.DefaultServiceInstance{
+		Id:          "testId",
+		ServiceName: testName,
+		Host:        "127.0.0.1",
+		Port:        2233,
+		Enable:      true,
+		Healthy:     true,
+		Metadata:    nil,
+	})
+	tn.wg.Wait()
+}
+
+type testNotify struct {
+	wg *sync.WaitGroup
+	t  *testing.T
+}
+
+func (tn *testNotify) Notify(e observer.Event) {
+	ice := e.(*registry.ServiceInstancesChangedEvent)
+	assert.Equal(tn.t, 1, len(ice.Instances))
+	assert.Equal(tn.t, "127.0.0.1:2233", ice.Instances[0].GetId())
+	tn.wg.Done()
 }
