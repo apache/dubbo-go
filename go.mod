@@ -4,7 +4,7 @@ require (
 	github.com/Workiva/go-datastructures v1.0.50
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
 	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190802083043-4cd0c391755e // indirect
-	github.com/apache/dubbo-go-hessian2 v1.5.0
+	github.com/apache/dubbo-go-hessian2 v1.6.1-0.20200623062814-707fde850279
 	github.com/buger/jsonparser v0.0.0-20181115193947-bf1c66bbce23 // indirect
 	github.com/coreos/bbolt v1.3.3 // indirect
 	github.com/coreos/etcd v3.3.13+incompatible
@@ -12,7 +12,7 @@ require (
 	github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f // indirect
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
 	github.com/creasty/defaults v1.3.0
-	github.com/dubbogo/getty v1.3.5
+	github.com/dubbogo/getty v1.3.7
 	github.com/dubbogo/go-zookeeper v1.0.0
 	github.com/dubbogo/gost v1.9.0
 	github.com/emicklei/go-restful/v3 v3.0.0
@@ -42,7 +42,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 	github.com/nacos-group/nacos-sdk-go v0.0.0-20191128082542-fe1b325b125c
 	github.com/opentracing/opentracing-go v1.1.0
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.1.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/smartystreets/goconvey v0.0.0-20190710185942-9d28bd7c0945 // indirect
@@ -54,8 +54,8 @@ require (
 	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
 	github.com/zouyx/agollo v0.0.0-20191114083447-dde9fc9f35b8
 	go.etcd.io/bbolt v1.3.4 // indirect
-	go.uber.org/atomic v1.4.0
-	go.uber.org/zap v1.10.0
+	go.uber.org/atomic v1.6.0
+	go.uber.org/zap v1.15.0
 	google.golang.org/grpc v1.22.1
 	gopkg.in/yaml.v2 v2.2.2
 	k8s.io/api v0.0.0-20190325185214-7544f9db76f6
