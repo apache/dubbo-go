@@ -343,6 +343,12 @@ func suiteMethod(method reflect.Method) *MethodType {
 		argsType           []reflect.Type
 	)
 
+	// this method is in RPCService
+	// we force users must implement RPCService interface in their provider
+	// and RPCService has only one method "Reference"
+	// In general, this method should not be exported to client
+	// so we ignore this method
+	// see RPCService
 	if mname == "Reference" {
 		return nil
 	}

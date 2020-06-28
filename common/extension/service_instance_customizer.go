@@ -19,7 +19,9 @@ package extension
 
 import (
 	"sort"
+)
 
+import (
 	"github.com/apache/dubbo-go/registry"
 )
 
@@ -35,15 +37,20 @@ func AddCustomizers(cus registry.ServiceInstanceCustomizer) {
 }
 
 // GetCustomizers will return the sorted customizer
+// the result won't be nil
 func GetCustomizers() []registry.ServiceInstanceCustomizer {
 	return customizers
 }
 
 type customizerSlice []registry.ServiceInstanceCustomizer
 
+// nolint
 func (c customizerSlice) Len() int {
 	return len(c)
 }
 
-func (c customizerSlice) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
+// nolint
+func (c customizerSlice) Swap(i, j int) { c[i], c[j] = c[j], c[i] }
+
+// nolint
 func (c customizerSlice) Less(i, j int) bool { return c[i].GetPriority() < c[j].GetPriority() }

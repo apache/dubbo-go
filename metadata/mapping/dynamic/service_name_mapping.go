@@ -21,10 +21,6 @@ import (
 	"strconv"
 	"sync"
 	"time"
-
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/metadata/mapping"
 )
 
 import (
@@ -33,10 +29,13 @@ import (
 )
 
 import (
-	common_cfg "github.com/apache/dubbo-go/common/config"
+	commonCfg "github.com/apache/dubbo-go/common/config"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/config_center"
+	"github.com/apache/dubbo-go/metadata/mapping"
 )
 
 const (
@@ -87,12 +86,15 @@ func (d *DynamicConfigurationServiceNameMapping) buildGroup(serviceInterface str
 	return defaultGroup + slash + serviceInterface
 }
 
-var serviceNameMappingInstance *DynamicConfigurationServiceNameMapping
-var serviceNameMappingOnce sync.Once
+var (
+	serviceNameMappingInstance *DynamicConfigurationServiceNameMapping
+	serviceNameMappingOnce     sync.Once
+)
 
+// GetNameMappingInstance return an instance, if not found, it creates one
 func GetNameMappingInstance() mapping.ServiceNameMapping {
 	serviceNameMappingOnce.Do(func() {
-		dc := common_cfg.GetEnvInstance().GetDynamicConfiguration()
+		dc := commonCfg.GetEnvInstance().GetDynamicConfiguration()
 		serviceNameMappingInstance = &DynamicConfigurationServiceNameMapping{dc: dc}
 	})
 	return serviceNameMappingInstance

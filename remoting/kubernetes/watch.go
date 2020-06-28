@@ -71,6 +71,7 @@ type WatcherEvent struct {
 }
 
 // Watchable WatcherSet
+// thread-safe
 type WatcherSet interface {
 
 	// put the watch event to the watch set
@@ -139,17 +140,15 @@ func (s *watcherSetImpl) Watch(key string, prefix bool) (Watcher, error) {
 	return s.addWatcher(key, prefix)
 }
 
-// Done
-// get the watcher-set status
+// Done gets the watcher-set status
 func (s *watcherSetImpl) Done() <-chan struct{} {
 	return s.ctx.Done()
 }
 
-// Put
-// put the watch event to watcher-set
+// Put puts the watch event to watcher-set
 func (s *watcherSetImpl) Put(watcherEvent *WatcherEvent) error {
 
-	sendMsg := func(object *WatcherEvent, w *watcher) {
+	blockSendMsg := func(object *WatcherEvent, w *watcher) {
 
 		select {
 		case <-w.done():
@@ -167,40 +166,40 @@ func (s *watcherSetImpl) Put(watcherEvent *WatcherEvent) error {
 	}
 
 	// put to watcher-set
-	if watcherEvent.EventType == Delete {
+	switch watcherEvent.EventType {
+	case Delete:
+		// delete from store
 		delete(s.cache, watcherEvent.Key)
-	} else {
-
-		old, ok := s.cache[watcherEvent.Key]
-		if ok {
-			if old.Value == watcherEvent.Value {
-				// already have this k/v pair
-				return nil
-			}
+	case Update, Create:
+		o, ok := s.cache[watcherEvent.Key]
+		if !ok {
+			// pod update, but create new k/v pair
+			watcherEvent.EventType = Create
+			s.cache[watcherEvent.Key] = watcherEvent
+			break
 		}
-
-		// refresh the watcherEvent
+		// k/v pair already latest
+		if o.Value == watcherEvent.Value {
+			return nil
+		}
+		// update to latest status
 		s.cache[watcherEvent.Key] = watcherEvent
 	}
 
 	// notify watcher
 	for _, w := range s.watchers {
-
-		w := w
-
 		if !strings.Contains(watcherEvent.Key, w.interested.key) {
 			//  this watcher no interest in this element
 			continue
 		}
-
 		if !w.interested.prefix {
 			if watcherEvent.Key == w.interested.key {
-				go sendMsg(watcherEvent, w)
+				blockSendMsg(watcherEvent, w)
 			}
 			// not interest
 			continue
 		}
-		go sendMsg(watcherEvent, w)
+		blockSendMsg(watcherEvent, w)
 	}
 	return nil
 }
@@ -242,8 +241,7 @@ func (s *watcherSetImpl) addWatcher(key string, prefix bool) (Watcher, error) {
 	return w, nil
 }
 
-// Get
-// get elements from watcher-set
+// Get gets elements from watcher-set
 func (s *watcherSetImpl) Get(key string, prefix bool) ([]*WatcherEvent, error) {
 
 	s.lock.RLock()
@@ -296,19 +294,17 @@ type watcher struct {
 	exit      chan struct{}
 }
 
-// ResultChan
+// nolint
 func (w *watcher) ResultChan() <-chan *WatcherEvent {
 	return w.ch
 }
 
-// ID
-// the watcher's id
+// nolint
 func (w *watcher) ID() string {
 	return strconv.FormatUint(w.id, 10)
 }
 
-// stop
-// stop the watcher
+// nolint
 func (w *watcher) stop() {
 
 	// double close will panic
@@ -317,14 +313,12 @@ func (w *watcher) stop() {
 	})
 }
 
-// done
-// check watcher status
+// done checks watcher status
 func (w *watcher) done() <-chan struct{} {
 	return w.exit
 }
 
-// newWatcherSet
-// new watcher set from parent context
+// newWatcherSet returns new watcher set from parent context
 func newWatcherSet(ctx context.Context) WatcherSet {
 	s := &watcherSetImpl{
 		ctx:      ctx,

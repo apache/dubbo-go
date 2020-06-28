@@ -19,10 +19,16 @@ package config
 
 import (
 	"time"
+)
 
+import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
+// RemoteConfig: usually we need some middleware, including nacos, zookeeper
+// this represents an instance of this middleware
+// so that other module, like config center, registry could reuse the config
+// but now, only metadata report, metadata service, service discovery use this structure
 type RemoteConfig struct {
 	Address    string            `yaml:"address" json:"address,omitempty"`
 	TimeoutStr string            `default:"5s" yaml:"timeout" json:"timeout,omitempty"`
@@ -31,6 +37,8 @@ type RemoteConfig struct {
 	Params     map[string]string `yaml:"params" json:"address,omitempty"`
 }
 
+// Timeout return timeout duration.
+// if the configure is invalid, or missing, the default value 5s will be returned
 func (rc *RemoteConfig) Timeout() time.Duration {
 	if res, err := time.ParseDuration(rc.TimeoutStr); err == nil {
 		return res
