@@ -32,6 +32,10 @@ import (
 	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
+var (
+	emptyStrSlice = make([]string, 0)
+)
+
 func init() {
 	mf := &zookeeperMetadataReportFactory{}
 	extension.SetMetadataReportFactory("zookeeper", func() factory.MetadataReportFactory {
@@ -77,6 +81,10 @@ func (m *zookeeperMetadataReport) GetExportedURLs(metadataIdentifier *identifier
 	if err != nil {
 		panic(err)
 	}
+
+	if len(v) == 0 {
+		return emptyStrSlice
+	}
 	return []string{string(v)}
 }
 
@@ -92,6 +100,10 @@ func (m *zookeeperMetadataReport) GetSubscribedURLs(subscriberMetadataIdentifier
 	v, _, err := m.client.GetContent(k)
 	if err != nil {
 		panic(err)
+	}
+
+	if len(v) == 0 {
+		return emptyStrSlice
 	}
 	return []string{string(v)}
 }
