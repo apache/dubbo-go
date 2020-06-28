@@ -253,7 +253,7 @@ func (z *ZookeeperClient) HandleZkEvent(session <-chan zk.Event) {
 		case <-z.exit:
 			return
 		case event = <-session:
-			logger.Warnf("client{%s} get a zookeeper event{type:%s, server:%s, path:%s, state:%d-%s, err:%v}",
+			logger.Infof("client{%s} get a zookeeper event{type:%s, server:%s, path:%s, state:%d-%s, err:%v}",
 				z.name, event.Type, event.Server, event.Path, event.State, StateToString(event.State), event.Err)
 			switch (int)(event.State) {
 			case (int)(zk.StateDisconnected):
