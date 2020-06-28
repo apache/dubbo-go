@@ -19,6 +19,7 @@ package zookeeper
 
 import (
 	"strings"
+	"time"
 )
 
 import (
@@ -33,7 +34,7 @@ import (
 
 func init() {
 	mf := &zookeeperMetadataReportFactory{}
-	extension.SetMetadataReportFactory("consul", func() factory.MetadataReportFactory {
+	extension.SetMetadataReportFactory("zookeeper", func() factory.MetadataReportFactory {
 		return mf
 	})
 }
@@ -109,7 +110,11 @@ type zookeeperMetadataReportFactory struct {
 }
 
 func (mf *zookeeperMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {
-	client, err := zookeeper.NewZookeeperClient("zookeeperMetadataReport", strings.Split(url.Location, ","), 15)
+	client, err := zookeeper.NewZookeeperClient(
+		"zookeeperMetadataReport",
+		strings.Split(url.Location, ","),
+		15 * time.Second,
+	)
 	if err != nil {
 		panic(err)
 	}
