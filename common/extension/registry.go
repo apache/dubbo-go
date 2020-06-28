@@ -27,7 +27,7 @@ var (
 )
 
 // SetRegistry sets the registry extension with @name
-func SetRegistry(name string, v func(config *common.URL) (registry.Registry, error)) {
+func SetRegistry(name string, v func(_ *common.URL) (registry.Registry, error)) {
 	registrys[name] = v
 }
 

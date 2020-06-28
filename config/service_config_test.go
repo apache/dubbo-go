@@ -183,7 +183,7 @@ func doInitProviderWithSingleRegistry() {
 	}
 }
 
-func Test_Export(t *testing.T) {
+func TestExport(t *testing.T) {
 	doInitProvider()
 	extension.SetProtocol("registry", GetProtocol)
 
@@ -195,7 +195,7 @@ func Test_Export(t *testing.T) {
 	providerConfig = nil
 }
 
-func Test_getRandomPort(t *testing.T) {
+func TestgetRandomPort(t *testing.T) {
 	protocolConfigs := make([]*ProtocolConfig, 0, 3)
 
 	ip, err := gxnet.GetLocalIP()
