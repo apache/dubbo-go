@@ -51,7 +51,7 @@ var (
 type ZookeeperClient struct {
 	name          string
 	ZkAddrs       []string
-	sync.Mutex    // for conn
+	sync.RWMutex  // for conn
 	Conn          *zk.Conn
 	Timeout       time.Duration
 	exit          chan struct{}
