@@ -29,7 +29,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 )
 
-func Test_loadRegistries(t *testing.T) {
+func TestLoadRegistries(t *testing.T) {
 	target := "shanghai1"
 	regs := map[string]*RegistryConfig{
 
@@ -47,7 +47,7 @@ func Test_loadRegistries(t *testing.T) {
 	assert.Equal(t, "127.0.0.2:2181,128.0.0.1:2181", urls[0].Location)
 }
 
-func Test_loadRegistries1(t *testing.T) {
+func TestLoadRegistries1(t *testing.T) {
 	target := "shanghai1"
 	regs := map[string]*RegistryConfig{
 
