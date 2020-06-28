@@ -113,7 +113,7 @@ func (mf *zookeeperMetadataReportFactory) CreateMetadataReport(url *common.URL) 
 	client, err := zookeeper.NewZookeeperClient(
 		"zookeeperMetadataReport",
 		strings.Split(url.Location, ","),
-		15 * time.Second,
+		15*time.Second,
 	)
 	if err != nil {
 		panic(err)
