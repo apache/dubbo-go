@@ -72,6 +72,19 @@ func newFailbackClusterInvoker(directory cluster.Directory) protocol.Invoker {
 	return invoker
 }
 
+func (invoker *failbackClusterInvoker) tryTimerTaskProc(ctx context.Context, retryTask *retryTimerTask) {
+	invoked := make([]protocol.Invoker, 0)
+	invoked = append(invoked, retryTask.lastInvoker)
+
+	retryInvoker := invoker.doSelect(retryTask.loadbalance, retryTask.invocation, retryTask.invokers, invoked)
+	var result protocol.Result
+	result = retryInvoker.Invoke(ctx, retryTask.invocation)
+	if result.Error() != nil {
+		retryTask.lastInvoker = retryInvoker
+		invoker.checkRetry(retryTask, result.Error())
+	}
+}
+
 func (invoker *failbackClusterInvoker) process(ctx context.Context) {
 	invoker.ticker = time.NewTicker(time.Second * 1)
 	for range invoker.ticker.C {
@@ -97,19 +110,6 @@ func (invoker *failbackClusterInvoker) process(ctx context.Context) {
 			}
 			go invoker.tryTimerTaskProc(ctx, retryTask)
 		}
-	}
-}
-
-func (invoker *failbackClusterInvoker) tryTimerTaskProc(ctx context.Context, retryTask *retryTimerTask) {
-	invoked := make([]protocol.Invoker, 0)
-	invoked = append(invoked, retryTask.lastInvoker)
-
-	retryInvoker := invoker.doSelect(retryTask.loadbalance, retryTask.invocation, retryTask.invokers, invoked)
-	var result protocol.Result
-	result = retryInvoker.Invoke(ctx, retryTask.invocation)
-	if result.Error() != nil {
-		retryTask.lastInvoker = retryInvoker
-		invoker.checkRetry(retryTask, result.Error())
 	}
 }
 

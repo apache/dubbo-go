@@ -31,7 +31,7 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
-func callback(listener config_center.ConfigurationListener, namespace, group, dataId, data string) {
+func callback(listener config_center.ConfigurationListener, _, _, dataId, data string) {
 	listener.Process(&config_center.ConfigChangeEvent{Key: dataId, Value: data, ConfigType: remoting.EventTypeUpdate})
 }
 

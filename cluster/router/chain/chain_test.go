@@ -139,11 +139,11 @@ conditions:
 	url := getConditionRouteUrl(applicationKey)
 	assert.NotNil(t, url)
 	factory := extension.GetRouterFactory(url.Protocol)
-	r, err := factory.NewRouter(url)
+	r, err := factory.NewPriorityRouter(url)
 	assert.Nil(t, err)
 	assert.NotNil(t, r)
 
-	routers := make([]router.Router, 0)
+	routers := make([]router.PriorityRouter, 0)
 	routers = append(routers, r)
 	chain.AddRouters(routers)
 	assert.Equal(t, 3, len(chain.routers))
