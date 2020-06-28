@@ -17,7 +17,9 @@
 
 package extension
 
-import "github.com/apache/dubbo-go/metadata/mapping"
+import (
+	"github.com/apache/dubbo-go/metadata/mapping"
+)
 
 var (
 	globalNameMappingCreator func() mapping.ServiceNameMapping

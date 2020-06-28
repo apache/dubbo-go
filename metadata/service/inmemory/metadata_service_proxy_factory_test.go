@@ -18,10 +18,21 @@
 package inmemory
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
+)
 
+import (
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/registry"
 )
 
 func TestMetadataService_GetMetadataServiceUrlParams(t *testing.T) {
@@ -29,4 +40,61 @@ func TestMetadataService_GetMetadataServiceUrlParams(t *testing.T) {
 	tmp := make(map[string]map[string]string)
 	err := json.Unmarshal([]byte(str), &tmp)
 	assert.Nil(t, err)
+}
+
+func TestCreateProxy(t *testing.T) {
+	extension.SetProtocol("mock", func() protocol.Protocol {
+		return &mockProtocol{}
+	})
+	ins := &registry.DefaultServiceInstance{
+		Id:          "test-id",
+		ServiceName: "com.dubbo",
+		Host:        "localhost",
+		Port:        8080,
+		Enable:      true,
+		Healthy:     true,
+	}
+
+	pxy := createProxy(ins)
+	assert.Nil(t, pxy)
+
+	ins.Metadata = map[string]string{constant.METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME: `{"mock":{"timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"20880"}}`}
+	pxy = createProxy(ins)
+	assert.NotNil(t, pxy)
+}
+
+type mockProtocol struct {
+}
+
+func (m mockProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
+	panic("implement me")
+}
+
+func (m mockProtocol) Refer(url common.URL) protocol.Invoker {
+	return &mockInvoker{}
+}
+
+func (m mockProtocol) Destroy() {
+	panic("implement me")
+}
+
+type mockInvoker struct {
+}
+
+func (m *mockInvoker) GetUrl() common.URL {
+	panic("implement me")
+}
+
+func (m *mockInvoker) IsAvailable() bool {
+	panic("implement me")
+}
+
+func (m *mockInvoker) Destroy() {
+	panic("implement me")
+}
+
+func (m *mockInvoker) Invoke(context.Context, protocol.Invocation) protocol.Result {
+	return &protocol.RPCResult{
+		Rest: &[]interface{}{"dubbo://localhost"},
+	}
 }

@@ -117,6 +117,7 @@ func (proto *registryProtocol) initConfigurationListeners() {
 	proto.providerConfigurationListener = newProviderConfigurationListener(proto.overrideListeners)
 }
 
+// Refer provider service from registry center
 func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 	var registryUrl = url
 	var serviceUrl = registryUrl.SubURL
@@ -156,6 +157,7 @@ func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 	return invoker
 }
 
+// Export provider service to registry center
 func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	proto.once.Do(func() {
 		proto.initConfigurationListeners()
@@ -229,6 +231,7 @@ func newOverrideSubscribeListener(overriderUrl *common.URL, invoker protocol.Inv
 	return &overrideSubscribeListener{url: overriderUrl, originInvoker: invoker, protocol: proto}
 }
 
+// Notify will be triggered when a service change notification is received.
 func (nl *overrideSubscribeListener) Notify(event *registry.ServiceEvent) {
 	if isMatched(&(event.Service), nl.url) && event.Action == remoting.EventTypeAdd {
 		nl.configurator = extension.GetDefaultConfigurator(&(event.Service))
@@ -325,6 +328,7 @@ func getSubscribedOverrideUrl(providerUrl *common.URL) *common.URL {
 	return newUrl
 }
 
+// Destroy registry protocol
 func (proto *registryProtocol) Destroy() {
 	for _, ivk := range proto.invokers {
 		ivk.Destroy()
@@ -389,6 +393,7 @@ func newWrappedInvoker(invoker protocol.Invoker, url *common.URL) *wrappedInvoke
 	}
 }
 
+// Invoke remote service base on URL of wrappedInvoker
 func (ivk *wrappedInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	// get right url
 	ivk.invoker.(*proxy_factory.ProxyInvoker).BaseInvoker = *protocol.NewBaseInvoker(ivk.GetUrl())
@@ -411,6 +416,7 @@ func newProviderConfigurationListener(overrideListeners *sync.Map) *providerConf
 	return listener
 }
 
+// Process notified once there's any change happens on the provider config
 func (listener *providerConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
 	listener.BaseConfigurationListener.Process(event)
 	listener.overrideListeners.Range(func(key, value interface{}) bool {
@@ -435,6 +441,7 @@ func newServiceConfigurationListener(overrideListener *overrideSubscribeListener
 	return listener
 }
 
+// Process notified once there's any change happens on the service config
 func (listener *serviceConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
 	listener.BaseConfigurationListener.Process(event)
 	listener.overrideListener.doOverrideIfNecessary()

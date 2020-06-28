@@ -22,8 +22,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/apache/dubbo-go/config"
 )
 
 import (
@@ -37,16 +35,10 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/config"
 )
 
-func NewNacosNamingClient(url *common.URL) (naming_client.INamingClient, error) {
-	nacosConfig, err := getNacosConfig(url)
-	if err != nil {
-		return nil, err
-	}
-	return clients.CreateNamingClient(nacosConfig)
-}
-
+// NewNacosConfigClient read the config from url and build an instance
 func NewNacosConfigClient(url *common.URL) (config_client.IConfigClient, error) {
 	nacosConfig, err := getNacosConfig(url)
 	if err != nil {
@@ -102,6 +94,7 @@ func getNacosConfig(url *common.URL) (map[string]interface{}, error) {
 	return configMap, nil
 }
 
+// NewNacosClient creates an instance with the config
 func NewNacosClient(rc *config.RemoteConfig) (naming_client.INamingClient, error) {
 	if len(rc.Address) == 0 {
 		return nil, perrors.New("nacos address is empty!")

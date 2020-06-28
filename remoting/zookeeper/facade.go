@@ -40,7 +40,7 @@ type ZkClientFacade interface {
 	GetUrl() common.URL
 }
 
-// HandleClientRestart ...
+// HandleClientRestart keeps the connection between client and server
 func HandleClientRestart(r ZkClientFacade) {
 	var (
 		err error

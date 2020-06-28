@@ -40,14 +40,14 @@ type multiConfiger interface {
 	Prefix() string
 }
 
-// BaseConfig is the event configuration for provider and consumer
+// BaseConfig is the common configuration for provider and consumer
 type BaseConfig struct {
-	ConfigCenterConfig *ConfigCenterConfig                `yaml:"config_center" json:"config_center,omitempty"`
-	Remotes            map[string]*RemoteConfig           `yaml:"remote" json:"remote,omitempty"`
-	ServiceDiscoveries map[string]*ServiceDiscoveryConfig `yaml:"service_discovery" json:"service_discovery,omitempty"`
+	ConfigCenterConfig *ConfigCenterConfig `yaml:"config_center" json:"config_center,omitempty"`
 
-	Registry   *RegistryConfig            `yaml:"registry" json:"registry,omitempty" property:"registry"`
-	Registries map[string]*RegistryConfig `yaml:"registries" json:"registries,omitempty" property:"registries"`
+	// since 1.5.0 version
+	Remotes              map[string]*RemoteConfig           `yaml:"remote" json:"remote,omitempty"`
+	ServiceDiscoveries   map[string]*ServiceDiscoveryConfig `yaml:"service_discovery" json:"service_discovery,omitempty"`
+	MetadataReportConfig *MetadataReportConfig              `yaml:"metadata_report" json:"metadata_report,omitempty" property:"metadata_report"`
 
 	// application config
 	ApplicationConfig *ApplicationConfig `yaml:"application" json:"application,omitempty" property:"application"`
@@ -60,6 +60,7 @@ type BaseConfig struct {
 	fileStream          *bytes.Buffer
 }
 
+// nolint
 func (c *BaseConfig) GetServiceDiscoveries(name string) (config *ServiceDiscoveryConfig, ok bool) {
 	config, ok = c.ServiceDiscoveries[name]
 	return
@@ -88,7 +89,6 @@ func (c *BaseConfig) startConfigCenter() error {
 }
 
 func (c *BaseConfig) prepareEnvironment() error {
-
 	factory := extension.GetConfigCenterFactory(c.ConfigCenterConfig.Protocol)
 	dynamicConfig, err := factory.GetDynamicConfiguration(c.configCenterUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(dynamicConfig)
@@ -342,7 +342,7 @@ func (c *BaseConfig) freshInternalConfig(config *config.InmemoryConfiguration) {
 	setFieldValue(val, reflect.Value{}, config)
 }
 
-// SetFatherConfig ...
+// SetFatherConfig sets father config by @fatherConfig
 func (c *BaseConfig) SetFatherConfig(fatherConfig interface{}) {
 	c.fatherConfig = fatherConfig
 }

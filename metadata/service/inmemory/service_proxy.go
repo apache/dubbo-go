@@ -20,8 +20,9 @@ package inmemory
 import (
 	"context"
 	"reflect"
-	"time"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
@@ -36,7 +37,7 @@ import (
 // so in client-side, if we want to get the metadata information,
 // we must call metadata service
 // this is the stub, or proxy
-// for now, only GetExportedURLs will be implemented
+// for now, only GetExportedURLs need to be implemented
 type MetadataServiceProxy struct {
 	invkr        protocol.Invoker
 	golangServer bool
@@ -49,15 +50,7 @@ func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 	vV := reflect.ValueOf(version)
 	pV := reflect.ValueOf(protocol)
 
-	// this is a strange logic
-	// we should notice that
-	// when we call java server, the method was register as "getExportedURLs"
-	// however, if we call golang server, the method was register as "GetExportedURLs"
-	// it's so tricky...
-	methodName := "getExportedURLs"
-	if m.golangServer {
-		methodName = "GetExportedURLs"
-	}
+	const methodName = "getExportedURLs"
 
 	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName(methodName),
 		invocation.WithArguments([]interface{}{siV.Interface(), gV.Interface(), vV.Interface(), pV.Interface()}),
@@ -65,10 +58,7 @@ func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 		invocation.WithAttachments(map[string]string{constant.ASYNC_KEY: "false"}),
 		invocation.WithParameterValues([]reflect.Value{siV, gV, vV, pV}))
 
-	start := time.Now()
 	res := m.invkr.Invoke(context.Background(), inv)
-	end := time.Now()
-	logger.Infof("duration: %s, result: %v", (end.Sub(start)).String(), res.Result())
 	if res.Error() != nil {
 		logger.Errorf("could not get the metadata service from remote provider: %v", res.Error())
 		return []interface{}{}, nil
@@ -82,6 +72,10 @@ func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 		ret = append(ret, s)
 	}
 	return ret, nil
+}
+
+func (m *MetadataServiceProxy) MethodMapper() map[string]string {
+	return map[string]string{}
 }
 
 func (m *MetadataServiceProxy) Reference() string {

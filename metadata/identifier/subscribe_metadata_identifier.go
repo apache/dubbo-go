@@ -23,12 +23,12 @@ type SubscriberMetadataIdentifier struct {
 	MetadataIdentifier
 }
 
-// GetIdentifierKey will return string format as service:Version:Group:Side:Revision
+// GetIdentifierKey returns string that format is service:Version:Group:Side:Revision
 func (mdi *SubscriberMetadataIdentifier) GetIdentifierKey() string {
 	return mdi.BaseMetadataIdentifier.getIdentifierKey(mdi.Revision)
 }
 
-// GetFilePathKey will return string format as metadata/path/Version/Group/Side/Revision
+// GetFilePathKey returns string that format is metadata/path/Version/Group/Side/Revision
 func (mdi *SubscriberMetadataIdentifier) GetFilePathKey() string {
 	return mdi.BaseMetadataIdentifier.getFilePathKey(mdi.Revision)
 }

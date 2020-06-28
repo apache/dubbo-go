@@ -17,15 +17,23 @@
 
 package protocol
 
-// Result ...
+// Result is a RPC result
 type Result interface {
+	// SetError sets error.
 	SetError(error)
+	// Error gets error.
 	Error() error
+	// SetResult sets invoker result.
 	SetResult(interface{})
+	// Result gets invoker result.
 	Result() interface{}
+	// SetAttachments replaces the existing attachments with the specified param.
 	SetAttachments(map[string]string)
+	// Attachments gets all attachments
 	Attachments() map[string]string
+	// AddAttachment adds the specified map to existing attachments in this instance.
 	AddAttachment(string, string)
+	// Attachment gets attachment by key with default value.
 	Attachment(string, string) string
 }
 
@@ -33,48 +41,49 @@ type Result interface {
 // Result Impletment of RPC
 /////////////////////////////
 
-// RPCResult ...
+// RPCResult is default RPC result.
 type RPCResult struct {
 	Attrs map[string]string
 	Err   error
 	Rest  interface{}
 }
 
-// SetError ...
+// SetError sets error.
 func (r *RPCResult) SetError(err error) {
 	r.Err = err
 }
 
+// Error gets error.
 func (r *RPCResult) Error() error {
 	return r.Err
 }
 
-// SetResult ...
+// SetResult sets invoker result.
 func (r *RPCResult) SetResult(rest interface{}) {
 	r.Rest = rest
 }
 
-// Result ...
+// Result gets invoker result.
 func (r *RPCResult) Result() interface{} {
 	return r.Rest
 }
 
-// SetAttachments ...
+// SetAttachments replaces the existing attachments with the specified param.
 func (r *RPCResult) SetAttachments(attr map[string]string) {
 	r.Attrs = attr
 }
 
-// Attachments ...
+// Attachments gets all attachments
 func (r *RPCResult) Attachments() map[string]string {
 	return r.Attrs
 }
 
-// AddAttachment ...
+// AddAttachment adds the specified map to existing attachments in this instance.
 func (r *RPCResult) AddAttachment(key, value string) {
 	r.Attrs[key] = value
 }
 
-// Attachment ...
+// Attachment gets attachment by key with default value.
 func (r *RPCResult) Attachment(key, defaultValue string) string {
 	v, ok := r.Attrs[key]
 	if !ok {
