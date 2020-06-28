@@ -36,8 +36,7 @@ import (
 )
 
 const (
-	// RegistryConnDelay ...
-	RegistryConnDelay = 3
+	registryConnDelay = 3
 )
 
 func init() {
@@ -74,6 +73,8 @@ func newConsulRegistry(url *common.URL) (registry.Registry, error) {
 	return r, nil
 }
 
+// Register register @url
+// it delegate the job to register() method
 func (r *consulRegistry) Register(url common.URL) error {
 	var err error
 
@@ -87,6 +88,7 @@ func (r *consulRegistry) Register(url common.URL) error {
 	return nil
 }
 
+// register actually register the @url
 func (r *consulRegistry) register(url common.URL) error {
 	service, err := buildService(url)
 	if err != nil {
@@ -95,6 +97,8 @@ func (r *consulRegistry) register(url common.URL) error {
 	return r.client.Agent().ServiceRegister(service)
 }
 
+// UnRegister unregister the @url
+// it delegate the job to unregister() method
 func (r *consulRegistry) UnRegister(url common.URL) error {
 	var err error
 
@@ -108,10 +112,12 @@ func (r *consulRegistry) UnRegister(url common.URL) error {
 	return nil
 }
 
+// unregister actually unregister the @url
 func (r *consulRegistry) unregister(url common.URL) error {
 	return r.client.Agent().ServiceDeregister(buildId(url))
 }
 
+// Subscribe subscribe the @url with the @notifyListener
 func (r *consulRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) error {
 	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
 	if role == common.CONSUMER {
@@ -120,11 +126,13 @@ func (r *consulRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 	return nil
 }
 
-// UnSubscribe :
+// UnSubscribe is not supported yet
 func (r *consulRegistry) UnSubscribe(url *common.URL, notifyListener registry.NotifyListener) error {
 	return perrors.New("UnSubscribe not support in consulRegistry")
 }
 
+// subscribe actually subscribe the @url
+// it loops forever until success
 func (r *consulRegistry) subscribe(url *common.URL, notifyListener registry.NotifyListener) {
 	for {
 		if !r.IsAvailable() {
@@ -139,7 +147,7 @@ func (r *consulRegistry) subscribe(url *common.URL, notifyListener registry.Noti
 				return
 			}
 			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
-			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
+			time.Sleep(time.Duration(registryConnDelay) * time.Second)
 			continue
 		}
 
@@ -162,10 +170,12 @@ func (r *consulRegistry) getListener(url common.URL) (registry.Listener, error) 
 	return listener, err
 }
 
+// GetUrl get registry URL of consul registry center
 func (r *consulRegistry) GetUrl() common.URL {
 	return *r.URL
 }
 
+// IsAvailable checks consul registry center whether is available
 func (r *consulRegistry) IsAvailable() bool {
 	select {
 	case <-r.done:
@@ -175,6 +185,7 @@ func (r *consulRegistry) IsAvailable() bool {
 	}
 }
 
+// Destroy consul registry center
 func (r *consulRegistry) Destroy() {
 	close(r.done)
 }

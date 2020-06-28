@@ -127,6 +127,7 @@ const (
 	CONFIG_CLUSTER_KEY    = "config.cluster"
 	CONFIG_CHECK_KEY      = "config.check"
 	CONFIG_TIMEOUT_KET    = "config.timeout"
+	CONFIG_LOG_DIR_KEY    = "config.logDir"
 	CONFIG_VERSION_KEY    = "configVersion"
 	COMPATIBLE_CONFIG_KEY = "compatible_config"
 )
@@ -161,6 +162,10 @@ const (
 
 const (
 	ZOOKEEPER_KEY = "zookeeper"
+)
+
+const (
+	ETCDV3_KEY = "etcdv3"
 )
 
 const (
@@ -281,6 +286,4 @@ const (
 
 	// SERVICE_DISCOVERY_KEY indicate which service discovery instance will be used
 	SERVICE_DISCOVERY_KEY = "service_discovery"
-	LANGUAGE_KEY          = "language"
-	GO_LANG               = "golang"
 )

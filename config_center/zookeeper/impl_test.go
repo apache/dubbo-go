@@ -18,6 +18,7 @@ package zookeeper
 
 import (
 	"fmt"
+	"strconv"
 	"sync"
 	"testing"
 )
@@ -30,16 +31,28 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/config_center/parser"
 )
 
 func initZkData(group string, t *testing.T) (*zk.TestCluster, *zookeeperDynamicConfiguration) {
-	regurl, _ := common.NewURL("registry://127.0.0.1:1111")
-	ts, reg, err := newMockZookeeperDynamicConfiguration(&regurl)
-	reg.SetParser(&parser.DefaultConfigurationParser{})
-
+	ts, err := zk.StartTestCluster(1, nil, nil)
 	assert.NoError(t, err)
+	assert.NotNil(t, ts.Servers[0])
+	urlString := "registry://127.0.0.1:" + strconv.Itoa(ts.Servers[0].Port)
+	regurl, err := common.NewURL(urlString)
+	assert.NoError(t, err)
+	regurl.AddParam(constant.REGISTRY_TIMEOUT_KEY, "15s")
+	zkFactory := &zookeeperDynamicConfigurationFactory{}
+	reg, err := zkFactory.GetDynamicConfiguration(&regurl)
+	zreg, ok := reg.(*zookeeperDynamicConfiguration)
+	assert.True(t, ok)
+	assert.NoError(t, err)
+	assert.True(t, zreg.IsAvailable())
+	assert.Equal(t, zreg.GetUrl(), regurl)
+	assert.True(t, zreg.RestartCallBack())
+	zreg.SetParser(&parser.DefaultConfigurationParser{})
 
 	data := `
 	dubbo.consumer.request_timeout=5s
@@ -63,20 +76,20 @@ func initZkData(group string, t *testing.T) (*zk.TestCluster, *zookeeperDynamicC
 	dubbo.service.com.ikurento.user.UserProvider.cluster=failover
 `
 	if group != "" {
-		err = reg.client.Create(reg.rootPath + "/dubbo/dubbo.properties")
+		err = zreg.client.Create(zreg.rootPath + "/dubbo/dubbo.properties")
 		assert.NoError(t, err)
 
-		_, err = reg.client.Conn.Set(reg.rootPath+"/dubbo/dubbo.properties", []byte(data), 0)
+		_, err = zreg.client.Conn.Set(zreg.rootPath+"/dubbo/dubbo.properties", []byte(data), 0)
 		assert.NoError(t, err)
 	} else {
-		err = reg.client.Create(reg.rootPath + "/dubbo.properties")
+		err = zreg.client.Create(zreg.rootPath + "/dubbo.properties")
 		assert.NoError(t, err)
 
-		_, err = reg.client.Conn.Set(reg.rootPath+"/dubbo.properties", []byte(data), 0)
+		_, err = zreg.client.Conn.Set(zreg.rootPath+"/dubbo.properties", []byte(data), 0)
 		assert.NoError(t, err)
 	}
 
-	return ts, reg
+	return ts, zreg
 }
 
 func Test_GetConfig(t *testing.T) {
@@ -87,6 +100,12 @@ func Test_GetConfig(t *testing.T) {
 	m, err := reg.Parser().Parse(configs)
 	assert.NoError(t, err)
 	assert.Equal(t, "5s", m["dubbo.consumer.request_timeout"])
+	configs, err = reg.GetProperties("dubbo.properties")
+	assert.Error(t, err)
+	configs, err = reg.GetInternalProperty("dubbo.properties")
+	assert.Error(t, err)
+	configs, err = reg.GetRule("dubbo.properties")
+	assert.Error(t, err)
 }
 
 func Test_AddListener(t *testing.T) {

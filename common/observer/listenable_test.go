@@ -28,7 +28,8 @@ import (
 
 func TestListenable(t *testing.T) {
 	el := &TestEventListener{}
-	b := &BaseListenable{}
+	bl := NewBaseListener()
+	b := &bl
 	b.AddEventListener(el)
 	b.AddEventListener(el)
 	al := b.GetAllEventListeners()

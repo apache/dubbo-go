@@ -19,9 +19,13 @@ package event
 
 import (
 	"encoding/json"
+)
 
+import (
 	gxset "github.com/dubbogo/gost/container/set"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"

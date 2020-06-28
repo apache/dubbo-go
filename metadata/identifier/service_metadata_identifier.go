@@ -29,6 +29,9 @@ type ServiceMetadataIdentifier struct {
 	BaseMetadataIdentifier
 }
 
+// NewServiceMetadataIdentifier create instance.
+// The ServiceInterface is the @url.Service()
+// other parameters are read from @url
 func NewServiceMetadataIdentifier(url common.URL) *ServiceMetadataIdentifier {
 	return &ServiceMetadataIdentifier{
 		BaseMetadataIdentifier: BaseMetadataIdentifier{
@@ -41,12 +44,12 @@ func NewServiceMetadataIdentifier(url common.URL) *ServiceMetadataIdentifier {
 	}
 }
 
-// GetIdentifierKey will return string format as service:Version:Group:Side:Protocol:"revision"+Revision
+// GetIdentifierKey returns string that format is service:Version:Group:Side:Protocol:"revision"+Revision
 func (mdi *ServiceMetadataIdentifier) GetIdentifierKey() string {
 	return mdi.BaseMetadataIdentifier.getIdentifierKey(mdi.Protocol, constant.KEY_REVISON_PREFIX+mdi.Revision)
 }
 
-// GetFilePathKey will return string format as metadata/path/Version/Group/Side/Protocol/"revision"+Revision
+// GetFilePathKey returns string that format is metadata/path/Version/Group/Side/Protocol/"revision"+Revision
 func (mdi *ServiceMetadataIdentifier) GetFilePathKey() string {
 	return mdi.BaseMetadataIdentifier.getFilePathKey(mdi.Protocol, constant.KEY_REVISON_PREFIX+mdi.Revision)
 }

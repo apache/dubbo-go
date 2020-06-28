@@ -29,8 +29,7 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-// ConsumerSignFilter
-// This filter is working for signing the request on consumer side
+// ConsumerSignFilter signs the request on consumer side
 type ConsumerSignFilter struct {
 }
 
@@ -38,6 +37,7 @@ func init() {
 	extension.SetFilter(constant.CONSUMER_SIGN_FILTER, getConsumerSignFilter)
 }
 
+// Invoke retrieves the configured Authenticator to add signature to invocation
 func (csf *ConsumerSignFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("invoking ConsumerSign filter.")
 	url := invoker.GetUrl()
@@ -52,6 +52,7 @@ func (csf *ConsumerSignFilter) Invoke(ctx context.Context, invoker protocol.Invo
 	return invoker.Invoke(ctx, invocation)
 }
 
+// OnResponse dummy process, returns the result directly
 func (csf *ConsumerSignFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }

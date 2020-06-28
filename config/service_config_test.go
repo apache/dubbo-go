@@ -42,40 +42,6 @@ func doInitProvider() {
 				Owner:        "dubbo",
 				Environment:  "test"},
 		},
-		Registries: map[string]*RegistryConfig{
-			"shanghai_reg1": {
-				Protocol:   "mock",
-				TimeoutStr: "2s",
-				Group:      "shanghai_idc",
-				Address:    "127.0.0.1:2181",
-				Username:   "user1",
-				Password:   "pwd1",
-			},
-			"shanghai_reg2": {
-				Protocol:   "mock",
-				TimeoutStr: "2s",
-				Group:      "shanghai_idc",
-				Address:    "127.0.0.2:2181",
-				Username:   "user1",
-				Password:   "pwd1",
-			},
-			"hangzhou_reg1": {
-				Protocol:   "mock",
-				TimeoutStr: "2s",
-				Group:      "hangzhou_idc",
-				Address:    "127.0.0.3:2181",
-				Username:   "user1",
-				Password:   "pwd1",
-			},
-			"hangzhou_reg2": {
-				Protocol:   "mock",
-				TimeoutStr: "2s",
-				Group:      "hangzhou_idc",
-				Address:    "127.0.0.4:2181",
-				Username:   "user1",
-				Password:   "pwd1",
-			},
-		},
 		Services: map[string]*ServiceConfig{
 			"MockService": {
 				InterfaceName: "com.MockService",
@@ -128,6 +94,42 @@ func doInitProvider() {
 				exported: new(atomic.Bool),
 			},
 		},
+
+		Registries: map[string]*RegistryConfig{
+			"shanghai_reg1": {
+				Protocol:   "mock",
+				TimeoutStr: "2s",
+				Group:      "shanghai_idc",
+				Address:    "127.0.0.1:2181",
+				Username:   "user1",
+				Password:   "pwd1",
+			},
+			"shanghai_reg2": {
+				Protocol:   "mock",
+				TimeoutStr: "2s",
+				Group:      "shanghai_idc",
+				Address:    "127.0.0.2:2181",
+				Username:   "user1",
+				Password:   "pwd1",
+			},
+			"hangzhou_reg1": {
+				Protocol:   "mock",
+				TimeoutStr: "2s",
+				Group:      "hangzhou_idc",
+				Address:    "127.0.0.3:2181",
+				Username:   "user1",
+				Password:   "pwd1",
+			},
+			"hangzhou_reg2": {
+				Protocol:   "mock",
+				TimeoutStr: "2s",
+				Group:      "hangzhou_idc",
+				Address:    "127.0.0.4:2181",
+				Username:   "user1",
+				Password:   "pwd1",
+			},
+		},
+
 		Protocols: map[string]*ProtocolConfig{
 			"mock": {
 				Name: "mock",

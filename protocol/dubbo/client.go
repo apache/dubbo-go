@@ -111,7 +111,7 @@ func setClientGrpool() {
 	}
 }
 
-// Options ...
+// Options is option for create dubbo client
 type Options struct {
 	// connect timeout
 	ConnectTimeout time.Duration
@@ -280,7 +280,7 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 	}
 
 	select {
-	case <-getty.GetTimeWheel().After(3 * time.Second):
+	case <-getty.GetTimeWheel().After(c.opts.RequestTimeout):
 		c.removePendingResponse(SequenceType(rsp.seq))
 		return perrors.WithStack(errClientReadTimeout)
 	case <-rsp.done:
