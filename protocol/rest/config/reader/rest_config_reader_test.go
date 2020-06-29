@@ -31,7 +31,7 @@ import (
 	"github.com/apache/dubbo-go/protocol/rest/config"
 )
 
-func TestRestConfigReader_ReadConsumerConfig(t *testing.T) {
+func TestRestConfigReaderReadConsumerConfig(t *testing.T) {
 	bs, err := yaml.LoadYMLConfig("./testdata/consumer_config.yml")
 	assert.NoError(t, err)
 	configReader := NewRestConfigReader()
@@ -40,7 +40,7 @@ func TestRestConfigReader_ReadConsumerConfig(t *testing.T) {
 	assert.NotEmpty(t, config.GetRestConsumerServiceConfigMap())
 }
 
-func TestRestConfigReader_ReadProviderConfig(t *testing.T) {
+func TestRestConfigReaderReadProviderConfig(t *testing.T) {
 	bs, err := yaml.LoadYMLConfig("./testdata/provider_config.yml")
 	assert.NoError(t, err)
 	configReader := NewRestConfigReader()
