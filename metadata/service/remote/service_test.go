@@ -73,8 +73,8 @@ func (metadataReport) RemoveServiceMetadata(*identifier.ServiceMetadataIdentifie
 	return nil
 }
 
-func (metadataReport) GetExportedURLs(*identifier.ServiceMetadataIdentifier) []string {
-	return nil
+func (metadataReport) GetExportedURLs(*identifier.ServiceMetadataIdentifier) ([]string, error) {
+	return nil, nil
 }
 
 func (mr *metadataReport) SaveSubscribedData(id *identifier.SubscriberMetadataIdentifier, urls string) error {
@@ -83,12 +83,12 @@ func (mr *metadataReport) SaveSubscribedData(id *identifier.SubscriberMetadataId
 	return nil
 }
 
-func (metadataReport) GetSubscribedURLs(*identifier.SubscriberMetadataIdentifier) []string {
-	return nil
+func (metadataReport) GetSubscribedURLs(*identifier.SubscriberMetadataIdentifier) ([]string, error) {
+	return nil, nil
 }
 
-func (metadataReport) GetServiceDefinition(*identifier.MetadataIdentifier) string {
-	return ""
+func (metadataReport) GetServiceDefinition(*identifier.MetadataIdentifier) (string, error) {
+	return "", nil
 }
 
 func TestMetadataService(t *testing.T) {
@@ -111,6 +111,7 @@ func mockInmemoryProc(t *testing.T) *inmemory.MetadataService {
 	version := "0.0.1"
 	protocol := "dubbo"
 	beanName := "UserProvider"
+	userProvider := &definition.UserProvider{}
 
 	u, err := common.NewURL(fmt.Sprintf(
 		"%v://127.0.0.1:20000/com.ikurento.user.UserProvider1?anyhost=true&"+
@@ -119,13 +120,17 @@ func mockInmemoryProc(t *testing.T) *inmemory.MetadataService {
 			"owner=ZX&pid=1447&revision=0.0.1&side=provider&timeout=3000&timestamp=1556509797245&group=%v&version=%v&bean.name=%v",
 		protocol, serviceName, group, version, beanName))
 	assert.NoError(t, err)
-	mts.ExportURL(u)
 
-	mts.SubscribeURL(u)
+	_, err = mts.ExportURL(u)
+	assert.NoError(t, err)
+	_, err = mts.SubscribeURL(u)
+	assert.NoError(t, err)
 
-	userProvider := &definition.UserProvider{}
-	common.ServiceMap.Register(serviceName, protocol, userProvider)
-	mts.PublishServiceDefinition(u)
+	_, err = common.ServiceMap.Register(serviceName, protocol, userProvider)
+	assert.NoError(t, err)
+	err = mts.PublishServiceDefinition(u)
+	assert.NoError(t, err)
+
 	expected := "{\"CanonicalName\":\"com.ikurento.user.UserProvider\",\"CodeSource\":\"\"," +
 		"\"Methods\":[{\"Name\":\"GetUser\",\"ParameterTypes\":[\"slice\"],\"ReturnType\":\"ptr\"," +
 		"\"Parameters\":null}],\"Types\":null}"
