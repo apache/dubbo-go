@@ -115,8 +115,9 @@ func (suite *consulMetadataReportTestSuite) testRemoveServiceMetadata() {
 
 func (suite *consulMetadataReportTestSuite) testGetExportedURLs() {
 	serviceMi := newServiceMetadataIdentifier("provider")
-	urls := suite.m.GetExportedURLs(serviceMi)
+	urls, err := suite.m.GetExportedURLs(serviceMi)
 	assert.Equal(suite.t, 1, len(urls))
+	assert.NoError(suite.t, err)
 }
 
 func (suite *consulMetadataReportTestSuite) testSaveSubscribedData(url common.URL) {
@@ -129,14 +130,16 @@ func (suite *consulMetadataReportTestSuite) testSaveSubscribedData(url common.UR
 
 func (suite *consulMetadataReportTestSuite) testGetSubscribedURLs() {
 	subscribeMi := newSubscribeMetadataIdentifier("provider")
-	urls := suite.m.GetSubscribedURLs(subscribeMi)
+	urls, err := suite.m.GetSubscribedURLs(subscribeMi)
 	assert.Equal(suite.t, 1, len(urls))
+	assert.NoError(suite.t, err)
 }
 
 func (suite *consulMetadataReportTestSuite) testGetServiceDefinition() {
 	providerMi := newMetadataIdentifier("provider")
-	providerMeta := suite.m.GetServiceDefinition(providerMi)
+	providerMeta, err := suite.m.GetServiceDefinition(providerMi)
 	assert.Equal(suite.t, "provider", providerMeta)
+	assert.NoError(suite.t, err)
 }
 
 func test1(t *testing.T) {

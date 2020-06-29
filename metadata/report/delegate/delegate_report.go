@@ -235,7 +235,7 @@ func (mr *MetadataReport) RemoveServiceMetadata(identifier *identifier.ServiceMe
 }
 
 // GetExportedURLs will delegate to call remote metadata's sdk to get exported urls
-func (mr *MetadataReport) GetExportedURLs(identifier *identifier.ServiceMetadataIdentifier) []string {
+func (mr *MetadataReport) GetExportedURLs(identifier *identifier.ServiceMetadataIdentifier) ([]string, error) {
 	report := instance.GetMetadataReportInstance()
 	return report.GetExportedURLs(identifier)
 }
@@ -260,13 +260,13 @@ func (mr *MetadataReport) SaveSubscribedData(identifier *identifier.SubscriberMe
 }
 
 // GetSubscribedURLs will delegate to call remote metadata's sdk to get subscribed urls
-func (MetadataReport) GetSubscribedURLs(identifier *identifier.SubscriberMetadataIdentifier) []string {
+func (MetadataReport) GetSubscribedURLs(identifier *identifier.SubscriberMetadataIdentifier) ([]string, error) {
 	report := instance.GetMetadataReportInstance()
 	return report.GetSubscribedURLs(identifier)
 }
 
 // GetServiceDefinition will delegate to call remote metadata's sdk to get service definitions
-func (MetadataReport) GetServiceDefinition(identifier *identifier.MetadataIdentifier) string {
+func (MetadataReport) GetServiceDefinition(identifier *identifier.MetadataIdentifier) (string, error) {
 	report := instance.GetMetadataReportInstance()
 	return report.GetServiceDefinition(identifier)
 }
