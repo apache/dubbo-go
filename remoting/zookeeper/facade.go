@@ -78,7 +78,7 @@ LOOP:
 				err = ValidateZookeeperClient(r, WithZkName(zkName))
 				logger.Infof("ZkProviderRegistry.validateZookeeperClient(zkAddr{%s}) = error{%#v}",
 					zkAddress, perrors.WithStack(err))
-				if err == nil && r.RestartCallBack(){
+				if err == nil && r.RestartCallBack() {
 					break
 				}
 				failTimes++
