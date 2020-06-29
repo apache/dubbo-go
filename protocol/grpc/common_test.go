@@ -106,7 +106,7 @@ func dubboGreeterSayHelloHandler(srv interface{}, ctx context.Context,
 		Server:     srv,
 		FullMethod: "/helloworld.Greeter/SayHello",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(context.Context, interface{}) (interface{}, error) {
 		result := base.GetProxyImpl().Invoke(context.Background(), invo)
 		return result.Result(), result.Error()
 	}
