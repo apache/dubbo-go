@@ -22,10 +22,6 @@ import (
 	"github.com/apache/dubbo-go/metadata/report"
 )
 
-var (
-	MetadataReportInstance report.MetadataReport
-)
-
 // MetadataReportFactory interface will create metadata report
 type MetadataReportFactory interface {
 	CreateMetadataReport(*common.URL) report.MetadataReport
