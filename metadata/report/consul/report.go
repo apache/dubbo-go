@@ -34,9 +34,8 @@ var (
 )
 
 func init() {
-	mf := &consulMetadataReportFactory{}
 	extension.SetMetadataReportFactory("consul", func() factory.MetadataReportFactory {
-		return mf
+		return &consulMetadataReportFactory{}
 	})
 }
 
@@ -75,17 +74,17 @@ func (m *consulMetadataReport) RemoveServiceMetadata(metadataIdentifier *identif
 }
 
 // GetExportedURLs gets the urls.
-func (m *consulMetadataReport) GetExportedURLs(metadataIdentifier *identifier.ServiceMetadataIdentifier) []string {
+func (m *consulMetadataReport) GetExportedURLs(metadataIdentifier *identifier.ServiceMetadataIdentifier) ([]string, error) {
 	k := metadataIdentifier.GetIdentifierKey()
 	kv, _, err := m.client.KV().Get(k, nil)
 	if err != nil {
-		panic(err)
+		return emptyStrSlice, err
 	}
 
 	if kv == nil {
-		return emptyStrSlice
+		return emptyStrSlice, nil
 	}
-	return []string{string(kv.Value)}
+	return []string{string(kv.Value)}, nil
 }
 
 // SaveSubscribedData saves the urls.
@@ -96,31 +95,31 @@ func (m *consulMetadataReport) SaveSubscribedData(subscriberMetadataIdentifier *
 }
 
 // GetSubscribedURLs gets the urls.
-func (m *consulMetadataReport) GetSubscribedURLs(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier) []string {
+func (m *consulMetadataReport) GetSubscribedURLs(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier) ([]string, error) {
 	k := subscriberMetadataIdentifier.GetIdentifierKey()
 	kv, _, err := m.client.KV().Get(k, nil)
 	if err != nil {
-		panic(err)
+		return emptyStrSlice, err
 	}
 
 	if kv == nil {
-		return emptyStrSlice
+		return emptyStrSlice, nil
 	}
-	return []string{string(kv.Value)}
+	return []string{string(kv.Value)}, nil
 }
 
 // GetServiceDefinition gets the service definition.
-func (m *consulMetadataReport) GetServiceDefinition(metadataIdentifier *identifier.MetadataIdentifier) string {
+func (m *consulMetadataReport) GetServiceDefinition(metadataIdentifier *identifier.MetadataIdentifier) (string, error) {
 	k := metadataIdentifier.GetIdentifierKey()
 	kv, _, err := m.client.KV().Get(k, nil)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
 	if kv == nil {
-		return ""
+		return "", nil
 	}
-	return string(kv.Value)
+	return string(kv.Value), nil
 }
 
 type consulMetadataReportFactory struct {

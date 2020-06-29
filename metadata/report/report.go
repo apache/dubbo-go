@@ -28,8 +28,8 @@ type MetadataReport interface {
 	StoreConsumerMetadata(*identifier.MetadataIdentifier, string) error
 	SaveServiceMetadata(*identifier.ServiceMetadataIdentifier, common.URL) error
 	RemoveServiceMetadata(*identifier.ServiceMetadataIdentifier) error
-	GetExportedURLs(*identifier.ServiceMetadataIdentifier) []string
+	GetExportedURLs(*identifier.ServiceMetadataIdentifier) ([]string, error)
 	SaveSubscribedData(*identifier.SubscriberMetadataIdentifier, string) error
-	GetSubscribedURLs(*identifier.SubscriberMetadataIdentifier) []string
-	GetServiceDefinition(*identifier.MetadataIdentifier) string
+	GetSubscribedURLs(*identifier.SubscriberMetadataIdentifier) ([]string, error)
+	GetServiceDefinition(*identifier.MetadataIdentifier) (string, error)
 }

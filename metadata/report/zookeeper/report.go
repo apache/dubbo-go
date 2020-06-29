@@ -37,9 +37,8 @@ var (
 )
 
 func init() {
-	mf := &zookeeperMetadataReportFactory{}
 	extension.SetMetadataReportFactory("zookeeper", func() factory.MetadataReportFactory {
-		return mf
+		return &zookeeperMetadataReportFactory{}
 	})
 }
 
@@ -75,17 +74,17 @@ func (m *zookeeperMetadataReport) RemoveServiceMetadata(metadataIdentifier *iden
 }
 
 // GetExportedURLs gets the urls.
-func (m *zookeeperMetadataReport) GetExportedURLs(metadataIdentifier *identifier.ServiceMetadataIdentifier) []string {
+func (m *zookeeperMetadataReport) GetExportedURLs(metadataIdentifier *identifier.ServiceMetadataIdentifier) ([]string, error) {
 	k := m.rootDir + metadataIdentifier.GetFilePathKey()
 	v, _, err := m.client.GetContent(k)
 	if err != nil {
-		panic(err)
+		return emptyStrSlice, err
 	}
 
 	if len(v) == 0 {
-		return emptyStrSlice
+		return emptyStrSlice, nil
 	}
-	return []string{string(v)}
+	return []string{string(v)}, nil
 }
 
 // SaveSubscribedData saves the urls.
@@ -95,27 +94,27 @@ func (m *zookeeperMetadataReport) SaveSubscribedData(subscriberMetadataIdentifie
 }
 
 // GetSubscribedURLs gets the urls.
-func (m *zookeeperMetadataReport) GetSubscribedURLs(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier) []string {
+func (m *zookeeperMetadataReport) GetSubscribedURLs(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier) ([]string, error) {
 	k := m.rootDir + subscriberMetadataIdentifier.GetFilePathKey()
 	v, _, err := m.client.GetContent(k)
 	if err != nil {
-		panic(err)
+		return emptyStrSlice, err
 	}
 
 	if len(v) == 0 {
-		return emptyStrSlice
+		return emptyStrSlice, nil
 	}
-	return []string{string(v)}
+	return []string{string(v)}, nil
 }
 
 // GetServiceDefinition gets the service definition.
-func (m *zookeeperMetadataReport) GetServiceDefinition(metadataIdentifier *identifier.MetadataIdentifier) string {
+func (m *zookeeperMetadataReport) GetServiceDefinition(metadataIdentifier *identifier.MetadataIdentifier) (string, error) {
 	k := m.rootDir + metadataIdentifier.GetFilePathKey()
 	v, _, err := m.client.GetContent(k)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	return string(v)
+	return string(v), nil
 }
 
 type zookeeperMetadataReportFactory struct {
