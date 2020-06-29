@@ -38,9 +38,8 @@ import (
 )
 
 func init() {
-	mf := &nacosMetadataReportFactory{}
 	extension.SetMetadataReportFactory("nacos", func() factory.MetadataReportFactory {
-		return mf
+		return &nacosMetadataReportFactory{}
 	})
 }
 
@@ -86,7 +85,7 @@ func (n *nacosMetadataReport) RemoveServiceMetadata(metadataIdentifier *identifi
 }
 
 // GetExportedURLs gets the urls.
-func (n *nacosMetadataReport) GetExportedURLs(metadataIdentifier *identifier.ServiceMetadataIdentifier) []string {
+func (n *nacosMetadataReport) GetExportedURLs(metadataIdentifier *identifier.ServiceMetadataIdentifier) ([]string, error) {
 	return n.getConfigAsArray(vo.ConfigParam{
 		DataId: metadataIdentifier.GetIdentifierKey(),
 		Group:  metadataIdentifier.Group,
@@ -103,7 +102,7 @@ func (n *nacosMetadataReport) SaveSubscribedData(subscriberMetadataIdentifier *i
 }
 
 // GetSubscribedURLs gets the urls.
-func (n *nacosMetadataReport) GetSubscribedURLs(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier) []string {
+func (n *nacosMetadataReport) GetSubscribedURLs(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier) ([]string, error) {
 	return n.getConfigAsArray(vo.ConfigParam{
 		DataId: subscriberMetadataIdentifier.GetIdentifierKey(),
 		Group:  subscriberMetadataIdentifier.Group,
@@ -111,7 +110,7 @@ func (n *nacosMetadataReport) GetSubscribedURLs(subscriberMetadataIdentifier *id
 }
 
 // GetServiceDefinition gets the service definition.
-func (n *nacosMetadataReport) GetServiceDefinition(metadataIdentifier *identifier.MetadataIdentifier) string {
+func (n *nacosMetadataReport) GetServiceDefinition(metadataIdentifier *identifier.MetadataIdentifier) (string, error) {
 	return n.getConfig(vo.ConfigParam{
 		DataId: metadataIdentifier.GetIdentifierKey(),
 		Group:  metadataIdentifier.Group,
@@ -145,28 +144,34 @@ func (n *nacosMetadataReport) deleteMetadata(param vo.ConfigParam) error {
 
 // getConfigAsArray will read the config and then convert it as an one-element array
 // error or config not found, an empty list will be returned.
-func (n *nacosMetadataReport) getConfigAsArray(param vo.ConfigParam) []string {
-	cfg := n.getConfig(param)
+func (n *nacosMetadataReport) getConfigAsArray(param vo.ConfigParam) ([]string, error) {
 	res := make([]string, 0, 1)
-	if len(cfg) == 0 {
-		return res
+
+	cfg, err := n.getConfig(param)
+	if err != nil {
+		return res, err
 	}
+	if len(cfg) == 0 {
+		return res, nil
+	}
+
 	decodeCfg, err := url.QueryUnescape(cfg)
 	if err != nil {
 		logger.Errorf("The config is invalid: %s", cfg)
-		return res
+		return res, err
 	}
 	res = append(res, decodeCfg)
-	return res
+	return res, nil
 }
 
 // getConfig will read the config
-func (n *nacosMetadataReport) getConfig(param vo.ConfigParam) string {
+func (n *nacosMetadataReport) getConfig(param vo.ConfigParam) (string, error) {
 	cfg, err := n.client.GetConfig(param)
 	if err != nil {
 		logger.Errorf("Finding the configuration failed: %v", param)
+		return "", err
 	}
-	return cfg
+	return cfg, nil
 }
 
 type nacosMetadataReportFactory struct {
