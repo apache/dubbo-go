@@ -38,13 +38,12 @@ import (
 )
 
 func newProviderRegistryUrl(host string, port int) *common.URL {
-	url1 := common.NewURLWithOptions(
+	return common.NewURLWithOptions(
 		common.WithIp(host),
 		common.WithPort(strconv.Itoa(port)),
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)),
 	)
-	return url1
 }
 
 func newBaseMetadataIdentifier(side string) *identifier.BaseMetadataIdentifier {
