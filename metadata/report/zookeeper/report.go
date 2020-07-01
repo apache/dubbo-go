@@ -37,8 +37,9 @@ var (
 )
 
 func init() {
+	mf := &zookeeperMetadataReportFactory{}
 	extension.SetMetadataReportFactory("zookeeper", func() factory.MetadataReportFactory {
-		return &zookeeperMetadataReportFactory{}
+		return mf
 	})
 }
 
@@ -77,12 +78,8 @@ func (m *zookeeperMetadataReport) RemoveServiceMetadata(metadataIdentifier *iden
 func (m *zookeeperMetadataReport) GetExportedURLs(metadataIdentifier *identifier.ServiceMetadataIdentifier) ([]string, error) {
 	k := m.rootDir + metadataIdentifier.GetFilePathKey()
 	v, _, err := m.client.GetContent(k)
-	if err != nil {
+	if err != nil || len(v) == 0 {
 		return emptyStrSlice, err
-	}
-
-	if len(v) == 0 {
-		return emptyStrSlice, nil
 	}
 	return []string{string(v)}, nil
 }
@@ -97,12 +94,8 @@ func (m *zookeeperMetadataReport) SaveSubscribedData(subscriberMetadataIdentifie
 func (m *zookeeperMetadataReport) GetSubscribedURLs(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier) ([]string, error) {
 	k := m.rootDir + subscriberMetadataIdentifier.GetFilePathKey()
 	v, _, err := m.client.GetContent(k)
-	if err != nil {
+	if err != nil || len(v) == 0 {
 		return emptyStrSlice, err
-	}
-
-	if len(v) == 0 {
-		return emptyStrSlice, nil
 	}
 	return []string{string(v)}, nil
 }
@@ -111,15 +104,13 @@ func (m *zookeeperMetadataReport) GetSubscribedURLs(subscriberMetadataIdentifier
 func (m *zookeeperMetadataReport) GetServiceDefinition(metadataIdentifier *identifier.MetadataIdentifier) (string, error) {
 	k := m.rootDir + metadataIdentifier.GetFilePathKey()
 	v, _, err := m.client.GetContent(k)
-	if err != nil {
-		return "", err
-	}
-	return string(v), nil
+	return string(v), err
 }
 
 type zookeeperMetadataReportFactory struct {
 }
 
+// nolint
 func (mf *zookeeperMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {
 	client, err := zookeeper.NewZookeeperClient(
 		"zookeeperMetadataReport",
