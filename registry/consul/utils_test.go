@@ -46,43 +46,39 @@ var (
 )
 
 func newProviderRegistryUrl(host string, port int) *common.URL {
-	url1 := common.NewURLWithOptions(
+	return common.NewURLWithOptions(
 		common.WithIp(host),
 		common.WithPort(strconv.Itoa(port)),
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)),
 	)
-	return url1
 }
 
 func newConsumerRegistryUrl(host string, port int) *common.URL {
-	url1 := common.NewURLWithOptions(
+	return common.NewURLWithOptions(
 		common.WithIp(host),
 		common.WithPort(strconv.Itoa(port)),
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER)),
 	)
-	return url1
 }
 
 func newProviderUrl(host string, port int, service string, protocol string) common.URL {
-	url1 := common.NewURLWithOptions(
+	return *common.NewURLWithOptions(
 		common.WithIp(host),
 		common.WithPort(strconv.Itoa(port)),
 		common.WithPath(service),
 		common.WithProtocol(protocol),
 	)
-	return *url1
 }
 
 func newConsumerUrl(host string, port int, service string, protocol string) common.URL {
-	url1 := common.NewURLWithOptions(
+	return *common.NewURLWithOptions(
 		common.WithIp(host),
 		common.WithPort(strconv.Itoa(port)),
 		common.WithPath(service),
 		common.WithProtocol(protocol),
 	)
-	return *url1
 }
 
 type testServer struct {

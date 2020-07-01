@@ -22,14 +22,39 @@ import (
 	"github.com/apache/dubbo-go/metadata/identifier"
 )
 
-// MetadataReport is an interface of remote metadata report
+// MetadataReport is an interface of
+// remote metadata report.
 type MetadataReport interface {
+	// StoreProviderMetadata stores the metadata.
+	// Metadata includes the basic info of the server,
+	// provider info, and other user custom info.
 	StoreProviderMetadata(*identifier.MetadataIdentifier, string) error
+
+	// StoreConsumerMetadata stores the metadata.
+	// Metadata includes the basic info of the server,
+	// consumer info, and other user custom info.
 	StoreConsumerMetadata(*identifier.MetadataIdentifier, string) error
+
+	// SaveServiceMetadata saves the metadata.
+	// Metadata includes the basic info of the server,
+	// service info, and other user custom info.
 	SaveServiceMetadata(*identifier.ServiceMetadataIdentifier, common.URL) error
+
+	// RemoveServiceMetadata removes the metadata.
 	RemoveServiceMetadata(*identifier.ServiceMetadataIdentifier) error
+
+	// GetExportedURLs gets the urls.
+	// If not found, an empty list will be returned.
 	GetExportedURLs(*identifier.ServiceMetadataIdentifier) ([]string, error)
+
+	// SaveSubscribedData saves the urls.
+	// If not found, an empty str will be returned.
 	SaveSubscribedData(*identifier.SubscriberMetadataIdentifier, string) error
+
+	// GetSubscribedURLs gets the urls.
+	// If not found, an empty list will be returned.
 	GetSubscribedURLs(*identifier.SubscriberMetadataIdentifier) ([]string, error)
+
+	// GetServiceDefinition gets the service definition.
 	GetServiceDefinition(*identifier.MetadataIdentifier) (string, error)
 }
