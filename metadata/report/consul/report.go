@@ -34,8 +34,9 @@ var (
 )
 
 func init() {
+	mf := &consulMetadataReportFactory{}
 	extension.SetMetadataReportFactory("consul", func() factory.MetadataReportFactory {
-		return &consulMetadataReportFactory{}
+		return mf
 	})
 }
 
@@ -77,12 +78,8 @@ func (m *consulMetadataReport) RemoveServiceMetadata(metadataIdentifier *identif
 func (m *consulMetadataReport) GetExportedURLs(metadataIdentifier *identifier.ServiceMetadataIdentifier) ([]string, error) {
 	k := metadataIdentifier.GetIdentifierKey()
 	kv, _, err := m.client.KV().Get(k, nil)
-	if err != nil {
+	if err != nil || kv == nil {
 		return emptyStrSlice, err
-	}
-
-	if kv == nil {
-		return emptyStrSlice, nil
 	}
 	return []string{string(kv.Value)}, nil
 }
@@ -98,12 +95,8 @@ func (m *consulMetadataReport) SaveSubscribedData(subscriberMetadataIdentifier *
 func (m *consulMetadataReport) GetSubscribedURLs(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier) ([]string, error) {
 	k := subscriberMetadataIdentifier.GetIdentifierKey()
 	kv, _, err := m.client.KV().Get(k, nil)
-	if err != nil {
+	if err != nil || kv == nil {
 		return emptyStrSlice, err
-	}
-
-	if kv == nil {
-		return emptyStrSlice, nil
 	}
 	return []string{string(kv.Value)}, nil
 }
@@ -112,12 +105,8 @@ func (m *consulMetadataReport) GetSubscribedURLs(subscriberMetadataIdentifier *i
 func (m *consulMetadataReport) GetServiceDefinition(metadataIdentifier *identifier.MetadataIdentifier) (string, error) {
 	k := metadataIdentifier.GetIdentifierKey()
 	kv, _, err := m.client.KV().Get(k, nil)
-	if err != nil {
+	if err != nil || kv == nil {
 		return "", err
-	}
-
-	if kv == nil {
-		return "", nil
 	}
 	return string(kv.Value), nil
 }
@@ -125,6 +114,7 @@ func (m *consulMetadataReport) GetServiceDefinition(metadataIdentifier *identifi
 type consulMetadataReportFactory struct {
 }
 
+// nolint
 func (mf *consulMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {
 	config := &consul.Config{Address: url.Location}
 	client, err := consul.NewClient(config)

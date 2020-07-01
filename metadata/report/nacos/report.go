@@ -38,8 +38,9 @@ import (
 )
 
 func init() {
+	mf := &nacosMetadataReportFactory{}
 	extension.SetMetadataReportFactory("nacos", func() factory.MetadataReportFactory {
-		return &nacosMetadataReportFactory{}
+		return mf
 	})
 }
 
@@ -148,11 +149,8 @@ func (n *nacosMetadataReport) getConfigAsArray(param vo.ConfigParam) ([]string, 
 	res := make([]string, 0, 1)
 
 	cfg, err := n.getConfig(param)
-	if err != nil {
+	if err != nil || len(cfg) == 0 {
 		return res, err
-	}
-	if len(cfg) == 0 {
-		return res, nil
 	}
 
 	decodeCfg, err := url.QueryUnescape(cfg)
@@ -160,6 +158,7 @@ func (n *nacosMetadataReport) getConfigAsArray(param vo.ConfigParam) ([]string, 
 		logger.Errorf("The config is invalid: %s", cfg)
 		return res, err
 	}
+
 	res = append(res, decodeCfg)
 	return res, nil
 }
@@ -177,6 +176,7 @@ func (n *nacosMetadataReport) getConfig(param vo.ConfigParam) (string, error) {
 type nacosMetadataReportFactory struct {
 }
 
+// nolint
 func (n *nacosMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {
 	client, err := nacos.NewNacosConfigClient(url)
 	if err != nil {
