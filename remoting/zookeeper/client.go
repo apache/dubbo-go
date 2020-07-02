@@ -432,6 +432,44 @@ func (z *ZookeeperClient) CreateWithValue(basePath string, value []byte) error {
 	return nil
 }
 
+// CreateTempWithValue will create the node recursively, which means that if the parent node is absent,
+// it will create parent node first，and set value in last child path
+func (z *ZookeeperClient) CreateTempWithValue(basePath string, value []byte) error {
+	var (
+		err     error
+		tmpPath string
+	)
+
+	logger.Debugf("zookeeperClient.Create(basePath{%s})", basePath)
+	conn := z.getConn()
+	err = errNilZkClientConn
+	if conn == nil {
+		return perrors.WithMessagef(err, "zk.Create(path:%s)", basePath)
+	}
+
+	pathSlice := strings.Split(basePath, "/")[1:]
+	length := len(pathSlice)
+	for i, str := range pathSlice {
+		tmpPath = path.Join(tmpPath, "/", str)
+		// last child need be ephemeral
+		if i == length-1 {
+			_, err = conn.Create(tmpPath, value, zk.FlagEphemeral, zk.WorldACL(zk.PermAll))
+		} else {
+			_, err = conn.Create(tmpPath, []byte{}, 0, zk.WorldACL(zk.PermAll))
+		}
+		if err != nil {
+			if err == zk.ErrNodeExists {
+				logger.Debugf("zk.create(\"%s\") exists", tmpPath)
+			} else {
+				logger.Errorf("zk.create(\"%s\") error(%v)", tmpPath, perrors.WithStack(err))
+				return perrors.WithMessagef(err, "zk.Create(path:%s)", basePath)
+			}
+		}
+	}
+
+	return nil
+}
+
 // nolint
 func (z *ZookeeperClient) Delete(basePath string) error {
 	err := errNilZkClientConn

@@ -70,7 +70,7 @@ func (sd *ServiceDiscovery) registerService(instance *ServiceInstance) error {
 	if err != nil {
 		return err
 	}
-	err = sd.client.CreateWithValue(path, data)
+	err = sd.client.CreateTempWithValue(path, data)
 	if err != nil {
 		return err
 	}
