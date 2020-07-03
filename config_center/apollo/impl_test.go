@@ -17,13 +17,14 @@
 package apollo
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 import (
@@ -124,7 +125,7 @@ func initApollo() *httptest.Server {
 	return runMockConfigServer(handlerMap, notifyResponse)
 }
 
-func configResponse(rw http.ResponseWriter, req *http.Request) {
+func configResponse(rw http.ResponseWriter, _ *http.Request) {
 	result := fmt.Sprintf(mockConfigRes)
 	fmt.Fprintf(rw, "%s", result)
 }
@@ -134,12 +135,12 @@ func notifyResponse(rw http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(rw, "%s", result)
 }
 
-func serviceConfigResponse(rw http.ResponseWriter, req *http.Request) {
+func serviceConfigResponse(rw http.ResponseWriter, _ *http.Request) {
 	result := fmt.Sprintf(mockServiceConfigRes)
 	fmt.Fprintf(rw, "%s", result)
 }
 
-//run mock config server
+// run mock config server
 func runMockConfigServer(handlerMap map[string]func(http.ResponseWriter, *http.Request),
 	notifyHandler func(http.ResponseWriter, *http.Request)) *httptest.Server {
 	uriHandlerMap := make(map[string]func(http.ResponseWriter, *http.Request), 0)
@@ -163,7 +164,7 @@ func runMockConfigServer(handlerMap map[string]func(http.ResponseWriter, *http.R
 	return ts
 }
 
-func Test_GetConfig(t *testing.T) {
+func TestGetConfig(t *testing.T) {
 	configuration := initMockApollo(t)
 	configs, err := configuration.GetProperties(mockNamespace, config_center.WithGroup("dubbo"))
 	assert.NoError(t, err)
@@ -171,15 +172,17 @@ func Test_GetConfig(t *testing.T) {
 	mapContent, err := configuration.Parser().Parse(configs)
 	assert.NoError(t, err)
 	assert.Equal(t, "ikurento.com", mapContent["application.organization"])
+	deleteMockJson(t)
 }
 
-func Test_GetConfigItem(t *testing.T) {
+func TestGetConfigItem(t *testing.T) {
 	configuration := initMockApollo(t)
 	configs, err := configuration.GetInternalProperty("application.organization")
 	assert.NoError(t, err)
 	configuration.SetParser(&parser.DefaultConfigurationParser{})
 	assert.NoError(t, err)
 	assert.Equal(t, "ikurento.com", configs)
+	deleteMockJson(t)
 }
 
 func initMockApollo(t *testing.T) *apolloConfiguration {
@@ -188,11 +191,11 @@ func initMockApollo(t *testing.T) *apolloConfiguration {
 		Address:   "106.12.25.204:8080",
 		AppId:     "testApplication_yang",
 		Cluster:   "dev",
-		Namespace: "mockDubbog.properties",
+		Namespace: "mockDubbog",
 	}}
 	apollo := initApollo()
 	apolloUrl := strings.ReplaceAll(apollo.URL, "http", "apollo")
-	url, err := common.NewURL(context.TODO(), apolloUrl, common.WithParams(c.ConfigCenterConfig.GetUrlMap()))
+	url, err := common.NewURL(apolloUrl, common.WithParams(c.ConfigCenterConfig.GetUrlMap()))
 	assert.NoError(t, err)
 	configuration, err := newApolloConfiguration(&url)
 	assert.NoError(t, err)
@@ -216,6 +219,7 @@ func TestAddListener(t *testing.T) {
 	listener.wg.Wait()
 	assert.Equal(t, "registries.hangzhouzk.username", listener.event)
 	assert.Greater(t, listener.count, 0)
+	deleteMockJson(t)
 }
 
 func TestRemoveListener(t *testing.T) {
@@ -234,7 +238,7 @@ func TestRemoveListener(t *testing.T) {
 	apollo.RemoveListener(mockNamespace, listener)
 	assert.Equal(t, "", listener.event)
 	listenerCount := 0
-	apollo.listeners.Range(func(key, value interface{}) bool {
+	apollo.listeners.Range(func(_, value interface{}) bool {
 		apolloListener := value.(*apolloListener)
 		for e := range apolloListener.listeners {
 			fmt.Println(e)
@@ -244,6 +248,7 @@ func TestRemoveListener(t *testing.T) {
 	})
 	assert.Equal(t, listenerCount, 0)
 	assert.Equal(t, listener.count, 0)
+	deleteMockJson(t)
 }
 
 type apolloDataListener struct {
@@ -259,4 +264,11 @@ func (l *apolloDataListener) Process(configType *config_center.ConfigChangeEvent
 	l.wg.Done()
 	l.count++
 	l.event = configType.Key
+}
+
+func deleteMockJson(t *testing.T) {
+	// because the file write in another goroutine,so have a break ...
+	time.Sleep(100 * time.Millisecond)
+	remove := os.Remove("mockDubbog.properties.json")
+	t.Log("remove result:", remove)
 }

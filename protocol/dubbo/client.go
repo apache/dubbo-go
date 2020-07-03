@@ -18,15 +18,16 @@
 package dubbo
 
 import (
+	"math/rand"
 	"strings"
 	"sync"
 	"time"
 )
 
 import (
-	"github.com/apache/dubbo-go-hessian2"
+	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/dubbogo/getty"
-	"github.com/dubbogo/gost/sync"
+	gxsync "github.com/dubbogo/gost/sync"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
 	"gopkg.in/yaml.v2"
@@ -83,8 +84,11 @@ func init() {
 		return
 	}
 	setClientGrpool()
+
+	rand.Seed(time.Now().UnixNano())
 }
 
+// SetClientConf set dubbo client config.
 func SetClientConf(c ClientConfig) {
 	clientConf = &c
 	err := clientConf.CheckValidity()
@@ -95,6 +99,7 @@ func SetClientConf(c ClientConfig) {
 	setClientGrpool()
 }
 
+// GetClientConf get dubbo client config.
 func GetClientConf() ClientConfig {
 	return *clientConf
 }
@@ -106,6 +111,7 @@ func setClientGrpool() {
 	}
 }
 
+// Options is option for create dubbo client
 type Options struct {
 	// connect timeout
 	ConnectTimeout time.Duration
@@ -123,6 +129,7 @@ type AsyncCallbackResponse struct {
 	Reply     interface{}
 }
 
+// Client is dubbo protocol client.
 type Client struct {
 	opts     Options
 	conf     ClientConfig
@@ -132,6 +139,7 @@ type Client struct {
 	pendingResponses *sync.Map
 }
 
+// NewClient create a new Client.
 func NewClient(opt Options) *Client {
 
 	switch {
@@ -142,16 +150,24 @@ func NewClient(opt Options) *Client {
 		opt.RequestTimeout = 3 * time.Second
 	}
 
+	// make sure that client request sequence is an odd number
+	initSequence := uint64(rand.Int63n(time.Now().UnixNano()))
+	if initSequence%2 == 0 {
+		initSequence++
+	}
+
 	c := &Client{
 		opts:             opt,
 		pendingResponses: new(sync.Map),
 		conf:             *clientConf,
 	}
+	c.sequence.Store(initSequence)
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
 
 	return c
 }
 
+// Request is dubbo protocol request.
 type Request struct {
 	addr   string
 	svcUrl common.URL
@@ -160,6 +176,7 @@ type Request struct {
 	atta   map[string]string
 }
 
+// NewRequest create a new Request.
 func NewRequest(addr string, svcUrl common.URL, method string, args interface{}, atta map[string]string) *Request {
 	return &Request{
 		addr:   addr,
@@ -170,11 +187,13 @@ func NewRequest(addr string, svcUrl common.URL, method string, args interface{},
 	}
 }
 
+// Response is dubbo protocol response.
 type Response struct {
 	reply interface{}
 	atta  map[string]string
 }
 
+// NewResponse  create a new Response.
 func NewResponse(reply interface{}, atta map[string]string) *Response {
 	return &Response{
 		reply: reply,
@@ -182,15 +201,14 @@ func NewResponse(reply interface{}, atta map[string]string) *Response {
 	}
 }
 
-// call one way
+// CallOneway call by one way
 func (c *Client) CallOneway(request *Request) error {
 
 	return perrors.WithStack(c.call(CT_OneWay, request, NewResponse(nil, nil), nil))
 }
 
-// if @response is nil, the transport layer will get the response without notify the invoker.
+// Call call remoting by two way or one way, if @response.reply is nil, the way of call is one way.
 func (c *Client) Call(request *Request, response *Response) error {
-
 	ct := CT_TwoWay
 	if response.reply == nil {
 		ct = CT_OneWay
@@ -199,20 +217,27 @@ func (c *Client) Call(request *Request, response *Response) error {
 	return perrors.WithStack(c.call(ct, request, response, nil))
 }
 
+// AsyncCall call remoting by async with callback.
 func (c *Client) AsyncCall(request *Request, callback common.AsyncCallback, response *Response) error {
-
 	return perrors.WithStack(c.call(CT_TwoWay, request, response, callback))
 }
 
 func (c *Client) call(ct CallType, request *Request, response *Response, callback common.AsyncCallback) error {
-
 	p := &DubboPackage{}
 	p.Service.Path = strings.TrimPrefix(request.svcUrl.Path, "/")
 	p.Service.Interface = request.svcUrl.GetParam(constant.INTERFACE_KEY, "")
 	p.Service.Version = request.svcUrl.GetParam(constant.VERSION_KEY, "")
 	p.Service.Group = request.svcUrl.GetParam(constant.GROUP_KEY, "")
 	p.Service.Method = request.method
+
 	p.Service.Timeout = c.opts.RequestTimeout
+	var timeout = request.svcUrl.GetParam(strings.Join([]string{constant.METHOD_KEYS, request.method + constant.RETRIES_KEY}, "."), "")
+	if len(timeout) != 0 {
+		if t, err := time.ParseDuration(timeout); err == nil {
+			p.Service.Timeout = t
+		}
+	}
+
 	p.Header.SerialID = byte(S_Dubbo)
 	p.Body = hessian.NewRequest(request.args, request.atta)
 
@@ -238,7 +263,13 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 	if session == nil {
 		return errSessionNotExist
 	}
-	defer c.pool.release(conn, err)
+	defer func() {
+		if err == nil {
+			c.pool.put(conn)
+			return
+		}
+		conn.close()
+	}()
 
 	if err = c.transfer(session, p, rsp); err != nil {
 		return perrors.WithStack(err)
@@ -250,8 +281,8 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 
 	select {
 	case <-getty.GetTimeWheel().After(c.opts.RequestTimeout):
-		err = errClientReadTimeout
 		c.removePendingResponse(SequenceType(rsp.seq))
+		return perrors.WithStack(errClientReadTimeout)
 	case <-rsp.done:
 		err = rsp.err
 	}
@@ -259,6 +290,7 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 	return perrors.WithStack(err)
 }
 
+// Close close the client pool.
 func (c *Client) Close() {
 	if c.pool != nil {
 		c.pool.close()

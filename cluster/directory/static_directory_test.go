@@ -18,7 +18,6 @@
 package directory
 
 import (
-	"context"
 	"fmt"
 	"testing"
 )
@@ -33,21 +32,23 @@ import (
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
-func Test_StaticDirList(t *testing.T) {
+func TestStaticDirList(t *testing.T) {
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {
-		url, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
+		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		invokers = append(invokers, protocol.NewBaseInvoker(url))
 	}
 
 	staticDir := NewStaticDirectory(invokers)
-	assert.Len(t, staticDir.List(&invocation.RPCInvocation{}), 10)
+	list := staticDir.List(&invocation.RPCInvocation{})
+
+	assert.Len(t, list, 10)
 }
 
-func Test_StaticDirDestroy(t *testing.T) {
+func TestStaticDirDestroy(t *testing.T) {
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {
-		url, _ := common.NewURL(context.TODO(), fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
+		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		invokers = append(invokers, protocol.NewBaseInvoker(url))
 	}
 

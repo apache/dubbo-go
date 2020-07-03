@@ -20,12 +20,11 @@ package zookeeper
 import (
 	"strings"
 	"sync"
-	"time"
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
 	perrors "github.com/pkg/errors"
-	"github.com/samuel/go-zookeeper/zk"
 )
 
 import (
@@ -37,7 +36,12 @@ import (
 	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
-const ZkClient = "zk config_center"
+const (
+	// ZkClient
+	// zookeeper client name
+	ZkClient      = "zk config_center"
+	pathSeparator = "/"
+)
 
 type zookeeperDynamicConfiguration struct {
 	url      *common.URL
@@ -70,34 +74,8 @@ func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfigu
 	c.cacheListener = NewCacheListener(c.rootPath)
 
 	err = c.client.Create(c.rootPath)
-	c.listener.ListenServiceEvent(c.rootPath, c.cacheListener)
+	c.listener.ListenServiceEvent(url, c.rootPath, c.cacheListener)
 	return c, err
-
-}
-
-func newMockZookeeperDynamicConfiguration(url *common.URL, opts ...zookeeper.Option) (*zk.TestCluster, *zookeeperDynamicConfiguration, error) {
-	c := &zookeeperDynamicConfiguration{
-		url:      url,
-		rootPath: "/" + url.GetParam(constant.CONFIG_NAMESPACE_KEY, config_center.DEFAULT_GROUP) + "/config",
-	}
-	var (
-		tc  *zk.TestCluster
-		err error
-	)
-	tc, c.client, _, err = zookeeper.NewMockZookeeperClient("test", 15*time.Second, opts...)
-	if err != nil {
-		logger.Errorf("mock zookeeper client start error ,error message is %v", err)
-		return tc, c, err
-	}
-	c.wg.Add(1)
-	go zookeeper.HandleClientRestart(c)
-
-	c.listener = zookeeper.NewZkEventListener(c.client)
-	c.cacheListener = NewCacheListener(c.rootPath)
-
-	err = c.client.Create(c.rootPath)
-	go c.listener.ListenServiceEvent(c.rootPath, c.cacheListener)
-	return tc, c, err
 
 }
 
@@ -134,15 +112,42 @@ func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config
 	content, _, err := c.client.GetContent(c.rootPath + "/" + key)
 	if err != nil {
 		return "", perrors.WithStack(err)
-	} else {
-		return string(content), nil
 	}
 
+	return string(content), nil
 }
 
-//For zookeeper, getConfig and getConfigs have the same meaning.
+// GetInternalProperty For zookeeper, getConfig and getConfigs have the same meaning.
 func (c *zookeeperDynamicConfiguration) GetInternalProperty(key string, opts ...config_center.Option) (string, error) {
 	return c.GetProperties(key, opts...)
+}
+
+// PublishConfig will put the value into Zk with specific path
+func (c *zookeeperDynamicConfiguration) PublishConfig(key string, group string, value string) error {
+	path := c.getPath(key, group)
+	err := c.client.CreateWithValue(path, []byte(value))
+	if err != nil {
+		return perrors.WithStack(err)
+	}
+	return nil
+}
+
+// GetConfigKeysByGroup will return all keys with the group
+func (c *zookeeperDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
+	path := c.getPath("", group)
+	result, err := c.client.GetChildren(path)
+	if err != nil {
+		return nil, perrors.WithStack(err)
+	}
+
+	if len(result) == 0 {
+		return nil, perrors.New("could not find keys with group: " + group)
+	}
+	set := gxset.NewSet()
+	for _, e := range result {
+		set.Add(e)
+	}
+	return set, nil
 }
 
 func (c *zookeeperDynamicConfiguration) GetRule(key string, opts ...config_center.Option) (string, error) {
@@ -152,61 +157,76 @@ func (c *zookeeperDynamicConfiguration) GetRule(key string, opts ...config_cente
 func (c *zookeeperDynamicConfiguration) Parser() parser.ConfigurationParser {
 	return c.parser
 }
+
 func (c *zookeeperDynamicConfiguration) SetParser(p parser.ConfigurationParser) {
 	c.parser = p
 }
 
-func (r *zookeeperDynamicConfiguration) ZkClient() *zookeeper.ZookeeperClient {
-	return r.client
+func (c *zookeeperDynamicConfiguration) ZkClient() *zookeeper.ZookeeperClient {
+	return c.client
 }
 
-func (r *zookeeperDynamicConfiguration) SetZkClient(client *zookeeper.ZookeeperClient) {
-	r.client = client
+func (c *zookeeperDynamicConfiguration) SetZkClient(client *zookeeper.ZookeeperClient) {
+	c.client = client
 }
 
-func (r *zookeeperDynamicConfiguration) ZkClientLock() *sync.Mutex {
-	return &r.cltLock
+func (c *zookeeperDynamicConfiguration) ZkClientLock() *sync.Mutex {
+	return &c.cltLock
 }
 
-func (r *zookeeperDynamicConfiguration) WaitGroup() *sync.WaitGroup {
-	return &r.wg
+func (c *zookeeperDynamicConfiguration) WaitGroup() *sync.WaitGroup {
+	return &c.wg
 }
 
-func (r *zookeeperDynamicConfiguration) GetDone() chan struct{} {
-	return r.done
+func (c *zookeeperDynamicConfiguration) Done() chan struct{} {
+	return c.done
 }
 
-func (r *zookeeperDynamicConfiguration) GetUrl() common.URL {
-	return *r.url
+func (c *zookeeperDynamicConfiguration) GetUrl() common.URL {
+	return *c.url
 }
 
-func (r *zookeeperDynamicConfiguration) Destroy() {
-	if r.listener != nil {
-		r.listener.Close()
+func (c *zookeeperDynamicConfiguration) Destroy() {
+	if c.listener != nil {
+		c.listener.Close()
 	}
-	close(r.done)
-	r.wg.Wait()
-	r.closeConfigs()
+	close(c.done)
+	c.wg.Wait()
+	c.closeConfigs()
 }
 
-func (r *zookeeperDynamicConfiguration) IsAvailable() bool {
+func (c *zookeeperDynamicConfiguration) IsAvailable() bool {
 	select {
-	case <-r.done:
+	case <-c.done:
 		return false
 	default:
 		return true
 	}
 }
 
-func (r *zookeeperDynamicConfiguration) closeConfigs() {
-	r.cltLock.Lock()
-	defer r.cltLock.Unlock()
+func (c *zookeeperDynamicConfiguration) closeConfigs() {
+	c.cltLock.Lock()
+	defer c.cltLock.Unlock()
 	logger.Infof("begin to close provider zk client")
 	// Close the old client first to close the tmp node
-	r.client.Close()
-	r.client = nil
+	c.client.Close()
+	c.client = nil
 }
 
-func (r *zookeeperDynamicConfiguration) RestartCallBack() bool {
+func (c *zookeeperDynamicConfiguration) RestartCallBack() bool {
 	return true
+}
+
+func (c *zookeeperDynamicConfiguration) getPath(key string, group string) string {
+	if len(key) == 0 {
+		return c.buildPath(group)
+	}
+	return c.buildPath(group) + pathSeparator + key
+}
+
+func (c *zookeeperDynamicConfiguration) buildPath(group string) string {
+	if len(group) == 0 {
+		group = config_center.DEFAULT_GROUP
+	}
+	return c.rootPath + pathSeparator + group
 }

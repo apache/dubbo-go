@@ -14,33 +14,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package config
 
 import (
-	"context"
-	"io/ioutil"
-	"path"
+	"bytes"
 )
 
 import (
 	"github.com/creasty/defaults"
 	perrors "github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 )
 
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/common/yaml"
 )
 
 /////////////////////////
 // providerConfig
 /////////////////////////
 
+// ProviderConfig is the default configuration of service provider
 type ProviderConfig struct {
 	BaseConfig   `yaml:",inline"`
 	Filter       string `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	ProxyFactory string `yaml:"proxy_factory" default:"default" json:"proxy_factory,omitempty" property:"proxy_factory"`
+	// metadata-report
+	MetadataReportConfig *MetadataReportConfig `yaml:"metadata_report" json:"metadata_report,omitempty" property:"metadata_report"`
 
 	ApplicationConfig *ApplicationConfig         `yaml:"application" json:"application,omitempty" property:"application"`
 	Registry          *RegistryConfig            `yaml:"registry" json:"registry,omitempty" property:"registry"`
@@ -50,8 +52,10 @@ type ProviderConfig struct {
 	ProtocolConf      interface{}                `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf" `
 	FilterConf        interface{}                `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf" `
 	ShutdownConfig    *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf" `
+	ConfigType        map[string]string          `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 }
 
+// UnmarshalYAML unmarshals the ProviderConfig by @unmarshal function
 func (c *ProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
@@ -63,40 +67,28 @@ func (c *ProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) error 
 	return nil
 }
 
+// nolint
 func (*ProviderConfig) Prefix() string {
 	return constant.ProviderConfigPrefix
 }
 
+// SetProviderConfig sets provider config by @p
 func SetProviderConfig(p ProviderConfig) {
 	providerConfig = &p
 }
-func GetProviderConfig() ProviderConfig {
-	if providerConfig == nil {
-		logger.Warnf("providerConfig is nil!")
-		return ProviderConfig{}
-	}
-	return *providerConfig
-}
 
+// ProviderInit loads config file to init provider config
 func ProviderInit(confProFile string) error {
 	if len(confProFile) == 0 {
 		return perrors.Errorf("application configure(provider) file name is nil")
 	}
-
-	if path.Ext(confProFile) != ".yml" {
-		return perrors.Errorf("application configure file name{%v} suffix must be .yml", confProFile)
-	}
-
-	confFileStream, err := ioutil.ReadFile(confProFile)
-	if err != nil {
-		return perrors.Errorf("ioutil.ReadFile(file:%s) = error:%v", confProFile, perrors.WithStack(err))
-	}
 	providerConfig = &ProviderConfig{}
-	err = yaml.Unmarshal(confFileStream, providerConfig)
+	fileStream, err := yaml.UnmarshalYMLConfig(confProFile, providerConfig)
 	if err != nil {
-		return perrors.Errorf("yaml.Unmarshal() = error:%v", perrors.WithStack(err))
+		return perrors.Errorf("unmarshalYmlConfig error %v", perrors.WithStack(err))
 	}
 
+	providerConfig.fileStream = bytes.NewBuffer(fileStream)
 	//set method interfaceId & interfaceName
 	for k, v := range providerConfig.Services {
 		//set id for reference
@@ -105,7 +97,10 @@ func ProviderInit(confProFile string) error {
 			n.InterfaceId = k
 		}
 	}
-
+	//start the metadata report if config set
+	if err := startMetadataReport(providerConfig.ApplicationConfig.MetadataType, providerConfig.MetadataReportConfig); err != nil {
+		return perrors.WithMessagef(err, "Provider starts metadata report error, and the error is {%#v}", err)
+	}
 	logger.Debugf("provider config{%#v}\n", providerConfig)
 
 	return nil
@@ -115,7 +110,7 @@ func configCenterRefreshProvider() error {
 	//fresh it
 	if providerConfig.ConfigCenterConfig != nil {
 		providerConfig.fatherConfig = providerConfig
-		if err := providerConfig.startConfigCenter(context.Background()); err != nil {
+		if err := providerConfig.startConfigCenter(); err != nil {
 			return perrors.Errorf("start config center error , error message is {%v}", perrors.WithStack(err))
 		}
 		providerConfig.fresh()

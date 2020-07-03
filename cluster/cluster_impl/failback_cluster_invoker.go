@@ -18,6 +18,7 @@
 package cluster_impl
 
 import (
+	"context"
 	"strconv"
 	"sync"
 	"time"
@@ -71,7 +72,20 @@ func newFailbackClusterInvoker(directory cluster.Directory) protocol.Invoker {
 	return invoker
 }
 
-func (invoker *failbackClusterInvoker) process() {
+func (invoker *failbackClusterInvoker) tryTimerTaskProc(ctx context.Context, retryTask *retryTimerTask) {
+	invoked := make([]protocol.Invoker, 0)
+	invoked = append(invoked, retryTask.lastInvoker)
+
+	retryInvoker := invoker.doSelect(retryTask.loadbalance, retryTask.invocation, retryTask.invokers, invoked)
+	var result protocol.Result
+	result = retryInvoker.Invoke(ctx, retryTask.invocation)
+	if result.Error() != nil {
+		retryTask.lastInvoker = retryInvoker
+		invoker.checkRetry(retryTask, result.Error())
+	}
+}
+
+func (invoker *failbackClusterInvoker) process(ctx context.Context) {
 	invoker.ticker = time.NewTicker(time.Second * 1)
 	for range invoker.ticker.C {
 		// check each timeout task and re-run
@@ -90,25 +104,11 @@ func (invoker *failbackClusterInvoker) process() {
 			}
 
 			// ignore return. the get must success.
-			_, err = invoker.taskList.Get(1)
-			if err != nil {
+			if _, err = invoker.taskList.Get(1); err != nil {
 				logger.Warnf("get task found err: %v\n", err)
 				break
 			}
-
-			go func(retryTask *retryTimerTask) {
-				invoked := make([]protocol.Invoker, 0)
-				invoked = append(invoked, retryTask.lastInvoker)
-
-				retryInvoker := invoker.doSelect(retryTask.loadbalance, retryTask.invocation, retryTask.invokers, invoked)
-				var result protocol.Result
-				result = retryInvoker.Invoke(retryTask.invocation)
-				if result.Error() != nil {
-					retryTask.lastInvoker = retryInvoker
-					invoker.checkRetry(retryTask, result.Error())
-				}
-			}(retryTask)
-
+			go invoker.tryTimerTaskProc(ctx, retryTask)
 		}
 	}
 }
@@ -126,35 +126,32 @@ func (invoker *failbackClusterInvoker) checkRetry(retryTask *retryTimerTask, err
 	}
 }
 
-func (invoker *failbackClusterInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	invokers := invoker.directory.List(invocation)
-	err := invoker.checkInvokers(invokers, invocation)
-	if err != nil {
+	if err := invoker.checkInvokers(invokers, invocation); err != nil {
 		logger.Errorf("Failed to invoke the method %v in the service %v, wait for retry in background. Ignored exception: %v.\n",
 			invocation.MethodName(), invoker.GetUrl().Service(), err)
 		return &protocol.RPCResult{}
 	}
-	url := invokers[0].GetUrl()
-	methodName := invocation.MethodName()
-	//Get the service loadbalance config
-	lb := url.GetParam(constant.LOADBALANCE_KEY, constant.DEFAULT_LOADBALANCE)
 
+	//Get the service loadbalance config
+	url := invokers[0].GetUrl()
+	lb := url.GetParam(constant.LOADBALANCE_KEY, constant.DEFAULT_LOADBALANCE)
 	//Get the service method loadbalance config if have
+	methodName := invocation.MethodName()
 	if v := url.GetMethodParam(methodName, constant.LOADBALANCE_KEY, ""); v != "" {
 		lb = v
 	}
-	loadbalance := extension.GetLoadbalance(lb)
 
+	loadBalance := extension.GetLoadbalance(lb)
 	invoked := make([]protocol.Invoker, 0, len(invokers))
-	var result protocol.Result
-
-	ivk := invoker.doSelect(loadbalance, invocation, invokers, invoked)
+	ivk := invoker.doSelect(loadBalance, invocation, invokers, invoked)
 	//DO INVOKE
-	result = ivk.Invoke(invocation)
+	result := ivk.Invoke(ctx, invocation)
 	if result.Error() != nil {
 		invoker.once.Do(func() {
 			invoker.taskList = queue.New(invoker.failbackTasks)
-			go invoker.process()
+			go invoker.process(ctx)
 		})
 
 		taskLen := invoker.taskList.Len()
@@ -163,7 +160,7 @@ func (invoker *failbackClusterInvoker) Invoke(invocation protocol.Invocation) pr
 			return &protocol.RPCResult{}
 		}
 
-		timerTask := newRetryTimerTask(loadbalance, invocation, invokers, ivk)
+		timerTask := newRetryTimerTask(loadBalance, invocation, invokers, ivk)
 		invoker.taskList.Put(timerTask)
 
 		logger.Errorf("Failback to invoke the method %v in the service %v, wait for retry in background. Ignored exception: %v.\n",
@@ -171,7 +168,6 @@ func (invoker *failbackClusterInvoker) Invoke(invocation protocol.Invocation) pr
 		// ignore
 		return &protocol.RPCResult{}
 	}
-
 	return result
 }
 

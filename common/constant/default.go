@@ -41,12 +41,15 @@ const (
 	DEFAULT_FAILBACK_TIMES     = "3"
 	DEFAULT_FAILBACK_TIMES_INT = 3
 	DEFAULT_FAILBACK_TASKS     = 100
+	DEFAULT_REST_CLIENT        = "resty"
+	DEFAULT_REST_SERVER        = "go-restful"
+	DEFAULT_PORT               = 20000
 )
 
 const (
 	DEFAULT_KEY               = "default"
 	PREFIX_DEFAULT_KEY        = "default."
-	DEFAULT_SERVICE_FILTERS   = "echo,token,accesslog,tps,execute,pshutdown"
+	DEFAULT_SERVICE_FILTERS   = "echo,token,accesslog,tps,generic_service,execute,pshutdown"
 	DEFAULT_REFERENCE_FILTERS = "cshutdown"
 	GENERIC_REFERENCE_FILTERS = "generic"
 	GENERIC                   = "$invoke"
@@ -56,6 +59,7 @@ const (
 const (
 	ANY_VALUE           = "*"
 	ANYHOST_VALUE       = "0.0.0.0"
+	LOCAL_HOST_VALUE    = "192.168.1.1"
 	REMOVE_VALUE_PREFIX = "-"
 )
 
@@ -66,6 +70,7 @@ const (
 	DYNAMIC_CONFIGURATORS_CATEGORY     = "dynamicconfigurators"
 	APP_DYNAMIC_CONFIGURATORS_CATEGORY = "appdynamicconfigurators"
 	PROVIDER_CATEGORY                  = "providers"
+	CONSUMER_CATEGORY                  = "consumers"
 )
 
 const (

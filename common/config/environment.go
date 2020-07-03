@@ -27,6 +27,7 @@ import (
 	"github.com/apache/dubbo-go/config_center"
 )
 
+// Environment
 // There is dubbo.properties file and application level config center configuration which higner than normal config center in java. So in java the
 // configuration sequence will be config center > application level config center > dubbo.properties > spring bean configuration.
 // But in go, neither the dubbo.properties file or application level config center configuration will not support for the time being.
@@ -45,12 +46,15 @@ var (
 	once     sync.Once
 )
 
+// GetEnvInstance gets env instance by singleton
 func GetEnvInstance() *Environment {
 	once.Do(func() {
 		instance = &Environment{configCenterFirst: true}
 	})
 	return instance
 }
+
+// NewEnvInstance creates Environment instance
 func NewEnvInstance() {
 	instance = &Environment{configCenterFirst: true}
 }
@@ -63,34 +67,41 @@ func NewEnvInstance() {
 //	return env.configCenterFirst
 //}
 
+// UpdateExternalConfigMap updates env externalConfigMap field
 func (env *Environment) UpdateExternalConfigMap(externalMap map[string]string) {
 	for k, v := range externalMap {
 		env.externalConfigMap.Store(k, v)
 	}
 }
 
+// UpdateAppExternalConfigMap updates env appExternalConfigMap field
 func (env *Environment) UpdateAppExternalConfigMap(externalMap map[string]string) {
 	for k, v := range externalMap {
 		env.appExternalConfigMap.Store(k, v)
 	}
 }
 
+// Configuration puts externalConfigMap and appExternalConfigMap into list
+// List represents a doubly linked list.
 func (env *Environment) Configuration() *list.List {
-	list := list.New()
+	cfgList := list.New()
 	// The sequence would be: SystemConfiguration -> ExternalConfiguration -> AppExternalConfiguration -> AbstractConfig -> PropertiesConfiguration
-	list.PushFront(newInmemoryConfiguration(&(env.externalConfigMap)))
-	list.PushFront(newInmemoryConfiguration(&(env.appExternalConfigMap)))
-	return list
+	cfgList.PushFront(newInmemoryConfiguration(&(env.externalConfigMap)))
+	cfgList.PushFront(newInmemoryConfiguration(&(env.appExternalConfigMap)))
+	return cfgList
 }
 
+// SetDynamicConfiguration sets value for dynamicConfiguration
 func (env *Environment) SetDynamicConfiguration(dc config_center.DynamicConfiguration) {
 	env.dynamicConfiguration = dc
 }
 
+// GetDynamicConfiguration gets dynamicConfiguration
 func (env *Environment) GetDynamicConfiguration() config_center.DynamicConfiguration {
 	return env.dynamicConfiguration
 }
 
+// InmemoryConfiguration stores config in memory
 type InmemoryConfiguration struct {
 	store *sync.Map
 }
@@ -99,6 +110,7 @@ func newInmemoryConfiguration(p *sync.Map) *InmemoryConfiguration {
 	return &InmemoryConfiguration{store: p}
 }
 
+// GetProperty gets value from InmemoryConfiguration instance by @key
 func (conf *InmemoryConfiguration) GetProperty(key string) (bool, string) {
 	if conf.store == nil {
 		return false, ""
@@ -112,13 +124,14 @@ func (conf *InmemoryConfiguration) GetProperty(key string) (bool, string) {
 	return false, ""
 }
 
+// GetSubProperty gets sub property from InmemoryConfiguration instance by @subkey
 func (conf *InmemoryConfiguration) GetSubProperty(subKey string) map[string]struct{} {
 	if conf.store == nil {
 		return nil
 	}
 
 	properties := make(map[string]struct{})
-	conf.store.Range(func(key, value interface{}) bool {
+	conf.store.Range(func(key, _ interface{}) bool {
 		if idx := strings.Index(key.(string), subKey); idx >= 0 {
 			after := key.(string)[idx+len(subKey):]
 			if i := strings.Index(after, "."); i >= 0 {

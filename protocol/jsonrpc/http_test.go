@@ -25,6 +25,7 @@ import (
 )
 
 import (
+	"github.com/opentracing/opentracing-go"
 	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
@@ -47,19 +48,23 @@ type (
 	}
 )
 
-func TestHTTPClient_Call(t *testing.T) {
+const (
+	mockJsonCommonUrl = "jsonrpc://127.0.0.1:20001/UserProvider?anyhost=true&" +
+		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
+		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider"
+)
 
-	methods, err := common.ServiceMap.Register("jsonrpc", &UserProvider{})
+func TestHTTPClientCall(t *testing.T) {
+
+	methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "jsonrpc", &UserProvider{})
 	assert.NoError(t, err)
 	assert.Equal(t, "GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4", methods)
 
 	// Export
 	proto := GetProtocol()
-	url, err := common.NewURL(context.Background(), "jsonrpc://127.0.0.1:20001/UserProvider?anyhost=true&"+
-		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&"+
-		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&"+
-		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&"+
-		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
+	url, err := common.NewURL(mockJsonCommonUrl)
 	assert.NoError(t, err)
 	proto.Export(&proxy_factory.ProxyInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
@@ -74,6 +79,7 @@ func TestHTTPClient_Call(t *testing.T) {
 		"X-Services": url.Path,
 		"X-Method":   "GetUser",
 	})
+
 	req := client.NewRequest(url, "GetUser", []interface{}{"1", "username"})
 	reply := &User{}
 	err = client.Call(ctx, url, req, reply)
@@ -147,6 +153,10 @@ func TestHTTPClient_Call(t *testing.T) {
 		"X-Services": url.Path,
 		"X-Method":   "GetUser4",
 	})
+
+	span := opentracing.StartSpan("Test-Inject-Tracing-ID")
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
 	req = client.NewRequest(url, "GetUser4", []interface{}{1})
 	reply = &User{}
 	err = client.Call(ctx, url, req, reply)

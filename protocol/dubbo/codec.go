@@ -30,28 +30,34 @@ import (
 	perrors "github.com/pkg/errors"
 )
 
-// serial ID
+//SerialID serial ID
 type SerialID byte
 
 const (
+	// S_Dubbo dubbo serial id
 	S_Dubbo SerialID = 2
 )
 
-// call type
+//CallType call type
 type CallType int32
 
 const (
+	// CT_UNKNOWN unknown call type
 	CT_UNKNOWN CallType = 0
-	CT_OneWay  CallType = 1
-	CT_TwoWay  CallType = 2
+	// CT_OneWay call one way
+	CT_OneWay CallType = 1
+	// CT_TwoWay call in request/response
+	CT_TwoWay CallType = 2
 )
 
 ////////////////////////////////////////////
 // dubbo package
 ////////////////////////////////////////////
 
+// SequenceType ...
 type SequenceType int64
 
+// DubboPackage ...
 type DubboPackage struct {
 	Header  hessian.DubboHeader
 	Service hessian.Service
@@ -59,10 +65,12 @@ type DubboPackage struct {
 	Err     error
 }
 
+// String prints dubbo package detail include header、path、body etc.
 func (p DubboPackage) String() string {
 	return fmt.Sprintf("DubboPackage: Header-%v, Path-%v, Body-%v", p.Header, p.Service, p.Body)
 }
 
+// Marshal encode hessian package.
 func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 	codec := hessian.NewHessianCodec(nil)
 
@@ -74,8 +82,15 @@ func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 	return bytes.NewBuffer(pkg), nil
 }
 
+// Unmarshal dncode hessian package.
 func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
-	codec := hessian.NewHessianCodec(bufio.NewReaderSize(buf, buf.Len()))
+	// fix issue https://github.com/apache/dubbo-go/issues/380
+	bufLen := buf.Len()
+	if bufLen < hessian.HEADER_LENGTH {
+		return perrors.WithStack(hessian.ErrHeaderNotEnough)
+	}
+
+	codec := hessian.NewHessianCodec(bufio.NewReaderSize(buf, bufLen))
 
 	// read header
 	err := codec.ReadHeader(&p.Header)
@@ -89,11 +104,17 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 			return perrors.Errorf("opts[0] is not of type *Client")
 		}
 
-		pendingRsp, ok := client.pendingResponses.Load(SequenceType(p.Header.ID))
-		if !ok {
-			return perrors.Errorf("client.GetPendingResponse(%v) = nil", p.Header.ID)
+		if p.Header.Type&hessian.PackageRequest != 0x00 {
+			// size of this array must be '7'
+			// https://github.com/apache/dubbo-go-hessian2/blob/master/request.go#L272
+			p.Body = make([]interface{}, 7)
+		} else {
+			pendingRsp, ok := client.pendingResponses.Load(SequenceType(p.Header.ID))
+			if !ok {
+				return perrors.Errorf("client.GetPendingResponse(%v) = nil", p.Header.ID)
+			}
+			p.Body = &hessian.Response{RspObj: pendingRsp.(*PendingResponse).response.reply}
 		}
-		p.Body = &hessian.Response{RspObj: pendingRsp.(*PendingResponse).response.reply}
 	}
 
 	// read body
@@ -105,6 +126,7 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 // PendingResponse
 ////////////////////////////////////////////
 
+// PendingResponse is a pending response.
 type PendingResponse struct {
 	seq       uint64
 	err       error
@@ -115,6 +137,7 @@ type PendingResponse struct {
 	done      chan struct{}
 }
 
+// NewPendingResponse create a PendingResponses.
 func NewPendingResponse() *PendingResponse {
 	return &PendingResponse{
 		start:    time.Now(),
@@ -123,6 +146,7 @@ func NewPendingResponse() *PendingResponse {
 	}
 }
 
+// GetCallResponse get AsyncCallbackResponse.
 func (r PendingResponse) GetCallResponse() common.CallbackResponse {
 	return AsyncCallbackResponse{
 		Cause:     r.err,

@@ -18,6 +18,9 @@
 package cluster_impl
 
 import (
+	"context"
+)
+import (
 	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
@@ -33,19 +36,19 @@ func newRegistryAwareClusterInvoker(directory cluster.Directory) protocol.Invoke
 	}
 }
 
-func (invoker *registryAwareClusterInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
+func (invoker *registryAwareClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	invokers := invoker.directory.List(invocation)
 	//First, pick the invoker (XXXClusterInvoker) that comes from the local registry, distinguish by a 'default' key.
 	for _, invoker := range invokers {
 		if invoker.IsAvailable() && invoker.GetUrl().GetParam(constant.REGISTRY_DEFAULT_KEY, "false") == "true" {
-			return invoker.Invoke(invocation)
+			return invoker.Invoke(ctx, invocation)
 		}
 	}
 
 	//If none of the invokers has a local signal, pick the first one available.
 	for _, invoker := range invokers {
 		if invoker.IsAvailable() {
-			return invoker.Invoke(invocation)
+			return invoker.Invoke(ctx, invocation)
 		}
 	}
 	return nil

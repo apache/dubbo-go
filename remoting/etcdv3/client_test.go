@@ -18,8 +18,8 @@
 package etcdv3
 
 import (
-	"fmt"
 	"net/url"
+	"os"
 	"path"
 	"reflect"
 	"strings"
@@ -29,12 +29,15 @@ import (
 )
 
 import (
+	"github.com/coreos/etcd/embed"
 	"github.com/coreos/etcd/mvcc/mvccpb"
 	perrors "github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"go.etcd.io/etcd/embed"
 	"google.golang.org/grpc/connectivity"
 )
+
+const defaultEtcdV3WorkDir = "/tmp/default-dubbo-go-remote.etcd"
 
 // tests dataset
 var tests = []struct {
@@ -91,7 +94,7 @@ func (suite *ClientTestSuite) SetupSuite() {
 	cfg := embed.NewConfig()
 	cfg.LPUrls = []url.URL{*lpurl}
 	cfg.LCUrls = []url.URL{*lcurl}
-	cfg.Dir = "/tmp/default.etcd"
+	cfg.Dir = defaultEtcdV3WorkDir
 	e, err := embed.StartEtcd(cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -111,6 +114,9 @@ func (suite *ClientTestSuite) SetupSuite() {
 // stop etcd server
 func (suite *ClientTestSuite) TearDownSuite() {
 	suite.etcd.Close()
+	if err := os.RemoveAll(defaultEtcdV3WorkDir); err != nil {
+		suite.FailNow(err.Error())
+	}
 }
 
 func (suite *ClientTestSuite) setUpClient() *Client {
@@ -134,8 +140,6 @@ func (suite *ClientTestSuite) SetupTest() {
 
 func (suite *ClientTestSuite) TestClientClose() {
 
-	fmt.Println("called client close")
-
 	c := suite.client
 	t := suite.T()
 
@@ -147,12 +151,10 @@ func (suite *ClientTestSuite) TestClientClose() {
 
 func (suite *ClientTestSuite) TestClientValid() {
 
-	fmt.Println("called client valid")
-
 	c := suite.client
 	t := suite.T()
 
-	if c.Valid() != true {
+	if !c.Valid() {
 		t.Fatal("client is not valid")
 	}
 	c.Close()
@@ -171,6 +173,10 @@ func (suite *ClientTestSuite) TestClientDone() {
 	}()
 
 	c.Wait.Wait()
+
+	if c.Valid() {
+		suite.T().Fatal("client should be invalid then")
+	}
 }
 
 func (suite *ClientTestSuite) TestClientCreateKV() {
@@ -295,13 +301,26 @@ func (suite *ClientTestSuite) TestClientWatch() {
 			t.Fatal(err)
 		}
 
+		events := make([]mvccpb.Event, 0)
+		var eCreate, eDelete mvccpb.Event
+
 		for e := range wc {
 
 			for _, event := range e.Events {
+				events = append(events, (mvccpb.Event)(*event))
+				if event.Type == mvccpb.PUT {
+					eCreate = (mvccpb.Event)(*event)
+				}
+				if event.Type == mvccpb.DELETE {
+					eDelete = (mvccpb.Event)(*event)
+				}
 				t.Logf("type IsCreate %v k %s v %s", event.IsCreate(), event.Kv.Key, event.Kv.Value)
 			}
 		}
 
+		assert.Equal(t, 2, len(events))
+		assert.Contains(t, events, eCreate)
+		assert.Contains(t, events, eDelete)
 	}()
 
 	for _, tc := range tests {
@@ -334,25 +353,35 @@ func (suite *ClientTestSuite) TestClientRegisterTemp() {
 	wg.Add(1)
 
 	go func() {
+		defer wg.Done()
+
 		completePath := path.Join("scott", "wang")
 		wc, err := observeC.watch(completePath)
 		if err != nil {
 			t.Fatal(err)
 		}
 
+		events := make([]mvccpb.Event, 0)
+		var eCreate, eDelete mvccpb.Event
+
 		for e := range wc {
 
 			for _, event := range e.Events {
-
+				events = append(events, (mvccpb.Event)(*event))
 				if event.Type == mvccpb.DELETE {
+					eDelete = (mvccpb.Event)(*event)
 					t.Logf("complete key (%s) is delete", completePath)
-					wg.Done()
 					observeC.Close()
-					return
+					break
 				}
+				eCreate = (mvccpb.Event)(*event)
 				t.Logf("type IsCreate %v k %s v %s", event.IsCreate(), event.Kv.Key, event.Kv.Value)
 			}
 		}
+
+		assert.Equal(t, 2, len(events))
+		assert.Contains(t, events, eCreate)
+		assert.Contains(t, events, eDelete)
 	}()
 
 	_, err := c.RegisterTemp("scott", "wang")

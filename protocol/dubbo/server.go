@@ -71,9 +71,10 @@ func init() {
 	if err := srvConf.CheckValidity(); err != nil {
 		panic(err)
 	}
-	SetServerGrpool()
+	setServerGrpool()
 }
 
+// SetServerConfig set dubbo server config.
 func SetServerConfig(s ServerConfig) {
 	srvConf = &s
 	err := srvConf.CheckValidity()
@@ -81,26 +82,29 @@ func SetServerConfig(s ServerConfig) {
 		logger.Warnf("[ServerConfig CheckValidity] error: %v", err)
 		return
 	}
-	SetServerGrpool()
+	setServerGrpool()
 }
 
+// GetServerConfig get dubbo server config.
 func GetServerConfig() ServerConfig {
 	return *srvConf
 }
 
-func SetServerGrpool() {
+func setServerGrpool() {
 	if srvConf.GrPoolSize > 1 {
 		srvGrpool = gxsync.NewTaskPool(gxsync.WithTaskPoolTaskPoolSize(srvConf.GrPoolSize), gxsync.WithTaskPoolTaskQueueLength(srvConf.QueueLen),
 			gxsync.WithTaskPoolTaskQueueNumber(srvConf.QueueNumber))
 	}
 }
 
+// Server is dubbo protocol server.
 type Server struct {
 	conf       ServerConfig
 	tcpServer  getty.Server
 	rpcHandler *RpcServerHandler
 }
 
+// NewServer create a new Server.
 func NewServer() *Server {
 
 	s := &Server{
@@ -151,6 +155,7 @@ func (s *Server) newSession(session getty.Session) error {
 	return nil
 }
 
+// Start start dubbo server.
 func (s *Server) Start(url common.URL) {
 	var (
 		addr      string
@@ -167,6 +172,7 @@ func (s *Server) Start(url common.URL) {
 
 }
 
+// Stop stop dubbo server.
 func (s *Server) Stop() {
 	s.tcpServer.Close()
 }

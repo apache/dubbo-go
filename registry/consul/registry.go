@@ -36,7 +36,7 @@ import (
 )
 
 const (
-	RegistryConnDelay = 3
+	registryConnDelay = 3
 )
 
 func init() {
@@ -73,6 +73,7 @@ func newConsulRegistry(url *common.URL) (registry.Registry, error) {
 	return r, nil
 }
 
+// Register service to consul registry center
 func (r *consulRegistry) Register(url common.URL) error {
 	var err error
 
@@ -94,6 +95,7 @@ func (r *consulRegistry) register(url common.URL) error {
 	return r.client.Agent().ServiceRegister(service)
 }
 
+// Unregister service from consul registry center
 func (r *consulRegistry) Unregister(url common.URL) error {
 	var err error
 
@@ -111,6 +113,7 @@ func (r *consulRegistry) unregister(url common.URL) error {
 	return r.client.Agent().ServiceDeregister(buildId(url))
 }
 
+// Subscribe service from consul registry center
 func (r *consulRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
 	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
 	if role == common.CONSUMER {
@@ -132,19 +135,20 @@ func (r *consulRegistry) subscribe(url *common.URL, notifyListener registry.Noti
 				return
 			}
 			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
-			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
+			time.Sleep(time.Duration(registryConnDelay) * time.Second)
 			continue
 		}
 
 		for {
-			if serviceEvent, err := listener.Next(); err != nil {
+			serviceEvent, err := listener.Next()
+			if err != nil {
 				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
 				listener.Close()
 				return
-			} else {
-				logger.Infof("update begin, service event: %v", serviceEvent.String())
-				notifyListener.Notify(serviceEvent)
 			}
+
+			logger.Infof("update begin, service event: %v", serviceEvent.String())
+			notifyListener.Notify(serviceEvent)
 		}
 	}
 }
@@ -154,10 +158,12 @@ func (r *consulRegistry) getListener(url common.URL) (registry.Listener, error) 
 	return listener, err
 }
 
+// GetUrl get registry URL of consul registry center
 func (r *consulRegistry) GetUrl() common.URL {
 	return *r.URL
 }
 
+// IsAvailable checks consul registry center whether is available
 func (r *consulRegistry) IsAvailable() bool {
 	select {
 	case <-r.done:
@@ -167,6 +173,7 @@ func (r *consulRegistry) IsAvailable() bool {
 	}
 }
 
+// Destroy consul registry center
 func (r *consulRegistry) Destroy() {
 	close(r.done)
 }
