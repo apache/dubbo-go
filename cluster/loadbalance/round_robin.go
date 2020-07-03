@@ -31,16 +31,19 @@ import (
 )
 
 const (
+	// RoundRobin ...
 	RoundRobin = "roundrobin"
 
+	// COMPLETE ...
 	COMPLETE = 0
+	// UPDATING ...
 	UPDATING = 1
 )
 
 var (
-	methodWeightMap sync.Map            // [string]invokers
-	state           int32    = COMPLETE // update lock acquired ?
-	recyclePeriod   int64    = 60 * time.Second.Nanoseconds()
+	methodWeightMap sync.Map          // [string]invokers
+	state           = int32(COMPLETE) // update lock acquired ?
+	recyclePeriod   = 60 * time.Second.Nanoseconds()
 )
 
 func init() {
@@ -49,6 +52,9 @@ func init() {
 
 type roundRobinLoadBalance struct{}
 
+// NewRoundRobinLoadBalance returns a round robin load balance
+//
+// Use the weight's common advisory to determine round robin ratio
 func NewRoundRobinLoadBalance() cluster.LoadBalance {
 	return &roundRobinLoadBalance{}
 }

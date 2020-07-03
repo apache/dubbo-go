@@ -27,7 +27,9 @@ import (
 	"strconv"
 	"strings"
 )
-
+import (
+	gxsort "github.com/dubbogo/gost/sort"
+)
 import (
 	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/common/constant"
@@ -36,9 +38,12 @@ import (
 )
 
 const (
+	// ConsistentHash ...
 	ConsistentHash = "consistenthash"
-	HashNodes      = "hash.nodes"
-	HashArguments  = "hash.arguments"
+	// HashNodes ...
+	HashNodes = "hash.nodes"
+	// HashArguments  key of hash arguments  in url
+	HashArguments = "hash.arguments"
 )
 
 var (
@@ -50,13 +55,18 @@ func init() {
 	extension.SetLoadbalance(ConsistentHash, NewConsistentHashLoadBalance)
 }
 
+// ConsistentHashLoadBalance implementation of load balancing: using consistent hashing
 type ConsistentHashLoadBalance struct {
 }
 
+// NewConsistentHashLoadBalance creates NewConsistentHashLoadBalance
+//
+// The same parameters of the request is always sent to the same provider.
 func NewConsistentHashLoadBalance() cluster.LoadBalance {
 	return &ConsistentHashLoadBalance{}
 }
 
+// Select gets invoker based on load balancing strategy
 func (lb *ConsistentHashLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
 	methodName := invocation.MethodName()
 	key := invokers[0].GetUrl().ServiceKey() + "." + methodName
@@ -79,25 +89,12 @@ func (lb *ConsistentHashLoadBalance) Select(invokers []protocol.Invoker, invocat
 	return selector.Select(invocation)
 }
 
-type Uint32Slice []uint32
-
-func (s Uint32Slice) Len() int {
-	return len(s)
-}
-
-func (s Uint32Slice) Less(i, j int) bool {
-	return s[i] < s[j]
-}
-
-func (s Uint32Slice) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
+// ConsistentHashSelector implementation of Selector:get invoker based on load balancing strategy
 type ConsistentHashSelector struct {
 	hashCode        uint32
 	replicaNum      int
 	virtualInvokers map[uint32]protocol.Invoker
-	keys            Uint32Slice
+	keys            gxsort.Uint32Slice
 	argumentIndex   []int
 }
 
@@ -133,6 +130,7 @@ func newConsistentHashSelector(invokers []protocol.Invoker, methodName string,
 	return selector
 }
 
+// Select gets invoker based on load balancing strategy
 func (c *ConsistentHashSelector) Select(invocation protocol.Invocation) protocol.Invoker {
 	key := c.toKey(invocation.Arguments())
 	digest := md5.Sum([]byte(key))

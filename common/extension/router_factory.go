@@ -18,21 +18,50 @@
 package extension
 
 import (
-	"github.com/apache/dubbo-go/cluster"
+	"sync"
+)
+
+import (
+	"github.com/apache/dubbo-go/cluster/router"
 )
 
 var (
-	routers = make(map[string]func() cluster.RouterFactory)
+	routers               = make(map[string]func() router.PriorityRouterFactory)
+	fileRouterFactoryOnce sync.Once
+	fileRouterFactories   = make(map[string]router.FilePriorityRouterFactory)
 )
 
-func SetRouterFactory(name string, fun func() cluster.RouterFactory) {
+// SetRouterFactory sets create router factory function with @name
+func SetRouterFactory(name string, fun func() router.PriorityRouterFactory) {
 	routers[name] = fun
 }
 
-func GetRouterFactory(name string) cluster.RouterFactory {
+// GetRouterFactory gets create router factory function by @name
+func GetRouterFactory(name string) router.PriorityRouterFactory {
 	if routers[name] == nil {
 		panic("router_factory for " + name + " is not existing, make sure you have import the package.")
 	}
 	return routers[name]()
+}
 
+// GetRouterFactories gets all create router factory function
+func GetRouterFactories() map[string]func() router.PriorityRouterFactory {
+	return routers
+}
+
+// GetFileRouterFactories gets all create file router factory instance
+func GetFileRouterFactories() map[string]router.FilePriorityRouterFactory {
+	l := len(routers)
+	if l == 0 {
+		return nil
+	}
+	fileRouterFactoryOnce.Do(func() {
+		for k := range routers {
+			factory := GetRouterFactory(k)
+			if fr, ok := factory.(router.FilePriorityRouterFactory); ok {
+				fileRouterFactories[k] = fr
+			}
+		}
+	})
+	return fileRouterFactories
 }

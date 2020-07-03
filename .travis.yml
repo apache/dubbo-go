@@ -1,20 +1,35 @@
+dist: trusty
+sudo: required
+
+# define the dependence env
 language: go
-
+os:
+  - linux
 go:
-  - "1.12"
-
+  - "1.13"
+services:
+  - docker
 env:
   - GO111MODULE=on
-
 install: true
 
+# define ci-stage
 script:
+  # license-check
+  - echo 'start license check'
   - go fmt ./... && [[ -z `git status -s` ]]
-  - mkdir -p remoting/zookeeper/zookeeper-4unittest/contrib/fatjar config_center/zookeeper/zookeeper-4unittest/contrib/fatjar registry/zookeeper/zookeeper-4unittest/contrib/fatjar
-  - wget -P "remoting/zookeeper/zookeeper-4unittest/contrib/fatjar" https://github.com/dubbogo/resources/raw/master/zookeeper-4unitest/contrib/fatjar/zookeeper-3.4.9-fatjar.jar
-  - cp remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/zookeeper-3.4.9-fatjar.jar config_center/zookeeper/zookeeper-4unittest/contrib/fatjar/
-  - cp remoting/zookeeper/zookeeper-4unittest/contrib/fatjar/zookeeper-3.4.9-fatjar.jar registry/zookeeper/zookeeper-4unittest/contrib/fatjar/
+  - sh before_validate_license.sh
+  - chmod u+x /tmp/tools/license/license-header-checker
+  - /tmp/tools/license/license-header-checker -v -a -r -i vendor  /tmp/tools/license/license.txt . go  && [[ -z `git status -s` ]]
+  # unit-test
+  - echo 'start unit-test'
+  - chmod u+x before_ut.sh && ./before_ut.sh
   - go mod vendor && go test ./... -coverprofile=coverage.txt -covermode=atomic
+  # integrate-test
+  - chmod +x integrate_test.sh && ./integrate_test.sh
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+
+notifications:
+  webhooks: https://oapi.dingtalk.com/robot/send?access_token=f5d6237f2c79db584e75604f7f88db1ce1673c8c0e98451217b28fde791e1d4f

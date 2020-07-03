@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestShutdownConfig_GetTimeout(t *testing.T) {
+func TestShutdownConfigGetTimeout(t *testing.T) {
 	config := ShutdownConfig{}
 	assert.False(t, config.RejectRequest)
 	assert.False(t, config.RequestsFinished)

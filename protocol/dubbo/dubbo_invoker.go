@@ -18,11 +18,15 @@
 package dubbo
 
 import (
+	"context"
 	"strconv"
 	"sync"
+	"sync/atomic"
+	"time"
 )
 
 import (
+	"github.com/opentracing/opentracing-go"
 	perrors "github.com/pkg/errors"
 )
 
@@ -34,31 +38,50 @@ import (
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 )
 
-var Err_No_Reply = perrors.New("request need @response")
+var (
+	// ErrNoReply
+	ErrNoReply = perrors.New("request need @response")
+	// ErrDestroyedInvoker
+	ErrDestroyedInvoker = perrors.New("request Destroyed invoker")
+)
 
 var (
 	attachmentKey = []string{constant.INTERFACE_KEY, constant.GROUP_KEY, constant.TOKEN_KEY, constant.TIMEOUT_KEY}
 )
 
+// DubboInvoker is dubbo client invoker.
 type DubboInvoker struct {
 	protocol.BaseInvoker
 	client   *Client
 	quitOnce sync.Once
+	// Used to record the number of requests. -1 represent this DubboInvoker is destroyed
+	reqNum int64
 }
 
+// NewDubboInvoker create dubbo client invoker.
 func NewDubboInvoker(url common.URL, client *Client) *DubboInvoker {
 	return &DubboInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
+		reqNum:      0,
 	}
 }
 
-func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
-
+// Invoke call remoting.
+func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	var (
 		err    error
 		result protocol.RPCResult
 	)
+	if di.reqNum < 0 {
+		// Generally, the case will not happen, because the invoker has been removed
+		// from the invoker list before destroy,so no new request will enter the destroyed invoker
+		logger.Warnf("this dubboInvoker is destroyed")
+		result.Err = ErrDestroyedInvoker
+		return &result
+	}
+	atomic.AddInt64(&(di.reqNum), 1)
+	defer atomic.AddInt64(&(di.reqNum), -1)
 
 	inv := invocation.(*invocation_impl.RPCInvocation)
 	for _, k := range attachmentKey {
@@ -66,6 +89,10 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 			inv.SetAttachments(k, v)
 		}
 	}
+
+	// put the ctx into attachment
+	di.appendCtx(ctx, inv)
+
 	url := di.GetUrl()
 	// async
 	async, err := strconv.ParseBool(inv.AttachmentsByKey(constant.ASYNC_KEY, "false"))
@@ -82,7 +109,7 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 		}
 	} else {
 		if inv.Reply() == nil {
-			result.Err = Err_No_Reply
+			result.Err = ErrNoReply
 		} else {
 			result.Err = di.client.Call(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), response)
 		}
@@ -96,12 +123,37 @@ func (di *DubboInvoker) Invoke(invocation protocol.Invocation) protocol.Result {
 	return &result
 }
 
+// Destroy destroy dubbo client invoker.
 func (di *DubboInvoker) Destroy() {
 	di.quitOnce.Do(func() {
-		di.BaseInvoker.Destroy()
-
-		if di.client != nil {
-			di.client.Close()
+		for {
+			if di.reqNum == 0 {
+				di.reqNum = -1
+				logger.Infof("dubboInvoker is destroyed,url:{%s}", di.GetUrl().Key())
+				di.BaseInvoker.Destroy()
+				if di.client != nil {
+					di.client.Close()
+					di.client = nil
+				}
+				break
+			}
+			logger.Warnf("DubboInvoker is to be destroyed, wait {%v} req end,url:{%s}", di.reqNum, di.GetUrl().Key())
+			time.Sleep(1 * time.Second)
 		}
+
 	})
+}
+
+// Finally, I made the decision that I don't provide a general way to transfer the whole context
+// because it could be misused. If the context contains to many key-value pairs, the performance will be much lower.
+func (di *DubboInvoker) appendCtx(ctx context.Context, inv *invocation_impl.RPCInvocation) {
+	// inject opentracing ctx
+	currentSpan := opentracing.SpanFromContext(ctx)
+	if currentSpan != nil {
+		carrier := opentracing.TextMapCarrier(inv.Attachments())
+		err := opentracing.GlobalTracer().Inject(currentSpan.Context(), opentracing.TextMap, carrier)
+		if err != nil {
+			logger.Errorf("Could not inject the span context into attachments: %v", err)
+		}
+	}
 }

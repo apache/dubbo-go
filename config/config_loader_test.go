@@ -36,10 +36,13 @@ import (
 	"github.com/apache/dubbo-go/config_center"
 )
 
+const mockConsumerConfigPath = "./testdata/consumer_config.yml"
+const mockProviderConfigPath = "./testdata/provider_config.yml"
+
 func TestConfigLoader(t *testing.T) {
-	conPath, err := filepath.Abs("./testdata/consumer_config.yml")
+	conPath, err := filepath.Abs(mockConsumerConfigPath)
 	assert.NoError(t, err)
-	proPath, err := filepath.Abs("./testdata/provider_config.yml")
+	proPath, err := filepath.Abs(mockProviderConfigPath)
 	assert.NoError(t, err)
 
 	assert.Nil(t, consumerConfig)
@@ -82,7 +85,8 @@ func TestLoad(t *testing.T) {
 
 	conServices = map[string]common.RPCService{}
 	proServices = map[string]common.RPCService{}
-	common.ServiceMap.UnRegister("mock", "MockService")
+	err := common.ServiceMap.UnRegister("com.MockService", "mock", "MockService")
+	assert.Nil(t, err)
 	consumerConfig = nil
 	providerConfig = nil
 }
@@ -110,7 +114,7 @@ func TestLoadWithSingleReg(t *testing.T) {
 
 	conServices = map[string]common.RPCService{}
 	proServices = map[string]common.RPCService{}
-	common.ServiceMap.UnRegister("mock", "MockService")
+	common.ServiceMap.UnRegister("com.MockService", "mock", "MockService")
 	consumerConfig = nil
 	providerConfig = nil
 }
@@ -139,7 +143,7 @@ func TestWithNoRegLoad(t *testing.T) {
 
 	conServices = map[string]common.RPCService{}
 	proServices = map[string]common.RPCService{}
-	common.ServiceMap.UnRegister("mock", "MockService")
+	common.ServiceMap.UnRegister("com.MockService", "mock", "MockService")
 	consumerConfig = nil
 	providerConfig = nil
 }
@@ -151,7 +155,7 @@ func TestConfigLoaderWithConfigCenter(t *testing.T) {
 
 	conPath, err := filepath.Abs("./testdata/consumer_config_with_configcenter.yml")
 	assert.NoError(t, err)
-	proPath, err := filepath.Abs("./testdata/provider_config.yml")
+	proPath, err := filepath.Abs(mockProviderConfigPath)
 	assert.NoError(t, err)
 
 	assert.Nil(t, consumerConfig)
@@ -204,7 +208,7 @@ func TestConfigLoaderWithConfigCenterSingleRegistry(t *testing.T) {
 
 	conPath, err := filepath.Abs("./testdata/consumer_config_with_configcenter.yml")
 	assert.NoError(t, err)
-	proPath, err := filepath.Abs("./testdata/provider_config.yml")
+	proPath, err := filepath.Abs(mockProviderConfigPath)
 	assert.NoError(t, err)
 
 	assert.Nil(t, consumerConfig)

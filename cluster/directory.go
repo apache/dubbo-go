@@ -22,6 +22,7 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
+// Directory
 // Extension - Directory
 type Directory interface {
 	common.Node

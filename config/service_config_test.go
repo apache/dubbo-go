@@ -22,6 +22,11 @@ import (
 )
 
 import (
+	gxnet "github.com/dubbogo/gost/net"
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"github.com/apache/dubbo-go/common/extension"
 )
 
@@ -72,6 +77,30 @@ func doInitProvider() {
 			"MockService": {
 				InterfaceName: "com.MockService",
 				Protocol:      "mock",
+				Registry:      "shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2",
+				Cluster:       "failover",
+				Loadbalance:   "random",
+				Retries:       "3",
+				Group:         "huadong_idc",
+				Version:       "1.0.0",
+				Methods: []*MethodConfig{
+					{
+						Name:        "GetUser",
+						Retries:     "2",
+						Loadbalance: "random",
+						Weight:      200,
+					},
+					{
+						Name:        "GetUser1",
+						Retries:     "2",
+						Loadbalance: "random",
+						Weight:      200,
+					},
+				},
+			},
+			"MockServiceNoRightProtocol": {
+				InterfaceName: "com.MockService",
+				Protocol:      "mock1",
 				Registry:      "shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2",
 				Cluster:       "failover",
 				Loadbalance:   "random",
@@ -154,7 +183,7 @@ func doInitProviderWithSingleRegistry() {
 	}
 }
 
-func Test_Export(t *testing.T) {
+func TestExport(t *testing.T) {
 	doInitProvider()
 	extension.SetProtocol("registry", GetProtocol)
 
@@ -164,4 +193,36 @@ func Test_Export(t *testing.T) {
 		service.Export()
 	}
 	providerConfig = nil
+}
+
+func TestgetRandomPort(t *testing.T) {
+	protocolConfigs := make([]*ProtocolConfig, 0, 3)
+
+	ip, err := gxnet.GetLocalIP()
+	protocolConfigs = append(protocolConfigs, &ProtocolConfig{
+		Ip: ip,
+	})
+	protocolConfigs = append(protocolConfigs, &ProtocolConfig{
+		Ip: ip,
+	})
+	protocolConfigs = append(protocolConfigs, &ProtocolConfig{
+		Ip: ip,
+	})
+	assert.NoError(t, err)
+	ports := getRandomPort(protocolConfigs)
+
+	assert.Equal(t, ports.Len(), len(protocolConfigs))
+
+	front := ports.Front()
+	for {
+		if front == nil {
+			break
+		}
+		t.Logf("port:%v", front.Value)
+		front = front.Next()
+	}
+
+	protocolConfigs = make([]*ProtocolConfig, 0, 3)
+	ports = getRandomPort(protocolConfigs)
+	assert.Equal(t, ports.Len(), len(protocolConfigs))
 }

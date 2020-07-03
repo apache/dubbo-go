@@ -1,0 +1,88 @@
+# dubbo server yaml configure file
+
+filter: ""
+
+config_type:
+  rest: "rest"
+
+# application config
+application:
+  organization : "ikurento.com"
+  name : "BDTService"
+  module : "dubbogo user-info server"
+  version : "0.0.1"
+  owner : "ZX"
+  environment : "dev"
+
+registries :
+  "hangzhouzk":
+    protocol: "zookeeper"
+    timeout	: "3s"
+    address: "127.0.0.1:2181"
+    username: ""
+    password: ""
+  "shanghaizk":
+    protocol: "zookeeper"
+    timeout	: "3s"
+    address: "127.0.0.1:2182"
+    username: ""
+    password: ""
+
+rest_server: "go-restful"
+rest_produces: "*/*"
+rest_consumes: "*/*"
+
+services:
+  "UserProvider":
+    registry: "hangzhouzk,shanghaizk"
+    filter: ""
+    # the name of limiter
+    tps.limiter: "default"
+    # the time unit of interval is ms
+    tps.limit.interval: 60000
+    tps.limit.rate: 200
+    # the name of strategy
+    tps.limit.strategy: "slidingWindow"
+    # the name of RejectedExecutionHandler
+    tps.limit.rejected.handler: "default"
+    # the concurrent request limitation of this service
+    # if the value < 0, it will not be limited.
+    execute.limit: "200"
+    # the name of RejectedExecutionHandler
+    execute.limit.rejected.handler: "default"
+    protocol : "rest"
+    # equivalent to interface of dubbo.xml
+    interface : "com.ikurento.user.UserProvider"
+    loadbalance: "random"
+    version: "1.0"
+    group: "as"
+    warmup: "100"
+    cluster: "failover"
+    rest_server: "go-restful1"
+    rest_produces: "*/*"
+    rest_consumes: "*/*"
+    methods:
+      - name: "GetUser"
+        retries: 1
+        loadbalance: "random"
+        # the concurrent request limitation of this method
+        # if the value < 0, it will not be limited.
+        execute.limit: "200"
+        # the name of RejectedExecutionHandler
+        execute.limit.rejected.handler: "default"
+        rest_query_params: "1:userid,2:username"
+        rest_headers: "3:age"
+        rest_path_params: "4:time,2:name"
+        rest_body: 0
+        rest_produces: "application/xml"
+        rest_consumes: "application/xml"
+
+protocols:
+    "rest":
+      name: "rest"
+      ip : "127.0.0.1"
+      port : 20000
+
+
+
+

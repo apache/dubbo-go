@@ -19,18 +19,20 @@ package extension
 
 import (
 	"github.com/apache/dubbo-go/filter"
-	"github.com/apache/dubbo-go/filter/common"
 )
 
 var (
 	filters                  = make(map[string]func() filter.Filter)
-	rejectedExecutionHandler = make(map[string]func() common.RejectedExecutionHandler)
+	rejectedExecutionHandler = make(map[string]func() filter.RejectedExecutionHandler)
 )
 
+// SetFilter sets the filter extension with @name
+// For example: hystrix/metrics/token/tracing/limit/...
 func SetFilter(name string, v func() filter.Filter) {
 	filters[name] = v
 }
 
+// GetFilter finds the filter extension with @name
 func GetFilter(name string) filter.Filter {
 	if filters[name] == nil {
 		panic("filter for " + name + " is not existing, make sure you have imported the package.")
@@ -38,11 +40,13 @@ func GetFilter(name string) filter.Filter {
 	return filters[name]()
 }
 
-func SetRejectedExecutionHandler(name string, creator func() common.RejectedExecutionHandler) {
+// SetRejectedExecutionHandler sets the RejectedExecutionHandler with @name
+func SetRejectedExecutionHandler(name string, creator func() filter.RejectedExecutionHandler) {
 	rejectedExecutionHandler[name] = creator
 }
 
-func GetRejectedExecutionHandler(name string) common.RejectedExecutionHandler {
+// GetRejectedExecutionHandler finds the RejectedExecutionHandler with @name
+func GetRejectedExecutionHandler(name string) filter.RejectedExecutionHandler {
 	creator, ok := rejectedExecutionHandler[name]
 	if !ok {
 		panic("RejectedExecutionHandler for " + name + " is not existing, make sure you have import the package " +

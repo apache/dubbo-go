@@ -24,7 +24,7 @@ import (
 )
 
 import (
-	"github.com/samuel/go-zookeeper/zk"
+	"github.com/dubbogo/go-zookeeper/zk"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -106,7 +106,6 @@ func TestCreateDelete(t *testing.T) {
 	assert.NoError(t, err)
 	err2 := z.Delete("/test1/test2/test3/test4")
 	assert.NoError(t, err2)
-	//verifyEventOrder(t, event, []zk.EventType{zk.EventNodeCreated}, "event channel")
 }
 
 func TestRegisterTemp(t *testing.T) {
@@ -132,4 +131,13 @@ func TestRegisterTempSeq(t *testing.T) {
 	assert.Equal(t, "/test1/test2/test3/0000000000", tmpath)
 	states := []zk.State{zk.StateConnecting, zk.StateConnected, zk.StateHasSession}
 	verifyEventStateOrder(t, event, states, "event channel")
+}
+
+func Test_UnregisterEvent(t *testing.T) {
+	client := &ZookeeperClient{}
+	client.eventRegistry = make(map[string][]*chan struct{})
+	array := []*chan struct{}{}
+	array = append(array, new(chan struct{}))
+	client.eventRegistry["test"] = array
+	client.UnregisterEvent("test", new(chan struct{}))
 }
