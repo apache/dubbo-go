@@ -154,7 +154,7 @@ func (suite *ClientTestSuite) TestClientValid() {
 	c := suite.client
 	t := suite.T()
 
-	if c.Valid() != true {
+	if !c.Valid() {
 		t.Fatal("client is not valid")
 	}
 	c.Close()
@@ -174,7 +174,7 @@ func (suite *ClientTestSuite) TestClientDone() {
 
 	c.Wait.Wait()
 
-	if c.Valid() == true {
+	if c.Valid() {
 		suite.T().Fatal("client should be invalid then")
 	}
 }

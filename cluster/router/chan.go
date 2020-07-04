@@ -15,25 +15,11 @@
  * limitations under the License.
  */
 
-package extension
+package router
 
-import (
-	"github.com/apache/dubbo-go/protocol/rest/client"
-)
-
-var (
-	restClients = make(map[string]func(restOptions *client.RestOptions) client.RestClient, 8)
-)
-
-// SetRestClient sets the RestClient with @name
-func SetRestClient(name string, fun func(_ *client.RestOptions) client.RestClient) {
-	restClients[name] = fun
-}
-
-// GetNewRestClient finds the RestClient with @name
-func GetNewRestClient(name string, restOptions *client.RestOptions) client.RestClient {
-	if restClients[name] == nil {
-		panic("restClient for " + name + " is not existing, make sure you have import the package.")
-	}
-	return restClients[name](restOptions)
+// Chain
+type Chain interface {
+	router
+	// AddRouters Add routers
+	AddRouters([]PriorityRouter)
 }
