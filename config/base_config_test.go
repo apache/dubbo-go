@@ -33,84 +33,95 @@ import (
 	_ "github.com/apache/dubbo-go/config_center/apollo"
 )
 
-func Test_refresh(t *testing.T) {
+func getMockMap() map[string]string {
+	baseMockMap := map[string]string{
+		"dubbo.registries.shanghai_reg1.protocol":             "mock100",
+		"dubbo.reference.com.MockService.MockService.retries": "10",
+		"dubbo.com.MockService.MockService.GetUser.retries":   "10",
+		"dubbo.consumer.check":                                "false",
+		"dubbo.application.name":                              "dubbo",
+	}
+	return baseMockMap
+}
+
+var baseAppConfig = &ApplicationConfig{
+	Organization: "dubbo_org",
+	Name:         "dubbo",
+	Module:       "module",
+	Version:      "2.6.0",
+	Owner:        "dubbo",
+	Environment:  "test",
+}
+
+var baseRegistries = map[string]*RegistryConfig{
+	"shanghai_reg2": {
+		Protocol:   "mock",
+		TimeoutStr: "2s",
+		Group:      "shanghai_idc",
+		Address:    "127.0.0.2:2181",
+		Username:   "user1",
+		Password:   "pwd1",
+	},
+	"hangzhou_reg1": {
+		Protocol:   "mock",
+		TimeoutStr: "2s",
+		Group:      "hangzhou_idc",
+		Address:    "127.0.0.3:2181",
+		Username:   "user1",
+		Password:   "pwd1",
+	},
+	"hangzhou_reg2": {
+		Protocol:   "mock",
+		TimeoutStr: "2s",
+		Group:      "hangzhou_idc",
+		Address:    "127.0.0.4:2181",
+		Username:   "user1",
+		Password:   "pwd1",
+	},
+}
+
+var baseMockRef = map[string]*ReferenceConfig{
+	"MockService": {
+		InterfaceName: "com.MockService",
+		Protocol:      "mock",
+		Cluster:       "failover",
+		Loadbalance:   "random",
+		Retries:       "3",
+		Group:         "huadong_idc",
+		Version:       "1.0.0",
+		Methods: []*MethodConfig{
+			{
+				InterfaceId:   "MockService",
+				InterfaceName: "com.MockService",
+				Name:          "GetUser",
+				Retries:       "2",
+				Loadbalance:   "random",
+			},
+			{
+				InterfaceId:   "MockService",
+				InterfaceName: "com.MockService",
+				Name:          "GetUser1",
+				Retries:       "2",
+				Loadbalance:   "random",
+			},
+		},
+	},
+}
+
+func TestRefresh(t *testing.T) {
 	c := &BaseConfig{}
-	mockMap := map[string]string{}
-	mockMap["dubbo.registries.shanghai_reg1.protocol"] = "mock100"
-	mockMap["dubbo.reference.com.MockService.MockService.retries"] = "10"
-	mockMap["dubbo.com.MockService.MockService.GetUser.retries"] = "10"
-	mockMap["dubbo.consumer.check"] = "false"
-	mockMap["dubbo.application.name"] = "dubbo"
+	mockMap := getMockMap()
 	mockMap["dubbo.shutdown.timeout"] = "12s"
 
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
 
 	father := &ConsumerConfig{
-		Check: &[]bool{true}[0],
+		Check:             &[]bool{true}[0],
 		BaseConfig: BaseConfig{
-			ApplicationConfig: &ApplicationConfig{
-				Organization: "dubbo_org",
-				Name:         "dubbo",
-				Module:       "module",
-				Version:      "2.6.0",
-				Owner:        "dubbo",
-				Environment:  "test"},
+			ApplicationConfig:baseAppConfig,
 		},
-
-		Registries: map[string]*RegistryConfig{
-			"shanghai_reg2": {
-				Protocol:   "mock",
-				TimeoutStr: "2s",
-				Group:      "shanghai_idc",
-				Address:    "127.0.0.2:2181",
-				Username:   "user1",
-				Password:   "pwd1",
-			},
-			"hangzhou_reg1": {
-				Protocol:   "mock",
-				TimeoutStr: "2s",
-				Group:      "hangzhou_idc",
-				Address:    "127.0.0.3:2181",
-				Username:   "user1",
-				Password:   "pwd1",
-			},
-			"hangzhou_reg2": {
-				Protocol:   "mock",
-				TimeoutStr: "2s",
-				Group:      "hangzhou_idc",
-				Address:    "127.0.0.4:2181",
-				Username:   "user1",
-				Password:   "pwd1",
-			},
-		},
-
-		References: map[string]*ReferenceConfig{
-			"MockService": {
-				InterfaceName: "com.MockService",
-				Protocol:      "mock",
-				Cluster:       "failover",
-				Loadbalance:   "random",
-				Retries:       "3",
-				Group:         "huadong_idc",
-				Version:       "1.0.0",
-				Methods: []*MethodConfig{
-					{
-						InterfaceId:   "MockService",
-						InterfaceName: "com.MockService",
-						Name:          "GetUser",
-						Retries:       "2",
-						Loadbalance:   "random",
-					},
-					{
-						InterfaceId:   "MockService",
-						InterfaceName: "com.MockService",
-						Name:          "GetUser1",
-						Retries:       "2",
-						Loadbalance:   "random",
-					},
-				},
-			},
-		},
+		Registries:        baseRegistries,
+		References:        baseMockRef,
 		ShutdownConfig: &ShutdownConfig{
 			Timeout:              "12s",
 			StepTimeout:          "2s",
@@ -130,84 +141,21 @@ func Test_refresh(t *testing.T) {
 	assert.Equal(t, "dubbo", father.ApplicationConfig.Name)
 }
 
-func Test_appExternal_refresh(t *testing.T) {
+func TestAppExternalRefresh(t *testing.T) {
 	c := &BaseConfig{}
-	mockMap := map[string]string{}
-	mockMap["dubbo.registries.shanghai_reg1.protocol"] = "mock100"
-	mockMap["dubbo.reference.com.MockService.MockService.retries"] = "10"
+	mockMap := getMockMap()
 	mockMap["dubbo.reference.com.MockService.retries"] = "5"
-	mockMap["dubbo.com.MockService.MockService.GetUser.retries"] = "10"
-	mockMap["dubbo.consumer.check"] = "false"
-	mockMap["dubbo.application.name"] = "dubbo"
 
 	config.GetEnvInstance().UpdateAppExternalConfigMap(mockMap)
 	mockMap["dubbo.consumer.check"] = "true"
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
 	father := &ConsumerConfig{
-		Check: &[]bool{true}[0],
+		Check:             &[]bool{true}[0],
 		BaseConfig: BaseConfig{
-			ApplicationConfig: &ApplicationConfig{
-				Organization: "dubbo_org",
-				Name:         "dubbo",
-				Module:       "module",
-				Version:      "2.6.0",
-				Owner:        "dubbo",
-				Environment:  "test"},
+			ApplicationConfig:baseAppConfig,
 		},
-
-		Registries: map[string]*RegistryConfig{
-			"shanghai_reg2": {
-				Protocol:   "mock",
-				TimeoutStr: "2s",
-				Group:      "shanghai_idc",
-				Address:    "127.0.0.2:2181",
-				Username:   "user1",
-				Password:   "pwd1",
-			},
-			"hangzhou_reg1": {
-				Protocol:   "mock",
-				TimeoutStr: "2s",
-				Group:      "hangzhou_idc",
-				Address:    "127.0.0.3:2181",
-				Username:   "user1",
-				Password:   "pwd1",
-			},
-			"hangzhou_reg2": {
-				Protocol:   "mock",
-				TimeoutStr: "2s",
-				Group:      "hangzhou_idc",
-				Address:    "127.0.0.4:2181",
-				Username:   "user1",
-				Password:   "pwd1",
-			},
-		},
-		References: map[string]*ReferenceConfig{
-			"MockService": {
-				InterfaceName: "com.MockService",
-				Protocol:      "mock",
-				Cluster:       "failover",
-				Loadbalance:   "random",
-				Retries:       "3",
-				Group:         "huadong_idc",
-				Version:       "1.0.0",
-				Methods: []*MethodConfig{
-					{
-						InterfaceId:   "MockService",
-						InterfaceName: "com.MockService",
-						Name:          "GetUser",
-						Retries:       "2",
-						Loadbalance:   "random",
-					},
-					{
-						InterfaceId:   "MockService",
-						InterfaceName: "com.MockService",
-						Name:          "GetUser1",
-						Retries:       "2",
-						Loadbalance:   "random",
-					},
-				},
-			},
-		},
+		Registries:        baseRegistries,
+		References:        baseMockRef,
 	}
 
 	c.SetFatherConfig(father)
@@ -220,84 +168,22 @@ func Test_appExternal_refresh(t *testing.T) {
 	assert.Equal(t, "dubbo", father.ApplicationConfig.Name)
 }
 
-func Test_appExternalWithoutId_refresh(t *testing.T) {
+func TestAppExternalWithoutIDRefresh(t *testing.T) {
 	c := &BaseConfig{}
-	mockMap := map[string]string{}
-	mockMap["dubbo.registries.shanghai_reg1.protocol"] = "mock100"
+	mockMap := getMockMap()
+	delete(mockMap, "dubbo.reference.com.MockService.MockService.retries")
 	mockMap["dubbo.reference.com.MockService.retries"] = "10"
-	mockMap["dubbo.com.MockService.MockService.GetUser.retries"] = "10"
-	mockMap["dubbo.consumer.check"] = "false"
-	mockMap["dubbo.application.name"] = "dubbo"
 
 	config.GetEnvInstance().UpdateAppExternalConfigMap(mockMap)
 	mockMap["dubbo.consumer.check"] = "true"
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
 	father := &ConsumerConfig{
-		Check: &[]bool{true}[0],
+		Check:             &[]bool{true}[0],
 		BaseConfig: BaseConfig{
-			ApplicationConfig: &ApplicationConfig{
-				Organization: "dubbo_org",
-				Name:         "dubbo",
-				Module:       "module",
-				Version:      "2.6.0",
-				Owner:        "dubbo",
-				Environment:  "test"},
+			ApplicationConfig:baseAppConfig,
 		},
-
-		Registries: map[string]*RegistryConfig{
-			"shanghai_reg2": {
-				Protocol:   "mock",
-				TimeoutStr: "2s",
-				Group:      "shanghai_idc",
-				Address:    "127.0.0.2:2181",
-				Username:   "user1",
-				Password:   "pwd1",
-			},
-			"hangzhou_reg1": {
-				Protocol:   "mock",
-				TimeoutStr: "2s",
-				Group:      "hangzhou_idc",
-				Address:    "127.0.0.3:2181",
-				Username:   "user1",
-				Password:   "pwd1",
-			},
-			"hangzhou_reg2": {
-				Protocol:   "mock",
-				TimeoutStr: "2s",
-				Group:      "hangzhou_idc",
-				Address:    "127.0.0.4:2181",
-				Username:   "user1",
-				Password:   "pwd1",
-			},
-		},
-
-		References: map[string]*ReferenceConfig{
-			"MockService": {
-				InterfaceName: "com.MockService",
-				Protocol:      "mock",
-				Cluster:       "failover",
-				Loadbalance:   "random",
-				Retries:       "3",
-				Group:         "huadong_idc",
-				Version:       "1.0.0",
-				Methods: []*MethodConfig{
-					{
-						InterfaceId:   "MockService",
-						InterfaceName: "com.MockService",
-						Name:          "GetUser",
-						Retries:       "3",
-						Loadbalance:   "random",
-					},
-					{
-						InterfaceId:   "MockService",
-						InterfaceName: "com.MockService",
-						Name:          "GetUser1",
-						Retries:       "2",
-						Loadbalance:   "random",
-					},
-				},
-			},
-		},
+		Registries:        baseRegistries,
+		References:        baseMockRef,
 	}
 
 	c.SetFatherConfig(father)
@@ -310,7 +196,7 @@ func Test_appExternalWithoutId_refresh(t *testing.T) {
 	assert.Equal(t, "dubbo", father.ApplicationConfig.Name)
 }
 
-func Test_refresh_singleRegistry(t *testing.T) {
+func TestRefreshSingleRegistry(t *testing.T) {
 	c := &BaseConfig{}
 	mockMap := map[string]string{}
 	mockMap["dubbo.registry.address"] = "mock100://127.0.0.1:2181"
@@ -322,48 +208,13 @@ func Test_refresh_singleRegistry(t *testing.T) {
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
 
 	father := &ConsumerConfig{
-		Check: &[]bool{true}[0],
+		Check:             &[]bool{true}[0],
 		BaseConfig: BaseConfig{
-
-			ApplicationConfig: &ApplicationConfig{
-				Organization: "dubbo_org",
-				Name:         "dubbo",
-				Module:       "module",
-				Version:      "2.6.0",
-				Owner:        "dubbo",
-				Environment:  "test"},
+			ApplicationConfig:    baseAppConfig,
 		},
-
-		Registries: map[string]*RegistryConfig{},
-		Registry:   &RegistryConfig{},
-
-		References: map[string]*ReferenceConfig{
-			"MockService": {
-				InterfaceName: "com.MockService",
-				Protocol:      "mock",
-				Cluster:       "failover",
-				Loadbalance:   "random",
-				Retries:       "3",
-				Group:         "huadong_idc",
-				Version:       "1.0.0",
-				Methods: []*MethodConfig{
-					{
-						InterfaceId:   "MockService",
-						InterfaceName: "com.MockService",
-						Name:          "GetUser",
-						Retries:       "2",
-						Loadbalance:   "random",
-					},
-					{
-						InterfaceId:   "MockService",
-						InterfaceName: "com.MockService",
-						Name:          "GetUser1",
-						Retries:       "2",
-						Loadbalance:   "random",
-					},
-				},
-			},
-		},
+		Registries:        map[string]*RegistryConfig{},
+		Registry:          &RegistryConfig{},
+		References:        baseMockRef,
 	}
 
 	c.SetFatherConfig(father)
@@ -376,14 +227,11 @@ func Test_refresh_singleRegistry(t *testing.T) {
 	assert.Equal(t, "dubbo", father.ApplicationConfig.Name)
 }
 
-func Test_refreshProvider(t *testing.T) {
+func TestRefreshProvider(t *testing.T) {
 	c := &BaseConfig{}
-	mockMap := map[string]string{}
-	mockMap["dubbo.registries.shanghai_reg1.protocol"] = "mock100"
+	mockMap := getMockMap()
+	delete(mockMap, "dubbo.reference.com.MockService.MockService.retries")
 	mockMap["dubbo.service.com.MockService.MockService.retries"] = "10"
-	mockMap["dubbo.com.MockService.MockService.GetUser.retries"] = "10"
-	mockMap["dubbo.consumer.check"] = "false"
-	mockMap["dubbo.application.name"] = "dubbo"
 	mockMap["dubbo.protocols.jsonrpc1.name"] = "jsonrpc"
 	mockMap["dubbo.protocols.jsonrpc1.ip"] = "127.0.0.1"
 	mockMap["dubbo.protocols.jsonrpc1.port"] = "20001"
@@ -392,42 +240,9 @@ func Test_refreshProvider(t *testing.T) {
 
 	father := &ProviderConfig{
 		BaseConfig: BaseConfig{
-			ApplicationConfig: &ApplicationConfig{
-				Organization: "dubbo_org",
-				Name:         "dubbo",
-				Module:       "module",
-				Version:      "2.6.0",
-				Owner:        "dubbo",
-				Environment:  "test"},
+			ApplicationConfig: baseAppConfig,
 		},
-
-		Registries: map[string]*RegistryConfig{
-			"shanghai_reg2": {
-				Protocol:   "mock",
-				TimeoutStr: "2s",
-				Group:      "shanghai_idc",
-				Address:    "127.0.0.2:2181",
-				Username:   "user1",
-				Password:   "pwd1",
-			},
-			"hangzhou_reg1": {
-				Protocol:   "mock",
-				TimeoutStr: "2s",
-				Group:      "hangzhou_idc",
-				Address:    "127.0.0.3:2181",
-				Username:   "user1",
-				Password:   "pwd1",
-			},
-			"hangzhou_reg2": {
-				Protocol:   "mock",
-				TimeoutStr: "2s",
-				Group:      "hangzhou_idc",
-				Address:    "127.0.0.4:2181",
-				Username:   "user1",
-				Password:   "pwd1",
-			},
-		},
-
+		Registries:        baseRegistries,
 		Services: map[string]*ServiceConfig{
 			"MockService": {
 				InterfaceName: "com.MockService",
@@ -445,7 +260,8 @@ func Test_refreshProvider(t *testing.T) {
 						Retries:       "2",
 						Loadbalance:   "random",
 					},
-					{InterfaceId: "MockService",
+					{
+						InterfaceId:   "MockService",
 						InterfaceName: "com.MockService",
 						Name:          "GetUser1",
 						Retries:       "2",
@@ -466,7 +282,7 @@ func Test_refreshProvider(t *testing.T) {
 	assert.Equal(t, "20001", father.Protocols["jsonrpc1"].Port)
 }
 
-func Test_startConfigCenter(t *testing.T) {
+func TestStartConfigCenter(t *testing.T) {
 	extension.SetConfigCenterFactory("mock", func() config_center.DynamicConfigurationFactory {
 		return &config_center.MockDynamicConfigurationFactory{}
 	})
@@ -483,7 +299,7 @@ func Test_startConfigCenter(t *testing.T) {
 	assert.Equal(t, "ikurento.com", v)
 }
 
-func Test_initializeStruct(t *testing.T) {
+func TestInitializeStruct(t *testing.T) {
 	testConsumerConfig := &ConsumerConfig{}
 	tp := reflect.TypeOf(ConsumerConfig{})
 	v := reflect.New(tp)

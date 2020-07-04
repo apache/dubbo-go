@@ -18,7 +18,7 @@
 package condition
 
 import (
-	"strconv"
+	"fmt"
 	"testing"
 	"time"
 )
@@ -31,6 +31,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/config"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/remoting"
@@ -38,7 +39,15 @@ import (
 )
 
 const (
-	path = "/dubbo/config/dubbo/test-condition.condition-router"
+	routerPath    = "/dubbo/config/dubbo/test-condition.condition-router"
+	routerLocalIP = "127.0.0.1"
+	routerZk      = "zookeeper"
+	routerKey     = "test-condition"
+)
+
+var (
+	zkFormat        = "zookeeper://%s:%d"
+	conditionFormat = "condition://%s/com.foo.BarService"
 )
 
 func TestNewAppRouter(t *testing.T) {
@@ -51,22 +60,22 @@ conditions:
 `
 	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
-	err = z.Create(path)
+	err = z.Create(routerPath)
 	assert.NoError(t, err)
 
-	_, err = z.Conn.Set(path, []byte(testYML), 0)
+	_, err = z.Conn.Set(routerPath, []byte(testYML), 0)
 	assert.NoError(t, err)
 	defer ts.Stop()
 	defer z.Close()
 
-	zkUrl, _ := common.NewURL("zookeeper://127.0.0.1:" + strconv.Itoa(ts.Servers[0].Port))
-	configuration, err := extension.GetConfigCenterFactory("zookeeper").GetDynamicConfiguration(&zkUrl)
+	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, routerLocalIP, ts.Servers[0].Port))
+	configuration, err := extension.GetConfigCenterFactory(routerZk).GetDynamicConfiguration(&zkUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, configuration)
 
-	appRouteURL := getAppRouteURL("test-condition")
+	appRouteURL := getAppRouteURL(routerKey)
 	appRouter, err := NewAppRouter(appRouteURL)
 	assert.Nil(t, err)
 	assert.NotNil(t, appRouter)
@@ -97,22 +106,22 @@ conditions:
 `
 	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
-	err = z.Create(path)
+	err = z.Create(routerPath)
 	assert.NoError(t, err)
 
-	_, err = z.Conn.Set(path, []byte(testYML), 0)
+	_, err = z.Conn.Set(routerPath, []byte(testYML), 0)
 	assert.NoError(t, err)
 	defer ts.Stop()
 	defer z.Close()
 
-	zkUrl, _ := common.NewURL("zookeeper://127.0.0.1:" + strconv.Itoa(ts.Servers[0].Port))
-	configuration, err := extension.GetConfigCenterFactory("zookeeper").GetDynamicConfiguration(&zkUrl)
+	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, routerLocalIP, ts.Servers[0].Port))
+	configuration, err := extension.GetConfigCenterFactory(routerZk).GetDynamicConfiguration(&zkUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, configuration)
 
-	appRouteURL := getAppRouteURL("test-condition")
+	appRouteURL := getAppRouteURL(routerKey)
 	appRouter, err := NewAppRouter(appRouteURL)
 	assert.Nil(t, err)
 	assert.NotNil(t, appRouter)
@@ -134,22 +143,22 @@ conditions:
 `
 	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
-	err = z.Create(path)
+	err = z.Create(routerPath)
 	assert.NoError(t, err)
 
-	_, err = z.Conn.Set(path, []byte(testYML), 0)
+	_, err = z.Conn.Set(routerPath, []byte(testYML), 0)
 	assert.NoError(t, err)
 	defer ts.Stop()
 	defer z.Close()
 
-	zkUrl, _ := common.NewURL("zookeeper://127.0.0.1:" + strconv.Itoa(ts.Servers[0].Port))
-	configuration, err := extension.GetConfigCenterFactory("zookeeper").GetDynamicConfiguration(&zkUrl)
+	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, routerLocalIP, ts.Servers[0].Port))
+	configuration, err := extension.GetConfigCenterFactory(routerZk).GetDynamicConfiguration(&zkUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, configuration)
 
-	appRouteURL := getAppRouteURL("test-condition")
+	appRouteURL := getAppRouteURL(routerKey)
 	appRouter, err := NewAppRouter(appRouteURL)
 	assert.Nil(t, err)
 	assert.NotNil(t, appRouter)
@@ -175,7 +184,7 @@ conditions:
 }
 
 func getAppRouteURL(applicationKey string) *common.URL {
-	url, _ := common.NewURL("condition://0.0.0.0/com.foo.BarService")
+	url, _ := common.NewURL(fmt.Sprintf(conditionFormat, constant.ANYHOST_VALUE))
 	url.AddParam("application", applicationKey)
 	url.AddParam("force", "true")
 	return &url

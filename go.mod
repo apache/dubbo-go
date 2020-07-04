@@ -3,14 +3,16 @@ module github.com/apache/dubbo-go
 require (
 	github.com/Workiva/go-datastructures v1.0.50
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
-	github.com/apache/dubbo-go-hessian2 v1.5.0
+	github.com/aliyun/aliyun-oss-go-sdk v0.0.0-20190307165228-86c17b95fcd5 // indirect
+	github.com/apache/dubbo-go-hessian2 v1.6.1-0.20200623062814-707fde850279
+	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/coreos/bbolt v1.3.3 // indirect
 	github.com/coreos/etcd v3.3.13+incompatible
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f // indirect
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
 	github.com/creasty/defaults v1.3.0
-	github.com/dubbogo/getty v1.3.5
+	github.com/dubbogo/getty v1.3.7
 	github.com/dubbogo/go-zookeeper v1.0.1
 	github.com/dubbogo/gost v1.9.0
 	github.com/emicklei/go-restful/v3 v3.0.0
@@ -44,8 +46,9 @@ require (
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5 // indirect
 	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
 	github.com/zouyx/agollo v0.0.0-20191114083447-dde9fc9f35b8
-	go.uber.org/atomic v1.4.0
-	go.uber.org/zap v1.10.0
+	go.etcd.io/bbolt v1.3.4 // indirect
+	go.uber.org/atomic v1.6.0
+	go.uber.org/zap v1.15.0
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect
 	google.golang.org/grpc v1.22.1
 	gopkg.in/yaml.v2 v2.2.2

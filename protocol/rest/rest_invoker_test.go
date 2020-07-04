@@ -39,7 +39,15 @@ import (
 	"github.com/apache/dubbo-go/protocol/rest/server/server_impl"
 )
 
-func TestRestInvoker_Invoke(t *testing.T) {
+const (
+	mockRestCommonUrl = "rest://127.0.0.1:8877/com.ikurento.user.UserProvider?anyhost=true&" +
+		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
+		"side=provider&timeout=3000&timestamp=1556509797245"
+)
+
+func TestRestInvokerInvoke(t *testing.T) {
 	// Refer
 	proto := GetRestProtocol()
 	defer proto.Destroy()
@@ -55,11 +63,7 @@ func TestRestInvoker_Invoke(t *testing.T) {
 		chain.ProcessFilter(request, response)
 	})
 
-	url, err := common.NewURL("rest://127.0.0.1:8877/com.ikurento.user.UserProvider?anyhost=true&" +
-		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
-		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
-		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
-		"side=provider&timeout=3000&timestamp=1556509797245")
+	url, err := common.NewURL(mockRestCommonUrl)
 	assert.NoError(t, err)
 	_, err = common.ServiceMap.Register("UserProvider", url.Protocol, &UserProvider{})
 	assert.NoError(t, err)
