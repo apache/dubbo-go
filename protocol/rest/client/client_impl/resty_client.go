@@ -50,7 +50,7 @@ func NewRestyClient(restOption *client.RestOptions) client.RestClient {
 	client := resty.New()
 	client.SetTransport(
 		&http.Transport{
-			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			DialContext: func(_ context.Context, network, addr string) (net.Conn, error) {
 				c, err := net.DialTimeout(network, addr, restOption.ConnectTimeout)
 				if err != nil {
 					return nil, err

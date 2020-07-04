@@ -29,18 +29,21 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
+const (
+	fileTestTag = `priority: 100
+force: true`
+)
+
 func TestNewFileTagRouter(t *testing.T) {
-	router, e := NewFileTagRouter([]byte(`priority: 100
-force: true`))
+	router, e := NewFileTagRouter([]byte(fileTestTag))
 	assert.Nil(t, e)
 	assert.NotNil(t, router)
 	assert.Equal(t, 100, router.routerRule.Priority)
 	assert.Equal(t, true, router.routerRule.Force)
 }
 
-func TestFileTagRouter_URL(t *testing.T) {
-	router, e := NewFileTagRouter([]byte(`priority: 100
-force: true`))
+func TestFileTagRouterURL(t *testing.T) {
+	router, e := NewFileTagRouter([]byte(fileTestTag))
 	assert.Nil(t, e)
 	assert.NotNil(t, router)
 	url := router.URL()
@@ -52,9 +55,8 @@ force: true`))
 
 }
 
-func TestFileTagRouter_Priority(t *testing.T) {
-	router, e := NewFileTagRouter([]byte(`priority: 100
-force: true`))
+func TestFileTagRouterPriority(t *testing.T) {
+	router, e := NewFileTagRouter([]byte(fileTestTag))
 	assert.Nil(t, e)
 	assert.NotNil(t, router)
 	priority := router.Priority()
