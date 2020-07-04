@@ -26,6 +26,7 @@ import (
 
 import (
 	"github.com/go-co-op/gocron"
+	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
 )
 
@@ -234,29 +235,38 @@ func (mr *MetadataReport) RemoveServiceMetadata(identifier *identifier.ServiceMe
 }
 
 // GetExportedURLs will delegate to call remote metadata's sdk to get exported urls
-func (mr *MetadataReport) GetExportedURLs(identifier *identifier.ServiceMetadataIdentifier) []string {
+func (mr *MetadataReport) GetExportedURLs(identifier *identifier.ServiceMetadataIdentifier) ([]string, error) {
 	report := instance.GetMetadataReportInstance()
 	return report.GetExportedURLs(identifier)
 }
 
 // SaveSubscribedData will delegate to call remote metadata's sdk to save subscribed data
 func (mr *MetadataReport) SaveSubscribedData(identifier *identifier.SubscriberMetadataIdentifier, urls []common.URL) error {
+	urlStrList := make([]string, 0, len(urls))
+	for _, url := range urls {
+		urlStrList = append(urlStrList, url.String())
+	}
+	bytes, err := json.Marshal(urlStrList)
+	if err != nil {
+		return perrors.WithMessage(err, "Could not convert the array to json")
+	}
+
 	report := instance.GetMetadataReportInstance()
 	if mr.syncReport {
-		return report.SaveSubscribedData(identifier, urls)
+		return report.SaveSubscribedData(identifier, string(bytes))
 	}
-	go report.SaveSubscribedData(identifier, urls)
+	go report.SaveSubscribedData(identifier, string(bytes))
 	return nil
 }
 
 // GetSubscribedURLs will delegate to call remote metadata's sdk to get subscribed urls
-func (MetadataReport) GetSubscribedURLs(identifier *identifier.SubscriberMetadataIdentifier) []string {
+func (MetadataReport) GetSubscribedURLs(identifier *identifier.SubscriberMetadataIdentifier) ([]string, error) {
 	report := instance.GetMetadataReportInstance()
 	return report.GetSubscribedURLs(identifier)
 }
 
 // GetServiceDefinition will delegate to call remote metadata's sdk to get service definitions
-func (MetadataReport) GetServiceDefinition(identifier *identifier.MetadataIdentifier) string {
+func (MetadataReport) GetServiceDefinition(identifier *identifier.MetadataIdentifier) (string, error) {
 	report := instance.GetMetadataReportInstance()
 	return report.GetServiceDefinition(identifier)
 }

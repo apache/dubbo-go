@@ -71,7 +71,7 @@ func (m *metadataServiceProxy) PublishServiceDefinition(url common.URL) error {
 }
 
 func (m *metadataServiceProxy) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]interface{}, error) {
-	urls := m.report.GetExportedURLs(&identifier.ServiceMetadataIdentifier{
+	urls, err := m.report.GetExportedURLs(&identifier.ServiceMetadataIdentifier{
 		BaseMetadataIdentifier: identifier.BaseMetadataIdentifier{
 			ServiceInterface: serviceInterface,
 			Version:          version,
@@ -81,6 +81,10 @@ func (m *metadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 		Revision: m.revision,
 		Protocol: protocol,
 	})
+
+	if err != nil {
+		return []interface{}{}, nil
+	}
 	res := make([]common.URL, 0, len(urls))
 	for _, s := range urls {
 		u, err := common.NewURL(s)
@@ -111,7 +115,7 @@ func (m *metadataServiceProxy) GetServiceDefinition(interfaceName string, group 
 			Side:             constant.PROVIDER_PROTOCOL,
 		},
 		Application: m.serviceName,
-	}), nil
+	})
 }
 
 func (m *metadataServiceProxy) GetServiceDefinitionByServiceKey(serviceKey string) (string, error) {
