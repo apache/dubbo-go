@@ -18,7 +18,6 @@
 package nacos
 
 import (
-	"encoding/json"
 	"net/url"
 )
 
@@ -39,19 +38,19 @@ import (
 )
 
 func init() {
-	ins := &nacosMetadataReportFactory{}
+	mf := &nacosMetadataReportFactory{}
 	extension.SetMetadataReportFactory("nacos", func() factory.MetadataReportFactory {
-		return ins
+		return mf
 	})
 }
 
-// nacosMetadataReport is the implementation of MetadataReport based Nacos
+// nacosMetadataReport is the implementation
+// of MetadataReport based on nacos.
 type nacosMetadataReport struct {
 	client config_client.IConfigClient
 }
 
-// StoreProviderMetadata will store the metadata
-// metadata including the basic info of the server, provider info, and other user custom info
+// StoreProviderMetadata stores the metadata.
 func (n *nacosMetadataReport) StoreProviderMetadata(providerIdentifier *identifier.MetadataIdentifier, serviceDefinitions string) error {
 	return n.storeMetadata(vo.ConfigParam{
 		DataId:  providerIdentifier.GetIdentifierKey(),
@@ -60,8 +59,7 @@ func (n *nacosMetadataReport) StoreProviderMetadata(providerIdentifier *identifi
 	})
 }
 
-// StoreConsumerMetadata will store the metadata
-// metadata including the basic info of the server, consumer info, and other user custom info
+// StoreConsumerMetadata stores the metadata.
 func (n *nacosMetadataReport) StoreConsumerMetadata(consumerMetadataIdentifier *identifier.MetadataIdentifier, serviceParameterString string) error {
 	return n.storeMetadata(vo.ConfigParam{
 		DataId:  consumerMetadataIdentifier.GetIdentifierKey(),
@@ -70,8 +68,7 @@ func (n *nacosMetadataReport) StoreConsumerMetadata(consumerMetadataIdentifier *
 	})
 }
 
-// SaveServiceMetadata will store the metadata
-// metadata including the basic info of the server, service info, and other user custom info
+// SaveServiceMetadata saves the metadata.
 func (n *nacosMetadataReport) SaveServiceMetadata(metadataIdentifier *identifier.ServiceMetadataIdentifier, url common.URL) error {
 	return n.storeMetadata(vo.ConfigParam{
 		DataId:  metadataIdentifier.GetIdentifierKey(),
@@ -80,7 +77,7 @@ func (n *nacosMetadataReport) SaveServiceMetadata(metadataIdentifier *identifier
 	})
 }
 
-// RemoveServiceMetadata will remove the service metadata
+// RemoveServiceMetadata removes the metadata.
 func (n *nacosMetadataReport) RemoveServiceMetadata(metadataIdentifier *identifier.ServiceMetadataIdentifier) error {
 	return n.deleteMetadata(vo.ConfigParam{
 		DataId: metadataIdentifier.GetIdentifierKey(),
@@ -88,50 +85,33 @@ func (n *nacosMetadataReport) RemoveServiceMetadata(metadataIdentifier *identifi
 	})
 }
 
-// GetExportedURLs will look up the exported urls.
-// if not found, an empty list will be returned.
-func (n *nacosMetadataReport) GetExportedURLs(metadataIdentifier *identifier.ServiceMetadataIdentifier) []string {
+// GetExportedURLs gets the urls.
+func (n *nacosMetadataReport) GetExportedURLs(metadataIdentifier *identifier.ServiceMetadataIdentifier) ([]string, error) {
 	return n.getConfigAsArray(vo.ConfigParam{
 		DataId: metadataIdentifier.GetIdentifierKey(),
 		Group:  metadataIdentifier.Group,
 	})
 }
 
-// SaveSubscribedData will convert the urlList to json array and then store it
-func (n *nacosMetadataReport) SaveSubscribedData(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier, urlList []common.URL) error {
-	if len(urlList) == 0 {
-		logger.Warnf("The url list is empty")
-		return nil
-	}
-	urlStrList := make([]string, 0, len(urlList))
-
-	for _, e := range urlList {
-		urlStrList = append(urlStrList, e.String())
-	}
-
-	bytes, err := json.Marshal(urlStrList)
-
-	if err != nil {
-		return perrors.WithMessage(err, "Could not convert the array to json")
-	}
+// SaveSubscribedData saves the urls.
+func (n *nacosMetadataReport) SaveSubscribedData(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier, urls string) error {
 	return n.storeMetadata(vo.ConfigParam{
 		DataId:  subscriberMetadataIdentifier.GetIdentifierKey(),
 		Group:   subscriberMetadataIdentifier.Group,
-		Content: string(bytes),
+		Content: urls,
 	})
 }
 
-// GetSubscribedURLs will lookup the url
-// if not found, an empty list will be returned
-func (n *nacosMetadataReport) GetSubscribedURLs(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier) []string {
+// GetSubscribedURLs gets the urls.
+func (n *nacosMetadataReport) GetSubscribedURLs(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier) ([]string, error) {
 	return n.getConfigAsArray(vo.ConfigParam{
 		DataId: subscriberMetadataIdentifier.GetIdentifierKey(),
 		Group:  subscriberMetadataIdentifier.Group,
 	})
 }
 
-// GetServiceDefinition will lookup the service definition
-func (n *nacosMetadataReport) GetServiceDefinition(metadataIdentifier *identifier.MetadataIdentifier) string {
+// GetServiceDefinition gets the service definition.
+func (n *nacosMetadataReport) GetServiceDefinition(metadataIdentifier *identifier.MetadataIdentifier) (string, error) {
 	return n.getConfig(vo.ConfigParam{
 		DataId: metadataIdentifier.GetIdentifierKey(),
 		Group:  metadataIdentifier.Group,
@@ -165,33 +145,38 @@ func (n *nacosMetadataReport) deleteMetadata(param vo.ConfigParam) error {
 
 // getConfigAsArray will read the config and then convert it as an one-element array
 // error or config not found, an empty list will be returned.
-func (n *nacosMetadataReport) getConfigAsArray(param vo.ConfigParam) []string {
-	cfg := n.getConfig(param)
+func (n *nacosMetadataReport) getConfigAsArray(param vo.ConfigParam) ([]string, error) {
 	res := make([]string, 0, 1)
-	if len(cfg) == 0 {
-		return res
+
+	cfg, err := n.getConfig(param)
+	if err != nil || len(cfg) == 0 {
+		return res, err
 	}
+
 	decodeCfg, err := url.QueryUnescape(cfg)
 	if err != nil {
 		logger.Errorf("The config is invalid: %s", cfg)
-		return res
+		return res, err
 	}
+
 	res = append(res, decodeCfg)
-	return res
+	return res, nil
 }
 
 // getConfig will read the config
-func (n *nacosMetadataReport) getConfig(param vo.ConfigParam) string {
+func (n *nacosMetadataReport) getConfig(param vo.ConfigParam) (string, error) {
 	cfg, err := n.client.GetConfig(param)
 	if err != nil {
-		logger.Errorf("Finding the configuration failed: %v, err: %v", param, err)
+		logger.Errorf("Finding the configuration failed: %v", param)
+		return "", err
 	}
-	return cfg
+	return cfg, nil
 }
 
 type nacosMetadataReportFactory struct {
 }
 
+// nolint
 func (n *nacosMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {
 	client, err := nacos.NewNacosConfigClient(url)
 	if err != nil {

@@ -11,7 +11,7 @@ require (
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
 	github.com/creasty/defaults v1.3.0
 	github.com/dubbogo/getty v1.3.5
-	github.com/dubbogo/go-zookeeper v1.0.0
+	github.com/dubbogo/go-zookeeper v1.0.1
 	github.com/dubbogo/gost v1.9.0
 	github.com/emicklei/go-restful/v3 v3.0.0
 	github.com/go-co-op/gocron v0.1.1

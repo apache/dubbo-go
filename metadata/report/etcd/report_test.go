@@ -18,6 +18,7 @@
 package etcd
 
 import (
+	"encoding/json"
 	"net/url"
 	"strconv"
 	"testing"
@@ -86,9 +87,10 @@ func TestEtcdMetadataReport_CRUD(t *testing.T) {
 	assert.Nil(t, err)
 
 	subMi := newSubscribeMetadataIdentifier()
-	urlList := make([]common.URL, 0, 1)
-	urlList = append(urlList, serviceUrl)
-	err = metadataReport.SaveSubscribedData(subMi, urlList)
+	urlList := make([]string, 0, 1)
+	urlList = append(urlList, serviceUrl.String())
+	urls, _ := json.Marshal(urlList)
+	err = metadataReport.SaveSubscribedData(subMi, string(urls))
 	assert.Nil(t, err)
 
 	err = metadataReport.RemoveServiceMetadata(serviceMi)

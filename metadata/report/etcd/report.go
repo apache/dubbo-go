@@ -18,13 +18,8 @@
 package etcd
 
 import (
-	"encoding/json"
 	"strings"
 	"time"
-)
-
-import (
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -80,58 +75,44 @@ func (e *etcdMetadataReport) RemoveServiceMetadata(metadataIdentifier *identifie
 
 // GetExportedURLs will look up the exported urls.
 // if not found, an empty list will be returned.
-func (e *etcdMetadataReport) GetExportedURLs(metadataIdentifier *identifier.ServiceMetadataIdentifier) []string {
+func (e *etcdMetadataReport) GetExportedURLs(metadataIdentifier *identifier.ServiceMetadataIdentifier) ([]string, error) {
 	content, err := e.client.Get(e.getNodeKey(metadataIdentifier))
 	if err != nil {
 		logger.Errorf("etcdMetadataReport GetExportedURLs err:{%v}", err.Error())
-		return nil
+		return []string{}, err
 	}
 	if content == "" {
-		return []string{}
+		return []string{}, nil
 	}
-	return []string{content}
+	return []string{content}, nil
 }
 
 // SaveSubscribedData will convert the urlList to json array and then store it
-func (e *etcdMetadataReport) SaveSubscribedData(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier, urlList []common.URL) error {
-	if len(urlList) == 0 {
-		logger.Warnf("The url list is empty")
-		return nil
-	}
-	urlStrList := make([]string, 0, len(urlList))
-
-	for _, e := range urlList {
-		urlStrList = append(urlStrList, e.String())
-	}
-
-	bytes, err := json.Marshal(urlStrList)
-
-	if err != nil {
-		return perrors.WithMessage(err, "Could not convert the array to json")
-	}
+func (e *etcdMetadataReport) SaveSubscribedData(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier, urls string) error {
 	key := e.getNodeKey(subscriberMetadataIdentifier)
-	return e.client.Create(key, string(bytes))
+	return e.client.Create(key, urls)
 }
 
 // GetSubscribedURLs will lookup the url
 // if not found, an empty list will be returned
-func (e *etcdMetadataReport) GetSubscribedURLs(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier) []string {
+func (e *etcdMetadataReport) GetSubscribedURLs(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier) ([]string, error) {
 	content, err := e.client.Get(e.getNodeKey(subscriberMetadataIdentifier))
 	if err != nil {
 		logger.Errorf("etcdMetadataReport GetSubscribedURLs err:{%v}", err.Error())
+		return nil, err
 	}
-	return []string{content}
+	return []string{content}, nil
 }
 
 // GetServiceDefinition will lookup the service definition
-func (e *etcdMetadataReport) GetServiceDefinition(metadataIdentifier *identifier.MetadataIdentifier) string {
+func (e *etcdMetadataReport) GetServiceDefinition(metadataIdentifier *identifier.MetadataIdentifier) (string, error) {
 	key := e.getNodeKey(metadataIdentifier)
 	content, err := e.client.Get(key)
 	if err != nil {
 		logger.Errorf("etcdMetadataReport GetServiceDefinition err:{%v}", err.Error())
-		return ""
+		return "", err
 	}
-	return content
+	return content, nil
 }
 
 type etcdMetadataReportFactory struct{}

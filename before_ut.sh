@@ -25,13 +25,16 @@ if [ ! -f "${zkJar}" ]; then
 fi
 
 mkdir -p config_center/zookeeper/zookeeper-4unittest/contrib/fatjar
-cp ${zkJar} config_center/zookeeper/zookeeper-4unittest/contrib/fatjar/
+cp ${zkJar} config_center/zookeeper/zookeeper-4unittest/contrib/fatjar
 
 mkdir -p registry/zookeeper/zookeeper-4unittest/contrib/fatjar
-cp ${zkJar} registry/zookeeper/zookeeper-4unittest/contrib/fatjar/
+cp ${zkJar} registry/zookeeper/zookeeper-4unittest/contrib/fatjar
 
 mkdir -p cluster/router/chain/zookeeper-4unittest/contrib/fatjar
 cp ${zkJar} cluster/router/chain/zookeeper-4unittest/contrib/fatjar
 
 mkdir -p cluster/router/condition/zookeeper-4unittest/contrib/fatjar
 cp ${zkJar} cluster/router/condition/zookeeper-4unittest/contrib/fatjar
+
+mkdir -p metadata/report/zookeeper/zookeeper-4unittest/contrib/fatjar
+cp ${zkJar} metadata/report/zookeeper/zookeeper-4unittest/contrib/fatjar
