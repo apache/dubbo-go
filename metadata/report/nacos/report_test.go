@@ -18,6 +18,7 @@
 package nacos
 
 import (
+	"encoding/json"
 	"strconv"
 	"testing"
 )
@@ -41,6 +42,7 @@ func TestNacosMetadataReport_CRUD(t *testing.T) {
 	providerMi := newMetadataIdentifier("server")
 	providerMeta := "provider"
 	err := rpt.StoreProviderMetadata(providerMi, providerMeta)
+	assert.Nil(t, err)
 
 	consumerMi := newMetadataIdentifier("client")
 	consumerMeta := "consumer"
@@ -49,25 +51,25 @@ func TestNacosMetadataReport_CRUD(t *testing.T) {
 
 	serviceMi := newServiceMetadataIdentifier()
 	serviceUrl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
-
 	err = rpt.SaveServiceMetadata(serviceMi, serviceUrl)
 	assert.Nil(t, err)
 
-	exportedUrls := rpt.GetExportedURLs(serviceMi)
+	exportedUrls, err := rpt.GetExportedURLs(serviceMi)
 	assert.Equal(t, 1, len(exportedUrls))
-
-	subMi := newSubscribeMetadataIdentifier()
-	urlList := make([]common.URL, 0, 1)
-	urlList = append(urlList, serviceUrl)
-	err = rpt.SaveSubscribedData(subMi, urlList)
 	assert.Nil(t, err)
 
-	subscribeUrl := rpt.GetSubscribedURLs(subMi)
+	subMi := newSubscribeMetadataIdentifier()
+	urls := []string{serviceUrl.String()}
+	bytes, _ := json.Marshal(urls)
+	err = rpt.SaveSubscribedData(subMi, string(bytes))
+	assert.Nil(t, err)
+
+	subscribeUrl, err := rpt.GetSubscribedURLs(subMi)
 	assert.Equal(t, 1, len(subscribeUrl))
+	assert.Nil(t, err)
 
 	err = rpt.RemoveServiceMetadata(serviceMi)
 	assert.Nil(t, err)
-
 }
 
 func newSubscribeMetadataIdentifier() *identifier.SubscriberMetadataIdentifier {
@@ -75,7 +77,6 @@ func newSubscribeMetadataIdentifier() *identifier.SubscriberMetadataIdentifier {
 		Revision:           "subscribe",
 		MetadataIdentifier: *newMetadataIdentifier("provider"),
 	}
-
 }
 
 func newServiceMetadataIdentifier() *identifier.ServiceMetadataIdentifier {
