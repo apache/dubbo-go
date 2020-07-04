@@ -18,7 +18,6 @@
 package zookeeper
 
 import (
-	"fmt"
 	"testing"
 	"time"
 )
@@ -28,6 +27,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+import (
+	"github.com/apache/dubbo-go/common/logger"
+)
+
 func verifyEventStateOrder(t *testing.T, c <-chan zk.Event, expectedStates []zk.State, source string) {
 	for _, state := range expectedStates {
 		for {
@@ -35,7 +38,7 @@ func verifyEventStateOrder(t *testing.T, c <-chan zk.Event, expectedStates []zk.
 			if !ok {
 				t.Fatalf("unexpected channel close for %s", source)
 			}
-			fmt.Println(event)
+			logger.Debug(event)
 			if event.Type != zk.EventSession {
 				continue
 			}
@@ -87,9 +90,10 @@ func Test_newMockZookeeperClient(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	ts, z, event, _ := NewMockZookeeperClient("test", 15*time.Second)
+	ts, z, event, err := NewMockZookeeperClient("test", 15*time.Second)
+	assert.NoError(t, err)
 	defer ts.Stop()
-	err := z.Create("test1/test2/test3/test4")
+	err = z.Create("test1/test2/test3/test4")
 	assert.NoError(t, err)
 
 	states := []zk.State{zk.StateConnecting, zk.StateConnected, zk.StateHasSession}
@@ -97,21 +101,24 @@ func TestCreate(t *testing.T) {
 }
 
 func TestCreateDelete(t *testing.T) {
-	ts, z, event, _ := NewMockZookeeperClient("test", 15*time.Second)
+	ts, z, event, err := NewMockZookeeperClient("test", 15*time.Second)
+	assert.NoError(t, err)
 	defer ts.Stop()
 
 	states := []zk.State{zk.StateConnecting, zk.StateConnected, zk.StateHasSession}
 	verifyEventStateOrder(t, event, states, "event channel")
-	err := z.Create("/test1/test2/test3/test4")
+	err = z.Create("/test1/test2/test3/test4")
 	assert.NoError(t, err)
-	err2 := z.Delete("/test1/test2/test3/test4")
-	assert.NoError(t, err2)
+	err = z.Delete("/test1/test2/test3/test4")
+	assert.NoError(t, err)
+	// verifyEventOrder(t, event, []zk.EventType{zk.EventNodeCreated}, "event channel")
 }
 
 func TestRegisterTemp(t *testing.T) {
-	ts, z, event, _ := NewMockZookeeperClient("test", 15*time.Second)
+	ts, z, event, err := NewMockZookeeperClient("test", 15*time.Second)
+	assert.NoError(t, err)
 	defer ts.Stop()
-	err := z.Create("/test1/test2/test3")
+	err = z.Create("/test1/test2/test3")
 	assert.NoError(t, err)
 
 	tmpath, err := z.RegisterTemp("/test1/test2/test3", "test4")
@@ -122,9 +129,10 @@ func TestRegisterTemp(t *testing.T) {
 }
 
 func TestRegisterTempSeq(t *testing.T) {
-	ts, z, event, _ := NewMockZookeeperClient("test", 15*time.Second)
+	ts, z, event, err := NewMockZookeeperClient("test", 15*time.Second)
+	assert.NoError(t, err)
 	defer ts.Stop()
-	err := z.Create("/test1/test2/test3")
+	err = z.Create("/test1/test2/test3")
 	assert.NoError(t, err)
 	tmpath, err := z.RegisterTempSeq("/test1/test2/test3", []byte("test"))
 	assert.NoError(t, err)

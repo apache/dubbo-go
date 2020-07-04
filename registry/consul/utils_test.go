@@ -19,17 +19,11 @@ package consul
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/url"
-	"os"
 	"strconv"
 	"sync"
 	"testing"
-)
-
-import (
-	"github.com/hashicorp/consul/agent"
 )
 
 import (
@@ -37,6 +31,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting"
+	"github.com/apache/dubbo-go/remoting/consul"
 )
 
 var (
@@ -51,71 +46,39 @@ var (
 )
 
 func newProviderRegistryUrl(host string, port int) *common.URL {
-	url1 := common.NewURLWithOptions(
+	return common.NewURLWithOptions(
 		common.WithIp(host),
 		common.WithPort(strconv.Itoa(port)),
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)),
 	)
-	return url1
 }
 
 func newConsumerRegistryUrl(host string, port int) *common.URL {
-	url1 := common.NewURLWithOptions(
+	return common.NewURLWithOptions(
 		common.WithIp(host),
 		common.WithPort(strconv.Itoa(port)),
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER)),
 	)
-	return url1
 }
 
 func newProviderUrl(host string, port int, service string, protocol string) common.URL {
-	url1 := common.NewURLWithOptions(
+	return *common.NewURLWithOptions(
 		common.WithIp(host),
 		common.WithPort(strconv.Itoa(port)),
 		common.WithPath(service),
 		common.WithProtocol(protocol),
 	)
-	return *url1
 }
 
 func newConsumerUrl(host string, port int, service string, protocol string) common.URL {
-	url1 := common.NewURLWithOptions(
+	return *common.NewURLWithOptions(
 		common.WithIp(host),
 		common.WithPort(strconv.Itoa(port)),
 		common.WithPath(service),
 		common.WithProtocol(protocol),
 	)
-	return *url1
-}
-
-type testConsulAgent struct {
-	dataDir   string
-	testAgent *agent.TestAgent
-}
-
-func newConsulAgent(t *testing.T, port int) *testConsulAgent {
-	dataDir, _ := ioutil.TempDir("./", "agent")
-	hcl := `
-		ports { 
-			http = ` + strconv.Itoa(port) + `
-		}
-		data_dir = "` + dataDir + `"
-	`
-	testAgent := &agent.TestAgent{Name: t.Name(), DataDir: dataDir, HCL: hcl}
-	testAgent.Start(t)
-
-	consulAgent := &testConsulAgent{
-		dataDir:   dataDir,
-		testAgent: testAgent,
-	}
-	return consulAgent
-}
-
-func (consulAgent *testConsulAgent) close() {
-	consulAgent.testAgent.Shutdown()
-	os.RemoveAll(consulAgent.dataDir)
 }
 
 type testServer struct {
@@ -184,8 +147,8 @@ func (suite *consulRegistryTestSuite) close() {
 
 // register -> subscribe -> unregister
 func test1(t *testing.T) {
-	consulAgent := newConsulAgent(t, registryPort)
-	defer consulAgent.close()
+	consulAgent := consul.NewConsulAgent(t, registryPort)
+	defer consulAgent.Close()
 
 	server := newServer(providerHost, providerPort)
 	defer server.close()
@@ -204,8 +167,8 @@ func test1(t *testing.T) {
 
 // subscribe -> register
 func test2(t *testing.T) {
-	consulAgent := newConsulAgent(t, registryPort)
-	defer consulAgent.close()
+	consulAgent := consul.NewConsulAgent(t, registryPort)
+	defer consulAgent.Close()
 
 	server := newServer(providerHost, providerPort)
 	defer server.close()
