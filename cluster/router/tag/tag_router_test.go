@@ -32,6 +32,21 @@ import (
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
+const (
+	tagRouterTestHangZhouUrl     = "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=true&dubbo.tag=hangzhou"
+	tagRouterTestShangHaiUrl     = "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=true&dubbo.tag=shanghai"
+	tagRouterTestBeijingUrl      = "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=true&dubbo.tag=beijing"
+	tagRouterTestUserConsumer    = "dubbo://127.0.0.1:20000/com.ikurento.user.UserConsumer?interface=com.ikurento.user.UserConsumer&group=&version=2.6.0&enabled=true"
+	tagRouterTestUserConsumerTag = "dubbo://127.0.0.1:20000/com.ikurento.user.UserConsumer?interface=com.ikurento.user.UserConsumer&group=&version=2.6.0&enabled=true&dubbo.force.tag=true"
+
+	tagRouterTestDubboTag      = "dubbo.tag"
+	tagRouterTestDubboForceTag = "dubbo.force.tag"
+	tagRouterTestHangZhou      = "hangzhou"
+	tagRouterTestGuangZhou     = "guangzhou"
+	tagRouterTestFalse         = "false"
+	tagRouterTestTrue          = "true"
+)
+
 // MockInvoker is only mock the Invoker to support test tagRouter
 type MockInvoker struct {
 	url          common.URL
@@ -73,8 +88,8 @@ func (bi *MockInvoker) Destroy() {
 	bi.available = false
 }
 
-func TestTagRouter_Priority(t *testing.T) {
-	u1, err := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserConsumer?interface=com.ikurento.user.UserConsumer&group=&version=2.6.0&enabled=true&dubbo.force.tag=true")
+func TestTagRouterPriority(t *testing.T) {
+	u1, err := common.NewURL(tagRouterTestUserConsumerTag)
 	assert.Nil(t, err)
 	tagRouter, e := NewTagRouter(&u1)
 	assert.Nil(t, e)
@@ -82,15 +97,15 @@ func TestTagRouter_Priority(t *testing.T) {
 	assert.Equal(t, int64(0), p)
 }
 
-func TestTagRouter_Route_force(t *testing.T) {
-	u1, e1 := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserConsumer?interface=com.ikurento.user.UserConsumer&group=&version=2.6.0&enabled=true&dubbo.force.tag=true")
+func TestTagRouterRouteForce(t *testing.T) {
+	u1, e1 := common.NewURL(tagRouterTestUserConsumerTag)
 	assert.Nil(t, e1)
 	tagRouter, e := NewTagRouter(&u1)
 	assert.Nil(t, e)
 
-	u2, e2 := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=true&dubbo.tag=hangzhou")
-	u3, e3 := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=true&dubbo.tag=shanghai")
-	u4, e4 := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=true&dubbo.tag=beijing")
+	u2, e2 := common.NewURL(tagRouterTestHangZhouUrl)
+	u3, e3 := common.NewURL(tagRouterTestShangHaiUrl)
+	u4, e4 := common.NewURL(tagRouterTestBeijingUrl)
 	assert.Nil(t, e2)
 	assert.Nil(t, e3)
 	assert.Nil(t, e4)
@@ -100,29 +115,29 @@ func TestTagRouter_Route_force(t *testing.T) {
 	var invokers []protocol.Invoker
 	invokers = append(invokers, inv2, inv3, inv4)
 	inv := &invocation.RPCInvocation{}
-	inv.SetAttachments("dubbo.tag", "hangzhou")
+	inv.SetAttachments(tagRouterTestDubboTag, tagRouterTestHangZhou)
 	invRst1 := tagRouter.Route(invokers, &u1, inv)
 	assert.Equal(t, 1, len(invRst1))
-	assert.Equal(t, "hangzhou", invRst1[0].GetUrl().GetParam("dubbo.tag", ""))
+	assert.Equal(t, tagRouterTestHangZhou, invRst1[0].GetUrl().GetParam(tagRouterTestDubboTag, ""))
 
-	inv.SetAttachments("dubbo.tag", "guangzhou")
+	inv.SetAttachments(tagRouterTestDubboTag, tagRouterTestGuangZhou)
 	invRst2 := tagRouter.Route(invokers, &u1, inv)
 	assert.Equal(t, 0, len(invRst2))
-	inv.SetAttachments("dubbo.force.tag", "false")
-	inv.SetAttachments("dubbo.tag", "guangzhou")
+	inv.SetAttachments(tagRouterTestDubboForceTag, tagRouterTestFalse)
+	inv.SetAttachments(tagRouterTestDubboTag, tagRouterTestGuangZhou)
 	invRst3 := tagRouter.Route(invokers, &u1, inv)
 	assert.Equal(t, 3, len(invRst3))
 }
 
-func TestTagRouter_Route_noForce(t *testing.T) {
-	u1, e1 := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserConsumer?interface=com.ikurento.user.UserConsumer&group=&version=2.6.0&enabled=true")
+func TestTagRouterRouteNoForce(t *testing.T) {
+	u1, e1 := common.NewURL(tagRouterTestUserConsumer)
 	assert.Nil(t, e1)
 	tagRouter, e := NewTagRouter(&u1)
 	assert.Nil(t, e)
 
-	u2, e2 := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=true&dubbo.tag=hangzhou")
-	u3, e3 := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=true&dubbo.tag=shanghai")
-	u4, e4 := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=true&dubbo.tag=beijing")
+	u2, e2 := common.NewURL(tagRouterTestHangZhouUrl)
+	u3, e3 := common.NewURL(tagRouterTestShangHaiUrl)
+	u4, e4 := common.NewURL(tagRouterTestShangHaiUrl)
 	assert.Nil(t, e2)
 	assert.Nil(t, e3)
 	assert.Nil(t, e4)
@@ -132,16 +147,16 @@ func TestTagRouter_Route_noForce(t *testing.T) {
 	var invokers []protocol.Invoker
 	invokers = append(invokers, inv2, inv3, inv4)
 	inv := &invocation.RPCInvocation{}
-	inv.SetAttachments("dubbo.tag", "hangzhou")
+	inv.SetAttachments(tagRouterTestDubboTag, tagRouterTestHangZhou)
 	invRst := tagRouter.Route(invokers, &u1, inv)
 	assert.Equal(t, 1, len(invRst))
-	assert.Equal(t, "hangzhou", invRst[0].GetUrl().GetParam("dubbo.tag", ""))
+	assert.Equal(t, tagRouterTestHangZhou, invRst[0].GetUrl().GetParam(tagRouterTestDubboTag, ""))
 
-	inv.SetAttachments("dubbo.tag", "guangzhou")
-	inv.SetAttachments("dubbo.force.tag", "true")
+	inv.SetAttachments(tagRouterTestDubboTag, tagRouterTestGuangZhou)
+	inv.SetAttachments(tagRouterTestDubboForceTag, tagRouterTestTrue)
 	invRst1 := tagRouter.Route(invokers, &u1, inv)
 	assert.Equal(t, 0, len(invRst1))
-	inv.SetAttachments("dubbo.force.tag", "false")
+	inv.SetAttachments(tagRouterTestDubboForceTag, tagRouterTestFalse)
 	invRst2 := tagRouter.Route(invokers, &u1, inv)
 	assert.Equal(t, 3, len(invRst2))
 }

@@ -38,7 +38,7 @@ import (
 // consumerConfig
 /////////////////////////
 
-// ConsumerConfig ...
+// ConsumerConfig is Consumer default configuration
 type ConsumerConfig struct {
 	BaseConfig `yaml:",inline"`
 	Filter     string `yaml:"filter" json:"filter,omitempty" property:"filter"`
@@ -63,7 +63,7 @@ type ConsumerConfig struct {
 	ConfigType     map[string]string           `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 }
 
-// UnmarshalYAML ...
+// UnmarshalYAML unmarshals the ConsumerConfig by @unmarshal function
 func (c *ConsumerConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
@@ -75,17 +75,17 @@ func (c *ConsumerConfig) UnmarshalYAML(unmarshal func(interface{}) error) error 
 	return nil
 }
 
-// Prefix ...
+// nolint
 func (*ConsumerConfig) Prefix() string {
 	return constant.ConsumerConfigPrefix
 }
 
-// SetConsumerConfig ...
+// SetConsumerConfig sets consumerConfig by @c
 func SetConsumerConfig(c ConsumerConfig) {
 	consumerConfig = &c
 }
 
-// ConsumerInit ...
+// ConsumerInit loads config file to init consumer config
 func ConsumerInit(confConFile string) error {
 	if confConFile == "" {
 		return perrors.Errorf("application configure(consumer) file name is nil")
@@ -129,7 +129,7 @@ func configCenterRefreshConsumer() error {
 	var err error
 	if consumerConfig.ConfigCenterConfig != nil {
 		consumerConfig.SetFatherConfig(consumerConfig)
-		if err := consumerConfig.startConfigCenter(); err != nil {
+		if err = consumerConfig.startConfigCenter(); err != nil {
 			return perrors.Errorf("start config center error , error message is {%v}", perrors.WithStack(err))
 		}
 		consumerConfig.fresh()
@@ -144,6 +144,5 @@ func configCenterRefreshConsumer() error {
 			return perrors.WithMessagef(err, "time.ParseDuration(Connect_Timeout{%#v})", consumerConfig.Connect_Timeout)
 		}
 	}
-
 	return nil
 }

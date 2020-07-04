@@ -36,35 +36,41 @@ import (
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
-func Test_RandomlbSelect(t *testing.T) {
+const (
+	tmpUrl       = "dubbo://192.168.1.100:20000/com.ikurento.user.UserProvider"
+	tmpUrlFormat = "dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider"
+	tmpIp        = "192.168.1.100"
+)
+
+func TestRandomlbSelect(t *testing.T) {
 	randomlb := NewRandomLoadBalance()
 
 	invokers := []protocol.Invoker{}
 
-	url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", 0))
+	url, _ := common.NewURL(fmt.Sprintf(tmpUrlFormat, 0))
 	invokers = append(invokers, protocol.NewBaseInvoker(url))
 	i := randomlb.Select(invokers, &invocation.RPCInvocation{})
 	assert.True(t, i.GetUrl().URLEqual(url))
 
 	for i := 1; i < 10; i++ {
-		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
+		url, _ := common.NewURL(fmt.Sprintf(tmpUrlFormat, i))
 		invokers = append(invokers, protocol.NewBaseInvoker(url))
 	}
 	randomlb.Select(invokers, &invocation.RPCInvocation{})
 }
 
-func Test_RandomlbSelectWeight(t *testing.T) {
+func TestRandomlbSelectWeight(t *testing.T) {
 	randomlb := NewRandomLoadBalance()
 
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {
-		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
+		url, _ := common.NewURL(fmt.Sprintf(tmpUrlFormat, i))
 		invokers = append(invokers, protocol.NewBaseInvoker(url))
 	}
 
 	urlParams := url.Values{}
 	urlParams.Set("methods.test."+constant.WEIGHT_KEY, "10000000000000")
-	urll, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.100:20000/com.ikurento.user.UserProvider"), common.WithParams(urlParams))
+	urll, _ := common.NewURL(tmpUrl, common.WithParams(urlParams))
 	invokers = append(invokers, protocol.NewBaseInvoker(urll))
 	ivc := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("test"))
 
@@ -72,7 +78,7 @@ func Test_RandomlbSelectWeight(t *testing.T) {
 	var selected float64
 	for i := 0; i < 10000; i++ {
 		s := randomlb.Select(invokers, ivc)
-		if s.GetUrl().Ip == "192.168.1.100" {
+		if s.GetUrl().Ip == tmpIp {
 			selected++
 		}
 		selectedInvoker = append(selectedInvoker, s)
@@ -84,18 +90,18 @@ func Test_RandomlbSelectWeight(t *testing.T) {
 	})
 }
 
-func Test_RandomlbSelectWarmup(t *testing.T) {
+func TestRandomlbSelectWarmup(t *testing.T) {
 	randomlb := NewRandomLoadBalance()
 
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {
-		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
+		url, _ := common.NewURL(fmt.Sprintf(tmpUrlFormat, i))
 		invokers = append(invokers, protocol.NewBaseInvoker(url))
 	}
 
 	urlParams := url.Values{}
 	urlParams.Set(constant.REMOTE_TIMESTAMP_KEY, strconv.FormatInt(time.Now().Add(time.Minute*(-9)).Unix(), 10))
-	urll, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.100:20000/com.ikurento.user.UserProvider"), common.WithParams(urlParams))
+	urll, _ := common.NewURL(tmpUrl, common.WithParams(urlParams))
 	invokers = append(invokers, protocol.NewBaseInvoker(urll))
 	ivc := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("test"))
 
@@ -103,7 +109,7 @@ func Test_RandomlbSelectWarmup(t *testing.T) {
 	var selected float64
 	for i := 0; i < 10000; i++ {
 		s := randomlb.Select(invokers, ivc)
-		if s.GetUrl().Ip == "192.168.1.100" {
+		if s.GetUrl().Ip == tmpIp {
 			selected++
 		}
 		selectedInvoker = append(selectedInvoker, s)

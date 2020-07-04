@@ -29,8 +29,8 @@ var (
 	discoveryCreatorMap = make(map[string]func(url *common.URL) (registry.ServiceDiscovery, error), 4)
 )
 
-// SetServiceDiscovery will store the creator and name
-func SetServiceDiscovery(name string, creator func(url *common.URL) (registry.ServiceDiscovery, error)) {
+// SetServiceDiscovery will store the @creator and @name
+func SetServiceDiscovery(name string, creator func(_ *common.URL) (registry.ServiceDiscovery, error)) {
 	discoveryCreatorMap[name] = creator
 }
 

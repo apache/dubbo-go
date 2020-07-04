@@ -50,12 +50,12 @@ func (c *overrideConfigurator) GetUrl() *common.URL {
 }
 
 func (c *overrideConfigurator) Configure(url *common.URL) {
-	//remove configuratorUrl some param that can not be configured
+	// remove configuratorUrl some param that can not be configured
 	if c.configuratorUrl.GetParam(constant.ENABLED_KEY, "true") == "false" || len(c.configuratorUrl.Location) == 0 {
 		return
 	}
 
-	//branch for version 2.7.x
+	// branch for version 2.7.x
 	apiVersion := c.configuratorUrl.GetParam(constant.CONFIG_VERSION_KEY, "")
 	if len(apiVersion) != 0 {
 		currentSide := url.GetParam(constant.SIDE_KEY, "")
@@ -67,48 +67,51 @@ func (c *overrideConfigurator) Configure(url *common.URL) {
 			c.configureIfMatch(url.Ip, url)
 		}
 	} else {
-		//branch for version 2.6.x and less
+		// branch for version 2.6.x and less
 		c.configureDeprecated(url)
 	}
 }
 
-//translate from java, compatible rules in java
+func (c *overrideConfigurator) configureIfMatchInternal(url *common.URL) {
+	configApp := c.configuratorUrl.GetParam(constant.APPLICATION_KEY, c.configuratorUrl.Username)
+	currentApp := url.GetParam(constant.APPLICATION_KEY, url.Username)
+	if len(configApp) == 0 || constant.ANY_VALUE == configApp || configApp == currentApp {
+		conditionKeys := gxset.NewSet()
+		conditionKeys.Add(constant.CATEGORY_KEY)
+		conditionKeys.Add(constant.CHECK_KEY)
+		conditionKeys.Add(constant.ENABLED_KEY)
+		conditionKeys.Add(constant.GROUP_KEY)
+		conditionKeys.Add(constant.VERSION_KEY)
+		conditionKeys.Add(constant.APPLICATION_KEY)
+		conditionKeys.Add(constant.SIDE_KEY)
+		conditionKeys.Add(constant.CONFIG_VERSION_KEY)
+		conditionKeys.Add(constant.COMPATIBLE_CONFIG_KEY)
+		returnUrl := false
+		c.configuratorUrl.RangeParams(func(k, _ string) bool {
+			value := c.configuratorUrl.GetParam(k, "")
+			if strings.HasPrefix(k, "~") || k == constant.APPLICATION_KEY || k == constant.SIDE_KEY {
+				conditionKeys.Add(k)
+				if len(value) != 0 && value != constant.ANY_VALUE && value != url.GetParam(strings.TrimPrefix(k, "~"), "") {
+					returnUrl = true
+					return false
+				}
+			}
+			return true
+		})
+		if returnUrl {
+			return
+		}
+		configUrl := c.configuratorUrl.CloneExceptParams(conditionKeys)
+		url.SetParams(configUrl.GetParams())
+	}
+}
+
+// configureIfMatch translate from java, compatible rules in java
 func (c *overrideConfigurator) configureIfMatch(host string, url *common.URL) {
 	if constant.ANYHOST_VALUE == c.configuratorUrl.Ip || host == c.configuratorUrl.Ip {
 		providers := c.configuratorUrl.GetParam(constant.OVERRIDE_PROVIDERS_KEY, "")
 		if len(providers) == 0 || strings.Index(providers, url.Location) >= 0 || strings.Index(providers, constant.ANYHOST_VALUE) >= 0 {
-			configApp := c.configuratorUrl.GetParam(constant.APPLICATION_KEY, c.configuratorUrl.Username)
-			currentApp := url.GetParam(constant.APPLICATION_KEY, url.Username)
-			if len(configApp) == 0 || constant.ANY_VALUE == configApp || configApp == currentApp {
-				conditionKeys := gxset.NewSet()
-				conditionKeys.Add(constant.CATEGORY_KEY)
-				conditionKeys.Add(constant.CHECK_KEY)
-				conditionKeys.Add(constant.ENABLED_KEY)
-				conditionKeys.Add(constant.GROUP_KEY)
-				conditionKeys.Add(constant.VERSION_KEY)
-				conditionKeys.Add(constant.APPLICATION_KEY)
-				conditionKeys.Add(constant.SIDE_KEY)
-				conditionKeys.Add(constant.CONFIG_VERSION_KEY)
-				conditionKeys.Add(constant.COMPATIBLE_CONFIG_KEY)
-				returnUrl := false
-				c.configuratorUrl.RangeParams(func(k, v string) bool {
-					value := c.configuratorUrl.GetParam(k, "")
-					if strings.HasPrefix(k, "~") || k == constant.APPLICATION_KEY || k == constant.SIDE_KEY {
-						conditionKeys.Add(k)
-						if len(value) != 0 && value != constant.ANY_VALUE && value != url.GetParam(strings.TrimPrefix(k, "~"), "") {
-							returnUrl = true
-							return false
-						}
-					}
-					return true
-				})
-				if returnUrl {
-					return
-				}
-				configUrl := c.configuratorUrl.Clone()
-				configUrl.RemoveParams(conditionKeys)
-				url.SetParams(configUrl.GetParams())
-			}
+			c.configureIfMatchInternal(url)
 		}
 	}
 }

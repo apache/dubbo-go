@@ -18,7 +18,6 @@
 package zookeeper
 
 import (
-	"github.com/apache/dubbo-go/common"
 	"path"
 	"strings"
 	"sync"
@@ -32,12 +31,13 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/remoting"
 )
 
-// ZkEventListener ...
+// nolint
 type ZkEventListener struct {
 	client      *ZookeeperClient
 	pathMapLock sync.Mutex
@@ -45,7 +45,7 @@ type ZkEventListener struct {
 	wg          sync.WaitGroup
 }
 
-// NewZkEventListener ...
+// NewZkEventListener returns a EventListener instance
 func NewZkEventListener(client *ZookeeperClient) *ZkEventListener {
 	return &ZkEventListener{
 		client:  client,
@@ -53,12 +53,12 @@ func NewZkEventListener(client *ZookeeperClient) *ZkEventListener {
 	}
 }
 
-// SetClient ...
+// nolint
 func (l *ZkEventListener) SetClient(client *ZookeeperClient) {
 	l.client = client
 }
 
-// ListenServiceNodeEvent ...
+// nolint
 func (l *ZkEventListener) ListenServiceNodeEvent(zkPath string, listener ...remoting.DataListener) bool {
 	defer l.wg.Done()
 	var zkEvent zk.Event
@@ -96,8 +96,6 @@ func (l *ZkEventListener) ListenServiceNodeEvent(zkPath string, listener ...remo
 			return false
 		}
 	}
-
-	return false
 }
 
 func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, listener remoting.DataListener) {
@@ -249,8 +247,14 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 			l.pathMapLock.Lock()
 			l.pathMap[dubboPath] = struct{}{}
 			l.pathMapLock.Unlock()
-
+			//When Zk disconnected, the Conn will be set to nil, so here need check the value of Conn
+			l.client.RLock()
+			if l.client.Conn == nil {
+				l.client.RUnlock()
+				break
+			}
 			content, _, err := l.client.Conn.Get(dubboPath)
+			l.client.RUnlock()
 			if err != nil {
 				logger.Errorf("Get new node path {%v} 's content error,message is  {%v}", dubboPath, perrors.WithStack(err))
 			}
@@ -314,7 +318,7 @@ func (l *ZkEventListener) valid() bool {
 	return l.client.ZkConnValid()
 }
 
-// Close ...
+// nolint
 func (l *ZkEventListener) Close() {
 	l.wg.Wait()
 }

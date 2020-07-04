@@ -87,8 +87,11 @@ func (invoker *baseClusterInvoker) checkWhetherDestroyed() error {
 }
 
 func (invoker *baseClusterInvoker) doSelect(lb cluster.LoadBalance, invocation protocol.Invocation, invokers []protocol.Invoker, invoked []protocol.Invoker) protocol.Invoker {
-
 	var selectedInvoker protocol.Invoker
+	if len(invokers) <= 0 {
+		return selectedInvoker
+	}
+
 	url := invokers[0].GetUrl()
 	sticky := url.GetParamBool(constant.STICKY_KEY, false)
 	//Get the service method sticky config if have
@@ -98,19 +101,17 @@ func (invoker *baseClusterInvoker) doSelect(lb cluster.LoadBalance, invocation p
 		invoker.stickyInvoker = nil
 	}
 
-	if sticky && invoker.stickyInvoker != nil && (invoked == nil || !isInvoked(invoker.stickyInvoker, invoked)) {
-		if invoker.availablecheck && invoker.stickyInvoker.IsAvailable() {
-			return invoker.stickyInvoker
-		}
+	if sticky && invoker.availablecheck &&
+		invoker.stickyInvoker != nil && invoker.stickyInvoker.IsAvailable() &&
+		(invoked == nil || !isInvoked(invoker.stickyInvoker, invoked)) {
+		return invoker.stickyInvoker
 	}
 
 	selectedInvoker = invoker.doSelectInvoker(lb, invocation, invokers, invoked)
-
 	if sticky {
 		invoker.stickyInvoker = selectedInvoker
 	}
 	return selectedInvoker
-
 }
 
 func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invocation protocol.Invocation, invokers []protocol.Invoker, invoked []protocol.Invoker) protocol.Invoker {

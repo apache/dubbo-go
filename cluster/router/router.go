@@ -23,34 +23,30 @@ import (
 )
 
 // Extension - Router
-
-// RouterFactory Router create factory
-type RouterFactory interface {
-	// NewRouter Create router instance with URL
-	NewRouter(*common.URL) (Router, error)
+// PriorityRouterFactory creates creates priority router with url
+type PriorityRouterFactory interface {
+	// NewPriorityRouter creates router instance with URL
+	NewPriorityRouter(*common.URL) (PriorityRouter, error)
 }
 
-// RouterFactory Router create factory use for parse config file
-type FileRouterFactory interface {
+// FilePriorityRouterFactory creates priority router with parse config file
+type FilePriorityRouterFactory interface {
 	// NewFileRouters Create file router with config file
-	NewFileRouter([]byte) (Router, error)
+	NewFileRouter([]byte) (PriorityRouter, error)
 }
 
 // Router
-type Router interface {
+type router interface {
 	// Route Determine the target invokers list.
 	Route([]protocol.Invoker, *common.URL, protocol.Invocation) []protocol.Invoker
-	// Priority Return Priority in router
-	// 0 to ^int(0) is better
-	Priority() int64
 	// URL Return URL in router
 	URL() common.URL
 }
 
-// Chain
-type Chain interface {
-	// Route Determine the target invokers list with chain.
-	Route([]protocol.Invoker, *common.URL, protocol.Invocation) []protocol.Invoker
-	// AddRouters Add routers
-	AddRouters([]Router)
+// Router
+type PriorityRouter interface {
+	router
+	// Priority Return Priority in router
+	// 0 to ^int(0) is better
+	Priority() int64
 }

@@ -119,6 +119,7 @@ const (
 	CONFIG_CLUSTER_KEY    = "config.cluster"
 	CONFIG_CHECK_KEY      = "config.check"
 	CONFIG_TIMEOUT_KET    = "config.timeout"
+	CONFIG_LOG_DIR_KEY    = "config.logDir"
 	CONFIG_VERSION_KEY    = "configVersion"
 	COMPATIBLE_CONFIG_KEY = "compatible_config"
 )
@@ -149,6 +150,7 @@ const (
 	NACOS_CATEGORY_KEY           = "category"
 	NACOS_PROTOCOL_KEY           = "protocol"
 	NACOS_PATH_KEY               = "path"
+	NACOS_NAMESPACE_ID           = "namespaceId"
 )
 
 const (
@@ -180,6 +182,9 @@ const (
 	// ForceUseTag is the tag in attachment
 	ForceUseTag = "dubbo.force.tag"
 	Tagkey      = "dubbo.tag"
+
+	// Attachment key in context in invoker
+	AttachmentKey = "attachment"
 )
 
 const (
@@ -210,9 +215,9 @@ const (
 	// consumer
 	CONSUMER = "consumer"
 	// key of access key id
-	ACCESS_KEY_ID_KEY = "accessKeyId"
+	ACCESS_KEY_ID_KEY = ".accessKeyId"
 	// key of secret access key
-	SECRET_ACCESS_KEY_KEY = "secretAccessKey"
+	SECRET_ACCESS_KEY_KEY = ".secretAccessKey"
 )
 
 // metadata report
