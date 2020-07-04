@@ -77,13 +77,21 @@ func (l *ZkEventListener) ListenServiceNodeEvent(zkPath string, listener ...remo
 			case zk.EventNodeDataChanged:
 				logger.Warnf("zk.ExistW(key{%s}) = event{EventNodeDataChanged}", zkPath)
 				if len(listener) > 0 {
-					content, _, _ := l.client.Conn.Get(zkEvent.Path)
+					content, _, err := l.client.Conn.Get(zkEvent.Path)
+					if err != nil {
+						logger.Warnf("zk.Conn.Get{key:%s} = error{%v}", zkPath, err)
+						return false
+					}
 					listener[0].DataChange(remoting.Event{Path: zkEvent.Path, Action: remoting.EventTypeUpdate, Content: string(content)})
 				}
 			case zk.EventNodeCreated:
 				logger.Warnf("zk.ExistW(key{%s}) = event{EventNodeCreated}", zkPath)
 				if len(listener) > 0 {
-					content, _, _ := l.client.Conn.Get(zkEvent.Path)
+					content, _, err := l.client.Conn.Get(zkEvent.Path)
+					if err != nil {
+						logger.Warnf("zk.Conn.Get{key:%s} = error{%v}", zkPath, err)
+						return false
+					}
 					listener[0].DataChange(remoting.Event{Path: zkEvent.Path, Action: remoting.EventTypeAdd, Content: string(content)})
 				}
 			case zk.EventNotWatching:

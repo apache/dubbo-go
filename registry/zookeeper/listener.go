@@ -111,7 +111,6 @@ type RegistryConfigurationListener struct {
 
 // NewRegistryConfigurationListener for listening the event of zk.
 func NewRegistryConfigurationListener(client *zk.ZookeeperClient, reg *zkRegistry) *RegistryConfigurationListener {
-	reg.WaitGroup().Add(1)
 	return &RegistryConfigurationListener{client: client, registry: reg, events: make(chan *config_center.ConfigChangeEvent, 32), isClosed: false, close: make(chan struct{}, 1)}
 }
 
