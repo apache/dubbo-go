@@ -40,7 +40,7 @@ type zkClientFacade interface {
 	common.Node
 }
 
-// HandleClientRestart ...
+// HandleClientRestart keeps the connection between client and server
 func HandleClientRestart(r zkClientFacade) {
 	var (
 		err error
@@ -78,10 +78,8 @@ LOOP:
 				err = ValidateZookeeperClient(r, WithZkName(zkName))
 				logger.Infof("ZkProviderRegistry.validateZookeeperClient(zkAddr{%s}) = error{%#v}",
 					zkAddress, perrors.WithStack(err))
-				if err == nil {
-					if r.RestartCallBack() {
-						break
-					}
+				if err == nil && r.RestartCallBack() {
+					break
 				}
 				failTimes++
 				if MaxFailTimes <= failTimes {

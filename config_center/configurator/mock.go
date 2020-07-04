@@ -23,7 +23,7 @@ import (
 	"github.com/apache/dubbo-go/config_center"
 )
 
-// NewMockConfigurator ...
+// NewMockConfigurator creates a new mockConfigurator
 func NewMockConfigurator(url *common.URL) config_center.Configurator {
 	return &mockConfigurator{configuratorUrl: url}
 }
@@ -32,12 +32,12 @@ type mockConfigurator struct {
 	configuratorUrl *common.URL
 }
 
-// GetUrl ...
+// GetUrl gets a configuratorUrl
 func (c *mockConfigurator) GetUrl() *common.URL {
 	return c.configuratorUrl
 }
 
-// Configure ...
+// Configure sets up param CLUSTER_KEY and cluster for url
 func (c *mockConfigurator) Configure(url *common.URL) {
 	if cluster := c.GetUrl().GetParam(constant.CLUSTER_KEY, ""); cluster != "" {
 		url.SetParam(constant.CLUSTER_KEY, cluster)

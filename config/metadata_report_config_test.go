@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMetadataReportConfig_ToUrl(t *testing.T) {
+func TestMetadataReportConfigToUrl(t *testing.T) {
 	metadataReportConfig := MetadataReportConfig{
 		Protocol:   "mock",
 		Address:    "127.0.0.1:2181",

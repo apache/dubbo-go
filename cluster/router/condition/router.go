@@ -181,9 +181,7 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 		return condition, nil
 	}
 
-	var (
-		pair MatchPair
-	)
+	var pair MatchPair
 	values := gxset.NewSet()
 	matches := routerPatternReg.FindAllSubmatch([]byte(rule), -1)
 	for _, groups := range matches {
