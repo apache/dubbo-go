@@ -32,8 +32,8 @@ func init() {
 	extension.SetTpsLimitStrategy("slidingWindow", &slidingWindowStrategyCreator{})
 }
 
+// SlidingWindowTpsLimitStrategyImpl implements a thread-safe TPS limit strategy base on requests count.
 /**
- * SlidingWindowTpsLimitStrategyImpl
  * it's thread-safe.
  * "UserProvider":
  *   registry: "hangzhouzk"
@@ -54,7 +54,8 @@ type SlidingWindowTpsLimitStrategyImpl struct {
 	queue    *list.List
 }
 
-// IsAllowable ...
+// IsAllowable determins whether the number of requests within the time window overs the threshold
+// It is thread-safe.
 func (impl *SlidingWindowTpsLimitStrategyImpl) IsAllowable() bool {
 	impl.mutex.Lock()
 	defer impl.mutex.Unlock()
@@ -84,6 +85,7 @@ func (impl *SlidingWindowTpsLimitStrategyImpl) IsAllowable() bool {
 
 type slidingWindowStrategyCreator struct{}
 
+// Create returns SlidingWindowTpsLimitStrategyImpl instance with configured limit rate and interval
 func (creator *slidingWindowStrategyCreator) Create(rate int, interval int) filter.TpsLimitStrategy {
 	return &SlidingWindowTpsLimitStrategyImpl{
 		rate:     rate,

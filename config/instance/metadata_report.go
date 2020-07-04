@@ -32,7 +32,7 @@ var (
 	once     sync.Once
 )
 
-// GetMetadataReportInstance ...
+// GetMetadataReportInstance gets metadata report instance by @url
 func GetMetadataReportInstance(url *common.URL) metadata.MetadataReport {
 	once.Do(func() {
 		instance = extension.GetMetadataReportFactory(url.Protocol).CreateMetadataReport(url)

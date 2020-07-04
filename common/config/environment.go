@@ -46,7 +46,7 @@ var (
 	once     sync.Once
 )
 
-// GetEnvInstance ...
+// GetEnvInstance gets env instance by singleton
 func GetEnvInstance() *Environment {
 	once.Do(func() {
 		instance = &Environment{configCenterFirst: true}
@@ -54,7 +54,7 @@ func GetEnvInstance() *Environment {
 	return instance
 }
 
-// NewEnvInstance ...
+// NewEnvInstance creates Environment instance
 func NewEnvInstance() {
 	instance = &Environment{configCenterFirst: true}
 }
@@ -67,21 +67,22 @@ func NewEnvInstance() {
 //	return env.configCenterFirst
 //}
 
-// UpdateExternalConfigMap ...
+// UpdateExternalConfigMap updates env externalConfigMap field
 func (env *Environment) UpdateExternalConfigMap(externalMap map[string]string) {
 	for k, v := range externalMap {
 		env.externalConfigMap.Store(k, v)
 	}
 }
 
-// UpdateAppExternalConfigMap ...
+// UpdateAppExternalConfigMap updates env appExternalConfigMap field
 func (env *Environment) UpdateAppExternalConfigMap(externalMap map[string]string) {
 	for k, v := range externalMap {
 		env.appExternalConfigMap.Store(k, v)
 	}
 }
 
-// Configuration ...
+// Configuration puts externalConfigMap and appExternalConfigMap into list
+// List represents a doubly linked list.
 func (env *Environment) Configuration() *list.List {
 	cfgList := list.New()
 	// The sequence would be: SystemConfiguration -> ExternalConfiguration -> AppExternalConfiguration -> AbstractConfig -> PropertiesConfiguration
@@ -90,17 +91,17 @@ func (env *Environment) Configuration() *list.List {
 	return cfgList
 }
 
-// SetDynamicConfiguration ...
+// SetDynamicConfiguration sets value for dynamicConfiguration
 func (env *Environment) SetDynamicConfiguration(dc config_center.DynamicConfiguration) {
 	env.dynamicConfiguration = dc
 }
 
-// GetDynamicConfiguration ...
+// GetDynamicConfiguration gets dynamicConfiguration
 func (env *Environment) GetDynamicConfiguration() config_center.DynamicConfiguration {
 	return env.dynamicConfiguration
 }
 
-// InmemoryConfiguration ...
+// InmemoryConfiguration stores config in memory
 type InmemoryConfiguration struct {
 	store *sync.Map
 }
@@ -109,7 +110,7 @@ func newInmemoryConfiguration(p *sync.Map) *InmemoryConfiguration {
 	return &InmemoryConfiguration{store: p}
 }
 
-// GetProperty ...
+// GetProperty gets value from InmemoryConfiguration instance by @key
 func (conf *InmemoryConfiguration) GetProperty(key string) (bool, string) {
 	if conf.store == nil {
 		return false, ""
@@ -123,14 +124,14 @@ func (conf *InmemoryConfiguration) GetProperty(key string) (bool, string) {
 	return false, ""
 }
 
-// GetSubProperty ...
+// GetSubProperty gets sub property from InmemoryConfiguration instance by @subkey
 func (conf *InmemoryConfiguration) GetSubProperty(subKey string) map[string]struct{} {
 	if conf.store == nil {
 		return nil
 	}
 
 	properties := make(map[string]struct{})
-	conf.store.Range(func(key, value interface{}) bool {
+	conf.store.Range(func(key, _ interface{}) bool {
 		if idx := strings.Index(key.(string), subKey); idx >= 0 {
 			after := key.(string)[idx+len(subKey):]
 			if i := strings.Index(after, "."); i >= 0 {

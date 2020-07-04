@@ -28,19 +28,22 @@ import (
 
 type mockProtocolFilter struct{}
 
-// NewMockProtocolFilter ...
+// NewMockProtocolFilter creates a new mock protocol
 func NewMockProtocolFilter() protocol.Protocol {
 	return &mockProtocolFilter{}
 }
 
+// Export mock service for  remote invocation
 func (pfw *mockProtocolFilter) Export(invoker protocol.Invoker) protocol.Exporter {
 	return protocol.NewBaseExporter("key", invoker, &sync.Map{})
 }
 
+// Refer a mock remote service
 func (pfw *mockProtocolFilter) Refer(url common.URL) protocol.Invoker {
 	return protocol.NewBaseInvoker(url)
 }
 
+// Destroy will do nothing
 func (pfw *mockProtocolFilter) Destroy() {
-
+	return
 }

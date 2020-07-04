@@ -45,8 +45,8 @@ func NewEventListener(client *Client) *EventListener {
 }
 
 // Listen on a spec key
-// this method will return true when spec key deleted,
-// this method will return false when deep layer connection lose
+// this method returns true when spec key deleted,
+// this method returns false when deep layer connection lose
 func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.DataListener) bool {
 	defer l.wg.Done()
 	for {
@@ -81,12 +81,10 @@ func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.
 			}
 		}
 	}
-
-	return false
 }
 
-// return true mean the event type is DELETE
-// return false mean the event type is CREATE || UPDATE
+// return true means the event type is DELETE
+// return false means the event type is CREATE || UPDATE
 func (l *EventListener) handleEvents(event *WatcherEvent, listeners ...remoting.DataListener) bool {
 
 	logger.Infof("got a kubernetes-watcherSet event {type: %d, key: %s}", event.EventType, event.Key)
