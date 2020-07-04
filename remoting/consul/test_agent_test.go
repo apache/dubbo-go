@@ -15,17 +15,18 @@
  * limitations under the License.
  */
 
-package factory
+package consul
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/metadata/report"
+	"testing"
 )
 
-// MetadataReportFactory interface will create metadata report
-type MetadataReportFactory interface {
-	CreateMetadataReport(*common.URL) report.MetadataReport
-}
+import (
+	"github.com/stretchr/testify/assert"
+)
 
-type BaseMetadataReportFactory struct {
+func TestNewConsulAgent(t *testing.T) {
+	consulAgent := NewConsulAgent(t, 8500)
+	err := consulAgent.Close()
+	assert.NoError(t, err)
 }
