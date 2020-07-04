@@ -25,7 +25,7 @@ import (
 
 type MetadataReport interface {
 	StoreProviderMetadata(*identifier.MetadataIdentifier, *definition.ServiceDefinition)
-	StoreConsumeretadata(*identifier.MetadataIdentifier, map[string]string)
+	StoreConsumerMetadata(*identifier.MetadataIdentifier, map[string]string)
 	SaveServiceMetadata(*identifier.ServiceMetadataIdentifier, *common.URL)
 	RemoveServiceMetadata(*identifier.ServiceMetadataIdentifier)
 	GetExportedURLs(*identifier.ServiceMetadataIdentifier) []string

@@ -53,7 +53,7 @@ func (s *TestServiceInt) Reference() string {
 	return "com.test.TestServiceInt"
 }
 
-func TestProxy_Implement(t *testing.T) {
+func TestProxyImplement(t *testing.T) {
 
 	invoker := protocol.NewBaseInvoker(common.URL{})
 	p := NewProxy(invoker, nil, map[string]string{constant.ASYNC_KEY: "false"})
@@ -84,7 +84,7 @@ func TestProxy_Implement(t *testing.T) {
 		TestService
 		methodOne func(context.Context, interface{}, *struct{}) error
 	}
-	s1 := &S1{TestService: *s, methodOne: func(i context.Context, i2 interface{}, i3 *struct{}) error {
+	s1 := &S1{TestService: *s, methodOne: func(_ context.Context, _ interface{}, _ *struct{}) error {
 		return perrors.New("errors")
 	}}
 	p.Implement(s1)

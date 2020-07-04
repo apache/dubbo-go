@@ -16,7 +16,7 @@ Apache License, Version 2.0
 
 ## Release note ##
 
-[v1.4.0-rc1 - Mar 12, 2020](https://github.com/apache/dubbo-go/releases/tag/v1.4.0-rc1)
+[v1.4.0 - Mar 17, 2020](https://github.com/apache/dubbo-go/releases/tag/v1.4.0)
 
 [v1.3.0 - Mar 1, 2020](https://github.com/apache/dubbo-go/releases/tag/v1.3.0)
 
@@ -176,5 +176,5 @@ About dubbo-go benchmarking report, please refer to [dubbo benchmarking report](
 If you are using [apache/dubbo-go](github.com/apache/dubbo-go) and think that it helps you or want do some contributions to it, please add your company to to [the user list](https://github.com/apache/dubbo-go/issues/2) to let us know your needs.
 
 ![ctrip](https://pic.c-ctrip.com/common/c_logo2013.png)
-![Excellent Health Technology Group](https://raw.githubusercontent.com/dajiiu/photo/static/mirror/haozhuo_logo.png)
+![Excellent Health Technology Group](https://user-images.githubusercontent.com/52339367/84628582-80512200-af1b-11ea-945a-c6b4b9ad31f2.png)
 ![tuya](https://raw.githubusercontent.com/pantianying/go-tool/master/picture/logo_2-removebg-preview.png)

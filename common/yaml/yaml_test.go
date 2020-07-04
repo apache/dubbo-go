@@ -38,7 +38,7 @@ func TestUnmarshalYMLConfig(t *testing.T) {
 	assert.Equal(t, "childStrTest", c.ChildConfig.StrTest)
 }
 
-func TestUnmarshalYMLConfig_Error(t *testing.T) {
+func TestUnmarshalYMLConfigError(t *testing.T) {
 	c := &Config{}
 	_, err := UnmarshalYMLConfig("./testdata/config", c)
 	assert.Error(t, err)

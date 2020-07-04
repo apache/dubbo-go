@@ -69,7 +69,6 @@ func (c *BaseConfig) startConfigCenter() error {
 }
 
 func (c *BaseConfig) prepareEnvironment() error {
-
 	factory := extension.GetConfigCenterFactory(c.ConfigCenterConfig.Protocol)
 	dynamicConfig, err := factory.GetDynamicConfiguration(c.configCenterUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(dynamicConfig)
@@ -125,20 +124,20 @@ func getKeyPrefix(val reflect.Value) []string {
 	var (
 		prefix string
 	)
-
+	configPrefixMethod := "Prefix"
 	if val.CanAddr() {
-		prefix = val.Addr().MethodByName("Prefix").Call(nil)[0].String()
+		prefix = val.Addr().MethodByName(configPrefixMethod).Call(nil)[0].String()
 	} else {
-		prefix = val.MethodByName("Prefix").Call(nil)[0].String()
+		prefix = val.MethodByName(configPrefixMethod).Call(nil)[0].String()
 	}
-	var retPrefixs []string
+	var retPrefixes []string
 
 	for _, pfx := range strings.Split(prefix, "|") {
 
-		retPrefixs = append(retPrefixs, pfx)
+		retPrefixes = append(retPrefixes, pfx)
 
 	}
-	return retPrefixs
+	return retPrefixes
 
 }
 
@@ -165,13 +164,13 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 						idStr string
 					)
 
-					prefixs := getKeyPrefix(val)
+					prefixes := getKeyPrefix(val)
 
 					if id.Kind() == reflect.String {
 						idStr = id.Interface().(string)
 					}
 
-					for _, pfx := range prefixs {
+					for _, pfx := range prefixes {
 
 						if len(pfx) > 0 {
 							if len(idStr) > 0 {
@@ -191,18 +190,20 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 
 					}
 					if ok {
+						errMsg := func(structName string, fieldName string, errorDetails error) {
+							logger.Errorf("Dynamic change the configuration in struct {%v} field {%v} error ,error message is {%v}",
+								structName, fieldName, errorDetails)
+						}
 						switch f.Kind() {
 						case reflect.Int64:
 							x, err := strconv.Atoi(value)
 							if err != nil {
-								logger.Errorf("Dynamic change the configuration in struct {%v} field {%v} error ,error message is {%v}",
-									val.Type().Name(), val.Type().Field(i).Name, err)
+								errMsg(val.Type().Name(), val.Type().Field(i).Name, err)
 							} else {
 								if !f.OverflowInt(int64(x)) {
 									f.SetInt(int64(x))
 								} else {
-									logger.Errorf("Dynamic change the configuration in struct {%v} field {%v} error ,error message is {%v}",
-										val.Type().Name(), val.Type().Field(i).Name, perrors.Errorf("the int64 value {%v} from config center is  overflow", int64(x)))
+									errMsg(val.Type().Name(), val.Type().Field(i).Name, perrors.Errorf("the int64 value {%v} from config center is  overflow", int64(x)))
 								}
 							}
 						case reflect.String:
@@ -210,21 +211,18 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 						case reflect.Bool:
 							x, err := strconv.ParseBool(value)
 							if err != nil {
-								logger.Errorf("Dynamic change the configuration in struct {%v} field {%v} error ,error message is {%v}",
-									val.Type().Name(), val.Type().Field(i).Name, err)
+								errMsg(val.Type().Name(), val.Type().Field(i).Name, err)
 							}
 							f.SetBool(x)
 						case reflect.Float64:
 							x, err := strconv.ParseFloat(value, 64)
 							if err != nil {
-								logger.Errorf("Dynamic change the configuration in struct {%v} field {%v} error ,error message is {%v}",
-									val.Type().Name(), val.Type().Field(i).Name, err)
+								errMsg(val.Type().Name(), val.Type().Field(i).Name, err)
 							} else {
 								if !f.OverflowFloat(x) {
 									f.SetFloat(x)
 								} else {
-									logger.Errorf("Dynamic change the configuration in struct {%v} field {%v} error ,error message is {%v}",
-										val.Type().Name(), val.Type().Field(i).Name, perrors.Errorf("the float64 value {%v} from config center is  overflow", x))
+									errMsg(val.Type().Name(), val.Type().Field(i).Name, perrors.Errorf("the float64 value {%v} from config center is  overflow", x))
 								}
 							}
 						default:
@@ -323,45 +321,46 @@ func (c *BaseConfig) freshInternalConfig(config *config.InmemoryConfiguration) {
 	setFieldValue(val, reflect.Value{}, config)
 }
 
-// SetFatherConfig ...
+// SetFatherConfig sets father config by @fatherConfig
 func (c *BaseConfig) SetFatherConfig(fatherConfig interface{}) {
 	c.fatherConfig = fatherConfig
 }
 
 func initializeStruct(t reflect.Type, v reflect.Value) {
-	if v.Kind() == reflect.Struct {
-		for i := 0; i < v.NumField(); i++ {
-			f := v.Field(i)
-			ft := t.Field(i)
+	if v.Kind() != reflect.Struct {
+		return
+	}
+	for i := 0; i < v.NumField(); i++ {
+		f := v.Field(i)
+		ft := t.Field(i)
 
-			if ft.Tag.Get("property") != "" {
-				switch ft.Type.Kind() {
-				case reflect.Map:
-					if f.IsNil() {
-						f.Set(reflect.MakeMap(ft.Type))
-					}
-				case reflect.Slice:
-					if f.IsNil() {
-						f.Set(reflect.MakeSlice(ft.Type, 0, 0))
-					}
-				case reflect.Chan:
-					if f.IsNil() {
-						f.Set(reflect.MakeChan(ft.Type, 0))
-					}
-				case reflect.Struct:
-					if f.IsNil() {
-						initializeStruct(ft.Type, f)
-					}
-				case reflect.Ptr:
-					if f.IsNil() {
-						fv := reflect.New(ft.Type.Elem())
-						initializeStruct(ft.Type.Elem(), fv.Elem())
-						f.Set(fv)
-					}
-				default:
-				}
+		if ft.Tag.Get("property") == "" {
+			continue
+		}
+		switch ft.Type.Kind() {
+		case reflect.Map:
+			if f.IsNil() {
+				f.Set(reflect.MakeMap(ft.Type))
 			}
-
+		case reflect.Slice:
+			if f.IsNil() {
+				f.Set(reflect.MakeSlice(ft.Type, 0, 0))
+			}
+		case reflect.Chan:
+			if f.IsNil() {
+				f.Set(reflect.MakeChan(ft.Type, 0))
+			}
+		case reflect.Struct:
+			if f.IsNil() {
+				initializeStruct(ft.Type, f)
+			}
+		case reflect.Ptr:
+			if f.IsNil() {
+				fv := reflect.New(ft.Type.Elem())
+				initializeStruct(ft.Type.Elem(), fv.Elem())
+				f.Set(fv)
+			}
+		default:
 		}
 	}
 }

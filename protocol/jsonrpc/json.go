@@ -37,7 +37,7 @@ const (
 	VERSION = "2.0"
 )
 
-// CodecData ...
+// CodecData is codec data for json RPC.
 type CodecData struct {
 	ID     int64
 	Method string
@@ -64,11 +64,12 @@ type Error struct {
 	Data    interface{} `json:"data,omitempty"`
 }
 
+// Error decodes response error for a string.
 func (e *Error) Error() string {
 	buf, err := json.Marshal(e)
 	if err != nil {
-		msg, err := json.Marshal(err.Error())
-		if err != nil {
+		msg, retryErr := json.Marshal(err.Error())
+		if retryErr != nil {
 			msg = []byte("jsonrpc2.Error: json.Marshal failed")
 		}
 		return fmt.Sprintf(`{"code":%d,"message":%s}`, -32001, string(msg))
@@ -114,6 +115,7 @@ func newJsonClientCodec() *jsonClientCodec {
 	}
 }
 
+// Write codec data as byte.
 func (c *jsonClientCodec) Write(d *CodecData) ([]byte, error) {
 	// If return error: it will be returned as is for this call.
 	// Allow param to be only Array, Slice, Map or Struct.
@@ -122,10 +124,8 @@ func (c *jsonClientCodec) Write(d *CodecData) ([]byte, error) {
 	if param != nil {
 		switch k := reflect.TypeOf(param).Kind(); k {
 		case reflect.Map:
-			if reflect.TypeOf(param).Key().Kind() == reflect.String {
-				if reflect.ValueOf(param).IsNil() {
-					param = nil
-				}
+			if reflect.TypeOf(param).Key().Kind() == reflect.String && reflect.ValueOf(param).IsNil() {
+				param = nil
 			}
 		case reflect.Slice:
 			if reflect.ValueOf(param).IsNil() {
@@ -133,12 +133,10 @@ func (c *jsonClientCodec) Write(d *CodecData) ([]byte, error) {
 			}
 		case reflect.Array, reflect.Struct:
 		case reflect.Ptr:
-			switch k := reflect.TypeOf(param).Elem().Kind(); k {
+			switch ptrK := reflect.TypeOf(param).Elem().Kind(); ptrK {
 			case reflect.Map:
-				if reflect.TypeOf(param).Elem().Key().Kind() == reflect.String {
-					if reflect.ValueOf(param).Elem().IsNil() {
-						param = nil
-					}
+				if reflect.TypeOf(param).Elem().Key().Kind() == reflect.String && reflect.ValueOf(param).Elem().IsNil() {
+					param = nil
 				}
 			case reflect.Slice:
 				if reflect.ValueOf(param).Elem().IsNil() {
@@ -146,7 +144,7 @@ func (c *jsonClientCodec) Write(d *CodecData) ([]byte, error) {
 				}
 			case reflect.Array, reflect.Struct:
 			default:
-				return nil, perrors.New("unsupported param type: Ptr to " + k.String())
+				return nil, perrors.New("unsupported param type: Ptr to " + ptrK.String())
 			}
 		default:
 			return nil, perrors.New("unsupported param type: " + k.String())
@@ -170,6 +168,7 @@ func (c *jsonClientCodec) Write(d *CodecData) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// Read bytes as structured data
 func (c *jsonClientCodec) Read(streamBytes []byte, x interface{}) error {
 	c.rsp.reset()
 
@@ -223,6 +222,7 @@ func (r *serverRequest) reset() {
 	}
 }
 
+// UnmarshalJSON unmarshals JSON for server request.
 func (r *serverRequest) UnmarshalJSON(raw []byte) error {
 	r.reset()
 
@@ -281,7 +281,7 @@ type serverResponse struct {
 	Error   interface{}      `json:"error,omitempty"`
 }
 
-// ServerCodec ...
+// ServerCodec is codec data for request server.
 type ServerCodec struct {
 	req serverRequest
 }
@@ -296,7 +296,7 @@ func newServerCodec() *ServerCodec {
 	return &ServerCodec{}
 }
 
-// ReadHeader ...
+// ReadHeader reads header and unmarshal to server codec
 func (c *ServerCodec) ReadHeader(header map[string]string, body []byte) error {
 	if header["HttpMethod"] != "POST" {
 		return &Error{Code: -32601, Message: "Method not found"}
@@ -328,7 +328,7 @@ func (c *ServerCodec) ReadHeader(header map[string]string, body []byte) error {
 	return nil
 }
 
-// ReadBody ...
+// ReadBody reads @x as request body.
 func (c *ServerCodec) ReadBody(x interface{}) error {
 	// If x!=nil and return error e:
 	// - Write() will be called with e.Error() in r.Error
@@ -339,7 +339,7 @@ func (c *ServerCodec) ReadBody(x interface{}) error {
 		return nil
 	}
 
-	// 在这里把请求参数json 字符串转换成了相应的struct
+	// the request parameter JSON string is converted to the corresponding struct
 	params := []byte(*c.req.Params)
 	if err := json.Unmarshal(*c.req.Params, x); err != nil {
 		// Note: if c.request.Params is nil it's not an error, it's an optional member.
@@ -362,7 +362,7 @@ func (c *ServerCodec) ReadBody(x interface{}) error {
 	return nil
 }
 
-// NewError ...
+// NewError creates a error with @code and @message
 func NewError(code int, message string) *Error {
 	return &Error{Code: code, Message: message}
 }
@@ -380,6 +380,7 @@ func newError(message string) *Error {
 	}
 }
 
+// Write responses as byte
 func (c *ServerCodec) Write(errMsg string, x interface{}) ([]byte, error) {
 	// If return error: nothing happens.
 	// In r.Error will be "" or .Error() of error returned by:
