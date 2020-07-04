@@ -68,18 +68,18 @@ func (m mockMetadataReport) RemoveServiceMetadata(*identifier.ServiceMetadataIde
 	panic("implement me")
 }
 
-func (m mockMetadataReport) GetExportedURLs(*identifier.ServiceMetadataIdentifier) []string {
+func (m mockMetadataReport) GetExportedURLs(*identifier.ServiceMetadataIdentifier) ([]string, error) {
 	panic("implement me")
 }
 
-func (m mockMetadataReport) SaveSubscribedData(*identifier.SubscriberMetadataIdentifier, []common.URL) error {
+func (m mockMetadataReport) SaveSubscribedData(*identifier.SubscriberMetadataIdentifier, string) error {
 	panic("implement me")
 }
 
-func (m mockMetadataReport) GetSubscribedURLs(*identifier.SubscriberMetadataIdentifier) []string {
+func (m mockMetadataReport) GetSubscribedURLs(*identifier.SubscriberMetadataIdentifier) ([]string, error) {
 	panic("implement me")
 }
 
-func (m mockMetadataReport) GetServiceDefinition(*identifier.MetadataIdentifier) string {
+func (m mockMetadataReport) GetServiceDefinition(*identifier.MetadataIdentifier) (string, error) {
 	panic("implement me")
 }

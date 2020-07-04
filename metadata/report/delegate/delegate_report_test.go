@@ -75,14 +75,14 @@ func TestMetadataReport_MetadataReportRetryWithLimit(t *testing.T) {
 
 func mockNewMetadataReport(t *testing.T) *MetadataReport {
 	syncReportKey := "false"
-	retryPeroidKey := "3"
+	retryPeriodKey := "3"
 	retryTimesKey := "100"
 	cycleReportKey := "true"
 
 	url, err := common.NewURL(fmt.Sprintf(
 		"test://127.0.0.1:20000/?"+constant.SYNC_REPORT_KEY+"=%v&"+constant.RETRY_PERIOD_KEY+"=%v&"+
 			constant.RETRY_TIMES_KEY+"=%v&"+constant.CYCLE_REPORT_KEY+"=%v",
-		syncReportKey, retryPeroidKey, retryTimesKey, cycleReportKey))
+		syncReportKey, retryPeriodKey, retryTimesKey, cycleReportKey))
 	assert.NoError(t, err)
 	instance.SetMetadataReportUrl(url)
 	mtr, err := NewMetadataReport()
