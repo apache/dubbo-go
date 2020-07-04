@@ -53,6 +53,7 @@ const (
 	ROUTER
 	// PROVIDER is provider role
 	PROVIDER
+	PROTOCOL = "protocol"
 )
 
 var (
@@ -437,7 +438,7 @@ func (c URL) GetParamAndDecoded(key string) (string, error) {
 // GetRawParam gets raw param
 func (c URL) GetRawParam(key string) string {
 	switch key {
-	case "protocol":
+	case PROTOCOL:
 		return c.Protocol
 	case "username":
 		return c.Username
@@ -525,7 +526,7 @@ func (c URL) ToMap() map[string]string {
 	})
 
 	if c.Protocol != "" {
-		paramsMap["protocol"] = c.Protocol
+		paramsMap[PROTOCOL] = c.Protocol
 	}
 	if c.Username != "" {
 		paramsMap["username"] = c.Username
@@ -544,7 +545,7 @@ func (c URL) ToMap() map[string]string {
 		paramsMap["port"] = port
 	}
 	if c.Protocol != "" {
-		paramsMap["protocol"] = c.Protocol
+		paramsMap[PROTOCOL] = c.Protocol
 	}
 	if c.Path != "" {
 		paramsMap["path"] = c.Path

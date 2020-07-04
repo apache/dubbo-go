@@ -37,10 +37,13 @@ import (
 	"github.com/apache/dubbo-go/config_center"
 )
 
+const mockConsumerConfigPath = "./testdata/consumer_config.yml"
+const mockProviderConfigPath = "./testdata/provider_config.yml"
+
 func TestConfigLoader(t *testing.T) {
-	conPath, err := filepath.Abs("./testdata/consumer_config.yml")
+	conPath, err := filepath.Abs(mockConsumerConfigPath)
 	assert.NoError(t, err)
-	proPath, err := filepath.Abs("./testdata/provider_config.yml")
+	proPath, err := filepath.Abs(mockProviderConfigPath)
 	assert.NoError(t, err)
 
 	assert.Nil(t, consumerConfig)
@@ -153,7 +156,7 @@ func TestConfigLoaderWithConfigCenter(t *testing.T) {
 
 	conPath, err := filepath.Abs("./testdata/consumer_config_with_configcenter.yml")
 	assert.NoError(t, err)
-	proPath, err := filepath.Abs("./testdata/provider_config.yml")
+	proPath, err := filepath.Abs(mockProviderConfigPath)
 	assert.NoError(t, err)
 
 	assert.Nil(t, consumerConfig)
@@ -206,7 +209,7 @@ func TestConfigLoaderWithConfigCenterSingleRegistry(t *testing.T) {
 
 	conPath, err := filepath.Abs("./testdata/consumer_config_with_configcenter.yml")
 	assert.NoError(t, err)
-	proPath, err := filepath.Abs("./testdata/provider_config.yml")
+	proPath, err := filepath.Abs(mockProviderConfigPath)
 	assert.NoError(t, err)
 
 	assert.Nil(t, consumerConfig)

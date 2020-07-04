@@ -125,7 +125,7 @@ func initApollo() *httptest.Server {
 	return runMockConfigServer(handlerMap, notifyResponse)
 }
 
-func configResponse(rw http.ResponseWriter, req *http.Request) {
+func configResponse(rw http.ResponseWriter, _ *http.Request) {
 	result := fmt.Sprintf(mockConfigRes)
 	fmt.Fprintf(rw, "%s", result)
 }
@@ -135,7 +135,7 @@ func notifyResponse(rw http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(rw, "%s", result)
 }
 
-func serviceConfigResponse(rw http.ResponseWriter, req *http.Request) {
+func serviceConfigResponse(rw http.ResponseWriter, _ *http.Request) {
 	result := fmt.Sprintf(mockServiceConfigRes)
 	fmt.Fprintf(rw, "%s", result)
 }
@@ -164,7 +164,7 @@ func runMockConfigServer(handlerMap map[string]func(http.ResponseWriter, *http.R
 	return ts
 }
 
-func Test_GetConfig(t *testing.T) {
+func TestGetConfig(t *testing.T) {
 	configuration := initMockApollo(t)
 	configs, err := configuration.GetProperties(mockNamespace, config_center.WithGroup("dubbo"))
 	assert.NoError(t, err)
@@ -175,7 +175,7 @@ func Test_GetConfig(t *testing.T) {
 	deleteMockJson(t)
 }
 
-func Test_GetConfigItem(t *testing.T) {
+func TestGetConfigItem(t *testing.T) {
 	configuration := initMockApollo(t)
 	configs, err := configuration.GetInternalProperty("application.organization")
 	assert.NoError(t, err)
@@ -238,7 +238,7 @@ func TestRemoveListener(t *testing.T) {
 	apollo.RemoveListener(mockNamespace, listener)
 	assert.Equal(t, "", listener.event)
 	listenerCount := 0
-	apollo.listeners.Range(func(key, value interface{}) bool {
+	apollo.listeners.Range(func(_, value interface{}) bool {
 		apolloListener := value.(*apolloListener)
 		for e := range apolloListener.listeners {
 			fmt.Println(e)

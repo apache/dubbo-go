@@ -30,7 +30,7 @@ type TestData struct {
 	Test string
 }
 
-func TestJsonClientCodec_Write(t *testing.T) {
+func TestJsonClientCodecWrite(t *testing.T) {
 	cd := &CodecData{
 		ID:     1,
 		Method: "GetUser",
@@ -46,7 +46,7 @@ func TestJsonClientCodec_Write(t *testing.T) {
 	assert.EqualError(t, err, "unsupported param type: int")
 }
 
-func TestJsonClientCodec_Read(t *testing.T) {
+func TestJsonClientCodecRead(t *testing.T) {
 	codec := newJsonClientCodec()
 	codec.pending[1] = "GetUser"
 	rsp := &TestData{}
@@ -60,7 +60,7 @@ func TestJsonClientCodec_Read(t *testing.T) {
 	assert.EqualError(t, err, "{\"code\":-32000,\"message\":\"error\"}")
 }
 
-func TestServerCodec_Write(t *testing.T) {
+func TestServerCodecWrite(t *testing.T) {
 	codec := newServerCodec()
 	a := json.RawMessage([]byte("1"))
 	codec.req = serverRequest{Version: "1.0", Method: "GetUser", ID: &a}
@@ -73,7 +73,7 @@ func TestServerCodec_Write(t *testing.T) {
 	assert.Equal(t, "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"Test\":\"test\"},\"error\":{\"code\":-32000,\"message\":\"error\"}}\n", string(data))
 }
 
-func TestServerCodec_Read(t *testing.T) {
+func TestServerCodecRead(t *testing.T) {
 	codec := newServerCodec()
 	header := map[string]string{}
 	err := codec.ReadHeader(header, []byte("{\"jsonrpc\":\"2.0\",\"method\":\"GetUser\",\"params\":[\"args\",2],\"id\":1}\n"))
