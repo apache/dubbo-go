@@ -60,11 +60,5 @@ func (consulAgent *ConsulAgent) Close() error {
 	if err != nil {
 		return err
 	}
-
-	err = os.RemoveAll(consulAgent.dataDir)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return os.RemoveAll(consulAgent.dataDir)
 }

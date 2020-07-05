@@ -18,7 +18,6 @@
 package zookeeper
 
 import (
-	"github.com/apache/dubbo-go/common"
 	"sync"
 )
 import (
@@ -27,6 +26,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 )
 
@@ -34,8 +34,8 @@ type ZkClientFacade interface {
 	ZkClient() *ZookeeperClient
 	SetZkClient(*ZookeeperClient)
 	ZkClientLock() *sync.Mutex
-	WaitGroup() *sync.WaitGroup //for wait group control, zk client listener & zk client container
-	Done() chan struct{}        //for zk client control
+	WaitGroup() *sync.WaitGroup // for wait group control, zk client listener & zk client container
+	Done() chan struct{}        // for zk client control
 	RestartCallBack() bool
 	GetUrl() common.URL
 }

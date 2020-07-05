@@ -148,9 +148,9 @@ func loadConsumerConfig() {
 					checkok = false
 					count++
 					if count > maxWait {
-						errMsg := fmt.Sprintf("Failed to check the status of the service %v . No provider available for the service to the consumer use dubbo version %v", refconfig.InterfaceName, constant.Version)
-						logger.Error(errMsg)
-						panic(errMsg)
+						// errMsg := fmt.Sprintf("Failed to check the status of the service %v . No provider available for the service to the consumer use dubbo version %v", refconfig.InterfaceName, constant.Version)
+						// logger.Error(errMsg)
+						// panic(errMsg)
 					}
 					time.Sleep(time.Second * 1)
 					break

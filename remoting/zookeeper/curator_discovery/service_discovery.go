@@ -22,6 +22,8 @@ import (
 	"path"
 	"strings"
 	"sync"
+
+	"github.com/dubbogo/go-zookeeper/zk"
 )
 
 import (
@@ -71,6 +73,16 @@ func (sd *ServiceDiscovery) registerService(instance *ServiceInstance) error {
 		return err
 	}
 	err = sd.client.CreateTempWithValue(path, data)
+	if err == zk.ErrNodeExists {
+		_, state, _ := sd.client.GetContent(path)
+		if state != nil {
+			_, err = sd.client.SetContent(path, data, state.Version+1)
+			if err != nil {
+				logger.Debugf("Try to update the node data failed. In most cases, it's not a problem. ")
+			}
+		}
+		return nil
+	}
 	if err != nil {
 		return err
 	}
