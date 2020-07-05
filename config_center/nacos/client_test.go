@@ -56,7 +56,7 @@ func TestNewNacosClient(t *testing.T) {
 
 func TestSetNacosClient(t *testing.T) {
 	server := mockCommonNacosServer()
-	nacosURL := server.Listener.Addr().String()
+	nacosURL := "registry://" + server.Listener.Addr().String()
 	registryUrl, _ := common.NewURL(nacosURL)
 	c := &nacosDynamicConfiguration{
 		url:  &registryUrl,
