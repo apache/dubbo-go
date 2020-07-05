@@ -18,8 +18,6 @@
 package zookeeper
 
 import (
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/observer"
 	"strconv"
 	"sync"
 	"testing"
@@ -31,6 +29,8 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/observer"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/registry"
 )

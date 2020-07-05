@@ -300,6 +300,7 @@ func (zksd *zookeeperServiceDiscovery) DataChange(eventType remoting.Event) bool
 	err := zksd.DispatchEventByServiceName(serviceName)
 	if err != nil {
 		logger.Errorf("[zkServiceDiscovery] DispatchEventByServiceName{%s} error = err{%v}", serviceName, err)
+		return false
 	}
 	return true
 }
