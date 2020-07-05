@@ -384,7 +384,7 @@ func (suite *ClientTestSuite) TestClientRegisterTemp() {
 		assert.Contains(t, events, eDelete)
 	}()
 
-	_, err := c.RegisterTemp("scott", "wang")
+	err := c.RegisterTemp("scott/wang", "test")
 	if err != nil {
 		t.Fatal(err)
 	}

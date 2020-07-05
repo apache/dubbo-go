@@ -162,6 +162,10 @@ const (
 )
 
 const (
+	ZOOKEEPER_KEY = "zookeeper"
+)
+
+const (
 	ETCDV3_KEY = "etcdv3"
 )
 

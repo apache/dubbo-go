@@ -38,7 +38,7 @@ type mockFacade struct {
 	done    chan struct{}
 }
 
-func newMockFacade(client *ZookeeperClient, url *common.URL) zkClientFacade {
+func newMockFacade(client *ZookeeperClient, url *common.URL) ZkClientFacade {
 	mock := &mockFacade{
 		client: client,
 		URL:    url,

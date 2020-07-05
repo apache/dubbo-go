@@ -19,7 +19,6 @@ package etcdv3
 
 import (
 	"context"
-	"path"
 	"sync"
 	"time"
 )
@@ -520,16 +519,14 @@ func (c *Client) Delete(k string) error {
 }
 
 // RegisterTemp registers a temporary node
-func (c *Client) RegisterTemp(basePath string, node string) (string, error) {
+func (c *Client) RegisterTemp(k, v string) error {
 
-	completeKey := path.Join(basePath, node)
-
-	err := c.keepAliveKV(completeKey, "")
+	err := c.keepAliveKV(k, v)
 	if err != nil {
-		return "", perrors.WithMessagef(err, "keepalive kv (key %s)", completeKey)
+		return perrors.WithMessagef(err, "keepalive kv (key %s)", k)
 	}
 
-	return completeKey, nil
+	return nil
 }
 
 // GetChildrenKVList gets children kv list by @k
