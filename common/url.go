@@ -178,10 +178,8 @@ func WithToken(token string) option {
 		if len(token) > 0 {
 			value := token
 			if strings.ToLower(token) == "true" || strings.ToLower(token) == "default" {
-				uid, err := uuid.NewV4()
-				if err == nil {
-					value = uid.String()
-				}
+				uid, _ := uuid.NewV4()
+				value = uid.String()
 			}
 			url.SetParam(constant.TOKEN_KEY, value)
 		}
