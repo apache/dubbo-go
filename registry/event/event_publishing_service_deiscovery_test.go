@@ -20,8 +20,6 @@ package event
 import (
 	"reflect"
 	"testing"
-
-	"github.com/apache/dubbo-go/metadata/mapping"
 )
 
 import (
@@ -36,6 +34,7 @@ import (
 	"github.com/apache/dubbo-go/common/observer"
 	dispatcher2 "github.com/apache/dubbo-go/common/observer/dispatcher"
 	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/metadata/mapping"
 	_ "github.com/apache/dubbo-go/metadata/service/inmemory"
 	"github.com/apache/dubbo-go/registry"
 )

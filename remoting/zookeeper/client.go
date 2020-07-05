@@ -156,7 +156,7 @@ func ValidateZookeeperClient(container ZkClientFacade, opts ...Option) error {
 	}
 
 	if connected {
-		logger.Info("Connect to zookeeper successfully, name{%s}, zk address{%v}", options.zkName, url.Location)
+		logger.Infof("Connect to zookeeper successfully, name{%s}, zk address{%v}", options.zkName, url.Location)
 		container.WaitGroup().Add(1) // zk client start successful, then registry wg +1
 	}
 
@@ -433,6 +433,7 @@ func (z *ZookeeperClient) CreateWithValue(basePath string, value []byte) error {
 
 // CreateTempWithValue will create the node recursively, which means that if the parent node is absent,
 // it will create parent node first，and set value in last child path
+// If the path exist, it will update data
 func (z *ZookeeperClient) CreateTempWithValue(basePath string, value []byte) error {
 	var (
 		err     error
@@ -453,6 +454,9 @@ func (z *ZookeeperClient) CreateTempWithValue(basePath string, value []byte) err
 		// last child need be ephemeral
 		if i == length-1 {
 			_, err = conn.Create(tmpPath, value, zk.FlagEphemeral, zk.WorldACL(zk.PermAll))
+			if err == zk.ErrNodeExists {
+				return err
+			}
 		} else {
 			_, err = conn.Create(tmpPath, []byte{}, 0, zk.WorldACL(zk.PermAll))
 		}
