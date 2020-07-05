@@ -151,6 +151,8 @@ const (
 	NACOS_PROTOCOL_KEY           = "protocol"
 	NACOS_PATH_KEY               = "path"
 	NACOS_NAMESPACE_ID           = "namespaceId"
+	NACOS_PASSWORD               = "password"
+	NACOS_USERNAME               = "username"
 )
 
 const (
