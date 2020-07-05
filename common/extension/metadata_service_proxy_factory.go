@@ -29,8 +29,10 @@ var (
 	metadataServiceProxyFactoryMap = make(map[string]func() service.MetadataServiceProxyFactory)
 )
 
+type MetadataServiceProxyFactoryFunc func() service.MetadataServiceProxyFactory
+
 // SetMetadataServiceProxyFactory store the name-creator pair
-func SetMetadataServiceProxyFactory(name string, creator func() service.MetadataServiceProxyFactory) {
+func SetMetadataServiceProxyFactory(name string, creator MetadataServiceProxyFactoryFunc) {
 	metadataServiceProxyFactoryMap[name] = creator
 }
 

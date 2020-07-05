@@ -158,7 +158,7 @@ func (e *etcdV3ServiceDiscovery) GetInstances(serviceName string) []registry.Ser
 			}
 			return serviceInstances
 		}
-		perrors.New(fmt.Sprintf("could not getChildrenKVList the err is:%v", err))
+		logger.Infof("could not getChildrenKVList the err is:%v", err)
 	}
 
 	return make([]registry.ServiceInstance, 0, 0)
