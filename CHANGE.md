@@ -1,6 +1,55 @@
 # Release Notes
 ---
 
+## 1.5.0
+
+### New Features
+- [Application-Level Registry Model](https://github.com/apache/dubbo-go/pull/604)
+    - [DelegateMetadataReport & RemoteMetadataService](https://github.com/apache/dubbo-go/pull/505)
+    - [Nacos MetadataReport implementation](https://github.com/apache/dubbo-go/pull/522)
+    - [Nacos service discovery](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/nacos/service_discovery.go)
+    - [Zk metadata service](https://github.com/apache/dubbo-go/pull/633)
+    - [Zk service discovery](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/zookeeper/service_discovery.go)
+    - [Etcd metadata report](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/metadata/report/etcd/report.go)
+    - [Etcd metadata service discovery](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/etcdv3/service_discovery.go)
+- [Support grpc json protocol](https://github.com/apache/dubbo-go/pull/582)
+
+### Enhancement
+- [Optimize err handling ](https://github.com/apache/dubbo-go/pull/536/)
+- [Add attribute method into Invocation and RpcInvocation](https://github.com/apache/dubbo-go/pull/537)
+- [Optimize lock for zookeeper registry](https://github.com/apache/dubbo-go/pull/578)
+- [Improve code coverage of zookeeper config center](https://github.com/apache/dubbo-go/pull/549)
+- [Improve code coverage of nacos config center and configuration parser](https://github.com/apache/dubbo-go/pull/587)
+- [Kubernetes as registry enhance](https://github.com/apache/dubbo-go/pull/577)
+- [Optimize zk client's lock and tests](https://github.com/apache/dubbo-go/pull/601)
+- [Add setInvoker method for invocation](https://github.com/apache/dubbo-go/pull/612)
+- [Upgrade getty & hessian2](https://github.com/apache/dubbo-go/pull/626)
+- [Optimize router design: Extract priority router](https://github.com/apache/dubbo-go/pull/630)
+- [NamespaceId config for nacos](https://github.com/apache/dubbo-go/pull/641)
+
+
+### Bugfixes
+- [Fix Gitee problem](https://github.com/apache/dubbo-go/pull/590)
+- [Gitee quality analyses -- common](https://github.com/apache/dubbo-go/issues/616)
+- [Nacos client logDir path seperator for Windows](https://github.com/apache/dubbo-go/pull/591)
+- [Fix various linter warnings](https://github.com/apache/dubbo-go/pull/624)
+- [Fixed some issues in config folder that reported by sonar-qube](https://github.com/apache/dubbo-go/pull/634)
+- [Zk disconnected, dubbo-go panic when subscribe](https://github.com/apache/dubbo-go/pull/613)
+- [Enhancement cluster code analysis](https://github.com/apache/dubbo-go/pull/632)
+
+### Document & Comment
+- [Add comment for common directory](https://github.com/apache/dubbo-go/pull/530)
+- [Add comments for config_center](https://github.com/apache/dubbo-go/pull/545)
+- [Update the comments in metrics](https://github.com/apache/dubbo-go/pull/547)
+- [Add comments for config](https://github.com/apache/dubbo-go/pull/579)
+- [Updated the dubbo-go-ext image](https://github.com/apache/dubbo-go/pull/581)
+- [Add comment for cluster](https://github.com/apache/dubbo-go/pull/584)
+- [Update the comments in filter directory](https://github.com/apache/dubbo-go/pull/586)
+- [Add comment for metadata](https://github.com/apache/dubbo-go/pull/588)
+- [Update the comments in protocol directory](https://github.com/apache/dubbo-go/pull/602)
+- [Add comments for remoting](https://github.com/apache/dubbo-go/pull/605)
+- [Update the comments in registy directory](https://github.com/apache/dubbo-go/pull/589)
+
 ## 1.4.0
 ### New Features
 
