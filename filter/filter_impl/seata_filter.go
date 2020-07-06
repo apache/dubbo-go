@@ -37,7 +37,7 @@ func init() {
 	extension.SetFilter(SEATA, GetSeataFilter)
 }
 
-// SeataFilter ...
+// SeataFilter when use seata-golang, use this filter to transfer xid
 type SeataFilter struct {}
 
 // When use Seata, transfer xid by attachments
@@ -52,12 +52,12 @@ func (sf *SeataFilter) Invoke(ctx context.Context, invoker protocol.Invoker, inv
 	return invoker.Invoke(ctx,invocation)
 }
 
-// OnResponse ...
+// OnResponse dummy process, returns the result directly
 func (sf *SeataFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }
 
-// GetSeataFilter ...
+// GetSeataFilter create SeataFilter instance
 func GetSeataFilter() filter.Filter {
 	return &SeataFilter{}
 }
