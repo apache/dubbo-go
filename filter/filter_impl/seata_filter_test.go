@@ -40,7 +40,7 @@ func (iv *testMockSeataInvoker) Invoke(ctx context.Context, _ protocol.Invocatio
 	if val != nil {
 		xid, ok := val.(string)
 		if ok {
-			return &protocol.RPCResult{Rest:xid}
+			return &protocol.RPCResult{Rest: xid}
 		}
 	}
 	return &protocol.RPCResult{}
@@ -53,4 +53,3 @@ func TestSeataFilter_Invoke(t *testing.T) {
 	}))
 	assert.Equal(t, "10.30.21.227:8091:2000047792", result.Result())
 }
-
