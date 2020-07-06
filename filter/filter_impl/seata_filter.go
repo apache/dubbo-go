@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	SEATA = "SEATA"
+	SEATA     = "SEATA"
 	SEATA_XID = "SEATA_XID"
 )
 
@@ -38,18 +38,18 @@ func init() {
 }
 
 // SeataFilter when use seata-golang, use this filter to transfer xid
-type SeataFilter struct {}
+type SeataFilter struct{}
 
 // When use Seata, transfer xid by attachments
 // Invoke Get Xid by attachment key `SEATA_XID`
 func (sf *SeataFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("invoking seata filter.")
-	xid := invocation.AttachmentsByKey(SEATA_XID,"")
+	xid := invocation.AttachmentsByKey(SEATA_XID, "")
 	if xid != "" {
 		logger.Debugf("Method: %v,Xid: %v", invocation.MethodName(), xid)
-		return invoker.Invoke(context.WithValue(ctx,SEATA_XID, xid), invocation)
+		return invoker.Invoke(context.WithValue(ctx, SEATA_XID, xid), invocation)
 	}
-	return invoker.Invoke(ctx,invocation)
+	return invoker.Invoke(ctx, invocation)
 }
 
 // OnResponse dummy process, returns the result directly
