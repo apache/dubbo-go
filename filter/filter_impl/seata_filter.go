@@ -34,7 +34,7 @@ const (
 )
 
 func init() {
-	extension.SetFilter(SEATA, GetSeataFilter)
+	extension.SetFilter(SEATA, getSeataFilter)
 }
 
 // SeataFilter when use seata-golang, use this filter to transfer xid
@@ -57,7 +57,7 @@ func (sf *SeataFilter) OnResponse(ctx context.Context, result protocol.Result, i
 	return result
 }
 
-// GetSeataFilter create SeataFilter instance
-func GetSeataFilter() filter.Filter {
+// getSeataFilter create SeataFilter instance
+func getSeataFilter() filter.Filter {
 	return &SeataFilter{}
 }
