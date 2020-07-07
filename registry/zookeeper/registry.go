@@ -134,6 +134,7 @@ func (r *zkRegistry) InitListeners() {
 					regConfigListener.Close()
 				}
 				newDataListener.SubscribeURL(conf, NewRegistryConfigurationListener(r.client, r))
+				r.WaitGroup().Add(1)
 				go r.listener.ListenServiceEvent(conf, fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, url.QueryEscape(conf.Service())), newDataListener)
 
 			}
@@ -259,7 +260,7 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 
 	//Interested register to dataconfig.
 	r.dataListener.SubscribeURL(conf, zkListener)
-
+	r.WaitGroup().Add(1)
 	go r.listener.ListenServiceEvent(conf, fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, url.QueryEscape(conf.Service())), r.dataListener)
 
 	return zkListener, nil
