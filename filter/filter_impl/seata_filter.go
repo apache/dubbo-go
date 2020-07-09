@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	SEATA     = "SEATA"
+	SEATA     = "seata"
 	SEATA_XID = "SEATA_XID"
 )
 
