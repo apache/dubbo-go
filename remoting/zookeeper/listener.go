@@ -235,7 +235,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 			// Only need to compare Path when subscribing to provider
 			if strings.LastIndex(zkPath, constant.PROVIDER_CATEGORY) != -1 {
 				provider, _ := common.NewURL(c)
-				if provider.Path != conf.Path {
+				if provider.ServiceKey() != conf.ServiceKey() {
 					continue
 				}
 			}
