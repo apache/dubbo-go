@@ -101,6 +101,6 @@ func endpointsStr(protocolMap map[string]int) string {
 
 // nolint
 type endpoint struct {
-	Port     int    `json:"port"`
-	Protocol string `json:"protocol"`
+	Port     int    `json:"port, omitempty"`
+	Protocol string `json:"protocol, omitempty"`
 }

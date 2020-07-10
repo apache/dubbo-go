@@ -95,7 +95,7 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 		subscribedServices:               subscribedServices,
 		subscribedURLsSynthesizers:       subscribedURLsSynthesizers,
 		registeredListeners:              gxset.NewSet(),
-		serviceRevisionExportedURLsCache: make(map[string]map[string][]common.URL),
+		serviceRevisionExportedURLsCache: make(map[string]map[string][]common.URL, 8),
 		serviceNameMapping:               serviceNameMapping,
 		metaDataService:                  metaDataService,
 	}, nil
@@ -316,7 +316,6 @@ func (s *serviceDiscoveryRegistry) subscribe(url *common.URL, notify registry.No
 	if len(subscribedURLs) == 0 {
 		subscribedURLs = s.synthesizeSubscribedURLs(url, serviceInstances)
 	}
-	// TODO make sure it's workable
 	for _, url := range subscribedURLs {
 		notify.Notify(&registry.ServiceEvent{
 			Action:  remoting.EventTypeAdd,
@@ -519,7 +518,7 @@ func (s *serviceDiscoveryRegistry) initRevisionExportedURLsByInst(serviceInstanc
 	revision := getExportedServicesRevision(serviceInstance)
 	revisionExportedURLsMap := s.serviceRevisionExportedURLsCache[serviceName]
 	if revisionExportedURLsMap == nil {
-		revisionExportedURLsMap = make(map[string][]common.URL)
+		revisionExportedURLsMap = make(map[string][]common.URL, 4)
 		s.serviceRevisionExportedURLsCache[serviceName] = revisionExportedURLsMap
 	}
 	revisionExportedURLs := revisionExportedURLsMap[revision]
@@ -592,8 +591,8 @@ func (s *serviceDiscoveryRegistry) cloneExportedURLs(url common.URL, serviceInsa
 }
 
 type endpoint struct {
-	Port     int    `json:"port"`
-	Protocol string `json:"protocol"`
+	Port     int    `json:"port, omitempty"`
+	Protocol string `json:"protocol, omitempty"`
 }
 
 func getProtocolPort(serviceInstance registry.ServiceInstance, protocol string) int {

@@ -308,7 +308,7 @@ func (zksd *zookeeperServiceDiscovery) DataChange(eventType remoting.Event) bool
 // toCuratorInstance convert to curator's service instance
 func (zksd *zookeeperServiceDiscovery) toCuratorInstance(instance registry.ServiceInstance) *curator_discovery.ServiceInstance {
 	id := instance.GetHost() + ":" + strconv.Itoa(instance.GetPort())
-	pl := make(map[string]interface{})
+	pl := make(map[string]interface{}, 8)
 	pl["id"] = id
 	pl["name"] = instance.GetServiceName()
 	pl["metadata"] = instance.GetMetadata()

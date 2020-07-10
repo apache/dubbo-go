@@ -169,6 +169,7 @@ type Client struct {
 	Wait sync.WaitGroup
 }
 
+// nolint
 func NewClient(name string, endpoints []string, timeout time.Duration, heartbeat int) (*Client, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
