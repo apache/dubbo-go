@@ -196,20 +196,12 @@ func (mts *MetadataService) PublishServiceDefinition(url common.URL) error {
 	interfaceName := url.GetParam(constant.INTERFACE_KEY, "")
 	isGeneric := url.GetParamBool(constant.GENERIC_KEY, false)
 	if len(interfaceName) > 0 && !isGeneric {
-		// judge is consumer or provider
-		// side := url.GetParam(constant.SIDE_KEY, "")
-		// var service event.RPCService
 		service := common.ServiceMap.GetService(url.Protocol, url.GetParam(constant.BEAN_NAME_KEY, url.Service()))
-		// if side == event.RoleType(event.CONSUMER).Role() {
-		//	//TODO:generate the service definition and store it
-		//
-		// } else if side == event.RoleType(event.PROVIDER).Role() {
-		//	//TODO:generate the service definition and store it
-		// }
 		sd := definition.BuildServiceDefinition(*service, url)
 		data, err := sd.ToBytes()
 		if err != nil {
 			logger.Errorf("publishProvider getServiceDescriptor error. providerUrl:%v , error:%v ", url, err)
+			return nil
 		}
 		mts.serviceDefinitions.Store(url.ServiceKey(), string(data))
 		return nil
