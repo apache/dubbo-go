@@ -21,11 +21,13 @@ import (
 	"github.com/apache/dubbo-go/metadata/mapping"
 )
 
+type ServiceNameMappingCreator func() mapping.ServiceNameMapping
+
 var (
-	globalNameMappingCreator func() mapping.ServiceNameMapping
+	globalNameMappingCreator ServiceNameMappingCreator
 )
 
-func SetGlobalServiceNameMapping(nameMappingCreator func() mapping.ServiceNameMapping) {
+func SetGlobalServiceNameMapping(nameMappingCreator ServiceNameMappingCreator) {
 	globalNameMappingCreator = nameMappingCreator
 }
 

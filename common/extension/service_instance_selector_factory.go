@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	serviceInstanceSelectorMappings = make(map[string]func() instance.ServiceInstanceSelector)
+	serviceInstanceSelectorMappings = make(map[string]func() instance.ServiceInstanceSelector, 2)
 )
 
 // nolint

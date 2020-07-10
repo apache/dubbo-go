@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	metadataServiceProxyFactoryMap = make(map[string]func() service.MetadataServiceProxyFactory)
+	metadataServiceProxyFactoryMap = make(map[string]func() service.MetadataServiceProxyFactory, 2)
 )
 
 type MetadataServiceProxyFactoryFunc func() service.MetadataServiceProxyFactory
