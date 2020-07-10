@@ -263,9 +263,9 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 		}
 		s.registerServiceInstancesChangedListener(*url, listener)
 	}
-
 	return nil
 }
+
 func (s *serviceDiscoveryRegistry) registerServiceInstancesChangedListener(url common.URL, listener *registry.ServiceInstancesChangedListener) {
 	listenerId := listener.ServiceName + ":" + getUrlKey(url)
 	if !s.subscribedServices.Contains(listenerId) {
@@ -335,6 +335,7 @@ func (s *serviceDiscoveryRegistry) synthesizeSubscribedURLs(subscribedURL *commo
 	}
 	return urls
 }
+
 func shouldSubscribe(url common.URL) bool {
 	return !shouldRegister(url)
 }
