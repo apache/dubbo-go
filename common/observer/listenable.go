@@ -110,7 +110,7 @@ func (bl *BaseListener) RemoveEventListeners(listenersSlice []EventListener) {
 func (bl *BaseListener) RemoveAllEventListeners() {
 	bl.Mutex.Lock()
 	defer bl.Mutex.Unlock()
-	bl.ListenersCache = make(map[reflect.Type][]EventListener)
+	bl.ListenersCache = make(map[reflect.Type][]EventListener, 8)
 }
 
 // GetAllEventListeners get all listener
