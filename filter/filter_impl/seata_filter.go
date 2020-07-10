@@ -19,6 +19,7 @@ package filter_impl
 
 import (
 	"context"
+	"strings"
 )
 
 import (
@@ -45,7 +46,7 @@ type SeataFilter struct{}
 func (sf *SeataFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("invoking seata filter.")
 	xid := invocation.AttachmentsByKey(SEATA_XID, "")
-	if xid != "" {
+	if strings.TrimSpace(xid) != "" {
 		logger.Debugf("Method: %v,Xid: %v", invocation.MethodName(), xid)
 		return invoker.Invoke(context.WithValue(ctx, SEATA_XID, xid), invocation)
 	}
