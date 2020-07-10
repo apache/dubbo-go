@@ -22,8 +22,6 @@ import (
 	"path"
 	"strings"
 	"sync"
-
-	"github.com/dubbogo/go-zookeeper/zk"
 )
 
 import (
@@ -31,6 +29,8 @@ import (
 )
 
 import (
+	"github.com/dubbogo/go-zookeeper/zk"
+
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/remoting"
@@ -119,14 +119,17 @@ func (sd *ServiceDiscovery) UpdateService(instance *ServiceInstance) error {
 	if !ok {
 		return perrors.New("[ServiceDiscovery] services value not entry")
 	}
+	data, err := json.Marshal(instance)
+
+	if err != nil {
+		return err
+	}
+
 	entry.Lock()
 	defer entry.Unlock()
 	entry.instance = instance
 	path := sd.pathForInstance(instance.Name, instance.Id)
-	data, err := json.Marshal(instance)
-	if err != nil {
-		return err
-	}
+
 	_, err = sd.client.SetContent(path, data, -1)
 	if err != nil {
 		return err
