@@ -89,13 +89,21 @@ func (l *ZkEventListener) listenServiceNodeEvent(zkPath string, listener ...remo
 			case zk.EventNodeDataChanged:
 				logger.Warnf("zk.ExistW(key{%s}) = event{EventNodeDataChanged}", zkPath)
 				if len(listener) > 0 {
-					content, _, _ := l.client.Conn.Get(zkEvent.Path)
+					content, _, err := l.client.Conn.Get(zkEvent.Path)
+					if err != nil {
+						logger.Warnf("zk.Conn.Get{key:%s} = error{%v}", zkPath, err)
+						return false
+					}
 					listener[0].DataChange(remoting.Event{Path: zkEvent.Path, Action: remoting.EventTypeUpdate, Content: string(content)})
 				}
 			case zk.EventNodeCreated:
 				logger.Warnf("zk.ExistW(key{%s}) = event{EventNodeCreated}", zkPath)
 				if len(listener) > 0 {
-					content, _, _ := l.client.Conn.Get(zkEvent.Path)
+					content, _, err := l.client.Conn.Get(zkEvent.Path)
+					if err != nil {
+						logger.Warnf("zk.Conn.Get{key:%s} = error{%v}", zkPath, err)
+						return false
+					}
 					listener[0].DataChange(remoting.Event{Path: zkEvent.Path, Action: remoting.EventTypeAdd, Content: string(content)})
 				}
 			case zk.EventNotWatching:
@@ -239,15 +247,15 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 			// Only need to compare Path when subscribing to provider
 			if strings.LastIndex(zkPath, constant.PROVIDER_CATEGORY) != -1 {
 				provider, _ := common.NewURL(c)
-				if provider.Path != conf.Path {
+				if provider.ServiceKey() != conf.ServiceKey() {
 					continue
 				}
 			}
 
-			//listen l service node
+			// listen l service node
 			dubboPath := path.Join(zkPath, c)
 
-			//Save the path to avoid listen repeatedly
+			// Save the path to avoid listen repeatedly
 			l.pathMapLock.Lock()
 			_, ok := l.pathMap[dubboPath]
 			l.pathMapLock.Unlock()
@@ -259,7 +267,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 			l.pathMapLock.Lock()
 			l.pathMap[dubboPath] = struct{}{}
 			l.pathMapLock.Unlock()
-			//When Zk disconnected, the Conn will be set to nil, so here need check the value of Conn
+			// When Zk disconnected, the Conn will be set to nil, so here need check the value of Conn
 			l.client.RLock()
 			if l.client.Conn == nil {
 				l.client.RUnlock()
@@ -283,8 +291,8 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 				logger.Warnf("listenSelf(zk path{%s}) goroutine exit now", zkPath)
 			}(dubboPath, listener)
 
-			//listen sub path recursive
-			//if zkPath is end of "providers/ & consumers/" we do not listen children dir
+			// listen sub path recursive
+			// if zkPath is end of "providers/ & consumers/" we do not listen children dir
 			if strings.LastIndex(zkPath, constant.PROVIDER_CATEGORY) == -1 &&
 				strings.LastIndex(zkPath, constant.CONSUMER_CATEGORY) == -1 {
 				l.wg.Add(1)

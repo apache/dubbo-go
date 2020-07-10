@@ -64,10 +64,7 @@ func getNacosConfig(url *common.URL) (map[string]interface{}, error) {
 		if err != nil {
 			return nil, perrors.WithMessagef(err, "split [%s] ", addr)
 		}
-		port, err := strconv.Atoi(portStr)
-		if err != nil {
-			return configMap, perrors.WithMessage(err, "the port string is invalid. "+portStr)
-		}
+		port, _ := strconv.Atoi(portStr)
 		serverConfigs = append(serverConfigs, nacosConstant.ServerConfig{
 			IpAddr: ip,
 			Port:   uint64(port),
@@ -75,21 +72,22 @@ func getNacosConfig(url *common.URL) (map[string]interface{}, error) {
 	}
 	configMap["serverConfigs"] = serverConfigs
 
+	var clientConfig nacosConstant.ClientConfig
 	timeout, err := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
 	if err != nil {
 		return nil, err
 	}
-
-	timeoutMs := uint64(timeout.Nanoseconds() / constant.MsToNanoRate)
-
-	configMap["clientConfig"] = nacosConstant.ClientConfig{
-		TimeoutMs:           timeoutMs,
-		ListenInterval:      2 * timeoutMs,
-		CacheDir:            url.GetParam(constant.NACOS_CACHE_DIR_KEY, ""),
-		LogDir:              url.GetParam(constant.NACOS_LOG_DIR_KEY, ""),
-		Endpoint:            url.GetParam(constant.NACOS_ENDPOINT, ""),
-		NotLoadCacheAtStart: true,
-	}
+	clientConfig.TimeoutMs = uint64(timeout.Seconds() * 1000)
+	clientConfig.ListenInterval = 2 * clientConfig.TimeoutMs
+	clientConfig.CacheDir = url.GetParam(constant.NACOS_CACHE_DIR_KEY, "")
+	clientConfig.LogDir = url.GetParam(constant.NACOS_LOG_DIR_KEY, "")
+	clientConfig.Endpoint = url.GetParam(constant.NACOS_ENDPOINT, "")
+	clientConfig.NamespaceId = url.GetParam(constant.NACOS_NAMESPACE_ID, "")
+	clientConfig.Username = url.GetParam(constant.NACOS_USERNAME, "")
+	clientConfig.Password = url.GetParam(constant.NACOS_PASSWORD, "")
+	clientConfig.NamespaceId = url.GetParam(constant.NACOS_NAMESPACE_ID, "")
+	clientConfig.NotLoadCacheAtStart = true
+	configMap["clientConfig"] = clientConfig
 
 	return configMap, nil
 }
@@ -122,7 +120,9 @@ func NewNacosClient(rc *config.RemoteConfig) (naming_client.INamingClient, error
 	clientConfig.ListenInterval = 2 * clientConfig.TimeoutMs
 	clientConfig.CacheDir = rc.GetParam(constant.NACOS_CACHE_DIR_KEY, "")
 	clientConfig.LogDir = rc.GetParam(constant.NACOS_LOG_DIR_KEY, "")
-	clientConfig.Endpoint = rc.GetParam(constant.NACOS_ENDPOINT, "")
+	clientConfig.Endpoint = rc.Address
+	clientConfig.Username = rc.Username
+	clientConfig.Password = rc.Password
 	clientConfig.NotLoadCacheAtStart = true
 	configMap["clientConfig"] = clientConfig
 
