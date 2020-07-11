@@ -71,7 +71,10 @@ func (f *FileConditionRouter) URL() common.URL {
 			common.WithParamsValue(constant.RouterPriority, strconv.Itoa(routerRule.Priority)),
 			common.WithParamsValue(constant.RULE_KEY, base64.URLEncoding.EncodeToString([]byte(rule))),
 			common.WithParamsValue(constant.ROUTER_KEY, constant.CONDITION_ROUTE_PROTOCOL),
-			common.WithParamsValue(constant.CATEGORY_KEY, constant.ROUTERS_CATEGORY))
+			common.WithParamsValue(constant.CATEGORY_KEY, constant.ROUTERS_CATEGORY),
+			common.WithParamsValue(constant.RouterRuleKey, routerRule.Key),
+			common.WithParamsValue(constant.RouterScope, routerRule.Scope),
+		)
 	})
 	return f.url
 }
