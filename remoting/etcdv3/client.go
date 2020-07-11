@@ -131,7 +131,7 @@ func ValidateClient(container clientFacade, opts ...Option) error {
 	return nil
 }
 
-//  NewServiceDiscoveryClient
+//  nolint
 func NewServiceDiscoveryClient(opts ...Option) *Client {
 	options := &Options{
 		heartbeat: 1, // default heartbeat
