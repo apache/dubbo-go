@@ -163,7 +163,6 @@ func ValidateZookeeperClient(container ZkClientFacade, opts ...Option) error {
 	return perrors.WithMessagef(err, "newZookeeperClient(address:%+v)", url.PrimitiveURL)
 }
 
-
 // nolint
 func NewZookeeperClient(name string, zkAddrs []string, timeout time.Duration) (*ZookeeperClient, error) {
 	var (
