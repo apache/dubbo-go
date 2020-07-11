@@ -25,12 +25,11 @@ import (
 )
 
 import (
+	"github.com/dubbogo/go-zookeeper/zk"
 	perrors "github.com/pkg/errors"
 )
 
 import (
-	"github.com/dubbogo/go-zookeeper/zk"
-
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/remoting"

@@ -342,7 +342,7 @@ func shouldSubscribe(url common.URL) bool {
 func (s *serviceDiscoveryRegistry) getServices(url common.URL) *gxset.HashSet {
 	services := gxset.NewSet()
 	serviceNames := url.GetParam(constant.PROVIDER_BY, "")
-	if len(serviceNames) != 0 {
+	if len(serviceNames) > 0 {
 		services = parseServices(serviceNames)
 	}
 	if services.Empty() {
@@ -486,7 +486,7 @@ func (s *serviceDiscoveryRegistry) initSelectedRevisionExportedURLs(serviceInsta
 	for range serviceInstances {
 		selectServiceInstance := s.selectServiceInstance(serviceInstances)
 		revisionExportedURLs := s.initRevisionExportedURLsByInst(selectServiceInstance)
-		if len(revisionExportedURLs) != 0 {
+		if len(revisionExportedURLs) > 0 {
 			// If the result is valid,break
 			break
 		}
@@ -565,7 +565,7 @@ func getExportedStoreType(serviceInstance registry.ServiceInstance) string {
 }
 
 func (s *serviceDiscoveryRegistry) cloneExportedURLs(url common.URL, serviceInsances []registry.ServiceInstance) []common.URL {
-	if serviceInsances == nil || len(serviceInsances) == 0 {
+	if len(serviceInsances) == 0 {
 		return []common.URL{}
 	}
 	var clonedExportedURLs []common.URL
