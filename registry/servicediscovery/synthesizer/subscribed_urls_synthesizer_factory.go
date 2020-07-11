@@ -17,16 +17,25 @@
 
 package synthesizer
 
+import (
+	"sync"
+)
+
 var (
-	synthesizers []SubscribedURLsSynthesizer
+	synthesizers     []SubscribedURLsSynthesizer
+	synthesizerMutex sync.RWMutex
 )
 
 // nolint
 func AddSynthesizer(synthesizer SubscribedURLsSynthesizer) {
+	synthesizerMutex.Lock()
+	defer synthesizerMutex.Unlock()
 	synthesizers = append(synthesizers, synthesizer)
 }
 
 // nolint
 func GetAllSynthesizer() []SubscribedURLsSynthesizer {
+	synthesizerMutex.RLock()
+	defer synthesizerMutex.RUnlock()
 	return synthesizers
 }
