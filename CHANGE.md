@@ -13,6 +13,7 @@
     - [Etcd metadata report](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/metadata/report/etcd/report.go)
     - [Etcd metadata service discovery](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/etcdv3/service_discovery.go)
 - [Support grpc json protocol](https://github.com/apache/dubbo-go/pull/582)
+- [Ftr: using different labels btw provider and consumer, k8s service discovery across namespaces](https://github.com/apache/dubbo-go/pull/577 )
 
 ### Enhancement
 - [Optimize err handling ](https://github.com/apache/dubbo-go/pull/536/)
