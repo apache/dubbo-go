@@ -26,6 +26,8 @@ import (
 	gxpage "github.com/dubbogo/gost/page"
 )
 
+const DefaultPageSize = 100
+
 // ServiceDiscovery is the common operations of Service Discovery
 type ServiceDiscovery interface {
 	fmt.Stringer

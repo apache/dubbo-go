@@ -58,8 +58,20 @@ func (l *ZkEventListener) SetClient(client *ZookeeperClient) {
 	l.client = client
 }
 
+// ListenServiceNodeEvent listen a path node event
+func (l *ZkEventListener) ListenServiceNodeEvent(zkPath string, listener remoting.DataListener) {
+	// listen l service node
+	l.wg.Add(1)
+	go func(zkPath string, listener remoting.DataListener) {
+		if l.listenServiceNodeEvent(zkPath, listener) {
+			listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeDel})
+		}
+		logger.Warnf("listenSelf(zk path{%s}) goroutine exit now", zkPath)
+	}(zkPath, listener)
+}
+
 // nolint
-func (l *ZkEventListener) ListenServiceNodeEvent(zkPath string, listener ...remoting.DataListener) bool {
+func (l *ZkEventListener) listenServiceNodeEvent(zkPath string, listener ...remoting.DataListener) bool {
 	defer l.wg.Done()
 	var zkEvent zk.Event
 	for {
@@ -154,7 +166,7 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 		l.wg.Add(1)
 		go func(node string, zkPath string, listener remoting.DataListener) {
 			logger.Infof("delete zkNode{%s}", node)
-			if l.ListenServiceNodeEvent(node, listener) {
+			if l.listenServiceNodeEvent(node, listener) {
 				logger.Infof("delete content{%s}", node)
 				listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeDel})
 			}
@@ -240,10 +252,10 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 				}
 			}
 
-			//listen l service node
+			// listen l service node
 			dubboPath := path.Join(zkPath, c)
 
-			//Save the path to avoid listen repeatedly
+			// Save the path to avoid listen repeatedly
 			l.pathMapLock.Lock()
 			_, ok := l.pathMap[dubboPath]
 			l.pathMapLock.Unlock()
@@ -255,7 +267,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 			l.pathMapLock.Lock()
 			l.pathMap[dubboPath] = struct{}{}
 			l.pathMapLock.Unlock()
-			//When Zk disconnected, the Conn will be set to nil, so here need check the value of Conn
+			// When Zk disconnected, the Conn will be set to nil, so here need check the value of Conn
 			l.client.RLock()
 			if l.client.Conn == nil {
 				l.client.RUnlock()
@@ -273,14 +285,14 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 			logger.Infof("listen dubbo service key{%s}", dubboPath)
 			l.wg.Add(1)
 			go func(zkPath string, listener remoting.DataListener) {
-				if l.ListenServiceNodeEvent(zkPath) {
+				if l.listenServiceNodeEvent(zkPath) {
 					listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeDel})
 				}
 				logger.Warnf("listenSelf(zk path{%s}) goroutine exit now", zkPath)
 			}(dubboPath, listener)
 
-			//listen sub path recursive
-			//if zkPath is end of "providers/ & consumers/" we do not listen children dir
+			// listen sub path recursive
+			// if zkPath is end of "providers/ & consumers/" we do not listen children dir
 			if strings.LastIndex(zkPath, constant.PROVIDER_CATEGORY) == -1 &&
 				strings.LastIndex(zkPath, constant.CONSUMER_CATEGORY) == -1 {
 				l.wg.Add(1)
@@ -310,9 +322,9 @@ func timeSecondDuration(sec int) time.Duration {
 }
 
 // ListenServiceEvent is invoked by ZkConsumerRegistry::Register/ZkConsumerRegistry::get/ZkConsumerRegistry::getListener
-// registry.go:Listen -> listenServiceEvent -> listenDirEvent -> ListenServiceNodeEvent
+// registry.go:Listen -> listenServiceEvent -> listenDirEvent -> listenServiceNodeEvent
 //                            |
-//                            --------> ListenServiceNodeEvent
+//                            --------> listenServiceNodeEvent
 func (l *ZkEventListener) ListenServiceEvent(conf *common.URL, zkPath string, listener remoting.DataListener) {
 	logger.Infof("listen dubbo path{%s}", zkPath)
 	l.wg.Add(1)
@@ -326,7 +338,8 @@ func (l *ZkEventListener) valid() bool {
 	return l.client.ZkConnValid()
 }
 
-// nolint
+// Close will let client listen exit
 func (l *ZkEventListener) Close() {
+	close(l.client.exit)
 	l.wg.Wait()
 }

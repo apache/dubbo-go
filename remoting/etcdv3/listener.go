@@ -49,7 +49,7 @@ func NewEventListener(client *Client) *EventListener {
 	}
 }
 
-// ListenServiceNodeEvent Listen on a spec key
+// listenServiceNodeEvent Listen on a spec key
 // this method will return true when spec key deleted,
 // this method will return false when deep layer connection lose
 func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.DataListener) bool {
@@ -178,9 +178,9 @@ func timeSecondDuration(sec int) time.Duration {
 }
 
 // ListenServiceEvent is invoked by etcdv3 ConsumerRegistry::Registe/ etcdv3 ConsumerRegistry::get/etcdv3 ConsumerRegistry::getListener
-// registry.go:Listen -> listenServiceEvent -> listenDirEvent -> ListenServiceNodeEvent
+// registry.go:Listen -> listenServiceEvent -> listenDirEvent -> listenServiceNodeEvent
 //                            |
-//                            --------> ListenServiceNodeEvent
+//                            --------> listenServiceNodeEvent
 func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataListener) {
 
 	l.keyMapLock.Lock()

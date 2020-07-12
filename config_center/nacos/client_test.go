@@ -66,7 +66,7 @@ func TestSetNacosClient(t *testing.T) {
 	client = &NacosClient{
 		name:       nacosClientName,
 		NacosAddrs: []string{nacosURL},
-		Timeout:    15,
+		Timeout:    15 * time.Second,
 		exit:       make(chan struct{}),
 		onceClose: func() {
 			close(client.exit)

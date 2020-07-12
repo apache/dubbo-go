@@ -18,14 +18,18 @@
 package config
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
 	perrors "github.com/pkg/errors"
 )
 
 import (
-	"github.com/apache/dubbo-go/cluster/directory"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/yaml"
+)
+
+var (
+	routerURLSet = gxset.NewSet()
 )
 
 // RouterInit Load config file to init router config
@@ -40,10 +44,14 @@ func RouterInit(confRouterFile string) error {
 		r, e := factory.NewFileRouter(bytes)
 		if e == nil {
 			url := r.URL()
-			directory.AddRouterURLSet(&url)
+			routerURLSet.Add(url)
 			return nil
 		}
 		logger.Warnf("router config type %s create fail {%v}\n", k, e)
 	}
 	return perrors.Errorf("no file router exists for parse %s , implement router.FIleRouterFactory please.", confRouterFile)
+}
+
+func GetRouterURLSet() *gxset.HashSet {
+	return routerURLSet
 }

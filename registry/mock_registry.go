@@ -52,6 +52,11 @@ func (*MockRegistry) Register(url common.URL) error {
 }
 
 // nolint
+func (r *MockRegistry) UnRegister(conf common.URL) error {
+	return nil
+}
+
+// nolint
 func (r *MockRegistry) Destroy() {
 	if r.destroyed.CAS(false, true) {
 	}
@@ -72,7 +77,7 @@ func (r *MockRegistry) subscribe(*common.URL) (Listener, error) {
 }
 
 // nolint
-func (r *MockRegistry) Subscribe(url *common.URL, notifyListener NotifyListener) {
+func (r *MockRegistry) Subscribe(url *common.URL, notifyListener NotifyListener) error {
 	go func() {
 		for {
 			if !r.IsAvailable() {
@@ -104,6 +109,12 @@ func (r *MockRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 			}
 		}
 	}()
+	return nil
+}
+
+// UnSubscribe :
+func (r *MockRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListener) error {
+	return nil
 }
 
 type listener struct {
