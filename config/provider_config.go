@@ -28,7 +28,6 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/yaml"
 )
 
@@ -38,21 +37,18 @@ import (
 
 // ProviderConfig is the default configuration of service provider
 type ProviderConfig struct {
-	BaseConfig   `yaml:",inline"`
-	Filter       string `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	ProxyFactory string `yaml:"proxy_factory" default:"default" json:"proxy_factory,omitempty" property:"proxy_factory"`
-	// metadata-report
-	MetadataReportConfig *MetadataReportConfig `yaml:"metadata_report" json:"metadata_report,omitempty" property:"metadata_report"`
+	BaseConfig     `yaml:",inline"`
+	Filter         string                     `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	ProxyFactory   string                     `yaml:"proxy_factory" default:"default" json:"proxy_factory,omitempty" property:"proxy_factory"`
+	Services       map[string]*ServiceConfig  `yaml:"services" json:"services,omitempty" property:"services"`
+	Protocols      map[string]*ProtocolConfig `yaml:"protocols" json:"protocols,omitempty" property:"protocols"`
+	ProtocolConf   interface{}                `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf" `
+	FilterConf     interface{}                `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf" `
+	ShutdownConfig *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf" `
+	ConfigType     map[string]string          `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 
-	ApplicationConfig *ApplicationConfig         `yaml:"application" json:"application,omitempty" property:"application"`
-	Registry          *RegistryConfig            `yaml:"registry" json:"registry,omitempty" property:"registry"`
-	Registries        map[string]*RegistryConfig `yaml:"registries" json:"registries,omitempty" property:"registries"`
-	Services          map[string]*ServiceConfig  `yaml:"services" json:"services,omitempty" property:"services"`
-	Protocols         map[string]*ProtocolConfig `yaml:"protocols" json:"protocols,omitempty" property:"protocols"`
-	ProtocolConf      interface{}                `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf" `
-	FilterConf        interface{}                `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf" `
-	ShutdownConfig    *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf" `
-	ConfigType        map[string]string          `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
+	Registry   *RegistryConfig            `yaml:"registry" json:"registry,omitempty" property:"registry"`
+	Registries map[string]*RegistryConfig `yaml:"registries" json:"registries,omitempty" property:"registries"`
 }
 
 // UnmarshalYAML unmarshals the ProviderConfig by @unmarshal function
@@ -89,25 +85,20 @@ func ProviderInit(confProFile string) error {
 	}
 
 	providerConfig.fileStream = bytes.NewBuffer(fileStream)
-	//set method interfaceId & interfaceName
+	// set method interfaceId & interfaceName
 	for k, v := range providerConfig.Services {
-		//set id for reference
+		// set id for reference
 		for _, n := range providerConfig.Services[k].Methods {
 			n.InterfaceName = v.InterfaceName
 			n.InterfaceId = k
 		}
 	}
-	//start the metadata report if config set
-	if err := startMetadataReport(providerConfig.ApplicationConfig.MetadataType, providerConfig.MetadataReportConfig); err != nil {
-		return perrors.WithMessagef(err, "Provider starts metadata report error, and the error is {%#v}", err)
-	}
-	logger.Debugf("provider config{%#v}\n", providerConfig)
 
 	return nil
 }
 
 func configCenterRefreshProvider() error {
-	//fresh it
+	// fresh it
 	if providerConfig.ConfigCenterConfig != nil {
 		providerConfig.fatherConfig = providerConfig
 		if err := providerConfig.startConfigCenter(); err != nil {

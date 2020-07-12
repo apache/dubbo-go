@@ -18,22 +18,38 @@
 package identifier
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 )
 
 // ServiceMetadataIdentifier is inherit baseMetaIdentifier with service params: Revision and Protocol
 type ServiceMetadataIdentifier struct {
-	revision string
-	protocol string
+	Revision string
+	Protocol string
 	BaseMetadataIdentifier
 }
 
+// NewServiceMetadataIdentifier create instance.
+// The ServiceInterface is the @url.Service()
+// other parameters are read from @url
+func NewServiceMetadataIdentifier(url common.URL) *ServiceMetadataIdentifier {
+	return &ServiceMetadataIdentifier{
+		BaseMetadataIdentifier: BaseMetadataIdentifier{
+			ServiceInterface: url.Service(),
+			Version:          url.GetParam(constant.VERSION_KEY, ""),
+			Group:            url.GetParam(constant.GROUP_KEY, ""),
+			Side:             url.GetParam(constant.SIDE_KEY, ""),
+		},
+		Protocol: url.Protocol,
+	}
+}
+
 // GetIdentifierKey returns string that format is service:Version:Group:Side:Protocol:"revision"+Revision
-func (mdi *ServiceMetadataIdentifier) getIdentifierKey(params ...string) string {
-	return mdi.BaseMetadataIdentifier.getIdentifierKey(mdi.protocol + constant.KEY_REVISON_PREFIX + mdi.revision)
+func (mdi *ServiceMetadataIdentifier) GetIdentifierKey() string {
+	return mdi.BaseMetadataIdentifier.getIdentifierKey(mdi.Protocol, constant.KEY_REVISON_PREFIX+mdi.Revision)
 }
 
 // GetFilePathKey returns string that format is metadata/path/Version/Group/Side/Protocol/"revision"+Revision
-func (mdi *ServiceMetadataIdentifier) getFilePathKey(params ...string) string {
-	return mdi.BaseMetadataIdentifier.getFilePathKey(mdi.protocol + constant.KEY_REVISON_PREFIX + mdi.revision)
+func (mdi *ServiceMetadataIdentifier) GetFilePathKey() string {
+	return mdi.BaseMetadataIdentifier.getFilePathKey(mdi.Protocol, constant.KEY_REVISON_PREFIX+mdi.Revision)
 }
