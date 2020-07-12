@@ -44,7 +44,7 @@ func RouterInit(confRouterFile string) error {
 		r, e := factory.NewFileRouter(bytes)
 		if e == nil {
 			url := r.URL()
-			routerURLSet.Add(url)
+			routerURLSet.Add(&url)
 			return nil
 		}
 		logger.Warnf("router config type %s create fail {%v}\n", k, e)
