@@ -23,13 +23,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMetadataReportConfigToUrl(t *testing.T) {
-	metadataReportConfig := MetadataReportConfig{
-		Protocol:   "mock",
+func TestMetadataReportConfig_ToUrl(t *testing.T) {
+	GetBaseConfig().Remotes["mock"] = &RemoteConfig{
 		Address:    "127.0.0.1:2181",
 		Username:   "test",
 		Password:   "test",
 		TimeoutStr: "3s",
+	}
+	metadataReportConfig := MetadataReportConfig{
+		Protocol:  "mock",
+		RemoteRef: "mock",
 		Params: map[string]string{
 			"k": "v",
 		},

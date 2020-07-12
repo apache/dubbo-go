@@ -20,6 +20,7 @@ package zookeeper
 import (
 	"fmt"
 	"net/url"
+	"path"
 	"sync"
 	"time"
 )
@@ -129,13 +130,17 @@ func (r *zkRegistry) InitListeners() {
 		recoverd := r.dataListener.subscribed
 		if recoverd != nil && len(recoverd) > 0 {
 			// recover all subscribed url
-			for conf, oldListener := range recoverd {
-				if regConfigListener, ok := oldListener.(*RegistryConfigurationListener); ok {
+			for _, oldListener := range recoverd {
+				var (
+					regConfigListener *RegistryConfigurationListener
+					ok                bool
+				)
+
+				if regConfigListener, ok = oldListener.(*RegistryConfigurationListener); ok {
 					regConfigListener.Close()
 				}
-				newDataListener.SubscribeURL(conf, NewRegistryConfigurationListener(r.client, r))
-				r.WaitGroup().Add(1)
-				go r.listener.ListenServiceEvent(conf, fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, url.QueryEscape(conf.Service())), newDataListener)
+				newDataListener.SubscribeURL(regConfigListener.subscribeURL, NewRegistryConfigurationListener(r.client, r, regConfigListener.subscribeURL))
+				go r.listener.ListenServiceEvent(regConfigListener.subscribeURL, fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, url.QueryEscape(regConfigListener.subscribeURL.Service())), newDataListener)
 
 			}
 		}
@@ -153,9 +158,22 @@ func (r *zkRegistry) DoRegister(root string, node string) error {
 	return r.registerTempZookeeperNode(root, node)
 }
 
+func (r *zkRegistry) DoUnregister(root string, node string) error {
+	r.cltLock.Lock()
+	defer r.cltLock.Unlock()
+	if !r.ZkClient().ZkConnValid() {
+		return perrors.Errorf("zk client is not valid.")
+	}
+	return r.ZkClient().Delete(path.Join(root, node))
+}
+
 // DoSubscribe actually subscribes the provider URL
 func (r *zkRegistry) DoSubscribe(conf *common.URL) (registry.Listener, error) {
 	return r.getListener(conf)
+}
+
+func (r *zkRegistry) DoUnsubscribe(conf *common.URL) (registry.Listener, error) {
+	return r.getCloseListener(conf)
 }
 
 // CloseAndNilClient closes listeners and clear client
@@ -227,9 +245,9 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 	dataListener := r.dataListener
 	dataListener.mutex.Lock()
 	defer dataListener.mutex.Unlock()
-	if r.dataListener.subscribed[conf] != nil {
+	if r.dataListener.subscribed[conf.ServiceKey()] != nil {
 
-		zkListener, _ := r.dataListener.subscribed[conf].(*RegistryConfigurationListener)
+		zkListener, _ := r.dataListener.subscribed[conf.ServiceKey()].(*RegistryConfigurationListener)
 		if zkListener != nil {
 			r.listenerLock.Lock()
 			defer r.listenerLock.Unlock()
@@ -241,7 +259,7 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 		}
 	}
 
-	zkListener = NewRegistryConfigurationListener(r.client, r)
+	zkListener = NewRegistryConfigurationListener(r.client, r, conf)
 	if r.listener == nil {
 		r.cltLock.Lock()
 		client := r.client
@@ -260,8 +278,42 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 
 	//Interested register to dataconfig.
 	r.dataListener.SubscribeURL(conf, zkListener)
-	r.WaitGroup().Add(1)
+
 	go r.listener.ListenServiceEvent(conf, fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, url.QueryEscape(conf.Service())), r.dataListener)
+
+	return zkListener, nil
+}
+
+func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationListener, error) {
+
+	var zkListener *RegistryConfigurationListener
+	r.dataListener.mutex.Lock()
+	configurationListener := r.dataListener.subscribed[conf.ServiceKey()]
+	if configurationListener != nil {
+
+		zkListener, _ := configurationListener.(*RegistryConfigurationListener)
+		if zkListener != nil {
+			if zkListener.isClosed {
+				return nil, perrors.New("configListener already been closed")
+			}
+		}
+	}
+
+	zkListener = r.dataListener.UnSubscribeURL(conf).(*RegistryConfigurationListener)
+	r.dataListener.mutex.Unlock()
+
+	if r.listener == nil {
+		return nil, perrors.New("listener is null can not close.")
+	}
+
+	//Interested register to dataconfig.
+	r.listenerLock.Lock()
+	listener := r.listener
+	r.listener = nil
+	r.listenerLock.Unlock()
+
+	r.dataListener.Close()
+	listener.Close()
 
 	return zkListener, nil
 }
