@@ -29,14 +29,14 @@ func TestGetEnvInstance(t *testing.T) {
 	assert.NotNil(t, instance)
 }
 
-func TestEnvironment_UpdateExternalConfigMap(t *testing.T) {
+func TestEnvironmentUpdateExternalConfigMap(t *testing.T) {
 	GetEnvInstance().UpdateExternalConfigMap(map[string]string{"1": "2"})
 	v, ok := GetEnvInstance().externalConfigMap.Load("1")
 	assert.True(t, ok)
 	assert.Equal(t, "2", v)
 }
 
-func TestEnvironment_ConfigurationAndGetProperty(t *testing.T) {
+func TestEnvironmentConfigurationAndGetProperty(t *testing.T) {
 	GetEnvInstance().UpdateExternalConfigMap(map[string]string{"1": "2"})
 	list := GetEnvInstance().Configuration()
 	ok, v := list.Back().Value.(*InmemoryConfiguration).GetProperty("1")
@@ -44,7 +44,7 @@ func TestEnvironment_ConfigurationAndGetProperty(t *testing.T) {
 	assert.Equal(t, "2", v)
 }
 
-func TestInmemoryConfiguration_GetSubProperty(t *testing.T) {
+func TestInmemoryConfigurationGetSubProperty(t *testing.T) {
 	GetEnvInstance().UpdateExternalConfigMap(map[string]string{"123": "2"})
 	list := GetEnvInstance().Configuration()
 	m := list.Front().Value.(*InmemoryConfiguration).GetSubProperty("1")

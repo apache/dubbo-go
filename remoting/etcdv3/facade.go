@@ -85,10 +85,8 @@ LOOP:
 				)
 				logger.Infof("ETCDV3ProviderRegistry.validateETCDV3Client(etcd Addr{%s}) = error{%#v}",
 					endpoint, perrors.WithStack(err))
-				if err == nil {
-					if r.RestartCallBack() {
-						break
-					}
+				if err == nil && r.RestartCallBack() {
+					break
 				}
 				failTimes++
 				if MaxFailTimes <= failTimes {

@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDefaultConfigurationParser_Parser(t *testing.T) {
+func TestDefaultConfigurationParserParser(t *testing.T) {
 	parser := &DefaultConfigurationParser{}
 	m, err := parser.Parse("dubbo.registry.address=172.0.0.1\ndubbo.registry.name=test")
 	assert.NoError(t, err)
@@ -33,7 +33,7 @@ func TestDefaultConfigurationParser_Parser(t *testing.T) {
 	assert.Equal(t, "172.0.0.1", m["dubbo.registry.address"])
 }
 
-func TestDefaultConfigurationParser_appItemToUrls_ParserToUrls(t *testing.T) {
+func TestDefaultConfigurationParserAppItemToUrls_ParserToUrls(t *testing.T) {
 	parser := &DefaultConfigurationParser{}
 	content := `configVersion: 2.7.1
 scope: application
@@ -60,7 +60,7 @@ configs:
 	assert.Equal(t, "0.0.0.0", urls[0].Location)
 }
 
-func TestDefaultConfigurationParser_serviceItemToUrls_ParserToUrls(t *testing.T) {
+func TestDefaultConfigurationParserServiceItemToUrls_ParserToUrls(t *testing.T) {
 	parser := &DefaultConfigurationParser{}
 	content := `configVersion: 2.7.1
 scope: notApplication
