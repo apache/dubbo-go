@@ -26,7 +26,7 @@ var (
 )
 
 // SetRestClient sets the RestClient with @name
-func SetRestClient(name string, fun func(restOptions *client.RestOptions) client.RestClient) {
+func SetRestClient(name string, fun func(_ *client.RestOptions) client.RestClient) {
 	restClients[name] = fun
 }
 

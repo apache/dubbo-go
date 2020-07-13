@@ -18,6 +18,7 @@
 package config
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 )
@@ -30,50 +31,35 @@ func mergeValue(str1, str2, def string) string {
 	if str1 == "" && str2 == "" {
 		return def
 	}
-	str := "," + strings.Trim(str1, ",")
-	if str1 == "" {
-		str = "," + strings.Trim(str2, ",")
-	} else if str2 != "" {
-		str = str + "," + strings.Trim(str2, ",")
-	}
+	s1 := strings.Split(str1, ",")
+	s2 := strings.Split(str2, ",")
+	str := "," + strings.Join(append(s1, s2...), ",")
 	defKey := strings.Contains(str, ","+constant.DEFAULT_KEY)
 	if !defKey {
 		str = "," + constant.DEFAULT_KEY + str
 	}
 	str = strings.TrimPrefix(strings.Replace(str, ","+constant.DEFAULT_KEY, ","+def, -1), ",")
+	return removeMinus(strings.Split(str, ","))
+}
 
-	strArr := strings.Split(str, ",")
-	strMap := make(map[string][]int)
-	for k, v := range strArr {
-		add := true
+func removeMinus(strArr []string) string {
+	if len(strArr) == 0 {
+		return ""
+	}
+	var normalStr string
+	var minusStrArr []string
+	for _, v := range strArr {
 		if strings.HasPrefix(v, "-") {
-			v = v[1:]
-			add = false
-		}
-		if _, ok := strMap[v]; !ok {
-			if add {
-				strMap[v] = []int{1, k}
-			}
+			minusStrArr = append(minusStrArr, v[1:])
 		} else {
-			if add {
-				strMap[v][0] += 1
-				strMap[v] = append(strMap[v], k)
-			} else {
-				strMap[v][0] -= 1
-				strMap[v] = strMap[v][:len(strMap[v])-1]
-			}
+			normalStr += fmt.Sprintf(",%s", v)
 		}
 	}
-	strArr = make([]string, len(strArr))
-	for key, value := range strMap {
-		if value[0] == 0 {
-			continue
-		}
-		for i := 1; i < len(value); i++ {
-			strArr[value[i]] = key
-		}
+	normalStr = strings.Trim(normalStr, ",")
+	for _, v := range minusStrArr {
+		normalStr = strings.Replace(normalStr, v, "", 1)
 	}
 	reg := regexp.MustCompile("[,]+")
-	str = reg.ReplaceAllString(strings.Join(strArr, ","), ",")
-	return strings.Trim(str, ",")
+	normalStr = reg.ReplaceAllString(strings.Trim(normalStr, ","), ",")
+	return normalStr
 }

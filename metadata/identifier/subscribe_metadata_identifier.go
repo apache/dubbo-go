@@ -19,16 +19,16 @@ package identifier
 
 // SubscriberMetadataIdentifier is inherit baseMetaIdentifier with service params: Revision
 type SubscriberMetadataIdentifier struct {
-	revision string
-	BaseMetadataIdentifier
+	Revision string
+	MetadataIdentifier
 }
 
 // GetIdentifierKey returns string that format is service:Version:Group:Side:Revision
-func (mdi *SubscriberMetadataIdentifier) getIdentifierKey(params ...string) string {
-	return mdi.BaseMetadataIdentifier.getIdentifierKey(mdi.revision)
+func (mdi *SubscriberMetadataIdentifier) GetIdentifierKey() string {
+	return mdi.BaseMetadataIdentifier.getIdentifierKey(mdi.Revision)
 }
 
 // GetFilePathKey returns string that format is metadata/path/Version/Group/Side/Revision
-func (mdi *SubscriberMetadataIdentifier) getFilePathKey(params ...string) string {
-	return mdi.BaseMetadataIdentifier.getFilePathKey(mdi.revision)
+func (mdi *SubscriberMetadataIdentifier) GetFilePathKey() string {
+	return mdi.BaseMetadataIdentifier.getFilePathKey(mdi.Revision)
 }

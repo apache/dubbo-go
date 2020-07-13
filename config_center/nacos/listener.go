@@ -31,7 +31,7 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
-func callback(listener config_center.ConfigurationListener, namespace, group, dataId, data string) {
+func callback(listener config_center.ConfigurationListener, _, _, dataId, data string) {
 	listener.Process(&config_center.ConfigChangeEvent{Key: dataId, Value: data, ConfigType: remoting.EventTypeUpdate})
 }
 
@@ -46,7 +46,9 @@ func (n *nacosDynamicConfiguration) addListener(key string, listener config_cent
 				go callback(listener, namespace, group, dataId, data)
 			},
 		})
-		logger.Errorf("nacos : listen config fail, error:%v ", err)
+		if err != nil {
+			logger.Errorf("nacos : listen config fail, error:%v ", err)
+		}
 		newListener := make(map[config_center.ConfigurationListener]context.CancelFunc)
 		newListener[listener] = cancel
 		n.keyListeners.Store(key, newListener)

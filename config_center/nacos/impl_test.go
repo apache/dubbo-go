@@ -59,10 +59,10 @@ func runMockConfigServer(configHandler func(http.ResponseWriter, *http.Request),
 }
 
 func mockCommonNacosServer() *httptest.Server {
-	return runMockConfigServer(func(writer http.ResponseWriter, request *http.Request) {
+	return runMockConfigServer(func(writer http.ResponseWriter, _ *http.Request) {
 		data := "true"
 		fmt.Fprintf(writer, "%s", data)
-	}, func(writer http.ResponseWriter, request *http.Request) {
+	}, func(writer http.ResponseWriter, _ *http.Request) {
 		data := `dubbo.properties%02dubbo%02dubbo.service.com.ikurento.user.UserProvider.cluster=failback`
 		fmt.Fprintf(writer, "%s", data)
 	})
@@ -81,7 +81,7 @@ func initNacosData(t *testing.T) (*nacosDynamicConfiguration, error) {
 	return nacosConfiguration.(*nacosDynamicConfiguration), err
 }
 
-func Test_GetConfig(t *testing.T) {
+func TestGetConfig(t *testing.T) {
 	nacos, err := initNacosData(t)
 	assert.NoError(t, err)
 	configs, err := nacos.GetProperties("dubbo.properties", config_center.WithGroup("dubbo"))
@@ -89,7 +89,35 @@ func Test_GetConfig(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestNacosDynamicConfiguration_PublishConfig(t *testing.T) {
+func TestNacosDynamicConfiguration_GetConfigKeysByGroup(t *testing.T) {
+	data := `
+{
+    "PageItems": [
+        {
+            "dataId": "application"
+        }
+    ]
+}
+`
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(data))
+	}))
+
+	nacosURL := strings.ReplaceAll(ts.URL, "http", "registry")
+	regurl, _ := common.NewURL(nacosURL)
+	nacosConfiguration, err := newNacosDynamicConfiguration(&regurl)
+	assert.NoError(t, err)
+
+	nacosConfiguration.SetParser(&parser.DefaultConfigurationParser{})
+
+	configs, err := nacosConfiguration.GetConfigKeysByGroup("dubbo")
+	assert.Nil(t, err)
+	assert.Equal(t, 1, configs.Size())
+	assert.True(t, configs.Contains("application"))
+
+}
+
+func TestNacosDynamicConfigurationPublishConfig(t *testing.T) {
 	nacos, err := initNacosData(t)
 	assert.Nil(t, err)
 	key := "myKey"
@@ -99,17 +127,15 @@ func TestNacosDynamicConfiguration_PublishConfig(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func Test_AddListener(t *testing.T) {
+func TestAddListener(t *testing.T) {
 	nacos, err := initNacosData(t)
 	assert.NoError(t, err)
 	listener := &mockDataListener{}
 	time.Sleep(time.Second * 2)
 	nacos.AddListener("dubbo.properties", listener)
-	listener.wg.Add(1)
-	listener.wg.Wait()
 }
 
-func Test_RemoveListener(t *testing.T) {
+func TestRemoveListener(_ *testing.T) {
 	//TODO not supported in current go_nacos_sdk version
 }
 
