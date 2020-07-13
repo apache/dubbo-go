@@ -24,6 +24,11 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go-hessian2/java_exception"
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
@@ -154,7 +159,17 @@ func (p *Proxy) Implement(v common.RPCService) {
 			}
 
 			err = result.Error()
-			logger.Debugf("[makeDubboCallProxy] result: %v, err: %v", result.Result(), err)
+			if err != nil {
+				// the cause reason
+				err = perrors.Cause(err)
+				if throwabler, ok := err.(java_exception.Throwabler); ok {
+					logger.Errorf("invoke service throw exception: %v , stackTraceElements: %v", err.Error(), throwabler.GetStackTrace())
+				} else {
+					logger.Errorf("result err: %v", err)
+				}
+			} else {
+				logger.Debugf("[makeDubboCallProxy] result: %v, err: %v", result.Result(), err)
+			}
 			if len(outs) == 1 {
 				return []reflect.Value{reflect.ValueOf(&err).Elem()}
 			}
