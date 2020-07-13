@@ -26,18 +26,18 @@ import (
 )
 
 var (
-	routers               = make(map[string]func() router.RouterFactory)
+	routers               = make(map[string]func() router.PriorityRouterFactory)
 	fileRouterFactoryOnce sync.Once
-	fileRouterFactories   = make(map[string]router.FileRouterFactory)
+	fileRouterFactories   = make(map[string]router.FilePriorityRouterFactory)
 )
 
 // SetRouterFactory sets create router factory function with @name
-func SetRouterFactory(name string, fun func() router.RouterFactory) {
+func SetRouterFactory(name string, fun func() router.PriorityRouterFactory) {
 	routers[name] = fun
 }
 
 // GetRouterFactory gets create router factory function by @name
-func GetRouterFactory(name string) router.RouterFactory {
+func GetRouterFactory(name string) router.PriorityRouterFactory {
 	if routers[name] == nil {
 		panic("router_factory for " + name + " is not existing, make sure you have import the package.")
 	}
@@ -45,12 +45,12 @@ func GetRouterFactory(name string) router.RouterFactory {
 }
 
 // GetRouterFactories gets all create router factory function
-func GetRouterFactories() map[string]func() router.RouterFactory {
+func GetRouterFactories() map[string]func() router.PriorityRouterFactory {
 	return routers
 }
 
 // GetFileRouterFactories gets all create file router factory instance
-func GetFileRouterFactories() map[string]router.FileRouterFactory {
+func GetFileRouterFactories() map[string]router.FilePriorityRouterFactory {
 	l := len(routers)
 	if l == 0 {
 		return nil
@@ -58,7 +58,7 @@ func GetFileRouterFactories() map[string]router.FileRouterFactory {
 	fileRouterFactoryOnce.Do(func() {
 		for k := range routers {
 			factory := GetRouterFactory(k)
-			if fr, ok := factory.(router.FileRouterFactory); ok {
+			if fr, ok := factory.(router.FilePriorityRouterFactory); ok {
 				fileRouterFactories[k] = fr
 			}
 		}

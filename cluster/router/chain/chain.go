@@ -40,19 +40,21 @@ type RouterChain struct {
 	// Full list of addresses from registry, classified by method name.
 	invokers []protocol.Invoker
 	// Containing all routers, reconstruct every time 'route://' urls change.
-	routers []router.Router
+	routers []router.PriorityRouter
 	// Fixed router instances: ConfigConditionRouter, TagRouter, e.g., the rule for each instance may change but the
 	// instance will never delete or recreate.
-	builtinRouters []router.Router
+	builtinRouters []router.PriorityRouter
 
 	mutex sync.RWMutex
+
+	url common.URL
 }
 
 // Route Loop routers in RouterChain and call Route method to determine the target invokers list.
 func (c *RouterChain) Route(invoker []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	finalInvokers := invoker
 	l := len(c.routers)
-	rs := make([]router.Router, l, int(math.Ceil(float64(l)*1.2)))
+	rs := make([]router.PriorityRouter, l, int(math.Ceil(float64(l)*1.2)))
 	c.mutex.RLock()
 	copy(rs, c.routers)
 	c.mutex.RUnlock()
@@ -67,14 +69,19 @@ func (c *RouterChain) Route(invoker []protocol.Invoker, url *common.URL, invocat
 // New a array add builtinRouters which is not sorted in RouterChain and routers
 // Sort the array
 // Replace router array in RouterChain
-func (c *RouterChain) AddRouters(routers []router.Router) {
-	newRouters := make([]router.Router, 0, len(c.builtinRouters)+len(routers))
+func (c *RouterChain) AddRouters(routers []router.PriorityRouter) {
+	newRouters := make([]router.PriorityRouter, 0, len(c.builtinRouters)+len(routers))
 	newRouters = append(newRouters, c.builtinRouters...)
 	newRouters = append(newRouters, routers...)
 	sortRouter(newRouters)
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.routers = newRouters
+}
+
+// URL Return URL in RouterChain
+func (c *RouterChain) URL() common.URL {
+	return c.url
 }
 
 // NewRouterChain Use url to init router chain
@@ -84,9 +91,9 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 	if len(routerFactories) == 0 {
 		return nil, perrors.Errorf("No routerFactory exits , create one please")
 	}
-	routers := make([]router.Router, 0, len(routerFactories))
+	routers := make([]router.PriorityRouter, 0, len(routerFactories))
 	for key, routerFactory := range routerFactories {
-		r, err := routerFactory().NewRouter(url)
+		r, err := routerFactory().NewPriorityRouter(url)
 		if r == nil || err != nil {
 			logger.Errorf("router chain build router fail! routerFactories key:%s  error:%s", key, err.Error())
 			continue
@@ -94,7 +101,7 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 		routers = append(routers, r)
 	}
 
-	newRouters := make([]router.Router, len(routers))
+	newRouters := make([]router.PriorityRouter, len(routers))
 	copy(newRouters, routers)
 
 	sortRouter(newRouters)
@@ -103,17 +110,20 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 		builtinRouters: routers,
 		routers:        newRouters,
 	}
+	if url != nil {
+		chain.url = *url
+	}
 
 	return chain, nil
 }
 
 // sortRouter Sort router instance by priority with stable algorithm
-func sortRouter(routers []router.Router) {
+func sortRouter(routers []router.PriorityRouter) {
 	sort.Stable(byPriority(routers))
 }
 
 // byPriority Sort by priority
-type byPriority []router.Router
+type byPriority []router.PriorityRouter
 
 func (a byPriority) Len() int           { return len(a) }
 func (a byPriority) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }

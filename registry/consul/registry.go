@@ -73,7 +73,8 @@ func newConsulRegistry(url *common.URL) (registry.Registry, error) {
 	return r, nil
 }
 
-// Register service to consul registry center
+// Register register @url
+// it delegate the job to register() method
 func (r *consulRegistry) Register(url common.URL) error {
 	var err error
 
@@ -87,6 +88,7 @@ func (r *consulRegistry) Register(url common.URL) error {
 	return nil
 }
 
+// register actually register the @url
 func (r *consulRegistry) register(url common.URL) error {
 	service, err := buildService(url)
 	if err != nil {
@@ -95,8 +97,9 @@ func (r *consulRegistry) register(url common.URL) error {
 	return r.client.Agent().ServiceRegister(service)
 }
 
-// Unregister service from consul registry center
-func (r *consulRegistry) Unregister(url common.URL) error {
+// UnRegister unregister the @url
+// it delegate the job to unregister() method
+func (r *consulRegistry) UnRegister(url common.URL) error {
 	var err error
 
 	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
@@ -109,18 +112,27 @@ func (r *consulRegistry) Unregister(url common.URL) error {
 	return nil
 }
 
+// unregister actually unregister the @url
 func (r *consulRegistry) unregister(url common.URL) error {
 	return r.client.Agent().ServiceDeregister(buildId(url))
 }
 
-// Subscribe service from consul registry center
-func (r *consulRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) {
+// Subscribe subscribe the @url with the @notifyListener
+func (r *consulRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) error {
 	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
 	if role == common.CONSUMER {
 		r.subscribe(url, notifyListener)
 	}
+	return nil
 }
 
+// UnSubscribe is not supported yet
+func (r *consulRegistry) UnSubscribe(url *common.URL, notifyListener registry.NotifyListener) error {
+	return perrors.New("UnSubscribe not support in consulRegistry")
+}
+
+// subscribe actually subscribe the @url
+// it loops forever until success
 func (r *consulRegistry) subscribe(url *common.URL, notifyListener registry.NotifyListener) {
 	for {
 		if !r.IsAvailable() {
