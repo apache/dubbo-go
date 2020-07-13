@@ -38,6 +38,10 @@ type MockDynamicConfigurationFactory struct {
 	Content string
 }
 
+const (
+	mockServiceName = "org.apache.dubbo-go.mockService"
+)
+
 var (
 	once                 sync.Once
 	dynamicConfiguration *MockDynamicConfiguration
@@ -106,6 +110,7 @@ func (c *MockDynamicConfiguration) AddListener(key string, listener Configuratio
 
 // RemoveListener removes the listener for MockDynamicConfiguration
 func (c *MockDynamicConfiguration) RemoveListener(_ string, _ ConfigurationListener, _ ...Option) {
+	// mock remove
 }
 
 // GetConfig returns content of MockDynamicConfiguration
@@ -149,20 +154,20 @@ func (c *MockDynamicConfiguration) MockServiceConfigEvent() {
 	config := &parser.ConfiguratorConfig{
 		ConfigVersion: "2.7.1",
 		Scope:         parser.GeneralType,
-		Key:           "org.apache.dubbo-go.mockService",
+		Key:           mockServiceName,
 		Enabled:       true,
 		Configs: []parser.ConfigItem{
 			{Type: parser.GeneralType,
 				Enabled:    true,
 				Addresses:  []string{"0.0.0.0"},
-				Services:   []string{"org.apache.dubbo-go.mockService"},
+				Services:   []string{mockServiceName},
 				Side:       "provider",
 				Parameters: map[string]string{"cluster": "mock1"},
 			},
 		},
 	}
 	value, _ := yaml.Marshal(config)
-	key := "group*org.apache.dubbo-go.mockService:1.0.0" + constant.CONFIGURATORS_SUFFIX
+	key := "group*" + mockServiceName + ":1.0.0" + constant.CONFIGURATORS_SUFFIX
 	c.listener[key].Process(&ConfigChangeEvent{Key: key, Value: string(value), ConfigType: remoting.EventTypeAdd})
 }
 
@@ -171,13 +176,13 @@ func (c *MockDynamicConfiguration) MockApplicationConfigEvent() {
 	config := &parser.ConfiguratorConfig{
 		ConfigVersion: "2.7.1",
 		Scope:         parser.ScopeApplication,
-		Key:           "org.apache.dubbo-go.mockService",
+		Key:           mockServiceName,
 		Enabled:       true,
 		Configs: []parser.ConfigItem{
 			{Type: parser.ScopeApplication,
 				Enabled:    true,
 				Addresses:  []string{"0.0.0.0"},
-				Services:   []string{"org.apache.dubbo-go.mockService"},
+				Services:   []string{mockServiceName},
 				Side:       "provider",
 				Parameters: map[string]string{"cluster": "mock1"},
 			},

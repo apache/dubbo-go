@@ -29,7 +29,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
+func TestDubboPackageMarshalAndUnmarshal(t *testing.T) {
 	pkg := &DubboPackage{}
 	pkg.Body = []interface{}{"a"}
 	pkg.Header.Type = hessian.PackageHeartbeat

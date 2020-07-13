@@ -68,7 +68,6 @@ var (
 	typeOfError = reflect.TypeOf((*error)(nil)).Elem()
 
 	// ServiceMap store description of service.
-	// todo: lowerecas?
 	ServiceMap = &serviceMap{
 		serviceMap:   make(map[string]map[string]*Service),
 		interfaceMap: make(map[string][]*Service),
@@ -130,6 +129,11 @@ type Service struct {
 // Method gets @s.methods.
 func (s *Service) Method() map[string]*MethodType {
 	return s.methods
+}
+
+// Name will return service name
+func (s *Service) Name() string {
+	return s.name
 }
 
 // RcvrType gets @s.rcvrType.
@@ -273,7 +277,7 @@ func (sm *serviceMap) UnRegister(interfaceName, protocol, serviceId string) erro
 		}
 	}
 	delete(svcs, serviceId)
-	if len(sm.serviceMap) == 0 {
+	if len(sm.serviceMap[protocol]) == 0 {
 		delete(sm.serviceMap, protocol)
 	}
 
@@ -337,6 +341,16 @@ func suiteMethod(method reflect.Method) *MethodType {
 		replyType, ctxType reflect.Type
 		argsType           []reflect.Type
 	)
+
+	// this method is in RPCService
+	// we force users must implement RPCService interface in their provider
+	// and RPCService has only one method "Reference"
+	// In general, this method should not be exported to client
+	// so we ignore this method
+	// see RPCService
+	if mname == "Reference" {
+		return nil
+	}
 
 	if outNum != 1 && outNum != 2 {
 		logger.Warnf("method %s of mtype %v has wrong number of in out parameters %d; needs exactly 1/2",

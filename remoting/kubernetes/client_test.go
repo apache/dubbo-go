@@ -59,6 +59,9 @@ var tests = []struct {
 // test dataset prefix
 const prefix = "name"
 
+var (
+	watcherStopLog = "the watcherSet watcher was stopped"
+)
 var clientPodListJsonData = `{
     "apiVersion": "v1",
     "items": [
@@ -258,12 +261,12 @@ func TestClientValid(t *testing.T) {
 	client := getTestClient(t)
 	defer client.Close()
 
-	if client.Valid() != true {
+	if !client.Valid() {
 		t.Fatal("client is not valid")
 	}
 
 	client.Close()
-	if client.Valid() != false {
+	if client.Valid() {
 		t.Fatal("client is valid")
 	}
 }
@@ -278,7 +281,7 @@ func TestClientDone(t *testing.T) {
 
 	<-client.Done()
 
-	if client.Valid() == true {
+	if client.Valid() {
 		t.Fatal("client should be invalid")
 	}
 }
@@ -331,7 +334,7 @@ func TestClientGetChildrenKVList(t *testing.T) {
 					return
 				}
 			case <-done:
-				t.Log("the watcherSet watcher was stopped")
+				t.Log(watcherStopLog)
 				return
 			}
 		}
@@ -399,7 +402,7 @@ func TestClientWatchPrefix(t *testing.T) {
 			case e := <-wc:
 				t.Logf("got event %v k %s v %s", e.EventType, e.Key, e.Value)
 			case <-done:
-				t.Log("the watcherSet watcher was stopped")
+				t.Log(watcherStopLog)
 				return
 			}
 		}
@@ -441,7 +444,7 @@ func TestClientWatch(t *testing.T) {
 			case e := <-wc:
 				t.Logf("got event %v k %s v %s", e.EventType, e.Key, e.Value)
 			case <-done:
-				t.Log("the watcherSet watcher was stopped")
+				t.Log(watcherStopLog)
 				return
 			}
 		}

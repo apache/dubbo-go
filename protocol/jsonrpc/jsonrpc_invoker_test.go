@@ -34,7 +34,7 @@ import (
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
-func TestJsonrpcInvoker_Invoke(t *testing.T) {
+func TestJsonrpcInvokerInvoke(t *testing.T) {
 
 	methods, err := common.ServiceMap.Register("UserProvider", "jsonrpc", &UserProvider{})
 	assert.NoError(t, err)

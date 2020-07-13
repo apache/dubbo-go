@@ -38,13 +38,16 @@ var regProtocol protocol.Protocol
 
 func doInitConsumer() {
 	consumerConfig = &ConsumerConfig{
-		ApplicationConfig: &ApplicationConfig{
-			Organization: "dubbo_org",
-			Name:         "dubbo",
-			Module:       "module",
-			Version:      "2.6.0",
-			Owner:        "dubbo",
-			Environment:  "test"},
+		BaseConfig: BaseConfig{
+			ApplicationConfig: &ApplicationConfig{
+				Organization: "dubbo_org",
+				Name:         "dubbo",
+				Module:       "module",
+				Version:      "2.6.0",
+				Owner:        "dubbo",
+				Environment:  "test"},
+		},
+
 		Registries: map[string]*RegistryConfig{
 			"shanghai_reg1": {
 				Protocol:   "mock",
@@ -79,6 +82,7 @@ func doInitConsumer() {
 				Password:   "pwd1",
 			},
 		},
+
 		References: map[string]*ReferenceConfig{
 			"MockService": {
 				id: "MockProvider",
@@ -123,6 +127,7 @@ func (m *MockProvider) Reference() string {
 }
 
 func (m *MockProvider) CallBack(res common.CallbackResponse) {
+	// CallBack is a mock function. to implement the interface
 }
 
 func doInitConsumerAsync() {
@@ -135,19 +140,23 @@ func doInitConsumerAsync() {
 
 func doInitConsumerWithSingleRegistry() {
 	consumerConfig = &ConsumerConfig{
-		ApplicationConfig: &ApplicationConfig{
-			Organization: "dubbo_org",
-			Name:         "dubbo",
-			Module:       "module",
-			Version:      "2.6.0",
-			Owner:        "dubbo",
-			Environment:  "test"},
+		BaseConfig: BaseConfig{
+			ApplicationConfig: &ApplicationConfig{
+				Organization: "dubbo_org",
+				Name:         "dubbo",
+				Module:       "module",
+				Version:      "2.6.0",
+				Owner:        "dubbo",
+				Environment:  "test"},
+		},
+
 		Registry: &RegistryConfig{
 			Address:  "mock://27.0.0.1:2181",
 			Username: "user1",
 			Password: "pwd1",
 		},
 		Registries: map[string]*RegistryConfig{},
+
 		References: map[string]*ReferenceConfig{
 			"MockService": {
 				Params: map[string]string{
@@ -178,7 +187,7 @@ func doInitConsumerWithSingleRegistry() {
 	}
 }
 
-func Test_ReferMultireg(t *testing.T) {
+func TestReferMultireg(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("registry", GetProtocol)
 	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
@@ -191,7 +200,7 @@ func Test_ReferMultireg(t *testing.T) {
 	consumerConfig = nil
 }
 
-func Test_Refer(t *testing.T) {
+func TestRefer(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("registry", GetProtocol)
 	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
@@ -205,7 +214,7 @@ func Test_Refer(t *testing.T) {
 	consumerConfig = nil
 }
 
-func Test_ReferAsync(t *testing.T) {
+func TestReferAsync(t *testing.T) {
 	doInitConsumerAsync()
 	extension.SetProtocol("registry", GetProtocol)
 	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
@@ -220,7 +229,7 @@ func Test_ReferAsync(t *testing.T) {
 	consumerConfig = nil
 }
 
-func Test_ReferP2P(t *testing.T) {
+func TestReferP2P(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("dubbo", GetProtocol)
 	m := consumerConfig.References["MockService"]
@@ -234,7 +243,7 @@ func Test_ReferP2P(t *testing.T) {
 	consumerConfig = nil
 }
 
-func Test_ReferMultiP2P(t *testing.T) {
+func TestReferMultiP2P(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("dubbo", GetProtocol)
 	m := consumerConfig.References["MockService"]
@@ -248,7 +257,7 @@ func Test_ReferMultiP2P(t *testing.T) {
 	consumerConfig = nil
 }
 
-func Test_ReferMultiP2PWithReg(t *testing.T) {
+func TestReferMultiP2PWithReg(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("dubbo", GetProtocol)
 	extension.SetProtocol("registry", GetProtocol)
@@ -263,7 +272,7 @@ func Test_ReferMultiP2PWithReg(t *testing.T) {
 	consumerConfig = nil
 }
 
-func Test_Implement(t *testing.T) {
+func TestImplement(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("registry", GetProtocol)
 	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
@@ -276,7 +285,7 @@ func Test_Implement(t *testing.T) {
 	consumerConfig = nil
 }
 
-func Test_Forking(t *testing.T) {
+func TestForking(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("dubbo", GetProtocol)
 	extension.SetProtocol("registry", GetProtocol)
@@ -293,7 +302,7 @@ func Test_Forking(t *testing.T) {
 	consumerConfig = nil
 }
 
-func Test_Sticky(t *testing.T) {
+func TestSticky(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("dubbo", GetProtocol)
 	extension.SetProtocol("registry", GetProtocol)
@@ -332,4 +341,6 @@ func (*mockRegistryProtocol) Export(invoker protocol.Invoker) protocol.Exporter 
 	return protocol.NewBaseExporter("test", invoker, &sync.Map{})
 }
 
-func (*mockRegistryProtocol) Destroy() {}
+func (*mockRegistryProtocol) Destroy() {
+	// Destroy is a mock function
+}
