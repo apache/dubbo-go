@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestThreadSafeFixedWindowTpsLimitStrategyImpl_IsAllowable(t *testing.T) {
+func TestThreadSafeFixedWindowTpsLimitStrategyImplIsAllowable(t *testing.T) {
 	creator := &threadSafeFixedWindowStrategyCreator{}
 	strategy := creator.Create(2, 60000)
 	assert.True(t, strategy.IsAllowable())
