@@ -34,7 +34,7 @@ import (
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
-func TestMethodServiceTpsLimiterImpl_IsAllowable_Only_Service_Level(t *testing.T) {
+func TestMethodServiceTpsLimiterImplIsAllowableOnlyServiceLevel(t *testing.T) {
 	methodName := "hello"
 	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]string, 0))
 
@@ -61,7 +61,7 @@ func TestMethodServiceTpsLimiterImpl_IsAllowable_Only_Service_Level(t *testing.T
 	assert.True(t, result)
 }
 
-func TestMethodServiceTpsLimiterImpl_IsAllowable_No_Config(t *testing.T) {
+func TestMethodServiceTpsLimiterImplIsAllowableNoConfig(t *testing.T) {
 	methodName := "hello1"
 	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]string, 0))
 	// ctrl := gomock.NewController(t)
@@ -77,7 +77,7 @@ func TestMethodServiceTpsLimiterImpl_IsAllowable_No_Config(t *testing.T) {
 	assert.True(t, result)
 }
 
-func TestMethodServiceTpsLimiterImpl_IsAllowable_Method_Level_Override(t *testing.T) {
+func TestMethodServiceTpsLimiterImplIsAllowableMethodLevelOverride(t *testing.T) {
 	methodName := "hello2"
 	methodConfigPrefix := "methods." + methodName + "."
 	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]string, 0))
@@ -110,7 +110,7 @@ func TestMethodServiceTpsLimiterImpl_IsAllowable_Method_Level_Override(t *testin
 	assert.True(t, result)
 }
 
-func TestMethodServiceTpsLimiterImpl_IsAllowable_Both_Method_And_Service(t *testing.T) {
+func TestMethodServiceTpsLimiterImplIsAllowableBothMethodAndService(t *testing.T) {
 	methodName := "hello3"
 	methodConfigPrefix := "methods." + methodName + "."
 	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]string, 0))
