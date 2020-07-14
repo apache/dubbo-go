@@ -90,7 +90,7 @@ func TestGetHystrixFilter(t *testing.T) {
 	assert.NotNil(t, filterGot)
 }
 
-func TestGetConfig_1(t *testing.T) {
+func TestGetConfig1(t *testing.T) {
 	mockInitHystrixConfig()
 	configGot := getConfig("com.ikurento.user.UserProvider", "GetUser", true)
 	assert.NotNil(t, configGot)
@@ -101,7 +101,7 @@ func TestGetConfig_1(t *testing.T) {
 	assert.Equal(t, 5, configGot.RequestVolumeThreshold)
 }
 
-func TestGetConfig_2(t *testing.T) {
+func TestGetConfig2(t *testing.T) {
 	mockInitHystrixConfig()
 	configGot := getConfig("com.ikurento.user.UserProvider", "GetUser0", true)
 	assert.NotNil(t, configGot)
@@ -112,7 +112,7 @@ func TestGetConfig_2(t *testing.T) {
 	assert.Equal(t, 15, configGot.RequestVolumeThreshold)
 }
 
-func TestGetConfig_3(t *testing.T) {
+func TestGetConfig3(t *testing.T) {
 	mockInitHystrixConfig()
 	//This should use default
 	configGot := getConfig("Mock.Service", "GetMock", true)
@@ -145,7 +145,7 @@ func (iv *testMockFailInvoker) Invoke(_ context.Context, _ protocol.Invocation) 
 	}
 }
 
-func TestHystrixFilter_Invoke_Success(t *testing.T) {
+func TestHystrixFilterInvokeSuccess(t *testing.T) {
 	hf := &HystrixFilter{}
 	result := hf.Invoke(context.Background(), &testMockSuccessInvoker{}, &invocation.RPCInvocation{})
 	assert.NotNil(t, result)
@@ -153,14 +153,14 @@ func TestHystrixFilter_Invoke_Success(t *testing.T) {
 	assert.NotNil(t, result.Result())
 }
 
-func TestHystrixFilter_Invoke_Fail(t *testing.T) {
+func TestHystrixFilterInvokeFail(t *testing.T) {
 	hf := &HystrixFilter{}
 	result := hf.Invoke(context.Background(), &testMockFailInvoker{}, &invocation.RPCInvocation{})
 	assert.NotNil(t, result)
 	assert.Error(t, result.Error())
 }
 
-func TestHystricFilter_Invoke_CircuitBreak(t *testing.T) {
+func TestHystricFilterInvokeCircuitBreak(t *testing.T) {
 	mockInitHystrixConfig()
 	hystrix.Flush()
 	hf := &HystrixFilter{COrP: true}
@@ -183,7 +183,7 @@ func TestHystricFilter_Invoke_CircuitBreak(t *testing.T) {
 
 }
 
-func TestHystricFilter_Invoke_CircuitBreak_Omit_Exception(t *testing.T) {
+func TestHystricFilterInvokeCircuitBreakOmitException(t *testing.T) {
 	mockInitHystrixConfig()
 	hystrix.Flush()
 	reg, _ := regexp.Compile(".*exception.*")

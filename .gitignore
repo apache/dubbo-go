@@ -30,3 +30,7 @@ registry/zookeeper/zookeeper-4unittest/
 metadata/report/zookeeper/zookeeper-4unittest/
 registry/consul/agent*
 config_center/apollo/mockDubbog.properties.json
+
+# vim stuff
+*~
+.*.sw?
