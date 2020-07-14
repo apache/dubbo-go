@@ -162,10 +162,11 @@ func (p *Proxy) Implement(v common.RPCService) {
 			if err != nil {
 				// the cause reason
 				err = perrors.Cause(err)
+				// if some error happened, it should be log some info in the seperate file.
 				if throwabler, ok := err.(java_exception.Throwabler); ok {
-					logger.Errorf("invoke service throw exception: %v , stackTraceElements: %v", err.Error(), throwabler.GetStackTrace())
+					logger.Warnf("invoke service throw exception: %v , stackTraceElements: %v", err.Error(), throwabler.GetStackTrace())
 				} else {
-					logger.Errorf("result err: %v", err)
+					logger.Warnf("result err: %v", err)
 				}
 			} else {
 				logger.Debugf("[makeDubboCallProxy] result: %v, err: %v", result.Result(), err)
