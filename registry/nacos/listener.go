@@ -51,7 +51,7 @@ type nacosListener struct {
 	subscribeParam *vo.SubscribeParam
 }
 
-// NewNacosListener ...
+// NewRegistryDataListener creates a data listener for nacos
 func NewNacosListener(url common.URL, namingClient naming_client.INamingClient) (*nacosListener, error) {
 	listener := &nacosListener{
 		namingClient: namingClient,
@@ -109,6 +109,7 @@ func generateUrl(instance model.Instance) *common.URL {
 	)
 }
 
+// Callback will be invoked when got subscribed events.
 func (nl *nacosListener) Callback(services []model.SubscribeService, err error) {
 	if err != nil {
 		logger.Errorf("nacos subscribe callback error:%s , subscribe:%+v ", err.Error(), nl.subscribeParam)
@@ -198,6 +199,7 @@ func (nl *nacosListener) process(configType *config_center.ConfigChangeEvent) {
 	nl.events <- configType
 }
 
+// Next returns the service event from nacos.
 func (nl *nacosListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
@@ -212,6 +214,7 @@ func (nl *nacosListener) Next() (*registry.ServiceEvent, error) {
 	}
 }
 
+// nolint
 func (nl *nacosListener) Close() {
 	nl.stopListen()
 	close(nl.done)

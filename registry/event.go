@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/observer"
 	"github.com/apache/dubbo-go/remoting"
 )
 
@@ -36,7 +37,7 @@ func init() {
 // service event
 // ////////////////////////////////////////
 
-// ServiceEvent ...
+// ServiceEvent includes create, update, delete event
 type ServiceEvent struct {
 	Action  remoting.EventType
 	Service common.URL
@@ -47,47 +48,9 @@ func (e ServiceEvent) String() string {
 	return fmt.Sprintf("ServiceEvent{Action{%s}, Path{%s}}", e.Action, e.Service)
 }
 
-// Event is align with Event interface in Java.
-// it's the top abstraction
-// Align with 2.7.5
-type Event interface {
-	fmt.Stringer
-	GetSource() interface{}
-	GetTimestamp() time.Time
-}
-
-// baseEvent is the base implementation of Event
-// You should never use it directly
-type baseEvent struct {
-	source    interface{}
-	timestamp time.Time
-}
-
-// GetSource return the source
-func (b *baseEvent) GetSource() interface{} {
-	return b.source
-}
-
-// GetTimestamp return the timestamp when the event is created
-func (b *baseEvent) GetTimestamp() time.Time {
-	return b.timestamp
-}
-
-// String return a human readable string representing this event
-func (b *baseEvent) String() string {
-	return fmt.Sprintf("baseEvent[source = %#v]", b.source)
-}
-
-func newBaseEvent(source interface{}) *baseEvent {
-	return &baseEvent{
-		source:    source,
-		timestamp: time.Now(),
-	}
-}
-
 // ServiceInstancesChangedEvent represents service instances make some changing
 type ServiceInstancesChangedEvent struct {
-	baseEvent
+	observer.BaseEvent
 	ServiceName string
 	Instances   []ServiceInstance
 }
@@ -100,9 +63,9 @@ func (s *ServiceInstancesChangedEvent) String() string {
 // NewServiceInstancesChangedEvent will create the ServiceInstanceChangedEvent instance
 func NewServiceInstancesChangedEvent(serviceName string, instances []ServiceInstance) *ServiceInstancesChangedEvent {
 	return &ServiceInstancesChangedEvent{
-		baseEvent: baseEvent{
-			source:    serviceName,
-			timestamp: time.Now(),
+		BaseEvent: observer.BaseEvent{
+			Source:    serviceName,
+			Timestamp: time.Now(),
 		},
 		ServiceName: serviceName,
 		Instances:   instances,

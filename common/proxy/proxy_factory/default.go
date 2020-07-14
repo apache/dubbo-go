@@ -54,7 +54,7 @@ type DefaultProxyFactory struct {
 //}
 
 // NewDefaultProxyFactory returns a proxy factory instance
-func NewDefaultProxyFactory(options ...proxy.Option) proxy.ProxyFactory {
+func NewDefaultProxyFactory(_ ...proxy.Option) proxy.ProxyFactory {
 	return &DefaultProxyFactory{}
 }
 

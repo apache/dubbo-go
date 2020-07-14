@@ -24,18 +24,35 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/metadata"
+	"github.com/apache/dubbo-go/metadata/report"
 )
 
 var (
-	instance metadata.MetadataReport
-	once     sync.Once
+	instance  report.MetadataReport
+	reportUrl common.URL
+	once      sync.Once
 )
 
-// GetMetadataReportInstance gets metadata report instance by @url
-func GetMetadataReportInstance(url *common.URL) metadata.MetadataReport {
+// GetMetadataReportInstance will return the instance in lazy mode. Be careful the instance create will only
+// execute once.
+func GetMetadataReportInstance(selectiveUrl ...*common.URL) report.MetadataReport {
 	once.Do(func() {
-		instance = extension.GetMetadataReportFactory(url.Protocol).CreateMetadataReport(url)
+		var url *common.URL
+		if len(selectiveUrl) > 0 {
+			url = selectiveUrl[0]
+			instance = extension.GetMetadataReportFactory(url.Protocol).CreateMetadataReport(url)
+			reportUrl = *url
+		}
 	})
 	return instance
+}
+
+// GetMetadataReportUrl will return the report instance url
+func GetMetadataReportUrl() common.URL {
+	return reportUrl
+}
+
+// SetMetadataReportUrl will only can be used by unit test to mock url
+func SetMetadataReportUrl(url common.URL) {
+	reportUrl = url
 }

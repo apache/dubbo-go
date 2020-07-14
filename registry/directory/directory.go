@@ -46,13 +46,15 @@ func init() {
 	extension.SetDefaultRegistryDirectory(NewRegistryDirectory)
 }
 
+// RegistryDirectory implementation of Directory:
+// Invoker list returned from this Directory's list method have been filtered by Routers
 type RegistryDirectory struct {
 	directory.BaseDirectory
 	cacheInvokers                  []protocol.Invoker
 	listenerLock                   sync.Mutex
 	serviceType                    string
 	registry                       registry.Registry
-	cacheInvokersMap               *sync.Map //use sync.map
+	cacheInvokersMap               *sync.Map // use sync.map
 	cacheOriginUrl                 *common.URL
 	configurators                  []config_center.Configurator
 	consumerConfigurationListener  *consumerConfigurationListener
@@ -106,15 +108,15 @@ func (dir *RegistryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 		url        *common.URL
 		oldInvoker protocol.Invoker = nil
 	)
-	//judge is override or others
+	// judge is override or others
 	if res != nil {
 		url = &res.Service
-		//1.for override url in 2.6.x
+		// 1.for override url in 2.6.x
 		if url.Protocol == constant.OVERRIDE_PROTOCOL ||
 			url.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY) == constant.CONFIGURATORS_CATEGORY {
 			dir.configurators = append(dir.configurators, extension.GetDefaultConfigurator(url))
 			url = nil
-		} else if url.Protocol == constant.ROUTER_PROTOCOL || //2.for router
+		} else if url.Protocol == constant.ROUTER_PROTOCOL || // 2.for router
 			url.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY) == constant.ROUTER_CATEGORY {
 			url = nil
 
@@ -124,7 +126,7 @@ func (dir *RegistryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 			logger.Infof("selector add service url{%s}", res.Service)
 
 			var urls []*common.URL
-			for _, v := range directory.GetRouterURLSet().Values() {
+			for _, v := range config.GetRouterURLSet().Values() {
 				urls = append(urls, v.(*common.URL))
 			}
 
@@ -175,7 +177,7 @@ func (dir *RegistryDirectory) toGroupInvokers() []protocol.Invoker {
 	}
 	groupInvokersList := make([]protocol.Invoker, 0, len(groupInvokersMap))
 	if len(groupInvokersMap) == 1 {
-		//len is 1 it means no group setting ,so do not need cluster again
+		// len is 1 it means no group setting ,so do not need cluster again
 		for _, invokers := range groupInvokersMap {
 			groupInvokersList = invokers
 		}
@@ -219,7 +221,7 @@ func (dir *RegistryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
 		logger.Error("URL is nil ,pls check if service url is subscribe successfully!")
 		return nil
 	}
-	//check the url's protocol is equal to the protocol which is configured in reference config or referenceUrl is not care about protocol
+	// check the url's protocol is equal to the protocol which is configured in reference config or referenceUrl is not care about protocol
 	if url.Protocol == referenceUrl.Protocol || referenceUrl.Protocol == "" {
 		newUrl := common.MergeUrl(url, referenceUrl)
 		dir.overrideUrl(newUrl)
@@ -269,7 +271,7 @@ func (dir *RegistryDirectory) IsAvailable() bool {
 
 // Destroy method
 func (dir *RegistryDirectory) Destroy() {
-	//TODO:unregister & unsubscribe
+	// TODO:unregister & unsubscribe
 	dir.BaseDirectory.Destroy(func() {
 		invokers := dir.cacheInvokers
 		dir.cacheInvokers = []protocol.Invoker{}

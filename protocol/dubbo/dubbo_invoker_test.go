@@ -35,7 +35,7 @@ import (
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
-func TestDubboInvoker_Invoke(t *testing.T) {
+func TestDubboInvokerInvoke(t *testing.T) {
 	proto, url := InitTest(t)
 
 	c := &Client{
@@ -51,7 +51,7 @@ func TestDubboInvoker_Invoke(t *testing.T) {
 	invoker := NewDubboInvoker(url, c)
 	user := &User{}
 
-	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUser"), invocation.WithArguments([]interface{}{"1", "username"}),
+	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName(mockMethodNameGetUser), invocation.WithArguments([]interface{}{"1", "username"}),
 		invocation.WithReply(user), invocation.WithAttachments(map[string]string{"test_key": "test_value"}))
 
 	// Call
