@@ -48,7 +48,7 @@ type ProviderConfig struct {
 	ConfigType     map[string]string          `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 
 	Registry   *RegistryConfig            `yaml:"registry" json:"registry,omitempty" property:"registry"`
-	Registries map[string]*RegistryConfig `yaml:"registries" json:"registries,omitempty" property:"registries"`
+	Registries map[string]*RegistryConfig `default:"{}" yaml:"registries" json:"registries,omitempty" property:"registries"`
 }
 
 // UnmarshalYAML unmarshals the ProviderConfig by @unmarshal function

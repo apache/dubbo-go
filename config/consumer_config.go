@@ -47,7 +47,7 @@ type ConsumerConfig struct {
 	ConnectTimeout  time.Duration
 
 	Registry   *RegistryConfig            `yaml:"registry" json:"registry,omitempty" property:"registry"`
-	Registries map[string]*RegistryConfig `yaml:"registries" json:"registries,omitempty" property:"registries"`
+	Registries map[string]*RegistryConfig `default:"{}" yaml:"registries" json:"registries" property:"registries"`
 
 	Request_Timeout string `yaml:"request_timeout" default:"5s" json:"request_timeout,omitempty" property:"request_timeout"`
 	RequestTimeout  time.Duration
