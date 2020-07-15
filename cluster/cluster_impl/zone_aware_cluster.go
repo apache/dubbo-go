@@ -23,17 +23,23 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-type registryAwareCluster struct{}
+type zoneAwareCluster struct{}
+
+const zoneAware = "zoneAware"
 
 func init() {
-	extension.SetCluster("registryAware", NewRegistryAwareCluster)
+	extension.SetCluster(zoneAware, NewZoneAwareCluster)
 }
 
-// NewRegistryAwareCluster returns a registry aware cluster instance
-func NewRegistryAwareCluster() cluster.Cluster {
-	return &registryAwareCluster{}
+// NewZoneAwareCluster ...
+func NewZoneAwareCluster() cluster.Cluster {
+	return &zoneAwareCluster{}
 }
 
-func (cluster *registryAwareCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return newRegistryAwareClusterInvoker(directory)
+func (cluster *zoneAwareCluster) Join(directory cluster.Directory) protocol.Invoker {
+	return newZoneAwareClusterInvoker(directory)
+}
+
+func GetZoneAwareName() string {
+	return zoneAware
 }

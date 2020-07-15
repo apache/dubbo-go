@@ -20,6 +20,7 @@ package config
 import (
 	"context"
 	"fmt"
+	"github.com/apache/dubbo-go/cluster/cluster_impl"
 	"net/url"
 	"strconv"
 	"time"
@@ -145,10 +146,21 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 			}
 		}
 		if regUrl != nil {
-			cluster := extension.GetCluster("registryAware")
+			// for multi-subscription scenario, use 'zone-aware' policy by default
+			cluster := extension.GetCluster(cluster_impl.GetZoneAwareName())
+			// The invoker wrap sequence would be: ZoneAwareClusterInvoker(StaticDirectory) -> FailoverClusterInvoker(RegistryDirectory, routing happens here) -> Invoker
 			c.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
 		} else {
-			cluster := extension.GetCluster(c.Cluster)
+			// not a registry url, must be direct invoke.
+			clu := cluster_impl.GetFailoverName()
+			if len(invokers) > 0 {
+				u := invokers[0].GetUrl()
+				if nil != &u {
+					clu = u.GetParam(constant.CLUSTER_KEY, cluster_impl.GetZoneAwareName())
+				}
+			}
+
+			cluster := extension.GetCluster(clu)
 			c.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
 		}
 	}
