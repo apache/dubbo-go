@@ -25,12 +25,13 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 )
 
-// Proxy struct
+// nolint
 type Proxy struct {
 	rpc         common.RPCService
 	invoke      protocol.Invoker
@@ -44,7 +45,7 @@ var (
 	typError = reflect.Zero(reflect.TypeOf((*error)(nil)).Elem()).Type()
 )
 
-// NewProxy ...
+// NewProxy create service proxy.
 func NewProxy(invoke protocol.Invoker, callBack interface{}, attachments map[string]string) *Proxy {
 	return &Proxy{
 		invoke:      invoke,
@@ -59,7 +60,6 @@ func NewProxy(invoke protocol.Invoker, callBack interface{}, attachments map[str
 // 		type XxxProvider struct {
 //  		Yyy func(ctx context.Context, args []interface{}, rsp *Zzz) error
 // 		}
-
 func (p *Proxy) Implement(v common.RPCService) {
 
 	// check parameters, incoming interface must be a elem's pointer.
@@ -141,7 +141,7 @@ func (p *Proxy) Implement(v common.RPCService) {
 			}
 
 			// add user setAttachment
-			atm := invCtx.Value("attachment")
+			atm := invCtx.Value(constant.AttachmentKey)
 			if m, ok := atm.(map[string]string); ok {
 				for k, value := range m {
 					inv.SetAttachments(k, value)
@@ -149,6 +149,9 @@ func (p *Proxy) Implement(v common.RPCService) {
 			}
 
 			result := p.invoke.Invoke(invCtx, inv)
+			if len(result.Attachments()) > 0 {
+				invCtx = context.WithValue(invCtx, constant.AttachmentKey, result.Attachments())
+			}
 
 			err = result.Error()
 			logger.Debugf("[makeDubboCallProxy] result: %v, err: %v", result.Result(), err)
@@ -202,12 +205,12 @@ func (p *Proxy) Implement(v common.RPCService) {
 
 }
 
-// Get ...
+// Get gets rpc service instance.
 func (p *Proxy) Get() common.RPCService {
 	return p.rpc
 }
 
-// GetCallback ...
+// GetCallback gets callback.
 func (p *Proxy) GetCallback() interface{} {
 	return p.callBack
 }

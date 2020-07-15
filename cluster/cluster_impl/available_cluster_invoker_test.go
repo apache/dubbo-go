@@ -19,6 +19,7 @@ package cluster_impl
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -32,6 +33,7 @@ import (
 	"github.com/apache/dubbo-go/cluster/directory"
 	"github.com/apache/dubbo-go/cluster/loadbalance"
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
@@ -39,10 +41,11 @@ import (
 )
 
 var (
-	availableUrl, _ = common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
+	availableUrl, _ = common.NewURL(fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider",
+		constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
 )
 
-func registerAvailable(t *testing.T, invoker *mock.MockInvoker) protocol.Invoker {
+func registerAvailable(invoker *mock.MockInvoker) protocol.Invoker {
 	extension.SetLoadbalance("random", loadbalance.NewRandomLoadBalance)
 	availableCluster := NewAvailableCluster()
 
@@ -60,7 +63,7 @@ func TestAvailableClusterInvokerSuccess(t *testing.T) {
 	defer ctrl.Finish()
 
 	invoker := mock.NewMockInvoker(ctrl)
-	clusterInvoker := registerAvailable(t, invoker)
+	clusterInvoker := registerAvailable(invoker)
 
 	mockResult := &protocol.RPCResult{Rest: rest{tried: 0, success: true}}
 	invoker.EXPECT().IsAvailable().Return(true)
@@ -76,7 +79,7 @@ func TestAvailableClusterInvokerNoAvail(t *testing.T) {
 	defer ctrl.Finish()
 
 	invoker := mock.NewMockInvoker(ctrl)
-	clusterInvoker := registerAvailable(t, invoker)
+	clusterInvoker := registerAvailable(invoker)
 
 	invoker.EXPECT().IsAvailable().Return(false)
 

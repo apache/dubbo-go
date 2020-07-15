@@ -26,7 +26,7 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-// GetWeight ...
+// GetWeight gets weight for load balance strategy
 func GetWeight(invoker protocol.Invoker, invocation protocol.Invocation) int64 {
 	url := invoker.GetUrl()
 	weight := url.GetMethodParamInt64(invocation.MethodName(), constant.WEIGHT_KEY, constant.DEFAULT_WEIGHT)

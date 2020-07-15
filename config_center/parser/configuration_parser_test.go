@@ -25,10 +25,65 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDefaultConfigurationParser_Parser(t *testing.T) {
+func TestDefaultConfigurationParserParser(t *testing.T) {
 	parser := &DefaultConfigurationParser{}
 	m, err := parser.Parse("dubbo.registry.address=172.0.0.1\ndubbo.registry.name=test")
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(m))
 	assert.Equal(t, "172.0.0.1", m["dubbo.registry.address"])
+}
+
+func TestDefaultConfigurationParserAppItemToUrls_ParserToUrls(t *testing.T) {
+	parser := &DefaultConfigurationParser{}
+	content := `configVersion: 2.7.1
+scope: application
+key: org.apache.dubbo-go.mockService
+enabled: true
+configs:
+- type: application
+  enabled: true
+  addresses:
+  - 0.0.0.0
+  providerAddresses: []
+  services:
+  - org.apache.dubbo-go.mockService
+  applications: []
+  parameters:
+    cluster: mock1
+  side: provider`
+	urls, err := parser.ParseToUrls(content)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(urls))
+	assert.Equal(t, "org.apache.dubbo-go.mockService", urls[0].GetParam("application", ""))
+	assert.Equal(t, "mock1", urls[0].GetParam("cluster", ""))
+	assert.Equal(t, "override", urls[0].Protocol)
+	assert.Equal(t, "0.0.0.0", urls[0].Location)
+}
+
+func TestDefaultConfigurationParserServiceItemToUrls_ParserToUrls(t *testing.T) {
+	parser := &DefaultConfigurationParser{}
+	content := `configVersion: 2.7.1
+scope: notApplication
+key: groupA/test:1
+enabled: true
+configs:
+- type: application
+  enabled: true
+  addresses:
+  - 0.0.0.0
+  providerAddresses: []
+  services:
+  - org.apache.dubbo-go.mockService
+  applications: []
+  parameters:
+    cluster: mock1
+  side: provider`
+	urls, err := parser.ParseToUrls(content)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(urls))
+	assert.Equal(t, "groupA", urls[0].GetParam("group", ""))
+	assert.Equal(t, "/test", urls[0].Path)
+	assert.Equal(t, "mock1", urls[0].GetParam("cluster", ""))
+	assert.Equal(t, "override", urls[0].Protocol)
+	assert.Equal(t, "0.0.0.0", urls[0].Location)
 }

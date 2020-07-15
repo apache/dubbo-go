@@ -40,15 +40,17 @@ func init() {
 	extension.SetRestClient(constant.DEFAULT_REST_CLIENT, NewRestyClient)
 }
 
+// RestyClient a rest client implement by Resty
 type RestyClient struct {
 	client *resty.Client
 }
 
+// NewRestyClient a constructor of RestyClient
 func NewRestyClient(restOption *client.RestOptions) client.RestClient {
 	client := resty.New()
 	client.SetTransport(
 		&http.Transport{
-			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			DialContext: func(_ context.Context, network, addr string) (net.Conn, error) {
 				c, err := net.DialTimeout(network, addr, restOption.ConnectTimeout)
 				if err != nil {
 					return nil, err
@@ -65,21 +67,21 @@ func NewRestyClient(restOption *client.RestOptions) client.RestClient {
 	}
 }
 
-func (rc *RestyClient) Do(restRequest *client.RestRequest, res interface{}) error {
-	r, err := rc.client.R().
-		SetHeader("Content-Type", restRequest.Consumes).
-		SetHeader("Accept", restRequest.Produces).
+// Do send request by RestyClient
+func (rc *RestyClient) Do(restRequest *client.RestClientRequest, res interface{}) error {
+	req := rc.client.R()
+	req.Header = restRequest.Header
+	resp, err := req.
 		SetPathParams(restRequest.PathParams).
 		SetQueryParams(restRequest.QueryParams).
-		SetHeaders(restRequest.Headers).
 		SetBody(restRequest.Body).
 		SetResult(res).
 		Execute(restRequest.Method, "http://"+path.Join(restRequest.Location, restRequest.Path))
 	if err != nil {
 		return perrors.WithStack(err)
 	}
-	if r.IsError() {
-		return perrors.New(r.String())
+	if resp.IsError() {
+		return perrors.New(resp.String())
 	}
 	return nil
 }

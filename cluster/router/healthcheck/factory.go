@@ -33,11 +33,11 @@ type HealthCheckRouteFactory struct {
 }
 
 // newHealthCheckRouteFactory construct a new HealthCheckRouteFactory
-func newHealthCheckRouteFactory() router.RouterFactory {
+func newHealthCheckRouteFactory() router.PriorityRouterFactory {
 	return &HealthCheckRouteFactory{}
 }
 
-// NewRouter construct a new NewHealthCheckRouter via url
-func (f *HealthCheckRouteFactory) NewRouter(url *common.URL) (router.Router, error) {
+// NewPriorityRouter construct a new NewHealthCheckRouter via url
+func (f *HealthCheckRouteFactory) NewPriorityRouter(url *common.URL) (router.PriorityRouter, error) {
 	return NewHealthCheckRouter(url)
 }

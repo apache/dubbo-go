@@ -31,32 +31,34 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
-func callback(listener config_center.ConfigurationListener, namespace, group, dataId, data string) {
+func callback(listener config_center.ConfigurationListener, _, _, dataId, data string) {
 	listener.Process(&config_center.ConfigChangeEvent{Key: dataId, Value: data, ConfigType: remoting.EventTypeUpdate})
 }
 
-func (l *nacosDynamicConfiguration) addListener(key string, listener config_center.ConfigurationListener) {
-	_, loaded := l.keyListeners.Load(key)
+func (n *nacosDynamicConfiguration) addListener(key string, listener config_center.ConfigurationListener) {
+	_, loaded := n.keyListeners.Load(key)
 	if !loaded {
 		_, cancel := context.WithCancel(context.Background())
-		err := (*l.client.Client()).ListenConfig(vo.ConfigParam{
+		err := (*n.client.Client()).ListenConfig(vo.ConfigParam{
 			DataId: key,
 			Group:  "dubbo",
 			OnChange: func(namespace, group, dataId, data string) {
 				go callback(listener, namespace, group, dataId, data)
 			},
 		})
-		logger.Errorf("nacos : listen config fail, error:%v ", err)
+		if err != nil {
+			logger.Errorf("nacos : listen config fail, error:%v ", err)
+		}
 		newListener := make(map[config_center.ConfigurationListener]context.CancelFunc)
 		newListener[listener] = cancel
-		l.keyListeners.Store(key, newListener)
+		n.keyListeners.Store(key, newListener)
 	} else {
 		// TODO check goroutine alive, but this version of go_nacos_sdk is not support.
 		logger.Infof("profile:%s. this profile is already listening", key)
 	}
 }
 
-func (l *nacosDynamicConfiguration) removeListener(key string, listener config_center.ConfigurationListener) {
+func (n *nacosDynamicConfiguration) removeListener(key string, listener config_center.ConfigurationListener) {
 	// TODO: not supported in current go_nacos_sdk version
 	logger.Warn("not supported in current go_nacos_sdk version")
 }

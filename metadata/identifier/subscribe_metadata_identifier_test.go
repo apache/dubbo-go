@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-package config
+package identifier
 
 import (
-	"strings"
 	"testing"
 )
 
@@ -26,42 +25,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-import (
-	"github.com/apache/dubbo-go/cluster/directory"
-	_ "github.com/apache/dubbo-go/cluster/router/condition"
-)
-
-const testYML = "testdata/router_config.yml"
-const errorTestYML = "testdata/router_config_error.yml"
-
-func TestString(t *testing.T) {
-
-	s := "a1=>a2"
-	s1 := "=>a2"
-	s2 := "a1=>"
-
-	n := strings.SplitN(s, "=>", 2)
-	n1 := strings.SplitN(s1, "=>", 2)
-	n2 := strings.SplitN(s2, "=>", 2)
-
-	assert.Equal(t, n[0], "a1")
-	assert.Equal(t, n[1], "a2")
-
-	assert.Equal(t, n1[0], "")
-	assert.Equal(t, n1[1], "a2")
-
-	assert.Equal(t, n2[0], "a1")
-	assert.Equal(t, n2[1], "")
+var subscribeMetadataId = &SubscriberMetadataIdentifier{
+	Revision: "1.0",
+	MetadataIdentifier: MetadataIdentifier{
+		BaseMetadataIdentifier: BaseMetadataIdentifier{
+			ServiceInterface: "org.apache.pkg.mockService",
+			Version:          "1.0.0",
+			Group:            "Group",
+			Side:             "provider",
+		},
+	},
 }
 
-func TestRouterInit(t *testing.T) {
-	errPro := RouterInit(errorTestYML)
-	assert.Error(t, errPro)
+func TestSubscribeGetFilePathKey(t *testing.T) {
+	assert.Equal(t, "metadata/1.0.0/Group/provider/1.0", subscribeMetadataId.GetFilePathKey())
+}
 
-	assert.Equal(t, 0, directory.GetRouterURLSet().Size())
-
-	errPro = RouterInit(testYML)
-	assert.NoError(t, errPro)
-
-	assert.Equal(t, 1, directory.GetRouterURLSet().Size())
+func TestSubscribeGetIdentifierKey(t *testing.T) {
+	assert.Equal(t, "org.apache.pkg.mockService:1.0.0:Group:provider:1.0", subscribeMetadataId.GetIdentifierKey())
 }

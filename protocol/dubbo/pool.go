@@ -219,25 +219,25 @@ func (c *gettyRPCClient) updateSession(session getty.Session) {
 
 func (c *gettyRPCClient) getClientRpcSession(session getty.Session) (rpcSession, error) {
 	var (
-		err        error
-		rpcSession rpcSession
+		err              error
+		rpcClientSession rpcSession
 	)
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 	if c.sessions == nil {
-		return rpcSession, errClientClosed
+		return rpcClientSession, errClientClosed
 	}
 
 	err = errSessionNotExist
 	for _, s := range c.sessions {
 		if s.session == session {
-			rpcSession = *s
+			rpcClientSession = *s
 			err = nil
 			break
 		}
 	}
 
-	return rpcSession, perrors.WithStack(err)
+	return rpcClientSession, perrors.WithStack(err)
 }
 
 func (c *gettyRPCClient) isAvailable() bool {
@@ -319,8 +319,7 @@ func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPC
 	conn, err := p.get()
 	if err == nil && conn == nil {
 		// create new conn
-		rpcClientConn, err := newGettyRPCClientConn(p, protocol, addr)
-		return rpcClientConn, perrors.WithStack(err)
+		conn, err = newGettyRPCClientConn(p, protocol, addr)
 	}
 	return conn, perrors.WithStack(err)
 }

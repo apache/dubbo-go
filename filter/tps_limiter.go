@@ -22,8 +22,8 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
+// TpsLimiter defines the Limiter that judge if the TPS overs the threshold
 /*
- * TpsLimiter
  * please register your implementation by invoking SetTpsLimiter
  * The usage, for example:
  * "UserProvider":
@@ -34,5 +34,6 @@ import (
  *   tps.limiter: "the name of limiter",
  */
 type TpsLimiter interface {
+	// IsAllowable will check whether this invocation should be enabled for further process
 	IsAllowable(common.URL, protocol.Invocation) bool
 }

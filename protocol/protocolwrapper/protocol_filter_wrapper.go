@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	// FILTER ...
+	// FILTER is protocol key.
 	FILTER = "filter"
 )
 
@@ -45,7 +45,7 @@ type ProtocolFilterWrapper struct {
 	protocol protocol.Protocol
 }
 
-// Export ...
+// Export service for remote invocation
 func (pfw *ProtocolFilterWrapper) Export(invoker protocol.Invoker) protocol.Exporter {
 	if pfw.protocol == nil {
 		pfw.protocol = extension.GetProtocol(invoker.GetUrl().Protocol)
@@ -54,7 +54,7 @@ func (pfw *ProtocolFilterWrapper) Export(invoker protocol.Invoker) protocol.Expo
 	return pfw.protocol.Export(invoker)
 }
 
-// Refer ...
+// Refer a remote service
 func (pfw *ProtocolFilterWrapper) Refer(url common.URL) protocol.Invoker {
 	if pfw.protocol == nil {
 		pfw.protocol = extension.GetProtocol(url.Protocol)
@@ -62,7 +62,7 @@ func (pfw *ProtocolFilterWrapper) Refer(url common.URL) protocol.Invoker {
 	return buildInvokerChain(pfw.protocol.Refer(url), constant.REFERENCE_FILTER_KEY)
 }
 
-// Destroy ...
+// Destroy will destroy all invoker and exporter.
 func (pfw *ProtocolFilterWrapper) Destroy() {
 	pfw.protocol.Destroy()
 }

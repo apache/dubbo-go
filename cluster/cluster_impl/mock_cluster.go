@@ -24,7 +24,11 @@ import (
 
 type mockCluster struct{}
 
-// NewMockCluster ...
+// NewMockCluster returns a mock cluster instance.
+//
+// Mock cluster is usually used for service degradation, such as an authentication service.
+// When the service provider is completely hung up, the client does not throw an exception,
+// return an authorization failure through the Mock data instead.
 func NewMockCluster() cluster.Cluster {
 	return &mockCluster{}
 }

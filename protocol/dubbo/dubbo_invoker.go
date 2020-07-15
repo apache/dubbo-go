@@ -39,8 +39,9 @@ import (
 )
 
 var (
-	// ErrNoReply ...
-	ErrNoReply          = perrors.New("request need @response")
+	// ErrNoReply
+	ErrNoReply = perrors.New("request need @response")
+	// ErrDestroyedInvoker
 	ErrDestroyedInvoker = perrors.New("request Destroyed invoker")
 )
 
@@ -48,7 +49,7 @@ var (
 	attachmentKey = []string{constant.INTERFACE_KEY, constant.GROUP_KEY, constant.TOKEN_KEY, constant.TIMEOUT_KEY}
 )
 
-// DubboInvoker ...
+// DubboInvoker is dubbo client invoker.
 type DubboInvoker struct {
 	protocol.BaseInvoker
 	client   *Client
@@ -57,7 +58,7 @@ type DubboInvoker struct {
 	reqNum int64
 }
 
-// NewDubboInvoker ...
+// NewDubboInvoker create dubbo client invoker.
 func NewDubboInvoker(url common.URL, client *Client) *DubboInvoker {
 	return &DubboInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
@@ -66,7 +67,7 @@ func NewDubboInvoker(url common.URL, client *Client) *DubboInvoker {
 	}
 }
 
-// Invoke ...
+// Invoke call remoting.
 func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	var (
 		err    error
@@ -122,7 +123,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	return &result
 }
 
-// Destroy ...
+// Destroy destroy dubbo client invoker.
 func (di *DubboInvoker) Destroy() {
 	di.quitOnce.Do(func() {
 		for {
