@@ -38,6 +38,16 @@ type mockFacade struct {
 	done    chan struct{}
 }
 
+func newMockFacade(client *ZookeeperClient, url *common.URL) ZkClientFacade {
+	mock := &mockFacade{
+		client: client,
+		URL:    url,
+	}
+
+	mock.wg.Add(1)
+	return mock
+}
+
 func (r *mockFacade) ZkClient() *ZookeeperClient {
 	return r.client
 }
@@ -80,7 +90,7 @@ func Test_Facade(t *testing.T) {
 	assert.NoError(t, err)
 	defer ts.Stop()
 	url, _ := common.NewURL("mock://127.0.0.1")
-	mock := &mockFacade{client: z, URL: &url}
+	mock := newMockFacade(z, &url)
 	go HandleClientRestart(mock)
 	states := []zk.State{zk.StateConnecting, zk.StateConnected, zk.StateHasSession}
 	verifyEventStateOrder(t, event, states, "event channel")

@@ -22,7 +22,6 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/container/set"
 	"go.uber.org/atomic"
 )
 
@@ -34,8 +33,6 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 )
-
-var routerURLSet = gxset.NewSet()
 
 // BaseDirectory Abstract implementation of Directory: Invoker list returned from this Directory's list method have been filtered by Routers
 type BaseDirectory struct {
@@ -83,16 +80,16 @@ func (dir *BaseDirectory) SetRouters(urls []*common.URL) {
 		return
 	}
 
-	routers := make([]router.Router, 0, len(urls))
+	routers := make([]router.PriorityRouter, 0, len(urls))
 
 	for _, url := range urls {
 		routerKey := url.GetParam(constant.ROUTER_KEY, "")
 
 		if len(routerKey) > 0 {
 			factory := extension.GetRouterFactory(url.Protocol)
-			r, err := factory.NewRouter(url)
+			r, err := factory.NewPriorityRouter(url)
 			if err != nil {
-				logger.Errorf("Create router fail. router key: %s, error: %v", routerKey, url.Service(), err)
+				logger.Errorf("Create router fail. router key: %s, url:%s, error: %+v", routerKey, url.Service(), err)
 				return
 			}
 			routers = append(routers, r)
@@ -119,15 +116,4 @@ func (dir *BaseDirectory) Destroy(doDestroy func()) {
 // IsAvailable Once directory init finish, it will change to true
 func (dir *BaseDirectory) IsAvailable() bool {
 	return !dir.destroyed.Load()
-}
-
-// GetRouterURLSet Return router URL
-func GetRouterURLSet() *gxset.HashSet {
-	return routerURLSet
-}
-
-// AddRouterURLSet Add router URL
-// Router URL will init in config/config_loader.go
-func AddRouterURLSet(url *common.URL) {
-	routerURLSet.Add(url)
 }

@@ -22,10 +22,12 @@ const (
 )
 
 const (
+	PORT_KEY               = "port"
 	GROUP_KEY              = "group"
 	VERSION_KEY            = "version"
 	INTERFACE_KEY          = "interface"
 	PATH_KEY               = "path"
+	PROTOCOL_KEY           = "protocol"
 	SERVICE_KEY            = "service"
 	METHODS_KEY            = "methods"
 	TIMEOUT_KEY            = "timeout"
@@ -41,6 +43,9 @@ const (
 	LOCAL_ADDR             = "local-addr"
 	REMOTE_ADDR            = "remote-addr"
 	PATH_SEPARATOR         = "/"
+	DUBBO_KEY              = "dubbo"
+	RELEASE_KEY            = "release"
+	ANYHOST_KEY            = "anyhost"
 )
 
 const (
@@ -75,6 +80,11 @@ const (
 	EXECUTE_REJECTED_EXECUTION_HANDLER_KEY = "execute.limit.rejected.handler"
 	PROVIDER_SHUTDOWN_FILTER               = "pshutdown"
 	CONSUMER_SHUTDOWN_FILTER               = "cshutdown"
+	PID_KEY                                = "pid"
+	SYNC_REPORT_KEY                        = "sync.report"
+	RETRY_PERIOD_KEY                       = "retry.period"
+	RETRY_TIMES_KEY                        = "retry.times"
+	CYCLE_REPORT_KEY                       = "cycle.report"
 )
 
 const (
@@ -105,6 +115,7 @@ const (
 	ROUTERS_CATEGORY         = "routers"
 	ROUTE_PROTOCOL           = "route"
 	CONDITION_ROUTE_PROTOCOL = "condition"
+	TAG_ROUTE_PROTOCOL       = "tag"
 	PROVIDERS_CATEGORY       = "providers"
 	ROUTER_KEY               = "router"
 )
@@ -116,6 +127,7 @@ const (
 	CONFIG_CLUSTER_KEY    = "config.cluster"
 	CONFIG_CHECK_KEY      = "config.check"
 	CONFIG_TIMEOUT_KET    = "config.timeout"
+	CONFIG_LOG_DIR_KEY    = "config.logDir"
 	CONFIG_VERSION_KEY    = "configVersion"
 	COMPATIBLE_CONFIG_KEY = "compatible_config"
 )
@@ -128,6 +140,7 @@ const (
 	ProviderConfigPrefix       = "dubbo.provider."
 	ConsumerConfigPrefix       = "dubbo.consumer."
 	ShutdownConfigPrefix       = "dubbo.shutdown."
+	MetadataReportPrefix       = "dubbo.metadata-report."
 	RouterConfigPrefix         = "dubbo.router."
 )
 
@@ -145,6 +158,17 @@ const (
 	NACOS_CATEGORY_KEY           = "category"
 	NACOS_PROTOCOL_KEY           = "protocol"
 	NACOS_PATH_KEY               = "path"
+	NACOS_NAMESPACE_ID           = "namespaceId"
+	NACOS_PASSWORD               = "password"
+	NACOS_USERNAME               = "username"
+)
+
+const (
+	ZOOKEEPER_KEY = "zookeeper"
+)
+
+const (
+	ETCDV3_KEY = "etcdv3"
 )
 
 const (
@@ -161,7 +185,8 @@ const (
 	ListenableRouterName = "listenable"
 	// HealthCheckRouterName Specify the name of HealthCheckRouter
 	HealthCheckRouterName = "health_check"
-
+	// TagRouterName Specify the name of TagRouter
+	TagRouterName = "tag"
 	// ConditionRouterRuleSuffix Specify condition router suffix
 	ConditionRouterRuleSuffix = ".condition-router"
 
@@ -171,6 +196,13 @@ const (
 	RouterEnabled = "enabled"
 	// Priority Priority key in router module
 	RouterPriority = "priority"
+
+	// ForceUseTag is the tag in attachment
+	ForceUseTag = "dubbo.force.tag"
+	Tagkey      = "dubbo.tag"
+
+	// Attachment key in context in invoker
+	AttachmentKey = "attachment"
 )
 
 const (
@@ -201,9 +233,22 @@ const (
 	// consumer
 	CONSUMER = "consumer"
 	// key of access key id
-	ACCESS_KEY_ID_KEY = "accessKeyId"
+	ACCESS_KEY_ID_KEY = ".accessKeyId"
 	// key of secret access key
-	SECRET_ACCESS_KEY_KEY = "secretAccessKey"
+	SECRET_ACCESS_KEY_KEY = ".secretAccessKey"
+)
+
+// metadata report
+
+const (
+	METACONFIG_REMOTE  = "remote"
+	METACONFIG_LOCAL   = "local"
+	KEY_SEPARATOR      = ":"
+	DEFAULT_PATH_TAG   = "metadata"
+	KEY_REVISON_PREFIX = "revision"
+
+	// metadata service
+	METADATA_SERVICE_NAME = "org.apache.dubbo.metadata.MetadataService"
 )
 
 // HealthCheck Router
@@ -226,4 +271,22 @@ const (
 	DEFAULT_CIRCUIT_TRIPPED_TIMEOUT_FACTOR = 1000
 	// The default time window of circuit-tripped  in millisecond if not specfied
 	MAX_CIRCUIT_TRIPPED_TIMEOUT_IN_MS = 30000
+)
+
+// service discovery
+const (
+	SUBSCRIBED_SERVICE_NAMES_KEY               = "subscribed-services"
+	PROVIDER_BY                                = "provided-by"
+	EXPORTED_SERVICES_REVISION_PROPERTY_NAME   = "dubbo.exported-services.revision"
+	SUBSCRIBED_SERVICES_REVISION_PROPERTY_NAME = "dubbo.subscribed-services.revision"
+	SERVICE_INSTANCE_SELECTOR                  = "service-instance-selector"
+	METADATA_STORAGE_TYPE_PROPERTY_NAME        = "dubbo.metadata.storage-type"
+	DEFAULT_METADATA_STORAGE_TYPE              = "local"
+	SERVICE_INSTANCE_ENDPOINTS                 = "dubbo.endpoints"
+	METADATA_SERVICE_PREFIX                    = "dubbo.metadata-service."
+	METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME  = METADATA_SERVICE_PREFIX + "url-params"
+	METADATA_SERVICE_URLS_PROPERTY_NAME        = METADATA_SERVICE_PREFIX + "urls"
+
+	// SERVICE_DISCOVERY_KEY indicate which service discovery instance will be used
+	SERVICE_DISCOVERY_KEY = "service_discovery"
 )

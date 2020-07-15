@@ -33,12 +33,12 @@ type CacheListener struct {
 	rootPath     string
 }
 
-// NewCacheListener ...
+// NewCacheListener creates a new CacheListener
 func NewCacheListener(rootPath string) *CacheListener {
 	return &CacheListener{rootPath: rootPath}
 }
 
-// AddListener ...
+// AddListener will add a listener if loaded
 func (l *CacheListener) AddListener(key string, listener config_center.ConfigurationListener) {
 
 	// reference from https://stackoverflow.com/questions/34018908/golang-why-dont-we-have-a-set-datastructure
@@ -50,7 +50,7 @@ func (l *CacheListener) AddListener(key string, listener config_center.Configura
 	}
 }
 
-// RemoveListener ...
+// RemoveListener will delete a listener if loaded
 func (l *CacheListener) RemoveListener(key string, listener config_center.ConfigurationListener) {
 	listeners, loaded := l.keyListeners.Load(key)
 	if loaded {
@@ -58,7 +58,7 @@ func (l *CacheListener) RemoveListener(key string, listener config_center.Config
 	}
 }
 
-// DataChange ...
+// DataChange changes all listeners' event
 func (l *CacheListener) DataChange(event remoting.Event) bool {
 	if event.Content == "" {
 		//meanings new node

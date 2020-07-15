@@ -29,7 +29,7 @@ type apolloListener struct {
 	listeners map[config_center.ConfigurationListener]struct{}
 }
 
-// NewApolloListener ...
+// NewApolloListener creates a new apolloListener
 func NewApolloListener() *apolloListener {
 	return &apolloListener{
 		listeners: make(map[config_center.ConfigurationListener]struct{}, 0),
@@ -49,7 +49,7 @@ func (a *apolloListener) OnChange(changeEvent *agollo.ChangeEvent) {
 	}
 }
 
-// AddListener ...
+// AddListener adds a listener for apollo
 func (a *apolloListener) AddListener(l config_center.ConfigurationListener) {
 	if _, ok := a.listeners[l]; !ok {
 		a.listeners[l] = struct{}{}
@@ -57,7 +57,7 @@ func (a *apolloListener) AddListener(l config_center.ConfigurationListener) {
 	}
 }
 
-// RemoveListener ...
+// RemoveListener removes listeners of apollo
 func (a *apolloListener) RemoveListener(l config_center.ConfigurationListener) {
 	delete(a.listeners, l)
 }

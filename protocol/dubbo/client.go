@@ -88,7 +88,7 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-// SetClientConf ...
+// SetClientConf set dubbo client config.
 func SetClientConf(c ClientConfig) {
 	clientConf = &c
 	err := clientConf.CheckValidity()
@@ -99,7 +99,7 @@ func SetClientConf(c ClientConfig) {
 	setClientGrpool()
 }
 
-// GetClientConf ...
+// GetClientConf get dubbo client config.
 func GetClientConf() ClientConfig {
 	return *clientConf
 }
@@ -111,7 +111,7 @@ func setClientGrpool() {
 	}
 }
 
-// Options ...
+// Options is option for create dubbo client
 type Options struct {
 	// connect timeout
 	ConnectTimeout time.Duration
@@ -129,7 +129,7 @@ type AsyncCallbackResponse struct {
 	Reply     interface{}
 }
 
-// Client ...
+// Client is dubbo protocol client.
 type Client struct {
 	opts     Options
 	conf     ClientConfig
@@ -139,7 +139,7 @@ type Client struct {
 	pendingResponses *sync.Map
 }
 
-// NewClient ...
+// NewClient create a new Client.
 func NewClient(opt Options) *Client {
 
 	switch {
@@ -167,7 +167,7 @@ func NewClient(opt Options) *Client {
 	return c
 }
 
-// Request ...
+// Request is dubbo protocol request.
 type Request struct {
 	addr   string
 	svcUrl common.URL
@@ -176,7 +176,7 @@ type Request struct {
 	atta   map[string]string
 }
 
-// NewRequest ...
+// NewRequest create a new Request.
 func NewRequest(addr string, svcUrl common.URL, method string, args interface{}, atta map[string]string) *Request {
 	return &Request{
 		addr:   addr,
@@ -187,13 +187,13 @@ func NewRequest(addr string, svcUrl common.URL, method string, args interface{},
 	}
 }
 
-// Response ...
+// Response is dubbo protocol response.
 type Response struct {
 	reply interface{}
 	atta  map[string]string
 }
 
-// NewResponse ...
+// NewResponse  create a new Response.
 func NewResponse(reply interface{}, atta map[string]string) *Response {
 	return &Response{
 		reply: reply,
@@ -201,15 +201,14 @@ func NewResponse(reply interface{}, atta map[string]string) *Response {
 	}
 }
 
-// CallOneway call one way
+// CallOneway call by one way
 func (c *Client) CallOneway(request *Request) error {
 
 	return perrors.WithStack(c.call(CT_OneWay, request, NewResponse(nil, nil), nil))
 }
 
-// Call if @response is nil, the transport layer will get the response without notify the invoker.
+// Call call remoting by two way or one way, if @response.reply is nil, the way of call is one way.
 func (c *Client) Call(request *Request, response *Response) error {
-
 	ct := CT_TwoWay
 	if response.reply == nil {
 		ct = CT_OneWay
@@ -218,14 +217,12 @@ func (c *Client) Call(request *Request, response *Response) error {
 	return perrors.WithStack(c.call(ct, request, response, nil))
 }
 
-// AsyncCall ...
+// AsyncCall call remoting by async with callback.
 func (c *Client) AsyncCall(request *Request, callback common.AsyncCallback, response *Response) error {
-
 	return perrors.WithStack(c.call(CT_TwoWay, request, response, callback))
 }
 
 func (c *Client) call(ct CallType, request *Request, response *Response, callback common.AsyncCallback) error {
-
 	p := &DubboPackage{}
 	p.Service.Path = strings.TrimPrefix(request.svcUrl.Path, "/")
 	p.Service.Interface = request.svcUrl.GetParam(constant.INTERFACE_KEY, "")
@@ -293,7 +290,7 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 	return perrors.WithStack(err)
 }
 
-// Close ...
+// Close close the client pool.
 func (c *Client) Close() {
 	if c.pool != nil {
 		c.pool.close()

@@ -18,6 +18,7 @@
 package healthcheck
 
 import (
+	"fmt"
 	"math"
 	"testing"
 )
@@ -32,12 +33,18 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-func TestDefaultHealthChecker_IsHealthy(t *testing.T) {
+const (
+	healthCheckDubbo1010IP    = "192.168.10.10"
+	healthCheckDubbo1011IP    = "192.168.10.11"
+	healthCheckMethodTest     = "test"
+	healthCheckDubboUrlFormat = "dubbo://%s:20000/com.ikurento.user.UserProvider"
+)
 
+func TestDefaultHealthCheckerIsHealthy(t *testing.T) {
 	defer protocol.CleanAllStatus()
-	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+	url, _ := common.NewURL(fmt.Sprintf(healthCheckDubboUrlFormat, healthCheckDubbo1010IP))
 	hc := NewDefaultHealthChecker(&url).(*DefaultHealthChecker)
-	invoker := NewMockInvoker(url, 1)
+	invoker := NewMockInvoker(url)
 	healthy := hc.IsHealthy(invoker)
 	assert.True(t, healthy)
 
@@ -45,7 +52,7 @@ func TestDefaultHealthChecker_IsHealthy(t *testing.T) {
 	url.SetParam(constant.SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY, "100")
 	// fake the outgoing request
 	for i := 0; i < 11; i++ {
-		request(url, "test", 0, true, false)
+		request(url, healthCheckMethodTest, 0, true, false)
 	}
 	hc = NewDefaultHealthChecker(&url).(*DefaultHealthChecker)
 	healthy = hc.IsHealthy(invoker)
@@ -54,7 +61,7 @@ func TestDefaultHealthChecker_IsHealthy(t *testing.T) {
 
 	// successive failed count is more than constant.SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY, go to unhealthy
 	for i := 0; i < 11; i++ {
-		request(url, "test", 0, false, false)
+		request(url, healthCheckMethodTest, 0, false, false)
 	}
 	url.SetParam(constant.SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY, "10")
 	url.SetParam(constant.OUTSTANDING_REQUEST_COUNT_LIMIT_KEY, "1000")
@@ -63,18 +70,18 @@ func TestDefaultHealthChecker_IsHealthy(t *testing.T) {
 	assert.False(t, hc.IsHealthy(invoker))
 
 	// reset successive failed count and go to healthy
-	request(url, "test", 0, false, true)
+	request(url, healthCheckMethodTest, 0, false, true)
 	healthy = hc.IsHealthy(invoker)
 	assert.True(t, hc.IsHealthy(invoker))
 }
 
-func TestDefaultHealthChecker_getCircuitBreakerSleepWindowTime(t *testing.T) {
+func TestDefaultHealthCheckerGetCircuitBreakerSleepWindowTime(t *testing.T) {
 	defer protocol.CleanAllStatus()
-	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+	url, _ := common.NewURL(fmt.Sprintf(healthCheckDubboUrlFormat, healthCheckDubbo1010IP))
 	defaultHc := NewDefaultHealthChecker(&url).(*DefaultHealthChecker)
 	// Increase the number of failed requests
 	for i := 0; i < 100; i++ {
-		request(url, "test", 1, false, false)
+		request(url, healthCheckMethodTest, 1, false, false)
 	}
 	sleepWindowTime := defaultHc.getCircuitBreakerSleepWindowTime(protocol.GetURLStatus(url))
 	assert.True(t, sleepWindowTime == constant.MAX_CIRCUIT_TRIPPED_TIMEOUT_IN_MS)
@@ -84,48 +91,48 @@ func TestDefaultHealthChecker_getCircuitBreakerSleepWindowTime(t *testing.T) {
 	sleepWindowTime = NewDefaultHealthChecker(&url).(*DefaultHealthChecker).getCircuitBreakerSleepWindowTime(protocol.GetURLStatus(url))
 	assert.True(t, sleepWindowTime == 0)
 
-	url1, _ := common.NewURL("dubbo://192.168.10.11:20000/com.ikurento.user.UserProvider")
+	url1, _ := common.NewURL(fmt.Sprintf(healthCheckDubboUrlFormat, healthCheckDubbo1011IP))
 	sleepWindowTime = defaultHc.getCircuitBreakerSleepWindowTime(protocol.GetURLStatus(url1))
 	assert.True(t, sleepWindowTime == 0)
-	request(url1, "test", 1, false, false)
-	request(url1, "test", 1, false, false)
-	request(url1, "test", 1, false, false)
-	request(url1, "test", 1, false, false)
-	request(url1, "test", 1, false, false)
-	request(url1, "test", 1, false, false)
+	request(url1, healthCheckMethodTest, 1, false, false)
+	request(url1, healthCheckMethodTest, 1, false, false)
+	request(url1, healthCheckMethodTest, 1, false, false)
+	request(url1, healthCheckMethodTest, 1, false, false)
+	request(url1, healthCheckMethodTest, 1, false, false)
+	request(url1, healthCheckMethodTest, 1, false, false)
 	sleepWindowTime = defaultHc.getCircuitBreakerSleepWindowTime(protocol.GetURLStatus(url1))
 	assert.True(t, sleepWindowTime > 0 && sleepWindowTime < constant.MAX_CIRCUIT_TRIPPED_TIMEOUT_IN_MS)
 }
 
-func TestDefaultHealthChecker_getCircuitBreakerTimeout(t *testing.T) {
+func TestDefaultHealthCheckerGetCircuitBreakerTimeout(t *testing.T) {
 	defer protocol.CleanAllStatus()
-	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+	url, _ := common.NewURL(fmt.Sprintf(healthCheckDubboUrlFormat, healthCheckDubbo1010IP))
 	defaultHc := NewDefaultHealthChecker(&url).(*DefaultHealthChecker)
 	timeout := defaultHc.getCircuitBreakerTimeout(protocol.GetURLStatus(url))
 	assert.True(t, timeout == 0)
-	url1, _ := common.NewURL("dubbo://192.168.10.11:20000/com.ikurento.user.UserProvider")
-	request(url1, "test", 1, false, false)
-	request(url1, "test", 1, false, false)
-	request(url1, "test", 1, false, false)
-	request(url1, "test", 1, false, false)
-	request(url1, "test", 1, false, false)
-	request(url1, "test", 1, false, false)
+	url1, _ := common.NewURL(fmt.Sprintf(healthCheckDubboUrlFormat, healthCheckDubbo1011IP))
+	request(url1, healthCheckMethodTest, 1, false, false)
+	request(url1, healthCheckMethodTest, 1, false, false)
+	request(url1, healthCheckMethodTest, 1, false, false)
+	request(url1, healthCheckMethodTest, 1, false, false)
+	request(url1, healthCheckMethodTest, 1, false, false)
+	request(url1, healthCheckMethodTest, 1, false, false)
 	timeout = defaultHc.getCircuitBreakerTimeout(protocol.GetURLStatus(url1))
 	// timeout must after the current time
 	assert.True(t, timeout > protocol.CurrentTimeMillis())
 
 }
 
-func TestDefaultHealthChecker_isCircuitBreakerTripped(t *testing.T) {
+func TestDefaultHealthCheckerIsCircuitBreakerTripped(t *testing.T) {
 	defer protocol.CleanAllStatus()
-	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+	url, _ := common.NewURL(fmt.Sprintf(healthCheckDubboUrlFormat, healthCheckDubbo1010IP))
 	defaultHc := NewDefaultHealthChecker(&url).(*DefaultHealthChecker)
 	status := protocol.GetURLStatus(url)
 	tripped := defaultHc.isCircuitBreakerTripped(status)
 	assert.False(t, tripped)
 	// Increase the number of failed requests
 	for i := 0; i < 100; i++ {
-		request(url, "test", 1, false, false)
+		request(url, healthCheckMethodTest, 1, false, false)
 	}
 	tripped = defaultHc.isCircuitBreakerTripped(protocol.GetURLStatus(url))
 	assert.True(t, tripped)
@@ -134,13 +141,13 @@ func TestDefaultHealthChecker_isCircuitBreakerTripped(t *testing.T) {
 
 func TestNewDefaultHealthChecker(t *testing.T) {
 	defer protocol.CleanAllStatus()
-	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+	url, _ := common.NewURL(fmt.Sprintf(healthCheckDubboUrlFormat, healthCheckDubbo1010IP))
 	defaultHc := NewDefaultHealthChecker(&url).(*DefaultHealthChecker)
 	assert.NotNil(t, defaultHc)
 	assert.Equal(t, defaultHc.outStandingRequestConutLimit, int32(math.MaxInt32))
 	assert.Equal(t, defaultHc.requestSuccessiveFailureThreshold, int32(constant.DEFAULT_SUCCESSIVE_FAILED_REQUEST_MAX_DIFF))
 
-	url1, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+	url1, _ := common.NewURL(fmt.Sprintf(healthCheckDubboUrlFormat, healthCheckDubbo1010IP))
 	url1.SetParam(constant.OUTSTANDING_REQUEST_COUNT_LIMIT_KEY, "10")
 	url1.SetParam(constant.SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY, "10")
 	nondefaultHc := NewDefaultHealthChecker(&url1).(*DefaultHealthChecker)

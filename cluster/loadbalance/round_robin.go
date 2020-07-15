@@ -52,7 +52,9 @@ func init() {
 
 type roundRobinLoadBalance struct{}
 
-// NewRoundRobinLoadBalance ...
+// NewRoundRobinLoadBalance returns a round robin load balance
+//
+// Use the weight's common advisory to determine round robin ratio
 func NewRoundRobinLoadBalance() cluster.LoadBalance {
 	return &roundRobinLoadBalance{}
 }

@@ -17,8 +17,8 @@
 
 package filter
 
+// TpsLimitStrategy defines how to do the TPS limiting in method level.
 /*
- * TpsLimitStrategy
  * please register your implementation by invoking SetTpsLimitStrategy
  * "UserProvider":
  *   registry: "hangzhouzk"
@@ -33,10 +33,16 @@ package filter
  *      tps.limit.strategy: "name of implementation" # method-level
  */
 type TpsLimitStrategy interface {
+	// IsAllowable will return true if this invocation is not over limitation
 	IsAllowable() bool
 }
 
-// TpsLimitStrategyCreator ...
+// TpsLimitStrategyCreator is the creator abstraction for TpsLimitStrategy
 type TpsLimitStrategyCreator interface {
-	Create(rate int, interval int) TpsLimitStrategy
+	// Create will create an instance of TpsLimitStrategy
+	// It will be a little hard to understand this method.
+	// The unit of interval is ms
+	// for example, if the limit = 100, interval = 1000
+	// which means that the tps limitation is 100 times per 1000ms (100/1000ms)
+	Create(limit int, interval int) TpsLimitStrategy
 }

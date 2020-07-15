@@ -27,7 +27,6 @@ import (
 )
 
 import (
-	matcher "github.com/apache/dubbo-go/cluster/router/match"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
@@ -182,9 +181,7 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 		return condition, nil
 	}
 
-	var (
-		pair MatchPair
-	)
+	var pair MatchPair
 	values := gxset.NewSet()
 	matches := routerPatternReg.FindAllSubmatch([]byte(rule), -1)
 	for _, groups := range matches {
@@ -301,7 +298,7 @@ func (pair MatchPair) isMatch(value string, param *common.URL) bool {
 	if !pair.Matches.Empty() && pair.Mismatches.Empty() {
 
 		for match := range pair.Matches.Items {
-			if matcher.IsMatchGlobalPattern(match.(string), value, param) {
+			if isMatchGlobalPattern(match.(string), value, param) {
 				return true
 			}
 		}
@@ -310,7 +307,7 @@ func (pair MatchPair) isMatch(value string, param *common.URL) bool {
 	if !pair.Mismatches.Empty() && pair.Matches.Empty() {
 
 		for mismatch := range pair.Mismatches.Items {
-			if matcher.IsMatchGlobalPattern(mismatch.(string), value, param) {
+			if isMatchGlobalPattern(mismatch.(string), value, param) {
 				return false
 			}
 		}
@@ -319,12 +316,12 @@ func (pair MatchPair) isMatch(value string, param *common.URL) bool {
 	if !pair.Mismatches.Empty() && !pair.Matches.Empty() {
 		//when both mismatches and matches contain the same value, then using mismatches first
 		for mismatch := range pair.Mismatches.Items {
-			if matcher.IsMatchGlobalPattern(mismatch.(string), value, param) {
+			if isMatchGlobalPattern(mismatch.(string), value, param) {
 				return false
 			}
 		}
 		for match := range pair.Matches.Items {
-			if matcher.IsMatchGlobalPattern(match.(string), value, param) {
+			if isMatchGlobalPattern(match.(string), value, param) {
 				return true
 			}
 		}

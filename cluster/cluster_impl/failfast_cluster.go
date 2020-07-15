@@ -31,7 +31,10 @@ func init() {
 	extension.SetCluster(failfast, NewFailFastCluster)
 }
 
-// NewFailFastCluster ...
+// NewFailFastCluster returns a failfast cluster instance.
+//
+// Fast failure, only made a call, failure immediately error. Usually used for non-idempotent write operations,
+// such as adding records.
 func NewFailFastCluster() cluster.Cluster {
 	return &failfastCluster{}
 }

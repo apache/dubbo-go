@@ -38,16 +38,17 @@ import (
 // RpcClientPackageHandler
 ////////////////////////////////////////////
 
-// RpcClientPackageHandler ...
+// RpcClientPackageHandler handle package for client in getty.
 type RpcClientPackageHandler struct {
 	client *Client
 }
 
-// NewRpcClientPackageHandler ...
+// NewRpcClientPackageHandler create a RpcClientPackageHandler.
 func NewRpcClientPackageHandler(client *Client) *RpcClientPackageHandler {
 	return &RpcClientPackageHandler{client: client}
 }
 
+// Read decode @data to DubboPackage.
 func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
 	pkg := &DubboPackage{}
 
@@ -72,6 +73,7 @@ func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface
 	return pkg, hessian.HEADER_LENGTH + pkg.Header.BodyLen, nil
 }
 
+// Write encode @pkg.
 func (p *RpcClientPackageHandler) Write(ss getty.Session, pkg interface{}) ([]byte, error) {
 	req, ok := pkg.(*DubboPackage)
 	if !ok {
@@ -96,9 +98,10 @@ var (
 	rpcServerPkgHandler = &RpcServerPackageHandler{}
 )
 
-// RpcServerPackageHandler ...
+// RpcServerPackageHandler handle package for server in getty.
 type RpcServerPackageHandler struct{}
 
+// Read decode @data to DubboPackage.
 func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
 	pkg := &DubboPackage{
 		Body: make([]interface{}, 7),
@@ -169,6 +172,7 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 	return pkg, hessian.HEADER_LENGTH + pkg.Header.BodyLen, nil
 }
 
+// Write encode @pkg.
 func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg interface{}) ([]byte, error) {
 	res, ok := pkg.(*DubboPackage)
 	if !ok {
