@@ -40,11 +40,17 @@ type RegistryConfig struct {
 	TimeoutStr string `yaml:"timeout" default:"5s" json:"timeout,omitempty" property:"timeout"` // unit: second
 	Group      string `yaml:"group" json:"group,omitempty" property:"group"`
 	// for registry
-	Address    string            `yaml:"address" json:"address,omitempty" property:"address"`
-	Username   string            `yaml:"username" json:"username,omitempty" property:"username"`
-	Password   string            `yaml:"password" json:"password,omitempty"  property:"password"`
-	Simplified bool              `yaml:"simplified" json:"simplified,omitempty"  property:"simplified"`
-	Params     map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
+	Address    string `yaml:"address" json:"address,omitempty" property:"address"`
+	Username   string `yaml:"username" json:"username,omitempty" property:"username"`
+	Password   string `yaml:"password" json:"password,omitempty"  property:"password"`
+	Simplified bool   `yaml:"simplified" json:"simplified,omitempty"  property:"simplified"`
+	// Always use this registry first if set to true, useful when subscribe to multiple registries
+	Preferred bool `yaml:"preferred" json:"params,omitempty" property:"preferred"`
+	// The region where the registry belongs, usually used to isolate traffics
+	Zone string `yaml:"zone" json:"params,omitempty" property:"zone"`
+	// Affects traffic distribution among registries, useful when subscribe to multiple registries Take effect only when no preferred registry is specified.
+	Weight int64             `yaml:"weight" json:"params,omitempty" property:"weight"`
+	Params map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
 }
 
 // UnmarshalYAML unmarshals the RegistryConfig by @unmarshal function
@@ -118,6 +124,11 @@ func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(int(roleType)))
 	urlMap.Set(constant.REGISTRY_KEY, c.Protocol)
 	urlMap.Set(constant.REGISTRY_TIMEOUT_KEY, c.TimeoutStr)
+	// multi registry invoker weight label for load balance
+	urlMap.Set(constant.REGISTRY_KEY+"."+constant.REGISTRY_LABEL_KEY, strconv.FormatBool(true))
+	urlMap.Set(constant.REGISTRY_KEY+"."+constant.PREFERRED_KEY, strconv.FormatBool(c.Preferred))
+	urlMap.Set(constant.REGISTRY_KEY+"."+constant.ZONE_KEY, c.Zone)
+	urlMap.Set(constant.REGISTRY_KEY+"."+constant.WEIGHT_KEY, strconv.FormatInt(c.Weight, 10))
 	for k, v := range c.Params {
 		urlMap.Set(k, v)
 	}

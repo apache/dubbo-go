@@ -43,3 +43,7 @@ func NewFailoverCluster() cluster.Cluster {
 func (cluster *failoverCluster) Join(directory cluster.Directory) protocol.Invoker {
 	return newFailoverClusterInvoker(directory)
 }
+
+func GetFailoverName() string {
+	return name
+}
