@@ -32,28 +32,28 @@ func init() {
 // ConditionRouterFactory Condition router factory
 type ConditionRouterFactory struct{}
 
-func newConditionRouterFactory() router.RouterFactory {
+func newConditionRouterFactory() router.PriorityRouterFactory {
 	return &ConditionRouterFactory{}
 }
 
-// NewRouter Create ConditionRouterFactory by URL
-func (c *ConditionRouterFactory) NewRouter(url *common.URL) (router.Router, error) {
+// NewPriorityRouter creates ConditionRouterFactory by URL
+func (c *ConditionRouterFactory) NewPriorityRouter(url *common.URL) (router.PriorityRouter, error) {
 	return NewConditionRouter(url)
 }
 
 // NewRouter Create FileRouterFactory by Content
-func (c *ConditionRouterFactory) NewFileRouter(content []byte) (router.Router, error) {
+func (c *ConditionRouterFactory) NewFileRouter(content []byte) (router.PriorityRouter, error) {
 	return NewFileConditionRouter(content)
 }
 
 // AppRouterFactory Application router factory
 type AppRouterFactory struct{}
 
-func newAppRouterFactory() router.RouterFactory {
+func newAppRouterFactory() router.PriorityRouterFactory {
 	return &AppRouterFactory{}
 }
 
-// NewRouter Create AppRouterFactory by URL
-func (c *AppRouterFactory) NewRouter(url *common.URL) (router.Router, error) {
+// NewPriorityRouter creates AppRouterFactory by URL
+func (c *AppRouterFactory) NewPriorityRouter(url *common.URL) (router.PriorityRouter, error) {
 	return NewAppRouter(url)
 }

@@ -19,6 +19,7 @@ package cluster_impl
 
 import (
 	"context"
+	"fmt"
 	"testing"
 )
 
@@ -32,6 +33,7 @@ import (
 	"github.com/apache/dubbo-go/cluster/directory"
 	"github.com/apache/dubbo-go/cluster/loadbalance"
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
@@ -39,11 +41,12 @@ import (
 )
 
 var (
-	failfastUrl, _ = common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
+	failfastUrl, _ = common.NewURL(
+		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
 )
 
 // registerFailfast register failfastCluster to cluster extension.
-func registerFailfast(t *testing.T, invoker *mock.MockInvoker) protocol.Invoker {
+func registerFailfast(invoker *mock.MockInvoker) protocol.Invoker {
 	extension.SetLoadbalance("random", loadbalance.NewRandomLoadBalance)
 	failfastCluster := NewFailFastCluster()
 
@@ -57,12 +60,12 @@ func registerFailfast(t *testing.T, invoker *mock.MockInvoker) protocol.Invoker 
 	return clusterInvoker
 }
 
-func Test_FailfastInvokeSuccess(t *testing.T) {
+func TestFailfastInvokeSuccess(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	invoker := mock.NewMockInvoker(ctrl)
-	clusterInvoker := registerFailfast(t, invoker)
+	clusterInvoker := registerFailfast(invoker)
 
 	invoker.EXPECT().GetUrl().Return(failfastUrl).AnyTimes()
 
@@ -77,12 +80,12 @@ func Test_FailfastInvokeSuccess(t *testing.T) {
 	assert.Equal(t, 0, res.tried)
 }
 
-func Test_FailfastInvokeFail(t *testing.T) {
+func TestFailfastInvokeFail(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	invoker := mock.NewMockInvoker(ctrl)
-	clusterInvoker := registerFailfast(t, invoker)
+	clusterInvoker := registerFailfast(invoker)
 
 	invoker.EXPECT().GetUrl().Return(failfastUrl).AnyTimes()
 

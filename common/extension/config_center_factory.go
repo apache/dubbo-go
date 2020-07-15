@@ -25,12 +25,12 @@ var (
 	configCenterFactories = make(map[string]func() config_center.DynamicConfigurationFactory)
 )
 
-// SetConfigCenterFactory ...
+// SetConfigCenterFactory sets the DynamicConfigurationFactory with @name
 func SetConfigCenterFactory(name string, v func() config_center.DynamicConfigurationFactory) {
 	configCenterFactories[name] = v
 }
 
-// GetConfigCenterFactory ...
+// GetConfigCenterFactory finds the DynamicConfigurationFactory with @name
 func GetConfigCenterFactory(name string) config_center.DynamicConfigurationFactory {
 	if configCenterFactories[name] == nil {
 		panic("config center for " + name + " is not existing, make sure you have import the package.")

@@ -29,13 +29,13 @@ import (
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 )
 
-// JsonrpcInvoker ...
+// JsonrpcInvoker is JSON RPC invoker
 type JsonrpcInvoker struct {
 	protocol.BaseInvoker
 	client *HTTPClient
 }
 
-// NewJsonrpcInvoker ...
+// NewJsonrpcInvoker creates JSON RPC invoker with @url and @client
 func NewJsonrpcInvoker(url common.URL, client *HTTPClient) *JsonrpcInvoker {
 	return &JsonrpcInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
@@ -43,7 +43,7 @@ func NewJsonrpcInvoker(url common.URL, client *HTTPClient) *JsonrpcInvoker {
 	}
 }
 
-// Invoke ...
+// Invoke the JSON RPC invocation and return result.
 func (ji *JsonrpcInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 
 	var (

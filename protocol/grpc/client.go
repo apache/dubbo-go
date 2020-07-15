@@ -25,27 +25,78 @@ import (
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 	"github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc"
+	"gopkg.in/yaml.v2"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 )
 
-// Client ...
+var (
+	clientConf *ClientConfig
+)
+
+func init() {
+	// load clientconfig from consumer_config
+	consumerConfig := config.GetConsumerConfig()
+
+	clientConfig := GetClientConfig()
+	clientConf = &clientConfig
+
+	// check client config and decide whether to use the default config
+	defer func() {
+		if clientConf == nil || len(clientConf.ContentSubType) == 0 {
+			defaultClientConfig := GetDefaultClientConfig()
+			clientConf = &defaultClientConfig
+		}
+		if err := clientConf.Validate(); err != nil {
+			panic(err)
+		}
+	}()
+
+	if consumerConfig.ApplicationConfig == nil {
+		return
+	}
+	protocolConf := config.GetConsumerConfig().ProtocolConf
+
+	if protocolConf == nil {
+		logger.Info("protocol_conf default use dubbo config")
+	} else {
+		grpcConf := protocolConf.(map[interface{}]interface{})[GRPC]
+		if grpcConf == nil {
+			logger.Warnf("grpcConf is nil")
+			return
+		}
+		grpcConfByte, err := yaml.Marshal(grpcConf)
+		if err != nil {
+			panic(err)
+		}
+		err = yaml.Unmarshal(grpcConfByte, clientConf)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+}
+
+// Client is gRPC client include client connection and invoker
 type Client struct {
 	*grpc.ClientConn
 	invoker reflect.Value
 }
 
-// NewClient ...
+// NewClient creates a new gRPC client.
 func NewClient(url common.URL) *Client {
 	// if global trace instance was set , it means trace function enabled. If not , will return Nooptracer
 	tracer := opentracing.GlobalTracer()
-	conn, err := grpc.Dial(url.Location, grpc.WithInsecure(), grpc.WithBlock(),
-		grpc.WithUnaryInterceptor(
-			otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())))
+	dailOpts := make([]grpc.DialOption, 0, 4)
+	dailOpts = append(dailOpts, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithUnaryInterceptor(
+		otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())),
+		grpc.WithDefaultCallOptions(grpc.CallContentSubtype(clientConf.ContentSubType)))
+	conn, err := grpc.Dial(url.Location, dailOpts...)
 	if err != nil {
 		panic(err)
 	}

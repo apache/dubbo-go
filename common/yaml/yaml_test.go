@@ -38,12 +38,24 @@ func TestUnmarshalYMLConfig(t *testing.T) {
 	assert.Equal(t, "childStrTest", c.ChildConfig.StrTest)
 }
 
-func TestUnmarshalYMLConfig_Error(t *testing.T) {
+func TestUnmarshalYMLConfigError(t *testing.T) {
 	c := &Config{}
 	_, err := UnmarshalYMLConfig("./testdata/config", c)
 	assert.Error(t, err)
 	_, err = UnmarshalYMLConfig("", c)
 	assert.Error(t, err)
+}
+
+func TestUnmarshalYML(t *testing.T) {
+	c := &Config{}
+	b, err := LoadYMLConfig("./testdata/config.yml")
+	assert.NoError(t, err)
+	err = UnmarshalYML(b, c)
+	assert.NoError(t, err)
+	assert.Equal(t, "strTest", c.StrTest)
+	assert.Equal(t, 11, c.IntTest)
+	assert.Equal(t, false, c.BooleanTest)
+	assert.Equal(t, "childStrTest", c.ChildConfig.StrTest)
 }
 
 type Config struct {

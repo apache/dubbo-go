@@ -15,32 +15,50 @@
  * limitations under the License.
  */
 
-package match
+package consul
 
 import (
+	"io/ioutil"
+	"os"
+	"strconv"
 	"testing"
 )
 
 import (
-	"github.com/stretchr/testify/assert"
+	"github.com/hashicorp/consul/agent"
 )
 
-import (
-	"github.com/apache/dubbo-go/common"
-)
-
-func TestIsMatchInternalPattern(t *testing.T) {
-	assert.Equal(t, true, isMatchInternalPattern("*", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("", ""))
-	assert.Equal(t, false, isMatchInternalPattern("", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("value", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("v*", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("*ue", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("*e", "value"))
-	assert.Equal(t, true, isMatchInternalPattern("v*e", "value"))
+// Consul agent, used for test, simulates
+// an embedded consul server.
+type ConsulAgent struct {
+	dataDir   string
+	testAgent *agent.TestAgent
 }
 
-func TestIsMatchGlobPattern(t *testing.T) {
-	url, _ := common.NewURL("dubbo://localhost:8080/Foo?key=v*e")
-	assert.Equal(t, true, IsMatchGlobalPattern("$key", "value", &url))
+func NewConsulAgent(t *testing.T, port int) *ConsulAgent {
+	dataDir, _ := ioutil.TempDir("./", "agent")
+	hcl := `
+		ports { 
+			http = ` + strconv.Itoa(port) + `
+		}
+		data_dir = "` + dataDir + `"
+	`
+	testAgent := &agent.TestAgent{Name: t.Name(), DataDir: dataDir, HCL: hcl}
+	testAgent.Start(t)
+
+	consulAgent := &ConsulAgent{
+		dataDir:   dataDir,
+		testAgent: testAgent,
+	}
+	return consulAgent
+}
+
+func (consulAgent *ConsulAgent) Close() error {
+	var err error
+
+	err = consulAgent.testAgent.Shutdown()
+	if err != nil {
+		return err
+	}
+	return os.RemoveAll(consulAgent.dataDir)
 }

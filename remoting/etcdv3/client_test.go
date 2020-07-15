@@ -29,11 +29,11 @@ import (
 )
 
 import (
+	"github.com/coreos/etcd/embed"
 	"github.com/coreos/etcd/mvcc/mvccpb"
 	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"go.etcd.io/etcd/embed"
 	"google.golang.org/grpc/connectivity"
 )
 
@@ -120,7 +120,7 @@ func (suite *ClientTestSuite) TearDownSuite() {
 }
 
 func (suite *ClientTestSuite) setUpClient() *Client {
-	c, err := newClient(suite.etcdConfig.name,
+	c, err := NewClient(suite.etcdConfig.name,
 		suite.etcdConfig.endpoints,
 		suite.etcdConfig.timeout,
 		suite.etcdConfig.heartbeat)
@@ -154,7 +154,7 @@ func (suite *ClientTestSuite) TestClientValid() {
 	c := suite.client
 	t := suite.T()
 
-	if c.Valid() != true {
+	if !c.Valid() {
 		t.Fatal("client is not valid")
 	}
 	c.Close()
@@ -174,7 +174,7 @@ func (suite *ClientTestSuite) TestClientDone() {
 
 	c.Wait.Wait()
 
-	if c.Valid() == true {
+	if c.Valid() {
 		suite.T().Fatal("client should be invalid then")
 	}
 }
@@ -384,7 +384,7 @@ func (suite *ClientTestSuite) TestClientRegisterTemp() {
 		assert.Contains(t, events, eDelete)
 	}()
 
-	_, err := c.RegisterTemp("scott", "wang")
+	err := c.RegisterTemp("scott/wang", "test")
 	if err != nil {
 		t.Fatal(err)
 	}

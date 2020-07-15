@@ -71,14 +71,18 @@ func init() {
  *
  * the value of "accesslog" can be "true" or "default" too.
  * If the value is one of them, the access log will be record in log file which defined in log.yml
+ * AccessLogFilter is designed to be singleton
  */
 type AccessLogFilter struct {
 	logChan chan AccessLogData
 }
 
-// Invoke ...
+// Invoke will check whether user wants to use this filter.
+// If we find the value of key constant.ACCESS_LOG_KEY, we will log the invocation info
 func (ef *AccessLogFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	accessLog := invoker.GetUrl().GetParam(constant.ACCESS_LOG_KEY, "")
+
+	// the user do not
 	if len(accessLog) > 0 {
 		accessLogData := AccessLogData{data: ef.buildAccessLogData(invoker, invocation), accessLog: accessLog}
 		ef.logIntoChannel(accessLogData)
@@ -86,7 +90,7 @@ func (ef *AccessLogFilter) Invoke(ctx context.Context, invoker protocol.Invoker,
 	return invoker.Invoke(ctx, invocation)
 }
 
-// it won't block the invocation
+// logIntoChannel won't block the invocation
 func (ef *AccessLogFilter) logIntoChannel(accessLogData AccessLogData) {
 	select {
 	case ef.logChan <- accessLogData:
@@ -97,6 +101,7 @@ func (ef *AccessLogFilter) logIntoChannel(accessLogData AccessLogData) {
 	}
 }
 
+// buildAccessLogData builds the access log data
 func (ef *AccessLogFilter) buildAccessLogData(_ protocol.Invoker, invocation protocol.Invocation) map[string]string {
 	dataMap := make(map[string]string, 16)
 	attachments := invocation.Attachments()
@@ -130,11 +135,12 @@ func (ef *AccessLogFilter) buildAccessLogData(_ protocol.Invoker, invocation pro
 	return dataMap
 }
 
-// OnResponse ...
+// OnResponse do nothing
 func (ef *AccessLogFilter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker, _ protocol.Invocation) protocol.Result {
 	return result
 }
 
+// writeLogToFile actually write the logs into file
 func (ef *AccessLogFilter) writeLogToFile(data AccessLogData) {
 	accessLog := data.accessLog
 	if isDefault(accessLog) {
@@ -156,6 +162,12 @@ func (ef *AccessLogFilter) writeLogToFile(data AccessLogData) {
 	}
 }
 
+// openLogFile will open the log file with append mode.
+// If the file is not found, it will create the file.
+// Actually, the accessLog is the filename
+// You may find out that, once we want to write access log into log file,
+// we open the file again and again.
+// It needs to be optimized.
 func (ef *AccessLogFilter) openLogFile(accessLog string) (*os.File, error) {
 	logFile, err := os.OpenFile(accessLog, os.O_CREATE|os.O_APPEND|os.O_RDWR, LogFileMode)
 	if err != nil {
@@ -169,6 +181,12 @@ func (ef *AccessLogFilter) openLogFile(accessLog string) (*os.File, error) {
 		return nil, err
 	}
 	last := fileInfo.ModTime().Format(FileDateFormat)
+
+	// this is confused.
+	// for example, if the last = '2020-03-04'
+	// and today is '2020-03-05'
+	// we will create one new file to log access data
+	// By this way, we can split the access log based on days.
 	if now != last {
 		err = os.Rename(fileInfo.Name(), fileInfo.Name()+"."+now)
 		if err != nil {
@@ -180,11 +198,12 @@ func (ef *AccessLogFilter) openLogFile(accessLog string) (*os.File, error) {
 	return logFile, err
 }
 
+// isDefault check whether accessLog == true or accessLog == default
 func isDefault(accessLog string) bool {
 	return strings.EqualFold("true", accessLog) || strings.EqualFold("default", accessLog)
 }
 
-// GetAccessLogFilter ...
+// GetAccessLogFilter return the instance of AccessLogFilter
 func GetAccessLogFilter() filter.Filter {
 	accessLogFilter := &AccessLogFilter{logChan: make(chan AccessLogData, LogMaxBuffer)}
 	go func() {
@@ -195,12 +214,13 @@ func GetAccessLogFilter() filter.Filter {
 	return accessLogFilter
 }
 
-// AccessLogData ...
+// AccessLogData defines the data that will be log into file
 type AccessLogData struct {
 	accessLog string
 	data      map[string]string
 }
 
+// toLogMessage convert the AccessLogData to String
 func (ef *AccessLogData) toLogMessage() string {
 	builder := strings.Builder{}
 	builder.WriteString("[")

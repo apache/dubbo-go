@@ -38,13 +38,13 @@ func init() {
 	extension.SetFilter(ECHO, GetFilter)
 }
 
-// EchoFilter
+// EchoFilter health check
 // RPCService need a Echo method in consumer, if you want to use EchoFilter
 // eg:
 //		Echo func(ctx context.Context, arg interface{}, rsp *Xxx) error
 type EchoFilter struct{}
 
-// Invoke ...
+// Invoke response to the callers with its first argument.
 func (ef *EchoFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("invoking echo filter.")
 	logger.Debugf("%v,%v", invocation.MethodName(), len(invocation.Arguments()))
@@ -58,7 +58,7 @@ func (ef *EchoFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invo
 	return invoker.Invoke(ctx, invocation)
 }
 
-// OnResponse ...
+// OnResponse dummy process, returns the result directly
 func (ef *EchoFilter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker,
 	_ protocol.Invocation) protocol.Result {
 

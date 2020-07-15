@@ -18,6 +18,7 @@
 package config
 
 import (
+	"container/list"
 	"context"
 	"fmt"
 	"net/url"
@@ -29,6 +30,7 @@ import (
 
 import (
 	"github.com/creasty/defaults"
+	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
 )
@@ -42,7 +44,7 @@ import (
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 )
 
-// ServiceConfig ...
+// ServiceConfig is the configuration of the service provider
 type ServiceConfig struct {
 	context                     context.Context
 	id                          string
@@ -69,20 +71,25 @@ type ServiceConfig struct {
 	ExecuteLimitRejectedHandler string            `yaml:"execute.limit.rejected.handler" json:"execute.limit.rejected.handler,omitempty" property:"execute.limit.rejected.handler"`
 	Auth                        string            `yaml:"auth" json:"auth,omitempty" property:"auth"`
 	ParamSign                   string            `yaml:"param.sign" json:"param.sign,omitempty" property:"param.sign"`
+	Tag                         string            `yaml:"tag" json:"tag,omitempty" property:"tag"`
 
+	Protocols     map[string]*ProtocolConfig
 	unexported    *atomic.Bool
 	exported      *atomic.Bool
 	rpcService    common.RPCService
-	cacheProtocol protocol.Protocol
 	cacheMutex    sync.Mutex
+	cacheProtocol protocol.Protocol
+
+	exportersLock sync.Mutex
+	exporters     []protocol.Exporter
 }
 
-// Prefix ...
+// Prefix returns dubbo.service.${interface}.
 func (c *ServiceConfig) Prefix() string {
 	return constant.ServiceConfigPrefix + c.InterfaceName + "."
 }
 
-// UnmarshalYAML ...
+// UnmarshalYAML unmarshals the ServiceConfig by @unmarshal function
 func (c *ServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
@@ -91,6 +98,8 @@ func (c *ServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := unmarshal((*plain)(c)); err != nil {
 		return err
 	}
+	c.exported = atomic.NewBool(false)
+	c.unexported = atomic.NewBool(false)
 	return nil
 }
 
@@ -104,7 +113,35 @@ func NewServiceConfig(id string, context context.Context) *ServiceConfig {
 	}
 }
 
-// Export ...
+// InitExported will set exported as false atom bool
+func (c *ServiceConfig) InitExported() {
+	c.exported = atomic.NewBool(false)
+}
+
+// IsExport will return whether the service config is exported or not
+func (c *ServiceConfig) IsExport() bool {
+	return c.exported.Load()
+}
+
+// Get Random Port
+func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
+	ports := list.New()
+	for _, proto := range protocolConfigs {
+		if len(proto.Port) > 0 {
+			continue
+		}
+
+		tcp, err := gxnet.ListenOnTCPRandomPort(proto.Ip)
+		if err != nil {
+			panic(perrors.New(fmt.Sprintf("Get tcp port error,err is {%v}", err)))
+		}
+		defer tcp.Close()
+		ports.PushBack(strings.Split(tcp.Addr().String(), ":")[1])
+	}
+	return ports
+}
+
+// Export exports the service
 func (c *ServiceConfig) Export() error {
 	// TODO: config center start here
 
@@ -121,29 +158,44 @@ func (c *ServiceConfig) Export() error {
 
 	regUrls := loadRegistries(c.Registry, providerConfig.Registries, common.PROVIDER)
 	urlMap := c.getUrlMap()
-	protocolConfigs := loadProtocol(c.Protocol, providerConfig.Protocols)
+	protocolConfigs := loadProtocol(c.Protocol, c.Protocols)
 	if len(protocolConfigs) == 0 {
 		logger.Warnf("The service %v's '%v' protocols don't has right protocolConfigs ", c.InterfaceName, c.Protocol)
 		return nil
 	}
+
+	ports := getRandomPort(protocolConfigs)
+	nextPort := ports.Front()
 	for _, proto := range protocolConfigs {
 		// registry the service reflect
-		methods, err := common.ServiceMap.Register(proto.Name, c.rpcService)
+		methods, err := common.ServiceMap.Register(c.InterfaceName, proto.Name, c.rpcService)
 		if err != nil {
-			err := perrors.Errorf("The service %v  export the protocol %v error! Error message is %v .", c.InterfaceName, proto.Name, err.Error())
-			logger.Errorf(err.Error())
-			return err
+			formatErr := perrors.Errorf("The service %v  export the protocol %v error! Error message is %v .", c.InterfaceName, proto.Name, err.Error())
+			logger.Errorf(formatErr.Error())
+			return formatErr
+		}
+
+		port := proto.Port
+
+		if len(proto.Port) == 0 {
+			port = nextPort.Value.(string)
+			nextPort = nextPort.Next()
 		}
 		ivkURL := common.NewURLWithOptions(
 			common.WithPath(c.id),
 			common.WithProtocol(proto.Name),
 			common.WithIp(proto.Ip),
-			common.WithPort(proto.Port),
+			common.WithPort(port),
 			common.WithParams(urlMap),
 			common.WithParamsValue(constant.BEAN_NAME_KEY, c.id),
 			common.WithMethods(strings.Split(methods, ",")),
 			common.WithToken(c.Token),
 		)
+		if len(c.Tag) > 0 {
+			ivkURL.AddParam(constant.Tagkey, c.Tag)
+		}
+
+		var exporter protocol.Exporter
 
 		if len(regUrls) > 0 {
 			for _, regUrl := range regUrls {
@@ -157,23 +209,47 @@ func (c *ServiceConfig) Export() error {
 				c.cacheMutex.Unlock()
 
 				invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*regUrl)
-				exporter := c.cacheProtocol.Export(invoker)
+				exporter = c.cacheProtocol.Export(invoker)
 				if exporter == nil {
 					panic(perrors.New(fmt.Sprintf("Registry protocol new exporter error,registry is {%v},url is {%v}", regUrl, ivkURL)))
 				}
 			}
 		} else {
 			invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*ivkURL)
-			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
+			exporter = extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {
 				panic(perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error,url is {%v}", ivkURL)))
 			}
 		}
+		c.exporters = append(c.exporters, exporter)
 	}
+	c.exported.Store(true)
 	return nil
 }
 
-// Implement ...
+// Unexport will call unexport of all exporters service config exported
+func (c *ServiceConfig) Unexport() {
+	if !c.exported.Load() {
+		return
+	}
+	if c.unexported.Load() {
+		return
+	}
+
+	func() {
+		c.exportersLock.Lock()
+		defer c.exportersLock.Unlock()
+		for _, exporter := range c.exporters {
+			exporter.Unexport()
+		}
+		c.exporters = nil
+	}()
+
+	c.exported.Store(false)
+	c.unexported.Store(true)
+}
+
+// Implement only store the @s and return
 func (c *ServiceConfig) Implement(s common.RPCService) {
 	c.rpcService = s
 }
@@ -193,6 +269,9 @@ func (c *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.GROUP_KEY, c.Group)
 	urlMap.Set(constant.VERSION_KEY, c.Version)
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
+	urlMap.Set(constant.RELEASE_KEY, "dubbo-golang-"+constant.Version)
+	urlMap.Set(constant.SIDE_KEY, (common.RoleType(common.PROVIDER)).Role())
+
 	// application info
 	urlMap.Set(constant.APPLICATION_KEY, providerConfig.ApplicationConfig.Name)
 	urlMap.Set(constant.ORGANIZATION_KEY, providerConfig.ApplicationConfig.Organization)
@@ -238,4 +317,17 @@ func (c *ServiceConfig) getUrlMap() url.Values {
 	}
 
 	return urlMap
+}
+
+// GetExportedUrls will return the url in service config's exporter
+func (c *ServiceConfig) GetExportedUrls() []*common.URL {
+	if c.exported.Load() {
+		var urls []*common.URL
+		for _, exporter := range c.exporters {
+			url := exporter.GetInvoker().GetUrl()
+			urls = append(urls, &url)
+		}
+		return urls
+	}
+	return nil
 }

@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"strings"
 	"sync"
 	"time"
 )
@@ -30,7 +29,7 @@ import (
 	"github.com/dubbogo/getty"
 	"github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
-	k8s "k8s.io/client-go/kubernetes"
+	v1 "k8s.io/api/core/v1"
 )
 
 import (
@@ -69,23 +68,28 @@ type kubernetesRegistry struct {
 	configListener *configurationListener
 }
 
+// Client gets the etcdv3 kubernetes
 func (r *kubernetesRegistry) Client() *kubernetes.Client {
 	r.cltLock.RLock()
 	client := r.client
 	r.cltLock.RUnlock()
 	return client
 }
+
+// SetClient sets the kubernetes client
 func (r *kubernetesRegistry) SetClient(client *kubernetes.Client) {
 	r.cltLock.Lock()
 	r.client = client
 	r.cltLock.Unlock()
 }
 
+// CloseAndNilClient closes listeners and clear client
 func (r *kubernetesRegistry) CloseAndNilClient() {
 	r.client.Close()
 	r.client = nil
 }
 
+// CloseListener closes listeners
 func (r *kubernetesRegistry) CloseListener() {
 
 	r.cltLock.Lock()
@@ -97,6 +101,7 @@ func (r *kubernetesRegistry) CloseListener() {
 	r.configListener = nil
 }
 
+// CreatePath create the path in the registry center of kubernetes
 func (r *kubernetesRegistry) CreatePath(k string) error {
 	if err := r.client.Create(k, ""); err != nil {
 		return perrors.WithMessagef(err, "create path %s in kubernetes", k)
@@ -104,10 +109,16 @@ func (r *kubernetesRegistry) CreatePath(k string) error {
 	return nil
 }
 
+// DoRegister actually do the register job in the registry center of kubernetes
 func (r *kubernetesRegistry) DoRegister(root string, node string) error {
 	return r.client.Create(path.Join(root, node), "")
 }
 
+func (r *kubernetesRegistry) DoUnregister(root string, node string) error {
+	return perrors.New("DoUnregister is not support in kubernetesRegistry")
+}
+
+// DoSubscribe actually subscribe the provider URL
 func (r *kubernetesRegistry) DoSubscribe(svc *common.URL) (registry.Listener, error) {
 
 	var (
@@ -135,13 +146,17 @@ func (r *kubernetesRegistry) DoSubscribe(svc *common.URL) (registry.Listener, er
 
 	//register the svc to dataListener
 	r.dataListener.AddInterestedURL(svc)
-	for _, v := range strings.Split(svc.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY), ",") {
-		go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+v, svc.Service()), r.dataListener)
-	}
+	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, svc.Service()), r.dataListener)
 
 	return configListener, nil
 }
 
+// nolint
+func (r *kubernetesRegistry) DoUnsubscribe(conf *common.URL) (registry.Listener, error) {
+	return nil, perrors.New("DoUnsubscribe is not support in kubernetesRegistry")
+}
+
+// InitListeners init listeners of kubernetes registry center
 func (r *kubernetesRegistry) InitListeners() {
 	r.listener = kubernetes.NewEventListener(r.client)
 	r.configListener = NewConfigurationListener(r)
@@ -163,15 +178,14 @@ func newKubernetesRegistry(url *common.URL) (registry.Registry, error) {
 	go r.HandleClientRestart()
 	r.InitListeners()
 
-	logger.Debugf("the kubernetes registry started")
+	logger.Debugf("kubernetes registry started")
 
 	return r, nil
 }
 
 func newMockKubernetesRegistry(
 	url *common.URL,
-	namespace string,
-	clientGeneratorFunc func() (k8s.Interface, error),
+	podsList *v1.PodList,
 ) (registry.Registry, error) {
 
 	var err error
@@ -179,7 +193,7 @@ func newMockKubernetesRegistry(
 	r := &kubernetesRegistry{}
 
 	r.InitBaseRegistry(url, r)
-	r.client, err = kubernetes.NewMockClient(namespace, clientGeneratorFunc)
+	r.client, err = kubernetes.NewMockClient(podsList)
 	if err != nil {
 		return nil, perrors.WithMessage(err, "new mock client")
 	}
@@ -187,6 +201,7 @@ func newMockKubernetesRegistry(
 	return r, nil
 }
 
+// HandleClientRestart will reconnect to  kubernetes registry center
 func (r *kubernetesRegistry) HandleClientRestart() {
 
 	var (

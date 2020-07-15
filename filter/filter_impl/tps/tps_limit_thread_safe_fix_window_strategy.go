@@ -32,10 +32,9 @@ func init() {
 	})
 }
 
+// ThreadSafeFixedWindowTpsLimitStrategyImpl is the thread-safe implementation.
+// It's also a thread-safe decorator of FixedWindowTpsLimitStrategyImpl
 /**
- * ThreadSafeFixedWindowTpsLimitStrategyImpl
- * it's the thread-safe implementation.
- * Also, it's a thread-safe decorator of FixedWindowTpsLimitStrategyImpl
  * "UserProvider":
  *   registry: "hangzhouzk"
  *   protocol : "dubbo"
@@ -53,7 +52,7 @@ type ThreadSafeFixedWindowTpsLimitStrategyImpl struct {
 	fixedWindow *FixedWindowTpsLimitStrategyImpl
 }
 
-// IsAllowable ...
+// IsAllowable implements thread-safe then run the FixedWindowTpsLimitStrategy
 func (impl *ThreadSafeFixedWindowTpsLimitStrategyImpl) IsAllowable() bool {
 	impl.mutex.Lock()
 	defer impl.mutex.Unlock()
@@ -64,6 +63,7 @@ type threadSafeFixedWindowStrategyCreator struct {
 	fixedWindowStrategyCreator *fixedWindowStrategyCreator
 }
 
+// Create returns ThreadSafeFixedWindowTpsLimitStrategyImpl instance
 func (creator *threadSafeFixedWindowStrategyCreator) Create(rate int, interval int) filter.TpsLimitStrategy {
 	fixedWindowStrategy := creator.fixedWindowStrategyCreator.Create(rate, interval).(*FixedWindowTpsLimitStrategyImpl)
 	return &ThreadSafeFixedWindowTpsLimitStrategyImpl{

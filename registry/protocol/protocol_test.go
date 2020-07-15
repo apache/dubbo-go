@@ -42,7 +42,9 @@ import (
 )
 
 func init() {
-	config.SetProviderConfig(config.ProviderConfig{ApplicationConfig: &config.ApplicationConfig{Name: "test-application"}})
+	config.SetProviderConfig(config.ProviderConfig{BaseConfig: config.BaseConfig{
+		ApplicationConfig: &config.ApplicationConfig{Name: "test-application"},
+	}})
 }
 
 func referNormal(t *testing.T, regProtocol *registryProtocol) {
@@ -66,8 +68,9 @@ func referNormal(t *testing.T, regProtocol *registryProtocol) {
 
 func TestRefer(t *testing.T) {
 	config.SetConsumerConfig(
-		config.ConsumerConfig{
-			ApplicationConfig: &config.ApplicationConfig{Name: "test-application"}})
+		config.ConsumerConfig{BaseConfig: config.BaseConfig{
+			ApplicationConfig: &config.ApplicationConfig{Name: "test-application"},
+		}})
 	regProtocol := newRegistryProtocol()
 	referNormal(t, regProtocol)
 }
@@ -283,4 +286,13 @@ func TestExportWithApplicationConfig(t *testing.T) {
 	newUrl.SetParam(constant.CLUSTER_KEY, "mock1")
 	v2, _ := regProtocol.bounds.Load(getCacheKey(newUrl))
 	assert.NotNil(t, v2)
+}
+
+func TestGetProviderUrlWithHideKey(t *testing.T) {
+	url, _ := common.NewURL("dubbo://127.0.0.1:1111?a=a1&b=b1&.c=c1&.d=d1&e=e1&protocol=registry")
+	providerUrl := getUrlToRegistry(&url, &url)
+	assert.NotContains(t, providerUrl.GetParams(), ".c")
+	assert.NotContains(t, providerUrl.GetParams(), ".d")
+	assert.Contains(t, providerUrl.GetParams(), "a")
+
 }

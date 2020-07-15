@@ -37,7 +37,13 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-func TestClient_CallOneway(t *testing.T) {
+const (
+	mockMethodNameGetUser   = "GetUser"
+	mockMethodNameGetBigPkg = "GetBigPkg"
+	mockAddress             = "127.0.0.1:20000"
+)
+
+func TestClientCallOneway(t *testing.T) {
 	proto, url := InitTest(t)
 
 	c := &Client{
@@ -50,15 +56,14 @@ func TestClient_CallOneway(t *testing.T) {
 	}
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
 
-	//user := &User{}
-	err := c.CallOneway(NewRequest("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"}, nil))
+	err := c.CallOneway(NewRequest(mockAddress, url, mockMethodNameGetUser, []interface{}{"1", "username"}, nil))
 	assert.NoError(t, err)
 
 	// destroy
 	proto.Destroy()
 }
 
-func TestClient_Call(t *testing.T) {
+func TestClientCall(t *testing.T) {
 	proto, url := InitTest(t)
 
 	c := &Client{
@@ -77,50 +82,50 @@ func TestClient_Call(t *testing.T) {
 	)
 
 	user = &User{}
-	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetBigPkg", []interface{}{nil}, nil), NewResponse(user, nil))
+	err = c.Call(NewRequest(mockAddress, url, mockMethodNameGetBigPkg, []interface{}{nil}, nil), NewResponse(user, nil))
 	assert.NoError(t, err)
 	assert.NotEqual(t, "", user.Id)
 	assert.NotEqual(t, "", user.Name)
 
 	user = &User{}
-	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"}, nil), NewResponse(user, nil))
+	err = c.Call(NewRequest(mockAddress, url, mockMethodNameGetUser, []interface{}{"1", "username"}, nil), NewResponse(user, nil))
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "1", Name: "username"}, *user)
 
 	user = &User{}
-	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser0", []interface{}{"1", nil, "username"}, nil), NewResponse(user, nil))
+	err = c.Call(NewRequest(mockAddress, url, "GetUser0", []interface{}{"1", nil, "username"}, nil), NewResponse(user, nil))
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "1", Name: "username"}, *user)
 
-	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser1", []interface{}{}, nil), NewResponse(user, nil))
+	err = c.Call(NewRequest(mockAddress, url, "GetUser1", []interface{}{}, nil), NewResponse(user, nil))
 	assert.NoError(t, err)
 
-	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser2", []interface{}{}, nil), NewResponse(user, nil))
+	err = c.Call(NewRequest(mockAddress, url, "GetUser2", []interface{}{}, nil), NewResponse(user, nil))
 	assert.EqualError(t, err, "error")
 
 	user2 := []interface{}{}
-	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser3", []interface{}{}, nil), NewResponse(&user2, nil))
+	err = c.Call(NewRequest(mockAddress, url, "GetUser3", []interface{}{}, nil), NewResponse(&user2, nil))
 	assert.NoError(t, err)
 	assert.Equal(t, &User{Id: "1", Name: "username"}, user2[0])
 
 	user2 = []interface{}{}
-	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser4", []interface{}{[]interface{}{"1", "username"}}, nil), NewResponse(&user2, nil))
+	err = c.Call(NewRequest(mockAddress, url, "GetUser4", []interface{}{[]interface{}{"1", "username"}}, nil), NewResponse(&user2, nil))
 	assert.NoError(t, err)
 	assert.Equal(t, &User{Id: "1", Name: "username"}, user2[0])
 
 	user3 := map[interface{}]interface{}{}
-	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser5", []interface{}{map[interface{}]interface{}{"id": "1", "name": "username"}}, nil), NewResponse(&user3, nil))
+	err = c.Call(NewRequest(mockAddress, url, "GetUser5", []interface{}{map[interface{}]interface{}{"id": "1", "name": "username"}}, nil), NewResponse(&user3, nil))
 	assert.NoError(t, err)
 	assert.NotNil(t, user3)
 	assert.Equal(t, &User{Id: "1", Name: "username"}, user3["key"])
 
 	user = &User{}
-	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser6", []interface{}{0}, nil), NewResponse(user, nil))
+	err = c.Call(NewRequest(mockAddress, url, "GetUser6", []interface{}{0}, nil), NewResponse(user, nil))
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "", Name: ""}, *user)
 
 	user = &User{}
-	err = c.Call(NewRequest("127.0.0.1:20000", url, "GetUser6", []interface{}{1}, nil), NewResponse(user, nil))
+	err = c.Call(NewRequest(mockAddress, url, "GetUser6", []interface{}{1}, nil), NewResponse(user, nil))
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "1", Name: ""}, *user)
 
@@ -128,7 +133,7 @@ func TestClient_Call(t *testing.T) {
 	proto.Destroy()
 }
 
-func TestClient_AsyncCall(t *testing.T) {
+func TestClientAsyncCall(t *testing.T) {
 	proto, url := InitTest(t)
 
 	c := &Client{
@@ -144,7 +149,7 @@ func TestClient_AsyncCall(t *testing.T) {
 	user := &User{}
 	lock := sync.Mutex{}
 	lock.Lock()
-	err := c.AsyncCall(NewRequest("127.0.0.1:20000", url, "GetUser", []interface{}{"1", "username"}, nil), func(response common.CallbackResponse) {
+	err := c.AsyncCall(NewRequest(mockAddress, url, mockMethodNameGetUser, []interface{}{"1", "username"}, nil), func(response common.CallbackResponse) {
 		r := response.(AsyncCallbackResponse)
 		assert.Equal(t, User{Id: "1", Name: "username"}, *r.Reply.(*Response).reply.(*User))
 		lock.Unlock()
@@ -162,7 +167,7 @@ func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 
 	hessian.RegisterPOJO(&User{})
 
-	methods, err := common.ServiceMap.Register("dubbo", &UserProvider{})
+	methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "dubbo", &UserProvider{})
 	assert.NoError(t, err)
 	assert.Equal(t, "GetBigPkg,GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4,GetUser5,GetUser6", methods)
 

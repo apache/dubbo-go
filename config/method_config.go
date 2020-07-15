@@ -42,7 +42,7 @@ type MethodConfig struct {
 	RequestTimeout              string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
 }
 
-// Prefix ...
+// nolint
 func (c *MethodConfig) Prefix() string {
 	if len(c.InterfaceId) != 0 {
 		return constant.DUBBO + "." + c.InterfaceName + "." + c.InterfaceId + "." + c.Name + "."
@@ -51,7 +51,7 @@ func (c *MethodConfig) Prefix() string {
 	return constant.DUBBO + "." + c.InterfaceName + "." + c.Name + "."
 }
 
-// UnmarshalYAML ...
+// UnmarshalYAML unmarshals the MethodConfig by @unmarshal function
 func (c *MethodConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err

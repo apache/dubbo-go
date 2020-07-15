@@ -32,7 +32,7 @@ var (
 	serviceStatistic sync.Map // url -> RPCStatus
 )
 
-// RPCStatus ...
+// RPCStatus is URL statistics.
 type RPCStatus struct {
 	active                        int32
 	failed                        int32
@@ -46,63 +46,63 @@ type RPCStatus struct {
 	lastRequestFailedTimestamp    int64
 }
 
-// GetActive ...
+// GetActive gets active.
 func (rpc *RPCStatus) GetActive() int32 {
 	return atomic.LoadInt32(&rpc.active)
 }
 
-// GetFailed ...
+// GetFailed gets failed.
 func (rpc *RPCStatus) GetFailed() int32 {
 	return atomic.LoadInt32(&rpc.failed)
 }
 
-// GetTotal ...
+// GetTotal gets total.
 func (rpc *RPCStatus) GetTotal() int32 {
 	return atomic.LoadInt32(&rpc.total)
 }
 
-// GetTotalElapsed ...
+// GetTotalElapsed gets total elapsed.
 func (rpc *RPCStatus) GetTotalElapsed() int64 {
 	return atomic.LoadInt64(&rpc.totalElapsed)
 }
 
-// GetFailedElapsed ...
+// GetFailedElapsed gets failed elapsed.
 func (rpc *RPCStatus) GetFailedElapsed() int64 {
 	return atomic.LoadInt64(&rpc.failedElapsed)
 }
 
-// GetMaxElapsed ...
+// GetMaxElapsed gets max elapsed.
 func (rpc *RPCStatus) GetMaxElapsed() int64 {
 	return atomic.LoadInt64(&rpc.maxElapsed)
 }
 
-// GetFailedMaxElapsed ...
+// GetFailedMaxElapsed gets failed max elapsed.
 func (rpc *RPCStatus) GetFailedMaxElapsed() int64 {
 	return atomic.LoadInt64(&rpc.failedMaxElapsed)
 }
 
-// GetSucceededMaxElapsed ...
+// GetSucceededMaxElapsed gets succeeded max elapsed.
 func (rpc *RPCStatus) GetSucceededMaxElapsed() int64 {
 	return atomic.LoadInt64(&rpc.succeededMaxElapsed)
 }
 
-// GetLastRequestFailedTimestamp ...
+// GetLastRequestFailedTimestamp gets last request failed timestamp.
 func (rpc *RPCStatus) GetLastRequestFailedTimestamp() int64 {
 	return atomic.LoadInt64(&rpc.lastRequestFailedTimestamp)
 }
 
-// GetSuccessiveRequestFailureCount ...
+// GetSuccessiveRequestFailureCount gets successive request failure count.
 func (rpc *RPCStatus) GetSuccessiveRequestFailureCount() int32 {
 	return atomic.LoadInt32(&rpc.successiveRequestFailureCount)
 }
 
-// GetURLStatus ...
+// GetURLStatus get URL RPC status.
 func GetURLStatus(url common.URL) *RPCStatus {
 	rpcStatus, _ := serviceStatistic.LoadOrStore(url.Key(), &RPCStatus{})
 	return rpcStatus.(*RPCStatus)
 }
 
-// GetMethodStatus ...
+// GetMethodStatus get method RPC status.
 func GetMethodStatus(url common.URL, methodName string) *RPCStatus {
 	identifier := url.Key()
 	methodMap, found := methodStatistics.Load(identifier)
@@ -122,13 +122,13 @@ func GetMethodStatus(url common.URL, methodName string) *RPCStatus {
 	return status
 }
 
-// BeginCount ...
+// BeginCount gets begin count.
 func BeginCount(url common.URL, methodName string) {
 	beginCount0(GetURLStatus(url))
 	beginCount0(GetMethodStatus(url, methodName))
 }
 
-// EndCount ...
+// EndCount gets end count.
 func EndCount(url common.URL, methodName string, elapsed int64, succeeded bool) {
 	endCount0(GetURLStatus(url), elapsed, succeeded)
 	endCount0(GetMethodStatus(url, methodName), elapsed, succeeded)
@@ -163,19 +163,19 @@ func endCount0(rpcStatus *RPCStatus, elapsed int64, succeeded bool) {
 	}
 }
 
-// CurrentTimeMillis ...
+// CurrentTimeMillis get current timestamp
 func CurrentTimeMillis() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
 }
 
 // Destroy is used to clean all status
 func CleanAllStatus() {
-	delete1 := func(key interface{}, value interface{}) bool {
+	delete1 := func(key, _ interface{}) bool {
 		methodStatistics.Delete(key)
 		return true
 	}
 	methodStatistics.Range(delete1)
-	delete2 := func(key interface{}, value interface{}) bool {
+	delete2 := func(key, _ interface{}) bool {
 		serviceStatistic.Delete(key)
 		return true
 	}

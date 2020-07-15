@@ -37,13 +37,11 @@ func init() {
 	extension.SetAuthenticator(constant.DEFAULT_AUTHENTICATOR, GetDefaultAuthenticator)
 }
 
-// DefaultAuthenticator
-// The default implemetation of Authenticator
+// DefaultAuthenticator is the default implementation of Authenticator
 type DefaultAuthenticator struct {
 }
 
-// Sign
-// add the signature for the invocation
+// Sign adds the signature to the invocation
 func (authenticator *DefaultAuthenticator) Sign(invocation protocol.Invocation, url *common.URL) error {
 	currentTimeMillis := strconv.Itoa(int(time.Now().Unix() * 1000))
 
@@ -84,8 +82,7 @@ func getSignature(url *common.URL, invocation protocol.Invocation, secrectKey st
 	return signature, nil
 }
 
-// Authenticate
-// This method verifies whether the signature sent by the requester is correct
+// Authenticate verifies whether the signature sent by the requester is correct
 func (authenticator *DefaultAuthenticator) Authenticate(invocation protocol.Invocation, url *common.URL) error {
 	accessKeyId := invocation.AttachmentsByKey(constant.AK_KEY, "")
 
@@ -122,6 +119,7 @@ func getAccessKeyPair(invocation protocol.Invocation, url *common.URL) (*filter.
 	}
 }
 
+// GetDefaultAuthenticator creates an empty DefaultAuthenticator instance
 func GetDefaultAuthenticator() filter.Authenticator {
 	return &DefaultAuthenticator{}
 }

@@ -45,5 +45,6 @@ func TestGetMetricReporter(t *testing.T) {
 type mockReporter struct {
 }
 
+// Report method for feature expansion
 func (m mockReporter) Report(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, cost time.Duration, res protocol.Result) {
 }

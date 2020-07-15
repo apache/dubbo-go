@@ -31,24 +31,30 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
+const (
+	userName        = "username"
+	password        = "password"
+	loopbackAddress = "127.0.0.1"
+)
+
 func TestNewURLWithOptions(t *testing.T) {
 	methods := []string{"Methodone,methodtwo"}
 	params := url.Values{}
 	params.Set("key", "value")
 	u := NewURLWithOptions(WithPath("com.test.Service"),
-		WithUsername("username"),
-		WithPassword("password"),
+		WithUsername(userName),
+		WithPassword(password),
 		WithProtocol("testprotocol"),
-		WithIp("127.0.0.1"),
+		WithIp(loopbackAddress),
 		WithPort("8080"),
 		WithMethods(methods),
 		WithParams(params),
 		WithParamsValue("key2", "value2"))
 	assert.Equal(t, "/com.test.Service", u.Path)
-	assert.Equal(t, "username", u.Username)
-	assert.Equal(t, "password", u.Password)
+	assert.Equal(t, userName, u.Username)
+	assert.Equal(t, password, u.Password)
 	assert.Equal(t, "testprotocol", u.Protocol)
-	assert.Equal(t, "127.0.0.1", u.Ip)
+	assert.Equal(t, loopbackAddress, u.Ip)
 	assert.Equal(t, "8080", u.Port)
 	assert.Equal(t, methods, u.Methods)
 	assert.Equal(t, params, u.params)
@@ -65,7 +71,7 @@ func TestURL(t *testing.T) {
 	assert.Equal(t, "/com.ikurento.user.UserProvider", u.Path)
 	assert.Equal(t, "127.0.0.1:20000", u.Location)
 	assert.Equal(t, "dubbo", u.Protocol)
-	assert.Equal(t, "127.0.0.1", u.Ip)
+	assert.Equal(t, loopbackAddress, u.Ip)
 	assert.Equal(t, "20000", u.Port)
 	assert.Equal(t, URL{}.Methods, u.Methods)
 	assert.Equal(t, "", u.Username)
@@ -92,7 +98,7 @@ func TestURLWithoutSchema(t *testing.T) {
 	assert.Equal(t, "/com.ikurento.user.UserProvider", u.Path)
 	assert.Equal(t, "127.0.0.1:20000", u.Location)
 	assert.Equal(t, "dubbo", u.Protocol)
-	assert.Equal(t, "127.0.0.1", u.Ip)
+	assert.Equal(t, loopbackAddress, u.Ip)
 	assert.Equal(t, "20000", u.Port)
 	assert.Equal(t, URL{}.Methods, u.Methods)
 	assert.Equal(t, "", u.Username)
@@ -108,7 +114,7 @@ func TestURLWithoutSchema(t *testing.T) {
 		"ZX&pid=1447&revision=0.0.1&side=provider&timeout=3000&timestamp=1556509797245", u.String())
 }
 
-func TestURL_URLEqual(t *testing.T) {
+func TestURLEqual(t *testing.T) {
 	u1, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0")
 	assert.NoError(t, err)
 	u2, err := NewURL("dubbo://127.0.0.2:20001/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0")
@@ -118,9 +124,36 @@ func TestURL_URLEqual(t *testing.T) {
 	u3, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
 	assert.NoError(t, err)
 	assert.False(t, u1.URLEqual(u3))
+
+	// urlGroupAnyValue's group is *
+	urlGroupAnyValue, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0")
+	assert.NoError(t, err)
+	assert.True(t, u3.URLEqual(urlGroupAnyValue))
+
+	// test for enabled
+	urlEnabledEmpty, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0&enabled=")
+	assert.NoError(t, err)
+	assert.True(t, u3.URLEqual(urlEnabledEmpty))
+
+	urlEnabledFalse, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0&enabled=1")
+	assert.NoError(t, err)
+	assert.False(t, u3.URLEqual(urlEnabledFalse))
+
+	urlEnabledTrue, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0&enabled=true")
+	assert.NoError(t, err)
+	assert.True(t, u3.URLEqual(urlEnabledTrue))
+
+	urlEnabledAny, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0&enabled=*")
+	assert.NoError(t, err)
+	assert.True(t, u3.URLEqual(urlEnabledAny))
+
+	// test for category
+	categoryAny, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0&enabled=*&category=*")
+	assert.NoError(t, err)
+	assert.True(t, categoryAny.URLEqual(u3))
 }
 
-func TestURL_GetParam(t *testing.T) {
+func TestURLGetParam(t *testing.T) {
 	params := url.Values{}
 	params.Set("key", "value")
 	u := URL{baseUrl: baseUrl{params: params}}
@@ -132,7 +165,7 @@ func TestURL_GetParam(t *testing.T) {
 	assert.Equal(t, "default", v)
 }
 
-func TestURL_GetParamInt(t *testing.T) {
+func TestURLGetParamInt(t *testing.T) {
 	params := url.Values{}
 	params.Set("key", "3")
 	u := URL{baseUrl: baseUrl{params: params}}
@@ -144,7 +177,7 @@ func TestURL_GetParamInt(t *testing.T) {
 	assert.Equal(t, int64(1), v)
 }
 
-func TestURL_GetParamBool(t *testing.T) {
+func TestURLGetParamBool(t *testing.T) {
 	params := url.Values{}
 	params.Set("force", "true")
 	u := URL{baseUrl: baseUrl{params: params}}
@@ -156,7 +189,7 @@ func TestURL_GetParamBool(t *testing.T) {
 	assert.Equal(t, false, v)
 }
 
-func TestURL_GetParamAndDecoded(t *testing.T) {
+func TestURLGetParamAndDecoded(t *testing.T) {
 	rule := "host = 2.2.2.2,1.1.1.1,3.3.3.3 & host !=1.1.1.1 => host = 1.2.3.4"
 	params := url.Values{}
 	params.Set("rule", base64.URLEncoding.EncodeToString([]byte(rule)))
@@ -165,20 +198,20 @@ func TestURL_GetParamAndDecoded(t *testing.T) {
 	assert.Equal(t, rule, v)
 }
 
-func TestURL_GetRawParam(t *testing.T) {
+func TestURLGetRawParam(t *testing.T) {
 	u, _ := NewURL("condition://0.0.0.0:8080/com.foo.BarService?serialization=fastjson")
 	u.Username = "test"
 	u.Password = "test"
 	assert.Equal(t, "condition", u.GetRawParam("protocol"))
 	assert.Equal(t, "0.0.0.0", u.GetRawParam("host"))
 	assert.Equal(t, "8080", u.GetRawParam("port"))
-	assert.Equal(t, "test", u.GetRawParam("username"))
-	assert.Equal(t, "test", u.GetRawParam("password"))
+	assert.Equal(t, "test", u.GetRawParam(userName))
+	assert.Equal(t, "test", u.GetRawParam(password))
 	assert.Equal(t, "/com.foo.BarService", u.GetRawParam("path"))
 	assert.Equal(t, "fastjson", u.GetRawParam("serialization"))
 }
 
-func TestURL_ToMap(t *testing.T) {
+func TestURLToMap(t *testing.T) {
 	u, _ := NewURL("condition://0.0.0.0:8080/com.foo.BarService?serialization=fastjson")
 	u.Username = "test"
 	u.Password = "test"
@@ -188,13 +221,13 @@ func TestURL_ToMap(t *testing.T) {
 	assert.Equal(t, "condition", m["protocol"])
 	assert.Equal(t, "0.0.0.0", m["host"])
 	assert.Equal(t, "8080", m["port"])
-	assert.Equal(t, "test", m["username"])
-	assert.Equal(t, "test", m["password"])
+	assert.Equal(t, "test", m[userName])
+	assert.Equal(t, "test", m[password])
 	assert.Equal(t, "/com.foo.BarService", m["path"])
 	assert.Equal(t, "fastjson", m["serialization"])
 }
 
-func TestURL_GetMethodParamInt(t *testing.T) {
+func TestURLGetMethodParamInt(t *testing.T) {
 	params := url.Values{}
 	params.Set("methods.GetValue.timeout", "3")
 	u := URL{baseUrl: baseUrl{params: params}}
@@ -206,7 +239,7 @@ func TestURL_GetMethodParamInt(t *testing.T) {
 	assert.Equal(t, int64(1), v)
 }
 
-func TestURL_GetMethodParam(t *testing.T) {
+func TestURLGetMethodParam(t *testing.T) {
 	params := url.Values{}
 	params.Set("methods.GetValue.timeout", "3s")
 	u := URL{baseUrl: baseUrl{params: params}}
@@ -218,7 +251,7 @@ func TestURL_GetMethodParam(t *testing.T) {
 	assert.Equal(t, "1s", v)
 }
 
-func TestURL_GetMethodParamBool(t *testing.T) {
+func TestURLGetMethodParamBool(t *testing.T) {
 	params := url.Values{}
 	params.Set("methods.GetValue.async", "true")
 	u := URL{baseUrl: baseUrl{params: params}}
@@ -252,7 +285,7 @@ func TestMergeUrl(t *testing.T) {
 	assert.Equal(t, "2", mergedUrl.GetParam(constant.METHOD_KEYS+".testMethod."+constant.RETRIES_KEY, ""))
 }
 
-func TestURL_SetParams(t *testing.T) {
+func TestURLSetParams(t *testing.T) {
 	u1, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&configVersion=1.0")
 	assert.NoError(t, err)
 	params := url.Values{}

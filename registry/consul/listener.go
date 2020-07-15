@@ -142,7 +142,6 @@ func (l *consulListener) run() {
 func (l *consulListener) handler(idx uint64, raw interface{}) {
 	var (
 		service *consul.ServiceEntry
-		event   *registry.ServiceEvent
 		url     common.URL
 		ok      bool
 		err     error
@@ -183,11 +182,12 @@ func (l *consulListener) handler(idx uint64, raw interface{}) {
 	}
 
 	l.urls = newUrls
-	for _, event = range events {
+	for _, event := range events {
 		l.eventCh <- event
 	}
 }
 
+// Next returns the service event from consul.
 func (l *consulListener) Next() (*registry.ServiceEvent, error) {
 	select {
 	case event := <-l.eventCh:
@@ -197,6 +197,7 @@ func (l *consulListener) Next() (*registry.ServiceEvent, error) {
 	}
 }
 
+// Close closes this listener
 func (l *consulListener) Close() {
 	close(l.done)
 	l.plan.Stop()

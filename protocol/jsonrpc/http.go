@@ -63,7 +63,7 @@ type Request struct {
 // HTTP Client
 // ////////////////////////////////////////////
 
-// HTTPOptions ...
+// HTTPOptions is a HTTP option include HandshakeTimeout and HTTPTimeout.
 type HTTPOptions struct {
 	HandshakeTimeout time.Duration
 	HTTPTimeout      time.Duration
@@ -74,13 +74,13 @@ var defaultHTTPOptions = HTTPOptions{
 	HTTPTimeout:      3 * time.Second,
 }
 
-// HTTPClient ...
+// HTTPClient is a HTTP client ,include ID and options.
 type HTTPClient struct {
 	ID      int64
 	options HTTPOptions
 }
 
-// NewHTTPClient ...
+// NewHTTPClient creates a new HTTP client with HTTPOptions.
 func NewHTTPClient(opt *HTTPOptions) *HTTPClient {
 	if opt == nil {
 		opt = &defaultHTTPOptions
@@ -100,7 +100,7 @@ func NewHTTPClient(opt *HTTPOptions) *HTTPClient {
 	}
 }
 
-// NewRequest ...
+// NewRequest creates a new HTTP request with @service ,@method and @arguments.
 func (c *HTTPClient) NewRequest(service common.URL, method string, args interface{}) *Request {
 
 	return &Request{
@@ -114,7 +114,7 @@ func (c *HTTPClient) NewRequest(service common.URL, method string, args interfac
 	}
 }
 
-// Call ...
+// Call makes a HTTP call with @ctx , @service ,@req and @rsp
 func (c *HTTPClient) Call(ctx context.Context, service common.URL, req *Request, rsp interface{}) error {
 	// header
 	httpHeader := http.Header{}
@@ -172,7 +172,7 @@ func (c *HTTPClient) Do(addr, path string, httpHeader http.Header, body []byte) 
 	httpReq.Close = true
 
 	reqBuf := bytes.NewBuffer(make([]byte, 0))
-	if err := httpReq.Write(reqBuf); err != nil {
+	if err = httpReq.Write(reqBuf); err != nil {
 		return nil, perrors.WithStack(err)
 	}
 
@@ -191,7 +191,7 @@ func (c *HTTPClient) Do(addr, path string, httpHeader http.Header, body []byte) 
 	}
 	setNetConnTimeout(tcpConn, c.options.HTTPTimeout)
 
-	if _, err := reqBuf.WriteTo(tcpConn); err != nil {
+	if _, err = reqBuf.WriteTo(tcpConn); err != nil {
 		return nil, perrors.WithStack(err)
 	}
 

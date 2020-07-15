@@ -36,7 +36,7 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-func TestProtocolFilterWrapper_Export(t *testing.T) {
+func TestProtocolFilterWrapperExport(t *testing.T) {
 	filtProto := extension.GetProtocol(FILTER)
 	filtProto.(*ProtocolFilterWrapper).protocol = &protocol.BaseProtocol{}
 
@@ -48,7 +48,7 @@ func TestProtocolFilterWrapper_Export(t *testing.T) {
 	assert.True(t, ok)
 }
 
-func TestProtocolFilterWrapper_Refer(t *testing.T) {
+func TestProtocolFilterWrapperRefer(t *testing.T) {
 	filtProto := extension.GetProtocol(FILTER)
 	filtProto.(*ProtocolFilterWrapper).protocol = &protocol.BaseProtocol{}
 

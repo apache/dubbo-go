@@ -38,14 +38,10 @@ import (
 	rest_config "github.com/apache/dubbo-go/protocol/rest/config"
 )
 
-func TestRestProtocol_Refer(t *testing.T) {
+func TestRestProtocolRefer(t *testing.T) {
 	// Refer
 	proto := GetRestProtocol()
-	url, err := common.NewURL("rest://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
-		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
-		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
-		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
-		"side=provider&timeout=3000&timestamp=1556509797245")
+	url, err := common.NewURL(mockRestCommonUrl)
 	assert.NoError(t, err)
 	con := config.ConsumerConfig{
 		ConnectTimeout: 5 * time.Second,
@@ -71,16 +67,12 @@ func TestRestProtocol_Refer(t *testing.T) {
 	assert.Equal(t, 0, invokersLen)
 }
 
-func TestRestProtocol_Export(t *testing.T) {
+func TestRestProtocolExport(t *testing.T) {
 	// Export
 	proto := GetRestProtocol()
-	url, err := common.NewURL("rest://127.0.0.1:8888/com.ikurento.user.UserProvider?anyhost=true&" +
-		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
-		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
-		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
-		"side=provider&timeout=3000&timestamp=1556509797245")
+	url, err := common.NewURL(mockRestCommonUrl)
 	assert.NoError(t, err)
-	_, err = common.ServiceMap.Register(url.Protocol, &UserProvider{})
+	_, err = common.ServiceMap.Register("UserProvider", url.Protocol, &UserProvider{})
 	assert.NoError(t, err)
 	con := config.ProviderConfig{}
 	config.SetProviderConfig(con)
@@ -128,7 +120,7 @@ func TestRestProtocol_Export(t *testing.T) {
 	proto.Destroy()
 	_, ok = proto.(*RestProtocol).serverMap[url.Location]
 	assert.False(t, ok)
-	err = common.ServiceMap.UnRegister(url.Protocol, "com.ikurento.user.UserProvider")
+	err = common.ServiceMap.UnRegister("UserProvider", url.Protocol, "com.ikurento.user.UserProvider")
 	assert.NoError(t, err)
 }
 
