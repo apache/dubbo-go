@@ -22,18 +22,79 @@ import (
 )
 
 import (
+	gxnet "github.com/dubbogo/gost/net"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/atomic"
+)
+
+import (
 	"github.com/apache/dubbo-go/common/extension"
 )
 
 func doInitProvider() {
 	providerConfig = &ProviderConfig{
-		ApplicationConfig: &ApplicationConfig{
-			Organization: "dubbo_org",
-			Name:         "dubbo",
-			Module:       "module",
-			Version:      "2.6.0",
-			Owner:        "dubbo",
-			Environment:  "test"},
+		BaseConfig: BaseConfig{
+			ApplicationConfig: &ApplicationConfig{
+				Organization: "dubbo_org",
+				Name:         "dubbo",
+				Module:       "module",
+				Version:      "2.6.0",
+				Owner:        "dubbo",
+				Environment:  "test"},
+		},
+		Services: map[string]*ServiceConfig{
+			"MockService": {
+				InterfaceName: "com.MockService",
+				Protocol:      "mock",
+				Registry:      "shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2",
+				Cluster:       "failover",
+				Loadbalance:   "random",
+				Retries:       "3",
+				Group:         "huadong_idc",
+				Version:       "1.0.0",
+				Methods: []*MethodConfig{
+					{
+						Name:        "GetUser",
+						Retries:     "2",
+						Loadbalance: "random",
+						Weight:      200,
+					},
+					{
+						Name:        "GetUser1",
+						Retries:     "2",
+						Loadbalance: "random",
+						Weight:      200,
+					},
+				},
+				exported: new(atomic.Bool),
+			},
+			"MockServiceNoRightProtocol": {
+				InterfaceName: "com.MockService",
+				Protocol:      "mock1",
+				Registry:      "shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2",
+				Cluster:       "failover",
+				Loadbalance:   "random",
+				Retries:       "3",
+				Group:         "huadong_idc",
+				Version:       "1.0.0",
+				Methods: []*MethodConfig{
+					{
+						Name:        "GetUser",
+						Retries:     "2",
+						Loadbalance: "random",
+						Weight:      200,
+					},
+					{
+						Name:        "GetUser1",
+						Retries:     "2",
+						Loadbalance: "random",
+						Weight:      200,
+					},
+				},
+				exported: new(atomic.Bool),
+			},
+		},
+
 		Registries: map[string]*RegistryConfig{
 			"shanghai_reg1": {
 				Protocol:   "mock",
@@ -68,56 +129,7 @@ func doInitProvider() {
 				Password:   "pwd1",
 			},
 		},
-		Services: map[string]*ServiceConfig{
-			"MockService": {
-				InterfaceName: "com.MockService",
-				Protocol:      "mock",
-				Registry:      "shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2",
-				Cluster:       "failover",
-				Loadbalance:   "random",
-				Retries:       "3",
-				Group:         "huadong_idc",
-				Version:       "1.0.0",
-				Methods: []*MethodConfig{
-					{
-						Name:        "GetUser",
-						Retries:     "2",
-						Loadbalance: "random",
-						Weight:      200,
-					},
-					{
-						Name:        "GetUser1",
-						Retries:     "2",
-						Loadbalance: "random",
-						Weight:      200,
-					},
-				},
-			},
-			"MockServiceNoRightProtocol": {
-				InterfaceName: "com.MockService",
-				Protocol:      "mock1",
-				Registry:      "shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2",
-				Cluster:       "failover",
-				Loadbalance:   "random",
-				Retries:       "3",
-				Group:         "huadong_idc",
-				Version:       "1.0.0",
-				Methods: []*MethodConfig{
-					{
-						Name:        "GetUser",
-						Retries:     "2",
-						Loadbalance: "random",
-						Weight:      200,
-					},
-					{
-						Name:        "GetUser1",
-						Retries:     "2",
-						Loadbalance: "random",
-						Weight:      200,
-					},
-				},
-			},
-		},
+
 		Protocols: map[string]*ProtocolConfig{
 			"mock": {
 				Name: "mock",
@@ -128,64 +140,47 @@ func doInitProvider() {
 	}
 }
 
-func doInitProviderWithSingleRegistry() {
-	providerConfig = &ProviderConfig{
-		ApplicationConfig: &ApplicationConfig{
-			Organization: "dubbo_org",
-			Name:         "dubbo",
-			Module:       "module",
-			Version:      "2.6.0",
-			Owner:        "dubbo",
-			Environment:  "test"},
-		Registry: &RegistryConfig{
-			Address:  "mock://127.0.0.1:2181",
-			Username: "user1",
-			Password: "pwd1",
-		},
-		Registries: map[string]*RegistryConfig{},
-		Services: map[string]*ServiceConfig{
-			"MockService": {
-				InterfaceName: "com.MockService",
-				Protocol:      "mock",
-				Cluster:       "failover",
-				Loadbalance:   "random",
-				Retries:       "3",
-				Group:         "huadong_idc",
-				Version:       "1.0.0",
-				Methods: []*MethodConfig{
-					{
-						Name:        "GetUser",
-						Retries:     "2",
-						Loadbalance: "random",
-						Weight:      200,
-					},
-					{
-						Name:        "GetUser1",
-						Retries:     "2",
-						Loadbalance: "random",
-						Weight:      200,
-					},
-				},
-			},
-		},
-		Protocols: map[string]*ProtocolConfig{
-			"mock": {
-				Name: "mock",
-				Ip:   "127.0.0.1",
-				Port: "20000",
-			},
-		},
-	}
-}
-
-func Test_Export(t *testing.T) {
+func TestExport(t *testing.T) {
 	doInitProvider()
 	extension.SetProtocol("registry", GetProtocol)
 
 	for i := range providerConfig.Services {
 		service := providerConfig.Services[i]
 		service.Implement(&MockService{})
+		service.Protocols = providerConfig.Protocols
 		service.Export()
 	}
 	providerConfig = nil
+}
+
+func TestgetRandomPort(t *testing.T) {
+	protocolConfigs := make([]*ProtocolConfig, 0, 3)
+
+	ip, err := gxnet.GetLocalIP()
+	protocolConfigs = append(protocolConfigs, &ProtocolConfig{
+		Ip: ip,
+	})
+	protocolConfigs = append(protocolConfigs, &ProtocolConfig{
+		Ip: ip,
+	})
+	protocolConfigs = append(protocolConfigs, &ProtocolConfig{
+		Ip: ip,
+	})
+	assert.NoError(t, err)
+	ports := getRandomPort(protocolConfigs)
+
+	assert.Equal(t, ports.Len(), len(protocolConfigs))
+
+	front := ports.Front()
+	for {
+		if front == nil {
+			break
+		}
+		t.Logf("port:%v", front.Value)
+		front = front.Next()
+	}
+
+	protocolConfigs = make([]*ProtocolConfig, 0, 3)
+	ports = getRandomPort(protocolConfigs)
+	assert.Equal(t, ports.Len(), len(protocolConfigs))
 }

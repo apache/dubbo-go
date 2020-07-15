@@ -18,24 +18,15 @@
 package kubernetes
 
 import (
-	"encoding/json"
-	"os"
-	"strconv"
 	"testing"
-	"time"
 )
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/suite"
-	"k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/fake"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/remoting"
 )
@@ -184,67 +175,7 @@ type MockDataListener struct{}
 
 func (*MockDataListener) Process(configType *config_center.ConfigChangeEvent) {}
 
-type KubernetesRegistryTestSuite struct {
-	suite.Suite
-
-	currentPod v1.Pod
-}
-
-func (s *KubernetesRegistryTestSuite) initRegistry() *kubernetesRegistry {
-
-	t := s.T()
-
-	regurl, err := common.NewURL("registry://127.0.0.1:443", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	mock, err := newMockKubernetesRegistry(&regurl, s.currentPod.GetNamespace(), func() (kubernetes.Interface, error) {
-
-		out := fake.NewSimpleClientset()
-
-		// mock current pod
-		if _, err := out.CoreV1().Pods(s.currentPod.GetNamespace()).Create(&s.currentPod); err != nil {
-			t.Fatal(err)
-		}
-		return out, nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	time.Sleep(time.Second)
-	return mock.(*kubernetesRegistry)
-}
-
-func (s *KubernetesRegistryTestSuite) SetupSuite() {
-
-	t := s.T()
-
-	const (
-		// kubernetes inject the var
-		podNameKey   = "HOSTNAME"
-		nameSpaceKey = "NAMESPACE"
-	)
-
-	// 1. install test data
-	if err := json.Unmarshal([]byte(clientPodJsonData), &s.currentPod); err != nil {
-		t.Fatal(err)
-	}
-
-	// 2. set downward-api inject env
-	if err := os.Setenv(podNameKey, s.currentPod.GetName()); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Setenv(nameSpaceKey, s.currentPod.GetNamespace()); err != nil {
-		t.Fatal(err)
-	}
-
-}
-
-func (s *KubernetesRegistryTestSuite) TestDataChange() {
-
-	t := s.T()
+func TestDataChange(t *testing.T) {
 
 	listener := NewRegistryDataListener(&MockDataListener{})
 	url, _ := common.NewURL("jsonrpc%3A%2F%2F127.0.0.1%3A20001%2Fcom.ikurento.user.UserProvider%3Fanyhost%3Dtrue%26app.version%3D0.0.1%26application%3DBDTService%26category%3Dproviders%26cluster%3Dfailover%26dubbo%3Ddubbo-provider-golang-2.6.0%26environment%3Ddev%26group%3D%26interface%3Dcom.ikurento.user.UserProvider%26ip%3D10.32.20.124%26loadbalance%3Drandom%26methods.GetUser.loadbalance%3Drandom%26methods.GetUser.retries%3D1%26methods.GetUser.weight%3D0%26module%3Ddubbogo%2Buser-info%2Bserver%26name%3DBDTService%26organization%3Dikurento.com%26owner%3DZX%26pid%3D74500%26retries%3D0%26service.filter%3Decho%26side%3Dprovider%26timestamp%3D1560155407%26version%3D%26warmup%3D100")
@@ -252,8 +183,4 @@ func (s *KubernetesRegistryTestSuite) TestDataChange() {
 	if !listener.DataChange(remoting.Event{Path: "/dubbo/com.ikurento.user.UserProvider/providers/jsonrpc%3A%2F%2F127.0.0.1%3A20001%2Fcom.ikurento.user.UserProvider%3Fanyhost%3Dtrue%26app.version%3D0.0.1%26application%3DBDTService%26category%3Dproviders%26cluster%3Dfailover%26dubbo%3Ddubbo-provider-golang-2.6.0%26environment%3Ddev%26group%3D%26interface%3Dcom.ikurento.user.UserProvider%26ip%3D10.32.20.124%26loadbalance%3Drandom%26methods.GetUser.loadbalance%3Drandom%26methods.GetUser.retries%3D1%26methods.GetUser.weight%3D0%26module%3Ddubbogo%2Buser-info%2Bserver%26name%3DBDTService%26organization%3Dikurento.com%26owner%3DZX%26pid%3D74500%26retries%3D0%26service.filter%3Decho%26side%3Dprovider%26timestamp%3D1560155407%26version%3D%26warmup%3D100"}) {
 		t.Fatal("data change not ok")
 	}
-}
-
-func TestKubernetesRegistrySuite(t *testing.T) {
-	suite.Run(t, &KubernetesRegistryTestSuite{})
 }

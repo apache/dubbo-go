@@ -15,34 +15,46 @@
  * limitations under the License.
  */
 
-package config
+package event
 
 import (
-	perrors "github.com/pkg/errors"
+	"reflect"
+	"sync"
 )
 
 import (
-	"github.com/apache/dubbo-go/cluster/directory"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/common/yaml"
+	"github.com/apache/dubbo-go/common/observer"
 )
 
-//RouterInit Load config file to init router config
-func RouterInit(confRouterFile string) error {
-	fileRouterFactories := extension.GetFileRouterFactories()
-	bytes, err := yaml.LoadYMLConfig(confRouterFile)
-	if err != nil {
-		return perrors.Errorf("ioutil.ReadFile(file:%s) = error:%v", confRouterFile, perrors.WithStack(err))
-	}
-	for k, factory := range fileRouterFactories {
-		r, e := factory.NewFileRouter(bytes)
-		if e == nil {
-			url := r.URL()
-			directory.AddRouterURLSet(&url)
-			return nil
-		}
-		logger.Warnf("router config type %s create fail \n", k)
-	}
-	return perrors.Errorf("no file router exists for parse %s , implement router.FIleRouterFactory please.", confRouterFile)
+func init() {
+	extension.AddEventListener(GetLogEventListener)
+}
+
+// logEventListener is singleton
+type logEventListener struct {
+}
+
+func (l *logEventListener) GetPriority() int {
+	return 0
+}
+
+func (l *logEventListener) OnEvent(e observer.Event) error {
+	logger.Info("Event happen: " + e.String())
+	return nil
+}
+
+func (l *logEventListener) GetEventType() reflect.Type {
+	return reflect.TypeOf(&observer.BaseEvent{})
+}
+
+var logEventListenerInstance *logEventListener
+var logEventListenerOnce sync.Once
+
+func GetLogEventListener() observer.EventListener {
+	logEventListenerOnce.Do(func() {
+		logEventListenerInstance = &logEventListener{}
+	})
+	return logEventListenerInstance
 }

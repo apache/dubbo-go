@@ -39,11 +39,11 @@ func init() {
 	extension.SetFilter(active, GetActiveFilter)
 }
 
-// ActiveFilter ...
+// ActiveFilter tracks the requests status
 type ActiveFilter struct {
 }
 
-// Invoke ...
+// Invoke starts to record the requests status
 func (ef *ActiveFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("invoking active filter. %v,%v", invocation.MethodName(), len(invocation.Arguments()))
 	invocation.(*invocation2.RPCInvocation).SetAttachments(dubboInvokeStartTime, strconv.FormatInt(protocol.CurrentTimeMillis(), 10))
@@ -51,7 +51,7 @@ func (ef *ActiveFilter) Invoke(ctx context.Context, invoker protocol.Invoker, in
 	return invoker.Invoke(ctx, invocation)
 }
 
-// OnResponse ...
+// OnResponse update the active count base on the request result.
 func (ef *ActiveFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	startTime, err := strconv.ParseInt(invocation.(*invocation2.RPCInvocation).AttachmentsByKey(dubboInvokeStartTime, "0"), 10, 64)
 	if err != nil {
@@ -64,7 +64,7 @@ func (ef *ActiveFilter) OnResponse(ctx context.Context, result protocol.Result, 
 	return result
 }
 
-// GetActiveFilter ...
+// GetActiveFilter creates ActiveFilter instance
 func GetActiveFilter() filter.Filter {
 	return &ActiveFilter{}
 }

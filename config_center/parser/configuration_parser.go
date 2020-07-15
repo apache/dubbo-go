@@ -47,7 +47,7 @@ type ConfigurationParser interface {
 	ParseToUrls(content string) ([]*common.URL, error)
 }
 
-// DefaultConfigurationParser for support properties file in config center
+// DefaultConfigurationParser for supporting properties file in config center
 type DefaultConfigurationParser struct{}
 
 // ConfiguratorConfig ...
@@ -71,7 +71,7 @@ type ConfigItem struct {
 	Side              string            `yaml:"side"`
 }
 
-// Parse ...
+// Parse load content
 func (parser *DefaultConfigurationParser) Parse(content string) (map[string]string, error) {
 	pps, err := properties.LoadString(content)
 	if err != nil {

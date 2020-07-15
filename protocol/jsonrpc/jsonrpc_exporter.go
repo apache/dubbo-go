@@ -28,23 +28,24 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-// JsonrpcExporter ...
+// JsonrpcExporter is JSON RPC exporter and  extends from base invoker.
 type JsonrpcExporter struct {
 	protocol.BaseExporter
 }
 
-// NewJsonrpcExporter ...
+// NewJsonrpcExporter creates JSON RPC exporter with @key, @invoker and @exporterMap
 func NewJsonrpcExporter(key string, invoker protocol.Invoker, exporterMap *sync.Map) *JsonrpcExporter {
 	return &JsonrpcExporter{
 		BaseExporter: *protocol.NewBaseExporter(key, invoker, exporterMap),
 	}
 }
 
-// Unexport ...
+// Unexport exported JSON RPC service.
 func (je *JsonrpcExporter) Unexport() {
 	serviceId := je.GetInvoker().GetUrl().GetParam(constant.BEAN_NAME_KEY, "")
+	interfaceName := je.GetInvoker().GetUrl().GetParam(constant.INTERFACE_KEY, "")
 	je.BaseExporter.Unexport()
-	err := common.ServiceMap.UnRegister(JSONRPC, serviceId)
+	err := common.ServiceMap.UnRegister(interfaceName, JSONRPC, serviceId)
 	if err != nil {
 		logger.Errorf("[JsonrpcExporter.Unexport] error: %v", err)
 	}

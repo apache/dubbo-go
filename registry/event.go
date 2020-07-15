@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/observer"
 	"github.com/apache/dubbo-go/remoting"
 )
 
@@ -32,16 +33,41 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-//////////////////////////////////////////
+// ////////////////////////////////////////
 // service event
-//////////////////////////////////////////
+// ////////////////////////////////////////
 
-// ServiceEvent ...
+// ServiceEvent includes create, update, delete event
 type ServiceEvent struct {
 	Action  remoting.EventType
 	Service common.URL
 }
 
+// String return the description of event
 func (e ServiceEvent) String() string {
 	return fmt.Sprintf("ServiceEvent{Action{%s}, Path{%s}}", e.Action, e.Service)
+}
+
+// ServiceInstancesChangedEvent represents service instances make some changing
+type ServiceInstancesChangedEvent struct {
+	observer.BaseEvent
+	ServiceName string
+	Instances   []ServiceInstance
+}
+
+// String return the description of the event
+func (s *ServiceInstancesChangedEvent) String() string {
+	return fmt.Sprintf("ServiceInstancesChangedEvent[source=%s]", s.ServiceName)
+}
+
+// NewServiceInstancesChangedEvent will create the ServiceInstanceChangedEvent instance
+func NewServiceInstancesChangedEvent(serviceName string, instances []ServiceInstance) *ServiceInstancesChangedEvent {
+	return &ServiceInstancesChangedEvent{
+		BaseEvent: observer.BaseEvent{
+			Source:    serviceName,
+			Timestamp: time.Now(),
+		},
+		ServiceName: serviceName,
+		Instances:   instances,
+	}
 }

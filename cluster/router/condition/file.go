@@ -44,7 +44,7 @@ type FileConditionRouter struct {
 // NewFileConditionRouter Create file condition router instance with content ( from config file)
 func NewFileConditionRouter(content []byte) (*FileConditionRouter, error) {
 	fileRouter := &FileConditionRouter{}
-	rule, err := Parse(string(content))
+	rule, err := getRule(string(content))
 	if err != nil {
 		return nil, perrors.Errorf("yaml.Unmarshal() failed , error:%v", perrors.WithStack(err))
 	}
@@ -77,10 +77,7 @@ func (f *FileConditionRouter) URL() common.URL {
 }
 
 func parseCondition(conditions []string) string {
-	var (
-		when string
-		then string
-	)
+	var when, then string
 	for _, condition := range conditions {
 		condition = strings.Trim(condition, " ")
 		if strings.Contains(condition, "=>") {
@@ -101,10 +98,7 @@ func parseCondition(conditions []string) string {
 					then = provider
 				}
 			}
-
 		}
-
 	}
-
 	return strings.Join([]string{when, then}, " => ")
 }

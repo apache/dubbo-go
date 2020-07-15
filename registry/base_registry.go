@@ -56,6 +56,8 @@ func init() {
 	localIP, _ = gxnet.GetLocalIP()
 }
 
+type createPathFunc func(dubboPath string) error
+
 /*
  * -----------------------------------NOTICE---------------------------------------------
  * If there is no special case, you'd better inherit BaseRegistry and implement the
@@ -74,8 +76,12 @@ type FacadeBasedRegistry interface {
 	CreatePath(string) error
 	// DoRegister actually do the register job
 	DoRegister(string, string) error
+	// DoUnregister do the unregister job
+	DoUnregister(string, string) error
 	// DoSubscribe actually subscribe the URL
 	DoSubscribe(conf *common.URL) (Listener, error)
+	// DoUnsubscribe does unsubscribe the URL
+	DoUnsubscribe(conf *common.URL) (Listener, error)
 	// CloseAndNilClient close the client and then reset the client in registry to nil
 	// you should notice that this method will be invoked inside a lock.
 	// So you should implement this method as light weighted as you can.
@@ -94,7 +100,7 @@ type BaseRegistry struct {
 	birth    int64          // time of file birth, seconds since Epoch; 0 if unknown
 	wg       sync.WaitGroup // wg+done for zk restart
 	done     chan struct{}
-	cltLock  sync.Mutex            //ctl lock is a lock for services map
+	cltLock  sync.RWMutex          //ctl lock is a lock for services map
 	services map[string]common.URL // service name + protocol -> service config, for store the service registered
 }
 
@@ -121,6 +127,7 @@ func (r *BaseRegistry) Destroy() {
 	close(r.done)
 	// wait waitgroup done (wait listeners outside close over)
 	r.wg.Wait()
+
 	//close registry client
 	r.closeRegisters()
 }
@@ -153,6 +160,43 @@ func (r *BaseRegistry) Register(conf common.URL) error {
 	return nil
 }
 
+// UnRegister implement interface registry to unregister
+func (r *BaseRegistry) UnRegister(conf common.URL) error {
+	var (
+		ok     bool
+		err    error
+		oldURL common.URL
+	)
+
+	func() {
+		r.cltLock.Lock()
+		defer r.cltLock.Unlock()
+		oldURL, ok = r.services[conf.Key()]
+
+		if !ok {
+			err = perrors.Errorf("Path{%s} has not registered", conf.Key())
+		}
+
+		delete(r.services, conf.Key())
+	}()
+
+	if err != nil {
+		return err
+	}
+
+	err = r.unregister(conf)
+	if err != nil {
+		func() {
+			r.cltLock.Lock()
+			defer r.cltLock.Unlock()
+			r.services[conf.Key()] = oldURL
+		}()
+		return perrors.WithMessagef(err, "register(conf:%+v)", conf)
+	}
+
+	return nil
+}
+
 // service is for getting service path stored in url
 func (r *BaseRegistry) service(c common.URL) string {
 	return url.QueryEscape(c.Service())
@@ -178,13 +222,28 @@ func (r *BaseRegistry) RestartCallBack() bool {
 		}
 		logger.Infof("success to re-register service :%v", confIf.Key())
 	}
-	r.facadeBasedRegistry.InitListeners()
+
+	if flag {
+		r.facadeBasedRegistry.InitListeners()
+	}
 
 	return flag
 }
 
 // register for register url to registry, include init params
 func (r *BaseRegistry) register(c common.URL) error {
+	return r.processURL(c, r.facadeBasedRegistry.DoRegister, r.createPath)
+}
+
+// unregister for unregister url to registry, include init params
+func (r *BaseRegistry) unregister(c common.URL) error {
+	return r.processURL(c, r.facadeBasedRegistry.DoUnregister, nil)
+}
+
+func (r *BaseRegistry) processURL(c common.URL, f func(string, string) error, cpf createPathFunc) error {
+	if f == nil {
+		panic(" Must provide a `function(string, string) error` to process URL. ")
+	}
 	var (
 		err error
 		//revision   string
@@ -209,15 +268,15 @@ func (r *BaseRegistry) register(c common.URL) error {
 	switch role {
 
 	case common.PROVIDER:
-		dubboPath, rawURL, err = r.providerRegistry(c, params)
+		dubboPath, rawURL, err = r.providerRegistry(c, params, cpf)
 	case common.CONSUMER:
-		dubboPath, rawURL, err = r.consumerRegistry(c, params)
+		dubboPath, rawURL, err = r.consumerRegistry(c, params, cpf)
 	default:
 		return perrors.Errorf("@c{%v} type is not referencer or provider", c)
 	}
 	encodedURL = url.QueryEscape(rawURL)
 	dubboPath = strings.ReplaceAll(dubboPath, "$", "%24")
-	err = r.facadeBasedRegistry.DoRegister(dubboPath, encodedURL)
+	err = f(dubboPath, encodedURL)
 
 	if err != nil {
 		return perrors.WithMessagef(err, "register Node(path:%s, url:%s)", dubboPath, rawURL)
@@ -225,8 +284,15 @@ func (r *BaseRegistry) register(c common.URL) error {
 	return nil
 }
 
+// createPath will create dubbo path in register
+func (r *BaseRegistry) createPath(dubboPath string) error {
+	r.cltLock.Lock()
+	defer r.cltLock.Unlock()
+	return r.facadeBasedRegistry.CreatePath(dubboPath)
+}
+
 // providerRegistry for provider role do
-func (r *BaseRegistry) providerRegistry(c common.URL, params url.Values) (string, string, error) {
+func (r *BaseRegistry) providerRegistry(c common.URL, params url.Values, f createPathFunc) (string, string, error) {
 	var (
 		dubboPath string
 		rawURL    string
@@ -236,28 +302,20 @@ func (r *BaseRegistry) providerRegistry(c common.URL, params url.Values) (string
 		return "", "", perrors.Errorf("conf{Path:%s, Methods:%s}", c.Path, c.Methods)
 	}
 	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.PROVIDER])
-	func() {
-		r.cltLock.Lock()
-		defer r.cltLock.Unlock()
-		err = r.facadeBasedRegistry.CreatePath(dubboPath)
-	}()
+	if f != nil {
+		err = f(dubboPath)
+	}
 	if err != nil {
 		logger.Errorf("facadeBasedRegistry.CreatePath(path{%s}) = error{%#v}", dubboPath, perrors.WithStack(err))
 		return "", "", perrors.WithMessagef(err, "facadeBasedRegistry.CreatePath(path:%s)", dubboPath)
 	}
-	params.Add("anyhost", "true")
+	params.Add(constant.ANYHOST_KEY, "true")
 
 	// Dubbo java consumer to start looking for the provider url,because the category does not match,
 	// the provider will not find, causing the consumer can not start, so we use consumers.
-	// DubboRole               = [...]string{"consumer", "", "", "provider"}
-	// params.Add("category", (RoleType(PROVIDER)).Role())
-	params.Add("category", (common.RoleType(common.PROVIDER)).String())
-	params.Add("dubbo", "dubbo-provider-golang-"+constant.Version)
-
-	params.Add("side", (common.RoleType(common.PROVIDER)).Role())
 
 	if len(c.Methods) == 0 {
-		params.Add("methods", strings.Join(c.Methods, ","))
+		params.Add(constant.METHODS_KEY, strings.Join(c.Methods, ","))
 	}
 	logger.Debugf("provider url params:%#v", params)
 	var host string
@@ -276,7 +334,7 @@ func (r *BaseRegistry) providerRegistry(c common.URL, params url.Values) (string
 }
 
 // consumerRegistry for consumer role do
-func (r *BaseRegistry) consumerRegistry(c common.URL, params url.Values) (string, string, error) {
+func (r *BaseRegistry) consumerRegistry(c common.URL, params url.Values, f createPathFunc) (string, string, error) {
 	var (
 		dubboPath string
 		rawURL    string
@@ -284,23 +342,18 @@ func (r *BaseRegistry) consumerRegistry(c common.URL, params url.Values) (string
 	)
 	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.CONSUMER])
 
-	func() {
-		r.cltLock.Lock()
-		defer r.cltLock.Unlock()
-		err = r.facadeBasedRegistry.CreatePath(dubboPath)
-
-	}()
+	if f != nil {
+		err = f(dubboPath)
+	}
 	if err != nil {
 		logger.Errorf("facadeBasedRegistry.CreatePath(path{%s}) = error{%v}", dubboPath, perrors.WithStack(err))
 		return "", "", perrors.WithStack(err)
 	}
 	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.PROVIDER])
 
-	func() {
-		r.cltLock.Lock()
-		defer r.cltLock.Unlock()
-		err = r.facadeBasedRegistry.CreatePath(dubboPath)
-	}()
+	if f != nil {
+		err = f(dubboPath)
+	}
 
 	if err != nil {
 		logger.Errorf("facadeBasedRegistry.CreatePath(path{%s}) = error{%v}", dubboPath, perrors.WithStack(err))
@@ -308,9 +361,6 @@ func (r *BaseRegistry) consumerRegistry(c common.URL, params url.Values) (string
 	}
 
 	params.Add("protocol", c.Protocol)
-	params.Add("category", (common.RoleType(common.CONSUMER)).String())
-	params.Add("dubbo", "dubbogo-consumer-"+constant.Version)
-
 	rawURL = fmt.Sprintf("consumer://%s%s?%s", localIP, c.Path, params.Encode())
 	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), (common.RoleType(common.CONSUMER)).String())
 
@@ -328,20 +378,20 @@ func sleepWait(n int) {
 }
 
 // Subscribe :subscribe from registry, event will notify by notifyListener
-func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener) {
+func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener) error {
 	n := 0
 	for {
 		n++
 		if !r.IsAvailable() {
 			logger.Warnf("event listener game over.")
-			return
+			return perrors.New("BaseRegistry is not available.")
 		}
 
 		listener, err := r.facadeBasedRegistry.DoSubscribe(url)
 		if err != nil {
 			if !r.IsAvailable() {
 				logger.Warnf("event listener game over.")
-				return
+				return err
 			}
 			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
 			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
@@ -361,6 +411,37 @@ func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 		}
 		sleepWait(n)
 	}
+}
+
+// UnSubscribe URL
+func (r *BaseRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListener) error {
+	if !r.IsAvailable() {
+		logger.Warnf("event listener game over.")
+		return perrors.New("BaseRegistry is not available.")
+	}
+
+	listener, err := r.facadeBasedRegistry.DoUnsubscribe(url)
+	if err != nil {
+		if !r.IsAvailable() {
+			logger.Warnf("event listener game over.")
+			return perrors.New("BaseRegistry is not available.")
+		}
+		logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
+		return perrors.WithStack(err)
+	}
+
+	for {
+		if serviceEvent, err := listener.Next(); err != nil {
+			logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
+			listener.Close()
+			break
+		} else {
+			logger.Infof("update begin, service event: %v", serviceEvent.String())
+			notifyListener.Notify(serviceEvent)
+		}
+
+	}
+	return nil
 }
 
 // closeRegisters close and remove registry client and reset services map

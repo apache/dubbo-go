@@ -46,14 +46,12 @@ func newForkingClusterInvoker(directory cluster.Directory) protocol.Invoker {
 
 // Invoke ...
 func (invoker *forkingClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
-	err := invoker.checkWhetherDestroyed()
-	if err != nil {
+	if err := invoker.checkWhetherDestroyed(); err != nil {
 		return &protocol.RPCResult{Err: err}
 	}
 
 	invokers := invoker.directory.List(invocation)
-	err = invoker.checkInvokers(invokers, invocation)
-	if err != nil {
+	if err := invoker.checkInvokers(invokers, invocation); err != nil {
 		return &protocol.RPCResult{Err: err}
 	}
 
@@ -63,11 +61,9 @@ func (invoker *forkingClusterInvoker) Invoke(ctx context.Context, invocation pro
 	if forks < 0 || forks > len(invokers) {
 		selected = invokers
 	} else {
-		selected = make([]protocol.Invoker, 0)
-		loadbalance := getLoadBalance(invokers[0], invocation)
+		loadBalance := getLoadBalance(invokers[0], invocation)
 		for i := 0; i < forks; i++ {
-			ivk := invoker.doSelect(loadbalance, invocation, invokers, selected)
-			if ivk != nil {
+			if ivk := invoker.doSelect(loadBalance, invocation, invokers, selected); ivk != nil {
 				selected = append(selected, ivk)
 			}
 		}
@@ -77,8 +73,7 @@ func (invoker *forkingClusterInvoker) Invoke(ctx context.Context, invocation pro
 	for _, ivk := range selected {
 		go func(k protocol.Invoker) {
 			result := k.Invoke(ctx, invocation)
-			err := resultQ.Put(result)
-			if err != nil {
+			if err := resultQ.Put(result); err != nil {
 				logger.Errorf("resultQ put failed with exception: %v.\n", err)
 			}
 		}(ivk)
@@ -99,6 +94,5 @@ func (invoker *forkingClusterInvoker) Invoke(ctx context.Context, invocation pro
 	if !ok {
 		return &protocol.RPCResult{Err: fmt.Errorf("failed to forking invoke provider %v, but not legal resp", selected)}
 	}
-
 	return result
 }

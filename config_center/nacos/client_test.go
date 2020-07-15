@@ -31,7 +31,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 )
 
-func Test_newNacosClient(t *testing.T) {
+func TestNewNacosClient(t *testing.T) {
 	server := mockCommonNacosServer()
 	nacosURL := strings.ReplaceAll(server.URL, "http", "registry")
 	registryUrl, _ := common.NewURL(nacosURL)
@@ -51,5 +51,64 @@ func Test_newNacosClient(t *testing.T) {
 		c.client.Close()
 	}()
 	<-c.client.Done()
+	c.Destroy()
+}
+
+func TestSetNacosClient(t *testing.T) {
+	server := mockCommonNacosServer()
+	nacosURL := "registry://" + server.Listener.Addr().String()
+	registryUrl, _ := common.NewURL(nacosURL)
+	c := &nacosDynamicConfiguration{
+		url:  &registryUrl,
+		done: make(chan struct{}),
+	}
+	var client *NacosClient
+	client = &NacosClient{
+		name:       nacosClientName,
+		NacosAddrs: []string{nacosURL},
+		Timeout:    15 * time.Second,
+		exit:       make(chan struct{}),
+		onceClose: func() {
+			close(client.exit)
+		},
+	}
+	c.SetNacosClient(client)
+	err := ValidateNacosClient(c, WithNacosName(nacosClientName))
+	assert.NoError(t, err)
+	c.wg.Add(1)
+	go HandleClientRestart(c)
+	go func() {
+		// c.client.Close() and <-c.client.Done() have order requirements.
+		// If c.client.Close() is called first.It is possible that "go HandleClientRestart(c)"
+		// sets c.client to nil before calling c.client.Done().
+		time.Sleep(time.Second)
+		c.client.Close()
+	}()
+	<-c.client.Done()
+	c.Destroy()
+}
+
+func TestNewNacosClient_connectError(t *testing.T) {
+	nacosURL := "registry://127.0.0.1:8888"
+	registryUrl, err := common.NewURL(nacosURL)
+	assert.NoError(t, err)
+	c := &nacosDynamicConfiguration{
+		url:  &registryUrl,
+		done: make(chan struct{}),
+	}
+	err = ValidateNacosClient(c, WithNacosName(nacosClientName))
+	assert.NoError(t, err)
+	c.wg.Add(1)
+	go HandleClientRestart(c)
+	go func() {
+		// c.client.Close() and <-c.client.Done() have order requirements.
+		// If c.client.Close() is called first.It is possible that "go HandleClientRestart(c)"
+		// sets c.client to nil before calling c.client.Done().
+		time.Sleep(time.Second)
+		c.client.Close()
+	}()
+	<-c.client.Done()
+	// let client do retry
+	time.Sleep(5 * time.Second)
 	c.Destroy()
 }

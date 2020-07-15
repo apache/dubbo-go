@@ -29,7 +29,7 @@ Apache License, Version 2.0
 
 基于dubbo的extension模块和分层的代码设计(包括 protocol layer, registry layer, cluster layer, config 等等)。我们的目标是：你可以对这些分层接口进行新的实现，并通过调用 extension 模块的“ extension.SetXXX ”方法来覆盖 dubbo-go [同 go-for-apache-dubbo ]的默认实现，以完成自己的特殊需求而无需修改源代码。同时，欢迎你为社区贡献有用的拓展实现。
 
-![框架设计](https://raw.githubusercontent.com/wiki/dubbo/dubbo-go/dubbo-go%E4%BB%A3%E7%A0%81%E5%88%86%E5%B1%82%E8%AE%BE%E8%AE%A1.png)
+![dubbo go extend](./doc/pic/arch/dubbo-go-ext.png)
 
 关于详细设计请阅读 [code layered design](https://github.com/apache/dubbo-go/wiki/dubbo-go-V1.0-design)
 
@@ -107,6 +107,7 @@ Apache License, Version 2.0
     * [For jsonrpc](https://github.com/apache/dubbo-go/pull/335)
     * [For dubbo](https://github.com/apache/dubbo-go/pull/344)
     * [For grpc](https://github.com/apache/dubbo-go/pull/397)
+
 
 - 其他功能支持:
     * 启动时检查

@@ -22,14 +22,13 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-// Authenticator
+// Authenticator defines how an Authenticator works.
+// Custom Authenticator must be set by calling auth.SetAuthenticator before use.
 type Authenticator interface {
 
-	// Sign
-	// give a sign to request
+	// Sign adds signature to the invocation
 	Sign(protocol.Invocation, *common.URL) error
 
-	// Authenticate
-	// verify the signature of the request is valid or not
+	// Authenticate verifies the signature of the request
 	Authenticate(protocol.Invocation, *common.URL) error
 }

@@ -39,14 +39,14 @@ func init() {
 
 var grpcProtocol *GrpcProtocol
 
-// GrpcProtocol ...
+// GrpcProtocol is gRPC protocol
 type GrpcProtocol struct {
 	protocol.BaseProtocol
 	serverMap  map[string]*Server
 	serverLock sync.Mutex
 }
 
-// NewGRPCProtocol ...
+// NewGRPCProtocol creates new gRPC protocol
 func NewGRPCProtocol() *GrpcProtocol {
 	return &GrpcProtocol{
 		BaseProtocol: protocol.NewBaseProtocol(),
@@ -54,7 +54,7 @@ func NewGRPCProtocol() *GrpcProtocol {
 	}
 }
 
-// Export ...
+// Export gRPC service for remote invocation
 func (gp *GrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetUrl()
 	serviceKey := url.ServiceKey()
@@ -84,7 +84,7 @@ func (gp *GrpcProtocol) openServer(url common.URL) {
 	}
 }
 
-// Refer ...
+// Refer a remote gRPC service
 func (gp *GrpcProtocol) Refer(url common.URL) protocol.Invoker {
 	invoker := NewGrpcInvoker(url, NewClient(url))
 	gp.SetInvokers(invoker)
@@ -92,7 +92,7 @@ func (gp *GrpcProtocol) Refer(url common.URL) protocol.Invoker {
 	return invoker
 }
 
-// Destroy ...
+// Destroy will destroy gRPC all invoker and exporter, so it only is called once.
 func (gp *GrpcProtocol) Destroy() {
 	logger.Infof("GrpcProtocol destroy.")
 
@@ -104,7 +104,7 @@ func (gp *GrpcProtocol) Destroy() {
 	}
 }
 
-// GetProtocol ...
+// GetProtocol gets gRPC protocol , will create if null.
 func GetProtocol() protocol.Protocol {
 	if grpcProtocol == nil {
 		grpcProtocol = NewGRPCProtocol()

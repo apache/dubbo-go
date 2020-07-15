@@ -19,7 +19,6 @@ package directory
 
 import (
 	"sync"
-	"time"
 )
 
 import (
@@ -28,6 +27,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/cluster/directory"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
@@ -42,67 +42,59 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
-// Options ...
-type Options struct {
-	serviceTTL time.Duration
+func init() {
+	extension.SetDefaultRegistryDirectory(NewRegistryDirectory)
 }
 
-// Option ...
-type Option func(*Options)
-
-type registryDirectory struct {
+// RegistryDirectory implementation of Directory:
+// Invoker list returned from this Directory's list method have been filtered by Routers
+type RegistryDirectory struct {
 	directory.BaseDirectory
 	cacheInvokers                  []protocol.Invoker
 	listenerLock                   sync.Mutex
 	serviceType                    string
 	registry                       registry.Registry
-	cacheInvokersMap               *sync.Map //use sync.map
+	cacheInvokersMap               *sync.Map // use sync.map
 	cacheOriginUrl                 *common.URL
 	configurators                  []config_center.Configurator
 	consumerConfigurationListener  *consumerConfigurationListener
 	referenceConfigurationListener *referenceConfigurationListener
-	Options
-	serviceKey string
-	forbidden  atomic.Bool
+	serviceKey                     string
+	forbidden                      atomic.Bool
 }
 
-// NewRegistryDirectory ...
-func NewRegistryDirectory(url *common.URL, registry registry.Registry, opts ...Option) (*registryDirectory, error) {
-	options := Options{
-		//default 300s
-		serviceTTL: time.Duration(300e9),
-	}
-	for _, opt := range opts {
-		opt(&options)
-	}
+// NewRegistryDirectory will create a new RegistryDirectory
+func NewRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.Directory, error) {
 	if url.SubURL == nil {
 		return nil, perrors.Errorf("url is invalid, suburl can not be nil")
 	}
-	dir := &registryDirectory{
+	dir := &RegistryDirectory{
 		BaseDirectory:    directory.NewBaseDirectory(url),
 		cacheInvokers:    []protocol.Invoker{},
 		cacheInvokersMap: &sync.Map{},
 		serviceType:      url.SubURL.Service(),
 		registry:         registry,
-		Options:          options,
 	}
 	dir.consumerConfigurationListener = newConsumerConfigurationListener(dir)
+
+	go dir.subscribe(url.SubURL)
 	return dir, nil
 }
 
-//subscribe from registry
-func (dir *registryDirectory) Subscribe(url *common.URL) {
+// subscribe from registry
+func (dir *RegistryDirectory) subscribe(url *common.URL) {
 	dir.consumerConfigurationListener.addNotifyListener(dir)
 	dir.referenceConfigurationListener = newReferenceConfigurationListener(dir, url)
 	dir.registry.Subscribe(url, dir)
 }
 
-func (dir *registryDirectory) Notify(event *registry.ServiceEvent) {
+// Notify monitor changes from registry,and update the cacheServices
+func (dir *RegistryDirectory) Notify(event *registry.ServiceEvent) {
 	go dir.update(event)
 }
 
-//subscribe service from registry, and update the cacheServices
-func (dir *registryDirectory) update(res *registry.ServiceEvent) {
+// update the cacheServices and subscribe service from registry
+func (dir *RegistryDirectory) update(res *registry.ServiceEvent) {
 	if res == nil {
 		return
 	}
@@ -111,37 +103,36 @@ func (dir *registryDirectory) update(res *registry.ServiceEvent) {
 	dir.refreshInvokers(res)
 }
 
-func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
+func (dir *RegistryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 	var (
 		url        *common.URL
 		oldInvoker protocol.Invoker = nil
 	)
-	//judge is override or others
+	// judge is override or others
 	if res != nil {
 		url = &res.Service
-		//1.for override url in 2.6.x
+		// 1.for override url in 2.6.x
 		if url.Protocol == constant.OVERRIDE_PROTOCOL ||
 			url.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY) == constant.CONFIGURATORS_CATEGORY {
 			dir.configurators = append(dir.configurators, extension.GetDefaultConfigurator(url))
 			url = nil
-		} else if url.Protocol == constant.ROUTER_PROTOCOL || //2.for router
+		} else if url.Protocol == constant.ROUTER_PROTOCOL || // 2.for router
 			url.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY) == constant.ROUTER_CATEGORY {
 			url = nil
+
 		}
 		switch res.Action {
 		case remoting.EventTypeAdd, remoting.EventTypeUpdate:
 			logger.Infof("selector add service url{%s}", res.Service)
-			var urls []*common.URL
 
-			for _, v := range directory.GetRouterURLSet().Values() {
+			var urls []*common.URL
+			for _, v := range config.GetRouterURLSet().Values() {
 				urls = append(urls, v.(*common.URL))
 			}
 
 			if len(urls) > 0 {
 				dir.SetRouters(urls)
 			}
-
-			//dir.cacheService.EventTypeAdd(res.Path, dir.serviceTTL)
 			oldInvoker = dir.cacheInvoker(url)
 		case remoting.EventTypeDel:
 			oldInvoker = dir.uncacheInvoker(url)
@@ -163,10 +154,12 @@ func (dir *registryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 
 }
 
-func (dir *registryDirectory) toGroupInvokers() []protocol.Invoker {
-	newInvokersList := []protocol.Invoker{}
+func (dir *RegistryDirectory) toGroupInvokers() []protocol.Invoker {
+	var (
+		err             error
+		newInvokersList []protocol.Invoker
+	)
 	groupInvokersMap := make(map[string][]protocol.Invoker)
-	groupInvokersList := []protocol.Invoker{}
 
 	dir.cacheInvokersMap.Range(func(key, value interface{}) bool {
 		newInvokersList = append(newInvokersList, value.(protocol.Invoker))
@@ -182,25 +175,30 @@ func (dir *registryDirectory) toGroupInvokers() []protocol.Invoker {
 			groupInvokersMap[group] = []protocol.Invoker{invoker}
 		}
 	}
+	groupInvokersList := make([]protocol.Invoker, 0, len(groupInvokersMap))
 	if len(groupInvokersMap) == 1 {
-		//len is 1 it means no group setting ,so do not need cluster again
+		// len is 1 it means no group setting ,so do not need cluster again
 		for _, invokers := range groupInvokersMap {
 			groupInvokersList = invokers
 		}
 	} else {
 		for _, invokers := range groupInvokersMap {
 			staticDir := directory.NewStaticDirectory(invokers)
-			cluster := extension.GetCluster(dir.GetUrl().SubURL.GetParam(constant.CLUSTER_KEY, constant.DEFAULT_CLUSTER))
-			staticDir.BuildRouterChain(invokers)
-			groupInvokersList = append(groupInvokersList, cluster.Join(staticDir))
+			cst := extension.GetCluster(dir.GetUrl().SubURL.GetParam(constant.CLUSTER_KEY, constant.DEFAULT_CLUSTER))
+			err = staticDir.BuildRouterChain(invokers)
+			if err != nil {
+				logger.Error(err)
+				continue
+			}
+			groupInvokersList = append(groupInvokersList, cst.Join(staticDir))
 		}
 	}
 
 	return groupInvokersList
 }
 
-// uncacheInvoker return abandoned Invoker,if no Invoker to be abandoned,return nil
-func (dir *registryDirectory) uncacheInvoker(url *common.URL) protocol.Invoker {
+// uncacheInvoker will return abandoned Invoker,if no Invoker to be abandoned,return nil
+func (dir *RegistryDirectory) uncacheInvoker(url *common.URL) protocol.Invoker {
 	logger.Debugf("service will be deleted in cache invokers: invokers key is  %s!", url.Key())
 	if cacheInvoker, ok := dir.cacheInvokersMap.Load(url.Key()); ok {
 		dir.cacheInvokersMap.Delete(url.Key())
@@ -209,8 +207,8 @@ func (dir *registryDirectory) uncacheInvoker(url *common.URL) protocol.Invoker {
 	return nil
 }
 
-// cacheInvoker return abandoned Invoker,if no Invoker to be abandoned,return nil
-func (dir *registryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
+// cacheInvoker will return abandoned Invoker,if no Invoker to be abandoned,return nil
+func (dir *RegistryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
 	dir.overrideUrl(dir.GetDirectoryUrl())
 	referenceUrl := dir.GetDirectoryUrl().SubURL
 
@@ -223,7 +221,7 @@ func (dir *registryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
 		logger.Error("URL is nil ,pls check if service url is subscribe successfully!")
 		return nil
 	}
-	//check the url's protocol is equal to the protocol which is configured in reference config or referenceUrl is not care about protocol
+	// check the url's protocol is equal to the protocol which is configured in reference config or referenceUrl is not care about protocol
 	if url.Protocol == referenceUrl.Protocol || referenceUrl.Protocol == "" {
 		newUrl := common.MergeUrl(url, referenceUrl)
 		dir.overrideUrl(newUrl)
@@ -245,8 +243,8 @@ func (dir *registryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
 	return nil
 }
 
-//select the protocol invokers from the directory
-func (dir *registryDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
+// List selected protocol invokers from the directory
+func (dir *RegistryDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
 	invokers := dir.cacheInvokers
 	routerChain := dir.RouterChain()
 
@@ -256,7 +254,8 @@ func (dir *registryDirectory) List(invocation protocol.Invocation) []protocol.In
 	return routerChain.Route(invokers, dir.cacheOriginUrl, invocation)
 }
 
-func (dir *registryDirectory) IsAvailable() bool {
+// IsAvailable  whether the directory is available
+func (dir *RegistryDirectory) IsAvailable() bool {
 	if !dir.BaseDirectory.IsAvailable() {
 		return dir.BaseDirectory.IsAvailable()
 	}
@@ -270,8 +269,9 @@ func (dir *registryDirectory) IsAvailable() bool {
 	return false
 }
 
-func (dir *registryDirectory) Destroy() {
-	//TODO:unregister & unsubscribe
+// Destroy method
+func (dir *RegistryDirectory) Destroy() {
+	// TODO:unregister & unsubscribe
 	dir.BaseDirectory.Destroy(func() {
 		invokers := dir.cacheInvokers
 		dir.cacheInvokers = []protocol.Invoker{}
@@ -281,7 +281,7 @@ func (dir *registryDirectory) Destroy() {
 	})
 }
 
-func (dir *registryDirectory) overrideUrl(targetUrl *common.URL) {
+func (dir *RegistryDirectory) overrideUrl(targetUrl *common.URL) {
 	doOverrideUrl(dir.configurators, targetUrl)
 	doOverrideUrl(dir.consumerConfigurationListener.Configurators(), targetUrl)
 	doOverrideUrl(dir.referenceConfigurationListener.Configurators(), targetUrl)
@@ -295,11 +295,11 @@ func doOverrideUrl(configurators []config_center.Configurator, targetUrl *common
 
 type referenceConfigurationListener struct {
 	registry.BaseConfigurationListener
-	directory *registryDirectory
+	directory *RegistryDirectory
 	url       *common.URL
 }
 
-func newReferenceConfigurationListener(dir *registryDirectory, url *common.URL) *referenceConfigurationListener {
+func newReferenceConfigurationListener(dir *RegistryDirectory, url *common.URL) *referenceConfigurationListener {
 	listener := &referenceConfigurationListener{directory: dir, url: url}
 	listener.InitWith(
 		url.EncodedServiceKey()+constant.CONFIGURATORS_SUFFIX,
@@ -309,6 +309,7 @@ func newReferenceConfigurationListener(dir *registryDirectory, url *common.URL) 
 	return listener
 }
 
+// Process handle events and update Invokers
 func (l *referenceConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
 	l.BaseConfigurationListener.Process(event)
 	l.directory.refreshInvokers(nil)
@@ -317,10 +318,10 @@ func (l *referenceConfigurationListener) Process(event *config_center.ConfigChan
 type consumerConfigurationListener struct {
 	registry.BaseConfigurationListener
 	listeners []registry.NotifyListener
-	directory *registryDirectory
+	directory *RegistryDirectory
 }
 
-func newConsumerConfigurationListener(dir *registryDirectory) *consumerConfigurationListener {
+func newConsumerConfigurationListener(dir *RegistryDirectory) *consumerConfigurationListener {
 	listener := &consumerConfigurationListener{directory: dir}
 	listener.InitWith(
 		config.GetConsumerConfig().ApplicationConfig.Name+constant.CONFIGURATORS_SUFFIX,
@@ -334,6 +335,7 @@ func (l *consumerConfigurationListener) addNotifyListener(listener registry.Noti
 	l.listeners = append(l.listeners, listener)
 }
 
+// Process handles events from Configuration Center and update Invokers
 func (l *consumerConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
 	l.BaseConfigurationListener.Process(event)
 	l.directory.refreshInvokers(nil)

@@ -20,7 +20,7 @@ set zkJarPath=remoting/zookeeper/zookeeper-4unittest/contrib/fatjar
 set zkJar=%zkJarPath%/%zkJarName%
 
 if not exist "%zkJar%" (
-   md %zkJarPath%
+   md "%zkJarPath%"
    curl -L %remoteJarUrl% -o %zkJar%
 )
 
@@ -35,3 +35,6 @@ xcopy /f "%zkJar%" "cluster/router/chain/zookeeper-4unittest/contrib/fatjar/"
 
 md cluster\router\condition\zookeeper-4unittest\contrib\fatjar
 xcopy /f "%zkJar%" "cluster/router/condition/zookeeper-4unittest/contrib/fatjar/"
+
+md metadata\report\zookeeper\zookeeper-4unittest\contrib\fatjar
+xcopy /f "%zkJar%" "metadata/report/zookeeper/zookeeper-4unittest/contrib/fatjar/"

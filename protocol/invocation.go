@@ -21,14 +21,26 @@ import (
 	"reflect"
 )
 
-// Invocation ...
+// Invocation is a invocation for each remote method.
 type Invocation interface {
+	// MethodName gets invocation method name.
 	MethodName() string
+	// ParameterTypes gets invocation parameter types.
 	ParameterTypes() []reflect.Type
+	// ParameterValues gets invocation parameter values.
 	ParameterValues() []reflect.Value
+	// Arguments gets arguments.
 	Arguments() []interface{}
+	// Reply gets response of request
 	Reply() interface{}
+	// Attachments gets all attachments
 	Attachments() map[string]string
+	// AttachmentsByKey gets attachment by key , if nil then return default value
 	AttachmentsByKey(string, string) string
+	// Attributes refers to dubbo 2.7.6.  It is different from attachment. It is used in internal process.
+	Attributes() map[string]interface{}
+	// AttributeByKey gets attribute by key , if nil then return default value
+	AttributeByKey(string, interface{}) interface{}
+	// Invoker gets the invoker in current context.
 	Invoker() Invoker
 }

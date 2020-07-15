@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	// DefaultKey ...
+	// DefaultKey for default Configurator
 	DefaultKey = "default"
 )
 
@@ -33,12 +33,12 @@ var (
 	configurator = make(map[string]getConfiguratorFunc)
 )
 
-// SetConfigurator ...
+// SetConfigurator sets the getConfiguratorFunc with @name
 func SetConfigurator(name string, v getConfiguratorFunc) {
 	configurator[name] = v
 }
 
-// GetConfigurator ...
+// GetConfigurator finds the Configurator with @name
 func GetConfigurator(name string, url *common.URL) config_center.Configurator {
 	if configurator[name] == nil {
 		panic("configurator for " + name + " is not existing, make sure you have import the package.")
@@ -47,12 +47,12 @@ func GetConfigurator(name string, url *common.URL) config_center.Configurator {
 
 }
 
-// SetDefaultConfigurator ...
+// SetDefaultConfigurator sets the default Configurator
 func SetDefaultConfigurator(v getConfiguratorFunc) {
 	configurator[DefaultKey] = v
 }
 
-// GetDefaultConfigurator ...
+// GetDefaultConfigurator gets default configurator
 func GetDefaultConfigurator(url *common.URL) config_center.Configurator {
 	if configurator[DefaultKey] == nil {
 		panic("configurator for default is not existing, make sure you have import the package.")
@@ -61,7 +61,7 @@ func GetDefaultConfigurator(url *common.URL) config_center.Configurator {
 
 }
 
-// GetDefaultConfiguratorFunc ...
+// GetDefaultConfiguratorFunc gets default configurator function
 func GetDefaultConfiguratorFunc() getConfiguratorFunc {
 	if configurator[DefaultKey] == nil {
 		panic("configurator for default is not existing, make sure you have import the package.")

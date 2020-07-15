@@ -18,7 +18,7 @@
 package kubernetes
 
 import (
-	"time"
+	"testing"
 )
 
 import (
@@ -67,9 +67,7 @@ func (m *mockDataListener) DataChange(eventType remoting.Event) bool {
 	return true
 }
 
-func (s *KubernetesClientTestSuite) TestListener() {
-
-	t := s.T()
+func TestListener(t *testing.T) {
 
 	var tests = []struct {
 		input struct {
@@ -83,15 +81,13 @@ func (s *KubernetesClientTestSuite) TestListener() {
 		}{k: "/dubbo", v: changedData}},
 	}
 
-	c := s.initClient()
+	c := getTestClient(t)
 	defer c.Close()
 
 	listener := NewEventListener(c)
 	dataListener := &mockDataListener{client: c, changedData: changedData, rc: make(chan remoting.Event)}
 	listener.ListenServiceEvent("/dubbo", dataListener)
 
-	// NOTICE:  direct listen will lose create msg
-	time.Sleep(time.Second)
 	for _, tc := range tests {
 
 		k := tc.input.k
