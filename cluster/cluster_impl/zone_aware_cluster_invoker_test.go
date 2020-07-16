@@ -83,6 +83,7 @@ func Test_ZoneWareInvokerWithWeightSuccess(t *testing.T) {
 		invoker := mock.NewMockInvoker(ctrl)
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 		invoker.EXPECT().GetUrl().Return(url).AnyTimes()
+		url.SetParam(constant.REGISTRY_KEY+"."+constant.REGISTRY_LABEL_KEY, "true")
 		if 1 == i {
 			url.SetParam(constant.REGISTRY_KEY+"."+constant.WEIGHT_KEY, w1)
 			invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
@@ -115,7 +116,7 @@ func Test_ZoneWareInvokerWithWeightSuccess(t *testing.T) {
 		}
 		assert.NoError(t, result.Error())
 	}
-	t.Logf("loop count : %d, w1 value : %s | count : %d, w2 value : %s | count : %d", loop,
+	t.Logf("loop count : %d, w1 height : %s | count : %d, w2 height : %s | count : %d", loop,
 		w1, w1Count, w2, w2Count)
 }
 
