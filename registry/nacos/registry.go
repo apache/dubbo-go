@@ -59,6 +59,7 @@ func init() {
 type nacosRegistry struct {
 	*common.URL
 	namingClient naming_client.INamingClient
+	registryUrls []common.URL
 }
 
 func getNacosConfig(url *common.URL) (map[string]interface{}, error) {
@@ -116,6 +117,7 @@ func newNacosRegistry(url *common.URL) (registry.Registry, error) {
 	registry := nacosRegistry{
 		URL:          url,
 		namingClient: client,
+		registryUrls: make([]common.URL, 16, 16),
 	}
 	return &registry, nil
 }
@@ -176,6 +178,21 @@ func createRegisterParam(url common.URL, serviceName string) vo.RegisterInstance
 	return instance
 }
 
+func createDegisterParam(url common.URL, serviceName string) vo.DeregisterInstanceParam {
+	if len(url.Ip) == 0 {
+		url.Ip = localIP
+	}
+	if len(url.Port) == 0 || url.Port == "0" {
+		url.Port = "80"
+	}
+	port, _ := strconv.Atoi(url.Port)
+	return vo.DeregisterInstanceParam{
+		Ip:          url.Ip,
+		Port:        uint64(port),
+		ServiceName: serviceName,
+		Ephemeral:   true,
+	}
+}
 func (nr *nacosRegistry) Register(url common.URL) error {
 	serviceName := getServiceName(url)
 	param := createRegisterParam(url, serviceName)
@@ -185,6 +202,20 @@ func (nr *nacosRegistry) Register(url common.URL) error {
 	}
 	if !isRegistry {
 		return perrors.New("registry [" + serviceName + "] to  nacos failed")
+	}
+	nr.registryUrls = append(nr.registryUrls, url)
+	return nil
+}
+
+func (nr *nacosRegistry) DeRegister(url common.URL) error {
+	serviceName := getServiceName(url)
+	param := createDegisterParam(url, serviceName)
+	isDeRegistry, err := nr.namingClient.DeregisterInstance(param)
+	if err != nil {
+		return err
+	}
+	if !isDeRegistry {
+		return perrors.New("DeRegistry [" + serviceName + "] to  nacos failed")
 	}
 	return nil
 }
@@ -236,5 +267,12 @@ func (nr *nacosRegistry) IsAvailable() bool {
 }
 
 func (nr *nacosRegistry) Destroy() {
+	logger.Info("Destroy nacos")
+	for _, url := range nr.registryUrls {
+		err := nr.DeRegister(url)
+		if err != nil {
+			logger.Errorf("Deregister url:%+v  err:%v", url, err.Error())
+		}
+	}
 	return
 }
