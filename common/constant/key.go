@@ -197,11 +197,11 @@ const (
 	// Priority Priority key in router module
 	RouterPriority = "priority"
 	// RouterScope Scope key in router module
-	RouterScope = "scope" 
+	RouterScope = "scope"
 	// RouterApplicationScope Scope key in router module
 	RouterApplicationScope = "application"
 	// RouterServiceScope Scope key in router module
-	RouterServiceScope = "service" 
+	RouterServiceScope = "service"
 	// RouterRuleKey defines the key of the router, service's/application's name
 	RouterRuleKey = "key"
 	// ForceUseTag is the tag in attachment

@@ -33,9 +33,11 @@ var (
 	routerURLSet = gxset.NewSet()
 )
 
+// LocalRouterRules defines the local router config structure
 type LocalRouterRules struct {
 	RouterRules []interface{} `yaml:"routerRules"`
 }
+
 // RouterInit Load config file to init router config
 func RouterInit(confRouterFile string) error {
 	bytes, err := yaml.LoadYMLConfig(confRouterFile)
@@ -58,7 +60,7 @@ func RouterInit(confRouterFile string) error {
 	return err
 }
 
-func initRouterConfig (content []byte,factories map[string]router.FilePriorityRouterFactory) error {
+func initRouterConfig(content []byte, factories map[string]router.FilePriorityRouterFactory) error {
 	logger.Warnf("get fileRouterFactories len{%+v})", len(factories))
 	for k, factory := range factories {
 		r, e := factory.NewFileRouter(content)
@@ -72,6 +74,7 @@ func initRouterConfig (content []byte,factories map[string]router.FilePriorityRo
 	return perrors.Errorf("no file router exists for parse %s , implement router.FIleRouterFactory please.", confRouterFile)
 }
 
+// GetRouterURLSet exposes the routerURLSet
 func GetRouterURLSet() *gxset.HashSet {
 	return routerURLSet
 }

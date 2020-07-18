@@ -26,9 +26,9 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/cluster/router"
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/yaml"
 )
 
@@ -58,7 +58,7 @@ func getRule(rawRule string) (*RouterRule, error) {
 		return r, err
 	}
 	r.RawRule = rawRule
-	if len(r.Conditions) != 0 && r.Key != "" && (r.Scope == constant.RouterApplicationScope || r.Scope == constant.RouterServiceScope){
+	if len(r.Conditions) != 0 && r.Key != "" && (r.Scope == constant.RouterApplicationScope || r.Scope == constant.RouterServiceScope) {
 		r.Valid = true
 	}
 
