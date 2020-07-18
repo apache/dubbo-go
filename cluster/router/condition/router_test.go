@@ -15,46 +15,43 @@
  * limitations under the License.
  */
 
- package condition
+package condition
 
- import (
-	 "testing"
- )
- 
- import (
-	 "github.com/stretchr/testify/assert"
- )
+import (
+	"testing"
+)
 
- import (
+import (
 	"github.com/dubbogo/gost/container/set"
- )
+	"github.com/stretchr/testify/assert"
+)
 
- func TestParseRule(t *testing.T) {
-	 testString := ``
-	 matchPair, err := parseRule(testString)
-	 assert.Nil(t, err)
-	 assert.EqualValues(t, matchPair, make(map[string]MatchPair, 16))
+func TestParseRule(t *testing.T) {
+	testString := ``
+	matchPair, err := parseRule(testString)
+	assert.Nil(t, err)
+	assert.EqualValues(t, matchPair, make(map[string]MatchPair, 16))
 
-	 testString = `method!=sayHello&application=sayGoodBye`
-	 matchPair, err = parseRule(testString)
-	 assert.Nil(t, err)
-	 assert.EqualValues(t, matchPair["method"].Mismatches, gxset.NewSet("sayHello"))
-	 assert.EqualValues(t, matchPair["application"].Matches, gxset.NewSet("sayGoodBye"))
+	testString = `method!=sayHello&application=sayGoodBye`
+	matchPair, err = parseRule(testString)
+	assert.Nil(t, err)
+	assert.EqualValues(t, matchPair["method"].Mismatches, gxset.NewSet("sayHello"))
+	assert.EqualValues(t, matchPair["application"].Matches, gxset.NewSet("sayGoodBye"))
 
-	 testString = `noRule`
-	 matchPair, err = parseRule(testString)
-	 assert.Nil(t, err)
-	 assert.EqualValues(t, matchPair["noRule"].Mismatches, gxset.NewSet())
-	 assert.EqualValues(t, matchPair["noRule"].Matches, gxset.NewSet())
+	testString = `noRule`
+	matchPair, err = parseRule(testString)
+	assert.Nil(t, err)
+	assert.EqualValues(t, matchPair["noRule"].Mismatches, gxset.NewSet())
+	assert.EqualValues(t, matchPair["noRule"].Matches, gxset.NewSet())
 
-	 testString = `method!=sayHello,sayGoodBye`
-	 matchPair, err = parseRule(testString)
-	 assert.Nil(t, err)
-	 assert.EqualValues(t, matchPair["method"].Mismatches, gxset.NewSet(`sayHello`, `sayGoodBye`))
-	 
-	 testString = `method!=sayHello,sayGoodDay=sayGoodBye`
-	 matchPair, err = parseRule(testString)
-	 assert.Nil(t, err)
-	 assert.EqualValues(t, matchPair["method"].Mismatches, gxset.NewSet(`sayHello`, `sayGoodDay`))
-	 assert.EqualValues(t, matchPair["method"].Matches, gxset.NewSet(`sayGoodBye`))
- }
+	testString = `method!=sayHello,sayGoodBye`
+	matchPair, err = parseRule(testString)
+	assert.Nil(t, err)
+	assert.EqualValues(t, matchPair["method"].Mismatches, gxset.NewSet(`sayHello`, `sayGoodBye`))
+
+	testString = `method!=sayHello,sayGoodDay=sayGoodBye`
+	matchPair, err = parseRule(testString)
+	assert.Nil(t, err)
+	assert.EqualValues(t, matchPair["method"].Mismatches, gxset.NewSet(`sayHello`, `sayGoodDay`))
+	assert.EqualValues(t, matchPair["method"].Matches, gxset.NewSet(`sayGoodBye`))
+}

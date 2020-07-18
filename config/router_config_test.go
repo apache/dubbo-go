@@ -23,6 +23,7 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/container/set"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -65,8 +66,9 @@ func TestRouterInit(t *testing.T) {
 
 	assert.Equal(t, 1, routerURLSet.Size())
 
+	routerURLSet = gxset.NewSet()
 	errPro = RouterInit(testMultiRouterYML)
 	assert.NoError(t, errPro)
 
-	assert.Equal(t, 3, GetRouterURLSet().Size())
+	assert.Equal(t, 2, routerURLSet.Size())
 }

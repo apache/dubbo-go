@@ -73,9 +73,9 @@ key: test-provider
 conditions:
   - >
     method!=sayHello =>`
-		rule, e = getRule(testyml)
-		assert.Nil(t, e)
-		assert.False(t, rule.Valid)
+	rule, e = getRule(testyml)
+	assert.Nil(t, e)
+	assert.False(t, rule.Valid)
 }
 
 func TestIsMatchGlobPattern(t *testing.T) {
