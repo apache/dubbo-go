@@ -28,16 +28,19 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
+// nolint
 type RestExporter struct {
 	protocol.BaseExporter
 }
 
+// NewRestExporter returns a RestExporter
 func NewRestExporter(key string, invoker protocol.Invoker, exporterMap *sync.Map) *RestExporter {
 	return &RestExporter{
 		BaseExporter: *protocol.NewBaseExporter(key, invoker, exporterMap),
 	}
 }
 
+// Unexport unexport the RestExporter
 func (re *RestExporter) Unexport() {
 	serviceId := re.GetInvoker().GetUrl().GetParam(constant.BEAN_NAME_KEY, "")
 	interfaceName := re.GetInvoker().GetUrl().GetParam(constant.INTERFACE_KEY, "")

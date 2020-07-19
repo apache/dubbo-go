@@ -22,6 +22,7 @@ import (
 	"github.com/apache/dubbo-go/registry"
 )
 
+// SubscribedURLsSynthesizer is used to synthesize the subscribed url
 type SubscribedURLsSynthesizer interface {
 	// Supports the synthesis of the subscribed url or not
 	Support(subscribedURL *common.URL) bool
