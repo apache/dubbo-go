@@ -26,7 +26,7 @@ import (
 )
 
 import (
-	"reflect"
+	reflect "reflect"
 )
 
 // MockTpsLimitStrategy is a mock of TpsLimitStrategy interface
