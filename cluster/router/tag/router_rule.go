@@ -22,9 +22,27 @@ import (
 	"github.com/apache/dubbo-go/common/yaml"
 )
 
+/**
+ * %YAML1.2
+ * ---
+ * force: true
+ * runtime: false
+ * enabled: true
+ * priority: 1
+ * key: demo-provider
+ * tags:
+ * - name: tag1
+ * addresses: [ip1, ip2]
+ * - name: tag2
+ * addresses: [ip3, ip4]
+ * ...
+ */
 // RouterRule RouterRule config read from config file or config center
 type RouterRule struct {
 	router.BaseRouterRule `yaml:",inline""`
+	tags                  []tag
+	addressToTagNames     map[string][]string
+	tagNameToAddresses    map[string][]string
 }
 
 func getRule(rawRule string) (*RouterRule, error) {
@@ -34,5 +52,32 @@ func getRule(rawRule string) (*RouterRule, error) {
 		return r, err
 	}
 	r.RawRule = rawRule
+	// TODO init tags
 	return r, nil
+}
+
+func (t *RouterRule) getAddresses() []string {
+	// TODO get all tag addresses
+	return nil
+}
+
+func (t *RouterRule) getTagNames() []string {
+	// TODO get all tag names
+	return nil
+}
+
+func (t *RouterRule) getAddressToTagNames() map[string][]string {
+	return t.addressToTagNames
+}
+
+func (t *RouterRule) getTagNameToAddresses() map[string][]string {
+	return t.tagNameToAddresses
+}
+
+func (t *RouterRule) getTags() []tag {
+	return t.tags
+}
+
+func (t *RouterRule) setTags(tags []tag) {
+	t.tags = tags
 }
