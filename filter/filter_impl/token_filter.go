@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	// TOKEN ...
+	// nolint
 	TOKEN = "token"
 )
 
@@ -66,7 +66,7 @@ func (tf *TokenFilter) OnResponse(ctx context.Context, result protocol.Result, i
 	return result
 }
 
-// GetTokenFilter ...
+// nolint
 func GetTokenFilter() filter.Filter {
 	return &TokenFilter{}
 }

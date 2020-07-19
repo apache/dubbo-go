@@ -65,7 +65,7 @@ func (ef *EchoFilter) OnResponse(_ context.Context, result protocol.Result, _ pr
 	return result
 }
 
-// GetFilter ...
+// GetFilter returns the Filter
 func GetFilter() filter.Filter {
 	return &EchoFilter{}
 }
