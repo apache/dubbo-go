@@ -40,6 +40,7 @@ func NewFailoverCluster() cluster.Cluster {
 	return &failoverCluster{}
 }
 
+// Join would return baseClusterInvoker instance
 func (cluster *failoverCluster) Join(directory cluster.Directory) protocol.Invoker {
 	return newFailoverClusterInvoker(directory)
 }
