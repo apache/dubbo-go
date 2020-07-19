@@ -38,9 +38,9 @@ import (
 )
 
 const (
-	// ConsistentHash ...
+	// ConsistentHash consistent hash
 	ConsistentHash = "consistenthash"
-	// HashNodes ...
+	// HashNodes hash nodes
 	HashNodes = "hash.nodes"
 	// HashArguments  key of hash arguments  in url
 	HashArguments = "hash.arguments"
