@@ -36,7 +36,7 @@ func NewApolloListener() *apolloListener {
 	}
 }
 
-// OnChange ...
+// OnChange process each listener
 func (a *apolloListener) OnChange(changeEvent *agollo.ChangeEvent) {
 	for key, change := range changeEvent.Changes {
 		for listener := range a.listeners {
