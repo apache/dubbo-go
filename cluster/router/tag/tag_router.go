@@ -38,7 +38,7 @@ type tagRouter struct {
 	priority int64
 }
 
-// NewTagRouter would return tagRouter instance if url is not nil
+// NewTagRouter returns a tagRouter instance if url is not nil
 func NewTagRouter(url *common.URL) (*tagRouter, error) {
 	if url == nil {
 		return nil, perrors.Errorf("Illegal route URL!")
