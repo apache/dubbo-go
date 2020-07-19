@@ -31,12 +31,12 @@ import (
 )
 
 const (
-	// RoundRobin ...
+	// RoundRobin load balancing way
 	RoundRobin = "roundrobin"
 
-	// COMPLETE ...
+	// nolint
 	COMPLETE = 0
-	// UPDATING ...
+	// nolint
 	UPDATING = 1
 )
 
