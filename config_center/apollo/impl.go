@@ -26,7 +26,9 @@ import (
 
 import (
 	"github.com/pkg/errors"
-	"github.com/zouyx/agollo"
+	"github.com/zouyx/agollo/v3"
+	agolloConstant "github.com/zouyx/agollo/v3/constant"
+	"github.com/zouyx/agollo/v3/env/config"
 )
 
 import (
@@ -34,19 +36,18 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	cc "github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/config_center/parser"
-	"github.com/apache/dubbo-go/remoting"
 )
 
 const (
 	apolloProtocolPrefix = "http://"
-	apolloConfigFormat   = "%s.%s"
+	apolloConfigFormat   = "%s%s"
 )
 
 type apolloConfiguration struct {
 	url *common.URL
 
 	listeners sync.Map
-	appConf   *agollo.AppConfig
+	appConf   *config.AppConfig
 	parser    parser.ConfigurationParser
 }
 
@@ -59,29 +60,18 @@ func newApolloConfiguration(url *common.URL) (*apolloConfiguration, error) {
 
 	appId := url.GetParam(constant.CONFIG_APP_ID_KEY, "")
 	namespaces := getProperties(url.GetParam(constant.CONFIG_NAMESPACE_KEY, cc.DEFAULT_GROUP))
-	c.appConf = &agollo.AppConfig{
-		AppId:         appId,
+	c.appConf = &config.AppConfig{
+		AppID:         appId,
 		Cluster:       configCluster,
 		NamespaceName: namespaces,
-		Ip:            configAddr,
+		IP:            configAddr,
 	}
 
-	agollo.InitCustomConfig(func() (*agollo.AppConfig, error) {
+	agollo.InitCustomConfig(func() (*config.AppConfig, error) {
 		return c.appConf, nil
 	})
 
 	return c, agollo.Start()
-}
-
-func getChangeType(change agollo.ConfigChangeType) remoting.EventType {
-	switch change {
-	case agollo.ADDED:
-		return remoting.EventTypeAdd
-	case agollo.DELETED:
-		return remoting.EventTypeDel
-	default:
-		return remoting.EventTypeUpdate
-	}
 }
 
 func (c *apolloConfiguration) AddListener(key string, listener cc.ConfigurationListener, opts ...cc.Option) {
@@ -91,7 +81,7 @@ func (c *apolloConfiguration) AddListener(key string, listener cc.ConfigurationL
 	}
 
 	key = k.Group + key
-	l, _ := c.listeners.LoadOrStore(key, NewApolloListener())
+	l, _ := c.listeners.LoadOrStore(key, newApolloListener())
 	l.(*apolloListener).AddListener(listener)
 }
 
@@ -109,10 +99,10 @@ func (c *apolloConfiguration) RemoveListener(key string, listener cc.Configurati
 }
 
 func getProperties(namespace string) string {
-	return getNamespaceName(namespace, agollo.Properties)
+	return getNamespaceName(namespace, agolloConstant.Properties)
 }
 
-func getNamespaceName(namespace string, configFileFormat agollo.ConfigFileFormat) string {
+func getNamespaceName(namespace string, configFileFormat agolloConstant.ConfigFileFormat) string {
 	return fmt.Sprintf(apolloConfigFormat, namespace, configFileFormat)
 }
 
@@ -137,7 +127,7 @@ func (c *apolloConfiguration) GetProperties(key string, opts ...cc.Option) (stri
 	if config == nil {
 		return "", errors.New(fmt.Sprintf("nothing in namespace:%s ", key))
 	}
-	return config.GetContent(agollo.Properties), nil
+	return config.GetContent(), nil
 }
 
 func (c *apolloConfiguration) getAddressWithProtocolPrefix(url *common.URL) string {
