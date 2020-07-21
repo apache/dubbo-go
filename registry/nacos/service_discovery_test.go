@@ -18,7 +18,6 @@
 package nacos
 
 import (
-	"strconv"
 	"testing"
 )
 
@@ -27,22 +26,65 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/observer"
+	"github.com/apache/dubbo-go/common/observer/dispatcher"
+	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/registry"
 )
 
+var (
+	testName = "test"
+)
+
+func Test_newNacosServiceDiscovery(t *testing.T) {
+	name := "nacos1"
+	_, err := newNacosServiceDiscovery(name)
+
+	// the ServiceDiscoveryConfig not found
+	assert.NotNil(t, err)
+
+	sdc := &config.ServiceDiscoveryConfig{
+		Protocol:  "nacos",
+		RemoteRef: "mock",
+	}
+	config.GetBaseConfig().ServiceDiscoveries[name] = sdc
+
+	_, err = newNacosServiceDiscovery(name)
+
+	// RemoteConfig not found
+	assert.NotNil(t, err)
+
+	config.GetBaseConfig().Remotes["mock"] = &config.RemoteConfig{
+		Address:    "console.nacos.io:80",
+		TimeoutStr: "10s",
+	}
+
+	res, err := newNacosServiceDiscovery(name)
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+
+}
+
 func TestNacosServiceDiscovery_Destroy(t *testing.T) {
-	serviceDiscovry, err := extension.GetServiceDiscovery(constant.NACOS_KEY, mockUrl())
+	prepareData()
+	serviceDiscovery, err := extension.GetServiceDiscovery(constant.NACOS_KEY, testName)
 	assert.Nil(t, err)
-	assert.NotNil(t, serviceDiscovry)
-	err = serviceDiscovry.Destroy()
+	assert.NotNil(t, serviceDiscovery)
+	err = serviceDiscovery.Destroy()
 	assert.Nil(t, err)
-	assert.Nil(t, serviceDiscovry.(*nacosServiceDiscovery).namingClient)
+	assert.Nil(t, serviceDiscovery.(*nacosServiceDiscovery).namingClient)
 }
 
 func TestNacosServiceDiscovery_CRUD(t *testing.T) {
+	prepareData()
+	extension.SetEventDispatcher("mock", func() observer.EventDispatcher {
+		return &dispatcher.MockEventDispatcher{}
+	})
+
+	extension.SetAndInitGlobalDispatcher("mock")
+
 	serviceName := "service-name"
 	id := "id"
 	host := "host"
@@ -59,7 +101,7 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 
 	// clean data
 
-	serviceDiscovry, _ := extension.GetServiceDiscovery(constant.NACOS_KEY, mockUrl())
+	serviceDiscovry, _ := extension.GetServiceDiscovery(constant.NACOS_KEY, testName)
 
 	// clean data for local test
 	serviceDiscovry.Unregister(&registry.DefaultServiceInstance{
@@ -112,11 +154,19 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 }
 
 func TestNacosServiceDiscovery_GetDefaultPageSize(t *testing.T) {
-	serviceDiscovry, _ := extension.GetServiceDiscovery(constant.NACOS_KEY, mockUrl())
-	assert.Equal(t, defaultPageSize, serviceDiscovry.GetDefaultPageSize())
+	prepareData()
+	serviceDiscovry, _ := extension.GetServiceDiscovery(constant.NACOS_KEY, testName)
+	assert.Equal(t, registry.DefaultPageSize, serviceDiscovry.GetDefaultPageSize())
 }
 
-func mockUrl() *common.URL {
-	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
-	return &regurl
+func prepareData() {
+	config.GetBaseConfig().ServiceDiscoveries[testName] = &config.ServiceDiscoveryConfig{
+		Protocol:  "nacos",
+		RemoteRef: testName,
+	}
+
+	config.GetBaseConfig().Remotes[testName] = &config.RemoteConfig{
+		Address:    "console.nacos.io:80",
+		TimeoutStr: "10s",
+	}
 }
