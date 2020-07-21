@@ -38,6 +38,7 @@ func NewAvailableCluster() cluster.Cluster {
 	return &availableCluster{}
 }
 
+// Join returns a baseClusterInvoker instance
 func (cluser *availableCluster) Join(directory cluster.Directory) protocol.Invoker {
 	return NewAvailableClusterInvoker(directory)
 }
