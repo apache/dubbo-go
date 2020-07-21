@@ -39,6 +39,7 @@ func NewFailsafeCluster() cluster.Cluster {
 	return &failsafeCluster{}
 }
 
+// Join returns a baseClusterInvoker instance
 func (cluster *failsafeCluster) Join(directory cluster.Directory) protocol.Invoker {
 	return newFailsafeClusterInvoker(directory)
 }
