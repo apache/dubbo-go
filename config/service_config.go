@@ -303,7 +303,7 @@ func (c *ServiceConfig) getUrlMap() url.Values {
 
 	for _, v := range c.Methods {
 		prefix := "methods." + v.Name + "."
-		urlMap.Set(prefix+constant.LOADBALANCE_KEY, v.Loadbalance)
+		urlMap.Set(prefix+constant.LOADBALANCE_KEY, v.LoadBalance)
 		urlMap.Set(prefix+constant.RETRIES_KEY, v.Retries)
 		urlMap.Set(prefix+constant.WEIGHT_KEY, strconv.FormatInt(v.Weight, 10))
 
