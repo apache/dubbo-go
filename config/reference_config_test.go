@@ -103,12 +103,12 @@ func doInitConsumer() {
 					{
 						Name:        "GetUser",
 						Retries:     "2",
-						Loadbalance: "random",
+						LoadBalance: "random",
 					},
 					{
 						Name:        "GetUser1",
 						Retries:     "2",
-						Loadbalance: "random",
+						LoadBalance: "random",
 						Sticky:      true,
 					},
 				},
@@ -174,12 +174,12 @@ func doInitConsumerWithSingleRegistry() {
 					{
 						Name:        "GetUser",
 						Retries:     "2",
-						Loadbalance: "random",
+						LoadBalance: "random",
 					},
 					{
 						Name:        "GetUser1",
 						Retries:     "2",
-						Loadbalance: "random",
+						LoadBalance: "random",
 					},
 				},
 			},

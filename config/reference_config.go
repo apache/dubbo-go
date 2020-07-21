@@ -220,7 +220,7 @@ func (c *ReferenceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.REFERENCE_FILTER_KEY, mergeValue(consumerConfig.Filter, c.Filter, defaultReferenceFilter))
 
 	for _, v := range c.Methods {
-		urlMap.Set("methods."+v.Name+"."+constant.LOADBALANCE_KEY, v.Loadbalance)
+		urlMap.Set("methods."+v.Name+"."+constant.LOADBALANCE_KEY, v.LoadBalance)
 		urlMap.Set("methods."+v.Name+"."+constant.RETRIES_KEY, v.Retries)
 		urlMap.Set("methods."+v.Name+"."+constant.STICKY_KEY, strconv.FormatBool(v.Sticky))
 		if len(v.RequestTimeout) != 0 {
