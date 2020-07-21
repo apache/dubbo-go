@@ -117,7 +117,7 @@ func newNacosRegistry(url *common.URL) (registry.Registry, error) {
 	registry := nacosRegistry{
 		URL:          url,
 		namingClient: client,
-		registryUrls: make([]common.URL, 16, 16),
+		registryUrls: []common.URL{},
 	}
 	return &registry, nil
 }
@@ -267,9 +267,9 @@ func (nr *nacosRegistry) IsAvailable() bool {
 }
 
 func (nr *nacosRegistry) Destroy() {
-	logger.Info("Destroy nacos")
 	for _, url := range nr.registryUrls {
 		err := nr.DeRegister(url)
+		logger.Infof("DeRegister Nacos url:%+v", url)
 		if err != nil {
 			logger.Errorf("Deregister url:%+v  err:%v", url, err.Error())
 		}
