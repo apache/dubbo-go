@@ -554,8 +554,8 @@ github.com/vmware/govmomi v0.18.0 h1:f7QxSmP7meCtoAmiKZogvVbLInT+CZx6Px6K5rYsJZo
 github.com/vmware/govmomi v0.18.0/go.mod h1:URlwyTFZX72RmxtxuaFL2Uj3fD1JTvZdx59bHWk6aFU=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 h1:eY9dn8+vbi4tKz5Qo6v2eYzo7kUS51QINcR5jNpbZS8=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
-github.com/zouyx/agollo/v3 v3.4.3 h1:1Ni6VbcwMkEyJBNOk8ApRSAuh42YsnYuhW79lNE+TBA=
-github.com/zouyx/agollo/v3 v3.4.3/go.mod h1:ag0XmE1r4iAgPd6PUnU9TJ0DMEjM1VKX1HUNqQJ2ywU=
+github.com/zouyx/agollo/v3 v3.4.4 h1:5G7QNw3fw74Ns8SfnHNhjndV2mlz5Fg8bB7q84ydFYI=
+github.com/zouyx/agollo/v3 v3.4.4/go.mod h1:ag0XmE1r4iAgPd6PUnU9TJ0DMEjM1VKX1HUNqQJ2ywU=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.etcd.io/bbolt v1.3.3 h1:MUGmc65QhB3pIlaQ5bB4LwqSj6GIonVJXpZiaKNyaKk=
 go.etcd.io/bbolt v1.3.3/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=

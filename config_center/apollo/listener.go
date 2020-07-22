@@ -33,7 +33,7 @@ type apolloListener struct {
 	listeners map[config_center.ConfigurationListener]struct{}
 }
 
-// newApolloListener ...
+// nolint
 func newApolloListener() *apolloListener {
 	return &apolloListener{
 		listeners: make(map[config_center.ConfigurationListener]struct{}, 0),
@@ -45,7 +45,7 @@ func (a *apolloListener) OnChange(changeEvent *storage.ChangeEvent) {
 
 }
 
-// OnNewestChange ...
+// OnNewestChange process each listener by all changes
 func (a *apolloListener) OnNewestChange(changeEvent *storage.FullChangeEvent) {
 	b, err := yaml.Marshal(changeEvent.Changes)
 	if err != nil {
