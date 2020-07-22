@@ -217,7 +217,7 @@ func TestAddListener(t *testing.T) {
 }`
 	apollo.AddListener(mockNamespace, listener)
 	listener.wg.Wait()
-	assert.Equal(t, "registries.hangzhouzk.username", listener.event)
+	assert.Equal(t, "mockDubbog.properties", listener.event)
 	assert.Greater(t, listener.count, 0)
 	deleteMockJson(t)
 }
