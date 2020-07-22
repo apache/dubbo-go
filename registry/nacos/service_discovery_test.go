@@ -18,7 +18,10 @@
 package nacos
 
 import (
+	"math/rand"
+	"strconv"
 	"testing"
+	"time"
 )
 
 import (
@@ -84,8 +87,8 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 	})
 
 	extension.SetAndInitGlobalDispatcher("mock")
-
-	serviceName := "service-name"
+	rand.Seed(time.Now().Unix())
+	serviceName := "service-name" + strconv.Itoa(rand.Intn(10000))
 	id := "id"
 	host := "host"
 	port := 123
@@ -113,7 +116,9 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 
 	err := serviceDiscovry.Register(instance)
 	assert.Nil(t, err)
-
+	//sometimes nacos may be failed to push update of instance,
+	//so it need 10s to pull, we sleep 10 second to make sure instance has been update
+	time.Sleep(11 * time.Second)
 	page := serviceDiscovry.GetHealthyInstancesByPage(serviceName, 0, 10, true)
 	assert.NotNil(t, page)
 
