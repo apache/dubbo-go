@@ -19,6 +19,7 @@ package cluster_impl
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 )
 
@@ -92,8 +93,10 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 	invokerSvc := invoker.GetUrl().Service()
 	invokerUrl := invoker.directory.GetUrl()
 	return &protocol.RPCResult{
-		Err: perrors.Errorf("Failed to invoke the method %v in the service %v. Tried %v times of the providers %v (%v/%v)from the registry %v on the consumer %v using the dubbo version %v. Last error is %v.",
-			methodName, invokerSvc, retries, providers, len(providers), len(invokers), invokerUrl, ip, constant.Version, result.Error().Error(),
+		Err: perrors.Wrap(result.Error(), fmt.Sprintf("Failed to invoke the method %v in the service %v. "+
+			"Tried %v times of the providers %v (%v/%v)from the registry %v on the consumer %v using the dubbo version %v. "+
+			"Last error is %+v.", methodName, invokerSvc, retries, providers, len(providers), len(invokers),
+			invokerUrl, ip, constant.Version, result.Error().Error()),
 		)}
 }
 
