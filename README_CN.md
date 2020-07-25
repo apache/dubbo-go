@@ -50,6 +50,7 @@ Apache License, Version 2.0
 - 序列化协议
     * JsonRPC V2
     * Hessian V2
+    * [json for grpc](https://github.com/apache/dubbo-go/pull/582)
 
 - 协议
     * Dubbo
