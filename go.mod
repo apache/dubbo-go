@@ -67,5 +67,3 @@ require (
 )
 
 go 1.13
-
-replace github.com/ugorji/go v1.1.4 => github.com/ugorji/go v1.1.7
