@@ -14,7 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package remoting
+
+package getty
 
 import (
 	"fmt"
@@ -22,35 +23,74 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/logger"
+	"github.com/dubbogo/getty"
+	gxsync "github.com/dubbogo/gost/sync"
+	"gopkg.in/yaml.v2"
 )
 
 import (
-	"github.com/dubbogo/getty"
-	gxsync "github.com/dubbogo/gost/sync"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/invocation"
+	"github.com/apache/dubbo-go/remoting"
 )
 
-// TODO: 需要移动到 业务的实现
 var (
 	srvConf   *ServerConfig
 	srvGrpool *gxsync.TaskPool
 )
+
+func initServer(protocol string) {
+
+	// load clientconfig from provider_config
+	// default use dubbo
+	providerConfig := config.GetProviderConfig()
+	if providerConfig.ApplicationConfig == nil {
+		return
+	}
+	protocolConf := providerConfig.ProtocolConf
+	defaultServerConfig := GetDefaultServerConfig()
+	if protocolConf == nil {
+		logger.Info("protocol_conf default use dubbo config")
+	} else {
+		dubboConf := protocolConf.(map[interface{}]interface{})[protocol]
+		if dubboConf == nil {
+			logger.Warnf("dubboConf is nil")
+			return
+		}
+
+		dubboConfByte, err := yaml.Marshal(dubboConf)
+		if err != nil {
+			panic(err)
+		}
+		err = yaml.Unmarshal(dubboConfByte, &defaultServerConfig)
+		if err != nil {
+			panic(err)
+		}
+	}
+	srvConf = &defaultServerConfig
+	if err := srvConf.CheckValidity(); err != nil {
+		panic(err)
+	}
+	SetServerGrpool()
+}
 
 // SetServerConfig ...
 func SetServerConfig(s ServerConfig) {
 	srvConf = &s
 	err := srvConf.CheckValidity()
 	if err != nil {
-		panic(err)
+		logger.Warnf("[ServerConfig CheckValidity] error: %v", err)
 		return
 	}
 	SetServerGrpool()
 }
 
 // GetServerConfig ...
-func GetServerConfig() *ServerConfig {
-	return srvConf
+func GetServerConfig() ServerConfig {
+	return *srvConf
 }
 
 // SetServerGrpool ...
@@ -63,19 +103,27 @@ func SetServerGrpool() {
 
 // Server ...
 type Server struct {
-	conf       ServerConfig
-	tcpServer  getty.Server
-	rpcHandler *RpcServerHandler
+	conf           ServerConfig
+	addr           string
+	codec          remoting.Codec
+	tcpServer      getty.Server
+	rpcHandler     *RpcServerHandler
+	requestHandler func(*invocation.RPCInvocation) protocol.RPCResult
 }
 
 // NewServer ...
-func NewServer(handler StubHandler) *Server {
+func NewServer(url common.URL, handlers func(*invocation.RPCInvocation) protocol.RPCResult) *Server {
+	//init
+	initServer(url.Protocol)
 
 	s := &Server{
-		conf: *srvConf,
+		conf:           *srvConf,
+		addr:           url.Location,
+		codec:          remoting.GetCodec(url.Protocol),
+		requestHandler: handlers,
 	}
 
-	s.rpcHandler = NewRpcServerHandler(handler, s.conf.SessionNumber, s.conf.SessionTimeoutD)
+	s.rpcHandler = NewRpcServerHandler(s.conf.SessionNumber, s.conf.sessionTimeout, s)
 
 	return s
 }
@@ -98,20 +146,20 @@ func (s *Server) newSession(session getty.Session) error {
 	tcpConn.SetNoDelay(conf.GettySessionParam.TcpNoDelay)
 	tcpConn.SetKeepAlive(conf.GettySessionParam.TcpKeepAlive)
 	if conf.GettySessionParam.TcpKeepAlive {
-		tcpConn.SetKeepAlivePeriod(conf.GettySessionParam.KeepAlivePeriodD)
+		tcpConn.SetKeepAlivePeriod(conf.GettySessionParam.keepAlivePeriod)
 	}
 	tcpConn.SetReadBuffer(conf.GettySessionParam.TcpRBufSize)
 	tcpConn.SetWriteBuffer(conf.GettySessionParam.TcpWBufSize)
 
 	session.SetName(conf.GettySessionParam.SessionName)
 	session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
-	session.SetPkgHandler(rpcServerPkgHandler)
+	session.SetPkgHandler(NewRpcServerPackageHandler(s))
 	session.SetEventListener(s.rpcHandler)
 	session.SetWQLen(conf.GettySessionParam.PkgWQSize)
-	session.SetReadTimeout(conf.GettySessionParam.TcpReadTimeoutD)
-	session.SetWriteTimeout(conf.GettySessionParam.TcpWriteTimeoutD)
-	session.SetCronPeriod((int)(conf.SessionTimeoutD.Nanoseconds() / 1e6))
-	session.SetWaitTime(conf.GettySessionParam.WaitTimeoutD)
+	session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
+	session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
+	session.SetCronPeriod((int)(conf.sessionTimeout.Nanoseconds() / 1e6))
+	session.SetWaitTime(conf.GettySessionParam.waitTimeout)
 	logger.Debugf("app accepts new session:%s\n", session.Stat())
 
 	session.SetTaskPool(srvGrpool)
@@ -120,18 +168,16 @@ func (s *Server) newSession(session getty.Session) error {
 }
 
 // Start ...
-func (s *Server) Start(url common.URL) {
+func (s *Server) Start() {
 	var (
-		addr      string
 		tcpServer getty.Server
 	)
 
-	addr = url.Location
 	tcpServer = getty.NewTCPServer(
-		getty.WithLocalAddress(addr),
+		getty.WithLocalAddress(s.addr),
 	)
 	tcpServer.RunEventLoop(s.newSession)
-	logger.Debugf("s bind addr{%s} ok!", addr)
+	logger.Debugf("s bind addr{%s} ok!", s.addr)
 	s.tcpServer = tcpServer
 
 }
