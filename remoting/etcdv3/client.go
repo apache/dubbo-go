@@ -142,9 +142,7 @@ func NewServiceDiscoveryClient(opts ...Option) *Client {
 	if err != nil {
 		logger.Errorf("new etcd client (name{%s}, etcd addresses{%v}, timeout{%d}) = error{%v}",
 			options.name, options.endpoints, options.timeout, err)
-		return nil
 	}
-
 	return newClient
 }
 
@@ -426,8 +424,7 @@ func (c *Client) keepAliveKV(k string, v string) error {
 	}
 
 	_, err = c.rawClient.Put(c.ctx, k, v, clientv3.WithLease(lease.ID))
-	err = perrors.WithMessage(err, "put k/v with lease")
-	return err
+	return perrors.WithMessage(err, "put k/v with lease")
 }
 
 // nolint
@@ -445,64 +442,53 @@ func (c *Client) Valid() bool {
 
 	c.lock.RLock()
 	defer c.lock.RUnlock()
-	if c.rawClient == nil {
-		return false
-	}
-	return true
+	return c.rawClient != nil
 }
 
 // nolint
 func (c *Client) Create(k string, v string) error {
 	err := c.put(k, v)
-	err = perrors.WithMessagef(err, "put k/v (key: %s value %s)", k, v)
-	return err
+	return perrors.WithMessagef(err, "put k/v (key: %s value %s)", k, v)
 }
 
 // Update key value ...
 func (c *Client) Update(k, v string) error {
 	err := c.update(k, v)
-	err = perrors.WithMessagef(err, "Update k/v (key: %s value %s)", k, v)
-	return err
+	return perrors.WithMessagef(err, "Update k/v (key: %s value %s)", k, v)
 }
 
 // nolint
 func (c *Client) Delete(k string) error {
 	err := c.delete(k)
-	err = perrors.WithMessagef(err, "delete k/v (key %s)", k)
-	return err
+	return perrors.WithMessagef(err, "delete k/v (key %s)", k)
 }
 
 // RegisterTemp registers a temporary node
 func (c *Client) RegisterTemp(k, v string) error {
 	err := c.keepAliveKV(k, v)
-	err = perrors.WithMessagef(err, "keepalive kv (key %s)", k)
-	return err
+	return perrors.WithMessagef(err, "keepalive kv (key %s)", k)
 }
 
 // GetChildrenKVList gets children kv list by @k
 func (c *Client) GetChildrenKVList(k string) ([]string, []string, error) {
 	kList, vList, err := c.getChildren(k)
-	err = perrors.WithMessagef(err, "get key children (key %s)", k)
-	return kList, vList, err
+	return kList, vList, perrors.WithMessagef(err, "get key children (key %s)", k)
 }
 
 // Get gets value by @k
 func (c *Client) Get(k string) (string, error) {
 	v, err := c.get(k)
-	err = perrors.WithMessagef(err, "get key value (key %s)", k)
-	return v, err
+	return v, perrors.WithMessagef(err, "get key value (key %s)", k)
 }
 
 // Watch watches on spec key
 func (c *Client) Watch(k string) (clientv3.WatchChan, error) {
 	wc, err := c.watch(k)
-	err = perrors.WithMessagef(err, "watch prefix (key %s)", k)
-	return wc, err
+	return wc, perrors.WithMessagef(err, "watch prefix (key %s)", k)
 }
 
 // WatchWithPrefix watches on spec prefix
 func (c *Client) WatchWithPrefix(prefix string) (clientv3.WatchChan, error) {
 	wc, err := c.watchWithPrefix(prefix)
-	err = perrors.WithMessagef(err, "watch prefix (key %s)", prefix)
-	return wc, err
+	return wc, perrors.WithMessagef(err, "watch prefix (key %s)", prefix)
 }
