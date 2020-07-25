@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package remoting
+package getty
 
 import (
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -30,13 +31,16 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/protocol/dubbo/impl"
+	"github.com/apache/dubbo-go/protocol/invocation"
+	"github.com/apache/dubbo-go/remoting"
 )
 
-// todo: writePkg_Timeout will entry *.yml
+// todo: WritePkg_Timeout will entry *.yml
 const (
-	writePkg_Timeout = 5 * time.Second
+	// WritePkg_Timeout ...
+	WritePkg_Timeout = 5 * time.Second
 )
 
 var (
@@ -48,12 +52,10 @@ type rpcSession struct {
 	reqNum  int32
 }
 
-// AddReqNum adds total request number safely
 func (s *rpcSession) AddReqNum(num int32) {
 	atomic.AddInt32(&s.reqNum, num)
 }
 
-// GetReqNum gets total request number safely
 func (s *rpcSession) GetReqNum() int32 {
 	return atomic.LoadInt32(&s.reqNum)
 }
@@ -62,74 +64,81 @@ func (s *rpcSession) GetReqNum() int32 {
 // RpcClientHandler
 // //////////////////////////////////////////
 
-// RpcClientHandler is handler of RPC Client
+// RpcClientHandler ...
 type RpcClientHandler struct {
 	conn *gettyRPCClient
 }
 
-// NewRpcClientHandler creates RpcClientHandler with @gettyRPCClient
+// NewRpcClientHandler ...
 func NewRpcClientHandler(client *gettyRPCClient) *RpcClientHandler {
 	return &RpcClientHandler{conn: client}
 }
 
-// OnOpen notified when RPC client session opened
+// OnOpen ...
 func (h *RpcClientHandler) OnOpen(session getty.Session) error {
 	h.conn.addSession(session)
 	return nil
 }
 
-// OnError notified when RPC client session got any error
+// OnError ...
 func (h *RpcClientHandler) OnError(session getty.Session, err error) {
-	logger.Warnf("session{%s} got error{%v}, will be closed.", session.Stat(), err)
+	logger.Infof("session{%s} got error{%v}, will be closed.", session.Stat(), err)
 	h.conn.removeSession(session)
 }
 
-// OnOpen notified when RPC client session closed
+// OnClose ...
 func (h *RpcClientHandler) OnClose(session getty.Session) {
 	logger.Infof("session{%s} is closing......", session.Stat())
 	h.conn.removeSession(session)
 }
 
-// OnMessage notified when RPC client session got any message in connection
+// OnMessage ...
 func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
-	p, ok := pkg.(*impl.DubboPackage)
+	result, ok := pkg.(remoting.DecodeResult)
 	if !ok {
 		logger.Errorf("illegal package")
 		return
 	}
-
-	if p.Header.Type&impl.PackageHeartbeat != 0x00 {
-		logger.Debugf("get rpc heartbeat response{header: %#v, body: %#v}", p.Header, p.Body)
-		if p.Err != nil {
-			logger.Errorf("rpc heartbeat response{error: %#v}", p.Err)
+	// get heartbeart request from server
+	if result.IsRequest {
+		req := result.Result.(*remoting.Request)
+		if req.Event {
+			logger.Debugf("get rpc heartbeat request{%#v}", req)
+			resp := remoting.NewResponse(req.ID, req.Version)
+			resp.Status = hessian.Response_OK
+			resp.Event = req.Event
+			resp.SerialID = req.SerialID
+			resp.Version = "2.0.2"
+			reply(session, resp, hessian.PackageHeartbeat)
+			return
 		}
+		logger.Errorf("illegal request but not heartbeart. {%#v}", req)
 		return
 	}
-	logger.Debugf("get rpc response{header: %#v, body: %#v}", p.Header, p.Body)
+
+	p := result.Result.(*remoting.Response)
+	// get heartbeart
+	if p.Event {
+		logger.Debugf("get rpc heartbeat response{%#v}", p)
+		if p.Error != nil {
+			logger.Errorf("rpc heartbeat response{error: %#v}", p.Error)
+		}
+		h.conn.pool.rpcClient.responseHandler.Handler(p)
+		return
+	}
+	if result.IsRequest {
+		logger.Errorf("illegal package for it is response type. {%#v}", pkg)
+		return
+	}
+
+	logger.Debugf("get rpc response{%#v}", p)
 
 	h.conn.updateSession(session)
 
-	pendingResponse := h.conn.pool.rpcClient.removePendingResponse(impl.SequenceType(p.Header.ID))
-	if pendingResponse == nil {
-		logger.Errorf("failed to get pending response context for response package %s", *p)
-		return
-	}
-
-	if p.Err != nil {
-		pendingResponse.err = p.Err
-	}
-
-	pendingResponse.response.Atta = p.Body.(*Response).Atta
-
-	if pendingResponse.callback == nil {
-		pendingResponse.done <- struct{}{}
-	} else {
-		logger.Info("proxy service callback")
-		pendingResponse.callback(pendingResponse.GetCallResponse())
-	}
+	h.conn.pool.rpcClient.responseHandler.Handler(p)
 }
 
-// OnCron notified when RPC client session got any message in cron job
+// OnCron ...
 func (h *RpcClientHandler) OnCron(session getty.Session) {
 	rpcSession, err := h.conn.getClientRpcSession(session)
 	if err != nil {
@@ -137,10 +146,10 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 			session.Stat(), perrors.WithStack(err))
 		return
 	}
-	if h.conn.pool.rpcClient.Conf.SessionTimeoutD.Nanoseconds() < time.Since(session.GetActive()).Nanoseconds() {
+	if h.conn.pool.rpcClient.conf.sessionTimeout.Nanoseconds() < time.Since(session.GetActive()).Nanoseconds() {
 		logger.Warnf("session{%s} timeout{%s}, reqNum{%d}",
 			session.Stat(), time.Since(session.GetActive()).String(), rpcSession.reqNum)
-		h.conn.removeSession(session) // -> h.conn.close() -> h.conn.Pool.remove(h.conn)
+		h.conn.removeSession(session) // -> h.conn.close() -> h.conn.pool.remove(h.conn)
 		return
 	}
 
@@ -151,35 +160,26 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 // RpcServerHandler
 // //////////////////////////////////////////
 
-type StubHandler interface {
-	OnPackage(session getty.Session, pkg *impl.DubboPackage)
-}
-
-type StubFunc func(session getty.Session, pkg *impl.DubboPackage)
-
-func (f StubFunc) OnPackage(session getty.Session, pkg *impl.DubboPackage) {
-	f(session, pkg)
-}
-
+// RpcServerHandler ...
 type RpcServerHandler struct {
 	maxSessionNum  int
 	sessionTimeout time.Duration
 	sessionMap     map[getty.Session]*rpcSession
 	rwlock         sync.RWMutex
-	stub           StubHandler
+	server         *Server
 }
 
-// NewRpcServerHandler creates RpcServerHandler with @maxSessionNum and @sessionTimeout
-func NewRpcServerHandler(stubHandler StubHandler, maxSessionNum int, sessionTimeout time.Duration) *RpcServerHandler {
+// NewRpcServerHandler ...
+func NewRpcServerHandler(maxSessionNum int, sessionTimeout time.Duration, serverP *Server) *RpcServerHandler {
 	return &RpcServerHandler{
 		maxSessionNum:  maxSessionNum,
 		sessionTimeout: sessionTimeout,
 		sessionMap:     make(map[getty.Session]*rpcSession),
-		stub:           stubHandler,
+		server:         serverP,
 	}
 }
 
-// OnOpen notified when RPC server session opened
+// OnOpen ...
 func (h *RpcServerHandler) OnOpen(session getty.Session) error {
 	var err error
 	h.rwlock.RLock()
@@ -198,15 +198,15 @@ func (h *RpcServerHandler) OnOpen(session getty.Session) error {
 	return nil
 }
 
-// OnError notified when RPC server session got any error
+// OnError ...
 func (h *RpcServerHandler) OnError(session getty.Session, err error) {
-	logger.Warnf("session{%s} got error{%v}, will be closed.", session.Stat(), err)
+	logger.Infof("session{%s} got error{%v}, will be closed.", session.Stat(), err)
 	h.rwlock.Lock()
 	delete(h.sessionMap, session)
 	h.rwlock.Unlock()
 }
 
-// OnOpen notified when RPC server session closed
+// OnClose ...
 func (h *RpcServerHandler) OnClose(session getty.Session) {
 	logger.Infof("session{%s} is closing......", session.Stat())
 	h.rwlock.Lock()
@@ -214,7 +214,7 @@ func (h *RpcServerHandler) OnClose(session getty.Session) {
 	h.rwlock.Unlock()
 }
 
-// OnMessage notified when RPC server session got any message in connection
+// OnMessage ...
 func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	h.rwlock.Lock()
 	if _, ok := h.sessionMap[session]; ok {
@@ -222,54 +222,70 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	}
 	h.rwlock.Unlock()
 
-	p, ok := pkg.(*impl.DubboPackage)
+	decodeResult, ok := pkg.(remoting.DecodeResult)
 	if !ok {
 		logger.Errorf("illegal package{%#v}", pkg)
 		return
 	}
-	p.SetResponseStatus(hessian.Response_OK)
-	//p.Header.ResponseStatus = hessian.Response_OK
-
-	// heartbeat
-	if p.GetHeader().Type&impl.PackageHeartbeat != 0x00 {
-		logger.Debugf("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", p.GetHeader(), p.GetService(), p.GetBody())
-		h.reply(session, p, impl.PackageHeartbeat)
+	if !decodeResult.IsRequest {
+		logger.Errorf("illegal package for it is response type. {%#v}", pkg)
 		return
 	}
+	req := decodeResult.Result.(*remoting.Request)
 
-	twoway := true
-	// not twoway
-	if p.GetHeader().Type&impl.PackageRequest_TwoWay == 0x00 {
-		twoway = false
+	resp := remoting.NewResponse(req.ID, req.Version)
+	resp.Status = hessian.Response_OK
+	resp.Event = req.Event
+	resp.SerialID = req.SerialID
+	resp.Version = "2.0.2"
+
+	// heartbeat
+	if req.Event {
+		logger.Debugf("get rpc heartbeat request{%#v}", resp)
+		reply(session, resp, hessian.PackageHeartbeat)
+		return
 	}
 
 	defer func() {
 		if e := recover(); e != nil {
-			p.SetResponseStatus(hessian.Response_SERVER_ERROR)
+			resp.Status = hessian.Response_SERVER_ERROR
 			if err, ok := e.(error); ok {
 				logger.Errorf("OnMessage panic: %+v", perrors.WithStack(err))
-				p.SetBody(perrors.WithStack(err))
+				resp.Error = perrors.WithStack(err)
 			} else if err, ok := e.(string); ok {
 				logger.Errorf("OnMessage panic: %+v", perrors.New(err))
-				p.SetBody(perrors.New(err))
+				resp.Error = perrors.New(err)
 			} else {
 				logger.Errorf("OnMessage panic: %+v, this is impossible.", e)
-				p.SetBody(e)
+				resp.Error = fmt.Errorf("OnMessage panic unknow exception. %+v", e)
 			}
 
-			if !twoway {
+			if !req.TwoWay {
 				return
 			}
-			h.reply(session, p, impl.PackageResponse)
+			reply(session, resp, hessian.PackageResponse)
 		}
 
 	}()
 
-	h.stub.OnPackage(session, p)
-	h.reply(session, p, impl.PackageResponse)
+	invoc, ok := req.Data.(*invocation.RPCInvocation)
+	if !ok {
+		panic("create invocation occur some exception for the type is not suitable one.")
+		return
+	}
+	attachments := invoc.Attachments()
+	attachments[constant.LOCAL_ADDR] = session.LocalAddr()
+	attachments[constant.REMOTE_ADDR] = session.RemoteAddr()
+
+	result := h.server.requestHandler(invoc)
+	if !req.TwoWay {
+		return
+	}
+	resp.Result = result
+	reply(session, resp, hessian.PackageResponse)
 }
 
-// OnCron notified when RPC server session got any message in cron job
+// OnCron ...
 func (h *RpcServerHandler) OnCron(session getty.Session) {
 	var (
 		flag   bool
@@ -295,35 +311,9 @@ func (h *RpcServerHandler) OnCron(session getty.Session) {
 	}
 }
 
-func (h *RpcServerHandler) reply(session getty.Session, req *impl.DubboPackage, tp impl.PackageType) {
-	header := impl.DubboHeader{
-		SerialID:       req.GetHeader().SerialID,
-		Type:           tp,
-		ID:             req.GetHeader().ID,
-		BodyLen:        0,
-		ResponseStatus: req.GetHeader().ResponseStatus,
-	}
-	resp := NewServerResponsePackage(header)
-	if err := impl.LoadSerializer(resp); err != nil {
-		logger.Errorf("Reply error %v", err)
-		return
-	}
+func reply(session getty.Session, resp *remoting.Response, tp hessian.PackageType) {
 
-	if req.GetHeader().Type&impl.PackageRequest != 0x00 {
-		resp.SetBody(req.GetBody())
-	}
-
-	if err := session.WritePkg(resp, writePkg_Timeout); err != nil {
-		logger.Errorf("WritePkg error: %#v, %#v", perrors.WithStack(err), req.GetHeader())
-	}
-}
-
-// server side response package, just for serialization
-func NewServerResponsePackage(header impl.DubboHeader) *impl.DubboPackage {
-	return &impl.DubboPackage{
-		Header: header,
-		Body:   nil,
-		Err:    nil,
-		Codec:  impl.NewDubboCodec(nil),
+	if err := session.WritePkg(resp, WritePkg_Timeout); err != nil {
+		logger.Errorf("WritePkg error: %#v, %#v", perrors.WithStack(err), resp)
 	}
 }

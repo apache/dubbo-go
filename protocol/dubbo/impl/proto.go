@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/apache/dubbo-go/common/logger"
 	"io"
 	"reflect"
 	"strconv"
@@ -157,9 +158,11 @@ func unmarshalRequestProto(data []byte, pkg *DubboPackage) error {
 		return err
 	}
 	arg := getRegisterMessage(argsType)
-	err := proto.Unmarshal(argBytes, arg.Interface().(JavaProto))
-	if err != nil {
-		panic(err)
+	if !arg.IsZero() {
+		err := proto.Unmarshal(argBytes, arg.Interface().(JavaProto))
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	m := &pb.Map{}
@@ -432,7 +435,8 @@ func getRegisterMessage(sig string) reflect.Value {
 
 	t, ok := register.registry[sig]
 	if !ok {
-		panic(fmt.Sprintf("registry dose not have for svc: %v", sig))
+		logger.Error(fmt.Sprintf("registry dose not have for svc: %v", sig))
+		return NilValue
 	}
 	return reflect.New(t)
 }
