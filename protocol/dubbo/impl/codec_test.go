@@ -128,7 +128,7 @@ func TestDubboPackage_Protobuf_Serialization_Request(t *testing.T) {
 	// protobuf rpc just has exact one parameter
 	assert.Equal(t, len(req), 1)
 	argsBytes, ok := req[0].([]byte)
-	assert.Equal(t, ok, true)
+	assert.Equal(t, true, ok)
 	sv := pb.StringValue{}
 	buf := proto.NewBuffer(argsBytes)
 	err = buf.Unmarshal(&sv)

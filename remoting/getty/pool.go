@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-package remoting
+package getty
 
 import (
 	"fmt"
-
 	"math/rand"
 	"net"
 	"sync"
@@ -37,10 +36,10 @@ import (
 )
 
 type gettyRPCClient struct {
-	once     sync.Once
-	protocol string
-	addr     string
-	active   int64 // zero, not create or be destroyed
+	once sync.Once
+	//protocol string
+	addr   string
+	active int64 // zero, not create or be destroyed
 
 	pool *gettyRPCClientPool
 
@@ -50,23 +49,23 @@ type gettyRPCClient struct {
 }
 
 var (
-	errClientPoolClosed = perrors.New("client Pool closed")
+	errClientPoolClosed = perrors.New("client pool closed")
 )
 
-func newGettyRPCClientConn(pool *gettyRPCClientPool, protocol, addr string) (*gettyRPCClient, error) {
+func newGettyRPCClientConn(pool *gettyRPCClientPool, addr string) (*gettyRPCClient, error) {
 	c := &gettyRPCClient{
-		protocol: protocol,
-		addr:     addr,
-		pool:     pool,
+		//protocol: protocol,
+		addr: addr,
+		pool: pool,
 		gettyClient: getty.NewTCPClient(
 			getty.WithServerAddress(addr),
-			getty.WithConnectionNumber((int)(pool.rpcClient.Conf.ConnectionNum)),
-			getty.WithReconnectInterval(pool.rpcClient.Conf.ReconnectInterval),
+			getty.WithConnectionNumber((int)(pool.rpcClient.conf.ConnectionNum)),
+			getty.WithReconnectInterval(pool.rpcClient.conf.ReconnectInterval),
 		),
 	}
 	go c.gettyClient.RunEventLoop(c.newSession)
 	idx := 1
-	times := int(pool.rpcClient.Opts.ConnectTimeout / 1e6)
+	times := int(pool.rpcClient.opts.ConnectTimeout / 1e6)
 	for {
 		idx++
 		if c.isAvailable() {
@@ -99,8 +98,7 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 		tcpConn *net.TCPConn
 		conf    ClientConfig
 	)
-
-	conf = c.pool.rpcClient.Conf
+	conf = c.pool.rpcClient.conf
 	if conf.GettySessionParam.CompressEncoding {
 		session.SetCompressType(getty.CompressZip)
 	}
@@ -112,7 +110,7 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 	tcpConn.SetNoDelay(conf.GettySessionParam.TcpNoDelay)
 	tcpConn.SetKeepAlive(conf.GettySessionParam.TcpKeepAlive)
 	if conf.GettySessionParam.TcpKeepAlive {
-		tcpConn.SetKeepAlivePeriod(conf.GettySessionParam.KeepAlivePeriodD)
+		tcpConn.SetKeepAlivePeriod(conf.GettySessionParam.keepAlivePeriod)
 	}
 	tcpConn.SetReadBuffer(conf.GettySessionParam.TcpRBufSize)
 	tcpConn.SetWriteBuffer(conf.GettySessionParam.TcpWBufSize)
@@ -122,10 +120,10 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 	session.SetPkgHandler(NewRpcClientPackageHandler(c.pool.rpcClient))
 	session.SetEventListener(NewRpcClientHandler(c))
 	session.SetWQLen(conf.GettySessionParam.PkgWQSize)
-	session.SetReadTimeout(conf.GettySessionParam.TcpReadTimeoutD)
-	session.SetWriteTimeout(conf.GettySessionParam.TcpWriteTimeoutD)
-	session.SetCronPeriod((int)(conf.HeartbeatPeriodD.Nanoseconds() / 1e6))
-	session.SetWaitTime(conf.GettySessionParam.WaitTimeoutD)
+	session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
+	session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
+	session.SetCronPeriod((int)(conf.heartbeatPeriod.Nanoseconds() / 1e6))
+	session.SetWaitTime(conf.GettySessionParam.waitTimeout)
 	logger.Debugf("client new session:%s\n", session.Stat())
 
 	session.SetTaskPool(clientGrpool)
@@ -220,25 +218,25 @@ func (c *gettyRPCClient) updateSession(session getty.Session) {
 
 func (c *gettyRPCClient) getClientRpcSession(session getty.Session) (rpcSession, error) {
 	var (
-		err              error
-		rpcClientSession rpcSession
+		err        error
+		rpcSession rpcSession
 	)
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 	if c.sessions == nil {
-		return rpcClientSession, errClientClosed
+		return rpcSession, errClientClosed
 	}
 
 	err = errSessionNotExist
 	for _, s := range c.sessions {
 		if s.session == session {
-			rpcClientSession = *s
+			rpcSession = *s
 			err = nil
 			break
 		}
 	}
 
-	return rpcClientSession, perrors.WithStack(err)
+	return rpcSession, perrors.WithStack(err)
 }
 
 func (c *gettyRPCClient) isAvailable() bool {
@@ -297,12 +295,13 @@ type gettyRPCClientPool struct {
 	conns []*gettyRPCClient
 }
 
-func NewGettyRPCClientConnPool(rpcClient *Client, size int, ttl time.Duration) *gettyRPCClientPool {
+func newGettyRPCClientConnPool(rpcClient *Client, size int, ttl time.Duration) *gettyRPCClientPool {
 	return &gettyRPCClientPool{
 		rpcClient: rpcClient,
 		size:      size,
 		ttl:       int64(ttl.Seconds()),
-		conns:     make([]*gettyRPCClient, 0, 16),
+		// init capacity : 2
+		conns: make([]*gettyRPCClient, 0, 2),
 	}
 }
 
@@ -316,11 +315,15 @@ func (p *gettyRPCClientPool) close() {
 	}
 }
 
-func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPCClient, error) {
+func (p *gettyRPCClientPool) getGettyRpcClient(addr string) (*gettyRPCClient, error) {
 	conn, err := p.get()
 	if err == nil && conn == nil {
 		// create new conn
-		conn, err = newGettyRPCClientConn(p, protocol, addr)
+		rpcClientConn, err := newGettyRPCClientConn(p, addr)
+		if err == nil {
+			p.put(rpcClientConn)
+		}
+		return rpcClientConn, perrors.WithStack(err)
 	}
 	return conn, perrors.WithStack(err)
 }
@@ -333,10 +336,15 @@ func (p *gettyRPCClientPool) get() (*gettyRPCClient, error) {
 	if p.conns == nil {
 		return nil, errClientPoolClosed
 	}
-
-	for len(p.conns) > 0 {
-		conn := p.conns[len(p.conns)-1]
-		p.conns = p.conns[:len(p.conns)-1]
+	for num := len(p.conns); num > 0; {
+		var conn *gettyRPCClient
+		if num != 1 {
+			conn = p.conns[rand.Int31n(int32(num))]
+		} else {
+			conn = p.conns[0]
+		}
+		// This will recreate gettyRpcClient for remove last position
+		//p.conns = p.conns[:len(p.conns)-1]
 
 		if d := now - conn.getActive(); d > p.ttl {
 			p.remove(conn)
@@ -353,23 +361,19 @@ func (p *gettyRPCClientPool) put(conn *gettyRPCClient) {
 	if conn == nil || conn.getActive() == 0 {
 		return
 	}
-
 	p.Lock()
 	defer p.Unlock()
-
 	if p.conns == nil {
 		return
 	}
-
 	// check whether @conn has existed in p.conns or not.
 	for i := range p.conns {
 		if p.conns[i] == conn {
 			return
 		}
 	}
-
 	if len(p.conns) >= p.size {
-		// delete @conn from client Pool
+		// delete @conn from client pool
 		// p.remove(conn)
 		conn.close()
 		return
