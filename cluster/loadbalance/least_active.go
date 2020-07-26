@@ -46,6 +46,7 @@ func NewLeastActiveLoadBalance() cluster.LoadBalance {
 	return &leastActiveLoadBalance{}
 }
 
+// Select gets invoker based on least active load balancing strategy
 func (lb *leastActiveLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
 	count := len(invokers)
 	if count == 0 {
