@@ -178,7 +178,7 @@ func createRegisterParam(url common.URL, serviceName string) vo.RegisterInstance
 	return instance
 }
 
-func createDegisterParam(url common.URL, serviceName string) vo.DeregisterInstanceParam {
+func createDeregisterParam(url common.URL, serviceName string) vo.DeregisterInstanceParam {
 	if len(url.Ip) == 0 {
 		url.Ip = localIP
 	}
@@ -209,13 +209,13 @@ func (nr *nacosRegistry) Register(url common.URL) error {
 
 func (nr *nacosRegistry) DeRegister(url common.URL) error {
 	serviceName := getServiceName(url)
-	param := createDegisterParam(url, serviceName)
+	param := createDeregisterParam(url, serviceName)
 	isDeRegistry, err := nr.namingClient.DeregisterInstance(param)
 	if err != nil {
 		return err
 	}
 	if !isDeRegistry {
-		return perrors.New("DeRegistry [" + serviceName + "] to  nacos failed")
+		return perrors.New("DeRegistry [" + serviceName + "] to nacos failed")
 	}
 	return nil
 }
@@ -271,7 +271,7 @@ func (nr *nacosRegistry) Destroy() {
 		err := nr.DeRegister(url)
 		logger.Infof("DeRegister Nacos url:%+v", url)
 		if err != nil {
-			logger.Errorf("Deregister url:%+v  err:%v", url, err.Error())
+			logger.Errorf("Deregister url:%+v err:%v", url, err.Error())
 		}
 	}
 	return
