@@ -31,12 +31,12 @@ import (
 )
 
 const (
-	// RoundRobin ...
+	// RoundRobin load balancing way
 	RoundRobin = "roundrobin"
 
-	// COMPLETE ...
+	// nolint
 	COMPLETE = 0
-	// UPDATING ...
+	// nolint
 	UPDATING = 1
 )
 
@@ -59,6 +59,7 @@ func NewRoundRobinLoadBalance() cluster.LoadBalance {
 	return &roundRobinLoadBalance{}
 }
 
+// Select gets invoker based on round robin load balancing strategy
 func (lb *roundRobinLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
 	count := len(invokers)
 	if count == 0 {

@@ -126,6 +126,7 @@ func (invoker *failbackClusterInvoker) checkRetry(retryTask *retryTimerTask, err
 	}
 }
 
+// nolint
 func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	invokers := invoker.directory.List(invocation)
 	if err := invoker.checkInvokers(invokers, invocation); err != nil {
