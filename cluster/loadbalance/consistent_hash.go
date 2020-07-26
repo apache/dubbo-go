@@ -38,9 +38,9 @@ import (
 )
 
 const (
-	// ConsistentHash ...
+	// ConsistentHash consistent hash
 	ConsistentHash = "consistenthash"
-	// HashNodes ...
+	// HashNodes hash nodes
 	HashNodes = "hash.nodes"
 	// HashArguments  key of hash arguments  in url
 	HashArguments = "hash.arguments"
@@ -157,6 +157,7 @@ func (c *ConsistentHashSelector) selectForKey(hash uint32) protocol.Invoker {
 	return c.virtualInvokers[c.keys[idx]]
 }
 
+// nolint
 func (c *ConsistentHashSelector) hash(digest [16]byte, i int) uint32 {
 	return uint32((digest[3+i*4]&0xFF)<<24) | uint32((digest[2+i*4]&0xFF)<<16) |
 		uint32((digest[1+i*4]&0xFF)<<8) | uint32(digest[i*4]&0xFF)&0xFFFFFFF

@@ -43,6 +43,10 @@ const (
 	DEFAULT_REMOTING_TIMEOUT = 3000
 	RELEASE_KEY              = "release"
 	ANYHOST_KEY              = "anyhost"
+	PORT_KEY                 = "port"
+	PROTOCOL_KEY             = "protocol"
+	PATH_SEPARATOR           = "/"
+	DUBBO_KEY                = "dubbo"
 )
 
 const (
@@ -78,6 +82,11 @@ const (
 	PROVIDER_SHUTDOWN_FILTER               = "pshutdown"
 	CONSUMER_SHUTDOWN_FILTER               = "cshutdown"
 	SERIALIZATION_KEY                      = "serialization"
+	PID_KEY                                = "pid"
+	SYNC_REPORT_KEY                        = "sync.report"
+	RETRY_PERIOD_KEY                       = "retry.period"
+	RETRY_TIMES_KEY                        = "retry.times"
+	CYCLE_REPORT_KEY                       = "cycle.report"
 )
 
 const (
@@ -151,6 +160,17 @@ const (
 	NACOS_CATEGORY_KEY           = "category"
 	NACOS_PROTOCOL_KEY           = "protocol"
 	NACOS_PATH_KEY               = "path"
+	NACOS_NAMESPACE_ID           = "namespaceId"
+	NACOS_PASSWORD               = "password"
+	NACOS_USERNAME               = "username"
+)
+
+const (
+	ZOOKEEPER_KEY = "zookeeper"
+)
+
+const (
+	ETCDV3_KEY = "etcdv3"
 )
 
 const (
@@ -228,7 +248,6 @@ const (
 	KEY_SEPARATOR      = ":"
 	DEFAULT_PATH_TAG   = "metadata"
 	KEY_REVISON_PREFIX = "revision"
-	PATH_SEPARATOR     = "/"
 
 	// metadata service
 	METADATA_SERVICE_NAME = "org.apache.dubbo.metadata.MetadataService"
@@ -257,7 +276,19 @@ const (
 )
 
 // service discovery
-
 const (
-	NACOS_GROUP = "nacos.group"
+	SUBSCRIBED_SERVICE_NAMES_KEY               = "subscribed-services"
+	PROVIDER_BY                                = "provided-by"
+	EXPORTED_SERVICES_REVISION_PROPERTY_NAME   = "dubbo.exported-services.revision"
+	SUBSCRIBED_SERVICES_REVISION_PROPERTY_NAME = "dubbo.subscribed-services.revision"
+	SERVICE_INSTANCE_SELECTOR                  = "service-instance-selector"
+	METADATA_STORAGE_TYPE_PROPERTY_NAME        = "dubbo.metadata.storage-type"
+	DEFAULT_METADATA_STORAGE_TYPE              = "local"
+	SERVICE_INSTANCE_ENDPOINTS                 = "dubbo.endpoints"
+	METADATA_SERVICE_PREFIX                    = "dubbo.metadata-service."
+	METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME  = METADATA_SERVICE_PREFIX + "url-params"
+	METADATA_SERVICE_URLS_PROPERTY_NAME        = METADATA_SERVICE_PREFIX + "urls"
+
+	// SERVICE_DISCOVERY_KEY indicate which service discovery instance will be used
+	SERVICE_DISCOVERY_KEY = "service_discovery"
 )

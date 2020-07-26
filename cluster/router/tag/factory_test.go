@@ -18,6 +18,7 @@
 package tag
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -29,8 +30,13 @@ import (
 	"github.com/apache/dubbo-go/common"
 )
 
-func TestTagRouterFactory_NewRouter(t *testing.T) {
-	u1, err := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=true")
+const (
+	factoryLocalIP = "127.0.0.1"
+	factoryFormat  = "dubbo://%s:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=true"
+)
+
+func TestTagRouterFactoryNewRouter(t *testing.T) {
+	u1, err := common.NewURL(fmt.Sprintf(factoryFormat, factoryLocalIP))
 	assert.Nil(t, err)
 	factory := NewTagRouterFactory()
 	tagRouter, e := factory.NewPriorityRouter(&u1)

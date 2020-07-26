@@ -45,5 +45,5 @@ func (pfw *mockProtocolFilter) Refer(url common.URL) protocol.Invoker {
 
 // Destroy will do nothing
 func (pfw *mockProtocolFilter) Destroy() {
-
+	return
 }

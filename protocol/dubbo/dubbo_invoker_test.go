@@ -42,7 +42,7 @@ import (
 	"github.com/apache/dubbo-go/remoting/getty"
 )
 
-func TestDubboInvoker_Invoke(t *testing.T) {
+func TestDubboInvokerInvoke(t *testing.T) {
 	proto, url := InitTest(t)
 
 	c := getExchangeClient(url)

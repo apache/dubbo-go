@@ -18,6 +18,7 @@
 package healthcheck
 
 import (
+	"fmt"
 	"math"
 	"testing"
 	"time"
@@ -34,13 +35,22 @@ import (
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
-func TestHealthCheckRouter_Route(t *testing.T) {
+const (
+	healthCheckRoute1010IP         = "192.168.10.10"
+	healthCheckRoute1011IP         = "192.168.10.11"
+	healthCheckRoute1012IP         = "192.168.10.12"
+	healthCheckRouteMethodNameTest = "test"
+	healthCheck1001URL             = "dubbo://192.168.10.1/com.ikurento.user.UserProvider"
+	healthCheckRouteUrlFormat      = "dubbo://%s:20000/com.ikurento.user.UserProvider"
+)
+
+func TestHealthCheckRouterRoute(t *testing.T) {
 	defer protocol.CleanAllStatus()
-	consumerURL, _ := common.NewURL("dubbo://192.168.10.1/com.ikurento.user.UserProvider")
+	consumerURL, _ := common.NewURL(healthCheck1001URL)
 	consumerURL.SetParam(HEALTH_ROUTE_ENABLED_KEY, "true")
-	url1, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
-	url2, _ := common.NewURL("dubbo://192.168.10.11:20000/com.ikurento.user.UserProvider")
-	url3, _ := common.NewURL("dubbo://192.168.10.12:20000/com.ikurento.user.UserProvider")
+	url1, _ := common.NewURL(fmt.Sprintf(healthCheckRouteUrlFormat, healthCheckRoute1010IP))
+	url2, _ := common.NewURL(fmt.Sprintf(healthCheckRouteUrlFormat, healthCheckRoute1011IP))
+	url3, _ := common.NewURL(fmt.Sprintf(healthCheckRouteUrlFormat, healthCheckRoute1012IP))
 	hcr, _ := NewHealthCheckRouter(&consumerURL)
 
 	var invokers []protocol.Invoker
@@ -48,21 +58,21 @@ func TestHealthCheckRouter_Route(t *testing.T) {
 	invoker2 := NewMockInvoker(url2)
 	invoker3 := NewMockInvoker(url3)
 	invokers = append(invokers, invoker1, invoker2, invoker3)
-	inv := invocation.NewRPCInvocation("test", nil, nil)
+	inv := invocation.NewRPCInvocation(healthCheckRouteMethodNameTest, nil, nil)
 	res := hcr.Route(invokers, &consumerURL, inv)
 	// now all invokers are healthy
 	assert.True(t, len(res) == len(invokers))
 
 	for i := 0; i < 10; i++ {
-		request(url1, "test", 0, false, false)
+		request(url1, healthCheckRouteMethodNameTest, 0, false, false)
 	}
 	res = hcr.Route(invokers, &consumerURL, inv)
 	// invokers1  is unhealthy now
 	assert.True(t, len(res) == 2 && !contains(res, invoker1))
 
 	for i := 0; i < 10; i++ {
-		request(url1, "test", 0, false, false)
-		request(url2, "test", 0, false, false)
+		request(url1, healthCheckRouteMethodNameTest, 0, false, false)
+		request(url2, healthCheckRouteMethodNameTest, 0, false, false)
 	}
 
 	res = hcr.Route(invokers, &consumerURL, inv)
@@ -70,9 +80,9 @@ func TestHealthCheckRouter_Route(t *testing.T) {
 	assert.True(t, len(res) == 1 && !contains(res, invoker1) && !contains(res, invoker2))
 
 	for i := 0; i < 10; i++ {
-		request(url1, "test", 0, false, false)
-		request(url2, "test", 0, false, false)
-		request(url3, "test", 0, false, false)
+		request(url1, healthCheckRouteMethodNameTest, 0, false, false)
+		request(url2, healthCheckRouteMethodNameTest, 0, false, false)
+		request(url3, healthCheckRouteMethodNameTest, 0, false, false)
 	}
 
 	res = hcr.Route(invokers, &consumerURL, inv)
@@ -80,12 +90,12 @@ func TestHealthCheckRouter_Route(t *testing.T) {
 	assert.True(t, len(res) == 3)
 
 	// reset the invoker1 successive failed count, so invoker1 go to healthy
-	request(url1, "test", 0, false, true)
+	request(url1, healthCheckRouteMethodNameTest, 0, false, true)
 	res = hcr.Route(invokers, &consumerURL, inv)
 	assert.True(t, contains(res, invoker1))
 
 	for i := 0; i < 6; i++ {
-		request(url1, "test", 0, false, false)
+		request(url1, healthCheckRouteMethodNameTest, 0, false, false)
 	}
 	// now all invokers are unhealthy, so downgraded to all again
 	res = hcr.Route(invokers, &consumerURL, inv)
@@ -108,7 +118,7 @@ func contains(invokers []protocol.Invoker, invoker protocol.Invoker) bool {
 
 func TestNewHealthCheckRouter(t *testing.T) {
 	defer protocol.CleanAllStatus()
-	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+	url, _ := common.NewURL(fmt.Sprintf(healthCheckDubboUrlFormat, healthCheckDubbo1010IP))
 	hcr, _ := NewHealthCheckRouter(&url)
 	h := hcr.(*HealthCheckRouter)
 	assert.Nil(t, h.checker)
