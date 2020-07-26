@@ -27,7 +27,6 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/cluster/directory"
 	_ "github.com/apache/dubbo-go/cluster/router/condition"
 )
 
@@ -58,10 +57,10 @@ func TestRouterInit(t *testing.T) {
 	errPro := RouterInit(errorTestYML)
 	assert.Error(t, errPro)
 
-	assert.Equal(t, 0, directory.GetRouterURLSet().Size())
+	assert.Equal(t, 0, routerURLSet.Size())
 
 	errPro = RouterInit(testYML)
 	assert.NoError(t, errPro)
 
-	assert.Equal(t, 1, directory.GetRouterURLSet().Size())
+	assert.Equal(t, 1, routerURLSet.Size())
 }

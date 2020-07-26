@@ -22,7 +22,6 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/container/set"
 	"go.uber.org/atomic"
 )
 
@@ -34,8 +33,6 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 )
-
-var routerURLSet = gxset.NewSet()
 
 // BaseDirectory Abstract implementation of Directory: Invoker list returned from this Directory's list method have been filtered by Routers
 type BaseDirectory struct {
@@ -119,15 +116,4 @@ func (dir *BaseDirectory) Destroy(doDestroy func()) {
 // IsAvailable Once directory init finish, it will change to true
 func (dir *BaseDirectory) IsAvailable() bool {
 	return !dir.destroyed.Load()
-}
-
-// GetRouterURLSet Return router URL
-func GetRouterURLSet() *gxset.HashSet {
-	return routerURLSet
-}
-
-// AddRouterURLSet Add router URL
-// Router URL will init in config/config_loader.go
-func AddRouterURLSet(url *common.URL) {
-	routerURLSet.Add(url)
 }

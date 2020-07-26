@@ -21,25 +21,28 @@ import (
 	perrors "github.com/pkg/errors"
 )
 import (
-	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/registry"
 )
 
 var (
-	discoveryCreatorMap = make(map[string]func(url *common.URL) (registry.ServiceDiscovery, error), 4)
+	discoveryCreatorMap = make(map[string]func(name string) (registry.ServiceDiscovery, error), 4)
 )
 
 // SetServiceDiscovery will store the @creator and @name
-func SetServiceDiscovery(name string, creator func(_ *common.URL) (registry.ServiceDiscovery, error)) {
-	discoveryCreatorMap[name] = creator
+// protocol indicate the implementation, like nacos
+// the name like nacos-1...
+func SetServiceDiscovery(protocol string, creator func(name string) (registry.ServiceDiscovery, error)) {
+	discoveryCreatorMap[protocol] = creator
 }
 
 // GetServiceDiscovery will return the registry.ServiceDiscovery
+// protocol indicate the implementation, like nacos
+// the name like nacos-1...
 // if not found, or initialize instance failed, it will return error.
-func GetServiceDiscovery(name string, url *common.URL) (registry.ServiceDiscovery, error) {
-	creator, ok := discoveryCreatorMap[name]
+func GetServiceDiscovery(protocol string, name string) (registry.ServiceDiscovery, error) {
+	creator, ok := discoveryCreatorMap[protocol]
 	if !ok {
-		return nil, perrors.New("Could not find the service discovery with name: " + name)
+		return nil, perrors.New("Could not find the service discovery with discovery protocol: " + protocol)
 	}
-	return creator(url)
+	return creator(name)
 }

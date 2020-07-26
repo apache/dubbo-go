@@ -18,6 +18,7 @@
 package loadbalance
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -32,6 +33,19 @@ import (
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
+const (
+	ip       = "192.168.1.0"
+	port8080 = 8080
+	port8082 = 8082
+
+	url8080Short = "dubbo://192.168.1.0:8080"
+	url8081Short = "dubbo://192.168.1.0:8081"
+	url20000     = "dubbo://192.168.1.0:20000/org.apache.demo.HelloService?methods.echo.hash.arguments=0,1"
+	url8080      = "dubbo://192.168.1.0:8080/org.apache.demo.HelloService?methods.echo.hash.arguments=0,1"
+	url8081      = "dubbo://192.168.1.0:8081/org.apache.demo.HelloService?methods.echo.hash.arguments=0,1"
+	url8082      = "dubbo://192.168.1.0:8082/org.apache.demo.HelloService?methods.echo.hash.arguments=0,1"
+)
+
 func TestConsistentHashSelectorSuite(t *testing.T) {
 	suite.Run(t, new(consistentHashSelectorSuite))
 }
@@ -43,8 +57,7 @@ type consistentHashSelectorSuite struct {
 
 func (s *consistentHashSelectorSuite) SetupTest() {
 	var invokers []protocol.Invoker
-	url, _ := common.NewURL(
-		"dubbo://192.168.1.0:20000/org.apache.demo.HelloService?methods.echo.hash.arguments=0,1")
+	url, _ := common.NewURL(url20000)
 	invokers = append(invokers, protocol.NewBaseInvoker(url))
 	s.selector = newConsistentHashSelector(invokers, "echo", 999944)
 }
@@ -55,14 +68,14 @@ func (s *consistentHashSelectorSuite) TestToKey() {
 }
 
 func (s *consistentHashSelectorSuite) TestSelectForKey() {
-	url1, _ := common.NewURL("dubbo://192.168.1.0:8080")
-	url2, _ := common.NewURL("dubbo://192.168.1.0:8081")
+	url1, _ := common.NewURL(url8080Short)
+	url2, _ := common.NewURL(url8081Short)
 	s.selector.virtualInvokers = make(map[uint32]protocol.Invoker)
 	s.selector.virtualInvokers[99874] = protocol.NewBaseInvoker(url1)
 	s.selector.virtualInvokers[9999945] = protocol.NewBaseInvoker(url2)
 	s.selector.keys = []uint32{99874, 9999945}
 	result := s.selector.selectForKey(9999944)
-	s.Equal(result.GetUrl().String(), "dubbo://192.168.1.0:8081?")
+	s.Equal(result.GetUrl().String(), url8081Short+"?")
 }
 
 func TestConsistentHashLoadBalanceSuite(t *testing.T) {
@@ -83,11 +96,11 @@ type consistentHashLoadBalanceSuite struct {
 
 func (s *consistentHashLoadBalanceSuite) SetupTest() {
 	var err error
-	s.url1, err = common.NewURL("dubbo://192.168.1.0:8080/org.apache.demo.HelloService?methods.echo.hash.arguments=0,1")
+	s.url1, err = common.NewURL(url8080)
 	s.NoError(err)
-	s.url2, err = common.NewURL("dubbo://192.168.1.0:8081/org.apache.demo.HelloService?methods.echo.hash.arguments=0,1")
+	s.url2, err = common.NewURL(url8081)
 	s.NoError(err)
-	s.url3, err = common.NewURL("dubbo://192.168.1.0:8082/org.apache.demo.HelloService?methods.echo.hash.arguments=0,1")
+	s.url3, err = common.NewURL(url8082)
 	s.NoError(err)
 
 	s.invoker1 = protocol.NewBaseInvoker(s.url1)
@@ -101,9 +114,9 @@ func (s *consistentHashLoadBalanceSuite) SetupTest() {
 func (s *consistentHashLoadBalanceSuite) TestSelect() {
 	args := []interface{}{"name", "password", "age"}
 	invoker := s.lb.Select(s.invokers, invocation.NewRPCInvocation("echo", args, nil))
-	s.Equal(invoker.GetUrl().Location, "192.168.1.0:8080")
+	s.Equal(invoker.GetUrl().Location, fmt.Sprintf("%s:%d", ip, port8080))
 
 	args = []interface{}{"ok", "abc"}
 	invoker = s.lb.Select(s.invokers, invocation.NewRPCInvocation("echo", args, nil))
-	s.Equal(invoker.GetUrl().Location, "192.168.1.0:8082")
+	s.Equal(invoker.GetUrl().Location, fmt.Sprintf("%s:%d", ip, port8082))
 }

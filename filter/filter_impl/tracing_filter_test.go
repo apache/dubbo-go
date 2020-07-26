@@ -27,16 +27,13 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
-)
-
-import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
-func TestTracingFilter_Invoke(t *testing.T) {
+func TestTracingFilterInvoke(t *testing.T) {
 	url, _ := common.NewURL(
 		"dubbo://:20000/UserProvider?app.version=0.0.1&application=BDTService&bean.name=UserProvider" +
 			"&cluster=failover&environment=dev&group=&interface=com.ikurento.user.UserProvider&loadbalance=random&methods.GetUser." +

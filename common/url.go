@@ -38,6 +38,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
 )
 
 // ///////////////////////////////
@@ -180,7 +181,12 @@ func WithToken(token string) option {
 		if len(token) > 0 {
 			value := token
 			if strings.ToLower(token) == "true" || strings.ToLower(token) == "default" {
-				value = uuid.NewV4().String()
+				u, err := uuid.NewV4()
+				if err != nil {
+					logger.Errorf("could not generator UUID: %v", err)
+					return
+				}
+				value = u.String()
 			}
 			url.SetParam(constant.TOKEN_KEY, value)
 		}
@@ -680,4 +686,23 @@ func ParamsUnescapeEncode(params url.Values) string {
 		}
 	}
 	return buf.String()
+}
+
+// URLSlice will be used to sort URL instance
+// Instances will be order by URL.String()
+type URLSlice []URL
+
+// nolint
+func (s URLSlice) Len() int {
+	return len(s)
+}
+
+// nolint
+func (s URLSlice) Less(i, j int) bool {
+	return s[i].String() < s[j].String()
+}
+
+// nolint
+func (s URLSlice) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
 }
