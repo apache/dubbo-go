@@ -34,13 +34,10 @@ import (
 
 // MethodConfig is method level configuration
 type MetadataReportConfig struct {
-	Protocol   string            `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
-	Address    string            `yaml:"address" json:"address,omitempty" property:"address"`
-	Username   string            `yaml:"username" json:"username,omitempty" property:"username"`
-	Password   string            `yaml:"password" json:"password,omitempty"  property:"password"`
-	Params     map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
-	TimeoutStr string            `yaml:"timeout" default:"5s" json:"timeout,omitempty" property:"timeout"` // unit: second
-	Group      string            `yaml:"group" json:"group,omitempty" property:"group"`
+	Protocol  string            `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
+	RemoteRef string            `required:"true"  yaml:"remote_ref"  json:"remote_ref,omitempty"`
+	Params    map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
+	Group     string            `yaml:"group" json:"group,omitempty" property:"group"`
 }
 
 // nolint
@@ -70,18 +67,24 @@ func (c *MetadataReportConfig) ToUrl() (*common.URL, error) {
 		}
 	}
 
-	url, err := common.NewURL(c.Address,
+	rc, ok := GetBaseConfig().GetRemoteConfig(c.RemoteRef)
+
+	if !ok {
+		return nil, perrors.New("Could not find out the remote ref config, name: " + c.RemoteRef)
+	}
+
+	res, err := common.NewURL(rc.Address,
 		common.WithParams(urlMap),
-		common.WithUsername(c.Username),
-		common.WithPassword(c.Password),
-		common.WithLocation(c.Address),
+		common.WithUsername(rc.Username),
+		common.WithPassword(rc.Password),
+		common.WithLocation(rc.Address),
 		common.WithProtocol(c.Protocol),
 	)
-	if err != nil || len(url.Protocol) == 0 {
+	if err != nil || len(res.Protocol) == 0 {
 		return nil, perrors.New("Invalid MetadataReportConfig.")
 	}
-	url.SetParam("metadata", url.Protocol)
-	return &url, nil
+	res.SetParam("metadata", res.Protocol)
+	return &res, nil
 }
 
 func (c *MetadataReportConfig) IsValid() bool {
@@ -90,14 +93,12 @@ func (c *MetadataReportConfig) IsValid() bool {
 
 // StartMetadataReport: The entry of metadata report start
 func startMetadataReport(metadataType string, metadataReportConfig *MetadataReportConfig) error {
-	if metadataReportConfig == nil || metadataReportConfig.IsValid() {
+	if metadataReportConfig == nil || !metadataReportConfig.IsValid() {
 		return nil
 	}
 
-	if metadataType == constant.METACONFIG_REMOTE {
-		return perrors.New("No MetadataConfig found, you must specify the remote Metadata Center address when 'metadata=remote' is enabled.")
-	} else if metadataType == constant.METACONFIG_REMOTE && len(metadataReportConfig.Address) == 0 {
-		return perrors.New("MetadataConfig address can not be empty.")
+	if metadataType == constant.METACONFIG_REMOTE && len(metadataReportConfig.RemoteRef) == 0 {
+		return perrors.New("MetadataConfig remote ref can not be empty.")
 	}
 
 	if url, err := metadataReportConfig.ToUrl(); err == nil {

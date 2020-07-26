@@ -51,7 +51,7 @@ func (c *TestStruct) JavaClassName() string {
 
 type TestService struct{}
 
-// MethodOne ...
+// nolint
 func (ts *TestService) MethodOne(_ context.Context, test1 *TestStruct, test2 []TestStruct,
 	test3 interface{}, test4 []interface{}, test5 *string) (*TestStruct, error) {
 	if test1 == nil {
@@ -72,12 +72,12 @@ func (ts *TestService) MethodOne(_ context.Context, test1 *TestStruct, test2 []T
 	return &TestStruct{}, nil
 }
 
-// Reference ...
+// nolint
 func (*TestService) Reference() string {
 	return "com.test.Path"
 }
 
-func TestGenericServiceFilter_Invoke(t *testing.T) {
+func TestGenericServiceFilterInvoke(t *testing.T) {
 	hessian.RegisterPOJO(&TestStruct{})
 	methodName := "$invoke"
 	m := make(map[string]interface{})
@@ -105,7 +105,7 @@ func TestGenericServiceFilter_Invoke(t *testing.T) {
 	assert.Nil(t, result.Error())
 }
 
-func TestGenericServiceFilter_ResponseTestStruct(t *testing.T) {
+func TestGenericServiceFilterResponseTestStruct(t *testing.T) {
 	ts := &TestStruct{
 		AaAa: "aaa",
 		BaBa: "bbb",
@@ -130,7 +130,7 @@ func TestGenericServiceFilter_ResponseTestStruct(t *testing.T) {
 	assert.Equal(t, reflect.ValueOf(r.Result()).Kind(), reflect.Map)
 }
 
-func TestGenericServiceFilter_ResponseString(t *testing.T) {
+func TestGenericServiceFilterResponseString(t *testing.T) {
 	str := "111"
 	result := &protocol.RPCResult{
 		Rest: str,

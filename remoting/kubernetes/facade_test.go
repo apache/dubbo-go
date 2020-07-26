@@ -48,6 +48,7 @@ func (r *mockFacade) GetUrl() common.URL {
 }
 
 func (r *mockFacade) Destroy() {
+	// TODO implementation me
 }
 
 func (r *mockFacade) RestartCallBack() bool {

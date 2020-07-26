@@ -55,6 +55,7 @@ type ReferenceConfig struct {
 	Retries        string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
 	Group          string            `yaml:"group"  json:"group,omitempty" property:"group"`
 	Version        string            `yaml:"version"  json:"version,omitempty" property:"version"`
+	ProvideBy      string            `yaml:"provide_by"  json:"provide_by,omitempty" property:"provide_by"`
 	Methods        []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
 	Async          bool              `yaml:"async"  json:"async,omitempty" property:"async"`
 	Params         map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
@@ -144,6 +145,8 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 				regUrl = u
 			}
 		}
+
+		// TODO(decouple from directory, config should not depend on directory module)
 		if regUrl != nil {
 			cluster := extension.GetCluster("registryAware")
 			c.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
@@ -188,6 +191,7 @@ func (c *ReferenceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.VERSION_KEY, c.Version)
 	urlMap.Set(constant.GENERIC_KEY, strconv.FormatBool(c.Generic))
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
+	urlMap.Set(constant.PROVIDER_BY, c.ProvideBy)
 
 	urlMap.Set(constant.RELEASE_KEY, "dubbo-golang-"+constant.Version)
 	urlMap.Set(constant.SIDE_KEY, (common.RoleType(common.CONSUMER)).Role())
@@ -216,7 +220,7 @@ func (c *ReferenceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.REFERENCE_FILTER_KEY, mergeValue(consumerConfig.Filter, c.Filter, defaultReferenceFilter))
 
 	for _, v := range c.Methods {
-		urlMap.Set("methods."+v.Name+"."+constant.LOADBALANCE_KEY, v.Loadbalance)
+		urlMap.Set("methods."+v.Name+"."+constant.LOADBALANCE_KEY, v.LoadBalance)
 		urlMap.Set("methods."+v.Name+"."+constant.RETRIES_KEY, v.Retries)
 		urlMap.Set("methods."+v.Name+"."+constant.STICKY_KEY, strconv.FormatBool(v.Sticky))
 		if len(v.RequestTimeout) != 0 {

@@ -30,10 +30,14 @@ import (
 	"github.com/apache/dubbo-go/common"
 )
 
+const (
+	mockCommonDubboUrl = "dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider"
+)
+
 func TestBeginCount(t *testing.T) {
 	defer CleanAllStatus()
 
-	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+	url, _ := common.NewURL(mockCommonDubboUrl)
 	BeginCount(url, "test")
 	urlStatus := GetURLStatus(url)
 	methodStatus := GetMethodStatus(url, "test")
@@ -47,7 +51,7 @@ func TestBeginCount(t *testing.T) {
 func TestEndCount(t *testing.T) {
 	defer CleanAllStatus()
 
-	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+	url, _ := common.NewURL(mockCommonDubboUrl)
 	EndCount(url, "test", 100, true)
 	urlStatus := GetURLStatus(url)
 	methodStatus := GetMethodStatus(url, "test")
@@ -60,7 +64,7 @@ func TestEndCount(t *testing.T) {
 func TestGetMethodStatus(t *testing.T) {
 	defer CleanAllStatus()
 
-	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+	url, _ := common.NewURL(mockCommonDubboUrl)
 	status := GetMethodStatus(url, "test")
 	assert.NotNil(t, status)
 	assert.Equal(t, int32(0), status.total)
@@ -69,25 +73,25 @@ func TestGetMethodStatus(t *testing.T) {
 func TestGetUrlStatus(t *testing.T) {
 	defer CleanAllStatus()
 
-	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+	url, _ := common.NewURL(mockCommonDubboUrl)
 	status := GetURLStatus(url)
 	assert.NotNil(t, status)
 	assert.Equal(t, int32(0), status.total)
 }
 
-func Test_beginCount0(t *testing.T) {
+func TestbeginCount0(t *testing.T) {
 	defer CleanAllStatus()
 
-	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+	url, _ := common.NewURL(mockCommonDubboUrl)
 	status := GetURLStatus(url)
 	beginCount0(status)
 	assert.Equal(t, int32(1), status.active)
 }
 
-func Test_All(t *testing.T) {
+func TestAll(t *testing.T) {
 	defer CleanAllStatus()
 
-	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+	url, _ := common.NewURL(mockCommonDubboUrl)
 	request(url, "test", 100, false, true)
 	urlStatus := GetURLStatus(url)
 	methodStatus := GetMethodStatus(url, "test")

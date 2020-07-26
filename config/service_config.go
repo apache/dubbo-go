@@ -74,14 +74,18 @@ type ServiceConfig struct {
 	ParamSign                   string            `yaml:"param.sign" json:"param.sign,omitempty" property:"param.sign"`
 	Tag                         string            `yaml:"tag" json:"tag,omitempty" property:"tag"`
 
+	Protocols     map[string]*ProtocolConfig
 	unexported    *atomic.Bool
 	exported      *atomic.Bool
 	rpcService    common.RPCService
-	cacheProtocol protocol.Protocol
 	cacheMutex    sync.Mutex
+	cacheProtocol protocol.Protocol
+
+	exportersLock sync.Mutex
+	exporters     []protocol.Exporter
 }
 
-// nolint
+// Prefix returns dubbo.service.${interface}.
 func (c *ServiceConfig) Prefix() string {
 	return constant.ServiceConfigPrefix + c.InterfaceName + "."
 }
@@ -95,6 +99,8 @@ func (c *ServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := unmarshal((*plain)(c)); err != nil {
 		return err
 	}
+	c.exported = atomic.NewBool(false)
+	c.unexported = atomic.NewBool(false)
 	return nil
 }
 
@@ -106,6 +112,16 @@ func NewServiceConfig(id string, context context.Context) *ServiceConfig {
 		unexported: atomic.NewBool(false),
 		exported:   atomic.NewBool(false),
 	}
+}
+
+// InitExported will set exported as false atom bool
+func (c *ServiceConfig) InitExported() {
+	c.exported = atomic.NewBool(false)
+}
+
+// IsExport will return whether the service config is exported or not
+func (c *ServiceConfig) IsExport() bool {
+	return c.exported.Load()
 }
 
 // Get Random Port
@@ -126,7 +142,7 @@ func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
 	return ports
 }
 
-// Export ...
+// Export exports the service
 func (c *ServiceConfig) Export() error {
 	// TODO: config center start here
 
@@ -143,7 +159,7 @@ func (c *ServiceConfig) Export() error {
 
 	regUrls := loadRegistries(c.Registry, providerConfig.Registries, common.PROVIDER)
 	urlMap := c.getUrlMap()
-	protocolConfigs := loadProtocol(c.Protocol, providerConfig.Protocols)
+	protocolConfigs := loadProtocol(c.Protocol, c.Protocols)
 	if len(protocolConfigs) == 0 {
 		logger.Warnf("The service %v's '%v' protocols don't has right protocolConfigs ", c.InterfaceName, c.Protocol)
 		return nil
@@ -179,6 +195,9 @@ func (c *ServiceConfig) Export() error {
 		if len(c.Tag) > 0 {
 			ivkURL.AddParam(constant.Tagkey, c.Tag)
 		}
+
+		var exporter protocol.Exporter
+
 		if len(regUrls) > 0 {
 			for _, regUrl := range regUrls {
 				regUrl.SubURL = ivkURL
@@ -191,23 +210,47 @@ func (c *ServiceConfig) Export() error {
 				c.cacheMutex.Unlock()
 
 				invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*regUrl)
-				exporter := c.cacheProtocol.Export(invoker)
+				exporter = c.cacheProtocol.Export(invoker)
 				if exporter == nil {
 					panic(perrors.New(fmt.Sprintf("Registry protocol new exporter error,registry is {%v},url is {%v}", regUrl, ivkURL)))
 				}
 			}
 		} else {
 			invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*ivkURL)
-			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
+			exporter = extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {
 				panic(perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error,url is {%v}", ivkURL)))
 			}
 		}
+		c.exporters = append(c.exporters, exporter)
 	}
+	c.exported.Store(true)
 	return nil
 }
 
-// Implement ...
+// Unexport will call unexport of all exporters service config exported
+func (c *ServiceConfig) Unexport() {
+	if !c.exported.Load() {
+		return
+	}
+	if c.unexported.Load() {
+		return
+	}
+
+	func() {
+		c.exportersLock.Lock()
+		defer c.exportersLock.Unlock()
+		for _, exporter := range c.exporters {
+			exporter.Unexport()
+		}
+		c.exporters = nil
+	}()
+
+	c.exported.Store(false)
+	c.unexported.Store(true)
+}
+
+// Implement only store the @s and return
 func (c *ServiceConfig) Implement(s common.RPCService) {
 	c.rpcService = s
 }
@@ -262,7 +305,7 @@ func (c *ServiceConfig) getUrlMap() url.Values {
 
 	for _, v := range c.Methods {
 		prefix := "methods." + v.Name + "."
-		urlMap.Set(prefix+constant.LOADBALANCE_KEY, v.Loadbalance)
+		urlMap.Set(prefix+constant.LOADBALANCE_KEY, v.LoadBalance)
 		urlMap.Set(prefix+constant.RETRIES_KEY, v.Retries)
 		urlMap.Set(prefix+constant.WEIGHT_KEY, strconv.FormatInt(v.Weight, 10))
 
@@ -276,4 +319,17 @@ func (c *ServiceConfig) getUrlMap() url.Values {
 	}
 
 	return urlMap
+}
+
+// GetExportedUrls will return the url in service config's exporter
+func (c *ServiceConfig) GetExportedUrls() []*common.URL {
+	if c.exported.Load() {
+		var urls []*common.URL
+		for _, exporter := range c.exporters {
+			url := exporter.GetInvoker().GetUrl()
+			urls = append(urls, &url)
+		}
+		return urls
+	}
+	return nil
 }
