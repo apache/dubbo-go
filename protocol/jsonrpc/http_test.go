@@ -44,7 +44,15 @@ type (
 	}
 )
 
-func TestHTTPClient_Call(t *testing.T) {
+const (
+	mockJsonCommonUrl = "jsonrpc://127.0.0.1:20001/UserProvider?anyhost=true&" +
+		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
+		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider"
+)
+
+func TestHTTPClientCall(t *testing.T) {
 
 	methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "jsonrpc", &UserProvider{})
 	assert.NoError(t, err)
@@ -52,11 +60,7 @@ func TestHTTPClient_Call(t *testing.T) {
 
 	// Export
 	proto := GetProtocol()
-	url, err := common.NewURL("jsonrpc://127.0.0.1:20001/UserProvider?anyhost=true&" +
-		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
-		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
-		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
-		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
+	url, err := common.NewURL(mockJsonCommonUrl)
 	assert.NoError(t, err)
 	proto.Export(&proxy_factory.ProxyInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),

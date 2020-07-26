@@ -89,7 +89,7 @@ func buildInvokerChain(invoker protocol.Invoker, key string) protocol.Invoker {
 	return next
 }
 
-// GetProtocol ...
+// nolint
 func GetProtocol() protocol.Protocol {
 	return &ProtocolFilterWrapper{}
 }
@@ -98,30 +98,30 @@ func GetProtocol() protocol.Protocol {
 // filter invoker
 ///////////////////////////
 
-// FilterInvoker ...
+// FilterInvoker defines invoker and filter
 type FilterInvoker struct {
 	next    protocol.Invoker
 	invoker protocol.Invoker
 	filter  filter.Filter
 }
 
-// GetUrl ...
+// GetUrl is used to get url from FilterInvoker
 func (fi *FilterInvoker) GetUrl() common.URL {
 	return fi.invoker.GetUrl()
 }
 
-// IsAvailable ...
+// IsAvailable is used to get available status
 func (fi *FilterInvoker) IsAvailable() bool {
 	return fi.invoker.IsAvailable()
 }
 
-// Invoke ...
+// Invoke is used to call service method by invocation
 func (fi *FilterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	result := fi.filter.Invoke(ctx, fi.next, invocation)
 	return fi.filter.OnResponse(ctx, result, fi.invoker, invocation)
 }
 
-// Destroy ...
+// Destroy will destroy invoker
 func (fi *FilterInvoker) Destroy() {
 	fi.invoker.Destroy()
 }

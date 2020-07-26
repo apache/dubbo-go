@@ -82,14 +82,6 @@ func TestDubboProtocol_Export(t *testing.T) {
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245")
-	assert.NoError(t, err)
-	exporter := proto.Export(protocol.NewBaseInvoker(url))
-
-	// make sure url
-	eq := exporter.GetInvoker().GetUrl().URLEqual(url)
-	assert.True(t, eq)
-
-	// second service: the same path and the different version
 	url2, err := common.NewURL("dubbo://127.0.0.1:20095/com.ikurento.user.UserProvider?anyhost=true&"+
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&"+
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&"+
@@ -104,7 +96,7 @@ func TestDubboProtocol_Export(t *testing.T) {
 	// make sure exporterMap after 'Unexport'
 	_, ok := proto.(*DubboProtocol).ExporterMap().Load(url.ServiceKey())
 	assert.True(t, ok)
-	exporter.Unexport()
+	exporter2.Unexport()
 	_, ok = proto.(*DubboProtocol).ExporterMap().Load(url.ServiceKey())
 	assert.False(t, ok)
 

@@ -43,6 +43,7 @@ import (
 // mock invoker
 // ///////////////////////////
 
+// nolint
 type MockInvoker struct {
 	url       common.URL
 	available bool
@@ -51,6 +52,7 @@ type MockInvoker struct {
 	successCount int
 }
 
+// nolint
 func NewMockInvoker(url common.URL, successCount int) *MockInvoker {
 	return &MockInvoker{
 		url:          url,
@@ -60,23 +62,28 @@ func NewMockInvoker(url common.URL, successCount int) *MockInvoker {
 	}
 }
 
+// nolint
 func (bi *MockInvoker) GetUrl() common.URL {
 	return bi.url
 }
 
+// nolint
 func (bi *MockInvoker) IsAvailable() bool {
 	return bi.available
 }
 
+// nolint
 func (bi *MockInvoker) IsDestroyed() bool {
 	return bi.destroyed
 }
 
+// nolint
 type rest struct {
 	tried   int
 	success bool
 }
 
+// nolint
 func (bi *MockInvoker) Invoke(c context.Context, invocation protocol.Invocation) protocol.Result {
 	count++
 	var (
@@ -93,14 +100,17 @@ func (bi *MockInvoker) Invoke(c context.Context, invocation protocol.Invocation)
 	return result
 }
 
+// nolint
 func (bi *MockInvoker) Destroy() {
 	logger.Infof("Destroy invoker: %v", bi.GetUrl().String())
 	bi.destroyed = true
 	bi.available = false
 }
 
+// nolint
 var count int
 
+// nolint
 func normalInvoke(successCount int, urlParam url.Values, invocations ...*invocation.RPCInvocation) protocol.Result {
 	extension.SetLoadbalance("random", loadbalance.NewRandomLoadBalance)
 	failoverCluster := NewFailoverCluster()
@@ -119,6 +129,7 @@ func normalInvoke(successCount int, urlParam url.Values, invocations ...*invocat
 	return clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 }
 
+// nolint
 func TestFailoverInvokeSuccess(t *testing.T) {
 	urlParams := url.Values{}
 	result := normalInvoke(3, urlParams)
@@ -126,6 +137,7 @@ func TestFailoverInvokeSuccess(t *testing.T) {
 	count = 0
 }
 
+// nolint
 func TestFailoverInvokeFail(t *testing.T) {
 	urlParams := url.Values{}
 	result := normalInvoke(4, urlParams)
@@ -133,6 +145,7 @@ func TestFailoverInvokeFail(t *testing.T) {
 	count = 0
 }
 
+// nolint
 func TestFailoverInvoke1(t *testing.T) {
 	urlParams := url.Values{}
 	urlParams.Set(constant.RETRIES_KEY, "3")
@@ -141,6 +154,7 @@ func TestFailoverInvoke1(t *testing.T) {
 	count = 0
 }
 
+// nolint
 func TestFailoverInvoke2(t *testing.T) {
 	urlParams := url.Values{}
 	urlParams.Set(constant.RETRIES_KEY, "2")
@@ -152,6 +166,7 @@ func TestFailoverInvoke2(t *testing.T) {
 	count = 0
 }
 
+// nolint
 func TestFailoverDestroy(t *testing.T) {
 	extension.SetLoadbalance("random", loadbalance.NewRandomLoadBalance)
 	failoverCluster := NewFailoverCluster()

@@ -37,11 +37,11 @@ import (
 )
 
 const (
-	// HYSTRIX_CONSUMER ...
+	// nolint
 	HYSTRIX_CONSUMER = "hystrix_consumer"
-	// HYSTRIX_PROVIDER ...
+	// nolint
 	HYSTRIX_PROVIDER = "hystrix_provider"
-	// HYSTRIX ...
+	// nolint
 	HYSTRIX = "hystrix"
 )
 
@@ -85,14 +85,14 @@ func NewHystrixFilterError(err error, failByHystrix bool) error {
 	}
 }
 
-// HystrixFilter ...
+// nolint
 type HystrixFilter struct {
 	COrP     bool //true for consumer
 	res      map[string][]*regexp.Regexp
 	ifNewMap sync.Map
 }
 
-// Invoke is an implentation of filter, provides Hystrix pattern latency and fault tolerance
+// Invoke is an implementation of filter, provides Hystrix pattern latency and fault tolerance
 func (hf *HystrixFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	cmdName := fmt.Sprintf("%s&method=%s", invoker.GetUrl().Key(), invocation.MethodName())
 
@@ -256,7 +256,7 @@ func initHystrixConfigProvider() error {
 //	return initHystrixConfig()
 //}
 
-// CommandConfigWithError ...
+// nolint
 type CommandConfigWithError struct {
 	Timeout                int      `yaml:"timeout"`
 	MaxConcurrentRequests  int      `yaml:"max_concurrent_requests"`
@@ -274,14 +274,14 @@ type CommandConfigWithError struct {
 //- ErrorPercentThreshold: it causes circuits to open once the rolling measure of errors exceeds this percent of requests
 //See hystrix doc
 
-// HystrixFilterConfig ...
+// nolint
 type HystrixFilterConfig struct {
 	Configs  map[string]*CommandConfigWithError
 	Default  string
 	Services map[string]ServiceHystrixConfig
 }
 
-// ServiceHystrixConfig ...
+// nolint
 type ServiceHystrixConfig struct {
 	ServiceConfig string `yaml:"service_config"`
 	Methods       map[string]string

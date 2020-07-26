@@ -33,10 +33,15 @@ import (
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
+const (
+	baseClusterInvokerMethodName = "getUser"
+	baseClusterInvokerFormat     = "dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider"
+)
+
 func TestStickyNormal(t *testing.T) {
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {
-		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
+		url, _ := common.NewURL(fmt.Sprintf(baseClusterInvokerFormat, i))
 		url.SetParam("sticky", "true")
 		invokers = append(invokers, NewMockInvoker(url, 1))
 	}
@@ -45,7 +50,7 @@ func TestStickyNormal(t *testing.T) {
 	invoked := []protocol.Invoker{}
 
 	tmpRandomBalance := loadbalance.NewRandomLoadBalance()
-	tmpInvocation := invocation.NewRPCInvocation("getUser", nil, nil)
+	tmpInvocation := invocation.NewRPCInvocation(baseClusterInvokerMethodName, nil, nil)
 	result := base.doSelect(tmpRandomBalance, tmpInvocation, invokers, invoked)
 	result1 := base.doSelect(tmpRandomBalance, tmpInvocation, invokers, invoked)
 	assert.Equal(t, result, result1)
@@ -54,7 +59,7 @@ func TestStickyNormal(t *testing.T) {
 func TestStickyNormalWhenError(t *testing.T) {
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {
-		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
+		url, _ := common.NewURL(fmt.Sprintf(baseClusterInvokerFormat, i))
 		url.SetParam("sticky", "true")
 		invokers = append(invokers, NewMockInvoker(url, 1))
 	}
@@ -62,8 +67,8 @@ func TestStickyNormalWhenError(t *testing.T) {
 	base.availablecheck = true
 
 	invoked := []protocol.Invoker{}
-	result := base.doSelect(loadbalance.NewRandomLoadBalance(), invocation.NewRPCInvocation("getUser", nil, nil), invokers, invoked)
+	result := base.doSelect(loadbalance.NewRandomLoadBalance(), invocation.NewRPCInvocation(baseClusterInvokerMethodName, nil, nil), invokers, invoked)
 	invoked = append(invoked, result)
-	result1 := base.doSelect(loadbalance.NewRandomLoadBalance(), invocation.NewRPCInvocation("getUser", nil, nil), invokers, invoked)
+	result1 := base.doSelect(loadbalance.NewRandomLoadBalance(), invocation.NewRPCInvocation(baseClusterInvokerMethodName, nil, nil), invokers, invoked)
 	assert.NotEqual(t, result, result1)
 }
