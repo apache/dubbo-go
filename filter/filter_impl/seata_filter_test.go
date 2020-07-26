@@ -15,20 +15,41 @@
  * limitations under the License.
  */
 
-package filter
+package filter_impl
 
 import (
 	"context"
-)
-import (
-	"github.com/apache/dubbo-go/protocol"
+	"testing"
 )
 
-// Filter interface defines the functions of a filter
-// Extension - Filter
-type Filter interface {
-	// Invoke is the core function of a filter, it determines the process of the filter
-	Invoke(context.Context, protocol.Invoker, protocol.Invocation) protocol.Result
-	// OnResponse updates the results from Invoke and then returns the modified results.
-	OnResponse(context.Context, protocol.Result, protocol.Invoker, protocol.Invocation) protocol.Result
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/invocation"
+)
+
+type testMockSeataInvoker struct {
+	protocol.BaseInvoker
+}
+
+func (iv *testMockSeataInvoker) Invoke(ctx context.Context, _ protocol.Invocation) protocol.Result {
+	val := ctx.Value(SEATA_XID)
+	if val != nil {
+		xid, ok := val.(string)
+		if ok {
+			return &protocol.RPCResult{Rest: xid}
+		}
+	}
+	return &protocol.RPCResult{}
+}
+
+func TestSeataFilter_Invoke(t *testing.T) {
+	filter := getSeataFilter()
+	result := filter.Invoke(context.Background(), &testMockSeataInvoker{}, invocation.NewRPCInvocation("$echo", []interface{}{"OK"}, map[string]string{
+		SEATA_XID: "10.30.21.227:8091:2000047792",
+	}))
+	assert.Equal(t, "10.30.21.227:8091:2000047792", result.Result())
 }

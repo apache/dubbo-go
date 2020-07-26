@@ -48,6 +48,7 @@ var serviceEventTypeStrings = [...]string{
 	"update",
 }
 
+// nolint
 func (t EventType) String() string {
 	return serviceEventTypeStrings[t]
 }
@@ -63,6 +64,7 @@ type Event struct {
 	Content string
 }
 
+// nolint
 func (e Event) String() string {
 	return fmt.Sprintf("Event{Action{%s}, Content{%s}}", e.Action, e.Content)
 }
