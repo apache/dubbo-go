@@ -20,6 +20,7 @@ package condition
 import (
 	"encoding/base64"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -72,11 +73,38 @@ func (f *FileConditionRouter) URL() common.URL {
 			common.WithParamsValue(constant.RULE_KEY, base64.URLEncoding.EncodeToString([]byte(rule))),
 			common.WithParamsValue(constant.ROUTER_KEY, constant.CONDITION_ROUTE_PROTOCOL),
 			common.WithParamsValue(constant.CATEGORY_KEY, constant.ROUTERS_CATEGORY),
-			common.WithParamsValue(constant.RouterRuleKey, routerRule.Key),
-			common.WithParamsValue(constant.RouterScope, routerRule.Scope),
 		)
+		if routerRule.Scope == constant.RouterApplicationScope {
+			f.url.AddParam(constant.APPLICATION_KEY, routerRule.Key)
+		} else {
+			grp, srv, ver, _ := parseServiceRouterKey(routerRule.Key)
+			if len(grp) > 0 {
+				f.url.AddParam(constant.GROUP_KEY, grp)
+			}
+			if len(ver) > 0 {
+				f.url.AddParam(constant.VERSION_KEY, ver)
+			}
+			if len(srv) > 0 {
+				f.url.AddParam(constant.INTERFACE_KEY, srv)
+			}
+		}
 	})
 	return f.url
+}
+
+func parseServiceRouterKey(key string) (string, string, string, error) {
+	if len(strings.TrimSpace(key)) == 0 {
+		return "", "", "", nil
+	}
+	reg := regexp.MustCompile(`(.*/{1})?([^:/]+)(:{1}[^:]*)?`)
+	strs := reg.FindAllStringSubmatch(key, -1)
+	if strs == nil || len(strs) != 1 {
+		return "", "", "", perrors.Errorf("Invalid key, service key must follow [{group}/]{service}[:{version}] pattern")
+	}
+	grp := strings.TrimSpace(strings.TrimRight(strs[0][1], "/"))
+	srv := strings.TrimSpace(strs[0][2])
+	ver := strings.TrimSpace(strings.TrimLeft(strs[0][3], ":"))
+	return grp, srv, ver, nil
 }
 
 func parseCondition(conditions []string) string {

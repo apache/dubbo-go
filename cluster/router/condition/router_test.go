@@ -22,6 +22,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"github.com/dubbogo/gost/container/set"
 	"github.com/stretchr/testify/assert"
 )
@@ -54,4 +55,34 @@ func TestParseRule(t *testing.T) {
 	assert.Nil(t, err)
 	assert.EqualValues(t, matchPair["method"].Mismatches, gxset.NewSet(`sayHello`, `sayGoodDay`))
 	assert.EqualValues(t, matchPair["method"].Matches, gxset.NewSet(`sayGoodBye`))
+}
+
+func TestNewConditionRouter(t *testing.T) {
+	url, _ := common.NewURL(`condition://0.0.0.0:?application=mock-app&category=routers&force=true&priority=1&router=condition&rule=YSAmIGMgPT4gYiAmIGQ%3D`)
+	router, err := NewConditionRouter(&url)
+	assert.Nil(t, err)
+	assert.Equal(t, true, router.Enabled())
+	assert.Equal(t, true, router.Force)
+	assert.Equal(t, int64(1), router.Priority())
+	whenRule, _ := parseRule("a & c")
+	thenRule, _ := parseRule("b & d")
+	assert.EqualValues(t, router.WhenCondition, whenRule)
+	assert.EqualValues(t, router.ThenCondition, thenRule)
+
+	router, err = NewConditionRouter(nil)
+	assert.Error(t, err)
+
+	url, _ = common.NewURL(`condition://0.0.0.0:?application=mock-app&category=routers&force=true&priority=1&router=condition&rule=YSAmT4gYiAmIGQ%3D`)
+	router, err = NewConditionRouter(&url)
+	assert.Error(t, err)
+
+	url, _ = common.NewURL(`condition://0.0.0.0:?application=mock-app&category=routers&force=true&router=condition&rule=YSAmIGMgPT4gYiAmIGQ%3D`)
+	router, err = NewConditionRouter(&url)
+	assert.Nil(t, err)
+	assert.Equal(t, int64(150), router.Priority())
+
+	url, _ = common.NewURL(`condition://0.0.0.0:?category=routers&force=true&interface=mock-service&router=condition&rule=YSAmIGMgPT4gYiAmIGQ%3D`)
+	router, err = NewConditionRouter(&url)
+	assert.Nil(t, err)
+	assert.Equal(t, int64(140), router.Priority())
 }

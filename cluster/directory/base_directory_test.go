@@ -48,13 +48,17 @@ func TestNewBaseDirectory(t *testing.T) {
 }
 
 func TestBuildRouterChain(t *testing.T) {
-	directory := NewBaseDirectory(&url)
+
+	regURL := url
+	regURL.AddParam(constant.INTERFACE_KEY, "mock-app")
+	directory := NewBaseDirectory(&regURL)
 
 	assert.NotNil(t, directory)
 
 	localIP, _ := gxnet.GetLocalIP()
 	rule := base64.URLEncoding.EncodeToString([]byte("true => " + " host = " + localIP))
-	routeURL := getRouteUrl(rule)
+	routeURL := getRouteURL(rule)
+	routeURL.AddParam(constant.INTERFACE_KEY, "mock-app")
 	routerURLs := make([]*common.URL, 0)
 	routerURLs = append(routerURLs, routeURL)
 	directory.SetRouters(routerURLs)
@@ -63,9 +67,9 @@ func TestBuildRouterChain(t *testing.T) {
 	assert.NotNil(t, chain)
 }
 
-func getRouteUrl(rule string) *common.URL {
+func getRouteURL(rule string) *common.URL {
 	anyUrl.AddParam("rule", rule)
 	anyUrl.AddParam("force", "true")
 	anyUrl.AddParam(constant.ROUTER_KEY, "router")
-	return &url
+	return &anyUrl
 }
