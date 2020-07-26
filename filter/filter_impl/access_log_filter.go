@@ -36,20 +36,20 @@ import (
 const (
 	//used in URL.
 
-	// FileDateFormat ...
+	// nolint
 	FileDateFormat = "2006-01-02"
-	// MessageDateLayout ...
+	// nolint
 	MessageDateLayout = "2006-01-02 15:04:05"
-	// LogMaxBuffer ...
+	// nolint
 	LogMaxBuffer = 5000
-	// LogFileMode ...
+	// nolint
 	LogFileMode = 0600
 
 	// those fields are the data collected by this filter
 
-	// Types ...
+	// nolint
 	Types = "types"
-	// Arguments ...
+	// nolint
 	Arguments = "arguments"
 )
 
