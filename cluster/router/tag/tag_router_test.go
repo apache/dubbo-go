@@ -19,6 +19,7 @@ package tag
 
 import (
 	"context"
+	"github.com/apache/dubbo-go/common/constant"
 	"testing"
 )
 
@@ -159,4 +160,26 @@ func TestTagRouterRouteNoForce(t *testing.T) {
 	inv.SetAttachments(tagRouterTestDubboForceTag, tagRouterTestFalse)
 	invRst2 := tagRouter.Route(invokers, &u1, inv)
 	assert.Equal(t, 3, len(invRst2))
+}
+
+func TestFilterCondition(t *testing.T) {
+	u2, e2 := common.NewURL(tagRouterTestHangZhouUrl)
+	u3, e3 := common.NewURL(tagRouterTestShangHaiUrl)
+	u4, e4 := common.NewURL(tagRouterTestBeijingUrl)
+	assert.Nil(t, e2)
+	assert.Nil(t, e3)
+	assert.Nil(t, e4)
+	inv2 := NewMockInvoker(u2)
+	inv3 := NewMockInvoker(u3)
+	inv4 := NewMockInvoker(u4)
+	var invokers []protocol.Invoker
+	invokers = append(invokers, inv2, inv3, inv4)
+	cond := func(invoker protocol.Invoker) bool {
+		if invoker.GetUrl().GetParam(constant.Tagkey, "") == "beijing" {
+			return true
+		}
+		return false
+	}
+	res := filterCondition(invokers, cond)
+	assert.Equal(t, []protocol.Invoker{inv4}, res)
 }

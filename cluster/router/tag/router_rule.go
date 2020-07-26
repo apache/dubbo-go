@@ -40,7 +40,7 @@ import (
 // RouterRule RouterRule config read from config file or config center
 type RouterRule struct {
 	router.BaseRouterRule `yaml:",inline""`
-	tags                  []tag
+	Tags                  []Tag
 	addressToTagNames     map[string][]string
 	tagNameToAddresses    map[string][]string
 }
@@ -52,18 +52,44 @@ func getRule(rawRule string) (*RouterRule, error) {
 		return r, err
 	}
 	r.RawRule = rawRule
-	// TODO init tags
+	r.init()
 	return r, nil
 }
 
+func (t *RouterRule) init() {
+	t.addressToTagNames = make(map[string][]string)
+	t.tagNameToAddresses = make(map[string][]string)
+	for _, tag := range t.Tags {
+		for _, address := range tag.Addresses {
+			t.addressToTagNames[address] = append(t.addressToTagNames[address], tag.Name)
+		}
+		t.tagNameToAddresses[tag.Name] = tag.Addresses
+	}
+}
+
 func (t *RouterRule) getAddresses() []string {
-	// TODO get all tag addresses
-	return nil
+	var result []string
+	for _, tag := range t.Tags {
+		result = append(result, tag.Addresses...)
+	}
+	return result
 }
 
 func (t *RouterRule) getTagNames() []string {
-	// TODO get all tag names
-	return nil
+	var result []string
+	for _, tag := range t.Tags {
+		result = append(result, tag.Name)
+	}
+	return result
+}
+
+func (t *RouterRule) hasTag(tag string) bool {
+	for _, t := range t.Tags {
+		if tag == t.Name {
+			return true
+		}
+	}
+	return false
 }
 
 func (t *RouterRule) getAddressToTagNames() map[string][]string {
@@ -74,10 +100,10 @@ func (t *RouterRule) getTagNameToAddresses() map[string][]string {
 	return t.tagNameToAddresses
 }
 
-func (t *RouterRule) getTags() []tag {
-	return t.tags
+func (t *RouterRule) getTags() []Tag {
+	return t.Tags
 }
 
-func (t *RouterRule) setTags(tags []tag) {
-	t.tags = tags
+func (t *RouterRule) setTags(tags []Tag) {
+	t.Tags = tags
 }
