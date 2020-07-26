@@ -17,23 +17,23 @@
 
 package tag
 
-type tag struct {
-	name      string
-	addresses []string
+type Tag struct {
+	Name      string
+	Addresses []string
 }
 
-func (t *tag) getName() string {
-	return t.name
+func (t *Tag) getName() string {
+	return t.Name
 }
 
-func (t *tag) setName(name string) {
-	t.name = name
+func (t *Tag) setName(name string) {
+	t.Name = name
 }
 
-func (t *tag) getAddresses() []string {
-	return t.addresses
+func (t *Tag) getAddresses() []string {
+	return t.Addresses
 }
 
-func (t *tag) setAddresses(addresses []string) {
-	t.addresses = addresses
+func (t *Tag) setAddresses(addresses []string) {
+	t.Addresses = addresses
 }
