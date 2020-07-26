@@ -81,16 +81,20 @@ func (c *tagRouter) Route(invokers []protocol.Invoker, url *common.URL, invocati
 		addresses, _ = tagRouterRuleCopy.getTagNameToAddresses()[tag]
 		// filter by dynamic tag group first
 		if len(addresses) > 0 {
-			// TODO filter invokers
-			result = nil
+			result = filterAddressMatches(invokers, addresses)
 			if len(result) > 0 || tagRouterRuleCopy.Force {
 				return result
 			}
 		} else {
 			// dynamic tag group doesn't have any item about the requested app OR it's null after filtered by
 			// dynamic tag group but force=false. check static tag
-			// TODO filter invokers
-			return result
+			cond := func(invoker protocol.Invoker) bool {
+				if invoker.GetUrl().GetParam(constant.Tagkey, "") == tag {
+					return true
+				}
+				return false
+			}
+			result = filterCondition(invokers, cond)
 		}
 		// If there's no tagged providers that can match the current tagged request. force.tag is set by default
 		// to false, which means it will invoke any providers without a tag unless it's explicitly disallowed.
@@ -98,14 +102,20 @@ func (c *tagRouter) Route(invokers []protocol.Invoker, url *common.URL, invocati
 			return result
 		} else {
 			// FAILOVER: return all Providers without any tags.
-			// TODO filter invokers
-			return result
+			result = filterAddressNotMatches(invokers, tagRouterRuleCopy.getAddresses())
+			cond := func(invoker protocol.Invoker) bool {
+				if invoker.GetUrl().GetParam(constant.Tagkey, "") == "" {
+					return true
+				}
+				return false
+			}
+			return filterCondition(result, cond)
 		}
 	} else {
 		// return all addresses in dynamic tag group.
 		addresses = tagRouterRuleCopy.getAddresses()
 		if len(addresses) > 0 {
-			// TODO filter invokers
+			result = filterAddressNotMatches(invokers, addresses)
 			// 1. all addresses are in dynamic tag group, return empty list.
 			if len(result) == 0 {
 				return result
@@ -113,8 +123,11 @@ func (c *tagRouter) Route(invokers []protocol.Invoker, url *common.URL, invocati
 			// 2. if there are some addresses that are not in any dynamic tag group, continue to filter using the
 			// static tag group.
 		}
-		// TODO filter invokers
-		return result
+		cond := func(invoker protocol.Invoker) bool {
+			localTag := invoker.GetUrl().GetParam(constant.Tagkey, "")
+			return localTag == "" || !(tagRouterRuleCopy.hasTag(localTag))
+		}
+		return filterCondition(result, cond)
 	}
 }
 
@@ -172,18 +185,51 @@ func isForceUseTag(url *common.URL, invocation protocol.Invocation) bool {
 	return false
 }
 
-func addressMatches(url *common.URL, addresses []string) bool {
-	return len(addresses) > 0 && checkAddressMatch(addresses, url.Ip, url.Port)
+func filterAddressMatches(invokers []protocol.Invoker, addresses []string) []protocol.Invoker {
+	var idx int
+	for _, invoker := range invokers {
+		url := invoker.GetUrl()
+		if !(len(addresses) > 0 && checkAddressMatch(addresses, url.Ip, url.Port)) {
+			continue
+		}
+		invokers[idx] = invoker
+		idx++
+	}
+	return invokers[:idx]
 }
 
-func addressNotMatches(url *common.URL, addresses []string) bool {
-	return len(addresses) == 0 || !checkAddressMatch(addresses, url.Ip, url.Port)
+func filterAddressNotMatches(invokers []protocol.Invoker, addresses []string) []protocol.Invoker {
+	var idx int
+	for _, invoker := range invokers {
+		url := invoker.GetUrl()
+		if !(len(addresses) == 0 || !checkAddressMatch(addresses, url.Ip, url.Port)) {
+			continue
+		}
+		invokers[idx] = invoker
+		idx++
+	}
+	return invokers[:idx]
+}
+
+func filterCondition(invokers []protocol.Invoker, condition func(protocol.Invoker) bool) []protocol.Invoker {
+	var idx int
+	for _, invoker := range invokers {
+		if !condition(invoker) {
+			continue
+		}
+		invokers[idx] = invoker
+		idx++
+	}
+	return invokers[:idx]
 }
 
 func checkAddressMatch(addresses []string, host, port string) bool {
 	for _, address := range addresses {
-		// TODO address parse
-		if address == (host + port) {
+		// TODO ip match
+		if address == host+":"+port {
+			return true
+		}
+		if address == constant.ANYHOST_VALUE+":"+port {
 			return true
 		}
 	}
