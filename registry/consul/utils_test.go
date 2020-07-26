@@ -148,7 +148,7 @@ func (suite *consulRegistryTestSuite) close() {
 // register -> subscribe -> unregister
 func test1(t *testing.T) {
 	consulAgent := consul.NewConsulAgent(t, registryPort)
-	defer consulAgent.Close()
+	defer consulAgent.Shutdown()
 
 	server := newServer(providerHost, providerPort)
 	defer server.close()
@@ -165,10 +165,10 @@ func test1(t *testing.T) {
 	suite.testListener(remoting.EventTypeDel)
 }
 
-// subscribe -> register
+// subscribe -> register -> unregister
 func test2(t *testing.T) {
 	consulAgent := consul.NewConsulAgent(t, registryPort)
-	defer consulAgent.Close()
+	defer consulAgent.Shutdown()
 
 	server := newServer(providerHost, providerPort)
 	defer server.close()
@@ -181,6 +181,8 @@ func test2(t *testing.T) {
 	suite.testNewProviderRegistry()
 	suite.testRegister()
 	suite.testListener(remoting.EventTypeAdd)
+	suite.testUnregister()
+	suite.testListener(remoting.EventTypeDel)
 }
 
 func TestConsulRegistry(t *testing.T) {
