@@ -115,6 +115,7 @@ Apache License, Version 2.0
     * [Nacos](https://github.com/apache/dubbo-go/pull/522)
     * [Zookeeper](https://github.com/apache/dubbo-go/pull/633)
     * [Etcd](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/metadata/report/etcd/report.go)
+    * [Consul](https://github.com/apache/dubbo-go/pull/633)
 
 - 服务发现
     * [Nacos](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/nacos/service_discovery.go)
