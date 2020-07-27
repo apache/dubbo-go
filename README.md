@@ -16,6 +16,8 @@ Apache License, Version 2.0
 
 ## Release note ##
 
+[v1.5.0 - July 24, 2020](https://github.com/apache/dubbo-go/releases/tag/v1.5.0)
+
 [v1.4.0 - Mar 17, 2020](https://github.com/apache/dubbo-go/releases/tag/v1.4.0)
 
 [v1.3.0 - Mar 1, 2020](https://github.com/apache/dubbo-go/releases/tag/v1.3.0)
@@ -49,6 +51,7 @@ Finished List:
 - Codec
     * JsonRPC V2
     * Hessian V2
+    * [json for grpc](https://github.com/apache/dubbo-go/pull/582)
 
 - Protocol
     * Dubbo
@@ -110,6 +113,17 @@ Finished List:
     * [For dubbo](https://github.com/apache/dubbo-go/pull/344)
     * [For grpc](https://github.com/apache/dubbo-go/pull/397)
 
+- Metadata Center
+    * [Nacos](https://github.com/apache/dubbo-go/pull/522)
+    * [Zookeeper](https://github.com/apache/dubbo-go/pull/633)
+    * [Etcd](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/metadata/report/etcd/report.go)
+    * [Consul](https://github.com/apache/dubbo-go/pull/633)
+
+- Service discovery
+    * [Nacos](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/nacos/service_discovery.go)
+    * [Zookeeper](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/zookeeper/service_discovery.go)
+    * [Etcd](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/etcdv3/service_discovery.go)
+
 - Others:
     * start check
     * connecting certain provider
@@ -117,11 +131,6 @@ Finished List:
     * multi-registries
     * multi-versions
     * service group
-
-Working List:
-
-- Metadata Center (dubbo v2.7.x)
-- Service Discovery (dubbo v2.7.x)
 
 You can know more about dubbo-go by its [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap).
 
@@ -169,12 +178,40 @@ If you are willing to do some code contributions and document contributions to [
 
 Benchmark project [dubbo-go-benchmark](https://github.com/dubbogo/dubbo-go-benchmark).
 
-About dubbo-go benchmarking report, please refer to [dubbo benchmarking report](https://github.com/apache/dubbo-go/wiki/pressure-test-report-for-dubbo) & [jsonrpc benchmarking report](https://github.com/apache/dubbo-go/wiki/pressure-test-report-for-jsonrpc).
+About dubbo-go benchmarking report, please refer to [dubbo benchmarking report](https://github.com/apache/dubbo-go/wiki/Benchmark-test-of-dubbo) & [jsonrpc benchmarking report](https://github.com/apache/dubbo-go/wiki/Benchmark-test-of-jsonrpc).
 
 ## [User List](https://github.com/apache/dubbo-go/issues/2)
 
 If you are using [apache/dubbo-go](github.com/apache/dubbo-go) and think that it helps you or want do some contributions to it, please add your company to to [the user list](https://github.com/apache/dubbo-go/issues/2) to let us know your needs.
 
-![ctrip](https://pic.c-ctrip.com/common/c_logo2013.png)
-![Excellent Health Technology Group](https://user-images.githubusercontent.com/52339367/84628582-80512200-af1b-11ea-945a-c6b4b9ad31f2.png)
-![tuya](https://raw.githubusercontent.com/pantianying/go-tool/master/picture/logo_2-removebg-preview.png)
+
+<div>
+<table>
+  <tbody>
+  <tr></tr>
+    <tr>
+      <td align="center"  valign="middle">
+        <a href="" target="_blank">
+          <img width="222px"  src="https://pic.c-ctrip.com/common/c_logo2013.png">
+        </a>
+      </td>
+      <td align="center"  valign="middle">
+        <a href="" target="_blank">
+          <img width="222px"  src="https://user-images.githubusercontent.com/52339367/84628582-80512200-af1b-11ea-945a-c6b4b9ad31f2.png">
+        </a>
+      </td>
+      <td align="center"  valign="middle">
+        <a href="" target="_blank">
+          <img width="222px"  src="https://mosn.io/images/community/tuya.png">
+        </a>
+      </td>
+      <td align="center"  valign="middle">
+        <a href="https://github.com/mosn" target="_blank">
+          <img width="222px"  src="https://raw.githubusercontent.com/mosn/community/master/icons/png/mosn-labeled-horizontal.png">
+        </a>
+      </td>
+    </tr>
+    <tr></tr>
+  </tbody>
+</table>
+</div>

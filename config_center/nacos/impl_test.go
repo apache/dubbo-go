@@ -89,6 +89,34 @@ func TestGetConfig(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestNacosDynamicConfiguration_GetConfigKeysByGroup(t *testing.T) {
+	data := `
+{
+    "PageItems": [
+        {
+            "dataId": "application"
+        }
+    ]
+}
+`
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(data))
+	}))
+
+	nacosURL := strings.ReplaceAll(ts.URL, "http", "registry")
+	regurl, _ := common.NewURL(nacosURL)
+	nacosConfiguration, err := newNacosDynamicConfiguration(&regurl)
+	assert.NoError(t, err)
+
+	nacosConfiguration.SetParser(&parser.DefaultConfigurationParser{})
+
+	configs, err := nacosConfiguration.GetConfigKeysByGroup("dubbo")
+	assert.Nil(t, err)
+	assert.Equal(t, 1, configs.Size())
+	assert.True(t, configs.Contains("application"))
+
+}
+
 func TestNacosDynamicConfigurationPublishConfig(t *testing.T) {
 	nacos, err := initNacosData(t)
 	assert.Nil(t, err)
@@ -105,8 +133,6 @@ func TestAddListener(t *testing.T) {
 	listener := &mockDataListener{}
 	time.Sleep(time.Second * 2)
 	nacos.AddListener("dubbo.properties", listener)
-	listener.wg.Add(1)
-	listener.wg.Wait()
 }
 
 func TestRemoveListener(_ *testing.T) {

@@ -95,14 +95,14 @@ var baseMockRef = map[string]*ReferenceConfig{
 				InterfaceName: "com.MockService",
 				Name:          "GetUser",
 				Retries:       "2",
-				Loadbalance:   "random",
+				LoadBalance:   "random",
 			},
 			{
 				InterfaceId:   "MockService",
 				InterfaceName: "com.MockService",
 				Name:          "GetUser1",
 				Retries:       "2",
-				Loadbalance:   "random",
+				LoadBalance:   "random",
 			},
 		},
 	},
@@ -116,10 +116,12 @@ func TestRefresh(t *testing.T) {
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
 
 	father := &ConsumerConfig{
-		Check:             &[]bool{true}[0],
-		ApplicationConfig: baseAppConfig,
-		Registries:        baseRegistries,
-		References:        baseMockRef,
+		Check: &[]bool{true}[0],
+		BaseConfig: BaseConfig{
+			ApplicationConfig: baseAppConfig,
+		},
+		Registries: baseRegistries,
+		References: baseMockRef,
 		ShutdownConfig: &ShutdownConfig{
 			Timeout:              "12s",
 			StepTimeout:          "2s",
@@ -148,10 +150,12 @@ func TestAppExternalRefresh(t *testing.T) {
 	mockMap["dubbo.consumer.check"] = "true"
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
 	father := &ConsumerConfig{
-		Check:             &[]bool{true}[0],
-		ApplicationConfig: baseAppConfig,
-		Registries:        baseRegistries,
-		References:        baseMockRef,
+		Check: &[]bool{true}[0],
+		BaseConfig: BaseConfig{
+			ApplicationConfig: baseAppConfig,
+		},
+		Registries: baseRegistries,
+		References: baseMockRef,
 	}
 
 	c.SetFatherConfig(father)
@@ -174,10 +178,12 @@ func TestAppExternalWithoutIDRefresh(t *testing.T) {
 	mockMap["dubbo.consumer.check"] = "true"
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
 	father := &ConsumerConfig{
-		Check:             &[]bool{true}[0],
-		ApplicationConfig: baseAppConfig,
-		Registries:        baseRegistries,
-		References:        baseMockRef,
+		Check: &[]bool{true}[0],
+		BaseConfig: BaseConfig{
+			ApplicationConfig: baseAppConfig,
+		},
+		Registries: baseRegistries,
+		References: baseMockRef,
 	}
 
 	c.SetFatherConfig(father)
@@ -202,11 +208,13 @@ func TestRefreshSingleRegistry(t *testing.T) {
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
 
 	father := &ConsumerConfig{
-		Check:             &[]bool{true}[0],
-		ApplicationConfig: baseAppConfig,
-		Registries:        map[string]*RegistryConfig{},
-		Registry:          &RegistryConfig{},
-		References:        baseMockRef,
+		Check: &[]bool{true}[0],
+		BaseConfig: BaseConfig{
+			ApplicationConfig: baseAppConfig,
+		},
+		Registries: map[string]*RegistryConfig{},
+		Registry:   &RegistryConfig{},
+		References: baseMockRef,
 	}
 
 	c.SetFatherConfig(father)
@@ -231,8 +239,10 @@ func TestRefreshProvider(t *testing.T) {
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
 
 	father := &ProviderConfig{
-		ApplicationConfig: baseAppConfig,
-		Registries:        baseRegistries,
+		BaseConfig: BaseConfig{
+			ApplicationConfig: baseAppConfig,
+		},
+		Registries: baseRegistries,
 		Services: map[string]*ServiceConfig{
 			"MockService": {
 				InterfaceName: "com.MockService",
@@ -248,14 +258,14 @@ func TestRefreshProvider(t *testing.T) {
 						InterfaceName: "com.MockService",
 						Name:          "GetUser",
 						Retries:       "2",
-						Loadbalance:   "random",
+						LoadBalance:   "random",
 					},
 					{
 						InterfaceId:   "MockService",
 						InterfaceName: "com.MockService",
 						Name:          "GetUser1",
 						Retries:       "2",
-						Loadbalance:   "random",
+						LoadBalance:   "random",
 					},
 				},
 			},
@@ -299,7 +309,7 @@ func TestInitializeStruct(t *testing.T) {
 	reflect.ValueOf(testConsumerConfig).Elem().Set(v.Elem())
 
 	assert.Condition(t, func() (success bool) {
-		return testConsumerConfig.ApplicationConfig != nil
+		return testConsumerConfig.Registry != nil
 	})
 	assert.Condition(t, func() (success bool) {
 		return testConsumerConfig.Registries != nil
