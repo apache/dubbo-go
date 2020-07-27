@@ -114,6 +114,10 @@ func (r *kubernetesRegistry) DoRegister(root string, node string) error {
 	return r.client.Create(path.Join(root, node), "")
 }
 
+func (r *kubernetesRegistry) DoUnregister(root string, node string) error {
+	return perrors.New("DoUnregister is not support in kubernetesRegistry")
+}
+
 // DoSubscribe actually subscribe the provider URL
 func (r *kubernetesRegistry) DoSubscribe(svc *common.URL) (registry.Listener, error) {
 
@@ -145,6 +149,11 @@ func (r *kubernetesRegistry) DoSubscribe(svc *common.URL) (registry.Listener, er
 	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, svc.Service()), r.dataListener)
 
 	return configListener, nil
+}
+
+// nolint
+func (r *kubernetesRegistry) DoUnsubscribe(conf *common.URL) (registry.Listener, error) {
+	return nil, perrors.New("DoUnsubscribe is not support in kubernetesRegistry")
 }
 
 // InitListeners init listeners of kubernetes registry center

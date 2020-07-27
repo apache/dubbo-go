@@ -34,7 +34,7 @@ import (
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
-func TestTokenFilter_Invoke(t *testing.T) {
+func TestTokenFilterInvoke(t *testing.T) {
 	filter := GetTokenFilter()
 
 	url := common.NewURLWithOptions(
@@ -50,7 +50,7 @@ func TestTokenFilter_Invoke(t *testing.T) {
 	assert.Nil(t, result.Result())
 }
 
-func TestTokenFilter_InvokeEmptyToken(t *testing.T) {
+func TestTokenFilterInvokeEmptyToken(t *testing.T) {
 	filter := GetTokenFilter()
 
 	testUrl := common.URL{}
@@ -61,7 +61,7 @@ func TestTokenFilter_InvokeEmptyToken(t *testing.T) {
 	assert.Nil(t, result.Result())
 }
 
-func TestTokenFilter_InvokeEmptyAttach(t *testing.T) {
+func TestTokenFilterInvokeEmptyAttach(t *testing.T) {
 	filter := GetTokenFilter()
 
 	testUrl := common.NewURLWithOptions(
@@ -72,7 +72,7 @@ func TestTokenFilter_InvokeEmptyAttach(t *testing.T) {
 	assert.NotNil(t, result.Error())
 }
 
-func TestTokenFilter_InvokeNotEqual(t *testing.T) {
+func TestTokenFilterInvokeNotEqual(t *testing.T) {
 	filter := GetTokenFilter()
 
 	testUrl := common.NewURLWithOptions(
