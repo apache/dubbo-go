@@ -30,18 +30,18 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
-type zkClientFacade interface {
+type ZkClientFacade interface {
 	ZkClient() *ZookeeperClient
 	SetZkClient(*ZookeeperClient)
 	ZkClientLock() *sync.Mutex
-	WaitGroup() *sync.WaitGroup //for wait group control, zk client listener & zk client container
-	Done() chan struct{}        //for zk client control
+	WaitGroup() *sync.WaitGroup // for wait group control, zk client listener & zk client container
+	Done() chan struct{}        // for zk client control
 	RestartCallBack() bool
-	common.Node
+	GetUrl() common.URL
 }
 
 // HandleClientRestart keeps the connection between client and server
-func HandleClientRestart(r zkClientFacade) {
+func HandleClientRestart(r ZkClientFacade) {
 	var (
 		err error
 

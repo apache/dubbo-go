@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/atomic"
 )
 
 import (
@@ -93,7 +94,7 @@ func TestLoad(t *testing.T) {
 
 func TestLoadWithSingleReg(t *testing.T) {
 	doInitConsumerWithSingleRegistry()
-	doInitProviderWithSingleRegistry()
+	mockInitProviderWithSingleRegistry()
 
 	ms := &MockService{}
 	SetConsumerService(ms)
@@ -235,4 +236,67 @@ func TestConfigLoaderWithConfigCenterSingleRegistry(t *testing.T) {
 	assert.Equal(t, "BDTService", consumerConfig.ApplicationConfig.Name)
 	assert.Equal(t, "mock://127.0.0.1:2182", consumerConfig.Registries[constant.DEFAULT_KEY].Address)
 
+}
+
+func TestGetBaseConfig(t *testing.T) {
+	bc := GetBaseConfig()
+	assert.NotNil(t, bc)
+	_, found := bc.GetRemoteConfig("mock")
+	assert.False(t, found)
+}
+
+// mockInitProviderWithSingleRegistry will init a mocked providerConfig
+func mockInitProviderWithSingleRegistry() {
+	providerConfig = &ProviderConfig{
+		BaseConfig: BaseConfig{
+			ApplicationConfig: &ApplicationConfig{
+				Organization: "dubbo_org",
+				Name:         "dubbo",
+				Module:       "module",
+				Version:      "1.0.0",
+				Owner:        "dubbo",
+				Environment:  "test"},
+		},
+
+		Registry: &RegistryConfig{
+			Address:  "mock://127.0.0.1:2181",
+			Username: "user1",
+			Password: "pwd1",
+		},
+		Registries: map[string]*RegistryConfig{},
+
+		Services: map[string]*ServiceConfig{
+			"MockService": {
+				InterfaceName: "com.MockService",
+				Protocol:      "mock",
+				Cluster:       "failover",
+				Loadbalance:   "random",
+				Retries:       "3",
+				Group:         "huadong_idc",
+				Version:       "1.0.0",
+				Methods: []*MethodConfig{
+					{
+						Name:        "GetUser",
+						Retries:     "2",
+						LoadBalance: "random",
+						Weight:      200,
+					},
+					{
+						Name:        "GetUser1",
+						Retries:     "2",
+						LoadBalance: "random",
+						Weight:      200,
+					},
+				},
+				exported: new(atomic.Bool),
+			},
+		},
+		Protocols: map[string]*ProtocolConfig{
+			"mock": {
+				Name: "mock",
+				Ip:   "127.0.0.1",
+				Port: "20000",
+			},
+		},
+	}
 }

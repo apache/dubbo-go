@@ -33,6 +33,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 )
@@ -89,20 +90,17 @@ func ValidateNacosClient(container nacosClientFacade, opts ...option) error {
 	}
 
 	url := container.GetUrl()
-	logDir = url.GetParam(constant.CONFIG_LOG_DIR_KEY, logDir)
-
+	timeout, err := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
+	if err != nil {
+		logger.Errorf("invalid timeout config %+v,got err %+v",
+			url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), err)
+		return perrors.WithMessagef(err, "newNacosClient(address:%+v)", url.Location)
+	}
+	nacosAddresses := strings.Split(url.Location, ",")
 	if container.NacosClient() == nil {
-		//in dubbo ,every registry only connect one node ,so this is []string{r.Address}
-		timeout, err := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
+		newClient, err := newNacosClient(os.nacosName, nacosAddresses, timeout, url)
 		if err != nil {
-			logger.Errorf("timeout config %v is invalid ,err is %v",
-				url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), err.Error())
-			return perrors.WithMessagef(err, "newNacosClient(address:%+v)", url.Location)
-		}
-		nacosAddresses := strings.Split(url.Location, ",")
-		newClient, err := newNacosClient(os.nacosName, nacosAddresses, timeout)
-		if err != nil {
-			logger.Warnf("newNacosClient(name{%s}, nacos address{%v}, timeout{%d}) = error{%v}",
+			logger.Errorf("newNacosClient(name{%s}, nacos address{%v}, timeout{%d}) = error{%v}",
 				os.nacosName, url.Location, timeout.String(), err)
 			return perrors.WithMessagef(err, "newNacosClient(address:%+v)", url.Location)
 		}
@@ -110,41 +108,19 @@ func ValidateNacosClient(container nacosClientFacade, opts ...option) error {
 	}
 
 	if container.NacosClient().Client() == nil {
-		svrConfList := []nacosconst.ServerConfig{}
-		for _, nacosAddr := range container.NacosClient().NacosAddrs {
-			split := strings.Split(nacosAddr, ":")
-			port, err := strconv.ParseUint(split[1], 10, 64)
-			if err != nil {
-				logger.Warnf("nacos addr port parse error ,error message is %v", err)
-				continue
-			}
-			svrconf := nacosconst.ServerConfig{
-				IpAddr: split[0],
-				Port:   port,
-			}
-			svrConfList = append(svrConfList, svrconf)
-		}
-
-		client, err := clients.CreateConfigClient(map[string]interface{}{
-			"serverConfigs": svrConfList,
-			"clientConfig": nacosconst.ClientConfig{
-				TimeoutMs:           uint64(int32(container.NacosClient().Timeout / time.Millisecond)),
-				ListenInterval:      10000,
-				NotLoadCacheAtStart: true,
-				LogDir:              logDir,
-			},
-		})
-
-		container.NacosClient().SetClient(&client)
+		configClient, err := initNacosConfigClient(nacosAddresses, timeout, url)
 		if err != nil {
-			logger.Errorf("nacos create config client error:%v", err)
+			logger.Errorf("initNacosConfigClient(addr:%+v,timeout:%v,url:%v) = err %+v",
+				nacosAddresses, timeout.String(), url, err)
+			return perrors.WithMessagef(err, "newNacosClient(address:%+v)", url.Location)
 		}
+		container.NacosClient().SetClient(&configClient)
 	}
 
 	return perrors.WithMessagef(nil, "newNacosClient(address:%+v)", url.PrimitiveURL)
 }
 
-func newNacosClient(name string, nacosAddrs []string, timeout time.Duration) (*NacosClient, error) {
+func newNacosClient(name string, nacosAddrs []string, timeout time.Duration, url common.URL) (*NacosClient, error) {
 	var (
 		err error
 		n   *NacosClient
@@ -160,12 +136,24 @@ func newNacosClient(name string, nacosAddrs []string, timeout time.Duration) (*N
 		},
 	}
 
-	svrConfList := make([]nacosconst.ServerConfig, 0, len(n.NacosAddrs))
-	for _, nacosAddr := range n.NacosAddrs {
+	configClient, err := initNacosConfigClient(nacosAddrs, timeout, url)
+	if err != nil {
+		logger.Errorf("initNacosConfigClient(addr:%+v,timeout:%v,url:%v) = err %+v",
+			nacosAddrs, timeout.String(), url, err)
+		return n, perrors.WithMessagef(err, "newNacosClient(address:%+v)", url.Location)
+	}
+	n.SetClient(&configClient)
+
+	return n, nil
+}
+
+func initNacosConfigClient(nacosAddrs []string, timeout time.Duration, url common.URL) (config_client.IConfigClient, error) {
+	svrConfList := []nacosconst.ServerConfig{}
+	for _, nacosAddr := range nacosAddrs {
 		split := strings.Split(nacosAddr, ":")
 		port, err := strconv.ParseUint(split[1], 10, 64)
 		if err != nil {
-			logger.Warnf("convert port , source:%s , error:%v ", split[1], err)
+			logger.Errorf("strconv.ParseUint(nacos addr port:%+v) = error %+v", split[1], err)
 			continue
 		}
 		svrconf := nacosconst.ServerConfig{
@@ -174,21 +162,21 @@ func newNacosClient(name string, nacosAddrs []string, timeout time.Duration) (*N
 		}
 		svrConfList = append(svrConfList, svrconf)
 	}
-	client, err := clients.CreateConfigClient(map[string]interface{}{
+
+	return clients.CreateConfigClient(map[string]interface{}{
 		"serverConfigs": svrConfList,
 		"clientConfig": nacosconst.ClientConfig{
-			TimeoutMs:           uint64(timeout / time.Millisecond),
-			ListenInterval:      20000,
+			TimeoutMs:           uint64(int32(timeout / time.Millisecond)),
+			ListenInterval:      uint64(int32(timeout / time.Millisecond)),
 			NotLoadCacheAtStart: true,
-			LogDir:              logDir,
+			LogDir:              url.GetParam(constant.NACOS_LOG_DIR_KEY, logDir),
+			CacheDir:            url.GetParam(constant.NACOS_CACHE_DIR_KEY, ""),
+			Endpoint:            url.GetParam(constant.NACOS_ENDPOINT, ""),
+			Username:            url.GetParam(constant.NACOS_USERNAME, ""),
+			Password:            url.GetParam(constant.NACOS_PASSWORD, ""),
+			NamespaceId:         url.GetParam(constant.NACOS_NAMESPACE_ID, ""),
 		},
 	})
-	n.SetClient(&client)
-	if err != nil {
-		return nil, perrors.WithMessagef(err, "nacos clients.CreateConfigClient(nacosAddrs:%+v)", nacosAddrs)
-	}
-
-	return n, nil
 }
 
 // Done Get nacos client exit signal
@@ -233,5 +221,4 @@ func (n *NacosClient) Close() {
 
 	n.stop()
 	n.SetClient(nil)
-	logger.Warnf("nacosClient{name:%s, nacos addr:%s} exit now.", n.name, n.NacosAddrs)
 }

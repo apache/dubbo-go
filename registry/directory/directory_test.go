@@ -45,7 +45,11 @@ import (
 )
 
 func init() {
-	config.SetConsumerConfig(config.ConsumerConfig{ApplicationConfig: &config.ApplicationConfig{Name: "test-application"}})
+	config.SetConsumerConfig(config.ConsumerConfig{
+		BaseConfig: config.BaseConfig{
+			ApplicationConfig: &config.ApplicationConfig{Name: "test-application"},
+		},
+	})
 }
 
 func TestSubscribe(t *testing.T) {
@@ -60,7 +64,7 @@ func TestSubscribe(t *testing.T) {
 //	registryDirectory, mockRegistry := normalRegistryDir()
 //	time.Sleep(1e9)
 //	assert.Len(t, registryDirectory.cacheInvokers, 3)
-//	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeDel, Service: *common.NewURLWithOptions(common.WithPath("TEST0"), common.WithProtocol("dubbo"))})
+//	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeDel, Service: *event.NewURLWithOptions(event.WithPath("TEST0"), event.WithProtocol("dubbo"))})
 //	time.Sleep(1e9)
 //	assert.Len(t, registryDirectory.cacheInvokers, 2)
 //}
