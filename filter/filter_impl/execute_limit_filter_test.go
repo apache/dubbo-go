@@ -34,7 +34,7 @@ import (
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
-func TestExecuteLimitFilter_Invoke_Ignored(t *testing.T) {
+func TestExecuteLimitFilterInvokeIgnored(t *testing.T) {
 	methodName := "hello"
 	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]string, 0))
 
@@ -49,7 +49,7 @@ func TestExecuteLimitFilter_Invoke_Ignored(t *testing.T) {
 	assert.Nil(t, result.Error())
 }
 
-func TestExecuteLimitFilter_Invoke_Configure_Error(t *testing.T) {
+func TestExecuteLimitFilterInvokeConfigureError(t *testing.T) {
 	methodName := "hello1"
 	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]string, 0))
 
@@ -66,7 +66,7 @@ func TestExecuteLimitFilter_Invoke_Configure_Error(t *testing.T) {
 	assert.Nil(t, result.Error())
 }
 
-func TestExecuteLimitFilter_Invoke(t *testing.T) {
+func TestExecuteLimitFilterInvoke(t *testing.T) {
 	methodName := "hello1"
 	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]string, 0))
 
