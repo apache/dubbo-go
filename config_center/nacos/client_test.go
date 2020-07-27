@@ -56,7 +56,7 @@ func TestNewNacosClient(t *testing.T) {
 
 func TestSetNacosClient(t *testing.T) {
 	server := mockCommonNacosServer()
-	nacosURL := server.Listener.Addr().String()
+	nacosURL := "registry://" + server.Listener.Addr().String()
 	registryUrl, _ := common.NewURL(nacosURL)
 	c := &nacosDynamicConfiguration{
 		url:  &registryUrl,
@@ -66,7 +66,7 @@ func TestSetNacosClient(t *testing.T) {
 	client = &NacosClient{
 		name:       nacosClientName,
 		NacosAddrs: []string{nacosURL},
-		Timeout:    15,
+		Timeout:    15 * time.Second,
 		exit:       make(chan struct{}),
 		onceClose: func() {
 			close(client.exit)

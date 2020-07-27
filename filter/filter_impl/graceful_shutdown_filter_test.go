@@ -38,7 +38,7 @@ import (
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
-func TestGenericFilter_Invoke(t *testing.T) {
+func TestGenericFilterInvoke(t *testing.T) {
 	invoc := invocation.NewRPCInvocation("GetUser", []interface{}{"OK"}, make(map[string]string, 0))
 
 	invokeUrl := common.NewURLWithOptions(
