@@ -202,9 +202,9 @@ func initMockApollo(t *testing.T) *apolloConfiguration {
 	return configuration
 }
 
-func TestAddListener(t *testing.T) {
+func TestListener(t *testing.T) {
 	listener := &apolloDataListener{}
-	listener.wg.Add(1)
+	listener.wg.Add(2)
 	apollo := initMockApollo(t)
 	mockConfigRes = `{
 	"appId": "testApplication_yang",
@@ -215,28 +215,14 @@ func TestAddListener(t *testing.T) {
 	},
 	"releaseKey": "20191104105242-0f13805d89f834a4"
 }`
+	//test add
 	apollo.AddListener(mockNamespace, listener)
 	listener.wg.Wait()
 	assert.Equal(t, "mockDubbog.properties", listener.event)
 	assert.Greater(t, listener.count, 0)
-	deleteMockJson(t)
-}
 
-func TestRemoveListener(t *testing.T) {
-	listener := &apolloDataListener{}
-	apollo := initMockApollo(t)
-	mockConfigRes = `{
-	"appId": "testApplication_yang",
-	"cluster": "default",
-	"namespaceName": "mockDubbog.properties",
-	"configurations": {
-		"registries.hangzhouzk.username": "11111"
-	},
-	"releaseKey": "20191104105242-0f13805d89f834a4"
-}`
-	apollo.AddListener(mockNamespace, listener)
+	//test remove
 	apollo.RemoveListener(mockNamespace, listener)
-	assert.Equal(t, "", listener.event)
 	listenerCount := 0
 	apollo.listeners.Range(func(key, value interface{}) bool {
 		apolloListener := value.(*apolloListener)
@@ -247,7 +233,6 @@ func TestRemoveListener(t *testing.T) {
 		return true
 	})
 	assert.Equal(t, listenerCount, 0)
-	assert.Equal(t, listener.count, 0)
 	deleteMockJson(t)
 }
 
