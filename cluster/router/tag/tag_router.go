@@ -31,12 +31,14 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
+// tagRouter defines url, enable and the priority
 type tagRouter struct {
 	url      *common.URL
 	enabled  bool
 	priority int64
 }
 
+// NewTagRouter returns a tagRouter instance if url is not nil
 func NewTagRouter(url *common.URL) (*tagRouter, error) {
 	if url == nil {
 		return nil, perrors.Errorf("Illegal route URL!")
@@ -48,10 +50,12 @@ func NewTagRouter(url *common.URL) (*tagRouter, error) {
 	}, nil
 }
 
+// nolint
 func (c *tagRouter) isEnabled() bool {
 	return c.enabled
 }
 
+// Route gets a list of invoker
 func (c *tagRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	if !c.isEnabled() {
 		return invokers
@@ -62,14 +66,17 @@ func (c *tagRouter) Route(invokers []protocol.Invoker, url *common.URL, invocati
 	return filterUsingStaticTag(invokers, url, invocation)
 }
 
+// URL gets the url of tagRouter
 func (c *tagRouter) URL() common.URL {
 	return *c.url
 }
 
+// Priority gets the priority of tagRouter
 func (c *tagRouter) Priority() int64 {
 	return c.priority
 }
 
+// filterUsingStaticTag gets a list of invoker using static tag
 func filterUsingStaticTag(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	if tag, ok := invocation.Attachments()[constant.Tagkey]; ok {
 		result := make([]protocol.Invoker, 0, 8)
@@ -86,6 +93,7 @@ func filterUsingStaticTag(invokers []protocol.Invoker, url *common.URL, invocati
 	return invokers
 }
 
+// isForceUseTag returns whether force use tag
 func isForceUseTag(url *common.URL, invocation protocol.Invocation) bool {
 	if b, e := strconv.ParseBool(invocation.AttachmentsByKey(constant.ForceUseTag, url.GetParam(constant.ForceUseTag, "false"))); e == nil {
 		return b

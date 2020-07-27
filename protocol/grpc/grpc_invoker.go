@@ -37,14 +37,14 @@ import (
 
 var errNoReply = errors.New("request need @response")
 
-// GrpcInvoker ...
+// nolint
 type GrpcInvoker struct {
 	protocol.BaseInvoker
 	quitOnce sync.Once
 	client   *Client
 }
 
-// NewGrpcInvoker ...
+// NewGrpcInvoker returns a Grpc invoker instance
 func NewGrpcInvoker(url common.URL, client *Client) *GrpcInvoker {
 	return &GrpcInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
@@ -52,7 +52,7 @@ func NewGrpcInvoker(url common.URL, client *Client) *GrpcInvoker {
 	}
 }
 
-// Invoke ...
+// Invoke is used to call service method by invocation
 func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	var (
 		result protocol.RPCResult
@@ -81,17 +81,17 @@ func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 	return &result
 }
 
-// IsAvailable ...
+// IsAvailable get available status
 func (gi *GrpcInvoker) IsAvailable() bool {
 	return gi.BaseInvoker.IsAvailable() && gi.client.GetState() != connectivity.Shutdown
 }
 
-// IsDestroyed ...
+// IsDestroyed get destroyed status
 func (gi *GrpcInvoker) IsDestroyed() bool {
 	return gi.BaseInvoker.IsDestroyed() && gi.client.GetState() == connectivity.Shutdown
 }
 
-// Destroy ...
+// Destroy will destroy gRPC's invoker and client, so it is only called once
 func (gi *GrpcInvoker) Destroy() {
 	gi.quitOnce.Do(func() {
 		gi.BaseInvoker.Destroy()

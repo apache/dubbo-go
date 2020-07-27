@@ -100,7 +100,6 @@ func InitLog(logConfFile string) error {
 func InitLogger(conf *zap.Config) {
 	var zapLoggerConfig zap.Config
 	if conf == nil {
-		zapLoggerConfig = zap.NewDevelopmentConfig()
 		zapLoggerEncoderConfig := zapcore.EncoderConfig{
 			TimeKey:        "time",
 			LevelKey:       "level",
@@ -113,12 +112,18 @@ func InitLogger(conf *zap.Config) {
 			EncodeDuration: zapcore.SecondsDurationEncoder,
 			EncodeCaller:   zapcore.ShortCallerEncoder,
 		}
-		zapLoggerConfig.EncoderConfig = zapLoggerEncoderConfig
+		zapLoggerConfig = zap.Config{
+			Level:            zap.NewAtomicLevelAt(zap.DebugLevel),
+			Development:      false,
+			Encoding:         "console",
+			EncoderConfig:    zapLoggerEncoderConfig,
+			OutputPaths:      []string{"stderr"},
+			ErrorOutputPaths: []string{"stderr"},
+		}
 	} else {
 		zapLoggerConfig = *conf
 	}
 	zapLogger, _ := zapLoggerConfig.Build(zap.AddCallerSkip(1))
-	//logger = zapLogger.Sugar()
 	logger = &DubboLogger{Logger: zapLogger.Sugar(), dynamicLevel: zapLoggerConfig.Level}
 
 	// set getty log

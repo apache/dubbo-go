@@ -39,7 +39,7 @@ import (
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
-func TestTpsLimitFilter_Invoke_With_No_TpsLimiter(t *testing.T) {
+func TestTpsLimitFilterInvokeWithNoTpsLimiter(t *testing.T) {
 	tpsFilter := GetTpsLimitFilter()
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
@@ -55,7 +55,7 @@ func TestTpsLimitFilter_Invoke_With_No_TpsLimiter(t *testing.T) {
 
 }
 
-func TestGenericFilter_Invoke_With_Default_TpsLimiter(t *testing.T) {
+func TestGenericFilterInvokeWithDefaultTpsLimiter(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockLimiter := tps.NewMockTpsLimiter(ctrl)
@@ -78,7 +78,7 @@ func TestGenericFilter_Invoke_With_Default_TpsLimiter(t *testing.T) {
 	assert.Nil(t, result.Result())
 }
 
-func TestGenericFilter_Invoke_With_Default_TpsLimiter_Not_Allow(t *testing.T) {
+func TestGenericFilterInvokeWithDefaultTpsLimiterNotAllow(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockLimiter := tps.NewMockTpsLimiter(ctrl)
