@@ -17,6 +17,7 @@
 
 package constant
 
+// nolint
 const (
 	// CONF_CONSUMER_FILE_PATH ...
 	CONF_CONSUMER_FILE_PATH = "CONF_CONSUMER_FILE_PATH"

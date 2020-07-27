@@ -43,13 +43,33 @@ type multiConfiger interface {
 // BaseConfig is the common configuration for provider and consumer
 type BaseConfig struct {
 	ConfigCenterConfig *ConfigCenterConfig `yaml:"config_center" json:"config_center,omitempty"`
-	configCenterUrl    *common.URL
-	prefix             string
-	fatherConfig       interface{}
 
-	MetricConfig *MetricConfig `yaml:"metrics" json:"metrics,omitempty"`
+	// since 1.5.0 version
+	Remotes              map[string]*RemoteConfig           `yaml:"remote" json:"remote,omitempty"`
+	ServiceDiscoveries   map[string]*ServiceDiscoveryConfig `yaml:"service_discovery" json:"service_discovery,omitempty"`
+	MetadataReportConfig *MetadataReportConfig              `yaml:"metadata_report" json:"metadata_report,omitempty" property:"metadata_report"`
 
-	fileStream *bytes.Buffer
+	// application config
+	ApplicationConfig *ApplicationConfig `yaml:"application" json:"application,omitempty" property:"application"`
+
+	configCenterUrl     *common.URL
+	prefix              string
+	fatherConfig        interface{}
+	EventDispatcherType string        `default:"direct" yaml:"event_dispatcher_type" json:"event_dispatcher_type,omitempty"`
+	MetricConfig        *MetricConfig `yaml:"metrics" json:"metrics,omitempty"`
+	fileStream          *bytes.Buffer
+}
+
+// nolint
+func (c *BaseConfig) GetServiceDiscoveries(name string) (config *ServiceDiscoveryConfig, ok bool) {
+	config, ok = c.ServiceDiscoveries[name]
+	return
+}
+
+// GetRemoteConfig will return the remote's config with the name if found
+func (c *BaseConfig) GetRemoteConfig(name string) (config *RemoteConfig, ok bool) {
+	config, ok = c.Remotes[name]
+	return
 }
 
 // startConfigCenter will start the config center.
@@ -64,7 +84,7 @@ func (c *BaseConfig) startConfigCenter() error {
 	if c.prepareEnvironment() != nil {
 		return perrors.WithMessagef(err, "start config center error!")
 	}
-	//c.fresh()
+	// c.fresh()
 	return err
 }
 
@@ -101,14 +121,14 @@ func (c *BaseConfig) prepareEnvironment() error {
 			return perrors.WithStack(err)
 		}
 	}
-	//global config file
+	// global config file
 	mapContent, err := dynamicConfig.Parser().Parse(content)
 	if err != nil {
 		return perrors.WithStack(err)
 	}
 	config.GetEnvInstance().UpdateExternalConfigMap(mapContent)
 
-	//appGroup config file
+	// appGroup config file
 	if len(appContent) != 0 {
 		appMapConent, err := dynamicConfig.Parser().Parse(appContent)
 		if err != nil {
@@ -263,7 +283,7 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 				if f.Kind() == reflect.Map {
 
 					if f.Type().Elem().Kind() == reflect.Ptr {
-						//initiate config
+						// initiate config
 						s := reflect.New(f.Type().Elem().Elem())
 						prefix := s.MethodByName("Prefix").Call(nil)[0].String()
 						for _, pfx := range strings.Split(prefix, "|") {
@@ -278,7 +298,7 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 
 					}
 
-					//iter := f.MapRange()
+					// iter := f.MapRange()
 
 					for _, k := range f.MapKeys() {
 						v := f.MapIndex(k)
@@ -313,7 +333,7 @@ func (c *BaseConfig) fresh() {
 }
 
 func (c *BaseConfig) freshInternalConfig(config *config.InmemoryConfiguration) {
-	//reflect to init struct
+	// reflect to init struct
 	tp := reflect.ValueOf(c.fatherConfig).Elem().Type()
 	initializeStruct(tp, reflect.ValueOf(c.fatherConfig).Elem())
 

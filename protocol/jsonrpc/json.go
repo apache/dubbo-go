@@ -288,7 +288,7 @@ type ServerCodec struct {
 
 var (
 	null = json.RawMessage([]byte("null"))
-	// Version ...
+	// Version is json RPC's version
 	Version = "2.0"
 )
 

@@ -76,3 +76,12 @@ const (
 const (
 	COMMA_SPLIT_PATTERN = "\\s*[,]+\\s*"
 )
+
+const (
+	SIMPLE_METADATA_SERVICE_NAME = "MetadataService"
+	DEFAULT_REVIESION            = "N/A"
+)
+
+const (
+	SERVICE_DISCOVERY_DEFAULT_GROUP = "DEFAULT_GROUP"
+)
