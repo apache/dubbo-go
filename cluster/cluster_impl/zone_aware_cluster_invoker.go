@@ -20,6 +20,9 @@ package cluster_impl
 import (
 	"context"
 	"fmt"
+)
+
+import (
 	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"

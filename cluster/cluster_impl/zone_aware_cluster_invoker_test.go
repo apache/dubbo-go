@@ -20,15 +20,21 @@ package cluster_impl
 import (
 	"context"
 	"fmt"
+	"testing"
+)
+
+import (
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"github.com/apache/dubbo-go/cluster/directory"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/apache/dubbo-go/protocol/mock"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func Test_ZoneWareInvokerWithPreferredSuccess(t *testing.T) {

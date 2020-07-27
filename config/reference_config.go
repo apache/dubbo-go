@@ -20,13 +20,13 @@ package config
 import (
 	"context"
 	"fmt"
-	"github.com/apache/dubbo-go/cluster/cluster_impl"
 	"net/url"
 	"strconv"
 	"time"
 )
 
 import (
+	"github.com/apache/dubbo-go/cluster/cluster_impl"
 	"github.com/creasty/defaults"
 	gxstrings "github.com/dubbogo/gost/strings"
 )

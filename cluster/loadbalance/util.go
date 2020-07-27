@@ -18,9 +18,12 @@
 package loadbalance
 
 import (
+	"time"
+)
+
+import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
-	"time"
 )
 
 // GetWeight gets weight for load balance strategy
