@@ -26,7 +26,7 @@ var (
 	restProviderServiceConfigMap map[string]*RestServiceConfig
 )
 
-// RestConsumerConfig ...
+// nolint
 type RestConsumerConfig struct {
 	Client                string                        `default:"resty" yaml:"rest_client" json:"rest_client,omitempty" property:"rest_client"`
 	Produces              string                        `default:"application/json" yaml:"rest_produces"  json:"rest_produces,omitempty" property:"rest_produces"`
@@ -34,7 +34,7 @@ type RestConsumerConfig struct {
 	RestServiceConfigsMap map[string]*RestServiceConfig `yaml:"references" json:"references,omitempty" property:"references"`
 }
 
-// UnmarshalYAML ...
+// UnmarshalYAML unmarshals the RestConsumerConfig by @unmarshal function
 func (c *RestConsumerConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
@@ -46,7 +46,7 @@ func (c *RestConsumerConfig) UnmarshalYAML(unmarshal func(interface{}) error) er
 	return nil
 }
 
-// RestProviderConfig ...
+// nolint
 type RestProviderConfig struct {
 	Server                string                        `default:"go-restful" yaml:"rest_server" json:"rest_server,omitempty" property:"rest_server"`
 	Produces              string                        `default:"*/*" yaml:"rest_produces"  json:"rest_produces,omitempty" property:"rest_produces"`
@@ -54,7 +54,7 @@ type RestProviderConfig struct {
 	RestServiceConfigsMap map[string]*RestServiceConfig `yaml:"services" json:"services,omitempty" property:"services"`
 }
 
-// UnmarshalYAML ...
+// UnmarshalYAML unmarshals the RestProviderConfig by @unmarshal function
 func (c *RestProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
@@ -66,7 +66,7 @@ func (c *RestProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) er
 	return nil
 }
 
-// RestServiceConfig ...
+// nolint
 type RestServiceConfig struct {
 	InterfaceName        string              `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
 	Url                  string              `yaml:"url"  json:"url,omitempty" property:"url"`
@@ -80,7 +80,7 @@ type RestServiceConfig struct {
 	RestMethodConfigsMap map[string]*RestMethodConfig
 }
 
-// UnmarshalYAML ...
+// UnmarshalYAML unmarshals the RestServiceConfig by @unmarshal function
 func (c *RestServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
@@ -92,7 +92,7 @@ func (c *RestServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) err
 	return nil
 }
 
-// RestMethodConfig ...
+// nolint
 type RestMethodConfig struct {
 	InterfaceName  string
 	MethodName     string `required:"true" yaml:"name"  json:"name,omitempty" property:"name"`
@@ -110,7 +110,7 @@ type RestMethodConfig struct {
 	HeadersMap     map[int]string
 }
 
-// UnmarshalYAML ...
+// UnmarshalYAML unmarshals the RestMethodConfig by @unmarshal function
 func (c *RestMethodConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
@@ -122,32 +122,32 @@ func (c *RestMethodConfig) UnmarshalYAML(unmarshal func(interface{}) error) erro
 	return nil
 }
 
-// GetRestConsumerServiceConfig ...
+// nolint
 func GetRestConsumerServiceConfig(path string) *RestServiceConfig {
 	return restConsumerServiceConfigMap[path]
 }
 
-// GetRestProviderServiceConfig ...
+// nolint
 func GetRestProviderServiceConfig(path string) *RestServiceConfig {
 	return restProviderServiceConfigMap[path]
 }
 
-// SetRestConsumerServiceConfigMap ...
+// nolint
 func SetRestConsumerServiceConfigMap(configMap map[string]*RestServiceConfig) {
 	restConsumerServiceConfigMap = configMap
 }
 
-// SetRestProviderServiceConfigMap ...
+// nolint
 func SetRestProviderServiceConfigMap(configMap map[string]*RestServiceConfig) {
 	restProviderServiceConfigMap = configMap
 }
 
-// GetRestConsumerServiceConfigMap ...
+// nolint
 func GetRestConsumerServiceConfigMap() map[string]*RestServiceConfig {
 	return restConsumerServiceConfigMap
 }
 
-// GetRestProviderServiceConfigMap ...
+// nolint
 func GetRestProviderServiceConfigMap() map[string]*RestServiceConfig {
 	return restProviderServiceConfigMap
 }

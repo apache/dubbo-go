@@ -157,6 +157,8 @@ func (r *RPCInvocation) Invoker() protocol.Invoker {
 
 // nolint
 func (r *RPCInvocation) SetInvoker(invoker protocol.Invoker) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	r.invoker = invoker
 }
 
