@@ -58,7 +58,7 @@ func getRule(rawRule string) (*RouterRule, error) {
 		return r, err
 	}
 	r.RawRule = rawRule
-	if len(r.Conditions) != 0 && r.Key != "" && (r.Scope == constant.RouterApplicationScope || r.Scope == constant.RouterServiceScope) {
+	if len(r.Conditions) > 0 && len(r.Key) > 0 && (r.Scope == constant.RouterApplicationScope || r.Scope == constant.RouterServiceScope) {
 		r.Valid = true
 	}
 
