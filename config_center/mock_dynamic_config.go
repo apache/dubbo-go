@@ -33,7 +33,7 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
-// MockDynamicConfigurationFactory ...
+// MockDynamicConfigurationFactory defines content
 type MockDynamicConfigurationFactory struct {
 	Content string
 }
@@ -96,7 +96,7 @@ func (c *MockDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.Ha
 	return gxset.NewSet(c.content), nil
 }
 
-// MockDynamicConfiguration ...
+// MockDynamicConfiguration uses to parse content and defines listener
 type MockDynamicConfiguration struct {
 	parser   parser.ConfigurationParser
 	content  string
@@ -149,7 +149,7 @@ func (c *MockDynamicConfiguration) GetRule(key string, opts ...Option) (string, 
 	return c.GetProperties(key, opts...)
 }
 
-// MockServiceConfigEvent ...
+// MockServiceConfigEvent returns ConfiguratorConfig
 func (c *MockDynamicConfiguration) MockServiceConfigEvent() {
 	config := &parser.ConfiguratorConfig{
 		ConfigVersion: "2.7.1",
@@ -171,7 +171,7 @@ func (c *MockDynamicConfiguration) MockServiceConfigEvent() {
 	c.listener[key].Process(&ConfigChangeEvent{Key: key, Value: string(value), ConfigType: remoting.EventTypeAdd})
 }
 
-// MockApplicationConfigEvent ...
+// MockApplicationConfigEvent returns ConfiguratorConfig
 func (c *MockDynamicConfiguration) MockApplicationConfigEvent() {
 	config := &parser.ConfiguratorConfig{
 		ConfigVersion: "2.7.1",
