@@ -19,7 +19,6 @@ package tag
 
 import (
 	"context"
-	"github.com/apache/dubbo-go/common/constant"
 	"testing"
 )
 
@@ -29,16 +28,18 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 const (
-	tagRouterTestHangZhouUrl     = "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=true&dubbo.tag=hangzhou"
-	tagRouterTestShangHaiUrl     = "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=true&dubbo.tag=shanghai"
-	tagRouterTestBeijingUrl      = "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=true&dubbo.tag=beijing"
-	tagRouterTestUserConsumer    = "dubbo://127.0.0.1:20000/com.ikurento.user.UserConsumer?interface=com.ikurento.user.UserConsumer&group=&version=2.6.0&enabled=true"
-	tagRouterTestUserConsumerTag = "dubbo://127.0.0.1:20000/com.ikurento.user.UserConsumer?interface=com.ikurento.user.UserConsumer&group=&version=2.6.0&enabled=true&dubbo.force.tag=true"
+	tagRouterTestHangZhouUrl       = "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=true&dubbo.tag=hangzhou"
+	tagRouterTestShangHaiUrl       = "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=true&dubbo.tag=shanghai"
+	tagRouterTestBeijingUrl        = "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=true&dubbo.tag=beijing"
+	tagRouterTestEnabledBeijingUrl = "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=false&dubbo.tag=beijing"
+	tagRouterTestUserConsumer      = "dubbo://127.0.0.1:20000/com.ikurento.user.UserConsumer?interface=com.ikurento.user.UserConsumer&group=&version=2.6.0&enabled=true"
+	tagRouterTestUserConsumerTag   = "dubbo://127.0.0.1:20000/com.ikurento.user.UserConsumer?interface=com.ikurento.user.UserConsumer&group=&version=2.6.0&enabled=true&dubbo.force.tag=true"
 
 	tagRouterTestDubboTag      = "dubbo.tag"
 	tagRouterTestDubboForceTag = "dubbo.force.tag"
@@ -162,24 +163,36 @@ func TestTagRouterRouteNoForce(t *testing.T) {
 	assert.Equal(t, 3, len(invRst2))
 }
 
-func TestFilterCondition(t *testing.T) {
+func TestFilterInvoker(t *testing.T) {
 	u2, e2 := common.NewURL(tagRouterTestHangZhouUrl)
 	u3, e3 := common.NewURL(tagRouterTestShangHaiUrl)
 	u4, e4 := common.NewURL(tagRouterTestBeijingUrl)
+	u5, e5 := common.NewURL(tagRouterTestEnabledBeijingUrl)
 	assert.Nil(t, e2)
 	assert.Nil(t, e3)
 	assert.Nil(t, e4)
+	assert.Nil(t, e5)
 	inv2 := NewMockInvoker(u2)
 	inv3 := NewMockInvoker(u3)
 	inv4 := NewMockInvoker(u4)
+	inv5 := NewMockInvoker(u5)
 	var invokers []protocol.Invoker
-	invokers = append(invokers, inv2, inv3, inv4)
-	cond := func(invoker protocol.Invoker) bool {
+	invokers = append(invokers, inv2, inv3, inv4, inv5)
+	filterTag := func(invoker protocol.Invoker) bool {
 		if invoker.GetUrl().GetParam(constant.Tagkey, "") == "beijing" {
 			return true
 		}
 		return false
 	}
-	res := filterCondition(invokers, cond)
-	assert.Equal(t, []protocol.Invoker{inv4}, res)
+	res := filterInvoker(invokers, filterTag)
+	assert.Equal(t, []protocol.Invoker{inv4, inv5}, res)
+	flag := true
+	filterEnabled := func(invoker protocol.Invoker) bool {
+		if invoker.GetUrl().GetParamBool(constant.RouterEnabled, false) == flag {
+			return true
+		}
+		return false
+	}
+	res2 := filterInvoker(invokers, filterTag, filterEnabled)
+	assert.Equal(t, []protocol.Invoker{inv4}, res2)
 }
