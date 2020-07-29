@@ -187,6 +187,9 @@ const (
 	HealthCheckRouterName = "health_check"
 	// TagRouterName Specify the name of TagRouter
 	TagRouterName = "tag"
+	// TagRouterRuleSuffix Specify tag router suffix
+	TagRouterRuleSuffix  = ".tag-router"
+	RemoteApplicationKey = "remote.application"
 	// ConditionRouterRuleSuffix Specify condition router suffix
 	ConditionRouterRuleSuffix = ".condition-router"
 
