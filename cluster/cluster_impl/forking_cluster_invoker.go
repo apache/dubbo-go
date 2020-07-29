@@ -44,7 +44,7 @@ func newForkingClusterInvoker(directory cluster.Directory) protocol.Invoker {
 	}
 }
 
-// Invoke ...
+// nolint
 func (invoker *forkingClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	if err := invoker.checkWhetherDestroyed(); err != nil {
 		return &protocol.RPCResult{Err: err}

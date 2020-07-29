@@ -28,7 +28,7 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-// GrpcExporter ...
+// nolint
 type GrpcExporter struct {
 	*protocol.BaseExporter
 }
