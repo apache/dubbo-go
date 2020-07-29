@@ -136,9 +136,6 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 	err = serviceDiscovery.Update(instance)
 	assert.Nil(t, err)
 
-	//sometimes nacos may be failed to push update of instance,
-	//so it need 10s to pull, we sleep 10 second to make sure instance has been update
-	time.Sleep(11 * time.Second)
 	pageMap := serviceDiscovery.GetRequestInstances([]string{serviceName}, 0, 1)
 	assert.Equal(t, 1, len(pageMap))
 
