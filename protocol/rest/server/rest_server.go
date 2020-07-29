@@ -45,9 +45,9 @@ type RestServer interface {
 	// Start rest server
 	Start(url common.URL)
 	// Deploy a http api
-	Deploy(restMethodConfig *rest_config.RestMethodConfig, routeFunc func(request RestServerRequest, response RestServerResponse))
+	Deploy(restServiceConfig *rest_config.RestServiceConfig, invoker protocol.Invoker)
 	// UnDeploy a http api
-	UnDeploy(restMethodConfig *rest_config.RestMethodConfig)
+	UnDeploy(restServiceConfig *rest_config.RestServiceConfig)
 	// Destroy rest server
 	Destroy()
 }

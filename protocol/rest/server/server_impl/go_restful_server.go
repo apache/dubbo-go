@@ -36,6 +36,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/rest/config"
 	"github.com/apache/dubbo-go/protocol/rest/server"
 )
@@ -82,8 +83,8 @@ func (grs *GoRestfulServer) Start(url common.URL) {
 
 // Publish a http api in go-restful server
 // The routeFunc should be invoked when the server receive a request
-func (grs *GoRestfulServer) Deploy(restMethodConfig *config.RestMethodConfig, routeFunc func(request server.RestServerRequest, response server.RestServerResponse)) {
-	ws := &restful.WebService{}
+func (grs *GoRestfulServer) Deploy(restServiceConfig *config.RestServiceConfig, invoker protocol.Invoker) {
+	/*ws := &restful.WebService{}
 	rf := func(req *restful.Request, resp *restful.Response) {
 		routeFunc(NewGoRestfulRequestAdapter(req), resp)
 	}
@@ -91,14 +92,30 @@ func (grs *GoRestfulServer) Deploy(restMethodConfig *config.RestMethodConfig, ro
 		Produces(strings.Split(restMethodConfig.Produces, ",")...).
 		Consumes(strings.Split(restMethodConfig.Consumes, ",")...).
 		Route(ws.Method(restMethodConfig.MethodType).To(rf))
-	grs.container.Add(ws)
+	grs.container.Add(ws)*/
 
+	ws := &restful.WebService{}
+	ws.Path(restServiceConfig.Path)
+	for _, methodConfig := range restServiceConfig.RestMethodConfigsMap {
+		routeFunc := server.GetRouteFunc(invoker, methodConfig)
+		rf := func(req *restful.Request, resp *restful.Response) {
+			routeFunc(NewGoRestfulRequestAdapter(req), resp)
+		}
+
+		ws.Route(
+			ws.Method(methodConfig.MethodType).
+				Path(methodConfig.Path).
+				Produces(strings.Split(methodConfig.Produces, ",")...).
+				Consumes(strings.Split(methodConfig.Consumes, ",")...).
+				To(rf))
+	}
+	grs.container.Add(ws)
 }
 
 // Delete a http api in go-restful server
-func (grs *GoRestfulServer) UnDeploy(restMethodConfig *config.RestMethodConfig) {
+func (grs *GoRestfulServer) UnDeploy(restServiceConfig *config.RestServiceConfig) {
 	ws := new(restful.WebService)
-	ws.Path(restMethodConfig.Path)
+	ws.Path(restServiceConfig.Path)
 	err := grs.container.Remove(ws)
 	if err != nil {
 		logger.Warnf("[Go restful] Remove web service error:%v", err)

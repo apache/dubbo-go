@@ -90,7 +90,7 @@ func initMethodConfigMap(rc *config.RestServiceConfig, consumes string, produces
 	mcm := make(map[string]*config.RestMethodConfig, len(rc.RestMethodConfigs))
 	for _, mc := range rc.RestMethodConfigs {
 		mc.InterfaceName = rc.InterfaceName
-		mc.Path = rc.Path + mc.Path
+		//mc.Path = rc.Path + mc.Path
 		mc.Consumes = getNotEmptyStr(mc.Consumes, rc.Consumes, consumes)
 		mc.Produces = getNotEmptyStr(mc.Produces, rc.Produces, produces)
 		mc.MethodType = getNotEmptyStr(mc.MethodType, rc.MethodType)
