@@ -36,10 +36,12 @@ func NewZoneAwareCluster() cluster.Cluster {
 	return &zoneAwareCluster{}
 }
 
+// Join returns a zoneAwareClusterInvoker instance
 func (cluster *zoneAwareCluster) Join(directory cluster.Directory) protocol.Invoker {
 	return newZoneAwareClusterInvoker(directory)
 }
 
+// Get cluster name
 func GetZoneAwareName() string {
 	return zoneAware
 }

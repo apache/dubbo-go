@@ -45,6 +45,7 @@ func newZoneAwareClusterInvoker(directory cluster.Directory) protocol.Invoker {
 	}
 }
 
+// nolint
 func (invoker *zoneAwareClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	invokers := invoker.directory.List(invocation)
 
