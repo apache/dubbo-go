@@ -35,12 +35,14 @@ import (
 	"github.com/apache/dubbo-go/protocol/rest/config"
 )
 
+// nolint
 type RestInvoker struct {
 	protocol.BaseInvoker
 	client              client.RestClient
 	restMethodConfigMap map[string]*config.RestMethodConfig
 }
 
+// NewRestInvoker returns a RestInvoker
 func NewRestInvoker(url common.URL, client *client.RestClient, restMethodConfig map[string]*config.RestMethodConfig) *RestInvoker {
 	return &RestInvoker{
 		BaseInvoker:         *protocol.NewBaseInvoker(url),
@@ -49,6 +51,7 @@ func NewRestInvoker(url common.URL, client *client.RestClient, restMethodConfig 
 	}
 }
 
+// Invoke is used to call service method by invocation
 func (ri *RestInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	inv := invocation.(*invocation_impl.RPCInvocation)
 	methodConfig := ri.restMethodConfigMap[inv.MethodName()]
@@ -95,6 +98,7 @@ func (ri *RestInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 	return &result
 }
 
+// restStringMapTransform is used to transform rest map
 func restStringMapTransform(paramsMap map[int]string, args []interface{}) (map[string]string, error) {
 	resMap := make(map[string]string, len(paramsMap))
 	for k, v := range paramsMap {
@@ -106,6 +110,7 @@ func restStringMapTransform(paramsMap map[int]string, args []interface{}) (map[s
 	return resMap, nil
 }
 
+// nolint
 func getRestHttpHeader(methodConfig *config.RestMethodConfig, args []interface{}) (http.Header, error) {
 	header := http.Header{}
 	headersMap := methodConfig.HeadersMap

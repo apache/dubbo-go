@@ -56,13 +56,13 @@ func doInitProvider() {
 					{
 						Name:        "GetUser",
 						Retries:     "2",
-						Loadbalance: "random",
+						LoadBalance: "random",
 						Weight:      200,
 					},
 					{
 						Name:        "GetUser1",
 						Retries:     "2",
-						Loadbalance: "random",
+						LoadBalance: "random",
 						Weight:      200,
 					},
 				},
@@ -81,13 +81,13 @@ func doInitProvider() {
 					{
 						Name:        "GetUser",
 						Retries:     "2",
-						Loadbalance: "random",
+						LoadBalance: "random",
 						Weight:      200,
 					},
 					{
 						Name:        "GetUser1",
 						Retries:     "2",
-						Loadbalance: "random",
+						LoadBalance: "random",
 						Weight:      200,
 					},
 				},

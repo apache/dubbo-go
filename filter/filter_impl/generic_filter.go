@@ -47,7 +47,7 @@ func init() {
 
 //  when do a generic invoke, struct need to be map
 
-// GenericFilter ...
+// nolint
 type GenericFilter struct{}
 
 // Invoke turns the parameters to map for generic method
