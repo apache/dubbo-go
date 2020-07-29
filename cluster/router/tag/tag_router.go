@@ -20,6 +20,7 @@ package tag
 import (
 	"errors"
 	"fmt"
+	"github.com/apache/dubbo-go/common/config"
 	"net"
 	"strconv"
 	"strings"
@@ -43,6 +44,7 @@ type tagRouter struct {
 	tagRouterRule *RouterRule
 	enabled       bool
 	priority      int64
+	application   string
 }
 
 func NewTagRouter(url *common.URL) (*tagRouter, error) {
@@ -60,6 +62,15 @@ func (c *tagRouter) isEnabled() bool {
 	return c.enabled
 }
 
+func (c *tagRouter) SetApplication(app string) {
+	c.application = app
+}
+
+func (c *tagRouter) tagRouterRuleCopy() RouterRule {
+	routerRule := *c.tagRouterRule
+	return routerRule
+}
+
 func (c *tagRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	if !c.isEnabled() {
 		return invokers
@@ -68,8 +79,8 @@ func (c *tagRouter) Route(invokers []protocol.Invoker, url *common.URL, invocati
 		return invokers
 	}
 	// since the rule can be changed by config center, we should copy one to use.
-	tagRouterRuleCopy := c.tagRouterRule
-	if tagRouterRuleCopy == nil || !tagRouterRuleCopy.Valid || !tagRouterRuleCopy.Enabled {
+	tagRouterRuleCopy := c.tagRouterRuleCopy()
+	if !tagRouterRuleCopy.Valid || !tagRouterRuleCopy.Enabled {
 		return filterUsingStaticTag(invokers, url, invocation)
 	}
 	tag, ok := invocation.Attachments()[constant.Tagkey]
@@ -155,7 +166,7 @@ func (c *tagRouter) Route(invokers []protocol.Invoker, url *common.URL, invocati
 }
 
 func (c *tagRouter) Process(event *config_center.ConfigChangeEvent) {
-	logger.Infof("Notification of dynamic tag rule, change type is:[%s] , raw rule is:[%v]", event.ConfigType, event.Value)
+	logger.Infof("Notification of tag rule, change type is:[%s] , raw rule is:[%v]", event.ConfigType, event.Value)
 	if remoting.EventTypeDel == event.ConfigType {
 		c.tagRouterRule = nil
 		return
@@ -177,6 +188,44 @@ func (c *tagRouter) Process(event *config_center.ConfigChangeEvent) {
 	}
 }
 
+func (c *tagRouter) Notify(invokers []protocol.Invoker) {
+	if len(invokers) == 0 {
+		return
+	}
+	invoker := invokers[0]
+	url := invoker.GetUrl()
+	providerApplication := url.GetParam(constant.RemoteApplicationKey, "")
+	if providerApplication == "" {
+		logger.Error("TagRouter must getConfig from or subscribe to a specific application, but the application " +
+			"in this TagRouter is not specified.")
+		return
+	}
+	dynamicConfiguration := config.GetEnvInstance().GetDynamicConfiguration()
+	if dynamicConfiguration == nil {
+		logger.Error("Get dynamicConfiguration fail, dynamicConfiguration is nil, init config center plugin please")
+		return
+	}
+
+	if providerApplication != c.application {
+		dynamicConfiguration.RemoveListener(c.application+constant.TagRouterRuleSuffix, c)
+	}
+
+	routerKey := providerApplication + constant.TagRouterRuleSuffix
+	dynamicConfiguration.AddListener(routerKey, c)
+	//get rule
+	rule, err := dynamicConfiguration.GetRule(routerKey, config_center.WithGroup(config_center.DEFAULT_GROUP))
+	if len(rule) == 0 || err != nil {
+		logger.Errorf("Get rule fail, config rule{%s},  error{%v}", rule, err)
+		return
+	}
+	if rule != "" {
+		c.Process(&config_center.ConfigChangeEvent{
+			Key:        routerKey,
+			Value:      rule,
+			ConfigType: remoting.EventTypeUpdate})
+	}
+}
+
 func (c *tagRouter) URL() common.URL {
 	return *c.url
 }
@@ -185,6 +234,7 @@ func (c *tagRouter) Priority() int64 {
 	return c.priority
 }
 
+// If there's no dynamic tag rule being set, use static tag in URL
 func filterUsingStaticTag(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	if tag, ok := invocation.Attachments()[constant.Tagkey]; ok {
 		result := make([]protocol.Invoker, 0, 8)
@@ -295,7 +345,6 @@ func matchIpRange(pattern, host, port string) bool {
 		return pattern == host
 	}
 
-	// ip 段
 	ipAddress := strings.Split(host, splitCharacter)
 	for i := 0; i < len(mask); i++ {
 		if "*" == mask[i] || mask[i] == ipAddress[i] {
