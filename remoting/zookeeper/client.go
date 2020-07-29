@@ -363,14 +363,9 @@ func (z *ZookeeperClient) ZkConnValid() bool {
 	default:
 	}
 
-	valid := true
 	z.RLock()
-	if z.Conn == nil {
-		valid = false
-	}
-	z.RUnlock()
-
-	return valid
+	defer z.RUnlock()
+	return z.Conn != nil
 }
 
 // nolint

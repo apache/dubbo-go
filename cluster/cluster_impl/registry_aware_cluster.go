@@ -34,6 +34,7 @@ func NewRegistryAwareCluster() cluster.Cluster {
 	return &registryAwareCluster{}
 }
 
+// nolint
 func (cluster *registryAwareCluster) Join(directory cluster.Directory) protocol.Invoker {
 	return newRegistryAwareClusterInvoker(directory)
 }

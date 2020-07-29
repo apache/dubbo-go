@@ -31,34 +31,43 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
+// nolint
 type MockInvoker struct {
 	url common.URL
 }
 
+// nolint
 func NewMockInvoker(url common.URL) *MockInvoker {
 	return &MockInvoker{
 		url: url,
 	}
 }
 
+// nolint
 func (bi *MockInvoker) GetUrl() common.URL {
 	return bi.url
 }
+
+// nolint
 func (bi *MockInvoker) IsAvailable() bool {
 	return true
 }
 
+// nolint
 func (bi *MockInvoker) IsDestroyed() bool {
 	return true
 }
 
+// nolint
 func (bi *MockInvoker) Invoke(_ context.Context, _ protocol.Invocation) protocol.Result {
 	return nil
 }
 
+// nolint
 func (bi *MockInvoker) Destroy() {
 }
 
+// nolint
 func TestHealthCheckRouteFactory(t *testing.T) {
 	factory := newHealthCheckRouteFactory()
 	assert.NotNil(t, factory)
