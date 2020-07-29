@@ -30,6 +30,3 @@ script:
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
-
-notifications:
-  webhooks: https://oapi.dingtalk.com/robot/send?access_token=f5d6237f2c79db584e75604f7f88db1ce1673c8c0e98451217b28fde791e1d4f
