@@ -34,9 +34,10 @@ type Invocation interface {
 	// Reply gets response of request
 	Reply() interface{}
 	// Attachments gets all attachments
-	Attachments() map[string]string
-	// AttachmentsByKey gets attachment by key , if nil then return default value
+	Attachments() map[string]interface{}
+	// AttachmentsByKey gets attachment by key , if nil then return default value. （It will be discarded）
 	AttachmentsByKey(string, string) string
+	Attachment(string) interface{}
 	// Attributes refers to dubbo 2.7.6.  It is different from attachment. It is used in internal process.
 	Attributes() map[string]interface{}
 	// AttributeByKey gets attribute by key , if nil then return default value

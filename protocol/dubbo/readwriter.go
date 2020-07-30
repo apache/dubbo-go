@@ -126,7 +126,7 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 		if len(req) > 0 {
 			var dubboVersion, argsTypes string
 			var args []interface{}
-			var attachments map[string]string
+			var attachments map[string]interface{}
 			if req[0] != nil {
 				dubboVersion = req[0].(string)
 			}
@@ -146,18 +146,18 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 				args = req[5].([]interface{})
 			}
 			if req[6] != nil {
-				attachments = req[6].(map[string]string)
+				attachments = req[6].(map[string]interface{})
 			}
-			if pkg.Service.Path == "" && len(attachments[constant.PATH_KEY]) > 0 {
-				pkg.Service.Path = attachments[constant.PATH_KEY]
+			if pkg.Service.Path == "" && attachments[constant.PATH_KEY] != nil && len(attachments[constant.PATH_KEY].(string)) > 0 {
+				pkg.Service.Path = attachments[constant.PATH_KEY].(string)
 			}
-			if _, ok := attachments[constant.INTERFACE_KEY]; ok {
-				pkg.Service.Interface = attachments[constant.INTERFACE_KEY]
+			if inter, ok := attachments[constant.INTERFACE_KEY]; ok && inter != nil {
+				pkg.Service.Interface = inter.(string)
 			} else {
 				pkg.Service.Interface = pkg.Service.Path
 			}
-			if len(attachments[constant.GROUP_KEY]) > 0 {
-				pkg.Service.Group = attachments[constant.GROUP_KEY]
+			if attachments[constant.GROUP_KEY] != nil && len(attachments[constant.GROUP_KEY].(string)) > 0 {
+				pkg.Service.Group = attachments[constant.GROUP_KEY].(string)
 			}
 			pkg.Body = map[string]interface{}{
 				"dubboVersion": dubboVersion,

@@ -71,17 +71,19 @@ func (c *tagRouter) Priority() int64 {
 }
 
 func filterUsingStaticTag(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
-	if tag, ok := invocation.Attachments()[constant.Tagkey]; ok {
-		result := make([]protocol.Invoker, 0, 8)
-		for _, v := range invokers {
-			if v.GetUrl().GetParam(constant.Tagkey, "") == tag {
-				result = append(result, v)
+	if tagObject := invocation.Attachment(constant.Tagkey); tagObject != nil {
+		if tag, ok := tagObject.(string); ok {
+			result := make([]protocol.Invoker, 0, 8)
+			for _, v := range invokers {
+				if v.GetUrl().GetParam(constant.Tagkey, "") == tag {
+					result = append(result, v)
+				}
 			}
+			if len(result) == 0 && !isForceUseTag(url, invocation) {
+				return invokers
+			}
+			return result
 		}
-		if len(result) == 0 && !isForceUseTag(url, invocation) {
-			return invokers
-		}
-		return result
 	}
 	return invokers
 }

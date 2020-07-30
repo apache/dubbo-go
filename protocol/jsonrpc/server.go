@@ -345,7 +345,7 @@ func serveRequest(ctx context.Context,
 	exporter, _ := jsonrpcProtocol.ExporterMap().Load(path)
 	invoker := exporter.(*JsonrpcExporter).GetInvoker()
 	if invoker != nil {
-		result := invoker.Invoke(ctx, invocation.NewRPCInvocation(methodName, args, map[string]string{
+		result := invoker.Invoke(ctx, invocation.NewRPCInvocation(methodName, args, map[string]interface{}{
 			constant.PATH_KEY:    path,
 			constant.VERSION_KEY: codec.req.Version}))
 		if err := result.Error(); err != nil {

@@ -173,11 +173,11 @@ type Request struct {
 	svcUrl common.URL
 	method string
 	args   interface{}
-	atta   map[string]string
+	atta   map[string]interface{}
 }
 
 // NewRequest create a new Request.
-func NewRequest(addr string, svcUrl common.URL, method string, args interface{}, atta map[string]string) *Request {
+func NewRequest(addr string, svcUrl common.URL, method string, args interface{}, atta map[string]interface{}) *Request {
 	return &Request{
 		addr:   addr,
 		svcUrl: svcUrl,
@@ -190,11 +190,11 @@ func NewRequest(addr string, svcUrl common.URL, method string, args interface{},
 // Response is dubbo protocol response.
 type Response struct {
 	reply interface{}
-	atta  map[string]string
+	atta  map[string]interface{}
 }
 
 // NewResponse  create a new Response.
-func NewResponse(reply interface{}, atta map[string]string) *Response {
+func NewResponse(reply interface{}, atta map[string]interface{}) *Response {
 	return &Response{
 		reply: reply,
 		atta:  atta,

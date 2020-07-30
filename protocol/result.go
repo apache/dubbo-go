@@ -28,13 +28,14 @@ type Result interface {
 	// Result gets invoker result.
 	Result() interface{}
 	// SetAttachments replaces the existing attachments with the specified param.
-	SetAttachments(map[string]string)
+	SetAttachments(map[string]interface{})
 	// Attachments gets all attachments
-	Attachments() map[string]string
+	Attachments() map[string]interface{}
+
 	// AddAttachment adds the specified map to existing attachments in this instance.
-	AddAttachment(string, string)
+	AddAttachment(string, interface{})
 	// Attachment gets attachment by key with default value.
-	Attachment(string, string) string
+	Attachment(string, interface{}) interface{}
 }
 
 /////////////////////////////
@@ -43,7 +44,7 @@ type Result interface {
 
 // RPCResult is default RPC result.
 type RPCResult struct {
-	Attrs map[string]string
+	Attrs map[string]interface{}
 	Err   error
 	Rest  interface{}
 }
@@ -69,22 +70,22 @@ func (r *RPCResult) Result() interface{} {
 }
 
 // SetAttachments replaces the existing attachments with the specified param.
-func (r *RPCResult) SetAttachments(attr map[string]string) {
+func (r *RPCResult) SetAttachments(attr map[string]interface{}) {
 	r.Attrs = attr
 }
 
 // Attachments gets all attachments
-func (r *RPCResult) Attachments() map[string]string {
+func (r *RPCResult) Attachments() map[string]interface{} {
 	return r.Attrs
 }
 
 // AddAttachment adds the specified map to existing attachments in this instance.
-func (r *RPCResult) AddAttachment(key, value string) {
+func (r *RPCResult) AddAttachment(key string, value interface{}) {
 	r.Attrs[key] = value
 }
 
 // Attachment gets attachment by key with default value.
-func (r *RPCResult) Attachment(key, defaultValue string) string {
+func (r *RPCResult) Attachment(key string, defaultValue interface{}) interface{} {
 	v, ok := r.Attrs[key]
 	if !ok {
 		v = defaultValue

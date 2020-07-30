@@ -29,7 +29,6 @@ import (
 import (
 	"github.com/apache/dubbo-go-hessian2"
 	"github.com/dubbogo/getty"
-	"github.com/opentracing/opentracing-go"
 	perrors "github.com/pkg/errors"
 )
 
@@ -281,7 +280,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	}
 	invoker := exporter.(protocol.Exporter).GetInvoker()
 	if invoker != nil {
-		attachments := p.Body.(map[string]interface{})["attachments"].(map[string]string)
+		attachments := p.Body.(map[string]interface{})["attachments"].(map[string]interface{})
 		attachments[constant.LOCAL_ADDR] = session.LocalAddr()
 		attachments[constant.REMOTE_ADDR] = session.RemoteAddr()
 
@@ -340,8 +339,7 @@ func rebuildCtx(inv *invocation.RPCInvocation) context.Context {
 	ctx := context.Background()
 
 	// actually, if user do not use any opentracing framework, the err will not be nil.
-	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.TextMap,
-		opentracing.TextMapCarrier(inv.Attachments()))
+	spanCtx, err := extractTraceCtx(inv)
 	if err == nil {
 		ctx = context.WithValue(ctx, constant.TRACING_REMOTE_SPAN_CTX, spanCtx)
 	}
