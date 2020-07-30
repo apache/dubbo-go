@@ -31,7 +31,10 @@ func init() {
 	extension.SetCluster(zoneAware, NewZoneAwareCluster)
 }
 
-// NewZoneAwareCluster ...
+// NewZoneAwareCluster returns a zoneaware cluster instance.
+//
+// More than one registry for subscription.
+// Usually it is used for choose between registries.
 func NewZoneAwareCluster() cluster.Cluster {
 	return &zoneAwareCluster{}
 }
@@ -41,7 +44,7 @@ func (cluster *zoneAwareCluster) Join(directory cluster.Directory) protocol.Invo
 	return newZoneAwareClusterInvoker(directory)
 }
 
-// Get cluster name
+// GetZoneAwareName get cluster name
 func GetZoneAwareName() string {
 	return zoneAware
 }
