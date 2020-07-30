@@ -37,18 +37,18 @@ func TestGoRestfulServerDeploySameUrl(t *testing.T) {
 	assert.NoError(t, err)
 	grs.Start(url)
 	rmc := &config.RestMethodConfig{
-		Produces:       "*/*",
-		Consumes:       "*/*",
-		MethodType:     "POST",
-		Path: "/test",
+		Produces:   "*/*",
+		Consumes:   "*/*",
+		MethodType: "POST",
+		Path:       "/test",
 	}
 	f := func(request server.RestServerRequest, response server.RestServerResponse) {}
 	grs.Deploy(rmc, f)
 	rmc1 := &config.RestMethodConfig{
-		Produces:       "*/*",
-		Consumes:       "*/*",
-		MethodType:     "GET",
-		Path: "/test",
+		Produces:   "*/*",
+		Consumes:   "*/*",
+		MethodType: "GET",
+		Path:       "/test",
 	}
 	grs.Deploy(rmc1, f)
 	grs.UnDeploy(rmc)
