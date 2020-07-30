@@ -75,7 +75,7 @@ func (rp *RestProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	}
 	rp.SetExporterMap(serviceKey, exporter)
 	restServer := rp.getServer(url, restServiceConfig.Server)
-	restServer.Deploy(invoker, restServiceConfig.RestMethodConfigsMap)
+	restServer.Deploy(invoker, restServiceConfig)
 	return exporter
 }
 

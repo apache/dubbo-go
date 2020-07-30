@@ -80,21 +80,25 @@ func (grs *GoRestfulServer) Start(url common.URL) {
 	}()
 }
 
-func (grs *GoRestfulServer) Deploy(invoker protocol.Invoker, restMethodConfig map[string]*config.RestMethodConfig) {
+func (grs *GoRestfulServer) Deploy(invoker protocol.Invoker, restServiceConfig *config.RestServiceConfig) {
+	ws := &restful.WebService{}
+	ws.Path(restServiceConfig.Path)
+    
 	svc := common.ServiceMap.GetService(invoker.GetUrl().Protocol, strings.TrimPrefix(invoker.GetUrl().Path, "/"))
-	for methodName, config := range restMethodConfig {
+    
+	for methodName, config := range restServiceConfig.RestMethodConfigsMap {
 		// get method
 		method := svc.Method()[methodName]
 		argsTypes := method.ArgsType()
 		replyType := method.ReplyType()
-		ws := new(restful.WebService)
-		ws.Path(config.Path).
+		ws.Route(
+			ws.Method(config.MethodType).
+			Path(config.Path).
 			Produces(strings.Split(config.Produces, ",")...).
 			Consumes(strings.Split(config.Consumes, ",")...).
-			Route(ws.Method(config.MethodType).To(getFunc(methodName, invoker, argsTypes, replyType, config)))
-		grs.container.Add(ws)
+			To(getFunc(methodName, invoker, argsTypes, replyType, config)))
 	}
-
+	grs.container.Add(ws)
 }
 
 func getFunc(methodName string, invoker protocol.Invoker, argsTypes []reflect.Type,
@@ -124,14 +128,12 @@ func getFunc(methodName string, invoker protocol.Invoker, argsTypes []reflect.Ty
 		}
 	}
 }
-func (grs *GoRestfulServer) UnDeploy(restMethodConfig map[string]*config.RestMethodConfig) {
-	for _, config := range restMethodConfig {
-		ws := new(restful.WebService)
-		ws.Path(config.Path)
-		err := grs.container.Remove(ws)
-		if err != nil {
-			logger.Warnf("[Go restful] Remove web service error:%v", err)
-		}
+func (grs *GoRestfulServer) UnDeploy(restServiceConfig *config.RestServiceConfig) {
+	ws := new(restful.WebService)
+	ws.Path(restServiceConfig.Path)
+	err := grs.container.Remove(ws)
+	if err != nil {
+		logger.Warnf("[Go restful] Remove web service error:%v", err)
 	}
 }
 
