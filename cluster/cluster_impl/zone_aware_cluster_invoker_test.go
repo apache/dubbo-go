@@ -39,10 +39,13 @@ import (
 
 func Test_ZoneWareInvokerWithPreferredSuccess(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	// In Go versions 1.14+, if you pass a *testing.T into gomock.NewController(t) you no longer need to call ctrl.Finish().
+	// In Go versions 1.14+, if you pass a *testing.T
+	// into gomock.NewController(t) you no longer need to call ctrl.Finish().
 	//defer ctrl.Finish()
 
-	mockResult := &protocol.RPCResult{Attrs: map[string]string{constant.PREFERRED_KEY: "true"}, Rest: rest{tried: 0, success: true}}
+	mockResult := &protocol.RPCResult{
+		Attrs: map[string]string{constant.PREFERRED_KEY: "true"},
+		Rest:  rest{tried: 0, success: true}}
 
 	var invokers []protocol.Invoker
 	for i := 0; i < 2; i++ {
@@ -77,7 +80,8 @@ func Test_ZoneWareInvokerWithPreferredSuccess(t *testing.T) {
 
 func Test_ZoneWareInvokerWithWeightSuccess(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	// In Go versions 1.14+, if you pass a *testing.T into gomock.NewController(t) you no longer need to call ctrl.Finish().
+	// In Go versions 1.14+, if you pass a *testing.T
+	// into gomock.NewController(t) you no longer need to call ctrl.Finish().
 	//defer ctrl.Finish()
 
 	w1 := "50"
@@ -94,13 +98,17 @@ func Test_ZoneWareInvokerWithWeightSuccess(t *testing.T) {
 			url.SetParam(constant.REGISTRY_KEY+"."+constant.WEIGHT_KEY, w1)
 			invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
 				func(invocation protocol.Invocation) protocol.Result {
-					return &protocol.RPCResult{Attrs: map[string]string{constant.WEIGHT_KEY: w1}, Rest: rest{tried: 0, success: true}}
+					return &protocol.RPCResult{
+						Attrs: map[string]string{constant.WEIGHT_KEY: w1},
+						Rest:  rest{tried: 0, success: true}}
 				}).MaxTimes(100)
 		} else {
 			url.SetParam(constant.REGISTRY_KEY+"."+constant.WEIGHT_KEY, w2)
 			invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
 				func(invocation protocol.Invocation) protocol.Result {
-					return &protocol.RPCResult{Attrs: map[string]string{constant.WEIGHT_KEY: w2}, Rest: rest{tried: 0, success: true}}
+					return &protocol.RPCResult{
+						Attrs: map[string]string{constant.WEIGHT_KEY: w2},
+						Rest:  rest{tried: 0, success: true}}
 				}).MaxTimes(100)
 		}
 		invokers = append(invokers, invoker)
@@ -130,7 +138,8 @@ func Test_ZoneWareInvokerWithZoneSuccess(t *testing.T) {
 	var zoneArray = []string{"hangzhou", "shanghai"}
 
 	ctrl := gomock.NewController(t)
-	// In Go versions 1.14+, if you pass a *testing.T into gomock.NewController(t) you no longer need to call ctrl.Finish().
+	// In Go versions 1.14+, if you pass a *testing.T
+	// into gomock.NewController(t) you no longer need to call ctrl.Finish().
 	//defer ctrl.Finish()
 
 	var invokers []protocol.Invoker
@@ -144,7 +153,9 @@ func Test_ZoneWareInvokerWithZoneSuccess(t *testing.T) {
 		invoker.EXPECT().GetUrl().Return(url).AnyTimes()
 		invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
 			func(invocation protocol.Invocation) protocol.Result {
-				return &protocol.RPCResult{Attrs: map[string]string{constant.ZONE_KEY: zoneValue}, Rest: rest{tried: 0, success: true}}
+				return &protocol.RPCResult{
+					Attrs: map[string]string{constant.ZONE_KEY: zoneValue},
+					Rest:  rest{tried: 0, success: true}}
 			})
 		invokers = append(invokers, invoker)
 	}
@@ -165,7 +176,8 @@ func Test_ZoneWareInvokerWithZoneSuccess(t *testing.T) {
 
 func Test_ZoneWareInvokerWithZoneForceFail(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	// In Go versions 1.14+, if you pass a *testing.T into gomock.NewController(t) you no longer need to call ctrl.Finish().
+	// In Go versions 1.14+, if you pass a *testing.T
+	// into gomock.NewController(t) you no longer need to call ctrl.Finish().
 	//defer ctrl.Finish()
 
 	var invokers []protocol.Invoker

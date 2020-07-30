@@ -56,7 +56,8 @@ func (invoker *zoneAwareClusterInvoker) Invoke(ctx context.Context, invocation p
 
 	// First, pick the invoker (XXXClusterInvoker) that comes from the local registry, distinguish by a 'preferred' key.
 	for _, invoker := range invokers {
-		if invoker.IsAvailable() && "true" == invoker.GetUrl().GetParam(constant.REGISTRY_KEY+"."+constant.PREFERRED_KEY, "false") {
+		if invoker.IsAvailable() &&
+			"true" == invoker.GetUrl().GetParam(constant.REGISTRY_KEY+"."+constant.PREFERRED_KEY, "false") {
 			return invoker.Invoke(ctx, invocation)
 		}
 	}
@@ -65,7 +66,8 @@ func (invoker *zoneAwareClusterInvoker) Invoke(ctx context.Context, invocation p
 	zone := invocation.AttachmentsByKey(constant.REGISTRY_ZONE, "")
 	if "" != zone {
 		for _, invoker := range invokers {
-			if invoker.IsAvailable() && zone == invoker.GetUrl().GetParam(constant.REGISTRY_KEY+"."+constant.ZONE_KEY, "") {
+			if invoker.IsAvailable() &&
+				zone == invoker.GetUrl().GetParam(constant.REGISTRY_KEY+"."+constant.ZONE_KEY, "") {
 				return invoker.Invoke(ctx, invocation)
 			}
 		}
@@ -73,7 +75,8 @@ func (invoker *zoneAwareClusterInvoker) Invoke(ctx context.Context, invocation p
 		force := invocation.AttachmentsByKey(constant.REGISTRY_ZONE_FORCE, "")
 		if "true" == force {
 			return &protocol.RPCResult{
-				Err: fmt.Errorf("no registry instance in zone or no available providers in the registry, zone: %v, "+
+				Err: fmt.Errorf("no registry instance in zone or "+
+					"no available providers in the registry, zone: %v, "+
 					" registries: %v", zone, invoker.GetUrl()),
 			}
 		}

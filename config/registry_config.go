@@ -48,7 +48,8 @@ type RegistryConfig struct {
 	Preferred bool `yaml:"preferred" json:"params,omitempty" property:"preferred"`
 	// The region where the registry belongs, usually used to isolate traffics
 	Zone string `yaml:"zone" json:"params,omitempty" property:"zone"`
-	// Affects traffic distribution among registries, useful when subscribe to multiple registries Take effect only when no preferred registry is specified.
+	// Affects traffic distribution among registries,
+	// useful when subscribe to multiple registries Take effect only when no preferred registry is specified.
 	Weight int64             `yaml:"weight" json:"params,omitempty" property:"weight"`
 	Params map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
 }
