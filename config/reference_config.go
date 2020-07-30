@@ -151,7 +151,9 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 		if regUrl != nil {
 			// for multi-subscription scenario, use 'zone-aware' policy by default
 			cluster := extension.GetCluster(cluster_impl.GetZoneAwareName())
-			// The invoker wrap sequence would be: ZoneAwareClusterInvoker(StaticDirectory) -> FailoverClusterInvoker(RegistryDirectory, routing happens here) -> Invoker
+			// The invoker wrap sequence would be:
+			// ZoneAwareClusterInvoker(StaticDirectory) ->
+			// FailoverClusterInvoker(RegistryDirectory, routing happens here) -> Invoker
 			c.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
 		} else {
 			// not a registry url, must be direct invoke.
