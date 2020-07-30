@@ -20,7 +20,6 @@ package tag
 import (
 	"errors"
 	"fmt"
-	"github.com/apache/dubbo-go/common/config"
 	"net"
 	"strconv"
 	"strings"
@@ -32,6 +31,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/config"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config_center"
@@ -70,6 +70,7 @@ func (c *tagRouter) SetApplication(app string) {
 }
 
 func (c *tagRouter) tagRouterRuleCopy() RouterRule {
+	fmt.Println(c.tagRouterRule, "fuck")
 	routerRule := *c.tagRouterRule
 	return routerRule
 }
@@ -82,11 +83,11 @@ func (c *tagRouter) Route(invokers []protocol.Invoker, url *common.URL, invocati
 	if len(invokers) == 0 {
 		return invokers
 	}
-	// since the rule can be changed by config center, we should copy one to use.
-	tagRouterRuleCopy := c.tagRouterRuleCopy()
-	if !tagRouterRuleCopy.Valid || !tagRouterRuleCopy.Enabled {
+	if c.tagRouterRule == nil || !c.tagRouterRule.Valid || !c.tagRouterRule.Enabled {
 		return filterUsingStaticTag(invokers, url, invocation)
 	}
+	// since the rule can be changed by config center, we should copy one to use.
+	tagRouterRuleCopy := c.tagRouterRuleCopy()
 	tag, ok := invocation.Attachments()[constant.Tagkey]
 	if !ok {
 		tag = url.GetParam(constant.Tagkey, "")
