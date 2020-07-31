@@ -56,8 +56,8 @@ func (invoker *zoneAwareClusterInvoker) Invoke(ctx context.Context, invocation p
 
 	// First, pick the invoker (XXXClusterInvoker) that comes from the local registry, distinguish by a 'preferred' key.
 	for _, invoker := range invokers {
-		if invoker.IsAvailable() &&
-			"true" == invoker.GetUrl().GetParam(constant.REGISTRY_KEY+"."+constant.PREFERRED_KEY, "false") {
+		key := constant.REGISTRY_KEY + "." + constant.PREFERRED_KEY
+		if invoker.IsAvailable() && matchParam("true", key, "false", invoker) {
 			return invoker.Invoke(ctx, invocation)
 		}
 	}
@@ -66,8 +66,8 @@ func (invoker *zoneAwareClusterInvoker) Invoke(ctx context.Context, invocation p
 	zone := invocation.AttachmentsByKey(constant.REGISTRY_ZONE, "")
 	if "" != zone {
 		for _, invoker := range invokers {
-			if invoker.IsAvailable() &&
-				zone == invoker.GetUrl().GetParam(constant.REGISTRY_KEY+"."+constant.ZONE_KEY, "") {
+			key := constant.REGISTRY_KEY + "." + constant.ZONE_KEY
+			if invoker.IsAvailable() && matchParam(zone, key, "", invoker) {
 				return invoker.Invoke(ctx, invocation)
 			}
 		}
@@ -99,4 +99,8 @@ func (invoker *zoneAwareClusterInvoker) Invoke(ctx context.Context, invocation p
 	return &protocol.RPCResult{
 		Err: fmt.Errorf("no provider available in %v", invokers),
 	}
+}
+
+func matchParam(target, key, def string, invoker protocol.Invoker) bool {
+	return target == invoker.GetUrl().GetParam(key, def)
 }
