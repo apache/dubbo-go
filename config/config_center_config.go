@@ -20,6 +20,7 @@ package config
 import (
 	"context"
 	"net/url"
+	"reflect"
 	"time"
 )
 
@@ -28,7 +29,13 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/config"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/config_center"
+	perrors "github.com/pkg/errors"
 )
 
 // ConfigCenterConfig is configuration for config center
@@ -52,6 +59,7 @@ type ConfigCenterConfig struct {
 	AppConfigFile string `default:"dubbo.properties" yaml:"app_config_file"  json:"app_config_file,omitempty"`
 	AppId         string `default:"dubbo" yaml:"app_id"  json:"app_id,omitempty"`
 	TimeoutStr    string `yaml:"timeout"  json:"timeout,omitempty"`
+	RemoteRef     string `required:"false"  yaml:"remote_ref"  json:"remote_ref,omitempty"`
 	timeout       time.Duration
 }
 
@@ -76,4 +84,74 @@ func (c *ConfigCenterConfig) GetUrlMap() url.Values {
 	urlMap.Set(constant.CONFIG_APP_ID_KEY, c.AppId)
 	urlMap.Set(constant.CONFIG_LOG_DIR_KEY, c.LogDir)
 	return urlMap
+}
+
+type configCenter struct {
+}
+
+// startConfigCenter will start the config center.
+// it will prepare the environment
+func (b *configCenter) startConfigCenter(baseConfig BaseConfig) error {
+	url, err := common.NewURL(baseConfig.ConfigCenterConfig.Address,
+		common.WithProtocol(baseConfig.ConfigCenterConfig.Protocol), common.WithParams(baseConfig.ConfigCenterConfig.GetUrlMap()))
+	if err != nil {
+		return err
+	}
+	if b.prepareEnvironment(baseConfig, &url) != nil {
+		return perrors.WithMessagef(err, "start config center error!")
+	}
+	// c.fresh()
+	return err
+}
+
+func (b *configCenter) prepareEnvironment(baseConfig BaseConfig, configCenterUrl *common.URL) error {
+	factory := extension.GetConfigCenterFactory(baseConfig.ConfigCenterConfig.Protocol)
+	dynamicConfig, err := factory.GetDynamicConfiguration(configCenterUrl)
+	config.GetEnvInstance().SetDynamicConfiguration(dynamicConfig)
+	if err != nil {
+		logger.Errorf("Get dynamic configuration error , error message is %v", err)
+		return perrors.WithStack(err)
+	}
+	content, err := dynamicConfig.GetProperties(baseConfig.ConfigCenterConfig.ConfigFile, config_center.WithGroup(c.ConfigCenterConfig.Group))
+	if err != nil {
+		logger.Errorf("Get config content in dynamic configuration error , error message is %v", err)
+		return perrors.WithStack(err)
+	}
+	var appGroup string
+	var appContent string
+	if providerConfig != nil && providerConfig.ApplicationConfig != nil &&
+		reflect.ValueOf(baseConfig.fatherConfig).Elem().Type().Name() == "ProviderConfig" {
+		appGroup = providerConfig.ApplicationConfig.Name
+	} else if consumerConfig != nil && consumerConfig.ApplicationConfig != nil &&
+		reflect.ValueOf(baseConfig.fatherConfig).Elem().Type().Name() == "ConsumerConfig" {
+		appGroup = consumerConfig.ApplicationConfig.Name
+	}
+
+	if len(appGroup) != 0 {
+		configFile := baseConfig.ConfigCenterConfig.AppConfigFile
+		if len(configFile) == 0 {
+			configFile = baseConfig.ConfigCenterConfig.ConfigFile
+		}
+		appContent, err = dynamicConfig.GetProperties(configFile, config_center.WithGroup(appGroup))
+		if err != nil {
+			return perrors.WithStack(err)
+		}
+	}
+	// global config file
+	mapContent, err := dynamicConfig.Parser().Parse(content)
+	if err != nil {
+		return perrors.WithStack(err)
+	}
+	config.GetEnvInstance().UpdateExternalConfigMap(mapContent)
+
+	// appGroup config file
+	if len(appContent) != 0 {
+		appMapConent, err := dynamicConfig.Parser().Parse(appContent)
+		if err != nil {
+			return perrors.WithStack(err)
+		}
+		config.GetEnvInstance().UpdateAppExternalConfigMap(appMapConent)
+	}
+
+	return nil
 }
