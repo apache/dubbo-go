@@ -188,6 +188,7 @@ func (c *ServiceConfig) Export() error {
 			common.WithPort(port),
 			common.WithParams(urlMap),
 			common.WithParamsValue(constant.BEAN_NAME_KEY, c.id),
+			common.WithParamsValue(constant.SSL_ENABLED_KEY, strconv.FormatBool(proto.SslEnabled)),
 			common.WithMethods(strings.Split(methods, ",")),
 			common.WithToken(c.Token),
 		)

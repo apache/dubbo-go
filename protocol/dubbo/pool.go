@@ -33,6 +33,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/config"
 )
 
 type gettyRPCClient struct {
@@ -53,15 +54,26 @@ var (
 )
 
 func newGettyRPCClientConn(pool *gettyRPCClientPool, protocol, addr string) (*gettyRPCClient, error) {
-	c := &gettyRPCClient{
-		protocol: protocol,
-		addr:     addr,
-		pool:     pool,
-		gettyClient: getty.NewTCPClient(
+	var gettyClient getty.Client
+	if pool.sslEnabled {
+		gettyClient = getty.NewTCPClient(
 			getty.WithServerAddress(addr),
 			getty.WithConnectionNumber((int)(pool.rpcClient.conf.ConnectionNum)),
 			getty.WithReconnectInterval(pool.rpcClient.conf.ReconnectInterval),
-		),
+			getty.WithClientTlsConfigBuilder(config.GetClientTlsConfigBuilder()),
+		)
+	} else {
+		gettyClient = getty.NewTCPClient(
+			getty.WithServerAddress(addr),
+			getty.WithConnectionNumber((int)(pool.rpcClient.conf.ConnectionNum)),
+			getty.WithReconnectInterval(pool.rpcClient.conf.ReconnectInterval),
+		)
+	}
+	c := &gettyRPCClient{
+		protocol:    protocol,
+		addr:        addr,
+		pool:        pool,
+		gettyClient: gettyClient,
 	}
 	go c.gettyClient.RunEventLoop(c.newSession)
 	idx := 1
@@ -288,9 +300,10 @@ func (c *gettyRPCClient) close() error {
 }
 
 type gettyRPCClientPool struct {
-	rpcClient *Client
-	size      int   // size of []*gettyRPCClient
-	ttl       int64 // ttl of every gettyRPCClient, it is checked when getConn
+	rpcClient  *Client
+	size       int   // size of []*gettyRPCClient
+	ttl        int64 // ttl of every gettyRPCClient, it is checked when getConn
+	sslEnabled bool
 
 	sync.Mutex
 	conns []*gettyRPCClient
