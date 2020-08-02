@@ -1,5 +1,7 @@
 module github.com/apache/dubbo-go
 
+go 1.14
+
 require (
 	cloud.google.com/go v0.39.0 // indirect
 	github.com/Microsoft/go-winio v0.4.13 // indirect
@@ -66,4 +68,4 @@ require (
 	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a // indirect
 )
 
-go 1.13
+replace github.com/dubbogo/getty v1.2.2 => github.com/aliiohs/getty v1.1.1-0.20200802094147-169328c4ff38
