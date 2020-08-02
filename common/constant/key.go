@@ -46,6 +46,7 @@ const (
 	DUBBO_KEY              = "dubbo"
 	RELEASE_KEY            = "release"
 	ANYHOST_KEY            = "anyhost"
+	SSL_ENABLED_KEY        = "ssl-enabled"
 )
 
 const (
