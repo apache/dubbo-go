@@ -41,7 +41,8 @@ import (
 // ConsumerConfig is Consumer default configuration
 type ConsumerConfig struct {
 	BaseConfig `yaml:",inline"`
-	Filter     string `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	configCenter
+	Filter string `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	// client
 	Connect_Timeout string `default:"100ms"  yaml:"connect_timeout" json:"connect_timeout,omitempty" property:"connect_timeout"`
 	ConnectTimeout  time.Duration
@@ -127,7 +128,7 @@ func configCenterRefreshConsumer() error {
 	var err error
 	if consumerConfig.ConfigCenterConfig != nil {
 		consumerConfig.SetFatherConfig(consumerConfig)
-		if err = consumerConfig.startConfigCenter(); err != nil {
+		if err = consumerConfig.startConfigCenter((*consumerConfig).BaseConfig); err != nil {
 			return perrors.Errorf("start config center error , error message is {%v}", perrors.WithStack(err))
 		}
 		consumerConfig.fresh()
