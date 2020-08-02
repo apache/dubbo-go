@@ -229,6 +229,7 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 	p.Service.Version = request.svcUrl.GetParam(constant.VERSION_KEY, "")
 	p.Service.Group = request.svcUrl.GetParam(constant.GROUP_KEY, "")
 	p.Service.Method = request.method
+	c.pool.sslEnabled = request.svcUrl.GetParamBool(constant.SSL_ENABLED_KEY, false)
 
 	p.Service.Timeout = c.opts.RequestTimeout
 	var timeout = request.svcUrl.GetParam(strings.Join([]string{constant.METHOD_KEYS, request.method + constant.RETRIES_KEY}, "."), "")
