@@ -19,6 +19,7 @@ package dubbo
 
 import (
 	"fmt"
+	"github.com/apache/dubbo-go/common/constant"
 	"net"
 )
 
@@ -155,9 +156,18 @@ func (s *Server) Start(url common.URL) {
 	)
 
 	addr = url.Location
-	tcpServer = getty.NewTCPServer(
-		getty.WithLocalAddress(addr),
-	)
+	if url.GetParamBool(constant.SSL_ENABLED_KEY, false) {
+		tcpServer = getty.NewTCPServer(
+			getty.WithLocalAddress(addr),
+			getty.WithServerSslEnabled(url.GetParamBool(constant.SSL_ENABLED_KEY, false)),
+			getty.WithServerTlsConfigBuilder(config.GetServerTlsConfigBuilder()),
+		)
+
+	} else {
+		tcpServer = getty.NewTCPServer(
+			getty.WithLocalAddress(addr),
+		)
+	}
 	tcpServer.RunEventLoop(s.newSession)
 	logger.Debugf("s bind addr{%s} ok!", addr)
 	s.tcpServer = tcpServer

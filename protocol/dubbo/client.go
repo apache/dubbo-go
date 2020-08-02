@@ -184,7 +184,7 @@ func (c *Client) call(ct CallType, addr string, svcUrl common.URL, method string
 	p.Service.Timeout = c.opts.RequestTimeout
 	p.Header.SerialID = byte(S_Dubbo)
 	p.Body = args
-
+	c.pool.sslEnabled = svcUrl.GetParamBool(constant.SSL_ENABLED_KEY, false)
 	var rsp *PendingResponse
 	if ct != CT_OneWay {
 		p.Header.Type = hessian.PackageRequest_TwoWay

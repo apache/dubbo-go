@@ -111,6 +111,7 @@ func (srvconfig *ServiceConfig) Export() error {
 			common.WithPort(proto.Port),
 			common.WithParams(urlMap),
 			common.WithParamsValue(constant.BEAN_NAME_KEY, srvconfig.id),
+			common.WithParamsValue(constant.SSL_ENABLED_KEY, strconv.FormatBool(proto.SslEnabled)),
 			common.WithMethods(strings.Split(methods, ",")))
 
 		if len(regUrls) > 0 {

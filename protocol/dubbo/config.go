@@ -59,6 +59,9 @@ type (
 
 		// session tcp parameters
 		GettySessionParam GettySessionParam `required:"true" yaml:"getty_session_param" json:"getty_session_param,omitempty"`
+		Cert              string            `default:"0" yaml:"cert" json:"cert,omitempty"`
+		PrivateKey        string            `default:"0" yaml:"private_key" json:"private_key,omitempty"`
+		CaCert            string            `default:"0" yaml:"caCert" json:"caCert,omitempty"`
 	}
 
 	// Config holds supported types by the multiconfig package

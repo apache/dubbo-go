@@ -22,14 +22,15 @@ const (
 )
 
 const (
-	GROUP_KEY     = "group"
-	VERSION_KEY   = "version"
-	INTERFACE_KEY = "interface"
-	PATH_KEY      = "path"
-	SERVICE_KEY   = "service"
-	METHODS_KEY   = "methods"
-	TIMEOUT_KEY   = "timeout"
-	BEAN_NAME_KEY = "bean.name"
+	GROUP_KEY       = "group"
+	VERSION_KEY     = "version"
+	INTERFACE_KEY   = "interface"
+	PATH_KEY        = "path"
+	SERVICE_KEY     = "service"
+	METHODS_KEY     = "methods"
+	TIMEOUT_KEY     = "timeout"
+	BEAN_NAME_KEY   = "bean.name"
+	SSL_ENABLED_KEY = "ssl-enabled"
 )
 
 const (
