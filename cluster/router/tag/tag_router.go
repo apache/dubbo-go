@@ -19,7 +19,6 @@ package tag
 
 import (
 	"errors"
-	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -70,7 +69,6 @@ func (c *tagRouter) SetApplication(app string) {
 }
 
 func (c *tagRouter) tagRouterRuleCopy() RouterRule {
-	fmt.Println(c.tagRouterRule, "fuck")
 	routerRule := *c.tagRouterRule
 	return routerRule
 }
@@ -96,7 +94,8 @@ func (c *tagRouter) Route(invokers []protocol.Invoker, url *common.URL, invocati
 		result    []protocol.Invoker
 		addresses []string
 	)
-	if tag != "" {
+	// if we are requesting for a Provider with a specific tag
+	if len(tag) > 0 {
 		addresses, _ = tagRouterRuleCopy.getTagNameToAddresses()[tag]
 		// filter by dynamic tag group first
 		if len(addresses) > 0 {
@@ -159,9 +158,9 @@ func (c *tagRouter) Route(invokers []protocol.Invoker, url *common.URL, invocati
 			if len(result) == 0 {
 				return result
 			}
-			// 2. if there are some addresses that are not in any dynamic tag group, continue to filter using the
-			// static tag group.
 		}
+		// 2. if there are some addresses that are not in any dynamic tag group, continue to filter using the
+		// static tag group.
 		filter := func(invoker protocol.Invoker) bool {
 			localTag := invoker.GetUrl().GetParam(constant.Tagkey, "")
 			return localTag == "" || !(tagRouterRuleCopy.hasTag(localTag))
@@ -178,8 +177,7 @@ func (c *tagRouter) Process(event *config_center.ConfigChangeEvent) {
 	} else {
 		content, ok := event.Value.(string)
 		if !ok {
-			msg := fmt.Sprintf("Convert event content fail,raw content:[%s] ", event.Value)
-			logger.Error(msg)
+			logger.Errorf("Convert event content fail,raw content:[%s] ", event.Value)
 			return
 		}
 
@@ -282,13 +280,13 @@ OUTER:
 	return res
 }
 
-// TODO 需要搬到 dubbogo/gost, 可以先 review
+// TODO: need move to dubbogo/gost
 func checkAddressMatch(addresses []string, host, port string) bool {
 	for _, address := range addresses {
 		if matchIp(address, host, port) {
 			return true
 		}
-		if address == constant.ANYHOST_VALUE+":"+port {
+		if address == net.JoinHostPort(constant.ANYHOST_VALUE, port) {
 			return true
 		}
 	}
@@ -332,7 +330,7 @@ func matchIpRange(pattern, host, port string) bool {
 
 	pattern = hostAndPort[0]
 	// TODO 常量化
-	splitCharacter := "\\."
+	splitCharacter := "."
 	if !isIpv4 {
 		splitCharacter = ":"
 	}

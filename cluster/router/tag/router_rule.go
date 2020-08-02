@@ -57,8 +57,8 @@ func getRule(rawRule string) (*RouterRule, error) {
 }
 
 func (t *RouterRule) init() {
-	t.addressToTagNames = make(map[string][]string)
-	t.tagNameToAddresses = make(map[string][]string)
+	t.addressToTagNames = make(map[string][]string, 8)
+	t.tagNameToAddresses = make(map[string][]string, 8)
 	for _, tag := range t.Tags {
 		for _, address := range tag.Addresses {
 			t.addressToTagNames[address] = append(t.addressToTagNames[address], tag.Name)
@@ -68,7 +68,7 @@ func (t *RouterRule) init() {
 }
 
 func (t *RouterRule) getAddresses() []string {
-	var result []string
+	var result = make([]string, 0, 8*len(t.Tags))
 	for _, tag := range t.Tags {
 		result = append(result, tag.Addresses...)
 	}
@@ -76,7 +76,7 @@ func (t *RouterRule) getAddresses() []string {
 }
 
 func (t *RouterRule) getTagNames() []string {
-	var result []string
+	var result = make([]string, 0, len(t.Tags))
 	for _, tag := range t.Tags {
 		result = append(result, tag.Name)
 	}
