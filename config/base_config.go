@@ -31,9 +31,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/config"
-	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/config_center"
 )
 
 type multiConfiger interface {
@@ -52,7 +50,6 @@ type BaseConfig struct {
 	// application config
 	ApplicationConfig *ApplicationConfig `yaml:"application" json:"application,omitempty" property:"application"`
 
-	configCenterUrl     *common.URL
 	prefix              string
 	fatherConfig        interface{}
 	EventDispatcherType string        `default:"direct" yaml:"event_dispatcher_type" json:"event_dispatcher_type,omitempty"`
@@ -72,72 +69,19 @@ func (c *BaseConfig) GetRemoteConfig(name string) (config *RemoteConfig, ok bool
 	return
 }
 
-// startConfigCenter will start the config center.
-// it will prepare the environment
-func (c *BaseConfig) startConfigCenter() error {
-	url, err := common.NewURL(c.ConfigCenterConfig.Address,
-		common.WithProtocol(c.ConfigCenterConfig.Protocol), common.WithParams(c.ConfigCenterConfig.GetUrlMap()))
-	if err != nil {
-		return err
-	}
-	c.configCenterUrl = &url
-	if c.prepareEnvironment() != nil {
-		return perrors.WithMessagef(err, "start config center error!")
-	}
-	// c.fresh()
-	return err
-}
+func (c *BaseConfig) newURL(name string, protocol string) (common.URL, error) {
+	rc, ok := GetBaseConfig().GetRemoteConfig(name)
 
-func (c *BaseConfig) prepareEnvironment() error {
-	factory := extension.GetConfigCenterFactory(c.ConfigCenterConfig.Protocol)
-	dynamicConfig, err := factory.GetDynamicConfiguration(c.configCenterUrl)
-	config.GetEnvInstance().SetDynamicConfiguration(dynamicConfig)
-	if err != nil {
-		logger.Errorf("Get dynamic configuration error , error message is %v", err)
-		return perrors.WithStack(err)
-	}
-	content, err := dynamicConfig.GetProperties(c.ConfigCenterConfig.ConfigFile, config_center.WithGroup(c.ConfigCenterConfig.Group))
-	if err != nil {
-		logger.Errorf("Get config content in dynamic configuration error , error message is %v", err)
-		return perrors.WithStack(err)
-	}
-	var appGroup string
-	var appContent string
-	if providerConfig != nil && providerConfig.ApplicationConfig != nil &&
-		reflect.ValueOf(c.fatherConfig).Elem().Type().Name() == "ProviderConfig" {
-		appGroup = providerConfig.ApplicationConfig.Name
-	} else if consumerConfig != nil && consumerConfig.ApplicationConfig != nil &&
-		reflect.ValueOf(c.fatherConfig).Elem().Type().Name() == "ConsumerConfig" {
-		appGroup = consumerConfig.ApplicationConfig.Name
+	if !ok {
+		return common.URL{}, perrors.New("Could not find out the remote ref config, name: " + name)
 	}
 
-	if len(appGroup) != 0 {
-		configFile := c.ConfigCenterConfig.AppConfigFile
-		if len(configFile) == 0 {
-			configFile = c.ConfigCenterConfig.ConfigFile
-		}
-		appContent, err = dynamicConfig.GetProperties(configFile, config_center.WithGroup(appGroup))
-		if err != nil {
-			return perrors.WithStack(err)
-		}
-	}
-	// global config file
-	mapContent, err := dynamicConfig.Parser().Parse(content)
-	if err != nil {
-		return perrors.WithStack(err)
-	}
-	config.GetEnvInstance().UpdateExternalConfigMap(mapContent)
-
-	// appGroup config file
-	if len(appContent) != 0 {
-		appMapConent, err := dynamicConfig.Parser().Parse(appContent)
-		if err != nil {
-			return perrors.WithStack(err)
-		}
-		config.GetEnvInstance().UpdateAppExternalConfigMap(appMapConent)
-	}
-
-	return nil
+	return common.NewURL(rc.Address,
+		common.WithUsername(rc.Username),
+		common.WithPassword(rc.Password),
+		common.WithLocation(rc.Address),
+		common.WithProtocol(protocol),
+	)
 }
 
 func getKeyPrefix(val reflect.Value) []string {
