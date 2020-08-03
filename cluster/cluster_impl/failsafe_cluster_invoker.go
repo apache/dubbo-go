@@ -45,6 +45,7 @@ func newFailsafeClusterInvoker(directory cluster.Directory) protocol.Invoker {
 	}
 }
 
+// nolint
 func (invoker *failsafeClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	invokers := invoker.directory.List(invocation)
 

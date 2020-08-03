@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package consul
+package filter_impl
 
 import (
+	"context"
 	"testing"
 )
 
@@ -25,8 +26,30 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewConsulAgent(t *testing.T) {
-	consulAgent := NewConsulAgent(t, 8500)
-	err := consulAgent.Shutdown()
-	assert.NoError(t, err)
+import (
+	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/invocation"
+)
+
+type testMockSeataInvoker struct {
+	protocol.BaseInvoker
+}
+
+func (iv *testMockSeataInvoker) Invoke(ctx context.Context, _ protocol.Invocation) protocol.Result {
+	val := ctx.Value(SEATA_XID)
+	if val != nil {
+		xid, ok := val.(string)
+		if ok {
+			return &protocol.RPCResult{Rest: xid}
+		}
+	}
+	return &protocol.RPCResult{}
+}
+
+func TestSeataFilter_Invoke(t *testing.T) {
+	filter := getSeataFilter()
+	result := filter.Invoke(context.Background(), &testMockSeataInvoker{}, invocation.NewRPCInvocation("$echo", []interface{}{"OK"}, map[string]string{
+		SEATA_XID: "10.30.21.227:8091:2000047792",
+	}))
+	assert.Equal(t, "10.30.21.227:8091:2000047792", result.Result())
 }

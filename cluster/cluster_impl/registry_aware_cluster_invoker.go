@@ -36,6 +36,7 @@ func newRegistryAwareClusterInvoker(directory cluster.Directory) protocol.Invoke
 	}
 }
 
+// nolint
 func (invoker *registryAwareClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	invokers := invoker.directory.List(invocation)
 	//First, pick the invoker (XXXClusterInvoker) that comes from the local registry, distinguish by a 'default' key.
