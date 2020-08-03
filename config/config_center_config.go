@@ -89,7 +89,7 @@ func (c *ConfigCenterConfig) GetUrlMap() url.Values {
 type configCenter struct {
 }
 
-// toURL will compatible with baseConfig.ConfigCenterConfig.Address before 1.6.0
+// toURL will compatible with baseConfig.ConfigCenterConfig.Address and baseConfig.ConfigCenterConfig.RemoteRef before 1.6.0
 // After 1.6.0 will not compatible, only baseConfig.ConfigCenterConfig.RemoteRef
 func (b *configCenter) toURL(baseConfig BaseConfig) (common.URL, error) {
 	if len(baseConfig.ConfigCenterConfig.Address) > 0 {
