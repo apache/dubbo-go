@@ -96,7 +96,11 @@ func (b *configCenter) toURL(baseConfig BaseConfig) (common.URL, error) {
 		return common.NewURL(baseConfig.ConfigCenterConfig.Address,
 			common.WithProtocol(baseConfig.ConfigCenterConfig.Protocol), common.WithParams(baseConfig.ConfigCenterConfig.GetUrlMap()))
 	}
-	return baseConfig.toURL(baseConfig.ConfigCenterConfig.RemoteRef, baseConfig.ConfigCenterConfig.Protocol)
+	newURL, err := baseConfig.toURL(baseConfig.ConfigCenterConfig.RemoteRef, baseConfig.ConfigCenterConfig.Protocol)
+	if err == nil {
+		newURL.SetParams(baseConfig.ConfigCenterConfig.GetUrlMap())
+	}
+	return newURL, err
 }
 
 // startConfigCenter will start the config center.
