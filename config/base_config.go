@@ -69,7 +69,7 @@ func (c *BaseConfig) GetRemoteConfig(name string) (config *RemoteConfig, ok bool
 	return
 }
 
-func (c *BaseConfig) newURL(name string, protocol string) (common.URL, error) {
+func (c *BaseConfig) toURL(name string, protocol string) (common.URL, error) {
 	rc, ok := GetBaseConfig().GetRemoteConfig(name)
 
 	if !ok {
