@@ -44,10 +44,12 @@ var (
 
 const REST = "rest"
 
+// nolint
 func init() {
 	extension.SetProtocol(REST, GetRestProtocol)
 }
 
+// nolint
 type RestProtocol struct {
 	protocol.BaseProtocol
 	serverLock sync.Mutex
@@ -56,6 +58,7 @@ type RestProtocol struct {
 	clientMap  map[client.RestOptions]client.RestClient
 }
 
+// NewRestProtocol returns a RestProtocol
 func NewRestProtocol() *RestProtocol {
 	return &RestProtocol{
 		BaseProtocol: protocol.NewBaseProtocol(),
@@ -64,6 +67,7 @@ func NewRestProtocol() *RestProtocol {
 	}
 }
 
+// Export export rest service
 func (rp *RestProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetUrl()
 	serviceKey := url.ServiceKey()
@@ -81,6 +85,7 @@ func (rp *RestProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	return exporter
 }
 
+// Refer create rest service reference
 func (rp *RestProtocol) Refer(url common.URL) protocol.Invoker {
 	// create rest_invoker
 	var requestTimeout = config.GetConsumerConfig().RequestTimeout
@@ -101,6 +106,7 @@ func (rp *RestProtocol) Refer(url common.URL) protocol.Invoker {
 	return invoker
 }
 
+// nolint
 func (rp *RestProtocol) getServer(url common.URL, serverType string) server.RestServer {
 	restServer, ok := rp.serverMap[url.Location]
 	if ok {
@@ -122,6 +128,7 @@ func (rp *RestProtocol) getServer(url common.URL, serverType string) server.Rest
 	return restServer
 }
 
+// nolint
 func (rp *RestProtocol) getClient(restOptions client.RestOptions, clientType string) client.RestClient {
 	restClient, ok := rp.clientMap[restOptions]
 	if ok {
@@ -138,6 +145,7 @@ func (rp *RestProtocol) getClient(restOptions client.RestOptions, clientType str
 	return restClient
 }
 
+// Destroy destroy rest service
 func (rp *RestProtocol) Destroy() {
 	// destroy rest_server
 	rp.BaseProtocol.Destroy()
@@ -150,6 +158,7 @@ func (rp *RestProtocol) Destroy() {
 	}
 }
 
+// GetRestProtocol get a rest protocol
 func GetRestProtocol() protocol.Protocol {
 	if restProtocol == nil {
 		restProtocol = NewRestProtocol()
