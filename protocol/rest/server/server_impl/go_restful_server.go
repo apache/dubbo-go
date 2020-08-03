@@ -83,9 +83,9 @@ func (grs *GoRestfulServer) Start(url common.URL) {
 func (grs *GoRestfulServer) Deploy(invoker protocol.Invoker, restServiceConfig *config.RestServiceConfig) {
 	ws := &restful.WebService{}
 	ws.Path(restServiceConfig.Path)
-    
+
 	svc := common.ServiceMap.GetService(invoker.GetUrl().Protocol, strings.TrimPrefix(invoker.GetUrl().Path, "/"))
-    
+
 	for methodName, config := range restServiceConfig.RestMethodConfigsMap {
 		// get method
 		method := svc.Method()[methodName]
@@ -93,10 +93,10 @@ func (grs *GoRestfulServer) Deploy(invoker protocol.Invoker, restServiceConfig *
 		replyType := method.ReplyType()
 		ws.Route(
 			ws.Method(config.MethodType).
-			Path(config.Path).
-			Produces(strings.Split(config.Produces, ",")...).
-			Consumes(strings.Split(config.Consumes, ",")...).
-			To(getFunc(methodName, invoker, argsTypes, replyType, config)))
+				Path(config.Path).
+				Produces(strings.Split(config.Produces, ",")...).
+				Consumes(strings.Split(config.Consumes, ",")...).
+				To(getFunc(methodName, invoker, argsTypes, replyType, config)))
 	}
 	grs.container.Add(ws)
 }
