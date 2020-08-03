@@ -19,10 +19,10 @@ package filter_impl
 
 import (
 	"context"
+	"strings"
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/filter"
@@ -30,42 +30,35 @@ import (
 )
 
 const (
-	// ECHO echo module name
-	ECHO = "echo"
+	SEATA     = "seata"
+	SEATA_XID = "SEATA_XID"
 )
 
 func init() {
-	extension.SetFilter(ECHO, GetFilter)
+	extension.SetFilter(SEATA, getSeataFilter)
 }
 
-// EchoFilter health check
-// RPCService need a Echo method in consumer, if you want to use EchoFilter
-// eg:
-//		Echo func(ctx context.Context, arg interface{}, rsp *Xxx) error
-type EchoFilter struct{}
+// SeataFilter when use seata-golang, use this filter to transfer xid
+type SeataFilter struct{}
 
-// Invoke response to the callers with its first argument.
-func (ef *EchoFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	logger.Infof("invoking echo filter.")
-	logger.Debugf("%v,%v", invocation.MethodName(), len(invocation.Arguments()))
-	if invocation.MethodName() == constant.ECHO && len(invocation.Arguments()) == 1 {
-		return &protocol.RPCResult{
-			Rest:  invocation.Arguments()[0],
-			Attrs: invocation.Attachments(),
-		}
+// When use Seata, transfer xid by attachments
+// Invoke Get Xid by attachment key `SEATA_XID`
+func (sf *SeataFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	logger.Infof("invoking seata filter.")
+	xid := invocation.AttachmentsByKey(SEATA_XID, "")
+	if strings.TrimSpace(xid) != "" {
+		logger.Debugf("Method: %v,Xid: %v", invocation.MethodName(), xid)
+		return invoker.Invoke(context.WithValue(ctx, SEATA_XID, xid), invocation)
 	}
-
 	return invoker.Invoke(ctx, invocation)
 }
 
 // OnResponse dummy process, returns the result directly
-func (ef *EchoFilter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker,
-	_ protocol.Invocation) protocol.Result {
-
+func (sf *SeataFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }
 
-// GetFilter gets the Filter
-func GetFilter() filter.Filter {
-	return &EchoFilter{}
+// getSeataFilter create SeataFilter instance
+func getSeataFilter() filter.Filter {
+	return &SeataFilter{}
 }
