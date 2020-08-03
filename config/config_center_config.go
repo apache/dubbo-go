@@ -89,11 +89,20 @@ func (c *ConfigCenterConfig) GetUrlMap() url.Values {
 type configCenter struct {
 }
 
+// toURL will compatible with baseConfig.ConfigCenterConfig.Address before 1.6.0
+// After 1.6.0 will not compatible, only baseConfig.ConfigCenterConfig.RemoteRef
+func (b *configCenter) toURL(baseConfig BaseConfig) (common.URL, error) {
+	if len(baseConfig.ConfigCenterConfig.Address) > 0 {
+		return common.NewURL(baseConfig.ConfigCenterConfig.Address,
+			common.WithProtocol(baseConfig.ConfigCenterConfig.Protocol), common.WithParams(baseConfig.ConfigCenterConfig.GetUrlMap()))
+	}
+	return baseConfig.toURL(baseConfig.ConfigCenterConfig.RemoteRef, baseConfig.ConfigCenterConfig.Protocol)
+}
+
 // startConfigCenter will start the config center.
 // it will prepare the environment
 func (b *configCenter) startConfigCenter(baseConfig BaseConfig) error {
-	url, err := common.NewURL(baseConfig.ConfigCenterConfig.Address,
-		common.WithProtocol(baseConfig.ConfigCenterConfig.Protocol), common.WithParams(baseConfig.ConfigCenterConfig.GetUrlMap()))
+	url, err := b.toURL(baseConfig)
 	if err != nil {
 		return err
 	}
@@ -112,7 +121,7 @@ func (b *configCenter) prepareEnvironment(baseConfig BaseConfig, configCenterUrl
 		logger.Errorf("Get dynamic configuration error , error message is %v", err)
 		return perrors.WithStack(err)
 	}
-	content, err := dynamicConfig.GetProperties(baseConfig.ConfigCenterConfig.ConfigFile, config_center.WithGroup(c.ConfigCenterConfig.Group))
+	content, err := dynamicConfig.GetProperties(baseConfig.ConfigCenterConfig.ConfigFile, config_center.WithGroup(baseConfig.ConfigCenterConfig.Group))
 	if err != nil {
 		logger.Errorf("Get config content in dynamic configuration error , error message is %v", err)
 		return perrors.WithStack(err)
