@@ -172,6 +172,10 @@ const (
 )
 
 const (
+	CONSUL_KEY = "consul"
+)
+
+const (
 	TRACING_REMOTE_SPAN_CTX = "tracing.remote.span.ctx"
 )
 
