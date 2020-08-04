@@ -104,7 +104,7 @@ func (b *configCenter) toURL(baseConfig BaseConfig) (common.URL, error) {
 		return common.URL{}, perrors.New("Could not find out the remote ref config, name: " + remoteRef)
 	}
 
-	newURL, err := rc.toURL(baseConfig.ConfigCenterConfig.Protocol)
+	newURL, err := rc.toURL()
 	if err == nil {
 		newURL.SetParams(baseConfig.ConfigCenterConfig.GetUrlMap())
 	}
@@ -126,7 +126,7 @@ func (b *configCenter) startConfigCenter(baseConfig BaseConfig) error {
 }
 
 func (b *configCenter) prepareEnvironment(baseConfig BaseConfig, configCenterUrl *common.URL) error {
-	factory := extension.GetConfigCenterFactory(baseConfig.ConfigCenterConfig.Protocol)
+	factory := extension.GetConfigCenterFactory(configCenterUrl.Protocol)
 	dynamicConfig, err := factory.GetDynamicConfiguration(configCenterUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(dynamicConfig)
 	if err != nil {
