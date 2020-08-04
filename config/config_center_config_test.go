@@ -55,11 +55,10 @@ func TestStartConfigCenterWithRemoteRef(t *testing.T) {
 		return &config_center.MockDynamicConfigurationFactory{}
 	})
 	m := make(map[string]*RemoteConfig)
-	m["mock"] = &RemoteConfig{Address: "172.0.0.1"}
+	m["mock"] = &RemoteConfig{Protocol: "mock", Address: "172.0.0.1"}
 	baseConfig = &BaseConfig{
 		Remotes: m,
 		ConfigCenterConfig: &ConfigCenterConfig{
-			Protocol:   "mock",
 			Group:      "dubbo",
 			RemoteRef:  "mock",
 			ConfigFile: "mockDubbo.properties",
