@@ -37,6 +37,7 @@ const (
 	DEFAULT_RETRIES_INT        = 2
 	DEFAULT_PROTOCOL           = "dubbo"
 	DEFAULT_REG_TIMEOUT        = "10s"
+	DEFAULT_REG_TTL            = "10m"
 	DEFAULT_CLUSTER            = "failover"
 	DEFAULT_FAILBACK_TIMES     = "3"
 	DEFAULT_FAILBACK_TIMES_INT = 3
