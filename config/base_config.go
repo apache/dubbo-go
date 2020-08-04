@@ -29,7 +29,6 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/config"
 	"github.com/apache/dubbo-go/common/logger"
 )
@@ -67,21 +66,6 @@ func (c *BaseConfig) GetServiceDiscoveries(name string) (config *ServiceDiscover
 func (c *BaseConfig) GetRemoteConfig(name string) (config *RemoteConfig, ok bool) {
 	config, ok = c.Remotes[name]
 	return
-}
-
-func (c *BaseConfig) toConfigCenterURL() (common.URL, error) {
-	rc, ok := GetBaseConfig().GetRemoteConfig(baseConfig.ConfigCenterConfig.RemoteRef)
-
-	if !ok {
-		return common.URL{}, perrors.New("Could not find out the remote ref config, name: " + name)
-	}
-
-	return common.NewURL(rc.Address,
-		common.WithUsername(rc.Username),
-		common.WithPassword(rc.Password),
-		common.WithLocation(rc.Address),
-		common.WithProtocol(baseConfig.ConfigCenterConfig.Protocol),
-	)
 }
 
 func getKeyPrefix(val reflect.Value) []string {

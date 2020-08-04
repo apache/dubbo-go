@@ -18,6 +18,7 @@
 package config
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"time"
 )
 
@@ -55,4 +56,13 @@ func (rc *RemoteConfig) GetParam(key string, def string) string {
 		return def
 	}
 	return param
+}
+
+func (rc *RemoteConfig) toURL(protocol string) (common.URL, error) {
+	return common.NewURL(rc.Address,
+		common.WithUsername(rc.Username),
+		common.WithPassword(rc.Password),
+		common.WithLocation(rc.Address),
+		common.WithProtocol(protocol),
+	)
 }
