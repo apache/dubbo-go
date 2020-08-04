@@ -96,7 +96,15 @@ func (b *configCenter) toURL(baseConfig BaseConfig) (common.URL, error) {
 		return common.NewURL(baseConfig.ConfigCenterConfig.Address,
 			common.WithProtocol(baseConfig.ConfigCenterConfig.Protocol), common.WithParams(baseConfig.ConfigCenterConfig.GetUrlMap()))
 	}
-	newURL, err := baseConfig.toConfigCenterURL()
+
+	remoteRef := baseConfig.ConfigCenterConfig.RemoteRef
+	rc, ok := GetBaseConfig().GetRemoteConfig(remoteRef)
+
+	if !ok {
+		return common.URL{}, perrors.New("Could not find out the remote ref config, name: " + remoteRef)
+	}
+
+	newURL, err := rc.toURL(baseConfig.ConfigCenterConfig.Protocol)
 	if err == nil {
 		newURL.SetParams(baseConfig.ConfigCenterConfig.GetUrlMap())
 	}
