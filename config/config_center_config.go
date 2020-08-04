@@ -96,7 +96,7 @@ func (b *configCenter) toURL(baseConfig BaseConfig) (common.URL, error) {
 		return common.NewURL(baseConfig.ConfigCenterConfig.Address,
 			common.WithProtocol(baseConfig.ConfigCenterConfig.Protocol), common.WithParams(baseConfig.ConfigCenterConfig.GetUrlMap()))
 	}
-	newURL, err := baseConfig.toURL(baseConfig.ConfigCenterConfig.RemoteRef, baseConfig.ConfigCenterConfig.Protocol)
+	newURL, err := baseConfig.toConfigCenterURL()
 	if err == nil {
 		newURL.SetParams(baseConfig.ConfigCenterConfig.GetUrlMap())
 	}
