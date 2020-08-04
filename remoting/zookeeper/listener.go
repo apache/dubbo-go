@@ -37,6 +37,10 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
+var (
+	DefaultTTL = 10 * time.Minute
+)
+
 // nolint
 type ZkEventListener struct {
 	client      *ZookeeperClient
@@ -197,10 +201,18 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 
 	var (
 		failTimes int
+		ttl       time.Duration
 		event     chan struct{}
 		zkEvent   zk.Event
 	)
 	event = make(chan struct{}, 4)
+	ttl = DefaultTTL
+	timeout, err := time.ParseDuration(conf.GetParam(constant.REGISTRY_TTL_KEY, constant.DEFAULT_REG_TTL))
+	if err == nil {
+		ttl = timeout
+	} else {
+		logger.Warnf("wrong configuration for registry ttl, error:=%+v", err)
+	}
 	defer close(event)
 	for {
 		// get current children for a zkPath
@@ -302,18 +314,29 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 				}(dubboPath, listener)
 			}
 		}
-		select {
-		case zkEvent = <-childEventCh:
-			logger.Warnf("get a zookeeper zkEvent{type:%s, server:%s, path:%s, state:%d-%s, err:%s}",
-				zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, StateToString(zkEvent.State), zkEvent.Err)
-			if zkEvent.Type != zk.EventNodeChildrenChanged {
-				continue
+		// Periodically update provider information
+		ticker := time.NewTicker(ttl)
+	WATCH:
+		for {
+			select {
+			case <-ticker.C:
+				l.handleZkNodeEvent(zkEvent.Path, children, listener)
+			case zkEvent = <-childEventCh:
+				logger.Warnf("get a zookeeper zkEvent{type:%s, server:%s, path:%s, state:%d-%s, err:%s}",
+					zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, StateToString(zkEvent.State), zkEvent.Err)
+				ticker.Stop()
+				if zkEvent.Type != zk.EventNodeChildrenChanged {
+					break WATCH
+				}
+				l.handleZkNodeEvent(zkEvent.Path, children, listener)
+				break WATCH
+			case <-l.client.Done():
+				logger.Warnf("client.done(), listen(path{%s}) goroutine exit now...", zkPath)
+				ticker.Stop()
+				return
 			}
-			l.handleZkNodeEvent(zkEvent.Path, children, listener)
-		case <-l.client.Done():
-			logger.Warnf("client.done(), listen(path{%s}) goroutine exit now...", zkPath)
-			return
 		}
+
 	}
 }
 
