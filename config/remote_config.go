@@ -31,6 +31,7 @@ import (
 // so that other module, like config center, registry could reuse the config
 // but now, only metadata report, metadata service, service discovery use this structure
 type RemoteConfig struct {
+	Protocol   string            `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
 	Address    string            `yaml:"address" json:"address,omitempty"`
 	TimeoutStr string            `default:"5s" yaml:"timeout" json:"timeout,omitempty"`
 	Username   string            `yaml:"username" json:"username,omitempty" property:"username"`
@@ -58,11 +59,11 @@ func (rc *RemoteConfig) GetParam(key string, def string) string {
 	return param
 }
 
-func (rc *RemoteConfig) toURL(protocol string) (common.URL, error) {
+func (rc *RemoteConfig) toURL() (common.URL, error) {
 	return common.NewURL(rc.Address,
 		common.WithUsername(rc.Username),
 		common.WithPassword(rc.Password),
 		common.WithLocation(rc.Address),
-		common.WithProtocol(protocol),
+		common.WithProtocol(rc.Protocol),
 	)
 }
