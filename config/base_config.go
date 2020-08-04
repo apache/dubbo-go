@@ -69,8 +69,8 @@ func (c *BaseConfig) GetRemoteConfig(name string) (config *RemoteConfig, ok bool
 	return
 }
 
-func (c *BaseConfig) toURL(name string, protocol string) (common.URL, error) {
-	rc, ok := GetBaseConfig().GetRemoteConfig(name)
+func (c *BaseConfig) toConfigCenterURL() (common.URL, error) {
+	rc, ok := GetBaseConfig().GetRemoteConfig(baseConfig.ConfigCenterConfig.RemoteRef)
 
 	if !ok {
 		return common.URL{}, perrors.New("Could not find out the remote ref config, name: " + name)
@@ -80,7 +80,7 @@ func (c *BaseConfig) toURL(name string, protocol string) (common.URL, error) {
 		common.WithUsername(rc.Username),
 		common.WithPassword(rc.Password),
 		common.WithLocation(rc.Address),
-		common.WithProtocol(protocol),
+		common.WithProtocol(baseConfig.ConfigCenterConfig.Protocol),
 	)
 }
 
