@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -35,6 +36,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	_ "github.com/apache/dubbo-go/common/observer/dispatcher"
+	"github.com/apache/dubbo-go/registry"
 )
 
 var (
@@ -206,6 +208,98 @@ func loadProviderConfig() {
 			panic(fmt.Sprintf("service %s export failed! err: %#v", key, err))
 		}
 	}
+	registerServiceInstance()
+}
+
+// registerServiceInstance register service instance
+func registerServiceInstance(){
+	url := selectMetadataServiceExportedURL()
+	if url == nil {
+		return
+	}
+	instance, err := createInstance(*url)
+	if err != nil {
+		panic(err)
+	}
+	p := extension.GetProtocol(constant.REGISTRY_KEY)
+	var rp registry.RegistryFactory
+	var ok bool
+	if rp, ok = p.(registry.RegistryFactory); !ok {
+		panic("dubbo registry protocol is invalid")
+	}
+	rs := rp.GetRegistries()
+	for _, r := range rs {
+		var sdr registry.ServiceDiscoveryFactory
+		if sdr, ok = r.(registry.ServiceDiscoveryFactory); !ok {
+			continue
+		}
+		err := sdr.GetServiceDiscovery().Register(instance)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+// createInstance
+func createInstance(url common.URL) (registry.ServiceInstance, error) {
+	appConfig := GetApplicationConfig()
+	port, err := strconv.ParseInt(url.Port, 10, 32)
+	if err != nil {
+		return nil, perrors.WithMessage(err, "invalid port: "+url.Port)
+	}
+
+	host := url.Ip
+	if len(host) == 0 {
+		host, err = gxnet.GetLocalIP()
+		if err != nil {
+			return nil, perrors.WithMessage(err, "could not get the local Ip")
+		}
+	}
+
+	// usually we will add more metadata
+	metadata := make(map[string]string, 8)
+	metadata[constant.METADATA_STORAGE_TYPE_PROPERTY_NAME] = appConfig.MetadataType
+
+	return &registry.DefaultServiceInstance{
+		ServiceName: appConfig.Name,
+		Host:        host,
+		Port:        int(port),
+		Id:          host + constant.KEY_SEPARATOR + url.Port,
+		Enable:      true,
+		Healthy:     true,
+		Metadata:    metadata,
+	}, nil
+}
+
+// selectMetadataServiceExportedURL get already be exported url
+func selectMetadataServiceExportedURL() *common.URL {
+	var selectedUrl common.URL
+	metaDataService, err := extension.GetMetadataService(GetApplicationConfig().MetadataType)
+	if err != nil {
+		panic(err)
+	}
+	list, err := metaDataService.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
+	if err != nil {
+		panic(err)
+	}
+	if len(list) == 0 {
+		return nil
+	}
+	for _, urlStr := range list {
+		url, err := common.NewURL(urlStr.(string))
+		if err != nil {
+			logger.Errorf("url format error {%v}", url)
+			continue
+		}
+		// rest first
+		if url.Protocol == "rest" {
+			selectedUrl = url
+			break
+		} else {
+			selectedUrl = url
+		}
+	}
+	return &selectedUrl
 }
 
 func initRouter() {
