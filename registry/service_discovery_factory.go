@@ -17,8 +17,8 @@
 
 package registry
 
-// ServiceDiscoveryFactory
-type ServiceDiscoveryFactory interface {
+// ServiceDiscoveryHolder
+type ServiceDiscoveryHolder interface {
 	// GetServiceDiscovery get service discovery
 	GetServiceDiscovery() ServiceDiscovery
 }

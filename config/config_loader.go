@@ -229,8 +229,8 @@ func registerServiceInstance(){
 	}
 	rs := rp.GetRegistries()
 	for _, r := range rs {
-		var sdr registry.ServiceDiscoveryFactory
-		if sdr, ok = r.(registry.ServiceDiscoveryFactory); !ok {
+		var sdr registry.ServiceDiscoveryHolder
+		if sdr, ok = r.(registry.ServiceDiscoveryHolder); !ok {
 			continue
 		}
 		err := sdr.GetServiceDiscovery().Register(instance)
