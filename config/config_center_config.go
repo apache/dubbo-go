@@ -118,21 +118,21 @@ func (b *configCenter) startConfigCenter(baseConfig BaseConfig) error {
 	if err != nil {
 		return err
 	}
-	if b.prepareEnvironment(baseConfig, &url) != nil {
+	if err = b.prepareEnvironment(baseConfig, &url); err != nil {
 		return perrors.WithMessagef(err, "start config center error!")
 	}
 	// c.fresh()
-	return err
+	return nil
 }
 
 func (b *configCenter) prepareEnvironment(baseConfig BaseConfig, configCenterUrl *common.URL) error {
 	factory := extension.GetConfigCenterFactory(configCenterUrl.Protocol)
 	dynamicConfig, err := factory.GetDynamicConfiguration(configCenterUrl)
-	config.GetEnvInstance().SetDynamicConfiguration(dynamicConfig)
 	if err != nil {
 		logger.Errorf("Get dynamic configuration error , error message is %v", err)
 		return perrors.WithStack(err)
 	}
+	config.GetEnvInstance().SetDynamicConfiguration(dynamicConfig)
 	content, err := dynamicConfig.GetProperties(baseConfig.ConfigCenterConfig.ConfigFile, config_center.WithGroup(baseConfig.ConfigCenterConfig.Group))
 	if err != nil {
 		logger.Errorf("Get config content in dynamic configuration error , error message is %v", err)
