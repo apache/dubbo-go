@@ -103,25 +103,26 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 	}
 
 	// clean data
-
-	serviceDiscovry, _ := extension.GetServiceDiscovery(constant.NACOS_KEY, testName)
+	serviceDiscovery, err := extension.GetServiceDiscovery(constant.NACOS_KEY, testName)
+	assert.Nil(t, err)
 
 	// clean data for local test
-	serviceDiscovry.Unregister(&registry.DefaultServiceInstance{
+	err = serviceDiscovery.Unregister(&registry.DefaultServiceInstance{
 		Id:          id,
 		ServiceName: serviceName,
 		Host:        host,
 		Port:        port,
 	})
-
-	err := serviceDiscovry.Register(instance)
 	assert.Nil(t, err)
+
+	err = serviceDiscovery.Register(instance)
+	assert.Nil(t, err)
+
 	//sometimes nacos may be failed to push update of instance,
 	//so it need 10s to pull, we sleep 10 second to make sure instance has been update
 	time.Sleep(11 * time.Second)
-	page := serviceDiscovry.GetHealthyInstancesByPage(serviceName, 0, 10, true)
+	page := serviceDiscovery.GetHealthyInstancesByPage(serviceName, 0, 10, true)
 	assert.NotNil(t, page)
-
 	assert.Equal(t, 0, page.GetOffset())
 	assert.Equal(t, 10, page.GetPageSize())
 	assert.Equal(t, 1, page.GetDataSize())
@@ -135,12 +136,15 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 	assert.Equal(t, 0, len(instance.GetMetadata()))
 
 	instance.Metadata["a"] = "b"
-
-	err = serviceDiscovry.Update(instance)
+	err = serviceDiscovery.Update(instance)
 	assert.Nil(t, err)
 
-	pageMap := serviceDiscovry.GetRequestInstances([]string{serviceName}, 0, 1)
+	//sometimes nacos may be failed to push update of instance,
+	//so it need 10s to pull, we sleep 10 second to make sure instance has been update
+	time.Sleep(11 * time.Second)
+	pageMap := serviceDiscovery.GetRequestInstances([]string{serviceName}, 0, 1)
 	assert.Equal(t, 1, len(pageMap))
+
 	page = pageMap[serviceName]
 	assert.NotNil(t, page)
 	assert.Equal(t, 1, len(page.GetData()))
@@ -150,11 +154,11 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 	assert.Equal(t, "b", v)
 
 	// test dispatcher event
-	err = serviceDiscovry.DispatchEventByServiceName(serviceName)
+	err = serviceDiscovery.DispatchEventByServiceName(serviceName)
 	assert.Nil(t, err)
 
 	// test AddListener
-	err = serviceDiscovry.AddListener(&registry.ServiceInstancesChangedListener{})
+	err = serviceDiscovery.AddListener(&registry.ServiceInstancesChangedListener{})
 	assert.Nil(t, err)
 }
 
