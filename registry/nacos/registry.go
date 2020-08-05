@@ -226,9 +226,9 @@ func (nr *nacosRegistry) IsAvailable() bool {
 func (nr *nacosRegistry) Destroy() {
 	for _, url := range nr.registryUrls {
 		err := nr.DeRegister(url)
-		logger.Infof("DeRegister Nacos url:%+v", url)
+		logger.Infof("DeRegister Nacos URL:%+v", url)
 		if err != nil {
-			logger.Errorf("Deregister url:%+v err:%v", url, err.Error())
+			logger.Errorf("Deregister URL:%+v err:%v", url, err.Error())
 		}
 	}
 	return
