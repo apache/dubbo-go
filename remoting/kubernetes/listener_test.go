@@ -18,7 +18,9 @@
 package kubernetes
 
 import (
+	"runtime"
 	"testing"
+	"time"
 )
 
 import (
@@ -50,6 +52,10 @@ var changedData = `
 	dubbo.service.com.ikurento.user.UserProvider.warmup=100
 	dubbo.service.com.ikurento.user.UserProvider.cluster=failover
 `
+
+func init(){
+	runtime.GOMAXPROCS(1)
+}
 
 type mockDataListener struct {
 	eventList   []remoting.Event
@@ -87,6 +93,7 @@ func TestListener(t *testing.T) {
 	listener := NewEventListener(c)
 	dataListener := &mockDataListener{client: c, changedData: changedData, rc: make(chan remoting.Event)}
 	listener.ListenServiceEvent("/dubbo", dataListener)
+	time.Sleep(1e9)
 
 	for _, tc := range tests {
 
