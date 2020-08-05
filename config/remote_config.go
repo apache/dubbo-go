@@ -18,11 +18,11 @@
 package config
 
 import (
-	"github.com/apache/dubbo-go/common"
 	"time"
 )
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 )
 
