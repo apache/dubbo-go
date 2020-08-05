@@ -43,7 +43,7 @@ import (
 )
 
 var (
-	regProtocol   *registryProtocol
+	regProtocol   *RegistryProtocol
 	once          sync.Once
 	reserveParams = []string{
 		"application", "codec", "exchanger", "serialization", "cluster", "connections", "deprecated", "group",
@@ -52,7 +52,7 @@ var (
 	}
 )
 
-type registryProtocol struct {
+type RegistryProtocol struct {
 	invokers []protocol.Invoker
 	// Registry  Map<RegistryAddress, Registry>
 	registries *sync.Map
@@ -74,8 +74,8 @@ func getCacheKey(url *common.URL) string {
 	return url.CloneExceptParams(delKeys).String()
 }
 
-func newRegistryProtocol() *registryProtocol {
-	return &registryProtocol{
+func newRegistryProtocol() *RegistryProtocol {
+	return &RegistryProtocol{
 		registries: &sync.Map{},
 		bounds:     &sync.Map{},
 	}
@@ -111,14 +111,25 @@ func filterHideKey(url *common.URL) *common.URL {
 	return url.CloneExceptParams(removeSet)
 }
 
-func (proto *registryProtocol) initConfigurationListeners() {
+func (proto *RegistryProtocol) initConfigurationListeners() {
 	proto.overrideListeners = &sync.Map{}
 	proto.serviceConfigurationListeners = &sync.Map{}
 	proto.providerConfigurationListener = newProviderConfigurationListener(proto.overrideListeners)
 }
 
+func (proto *RegistryProtocol) GetRegistries() []registry.Registry{
+	var rs []registry.Registry
+	proto.registries.Range(func(_, v interface{}) bool {
+		if r, ok := v.(registry.Registry); ok {
+			rs = append(rs, r)
+		}
+		return true
+	})
+	return rs
+}
+
 // Refer provider service from registry center
-func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
+func (proto *RegistryProtocol) Refer(url common.URL) protocol.Invoker {
 	var registryUrl = url
 	var serviceUrl = registryUrl.SubURL
 	if registryUrl.Protocol == constant.REGISTRY_PROTOCOL {
@@ -158,7 +169,7 @@ func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 }
 
 // Export provider service to registry center
-func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
+func (proto *RegistryProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	proto.once.Do(func() {
 		proto.initConfigurationListeners()
 	})
@@ -207,7 +218,7 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 
 }
 
-func (proto *registryProtocol) reExport(invoker protocol.Invoker, newUrl *common.URL) {
+func (proto *RegistryProtocol) reExport(invoker protocol.Invoker, newUrl *common.URL) {
 	url := getProviderUrl(invoker)
 	key := getCacheKey(url)
 	if oldExporter, loaded := proto.bounds.Load(key); loaded {
@@ -223,11 +234,11 @@ func (proto *registryProtocol) reExport(invoker protocol.Invoker, newUrl *common
 type overrideSubscribeListener struct {
 	url           *common.URL
 	originInvoker protocol.Invoker
-	protocol      *registryProtocol
+	protocol      *RegistryProtocol
 	configurator  config_center.Configurator
 }
 
-func newOverrideSubscribeListener(overriderUrl *common.URL, invoker protocol.Invoker, proto *registryProtocol) *overrideSubscribeListener {
+func newOverrideSubscribeListener(overriderUrl *common.URL, invoker protocol.Invoker, proto *RegistryProtocol) *overrideSubscribeListener {
 	return &overrideSubscribeListener{url: overriderUrl, originInvoker: invoker, protocol: proto}
 }
 
@@ -329,7 +340,7 @@ func getSubscribedOverrideUrl(providerUrl *common.URL) *common.URL {
 }
 
 // Destroy registry protocol
-func (proto *registryProtocol) Destroy() {
+func (proto *RegistryProtocol) Destroy() {
 	for _, ivk := range proto.invokers {
 		ivk.Destroy()
 	}
