@@ -207,11 +207,13 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 	)
 	event = make(chan struct{}, 4)
 	ttl = DefaultTTL
-	timeout, err := time.ParseDuration(conf.GetParam(constant.REGISTRY_TTL_KEY, constant.DEFAULT_REG_TTL))
-	if err == nil {
-		ttl = timeout
-	} else {
-		logger.Warnf("wrong configuration for registry ttl, error:=%+v", err)
+	if conf != nil {
+		timeout, err := time.ParseDuration(conf.GetParam(constant.REGISTRY_TTL_KEY, constant.DEFAULT_REG_TTL))
+		if err == nil {
+			ttl = timeout
+		} else {
+			logger.Warnf("wrong configuration for registry ttl, error:=%+v", err)
+		}
 	}
 	defer close(event)
 	for {
