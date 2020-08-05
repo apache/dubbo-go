@@ -15,6 +15,8 @@ Apache License, Version 2.0
 
 ## 发布日志 ##
 
+[v1.5.0 - 2020年7月24日](https://github.com/apache/dubbo-go/releases/tag/v1.5.0)
+
 [v1.4.0 - 2020年3月17日](https://github.com/apache/dubbo-go/releases/tag/v1.4.0)
 
 [v1.3.0 - 2020年3月1日](https://github.com/apache/dubbo-go/releases/tag/v1.3.0)
@@ -48,6 +50,7 @@ Apache License, Version 2.0
 - 序列化协议
     * JsonRPC V2
     * Hessian V2
+    * [json for grpc](https://github.com/apache/dubbo-go/pull/582)
 
 - 协议
     * Dubbo
@@ -108,6 +111,16 @@ Apache License, Version 2.0
     * [For dubbo](https://github.com/apache/dubbo-go/pull/344)
     * [For grpc](https://github.com/apache/dubbo-go/pull/397)
 
+- 元数据中心
+    * [Nacos](https://github.com/apache/dubbo-go/pull/522)
+    * [Zookeeper](https://github.com/apache/dubbo-go/pull/633)
+    * [Etcd](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/metadata/report/etcd/report.go)
+    * [Consul](https://github.com/apache/dubbo-go/pull/633)
+
+- 服务发现
+    * [Nacos](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/nacos/service_discovery.go)
+    * [Zookeeper](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/zookeeper/service_discovery.go)
+    * [Etcd](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/etcdv3/service_discovery.go)
 
 - 其他功能支持:
     * 启动时检查
@@ -116,11 +129,6 @@ Apache License, Version 2.0
     * 多注册中心
     * 多服务版本
     * 服务分组
-
-开发中列表:
-
-- 元数据中心 (dubbo v2.7.x)
-- 服务发现 (dubbo v2.7.x)
 
 你可以通过访问 [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap) 知道更多关于 dubbo-go 的信息。
 
@@ -172,7 +180,7 @@ go test ./... -coverprofile=coverage.txt -covermode=atomic
 
 ## [User List](https://github.com/apache/dubbo-go/issues/2)
 
-若你正在使用 [apache/dubbo-go](github.com/apache/dubbo-go) 且认为其有用或者向对其做改进，请忝列贵司信息于 [用户列表](https://github.com/apache/dubbo-go/issues/2)，以便我们知晓之。
+若你正在使用 [apache/dubbo-go](github.com/apache/dubbo-go) 且认为其有用或者想对其做改进，请添列贵司信息于 [用户列表](https://github.com/apache/dubbo-go/issues/2)，以便我们知晓。
 
 <div>
 <table>
