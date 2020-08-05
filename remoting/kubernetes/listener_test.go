@@ -18,7 +18,6 @@
 package kubernetes
 
 import (
-	"runtime"
 	"testing"
 	"time"
 )
@@ -52,10 +51,6 @@ var changedData = `
 	dubbo.service.com.ikurento.user.UserProvider.warmup=100
 	dubbo.service.com.ikurento.user.UserProvider.cluster=failover
 `
-
-func init(){
-	runtime.GOMAXPROCS(1)
-}
 
 type mockDataListener struct {
 	eventList   []remoting.Event
