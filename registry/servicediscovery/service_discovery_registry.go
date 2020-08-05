@@ -28,7 +28,6 @@ import (
 import (
 	cm "github.com/Workiva/go-datastructures/common"
 	gxset "github.com/dubbogo/gost/container/set"
-	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
 )
@@ -176,18 +175,6 @@ func (s *serviceDiscoveryRegistry) Register(url common.URL) error {
 		logger.Warnf("The URL[%s] has been registry!", url.String())
 	}
 
-	// we try to register this instance. Dubbo do this in org.apache.dubbo.config.bootstrap.DubboBootstrap
-	// But we don't want to design a similar bootstrap class.
-	ins, err := createInstance(url)
-	if err != nil {
-		return perrors.WithMessage(err, "could not create servcie instance, please check your service url")
-	}
-
-	err = s.serviceDiscovery.Register(ins)
-	if err != nil {
-		return perrors.WithMessage(err, "register the service failed")
-	}
-
 	err = s.metaDataService.PublishServiceDefinition(url)
 	if err != nil {
 		return perrors.WithMessage(err, "publish the service definition failed. ")
@@ -196,36 +183,6 @@ func (s *serviceDiscoveryRegistry) Register(url common.URL) error {
 		url.GetParam(constant.GROUP_KEY, ""),
 		url.GetParam(constant.Version, ""),
 		url.Protocol)
-}
-
-func createInstance(url common.URL) (registry.ServiceInstance, error) {
-	appConfig := config.GetApplicationConfig()
-	port, err := strconv.ParseInt(url.Port, 10, 32)
-	if err != nil {
-		return nil, perrors.WithMessage(err, "invalid port: "+url.Port)
-	}
-
-	host := url.Ip
-	if len(host) == 0 {
-		host, err = gxnet.GetLocalIP()
-		if err != nil {
-			return nil, perrors.WithMessage(err, "could not get the local Ip")
-		}
-	}
-
-	// usually we will add more metadata
-	metadata := make(map[string]string, 8)
-	metadata[constant.METADATA_STORAGE_TYPE_PROPERTY_NAME] = appConfig.MetadataType
-
-	return &registry.DefaultServiceInstance{
-		ServiceName: appConfig.Name,
-		Host:        host,
-		Port:        int(port),
-		Id:          host + constant.KEY_SEPARATOR + url.Port,
-		Enable:      true,
-		Healthy:     true,
-		Metadata:    metadata,
-	}, nil
 }
 
 func shouldRegister(url common.URL) bool {
