@@ -56,7 +56,7 @@ func TestStartConfigCenterWithRemoteRef(t *testing.T) {
 	})
 	m := make(map[string]*RemoteConfig)
 	m["mock"] = &RemoteConfig{Protocol: "mock", Address: "172.0.0.1"}
-	baseConfig = &BaseConfig{
+	baseConfig := &BaseConfig{
 		Remotes: m,
 		ConfigCenterConfig: &ConfigCenterConfig{
 			Group:      "dubbo",
