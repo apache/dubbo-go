@@ -22,27 +22,9 @@ import (
 	"github.com/apache/dubbo-go/common/yaml"
 )
 
-/**
- * %YAML1.2
- * ---
- * force: true
- * runtime: false
- * enabled: true
- * priority: 1
- * key: demo-provider
- * tags:
- * - name: tag1
- * addresses: [ip1, ip2]
- * - name: tag2
- * addresses: [ip3, ip4]
- * ...
- */
 // RouterRule RouterRule config read from config file or config center
 type RouterRule struct {
 	router.BaseRouterRule `yaml:",inline""`
-	Tags                  []Tag
-	addressToTagNames     map[string][]string
-	tagNameToAddresses    map[string][]string
 }
 
 func getRule(rawRule string) (*RouterRule, error) {
@@ -52,58 +34,5 @@ func getRule(rawRule string) (*RouterRule, error) {
 		return r, err
 	}
 	r.RawRule = rawRule
-	r.init()
 	return r, nil
-}
-
-func (t *RouterRule) init() {
-	t.addressToTagNames = make(map[string][]string, 8)
-	t.tagNameToAddresses = make(map[string][]string, 8)
-	for _, tag := range t.Tags {
-		for _, address := range tag.Addresses {
-			t.addressToTagNames[address] = append(t.addressToTagNames[address], tag.Name)
-		}
-		t.tagNameToAddresses[tag.Name] = tag.Addresses
-	}
-}
-
-func (t *RouterRule) getAddresses() []string {
-	var result = make([]string, 0, 8*len(t.Tags))
-	for _, tag := range t.Tags {
-		result = append(result, tag.Addresses...)
-	}
-	return result
-}
-
-func (t *RouterRule) getTagNames() []string {
-	var result = make([]string, 0, len(t.Tags))
-	for _, tag := range t.Tags {
-		result = append(result, tag.Name)
-	}
-	return result
-}
-
-func (t *RouterRule) hasTag(tag string) bool {
-	for _, t := range t.Tags {
-		if tag == t.Name {
-			return true
-		}
-	}
-	return false
-}
-
-func (t *RouterRule) getAddressToTagNames() map[string][]string {
-	return t.addressToTagNames
-}
-
-func (t *RouterRule) getTagNameToAddresses() map[string][]string {
-	return t.tagNameToAddresses
-}
-
-func (t *RouterRule) getTags() []Tag {
-	return t.Tags
-}
-
-func (t *RouterRule) setTags(tags []Tag) {
-	t.Tags = tags
 }
