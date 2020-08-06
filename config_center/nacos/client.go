@@ -167,7 +167,6 @@ func initNacosConfigClient(nacosAddrs []string, timeout time.Duration, url commo
 		"serverConfigs": svrConfList,
 		"clientConfig": nacosconst.ClientConfig{
 			TimeoutMs:           uint64(int32(timeout / time.Millisecond)),
-			ListenInterval:      uint64(int32(timeout / time.Millisecond)),
 			NotLoadCacheAtStart: true,
 			LogDir:              url.GetParam(constant.NACOS_LOG_DIR_KEY, logDir),
 			CacheDir:            url.GetParam(constant.NACOS_CACHE_DIR_KEY, ""),
