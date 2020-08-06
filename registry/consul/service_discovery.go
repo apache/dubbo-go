@@ -18,21 +18,26 @@
 package consul
 
 import (
+	"crypto/md5"
+	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/consul/api/watch"
-	"github.com/hashicorp/go-hclog"
 	"strconv"
+	"strings"
 	"sync"
+	"time"
 )
 
 import (
 	"github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/page"
 	consul "github.com/hashicorp/consul/api"
+	"github.com/hashicorp/consul/api/watch"
+	"github.com/hashicorp/go-hclog"
 	perrors "github.com/pkg/errors"
 )
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
@@ -43,6 +48,19 @@ import (
 const (
 	PageSize = "pageSize"
 	Enable   = "enable"
+)
+
+const (
+	CHECK_PASS_INTERVAL = "consul-check-pass-interval"
+	// default time-to-live in millisecond
+	DEFAULT_CHECK_PASS_INTERVAL = 16000
+	UERY_TAG                    = "consul_query_tag"
+	ACL_TOKEN                   = "acl-token"
+	// default deregister critical server after
+	DEFAULT_DEREGISTER_TIME = "20s"
+	DEFAULT_WATCH_TIMEOUT   = 60 * 1000
+	WATCH_TIMEOUT           = "consul-watch-timeout"
+	DEREGISTER_AFTER        = "consul-deregister-critical-service-after"
 )
 
 var (
@@ -84,12 +102,6 @@ func newConsulServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 		return nil, perrors.New("could not find the remote config for name: " + sdc.RemoteRef)
 	}
 
-	config := &consul.Config{Address: remoteConfig.Address}
-	client, err := consul.NewClient(config)
-	if err != nil {
-		return nil, perrors.WithMessage(err, "create consul client failed.")
-	}
-
 	descriptor := fmt.Sprintf("consul-service-discovery[%s]", remoteConfig.Address)
 
 	pageSize := 20
@@ -102,9 +114,9 @@ func newConsulServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 		}
 	}
 	return &consulServiceDiscovery{
-		consulClient: client,
-		descriptor:   descriptor,
-		PageSize:     pageSize,
+		address:    remoteConfig.Address,
+		descriptor: descriptor,
+		PageSize:   pageSize,
 	}, nil
 }
 
@@ -116,10 +128,29 @@ type consulServiceDiscovery struct {
 	// descriptor is a short string about the basic information of this instance
 	descriptor string
 	// Consul client.
-	consulClient *consul.Client
-	PageSize     int
+	consulClient      *consul.Client
+	PageSize          int
+	serviceUrl        common.URL
+	checkPassInterval int64
+	tag               string
+	tags              []string
+	address           string
 }
 
+func (csd consulServiceDiscovery) Initialize(registryURL common.URL) error {
+	csd.serviceUrl = registryURL
+	csd.checkPassInterval = registryURL.GetParamInt(CHECK_PASS_INTERVAL, DEFAULT_CHECK_PASS_INTERVAL)
+	csd.tag = registryURL.GetParam(UERY_TAG, "")
+	csd.tags = strings.Split(registryURL.GetParam("tags", ""), ",")
+	aclToken := registryURL.GetParam(ACL_TOKEN, "")
+	config := &consul.Config{Address: csd.address, Token: aclToken}
+	client, err := consul.NewClient(config)
+	if err != nil {
+		return perrors.WithMessage(err, "create consul client failed.")
+	}
+	csd.consulClient = client
+	return nil
+}
 func (csd consulServiceDiscovery) String() string {
 	return csd.descriptor
 }
@@ -130,11 +161,8 @@ func (csd consulServiceDiscovery) Destroy() error {
 }
 
 func (csd consulServiceDiscovery) Register(instance registry.ServiceInstance) error {
-	ins, err := csd.buildRegisterInstance(instance)
-	if err != nil {
-		panic(err)
-	}
-	err = csd.consulClient.Agent().ServiceRegister(ins)
+	ins, _ := csd.buildRegisterInstance(instance)
+	err := csd.consulClient.Agent().ServiceRegister(ins)
 	if err != nil {
 		return perrors.WithMessage(err, "consul could not register the instance. "+instance.GetServiceName())
 	}
@@ -151,7 +179,7 @@ func (csd consulServiceDiscovery) Update(instance registry.ServiceInstance) erro
 }
 
 func (csd consulServiceDiscovery) Unregister(instance registry.ServiceInstance) error {
-	return csd.consulClient.Agent().ServiceDeregister(instance.GetId())
+	return csd.consulClient.Agent().ServiceDeregister(buildID(instance))
 }
 
 func (csd consulServiceDiscovery) GetDefaultPageSize() int {
@@ -161,20 +189,24 @@ func (csd consulServiceDiscovery) GetDefaultPageSize() int {
 func (csd consulServiceDiscovery) GetServices() *gxset.HashSet {
 
 	var res = gxset.NewSet()
-	services, err := csd.consulClient.Agent().Services()
+	services, _, err := csd.consulClient.Catalog().Services(nil)
 	if err != nil {
 		return res
 	}
 
-	for _, service := range services {
-		res.Add(service.Service)
+	for service, _ := range services {
+		res.Add(service)
 	}
 	return res
 
 }
 
 func (csd consulServiceDiscovery) GetInstances(serviceName string) []registry.ServiceInstance {
-	_, instances, err := csd.consulClient.Agent().AgentHealthServiceByName(serviceName)
+	waitTime := csd.serviceUrl.GetParamInt(WATCH_TIMEOUT, DEFAULT_WATCH_TIMEOUT) / 1000
+	instances, _, err := csd.consulClient.Health().Service(serviceName, csd.tag, true, &consul.QueryOptions{
+		WaitTime:  time.Duration(waitTime),
+		WaitIndex: -1,
+	})
 	if err != nil {
 		return nil
 	}
@@ -249,6 +281,7 @@ func (csd consulServiceDiscovery) AddListener(listener *registry.ServiceInstance
 	params := make(map[string]interface{}, 8)
 	params["type"] = "service"
 	params["service"] = listener.ServiceName
+	params["passingonly"] = true
 	//params["tag"] = "dubbo"
 	//params["passingonly"] = true
 	plan, err := watch.Parse(params)
@@ -327,23 +360,37 @@ func (csd consulServiceDiscovery) buildRegisterInstance(instance registry.Servic
 	}
 	metadata[Enable] = strconv.FormatBool(instance.IsEnable())
 
-	// tcp
-	tcp := fmt.Sprintf("%s:%d", instance.GetHost(), instance.GetPort())
-
 	// check
-	check := &consul.AgentServiceCheck{
-		TCP: tcp,
-		//Interval:                       url.GetParam("consul-check-interval", "10s"),
-		//Timeout:                        url.GetParam("consul-check-timeout", "1s"),
-		//DeregisterCriticalServiceAfter: url.GetParam("consul-deregister-critical-service-after", "20s"),
-	}
+	check := csd.buildCheck(instance)
 
 	return &consul.AgentServiceRegistration{
-		ID:      instance.GetId(),
+		ID:      buildID(instance),
 		Name:    instance.GetServiceName(),
 		Port:    instance.GetPort(),
 		Address: instance.GetHost(),
 		Meta:    metadata,
-		Check:   check,
+		Check:   &check,
 	}, nil
+}
+
+func (csd consulServiceDiscovery) buildCheck(instance registry.ServiceInstance) consul.AgentServiceCheck {
+
+	deregister, ok := instance.GetMetadata()[DEREGISTER_AFTER]
+	if !ok || deregister == "" {
+		deregister = DEFAULT_DEREGISTER_TIME
+	}
+	return consul.AgentServiceCheck{
+		TTL:                            strconv.FormatInt(csd.checkPassInterval/1000, 10) + "s",
+		DeregisterCriticalServiceAfter: deregister,
+	}
+}
+
+func buildID(instance registry.ServiceInstance) string {
+
+	metaBytes, _ := json.Marshal(instance.GetMetadata())
+	id := fmt.Sprintf("id:%s,serviceName:%s,host:%s,port:%d,enable:%b,healthy:%b,meta:%s", instance.GetId(), instance.GetServiceName(),
+		instance.GetHost(), instance.GetPort(), instance.IsEnable(), instance.IsHealthy(), metaBytes)
+	Md5Inst := md5.New()
+	Md5Inst.Write([]byte(id))
+	return string(Md5Inst.Sum([]byte("")))
 }
