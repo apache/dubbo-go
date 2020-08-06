@@ -163,6 +163,10 @@ func (zksd *zookeeperServiceDiscovery) String() string {
 	return fmt.Sprintf("zookeeper-service-discovery[%s]", zksd.url)
 }
 
+func (zksd *zookeeperServiceDiscovery) Initialize(registryURL common.URL) error {
+	return nil
+}
+
 // Close client be closed
 func (zksd *zookeeperServiceDiscovery) Destroy() error {
 	zksd.client.Close()
