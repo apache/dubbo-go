@@ -32,6 +32,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
@@ -60,6 +61,10 @@ type nacosServiceDiscovery struct {
 
 	// namingClient is the Nacos' client
 	namingClient naming_client.INamingClient
+}
+
+func (n *nacosServiceDiscovery) Initialize(registryURL common.URL) error {
+	return nil
 }
 
 // Destroy will close the service discovery.

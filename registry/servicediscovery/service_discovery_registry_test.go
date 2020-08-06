@@ -126,6 +126,10 @@ func (m *mockServiceNameMapping) Get(serviceInterface string, group string, vers
 type mockServiceDiscovery struct {
 }
 
+func (m *mockServiceDiscovery) Initialize(registryURL common.URL) error {
+	panic("implement me")
+}
+
 func (m *mockServiceDiscovery) String() string {
 	panic("implement me")
 }
