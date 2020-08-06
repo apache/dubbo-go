@@ -22,6 +22,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common"
 	gxset "github.com/dubbogo/gost/container/set"
 	gxpage "github.com/dubbogo/gost/page"
 )
@@ -33,6 +34,12 @@ type ServiceDiscovery interface {
 	fmt.Stringer
 
 	// ----------------- lifecycle -------------------
+
+	/**
+	 * Initializes the  ServiceDiscovery
+	 *
+	 */
+	Initialize(registryURL common.URL) error
 
 	// Destroy will destroy the service discovery.
 	// If the discovery cannot be destroy, it will return an error.
