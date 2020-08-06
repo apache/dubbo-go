@@ -38,7 +38,7 @@ import (
 )
 
 var (
-	DefaultTTL = 15 * time.Minute
+	defaultTTL = 15 * time.Minute
 )
 
 // nolint
@@ -206,13 +206,13 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 		zkEvent   zk.Event
 	)
 	event = make(chan struct{}, 4)
-	ttl = DefaultTTL
+	ttl = defaultTTL
 	if conf != nil {
 		timeout, err := time.ParseDuration(conf.GetParam(constant.REGISTRY_TTL_KEY, constant.DEFAULT_REG_TTL))
 		if err == nil {
 			ttl = timeout
 		} else {
-			logger.Warnf("wrong configuration for registry ttl, error:=%+v", err)
+			logger.Warnf("wrong configuration for registry ttl, error:=%+v, using default value %v instead", err, defaultTTL)
 		}
 	}
 	defer close(event)
