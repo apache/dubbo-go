@@ -22,19 +22,56 @@ import (
 )
 
 import (
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestGetRule(t *testing.T) {
+type RuleTestSuite struct {
+	suite.Suite
+	rule *RouterRule
+}
+
+func (suite *RuleTestSuite) SetupTest() {
+	var err error
 	yml := `
 scope: application
-runtime: true
 force: true
+runtime: false
+enabled: true
+priority: 1
+key: demo-provider
+tags:
+  - name: tag1
+    addresses: [ip1, ip2]
+  - name: tag2
+    addresses: [ip3, ip4]
 `
-	rule, e := getRule(yml)
-	assert.Nil(t, e)
-	assert.NotNil(t, rule)
-	assert.Equal(t, true, rule.Force)
-	assert.Equal(t, true, rule.Runtime)
-	assert.Equal(t, "application", rule.Scope)
+	suite.rule, err = getRule(yml)
+	suite.Nil(err)
+}
+
+func (suite *RuleTestSuite) TestGetRule() {
+	var err error
+	suite.Equal(true, suite.rule.Force)
+	suite.Equal(false, suite.rule.Runtime)
+	suite.Equal("application", suite.rule.Scope)
+	suite.Equal(1, suite.rule.Priority)
+	suite.Equal("demo-provider", suite.rule.Key)
+	suite.Nil(err)
+}
+
+func (suite *RuleTestSuite) TestGetTagNames() {
+	suite.Equal([]string{"tag1", "tag2"}, suite.rule.getTagNames())
+}
+
+func (suite *RuleTestSuite) TestGetAddresses() {
+	suite.Equal([]string{"ip1", "ip2", "ip3", "ip4"}, suite.rule.getAddresses())
+}
+
+func (suite *RuleTestSuite) TestHasTag() {
+	suite.Equal(true, suite.rule.hasTag("tag1"))
+	suite.Equal(false, suite.rule.hasTag("tag404"))
+}
+
+func TestRuleTestSuite(t *testing.T) {
+	suite.Run(t, new(RuleTestSuite))
 }
