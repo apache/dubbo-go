@@ -100,8 +100,7 @@ const (
 	REGISTRY_LABEL_KEY   = "label"
 	PREFERRED_KEY        = "preferred"
 	ZONE_KEY             = "zone"
-	REGISTRY_ZONE        = "registry_zone"
-	REGISTRY_ZONE_FORCE  = "registry_zone_force"
+	ZONE_FORCE_KEY       = "zone.force"
 	REGISTRY_TTL_KEY     = "registry.ttl"
 )
 

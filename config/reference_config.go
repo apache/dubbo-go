@@ -26,7 +26,6 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/cluster/cluster_impl"
 	"github.com/creasty/defaults"
 	gxstrings "github.com/dubbogo/gost/strings"
 )
@@ -148,26 +147,26 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 		}
 
 		// TODO(decouple from directory, config should not depend on directory module)
+		var hitClu string
 		if regUrl != nil {
 			// for multi-subscription scenario, use 'zone-aware' policy by default
-			cluster := extension.GetCluster(cluster_impl.GetZoneAwareName())
-			// The invoker wrap sequence would be:
-			// ZoneAwareClusterInvoker(StaticDirectory) ->
-			// FailoverClusterInvoker(RegistryDirectory, routing happens here) -> Invoker
-			c.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
+			hitClu = constant.ZONEAWARE_CLUSTER_NAME
 		} else {
 			// not a registry url, must be direct invoke.
-			clu := cluster_impl.GetFailoverName()
+			hitClu = constant.FAILOVER_CLUSTER_NAME
 			if len(invokers) > 0 {
 				u := invokers[0].GetUrl()
 				if nil != &u {
-					clu = u.GetParam(constant.CLUSTER_KEY, cluster_impl.GetZoneAwareName())
+					hitClu = u.GetParam(constant.CLUSTER_KEY, constant.ZONEAWARE_CLUSTER_NAME)
 				}
 			}
-
-			cluster := extension.GetCluster(clu)
-			c.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
 		}
+
+		cluster := extension.GetCluster(hitClu)
+		// If 'zone-aware' policy select, the invoker wrap sequence would be:
+		// ZoneAwareClusterInvoker(StaticDirectory) ->
+		// FailoverClusterInvoker(RegistryDirectory, routing happens here) -> Invoker
+		c.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
 	}
 
 	// create proxy

@@ -15,30 +15,10 @@
  * limitations under the License.
  */
 
-package cluster_impl
+package constant
 
-import (
-	"github.com/apache/dubbo-go/cluster"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/protocol"
+// nolint
+const (
+	FAILOVER_CLUSTER_NAME  = "failover"
+	ZONEAWARE_CLUSTER_NAME = "zoneAware"
 )
-
-type zoneAwareCluster struct{}
-
-func init() {
-	extension.SetCluster(constant.ZONEAWARE_CLUSTER_NAME, NewZoneAwareCluster)
-}
-
-// NewZoneAwareCluster returns a zoneaware cluster instance.
-//
-// More than one registry for subscription.
-// Usually it is used for choose between registries.
-func NewZoneAwareCluster() cluster.Cluster {
-	return &zoneAwareCluster{}
-}
-
-// Join returns a zoneAwareClusterInvoker instance
-func (cluster *zoneAwareCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return newZoneAwareClusterInvoker(directory)
-}

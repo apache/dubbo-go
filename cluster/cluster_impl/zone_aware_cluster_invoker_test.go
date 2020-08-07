@@ -37,7 +37,7 @@ import (
 	"github.com/apache/dubbo-go/protocol/mock"
 )
 
-func Test_ZoneWareInvokerWithPreferredSuccess(t *testing.T) {
+func TestZoneWareInvokerWithPreferredSuccess(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	// In Go versions 1.14+, if you pass a *testing.T
 	// into gomock.NewController(t) you no longer need to call ctrl.Finish().
@@ -78,7 +78,7 @@ func Test_ZoneWareInvokerWithPreferredSuccess(t *testing.T) {
 	assert.Equal(t, mockResult, result)
 }
 
-func Test_ZoneWareInvokerWithWeightSuccess(t *testing.T) {
+func TestZoneWareInvokerWithWeightSuccess(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	// In Go versions 1.14+, if you pass a *testing.T
 	// into gomock.NewController(t) you no longer need to call ctrl.Finish().
@@ -134,7 +134,7 @@ func Test_ZoneWareInvokerWithWeightSuccess(t *testing.T) {
 		w1, w1Count, w2, w2Count)
 }
 
-func Test_ZoneWareInvokerWithZoneSuccess(t *testing.T) {
+func TestZoneWareInvokerWithZoneSuccess(t *testing.T) {
 	var zoneArray = []string{"hangzhou", "shanghai"}
 
 	ctrl := gomock.NewController(t)
@@ -167,14 +167,14 @@ func Test_ZoneWareInvokerWithZoneSuccess(t *testing.T) {
 	inv := &invocation.RPCInvocation{}
 	// zone hangzhou
 	hz := zoneArray[0]
-	inv.SetAttachments(constant.REGISTRY_ZONE, hz)
+	inv.SetAttachments(constant.REGISTRY_KEY+"."+constant.ZONE_KEY, hz)
 
 	result := clusterInvoker.Invoke(context.Background(), inv)
 
 	assert.Equal(t, hz, result.Attachment(constant.ZONE_KEY, ""))
 }
 
-func Test_ZoneWareInvokerWithZoneForceFail(t *testing.T) {
+func TestZoneWareInvokerWithZoneForceFail(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	// In Go versions 1.14+, if you pass a *testing.T
 	// into gomock.NewController(t) you no longer need to call ctrl.Finish().
@@ -196,8 +196,9 @@ func Test_ZoneWareInvokerWithZoneForceFail(t *testing.T) {
 
 	inv := &invocation.RPCInvocation{}
 	// zone hangzhou
-	inv.SetAttachments(constant.REGISTRY_ZONE, "hangzhou")
-	inv.SetAttachments(constant.REGISTRY_ZONE_FORCE, "true")
+	inv.SetAttachments(constant.REGISTRY_KEY+"."+constant.ZONE_KEY, "hangzhou")
+	// zone force
+	inv.SetAttachments(constant.REGISTRY_KEY+"."+constant.ZONE_FORCE_KEY, "true")
 
 	result := clusterInvoker.Invoke(context.Background(), inv)
 
