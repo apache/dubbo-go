@@ -20,7 +20,6 @@ package tag
 import (
 	"context"
 	"fmt"
-	"github.com/stretchr/testify/suite"
 	"testing"
 	"time"
 )
@@ -28,6 +27,7 @@ import (
 import (
 	"github.com/dubbogo/go-zookeeper/zk"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
 import (
@@ -70,8 +70,7 @@ const (
 )
 
 var (
-	zkFormat        = "zookeeper://%s:%d"
-	conditionFormat = "condition://%s/com.foo.BarService"
+	zkFormat = "zookeeper://%s:%d"
 )
 
 // MockInvoker is only mock the Invoker to support test tagRouter
@@ -339,30 +338,6 @@ func (suite *DynamicTagRouter) TestDynamicTagRouterByNoTagAndAddressMatch() {
 	targetInvokers = suite.route.Route(invokers, suite.url, consumer)
 	suite.Equal(1, len(targetInvokers))
 	suite.Equal(targetInvokers[0], suite.invokers[4])
-}
-
-func (suite *DynamicTagRouter) TestTODO() {
-	testYML := `enabled: true
-scope: application
-force: true
-runtime: false
-valid: true
-priority: 1
-key: demo-provider
-tags:
-  - name: tag1
-    addresses: ["127.0.0.1:20001"]
-  - name: tag2
-    addresses: ["127.0.0.1:20002"]
-  - name: tag3
-    addresses: ["127.0.0.1:20003", "127.0.0.1:20004"]
-`
-	_, err := suite.zkClient.Conn.Set(routerPath, []byte(testYML), 1)
-	suite.NoError(err)
-
-	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, routerLocalIP, suite.testCluster.Servers[0].Port))
-	configuration, err := extension.GetConfigCenterFactory(routerZk).GetDynamicConfiguration(&zkUrl)
-	config.GetEnvInstance().SetDynamicConfiguration(configuration)
 }
 
 func TestProcess(t *testing.T) {
