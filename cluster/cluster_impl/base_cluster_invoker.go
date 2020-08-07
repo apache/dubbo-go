@@ -17,8 +17,9 @@
 
 package cluster_impl
 
+import "context"
+
 import (
-	"context"
 	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
