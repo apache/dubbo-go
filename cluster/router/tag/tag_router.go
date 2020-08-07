@@ -18,6 +18,9 @@
 package tag
 
 import (
+	"github.com/RoaringBitmap/roaring"
+	"github.com/apache/dubbo-go/cluster/router"
+	"github.com/apache/dubbo-go/cluster/router/utils"
 	"strconv"
 )
 
@@ -52,14 +55,25 @@ func (c *tagRouter) isEnabled() bool {
 	return c.enabled
 }
 
-func (c *tagRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
-	if !c.isEnabled() {
+func (c *tagRouter) Route(invokers *roaring.Bitmap, cache *router.AddrCache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
+	if !c.isEnabled() || invokers.IsEmpty() {
 		return invokers
 	}
-	if len(invokers) == 0 {
+
+	tag := findStaticTag(invocation)
+	if tag == "" {
 		return invokers
 	}
-	return filterUsingStaticTag(invokers, url, invocation)
+
+	addrPool := cache.FindAddrPool(c)
+	if target, ok := addrPool[tag]; ok {
+		ret := utils.JoinIfNotEqual(target, invokers)
+		if ret.IsEmpty() && !isForceUseTag(url, invocation) {
+			return invokers
+		}
+		return ret
+	}
+	return invokers
 }
 
 func (c *tagRouter) URL() common.URL {
@@ -70,20 +84,31 @@ func (c *tagRouter) Priority() int64 {
 	return c.priority
 }
 
-func filterUsingStaticTag(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
-	if tag, ok := invocation.Attachments()[constant.Tagkey]; ok {
-		result := make([]protocol.Invoker, 0, 8)
-		for _, v := range invokers {
-			if v.GetUrl().GetParam(constant.Tagkey, "") == tag {
-				result = append(result, v)
+func (c *tagRouter) Pool(invokers []protocol.Invoker) (router.RouterAddrPool, router.AddrMetadata) {
+	rb := make(router.RouterAddrPool)
+	for i, invoker := range invokers {
+		url := invoker.GetUrl()
+		tag := url.GetParam(constant.Tagkey, "")
+		if tag != "" {
+			if _, ok := rb[tag]; !ok {
+				rb[tag] = roaring.NewBitmap()
 			}
+			rb[tag].AddInt(i)
 		}
-		if len(result) == 0 && !isForceUseTag(url, invocation) {
-			return invokers
-		}
-		return result
 	}
-	return invokers
+	return rb, nil
+}
+
+func (c *tagRouter) ShouldRePool() bool {
+	return false
+}
+
+func (c *tagRouter) Name() string {
+	return "tag-router"
+}
+
+func findStaticTag(invocation protocol.Invocation) string {
+	return invocation.Attachments()[constant.Tagkey]
 }
 
 func isForceUseTag(url *common.URL, invocation protocol.Invocation) bool {

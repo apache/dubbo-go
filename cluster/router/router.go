@@ -18,6 +18,7 @@
 package router
 
 import (
+	"github.com/RoaringBitmap/roaring"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
 )
@@ -38,7 +39,8 @@ type FilePriorityRouterFactory interface {
 // Router
 type router interface {
 	// Route Determine the target invokers list.
-	Route([]protocol.Invoker, *common.URL, protocol.Invocation) []protocol.Invoker
+	Route(*roaring.Bitmap, *AddrCache, *common.URL, protocol.Invocation) *roaring.Bitmap
+
 	// URL Return URL in router
 	URL() common.URL
 }
@@ -50,3 +52,34 @@ type PriorityRouter interface {
 	// 0 to ^int(0) is better
 	Priority() int64
 }
+
+type Poolable interface {
+	Pool([]protocol.Invoker) (RouterAddrPool, AddrMetadata)
+	ShouldRePool() bool
+	Name() string
+}
+
+type AddrMetadata interface {
+	Source() string
+}
+
+type RouterAddrPool map[string]*roaring.Bitmap
+
+// AddrCache caches all addresses relevant info for a snapshot of received invokers, the calculation logic is
+// different from router to router.
+type AddrCache struct {
+	Invokers []protocol.Invoker        // invokers snapshot
+	Bitmap   *roaring.Bitmap           // bitmap for invokers
+	AddrPool map[string]RouterAddrPool // address pool from the invokers for one particular router
+	AddrMeta map[string]AddrMetadata   // address meta info collected from the invokers for one particular router
+}
+
+func (c *AddrCache) FindAddrPool(p Poolable) RouterAddrPool {
+	return c.AddrPool[p.Name()]
+}
+
+func (c *AddrCache) FindAddrMeta(p Poolable) AddrMetadata {
+	return c.AddrMeta[p.Name()]
+}
+
+var EmptyAddr = roaring.NewBitmap()

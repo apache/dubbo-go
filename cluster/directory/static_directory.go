@@ -69,7 +69,7 @@ func (dir *staticDirectory) List(invocation protocol.Invocation) []protocol.Invo
 		return invokers
 	}
 	dirUrl := dir.GetUrl()
-	return routerChain.Route(invokers, &dirUrl, invocation)
+	return routerChain.Route(&dirUrl, invocation)
 }
 
 // Destroy Destroy
@@ -92,6 +92,7 @@ func (dir *staticDirectory) BuildRouterChain(invokers []protocol.Invoker) error 
 	if e != nil {
 		return e
 	}
+	routerChain.SetInvokers(dir.invokers)
 	dir.SetRouterChain(routerChain)
 	return nil
 }
