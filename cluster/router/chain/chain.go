@@ -51,8 +51,8 @@ type RouterChain struct {
 }
 
 // Route Loop routers in RouterChain and call Route method to determine the target invokers list.
-func (c *RouterChain) Route(invoker []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
-	finalInvokers := invoker
+func (c *RouterChain) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+	finalInvokers := invokers
 	l := len(c.routers)
 	rs := make([]router.PriorityRouter, l, int(math.Ceil(float64(l)*1.2)))
 	c.mutex.RLock()
@@ -63,6 +63,15 @@ func (c *RouterChain) Route(invoker []protocol.Invoker, url *common.URL, invocat
 		finalInvokers = r.Route(finalInvokers, url, invocation)
 	}
 	return finalInvokers
+}
+
+// Notify router chain of the initial addresses from registry at the first time. Notify whenever addresses in registry change.
+func (c *RouterChain) SetInvokers(invokers []protocol.Invoker) {
+	for _, r := range c.routers {
+		if notifyRouter, ok := r.(router.NotifyRouter); ok {
+			notifyRouter.Notify(invokers)
+		}
+	}
 }
 
 // AddRouters Add routers to router chain
