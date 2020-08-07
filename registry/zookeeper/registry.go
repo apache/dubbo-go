@@ -243,6 +243,8 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 
 	var zkListener *RegistryConfigurationListener
 	dataListener := r.dataListener
+	ttl := r.GetParam(constant.REGISTRY_TTL_KEY, constant.DEFAULT_REG_TTL)
+	conf.SetParam(constant.REGISTRY_TTL_KEY, ttl)
 	dataListener.mutex.Lock()
 	defer dataListener.mutex.Unlock()
 	if r.dataListener.subscribed[conf.ServiceKey()] != nil {

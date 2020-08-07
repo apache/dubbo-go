@@ -56,7 +56,7 @@ func getRule(rawRule string) (*RouterRule, error) {
 	return r, nil
 }
 
-// init use for flatten yaml tags data to @addressToTagNames and @tagNameToAddresses
+// init use for flattening tags data to @addressToTagNames and @tagNameToAddresses
 func (t *RouterRule) init() {
 	t.addressToTagNames = make(map[string][]string, 2*len(t.Tags))
 	t.tagNameToAddresses = make(map[string][]string, len(t.Tags))
@@ -68,7 +68,6 @@ func (t *RouterRule) init() {
 	}
 }
 
-// getAddresses gets all tag addresses
 func (t *RouterRule) getAddresses() []string {
 	var result = make([]string, 0, 2*len(t.Tags))
 	for _, tag := range t.Tags {
@@ -77,7 +76,6 @@ func (t *RouterRule) getAddresses() []string {
 	return result
 }
 
-// getTagNames gets all tag names
 func (t *RouterRule) getTagNames() []string {
 	var result = make([]string, 0, len(t.Tags))
 	for _, tag := range t.Tags {
