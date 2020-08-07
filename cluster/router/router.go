@@ -50,3 +50,14 @@ type PriorityRouter interface {
 	// 0 to ^int(0) is better
 	Priority() int64
 }
+
+// NotifyRouter notify router use the invoker list. Invoker list may change from time to time. This method gives the router a
+// chance to prepare before {@link Router#route(List, URL, Invocation)} gets called.
+type NotifyRouter interface {
+	router
+	// Notify notify whenever addresses in registry change
+	Notify([]protocol.Invoker)
+	// Priority Return Priority in router
+	// 0 to ^int(0) is better
+	Priority() int64
+}
