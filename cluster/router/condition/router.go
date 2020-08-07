@@ -18,6 +18,9 @@
 package condition
 
 import (
+	"github.com/RoaringBitmap/roaring"
+	"github.com/apache/dubbo-go/cluster/router"
+	"github.com/apache/dubbo-go/cluster/router/utils"
 	"regexp"
 	"strings"
 )
@@ -51,6 +54,8 @@ type ConditionRouter struct {
 	priority      int64
 	Force         bool
 	enabled       bool
+	rule          string
+	isNew         bool
 	WhenCondition map[string]MatchPair
 	ThenCondition map[string]MatchPair
 }
@@ -96,6 +101,8 @@ func NewConditionRouterWithRule(rule string) (*ConditionRouter, error) {
 	}
 	return &ConditionRouter{
 		Pattern:       pattern,
+		rule:          rule,
+		isNew:         true,
 		WhenCondition: when,
 		ThenCondition: then,
 	}, nil
@@ -142,29 +149,38 @@ func (c *ConditionRouter) Enabled() bool {
 }
 
 // Route Determine the target invokers list.
-func (c *ConditionRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+func (c *ConditionRouter) Route(invokers *roaring.Bitmap, cache *router.AddrCache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
 	if !c.Enabled() {
 		return invokers
 	}
-	if len(invokers) == 0 {
+
+	if invokers.IsEmpty() {
 		return invokers
 	}
+
 	isMatchWhen := c.MatchWhen(url, invocation)
 	if !isMatchWhen {
 		return invokers
 	}
-	var result []protocol.Invoker
+
 	if len(c.ThenCondition) == 0 {
-		return result
+		return router.EmptyAddr
 	}
-	for _, invoker := range invokers {
-		invokerUrl := invoker.GetUrl()
-		isMatchThen := c.MatchThen(&invokerUrl, url)
-		if isMatchThen {
-			result = append(result, invoker)
-		}
-	}
-	if len(result) > 0 {
+
+	addrPool := cache.FindAddrPool(c)
+	result := utils.JoinIfNotEqual(addrPool["matched"], invokers)
+
+	//result = roaring.NewBitmap()
+	//for iter := invokers.Iterator(); iter.HasNext(); {
+	//	index := iter.Next()
+	//	invokerUrl := cache.Invokers[index].GetUrl()
+	//	isMatchThen := c.MatchThen(&invokerUrl, url)
+	//	if isMatchThen {
+	//		result.Add(index)
+	//	}
+	//}
+
+	if !result.IsEmpty() {
 		return result
 	} else if c.Force {
 		rule, _ := url.GetParamAndDecoded(constant.RULE_KEY)
@@ -173,6 +189,32 @@ func (c *ConditionRouter) Route(invokers []protocol.Invoker, url *common.URL, in
 		return result
 	}
 	return invokers
+}
+
+func (c *ConditionRouter) Pool(invokers []protocol.Invoker) (router.RouterAddrPool, router.AddrMetadata) {
+	rb := make(router.RouterAddrPool)
+	rb["matched"] = roaring.NewBitmap()
+	param := invokers[0].GetUrl()
+	for i, invoker := range invokers {
+		invokerUrl := invoker.GetUrl()
+		if c.MatchThen(&invokerUrl, &param) {
+			rb["matched"].AddInt(i)
+		}
+	}
+	return rb, nil
+}
+
+func (c *ConditionRouter) ShouldRePool() bool {
+	if c.isNew {
+		c.isNew = false
+		return true
+	} else {
+		return false
+	}
+}
+
+func (c *ConditionRouter) Name() string {
+	return c.rule
 }
 
 func parseRule(rule string) (map[string]MatchPair, error) {

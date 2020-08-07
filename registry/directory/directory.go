@@ -18,6 +18,7 @@
 package directory
 
 import (
+	"github.com/apache/dubbo-go/cluster/router/chain"
 	"sync"
 )
 
@@ -75,6 +76,13 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.
 		serviceType:      url.SubURL.Service(),
 		registry:         registry,
 	}
+
+	if routerChain, err := chain.NewRouterChain(url.SubURL); err == nil {
+		dir.BaseDirectory.SetRouterChain(routerChain)
+	} else {
+		logger.Warnf("fail to create router chain with url: %s, err is: %v", url.SubURL, err)
+	}
+
 	dir.consumerConfigurationListener = newConsumerConfigurationListener(dir)
 
 	go dir.subscribe(url.SubURL)
@@ -145,6 +153,7 @@ func (dir *RegistryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 	newInvokers := dir.toGroupInvokers()
 	dir.listenerLock.Lock()
 	dir.cacheInvokers = newInvokers
+	dir.RouterChain().SetInvokers(newInvokers)
 	dir.listenerLock.Unlock()
 	// After dir.cacheInvokers is updated,destroy the oldInvoker
 	// Ensure that no request will enter the oldInvoker
@@ -251,7 +260,7 @@ func (dir *RegistryDirectory) List(invocation protocol.Invocation) []protocol.In
 	if routerChain == nil {
 		return invokers
 	}
-	return routerChain.Route(invokers, dir.cacheOriginUrl, invocation)
+	return routerChain.Route(dir.cacheOriginUrl, invocation)
 }
 
 // IsAvailable  whether the directory is available
