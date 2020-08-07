@@ -18,8 +18,6 @@
 package consul
 
 import (
-	"crypto/md5"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -159,6 +157,10 @@ func (csd consulServiceDiscovery) String() string {
 
 func (csd consulServiceDiscovery) Destroy() error {
 	csd.consulClient = nil
+	for _, t := range csd.ttl {
+		close(t)
+	}
+	csd.ttl = nil
 	return nil
 }
 
@@ -188,7 +190,12 @@ func (csd *consulServiceDiscovery) registerTtl(instance registry.ServiceInstance
 			select {
 			case <-timer.C:
 				timer.Reset(period)
-				csd.consulClient.Agent().PassTTL(checkID, "")
+				err := csd.consulClient.Agent().PassTTL(checkID, "")
+				if err != nil {
+					logger.Warnf("pass ttl heartbeat fail:%v", err)
+					break
+				}
+				logger.Debugf("passed ttl heartbeat for %s", checkID)
 				break
 			case <-stopChan:
 				logger.Info("ttl %s for service %s is stopped", checkID, instance.GetServiceName())
@@ -200,15 +207,26 @@ func (csd *consulServiceDiscovery) registerTtl(instance registry.ServiceInstance
 }
 
 func (csd consulServiceDiscovery) Update(instance registry.ServiceInstance) error {
-	ins, err := csd.buildRegisterInstance(instance)
+	ins, _ := csd.buildRegisterInstance(instance)
+	err := csd.consulClient.Agent().ServiceDeregister(buildID(instance))
 	if err != nil {
-		panic(err)
+		logger.Warnf("unregister instance %s fail:%v", instance.GetServiceName(), err)
 	}
-	return csd.consulClient.Agent().ServiceRegisterOpts(ins, consul.ServiceRegisterOpts{ReplaceExistingChecks: true})
+	err = csd.consulClient.Agent().ServiceRegister(ins)
+	return err
 }
 
 func (csd consulServiceDiscovery) Unregister(instance registry.ServiceInstance) error {
-	return csd.consulClient.Agent().ServiceDeregister(buildID(instance))
+	err := csd.consulClient.Agent().ServiceDeregister(buildID(instance))
+	if err != nil {
+		return err
+	}
+	stopChanel, ok := csd.ttl[buildID(instance)]
+	if ok {
+		close(stopChanel)
+		delete(csd.ttl, buildID(instance))
+	}
+	return nil
 }
 
 func (csd consulServiceDiscovery) GetDefaultPageSize() int {
@@ -233,7 +251,7 @@ func (csd consulServiceDiscovery) GetServices() *gxset.HashSet {
 func (csd consulServiceDiscovery) GetInstances(serviceName string) []registry.ServiceInstance {
 	waitTime := csd.serviceUrl.GetParamInt(WATCH_TIMEOUT, DEFAULT_WATCH_TIMEOUT) / 1000
 	instances, _, err := csd.consulClient.Health().Service(serviceName, csd.tag, true, &consul.QueryOptions{
-		WaitTime:  time.Duration(waitTime),
+		WaitTime: time.Duration(waitTime),
 	})
 	if err != nil {
 		return nil
@@ -352,19 +370,17 @@ func (csd consulServiceDiscovery) AddListener(listener *registry.ServiceInstance
 				Metadata:    metadata,
 			})
 		}
-		if len(instances) < 1 {
-			return
-		}
 		e := csd.DispatchEventForInstances(listener.ServiceName, instances)
 		if e != nil {
 			logger.Errorf("Dispatching event got exception, service name: %s, err: %v", listener.ServiceName, err)
 		}
 	}
-	err = plan.RunWithClientAndHclog(csd.consulClient, hcLogger)
-	if err != nil {
-		logger.Error("consul plan run failure!error:%v", err)
-		return err
-	}
+	go func() {
+		err = plan.RunWithClientAndHclog(csd.consulClient, hcLogger)
+		if err != nil {
+			logger.Error("consul plan run failure!error:%v", err)
+		}
+	}()
 	return nil
 }
 
@@ -408,6 +424,7 @@ func (csd consulServiceDiscovery) buildCheck(instance registry.ServiceInstance) 
 		deregister = DEFAULT_DEREGISTER_TIME
 	}
 	return consul.AgentServiceCheck{
+		CheckID:                        buildID(instance),
 		TTL:                            strconv.FormatInt(csd.checkPassInterval/1000, 10) + "s",
 		DeregisterCriticalServiceAfter: deregister,
 	}
@@ -415,10 +432,8 @@ func (csd consulServiceDiscovery) buildCheck(instance registry.ServiceInstance) 
 
 func buildID(instance registry.ServiceInstance) string {
 
-	metaBytes, _ := json.Marshal(instance.GetMetadata())
-	id := fmt.Sprintf("id:%s,serviceName:%s,host:%s,port:%d,enable:%t,healthy:%t,meta:%s", instance.GetId(), instance.GetServiceName(),
-		instance.GetHost(), instance.GetPort(), instance.IsEnable(), instance.IsHealthy(), metaBytes)
-	Md5Inst := md5.New()
-	Md5Inst.Write([]byte(id))
-	return string(Md5Inst.Sum([]byte("")))
+	id := fmt.Sprintf("id:%s,serviceName:%s,host:%s,port:%d", instance.GetId(), instance.GetServiceName(), instance.GetHost(), instance.GetPort())
+	//Md5Inst := md5.New()
+	//Md5Inst.Write([]byte(id))
+	return id
 }
