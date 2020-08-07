@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package tag
+package server_impl
 
 import (
 	"testing"
@@ -25,16 +25,33 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetRule(t *testing.T) {
-	yml := `
-scope: application
-runtime: true
-force: true
-`
-	rule, e := getRule(yml)
-	assert.Nil(t, e)
-	assert.NotNil(t, rule)
-	assert.Equal(t, true, rule.Force)
-	assert.Equal(t, true, rule.Runtime)
-	assert.Equal(t, "application", rule.Scope)
+import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/protocol/rest/config"
+	"github.com/apache/dubbo-go/protocol/rest/server"
+)
+
+func TestGoRestfulServerDeploySameUrl(t *testing.T) {
+	grs := NewGoRestfulServer()
+	url, err := common.NewURL("http://127.0.0.1:43121")
+	assert.NoError(t, err)
+	grs.Start(url)
+	rmc := &config.RestMethodConfig{
+		Produces:   "*/*",
+		Consumes:   "*/*",
+		MethodType: "POST",
+		Path:       "/test",
+	}
+	f := func(request server.RestServerRequest, response server.RestServerResponse) {}
+	grs.Deploy(rmc, f)
+	rmc1 := &config.RestMethodConfig{
+		Produces:   "*/*",
+		Consumes:   "*/*",
+		MethodType: "GET",
+		Path:       "/test",
+	}
+	grs.Deploy(rmc1, f)
+	grs.UnDeploy(rmc)
+	grs.UnDeploy(rmc1)
+	grs.Destroy()
 }
