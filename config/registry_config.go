@@ -46,9 +46,11 @@ type RegistryConfig struct {
 	Password   string `yaml:"password" json:"password,omitempty"  property:"password"`
 	Simplified bool   `yaml:"simplified" json:"simplified,omitempty"  property:"simplified"`
 	// Always use this registry first if set to true, useful when subscribe to multiple registries
-	Preferred bool `yaml:"preferred" json:"params,omitempty" property:"preferred"`
+	Preferred bool `yaml:"preferred" json:"preferred,omitempty" property:"preferred"`
 	// The region where the registry belongs, usually used to isolate traffics
-	Zone string `yaml:"zone" json:"params,omitempty" property:"zone"`
+	Zone string `yaml:"zone" json:"zone,omitempty" property:"zone"`
+	//// Force must user the region, property zone is specified.
+	//ZoneForce bool `yaml:"zoneForce" json:"zoneForce,omitempty" property:"zoneForce"`
 	// Affects traffic distribution among registries,
 	// useful when subscribe to multiple registries Take effect only when no preferred registry is specified.
 	Weight int64             `yaml:"weight" json:"params,omitempty" property:"weight"`
@@ -130,6 +132,7 @@ func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 	urlMap.Set(constant.REGISTRY_KEY+"."+constant.REGISTRY_LABEL_KEY, strconv.FormatBool(true))
 	urlMap.Set(constant.REGISTRY_KEY+"."+constant.PREFERRED_KEY, strconv.FormatBool(c.Preferred))
 	urlMap.Set(constant.REGISTRY_KEY+"."+constant.ZONE_KEY, c.Zone)
+	//urlMap.Set(constant.REGISTRY_KEY+"."+constant.ZONE_FORCE_KEY, strconv.FormatBool(c.ZoneForce))
 	urlMap.Set(constant.REGISTRY_KEY+"."+constant.WEIGHT_KEY, strconv.FormatInt(c.Weight, 10))
 	urlMap.Set(constant.REGISTRY_TTL_KEY, c.TTL)
 	for k, v := range c.Params {

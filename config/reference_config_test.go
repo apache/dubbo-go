@@ -190,7 +190,7 @@ func doInitConsumerWithSingleRegistry() {
 func TestReferMultiReg(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("registry", GetProtocol)
-	extension.SetCluster(cluster_impl.GetZoneAwareName(), cluster_impl.NewZoneAwareCluster)
+	extension.SetCluster(constant.ZONEAWARE_CLUSTER_NAME, cluster_impl.NewZoneAwareCluster)
 
 	for _, reference := range consumerConfig.References {
 		reference.Refer(nil)
@@ -203,7 +203,7 @@ func TestReferMultiReg(t *testing.T) {
 func TestRefer(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("registry", GetProtocol)
-	extension.SetCluster(cluster_impl.GetZoneAwareName(), cluster_impl.NewZoneAwareCluster)
+	extension.SetCluster(constant.ZONEAWARE_CLUSTER_NAME, cluster_impl.NewZoneAwareCluster)
 
 	for _, reference := range consumerConfig.References {
 		reference.Refer(nil)
@@ -217,7 +217,7 @@ func TestRefer(t *testing.T) {
 func TestReferAsync(t *testing.T) {
 	doInitConsumerAsync()
 	extension.SetProtocol("registry", GetProtocol)
-	extension.SetCluster(cluster_impl.GetZoneAwareName(), cluster_impl.NewZoneAwareCluster)
+	extension.SetCluster(constant.ZONEAWARE_CLUSTER_NAME, cluster_impl.NewZoneAwareCluster)
 
 	for _, reference := range consumerConfig.References {
 		reference.Refer(nil)
@@ -275,7 +275,7 @@ func TestReferMultiP2PWithReg(t *testing.T) {
 func TestImplement(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("registry", GetProtocol)
-	extension.SetCluster(cluster_impl.GetZoneAwareName(), cluster_impl.NewZoneAwareCluster)
+	extension.SetCluster(constant.ZONEAWARE_CLUSTER_NAME, cluster_impl.NewZoneAwareCluster)
 	for _, reference := range consumerConfig.References {
 		reference.Refer(nil)
 		reference.Implement(&MockService{})

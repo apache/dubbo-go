@@ -40,13 +40,16 @@ type zoneAwareClusterInvoker struct {
 }
 
 func newZoneAwareClusterInvoker(directory cluster.Directory) protocol.Invoker {
-	return &zoneAwareClusterInvoker{
+	invoke := &zoneAwareClusterInvoker{
 		baseClusterInvoker: newBaseClusterInvoker(directory),
 	}
+	// add self to interceptor
+	invoke.interceptor = invoke
+	return invoke
 }
 
 // nolint
-func (invoker *zoneAwareClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (invoker *zoneAwareClusterInvoker) DoInvoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	invokers := invoker.directory.List(invocation)
 
 	err := invoker.checkInvokers(invokers, invocation)
@@ -63,16 +66,16 @@ func (invoker *zoneAwareClusterInvoker) Invoke(ctx context.Context, invocation p
 	}
 
 	// providers in the registry with the same zone
-	zone := invocation.AttachmentsByKey(constant.REGISTRY_ZONE, "")
+	key := constant.REGISTRY_KEY + "." + constant.ZONE_KEY
+	zone := invocation.AttachmentsByKey(key, "")
 	if "" != zone {
 		for _, invoker := range invokers {
-			key := constant.REGISTRY_KEY + "." + constant.ZONE_KEY
 			if invoker.IsAvailable() && matchParam(zone, key, "", invoker) {
 				return invoker.Invoke(ctx, invocation)
 			}
 		}
 
-		force := invocation.AttachmentsByKey(constant.REGISTRY_ZONE_FORCE, "")
+		force := invocation.AttachmentsByKey(constant.REGISTRY_KEY+"."+constant.ZONE_FORCE_KEY, "")
 		if "true" == force {
 			return &protocol.RPCResult{
 				Err: fmt.Errorf("no registry instance in zone or "+
@@ -99,6 +102,30 @@ func (invoker *zoneAwareClusterInvoker) Invoke(ctx context.Context, invocation p
 	return &protocol.RPCResult{
 		Err: fmt.Errorf("no provider available in %v", invokers),
 	}
+}
+
+func (invoker *zoneAwareClusterInvoker) BeforeInvoker(ctx context.Context, invocation protocol.Invocation) {
+	key := constant.REGISTRY_KEY + "." + constant.ZONE_FORCE_KEY
+	force := ctx.Value(key)
+
+	if force != nil {
+		switch value := force.(type) {
+		case bool:
+			if value {
+				invocation.SetAttachments(key, "true")
+			}
+		case string:
+			if "true" == value {
+				invocation.SetAttachments(key, "true")
+			}
+		default:
+			// ignore
+		}
+	}
+}
+
+func (invoker *zoneAwareClusterInvoker) AfterInvoker(ctx context.Context, invocation protocol.Invocation) {
+
 }
 
 func matchParam(target, key, def string, invoker protocol.Invoker) bool {
