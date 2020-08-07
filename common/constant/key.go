@@ -102,6 +102,7 @@ const (
 	ZONE_KEY             = "zone"
 	REGISTRY_ZONE        = "registry_zone"
 	REGISTRY_ZONE_FORCE  = "registry_zone_force"
+	REGISTRY_TTL_KEY     = "registry.ttl"
 )
 
 const (
@@ -192,6 +193,9 @@ const (
 	HealthCheckRouterName = "health_check"
 	// TagRouterName Specify the name of TagRouter
 	TagRouterName = "tag"
+	// TagRouterRuleSuffix Specify tag router suffix
+	TagRouterRuleSuffix  = ".tag-router"
+	RemoteApplicationKey = "remote.application"
 	// ConditionRouterRuleSuffix Specify condition router suffix
 	ConditionRouterRuleSuffix = ".condition-router"
 

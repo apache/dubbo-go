@@ -39,6 +39,7 @@ type RegistryConfig struct {
 	// I changed "type" to "protocol" ,the same as "protocol" field in java class RegistryConfig
 	TimeoutStr string `yaml:"timeout" default:"5s" json:"timeout,omitempty" property:"timeout"` // unit: second
 	Group      string `yaml:"group" json:"group,omitempty" property:"group"`
+	TTL        string `yaml:"ttl" default:"10m" json:"ttl,omitempty" property:"ttl"` // unit: minute
 	// for registry
 	Address    string `yaml:"address" json:"address,omitempty" property:"address"`
 	Username   string `yaml:"username" json:"username,omitempty" property:"username"`
@@ -130,6 +131,7 @@ func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 	urlMap.Set(constant.REGISTRY_KEY+"."+constant.PREFERRED_KEY, strconv.FormatBool(c.Preferred))
 	urlMap.Set(constant.REGISTRY_KEY+"."+constant.ZONE_KEY, c.Zone)
 	urlMap.Set(constant.REGISTRY_KEY+"."+constant.WEIGHT_KEY, strconv.FormatInt(c.Weight, 10))
+	urlMap.Set(constant.REGISTRY_TTL_KEY, c.TTL)
 	for k, v := range c.Params {
 		urlMap.Set(k, v)
 	}
