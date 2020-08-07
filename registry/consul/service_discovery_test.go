@@ -18,7 +18,9 @@
 package consul
 
 import (
+	"fmt"
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/remoting/consul"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -39,8 +41,11 @@ import (
 )
 
 var (
-	testName    = "test"
-	registryURL = common.URL{
+	testName                             = "test"
+	consulCheckPassInterval              = 17000
+	consulDeregisterCriticalServiceAfter = "20s"
+	consulWatchTimeout                   = 60000
+	registryURL                          = common.URL{
 		Path:     "",
 		Username: "",
 		Password: "",
@@ -65,7 +70,7 @@ func TestConsulServiceDiscovery_newConsulServiceDiscovery(t *testing.T) {
 	assert.NotNil(t, err)
 
 	config.GetBaseConfig().Remotes["mock"] = &config.RemoteConfig{
-		Address: "", // TODO
+		Address: "localhost:8081",
 	}
 
 	res, err := newConsulServiceDiscovery(name)
@@ -86,6 +91,10 @@ func TestConsulServiceDiscovery_Destroy(t *testing.T) {
 }
 
 func TestConsulServiceDiscovery_CRUD(t *testing.T) {
+	// start consul agent
+	consulAgent := consul.NewConsulAgent(t, registryPort)
+	defer consulAgent.Shutdown()
+
 	prepareData()
 	extension.SetEventDispatcher("mock", func() observer.EventDispatcher {
 		return &dispatcher.MockEventDispatcher{}
@@ -102,9 +111,9 @@ func TestConsulServiceDiscovery_CRUD(t *testing.T) {
 
 	err = serviceDiscovery.Initialize(registryUrl)
 	assert.Nil(t, err)
-	// clean data for local test
+
 	err = serviceDiscovery.Unregister(instance)
-	assert.Nil(t, err)
+	assert.NotNil(t, err)
 
 	err = serviceDiscovery.Register(instance)
 	assert.Nil(t, err)
@@ -158,28 +167,24 @@ func prepareData() {
 	}
 
 	config.GetBaseConfig().Remotes[testName] = &config.RemoteConfig{
-		Address:    "", // TODO
-		TimeoutStr: "10s",
+		Address: fmt.Sprintf("%s:%d", registryHost, registryPort),
 	}
 }
 func prepareService() (registry.ServiceInstance, common.URL) {
-	serviceName := "service-name" + strconv.Itoa(rand.Intn(10000))
 	id := "id"
-	host := "host"
-	port := 123
 
-	registryUrl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
+	registryUrl, _ := common.NewURL(protocol + "://" + providerHost + ":" + strconv.Itoa(providerPort) + "/" + service + "?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
-		"side=provider&timeout=3000&timestamp=1556509797245&consul-check-pass-interval=17000&consul-deregister-critical-service-after=20s&" +
-		"consul-watch-timeout=60000")
+		"side=provider&timeout=3000&timestamp=1556509797245&consul-check-pass-interval=" + strconv.Itoa(consulCheckPassInterval) + "&consul-deregister-critical-service-after=" + consulDeregisterCriticalServiceAfter + "&" +
+		"consul-watch-timeout=" + strconv.Itoa(consulWatchTimeout))
 
 	return &registry.DefaultServiceInstance{
 		Id:          id,
-		ServiceName: serviceName,
-		Host:        host,
-		Port:        port,
+		ServiceName: service,
+		Host:        registryHost,
+		Port:        registryPort,
 		Enable:      true,
 		Healthy:     true,
 		Metadata:    nil,
