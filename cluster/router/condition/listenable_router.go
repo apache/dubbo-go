@@ -85,7 +85,7 @@ func newListenableRouter(url *common.URL, ruleKey string) (*AppRouter, error) {
 	return l, nil
 }
 
-// Process Process config change event , generate routers and set them to the listenableRouter instance
+// Process Process config change event, generate routers and set them to the listenableRouter instance
 func (l *listenableRouter) Process(event *config_center.ConfigChangeEvent) {
 	logger.Infof("Notification of condition rule, change type is:[%s] , raw rule is:[%v]", event.ConfigType, event.Value)
 	if remoting.EventTypeDel == event.ConfigType {
