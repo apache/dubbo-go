@@ -54,7 +54,7 @@ const (
 	CHECK_PASS_INTERVAL = "consul-check-pass-interval"
 	// default time-to-live in millisecond
 	DEFAULT_CHECK_PASS_INTERVAL = 16000
-	UERY_TAG                    = "consul_query_tag"
+	QUERY_TAG                   = "consul_query_tag"
 	ACL_TOKEN                   = "acl-token"
 	// default deregister critical server after
 	DEFAULT_DEREGISTER_TIME = "20s"
@@ -117,6 +117,7 @@ func newConsulServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 		address:    remoteConfig.Address,
 		descriptor: descriptor,
 		PageSize:   pageSize,
+		ttl:        make(map[string]chan struct{}),
 	}, nil
 }
 
@@ -135,12 +136,13 @@ type consulServiceDiscovery struct {
 	tag               string
 	tags              []string
 	address           string
+	ttl               map[string]chan struct{}
 }
 
-func (csd consulServiceDiscovery) Initialize(registryURL common.URL) error {
+func (csd *consulServiceDiscovery) Initialize(registryURL common.URL) error {
 	csd.serviceUrl = registryURL
 	csd.checkPassInterval = registryURL.GetParamInt(CHECK_PASS_INTERVAL, DEFAULT_CHECK_PASS_INTERVAL)
-	csd.tag = registryURL.GetParam(UERY_TAG, "")
+	csd.tag = registryURL.GetParam(QUERY_TAG, "")
 	csd.tags = strings.Split(registryURL.GetParam("tags", ""), ",")
 	aclToken := registryURL.GetParam(ACL_TOKEN, "")
 	config := &consul.Config{Address: csd.address, Token: aclToken}
@@ -160,14 +162,41 @@ func (csd consulServiceDiscovery) Destroy() error {
 	return nil
 }
 
-func (csd consulServiceDiscovery) Register(instance registry.ServiceInstance) error {
+func (csd *consulServiceDiscovery) Register(instance registry.ServiceInstance) error {
 	ins, _ := csd.buildRegisterInstance(instance)
 	err := csd.consulClient.Agent().ServiceRegister(ins)
 	if err != nil {
 		return perrors.WithMessage(err, "consul could not register the instance. "+instance.GetServiceName())
 	}
+
+	csd.registerTtl(instance)
+
 	return nil
 
+}
+func (csd *consulServiceDiscovery) registerTtl(instance registry.ServiceInstance) error {
+
+	checkID := buildID(instance)
+
+	stopChan := make(chan struct{})
+	csd.ttl[buildID(instance)] = stopChan
+
+	period := time.Duration(csd.checkPassInterval/8) * time.Millisecond
+	timer := time.NewTimer(period)
+	go func() {
+		for {
+			select {
+			case <-timer.C:
+				timer.Reset(period)
+				csd.consulClient.Agent().PassTTL(checkID, "")
+				break
+			case <-stopChan:
+				logger.Info("ttl %s for service %s is stopped", checkID, instance.GetServiceName())
+				return
+			}
+		}
+	}()
+	return nil
 }
 
 func (csd consulServiceDiscovery) Update(instance registry.ServiceInstance) error {
@@ -205,7 +234,6 @@ func (csd consulServiceDiscovery) GetInstances(serviceName string) []registry.Se
 	waitTime := csd.serviceUrl.GetParamInt(WATCH_TIMEOUT, DEFAULT_WATCH_TIMEOUT) / 1000
 	instances, _, err := csd.consulClient.Health().Service(serviceName, csd.tag, true, &consul.QueryOptions{
 		WaitTime:  time.Duration(waitTime),
-		WaitIndex: -1,
 	})
 	if err != nil {
 		return nil
@@ -388,7 +416,7 @@ func (csd consulServiceDiscovery) buildCheck(instance registry.ServiceInstance) 
 func buildID(instance registry.ServiceInstance) string {
 
 	metaBytes, _ := json.Marshal(instance.GetMetadata())
-	id := fmt.Sprintf("id:%s,serviceName:%s,host:%s,port:%d,enable:%b,healthy:%b,meta:%s", instance.GetId(), instance.GetServiceName(),
+	id := fmt.Sprintf("id:%s,serviceName:%s,host:%s,port:%d,enable:%t,healthy:%t,meta:%s", instance.GetId(), instance.GetServiceName(),
 		instance.GetHost(), instance.GetPort(), instance.IsEnable(), instance.IsHealthy(), metaBytes)
 	Md5Inst := md5.New()
 	Md5Inst.Write([]byte(id))
