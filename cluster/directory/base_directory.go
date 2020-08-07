@@ -116,14 +116,11 @@ func (dir *BaseDirectory) isProperRouter(url *common.URL) bool {
 	if serviceKey == "" {
 		serviceKey = dir.GetUrl().SubURL.ServiceKey()
 	}
-	if len(app) > 0 {
-		if app != dir.GetUrl().GetParam(constant.APPLICATION_KEY, "") {
-			return false
-		}
-	} else {
-		if url.ServiceKey() != serviceKey {
-			return false
-		}
+	if len(app) > 0 && app != dir.GetUrl().GetParam(constant.APPLICATION_KEY, "") {
+		return false
+	}
+	if url.ServiceKey() != serviceKey {
+		return false
 	}
 	return true
 }
