@@ -37,7 +37,8 @@ import (
 
 // ProviderConfig is the default configuration of service provider
 type ProviderConfig struct {
-	BaseConfig     `yaml:",inline"`
+	BaseConfig `yaml:",inline"`
+	configCenter
 	Filter         string                     `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	ProxyFactory   string                     `yaml:"proxy_factory" default:"default" json:"proxy_factory,omitempty" property:"proxy_factory"`
 	Services       map[string]*ServiceConfig  `yaml:"services" json:"services,omitempty" property:"services"`
@@ -101,7 +102,7 @@ func configCenterRefreshProvider() error {
 	// fresh it
 	if providerConfig.ConfigCenterConfig != nil {
 		providerConfig.fatherConfig = providerConfig
-		if err := providerConfig.startConfigCenter(); err != nil {
+		if err := providerConfig.startConfigCenter((*providerConfig).BaseConfig); err != nil {
 			return perrors.Errorf("start config center error , error message is {%v}", perrors.WithStack(err))
 		}
 		providerConfig.fresh()
