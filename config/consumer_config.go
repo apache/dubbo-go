@@ -41,7 +41,8 @@ import (
 // ConsumerConfig is Consumer default configuration
 type ConsumerConfig struct {
 	BaseConfig `yaml:",inline"`
-	Filter     string `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	configCenter
+	Filter string `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	// client
 	Connect_Timeout string `default:"100ms"  yaml:"connect_timeout" json:"connect_timeout,omitempty" property:"connect_timeout"`
 	ConnectTimeout  time.Duration
@@ -125,13 +126,6 @@ func ConsumerInit(confConFile string) error {
 func configCenterRefreshConsumer() error {
 	//fresh it
 	var err error
-	if consumerConfig.ConfigCenterConfig != nil {
-		consumerConfig.SetFatherConfig(consumerConfig)
-		if err = consumerConfig.startConfigCenter(); err != nil {
-			return perrors.Errorf("start config center error , error message is {%v}", perrors.WithStack(err))
-		}
-		consumerConfig.fresh()
-	}
 	if consumerConfig.Request_Timeout != "" {
 		if consumerConfig.RequestTimeout, err = time.ParseDuration(consumerConfig.Request_Timeout); err != nil {
 			return perrors.WithMessagef(err, "time.ParseDuration(Request_Timeout{%#v})", consumerConfig.Request_Timeout)
@@ -141,6 +135,13 @@ func configCenterRefreshConsumer() error {
 		if consumerConfig.ConnectTimeout, err = time.ParseDuration(consumerConfig.Connect_Timeout); err != nil {
 			return perrors.WithMessagef(err, "time.ParseDuration(Connect_Timeout{%#v})", consumerConfig.Connect_Timeout)
 		}
+	}
+	if consumerConfig.ConfigCenterConfig != nil {
+		consumerConfig.SetFatherConfig(consumerConfig)
+		if err = consumerConfig.startConfigCenter((*consumerConfig).BaseConfig); err != nil {
+			return perrors.Errorf("start config center error , error message is {%v}", perrors.WithStack(err))
+		}
+		consumerConfig.fresh()
 	}
 	return nil
 }
