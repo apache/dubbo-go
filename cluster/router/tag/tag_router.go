@@ -64,10 +64,6 @@ func (c *tagRouter) isEnabled() bool {
 	return c.enabled
 }
 
-func (c *tagRouter) SetApplication(app string) {
-	c.application = app
-}
-
 func (c *tagRouter) tagRouterRuleCopy() RouterRule {
 	routerRule := *c.tagRouterRule
 	return routerRule
@@ -79,6 +75,7 @@ func (c *tagRouter) Route(invokers []protocol.Invoker, url *common.URL, invocati
 		result    []protocol.Invoker
 		addresses []string
 	)
+
 	if !c.isEnabled() || len(invokers) == 0 {
 		return invokers
 	}
@@ -191,7 +188,7 @@ func (c *tagRouter) Priority() int64 {
 	return c.priority
 }
 
-// filterUsingStaticTag gets a list of invoker using static tag, If there's no dynamic tag rule being set, use static tag in URL
+// filterUsingStaticTag gets a list of invoker using static tag
 func filterUsingStaticTag(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	if tag, ok := invocation.Attachments()[constant.Tagkey]; ok {
 		result := make([]protocol.Invoker, 0, 8)

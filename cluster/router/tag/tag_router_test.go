@@ -70,7 +70,8 @@ const (
 )
 
 var (
-	zkFormat = "zookeeper://%s:%d"
+	zkFormat        = "zookeeper://%s:%d"
+	conditionFormat = "condition://%s/com.foo.BarService"
 )
 
 // MockInvoker is only mock the Invoker to support test tagRouter
