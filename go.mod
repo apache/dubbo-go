@@ -42,7 +42,7 @@ require (
 	github.com/mitchellh/hashstructure v1.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.2.3
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
-	github.com/nacos-group/nacos-sdk-go v0.3.3-0.20200617023039-50c7537d6a5f
+	github.com/nacos-group/nacos-sdk-go v1.0.0
 	github.com/opentracing/opentracing-go v1.1.0
 	github.com/pierrec/lz4 v2.2.6+incompatible // indirect
 	github.com/pkg/errors v0.9.1
