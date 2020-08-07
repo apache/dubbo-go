@@ -117,13 +117,11 @@ func NewConditionRouter(url *common.URL) (*ConditionRouter, error) {
 	}
 
 	router.url = url
-	var defaultPriority int64
+	var defaultPriority int64 = 0
 	if url.GetParam(constant.APPLICATION_KEY, "") != "" {
 		defaultPriority = 150
 	} else if url.GetParam(constant.INTERFACE_KEY, "") != "" {
 		defaultPriority = 140
-	} else {
-		defaultPriority = 0
 	}
 	router.priority = url.GetParamInt(constant.RouterPriority, defaultPriority)
 	router.Force = url.GetParamBool(constant.RouterForce, false)
