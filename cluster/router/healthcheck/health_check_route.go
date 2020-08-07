@@ -18,7 +18,9 @@
 package healthcheck
 
 import (
+	"github.com/RoaringBitmap/roaring"
 	"github.com/apache/dubbo-go/cluster/router"
+	"github.com/apache/dubbo-go/cluster/router/utils"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -28,6 +30,7 @@ import (
 
 const (
 	HEALTH_ROUTE_ENABLED_KEY = "health.route.enabled"
+	healthy                  = "healthy"
 )
 
 // HealthCheckRouter provides a health-first routing mechanism through HealthChecker
@@ -51,23 +54,40 @@ func NewHealthCheckRouter(url *common.URL) (router.PriorityRouter, error) {
 }
 
 // Route gets a list of healthy invoker
-func (r *HealthCheckRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+func (r *HealthCheckRouter) Route(invokers *roaring.Bitmap, cache *router.AddrCache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
 	if !r.enabled {
 		return invokers
 	}
-	healthyInvokers := make([]protocol.Invoker, 0, len(invokers))
+
+	addrPool := cache.FindAddrPool(r)
 	// Add healthy invoker to the list
-	for _, invoker := range invokers {
-		if r.checker.IsHealthy(invoker) {
-			healthyInvokers = append(healthyInvokers, invoker)
-		}
-	}
-	// If all Invoke are considered unhealthy, downgrade to all inovker
-	if len(healthyInvokers) == 0 {
+	healthyInvokers := utils.JoinIfNotEqual(addrPool[healthy], invokers)
+	// If all Invoke are considered unhealthy, downgrade to all invoker
+	if healthyInvokers.IsEmpty() {
 		logger.Warnf(" Now all invokers are unhealthy, so downgraded to all! Service: [%s]", url.ServiceKey())
 		return invokers
 	}
 	return healthyInvokers
+}
+
+func (r *HealthCheckRouter) Pool(invokers []protocol.Invoker) (router.RouterAddrPool, router.AddrMetadata) {
+	rb := make(router.RouterAddrPool)
+	rb[healthy] = roaring.NewBitmap()
+	for i, invoker := range invokers {
+		if r.checker.IsHealthy(invoker) {
+			rb[healthy].Add(uint32(i))
+		}
+	}
+
+	return rb, nil
+}
+
+func (r *HealthCheckRouter) ShouldRePool() bool {
+	return true
+}
+
+func (r *HealthCheckRouter) Name() string {
+	return "health-check-router"
 }
 
 // Priority
