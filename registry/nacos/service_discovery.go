@@ -60,11 +60,20 @@ type nacosServiceDiscovery struct {
 
 	// namingClient is the Nacos' client
 	namingClient naming_client.INamingClient
+	// cache registry instances
+	registryInstances []registry.ServiceInstance
 }
 
 // Destroy will close the service discovery.
 // Actually, it only marks the naming client as null and then return
 func (n *nacosServiceDiscovery) Destroy() error {
+	for _, inst := range n.registryInstances {
+		err := n.Unregister(inst)
+		logger.Infof("Unregister nacos instance:%+v", inst)
+		if err != nil {
+			logger.Errorf("Unregister nacos instance:%+v, err:%+v", inst, err)
+		}
+	}
 	n.namingClient = nil
 	return nil
 }
@@ -76,6 +85,7 @@ func (n *nacosServiceDiscovery) Register(instance registry.ServiceInstance) erro
 	if err != nil || !ok {
 		return perrors.WithMessage(err, "Could not register the instance. "+instance.GetServiceName())
 	}
+	n.registryInstances = append(n.registryInstances, instance)
 	return nil
 }
 
@@ -118,8 +128,8 @@ func (n *nacosServiceDiscovery) GetServices() *gxset.HashSet {
 		return res
 	}
 
-	for _, e := range services {
-		res.Add(e.Name)
+	for _, e := range services.Doms {
+		res.Add(e)
 	}
 	return res
 }
@@ -334,8 +344,9 @@ func newNacosServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 	descriptor := fmt.Sprintf("nacos-service-discovery[%s]", remoteConfig.Address)
 
 	return &nacosServiceDiscovery{
-		group:        group,
-		namingClient: client,
-		descriptor:   descriptor,
+		group:             group,
+		namingClient:      client,
+		descriptor:        descriptor,
+		registryInstances: []registry.ServiceInstance{},
 	}, nil
 }
