@@ -65,15 +65,16 @@ func (c *tagRouter) Route(invokers *roaring.Bitmap, cache *router.AddrCache, url
 		return invokers
 	}
 
-	addrPool := cache.FindAddrPool(c)
-	if target, ok := addrPool[tag]; ok {
-		ret := utils.JoinIfNotEqual(target, invokers)
-		if ret.IsEmpty() && !isForceUseTag(url, invocation) {
-			return invokers
-		}
-		return ret
+	ret := router.EmptyAddr
+	if target, ok := cache.FindAddrPool(c)[tag]; ok {
+		ret = utils.JoinIfNotEqual(target, invokers)
 	}
-	return invokers
+
+	if ret.IsEmpty() && !isForceUseTag(url, invocation) {
+		return invokers
+	}
+
+	return ret
 }
 
 func (c *tagRouter) URL() common.URL {

@@ -32,6 +32,8 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/cluster/router"
+	"github.com/apache/dubbo-go/cluster/router/utils"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
@@ -180,30 +182,30 @@ func TestRoute_matchFilter(t *testing.T) {
 	router5, _ := newConditionRouterFactory().NewPriorityRouter(getRouteUrl(rule5))
 	router6, _ := newConditionRouterFactory().NewPriorityRouter(getRouteUrl(rule6))
 	cUrl, _ := common.NewURL(fmt.Sprintf(factoryConsumerFormat, localIP))
-	fileredInvokers1 := router1.Route(invokers, &cUrl, &invocation.RPCInvocation{})
-	fileredInvokers2 := router2.Route(invokers, &cUrl, &invocation.RPCInvocation{})
-	fileredInvokers3 := router3.Route(invokers, &cUrl, &invocation.RPCInvocation{})
-	fileredInvokers4 := router4.Route(invokers, &cUrl, &invocation.RPCInvocation{})
-	fileredInvokers5 := router5.Route(invokers, &cUrl, &invocation.RPCInvocation{})
-	fileredInvokers6 := router6.Route(invokers, &cUrl, &invocation.RPCInvocation{})
-	assert.Equal(t, 1, len(fileredInvokers1))
-	assert.Equal(t, 0, len(fileredInvokers2))
-	assert.Equal(t, 0, len(fileredInvokers3))
-	assert.Equal(t, 1, len(fileredInvokers4))
-	assert.Equal(t, 2, len(fileredInvokers5))
-	assert.Equal(t, 1, len(fileredInvokers6))
+	ret1 := router1.Route(utils.ToBitmap(invokers), setUpAddrCache(invokers), &cUrl, &invocation.RPCInvocation{})
+	ret2 := router2.Route(utils.ToBitmap(invokers), setUpAddrCache(invokers), &cUrl, &invocation.RPCInvocation{})
+	ret3 := router3.Route(utils.ToBitmap(invokers), setUpAddrCache(invokers), &cUrl, &invocation.RPCInvocation{})
+	ret4 := router4.Route(utils.ToBitmap(invokers), setUpAddrCache(invokers), &cUrl, &invocation.RPCInvocation{})
+	ret5 := router5.Route(utils.ToBitmap(invokers), setUpAddrCache(invokers), &cUrl, &invocation.RPCInvocation{})
+	ret6 := router6.Route(utils.ToBitmap(invokers), setUpAddrCache(invokers), &cUrl, &invocation.RPCInvocation{})
+	assert.Equal(t, 1, len(ret1.ToArray()))
+	assert.Equal(t, 0, len(ret2.ToArray()))
+	assert.Equal(t, 0, len(ret3.ToArray()))
+	assert.Equal(t, 1, len(ret4.ToArray()))
+	assert.Equal(t, 2, len(ret5.ToArray()))
+	assert.Equal(t, 1, len(ret6.ToArray()))
 
 }
 
 func TestRoute_methodRoute(t *testing.T) {
 	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("getFoo"), invocation.WithParameterTypes([]reflect.Type{}), invocation.WithArguments([]interface{}{}))
 	rule := base64.URLEncoding.EncodeToString([]byte("host !=4.4.4.* & host = 2.2.2.2,1.1.1.1,3.3.3.3 => host = 1.2.3.4"))
-	router, _ := newConditionRouterFactory().NewPriorityRouter(getRouteUrl(rule))
+	r, _ := newConditionRouterFactory().NewPriorityRouter(getRouteUrl(rule))
 	url, _ := common.NewURL("consumer://1.1.1.1/com.foo.BarService?methods=setFoo,getFoo,findFoo")
-	matchWhen := router.(*ConditionRouter).MatchWhen(&url, inv)
+	matchWhen := r.(*ConditionRouter).MatchWhen(&url, inv)
 	assert.Equal(t, true, matchWhen)
 	url1, _ := common.NewURL(fmt.Sprintf(factoryConsumerMethodFormat, factory1111Ip))
-	matchWhen = router.(*ConditionRouter).MatchWhen(&url1, inv)
+	matchWhen = r.(*ConditionRouter).MatchWhen(&url1, inv)
 	assert.Equal(t, true, matchWhen)
 	url2, _ := common.NewURL(fmt.Sprintf(factoryConsumerMethodFormat, factory1111Ip))
 	rule2 := base64.URLEncoding.EncodeToString([]byte("methods=getFoo & host!=1.1.1.1 => host = 1.2.3.4"))
@@ -225,9 +227,9 @@ func TestRoute_ReturnFalse(t *testing.T) {
 	inv := &invocation.RPCInvocation{}
 	rule := base64.URLEncoding.EncodeToString([]byte("host = " + localIP + " => false"))
 	curl, _ := common.NewURL(fmt.Sprintf(factoryConsumerFormat, localIP))
-	router, _ := newConditionRouterFactory().NewPriorityRouter(getRouteUrl(rule))
-	fileredInvokers := router.(*ConditionRouter).Route(invokers, &curl, inv)
-	assert.Equal(t, 0, len(fileredInvokers))
+	r, _ := newConditionRouterFactory().NewPriorityRouter(getRouteUrl(rule))
+	ret := r.Route(utils.ToBitmap(invokers), setUpAddrCache(invokers), &curl, inv)
+	assert.Equal(t, 0, len(ret.ToArray()))
 }
 
 func TestRoute_ReturnEmpty(t *testing.T) {
@@ -237,9 +239,9 @@ func TestRoute_ReturnEmpty(t *testing.T) {
 	inv := &invocation.RPCInvocation{}
 	rule := base64.URLEncoding.EncodeToString([]byte("host = " + localIP + " => "))
 	curl, _ := common.NewURL(fmt.Sprintf(factoryConsumerFormat, localIP))
-	router, _ := newConditionRouterFactory().NewPriorityRouter(getRouteUrl(rule))
-	fileredInvokers := router.(*ConditionRouter).Route(invokers, &curl, inv)
-	assert.Equal(t, 0, len(fileredInvokers))
+	r, _ := newConditionRouterFactory().NewPriorityRouter(getRouteUrl(rule))
+	ret := r.Route(utils.ToBitmap(invokers), setUpAddrCache(invokers), &curl, inv)
+	assert.Equal(t, 0, len(ret.ToArray()))
 }
 
 func TestRoute_ReturnAll(t *testing.T) {
@@ -253,9 +255,9 @@ func TestRoute_ReturnAll(t *testing.T) {
 	inv := &invocation.RPCInvocation{}
 	rule := base64.URLEncoding.EncodeToString([]byte("host = " + localIP + " => " + " host = " + localIP))
 	curl, _ := common.NewURL(fmt.Sprintf(factoryConsumerFormat, localIP))
-	router, _ := newConditionRouterFactory().NewPriorityRouter(getRouteUrl(rule))
-	fileredInvokers := router.(*ConditionRouter).Route(invokers, &curl, inv)
-	assert.Equal(t, invokers, fileredInvokers)
+	r, _ := newConditionRouterFactory().NewPriorityRouter(getRouteUrl(rule))
+	ret := r.Route(utils.ToBitmap(invokers), setUpAddrCache(invokers), &curl, inv)
+	assert.Equal(t, len(invokers), len(ret.ToArray()))
 }
 
 func TestRoute_HostFilter(t *testing.T) {
@@ -270,11 +272,11 @@ func TestRoute_HostFilter(t *testing.T) {
 	inv := &invocation.RPCInvocation{}
 	rule := base64.URLEncoding.EncodeToString([]byte("host = " + localIP + " => " + " host = " + localIP))
 	curl, _ := common.NewURL(fmt.Sprintf(factoryConsumerFormat, localIP))
-	router, _ := newConditionRouterFactory().NewPriorityRouter(getRouteUrl(rule))
-	fileredInvokers := router.(*ConditionRouter).Route(invokers, &curl, inv)
-	assert.Equal(t, 2, len(fileredInvokers))
-	assert.Equal(t, invoker2, fileredInvokers[0])
-	assert.Equal(t, invoker3, fileredInvokers[1])
+	r, _ := newConditionRouterFactory().NewPriorityRouter(getRouteUrl(rule))
+	ret := r.Route(utils.ToBitmap(invokers), setUpAddrCache(invokers), &curl, inv)
+	assert.Equal(t, 2, len(ret.ToArray()))
+	assert.Equal(t, invoker2, invokers[ret.ToArray()[0]])
+	assert.Equal(t, invoker3, invokers[ret.ToArray()[1]])
 }
 
 func TestRoute_Empty_HostFilter(t *testing.T) {
@@ -289,11 +291,11 @@ func TestRoute_Empty_HostFilter(t *testing.T) {
 	inv := &invocation.RPCInvocation{}
 	rule := base64.URLEncoding.EncodeToString([]byte(" => " + " host = " + localIP))
 	curl, _ := common.NewURL(fmt.Sprintf(factoryConsumerFormat, localIP))
-	router, _ := newConditionRouterFactory().NewPriorityRouter(getRouteUrl(rule))
-	fileredInvokers := router.(*ConditionRouter).Route(invokers, &curl, inv)
-	assert.Equal(t, 2, len(fileredInvokers))
-	assert.Equal(t, invoker2, fileredInvokers[0])
-	assert.Equal(t, invoker3, fileredInvokers[1])
+	r, _ := newConditionRouterFactory().NewPriorityRouter(getRouteUrl(rule))
+	ret := r.Route(utils.ToBitmap(invokers), setUpAddrCache(invokers), &curl, inv)
+	assert.Equal(t, 2, len(ret.ToArray()))
+	assert.Equal(t, invoker2, invokers[ret.ToArray()[0]])
+	assert.Equal(t, invoker3, invokers[ret.ToArray()[1]])
 }
 
 func TestRoute_False_HostFilter(t *testing.T) {
@@ -308,11 +310,11 @@ func TestRoute_False_HostFilter(t *testing.T) {
 	inv := &invocation.RPCInvocation{}
 	rule := base64.URLEncoding.EncodeToString([]byte("true => " + " host = " + localIP))
 	curl, _ := common.NewURL(fmt.Sprintf(factoryConsumerFormat, localIP))
-	router, _ := newConditionRouterFactory().NewPriorityRouter(getRouteUrl(rule))
-	fileredInvokers := router.(*ConditionRouter).Route(invokers, &curl, inv)
-	assert.Equal(t, 2, len(fileredInvokers))
-	assert.Equal(t, invoker2, fileredInvokers[0])
-	assert.Equal(t, invoker3, fileredInvokers[1])
+	r, _ := newConditionRouterFactory().NewPriorityRouter(getRouteUrl(rule))
+	ret := r.Route(utils.ToBitmap(invokers), setUpAddrCache(invokers), &curl, inv)
+	assert.Equal(t, 2, len(ret.ToArray()))
+	assert.Equal(t, invoker2, invokers[ret.ToArray()[0]])
+	assert.Equal(t, invoker3, invokers[ret.ToArray()[1]])
 }
 
 func TestRoute_Placeholder(t *testing.T) {
@@ -327,11 +329,11 @@ func TestRoute_Placeholder(t *testing.T) {
 	inv := &invocation.RPCInvocation{}
 	rule := base64.URLEncoding.EncodeToString([]byte("host = " + localIP + " => " + " host = $host"))
 	curl, _ := common.NewURL(fmt.Sprintf(factoryConsumerFormat, localIP))
-	router, _ := newConditionRouterFactory().NewPriorityRouter(getRouteUrl(rule))
-	fileredInvokers := router.(*ConditionRouter).Route(invokers, &curl, inv)
-	assert.Equal(t, 2, len(fileredInvokers))
-	assert.Equal(t, invoker2, fileredInvokers[0])
-	assert.Equal(t, invoker3, fileredInvokers[1])
+	r, _ := newConditionRouterFactory().NewPriorityRouter(getRouteUrl(rule))
+	ret := r.Route(utils.ToBitmap(invokers), setUpAddrCache(invokers), &curl, inv)
+	assert.Equal(t, 2, len(ret.ToArray()))
+	assert.Equal(t, invoker2, invokers[ret.ToArray()[0]])
+	assert.Equal(t, invoker3, invokers[ret.ToArray()[1]])
 }
 
 func TestRoute_NoForce(t *testing.T) {
@@ -346,9 +348,9 @@ func TestRoute_NoForce(t *testing.T) {
 	inv := &invocation.RPCInvocation{}
 	rule := base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf(factoryHostIp1234Format, localIP)))
 	curl, _ := common.NewURL(fmt.Sprintf(factoryConsumerFormat, localIP))
-	router, _ := newConditionRouterFactory().NewPriorityRouter(getRouteUrlWithNoForce(rule))
-	fileredInvokers := router.(*ConditionRouter).Route(invokers, &curl, inv)
-	assert.Equal(t, invokers, fileredInvokers)
+	r, _ := newConditionRouterFactory().NewPriorityRouter(getRouteUrlWithNoForce(rule))
+	ret := r.Route(utils.ToBitmap(invokers), setUpAddrCache(invokers), &curl, inv)
+	assert.Equal(t, len(invokers), len(ret.ToArray()))
 }
 
 func TestRoute_Force(t *testing.T) {
@@ -363,9 +365,9 @@ func TestRoute_Force(t *testing.T) {
 	inv := &invocation.RPCInvocation{}
 	rule := base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf(factoryHostIp1234Format, localIP)))
 	curl, _ := common.NewURL(fmt.Sprintf(factoryConsumerFormat, localIP))
-	router, _ := newConditionRouterFactory().NewPriorityRouter(getRouteUrlWithForce(rule, "true"))
-	fileredInvokers := router.(*ConditionRouter).Route(invokers, &curl, inv)
-	assert.Equal(t, 0, len(fileredInvokers))
+	r, _ := newConditionRouterFactory().NewPriorityRouter(getRouteUrlWithForce(rule, "true"))
+	fileredInvokers := r.Route(utils.ToBitmap(invokers), setUpAddrCache(invokers), &curl, inv)
+	assert.Equal(t, 0, len(fileredInvokers.ToArray()))
 }
 
 func TestNewConditionRouterFactory(t *testing.T) {
@@ -376,4 +378,11 @@ func TestNewConditionRouterFactory(t *testing.T) {
 func TestNewAppRouterFactory(t *testing.T) {
 	factory := newAppRouterFactory()
 	assert.NotNil(t, factory)
+}
+
+func setUpAddrCache(addrs []protocol.Invoker) *router.AddrCache {
+	cache := &router.AddrCache{
+		Invokers: addrs,
+	}
+	return cache
 }

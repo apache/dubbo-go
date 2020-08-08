@@ -81,8 +81,8 @@ func (c *RouterChain) Route(url *common.URL, invocation protocol.Invocation) []p
 
 	indexes := bitmap.ToArray()
 	finalInvokers := make([]protocol.Invoker, len(indexes))
-	for _, index := range indexes {
-		finalInvokers = append(finalInvokers, cache.Invokers[index])
+	for i, index := range indexes {
+		finalInvokers[i] = cache.Invokers[index]
 	}
 	return finalInvokers
 }
