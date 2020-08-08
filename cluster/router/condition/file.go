@@ -95,6 +95,12 @@ func (f *FileConditionRouter) URL() common.URL {
 	return f.url
 }
 
+// The input value must follow [{group}/]{service}[:{version}] pattern
+// the returning strings are representing group, service, version respectively.
+// input: mock-group/mock-service:1.0.0 ==> "mock-group", "mock-service", "1.0.0"
+// input: mock-group/mock-service ==> "mock-group", "mock-service", ""
+// input: mock-service:1.0.0 ==> "", "mock-service", "1.0.0"
+// For more samples, please refer to unit test.
 func parseServiceRouterKey(key string) (string, string, string, error) {
 	if len(strings.TrimSpace(key)) == 0 {
 		return "", "", "", nil
