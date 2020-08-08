@@ -18,6 +18,7 @@
 package event
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"reflect"
 	"testing"
 )
@@ -114,6 +115,10 @@ func (tel *TestServiceInstancePreRegisteredEventListener) GetEventType() reflect
 }
 
 type ServiceDiscoveryA struct {
+}
+
+func (msd *ServiceDiscoveryA) Initialize(registryURL common.URL) error {
+	return nil
 }
 
 // String return mockServiceDiscovery
