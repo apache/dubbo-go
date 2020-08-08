@@ -20,13 +20,14 @@ package event
 import (
 	"sync"
 )
+
 import (
-	"github.com/apache/dubbo-go/common"
 	gxset "github.com/dubbogo/gost/container/set"
 	gxpage "github.com/dubbogo/gost/page"
 )
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/observer"
 	"github.com/apache/dubbo-go/config"
