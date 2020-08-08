@@ -19,6 +19,8 @@ package tag
 
 import (
 	"context"
+	"github.com/apache/dubbo-go/cluster/router"
+	"github.com/apache/dubbo-go/cluster/router/utils"
 	"testing"
 )
 
@@ -116,17 +118,17 @@ func TestTagRouterRouteForce(t *testing.T) {
 	invokers = append(invokers, inv2, inv3, inv4)
 	inv := &invocation.RPCInvocation{}
 	inv.SetAttachments(tagRouterTestDubboTag, tagRouterTestHangZhou)
-	invRst1 := tagRouter.Route(invokers, &u1, inv)
-	assert.Equal(t, 1, len(invRst1))
-	assert.Equal(t, tagRouterTestHangZhou, invRst1[0].GetUrl().GetParam(tagRouterTestDubboTag, ""))
+	invRst1 := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), &u1, inv)
+	assert.Equal(t, 1, len(invRst1.ToArray()))
+	assert.Equal(t, tagRouterTestHangZhou, invokers[invRst1.ToArray()[0]].GetUrl().GetParam(tagRouterTestDubboTag, ""))
 
 	inv.SetAttachments(tagRouterTestDubboTag, tagRouterTestGuangZhou)
-	invRst2 := tagRouter.Route(invokers, &u1, inv)
-	assert.Equal(t, 0, len(invRst2))
+	invRst2 := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), &u1, inv)
+	assert.Equal(t, 0, len(invRst2.ToArray()))
 	inv.SetAttachments(tagRouterTestDubboForceTag, tagRouterTestFalse)
 	inv.SetAttachments(tagRouterTestDubboTag, tagRouterTestGuangZhou)
-	invRst3 := tagRouter.Route(invokers, &u1, inv)
-	assert.Equal(t, 3, len(invRst3))
+	invRst3 := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), &u1, inv)
+	assert.Equal(t, 3, len(invRst3.ToArray()))
 }
 
 func TestTagRouterRouteNoForce(t *testing.T) {
@@ -148,15 +150,28 @@ func TestTagRouterRouteNoForce(t *testing.T) {
 	invokers = append(invokers, inv2, inv3, inv4)
 	inv := &invocation.RPCInvocation{}
 	inv.SetAttachments(tagRouterTestDubboTag, tagRouterTestHangZhou)
-	invRst := tagRouter.Route(invokers, &u1, inv)
-	assert.Equal(t, 1, len(invRst))
-	assert.Equal(t, tagRouterTestHangZhou, invRst[0].GetUrl().GetParam(tagRouterTestDubboTag, ""))
+	invRst := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), &u1, inv)
+	assert.Equal(t, 1, len(invRst.ToArray()))
+	assert.Equal(t, tagRouterTestHangZhou, invokers[invRst.ToArray()[0]].GetUrl().GetParam(tagRouterTestDubboTag, ""))
 
 	inv.SetAttachments(tagRouterTestDubboTag, tagRouterTestGuangZhou)
 	inv.SetAttachments(tagRouterTestDubboForceTag, tagRouterTestTrue)
-	invRst1 := tagRouter.Route(invokers, &u1, inv)
-	assert.Equal(t, 0, len(invRst1))
+	invRst1 := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), &u1, inv)
+	assert.Equal(t, 0, len(invRst1.ToArray()))
 	inv.SetAttachments(tagRouterTestDubboForceTag, tagRouterTestFalse)
-	invRst2 := tagRouter.Route(invokers, &u1, inv)
-	assert.Equal(t, 3, len(invRst2))
+	invRst2 := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), &u1, inv)
+	assert.Equal(t, 3, len(invRst2.ToArray()))
+}
+
+func setUpAddrCache(r router.Poolable, addrs []protocol.Invoker) *router.AddrCache {
+	pool, info := r.Pool(addrs)
+	cache := &router.AddrCache{
+		Invokers: addrs,
+		AddrPool: make(map[string]router.RouterAddrPool),
+		AddrMeta: make(map[string]router.AddrMetadata),
+	}
+
+	cache.AddrMeta[r.Name()] = info
+	cache.AddrPool[r.Name()] = pool
+	return cache
 }

@@ -18,18 +18,17 @@
 package condition
 
 import (
-	"github.com/RoaringBitmap/roaring"
-	"github.com/apache/dubbo-go/cluster/router"
-	"github.com/apache/dubbo-go/cluster/router/utils"
 	"regexp"
 	"strings"
 )
 
 import (
+	"github.com/RoaringBitmap/roaring"
 	perrors "github.com/pkg/errors"
 )
 
 import (
+	"github.com/apache/dubbo-go/cluster/router"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
@@ -54,8 +53,6 @@ type ConditionRouter struct {
 	priority      int64
 	Force         bool
 	enabled       bool
-	rule          string
-	isNew         bool
 	WhenCondition map[string]MatchPair
 	ThenCondition map[string]MatchPair
 }
@@ -101,8 +98,6 @@ func NewConditionRouterWithRule(rule string) (*ConditionRouter, error) {
 	}
 	return &ConditionRouter{
 		Pattern:       pattern,
-		rule:          rule,
-		isNew:         true,
 		WhenCondition: when,
 		ThenCondition: then,
 	}, nil
@@ -167,18 +162,15 @@ func (c *ConditionRouter) Route(invokers *roaring.Bitmap, cache *router.AddrCach
 		return router.EmptyAddr
 	}
 
-	addrPool := cache.FindAddrPool(c)
-	result := utils.JoinIfNotEqual(addrPool["matched"], invokers)
-
-	//result = roaring.NewBitmap()
-	//for iter := invokers.Iterator(); iter.HasNext(); {
-	//	index := iter.Next()
-	//	invokerUrl := cache.Invokers[index].GetUrl()
-	//	isMatchThen := c.MatchThen(&invokerUrl, url)
-	//	if isMatchThen {
-	//		result.Add(index)
-	//	}
-	//}
+	result := roaring.NewBitmap()
+	for iter := invokers.Iterator(); iter.HasNext(); {
+		index := iter.Next()
+		invokerUrl := cache.Invokers[index].GetUrl()
+		isMatchThen := c.MatchThen(&invokerUrl, url)
+		if isMatchThen {
+			result.Add(index)
+		}
+	}
 
 	if !result.IsEmpty() {
 		return result
@@ -188,33 +180,8 @@ func (c *ConditionRouter) Route(invokers *roaring.Bitmap, cache *router.AddrCach
 		logger.Warnf("The route result is empty and force execute. consumer: %s, service: %s, router: %s", localIP, url.Service(), rule)
 		return result
 	}
+
 	return invokers
-}
-
-func (c *ConditionRouter) Pool(invokers []protocol.Invoker) (router.RouterAddrPool, router.AddrMetadata) {
-	rb := make(router.RouterAddrPool)
-	rb["matched"] = roaring.NewBitmap()
-	param := invokers[0].GetUrl()
-	for i, invoker := range invokers {
-		invokerUrl := invoker.GetUrl()
-		if c.MatchThen(&invokerUrl, &param) {
-			rb["matched"].AddInt(i)
-		}
-	}
-	return rb, nil
-}
-
-func (c *ConditionRouter) ShouldRePool() bool {
-	if c.isNew {
-		c.isNew = false
-		return true
-	} else {
-		return false
-	}
-}
-
-func (c *ConditionRouter) Name() string {
-	return c.rule
 }
 
 func parseRule(rule string) (map[string]MatchPair, error) {

@@ -18,6 +18,8 @@
 package tag
 
 import (
+	"github.com/RoaringBitmap/roaring"
+	"github.com/apache/dubbo-go/cluster/router"
 	"net/url"
 	"strconv"
 	"sync"
@@ -74,9 +76,10 @@ func (f *FileTagRouter) Priority() int64 {
 	return f.router.priority
 }
 
-func (f *FileTagRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
-	if len(invokers) == 0 {
+func (f *FileTagRouter) Route(invokers *roaring.Bitmap, cache *router.AddrCache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
+	if invokers.IsEmpty() {
 		return invokers
 	}
-	return f.Route(invokers, url, invocation)
+	// FIXME: I believe this is incorrect.
+	return f.Route(invokers, cache, url, invocation)
 }
