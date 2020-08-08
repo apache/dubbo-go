@@ -22,9 +22,12 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
 	gxset "github.com/dubbogo/gost/container/set"
 	gxpage "github.com/dubbogo/gost/page"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
 )
 
 const DefaultPageSize = 100
