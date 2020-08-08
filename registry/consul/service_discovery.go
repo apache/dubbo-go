@@ -328,8 +328,6 @@ func (csd consulServiceDiscovery) AddListener(listener *registry.ServiceInstance
 	params["type"] = "service"
 	params["service"] = listener.ServiceName
 	params["passingonly"] = true
-	//params["tag"] = "dubbo"
-	//params["passingonly"] = true
 	plan, err := watch.Parse(params)
 	if err != nil {
 		return err
