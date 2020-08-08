@@ -18,11 +18,14 @@
 package directory
 
 import (
-	"github.com/apache/dubbo-go/cluster/router/chain"
+	"fmt"
+	"net/url"
+	"os"
 	"sync"
 )
 
 import (
+	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
 )
@@ -30,6 +33,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/cluster/directory"
+	"github.com/apache/dubbo-go/cluster/router/chain"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -77,7 +81,9 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.
 		registry:         registry,
 	}
 
-	if routerChain, err := chain.NewRouterChain(url.SubURL); err == nil {
+	dir.cacheOriginUrl = dir.getConsumerUrl(url.SubURL)
+
+	if routerChain, err := chain.NewRouterChain(dir.cacheOriginUrl); err == nil {
 		dir.BaseDirectory.SetRouterChain(routerChain)
 	} else {
 		logger.Warnf("fail to create router chain with url: %s, err is: %v", url.SubURL, err)
@@ -223,9 +229,8 @@ func (dir *RegistryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
 
 	if url == nil && dir.cacheOriginUrl != nil {
 		url = dir.cacheOriginUrl
-	} else {
-		dir.cacheOriginUrl = url
 	}
+
 	if url == nil {
 		logger.Error("URL is nil ,pls check if service url is subscribe successfully!")
 		return nil
@@ -294,6 +299,24 @@ func (dir *RegistryDirectory) overrideUrl(targetUrl *common.URL) {
 	doOverrideUrl(dir.configurators, targetUrl)
 	doOverrideUrl(dir.consumerConfigurationListener.Configurators(), targetUrl)
 	doOverrideUrl(dir.referenceConfigurationListener.Configurators(), targetUrl)
+}
+
+func (dir *RegistryDirectory) getConsumerUrl(c *common.URL) *common.URL {
+	processID := fmt.Sprintf("%d", os.Getpid())
+	localIP, _ := gxnet.GetLocalIP()
+
+	params := url.Values{}
+	c.RangeParams(func(key, value string) bool {
+		params.Add(key, value)
+		return true
+	})
+
+	params.Add("pid", processID)
+	params.Add("ip", localIP)
+	params.Add("protocol", c.Protocol)
+
+	return common.NewURLWithOptions(common.WithProtocol("consumer"), common.WithIp(localIP), common.WithPath(c.Path),
+		common.WithParams(params))
 }
 
 func doOverrideUrl(configurators []config_center.Configurator, targetUrl *common.URL) {
