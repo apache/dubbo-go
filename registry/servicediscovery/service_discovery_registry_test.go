@@ -127,7 +127,7 @@ type mockServiceDiscovery struct {
 }
 
 func (m *mockServiceDiscovery) Initialize(registryURL common.URL) error {
-	panic("implement me")
+	return nil
 }
 
 func (m *mockServiceDiscovery) String() string {
