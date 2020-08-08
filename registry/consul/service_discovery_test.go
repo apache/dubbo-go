@@ -19,8 +19,6 @@ package consul
 
 import (
 	"fmt"
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/remoting/consul"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -32,11 +30,13 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/observer"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/registry"
+	"github.com/apache/dubbo-go/remoting/consul"
 )
 
 var (
