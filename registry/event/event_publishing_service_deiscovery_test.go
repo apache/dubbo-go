@@ -18,7 +18,6 @@
 package event
 
 import (
-	"github.com/apache/dubbo-go/common"
 	"reflect"
 	"testing"
 )
@@ -31,6 +30,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/observer"
 	dispatcher2 "github.com/apache/dubbo-go/common/observer/dispatcher"
