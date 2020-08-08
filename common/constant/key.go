@@ -99,6 +99,7 @@ const (
 	ROLE_KEY             = "registry.role"
 	REGISTRY_DEFAULT_KEY = "registry.default"
 	REGISTRY_TIMEOUT_KEY = "registry.timeout"
+	REGISTRY_TTL_KEY     = "registry.ttl"
 )
 
 const (
