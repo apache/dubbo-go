@@ -86,7 +86,7 @@ func TestConsulServiceDiscovery_Destroy(t *testing.T) {
 	assert.NotNil(t, serviceDiscovery)
 	err = serviceDiscovery.Destroy()
 	assert.Nil(t, err)
-	assert.Nil(t, serviceDiscovery.(*consulServiceDiscovery).consulClient)
+	assert.NotNil(t, serviceDiscovery.(*consulServiceDiscovery).consulClient)
 }
 
 func TestConsulServiceDiscovery_CRUD(t *testing.T) {
