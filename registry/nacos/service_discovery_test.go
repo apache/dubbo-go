@@ -158,7 +158,7 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 	assert.Nil(t, err)
 
 	// test AddListener
-	err = serviceDiscovery.AddListener(&registry.ServiceInstancesChangedListener{})
+	err = serviceDiscovery.AddListener(&registry.ServiceInstancesChangedListener{ServiceName: serviceName})
 	assert.Nil(t, err)
 }
 
