@@ -8,9 +8,9 @@ require (
 	github.com/coreos/etcd v3.3.13+incompatible
 	github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f // indirect
 	github.com/creasty/defaults v1.3.0
-	github.com/dubbogo/getty v1.3.3
+	github.com/dubbogo/getty v1.3.8
 	github.com/dubbogo/go-zookeeper v1.0.0
-	github.com/dubbogo/gost v1.5.2
+	github.com/dubbogo/gost v1.9.0
 	github.com/emicklei/go-restful/v3 v3.0.0
 	github.com/go-resty/resty/v2 v2.1.0
 	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6 // indirect
@@ -33,8 +33,8 @@ require (
 	github.com/zouyx/agollo/v3 v3.4.4
 	go.etcd.io/bbolt v1.3.3 // indirect
 	go.etcd.io/etcd v3.3.13+incompatible
-	go.uber.org/atomic v1.4.0
-	go.uber.org/zap v1.10.0
+	go.uber.org/atomic v1.6.0
+	go.uber.org/zap v1.15.0
 	google.golang.org/grpc v1.22.1
 	gopkg.in/yaml.v2 v2.2.4
 	k8s.io/api v0.0.0-20190325185214-7544f9db76f6
