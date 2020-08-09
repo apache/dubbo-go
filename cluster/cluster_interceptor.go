@@ -17,7 +17,9 @@
 
 package cluster
 
-import "context"
+import (
+	"context"
+)
 
 import (
 	"github.com/apache/dubbo-go/protocol"
