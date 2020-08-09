@@ -212,13 +212,13 @@ func (csd consulServiceDiscovery) Update(instance registry.ServiceInstance) erro
 	if err != nil {
 		logger.Warnf("unregister instance %s fail:%v", instance.GetServiceName(), err)
 	}
-	err = csd.consulClient.Agent().ServiceRegister(ins)
-	return err
+	return csd.consulClient.Agent().ServiceRegister(ins)
 }
 
 func (csd consulServiceDiscovery) Unregister(instance registry.ServiceInstance) error {
 	err := csd.consulClient.Agent().ServiceDeregister(buildID(instance))
 	if err != nil {
+		logger.Errorf("unregister service instance %s,error: %v", instance.GetId(), err)
 		return err
 	}
 	stopChanel, ok := csd.ttl[buildID(instance)]
@@ -238,6 +238,7 @@ func (csd consulServiceDiscovery) GetServices() *gxset.HashSet {
 	var res = gxset.NewSet()
 	services, _, err := csd.consulClient.Catalog().Services(nil)
 	if err != nil {
+		logger.Errorf("get services,error: %v", err)
 		return res
 	}
 
@@ -254,6 +255,7 @@ func (csd consulServiceDiscovery) GetInstances(serviceName string) []registry.Se
 		WaitTime: time.Duration(waitTime),
 	})
 	if err != nil {
+		logger.Errorf("get instances for service %s,error: %v", serviceName, err)
 		return nil
 	}
 
@@ -330,6 +332,7 @@ func (csd consulServiceDiscovery) AddListener(listener *registry.ServiceInstance
 	params["passingonly"] = true
 	plan, err := watch.Parse(params)
 	if err != nil {
+		logger.Errorf("add listener for service %s,error:%v", listener.ServiceName, err)
 		return err
 	}
 
