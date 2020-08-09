@@ -38,8 +38,6 @@ require (
 	github.com/hashicorp/vault/api v1.0.5-0.20191108163347-bdd38fca2cff // indirect
 	github.com/hashicorp/vault/sdk v0.1.14-0.20191112033314-390e96e22eb2
 	github.com/jinzhu/copier v0.0.0-20190625015134-976e0346caa8
-	github.com/juju/loggo v0.0.0-20190526231331-6e530bcce5d8 // indirect
-	github.com/juju/testing v0.0.0-20191001232224-ce9dec17d28b // indirect
 	github.com/magiconair/properties v1.8.1
 	github.com/mitchellh/hashstructure v1.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.2.3
@@ -60,7 +58,6 @@ require (
 	go.uber.org/zap v1.15.0
 	google.golang.org/genproto v0.0.0-20190801165951-fa694d86fc64 // indirect
 	google.golang.org/grpc v1.23.0
-	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce // indirect
 	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.16.9
 	k8s.io/apimachinery v0.16.9
