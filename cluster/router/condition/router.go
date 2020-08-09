@@ -288,7 +288,7 @@ func matchCondition(pairs map[string]MatchPair, url *common.URL, param *common.U
 	return result
 }
 
-// MatchPair Match key pair , condition process
+// MatchPair Match key pair, condition process
 type MatchPair struct {
 	Matches    *gxset.HashSet
 	Mismatches *gxset.HashSet
@@ -314,7 +314,7 @@ func (pair MatchPair) isMatch(value string, param *common.URL) bool {
 		return true
 	}
 	if !pair.Mismatches.Empty() && !pair.Matches.Empty() {
-		//when both mismatches and matches contain the same value, then using mismatches first
+		// when both mismatches and matches contain the same value, then using mismatches first
 		for mismatch := range pair.Mismatches.Items {
 			if isMatchGlobalPattern(mismatch.(string), value, param) {
 				return false
