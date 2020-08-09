@@ -32,6 +32,14 @@ import (
 	"github.com/apache/dubbo-go/remoting/getty"
 )
 
+const (
+	mockCommonUrl = "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
+		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
+		"side=provider&timeout=3000&timestamp=1556509797245"
+)
+
 func init() {
 	getty.SetServerConfig(getty.ServerConfig{
 		SessionNumber:  700,
@@ -77,16 +85,15 @@ func TestDubboProtocol_Export(t *testing.T) {
 	getty.SetServerConfig(srvCfg)
 	// Export
 	proto := GetProtocol()
-	url, err := common.NewURL("dubbo://127.0.0.1:20094/com.ikurento.user.UserProvider?anyhost=true&" +
-		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
-		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
-		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
-		"side=provider&timeout=3000&timestamp=1556509797245")
-	url2, err := common.NewURL("dubbo://127.0.0.1:20095/com.ikurento.user.UserProvider?anyhost=true&"+
-		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&"+
-		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&"+
-		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&"+
-		"side=provider&timeout=3000&timestamp=1556509797245", common.WithParamsValue(constant.VERSION_KEY, "v1.1"))
+	url, err := common.NewURL(mockCommonUrl)
+	assert.NoError(t, err)
+	exporter := proto.Export(protocol.NewBaseInvoker(url))
+	// make sure url
+	eq := exporter.GetInvoker().GetUrl().URLEqual(url)
+	assert.True(t, eq)
+
+	// second service: the same path and the different version
+	url2, err := common.NewURL(mockCommonUrl, common.WithParamsValue(constant.VERSION_KEY, "v1.1"))
 	assert.NoError(t, err)
 	exporter2 := proto.Export(protocol.NewBaseInvoker(url2))
 	// make sure url
@@ -111,11 +118,7 @@ func TestDubboProtocol_Export(t *testing.T) {
 func TestDubboProtocol_Refer_No_connect(t *testing.T) {
 	// Refer
 	proto := GetProtocol()
-	url, err := common.NewURL("dubbo://127.0.0.1:20096/com.ikurento.user.UserProvider?anyhost=true&" +
-		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
-		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
-		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
-		"side=provider&timeout=3000&timestamp=1556509797245")
+	url, err := common.NewURL(mockCommonUrl)
 	assert.NoError(t, err)
 	invoker := proto.Refer(url)
 	assert.Nil(t, invoker)
@@ -127,11 +130,7 @@ func TestDubboProtocol_Refer(t *testing.T) {
 	// Refer
 	proto := GetProtocol()
 
-	url, err := common.NewURL("dubbo://127.0.0.1:20091/com.ikurento.user.UserProvider?anyhost=true&" +
-		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
-		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
-		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
-		"side=provider&timeout=3000&timestamp=1556509797245")
+	url, err := common.NewURL(mockCommonUrl)
 	assert.NoError(t, err)
 	invoker := proto.Refer(url)
 

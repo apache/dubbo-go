@@ -30,7 +30,7 @@ import (
 
 var (
 	// store requestID and response
-	pendingResponses *sync.Map = new(sync.Map)
+	pendingResponses = new(sync.Map)
 )
 
 type SequenceType int64

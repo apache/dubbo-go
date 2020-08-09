@@ -64,7 +64,7 @@ type DubboPackage struct {
 	Service Service
 	Body    interface{}
 	Err     error
-	Codec   *DubboCodec
+	Codec   *ProtocolCodec
 }
 
 func (p DubboPackage) String() string {
@@ -155,7 +155,7 @@ func (p *DubboPackage) SetSerializer(serializer Serializer) {
 }
 
 func NewDubboPackage(data *bytes.Buffer) *DubboPackage {
-	var codec *DubboCodec
+	var codec *ProtocolCodec
 	if data == nil {
 		codec = NewDubboCodec(nil)
 	} else {
