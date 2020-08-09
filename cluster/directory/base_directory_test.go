@@ -37,7 +37,7 @@ import (
 var (
 	url, _ = common.NewURL(
 		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
-	anyUrl, _ = common.NewURL(fmt.Sprintf("condition://%s/com.foo.BarService", constant.ANYHOST_VALUE))
+	anyURL, _ = common.NewURL(fmt.Sprintf("condition://%s/com.foo.BarService", constant.ANYHOST_VALUE))
 )
 
 func TestNewBaseDirectory(t *testing.T) {
@@ -48,13 +48,17 @@ func TestNewBaseDirectory(t *testing.T) {
 }
 
 func TestBuildRouterChain(t *testing.T) {
-	directory := NewBaseDirectory(&url)
+
+	regURL := url
+	regURL.AddParam(constant.INTERFACE_KEY, "mock-app")
+	directory := NewBaseDirectory(&regURL)
 
 	assert.NotNil(t, directory)
 
 	localIP, _ := gxnet.GetLocalIP()
 	rule := base64.URLEncoding.EncodeToString([]byte("true => " + " host = " + localIP))
-	routeURL := getRouteUrl(rule)
+	routeURL := getRouteURL(rule, anyURL)
+	routeURL.AddParam(constant.INTERFACE_KEY, "mock-app")
 	routerURLs := make([]*common.URL, 0)
 	routerURLs = append(routerURLs, routeURL)
 	directory.SetRouters(routerURLs)
@@ -63,9 +67,53 @@ func TestBuildRouterChain(t *testing.T) {
 	assert.NotNil(t, chain)
 }
 
-func getRouteUrl(rule string) *common.URL {
-	anyUrl.AddParam("rule", rule)
-	anyUrl.AddParam("force", "true")
-	anyUrl.AddParam(constant.ROUTER_KEY, "router")
-	return &url
+func getRouteURL(rule string, u common.URL) *common.URL {
+	ru := u
+	ru.AddParam("rule", rule)
+	ru.AddParam("force", "true")
+	ru.AddParam(constant.ROUTER_KEY, "router")
+	return &ru
+}
+
+func TestIsProperRouter(t *testing.T) {
+	regURL := url
+	regURL.AddParam(constant.APPLICATION_KEY, "mock-app")
+	d := NewBaseDirectory(&regURL)
+	localIP, _ := gxnet.GetLocalIP()
+	rule := base64.URLEncoding.EncodeToString([]byte("true => " + " host = " + localIP))
+	routeURL := getRouteURL(rule, anyURL)
+	routeURL.AddParam(constant.APPLICATION_KEY, "mock-app")
+	rst := d.isProperRouter(routeURL)
+	assert.True(t, rst)
+
+	regURL.AddParam(constant.APPLICATION_KEY, "")
+	regURL.AddParam(constant.INTERFACE_KEY, "com.foo.BarService")
+	d = NewBaseDirectory(&regURL)
+	routeURL = getRouteURL(rule, anyURL)
+	routeURL.AddParam(constant.INTERFACE_KEY, "com.foo.BarService")
+	rst = d.isProperRouter(routeURL)
+	assert.True(t, rst)
+
+	regURL.AddParam(constant.APPLICATION_KEY, "")
+	regURL.AddParam(constant.INTERFACE_KEY, "")
+	d = NewBaseDirectory(&regURL)
+	routeURL = getRouteURL(rule, anyURL)
+	rst = d.isProperRouter(routeURL)
+	assert.True(t, rst)
+
+	regURL.SetParam(constant.APPLICATION_KEY, "")
+	regURL.SetParam(constant.INTERFACE_KEY, "")
+	d = NewBaseDirectory(&regURL)
+	routeURL = getRouteURL(rule, anyURL)
+	routeURL.AddParam(constant.APPLICATION_KEY, "mock-service")
+	rst = d.isProperRouter(routeURL)
+	assert.False(t, rst)
+
+	regURL.SetParam(constant.APPLICATION_KEY, "")
+	regURL.SetParam(constant.INTERFACE_KEY, "")
+	d = NewBaseDirectory(&regURL)
+	routeURL = getRouteURL(rule, anyURL)
+	routeURL.AddParam(constant.INTERFACE_KEY, "mock-service")
+	rst = d.isProperRouter(routeURL)
+	assert.False(t, rst)
 }
