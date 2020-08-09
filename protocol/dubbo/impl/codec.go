@@ -20,6 +20,8 @@ package impl
 import (
 	"bufio"
 	"encoding/binary"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 import (
@@ -31,7 +33,7 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
-type DubboCodec struct {
+type ProtocolCodec struct {
 	reader     *bufio.Reader
 	pkgType    PackageType
 	bodyLen    int
@@ -39,24 +41,7 @@ type DubboCodec struct {
 	headerRead bool
 }
 
-//CallType call type
-type CallType int32
-
-const (
-	// CT_UNKNOWN unknown call type
-	CT_UNKNOWN CallType = 0
-	// CT_OneWay call one way
-	CT_OneWay CallType = 1
-	// CT_TwoWay call in request/response
-	CT_TwoWay CallType = 2
-)
-
-////////////////////////////////////////////
-// dubbo package
-////////////////////////////////////////////
-type SequenceType int64
-
-func (c *DubboCodec) ReadHeader(header *DubboHeader) error {
+func (c *ProtocolCodec) ReadHeader(header *DubboHeader) error {
 	var err error
 	if c.reader.Size() < HEADER_LENGTH {
 		return hessian.ErrHeaderNotEnough
@@ -118,7 +103,7 @@ func (c *DubboCodec) ReadHeader(header *DubboHeader) error {
 	return errors.WithStack(err)
 }
 
-func (c *DubboCodec) EncodeHeader(p DubboPackage) []byte {
+func (c *ProtocolCodec) EncodeHeader(p DubboPackage) []byte {
 	header := p.Header
 	bs := make([]byte, 0)
 	switch header.Type {
@@ -141,7 +126,7 @@ func (c *DubboCodec) EncodeHeader(p DubboPackage) []byte {
 	return bs
 }
 
-func (c *DubboCodec) Encode(p DubboPackage) ([]byte, error) {
+func (c *ProtocolCodec) Encode(p DubboPackage) ([]byte, error) {
 	// header
 	if c.serializer == nil {
 		return nil, errors.New("serializer should not be nil")
@@ -165,7 +150,7 @@ func (c *DubboCodec) Encode(p DubboPackage) ([]byte, error) {
 	}
 }
 
-func (c *DubboCodec) Decode(p *DubboPackage) error {
+func (c *ProtocolCodec) Decode(p *DubboPackage) error {
 	if !c.headerRead {
 		if err := c.ReadHeader(&p.Header); err != nil {
 			return err
@@ -195,10 +180,15 @@ func (c *DubboCodec) Decode(p *DubboPackage) error {
 	if c.serializer == nil {
 		return errors.New("Codec serializer is nil")
 	}
+	if p.IsResponse() {
+		p.Body = &ResponsePayload{
+			RspObj: remoting.GetPendingResponse(remoting.SequenceType(p.Header.ID)).Reply,
+		}
+	}
 	return c.serializer.Unmarshal(body, p)
 }
 
-func (c *DubboCodec) SetSerializer(serializer Serializer) {
+func (c *ProtocolCodec) SetSerializer(serializer Serializer) {
 	c.serializer = serializer
 }
 
@@ -289,11 +279,13 @@ func packResponse(p DubboPackage, serializer Serializer) ([]byte, error) {
 	return byteArray, nil
 }
 
-func NewDubboCodec(reader *bufio.Reader) *DubboCodec {
-	return &DubboCodec{
+func NewDubboCodec(reader *bufio.Reader) *ProtocolCodec {
+	s, _ := GetSerializerById(constant.S_Hessian2)
+	return &ProtocolCodec{
 		reader:     reader,
 		pkgType:    0,
 		bodyLen:    0,
 		headerRead: false,
+		serializer: s.(Serializer),
 	}
 }
