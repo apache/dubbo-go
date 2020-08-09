@@ -47,8 +47,6 @@ func NewRpcClientPackageHandler(client *Client) *RpcClientPackageHandler {
 }
 
 func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
-	//pkg := &DubboPackage{}
-	//p.client.ExchangeClient.GetPendingResponse(remoting.SequenceType())
 	resp, length, err := (p.client.codec).Decode(data)
 	//err := pkg.Unmarshal(buf, p.client)
 	if err != nil {
@@ -60,10 +58,6 @@ func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface
 
 		return nil, length, err
 	}
-	//if pkg.Header.Type&hessian.PackageRequest == 0x00 {
-	//	pkg.Err = pkg.Body.(*hessian.Response).Exception
-	//	pkg.Body = NewResponse(pkg.Body.(*hessian.Response).RspObj, pkg.Body.(*hessian.Response).Attachments)
-	//}
 
 	return resp, length, nil
 }
