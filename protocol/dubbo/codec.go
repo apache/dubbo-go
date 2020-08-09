@@ -82,7 +82,7 @@ func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 	return bytes.NewBuffer(pkg), nil
 }
 
-// Unmarshal dncode hessian package.
+// Unmarshal decode hessian package.
 func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 	// fix issue https://github.com/apache/dubbo-go/issues/380
 	bufLen := buf.Len()

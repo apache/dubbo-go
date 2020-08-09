@@ -35,7 +35,7 @@ import (
 )
 
 const (
-	// ConnDelay connection dalay
+	// ConnDelay connection delay
 	ConnDelay = 3
 	// MaxFailTimes max failure times
 	MaxFailTimes = 15
