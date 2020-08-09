@@ -49,7 +49,7 @@ type DefaultHealthChecker struct {
 // and the current active request
 func (c *DefaultHealthChecker) IsHealthy(invoker protocol.Invoker) bool {
 	urlStatus := protocol.GetURLStatus(invoker.GetUrl())
-	if c.isCircuitBreakerTripped(urlStatus) || urlStatus.GetActive() > c.GetOutStandingRequestConutLimit() {
+	if c.isCircuitBreakerTripped(urlStatus) || urlStatus.GetActive() > c.GetOutStandingRequestCountLimit() {
 		logger.Debugf("Invoker [%s] is currently in circuitbreaker tripped state", invoker.GetUrl().Key())
 		return false
 	}
@@ -92,18 +92,18 @@ func (c *DefaultHealthChecker) getCircuitBreakerSleepWindowTime(status *protocol
 	return int64(sleepWindow)
 }
 
-// GetOutStandingRequestConutLimit return the requestSuccessiveFailureThreshold bound to this DefaultHealthChecker
+// GetRequestSuccessiveFailureThreshold return the requestSuccessiveFailureThreshold bound to this DefaultHealthChecker
 func (c *DefaultHealthChecker) GetRequestSuccessiveFailureThreshold() int32 {
 	return c.requestSuccessiveFailureThreshold
 }
 
-// GetOutStandingRequestConutLimit return the circuitTrippedTimeoutFactor bound to this DefaultHealthChecker
+// GetCircuitTrippedTimeoutFactor return the circuitTrippedTimeoutFactor bound to this DefaultHealthChecker
 func (c *DefaultHealthChecker) GetCircuitTrippedTimeoutFactor() int32 {
 	return c.circuitTrippedTimeoutFactor
 }
 
-// GetOutStandingRequestConutLimit return the outStandingRequestConutLimit bound to this DefaultHealthChecker
-func (c *DefaultHealthChecker) GetOutStandingRequestConutLimit() int32 {
+// GetOutStandingRequestCountLimit return the outStandingRequestConutLimit bound to this DefaultHealthChecker
+func (c *DefaultHealthChecker) GetOutStandingRequestCountLimit() int32 {
 	return c.outStandingRequestConutLimit
 }
 
