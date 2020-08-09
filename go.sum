@@ -145,6 +145,7 @@ github.com/docker/go-connections v0.4.0/go.mod h1:Gbd7IOopHjR8Iph03tsViu4nIes5Xh
 github.com/docker/spdystream v0.0.0-20160310174837-449fdfce4d96/go.mod h1:Qh8CwZgvJUkLughtfhJv5dyTYa91l1fOUCrgjqmcifM=
 github.com/dubbogo/getty v1.3.7 h1:xlkYD2/AH34iGteuLMsGjLl2PwBVrbIhHjf3tlUsv1M=
 github.com/dubbogo/getty v1.3.7/go.mod h1:XWO4+wAaMqgnBN9Ykv2YxxOAkGxymg6LGO9RK+EiCDY=
+github.com/dubbogo/getty v1.3.8/go.mod h1:JIN5lNZznGnBuoYjlEe/yjNmq7eSjKaawHdnBAdtiEo=
 github.com/dubbogo/go-zookeeper v1.0.1 h1:irLzvOsDOTNsN8Sv9tvYYxVu6DCQfLtziZQtUHmZgz8=
 github.com/dubbogo/go-zookeeper v1.0.1/go.mod h1:fn6n2CAEer3novYgk9ULLwAjuV8/g4DdC2ENwRb6E+c=
 github.com/dubbogo/gost v1.9.0 h1:UT+dWwvLyJiDotxJERO75jB3Yxgsdy10KztR5ycxRAk=
