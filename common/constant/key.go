@@ -97,6 +97,10 @@ const (
 	ROLE_KEY             = "registry.role"
 	REGISTRY_DEFAULT_KEY = "registry.default"
 	REGISTRY_TIMEOUT_KEY = "registry.timeout"
+	REGISTRY_LABEL_KEY   = "label"
+	PREFERRED_KEY        = "preferred"
+	ZONE_KEY             = "zone"
+	ZONE_FORCE_KEY       = "zone.force"
 	REGISTRY_TTL_KEY     = "registry.ttl"
 )
 
