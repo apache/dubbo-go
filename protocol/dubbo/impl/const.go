@@ -241,3 +241,12 @@ var (
 var DescRegex, _ = regexp.Compile(DESC_REGEX)
 
 var NilValue = reflect.Zero(reflect.TypeOf((*interface{})(nil)).Elem())
+
+// Body map keys
+var (
+	DubboVersionKey = "dubboVersion"
+	ArgsTypesKey    = "argsTypes"
+	ArgsKey         = "args"
+	ServiceKey      = "service"
+	AttachmentsKey  = "attachments"
+)

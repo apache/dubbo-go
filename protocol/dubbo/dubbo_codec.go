@@ -39,75 +39,11 @@ import (
 //SerialID serial ID
 type SerialID byte
 
-const (
-	// S_Dubbo dubbo serial id
-	S_Dubbo SerialID = 2
-)
-
 func init() {
 	codec := &DubboCodec{}
 	// this is for registry dubboCodec of dubbo protocol
 	remoting.RegistryCodec("dubbo", codec)
 }
-
-// DubboPackage is for hessian encode/decode. If we refactor hessian, it will also be refactored.
-//type DubboPackage struct {
-//	Header  hessian.DubboHeader
-//	Service hessian.Service
-//	Body    interface{}
-//	Err     error
-//}
-
-// String of DubboPackage
-//func (p DubboPackage) String() string {
-//	return fmt.Sprintf("DubboPackage: Header-%v, Path-%v, Body-%v", p.Header, p.Service, p.Body)
-//}
-
-//  nolint
-//func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
-//	codec := hessian.NewHessianCodec(nil)
-//
-//	pkg, err := codec.Write(p.Service, p.Header, p.Body)
-//	if err != nil {
-//		return nil, perrors.WithStack(err)
-//	}
-//
-//	return bytes.NewBuffer(pkg), nil
-//}
-
-// nolint
-//func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, resp *remoting.Response) error {
-//	// fix issue https://github.com/apache/dubbo-go/issues/380
-//	bufLen := buf.Len()
-//	if bufLen < hessian.HEADER_LENGTH {
-//		return perrors.WithStack(hessian.ErrHeaderNotEnough)
-//	}
-//
-//	codec := hessian.NewHessianCodec(bufio.NewReaderSize(buf, bufLen))
-//
-//	// read header
-//	err := codec.ReadHeader(&p.Header)
-//	if err != nil {
-//		return perrors.WithStack(err)
-//	}
-//
-//	if resp != nil { // for client
-//		if (p.Header.Type & hessian.PackageRequest) != 0x00 {
-//			// size of this array must be '7'
-//			// https://github.com/apache/dubbo-go-hessian2/blob/master/request.go#L272
-//			p.Body = make([]interface{}, 7)
-//		} else {
-//			pendingRsp := remoting.GetPendingResponse(remoting.SequenceType(p.Header.ID))
-//			if pendingRsp == nil {
-//				return perrors.Errorf("client.GetPendingResponse(%v) = nil", p.Header.ID)
-//			}
-//			p.Body = &hessian.Response{RspObj: pendingRsp.Reply}
-//		}
-//	}
-//	// read body
-//	err = codec.ReadBody(p.Body)
-//	return perrors.WithStack(err)
-//}
 
 // DubboCodec. It is implements remoting.Codec
 type DubboCodec struct {
@@ -141,10 +77,10 @@ func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, er
 
 	header := impl.DubboHeader{}
 	serialization := invocation.AttachmentsByKey(constant.SERIALIZATION_KEY, constant.HESSIAN2_SERIALIZATION)
-	if serialization == constant.HESSIAN2_SERIALIZATION {
-		header.SerialID = constant.S_Hessian2
-	} else if serialization == constant.PROTOBUF_SERIALIZATION {
+	if serialization == constant.PROTOBUF_SERIALIZATION {
 		header.SerialID = constant.S_Proto
+	} else {
+		header.SerialID = constant.S_Hessian2
 	}
 	header.ID = request.ID
 	if request.TwoWay {
@@ -205,7 +141,7 @@ func (c *DubboCodec) EncodeResponse(response *remoting.Response) (*bytes.Buffer,
 		},
 	}
 	if !response.IsHeartbeat() {
-		resp.Body = &hessian.Response{
+		resp.Body = &impl.ResponsePayload{
 			RspObj:      response.Result.(protocol.RPCResult).Rest,
 			Exception:   response.Result.(protocol.RPCResult).Err,
 			Attachments: response.Result.(protocol.RPCResult).Attrs,
@@ -271,41 +207,28 @@ func (c *DubboCodec) decodeRequest(data []byte) (*remoting.Request, int, error) 
 	}
 	if (pkg.Header.Type & impl.PackageHeartbeat) == 0x00 {
 		// convert params of request
-		req := pkg.Body.([]interface{}) // length of body should be 7
-		if len(req) > 0 {
-			//invocation := request.Data.(*invocation.RPCInvocation)
-			var methodName string
-			var args []interface{}
-			var attachments map[string]string = make(map[string]string)
-			if req[0] != nil {
-				//dubbo version
-				request.Version = req[0].(string)
-			}
-			if req[1] != nil {
-				//path
-				attachments[constant.PATH_KEY] = req[1].(string)
-			}
-			if req[2] != nil {
-				//version
-				attachments[constant.VERSION_KEY] = req[2].(string)
-			}
-			if req[3] != nil {
-				//method
-				methodName = req[3].(string)
-			}
-			if req[4] != nil {
-				//ignore argTypes
-			}
-			if req[5] != nil {
-				args = req[5].([]interface{})
-			}
-			if req[6] != nil {
-				attachments = req[6].(map[string]string)
-			}
-			invoc := invocation.NewRPCInvocationWithOptions(invocation.WithAttachments(attachments),
-				invocation.WithArguments(args), invocation.WithMethodName(methodName))
-			request.Data = invoc
+		req := pkg.Body.(map[string]interface{})
+
+		//invocation := request.Data.(*invocation.RPCInvocation)
+		var methodName string
+		var args []interface{}
+		var attachments map[string]string = make(map[string]string)
+		if req[impl.DubboVersionKey] != nil {
+			//dubbo version
+			request.Version = req[impl.DubboVersionKey].(string)
 		}
+		//path
+		attachments[constant.PATH_KEY] = pkg.Service.Path
+		//version
+		attachments[constant.VERSION_KEY] = pkg.Service.Version
+		//method
+		methodName = pkg.Service.Method
+		args = req[impl.ArgsKey].([]interface{})
+		attachments = req[impl.AttachmentsKey].(map[string]string)
+		invoc := invocation.NewRPCInvocationWithOptions(invocation.WithAttachments(attachments),
+			invocation.WithArguments(args), invocation.WithMethodName(methodName))
+		request.Data = invoc
+
 	}
 	return request, hessian.HEADER_LENGTH + pkg.Header.BodyLen, nil
 }
@@ -354,12 +277,12 @@ func (c *DubboCodec) decodeResponse(data []byte) (*remoting.Response, int, error
 	if pkg.Header.Type&impl.PackageRequest == 0x00 {
 		if pkg.Err != nil {
 			rpcResult.Err = pkg.Err
-		} else if pkg.Body.(*hessian.Response).Exception != nil {
-			rpcResult.Err = pkg.Body.(*hessian.Response).Exception
+		} else if pkg.Body.(*impl.ResponsePayload).Exception != nil {
+			rpcResult.Err = pkg.Body.(*impl.ResponsePayload).Exception
 			response.Error = rpcResult.Err
 		}
-		rpcResult.Attrs = pkg.Body.(*hessian.Response).Attachments
-		rpcResult.Rest = pkg.Body.(*hessian.Response).RspObj
+		rpcResult.Attrs = pkg.Body.(*impl.ResponsePayload).Attachments
+		rpcResult.Rest = pkg.Body.(*impl.ResponsePayload).RspObj
 	}
 
 	return response, hessian.HEADER_LENGTH + pkg.Header.BodyLen, nil
