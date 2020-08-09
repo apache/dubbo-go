@@ -567,7 +567,7 @@ func (c *dubboRegistryController) addAnnotationForCurrentPod(k string, v string)
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	// 1. accord old pod && (k, v) assemble new pod dubbo annotion v
+	// 1. accord old pod && (k, v) assemble new pod dubbo annotation v
 	// 2. get patch data
 	// 3. PATCH the pod
 	currentPod, err := c.readCurrentPod()
