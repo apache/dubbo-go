@@ -24,7 +24,6 @@ import (
 
 import (
 	"github.com/creasty/defaults"
-	"github.com/dubbogo/getty"
 	perrors "github.com/pkg/errors"
 )
 
@@ -32,6 +31,10 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/yaml"
+)
+
+const (
+	maxWheelTimeSpan = 900e9 // 900s, 15 minute
 )
 
 /////////////////////////
@@ -107,9 +110,9 @@ func ConsumerInit(confConFile string) error {
 		if consumerConfig.RequestTimeout, err = time.ParseDuration(consumerConfig.Request_Timeout); err != nil {
 			return perrors.WithMessagef(err, "time.ParseDuration(Request_Timeout{%#v})", consumerConfig.Request_Timeout)
 		}
-		if consumerConfig.RequestTimeout >= time.Duration(getty.MaxWheelTimeSpan) {
+		if consumerConfig.RequestTimeout >= time.Duration(maxWheelTimeSpan) {
 			return perrors.WithMessagef(err, "request_timeout %s should be less than %s",
-				consumerConfig.Request_Timeout, time.Duration(getty.MaxWheelTimeSpan))
+				consumerConfig.Request_Timeout, time.Duration(maxWheelTimeSpan))
 		}
 	}
 	if consumerConfig.Connect_Timeout != "" {
