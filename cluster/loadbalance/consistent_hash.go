@@ -42,7 +42,7 @@ const (
 	ConsistentHash = "consistenthash"
 	// HashNodes hash nodes
 	HashNodes = "hash.nodes"
-	// HashArguments  key of hash arguments  in url
+	// HashArguments key of hash arguments in url
 	HashArguments = "hash.arguments"
 )
 
