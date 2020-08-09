@@ -17,7 +17,9 @@
 
 package cluster_impl
 
-import "context"
+import (
+	"context"
+)
 
 import (
 	gxnet "github.com/dubbogo/gost/net"
