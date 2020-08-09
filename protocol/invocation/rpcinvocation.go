@@ -27,7 +27,7 @@ import (
 )
 
 // ///////////////////////////
-// Invocation Impletment of RPC
+// Invocation Implement of RPC
 // ///////////////////////////
 
 // todo: is it necessary to separate fields of consumer(provider) from RPCInvocation
@@ -103,7 +103,7 @@ func (r *RPCInvocation) Attachments() map[string]string {
 	return r.attachments
 }
 
-// AttachmentsByKey gets RPC attachment by key , if nil then return default value.
+// AttachmentsByKey gets RPC attachment by key, if nil then return default value.
 func (r *RPCInvocation) AttachmentsByKey(key string, defaultValue string) string {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
