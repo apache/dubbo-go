@@ -147,13 +147,26 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 		}
 
 		// TODO(decouple from directory, config should not depend on directory module)
+		var hitClu string
 		if regUrl != nil {
-			cluster := extension.GetCluster("registryAware")
-			c.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
+			// for multi-subscription scenario, use 'zone-aware' policy by default
+			hitClu = constant.ZONEAWARE_CLUSTER_NAME
 		} else {
-			cluster := extension.GetCluster(c.Cluster)
-			c.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
+			// not a registry url, must be direct invoke.
+			hitClu = constant.FAILOVER_CLUSTER_NAME
+			if len(invokers) > 0 {
+				u := invokers[0].GetUrl()
+				if nil != &u {
+					hitClu = u.GetParam(constant.CLUSTER_KEY, constant.ZONEAWARE_CLUSTER_NAME)
+				}
+			}
 		}
+
+		cluster := extension.GetCluster(hitClu)
+		// If 'zone-aware' policy select, the invoker wrap sequence would be:
+		// ZoneAwareClusterInvoker(StaticDirectory) ->
+		// FailoverClusterInvoker(RegistryDirectory, routing happens here) -> Invoker
+		c.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
 	}
 
 	// create proxy
