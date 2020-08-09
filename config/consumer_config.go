@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	maxWheelTimeSpan = 900e9 // 900s, 15 minute
+	MaxWheelTimeSpan = 900e9 // 900s, 15 minute
 )
 
 /////////////////////////
@@ -110,9 +110,9 @@ func ConsumerInit(confConFile string) error {
 		if consumerConfig.RequestTimeout, err = time.ParseDuration(consumerConfig.Request_Timeout); err != nil {
 			return perrors.WithMessagef(err, "time.ParseDuration(Request_Timeout{%#v})", consumerConfig.Request_Timeout)
 		}
-		if consumerConfig.RequestTimeout >= time.Duration(maxWheelTimeSpan) {
+		if consumerConfig.RequestTimeout >= time.Duration(MaxWheelTimeSpan) {
 			return perrors.WithMessagef(err, "request_timeout %s should be less than %s",
-				consumerConfig.Request_Timeout, time.Duration(maxWheelTimeSpan))
+				consumerConfig.Request_Timeout, time.Duration(MaxWheelTimeSpan))
 		}
 	}
 	if consumerConfig.Connect_Timeout != "" {
