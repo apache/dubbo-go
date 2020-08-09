@@ -15,7 +15,7 @@ require (
 	github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f // indirect
 	github.com/creasty/defaults v1.3.0
 	github.com/docker/go-connections v0.4.0 // indirect
-	github.com/dubbogo/getty v1.3.7
+	github.com/dubbogo/getty v1.3.8
 	github.com/dubbogo/go-zookeeper v1.0.1
 	github.com/dubbogo/gost v1.9.0
 	github.com/elazarl/go-bindata-assetfs v1.0.0 // indirect
@@ -67,5 +67,3 @@ require (
 	k8s.io/client-go v0.16.9
 	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a // indirect
 )
-
-replace github.com/dubbogo/getty v1.2.2 => github.com/aliiohs/getty v1.1.1-0.20200802094147-169328c4ff38
