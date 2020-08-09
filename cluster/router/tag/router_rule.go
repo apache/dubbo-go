@@ -24,7 +24,7 @@ import (
 
 // RouterRule RouterRule config read from config file or config center
 type RouterRule struct {
-	router.BaseRouterRule `yaml:",inline""`
+	router.BaseRouterRule `yaml:",inline"`
 }
 
 func getRule(rawRule string) (*RouterRule, error) {
