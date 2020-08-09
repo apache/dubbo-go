@@ -1,7 +1,5 @@
 module github.com/apache/dubbo-go
 
-go 1.14
-
 require (
 	cloud.google.com/go v0.39.0 // indirect
 	github.com/Microsoft/go-winio v0.4.13 // indirect
