@@ -1,7 +1,5 @@
 module github.com/apache/dubbo-go
 
-go 1.14
-
 require (
 	cloud.google.com/go v0.39.0 // indirect
 	github.com/Microsoft/go-winio v0.4.13 // indirect
@@ -64,3 +62,7 @@ require (
 	k8s.io/client-go v0.16.9
 	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a // indirect
 )
+
+go 1.13
+
+replace launchpad.net/gocheck => github.com/go-check/check v0.0.0-20140225173054-eb6ee6f84d0a
