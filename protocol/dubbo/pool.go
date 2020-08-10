@@ -18,6 +18,7 @@
 package dubbo
 
 import (
+	"crypto/tls"
 	"fmt"
 	"math/rand"
 	"net"
@@ -116,7 +117,23 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 	if conf.GettySessionParam.CompressEncoding {
 		session.SetCompressType(getty.CompressZip)
 	}
-
+	if c.pool.sslEnabled {
+		if _, ok = session.Conn().(*tls.Conn); !ok {
+			panic(fmt.Sprintf("%s, session.conn{%#v} is not tls connection\n", session.Stat(), session.Conn()))
+		}
+		session.SetName(conf.GettySessionParam.SessionName)
+		session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
+		session.SetPkgHandler(NewRpcClientPackageHandler(c.pool.rpcClient))
+		session.SetEventListener(NewRpcClientHandler(c))
+		session.SetWQLen(conf.GettySessionParam.PkgWQSize)
+		session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
+		session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
+		session.SetCronPeriod((int)(conf.heartbeatPeriod.Nanoseconds() / 1e6))
+		session.SetWaitTime(conf.GettySessionParam.waitTimeout)
+		logger.Debugf("client new session:%s\n", session.Stat())
+		session.SetTaskPool(clientGrpool)
+		return nil
+	}
 	if tcpConn, ok = session.Conn().(*net.TCPConn); !ok {
 		panic(fmt.Sprintf("%s, session.conn{%#v} is not tcp connection\n", session.Stat(), session.Conn()))
 	}

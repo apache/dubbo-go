@@ -18,6 +18,7 @@
 package dubbo
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 )
@@ -127,7 +128,20 @@ func (s *Server) newSession(session getty.Session) error {
 	if conf.GettySessionParam.CompressEncoding {
 		session.SetCompressType(getty.CompressZip)
 	}
-
+	if _, ok = session.Conn().(*tls.Conn); ok {
+		session.SetName(conf.GettySessionParam.SessionName)
+		session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
+		session.SetPkgHandler(rpcServerPkgHandler)
+		session.SetEventListener(s.rpcHandler)
+		session.SetWQLen(conf.GettySessionParam.PkgWQSize)
+		session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
+		session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
+		session.SetCronPeriod((int)(conf.sessionTimeout.Nanoseconds() / 1e6))
+		session.SetWaitTime(conf.GettySessionParam.waitTimeout)
+		logger.Debugf("app accepts new session:%s\n", session.Stat())
+		session.SetTaskPool(srvGrpool)
+		return nil
+	}
 	if tcpConn, ok = session.Conn().(*net.TCPConn); !ok {
 		panic(fmt.Sprintf("%s, session.conn{%#v} is not tcp connection\n", session.Stat(), session.Conn()))
 	}
