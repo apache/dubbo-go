@@ -114,7 +114,7 @@ func (c *tagRouter) Route(invokers []protocol.Invoker, url *common.URL, invocati
 	// static tag group.
 	filter := func(invoker protocol.Invoker) bool {
 		localTag := invoker.GetUrl().GetParam(constant.Tagkey, "")
-		return localTag == "" || !(tagRouterRuleCopy.hasTag(localTag))
+		return len(localTag) == 0 || !(tagRouterRuleCopy.hasTag(localTag))
 	}
 	return filterInvoker(result, filter)
 }
