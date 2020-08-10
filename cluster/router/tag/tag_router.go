@@ -18,20 +18,24 @@
 package tag
 
 import (
-	"github.com/RoaringBitmap/roaring"
-	"github.com/apache/dubbo-go/cluster/router"
-	"github.com/apache/dubbo-go/cluster/router/utils"
 	"strconv"
 )
 
 import (
+	"github.com/RoaringBitmap/roaring"
 	perrors "github.com/pkg/errors"
 )
 
 import (
+	"github.com/apache/dubbo-go/cluster/router"
+	"github.com/apache/dubbo-go/cluster/router/utils"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
+)
+
+const (
+	name = "tag-router"
 )
 
 type tagRouter struct {
@@ -55,7 +59,7 @@ func (c *tagRouter) isEnabled() bool {
 	return c.enabled
 }
 
-func (c *tagRouter) Route(invokers *roaring.Bitmap, cache *router.AddrCache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
+func (c *tagRouter) Route(invokers *roaring.Bitmap, cache router.Cache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
 	if !c.isEnabled() || invokers.IsEmpty() {
 		return invokers
 	}
@@ -65,7 +69,7 @@ func (c *tagRouter) Route(invokers *roaring.Bitmap, cache *router.AddrCache, url
 		return invokers
 	}
 
-	ret := router.EmptyAddr
+	ret := utils.EmptyAddr
 	if target, ok := cache.FindAddrPool(c)[tag]; ok {
 		ret = utils.JoinIfNotEqual(target, invokers)
 	}
@@ -85,8 +89,9 @@ func (c *tagRouter) Priority() int64 {
 	return c.priority
 }
 
-func (c *tagRouter) Pool(invokers []protocol.Invoker) (router.RouterAddrPool, router.AddrMetadata) {
-	rb := make(router.RouterAddrPool)
+// Pool divided invokers into different address pool by tag.
+func (c *tagRouter) Pool(invokers []protocol.Invoker) (router.AddrPool, router.AddrMetadata) {
+	rb := make(router.AddrPool)
 	for i, invoker := range invokers {
 		url := invoker.GetUrl()
 		tag := url.GetParam(constant.Tagkey, "")
@@ -100,12 +105,13 @@ func (c *tagRouter) Pool(invokers []protocol.Invoker) (router.RouterAddrPool, ro
 	return rb, nil
 }
 
-func (c *tagRouter) ShouldRePool() bool {
+// ShouldPool returns false, to make sure address cache for tag router happens once and only once.
+func (c *tagRouter) ShouldPool() bool {
 	return false
 }
 
 func (c *tagRouter) Name() string {
-	return "tag-router"
+	return name
 }
 
 func findStaticTag(invocation protocol.Invocation) string {

@@ -66,14 +66,14 @@ func newListenableRouter(url *common.URL, ruleKey string) (*AppRouter, error) {
 	l.priority = listenableRouterDefaultPriority
 
 	routerKey := ruleKey + constant.ConditionRouterRuleSuffix
-	//add listener
+	// add listener
 	dynamicConfiguration := config.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration == nil {
 		return nil, perrors.Errorf("Get dynamicConfiguration fail, dynamicConfiguration is nil, init config center plugin please")
 	}
 
 	dynamicConfiguration.AddListener(routerKey, l)
-	//get rule
+	// get rule
 	rule, err := dynamicConfiguration.GetRule(routerKey, config_center.WithGroup(config_center.DEFAULT_GROUP))
 	if len(rule) == 0 || err != nil {
 		return nil, perrors.Errorf("Get rule fail, config rule{%s},  error{%v}", rule, err)
@@ -131,11 +131,11 @@ func (l *listenableRouter) generateConditions(rule *RouterRule) {
 }
 
 // Route Determine the target invokers list.
-func (l *listenableRouter) Route(invokers *roaring.Bitmap, cache *router.AddrCache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
+func (l *listenableRouter) Route(invokers *roaring.Bitmap, cache router.Cache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
 	if invokers.IsEmpty() || len(l.conditionRouters) == 0 {
 		return invokers
 	}
-	//We will check enabled status inside each router.
+	// We will check enabled status inside each router.
 	for _, r := range l.conditionRouters {
 		invokers = r.Route(invokers, cache, url, invocation)
 	}

@@ -24,21 +24,22 @@ import (
 
 import (
 	"github.com/RoaringBitmap/roaring"
+	"github.com/dubbogo/gost/container/set"
+	"github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 )
 
 import (
 	"github.com/apache/dubbo-go/cluster/router"
+	"github.com/apache/dubbo-go/cluster/router/utils"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
-	"github.com/dubbogo/gost/container/set"
-	"github.com/dubbogo/gost/net"
 )
 
 const (
-	//pattern route pattern regex
+	// pattern route pattern regex
 	pattern = `([&!=,]*)\\s*([^&!=,\\s]+)`
 )
 
@@ -144,7 +145,7 @@ func (c *ConditionRouter) Enabled() bool {
 }
 
 // Route Determine the target invokers list.
-func (c *ConditionRouter) Route(invokers *roaring.Bitmap, cache *router.AddrCache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
+func (c *ConditionRouter) Route(invokers *roaring.Bitmap, cache router.Cache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
 	if !c.Enabled() {
 		return invokers
 	}
@@ -159,13 +160,14 @@ func (c *ConditionRouter) Route(invokers *roaring.Bitmap, cache *router.AddrCach
 	}
 
 	if len(c.ThenCondition) == 0 {
-		return router.EmptyAddr
+		return utils.EmptyAddr
 	}
 
 	result := roaring.NewBitmap()
 	for iter := invokers.Iterator(); iter.HasNext(); {
 		index := iter.Next()
-		invokerUrl := cache.Invokers[index].GetUrl()
+		invoker := cache.GetInvokers()[index]
+		invokerUrl := invoker.GetUrl()
 		isMatchThen := c.MatchThen(&invokerUrl, url)
 		if isMatchThen {
 			result.Add(index)
@@ -323,7 +325,7 @@ func (pair MatchPair) isMatch(value string, param *common.URL) bool {
 		return true
 	}
 	if !pair.Mismatches.Empty() && !pair.Matches.Empty() {
-		//when both mismatches and matches contain the same value, then using mismatches first
+		// when both mismatches and matches contain the same value, then using mismatches first
 		for mismatch := range pair.Mismatches.Items {
 			if isMatchGlobalPattern(mismatch.(string), value, param) {
 				return false

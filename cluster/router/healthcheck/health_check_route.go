@@ -19,6 +19,9 @@ package healthcheck
 
 import (
 	"github.com/RoaringBitmap/roaring"
+)
+
+import (
 	"github.com/apache/dubbo-go/cluster/router"
 	"github.com/apache/dubbo-go/cluster/router/utils"
 	"github.com/apache/dubbo-go/common"
@@ -31,6 +34,7 @@ import (
 const (
 	HEALTH_ROUTE_ENABLED_KEY = "health.route.enabled"
 	healthy                  = "healthy"
+	name                     = "health-check-router"
 )
 
 // HealthCheckRouter provides a health-first routing mechanism through HealthChecker
@@ -54,7 +58,7 @@ func NewHealthCheckRouter(url *common.URL) (router.PriorityRouter, error) {
 }
 
 // Route gets a list of healthy invoker
-func (r *HealthCheckRouter) Route(invokers *roaring.Bitmap, cache *router.AddrCache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
+func (r *HealthCheckRouter) Route(invokers *roaring.Bitmap, cache router.Cache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
 	if !r.enabled {
 		return invokers
 	}
@@ -70,8 +74,9 @@ func (r *HealthCheckRouter) Route(invokers *roaring.Bitmap, cache *router.AddrCa
 	return healthyInvokers
 }
 
-func (r *HealthCheckRouter) Pool(invokers []protocol.Invoker) (router.RouterAddrPool, router.AddrMetadata) {
-	rb := make(router.RouterAddrPool)
+// Pool separates healthy invokers from others.
+func (r *HealthCheckRouter) Pool(invokers []protocol.Invoker) (router.AddrPool, router.AddrMetadata) {
+	rb := make(router.AddrPool)
 	rb[healthy] = roaring.NewBitmap()
 	for i, invoker := range invokers {
 		if r.checker.IsHealthy(invoker) {
@@ -82,12 +87,13 @@ func (r *HealthCheckRouter) Pool(invokers []protocol.Invoker) (router.RouterAddr
 	return rb, nil
 }
 
-func (r *HealthCheckRouter) ShouldRePool() bool {
+// ShouldPool will always return true to make sure healthy check constantly.
+func (r *HealthCheckRouter) ShouldPool() bool {
 	return true
 }
 
 func (r *HealthCheckRouter) Name() string {
-	return "health-check-router"
+	return name
 }
 
 // Priority
