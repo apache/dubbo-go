@@ -19,6 +19,9 @@ package router
 
 import (
 	"github.com/RoaringBitmap/roaring"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
 )
@@ -39,7 +42,7 @@ type FilePriorityRouterFactory interface {
 // Router
 type router interface {
 	// Route Determine the target invokers list.
-	Route(*roaring.Bitmap, *AddrCache, *common.URL, protocol.Invocation) *roaring.Bitmap
+	Route(*roaring.Bitmap, Cache, *common.URL, protocol.Invocation) *roaring.Bitmap
 
 	// URL Return URL in router
 	URL() common.URL
@@ -53,33 +56,38 @@ type PriorityRouter interface {
 	Priority() int64
 }
 
+// Poolable caches address pool and address metadata for a router instance which will be used later in Router's Route.
 type Poolable interface {
-	Pool([]protocol.Invoker) (RouterAddrPool, AddrMetadata)
-	ShouldRePool() bool
+	// Pool created address pool and address metadata from the invokers.
+	Pool([]protocol.Invoker) (AddrPool, AddrMetadata)
+
+	// ShouldPool returns if it should pool. One typical scenario is a router rule changes, in this case, a pooling
+	// is necessary, even if the addresses not changed at all.
+	ShouldPool() bool
+
+	// Name return the Poolable's name.
 	Name() string
 }
 
+// AddrPool is an address pool, backed by a snapshot of address list, divided into categories.
+type AddrPool map[string]*roaring.Bitmap
+
+// AddrMetadta is address metadata, collected from a snapshot of address list by a router, if it implements Poolable.
 type AddrMetadata interface {
+	// Source indicates where the metadata comes from.
 	Source() string
 }
 
-type RouterAddrPool map[string]*roaring.Bitmap
+// Cache caches all addresses relevant info for a snapshot of received invokers. It keeps a snapshot of the received
+// address list, and also keeps address pools and address metadata from routers based on the same address snapshot, if
+// the router implements Poolable.
+type Cache interface {
+	// GetInvokers returns the snapshot of received invokers.
+	GetInvokers() []protocol.Invoker
 
-// AddrCache caches all addresses relevant info for a snapshot of received invokers, the calculation logic is
-// different from router to router.
-type AddrCache struct {
-	Invokers []protocol.Invoker        // invokers snapshot
-	Bitmap   *roaring.Bitmap           // bitmap for invokers
-	AddrPool map[string]RouterAddrPool // address pool from the invokers for one particular router
-	AddrMeta map[string]AddrMetadata   // address meta info collected from the invokers for one particular router
+	// FindAddrPool returns address pool associated with the given Poolable instance.
+	FindAddrPool(Poolable) AddrPool
+
+	// FindAddrMeta returns address metadata associated with the given Poolable instance.
+	FindAddrMeta(Poolable) AddrMetadata
 }
-
-func (c *AddrCache) FindAddrPool(p Poolable) RouterAddrPool {
-	return c.AddrPool[p.Name()]
-}
-
-func (c *AddrCache) FindAddrMeta(p Poolable) AddrMetadata {
-	return c.AddrMeta[p.Name()]
-}
-
-var EmptyAddr = roaring.NewBitmap()

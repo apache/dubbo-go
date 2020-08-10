@@ -18,18 +18,18 @@
 package tag
 
 import (
-	"github.com/RoaringBitmap/roaring"
-	"github.com/apache/dubbo-go/cluster/router"
 	"net/url"
 	"strconv"
 	"sync"
 )
 
 import (
+	"github.com/RoaringBitmap/roaring"
 	perrors "github.com/pkg/errors"
 )
 
 import (
+	"github.com/apache/dubbo-go/cluster/router"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
@@ -76,7 +76,7 @@ func (f *FileTagRouter) Priority() int64 {
 	return f.router.priority
 }
 
-func (f *FileTagRouter) Route(invokers *roaring.Bitmap, cache *router.AddrCache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
+func (f *FileTagRouter) Route(invokers *roaring.Bitmap, cache router.Cache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
 	if invokers.IsEmpty() {
 		return invokers
 	}

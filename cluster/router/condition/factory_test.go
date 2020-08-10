@@ -33,6 +33,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/cluster/router"
+	"github.com/apache/dubbo-go/cluster/router/chain"
 	"github.com/apache/dubbo-go/cluster/router/utils"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
@@ -380,9 +381,6 @@ func TestNewAppRouterFactory(t *testing.T) {
 	assert.NotNil(t, factory)
 }
 
-func setUpAddrCache(addrs []protocol.Invoker) *router.AddrCache {
-	cache := &router.AddrCache{
-		Invokers: addrs,
-	}
-	return cache
+func setUpAddrCache(addrs []protocol.Invoker) router.Cache {
+	return chain.BuildCache(addrs)
 }
