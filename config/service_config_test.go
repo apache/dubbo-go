@@ -56,13 +56,13 @@ func doInitProvider() {
 					{
 						Name:        "GetUser",
 						Retries:     "2",
-						Loadbalance: "random",
+						LoadBalance: "random",
 						Weight:      200,
 					},
 					{
 						Name:        "GetUser1",
 						Retries:     "2",
-						Loadbalance: "random",
+						LoadBalance: "random",
 						Weight:      200,
 					},
 				},
@@ -81,13 +81,13 @@ func doInitProvider() {
 					{
 						Name:        "GetUser",
 						Retries:     "2",
-						Loadbalance: "random",
+						LoadBalance: "random",
 						Weight:      200,
 					},
 					{
 						Name:        "GetUser1",
 						Retries:     "2",
-						Loadbalance: "random",
+						LoadBalance: "random",
 						Weight:      200,
 					},
 				},
@@ -153,7 +153,7 @@ func TestExport(t *testing.T) {
 	providerConfig = nil
 }
 
-func TestgetRandomPort(t *testing.T) {
+func TestGetRandomPort(t *testing.T) {
 	protocolConfigs := make([]*ProtocolConfig, 0, 3)
 
 	ip, err := gxnet.GetLocalIP()

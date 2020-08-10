@@ -38,12 +38,14 @@ const (
 	name = "tag-router"
 )
 
+// tagRouter defines url, enable and the priority
 type tagRouter struct {
 	url      *common.URL
 	enabled  bool
 	priority int64
 }
 
+// NewTagRouter returns a tagRouter instance if url is not nil
 func NewTagRouter(url *common.URL) (*tagRouter, error) {
 	if url == nil {
 		return nil, perrors.Errorf("Illegal route URL!")
@@ -55,10 +57,12 @@ func NewTagRouter(url *common.URL) (*tagRouter, error) {
 	}, nil
 }
 
+// nolint
 func (c *tagRouter) isEnabled() bool {
 	return c.enabled
 }
 
+// Route gets a list of invoker
 func (c *tagRouter) Route(invokers *roaring.Bitmap, cache router.Cache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
 	if !c.isEnabled() || invokers.IsEmpty() {
 		return invokers
@@ -81,10 +85,12 @@ func (c *tagRouter) Route(invokers *roaring.Bitmap, cache router.Cache, url *com
 	return ret
 }
 
+// URL gets the url of tagRouter
 func (c *tagRouter) URL() common.URL {
 	return *c.url
 }
 
+// Priority gets the priority of tagRouter
 func (c *tagRouter) Priority() int64 {
 	return c.priority
 }
@@ -118,6 +124,7 @@ func findStaticTag(invocation protocol.Invocation) string {
 	return invocation.Attachments()[constant.Tagkey]
 }
 
+// isForceUseTag returns whether force use tag
 func isForceUseTag(url *common.URL, invocation protocol.Invocation) bool {
 	if b, e := strconv.ParseBool(invocation.AttachmentsByKey(constant.ForceUseTag, url.GetParam(constant.ForceUseTag, "false"))); e == nil {
 		return b

@@ -19,6 +19,7 @@ package kubernetes
 
 import (
 	"testing"
+	"time"
 )
 
 import (
@@ -87,6 +88,7 @@ func TestListener(t *testing.T) {
 	listener := NewEventListener(c)
 	dataListener := &mockDataListener{client: c, changedData: changedData, rc: make(chan remoting.Event)}
 	listener.ListenServiceEvent("/dubbo", dataListener)
+	time.Sleep(1e9)
 
 	for _, tc := range tests {
 

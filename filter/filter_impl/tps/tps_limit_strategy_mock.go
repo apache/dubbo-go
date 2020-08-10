@@ -23,6 +23,9 @@ package tps
 
 import (
 	gomock "github.com/golang/mock/gomock"
+)
+
+import (
 	reflect "reflect"
 )
 
