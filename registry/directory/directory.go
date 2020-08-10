@@ -82,7 +82,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.
 		registry:         registry,
 	}
 
-	dir.consumerURL= dir.getConsumerUrl(url.SubURL)
+	dir.consumerURL = dir.getConsumerUrl(url.SubURL)
 
 	if routerChain, err := chain.NewRouterChain(dir.consumerURL); err == nil {
 		dir.BaseDirectory.SetRouterChain(routerChain)
