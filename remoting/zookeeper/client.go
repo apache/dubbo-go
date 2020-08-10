@@ -190,7 +190,7 @@ func NewZookeeperClient(name string, zkAddrs []string, timeout time.Duration) (*
 	return z, nil
 }
 
-// WithTestCluster sets test cluser for zk client
+// WithTestCluster sets test cluster for zk client
 func WithTestCluster(ts *zk.TestCluster) Option {
 	return func(opt *Options) {
 		opt.ts = ts
