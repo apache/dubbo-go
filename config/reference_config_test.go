@@ -103,12 +103,12 @@ func doInitConsumer() {
 					{
 						Name:        "GetUser",
 						Retries:     "2",
-						Loadbalance: "random",
+						LoadBalance: "random",
 					},
 					{
 						Name:        "GetUser1",
 						Retries:     "2",
-						Loadbalance: "random",
+						LoadBalance: "random",
 						Sticky:      true,
 					},
 				},
@@ -174,12 +174,12 @@ func doInitConsumerWithSingleRegistry() {
 					{
 						Name:        "GetUser",
 						Retries:     "2",
-						Loadbalance: "random",
+						LoadBalance: "random",
 					},
 					{
 						Name:        "GetUser1",
 						Retries:     "2",
-						Loadbalance: "random",
+						LoadBalance: "random",
 					},
 				},
 			},
@@ -187,10 +187,10 @@ func doInitConsumerWithSingleRegistry() {
 	}
 }
 
-func TestReferMultireg(t *testing.T) {
+func TestReferMultiReg(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("registry", GetProtocol)
-	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
+	extension.SetCluster(constant.ZONEAWARE_CLUSTER_NAME, cluster_impl.NewZoneAwareCluster)
 
 	for _, reference := range consumerConfig.References {
 		reference.Refer(nil)
@@ -203,7 +203,7 @@ func TestReferMultireg(t *testing.T) {
 func TestRefer(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("registry", GetProtocol)
-	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
+	extension.SetCluster(constant.ZONEAWARE_CLUSTER_NAME, cluster_impl.NewZoneAwareCluster)
 
 	for _, reference := range consumerConfig.References {
 		reference.Refer(nil)
@@ -217,7 +217,7 @@ func TestRefer(t *testing.T) {
 func TestReferAsync(t *testing.T) {
 	doInitConsumerAsync()
 	extension.SetProtocol("registry", GetProtocol)
-	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
+	extension.SetCluster(constant.ZONEAWARE_CLUSTER_NAME, cluster_impl.NewZoneAwareCluster)
 
 	for _, reference := range consumerConfig.References {
 		reference.Refer(nil)
@@ -275,7 +275,7 @@ func TestReferMultiP2PWithReg(t *testing.T) {
 func TestImplement(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("registry", GetProtocol)
-	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
+	extension.SetCluster(constant.ZONEAWARE_CLUSTER_NAME, cluster_impl.NewZoneAwareCluster)
 	for _, reference := range consumerConfig.References {
 		reference.Refer(nil)
 		reference.Implement(&MockService{})
