@@ -18,8 +18,6 @@
 package chain
 
 import (
-	"github.com/RoaringBitmap/roaring"
-	"github.com/apache/dubbo-go/common/constant"
 	"math"
 	"sort"
 	"sync"
@@ -34,6 +32,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/cluster/router"
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
@@ -56,44 +55,38 @@ type RouterChain struct {
 	builtinRouters []router.PriorityRouter
 
 	mutex sync.RWMutex
-	url   common.URL
 
+	url common.URL
+
+	// The times of address notification since last update for address cache
 	count int64
-	last  time.Time
-	ch    chan struct{}
+	// The timestamp of last update for address cache
+	last time.Time
+	// Channel for notify to update the address cache
+	ch chan struct{}
+	// Address cache
 	cache atomic.Value
 }
 
 // Route Loop routers in RouterChain and call Route method to determine the target invokers list.
 func (c *RouterChain) Route(url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
-	rs := c.copyRouters()
-
-	v := c.cache.Load()
-	if v == nil {
+	cache := c.loadCache()
+	if cache == nil {
 		return c.invokers
 	}
 
-	cache := v.(*router.AddrCache)
-	bitmap := cache.Bitmap
-	for _, r := range rs {
+	bitmap := cache.bitmap
+	for _, r := range c.copyRouters() {
 		bitmap = r.Route(bitmap, cache, url, invocation)
 	}
 
 	indexes := bitmap.ToArray()
 	finalInvokers := make([]protocol.Invoker, len(indexes))
 	for i, index := range indexes {
-		finalInvokers[i] = cache.Invokers[index]
+		finalInvokers[i] = cache.invokers[index]
 	}
-	return finalInvokers
-}
 
-func (c *RouterChain) copyRouters() []router.PriorityRouter {
-	l := len(c.routers)
-	rs := make([]router.PriorityRouter, l, int(math.Ceil(float64(l)*1.2)))
-	c.mutex.RLock()
-	copy(rs, c.routers)
-	c.mutex.RUnlock()
-	return rs
+	return finalInvokers
 }
 
 // AddRouters Add routers to router chain
@@ -110,6 +103,8 @@ func (c *RouterChain) AddRouters(routers []router.PriorityRouter) {
 	c.routers = newRouters
 }
 
+// SetInvokers receives updated invokers from registry center. If the times of notification exceeds countThreshold and
+// time interval exceeds timeThreshold since last cache update, then notify to update the cache.
 func (c *RouterChain) SetInvokers(invokers []protocol.Invoker) {
 	c.invokers = invokers
 
@@ -124,6 +119,8 @@ func (c *RouterChain) SetInvokers(invokers []protocol.Invoker) {
 	}
 }
 
+// loop listens on events to update the address cache when it's necessary, either when it receives notification
+// from address update, or when timeInterval exceeds.
 func (c *RouterChain) loop() {
 	for {
 		select {
@@ -138,6 +135,27 @@ func (c *RouterChain) loop() {
 	}
 }
 
+// copyRouters make a snapshot copy from RouterChain's router list.
+func (c *RouterChain) copyRouters() []router.PriorityRouter {
+	l := len(c.routers)
+	rs := make([]router.PriorityRouter, l, int(math.Ceil(float64(l)*1.2)))
+	c.mutex.RLock()
+	copy(rs, c.routers)
+	c.mutex.RUnlock()
+	return rs
+}
+
+// loadCache loads cache from sync.Value to guarantee the visibility
+func (c *RouterChain) loadCache() *InvokerCache {
+	v := c.cache.Load()
+	if v == nil {
+		return nil
+	}
+
+	return v.(*InvokerCache)
+}
+
+// buildCache builds address cache with the new invokers for all poolable routers.
 func (c *RouterChain) buildCache() {
 	if c.invokers == nil || len(c.invokers) == 0 {
 		return
@@ -146,18 +164,8 @@ func (c *RouterChain) buildCache() {
 	// FIXME: should lock here, it is fine with dirty read if no panic happens I believe.
 	invokers := make([]protocol.Invoker, len(c.invokers))
 	copy(invokers, c.invokers)
-	cache := &router.AddrCache{
-		Invokers: invokers,
-		Bitmap:   ToBitmap(invokers),
-		AddrPool: make(map[string]router.RouterAddrPool),
-		AddrMeta: make(map[string]router.AddrMetadata),
-	}
-
-	var origin *router.AddrCache
-	v := c.cache.Load()
-	if v != nil {
-		origin = v.(*router.AddrCache)
-	}
+	cache := BuildCache(invokers)
+	origin := c.loadCache()
 
 	var mutex sync.Mutex
 	var wg sync.WaitGroup
@@ -168,8 +176,8 @@ func (c *RouterChain) buildCache() {
 			go func(p router.Poolable) {
 				pool, info := poolRouter(p, origin, invokers)
 				mutex.Lock()
-				cache.AddrPool[p.Name()] = pool
-				cache.AddrMeta[p.Name()] = info
+				cache.pools[p.Name()] = pool
+				cache.metadatas[p.Name()] = info
 				mutex.Unlock()
 				wg.Done()
 			}(p)
@@ -221,25 +229,32 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 	return chain, nil
 }
 
-func poolRouter(p router.Poolable, origin *router.AddrCache, invokers []protocol.Invoker) (router.RouterAddrPool, router.AddrMetadata) {
+// poolRouter calls poolable router's Pool() to create new address pool and address metadata if necessary.
+// If the corresponding cache entry exists, and the poolable router answers no need to re-pool (possibly because its
+// rule doesn't change), and the address list doesn't change, then the existing data will be re-used.
+func poolRouter(p router.Poolable, origin *InvokerCache, invokers []protocol.Invoker) (router.AddrPool, router.AddrMetadata) {
 	name := p.Name()
-	if isCacheMiss(origin, name) || p.ShouldRePool() || IsDiff(origin.Invokers, invokers) {
+	if isCacheMiss(origin, name) || p.ShouldPool() || isInvokersChanged(origin.invokers, invokers) {
 		logger.Debugf("build address cache for router %q", name)
 		return p.Pool(invokers)
 	} else {
 		logger.Debugf("reuse existing address cache for router %q", name)
-		return origin.AddrPool[name], origin.AddrMeta[name]
+		return origin.pools[name], origin.metadatas[name]
 	}
 }
 
-func isCacheMiss(cache *router.AddrCache, key string) bool {
-	if cache == nil || cache.AddrPool == nil || cache.Invokers == nil || cache.AddrPool[key] == nil {
+// isCacheMiss checks if the corresponding cache entry for a poolable router has already existed.
+// False returns when the cache is nil, or cache's pool is nil, or cache's invokers snapshot is nil, or the entry
+// doesn't exist.
+func isCacheMiss(cache *InvokerCache, key string) bool {
+	if cache == nil || cache.pools == nil || cache.invokers == nil || cache.pools[key] == nil {
 		return true
 	}
 	return false
 }
 
-func IsDiff(left []protocol.Invoker, right []protocol.Invoker) bool {
+// isInvokersChanged compares new invokers on the right changes, compared with the old invokers on the left.
+func isInvokersChanged(left []protocol.Invoker, right []protocol.Invoker) bool {
 	if len(right) != len(left) {
 		return true
 	}
@@ -247,7 +262,7 @@ func IsDiff(left []protocol.Invoker, right []protocol.Invoker) bool {
 	for _, r := range right {
 		found := false
 		for _, l := range left {
-			if IsEquals(l.GetUrl(), r.GetUrl()) {
+			if common.IsEquals(l.GetUrl(), r.GetUrl(), constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY) {
 				found = true
 				break
 			}
@@ -257,38 +272,6 @@ func IsDiff(left []protocol.Invoker, right []protocol.Invoker) bool {
 		}
 	}
 	return false
-}
-
-func IsEquals(left common.URL, right common.URL) bool {
-	if left.Ip != right.Ip || left.Port != right.Port {
-		return false
-	}
-
-	leftMap := left.ToMap()
-	delete(leftMap, constant.TIMESTAMP_KEY)
-	delete(leftMap, constant.REMOTE_TIMESTAMP_KEY)
-	rightMap := right.ToMap()
-	delete(rightMap, constant.TIMESTAMP_KEY)
-	delete(rightMap, constant.REMOTE_TIMESTAMP_KEY)
-
-	if len(leftMap) != len(rightMap) {
-		return false
-	}
-
-	for lk, lv := range leftMap {
-		if rv, ok := rightMap[lk]; !ok {
-			return false
-		} else if lv != rv {
-			return false
-		}
-	}
-	return true
-}
-
-func ToBitmap(invokers []protocol.Invoker) *roaring.Bitmap {
-	bitmap := roaring.NewBitmap()
-	bitmap.AddRange(0, uint64(len(invokers)))
-	return bitmap
 }
 
 // sortRouter Sort router instance by priority with stable algorithm

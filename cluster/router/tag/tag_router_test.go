@@ -19,8 +19,6 @@ package tag
 
 import (
 	"context"
-	"github.com/apache/dubbo-go/cluster/router"
-	"github.com/apache/dubbo-go/cluster/router/utils"
 	"testing"
 )
 
@@ -29,6 +27,9 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/cluster/router"
+	"github.com/apache/dubbo-go/cluster/router/chain"
+	"github.com/apache/dubbo-go/cluster/router/utils"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
@@ -163,15 +164,10 @@ func TestTagRouterRouteNoForce(t *testing.T) {
 	assert.Equal(t, 3, len(invRst2.ToArray()))
 }
 
-func setUpAddrCache(r router.Poolable, addrs []protocol.Invoker) *router.AddrCache {
+func setUpAddrCache(r router.Poolable, addrs []protocol.Invoker) router.Cache {
 	pool, info := r.Pool(addrs)
-	cache := &router.AddrCache{
-		Invokers: addrs,
-		AddrPool: make(map[string]router.RouterAddrPool),
-		AddrMeta: make(map[string]router.AddrMetadata),
-	}
-
-	cache.AddrMeta[r.Name()] = info
-	cache.AddrPool[r.Name()] = pool
+	cache := chain.BuildCache(addrs)
+	cache.SetAddrPool(r.Name(), pool)
+	cache.SetAddrMeta(r.Name(), info)
 	return cache
 }
