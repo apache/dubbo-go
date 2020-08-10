@@ -60,6 +60,7 @@ type RegistryDirectory struct {
 	serviceType                    string
 	registry                       registry.Registry
 	cacheInvokersMap               *sync.Map // use sync.map
+	consumerURL                    *common.URL
 	cacheOriginUrl                 *common.URL
 	configurators                  []config_center.Configurator
 	consumerConfigurationListener  *consumerConfigurationListener
@@ -81,9 +82,9 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.
 		registry:         registry,
 	}
 
-	dir.cacheOriginUrl = dir.getConsumerUrl(url.SubURL)
+	dir.consumerURL= dir.getConsumerUrl(url.SubURL)
 
-	if routerChain, err := chain.NewRouterChain(dir.cacheOriginUrl); err == nil {
+	if routerChain, err := chain.NewRouterChain(dir.consumerURL); err == nil {
 		dir.BaseDirectory.SetRouterChain(routerChain)
 	} else {
 		logger.Warnf("fail to create router chain with url: %s, err is: %v", url.SubURL, err)
@@ -159,7 +160,9 @@ func (dir *RegistryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 	newInvokers := dir.toGroupInvokers()
 	dir.listenerLock.Lock()
 	dir.cacheInvokers = newInvokers
-	dir.RouterChain().SetInvokers(newInvokers)
+	if res != nil {
+		dir.RouterChain().SetInvokers(newInvokers)
+	}
 	dir.listenerLock.Unlock()
 	// After dir.cacheInvokers is updated,destroy the oldInvoker
 	// Ensure that no request will enter the oldInvoker
@@ -229,8 +232,9 @@ func (dir *RegistryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
 
 	if url == nil && dir.cacheOriginUrl != nil {
 		url = dir.cacheOriginUrl
+	} else {
+		dir.cacheOriginUrl = url
 	}
-
 	if url == nil {
 		logger.Error("URL is nil ,pls check if service url is subscribe successfully!")
 		return nil
@@ -265,7 +269,7 @@ func (dir *RegistryDirectory) List(invocation protocol.Invocation) []protocol.In
 	if routerChain == nil {
 		return invokers
 	}
-	return routerChain.Route(dir.cacheOriginUrl, invocation)
+	return routerChain.Route(dir.consumerURL, invocation)
 }
 
 // IsAvailable  whether the directory is available
