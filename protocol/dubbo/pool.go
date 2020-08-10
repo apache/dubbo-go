@@ -60,6 +60,7 @@ func newGettyRPCClientConn(pool *gettyRPCClientPool, protocol, addr string) (*ge
 			getty.WithServerAddress(addr),
 			getty.WithConnectionNumber((int)(pool.rpcClient.conf.ConnectionNum)),
 			getty.WithReconnectInterval(pool.rpcClient.conf.ReconnectInterval),
+			getty.WithClientSslEnabled(pool.sslEnabled),
 			getty.WithClientTlsConfigBuilder(config.GetClientTlsConfigBuilder()),
 		)
 	} else {
