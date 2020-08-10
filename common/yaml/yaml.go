@@ -27,7 +27,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// loadYMLConfig Load yml config byte from file
+// LoadYMLConfig Load yml config byte from file
 func LoadYMLConfig(confProFile string) ([]byte, error) {
 	if len(confProFile) == 0 {
 		return nil, perrors.Errorf("application configure(provider) file name is nil")
@@ -40,7 +40,7 @@ func LoadYMLConfig(confProFile string) ([]byte, error) {
 	return ioutil.ReadFile(confProFile)
 }
 
-// unmarshalYMLConfig Load yml config byte from file, then unmarshal to object
+// UnmarshalYMLConfig Load yml config byte from file, then unmarshal to object
 func UnmarshalYMLConfig(confProFile string, out interface{}) ([]byte, error) {
 	confFileStream, err := LoadYMLConfig(confProFile)
 	if err != nil {
@@ -49,6 +49,12 @@ func UnmarshalYMLConfig(confProFile string, out interface{}) ([]byte, error) {
 	return confFileStream, yaml.Unmarshal(confFileStream, out)
 }
 
+//UnmarshalYML unmarshals decodes the first document found within the in byte slice and assigns decoded values into the out value.
 func UnmarshalYML(data []byte, out interface{}) error {
 	return yaml.Unmarshal(data, out)
+}
+
+// MarshalYML serializes the value provided into a YAML document.
+func MarshalYML(in interface{}) ([]byte, error) {
+	return yaml.Marshal(in)
 }
