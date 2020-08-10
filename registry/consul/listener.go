@@ -197,7 +197,7 @@ func (l *consulListener) Next() (*registry.ServiceEvent, error) {
 	}
 }
 
-// Close closes this listener
+// Close the listener.
 func (l *consulListener) Close() {
 	close(l.done)
 	l.plan.Stop()
