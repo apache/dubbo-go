@@ -15,31 +15,25 @@
  * limitations under the License.
  */
 
-package cluster_impl
+package cluster
 
 import (
-	"github.com/apache/dubbo-go/cluster"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
+	"context"
+)
+
+import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-type failoverCluster struct{}
+// ClusterInterceptor
+// Extension - ClusterInterceptor
+type ClusterInterceptor interface {
+	// Before DoInvoke method
+	BeforeInvoker(ctx context.Context, invocation protocol.Invocation)
 
-func init() {
-	extension.SetCluster(constant.FAILOVER_CLUSTER_NAME, NewFailoverCluster)
-}
+	// After DoInvoke method
+	AfterInvoker(ctx context.Context, invocation protocol.Invocation)
 
-// NewFailoverCluster returns a failover cluster instance
-//
-// Failure automatically switch, when there is a failure,
-// retry the other server (default). Usually used for read operations,
-// but retries can result in longer delays.
-func NewFailoverCluster() cluster.Cluster {
-	return &failoverCluster{}
-}
-
-// Join returns a baseClusterInvoker instance
-func (cluster *failoverCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return newFailoverClusterInvoker(directory)
+	// Corresponding cluster invoke
+	DoInvoke(ctx context.Context, invocation protocol.Invocation) protocol.Result
 }
