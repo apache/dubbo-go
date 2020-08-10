@@ -18,7 +18,7 @@
 package chain
 
 import (
-	"math"
+	"reflect"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -137,12 +137,25 @@ func (c *RouterChain) loop() {
 
 // copyRouters make a snapshot copy from RouterChain's router list.
 func (c *RouterChain) copyRouters() []router.PriorityRouter {
-	l := len(c.routers)
-	rs := make([]router.PriorityRouter, l, int(math.Ceil(float64(l)*1.2)))
 	c.mutex.RLock()
-	copy(rs, c.routers)
+	ret := copySlice(c.routers)
 	c.mutex.RUnlock()
-	return rs
+	return ret.([]router.PriorityRouter)
+}
+
+// copyInvokers copies a snapshot of the received invokers.
+func (c *RouterChain) copyInvokers() []protocol.Invoker {
+	c.mutex.RLock()
+	ret := copySlice(c.invokers)
+	c.mutex.RUnlock()
+	return ret.([]protocol.Invoker)
+}
+
+func copySlice(s interface{}) interface{} {
+	t, v := reflect.TypeOf(s), reflect.ValueOf(s)
+	c := reflect.MakeSlice(t, v.Len(), v.Len())
+	reflect.Copy(c, v)
+	return c.Interface()
 }
 
 // loadCache loads cache from sync.Value to guarantee the visibility
@@ -161,9 +174,7 @@ func (c *RouterChain) buildCache() {
 		return
 	}
 
-	// FIXME: should lock here, it is fine with dirty read if no panic happens I believe.
-	invokers := make([]protocol.Invoker, len(c.invokers))
-	copy(invokers, c.invokers)
+	invokers := c.copyInvokers()
 	cache := BuildCache(invokers)
 	origin := c.loadCache()
 
