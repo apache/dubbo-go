@@ -18,6 +18,10 @@
 package cluster_impl
 
 import (
+	"context"
+)
+
+import (
 	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
@@ -36,6 +40,7 @@ type baseClusterInvoker struct {
 	availablecheck bool
 	destroyed      *atomic.Bool
 	stickyInvoker  protocol.Invoker
+	interceptor    cluster.ClusterInterceptor
 }
 
 func newBaseClusterInvoker(directory cluster.Directory) baseClusterInvoker {
@@ -144,6 +149,20 @@ func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invoc
 		}
 	}
 	return selectedInvoker
+}
+
+func (invoker *baseClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+	if invoker.interceptor != nil {
+		invoker.interceptor.BeforeInvoker(ctx, invocation)
+
+		result := invoker.interceptor.DoInvoke(ctx, invocation)
+
+		invoker.interceptor.AfterInvoker(ctx, invocation)
+
+		return result
+	}
+
+	return nil
 }
 
 func isInvoked(selectedInvoker protocol.Invoker, invoked []protocol.Invoker) bool {
