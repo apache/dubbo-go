@@ -28,8 +28,6 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common/config"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/config_center"
 	_ "github.com/apache/dubbo-go/config_center/apollo"
 )
 
@@ -95,14 +93,14 @@ var baseMockRef = map[string]*ReferenceConfig{
 				InterfaceName: "com.MockService",
 				Name:          "GetUser",
 				Retries:       "2",
-				Loadbalance:   "random",
+				LoadBalance:   "random",
 			},
 			{
 				InterfaceId:   "MockService",
 				InterfaceName: "com.MockService",
 				Name:          "GetUser1",
 				Retries:       "2",
-				Loadbalance:   "random",
+				LoadBalance:   "random",
 			},
 		},
 	},
@@ -258,14 +256,14 @@ func TestRefreshProvider(t *testing.T) {
 						InterfaceName: "com.MockService",
 						Name:          "GetUser",
 						Retries:       "2",
-						Loadbalance:   "random",
+						LoadBalance:   "random",
 					},
 					{
 						InterfaceId:   "MockService",
 						InterfaceName: "com.MockService",
 						Name:          "GetUser1",
 						Retries:       "2",
-						Loadbalance:   "random",
+						LoadBalance:   "random",
 					},
 				},
 			},
@@ -280,23 +278,6 @@ func TestRefreshProvider(t *testing.T) {
 	assert.Equal(t, "10", father.Services["MockService"].Methods[0].Retries)
 	assert.Equal(t, "dubbo", father.ApplicationConfig.Name)
 	assert.Equal(t, "20001", father.Protocols["jsonrpc1"].Port)
-}
-
-func TestStartConfigCenter(t *testing.T) {
-	extension.SetConfigCenterFactory("mock", func() config_center.DynamicConfigurationFactory {
-		return &config_center.MockDynamicConfigurationFactory{}
-	})
-	c := &BaseConfig{ConfigCenterConfig: &ConfigCenterConfig{
-		Protocol:   "mock",
-		Address:    "172.0.0.1",
-		Group:      "dubbo",
-		ConfigFile: "mockDubbo.properties",
-	}}
-	err := c.startConfigCenter()
-	assert.NoError(t, err)
-	b, v := config.GetEnvInstance().Configuration().Back().Value.(*config.InmemoryConfiguration).GetProperty("dubbo.application.organization")
-	assert.True(t, b)
-	assert.Equal(t, "ikurento.com", v)
 }
 
 func TestInitializeStruct(t *testing.T) {

@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	// FixedWindowKey ...
+	// FixedWindowKey defines tps limit algorithm
 	FixedWindowKey = "fixedWindow"
 )
 

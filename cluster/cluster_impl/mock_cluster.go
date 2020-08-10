@@ -33,6 +33,7 @@ func NewMockCluster() cluster.Cluster {
 	return &mockCluster{}
 }
 
+// nolint
 func (cluster *mockCluster) Join(directory cluster.Directory) protocol.Invoker {
 	return protocol.NewBaseInvoker(directory.GetUrl())
 }

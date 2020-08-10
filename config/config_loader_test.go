@@ -72,7 +72,7 @@ func TestLoad(t *testing.T) {
 	SetProviderService(ms)
 
 	extension.SetProtocol("registry", GetProtocol)
-	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
+	extension.SetCluster(constant.ZONEAWARE_CLUSTER_NAME, cluster_impl.NewZoneAwareCluster)
 	extension.SetProxyFactory("default", proxy_factory.NewDefaultProxyFactory)
 
 	Load()
@@ -101,7 +101,7 @@ func TestLoadWithSingleReg(t *testing.T) {
 	SetProviderService(ms)
 
 	extension.SetProtocol("registry", GetProtocol)
-	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
+	extension.SetCluster(constant.ZONEAWARE_CLUSTER_NAME, cluster_impl.NewZoneAwareCluster)
 	extension.SetProxyFactory("default", proxy_factory.NewDefaultProxyFactory)
 
 	Load()
@@ -130,7 +130,7 @@ func TestWithNoRegLoad(t *testing.T) {
 	SetProviderService(ms)
 
 	extension.SetProtocol("registry", GetProtocol)
-	extension.SetCluster("registryAware", cluster_impl.NewRegistryAwareCluster)
+	extension.SetCluster(constant.ZONEAWARE_CLUSTER_NAME, cluster_impl.NewZoneAwareCluster)
 	extension.SetProxyFactory("default", proxy_factory.NewDefaultProxyFactory)
 
 	Load()
@@ -278,13 +278,13 @@ func mockInitProviderWithSingleRegistry() {
 					{
 						Name:        "GetUser",
 						Retries:     "2",
-						Loadbalance: "random",
+						LoadBalance: "random",
 						Weight:      200,
 					},
 					{
 						Name:        "GetUser1",
 						Retries:     "2",
-						Loadbalance: "random",
+						LoadBalance: "random",
 						Weight:      200,
 					},
 				},

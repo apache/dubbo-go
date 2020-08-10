@@ -15,25 +15,10 @@
  * limitations under the License.
  */
 
-package cluster_impl
+package constant
 
-import (
-	"github.com/apache/dubbo-go/cluster"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/protocol"
+// nolint
+const (
+	FAILOVER_CLUSTER_NAME  = "failover"
+	ZONEAWARE_CLUSTER_NAME = "zoneAware"
 )
-
-type registryAwareCluster struct{}
-
-func init() {
-	extension.SetCluster("registryAware", NewRegistryAwareCluster)
-}
-
-// NewRegistryAwareCluster returns a registry aware cluster instance
-func NewRegistryAwareCluster() cluster.Cluster {
-	return &registryAwareCluster{}
-}
-
-func (cluster *registryAwareCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return newRegistryAwareClusterInvoker(directory)
-}

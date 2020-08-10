@@ -36,6 +36,7 @@ func newBroadcastClusterInvoker(directory cluster.Directory) protocol.Invoker {
 	}
 }
 
+// nolint
 func (invoker *broadcastClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	invokers := invoker.directory.List(invocation)
 	err := invoker.checkInvokers(invokers, invocation)

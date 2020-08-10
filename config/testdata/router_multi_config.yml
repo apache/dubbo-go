@@ -1,0 +1,16 @@
+# dubbo router yaml configure file
+routerRules:
+  - scope: application
+    key: mock-app
+    priority: 1
+    force: true
+    conditions :
+      - "a => b"
+      - "c => d"
+  - scope: application
+    key: mock-app2
+    priority: 1
+    force: true
+    conditions :
+      - "a => b"
+      - "c => d"
