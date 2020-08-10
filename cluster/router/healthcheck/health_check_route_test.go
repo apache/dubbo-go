@@ -19,8 +19,6 @@ package healthcheck
 
 import (
 	"fmt"
-	"github.com/apache/dubbo-go/cluster/router"
-	"github.com/apache/dubbo-go/cluster/router/utils"
 	"math"
 	"testing"
 	"time"
@@ -31,6 +29,9 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/cluster/router"
+	"github.com/apache/dubbo-go/cluster/router/chain"
+	"github.com/apache/dubbo-go/cluster/router/utils"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
@@ -137,15 +138,10 @@ func TestNewHealthCheckRouter(t *testing.T) {
 	assert.Equal(t, dhc.circuitTrippedTimeoutFactor, int32(500))
 }
 
-func setUpAddrCache(r router.Poolable, addrs []protocol.Invoker) *router.AddrCache {
+func setUpAddrCache(r router.Poolable, addrs []protocol.Invoker) router.Cache {
 	pool, info := r.Pool(addrs)
-	cache := &router.AddrCache{
-		Invokers: addrs,
-		AddrPool: make(map[string]router.RouterAddrPool),
-		AddrMeta: make(map[string]router.AddrMetadata),
-	}
-
-	cache.AddrMeta[r.Name()] = info
-	cache.AddrPool[r.Name()] = pool
+	cache := chain.BuildCache(addrs)
+	cache.SetAddrMeta(r.Name(), info)
+	cache.SetAddrPool(r.Name(), pool)
 	return cache
 }
