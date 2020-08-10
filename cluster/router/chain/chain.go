@@ -125,11 +125,8 @@ func (c *RouterChain) loop() {
 	for {
 		select {
 		case <-time.Tick(timeInterval):
-			logger.Debugf("start to build address cache since time interval %d second ticks", int(timeInterval.Seconds()))
 			c.buildCache()
 		case <-c.ch:
-			logger.Debugf("start to build address cache since at least %d times of address notified within %d seconds",
-				countThreshold, int(timeThreshold.Seconds()))
 			c.buildCache()
 		}
 	}
