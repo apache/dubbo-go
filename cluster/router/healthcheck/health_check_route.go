@@ -76,6 +76,10 @@ func (r *HealthCheckRouter) Route(invokers *roaring.Bitmap, cache router.Cache, 
 
 // Pool separates healthy invokers from others.
 func (r *HealthCheckRouter) Pool(invokers []protocol.Invoker) (router.AddrPool, router.AddrMetadata) {
+	if !r.enabled {
+		return nil, nil
+	}
+
 	rb := make(router.AddrPool)
 	rb[healthy] = roaring.NewBitmap()
 	for i, invoker := range invokers {
@@ -89,7 +93,7 @@ func (r *HealthCheckRouter) Pool(invokers []protocol.Invoker) (router.AddrPool, 
 
 // ShouldPool will always return true to make sure healthy check constantly.
 func (r *HealthCheckRouter) ShouldPool() bool {
-	return true
+	return r.enabled
 }
 
 func (r *HealthCheckRouter) Name() string {
