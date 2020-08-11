@@ -22,8 +22,11 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/config"
 	perrors "github.com/pkg/errors"
+)
+
+import (
+	"github.com/apache/dubbo-go/config"
 )
 
 type (
