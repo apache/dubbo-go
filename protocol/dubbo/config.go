@@ -180,7 +180,7 @@ func (c *ClientConfig) CheckValidity() error {
 		return perrors.WithMessagef(err, "time.ParseDuration(HeartbeatPeroid{%#v})", c.HeartbeatPeriod)
 	}
 
-	if c.heartbeatPeriod >= time.Duration(getty.MaxWheelTimeSpan) {
+	if c.heartbeatPeriod >= time.Duration(config.MaxWheelTimeSpan) {
 		return perrors.WithMessagef(err, "heartbeat_period %s should be less than %s",
 			c.HeartbeatPeriod, time.Duration(getty.MaxWheelTimeSpan))
 	}
