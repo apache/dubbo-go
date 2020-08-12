@@ -55,8 +55,12 @@ var (
 )
 
 func newGettyRPCClientConn(pool *gettyRPCClientPool, protocol, addr string) (*gettyRPCClient, error) {
-	var gettyClient getty.Client
-	if pool.sslEnabled {
+	var (
+		gettyClient getty.Client
+		sslEnabled  bool
+	)
+	sslEnabled = pool.sslEnabled
+	if sslEnabled {
 		gettyClient = getty.NewTCPClient(
 			getty.WithServerAddress(addr),
 			getty.WithConnectionNumber((int)(pool.rpcClient.conf.ConnectionNum)),
@@ -108,16 +112,18 @@ func (c *gettyRPCClient) getActive() int64 {
 
 func (c *gettyRPCClient) newSession(session getty.Session) error {
 	var (
-		ok      bool
-		tcpConn *net.TCPConn
-		conf    ClientConfig
+		ok         bool
+		tcpConn    *net.TCPConn
+		conf       ClientConfig
+		sslEnabled bool
 	)
 
 	conf = c.pool.rpcClient.conf
+	sslEnabled = c.pool.sslEnabled
 	if conf.GettySessionParam.CompressEncoding {
 		session.SetCompressType(getty.CompressZip)
 	}
-	if c.pool.sslEnabled {
+	if sslEnabled {
 		if _, ok = session.Conn().(*tls.Conn); !ok {
 			panic(fmt.Sprintf("%s, session.conn{%#v} is not tls connection\n", session.Stat(), session.Conn()))
 		}
