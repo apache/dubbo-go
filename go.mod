@@ -15,7 +15,7 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/dubbogo/getty v1.3.7
 	github.com/dubbogo/go-zookeeper v1.0.1
-	github.com/dubbogo/gost v1.9.0
+	github.com/dubbogo/gost v1.9.1
 	github.com/elazarl/go-bindata-assetfs v1.0.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.0.0
 	github.com/frankban/quicktest v1.4.1 // indirect

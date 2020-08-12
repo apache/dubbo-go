@@ -18,13 +18,12 @@
 package tag
 
 import (
-	"errors"
 	"net"
 	"strconv"
-	"strings"
 )
 
 import (
+	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 )
 
@@ -272,144 +271,14 @@ OUTER:
 }
 
 func checkAddressMatch(addresses []string, host, port string) bool {
+	addr := net.JoinHostPort(constant.ANYHOST_VALUE, port)
 	for _, address := range addresses {
-		if matchIp(address, host, port) {
+		if gxnet.MatchIP(address, host, port) {
 			return true
 		}
-		if address == net.JoinHostPort(constant.ANYHOST_VALUE, port) {
+		if address == addr {
 			return true
 		}
 	}
 	return false
-}
-
-// TODO: Already moved to dubbogo/gost, after gost by merged the follows codes will be deleted.
-func matchIp(pattern, host, port string) bool {
-	// if the pattern is subnet format, it will not be allowed to config port param in pattern.
-	if strings.Contains(pattern, "/") {
-		_, subnet, _ := net.ParseCIDR(pattern)
-		if subnet != nil && subnet.Contains(net.ParseIP(host)) {
-			return true
-		}
-		return false
-	}
-	return matchIpRange(pattern, host, port)
-}
-
-func matchIpRange(pattern, host, port string) bool {
-	if pattern == "" || host == "" {
-		logger.Error("Illegal Argument pattern or hostName. Pattern:" + pattern + ", Host:" + host)
-		return false
-	}
-
-	pattern = strings.TrimSpace(pattern)
-	if "*.*.*.*" == pattern || "*" == pattern {
-		return true
-	}
-
-	isIpv4 := true
-	ip4 := net.ParseIP(host).To4()
-
-	if ip4 == nil {
-		isIpv4 = false
-	}
-
-	hostAndPort := getPatternHostAndPort(pattern, isIpv4)
-	if hostAndPort[1] != "" && hostAndPort[1] != port {
-		return false
-	}
-
-	pattern = hostAndPort[0]
-	splitCharacter := "."
-	if !isIpv4 {
-		splitCharacter = ":"
-	}
-
-	mask := strings.Split(pattern, splitCharacter)
-	// check format of pattern
-	if err := checkHostPattern(pattern, mask, isIpv4); err != nil {
-		logger.Error(err)
-		return false
-	}
-
-	if pattern == host {
-		return true
-	}
-
-	// short name condition
-	if !ipPatternContains(pattern) {
-		return pattern == host
-	}
-
-	ipAddress := strings.Split(host, splitCharacter)
-	for i := 0; i < len(mask); i++ {
-		if "*" == mask[i] || mask[i] == ipAddress[i] {
-			continue
-		} else if strings.Contains(mask[i], "-") {
-			rangeNumStrs := strings.Split(mask[i], "-")
-			if len(rangeNumStrs) != 2 {
-				logger.Error("There is wrong format of ip Address: " + mask[i])
-				return false
-			}
-			min := getNumOfIpSegment(rangeNumStrs[0], isIpv4)
-			max := getNumOfIpSegment(rangeNumStrs[1], isIpv4)
-			ip := getNumOfIpSegment(ipAddress[i], isIpv4)
-			if ip < min || ip > max {
-				return false
-			}
-		} else if "0" == ipAddress[i] && "0" == mask[i] || "00" == mask[i] || "000" == mask[i] || "0000" == mask[i] {
-			continue
-		} else if mask[i] != ipAddress[i] {
-			return false
-		}
-	}
-	return true
-}
-
-func ipPatternContains(pattern string) bool {
-	return strings.Contains(pattern, "*") || strings.Contains(pattern, "-")
-}
-
-func checkHostPattern(pattern string, mask []string, isIpv4 bool) error {
-	if !isIpv4 {
-		if len(mask) != 8 && ipPatternContains(pattern) {
-			return errors.New("If you config ip expression that contains '*' or '-', please fill qualified ip pattern like 234e:0:4567:0:0:0:3d:*. ")
-		}
-		if len(mask) != 8 && !strings.Contains(pattern, "::") {
-			return errors.New("The host is ipv6, but the pattern is not ipv6 pattern : " + pattern)
-		}
-	} else {
-		if len(mask) != 4 {
-			return errors.New("The host is ipv4, but the pattern is not ipv4 pattern : " + pattern)
-		}
-	}
-	return nil
-}
-
-func getPatternHostAndPort(pattern string, isIpv4 bool) []string {
-	result := make([]string, 2)
-	if strings.HasPrefix(pattern, "[") && strings.Contains(pattern, "]:") {
-		end := strings.Index(pattern, "]:")
-		result[0] = pattern[1:end]
-		result[1] = pattern[end+2:]
-	} else if strings.HasPrefix(pattern, "[") && strings.HasSuffix(pattern, "]") {
-		result[0] = pattern[1 : len(pattern)-1]
-		result[1] = ""
-	} else if isIpv4 && strings.Contains(pattern, ":") {
-		end := strings.Index(pattern, ":")
-		result[0] = pattern[:end]
-		result[1] = pattern[end+1:]
-	} else {
-		result[0] = pattern
-	}
-	return result
-}
-
-func getNumOfIpSegment(ipSegment string, isIpv4 bool) int {
-	if isIpv4 {
-		ipSeg, _ := strconv.Atoi(ipSegment)
-		return ipSeg
-	}
-	ipSeg, _ := strconv.ParseInt(ipSegment, 0, 16)
-	return int(ipSeg)
 }
