@@ -72,6 +72,8 @@ type RouterChain struct {
 func (c *RouterChain) Route(url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	cache := c.loadCache()
 	if cache == nil {
+		c.mutex.RLock()
+		defer c.mutex.RUnlock()
 		return c.invokers
 	}
 
@@ -106,7 +108,9 @@ func (c *RouterChain) AddRouters(routers []router.PriorityRouter) {
 // SetInvokers receives updated invokers from registry center. If the times of notification exceeds countThreshold and
 // time interval exceeds timeThreshold since last cache update, then notify to update the cache.
 func (c *RouterChain) SetInvokers(invokers []protocol.Invoker) {
+	c.mutex.Lock()
 	c.invokers = invokers
+	c.mutex.Unlock()
 
 	c.count++
 	now := time.Now()
