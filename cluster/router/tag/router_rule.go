@@ -39,7 +39,7 @@ import (
  */
 // RouterRule RouterRule config read from config file or config center
 type RouterRule struct {
-	router.BaseRouterRule `yaml:",inline""`
+	router.BaseRouterRule `yaml:",inline"`
 	Tags                  []Tag
 	addressToTagNames     map[string][]string
 	tagNameToAddresses    map[string][]string
@@ -52,12 +52,12 @@ func getRule(rawRule string) (*RouterRule, error) {
 		return r, err
 	}
 	r.RawRule = rawRule
-	r.init()
+	r.parseTags()
 	return r, nil
 }
 
-// init use for flattening tags data to @addressToTagNames and @tagNameToAddresses
-func (t *RouterRule) init() {
+// parseTags use for flattening tags data to @addressToTagNames and @tagNameToAddresses
+func (t *RouterRule) parseTags() {
 	t.addressToTagNames = make(map[string][]string, 2*len(t.Tags))
 	t.tagNameToAddresses = make(map[string][]string, len(t.Tags))
 	for _, tag := range t.Tags {

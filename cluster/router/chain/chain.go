@@ -65,7 +65,7 @@ func (c *RouterChain) Route(invokers []protocol.Invoker, url *common.URL, invoca
 	return finalInvokers
 }
 
-// Notify router chain of the initial addresses from registry at the first time. Notify whenever addresses in registry change.
+// SetInvokers router chain of the initial addresses from registry at the first time. Notify whenever addresses in registry change.
 func (c *RouterChain) SetInvokers(invokers []protocol.Invoker) {
 	for _, r := range c.routers {
 		if notifyRouter, ok := r.(router.NotifyRouter); ok {
