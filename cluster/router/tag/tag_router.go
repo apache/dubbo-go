@@ -146,7 +146,7 @@ func (c *tagRouter) Notify(invokers []protocol.Invoker) {
 	invoker := invokers[0]
 	url := invoker.GetUrl()
 	providerApplication := url.GetParam(constant.RemoteApplicationKey, "")
-	if providerApplication == "" {
+	if len(providerApplication) == 0 {
 		logger.Error("TagRouter must getConfig from or subscribe to a specific application, but the application " +
 			"in this TagRouter is not specified.")
 		return
