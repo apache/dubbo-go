@@ -21,19 +21,3 @@ type Tag struct {
 	Name      string
 	Addresses []string
 }
-
-func (t *Tag) getName() string {
-	return t.Name
-}
-
-func (t *Tag) setName(name string) {
-	t.Name = name
-}
-
-func (t *Tag) getAddresses() []string {
-	return t.Addresses
-}
-
-func (t *Tag) setAddresses(addresses []string) {
-	t.Addresses = addresses
-}
