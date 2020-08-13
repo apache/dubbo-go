@@ -147,6 +147,9 @@ func (c *RouterChain) copyRouters() []router.PriorityRouter {
 // copyInvokers copies a snapshot of the received invokers.
 func (c *RouterChain) copyInvokers() []protocol.Invoker {
 	c.mutex.RLock()
+	if c.invokers == nil || len(c.invokers) == 0 {
+		return nil
+	}
 	ret := copySlice(c.invokers)
 	c.mutex.RUnlock()
 	return ret.([]protocol.Invoker)
@@ -171,11 +174,11 @@ func (c *RouterChain) loadCache() *InvokerCache {
 
 // buildCache builds address cache with the new invokers for all poolable routers.
 func (c *RouterChain) buildCache() {
-	if c.invokers == nil || len(c.invokers) == 0 {
+	invokers := c.copyInvokers()
+	if invokers == nil || len(c.invokers) == 0 {
 		return
 	}
 
-	invokers := c.copyInvokers()
 	cache := BuildCache(invokers)
 	origin := c.loadCache()
 
