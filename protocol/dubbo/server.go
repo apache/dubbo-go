@@ -138,7 +138,7 @@ func (s *Server) newSession(session getty.Session) error {
 		session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
 		session.SetCronPeriod((int)(conf.sessionTimeout.Nanoseconds() / 1e6))
 		session.SetWaitTime(conf.GettySessionParam.waitTimeout)
-		logger.Debugf("app accepts new session:%s\n", session.Stat())
+		logger.Debugf("server accepts new session:%s\n", session.Stat())
 		session.SetTaskPool(srvGrpool)
 		return nil
 	}
