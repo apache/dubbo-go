@@ -136,7 +136,7 @@ type consulServiceDiscovery struct {
 	*consul.Config
 }
 
-func (csd *consulServiceDiscovery) Initialize(registryURL common.URL) error {
+func (csd *consulServiceDiscovery) Init(registryURL common.URL) error {
 	csd.serviceUrl = registryURL
 	csd.checkPassInterval = registryURL.GetParamInt(CHECK_PASS_INTERVAL, DEFAULT_CHECK_PASS_INTERVAL)
 	csd.tag = registryURL.GetParam(QUERY_TAG, "")
