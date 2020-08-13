@@ -19,12 +19,12 @@ package config
 
 import (
 	"bytes"
-	"github.com/dubbogo/getty"
 	"time"
 )
 
 import (
 	"github.com/creasty/defaults"
+	"github.com/dubbogo/getty"
 	perrors "github.com/pkg/errors"
 )
 
