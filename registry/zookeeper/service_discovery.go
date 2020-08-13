@@ -163,7 +163,7 @@ func (zksd *zookeeperServiceDiscovery) String() string {
 	return fmt.Sprintf("zookeeper-service-discovery[%s]", zksd.url)
 }
 
-func (zksd *zookeeperServiceDiscovery) Initialize(registryURL common.URL) error {
+func (zksd *zookeeperServiceDiscovery) Init(registryURL common.URL) error {
 	return nil
 }
 

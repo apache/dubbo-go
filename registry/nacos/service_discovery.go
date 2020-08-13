@@ -63,7 +63,7 @@ type nacosServiceDiscovery struct {
 	namingClient naming_client.INamingClient
 }
 
-func (n *nacosServiceDiscovery) Initialize(registryURL common.URL) error {
+func (n *nacosServiceDiscovery) Init(registryURL common.URL) error {
 	return nil
 }
 

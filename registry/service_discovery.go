@@ -42,7 +42,7 @@ type ServiceDiscovery interface {
 	 * Initializes the  ServiceDiscovery
 	 *
 	 */
-	Initialize(registryURL common.URL) error
+	Init(registryURL common.URL) error
 
 	// Destroy will destroy the service discovery.
 	// If the discovery cannot be destroy, it will return an error.

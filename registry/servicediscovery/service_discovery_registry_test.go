@@ -126,7 +126,7 @@ func (m *mockServiceNameMapping) Get(serviceInterface string, group string, vers
 type mockServiceDiscovery struct {
 }
 
-func (m *mockServiceDiscovery) Initialize(registryURL common.URL) error {
+func (m *mockServiceDiscovery) Init(registryURL common.URL) error {
 	return nil
 }
 

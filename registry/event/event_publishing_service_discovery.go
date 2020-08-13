@@ -38,8 +38,8 @@ import (
 // EventPublishingServiceDiscovery will enhance Service Discovery
 // Publish some event about service discovery
 type EventPublishingServiceDiscovery struct {
-	serviceDiscovery registry.ServiceDiscovery
-	once             sync.Once
+	serviceDiscovery         registry.ServiceDiscovery
+	serviceDiscoveryInitOnce sync.Once
 }
 
 // NewEventPublishingServiceDiscovery is a constructor
@@ -54,10 +54,10 @@ func (epsd *EventPublishingServiceDiscovery) String() string {
 	return epsd.serviceDiscovery.String()
 }
 
-func (epsd *EventPublishingServiceDiscovery) Initialize(registryURL common.URL) error {
+func (epsd *EventPublishingServiceDiscovery) Init(registryURL common.URL) error {
 	var err error
-	epsd.once.Do(func() {
-		err = epsd.serviceDiscovery.Initialize(registryURL)
+	epsd.serviceDiscoveryInitOnce.Do(func() {
+		err = epsd.serviceDiscovery.Init(registryURL)
 	})
 	return err
 }

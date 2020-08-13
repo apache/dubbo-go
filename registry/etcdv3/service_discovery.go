@@ -67,7 +67,7 @@ type etcdV3ServiceDiscovery struct {
 	childListenerMap map[string]*etcdv3.EventListener
 }
 
-func (e *etcdV3ServiceDiscovery) Initialize(registryURL common.URL) error {
+func (e *etcdV3ServiceDiscovery) Init(registryURL common.URL) error {
 	return nil
 }
 
