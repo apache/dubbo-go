@@ -39,9 +39,8 @@ func FallbackIfJoinToEmpty(left *roaring.Bitmap, right *roaring.Bitmap) *roaring
 	ret := JoinIfNotEqual(left, right)
 	if ret == nil || ret.IsEmpty() {
 		return right
-	} else {
-		return ret
 	}
+	return ret
 }
 
 func ToBitmap(invokers []protocol.Invoker) *roaring.Bitmap {
