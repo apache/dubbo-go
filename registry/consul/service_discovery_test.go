@@ -181,6 +181,7 @@ func prepareData() {
 		Address: fmt.Sprintf("%s:%d", registryHost, registryPort),
 	}
 }
+
 func prepareService() (registry.ServiceInstance, common.URL) {
 	id := "id"
 
@@ -208,28 +209,28 @@ type MockEventDispatcher struct {
 }
 
 // AddEventListener do nothing
-func (m MockEventDispatcher) AddEventListener(listener observer.EventListener) {
+func (m *MockEventDispatcher) AddEventListener(listener observer.EventListener) {
 }
 
 // AddEventListeners do nothing
-func (m MockEventDispatcher) AddEventListeners(listenersSlice []observer.EventListener) {
+func (m *MockEventDispatcher) AddEventListeners(listenersSlice []observer.EventListener) {
 }
 
 // RemoveEventListener do nothing
-func (m MockEventDispatcher) RemoveEventListener(listener observer.EventListener) {
+func (m *MockEventDispatcher) RemoveEventListener(listener observer.EventListener) {
 }
 
 // RemoveEventListeners do nothing
-func (m MockEventDispatcher) RemoveEventListeners(listenersSlice []observer.EventListener) {
+func (m *MockEventDispatcher) RemoveEventListeners(listenersSlice []observer.EventListener) {
 }
 
 // GetAllEventListeners return empty list
-func (m MockEventDispatcher) GetAllEventListeners() []observer.EventListener {
+func (m *MockEventDispatcher) GetAllEventListeners() []observer.EventListener {
 	return make([]observer.EventListener, 0)
 }
 
 // RemoveAllEventListeners do nothing
-func (m MockEventDispatcher) RemoveAllEventListeners() {
+func (m *MockEventDispatcher) RemoveAllEventListeners() {
 }
 
 // Dispatch do nothing
