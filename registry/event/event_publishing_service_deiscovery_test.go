@@ -117,7 +117,7 @@ func (tel *TestServiceInstancePreRegisteredEventListener) GetEventType() reflect
 type ServiceDiscoveryA struct {
 }
 
-func (msd *ServiceDiscoveryA) Initialize(registryURL common.URL) error {
+func (msd *ServiceDiscoveryA) Init(registryURL common.URL) error {
 	return nil
 }
 
