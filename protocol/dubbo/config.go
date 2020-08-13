@@ -18,6 +18,7 @@
 package dubbo
 
 import (
+	"github.com/dubbogo/getty"
 	"time"
 )
 
@@ -181,9 +182,9 @@ func (c *ClientConfig) CheckValidity() error {
 		return perrors.WithMessagef(err, "time.ParseDuration(HeartbeatPeroid{%#v})", c.HeartbeatPeriod)
 	}
 
-	if c.heartbeatPeriod >= time.Duration(config.MaxWheelTimeSpan) {
+	if c.heartbeatPeriod >= time.Duration(getty.MaxWheelTimeSpan) {
 		return perrors.WithMessagef(err, "heartbeat_period %s should be less than %s",
-			c.HeartbeatPeriod, time.Duration(config.MaxWheelTimeSpan))
+			c.HeartbeatPeriod, time.Duration(getty.MaxWheelTimeSpan))
 	}
 
 	if c.sessionTimeout, err = time.ParseDuration(c.SessionTimeout); err != nil {
@@ -201,9 +202,9 @@ func (c *ServerConfig) CheckValidity() error {
 		return perrors.WithMessagef(err, "time.ParseDuration(SessionTimeout{%#v})", c.SessionTimeout)
 	}
 
-	if c.sessionTimeout >= time.Duration(config.MaxWheelTimeSpan) {
+	if c.sessionTimeout >= time.Duration(getty.MaxWheelTimeSpan) {
 		return perrors.WithMessagef(err, "session_timeout %s should be less than %s",
-			c.SessionTimeout, time.Duration(config.MaxWheelTimeSpan))
+			c.SessionTimeout, time.Duration(getty.MaxWheelTimeSpan))
 	}
 
 	return perrors.WithStack(c.GettySessionParam.CheckValidity())
