@@ -13,7 +13,7 @@ require (
 	github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f // indirect
 	github.com/creasty/defaults v1.3.0
 	github.com/docker/go-connections v0.4.0 // indirect
-	github.com/dubbogo/getty v1.3.8
+	github.com/dubbogo/getty v1.3.9
 	github.com/dubbogo/go-zookeeper v1.0.1
 	github.com/dubbogo/gost v1.9.0
 	github.com/elazarl/go-bindata-assetfs v1.0.0 // indirect
