@@ -249,10 +249,10 @@ func poolRouter(p router.Poolable, origin *InvokerCache, invokers []protocol.Inv
 	if isCacheMiss(origin, name) || p.ShouldPool() || isInvokersChanged(origin.invokers, invokers) {
 		logger.Debugf("build address cache for router %q", name)
 		return p.Pool(invokers)
-	} else {
-		logger.Debugf("reuse existing address cache for router %q", name)
-		return origin.pools[name], origin.metadatas[name]
 	}
+
+	logger.Debugf("reuse existing address cache for router %q", name)
+	return origin.pools[name], origin.metadatas[name]
 }
 
 // isCacheMiss checks if the corresponding cache entry for a poolable router has already existed.
