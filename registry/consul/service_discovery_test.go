@@ -81,7 +81,7 @@ func TestConsulServiceDiscovery_Destroy(t *testing.T) {
 	prepareData()
 	serviceDiscovery, err := extension.GetServiceDiscovery(constant.CONSUL_KEY, testName)
 	_, registryUrl := prepareService()
-	serviceDiscovery.Initialize(registryUrl)
+	serviceDiscovery.Init(registryUrl)
 	assert.Nil(t, err)
 	assert.NotNil(t, serviceDiscovery)
 	err = serviceDiscovery.Destroy()
@@ -109,7 +109,7 @@ func TestConsulServiceDiscovery_CRUD(t *testing.T) {
 	serviceDiscovery, err := extension.GetServiceDiscovery(constant.CONSUL_KEY, testName)
 	assert.Nil(t, err)
 
-	err = serviceDiscovery.Initialize(registryUrl)
+	err = serviceDiscovery.Init(registryUrl)
 	assert.Nil(t, err)
 
 	err = serviceDiscovery.Unregister(instance)

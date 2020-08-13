@@ -126,7 +126,7 @@ func creatServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
 		return nil, perrors.WithMessage(err, "Create service discovery fialed")
 	}
 	serviceDiscovery := event.NewEventPublishingServiceDiscovery(originServiceDiscovery)
-	serviceDiscovery.Initialize(*url)
+	serviceDiscovery.Init(*url)
 	return serviceDiscovery, nil
 }
 
