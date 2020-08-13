@@ -18,16 +18,12 @@
 package dubbo
 
 import (
-	"github.com/dubbogo/getty"
 	"time"
 )
 
 import (
+	"github.com/dubbogo/getty"
 	perrors "github.com/pkg/errors"
-)
-
-import (
-	"github.com/apache/dubbo-go/config"
 )
 
 type (
