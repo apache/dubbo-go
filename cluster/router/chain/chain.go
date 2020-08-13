@@ -188,9 +188,9 @@ func (c *RouterChain) buildCache() {
 			go func(p router.Poolable) {
 				pool, info := poolRouter(p, origin, invokers)
 				mutex.Lock()
+				defer mutex.Unlock()
 				cache.pools[p.Name()] = pool
 				cache.metadatas[p.Name()] = info
-				mutex.Unlock()
 				wg.Done()
 			}(p)
 		}
