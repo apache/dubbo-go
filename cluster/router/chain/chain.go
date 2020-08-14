@@ -63,7 +63,7 @@ type RouterChain struct {
 	// The timestamp of last update for address cache
 	last time.Time
 	// Channel for notify to update the address cache
-	ch chan struct{}
+	notify chan struct{}
 	// Address cache
 	cache atomic.Value
 }
@@ -118,7 +118,7 @@ func (c *RouterChain) SetInvokers(invokers []protocol.Invoker) {
 		c.last = now
 		c.count = 0
 		go func() {
-			c.ch <- struct{}{}
+			c.notify <- struct{}{}
 		}()
 	}
 }
@@ -130,7 +130,7 @@ func (c *RouterChain) loop() {
 		select {
 		case <-time.Tick(timeInterval):
 			c.buildCache()
-		case <-c.ch:
+		case <-c.notify:
 			c.buildCache()
 		}
 	}
@@ -234,7 +234,7 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 		builtinRouters: routers,
 		routers:        newRouters,
 		last:           time.Now(),
-		ch:             make(chan struct{}),
+		notify:         make(chan struct{}),
 	}
 	if url != nil {
 		chain.url = *url
