@@ -97,7 +97,7 @@ func (c *tagRouter) Priority() int64 {
 
 // Pool divided invokers into different address pool by tag.
 func (c *tagRouter) Pool(invokers []protocol.Invoker) (router.AddrPool, router.AddrMetadata) {
-	rb := make(router.AddrPool)
+	rb := make(router.AddrPool, 8)
 	for i, invoker := range invokers {
 		url := invoker.GetUrl()
 		tag := url.GetParam(constant.Tagkey, "")
