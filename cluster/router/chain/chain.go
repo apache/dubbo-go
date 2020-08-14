@@ -139,19 +139,19 @@ func (c *RouterChain) loop() {
 // copyRouters make a snapshot copy from RouterChain's router list.
 func (c *RouterChain) copyRouters() []router.PriorityRouter {
 	c.mutex.RLock()
+	defer c.mutex.RUnlock()
 	ret := copySlice(c.routers)
-	c.mutex.RUnlock()
 	return ret.([]router.PriorityRouter)
 }
 
 // copyInvokers copies a snapshot of the received invokers.
 func (c *RouterChain) copyInvokers() []protocol.Invoker {
 	c.mutex.RLock()
+	defer c.mutex.RUnlock()
 	if c.invokers == nil || len(c.invokers) == 0 {
 		return nil
 	}
 	ret := copySlice(c.invokers)
-	c.mutex.RUnlock()
 	return ret.([]protocol.Invoker)
 }
 
