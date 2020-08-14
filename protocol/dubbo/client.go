@@ -193,13 +193,8 @@ type Response struct {
 	atta  map[string]interface{}
 }
 
-<<<<<<< HEAD
-// NewResponse  create a new Response.
-func NewResponse(reply interface{}, atta map[string]interface{}) *Response {
-=======
 // nolint
-func NewResponse(reply interface{}, atta map[string]string) *Response {
->>>>>>> aaa8be31fea3c0fe7ebbc1247cb273e74eaeb83b
+func NewResponse(reply interface{}, atta map[string]interface{}) *Response {
 	return &Response{
 		reply: reply,
 		atta:  atta,
