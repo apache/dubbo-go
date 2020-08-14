@@ -80,7 +80,7 @@ func (r *HealthCheckRouter) Pool(invokers []protocol.Invoker) (router.AddrPool, 
 		return nil, nil
 	}
 
-	rb := make(router.AddrPool)
+	rb := make(router.AddrPool, 8)
 	rb[healthy] = roaring.NewBitmap()
 	for i, invoker := range invokers {
 		if r.checker.IsHealthy(invoker) {
