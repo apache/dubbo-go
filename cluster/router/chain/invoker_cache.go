@@ -49,8 +49,8 @@ func BuildCache(invokers []protocol.Invoker) *InvokerCache {
 	return &InvokerCache{
 		invokers:  invokers,
 		bitmap:    utils.ToBitmap(invokers),
-		pools:     make(map[string]router.AddrPool),
-		metadatas: make(map[string]router.AddrMetadata),
+		pools:     make(map[string]router.AddrPool, 8),
+		metadatas: make(map[string]router.AddrMetadata, 8),
 	}
 }
 
