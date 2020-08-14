@@ -221,29 +221,27 @@ func filterInvokersWithTag(invokers []protocol.Invoker, url *common.URL, invocat
 		if len(result) > 0 || tagRouterRule.Force {
 			return result
 		}
-	} else {
-		// dynamic tag group doesn't have any item about the requested app OR it's null after filtered by
-		// dynamic tag group but force=false. check static tag
-		filter := func(invoker protocol.Invoker) bool {
-			return invoker.GetUrl().GetParam(constant.Tagkey, "") == tag
-		}
-		result = filterInvoker(invokers, filter)
 	}
+	// dynamic tag group doesn't have any item about the requested app OR it's null after filtered by
+	// dynamic tag group but force=false. check static tag
+	filter := func(invoker protocol.Invoker) bool {
+		return invoker.GetUrl().GetParam(constant.Tagkey, "") == tag
+	}
+	result = filterInvoker(invokers, filter)
 	// If there's no tagged providers that can match the current tagged request. force.tag is set by default
 	// to false, which means it will invoke any providers without a tag unless it's explicitly disallowed.
 	if len(result) > 0 || isForceUseTag(url, invocation) {
 		return result
-	} else {
-		// FAILOVER: return all Providers without any tags.
-		filterAddressNotMatches := func(invoker protocol.Invoker) bool {
-			url := invoker.GetUrl()
-			return len(addresses) == 0 || !checkAddressMatch(tagRouterRule.getAddresses(), url.Ip, url.Port)
-		}
-		filterTagIsEmpty := func(invoker protocol.Invoker) bool {
-			return invoker.GetUrl().GetParam(constant.Tagkey, "") == ""
-		}
-		return filterInvoker(invokers, filterAddressNotMatches, filterTagIsEmpty)
 	}
+	// FAILOVER: return all Providers without any tags.
+	filterAddressNotMatches := func(invoker protocol.Invoker) bool {
+		url := invoker.GetUrl()
+		return len(addresses) == 0 || !checkAddressMatch(tagRouterRule.getAddresses(), url.Ip, url.Port)
+	}
+	filterTagIsEmpty := func(invoker protocol.Invoker) bool {
+		return invoker.GetUrl().GetParam(constant.Tagkey, "") == ""
+	}
+	return filterInvoker(invokers, filterAddressNotMatches, filterTagIsEmpty)
 }
 
 // isForceUseTag returns whether force use tag
