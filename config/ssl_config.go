@@ -15,26 +15,29 @@
  * limitations under the License.
  */
 
-package cluster_impl
+package config
 
 import (
-	"github.com/apache/dubbo-go/cluster"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/protocol"
+	"github.com/dubbogo/getty"
 )
 
-type registryAwareCluster struct{}
+var (
+	serverTlsConfigBuilder getty.TlsConfigBuilder
+	clientTlsConfigBuilder getty.TlsConfigBuilder
+)
 
-func init() {
-	extension.SetCluster("registryAware", NewRegistryAwareCluster)
+func GetServerTlsConfigBuilder() getty.TlsConfigBuilder {
+	return serverTlsConfigBuilder
 }
 
-// NewRegistryAwareCluster returns a registry aware cluster instance
-func NewRegistryAwareCluster() cluster.Cluster {
-	return &registryAwareCluster{}
+func GetClientTlsConfigBuilder() getty.TlsConfigBuilder {
+	return clientTlsConfigBuilder
 }
 
-// nolint
-func (cluster *registryAwareCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return newRegistryAwareClusterInvoker(directory)
+func SetServerTlsConfigBuilder(configBuilder getty.TlsConfigBuilder) {
+	serverTlsConfigBuilder = configBuilder
+}
+
+func SetClientTlsConfigBuilder(configBuilder getty.TlsConfigBuilder) {
+	clientTlsConfigBuilder = configBuilder
 }

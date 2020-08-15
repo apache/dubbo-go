@@ -117,7 +117,13 @@ func NewConditionRouter(url *common.URL) (*ConditionRouter, error) {
 	}
 
 	router.url = url
-	router.priority = url.GetParamInt(constant.RouterPriority, 0)
+	var defaultPriority int64 = 0
+	if url.GetParam(constant.APPLICATION_KEY, "") != "" {
+		defaultPriority = 150
+	} else if url.GetParam(constant.INTERFACE_KEY, "") != "" {
+		defaultPriority = 140
+	}
+	router.priority = url.GetParamInt(constant.RouterPriority, defaultPriority)
 	router.Force = url.GetParamBool(constant.RouterForce, false)
 	router.enabled = url.GetParamBool(constant.RouterEnabled, true)
 
@@ -288,7 +294,7 @@ func matchCondition(pairs map[string]MatchPair, url *common.URL, param *common.U
 	return result
 }
 
-// MatchPair Match key pair , condition process
+// MatchPair Match key pair, condition process
 type MatchPair struct {
 	Matches    *gxset.HashSet
 	Mismatches *gxset.HashSet
@@ -314,7 +320,7 @@ func (pair MatchPair) isMatch(value string, param *common.URL) bool {
 		return true
 	}
 	if !pair.Mismatches.Empty() && !pair.Matches.Empty() {
-		//when both mismatches and matches contain the same value, then using mismatches first
+		// when both mismatches and matches contain the same value, then using mismatches first
 		for mismatch := range pair.Mismatches.Items {
 			if isMatchGlobalPattern(mismatch.(string), value, param) {
 				return false

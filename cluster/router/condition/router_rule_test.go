@@ -32,6 +32,7 @@ import (
 func TestGetRule(t *testing.T) {
 	testyml := `
 scope: application
+key: test-provider
 runtime: true
 force: false
 conditions:
@@ -50,10 +51,31 @@ conditions:
 	assert.True(t, rule.Runtime)
 	assert.Equal(t, false, rule.Force)
 	assert.Equal(t, testyml, rule.RawRule)
-	assert.True(t, true, rule.Valid)
+	assert.True(t, rule.Valid)
 	assert.Equal(t, false, rule.Enabled)
 	assert.Equal(t, false, rule.Dynamic)
-	assert.Equal(t, "", rule.Key)
+	assert.Equal(t, "test-provider", rule.Key)
+
+	testyml = `
+key: test-provider
+runtime: true
+force: false
+conditions:
+  - >
+    method!=sayHello =>`
+	rule, e = getRule(testyml)
+	assert.Nil(t, e)
+	assert.False(t, rule.Valid)
+
+	testyml = `
+scope: noApplication
+key: test-provider
+conditions:
+  - >
+    method!=sayHello =>`
+	rule, e = getRule(testyml)
+	assert.Nil(t, e)
+	assert.False(t, rule.Valid)
 }
 
 func TestIsMatchGlobPattern(t *testing.T) {

@@ -47,6 +47,7 @@ const (
 	PROTOCOL_KEY             = "protocol"
 	PATH_SEPARATOR           = "/"
 	DUBBO_KEY                = "dubbo"
+	SSL_ENABLED_KEY          = "ssl-enabled"
 )
 
 const (
@@ -99,6 +100,10 @@ const (
 	ROLE_KEY             = "registry.role"
 	REGISTRY_DEFAULT_KEY = "registry.default"
 	REGISTRY_TIMEOUT_KEY = "registry.timeout"
+	REGISTRY_LABEL_KEY   = "label"
+	PREFERRED_KEY        = "preferred"
+	ZONE_KEY             = "zone"
+	ZONE_FORCE_KEY       = "zone.force"
 	REGISTRY_TTL_KEY     = "registry.ttl"
 )
 
@@ -190,6 +195,9 @@ const (
 	HealthCheckRouterName = "health_check"
 	// TagRouterName Specify the name of TagRouter
 	TagRouterName = "tag"
+	// TagRouterRuleSuffix Specify tag router suffix
+	TagRouterRuleSuffix  = ".tag-router"
+	RemoteApplicationKey = "remote.application"
 	// ConditionRouterRuleSuffix Specify condition router suffix
 	ConditionRouterRuleSuffix = ".condition-router"
 
@@ -199,7 +207,14 @@ const (
 	RouterEnabled = "enabled"
 	// Priority Priority key in router module
 	RouterPriority = "priority"
-
+	// RouterScope Scope key in router module
+	RouterScope = "scope"
+	// RouterApplicationScope Scope key in router module
+	RouterApplicationScope = "application"
+	// RouterServiceScope Scope key in router module
+	RouterServiceScope = "service"
+	// RouterRuleKey defines the key of the router, service's/application's name
+	RouterRuleKey = "key"
 	// ForceUseTag is the tag in attachment
 	ForceUseTag = "dubbo.force.tag"
 	Tagkey      = "dubbo.tag"

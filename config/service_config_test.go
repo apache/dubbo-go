@@ -153,7 +153,7 @@ func TestExport(t *testing.T) {
 	providerConfig = nil
 }
 
-func TestgetRandomPort(t *testing.T) {
+func TestGetRandomPort(t *testing.T) {
 	protocolConfigs := make([]*ProtocolConfig, 0, 3)
 
 	ip, err := gxnet.GetLocalIP()
