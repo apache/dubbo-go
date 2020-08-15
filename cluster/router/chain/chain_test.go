@@ -173,6 +173,8 @@ func TestRouterChainRoute(t *testing.T) {
 	dubboURL, _ := common.NewURL(fmt.Sprintf(dubboForamt, test1234IP, port20000))
 	invokers = append(invokers, protocol.NewBaseInvoker(dubboURL))
 
+	chain.SetInvokers(invokers)
+
 	targetURL, _ := common.NewURL(fmt.Sprintf(consumerFormat, test1111IP))
 	inv := &invocation.RPCInvocation{}
 	finalInvokers := chain.Route(invokers, &targetURL, inv)
@@ -234,7 +236,6 @@ func TestRouterChainRouteNoRoute(t *testing.T) {
 
 	url := getConditionRouteUrl(applicationKey)
 	assert.NotNil(t, url)
-
 	invokers := []protocol.Invoker{}
 	dubboURL, _ := common.NewURL(fmt.Sprintf(dubboForamt, test1234IP, port20000))
 	invokers = append(invokers, protocol.NewBaseInvoker(dubboURL))
