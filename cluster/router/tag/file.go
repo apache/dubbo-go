@@ -42,7 +42,7 @@ type FileTagRouter struct {
 	force      bool
 }
 
-// NewFileTagRouter Create file tag router instance with content ( from config file)
+// NewFileTagRouter Create file tag router instance with content (from config file)
 func NewFileTagRouter(content []byte) (*FileTagRouter, error) {
 	fileRouter := &FileTagRouter{}
 	rule, err := getRule(string(content))
