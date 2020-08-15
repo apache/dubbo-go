@@ -85,15 +85,21 @@ func (dir *BaseDirectory) SetRouters(urls []*common.URL) {
 	for _, url := range urls {
 		routerKey := url.GetParam(constant.ROUTER_KEY, "")
 
-		if len(routerKey) > 0 {
-			factory := extension.GetRouterFactory(url.Protocol)
-			r, err := factory.NewPriorityRouter(url)
-			if err != nil {
-				logger.Errorf("Create router fail. router key: %s, url:%s, error: %+v", routerKey, url.Service(), err)
-				return
-			}
-			routers = append(routers, r)
+		if len(routerKey) == 0 {
+			continue
 		}
+		if url.Protocol == constant.CONDITION_ROUTE_PROTOCOL {
+			if !dir.isProperRouter(url) {
+				continue
+			}
+		}
+		factory := extension.GetRouterFactory(url.Protocol)
+		r, err := factory.NewPriorityRouter(url)
+		if err != nil {
+			logger.Errorf("Create router fail. router key: %s, url:%s, error: %+v", routerKey, url.Service(), err)
+			return
+		}
+		routers = append(routers, r)
 	}
 
 	logger.Infof("Init file condition router success, size: %v", len(routers))
@@ -102,6 +108,25 @@ func (dir *BaseDirectory) SetRouters(urls []*common.URL) {
 	dir.mutex.Unlock()
 
 	rc.AddRouters(routers)
+}
+
+func (dir *BaseDirectory) isProperRouter(url *common.URL) bool {
+	app := url.GetParam(constant.APPLICATION_KEY, "")
+	dirApp := dir.GetUrl().GetParam(constant.APPLICATION_KEY, "")
+	if len(dirApp) == 0 && dir.GetUrl().SubURL != nil {
+		dirApp = dir.GetUrl().SubURL.GetParam(constant.APPLICATION_KEY, "")
+	}
+	serviceKey := dir.GetUrl().ServiceKey()
+	if len(serviceKey) == 0 {
+		serviceKey = dir.GetUrl().SubURL.ServiceKey()
+	}
+	if len(app) > 0 && app == dirApp {
+		return true
+	}
+	if url.ServiceKey() == serviceKey {
+		return true
+	}
+	return false
 }
 
 // Destroy Destroy

@@ -24,7 +24,6 @@ import (
 )
 
 import (
-	_ "github.com/apache/dubbo-go/config_center/zookeeper"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,6 +33,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/config_center"
+	_ "github.com/apache/dubbo-go/config_center/zookeeper"
 	"github.com/apache/dubbo-go/remoting"
 	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
@@ -52,7 +52,9 @@ var (
 
 func TestNewAppRouter(t *testing.T) {
 
-	testYML := `enabled: true
+	testYML := `scope: application
+key: mock-app
+enabled: true
 force: true
 runtime: false
 conditions:
@@ -83,7 +85,7 @@ conditions:
 	assert.NotNil(t, appRouter)
 	assert.NotNil(t, appRouter.RouterRule())
 	rule := appRouter.RouterRule()
-	assert.Equal(t, "", rule.Scope)
+	assert.Equal(t, "application", rule.Scope)
 	assert.True(t, rule.Force)
 	assert.True(t, rule.Enabled)
 	assert.True(t, rule.Valid)
@@ -91,13 +93,15 @@ conditions:
 	assert.Equal(t, testYML, rule.RawRule)
 	assert.Equal(t, false, rule.Runtime)
 	assert.Equal(t, false, rule.Dynamic)
-	assert.Equal(t, "", rule.Key)
+	assert.Equal(t, "mock-app", rule.Key)
 	assert.Equal(t, 0, rule.Priority)
 }
 
 func TestGenerateConditions(t *testing.T) {
 
-	testYML := `enabled: true
+	testYML := `scope: application
+key: mock-app
+enabled: true
 force: true
 runtime: false
 conditions:
@@ -135,7 +139,9 @@ conditions:
 
 func TestProcess(t *testing.T) {
 
-	testYML := `enabled: true
+	testYML := `scope: application
+key: mock-app
+enabled: true
 force: true
 runtime: false
 conditions:
@@ -165,7 +171,8 @@ conditions:
 
 	assert.Equal(t, 1, len(appRouter.conditionRouters))
 
-	testNewYML := `
+	testNewYML := `scope: application
+key: mock-app
 enabled: true
 force: true
 runtime: false
