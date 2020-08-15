@@ -18,6 +18,7 @@
 package getty
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 )
@@ -30,6 +31,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
@@ -116,6 +118,8 @@ func NewServer(url common.URL, handlers func(*invocation.RPCInvocation) protocol
 	//init
 	initServer(url.Protocol)
 
+	srvConf.SSLEnabled = url.GetParamBool(constant.SSL_ENABLED_KEY, false)
+
 	s := &Server{
 		conf:           *srvConf,
 		addr:           url.Location,
@@ -138,7 +142,20 @@ func (s *Server) newSession(session getty.Session) error {
 	if conf.GettySessionParam.CompressEncoding {
 		session.SetCompressType(getty.CompressZip)
 	}
-
+	if _, ok = session.Conn().(*tls.Conn); ok {
+		session.SetName(conf.GettySessionParam.SessionName)
+		session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
+		session.SetPkgHandler(NewRpcServerPackageHandler(s))
+		session.SetEventListener(s.rpcHandler)
+		session.SetWQLen(conf.GettySessionParam.PkgWQSize)
+		session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
+		session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
+		session.SetCronPeriod((int)(conf.sessionTimeout.Nanoseconds() / 1e6))
+		session.SetWaitTime(conf.GettySessionParam.waitTimeout)
+		logger.Debugf("server accepts new session:%s\n", session.Stat())
+		session.SetTaskPool(srvGrpool)
+		return nil
+	}
 	if tcpConn, ok = session.Conn().(*net.TCPConn); !ok {
 		panic(fmt.Sprintf("%s, session.conn{%#v} is not tcp connection\n", session.Stat(), session.Conn()))
 	}
@@ -170,12 +187,23 @@ func (s *Server) newSession(session getty.Session) error {
 // Start ...
 func (s *Server) Start() {
 	var (
+		addr      string
 		tcpServer getty.Server
 	)
 
-	tcpServer = getty.NewTCPServer(
-		getty.WithLocalAddress(s.addr),
-	)
+	addr = s.addr
+	if s.conf.SSLEnabled {
+		tcpServer = getty.NewTCPServer(
+			getty.WithLocalAddress(addr),
+			getty.WithServerSslEnabled(s.conf.SSLEnabled),
+			getty.WithServerTlsConfigBuilder(config.GetServerTlsConfigBuilder()),
+		)
+
+	} else {
+		tcpServer = getty.NewTCPServer(
+			getty.WithLocalAddress(addr),
+		)
+	}
 	tcpServer.RunEventLoop(s.newSession)
 	logger.Debugf("s bind addr{%s} ok!", s.addr)
 	s.tcpServer = tcpServer

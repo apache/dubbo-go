@@ -50,6 +50,8 @@ type (
 	// ServerConfig
 	//Config holds supported types by the multiconfig package
 	ServerConfig struct {
+		SSLEnabled bool
+
 		// session
 		SessionTimeout string `default:"60s" yaml:"session_timeout" json:"session_timeout,omitempty"`
 		sessionTimeout time.Duration

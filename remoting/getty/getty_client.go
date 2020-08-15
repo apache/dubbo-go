@@ -18,6 +18,7 @@
 package getty
 
 import (
+	"github.com/apache/dubbo-go/common/constant"
 	"math/rand"
 	"time"
 )
@@ -111,6 +112,8 @@ type Options struct {
 	// connect timeout
 	// remove request timeout, it will be calulate for every request
 	ConnectTimeout time.Duration
+	// request timeout
+	RequestTimeout time.Duration
 }
 
 // Client : some configuration for network communication.
@@ -129,6 +132,9 @@ func NewClient(opt Options) *Client {
 	switch {
 	case opt.ConnectTimeout == 0:
 		opt.ConnectTimeout = 3 * time.Second
+		fallthrough
+	case opt.RequestTimeout == 0:
+		opt.RequestTimeout = 3 * time.Second
 	}
 
 	c := &Client{
@@ -150,6 +156,8 @@ func (c *Client) Connect(url common.URL) error {
 	c.conf = *clientConf
 	// new client
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
+	c.pool.sslEnabled = url.GetParamBool(constant.SSL_ENABLED_KEY, false)
+
 	// codec
 	c.codec = remoting.GetCodec(url.Protocol)
 	c.addr = url.Location

@@ -200,6 +200,7 @@ func getExchangeClient(url common.URL) *remoting.ExchangeClient {
 			// new ExchangeClient
 			exchangeClientTmp = remoting.NewExchangeClient(url, getty.NewClient(getty.Options{
 				ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
+				RequestTimeout: config.GetConsumerConfig().RequestTimeout,
 			}), config.GetConsumerConfig().ConnectTimeout, false)
 			// input store
 			if exchangeClientTmp != nil {
@@ -218,7 +219,7 @@ func getExchangeClient(url common.URL) *remoting.ExchangeClient {
 	if !ok {
 		exchangeClientTmp := remoting.NewExchangeClient(url, getty.NewClient(getty.Options{
 			ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
-		}), config.GetConsumerConfig().ConnectTimeout, false)
+			RequestTimeout: config.GetConsumerConfig().RequestTimeout}), config.GetConsumerConfig().ConnectTimeout, false)
 		if exchangeClientTmp != nil {
 			exchangeClientMap.Store(url.Location, exchangeClientTmp)
 		}
