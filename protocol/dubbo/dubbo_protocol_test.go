@@ -104,7 +104,7 @@ func TestDubboProtocol_Export(t *testing.T) {
 	_, ok := proto.(*DubboProtocol).ExporterMap().Load(url.ServiceKey())
 	assert.True(t, ok)
 	exporter2.Unexport()
-	_, ok = proto.(*DubboProtocol).ExporterMap().Load(url.ServiceKey())
+	_, ok = proto.(*DubboProtocol).ExporterMap().Load(url2.ServiceKey())
 	assert.False(t, ok)
 
 	// make sure serverMap after 'Destroy'
