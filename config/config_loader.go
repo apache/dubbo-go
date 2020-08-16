@@ -277,7 +277,8 @@ func selectMetadataServiceExportedURL() *common.URL {
 	var selectedUrl common.URL
 	metaDataService, err := extension.GetMetadataService(GetApplicationConfig().MetadataType)
 	if err != nil {
-		panic(err)
+		logger.Warn(err)
+		return nil
 	}
 	list, err := metaDataService.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
 	if err != nil {
@@ -292,12 +293,10 @@ func selectMetadataServiceExportedURL() *common.URL {
 			logger.Errorf("url format error {%v}", url)
 			continue
 		}
+		selectedUrl = url
 		// rest first
 		if url.Protocol == "rest" {
-			selectedUrl = url
 			break
-		} else {
-			selectedUrl = url
 		}
 	}
 	return &selectedUrl
