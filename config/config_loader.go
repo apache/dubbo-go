@@ -27,6 +27,7 @@ import (
 )
 
 import (
+	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 )
 
@@ -212,7 +213,7 @@ func loadProviderConfig() {
 }
 
 // registerServiceInstance register service instance
-func registerServiceInstance(){
+func registerServiceInstance() {
 	url := selectMetadataServiceExportedURL()
 	if url == nil {
 		return
