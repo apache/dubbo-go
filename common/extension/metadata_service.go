@@ -22,6 +22,10 @@ import (
 )
 
 import (
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"github.com/apache/dubbo-go/metadata/service"
 )
 
@@ -36,12 +40,11 @@ func SetMetadataService(msType string, creator func() (service.MetadataService, 
 }
 
 // GetMetadataService will create a MetadataService instance
-// it will panic if msType not found
 func GetMetadataService(msType string) (service.MetadataService, error) {
 	if creator, ok := metadataServiceInsMap[msType]; ok {
 		return creator()
 	}
-	panic(fmt.Sprintf("could not find the metadata service creator for metadataType: %s, please check whether you have imported relative packages, \n"+
+	return nil, perrors.New(fmt.Sprintf("could not find the metadata service creator for metadataType: %s, please check whether you have imported relative packages, \n"+
 		"local - github.com/apache/dubbo-go/metadata/service/inmemory, \n"+
 		"remote - github.com/apache/dubbo-go/metadata/service/remote", msType))
 }
