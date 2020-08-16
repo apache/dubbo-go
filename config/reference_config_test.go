@@ -32,6 +32,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/registry"
 )
 
 var regProtocol protocol.Protocol
@@ -338,9 +339,37 @@ func (*mockRegistryProtocol) Refer(url common.URL) protocol.Invoker {
 }
 
 func (*mockRegistryProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
+	registryUrl := getRegistryUrl(invoker)
+	if registryUrl.Protocol == "service-discovery" {
+		metaDataService, err := extension.GetMetadataService(GetApplicationConfig().MetadataType)
+		if err != nil {
+			panic(err)
+		}
+		ok, err := metaDataService.ExportURL(*invoker.GetUrl().SubURL.Clone())
+		if err != nil {
+			panic(err)
+		}
+		if !ok {
+			panic("The URL has been registry!")
+		}
+	}
 	return protocol.NewBaseExporter("test", invoker, &sync.Map{})
 }
 
 func (*mockRegistryProtocol) Destroy() {
 	// Destroy is a mock function
+}
+func getRegistryUrl(invoker protocol.Invoker) *common.URL {
+	// here add * for return a new url
+	url := invoker.GetUrl()
+	// if the protocol == registry ,set protocol the registry value in url.params
+	if url.Protocol == constant.REGISTRY_PROTOCOL {
+		protocol := url.GetParam(constant.REGISTRY_KEY, "")
+		url.Protocol = protocol
+	}
+	return &url
+}
+
+func (p *mockRegistryProtocol) GetRegistries() []registry.Registry {
+	return []registry.Registry{&mockServiceDiscoveryRegistry{}}
 }
