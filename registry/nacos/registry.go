@@ -62,6 +62,66 @@ type nacosRegistry struct {
 	registryUrls []common.URL
 }
 
+func getNacosConfig(url *common.URL) (map[string]interface{}, error) {
+	if url == nil {
+		return nil, perrors.New("url is empty!")
+	}
+	if len(url.Location) == 0 {
+		return nil, perrors.New("url.location is empty!")
+	}
+	configMap := make(map[string]interface{}, 2)
+
+	addresses := strings.Split(url.Location, ",")
+	serverConfigs := make([]nacosConstant.ServerConfig, 0, len(addresses))
+	for _, addr := range addresses {
+		ip, portStr, err := net.SplitHostPort(addr)
+		if err != nil {
+			return nil, perrors.WithMessagef(err, "split [%s] ", addr)
+		}
+		port, _ := strconv.Atoi(portStr)
+		serverConfigs = append(serverConfigs, nacosConstant.ServerConfig{
+			IpAddr: ip,
+			Port:   uint64(port),
+		})
+	}
+	configMap["serverConfigs"] = serverConfigs
+
+	var clientConfig nacosConstant.ClientConfig
+	timeout, err := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
+	if err != nil {
+		return nil, err
+	}
+	clientConfig.TimeoutMs = uint64(timeout.Seconds() * 1000)
+	clientConfig.ListenInterval = 2 * clientConfig.TimeoutMs
+	clientConfig.CacheDir = url.GetParam(constant.NACOS_CACHE_DIR_KEY, "")
+	clientConfig.LogDir = url.GetParam(constant.NACOS_LOG_DIR_KEY, "")
+	clientConfig.Endpoint = url.GetParam(constant.NACOS_ENDPOINT, "")
+	clientConfig.Username = url.GetParam(constant.NACOS_USERNAME, "")
+	clientConfig.Password = url.GetParam(constant.NACOS_PASSWORD, "")
+	clientConfig.NamespaceId = url.GetParam(constant.NACOS_NAMESPACEID, "")
+	clientConfig.NotLoadCacheAtStart = true
+	configMap["clientConfig"] = clientConfig
+
+	return configMap, nil
+}
+
+func newNacosRegistry(url *common.URL) (registry.Registry, error) {
+	nacosConfig, err := getNacosConfig(url)
+	if err != nil {
+		return nil, err
+	}
+	client, err := clients.CreateNamingClient(nacosConfig)
+	if err != nil {
+		return nil, err
+	}
+	registry := nacosRegistry{
+		URL:          url,
+		namingClient: client,
+		registryUrls: []common.URL{},
+	}
+	return &registry, nil
+}
+
 func getCategory(url common.URL) string {
 	role, _ := strconv.Atoi(url.GetParam(constant.ROLE_KEY, strconv.Itoa(constant.NACOS_DEFAULT_ROLETYPE)))
 	category := common.DubboNodes[role]
@@ -116,6 +176,22 @@ func createRegisterParam(url common.URL, serviceName string) vo.RegisterInstance
 		ServiceName: serviceName,
 	}
 	return instance
+}
+
+func createDeregisterParam(url common.URL, serviceName string) vo.DeregisterInstanceParam {
+	if len(url.Ip) == 0 {
+		url.Ip = localIP
+	}
+	if len(url.Port) == 0 || url.Port == "0" {
+		url.Port = "80"
+	}
+	port, _ := strconv.Atoi(url.Port)
+	return vo.DeregisterInstanceParam{
+		Ip:          url.Ip,
+		Port:        uint64(port),
+		ServiceName: serviceName,
+		Ephemeral:   true,
+	}
 }
 
 // Register will register the service @url to its nacos registry center
