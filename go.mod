@@ -1,7 +1,6 @@
 module github.com/apache/dubbo-go
 
 require (
-	cloud.google.com/go v0.39.0 // indirect
 	github.com/Microsoft/go-winio v0.4.13 // indirect
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
 	github.com/Workiva/go-datastructures v1.0.50
@@ -46,14 +45,12 @@ require (
 	github.com/prometheus/client_golang v1.1.0
 	github.com/satori/go.uuid v1.2.1-0.20181028125025-b2ce2384e17b
 	github.com/shirou/gopsutil v2.19.9+incompatible // indirect
-	github.com/smartystreets/goconvey v0.0.0-20190710185942-9d28bd7c0945 // indirect
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/stretchr/testify v1.5.1
 	github.com/zouyx/agollo/v3 v3.4.4
 	go.etcd.io/bbolt v1.3.4 // indirect
 	go.uber.org/atomic v1.6.0
 	go.uber.org/zap v1.15.0
-	google.golang.org/genproto v0.0.0-20190801165951-fa694d86fc64 // indirect
 	google.golang.org/grpc v1.23.0
 	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.16.9
