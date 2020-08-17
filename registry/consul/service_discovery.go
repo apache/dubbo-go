@@ -196,10 +196,10 @@ func (csd *consulServiceDiscovery) Unregister(instance registry.ServiceInstance)
 	stopChanel, ok := csd.ttl[buildID(instance)]
 	if !ok {
 		logger.Warnf("ttl for service instance %s didn't exist", instance.GetId())
-	} else {
-		close(stopChanel)
-		delete(csd.ttl, buildID(instance))
+		return nil
 	}
+	close(stopChanel)
+	delete(csd.ttl, buildID(instance))
 	return nil
 }
 
