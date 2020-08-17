@@ -172,7 +172,17 @@ const (
 )
 
 const (
-	CONSUL_KEY = "consul"
+	CONSUL_KEY          = "consul"
+	CHECK_PASS_INTERVAL = "consul-check-pass-interval"
+	// default time-to-live in millisecond
+	DEFAULT_CHECK_PASS_INTERVAL = 16000
+	QUERY_TAG                   = "consul_query_tag"
+	ACL_TOKEN                   = "acl-token"
+	// default deregister critical server after
+	DEFAULT_DEREGISTER_TIME = "20s"
+	DEFAULT_WATCH_TIMEOUT   = 60 * 1000
+	WATCH_TIMEOUT           = "consul-watch-timeout"
+	DEREGISTER_AFTER        = "consul-deregister-critical-service-after"
 )
 
 const (
