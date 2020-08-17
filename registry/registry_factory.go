@@ -19,6 +19,6 @@ package registry
 
 // RegistryFactory
 type RegistryFactory interface {
-	 // GetRegistries get registries
-	 GetRegistries() []Registry
+	// GetRegistries get registries
+	GetRegistries() []Registry
 }
