@@ -43,21 +43,7 @@ import (
 )
 
 const (
-	PageSize = "pageSize"
-	Enable   = "enable"
-)
-
-const (
-	CHECK_PASS_INTERVAL = "consul-check-pass-interval"
-	// default time-to-live in millisecond
-	DEFAULT_CHECK_PASS_INTERVAL = 16000
-	QUERY_TAG                   = "consul_query_tag"
-	ACL_TOKEN                   = "acl-token"
-	// default deregister critical server after
-	DEFAULT_DEREGISTER_TIME = "20s"
-	DEFAULT_WATCH_TIMEOUT   = 60 * 1000
-	WATCH_TIMEOUT           = "consul-watch-timeout"
-	DEREGISTER_AFTER        = "consul-deregister-critical-service-after"
+	enable = "enable"
 )
 
 var (
@@ -100,19 +86,9 @@ func newConsulServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 
 	descriptor := fmt.Sprintf("consul-service-discovery[%s]", remoteConfig.Address)
 
-	pageSize := 20
-	if remoteConfig.Params != nil {
-		if tmp, OK := remoteConfig.Params[PageSize]; OK {
-			intTmp, err := strconv.Atoi(tmp)
-			if err == nil && intTmp > 20 {
-				pageSize = intTmp
-			}
-		}
-	}
 	return &consulServiceDiscovery{
 		address:    remoteConfig.Address,
 		descriptor: descriptor,
-		PageSize:   pageSize,
 		ttl:        make(map[string]chan struct{}),
 	}, nil
 }
@@ -126,7 +102,6 @@ type consulServiceDiscovery struct {
 	descriptor string
 	// Consul client.
 	consulClient      *consul.Client
-	PageSize          int
 	serviceUrl        common.URL
 	checkPassInterval int64
 	tag               string
@@ -138,10 +113,10 @@ type consulServiceDiscovery struct {
 
 func (csd *consulServiceDiscovery) Init(registryURL common.URL) error {
 	csd.serviceUrl = registryURL
-	csd.checkPassInterval = registryURL.GetParamInt(CHECK_PASS_INTERVAL, DEFAULT_CHECK_PASS_INTERVAL)
-	csd.tag = registryURL.GetParam(QUERY_TAG, "")
+	csd.checkPassInterval = registryURL.GetParamInt(constant.CHECK_PASS_INTERVAL, constant.DEFAULT_CHECK_PASS_INTERVAL)
+	csd.tag = registryURL.GetParam(constant.QUERY_TAG, "")
 	csd.tags = strings.Split(registryURL.GetParam("tags", ""), ",")
-	aclToken := registryURL.GetParam(ACL_TOKEN, "")
+	aclToken := registryURL.GetParam(constant.ACL_TOKEN, "")
 	csd.Config = &consul.Config{Address: csd.address, Token: aclToken}
 	client, err := consul.NewClient(csd.Config)
 	if err != nil {
@@ -219,7 +194,9 @@ func (csd *consulServiceDiscovery) Unregister(instance registry.ServiceInstance)
 		return err
 	}
 	stopChanel, ok := csd.ttl[buildID(instance)]
-	if ok {
+	if !ok {
+		logger.Warnf("ttl for service instance %s didn't exist", instance.GetId())
+	} else {
 		close(stopChanel)
 		delete(csd.ttl, buildID(instance))
 	}
@@ -227,7 +204,7 @@ func (csd *consulServiceDiscovery) Unregister(instance registry.ServiceInstance)
 }
 
 func (csd *consulServiceDiscovery) GetDefaultPageSize() int {
-	return csd.PageSize
+	return registry.DefaultPageSize
 }
 
 func (csd *consulServiceDiscovery) GetServices() *gxset.HashSet {
@@ -247,7 +224,7 @@ func (csd *consulServiceDiscovery) GetServices() *gxset.HashSet {
 }
 
 func (csd *consulServiceDiscovery) GetInstances(serviceName string) []registry.ServiceInstance {
-	waitTime := csd.serviceUrl.GetParamInt(WATCH_TIMEOUT, DEFAULT_WATCH_TIMEOUT) / 1000
+	waitTime := csd.serviceUrl.GetParamInt(constant.WATCH_TIMEOUT, constant.DEFAULT_WATCH_TIMEOUT) / 1000
 	instances, _, err := csd.consulClient.Health().Service(serviceName, csd.tag, true, &consul.QueryOptions{
 		WaitTime: time.Duration(waitTime),
 	})
@@ -261,8 +238,8 @@ func (csd *consulServiceDiscovery) GetInstances(serviceName string) []registry.S
 		metadata := ins.Service.Meta
 
 		// enable status
-		enableStr := metadata[Enable]
-		delete(metadata, Enable)
+		enableStr := metadata[enable]
+		delete(metadata, enable)
 		enable, _ := strconv.ParseBool(enableStr)
 
 		// health status
@@ -344,8 +321,8 @@ func (csd *consulServiceDiscovery) AddListener(listener *registry.ServiceInstanc
 			metadata := ins.Service.Meta
 
 			// enable status
-			enableStr := metadata[Enable]
-			delete(metadata, Enable)
+			enableStr := metadata[enable]
+			delete(metadata, enable)
 			enable, _ := strconv.ParseBool(enableStr)
 
 			// health status
@@ -396,7 +373,7 @@ func (csd *consulServiceDiscovery) buildRegisterInstance(instance registry.Servi
 	if metadata == nil {
 		metadata = make(map[string]string, 1)
 	}
-	metadata[Enable] = strconv.FormatBool(instance.IsEnable())
+	metadata[enable] = strconv.FormatBool(instance.IsEnable())
 
 	// check
 	check := csd.buildCheck(instance)
@@ -413,9 +390,9 @@ func (csd *consulServiceDiscovery) buildRegisterInstance(instance registry.Servi
 
 func (csd *consulServiceDiscovery) buildCheck(instance registry.ServiceInstance) consul.AgentServiceCheck {
 
-	deregister, ok := instance.GetMetadata()[DEREGISTER_AFTER]
+	deregister, ok := instance.GetMetadata()[constant.DEREGISTER_AFTER]
 	if !ok || deregister == "" {
-		deregister = DEFAULT_DEREGISTER_TIME
+		deregister = constant.DEFAULT_DEREGISTER_TIME
 	}
 	return consul.AgentServiceCheck{
 		CheckID:                        buildID(instance),
