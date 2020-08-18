@@ -42,6 +42,7 @@ var (
 	providerConfig *ProviderConfig
 	// baseConfig = providerConfig.BaseConfig or consumerConfig
 	baseConfig *BaseConfig
+	sslEnabled = false
 
 	// configAccessMutex is used to make sure that xxxxConfig will only be created once if needed.
 	// it should be used combine with double-check to avoid the race condition
@@ -325,6 +326,12 @@ func GetBaseConfig() *BaseConfig {
 	return baseConfig
 }
 
+func GetSslEnabled() bool {
+	return sslEnabled
+}
+func SetSslEnabled(enabled bool) {
+	sslEnabled = enabled
+}
 func IsProvider() bool {
 	return providerConfig != nil
 }
