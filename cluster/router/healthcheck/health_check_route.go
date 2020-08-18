@@ -66,7 +66,7 @@ func (r *HealthCheckRouter) Route(invokers *roaring.Bitmap, cache router.Cache, 
 	addrPool := cache.FindAddrPool(r)
 	// Add healthy invoker to the list
 	healthyInvokers := utils.JoinIfNotEqual(addrPool[healthy], invokers)
-	// If all Invoke are considered unhealthy, downgrade to all invoker
+	// If all invokers are considered unhealthy, downgrade to all invoker
 	if healthyInvokers.IsEmpty() {
 		logger.Warnf(" Now all invokers are unhealthy, so downgraded to all! Service: [%s]", url.ServiceKey())
 		return invokers
