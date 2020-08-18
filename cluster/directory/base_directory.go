@@ -112,11 +112,15 @@ func (dir *BaseDirectory) SetRouters(urls []*common.URL) {
 
 func (dir *BaseDirectory) isProperRouter(url *common.URL) bool {
 	app := url.GetParam(constant.APPLICATION_KEY, "")
+	dirApp := dir.GetUrl().GetParam(constant.APPLICATION_KEY, "")
+	if len(dirApp) == 0 && dir.GetUrl().SubURL != nil {
+		dirApp = dir.GetUrl().SubURL.GetParam(constant.APPLICATION_KEY, "")
+	}
 	serviceKey := dir.GetUrl().ServiceKey()
-	if serviceKey == "" {
+	if len(serviceKey) == 0 {
 		serviceKey = dir.GetUrl().SubURL.ServiceKey()
 	}
-	if len(app) > 0 && app == dir.GetUrl().GetParam(constant.APPLICATION_KEY, "") {
+	if len(app) > 0 && app == dirApp {
 		return true
 	}
 	if url.ServiceKey() == serviceKey {
