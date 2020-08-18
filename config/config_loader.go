@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"reflect"
 	"strconv"
 	"sync"
 	"time"
@@ -226,7 +227,7 @@ func registerServiceInstance() {
 	var rp registry.RegistryFactory
 	var ok bool
 	if rp, ok = p.(registry.RegistryFactory); !ok {
-		panic("dubbo registry protocol is invalid")
+		panic("dubbo registry protocol{" + reflect.TypeOf(p).String() + "} is invalid")
 	}
 	rs := rp.GetRegistries()
 	for _, r := range rs {
