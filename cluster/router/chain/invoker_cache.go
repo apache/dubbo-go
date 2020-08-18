@@ -78,3 +78,30 @@ func (c *InvokerCache) SetAddrPool(name string, pool router.AddrPool) {
 func (c *InvokerCache) SetAddrMeta(name string, meta router.AddrMetadata) {
 	c.metadatas[name] = meta
 }
+
+func (c *InvokerCache) Clone() *InvokerCache {
+	ret := &InvokerCache{
+		pools:     make(map[string]router.AddrPool, len(c.pools)),
+		metadatas: make(map[string]router.AddrMetadata, len(c.metadatas)),
+	}
+
+	invokers := make([]protocol.Invoker, 0, len(c.invokers))
+	invokers = append(invokers, c.invokers...)
+	ret.invokers = invokers
+
+	ret.bitmap = c.bitmap.Clone()
+
+	for k, v := range c.pools {
+		pool := make(router.AddrPool, len(v))
+		for k1, v1 := range pool {
+			pool[k1] = v1.Clone()
+		}
+		ret.pools[k] = pool
+	}
+
+	for k, v := range c.metadatas {
+		ret.metadatas[k] = v.Clone()
+	}
+
+	return ret
+}

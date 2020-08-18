@@ -74,8 +74,8 @@ type AddrPool map[string]*roaring.Bitmap
 
 // AddrMetadta is address metadata, collected from a snapshot of address list by a router, if it implements Poolable.
 type AddrMetadata interface {
-	// Source indicates where the metadata comes from.
-	Source() string
+	// Copy returns a copy of address metadata.
+	Clone() AddrMetadata
 }
 
 // Cache caches all addresses relevant info for a snapshot of received invokers. It keeps a snapshot of the received
