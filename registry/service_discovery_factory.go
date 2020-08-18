@@ -17,7 +17,8 @@
 
 package registry
 
-// ServiceDiscoveryHolder
+// ServiceDiscoveryHolder we can get a service discovery
+// it always be a service discovery registry
 type ServiceDiscoveryHolder interface {
 	// GetServiceDiscovery get service discovery
 	GetServiceDiscovery() ServiceDiscovery
