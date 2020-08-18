@@ -298,7 +298,7 @@ func poolWithStaticTag(invokers []protocol.Invoker, pool router.AddrPool) {
 	for i, invoker := range invokers {
 		url := invoker.GetUrl()
 		tag := url.GetParam(constant.Tagkey, "")
-		if tag != "" {
+		if len(tag) > 0 {
 			if _, ok := pool[staticPrefix+tag]; !ok {
 				pool[staticPrefix+tag] = roaring.NewBitmap()
 			}
