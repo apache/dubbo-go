@@ -18,7 +18,6 @@
 package chain
 
 import (
-	"reflect"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -141,8 +140,9 @@ func (c *RouterChain) loop() {
 func (c *RouterChain) copyRouters() []router.PriorityRouter {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
-	ret := copySlice(c.routers)
-	return ret.([]router.PriorityRouter)
+	ret := make([]router.PriorityRouter, 0, len(c.routers))
+	ret = append(ret, c.routers...)
+	return ret
 }
 
 // copyInvokers copies a snapshot of the received invokers.
@@ -152,15 +152,9 @@ func (c *RouterChain) copyInvokers() []protocol.Invoker {
 	if c.invokers == nil || len(c.invokers) == 0 {
 		return nil
 	}
-	ret := copySlice(c.invokers)
-	return ret.([]protocol.Invoker)
-}
-
-func copySlice(s interface{}) interface{} {
-	t, v := reflect.TypeOf(s), reflect.ValueOf(s)
-	c := reflect.MakeSlice(t, v.Len(), v.Len())
-	reflect.Copy(c, v)
-	return c.Interface()
+	ret := make([]protocol.Invoker, 0, len(c.invokers))
+	ret = append(ret, c.invokers...)
+	return ret
 }
 
 // loadCache loads cache from sync.Value to guarantee the visibility
