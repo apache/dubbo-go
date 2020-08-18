@@ -117,6 +117,7 @@ func (proto *registryProtocol) initConfigurationListeners() {
 	proto.providerConfigurationListener = newProviderConfigurationListener(proto.overrideListeners)
 }
 
+// nolint
 func (proto *registryProtocol) GetRegistries() []registry.Registry {
 	var rs []registry.Registry
 	proto.registries.Range(func(_, v interface{}) bool {
