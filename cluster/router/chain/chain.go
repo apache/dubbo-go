@@ -127,8 +127,9 @@ func (c *RouterChain) SetInvokers(invokers []protocol.Invoker) {
 // from address update, or when timeInterval exceeds.
 func (c *RouterChain) loop() {
 	for {
+		ticker := time.NewTicker(timeInterval)
 		select {
-		case <-time.Tick(timeInterval):
+		case <-ticker.C:
 			c.buildCache()
 		case <-c.notify:
 			c.buildCache()
