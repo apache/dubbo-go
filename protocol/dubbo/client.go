@@ -193,11 +193,7 @@ type Response struct {
 	atta  map[string]string
 }
 
-<<<<<<< HEAD
-// NewResponse create a new Response.
-=======
-// nolint
->>>>>>> aaa8be31fea3c0fe7ebbc1247cb273e74eaeb83b
+// NewResponse creates a new Response.
 func NewResponse(reply interface{}, atta map[string]string) *Response {
 	return &Response{
 		reply: reply,
