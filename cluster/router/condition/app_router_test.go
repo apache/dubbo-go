@@ -24,7 +24,6 @@ import (
 )
 
 import (
-	_ "github.com/apache/dubbo-go/config_center/zookeeper"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,6 +33,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/config_center"
+	_ "github.com/apache/dubbo-go/config_center/zookeeper"
 	"github.com/apache/dubbo-go/remoting"
 	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
