@@ -24,8 +24,8 @@ import (
 )
 
 import (
-	"github.com/coreos/etcd/embed"
 	"github.com/apache/dubbo-getty"
+	"github.com/coreos/etcd/embed"
 	"github.com/stretchr/testify/suite"
 )
 
