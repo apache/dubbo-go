@@ -177,8 +177,10 @@ func (c *RouterChain) buildCache() {
 	cache := BuildCache(invokers)
 	origin := c.loadCache()
 
-	var mutex sync.Mutex
-	var wg sync.WaitGroup
+	var (
+		mutex sync.Mutex
+		wg    sync.WaitGroup
+	)
 
 	for _, r := range c.copyRouters() {
 		if p, ok := r.(router.Poolable); ok {
