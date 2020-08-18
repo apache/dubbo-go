@@ -20,7 +20,6 @@ package chain
 import (
 	"sort"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
@@ -64,17 +63,20 @@ type RouterChain struct {
 	// Channel for notify to update the address cache
 	notify chan struct{}
 	// Address cache
-	cache atomic.Value
+	cache *InvokerCache
 }
 
 // Route Loop routers in RouterChain and call Route method to determine the target invokers list.
 func (c *RouterChain) Route(url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
-	cache := c.loadCache()
-	if cache == nil {
-		c.mutex.RLock()
+	var cache *InvokerCache
+	c.mutex.RLock()
+	if c.cache == nil {
 		defer c.mutex.RUnlock()
 		return c.invokers
 	}
+	// FIXME: this means clone happens in request scope which should be avoid
+	cache = c.cache.Clone()
+	c.mutex.RUnlock()
 
 	bitmap := cache.bitmap
 	for _, r := range c.copyRouters() {
@@ -145,37 +147,23 @@ func (c *RouterChain) copyRouters() []router.PriorityRouter {
 	return ret
 }
 
-// copyInvokers copies a snapshot of the received invokers.
-func (c *RouterChain) copyInvokers() []protocol.Invoker {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
-	if c.invokers == nil || len(c.invokers) == 0 {
-		return nil
-	}
-	ret := make([]protocol.Invoker, 0, len(c.invokers))
-	ret = append(ret, c.invokers...)
-	return ret
-}
-
-// loadCache loads cache from sync.Value to guarantee the visibility
-func (c *RouterChain) loadCache() *InvokerCache {
-	v := c.cache.Load()
-	if v == nil {
-		return nil
-	}
-
-	return v.(*InvokerCache)
-}
-
 // buildCache builds address cache with the new invokers for all poolable routers.
 func (c *RouterChain) buildCache() {
-	invokers := c.copyInvokers()
-	if invokers == nil || len(c.invokers) == 0 {
+	c.mutex.RLock()
+	if c.invokers == nil || len(c.invokers) == 0 {
+		defer c.mutex.RUnlock()
 		return
 	}
 
+	invokers := make([]protocol.Invoker, 0, len(c.invokers))
+	invokers = append(invokers, c.invokers...)
+	var origin *InvokerCache
+	if c.cache != nil {
+		origin = c.cache.Clone()
+	}
+	c.mutex.RUnlock()
+
 	cache := BuildCache(invokers)
-	origin := c.loadCache()
 
 	var (
 		mutex sync.Mutex
@@ -197,7 +185,9 @@ func (c *RouterChain) buildCache() {
 	}
 	wg.Wait()
 
-	c.cache.Store(cache)
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	c.cache = cache
 }
 
 // URL Return URL in RouterChain
