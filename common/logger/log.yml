@@ -1,6 +1,5 @@
-
 level: "debug"
-development: true
+development: false
 disableCaller: false
 disableStacktrace: false
 sampling:

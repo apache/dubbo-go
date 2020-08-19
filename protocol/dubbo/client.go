@@ -25,8 +25,8 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-getty"
 	hessian "github.com/apache/dubbo-go-hessian2"
-	"github.com/dubbogo/getty"
 	gxsync "github.com/dubbogo/gost/sync"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
@@ -193,7 +193,7 @@ type Response struct {
 	atta  map[string]interface{}
 }
 
-// nolint
+// NewResponse creates a new Response.
 func NewResponse(reply interface{}, atta map[string]interface{}) *Response {
 	return &Response{
 		reply: reply,
@@ -229,6 +229,7 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 	p.Service.Version = request.svcUrl.GetParam(constant.VERSION_KEY, "")
 	p.Service.Group = request.svcUrl.GetParam(constant.GROUP_KEY, "")
 	p.Service.Method = request.method
+	c.pool.sslEnabled = request.svcUrl.GetParamBool(constant.SSL_ENABLED_KEY, false)
 
 	p.Service.Timeout = c.opts.RequestTimeout
 	var timeout = request.svcUrl.GetParam(strings.Join([]string{constant.METHOD_KEYS, request.method + constant.RETRIES_KEY}, "."), "")

@@ -188,6 +188,7 @@ func (c *ServiceConfig) Export() error {
 			common.WithPort(port),
 			common.WithParams(urlMap),
 			common.WithParamsValue(constant.BEAN_NAME_KEY, c.id),
+			common.WithParamsValue(constant.SSL_ENABLED_KEY, strconv.FormatBool(GetSslEnabled())),
 			common.WithMethods(strings.Split(methods, ",")),
 			common.WithToken(c.Token),
 		)
@@ -303,7 +304,7 @@ func (c *ServiceConfig) getUrlMap() url.Values {
 
 	for _, v := range c.Methods {
 		prefix := "methods." + v.Name + "."
-		urlMap.Set(prefix+constant.LOADBALANCE_KEY, v.Loadbalance)
+		urlMap.Set(prefix+constant.LOADBALANCE_KEY, v.LoadBalance)
 		urlMap.Set(prefix+constant.RETRIES_KEY, v.Retries)
 		urlMap.Set(prefix+constant.WEIGHT_KEY, strconv.FormatInt(v.Weight, 10))
 

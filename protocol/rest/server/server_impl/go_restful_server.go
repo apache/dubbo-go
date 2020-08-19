@@ -48,8 +48,8 @@ var filterSlice []restful.FilterFunction
 
 // GoRestfulServer a rest server implement by go-restful
 type GoRestfulServer struct {
-	srv       *http.Server
-	container *restful.Container
+	srv *http.Server
+	ws  *restful.WebService
 }
 
 // NewGoRestfulServer a constructor of GoRestfulServer
@@ -60,13 +60,17 @@ func NewGoRestfulServer() server.RestServer {
 // Start go-restful server
 // It will add all go-restful filters
 func (grs *GoRestfulServer) Start(url common.URL) {
-	grs.container = restful.NewContainer()
+	container := restful.NewContainer()
 	for _, filter := range filterSlice {
-		grs.container.Filter(filter)
+		container.Filter(filter)
 	}
 	grs.srv = &http.Server{
-		Handler: grs.container,
+		Handler: container,
 	}
+	grs.ws = &restful.WebService{}
+	grs.ws.Path("/")
+	grs.ws.SetDynamicRoutes(true)
+	container.Add(grs.ws)
 	ln, err := net.Listen("tcp", url.Location)
 	if err != nil {
 		panic(perrors.New(fmt.Sprintf("Restful Server start error:%v", err)))
@@ -83,23 +87,21 @@ func (grs *GoRestfulServer) Start(url common.URL) {
 // Publish a http api in go-restful server
 // The routeFunc should be invoked when the server receive a request
 func (grs *GoRestfulServer) Deploy(restMethodConfig *config.RestMethodConfig, routeFunc func(request server.RestServerRequest, response server.RestServerResponse)) {
-	ws := &restful.WebService{}
+
 	rf := func(req *restful.Request, resp *restful.Response) {
 		routeFunc(NewGoRestfulRequestAdapter(req), resp)
 	}
-	ws.Path(restMethodConfig.Path).
+	grs.ws.Route(grs.ws.Method(restMethodConfig.MethodType).
 		Produces(strings.Split(restMethodConfig.Produces, ",")...).
 		Consumes(strings.Split(restMethodConfig.Consumes, ",")...).
-		Route(ws.Method(restMethodConfig.MethodType).To(rf))
-	grs.container.Add(ws)
-
+		Path(restMethodConfig.Path).To(rf))
 }
 
 // Delete a http api in go-restful server
 func (grs *GoRestfulServer) UnDeploy(restMethodConfig *config.RestMethodConfig) {
 	ws := new(restful.WebService)
 	ws.Path(restMethodConfig.Path)
-	err := grs.container.Remove(ws)
+	err := grs.ws.RemoveRoute(restMethodConfig.Path, restMethodConfig.MethodType)
 	if err != nil {
 		logger.Warnf("[Go restful] Remove web service error:%v", err)
 	}

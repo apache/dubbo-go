@@ -54,10 +54,10 @@ const (
 // dubbo package
 ////////////////////////////////////////////
 
-// SequenceType ...
+// SequenceType sequence type
 type SequenceType int64
 
-// DubboPackage ...
+// nolint
 type DubboPackage struct {
 	Header  hessian.DubboHeader
 	Service hessian.Service

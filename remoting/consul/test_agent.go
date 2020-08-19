@@ -18,8 +18,6 @@
 package consul
 
 import (
-	"io/ioutil"
-	"os"
 	"strconv"
 	"testing"
 )
@@ -30,35 +28,11 @@ import (
 
 // Consul agent, used for test, simulates
 // an embedded consul server.
-type ConsulAgent struct {
-	dataDir   string
-	testAgent *agent.TestAgent
-}
-
-func NewConsulAgent(t *testing.T, port int) *ConsulAgent {
-	dataDir, _ := ioutil.TempDir("./", "agent")
+func NewConsulAgent(t *testing.T, port int) *agent.TestAgent {
 	hcl := `
 		ports { 
 			http = ` + strconv.Itoa(port) + `
 		}
-		data_dir = "` + dataDir + `"
 	`
-	testAgent := &agent.TestAgent{Name: t.Name(), DataDir: dataDir, HCL: hcl}
-	testAgent.Start(t)
-
-	consulAgent := &ConsulAgent{
-		dataDir:   dataDir,
-		testAgent: testAgent,
-	}
-	return consulAgent
-}
-
-func (consulAgent *ConsulAgent) Close() error {
-	var err error
-
-	err = consulAgent.testAgent.Shutdown()
-	if err != nil {
-		return err
-	}
-	return os.RemoveAll(consulAgent.dataDir)
+	return agent.NewTestAgent(t, hcl)
 }
