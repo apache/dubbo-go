@@ -59,7 +59,7 @@ func NewJsonrpcProtocol() *JsonrpcProtocol {
 	}
 }
 
-// Export JSON RPC service  for remote invocation
+// Export JSON RPC service for remote invocation
 func (jp *JsonrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetUrl()
 	serviceKey := strings.TrimPrefix(url.Path, "/")
