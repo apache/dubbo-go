@@ -3,7 +3,7 @@ module github.com/apache/dubbo-go
 require (
 	github.com/Workiva/go-datastructures v1.0.50
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
-	github.com/apache/dubbo-go-hessian2 v1.6.1
+	github.com/apache/dubbo-go-hessian2 v1.6.0-rc1.0.20200819060303-9b32032784f6
 	github.com/coreos/bbolt v1.3.3 // indirect
 	github.com/coreos/etcd v3.3.13+incompatible
 	github.com/coreos/go-semver v0.3.0 // indirect
@@ -12,7 +12,7 @@ require (
 	github.com/creasty/defaults v1.3.0
 	github.com/dubbogo/getty v1.3.7
 	github.com/dubbogo/go-zookeeper v1.0.1
-	github.com/dubbogo/gost v1.9.0
+	github.com/dubbogo/gost v1.9.1
 	github.com/emicklei/go-restful/v3 v3.0.0
 	github.com/go-co-op/gocron v0.1.1
 	github.com/go-resty/resty/v2 v2.1.0
@@ -55,7 +55,5 @@ require (
 	k8s.io/client-go v8.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a // indirect
 )
-
-replace github.com/apache/dubbo-go-hessian2 => /Users/cvictory/go/src/github.com/apache/dubbo-go-hessian2
 
 go 1.13
