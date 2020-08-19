@@ -205,7 +205,6 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 
 	go reg.Subscribe(overriderUrl, overrideSubscribeListener)
 	return cachedExporter.(protocol.Exporter)
-
 }
 
 func (proto *registryProtocol) reExport(invoker protocol.Invoker, newUrl *common.URL) {
