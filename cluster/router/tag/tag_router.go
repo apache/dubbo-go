@@ -62,10 +62,9 @@ type addrMetadata struct {
 	ruleEnabled bool
 }
 
-// Clone returns a copy of addrMetadata
-func (m *addrMetadata) Clone() router.AddrMetadata {
-	ret := *m
-	return &ret
+// Source indicates where the metadata comes from.
+func (m *addrMetadata) Source() string {
+	return name
 }
 
 // tagRouter defines url, enable and the priority

@@ -62,21 +62,19 @@ type RouterChain struct {
 	last time.Time
 	// Channel for notify to update the address cache
 	notify chan struct{}
-	// Address cache
-	cache *InvokerCache
+	// Address caches, all caches still in used will be kept
+	caches []*InvokerCache
 }
 
 // Route Loop routers in RouterChain and call Route method to determine the target invokers list.
 func (c *RouterChain) Route(url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
-	var cache *InvokerCache
-	c.mutex.RLock()
-	if c.cache == nil {
-		defer c.mutex.RUnlock()
+	cache, ok := c.findCache()
+	if !ok {
 		return c.invokers
 	}
-	// FIXME: this means clone happens in request scope which should be avoid
-	cache = c.cache.Clone()
-	c.mutex.RUnlock()
+
+	cache.in()
+	defer cache.out()
 
 	bitmap := cache.bitmap
 	for _, r := range c.copyRouters() {
@@ -147,6 +145,27 @@ func (c *RouterChain) copyRouters() []router.PriorityRouter {
 	return ret
 }
 
+// findCache returns the latest cache (at the end of the cache list), if there's no valid entry in the list yet,
+// return false instead.
+func (c *RouterChain) findCache() (*InvokerCache, bool) {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+	if c.caches == nil || len(c.caches) == 0 {
+		return nil, false
+	}
+	return c.caches[len(c.caches)-1], true
+}
+
+func sweepUnusedCache(caches []*InvokerCache) []*InvokerCache {
+	ret := caches[:0]
+	for _, c := range caches {
+		if c.isInUse() {
+			ret = append(ret, c)
+		}
+	}
+	return ret
+}
+
 // buildCache builds address cache with the new invokers for all poolable routers.
 func (c *RouterChain) buildCache() {
 	c.mutex.RLock()
@@ -157,19 +176,20 @@ func (c *RouterChain) buildCache() {
 
 	invokers := make([]protocol.Invoker, 0, len(c.invokers))
 	invokers = append(invokers, c.invokers...)
+
 	var origin *InvokerCache
-	if c.cache != nil {
-		origin = c.cache.Clone()
+	if c.caches != nil && len(c.caches) > 0 {
+		origin = c.caches[len(c.caches)-1]
+		c.caches = sweepUnusedCache(c.caches)
 	}
 	c.mutex.RUnlock()
-
-	cache := BuildCache(invokers)
 
 	var (
 		mutex sync.Mutex
 		wg    sync.WaitGroup
 	)
 
+	cache := BuildCache(invokers)
 	for _, r := range c.copyRouters() {
 		if p, ok := r.(router.Poolable); ok {
 			wg.Add(1)
@@ -187,7 +207,7 @@ func (c *RouterChain) buildCache() {
 
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	c.cache = cache
+	c.caches = append(c.caches, cache)
 }
 
 // URL Return URL in RouterChain
@@ -221,6 +241,7 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 		builtinRouters: routers,
 		routers:        newRouters,
 		last:           time.Now(),
+		caches:         []*InvokerCache{},
 		notify:         make(chan struct{}),
 	}
 	if url != nil {

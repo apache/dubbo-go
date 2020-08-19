@@ -19,6 +19,7 @@ package chain
 
 import (
 	"github.com/RoaringBitmap/roaring"
+	"go.uber.org/atomic"
 )
 
 import (
@@ -42,6 +43,8 @@ type InvokerCache struct {
 
 	// Address metadata from routers which implement Poolable
 	metadatas map[string]router.AddrMetadata
+
+	inUse atomic.Int32
 }
 
 // BuildCache builds address cache from the given invokers.
@@ -79,29 +82,17 @@ func (c *InvokerCache) SetAddrMeta(name string, meta router.AddrMetadata) {
 	c.metadatas[name] = meta
 }
 
-func (c *InvokerCache) Clone() *InvokerCache {
-	ret := &InvokerCache{
-		pools:     make(map[string]router.AddrPool, len(c.pools)),
-		metadatas: make(map[string]router.AddrMetadata, len(c.metadatas)),
-	}
+// in increases inUse count at the beginning of every request, used only by router chain
+func (c *InvokerCache) in() {
+	c.inUse.Inc()
+}
 
-	invokers := make([]protocol.Invoker, 0, len(c.invokers))
-	invokers = append(invokers, c.invokers...)
-	ret.invokers = invokers
+// out decreases inUse count at the end of every request, used only by router chain
+func (c *InvokerCache) out() {
+	c.inUse.Dec()
+}
 
-	ret.bitmap = c.bitmap.Clone()
-
-	for k, v := range c.pools {
-		pool := make(router.AddrPool, len(v))
-		for k1, v1 := range pool {
-			pool[k1] = v1.Clone()
-		}
-		ret.pools[k] = pool
-	}
-
-	for k, v := range c.metadatas {
-		ret.metadatas[k] = v.Clone()
-	}
-
-	return ret
+// isInUse returns false when inUse count equals to 0, so that it can be safely removed by router chain
+func (c *InvokerCache) isInUse() bool {
+	return c.inUse.Load() > 0
 }
