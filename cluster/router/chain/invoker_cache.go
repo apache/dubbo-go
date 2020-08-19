@@ -19,7 +19,6 @@ package chain
 
 import (
 	"github.com/RoaringBitmap/roaring"
-	"go.uber.org/atomic"
 )
 
 import (
@@ -43,8 +42,6 @@ type InvokerCache struct {
 
 	// Address metadata from routers which implement Poolable
 	metadatas map[string]router.AddrMetadata
-
-	inUse atomic.Int32
 }
 
 // BuildCache builds address cache from the given invokers.
@@ -80,19 +77,4 @@ func (c *InvokerCache) SetAddrPool(name string, pool router.AddrPool) {
 // SetAddrMeta sets address metadata for a poolable router, for unit test only
 func (c *InvokerCache) SetAddrMeta(name string, meta router.AddrMetadata) {
 	c.metadatas[name] = meta
-}
-
-// in increases inUse count at the beginning of every request, used only by router chain
-func (c *InvokerCache) in() {
-	c.inUse.Inc()
-}
-
-// out decreases inUse count at the end of every request, used only by router chain
-func (c *InvokerCache) out() {
-	c.inUse.Dec()
-}
-
-// isInUse returns false when inUse count equals to 0, so that it can be safely removed by router chain
-func (c *InvokerCache) isInUse() bool {
-	return c.inUse.Load() > 0
 }
