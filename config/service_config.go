@@ -145,14 +145,14 @@ func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
 func (c *ServiceConfig) Export() error {
 	// TODO: config center start here
 
-	// TODO:delay export
+	// TODO: delay export
 	if c.unexported != nil && c.unexported.Load() {
-		err := perrors.Errorf("The service %v has already unexported! ", c.InterfaceName)
+		err := perrors.Errorf("The service %v has already unexported!", c.InterfaceName)
 		logger.Errorf(err.Error())
 		return err
 	}
 	if c.unexported != nil && c.exported.Load() {
-		logger.Warnf("The service %v has already exported! ", c.InterfaceName)
+		logger.Warnf("The service %v has already exported!", c.InterfaceName)
 		return nil
 	}
 
@@ -160,7 +160,7 @@ func (c *ServiceConfig) Export() error {
 	urlMap := c.getUrlMap()
 	protocolConfigs := loadProtocol(c.Protocol, c.Protocols)
 	if len(protocolConfigs) == 0 {
-		logger.Warnf("The service %v's '%v' protocols don't has right protocolConfigs ", c.InterfaceName, c.Protocol)
+		logger.Warnf("The service %v's '%v' protocols don't has right protocolConfigs", c.InterfaceName, c.Protocol)
 		return nil
 	}
 
@@ -170,7 +170,7 @@ func (c *ServiceConfig) Export() error {
 		// registry the service reflect
 		methods, err := common.ServiceMap.Register(c.InterfaceName, proto.Name, c.rpcService)
 		if err != nil {
-			formatErr := perrors.Errorf("The service %v  export the protocol %v error! Error message is %v .", c.InterfaceName, proto.Name, err.Error())
+			formatErr := perrors.Errorf("The service %v export the protocol %v error! Error message is %v.", c.InterfaceName, proto.Name, err.Error())
 			logger.Errorf(formatErr.Error())
 			return formatErr
 		}
@@ -204,7 +204,7 @@ func (c *ServiceConfig) Export() error {
 
 				c.cacheMutex.Lock()
 				if c.cacheProtocol == nil {
-					logger.Infof(fmt.Sprintf("First load the registry protocol , url is {%v}!", ivkURL))
+					logger.Infof(fmt.Sprintf("First load the registry protocol, url is {%v}!", ivkURL))
 					c.cacheProtocol = extension.GetProtocol("registry")
 				}
 				c.cacheMutex.Unlock()
@@ -212,14 +212,14 @@ func (c *ServiceConfig) Export() error {
 				invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*regUrl)
 				exporter = c.cacheProtocol.Export(invoker)
 				if exporter == nil {
-					panic(perrors.New(fmt.Sprintf("Registry protocol new exporter error,registry is {%v},url is {%v}", regUrl, ivkURL)))
+					return perrors.New(fmt.Sprintf("Registry protocol new exporter error, registry is {%v}, url is {%v}", regUrl, ivkURL))
 				}
 			}
 		} else {
 			invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*ivkURL)
 			exporter = extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {
-				panic(perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error,url is {%v}", ivkURL)))
+				return perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error, url is {%v}", ivkURL))
 			}
 		}
 		c.exporters = append(c.exporters, exporter)
