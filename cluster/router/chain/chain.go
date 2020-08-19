@@ -167,21 +167,35 @@ func (c *RouterChain) loadCache() *InvokerCache {
 	return v.(*InvokerCache)
 }
 
-// buildCache builds address cache with the new invokers for all poolable routers.
-func (c *RouterChain) buildCache() {
-	invokers := c.copyInvokers()
-	if invokers == nil || len(c.invokers) == 0 {
-		return
+// copyInvokerIfNecessary compares chain's invokers copy and cache's invokers copy, to avoid copy as much as possible
+func (c *RouterChain) copyInvokerIfNecessary(cache *InvokerCache) []protocol.Invoker {
+	var invokers []protocol.Invoker
+	if cache != nil {
+		invokers = cache.invokers
 	}
 
-	cache := BuildCache(invokers)
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+	if isInvokersChanged(invokers, c.invokers) {
+		invokers = c.copyInvokers()
+	}
+	return invokers
+}
+
+// buildCache builds address cache with the new invokers for all poolable routers.
+func (c *RouterChain) buildCache() {
 	origin := c.loadCache()
+	invokers := c.copyInvokerIfNecessary(origin)
+	if invokers == nil || len(invokers) == 0 {
+		return
+	}
 
 	var (
 		mutex sync.Mutex
 		wg    sync.WaitGroup
 	)
 
+	cache := BuildCache(invokers)
 	for _, r := range c.copyRouters() {
 		if p, ok := r.(router.Poolable); ok {
 			wg.Add(1)
@@ -246,7 +260,7 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 // rule doesn't change), and the address list doesn't change, then the existing data will be re-used.
 func poolRouter(p router.Poolable, origin *InvokerCache, invokers []protocol.Invoker) (router.AddrPool, router.AddrMetadata) {
 	name := p.Name()
-	if isCacheMiss(origin, name) || p.ShouldPool() || isInvokersChanged(origin.invokers, invokers) {
+	if isCacheMiss(origin, name) || p.ShouldPool() || &(origin.invokers) != &invokers {
 		logger.Debugf("build address cache for router %q", name)
 		return p.Pool(invokers)
 	}
