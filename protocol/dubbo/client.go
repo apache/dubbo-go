@@ -25,8 +25,8 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-getty"
 	hessian "github.com/apache/dubbo-go-hessian2"
-	"github.com/dubbogo/getty"
 	gxsync "github.com/dubbogo/gost/sync"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
@@ -193,7 +193,7 @@ type Response struct {
 	atta  map[string]string
 }
 
-// nolint
+// NewResponse creates a new Response.
 func NewResponse(reply interface{}, atta map[string]string) *Response {
 	return &Response{
 		reply: reply,
