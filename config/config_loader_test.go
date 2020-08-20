@@ -27,6 +27,7 @@ import (
 import (
 	cm "github.com/Workiva/go-datastructures/common"
 	"github.com/Workiva/go-datastructures/slice/skip"
+	gxpage "github.com/dubbogo/gost/page"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/atomic"
 )
@@ -43,7 +44,6 @@ import (
 	"github.com/apache/dubbo-go/metadata/service"
 	"github.com/apache/dubbo-go/registry"
 	gxset "github.com/dubbogo/gost/container/set"
-	gxpage "github.com/dubbogo/gost/page"
 )
 
 const mockConsumerConfigPath = "./testdata/consumer_config.yml"
