@@ -27,8 +27,8 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-getty"
 	"github.com/apache/dubbo-go-hessian2"
-	"github.com/dubbogo/getty"
 	"github.com/opentracing/opentracing-go"
 	perrors "github.com/pkg/errors"
 )
