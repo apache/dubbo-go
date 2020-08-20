@@ -166,6 +166,7 @@ func (c *ServiceConfig) Export() error {
 
 	ports := getRandomPort(protocolConfigs)
 	nextPort := ports.Front()
+	proxyFactory := extension.GetProxyFactory(providerConfig.ProxyFactory)
 	for _, proto := range protocolConfigs {
 		// registry the service reflect
 		methods, err := common.ServiceMap.Register(c.InterfaceName, proto.Name, c.rpcService)
@@ -176,7 +177,6 @@ func (c *ServiceConfig) Export() error {
 		}
 
 		port := proto.Port
-
 		if len(proto.Port) == 0 {
 			port = nextPort.Value.(string)
 			nextPort = nextPort.Next()
@@ -197,26 +197,24 @@ func (c *ServiceConfig) Export() error {
 		}
 
 		var exporter protocol.Exporter
-
 		if len(regUrls) > 0 {
+			c.cacheMutex.Lock()
+			if c.cacheProtocol == nil {
+				logger.Infof(fmt.Sprintf("First load the registry protocol, url is {%v}!", ivkURL))
+				c.cacheProtocol = extension.GetProtocol("registry")
+			}
+			c.cacheMutex.Unlock()
+
 			for _, regUrl := range regUrls {
 				regUrl.SubURL = ivkURL
-
-				c.cacheMutex.Lock()
-				if c.cacheProtocol == nil {
-					logger.Infof(fmt.Sprintf("First load the registry protocol, url is {%v}!", ivkURL))
-					c.cacheProtocol = extension.GetProtocol("registry")
-				}
-				c.cacheMutex.Unlock()
-
-				invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*regUrl)
+				invoker := proxyFactory.GetInvoker(*regUrl)
 				exporter = c.cacheProtocol.Export(invoker)
 				if exporter == nil {
 					return perrors.New(fmt.Sprintf("Registry protocol new exporter error, registry is {%v}, url is {%v}", regUrl, ivkURL))
 				}
 			}
 		} else {
-			invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*ivkURL)
+			invoker := proxyFactory.GetInvoker(*ivkURL)
 			exporter = extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {
 				return perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error, url is {%v}", ivkURL))
