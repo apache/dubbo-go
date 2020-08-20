@@ -196,7 +196,6 @@ func (c *ServiceConfig) Export() error {
 			ivkURL.AddParam(constant.Tagkey, c.Tag)
 		}
 
-		var exporter protocol.Exporter
 		if len(regUrls) > 0 {
 			c.cacheMutex.Lock()
 			if c.cacheProtocol == nil {
@@ -208,19 +207,20 @@ func (c *ServiceConfig) Export() error {
 			for _, regUrl := range regUrls {
 				regUrl.SubURL = ivkURL
 				invoker := proxyFactory.GetInvoker(*regUrl)
-				exporter = c.cacheProtocol.Export(invoker)
+				exporter := c.cacheProtocol.Export(invoker)
 				if exporter == nil {
 					return perrors.New(fmt.Sprintf("Registry protocol new exporter error, registry is {%v}, url is {%v}", regUrl, ivkURL))
 				}
+				c.exporters = append(c.exporters, exporter)
 			}
 		} else {
 			invoker := proxyFactory.GetInvoker(*ivkURL)
-			exporter = extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
+			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {
 				return perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error, url is {%v}", ivkURL))
 			}
+			c.exporters = append(c.exporters, exporter)
 		}
-		c.exporters = append(c.exporters, exporter)
 	}
 	c.exported.Store(true)
 	return nil
