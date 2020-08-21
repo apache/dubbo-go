@@ -632,7 +632,7 @@ func (icn *InstanceChangeNotify) Notify(event observer.Event) {
 
 	if se, ok := event.(*registry.ServiceInstancesChangedEvent); ok {
 		sdr := icn.serviceDiscoveryRegistry
-		sdr.subscribe(sdr.url.SubURL, icn.notify, se.ServiceName, se.Instances)
+		sdr.subscribe(sdr.url, icn.notify, se.ServiceName, se.Instances)
 	}
 }
 
