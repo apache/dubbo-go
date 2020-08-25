@@ -200,12 +200,12 @@ func (c *RouterChain) buildCache() {
 		if p, ok := r.(router.Poolable); ok {
 			wg.Add(1)
 			go func(p router.Poolable) {
+				defer wg.Done()
 				pool, info := poolRouter(p, origin, invokers)
 				mutex.Lock()
 				defer mutex.Unlock()
 				cache.pools[p.Name()] = pool
 				cache.metadatas[p.Name()] = info
-				wg.Done()
 			}(p)
 		}
 	}
