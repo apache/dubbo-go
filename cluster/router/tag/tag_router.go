@@ -24,6 +24,7 @@ import (
 
 import (
 	gxnet "github.com/dubbogo/gost/net"
+	"github.com/jinzhu/copier"
 	perrors "github.com/pkg/errors"
 )
 
@@ -63,11 +64,6 @@ func (c *tagRouter) isEnabled() bool {
 	return c.enabled
 }
 
-func (c *tagRouter) tagRouterRuleCopy() RouterRule {
-	routerRule := *c.tagRouterRule
-	return routerRule
-}
-
 // Route gets a list of invoker
 func (c *tagRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	var (
@@ -85,7 +81,8 @@ func (c *tagRouter) Route(invokers []protocol.Invoker, url *common.URL, invocati
 	}
 
 	// since the rule can be changed by config center, we should copy one to use.
-	tagRouterRuleCopy := c.tagRouterRuleCopy()
+	tagRouterRuleCopy := new(RouterRule)
+	_ = copier.Copy(tagRouterRuleCopy, c.tagRouterRule)
 	tag, ok := invocation.Attachments()[constant.Tagkey]
 	if !ok {
 		tag = url.GetParam(constant.Tagkey, "")
@@ -93,7 +90,7 @@ func (c *tagRouter) Route(invokers []protocol.Invoker, url *common.URL, invocati
 
 	// if we are requesting for a Provider with a specific tag
 	if t, ok := tag.(string); ok && len(t) > 0 {
-		return filterInvokersWithTag(invokers, url, invocation, tagRouterRuleCopy, t)
+		return filterInvokersWithTag(invokers, url, invocation, *tagRouterRuleCopy, t)
 	}
 
 	// return all addresses in dynamic tag group.
