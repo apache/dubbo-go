@@ -234,7 +234,7 @@ func initHystrixConfigProvider() error {
 	if config.GetProviderConfig().FilterConf == nil {
 		return perrors.Errorf("no config for hystrix")
 	}
-	filterConfig := config.GetConsumerConfig().FilterConf.(map[interface{}]interface{})[HYSTRIX]
+	filterConfig := config.GetProviderConfig().FilterConf.(map[interface{}]interface{})[HYSTRIX]
 	if filterConfig == nil {
 		return perrors.Errorf("no config for hystrix")
 	}
