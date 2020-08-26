@@ -53,10 +53,6 @@ var (
 	providerConfigOnce sync.Once
 )
 
-//The filter in the server end of dubbo-go can't get the invoke result for now,
-//this filter ONLY works in CLIENT end (consumer side) temporarily
-//Only after the callService logic is integrated into the filter chain of server end then the filter can be used,
-//which will be done soon
 func init() {
 	extension.SetFilter(HYSTRIX_CONSUMER, GetHystrixFilterConsumer)
 	extension.SetFilter(HYSTRIX_PROVIDER, GetHystrixFilterProvider)
