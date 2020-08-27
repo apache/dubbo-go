@@ -312,7 +312,6 @@ func (c *ServiceConfig) getUrlMap() url.Values {
 
 		urlMap.Set(constant.EXECUTE_LIMIT_KEY, v.ExecuteLimit)
 		urlMap.Set(constant.EXECUTE_REJECTED_EXECUTION_HANDLER_KEY, v.ExecuteLimitRejectedHandler)
-
 	}
 
 	return urlMap
