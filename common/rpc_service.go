@@ -169,7 +169,7 @@ func (sm *serviceMap) GetService(protocol, name string) *Service {
 	return nil
 }
 
-// GetInterface gets an interface defination by interface name
+// GetInterface gets an interface definition by interface name
 func (sm *serviceMap) GetInterface(interfaceName string) []*Service {
 	sm.mutex.RLock()
 	defer sm.mutex.RUnlock()
