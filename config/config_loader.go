@@ -144,12 +144,11 @@ func loadConsumerConfig() {
 				(refconfig.Check == nil && consumerConfig.Check != nil && *consumerConfig.Check) ||
 				(refconfig.Check == nil && consumerConfig.Check == nil) { // default to true
 
-				if refconfig.invoker != nil &&
-					!refconfig.invoker.IsAvailable() {
+				if refconfig.invoker != nil && !refconfig.invoker.IsAvailable() {
 					checkok = false
 					count++
 					if count > maxWait {
-						errMsg := fmt.Sprintf("Failed to check the status of the service %v . No provider available for the service to the consumer use dubbo version %v", refconfig.InterfaceName, constant.Version)
+						errMsg := fmt.Sprintf("Failed to check the status of the service %v. No provider available for the service to the consumer use dubbo version %v", refconfig.InterfaceName, constant.Version)
 						logger.Error(errMsg)
 						panic(errMsg)
 					}
@@ -157,7 +156,7 @@ func loadConsumerConfig() {
 					break
 				}
 				if refconfig.invoker == nil {
-					logger.Warnf("The interface %s invoker not exist , may you should check your interface config.", refconfig.InterfaceName)
+					logger.Warnf("The interface %s invoker not exist, may you should check your interface config.", refconfig.InterfaceName)
 				}
 			}
 		}
