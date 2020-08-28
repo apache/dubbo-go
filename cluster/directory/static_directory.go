@@ -39,10 +39,13 @@ func NewStaticDirectory(invokers []protocol.Invoker) *staticDirectory {
 	if len(invokers) > 0 {
 		url = invokers[0].GetUrl()
 	}
-	return &staticDirectory{
+	dir := &staticDirectory{
 		BaseDirectory: NewBaseDirectory(&url),
 		invokers:      invokers,
 	}
+
+	dir.routerChain.SetInvokers(invokers)
+	return dir
 }
 
 //for-loop invokers ,if all invokers is available ,then it means directory is available
@@ -69,7 +72,7 @@ func (dir *staticDirectory) List(invocation protocol.Invocation) []protocol.Invo
 		return invokers
 	}
 	dirUrl := dir.GetUrl()
-	return routerChain.Route(invokers, &dirUrl, invocation)
+	return routerChain.Route(&dirUrl, invocation)
 }
 
 // Destroy Destroy
@@ -92,6 +95,7 @@ func (dir *staticDirectory) BuildRouterChain(invokers []protocol.Invoker) error 
 	if e != nil {
 		return e
 	}
+	routerChain.SetInvokers(dir.invokers)
 	dir.SetRouterChain(routerChain)
 	return nil
 }
