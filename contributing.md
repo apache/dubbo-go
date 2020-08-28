@@ -39,3 +39,26 @@ The title format of the pull request `MUST` follow the following rules:
 
 >- 1 there should be comment for every export func/var.
 >- 2 the comment should begin with function name/var name.
+
+### 3.4 import 
+
+We dubbogo import blocks should be splited into 3 blocks.
+
+```Go
+// block 1: the go internal package
+import (
+  "fmt"
+)
+
+// block 2: the third package
+import (
+  "github.com/dubbogo/xxx"
+  
+  "github.com/RoaringBitmap/roaring"
+)
+
+// block 3: the dubbo-go package
+import (
+  "github.com/apache/dubbo-go/common"
+) 
+```
