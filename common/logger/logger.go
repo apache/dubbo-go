@@ -25,7 +25,7 @@ import (
 )
 
 import (
-	"github.com/dubbogo/getty"
+	"github.com/apache/dubbo-getty"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -60,6 +60,10 @@ type Logger interface {
 }
 
 func init() {
+	// forbidden to executing twice.
+	if logger != nil {
+		return
+	}
 	logConfFile := os.Getenv(constant.APP_LOG_CONF_FILE)
 	err := InitLog(logConfFile)
 	if err != nil {
