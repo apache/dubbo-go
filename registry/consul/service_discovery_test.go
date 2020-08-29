@@ -133,7 +133,8 @@ func TestConsulServiceDiscovery_CRUD(t *testing.T) {
 	assert.Equal(t, instance.GetHost(), instanceResult.GetHost())
 	assert.Equal(t, instance.GetPort(), instanceResult.GetPort())
 	assert.Equal(t, instance.GetServiceName(), instanceResult.GetServiceName())
-	assert.Equal(t, 0, len(instanceResult.GetMetadata()))
+	metadata := instanceResult.GetMetadata()
+	assert.Equal(t, 0, len(metadata))
 
 	instance.GetMetadata()["aaa"] = "bbb"
 	err = serviceDiscovery.Update(instance)
@@ -148,7 +149,7 @@ func TestConsulServiceDiscovery_CRUD(t *testing.T) {
 	assert.Equal(t, 1, len(page.GetData()))
 
 	instanceResult = page.GetData()[0].(*registry.DefaultServiceInstance)
-	v, _ := instanceResult.GetMetadata()["aaa"]
+	v, _ := instanceResult.Metadata["aaa"]
 	assert.Equal(t, "bbb", v)
 
 	// test dispatcher event
