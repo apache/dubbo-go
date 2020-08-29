@@ -381,7 +381,7 @@ func (c URL) Service() string {
 	if service != "" {
 		return service
 	} else if c.SubURL != nil {
-		service = c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
+		service = c.SubURL.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
 		if service != "" { // if url.path is "" then return suburl's path, special for registry url
 			return service
 		}
@@ -641,6 +641,34 @@ func (c *URL) CloneWithParams(reserveParams []string) *URL {
 		WithMethods(c.Methods),
 		WithParams(params),
 	)
+}
+
+// IsEquals compares if two URLs equals with each other. Excludes are all parameter keys which should ignored.
+func IsEquals(left URL, right URL, excludes ...string) bool {
+	if left.Ip != right.Ip || left.Port != right.Port {
+		return false
+	}
+
+	leftMap := left.ToMap()
+	rightMap := right.ToMap()
+	for _, exclude := range excludes {
+		delete(leftMap, exclude)
+		delete(rightMap, exclude)
+	}
+
+	if len(leftMap) != len(rightMap) {
+		return false
+	}
+
+	for lk, lv := range leftMap {
+		if rv, ok := rightMap[lk]; !ok {
+			return false
+		} else if lv != rv {
+			return false
+		}
+	}
+
+	return true
 }
 
 func mergeNormalParam(mergedUrl *URL, referenceUrl *URL, paramKeys []string) []func(method string) {
