@@ -76,7 +76,7 @@ func (e *etcdV3ServiceDiscovery) String() string {
 	return e.descriptor
 }
 
-// Destory service discovery
+// Destroy service discovery
 func (e *etcdV3ServiceDiscovery) Destroy() error {
 	if e.client != nil {
 		e.client.Close()

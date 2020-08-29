@@ -38,7 +38,7 @@ type Result interface {
 }
 
 /////////////////////////////
-// Result Impletment of RPC
+// Result Implement of RPC
 /////////////////////////////
 
 // RPCResult is default RPC result.
