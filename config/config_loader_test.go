@@ -503,6 +503,10 @@ func (m *mockServiceDiscovery) String() string {
 	panic("implement me")
 }
 
+func (m *mockServiceDiscovery) Init(registryURL common.URL) error {
+	panic("implement me")
+}
+
 func (m *mockServiceDiscovery) Destroy() error {
 	panic("implement me")
 }
