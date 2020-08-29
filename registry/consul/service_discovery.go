@@ -227,31 +227,31 @@ func (csd *consulServiceDiscovery) GetServices() *gxset.HashSet {
 
 // encodeConsulMetadata because consul validate key strictly.
 func encodeConsulMetadata(metadata map[string]string) map[string]string {
+	consulMetadata := make(map[string]string, 8)
 	if metadata == nil {
-		metadata = make(map[string]string, 1)
+		return consulMetadata
 	}
 	encoder := base64.RawStdEncoding
 	for k, v := range metadata {
-		delete(metadata, k)
-		metadata[encoder.EncodeToString([]byte(k))] = v
+		consulMetadata[encoder.EncodeToString([]byte(k))] = v
 	}
-	return metadata
+	return consulMetadata
 }
 
 // nolint
 func decodeConsulMetadata(metadata map[string]string) map[string]string {
+	dubboMetadata := make(map[string]string, 8)
 	if metadata == nil {
-		metadata = make(map[string]string, 1)
+		return dubboMetadata
 	}
 	encoder := base64.RawStdEncoding
 	for k, v := range metadata {
-		delete(metadata, k)
 		kBytes, err := encoder.DecodeString(k)
 		if err != nil {
 			logger.Warnf("can not decoded consul metadata key %s", k)
 			continue
 		}
-		metadata[string(kBytes)] = v
+		dubboMetadata[string(kBytes)] = v
 	}
 	return metadata
 }
