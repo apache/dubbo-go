@@ -253,7 +253,7 @@ func decodeConsulMetadata(metadata map[string]string) map[string]string {
 		}
 		dubboMetadata[string(kBytes)] = v
 	}
-	return metadata
+	return dubboMetadata
 }
 
 func (csd *consulServiceDiscovery) GetInstances(serviceName string) []registry.ServiceInstance {
