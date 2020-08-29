@@ -49,5 +49,4 @@ func (re *RestExporter) Unexport() {
 	if err != nil {
 		logger.Errorf("[RestExporter.Unexport] error: %v", err)
 	}
-	return
 }
