@@ -19,16 +19,15 @@ package cluster_impl
 
 import (
 	"github.com/apache/dubbo-go/cluster"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/protocol"
 )
 
 type failoverCluster struct{}
 
-const name = "failover"
-
 func init() {
-	extension.SetCluster(name, NewFailoverCluster)
+	extension.SetCluster(constant.FAILOVER_CLUSTER_NAME, NewFailoverCluster)
 }
 
 // NewFailoverCluster returns a failover cluster instance
