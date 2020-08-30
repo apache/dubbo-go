@@ -18,13 +18,12 @@
 package getty
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
 	"math/rand"
 	"time"
 )
 
 import (
-	"github.com/dubbogo/getty"
+	"github.com/apache/dubbo-getty"
 	gxsync "github.com/dubbogo/gost/sync"
 	perrors "github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
@@ -32,6 +31,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/remoting"
