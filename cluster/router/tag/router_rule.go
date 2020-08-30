@@ -41,8 +41,8 @@ import (
 type RouterRule struct {
 	router.BaseRouterRule `yaml:",inline"`
 	Tags                  []Tag
-	addressToTagNames     map[string][]string
-	tagNameToAddresses    map[string][]string
+	AddressToTagNames     map[string][]string
+	TagNameToAddresses    map[string][]string
 }
 
 func getRule(rawRule string) (*RouterRule, error) {
@@ -58,13 +58,13 @@ func getRule(rawRule string) (*RouterRule, error) {
 
 // parseTags use for flattening tags data to @addressToTagNames and @tagNameToAddresses
 func (t *RouterRule) parseTags() {
-	t.addressToTagNames = make(map[string][]string, 2*len(t.Tags))
-	t.tagNameToAddresses = make(map[string][]string, len(t.Tags))
+	t.AddressToTagNames = make(map[string][]string, 2*len(t.Tags))
+	t.TagNameToAddresses = make(map[string][]string, len(t.Tags))
 	for _, tag := range t.Tags {
 		for _, address := range tag.Addresses {
-			t.addressToTagNames[address] = append(t.addressToTagNames[address], tag.Name)
+			t.AddressToTagNames[address] = append(t.AddressToTagNames[address], tag.Name)
 		}
-		t.tagNameToAddresses[tag.Name] = tag.Addresses
+		t.TagNameToAddresses[tag.Name] = tag.Addresses
 	}
 }
 
@@ -85,15 +85,15 @@ func (t *RouterRule) getTagNames() []string {
 }
 
 func (t *RouterRule) hasTag(tag string) bool {
-	return len(t.tagNameToAddresses[tag]) > 0
+	return len(t.TagNameToAddresses[tag]) > 0
 }
 
 func (t *RouterRule) getAddressToTagNames() map[string][]string {
-	return t.addressToTagNames
+	return t.AddressToTagNames
 }
 
 func (t *RouterRule) getTagNameToAddresses() map[string][]string {
-	return t.tagNameToAddresses
+	return t.TagNameToAddresses
 }
 
 func (t *RouterRule) getTags() []Tag {

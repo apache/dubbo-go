@@ -117,6 +117,18 @@ func (proto *registryProtocol) initConfigurationListeners() {
 	proto.providerConfigurationListener = newProviderConfigurationListener(proto.overrideListeners)
 }
 
+// nolint
+func (proto *registryProtocol) GetRegistries() []registry.Registry {
+	var rs []registry.Registry
+	proto.registries.Range(func(_, v interface{}) bool {
+		if r, ok := v.(registry.Registry); ok {
+			rs = append(rs, r)
+		}
+		return true
+	})
+	return rs
+}
+
 // Refer provider service from registry center
 func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 	var registryUrl = url
@@ -178,6 +190,7 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 	if regI, loaded := proto.registries.Load(registryUrl.Key()); !loaded {
 		reg = getRegistry(registryUrl)
 		proto.registries.Store(registryUrl.Key(), reg)
+		logger.Infof("Export proto:%p registries address:%p", proto, proto.registries)
 	} else {
 		reg = regI.(registry.Registry)
 	}
@@ -334,14 +347,12 @@ func (proto *registryProtocol) Destroy() {
 		ivk.Destroy()
 	}
 	proto.invokers = []protocol.Invoker{}
-
 	proto.bounds.Range(func(key, value interface{}) bool {
 		exporter := value.(protocol.Exporter)
 		exporter.Unexport()
 		proto.bounds.Delete(key)
 		return true
 	})
-
 	proto.registries.Range(func(key, value interface{}) bool {
 		reg := value.(registry.Registry)
 		if reg.IsAvailable() {
@@ -373,7 +384,7 @@ func setProviderUrl(regURL *common.URL, providerURL *common.URL) {
 	regURL.SubURL = providerURL
 }
 
-// GetProtocol return the singleton RegistryProtocol
+// GetProtocol return the singleton registryProtocol
 func GetProtocol() protocol.Protocol {
 	once.Do(func() {
 		regProtocol = newRegistryProtocol()

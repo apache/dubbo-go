@@ -22,8 +22,8 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-getty"
 	hessian "github.com/apache/dubbo-go-hessian2"
-	"github.com/dubbogo/getty"
 	perrors "github.com/pkg/errors"
 )
 
