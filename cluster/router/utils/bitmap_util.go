@@ -15,29 +15,36 @@
  * limitations under the License.
  */
 
-package config
+package utils
 
 import (
-	"github.com/apache/dubbo-getty"
+	"github.com/RoaringBitmap/roaring"
 )
 
-var (
-	serverTlsConfigBuilder getty.TlsConfigBuilder
-	clientTlsConfigBuilder getty.TlsConfigBuilder
+import (
+	"github.com/apache/dubbo-go/protocol"
 )
 
-func GetServerTlsConfigBuilder() getty.TlsConfigBuilder {
-	return serverTlsConfigBuilder
+var EmptyAddr = roaring.NewBitmap()
+
+func JoinIfNotEqual(left *roaring.Bitmap, right *roaring.Bitmap) *roaring.Bitmap {
+	if !left.Equals(right) {
+		left = left.Clone()
+		left.And(right)
+	}
+	return left
 }
 
-func GetClientTlsConfigBuilder() getty.TlsConfigBuilder {
-	return clientTlsConfigBuilder
+func FallbackIfJoinToEmpty(left *roaring.Bitmap, right *roaring.Bitmap) *roaring.Bitmap {
+	ret := JoinIfNotEqual(left, right)
+	if ret == nil || ret.IsEmpty() {
+		return right
+	}
+	return ret
 }
 
-func SetServerTlsConfigBuilder(configBuilder getty.TlsConfigBuilder) {
-	serverTlsConfigBuilder = configBuilder
-}
-
-func SetClientTlsConfigBuilder(configBuilder getty.TlsConfigBuilder) {
-	clientTlsConfigBuilder = configBuilder
+func ToBitmap(invokers []protocol.Invoker) *roaring.Bitmap {
+	bitmap := roaring.NewBitmap()
+	bitmap.AddRange(0, uint64(len(invokers)))
+	return bitmap
 }

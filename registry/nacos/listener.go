@@ -132,7 +132,7 @@ func (nl *nacosListener) Callback(services []model.SubscribeService, err error) 
 		instance := generateInstance(services[i])
 		newInstanceMap[host] = instance
 		if old, ok := nl.instanceMap[host]; !ok {
-			// instance is not exist in cache, add it to cache
+			// instance does not exist in cache, add it to cache
 			addInstances = append(addInstances, instance)
 		} else {
 			// instance is not different from cache, update it to cache
@@ -144,7 +144,7 @@ func (nl *nacosListener) Callback(services []model.SubscribeService, err error) 
 
 	for host, inst := range nl.instanceMap {
 		if _, ok := newInstanceMap[host]; !ok {
-			// cache instance is not exist in new instance list, remove it from cache
+			// cache instance does not exist in new instance list, remove it from cache
 			delInstances = append(delInstances, inst)
 		}
 	}
@@ -188,7 +188,8 @@ func (nl *nacosListener) startListen() error {
 	}
 	serviceName := getSubscribeName(nl.listenUrl)
 	nl.subscribeParam = &vo.SubscribeParam{ServiceName: serviceName, SubscribeCallback: nl.Callback}
-	return nl.namingClient.Subscribe(nl.subscribeParam)
+	go nl.namingClient.Subscribe(nl.subscribeParam)
+	return nil
 }
 
 func (nl *nacosListener) stopListen() error {
