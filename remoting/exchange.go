@@ -77,7 +77,7 @@ type Response struct {
 	Result   interface{}
 }
 
-// NewResponse aims to create Response
+// NewResponse create to a new Response.
 func NewResponse(id int64, version string) *Response {
 	return &Response{
 		ID:      id,

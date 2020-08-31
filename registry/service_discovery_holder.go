@@ -15,29 +15,11 @@
  * limitations under the License.
  */
 
-package config
+package registry
 
-import (
-	"github.com/apache/dubbo-getty"
-)
-
-var (
-	serverTlsConfigBuilder getty.TlsConfigBuilder
-	clientTlsConfigBuilder getty.TlsConfigBuilder
-)
-
-func GetServerTlsConfigBuilder() getty.TlsConfigBuilder {
-	return serverTlsConfigBuilder
-}
-
-func GetClientTlsConfigBuilder() getty.TlsConfigBuilder {
-	return clientTlsConfigBuilder
-}
-
-func SetServerTlsConfigBuilder(configBuilder getty.TlsConfigBuilder) {
-	serverTlsConfigBuilder = configBuilder
-}
-
-func SetClientTlsConfigBuilder(configBuilder getty.TlsConfigBuilder) {
-	clientTlsConfigBuilder = configBuilder
+// ServiceDiscoveryHolder we can get a service discovery
+// it always be a service discovery registry
+type ServiceDiscoveryHolder interface {
+	// GetServiceDiscovery get service discovery
+	GetServiceDiscovery() ServiceDiscovery
 }
