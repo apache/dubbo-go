@@ -18,10 +18,14 @@
 package directory
 
 import (
+	"fmt"
+	"net/url"
+	"os"
 	"sync"
 )
 
 import (
+	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
 )
@@ -29,6 +33,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/cluster/directory"
+	"github.com/apache/dubbo-go/cluster/router/chain"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -55,6 +60,7 @@ type RegistryDirectory struct {
 	serviceType                    string
 	registry                       registry.Registry
 	cacheInvokersMap               *sync.Map // use sync.map
+	consumerURL                    *common.URL
 	cacheOriginUrl                 *common.URL
 	configurators                  []config_center.Configurator
 	consumerConfigurationListener  *consumerConfigurationListener
@@ -75,6 +81,15 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.
 		serviceType:      url.SubURL.Service(),
 		registry:         registry,
 	}
+
+	dir.consumerURL = dir.getConsumerUrl(url.SubURL)
+
+	if routerChain, err := chain.NewRouterChain(dir.consumerURL); err == nil {
+		dir.BaseDirectory.SetRouterChain(routerChain)
+	} else {
+		logger.Warnf("fail to create router chain with url: %s, err is: %v", url.SubURL, err)
+	}
+
 	dir.consumerConfigurationListener = newConsumerConfigurationListener(dir)
 
 	go dir.subscribe(url.SubURL)
@@ -145,6 +160,9 @@ func (dir *RegistryDirectory) refreshInvokers(res *registry.ServiceEvent) {
 	newInvokers := dir.toGroupInvokers()
 	dir.listenerLock.Lock()
 	dir.cacheInvokers = newInvokers
+	if res != nil {
+		dir.RouterChain().SetInvokers(newInvokers)
+	}
 	dir.listenerLock.Unlock()
 	// After dir.cacheInvokers is updated,destroy the oldInvoker
 	// Ensure that no request will enter the oldInvoker
@@ -251,7 +269,7 @@ func (dir *RegistryDirectory) List(invocation protocol.Invocation) []protocol.In
 	if routerChain == nil {
 		return invokers
 	}
-	return routerChain.Route(invokers, dir.cacheOriginUrl, invocation)
+	return routerChain.Route(dir.consumerURL, invocation)
 }
 
 // IsAvailable  whether the directory is available
@@ -285,6 +303,24 @@ func (dir *RegistryDirectory) overrideUrl(targetUrl *common.URL) {
 	doOverrideUrl(dir.configurators, targetUrl)
 	doOverrideUrl(dir.consumerConfigurationListener.Configurators(), targetUrl)
 	doOverrideUrl(dir.referenceConfigurationListener.Configurators(), targetUrl)
+}
+
+func (dir *RegistryDirectory) getConsumerUrl(c *common.URL) *common.URL {
+	processID := fmt.Sprintf("%d", os.Getpid())
+	localIP, _ := gxnet.GetLocalIP()
+
+	params := url.Values{}
+	c.RangeParams(func(key, value string) bool {
+		params.Add(key, value)
+		return true
+	})
+
+	params.Add("pid", processID)
+	params.Add("ip", localIP)
+	params.Add("protocol", c.Protocol)
+
+	return common.NewURLWithOptions(common.WithProtocol("consumer"), common.WithIp(localIP), common.WithPath(c.Path),
+		common.WithParams(params))
 }
 
 func doOverrideUrl(configurators []config_center.Configurator, targetUrl *common.URL) {
