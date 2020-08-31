@@ -103,7 +103,7 @@ func filterHideKey(url *common.URL) *common.URL {
 
 	// be careful params maps in url is map type
 	removeSet := gxset.NewSet()
-	for k, _ := range url.GetParams() {
+	for k := range url.GetParams() {
 		if strings.HasPrefix(k, ".") {
 			removeSet.Add(k)
 		}

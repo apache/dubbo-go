@@ -154,7 +154,6 @@ func (sd *ServiceDiscovery) updateInternalService(name, id string) {
 		return
 	}
 	entry.instance = instance
-	return
 }
 
 // UnregisterService un-register service in zookeeper and delete service in cache
