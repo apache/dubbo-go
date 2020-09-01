@@ -60,6 +60,10 @@ type Logger interface {
 }
 
 func init() {
+	// forbidden to executing twice.
+	if logger != nil {
+		return
+	}
 	logConfFile := os.Getenv(constant.APP_LOG_CONF_FILE)
 	err := InitLog(logConfFile)
 	if err != nil {

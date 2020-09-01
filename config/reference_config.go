@@ -251,5 +251,4 @@ func (c *ReferenceConfig) GenericLoad(id string) {
 	c.id = id
 	c.Refer(genericService)
 	c.Implement(genericService)
-	return
 }
