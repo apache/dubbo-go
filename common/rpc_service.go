@@ -271,7 +271,7 @@ func (sm *serviceMap) UnRegister(interfaceName, protocol, serviceId string) erro
 	sm.mutex.Lock()
 	defer sm.mutex.Unlock()
 	sm.interfaceMap[interfaceName] = make([]*Service, 0, len(svrs))
-	for i, _ := range svrs {
+	for i := range svrs {
 		if i != index {
 			sm.interfaceMap[interfaceName] = append(sm.interfaceMap[interfaceName], svrs[i])
 		}
