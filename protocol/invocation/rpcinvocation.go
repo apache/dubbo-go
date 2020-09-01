@@ -148,7 +148,7 @@ func (r *RPCInvocation) AttributeByKey(key string, defaultValue interface{}) int
 }
 
 // SetAttachments sets attribute by @key and @value.
-func (r *RPCInvocation) SetAttachments(key string, value string) {
+func (r *RPCInvocation) SetAttachments(key string, value interface{}) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	if r.attachments == nil {

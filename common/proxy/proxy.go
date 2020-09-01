@@ -151,6 +151,10 @@ func (p *Proxy) Implement(v common.RPCService) {
 				for k, value := range m {
 					inv.SetAttachments(k, value)
 				}
+			} else if m2, ok2 := atm.(map[string]interface{}); ok2 {
+				for k, value := range m2 {
+					inv.SetAttachments(k, value)
+				}
 			}
 
 			result := p.invoke.Invoke(invCtx, inv)

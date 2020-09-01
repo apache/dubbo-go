@@ -43,7 +43,7 @@ type Invocation interface {
 	// AttributeByKey gets attribute by key , if nil then return default value
 	AttributeByKey(string, interface{}) interface{}
 	// SetAttachments sets attribute by @key and @value.
-	SetAttachments(key string, value string)
+	SetAttachments(key string, value interface{})
 	// Invoker gets the invoker in current context.
 	Invoker() Invoker
 }
