@@ -141,8 +141,8 @@ func loadConsumerConfig() {
 
 	// wait for invoker is available, if wait over default 3s, then panic
 	var count int
-	checkok := true
 	for {
+		checkok := true
 		for _, refconfig := range consumerConfig.References {
 			if (refconfig.Check != nil && *refconfig.Check) ||
 				(refconfig.Check == nil && consumerConfig.Check != nil && *consumerConfig.Check) ||
@@ -167,7 +167,6 @@ func loadConsumerConfig() {
 		if checkok {
 			break
 		}
-		checkok = true
 	}
 }
 
