@@ -1,6 +1,34 @@
 # Release Notes
 ---
 
+## 1.5.1
+
+### New Features
+- [Add dynamic tag router](https://github.com/apache/dubbo-go/pull/703)
+- [Add TLS support](https://github.com/apache/dubbo-go/pull/685)
+- [Add Nearest first for multiple registry](https://github.com/apache/dubbo-go/pull/659)
+- [Add application and service level router](https://github.com/apache/dubbo-go/pull/662)
+- [Add dynamic tag router](https://github.com/apache/dubbo-go/pull/665)
+
+### Enhancement
+- [Avoid init the log twice](https://github.com/apache/dubbo-go/pull/719)
+- [Correct words and format codes](https://github.com/apache/dubbo-go/pull/704)
+- [Change log stack level from warn to error](https://github.com/apache/dubbo-go/pull/702)
+- [Optimize remotes configuration](https://github.com/apache/dubbo-go/pull/687)
+
+### Bugfixes
+- [Fix register service instance after provider config load](https://github.com/apache/dubbo-go/pull/694)
+- [Fix call subscribe function asynchronously](https://github.com/apache/dubbo-go/pull/721)
+- [Fix tag router rule copy](https://github.com/apache/dubbo-go/pull/721)
+- [Fix nacos unit test failed](https://github.com/apache/dubbo-go/pull/705)
+- [Fix can not inovke nacos destroy when graceful shutdown](https://github.com/apache/dubbo-go/pull/689)
+- [Fix zk lost event](https://github.com/apache/dubbo-go/pull/692)
+- [Fix k8s ut bug](https://github.com/apache/dubbo-go/pull/693)
+
+Milestone: [https://github.com/apache/dubbo-go/milestone/2?closed=1](https://github.com/apache/dubbo-go/milestone/2?closed=1)
+
+Project: [https://github.com/apache/dubbo-go/projects/8](https://github.com/apache/dubbo-go/projects/8)
+
 ## 1.5.0
 
 ### New Features
