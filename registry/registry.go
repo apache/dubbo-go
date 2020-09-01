@@ -31,8 +31,8 @@ import (
 type Registry interface {
 	common.Node
 
-	// used for service provider calling, register services to registry
-	// And it is also used for service consumer calling, register
+	// Register is used for service provider calling, register services
+	// to registry. And it is also used for service consumer calling, register
 	// services cared about, for dubbo's admin monitoring.
 	Register(url common.URL) error
 
@@ -45,6 +45,7 @@ type Registry interface {
 	// dubbo://10.20.153.10/org.apache.dubbo.foo.BarService?version=1.0.0&application=kylin
 	UnRegister(url common.URL) error
 
+	// Subscribe is required to support the contract:
 	// When creating new registry extension, pls select one of the
 	// following modes.
 	// Will remove in dubbogo version v1.1.0
