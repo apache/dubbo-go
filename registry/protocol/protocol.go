@@ -104,7 +104,7 @@ func getUrlToRegistry(providerUrl *common.URL, registryUrl *common.URL) *common.
 func filterHideKey(url *common.URL) *common.URL {
 	// be careful params maps in url is map type
 	removeSet := gxset.NewSet()
-	for k, _ := range url.GetParams() {
+	for k := range url.GetParams() {
 		if strings.HasPrefix(k, ".") {
 			removeSet.Add(k)
 		}
@@ -116,6 +116,18 @@ func (proto *registryProtocol) initConfigurationListeners() {
 	proto.overrideListeners = &sync.Map{}
 	proto.serviceConfigurationListeners = &sync.Map{}
 	proto.providerConfigurationListener = newProviderConfigurationListener(proto.overrideListeners)
+}
+
+// nolint
+func (proto *registryProtocol) GetRegistries() []registry.Registry {
+	var rs []registry.Registry
+	proto.registries.Range(func(_, v interface{}) bool {
+		if r, ok := v.(registry.Registry); ok {
+			rs = append(rs, r)
+		}
+		return true
+	})
+	return rs
 }
 
 // Refer provider service from registry center
@@ -369,7 +381,7 @@ func setProviderUrl(regURL *common.URL, providerURL *common.URL) {
 	regURL.SubURL = providerURL
 }
 
-// GetProtocol return the singleton RegistryProtocol
+// GetProtocol return the singleton registryProtocol
 func GetProtocol() protocol.Protocol {
 	once.Do(func() {
 		regProtocol = newRegistryProtocol()

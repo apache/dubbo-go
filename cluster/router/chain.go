@@ -17,9 +17,16 @@
 
 package router
 
+import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/protocol"
+)
+
 // Chain
 type Chain interface {
-	router
+	Route(*common.URL, protocol.Invocation) []protocol.Invoker
+	// Refresh invokers
+	SetInvokers([]protocol.Invoker)
 	// AddRouters Add routers
 	AddRouters([]PriorityRouter)
 }
