@@ -19,6 +19,8 @@ package proxy
 
 import (
 	"context"
+	hessian "github.com/apache/dubbo-go-hessian2"
+	"github.com/apache/dubbo-go/protocol/invocation"
 	"reflect"
 	"testing"
 )
@@ -40,6 +42,7 @@ type TestService struct {
 	MethodThree func(int, bool) (interface{}, error)
 	MethodFour  func(int, bool) (*interface{}, error) `dubbo:"methodFour"`
 	MethodFive  func() error
+	MethodSix   func(context.Context, string) (interface{}, error)
 	Echo        func(interface{}, *interface{}) error
 }
 
@@ -119,4 +122,35 @@ func TestProxyImplement(t *testing.T) {
 	p.Implement(s3)
 	assert.Nil(t, s3.MethodOne)
 
+}
+
+func TestProxyImplementForContext(t *testing.T) {
+	invoker := &TestProxyInvoker{
+		BaseInvoker: *protocol.NewBaseInvoker(common.URL{}),
+	}
+	p := NewProxy(invoker, nil, map[string]string{constant.ASYNC_KEY: "false"})
+	s := &TestService{}
+	p.Implement(s)
+	attahments1 := make(map[string]interface{}, 4)
+	attahments1["k1"] = "v1"
+	attahments1["k2"] = "v2"
+	context := context.WithValue(context.Background(), constant.AttachmentKey, attahments1)
+	r, err := p.Get().(*TestService).MethodSix(context, "xxx")
+	v1 := r.(map[string]interface{})
+	assert.NoError(t, err)
+	assert.Equal(t, v1["TestProxyInvoker"], "TestProxyInvokerValue")
+}
+
+type TestProxyInvoker struct {
+	protocol.BaseInvoker
+}
+
+func (bi *TestProxyInvoker) Invoke(context context.Context, inv protocol.Invocation) protocol.Result {
+	rpcInv := inv.(*invocation.RPCInvocation)
+	mapV := inv.Attachments()
+	mapV["TestProxyInvoker"] = "TestProxyInvokerValue"
+	hessian.ReflectResponse(mapV, rpcInv.Reply())
+	return &protocol.RPCResult{
+		Rest: inv.Arguments(),
+	}
 }
