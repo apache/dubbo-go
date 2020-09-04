@@ -74,7 +74,6 @@ func newConsulServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 	return &consulServiceDiscovery{
 		address:    remoteConfig.Address,
 		descriptor: descriptor,
-		ttl:        make(map[string]chan struct{}),
 	}, nil
 }
 
@@ -90,7 +89,7 @@ type consulServiceDiscovery struct {
 	tag               string
 	tags              []string
 	address           string
-	ttl               map[string]chan struct{}
+	ttl               sync.Map
 	*consul.Config
 }
 
@@ -115,10 +114,11 @@ func (csd *consulServiceDiscovery) String() string {
 
 func (csd *consulServiceDiscovery) Destroy() error {
 	csd.consulClient = nil
-	for _, t := range csd.ttl {
-		close(t)
-	}
-	csd.ttl = nil
+	csd.ttl.Range(func(key, t interface{}) bool {
+		close(t.(chan struct{}))
+		csd.ttl.Delete(key)
+		return true
+	})
 	return nil
 }
 
@@ -137,7 +137,7 @@ func (csd *consulServiceDiscovery) registerTtl(instance registry.ServiceInstance
 	checkID := buildID(instance)
 
 	stopChan := make(chan struct{})
-	csd.ttl[buildID(instance)] = stopChan
+	csd.ttl.LoadOrStore(buildID(instance), stopChan)
 
 	period := time.Duration(csd.checkPassInterval/8) * time.Millisecond
 	timer := time.NewTimer(period)
@@ -177,13 +177,14 @@ func (csd *consulServiceDiscovery) Unregister(instance registry.ServiceInstance)
 		logger.Errorf("unregister service instance %s,error: %v", instance.GetId(), err)
 		return err
 	}
-	stopChanel, ok := csd.ttl[buildID(instance)]
+
+	stopChanel, ok := csd.ttl.Load(buildID(instance))
 	if !ok {
 		logger.Warnf("ttl for service instance %s didn't exist", instance.GetId())
 		return nil
 	}
-	close(stopChanel)
-	delete(csd.ttl, buildID(instance))
+	close(stopChanel.(chan struct{}))
+	csd.ttl.Delete(buildID(instance))
 	return nil
 }
 
@@ -404,7 +405,7 @@ func (csd *consulServiceDiscovery) buildRegisterInstance(instance registry.Servi
 func (csd *consulServiceDiscovery) buildCheck(instance registry.ServiceInstance) consul.AgentServiceCheck {
 
 	deregister, ok := instance.GetMetadata()[constant.DEREGISTER_AFTER]
-	if !ok || deregister == "" {
+	if !ok || len(deregister) == 0 {
 		deregister = constant.DEFAULT_DEREGISTER_TIME
 	}
 	return consul.AgentServiceCheck{
