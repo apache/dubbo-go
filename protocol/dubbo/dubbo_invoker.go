@@ -19,7 +19,6 @@ package dubbo
 
 import (
 	"context"
-	"github.com/opentracing/opentracing-go"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -27,6 +26,7 @@ import (
 )
 
 import (
+	"github.com/opentracing/opentracing-go"
 	perrors "github.com/pkg/errors"
 )
 

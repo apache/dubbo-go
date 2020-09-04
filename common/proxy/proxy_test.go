@@ -19,13 +19,13 @@ package proxy
 
 import (
 	"context"
-	hessian "github.com/apache/dubbo-go-hessian2"
-	"github.com/apache/dubbo-go/protocol/invocation"
 	"reflect"
 	"testing"
 )
 
 import (
+	hessian "github.com/apache/dubbo-go-hessian2"
+	"github.com/apache/dubbo-go/protocol/invocation"
 	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )

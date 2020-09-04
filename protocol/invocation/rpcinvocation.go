@@ -117,7 +117,7 @@ func (r *RPCInvocation) AttachmentsByKey(key string, defaultValue string) string
 	return defaultValue
 }
 
-// Get Attachment of
+// Attachment returns the corresponding value from dubbo's attachment with the given key.
 func (r *RPCInvocation) Attachment(key string) interface{} {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
