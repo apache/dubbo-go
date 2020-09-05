@@ -127,10 +127,10 @@ func (s *Server) handlePkg(conn net.Conn) {
 		}
 
 		reqBody, err := ioutil.ReadAll(r.Body)
+		r.Body.Close()
 		if err != nil {
 			return
 		}
-		r.Body.Close()
 
 		reqHeader := make(map[string]string)
 		for k := range r.Header {
@@ -263,8 +263,7 @@ func (s *Server) Stop() {
 	})
 }
 
-func serveRequest(ctx context.Context,
-	header map[string]string, body []byte, conn net.Conn) error {
+func serveRequest(ctx context.Context, header map[string]string, body []byte, conn net.Conn) error {
 	sendErrorResp := func(header map[string]string, body []byte) error {
 		rsp := &http.Response{
 			Header:        make(http.Header),
@@ -324,13 +323,12 @@ func serveRequest(ctx context.Context,
 		if err == io.EOF || err == io.ErrUnexpectedEOF {
 			return perrors.WithStack(err)
 		}
-
 		return perrors.New("server cannot decode request: " + err.Error())
 	}
+
 	path := header["Path"]
 	methodName := codec.req.Method
 	if len(path) == 0 || len(methodName) == 0 {
-		codec.ReadBody(nil)
 		return perrors.New("service/method request ill-formed: " + path + "/" + methodName)
 	}
 
