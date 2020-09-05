@@ -191,7 +191,6 @@ func (c *tagRouter) Process(event *config_center.ConfigChangeEvent) {
 	defer c.mutex.Unlock()
 	c.tagRouterRule = routerRule
 	c.ruleChanged = true
-	return
 }
 
 // URL gets the url of tagRouter
