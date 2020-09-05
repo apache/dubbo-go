@@ -28,6 +28,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/remoting/getty"
 )
@@ -40,7 +41,7 @@ const (
 		"side=provider&timeout=3000&timestamp=1556509797245"
 )
 
-func init() {
+func initDubboInvokerTest() {
 	getty.SetServerConfig(getty.ServerConfig{
 		SessionNumber:  700,
 		SessionTimeout: "20s",
@@ -80,7 +81,9 @@ func init() {
 		},
 	})
 }
+
 func TestDubboProtocol_Export(t *testing.T) {
+	initDubboInvokerTest()
 	srvCfg := getty.GetDefaultServerConfig()
 	getty.SetServerConfig(srvCfg)
 	// Export
@@ -117,6 +120,7 @@ func TestDubboProtocol_Export(t *testing.T) {
 
 func TestDubboProtocol_Refer_No_connect(t *testing.T) {
 	// Refer
+	initDubboInvokerTest()
 	proto := GetProtocol()
 	url, err := common.NewURL(mockCommonUrl)
 	assert.NoError(t, err)
@@ -125,15 +129,18 @@ func TestDubboProtocol_Refer_No_connect(t *testing.T) {
 }
 
 func TestDubboProtocol_Refer(t *testing.T) {
+	initDubboInvokerTest()
 	cliCfg := getty.GetDefaultClientConfig()
 	getty.SetClientConf(cliCfg)
 	// Refer
 	proto := GetProtocol()
 
 	url, err := common.NewURL(mockCommonUrl)
+	proto.Export(&proxy_factory.ProxyInvoker{
+		BaseInvoker: *protocol.NewBaseInvoker(url),
+	})
 	assert.NoError(t, err)
 	invoker := proto.Refer(url)
-
 	// make sure url
 	eq := invoker.GetUrl().URLEqual(url)
 	assert.True(t, eq)

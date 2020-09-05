@@ -48,7 +48,6 @@ func TestRunSuite(t *testing.T) {
 	testRequestOneWay(t, svr, url, client)
 	testClient_Call(t, svr, url, client)
 	testClient_AsyncCall(t, svr, url, client)
-
 	svr.Stop()
 }
 
@@ -106,15 +105,10 @@ func testClient_Call(t *testing.T, svr *Server, url common.URL, c *Client) {
 	testGetUser5(t, c)
 	testGetUser6(t, c)
 	testGetUser61(t, c)
-
 }
-func testGetBigPkg(t *testing.T, c *Client) {
-	var (
-		user *User
-		err  error
-	)
 
-	user = &User{}
+func testGetBigPkg(t *testing.T, c *Client) {
+	user := &User{}
 	request := remoting.NewRequest("2.0.2")
 	invocation := createInvocation("GetBigPkg", nil, nil, []interface{}{[]interface{}{nil}, user},
 		[]reflect.Value{reflect.ValueOf([]interface{}{nil}), reflect.ValueOf(user)})
@@ -126,17 +120,14 @@ func testGetBigPkg(t *testing.T, c *Client) {
 	pendingResponse := remoting.NewPendingResponse(request.ID)
 	pendingResponse.Reply = user
 	remoting.AddPendingResponse(pendingResponse)
-	err = c.Request(request, 8*time.Second, pendingResponse)
+	err := c.Request(request, 8*time.Second, pendingResponse)
 	assert.NoError(t, err)
 	assert.NotEqual(t, "", user.Id)
 	assert.NotEqual(t, "", user.Name)
 }
+
 func testGetUser(t *testing.T, c *Client) {
-	var (
-		user *User
-		err  error
-	)
-	user = &User{}
+	user := &User{}
 	request := remoting.NewRequest("2.0.2")
 	invocation := createInvocation("GetUser", nil, nil, []interface{}{"1", "username"},
 		[]reflect.Value{reflect.ValueOf("1"), reflect.ValueOf("username")})
@@ -148,7 +139,7 @@ func testGetUser(t *testing.T, c *Client) {
 	pendingResponse := remoting.NewPendingResponse(request.ID)
 	pendingResponse.Reply = user
 	remoting.AddPendingResponse(pendingResponse)
-	err = c.Request(request, 3*time.Second, pendingResponse)
+	err := c.Request(request, 3*time.Second, pendingResponse)
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "1", Name: "username"}, *user)
 }
@@ -175,6 +166,7 @@ func testGetUser0(t *testing.T, c *Client) {
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "1", Name: "username"}, *user)
 }
+
 func testGetUser1(t *testing.T, c *Client) {
 	var (
 		err error
@@ -194,6 +186,7 @@ func testGetUser1(t *testing.T, c *Client) {
 	err = c.Request(request, 3*time.Second, pendingResponse)
 	assert.NoError(t, err)
 }
+
 func testGetUser2(t *testing.T, c *Client) {
 	var (
 		err error
@@ -211,6 +204,7 @@ func testGetUser2(t *testing.T, c *Client) {
 	err = c.Request(request, 3*time.Second, pendingResponse)
 	assert.EqualError(t, err, "error")
 }
+
 func testGetUser3(t *testing.T, c *Client) {
 	var (
 		err error
@@ -231,6 +225,7 @@ func testGetUser3(t *testing.T, c *Client) {
 	assert.NoError(t, err)
 	assert.Equal(t, &User{Id: "1", Name: "username"}, user2[0])
 }
+
 func testGetUser4(t *testing.T, c *Client) {
 	var (
 		err error
