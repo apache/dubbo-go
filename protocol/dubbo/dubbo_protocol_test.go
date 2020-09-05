@@ -118,7 +118,7 @@ func TestDubboProtocol_Export(t *testing.T) {
 	assert.False(t, ok)
 }
 
-func TestDubboProtocol_Refer_No_connect(t *testing.T) {
+func TestDubboProtocolReferNoConnect(t *testing.T) {
 	// Refer
 	initDubboInvokerTest()
 	proto := GetProtocol()
