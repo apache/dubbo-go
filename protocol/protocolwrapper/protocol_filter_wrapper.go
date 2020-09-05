@@ -68,24 +68,19 @@ func (pfw *ProtocolFilterWrapper) Destroy() {
 }
 
 func buildInvokerChain(invoker protocol.Invoker, key string) protocol.Invoker {
-	if invoker == nil {
-		return nil
-	}
-	filtName := invoker.GetUrl().GetParam(key, "")
-	if filtName == "" {
+	filterName := invoker.GetUrl().GetParam(key, "")
+	if filterName == "" {
 		return invoker
 	}
-	filtNames := strings.Split(filtName, ",")
-	next := invoker
+	filterNames := strings.Split(filterName, ",")
 
 	// The order of filters is from left to right, so loading from right to left
-
-	for i := len(filtNames) - 1; i >= 0; i-- {
-		flt := extension.GetFilter(filtNames[i])
+	next := invoker
+	for i := len(filterNames) - 1; i >= 0; i-- {
+		flt := extension.GetFilter(filterNames[i])
 		fi := &FilterInvoker{next: next, invoker: invoker, filter: flt}
 		next = fi
 	}
-
 	return next
 }
 
