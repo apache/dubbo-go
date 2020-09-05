@@ -43,9 +43,9 @@ type ProviderConfig struct {
 	ProxyFactory   string                     `yaml:"proxy_factory" default:"default" json:"proxy_factory,omitempty" property:"proxy_factory"`
 	Services       map[string]*ServiceConfig  `yaml:"services" json:"services,omitempty" property:"services"`
 	Protocols      map[string]*ProtocolConfig `yaml:"protocols" json:"protocols,omitempty" property:"protocols"`
-	ProtocolConf   interface{}                `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf" `
-	FilterConf     interface{}                `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf" `
-	ShutdownConfig *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf" `
+	ProtocolConf   interface{}                `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
+	FilterConf     interface{}                `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
+	ShutdownConfig *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
 	ConfigType     map[string]string          `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 
 	Registry   *RegistryConfig            `yaml:"registry" json:"registry,omitempty" property:"registry"`
