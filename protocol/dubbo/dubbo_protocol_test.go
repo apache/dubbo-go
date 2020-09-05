@@ -18,7 +18,6 @@
 package dubbo
 
 import (
-	"github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"testing"
 )
 
@@ -29,12 +28,13 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/remoting/getty"
 )
 
 const (
-	mockCommonUrl = "dubbo://127.0.0.1:30000/com.ikurento.user.UserProvider?anyhost=true&" +
+	mockCommonUrl = "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
