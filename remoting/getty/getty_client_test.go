@@ -18,6 +18,7 @@
 package getty
 
 import (
+	"bytes"
 	"context"
 	"reflect"
 	"sync"
@@ -39,11 +40,6 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/apache/dubbo-go/remoting"
-)
-
-const (
-	DubboCodecForTestUserID   = "DubboCodecForTestUserID"
-	DubboCodecForTestUserName = "DubboCodecForTestUserName"
 )
 
 func TestRunSuite(t *testing.T) {
@@ -126,8 +122,8 @@ func testGetBigPkg(t *testing.T, c *Client) {
 	remoting.AddPendingResponse(pendingResponse)
 	err := c.Request(request, 8*time.Second, pendingResponse)
 	assert.NoError(t, err)
-	assert.Equal(t, DubboCodecForTestUserID, user.Id)
-	assert.Equal(t, DubboCodecForTestUserName, user.Name)
+	assert.NotEqual(t, "", user.Id)
+	assert.NotEqual(t, "", user.Name)
 }
 
 func testGetUser(t *testing.T, c *Client) {
@@ -438,8 +434,13 @@ type (
 
 // size:4801228
 func (u *UserProvider) GetBigPkg(ctx context.Context, req []interface{}, rsp *User) error {
-	rsp.Id = DubboCodecForTestUserID
-	rsp.Name = DubboCodecForTestUserName
+	argBuf := new(bytes.Buffer)
+	for i := 0; i < 400; i++ {
+		argBuf.WriteString("击鼓其镗，踊跃用兵。土国城漕，我独南行。从孙子仲，平陈与宋。不我以归，忧心有忡。爰居爰处？爰丧其马？于以求之？于林之下。死生契阔，与子成说。执子之手，与子偕老。于嗟阔兮，不我活兮。于嗟洵兮，不我信兮。")
+		argBuf.WriteString("击鼓其镗，踊跃用兵。土国城漕，我独南行。从孙子仲，平陈与宋。不我以归，忧心有忡。爰居爰处？爰丧其马？于以求之？于林之下。死生契阔，与子成说。执子之手，与子偕老。于嗟阔兮，不我活兮。于嗟洵兮，不我信兮。")
+	}
+	rsp.Id = argBuf.String()
+	rsp.Name = argBuf.String()
 	return nil
 }
 
