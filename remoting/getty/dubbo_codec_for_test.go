@@ -20,17 +20,20 @@ package getty
 // it is used to unit test.
 import (
 	"bytes"
-	hessian "github.com/apache/dubbo-go-hessian2"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/dubbo/impl"
-	"github.com/apache/dubbo-go/protocol/invocation"
-	perrors "github.com/pkg/errors"
 	"strconv"
 	"time"
 )
 
 import (
+	hessian "github.com/apache/dubbo-go-hessian2"
+	perrors "github.com/pkg/errors"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/dubbo/impl"
+	"github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/apache/dubbo-go/remoting"
 )
 
