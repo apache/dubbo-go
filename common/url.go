@@ -224,7 +224,7 @@ func NewURL(urlString string, opts ...option) (URL, error) {
 	}
 
 	// rawUrlString = "//" + rawUrlString
-	if strings.Index(rawUrlString, "//") < 0 {
+	if !strings.Contains(rawUrlString, "//") {
 		t := URL{baseUrl: baseUrl{}}
 		for _, opt := range opts {
 			opt(&t)
