@@ -110,7 +110,7 @@ func (c *overrideConfigurator) configureIfMatchInternal(url *common.URL) {
 func (c *overrideConfigurator) configureIfMatch(host string, url *common.URL) {
 	if constant.ANYHOST_VALUE == c.configuratorUrl.Ip || host == c.configuratorUrl.Ip {
 		providers := c.configuratorUrl.GetParam(constant.OVERRIDE_PROVIDERS_KEY, "")
-		if len(providers) == 0 || strings.Index(providers, url.Location) >= 0 || strings.Index(providers, constant.ANYHOST_VALUE) >= 0 {
+		if len(providers) == 0 || strings.Contains(providers, url.Location) || strings.Contains(providers, constant.ANYHOST_VALUE) {
 			c.configureIfMatchInternal(url)
 		}
 	}
