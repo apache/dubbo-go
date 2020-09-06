@@ -237,7 +237,7 @@ var (
 	ErrIllegalPackage  = perrors.New("illegal package!")
 )
 
-// DescRegex ...
+// nolint
 var DescRegex, _ = regexp.Compile(DESC_REGEX)
 
 var NilValue = reflect.Zero(reflect.TypeOf((*interface{})(nil)).Elem())

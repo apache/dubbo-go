@@ -39,7 +39,7 @@ const (
 	PackageType_BitSize       = 0x2f
 )
 
-// PackageType ...
+// PackageType nolint
 type PackageType int
 
 // DubboHeader dubbo header
