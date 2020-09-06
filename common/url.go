@@ -690,14 +690,14 @@ func mergeNormalParam(mergedUrl *URL, referenceUrl *URL, paramKeys []string) []f
 	return methodConfigMergeFcn
 }
 
-// doesn't encode url reserve character, url.QueryEscape will do this work
+// ParamsUnescapeEncode doesn't encode url reserve character, url.QueryEscape will do this work
 // reference: https://github.com/golang/go.git, src/net/url/url.go, Encode method
 func ParamsUnescapeEncode(params url.Values) string {
 	if params == nil {
 		return ""
 	}
 	var buf strings.Builder
-	keys := make([]string, len(params))
+	keys := make([]string, 0, len(params))
 	for k := range params {
 		keys = append(keys, k)
 	}

@@ -20,17 +20,17 @@ package impl
 import (
 	"bufio"
 	"encoding/binary"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/remoting"
 )
 
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
-	"github.com/pkg/errors"
+	perrors "github.com/pkg/errors"
 )
 
 import (
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 type ProtocolCodec struct {
@@ -48,11 +48,11 @@ func (c *ProtocolCodec) ReadHeader(header *DubboHeader) error {
 	}
 	buf, err := c.reader.Peek(HEADER_LENGTH)
 	if err != nil { // this is impossible
-		return errors.WithStack(err)
+		return perrors.WithStack(err)
 	}
 	_, err = c.reader.Discard(HEADER_LENGTH)
 	if err != nil { // this is impossible
-		return errors.WithStack(err)
+		return perrors.WithStack(err)
 	}
 
 	//// read header
@@ -62,7 +62,7 @@ func (c *ProtocolCodec) ReadHeader(header *DubboHeader) error {
 
 	// Header{serialization id(5 bit), event, two way, req/response}
 	if header.SerialID = buf[2] & SERIAL_MASK; header.SerialID == Zero {
-		return errors.Errorf("serialization ID:%v", header.SerialID)
+		return perrors.Errorf("serialization ID:%v", header.SerialID)
 	}
 
 	flag := buf[2] & FLAG_EVENT
@@ -100,7 +100,7 @@ func (c *ProtocolCodec) ReadHeader(header *DubboHeader) error {
 		return hessian.ErrBodyNotEnough
 	}
 	c.headerRead = true
-	return errors.WithStack(err)
+	return perrors.WithStack(err)
 }
 
 func (c *ProtocolCodec) EncodeHeader(p DubboPackage) []byte {
@@ -129,7 +129,7 @@ func (c *ProtocolCodec) EncodeHeader(p DubboPackage) []byte {
 func (c *ProtocolCodec) Encode(p DubboPackage) ([]byte, error) {
 	// header
 	if c.serializer == nil {
-		return nil, errors.New("serializer should not be nil")
+		return nil, perrors.New("serializer should not be nil")
 	}
 	header := p.Header
 	switch header.Type {
@@ -146,7 +146,7 @@ func (c *ProtocolCodec) Encode(p DubboPackage) ([]byte, error) {
 		return packResponse(p, c.serializer)
 
 	default:
-		return nil, errors.Errorf("Unrecognised message type: %v", header.Type)
+		return nil, perrors.Errorf("Unrecognised message type: %v", header.Type)
 	}
 }
 
@@ -165,20 +165,20 @@ func (c *ProtocolCodec) Decode(p *DubboPackage) error {
 		decoder := hessian.NewDecoder(body)
 		exception, err := decoder.Decode()
 		if err != nil {
-			return errors.WithStack(err)
+			return perrors.WithStack(err)
 		}
 		rsp, ok := p.Body.(*ResponsePayload)
 		if !ok {
-			return errors.Errorf("java exception:%s", exception.(string))
+			return perrors.Errorf("java exception:%s", exception.(string))
 		}
-		rsp.Exception = errors.Errorf("java exception:%s", exception.(string))
+		rsp.Exception = perrors.Errorf("java exception:%s", exception.(string))
 		return nil
 	} else if p.IsHeartBeat() {
 		// heartbeat no need to unmarshal contents
 		return nil
 	}
 	if c.serializer == nil {
-		return errors.New("Codec serializer is nil")
+		return perrors.New("Codec serializer is nil")
 	}
 	if p.IsResponse() {
 		p.Body = &ResponsePayload{
@@ -232,7 +232,7 @@ func packRequest(p DubboPackage, serializer Serializer) ([]byte, error) {
 		}
 		pkgLen = len(body)
 		if pkgLen > int(DEFAULT_LEN) { // 8M
-			return nil, errors.Errorf("Data length %d too large, max payload %d", pkgLen, DEFAULT_LEN)
+			return nil, perrors.Errorf("Data length %d too large, max payload %d", pkgLen, DEFAULT_LEN)
 		}
 		byteArray = append(byteArray, body...)
 	}
@@ -271,7 +271,7 @@ func packResponse(p DubboPackage, serializer Serializer) ([]byte, error) {
 
 	pkgLen := len(body)
 	if pkgLen > int(DEFAULT_LEN) { // 8M
-		return nil, errors.Errorf("Data length %d too large, max payload %d", pkgLen, DEFAULT_LEN)
+		return nil, perrors.Errorf("Data length %d too large, max payload %d", pkgLen, DEFAULT_LEN)
 	}
 	// byteArray{body length}
 	binary.BigEndian.PutUint32(byteArray[12:], uint32(pkgLen))

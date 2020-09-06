@@ -18,7 +18,6 @@
 package configurable
 
 import (
-	"github.com/apache/dubbo-go/remoting/getty"
 	"testing"
 )
 
@@ -32,6 +31,7 @@ import (
 	_ "github.com/apache/dubbo-go/filter/filter_impl"
 	"github.com/apache/dubbo-go/metadata/service/inmemory"
 	_ "github.com/apache/dubbo-go/protocol/dubbo"
+	"github.com/apache/dubbo-go/remoting/getty"
 )
 
 func TestConfigurableExporter(t *testing.T) {
