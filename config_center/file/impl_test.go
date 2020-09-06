@@ -19,29 +19,149 @@ package file
 
 import (
 	"fmt"
+	"os"
 	"sync"
 	"testing"
+	"time"
 )
 
 import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/config_center"
 )
 
-const (
-	dubboPropertyFileName = "dubbo.properties"
+import (
+	"github.com/stretchr/testify/assert"
 )
 
-func TestListener(t *testing.T) {
-	fsdc := &fileSystemDynamicConfiguration{
-		rootPath: "/Users/tc/Documents/workspace_2020/dubbo/dubbo-common/target/test-classes/config-center",
+const (
+	key = "com.dubbo.go"
+)
+
+func initFileData(t *testing.T) (*FileSystemDynamicConfiguration, error) {
+	urlString := "registry://127.0.0.1:2181"
+	regurl, err := common.NewURL(urlString)
+	assert.NoError(t, err)
+	dc, err := extension.GetConfigCenterFactory("file").GetDynamicConfiguration(&regurl)
+	assert.NoError(t, err)
+
+	return dc.(*FileSystemDynamicConfiguration), err
+}
+
+func TestPublishAndGetConfig(t *testing.T) {
+	file, err := initFileData(t)
+	assert.NoError(t, err)
+	if err := file.PublishConfig(key, "", "A"); err != nil {
+		t.Fatal(err)
 	}
 
+	if prop, err := file.GetProperties(key); err != nil {
+		assert.Equal(t, "A", prop)
+	}
+
+	defer destroy(t, file.rootPath, file)
+}
+
+func TestAddListener(t *testing.T) {
+	file, err := initFileData(t)
+	group := "dubbogo"
+	value := "Test Value"
+	err = file.PublishConfig(key, group, value)
+	assert.NoError(t, err)
+
 	listener := &mockDataListener{}
+	file.AddListener(key, listener, config_center.WithGroup(group))
+
 	listener.wg.Add(1)
-	fsdc.addListener("abc-def-ghi", listener)
+	value = "Test Value 2"
+	err = file.PublishConfig(key, group, value)
+	assert.NoError(t, err)
+
+	listener.wg.Add(1)
+	value = "Test Value 3"
+	err = file.PublishConfig(key, group, value)
+	assert.NoError(t, err)
 
 	listener.wg.Wait()
-	fsdc.close()
+
+	time.Sleep(time.Second)
+	defer destroy(t, file.rootPath, file)
+}
+
+func TestAddAndRemoveListener(t *testing.T) {
+	file, err := initFileData(t)
+	group := "dubbogo"
+	value := "Test Value"
+	err = file.PublishConfig(key, group, value)
+	assert.NoError(t, err)
+
+	listener := &mockDataListener{}
+	file.AddListener(key, listener, config_center.WithGroup(group))
+
+	listener.wg.Add(1)
+	value = "Test Value 2"
+	err = file.PublishConfig(key, group, value)
+	assert.NoError(t, err)
+
+	// sleep, make sure callback run success, do `l.wg.Done()`
+	time.Sleep(time.Second)
+	file.RemoveListener(key, listener, config_center.WithGroup(group))
+
+	listener.wg.Add(1)
+	value = "Test Value 3"
+	err = file.PublishConfig(key, group, value)
+	assert.NoError(t, err)
+	listener.wg.Done()
+
+	listener.wg.Wait()
+
+	time.Sleep(time.Second)
+	defer destroy(t, file.rootPath, file)
+}
+
+func TestGetConfigKeysByGroup(t *testing.T) {
+	file, err := initFileData(t)
+	group := "dubbogo"
+	value := "Test Value"
+	err = file.PublishConfig(key, group, value)
+	gs, err := file.GetConfigKeysByGroup(group)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, gs.Size())
+	defer destroy(t, file.rootPath, file)
+}
+
+func TestGetConfig(t *testing.T) {
+	file, err := initFileData(t)
+	assert.NoError(t, err)
+	group := "dubbogo"
+	value := "Test Value"
+	err = file.PublishConfig(key, group, value)
+	assert.NoError(t, err)
+	prop, err := file.GetProperties(key, config_center.WithGroup(group))
+	assert.NoError(t, err)
+	assert.Equal(t, value, prop)
+	defer destroy(t, file.rootPath, file)
+}
+
+func TestPublishConfig(t *testing.T) {
+	file, err := initFileData(t)
+	assert.NoError(t, err)
+	group := "dubbogo"
+	value := "Test Value"
+	err = file.PublishConfig(key, group, value)
+	assert.NoError(t, err)
+	prop, err := file.GetInternalProperty(key, config_center.WithGroup(group))
+	assert.NoError(t, err)
+	assert.Equal(t, value, prop)
+	defer destroy(t, file.rootPath, file)
+}
+
+func destroy(t *testing.T, path string, fdc *FileSystemDynamicConfiguration) {
+	if err := os.RemoveAll(path); err != nil {
+		t.Error(err)
+	}
+	fdc.Close()
 }
 
 type mockDataListener struct {

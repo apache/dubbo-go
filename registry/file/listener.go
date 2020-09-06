@@ -17,26 +17,13 @@
 
 package file
 
-import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/config_center"
-	"github.com/apache/dubbo-go/config_center/parser"
-)
+import "github.com/apache/dubbo-go/config_center"
 
-func init() {
-	extension.SetConfigCenterFactory(constant.FILE_KEY, func() config_center.DynamicConfigurationFactory { return &fileDynamicConfigurationFactory{} })
+// RegistryConfigurationListener represent the processor of flie watcher
+type RegistryConfigurationListener struct {
 }
 
-type fileDynamicConfigurationFactory struct {
-}
+// Process submit the ConfigChangeEvent to the event chan to notify all observer
+func (l *RegistryConfigurationListener) Process(configType *config_center.ConfigChangeEvent) {
 
-func (f *fileDynamicConfigurationFactory) GetDynamicConfiguration(url *common.URL) (config_center.DynamicConfiguration, error) {
-	dynamicConfiguration, err := newFileSystemDynamicConfiguration(url)
-	if err != nil {
-		return nil, err
-	}
-	dynamicConfiguration.SetParser(&parser.DefaultConfigurationParser{})
-	return dynamicConfiguration, err
 }

@@ -18,144 +18,123 @@
 package file
 
 import (
-	"bytes"
-	"errors"
-	"os"
-	"os/exec"
-	"os/user"
-	"runtime"
-	"strings"
+	"io/ioutil"
 	"sync"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/config_center"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 import (
 	"github.com/fsnotify/fsnotify"
 )
 
-import (
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/config_center"
-)
+type CacheListener struct {
+	watch        *fsnotify.Watcher
+	keyListeners sync.Map
+	rootPath     string
+}
 
-var (
-	watchStartOnce = sync.Once{}
-	watch          *fsnotify.Watcher
-	callback       map[string]config_center.ConfigurationListener
-	//path           = strings.Join([]string{h, ".dubbo", "registry"}, string(filepath.Separator))
-)
-
-func init() {
+// NewCacheListener creates a new CacheListener
+func NewCacheListener(rootPath string) *CacheListener {
+	cl := &CacheListener{rootPath: rootPath}
+	// start watcher
 	watch, err := fsnotify.NewWatcher()
 	if err != nil {
 		logger.Errorf("file : listen config fail, error:%v ", err)
-		return
 	}
-
-	watchStartOnce.Do(func() {
-		go func() {
-			for {
-				select {
-				case event := <-watch.Events:
-					if event.Op&fsnotify.Write == fsnotify.Write {
-
+	go func() {
+		for {
+			select {
+			case event := <-watch.Events:
+				key := event.Name
+				logger.Debugf("watcher %s, event %v", cl.rootPath, event)
+				if event.Op&fsnotify.Write == fsnotify.Write {
+					if l, ok := cl.keyListeners.Load(key); ok {
+						allCallback(l.(map[config_center.ConfigurationListener]struct{}), key, remoting.EventTypeUpdate)
 					}
-					if event.Op&fsnotify.Create == fsnotify.Create {
-
-					}
-					if event.Op&fsnotify.Remove == fsnotify.Remove {
-
-					}
-				case err := <-watch.Errors:
-					logger.Errorf("file : listen watch fail:", err)
 				}
+				if event.Op&fsnotify.Create == fsnotify.Create {
+					if l, ok := cl.keyListeners.Load(key); ok {
+						allCallback(l.(map[config_center.ConfigurationListener]struct{}), key, remoting.EventTypeAdd)
+					}
+				}
+				if event.Op&fsnotify.Remove == fsnotify.Remove {
+					if l, ok := cl.keyListeners.Load(key); ok {
+						allCallback(l.(map[config_center.ConfigurationListener]struct{}), key, remoting.EventTypeDel)
+					}
+				}
+			case err := <-watch.Errors:
+				logger.Errorf("file : listen watch fail:", err)
 			}
-		}()
+		}
+	}()
+	cl.watch = watch
+
+	extension.AddCustomShutdownCallback(func() {
+		cl.watch.Close()
 	})
+
+	return cl
 }
 
-func (fsdc *fileSystemDynamicConfiguration) addListener(key string, listener config_center.ConfigurationListener) {
-	path := fsdc.buildPath(key, config_center.DEFAULT_GROUP)
-	_, loaded := fsdc.keyListeners.Load(path)
-	if !loaded {
-		if err := watch.Add(path); err != nil {
-			logger.Errorf("file : listen watch: %s add fail:", key, err)
-		} else {
-			fsdc.keyListeners.Store(key, listener)
-		}
+func allCallback(lmap map[config_center.ConfigurationListener]struct{}, key string, event remoting.EventType) {
+	if len(lmap) == 0 {
+		logger.Warnf("file watch callback but configuration listener is empty, key:%s, event:%v", key, event)
+	}
+	c := getFileContent(key)
+	for l := range lmap {
+		callback(l, key, c, event)
+	}
+}
+
+func callback(listener config_center.ConfigurationListener, path, data string, event remoting.EventType) {
+	listener.Process(&config_center.ConfigChangeEvent{Key: path, Value: data, ConfigType: event})
+}
+
+func (cl *CacheListener) Close() {
+	cl.keyListeners.Range(func(key, value interface{}) bool {
+		cl.keyListeners.Delete(key)
+		return true
+	})
+	cl.watch.Close()
+}
+
+// AddListener will add a listener if loaded
+func (cl *CacheListener) AddListener(key string, listener config_center.ConfigurationListener) {
+	// reference from https://stackoverflow.com/questions/34018908/golang-why-dont-we-have-a-set-datastructure
+	// make a map[your type]struct{} like set in java
+	listeners, loaded := cl.keyListeners.LoadOrStore(key, map[config_center.ConfigurationListener]struct{}{listener: {}})
+	if loaded {
+		listeners.(map[config_center.ConfigurationListener]struct{})[listener] = struct{}{}
+		cl.keyListeners.Store(key, listeners)
 	} else {
-		logger.Infof("profile:%s. this profile is already listening", key)
-	}
-}
-
-func (fsdc *fileSystemDynamicConfiguration) removeListener(key string, listener config_center.ConfigurationListener) {
-	path := fsdc.buildPath(key, config_center.DEFAULT_GROUP)
-	_, loaded := fsdc.keyListeners.Load(path)
-	if !loaded {
-		if err := watch.Remove(path); err != nil {
-			logger.Errorf("file : listen watch: %s remove fail:", key, err)
-		} else {
-			fsdc.keyListeners.Delete(path)
+		if err := cl.watch.Add(key); err != nil {
+			logger.Errorf("watcher add path:%s err:%v", key, err)
 		}
+	}
+}
+
+// RemoveListener will delete a listener if loaded
+func (cl *CacheListener) RemoveListener(key string, listener config_center.ConfigurationListener) {
+	listeners, loaded := cl.keyListeners.Load(key)
+	if loaded {
+		delete(listeners.(map[config_center.ConfigurationListener]struct{}), listener)
+		if err := cl.watch.Remove(key); err != nil {
+			logger.Errorf("watcher remove path:%s err:%v", key, err)
+		}
+	}
+}
+
+func getFileContent(path string) string {
+	if c, err := ioutil.ReadFile(path); err != nil {
+		logger.Errorf("read file path:%s err:%v", path, err)
+		return ""
 	} else {
-		logger.Infof("profile:%s. this profile is not exist", key)
+		return string(c)
 	}
-}
-
-func (fsdc *fileSystemDynamicConfiguration) close() {
-	watch.Close()
-}
-
-// Home returns the home directory for the executing user.
-//
-// This uses an OS-specific method for discovering the home directory.
-// An error is returned if a home directory cannot be detected.
-func Home() (string, error) {
-	user, err := user.Current()
-	if nil == err {
-		return user.HomeDir, nil
-	}
-
-	// cross compile support
-	if "windows" == runtime.GOOS {
-		return homeWindows()
-	}
-
-	// Unix-like system, so just assume Unix
-	return homeUnix()
-}
-
-func homeUnix() (string, error) {
-	// First prefer the HOME environmental variable
-	if home := os.Getenv("HOME"); home != "" {
-		return home, nil
-	}
-
-	// If that fails, try the shell
-	var stdout bytes.Buffer
-	cmd := exec.Command("sh", "-c", "eval echo ~$USER")
-	cmd.Stdout = &stdout
-	if err := cmd.Run(); err != nil {
-		return "", err
-	}
-
-	result := strings.TrimSpace(stdout.String())
-	if result == "" {
-		return "", errors.New("blank output when reading home directory")
-	}
-
-	return result, nil
-}
-
-func homeWindows() (string, error) {
-	drive := os.Getenv("HOMEDRIVE")
-	path := os.Getenv("HOMEPATH")
-	home := drive + path
-	if drive == "" || path == "" {
-		home = os.Getenv("USERPROFILE")
-	}
-	if home == "" {
-		return "", errors.New("HOMEDRIVE, HOMEPATH, and USERPROFILE are blank")
-	}
-
-	return home, nil
 }
