@@ -18,109 +18,287 @@
 package file
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
+	"bytes"
+	"errors"
+	"io/ioutil"
 	"os"
+	"os/exec"
+	"os/user"
+	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
-	"sync"
 )
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/config_center/parser"
 )
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
+	perrors "github.com/pkg/errors"
 )
 
-type fileSystemDynamicConfiguration struct {
+const (
+	PARAM_NAME_PREFIX                 = "dubbo.config-center."
+	CONFIG_CENTER_DIR_PARAM_NAME      = PARAM_NAME_PREFIX + "dir"
+	CONFIG_CENTER_ENCODING_PARAM_NAME = PARAM_NAME_PREFIX + "encoding"
+	DEFAULT_CONFIG_CENTER_ENCODING    = "UTF-8"
+)
+
+// FileSystemDynamicConfiguration
+type FileSystemDynamicConfiguration struct {
+	config_center.BaseDynamicConfiguration
 	url           *common.URL
-	rootDirectory os.File // the root directory for config center
-	keyListeners  sync.Map
-	encoding      string
 	rootPath      string
+	encoding      string
+	cacheListener *CacheListener
+	parser        parser.ConfigurationParser
 }
 
-func newFileSystemDynamicConfiguration(url *common.URL) (*fileSystemDynamicConfiguration, error) {
-	c := &fileSystemDynamicConfiguration{
-		url:      url,
-		rootPath: "/" + url.GetParam(constant.CONFIG_NAMESPACE_KEY, config_center.DEFAULT_GROUP) + "/config",
+func newFileSystemDynamicConfiguration(url *common.URL) (*FileSystemDynamicConfiguration, error) {
+	encode := url.GetParam(CONFIG_CENTER_ENCODING_PARAM_NAME, DEFAULT_CONFIG_CENTER_ENCODING)
+
+	root := url.GetParam(CONFIG_CENTER_DIR_PARAM_NAME, "")
+	var c *FileSystemDynamicConfiguration
+	if _, err := os.Stat(root); err != nil {
+		// not exist, use default, /XXX/xx/.dubbo/config-center
+		if rp, err := Home(); err != nil {
+			return nil, perrors.WithStack(err)
+		} else {
+			root = path.Join(rp, ".dubbo", "config-center")
+		}
 	}
+
+	if _, err := os.Stat(root); err != nil {
+		// it must be dir, if not exist, will create
+		if err = createDir(root); err != nil {
+			return nil, perrors.WithStack(err)
+		}
+	}
+
+	c = &FileSystemDynamicConfiguration{
+		url:      url,
+		rootPath: root,
+		encoding: encode,
+	}
+
+	c.cacheListener = NewCacheListener(c.rootPath)
 
 	return c, nil
 }
 
-func (fsdc *fileSystemDynamicConfiguration) Parser() parser.ConfigurationParser {
-	return nil
+func (fsdc *FileSystemDynamicConfiguration) RootPath() string {
+	return fsdc.rootPath
 }
-func (fsdc *fileSystemDynamicConfiguration) SetParser(parser.ConfigurationParser) {
 
+// Parser Get Parser
+func (fsdc *FileSystemDynamicConfiguration) Parser() parser.ConfigurationParser {
+	return fsdc.parser
 }
-func (fsdc *fileSystemDynamicConfiguration) AddListener(key string, listener config_center.ConfigurationListener, opions ...config_center.Option) {
-	fsdc.addListener(key, listener)
-}
-func (fsdc *fileSystemDynamicConfiguration) RemoveListener(key string, listener config_center.ConfigurationListener, opions ...config_center.Option) {
 
+// SetParser Set Parser
+func (fsdc *FileSystemDynamicConfiguration) SetParser(p parser.ConfigurationParser) {
+	fsdc.parser = p
+}
+
+// AddListener Add listener
+func (fsdc *FileSystemDynamicConfiguration) AddListener(key string, listener config_center.ConfigurationListener, opts ...config_center.Option) {
+	tmpOpts := &config_center.Options{}
+	for _, opt := range opts {
+		opt(tmpOpts)
+	}
+
+	path := fsdc.GetPath(key, tmpOpts.Group)
+
+	fsdc.cacheListener.AddListener(path, listener)
+}
+
+// RemoveListener Remove listener
+func (fsdc *FileSystemDynamicConfiguration) RemoveListener(key string, listener config_center.ConfigurationListener, opts ...config_center.Option) {
+	tmpOpts := &config_center.Options{}
+	for _, opt := range opts {
+		opt(tmpOpts)
+	}
+
+	path := fsdc.GetPath(key, tmpOpts.Group)
+
+	fsdc.cacheListener.RemoveListener(path, listener)
 }
 
 // GetProperties get properties file
-func (fsdc *fileSystemDynamicConfiguration) GetProperties(string, ...config_center.Option) (string, error) {
-	return "", nil
+func (fsdc *FileSystemDynamicConfiguration) GetProperties(key string, opts ...config_center.Option) (string, error) {
+	tmpOpts := &config_center.Options{}
+	for _, opt := range opts {
+		opt(tmpOpts)
+	}
+
+	path := fsdc.GetPath(key, tmpOpts.Group)
+	if file, err := ioutil.ReadFile(path); err != nil {
+		return "", perrors.WithStack(err)
+	} else {
+		return string(file), nil
+	}
 }
 
 // GetRule get Router rule properties file
-func (fsdc *fileSystemDynamicConfiguration) GetRule(string, ...config_center.Option) (string, error) {
-	return "", nil
+func (fsdc *FileSystemDynamicConfiguration) GetRule(key string, opts ...config_center.Option) (string, error) {
+	return fsdc.GetProperties(key, opts...)
 }
 
 // GetInternalProperty get value by key in Default properties file(dubbo.properties)
-func (fsdc *fileSystemDynamicConfiguration) GetInternalProperty(string, ...config_center.Option) (string, error) {
-	return "", nil
+func (fsdc *FileSystemDynamicConfiguration) GetInternalProperty(key string, opts ...config_center.Option) (string, error) {
+	return fsdc.GetProperties(key, opts...)
 }
 
 // PublishConfig will publish the config with the (key, group, value) pair
-func (fsdc *fileSystemDynamicConfiguration) PublishConfig(key string, group string, value string) error {
-	path := fsdc.buildPath(key, group)
-	return write(path, value)
-}
-
-func (fsdc *fileSystemDynamicConfiguration) buildPath(key string, group string) string {
-	return strings.Join([]string{fsdc.rootPath, group, key}, "/")
-}
-
-func write(path string, value string) error {
-	return nil
+func (fsdc *FileSystemDynamicConfiguration) PublishConfig(key string, group string, value string) error {
+	path := fsdc.GetPath(key, group)
+	return fsdc.write2File(path, value)
 }
 
 // GetConfigKeysByGroup will return all keys with the group
-func (fsdc *fileSystemDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
-	return nil, nil
+func (fsdc *FileSystemDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
+	path := fsdc.GetPath("", group)
+	r := gxset.NewSet()
+
+	fileInfo, _ := ioutil.ReadDir(path)
+
+	for _, file := range fileInfo {
+		// list file
+		if !file.IsDir() {
+			r.Add(file.Name())
+		}
+	}
+
+	return r, nil
 }
 
 // RemoveConfig will remove the config whit hte (key, group)
-func (fsdc *fileSystemDynamicConfiguration) RemoveConfig(string, string) error {
+func (fsdc *FileSystemDynamicConfiguration) RemoveConfig(key string, group string) error {
+	path := fsdc.GetPath(key, group)
+	_, err := fsdc.deleteDelay(path)
+	return err
+}
+
+// Close close file watcher
+func (fsdc *FileSystemDynamicConfiguration) Close() error {
+	return fsdc.cacheListener.watch.Close()
+}
+
+func (fsdc *FileSystemDynamicConfiguration) GetPath(key string, group string) string {
+	if len(key) == 0 {
+		return path.Join(fsdc.rootPath, group)
+	}
+
+	if len(group) == 0 {
+		group = config_center.DEFAULT_GROUP
+	}
+
+	return path.Join(fsdc.rootPath, group, key)
+}
+
+func (fsdc *FileSystemDynamicConfiguration) deleteDelay(path string) (bool, error) {
+	if path == "" {
+		return false, nil
+	}
+
+	if err := os.RemoveAll(path); err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (fsdc *FileSystemDynamicConfiguration) write2File(fp string, value string) error {
+	if err := forceMkdirParent(fp); err != nil {
+		return perrors.WithStack(err)
+	}
+
+	return ioutil.WriteFile(fp, []byte(value), os.ModePerm)
+}
+
+func forceMkdirParent(fp string) error {
+	pd := getParentDirectory(fp)
+
+	return createDir(pd)
+}
+
+func createDir(path string) error {
+	// create dir, chmod is drwxrwxrwx(0777)
+	if err := os.MkdirAll(path, os.ModePerm); err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (fsdc *fileSystemDynamicConfiguration) GetConfigGroups() *gxset.HashSet {
-	var cg []string
-	filepath.Walk(fsdc.rootDirectory.Name(), func(path string, info os.FileInfo, err error) error {
-		if info.IsDir() {
-			cg = append(cg, info.Name())
-		}
-
-		return nil
-	})
-
-	return gxset.NewSet(cg)
+func getParentDirectory(fp string) string {
+	return substr(fp, 0, strings.LastIndex(fp, string(filepath.Separator)))
 }
 
-func (fsdc *fileSystemDynamicConfiguration) getRootDirectory() os.File {
-	return fsdc.rootDirectory
+func substr(s string, pos, length int) string {
+	runes := []rune(s)
+	l := pos + length
+	if l > len(runes) {
+		l = len(runes)
+	}
+	return string(runes[pos:l])
 }
 
-func (fsdc *fileSystemDynamicConfiguration) ConfigFile(key string, group string) *os.File {
-	return nil
+// Home returns the home directory for the executing user.
+//
+// This uses an OS-specific method for discovering the home directory.
+// An error is returned if a home directory cannot be detected.
+func Home() (string, error) {
+	user, err := user.Current()
+	if nil == err {
+		return user.HomeDir, nil
+	}
+
+	// cross compile support
+	if "windows" == runtime.GOOS {
+		return homeWindows()
+	}
+
+	// Unix-like system, so just assume Unix
+	return homeUnix()
+}
+
+func homeUnix() (string, error) {
+	// First prefer the HOME environmental variable
+	if home := os.Getenv("HOME"); home != "" {
+		return home, nil
+	}
+
+	// If that fails, try the shell
+	var stdout bytes.Buffer
+	cmd := exec.Command("sh", "-c", "eval echo ~$USER")
+	cmd.Stdout = &stdout
+	if err := cmd.Run(); err != nil {
+		return "", err
+	}
+
+	result := strings.TrimSpace(stdout.String())
+	if result == "" {
+		return "", errors.New("blank output when reading home directory")
+	}
+
+	return result, nil
+}
+
+func homeWindows() (string, error) {
+	drive := os.Getenv("HOMEDRIVE")
+	path := os.Getenv("HOMEPATH")
+	home := drive + path
+	if drive == "" || path == "" {
+		home = os.Getenv("USERPROFILE")
+	}
+	if home == "" {
+		return "", errors.New("HOMEDRIVE, HOMEPATH, and USERPROFILE are blank")
+	}
+
+	return home, nil
 }
