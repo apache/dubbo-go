@@ -160,7 +160,7 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 // RpcServerHandler
 // //////////////////////////////////////////
 
-// RpcServerHandler ...
+// RpcServerHandler implement EventListener of getty.
 type RpcServerHandler struct {
 	maxSessionNum  int
 	sessionTimeout time.Duration
