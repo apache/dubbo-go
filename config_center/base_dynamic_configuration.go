@@ -15,28 +15,13 @@
  * limitations under the License.
  */
 
-package file
+package config_center
 
-import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/config_center"
-	"github.com/apache/dubbo-go/config_center/parser"
-)
-
-func init() {
-	extension.SetConfigCenterFactory(constant.FILE_KEY, func() config_center.DynamicConfigurationFactory { return &fileDynamicConfigurationFactory{} })
+// BaseDynamicConfiguration will default implementation DynamicConfiguration some method
+type BaseDynamicConfiguration struct {
 }
 
-type fileDynamicConfigurationFactory struct {
-}
-
-func (f *fileDynamicConfigurationFactory) GetDynamicConfiguration(url *common.URL) (config_center.DynamicConfiguration, error) {
-	dynamicConfiguration, err := newFileSystemDynamicConfiguration(url)
-	if err != nil {
-		return nil, err
-	}
-	dynamicConfiguration.SetParser(&parser.DefaultConfigurationParser{})
-	return dynamicConfiguration, err
+// RemoveConfig
+func (bdc *BaseDynamicConfiguration) RemoveConfig(string, string) error {
+	return nil
 }

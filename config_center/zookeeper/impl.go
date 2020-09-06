@@ -44,6 +44,7 @@ const (
 )
 
 type zookeeperDynamicConfiguration struct {
+	config_center.BaseDynamicConfiguration
 	url      *common.URL
 	rootPath string
 	wg       sync.WaitGroup
