@@ -40,6 +40,7 @@ var (
 )
 
 func TestNewFileSystemServiceDiscoveryAndDestroy(t *testing.T) {
+	prepareData()
 	serviceDiscovery, err := newFileSystemServiceDiscovery(testName)
 	assert.NoError(t, err)
 	assert.NotNil(t, serviceDiscovery)
