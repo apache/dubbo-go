@@ -24,15 +24,18 @@ import (
 )
 
 import (
-	hessian "github.com/apache/dubbo-go-hessian2"
 	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/protocol/dubbo/hessian2"
 )
 
 func TestDubboPackageMarshalAndUnmarshal(t *testing.T) {
 	pkg := &DubboPackage{}
 	pkg.Body = []interface{}{"a"}
-	pkg.Header.Type = hessian.PackageHeartbeat
+	pkg.Header.Type = hessian2.PackageHeartbeat
 	pkg.Header.SerialID = byte(S_Dubbo)
 	pkg.Header.ID = 10086
 
@@ -44,13 +47,13 @@ func TestDubboPackageMarshalAndUnmarshal(t *testing.T) {
 	pkgres.Body = []interface{}{}
 	err = pkgres.Unmarshal(data)
 	assert.NoError(t, err)
-	assert.Equal(t, hessian.PackageHeartbeat|hessian.PackageRequest|hessian.PackageRequest_TwoWay, pkgres.Header.Type)
+	assert.Equal(t, hessian2.PackageHeartbeat|hessian2.PackageRequest|hessian2.PackageRequest_TwoWay, pkgres.Header.Type)
 	assert.Equal(t, byte(S_Dubbo), pkgres.Header.SerialID)
 	assert.Equal(t, int64(10086), pkgres.Header.ID)
 	assert.Equal(t, 0, len(pkgres.Body.([]interface{})))
 
 	// request
-	pkg.Header.Type = hessian.PackageRequest
+	pkg.Header.Type = hessian2.PackageRequest
 	pkg.Service.Interface = "Service"
 	pkg.Service.Path = "path"
 	pkg.Service.Version = "2.6"
@@ -63,7 +66,7 @@ func TestDubboPackageMarshalAndUnmarshal(t *testing.T) {
 	pkgres.Body = make([]interface{}, 7)
 	err = pkgres.Unmarshal(data)
 	assert.NoError(t, err)
-	assert.Equal(t, hessian.PackageRequest, pkgres.Header.Type)
+	assert.Equal(t, hessian2.PackageRequest, pkgres.Header.Type)
 	assert.Equal(t, byte(S_Dubbo), pkgres.Header.SerialID)
 	assert.Equal(t, int64(10086), pkgres.Header.ID)
 	assert.Equal(t, "2.0.2", pkgres.Body.([]interface{})[0])
@@ -79,5 +82,5 @@ func TestIssue380(t *testing.T) {
 	pkg := &DubboPackage{}
 	buf := bytes.NewBuffer([]byte("hello"))
 	err := pkg.Unmarshal(buf)
-	assert.True(t, perrors.Cause(err) == hessian.ErrHeaderNotEnough)
+	assert.True(t, perrors.Cause(err) == hessian2.ErrHeaderNotEnough)
 }

@@ -24,7 +24,6 @@ import (
 
 import (
 	"github.com/apache/dubbo-getty"
-	"github.com/apache/dubbo-go-hessian2"
 	perrors "github.com/pkg/errors"
 )
 
@@ -32,6 +31,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/protocol/dubbo/hessian2"
 )
 
 ////////////////////////////////////////////
@@ -56,7 +56,7 @@ func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface
 	err := pkg.Unmarshal(buf, p.client)
 	if err != nil {
 		originErr := perrors.Cause(err)
-		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
+		if originErr == hessian2.ErrHeaderNotEnough || originErr == hessian2.ErrBodyNotEnough {
 			return nil, 0, nil
 		}
 
@@ -65,12 +65,12 @@ func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface
 		return nil, 0, perrors.WithStack(err)
 	}
 
-	if pkg.Header.Type&hessian.PackageRequest == 0x00 {
-		pkg.Err = pkg.Body.(*hessian.Response).Exception
-		pkg.Body = NewResponse(pkg.Body.(*hessian.Response).RspObj, pkg.Body.(*hessian.Response).Attachments)
+	if pkg.Header.Type&hessian2.PackageRequest == 0x00 {
+		pkg.Err = pkg.Body.(*hessian2.DubboResponse).Exception
+		pkg.Body = NewResponse(pkg.Body.(*hessian2.DubboResponse).RspObj, pkg.Body.(*hessian2.DubboResponse).Attachments)
 	}
 
-	return pkg, hessian.HEADER_LENGTH + pkg.Header.BodyLen, nil
+	return pkg, hessian2.HEADER_LENGTH + pkg.Header.BodyLen, nil
 }
 
 // Write encode @pkg.
@@ -111,7 +111,7 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 	err := pkg.Unmarshal(buf)
 	if err != nil {
 		originErr := perrors.Cause(err)
-		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
+		if originErr == hessian2.ErrHeaderNotEnough || originErr == hessian2.ErrBodyNotEnough {
 			return nil, 0, nil
 		}
 
@@ -120,7 +120,7 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 		return nil, 0, perrors.WithStack(err)
 	}
 
-	if pkg.Header.Type&hessian.PackageHeartbeat == 0x00 {
+	if pkg.Header.Type&hessian2.PackageHeartbeat == 0x00 {
 		// convert params of request
 		req := pkg.Body.([]interface{}) // length of body should be 7
 		if len(req) > 0 {
@@ -169,7 +169,7 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 		}
 	}
 
-	return pkg, hessian.HEADER_LENGTH + pkg.Header.BodyLen, nil
+	return pkg, hessian2.HEADER_LENGTH + pkg.Header.BodyLen, nil
 }
 
 // Write encode @pkg.

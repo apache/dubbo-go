@@ -24,7 +24,6 @@ import (
 )
 
 import (
-	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/apache/dubbo-go/protocol/invocation"
 	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -34,6 +33,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/dubbo/hessian2"
 )
 
 type TestService struct {
@@ -149,7 +149,7 @@ func (bi *TestProxyInvoker) Invoke(context context.Context, inv protocol.Invocat
 	rpcInv := inv.(*invocation.RPCInvocation)
 	mapV := inv.Attachments()
 	mapV["TestProxyInvoker"] = "TestProxyInvokerValue"
-	hessian.ReflectResponse(mapV, rpcInv.Reply())
+	hessian2.ReflectResponse(mapV, rpcInv.Reply())
 	return &protocol.RPCResult{
 		Rest: inv.Arguments(),
 	}

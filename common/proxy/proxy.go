@@ -151,9 +151,8 @@ func (p *Proxy) Implement(v common.RPCService) {
 				for k, value := range m {
 					inv.SetAttachments(k, value)
 				}
-				// it is support to transfer map[string]interface{}. It refers to dubbo-java 2.7.
 			} else if m2, ok2 := atm.(map[string]interface{}); ok2 {
-
+				// it is support to transfer map[string]interface{}. It refers to dubbo-java 2.7.
 				for k, value := range m2 {
 					inv.SetAttachments(k, value)
 				}
