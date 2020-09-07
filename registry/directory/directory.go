@@ -128,7 +128,7 @@ func (dir *RegistryDirectory) refreshInvokers(events ...*registry.ServiceEvent) 
 	var oldInvokers []protocol.Invoker
 
 	// in batch mode, it is safe to remove since we have the complete list of events.
-	if events != nil && len(events) > 1 {
+	if len(events) > 1 {
 		dir.cacheInvokersMap.Range(func(k, v interface{}) bool {
 			if !dir.eventMatched(k.(string), events) {
 				if invoker := dir.uncacheInvokerWithKey(k.(string)); invoker != nil {
@@ -145,7 +145,7 @@ func (dir *RegistryDirectory) refreshInvokers(events ...*registry.ServiceEvent) 
 		}
 	}
 
-	if events != nil && len(events) > 0 {
+	if len(events) > 0 {
 		dir.setNewInvokers()
 	}
 
