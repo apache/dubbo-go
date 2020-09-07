@@ -191,7 +191,6 @@ func (c *tagRouter) Process(event *config_center.ConfigChangeEvent) {
 	defer c.mutex.Unlock()
 	c.tagRouterRule = routerRule
 	c.ruleChanged = true
-	return
 }
 
 // URL gets the url of tagRouter
@@ -362,7 +361,9 @@ func isAnyHost(addr string) bool {
 func findTag(invocation protocol.Invocation, consumerUrl *common.URL) string {
 	tag, ok := invocation.Attachments()[constant.Tagkey]
 	if !ok {
-		tag = consumerUrl.GetParam(constant.Tagkey, "")
+		return consumerUrl.GetParam(constant.Tagkey, "")
+	} else if v, t := tag.(string); t {
+		return v
 	}
-	return tag
+	return ""
 }
