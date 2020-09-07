@@ -55,21 +55,21 @@ func NewCacheListener(rootPath string) *CacheListener {
 				logger.Debugf("watcher %s, event %v", cl.rootPath, event)
 				if event.Op&fsnotify.Write == fsnotify.Write {
 					if l, ok := cl.keyListeners.Load(key); ok {
-						allCallback(l.(map[config_center.ConfigurationListener]struct{}), key, remoting.EventTypeUpdate)
+						dataChangeCallback(l.(map[config_center.ConfigurationListener]struct{}), key, remoting.EventTypeUpdate)
 					}
 				}
 				if event.Op&fsnotify.Create == fsnotify.Create {
 					if l, ok := cl.keyListeners.Load(key); ok {
-						allCallback(l.(map[config_center.ConfigurationListener]struct{}), key, remoting.EventTypeAdd)
+						dataChangeCallback(l.(map[config_center.ConfigurationListener]struct{}), key, remoting.EventTypeAdd)
 					}
 				}
 				if event.Op&fsnotify.Remove == fsnotify.Remove {
 					if l, ok := cl.keyListeners.Load(key); ok {
-						allCallback(l.(map[config_center.ConfigurationListener]struct{}), key, remoting.EventTypeDel)
+						removeCallback(l.(map[config_center.ConfigurationListener]struct{}), key, remoting.EventTypeDel)
 					}
 				}
 			case err := <-watch.Errors:
-				logger.Errorf("file : listen watch fail:", err)
+				logger.Warnf("file : listen watch fail:", err)
 			}
 		}
 	}()
@@ -82,7 +82,16 @@ func NewCacheListener(rootPath string) *CacheListener {
 	return cl
 }
 
-func allCallback(lmap map[config_center.ConfigurationListener]struct{}, key string, event remoting.EventType) {
+func removeCallback(lmap map[config_center.ConfigurationListener]struct{}, key string, event remoting.EventType) {
+	if len(lmap) == 0 {
+		logger.Warnf("file watch callback but configuration listener is empty, key:%s, event:%v", key, event)
+	}
+	for l := range lmap {
+		callback(l, key, "", event)
+	}
+}
+
+func dataChangeCallback(lmap map[config_center.ConfigurationListener]struct{}, key string, event remoting.EventType) {
 	if len(lmap) == 0 {
 		logger.Warnf("file watch callback but configuration listener is empty, key:%s, event:%v", key, event)
 	}
@@ -105,6 +114,7 @@ func (cl *CacheListener) Close() {
 }
 
 // AddListener will add a listener if loaded
+// if you watcher a file or directory not exist, will error with no such file or directory
 func (cl *CacheListener) AddListener(key string, listener config_center.ConfigurationListener) {
 	// reference from https://stackoverflow.com/questions/34018908/golang-why-dont-we-have-a-set-datastructure
 	// make a map[your type]struct{} like set in java
