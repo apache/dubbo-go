@@ -25,14 +25,14 @@ import (
 )
 
 import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/registry"
-)
-
-import (
-	"github.com/stretchr/testify/assert"
 )
 
 var (
