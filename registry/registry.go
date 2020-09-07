@@ -69,7 +69,7 @@ type Registry interface {
 // nolint
 type NotifyListener interface {
 	// Notify supports notifications on the service interface and the dimension of the data type.
-	Notify(*ServiceEvent)
+	Notify(...*ServiceEvent)
 }
 
 // Listener Deprecated!
