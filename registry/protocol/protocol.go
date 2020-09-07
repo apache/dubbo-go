@@ -243,7 +243,7 @@ func newOverrideSubscribeListener(overriderUrl *common.URL, invoker protocol.Inv
 
 // Notify will be triggered when a service change notification is received.
 func (nl *overrideSubscribeListener) Notify(events ...*registry.ServiceEvent) {
-	if events == nil || len(events) == 0 {
+	if len(events) == 0 {
 		return
 	}
 
