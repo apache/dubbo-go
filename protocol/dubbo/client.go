@@ -26,7 +26,6 @@ import (
 
 import (
 	"github.com/apache/dubbo-getty"
-	hessian "github.com/apache/dubbo-go-hessian2"
 	gxsync "github.com/dubbogo/gost/sync"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
@@ -38,6 +37,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/protocol/dubbo/hessian2"
 )
 
 var (
@@ -173,11 +173,11 @@ type Request struct {
 	svcUrl common.URL
 	method string
 	args   interface{}
-	atta   map[string]string
+	atta   map[string]interface{}
 }
 
 // NewRequest create a new Request.
-func NewRequest(addr string, svcUrl common.URL, method string, args interface{}, atta map[string]string) *Request {
+func NewRequest(addr string, svcUrl common.URL, method string, args interface{}, atta map[string]interface{}) *Request {
 	return &Request{
 		addr:   addr,
 		svcUrl: svcUrl,
@@ -190,11 +190,11 @@ func NewRequest(addr string, svcUrl common.URL, method string, args interface{},
 // Response is dubbo protocol response.
 type Response struct {
 	reply interface{}
-	atta  map[string]string
+	atta  map[string]interface{}
 }
 
 // NewResponse creates a new Response.
-func NewResponse(reply interface{}, atta map[string]string) *Response {
+func NewResponse(reply interface{}, atta map[string]interface{}) *Response {
 	return &Response{
 		reply: reply,
 		atta:  atta,
@@ -240,16 +240,16 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 	}
 
 	p.Header.SerialID = byte(S_Dubbo)
-	p.Body = hessian.NewRequest(request.args, request.atta)
+	p.Body = hessian2.NewRequest(request.args, request.atta)
 
 	var rsp *PendingResponse
 	if ct != CT_OneWay {
-		p.Header.Type = hessian.PackageRequest_TwoWay
+		p.Header.Type = hessian2.PackageRequest_TwoWay
 		rsp = NewPendingResponse()
 		rsp.response = response
 		rsp.callback = callback
 	} else {
-		p.Header.Type = hessian.PackageRequest
+		p.Header.Type = hessian2.PackageRequest
 	}
 
 	var (
@@ -323,9 +323,9 @@ func (c *Client) transfer(session getty.Session, pkg *DubboPackage,
 
 	if pkg == nil {
 		pkg = &DubboPackage{}
-		pkg.Body = hessian.NewRequest([]interface{}{}, nil)
+		pkg.Body = hessian2.NewRequest([]interface{}{}, nil)
 		pkg.Body = []interface{}{}
-		pkg.Header.Type = hessian.PackageHeartbeat
+		pkg.Header.Type = hessian2.PackageHeartbeat
 		pkg.Header.SerialID = byte(S_Dubbo)
 	}
 	pkg.Header.ID = int64(sequence)
