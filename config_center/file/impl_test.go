@@ -52,15 +52,14 @@ func initFileData(t *testing.T) (*FileSystemDynamicConfiguration, error) {
 func TestPublishAndGetConfig(t *testing.T) {
 	file, err := initFileData(t)
 	assert.NoError(t, err)
-	if err := file.PublishConfig(key, "", "A"); err != nil {
-		t.Fatal(err)
-	}
+	err = file.PublishConfig(key, "", "A")
+	assert.NoError(t, err)
 
-	if prop, err := file.GetProperties(key); err != nil {
-		assert.Equal(t, "A", prop)
-	}
+	prop, err := file.GetProperties(key)
+	assert.NoError(t, err)
+	assert.Equal(t, "A", prop)
 
-	defer destroy(t, file.rootPath, file)
+	defer destroy(file.rootPath, file)
 }
 
 func TestAddListener(t *testing.T) {
@@ -86,7 +85,7 @@ func TestAddListener(t *testing.T) {
 	listener.wg.Wait()
 
 	time.Sleep(time.Second)
-	defer destroy(t, file.rootPath, file)
+	defer destroy(file.rootPath, file)
 }
 
 func TestAddAndRemoveListener(t *testing.T) {
@@ -117,7 +116,7 @@ func TestAddAndRemoveListener(t *testing.T) {
 	listener.wg.Wait()
 
 	time.Sleep(time.Second)
-	defer destroy(t, file.rootPath, file)
+	defer destroy(file.rootPath, file)
 }
 
 func TestGetConfigKeysByGroup(t *testing.T) {
@@ -128,7 +127,8 @@ func TestGetConfigKeysByGroup(t *testing.T) {
 	gs, err := file.GetConfigKeysByGroup(group)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, gs.Size())
-	defer destroy(t, file.rootPath, file)
+	assert.Equal(t, key, gs.Values()[0])
+	defer destroy(file.rootPath, file)
 }
 
 func TestGetConfig(t *testing.T) {
@@ -141,7 +141,7 @@ func TestGetConfig(t *testing.T) {
 	prop, err := file.GetProperties(key, config_center.WithGroup(group))
 	assert.NoError(t, err)
 	assert.Equal(t, value, prop)
-	defer destroy(t, file.rootPath, file)
+	defer destroy(file.rootPath, file)
 }
 
 func TestPublishConfig(t *testing.T) {
@@ -154,13 +154,11 @@ func TestPublishConfig(t *testing.T) {
 	prop, err := file.GetInternalProperty(key, config_center.WithGroup(group))
 	assert.NoError(t, err)
 	assert.Equal(t, value, prop)
-	defer destroy(t, file.rootPath, file)
+	defer destroy(file.rootPath, file)
 }
 
-func destroy(t *testing.T, path string, fdc *FileSystemDynamicConfiguration) {
-	if err := os.RemoveAll(path); err != nil {
-		t.Error(err)
-	}
+func destroy(path string, fdc *FileSystemDynamicConfiguration) {
+	os.RemoveAll(path)
 	fdc.Close()
 }
 
