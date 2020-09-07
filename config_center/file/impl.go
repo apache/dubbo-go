@@ -31,14 +31,14 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/config_center"
-	"github.com/apache/dubbo-go/config_center/parser"
+	gxset "github.com/dubbogo/gost/container/set"
+	perrors "github.com/pkg/errors"
 )
 
 import (
-	gxset "github.com/dubbogo/gost/container/set"
-	perrors "github.com/pkg/errors"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/config_center"
+	"github.com/apache/dubbo-go/config_center/parser"
 )
 
 const (

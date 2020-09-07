@@ -28,6 +28,12 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
+	gxpage "github.com/dubbogo/gost/page"
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -36,12 +42,6 @@ import (
 	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/config_center/file"
 	"github.com/apache/dubbo-go/registry"
-)
-
-import (
-	gxset "github.com/dubbogo/gost/container/set"
-	gxpage "github.com/dubbogo/gost/page"
-	perrors "github.com/pkg/errors"
 )
 
 var (
