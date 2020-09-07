@@ -23,14 +23,14 @@ import (
 )
 
 import (
+	"github.com/fsnotify/fsnotify"
+)
+
+import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/remoting"
-)
-
-import (
-	"github.com/fsnotify/fsnotify"
 )
 
 type CacheListener struct {
