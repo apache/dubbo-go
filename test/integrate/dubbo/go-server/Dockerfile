@@ -26,9 +26,11 @@ ARG PR_ORIGIN_REPO
 ARG PR_ORIGIN_COMMITID
 
 ADD . /go/src/github.com/apache/dubbo-go/test/integrate/dubbo/go-server
+ADD ./go.main.mod /go/src/github.com/apache/dubbo-go/go.mod
+
 # update dubbo-go to current commit id
 RUN test ${PR_ORIGIN_REPO} && echo "github.com/apache/dubbo-go will be replace to github.com/${PR_ORIGIN_REPO}@${PR_ORIGIN_COMMITID}" || echo 'go get github.com/apache/dubbo-go@develop'
-RUN test ${PR_ORIGIN_REPO} && sed -n '2,$p' ../../../../go.mod >> go.mod
+RUN test ${PR_ORIGIN_REPO} && sed -n '2,$p' go.main.mod >> go.mod
 RUN test ${PR_ORIGIN_REPO} && go mod edit  -replace=github.com/apache/dubbo-go=github.com/${PR_ORIGIN_REPO}@${PR_ORIGIN_COMMITID} || go mod vendor
 
 RUN go install github.com/apache/dubbo-go/test/integrate/dubbo/go-server
