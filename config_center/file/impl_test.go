@@ -76,19 +76,11 @@ func TestAddListener(t *testing.T) {
 	value = "Test Value 2"
 	err = file.PublishConfig(key, group, value)
 	assert.NoError(t, err)
-
-	listener.wg.Add(1)
-	value = "Test Value 3"
-	err = file.PublishConfig(key, group, value)
-	assert.NoError(t, err)
-
 	listener.wg.Wait()
-
-	time.Sleep(time.Second)
 	defer destroy(file.rootPath, file)
 }
 
-func TestAddAndRemoveListener(t *testing.T) {
+func TestRemoveListener(t *testing.T) {
 	file, err := initFileData(t)
 	group := "dubbogo"
 	value := "Test Value"
@@ -103,19 +95,17 @@ func TestAddAndRemoveListener(t *testing.T) {
 	err = file.PublishConfig(key, group, value)
 	assert.NoError(t, err)
 
-	// sleep, make sure callback run success, do `l.wg.Done()`
+	// make sure callback before RemoveListener
 	time.Sleep(time.Second)
-	file.RemoveListener(key, listener, config_center.WithGroup(group))
 
 	listener.wg.Add(1)
+	file.RemoveListener(key, listener, config_center.WithGroup(group))
 	value = "Test Value 3"
 	err = file.PublishConfig(key, group, value)
 	assert.NoError(t, err)
 	listener.wg.Done()
 
 	listener.wg.Wait()
-
-	time.Sleep(time.Second)
 	defer destroy(file.rootPath, file)
 }
 
@@ -158,8 +148,8 @@ func TestPublishConfig(t *testing.T) {
 }
 
 func destroy(path string, fdc *FileSystemDynamicConfiguration) {
-	os.RemoveAll(path)
 	fdc.Close()
+	os.RemoveAll(path)
 }
 
 type mockDataListener struct {
