@@ -222,7 +222,7 @@ func NewURL(urlString string, opts ...option) (URL, error) {
 	}
 
 	// rawUrlString = "//" + rawUrlString
-	if strings.Index(rawUrlString, "//") < 0 {
+	if !strings.Contains(rawUrlString, "//") {
 		t := URL{baseUrl: baseUrl{}}
 		for _, opt := range opts {
 			opt(&t)
@@ -641,6 +641,34 @@ func (c *URL) CloneWithParams(reserveParams []string) *URL {
 		WithMethods(c.Methods),
 		WithParams(params),
 	)
+}
+
+// IsEquals compares if two URLs equals with each other. Excludes are all parameter keys which should ignored.
+func IsEquals(left URL, right URL, excludes ...string) bool {
+	if left.Ip != right.Ip || left.Port != right.Port {
+		return false
+	}
+
+	leftMap := left.ToMap()
+	rightMap := right.ToMap()
+	for _, exclude := range excludes {
+		delete(leftMap, exclude)
+		delete(rightMap, exclude)
+	}
+
+	if len(leftMap) != len(rightMap) {
+		return false
+	}
+
+	for lk, lv := range leftMap {
+		if rv, ok := rightMap[lk]; !ok {
+			return false
+		} else if lv != rv {
+			return false
+		}
+	}
+
+	return true
 }
 
 func mergeNormalParam(mergedUrl *URL, referenceUrl *URL, paramKeys []string) []func(method string) {
