@@ -104,18 +104,8 @@ func (dir *RegistryDirectory) subscribe(url *common.URL) {
 }
 
 // Notify monitor changes from registry,and update the cacheServices
-func (dir *RegistryDirectory) Notify(event ...*registry.ServiceEvent) {
-	go dir.update(event...)
-}
-
-// update the cacheServices and subscribe service from registry
-func (dir *RegistryDirectory) update(events ...*registry.ServiceEvent) {
-	for _, event := range events {
-		logger.Debugf("registry update, result{%s}", event)
-		logger.Debugf("update service name: %s!", event.Service)
-	}
-
-	dir.refreshInvokers(events...)
+func (dir *RegistryDirectory) Notify(events ...*registry.ServiceEvent) {
+	go dir.refreshInvokers(events...)
 }
 
 // refreshInvokers refreshes service's events. It supports two modes: incremental mode and batch mode. If a single
@@ -140,6 +130,7 @@ func (dir *RegistryDirectory) refreshInvokers(events ...*registry.ServiceEvent) 
 	}
 
 	for _, event := range events {
+		logger.Debugf("registry update, result{%s}", event)
 		if oldInvoker, _ := dir.cacheInvokerByEvent(event); oldInvoker != nil {
 			oldInvokers = append(oldInvokers, oldInvoker)
 		}
