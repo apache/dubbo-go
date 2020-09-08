@@ -18,16 +18,11 @@
 package event
 
 import (
-	"sync"
-)
-
-import (
 	gxset "github.com/dubbogo/gost/container/set"
 	gxpage "github.com/dubbogo/gost/page"
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/observer"
 	"github.com/apache/dubbo-go/config"
@@ -38,8 +33,7 @@ import (
 // EventPublishingServiceDiscovery will enhance Service Discovery
 // Publish some event about service discovery
 type EventPublishingServiceDiscovery struct {
-	serviceDiscovery         registry.ServiceDiscovery
-	serviceDiscoveryInitOnce sync.Once
+	serviceDiscovery registry.ServiceDiscovery
 }
 
 // NewEventPublishingServiceDiscovery is a constructor
@@ -52,14 +46,6 @@ func NewEventPublishingServiceDiscovery(serviceDiscovery registry.ServiceDiscove
 // String returns serviceDiscovery.String()
 func (epsd *EventPublishingServiceDiscovery) String() string {
 	return epsd.serviceDiscovery.String()
-}
-
-func (epsd *EventPublishingServiceDiscovery) Init(registryURL common.URL) error {
-	var err error
-	epsd.serviceDiscoveryInitOnce.Do(func() {
-		err = epsd.serviceDiscovery.Init(registryURL)
-	})
-	return err
 }
 
 // Destroy delegate function

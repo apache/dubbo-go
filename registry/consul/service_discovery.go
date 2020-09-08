@@ -21,7 +21,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -35,7 +34,6 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
@@ -71,41 +69,35 @@ func newConsulServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 
 	descriptor := fmt.Sprintf("consul-service-discovery[%s]", remoteConfig.Address)
 
+	config := &consul.Config{Address: remoteConfig.Address, Token: remoteConfig.Params[constant.ACL_TOKEN]}
+	client, err := consul.NewClient(config)
+	if err != nil {
+		return nil, perrors.WithMessage(err, "create consul client failed.")
+	}
+
 	return &consulServiceDiscovery{
-		address:    remoteConfig.Address,
-		descriptor: descriptor,
+		address:                        remoteConfig.Address,
+		descriptor:                     descriptor,
+		checkPassInterval:              getCheckPassInterval(remoteConfig.Params),
+		Config:                         config,
+		tag:                            remoteConfig.Params[constant.QUERY_TAG],
+		consulClient:                   client,
+		deregisterCriticalServiceAfter: getDeregisterAfter(remoteConfig.Params),
 	}, nil
 }
 
 // consulServiceDiscovery is the implementation of service discovery based on consul.
 type consulServiceDiscovery struct {
-	group string
 	// descriptor is a short string about the basic information of this instance
 	descriptor string
 	// Consul client.
-	consulClient      *consul.Client
-	serviceUrl        common.URL
-	checkPassInterval int64
-	tag               string
-	tags              []string
-	address           string
-	ttl               sync.Map
+	consulClient                   *consul.Client
+	checkPassInterval              int64
+	tag                            string
+	address                        string
+	deregisterCriticalServiceAfter string
+	ttl                            sync.Map
 	*consul.Config
-}
-
-func (csd *consulServiceDiscovery) Init(registryURL common.URL) error {
-	csd.serviceUrl = registryURL
-	csd.checkPassInterval = registryURL.GetParamInt(constant.CHECK_PASS_INTERVAL, constant.DEFAULT_CHECK_PASS_INTERVAL)
-	csd.tag = registryURL.GetParam(constant.QUERY_TAG, "")
-	csd.tags = strings.Split(registryURL.GetParam("tags", ""), ",")
-	aclToken := registryURL.GetParam(constant.ACL_TOKEN, "")
-	csd.Config = &consul.Config{Address: csd.address, Token: aclToken}
-	client, err := consul.NewClient(csd.Config)
-	if err != nil {
-		return perrors.WithMessage(err, "create consul client failed.")
-	}
-	csd.consulClient = client
-	return nil
 }
 
 func (csd *consulServiceDiscovery) String() string {
@@ -240,9 +232,8 @@ func decodeConsulMetadata(metadata map[string]string) map[string]string {
 }
 
 func (csd *consulServiceDiscovery) GetInstances(serviceName string) []registry.ServiceInstance {
-	waitTime := csd.serviceUrl.GetParamInt(constant.WATCH_TIMEOUT, constant.DEFAULT_WATCH_TIMEOUT) / 1000
 	instances, _, err := csd.consulClient.Health().Service(serviceName, csd.tag, true, &consul.QueryOptions{
-		WaitTime: time.Duration(waitTime),
+		WaitTime: time.Duration(csd.checkPassInterval),
 	})
 	if err != nil {
 		logger.Errorf("get instances for service %s,error: %v", serviceName, err)
@@ -411,10 +402,32 @@ func (csd *consulServiceDiscovery) buildCheck(instance registry.ServiceInstance)
 	return consul.AgentServiceCheck{
 		//CheckID:                        buildID(instance),
 		TTL:                            strconv.FormatInt(csd.checkPassInterval/1000, 10) + "s",
-		DeregisterCriticalServiceAfter: deregister,
+		DeregisterCriticalServiceAfter: csd.deregisterCriticalServiceAfter,
 	}
 }
 
+// nolint
+func getCheckPassInterval(params map[string]string) int64 {
+	checkPassIntervalStr, ok := params[constant.CHECK_PASS_INTERVAL]
+	if !ok {
+		return constant.DEFAULT_CHECK_PASS_INTERVAL
+	}
+	checkPassInterval, err := strconv.ParseInt(checkPassIntervalStr, 10, 64)
+	if err != nil {
+		logger.Warnf("consul service discovery remote config error:%s", checkPassIntervalStr)
+		return constant.DEFAULT_CHECK_PASS_INTERVAL
+	}
+	return checkPassInterval
+}
+
+// nolint
+func getDeregisterAfter(metadata map[string]string) string {
+	deregister, ok := metadata[constant.DEREGISTER_AFTER]
+	if !ok || len(deregister) == 0 {
+		deregister = constant.DEFAULT_DEREGISTER_TIME
+	}
+	return deregister
+}
 func buildID(instance registry.ServiceInstance) string {
 
 	id := fmt.Sprintf("id:%s,serviceName:%s,host:%s,port:%d", instance.GetId(), instance.GetServiceName(), instance.GetHost(), instance.GetPort())
