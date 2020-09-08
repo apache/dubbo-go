@@ -39,7 +39,7 @@ import (
 )
 
 func TestGenericFilterInvoke(t *testing.T) {
-	invoc := invocation.NewRPCInvocation("GetUser", []interface{}{"OK"}, make(map[string]string, 0))
+	invoc := invocation.NewRPCInvocation("GetUser", []interface{}{"OK"}, make(map[string]interface{}, 0))
 
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}))
