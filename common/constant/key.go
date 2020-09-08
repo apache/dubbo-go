@@ -186,8 +186,6 @@ const (
 	ACL_TOKEN                   = "acl-token"
 	// default deregister critical server after
 	DEFAULT_DEREGISTER_TIME = "20s"
-	DEFAULT_WATCH_TIMEOUT   = 60 * 1000
-	WATCH_TIMEOUT           = "consul-watch-timeout"
 	DEREGISTER_AFTER        = "consul-deregister-critical-service-after"
 )
 
