@@ -33,6 +33,7 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
+// CacheListener is file watcher
 type CacheListener struct {
 	watch        *fsnotify.Watcher
 	keyListeners sync.Map
@@ -69,7 +70,10 @@ func NewCacheListener(rootPath string) *CacheListener {
 					}
 				}
 			case err := <-watch.Errors:
-				logger.Warnf("file : listen watch fail:", err)
+				// err may be nil, ignore
+				if err != nil {
+					logger.Warnf("file : listen watch fail:%+v", err)
+				}
 			}
 		}
 	}()
@@ -105,12 +109,13 @@ func callback(listener config_center.ConfigurationListener, path, data string, e
 	listener.Process(&config_center.ConfigChangeEvent{Key: path, Value: data, ConfigType: event})
 }
 
-func (cl *CacheListener) Close() {
+// Close will remove key listener and close watcher
+func (cl *CacheListener) Close() error {
 	cl.keyListeners.Range(func(key, value interface{}) bool {
 		cl.keyListeners.Delete(key)
 		return true
 	})
-	cl.watch.Close()
+	return cl.watch.Close()
 }
 
 // AddListener will add a listener if loaded

@@ -134,7 +134,7 @@ func (fssd *fileSystemServiceDiscovery) Destroy() error {
 
 // nolint
 func (fssd *fileSystemServiceDiscovery) releaseAndRemoveRegistrationFiles(file string) {
-	os.Remove(file)
+	os.RemoveAll(file)
 }
 
 // ----------------- registration ----------------

@@ -90,6 +90,7 @@ func newFileSystemDynamicConfiguration(url *common.URL) (*FileSystemDynamicConfi
 	return c, nil
 }
 
+// RootPath get root path
 func (fsdc *FileSystemDynamicConfiguration) RootPath() string {
 	return fsdc.rootPath
 }
@@ -185,9 +186,10 @@ func (fsdc *FileSystemDynamicConfiguration) RemoveConfig(key string, group strin
 
 // Close close file watcher
 func (fsdc *FileSystemDynamicConfiguration) Close() error {
-	return fsdc.cacheListener.watch.Close()
+	return fsdc.cacheListener.Close()
 }
 
+// GetPath get path
 func (fsdc *FileSystemDynamicConfiguration) GetPath(key string, group string) string {
 	if len(key) == 0 {
 		return path.Join(fsdc.rootPath, group)
