@@ -40,7 +40,7 @@ func TestTokenFilterInvoke(t *testing.T) {
 	url := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.TOKEN_KEY, "ori_key"))
-	attch := make(map[string]string, 0)
+	attch := make(map[string]interface{}, 0)
 	attch[constant.TOKEN_KEY] = "ori_key"
 	result := filter.Invoke(context.Background(),
 		protocol.NewBaseInvoker(*url),
@@ -54,7 +54,7 @@ func TestTokenFilterInvokeEmptyToken(t *testing.T) {
 	filter := GetTokenFilter()
 
 	testUrl := common.URL{}
-	attch := make(map[string]string, 0)
+	attch := make(map[string]interface{}, 0)
 	attch[constant.TOKEN_KEY] = "ori_key"
 	result := filter.Invoke(context.Background(), protocol.NewBaseInvoker(testUrl), invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, attch))
 	assert.Nil(t, result.Error())
@@ -67,7 +67,7 @@ func TestTokenFilterInvokeEmptyAttach(t *testing.T) {
 	testUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.TOKEN_KEY, "ori_key"))
-	attch := make(map[string]string, 0)
+	attch := make(map[string]interface{}, 0)
 	result := filter.Invoke(context.Background(), protocol.NewBaseInvoker(*testUrl), invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, attch))
 	assert.NotNil(t, result.Error())
 }
@@ -78,7 +78,7 @@ func TestTokenFilterInvokeNotEqual(t *testing.T) {
 	testUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.TOKEN_KEY, "ori_key"))
-	attch := make(map[string]string, 0)
+	attch := make(map[string]interface{}, 0)
 	attch[constant.TOKEN_KEY] = "err_key"
 	result := filter.Invoke(context.Background(),
 		protocol.NewBaseInvoker(*testUrl), invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, attch))
