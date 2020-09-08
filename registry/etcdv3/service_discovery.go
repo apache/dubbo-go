@@ -31,7 +31,6 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
@@ -65,10 +64,6 @@ type etcdV3ServiceDiscovery struct {
 	services *gxset.HashSet
 	// child listener
 	childListenerMap map[string]*etcdv3.EventListener
-}
-
-func (e *etcdV3ServiceDiscovery) Init(registryURL common.URL) error {
-	return nil
 }
 
 // basic information of this instance

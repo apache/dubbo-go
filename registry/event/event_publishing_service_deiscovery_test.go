@@ -30,7 +30,6 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/observer"
 	dispatcher2 "github.com/apache/dubbo-go/common/observer/dispatcher"
@@ -115,10 +114,6 @@ func (tel *TestServiceInstancePreRegisteredEventListener) GetEventType() reflect
 }
 
 type ServiceDiscoveryA struct {
-}
-
-func (msd *ServiceDiscoveryA) Init(registryURL common.URL) error {
-	return nil
 }
 
 // String return mockServiceDiscovery

@@ -80,8 +80,7 @@ func TestConsulServiceDiscovery_newConsulServiceDiscovery(t *testing.T) {
 func TestConsulServiceDiscovery_Destroy(t *testing.T) {
 	prepareData()
 	serviceDiscovery, err := extension.GetServiceDiscovery(constant.CONSUL_KEY, testName)
-	_, registryUrl := prepareService()
-	serviceDiscovery.Init(registryUrl)
+	prepareService()
 	assert.Nil(t, err)
 	assert.NotNil(t, serviceDiscovery)
 	err = serviceDiscovery.Destroy()
@@ -103,13 +102,10 @@ func TestConsulServiceDiscovery_CRUD(t *testing.T) {
 	extension.SetAndInitGlobalDispatcher("mock")
 	rand.Seed(time.Now().Unix())
 
-	instance, registryUrl := prepareService()
+	instance, _ := prepareService()
 
 	// clean data
 	serviceDiscovery, err := extension.GetServiceDiscovery(constant.CONSUL_KEY, testName)
-	assert.Nil(t, err)
-
-	err = serviceDiscovery.Init(registryUrl)
 	assert.Nil(t, err)
 
 	err = serviceDiscovery.Unregister(instance)
