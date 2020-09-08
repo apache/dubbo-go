@@ -361,7 +361,9 @@ func isAnyHost(addr string) bool {
 func findTag(invocation protocol.Invocation, consumerUrl *common.URL) string {
 	tag, ok := invocation.Attachments()[constant.Tagkey]
 	if !ok {
-		tag = consumerUrl.GetParam(constant.Tagkey, "")
+		return consumerUrl.GetParam(constant.Tagkey, "")
+	} else if v, t := tag.(string); t {
+		return v
 	}
-	return tag
+	return ""
 }
