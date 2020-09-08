@@ -20,6 +20,7 @@ package dubbo
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -129,6 +130,15 @@ func TestClientCall(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, User{Id: "1", Name: ""}, *user)
 
+	user = &User{}
+	r1 := "v1"
+	r2 := &AttaTestObject{Ti: 45, Desc: "v2"}
+	err = c.Call(NewRequest(mockAddress, url, "GetUserForAttachment", []interface{}{1}, map[string]interface{}{"sim": r1, "comp": r2}), NewResponse(user, nil))
+	assert.NoError(t, err)
+	// the param is transfered from client to server by attachment, and the server will return the attachment value.
+	// the test should check the value came back from server.
+	assert.Equal(t, User{Id: r1, Name: fmt.Sprintf("%+v", *r2)}, *user)
+
 	// destroy
 	proto.Destroy()
 }
@@ -166,10 +176,11 @@ func TestClientAsyncCall(t *testing.T) {
 func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 
 	hessian.RegisterPOJO(&User{})
+	hessian.RegisterPOJO(&AttaTestObject{})
 
 	methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "dubbo", &UserProvider{})
 	assert.NoError(t, err)
-	assert.Equal(t, "GetBigPkg,GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4,GetUser5,GetUser6", methods)
+	assert.Equal(t, "GetBigPkg,GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4,GetUser5,GetUser6,GetUserForAttachment", methods)
 
 	// config
 	SetClientConf(ClientConfig{
@@ -296,10 +307,29 @@ func (u *UserProvider) GetUser6(id int64) (*User, error) {
 	return &User{Id: "1"}, nil
 }
 
+func (u *UserProvider) GetUserForAttachment(context context.Context, id int64) (*User, error) {
+	if id == 0 {
+		return nil, nil
+	}
+	var attachments = context.Value("attachment").(map[string]interface{})
+	Id := attachments["sim"].(string)
+	name := fmt.Sprintf("%+v", *(attachments["comp"].(*AttaTestObject)))
+	return &User{Id: Id, Name: name}, nil
+}
+
 func (u *UserProvider) Reference() string {
 	return "UserProvider"
 }
 
 func (u User) JavaClassName() string {
 	return "com.ikurento.user.User"
+}
+
+type AttaTestObject struct {
+	Ti   int64
+	Desc string
+}
+
+func (u *AttaTestObject) JavaClassName() string {
+	return "UserProvider"
 }
