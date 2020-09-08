@@ -169,7 +169,7 @@ func (sm *serviceMap) GetService(protocol, name string) *Service {
 	return nil
 }
 
-// GetInterface gets an interface defination by interface name
+// GetInterface gets an interface definition by interface name
 func (sm *serviceMap) GetInterface(interfaceName string) []*Service {
 	sm.mutex.RLock()
 	defer sm.mutex.RUnlock()
@@ -271,7 +271,7 @@ func (sm *serviceMap) UnRegister(interfaceName, protocol, serviceId string) erro
 	sm.mutex.Lock()
 	defer sm.mutex.Unlock()
 	sm.interfaceMap[interfaceName] = make([]*Service, 0, len(svrs))
-	for i, _ := range svrs {
+	for i := range svrs {
 		if i != index {
 			sm.interfaceMap[interfaceName] = append(sm.interfaceMap[interfaceName], svrs[i])
 		}

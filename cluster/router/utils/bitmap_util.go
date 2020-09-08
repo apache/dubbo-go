@@ -15,38 +15,36 @@
  * limitations under the License.
  */
 
-package rest
+package utils
 
 import (
-	"sync"
+	"github.com/RoaringBitmap/roaring"
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
 )
 
-// nolint
-type RestExporter struct {
-	protocol.BaseExporter
+var EmptyAddr = roaring.NewBitmap()
+
+func JoinIfNotEqual(left *roaring.Bitmap, right *roaring.Bitmap) *roaring.Bitmap {
+	if !left.Equals(right) {
+		left = left.Clone()
+		left.And(right)
+	}
+	return left
 }
 
-// NewRestExporter returns a RestExporter
-func NewRestExporter(key string, invoker protocol.Invoker, exporterMap *sync.Map) *RestExporter {
-	return &RestExporter{
-		BaseExporter: *protocol.NewBaseExporter(key, invoker, exporterMap),
+func FallbackIfJoinToEmpty(left *roaring.Bitmap, right *roaring.Bitmap) *roaring.Bitmap {
+	ret := JoinIfNotEqual(left, right)
+	if ret == nil || ret.IsEmpty() {
+		return right
 	}
+	return ret
 }
 
-// Unexport unexport the RestExporter
-func (re *RestExporter) Unexport() {
-	serviceId := re.GetInvoker().GetUrl().GetParam(constant.BEAN_NAME_KEY, "")
-	interfaceName := re.GetInvoker().GetUrl().GetParam(constant.INTERFACE_KEY, "")
-	re.BaseExporter.Unexport()
-	err := common.ServiceMap.UnRegister(interfaceName, REST, serviceId)
-	if err != nil {
-		logger.Errorf("[RestExporter.Unexport] error: %v", err)
-	}
+func ToBitmap(invokers []protocol.Invoker) *roaring.Bitmap {
+	bitmap := roaring.NewBitmap()
+	bitmap.AddRange(0, uint64(len(invokers)))
+	return bitmap
 }

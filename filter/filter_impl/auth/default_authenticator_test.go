@@ -52,7 +52,7 @@ func TestDefaultAuthenticator_Authenticate(t *testing.T) {
 
 	var authenticator = &DefaultAuthenticator{}
 
-	invcation := invocation.NewRPCInvocation("test", parmas, map[string]string{
+	invcation := invocation.NewRPCInvocation("test", parmas, map[string]interface{}{
 		constant.REQUEST_SIGNATURE_KEY: signature,
 		constant.CONSUMER:              "test",
 		constant.REQUEST_TIMESTAMP_KEY: requestTime,
@@ -61,7 +61,7 @@ func TestDefaultAuthenticator_Authenticate(t *testing.T) {
 	err := authenticator.Authenticate(invcation, &testurl)
 	assert.Nil(t, err)
 	// modify the params
-	invcation = invocation.NewRPCInvocation("test", parmas[:1], map[string]string{
+	invcation = invocation.NewRPCInvocation("test", parmas[:1], map[string]interface{}{
 		constant.REQUEST_SIGNATURE_KEY: signature,
 		constant.CONSUMER:              "test",
 		constant.REQUEST_TIMESTAMP_KEY: requestTime,
@@ -119,7 +119,7 @@ func Test_getAccessKeyPairFailed(t *testing.T) {
 func Test_getSignatureWithinParams(t *testing.T) {
 	testurl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
 	testurl.SetParam(constant.PARAMTER_SIGNATURE_ENABLE_KEY, "true")
-	inv := invocation.NewRPCInvocation("test", []interface{}{"OK"}, map[string]string{
+	inv := invocation.NewRPCInvocation("test", []interface{}{"OK"}, map[string]interface{}{
 		"": "",
 	})
 	secret := "dubbo"
