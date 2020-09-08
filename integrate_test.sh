@@ -52,16 +52,12 @@ docker run -d --network host zookeeper
 echo "zookeeper listen in [:]2181"
 
 # build go-server image
-# copy main go.mod to test dir
-cp go.mod ./test/integrate/dubbo/go-server/go.main.mod
 cd ./test/integrate/dubbo/go-server
 docker build . -t  ci-provider --build-arg PR_ORIGIN_REPO=${TRAVIS_PULL_REQUEST_SLUG} --build-arg PR_ORIGIN_COMMITID=${TRAVIS_PULL_REQUEST_SHA}
 cd ${ROOT_DIR}
 docker run -d --network host ci-provider
 
 # build go-client image
-# copy main go.mod to test dir
-cp go.mod ./test/integrate/dubbo/go-client/go.main.mod
 cd ./test/integrate/dubbo/go-client
 docker build . -t  ci-consumer --build-arg PR_ORIGIN_REPO=${TRAVIS_PULL_REQUEST_SLUG} --build-arg PR_ORIGIN_COMMITID=${TRAVIS_PULL_REQUEST_SHA}
 cd ${ROOT_DIR}
