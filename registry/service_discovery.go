@@ -26,10 +26,6 @@ import (
 	gxpage "github.com/dubbogo/gost/page"
 )
 
-import (
-	"github.com/apache/dubbo-go/common"
-)
-
 const DefaultPageSize = 100
 
 // ServiceDiscovery is the common operations of Service Discovery
@@ -37,12 +33,6 @@ type ServiceDiscovery interface {
 	fmt.Stringer
 
 	// ----------------- lifecycle -------------------
-
-	/**
-	 * Initializes the  ServiceDiscovery
-	 *
-	 */
-	Init(registryURL common.URL) error
 
 	// Destroy will destroy the service discovery.
 	// If the discovery cannot be destroy, it will return an error.
