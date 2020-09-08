@@ -20,7 +20,6 @@ package file
 import (
 	"fmt"
 	"os"
-	"sync"
 	"testing"
 	"time"
 )
@@ -72,11 +71,11 @@ func TestAddListener(t *testing.T) {
 	listener := &mockDataListener{}
 	file.AddListener(key, listener, config_center.WithGroup(group))
 
-	listener.wg.Add(1)
 	value = "Test Value 2"
 	err = file.PublishConfig(key, group, value)
 	assert.NoError(t, err)
-	listener.wg.Wait()
+	// remove need wait a moment
+	time.Sleep(time.Second)
 	defer destroy(file.rootPath, file)
 }
 
@@ -90,22 +89,18 @@ func TestRemoveListener(t *testing.T) {
 	listener := &mockDataListener{}
 	file.AddListener(key, listener, config_center.WithGroup(group))
 
-	listener.wg.Add(1)
 	value = "Test Value 2"
 	err = file.PublishConfig(key, group, value)
 	assert.NoError(t, err)
 
 	// make sure callback before RemoveListener
 	time.Sleep(time.Second)
-
-	listener.wg.Add(1)
 	file.RemoveListener(key, listener, config_center.WithGroup(group))
 	value = "Test Value 3"
 	err = file.PublishConfig(key, group, value)
 	assert.NoError(t, err)
-	listener.wg.Done()
-
-	listener.wg.Wait()
+	// remove need wait a moment
+	time.Sleep(time.Second)
 	defer destroy(file.rootPath, file)
 }
 
@@ -152,13 +147,8 @@ func destroy(path string, fdc *FileSystemDynamicConfiguration) {
 	os.RemoveAll(path)
 }
 
-type mockDataListener struct {
-	wg    sync.WaitGroup
-	event string
-}
+type mockDataListener struct{}
 
 func (l *mockDataListener) Process(configType *config_center.ConfigChangeEvent) {
-	fmt.Println("process!!!!!")
-	l.wg.Done()
-	l.event = configType.Key
+	fmt.Printf("process!!!!! %v", configType)
 }
