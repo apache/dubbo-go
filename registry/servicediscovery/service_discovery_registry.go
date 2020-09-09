@@ -124,8 +124,7 @@ func creatServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
 	if err != nil {
 		return nil, perrors.WithMessage(err, "Create service discovery fialed")
 	}
-	serviceDiscovery := event.NewEventPublishingServiceDiscovery(originServiceDiscovery)
-	return serviceDiscovery, nil
+	return event.NewEventPublishingServiceDiscovery(originServiceDiscovery), nil
 }
 
 func parseServices(literalServices string) *gxset.HashSet {
