@@ -42,7 +42,12 @@ import (
 )
 
 const (
-	enable = "enable"
+	enable                 = "enable"
+	watch_type             = "type"
+	watch_type_service     = "service"
+	watch_service          = "service"
+	watch_passingonly      = "passingonly"
+	watch_passingonly_true = true
 )
 
 // init will put the service discovery into extension
@@ -198,10 +203,7 @@ func (csd *consulServiceDiscovery) GetServices() *gxset.HashSet {
 
 // encodeConsulMetadata because consul validate key strictly.
 func encodeConsulMetadata(metadata map[string]string) map[string]string {
-	consulMetadata := make(map[string]string, 8)
-	if metadata == nil {
-		return consulMetadata
-	}
+	consulMetadata := make(map[string]string, len(metadata))
 	encoder := base64.RawStdEncoding
 	for k, v := range metadata {
 		consulMetadata[encoder.EncodeToString([]byte(k))] = v
@@ -211,10 +213,7 @@ func encodeConsulMetadata(metadata map[string]string) map[string]string {
 
 // nolint
 func decodeConsulMetadata(metadata map[string]string) map[string]string {
-	dubboMetadata := make(map[string]string, 8)
-	if metadata == nil {
-		return dubboMetadata
-	}
+	dubboMetadata := make(map[string]string, len(metadata))
 	encoder := base64.RawStdEncoding
 	for k, v := range metadata {
 		kBytes, err := encoder.DecodeString(k)
@@ -305,9 +304,9 @@ func (csd *consulServiceDiscovery) GetRequestInstances(serviceNames []string, of
 func (csd *consulServiceDiscovery) AddListener(listener *registry.ServiceInstancesChangedListener) error {
 
 	params := make(map[string]interface{}, 8)
-	params["type"] = "service"
-	params["service"] = listener.ServiceName
-	params["passingonly"] = true
+	params[watch_type] = watch_type_service
+	params[watch_service] = listener.ServiceName
+	params[watch_passingonly] = watch_passingonly_true
 	plan, err := watch.Parse(params)
 	if err != nil {
 		logger.Errorf("add listener for service %s,error:%v", listener.ServiceName, err)
