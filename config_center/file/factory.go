@@ -18,6 +18,10 @@
 package file
 
 import (
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -26,17 +30,22 @@ import (
 )
 
 func init() {
-	extension.SetConfigCenterFactory(constant.FILE_KEY, func() config_center.DynamicConfigurationFactory { return &fileDynamicConfigurationFactory{} })
+	extension.SetConfigCenterFactory(constant.FILE_KEY, func() config_center.DynamicConfigurationFactory {
+		return &fileDynamicConfigurationFactory{}
+	})
 }
 
 type fileDynamicConfigurationFactory struct {
 }
 
-func (f *fileDynamicConfigurationFactory) GetDynamicConfiguration(url *common.URL) (config_center.DynamicConfiguration, error) {
+// GetDynamicConfiguration Get Configuration with URL
+func (f *fileDynamicConfigurationFactory) GetDynamicConfiguration(url *common.URL) (config_center.DynamicConfiguration,
+	error) {
 	dynamicConfiguration, err := newFileSystemDynamicConfiguration(url)
 	if err != nil {
-		return nil, err
+		return nil, perrors.WithStack(err)
 	}
+
 	dynamicConfiguration.SetParser(&parser.DefaultConfigurationParser{})
 	return dynamicConfiguration, err
 }

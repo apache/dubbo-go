@@ -106,7 +106,8 @@ func (fsdc *FileSystemDynamicConfiguration) SetParser(p parser.ConfigurationPars
 }
 
 // AddListener Add listener
-func (fsdc *FileSystemDynamicConfiguration) AddListener(key string, listener config_center.ConfigurationListener, opts ...config_center.Option) {
+func (fsdc *FileSystemDynamicConfiguration) AddListener(key string, listener config_center.ConfigurationListener,
+	opts ...config_center.Option) {
 	tmpOpts := &config_center.Options{}
 	for _, opt := range opts {
 		opt(tmpOpts)
@@ -118,7 +119,8 @@ func (fsdc *FileSystemDynamicConfiguration) AddListener(key string, listener con
 }
 
 // RemoveListener Remove listener
-func (fsdc *FileSystemDynamicConfiguration) RemoveListener(key string, listener config_center.ConfigurationListener, opts ...config_center.Option) {
+func (fsdc *FileSystemDynamicConfiguration) RemoveListener(key string, listener config_center.ConfigurationListener,
+	opts ...config_center.Option) {
 	tmpOpts := &config_center.Options{}
 	for _, opt := range opts {
 		opt(tmpOpts)
@@ -137,11 +139,12 @@ func (fsdc *FileSystemDynamicConfiguration) GetProperties(key string, opts ...co
 	}
 
 	path := fsdc.GetPath(key, tmpOpts.Group)
-	if file, err := ioutil.ReadFile(path); err != nil {
+	file, err := ioutil.ReadFile(path)
+	if err != nil {
 		return "", perrors.WithStack(err)
-	} else {
-		return string(file), nil
 	}
+
+	return string(file), nil
 }
 
 // GetRule get Router rule properties file
@@ -150,7 +153,8 @@ func (fsdc *FileSystemDynamicConfiguration) GetRule(key string, opts ...config_c
 }
 
 // GetInternalProperty get value by key in Default properties file(dubbo.properties)
-func (fsdc *FileSystemDynamicConfiguration) GetInternalProperty(key string, opts ...config_center.Option) (string, error) {
+func (fsdc *FileSystemDynamicConfiguration) GetInternalProperty(key string, opts ...config_center.Option) (string,
+	error) {
 	return fsdc.GetProperties(key, opts...)
 }
 
