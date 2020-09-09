@@ -188,8 +188,7 @@ func (di *DubboInvoker) appendCtx(ctx context.Context, inv *invocation_impl.RPCI
 	// inject opentracing ctx
 	currentSpan := opentracing.SpanFromContext(ctx)
 	if currentSpan != nil {
-		carrier := opentracing.TextMapCarrier(inv.Attachments())
-		err := opentracing.GlobalTracer().Inject(currentSpan.Context(), opentracing.TextMap, carrier)
+		err := injectTraceCtx(currentSpan, inv)
 		if err != nil {
 			logger.Errorf("Could not inject the span context into attachments: %v", err)
 		}
