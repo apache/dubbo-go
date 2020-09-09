@@ -45,10 +45,6 @@ const (
 	enable = "enable"
 )
 
-var (
-	initLock sync.Mutex
-)
-
 // init will put the service discovery into extension
 func init() {
 	extension.SetServiceDiscovery(constant.CONSUL_KEY, newConsulServiceDiscovery)
@@ -400,7 +396,6 @@ func (csd *consulServiceDiscovery) buildCheck(instance registry.ServiceInstance)
 		deregister = constant.DEFAULT_DEREGISTER_TIME
 	}
 	return consul.AgentServiceCheck{
-		//CheckID:                        buildID(instance),
 		TTL:                            strconv.FormatInt(csd.checkPassInterval/1000, 10) + "s",
 		DeregisterCriticalServiceAfter: csd.deregisterCriticalServiceAfter,
 	}
@@ -428,8 +423,9 @@ func getDeregisterAfter(metadata map[string]string) string {
 	}
 	return deregister
 }
-func buildID(instance registry.ServiceInstance) string {
 
+// nolint
+func buildID(instance registry.ServiceInstance) string {
 	id := fmt.Sprintf("id:%s,serviceName:%s,host:%s,port:%d", instance.GetId(), instance.GetServiceName(), instance.GetHost(), instance.GetPort())
 	return id
 }
