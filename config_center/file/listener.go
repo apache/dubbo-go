@@ -56,12 +56,14 @@ func NewCacheListener(rootPath string) *CacheListener {
 				logger.Debugf("watcher %s, event %v", cl.rootPath, event)
 				if event.Op&fsnotify.Write == fsnotify.Write {
 					if l, ok := cl.keyListeners.Load(key); ok {
-						dataChangeCallback(l.(map[config_center.ConfigurationListener]struct{}), key, remoting.EventTypeUpdate)
+						dataChangeCallback(l.(map[config_center.ConfigurationListener]struct{}), key,
+							remoting.EventTypeUpdate)
 					}
 				}
 				if event.Op&fsnotify.Create == fsnotify.Create {
 					if l, ok := cl.keyListeners.Load(key); ok {
-						dataChangeCallback(l.(map[config_center.ConfigurationListener]struct{}), key, remoting.EventTypeAdd)
+						dataChangeCallback(l.(map[config_center.ConfigurationListener]struct{}), key,
+							remoting.EventTypeAdd)
 					}
 				}
 				if event.Op&fsnotify.Remove == fsnotify.Remove {
@@ -89,6 +91,7 @@ func NewCacheListener(rootPath string) *CacheListener {
 func removeCallback(lmap map[config_center.ConfigurationListener]struct{}, key string, event remoting.EventType) {
 	if len(lmap) == 0 {
 		logger.Warnf("file watch callback but configuration listener is empty, key:%s, event:%v", key, event)
+		return
 	}
 	for l := range lmap {
 		callback(l, key, "", event)
@@ -98,6 +101,7 @@ func removeCallback(lmap map[config_center.ConfigurationListener]struct{}, key s
 func dataChangeCallback(lmap map[config_center.ConfigurationListener]struct{}, key string, event remoting.EventType) {
 	if len(lmap) == 0 {
 		logger.Warnf("file watch callback but configuration listener is empty, key:%s, event:%v", key, event)
+		return
 	}
 	c := getFileContent(key)
 	for l := range lmap {
@@ -123,33 +127,36 @@ func (cl *CacheListener) Close() error {
 func (cl *CacheListener) AddListener(key string, listener config_center.ConfigurationListener) {
 	// reference from https://stackoverflow.com/questions/34018908/golang-why-dont-we-have-a-set-datastructure
 	// make a map[your type]struct{} like set in java
-	listeners, loaded := cl.keyListeners.LoadOrStore(key, map[config_center.ConfigurationListener]struct{}{listener: {}})
+	listeners, loaded := cl.keyListeners.LoadOrStore(key, map[config_center.ConfigurationListener]struct{}{
+		listener: {}})
 	if loaded {
 		listeners.(map[config_center.ConfigurationListener]struct{})[listener] = struct{}{}
 		cl.keyListeners.Store(key, listeners)
-	} else {
-		if err := cl.watch.Add(key); err != nil {
-			logger.Errorf("watcher add path:%s err:%v", key, err)
-		}
+		return
+	}
+	if err := cl.watch.Add(key); err != nil {
+		logger.Errorf("watcher add path:%s err:%v", key, err)
 	}
 }
 
 // RemoveListener will delete a listener if loaded
 func (cl *CacheListener) RemoveListener(key string, listener config_center.ConfigurationListener) {
 	listeners, loaded := cl.keyListeners.Load(key)
-	if loaded {
-		delete(listeners.(map[config_center.ConfigurationListener]struct{}), listener)
-		if err := cl.watch.Remove(key); err != nil {
-			logger.Errorf("watcher remove path:%s err:%v", key, err)
-		}
+	if !loaded {
+		return
+	}
+	delete(listeners.(map[config_center.ConfigurationListener]struct{}), listener)
+	if err := cl.watch.Remove(key); err != nil {
+		logger.Errorf("watcher remove path:%s err:%v", key, err)
 	}
 }
 
 func getFileContent(path string) string {
-	if c, err := ioutil.ReadFile(path); err != nil {
+	c, err := ioutil.ReadFile(path)
+	if err != nil {
 		logger.Errorf("read file path:%s err:%v", path, err)
 		return ""
-	} else {
-		return string(c)
 	}
+
+	return string(c)
 }
