@@ -113,6 +113,8 @@ func TestGetConfigKeysByGroup(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 1, gs.Size())
 	assert.Equal(t, key, gs.Values()[0])
+	// remove need wait a moment
+	time.Sleep(time.Second)
 	defer destroy(file.rootPath, file)
 }
 

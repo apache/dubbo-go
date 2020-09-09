@@ -82,37 +82,39 @@ func newFileSystemServiceDiscovery(name string) (registry.ServiceDiscovery, erro
 		return nil, perrors.New("could not init the instance because the config is invalid")
 	}
 
-	if rp, err := file.Home(); err != nil {
+	rp, err := file.Home()
+	if err != nil {
 		return nil, perrors.WithStack(err)
-	} else {
-		fdcf := extension.GetConfigCenterFactory(constant.FILE_KEY)
-		p := path.Join(rp, ".dubbo", "registry")
-		url, _ := common.NewURL("")
-		url.AddParamAvoidNil(file.CONFIG_CENTER_DIR_PARAM_NAME, p)
-		if c, err := fdcf.GetDynamicConfiguration(&url); err != nil {
-			return nil, perrors.New("could not find the config for name: " + name)
-		} else {
-			sd := &fileSystemServiceDiscovery{
-				dynamicConfiguration: *c.(*file.FileSystemDynamicConfiguration),
-				rootPath:             p,
-				fileMap:              make(map[string]string),
-			}
+	}
 
-			extension.AddCustomShutdownCallback(func() {
-				sd.Destroy()
-			})
+	fdcf := extension.GetConfigCenterFactory(constant.FILE_KEY)
+	p := path.Join(rp, ".dubbo", "registry")
+	url, _ := common.NewURL("")
+	url.AddParamAvoidNil(file.CONFIG_CENTER_DIR_PARAM_NAME, p)
+	c, err := fdcf.GetDynamicConfiguration(&url)
+	if err != nil {
+		return nil, perrors.WithStack(err)
+	}
 
-			for _, v := range sd.GetServices().Values() {
-				for _, i := range sd.GetInstances(v.(string)) {
-					// like java do nothing
-					l := &RegistryConfigurationListener{}
-					sd.dynamicConfiguration.AddListener(getServiceInstanceId(i), l, config_center.WithGroup(getServiceName(i)))
-				}
-			}
+	sd := &fileSystemServiceDiscovery{
+		dynamicConfiguration: *c.(*file.FileSystemDynamicConfiguration),
+		rootPath:             p,
+		fileMap:              make(map[string]string),
+	}
 
-			return sd, nil
+	extension.AddCustomShutdownCallback(func() {
+		sd.Destroy()
+	})
+
+	for _, v := range sd.GetServices().Values() {
+		for _, i := range sd.GetInstances(v.(string)) {
+			// like java do nothing
+			l := &RegistryConfigurationListener{}
+			sd.dynamicConfiguration.AddListener(getServiceInstanceId(i), l, config_center.WithGroup(getServiceName(i)))
 		}
 	}
+
+	return sd, nil
 }
 
 // nolint
@@ -143,15 +145,18 @@ func (fssd *fileSystemServiceDiscovery) releaseAndRemoveRegistrationFiles(file s
 func (fssd *fileSystemServiceDiscovery) Register(instance registry.ServiceInstance) error {
 	id := getServiceInstanceId(instance)
 	sn := getServiceName(instance)
-	if c, err := getContent(instance); err != nil {
-		return err
-	} else {
-		if err := fssd.dynamicConfiguration.PublishConfig(id, sn, c); err != nil {
-			return perrors.WithStack(err)
-		} else {
-			fssd.fileMap[id] = fssd.dynamicConfiguration.GetPath(id, sn)
-		}
+
+	c, err := toJsonString(instance)
+	if err != nil {
+		return perrors.WithStack(err)
 	}
+
+	err = fssd.dynamicConfiguration.PublishConfig(id, sn, c)
+	if err != nil {
+		return perrors.WithStack(err)
+	}
+
+	fssd.fileMap[id] = fssd.dynamicConfiguration.GetPath(id, sn)
 
 	return nil
 }
@@ -170,13 +175,14 @@ func getServiceName(si registry.ServiceInstance) string {
 	return si.GetServiceName()
 }
 
-// getContent json string
-func getContent(si registry.ServiceInstance) (string, error) {
-	if bytes, err := json.Marshal(si); err != nil {
-		return "", err
-	} else {
-		return string(bytes), nil
+// toJsonString to json string
+func toJsonString(si registry.ServiceInstance) (string, error) {
+	bytes, err := json.Marshal(si)
+	if err != nil {
+		return "", perrors.WithStack(err)
 	}
+
+	return string(bytes), nil
 }
 
 // Update will update the data of the instance in registry
@@ -188,12 +194,14 @@ func (fssd *fileSystemServiceDiscovery) Update(instance registry.ServiceInstance
 func (fssd *fileSystemServiceDiscovery) Unregister(instance registry.ServiceInstance) error {
 	id := getServiceInstanceId(instance)
 	sn := getServiceName(instance)
-	if err := fssd.dynamicConfiguration.RemoveConfig(id, sn); err != nil {
-		return err
-	} else {
-		delete(fssd.fileMap, instance.GetId())
-		return nil
+
+	err := fssd.dynamicConfiguration.RemoveConfig(id, sn)
+	if err != nil {
+		return perrors.WithStack(err)
 	}
+
+	delete(fssd.fileMap, instance.GetId())
+	return nil
 }
 
 // ----------------- discovery -------------------
@@ -219,33 +227,37 @@ func (fssd *fileSystemServiceDiscovery) GetServices() *gxset.HashSet {
 
 // GetInstances will return all service instances with serviceName
 func (fssd *fileSystemServiceDiscovery) GetInstances(serviceName string) []registry.ServiceInstance {
-	if set, err := fssd.dynamicConfiguration.GetConfigKeysByGroup(serviceName); err != nil {
+	set, err := fssd.dynamicConfiguration.GetConfigKeysByGroup(serviceName)
+	if err != nil {
 		logger.Errorf("[FileServiceDiscovery] Could not query the instances for service{%s}, error = err{%v} ",
 			serviceName, err)
-
 		return make([]registry.ServiceInstance, 0, 0)
-	} else {
-		si := make([]registry.ServiceInstance, 0, set.Size())
-		for _, v := range set.Values() {
-			id := v.(string)
-			if p, err := fssd.dynamicConfiguration.GetProperties(id, config_center.WithGroup(serviceName)); err != nil {
-				logger.Errorf("[FileServiceDiscovery] Could not get the properties for id{%s}, service{%s}, "+
-					"error = err{%v} ",
-					id, serviceName, err)
-			} else {
-				dsi := &registry.DefaultServiceInstance{}
-				if err := json.Unmarshal([]byte(p), dsi); err != nil {
-					logger.Errorf("[FileServiceDiscovery] Could not unmarshal the properties for id{%s}, service{%s}, "+
-						"error = err{%v} ",
-						id, serviceName, err)
-				} else {
-					si = append(si, dsi)
-				}
-			}
+	}
+
+	res := make([]registry.ServiceInstance, 0, set.Size())
+	for _, v := range set.Values() {
+		id := v.(string)
+		p, err := fssd.dynamicConfiguration.GetProperties(id, config_center.WithGroup(serviceName))
+		if err != nil {
+			logger.Errorf("[FileServiceDiscovery] Could not get the properties for id{%s}, service{%s}, "+
+				"error = err{%v} ",
+				id, serviceName, err)
+			return make([]registry.ServiceInstance, 0, 0)
 		}
 
-		return si
+		dsi := &registry.DefaultServiceInstance{}
+		err = json.Unmarshal([]byte(p), dsi)
+		if err != nil {
+			logger.Errorf("[FileServiceDiscovery] Could not unmarshal the properties for id{%s}, service{%s}, "+
+				"error = err{%v} ",
+				id, serviceName, err)
+			return make([]registry.ServiceInstance, 0, 0)
+		}
+
+		res = append(res, dsi)
 	}
+
+	return res
 }
 
 // GetInstancesByPage will return a page containing instances of ServiceInstance with the serviceName
@@ -257,12 +269,14 @@ func (fssd *fileSystemServiceDiscovery) GetInstancesByPage(serviceName string, o
 // GetHealthyInstancesByPage will return a page containing instances of ServiceInstance.
 // The param healthy indices that the instance should be healthy or not.
 // The page will start at offset
-func (fssd *fileSystemServiceDiscovery) GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) gxpage.Pager {
+func (fssd *fileSystemServiceDiscovery) GetHealthyInstancesByPage(serviceName string, offset int, pageSize int,
+	healthy bool) gxpage.Pager {
 	return nil
 }
 
 // Batch get all instances by the specified service names
-func (fssd *fileSystemServiceDiscovery) GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]gxpage.Pager {
+func (fssd *fileSystemServiceDiscovery) GetRequestInstances(serviceNames []string, offset int,
+	requestedSize int) map[string]gxpage.Pager {
 	return nil
 }
 
@@ -280,7 +294,8 @@ func (fssd *fileSystemServiceDiscovery) DispatchEventByServiceName(serviceName s
 }
 
 // DispatchEventForInstances dispatches the ServiceInstancesChangedEvent to target instances
-func (fssd *fileSystemServiceDiscovery) DispatchEventForInstances(serviceName string, instances []registry.ServiceInstance) error {
+func (fssd *fileSystemServiceDiscovery) DispatchEventForInstances(serviceName string,
+	instances []registry.ServiceInstance) error {
 	return fssd.DispatchEvent(registry.NewServiceInstancesChangedEvent(serviceName, instances))
 }
 
