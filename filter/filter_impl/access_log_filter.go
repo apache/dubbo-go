@@ -105,13 +105,27 @@ func (ef *AccessLogFilter) logIntoChannel(accessLogData AccessLogData) {
 func (ef *AccessLogFilter) buildAccessLogData(_ protocol.Invoker, invocation protocol.Invocation) map[string]string {
 	dataMap := make(map[string]string, 16)
 	attachments := invocation.Attachments()
-	dataMap[constant.INTERFACE_KEY] = attachments[constant.INTERFACE_KEY]
-	dataMap[constant.METHOD_KEY] = invocation.MethodName()
-	dataMap[constant.VERSION_KEY] = attachments[constant.VERSION_KEY]
-	dataMap[constant.GROUP_KEY] = attachments[constant.GROUP_KEY]
-	dataMap[constant.TIMESTAMP_KEY] = time.Now().Format(MessageDateLayout)
-	dataMap[constant.LOCAL_ADDR], _ = attachments[constant.LOCAL_ADDR]
-	dataMap[constant.REMOTE_ADDR], _ = attachments[constant.REMOTE_ADDR]
+	if v, ok := attachments[constant.INTERFACE_KEY]; ok && v != nil {
+		dataMap[constant.INTERFACE_KEY] = v.(string)
+	}
+	if v, ok := attachments[constant.METHOD_KEY]; ok && v != nil {
+		dataMap[constant.METHOD_KEY] = v.(string)
+	}
+	if v, ok := attachments[constant.VERSION_KEY]; ok && v != nil {
+		dataMap[constant.VERSION_KEY] = v.(string)
+	}
+	if v, ok := attachments[constant.GROUP_KEY]; ok && v != nil {
+		dataMap[constant.GROUP_KEY] = v.(string)
+	}
+	if v, ok := attachments[constant.TIMESTAMP_KEY]; ok && v != nil {
+		dataMap[constant.TIMESTAMP_KEY] = v.(string)
+	}
+	if v, ok := attachments[constant.LOCAL_ADDR]; ok && v != nil {
+		dataMap[constant.LOCAL_ADDR] = v.(string)
+	}
+	if v, ok := attachments[constant.REMOTE_ADDR]; ok && v != nil {
+		dataMap[constant.REMOTE_ADDR] = v.(string)
+	}
 
 	if len(invocation.Arguments()) > 0 {
 		builder := strings.Builder{}
