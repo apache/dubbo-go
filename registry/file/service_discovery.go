@@ -88,7 +88,7 @@ func newFileSystemServiceDiscovery(name string) (registry.ServiceDiscovery, erro
 	}
 
 	fdcf := extension.GetConfigCenterFactory(constant.FILE_KEY)
-	p := path.Join(rp, ".dubbo", "registry")
+	p := path.Join(rp, ".dubbo", constant.REGISTRY_KEY)
 	url, _ := common.NewURL("")
 	url.AddParamAvoidNil(file.CONFIG_CENTER_DIR_PARAM_NAME, p)
 	c, err := fdcf.GetDynamicConfiguration(&url)
