@@ -173,9 +173,11 @@ func (fsdc *FileSystemDynamicConfiguration) GetConfigKeysByGroup(group string) (
 
 	for _, file := range fileInfo {
 		// list file
-		if !file.IsDir() {
-			r.Add(file.Name())
+		if file.IsDir() {
+			continue
 		}
+
+		r.Add(file.Name())
 	}
 
 	return r, nil
