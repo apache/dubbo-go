@@ -32,7 +32,6 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/config_center"
 	_ "github.com/apache/dubbo-go/config_center/configurator"
@@ -408,8 +407,6 @@ func newWrappedInvoker(invoker protocol.Invoker, url *common.URL) *wrappedInvoke
 
 // Invoke remote service base on URL of wrappedInvoker
 func (ivk *wrappedInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
-	// get right url
-	ivk.invoker.(*proxy_factory.ProxyInvoker).BaseInvoker = *protocol.NewBaseInvoker(ivk.GetUrl())
 	return ivk.invoker.Invoke(ctx, invocation)
 }
 
