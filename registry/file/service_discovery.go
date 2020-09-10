@@ -24,7 +24,6 @@ import (
 	"os"
 	"path"
 	"strconv"
-	"sync"
 )
 
 import (
@@ -44,12 +43,6 @@ import (
 	"github.com/apache/dubbo-go/registry"
 )
 
-var (
-	// 16 would be enough. We won't use concurrentMap because in most cases, there are not race condition
-	instanceMap = make(map[string]registry.ServiceDiscovery, 16)
-	initLock    sync.Mutex
-)
-
 // init will put the service discovery into extension
 func init() {
 	extension.SetServiceDiscovery(constant.FILE_KEY, newFileSystemServiceDiscovery)
@@ -63,20 +56,6 @@ type fileSystemServiceDiscovery struct {
 }
 
 func newFileSystemServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
-	instance, ok := instanceMap[name]
-	if ok {
-		return instance, nil
-	}
-
-	initLock.Lock()
-	defer initLock.Unlock()
-
-	// double check
-	instance, ok = instanceMap[name]
-	if ok {
-		return instance, nil
-	}
-
 	sdc, ok := config.GetBaseConfig().GetServiceDiscoveries(name)
 	if !ok || sdc.Protocol != constant.FILE_KEY {
 		return nil, perrors.New("could not init the instance because the config is invalid")
