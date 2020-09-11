@@ -27,9 +27,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go-hessian2"
-	"github.com/dubbogo/getty"
-	"github.com/opentracing/opentracing-go"
+	"github.com/apache/dubbo-getty"
 	perrors "github.com/pkg/errors"
 )
 
@@ -38,6 +36,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/dubbo/hessian2"
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
@@ -105,8 +104,8 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 		return
 	}
 
-	if p.Header.Type&hessian.PackageHeartbeat != 0x00 {
-		if p.Header.Type&hessian.PackageResponse != 0x00 {
+	if p.Header.Type&hessian2.PackageHeartbeat != 0x00 {
+		if p.Header.Type&hessian2.PackageResponse != 0x00 {
 			logger.Debugf("get rpc heartbeat response{header: %#v, body: %#v}", p.Header, p.Body)
 			if p.Err != nil {
 				logger.Errorf("rpc heartbeat response{error: %#v}", p.Err)
@@ -114,8 +113,8 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 			h.conn.pool.rpcClient.removePendingResponse(SequenceType(p.Header.ID))
 		} else {
 			logger.Debugf("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", p.Header, p.Service, p.Body)
-			p.Header.ResponseStatus = hessian.Response_OK
-			reply(session, p, hessian.PackageHeartbeat)
+			p.Header.ResponseStatus = hessian2.Response_OK
+			reply(session, p, hessian2.PackageHeartbeat)
 		}
 		return
 	}
@@ -229,24 +228,24 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 		logger.Errorf("illegal package{%#v}", pkg)
 		return
 	}
-	p.Header.ResponseStatus = hessian.Response_OK
+	p.Header.ResponseStatus = hessian2.Response_OK
 
 	// heartbeat
-	if p.Header.Type&hessian.PackageHeartbeat != 0x00 {
+	if p.Header.Type&hessian2.PackageHeartbeat != 0x00 {
 		logger.Debugf("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", p.Header, p.Service, p.Body)
-		reply(session, p, hessian.PackageHeartbeat)
+		reply(session, p, hessian2.PackageHeartbeat)
 		return
 	}
 
 	twoway := true
 	// not twoway
-	if p.Header.Type&hessian.PackageRequest_TwoWay == 0x00 {
+	if p.Header.Type&hessian2.PackageRequest_TwoWay == 0x00 {
 		twoway = false
 	}
 
 	defer func() {
 		if e := recover(); e != nil {
-			p.Header.ResponseStatus = hessian.Response_SERVER_ERROR
+			p.Header.ResponseStatus = hessian2.Response_SERVER_ERROR
 			if err, ok := e.(error); ok {
 				logger.Errorf("OnMessage panic: %+v", perrors.WithStack(err))
 				p.Body = perrors.WithStack(err)
@@ -261,7 +260,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 			if !twoway {
 				return
 			}
-			reply(session, p, hessian.PackageResponse)
+			reply(session, p, hessian2.PackageResponse)
 		}
 
 	}()
@@ -274,14 +273,14 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	if exporter == nil {
 		err := fmt.Errorf("don't have this exporter, key: %s", u.ServiceKey())
 		logger.Errorf(err.Error())
-		p.Header.ResponseStatus = hessian.Response_OK
+		p.Header.ResponseStatus = hessian2.Response_OK
 		p.Body = err
-		reply(session, p, hessian.PackageResponse)
+		reply(session, p, hessian2.PackageResponse)
 		return
 	}
 	invoker := exporter.(protocol.Exporter).GetInvoker()
 	if invoker != nil {
-		attachments := p.Body.(map[string]interface{})["attachments"].(map[string]string)
+		attachments := p.Body.(map[string]interface{})["attachments"].(map[string]interface{})
 		attachments[constant.LOCAL_ADDR] = session.LocalAddr()
 		attachments[constant.REMOTE_ADDR] = session.RemoteAddr()
 
@@ -292,19 +291,19 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 		result := invoker.Invoke(ctx, inv)
 		if err := result.Error(); err != nil {
-			p.Header.ResponseStatus = hessian.Response_OK
-			p.Body = hessian.NewResponse(nil, err, result.Attachments())
+			p.Header.ResponseStatus = hessian2.Response_OK
+			p.Body = hessian2.NewResponse(nil, err, result.Attachments())
 		} else {
 			res := result.Result()
-			p.Header.ResponseStatus = hessian.Response_OK
-			p.Body = hessian.NewResponse(res, nil, result.Attachments())
+			p.Header.ResponseStatus = hessian2.Response_OK
+			p.Body = hessian2.NewResponse(res, nil, result.Attachments())
 		}
 	}
 
 	if !twoway {
 		return
 	}
-	reply(session, p, hessian.PackageResponse)
+	reply(session, p, hessian2.PackageResponse)
 }
 
 // OnCron notified when RPC server session got any message in cron job
@@ -340,17 +339,16 @@ func rebuildCtx(inv *invocation.RPCInvocation) context.Context {
 	ctx := context.Background()
 
 	// actually, if user do not use any opentracing framework, the err will not be nil.
-	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.TextMap,
-		opentracing.TextMapCarrier(inv.Attachments()))
+	spanCtx, err := extractTraceCtx(inv)
 	if err == nil {
 		ctx = context.WithValue(ctx, constant.TRACING_REMOTE_SPAN_CTX, spanCtx)
 	}
 	return ctx
 }
 
-func reply(session getty.Session, req *DubboPackage, tp hessian.PackageType) {
+func reply(session getty.Session, req *DubboPackage, tp hessian2.PackageType) {
 	resp := &DubboPackage{
-		Header: hessian.DubboHeader{
+		Header: hessian2.DubboHeader{
 			SerialID:       req.Header.SerialID,
 			Type:           tp,
 			ID:             req.Header.ID,
@@ -358,7 +356,7 @@ func reply(session getty.Session, req *DubboPackage, tp hessian.PackageType) {
 		},
 	}
 
-	if req.Header.Type&hessian.PackageRequest != 0x00 {
+	if req.Header.Type&hessian2.PackageRequest != 0x00 {
 		resp.Body = req.Body
 	} else {
 		resp.Body = nil

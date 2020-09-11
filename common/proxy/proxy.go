@@ -24,6 +24,11 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go-hessian2/java_exception"
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
@@ -140,10 +145,15 @@ func (p *Proxy) Implement(v common.RPCService) {
 				inv.SetAttachments(k, value)
 			}
 
-			// add user setAttachment
+			// add user setAttachment.  It is compatibility with previous versions.
 			atm := invCtx.Value(constant.AttachmentKey)
 			if m, ok := atm.(map[string]string); ok {
 				for k, value := range m {
+					inv.SetAttachments(k, value)
+				}
+			} else if m2, ok2 := atm.(map[string]interface{}); ok2 {
+				// it is support to transfer map[string]interface{}. It refers to dubbo-java 2.7.
+				for k, value := range m2 {
 					inv.SetAttachments(k, value)
 				}
 			}
@@ -154,7 +164,18 @@ func (p *Proxy) Implement(v common.RPCService) {
 			}
 
 			err = result.Error()
-			logger.Debugf("[makeDubboCallProxy] result: %v, err: %v", result.Result(), err)
+			if err != nil {
+				// the cause reason
+				err = perrors.Cause(err)
+				// if some error happened, it should be log some info in the seperate file.
+				if throwabler, ok := err.(java_exception.Throwabler); ok {
+					logger.Warnf("invoke service throw exception: %v , stackTraceElements: %v", err.Error(), throwabler.GetStackTrace())
+				} else {
+					logger.Warnf("result err: %v", err)
+				}
+			} else {
+				logger.Debugf("[makeDubboCallProxy] result: %v, err: %v", result.Result(), err)
+			}
 			if len(outs) == 1 {
 				return []reflect.Value{reflect.ValueOf(&err).Elem()}
 			}

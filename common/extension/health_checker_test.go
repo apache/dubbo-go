@@ -32,7 +32,7 @@ import (
 )
 
 func TestGetHealthChecker(t *testing.T) {
-	SethealthChecker("mock", newMockhealthCheck)
+	SetHealthChecker("mock", newMockHealthCheck)
 	checker := GetHealthChecker("mock", common.NewURLWithOptions())
 	assert.NotNil(t, checker)
 }
@@ -44,6 +44,6 @@ func (m mockHealthChecker) IsHealthy(invoker protocol.Invoker) bool {
 	return true
 }
 
-func newMockhealthCheck(_ *common.URL) router.HealthChecker {
+func newMockHealthCheck(_ *common.URL) router.HealthChecker {
 	return &mockHealthChecker{}
 }

@@ -55,7 +55,7 @@ func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName(methodName),
 		invocation.WithArguments([]interface{}{siV.Interface(), gV.Interface(), vV.Interface(), pV.Interface()}),
 		invocation.WithReply(reflect.ValueOf(&[]interface{}{}).Interface()),
-		invocation.WithAttachments(map[string]string{constant.ASYNC_KEY: "false"}),
+		invocation.WithAttachments(map[string]interface{}{constant.ASYNC_KEY: "false"}),
 		invocation.WithParameterValues([]reflect.Value{siV, gV, vV, pV}))
 
 	res := m.invkr.Invoke(context.Background(), inv)

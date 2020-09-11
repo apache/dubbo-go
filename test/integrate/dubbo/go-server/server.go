@@ -48,7 +48,7 @@ func main() {
 	select {
 	case <-stopC:
 		// wait getty send resp to consumer
-		time.Sleep(3*time.Second)
+		time.Sleep(3 * time.Second)
 		return
 	case <-time.After(time.Minute):
 		panic("provider already running 1 min, but can't be call by consumer")
