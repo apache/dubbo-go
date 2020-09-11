@@ -54,7 +54,6 @@ jobs:
       run: |
         chmod u+x before_ut.sh && ./before_ut.sh
         go mod vendor && go test ./... -coverprofile=coverage.txt -covermode=atomic
-        export COMPOSE_INTERACTIVE_NO_CLI=1
         chmod +x integrate_test.sh && ./integrate_test.sh
 
     - name: Coverage
