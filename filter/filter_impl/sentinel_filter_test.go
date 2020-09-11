@@ -19,14 +19,20 @@ package filter_impl
 
 import (
 	"context"
-	"github.com/alibaba/sentinel-golang/core/flow"
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/invocation"
-	"github.com/stretchr/testify/assert"
 	"sync"
 	"sync/atomic"
 	"testing"
+)
+
+import (
+	"github.com/alibaba/sentinel-golang/core/flow"
+	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 func TestSentinelFilter_QPS(t *testing.T) {
