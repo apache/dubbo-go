@@ -126,7 +126,7 @@ func resolveRevision(urls []interface{}) string {
 
 		// append url params if we need it
 	}
-	sort.Sort(sort.StringSlice(candidates))
+	sort.Strings(candidates)
 
 	// it's nearly impossible to be overflow
 	res := uint64(0)

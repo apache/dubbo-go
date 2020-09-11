@@ -26,7 +26,9 @@ import (
 )
 
 func TestLoadYmlConfig(t *testing.T) {
-	router, e := NewFileConditionRouter([]byte(`priority: 1
+	router, e := NewFileConditionRouter([]byte(`scope: application
+key: mock-app
+priority: 1
 force: true
 conditions :
   - "a => b"
@@ -47,12 +49,78 @@ func TestParseCondition(t *testing.T) {
 }
 
 func TestFileRouterURL(t *testing.T) {
-	router, e := NewFileConditionRouter([]byte(`priority: 1
+	router, e := NewFileConditionRouter([]byte(`scope: application
+key: mock-app
+priority: 1
 force: true
 conditions :
   - "a => b"
   - "c => d"`))
 	assert.Nil(t, e)
 	assert.NotNil(t, router)
-	assert.Equal(t, "condition://0.0.0.0:?category=routers&force=true&priority=1&router=condition&rule=YSAmIGMgPT4gYiAmIGQ%3D", router.URL().String())
+	assert.Equal(t, "condition://0.0.0.0:?application=mock-app&category=routers&force=true&priority=1&router=condition&rule=YSAmIGMgPT4gYiAmIGQ%3D", router.URL().String())
+
+	router, e = NewFileConditionRouter([]byte(`scope: service
+key: mock-service
+priority: 1
+force: true
+conditions :
+  - "a => b"
+  - "c => d"`))
+	assert.Nil(t, e)
+	assert.NotNil(t, router)
+	assert.Equal(t, "condition://0.0.0.0:?category=routers&force=true&interface=mock-service&priority=1&router=condition&rule=YSAmIGMgPT4gYiAmIGQ%3D", router.URL().String())
+
+	router, e = NewFileConditionRouter([]byte(`scope: service
+key: grp1/mock-service:v1
+priority: 1
+force: true
+conditions :
+  - "a => b"
+  - "c => d"`))
+	assert.Nil(t, e)
+	assert.NotNil(t, router)
+	assert.Equal(t, "condition://0.0.0.0:?category=routers&force=true&group=grp1&interface=mock-service&priority=1&router=condition&rule=YSAmIGMgPT4gYiAmIGQ%3D&version=v1", router.URL().String())
+}
+
+func TestParseServiceRouterKey(t *testing.T) {
+	testString := " mock-group / mock-service:1.0.0"
+	grp, srv, ver, err := parseServiceRouterKey(testString)
+	assert.Equal(t, "mock-group", grp)
+	assert.Equal(t, "mock-service", srv)
+	assert.Equal(t, "1.0.0", ver)
+
+	testString = "mock-group/mock-service"
+	grp, srv, ver, err = parseServiceRouterKey(testString)
+	assert.Equal(t, "mock-group", grp)
+	assert.Equal(t, "mock-service", srv)
+	assert.Equal(t, "", ver)
+
+	testString = "mock-service:1.0.0"
+	grp, srv, ver, err = parseServiceRouterKey(testString)
+	assert.Equal(t, "", grp)
+	assert.Equal(t, "mock-service", srv)
+	assert.Equal(t, "1.0.0", ver)
+
+	testString = "mock-service"
+	grp, srv, ver, err = parseServiceRouterKey(testString)
+	assert.Equal(t, "", grp)
+	assert.Equal(t, "mock-service", srv)
+	assert.Equal(t, "", ver)
+
+	testString = "/mock-service:"
+	grp, srv, ver, err = parseServiceRouterKey(testString)
+	assert.Equal(t, "", grp)
+	assert.Equal(t, "mock-service", srv)
+	assert.Equal(t, "", ver)
+
+	testString = "grp:mock-service:123"
+	grp, srv, ver, err = parseServiceRouterKey(testString)
+	assert.Error(t, err)
+
+	testString = ""
+	grp, srv, ver, err = parseServiceRouterKey(testString)
+	assert.Equal(t, "", grp)
+	assert.Equal(t, "", srv)
+	assert.Equal(t, "", ver)
 }

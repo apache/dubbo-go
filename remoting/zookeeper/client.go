@@ -190,7 +190,7 @@ func NewZookeeperClient(name string, zkAddrs []string, timeout time.Duration) (*
 	return z, nil
 }
 
-// WithTestCluster sets test cluser for zk client
+// WithTestCluster sets test cluster for zk client
 func WithTestCluster(ts *zk.TestCluster) Option {
 	return func(opt *Options) {
 		opt.ts = ts
@@ -363,14 +363,9 @@ func (z *ZookeeperClient) ZkConnValid() bool {
 	default:
 	}
 
-	valid := true
 	z.RLock()
-	if z.Conn == nil {
-		valid = false
-	}
-	z.RUnlock()
-
-	return valid
+	defer z.RUnlock()
+	return z.Conn != nil
 }
 
 // nolint

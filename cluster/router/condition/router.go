@@ -23,20 +23,23 @@ import (
 )
 
 import (
+	"github.com/RoaringBitmap/roaring"
+	"github.com/dubbogo/gost/container/set"
+	"github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 )
 
 import (
+	"github.com/apache/dubbo-go/cluster/router"
+	"github.com/apache/dubbo-go/cluster/router/utils"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
-	"github.com/dubbogo/gost/container/set"
-	"github.com/dubbogo/gost/net"
 )
 
 const (
-	//pattern route pattern regex
+	// pattern route pattern regex
 	pattern = `([&!=,]*)\\s*([^&!=,\\s]+)`
 )
 
@@ -117,7 +120,13 @@ func NewConditionRouter(url *common.URL) (*ConditionRouter, error) {
 	}
 
 	router.url = url
-	router.priority = url.GetParamInt(constant.RouterPriority, 0)
+	var defaultPriority int64 = 0
+	if url.GetParam(constant.APPLICATION_KEY, "") != "" {
+		defaultPriority = 150
+	} else if url.GetParam(constant.INTERFACE_KEY, "") != "" {
+		defaultPriority = 140
+	}
+	router.priority = url.GetParamInt(constant.RouterPriority, defaultPriority)
 	router.Force = url.GetParamBool(constant.RouterForce, false)
 	router.enabled = url.GetParamBool(constant.RouterEnabled, true)
 
@@ -142,29 +151,36 @@ func (c *ConditionRouter) Enabled() bool {
 }
 
 // Route Determine the target invokers list.
-func (c *ConditionRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+func (c *ConditionRouter) Route(invokers *roaring.Bitmap, cache router.Cache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
 	if !c.Enabled() {
 		return invokers
 	}
-	if len(invokers) == 0 {
+
+	if invokers.IsEmpty() {
 		return invokers
 	}
+
 	isMatchWhen := c.MatchWhen(url, invocation)
 	if !isMatchWhen {
 		return invokers
 	}
-	var result []protocol.Invoker
+
 	if len(c.ThenCondition) == 0 {
-		return result
+		return utils.EmptyAddr
 	}
-	for _, invoker := range invokers {
+
+	result := roaring.NewBitmap()
+	for iter := invokers.Iterator(); iter.HasNext(); {
+		index := iter.Next()
+		invoker := cache.GetInvokers()[index]
 		invokerUrl := invoker.GetUrl()
 		isMatchThen := c.MatchThen(&invokerUrl, url)
 		if isMatchThen {
-			result = append(result, invoker)
+			result.Add(index)
 		}
 	}
-	if len(result) > 0 {
+
+	if !result.IsEmpty() {
 		return result
 	} else if c.Force {
 		rule, _ := url.GetParamAndDecoded(constant.RULE_KEY)
@@ -172,6 +188,7 @@ func (c *ConditionRouter) Route(invokers []protocol.Invoker, url *common.URL, in
 		logger.Warnf("The route result is empty and force execute. consumer: %s, service: %s, router: %s", localIP, url.Service(), rule)
 		return result
 	}
+
 	return invokers
 }
 
@@ -288,7 +305,7 @@ func matchCondition(pairs map[string]MatchPair, url *common.URL, param *common.U
 	return result
 }
 
-// MatchPair Match key pair , condition process
+// MatchPair Match key pair, condition process
 type MatchPair struct {
 	Matches    *gxset.HashSet
 	Mismatches *gxset.HashSet
@@ -314,7 +331,7 @@ func (pair MatchPair) isMatch(value string, param *common.URL) bool {
 		return true
 	}
 	if !pair.Mismatches.Empty() && !pair.Matches.Empty() {
-		//when both mismatches and matches contain the same value, then using mismatches first
+		// when both mismatches and matches contain the same value, then using mismatches first
 		for mismatch := range pair.Mismatches.Items {
 			if isMatchGlobalPattern(mismatch.(string), value, param) {
 				return false

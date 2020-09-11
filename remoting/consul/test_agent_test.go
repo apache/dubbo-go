@@ -27,6 +27,6 @@ import (
 
 func TestNewConsulAgent(t *testing.T) {
 	consulAgent := NewConsulAgent(t, 8500)
-	err := consulAgent.Close()
+	err := consulAgent.Shutdown()
 	assert.NoError(t, err)
 }

@@ -40,13 +40,33 @@ func doInitProvider() {
 				Module:       "module",
 				Version:      "2.6.0",
 				Owner:        "dubbo",
-				Environment:  "test"},
+				Environment:  "test",
+			},
+			Remotes: map[string]*RemoteConfig{
+				"test1": {
+					Address:    "127.0.0.5:2181",
+					TimeoutStr: "5s",
+					Username:   "user1",
+					Password:   "pwd1",
+					Params:     nil,
+				},
+			},
+			ServiceDiscoveries: map[string]*ServiceDiscoveryConfig{
+				"mock_servicediscovery": {
+					Protocol:  "mock",
+					RemoteRef: "test1",
+				},
+			},
+			MetadataReportConfig: &MetadataReportConfig{
+				Protocol:  "mock",
+				RemoteRef: "test1",
+			},
 		},
 		Services: map[string]*ServiceConfig{
 			"MockService": {
 				InterfaceName: "com.MockService",
 				Protocol:      "mock",
-				Registry:      "shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2",
+				Registry:      "shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2,hangzhou_service_discovery_reg",
 				Cluster:       "failover",
 				Loadbalance:   "random",
 				Retries:       "3",
@@ -56,13 +76,13 @@ func doInitProvider() {
 					{
 						Name:        "GetUser",
 						Retries:     "2",
-						Loadbalance: "random",
+						LoadBalance: "random",
 						Weight:      200,
 					},
 					{
 						Name:        "GetUser1",
 						Retries:     "2",
-						Loadbalance: "random",
+						LoadBalance: "random",
 						Weight:      200,
 					},
 				},
@@ -71,7 +91,7 @@ func doInitProvider() {
 			"MockServiceNoRightProtocol": {
 				InterfaceName: "com.MockService",
 				Protocol:      "mock1",
-				Registry:      "shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2",
+				Registry:      "shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2,hangzhou_service_discovery_reg",
 				Cluster:       "failover",
 				Loadbalance:   "random",
 				Retries:       "3",
@@ -81,13 +101,13 @@ func doInitProvider() {
 					{
 						Name:        "GetUser",
 						Retries:     "2",
-						Loadbalance: "random",
+						LoadBalance: "random",
 						Weight:      200,
 					},
 					{
 						Name:        "GetUser1",
 						Retries:     "2",
-						Loadbalance: "random",
+						LoadBalance: "random",
 						Weight:      200,
 					},
 				},
@@ -128,6 +148,14 @@ func doInitProvider() {
 				Username:   "user1",
 				Password:   "pwd1",
 			},
+			"hangzhou_service_discovery_reg": {
+				Protocol: "service-discovery",
+				Params: map[string]string{
+					"service_discovery": "mock_servicediscovery",
+					"name_mapping":      "in-memory",
+					"metadata":          "default",
+				},
+			},
 		},
 
 		Protocols: map[string]*ProtocolConfig{
@@ -153,7 +181,7 @@ func TestExport(t *testing.T) {
 	providerConfig = nil
 }
 
-func TestgetRandomPort(t *testing.T) {
+func TestGetRandomPort(t *testing.T) {
 	protocolConfigs := make([]*ProtocolConfig, 0, 3)
 
 	ip, err := gxnet.GetLocalIP()
