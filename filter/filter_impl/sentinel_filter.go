@@ -18,27 +18,82 @@
 package filter_impl
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-)
-
-import (
 	sentinel "github.com/alibaba/sentinel-golang/api"
 	"github.com/alibaba/sentinel-golang/core/base"
-)
-
-import (
+	"github.com/alibaba/sentinel-golang/logging"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/filter"
 	"github.com/apache/dubbo-go/protocol"
+	"strings"
 )
 
 func init() {
 	extension.SetFilter(SentinelProviderFilterName, GetSentinelProviderFilter)
 	extension.SetFilter(SentinelConsumerFilterName, GetSentinelConsumerFilter)
+
+	if err := sentinel.InitDefault(); err != nil {
+		logger.Errorf("[Sentinel Filter] fail to initialize Sentinel")
+	}
+	if err := logging.ResetGlobalLogger(DubboGoLogger{logger: logger.GetLogger()}); err != nil {
+		logger.Errorf("[Sentinel Filter] fail to ingest dubbo logger into sentinel")
+	}
+}
+
+type DubboGoLogger struct {
+	logger logger.Logger
+}
+
+func (d DubboGoLogger) Debug(v ...interface{}) {
+	d.logger.Debug(v...)
+}
+
+func (d DubboGoLogger) Debugf(format string, v ...interface{}) {
+	d.logger.Debugf(format, v...)
+}
+
+func (d DubboGoLogger) Info(v ...interface{}) {
+	d.logger.Info(v...)
+}
+
+func (d DubboGoLogger) Infof(format string, v ...interface{}) {
+	d.logger.Infof(format, v...)
+}
+
+func (d DubboGoLogger) Warn(v ...interface{}) {
+	d.logger.Warn(v...)
+}
+
+func (d DubboGoLogger) Warnf(format string, v ...interface{}) {
+	d.logger.Warnf(format, v...)
+}
+
+func (d DubboGoLogger) Error(v ...interface{}) {
+	d.logger.Error(v...)
+}
+
+func (d DubboGoLogger) Errorf(format string, v ...interface{}) {
+	d.logger.Errorf(format, v...)
+}
+
+func (d DubboGoLogger) Fatal(v ...interface{}) {
+	d.logger.Error(v...)
+}
+
+func (d DubboGoLogger) Fatalf(format string, v ...interface{}) {
+	d.logger.Errorf(format, v...)
+}
+
+func (d DubboGoLogger) Panic(v ...interface{}) {
+	d.logger.Error(v...)
+}
+
+func (d DubboGoLogger) Panicf(format string, v ...interface{}) {
+	d.logger.Errorf(format, v...)
 }
 
 func GetSentinelConsumerFilter() filter.Filter {
@@ -49,16 +104,24 @@ func GetSentinelProviderFilter() filter.Filter {
 	return &SentinelProviderFilter{}
 }
 
+func sentinelExit(ctx context.Context, result protocol.Result) {
+	if methodEntry := ctx.Value(MethodEntryKey); methodEntry != nil {
+		e := methodEntry.(*base.SentinelEntry)
+		sentinel.TraceError(e, result.Error())
+		e.Exit()
+	}
+	if interfaceEntry := ctx.Value(InterfaceEntryKey); interfaceEntry != nil {
+		e := interfaceEntry.(*base.SentinelEntry)
+		sentinel.TraceError(e, result.Error())
+		e.Exit()
+	}
+}
+
 type SentinelProviderFilter struct{}
 
 func (d *SentinelProviderFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	methodResourceName := getResourceName(invoker, invocation, getProviderPrefix())
-	interfaceResourceName := ""
-	if getInterfaceGroupAndVersionEnabled() {
-		interfaceResourceName = getColonSeparatedKey(invoker.GetUrl())
-	} else {
-		interfaceResourceName = invoker.GetUrl().Service()
-	}
+	interfaceResourceName, methodResourceName := getResourceName(invoker, invocation, getProviderPrefix())
+
 	var (
 		interfaceEntry *base.SentinelEntry
 		methodEntry    *base.SentinelEntry
@@ -71,8 +134,10 @@ func (d *SentinelProviderFilter) Invoke(ctx context.Context, invoker protocol.In
 	}
 	ctx = context.WithValue(ctx, InterfaceEntryKey, interfaceEntry)
 
-	methodEntry, b = sentinel.Entry(methodResourceName, sentinel.WithResourceType(base.ResTypeRPC),
-		sentinel.WithTrafficType(base.Inbound), sentinel.WithArgs(invocation.Arguments()...))
+	methodEntry, b = sentinel.Entry(methodResourceName,
+		sentinel.WithResourceType(base.ResTypeRPC),
+		sentinel.WithTrafficType(base.Inbound),
+		sentinel.WithArgs(invocation.Arguments()...))
 	if b != nil {
 		// method blocked
 		return sentinelDubboProviderFallback(ctx, invoker, invocation, b)
@@ -82,29 +147,14 @@ func (d *SentinelProviderFilter) Invoke(ctx context.Context, invoker protocol.In
 }
 
 func (d *SentinelProviderFilter) OnResponse(ctx context.Context, result protocol.Result, _ protocol.Invoker, _ protocol.Invocation) protocol.Result {
-	if methodEntry := ctx.Value(MethodEntryKey); methodEntry != nil {
-		e := methodEntry.(*base.SentinelEntry)
-		sentinel.TraceError(e, result.Error())
-		e.Exit()
-	}
-	if interfaceEntry := ctx.Value(InterfaceEntryKey); interfaceEntry != nil {
-		e := interfaceEntry.(*base.SentinelEntry)
-		sentinel.TraceError(e, result.Error())
-		e.Exit()
-	}
+	sentinelExit(ctx, result)
 	return result
 }
 
 type SentinelConsumerFilter struct{}
 
 func (d *SentinelConsumerFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	methodResourceName := getResourceName(invoker, invocation, getConsumerPrefix())
-	interfaceResourceName := ""
-	if getInterfaceGroupAndVersionEnabled() {
-		interfaceResourceName = getColonSeparatedKey(invoker.GetUrl())
-	} else {
-		interfaceResourceName = invoker.GetUrl().Service()
-	}
+	interfaceResourceName, methodResourceName := getResourceName(invoker, invocation, getConsumerPrefix())
 	var (
 		interfaceEntry *base.SentinelEntry
 		methodEntry    *base.SentinelEntry
@@ -130,16 +180,7 @@ func (d *SentinelConsumerFilter) Invoke(ctx context.Context, invoker protocol.In
 }
 
 func (d *SentinelConsumerFilter) OnResponse(ctx context.Context, result protocol.Result, _ protocol.Invoker, _ protocol.Invocation) protocol.Result {
-	if methodEntry := ctx.Value(MethodEntryKey); methodEntry != nil {
-		e := methodEntry.(*base.SentinelEntry)
-		sentinel.TraceError(e, result.Error())
-		e.Exit()
-	}
-	if interfaceEntry := ctx.Value(InterfaceEntryKey); interfaceEntry != nil {
-		e := interfaceEntry.(*base.SentinelEntry)
-		sentinel.TraceError(e, result.Error())
-		e.Exit()
-	}
+	sentinelExit(ctx, result)
 	return result
 }
 
@@ -176,34 +217,30 @@ const (
 	InterfaceEntryKey = "$$sentinelInterfaceEntry"
 )
 
-// Currently, a ConcurrentHashMap mechanism is missing.
-// All values are filled with default values first.
+func getResourceName(invoker protocol.Invoker, invocation protocol.Invocation, prefix string) (interfaceResourceName, methodResourceName string) {
+	var sb strings.Builder
 
-func getResourceName(invoker protocol.Invoker, invocation protocol.Invocation, prefix string) string {
-	var (
-		buf               bytes.Buffer
-		interfaceResource string
-	)
-	buf.WriteString(prefix)
+	sb.WriteString(prefix)
 	if getInterfaceGroupAndVersionEnabled() {
-		interfaceResource = getColonSeparatedKey(invoker.GetUrl())
+		interfaceResourceName = getColonSeparatedKey(invoker.GetUrl())
 	} else {
-		interfaceResource = invoker.GetUrl().Service()
+		interfaceResourceName = invoker.GetUrl().Service()
 	}
-	buf.WriteString(interfaceResource)
-	buf.WriteString(":")
-	buf.WriteString(invocation.MethodName())
-	buf.WriteString("(")
+	sb.WriteString(interfaceResourceName)
+	sb.WriteString(":")
+	sb.WriteString(invocation.MethodName())
+	sb.WriteString("(")
 	isFirst := true
 	for _, v := range invocation.ParameterTypes() {
 		if !isFirst {
-			buf.WriteString(",")
+			sb.WriteString(",")
 		}
-		buf.WriteString(v.Name())
+		sb.WriteString(v.Name())
 		isFirst = false
 	}
-	buf.WriteString(")")
-	return buf.String()
+	sb.WriteString(")")
+	methodResourceName = sb.String()
+	return
 }
 
 func getConsumerPrefix() string {
