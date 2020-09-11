@@ -65,7 +65,7 @@ jobs:
           {
             "msgtype": "markdown",
             "markdown": {
-                "text": "Github Actions",
-                "title": "- name: CI \n - repository: ${{ github.repository }} \n - trigger: ${{ github.actor }}"
+                "title": "Github Actions",
+                "text": "- name: CI \n - repository: ${{ github.repository }} \n - trigger: ${{ github.actor }}"
             }
           }
