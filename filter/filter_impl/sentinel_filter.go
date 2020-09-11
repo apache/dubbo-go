@@ -45,61 +45,29 @@ func init() {
 	if err := sentinel.InitDefault(); err != nil {
 		logger.Errorf("[Sentinel Filter] fail to initialize Sentinel")
 	}
-	if err := logging.ResetGlobalLogger(DubboGoLogger{logger: logger.GetLogger()}); err != nil {
+	if err := logging.ResetGlobalLogger(DubboLoggerWrapper{Logger: logger.GetLogger()}); err != nil {
 		logger.Errorf("[Sentinel Filter] fail to ingest dubbo logger into sentinel")
 	}
 }
 
-type DubboGoLogger struct {
-	logger logger.Logger
+type DubboLoggerWrapper struct {
+	logger.Logger
 }
 
-func (d DubboGoLogger) Debug(v ...interface{}) {
-	d.logger.Debug(v...)
+func (d DubboLoggerWrapper) Fatal(v ...interface{}) {
+	d.Logger.Error(v...)
 }
 
-func (d DubboGoLogger) Debugf(format string, v ...interface{}) {
-	d.logger.Debugf(format, v...)
+func (d DubboLoggerWrapper) Fatalf(format string, v ...interface{}) {
+	d.Logger.Errorf(format, v...)
 }
 
-func (d DubboGoLogger) Info(v ...interface{}) {
-	d.logger.Info(v...)
+func (d DubboLoggerWrapper) Panic(v ...interface{}) {
+	d.Logger.Error(v...)
 }
 
-func (d DubboGoLogger) Infof(format string, v ...interface{}) {
-	d.logger.Infof(format, v...)
-}
-
-func (d DubboGoLogger) Warn(v ...interface{}) {
-	d.logger.Warn(v...)
-}
-
-func (d DubboGoLogger) Warnf(format string, v ...interface{}) {
-	d.logger.Warnf(format, v...)
-}
-
-func (d DubboGoLogger) Error(v ...interface{}) {
-	d.logger.Error(v...)
-}
-
-func (d DubboGoLogger) Errorf(format string, v ...interface{}) {
-	d.logger.Errorf(format, v...)
-}
-
-func (d DubboGoLogger) Fatal(v ...interface{}) {
-	d.logger.Error(v...)
-}
-
-func (d DubboGoLogger) Fatalf(format string, v ...interface{}) {
-	d.logger.Errorf(format, v...)
-}
-
-func (d DubboGoLogger) Panic(v ...interface{}) {
-	d.logger.Error(v...)
-}
-
-func (d DubboGoLogger) Panicf(format string, v ...interface{}) {
-	d.logger.Errorf(format, v...)
+func (d DubboLoggerWrapper) Panicf(format string, v ...interface{}) {
+	d.Logger.Errorf(format, v...)
 }
 
 func GetSentinelConsumerFilter() filter.Filter {
