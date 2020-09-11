@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: "master"
+  pull_request:
+    branches: "*"
+
+jobs:
+
+  build:
+    name: ubuntu-latest ${{ matrix.config.go_version }}
+    runs-on: ubuntu
+    strategy:
+      matrix:
+        config:
+          - go_version: 1.13
+    steps:
+
+
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.config.go_version }}
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Get dependencies
+      run: |
+        go get -v -t -d ./...
+        if [ -f Gopkg.toml ]; then
+            curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+            dep ensure
+        fi
+
+    - name: License Check
+      run: |
+        go fmt ./... && [[ -z `git status -s` ]]
+        sh before_validate_license.sh
+        chmod u+x /tmp/tools/license/license-header-checker
+        /tmp/tools/license/license-header-checker -v -a -r -i vendor  /tmp/tools/license/license.txt . go  && [[ -z `git status -s` ]]
+
+    - name: Test
+      run: |
+        chmod u+x before_ut.sh && ./before_ut.sh
+        go mod vendor && go test ./... -coverprofile=coverage.txt -covermode=atomic
+        chmod +x integrate_test.sh && ./integrate_test.sh
+
+    - name: Coverage
+      run: bash <(curl -s https://codecov.io/bash)
+      
+    - name: DingDing Notify Action
+      # You may pin to the exact commit or the version.
+      # uses: zcong1993/actions-ding@2a68a4d06ed966d2e5c28178e7187c107ec57862
+      uses: zcong1993/actions-ding@v3.0.1
+      with:
+        # DingDing bot token
+        dingToken: ff0ff436a50c2aa41b7e3c92a0b1f68c302bd9873370aea0da59579ff23461f5
+        # Post Body to send
+        body: |
+          {
+            "msgtype": "markdown",
+            "markdown": {
+                "text": "Github Actions",
+                "title": "- name: CI \n - repository: ${{ github.repository }} \n - trigger: ${{ github.actor }}"
+            }
+          }
