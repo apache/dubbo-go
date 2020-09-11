@@ -66,6 +66,6 @@ jobs:
             "msgtype": "markdown",
             "markdown": {
                 "title": "Github Actions",
-                "text": "## Github Actions \n - name: CI \n - repository: ${{ github.repository }} \n - trigger: ${{ github.actor }} \n - sha: ${{ github.sha	 }} \n - ref: ${{ github.ref }} \n - status: ${{ job.status	}} \n - environment: ${{ os }}"
+                "text": "## Github Actions \n - name: CI \n - repository: ${{ github.repository }} \n - trigger: ${{ github.actor }} \n - sha: ${{ github.sha	 }} \n - ref: ${{ github.ref }} \n - status: ${{ job.status	}} \n - environment: ${{ runner.os }}"
             }
           }
