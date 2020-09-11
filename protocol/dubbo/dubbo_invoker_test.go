@@ -52,7 +52,7 @@ func TestDubboInvokerInvoke(t *testing.T) {
 	user := &User{}
 
 	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName(mockMethodNameGetUser), invocation.WithArguments([]interface{}{"1", "username"}),
-		invocation.WithReply(user), invocation.WithAttachments(map[string]string{"test_key": "test_value"}))
+		invocation.WithReply(user), invocation.WithAttachments(map[string]interface{}{"test_key": "test_value"}))
 
 	// Call
 	res := invoker.Invoke(context.Background(), inv)

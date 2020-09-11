@@ -20,6 +20,7 @@ package condition
 import (
 	"encoding/base64"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -71,9 +72,51 @@ func (f *FileConditionRouter) URL() common.URL {
 			common.WithParamsValue(constant.RouterPriority, strconv.Itoa(routerRule.Priority)),
 			common.WithParamsValue(constant.RULE_KEY, base64.URLEncoding.EncodeToString([]byte(rule))),
 			common.WithParamsValue(constant.ROUTER_KEY, constant.CONDITION_ROUTE_PROTOCOL),
-			common.WithParamsValue(constant.CATEGORY_KEY, constant.ROUTERS_CATEGORY))
+			common.WithParamsValue(constant.CATEGORY_KEY, constant.ROUTERS_CATEGORY),
+		)
+		if routerRule.Scope == constant.RouterApplicationScope {
+			f.url.AddParam(constant.APPLICATION_KEY, routerRule.Key)
+			return
+		}
+		grp, srv, ver, e := parseServiceRouterKey(routerRule.Key)
+		if e != nil {
+			return
+		}
+		if len(grp) > 0 {
+			f.url.AddParam(constant.GROUP_KEY, grp)
+		}
+		if len(ver) > 0 {
+			f.url.AddParam(constant.VERSION_KEY, ver)
+		}
+		if len(srv) > 0 {
+			f.url.AddParam(constant.INTERFACE_KEY, srv)
+		}
 	})
 	return f.url
+}
+
+// The input value must follow [{group}/]{service}[:{version}] pattern
+// the returning strings are representing group, service, version respectively.
+// input: mock-group/mock-service:1.0.0 ==> "mock-group", "mock-service", "1.0.0"
+// input: mock-group/mock-service ==> "mock-group", "mock-service", ""
+// input: mock-service:1.0.0 ==> "", "mock-service", "1.0.0"
+// For more samples, please refer to unit test.
+func parseServiceRouterKey(key string) (string, string, string, error) {
+	if len(strings.TrimSpace(key)) == 0 {
+		return "", "", "", nil
+	}
+	reg := regexp.MustCompile(`(.*/{1})?([^:/]+)(:{1}[^:]*)?`)
+	strs := reg.FindAllStringSubmatch(key, -1)
+	if strs == nil || len(strs) > 1 {
+		return "", "", "", perrors.Errorf("Invalid key, service key must follow [{group}/]{service}[:{version}] pattern")
+	}
+	if len(strs[0]) != 4 {
+		return "", "", "", perrors.Errorf("Parse service router key failed")
+	}
+	grp := strings.TrimSpace(strings.TrimRight(strs[0][1], "/"))
+	srv := strings.TrimSpace(strs[0][2])
+	ver := strings.TrimSpace(strings.TrimLeft(strs[0][3], ":"))
+	return grp, srv, ver, nil
 }
 
 func parseCondition(conditions []string) string {

@@ -23,8 +23,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go-hessian2"
-	"github.com/dubbogo/getty"
+	"github.com/apache/dubbo-getty"
 	perrors "github.com/pkg/errors"
 )
 
@@ -32,6 +31,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/protocol/dubbo/hessian2"
 )
 
 ////////////////////////////////////////////
@@ -56,7 +56,7 @@ func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface
 	err := pkg.Unmarshal(buf, p.client)
 	if err != nil {
 		originErr := perrors.Cause(err)
-		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
+		if originErr == hessian2.ErrHeaderNotEnough || originErr == hessian2.ErrBodyNotEnough {
 			return nil, 0, nil
 		}
 
@@ -65,12 +65,12 @@ func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface
 		return nil, 0, perrors.WithStack(err)
 	}
 
-	if pkg.Header.Type&hessian.PackageRequest == 0x00 {
-		pkg.Err = pkg.Body.(*hessian.Response).Exception
-		pkg.Body = NewResponse(pkg.Body.(*hessian.Response).RspObj, pkg.Body.(*hessian.Response).Attachments)
+	if pkg.Header.Type&hessian2.PackageRequest == 0x00 {
+		pkg.Err = pkg.Body.(*hessian2.DubboResponse).Exception
+		pkg.Body = NewResponse(pkg.Body.(*hessian2.DubboResponse).RspObj, pkg.Body.(*hessian2.DubboResponse).Attachments)
 	}
 
-	return pkg, hessian.HEADER_LENGTH + pkg.Header.BodyLen, nil
+	return pkg, hessian2.HEADER_LENGTH + pkg.Header.BodyLen, nil
 }
 
 // Write encode @pkg.
@@ -111,7 +111,7 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 	err := pkg.Unmarshal(buf)
 	if err != nil {
 		originErr := perrors.Cause(err)
-		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
+		if originErr == hessian2.ErrHeaderNotEnough || originErr == hessian2.ErrBodyNotEnough {
 			return nil, 0, nil
 		}
 
@@ -120,13 +120,13 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 		return nil, 0, perrors.WithStack(err)
 	}
 
-	if pkg.Header.Type&hessian.PackageHeartbeat == 0x00 {
+	if pkg.Header.Type&hessian2.PackageHeartbeat == 0x00 {
 		// convert params of request
 		req := pkg.Body.([]interface{}) // length of body should be 7
 		if len(req) > 0 {
 			var dubboVersion, argsTypes string
 			var args []interface{}
-			var attachments map[string]string
+			var attachments map[string]interface{}
 			if req[0] != nil {
 				dubboVersion = req[0].(string)
 			}
@@ -146,18 +146,18 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 				args = req[5].([]interface{})
 			}
 			if req[6] != nil {
-				attachments = req[6].(map[string]string)
+				attachments = req[6].(map[string]interface{})
 			}
-			if pkg.Service.Path == "" && len(attachments[constant.PATH_KEY]) > 0 {
-				pkg.Service.Path = attachments[constant.PATH_KEY]
+			if pkg.Service.Path == "" && attachments[constant.PATH_KEY] != nil && len(attachments[constant.PATH_KEY].(string)) > 0 {
+				pkg.Service.Path = attachments[constant.PATH_KEY].(string)
 			}
-			if _, ok := attachments[constant.INTERFACE_KEY]; ok {
-				pkg.Service.Interface = attachments[constant.INTERFACE_KEY]
+			if inter, ok := attachments[constant.INTERFACE_KEY]; ok && inter != nil {
+				pkg.Service.Interface = inter.(string)
 			} else {
 				pkg.Service.Interface = pkg.Service.Path
 			}
-			if len(attachments[constant.GROUP_KEY]) > 0 {
-				pkg.Service.Group = attachments[constant.GROUP_KEY]
+			if attachments[constant.GROUP_KEY] != nil && len(attachments[constant.GROUP_KEY].(string)) > 0 {
+				pkg.Service.Group = attachments[constant.GROUP_KEY].(string)
 			}
 			pkg.Body = map[string]interface{}{
 				"dubboVersion": dubboVersion,
@@ -169,7 +169,7 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 		}
 	}
 
-	return pkg, hessian.HEADER_LENGTH + pkg.Header.BodyLen, nil
+	return pkg, hessian2.HEADER_LENGTH + pkg.Header.BodyLen, nil
 }
 
 // Write encode @pkg.

@@ -37,14 +37,15 @@ import (
 
 // ProviderConfig is the default configuration of service provider
 type ProviderConfig struct {
-	BaseConfig     `yaml:",inline"`
+	BaseConfig `yaml:",inline"`
+	configCenter
 	Filter         string                     `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	ProxyFactory   string                     `yaml:"proxy_factory" default:"default" json:"proxy_factory,omitempty" property:"proxy_factory"`
 	Services       map[string]*ServiceConfig  `yaml:"services" json:"services,omitempty" property:"services"`
 	Protocols      map[string]*ProtocolConfig `yaml:"protocols" json:"protocols,omitempty" property:"protocols"`
-	ProtocolConf   interface{}                `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf" `
-	FilterConf     interface{}                `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf" `
-	ShutdownConfig *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf" `
+	ProtocolConf   interface{}                `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
+	FilterConf     interface{}                `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
+	ShutdownConfig *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
 	ConfigType     map[string]string          `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 
 	Registry   *RegistryConfig            `yaml:"registry" json:"registry,omitempty" property:"registry"`
@@ -101,7 +102,7 @@ func configCenterRefreshProvider() error {
 	// fresh it
 	if providerConfig.ConfigCenterConfig != nil {
 		providerConfig.fatherConfig = providerConfig
-		if err := providerConfig.startConfigCenter(); err != nil {
+		if err := providerConfig.startConfigCenter((*providerConfig).BaseConfig); err != nil {
 			return perrors.Errorf("start config center error , error message is {%v}", perrors.WithStack(err))
 		}
 		providerConfig.fresh()

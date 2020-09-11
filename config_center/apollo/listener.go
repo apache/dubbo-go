@@ -18,34 +18,48 @@
 package apollo
 
 import (
-	"github.com/zouyx/agollo"
+	"github.com/zouyx/agollo/v3"
+	"github.com/zouyx/agollo/v3/storage"
+	"gopkg.in/yaml.v2"
 )
 
 import (
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config_center"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 type apolloListener struct {
 	listeners map[config_center.ConfigurationListener]struct{}
 }
 
-// NewApolloListener creates a new apolloListener
-func NewApolloListener() *apolloListener {
+// nolint
+func newApolloListener() *apolloListener {
 	return &apolloListener{
 		listeners: make(map[config_center.ConfigurationListener]struct{}, 0),
 	}
 }
 
-// OnChange ...
-func (a *apolloListener) OnChange(changeEvent *agollo.ChangeEvent) {
-	for key, change := range changeEvent.Changes {
-		for listener := range a.listeners {
-			listener.Process(&config_center.ConfigChangeEvent{
-				ConfigType: getChangeType(change.ChangeType),
-				Key:        key,
-				Value:      change.NewValue,
-			})
-		}
+// OnChange process each listener
+func (a *apolloListener) OnChange(changeEvent *storage.ChangeEvent) {
+
+}
+
+// OnNewestChange process each listener by all changes
+func (a *apolloListener) OnNewestChange(changeEvent *storage.FullChangeEvent) {
+	b, err := yaml.Marshal(changeEvent.Changes)
+	if err != nil {
+		logger.Errorf("apollo onNewestChange err %+v",
+			err)
+		return
+	}
+	content := string(b)
+	for listener := range a.listeners {
+		listener.Process(&config_center.ConfigChangeEvent{
+			ConfigType: remoting.EventTypeUpdate,
+			Key:        changeEvent.Namespace,
+			Value:      content,
+		})
 	}
 }
 

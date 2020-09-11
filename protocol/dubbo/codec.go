@@ -25,9 +25,12 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go-hessian2"
 	"github.com/apache/dubbo-go/common"
 	perrors "github.com/pkg/errors"
+)
+
+import (
+	"github.com/apache/dubbo-go/protocol/dubbo/hessian2"
 )
 
 //SerialID serial ID
@@ -54,13 +57,13 @@ const (
 // dubbo package
 ////////////////////////////////////////////
 
-// SequenceType ...
+// SequenceType sequence type
 type SequenceType int64
 
-// DubboPackage ...
+// nolint
 type DubboPackage struct {
-	Header  hessian.DubboHeader
-	Service hessian.Service
+	Header  hessian2.DubboHeader
+	Service hessian2.Service
 	Body    interface{}
 	Err     error
 }
@@ -72,7 +75,7 @@ func (p DubboPackage) String() string {
 
 // Marshal encode hessian package.
 func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
-	codec := hessian.NewHessianCodec(nil)
+	codec := hessian2.NewHessianCodec(nil)
 
 	pkg, err := codec.Write(p.Service, p.Header, p.Body)
 	if err != nil {
@@ -82,15 +85,15 @@ func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 	return bytes.NewBuffer(pkg), nil
 }
 
-// Unmarshal dncode hessian package.
+// Unmarshal decodes hessian package.
 func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 	// fix issue https://github.com/apache/dubbo-go/issues/380
 	bufLen := buf.Len()
-	if bufLen < hessian.HEADER_LENGTH {
-		return perrors.WithStack(hessian.ErrHeaderNotEnough)
+	if bufLen < hessian2.HEADER_LENGTH {
+		return perrors.WithStack(hessian2.ErrHeaderNotEnough)
 	}
 
-	codec := hessian.NewHessianCodec(bufio.NewReaderSize(buf, bufLen))
+	codec := hessian2.NewHessianCodec(bufio.NewReaderSize(buf, bufLen))
 
 	// read header
 	err := codec.ReadHeader(&p.Header)
@@ -104,7 +107,7 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 			return perrors.Errorf("opts[0] is not of type *Client")
 		}
 
-		if p.Header.Type&hessian.PackageRequest != 0x00 {
+		if p.Header.Type&hessian2.PackageRequest != 0x00 {
 			// size of this array must be '7'
 			// https://github.com/apache/dubbo-go-hessian2/blob/master/request.go#L272
 			p.Body = make([]interface{}, 7)
@@ -113,7 +116,7 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, opts ...interface{}) error {
 			if !ok {
 				return perrors.Errorf("client.GetPendingResponse(%v) = nil", p.Header.ID)
 			}
-			p.Body = &hessian.Response{RspObj: pendingRsp.(*PendingResponse).response.reply}
+			p.Body = &hessian2.DubboResponse{RspObj: pendingRsp.(*PendingResponse).response.reply}
 		}
 	}
 
