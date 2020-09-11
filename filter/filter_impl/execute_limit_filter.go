@@ -74,7 +74,7 @@ type ExecuteLimitFilter struct {
 	executeState *concurrent.Map
 }
 
-// ExecuteState ...
+// ExecuteState defines the concurrent count
 type ExecuteState struct {
 	concurrentCount int64
 }

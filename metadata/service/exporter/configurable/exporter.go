@@ -48,7 +48,6 @@ func NewMetadataServiceExporter(metadataService service.MetadataService) exporte
 // Export will export the metadataService
 func (exporter *MetadataServiceExporter) Export() error {
 	if !exporter.IsExported() {
-
 		serviceConfig := config.NewServiceConfig(constant.SIMPLE_METADATA_SERVICE_NAME, context.Background())
 		serviceConfig.Protocol = constant.DEFAULT_PROTOCOL
 		serviceConfig.Protocols = map[string]*config.ProtocolConfig{

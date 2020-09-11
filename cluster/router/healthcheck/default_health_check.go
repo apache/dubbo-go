@@ -31,7 +31,7 @@ import (
 )
 
 func init() {
-	extension.SethealthChecker(constant.DEFAULT_HEALTH_CHECKER, NewDefaultHealthChecker)
+	extension.SetHealthChecker(constant.DEFAULT_HEALTH_CHECKER, NewDefaultHealthChecker)
 }
 
 // DefaultHealthChecker is the default implementation of HealthChecker, which determines the health status of
@@ -49,7 +49,7 @@ type DefaultHealthChecker struct {
 // and the current active request
 func (c *DefaultHealthChecker) IsHealthy(invoker protocol.Invoker) bool {
 	urlStatus := protocol.GetURLStatus(invoker.GetUrl())
-	if c.isCircuitBreakerTripped(urlStatus) || urlStatus.GetActive() > c.GetOutStandingRequestConutLimit() {
+	if c.isCircuitBreakerTripped(urlStatus) || urlStatus.GetActive() > c.GetOutStandingRequestCountLimit() {
 		logger.Debugf("Invoker [%s] is currently in circuitbreaker tripped state", invoker.GetUrl().Key())
 		return false
 	}
@@ -85,25 +85,25 @@ func (c *DefaultHealthChecker) getCircuitBreakerSleepWindowTime(status *protocol
 	} else if diff > constant.DEFAULT_SUCCESSIVE_FAILED_REQUEST_MAX_DIFF {
 		diff = constant.DEFAULT_SUCCESSIVE_FAILED_REQUEST_MAX_DIFF
 	}
-	sleepWindow := (1 << diff) * c.GetCircuitTrippedTimeoutFactor()
+	sleepWindow := (1 << uint(diff)) * c.GetCircuitTrippedTimeoutFactor()
 	if sleepWindow > constant.MAX_CIRCUIT_TRIPPED_TIMEOUT_IN_MS {
 		sleepWindow = constant.MAX_CIRCUIT_TRIPPED_TIMEOUT_IN_MS
 	}
 	return int64(sleepWindow)
 }
 
-// GetOutStandingRequestConutLimit return the requestSuccessiveFailureThreshold bound to this DefaultHealthChecker
+// GetRequestSuccessiveFailureThreshold return the requestSuccessiveFailureThreshold bound to this DefaultHealthChecker
 func (c *DefaultHealthChecker) GetRequestSuccessiveFailureThreshold() int32 {
 	return c.requestSuccessiveFailureThreshold
 }
 
-// GetOutStandingRequestConutLimit return the circuitTrippedTimeoutFactor bound to this DefaultHealthChecker
+// GetCircuitTrippedTimeoutFactor return the circuitTrippedTimeoutFactor bound to this DefaultHealthChecker
 func (c *DefaultHealthChecker) GetCircuitTrippedTimeoutFactor() int32 {
 	return c.circuitTrippedTimeoutFactor
 }
 
-// GetOutStandingRequestConutLimit return the outStandingRequestConutLimit bound to this DefaultHealthChecker
-func (c *DefaultHealthChecker) GetOutStandingRequestConutLimit() int32 {
+// GetOutStandingRequestCountLimit return the outStandingRequestConutLimit bound to this DefaultHealthChecker
+func (c *DefaultHealthChecker) GetOutStandingRequestCountLimit() int32 {
 	return c.outStandingRequestConutLimit
 }
 

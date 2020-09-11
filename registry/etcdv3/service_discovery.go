@@ -26,7 +26,7 @@ import (
 import (
 	gxset "github.com/dubbogo/gost/container/set"
 	gxpage "github.com/dubbogo/gost/page"
-	"github.com/hashicorp/vault/helper/jsonutil"
+	"github.com/hashicorp/vault/sdk/helper/jsonutil"
 	perrors "github.com/pkg/errors"
 )
 
@@ -71,7 +71,7 @@ func (e *etcdV3ServiceDiscovery) String() string {
 	return e.descriptor
 }
 
-// Destory service discovery
+// Destroy service discovery
 func (e *etcdV3ServiceDiscovery) Destroy() error {
 	if e.client != nil {
 		e.client.Close()

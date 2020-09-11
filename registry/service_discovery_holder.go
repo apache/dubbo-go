@@ -15,25 +15,11 @@
  * limitations under the License.
  */
 
-package cluster_impl
+package registry
 
-import (
-	"github.com/apache/dubbo-go/cluster"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/protocol"
-)
-
-type registryAwareCluster struct{}
-
-func init() {
-	extension.SetCluster("registryAware", NewRegistryAwareCluster)
-}
-
-// NewRegistryAwareCluster returns a registry aware cluster instance
-func NewRegistryAwareCluster() cluster.Cluster {
-	return &registryAwareCluster{}
-}
-
-func (cluster *registryAwareCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return newRegistryAwareClusterInvoker(directory)
+// ServiceDiscoveryHolder we can get a service discovery
+// it always be a service discovery registry
+type ServiceDiscoveryHolder interface {
+	// GetServiceDiscovery get service discovery
+	GetServiceDiscovery() ServiceDiscovery
 }

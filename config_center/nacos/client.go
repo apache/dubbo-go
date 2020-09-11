@@ -98,6 +98,7 @@ func ValidateNacosClient(container nacosClientFacade, opts ...option) error {
 	}
 	nacosAddresses := strings.Split(url.Location, ",")
 	if container.NacosClient() == nil {
+		//in dubbo ,every registry only connect one node ,so this is []string{r.Address}
 		newClient, err := newNacosClient(os.nacosName, nacosAddresses, timeout, url)
 		if err != nil {
 			logger.Errorf("newNacosClient(name{%s}, nacos address{%v}, timeout{%d}) = error{%v}",
@@ -115,6 +116,7 @@ func ValidateNacosClient(container nacosClientFacade, opts ...option) error {
 			return perrors.WithMessagef(err, "newNacosClient(address:%+v)", url.Location)
 		}
 		container.NacosClient().SetClient(&configClient)
+
 	}
 
 	return perrors.WithMessagef(nil, "newNacosClient(address:%+v)", url.PrimitiveURL)
@@ -169,7 +171,7 @@ func initNacosConfigClient(nacosAddrs []string, timeout time.Duration, url commo
 			TimeoutMs:           uint64(int32(timeout / time.Millisecond)),
 			ListenInterval:      uint64(int32(timeout / time.Millisecond)),
 			NotLoadCacheAtStart: true,
-			LogDir:              url.GetParam(constant.NACOS_LOG_DIR_KEY, logDir),
+			LogDir:              url.GetParam(constant.NACOS_LOG_DIR_KEY, ""),
 			CacheDir:            url.GetParam(constant.NACOS_CACHE_DIR_KEY, ""),
 			Endpoint:            url.GetParam(constant.NACOS_ENDPOINT, ""),
 			Username:            url.GetParam(constant.NACOS_USERNAME, ""),

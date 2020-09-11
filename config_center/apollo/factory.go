@@ -34,6 +34,7 @@ func createDynamicConfigurationFactory() config_center.DynamicConfigurationFacto
 
 type apolloConfigurationFactory struct{}
 
+// GetDynamicConfiguration gets the dynamic configuration
 func (f *apolloConfigurationFactory) GetDynamicConfiguration(url *common.URL) (config_center.DynamicConfiguration, error) {
 	dynamicConfiguration, err := newApolloConfiguration(url)
 	if err != nil {
