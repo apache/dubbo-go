@@ -52,7 +52,7 @@ jobs:
 #     - name: Coverage
 #       run: bash <(curl -s https://codecov.io/bash)
       
-    - name: DingDing Notify Action
+    - name: DingTalk Message Notify
       # You may pin to the exact commit or the version.
       # uses: zcong1993/actions-ding@2a68a4d06ed966d2e5c28178e7187c107ec57862
       uses: zcong1993/actions-ding@v3.0.1
@@ -66,6 +66,6 @@ jobs:
             "msgtype": "markdown",
             "markdown": {
                 "title": "Github Actions",
-                "text": "- name: CI \n - repository: ${{ github.repository }} \n - trigger: ${{ github.actor }}"
+                "text": "## Github Actions \n - name: CI \n - repository: ${{ github.repository }} \n - trigger: ${{ github.actor }} \n - sha: ${{ github.sha	 }} \n - ref: ${{ github.ref }} \n - status: ${{ job.status	}} \n - environment: ${{ os }}"
             }
           }
