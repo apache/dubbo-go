@@ -10,7 +10,7 @@ jobs:
 
   build:
     name: ubuntu-latest ${{ matrix.config.go_version }}
-    runs-on: ubuntu
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         config:
