@@ -9,12 +9,15 @@ on:
 jobs:
 
   build:
-    name: ubuntu-latest ${{ matrix.config.go_version }}
-    runs-on: ubuntu-latest
+    name: ubuntu-latest ${{ matrix.go_version }}
+    runs-on: ${{ matrix.os }}
     strategy:
+      # If you want to matrix build , you can append the following list.
       matrix:
-        config:
-          - go_version: 1.13
+        go_version:
+          - 1.13
+        os:
+          - ubuntu-latest
 
     env:
       DING_TOKEN: "6374f1bf8d4f23cde81d4a4b8c1f0bc98cc92b5151ca938ab938d3d7f4230fc4"
@@ -25,7 +28,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: ${{ matrix.config.go_version }}
+        go-version: ${{ matrix.go_version }}
       id: go
 
     - name: Check out code into the Go module directory
@@ -34,17 +37,21 @@ jobs:
     - name: Cache dependencies
       uses: actions/cache@v2
       with:
+        # Cache
         path: ~/go/pkg/mod
+        # Cache key
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        # An ordered list of keys to use for restoring the cache if no cache hit occurred for key
         restore-keys: |
           ${{ runner.os }}-go-
 
     - name: Get dependencies
       run: |
-        go get -v -t -d ./...
         if [ -f Gopkg.toml ]; then
             curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
             dep ensure
+        else
+            go get -v -t -d ./...
         fi
 
     - name: License Check
@@ -64,11 +71,13 @@ jobs:
       run: bash <(curl -s https://codecov.io/bash)
       
       # Because the contexts of push and PR are different, there are two Notify.
+      # Notifications are triggered only in the apache/dubbo-go repository.
     - name: DingTalk Message Notify only Push
       uses: zcong1993/actions-ding@v3.0.1
+      # Whether job is successful or not, always () is always true.
       if: |
         always() && 
-        github.event_name == 'push' && 
+        github.event_name == 'push' &&
         github.repository == 'apache/dubbo-go'
       with:
         # DingDing bot token
