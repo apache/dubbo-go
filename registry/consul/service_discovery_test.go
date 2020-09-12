@@ -44,13 +44,7 @@ var (
 	consulCheckPassInterval              = 17000
 	consulDeregisterCriticalServiceAfter = "20s"
 	consulWatchTimeout                   = 60000
-	registryURL                          = common.URL{
-		Path:     "",
-		Username: "",
-		Password: "",
-		Methods:  nil,
-		SubURL:   nil,
-	}
+	registryURL                          = common.URL{}
 )
 
 func TestConsulServiceDiscovery_newConsulServiceDiscovery(t *testing.T) {
