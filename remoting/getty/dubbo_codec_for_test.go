@@ -205,7 +205,7 @@ func (c *DubboTestCodec) decodeRequest(data []byte) (*remoting.Request, int, err
 		//invocation := request.Data.(*invocation.RPCInvocation)
 		var methodName string
 		var args []interface{}
-		var attachments map[string]string = make(map[string]string)
+		attachments := make(map[string]interface{})
 		if req[impl.DubboVersionKey] != nil {
 			//dubbo version
 			request.Version = req[impl.DubboVersionKey].(string)
@@ -217,7 +217,7 @@ func (c *DubboTestCodec) decodeRequest(data []byte) (*remoting.Request, int, err
 		//method
 		methodName = pkg.Service.Method
 		args = req[impl.ArgsKey].([]interface{})
-		attachments = req[impl.AttachmentsKey].(map[string]string)
+		attachments = req[impl.AttachmentsKey].(map[string]interface{})
 		invoc := invocation.NewRPCInvocationWithOptions(invocation.WithAttachments(attachments),
 			invocation.WithArguments(args), invocation.WithMethodName(methodName))
 		request.Data = invoc
