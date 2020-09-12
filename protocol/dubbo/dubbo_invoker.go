@@ -111,8 +111,8 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 	url := di.GetUrl()
 	// default hessian2 serialization, compatible
-	if url.GetParam("serialization", "") == "" {
-		url.SetParam("serialization", constant.HESSIAN2_SERIALIZATION)
+	if url.GetParam(constant.SERIALIZATION_KEY, "") == "" {
+		url.SetParam(constant.SERIALIZATION_KEY, constant.HESSIAN2_SERIALIZATION)
 	}
 	// async
 	async, err := strconv.ParseBool(inv.AttachmentsByKey(constant.ASYNC_KEY, "false"))

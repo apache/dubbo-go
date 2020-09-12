@@ -69,7 +69,7 @@ type DubboProtocol struct {
 	serverLock sync.Mutex
 }
 
-// nolint
+// NewDubboProtocol create a dubbo protocol.
 func NewDubboProtocol() *DubboProtocol {
 	return &DubboProtocol{
 		BaseProtocol: protocol.NewBaseProtocol(),
@@ -77,7 +77,7 @@ func NewDubboProtocol() *DubboProtocol {
 	}
 }
 
-// nolint
+// Export export dubbo service.
 func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetUrl()
 	serviceKey := url.ServiceKey()
@@ -236,7 +236,7 @@ func rebuildCtx(inv *invocation.RPCInvocation) context.Context {
 
 	// actually, if user do not use any opentracing framework, the err will not be nil.
 	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.TextMap,
-		opentracing.TextMapCarrier(inv.Attachments()))
+		opentracing.TextMapCarrier(filterContext(inv.Attachments())))
 	if err == nil {
 		ctx = context.WithValue(ctx, constant.TRACING_REMOTE_SPAN_CTX, spanCtx)
 	}

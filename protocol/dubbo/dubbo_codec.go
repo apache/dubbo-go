@@ -57,8 +57,9 @@ func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, er
 
 	invoc, ok := request.Data.(*protocol.Invocation)
 	if !ok {
-		logger.Errorf("encode request failed for parameter type :%+v", request)
-		return nil, perrors.Errorf("encode request failed for parameter type :%+v", request)
+		err := perrors.Errorf("encode request failed for parameter type :%+v", request)
+		logger.Errorf(err.Error())
+		return nil, err
 	}
 	invocation := *invoc
 
