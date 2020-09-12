@@ -63,7 +63,7 @@ jobs:
       # You may pin to the exact commit or the version.
       # uses: zcong1993/actions-ding@2a68a4d06ed966d2e5c28178e7187c107ec57862
       uses: zcong1993/actions-ding@v3.0.1
-      if: ${{ github.repository == 'apache/dubbo-go' }}
+      # if: ${{ github.repository == 'apache/dubbo-go' }}
       with:
         # DingDing bot token
         dingToken: 6374f1bf8d4f23cde81d4a4b8c1f0bc98cc92b5151ca938ab938d3d7f4230fc4
