@@ -112,8 +112,9 @@ func (r *etcdV3Registry) InitListeners() {
 }
 
 // DoRegister actually do the register job in the registry center of etcd
+// for lease
 func (r *etcdV3Registry) DoRegister(root string, node string) error {
-	return r.client.Create(path.Join(root, node), "")
+	return r.client.RegisterTemp(path.Join(root, node), "")
 }
 
 // nolint
