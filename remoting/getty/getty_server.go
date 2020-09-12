@@ -79,7 +79,7 @@ func initServer(protocol string) {
 	SetServerGrpool()
 }
 
-// SetServerConfig ...
+// SetServerConfig set dubbo server config.
 func SetServerConfig(s ServerConfig) {
 	srvConf = &s
 	err := srvConf.CheckValidity()
@@ -90,7 +90,7 @@ func SetServerConfig(s ServerConfig) {
 	SetServerGrpool()
 }
 
-// GetServerConfig ...
+// GetServerConfig get getty server config.
 func GetServerConfig() ServerConfig {
 	return *srvConf
 }
@@ -184,7 +184,7 @@ func (s *Server) newSession(session getty.Session) error {
 	return nil
 }
 
-// Start ...
+// Start dubbo server.
 func (s *Server) Start() {
 	var (
 		addr      string

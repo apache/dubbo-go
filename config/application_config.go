@@ -42,16 +42,6 @@ func (*ApplicationConfig) Prefix() string {
 	return constant.DUBBO + ".application."
 }
 
-// nolint
-func (c *ApplicationConfig) Id() string {
-	return ""
-}
-
-// SetId ...
-func (c *ApplicationConfig) SetId(id string) {
-
-}
-
 // UnmarshalYAML unmarshals the ApplicationConfig by @unmarshal function
 func (c *ApplicationConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
