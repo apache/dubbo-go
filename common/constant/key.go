@@ -170,6 +170,10 @@ const (
 )
 
 const (
+	FILE_KEY = "file"
+)
+
+const (
 	ZOOKEEPER_KEY = "zookeeper"
 )
 
