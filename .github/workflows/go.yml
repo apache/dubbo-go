@@ -74,6 +74,6 @@ jobs:
             "msgtype": "markdown",
             "markdown": {
                 "title": "Github Actions",
-                "text": "## Github Actions \n - name: CI \n - repository: ${{ github.repository }} \n - trigger: ${{ github.actor }} \n - ref: ${{ github.ref }} \n - status: ${{ job.status	}} \n - environment: ${{ runner.os }}"
+                "text": "## Github Actions \n - name: CI \n - repository: ${{ github.repository }} \n - trigger: ${{ github.actor }} \n - event: ${{ github.event_name }} \n - ref: ${{ github.ref }} \n - status: [${{ job.status	}}](https://github.com/sdttttt/dubbo-go/actions/runs/${{ github.run_id }}) \n - environment: ${{ runner.os }} \n - SHA: ${{ github.sha }}"
             }
           }
