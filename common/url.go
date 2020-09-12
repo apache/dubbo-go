@@ -24,7 +24,6 @@ import (
 	"math"
 	"net"
 	"net/url"
-	"sort"
 	"strconv"
 	"strings"
 )
@@ -688,32 +687,6 @@ func mergeNormalParam(mergedUrl *URL, referenceUrl *URL, paramKeys []string) []f
 		})
 	}
 	return methodConfigMergeFcn
-}
-
-// ParamsUnescapeEncode doesn't encode url reserve character, url.QueryEscape will do this work
-// reference: https://github.com/golang/go.git, src/net/url/url.go, Encode method
-func ParamsUnescapeEncode(params url.Values) string {
-	if params == nil {
-		return ""
-	}
-	var buf strings.Builder
-	keys := make([]string, 0, len(params))
-	for k := range params {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	for _, k := range keys {
-		vs := params[k]
-		for _, v := range vs {
-			if buf.Len() > 0 {
-				buf.WriteByte('&')
-			}
-			buf.WriteString(k)
-			buf.WriteByte('=')
-			buf.WriteString(v)
-		}
-	}
-	return buf.String()
 }
 
 // URLSlice will be used to sort URL instance

@@ -65,9 +65,19 @@ func rebuildCtx(inv *invocation.RPCInvocation) context.Context {
 
 	// actually, if user do not use any opentracing framework, the err will not be nil.
 	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.TextMap,
-		opentracing.TextMapCarrier(inv.Attachments()))
+		opentracing.TextMapCarrier(filterContext(inv.Attachments())))
 	if err == nil {
 		ctx = context.WithValue(ctx, constant.TRACING_REMOTE_SPAN_CTX, spanCtx)
 	}
 	return ctx
+}
+
+func filterContext(attachments map[string]interface{}) map[string]string {
+	var traceAttchment = make(map[string]string)
+	for k, v := range attachments {
+		if r, ok := v.(string); ok {
+			traceAttchment[k] = r
+		}
+	}
+	return traceAttchment
 }
