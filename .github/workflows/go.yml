@@ -68,8 +68,8 @@ jobs:
       if: ${{ always() && github.event_name == 'push' && github.repository == 'apache/dubbo-go' }}
       with:
         # DingDing bot token
-        dingToken: $DING_TOKEN
-        secret: $DING_SIGN
+        dingToken: ${{ DING_TOKEN }}
+        secret: ${{ DING_SIGN }}
         # Post Body to send
         body: |
           {
@@ -85,8 +85,8 @@ jobs:
       if: ${{ always() && github.event_name == 'pull_request' && github.repository == 'apache/dubbo-go' }}
       with:
         # DingDing bot token
-        dingToken: $DING_TOKEN
-        secret: $DING_SIGN
+        dingToken: ${{ DING_TOKEN }}
+        secret: ${{ DING_SIGN }}
         # Post Body to send
         body: |
           {
