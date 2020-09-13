@@ -55,6 +55,21 @@ func init() {
 	extension.SetServiceDiscovery(constant.CONSUL_KEY, newConsulServiceDiscovery)
 }
 
+// consulServiceDiscovery is the implementation of service discovery based on consul.
+type consulServiceDiscovery struct {
+	// descriptor is a short string about the basic information of this instance
+	descriptor string
+	clientLock sync.RWMutex
+	// Consul client.
+	consulClient                   *consul.Client
+	checkPassInterval              int64
+	tag                            string
+	address                        string
+	deregisterCriticalServiceAfter string
+	ttl                            sync.Map
+	*consul.Config
+}
+
 // newConsulServiceDiscovery will create new service discovery instance
 // use double-check pattern to reduce race condition
 func newConsulServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
@@ -88,34 +103,19 @@ func newConsulServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 	}, nil
 }
 
-// consulServiceDiscovery is the implementation of service discovery based on consul.
-type consulServiceDiscovery struct {
-	// descriptor is a short string about the basic information of this instance
-	descriptor string
-	clientLock sync.RWMutex
-	// Consul client.
-	consulClient                   *consul.Client
-	checkPassInterval              int64
-	tag                            string
-	address                        string
-	deregisterCriticalServiceAfter string
-	ttl                            sync.Map
-	*consul.Config
-}
-
 func (csd *consulServiceDiscovery) String() string {
 	return csd.descriptor
 }
 
 // nolint
-func (csd *consulServiceDiscovery) getConsulClient() (consulClient consul.Client, err error) {
+func (csd *consulServiceDiscovery) getConsulClient() (consulClient *consul.Client, err error) {
 	csd.clientLock.RLock()
 	defer csd.clientLock.RUnlock()
 	if csd.consulClient == nil {
 		err = perrors.New("consul client is destroyed or not ready!")
 		return
 	}
-	return *csd.consulClient, nil
+	return csd.consulClient, nil
 }
 
 // nolint
@@ -138,7 +138,7 @@ func (csd *consulServiceDiscovery) Destroy() error {
 func (csd *consulServiceDiscovery) Register(instance registry.ServiceInstance) error {
 	var (
 		err          error
-		consulClient consul.Client
+		consulClient *consul.Client
 	)
 	ins, _ := csd.buildRegisterInstance(instance)
 	if consulClient, err = csd.getConsulClient(); err == nil {
@@ -155,7 +155,7 @@ func (csd *consulServiceDiscovery) Register(instance registry.ServiceInstance) e
 func (csd *consulServiceDiscovery) registerTtl(instance registry.ServiceInstance) error {
 	var (
 		err          error
-		consulClient consul.Client
+		consulClient *consul.Client
 	)
 
 	checkID := buildID(instance)
@@ -191,7 +191,7 @@ func (csd *consulServiceDiscovery) registerTtl(instance registry.ServiceInstance
 func (csd *consulServiceDiscovery) Update(instance registry.ServiceInstance) error {
 	var (
 		err          error
-		consulClient consul.Client
+		consulClient *consul.Client
 	)
 	ins, _ := csd.buildRegisterInstance(instance)
 	consulClient, err = csd.getConsulClient()
@@ -207,7 +207,7 @@ func (csd *consulServiceDiscovery) Update(instance registry.ServiceInstance) err
 func (csd *consulServiceDiscovery) Unregister(instance registry.ServiceInstance) error {
 	var (
 		err          error
-		consulClient consul.Client
+		consulClient *consul.Client
 	)
 	if consulClient, err = csd.getConsulClient(); err == nil {
 		err = consulClient.Agent().ServiceDeregister(buildID(instance))
@@ -233,7 +233,7 @@ func (csd *consulServiceDiscovery) GetDefaultPageSize() int {
 func (csd *consulServiceDiscovery) GetServices() *gxset.HashSet {
 	var (
 		err          error
-		consulClient consul.Client
+		consulClient *consul.Client
 		services     map[string][]string
 	)
 	var res = gxset.NewSet()
@@ -282,7 +282,7 @@ func decodeConsulMetadata(metadata map[string]string) map[string]string {
 func (csd *consulServiceDiscovery) GetInstances(serviceName string) []registry.ServiceInstance {
 	var (
 		err          error
-		consulClient consul.Client
+		consulClient *consul.Client
 		instances    []*consul.ServiceEntry
 	)
 	csd.clientLock.RLock()
