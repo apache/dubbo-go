@@ -50,6 +50,10 @@ const (
 	watch_passingonly_true = true
 )
 
+var (
+	errConsulClientClosed = perrors.New("consul client is closed")
+)
+
 // init will put the service discovery into extension
 func init() {
 	extension.SetServiceDiscovery(constant.CONSUL_KEY, newConsulServiceDiscovery)
@@ -138,7 +142,7 @@ func (csd *consulServiceDiscovery) Register(instance registry.ServiceInstance) e
 	)
 	ins, _ := csd.buildRegisterInstance(instance)
 	if consulClient = csd.getConsulClient(); consulClient == nil {
-		return perrors.New("consul client is closed!")
+		return errConsulClientClosed
 	}
 	err = consulClient.Agent().ServiceRegister(ins)
 	if err != nil {
@@ -195,7 +199,7 @@ func (csd *consulServiceDiscovery) Update(instance registry.ServiceInstance) err
 	ins, _ := csd.buildRegisterInstance(instance)
 	consulClient = csd.getConsulClient()
 	if consulClient == nil {
-		return perrors.New("consul client is closed!")
+		return errConsulClientClosed
 	}
 	err = consulClient.Agent().ServiceDeregister(buildID(instance))
 	if err != nil {
@@ -210,7 +214,7 @@ func (csd *consulServiceDiscovery) Unregister(instance registry.ServiceInstance)
 		consulClient *consul.Client
 	)
 	if consulClient = csd.getConsulClient(); consulClient == nil {
-		return perrors.New("consul client is closed!")
+		return errConsulClientClosed
 	}
 	err = consulClient.Agent().ServiceDeregister(buildID(instance))
 	if err != nil {
