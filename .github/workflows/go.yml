@@ -9,7 +9,7 @@ on:
 jobs:
 
   build:
-    name: ${{ matrix.os }} - ${{ matrix.go_version }}
+    name: ${{ matrix.os }} - Go ${{ matrix.go_version }}
     runs-on: ${{ matrix.os }}
     strategy:
       # If you want to matrix build , you can append the following list.
