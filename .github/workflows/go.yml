@@ -2,26 +2,33 @@ name: CI
 
 on:
   push:
-    branches: ["master", "develop"]
+    branches: [master, develop]
   pull_request:
     branches: "*"
 
 jobs:
 
   build:
-    name: ubuntu-latest ${{ matrix.config.go_version }}
-    runs-on: ubuntu-latest
+    name: ${{ matrix.os }} - Go ${{ matrix.go_version }}
+    runs-on: ${{ matrix.os }}
     strategy:
+      # If you want to matrix build , you can append the following list.
       matrix:
-        config:
-          - go_version: 1.13
-    steps:
+        go_version:
+          - 1.13
+        os:
+          - ubuntu-latest
 
+    env:
+      DING_TOKEN: "6374f1bf8d4f23cde81d4a4b8c1f0bc98cc92b5151ca938ab938d3d7f4230fc4"
+      DING_SIGN: "SECa98677289194bb0e5caec3051301d06515750ff1bd2f932a4704298afb2e0ae6"
+
+    steps:
 
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: ${{ matrix.config.go_version }}
+        go-version: ${{ matrix.go_version }}
       id: go
 
     - name: Check out code into the Go module directory
@@ -30,17 +37,21 @@ jobs:
     - name: Cache dependencies
       uses: actions/cache@v2
       with:
+        # Cache
         path: ~/go/pkg/mod
+        # Cache key
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        # An ordered list of keys to use for restoring the cache if no cache hit occurred for key
         restore-keys: |
           ${{ runner.os }}-go-
 
     - name: Get dependencies
       run: |
-        go get -v -t -d ./...
         if [ -f Gopkg.toml ]; then
             curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
             dep ensure
+        else
+            go get -v -t -d ./...
         fi
 
     - name: License Check
@@ -59,21 +70,43 @@ jobs:
     - name: Coverage
       run: bash <(curl -s https://codecov.io/bash)
       
-    - name: DingTalk Message Notify
-      # You may pin to the exact commit or the version.
-      # uses: zcong1993/actions-ding@2a68a4d06ed966d2e5c28178e7187c107ec57862
+      # Because the contexts of push and PR are different, there are two Notify.
+      # Notifications are triggered only in the apache/dubbo-go repository.
+    - name: DingTalk Message Notify only Push
       uses: zcong1993/actions-ding@v3.0.1
-      if: ${{ github.repository == 'apache/dubbo-go' }}
+      # Whether job is successful or not, always () is always true.
+      if: |
+        always() && 
+        github.event_name == 'push' &&
+        github.repository == 'apache/dubbo-go'
       with:
         # DingDing bot token
-        dingToken: 6374f1bf8d4f23cde81d4a4b8c1f0bc98cc92b5151ca938ab938d3d7f4230fc4
-        secret: SECa98677289194bb0e5caec3051301d06515750ff1bd2f932a4704298afb2e0ae6
+        dingToken: ${{ env.DING_TOKEN }}
+        secret: ${{ env.DING_SIGN }}
         # Post Body to send
         body: |
           {
             "msgtype": "markdown",
             "markdown": {
                 "title": "Github Actions",
-                "text": "## Github Actions \n - name: CI \n - repository: ${{ github.repository }} \n - trigger: ${{ github.actor }} \n - ref: ${{ github.ref }} \n - status: ${{ job.status	}} \n - environment: ${{ runner.os }}"
+                "text": "## Github Actions \n - name: CI \n - repository: ${{ github.repository }} \n - trigger: ${{ github.actor }} \n - event: ${{ github.event_name }} \n - ref: ${{ github.ref }} \n - status: [${{ job.status	}}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) \n - environment: ${{ runner.os }} \n - SHA: [${{ github.sha }}](${{ github.event.compare }})"
+            }
+          }
+          
+    - name: DingTalk Message Notify only PR
+      uses: zcong1993/actions-ding@v3.0.1
+      if: | 
+        always() && 
+        github.event_name == 'pull_request' && 
+        github.repository == 'apache/dubbo-go'
+      with:
+        dingToken: ${{ env.DING_TOKEN }}
+        secret: ${{ env.DING_SIGN }}
+        body: |
+          {
+            "msgtype": "markdown",
+            "markdown": {
+                "title": "Github Actions",
+                "text": "## Github Actions \n - name: CI \n - repository: ${{ github.repository }} \n - pr_title: ${{ github.event.pull_request.title }} \n - trigger: ${{ github.actor }} \n - event: ${{ github.event_name }} \n - ref: [${{ github.ref }}](${{ github.event.pull_request._links.html.href }}) \n - status: [${{ job.status	}}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) \n - environment: ${{ runner.os }} \n > SHA: [${{ github.sha }}](${{ github.event.pull_request._links.html.href }})"
             }
           }
