@@ -9,7 +9,7 @@ on:
 jobs:
 
   build:
-    name: ubuntu-latest ${{ matrix.go_version }}
+    name: ${{ matrix.os }} - ${{ matrix.go_version }}
     runs-on: ${{ matrix.os }}
     strategy:
       # If you want to matrix build , you can append the following list.
