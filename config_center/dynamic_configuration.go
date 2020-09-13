@@ -58,6 +58,9 @@ type DynamicConfiguration interface {
 	// PublishConfig will publish the config with the (key, group, value) pair
 	PublishConfig(string, string, string) error
 
+	// RemoveConfig will remove the config white the (key, group) pair
+	RemoveConfig(string, string) error
+
 	// GetConfigKeysByGroup will return all keys with the group
 	GetConfigKeysByGroup(group string) (*gxset.HashSet, error)
 }
