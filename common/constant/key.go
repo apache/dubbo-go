@@ -182,6 +182,18 @@ const (
 )
 
 const (
+	CONSUL_KEY          = "consul"
+	CHECK_PASS_INTERVAL = "consul-check-pass-interval"
+	// default time-to-live in millisecond
+	DEFAULT_CHECK_PASS_INTERVAL = 16000
+	QUERY_TAG                   = "consul_query_tag"
+	ACL_TOKEN                   = "acl-token"
+	// default deregister critical server after
+	DEFAULT_DEREGISTER_TIME = "20s"
+	DEREGISTER_AFTER        = "consul-deregister-critical-service-after"
+)
+
+const (
 	TRACING_REMOTE_SPAN_CTX = "tracing.remote.span.ctx"
 )
 
