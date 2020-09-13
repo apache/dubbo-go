@@ -98,6 +98,7 @@ func (c *MockDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.Ha
 
 // MockDynamicConfiguration uses to parse content and defines listener
 type MockDynamicConfiguration struct {
+	BaseDynamicConfiguration
 	parser   parser.ConfigurationParser
 	content  string
 	listener map[string]ConfigurationListener
