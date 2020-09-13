@@ -108,14 +108,10 @@ func (csd *consulServiceDiscovery) String() string {
 }
 
 // nolint
-func (csd *consulServiceDiscovery) getConsulClient() (consulClient *consul.Client, err error) {
+func (csd *consulServiceDiscovery) getConsulClient() *consul.Client {
 	csd.clientLock.RLock()
 	defer csd.clientLock.RUnlock()
-	if csd.consulClient == nil {
-		err = perrors.New("consul client is destroyed or not ready!")
-		return
-	}
-	return csd.consulClient, nil
+	return csd.consulClient
 }
 
 // nolint
@@ -141,9 +137,10 @@ func (csd *consulServiceDiscovery) Register(instance registry.ServiceInstance) e
 		consulClient *consul.Client
 	)
 	ins, _ := csd.buildRegisterInstance(instance)
-	if consulClient, err = csd.getConsulClient(); err == nil {
-		err = consulClient.Agent().ServiceRegister(ins)
+	if consulClient = csd.getConsulClient(); consulClient == nil {
+		return perrors.New("consul client is closed!")
 	}
+	err = consulClient.Agent().ServiceRegister(ins)
 	if err != nil {
 		logger.Errorf("consul register the instance %s fail:%v", instance.GetServiceName(), err)
 		return perrors.WithMessage(err, "consul could not register the instance. "+instance.GetServiceName())
@@ -170,9 +167,11 @@ func (csd *consulServiceDiscovery) registerTtl(instance registry.ServiceInstance
 		for {
 			select {
 			case <-timer.C:
-				if consulClient, err = csd.getConsulClient(); err == nil {
-					err = consulClient.Agent().PassTTL(fmt.Sprintf("service:%s", checkID), "")
+				if consulClient = csd.getConsulClient(); consulClient == nil {
+					logger.Debugf("consul client is closed!")
+					return
 				}
+				err = consulClient.Agent().PassTTL(fmt.Sprintf("service:%s", checkID), "")
 				if err != nil {
 					logger.Warnf("pass ttl heartbeat fail:%v", err)
 					break
@@ -194,10 +193,11 @@ func (csd *consulServiceDiscovery) Update(instance registry.ServiceInstance) err
 		consulClient *consul.Client
 	)
 	ins, _ := csd.buildRegisterInstance(instance)
-	consulClient, err = csd.getConsulClient()
-	if err == nil {
-		err = consulClient.Agent().ServiceDeregister(buildID(instance))
+	consulClient = csd.getConsulClient()
+	if consulClient == nil {
+		return perrors.New("consul client is closed!")
 	}
+	err = consulClient.Agent().ServiceDeregister(buildID(instance))
 	if err != nil {
 		logger.Warnf("unregister instance %s fail:%v", instance.GetServiceName(), err)
 	}
@@ -209,9 +209,10 @@ func (csd *consulServiceDiscovery) Unregister(instance registry.ServiceInstance)
 		err          error
 		consulClient *consul.Client
 	)
-	if consulClient, err = csd.getConsulClient(); err == nil {
-		err = consulClient.Agent().ServiceDeregister(buildID(instance))
+	if consulClient = csd.getConsulClient(); consulClient == nil {
+		return perrors.New("consul client is closed!")
 	}
+	err = consulClient.Agent().ServiceDeregister(buildID(instance))
 	if err != nil {
 		logger.Errorf("unregister service instance %s,error: %v", instance.GetId(), err)
 		return err
@@ -237,11 +238,11 @@ func (csd *consulServiceDiscovery) GetServices() *gxset.HashSet {
 		services     map[string][]string
 	)
 	var res = gxset.NewSet()
-	csd.clientLock.RLock()
-	if consulClient, err = csd.getConsulClient(); err == nil {
-		services, _, err = consulClient.Catalog().Services(nil)
+	if consulClient = csd.getConsulClient(); consulClient == nil {
+		logger.Warnf("consul client is closed!")
+		return res
 	}
-	csd.clientLock.RUnlock()
+	services, _, err = consulClient.Catalog().Services(nil)
 	if err != nil {
 		logger.Errorf("get services,error: %v", err)
 		return res
@@ -285,13 +286,13 @@ func (csd *consulServiceDiscovery) GetInstances(serviceName string) []registry.S
 		consulClient *consul.Client
 		instances    []*consul.ServiceEntry
 	)
-	csd.clientLock.RLock()
-	if consulClient, err = csd.getConsulClient(); err == nil {
-		instances, _, err = consulClient.Health().Service(serviceName, csd.tag, true, &consul.QueryOptions{
-			WaitTime: time.Duration(csd.checkPassInterval),
-		})
+	if consulClient = csd.getConsulClient(); consulClient == nil {
+		logger.Warn("consul client is closed!")
+		return nil
 	}
-	csd.clientLock.RUnlock()
+	instances, _, err = consulClient.Health().Service(serviceName, csd.tag, true, &consul.QueryOptions{
+		WaitTime: time.Duration(csd.checkPassInterval),
+	})
 
 	if err != nil {
 		logger.Errorf("get instances for service %s,error: %v", serviceName, err)
