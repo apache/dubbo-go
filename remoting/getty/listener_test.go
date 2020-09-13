@@ -48,7 +48,9 @@ func TestRebuildCtx(t *testing.T) {
 
 	span, ctx := opentracing.StartSpanFromContext(ctx, "Test-Client")
 
-	injectTraceCtx(span, inv)
+	err := injectTraceCtx(span, inv)
+	assert.NoError(t, err)
+
 	// rebuild the context success
 	inv = invocation.NewRPCInvocation("MethodName", []interface{}{"OK", "Hello"}, attach)
 	ctx = rebuildCtx(inv)
@@ -70,14 +72,4 @@ func rebuildCtx(inv *invocation.RPCInvocation) context.Context {
 		ctx = context.WithValue(ctx, constant.TRACING_REMOTE_SPAN_CTX, spanCtx)
 	}
 	return ctx
-}
-
-func filterContext(attachments map[string]interface{}) map[string]string {
-	var traceAttchment = make(map[string]string)
-	for k, v := range attachments {
-		if r, ok := v.(string); ok {
-			traceAttchment[k] = r
-		}
-	}
-	return traceAttchment
 }
