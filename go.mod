@@ -7,7 +7,7 @@ require (
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
 	github.com/alibaba/sentinel-golang v0.6.1
 	github.com/apache/dubbo-getty v1.3.10
-	github.com/apache/dubbo-go-hessian2 v1.6.0-rc1.0.20200906044240-6c1fb5c3bd44
+	github.com/apache/dubbo-go-hessian2 v1.7.0
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/creasty/defaults v1.3.0
 	github.com/dubbogo/go-zookeeper v1.0.1
@@ -16,7 +16,6 @@ require (
 	github.com/emicklei/go-restful/v3 v3.0.0
 	github.com/frankban/quicktest v1.4.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.7
-	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32 // indirect
 	github.com/go-co-op/gocron v0.1.1
 	github.com/go-resty/resty/v2 v2.1.0
 	github.com/golang/mock v1.3.1
@@ -48,11 +47,11 @@ require (
 	k8s.io/apimachinery v0.16.9
 	k8s.io/client-go v0.16.9
 	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a // indirect
+)
 
+replace (
+	github.com/envoyproxy/go-control-plane => github.com/envoyproxy/go-control-plane v0.8.0
+	launchpad.net/gocheck => github.com/go-check/check v0.0.0-20140225173054-eb6ee6f84d0a
 )
 
 go 1.13
-
-replace launchpad.net/gocheck => github.com/go-check/check v0.0.0-20140225173054-eb6ee6f84d0a
-
-replace github.com/envoyproxy/go-control-plane => github.com/envoyproxy/go-control-plane v0.8.0
