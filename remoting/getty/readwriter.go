@@ -36,16 +36,18 @@ import (
 // RpcClientPackageHandler
 ////////////////////////////////////////////
 
-// RpcClientPackageHandler ...
+// RpcClientPackageHandler Read data from server and Write data to server
 type RpcClientPackageHandler struct {
 	client *Client
 }
 
-// NewRpcClientPackageHandler ...
+// NewRpcClientPackageHandler create a RpcClientPackageHandler
 func NewRpcClientPackageHandler(client *Client) *RpcClientPackageHandler {
 	return &RpcClientPackageHandler{client: client}
 }
 
+// Read data from server. if the package size from server is larger than 4096 byte, server will read 4096 byte
+// and send to client each time. the Read can assemble it.
 func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
 	resp, length, err := (p.client.codec).Decode(data)
 	//err := pkg.Unmarshal(buf, p.client)
@@ -63,6 +65,7 @@ func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface
 	return resp, length, nil
 }
 
+// Write send the data to server
 func (p *RpcClientPackageHandler) Write(ss getty.Session, pkg interface{}) ([]byte, error) {
 	req, ok := pkg.(*remoting.Request)
 	if !ok {
@@ -87,7 +90,7 @@ func (p *RpcClientPackageHandler) Write(ss getty.Session, pkg interface{}) ([]by
 //	rpcServerPkgHandler = &RpcServerPackageHandler{}
 //)
 
-// RpcServerPackageHandler ...
+// RpcServerPackageHandler Read data from client and Write data to client
 type RpcServerPackageHandler struct {
 	server *Server
 }
@@ -96,6 +99,8 @@ func NewRpcServerPackageHandler(server *Server) *RpcServerPackageHandler {
 	return &RpcServerPackageHandler{server: server}
 }
 
+// Read data from client. if the package size from client is larger than 4096 byte, client will read 4096 byte
+// and send to client each time. the Read can assemble it.
 func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
 	req, length, err := (p.server.codec).Decode(data)
 	//resp,len, err := (*p.).DecodeResponse(buf)
@@ -113,6 +118,7 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 	return req, length, err
 }
 
+// Write send the data to client
 func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg interface{}) ([]byte, error) {
 	res, ok := pkg.(*remoting.Response)
 	if !ok {
