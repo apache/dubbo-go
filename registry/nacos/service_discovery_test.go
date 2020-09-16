@@ -19,6 +19,7 @@ package nacos
 
 import (
 	"math/rand"
+	"net/http"
 	"strconv"
 	"testing"
 	"time"
@@ -81,6 +82,9 @@ func TestNacosServiceDiscovery_Destroy(t *testing.T) {
 }
 
 func TestNacosServiceDiscovery_CRUD(t *testing.T) {
+	if _, err := http.Get("http://console.nacos.io/nacos/"); err != nil {
+		return
+	}
 	prepareData()
 	extension.SetEventDispatcher("mock", func() observer.EventDispatcher {
 		return &dispatcher.MockEventDispatcher{}
