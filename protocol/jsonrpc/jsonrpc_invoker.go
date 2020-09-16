@@ -26,7 +26,6 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
-
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 )
 
