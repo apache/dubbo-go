@@ -19,6 +19,7 @@ package nacos
 
 import (
 	"encoding/json"
+	"net/http"
 	"net/url"
 	"strconv"
 	"testing"
@@ -35,6 +36,9 @@ import (
 )
 
 func TestNacosRegistry_Register(t *testing.T) {
+	if _, err := http.Get("http://console.nacos.io/nacos/"); err != nil {
+		return
+	}
 	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
 	urlMap := url.Values{}
 	urlMap.Set(constant.GROUP_KEY, "guangzhou-idc")
@@ -64,6 +68,9 @@ func TestNacosRegistry_Register(t *testing.T) {
 }
 
 func TestNacosRegistry_Subscribe(t *testing.T) {
+	if _, err := http.Get("http://console.nacos.io/nacos/"); err != nil {
+		return
+	}
 	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
 	urlMap := url.Values{}
 	urlMap.Set(constant.GROUP_KEY, "guangzhou-idc")
@@ -102,6 +109,9 @@ func TestNacosRegistry_Subscribe(t *testing.T) {
 }
 
 func TestNacosRegistry_Subscribe_del(t *testing.T) {
+	if _, err := http.Get("http://console.nacos.io/nacos/"); err != nil {
+		return
+	}
 	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
 	urlMap := url.Values{}
 	urlMap.Set(constant.GROUP_KEY, "guangzhou-idc")
