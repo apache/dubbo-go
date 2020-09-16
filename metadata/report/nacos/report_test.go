@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"strconv"
 	"testing"
+	"time"
 )
 
 import (
@@ -37,7 +38,7 @@ import (
 )
 
 func TestNacosMetadataReport_CRUD(t *testing.T) {
-	if _, err := http.Get("http://console.nacos.io/nacos/"); err != nil {
+	if !checkNacosServerAlive() {
 		return
 	}
 	rpt := newTestReport()
@@ -117,4 +118,12 @@ func newTestReport() report.MetadataReport {
 	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
 	res := extension.GetMetadataReportFactory("nacos").CreateMetadataReport(&regurl)
 	return res
+}
+
+func checkNacosServerAlive() bool {
+	c := http.Client{Timeout: time.Second}
+	if _, err := c.Get("http://console.nacos.io/nacos/"); err != nil {
+		return false
+	}
+	return true
 }
