@@ -23,6 +23,7 @@ import (
 	"net/url"
 	"strconv"
 	"testing"
+	"time"
 )
 
 import (
@@ -36,7 +37,7 @@ import (
 )
 
 func TestNacosRegistry_Register(t *testing.T) {
-	if _, err := http.Get("http://console.nacos.io/nacos/"); err != nil {
+	if !checkNacosServerAlive() {
 		return
 	}
 	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
@@ -68,7 +69,7 @@ func TestNacosRegistry_Register(t *testing.T) {
 }
 
 func TestNacosRegistry_Subscribe(t *testing.T) {
-	if _, err := http.Get("http://console.nacos.io/nacos/"); err != nil {
+	if !checkNacosServerAlive() {
 		return
 	}
 	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
@@ -109,7 +110,7 @@ func TestNacosRegistry_Subscribe(t *testing.T) {
 }
 
 func TestNacosRegistry_Subscribe_del(t *testing.T) {
-	if _, err := http.Get("http://console.nacos.io/nacos/"); err != nil {
+	if !checkNacosServerAlive() {
 		return
 	}
 	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
@@ -197,4 +198,12 @@ func TestNacosListener_Close(t *testing.T) {
 	listener.Close()
 	_, err = listener.Next()
 	assert.NotNil(t, err)
+}
+
+func checkNacosServerAlive() bool {
+	c := http.Client{Timeout: time.Second}
+	if _, err := c.Get("http://console.nacos.io/nacos/"); err != nil {
+		return false
+	}
+	return true
 }
