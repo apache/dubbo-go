@@ -214,6 +214,10 @@ func Test_RefreshUrl(t *testing.T) {
 		&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerUrl2}})
 	time.Sleep(1e9)
 	assert.Len(t, registryDirectory.cacheInvokers, 2)
+	// clear all address
+	mockRegistry.MockEvents([]*registry.ServiceEvent{})
+	time.Sleep(1e9)
+	assert.Len(t, registryDirectory.cacheInvokers, 0)
 }
 
 func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockRegistry) {
