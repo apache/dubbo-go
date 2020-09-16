@@ -19,14 +19,13 @@ package nacos
 
 import (
 	"testing"
-)
 
-import (
+	"github.com/apache/dubbo-go/config"
 	"github.com/stretchr/testify/assert"
 )
 
-import (
-	"github.com/apache/dubbo-go/config"
+const (
+	TestNacosAddress = "127.0.0.1:8848"
 )
 
 func TestNewNacosClient(t *testing.T) {
@@ -41,7 +40,7 @@ func TestNewNacosClient(t *testing.T) {
 	// invalid address
 	assert.NotNil(t, err)
 
-	rc.Address = "console.nacos.io:80"
+	rc.Address = TestNacosAddress
 	rc.TimeoutStr = "10s"
 	client, err = NewNacosClient(rc)
 	assert.NotNil(t, client)

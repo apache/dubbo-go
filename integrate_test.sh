@@ -42,9 +42,9 @@ echo "travis pull request repo slug -> ${TRAVIS_REPO_SLUG}"
 # docker run -d --network host consul
 # echo "consul listen in [:]8500"
 
-# #start nacos registry insecure listen in [:]:8848
-# docker run -d --network host nacos/nacos-server:latest
-# echo "ncacos listen in [:]8848"
+#start nacos registry insecure listen in [:]:8848
+docker run -d --network host nacos/nacos-server:latest
+echo "ncacos listen in [:]8848"
 
 # default use zk as registry
 #start zookeeper registry insecure listen in [:]:2181

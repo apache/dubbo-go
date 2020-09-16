@@ -22,24 +22,19 @@ import (
 	"strconv"
 	"testing"
 	"time"
-)
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/observer"
 	"github.com/apache/dubbo-go/common/observer/dispatcher"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/registry"
+	"github.com/stretchr/testify/assert"
 )
 
-var (
-	testName = "test"
-)
+var testName = "test"
+
+const TestNacosAddress = "127.0.0.1:8848"
 
 func Test_newNacosServiceDiscovery(t *testing.T) {
 	name := "nacos1"
@@ -60,7 +55,7 @@ func Test_newNacosServiceDiscovery(t *testing.T) {
 	assert.NotNil(t, err)
 
 	config.GetBaseConfig().Remotes["mock"] = &config.RemoteConfig{
-		Address:    "console.nacos.io:80",
+		Address:    TestNacosAddress,
 		TimeoutStr: "10s",
 	}
 
@@ -173,7 +168,7 @@ func prepareData() {
 	}
 
 	config.GetBaseConfig().Remotes[testName] = &config.RemoteConfig{
-		Address:    "console.nacos.io:80",
+		Address:    TestNacosAddress,
 		TimeoutStr: "10s",
 	}
 }
