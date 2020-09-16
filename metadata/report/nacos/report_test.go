@@ -19,6 +19,7 @@ package nacos
 
 import (
 	"encoding/json"
+	"net/http"
 	"strconv"
 	"testing"
 )
@@ -36,6 +37,9 @@ import (
 )
 
 func TestNacosMetadataReport_CRUD(t *testing.T) {
+	if _, err := http.Get("http://console.nacos.io/nacos/"); err != nil {
+		return
+	}
 	rpt := newTestReport()
 	assert.NotNil(t, rpt)
 
