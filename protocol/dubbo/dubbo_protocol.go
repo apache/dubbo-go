@@ -215,8 +215,7 @@ func getExchangeClient(url common.URL) *remoting.ExchangeClient {
 	if clientTmp == nil {
 		return nil
 	}
-	exchangeClient := clientTmp.(*remoting.ExchangeClient)
-	return exchangeClient
+	return clientTmp.(*remoting.ExchangeClient)
 }
 
 // rebuildCtx rebuild the context by attachment.
