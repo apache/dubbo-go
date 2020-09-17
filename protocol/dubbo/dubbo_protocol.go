@@ -48,8 +48,8 @@ const (
 var (
 	// Make the connection can be shared.
 	// It will create one connection for one address (ip+port)
-	exchangeClientMap *sync.Map = new(sync.Map)
-	exchangeLock      *sync.Map = new(sync.Map)
+	exchangeClientMap = new(sync.Map)
+	exchangeLock      = new(sync.Map)
 )
 
 func init() {
@@ -215,17 +215,7 @@ func getExchangeClient(url common.URL) *remoting.ExchangeClient {
 	if clientTmp == nil {
 		return nil
 	}
-	exchangeClient, ok := clientTmp.(*remoting.ExchangeClient)
-	if !ok {
-		exchangeClientTmp := remoting.NewExchangeClient(url, getty.NewClient(getty.Options{
-			ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
-			RequestTimeout: config.GetConsumerConfig().RequestTimeout}), config.GetConsumerConfig().ConnectTimeout, false)
-		if exchangeClientTmp != nil {
-			exchangeClientMap.Store(url.Location, exchangeClientTmp)
-		}
-		return exchangeClientTmp
-	}
-	return exchangeClient
+	return clientTmp.(*remoting.ExchangeClient)
 }
 
 // rebuildCtx rebuild the context by attachment.
