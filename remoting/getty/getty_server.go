@@ -95,7 +95,7 @@ func GetServerConfig() ServerConfig {
 	return *srvConf
 }
 
-// SetServerGrpool ...
+// SetServerGrpool set getty server GrPool
 func SetServerGrpool() {
 	if srvConf.GrPoolSize > 1 {
 		srvGrpool = gxsync.NewTaskPool(gxsync.WithTaskPoolTaskPoolSize(srvConf.GrPoolSize), gxsync.WithTaskPoolTaskQueueLength(srvConf.QueueLen),
@@ -103,7 +103,7 @@ func SetServerGrpool() {
 	}
 }
 
-// Server ...
+// Server define getty server
 type Server struct {
 	conf           ServerConfig
 	addr           string
@@ -113,7 +113,7 @@ type Server struct {
 	requestHandler func(*invocation.RPCInvocation) protocol.RPCResult
 }
 
-// NewServer ...
+// NewServer create a new Server
 func NewServer(url common.URL, handlers func(*invocation.RPCInvocation) protocol.RPCResult) *Server {
 	//init
 	initServer(url.Protocol)
@@ -210,7 +210,7 @@ func (s *Server) Start() {
 
 }
 
-// Stop ...
+// Stop dubbo server
 func (s *Server) Stop() {
 	s.tcpServer.Close()
 }
