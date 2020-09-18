@@ -15,35 +15,15 @@
  * limitations under the License.
  */
 
-package extension
+package file
 
-import (
-	"testing"
-)
+import "github.com/apache/dubbo-go/config_center"
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
-	"github.com/apache/dubbo-go/cluster/router"
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/protocol"
-)
-
-func TestGetHealthChecker(t *testing.T) {
-	SetHealthChecker("mock", newMockHealthCheck)
-	checker := GetHealthChecker("mock", common.NewURLWithOptions())
-	assert.NotNil(t, checker)
+// RegistryConfigurationListener represent the processor of flie watcher
+type RegistryConfigurationListener struct {
 }
 
-type mockHealthChecker struct {
-}
+// Process submit the ConfigChangeEvent to the event chan to notify all observer
+func (l *RegistryConfigurationListener) Process(configType *config_center.ConfigChangeEvent) {
 
-func (m mockHealthChecker) IsHealthy(invoker protocol.Invoker) bool {
-	return true
-}
-
-func newMockHealthCheck(_ *common.URL) router.HealthChecker {
-	return &mockHealthChecker{}
 }
