@@ -15,35 +15,13 @@
  * limitations under the License.
  */
 
-package extension
+package config_center
 
-import (
-	"testing"
-)
-
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
-	"github.com/apache/dubbo-go/cluster/router"
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/protocol"
-)
-
-func TestGetHealthChecker(t *testing.T) {
-	SetHealthChecker("mock", newMockHealthCheck)
-	checker := GetHealthChecker("mock", common.NewURLWithOptions())
-	assert.NotNil(t, checker)
+// BaseDynamicConfiguration will default implementation DynamicConfiguration some method
+type BaseDynamicConfiguration struct {
 }
 
-type mockHealthChecker struct {
-}
-
-func (m mockHealthChecker) IsHealthy(invoker protocol.Invoker) bool {
-	return true
-}
-
-func newMockHealthCheck(_ *common.URL) router.HealthChecker {
-	return &mockHealthChecker{}
+// RemoveConfig
+func (bdc *BaseDynamicConfiguration) RemoveConfig(string, string) error {
+	return nil
 }

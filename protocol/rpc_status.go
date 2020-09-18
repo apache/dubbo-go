@@ -98,7 +98,10 @@ func (rpc *RPCStatus) GetSuccessiveRequestFailureCount() int32 {
 
 // GetURLStatus get URL RPC status.
 func GetURLStatus(url common.URL) *RPCStatus {
-	rpcStatus, _ := serviceStatistic.LoadOrStore(url.Key(), &RPCStatus{})
+	rpcStatus, found := serviceStatistic.Load(url.Key())
+	if !found {
+		rpcStatus, _ = serviceStatistic.LoadOrStore(url.Key(), &RPCStatus{})
+	}
 	return rpcStatus.(*RPCStatus)
 }
 
@@ -107,15 +110,13 @@ func GetMethodStatus(url common.URL, methodName string) *RPCStatus {
 	identifier := url.Key()
 	methodMap, found := methodStatistics.Load(identifier)
 	if !found {
-		methodMap = &sync.Map{}
-		methodStatistics.Store(identifier, methodMap)
+		methodMap, _ = methodStatistics.LoadOrStore(identifier, &sync.Map{})
 	}
 
 	methodActive := methodMap.(*sync.Map)
 	rpcStatus, found := methodActive.Load(methodName)
 	if !found {
-		rpcStatus = &RPCStatus{}
-		methodActive.Store(methodName, rpcStatus)
+		rpcStatus, _ = methodActive.LoadOrStore(methodName, &RPCStatus{})
 	}
 
 	status := rpcStatus.(*RPCStatus)
