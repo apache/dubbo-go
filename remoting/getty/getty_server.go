@@ -26,6 +26,7 @@ import (
 import (
 	"github.com/apache/dubbo-getty"
 	gxsync "github.com/dubbogo/gost/sync"
+	perrors "github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
 
@@ -45,7 +46,6 @@ var (
 )
 
 func initServer(protocol string) {
-
 	// load clientconfig from provider_config
 	// default use dubbo
 	providerConfig := config.GetProviderConfig()
@@ -98,8 +98,11 @@ func GetServerConfig() ServerConfig {
 // SetServerGrpool set getty server GrPool
 func SetServerGrpool() {
 	if srvConf.GrPoolSize > 1 {
-		srvGrpool = gxsync.NewTaskPool(gxsync.WithTaskPoolTaskPoolSize(srvConf.GrPoolSize), gxsync.WithTaskPoolTaskQueueLength(srvConf.QueueLen),
-			gxsync.WithTaskPoolTaskQueueNumber(srvConf.QueueNumber))
+		srvGrpool = gxsync.NewTaskPool(
+			gxsync.WithTaskPoolTaskPoolSize(srvConf.GrPoolSize),
+			gxsync.WithTaskPoolTaskQueueLength(srvConf.QueueLen),
+			gxsync.WithTaskPoolTaskQueueNumber(srvConf.QueueNumber),
+		)
 	}
 }
 
@@ -136,6 +139,7 @@ func (s *Server) newSession(session getty.Session) error {
 	var (
 		ok      bool
 		tcpConn *net.TCPConn
+		err     error
 	)
 	conf := s.conf
 
@@ -160,13 +164,29 @@ func (s *Server) newSession(session getty.Session) error {
 		panic(fmt.Sprintf("%s, session.conn{%#v} is not tcp connection\n", session.Stat(), session.Conn()))
 	}
 
-	tcpConn.SetNoDelay(conf.GettySessionParam.TcpNoDelay)
-	tcpConn.SetKeepAlive(conf.GettySessionParam.TcpKeepAlive)
-	if conf.GettySessionParam.TcpKeepAlive {
-		tcpConn.SetKeepAlivePeriod(conf.GettySessionParam.keepAlivePeriod)
+	if _, ok = session.Conn().(*tls.Conn); !ok {
+		if tcpConn, ok = session.Conn().(*net.TCPConn); !ok {
+			return perrors.New(fmt.Sprintf("%s, session.conn{%#v} is not tcp connection", session.Stat(), session.Conn()))
+		}
+
+		if err = tcpConn.SetNoDelay(conf.GettySessionParam.TcpNoDelay); err != nil {
+			return err
+		}
+		if err = tcpConn.SetKeepAlive(conf.GettySessionParam.TcpKeepAlive); err != nil {
+			return err
+		}
+		if conf.GettySessionParam.TcpKeepAlive {
+			if err = tcpConn.SetKeepAlivePeriod(conf.GettySessionParam.keepAlivePeriod); err != nil {
+				return err
+			}
+		}
+		if err = tcpConn.SetReadBuffer(conf.GettySessionParam.TcpRBufSize); err != nil {
+			return err
+		}
+		if err = tcpConn.SetWriteBuffer(conf.GettySessionParam.TcpWBufSize); err != nil {
+			return err
+		}
 	}
-	tcpConn.SetReadBuffer(conf.GettySessionParam.TcpRBufSize)
-	tcpConn.SetWriteBuffer(conf.GettySessionParam.TcpWBufSize)
 
 	session.SetName(conf.GettySessionParam.SessionName)
 	session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
@@ -177,10 +197,8 @@ func (s *Server) newSession(session getty.Session) error {
 	session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
 	session.SetCronPeriod((int)(conf.sessionTimeout.Nanoseconds() / 1e6))
 	session.SetWaitTime(conf.GettySessionParam.waitTimeout)
-	logger.Debugf("app accepts new session:%s\n", session.Stat())
-
+	logger.Debugf("server accepts new session: %s", session.Stat())
 	session.SetTaskPool(srvGrpool)
-
 	return nil
 }
 
@@ -198,7 +216,6 @@ func (s *Server) Start() {
 			getty.WithServerSslEnabled(s.conf.SSLEnabled),
 			getty.WithServerTlsConfigBuilder(config.GetServerTlsConfigBuilder()),
 		)
-
 	} else {
 		tcpServer = getty.NewTCPServer(
 			getty.WithLocalAddress(addr),
@@ -207,7 +224,6 @@ func (s *Server) Start() {
 	tcpServer.RunEventLoop(s.newSession)
 	logger.Debugf("s bind addr{%s} ok!", s.addr)
 	s.tcpServer = tcpServer
-
 }
 
 // Stop dubbo server
