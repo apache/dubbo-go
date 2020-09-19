@@ -64,12 +64,12 @@ func (s *rpcSession) GetReqNum() int32 {
 // RpcClientHandler
 // //////////////////////////////////////////
 
-// RpcClientHandler getty rpc client handler
+// nolint
 type RpcClientHandler struct {
 	conn *gettyRPCClient
 }
 
-// NewRpcClientHandler new getty rpc client handler
+// nolint
 func NewRpcClientHandler(client *gettyRPCClient) *RpcClientHandler {
 	return &RpcClientHandler{conn: client}
 }
@@ -160,7 +160,7 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 // RpcServerHandler
 // //////////////////////////////////////////
 
-// RpcServerHandler implement EventListener of getty.
+// nolint
 type RpcServerHandler struct {
 	maxSessionNum  int
 	sessionTimeout time.Duration
@@ -169,7 +169,7 @@ type RpcServerHandler struct {
 	server         *Server
 }
 
-// NewRpcServerHandler new rpc server handler
+// nolint
 func NewRpcServerHandler(maxSessionNum int, sessionTimeout time.Duration, serverP *Server) *RpcServerHandler {
 	return &RpcServerHandler{
 		maxSessionNum:  maxSessionNum,
