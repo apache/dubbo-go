@@ -39,7 +39,7 @@ import (
 
 // todo: WritePkg_Timeout will entry *.yml
 const (
-	// WritePkg_Timeout ...
+	// WritePkg_Timeout the timeout of write pkg
 	WritePkg_Timeout = 5 * time.Second
 )
 
@@ -64,35 +64,35 @@ func (s *rpcSession) GetReqNum() int32 {
 // RpcClientHandler
 // //////////////////////////////////////////
 
-// RpcClientHandler ...
+// nolint
 type RpcClientHandler struct {
 	conn *gettyRPCClient
 }
 
-// NewRpcClientHandler ...
+// nolint
 func NewRpcClientHandler(client *gettyRPCClient) *RpcClientHandler {
 	return &RpcClientHandler{conn: client}
 }
 
-// OnOpen ...
+// OnOpen call the getty client session opened, add the session to getty client session list
 func (h *RpcClientHandler) OnOpen(session getty.Session) error {
 	h.conn.addSession(session)
 	return nil
 }
 
-// OnError ...
+// OnError the getty client session has errored, so remove the session from the getty client session list
 func (h *RpcClientHandler) OnError(session getty.Session, err error) {
 	logger.Infof("session{%s} got error{%v}, will be closed.", session.Stat(), err)
 	h.conn.removeSession(session)
 }
 
-// OnClose ...
+// OnClose close the session, remove it from the getty session list
 func (h *RpcClientHandler) OnClose(session getty.Session) {
 	logger.Infof("session{%s} is closing......", session.Stat())
 	h.conn.removeSession(session)
 }
 
-// OnMessage ...
+// OnMessage get response from getty server, and update the session to the getty client session list
 func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 	result, ok := pkg.(remoting.DecodeResult)
 	if !ok {
@@ -138,7 +138,7 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 	h.conn.pool.rpcClient.responseHandler.Handler(p)
 }
 
-// OnCron ...
+// OnCron check the session health periodic. if the session's sessionTimeout has reached, just close the session
 func (h *RpcClientHandler) OnCron(session getty.Session) {
 	rpcSession, err := h.conn.getClientRpcSession(session)
 	if err != nil {
@@ -160,7 +160,7 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 // RpcServerHandler
 // //////////////////////////////////////////
 
-// RpcServerHandler implement EventListener of getty.
+// nolint
 type RpcServerHandler struct {
 	maxSessionNum  int
 	sessionTimeout time.Duration
@@ -169,7 +169,7 @@ type RpcServerHandler struct {
 	server         *Server
 }
 
-// NewRpcServerHandler ...
+// nolint
 func NewRpcServerHandler(maxSessionNum int, sessionTimeout time.Duration, serverP *Server) *RpcServerHandler {
 	return &RpcServerHandler{
 		maxSessionNum:  maxSessionNum,
@@ -179,7 +179,8 @@ func NewRpcServerHandler(maxSessionNum int, sessionTimeout time.Duration, server
 	}
 }
 
-// OnOpen ...
+// OnOpen call server session opened, add the session to getty server session list. also onOpen
+// will check the max getty server session number
 func (h *RpcServerHandler) OnOpen(session getty.Session) error {
 	var err error
 	h.rwlock.RLock()
@@ -198,7 +199,7 @@ func (h *RpcServerHandler) OnOpen(session getty.Session) error {
 	return nil
 }
 
-// OnError ...
+// OnError the getty server session has errored, so remove the session from the getty server session list
 func (h *RpcServerHandler) OnError(session getty.Session, err error) {
 	logger.Infof("session{%s} got error{%v}, will be closed.", session.Stat(), err)
 	h.rwlock.Lock()
@@ -206,7 +207,7 @@ func (h *RpcServerHandler) OnError(session getty.Session, err error) {
 	h.rwlock.Unlock()
 }
 
-// OnClose ...
+// OnClose close the session, remove it from the getty server list
 func (h *RpcServerHandler) OnClose(session getty.Session) {
 	logger.Infof("session{%s} is closing......", session.Stat())
 	h.rwlock.Lock()
@@ -214,7 +215,7 @@ func (h *RpcServerHandler) OnClose(session getty.Session) {
 	h.rwlock.Unlock()
 }
 
-// OnMessage ...
+// OnMessage get request from getty client, update the session reqNum and reply response to client
 func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	h.rwlock.Lock()
 	if _, ok := h.sessionMap[session]; ok {
@@ -285,7 +286,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	reply(session, resp, hessian.PackageResponse)
 }
 
-// OnCron ...
+// OnCron check the session health periodic. if the session's sessionTimeout has reached, just close the session
 func (h *RpcServerHandler) OnCron(session getty.Session) {
 	var (
 		flag   bool
@@ -312,7 +313,6 @@ func (h *RpcServerHandler) OnCron(session getty.Session) {
 }
 
 func reply(session getty.Session, resp *remoting.Response, tp hessian.PackageType) {
-
 	if err := session.WritePkg(resp, WritePkg_Timeout); err != nil {
 		logger.Errorf("WritePkg error: %#v, %#v", perrors.WithStack(err), resp)
 	}
