@@ -18,6 +18,7 @@
 package common
 
 import (
+	"bytes"
 	"encoding/base64"
 	"fmt"
 	"math"
@@ -325,12 +326,15 @@ func (c URL) Key() string {
 
 // ServiceKey gets a unique key of a service.
 func (c URL) ServiceKey() string {
-	intf := c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
+	return ServiceKey(c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/")),
+		c.GetParam(constant.GROUP_KEY, ""), c.GetParam(constant.VERSION_KEY, ""))
+}
+
+func ServiceKey(intf string, group string, version string) string {
 	if intf == "" {
 		return ""
 	}
-	var buf strings.Builder
-	group := c.GetParam(constant.GROUP_KEY, "")
+	buf := &bytes.Buffer{}
 	if group != "" {
 		buf.WriteString(group)
 		buf.WriteString("/")
@@ -338,7 +342,6 @@ func (c URL) ServiceKey() string {
 
 	buf.WriteString(intf)
 
-	version := c.GetParam(constant.VERSION_KEY, "")
 	if version != "" && version != "0.0.0" {
 		buf.WriteString(":")
 		buf.WriteString(version)

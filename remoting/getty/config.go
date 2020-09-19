@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package dubbo
+package getty
 
 import (
 	"time"
@@ -30,7 +30,7 @@ import (
 )
 
 type (
-	// GettySessionParam is session configuration for getty.
+	// GettySessionParam is session configuration for getty
 	GettySessionParam struct {
 		CompressEncoding bool   `default:"false" yaml:"compress_encoding" json:"compress_encoding,omitempty"`
 		TcpNoDelay       bool   `default:"true" yaml:"tcp_no_delay" json:"tcp_no_delay,omitempty"`
@@ -52,6 +52,8 @@ type (
 
 	// ServerConfig holds supported types by the multiconfig package
 	ServerConfig struct {
+		SSLEnabled bool
+
 		// session
 		SessionTimeout string `default:"60s" yaml:"session_timeout" json:"session_timeout,omitempty"`
 		sessionTimeout time.Duration
@@ -95,7 +97,7 @@ type (
 	}
 )
 
-// GetDefaultClientConfig gets client default configuration.
+// GetDefaultClientConfig gets client default configuration
 func GetDefaultClientConfig() ClientConfig {
 	return ClientConfig{
 		ReconnectInterval: 0,
@@ -123,7 +125,7 @@ func GetDefaultClientConfig() ClientConfig {
 		}}
 }
 
-// GetDefaultServerConfig gets server default configuration.
+// GetDefaultServerConfig gets server default configuration
 func GetDefaultServerConfig() ServerConfig {
 	return ServerConfig{
 		SessionTimeout: "180s",
@@ -148,7 +150,7 @@ func GetDefaultServerConfig() ServerConfig {
 	}
 }
 
-// CheckValidity confirm getty sessian params.
+// CheckValidity confirm getty sessian params
 func (c *GettySessionParam) CheckValidity() error {
 	var err error
 
@@ -193,7 +195,7 @@ func (c *ClientConfig) CheckValidity() error {
 	return perrors.WithStack(c.GettySessionParam.CheckValidity())
 }
 
-// CheckValidity confirm server params.
+// CheckValidity confirm server params
 func (c *ServerConfig) CheckValidity() error {
 	var err error
 
