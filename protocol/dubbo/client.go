@@ -52,7 +52,6 @@ var (
 )
 
 func init() {
-
 	// load clientconfig from consumer_config
 	// default use dubbo
 	consumerConfig := config.GetConsumerConfig()
@@ -106,8 +105,11 @@ func GetClientConf() ClientConfig {
 
 func setClientGrpool() {
 	if clientConf.GrPoolSize > 1 {
-		clientGrpool = gxsync.NewTaskPool(gxsync.WithTaskPoolTaskPoolSize(clientConf.GrPoolSize), gxsync.WithTaskPoolTaskQueueLength(clientConf.QueueLen),
-			gxsync.WithTaskPoolTaskQueueNumber(clientConf.QueueNumber))
+		clientGrpool = gxsync.NewTaskPool(
+			gxsync.WithTaskPoolTaskPoolSize(clientConf.GrPoolSize),
+			gxsync.WithTaskPoolTaskQueueLength(clientConf.QueueLen),
+			gxsync.WithTaskPoolTaskQueueNumber(clientConf.QueueNumber),
+		)
 	}
 }
 
@@ -141,7 +143,6 @@ type Client struct {
 
 // NewClient create a new Client.
 func NewClient(opt Options) *Client {
-
 	switch {
 	case opt.ConnectTimeout == 0:
 		opt.ConnectTimeout = 3 * time.Second
@@ -203,7 +204,6 @@ func NewResponse(reply interface{}, atta map[string]interface{}) *Response {
 
 // CallOneway call by one way
 func (c *Client) CallOneway(request *Request) error {
-
 	return perrors.WithStack(c.call(CT_OneWay, request, NewResponse(nil, nil), nil))
 }
 
@@ -311,9 +311,7 @@ func (c *Client) heartbeat(session getty.Session) error {
 	return c.transfer(session, nil, NewPendingResponse())
 }
 
-func (c *Client) transfer(session getty.Session, pkg *DubboPackage,
-	rsp *PendingResponse) error {
-
+func (c *Client) transfer(session getty.Session, pkg *DubboPackage, rsp *PendingResponse) error {
 	var (
 		sequence uint64
 		err      error
