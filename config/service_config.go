@@ -59,6 +59,7 @@ type ServiceConfig struct {
 	Methods                     []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
 	Warmup                      string            `yaml:"warmup"  json:"warmup,omitempty"  property:"warmup"`
 	Retries                     string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
+	Serialization               string            `yaml:"serialization" json:"serialization" property:"serialization"`
 	Params                      map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
 	Token                       string            `yaml:"token" json:"token,omitempty" property:"token"`
 	AccessLog                   string            `yaml:"accesslog" json:"accesslog,omitempty" property:"accesslog"`
@@ -270,7 +271,8 @@ func (c *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
 	urlMap.Set(constant.RELEASE_KEY, "dubbo-golang-"+constant.Version)
 	urlMap.Set(constant.SIDE_KEY, (common.RoleType(common.PROVIDER)).Role())
-
+	// todo: move
+	urlMap.Set(constant.SERIALIZATION_KEY, c.Serialization)
 	// application info
 	urlMap.Set(constant.APPLICATION_KEY, providerConfig.ApplicationConfig.Name)
 	urlMap.Set(constant.ORGANIZATION_KEY, providerConfig.ApplicationConfig.Organization)
