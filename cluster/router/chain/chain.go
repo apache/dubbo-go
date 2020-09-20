@@ -251,6 +251,8 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 		chain.url = *url
 	}
 
+	// sync build cache and async refresh it
+	chain.buildCache()
 	go chain.loop()
 	return chain, nil
 }
