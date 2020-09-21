@@ -1,10 +1,10 @@
-# [dubbogo中的TPS Limit设计与实现](https://www.jianshu.com/p/5e4d490f163c)
+# [dubbogo中的TPS Limit设计与实现](https://developer.aliyun.com/article/726804)
 
 # 前言
 
-[Apache Dubbo](https://links.jianshu.com/go?to=http%3A%2F%2Fdubbo.apache.org%2Fen-us%2F)是由阿里开源的一个RPC框架，除了基本的RPC功能以外，还提供了一整套的服务治理相关功能。目前它已经是Apache基金会下的顶级项目。
+[Apache Dubbo](http://dubbo.apache.org)是由阿里开源的一个RPC框架，除了基本的RPC功能以外，还提供了一整套的服务治理相关功能。目前它已经是Apache基金会下的顶级项目。
 
-而[dubbogo](https://links.jianshu.com/go?to=https%3A%2F%2Fgithub.com%2Fapache%2Fdubbo-go)则是dubbo的go语言实现。
+而[dubbogo](https://github.com/apache/dubbo-go)则是dubbo的go语言实现。
 
 最近在`dubbogo`的`todo list`上发现，它还没有实现`TPS Limit`的模块，于是就抽空实现了这个部分。
 
@@ -18,7 +18,7 @@
 
 这个实现的目前只是合并到了`develop`上，等下次发布正式版本的时候才会发布出来。
 
-Github: [https://github.com/apache/dubbo-go/pull/237](https://links.jianshu.com/go?to=https%3A%2F%2Fgithub.com%2Fapache%2Fdubbo-go%2Fpull%2F237)
+Github: [https://github.com/apache/dubbo-go/pull/237](https://github.com/apache/dubbo-go/pull/237)
 
 # 设计思路
 
