@@ -193,51 +193,51 @@ func (c *ReferenceConfig) getUrlMap() url.Values {
 	urlMap := url.Values{}
 	//first set user params
 	for k, v := range c.Params {
-		urlMap.Set(k, v)
+		common.Set(k, v, urlMap)
 	}
-	urlMap.Set(constant.INTERFACE_KEY, c.InterfaceName)
-	urlMap.Set(constant.TIMESTAMP_KEY, strconv.FormatInt(time.Now().Unix(), 10))
-	urlMap.Set(constant.CLUSTER_KEY, c.Cluster)
-	urlMap.Set(constant.LOADBALANCE_KEY, c.Loadbalance)
-	urlMap.Set(constant.RETRIES_KEY, c.Retries)
-	urlMap.Set(constant.GROUP_KEY, c.Group)
-	urlMap.Set(constant.VERSION_KEY, c.Version)
-	urlMap.Set(constant.GENERIC_KEY, strconv.FormatBool(c.Generic))
-	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
-	urlMap.Set(constant.PROVIDER_BY, c.ProvideBy)
+	common.Set(constant.INTERFACE_KEY, c.InterfaceName, urlMap)
+	common.Set(constant.TIMESTAMP_KEY, strconv.FormatInt(time.Now().Unix(), 10), urlMap)
+	common.Set(constant.CLUSTER_KEY, c.Cluster, urlMap)
+	common.Set(constant.LOADBALANCE_KEY, c.Loadbalance, urlMap)
+	common.Set(constant.RETRIES_KEY, c.Retries, urlMap)
+	common.Set(constant.GROUP_KEY, c.Group, urlMap)
+	common.Set(constant.VERSION_KEY, c.Version, urlMap)
+	common.Set(constant.GENERIC_KEY, strconv.FormatBool(c.Generic), urlMap)
+	common.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER), urlMap)
+	common.Set(constant.PROVIDER_BY, c.ProvideBy, urlMap)
 
-	urlMap.Set(constant.RELEASE_KEY, "dubbo-golang-"+constant.Version)
-	urlMap.Set(constant.SIDE_KEY, (common.RoleType(common.CONSUMER)).Role())
+	common.Set(constant.RELEASE_KEY, "dubbo-golang-"+constant.Version, urlMap)
+	common.Set(constant.SIDE_KEY, (common.RoleType(common.CONSUMER)).Role(), urlMap)
 
 	if len(c.RequestTimeout) != 0 {
-		urlMap.Set(constant.TIMEOUT_KEY, c.RequestTimeout)
+		common.Set(constant.TIMEOUT_KEY, c.RequestTimeout, urlMap)
 	}
 	//getty invoke async or sync
-	urlMap.Set(constant.ASYNC_KEY, strconv.FormatBool(c.Async))
-	urlMap.Set(constant.STICKY_KEY, strconv.FormatBool(c.Sticky))
+	common.Set(constant.ASYNC_KEY, strconv.FormatBool(c.Async), urlMap)
+	common.Set(constant.STICKY_KEY, strconv.FormatBool(c.Sticky), urlMap)
 
 	//application info
-	urlMap.Set(constant.APPLICATION_KEY, consumerConfig.ApplicationConfig.Name)
-	urlMap.Set(constant.ORGANIZATION_KEY, consumerConfig.ApplicationConfig.Organization)
-	urlMap.Set(constant.NAME_KEY, consumerConfig.ApplicationConfig.Name)
-	urlMap.Set(constant.MODULE_KEY, consumerConfig.ApplicationConfig.Module)
-	urlMap.Set(constant.APP_VERSION_KEY, consumerConfig.ApplicationConfig.Version)
-	urlMap.Set(constant.OWNER_KEY, consumerConfig.ApplicationConfig.Owner)
-	urlMap.Set(constant.ENVIRONMENT_KEY, consumerConfig.ApplicationConfig.Environment)
+	common.Set(constant.APPLICATION_KEY, consumerConfig.ApplicationConfig.Name, urlMap)
+	common.Set(constant.ORGANIZATION_KEY, consumerConfig.ApplicationConfig.Organization, urlMap)
+	common.Set(constant.NAME_KEY, consumerConfig.ApplicationConfig.Name, urlMap)
+	common.Set(constant.MODULE_KEY, consumerConfig.ApplicationConfig.Module, urlMap)
+	common.Set(constant.APP_VERSION_KEY, consumerConfig.ApplicationConfig.Version, urlMap)
+	common.Set(constant.OWNER_KEY, consumerConfig.ApplicationConfig.Owner, urlMap)
+	common.Set(constant.ENVIRONMENT_KEY, consumerConfig.ApplicationConfig.Environment, urlMap)
 
 	//filter
 	var defaultReferenceFilter = constant.DEFAULT_REFERENCE_FILTERS
 	if c.Generic {
 		defaultReferenceFilter = constant.GENERIC_REFERENCE_FILTERS + "," + defaultReferenceFilter
 	}
-	urlMap.Set(constant.REFERENCE_FILTER_KEY, mergeValue(consumerConfig.Filter, c.Filter, defaultReferenceFilter))
+	common.Set(constant.REFERENCE_FILTER_KEY, mergeValue(consumerConfig.Filter, c.Filter, defaultReferenceFilter), urlMap)
 
 	for _, v := range c.Methods {
-		urlMap.Set("methods."+v.Name+"."+constant.LOADBALANCE_KEY, v.LoadBalance)
-		urlMap.Set("methods."+v.Name+"."+constant.RETRIES_KEY, v.Retries)
-		urlMap.Set("methods."+v.Name+"."+constant.STICKY_KEY, strconv.FormatBool(v.Sticky))
+		common.Set("methods."+v.Name+"."+constant.LOADBALANCE_KEY, v.LoadBalance, urlMap)
+		common.Set("methods."+v.Name+"."+constant.RETRIES_KEY, v.Retries, urlMap)
+		common.Set("methods."+v.Name+"."+constant.STICKY_KEY, strconv.FormatBool(v.Sticky), urlMap)
 		if len(v.RequestTimeout) != 0 {
-			urlMap.Set("methods."+v.Name+"."+constant.TIMEOUT_KEY, v.RequestTimeout)
+			common.Set("methods."+v.Name+"."+constant.TIMEOUT_KEY, v.RequestTimeout, urlMap)
 		}
 	}
 

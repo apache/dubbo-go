@@ -99,6 +99,13 @@ type URL struct {
 	SubURL *URL
 }
 
+func Set(key string, value string, urlMap url.Values) {
+	if len(value) == 0 {
+		return
+	}
+	urlMap.Set(key, value)
+}
+
 // Option accepts url
 // Option will define a function of handling URL
 type option func(*URL)

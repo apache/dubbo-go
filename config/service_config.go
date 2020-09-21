@@ -259,61 +259,62 @@ func (c *ServiceConfig) getUrlMap() url.Values {
 	urlMap := url.Values{}
 	// first set user params
 	for k, v := range c.Params {
-		urlMap.Set(k, v)
+		common.Set(k, v, urlMap)
 	}
-	urlMap.Set(constant.INTERFACE_KEY, c.InterfaceName)
-	urlMap.Set(constant.TIMESTAMP_KEY, strconv.FormatInt(time.Now().Unix(), 10))
-	urlMap.Set(constant.CLUSTER_KEY, c.Cluster)
-	urlMap.Set(constant.LOADBALANCE_KEY, c.Loadbalance)
-	urlMap.Set(constant.WARMUP_KEY, c.Warmup)
-	urlMap.Set(constant.RETRIES_KEY, c.Retries)
-	urlMap.Set(constant.GROUP_KEY, c.Group)
-	urlMap.Set(constant.VERSION_KEY, c.Version)
-	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
-	urlMap.Set(constant.RELEASE_KEY, "dubbo-golang-"+constant.Version)
-	urlMap.Set(constant.SIDE_KEY, (common.RoleType(common.PROVIDER)).Role())
+	common.Set(constant.INTERFACE_KEY, c.InterfaceName, urlMap)
+	common.Set(constant.INTERFACE_KEY, c.InterfaceName, urlMap)
+	common.Set(constant.TIMESTAMP_KEY, strconv.FormatInt(time.Now().Unix(), 10), urlMap)
+	common.Set(constant.CLUSTER_KEY, c.Cluster, urlMap)
+	common.Set(constant.LOADBALANCE_KEY, c.Loadbalance, urlMap)
+	common.Set(constant.WARMUP_KEY, c.Warmup, urlMap)
+	common.Set(constant.RETRIES_KEY, c.Retries, urlMap)
+	common.Set(constant.GROUP_KEY, c.Group, urlMap)
+	common.Set(constant.VERSION_KEY, c.Version, urlMap)
+	common.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER), urlMap)
+	common.Set(constant.RELEASE_KEY, "dubbo-golang-"+constant.Version, urlMap)
+	common.Set(constant.SIDE_KEY, (common.RoleType(common.PROVIDER)).Role(), urlMap)
 
 	// application info
-	urlMap.Set(constant.APPLICATION_KEY, providerConfig.ApplicationConfig.Name)
-	urlMap.Set(constant.ORGANIZATION_KEY, providerConfig.ApplicationConfig.Organization)
-	urlMap.Set(constant.NAME_KEY, providerConfig.ApplicationConfig.Name)
-	urlMap.Set(constant.MODULE_KEY, providerConfig.ApplicationConfig.Module)
-	urlMap.Set(constant.APP_VERSION_KEY, providerConfig.ApplicationConfig.Version)
-	urlMap.Set(constant.OWNER_KEY, providerConfig.ApplicationConfig.Owner)
-	urlMap.Set(constant.ENVIRONMENT_KEY, providerConfig.ApplicationConfig.Environment)
+	common.Set(constant.APPLICATION_KEY, providerConfig.ApplicationConfig.Name, urlMap)
+	common.Set(constant.ORGANIZATION_KEY, providerConfig.ApplicationConfig.Organization, urlMap)
+	common.Set(constant.NAME_KEY, providerConfig.ApplicationConfig.Name, urlMap)
+	common.Set(constant.MODULE_KEY, providerConfig.ApplicationConfig.Module, urlMap)
+	common.Set(constant.APP_VERSION_KEY, providerConfig.ApplicationConfig.Version, urlMap)
+	common.Set(constant.OWNER_KEY, providerConfig.ApplicationConfig.Owner, urlMap)
+	common.Set(constant.ENVIRONMENT_KEY, providerConfig.ApplicationConfig.Environment, urlMap)
 
 	// filter
-	urlMap.Set(constant.SERVICE_FILTER_KEY, mergeValue(providerConfig.Filter, c.Filter, constant.DEFAULT_SERVICE_FILTERS))
+	common.Set(constant.SERVICE_FILTER_KEY, mergeValue(providerConfig.Filter, c.Filter, constant.DEFAULT_SERVICE_FILTERS), urlMap)
 
 	// filter special config
-	urlMap.Set(constant.ACCESS_LOG_KEY, c.AccessLog)
+	common.Set(constant.ACCESS_LOG_KEY, c.AccessLog, urlMap)
 	// tps limiter
-	urlMap.Set(constant.TPS_LIMIT_STRATEGY_KEY, c.TpsLimitStrategy)
-	urlMap.Set(constant.TPS_LIMIT_INTERVAL_KEY, c.TpsLimitInterval)
-	urlMap.Set(constant.TPS_LIMIT_RATE_KEY, c.TpsLimitRate)
-	urlMap.Set(constant.TPS_LIMITER_KEY, c.TpsLimiter)
-	urlMap.Set(constant.TPS_REJECTED_EXECUTION_HANDLER_KEY, c.TpsLimitRejectedHandler)
+	common.Set(constant.TPS_LIMIT_STRATEGY_KEY, c.TpsLimitStrategy, urlMap)
+	common.Set(constant.TPS_LIMIT_INTERVAL_KEY, c.TpsLimitInterval, urlMap)
+	common.Set(constant.TPS_LIMIT_RATE_KEY, c.TpsLimitRate, urlMap)
+	common.Set(constant.TPS_LIMITER_KEY, c.TpsLimiter, urlMap)
+	common.Set(constant.TPS_REJECTED_EXECUTION_HANDLER_KEY, c.TpsLimitRejectedHandler, urlMap)
 
 	// execute limit filter
-	urlMap.Set(constant.EXECUTE_LIMIT_KEY, c.ExecuteLimit)
-	urlMap.Set(constant.EXECUTE_REJECTED_EXECUTION_HANDLER_KEY, c.ExecuteLimitRejectedHandler)
+	common.Set(constant.EXECUTE_LIMIT_KEY, c.ExecuteLimit, urlMap)
+	common.Set(constant.EXECUTE_REJECTED_EXECUTION_HANDLER_KEY, c.ExecuteLimitRejectedHandler, urlMap)
 
 	// auth filter
-	urlMap.Set(constant.SERVICE_AUTH_KEY, c.Auth)
-	urlMap.Set(constant.PARAMTER_SIGNATURE_ENABLE_KEY, c.ParamSign)
+	common.Set(constant.SERVICE_AUTH_KEY, c.Auth, urlMap)
+	common.Set(constant.PARAMTER_SIGNATURE_ENABLE_KEY, c.ParamSign, urlMap)
 
 	for _, v := range c.Methods {
 		prefix := "methods." + v.Name + "."
-		urlMap.Set(prefix+constant.LOADBALANCE_KEY, v.LoadBalance)
-		urlMap.Set(prefix+constant.RETRIES_KEY, v.Retries)
-		urlMap.Set(prefix+constant.WEIGHT_KEY, strconv.FormatInt(v.Weight, 10))
+		common.Set(prefix+constant.LOADBALANCE_KEY, v.LoadBalance, urlMap)
+		common.Set(prefix+constant.RETRIES_KEY, v.Retries, urlMap)
+		common.Set(prefix+constant.WEIGHT_KEY, strconv.FormatInt(v.Weight, 10), urlMap)
 
-		urlMap.Set(prefix+constant.TPS_LIMIT_STRATEGY_KEY, v.TpsLimitStrategy)
-		urlMap.Set(prefix+constant.TPS_LIMIT_INTERVAL_KEY, v.TpsLimitInterval)
-		urlMap.Set(prefix+constant.TPS_LIMIT_RATE_KEY, v.TpsLimitRate)
+		common.Set(prefix+constant.TPS_LIMIT_STRATEGY_KEY, v.TpsLimitStrategy, urlMap)
+		common.Set(prefix+constant.TPS_LIMIT_INTERVAL_KEY, v.TpsLimitInterval, urlMap)
+		common.Set(prefix+constant.TPS_LIMIT_RATE_KEY, v.TpsLimitRate, urlMap)
 
-		urlMap.Set(constant.EXECUTE_LIMIT_KEY, v.ExecuteLimit)
-		urlMap.Set(constant.EXECUTE_REJECTED_EXECUTION_HANDLER_KEY, v.ExecuteLimitRejectedHandler)
+		common.Set(constant.EXECUTE_LIMIT_KEY, v.ExecuteLimit, urlMap)
+		common.Set(constant.EXECUTE_REJECTED_EXECUTION_HANDLER_KEY, v.ExecuteLimitRejectedHandler, urlMap)
 
 	}
 
