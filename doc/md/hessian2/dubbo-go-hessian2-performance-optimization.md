@@ -1,6 +1,6 @@
-# [记一次对 dubbo-go-hessian2 的性能优化](https://gocn.vip/topics/10339)
+# 记一次对 dubbo-go-hessian2 的性能优化
 
-[joke59](https://gocn.vip/joke59) for [dubbogo 开源团队](https://gocn.vip/dubbogo) · 2020年05月02日
+2020年05月02日
 
 目录
 
