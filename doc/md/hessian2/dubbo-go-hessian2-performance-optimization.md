@@ -10,9 +10,7 @@
 
 譬如有网文 [基于 Go 的马蜂窝旅游网分布式 IM 系统技术实践](https://my.oschina.net/u/4231722/blog/3168223) 把 dubbo-go 与其他 RPC 框架对比如下：
 
-[![](../../pic/hessian2/dubbo-go-hessian2-performance-optimization-a.png)
-
-](https://static.gocn.vip/photo/2020/6e9e68d7-6ac7-474d-bed5-771922fd3439.png?x-oss-process=image/resize,w_1920)
+![](../../pic/hessian2/dubbo-go-hessian2-performance-optimization-a.png)
 
 有鉴于此，社区便开始组织部分人力，启动了对 dubbo-go 性能优化【同时也欢迎上文作者到钉钉群 23331795 与我们社区交流】。考察 dubbo-go 的各个组件，大家不约而同地决定首先优化比较独立的 [dubbo-go-hessian2](https://github.com/apache/dubbo-go-hessian2)。
 
@@ -72,15 +70,11 @@ BenchmarkDecode-8 64914 19595 ns/op 7448 B/op 224 allocs/op
 
 pprof 工具的用法可以参考官网文档。本文测试时直接使用了 Goland 内置 `CPU Profiler` 的测试工具：测试函数左边的 `Run xx with 'CPU Profiler'`。
 
-[![](../../pic/hessian2/dubbo-go-hessian2-performance-optimization-b.png)
-
-](https://static.gocn.vip/photo/2020/bc013139-bf80-47fa-bfd1-fcf74b53871f.png?x-oss-process=image/resize,w_1920)
+![](../../pic/hessian2/dubbo-go-hessian2-performance-optimization-b.png)
 
 测试跑完后， Goland 直接显示火焰图如下：
 
-[![](../../pic/hessian2/dubbo-go-hessian2-performance-optimization-c.png)
-
-](https://static.gocn.vip/photo/2020/4f05da60-4bda-4a7f-8b8c-af8a927619df.png?x-oss-process=image/resize,w_1920)
+![](../../pic/hessian2/dubbo-go-hessian2-performance-optimization-c.png)
 
 从这个图里可以看到，测试代码大概占用了左边的 70%，右边 30% 是运行时的一些消耗，运行时部分一般包括 gc、schedule 两大块，一般不能直接优化。图上左边可以清晰地看到 `encObject` 里 `RegisterPOJO` 和 `Encode` 各占了小一半。
 
@@ -104,9 +98,7 @@ BenchmarkEncode-8 197593   5601 ns/op   1771 B/op   51 allocs/op
 
 非常惊讶地看到，吞吐量大概是原来的 200%。与上面的火焰图对比，可以粗略的计算，`RegiserPOJO` 大概占了整体的 30%，改进后应该也只有原来的 `1 / 0.7 * 100% = 140%` 才对。答案也可以在火焰图里找到：
 
-[![](../../pic/hessian2/dubbo-go-hessian2-performance-optimization-d.png)
-
-](https://static.gocn.vip/photo/2020/b5d7fa1a-b225-4fef-bb64-b66ffbcf7ae3.png?x-oss-process=image/resize,w_1920)
+![](../../pic/hessian2/dubbo-go-hessian2-performance-optimization-d.png)
 
 除了 `RegisterPOJO` 被干掉以外，与上图对比，还有哪些区别呢？可以看到，原来占用将近 20% 的 `GC` 也几乎看不到了。所以真实的 CPU 利用率也要加上这部分的增长，大约 `1 / 0.5 * 100% = 200%`。
 
@@ -116,21 +108,15 @@ BenchmarkEncode-8 197593   5601 ns/op   1771 B/op   51 allocs/op
 
 看完了 `Encode` ，再来看看 `Decode` ，方法类似，直接看 Goland 生成的火焰图：
 
-[![](../../pic/hessian2/dubbo-go-hessian2-performance-optimization-e.png)
-
-](https://static.gocn.vip/photo/2020/2e72da06-ca92-422d-b925-d1fd689174c7.png?x-oss-process=image/resize,w_1920)
+![](../../pic/hessian2/dubbo-go-hessian2-performance-optimization-e.png)
 
 这个图有点迷惑性，好像也被分成差不多的小格子了。可以点开 `decObject` 这一层：
 
-[![](../../pic/hessian2/dubbo-go-hessian2-performance-optimization-f.png)
-
-](https://static.gocn.vip/photo/2020/2e77cb71-ba7d-4fe9-ac48-1f2d8a6504b2.png?x-oss-process=image/resize,w_1920)
+![](../../pic/hessian2/dubbo-go-hessian2-performance-optimization-f.png)
 
 这个时候原来小的 `...` 会显示具体内容，需要注意的是里面有两个 `findField` ，在复杂的调用里经常会遇到这种情况：一个耗资源的函数被分到了许多函数里，导致在看火焰图时并不能直观地看到它就是瓶颈。比较常见的有序列化、日志、网络请求等每个模块都会干一点却又没有一个全局的函数只干他一件事。这个时候除了肉眼去找以外也可以借助于另外一个工具：
 
-[![](../../pic/hessian2/dubbo-go-hessian2-performance-optimization-g.png)
-
-](https://static.gocn.vip/photo/2020/cb749c31-3d4f-428d-b2cf-fdc25de7ffe5.png?x-oss-process=image/resize,w_1920)
+![](../../pic/hessian2/dubbo-go-hessian2-performance-optimization-g.png)
 
 在这个 `Method List` 里可以明显看到 `findField` 已经被合并到一起了，总占用接近 CPU 的一半，看到这里你大概就知道它应该是个优化点了。
 
@@ -159,9 +145,7 @@ func findField(name string, typ reflect.Type) (indexes []int, err error) {
 
 可以看到，结果并不如预期的那样提升一倍效果。这个代码乍看起来，好像除了有一些啰嗦的断言，好像也没别的东西了，为什么只有 60% 的提升呢，我们还是借助下工具
 
-[![](../../pic/hessian2/dubbo-go-hessian2-performance-optimization-h.png)
-
-](https://static.gocn.vip/photo/2020/cf324978-2d29-46f9-831a-d31f0356f102.png?x-oss-process=image/resize,w_1920)
+![](../../pic/hessian2/dubbo-go-hessian2-performance-optimization-h.png)
 
 可以看到：读缓存耗费了 7% 的资源。其中，`sync.(*Map)` 不便优化，但 `newobejct` 是哪里来的呢？代码里可以看到，唯一定义新对象的地方就是函数第一行的 `&sync.Map` ，我抱着试一试的心态把 `LoadOrStore` 拆成了两步
 

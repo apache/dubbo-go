@@ -10,10 +10,9 @@
 
 我们以其中的provider filter适配为例:
 
-[![SentinelProviderFilter](../../pic/service-governance/dubbo-go-sentinel-a.png)](https://dubbogo.github.io/dubbo-go-website/img/blog/dubbogo-sentinel.resources/dubbo-go-sentinel-provider-filter.png)
+![SentinelProviderFilter](../../pic/service-governance/dubbo-go-sentinel-a.png)
 
-此 filter 实现了 dubbo-go的filter接口，只要用户在服务启动时将此filter加载到dubbo-go中，即可使用此filter。 [![Sentinel-design](../../pic/service-governance/dubbo-go-sentinel-b.png)](https://dubbogo.github.io/dubbo-go-website/img/blog/dubbogo-sentinel.resources/sentinel-golang.png)
-
+此 filter 实现了 dubbo-go的filter接口，只要用户在服务启动时将此filter加载到dubbo-go中，即可使用此filter。 ![Sentinel-design](../../pic/service-governance/dubbo-go-sentinel-b.png)
 sentinel实现原理与其他限流、熔断库大同小异，底层是用的滑动窗口算法。与hystrix等框架相比不同点是设计理念，Sentinel 的设计理念是让您自由选择控制的角度，并进行灵活组合，从而达到想要的效果。
 
 下面我整理了完整的使用流程：(注意：dubbo-go版本请使用1.3.0-rc3及其以上版本)
