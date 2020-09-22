@@ -396,6 +396,17 @@ func (c *URL) AddParam(key string, value string) {
 	c.params.Add(key, value)
 }
 
+// AddParamAvoidNil will add key-value pair
+// Not thread-safe
+// think twice before using it.
+func (c *URL) AddParamAvoidNil(key string, value string) {
+	if c.params == nil {
+		c.params = url.Values{}
+	}
+
+	c.params.Add(key, value)
+}
+
 // SetParam will put the key-value pair into url
 // it's not thread safe.
 // think twice before you want to use this method

@@ -47,6 +47,7 @@ const (
 
 // nacosDynamicConfiguration is the implementation of DynamicConfiguration based on nacos
 type nacosDynamicConfiguration struct {
+	config_center.BaseDynamicConfiguration
 	url          *common.URL
 	rootPath     string
 	wg           sync.WaitGroup
