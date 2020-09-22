@@ -30,15 +30,15 @@ import (
 	"github.com/apache/dubbo-go/config"
 	_ "github.com/apache/dubbo-go/filter/filter_impl"
 	"github.com/apache/dubbo-go/metadata/service/inmemory"
-	"github.com/apache/dubbo-go/protocol/dubbo"
 	_ "github.com/apache/dubbo-go/protocol/dubbo"
+	"github.com/apache/dubbo-go/remoting/getty"
 )
 
 func TestConfigurableExporter(t *testing.T) {
-	dubbo.SetServerConfig(dubbo.ServerConfig{
+	getty.SetServerConfig(getty.ServerConfig{
 		SessionNumber:  700,
 		SessionTimeout: "20s",
-		GettySessionParam: dubbo.GettySessionParam{
+		GettySessionParam: getty.GettySessionParam{
 			CompressEncoding: false,
 			TcpNoDelay:       true,
 			TcpKeepAlive:     true,
