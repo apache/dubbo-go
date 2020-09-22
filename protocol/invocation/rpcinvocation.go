@@ -39,7 +39,7 @@ type RPCInvocation struct {
 	arguments       []interface{}
 	reply           interface{}
 	callBack        interface{}
-	attachments     map[string]string
+	attachments     map[string]interface{}
 	// Refer to dubbo 2.7.6.  It is different from attachment. It is used in internal process.
 	attributes map[string]interface{}
 	invoker    protocol.Invoker
@@ -47,7 +47,7 @@ type RPCInvocation struct {
 }
 
 // NewRPCInvocation creates a RPC invocation.
-func NewRPCInvocation(methodName string, arguments []interface{}, attachments map[string]string) *RPCInvocation {
+func NewRPCInvocation(methodName string, arguments []interface{}, attachments map[string]interface{}) *RPCInvocation {
 	return &RPCInvocation{
 		methodName:  methodName,
 		arguments:   arguments,
@@ -99,7 +99,7 @@ func (r *RPCInvocation) SetReply(reply interface{}) {
 }
 
 // Attachments gets all attachments of RPC.
-func (r *RPCInvocation) Attachments() map[string]string {
+func (r *RPCInvocation) Attachments() map[string]interface{} {
 	return r.attachments
 }
 
@@ -112,9 +112,23 @@ func (r *RPCInvocation) AttachmentsByKey(key string, defaultValue string) string
 	}
 	value, ok := r.attachments[key]
 	if ok {
-		return value
+		return value.(string)
 	}
 	return defaultValue
+}
+
+// Attachment returns the corresponding value from dubbo's attachment with the given key.
+func (r *RPCInvocation) Attachment(key string) interface{} {
+	r.lock.RLock()
+	defer r.lock.RUnlock()
+	if r.attachments == nil {
+		return nil
+	}
+	value, ok := r.attachments[key]
+	if ok {
+		return value
+	}
+	return nil
 }
 
 // Attributes gets all attributes of RPC.
@@ -134,11 +148,11 @@ func (r *RPCInvocation) AttributeByKey(key string, defaultValue interface{}) int
 }
 
 // SetAttachments sets attribute by @key and @value.
-func (r *RPCInvocation) SetAttachments(key string, value string) {
+func (r *RPCInvocation) SetAttachments(key string, value interface{}) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	if r.attachments == nil {
-		r.attachments = make(map[string]string)
+		r.attachments = make(map[string]interface{})
 	}
 	r.attachments[key] = value
 }
@@ -221,7 +235,7 @@ func WithCallBack(callBack interface{}) option {
 }
 
 // WithAttachments creates option with @attachments.
-func WithAttachments(attachments map[string]string) option {
+func WithAttachments(attachments map[string]interface{}) option {
 	return func(invo *RPCInvocation) {
 		invo.attachments = attachments
 	}

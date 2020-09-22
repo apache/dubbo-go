@@ -35,7 +35,7 @@ import (
 // test rebuild the ctx
 func TestRebuildCtx(t *testing.T) {
 	opentracing.SetGlobalTracer(mocktracer.New())
-	attach := make(map[string]string, 10)
+	attach := make(map[string]interface{}, 10)
 	attach[constant.VERSION_KEY] = "1.0"
 	attach[constant.GROUP_KEY] = "MyGroup"
 	inv := invocation.NewRPCInvocation("MethodName", []interface{}{"OK", "Hello"}, attach)
@@ -47,8 +47,7 @@ func TestRebuildCtx(t *testing.T) {
 
 	span, ctx := opentracing.StartSpanFromContext(ctx, "Test-Client")
 
-	opentracing.GlobalTracer().Inject(span.Context(), opentracing.TextMap,
-		opentracing.TextMapCarrier(inv.Attachments()))
+	injectTraceCtx(span, inv)
 	// rebuild the context success
 	inv = invocation.NewRPCInvocation("MethodName", []interface{}{"OK", "Hello"}, attach)
 	ctx = rebuildCtx(inv)
