@@ -75,7 +75,7 @@ func TestHTTPClientCall(t *testing.T) {
 
 	// call GetUser
 	ctx := context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
-		"X-Proxy-Id": "dubbogo",
+		"X-Proxy-ID": "dubbogo",
 		"X-Services": url.Path,
 		"X-Method":   "GetUser",
 	})
@@ -89,7 +89,7 @@ func TestHTTPClientCall(t *testing.T) {
 
 	// call GetUser0
 	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
-		"X-Proxy-Id": "dubbogo",
+		"X-Proxy-ID": "dubbogo",
 		"X-Services": url.Path,
 		"X-Method":   "GetUser0",
 	})
@@ -102,7 +102,7 @@ func TestHTTPClientCall(t *testing.T) {
 
 	// call GetUser1
 	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
-		"X-Proxy-Id": "dubbogo",
+		"X-Proxy-ID": "dubbogo",
 		"X-Services": url.Path,
 		"X-Method":   "GetUser1",
 	})
@@ -114,7 +114,7 @@ func TestHTTPClientCall(t *testing.T) {
 
 	// call GetUser2
 	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
-		"X-Proxy-Id": "dubbogo",
+		"X-Proxy-ID": "dubbogo",
 		"X-Services": url.Path,
 		"X-Method":   "GetUser2",
 	})
@@ -126,7 +126,7 @@ func TestHTTPClientCall(t *testing.T) {
 
 	// call GetUser3
 	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
-		"X-Proxy-Id": "dubbogo",
+		"X-Proxy-ID": "dubbogo",
 		"X-Services": url.Path,
 		"X-Method":   "GetUser3",
 	})
@@ -138,7 +138,7 @@ func TestHTTPClientCall(t *testing.T) {
 
 	// call GetUser4
 	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
-		"X-Proxy-Id": "dubbogo",
+		"X-Proxy-ID": "dubbogo",
 		"X-Services": url.Path,
 		"X-Method":   "GetUser4",
 	})
@@ -149,7 +149,7 @@ func TestHTTPClientCall(t *testing.T) {
 	assert.Equal(t, &User{Id: "", Name: ""}, reply)
 
 	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
-		"X-Proxy-Id": "dubbogo",
+		"X-Proxy-ID": "dubbogo",
 		"X-Services": url.Path,
 		"X-Method":   "GetUser4",
 	})
