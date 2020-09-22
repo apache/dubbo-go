@@ -124,19 +124,19 @@ func loadRegistries(targetRegistries string, registries map[string]*RegistryConf
 
 func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 	urlMap := url.Values{}
-	urlMap.Set(constant.GROUP_KEY, c.Group)
-	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(int(roleType)))
-	urlMap.Set(constant.REGISTRY_KEY, c.Protocol)
-	urlMap.Set(constant.REGISTRY_TIMEOUT_KEY, c.TimeoutStr)
+	common.Set(constant.GROUP_KEY, c.Group, urlMap)
+	common.Set(constant.ROLE_KEY, strconv.Itoa(int(roleType)), urlMap)
+	common.Set(constant.REGISTRY_KEY, c.Protocol, urlMap)
+	common.Set(constant.REGISTRY_TIMEOUT_KEY, c.TimeoutStr, urlMap)
 	// multi registry invoker weight label for load balance
-	urlMap.Set(constant.REGISTRY_KEY+"."+constant.REGISTRY_LABEL_KEY, strconv.FormatBool(true))
-	urlMap.Set(constant.REGISTRY_KEY+"."+constant.PREFERRED_KEY, strconv.FormatBool(c.Preferred))
-	urlMap.Set(constant.REGISTRY_KEY+"."+constant.ZONE_KEY, c.Zone)
-	//urlMap.Set(constant.REGISTRY_KEY+"."+constant.ZONE_FORCE_KEY, strconv.FormatBool(c.ZoneForce))
-	urlMap.Set(constant.REGISTRY_KEY+"."+constant.WEIGHT_KEY, strconv.FormatInt(c.Weight, 10))
-	urlMap.Set(constant.REGISTRY_TTL_KEY, c.TTL)
+	common.Set(constant.REGISTRY_KEY+"."+constant.REGISTRY_LABEL_KEY, strconv.FormatBool(true), urlMap)
+	common.Set(constant.REGISTRY_KEY+"."+constant.PREFERRED_KEY, strconv.FormatBool(c.Preferred), urlMap)
+	common.Set(constant.REGISTRY_KEY+"."+constant.ZONE_KEY, c.Zone, urlMap)
+	//common.Set(constant.REGISTRY_KEY+"."+constant.ZONE_FORCE_KEY, strconv.FormatBool(c.ZoneForce))
+	common.Set(constant.REGISTRY_KEY+"."+constant.WEIGHT_KEY, strconv.FormatInt(c.Weight, 10), urlMap)
+	common.Set(constant.REGISTRY_TTL_KEY, c.TTL, urlMap)
 	for k, v := range c.Params {
-		urlMap.Set(k, v)
+		common.Set(k, v, urlMap)
 	}
 	return urlMap
 }

@@ -78,11 +78,11 @@ func (c *ConfigCenterConfig) UnmarshalYAML(unmarshal func(interface{}) error) er
 // GetUrlMap gets url map from ConfigCenterConfig
 func (c *ConfigCenterConfig) GetUrlMap() url.Values {
 	urlMap := url.Values{}
-	urlMap.Set(constant.CONFIG_NAMESPACE_KEY, c.Namespace)
-	urlMap.Set(constant.CONFIG_GROUP_KEY, c.Group)
-	urlMap.Set(constant.CONFIG_CLUSTER_KEY, c.Cluster)
-	urlMap.Set(constant.CONFIG_APP_ID_KEY, c.AppId)
-	urlMap.Set(constant.CONFIG_LOG_DIR_KEY, c.LogDir)
+	common.Set(constant.CONFIG_NAMESPACE_KEY, c.Namespace, urlMap)
+	common.Set(constant.CONFIG_GROUP_KEY, c.Group, urlMap)
+	common.Set(constant.CONFIG_CLUSTER_KEY, c.Cluster, urlMap)
+	common.Set(constant.CONFIG_APP_ID_KEY, c.AppId, urlMap)
+	common.Set(constant.CONFIG_LOG_DIR_KEY, c.LogDir, urlMap)
 	return urlMap
 }
 

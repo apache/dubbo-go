@@ -40,7 +40,8 @@ const (
 func TestNewURLWithOptions(t *testing.T) {
 	methods := []string{"Methodone,methodtwo"}
 	params := url.Values{}
-	params.Set("key", "value")
+	Set("key", "value", params)
+	Set("key1", "", params)
 	u := NewURLWithOptions(WithPath("com.test.Service"),
 		WithUsername(userName),
 		WithPassword(password),
@@ -155,11 +156,13 @@ func TestURLEqual(t *testing.T) {
 
 func TestURLGetParam(t *testing.T) {
 	params := url.Values{}
-	params.Set("key", "value")
+	Set("key", "value", params)
+	Set("key1", "", params)
 	u := URL{baseUrl: baseUrl{params: params}}
 	v := u.GetParam("key", "default")
+	v1 := u.GetParam("key1", "default")
 	assert.Equal(t, "value", v)
-
+	assert.Equal(t, "default", v1)
 	u = URL{}
 	v = u.GetParam("key", "default")
 	assert.Equal(t, "default", v)
@@ -167,7 +170,7 @@ func TestURLGetParam(t *testing.T) {
 
 func TestURLGetParamInt(t *testing.T) {
 	params := url.Values{}
-	params.Set("key", "3")
+	Set("key", "3", params)
 	u := URL{baseUrl: baseUrl{params: params}}
 	v := u.GetParamInt("key", 1)
 	assert.Equal(t, int64(3), v)
@@ -179,7 +182,7 @@ func TestURLGetParamInt(t *testing.T) {
 
 func TestURLGetParamBool(t *testing.T) {
 	params := url.Values{}
-	params.Set("force", "true")
+	Set("force", "true", params)
 	u := URL{baseUrl: baseUrl{params: params}}
 	v := u.GetParamBool("force", false)
 	assert.Equal(t, true, v)
@@ -192,7 +195,7 @@ func TestURLGetParamBool(t *testing.T) {
 func TestURLGetParamAndDecoded(t *testing.T) {
 	rule := "host = 2.2.2.2,1.1.1.1,3.3.3.3 & host !=1.1.1.1 => host = 1.2.3.4"
 	params := url.Values{}
-	params.Set("rule", base64.URLEncoding.EncodeToString([]byte(rule)))
+	Set("rule", base64.URLEncoding.EncodeToString([]byte(rule)), params)
 	u := URL{baseUrl: baseUrl{params: params}}
 	v, _ := u.GetParamAndDecoded("rule")
 	assert.Equal(t, rule, v)
@@ -229,7 +232,7 @@ func TestURLToMap(t *testing.T) {
 
 func TestURLGetMethodParamInt(t *testing.T) {
 	params := url.Values{}
-	params.Set("methods.GetValue.timeout", "3")
+	Set("methods.GetValue.timeout", "3", params)
 	u := URL{baseUrl: baseUrl{params: params}}
 	v := u.GetMethodParamInt("GetValue", "timeout", 1)
 	assert.Equal(t, int64(3), v)
@@ -241,7 +244,7 @@ func TestURLGetMethodParamInt(t *testing.T) {
 
 func TestURLGetMethodParam(t *testing.T) {
 	params := url.Values{}
-	params.Set("methods.GetValue.timeout", "3s")
+	Set("methods.GetValue.timeout", "3s", params)
 	u := URL{baseUrl: baseUrl{params: params}}
 	v := u.GetMethodParam("GetValue", "timeout", "1s")
 	assert.Equal(t, "3s", v)
@@ -253,7 +256,7 @@ func TestURLGetMethodParam(t *testing.T) {
 
 func TestURLGetMethodParamBool(t *testing.T) {
 	params := url.Values{}
-	params.Set("methods.GetValue.async", "true")
+	Set("methods.GetValue.async", "true", params)
 	u := URL{baseUrl: baseUrl{params: params}}
 	v := u.GetMethodParamBool("GetValue", "async", false)
 	assert.Equal(t, true, v)
@@ -265,15 +268,15 @@ func TestURLGetMethodParamBool(t *testing.T) {
 
 func TestMergeUrl(t *testing.T) {
 	referenceUrlParams := url.Values{}
-	referenceUrlParams.Set(constant.CLUSTER_KEY, "random")
-	referenceUrlParams.Set(constant.RETRIES_KEY, "1")
-	referenceUrlParams.Set("test3", "1")
-	referenceUrlParams.Set("methods.testMethod."+constant.RETRIES_KEY, "1")
+	Set(constant.CLUSTER_KEY, "random", referenceUrlParams)
+	Set(constant.RETRIES_KEY, "1", referenceUrlParams)
+	Set("test3", "1", referenceUrlParams)
+	Set("methods.testMethod."+constant.RETRIES_KEY, "1", referenceUrlParams)
 	serviceUrlParams := url.Values{}
-	serviceUrlParams.Set("test2", "1")
-	serviceUrlParams.Set(constant.CLUSTER_KEY, "roundrobin")
-	serviceUrlParams.Set(constant.RETRIES_KEY, "2")
-	serviceUrlParams.Set(constant.METHOD_KEYS+".testMethod."+constant.RETRIES_KEY, "2")
+	Set("test2", "1", serviceUrlParams)
+	Set(constant.CLUSTER_KEY, "roundrobin", serviceUrlParams)
+	Set(constant.RETRIES_KEY, "2", serviceUrlParams)
+	Set(constant.METHOD_KEYS+".testMethod."+constant.RETRIES_KEY, "2", serviceUrlParams)
 	referenceUrl, _ := NewURL("mock1://127.0.0.1:1111", WithParams(referenceUrlParams), WithMethods([]string{"testMethod"}))
 	serviceUrl, _ := NewURL("mock2://127.0.0.1:20000", WithParams(serviceUrlParams))
 
@@ -289,7 +292,7 @@ func TestURLSetParams(t *testing.T) {
 	u1, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&configVersion=1.0")
 	assert.NoError(t, err)
 	params := url.Values{}
-	params.Set("key", "3")
+	Set("key", "3", params)
 	u1.SetParams(params)
 	assert.Equal(t, "3", u1.GetParam("key", ""))
 	assert.Equal(t, "2.6.0", u1.GetParam("version", ""))
