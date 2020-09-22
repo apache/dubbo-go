@@ -45,6 +45,7 @@ const (
 	DEFAULT_REST_CLIENT        = "resty"
 	DEFAULT_REST_SERVER        = "go-restful"
 	DEFAULT_PORT               = 20000
+	DEFAULT_SERIALIZATION      = HESSIAN2_SERIALIZATION
 )
 
 const (
