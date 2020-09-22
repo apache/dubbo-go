@@ -45,6 +45,7 @@ const (
 )
 
 type apolloConfiguration struct {
+	cc.BaseDynamicConfiguration
 	url *common.URL
 
 	listeners sync.Map
