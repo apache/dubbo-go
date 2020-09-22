@@ -63,7 +63,6 @@ func (suite *RegistryTestSuite) SetupSuite() {
 	}
 
 	suite.etcd = e
-	return
 }
 
 // stop etcd server
