@@ -19,7 +19,6 @@ package loadbalance
 
 import (
 	"fmt"
-	"net/url"
 	"strconv"
 	"testing"
 	"time"
@@ -32,6 +31,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/net/url"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
 )

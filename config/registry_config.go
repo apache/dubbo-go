@@ -18,7 +18,6 @@
 package config
 
 import (
-	"net/url"
 	"strconv"
 	"strings"
 )
@@ -31,6 +30,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/common/net/url"
 )
 
 // RegistryConfig is the configuration of the registry center

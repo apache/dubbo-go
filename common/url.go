@@ -20,9 +20,9 @@ package common
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/apache/dubbo-go/common/net/url"
 	"math"
 	"net"
-	"net/url"
 	"strconv"
 	"strings"
 )

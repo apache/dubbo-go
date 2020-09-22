@@ -20,7 +20,6 @@ package cluster_impl
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"testing"
 )
 import (
@@ -35,6 +34,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/common/net/url"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
 )

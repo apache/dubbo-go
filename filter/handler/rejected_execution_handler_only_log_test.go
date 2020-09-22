@@ -18,12 +18,12 @@
 package handler
 
 import (
-	"net/url"
 	"testing"
 )
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/net/url"
 )
 
 func TestOnlyLogRejectedExecutionHandler_RejectedExecution(t *testing.T) {

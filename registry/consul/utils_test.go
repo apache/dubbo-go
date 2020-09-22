@@ -20,7 +20,6 @@ package consul
 import (
 	"fmt"
 	"net"
-	"net/url"
 	"strconv"
 	"sync"
 	"testing"
@@ -29,6 +28,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/net/url"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting"
 	"github.com/apache/dubbo-go/remoting/consul"

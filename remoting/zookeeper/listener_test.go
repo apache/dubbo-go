@@ -18,7 +18,6 @@
 package zookeeper
 
 import (
-	"net/url"
 	"sync"
 	"testing"
 	"time"
@@ -29,6 +28,7 @@ import (
 )
 import (
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/common/net/url"
 	"github.com/apache/dubbo-go/remoting"
 )
 

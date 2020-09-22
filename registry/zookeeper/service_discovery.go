@@ -19,7 +19,6 @@ package zookeeper
 
 import (
 	"fmt"
-	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -36,6 +35,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/common/net/url"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting"

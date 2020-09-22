@@ -18,10 +18,6 @@
 package config
 
 import (
-	"net/url"
-)
-
-import (
 	"github.com/creasty/defaults"
 	perrors "github.com/pkg/errors"
 )
@@ -29,6 +25,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/net/url"
 	"github.com/apache/dubbo-go/config/instance"
 )
 

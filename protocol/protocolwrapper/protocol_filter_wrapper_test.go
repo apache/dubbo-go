@@ -19,7 +19,6 @@ package protocolwrapper
 
 import (
 	"context"
-	"net/url"
 	"testing"
 )
 
@@ -32,6 +31,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/common/net/url"
 	"github.com/apache/dubbo-go/filter"
 	"github.com/apache/dubbo-go/protocol"
 )

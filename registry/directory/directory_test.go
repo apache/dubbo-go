@@ -18,7 +18,6 @@
 package directory
 
 import (
-	"net/url"
 	"strconv"
 	"testing"
 	"time"
@@ -36,6 +35,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/net/url"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/apache/dubbo-go/protocol/mock"

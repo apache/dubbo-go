@@ -19,7 +19,6 @@ package filter_impl
 
 import (
 	"context"
-	"net/url"
 	"testing"
 )
 
@@ -31,6 +30,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/net/url"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/filter"
 	common2 "github.com/apache/dubbo-go/filter/handler"

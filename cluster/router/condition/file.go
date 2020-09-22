@@ -19,7 +19,6 @@ package condition
 
 import (
 	"encoding/base64"
-	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -33,6 +32,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/net/url"
 )
 
 // FileConditionRouter Use for parse config file of condition router

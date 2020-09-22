@@ -19,7 +19,6 @@ package nacos
 
 import (
 	"encoding/json"
-	"net/url"
 	"strconv"
 	"testing"
 )
@@ -32,6 +31,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/net/url"
 )
 
 func TestNacosRegistry_Register(t *testing.T) {

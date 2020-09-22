@@ -19,7 +19,6 @@ package common
 
 import (
 	"encoding/base64"
-	"net/url"
 	"testing"
 )
 
@@ -29,6 +28,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/net/url"
 )
 
 const (
@@ -41,6 +41,9 @@ func TestNewURLWithOptions(t *testing.T) {
 	methods := []string{"Methodone,methodtwo"}
 	params := url.Values{}
 	params.Set("key", "value")
+	// test value is ""
+	params.Set("group", "")
+	params.Set("vserion", "")
 	u := NewURLWithOptions(WithPath("com.test.Service"),
 		WithUsername(userName),
 		WithPassword(password),
@@ -156,9 +159,14 @@ func TestURLEqual(t *testing.T) {
 func TestURLGetParam(t *testing.T) {
 	params := url.Values{}
 	params.Set("key", "value")
+	params.Set("key1", "")
 	u := URL{baseUrl: baseUrl{params: params}}
 	v := u.GetParam("key", "default")
 	assert.Equal(t, "value", v)
+
+	// test value is ""
+	v1 := u.GetParam("key1", "default")
+	assert.Equal(t, "default", v1)
 
 	u = URL{}
 	v = u.GetParam("key", "default")
@@ -316,6 +324,6 @@ func TestColonSeparatedKey(t *testing.T) {
 	u1.AddParam(constant.GROUP_KEY, "group1")
 	assert.Equal(t, u1.ColonSeparatedKey(), u1.GetParam(constant.INTERFACE_KEY, "")+":version1:group1")
 	u1.SetParam(constant.VERSION_KEY, "")
-	assert.Equal(t, u1.ColonSeparatedKey(), u1.GetParam(constant.INTERFACE_KEY, "")+"::group1")
+	assert.Equal(t, u1.ColonSeparatedKey(), u1.GetParam(constant.INTERFACE_KEY, "")+":version1:group1")
 
 }

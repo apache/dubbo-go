@@ -20,7 +20,6 @@ package registry
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -37,6 +36,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/common/net/url"
 )
 
 const (

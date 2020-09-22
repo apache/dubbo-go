@@ -19,7 +19,6 @@ package zookeeper
 
 import (
 	"encoding/json"
-	"net/url"
 	"strconv"
 	"testing"
 )
@@ -33,6 +32,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/net/url"
 	"github.com/apache/dubbo-go/metadata/identifier"
 	"github.com/apache/dubbo-go/metadata/report"
 )

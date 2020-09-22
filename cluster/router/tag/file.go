@@ -18,7 +18,6 @@
 package tag
 
 import (
-	"net/url"
 	"strconv"
 	"sync"
 )
@@ -30,6 +29,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/net/url"
 	"github.com/apache/dubbo-go/protocol"
 )
 
