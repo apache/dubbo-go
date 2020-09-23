@@ -67,6 +67,7 @@ type RegistryDirectory struct {
 	referenceConfigurationListener *referenceConfigurationListener
 	serviceKey                     string
 	forbidden                      atomic.Bool
+	registerLock                   sync.Mutex // this lock if for register
 }
 
 // NewRegistryDirectory will create a new RegistryDirectory
@@ -111,6 +112,7 @@ func (dir *RegistryDirectory) Notify(event *registry.ServiceEvent) {
 	go dir.refreshInvokers(event)
 }
 
+// NotifyAll notify the events that are complete Service Event List.
 func (dir *RegistryDirectory) NotifyAll(events []*registry.ServiceEvent) {
 	go dir.refreshAllInvokers(events)
 }
@@ -129,38 +131,49 @@ func (dir *RegistryDirectory) refreshInvokers(event *registry.ServiceEvent) {
 }
 
 // refreshAllInvokers the argument is the complete list of the service events,  we can safely assume any cached invoker
-// not in the incoming list can be removed.  It will ignore Action of serviceEvent.
+// not in the incoming list can be removed.  The Action of serviceEvent should be EventTypeUpdate.
 func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent) {
 	var (
 		oldInvokers []protocol.Invoker
 		addEvents   []*registry.ServiceEvent
 	)
-
-	// get need clear invokers from original invoker list
-	dir.cacheInvokersMap.Range(func(k, v interface{}) bool {
-		if !dir.eventMatched(k.(string), events) {
-			// delete unused invoker from cache
-			if invoker := dir.uncacheInvokerWithKey(k.(string)); invoker != nil {
-				oldInvokers = append(oldInvokers, invoker)
+	// loop the events to check the Action should be EventTypeUpdate.
+	for _, event := range events {
+		if event.Action != remoting.EventTypeUpdate {
+			panic("Your implements of register center is wrong, " +
+				"please check the Action of ServiceEvent should be EventTypeUpdate")
+			return
+		}
+	}
+	func() {
+		// this lock is work at batch update of InvokeCache
+		dir.registerLock.Lock()
+		defer dir.registerLock.Unlock()
+		// get need clear invokers from original invoker list
+		dir.cacheInvokersMap.Range(func(k, v interface{}) bool {
+			if !dir.eventMatched(k.(string), events) {
+				// delete unused invoker from cache
+				if invoker := dir.uncacheInvokerWithKey(k.(string)); invoker != nil {
+					oldInvokers = append(oldInvokers, invoker)
+				}
+			}
+			return true
+		})
+		// get need add invokers from events
+		for _, event := range events {
+			// Is the key (url.Key()) of cacheInvokersMap the best way?
+			if _, ok := dir.cacheInvokersMap.Load(event.Service.Key()); !ok {
+				addEvents = append(addEvents, event)
 			}
 		}
-		return true
-	})
-	// get need add invokers from events
-	for _, event := range events {
-		// Is the key (url.Key()) of cacheInvokersMap the best way?
-		if _, ok := dir.cacheInvokersMap.Load(event.Service.Key()); !ok {
-			event.Action = remoting.EventTypeAdd
-			addEvents = append(addEvents, event)
+		// loop the updateEvents
+		for _, event := range addEvents {
+			logger.Debugf("registry update, result{%s}", event)
+			if oldInvoker, _ := dir.cacheInvokerByEvent(event); oldInvoker != nil {
+				oldInvokers = append(oldInvokers, oldInvoker)
+			}
 		}
-	}
-	// loop the addEvents
-	for _, event := range addEvents {
-		logger.Debugf("registry update, result{%s}", event)
-		if oldInvoker, _ := dir.cacheInvokerByEvent(event); oldInvoker != nil {
-			oldInvokers = append(oldInvokers, oldInvoker)
-		}
-	}
+	}()
 	dir.setNewInvokers()
 	// destroy unused invokers
 	for _, invoker := range oldInvokers {
