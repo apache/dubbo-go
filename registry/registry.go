@@ -73,8 +73,8 @@ type NotifyListener interface {
 	// passed in, then it's a incremental event. Pls. note when a list (instead of single event) comes,
 	// the impl of NotifyListener may abandon the accumulated result from previous notifications.
 	Notify(*ServiceEvent)
-	// Notify the events are complete Service Event List.
-	// The argument of events []*ServiceEvent is equal to urls []*URL, because Action of ServiceEvent will be ignored.
+	// NotifyAll the events are complete Service Event List.
+	// The argument of events []*ServiceEvent is equal to urls []*URL, The Action of serviceEvent should be EventTypeUpdate.
 	// If your registry center can only get all urls but can't get individual event, you should use this one.
 	NotifyAll([]*ServiceEvent)
 }
