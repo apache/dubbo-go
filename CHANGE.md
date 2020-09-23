@@ -1,6 +1,34 @@
 # Release Notes
 ---
 
+## 1.5.2
+
+### New Features
+- [Add consul service discovery](https://github.com/apache/dubbo-go/pull/701) @zhangshen023
+- [Add File system service discovery](https://github.com/apache/dubbo-go/pull/732) @DogBaoBao
+- [Migrate travis Ci to Github Actions](https://github.com/apache/dubbo-go/pull/752) @sdttttt
+- [Add sentinel-golang flow control/circuit breaker](https://github.com/apache/dubbo-go/pull/748) @louyuting
+- [Add dubbo-go docs and blog into doc directory](https://github.com/apache/dubbo-go/pull/767) @oaoit 
+
+### Enhancement
+- [Refactor network and codec model](https://github.com/apache/dubbo-go/pull/673) @fangyincheng @georgehao
+- [Remove unnecessary return and judgement](https://github.com/apache/dubbo-go/pull/730) @YongHaoWu 
+- [Improve exporter append method](https://github.com/apache/dubbo-go/pull/722) @gaoxinge  
+- [Refactor for proxyInvoker cannot be extended](https://github.com/apache/dubbo-go/pull/747) @cvictory 
+- [Refactor attachment type from map\[string\]stiring to map\[string\]interface{}](https://github.com/apache/dubbo-go/pull/713) @cvictory 
+- [Improve map access concurrency](https://github.com/apache/dubbo-go/pull/739) @skyao 
+- [Improve code quantity](https://github.com/apache/dubbo-go/pull/763) @gaoxinge 
+
+### Bugfixes
+- [Fix etcdv3 lease](https://github.com/apache/dubbo-go/pull/738) @zhangshen023 
+- [Fix rename SethealthChecker to SetHealthChecker](https://github.com/apache/dubbo-go/pull/746) @watermelo  
+- [Fix init config problem in HystrixFilter](https://github.com/apache/dubbo-go/pull/731) @YGrylls   
+- [Fix zookeeper listener report error after started](https://github.com/apache/dubbo-go/pull/735) @wenxuwan      
+
+Milestone: [https://github.com/apache/dubbo-go/milestone/4](https://github.com/apache/dubbo-go/milestone/4?closed=1)
+
+Project: [https://github.com/apache/dubbo-go/projects/10](https://github.com/apache/dubbo-go/projects/10)
+
 ## 1.5.1
 
 ### New Features

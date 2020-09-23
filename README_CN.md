@@ -15,6 +15,10 @@ Apache License, Version 2.0
 
 ## 发布日志 ##
 
+[v1.5.2 - 2020年9月23日](https://github.com/apache/dubbo-go/releases/tag/v1.5.2)
+
+[v1.5.1 - 2020年8月23日](https://github.com/apache/dubbo-go/releases/tag/v1.5.1)
+
 [v1.5.0 - 2020年7月24日](https://github.com/apache/dubbo-go/releases/tag/v1.5.0)
 
 [v1.4.0 - 2020年3月17日](https://github.com/apache/dubbo-go/releases/tag/v1.4.0)
