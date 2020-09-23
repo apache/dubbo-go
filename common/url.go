@@ -78,10 +78,10 @@ func (t RoleType) Role() string {
 }
 
 type baseUrl struct {
-	Protocol     string
-	Location     string // ip+port
-	Ip           string
-	Port         string
+	Protocol string
+	Location string // ip+port
+	Ip       string
+	Port     string
 	//url.Values is not safe map, add to avoid concurrent map read and map write error
 	paramsLock   sync.RWMutex
 	params       url.Values
