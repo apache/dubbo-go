@@ -20,7 +20,6 @@ package common
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/apache/dubbo-go/common/net/url"
 	"math"
 	"net"
 	"strconv"
@@ -37,6 +36,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/common/net/url"
 )
 
 // ///////////////////////////////
