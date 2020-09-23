@@ -43,7 +43,7 @@ func TestNewURLWithOptions(t *testing.T) {
 	params.Set("key", "value")
 	// test value is ""
 	params.Set("group", "")
-	params.Set("vserion", "")
+	params.Set("version", "")
 	u := NewURLWithOptions(WithPath("com.test.Service"),
 		WithUsername(userName),
 		WithPassword(password),
