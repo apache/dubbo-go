@@ -404,11 +404,13 @@ func (c *URL) AddParam(key string, value string) {
 
 // AddParamAvoidNil will add key-value pair
 func (c *URL) AddParamAvoidNil(key string, value string) {
+	c.paramsLock.Lock()
+	defer c.paramsLock.Unlock()
 	if c.params == nil {
 		c.params = url.Values{}
 	}
 
-	c.AddParam(key, value)
+	c.params.Add(key, value)
 }
 
 // SetParam will put the key-value pair into url
