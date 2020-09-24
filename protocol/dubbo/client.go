@@ -267,6 +267,7 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 		return errSessionNotExist
 	}
 	defer func() {
+		c.pool.ch <- struct{}{}
 		if err == nil {
 			c.pool.put(conn)
 			return
