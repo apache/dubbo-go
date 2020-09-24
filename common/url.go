@@ -657,6 +657,34 @@ func (c *URL) CloneWithParams(reserveParams []string) *URL {
 	)
 }
 
+// IsEquals compares if two URLs equals with each other. Excludes are all parameter keys which should ignored.
+func IsEquals(left URL, right URL, excludes ...string) bool {
+	if left.Ip != right.Ip || left.Port != right.Port {
+		return false
+	}
+
+	leftMap := left.ToMap()
+	rightMap := right.ToMap()
+	for _, exclude := range excludes {
+		delete(leftMap, exclude)
+		delete(rightMap, exclude)
+	}
+
+	if len(leftMap) != len(rightMap) {
+		return false
+	}
+
+	for lk, lv := range leftMap {
+		if rv, ok := rightMap[lk]; !ok {
+			return false
+		} else if lv != rv {
+			return false
+		}
+	}
+
+	return true
+}
+
 func mergeNormalParam(mergedUrl *URL, referenceUrl *URL, paramKeys []string) []func(method string) {
 	methodConfigMergeFcn := make([]func(method string), 0, len(paramKeys))
 	for _, paramKey := range paramKeys {
