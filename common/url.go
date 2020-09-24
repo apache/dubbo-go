@@ -397,8 +397,8 @@ func (c URL) Service() string {
 
 // AddParam will add the key-value pair
 func (c *URL) AddParam(key string, value string) {
-	c.paramsLock.RLock()
-	defer c.paramsLock.RUnlock()
+	c.paramsLock.Lock()
+	defer c.paramsLock.Unlock()
 	c.params.Add(key, value)
 }
 
@@ -414,19 +414,34 @@ func (c *URL) AddParamAvoidNil(key string, value string) {
 // SetParam will put the key-value pair into url
 // usually it should only be invoked when you want to initialized an url
 func (c *URL) SetParam(key string, value string) {
-	c.paramsLock.RLock()
-	defer c.paramsLock.RUnlock()
+	c.paramsLock.Lock()
+	defer c.paramsLock.Unlock()
 	c.params.Set(key, value)
 }
 
 // RangeParams will iterate the params
 func (c *URL) RangeParams(f func(key, value string) bool) {
-	c.paramsLock.RLock()
-	defer c.paramsLock.RUnlock()
-	for k, v := range c.params {
-		if !f(k, v[0]) {
-			break
+	var (
+		flag bool
+		key string
+		value string
+	)
+
+	func() {
+		c.paramsLock.RLock()
+		defer c.paramsLock.RUnlock()
+		for k, v := range c.params {
+			if !f(k, v[0]) {
+				key = k
+				value = v[0]
+				flag = true
+				break
+			}
 		}
+	}()
+
+	if flag {
+		f(key, value)
 	}
 }
 
