@@ -422,8 +422,8 @@ func (c *URL) SetParam(key string, value string) {
 // RangeParams will iterate the params
 func (c *URL) RangeParams(f func(key, value string) bool) {
 	var (
-		flag bool
-		key string
+		flag  bool
+		key   string
 		value string
 	)
 
