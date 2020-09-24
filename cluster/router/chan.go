@@ -17,9 +17,16 @@
 
 package router
 
+import (
+	"github.com/apache/dubbo-go/protocol"
+)
+
 // Chain
 type Chain interface {
 	router
 	// AddRouters Add routers
 	AddRouters([]PriorityRouter)
+
+	// SetInvokers notify router chain of the initial addresses from registry at the first time. Notify whenever addresses in registry change.
+	SetInvokers(invokers []protocol.Invoker)
 }
