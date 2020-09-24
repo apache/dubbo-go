@@ -288,20 +288,24 @@ func (c *gettyRPCClient) close() error {
 }
 
 type gettyRPCClientPool struct {
-	rpcClient *Client
-	size      int   // size of []*gettyRPCClient
-	ttl       int64 // ttl of every gettyRPCClient, it is checked when getConn
-
-	sync.Mutex
+	rpcClient     *Client
+	maxSize       int   // maxSize of []*gettyRPCClient
+	ttl           int64 // ttl of every gettyRPCClient, it is checked when getConn
+	activeNumber  uint32
+	chInitialized uint32 // set to 1 when field ch is initialized
+	ch            chan struct{}
+	closeCh       chan struct{}
+	sync.RWMutex
 	conns []*gettyRPCClient
 }
 
 func newGettyRPCClientConnPool(rpcClient *Client, size int, ttl time.Duration) *gettyRPCClientPool {
 	return &gettyRPCClientPool{
 		rpcClient: rpcClient,
-		size:      size,
+		maxSize:   size,
 		ttl:       int64(ttl.Seconds()),
 		conns:     make([]*gettyRPCClient, 0, 16),
+		closeCh:   make(chan struct{}, 0),
 	}
 }
 
@@ -315,29 +319,64 @@ func (p *gettyRPCClientPool) close() {
 	}
 }
 
+func (p *gettyRPCClientPool) lazyInit() {
+	// Fast path.
+	if atomic.LoadUint32(&p.chInitialized) == 1 {
+		return
+	}
+	// Slow path.
+	p.Lock()
+	if p.chInitialized == 0 {
+		p.ch = make(chan struct{}, p.maxSize)
+		for i := 0; i < p.maxSize; i++ {
+			p.ch <- struct{}{}
+		}
+		atomic.StoreUint32(&p.chInitialized, 1)
+	}
+	p.Unlock()
+}
+
+func (p *gettyRPCClientPool) waitVacantConn() error {
+	p.lazyInit()
+	select {
+	case <-p.ch:
+		// Additionally check that close chan hasn't expired while we were waiting,
+		// because `select` picks a random `case` if several of them are "ready".
+		select {
+		case <-p.closeCh:
+			return errClientPoolClosed
+		default:
+		}
+	case <-p.closeCh:
+		return errClientPoolClosed
+	}
+	return nil
+}
+
 func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPCClient, error) {
+	err := p.waitVacantConn()
+	if err != nil {
+		return nil, err
+	}
+	p.Lock()
+	defer p.Unlock()
 	conn, err := p.get()
 	if err == nil && conn == nil {
-		// create new conn
 		rpcClientConn, err := newGettyRPCClientConn(p, protocol, addr)
 		return rpcClientConn, perrors.WithStack(err)
+
 	}
 	return conn, perrors.WithStack(err)
 }
 
 func (p *gettyRPCClientPool) get() (*gettyRPCClient, error) {
 	now := time.Now().Unix()
-
-	p.Lock()
-	defer p.Unlock()
 	if p.conns == nil {
 		return nil, errClientPoolClosed
 	}
-
 	for len(p.conns) > 0 {
-		conn := p.conns[len(p.conns)-1]
-		p.conns = p.conns[:len(p.conns)-1]
-
+		conn := p.conns[0]
+		p.conns = p.conns[1:]
 		if d := now - conn.getActive(); d > p.ttl {
 			p.remove(conn)
 			go conn.close()
@@ -368,7 +407,7 @@ func (p *gettyRPCClientPool) put(conn *gettyRPCClient) {
 		}
 	}
 
-	if len(p.conns) >= p.size {
+	if len(p.conns) >= p.maxSize {
 		// delete @conn from client pool
 		// p.remove(conn)
 		conn.close()

@@ -72,7 +72,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 		err    error
 		result protocol.RPCResult
 	)
-	if di.reqNum < 0 {
+	if atomic.LoadInt64(&di.reqNum) < 0 {
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
 		logger.Warnf("this dubboInvoker is destroyed")
@@ -125,9 +125,12 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 // Destroy ...
 func (di *DubboInvoker) Destroy() {
 	di.quitOnce.Do(func() {
+		if di.client != nil && di.client.pool != nil {
+			close(di.client.pool.closeCh)
+		}
 		for {
-			if di.reqNum == 0 {
-				di.reqNum = -1
+			if atomic.LoadInt64(&di.reqNum) == 0 {
+				atomic.StoreInt64(&di.reqNum, -1)
 				logger.Infof("dubboInvoker is destroyed,url:{%s}", di.GetUrl().Key())
 				di.BaseInvoker.Destroy()
 				if di.client != nil {
