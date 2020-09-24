@@ -421,27 +421,12 @@ func (c *URL) SetParam(key string, value string) {
 
 // RangeParams will iterate the params
 func (c *URL) RangeParams(f func(key, value string) bool) {
-	var (
-		flag  bool
-		key   string
-		value string
-	)
-
-	func() {
-		c.paramsLock.RLock()
-		defer c.paramsLock.RUnlock()
-		for k, v := range c.params {
-			if !f(k, v[0]) {
-				key = k
-				value = v[0]
-				flag = true
-				break
-			}
+	c.paramsLock.RLock()
+	defer c.paramsLock.RUnlock()
+	for k, v := range c.params {
+		if !f(k, v[0]) {
+			break
 		}
-	}()
-
-	if flag {
-		f(key, value)
 	}
 }
 
