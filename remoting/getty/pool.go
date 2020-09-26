@@ -93,7 +93,7 @@ func newGettyRPCClientConn(pool *gettyRPCClientPool, addr string) (*gettyRPCClie
 			c.gettyClient.Close()
 			return nil, perrors.New(fmt.Sprintf("failed to create client connection to %s in %f seconds", addr, float32(times)/1000))
 		}
-		time.Sleep(1e6)
+		time.Sleep(time.Millisecond * time.Duration(times))
 	}
 	logger.Debug("client init ok")
 	c.updateActive(time.Now().Unix())
