@@ -26,8 +26,8 @@ var (
 	healthCheckers = make(map[string]func(url *common.URL) router.HealthChecker)
 )
 
-// SethealthChecker sets the HealthChecker with @name
-func SethealthChecker(name string, fcn func(_ *common.URL) router.HealthChecker) {
+// SetHealthChecker sets the HealthChecker with @name
+func SetHealthChecker(name string, fcn func(_ *common.URL) router.HealthChecker) {
 	healthCheckers[name] = fcn
 }
 
