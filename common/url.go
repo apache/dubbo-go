@@ -18,6 +18,7 @@
 package common
 
 import (
+	"bytes"
 	"encoding/base64"
 	"fmt"
 	"math"
@@ -222,7 +223,7 @@ func NewURL(urlString string, opts ...option) (URL, error) {
 	}
 
 	// rawUrlString = "//" + rawUrlString
-	if strings.Index(rawUrlString, "//") < 0 {
+	if !strings.Contains(rawUrlString, "//") {
 		t := URL{baseUrl: baseUrl{}}
 		for _, opt := range opts {
 			opt(&t)
@@ -325,12 +326,15 @@ func (c URL) Key() string {
 
 // ServiceKey gets a unique key of a service.
 func (c URL) ServiceKey() string {
-	intf := c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
+	return ServiceKey(c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/")),
+		c.GetParam(constant.GROUP_KEY, ""), c.GetParam(constant.VERSION_KEY, ""))
+}
+
+func ServiceKey(intf string, group string, version string) string {
 	if intf == "" {
 		return ""
 	}
-	var buf strings.Builder
-	group := c.GetParam(constant.GROUP_KEY, "")
+	buf := &bytes.Buffer{}
 	if group != "" {
 		buf.WriteString(group)
 		buf.WriteString("/")
@@ -338,7 +342,6 @@ func (c URL) ServiceKey() string {
 
 	buf.WriteString(intf)
 
-	version := c.GetParam(constant.VERSION_KEY, "")
 	if version != "" && version != "0.0.0" {
 		buf.WriteString(":")
 		buf.WriteString(version)
@@ -393,6 +396,17 @@ func (c URL) Service() string {
 // Not thread-safe
 // think twice before using it.
 func (c *URL) AddParam(key string, value string) {
+	c.params.Add(key, value)
+}
+
+// AddParamAvoidNil will add key-value pair
+// Not thread-safe
+// think twice before using it.
+func (c *URL) AddParamAvoidNil(key string, value string) {
+	if c.params == nil {
+		c.params = url.Values{}
+	}
+
 	c.params.Add(key, value)
 }
 
@@ -641,6 +655,34 @@ func (c *URL) CloneWithParams(reserveParams []string) *URL {
 		WithMethods(c.Methods),
 		WithParams(params),
 	)
+}
+
+// IsEquals compares if two URLs equals with each other. Excludes are all parameter keys which should ignored.
+func IsEquals(left URL, right URL, excludes ...string) bool {
+	if left.Ip != right.Ip || left.Port != right.Port {
+		return false
+	}
+
+	leftMap := left.ToMap()
+	rightMap := right.ToMap()
+	for _, exclude := range excludes {
+		delete(leftMap, exclude)
+		delete(rightMap, exclude)
+	}
+
+	if len(leftMap) != len(rightMap) {
+		return false
+	}
+
+	for lk, lv := range leftMap {
+		if rv, ok := rightMap[lk]; !ok {
+			return false
+		} else if lv != rv {
+			return false
+		}
+	}
+
+	return true
 }
 
 func mergeNormalParam(mergedUrl *URL, referenceUrl *URL, paramKeys []string) []func(method string) {
