@@ -69,6 +69,7 @@ func (c *tagRouter) Route(invokers []protocol.Invoker, url *common.URL, invocati
 	var (
 		result    []protocol.Invoker
 		addresses []string
+		tag       string
 	)
 
 	if !c.isEnabled() || len(invokers) == 0 {
@@ -83,9 +84,14 @@ func (c *tagRouter) Route(invokers []protocol.Invoker, url *common.URL, invocati
 	// since the rule can be changed by config center, we should copy one to use.
 	tagRouterRuleCopy := new(RouterRule)
 	_ = copier.Copy(tagRouterRuleCopy, c.tagRouterRule)
-	tag, ok := invocation.Attachments()[constant.Tagkey]
+	tagValue, ok := invocation.Attachments()[constant.Tagkey]
 	if !ok {
 		tag = url.GetParam(constant.Tagkey, "")
+	} else {
+		tag, ok = tagValue.(string)
+		if !ok {
+			tag = url.GetParam(constant.Tagkey, "")
+		}
 	}
 
 	// if we are requesting for a Provider with a specific tag
