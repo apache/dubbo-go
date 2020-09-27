@@ -45,10 +45,7 @@ func NewJsonrpcInvoker(url common.URL, client *HTTPClient) *JsonrpcInvoker {
 
 // Invoke the JSON RPC invocation and return result.
 func (ji *JsonrpcInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
-
-	var (
-		result protocol.RPCResult
-	)
+	var result protocol.RPCResult
 
 	inv := invocation.(*invocation_impl.RPCInvocation)
 	url := ji.GetUrl()
