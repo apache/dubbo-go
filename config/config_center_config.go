@@ -26,6 +26,7 @@ import (
 
 import (
 	"github.com/creasty/defaults"
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -35,7 +36,6 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config_center"
-	perrors "github.com/pkg/errors"
 )
 
 // ConfigCenterConfig is configuration for config center
@@ -69,10 +69,7 @@ func (c *ConfigCenterConfig) UnmarshalYAML(unmarshal func(interface{}) error) er
 		return err
 	}
 	type plain ConfigCenterConfig
-	if err := unmarshal((*plain)(c)); err != nil {
-		return err
-	}
-	return nil
+	return unmarshal((*plain)(c))
 }
 
 // GetUrlMap gets url map from ConfigCenterConfig

@@ -53,7 +53,7 @@ type RegistryConfig struct {
 	//ZoneForce bool `yaml:"zoneForce" json:"zoneForce,omitempty" property:"zoneForce"`
 	// Affects traffic distribution among registries,
 	// useful when subscribe to multiple registries Take effect only when no preferred registry is specified.
-	Weight int64             `yaml:"weight" json:"params,omitempty" property:"weight"`
+	Weight int64             `yaml:"weight" json:"weight,omitempty" property:"weight"`
 	Params map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
 }
 
@@ -63,10 +63,7 @@ func (c *RegistryConfig) UnmarshalYAML(unmarshal func(interface{}) error) error 
 		return err
 	}
 	type plain RegistryConfig
-	if err := unmarshal((*plain)(c)); err != nil {
-		return err
-	}
-	return nil
+	return unmarshal((*plain)(c))
 }
 
 // nolint
