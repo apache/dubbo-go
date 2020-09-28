@@ -26,6 +26,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 import (
@@ -77,10 +78,12 @@ func (t RoleType) Role() string {
 }
 
 type baseUrl struct {
-	Protocol     string
-	Location     string // ip+port
-	Ip           string
-	Port         string
+	Protocol string
+	Location string // ip+port
+	Ip       string
+	Port     string
+	//url.Values is not safe map, add to avoid concurrent map read and map write error
+	paramsLock   sync.RWMutex
 	params       url.Values
 	PrimitiveURL string
 }
@@ -393,16 +396,16 @@ func (c URL) Service() string {
 }
 
 // AddParam will add the key-value pair
-// Not thread-safe
-// think twice before using it.
 func (c *URL) AddParam(key string, value string) {
+	c.paramsLock.Lock()
+	defer c.paramsLock.Unlock()
 	c.params.Add(key, value)
 }
 
 // AddParamAvoidNil will add key-value pair
-// Not thread-safe
-// think twice before using it.
 func (c *URL) AddParamAvoidNil(key string, value string) {
+	c.paramsLock.Lock()
+	defer c.paramsLock.Unlock()
 	if c.params == nil {
 		c.params = url.Values{}
 	}
@@ -411,16 +414,17 @@ func (c *URL) AddParamAvoidNil(key string, value string) {
 }
 
 // SetParam will put the key-value pair into url
-// it's not thread safe.
-// think twice before you want to use this method
 // usually it should only be invoked when you want to initialized an url
 func (c *URL) SetParam(key string, value string) {
+	c.paramsLock.Lock()
+	defer c.paramsLock.Unlock()
 	c.params.Set(key, value)
 }
 
 // RangeParams will iterate the params
-// it's not thread-safe
 func (c *URL) RangeParams(f func(key, value string) bool) {
+	c.paramsLock.RLock()
+	defer c.paramsLock.RUnlock()
 	for k, v := range c.params {
 		if !f(k, v[0]) {
 			break
@@ -430,6 +434,8 @@ func (c *URL) RangeParams(f func(key, value string) bool) {
 
 // GetParam gets value by key
 func (c URL) GetParam(s string, d string) string {
+	c.paramsLock.RLock()
+	defer c.paramsLock.RUnlock()
 	r := c.params.Get(s)
 	if len(r) == 0 {
 		r = d
