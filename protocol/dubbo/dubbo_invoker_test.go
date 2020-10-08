@@ -89,15 +89,15 @@ func TestDubboInvokerInvoke(t *testing.T) {
 
 	// destroy
 	lock.Lock()
+	defer lock.Unlock()
 	proto.Destroy()
-	lock.Unlock()
 }
 
 func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
 
 	hessian.RegisterPOJO(&User{})
 
-	methods, err := common.ServiceMap.Register("", "dubbo", &UserProvider{})
+	methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "dubbo", &UserProvider{})
 	assert.NoError(t, err)
 	assert.Equal(t, "GetBigPkg,GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4,GetUser5,GetUser6", methods)
 
@@ -176,9 +176,8 @@ type (
 // size:4801228
 func (u *UserProvider) GetBigPkg(ctx context.Context, req []interface{}, rsp *User) error {
 	argBuf := new(bytes.Buffer)
-	for i := 0; i < 400; i++ {
+	for i := 0; i < 800; i++ {
 		// use chinese for test
-		argBuf.WriteString("击鼓其镗，踊跃用兵。土国城漕，我独南行。从孙子仲，平陈与宋。不我以归，忧心有忡。爰居爰处？爰丧其马？于以求之？于林之下。死生契阔，与子成说。执子之手，与子偕老。于嗟阔兮，不我活兮。于嗟洵兮，不我信兮。")
 		argBuf.WriteString("击鼓其镗，踊跃用兵。土国城漕，我独南行。从孙子仲，平陈与宋。不我以归，忧心有忡。爰居爰处？爰丧其马？于以求之？于林之下。死生契阔，与子成说。执子之手，与子偕老。于嗟阔兮，不我活兮。于嗟洵兮，不我信兮。")
 	}
 	rsp.Id = argBuf.String()
