@@ -127,6 +127,9 @@ func (dir *RegistryDirectory) refreshInvokers(events ...*registry.ServiceEvent) 
 			}
 			return true
 		})
+	} else {
+		//override url
+		dir.cacheInvoker(nil)
 	}
 
 	for _, event := range events {
@@ -406,7 +409,6 @@ func newReferenceConfigurationListener(dir *RegistryDirectory, url *common.URL) 
 // Process handle events and update Invokers
 func (l *referenceConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
 	l.BaseConfigurationListener.Process(event)
-	// FIXME: this doesn't trigger dir.overrideUrl()
 	l.directory.refreshInvokers()
 }
 
@@ -433,6 +435,5 @@ func (l *consumerConfigurationListener) addNotifyListener(listener registry.Noti
 // Process handles events from Configuration Center and update Invokers
 func (l *consumerConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
 	l.BaseConfigurationListener.Process(event)
-	// FIXME: this doesn't trigger dir.overrideUrl()
 	l.directory.refreshInvokers()
 }
