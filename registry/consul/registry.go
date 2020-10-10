@@ -187,5 +187,10 @@ func (r *consulRegistry) IsAvailable() bool {
 
 // Destroy consul registry center
 func (r *consulRegistry) Destroy() {
+	if r.URL != nil{
+		if err := r.UnRegister(*r.URL); err != nil{
+			logger.Errorf("consul registry unregister with err: %s", err.Error())
+		}
+	}
 	close(r.done)
 }
