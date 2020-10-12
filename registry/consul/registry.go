@@ -37,6 +37,7 @@ import (
 
 const (
 	registryConnDelay = 3
+	registryDestroyDefaultTimeout = time.Second
 )
 
 func init() {
@@ -55,6 +56,9 @@ type consulRegistry struct {
 	// Done field represents whether
 	// consul registry is closed.
 	done chan struct{}
+
+	// time wait when destroy
+	timeOut time.Duration
 }
 
 func newConsulRegistry(url *common.URL) (registry.Registry, error) {
@@ -68,6 +72,7 @@ func newConsulRegistry(url *common.URL) (registry.Registry, error) {
 		URL:    url,
 		client: client,
 		done:   make(chan struct{}),
+		timeOut: registryDestroyDefaultTimeout,
 	}
 
 	return r, nil
@@ -188,8 +193,25 @@ func (r *consulRegistry) IsAvailable() bool {
 // Destroy consul registry center
 func (r *consulRegistry) Destroy() {
 	if r.URL != nil{
-		if err := r.UnRegister(*r.URL); err != nil{
-			logger.Errorf("consul registry unregister with err: %s", err.Error())
+		done := make(chan struct{}, 1)
+		ticker := time.NewTicker(r.timeOut)
+		go func(){
+			defer func(){
+				if e := recover(); e != nil{
+					logger.Errorf("consulRegistry destory with panic: %v", e)
+				}
+				done <- struct{}{}
+			}()
+			if err := r.UnRegister(*r.URL); err != nil{
+				logger.Errorf("consul registry unregister with err: %s", err.Error())
+			}
+		}()
+		select {
+		case <- done:
+			logger.Infof("consulRegistry unregister done")
+		case <- ticker.C:
+			logger.Errorf("consul unregister timeout")
+			ticker.Stop()
 		}
 	}
 	close(r.done)
