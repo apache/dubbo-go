@@ -56,7 +56,7 @@ func (suite *consulRegistryTestSuite) testSubscribe() {
 	suite.listener = listener
 }
 
-func (suite *consulRegistryTestSuite) testDestroy(){
+func (suite *consulRegistryTestSuite) testDestroy() {
 	consumerRegistryUrl := newConsumerRegistryUrl(registryHost, registryPort)
 	consumerRegistry, _ := newConsulRegistry(consumerRegistryUrl)
 	consulRegistryImp := consumerRegistry.(*consulRegistry)
