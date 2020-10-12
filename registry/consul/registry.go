@@ -194,7 +194,7 @@ func (r *consulRegistry) IsAvailable() bool {
 func (r *consulRegistry) Destroy() {
 	if r.URL != nil {
 		done := make(chan struct{}, 1)
-		ticker := time.NewTicker(r.timeOut)
+		ticker := time.After(r.timeOut)
 		go func() {
 			defer func() {
 				if e := recover(); e != nil {
@@ -209,9 +209,8 @@ func (r *consulRegistry) Destroy() {
 		select {
 		case <-done:
 			logger.Infof("consulRegistry unregister done")
-		case <-ticker.C:
+		case <-ticker:
 			logger.Errorf("consul unregister timeout")
-			ticker.Stop()
 		}
 	}
 	close(r.done)
