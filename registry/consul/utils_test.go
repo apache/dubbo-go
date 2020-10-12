@@ -187,8 +187,6 @@ func test2(t *testing.T) {
 	suite.testDestroy()
 }
 
-
-
 func TestConsulRegistry(t *testing.T) {
 	t.Run("test1", test1)
 	t.Run("test2", test2)
