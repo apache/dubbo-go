@@ -113,8 +113,9 @@ func (dir *RegistryDirectory) Notify(event *registry.ServiceEvent) {
 }
 
 // NotifyAll notify the events that are complete Service Event List.
-func (dir *RegistryDirectory) NotifyAll(events []*registry.ServiceEvent) {
-	go dir.refreshAllInvokers(events)
+// After notify the address, the callback func will be invoked.
+func (dir *RegistryDirectory) NotifyAll(events []*registry.ServiceEvent, callback func()) {
+	go dir.refreshAllInvokers(events, callback)
 }
 
 // refreshInvokers refreshes service's events.
@@ -132,7 +133,7 @@ func (dir *RegistryDirectory) refreshInvokers(event *registry.ServiceEvent) {
 
 // refreshAllInvokers the argument is the complete list of the service events,  we can safely assume any cached invoker
 // not in the incoming list can be removed.  The Action of serviceEvent should be EventTypeUpdate.
-func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent) {
+func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent, callback func()) {
 	var (
 		oldInvokers []protocol.Invoker
 		addEvents   []*registry.ServiceEvent
@@ -145,6 +146,8 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 			return
 		}
 	}
+	// After notify all addresses, do some callback.
+	defer callback()
 	func() {
 		// this lock is work at batch update of InvokeCache
 		dir.registerLock.Lock()
