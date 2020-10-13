@@ -55,3 +55,19 @@ func (suite *consulRegistryTestSuite) testSubscribe() {
 	assert.NoError(suite.t, err)
 	suite.listener = listener
 }
+
+func (suite *consulRegistryTestSuite) testDestroy() {
+	consumerRegistryUrl := newConsumerRegistryUrl(registryHost, registryPort)
+	consumerRegistry, _ := newConsulRegistry(consumerRegistryUrl)
+	consulRegistryImp := consumerRegistry.(*consulRegistry)
+	assert.True(suite.t, consulRegistryImp.IsAvailable())
+	consulRegistryImp.Destroy()
+	assert.False(suite.t, consulRegistryImp.IsAvailable())
+
+	consumerRegistry, _ = newConsulRegistry(consumerRegistryUrl)
+	consulRegistryImp = consumerRegistry.(*consulRegistry)
+	consulRegistryImp.URL = nil
+	assert.True(suite.t, consulRegistryImp.IsAvailable())
+	consulRegistryImp.Destroy()
+	assert.False(suite.t, consulRegistryImp.IsAvailable())
+}
