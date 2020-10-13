@@ -249,7 +249,7 @@ func (nl *overrideSubscribeListener) Notify(event *registry.ServiceEvent) {
 	}
 }
 
-func (nl *overrideSubscribeListener) NotifyAll(events []*registry.ServiceEvent) {
+func (nl *overrideSubscribeListener) NotifyAll(events []*registry.ServiceEvent, callback func()) {
 	if len(events) == 0 {
 		return
 	}

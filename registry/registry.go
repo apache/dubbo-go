@@ -76,7 +76,8 @@ type NotifyListener interface {
 	// NotifyAll the events are complete Service Event List.
 	// The argument of events []*ServiceEvent is equal to urls []*URL, The Action of serviceEvent should be EventTypeUpdate.
 	// If your registry center can only get all urls but can't get individual event, you should use this one.
-	NotifyAll([]*ServiceEvent)
+	// After notify the address, the callback func will be invoked.
+	NotifyAll([]*ServiceEvent, func())
 }
 
 // Listener Deprecated!
