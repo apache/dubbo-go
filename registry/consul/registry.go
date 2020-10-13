@@ -56,9 +56,6 @@ type consulRegistry struct {
 	// Done field represents whether
 	// consul registry is closed.
 	done chan struct{}
-
-	// time wait when destroy
-	timeOut time.Duration
 }
 
 func newConsulRegistry(url *common.URL) (registry.Registry, error) {
