@@ -240,7 +240,7 @@ func (g *dubboGrpc) generateClientSignature(servName string, method *pb.MethodDe
 	}
 	respName := "out *" + g.typeName(method.GetOutputType())
 	if method.GetServerStreaming() || method.GetClientStreaming() {
-		respName = servName + "_" + generator.CamelCase(origMethName) + "Client"
+		respName = "out * "+ servName + "_" + generator.CamelCase(origMethName) + "Client"
 	}
 	return fmt.Sprintf("%s func(ctx %s.Context%s, %s) error", methName, contextPkg, reqArg, respName)
 }
