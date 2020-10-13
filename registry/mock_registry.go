@@ -18,6 +18,7 @@
 package registry
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -113,7 +114,9 @@ func (r *MockRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 			for {
 				select {
 				case e := <-r.allAddress:
-					notifyListener.NotifyAll(e)
+					notifyListener.NotifyAll(e, func() {
+						fmt.Print("notify all ok")
+					})
 					break
 				}
 			}
