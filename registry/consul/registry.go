@@ -37,7 +37,7 @@ import (
 
 const (
 	registryConnDelay             = 3
-	registryDestroyDefaultTimeout = time.Second
+	registryDestroyDefaultTimeout = time.Second * 3
 )
 
 func init() {
@@ -69,10 +69,9 @@ func newConsulRegistry(url *common.URL) (registry.Registry, error) {
 	}
 
 	r := &consulRegistry{
-		URL:     url,
-		client:  client,
-		done:    make(chan struct{}),
-		timeOut: registryDestroyDefaultTimeout,
+		URL:    url,
+		client: client,
+		done:   make(chan struct{}),
 	}
 
 	return r, nil
@@ -194,7 +193,6 @@ func (r *consulRegistry) IsAvailable() bool {
 func (r *consulRegistry) Destroy() {
 	if r.URL != nil {
 		done := make(chan struct{}, 1)
-		ticker := time.After(r.timeOut)
 		go func() {
 			defer func() {
 				if e := recover(); e != nil {
@@ -209,7 +207,7 @@ func (r *consulRegistry) Destroy() {
 		select {
 		case <-done:
 			logger.Infof("consulRegistry unregister done")
-		case <-ticker:
+		case <-time.After(registryDestroyDefaultTimeout):
 			logger.Errorf("consul unregister timeout")
 		}
 	}
