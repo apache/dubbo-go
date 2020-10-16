@@ -211,7 +211,7 @@ func (g *dubboGrpc) generateService(file *generator.FileDescriptor, service *pb.
 	g.P("HandlerType: (*", grpcserverType, ")(nil),")
 	g.P("Methods: []", grpcPkg, ".MethodDesc{")
 	for i, method := range service.Method {
-		if method.GetClientStreaming() || method.GetServerStreaming() {
+		if method.GetServerStreaming() || method.GetClientStreaming() {
 			continue
 		}
 		g.P("{")
@@ -256,7 +256,8 @@ func (g *dubboGrpc) generateClientSignature(servName string, method *pb.MethodDe
 	}
 	respName := "out *" + g.typeName(method.GetOutputType())
 	if method.GetServerStreaming() || method.GetClientStreaming() {
-		respName = "stream *" + servName + "_" + generator.CamelCase(origMethName) + "Client"
+		respName = servName + "_" + generator.CamelCase(origMethName) + "Client"
+		return fmt.Sprintf("%s func(ctx %s.Context%s) (%s, error)", methName, contextPkg, reqArg, respName)
 	}
 	return fmt.Sprintf("%s func(ctx %s.Context%s, %s) error", methName, contextPkg, reqArg, respName)
 }
