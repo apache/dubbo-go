@@ -94,9 +94,6 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	proto := url.Protocol
 	path := strings.TrimPrefix(url.Path, "/")
 	args := invocation.Arguments()
-	for _, v := range args {
-		logger.Debugf("temp arg = %+v", v)
-	}
 
 	// get service
 	svc := common.ServiceMap.GetService(proto, path)
@@ -108,7 +105,6 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 	// get method
 	method := svc.Method()[methodName]
-	logger.Debugf("method = %s", method.Method().Name)
 	if method == nil {
 		logger.Errorf("cannot find method [%s] of service [%s] in %s", methodName, path, proto)
 		result.SetError(perrors.Errorf("cannot find method [%s] of service [%s] in %s", methodName, path, proto))
@@ -116,12 +112,10 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	}
 
 	in := []reflect.Value{svc.Rcvr()}
-	logger.Debugf("in = %+v, len = %d", in, len(in))
 	if method.CtxType() != nil {
 		ctx = context.WithValue(ctx, constant.AttachmentKey, invocation.Attachments())
 		in = append(in, method.SuiteContext(ctx))
 	}
-	logger.Debugf("after check method.CtxType")
 
 	// prepare argv
 	if (len(method.ArgsType()) == 1 || len(method.ArgsType()) == 2 && method.ReplyType() == nil) && method.ArgsType()[0].String() == "[]interface {}" {
@@ -140,19 +134,15 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 		}
 	}
 
-	logger.Debugf("after check ArgsType and so on")
-
 	// prepare replyv
 	var replyv reflect.Value
-	logger.Debugf("argsType len = %d, name = %s", len(method.ArgsType()), method.ArgsType()[0].Name())
-
 	if method.ReplyType() == nil && len(method.ArgsType()) > 0 {
 		replyv = reflect.New(method.ArgsType()[len(method.ArgsType())-1].Elem())
 		in = append(in, replyv)
 	}
-	logger.Debugf("before call")
+
 	returnValues := method.Method().Func.Call(in)
-	logger.Debugf("after call")
+
 	var retErr interface{}
 	if len(returnValues) == 1 {
 		retErr = returnValues[0].Interface()
