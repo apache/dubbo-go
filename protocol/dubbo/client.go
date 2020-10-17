@@ -268,19 +268,25 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 		return errSessionNotExist
 	}
 	defer func() {
-		c.pool.ch <- struct{}{}
+		failNumber := 0
 		if err == nil {
 			for {
 				ok := atomic.CompareAndSwapUint32(&c.pool.pushing, 0, 1)
 				if ok {
 					c.pool.poolQueue.pushHead(conn)
 					c.pool.pushing = 0
+					c.pool.ch <- struct{}{}
 					return
 				}
-				time.Sleep(1e6)
+				failNumber++
+				if failNumber%10 == 0 {
+					time.Sleep(1e6)
+				}
 			}
+		} else {
+			c.pool.ch <- struct{}{}
+			conn.close()
 		}
-		conn.close()
 	}()
 
 	if err = c.transfer(session, p, rsp); err != nil {
