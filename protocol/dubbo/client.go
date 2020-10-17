@@ -21,6 +21,7 @@ import (
 	"math/rand"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -29,7 +30,7 @@ import (
 	"github.com/dubbogo/getty"
 	gxsync "github.com/dubbogo/gost/sync"
 	perrors "github.com/pkg/errors"
-	"go.uber.org/atomic"
+	uatomic "go.uber.org/atomic"
 	"gopkg.in/yaml.v2"
 )
 
@@ -134,7 +135,7 @@ type Client struct {
 	opts     Options
 	conf     ClientConfig
 	pool     *gettyRPCClientPool
-	sequence atomic.Uint64
+	sequence uatomic.Uint64
 
 	pendingResponses *sync.Map
 }
@@ -269,8 +270,15 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 	defer func() {
 		c.pool.ch <- struct{}{}
 		if err == nil {
-			c.pool.put(conn)
-			return
+			for {
+				ok := atomic.CompareAndSwapUint32(&c.pool.pushing, 0, 1)
+				if ok {
+					c.pool.poolQueue.pushHead(conn)
+					c.pool.pushing = 0
+					return
+				}
+				time.Sleep(1e6)
+			}
 		}
 		conn.close()
 	}()
