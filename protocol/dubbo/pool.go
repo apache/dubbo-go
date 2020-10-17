@@ -295,17 +295,23 @@ type gettyRPCClientPool struct {
 	chInitialized uint32 // set to 1 when field ch is initialized
 	ch            chan struct{}
 	closeCh       chan struct{}
+	poolQueue     *poolDequeue
+	pushing       uint32
 	sync.RWMutex
 	conns []*gettyRPCClient
 }
 
 func newGettyRPCClientConnPool(rpcClient *Client, size int, ttl time.Duration) *gettyRPCClientPool {
+	pq := &poolDequeue{
+		vals: make([]eface, size),
+	}
 	return &gettyRPCClientPool{
 		rpcClient: rpcClient,
 		maxSize:   size,
 		ttl:       int64(ttl.Seconds()),
 		conns:     make([]*gettyRPCClient, 0, 16),
 		closeCh:   make(chan struct{}, 0),
+		poolQueue: pq,
 	}
 }
 
@@ -358,15 +364,30 @@ func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPC
 	if err != nil {
 		return nil, err
 	}
-	p.Lock()
-	defer p.Unlock()
-	conn, err := p.get()
+	conn, err := p.getConnFromPoll()
 	if err == nil && conn == nil {
 		rpcClientConn, err := newGettyRPCClientConn(p, protocol, addr)
 		return rpcClientConn, perrors.WithStack(err)
 
 	}
 	return conn, perrors.WithStack(err)
+}
+
+func (p *gettyRPCClientPool) getConnFromPoll() (*gettyRPCClient, error) {
+	now := time.Now().Unix()
+	if p.poolQueue == nil {
+		return nil, errClientPoolClosed
+	}
+	for value, ok := p.poolQueue.popTail(); ok; {
+		conn := value.(*gettyRPCClient)
+		if d := now - conn.getActive(); d > p.ttl {
+			go conn.close()
+			continue
+		}
+		conn.updateActive(now)
+		return conn, nil
+	}
+	return nil, nil
 }
 
 func (p *gettyRPCClientPool) get() (*gettyRPCClient, error) {
