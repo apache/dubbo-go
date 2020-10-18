@@ -75,6 +75,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.
 	if url.SubURL == nil {
 		return nil, perrors.Errorf("url is invalid, suburl can not be nil")
 	}
+	logger.Debugf("new RegistryDirectory for service :%s.", url.Key())
 	dir := &RegistryDirectory{
 		BaseDirectory:    directory.NewBaseDirectory(url),
 		cacheInvokers:    []protocol.Invoker{},
@@ -99,6 +100,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.
 
 // subscribe from registry
 func (dir *RegistryDirectory) subscribe(url *common.URL) {
+	logger.Debugf("subscribe service :%s for RegistryDirectory.", url.Key())
 	dir.consumerConfigurationListener.addNotifyListener(dir)
 	dir.referenceConfigurationListener = newReferenceConfigurationListener(dir, url)
 	dir.registry.Subscribe(url, dir)
