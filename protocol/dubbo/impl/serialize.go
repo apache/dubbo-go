@@ -14,12 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package impl
 
-package router
+import (
+	"github.com/apache/dubbo-go/common/constant"
+)
 
-// Chain
-type Chain interface {
-	router
-	// AddRouters Add routers
-	AddRouters([]PriorityRouter)
+type Serializer interface {
+	Marshal(p DubboPackage) ([]byte, error)
+	Unmarshal([]byte, *DubboPackage) error
+}
+
+func LoadSerializer(p *DubboPackage) error {
+	// NOTE: default serialID is S_Hessian
+	serialID := p.Header.SerialID
+	if serialID == 0 {
+		serialID = constant.S_Hessian2
+	}
+	serializer, err := GetSerializerById(serialID)
+	if err != nil {
+		panic(err)
+	}
+	p.SetSerializer(serializer.(Serializer))
+	return nil
 }

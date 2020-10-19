@@ -40,7 +40,7 @@ type RemoteConfig struct {
 	TimeoutStr string            `default:"5s" yaml:"timeout" json:"timeout,omitempty"`
 	Username   string            `yaml:"username" json:"username,omitempty" property:"username"`
 	Password   string            `yaml:"password" json:"password,omitempty"  property:"password"`
-	Params     map[string]string `yaml:"params" json:"address,omitempty"`
+	Params     map[string]string `yaml:"params" json:"params,omitempty"`
 }
 
 // Timeout return timeout duration.
