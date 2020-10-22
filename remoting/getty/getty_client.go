@@ -204,12 +204,10 @@ func (c *Client) Request(request *remoting.Request, timeout time.Duration, respo
 	return perrors.WithStack(err)
 }
 
+// isAvailable returns true if the connection is available, or it can be re-established.
 func (c *Client) IsAvailable() bool {
-	client, err := c.pool.get()
-	if client == nil || !client.isAvailable() || err != nil {
-		return false
-	}
-	return true
+	_, _, err := c.selectSession(c.addr)
+	return err == nil
 }
 
 func (c *Client) selectSession(addr string) (*gettyRPCClient, getty.Session, error) {
