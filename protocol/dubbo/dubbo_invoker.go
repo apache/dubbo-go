@@ -161,6 +161,10 @@ func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) ti
 	return di.timeout
 }
 
+func (di *DubboInvoker) IsAvailable() bool {
+	return di.client.IsAvailable()
+}
+
 // Destroy destroy dubbo client invoker.
 func (di *DubboInvoker) Destroy() {
 	di.quitOnce.Do(func() {

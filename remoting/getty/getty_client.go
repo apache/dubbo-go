@@ -204,6 +204,14 @@ func (c *Client) Request(request *remoting.Request, timeout time.Duration, respo
 	return perrors.WithStack(err)
 }
 
+func (c *Client) IsAvailable() bool {
+	client, err := c.pool.get()
+	if client == nil || !client.isAvailable() || err != nil {
+		return false
+	}
+	return true
+}
+
 func (c *Client) selectSession(addr string) (*gettyRPCClient, getty.Session, error) {
 	rpcClient, err := c.pool.getGettyRpcClient(addr)
 	if err != nil {
