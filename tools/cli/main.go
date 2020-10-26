@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"log"
 
 	"github.com/edison/go-telnet/client"
 
@@ -19,19 +20,32 @@ var sendObjFilePath string
 var recvObjFilePath string
 
 func init() {
-	flag.StringVar(&host, "host", "localhost", "target server host")
-	flag.IntVar(&port, "port", 8080, "target server port")
-	flag.StringVar(&protocolName, "protocol", "dubbo", "transfer protocol")
-	flag.StringVar(&InterfaceID, "interface", "com", "target service registered interface")
-	flag.StringVar(&version, "version", "", "target service version")
-	flag.StringVar(&group, "group", "", "target service group")
+	flag.StringVar(&host, "h", "localhost", "target server host")
+	flag.IntVar(&port, "p", 8080, "target server port")
+	flag.StringVar(&protocolName, "proto", "dubbo", "transfer protocol")
+	flag.StringVar(&InterfaceID, "i", "com", "target service registered interface")
+	flag.StringVar(&version, "v", "", "target service version")
+	flag.StringVar(&group, "g", "", "target service group")
 	flag.StringVar(&method, "method", "", "target method")
 	flag.StringVar(&sendObjFilePath, "sendObj", "", "json file path to define transfer struct")
 	flag.StringVar(&recvObjFilePath, "recvObj", "", "json file path to define receive struct")
 }
 
+func checkParam() {
+	if method == "" {
+		log.Fatalln("-method value not fond")
+	}
+	if sendObjFilePath == "" {
+		log.Fatalln("-sendObj value not found")
+	}
+	if recvObjFilePath == "" {
+		log.Fatalln("-recObj value not found")
+	}
+}
+
 func main() {
 	flag.Parse()
+	checkParam()
 	reqPkg := json_register.RegisterStructFromFile(sendObjFilePath)
 	recvPkg := json_register.RegisterStructFromFile(recvObjFilePath)
 
@@ -40,4 +54,5 @@ func main() {
 		panic(err)
 	}
 	t.ProcessRequests(recvPkg)
+	t.Destory()
 }
