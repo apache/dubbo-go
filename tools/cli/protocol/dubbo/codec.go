@@ -22,7 +22,6 @@ import (
 	"bytes"
 	e1 "errors"
 	"fmt"
-	"reflect"
 	"sync"
 
 	hessian "github.com/LaurenceLiZhixin/dubbo-go-hessian2"
@@ -64,45 +63,20 @@ type DubboPackage struct {
 	Err     error
 }
 
-// String prints protocol package detail include header、path、body etc.
-func (p DubboPackage) String() string {
-	return fmt.Sprintf("DubboPackage: Header-%v, Path-%v, Body-%v", p.Header, p.Service, p.Body)
-}
-
 // Marshal encode hessian package.
 // DubboPackage -> byte
 func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 	codec := hessian.NewHessianCodec(nil)
-
-	fmt.Printf("in Marshal: p.Service = %+v, p.Header = %+v\n", p.Service, p.Header)
-	val := reflect.ValueOf(p.Body).Elem()
-	typ := reflect.TypeOf(p.Body).Elem()
-	nums := val.NumField()
-	for i := 0; i < nums; i++ {
-		fmt.Printf("field %d: name = %s, val = %+v\n", i, typ.Field(i).Name, val.Field(i))
-		if i == 0 {
-			val1 := val.Field(i).Elem()
-			typ1 := typ.Field(i).Type
-			nums1 := val1.Len()
-			for j := 0; j < nums1; j++ {
-				fmt.Printf("field1 %d: type = %+v, val = %+v\n", j, typ1, val1.Index(j).Elem())
-			}
-
-		}
-	}
 	pkg, err := codec.Write(p.Service, p.Header, p.Body)
 	if err != nil {
 		return nil, perrors.WithStack(err)
 	}
-
-	fmt.Printf("after writed Pkg = %s", string(pkg))
 	return bytes.NewBuffer(pkg), nil
 }
 
 // Unmarshal decodes hessian package.
 // byte -> DubboPackage
 func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, pendingRsp *sync.Map) error {
-	// fix issue https://github.com/apache/dubbo-go/issues/380
 	bufLen := buf.Len()
 	if bufLen < hessian.HEADER_LENGTH {
 		return perrors.WithStack(hessian.ErrHeaderNotEnough)
@@ -114,8 +88,6 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, pendingRsp *sync.Map) error 
 		return perrors.WithStack(err)
 	}
 	if p.Header.Type&hessian.PackageRequest != 0x00 {
-		// size of this array must be '7'
-		// https://github.com/apache/dubbo-go-hessian2/blob/master/request.go#L272
 		p.Body = make([]interface{}, 7)
 	} else {
 		rspObj, ok := pendingRsp.Load(uint64(p.Header.ID))
