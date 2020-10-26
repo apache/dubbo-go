@@ -20,11 +20,11 @@ package cluster_impl
 import (
 	"context"
 	"fmt"
+	"github.com/apache/dubbo-go/common"
 	"strconv"
 )
 
 import (
-	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 )
 
@@ -89,7 +89,7 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 		return result
 	}
 
-	ip, _ := gxnet.GetLocalIP()
+	ip := common.GetLocalIp()
 	invokerSvc := invoker.GetUrl().Service()
 	invokerUrl := invoker.directory.GetUrl()
 	return &protocol.RPCResult{
