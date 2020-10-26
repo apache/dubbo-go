@@ -11,7 +11,7 @@ type Protocol interface {
 
 type Request struct {
 	ID          uint64
-	InterfaceID string // interface寻址id例如0
+	InterfaceID string // interface寻址id
 	Version     string
 	Group       string
 	Method      string

@@ -2,15 +2,22 @@ package json_register
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 
-	jparser "github.com/LaurenceLiZhixin/json-interface-parser"
+	"github.com/edison/go-telnet/common"
+
 	hessian "github.com/LaurenceLiZhixin/dubbo-go-hessian2"
+	jparser "github.com/LaurenceLiZhixin/json-interface-parser"
 )
 
 func RegisterStructFromFile(path string) interface{} {
+	if path == "" {
+		return nil
+	}
 	pkg, err := jparser.JsonFile2Interface(path)
-	fmt.Printf("get creatd pkg = %+v\n", pkg)
+	log.Printf("Created pkg: \n")
+	common.PrintInterface(pkg)
 	if err != nil {
 		fmt.Println("error: json file parse failed :", err)
 		return nil

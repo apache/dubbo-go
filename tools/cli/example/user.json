@@ -2,7 +2,6 @@
   "ID": "string",
   "Name": "string",
   "Age": "int",
-  "Time": "time.Time",
   "JavaClassName":  "string@com.ikurento.user.User",
   "SubInfo": {
     "SubID": "string",
