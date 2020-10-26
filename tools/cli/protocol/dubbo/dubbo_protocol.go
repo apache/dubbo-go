@@ -2,7 +2,7 @@ package dubbo
 
 import (
 	"bytes"
-	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -47,7 +47,7 @@ func (p RpcClientPackageHandler) Read(data []byte, pendingRsp *sync.Map) (interf
 	}
 	dubboRsp, ok := pkg.Body.(*Response)
 	if !ok {
-		fmt.Println("error with dubbboRsp.Body assertion err:")
+		log.Println("error: dubbboRsp.Body assertion err:")
 	}
 
 	return dubboRsp.Reply, hessian.HEADER_LENGTH + pkg.Header.BodyLen, nil
@@ -57,13 +57,13 @@ func (p RpcClientPackageHandler) Read(data []byte, pendingRsp *sync.Map) (interf
 func (p RpcClientPackageHandler) Write(clientReq *protocol.Request) ([]byte, error) {
 	req, ok := parseReq2DubboPkg(clientReq)
 	if !ok {
-		fmt.Printf("illegal clientReq:%+v\n", clientReq)
+		log.Printf("illegal clientReq:%+v\n", clientReq)
 		return nil, perrors.New("invalid rpc request")
 	}
 
 	buf, err := req.Marshal()
 	if err != nil {
-		fmt.Printf("binary.Write(req{%#v}) = err{%#v}\n", req, perrors.WithStack(err))
+		log.Printf("binary.Write(req{%#v}) = err{%#v}\n", req, perrors.WithStack(err))
 		return nil, perrors.WithStack(err)
 	}
 
