@@ -18,8 +18,11 @@
 package common
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetLocalIp(t *testing.T) {
