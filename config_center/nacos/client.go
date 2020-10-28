@@ -176,7 +176,7 @@ func initNacosConfigClient(nacosAddrs []string, timeout time.Duration, url commo
 			Endpoint:            url.GetParam(constant.NACOS_ENDPOINT, ""),
 			Username:            url.GetParam(constant.NACOS_USERNAME, ""),
 			Password:            url.GetParam(constant.NACOS_PASSWORD, ""),
-			NamespaceId:         url.GetParam(constant.NACOS_NAMESPACE_ID, ""),
+			NamespaceId:         url.GetParam(constant.CONFIG_NAMESPACE_KEY, ""),
 		},
 	})
 }
