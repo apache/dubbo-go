@@ -180,6 +180,8 @@ func (client *ExchangeClient) Send(invocation *protocol.Invocation, url common.U
 // close client
 func (client *ExchangeClient) Close() {
 	client.client.Close()
+	// for reinit client
+	client.init = false
 }
 
 // handle the response from server
