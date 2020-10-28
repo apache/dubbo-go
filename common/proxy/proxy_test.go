@@ -24,7 +24,6 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/protocol/invocation"
 	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
@@ -34,6 +33,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/dubbo/hessian2"
+	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 type TestService struct {
