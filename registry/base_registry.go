@@ -29,7 +29,6 @@ import (
 )
 
 import (
-	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 )
 
@@ -53,7 +52,7 @@ var (
 
 func init() {
 	processID = fmt.Sprintf("%d", os.Getpid())
-	localIP, _ = gxnet.GetLocalIP()
+	localIP = common.GetLocalIp()
 }
 
 type createPathFunc func(dubboPath string) error
