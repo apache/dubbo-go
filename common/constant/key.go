@@ -166,7 +166,7 @@ const (
 	NACOS_CATEGORY_KEY           = "category"
 	NACOS_PROTOCOL_KEY           = "protocol"
 	NACOS_PATH_KEY               = "path"
-	NACOS_NAMESPACE_ID           = "namespaceId"
+	NACOS_NAMESPACE_KEY          = "namespace"
 	NACOS_PASSWORD               = "password"
 	NACOS_USERNAME               = "username"
 )
