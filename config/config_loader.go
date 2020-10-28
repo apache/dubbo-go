@@ -28,7 +28,6 @@ import (
 )
 
 import (
-	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 )
 
@@ -250,7 +249,7 @@ func createInstance(url common.URL) (registry.ServiceInstance, error) {
 
 	host := url.Ip
 	if len(host) == 0 {
-		host, err = gxnet.GetLocalIP()
+		host = common.GetLocalIp()
 		if err != nil {
 			return nil, perrors.WithMessage(err, "could not get the local Ip")
 		}

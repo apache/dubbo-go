@@ -26,7 +26,6 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
@@ -164,7 +163,7 @@ func TestRoute_matchWhen(t *testing.T) {
 }
 
 func TestRoute_matchFilter(t *testing.T) {
-	localIP, _ := gxnet.GetLocalIP()
+	localIP := common.GetLocalIp()
 	t.Logf("The local ip is %s", localIP)
 	url1, _ := common.NewURL("dubbo://10.20.3.3:20880/com.foo.BarService?default.serialization=fastjson")
 	url2, _ := common.NewURL(fmt.Sprintf(factoryDubboFormat, localIP))
@@ -223,7 +222,7 @@ func TestRoute_methodRoute(t *testing.T) {
 
 func TestRoute_ReturnFalse(t *testing.T) {
 	url, _ := common.NewURL("")
-	localIP, _ := gxnet.GetLocalIP()
+	localIP := common.GetLocalIp()
 	invokers := []protocol.Invoker{NewMockInvoker(url, 1), NewMockInvoker(url, 2), NewMockInvoker(url, 3)}
 	inv := &invocation.RPCInvocation{}
 	rule := base64.URLEncoding.EncodeToString([]byte("host = " + localIP + " => false"))
@@ -234,7 +233,7 @@ func TestRoute_ReturnFalse(t *testing.T) {
 }
 
 func TestRoute_ReturnEmpty(t *testing.T) {
-	localIP, _ := gxnet.GetLocalIP()
+	localIP := common.GetLocalIp()
 	url, _ := common.NewURL("")
 	invokers := []protocol.Invoker{NewMockInvoker(url, 1), NewMockInvoker(url, 2), NewMockInvoker(url, 3)}
 	inv := &invocation.RPCInvocation{}
@@ -246,7 +245,7 @@ func TestRoute_ReturnEmpty(t *testing.T) {
 }
 
 func TestRoute_ReturnAll(t *testing.T) {
-	localIP, _ := gxnet.GetLocalIP()
+	localIP := common.GetLocalIp()
 	urlString := "dubbo://" + localIP + "/com.foo.BarService"
 	dubboURL, _ := common.NewURL(urlString)
 	mockInvoker1 := NewMockInvoker(dubboURL, 1)
@@ -262,7 +261,7 @@ func TestRoute_ReturnAll(t *testing.T) {
 }
 
 func TestRoute_HostFilter(t *testing.T) {
-	localIP, _ := gxnet.GetLocalIP()
+	localIP := common.GetLocalIp()
 	url1, _ := common.NewURL(factory333URL)
 	url2, _ := common.NewURL(fmt.Sprintf(factoryDubboFormat, localIP))
 	url3, _ := common.NewURL(fmt.Sprintf(factoryDubboFormat, localIP))
@@ -281,7 +280,7 @@ func TestRoute_HostFilter(t *testing.T) {
 }
 
 func TestRoute_Empty_HostFilter(t *testing.T) {
-	localIP, _ := gxnet.GetLocalIP()
+	localIP := common.GetLocalIp()
 	url1, _ := common.NewURL(factory333URL)
 	url2, _ := common.NewURL(fmt.Sprintf(factoryDubboFormat, localIP))
 	url3, _ := common.NewURL(fmt.Sprintf(factoryDubboFormat, localIP))
@@ -300,7 +299,7 @@ func TestRoute_Empty_HostFilter(t *testing.T) {
 }
 
 func TestRoute_False_HostFilter(t *testing.T) {
-	localIP, _ := gxnet.GetLocalIP()
+	localIP := common.GetLocalIp()
 	url1, _ := common.NewURL(factory333URL)
 	url2, _ := common.NewURL(fmt.Sprintf(factoryDubboFormat, localIP))
 	url3, _ := common.NewURL(fmt.Sprintf(factoryDubboFormat, localIP))
@@ -319,7 +318,7 @@ func TestRoute_False_HostFilter(t *testing.T) {
 }
 
 func TestRoute_Placeholder(t *testing.T) {
-	localIP, _ := gxnet.GetLocalIP()
+	localIP := common.GetLocalIp()
 	url1, _ := common.NewURL(factory333URL)
 	url2, _ := common.NewURL(fmt.Sprintf(factoryDubboFormat, localIP))
 	url3, _ := common.NewURL(fmt.Sprintf(factoryDubboFormat, localIP))
@@ -338,7 +337,7 @@ func TestRoute_Placeholder(t *testing.T) {
 }
 
 func TestRoute_NoForce(t *testing.T) {
-	localIP, _ := gxnet.GetLocalIP()
+	localIP := common.GetLocalIp()
 	url1, _ := common.NewURL(factory333URL)
 	url2, _ := common.NewURL(fmt.Sprintf(factoryDubboFormat, localIP))
 	url3, _ := common.NewURL(fmt.Sprintf(factoryDubboFormat, localIP))
@@ -355,7 +354,7 @@ func TestRoute_NoForce(t *testing.T) {
 }
 
 func TestRoute_Force(t *testing.T) {
-	localIP, _ := gxnet.GetLocalIP()
+	localIP := common.GetLocalIp()
 	url1, _ := common.NewURL(factory333URL)
 	url2, _ := common.NewURL(fmt.Sprintf(factoryDubboFormat, localIP))
 	url3, _ := common.NewURL(fmt.Sprintf(factoryDubboFormat, localIP))
