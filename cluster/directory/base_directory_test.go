@@ -24,7 +24,6 @@ import (
 )
 
 import (
-	gxnet "github.com/dubbogo/gost/net"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -55,7 +54,7 @@ func TestBuildRouterChain(t *testing.T) {
 
 	assert.NotNil(t, directory)
 
-	localIP, _ := gxnet.GetLocalIP()
+	localIP := common.GetLocalIp()
 	rule := base64.URLEncoding.EncodeToString([]byte("true => " + " host = " + localIP))
 	routeURL := getRouteURL(rule, anyURL)
 	routeURL.AddParam(constant.INTERFACE_KEY, "mock-app")
@@ -79,7 +78,7 @@ func TestIsProperRouter(t *testing.T) {
 	regURL := url
 	regURL.AddParam(constant.APPLICATION_KEY, "mock-app")
 	d := NewBaseDirectory(&regURL)
-	localIP, _ := gxnet.GetLocalIP()
+	localIP := common.GetLocalIp()
 	rule := base64.URLEncoding.EncodeToString([]byte("true => " + " host = " + localIP))
 	routeURL := getRouteURL(rule, anyURL)
 	routeURL.AddParam(constant.APPLICATION_KEY, "mock-app")
