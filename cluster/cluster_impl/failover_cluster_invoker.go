@@ -19,16 +19,17 @@ package cluster_impl
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 )
 
 import (
-	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 )
 
 import (
 	"github.com/apache/dubbo-go/cluster"
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
@@ -44,6 +45,7 @@ func newFailoverClusterInvoker(directory cluster.Directory) protocol.Invoker {
 	}
 }
 
+// nolint
 func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	var (
 		result    protocol.Result
@@ -87,12 +89,14 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 		return result
 	}
 
-	ip, _ := gxnet.GetLocalIP()
+	ip := common.GetLocalIp()
 	invokerSvc := invoker.GetUrl().Service()
 	invokerUrl := invoker.directory.GetUrl()
 	return &protocol.RPCResult{
-		Err: perrors.Errorf("Failed to invoke the method %v in the service %v. Tried %v times of the providers %v (%v/%v)from the registry %v on the consumer %v using the dubbo version %v. Last error is %v.",
-			methodName, invokerSvc, retries, providers, len(providers), len(invokers), invokerUrl, ip, constant.Version, result.Error().Error(),
+		Err: perrors.Wrap(result.Error(), fmt.Sprintf("Failed to invoke the method %v in the service %v. "+
+			"Tried %v times of the providers %v (%v/%v)from the registry %v on the consumer %v using the dubbo version %v. "+
+			"Last error is %+v.", methodName, invokerSvc, retries, providers, len(providers), len(invokers),
+			invokerUrl, ip, constant.Version, result.Error().Error()),
 		)}
 }
 

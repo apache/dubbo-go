@@ -47,7 +47,7 @@ import (
 // Request
 // ////////////////////////////////////////////
 
-// Request ...
+// Request is HTTP protocol request
 type Request struct {
 	ID          int64
 	group       string

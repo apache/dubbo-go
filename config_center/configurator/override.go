@@ -23,7 +23,6 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
-	gxnet "github.com/dubbogo/gost/net"
 )
 
 import (
@@ -61,7 +60,7 @@ func (c *overrideConfigurator) Configure(url *common.URL) {
 		currentSide := url.GetParam(constant.SIDE_KEY, "")
 		configuratorSide := c.configuratorUrl.GetParam(constant.SIDE_KEY, "")
 		if currentSide == configuratorSide && common.DubboRole[common.CONSUMER] == currentSide && c.configuratorUrl.Port == "0" {
-			localIP, _ := gxnet.GetLocalIP()
+			localIP := common.GetLocalIp()
 			c.configureIfMatch(localIP, url)
 		} else if currentSide == configuratorSide && common.DubboRole[common.PROVIDER] == currentSide && c.configuratorUrl.Port == url.Port {
 			c.configureIfMatch(url.Ip, url)
@@ -110,7 +109,7 @@ func (c *overrideConfigurator) configureIfMatchInternal(url *common.URL) {
 func (c *overrideConfigurator) configureIfMatch(host string, url *common.URL) {
 	if constant.ANYHOST_VALUE == c.configuratorUrl.Ip || host == c.configuratorUrl.Ip {
 		providers := c.configuratorUrl.GetParam(constant.OVERRIDE_PROVIDERS_KEY, "")
-		if len(providers) == 0 || strings.Index(providers, url.Location) >= 0 || strings.Index(providers, constant.ANYHOST_VALUE) >= 0 {
+		if len(providers) == 0 || strings.Contains(providers, url.Location) || strings.Contains(providers, constant.ANYHOST_VALUE) {
 			c.configureIfMatchInternal(url)
 		}
 	}
@@ -127,7 +126,7 @@ func (c *overrideConfigurator) configureDeprecated(url *common.URL) {
 		// 1.If it is a consumer ip address, the intention is to control a specific consumer instance, it must takes effect at the consumer side, any provider received this override url should ignore;
 		// 2.If the ip is 0.0.0.0, this override url can be used on consumer, and also can be used on provider
 		if url.GetParam(constant.SIDE_KEY, "") == common.DubboRole[common.CONSUMER] {
-			localIP, _ := gxnet.GetLocalIP()
+			localIP := common.GetLocalIp()
 			c.configureIfMatch(localIP, url)
 		} else {
 			c.configureIfMatch(constant.ANYHOST_VALUE, url)

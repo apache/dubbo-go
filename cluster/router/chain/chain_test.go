@@ -66,7 +66,9 @@ func TestNewRouterChain(t *testing.T) {
 	err = z.Create(path)
 	assert.NoError(t, err)
 
-	testyml := `enabled: true
+	testyml := `scope: application
+key: mock-app
+enabled: true
 force: true
 runtime: false
 conditions:
@@ -93,7 +95,7 @@ conditions:
 	assert.NotNil(t, appRouter)
 	assert.NotNil(t, appRouter.RouterRule())
 	rule := appRouter.RouterRule()
-	assert.Equal(t, "", rule.Scope)
+	assert.Equal(t, "application", rule.Scope)
 	assert.True(t, rule.Force)
 	assert.True(t, rule.Enabled)
 	assert.True(t, rule.Valid)
@@ -101,7 +103,7 @@ conditions:
 	assert.Equal(t, testyml, rule.RawRule)
 	assert.Equal(t, false, rule.Runtime)
 	assert.Equal(t, false, rule.Dynamic)
-	assert.Equal(t, "", rule.Key)
+	assert.Equal(t, "mock-app", rule.Key)
 }
 
 func TestNewRouterChainURLNil(t *testing.T) {
@@ -116,7 +118,9 @@ func TestRouterChainAddRouters(t *testing.T) {
 	err = z.Create(path)
 	assert.NoError(t, err)
 
-	testyml := `enabled: true
+	testyml := `scope: application
+key: mock-app
+enabled: true
 force: true
 runtime: false
 conditions:
@@ -168,10 +172,12 @@ func TestRouterChainRoute(t *testing.T) {
 	invokers := []protocol.Invoker{}
 	dubboURL, _ := common.NewURL(fmt.Sprintf(dubboForamt, test1234IP, port20000))
 	invokers = append(invokers, protocol.NewBaseInvoker(dubboURL))
+	chain.SetInvokers(invokers)
+	chain.buildCache()
 
 	targetURL, _ := common.NewURL(fmt.Sprintf(consumerFormat, test1111IP))
 	inv := &invocation.RPCInvocation{}
-	finalInvokers := chain.Route(invokers, &targetURL, inv)
+	finalInvokers := chain.Route(&targetURL, inv)
 
 	assert.Equal(t, 1, len(finalInvokers))
 }
@@ -182,7 +188,9 @@ func TestRouterChainRouteAppRouter(t *testing.T) {
 	err = z.Create(path)
 	assert.NoError(t, err)
 
-	testyml := `enabled: true
+	testyml := `scope: application
+key: mock-app
+enabled: true
 force: true
 runtime: false
 conditions:
@@ -205,10 +213,12 @@ conditions:
 	invokers := []protocol.Invoker{}
 	dubboURL, _ := common.NewURL(fmt.Sprintf(dubboForamt, test1234IP, port20000))
 	invokers = append(invokers, protocol.NewBaseInvoker(dubboURL))
+	chain.SetInvokers(invokers)
+	chain.buildCache()
 
 	targetURL, _ := common.NewURL(fmt.Sprintf(consumerFormat, test1111IP))
 	inv := &invocation.RPCInvocation{}
-	finalInvokers := chain.Route(invokers, &targetURL, inv)
+	finalInvokers := chain.Route(&targetURL, inv)
 
 	assert.Equal(t, 0, len(finalInvokers))
 }
@@ -232,10 +242,12 @@ func TestRouterChainRouteNoRoute(t *testing.T) {
 	invokers := []protocol.Invoker{}
 	dubboURL, _ := common.NewURL(fmt.Sprintf(dubboForamt, test1234IP, port20000))
 	invokers = append(invokers, protocol.NewBaseInvoker(dubboURL))
+	chain.SetInvokers(invokers)
+	chain.buildCache()
 
 	targetURL, _ := common.NewURL(fmt.Sprintf(consumerFormat, test1111IP))
 	inv := &invocation.RPCInvocation{}
-	finalInvokers := chain.Route(invokers, &targetURL, inv)
+	finalInvokers := chain.Route(&targetURL, inv)
 
 	assert.Equal(t, 0, len(finalInvokers))
 }

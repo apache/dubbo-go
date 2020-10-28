@@ -18,6 +18,7 @@
 package common
 
 import (
+	"bytes"
 	"encoding/base64"
 	"fmt"
 	"math"
@@ -25,6 +26,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 import (
@@ -76,10 +78,12 @@ func (t RoleType) Role() string {
 }
 
 type baseUrl struct {
-	Protocol     string
-	Location     string // ip+port
-	Ip           string
-	Port         string
+	Protocol string
+	Location string // ip+port
+	Ip       string
+	Port     string
+	//url.Values is not safe map, add to avoid concurrent map read and map write error
+	paramsLock   sync.RWMutex
 	params       url.Values
 	PrimitiveURL string
 }
@@ -222,7 +226,7 @@ func NewURL(urlString string, opts ...option) (URL, error) {
 	}
 
 	// rawUrlString = "//" + rawUrlString
-	if strings.Index(rawUrlString, "//") < 0 {
+	if !strings.Contains(rawUrlString, "//") {
 		t := URL{baseUrl: baseUrl{}}
 		for _, opt := range opts {
 			opt(&t)
@@ -325,12 +329,15 @@ func (c URL) Key() string {
 
 // ServiceKey gets a unique key of a service.
 func (c URL) ServiceKey() string {
-	intf := c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
+	return ServiceKey(c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/")),
+		c.GetParam(constant.GROUP_KEY, ""), c.GetParam(constant.VERSION_KEY, ""))
+}
+
+func ServiceKey(intf string, group string, version string) string {
 	if intf == "" {
 		return ""
 	}
-	var buf strings.Builder
-	group := c.GetParam(constant.GROUP_KEY, "")
+	buf := &bytes.Buffer{}
 	if group != "" {
 		buf.WriteString(group)
 		buf.WriteString("/")
@@ -338,7 +345,6 @@ func (c URL) ServiceKey() string {
 
 	buf.WriteString(intf)
 
-	version := c.GetParam(constant.VERSION_KEY, "")
 	if version != "" && version != "0.0.0" {
 		buf.WriteString(":")
 		buf.WriteString(version)
@@ -381,7 +387,7 @@ func (c URL) Service() string {
 	if service != "" {
 		return service
 	} else if c.SubURL != nil {
-		service = c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
+		service = c.SubURL.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
 		if service != "" { // if url.path is "" then return suburl's path, special for registry url
 			return service
 		}
@@ -390,23 +396,35 @@ func (c URL) Service() string {
 }
 
 // AddParam will add the key-value pair
-// Not thread-safe
-// think twice before using it.
 func (c *URL) AddParam(key string, value string) {
+	c.paramsLock.Lock()
+	defer c.paramsLock.Unlock()
+	c.params.Add(key, value)
+}
+
+// AddParamAvoidNil will add key-value pair
+func (c *URL) AddParamAvoidNil(key string, value string) {
+	c.paramsLock.Lock()
+	defer c.paramsLock.Unlock()
+	if c.params == nil {
+		c.params = url.Values{}
+	}
+
 	c.params.Add(key, value)
 }
 
 // SetParam will put the key-value pair into url
-// it's not thread safe.
-// think twice before you want to use this method
 // usually it should only be invoked when you want to initialized an url
 func (c *URL) SetParam(key string, value string) {
+	c.paramsLock.Lock()
+	defer c.paramsLock.Unlock()
 	c.params.Set(key, value)
 }
 
 // RangeParams will iterate the params
-// it's not thread-safe
 func (c *URL) RangeParams(f func(key, value string) bool) {
+	c.paramsLock.RLock()
+	defer c.paramsLock.RUnlock()
 	for k, v := range c.params {
 		if !f(k, v[0]) {
 			break
@@ -416,6 +434,8 @@ func (c *URL) RangeParams(f func(key, value string) bool) {
 
 // GetParam gets value by key
 func (c URL) GetParam(s string, d string) string {
+	c.paramsLock.RLock()
+	defer c.paramsLock.RUnlock()
 	r := c.params.Get(s)
 	if len(r) == 0 {
 		r = d
@@ -641,6 +661,34 @@ func (c *URL) CloneWithParams(reserveParams []string) *URL {
 		WithMethods(c.Methods),
 		WithParams(params),
 	)
+}
+
+// IsEquals compares if two URLs equals with each other. Excludes are all parameter keys which should ignored.
+func IsEquals(left URL, right URL, excludes ...string) bool {
+	if left.Ip != right.Ip || left.Port != right.Port {
+		return false
+	}
+
+	leftMap := left.ToMap()
+	rightMap := right.ToMap()
+	for _, exclude := range excludes {
+		delete(leftMap, exclude)
+		delete(rightMap, exclude)
+	}
+
+	if len(leftMap) != len(rightMap) {
+		return false
+	}
+
+	for lk, lv := range leftMap {
+		if rv, ok := rightMap[lk]; !ok {
+			return false
+		} else if lv != rv {
+			return false
+		}
+	}
+
+	return true
 }
 
 func mergeNormalParam(mergedUrl *URL, referenceUrl *URL, paramKeys []string) []func(method string) {

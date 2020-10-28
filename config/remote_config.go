@@ -22,6 +22,11 @@ import (
 )
 
 import (
+	perrors "github.com/pkg/errors"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 )
 
@@ -30,11 +35,12 @@ import (
 // so that other module, like config center, registry could reuse the config
 // but now, only metadata report, metadata service, service discovery use this structure
 type RemoteConfig struct {
+	Protocol   string            `yaml:"protocol"  json:"protocol,omitempty"`
 	Address    string            `yaml:"address" json:"address,omitempty"`
 	TimeoutStr string            `default:"5s" yaml:"timeout" json:"timeout,omitempty"`
 	Username   string            `yaml:"username" json:"username,omitempty" property:"username"`
 	Password   string            `yaml:"password" json:"password,omitempty"  property:"password"`
-	Params     map[string]string `yaml:"params" json:"address,omitempty"`
+	Params     map[string]string `yaml:"params" json:"params,omitempty"`
 }
 
 // Timeout return timeout duration.
@@ -55,4 +61,16 @@ func (rc *RemoteConfig) GetParam(key string, def string) string {
 		return def
 	}
 	return param
+}
+
+func (rc *RemoteConfig) toURL() (common.URL, error) {
+	if len(rc.Protocol) == 0 {
+		return common.URL{}, perrors.Errorf("Must provide protocol in RemoteConfig.")
+	}
+	return common.NewURL(rc.Address,
+		common.WithUsername(rc.Username),
+		common.WithPassword(rc.Password),
+		common.WithLocation(rc.Address),
+		common.WithProtocol(rc.Protocol),
+	)
 }

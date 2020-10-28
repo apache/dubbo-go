@@ -36,5 +36,8 @@ xcopy /f "%zkJar%" "cluster/router/chain/zookeeper-4unittest/contrib/fatjar/"
 md cluster\router\condition\zookeeper-4unittest\contrib\fatjar
 xcopy /f "%zkJar%" "cluster/router/condition/zookeeper-4unittest/contrib/fatjar/"
 
+md cluster/router/tag/zookeeper-4unittest/contrib/fatjar
+xcopy /f "%zkJar%" "cluster/router/tag/zookeeper-4unittest/contrib/fatjar/"
+
 md metadata\report\zookeeper\zookeeper-4unittest\contrib\fatjar
 xcopy /f "%zkJar%" "metadata/report/zookeeper/zookeeper-4unittest/contrib/fatjar/"

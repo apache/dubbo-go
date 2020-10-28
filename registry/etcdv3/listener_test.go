@@ -24,8 +24,8 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-getty"
 	"github.com/coreos/etcd/embed"
-	"github.com/dubbogo/getty"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -63,7 +63,6 @@ func (suite *RegistryTestSuite) SetupSuite() {
 	}
 
 	suite.etcd = e
-	return
 }
 
 // stop etcd server

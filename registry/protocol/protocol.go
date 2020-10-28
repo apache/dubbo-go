@@ -22,6 +22,7 @@ import (
 	"strings"
 	"sync"
 )
+
 import (
 	gxset "github.com/dubbogo/gost/container/set"
 )
@@ -31,7 +32,6 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/config_center"
 	_ "github.com/apache/dubbo-go/config_center/configurator"
@@ -54,9 +54,10 @@ var (
 
 type registryProtocol struct {
 	invokers []protocol.Invoker
-	// Registry  Map<RegistryAddress, Registry>
+	// Registry Map<RegistryAddress, Registry>
 	registries *sync.Map
-	// To solve the problem of RMI repeated exposure port conflicts, the services that have been exposed are no longer exposed.
+	// To solve the problem of RMI repeated exposure port conflicts,
+	// the services that have been exposed are no longer exposed.
 	// providerurl <--> exporter
 	bounds                        *sync.Map
 	overrideListeners             *sync.Map
@@ -100,10 +101,9 @@ func getUrlToRegistry(providerUrl *common.URL, registryUrl *common.URL) *common.
 
 // filterHideKey filter the parameters that do not need to be output in url(Starting with .)
 func filterHideKey(url *common.URL) *common.URL {
-
 	// be careful params maps in url is map type
 	removeSet := gxset.NewSet()
-	for k, _ := range url.GetParams() {
+	for k := range url.GetParams() {
 		if strings.HasPrefix(k, ".") {
 			removeSet.Add(k)
 		}
@@ -117,6 +117,18 @@ func (proto *registryProtocol) initConfigurationListeners() {
 	proto.providerConfigurationListener = newProviderConfigurationListener(proto.overrideListeners)
 }
 
+// nolint
+func (proto *registryProtocol) GetRegistries() []registry.Registry {
+	var rs []registry.Registry
+	proto.registries.Range(func(_, v interface{}) bool {
+		if r, ok := v.(registry.Registry); ok {
+			rs = append(rs, r)
+		}
+		return true
+	})
+	return rs
+}
+
 // Refer provider service from registry center
 func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 	var registryUrl = url
@@ -127,7 +139,6 @@ func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 	}
 
 	var reg registry.Registry
-
 	if regI, loaded := proto.registries.Load(registryUrl.Key()); !loaded {
 		reg = getRegistry(&registryUrl)
 		proto.registries.Store(registryUrl.Key(), reg)
@@ -138,7 +149,7 @@ func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 	// new registry directory for store service url from registry
 	directory, err := extension.GetDefaultRegistryDirectory(&registryUrl, reg)
 	if err != nil {
-		logger.Errorf("consumer service %v  create registry directory  error, error message is %s, and will return nil invoker!",
+		logger.Errorf("consumer service %v create registry directory error, error message is %s, and will return nil invoker!",
 			serviceUrl.String(), err.Error())
 		return nil
 	}
@@ -151,7 +162,6 @@ func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
 
 	// new cluster invoker
 	cluster := extension.GetCluster(serviceUrl.GetParam(constant.CLUSTER_KEY, constant.DEFAULT_CLUSTER))
-
 	invoker := cluster.Join(directory)
 	proto.invokers = append(proto.invokers, invoker)
 	return invoker
@@ -178,6 +188,7 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 	if regI, loaded := proto.registries.Load(registryUrl.Key()); !loaded {
 		reg = getRegistry(registryUrl)
 		proto.registries.Store(registryUrl.Key(), reg)
+		logger.Infof("Export proto:%p registries address:%p", proto, proto.registries)
 	} else {
 		reg = regI.(registry.Registry)
 	}
@@ -191,7 +202,7 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 	}
 
 	key := getCacheKey(providerUrl)
-	logger.Infof("The cached exporter keys is %v !", key)
+	logger.Infof("The cached exporter keys is %v!", key)
 	cachedExporter, loaded := proto.bounds.Load(key)
 	if loaded {
 		logger.Infof("The exporter has been cached, and will return cached exporter!")
@@ -204,7 +215,6 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 
 	go reg.Subscribe(overriderUrl, overrideSubscribeListener)
 	return cachedExporter.(protocol.Exporter)
-
 }
 
 func (proto *registryProtocol) reExport(invoker protocol.Invoker, newUrl *common.URL) {
@@ -216,7 +226,6 @@ func (proto *registryProtocol) reExport(invoker protocol.Invoker, newUrl *common
 		proto.bounds.Delete(key)
 		proto.Export(wrappedNewInvoker)
 		// TODO:  unregister & unsubscribe
-
 	}
 }
 
@@ -232,7 +241,12 @@ func newOverrideSubscribeListener(overriderUrl *common.URL, invoker protocol.Inv
 }
 
 // Notify will be triggered when a service change notification is received.
-func (nl *overrideSubscribeListener) Notify(event *registry.ServiceEvent) {
+func (nl *overrideSubscribeListener) Notify(events ...*registry.ServiceEvent) {
+	if len(events) == 0 {
+		return
+	}
+
+	event := events[0]
 	if isMatched(&(event.Service), nl.url) && event.Action == remoting.EventTypeAdd {
 		nl.configurator = extension.GetDefaultConfigurator(&(event.Service))
 		nl.doOverrideIfNecessary()
@@ -334,14 +348,12 @@ func (proto *registryProtocol) Destroy() {
 		ivk.Destroy()
 	}
 	proto.invokers = []protocol.Invoker{}
-
 	proto.bounds.Range(func(key, value interface{}) bool {
 		exporter := value.(protocol.Exporter)
 		exporter.Unexport()
 		proto.bounds.Delete(key)
 		return true
 	})
-
 	proto.registries.Range(func(key, value interface{}) bool {
 		reg := value.(registry.Registry)
 		if reg.IsAvailable() {
@@ -355,7 +367,7 @@ func (proto *registryProtocol) Destroy() {
 func getRegistryUrl(invoker protocol.Invoker) *common.URL {
 	// here add * for return a new url
 	url := invoker.GetUrl()
-	// if the protocol == registry ,set protocol the registry value in url.params
+	// if the protocol == registry, set protocol the registry value in url.params
 	if url.Protocol == constant.REGISTRY_PROTOCOL {
 		protocol := url.GetParam(constant.REGISTRY_KEY, "")
 		url.Protocol = protocol
@@ -373,7 +385,7 @@ func setProviderUrl(regURL *common.URL, providerURL *common.URL) {
 	regURL.SubURL = providerURL
 }
 
-// GetProtocol return the singleton RegistryProtocol
+// GetProtocol return the singleton registryProtocol
 func GetProtocol() protocol.Protocol {
 	once.Do(func() {
 		regProtocol = newRegistryProtocol()
@@ -395,8 +407,6 @@ func newWrappedInvoker(invoker protocol.Invoker, url *common.URL) *wrappedInvoke
 
 // Invoke remote service base on URL of wrappedInvoker
 func (ivk *wrappedInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
-	// get right url
-	ivk.invoker.(*proxy_factory.ProxyInvoker).BaseInvoker = *protocol.NewBaseInvoker(ivk.GetUrl())
 	return ivk.invoker.Invoke(ctx, invocation)
 }
 

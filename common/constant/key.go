@@ -22,30 +22,32 @@ const (
 )
 
 const (
-	PORT_KEY               = "port"
-	GROUP_KEY              = "group"
-	VERSION_KEY            = "version"
-	INTERFACE_KEY          = "interface"
-	PATH_KEY               = "path"
-	PROTOCOL_KEY           = "protocol"
-	SERVICE_KEY            = "service"
-	METHODS_KEY            = "methods"
-	TIMEOUT_KEY            = "timeout"
-	CATEGORY_KEY           = "category"
-	CHECK_KEY              = "check"
-	ENABLED_KEY            = "enabled"
-	SIDE_KEY               = "side"
-	OVERRIDE_PROVIDERS_KEY = "providerAddresses"
-	BEAN_NAME_KEY          = "bean.name"
-	GENERIC_KEY            = "generic"
-	CLASSIFIER_KEY         = "classifier"
-	TOKEN_KEY              = "token"
-	LOCAL_ADDR             = "local-addr"
-	REMOTE_ADDR            = "remote-addr"
-	PATH_SEPARATOR         = "/"
-	DUBBO_KEY              = "dubbo"
-	RELEASE_KEY            = "release"
-	ANYHOST_KEY            = "anyhost"
+	GROUP_KEY                = "group"
+	VERSION_KEY              = "version"
+	INTERFACE_KEY            = "interface"
+	PATH_KEY                 = "path"
+	SERVICE_KEY              = "service"
+	METHODS_KEY              = "methods"
+	TIMEOUT_KEY              = "timeout"
+	CATEGORY_KEY             = "category"
+	CHECK_KEY                = "check"
+	ENABLED_KEY              = "enabled"
+	SIDE_KEY                 = "side"
+	OVERRIDE_PROVIDERS_KEY   = "providerAddresses"
+	BEAN_NAME_KEY            = "bean.name"
+	GENERIC_KEY              = "generic"
+	CLASSIFIER_KEY           = "classifier"
+	TOKEN_KEY                = "token"
+	LOCAL_ADDR               = "local-addr"
+	REMOTE_ADDR              = "remote-addr"
+	DEFAULT_REMOTING_TIMEOUT = 3000
+	RELEASE_KEY              = "release"
+	ANYHOST_KEY              = "anyhost"
+	PORT_KEY                 = "port"
+	PROTOCOL_KEY             = "protocol"
+	PATH_SEPARATOR           = "/"
+	DUBBO_KEY                = "dubbo"
+	SSL_ENABLED_KEY          = "ssl-enabled"
 )
 
 const (
@@ -80,6 +82,7 @@ const (
 	EXECUTE_REJECTED_EXECUTION_HANDLER_KEY = "execute.limit.rejected.handler"
 	PROVIDER_SHUTDOWN_FILTER               = "pshutdown"
 	CONSUMER_SHUTDOWN_FILTER               = "cshutdown"
+	SERIALIZATION_KEY                      = "serialization"
 	PID_KEY                                = "pid"
 	SYNC_REPORT_KEY                        = "sync.report"
 	RETRY_PERIOD_KEY                       = "retry.period"
@@ -97,6 +100,11 @@ const (
 	ROLE_KEY             = "registry.role"
 	REGISTRY_DEFAULT_KEY = "registry.default"
 	REGISTRY_TIMEOUT_KEY = "registry.timeout"
+	REGISTRY_LABEL_KEY   = "label"
+	PREFERRED_KEY        = "preferred"
+	ZONE_KEY             = "zone"
+	ZONE_FORCE_KEY       = "zone.force"
+	REGISTRY_TTL_KEY     = "registry.ttl"
 )
 
 const (
@@ -164,11 +172,27 @@ const (
 )
 
 const (
+	FILE_KEY = "file"
+)
+
+const (
 	ZOOKEEPER_KEY = "zookeeper"
 )
 
 const (
 	ETCDV3_KEY = "etcdv3"
+)
+
+const (
+	CONSUL_KEY          = "consul"
+	CHECK_PASS_INTERVAL = "consul-check-pass-interval"
+	// default time-to-live in millisecond
+	DEFAULT_CHECK_PASS_INTERVAL = 16000
+	QUERY_TAG                   = "consul_query_tag"
+	ACL_TOKEN                   = "acl-token"
+	// default deregister critical server after
+	DEFAULT_DEREGISTER_TIME = "20s"
+	DEREGISTER_AFTER        = "consul-deregister-critical-service-after"
 )
 
 const (
@@ -187,6 +211,9 @@ const (
 	HealthCheckRouterName = "health_check"
 	// TagRouterName Specify the name of TagRouter
 	TagRouterName = "tag"
+	// TagRouterRuleSuffix Specify tag router suffix
+	TagRouterRuleSuffix  = ".tag-router"
+	RemoteApplicationKey = "remote.application"
 	// ConditionRouterRuleSuffix Specify condition router suffix
 	ConditionRouterRuleSuffix = ".condition-router"
 
@@ -196,7 +223,14 @@ const (
 	RouterEnabled = "enabled"
 	// Priority Priority key in router module
 	RouterPriority = "priority"
-
+	// RouterScope Scope key in router module
+	RouterScope = "scope"
+	// RouterApplicationScope Scope key in router module
+	RouterApplicationScope = "application"
+	// RouterServiceScope Scope key in router module
+	RouterServiceScope = "service"
+	// RouterRuleKey defines the key of the router, service's/application's name
+	RouterRuleKey = "key"
 	// ForceUseTag is the tag in attachment
 	ForceUseTag = "dubbo.force.tag"
 	Tagkey      = "dubbo.tag"

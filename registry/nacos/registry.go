@@ -26,7 +26,6 @@ import (
 )
 
 import (
-	gxnet "github.com/dubbogo/gost/net"
 	"github.com/nacos-group/nacos-sdk-go/clients"
 	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
 	nacosConstant "github.com/nacos-group/nacos-sdk-go/common/constant"
@@ -52,13 +51,14 @@ const (
 )
 
 func init() {
-	localIP, _ = gxnet.GetLocalIP()
+	localIP = common.GetLocalIp()
 	extension.SetRegistry(constant.NACOS_KEY, newNacosRegistry)
 }
 
 type nacosRegistry struct {
 	*common.URL
 	namingClient naming_client.INamingClient
+	registryUrls []common.URL
 }
 
 func getCategory(url common.URL) string {
@@ -128,6 +128,36 @@ func (nr *nacosRegistry) Register(url common.URL) error {
 	if !isRegistry {
 		return perrors.New("registry [" + serviceName + "] to  nacos failed")
 	}
+	nr.registryUrls = append(nr.registryUrls, url)
+	return nil
+}
+
+func createDeregisterParam(url common.URL, serviceName string) vo.DeregisterInstanceParam {
+	if len(url.Ip) == 0 {
+		url.Ip = localIP
+	}
+	if len(url.Port) == 0 || url.Port == "0" {
+		url.Port = "80"
+	}
+	port, _ := strconv.Atoi(url.Port)
+	return vo.DeregisterInstanceParam{
+		Ip:          url.Ip,
+		Port:        uint64(port),
+		ServiceName: serviceName,
+		Ephemeral:   true,
+	}
+}
+
+func (nr *nacosRegistry) DeRegister(url common.URL) error {
+	serviceName := getServiceName(url)
+	param := createDeregisterParam(url, serviceName)
+	isDeRegistry, err := nr.namingClient.DeregisterInstance(param)
+	if err != nil {
+		return err
+	}
+	if !isDeRegistry {
+		return perrors.New("DeRegistry [" + serviceName + "] to nacos failed")
+	}
 	return nil
 }
 
@@ -193,6 +223,13 @@ func (nr *nacosRegistry) IsAvailable() bool {
 
 // nolint
 func (nr *nacosRegistry) Destroy() {
+	for _, url := range nr.registryUrls {
+		err := nr.DeRegister(url)
+		logger.Infof("DeRegister Nacos URL:%+v", url)
+		if err != nil {
+			logger.Errorf("Deregister URL:%+v err:%v", url, err.Error())
+		}
+	}
 	return
 }
 
@@ -209,6 +246,7 @@ func newNacosRegistry(url *common.URL) (registry.Registry, error) {
 	registry := &nacosRegistry{
 		URL:          url,
 		namingClient: client,
+		registryUrls: []common.URL{},
 	}
 	return registry, nil
 }
@@ -249,6 +287,7 @@ func getNacosConfig(url *common.URL) (map[string]interface{}, error) {
 	clientConfig.CacheDir = url.GetParam(constant.NACOS_CACHE_DIR_KEY, "")
 	clientConfig.LogDir = url.GetParam(constant.NACOS_LOG_DIR_KEY, "")
 	clientConfig.Endpoint = url.GetParam(constant.NACOS_ENDPOINT, "")
+	clientConfig.NamespaceId = url.GetParam(constant.NACOS_NAMESPACE_ID, "")
 	clientConfig.NotLoadCacheAtStart = true
 	configMap["clientConfig"] = clientConfig
 

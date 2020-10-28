@@ -37,6 +37,7 @@ const (
 	DEFAULT_RETRIES_INT        = 2
 	DEFAULT_PROTOCOL           = "dubbo"
 	DEFAULT_REG_TIMEOUT        = "10s"
+	DEFAULT_REG_TTL            = "15m"
 	DEFAULT_CLUSTER            = "failover"
 	DEFAULT_FAILBACK_TIMES     = "3"
 	DEFAULT_FAILBACK_TIMES_INT = 3
@@ -44,6 +45,7 @@ const (
 	DEFAULT_REST_CLIENT        = "resty"
 	DEFAULT_REST_SERVER        = "go-restful"
 	DEFAULT_PORT               = 20000
+	DEFAULT_SERIALIZATION      = HESSIAN2_SERIALIZATION
 )
 
 const (

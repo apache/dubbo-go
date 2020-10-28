@@ -27,7 +27,7 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
-// CacheListener ...
+// CacheListener defines keyListeners and rootPath
 type CacheListener struct {
 	keyListeners sync.Map
 	rootPath     string

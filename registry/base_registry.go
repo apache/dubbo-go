@@ -29,7 +29,6 @@ import (
 )
 
 import (
-	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 )
 
@@ -53,7 +52,7 @@ var (
 
 func init() {
 	processID = fmt.Sprintf("%d", os.Getpid())
-	localIP, _ = gxnet.GetLocalIP()
+	localIP = common.GetLocalIp()
 }
 
 type createPathFunc func(dubboPath string) error
@@ -314,7 +313,7 @@ func (r *BaseRegistry) providerRegistry(c common.URL, params url.Values, f creat
 	// Dubbo java consumer to start looking for the provider url,because the category does not match,
 	// the provider will not find, causing the consumer can not start, so we use consumers.
 
-	if len(c.Methods) == 0 {
+	if len(c.Methods) != 0 {
 		params.Add(constant.METHODS_KEY, strings.Join(c.Methods, ","))
 	}
 	logger.Debugf("provider url params:%#v", params)
@@ -326,7 +325,8 @@ func (r *BaseRegistry) providerRegistry(c common.URL, params url.Values, f creat
 	}
 	host += ":" + c.Port
 
-	rawURL = fmt.Sprintf("%s://%s%s?%s", c.Protocol, host, c.Path, params.Encode())
+	s, _ := url.QueryUnescape(params.Encode())
+	rawURL = fmt.Sprintf("%s://%s%s?%s", c.Protocol, host, c.Path, s)
 	// Print your own registration service providers.
 	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), (common.RoleType(common.PROVIDER)).String())
 	logger.Debugf("provider path:%s, url:%s", dubboPath, rawURL)
@@ -361,7 +361,8 @@ func (r *BaseRegistry) consumerRegistry(c common.URL, params url.Values, f creat
 	}
 
 	params.Add("protocol", c.Protocol)
-	rawURL = fmt.Sprintf("consumer://%s%s?%s", localIP, c.Path, params.Encode())
+	s, _ := url.QueryUnescape(params.Encode())
+	rawURL = fmt.Sprintf("consumer://%s%s?%s", localIP, c.Path, s)
 	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), (common.RoleType(common.CONSUMER)).String())
 
 	logger.Debugf("consumer path:%s, url:%s", dubboPath, rawURL)
