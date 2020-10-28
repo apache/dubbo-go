@@ -26,7 +26,6 @@ import (
 )
 
 import (
-	gxnet "github.com/dubbogo/gost/net"
 	"github.com/nacos-group/nacos-sdk-go/clients"
 	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
 	nacosConstant "github.com/nacos-group/nacos-sdk-go/common/constant"
@@ -52,7 +51,7 @@ const (
 )
 
 func init() {
-	localIP, _ = gxnet.GetLocalIP()
+	localIP = common.GetLocalIp()
 	extension.SetRegistry(constant.NACOS_KEY, newNacosRegistry)
 }
 
