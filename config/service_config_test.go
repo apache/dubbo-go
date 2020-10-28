@@ -18,11 +18,11 @@
 package config
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"testing"
 )
 
 import (
-	gxnet "github.com/dubbogo/gost/net"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/atomic"
 )
@@ -184,7 +184,7 @@ func TestExport(t *testing.T) {
 func TestGetRandomPort(t *testing.T) {
 	protocolConfigs := make([]*ProtocolConfig, 0, 3)
 
-	ip, err := gxnet.GetLocalIP()
+	ip := common.GetLocalIp()
 	protocolConfigs = append(protocolConfigs, &ProtocolConfig{
 		Ip: ip,
 	})
@@ -194,7 +194,7 @@ func TestGetRandomPort(t *testing.T) {
 	protocolConfigs = append(protocolConfigs, &ProtocolConfig{
 		Ip: ip,
 	})
-	assert.NoError(t, err)
+	//assert.NoError(t, err)
 	ports := getRandomPort(protocolConfigs)
 
 	assert.Equal(t, ports.Len(), len(protocolConfigs))
