@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+)
 
-	"github.com/edison/go-telnet/common"
-
+import (
 	hessian "github.com/LaurenceLiZhixin/dubbo-go-hessian2"
 	jparser "github.com/LaurenceLiZhixin/json-interface-parser"
+	"github.com/apache/dubbo-go/tools/cli/common"
 )
 
 func RegisterStructFromFile(path string) interface{} {

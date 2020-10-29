@@ -1,6 +1,8 @@
 package common
 
-import "github.com/edison/go-telnet/protocol"
+import (
+	"github.com/apache/dubbo-go/tools/cli/protocol"
+)
 
 var (
 	protocols = make(map[string]func() protocol.Protocol)
