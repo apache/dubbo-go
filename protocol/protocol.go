@@ -90,7 +90,7 @@ func (bp *BaseProtocol) Export(invoker Invoker) Exporter {
 
 // Refer is default refer implement.
 func (bp *BaseProtocol) Refer(url common.URL) Invoker {
-	return NewBaseInvoker(url)
+	return NewBaseInvoker(&url)
 }
 
 // Destroy will destroy all invoker and exporter, so it only is called once.

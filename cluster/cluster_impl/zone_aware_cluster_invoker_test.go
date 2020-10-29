@@ -52,7 +52,7 @@ func TestZoneWareInvokerWithPreferredSuccess(t *testing.T) {
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		invoker := mock.NewMockInvoker(ctrl)
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
-		invoker.EXPECT().GetUrl().Return(url).AnyTimes()
+		invoker.EXPECT().GetUrl().Return(&url).AnyTimes()
 		if 0 == i {
 			url.SetParam(constant.REGISTRY_KEY+"."+constant.PREFERRED_KEY, "true")
 			invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
@@ -92,7 +92,7 @@ func TestZoneWareInvokerWithWeightSuccess(t *testing.T) {
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		invoker := mock.NewMockInvoker(ctrl)
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
-		invoker.EXPECT().GetUrl().Return(url).AnyTimes()
+		invoker.EXPECT().GetUrl().Return(&url).AnyTimes()
 		url.SetParam(constant.REGISTRY_KEY+"."+constant.REGISTRY_LABEL_KEY, "true")
 		if 1 == i {
 			url.SetParam(constant.REGISTRY_KEY+"."+constant.WEIGHT_KEY, w1)
@@ -150,7 +150,7 @@ func TestZoneWareInvokerWithZoneSuccess(t *testing.T) {
 
 		invoker := mock.NewMockInvoker(ctrl)
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
-		invoker.EXPECT().GetUrl().Return(url).AnyTimes()
+		invoker.EXPECT().GetUrl().Return(&url).AnyTimes()
 		invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
 			func(invocation protocol.Invocation) protocol.Result {
 				return &protocol.RPCResult{
@@ -186,7 +186,7 @@ func TestZoneWareInvokerWithZoneForceFail(t *testing.T) {
 
 		invoker := mock.NewMockInvoker(ctrl)
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
-		invoker.EXPECT().GetUrl().Return(url).AnyTimes()
+		invoker.EXPECT().GetUrl().Return(&url).AnyTimes()
 		invokers = append(invokers, invoker)
 	}
 

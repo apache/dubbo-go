@@ -275,9 +275,9 @@ func (nl *overrideSubscribeListener) doOverrideIfNecessary() {
 		}
 
 		if currentUrl.String() != providerUrl.String() {
-			newRegUrl := nl.originInvoker.GetUrl()
-			setProviderUrl(&newRegUrl, providerUrl)
-			nl.protocol.reExport(nl.originInvoker, &newRegUrl)
+			newRegUrl := nl.originInvoker.GetUrl().Clone()
+			setProviderUrl(newRegUrl, providerUrl)
+			nl.protocol.reExport(nl.originInvoker, newRegUrl)
 		}
 	}
 }
@@ -372,7 +372,7 @@ func getRegistryUrl(invoker protocol.Invoker) *common.URL {
 		protocol := url.GetParam(constant.REGISTRY_KEY, "")
 		url.Protocol = protocol
 	}
-	return &url
+	return url
 }
 
 func getProviderUrl(invoker protocol.Invoker) *common.URL {
@@ -401,7 +401,7 @@ type wrappedInvoker struct {
 func newWrappedInvoker(invoker protocol.Invoker, url *common.URL) *wrappedInvoker {
 	return &wrappedInvoker{
 		invoker:     invoker,
-		BaseInvoker: *protocol.NewBaseInvoker(*url),
+		BaseInvoker: *protocol.NewBaseInvoker(url),
 	}
 }
 

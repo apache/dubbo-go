@@ -172,8 +172,8 @@ func (r *consulRegistry) getListener(url common.URL) (registry.Listener, error) 
 }
 
 // GetUrl get registry URL of consul registry center
-func (r *consulRegistry) GetUrl() common.URL {
-	return *r.URL
+func (r *consulRegistry) GetUrl() *common.URL {
+	return r.URL
 }
 
 // IsAvailable checks consul registry center whether is available

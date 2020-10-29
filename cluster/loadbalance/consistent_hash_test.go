@@ -58,7 +58,7 @@ type consistentHashSelectorSuite struct {
 func (s *consistentHashSelectorSuite) SetupTest() {
 	var invokers []protocol.Invoker
 	url, _ := common.NewURL(url20000)
-	invokers = append(invokers, protocol.NewBaseInvoker(url))
+	invokers = append(invokers, protocol.NewBaseInvoker(&url))
 	s.selector = newConsistentHashSelector(invokers, "echo", 999944)
 }
 
@@ -71,8 +71,8 @@ func (s *consistentHashSelectorSuite) TestSelectForKey() {
 	url1, _ := common.NewURL(url8080Short)
 	url2, _ := common.NewURL(url8081Short)
 	s.selector.virtualInvokers = make(map[uint32]protocol.Invoker)
-	s.selector.virtualInvokers[99874] = protocol.NewBaseInvoker(url1)
-	s.selector.virtualInvokers[9999945] = protocol.NewBaseInvoker(url2)
+	s.selector.virtualInvokers[99874] = protocol.NewBaseInvoker(&url1)
+	s.selector.virtualInvokers[9999945] = protocol.NewBaseInvoker(&url2)
 	s.selector.keys = []uint32{99874, 9999945}
 	result := s.selector.selectForKey(9999944)
 	s.Equal(result.GetUrl().String(), url8081Short+"?")
@@ -103,9 +103,9 @@ func (s *consistentHashLoadBalanceSuite) SetupTest() {
 	s.url3, err = common.NewURL(url8082)
 	s.NoError(err)
 
-	s.invoker1 = protocol.NewBaseInvoker(s.url1)
-	s.invoker2 = protocol.NewBaseInvoker(s.url2)
-	s.invoker3 = protocol.NewBaseInvoker(s.url3)
+	s.invoker1 = protocol.NewBaseInvoker(&s.url1)
+	s.invoker2 = protocol.NewBaseInvoker(&s.url2)
+	s.invoker3 = protocol.NewBaseInvoker(&s.url3)
 
 	s.invokers = append(s.invokers, s.invoker1, s.invoker2, s.invoker3)
 	s.lb = NewConsistentHashLoadBalance()

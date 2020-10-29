@@ -61,7 +61,7 @@ func (gp *GrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	exporter := NewGrpcExporter(serviceKey, invoker, gp.ExporterMap())
 	gp.SetExporterMap(serviceKey, exporter)
 	logger.Infof("Export service: %s", url.String())
-	gp.openServer(url)
+	gp.openServer(*url)
 	return exporter
 }
 

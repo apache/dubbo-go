@@ -41,13 +41,13 @@ type Invoker interface {
 
 // BaseInvoker provides default invoker implement
 type BaseInvoker struct {
-	url       common.URL
+	url       *common.URL
 	available bool
 	destroyed bool
 }
 
 // NewBaseInvoker creates a new BaseInvoker
-func NewBaseInvoker(url common.URL) *BaseInvoker {
+func NewBaseInvoker(url *common.URL) *BaseInvoker {
 	return &BaseInvoker{
 		url:       url,
 		available: true,
@@ -56,7 +56,7 @@ func NewBaseInvoker(url common.URL) *BaseInvoker {
 }
 
 // GetUrl gets base invoker URL
-func (bi *BaseInvoker) GetUrl() common.URL {
+func (bi *BaseInvoker) GetUrl() *common.URL {
 	return bi.url
 }
 

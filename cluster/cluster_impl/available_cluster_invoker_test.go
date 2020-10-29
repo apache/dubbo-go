@@ -51,7 +51,7 @@ func registerAvailable(invoker *mock.MockInvoker) protocol.Invoker {
 
 	invokers := []protocol.Invoker{}
 	invokers = append(invokers, invoker)
-	invoker.EXPECT().GetUrl().Return(availableUrl)
+	invoker.EXPECT().GetUrl().Return(&availableUrl)
 
 	staticDir := directory.NewStaticDirectory(invokers)
 	clusterInvoker := availableCluster.Join(staticDir)

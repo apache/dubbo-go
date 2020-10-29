@@ -39,13 +39,13 @@ func TestLeastActiveSelect(t *testing.T) {
 	var invokers []protocol.Invoker
 
 	url, _ := common.NewURL(fmt.Sprintf("dubbo://%s:%d/org.apache.demo.HelloService", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
-	invokers = append(invokers, protocol.NewBaseInvoker(url))
+	invokers = append(invokers, protocol.NewBaseInvoker(&url))
 	i := loadBalance.Select(invokers, &invocation.RPCInvocation{})
 	assert.True(t, i.GetUrl().URLEqual(url))
 
 	for i := 1; i < 10; i++ {
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/org.apache.demo.HelloService", i))
-		invokers = append(invokers, protocol.NewBaseInvoker(url))
+		invokers = append(invokers, protocol.NewBaseInvoker(&url))
 	}
 	loadBalance.Select(invokers, &invocation.RPCInvocation{})
 }
@@ -57,7 +57,7 @@ func TestLeastActiveByWeight(t *testing.T) {
 	loop := 3
 	for i := 1; i <= loop; i++ {
 		url, _ := common.NewURL(fmt.Sprintf("test%v://192.168.1.%v:20000/org.apache.demo.HelloService?weight=%v", i, i, i))
-		invokers = append(invokers, protocol.NewBaseInvoker(url))
+		invokers = append(invokers, protocol.NewBaseInvoker(&url))
 	}
 
 	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("test"))

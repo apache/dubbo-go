@@ -173,7 +173,7 @@ func ValidateClient(container clientFacade) error {
 	// new Client
 	if client == nil || client.Valid() {
 
-		newClient, err := newClient(container.GetUrl())
+		newClient, err := newClient(*container.GetUrl())
 		if err != nil {
 			logger.Warnf("new kubernetes client: %v)", err)
 			return perrors.WithMessage(err, "new kubernetes client")

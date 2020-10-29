@@ -130,6 +130,9 @@ type HystrixFilter struct {
 
 // Invoke is an implementation of filter, provides Hystrix pattern latency and fault tolerance
 func (hf *HystrixFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	if invoker.GetUrl() == nil {
+		return invoker.Invoke(ctx, invocation)
+	}
 	cmdName := fmt.Sprintf("%s&method=%s", invoker.GetUrl().Key(), invocation.MethodName())
 
 	// Do the configuration if the circuit breaker is created for the first time

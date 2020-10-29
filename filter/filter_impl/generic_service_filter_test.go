@@ -100,7 +100,7 @@ func TestGenericServiceFilterInvoke(t *testing.T) {
 	rpcInvocation := invocation.NewRPCInvocation(methodName, aurguments, nil)
 	filter := GetGenericServiceFilter()
 	url, _ := common.NewURL("testprotocol://127.0.0.1:20000/com.test.Path")
-	result := filter.Invoke(context.Background(), &proxy_factory.ProxyInvoker{BaseInvoker: *protocol.NewBaseInvoker(url)}, rpcInvocation)
+	result := filter.Invoke(context.Background(), &proxy_factory.ProxyInvoker{BaseInvoker: *protocol.NewBaseInvoker(&url)}, rpcInvocation)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Error())
 }

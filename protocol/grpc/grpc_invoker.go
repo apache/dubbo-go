@@ -47,7 +47,7 @@ type GrpcInvoker struct {
 // NewGrpcInvoker returns a Grpc invoker instance
 func NewGrpcInvoker(url common.URL, client *Client) *GrpcInvoker {
 	return &GrpcInvoker{
-		BaseInvoker: *protocol.NewBaseInvoker(url),
+		BaseInvoker: *protocol.NewBaseInvoker(&url),
 		client:      client,
 	}
 }

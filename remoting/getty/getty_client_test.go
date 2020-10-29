@@ -397,7 +397,7 @@ func InitTest(t *testing.T) (*Server, common.URL) {
 	userProvider := &UserProvider{}
 	common.ServiceMap.Register("", url.Protocol, userProvider)
 	invoker := &proxy_factory.ProxyInvoker{
-		BaseInvoker: *protocol.NewBaseInvoker(url),
+		BaseInvoker: *protocol.NewBaseInvoker(&url),
 	}
 	handler := func(invocation *invocation.RPCInvocation) protocol.RPCResult {
 		//result := protocol.RPCResult{}

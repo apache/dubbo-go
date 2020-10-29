@@ -464,7 +464,7 @@ func (c Comparator) Compare(comp cm.Comparator) int {
 type mockServiceDiscoveryRegistry struct {
 }
 
-func (mr *mockServiceDiscoveryRegistry) GetUrl() common.URL {
+func (mr *mockServiceDiscoveryRegistry) GetUrl() *common.URL {
 	panic("implement me")
 }
 

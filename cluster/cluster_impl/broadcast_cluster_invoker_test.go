@@ -52,7 +52,7 @@ func registerBroadcast(mockInvokers ...*mock.MockInvoker) protocol.Invoker {
 	for i, ivk := range mockInvokers {
 		invokers = append(invokers, ivk)
 		if i == 0 {
-			ivk.EXPECT().GetUrl().Return(broadcastUrl)
+			ivk.EXPECT().GetUrl().Return(&broadcastUrl)
 		}
 	}
 	staticDir := directory.NewStaticDirectory(invokers)

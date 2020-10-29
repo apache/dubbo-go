@@ -85,7 +85,7 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	dp.SetExporterMap(serviceKey, exporter)
 	logger.Infof("Export service: %s", url.String())
 	// start server
-	dp.openServer(url)
+	dp.openServer(*url)
 	return exporter
 }
 

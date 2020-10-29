@@ -171,7 +171,7 @@ func TestRouterChainRoute(t *testing.T) {
 
 	invokers := []protocol.Invoker{}
 	dubboURL, _ := common.NewURL(fmt.Sprintf(dubboForamt, test1234IP, port20000))
-	invokers = append(invokers, protocol.NewBaseInvoker(dubboURL))
+	invokers = append(invokers, protocol.NewBaseInvoker(&dubboURL))
 	chain.SetInvokers(invokers)
 	chain.buildCache()
 
@@ -212,7 +212,7 @@ conditions:
 
 	invokers := []protocol.Invoker{}
 	dubboURL, _ := common.NewURL(fmt.Sprintf(dubboForamt, test1234IP, port20000))
-	invokers = append(invokers, protocol.NewBaseInvoker(dubboURL))
+	invokers = append(invokers, protocol.NewBaseInvoker(&dubboURL))
 	chain.SetInvokers(invokers)
 	chain.buildCache()
 
@@ -241,7 +241,7 @@ func TestRouterChainRouteNoRoute(t *testing.T) {
 
 	invokers := []protocol.Invoker{}
 	dubboURL, _ := common.NewURL(fmt.Sprintf(dubboForamt, test1234IP, port20000))
-	invokers = append(invokers, protocol.NewBaseInvoker(dubboURL))
+	invokers = append(invokers, protocol.NewBaseInvoker(&dubboURL))
 	chain.SetInvokers(invokers)
 	chain.buildCache()
 

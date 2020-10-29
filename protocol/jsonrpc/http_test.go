@@ -67,7 +67,7 @@ func TestHTTPClientCall(t *testing.T) {
 	url, err := common.NewURL(mockJsonCommonUrl)
 	assert.NoError(t, err)
 	proto.Export(&proxy_factory.ProxyInvoker{
-		BaseInvoker: *protocol.NewBaseInvoker(url),
+		BaseInvoker: *protocol.NewBaseInvoker(&url),
 	})
 	time.Sleep(time.Second * 2)
 

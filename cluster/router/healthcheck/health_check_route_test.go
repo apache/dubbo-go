@@ -57,9 +57,9 @@ func TestHealthCheckRouterRoute(t *testing.T) {
 	hcr, _ := NewHealthCheckRouter(&consumerURL)
 
 	var invokers []protocol.Invoker
-	invoker1 := NewMockInvoker(url1)
-	invoker2 := NewMockInvoker(url2)
-	invoker3 := NewMockInvoker(url3)
+	invoker1 := NewMockInvoker(&url1)
+	invoker2 := NewMockInvoker(&url2)
+	invoker3 := NewMockInvoker(&url3)
 	invokers = append(invokers, invoker1, invoker2, invoker3)
 	inv := invocation.NewRPCInvocation(healthCheckRouteMethodNameTest, nil, nil)
 	res := hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*HealthCheckRouter), invokers), &consumerURL, inv)
@@ -67,15 +67,15 @@ func TestHealthCheckRouterRoute(t *testing.T) {
 	assert.True(t, len(res.ToArray()) == len(invokers))
 
 	for i := 0; i < 10; i++ {
-		request(url1, healthCheckRouteMethodNameTest, 0, false, false)
+		request(&url1, healthCheckRouteMethodNameTest, 0, false, false)
 	}
 	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*HealthCheckRouter), invokers), &consumerURL, inv)
 	// invokers1  is unhealthy now
 	assert.True(t, len(res.ToArray()) == 2 && !res.Contains(0))
 
 	for i := 0; i < 10; i++ {
-		request(url1, healthCheckRouteMethodNameTest, 0, false, false)
-		request(url2, healthCheckRouteMethodNameTest, 0, false, false)
+		request(&url1, healthCheckRouteMethodNameTest, 0, false, false)
+		request(&url2, healthCheckRouteMethodNameTest, 0, false, false)
 	}
 
 	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*HealthCheckRouter), invokers), &consumerURL, inv)
@@ -83,9 +83,9 @@ func TestHealthCheckRouterRoute(t *testing.T) {
 	assert.True(t, len(res.ToArray()) == 1 && !res.Contains(0) && !res.Contains(1))
 
 	for i := 0; i < 10; i++ {
-		request(url1, healthCheckRouteMethodNameTest, 0, false, false)
-		request(url2, healthCheckRouteMethodNameTest, 0, false, false)
-		request(url3, healthCheckRouteMethodNameTest, 0, false, false)
+		request(&url1, healthCheckRouteMethodNameTest, 0, false, false)
+		request(&url2, healthCheckRouteMethodNameTest, 0, false, false)
+		request(&url3, healthCheckRouteMethodNameTest, 0, false, false)
 	}
 
 	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*HealthCheckRouter), invokers), &consumerURL, inv)
@@ -93,12 +93,12 @@ func TestHealthCheckRouterRoute(t *testing.T) {
 	assert.True(t, len(res.ToArray()) == 3)
 
 	// reset the invoker1 successive failed count, so invoker1 go to healthy
-	request(url1, healthCheckRouteMethodNameTest, 0, false, true)
+	request(&url1, healthCheckRouteMethodNameTest, 0, false, true)
 	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*HealthCheckRouter), invokers), &consumerURL, inv)
 	assert.True(t, res.Contains(0))
 
 	for i := 0; i < 6; i++ {
-		request(url1, healthCheckRouteMethodNameTest, 0, false, false)
+		request(&url1, healthCheckRouteMethodNameTest, 0, false, false)
 	}
 	// now all invokers are unhealthy, so downgraded to all again
 	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*HealthCheckRouter), invokers), &consumerURL, inv)

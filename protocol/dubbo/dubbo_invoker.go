@@ -74,7 +74,7 @@ func NewDubboInvoker(url common.URL, client *remoting.ExchangeClient) *DubboInvo
 		requestTimeout = t
 	}
 	return &DubboInvoker{
-		BaseInvoker: *protocol.NewBaseInvoker(url),
+		BaseInvoker: *protocol.NewBaseInvoker(&url),
 		client:      client,
 		reqNum:      0,
 		timeout:     requestTimeout,
@@ -126,15 +126,15 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	if async {
 		if callBack, ok := inv.CallBack().(func(response common.CallbackResponse)); ok {
 			//result.Err = di.client.AsyncCall(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), callBack, response)
-			result.Err = di.client.AsyncRequest(&invocation, url, timeout, callBack, rest)
+			result.Err = di.client.AsyncRequest(&invocation, *url, timeout, callBack, rest)
 		} else {
-			result.Err = di.client.Send(&invocation, url, timeout)
+			result.Err = di.client.Send(&invocation, *url, timeout)
 		}
 	} else {
 		if inv.Reply() == nil {
 			result.Err = ErrNoReply
 		} else {
-			result.Err = di.client.Request(&invocation, url, timeout, rest)
+			result.Err = di.client.Request(&invocation, *url, timeout, rest)
 		}
 	}
 	if result.Err == nil {

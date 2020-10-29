@@ -48,13 +48,13 @@ func TestRandomlbSelect(t *testing.T) {
 	invokers := []protocol.Invoker{}
 
 	url, _ := common.NewURL(fmt.Sprintf(tmpUrlFormat, 0))
-	invokers = append(invokers, protocol.NewBaseInvoker(url))
+	invokers = append(invokers, protocol.NewBaseInvoker(&url))
 	i := randomlb.Select(invokers, &invocation.RPCInvocation{})
 	assert.True(t, i.GetUrl().URLEqual(url))
 
 	for i := 1; i < 10; i++ {
 		url, _ := common.NewURL(fmt.Sprintf(tmpUrlFormat, i))
-		invokers = append(invokers, protocol.NewBaseInvoker(url))
+		invokers = append(invokers, protocol.NewBaseInvoker(&url))
 	}
 	randomlb.Select(invokers, &invocation.RPCInvocation{})
 }
@@ -65,13 +65,13 @@ func TestRandomlbSelectWeight(t *testing.T) {
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {
 		url, _ := common.NewURL(fmt.Sprintf(tmpUrlFormat, i))
-		invokers = append(invokers, protocol.NewBaseInvoker(url))
+		invokers = append(invokers, protocol.NewBaseInvoker(&url))
 	}
 
 	urlParams := url.Values{}
 	urlParams.Set("methods.test."+constant.WEIGHT_KEY, "10000000000000")
 	urll, _ := common.NewURL(tmpUrl, common.WithParams(urlParams))
-	invokers = append(invokers, protocol.NewBaseInvoker(urll))
+	invokers = append(invokers, protocol.NewBaseInvoker(&urll))
 	ivc := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("test"))
 
 	var selectedInvoker []protocol.Invoker
@@ -96,13 +96,13 @@ func TestRandomlbSelectWarmup(t *testing.T) {
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {
 		url, _ := common.NewURL(fmt.Sprintf(tmpUrlFormat, i))
-		invokers = append(invokers, protocol.NewBaseInvoker(url))
+		invokers = append(invokers, protocol.NewBaseInvoker(&url))
 	}
 
 	urlParams := url.Values{}
 	urlParams.Set(constant.REMOTE_TIMESTAMP_KEY, strconv.FormatInt(time.Now().Add(time.Minute*(-9)).Unix(), 10))
 	urll, _ := common.NewURL(tmpUrl, common.WithParams(urlParams))
-	invokers = append(invokers, protocol.NewBaseInvoker(urll))
+	invokers = append(invokers, protocol.NewBaseInvoker(&urll))
 	ivc := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("test"))
 
 	var selectedInvoker []protocol.Invoker

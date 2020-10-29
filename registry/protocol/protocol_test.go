@@ -129,7 +129,7 @@ func exporterNormal(t *testing.T, regProtocol *registryProtocol) *common.URL {
 	)
 
 	url.SubURL = &suburl
-	invoker := protocol.NewBaseInvoker(url)
+	invoker := protocol.NewBaseInvoker(&url)
 	exporter := regProtocol.Export(invoker)
 
 	assert.IsType(t, &protocol.BaseExporter{}, exporter)
@@ -154,7 +154,7 @@ func TestMultiRegAndMultiProtoExporter(t *testing.T) {
 	)
 
 	url2.SubURL = &suburl2
-	invoker2 := protocol.NewBaseInvoker(url2)
+	invoker2 := protocol.NewBaseInvoker(&url2)
 	regProtocol.Export(invoker2)
 
 	var count int
@@ -185,7 +185,7 @@ func TestOneRegAndProtoExporter(t *testing.T) {
 	)
 
 	url2.SubURL = &suburl2
-	invoker2 := protocol.NewBaseInvoker(url2)
+	invoker2 := protocol.NewBaseInvoker(&url2)
 	regProtocol.Export(invoker2)
 
 	var count int

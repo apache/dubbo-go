@@ -99,7 +99,7 @@ func ValidateNacosClient(container nacosClientFacade, opts ...option) error {
 	nacosAddresses := strings.Split(url.Location, ",")
 	if container.NacosClient() == nil {
 		//in dubbo ,every registry only connect one node ,so this is []string{r.Address}
-		newClient, err := newNacosClient(os.nacosName, nacosAddresses, timeout, url)
+		newClient, err := newNacosClient(os.nacosName, nacosAddresses, timeout, *url)
 		if err != nil {
 			logger.Errorf("newNacosClient(name{%s}, nacos address{%v}, timeout{%d}) = error{%v}",
 				os.nacosName, url.Location, timeout.String(), err)
@@ -109,7 +109,7 @@ func ValidateNacosClient(container nacosClientFacade, opts ...option) error {
 	}
 
 	if container.NacosClient().Client() == nil {
-		configClient, err := initNacosConfigClient(nacosAddresses, timeout, url)
+		configClient, err := initNacosConfigClient(nacosAddresses, timeout, *url)
 		if err != nil {
 			logger.Errorf("initNacosConfigClient(addr:%+v,timeout:%v,url:%v) = err %+v",
 				nacosAddresses, timeout.String(), url, err)

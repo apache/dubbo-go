@@ -68,8 +68,8 @@ func (r *MockRegistry) IsAvailable() bool {
 }
 
 // nolint
-func (r *MockRegistry) GetUrl() common.URL {
-	return common.URL{}
+func (r *MockRegistry) GetUrl() *common.URL {
+	return &common.URL{}
 }
 
 func (r *MockRegistry) subscribe(*common.URL) (Listener, error) {

@@ -54,7 +54,7 @@ func registerForking(mockInvokers ...*mock.MockInvoker) protocol.Invoker {
 	for i, ivk := range mockInvokers {
 		invokers = append(invokers, ivk)
 		if i == 0 {
-			ivk.EXPECT().GetUrl().Return(forkingUrl)
+			ivk.EXPECT().GetUrl().Return(&forkingUrl)
 		}
 	}
 	staticDir := directory.NewStaticDirectory(invokers)

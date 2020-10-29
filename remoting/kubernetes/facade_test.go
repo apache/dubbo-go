@@ -43,8 +43,8 @@ func (r *mockFacade) SetClient(client *Client) {
 	r.client = client
 }
 
-func (r *mockFacade) GetUrl() common.URL {
-	return *r.URL
+func (r *mockFacade) GetUrl() *common.URL {
+	return r.URL
 }
 
 func (r *mockFacade) Destroy() {

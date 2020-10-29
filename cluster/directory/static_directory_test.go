@@ -36,7 +36,7 @@ func TestStaticDirList(t *testing.T) {
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
-		invokers = append(invokers, protocol.NewBaseInvoker(url))
+		invokers = append(invokers, protocol.NewBaseInvoker(&url))
 	}
 
 	staticDir := NewStaticDirectory(invokers)
@@ -49,7 +49,7 @@ func TestStaticDirDestroy(t *testing.T) {
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
-		invokers = append(invokers, protocol.NewBaseInvoker(url))
+		invokers = append(invokers, protocol.NewBaseInvoker(&url))
 	}
 
 	staticDir := NewStaticDirectory(invokers)

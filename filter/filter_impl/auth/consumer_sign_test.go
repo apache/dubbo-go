@@ -46,7 +46,7 @@ func TestConsumerSignFilter_Invoke(t *testing.T) {
 	invoker := mock.NewMockInvoker(ctrl)
 	result := &protocol.RPCResult{}
 	invoker.EXPECT().Invoke(inv).Return(result).Times(2)
-	invoker.EXPECT().GetUrl().Return(url).Times(2)
+	invoker.EXPECT().GetUrl().Return(&url).Times(2)
 	assert.Equal(t, result, filter.Invoke(context.Background(), invoker, inv))
 
 	url.SetParam(constant.SERVICE_AUTH_KEY, "true")

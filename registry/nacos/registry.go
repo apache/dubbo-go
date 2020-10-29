@@ -211,8 +211,8 @@ func (nr *nacosRegistry) UnSubscribe(url *common.URL, notifyListener registry.No
 }
 
 // GetUrl gets its registration URL
-func (nr *nacosRegistry) GetUrl() common.URL {
-	return *nr.URL
+func (nr *nacosRegistry) GetUrl() *common.URL {
+	return nr.URL
 }
 
 // IsAvailable determines nacos registry center whether it is available

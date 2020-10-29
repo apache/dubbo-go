@@ -55,7 +55,7 @@ func TestMetricsFilterInvoke(t *testing.T) {
 			"loadbalance=random&methods.GetUser.retries=1&methods.GetUser.weight=0&module=dubbogo+user-info+server&name=" +
 			"BDTService&organization=ikurento.com&owner=ZX&registry.role=3&retries=&" +
 			"service.filter=echo%2Ctoken%2Caccesslog&timestamp=1569153406&token=934804bf-b007-4174-94eb-96e3e1d60cc7&version=&warmup=100")
-	invoker := protocol.NewBaseInvoker(url)
+	invoker := protocol.NewBaseInvoker(&url)
 
 	attach := make(map[string]interface{}, 10)
 	inv := invocation.NewRPCInvocation("MethodName", []interface{}{"OK", "Hello"}, attach)

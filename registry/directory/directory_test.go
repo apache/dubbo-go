@@ -183,7 +183,7 @@ func Test_toGroupInvokers(t *testing.T) {
 	defer ctrl.Finish()
 	invoker := mock.NewMockInvoker(ctrl)
 	newUrl, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
-	invoker.EXPECT().GetUrl().Return(newUrl).AnyTimes()
+	invoker.EXPECT().GetUrl().Return(&newUrl).AnyTimes()
 
 	registryDirectory.cacheInvokersMap.Store("group1", invoker)
 	registryDirectory.cacheInvokersMap.Store("group2", invoker)

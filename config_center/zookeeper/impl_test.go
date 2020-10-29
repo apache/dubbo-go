@@ -55,7 +55,7 @@ func initZkData(group string, t *testing.T) (*zk.TestCluster, *zookeeperDynamicC
 	assert.True(t, ok)
 	assert.NoError(t, err)
 	assert.True(t, zreg.IsAvailable())
-	assert.Equal(t, zreg.GetUrl(), regurl)
+	assert.Equal(t, *zreg.GetUrl(), regurl)
 	assert.True(t, zreg.RestartCallBack())
 	zreg.SetParser(&parser.DefaultConfigurationParser{})
 

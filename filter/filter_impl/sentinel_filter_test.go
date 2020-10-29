@@ -43,7 +43,7 @@ func TestSentinelFilter_QPS(t *testing.T) {
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
 	assert.NoError(t, err)
-	mockInvoker := protocol.NewBaseInvoker(url)
+	mockInvoker := protocol.NewBaseInvoker(&url)
 	interfaceResourceName, _ := getResourceName(mockInvoker,
 		invocation.NewRPCInvocation("hello", []interface{}{"OK"}, make(map[string]interface{})), "prefix_")
 	mockInvocation := invocation.NewRPCInvocation("hello", []interface{}{"OK"}, make(map[string]interface{}))
@@ -91,7 +91,7 @@ func TestConsumerFilter_Invoke(t *testing.T) {
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
 	assert.NoError(t, err)
-	mockInvoker := protocol.NewBaseInvoker(url)
+	mockInvoker := protocol.NewBaseInvoker(&url)
 	mockInvocation := invocation.NewRPCInvocation("hello", []interface{}{"OK"}, make(map[string]interface{}))
 	result := f.Invoke(context.TODO(), mockInvoker, mockInvocation)
 	assert.NoError(t, result.Error())
@@ -105,7 +105,7 @@ func TestProviderFilter_Invoke(t *testing.T) {
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
 	assert.NoError(t, err)
-	mockInvoker := protocol.NewBaseInvoker(url)
+	mockInvoker := protocol.NewBaseInvoker(&url)
 	mockInvocation := invocation.NewRPCInvocation("hello", []interface{}{"OK"}, make(map[string]interface{}))
 	result := f.Invoke(context.TODO(), mockInvoker, mockInvocation)
 	assert.NoError(t, result.Error())
@@ -119,7 +119,7 @@ func TestGetResourceName(t *testing.T) {
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
 	assert.NoError(t, err)
-	mockInvoker := protocol.NewBaseInvoker(url)
+	mockInvoker := protocol.NewBaseInvoker(&url)
 	interfaceResourceName, methodResourceName := getResourceName(mockInvoker,
 		invocation.NewRPCInvocation("hello", []interface{}{"OK"}, make(map[string]interface{})), "prefix_")
 	assert.Equal(t, "com.ikurento.user.UserProvider:myGroup:1.0.0", interfaceResourceName)

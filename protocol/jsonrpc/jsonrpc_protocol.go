@@ -69,7 +69,7 @@ func (jp *JsonrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	logger.Infof("Export service: %s", url.String())
 
 	// start server
-	jp.openServer(url)
+	jp.openServer(*url)
 
 	return exporter
 }

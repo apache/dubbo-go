@@ -37,7 +37,8 @@ const (
 func TestBeginCount(t *testing.T) {
 	defer CleanAllStatus()
 
-	url, _ := common.NewURL(mockCommonDubboUrl)
+	urlTmp, _ := common.NewURL(mockCommonDubboUrl)
+	url := &urlTmp
 	BeginCount(url, "test")
 	urlStatus := GetURLStatus(url)
 	methodStatus := GetMethodStatus(url, "test")
@@ -51,7 +52,8 @@ func TestBeginCount(t *testing.T) {
 func TestEndCount(t *testing.T) {
 	defer CleanAllStatus()
 
-	url, _ := common.NewURL(mockCommonDubboUrl)
+	urlTmp, _ := common.NewURL(mockCommonDubboUrl)
+	url := &urlTmp
 	EndCount(url, "test", 100, true)
 	urlStatus := GetURLStatus(url)
 	methodStatus := GetMethodStatus(url, "test")
@@ -65,7 +67,7 @@ func TestGetMethodStatus(t *testing.T) {
 	defer CleanAllStatus()
 
 	url, _ := common.NewURL(mockCommonDubboUrl)
-	status := GetMethodStatus(url, "test")
+	status := GetMethodStatus(&url, "test")
 	assert.NotNil(t, status)
 	assert.Equal(t, int32(0), status.total)
 }
@@ -74,7 +76,7 @@ func TestGetUrlStatus(t *testing.T) {
 	defer CleanAllStatus()
 
 	url, _ := common.NewURL(mockCommonDubboUrl)
-	status := GetURLStatus(url)
+	status := GetURLStatus(&url)
 	assert.NotNil(t, status)
 	assert.Equal(t, int32(0), status.total)
 }
@@ -83,7 +85,7 @@ func TestbeginCount0(t *testing.T) {
 	defer CleanAllStatus()
 
 	url, _ := common.NewURL(mockCommonDubboUrl)
-	status := GetURLStatus(url)
+	status := GetURLStatus(&url)
 	beginCount0(status)
 	assert.Equal(t, int32(1), status.active)
 }
@@ -91,7 +93,8 @@ func TestbeginCount0(t *testing.T) {
 func TestAll(t *testing.T) {
 	defer CleanAllStatus()
 
-	url, _ := common.NewURL(mockCommonDubboUrl)
+	urlTmp, _ := common.NewURL(mockCommonDubboUrl)
+	url := &urlTmp
 	request(url, "test", 100, false, true)
 	urlStatus := GetURLStatus(url)
 	methodStatus := GetMethodStatus(url, "test")
@@ -142,7 +145,7 @@ func TestAll(t *testing.T) {
 
 }
 
-func request(url common.URL, method string, elapsed int64, active, succeeded bool) {
+func request(url *common.URL, method string, elapsed int64, active, succeeded bool) {
 	BeginCount(url, method)
 	if !active {
 		EndCount(url, method, elapsed, succeeded)

@@ -50,7 +50,7 @@ func newBaseClusterInvoker(directory cluster.Directory) baseClusterInvoker {
 	}
 }
 
-func (invoker *baseClusterInvoker) GetUrl() common.URL {
+func (invoker *baseClusterInvoker) GetUrl() *common.URL {
 	return invoker.directory.GetUrl()
 }
 

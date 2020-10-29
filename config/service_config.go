@@ -325,7 +325,7 @@ func (c *ServiceConfig) GetExportedUrls() []*common.URL {
 		var urls []*common.URL
 		for _, exporter := range c.exporters {
 			url := exporter.GetInvoker().GetUrl()
-			urls = append(urls, &url)
+			urls = append(urls, url)
 		}
 		return urls
 	}

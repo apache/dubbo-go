@@ -52,7 +52,7 @@ const (
 )
 
 type MockInvoker struct {
-	url          common.URL
+	url          *common.URL
 	available    bool
 	destroyed    bool
 	successCount int
@@ -60,14 +60,14 @@ type MockInvoker struct {
 
 func NewMockInvoker(url common.URL, successCount int) *MockInvoker {
 	return &MockInvoker{
-		url:          url,
+		url:          &url,
 		available:    true,
 		destroyed:    false,
 		successCount: successCount,
 	}
 }
 
-func (bi *MockInvoker) GetUrl() common.URL {
+func (bi *MockInvoker) GetUrl() *common.URL {
 	return bi.url
 }
 

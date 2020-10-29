@@ -39,7 +39,7 @@ func TestGrpcProtocolExport(t *testing.T) {
 	proto := GetProtocol()
 	url, err := common.NewURL(mockGrpcCommonUrl)
 	assert.NoError(t, err)
-	exporter := proto.Export(protocol.NewBaseInvoker(url))
+	exporter := proto.Export(protocol.NewBaseInvoker(&url))
 	time.Sleep(time.Second)
 
 	// make sure url

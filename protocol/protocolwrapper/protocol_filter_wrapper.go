@@ -101,7 +101,7 @@ type FilterInvoker struct {
 }
 
 // GetUrl is used to get url from FilterInvoker
-func (fi *FilterInvoker) GetUrl() common.URL {
+func (fi *FilterInvoker) GetUrl() *common.URL {
 	return fi.invoker.GetUrl()
 }
 
