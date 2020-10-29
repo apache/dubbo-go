@@ -5,12 +5,12 @@ import (
 	"log"
 	"sync"
 	"time"
+)
 
-	"github.com/edison/go-telnet/protocol"
-
-	"github.com/edison/go-telnet/common"
-
+import (
 	hessian "github.com/LaurenceLiZhixin/dubbo-go-hessian2"
+	"github.com/apache/dubbo-go/tools/cli/common"
+	"github.com/apache/dubbo-go/tools/cli/protocol"
 	perrors "github.com/pkg/errors"
 )
 
