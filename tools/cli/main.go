@@ -4,9 +4,9 @@ import (
 	"flag"
 	"log"
 
-	"github.com/edison/go-telnet/client"
+	"github.com/apache/dubbo-go/tools/cli/client"
 
-	"github.com/edison/go-telnet/json_register"
+	"github.com/apache/dubbo-go/tools/cli/json_register"
 )
 
 var host string
