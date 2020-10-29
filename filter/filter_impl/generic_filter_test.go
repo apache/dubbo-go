@@ -20,6 +20,7 @@ package filter_impl
 import (
 	"reflect"
 	"testing"
+	"time"
 )
 
 import (
@@ -38,6 +39,7 @@ func TestStruct2MapAll(t *testing.T) {
 				Xx   string `m:"xx"`
 			} `m:"xxYy"`
 		} `m:"caCa"`
+		DaDa time.Time
 	}
 	testData.AaAa = "1"
 	testData.BaBa = "1"
@@ -45,6 +47,7 @@ func TestStruct2MapAll(t *testing.T) {
 	testData.CaCa.AaAa = "2"
 	testData.CaCa.XxYy.xxXx = "3"
 	testData.CaCa.XxYy.Xx = "3"
+	testData.DaDa = time.Date(2020, 10, 29, 2, 34, 0, 0, time.Local)
 	m := struct2MapAll(testData).(map[string]interface{})
 	assert.Equal(t, "1", m["aaAa"].(string))
 	assert.Equal(t, "1", m["baBa"].(string))
@@ -53,6 +56,7 @@ func TestStruct2MapAll(t *testing.T) {
 
 	assert.Equal(t, reflect.Map, reflect.TypeOf(m["caCa"]).Kind())
 	assert.Equal(t, reflect.Map, reflect.TypeOf(m["caCa"].(map[string]interface{})["xxYy"]).Kind())
+	assert.Equal(t, "2020-10-29 02:34:00", m["daDa"].(time.Time).Format("2006-01-02 15:04:05"))
 }
 
 type testStruct struct {
