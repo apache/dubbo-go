@@ -9,6 +9,9 @@ import (
 import (
 	hessian "github.com/LaurenceLiZhixin/dubbo-go-hessian2"
 	jparser "github.com/LaurenceLiZhixin/json-interface-parser"
+)
+
+import (
 	"github.com/apache/dubbo-go/tools/cli/common"
 )
 
