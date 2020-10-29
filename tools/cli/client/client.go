@@ -7,14 +7,13 @@ import (
 	"net"
 	"sync"
 	"time"
+)
 
-	"github.com/edison/go-telnet/common"
-
-	"github.com/edison/go-telnet/protocol"
-
+import (
+	"github.com/apache/dubbo-go/tools/cli/common"
+	"github.com/apache/dubbo-go/tools/cli/protocol"
+	_ "github.com/apache/dubbo-go/tools/cli/protocol/dubbo"
 	"go.uber.org/atomic"
-
-	_ "github.com/edison/go-telnet/protocol/dubbo"
 )
 
 const defaultBufferSize = 4096
@@ -32,7 +31,7 @@ type TelnetClient struct {
 	waitNum          atomic.Uint64
 }
 
-// NewTelnetClient 创建一个新的tcp链接，并初始化请求
+// NewTelnetClient 创建一个新的tcp链接，并初始化默认请求
 func NewTelnetClient(host string, port int, protocolName, interfaceID, version, group, method string, reqPkg interface{}) (*TelnetClient, error) {
 	tcpAddr := createTCPAddr(host, port)
 	resolved := resolveTCPAddr(tcpAddr)
