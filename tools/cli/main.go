@@ -3,9 +3,10 @@ package main
 import (
 	"flag"
 	"log"
+)
 
+import (
 	"github.com/apache/dubbo-go/tools/cli/client"
-
 	"github.com/apache/dubbo-go/tools/cli/json_register"
 )
 
