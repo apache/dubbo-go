@@ -9,9 +9,12 @@ import (
 
 import (
 	hessian "github.com/LaurenceLiZhixin/dubbo-go-hessian2"
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"github.com/apache/dubbo-go/tools/cli/common"
 	"github.com/apache/dubbo-go/tools/cli/protocol"
-	perrors "github.com/pkg/errors"
 )
 
 func init() {

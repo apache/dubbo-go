@@ -10,10 +10,13 @@ import (
 )
 
 import (
+	"go.uber.org/atomic"
+)
+
+import (
 	"github.com/apache/dubbo-go/tools/cli/common"
 	"github.com/apache/dubbo-go/tools/cli/protocol"
 	_ "github.com/apache/dubbo-go/tools/cli/protocol/dubbo"
-	"go.uber.org/atomic"
 )
 
 const defaultBufferSize = 4096
