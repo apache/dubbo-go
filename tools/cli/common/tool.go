@@ -23,7 +23,7 @@ import (
 	"reflect"
 )
 
-// PrintInterface 层级打印struct
+// PrintInterface print the interface by level
 func PrintInterface(v interface{}) {
 	val := reflect.ValueOf(v).Elem()
 	typ := reflect.TypeOf(v)
