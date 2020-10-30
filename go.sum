@@ -93,6 +93,8 @@ github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuy
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/alibaba/sentinel-golang v0.6.1 h1:Pxyw2X7ryklvToF40KG9l4uuO90jRZA2MWb8Z3d1wPo=
 github.com/alibaba/sentinel-golang v0.6.1/go.mod h1:5jemKdyCQCKVf+quEia53fo9a17OSe+wnl9HX2NbNpc=
+github.com/alibaba/sentinel-golang v0.6.2 h1:1OjjpljJbNKWp9p5RJKxOqS1gHGZPUWPlCcokv5xYJs=
+github.com/alibaba/sentinel-golang v0.6.2/go.mod h1:5jemKdyCQCKVf+quEia53fo9a17OSe+wnl9HX2NbNpc=
 github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190808125512-07798873deee/go.mod h1:myCDvQSzCW+wB1WAlocEru4wMGJxy+vlxHdhegi1CDQ=
 github.com/aliyun/alibaba-cloud-sdk-go v1.61.18 h1:zOVTBdCKFd9JbCKz9/nt+FovbjPFmb7mUnp8nH9fQBA=
 github.com/aliyun/alibaba-cloud-sdk-go v1.61.18/go.mod h1:v8ESoHo4SyHmuB4b1tJqDHxfTGEciD+yhvOU/5s1Rfk=
