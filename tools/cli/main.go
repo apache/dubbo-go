@@ -72,5 +72,5 @@ func main() {
 		panic(err)
 	}
 	t.ProcessRequests(recvPkg)
-	t.Destory()
+	t.Destroy()
 }
