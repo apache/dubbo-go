@@ -95,13 +95,15 @@ func struct2MapAll(obj interface{}) interface{} {
 		for i := 0; i < t.NumField(); i++ {
 			switch v.Field(i).Kind() {
 			case reflect.Struct:
-				if v.Field(i).Type().String() == "time.Time" {
-					setInMap(result, t.Field(i), v.Field(i).Interface())
-					break
-				}
 				fallthrough
-			case reflect.Slice | reflect.Map:
+			case reflect.Slice:
+				fallthrough
+			case reflect.Map:
 				if v.Field(i).CanInterface() {
+					if v.Field(i).Type().String() == "time.Time" {
+						setInMap(result, t.Field(i), v.Field(i).Interface())
+						break
+					}
 					setInMap(result, t.Field(i), struct2MapAll(v.Field(i).Interface()))
 				}
 				break
