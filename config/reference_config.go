@@ -118,6 +118,7 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 			} else {
 				if serviceUrl.Path == "" {
 					serviceUrl.Path = "/" + c.InterfaceName
+
 				}
 				// merge url need to do
 				newUrl := common.MergeUrl(&serviceUrl, cfgURL)
