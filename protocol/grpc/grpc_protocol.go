@@ -18,6 +18,8 @@
 package grpc
 
 import (
+	"github.com/apache/dubbo-go/common/constant"
+	"strconv"
 	"sync"
 )
 
@@ -76,7 +78,9 @@ func (gp *GrpcProtocol) openServer(url common.URL) {
 		gp.serverLock.Lock()
 		_, ok = gp.serverMap[url.Location]
 		if !ok {
+			grpcMessageSize, _ := strconv.Atoi(url.GetParam(constant.GRPC_MESSAGE_SIZE_KEY, "4"))
 			srv := NewServer()
+			srv.SetBufferSize(grpcMessageSize)
 			gp.serverMap[url.Location] = srv
 			srv.Start(url)
 		}
