@@ -80,8 +80,6 @@ func (s *Server) Start(url common.URL) {
 		grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)),
 		grpc.MaxRecvMsgSize(1024*1024*s.bufferSize),
 		grpc.MaxSendMsgSize(1024*1024*s.bufferSize))
-	fmt.Println("-------------------")
-	fmt.Println("size = ", s.bufferSize)
 
 	key := url.GetParam(constant.BEAN_NAME_KEY, "")
 	service := config.GetProviderService(key)
