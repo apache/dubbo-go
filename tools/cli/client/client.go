@@ -38,7 +38,7 @@ import (
 
 const defaultBufferSize = 4096
 
-// TelnetClient，维持一个服务的链接。
+// TelnetClient maintain a connection to target
 type TelnetClient struct {
 	responseTimeout time.Duration
 	protocolName    string
@@ -51,7 +51,7 @@ type TelnetClient struct {
 	waitNum          atomic.Uint64
 }
 
-// NewTelnetClient 创建一个新的tcp链接，并初始化默认请求
+// NewTelnetClient create a new tcp connection, and create default request
 func NewTelnetClient(host string, port int, protocolName, interfaceID, version, group, method string, reqPkg interface{}) (*TelnetClient, error) {
 	tcpAddr := createTCPAddr(host, port)
 	resolved := resolveTCPAddr(tcpAddr)
@@ -99,14 +99,15 @@ func resolveTCPAddr(addr string) *net.TCPAddr {
 	return resolved
 }
 
-// ProcessRequests 依次发起所有请求
+// ProcessRequests send all requests
 func (t *TelnetClient) ProcessRequests(userPkg interface{}) {
 	for i, _ := range t.requestList {
 		t.processSingleRequest(t.requestList[i], userPkg)
 	}
 }
 
-// addPendingResponse 加入等待队列
+// addPendingResponse add a response @model to pending queue
+// once the rsp got, the model will be used.
 func (t *TelnetClient) addPendingResponse(model interface{}) uint64 {
 	seqId := t.sequence.Load()
 	t.pendingResponses.Store(seqId, model)
@@ -115,7 +116,7 @@ func (t *TelnetClient) addPendingResponse(model interface{}) uint64 {
 	return seqId
 }
 
-// removePendingResponse 从等待队列中删除
+// removePendingResponse delete item from pending queue by @seq
 func (t *TelnetClient) removePendingResponse(seq uint64) {
 	if t.pendingResponses == nil {
 		return
@@ -127,9 +128,9 @@ func (t *TelnetClient) removePendingResponse(seq uint64) {
 	return
 }
 
-// processSingleRequest 执行单个request
+// processSingleRequest call one req.
 func (t *TelnetClient) processSingleRequest(req *protocol.Request, userPkg interface{}) {
-	// 协议打包过程
+	// proto create package procedure
 	req.ID = t.sequence.Load()
 	inputData, err := t.proto.Write(req)
 	if err != nil {
@@ -137,7 +138,7 @@ func (t *TelnetClient) processSingleRequest(req *protocol.Request, userPkg inter
 	}
 	startTime := time.Now()
 
-	// 如果有需要，先初始化协议异步回包
+	// init rsp Package and add to pending queue
 	seqId := t.addPendingResponse(userPkg)
 	defer t.removePendingResponse(seqId)
 
@@ -145,7 +146,7 @@ func (t *TelnetClient) processSingleRequest(req *protocol.Request, userPkg inter
 	doneChannel := make(chan bool)
 	responseDataChannel := make(chan []byte)
 
-	// 数据传输监听过程
+	// start data transfer procedure
 	go t.readInputData(string(inputData), requestDataChannel, doneChannel)
 	go t.readServerData(t.conn, responseDataChannel)
 
@@ -193,6 +194,7 @@ func (t *TelnetClient) assertEOF(error error) {
 	}
 }
 
-func (t *TelnetClient) Destory() {
+// Destroy close the tcp conn
+func (t *TelnetClient) Destroy() {
 	t.conn.Close()
 }
