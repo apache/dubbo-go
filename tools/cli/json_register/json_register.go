@@ -32,6 +32,8 @@ import (
 	"github.com/apache/dubbo-go/tools/cli/common"
 )
 
+// RegisterStructFromFile create the interface defined by @path file, and register it to hessian
+// the interface defined must have field "JavaClassName"
 func RegisterStructFromFile(path string) interface{} {
 	if path == "" {
 		return nil
