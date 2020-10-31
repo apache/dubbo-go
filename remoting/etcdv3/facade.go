@@ -63,7 +63,7 @@ LOOP:
 			r.ClientLock().Lock()
 			clientName := RegistryETCDV3Client
 			timeout, _ := time.ParseDuration(r.GetUrl().GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
-			endpoint := r.GetUrl().Location
+			endpoints := r.Client().endpoints
 			r.Client().Close()
 			r.SetClient(nil)
 			r.ClientLock().Unlock()
@@ -80,11 +80,11 @@ LOOP:
 				err = ValidateClient(
 					r,
 					WithName(clientName),
-					WithEndpoints(endpoint),
+					WithEndpoints(endpoints...),
 					WithTimeout(timeout),
 				)
 				logger.Infof("ETCDV3ProviderRegistry.validateETCDV3Client(etcd Addr{%s}) = error{%#v}",
-					endpoint, perrors.WithStack(err))
+					endpoints, perrors.WithStack(err))
 				if err == nil && r.RestartCallBack() {
 					break
 				}
