@@ -325,8 +325,16 @@ func (r *BaseRegistry) providerRegistry(c common.URL, params url.Values, f creat
 	}
 	host += ":" + c.Port
 
+	//delete empty param key
+	for key, val := range params {
+		if len(val) > 0 && val[0] == "" {
+			params.Del(key)
+		}
+	}
+
 	s, _ := url.QueryUnescape(params.Encode())
 	rawURL = fmt.Sprintf("%s://%s%s?%s", c.Protocol, host, c.Path, s)
+
 	// Print your own registration service providers.
 	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), (common.RoleType(common.PROVIDER)).String())
 	logger.Debugf("provider path:%s, url:%s", dubboPath, rawURL)
