@@ -9,7 +9,7 @@ require (
 	github.com/apache/dubbo-go-hessian2 v1.7.0
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/creasty/defaults v1.3.0
-	github.com/dubbogo/go-zookeeper v1.0.1
+	github.com/dubbogo/go-zookeeper v1.0.2
 	github.com/dubbogo/gost v1.9.1
 	github.com/elazarl/go-bindata-assetfs v1.0.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.0.0
