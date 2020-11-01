@@ -163,6 +163,7 @@ func test1(t *testing.T) {
 	suite.testListener(remoting.EventTypeAdd)
 	suite.testUnregister()
 	suite.testListener(remoting.EventTypeDel)
+	suite.testDestroy()
 }
 
 // subscribe -> register -> unregister
@@ -183,6 +184,7 @@ func test2(t *testing.T) {
 	suite.testListener(remoting.EventTypeAdd)
 	suite.testUnregister()
 	suite.testListener(remoting.EventTypeDel)
+	suite.testDestroy()
 }
 
 func TestConsulRegistry(t *testing.T) {
