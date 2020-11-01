@@ -91,7 +91,7 @@ func newETCDV3Registry(url *common.URL) (registry.Registry, error) {
 		r,
 		etcdv3.WithName(etcdv3.RegistryETCDV3Client),
 		etcdv3.WithTimeout(timeout),
-		etcdv3.WithEndpoints(url.Location),
+		etcdv3.WithEndpoints(strings.Split(url.Location, ",")...),
 	); err != nil {
 		return nil, err
 	}
