@@ -1,7 +1,23 @@
 # Release Notes
 ---
 
-## 1.5.2
+## 1.5.4
+
+### Bugfixes
+- [Fix etcd cluster reconnect](https://github.com/apache/dubbo-go/pull/828)  
+- [Fix zookeeper deadlock problem](https://github.com/apache/dubbo-go/pull/826)      
+- [Fix generic struct2MapAll](https://github.com/apache/dubbo-go/pull/822)     
+- [Fix Consumer panic when restart provider](https://github.com/apache/dubbo-go/pull/803)     
+- [Fix etcd can not registry](https://github.com/apache/dubbo-go/pull/819) [@lin-jianjun](https://github.com/lin-jianjun)
+- [Fix cannot call go provider service when used by java dubbo 2.7.7 version](https://github.com/apache/dubbo-go/pull/815) [@jack15083](https://github.com/jack15083) 
+- [Fix go client quit abnormally when it connects java server](https://github.com/apache/dubbo-go/pull/820) [@wenxuwan](https://github.com/wenxuwan)      
+- [Fix sentinel windows issue](https://github.com/apache/dubbo-go/pull/821) [@louyuting](https://github.com/louyuting)      
+- [Fix metadata default port](https://github.com/apache/dubbo-go/pull/821) [@sanxun0325](https://github.com/sanxun0325)      
+- [Fix consul can not destory](https://github.com/apache/dubbo-go/pull/788) [@LaurenceLiZhixin](https://github.com/LaurenceLiZhixin)      
+
+Milestone: [https://github.com/apache/dubbo-go/milestone/6](https://github.com/apache/dubbo-go/milestone/6?closed=1)
+
+## 1.5.3
 
 ### New Features
 - [Add consul service discovery](https://github.com/apache/dubbo-go/pull/701) [@zhangshen023](https://github.com/zhangshen023)
