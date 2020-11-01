@@ -15,16 +15,37 @@
  * limitations under the License.
  */
 
-package exporter
+package getty
 
 import (
-	"github.com/apache/dubbo-go/common"
+	"testing"
+	"time"
 )
 
-// MetadataServiceExporter will export & unexport the metadata service,  get exported url, and return is exported or not
-type MetadataServiceExporter interface {
-	Export(url *common.URL) error
-	Unexport()
-	GetExportedURLs() []*common.URL
-	IsExported() bool
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+func TestGetConnFromPool(t *testing.T) {
+	var rpcClient Client
+
+	clientPoll := newGettyRPCClientConnPool(&rpcClient, 1, time.Duration(5*time.Second))
+
+	var conn1 gettyRPCClient
+	conn1.active = time.Now().Unix()
+	clientPoll.put(&conn1)
+	assert.Equal(t, 1, len(clientPoll.conns))
+
+	var conn2 gettyRPCClient
+	conn2.active = time.Now().Unix()
+	clientPoll.put(&conn2)
+	assert.Equal(t, 1, len(clientPoll.conns))
+	conn, err := clientPoll.get()
+	assert.Nil(t, err)
+	assert.Equal(t, &conn1, conn)
+	time.Sleep(6 * time.Second)
+	conn, err = clientPoll.get()
+	assert.Nil(t, conn)
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(clientPoll.conns))
 }
