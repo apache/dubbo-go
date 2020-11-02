@@ -37,10 +37,8 @@ ARCH = amd64
 SHELL = /bin/bash
 
 prepare:
-	wget https://github.com/lsm-dev/license-header-checker/releases/download/v1.1.0/$(GO_LICENSE_CHECKER_DIR).zip -O $(GO_LICENSE_CHECKER_DIR).zip
-	unzip -o $(GO_LICENSE_CHECKER_DIR).zip
-	cp $(GO_LICENSE_CHECKER_DIR)/64bits/license-header-checker $(GO_PATH)/bin/
-	wget -O $(LICENSE_DIR) https://github.com/dubbogo/resources/raw/master/tools/license/license.txt
+	$(GO_LICENSE_CHECKER) -version || (wget https://github.com/lsm-dev/license-header-checker/releases/download/v1.1.0/$(GO_LICENSE_CHECKER_DIR).zip -O $(GO_LICENSE_CHECKER_DIR).zip && unzip -o $(GO_LICENSE_CHECKER_DIR).zip && cp $(GO_LICENSE_CHECKER_DIR)/64bits/license-header-checker $(GO_PATH)/bin/)
+	ls $(LICENSE_DIR) || wget -O $(LICENSE_DIR) https://github.com/dubbogo/resources/raw/master/tools/license/license.txt
 	#./before_ut.sh
 
 .PHONE: test
@@ -52,7 +50,7 @@ deps: prepare
 
 .PHONY: license
 license: clean prepare
-	$(GO_LICENSE_CHECKER) -v -a -r -i vendor  $(LICENSE_DIR) . go  && [[ -z `git status -s` ]]
+	$(GO_LICENSE_CHECKER) -v -a -r -i vendor $(LICENSE_DIR) . go  && [[ -z `git status -s` ]]
 
 .PHONY: verify
 verify: clean license lint test
