@@ -33,19 +33,31 @@ GO_LICENSE_CHECKER_DIR = license-header-checker-$(GO_OS)
 GO_LICENSE_CHECKER = $(GO_PATH)/bin/license-header-checker
 LICENSE_DIR = /tmp/tools/license
 
-PLATFORMS := windows linux darwin
-os = $(word 1, $@)
 ARCH = amd64
+
+ZK_TEST_LIST=registry/zookeeper cluster/router/chain cluster/router/condition cluster/router/tag  metadata/report/zookeeper
+ZK_JAR_NAME=zookeeper-3.4.9-fatjar.jar
+ZK_FATJAR_BASE=/zookeeper-4unittest/contrib/fatjar
+ZK_JAR_PATH=remoting/zookeeper$(ZK_FATJAR_BASE)
+ZK_JAR=$(ZK_JAR_PATH)/$(ZK_JAR_NAME)
 
 SHELL = /bin/bash
 
-prepare:
+prepareLic:
 	$(GO_LICENSE_CHECKER) -version || (wget https://github.com/lsm-dev/license-header-checker/releases/download/v1.2.0/$(GO_LICENSE_CHECKER_DIR).zip -O $(GO_LICENSE_CHECKER_DIR).zip && unzip -o $(GO_LICENSE_CHECKER_DIR).zip && mkdir -p $(GO_PATH)/bin/ && cp $(GO_LICENSE_CHECKER_DIR)/64bit/license-header-checker $(GO_PATH)/bin/)
 	ls /tmp/tools/license/license.txt || wget -P $(LICENSE_DIR) https://github.com/dubbogo/resources/raw/master/tools/license/license.txt
-	#./before_ut.sh
+
+prepareZk:
+	ls $(ZK_JAR) || (mkdir -p $(ZK_JAR_PATH)&&  wget -P $(ZK_JAR_PATH) https://github.com/dubbogo/resources/raw/master/zookeeper-4unitest/contrib/fatjar/${ZK_JAR_NAME})
+	@for i in $(ZK_TEST_LIST); do \
+		mkdir -p $$i$(ZK_FATJAR_BASE);\
+		cp ${ZK_JAR} $$i$(ZK_FATJAR_BASE);\
+	done
+
+prepare: prepareZk prepareLic
 
 .PHONE: test
-test: clean lint
+test: clean
 	$(GO_TEST) ./... -coverprofile=coverage.txt -covermode=atomic
 
 deps: prepare
@@ -56,8 +68,9 @@ license: clean prepare
 	$(GO_LICENSE_CHECKER) -v -a -r -i vendor $(LICENSE_DIR)/license.txt . go && [[ -z `git status -s` ]]
 
 .PHONY: verify
-verify: clean license lint test
+verify: clean license test
 
 .PHONY: clean
 clean: prepare
-	-rm -rf coverage.txt
+	rm -rf coverage.txt
+	rm -rf license-header-checker*
