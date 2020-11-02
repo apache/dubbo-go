@@ -18,17 +18,19 @@
 VERSION ?= latest
 
 GO = go
-GO_PATH = $$($(GO) env GOPATH)
-GO_OS = mac
-#GO_OS = $$($(GO) env GOOS)
+GO_PATH = $(shell $(GO) env GOPATH)
+GO_OS = $(shell $(GO) env GOOS)
+ifeq ($(GO_OS), darwin)
+    GO_OS = mac
+endif
 GO_BUILD = $(GO) build
 GO_GET = $(GO) get
 GO_TEST = $(GO) test
 GO_BUILD_FLAGS = -v
 GO_BUILD_LDFLAGS = -X main.version=$(VERSION)
 
-GO_LICENSE_CHECKER = $(GO_PATH)/bin/license-header-checker
 GO_LICENSE_CHECKER_DIR = license-header-checker-$(GO_OS)
+GO_LICENSE_CHECKER = $(GO_PATH)/bin/license-header-checker
 LICENSE_DIR = /tmp/tools/license
 
 PLATFORMS := windows linux darwin
@@ -39,7 +41,7 @@ SHELL = /bin/bash
 
 prepare:
 	$(GO_LICENSE_CHECKER) -version || (wget https://github.com/lsm-dev/license-header-checker/releases/download/v1.2.0/$(GO_LICENSE_CHECKER_DIR).zip -O $(GO_LICENSE_CHECKER_DIR).zip && unzip -o $(GO_LICENSE_CHECKER_DIR).zip && mkdir -p $(GO_PATH)/bin/ && cp $(GO_LICENSE_CHECKER_DIR)/64bit/license-header-checker $(GO_PATH)/bin/)
-	wget -P $(LICENSE_DIR) https://github.com/dubbogo/resources/raw/master/tools/license/license.txt
+	ls /tmp/tools/license/license.txt || wget -P $(LICENSE_DIR) https://github.com/dubbogo/resources/raw/master/tools/license/license.txt
 	#./before_ut.sh
 
 .PHONE: test
@@ -51,7 +53,7 @@ deps: prepare
 
 .PHONY: license
 license: clean prepare
-	$(GO_LICENSE_CHECKER) -v -a -r -i vendor $(LICENSE_DIR)/license.txt . go  && [[ -z `git status -s` ]]
+	$(GO_LICENSE_CHECKER) -v -a -r -i vendor $(LICENSE_DIR)/license.txt . go && [[ -z `git status -s` ]]
 
 .PHONY: verify
 verify: clean license lint test
