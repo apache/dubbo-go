@@ -34,8 +34,8 @@ GO_LICENSE_CHECKER = $(GO_PATH)/bin/license-header-checker
 LICENSE_DIR = /tmp/tools/license
 
 ARCH = amd64
-
-ZK_TEST_LIST=registry/zookeeper cluster/router/chain cluster/router/condition cluster/router/tag  metadata/report/zookeeper
+# for add zookeeper fatjar
+ZK_TEST_LIST=config_center/zookeeper registry/zookeeper cluster/router/chain cluster/router/condition cluster/router/tag  metadata/report/zookeeper
 ZK_JAR_NAME=zookeeper-3.4.9-fatjar.jar
 ZK_FATJAR_BASE=/zookeeper-4unittest/contrib/fatjar
 ZK_JAR_PATH=remoting/zookeeper$(ZK_FATJAR_BASE)
