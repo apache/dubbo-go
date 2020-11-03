@@ -54,5 +54,5 @@ jobs:
       run: |
         make verify
 
-    - name: Coverage
+    - name: Post Coverage
       run: bash <(curl -s https://codecov.io/bash)
