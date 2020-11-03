@@ -54,5 +54,9 @@ jobs:
       run: |
         make verify
 
+    - name: Integrate Test
+        run: |
+          chmod +x integrate_test.sh && ./integrate_test.sh
+
     - name: Post Coverage
       run: bash <(curl -s https://codecov.io/bash)
