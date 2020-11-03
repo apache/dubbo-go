@@ -28,6 +28,7 @@ GO_GET = $(GO) get
 GO_TEST = $(GO) test
 GO_BUILD_FLAGS = -v
 GO_BUILD_LDFLAGS = -X main.version=$(VERSION)
+GO_LINT = $(GO_PATH)/bin/golangci-lint
 
 GO_LICENSE_CHECKER_DIR = license-header-checker-$(GO_OS)
 GO_LICENSE_CHECKER = $(GO_PATH)/bin/license-header-checker
@@ -54,7 +55,10 @@ prepareZk:
 		cp ${ZK_JAR} $$i$(ZK_FATJAR_BASE);\
 	done
 
-prepare: prepareZk prepareLic
+prepareLint:
+	$(GO_LINT) version || curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GO_PATH)/bin v1.21.0
+
+prepare: prepareZk prepareLic prepareLint
 
 .PHONE: test
 test: clean prepareZk
@@ -63,12 +67,16 @@ test: clean prepareZk
 deps: prepare
 	$(GO_GET) -v -t -d ./...
 
+.PHONY: lint
+lint: prepareLint
+	$(GO_LINT) run -v ./...
+
 .PHONY: license
 license: clean prepareLic
 	$(GO_LICENSE_CHECKER) -v -a -r -i vendor $(LICENSE_DIR)/license.txt . go && [[ -z `git status -s` ]]
 
 .PHONY: verify
-verify: clean license test
+verify: clean license lint test
 
 .PHONY: clean
 clean: prepare
