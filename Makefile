@@ -57,14 +57,14 @@ prepareZk:
 prepare: prepareZk prepareLic
 
 .PHONE: test
-test: clean
+test: clean prepareZk
 	$(GO_TEST) ./... -coverprofile=coverage.txt -covermode=atomic
 
 deps: prepare
 	$(GO_GET) -v -t -d ./...
 
 .PHONY: license
-license: clean prepare
+license: clean prepareLic
 	$(GO_LICENSE_CHECKER) -v -a -r -i vendor $(LICENSE_DIR)/license.txt . go && [[ -z `git status -s` ]]
 
 .PHONY: verify
