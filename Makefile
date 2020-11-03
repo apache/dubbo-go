@@ -56,7 +56,7 @@ prepareZk:
 	done
 
 prepareLint:
-	$(GO_LINT) version || curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GO_PATH)/bin v1.21.0
+	$(GO_LINT) version || go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
 
 prepare: prepareZk prepareLic prepareLint
 
