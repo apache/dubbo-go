@@ -152,29 +152,27 @@ https://dubbogo.github.io/dubbo-go-website (**完善中**)
 
 ## 运行单测
 
-### 准备
+### 执行全部校验
 
-Mac/Linux
 ```bash
-sh ./before_ut.sh
+make verify
 ```
 
-Windows
+### 校验许可证
+
 ```bash
-before_ut.bat
+make license
 ```
 
-### 执行
-```bash
-go test ./...
+### 执行单元测试
 
-# coverage
-go test ./... -coverprofile=coverage.txt -covermode=atomic
+```bash
+make test
 ```
 
 ## 编译
 
-请移步 [dubbo-samples/golang](https://github.com/dubbogo/dubbo-samples)
+请移步 [dubbo-go-samples](https://github.com/apache/dubbo-go-samples)
 
 ## 如何贡献
 
