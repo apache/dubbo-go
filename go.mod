@@ -15,7 +15,7 @@ require (
 	github.com/elazarl/go-bindata-assetfs v1.0.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.0.0
 	github.com/frankban/quicktest v1.4.1 // indirect
-	github.com/fsnotify/fsnotify v1.4.7
+	github.com/fsnotify/fsnotify v1.4.9
 	github.com/go-co-op/gocron v0.1.1
 	github.com/go-resty/resty/v2 v2.3.0
 	github.com/golang/mock v1.4.4
@@ -41,12 +41,11 @@ require (
 	github.com/zouyx/agollo/v3 v3.4.5
 	go.uber.org/atomic v1.6.0
 	go.uber.org/zap v1.16.0
-	google.golang.org/grpc v1.26.0
+	google.golang.org/grpc v1.27.0
 	gopkg.in/yaml.v2 v2.2.8
-	k8s.io/api v0.16.9
-	k8s.io/apimachinery v0.16.9
-	k8s.io/client-go v0.16.9
-	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a // indirect
+	k8s.io/api v0.19.3
+	k8s.io/apimachinery v0.19.3
+	k8s.io/client-go v0.19.3
 )
 
 replace (
