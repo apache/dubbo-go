@@ -31,6 +31,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
 )
 
@@ -119,6 +120,10 @@ func (invoker *baseClusterInvoker) doSelect(lb cluster.LoadBalance, invocation p
 }
 
 func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invocation protocol.Invocation, invokers []protocol.Invoker, invoked []protocol.Invoker) protocol.Invoker {
+	if len(invokers) == 0 {
+		logger.Errorf("the invokers of %s is nil. ", invocation.Invoker().GetUrl().ServiceKey())
+		return nil
+	}
 	if len(invokers) == 1 {
 		return invokers[0]
 	}
@@ -133,6 +138,8 @@ func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invoc
 
 		for _, invoker := range invokers {
 			if !invoker.IsAvailable() {
+				logger.Infof("the invoker of %s is not available, maybe some network error happened or the server is shutdown.",
+					invoker.GetUrl().Ip)
 				continue
 			}
 
@@ -144,6 +151,7 @@ func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invoc
 		if len(reslectInvokers) > 0 {
 			selectedInvoker = lb.Select(reslectInvokers, invocation)
 		} else {
+			logger.Errorf("all %d invokers is unavailable for %s.", len(invokers), selectedInvoker.GetUrl().String())
 			return nil
 		}
 	}
