@@ -272,7 +272,7 @@ func (c *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
 	urlMap.Set(constant.RELEASE_KEY, "dubbo-golang-"+constant.Version)
 	urlMap.Set(constant.SIDE_KEY, (common.RoleType(common.PROVIDER)).Role())
-	urlMap.Set(constant.GRPC_MESSAGE_SIZE_KEY, strconv.Itoa(c.GrpcMaxMessageSize))
+	urlMap.Set(constant.MESSAGE_SIZE_KEY, strconv.Itoa(c.GrpcMaxMessageSize))
 	// todo: move
 	urlMap.Set(constant.SERIALIZATION_KEY, c.Serialization)
 	// application info
