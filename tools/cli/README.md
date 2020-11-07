@@ -1,18 +1,21 @@
 # dubbo-go-cli
 
-### 1. 解决问题
+### 1. Problem we solved.
 
-针对正在运行的dubbo服务，需要拥有一个命令行工具来针对服务进行测试。
-该服务需要支持dubbo协议，方便用户进行自定义传输包体。
-
-### 2. cli工具获取方法
-`sh build.sh`
-
-### 3. 使用方法：见[example](./example/README.md)
+For the running dubbo-go server, we need a telnet-cli tool to test if the server works healthily.
+The tool should support dubbo protocol, making it easy for you to define your own request pkg, get rsp struct of your server, and total costing time. 
 
 
+### 2. How to get cli-tool
+run in dubbo-go/tools/cli \
+`$ sh build.sh`\
+and you can get dubbo-go-cli 
 
-### 第三方依赖（临时兼容）
+### 3. Quick start：[example](example/README_CN.md)
+
+
+
+### Third party dependence（temporary）
 
 github.com/LaurenceLiZhixin/dubbo-go-hessian2 \
 github.com/LaurenceLiZhixin/json-interface-parser 
