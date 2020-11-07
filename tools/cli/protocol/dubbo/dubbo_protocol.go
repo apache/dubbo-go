@@ -73,7 +73,7 @@ func (p RpcClientPackageHandler) Read(data []byte, pendingRsp *sync.Map) (interf
 	return dubboRsp.Reply, hessian.HEADER_LENGTH + pkg.Header.BodyLen, nil
 }
 
-// Write encode @pkg.
+// Write encode @clientReq to []byte
 func (p RpcClientPackageHandler) Write(clientReq *protocol.Request) ([]byte, error) {
 	req, ok := parseReq2DubboPkg(clientReq)
 	if !ok {
@@ -91,7 +91,6 @@ func (p RpcClientPackageHandler) Write(clientReq *protocol.Request) ([]byte, err
 }
 
 func parseReq2DubboPkg(req *protocol.Request) (*DubboPackage, bool) {
-	// todo check req
 	p := &DubboPackage{}
 
 	p.Service.Interface = req.InterfaceID
@@ -101,9 +100,7 @@ func parseReq2DubboPkg(req *protocol.Request) (*DubboPackage, bool) {
 	p.Service.Timeout = time.Second * 3
 	p.Header.SerialID = byte(S_Dubbo)
 	p.Service.Path = req.InterfaceID
-	//for _, v := range req.Params {
-	//	fmt.Printf("inIarr i = %+v\n", v)
-	//}
+
 	atta := make(map[string]string)
 	atta["async"] = "false"
 	atta["interface"] = req.InterfaceID

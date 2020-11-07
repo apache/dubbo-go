@@ -1,11 +1,9 @@
-# dubbo-go-cli example
+# dubbo-go-cli 使用示例
 
-### 1. Start dubbo-go server
-before we use dubbo-go-cli to send a request, we start a dubbo-go server firstly.
+### 1. 开启服务端
+见 server/main.go server/user.go
 
-example in file: server/main.go server/user.go
-
-example：user.go:
+示例：user.go:
 ```go
 func (u *UserProvider) GetUser(ctx context.Context, userStruct *CallUserStruct) (*User, error) {
 	fmt.Printf("=======================\nreq:%#v\n", userStruct)
@@ -15,14 +13,13 @@ func (u *UserProvider) GetUser(ctx context.Context, userStruct *CallUserStruct) 
 }
 
 ```
-as example shows above, server start a function named GetUser, which has a param @CallUserStruct and return User struct.
-
-param @CallUserStruct defination:
+服务端开启一个服务，名为GetUser，传入一个CallUserStruct的参数，返回一个User参数\
+CallUserStruct参数定义：
 ```go
 type CallUserStruct struct {
 	ID      string
 	Male    bool
-	SubInfo SubInfo // nesting sub struct
+	SubInfo SubInfo // 嵌套子结构
 }
 func (cs CallUserStruct) JavaClassName() string {
 	return "com.ikurento.user.CallUserStruct"
@@ -39,13 +36,13 @@ func (s SubInfo) JavaClassName() string {
 }
 
 ```
-User struct defination：
+User结构定义：
 ```go
 type User struct {
 	Id      string
 	Name    string
 	Age     int32
-	SubInfo SubInfo // nesting sub struct, the same as above
+	SubInfo SubInfo // 嵌套上述子结构SubInfo
 }
 
 func (u *User) JavaClassName() string {
@@ -53,19 +50,20 @@ func (u *User) JavaClassName() string {
 }
 ```
 
-start dubbo-go server:
+开启服务：
 
-`$ cd server `\
-`$ source builddev.sh`\
-`$ go run .`
+`cd server `\
+`source builddev.sh`\
+`go run .`
 
-### 2. Define your request structs (encode and decode protocol)
-You should define your request structs in json format. we appoint that key and val in json file must be string.\
-Key in json file defines your go struct's field name, such as "ID","Name".\
-Value in json file defines your go struct's field type and value, in format of "type@value". We support 'type' of 'string,int,bool,time', and use value to init the field, if value is empty, we init it by zero.
-We appoint that each json struct must have key 'JavaClassName', and the value of it must corresponding to server end.  
+### 2. 定义请求体(打解包协议)
 
-example int userCall.json:
+请求体定义为json文件，约定键值均为string\
+键对应go语言struct字段名例如"ID"、"Name" ，值对应"type@val"\
+其中type支持string int bool time，val使用string 来初始化，如果只填写type则初始化为零值。
+约定每个struct必须有JavaClassName字段，务必与server端严格对应
+
+见userCall.json:
 ```json
 {
   "ID": "string@A000",
@@ -79,10 +77,9 @@ example int userCall.json:
   "JavaClassName": "string@com.ikurento.user.CallUserStruct"
 }
 ```
-'userCall.json' defines param @CallUserStruct and it's substruct 'SubInfo', meanwhile it inits all fields.
+userCall.json将参数CallUserStruct的结构及子结构SubInfo都定义了出来，并且给请求参数赋值。
 
-
-'user.json' Similarly defines all field, but you are not need to set inital value for them. Remember that 'JavaClassName' field must corresponding to server end.
+user.json 同理，作为返回值不需要赋初始值，但JavaClassName字段一定与server端严格对应
 ```go
 {
   "ID": "string",
@@ -98,10 +95,10 @@ example int userCall.json:
 }
 ```
 
-### 3. Exec cli to send req.
+### 3. 执行请求
 `./dubbo-go-cli -h=localhost -p=20000 -proto=dubbo -i=com.ikurento.user.UserProvider -method=GetUser -sendObj="./userCall.json" -recvObj="./user.json"`
 
-cli-end output：
+cli端打印结果：
 ```log
 2020/10/26 20:47:45 Created pkg:
 2020/10/26 20:47:45 &{ID:A000 Male:true SubInfo:0xc00006ea20 JavaClassName:com.ikurento.user.CallUserStruct}
@@ -124,13 +121,12 @@ cli-end output：
 2020/10/26 20:47:45 SubInfo:
 2020/10/26 20:47:45 &{SubID:A001 SubMale:false SubAge:18 JavaClassName:}```
 ```
-By reading logs above, you can get req struct, cost time and rsp struct in details.\
-The nesting sub struct is supported.
+可看到详细的请求体赋值情况，以及返回结果和耗时。支持嵌套结构
 
-server-end output:
+server端打印结果
 ```
 =======================
 req:&main.CallUserStruct{ID:"A000", Male:true, SubInfo:main.SubInfo{SubID:"A001", SubMale:false, SubAge:18}}
 =======================
 ```
-It's showed that server-end got specific request.
+可见接收到了来自cli的数据
