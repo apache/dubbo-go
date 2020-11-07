@@ -94,7 +94,7 @@ func NewClient(url common.URL) *Client {
 	// if global trace instance was set , it means trace function enabled. If not , will return Nooptracer
 	tracer := opentracing.GlobalTracer()
 	dailOpts := make([]grpc.DialOption, 0, 4)
-	maxMessageSize, _ := strconv.Atoi(url.GetParam(constant.GRPC_MESSAGE_SIZE_KEY, "4"))
+	maxMessageSize, _ := strconv.Atoi(url.GetParam(constant.MESSAGE_SIZE_KEY, "4"))
 	dailOpts = append(dailOpts, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithUnaryInterceptor(
 		otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())),
 		grpc.WithDefaultCallOptions(
