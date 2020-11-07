@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	protocols = make(map[string]func() protocol.Protocol)
+	protocols = make(map[string]func() protocol.Protocol, 8)
 )
 
 // SetProtocol sets the protocol extension with @name

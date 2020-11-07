@@ -18,10 +18,9 @@
 package client
 
 import (
-	"bytes"
-	"fmt"
 	"log"
 	"net"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -36,10 +35,11 @@ import (
 	_ "github.com/apache/dubbo-go/tools/cli/protocol/dubbo"
 )
 
-const defaultBufferSize = 4096
+const defaultBufferSize = 1024 * 1024 * 4
 
 // TelnetClient maintain a connection to target
 type TelnetClient struct {
+	tcpAddr         string
 	responseTimeout time.Duration
 	protocolName    string
 	requestList     []*protocol.Request
@@ -52,21 +52,22 @@ type TelnetClient struct {
 }
 
 // NewTelnetClient create a new tcp connection, and create default request
-func NewTelnetClient(host string, port int, protocolName, interfaceID, version, group, method string, reqPkg interface{}) (*TelnetClient, error) {
-	tcpAddr := createTCPAddr(host, port)
+func NewTelnetClient(host string, port int, protocolName, interfaceID, version, group, method string, reqPkg interface{}, timeout int) (*TelnetClient, error) {
+	tcpAddr := net.JoinHostPort(host, strconv.Itoa(port))
 	resolved := resolveTCPAddr(tcpAddr)
 	conn, err := net.DialTCP("tcp", nil, resolved)
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("connected to %s:%d!\n", host, port)
+	log.Printf("connected to %s:%d\n", host, port)
 	log.Printf("try calling interface:%s.%s\n", interfaceID, method)
 	log.Printf("with protocol:%s\n\n", protocolName)
 	proto := common.GetProtocol(protocolName)
 
 	return &TelnetClient{
+		tcpAddr:          tcpAddr,
 		conn:             conn,
-		responseTimeout:  100000000, //default timeout
+		responseTimeout:  time.Duration(timeout) * time.Millisecond, //default timeout
 		protocolName:     protocolName,
 		pendingResponses: &sync.Map{},
 		proto:            proto,
@@ -80,14 +81,6 @@ func NewTelnetClient(host string, port int, protocolName, interfaceID, version, 
 			},
 		},
 	}, nil
-}
-
-func createTCPAddr(host string, port int) string {
-	var buffer bytes.Buffer
-	buffer.WriteString(host)
-	buffer.WriteByte(':')
-	buffer.WriteString(fmt.Sprintf("%d", port))
-	return buffer.String()
 }
 
 func resolveTCPAddr(addr string) *net.TCPAddr {
@@ -142,16 +135,20 @@ func (t *TelnetClient) processSingleRequest(req *protocol.Request, userPkg inter
 	seqId := t.addPendingResponse(userPkg)
 	defer t.removePendingResponse(seqId)
 
-	requestDataChannel := make(chan []byte)
-	doneChannel := make(chan bool)
-	responseDataChannel := make(chan []byte)
+	requestDataChannel := make(chan []byte, 0)
+	responseDataChannel := make(chan []byte, 0)
 
 	// start data transfer procedure
-	go t.readInputData(string(inputData), requestDataChannel, doneChannel)
+	go t.readInputData(string(inputData), requestDataChannel)
 	go t.readServerData(t.conn, responseDataChannel)
+
+	timeAfter := time.After(t.responseTimeout)
 
 	for {
 		select {
+		case <-timeAfter:
+			log.Println("request timeout to:", t.tcpAddr)
+			return
 		case request := <-requestDataChannel:
 			if _, err := t.conn.Write(request); nil != err {
 				log.Fatalf("Error occured while writing to TCP socket: %v\n", err)
@@ -171,9 +168,8 @@ func (t *TelnetClient) processSingleRequest(req *protocol.Request, userPkg inter
 	}
 }
 
-func (t *TelnetClient) readInputData(inputData string, toSent chan<- []byte, doneChannel chan<- bool) {
+func (t *TelnetClient) readInputData(inputData string, toSent chan<- []byte) {
 	toSent <- []byte(inputData)
-	doneChannel <- true
 }
 
 func (t *TelnetClient) readServerData(connection *net.TCPConn, received chan<- []byte) {

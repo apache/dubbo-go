@@ -36,6 +36,7 @@ var group string
 var method string
 var sendObjFilePath string
 var recvObjFilePath string
+var timeout int
 
 func init() {
 	flag.StringVar(&host, "h", "localhost", "target server host")
@@ -47,6 +48,7 @@ func init() {
 	flag.StringVar(&method, "method", "", "target method")
 	flag.StringVar(&sendObjFilePath, "sendObj", "", "json file path to define transfer struct")
 	flag.StringVar(&recvObjFilePath, "recvObj", "", "json file path to define receive struct")
+	flag.IntVar(&timeout, "timeout", 3000, "request timeout (ms)")
 }
 
 func checkParam() {
@@ -67,7 +69,7 @@ func main() {
 	reqPkg := json_register.RegisterStructFromFile(sendObjFilePath)
 	recvPkg := json_register.RegisterStructFromFile(recvObjFilePath)
 
-	t, err := client.NewTelnetClient(host, port, protocolName, InterfaceID, version, group, method, reqPkg)
+	t, err := client.NewTelnetClient(host, port, protocolName, InterfaceID, version, group, method, reqPkg, timeout)
 	if err != nil {
 		panic(err)
 	}
