@@ -25,6 +25,7 @@ const (
 	GROUP_KEY                = "group"
 	VERSION_KEY              = "version"
 	INTERFACE_KEY            = "interface"
+	MESSAGE_SIZE_KEY         = "message_size"
 	PATH_KEY                 = "path"
 	SERVICE_KEY              = "service"
 	METHODS_KEY              = "methods"
