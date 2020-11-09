@@ -208,7 +208,7 @@ go test ./... -coverprofile=coverage.txt -covermode=atomic
         </a>
       </td>
       <td align="center"  valign="middle">
-        <a href="https://github.com/mosn" target="_blank">
+        <a href="" target="_blank">
           <img width="222px"  src="https://festatic.estudy.cn/assets/xhx-web/layout/logo.png">
         </a>
       </td>
