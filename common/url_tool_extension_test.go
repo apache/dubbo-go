@@ -34,8 +34,8 @@ func TestDefaultURLTool(t *testing.T) {
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=155650979798")
-	assert.False(t, GetURLTool().CompareURLEqual(&url1, &url2))
-	assert.True(t, GetURLTool().CompareURLEqual(&url1, &url2, constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY))
+	assert.False(t, GetURLComparator().CompareURLEqual(&url1, &url2))
+	assert.True(t, GetURLComparator().CompareURLEqual(&url1, &url2, constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY))
 }
 
 func TestNewCustomURLTool(t *testing.T) {
@@ -49,10 +49,10 @@ func TestNewCustomURLTool(t *testing.T) {
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=155650979798")
-	assert.True(t, GetURLTool().CompareURLEqual(&url1, &url2, constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY))
-	SetURLTool(customURLTool{})
-	assert.False(t, GetURLTool().CompareURLEqual(&url1, &url2))
-	assert.False(t, GetURLTool().CompareURLEqual(&url1, &url2, constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY))
+	assert.True(t, GetURLComparator().CompareURLEqual(&url1, &url2, constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY))
+	SetURLComparator(customURLTool{})
+	assert.False(t, GetURLComparator().CompareURLEqual(&url1, &url2))
+	assert.False(t, GetURLComparator().CompareURLEqual(&url1, &url2, constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY))
 
 	url1, _ = NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
@@ -64,11 +64,11 @@ func TestNewCustomURLTool(t *testing.T) {
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000")
-	assert.True(t, GetURLTool().CompareURLEqual(&url1, &url2))
-	assert.True(t, GetURLTool().CompareURLEqual(&url1, &url2, constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY))
-	SetURLTool(customURLTool{})
-	assert.True(t, GetURLTool().CompareURLEqual(&url1, &url2))
-	assert.True(t, GetURLTool().CompareURLEqual(&url1, &url2, constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY))
+	assert.True(t, GetURLComparator().CompareURLEqual(&url1, &url2))
+	assert.True(t, GetURLComparator().CompareURLEqual(&url1, &url2, constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY))
+	SetURLComparator(customURLTool{})
+	assert.True(t, GetURLComparator().CompareURLEqual(&url1, &url2))
+	assert.True(t, GetURLComparator().CompareURLEqual(&url1, &url2, constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY))
 }
 
 // just for no timestamp, it depend on write data.
