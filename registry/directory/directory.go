@@ -25,7 +25,6 @@ import (
 )
 
 import (
-	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
 )
@@ -365,7 +364,7 @@ func (dir *RegistryDirectory) overrideUrl(targetUrl *common.URL) {
 
 func (dir *RegistryDirectory) getConsumerUrl(c *common.URL) *common.URL {
 	processID := fmt.Sprintf("%d", os.Getpid())
-	localIP, _ := gxnet.GetLocalIP()
+	localIP := common.GetLocalIp()
 
 	params := url.Values{}
 	c.RangeParams(func(key, value string) bool {
