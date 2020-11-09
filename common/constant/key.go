@@ -325,3 +325,9 @@ const (
 	// SERVICE_DISCOVERY_KEY indicate which service discovery instance will be used
 	SERVICE_DISCOVERY_KEY = "service_discovery"
 )
+
+//custom registry ip and port
+const (
+	DUBBOGO_IP_TO_REGISTRY   = "DUBBOGO_IP_TO_REGISTRY"
+	DUBBOGO_PORT_TO_REGISTRY = "DUBBOGO_PORT_TO_REGISTRY"
+)

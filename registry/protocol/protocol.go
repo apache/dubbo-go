@@ -19,6 +19,7 @@ package protocol
 
 import (
 	"context"
+	"os"
 	"strings"
 	"sync"
 )
@@ -194,6 +195,16 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 	}
 
 	registeredProviderUrl := getUrlToRegistry(providerUrl, registryUrl)
+
+	// custom registry report ip and ports
+	customIp := os.Getenv(constant.DUBBOGO_IP_TO_REGISTRY)
+	if len(customIp) > 0 {
+		registeredProviderUrl.Ip = customIp
+	}
+	customPort := os.Getenv(constant.DUBBOGO_PORT_TO_REGISTRY)
+	if len(customPort) > 0 {
+		registeredProviderUrl.Port = customPort
+	}
 	err := reg.Register(*registeredProviderUrl)
 	if err != nil {
 		logger.Errorf("provider service %v register registry %v error, error message is %s",
