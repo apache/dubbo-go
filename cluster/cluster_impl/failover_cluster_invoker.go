@@ -24,12 +24,12 @@ import (
 )
 
 import (
-	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 )
 
 import (
 	"github.com/apache/dubbo-go/cluster"
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
@@ -89,7 +89,7 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 		return result
 	}
 
-	ip, _ := gxnet.GetLocalIP()
+	ip := common.GetLocalIp()
 	invokerSvc := invoker.GetUrl().Service()
 	invokerUrl := invoker.directory.GetUrl()
 	return &protocol.RPCResult{
