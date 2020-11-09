@@ -17,50 +17,30 @@
 
 package common
 
-import "sync"
-
-var urlTool URLTool
-var lock sync.Mutex
+var urlComparator URLComparator
 
 // Define some func for URL, such as comparison of URL.
-// Your can define your own implements, and invoke SetURLTool for high priority.
-type URLTool interface {
-	// The higher of the number, the higher of the priority.
-	Priority() uint8
-	// comparison of two URL, excluding some params
+// Your can define your own implements, and invoke SetURLComparator.
+type URLComparator interface {
 	CompareURLEqual(*URL, *URL, ...string) bool
 }
 
-func SetURLTool(tool URLTool) {
-	lock.Lock()
-	defer lock.Unlock()
-	if urlTool == nil {
-		urlTool = tool
-		return
-	}
-	if urlTool.Priority() < tool.Priority() {
-		urlTool = tool
-	}
+func SetURLComparator(comparator URLComparator) {
+	urlComparator = comparator
 }
-func GetURLTool() URLTool {
-	return urlTool
+func GetURLComparator() URLComparator {
+	return urlComparator
 }
 
-// Config default urlTools.
+// Config default defaultURLComparator.
 func init() {
-	SetURLTool(defaultURLTool{})
+	SetURLComparator(defaultURLComparator{})
 }
 
-type defaultURLTool struct {
-}
-
-// default priority is 16.
-func (defaultURLTool) Priority() uint8 {
-	//default is 16.
-	return 16
+type defaultURLComparator struct {
 }
 
 // default comparison implements
-func (defaultURLTool) CompareURLEqual(l *URL, r *URL, execludeParam ...string) bool {
-	return IsEquals(*l, *r, execludeParam...)
+func (defaultURLComparator) CompareURLEqual(l *URL, r *URL, excludeParam ...string) bool {
+	return IsEquals(*l, *r, excludeParam...)
 }
