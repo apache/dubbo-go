@@ -103,6 +103,7 @@ Apache License, Version 2.0
     * [AccessLogFilter](https://github.com/apache/dubbo-go/pull/214)
     * [TpsLimitFilter](https://github.com/apache/dubbo-go/pull/237)
     * [ExecuteLimitFilter](https://github.com/apache/dubbo-go/pull/246)
+    * [GenericServiceFilter](https://github.com/apache/dubbo-go/pull/291)
     * [Auth/Sign](https://github.com/apache/dubbo-go/pull/323)
     * [Metrics filter](https://github.com/apache/dubbo-go/pull/342)
     * [Tracing filter](https://github.com/apache/dubbo-go/pull/335)
@@ -220,6 +221,7 @@ make test
       </td>
     </tr>
     <tr></tr>
+
   </tbody>
 </table>
 </div>
