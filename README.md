@@ -66,7 +66,7 @@ Finished List:
     * Jsonrpc2.0
     * [gRPC](https://github.com/apache/dubbo-go/pull/311)
     * [RESTful](https://github.com/apache/dubbo-go/pull/352)
-    
+
 - Router
     * [Condition router](https://github.com/apache/dubbo-go/pull/294)
     * [Health check router](https://github.com/apache/dubbo-go/pull/389)
@@ -111,7 +111,7 @@ Finished List:
 
 - Invoke
     * [generic invoke](https://github.com/apache/dubbo-go/pull/122)
-    
+
 - Monitor
     * Opentracing API
     * [Prometheus](https://github.com/apache/dubbo-go/pull/342)
@@ -216,8 +216,14 @@ If you are using [apache/dubbo-go](github.com/apache/dubbo-go) and think that it
           <img width="222px"  src="https://raw.githubusercontent.com/mosn/community/master/icons/png/mosn-labeled-horizontal.png">
         </a>
       </td>
+      <td align="center"  valign="middle">
+        <a href="" target="_blank">
+          <img width="222px"  src="https://festatic.estudy.cn/assets/xhx-web/layout/logo.png">
+        </a>
+      </td>
     </tr>
     <tr></tr>
+
   </tbody>
 </table>
 </div>
