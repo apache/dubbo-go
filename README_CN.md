@@ -213,6 +213,11 @@ make test
           <img width="222px"  src="https://raw.githubusercontent.com/mosn/community/master/icons/png/mosn-labeled-horizontal.png">
         </a>
       </td>
+      <td align="center"  valign="middle">
+        <a href="" target="_blank">
+          <img width="222px"  src="https://festatic.estudy.cn/assets/xhx-web/layout/logo.png">
+        </a>
+      </td>
     </tr>
     <tr></tr>
   </tbody>
