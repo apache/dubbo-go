@@ -167,10 +167,22 @@ func TestURLGetParam(t *testing.T) {
 
 func TestURLGetParamInt(t *testing.T) {
 	params := url.Values{}
-	params.Set("key", "3")
+	params.Set("key", "")
 	u := URL{baseUrl: baseUrl{params: params}}
 	v := u.GetParamInt("key", 1)
-	assert.Equal(t, int64(3), v)
+	assert.Equal(t, int64(1), v)
+
+	u = URL{}
+	v = u.GetParamInt("key", 1)
+	assert.Equal(t, int64(1), v)
+}
+
+func TestURLGetParamIntValue(t *testing.T) {
+	params := url.Values{}
+	params.Set("key", "0")
+	u := URL{baseUrl: baseUrl{params: params}}
+	v := u.GetParamInt("key", 1)
+	assert.Equal(t, int64(0), v)
 
 	u = URL{}
 	v = u.GetParamInt("key", 1)
