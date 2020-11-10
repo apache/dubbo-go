@@ -223,7 +223,14 @@ If you are using [apache/dubbo-go](github.com/apache/dubbo-go) and think that it
       </td>
     </tr>
     <tr></tr>
-
+    <tr>
+      <td align="center"  valign="middle">
+        <a href="http://www.j.cn" target="_blank">
+          <img width="222px"  src="http://image.guang.j.cn/bbs/imgs/home/pc/icon_8500.png">
+        </a>
+      </td>
+    </tr>
+    <tr></tr>
   </tbody>
 </table>
 </div>
