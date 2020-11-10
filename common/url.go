@@ -502,8 +502,8 @@ func (c URL) GetParamInt32(key string, d int32) int32 {
 	return int32(r)
 }
 
-// GetParamByInt0 gets int value by @key
-func (c URL) GetParamByInt0(key string, d int) int {
+// GetParamByIntValue gets int value by @key
+func (c URL) GetParamByIntValue(key string, d int) int {
 	r, err := strconv.ParseInt(c.GetParam(key, ""), 10, 0)
 	if r == 0 || err != nil {
 		return d
@@ -520,8 +520,8 @@ func (c URL) GetMethodParamInt(method string, key string, d int64) int64 {
 	return r
 }
 
-// GetMethodParamInt0 gets int method param
-func (c URL) GetMethodParamInt0(method string, key string, d int) int {
+// GetMethodParamIntValue gets int method param
+func (c URL) GetMethodParamIntValue(method string, key string, d int) int {
 	r, err := strconv.ParseInt(c.GetParam("methods."+method+"."+key, ""), 10, 0)
 	if r == 0 || err != nil {
 		return d
