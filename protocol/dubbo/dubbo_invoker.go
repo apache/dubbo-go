@@ -73,6 +73,9 @@ func NewDubboInvoker(url common.URL, client *remoting.ExchangeClient) *DubboInvo
 	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
 		requestTimeout = t
 	}
+	if requestTimeout == 0 {
+		requestTimeout = time.Second * 3
+	}
 	return &DubboInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
