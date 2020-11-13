@@ -182,7 +182,7 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 	dir.setNewInvokers()
 	// destroy unused invokers
 	for _, invoker := range oldInvokers {
-		invoker.Destroy()
+		go invoker.Destroy()
 	}
 }
 
