@@ -25,7 +25,6 @@ import (
 )
 
 import (
-	gxnet "github.com/dubbogo/gost/net"
 	consul "github.com/hashicorp/consul/api"
 	perrors "github.com/pkg/errors"
 )
@@ -47,7 +46,7 @@ func buildService(url common.URL) (*consul.AgentServiceRegistration, error) {
 
 	// address
 	if url.Ip == "" {
-		url.Ip, _ = gxnet.GetLocalIP()
+		url.Ip = common.GetLocalIp()
 	}
 
 	// port

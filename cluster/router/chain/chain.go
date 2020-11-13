@@ -125,8 +125,8 @@ func (c *RouterChain) SetInvokers(invokers []protocol.Invoker) {
 // loop listens on events to update the address cache when it's necessary, either when it receives notification
 // from address update, or when timeInterval exceeds.
 func (c *RouterChain) loop() {
+	ticker := time.NewTicker(timeInterval)
 	for {
-		ticker := time.NewTicker(timeInterval)
 		select {
 		case <-ticker.C:
 			c.buildCache()
