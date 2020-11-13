@@ -103,6 +103,7 @@ Apache License, Version 2.0
     * [AccessLogFilter](https://github.com/apache/dubbo-go/pull/214)
     * [TpsLimitFilter](https://github.com/apache/dubbo-go/pull/237)
     * [ExecuteLimitFilter](https://github.com/apache/dubbo-go/pull/246)
+    * [GenericServiceFilter](https://github.com/apache/dubbo-go/pull/291)
     * [Auth/Sign](https://github.com/apache/dubbo-go/pull/323)
     * [Metrics filter](https://github.com/apache/dubbo-go/pull/342)
     * [Tracing filter](https://github.com/apache/dubbo-go/pull/335)
@@ -211,6 +212,19 @@ make test
       <td align="center"  valign="middle">
         <a href="https://github.com/mosn" target="_blank">
           <img width="222px"  src="https://raw.githubusercontent.com/mosn/community/master/icons/png/mosn-labeled-horizontal.png">
+        </a>
+      </td>
+      <td align="center"  valign="middle">
+        <a href="" target="_blank">
+          <img width="222px"  src="https://festatic.estudy.cn/assets/xhx-web/layout/logo.png">
+        </a>
+      </td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="center"  valign="middle">
+        <a href="http://www.j.cn" target="_blank">
+          <img width="222px"  src="http://image.guang.j.cn/bbs/imgs/home/pc/icon_8500.png">
         </a>
       </td>
     </tr>
