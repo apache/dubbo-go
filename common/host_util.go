@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package exporter
+package common
 
-import (
-	"github.com/apache/dubbo-go/common"
-)
+import gxnet "github.com/dubbogo/gost/net"
 
-// MetadataServiceExporter will export & unexport the metadata service,  get exported url, and return is exported or not
-type MetadataServiceExporter interface {
-	Export(url *common.URL) error
-	Unexport()
-	GetExportedURLs() []*common.URL
-	IsExported() bool
+var localIp string
+
+func GetLocalIp() string {
+	if len(localIp) != 0 {
+		return localIp
+	}
+	localIp, _ = gxnet.GetLocalIP()
+	return localIp
 }

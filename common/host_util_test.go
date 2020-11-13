@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package exporter
+package common
 
 import (
-	"github.com/apache/dubbo-go/common"
+	"testing"
 )
 
-// MetadataServiceExporter will export & unexport the metadata service,  get exported url, and return is exported or not
-type MetadataServiceExporter interface {
-	Export(url *common.URL) error
-	Unexport()
-	GetExportedURLs() []*common.URL
-	IsExported() bool
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+func TestGetLocalIp(t *testing.T) {
+	assert.NotNil(t, GetLocalIp())
 }

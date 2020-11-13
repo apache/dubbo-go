@@ -47,6 +47,8 @@ type Client interface {
 	Close()
 	// send request to server.
 	Request(request *Request, timeout time.Duration, response *PendingResponse) error
+	// check if the client is still available
+	IsAvailable() bool
 }
 
 // This is abstraction level. it is like facade.
@@ -180,6 +182,13 @@ func (client *ExchangeClient) Send(invocation *protocol.Invocation, url common.U
 // close client
 func (client *ExchangeClient) Close() {
 	client.client.Close()
+	// for reinit client
+	client.init = false
+}
+
+// IsAvailable to check if the underlying network client is available yet.
+func (client *ExchangeClient) IsAvailable() bool {
+	return client.client.IsAvailable()
 }
 
 // handle the response from server

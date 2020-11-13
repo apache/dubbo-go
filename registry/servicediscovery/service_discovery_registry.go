@@ -75,7 +75,7 @@ type serviceDiscoveryRegistry struct {
 
 func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 
-	tryInitMetadataService()
+	tryInitMetadataService(url)
 
 	serviceDiscovery, err := creatServiceDiscovery(url)
 	if err != nil {
@@ -642,7 +642,7 @@ var (
 
 // tryInitMetadataService will try to initialize metadata service
 // TODO (move to somewhere)
-func tryInitMetadataService() {
+func tryInitMetadataService(url *common.URL) {
 
 	ms, err := extension.GetMetadataService(config.GetApplicationConfig().MetadataType)
 	if err != nil {
@@ -662,7 +662,7 @@ func tryInitMetadataService() {
 
 	expt := configurable.NewMetadataServiceExporter(ms)
 
-	err = expt.Export()
+	err = expt.Export(url)
 	if err != nil {
 		logger.Errorf("could not export the metadata service", err)
 	}
