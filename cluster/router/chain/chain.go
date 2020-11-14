@@ -55,7 +55,7 @@ type RouterChain struct {
 
 	mutex sync.RWMutex
 
-	url common.URL
+	url *common.URL
 
 	// The times of address notification since last update for address cache
 	count int64
@@ -215,7 +215,7 @@ func (c *RouterChain) buildCache() {
 }
 
 // URL Return URL in RouterChain
-func (c *RouterChain) URL() common.URL {
+func (c *RouterChain) URL() *common.URL {
 	return c.url
 }
 
@@ -248,7 +248,7 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 		notify:         make(chan struct{}),
 	}
 	if url != nil {
-		chain.url = *url
+		chain.url = url
 	}
 
 	go chain.loop()

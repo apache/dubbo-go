@@ -32,7 +32,7 @@ type Protocol interface {
 	// Export service for remote invocation
 	Export(invoker Invoker) Exporter
 	// Refer a remote service
-	Refer(url common.URL) Invoker
+	Refer(url *common.URL) Invoker
 	// Destroy will destroy all invoker and exporter, so it only is called once.
 	Destroy()
 }
@@ -89,7 +89,7 @@ func (bp *BaseProtocol) Export(invoker Invoker) Exporter {
 }
 
 // Refer is default refer implement.
-func (bp *BaseProtocol) Refer(url common.URL) Invoker {
+func (bp *BaseProtocol) Refer(url *common.URL) Invoker {
 	return NewBaseInvoker(url)
 }
 

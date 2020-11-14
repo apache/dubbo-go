@@ -53,7 +53,7 @@ type RegistryConfig struct {
 	//ZoneForce bool `yaml:"zoneForce" json:"zoneForce,omitempty" property:"zoneForce"`
 	// Affects traffic distribution among registries,
 	// useful when subscribe to multiple registries Take effect only when no preferred registry is specified.
-	Weight int64             `yaml:"weight" json:"params,omitempty" property:"weight"`
+	Weight int64             `yaml:"weight" json:"weight,omitempty" property:"weight"`
 	Params map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
 }
 
@@ -114,7 +114,7 @@ func loadRegistries(targetRegistries string, registries map[string]*RegistryConf
 				logger.Errorf("The registry id: %s url is invalid, error: %#v", k, err)
 				panic(err)
 			} else {
-				urls = append(urls, &url)
+				urls = append(urls, url)
 			}
 		}
 	}
