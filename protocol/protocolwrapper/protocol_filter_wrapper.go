@@ -55,7 +55,7 @@ func (pfw *ProtocolFilterWrapper) Export(invoker protocol.Invoker) protocol.Expo
 }
 
 // Refer a remote service
-func (pfw *ProtocolFilterWrapper) Refer(url common.URL) protocol.Invoker {
+func (pfw *ProtocolFilterWrapper) Refer(url *common.URL) protocol.Invoker {
 	if pfw.protocol == nil {
 		pfw.protocol = extension.GetProtocol(url.Protocol)
 	}
@@ -101,7 +101,7 @@ type FilterInvoker struct {
 }
 
 // GetUrl is used to get url from FilterInvoker
-func (fi *FilterInvoker) GetUrl() common.URL {
+func (fi *FilterInvoker) GetUrl() *common.URL {
 	return fi.invoker.GetUrl()
 }
 

@@ -72,7 +72,7 @@ func (factory *DefaultProxyFactory) GetAsyncProxy(invoker protocol.Invoker, call
 }
 
 // GetInvoker gets a invoker
-func (factory *DefaultProxyFactory) GetInvoker(url common.URL) protocol.Invoker {
+func (factory *DefaultProxyFactory) GetInvoker(url *common.URL) protocol.Invoker {
 	return &ProxyInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 	}
@@ -90,7 +90,7 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 	url := pi.GetUrl()
 	//get providerUrl. The origin url may be is registry URL.
-	url = *getProviderURL(&url)
+	url = getProviderURL(url)
 
 	methodName := invocation.MethodName()
 	proto := url.Protocol

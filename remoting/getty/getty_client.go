@@ -151,7 +151,7 @@ func (c *Client) SetResponseHandler(responseHandler remoting.ResponseHandler) {
 }
 
 // init client and try to connection.
-func (c *Client) Connect(url common.URL) error {
+func (c *Client) Connect(url *common.URL) error {
 	initClient(url.Protocol)
 	c.conf = *clientConf
 	// new client
