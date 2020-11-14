@@ -272,7 +272,6 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	invoc, ok := req.Data.(*invocation.RPCInvocation)
 	if !ok {
 		panic("create invocation occur some exception for the type is not suitable one.")
-		return
 	}
 	attachments := invoc.Attachments()
 	attachments[constant.LOCAL_ADDR] = session.LocalAddr()
