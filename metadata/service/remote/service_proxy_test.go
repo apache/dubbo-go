@@ -55,15 +55,15 @@ func TestMetadataServiceProxy_GetServiceDefinition(t *testing.T) {
 func TestMetadataServiceProxy(t *testing.T) {
 	pxy := createProxy()
 	pxy.ServiceName()
-	pxy.PublishServiceDefinition(common.URL{})
+	pxy.PublishServiceDefinition(&common.URL{})
 	pxy.Version()
 	pxy.GetSubscribedURLs()
-	pxy.UnsubscribeURL(common.URL{})
+	pxy.UnsubscribeURL(&common.URL{})
 	pxy.GetServiceDefinitionByServiceKey("any")
-	pxy.ExportURL(common.URL{})
-	pxy.SubscribeURL(common.URL{})
+	pxy.ExportURL(&common.URL{})
+	pxy.SubscribeURL(&common.URL{})
 	pxy.MethodMapper()
-	pxy.UnexportURL(common.URL{})
+	pxy.UnexportURL(&common.URL{})
 	pxy.Reference()
 	pxy.RefreshMetadata(constant.ANY_VALUE, constant.ANY_VALUE)
 }
@@ -89,7 +89,7 @@ func prepareTest() {
 		return &mockMetadataReportFactory{}
 	})
 	u, _ := common.NewURL("mock://localhost")
-	instance.GetMetadataReportInstance(&u)
+	instance.GetMetadataReportInstance(u)
 }
 
 type mockMetadataReportFactory struct {
@@ -110,7 +110,7 @@ func (m mockMetadataReport) StoreConsumerMetadata(*identifier.MetadataIdentifier
 	panic("implement me")
 }
 
-func (m mockMetadataReport) SaveServiceMetadata(*identifier.ServiceMetadataIdentifier, common.URL) error {
+func (m mockMetadataReport) SaveServiceMetadata(*identifier.ServiceMetadataIdentifier, *common.URL) error {
 	return nil
 }
 

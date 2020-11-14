@@ -114,13 +114,13 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 			}
 			if serviceUrl.Protocol == constant.REGISTRY_PROTOCOL {
 				serviceUrl.SubURL = cfgURL
-				c.urls = append(c.urls, &serviceUrl)
+				c.urls = append(c.urls, serviceUrl)
 			} else {
 				if serviceUrl.Path == "" {
 					serviceUrl.Path = "/" + c.id
 				}
 				// merge url need to do
-				newUrl := common.MergeUrl(&serviceUrl, cfgURL)
+				newUrl := common.MergeUrl(serviceUrl, cfgURL)
 				c.urls = append(c.urls, newUrl)
 			}
 		}
@@ -135,12 +135,12 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 	}
 
 	if len(c.urls) == 1 {
-		c.invoker = extension.GetProtocol(c.urls[0].Protocol).Refer(*c.urls[0])
+		c.invoker = extension.GetProtocol(c.urls[0].Protocol).Refer(c.urls[0])
 	} else {
 		invokers := make([]protocol.Invoker, 0, len(c.urls))
 		var regUrl *common.URL
 		for _, u := range c.urls {
-			invokers = append(invokers, extension.GetProtocol(u.Protocol).Refer(*u))
+			invokers = append(invokers, extension.GetProtocol(u.Protocol).Refer(u))
 			if u.Protocol == constant.REGISTRY_PROTOCOL {
 				regUrl = u
 			}
