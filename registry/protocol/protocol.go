@@ -274,7 +274,7 @@ func (nl *overrideSubscribeListener) doOverrideIfNecessary() {
 		}
 
 		if currentUrl.String() != providerUrl.String() {
-			newRegUrl := nl.originInvoker.GetUrl()
+			newRegUrl := nl.originInvoker.GetUrl().Clone()
 			setProviderUrl(newRegUrl, providerUrl)
 			nl.protocol.reExport(nl.originInvoker, newRegUrl)
 		}
