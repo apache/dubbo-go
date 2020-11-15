@@ -271,14 +271,18 @@ func NewURL(urlString string, opts ...Option) (*URL, error) {
 
 // URLEqual judge @url and @c is equal or not.
 func (c *URL) URLEqual(url *URL) bool {
-	c.Ip = ""
-	c.Port = ""
-	url.Ip = ""
-	url.Port = ""
-	cGroup := c.GetParam(constant.GROUP_KEY, "")
-	urlGroup := url.GetParam(constant.GROUP_KEY, "")
-	cKey := c.Key()
-	urlKey := url.Key()
+	tmpC := c.Clone()
+	tmpC.Ip = ""
+	tmpC.Port = ""
+
+	tmpUrl := url.Clone()
+	tmpUrl.Ip = ""
+	tmpUrl.Port = ""
+
+	cGroup := tmpC.GetParam(constant.GROUP_KEY, "")
+	urlGroup := tmpUrl.GetParam(constant.GROUP_KEY, "")
+	cKey := tmpC.Key()
+	urlKey := tmpUrl.Key()
 
 	if cGroup == constant.ANY_VALUE {
 		cKey = strings.Replace(cKey, "group=*", "group="+urlGroup, 1)
@@ -292,12 +296,12 @@ func (c *URL) URLEqual(url *URL) bool {
 	}
 
 	// 2. if url contains enabled key, should be true, or *
-	if url.GetParam(constant.ENABLED_KEY, "true") != "true" && url.GetParam(constant.ENABLED_KEY, "") != constant.ANY_VALUE {
+	if tmpUrl.GetParam(constant.ENABLED_KEY, "true") != "true" && tmpUrl.GetParam(constant.ENABLED_KEY, "") != constant.ANY_VALUE {
 		return false
 	}
 
 	// TODO :may need add interface key any value condition
-	return isMatchCategory(url.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY), c.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY))
+	return isMatchCategory(tmpUrl.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY), tmpC.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY))
 }
 
 func isMatchCategory(category1 string, category2 string) bool {
