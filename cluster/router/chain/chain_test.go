@@ -65,7 +65,6 @@ func TestNewRouterChain(t *testing.T) {
 	assert.NoError(t, err)
 	err = z.Create(path)
 	assert.NoError(t, err)
-
 	testyml := `scope: application
 key: mock-app
 enabled: true
