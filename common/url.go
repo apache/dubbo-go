@@ -402,9 +402,6 @@ func (c *URL) Service() string {
 func (c *URL) AddParam(key string, value string) {
 	c.paramsLock.Lock()
 	defer c.paramsLock.Unlock()
-	if len(value) == 0 {
-		return
-	}
 	c.params.Add(key, value)
 }
 
@@ -415,9 +412,6 @@ func (c *URL) AddParamAvoidNil(key string, value string) {
 	if c.params == nil {
 		c.params = url.Values{}
 	}
-	if len(value) == 0 {
-		return
-	}
 	c.params.Add(key, value)
 }
 
@@ -426,9 +420,6 @@ func (c *URL) AddParamAvoidNil(key string, value string) {
 func (c *URL) SetParam(key string, value string) {
 	c.paramsLock.Lock()
 	defer c.paramsLock.Unlock()
-	if len(value) == 0 {
-		return
-	}
 	c.params.Set(key, value)
 }
 
