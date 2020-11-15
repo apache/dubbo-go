@@ -204,7 +204,7 @@ func (client *ExchangeClient) Handler(response *Response) {
 
 	if pendingResponse.Callback == nil {
 		pendingResponse.Err = pendingResponse.response.Error
-		pendingResponse.Done <- struct{}{}
+		close(pendingResponse.Done)
 	} else {
 		pendingResponse.Callback(pendingResponse.GetCallResponse())
 	}
