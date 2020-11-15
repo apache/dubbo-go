@@ -265,6 +265,7 @@ func TestExportWithServiceConfig(t *testing.T) {
 
 	newUrl := url.SubURL.Clone()
 	newUrl.SetParam(constant.CLUSTER_KEY, "mock1")
+
 	v2, _ := regProtocol.bounds.Load(getCacheKey(newUrl))
 	assert.NotNil(t, v2)
 }
