@@ -46,7 +46,10 @@ func (l *nacosDynamicConfiguration) addListener(key string, listener config_cent
 				go callback(listener, namespace, group, dataId, data)
 			},
 		})
-		logger.Errorf("nacos : listen config fail, error:%v ", err)
+		if err != nil {
+			logger.Errorf("nacos : listen config fail, error:%v ", err)
+			return
+		}
 		newListener := make(map[config_center.ConfigurationListener]context.CancelFunc)
 		newListener[listener] = cancel
 		l.keyListeners.Store(key, newListener)

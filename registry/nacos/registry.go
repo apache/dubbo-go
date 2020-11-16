@@ -59,6 +59,7 @@ func init() {
 type nacosRegistry struct {
 	*common.URL
 	namingClient naming_client.INamingClient
+	registryUrls []common.URL
 }
 
 func getNacosConfig(url *common.URL) (map[string]interface{}, error) {
@@ -95,6 +96,9 @@ func getNacosConfig(url *common.URL) (map[string]interface{}, error) {
 	clientConfig.CacheDir = url.GetParam(constant.NACOS_CACHE_DIR_KEY, "")
 	clientConfig.LogDir = url.GetParam(constant.NACOS_LOG_DIR_KEY, "")
 	clientConfig.Endpoint = url.GetParam(constant.NACOS_ENDPOINT, "")
+	clientConfig.Username = url.GetParam(constant.NACOS_USERNAME, "")
+	clientConfig.Password = url.GetParam(constant.NACOS_PASSWORD, "")
+	clientConfig.NamespaceId = url.GetParam(constant.NACOS_NAMESPACEID, "")
 	clientConfig.NotLoadCacheAtStart = true
 	configMap["clientConfig"] = clientConfig
 
@@ -113,6 +117,7 @@ func newNacosRegistry(url *common.URL) (registry.Registry, error) {
 	registry := nacosRegistry{
 		URL:          url,
 		namingClient: client,
+		registryUrls: []common.URL{},
 	}
 	return &registry, nil
 }
@@ -173,6 +178,21 @@ func createRegisterParam(url common.URL, serviceName string) vo.RegisterInstance
 	return instance
 }
 
+func createDeregisterParam(url common.URL, serviceName string) vo.DeregisterInstanceParam {
+	if len(url.Ip) == 0 {
+		url.Ip = localIP
+	}
+	if len(url.Port) == 0 || url.Port == "0" {
+		url.Port = "80"
+	}
+	port, _ := strconv.Atoi(url.Port)
+	return vo.DeregisterInstanceParam{
+		Ip:          url.Ip,
+		Port:        uint64(port),
+		ServiceName: serviceName,
+		Ephemeral:   true,
+	}
+}
 func (nr *nacosRegistry) Register(url common.URL) error {
 	serviceName := getServiceName(url)
 	param := createRegisterParam(url, serviceName)
@@ -182,6 +202,20 @@ func (nr *nacosRegistry) Register(url common.URL) error {
 	}
 	if !isRegistry {
 		return perrors.New("registry [" + serviceName + "] to  nacos failed")
+	}
+	nr.registryUrls = append(nr.registryUrls, url)
+	return nil
+}
+
+func (nr *nacosRegistry) DeRegister(url common.URL) error {
+	serviceName := getServiceName(url)
+	param := createDeregisterParam(url, serviceName)
+	isDeRegistry, err := nr.namingClient.DeregisterInstance(param)
+	if err != nil {
+		return err
+	}
+	if !isDeRegistry {
+		return perrors.New("DeRegistry [" + serviceName + "] to nacos failed")
 	}
 	return nil
 }
@@ -233,5 +267,12 @@ func (nr *nacosRegistry) IsAvailable() bool {
 }
 
 func (nr *nacosRegistry) Destroy() {
+	for _, url := range nr.registryUrls {
+		err := nr.DeRegister(url)
+		logger.Infof("DeRegister Nacos url:%+v", url)
+		if err != nil {
+			logger.Errorf("Deregister url:%+v err:%v", url, err.Error())
+		}
+	}
 	return
 }
