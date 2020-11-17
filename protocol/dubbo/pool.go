@@ -28,6 +28,7 @@ import (
 
 import (
 	"github.com/dubbogo/getty"
+	gxqueue "github.com/dubbogo/gost/container/queue"
 	perrors "github.com/pkg/errors"
 )
 
@@ -294,15 +295,13 @@ type gettyRPCClientPool struct {
 	chInitialized uint32 // set to 1 when field ch is initialized
 	ch            chan struct{}
 	closeCh       chan struct{}
-	poolQueue     *poolDequeue // store *gettyRPCClient
+	poolQueue     gxqueue.SPMCLockFreeQ // store *gettyRPCClient
 	pushing       uint32
 	sync.RWMutex
 }
 
 func newGettyRPCClientConnPool(rpcClient *Client, size int, ttl time.Duration) *gettyRPCClientPool {
-	pq := &poolDequeue{
-		vals: make([]eface, size),
-	}
+	pq, _ := gxqueue.NewSPMCLockFreeQ(size)
 	return &gettyRPCClientPool{
 		rpcClient: rpcClient,
 		maxSize:   size,
@@ -318,7 +317,7 @@ func (p *gettyRPCClientPool) close() {
 	p.poolQueue = nil
 	p.Unlock()
 	for {
-		conn, ok := connPool.popTail()
+		conn, ok := connPool.PopTail()
 		if ok {
 			c := conn.(*gettyRPCClient)
 			c.close()
@@ -335,6 +334,7 @@ func (p *gettyRPCClientPool) lazyInit() {
 	}
 	// Slow path.
 	p.Lock()
+	defer p.Unlock()
 	if p.chInitialized == 0 {
 		p.ch = make(chan struct{}, p.maxSize)
 		for i := 0; i < p.maxSize; i++ {
@@ -342,7 +342,6 @@ func (p *gettyRPCClientPool) lazyInit() {
 		}
 		atomic.StoreUint32(&p.chInitialized, 1)
 	}
-	p.Unlock()
 }
 
 func (p *gettyRPCClientPool) waitVacantConn() error {
@@ -382,7 +381,7 @@ func (p *gettyRPCClientPool) getConnFromPoll() (*gettyRPCClient, error) {
 		return nil, errClientPoolClosed
 	}
 	for {
-		value, ok := p.poolQueue.popTail()
+		value, ok := p.poolQueue.PopTail()
 		if ok {
 			conn := value.(*gettyRPCClient)
 			if d := now - conn.getActive(); d > p.ttl {
@@ -391,9 +390,7 @@ func (p *gettyRPCClientPool) getConnFromPoll() (*gettyRPCClient, error) {
 			}
 			conn.updateActive(now)
 			return conn, nil
-		} else {
-			break
 		}
+		return nil, nil
 	}
-	return nil, nil
 }

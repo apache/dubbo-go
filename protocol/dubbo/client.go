@@ -273,7 +273,7 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 			for {
 				ok := atomic.CompareAndSwapUint32(&c.pool.pushing, 0, 1)
 				if ok {
-					c.pool.poolQueue.pushHead(conn)
+					c.pool.poolQueue.PushHead(conn)
 					c.pool.pushing = 0
 					c.pool.ch <- struct{}{}
 					return

@@ -18,6 +18,7 @@
 package dubbo
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -84,7 +85,7 @@ type (
 		sessionTimeout time.Duration
 
 		// Connection Pool
-		PoolSize int `default:"2" yaml:"pool_size" json:"pool_size,omitempty"`
+		PoolSize int `default:"4" yaml:"pool_size" json:"pool_size,omitempty"`
 		PoolTTL  int `default:"180" yaml:"pool_ttl" json:"pool_ttl,omitempty"`
 
 		// grpool
@@ -184,8 +185,12 @@ func (c *ClientConfig) CheckValidity() error {
 	}
 
 	if c.heartbeatPeriod >= time.Duration(config.MaxWheelTimeSpan) {
-		return perrors.WithMessagef(err, "heartbeat_period %s should be less than %s",
-			c.HeartbeatPeriod, time.Duration(config.MaxWheelTimeSpan))
+		return perrors.New(fmt.Sprintf("heartbeat_period %s should be less than %s",
+			c.HeartbeatPeriod, time.Duration(config.MaxWheelTimeSpan)))
+	}
+
+	if c.PoolSize <= 0 || (c.PoolSize&(c.PoolSize-1) != 0) {
+		return perrors.New(fmt.Sprintf("poolsize {%#v} should be bigger than 0 and pow of 2", c.PoolSize))
 	}
 
 	if c.sessionTimeout, err = time.ParseDuration(c.SessionTimeout); err != nil {
