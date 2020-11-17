@@ -10,7 +10,7 @@ require (
 	github.com/creasty/defaults v1.3.0
 	github.com/dubbogo/getty v1.3.8
 	github.com/dubbogo/go-zookeeper v1.0.0
-	github.com/dubbogo/gost v1.9.0
+	github.com/dubbogo/gost v1.9.5
 	github.com/emicklei/go-restful/v3 v3.0.0
 	github.com/go-resty/resty/v2 v2.1.0
 	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6 // indirect
@@ -29,7 +29,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.1.0
 	github.com/satori/go.uuid v1.2.1-0.20181028125025-b2ce2384e17b
-	github.com/stretchr/testify v1.5.1
+	github.com/stretchr/testify v1.6.1
 	github.com/zouyx/agollo/v3 v3.4.4
 	go.etcd.io/bbolt v1.3.3 // indirect
 	go.etcd.io/etcd v3.3.13+incompatible
