@@ -377,7 +377,7 @@ func (c URL) Service() string {
 	if service != "" {
 		return service
 	} else if c.SubURL != nil {
-		service = c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
+		service = c.SubURL.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
 		if service != "" { //if url.path is "" then return suburl's path, special for registry url
 			return service
 		}
