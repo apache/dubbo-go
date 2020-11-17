@@ -366,7 +366,7 @@ func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPC
 	if err != nil {
 		return nil, err
 	}
-	conn, err := p.getConnFromPoll()
+	conn, err := p.getConnFromPool()
 	if err == nil && conn == nil {
 		rpcClientConn, err := newGettyRPCClientConn(p, protocol, addr)
 		return rpcClientConn, perrors.WithStack(err)
@@ -375,7 +375,7 @@ func (p *gettyRPCClientPool) getGettyRpcClient(protocol, addr string) (*gettyRPC
 	return conn, perrors.WithStack(err)
 }
 
-func (p *gettyRPCClientPool) getConnFromPoll() (*gettyRPCClient, error) {
+func (p *gettyRPCClientPool) getConnFromPool() (*gettyRPCClient, error) {
 	now := time.Now().Unix()
 	if p.poolQueue == nil {
 		return nil, errClientPoolClosed
