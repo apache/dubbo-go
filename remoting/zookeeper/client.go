@@ -375,10 +375,6 @@ func (z *ZookeeperClient) ZkConnValid() bool {
 
 // Close ...
 func (z *ZookeeperClient) Close() {
-	if z == nil {
-		return
-	}
-
 	z.stop()
 	z.Wait.Wait()
 	z.Lock()

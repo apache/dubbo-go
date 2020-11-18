@@ -115,8 +115,11 @@ func (r *etcdV3Registry) DoRegister(root string, node string) error {
 }
 
 func (r *etcdV3Registry) CloseAndNilClient() {
-	r.client.Close()
+	r.cltLock.Lock()
+	defer r.cltLock.Unlock()
+	client := r.client
 	r.client = nil
+	go client.Close()
 }
 
 func (r *etcdV3Registry) CloseListener() {

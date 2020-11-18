@@ -138,8 +138,11 @@ func (r *zkRegistry) DoSubscribe(conf *common.URL) (registry.Listener, error) {
 }
 
 func (r *zkRegistry) CloseAndNilClient() {
-	r.client.Close()
+	r.cltLock.Lock()
+	defer r.cltLock.Unlock()
+	client := r.client
 	r.client = nil
+	go client.Close()
 }
 
 func (r *zkRegistry) ZkClient() *zookeeper.ZookeeperClient {
