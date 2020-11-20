@@ -63,8 +63,7 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 	loadBalance := getLoadBalance(invokers[0], invocation)
 
 	for i := 0; i <= retries; i++ {
-		//Reselect before retry to avoid a change of candidate `invokers`.
-		//NOTE: if `invokers` changed, then `invoked` also lose accuracy.
+		// 失败后重试，检查是否被destroy
 		if i > 0 {
 			if err := invoker.checkWhetherDestroyed(); err != nil {
 				return &protocol.RPCResult{Err: err}
@@ -75,12 +74,14 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 				return &protocol.RPCResult{Err: err}
 			}
 		}
+		// 第一次负载均衡策略，选择目标invoker
+		// 第二次之后，重新按照负载均衡策略选择
 		ivk := invoker.doSelect(loadBalance, invocation, invokers, invoked)
 		if ivk == nil {
 			continue
 		}
 		invoked = append(invoked, ivk)
-		//DO INVOKE
+		// 调用
 		result = ivk.Invoke(ctx, invocation)
 		if result.Error() != nil {
 			providers = append(providers, ivk.GetUrl().Key())
