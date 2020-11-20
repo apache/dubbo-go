@@ -231,6 +231,11 @@ If you are using [apache/dubbo-go](github.com/apache/dubbo-go) and think that it
           <img width="222px"  src="http://image.guang.j.cn/bbs/imgs/home/pc/icon_8500.png">
         </a>
       </td>
+      <td align="center"  valign="middle">
+        <a href="https://www.genshuixue.com/" target="_blank">
+          <img width="222px"  src="https://i.gsxcdn.com/0cms/d/file/content/2020/02/5e572137d7d94.png">
+        </a>
+      </td>
     </tr>
     <tr></tr>
   </tbody>
