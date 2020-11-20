@@ -232,7 +232,7 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 			_, ok := l.pathMap[dubboPath]
 			l.pathMapLock.Unlock()
 			if ok {
-				logger.Warnf("@zkPath %s has already been listened.", zkPath)
+				logger.Warnf("@zkPath %s has already been listened.", dubboPath)
 				continue
 			}
 
