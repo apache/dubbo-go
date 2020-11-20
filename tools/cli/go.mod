@@ -9,6 +9,6 @@ require (
 	go.uber.org/atomic v1.7.0
 )
 
-replace github.com/LaurenceLiZhixin/dubbo-go-hessian2 v1.7.3 => ../../../dubbo-go-hessian2
+replace github.com/LaurenceLiZhixin/dubbo-go-hessian2 v1.7.3 => ../../../telnet-support/dubbo-go-hessian2
 
-replace github.com/LaurenceLiZhixin/json-interface-parser v0.0.0-20201026115035-e5b01058601f => ../../../json-interface-parser
+replace github.com/LaurenceLiZhixin/json-interface-parser v0.0.0-20201026115035-e5b01058601f => ../../../telnet-support/json-interface-parser
