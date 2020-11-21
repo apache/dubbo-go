@@ -88,9 +88,8 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	result := &protocol.RPCResult{}
 	result.SetAttachments(invocation.Attachments())
 
-	url := pi.GetUrl()
 	//get providerUrl. The origin url may be is registry URL.
-	url = getProviderURL(url)
+	url := getProviderURL(pi.GetUrl())
 
 	methodName := invocation.MethodName()
 	proto := url.Protocol
