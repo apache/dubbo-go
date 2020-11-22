@@ -144,14 +144,14 @@ func serviceItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.UR
 				if err != nil {
 					return nil, perrors.WithStack(err)
 				}
-				urls = append(urls, &url)
+				urls = append(urls, url)
 			}
 		} else {
 			url, err := common.NewURL(urlStr)
 			if err != nil {
 				return nil, perrors.WithStack(err)
 			}
-			urls = append(urls, &url)
+			urls = append(urls, url)
 		}
 	}
 	return urls, nil
@@ -192,7 +192,7 @@ func appItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.URL, e
 			if err != nil {
 				return nil, perrors.WithStack(err)
 			}
-			urls = append(urls, &url)
+			urls = append(urls, url)
 		}
 	}
 	return urls, nil

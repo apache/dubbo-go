@@ -42,8 +42,8 @@ func (paf *ProviderAuthFilter) Invoke(ctx context.Context, invoker protocol.Invo
 	logger.Infof("invoking providerAuth filter.")
 	url := invoker.GetUrl()
 
-	err := doAuthWork(&url, func(authenticator filter.Authenticator) error {
-		return authenticator.Authenticate(invocation, &url)
+	err := doAuthWork(url, func(authenticator filter.Authenticator) error {
+		return authenticator.Authenticate(invocation, url)
 	})
 	if err != nil {
 		logger.Infof("auth the request: %v occur exception, cause: %s", invocation, err.Error())

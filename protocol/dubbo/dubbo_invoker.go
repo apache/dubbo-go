@@ -66,7 +66,7 @@ type DubboInvoker struct {
 }
 
 // NewDubboInvoker constructor
-func NewDubboInvoker(url common.URL, client *remoting.ExchangeClient) *DubboInvoker {
+func NewDubboInvoker(url *common.URL, client *remoting.ExchangeClient) *DubboInvoker {
 	requestTimeout := config.GetConsumerConfig().RequestTimeout
 
 	requestTimeoutStr := url.GetParam(constant.TIMEOUT_KEY, config.GetConsumerConfig().Request_Timeout)

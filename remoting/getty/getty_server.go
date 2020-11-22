@@ -117,7 +117,7 @@ type Server struct {
 }
 
 // NewServer create a new Server
-func NewServer(url common.URL, handlers func(*invocation.RPCInvocation) protocol.RPCResult) *Server {
+func NewServer(url *common.URL, handlers func(*invocation.RPCInvocation) protocol.RPCResult) *Server {
 	//init
 	initServer(url.Protocol)
 
