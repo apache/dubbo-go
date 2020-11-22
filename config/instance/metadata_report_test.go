@@ -38,7 +38,7 @@ func TestGetMetadataReportInstance(t *testing.T) {
 		return &mockMetadataReportFactory{}
 	})
 	u, _ := common.NewURL("mock://127.0.0.1")
-	rpt := GetMetadataReportInstance(&u)
+	rpt := GetMetadataReportInstance(u)
 	assert.NotNil(t, rpt)
 }
 
@@ -60,7 +60,7 @@ func (m mockMetadataReport) StoreConsumerMetadata(*identifier.MetadataIdentifier
 	panic("implement me")
 }
 
-func (m mockMetadataReport) SaveServiceMetadata(*identifier.ServiceMetadataIdentifier, common.URL) error {
+func (m mockMetadataReport) SaveServiceMetadata(*identifier.ServiceMetadataIdentifier, *common.URL) error {
 	panic("implement me")
 }
 

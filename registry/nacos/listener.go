@@ -43,7 +43,7 @@ import (
 
 type nacosListener struct {
 	namingClient   naming_client.INamingClient
-	listenUrl      common.URL
+	listenUrl      *common.URL
 	events         chan *config_center.ConfigChangeEvent
 	instanceMap    map[string]model.Instance
 	cacheLock      sync.Mutex
@@ -52,7 +52,7 @@ type nacosListener struct {
 }
 
 // NewRegistryDataListener creates a data listener for nacos
-func NewNacosListener(url common.URL, namingClient naming_client.INamingClient) (*nacosListener, error) {
+func NewNacosListener(url *common.URL, namingClient naming_client.INamingClient) (*nacosListener, error) {
 	listener := &nacosListener{
 		namingClient: namingClient,
 		listenUrl:    url, events: make(chan *config_center.ConfigChangeEvent, 32),
@@ -154,25 +154,25 @@ func (nl *nacosListener) Callback(services []model.SubscribeService, err error) 
 	for i := range addInstances {
 		newUrl := generateUrl(addInstances[i])
 		if newUrl != nil {
-			nl.process(&config_center.ConfigChangeEvent{Value: *newUrl, ConfigType: remoting.EventTypeAdd})
+			nl.process(&config_center.ConfigChangeEvent{Value: newUrl, ConfigType: remoting.EventTypeAdd})
 		}
 	}
 	for i := range delInstances {
 		newUrl := generateUrl(delInstances[i])
 		if newUrl != nil {
-			nl.process(&config_center.ConfigChangeEvent{Value: *newUrl, ConfigType: remoting.EventTypeDel})
+			nl.process(&config_center.ConfigChangeEvent{Value: newUrl, ConfigType: remoting.EventTypeDel})
 		}
 	}
 
 	for i := range updateInstances {
 		newUrl := generateUrl(updateInstances[i])
 		if newUrl != nil {
-			nl.process(&config_center.ConfigChangeEvent{Value: *newUrl, ConfigType: remoting.EventTypeUpdate})
+			nl.process(&config_center.ConfigChangeEvent{Value: newUrl, ConfigType: remoting.EventTypeUpdate})
 		}
 	}
 }
 
-func getSubscribeName(url common.URL) string {
+func getSubscribeName(url *common.URL) string {
 	var buffer bytes.Buffer
 
 	buffer.Write([]byte(common.DubboNodes[common.PROVIDER]))
@@ -210,7 +210,7 @@ func (nl *nacosListener) Next() (*registry.ServiceEvent, error) {
 
 		case e := <-nl.events:
 			logger.Debugf("got nacos event %s", e)
-			return &registry.ServiceEvent{Action: e.ConfigType, Service: e.Value.(common.URL)}, nil
+			return &registry.ServiceEvent{Action: e.ConfigType, Service: e.Value.(*common.URL)}, nil
 		}
 	}
 }
