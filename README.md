@@ -16,6 +16,8 @@ Apache License, Version 2.0
 
 ## Release note ##
 
+[v1.4.5 - Nov 18, 2020](https://github.com/apache/dubbo-go/releases/tag/v1.4.5)
+
 [v1.5.4 - Nov 1, 2020](https://github.com/apache/dubbo-go/releases/tag/v1.5.4)
 
 [v1.5.3 - Sep 23, 2020](https://github.com/apache/dubbo-go/releases/tag/v1.5.3)
@@ -223,7 +225,19 @@ If you are using [apache/dubbo-go](github.com/apache/dubbo-go) and think that it
       </td>
     </tr>
     <tr></tr>
-
+    <tr>
+      <td align="center"  valign="middle">
+        <a href="http://www.j.cn" target="_blank">
+          <img width="222px"  src="http://image.guang.j.cn/bbs/imgs/home/pc/icon_8500.png">
+        </a>
+      </td>
+      <td align="center"  valign="middle">
+        <a href="https://www.genshuixue.com/" target="_blank">
+          <img width="222px"  src="https://i.gsxcdn.com/0cms/d/file/content/2020/02/5e572137d7d94.png">
+        </a>
+      </td>
+    </tr>
+    <tr></tr>
   </tbody>
 </table>
 </div>

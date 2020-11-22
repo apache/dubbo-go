@@ -96,6 +96,7 @@ func (c *DefaultHealthChecker) getCircuitBreakerSleepWindowTime(status *protocol
 	return int64(sleepWindow)
 }
 
+
 // GetRequestSuccessiveFailureThreshold return the requestSuccessiveFailureThreshold bound to this DefaultHealthChecker
 func (c *DefaultHealthChecker) GetRequestSuccessiveFailureThreshold() int32 {
 	return c.requestSuccessiveFailureThreshold
@@ -114,8 +115,8 @@ func (c *DefaultHealthChecker) GetOutStandingRequestCountLimit() int32 {
 // NewDefaultHealthChecker constructs a new DefaultHealthChecker based on the url
 func NewDefaultHealthChecker(url *common.URL) router.HealthChecker {
 	return &DefaultHealthChecker{
-		outStandingRequestConutLimit:      int32(url.GetParamInt(constant.OUTSTANDING_REQUEST_COUNT_LIMIT_KEY, math.MaxInt32)),
-		requestSuccessiveFailureThreshold: int32(url.GetParamInt(constant.SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY, constant.DEFAULT_SUCCESSIVE_FAILED_REQUEST_MAX_DIFF)),
-		circuitTrippedTimeoutFactor:       int32(url.GetParamInt(constant.CIRCUIT_TRIPPED_TIMEOUT_FACTOR_KEY, constant.DEFAULT_CIRCUIT_TRIPPED_TIMEOUT_FACTOR)),
+		outStandingRequestConutLimit:      url.GetParamInt32(constant.OUTSTANDING_REQUEST_COUNT_LIMIT_KEY, math.MaxInt32),
+		requestSuccessiveFailureThreshold: url.GetParamInt32(constant.SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY, constant.DEFAULT_SUCCESSIVE_FAILED_REQUEST_MAX_DIFF),
+		circuitTrippedTimeoutFactor:       url.GetParamInt32(constant.CIRCUIT_TRIPPED_TIMEOUT_FACTOR_KEY, constant.DEFAULT_CIRCUIT_TRIPPED_TIMEOUT_FACTOR),
 	}
 }
