@@ -153,7 +153,9 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 		return
 	}
 
-	h.conn.pool.rpcClient.heartbeat(session)
+	if err := h.conn.pool.rpcClient.heartbeat(session); err != nil {
+		logger.Warnf("failed to send heartbeat, error: %v", err)
+	}
 }
 
 // //////////////////////////////////////////
