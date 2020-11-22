@@ -22,7 +22,6 @@ import (
 )
 
 import (
-	cm "github.com/Workiva/go-datastructures/common"
 	"github.com/Workiva/go-datastructures/slice/skip"
 )
 
@@ -75,23 +74,6 @@ func NewMetadataService() (service.MetadataService, error) {
 	return metadataServiceInstance, nil
 }
 
-// Comparator is defined as Comparator for skip list to compare the URL
-type Comparator common.URL
-
-// Compare is defined as Comparator for skip list to compare the URL
-func (c Comparator) Compare(comp cm.Comparator) int {
-	a := common.URL(c).String()
-	b := common.URL(comp.(Comparator)).String()
-	switch {
-	case a > b:
-		return 1
-	case a < b:
-		return -1
-	default:
-		return 0
-	}
-}
-
 // addURL will add URL in memory
 func (mts *MetadataService) addURL(targetMap *sync.Map, url *common.URL) bool {
 	var (
@@ -101,7 +83,7 @@ func (mts *MetadataService) addURL(targetMap *sync.Map, url *common.URL) bool {
 	logger.Debug(url.ServiceKey())
 	if urlSet, loaded = targetMap.LoadOrStore(url.ServiceKey(), skip.New(uint64(0))); loaded {
 		mts.lock.RLock()
-		wantedUrl := urlSet.(*skip.SkipList).Get(Comparator(*url))
+		wantedUrl := urlSet.(*skip.SkipList).Get(url)
 		if len(wantedUrl) > 0 && wantedUrl[0] != nil {
 			mts.lock.RUnlock()
 			return false
@@ -110,12 +92,12 @@ func (mts *MetadataService) addURL(targetMap *sync.Map, url *common.URL) bool {
 	}
 	mts.lock.Lock()
 	// double chk
-	wantedUrl := urlSet.(*skip.SkipList).Get(Comparator(*url))
+	wantedUrl := urlSet.(*skip.SkipList).Get(url)
 	if len(wantedUrl) > 0 && wantedUrl[0] != nil {
 		mts.lock.Unlock()
 		return false
 	}
-	urlSet.(*skip.SkipList).Insert(Comparator(*url))
+	urlSet.(*skip.SkipList).Insert(url)
 	mts.lock.Unlock()
 	return true
 }
@@ -124,7 +106,7 @@ func (mts *MetadataService) addURL(targetMap *sync.Map, url *common.URL) bool {
 func (mts *MetadataService) removeURL(targetMap *sync.Map, url *common.URL) {
 	if value, loaded := targetMap.Load(url.ServiceKey()); loaded {
 		mts.lock.Lock()
-		value.(*skip.SkipList).Delete(Comparator(*url))
+		value.(*skip.SkipList).Delete(url)
 		mts.lock.Unlock()
 		mts.lock.RLock()
 		defer mts.lock.RUnlock()
@@ -135,13 +117,13 @@ func (mts *MetadataService) removeURL(targetMap *sync.Map, url *common.URL) {
 }
 
 // getAllService can return all the exportedUrlString except for metadataService
-func (mts *MetadataService) getAllService(services *sync.Map) []common.URL {
+func (mts *MetadataService) getAllService(services *sync.Map) []*common.URL {
 	// using skip list to dedup and sorting
-	res := make([]common.URL, 0)
+	var res []*common.URL
 	services.Range(func(key, value interface{}) bool {
 		urls := value.(*skip.SkipList)
 		for i := uint64(0); i < urls.Len(); i++ {
-			url := common.URL(urls.ByPosition(i).(Comparator))
+			url := urls.ByPosition(i).(*common.URL)
 			if url.GetParam(constant.INTERFACE_KEY, url.Path) != constant.METADATA_SERVICE_NAME {
 				res = append(res, url)
 			}
@@ -153,13 +135,13 @@ func (mts *MetadataService) getAllService(services *sync.Map) []common.URL {
 }
 
 // getSpecifiedService can return specified service url by serviceKey
-func (mts *MetadataService) getSpecifiedService(services *sync.Map, serviceKey string, protocol string) []common.URL {
-	res := make([]common.URL, 0)
+func (mts *MetadataService) getSpecifiedService(services *sync.Map, serviceKey string, protocol string) []*common.URL {
+	var res []*common.URL
 	serviceList, loaded := services.Load(serviceKey)
 	if loaded {
 		urls := serviceList.(*skip.SkipList)
 		for i := uint64(0); i < urls.Len(); i++ {
-			url := common.URL(urls.ByPosition(i).(Comparator))
+			url := urls.ByPosition(i).(*common.URL)
 			if len(protocol) == 0 || protocol == constant.ANY_VALUE || url.Protocol == protocol || url.GetParam(constant.PROTOCOL_KEY, "") == protocol {
 				res = append(res, url)
 			}
@@ -170,34 +152,34 @@ func (mts *MetadataService) getSpecifiedService(services *sync.Map, serviceKey s
 }
 
 // ExportURL can store the in memory
-func (mts *MetadataService) ExportURL(url common.URL) (bool, error) {
-	return mts.addURL(mts.exportedServiceURLs, &url), nil
+func (mts *MetadataService) ExportURL(url *common.URL) (bool, error) {
+	return mts.addURL(mts.exportedServiceURLs, url), nil
 }
 
 // UnexportURL can remove the url store in memory
-func (mts *MetadataService) UnexportURL(url common.URL) error {
-	mts.removeURL(mts.exportedServiceURLs, &url)
+func (mts *MetadataService) UnexportURL(url *common.URL) error {
+	mts.removeURL(mts.exportedServiceURLs, url)
 	return nil
 }
 
 // SubscribeURL can store the in memory
-func (mts *MetadataService) SubscribeURL(url common.URL) (bool, error) {
-	return mts.addURL(mts.subscribedServiceURLs, &url), nil
+func (mts *MetadataService) SubscribeURL(url *common.URL) (bool, error) {
+	return mts.addURL(mts.subscribedServiceURLs, url), nil
 }
 
 // UnsubscribeURL can remove the url store in memory
-func (mts *MetadataService) UnsubscribeURL(url common.URL) error {
-	mts.removeURL(mts.subscribedServiceURLs, &url)
+func (mts *MetadataService) UnsubscribeURL(url *common.URL) error {
+	mts.removeURL(mts.subscribedServiceURLs, url)
 	return nil
 }
 
 // PublishServiceDefinition: publish url's service metadata info, and write into memory
-func (mts *MetadataService) PublishServiceDefinition(url common.URL) error {
+func (mts *MetadataService) PublishServiceDefinition(url *common.URL) error {
 	interfaceName := url.GetParam(constant.INTERFACE_KEY, "")
 	isGeneric := url.GetParamBool(constant.GENERIC_KEY, false)
 	if len(interfaceName) > 0 && !isGeneric {
-		service := common.ServiceMap.GetService(url.Protocol, url.GetParam(constant.BEAN_NAME_KEY, url.Service()))
-		sd := definition.BuildServiceDefinition(*service, url)
+		tmpService := common.ServiceMap.GetService(url.Protocol, url.GetParam(constant.BEAN_NAME_KEY, url.Service()))
+		sd := definition.BuildServiceDefinition(*tmpService, url)
 		data, err := sd.ToBytes()
 		if err != nil {
 			logger.Errorf("publishProvider getServiceDescriptor error. providerUrl:%v , error:%v ", url, err)
@@ -221,7 +203,7 @@ func (mts *MetadataService) GetExportedURLs(serviceInterface string, group strin
 }
 
 // GetSubscribedURLs get all subscribedUrl
-func (mts *MetadataService) GetSubscribedURLs() ([]common.URL, error) {
+func (mts *MetadataService) GetSubscribedURLs() ([]*common.URL, error) {
 	return mts.getAllService(mts.subscribedServiceURLs), nil
 }
 
@@ -239,7 +221,7 @@ func (mts *MetadataService) GetServiceDefinitionByServiceKey(serviceKey string) 
 }
 
 // RefreshMetadata will always return true because it will be implement by remote service
-func (mts *MetadataService) RefreshMetadata(exportedRevision string, subscribedRevision string) (bool, error) {
+func (mts *MetadataService) RefreshMetadata(string, string) (bool, error) {
 	return true, nil
 }
 
