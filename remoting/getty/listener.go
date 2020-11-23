@@ -109,7 +109,7 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 			resp.Event = req.Event
 			resp.SerialID = req.SerialID
 			resp.Version = "2.0.2"
-			reply(session, resp, hessian.PackageHeartbeat)
+			reply(session, resp)
 			return
 		}
 		logger.Errorf("illegal request but not heartbeart. {%#v}", req)
@@ -153,8 +153,15 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 		return
 	}
 
-	if err := h.conn.pool.rpcClient.heartbeat(session); err != nil {
-		logger.Warnf("failed to send heartbeat, error: %v", err)
+	heartbeatCallBack := func(err error) {
+		if err != nil {
+			logger.Warnf("failed to send heartbeat, error{%v}", err)
+			h.conn.removeSession(session)
+		}
+	}
+
+	if err := h.conn.pool.rpcClient.heartbeat(session, h.conn.pool.rpcClient.conf.heartbeatTimeout, heartbeatCallBack); err != nil {
+		logger.Warnf("failed to send heartbeat, error{%v}", err)
 	}
 }
 
@@ -231,6 +238,14 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 		return
 	}
 	if !decodeResult.IsRequest {
+		res := decodeResult.Result.(*remoting.Response)
+		if res.Event {
+			logger.Debugf("get rpc heartbeat response{%#v}", res)
+			if res.Error != nil {
+				logger.Errorf("rpc heartbeat response{error: %#v}", res.Error)
+			}
+			return
+		}
 		logger.Errorf("illegal package for it is response type. {%#v}", pkg)
 		return
 	}
@@ -245,7 +260,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	// heartbeat
 	if req.Event {
 		logger.Debugf("get rpc heartbeat request{%#v}", resp)
-		reply(session, resp, hessian.PackageHeartbeat)
+		reply(session, resp)
 		return
 	}
 
@@ -266,7 +281,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 			if !req.TwoWay {
 				return
 			}
-			reply(session, resp, hessian.PackageResponse)
+			reply(session, resp)
 		}
 
 	}()
@@ -284,7 +299,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 		return
 	}
 	resp.Result = result
-	reply(session, resp, hessian.PackageResponse)
+	reply(session, resp)
 }
 
 // OnCron check the session health periodic. if the session's sessionTimeout has reached, just close the session
@@ -311,10 +326,21 @@ func (h *RpcServerHandler) OnCron(session getty.Session) {
 		h.rwlock.Unlock()
 		session.Close()
 	}
+
+	heartbeat(session)
 }
 
-func reply(session getty.Session, resp *remoting.Response, tp hessian.PackageType) {
+func reply(session getty.Session, resp *remoting.Response) {
 	if err := session.WritePkg(resp, WritePkg_Timeout); err != nil {
 		logger.Errorf("WritePkg error: %#v, %#v", perrors.WithStack(err), resp)
+	}
+}
+
+func heartbeat(session getty.Session) {
+	req := remoting.NewRequest("2.0.2")
+	req.TwoWay = true
+	req.Event = true
+	if err := session.WritePkg(req, WritePkg_Timeout); err != nil {
+		logger.Errorf("WritePkg error: %#v, %#v", perrors.WithStack(err), req)
 	}
 }
