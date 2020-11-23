@@ -38,11 +38,12 @@ import (
 )
 
 var (
-	errInvalidCodecType  = perrors.New("illegal CodecType")
-	errInvalidAddress    = perrors.New("remote address invalid or empty")
-	errSessionNotExist   = perrors.New("session not exist")
-	errClientClosed      = perrors.New("client closed")
-	errClientReadTimeout = perrors.New("client read timeout")
+	errInvalidCodecType     = perrors.New("illegal CodecType")
+	errInvalidAddress       = perrors.New("remote address invalid or empty")
+	errSessionNotExist      = perrors.New("session not exist")
+	errClientClosed         = perrors.New("client closed")
+	errClientReadTimeout    = perrors.New("client read timeout")
+	errHeartbeatReadTimeout = perrors.New("heartbeat read timeout")
 
 	clientConf   *ClientConfig
 	clientGrpool *gxsync.TaskPool
@@ -220,13 +221,26 @@ func (c *Client) selectSession(addr string) (*gettyRPCClient, getty.Session, err
 	return rpcClient, rpcClient.selectSession(), nil
 }
 
-func (c *Client) heartbeat(session getty.Session) error {
+func (c *Client) heartbeat(session getty.Session, timeout time.Duration, callBack func(err error)) error {
 	req := remoting.NewRequest("2.0.2")
 	req.TwoWay = true
 	req.Event = true
 	resp := remoting.NewPendingResponse(req.ID)
 	remoting.AddPendingResponse(resp)
-	return c.transfer(session, req, 3*time.Second)
+	err := c.transfer(session, req, 3*time.Second)
+
+	go func() {
+		var err1 error
+		select {
+		case <-getty.GetTimeWheel().After(timeout):
+			err1 = errHeartbeatReadTimeout
+		case <-resp.Done:
+			err1 = resp.Err
+		}
+		callBack(err1)
+	}()
+
+	return perrors.WithStack(err)
 }
 
 func (c *Client) transfer(session getty.Session, request *remoting.Request, timeout time.Duration) error {
