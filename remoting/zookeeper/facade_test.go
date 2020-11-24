@@ -68,8 +68,8 @@ func (r *mockFacade) Done() chan struct{} {
 	return r.done
 }
 
-func (r *mockFacade) GetUrl() common.URL {
-	return *r.URL
+func (r *mockFacade) GetUrl() *common.URL {
+	return r.URL
 }
 
 func (r *mockFacade) Destroy() {
@@ -90,7 +90,7 @@ func Test_Facade(t *testing.T) {
 	assert.NoError(t, err)
 	defer ts.Stop()
 	url, _ := common.NewURL("mock://127.0.0.1")
-	mock := newMockFacade(z, &url)
+	mock := newMockFacade(z, url)
 	go HandleClientRestart(mock)
 	states := []zk.State{zk.StateConnecting, zk.StateConnected, zk.StateHasSession}
 	verifyEventStateOrder(t, event, states, "event channel")

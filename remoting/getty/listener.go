@@ -153,7 +153,9 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 		return
 	}
 
-	h.conn.pool.rpcClient.heartbeat(session)
+	if err := h.conn.pool.rpcClient.heartbeat(session); err != nil {
+		logger.Warnf("failed to send heartbeat, error: %v", err)
+	}
 }
 
 // //////////////////////////////////////////
@@ -272,7 +274,6 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	invoc, ok := req.Data.(*invocation.RPCInvocation)
 	if !ok {
 		panic("create invocation occur some exception for the type is not suitable one.")
-		return
 	}
 	attachments := invoc.Attachments()
 	attachments[constant.LOCAL_ADDR] = session.LocalAddr()

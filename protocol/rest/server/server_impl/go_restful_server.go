@@ -59,7 +59,7 @@ func NewGoRestfulServer() server.RestServer {
 
 // Start go-restful server
 // It will add all go-restful filters
-func (grs *GoRestfulServer) Start(url common.URL) {
+func (grs *GoRestfulServer) Start(url *common.URL) {
 	container := restful.NewContainer()
 	for _, filter := range filterSlice {
 		container.Filter(filter)
