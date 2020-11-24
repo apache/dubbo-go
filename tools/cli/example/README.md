@@ -99,7 +99,7 @@ example int userCall.json:
 ```
 
 ### 3. Exec cli to send req.
-`./dubbo-go-cli -h=localhost -p=20000 -proto=dubbo -i=com.ikurento.user.UserProvider -method=GetUser -sendObj="./userCall.json" -recvObj="./user.json"`
+`./dubbo-go-cli -h=localhost -p=20001 -proto=dubbo -i=com.ikurento.user.UserProvider -method=GetUser -sendObj="./userCall.json" -recvObj="./user.json"`
 
 cli-end output：
 ```log
@@ -115,7 +115,7 @@ cli-end output：
 2020/10/26 20:47:45 &{SubID: SubMale:false SubAge:0 JavaClassName:com.ikurento.user.SubInfo}
 
 
-2020/10/26 20:47:45 connected to localhost:20000!
+2020/10/26 20:47:45 connected to localhost:20001!
 2020/10/26 20:47:45 try calling interface:com.ikurento.user.UserProvider.GetUser
 2020/10/26 20:47:45 with protocol:dubbo
 
