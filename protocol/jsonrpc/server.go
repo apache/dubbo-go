@@ -229,7 +229,7 @@ func accept(listener net.Listener, fn func(net.Conn)) error {
 }
 
 // Start JSON RPC server then ready for accept request.
-func (s *Server) Start(url common.URL) {
+func (s *Server) Start(url *common.URL) {
 	listener, err := net.Listen("tcp", url.Location)
 	if err != nil {
 		logger.Errorf("jsonrpc server [%s] start failed: %v", url.Path, err)

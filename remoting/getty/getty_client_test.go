@@ -51,7 +51,7 @@ func TestRunSuite(t *testing.T) {
 	svr.Stop()
 }
 
-func testRequestOneWay(t *testing.T, svr *Server, url common.URL, client *Client) {
+func testRequestOneWay(t *testing.T, svr *Server, url *common.URL, client *Client) {
 
 	request := remoting.NewRequest("2.0.2")
 	up := &UserProvider{}
@@ -80,7 +80,7 @@ func setAttachment(invocation *invocation.RPCInvocation, attachments map[string]
 	}
 }
 
-func getClient(url common.URL) *Client {
+func getClient(url *common.URL) *Client {
 	client := NewClient(Options{
 		ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
 	})
@@ -92,7 +92,7 @@ func getClient(url common.URL) *Client {
 	return client
 }
 
-func testClient_Call(t *testing.T, svr *Server, url common.URL, c *Client) {
+func testClient_Call(t *testing.T, svr *Server, url *common.URL, c *Client) {
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
 
 	testGetBigPkg(t, c)
@@ -309,7 +309,7 @@ func testGetUser61(t *testing.T, c *Client) {
 	assert.Equal(t, User{Id: "1", Name: ""}, *user)
 }
 
-func testClient_AsyncCall(t *testing.T, svr *Server, url common.URL, client *Client) {
+func testClient_AsyncCall(t *testing.T, svr *Server, url *common.URL, client *Client) {
 	user := &User{}
 	lock := sync.Mutex{}
 	request := remoting.NewRequest("2.0.2")
@@ -337,7 +337,7 @@ func testClient_AsyncCall(t *testing.T, svr *Server, url common.URL, client *Cli
 	time.Sleep(1 * time.Second)
 }
 
-func InitTest(t *testing.T) (*Server, common.URL) {
+func InitTest(t *testing.T) (*Server, *common.URL) {
 
 	hessian.RegisterPOJO(&User{})
 	remoting.RegistryCodec("dubbo", &DubboTestCodec{})

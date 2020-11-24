@@ -65,8 +65,8 @@ func (dir *BaseDirectory) SetRouterChain(routerChain router.Chain) {
 }
 
 // GetUrl Get URL
-func (dir *BaseDirectory) GetUrl() common.URL {
-	return *dir.url
+func (dir *BaseDirectory) GetUrl() *common.URL {
+	return dir.url
 }
 
 // GetDirectoryUrl Get URL instance
