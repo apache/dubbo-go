@@ -45,7 +45,7 @@ import (
 
 // nolint
 type MockInvoker struct {
-	url       common.URL
+	url       *common.URL
 	available bool
 	destroyed bool
 
@@ -53,7 +53,7 @@ type MockInvoker struct {
 }
 
 // nolint
-func NewMockInvoker(url common.URL, successCount int) *MockInvoker {
+func NewMockInvoker(url *common.URL, successCount int) *MockInvoker {
 	return &MockInvoker{
 		url:          url,
 		available:    true,
@@ -63,7 +63,7 @@ func NewMockInvoker(url common.URL, successCount int) *MockInvoker {
 }
 
 // nolint
-func (bi *MockInvoker) GetUrl() common.URL {
+func (bi *MockInvoker) GetUrl() *common.URL {
 	return bi.url
 }
 

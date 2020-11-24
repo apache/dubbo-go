@@ -167,10 +167,22 @@ func TestURLGetParam(t *testing.T) {
 
 func TestURLGetParamInt(t *testing.T) {
 	params := url.Values{}
-	params.Set("key", "3")
+	params.Set("key", "")
 	u := URL{baseUrl: baseUrl{params: params}}
 	v := u.GetParamInt("key", 1)
-	assert.Equal(t, int64(3), v)
+	assert.Equal(t, int64(1), v)
+
+	u = URL{}
+	v = u.GetParamInt("key", 1)
+	assert.Equal(t, int64(1), v)
+}
+
+func TestURLGetParamIntValue(t *testing.T) {
+	params := url.Values{}
+	params.Set("key", "0")
+	u := URL{baseUrl: baseUrl{params: params}}
+	v := u.GetParamInt("key", 1)
+	assert.Equal(t, int64(0), v)
 
 	u = URL{}
 	v = u.GetParamInt("key", 1)
@@ -277,7 +289,7 @@ func TestMergeUrl(t *testing.T) {
 	referenceUrl, _ := NewURL("mock1://127.0.0.1:1111", WithParams(referenceUrlParams), WithMethods([]string{"testMethod"}))
 	serviceUrl, _ := NewURL("mock2://127.0.0.1:20000", WithParams(serviceUrlParams))
 
-	mergedUrl := MergeUrl(&serviceUrl, &referenceUrl)
+	mergedUrl := MergeUrl(serviceUrl, referenceUrl)
 	assert.Equal(t, "random", mergedUrl.GetParam(constant.CLUSTER_KEY, ""))
 	assert.Equal(t, "1", mergedUrl.GetParam("test2", ""))
 	assert.Equal(t, "1", mergedUrl.GetParam("test3", ""))

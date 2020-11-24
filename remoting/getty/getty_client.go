@@ -151,7 +151,7 @@ func (c *Client) SetResponseHandler(responseHandler remoting.ResponseHandler) {
 }
 
 // init client and try to connection.
-func (c *Client) Connect(url common.URL) error {
+func (c *Client) Connect(url *common.URL) error {
 	initClient(url.Protocol)
 	c.conf = *clientConf
 	// new client
@@ -202,6 +202,14 @@ func (c *Client) Request(request *remoting.Request, timeout time.Duration, respo
 	}
 
 	return perrors.WithStack(err)
+}
+
+// isAvailable returns true if the connection is available, or it can be re-established.
+func (c *Client) IsAvailable() bool {
+	client, _, err := c.selectSession(c.addr)
+	return err == nil &&
+		// defensive check
+		client != nil
 }
 
 func (c *Client) selectSession(addr string) (*gettyRPCClient, getty.Session, error) {
