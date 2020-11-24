@@ -35,7 +35,7 @@ services:
 protocols:
   "dubbo":
     name: "dubbo"
-    port: 20000
+    port: 20001
 
 
 protocol_conf:
