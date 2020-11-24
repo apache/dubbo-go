@@ -66,7 +66,8 @@ func (s *rpcSession) GetReqNum() int32 {
 
 // nolint
 type RpcClientHandler struct {
-	conn *gettyRPCClient
+	conn         *gettyRPCClient
+	timeoutTimes int
 }
 
 // nolint
@@ -115,7 +116,7 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 		logger.Errorf("illegal request but not heartbeart. {%#v}", req)
 		return
 	}
-
+	h.timeoutTimes = 0
 	p := result.Result.(*remoting.Response)
 	// get heartbeart
 	if p.Event {
@@ -124,10 +125,6 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 			logger.Errorf("rpc heartbeat response{error: %#v}", p.Error)
 		}
 		h.conn.pool.rpcClient.responseHandler.Handler(p)
-		return
-	}
-	if result.IsRequest {
-		logger.Errorf("illegal package for it is response type. {%#v}", pkg)
 		return
 	}
 
@@ -156,8 +153,14 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 	heartbeatCallBack := func(err error) {
 		if err != nil {
 			logger.Warnf("failed to send heartbeat, error{%v}", err)
-			h.conn.removeSession(session)
+			if h.timeoutTimes >= 3 {
+				h.conn.removeSession(session)
+				return
+			}
+			h.timeoutTimes++
+			return
 		}
+		h.timeoutTimes = 0
 	}
 
 	if err := h.conn.pool.rpcClient.heartbeat(session, h.conn.pool.rpcClient.conf.heartbeatTimeout, heartbeatCallBack); err != nil {
@@ -243,10 +246,14 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 			logger.Debugf("get rpc heartbeat response{%#v}", res)
 			if res.Error != nil {
 				logger.Errorf("rpc heartbeat response{error: %#v}", res.Error)
+				h.rwlock.Lock()
+				delete(h.sessionMap, session)
+				h.rwlock.Unlock()
+				session.Close()
 			}
 			return
 		}
-		logger.Errorf("illegal package for it is response type. {%#v}", pkg)
+		logger.Errorf("illegal package but not heartbeart. {%#v}", pkg)
 		return
 	}
 	req := decodeResult.Result.(*remoting.Request)
