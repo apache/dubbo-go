@@ -90,7 +90,7 @@ type Client struct {
 }
 
 // NewClient creates a new gRPC client.
-func NewClient(url common.URL) *Client {
+func NewClient(url *common.URL) *Client {
 	// if global trace instance was set , it means trace function enabled. If not , will return Nooptracer
 	tracer := opentracing.GlobalTracer()
 	dailOpts := make([]grpc.DialOption, 0, 4)
@@ -117,7 +117,7 @@ func NewClient(url common.URL) *Client {
 }
 
 func getInvoker(impl interface{}, conn *grpc.ClientConn) interface{} {
-	in := []reflect.Value{}
+	var in []reflect.Value
 	in = append(in, reflect.ValueOf(conn))
 	method := reflect.ValueOf(impl).MethodByName("GetDubboStub")
 	res := method.Call(in)

@@ -42,7 +42,7 @@ type Client interface {
 	// responseHandler is used to deal with msg
 	SetResponseHandler(responseHandler ResponseHandler)
 	// connect url
-	Connect(url common.URL) error
+	Connect(url *common.URL) error
 	// close
 	Close()
 	// send request to server.
@@ -69,7 +69,7 @@ type ResponseHandler interface {
 }
 
 // create ExchangeClient
-func NewExchangeClient(url common.URL, client Client, connectTimeout time.Duration, lazyInit bool) *ExchangeClient {
+func NewExchangeClient(url *common.URL, client Client, connectTimeout time.Duration, lazyInit bool) *ExchangeClient {
 	exchangeClient := &ExchangeClient{
 		ConnectTimeout: connectTimeout,
 		address:        url.Location,
@@ -86,7 +86,7 @@ func NewExchangeClient(url common.URL, client Client, connectTimeout time.Durati
 	return exchangeClient
 }
 
-func (cl *ExchangeClient) doInit(url common.URL) error {
+func (cl *ExchangeClient) doInit(url *common.URL) error {
 	if cl.init {
 		return nil
 	}
@@ -104,7 +104,7 @@ func (cl *ExchangeClient) doInit(url common.URL) error {
 }
 
 // two way request
-func (client *ExchangeClient) Request(invocation *protocol.Invocation, url common.URL, timeout time.Duration,
+func (client *ExchangeClient) Request(invocation *protocol.Invocation, url *common.URL, timeout time.Duration,
 	result *protocol.RPCResult) error {
 	if er := client.doInit(url); er != nil {
 		return er
@@ -134,7 +134,7 @@ func (client *ExchangeClient) Request(invocation *protocol.Invocation, url commo
 }
 
 // async two way request
-func (client *ExchangeClient) AsyncRequest(invocation *protocol.Invocation, url common.URL, timeout time.Duration,
+func (client *ExchangeClient) AsyncRequest(invocation *protocol.Invocation, url *common.URL, timeout time.Duration,
 	callback common.AsyncCallback, result *protocol.RPCResult) error {
 	if er := client.doInit(url); er != nil {
 		return er
@@ -160,7 +160,7 @@ func (client *ExchangeClient) AsyncRequest(invocation *protocol.Invocation, url 
 }
 
 // oneway request
-func (client *ExchangeClient) Send(invocation *protocol.Invocation, url common.URL, timeout time.Duration) error {
+func (client *ExchangeClient) Send(invocation *protocol.Invocation, url *common.URL, timeout time.Duration) error {
 	if er := client.doInit(url); er != nil {
 		return er
 	}
@@ -204,7 +204,7 @@ func (client *ExchangeClient) Handler(response *Response) {
 
 	if pendingResponse.Callback == nil {
 		pendingResponse.Err = pendingResponse.response.Error
-		pendingResponse.Done <- struct{}{}
+		close(pendingResponse.Done)
 	} else {
 		pendingResponse.Callback(pendingResponse.GetCallResponse())
 	}
