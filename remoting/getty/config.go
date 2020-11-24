@@ -197,7 +197,7 @@ func (c *ClientConfig) CheckValidity() error {
 	}
 
 	if len(c.HeartbeatTimeout) == 0 {
-		c.heartbeatTimeout = 5 * time.Second
+		c.heartbeatTimeout = 60 * time.Second
 	} else if c.heartbeatTimeout, err = time.ParseDuration(c.HeartbeatTimeout); err != nil {
 		return perrors.WithMessagef(err, "time.ParseDuration(HeartbeatTimeout{%#v})", c.HeartbeatTimeout)
 	}
@@ -214,7 +214,7 @@ func (c *ServerConfig) CheckValidity() error {
 	var err error
 
 	if len(c.HeartbeatPeriod) == 0 {
-		c.heartbeatPeriod = 15 * time.Second
+		c.heartbeatPeriod = 60 * time.Second
 	} else if c.heartbeatPeriod, err = time.ParseDuration(c.HeartbeatPeriod); err != nil {
 		return perrors.WithMessagef(err, "time.ParseDuration(HeartbeatPeroid{%#v})", c.HeartbeatPeriod)
 	}
