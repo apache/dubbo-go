@@ -89,29 +89,29 @@ func (mts *MetadataService) setInMemoryMetadataService(metadata *inmemory.Metada
 }
 
 // ExportURL will be implemented by in memory service
-func (mts *MetadataService) ExportURL(url common.URL) (bool, error) {
+func (mts *MetadataService) ExportURL(url *common.URL) (bool, error) {
 	return mts.inMemoryMetadataService.ExportURL(url)
 }
 
 // UnexportURL remove @url's metadata
-func (mts *MetadataService) UnexportURL(url common.URL) error {
+func (mts *MetadataService) UnexportURL(url *common.URL) error {
 	smi := identifier.NewServiceMetadataIdentifier(url)
 	smi.Revision = mts.exportedRevision.Load()
 	return mts.delegateReport.RemoveServiceMetadata(smi)
 }
 
 // SubscribeURL will be implemented by in memory service
-func (mts *MetadataService) SubscribeURL(url common.URL) (bool, error) {
+func (mts *MetadataService) SubscribeURL(url *common.URL) (bool, error) {
 	return mts.inMemoryMetadataService.SubscribeURL(url)
 }
 
 // UnsubscribeURL will be implemented by in memory service
-func (mts *MetadataService) UnsubscribeURL(url common.URL) error {
+func (mts *MetadataService) UnsubscribeURL(url *common.URL) error {
 	return mts.UnsubscribeURL(url)
 }
 
 // PublishServiceDefinition will call remote metadata's StoreProviderMetadata to store url info and service definition
-func (mts *MetadataService) PublishServiceDefinition(url common.URL) error {
+func (mts *MetadataService) PublishServiceDefinition(url *common.URL) error {
 	interfaceName := url.GetParam(constant.INTERFACE_KEY, "")
 	isGeneric := url.GetParamBool(constant.GENERIC_KEY, false)
 	if len(interfaceName) > 0 && !isGeneric {
@@ -139,7 +139,7 @@ func (mts *MetadataService) GetExportedURLs(serviceInterface string, group strin
 }
 
 // GetSubscribedURLs will be implemented by in memory service
-func (mts *MetadataService) GetSubscribedURLs() ([]common.URL, error) {
+func (mts *MetadataService) GetSubscribedURLs() ([]*common.URL, error) {
 	return mts.inMemoryMetadataService.GetSubscribedURLs()
 }
 

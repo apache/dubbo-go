@@ -52,5 +52,5 @@ func TestRandomServiceInstanceSelector_Select(t *testing.T) {
 			Metadata:    nil,
 		},
 	}
-	assert.NotNil(t, selector.Select(common.URL{}, serviceInstances))
+	assert.NotNil(t, selector.Select(&common.URL{}, serviceInstances))
 }

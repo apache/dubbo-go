@@ -70,7 +70,7 @@ func newFileSystemServiceDiscovery(name string) (registry.ServiceDiscovery, erro
 	p := path.Join(rp, ".dubbo", constant.REGISTRY_KEY)
 	url, _ := common.NewURL("")
 	url.AddParamAvoidNil(file.CONFIG_CENTER_DIR_PARAM_NAME, p)
-	c, err := fdcf.GetDynamicConfiguration(&url)
+	c, err := fdcf.GetDynamicConfiguration(url)
 	if err != nil {
 		return nil, perrors.WithStack(err)
 	}
