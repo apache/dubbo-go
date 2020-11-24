@@ -27,7 +27,6 @@ import (
 
 import (
 	"github.com/apache/dubbo-getty"
-	"github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 )
@@ -54,7 +53,7 @@ const (
 
 func init() {
 	processID = fmt.Sprintf("%d", os.Getpid())
-	localIP, _ = gxnet.GetLocalIP()
+	localIP = common.GetLocalIp()
 	extension.SetRegistry(Name, newKubernetesRegistry)
 }
 
