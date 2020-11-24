@@ -129,8 +129,6 @@ func (l *EventListener) handleEvents(event *clientv3.Event, listeners ...remotin
 	default:
 		return false
 	}
-
-	panic("unreachable")
 }
 
 // ListenServiceNodeEventWithPrefix listens on a set of key with spec prefix
