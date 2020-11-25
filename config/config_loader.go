@@ -203,6 +203,8 @@ func loadProviderConfig() {
 		svs.id = key
 		svs.Implement(rpcService)
 		svs.Protocols = providerConfig.Protocols
+		svs.InitExported()
+		svs.InitUnexported()
 		if err := svs.Export(); err != nil {
 			panic(fmt.Sprintf("service %s export failed! err: %#v", key, err))
 		}

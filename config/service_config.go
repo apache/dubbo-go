@@ -86,9 +86,9 @@ type ServiceConfig struct {
 	exporters     []protocol.Exporter
 }
 
-// Prefix returns dubbo.service.${interface}.
+// Prefix returns dubbo.service.
 func (c *ServiceConfig) Prefix() string {
-	return constant.ServiceConfigPrefix + c.InterfaceName + "."
+	return constant.ServiceConfigPrefix
 }
 
 // UnmarshalYAML unmarshals the ServiceConfig by @unmarshal function
@@ -118,6 +118,11 @@ func NewServiceConfig(id string, context context.Context) *ServiceConfig {
 // InitExported will set exported as false atom bool
 func (c *ServiceConfig) InitExported() {
 	c.exported = atomic.NewBool(false)
+}
+
+// InitUnexported will set unexported as false atom bool
+func (c *ServiceConfig) InitUnexported() {
+	c.unexported = atomic.NewBool(false)
 }
 
 // IsExport will return whether the service config is exported or not

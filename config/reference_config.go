@@ -69,7 +69,7 @@ type ReferenceConfig struct {
 
 // nolint
 func (c *ReferenceConfig) Prefix() string {
-	return constant.ReferenceConfigPrefix + c.InterfaceName + "."
+	return constant.ReferenceConfigPrefix
 }
 
 // NewReferenceConfig The only way to get a new ReferenceConfig
