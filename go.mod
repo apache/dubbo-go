@@ -22,7 +22,7 @@ require (
 	github.com/golang/protobuf v1.4.3
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
 	github.com/hashicorp/consul v1.8.0
-	github.com/hashicorp/consul/api v1.5.0
+	github.com/hashicorp/consul/api v1.8.0
 	github.com/hashicorp/go-raftchunking v0.6.3-0.20191002164813-7e9e8525653a // indirect
 	github.com/hashicorp/vault/api v1.0.5-0.20191108163347-bdd38fca2cff // indirect
 	github.com/hashicorp/vault/sdk v0.1.14-0.20191112033314-390e96e22eb2
