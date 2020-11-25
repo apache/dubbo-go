@@ -44,7 +44,8 @@ const (
 )
 
 var (
-	errTooManySessions = perrors.New("too many sessions")
+	errTooManySessions      = perrors.New("too many sessions")
+	errHeartbeatReadTimeout = perrors.New("heartbeat read timeout")
 )
 
 type rpcSession struct {
@@ -124,7 +125,7 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 		if p.Error != nil {
 			logger.Errorf("rpc heartbeat response{error: %#v}", p.Error)
 		}
-		h.conn.pool.rpcClient.responseHandler.Handler(p)
+		p.Handle()
 		return
 	}
 
@@ -132,7 +133,7 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 	h.conn.updateSession(session)
 
-	h.conn.pool.rpcClient.responseHandler.Handler(p)
+	p.Handle()
 }
 
 // OnCron check the session health periodic. if the session's sessionTimeout has reached, just close the session
@@ -163,7 +164,7 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 		h.timeoutTimes = 0
 	}
 
-	if err := h.conn.pool.rpcClient.heartbeat(session, h.conn.pool.rpcClient.conf.heartbeatTimeout, heartbeatCallBack); err != nil {
+	if err := heartbeat(session, h.conn.pool.rpcClient.conf.heartbeatTimeout, heartbeatCallBack); err != nil {
 		logger.Warnf("failed to send heartbeat, error{%v}", err)
 	}
 }
@@ -179,6 +180,7 @@ type RpcServerHandler struct {
 	sessionMap     map[getty.Session]*rpcSession
 	rwlock         sync.RWMutex
 	server         *Server
+	timeoutTimes   int
 }
 
 // nolint
@@ -246,11 +248,8 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 			logger.Debugf("get rpc heartbeat response{%#v}", res)
 			if res.Error != nil {
 				logger.Errorf("rpc heartbeat response{error: %#v}", res.Error)
-				h.rwlock.Lock()
-				delete(h.sessionMap, session)
-				h.rwlock.Unlock()
-				session.Close()
 			}
+			res.Handle()
 			return
 		}
 		logger.Errorf("illegal package but not heartbeart. {%#v}", pkg)
@@ -334,7 +333,25 @@ func (h *RpcServerHandler) OnCron(session getty.Session) {
 		session.Close()
 	}
 
-	heartbeat(session)
+	heartbeatCallBack := func(err error) {
+		if err != nil {
+			logger.Warnf("failed to send heartbeat, error{%v}", err)
+			if h.timeoutTimes >= 3 {
+				h.rwlock.Lock()
+				delete(h.sessionMap, session)
+				h.rwlock.Unlock()
+				session.Close()
+				return
+			}
+			h.timeoutTimes++
+			return
+		}
+		h.timeoutTimes = 0
+	}
+
+	if err := heartbeat(session, h.server.conf.heartbeatTimeout, heartbeatCallBack); err != nil {
+		logger.Warnf("failed to send heartbeat, error{%v}", err)
+	}
 }
 
 func reply(session getty.Session, resp *remoting.Response) {
@@ -343,11 +360,24 @@ func reply(session getty.Session, resp *remoting.Response) {
 	}
 }
 
-func heartbeat(session getty.Session) {
+func heartbeat(session getty.Session, timeout time.Duration, callBack func(err error)) error {
 	req := remoting.NewRequest("2.0.2")
 	req.TwoWay = true
 	req.Event = true
-	if err := session.WritePkg(req, WritePkg_Timeout); err != nil {
-		logger.Errorf("WritePkg error: %#v, %#v", perrors.WithStack(err), req)
-	}
+	resp := remoting.NewPendingResponse(req.ID)
+	remoting.AddPendingResponse(resp)
+	err := session.WritePkg(req, 3*time.Second)
+
+	go func() {
+		var err1 error
+		select {
+		case <-getty.GetTimeWheel().After(timeout):
+			err1 = errHeartbeatReadTimeout
+		case <-resp.Done:
+			err1 = resp.Err
+		}
+		callBack(err1)
+	}()
+
+	return perrors.WithStack(err)
 }
