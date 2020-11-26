@@ -36,7 +36,7 @@ type JsonrpcInvoker struct {
 }
 
 // NewJsonrpcInvoker creates JSON RPC invoker with @url and @client
-func NewJsonrpcInvoker(url common.URL, client *HTTPClient) *JsonrpcInvoker {
+func NewJsonrpcInvoker(url *common.URL, client *HTTPClient) *JsonrpcInvoker {
 	return &JsonrpcInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,

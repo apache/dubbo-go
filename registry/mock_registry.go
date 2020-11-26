@@ -47,12 +47,12 @@ func NewMockRegistry(url *common.URL) (Registry, error) {
 }
 
 // Register is used as a mock registry
-func (*MockRegistry) Register(url common.URL) error {
+func (*MockRegistry) Register(url *common.URL) error {
 	return nil
 }
 
 // nolint
-func (r *MockRegistry) UnRegister(conf common.URL) error {
+func (r *MockRegistry) UnRegister(conf *common.URL) error {
 	return nil
 }
 
@@ -68,8 +68,8 @@ func (r *MockRegistry) IsAvailable() bool {
 }
 
 // nolint
-func (r *MockRegistry) GetUrl() common.URL {
-	return common.URL{}
+func (r *MockRegistry) GetUrl() *common.URL {
+	return nil
 }
 
 func (r *MockRegistry) subscribe(*common.URL) (Listener, error) {
