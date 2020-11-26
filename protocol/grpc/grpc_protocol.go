@@ -18,11 +18,13 @@
 package grpc
 
 import (
+	"strconv"
 	"sync"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
@@ -65,7 +67,7 @@ func (gp *GrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	return exporter
 }
 
-func (gp *GrpcProtocol) openServer(url common.URL) {
+func (gp *GrpcProtocol) openServer(url *common.URL) {
 	_, ok := gp.serverMap[url.Location]
 	if !ok {
 		_, ok := gp.ExporterMap().Load(url.ServiceKey())
@@ -76,7 +78,9 @@ func (gp *GrpcProtocol) openServer(url common.URL) {
 		gp.serverLock.Lock()
 		_, ok = gp.serverMap[url.Location]
 		if !ok {
+			grpcMessageSize, _ := strconv.Atoi(url.GetParam(constant.MESSAGE_SIZE_KEY, "4"))
 			srv := NewServer()
+			srv.SetBufferSize(grpcMessageSize)
 			gp.serverMap[url.Location] = srv
 			srv.Start(url)
 		}
@@ -85,7 +89,7 @@ func (gp *GrpcProtocol) openServer(url common.URL) {
 }
 
 // Refer a remote gRPC service
-func (gp *GrpcProtocol) Refer(url common.URL) protocol.Invoker {
+func (gp *GrpcProtocol) Refer(url *common.URL) protocol.Invoker {
 	invoker := NewGrpcInvoker(url, NewClient(url))
 	gp.SetInvokers(invoker)
 	logger.Infof("Refer service: %s", url.String())
