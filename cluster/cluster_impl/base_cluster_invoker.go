@@ -22,7 +22,6 @@ import (
 )
 
 import (
-	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
 )
@@ -32,6 +31,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
 )
 
@@ -51,7 +51,7 @@ func newBaseClusterInvoker(directory cluster.Directory) baseClusterInvoker {
 	}
 }
 
-func (invoker *baseClusterInvoker) GetUrl() common.URL {
+func (invoker *baseClusterInvoker) GetUrl() *common.URL {
 	return invoker.directory.GetUrl()
 }
 
@@ -72,7 +72,7 @@ func (invoker *baseClusterInvoker) IsAvailable() bool {
 //check invokers availables
 func (invoker *baseClusterInvoker) checkInvokers(invokers []protocol.Invoker, invocation protocol.Invocation) error {
 	if len(invokers) == 0 {
-		ip, _ := gxnet.GetLocalIP()
+		ip := common.GetLocalIp()
 		return perrors.Errorf("Failed to invoke the method %v. No provider available for the service %v from "+
 			"registry %v on the consumer %v using the dubbo version %v .Please check if the providers have been started and registered.",
 			invocation.MethodName(), invoker.directory.GetUrl().SubURL.Key(), invoker.directory.GetUrl().String(), ip, constant.Version)
@@ -84,7 +84,7 @@ func (invoker *baseClusterInvoker) checkInvokers(invokers []protocol.Invoker, in
 //check cluster invoker is destroyed or not
 func (invoker *baseClusterInvoker) checkWhetherDestroyed() error {
 	if invoker.destroyed.Load() {
-		ip, _ := gxnet.GetLocalIP()
+		ip := common.GetLocalIp()
 		return perrors.Errorf("Rpc cluster invoker for %v on consumer %v use dubbo version %v is now destroyed! can not invoke any more. ",
 			invoker.directory.GetUrl().Service(), ip, constant.Version)
 	}
@@ -120,6 +120,10 @@ func (invoker *baseClusterInvoker) doSelect(lb cluster.LoadBalance, invocation p
 }
 
 func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invocation protocol.Invocation, invokers []protocol.Invoker, invoked []protocol.Invoker) protocol.Invoker {
+	if len(invokers) == 0 {
+		logger.Errorf("the invokers of %s is nil. ", invocation.Invoker().GetUrl().ServiceKey())
+		return nil
+	}
 	if len(invokers) == 1 {
 		return invokers[0]
 	}
@@ -134,6 +138,8 @@ func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invoc
 
 		for _, invoker := range invokers {
 			if !invoker.IsAvailable() {
+				logger.Infof("the invoker of %s is not available, maybe some network error happened or the server is shutdown.",
+					invoker.GetUrl().Ip)
 				continue
 			}
 
@@ -145,6 +151,7 @@ func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invoc
 		if len(reslectInvokers) > 0 {
 			selectedInvoker = lb.Select(reslectInvokers, invocation)
 		} else {
+			logger.Errorf("all %d invokers is unavailable for %s.", len(invokers), selectedInvoker.GetUrl().String())
 			return nil
 		}
 	}

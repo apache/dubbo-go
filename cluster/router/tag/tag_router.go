@@ -194,8 +194,8 @@ func (c *tagRouter) Process(event *config_center.ConfigChangeEvent) {
 }
 
 // URL gets the url of tagRouter
-func (c *tagRouter) URL() common.URL {
-	return *c.url
+func (c *tagRouter) URL() *common.URL {
+	return c.url
 }
 
 // Priority gets the priority of tagRouter

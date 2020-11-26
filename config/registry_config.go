@@ -111,7 +111,7 @@ func loadRegistries(targetRegistries string, registries map[string]*RegistryConf
 				logger.Errorf("The registry id: %s url is invalid, error: %#v", k, err)
 				panic(err)
 			} else {
-				urls = append(urls, &url)
+				urls = append(urls, url)
 			}
 		}
 	}
