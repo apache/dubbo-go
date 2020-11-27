@@ -1,9 +1,12 @@
-github.com/LaurenceLiZhixin/dubbo-go-hessian2 v1.7.2 h1:0lpEXT7zLWbWuqhrSPKZvtJ7nRfHzxg+dL4DI4dvmEQ=
-github.com/LaurenceLiZhixin/dubbo-go-hessian2 v1.7.2/go.mod h1:/e2CHYUlackFzP9rqYdQcaVJRaqRYFJz90jap5WfUeE=
-github.com/LaurenceLiZhixin/dubbo-go-hessian2 v1.7.3 h1:j2WAG6LPvsBmAqItsKxbwDNjlNqAeKzTQLQJlb9AXuw=
-github.com/LaurenceLiZhixin/dubbo-go-hessian2 v1.7.3/go.mod h1:/e2CHYUlackFzP9rqYdQcaVJRaqRYFJz90jap5WfUeE=
 github.com/LaurenceLiZhixin/json-interface-parser v0.0.0-20201026115035-e5b01058601f h1:c90ZYRHVlFi8Aj1KRRFI9sCT0DCETIi5FRDnIFA5hnw=
 github.com/LaurenceLiZhixin/json-interface-parser v0.0.0-20201026115035-e5b01058601f/go.mod h1:yg2osnKrQzem36qLj76dkKwUJ3kA/4n3HT5KBP0fbts=
+github.com/LaurenceLiZhixin/json-interface-parser v1.0.0 h1:Fp9oOCU5PpcIkJTrkL/UBaHqyGiMNo9Afzj/RK5sNNY=
+github.com/LaurenceLiZhixin/json-interface-parser v1.0.0/go.mod h1:RsBCa3XcOJrZZW53oapt+kCrJSspPjnL/BRaO4dgePk=
+github.com/LaurenceLiZhixin/json-interface-parser v1.0.1 h1:TaOM0NU8SvjZmMjMI0ZOmouA79p7rtOxzJWqcUh6/Io=
+github.com/LaurenceLiZhixin/json-interface-parser v1.0.1/go.mod h1:EHNz266pzyRpgnfCUCEVNvnakrMBtG3Z/nD7uulKR9Q=
+github.com/apache/dubbo-go-hessian2 v1.2.5-0.20201127003856-07e93979195d/go.mod h1:7rEw9guWABQa6Aqb8HeZcsYPHsOS7XT1qtJvkmI6c5w=
+github.com/apache/dubbo-go-hessian2 v1.6.1-0.20201127003856-07e93979195d h1:oTTnZ0pYQCeqwxjBitAl3i6CGa/DPP+GJR83uu4ccVk=
+github.com/apache/dubbo-go-hessian2 v1.6.1-0.20201127003856-07e93979195d/go.mod h1:7rEw9guWABQa6Aqb8HeZcsYPHsOS7XT1qtJvkmI6c5w=
 github.com/apache/dubbo-go-hessian2 v1.7.0 h1:u2XxIuepu/zb6JcGZc7EbvKboXdKoJbf7rbmeq6SF1w=
 github.com/apache/dubbo-go-hessian2 v1.7.0/go.mod h1:7rEw9guWABQa6Aqb8HeZcsYPHsOS7XT1qtJvkmI6c5w=
 github.com/buger/jsonparser v1.0.0 h1:etJTGF5ESxjI0Ic2UaLQs2LQQpa8G9ykQScukbh4L8A=
