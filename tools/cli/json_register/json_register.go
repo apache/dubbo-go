@@ -24,8 +24,8 @@ import (
 )
 
 import (
-	hessian "github.com/LaurenceLiZhixin/dubbo-go-hessian2"
 	jparser "github.com/LaurenceLiZhixin/json-interface-parser"
+	hessian "github.com/apache/dubbo-go-hessian2"
 )
 
 import (
