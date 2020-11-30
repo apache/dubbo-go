@@ -18,7 +18,6 @@ package remoting
 
 import (
 	"errors"
-	"sync"
 	"time"
 )
 
@@ -28,19 +27,10 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-var (
-	// store requestID and response
-	pendingResponses = new(sync.Map)
-)
-
-type SequenceType int64
-
 // It is interface of client for network communication.
 // If you use getty as network communication, you should define GettyClient that implements this interface.
 type Client interface {
 	SetExchangeClient(client *ExchangeClient)
-	// responseHandler is used to deal with msg
-	SetResponseHandler(responseHandler ResponseHandler)
 	// connect url
 	Connect(url *common.URL) error
 	// close
@@ -63,11 +53,6 @@ type ExchangeClient struct {
 	init bool
 }
 
-// handle the message from server
-type ResponseHandler interface {
-	Handler(response *Response)
-}
-
 // create ExchangeClient
 func NewExchangeClient(url *common.URL, client Client, connectTimeout time.Duration, lazyInit bool) *ExchangeClient {
 	exchangeClient := &ExchangeClient{
@@ -82,7 +67,6 @@ func NewExchangeClient(url *common.URL, client Client, connectTimeout time.Durat
 		}
 	}
 
-	client.SetResponseHandler(exchangeClient)
 	return exchangeClient
 }
 
@@ -189,48 +173,4 @@ func (client *ExchangeClient) Close() {
 // IsAvailable to check if the underlying network client is available yet.
 func (client *ExchangeClient) IsAvailable() bool {
 	return client.client.IsAvailable()
-}
-
-// handle the response from server
-func (client *ExchangeClient) Handler(response *Response) {
-
-	pendingResponse := removePendingResponse(SequenceType(response.ID))
-	if pendingResponse == nil {
-		logger.Errorf("failed to get pending response context for response package %s", *response)
-		return
-	}
-
-	pendingResponse.response = response
-
-	if pendingResponse.Callback == nil {
-		pendingResponse.Err = pendingResponse.response.Error
-		close(pendingResponse.Done)
-	} else {
-		pendingResponse.Callback(pendingResponse.GetCallResponse())
-	}
-}
-
-// store response into map
-func AddPendingResponse(pr *PendingResponse) {
-	pendingResponses.Store(SequenceType(pr.seq), pr)
-}
-
-// get and remove response
-func removePendingResponse(seq SequenceType) *PendingResponse {
-	if pendingResponses == nil {
-		return nil
-	}
-	if presp, ok := pendingResponses.Load(seq); ok {
-		pendingResponses.Delete(seq)
-		return presp.(*PendingResponse)
-	}
-	return nil
-}
-
-// get response
-func GetPendingResponse(seq SequenceType) *PendingResponse {
-	if presp, ok := pendingResponses.Load(seq); ok {
-		return presp.(*PendingResponse)
-	}
-	return nil
 }

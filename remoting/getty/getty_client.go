@@ -118,13 +118,12 @@ type Options struct {
 
 // Client : some configuration for network communication.
 type Client struct {
-	addr            string
-	opts            Options
-	conf            ClientConfig
-	pool            *gettyRPCClientPool
-	codec           remoting.Codec
-	responseHandler remoting.ResponseHandler
-	ExchangeClient  *remoting.ExchangeClient
+	addr           string
+	opts           Options
+	conf           ClientConfig
+	pool           *gettyRPCClientPool
+	codec          remoting.Codec
+	ExchangeClient *remoting.ExchangeClient
 }
 
 // create client
@@ -145,9 +144,6 @@ func NewClient(opt Options) *Client {
 
 func (c *Client) SetExchangeClient(client *remoting.ExchangeClient) {
 	c.ExchangeClient = client
-}
-func (c *Client) SetResponseHandler(responseHandler remoting.ResponseHandler) {
-	c.responseHandler = responseHandler
 }
 
 // init client and try to connection.
@@ -218,15 +214,6 @@ func (c *Client) selectSession(addr string) (*gettyRPCClient, getty.Session, err
 		return nil, nil, perrors.WithStack(err)
 	}
 	return rpcClient, rpcClient.selectSession(), nil
-}
-
-func (c *Client) heartbeat(session getty.Session) error {
-	req := remoting.NewRequest("2.0.2")
-	req.TwoWay = true
-	req.Event = true
-	resp := remoting.NewPendingResponse(req.ID)
-	remoting.AddPendingResponse(resp)
-	return c.transfer(session, req, 3*time.Second)
 }
 
 func (c *Client) transfer(session getty.Session, request *remoting.Request, timeout time.Duration) error {
