@@ -127,15 +127,15 @@ func (r *zkRegistry) InitListeners() {
 		oldDataListener := r.dataListener
 		oldDataListener.mutex.Lock()
 		defer oldDataListener.mutex.Unlock()
-		recoverd := r.dataListener.subscribed
-		if recoverd != nil && len(recoverd) > 0 {
+		r.dataListener.closed = true
+		recovered := r.dataListener.subscribed
+		if recovered != nil && len(recovered) > 0 {
 			// recover all subscribed url
-			for _, oldListener := range recoverd {
+			for _, oldListener := range recovered {
 				var (
 					regConfigListener *RegistryConfigurationListener
 					ok                bool
 				)
-
 				if regConfigListener, ok = oldListener.(*RegistryConfigurationListener); ok {
 					regConfigListener.Close()
 				}
@@ -292,10 +292,10 @@ func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationL
 	r.dataListener.mutex.Lock()
 	configurationListener := r.dataListener.subscribed[conf.ServiceKey()]
 	if configurationListener != nil {
-
 		zkListener, _ := configurationListener.(*RegistryConfigurationListener)
 		if zkListener != nil {
 			if zkListener.isClosed {
+				r.dataListener.mutex.Unlock()
 				return nil, perrors.New("configListener already been closed")
 			}
 		}
