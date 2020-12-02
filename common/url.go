@@ -432,7 +432,7 @@ func (c *URL) SetParam(key string, value string) {
 // 1. if there already has same key, the value will be override
 // 2. it's not thread safe
 // usually it should only be invoked when you want to modify an url, such as MergeURL
-func (c *URL) SetParams(param url.Values) {
+func (c *URL) ReplaceParams(param url.Values) {
 	c.paramsLock.Lock()
 	defer c.paramsLock.Unlock()
 	c.params = param
@@ -570,15 +570,15 @@ func (c *URL) GetMethodParamBool(method string, key string, d bool) bool {
 	return r
 }
 
-// SetParams will put all key-value pair into url.
-// 1. if there already has same key, the value will be override
-// 2. it's not thread safe
-// 3. think twice when you want to invoke this method
-//func (c *URL) SetParams(m url.Values) {
-//	for k := range m {
-//		c.SetParam(k, m.Get(k))
-//	}
-//}
+//SetParams will put all key-value pair into url.
+//1. if there already has same key, the value will be override
+//2. it's not thread safe
+//3. think twice when you want to invoke this method
+func (c *URL) SetParams(m url.Values) {
+	for k := range m {
+		c.SetParam(k, m.Get(k))
+	}
+}
 
 // ToMap transfer URL to Map
 func (c *URL) ToMap() map[string]string {
@@ -659,7 +659,7 @@ func MergeUrl(serviceUrl *URL, referenceUrl *URL) *URL {
 		}
 	}
 	// In this way, we will raise some performance.
-	mergedUrl.SetParams(params)
+	mergedUrl.ReplaceParams(params)
 	return mergedUrl
 }
 
