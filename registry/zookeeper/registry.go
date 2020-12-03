@@ -212,6 +212,9 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 
 	r.cltLock.Lock()
 	defer r.cltLock.Unlock()
+	if r.client == nil{
+		return perrors.WithStack(perrors.New("zk client already been closed"))
+	}
 	err = r.client.Create(root)
 	if err != nil {
 		logger.Errorf("zk.Create(root{%s}) = err{%v}", root, perrors.WithStack(err))
