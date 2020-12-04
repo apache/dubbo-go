@@ -24,7 +24,7 @@ import (
 )
 
 import (
-	jparser "github.com/LaurenceLiZhixin/json-interface-parser"
+	jparser "github.com/LaurenceLiZhixin/gost/encoding/json"
 	hessian "github.com/apache/dubbo-go-hessian2"
 )
 
@@ -38,12 +38,15 @@ func RegisterStructFromFile(path string) interface{} {
 	if path == "" {
 		return nil
 	}
-	pkg, err := jparser.JsonFile2Interface(path)
+	pair,pkg, err := jparser.File2Interface(path)
 	log.Printf("Created pkg: \n")
 	common.PrintInterface(pkg)
 	if err != nil {
 		fmt.Println("error: json file parse failed :", err)
 		return nil
+	}
+	for _,v := range pair{
+		hessian.RegisterPOJOMapping(v.JavaClassName, v.Obj)
 	}
 	hessian.RegisterPOJOMapping(getJavaClassName(pkg), pkg)
 	return pkg
