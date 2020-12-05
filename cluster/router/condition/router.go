@@ -25,7 +25,6 @@ import (
 import (
 	"github.com/RoaringBitmap/roaring"
 	"github.com/dubbogo/gost/container/set"
-	"github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 )
 
@@ -139,8 +138,8 @@ func (c *ConditionRouter) Priority() int64 {
 }
 
 // URL Return URL in condition router
-func (c *ConditionRouter) URL() common.URL {
-	return *c.url
+func (c *ConditionRouter) URL() *common.URL {
+	return c.url
 }
 
 // Enabled Return is condition router is enabled
@@ -174,7 +173,7 @@ func (c *ConditionRouter) Route(invokers *roaring.Bitmap, cache router.Cache, ur
 		index := iter.Next()
 		invoker := cache.GetInvokers()[index]
 		invokerUrl := invoker.GetUrl()
-		isMatchThen := c.MatchThen(&invokerUrl, url)
+		isMatchThen := c.MatchThen(invokerUrl, url)
 		if isMatchThen {
 			result.Add(index)
 		}
@@ -184,7 +183,7 @@ func (c *ConditionRouter) Route(invokers *roaring.Bitmap, cache router.Cache, ur
 		return result
 	} else if c.Force {
 		rule, _ := url.GetParamAndDecoded(constant.RULE_KEY)
-		localIP, _ := gxnet.GetLocalIP()
+		localIP := common.GetLocalIp()
 		logger.Warnf("The route result is empty and force execute. consumer: %s, service: %s, router: %s", localIP, url.Service(), rule)
 		return result
 	}

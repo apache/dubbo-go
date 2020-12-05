@@ -73,7 +73,7 @@ func initNacosData(t *testing.T) (*nacosDynamicConfiguration, error) {
 	nacosURL := strings.ReplaceAll(server.URL, "http", "registry")
 	regurl, _ := common.NewURL(nacosURL)
 	factory := &nacosDynamicConfigurationFactory{}
-	nacosConfiguration, err := factory.GetDynamicConfiguration(&regurl)
+	nacosConfiguration, err := factory.GetDynamicConfiguration(regurl)
 	assert.NoError(t, err)
 
 	nacosConfiguration.SetParser(&parser.DefaultConfigurationParser{})
@@ -105,7 +105,7 @@ func TestNacosDynamicConfiguration_GetConfigKeysByGroup(t *testing.T) {
 
 	nacosURL := strings.ReplaceAll(ts.URL, "http", "registry")
 	regurl, _ := common.NewURL(nacosURL)
-	nacosConfiguration, err := newNacosDynamicConfiguration(&regurl)
+	nacosConfiguration, err := newNacosDynamicConfiguration(regurl)
 	assert.NoError(t, err)
 
 	nacosConfiguration.SetParser(&parser.DefaultConfigurationParser{})
