@@ -73,6 +73,7 @@ type ServiceConfig struct {
 	Auth                        string            `yaml:"auth" json:"auth,omitempty" property:"auth"`
 	ParamSign                   string            `yaml:"param.sign" json:"param.sign,omitempty" property:"param.sign"`
 	Tag                         string            `yaml:"tag" json:"tag,omitempty" property:"tag"`
+	GrpcMaxMessageSize          int               `default:"4" yaml:"max_message_size" json:"max_message_size,omitempty"`
 
 	Protocols     map[string]*ProtocolConfig
 	unexported    *atomic.Bool
@@ -207,7 +208,7 @@ func (c *ServiceConfig) Export() error {
 
 			for _, regUrl := range regUrls {
 				regUrl.SubURL = ivkURL
-				invoker := proxyFactory.GetInvoker(*regUrl)
+				invoker := proxyFactory.GetInvoker(regUrl)
 				exporter := c.cacheProtocol.Export(invoker)
 				if exporter == nil {
 					return perrors.New(fmt.Sprintf("Registry protocol new exporter error, registry is {%v}, url is {%v}", regUrl, ivkURL))
@@ -215,7 +216,7 @@ func (c *ServiceConfig) Export() error {
 				c.exporters = append(c.exporters, exporter)
 			}
 		} else {
-			invoker := proxyFactory.GetInvoker(*ivkURL)
+			invoker := proxyFactory.GetInvoker(ivkURL)
 			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {
 				return perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error, url is {%v}", ivkURL))
@@ -271,6 +272,7 @@ func (c *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
 	urlMap.Set(constant.RELEASE_KEY, "dubbo-golang-"+constant.Version)
 	urlMap.Set(constant.SIDE_KEY, (common.RoleType(common.PROVIDER)).Role())
+	urlMap.Set(constant.MESSAGE_SIZE_KEY, strconv.Itoa(c.GrpcMaxMessageSize))
 	// todo: move
 	urlMap.Set(constant.SERIALIZATION_KEY, c.Serialization)
 	// application info
@@ -324,8 +326,7 @@ func (c *ServiceConfig) GetExportedUrls() []*common.URL {
 	if c.exported.Load() {
 		var urls []*common.URL
 		for _, exporter := range c.exporters {
-			url := exporter.GetInvoker().GetUrl()
-			urls = append(urls, &url)
+			urls = append(urls, exporter.GetInvoker().GetUrl())
 		}
 		return urls
 	}

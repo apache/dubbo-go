@@ -130,13 +130,13 @@ func newHistogramVec(side string) *prometheus.HistogramVec {
 }
 
 // whether this url represents the application received the request as server
-func isProvider(url common.URL) bool {
+func isProvider(url *common.URL) bool {
 	role := url.GetParam(constant.ROLE_KEY, "")
 	return strings.EqualFold(role, strconv.Itoa(common.PROVIDER))
 }
 
 // whether this url represents the application sent then request as client
-func isConsumer(url common.URL) bool {
+func isConsumer(url *common.URL) bool {
 	role := url.GetParam(constant.ROLE_KEY, "")
 	return strings.EqualFold(role, strconv.Itoa(common.CONSUMER))
 }

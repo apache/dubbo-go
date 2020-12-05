@@ -25,7 +25,6 @@ import (
 )
 
 import (
-	gxnet "github.com/dubbogo/gost/net"
 	consul "github.com/hashicorp/consul/api"
 	perrors "github.com/pkg/errors"
 )
@@ -34,12 +33,12 @@ import (
 	"github.com/apache/dubbo-go/common"
 )
 
-func buildId(url common.URL) string {
+func buildId(url *common.URL) string {
 	t := md5.Sum([]byte(url.String()))
 	return hex.EncodeToString(t[:])
 }
 
-func buildService(url common.URL) (*consul.AgentServiceRegistration, error) {
+func buildService(url *common.URL) (*consul.AgentServiceRegistration, error) {
 	var err error
 
 	// id
@@ -47,7 +46,7 @@ func buildService(url common.URL) (*consul.AgentServiceRegistration, error) {
 
 	// address
 	if url.Ip == "" {
-		url.Ip, _ = gxnet.GetLocalIP()
+		url.Ip = common.GetLocalIp()
 	}
 
 	// port
@@ -94,19 +93,19 @@ func buildService(url common.URL) (*consul.AgentServiceRegistration, error) {
 	return service, nil
 }
 
-func retrieveURL(service *consul.ServiceEntry) (common.URL, error) {
+func retrieveURL(service *consul.ServiceEntry) (*common.URL, error) {
 	url, ok := service.Service.Meta["url"]
 	if !ok {
-		return common.URL{}, perrors.New("retrieve url fails with no url key in service meta")
+		return nil, perrors.New("retrieve url fails with no url key in service meta")
 	}
 	url1, err := common.NewURL(url)
 	if err != nil {
-		return common.URL{}, perrors.WithStack(err)
+		return nil, perrors.WithStack(err)
 	}
 	return url1, nil
 }
 
-func in(url common.URL, urls []common.URL) bool {
+func in(url *common.URL, urls []*common.URL) bool {
 	for _, url1 := range urls {
 		if url.URLEqual(url1) {
 			return true

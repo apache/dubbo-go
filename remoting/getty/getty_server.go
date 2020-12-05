@@ -103,7 +103,7 @@ type Server struct {
 }
 
 // NewServer create a new Server
-func NewServer(url common.URL, handlers func(*invocation.RPCInvocation) protocol.RPCResult) *Server {
+func NewServer(url *common.URL, handlers func(*invocation.RPCInvocation) protocol.RPCResult) *Server {
 	//init
 	initServer(url.Protocol)
 
@@ -140,7 +140,7 @@ func (s *Server) newSession(session getty.Session) error {
 		session.SetWQLen(conf.GettySessionParam.PkgWQSize)
 		session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
 		session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
-		session.SetCronPeriod((int)(conf.sessionTimeout.Nanoseconds() / 1e6))
+		session.SetCronPeriod((int)(conf.heartbeatPeriod.Nanoseconds() / 1e6))
 		session.SetWaitTime(conf.GettySessionParam.waitTimeout)
 		logger.Debugf("server accepts new session:%s\n", session.Stat())
 		return nil
@@ -180,7 +180,7 @@ func (s *Server) newSession(session getty.Session) error {
 	session.SetWQLen(conf.GettySessionParam.PkgWQSize)
 	session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
 	session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
-	session.SetCronPeriod((int)(conf.sessionTimeout.Nanoseconds() / 1e6))
+	session.SetCronPeriod((int)(conf.heartbeatPeriod.Nanoseconds() / 1e6))
 	session.SetWaitTime(conf.GettySessionParam.waitTimeout)
 	logger.Debugf("server accepts new session: %s", session.Stat())
 	return nil

@@ -43,7 +43,7 @@ type RestInvoker struct {
 }
 
 // NewRestInvoker returns a RestInvoker
-func NewRestInvoker(url common.URL, client *client.RestClient, restMethodConfig map[string]*config.RestMethodConfig) *RestInvoker {
+func NewRestInvoker(url *common.URL, client *client.RestClient, restMethodConfig map[string]*config.RestMethodConfig) *RestInvoker {
 	return &RestInvoker{
 		BaseInvoker:         *protocol.NewBaseInvoker(url),
 		client:              *client,

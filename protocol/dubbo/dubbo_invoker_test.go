@@ -93,7 +93,7 @@ func TestDubboInvokerInvoke(t *testing.T) {
 	proto.Destroy()
 }
 
-func InitTest(t *testing.T) (protocol.Protocol, common.URL) {
+func InitTest(t *testing.T) (protocol.Protocol, *common.URL) {
 
 	hessian.RegisterPOJO(&User{})
 

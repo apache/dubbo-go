@@ -68,18 +68,27 @@ func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface
 // Write send the data to server
 func (p *RpcClientPackageHandler) Write(ss getty.Session, pkg interface{}) ([]byte, error) {
 	req, ok := pkg.(*remoting.Request)
-	if !ok {
-		logger.Errorf("illegal pkg:%+v\n", pkg)
-		return nil, perrors.New("invalid rpc request")
+	if ok {
+		buf, err := (p.client.codec).EncodeRequest(req)
+		if err != nil {
+			logger.Warnf("binary.Write(req{%#v}) = err{%#v}", req, perrors.WithStack(err))
+			return nil, perrors.WithStack(err)
+		}
+		return buf.Bytes(), nil
 	}
 
-	buf, err := (p.client.codec).EncodeRequest(req)
-	if err != nil {
-		logger.Warnf("binary.Write(req{%#v}) = err{%#v}", req, perrors.WithStack(err))
-		return nil, perrors.WithStack(err)
+	res, ok := pkg.(*remoting.Response)
+	if ok {
+		buf, err := (p.client.codec).EncodeResponse(res)
+		if err != nil {
+			logger.Warnf("binary.Write(res{%#v}) = err{%#v}", req, perrors.WithStack(err))
+			return nil, perrors.WithStack(err)
+		}
+		return buf.Bytes(), nil
 	}
 
-	return buf.Bytes(), nil
+	logger.Errorf("illegal pkg:%+v\n", pkg)
+	return nil, perrors.New("invalid rpc request")
 }
 
 ////////////////////////////////////////////
@@ -120,16 +129,26 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 // Write send the data to client
 func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg interface{}) ([]byte, error) {
 	res, ok := pkg.(*remoting.Response)
-	if !ok {
-		logger.Errorf("illegal pkg:%+v\n, it is %+v", pkg, reflect.TypeOf(pkg))
-		return nil, perrors.New("invalid rpc response")
+	if ok {
+		buf, err := (p.server.codec).EncodeResponse(res)
+		if err != nil {
+			logger.Warnf("binary.Write(res{%#v}) = err{%#v}", res, perrors.WithStack(err))
+			return nil, perrors.WithStack(err)
+		}
+		return buf.Bytes(), nil
 	}
 
-	buf, err := (p.server.codec).EncodeResponse(res)
-	if err != nil {
-		logger.Warnf("binary.Write(res{%#v}) = err{%#v}", res, perrors.WithStack(err))
-		return nil, perrors.WithStack(err)
+	req, ok := pkg.(*remoting.Request)
+	if ok {
+		buf, err := (p.server.codec).EncodeRequest(req)
+		if err != nil {
+			logger.Warnf("binary.Write(req{%#v}) = err{%#v}", res, perrors.WithStack(err))
+			return nil, perrors.WithStack(err)
+		}
+		return buf.Bytes(), nil
 	}
 
-	return buf.Bytes(), nil
+	logger.Errorf("illegal pkg:%+v\n, it is %+v", pkg, reflect.TypeOf(pkg))
+	return nil, perrors.New("invalid rpc response")
+
 }
