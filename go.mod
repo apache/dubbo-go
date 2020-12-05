@@ -6,12 +6,12 @@ require (
 	github.com/Workiva/go-datastructures v1.0.50
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
 	github.com/alibaba/sentinel-golang v0.6.1
-	github.com/apache/dubbo-getty v1.3.10
+	github.com/apache/dubbo-getty v1.4.1-rc1
 	github.com/apache/dubbo-go-hessian2 v1.7.0
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/creasty/defaults v1.3.0
 	github.com/dubbogo/go-zookeeper v1.0.1
-	github.com/dubbogo/gost v1.9.1
+	github.com/dubbogo/gost v1.9.8
 	github.com/elazarl/go-bindata-assetfs v1.0.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.0.0
 	github.com/frankban/quicktest v1.4.1 // indirect
@@ -37,7 +37,7 @@ require (
 	github.com/prometheus/client_golang v1.1.0
 	github.com/satori/go.uuid v1.2.1-0.20181028125025-b2ce2384e17b
 	github.com/stretchr/objx v0.2.0 // indirect
-	github.com/stretchr/testify v1.5.1
+	github.com/stretchr/testify v1.6.1
 	github.com/zouyx/agollo/v3 v3.4.4
 	go.uber.org/atomic v1.6.0
 	go.uber.org/zap v1.15.0
