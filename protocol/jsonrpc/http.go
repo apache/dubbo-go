@@ -101,7 +101,7 @@ func NewHTTPClient(opt *HTTPOptions) *HTTPClient {
 }
 
 // NewRequest creates a new HTTP request with @service ,@method and @arguments.
-func (c *HTTPClient) NewRequest(service common.URL, method string, args interface{}) *Request {
+func (c *HTTPClient) NewRequest(service *common.URL, method string, args interface{}) *Request {
 
 	return &Request{
 		ID:       atomic.AddInt64(&c.ID, 1),
@@ -115,7 +115,7 @@ func (c *HTTPClient) NewRequest(service common.URL, method string, args interfac
 }
 
 // Call makes a HTTP call with @ctx , @service ,@req and @rsp
-func (c *HTTPClient) Call(ctx context.Context, service common.URL, req *Request, rsp interface{}) error {
+func (c *HTTPClient) Call(ctx context.Context, service *common.URL, req *Request, rsp interface{}) error {
 	// header
 	httpHeader := http.Header{}
 	httpHeader.Set("Content-Type", "application/json")

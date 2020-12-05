@@ -21,6 +21,7 @@ import (
 	"context"
 	"reflect"
 	"strings"
+	"time"
 )
 
 import (
@@ -93,13 +94,21 @@ func struct2MapAll(obj interface{}) interface{} {
 	if t.Kind() == reflect.Struct {
 		result := make(map[string]interface{}, t.NumField())
 		for i := 0; i < t.NumField(); i++ {
-			if v.Field(i).Kind() == reflect.Struct || v.Field(i).Kind() == reflect.Slice || v.Field(i).Kind() == reflect.Map {
-				if v.Field(i).CanInterface() {
-					setInMap(result, t.Field(i), struct2MapAll(v.Field(i).Interface()))
+			field := t.Field(i)
+			value := v.Field(i)
+			kind := value.Kind()
+			if kind == reflect.Struct || kind == reflect.Slice || kind == reflect.Map {
+				if value.CanInterface() {
+					tmp := value.Interface()
+					if _, ok := tmp.(time.Time); ok {
+						setInMap(result, field, tmp)
+						continue
+					}
+					setInMap(result, field, struct2MapAll(tmp))
 				}
 			} else {
-				if v.Field(i).CanInterface() {
-					setInMap(result, t.Field(i), v.Field(i).Interface())
+				if value.CanInterface() {
+					setInMap(result, field, value.Interface())
 				}
 			}
 		}

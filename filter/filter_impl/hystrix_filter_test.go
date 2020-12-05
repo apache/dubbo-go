@@ -18,6 +18,7 @@ package filter_impl
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"testing"
 )
@@ -29,6 +30,8 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
@@ -147,7 +150,11 @@ func (iv *testMockFailInvoker) Invoke(_ context.Context, _ protocol.Invocation) 
 
 func TestHystrixFilterInvokeSuccess(t *testing.T) {
 	hf := &HystrixFilter{}
-	result := hf.Invoke(context.Background(), &testMockSuccessInvoker{}, &invocation.RPCInvocation{})
+	testUrl, err := common.NewURL(
+		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
+	assert.NoError(t, err)
+	testInvoker := testMockSuccessInvoker{*protocol.NewBaseInvoker(testUrl)}
+	result := hf.Invoke(context.Background(), &testInvoker, &invocation.RPCInvocation{})
 	assert.NotNil(t, result)
 	assert.NoError(t, result.Error())
 	assert.NotNil(t, result.Result())
@@ -155,7 +162,11 @@ func TestHystrixFilterInvokeSuccess(t *testing.T) {
 
 func TestHystrixFilterInvokeFail(t *testing.T) {
 	hf := &HystrixFilter{}
-	result := hf.Invoke(context.Background(), &testMockFailInvoker{}, &invocation.RPCInvocation{})
+	testUrl, err := common.NewURL(
+		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
+	assert.NoError(t, err)
+	testInvoker := testMockFailInvoker{*protocol.NewBaseInvoker(testUrl)}
+	result := hf.Invoke(context.Background(), &testInvoker, &invocation.RPCInvocation{})
 	assert.NotNil(t, result)
 	assert.Error(t, result.Error())
 }
@@ -167,7 +178,11 @@ func TestHystricFilterInvokeCircuitBreak(t *testing.T) {
 	resChan := make(chan protocol.Result, 50)
 	for i := 0; i < 50; i++ {
 		go func() {
-			result := hf.Invoke(context.Background(), &testMockFailInvoker{}, &invocation.RPCInvocation{})
+			testUrl, err := common.NewURL(
+				fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
+			assert.NoError(t, err)
+			testInvoker := testMockSuccessInvoker{*protocol.NewBaseInvoker(testUrl)}
+			result := hf.Invoke(context.Background(), &testInvoker, &invocation.RPCInvocation{})
 			resChan <- result
 		}()
 	}
@@ -192,7 +207,11 @@ func TestHystricFilterInvokeCircuitBreakOmitException(t *testing.T) {
 	resChan := make(chan protocol.Result, 50)
 	for i := 0; i < 50; i++ {
 		go func() {
-			result := hf.Invoke(context.Background(), &testMockFailInvoker{}, &invocation.RPCInvocation{})
+			testUrl, err := common.NewURL(
+				fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
+			assert.NoError(t, err)
+			testInvoker := testMockSuccessInvoker{*protocol.NewBaseInvoker(testUrl)}
+			result := hf.Invoke(context.Background(), &testInvoker, &invocation.RPCInvocation{})
 			resChan <- result
 		}()
 	}
