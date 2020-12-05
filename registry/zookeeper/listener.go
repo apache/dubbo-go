@@ -104,6 +104,7 @@ func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 func (l *RegistryDataListener) Close() {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
+	l.closed = true
 	for _, listener := range l.subscribed {
 		listener.(*RegistryConfigurationListener).Close()
 	}
