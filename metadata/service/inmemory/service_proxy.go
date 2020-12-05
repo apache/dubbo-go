@@ -88,34 +88,34 @@ func (m *MetadataServiceProxy) ServiceName() (string, error) {
 	return "", nil
 }
 
-func (m *MetadataServiceProxy) ExportURL(url common.URL) (bool, error) {
+func (m *MetadataServiceProxy) ExportURL(url *common.URL) (bool, error) {
 	logger.Error("you should never invoke this implementation")
 	return false, nil
 }
 
-func (m *MetadataServiceProxy) UnexportURL(url common.URL) error {
+func (m *MetadataServiceProxy) UnexportURL(url *common.URL) error {
 	logger.Error("you should never invoke this implementation")
 	return nil
 }
 
-func (m *MetadataServiceProxy) SubscribeURL(url common.URL) (bool, error) {
+func (m *MetadataServiceProxy) SubscribeURL(url *common.URL) (bool, error) {
 	logger.Error("you should never invoke this implementation")
 	return false, nil
 }
 
-func (m *MetadataServiceProxy) UnsubscribeURL(url common.URL) error {
+func (m *MetadataServiceProxy) UnsubscribeURL(url *common.URL) error {
 	logger.Error("you should never invoke this implementation")
 	return nil
 }
 
-func (m *MetadataServiceProxy) PublishServiceDefinition(url common.URL) error {
+func (m *MetadataServiceProxy) PublishServiceDefinition(url *common.URL) error {
 	logger.Error("you should never invoke this implementation")
 	return nil
 }
 
-func (m *MetadataServiceProxy) GetSubscribedURLs() ([]common.URL, error) {
+func (m *MetadataServiceProxy) GetSubscribedURLs() ([]*common.URL, error) {
 	logger.Error("you should never invoke this implementation")
-	return []common.URL{}, nil
+	return nil, nil
 }
 
 func (m *MetadataServiceProxy) GetServiceDefinition(interfaceName string, group string, version string) (string, error) {

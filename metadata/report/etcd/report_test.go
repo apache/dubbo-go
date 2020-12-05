@@ -60,7 +60,7 @@ func TestEtcdMetadataReportFactory_CreateMetadataReport(t *testing.T) {
 		t.Fatal(err)
 	}
 	metadataReportFactory := &etcdMetadataReportFactory{}
-	metadataReport := metadataReportFactory.CreateMetadataReport(&url)
+	metadataReport := metadataReportFactory.CreateMetadataReport(url)
 	assert.NotNil(t, metadataReport)
 	e.Close()
 }
@@ -72,7 +72,7 @@ func TestEtcdMetadataReport_CRUD(t *testing.T) {
 		t.Fatal(err)
 	}
 	metadataReportFactory := &etcdMetadataReportFactory{}
-	metadataReport := metadataReportFactory.CreateMetadataReport(&url)
+	metadataReport := metadataReportFactory.CreateMetadataReport(url)
 	assert.NotNil(t, metadataReport)
 
 	err = metadataReport.StoreConsumerMetadata(newMetadataIdentifier("consumer"), "consumer metadata")
