@@ -88,7 +88,6 @@ func getClient(url *common.URL) *Client {
 	exchangeClient := remoting.NewExchangeClient(url, client, 5*time.Second, false)
 	client.SetExchangeClient(exchangeClient)
 	client.Connect(url)
-	client.SetResponseHandler(exchangeClient)
 	return client
 }
 
