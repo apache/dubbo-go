@@ -127,15 +127,15 @@ func (r *zkRegistry) InitListeners() {
 		oldDataListener := r.dataListener
 		oldDataListener.mutex.Lock()
 		defer oldDataListener.mutex.Unlock()
-		recoverd := r.dataListener.subscribed
-		if recoverd != nil && len(recoverd) > 0 {
+		r.dataListener.closed = true
+		recovered := r.dataListener.subscribed
+		if recovered != nil && len(recovered) > 0 {
 			// recover all subscribed url
-			for _, oldListener := range recoverd {
+			for _, oldListener := range recovered {
 				var (
 					regConfigListener *RegistryConfigurationListener
 					ok                bool
 				)
-
 				if regConfigListener, ok = oldListener.(*RegistryConfigurationListener); ok {
 					regConfigListener.Close()
 				}
@@ -212,6 +212,9 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 
 	r.cltLock.Lock()
 	defer r.cltLock.Unlock()
+	if r.client == nil{
+		return perrors.WithStack(perrors.New("zk client already been closed"))
+	}
 	err = r.client.Create(root)
 	if err != nil {
 		logger.Errorf("zk.Create(root{%s}) = err{%v}", root, perrors.WithStack(err))
@@ -292,10 +295,10 @@ func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationL
 	r.dataListener.mutex.Lock()
 	configurationListener := r.dataListener.subscribed[conf.ServiceKey()]
 	if configurationListener != nil {
-
 		zkListener, _ := configurationListener.(*RegistryConfigurationListener)
 		if zkListener != nil {
 			if zkListener.isClosed {
+				r.dataListener.mutex.Unlock()
 				return nil, perrors.New("configListener already been closed")
 			}
 		}
