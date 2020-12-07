@@ -107,6 +107,7 @@ func (g *dubboGrpc) GenerateImports(file *generator.FileDescriptor) {
 	g.P(`dgrpc "github.com/apache/dubbo-go/protocol/grpc"`)
 	g.P(`"github.com/apache/dubbo-go/protocol/invocation"`)
 	g.P(`"github.com/apache/dubbo-go/protocol"`)
+	g.P(`"github.com/apache/dubbo-go/remoting/dubbo3"`)
 	g.P(` ) `)
 }
 
@@ -166,10 +167,10 @@ func (g *dubboGrpc) generateService(file *generator.FileDescriptor, service *pb.
 	g.P()
 
 	// add GetDubboStub method
-	// func (u *GrpcGreeterImpl) GetDubboStub(cc *grpc.ClientConn) GreeterClient {
+	// func (u *GrpcGreeterImpl) GetDubboStub(cc *dubbo3.TripleConn) GreeterClient {
 	//	return NewGreeterClient(cc)
 	//}
-	g.P("func (c *", dubboSrvName, ") ", " GetDubboStub(cc *grpc.ClientConn) ", servName, "Client {")
+	g.P("func (c *", dubboSrvName, ") ", " GetDubboStub(cc *dubbo3.TripleConn) ", servName, "Client {")
 	g.P(`return New`, servName, `Client(cc)`)
 	g.P("}")
 	g.P()
