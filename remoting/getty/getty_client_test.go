@@ -341,7 +341,7 @@ func InitTest(t *testing.T) (*Server, *common.URL) {
 	hessian.RegisterPOJO(&User{})
 	remoting.RegistryCodec("dubbo", &DubboTestCodec{})
 
-	methods, err := common.ServiceMap.Register("", "dubbo", &UserProvider{})
+	methods, err := common.ServiceMap.Register("", "dubbo", "", "0.0.1", &UserProvider{})
 	assert.NoError(t, err)
 	assert.Equal(t, "GetBigPkg,GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4,GetUser5,GetUser6", methods)
 
@@ -394,7 +394,7 @@ func InitTest(t *testing.T) (*Server, *common.URL) {
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
 	// init server
 	userProvider := &UserProvider{}
-	common.ServiceMap.Register("", url.Protocol, userProvider)
+	common.ServiceMap.Register("", url.Protocol, "", "0.0.1", userProvider)
 	invoker := &proxy_factory.ProxyInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 	}
