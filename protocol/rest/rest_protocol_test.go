@@ -120,8 +120,6 @@ func TestRestProtocolExport(t *testing.T) {
 	proto.Destroy()
 	_, ok = proto.(*RestProtocol).serverMap[url.Location]
 	assert.False(t, ok)
-	err = common.ServiceMap.UnRegister(url.Service(), url.Protocol, url.ServiceKey())
-	assert.NoError(t, err)
 }
 
 type UserProvider struct {
