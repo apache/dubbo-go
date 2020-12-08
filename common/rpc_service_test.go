@@ -96,12 +96,12 @@ func TestServiceMapRegister(t *testing.T) {
 
 	// repeat
 	_, err = ServiceMap.Register(testInterfaceName, "testporotocol", "", "v1", s)
-	assert.EqualError(t, err, "service already defined: com.test.Path")
+	assert.EqualError(t, err, "service already defined: testService:v1")
 
 	// no method
 	s1 := &TestService1{}
 	_, err = ServiceMap.Register(testInterfaceName, "testporotocol", "", "v2", s1)
-	assert.EqualError(t, err, "type com.test.Path1 has no exported methods of suitable type")
+	assert.EqualError(t, err, "type testService:v2 has no exported methods of suitable type")
 
 	ServiceMap = &serviceMap{
 		serviceMap:   make(map[string]map[string]*Service),
