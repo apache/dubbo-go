@@ -636,12 +636,14 @@ func MergeUrl(serviceUrl *URL, referenceUrl *URL) *URL {
 	mergedUrl := serviceUrl.Clone()
 	params := mergedUrl.GetParams()
 	// iterator the referenceUrl if serviceUrl not have the key ,merge in
-	referenceUrl.RangeParams(func(key, value string) bool {
-		if v := params[key]; len(v) == 0 {
-			params[key] = []string{value}
+	// referenceUrl usually will not changed. so change RangeParams to GetParams to avoid the string value copy.
+	for key, value := range referenceUrl.GetParams() {
+		if v := mergedUrl.GetParam(key, ""); len(v) == 0 {
+			if len(value) > 0 {
+				mergedUrl.SetParam(key, value[0])
+			}
 		}
-		return true
-	})
+	}
 
 	// loadBalance,cluster,retries strategy config
 	methodConfigMergeFcn := mergeNormalParam(params, referenceUrl, []string{constant.LOADBALANCE_KEY, constant.CLUSTER_KEY, constant.RETRIES_KEY, constant.TIMEOUT_KEY})
