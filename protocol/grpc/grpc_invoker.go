@@ -45,7 +45,7 @@ type GrpcInvoker struct {
 }
 
 // NewGrpcInvoker returns a Grpc invoker instance
-func NewGrpcInvoker(url common.URL, client *Client) *GrpcInvoker {
+func NewGrpcInvoker(url *common.URL, client *Client) *GrpcInvoker {
 	return &GrpcInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
@@ -62,7 +62,7 @@ func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 		result.Err = errNoReply
 	}
 
-	in := []reflect.Value{}
+	var in []reflect.Value
 	in = append(in, reflect.ValueOf(context.Background()))
 	in = append(in, invocation.ParameterValues()...)
 

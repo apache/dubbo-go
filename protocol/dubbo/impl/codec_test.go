@@ -15,42 +15,46 @@
  * limitations under the License.
  */
 
-package dubbo
+package impl
 
 import (
-	"bytes"
 	"testing"
 	"time"
 )
 
 import (
-	hessian "github.com/apache/dubbo-go-hessian2"
-	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDubboPackageMarshalAndUnmarshal(t *testing.T) {
-	pkg := &DubboPackage{}
+import (
+	"github.com/apache/dubbo-go/common/constant"
+)
+
+func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
+	pkg := NewDubboPackage(nil)
 	pkg.Body = []interface{}{"a"}
-	pkg.Header.Type = hessian.PackageHeartbeat
-	pkg.Header.SerialID = byte(S_Dubbo)
+	pkg.Header.Type = PackageHeartbeat
+	pkg.Header.SerialID = constant.S_Hessian2
 	pkg.Header.ID = 10086
+	pkg.SetSerializer(HessianSerializer{})
 
 	// heartbeat
 	data, err := pkg.Marshal()
 	assert.NoError(t, err)
 
-	pkgres := &DubboPackage{}
+	pkgres := NewDubboPackage(data)
+	pkgres.SetSerializer(HessianSerializer{})
+
 	pkgres.Body = []interface{}{}
-	err = pkgres.Unmarshal(data)
+	err = pkgres.Unmarshal()
 	assert.NoError(t, err)
-	assert.Equal(t, hessian.PackageHeartbeat|hessian.PackageRequest|hessian.PackageRequest_TwoWay, pkgres.Header.Type)
-	assert.Equal(t, byte(S_Dubbo), pkgres.Header.SerialID)
+	assert.Equal(t, PackageHeartbeat|PackageRequest|PackageRequest_TwoWay, pkgres.Header.Type)
+	assert.Equal(t, constant.S_Hessian2, pkgres.Header.SerialID)
 	assert.Equal(t, int64(10086), pkgres.Header.ID)
 	assert.Equal(t, 0, len(pkgres.Body.([]interface{})))
 
 	// request
-	pkg.Header.Type = hessian.PackageRequest
+	pkg.Header.Type = PackageRequest
 	pkg.Service.Interface = "Service"
 	pkg.Service.Path = "path"
 	pkg.Service.Version = "2.6"
@@ -59,25 +63,27 @@ func TestDubboPackageMarshalAndUnmarshal(t *testing.T) {
 	data, err = pkg.Marshal()
 	assert.NoError(t, err)
 
-	pkgres = &DubboPackage{}
+	pkgres = NewDubboPackage(data)
+	pkgres.SetSerializer(HessianSerializer{})
 	pkgres.Body = make([]interface{}, 7)
-	err = pkgres.Unmarshal(data)
+	err = pkgres.Unmarshal()
+	reassembleBody := pkgres.GetBody().(map[string]interface{})
 	assert.NoError(t, err)
-	assert.Equal(t, hessian.PackageRequest, pkgres.Header.Type)
-	assert.Equal(t, byte(S_Dubbo), pkgres.Header.SerialID)
+	assert.Equal(t, PackageRequest, pkgres.Header.Type)
+	assert.Equal(t, constant.S_Hessian2, pkgres.Header.SerialID)
 	assert.Equal(t, int64(10086), pkgres.Header.ID)
-	assert.Equal(t, "2.0.2", pkgres.Body.([]interface{})[0])
-	assert.Equal(t, "path", pkgres.Body.([]interface{})[1])
-	assert.Equal(t, "2.6", pkgres.Body.([]interface{})[2])
-	assert.Equal(t, "Method", pkgres.Body.([]interface{})[3])
-	assert.Equal(t, "Ljava/lang/String;", pkgres.Body.([]interface{})[4])
-	assert.Equal(t, []interface{}{"a"}, pkgres.Body.([]interface{})[5])
-	assert.Equal(t, map[string]string{"dubbo": "2.0.2", "interface": "Service", "path": "path", "timeout": "1000", "version": "2.6"}, pkgres.Body.([]interface{})[6])
-}
-
-func TestIssue380(t *testing.T) {
-	pkg := &DubboPackage{}
-	buf := bytes.NewBuffer([]byte("hello"))
-	err := pkg.Unmarshal(buf)
-	assert.True(t, perrors.Cause(err) == hessian.ErrHeaderNotEnough)
+	assert.Equal(t, "2.0.2", reassembleBody["dubboVersion"].(string))
+	assert.Equal(t, "path", pkgres.Service.Path)
+	assert.Equal(t, "2.6", pkgres.Service.Version)
+	assert.Equal(t, "Method", pkgres.Service.Method)
+	assert.Equal(t, "Ljava/lang/String;", reassembleBody["argsTypes"].(string))
+	assert.Equal(t, []interface{}{"a"}, reassembleBody["args"])
+	tmpData := map[string]interface{}{
+		"dubbo":     "2.0.2",
+		"interface": "Service",
+		"path":      "path",
+		"timeout":   "1000",
+		"version":   "2.6",
+	}
+	assert.Equal(t, tmpData, reassembleBody["attachments"])
 }

@@ -334,7 +334,7 @@ func newRegistryProtocol() protocol.Protocol {
 
 type mockRegistryProtocol struct{}
 
-func (*mockRegistryProtocol) Refer(url common.URL) protocol.Invoker {
+func (*mockRegistryProtocol) Refer(url *common.URL) protocol.Invoker {
 	return protocol.NewBaseInvoker(url)
 }
 
@@ -345,7 +345,7 @@ func (*mockRegistryProtocol) Export(invoker protocol.Invoker) protocol.Exporter 
 		if err != nil {
 			panic(err)
 		}
-		ok, err := metaDataService.ExportURL(*invoker.GetUrl().SubURL.Clone())
+		ok, err := metaDataService.ExportURL(invoker.GetUrl().SubURL.Clone())
 		if err != nil {
 			panic(err)
 		}
@@ -367,7 +367,7 @@ func getRegistryUrl(invoker protocol.Invoker) *common.URL {
 		protocol := url.GetParam(constant.REGISTRY_KEY, "")
 		url.Protocol = protocol
 	}
-	return &url
+	return url
 }
 
 func (p *mockRegistryProtocol) GetRegistries() []registry.Registry {

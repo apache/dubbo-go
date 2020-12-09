@@ -231,7 +231,7 @@ func getTestRegistry(t *testing.T) *kubernetesRegistry {
 	if err != nil {
 		t.Fatal(err)
 	}
-	out, err := newMockKubernetesRegistry(&regurl, pl)
+	out, err := newMockKubernetesRegistry(regurl, pl)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -268,7 +268,7 @@ func TestSubscribe(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	listener, err := r.DoSubscribe(&url)
+	listener, err := r.DoSubscribe(url)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -301,7 +301,7 @@ func TestConsumerDestroy(t *testing.T) {
 		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
 		common.WithMethods([]string{"GetUser", "AddUser"}))
 
-	_, err := r.DoSubscribe(&url)
+	_, err := r.DoSubscribe(url)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -336,7 +336,7 @@ func TestNewRegistry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = newKubernetesRegistry(&regUrl)
+	_, err = newKubernetesRegistry(regUrl)
 	if err == nil {
 		t.Fatal("not in cluster, should be a err")
 	}

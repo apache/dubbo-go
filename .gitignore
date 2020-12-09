@@ -29,8 +29,12 @@ config_center/zookeeper/zookeeper-4unittest/
 registry/zookeeper/zookeeper-4unittest/
 metadata/report/zookeeper/zookeeper-4unittest/
 registry/consul/agent*
+metadata/report/consul/agent*
+remoting/consul/agent*
 config_center/apollo/mockDubbog.properties.json
 
 # vim stuff
 *~
 .*.sw?
+/license-header-checker-linux/
+/license-header-checker-linux.zip

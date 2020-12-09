@@ -43,7 +43,7 @@ const parseParameterErrorStr = "An error occurred while parsing parameters on th
 // RestServer user can implement this server interface
 type RestServer interface {
 	// Start rest server
-	Start(url common.URL)
+	Start(url *common.URL)
 	// Deploy a http api
 	Deploy(restMethodConfig *rest_config.RestMethodConfig, routeFunc func(request RestServerRequest, response RestServerResponse))
 	// UnDeploy a http api
@@ -111,7 +111,7 @@ func GetRouteFunc(invoker protocol.Invoker, methodConfig *rest_config.RestMethod
 				logger.Errorf("[Go Restful] WriteErrorString error:%v", err)
 			}
 		}
-		result := invoker.Invoke(context.Background(), invocation.NewRPCInvocation(methodConfig.MethodName, args, make(map[string]string)))
+		result := invoker.Invoke(context.Background(), invocation.NewRPCInvocation(methodConfig.MethodName, args, make(map[string]interface{})))
 		if result.Error() != nil {
 			err = resp.WriteError(http.StatusInternalServerError, result.Error())
 			if err != nil {
