@@ -48,7 +48,7 @@ type DefaultHealthChecker struct {
 // IsHealthy evaluates the healthy state on the given Invoker based on the number of successive bad request
 // and the current active request
 func (c *DefaultHealthChecker) IsHealthy(invoker protocol.Invoker) bool {
-	if !protocol.GetInvokerHealthyStatus(invoker){
+	if !protocol.GetInvokerHealthyStatus(invoker) {
 		return false
 	}
 
@@ -95,7 +95,6 @@ func (c *DefaultHealthChecker) getCircuitBreakerSleepWindowTime(status *protocol
 	}
 	return int64(sleepWindow)
 }
-
 
 // GetRequestSuccessiveFailureThreshold return the requestSuccessiveFailureThreshold bound to this DefaultHealthChecker
 func (c *DefaultHealthChecker) GetRequestSuccessiveFailureThreshold() int32 {
