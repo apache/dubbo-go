@@ -216,7 +216,7 @@ func registerServiceInstance() {
 	if url == nil {
 		return
 	}
-	instance, err := createInstance(*url)
+	instance, err := createInstance(url)
 	if err != nil {
 		panic(err)
 	}
@@ -240,7 +240,7 @@ func registerServiceInstance() {
 }
 
 // nolint
-func createInstance(url common.URL) (registry.ServiceInstance, error) {
+func createInstance(url *common.URL) (registry.ServiceInstance, error) {
 	appConfig := GetApplicationConfig()
 	port, err := strconv.ParseInt(url.Port, 10, 32)
 	if err != nil {
@@ -250,9 +250,6 @@ func createInstance(url common.URL) (registry.ServiceInstance, error) {
 	host := url.Ip
 	if len(host) == 0 {
 		host = common.GetLocalIp()
-		if err != nil {
-			return nil, perrors.WithMessage(err, "could not get the local Ip")
-		}
 	}
 
 	// usually we will add more metadata
@@ -272,7 +269,7 @@ func createInstance(url common.URL) (registry.ServiceInstance, error) {
 
 // selectMetadataServiceExportedURL get already be exported url
 func selectMetadataServiceExportedURL() *common.URL {
-	var selectedUrl common.URL
+	var selectedUrl *common.URL
 	metaDataService, err := extension.GetMetadataService(GetApplicationConfig().MetadataType)
 	if err != nil {
 		logger.Warn(err)
@@ -297,7 +294,7 @@ func selectMetadataServiceExportedURL() *common.URL {
 			break
 		}
 	}
-	return &selectedUrl
+	return selectedUrl
 }
 
 func initRouter() {

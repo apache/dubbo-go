@@ -104,6 +104,7 @@ func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 func (l *RegistryDataListener) Close() {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
+	l.closed = true
 	for _, listener := range l.subscribed {
 		listener.(*RegistryConfigurationListener).Close()
 	}
@@ -158,7 +159,7 @@ func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 			//r.update(e.res)
 			//write to invoker
 			//r.outerEventCh <- e.res
-			return &registry.ServiceEvent{Action: e.ConfigType, Service: e.Value.(common.URL)}, nil
+			return &registry.ServiceEvent{Action: e.ConfigType, Service: e.Value.(*common.URL)}, nil
 		}
 	}
 }
