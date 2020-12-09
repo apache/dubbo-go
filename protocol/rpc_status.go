@@ -30,6 +30,7 @@ import (
 var (
 	methodStatistics sync.Map // url -> { methodName : RPCStatus}
 	serviceStatistic sync.Map // url -> RPCStatus
+	invokerBlackList sync.Map // store unhealthy url blackList
 )
 
 // RPCStatus is URL statistics.
@@ -181,4 +182,34 @@ func CleanAllStatus() {
 		return true
 	}
 	serviceStatistic.Range(delete2)
+	delete3 := func(key, _ interface{}) bool {
+		invokerBlackList.Delete(key)
+		return true
+	}
+	invokerBlackList.Range(delete3)
+}
+
+func GetInvokerHealthyStatus(invoker Invoker) bool {
+	_, found := invokerBlackList.Load(invoker.GetUrl().Key())
+	return !found
+}
+
+func SetInvokerUnhealthyStatus(invoker Invoker) {
+	invokerBlackList.Store(invoker.GetUrl().Key(), invoker)
+}
+
+func RemoveInvokerUnhealthyStatus(invoker Invoker) {
+	invokerBlackList.Delete(invoker.GetUrl().Key())
+}
+
+func GetBlackListInvokers(blockSize int) []Invoker {
+	resultIvks := make([]Invoker, 0, 16)
+	invokerBlackList.Range(func(k, v interface{}) bool {
+		resultIvks = append(resultIvks, v.(Invoker))
+		return true
+	})
+	if blockSize > len(resultIvks) {
+		return resultIvks
+	}
+	return resultIvks[:blockSize]
 }

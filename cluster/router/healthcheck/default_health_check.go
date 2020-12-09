@@ -48,7 +48,7 @@ type DefaultHealthChecker struct {
 // IsHealthy evaluates the healthy state on the given Invoker based on the number of successive bad request
 // and the current active request
 func (c *DefaultHealthChecker) IsHealthy(invoker protocol.Invoker) bool {
-	if !invoker.IsAvailable() {
+	if !protocol.GetInvokerHealthyStatus(invoker){
 		return false
 	}
 
