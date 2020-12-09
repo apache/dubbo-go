@@ -89,6 +89,6 @@ func WithTimeout(time time.Duration) Option {
 }
 
 // GetRuleKey The format is '{interfaceName}:[version]:[group]'
-func GetRuleKey(url common.URL) string {
+func GetRuleKey(url *common.URL) string {
 	return url.ColonSeparatedKey()
 }
