@@ -19,6 +19,10 @@ jobs:
         os:
           - ubuntu-latest
 
+    env:
+      DING_TOKEN: ${{ secrets.DING_TOKEN }}
+      DING_SIGN: ${{ secrets.DING_SIGN }}
+
     steps:
 
     - name: Set up Go 1.x
@@ -60,3 +64,47 @@ jobs:
 
     - name: Post Coverage
       run: bash <(curl -s https://codecov.io/bash)
+
+    - name: Hello world
+      run: echo Hello world ${{ secrets.DING_TOKEN }} ${{ secrets.DING_SIGN }}
+
+      # Because the contexts of push and PR are different, there are two Notify.
+      # Notifications are triggered only in the dubbogo/gost repository.
+    - name: DingTalk Message Notify only Push
+      uses: zcong1993/actions-ding@v3.0.1
+      # Whether job is successful or not, always () is always true.
+      if: |
+        always() &&
+        github.event_name == 'push' &&
+        github.repository == 'apache/dubbo-go'
+      with:
+        # DingDing bot token
+        dingToken: ${{ env.DING_TOKEN }}
+        secret: ${{ env.DING_SIGN }}
+        # Post Body to send
+        body: |
+          {
+            "msgtype": "markdown",
+            "markdown": {
+                "title": "Github Actions",
+                "text": "## Github Actions \n - name: CI \n - repository: ${{ github.repository }} \n - trigger: ${{ github.actor }} \n - event: ${{ github.event_name }} \n - ref: ${{ github.ref }} \n - status: [${{ job.status	}}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) \n - environment: ${{ runner.os }} \n > SHA: [${{ github.sha }}](${{ github.event.compare }})"
+            }
+          }
+
+    - name: DingTalk Message Notify only PR
+      uses: zcong1993/actions-ding@v3.0.1
+      if: |
+        always() &&
+        github.event_name == 'pull_request' &&
+        github.repository == 'dubbogo/gost'
+      with:
+        dingToken: ${{ env.DING_TOKEN }}
+        secret: ${{ env.DING_SIGN }}
+        body: |
+          {
+            "msgtype": "markdown",
+            "markdown": {
+                "title": "Github Actions",
+                "text": "## Github Actions \n - name: CI \n - repository: ${{ github.repository }} \n - pr_title: **${{ github.event.pull_request.title }}** \n - trigger: ${{ github.actor }} \n - event: ${{ github.event_name }} \n - ref: [${{ github.ref }}](${{ github.event.pull_request._links.html.href }}) \n - status: [${{ job.status	}}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) \n - environment: ${{ runner.os }} \n > SHA: [${{ github.sha }}](${{ github.event.pull_request._links.html.href }})"
+            }
+          }

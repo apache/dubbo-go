@@ -65,9 +65,9 @@ func TestConfigurableExporter(t *testing.T) {
 	t.Run("configurableExporter", func(t *testing.T) {
 		registryURL, _ := common.NewURL("service-discovery://localhost:12345")
 		subURL, _ := common.NewURL("dubbo://localhost:20003")
-		registryURL.SubURL = &subURL
+		registryURL.SubURL = subURL
 		assert.Equal(t, false, exported.IsExported())
-		assert.NoError(t, exported.Export(&registryURL))
+		assert.NoError(t, exported.Export(registryURL))
 		assert.Equal(t, true, exported.IsExported())
 		assert.Regexp(t, "dubbo://:20003/MetadataService*", exported.GetExportedURLs()[0].String())
 		exported.Unexport()
