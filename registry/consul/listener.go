@@ -39,17 +39,17 @@ import (
 // registry.
 type consulListener struct {
 	// Registry url.
-	registryUrl common.URL
+	registryUrl *common.URL
 
 	// Consumer url.
-	consumerUrl common.URL
+	consumerUrl *common.URL
 
 	// Consul watcher.
 	plan *watch.Plan
 
 	// Most recent service urls return by
 	// watcher.
-	urls []common.URL
+	urls []*common.URL
 
 	// All service information changes will
 	// be wrapped into ServiceEvent, and be
@@ -78,7 +78,7 @@ type consulListener struct {
 	wg sync.WaitGroup
 }
 
-func newConsulListener(registryUrl common.URL, consumerUrl common.URL) (*consulListener, error) {
+func newConsulListener(registryUrl *common.URL, consumerUrl *common.URL) (*consulListener, error) {
 	params := make(map[string]interface{}, 8)
 	params["type"] = "service"
 	params["service"] = consumerUrl.Service()
@@ -93,7 +93,7 @@ func newConsulListener(registryUrl common.URL, consumerUrl common.URL) (*consulL
 		registryUrl: registryUrl,
 		consumerUrl: consumerUrl,
 		plan:        plan,
-		urls:        make([]common.URL, 0, 8),
+		urls:        make([]*common.URL, 0, 8),
 		eventCh:     make(chan *registry.ServiceEvent, 32),
 		errCh:       make(chan error, 32),
 		done:        make(chan struct{}),
@@ -142,7 +142,7 @@ func (l *consulListener) run() {
 func (l *consulListener) handler(idx uint64, raw interface{}) {
 	var (
 		service *consul.ServiceEntry
-		url     common.URL
+		url     *common.URL
 		ok      bool
 		err     error
 	)
@@ -153,7 +153,7 @@ func (l *consulListener) handler(idx uint64, raw interface{}) {
 		l.errCh <- err
 		return
 	}
-	newUrls := make([]common.URL, 0, 8)
+	newUrls := make([]*common.URL, 0, 8)
 	events := make([]*registry.ServiceEvent, 0, 8)
 
 	for _, service = range services {

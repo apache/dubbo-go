@@ -43,7 +43,7 @@ const parseParameterErrorStr = "An error occurred while parsing parameters on th
 // RestServer user can implement this server interface
 type RestServer interface {
 	// Start rest server
-	Start(url common.URL)
+	Start(url *common.URL)
 	// Deploy a http api
 	Deploy(restMethodConfig *rest_config.RestMethodConfig, routeFunc func(request RestServerRequest, response RestServerResponse))
 	// UnDeploy a http api

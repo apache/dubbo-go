@@ -39,7 +39,7 @@ import (
 )
 
 var (
-	serviceMetadata    = make(map[*identifier.ServiceMetadataIdentifier]common.URL, 4)
+	serviceMetadata    = make(map[*identifier.ServiceMetadataIdentifier]*common.URL, 4)
 	subscribedMetadata = make(map[*identifier.SubscriberMetadataIdentifier]string, 4)
 )
 
@@ -65,7 +65,7 @@ func (metadataReport) StoreConsumerMetadata(*identifier.MetadataIdentifier, stri
 	return nil
 }
 
-func (mr *metadataReport) SaveServiceMetadata(id *identifier.ServiceMetadataIdentifier, url common.URL) error {
+func (mr *metadataReport) SaveServiceMetadata(id *identifier.ServiceMetadataIdentifier, url *common.URL) error {
 	logger.Infof("SaveServiceMetadata , url is %v", url)
 	serviceMetadata[id] = url
 	return nil
@@ -97,7 +97,7 @@ func TestMetadataService(t *testing.T) {
 	extension.SetMetadataReportFactory("mock", getMetadataReportFactory)
 	u, err := common.NewURL(fmt.Sprintf("mock://127.0.0.1:20000/?sync.report=true"))
 	assert.NoError(t, err)
-	instance.GetMetadataReportInstance(&u)
+	instance.GetMetadataReportInstance(u)
 	mts, err := newMetadataService()
 	assert.NoError(t, err)
 	mts.(*MetadataService).setInMemoryMetadataService(mockInmemoryProc(t))

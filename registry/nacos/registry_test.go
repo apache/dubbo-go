@@ -49,7 +49,7 @@ func TestNacosRegistry_Register(t *testing.T) {
 	urlMap.Set(constant.CLUSTER_KEY, "mock")
 	testUrl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParams(urlMap), common.WithMethods([]string{"GetUser", "AddUser"}))
 
-	reg, err := newNacosRegistry(&regurl)
+	reg, err := newNacosRegistry(regurl)
 	assert.Nil(t, err)
 	if err != nil {
 		t.Errorf("new nacos registry error:%s \n", err.Error())
@@ -82,7 +82,7 @@ func TestNacosRegistry_Subscribe(t *testing.T) {
 	urlMap.Set(constant.NACOS_PATH_KEY, "")
 	testUrl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParams(urlMap), common.WithMethods([]string{"GetUser", "AddUser"}))
 
-	reg, _ := newNacosRegistry(&regurl)
+	reg, _ := newNacosRegistry(regurl)
 	err := reg.Register(testUrl)
 	assert.Nil(t, err)
 	if err != nil {
@@ -91,8 +91,8 @@ func TestNacosRegistry_Subscribe(t *testing.T) {
 	}
 
 	regurl.SetParam(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
-	reg2, _ := newNacosRegistry(&regurl)
-	listener, err := reg2.(*nacosRegistry).subscribe(&testUrl)
+	reg2, _ := newNacosRegistry(regurl)
+	listener, err := reg2.(*nacosRegistry).subscribe(testUrl)
 	assert.Nil(t, err)
 	if err != nil {
 		t.Errorf("subscribe error:%s \n", err.Error())
@@ -124,7 +124,7 @@ func TestNacosRegistry_Subscribe_del(t *testing.T) {
 	url1, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParams(urlMap), common.WithMethods([]string{"GetUser", "AddUser"}))
 	url2, _ := common.NewURL("dubbo://127.0.0.2:20000/com.ikurento.user.UserProvider", common.WithParams(urlMap), common.WithMethods([]string{"GetUser", "AddUser"}))
 
-	reg, _ := newNacosRegistry(&regurl)
+	reg, _ := newNacosRegistry(regurl)
 	err := reg.Register(url1)
 	assert.Nil(t, err)
 	if err != nil {
@@ -139,8 +139,8 @@ func TestNacosRegistry_Subscribe_del(t *testing.T) {
 	}
 
 	regurl.SetParam(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
-	reg2, _ := newNacosRegistry(&regurl)
-	listener, err := reg2.(*nacosRegistry).subscribe(&url1)
+	reg2, _ := newNacosRegistry(regurl)
+	listener, err := reg2.(*nacosRegistry).subscribe(url1)
 	assert.Nil(t, err)
 	if err != nil {
 		t.Errorf("subscribe error:%s \n", err.Error())
@@ -188,8 +188,8 @@ func TestNacosListener_Close(t *testing.T) {
 	urlMap.Set(constant.CLUSTER_KEY, "mock")
 	urlMap.Set(constant.NACOS_PATH_KEY, "")
 	url1, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider2", common.WithParams(urlMap), common.WithMethods([]string{"GetUser", "AddUser"}))
-	reg, _ := newNacosRegistry(&regurl)
-	listener, err := reg.(*nacosRegistry).subscribe(&url1)
+	reg, _ := newNacosRegistry(regurl)
+	listener, err := reg.(*nacosRegistry).subscribe(url1)
 	assert.Nil(t, err)
 	if err != nil {
 		t.Errorf("subscribe error:%s \n", err.Error())

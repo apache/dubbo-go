@@ -79,13 +79,13 @@ var (
 
 // MockInvoker is only mock the Invoker to support test tagRouter
 type MockInvoker struct {
-	url          common.URL
+	url          *common.URL
 	available    bool
 	destroyed    bool
 	successCount int
 }
 
-func NewMockInvoker(url common.URL) *MockInvoker {
+func NewMockInvoker(url *common.URL) *MockInvoker {
 	return &MockInvoker{
 		url:          url,
 		available:    true,
@@ -94,7 +94,7 @@ func NewMockInvoker(url common.URL) *MockInvoker {
 	}
 }
 
-func (bi *MockInvoker) GetUrl() common.URL {
+func (bi *MockInvoker) GetUrl() *common.URL {
 	return bi.url
 }
 
@@ -121,7 +121,7 @@ func (bi *MockInvoker) Destroy() {
 func TestTagRouterPriority(t *testing.T) {
 	u1, err := common.NewURL(tagRouterTestUserConsumerTag)
 	assert.Nil(t, err)
-	tagRouter, e := NewTagRouter(&u1)
+	tagRouter, e := NewTagRouter(u1)
 	assert.Nil(t, e)
 	p := tagRouter.Priority()
 	assert.Equal(t, int64(0), p)
@@ -130,7 +130,7 @@ func TestTagRouterPriority(t *testing.T) {
 func TestTagRouterRouteForce(t *testing.T) {
 	u1, e1 := common.NewURL(tagRouterTestUserConsumerTag)
 	assert.Nil(t, e1)
-	tagRouter, e := NewTagRouter(&u1)
+	tagRouter, e := NewTagRouter(u1)
 	assert.Nil(t, e)
 
 	u2, e2 := common.NewURL(tagRouterTestHangZhouUrl)
@@ -146,23 +146,23 @@ func TestTagRouterRouteForce(t *testing.T) {
 	invokers = append(invokers, inv2, inv3, inv4)
 	inv := &invocation.RPCInvocation{}
 	inv.SetAttachments(tagRouterTestDubboTag, tagRouterTestHangZhou)
-	invRst1 := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), &u1, inv)
+	invRst1 := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), u1, inv)
 	assert.Equal(t, 1, len(invRst1.ToArray()))
 	assert.Equal(t, tagRouterTestHangZhou, invokers[invRst1.ToArray()[0]].GetUrl().GetParam(tagRouterTestDubboTag, ""))
 
 	inv.SetAttachments(tagRouterTestDubboTag, tagRouterTestGuangZhou)
-	invRst2 := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), &u1, inv)
+	invRst2 := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), u1, inv)
 	assert.Equal(t, 0, len(invRst2.ToArray()))
 	inv.SetAttachments(tagRouterTestDubboForceTag, tagRouterTestFalse)
 	inv.SetAttachments(tagRouterTestDubboTag, tagRouterTestGuangZhou)
-	invRst3 := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), &u1, inv)
+	invRst3 := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), u1, inv)
 	assert.Equal(t, 3, len(invRst3.ToArray()))
 }
 
 func TestTagRouterRouteNoForce(t *testing.T) {
 	u1, e1 := common.NewURL(tagRouterTestUserConsumer)
 	assert.Nil(t, e1)
-	tagRouter, e := NewTagRouter(&u1)
+	tagRouter, e := NewTagRouter(u1)
 	assert.Nil(t, e)
 
 	u2, e2 := common.NewURL(tagRouterTestHangZhouUrl)
@@ -178,16 +178,16 @@ func TestTagRouterRouteNoForce(t *testing.T) {
 	invokers = append(invokers, inv2, inv3, inv4)
 	inv := &invocation.RPCInvocation{}
 	inv.SetAttachments(tagRouterTestDubboTag, tagRouterTestHangZhou)
-	invRst := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), &u1, inv)
+	invRst := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), u1, inv)
 	assert.Equal(t, 1, len(invRst.ToArray()))
 	assert.Equal(t, tagRouterTestHangZhou, invokers[invRst.ToArray()[0]].GetUrl().GetParam(tagRouterTestDubboTag, ""))
 
 	inv.SetAttachments(tagRouterTestDubboTag, tagRouterTestGuangZhou)
 	inv.SetAttachments(tagRouterTestDubboForceTag, tagRouterTestTrue)
-	invRst1 := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), &u1, inv)
+	invRst1 := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), u1, inv)
 	assert.Equal(t, 0, len(invRst1.ToArray()))
 	inv.SetAttachments(tagRouterTestDubboForceTag, tagRouterTestFalse)
-	invRst2 := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), &u1, inv)
+	invRst2 := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), u1, inv)
 	assert.Equal(t, 3, len(invRst2.ToArray()))
 }
 
@@ -225,13 +225,13 @@ func TestRouteBeijingInvoker(t *testing.T) {
 	invokers = append(invokers, inv2, inv3, inv4, inv5)
 
 	url, _ := common.NewURL(tagRouterTestBeijingUrl)
-	tagRouter, _ := NewTagRouter(&url)
+	tagRouter, _ := NewTagRouter(url)
 
 	rb := roaring.NewBitmap()
 	rb.AddRange(0, uint64(len(invokers)))
 	cache := setUpAddrCache(tagRouter, invokers)
 	inv := &invocation.RPCInvocation{}
-	res := tagRouter.Route(rb, cache, &url, inv)
+	res := tagRouter.Route(rb, cache, url, inv)
 	// inv4 and inv5
 	assert.Equal(t, []uint32{2, 3}, res.ToArray())
 }
@@ -292,7 +292,7 @@ tags:
 	suite.NoError(err)
 
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, routerLocalIP, suite.testCluster.Servers[0].Port))
-	configuration, err := extension.GetConfigCenterFactory(routerZk).GetDynamicConfiguration(&zkUrl)
+	configuration, err := extension.GetConfigCenterFactory(routerZk).GetDynamicConfiguration(zkUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
 
 	suite.Nil(err)
@@ -301,11 +301,11 @@ tags:
 	url, e1 := common.NewURL(tagRouterTestUserConsumerTag)
 	suite.Nil(e1)
 
-	tagRouter, err := NewTagRouter(&url)
+	tagRouter, err := NewTagRouter(url)
 	suite.Nil(err)
 	suite.NotNil(tagRouter)
 	suite.route = tagRouter
-	suite.url = &url
+	suite.url = url
 }
 
 func (suite *DynamicTagRouter) TearDownTest() {
@@ -365,7 +365,7 @@ func (suite *DynamicTagRouter) TestDynamicTagRouterByNoTagAndAddressMatch() {
 func TestProcess(t *testing.T) {
 	u1, err := common.NewURL(tagRouterTestUserConsumerTag)
 	assert.Nil(t, err)
-	tagRouter, e := NewTagRouter(&u1)
+	tagRouter, e := NewTagRouter(u1)
 	assert.Nil(t, e)
 	assert.NotNil(t, tagRouter)
 
