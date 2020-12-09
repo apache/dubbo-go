@@ -83,13 +83,11 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.
 
 	dir.consumerURL = dir.getConsumerUrl(url.SubURL)
 
-	logger.Info("in NewRegistryDirectory ")
 	if routerChain, err := chain.NewRouterChain(dir.consumerURL); err == nil {
 		dir.BaseDirectory.SetRouterChain(routerChain)
 	} else {
 		logger.Warnf("fail to create router chain with url: %s, err is: %v", url.SubURL, err)
 	}
-	logger.Info("here")
 
 	dir.consumerConfigurationListener = newConsumerConfigurationListener(dir)
 
