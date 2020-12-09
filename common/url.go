@@ -640,7 +640,7 @@ func MergeUrl(serviceUrl *URL, referenceUrl *URL) *URL {
 	for key, value := range referenceUrl.GetParams() {
 		if v := mergedUrl.GetParam(key, ""); len(v) == 0 {
 			if len(value) > 0 {
-				mergedUrl.SetParam(key, value[0])
+				params[key] = value
 			}
 		}
 	}
