@@ -18,8 +18,14 @@
 package dubbo
 
 import (
+	"context"
+	"fmt"
 	"sync"
 	"time"
+)
+
+import (
+	"github.com/opentracing/opentracing-go"
 )
 
 import (
@@ -29,12 +35,21 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/invocation"
+	"github.com/apache/dubbo-go/remoting"
+	"github.com/apache/dubbo-go/remoting/getty"
 )
 
-// dubbo protocol constant
 const (
 	// DUBBO is dubbo protocol name
 	DUBBO = "dubbo"
+)
+
+var (
+	// Make the connection can be shared.
+	// It will create one connection for one address (ip+port)
+	exchangeClientMap = new(sync.Map)
+	exchangeLock      = new(sync.Map)
 )
 
 func init() {
@@ -45,10 +60,12 @@ var (
 	dubboProtocol *DubboProtocol
 )
 
-// DubboProtocol is a dubbo protocol implement.
+// It support dubbo protocol. It implements Protocol interface for dubbo protocol.
 type DubboProtocol struct {
 	protocol.BaseProtocol
-	serverMap  map[string]*Server
+	// It is store relationship about serviceKey(group/interface:version) and ExchangeServer
+	// The ExchangeServer is introduced to replace of Server. Because Server is depend on getty directly.
+	serverMap  map[string]*remoting.ExchangeServer
 	serverLock sync.Mutex
 }
 
@@ -56,7 +73,7 @@ type DubboProtocol struct {
 func NewDubboProtocol() *DubboProtocol {
 	return &DubboProtocol{
 		BaseProtocol: protocol.NewBaseProtocol(),
-		serverMap:    make(map[string]*Server),
+		serverMap:    make(map[string]*remoting.ExchangeServer),
 	}
 }
 
@@ -67,26 +84,19 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	exporter := NewDubboExporter(serviceKey, invoker, dp.ExporterMap())
 	dp.SetExporterMap(serviceKey, exporter)
 	logger.Infof("Export service: %s", url.String())
-
 	// start server
 	dp.openServer(url)
 	return exporter
 }
 
 // Refer create dubbo service reference.
-func (dp *DubboProtocol) Refer(url common.URL) protocol.Invoker {
-	//default requestTimeout
-	var requestTimeout = config.GetConsumerConfig().RequestTimeout
-
-	requestTimeoutStr := url.GetParam(constant.TIMEOUT_KEY, config.GetConsumerConfig().Request_Timeout)
-	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
-		requestTimeout = t
+func (dp *DubboProtocol) Refer(url *common.URL) protocol.Invoker {
+	exchangeClient := getExchangeClient(url)
+	if exchangeClient == nil {
+		logger.Warnf("can't dial the server: %+v", url.Location)
+		return nil
 	}
-
-	invoker := NewDubboInvoker(url, NewClient(Options{
-		ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
-		RequestTimeout: requestTimeout,
-	}))
+	invoker := NewDubboInvoker(url, exchangeClient)
 	dp.SetInvokers(invoker)
 	logger.Infof("Refer service: %s", url.String())
 	return invoker
@@ -105,7 +115,7 @@ func (dp *DubboProtocol) Destroy() {
 	}
 }
 
-func (dp *DubboProtocol) openServer(url common.URL) {
+func (dp *DubboProtocol) openServer(url *common.URL) {
 	_, ok := dp.serverMap[url.Location]
 	if !ok {
 		_, ok := dp.ExporterMap().Load(url.ServiceKey())
@@ -116,9 +126,12 @@ func (dp *DubboProtocol) openServer(url common.URL) {
 		dp.serverLock.Lock()
 		_, ok = dp.serverMap[url.Location]
 		if !ok {
-			srv := NewServer()
+			handler := func(invocation *invocation.RPCInvocation) protocol.RPCResult {
+				return doHandleRequest(invocation)
+			}
+			srv := remoting.NewExchangeServer(url, getty.NewServer(url, handler))
 			dp.serverMap[url.Location] = srv
-			srv.Start(url)
+			srv.Start()
 		}
 		dp.serverLock.Unlock()
 	}
@@ -130,4 +143,92 @@ func GetProtocol() protocol.Protocol {
 		dubboProtocol = NewDubboProtocol()
 	}
 	return dubboProtocol
+}
+
+func doHandleRequest(rpcInvocation *invocation.RPCInvocation) protocol.RPCResult {
+	exporter, _ := dubboProtocol.ExporterMap().Load(rpcInvocation.ServiceKey())
+	result := protocol.RPCResult{}
+	if exporter == nil {
+		err := fmt.Errorf("don't have this exporter, key: %s", rpcInvocation.ServiceKey())
+		logger.Errorf(err.Error())
+		result.Err = err
+		//reply(session, p, hessian.PackageResponse)
+		return result
+	}
+	invoker := exporter.(protocol.Exporter).GetInvoker()
+	if invoker != nil {
+		// FIXME
+		ctx := rebuildCtx(rpcInvocation)
+
+		invokeResult := invoker.Invoke(ctx, rpcInvocation)
+		if err := invokeResult.Error(); err != nil {
+			result.Err = invokeResult.Error()
+			//p.Header.ResponseStatus = hessian.Response_OK
+			//p.Body = hessian.NewResponse(nil, err, result.Attachments())
+		} else {
+			result.Rest = invokeResult.Result()
+			//p.Header.ResponseStatus = hessian.Response_OK
+			//p.Body = hessian.NewResponse(res, nil, result.Attachments())
+		}
+	} else {
+		result.Err = fmt.Errorf("don't have the invoker, key: %s", rpcInvocation.ServiceKey())
+	}
+	return result
+}
+
+func getExchangeClient(url *common.URL) *remoting.ExchangeClient {
+	clientTmp, ok := exchangeClientMap.Load(url.Location)
+	if !ok {
+		var exchangeClientTmp *remoting.ExchangeClient
+		func() {
+			// lock for NewExchangeClient and store into map.
+			_, loaded := exchangeLock.LoadOrStore(url.Location, 0x00)
+			// unlock
+			defer exchangeLock.Delete(url.Location)
+			if loaded {
+				// retry for 5 times.
+				for i := 0; i < 5; i++ {
+					if clientTmp, ok = exchangeClientMap.Load(url.Location); ok {
+						break
+					} else {
+						// if cannot get, sleep a while.
+						time.Sleep(time.Duration(i*100) * time.Millisecond)
+					}
+				}
+				return
+			}
+			// new ExchangeClient
+			exchangeClientTmp = remoting.NewExchangeClient(url, getty.NewClient(getty.Options{
+				ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
+				RequestTimeout: config.GetConsumerConfig().RequestTimeout,
+			}), config.GetConsumerConfig().ConnectTimeout, false)
+			// input store
+			if exchangeClientTmp != nil {
+				exchangeClientMap.Store(url.Location, exchangeClientTmp)
+			}
+		}()
+		if exchangeClientTmp != nil {
+			return exchangeClientTmp
+		}
+	}
+	// cannot dial the server
+	if clientTmp == nil {
+		return nil
+	}
+	return clientTmp.(*remoting.ExchangeClient)
+}
+
+// rebuildCtx rebuild the context by attachment.
+// Once we decided to transfer more context's key-value, we should change this.
+// now we only support rebuild the tracing context
+func rebuildCtx(inv *invocation.RPCInvocation) context.Context {
+	ctx := context.WithValue(context.Background(), "attachment", inv.Attachments())
+
+	// actually, if user do not use any opentracing framework, the err will not be nil.
+	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.TextMap,
+		opentracing.TextMapCarrier(filterContext(inv.Attachments())))
+	if err == nil {
+		ctx = context.WithValue(ctx, constant.TRACING_REMOTE_SPAN_CTX, spanCtx)
+	}
+	return ctx
 }

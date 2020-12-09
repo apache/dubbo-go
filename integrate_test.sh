@@ -63,4 +63,4 @@ docker build . -t  ci-consumer --build-arg PR_ORIGIN_REPO=${TRAVIS_PULL_REQUEST_
 cd ${ROOT_DIR}
 # run provider
 # check consumer status
-docker run -it --network host ci-consumer
+docker run -i --network host ci-consumer

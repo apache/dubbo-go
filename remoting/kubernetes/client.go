@@ -47,7 +47,7 @@ type Client struct {
 }
 
 // newClient returns Client instance for registry
-func newClient(url common.URL) (*Client, error) {
+func newClient(url *common.URL) (*Client, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 

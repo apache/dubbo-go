@@ -59,7 +59,7 @@ func NewJsonrpcProtocol() *JsonrpcProtocol {
 	}
 }
 
-// Export JSON RPC service  for remote invocation
+// Export JSON RPC service for remote invocation
 func (jp *JsonrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetUrl()
 	serviceKey := strings.TrimPrefix(url.Path, "/")
@@ -75,7 +75,7 @@ func (jp *JsonrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 }
 
 // Refer a remote JSON PRC service from registry
-func (jp *JsonrpcProtocol) Refer(url common.URL) protocol.Invoker {
+func (jp *JsonrpcProtocol) Refer(url *common.URL) protocol.Invoker {
 	//default requestTimeout
 	var requestTimeout = config.GetConsumerConfig().RequestTimeout
 
@@ -106,7 +106,7 @@ func (jp *JsonrpcProtocol) Destroy() {
 	}
 }
 
-func (jp *JsonrpcProtocol) openServer(url common.URL) {
+func (jp *JsonrpcProtocol) openServer(url *common.URL) {
 	_, ok := jp.serverMap[url.Location]
 	if !ok {
 		_, loadOk := jp.ExporterMap().Load(strings.TrimPrefix(url.Path, "/"))

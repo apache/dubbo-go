@@ -45,6 +45,7 @@ const (
 )
 
 type apolloConfiguration struct {
+	cc.BaseDynamicConfiguration
 	url *common.URL
 
 	listeners sync.Map
@@ -108,11 +109,11 @@ func getNamespaceName(namespace string, configFileFormat agolloConstant.ConfigFi
 }
 
 func (c *apolloConfiguration) GetInternalProperty(key string, opts ...cc.Option) (string, error) {
-	config := agollo.GetConfig(c.appConf.NamespaceName)
-	if config == nil {
+	newConfig := agollo.GetConfig(c.appConf.NamespaceName)
+	if newConfig == nil {
 		return "", perrors.New(fmt.Sprintf("nothing in namespace:%s ", key))
 	}
-	return config.GetStringValue(key, ""), nil
+	return newConfig.GetStringValue(key, ""), nil
 }
 
 func (c *apolloConfiguration) GetRule(key string, opts ...cc.Option) (string, error) {
@@ -134,11 +135,11 @@ func (c *apolloConfiguration) GetProperties(key string, opts ...cc.Option) (stri
 	 * when group is not null, we are getting startup configs(config file) from Config Center, for example:
 	 * key=dubbo.propertie
 	 */
-	config := agollo.GetConfig(key)
-	if config == nil {
+	tmpConfig := agollo.GetConfig(key)
+	if tmpConfig == nil {
 		return "", perrors.New(fmt.Sprintf("nothing in namespace:%s ", key))
 	}
-	return config.GetContent(), nil
+	return tmpConfig.GetContent(), nil
 }
 
 func (c *apolloConfiguration) getAddressWithProtocolPrefix(url *common.URL) string {

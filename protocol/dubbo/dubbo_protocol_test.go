@@ -28,7 +28,9 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/remoting/getty"
 )
 
 const (
@@ -39,14 +41,56 @@ const (
 		"side=provider&timeout=3000&timestamp=1556509797245"
 )
 
-func TestDubboProtocolExport(t *testing.T) {
+func initDubboInvokerTest() {
+	getty.SetServerConfig(getty.ServerConfig{
+		SessionNumber:  700,
+		SessionTimeout: "20s",
+		GettySessionParam: getty.GettySessionParam{
+			CompressEncoding: false,
+			TcpNoDelay:       true,
+			TcpKeepAlive:     true,
+			KeepAlivePeriod:  "120s",
+			TcpRBufSize:      262144,
+			TcpWBufSize:      65536,
+			PkgWQSize:        512,
+			TcpReadTimeout:   "1s",
+			TcpWriteTimeout:  "5s",
+			WaitTimeout:      "1s",
+			MaxMsgLen:        10240000000,
+			SessionName:      "server",
+		}})
+	getty.SetClientConf(getty.ClientConfig{
+		ConnectionNum:   1,
+		HeartbeatPeriod: "3s",
+		SessionTimeout:  "20s",
+		PoolTTL:         600,
+		PoolSize:        64,
+		GettySessionParam: getty.GettySessionParam{
+			CompressEncoding: false,
+			TcpNoDelay:       true,
+			TcpKeepAlive:     true,
+			KeepAlivePeriod:  "120s",
+			TcpRBufSize:      262144,
+			TcpWBufSize:      65536,
+			PkgWQSize:        512,
+			TcpReadTimeout:   "4s",
+			TcpWriteTimeout:  "5s",
+			WaitTimeout:      "1s",
+			MaxMsgLen:        10240000000,
+			SessionName:      "client",
+		},
+	})
+}
+
+func TestDubboProtocol_Export(t *testing.T) {
+	initDubboInvokerTest()
+	srvCfg := getty.GetDefaultServerConfig()
+	getty.SetServerConfig(srvCfg)
 	// Export
 	proto := GetProtocol()
-	srvConf = &ServerConfig{}
 	url, err := common.NewURL(mockCommonUrl)
 	assert.NoError(t, err)
 	exporter := proto.Export(protocol.NewBaseInvoker(url))
-
 	// make sure url
 	eq := exporter.GetInvoker().GetUrl().URLEqual(url)
 	assert.True(t, eq)
@@ -60,10 +104,10 @@ func TestDubboProtocolExport(t *testing.T) {
 	assert.True(t, eq2)
 
 	// make sure exporterMap after 'Unexport'
-	_, ok := proto.(*DubboProtocol).ExporterMap().Load(url.ServiceKey())
+	_, ok := proto.(*DubboProtocol).ExporterMap().Load(url2.ServiceKey())
 	assert.True(t, ok)
-	exporter.Unexport()
-	_, ok = proto.(*DubboProtocol).ExporterMap().Load(url.ServiceKey())
+	exporter2.Unexport()
+	_, ok = proto.(*DubboProtocol).ExporterMap().Load(url2.ServiceKey())
 	assert.False(t, ok)
 
 	// make sure serverMap after 'Destroy'
@@ -74,14 +118,29 @@ func TestDubboProtocolExport(t *testing.T) {
 	assert.False(t, ok)
 }
 
-func TestDubboProtocolRefer(t *testing.T) {
+func TestDubboProtocolReferNoConnect(t *testing.T) {
 	// Refer
+	initDubboInvokerTest()
 	proto := GetProtocol()
 	url, err := common.NewURL(mockCommonUrl)
 	assert.NoError(t, err)
-	clientConf = &ClientConfig{}
 	invoker := proto.Refer(url)
+	assert.Nil(t, invoker)
+}
 
+func TestDubboProtocol_Refer(t *testing.T) {
+	initDubboInvokerTest()
+	cliCfg := getty.GetDefaultClientConfig()
+	getty.SetClientConf(cliCfg)
+	// Refer
+	proto := GetProtocol()
+
+	url, err := common.NewURL(mockCommonUrl)
+	proto.Export(&proxy_factory.ProxyInvoker{
+		BaseInvoker: *protocol.NewBaseInvoker(url),
+	})
+	assert.NoError(t, err)
+	invoker := proto.Refer(url)
 	// make sure url
 	eq := invoker.GetUrl().URLEqual(url)
 	assert.True(t, eq)

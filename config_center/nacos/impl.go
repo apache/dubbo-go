@@ -47,6 +47,7 @@ const (
 
 // nacosDynamicConfiguration is the implementation of DynamicConfiguration based on nacos
 type nacosDynamicConfiguration struct {
+	config_center.BaseDynamicConfiguration
 	url          *common.URL
 	rootPath     string
 	wg           sync.WaitGroup
@@ -185,8 +186,8 @@ func (n *nacosDynamicConfiguration) GetDone() chan struct{} {
 }
 
 // GetUrl Get Url
-func (n *nacosDynamicConfiguration) GetUrl() common.URL {
-	return *n.url
+func (n *nacosDynamicConfiguration) GetUrl() *common.URL {
+	return n.url
 }
 
 // Destroy Destroy configuration instance

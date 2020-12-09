@@ -50,7 +50,7 @@ func initZkData(group string, t *testing.T) (*zk.TestCluster, *zookeeperDynamicC
 	assert.NoError(t, err)
 	regurl.AddParam(constant.REGISTRY_TIMEOUT_KEY, "15s")
 	zkFactory := &zookeeperDynamicConfigurationFactory{}
-	reg, err := zkFactory.GetDynamicConfiguration(&regurl)
+	reg, err := zkFactory.GetDynamicConfiguration(regurl)
 	zreg, ok := reg.(*zookeeperDynamicConfiguration)
 	assert.True(t, ok)
 	assert.NoError(t, err)

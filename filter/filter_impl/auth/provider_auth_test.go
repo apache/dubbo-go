@@ -52,9 +52,9 @@ func TestProviderAuthFilter_Invoke(t *testing.T) {
 	}
 	inv := invocation.NewRPCInvocation("test", parmas, nil)
 	requestTime := strconv.Itoa(int(time.Now().Unix() * 1000))
-	signature, _ := getSignature(&url, inv, secret, requestTime)
+	signature, _ := getSignature(url, inv, secret, requestTime)
 
-	inv = invocation.NewRPCInvocation("test", []interface{}{"OK"}, map[string]string{
+	inv = invocation.NewRPCInvocation("test", []interface{}{"OK"}, map[string]interface{}{
 		constant.REQUEST_SIGNATURE_KEY: signature,
 		constant.CONSUMER:              "test",
 		constant.REQUEST_TIMESTAMP_KEY: requestTime,

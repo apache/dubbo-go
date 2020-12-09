@@ -63,8 +63,8 @@ func newConsumerRegistryUrl(host string, port int) *common.URL {
 	)
 }
 
-func newProviderUrl(host string, port int, service string, protocol string) common.URL {
-	return *common.NewURLWithOptions(
+func newProviderUrl(host string, port int, service string, protocol string) *common.URL {
+	return common.NewURLWithOptions(
 		common.WithIp(host),
 		common.WithPort(strconv.Itoa(port)),
 		common.WithPath(service),
@@ -72,8 +72,8 @@ func newProviderUrl(host string, port int, service string, protocol string) comm
 	)
 }
 
-func newConsumerUrl(host string, port int, service string, protocol string) common.URL {
-	return *common.NewURLWithOptions(
+func newConsumerUrl(host string, port int, service string, protocol string) *common.URL {
+	return common.NewURLWithOptions(
 		common.WithIp(host),
 		common.WithPort(strconv.Itoa(port)),
 		common.WithPath(service),
@@ -130,8 +130,8 @@ type consulRegistryTestSuite struct {
 	providerRegistry registry.Registry
 	consumerRegistry *consulRegistry
 	listener         registry.Listener
-	providerUrl      common.URL
-	consumerUrl      common.URL
+	providerUrl      *common.URL
+	consumerUrl      *common.URL
 }
 
 func newConsulRegistryTestSuite(t *testing.T) *consulRegistryTestSuite {
@@ -163,6 +163,7 @@ func test1(t *testing.T) {
 	suite.testListener(remoting.EventTypeAdd)
 	suite.testUnregister()
 	suite.testListener(remoting.EventTypeDel)
+	suite.testDestroy()
 }
 
 // subscribe -> register -> unregister
@@ -183,6 +184,7 @@ func test2(t *testing.T) {
 	suite.testListener(remoting.EventTypeAdd)
 	suite.testUnregister()
 	suite.testListener(remoting.EventTypeDel)
+	suite.testDestroy()
 }
 
 func TestConsulRegistry(t *testing.T) {
