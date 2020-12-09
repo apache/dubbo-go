@@ -70,27 +70,27 @@ func (m *mockMetadataService) ServiceName() (string, error) {
 	panic("implement me")
 }
 
-func (m *mockMetadataService) ExportURL(url common.URL) (bool, error) {
+func (m *mockMetadataService) ExportURL(*common.URL) (bool, error) {
 	panic("implement me")
 }
 
-func (m *mockMetadataService) UnexportURL(url common.URL) error {
+func (m *mockMetadataService) UnexportURL(*common.URL) error {
 	panic("implement me")
 }
 
-func (m *mockMetadataService) SubscribeURL(url common.URL) (bool, error) {
+func (m *mockMetadataService) SubscribeURL(*common.URL) (bool, error) {
 	panic("implement me")
 }
 
-func (m *mockMetadataService) UnsubscribeURL(url common.URL) error {
+func (m *mockMetadataService) UnsubscribeURL(*common.URL) error {
 	panic("implement me")
 }
 
-func (m *mockMetadataService) PublishServiceDefinition(url common.URL) error {
+func (m *mockMetadataService) PublishServiceDefinition(*common.URL) error {
 	panic("implement me")
 }
 
-func (m *mockMetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]interface{}, error) {
+func (m *mockMetadataService) GetExportedURLs(string, string, string, string) ([]interface{}, error) {
 	return m.urls, nil
 }
 
@@ -98,8 +98,8 @@ func (m *mockMetadataService) MethodMapper() map[string]string {
 	panic("implement me")
 }
 
-func (m *mockMetadataService) GetSubscribedURLs() ([]common.URL, error) {
-	res := make([]common.URL, 0, len(m.urls))
+func (m *mockMetadataService) GetSubscribedURLs() ([]*common.URL, error) {
+	var res []*common.URL
 	for _, ui := range m.urls {
 		u, _ := common.NewURL(ui.(string))
 		res = append(res, u)
@@ -107,15 +107,15 @@ func (m *mockMetadataService) GetSubscribedURLs() ([]common.URL, error) {
 	return res, nil
 }
 
-func (m *mockMetadataService) GetServiceDefinition(interfaceName string, group string, version string) (string, error) {
+func (m *mockMetadataService) GetServiceDefinition(string, string, string) (string, error) {
 	panic("implement me")
 }
 
-func (m *mockMetadataService) GetServiceDefinitionByServiceKey(serviceKey string) (string, error) {
+func (m *mockMetadataService) GetServiceDefinitionByServiceKey(string) (string, error) {
 	panic("implement me")
 }
 
-func (m *mockMetadataService) RefreshMetadata(exportedRevision string, subscribedRevision string) (bool, error) {
+func (m *mockMetadataService) RefreshMetadata(string, string) (bool, error) {
 	panic("implement me")
 }
 

@@ -22,10 +22,12 @@ import (
 )
 
 import (
+	"github.com/RoaringBitmap/roaring"
 	perrors "github.com/pkg/errors"
 )
 
 import (
+	"github.com/apache/dubbo-go/cluster/router"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/config"
 	"github.com/apache/dubbo-go/common/constant"
@@ -64,14 +66,14 @@ func newListenableRouter(url *common.URL, ruleKey string) (*AppRouter, error) {
 	l.priority = listenableRouterDefaultPriority
 
 	routerKey := ruleKey + constant.ConditionRouterRuleSuffix
-	//add listener
+	// add listener
 	dynamicConfiguration := config.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration == nil {
 		return nil, perrors.Errorf("Get dynamicConfiguration fail, dynamicConfiguration is nil, init config center plugin please")
 	}
 
 	dynamicConfiguration.AddListener(routerKey, l)
-	//get rule
+	// get rule
 	rule, err := dynamicConfiguration.GetRule(routerKey, config_center.WithGroup(config_center.DEFAULT_GROUP))
 	if len(rule) == 0 || err != nil {
 		return nil, perrors.Errorf("Get rule fail, config rule{%s},  error{%v}", rule, err)
@@ -129,13 +131,13 @@ func (l *listenableRouter) generateConditions(rule *RouterRule) {
 }
 
 // Route Determine the target invokers list.
-func (l *listenableRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
-	if len(invokers) == 0 || len(l.conditionRouters) == 0 {
+func (l *listenableRouter) Route(invokers *roaring.Bitmap, cache router.Cache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
+	if invokers.IsEmpty() || len(l.conditionRouters) == 0 {
 		return invokers
 	}
-	//We will check enabled status inside each router.
+	// We will check enabled status inside each router.
 	for _, r := range l.conditionRouters {
-		invokers = r.Route(invokers, url, invocation)
+		invokers = r.Route(invokers, cache, url, invocation)
 	}
 	return invokers
 }
@@ -146,6 +148,6 @@ func (l *listenableRouter) Priority() int64 {
 }
 
 // URL Return URL in listenable router
-func (l *listenableRouter) URL() common.URL {
-	return *l.url
+func (l *listenableRouter) URL() *common.URL {
+	return l.url
 }

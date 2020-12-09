@@ -18,13 +18,16 @@
 package common
 
 import (
+	"bytes"
 	"encoding/base64"
 	"fmt"
+	cm "github.com/Workiva/go-datastructures/common"
 	"math"
 	"net"
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 import (
@@ -76,20 +79,35 @@ func (t RoleType) Role() string {
 }
 
 type baseUrl struct {
-	Protocol     string
-	Location     string // ip+port
-	Ip           string
-	Port         string
+	Protocol string
+	Location string // ip+port
+	Ip       string
+	Port     string
+	//url.Values is not safe map, add to avoid concurrent map read and map write error
+	paramsLock   sync.RWMutex
 	params       url.Values
 	PrimitiveURL string
 }
 
-// URL is not thread-safe.
+// noCopy may be embedded into structs which must not be copied
+// after the first use.
+//
+// See https://golang.org/issues/8005#issuecomment-190753527
+// for details.
+type noCopy struct{}
+
+// Lock is a no-op used by -copylocks checker from `go vet`.
+func (*noCopy) Lock()   {}
+func (*noCopy) Unlock() {}
+
+// URL thread-safe. but this url should not be copied.
 // we fail to define this struct to be immutable object.
 // but, those method which will update the URL, including SetParam, SetParams
 // are only allowed to be invoked in creating URL instance
 // Please keep in mind that this struct is immutable after it has been created and initialized.
 type URL struct {
+	noCopy noCopy
+
 	baseUrl
 	Path     string // like  /com.ikurento.dubbo.UserProvider3
 	Username string
@@ -101,80 +119,80 @@ type URL struct {
 
 // Option accepts url
 // Option will define a function of handling URL
-type option func(*URL)
+type Option func(*URL)
 
 // WithUsername sets username for url
-func WithUsername(username string) option {
+func WithUsername(username string) Option {
 	return func(url *URL) {
 		url.Username = username
 	}
 }
 
 // WithPassword sets password for url
-func WithPassword(pwd string) option {
+func WithPassword(pwd string) Option {
 	return func(url *URL) {
 		url.Password = pwd
 	}
 }
 
 // WithMethods sets methods for url
-func WithMethods(methods []string) option {
+func WithMethods(methods []string) Option {
 	return func(url *URL) {
 		url.Methods = methods
 	}
 }
 
 // WithParams sets params for url
-func WithParams(params url.Values) option {
+func WithParams(params url.Values) Option {
 	return func(url *URL) {
 		url.params = params
 	}
 }
 
 // WithParamsValue sets params field for url
-func WithParamsValue(key, val string) option {
+func WithParamsValue(key, val string) Option {
 	return func(url *URL) {
 		url.SetParam(key, val)
 	}
 }
 
 // WithProtocol sets protocol for url
-func WithProtocol(proto string) option {
+func WithProtocol(proto string) Option {
 	return func(url *URL) {
 		url.Protocol = proto
 	}
 }
 
 // WithIp sets ip for url
-func WithIp(ip string) option {
+func WithIp(ip string) Option {
 	return func(url *URL) {
 		url.Ip = ip
 	}
 }
 
 // WithPort sets port for url
-func WithPort(port string) option {
+func WithPort(port string) Option {
 	return func(url *URL) {
 		url.Port = port
 	}
 }
 
 // WithPath sets path for url
-func WithPath(path string) option {
+func WithPath(path string) Option {
 	return func(url *URL) {
 		url.Path = "/" + strings.TrimPrefix(path, "/")
 	}
 }
 
 // WithLocation sets location for url
-func WithLocation(location string) option {
+func WithLocation(location string) Option {
 	return func(url *URL) {
 		url.Location = location
 	}
 }
 
 // WithToken sets token for url
-func WithToken(token string) option {
+func WithToken(token string) Option {
 	return func(url *URL) {
 		if len(token) > 0 {
 			value := token
@@ -192,51 +210,45 @@ func WithToken(token string) option {
 }
 
 // NewURLWithOptions will create a new url with options
-func NewURLWithOptions(opts ...option) *URL {
-	url := &URL{}
+func NewURLWithOptions(opts ...Option) *URL {
+	newUrl := &URL{}
 	for _, opt := range opts {
-		opt(url)
+		opt(newUrl)
 	}
-	url.Location = url.Ip + ":" + url.Port
-	return url
+	newUrl.Location = newUrl.Ip + ":" + newUrl.Port
+	return newUrl
 }
 
 // NewURL will create a new url
 // the urlString should not be empty
-func NewURL(urlString string, opts ...option) (URL, error) {
-	var (
-		err          error
-		rawUrlString string
-		serviceUrl   *url.URL
-		s            = URL{baseUrl: baseUrl{}}
-	)
-
-	// new a null instance
+func NewURL(urlString string, opts ...Option) (*URL, error) {
+	s := URL{baseUrl: baseUrl{}}
 	if urlString == "" {
-		return s, nil
+		return &s, nil
 	}
 
-	rawUrlString, err = url.QueryUnescape(urlString)
+	rawUrlString, err := url.QueryUnescape(urlString)
 	if err != nil {
-		return s, perrors.Errorf("url.QueryUnescape(%s),  error{%v}", urlString, err)
+		return &s, perrors.Errorf("url.QueryUnescape(%s),  error{%v}", urlString, err)
 	}
 
 	// rawUrlString = "//" + rawUrlString
-	if strings.Index(rawUrlString, "//") < 0 {
+	if !strings.Contains(rawUrlString, "//") {
 		t := URL{baseUrl: baseUrl{}}
 		for _, opt := range opts {
 			opt(&t)
 		}
 		rawUrlString = t.Protocol + "://" + rawUrlString
 	}
-	serviceUrl, err = url.Parse(rawUrlString)
-	if err != nil {
-		return s, perrors.Errorf("url.Parse(url string{%s}),  error{%v}", rawUrlString, err)
+
+	serviceUrl, urlParseErr := url.Parse(rawUrlString)
+	if urlParseErr != nil {
+		return &s, perrors.Errorf("url.Parse(url string{%s}),  error{%v}", rawUrlString, err)
 	}
 
 	s.params, err = url.ParseQuery(serviceUrl.RawQuery)
 	if err != nil {
-		return s, perrors.Errorf("url.ParseQuery(raw url string{%s}),  error{%v}", serviceUrl.RawQuery, err)
+		return &s, perrors.Errorf("url.ParseQuery(raw url string{%s}),  error{%v}", serviceUrl.RawQuery, err)
 	}
 
 	s.PrimitiveURL = urlString
@@ -248,25 +260,29 @@ func NewURL(urlString string, opts ...option) (URL, error) {
 	if strings.Contains(s.Location, ":") {
 		s.Ip, s.Port, err = net.SplitHostPort(s.Location)
 		if err != nil {
-			return s, perrors.Errorf("net.SplitHostPort(url.Host{%s}), error{%v}", s.Location, err)
+			return &s, perrors.Errorf("net.SplitHostPort(url.Host{%s}), error{%v}", s.Location, err)
 		}
 	}
 	for _, opt := range opts {
 		opt(&s)
 	}
-	return s, nil
+	return &s, nil
 }
 
 // URLEqual judge @url and @c is equal or not.
-func (c URL) URLEqual(url URL) bool {
-	c.Ip = ""
-	c.Port = ""
-	url.Ip = ""
-	url.Port = ""
-	cGroup := c.GetParam(constant.GROUP_KEY, "")
-	urlGroup := url.GetParam(constant.GROUP_KEY, "")
-	cKey := c.Key()
-	urlKey := url.Key()
+func (c *URL) URLEqual(url *URL) bool {
+	tmpC := c.Clone()
+	tmpC.Ip = ""
+	tmpC.Port = ""
+
+	tmpUrl := url.Clone()
+	tmpUrl.Ip = ""
+	tmpUrl.Port = ""
+
+	cGroup := tmpC.GetParam(constant.GROUP_KEY, "")
+	urlGroup := tmpUrl.GetParam(constant.GROUP_KEY, "")
+	cKey := tmpC.Key()
+	urlKey := tmpUrl.Key()
 
 	if cGroup == constant.ANY_VALUE {
 		cKey = strings.Replace(cKey, "group=*", "group="+urlGroup, 1)
@@ -280,12 +296,12 @@ func (c URL) URLEqual(url URL) bool {
 	}
 
 	// 2. if url contains enabled key, should be true, or *
-	if url.GetParam(constant.ENABLED_KEY, "true") != "true" && url.GetParam(constant.ENABLED_KEY, "") != constant.ANY_VALUE {
+	if tmpUrl.GetParam(constant.ENABLED_KEY, "true") != "true" && tmpUrl.GetParam(constant.ENABLED_KEY, "") != constant.ANY_VALUE {
 		return false
 	}
 
 	// TODO :may need add interface key any value condition
-	return isMatchCategory(url.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY), c.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY))
+	return isMatchCategory(tmpUrl.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY), tmpC.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY))
 }
 
 func isMatchCategory(category1 string, category2 string) bool {
@@ -300,37 +316,35 @@ func isMatchCategory(category1 string, category2 string) bool {
 	}
 }
 
-func (c URL) String() string {
+func (c *URL) String() string {
 	var buf strings.Builder
 	if len(c.Username) == 0 && len(c.Password) == 0 {
-		buf.WriteString(fmt.Sprintf(
-			"%s://%s:%s%s?",
-			c.Protocol, c.Ip, c.Port, c.Path))
+		buf.WriteString(fmt.Sprintf("%s://%s:%s%s?", c.Protocol, c.Ip, c.Port, c.Path))
 	} else {
-		buf.WriteString(fmt.Sprintf(
-			"%s://%s:%s@%s:%s%s?",
-			c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path))
+		buf.WriteString(fmt.Sprintf("%s://%s:%s@%s:%s%s?", c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path))
 	}
 	buf.WriteString(c.params.Encode())
 	return buf.String()
 }
 
 // Key gets key
-func (c URL) Key() string {
-	buildString := fmt.Sprintf(
-		"%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s",
+func (c *URL) Key() string {
+	buildString := fmt.Sprintf("%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s",
 		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GROUP_KEY, ""), c.GetParam(constant.VERSION_KEY, ""))
 	return buildString
 }
 
 // ServiceKey gets a unique key of a service.
-func (c URL) ServiceKey() string {
-	intf := c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
+func (c *URL) ServiceKey() string {
+	return ServiceKey(c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/")),
+		c.GetParam(constant.GROUP_KEY, ""), c.GetParam(constant.VERSION_KEY, ""))
+}
+
+func ServiceKey(intf string, group string, version string) string {
 	if intf == "" {
 		return ""
 	}
-	var buf strings.Builder
-	group := c.GetParam(constant.GROUP_KEY, "")
+	buf := &bytes.Buffer{}
 	if group != "" {
 		buf.WriteString(group)
 		buf.WriteString("/")
@@ -338,7 +352,6 @@ func (c URL) ServiceKey() string {
 
 	buf.WriteString(intf)
 
-	version := c.GetParam(constant.VERSION_KEY, "")
 	if version != "" && version != "0.0.0" {
 		buf.WriteString(":")
 		buf.WriteString(version)
@@ -376,7 +389,7 @@ func (c *URL) EncodedServiceKey() string {
 }
 
 // Service gets service
-func (c URL) Service() string {
+func (c *URL) Service() string {
 	service := c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
 	if service != "" {
 		return service
@@ -390,23 +403,34 @@ func (c URL) Service() string {
 }
 
 // AddParam will add the key-value pair
-// Not thread-safe
-// think twice before using it.
 func (c *URL) AddParam(key string, value string) {
+	c.paramsLock.Lock()
+	defer c.paramsLock.Unlock()
+	c.params.Add(key, value)
+}
+
+// AddParamAvoidNil will add key-value pair
+func (c *URL) AddParamAvoidNil(key string, value string) {
+	c.paramsLock.Lock()
+	defer c.paramsLock.Unlock()
+	if c.params == nil {
+		c.params = url.Values{}
+	}
 	c.params.Add(key, value)
 }
 
 // SetParam will put the key-value pair into url
-// it's not thread safe.
-// think twice before you want to use this method
 // usually it should only be invoked when you want to initialized an url
 func (c *URL) SetParam(key string, value string) {
+	c.paramsLock.Lock()
+	defer c.paramsLock.Unlock()
 	c.params.Set(key, value)
 }
 
 // RangeParams will iterate the params
-// it's not thread-safe
 func (c *URL) RangeParams(f func(key, value string) bool) {
+	c.paramsLock.RLock()
+	defer c.paramsLock.RUnlock()
 	for k, v := range c.params {
 		if !f(k, v[0]) {
 			break
@@ -415,7 +439,9 @@ func (c *URL) RangeParams(f func(key, value string) bool) {
 }
 
 // GetParam gets value by key
-func (c URL) GetParam(s string, d string) string {
+func (c *URL) GetParam(s string, d string) string {
+	c.paramsLock.RLock()
+	defer c.paramsLock.RUnlock()
 	r := c.params.Get(s)
 	if len(r) == 0 {
 		r = d
@@ -424,19 +450,19 @@ func (c URL) GetParam(s string, d string) string {
 }
 
 // GetParams gets values
-func (c URL) GetParams() url.Values {
+func (c *URL) GetParams() url.Values {
 	return c.params
 }
 
 // GetParamAndDecoded gets values and decode
-func (c URL) GetParamAndDecoded(key string) (string, error) {
+func (c *URL) GetParamAndDecoded(key string) (string, error) {
 	ruleDec, err := base64.URLEncoding.DecodeString(c.GetParam(key, ""))
 	value := string(ruleDec)
 	return value, err
 }
 
 // GetRawParam gets raw param
-func (c URL) GetRawParam(key string) string {
+func (c *URL) GetRawParam(key string) string {
 	switch key {
 	case PROTOCOL:
 		return c.Protocol
@@ -456,7 +482,7 @@ func (c URL) GetRawParam(key string) string {
 }
 
 // GetParamBool judge whether @key exists or not
-func (c URL) GetParamBool(key string, d bool) bool {
+func (c *URL) GetParamBool(key string, d bool) bool {
 	r, err := strconv.ParseBool(c.GetParam(key, ""))
 	if err != nil {
 		return d
@@ -464,26 +490,53 @@ func (c URL) GetParamBool(key string, d bool) bool {
 	return r
 }
 
-// GetParamInt gets int value by @key
-func (c URL) GetParamInt(key string, d int64) int64 {
-	r, err := strconv.Atoi(c.GetParam(key, ""))
-	if r == 0 || err != nil {
+// GetParamInt gets int64 value by @key
+func (c *URL) GetParamInt(key string, d int64) int64 {
+	r, err := strconv.ParseInt(c.GetParam(key, ""), 10, 64)
+	if err != nil {
 		return d
 	}
-	return int64(r)
+	return r
+}
+
+// GetParamInt32 gets int32 value by @key
+func (c *URL) GetParamInt32(key string, d int32) int32 {
+	r, err := strconv.ParseInt(c.GetParam(key, ""), 10, 32)
+	if err != nil {
+		return d
+	}
+	return int32(r)
+}
+
+// GetParamByIntValue gets int value by @key
+func (c *URL) GetParamByIntValue(key string, d int) int {
+	r, err := strconv.ParseInt(c.GetParam(key, ""), 10, 0)
+	if err != nil {
+		return d
+	}
+	return int(r)
 }
 
 // GetMethodParamInt gets int method param
-func (c URL) GetMethodParamInt(method string, key string, d int64) int64 {
-	r, err := strconv.Atoi(c.GetParam("methods."+method+"."+key, ""))
-	if r == 0 || err != nil {
+func (c *URL) GetMethodParamInt(method string, key string, d int64) int64 {
+	r, err := strconv.ParseInt(c.GetParam("methods."+method+"."+key, ""), 10, 64)
+	if err != nil {
 		return d
 	}
-	return int64(r)
+	return r
+}
+
+// GetMethodParamIntValue gets int method param
+func (c *URL) GetMethodParamIntValue(method string, key string, d int) int {
+	r, err := strconv.ParseInt(c.GetParam("methods."+method+"."+key, ""), 10, 0)
+	if err != nil {
+		return d
+	}
+	return int(r)
 }
 
 // GetMethodParamInt64 gets int64 method param
-func (c URL) GetMethodParamInt64(method string, key string, d int64) int64 {
+func (c *URL) GetMethodParamInt64(method string, key string, d int64) int64 {
 	r := c.GetMethodParamInt(method, key, math.MinInt64)
 	if r == math.MinInt64 {
 		return c.GetParamInt(key, d)
@@ -492,7 +545,7 @@ func (c URL) GetMethodParamInt64(method string, key string, d int64) int64 {
 }
 
 // GetMethodParam gets method param
-func (c URL) GetMethodParam(method string, key string, d string) string {
+func (c *URL) GetMethodParam(method string, key string, d string) string {
 	r := c.GetParam("methods."+method+"."+key, "")
 	if r == "" {
 		r = d
@@ -501,7 +554,7 @@ func (c URL) GetMethodParam(method string, key string, d string) string {
 }
 
 // GetMethodParamBool judge whether @method param exists or not
-func (c URL) GetMethodParamBool(method string, key string, d bool) bool {
+func (c *URL) GetMethodParamBool(method string, key string, d bool) bool {
 	r := c.GetParamBool("methods."+method+"."+key, d)
 	return r
 }
@@ -517,7 +570,7 @@ func (c *URL) SetParams(m url.Values) {
 }
 
 // ToMap transfer URL to Map
-func (c URL) ToMap() map[string]string {
+func (c *URL) ToMap() map[string]string {
 	paramsMap := make(map[string]string)
 
 	c.RangeParams(func(key, value string) bool {
@@ -621,6 +674,19 @@ func (c *URL) CloneExceptParams(excludeParams *gxset.HashSet) *URL {
 	return newUrl
 }
 
+func (c *URL) Compare(comp cm.Comparator) int {
+	a := c.String()
+	b := comp.(*URL).String()
+	switch {
+	case a > b:
+		return 1
+	case a < b:
+		return -1
+	default:
+		return 0
+	}
+}
+
 // Copy url based on the reserved parameter's keys.
 func (c *URL) CloneWithParams(reserveParams []string) *URL {
 	params := url.Values{}
@@ -643,6 +709,34 @@ func (c *URL) CloneWithParams(reserveParams []string) *URL {
 	)
 }
 
+// IsEquals compares if two URLs equals with each other. Excludes are all parameter keys which should ignored.
+func IsEquals(left *URL, right *URL, excludes ...string) bool {
+	if left.Ip != right.Ip || left.Port != right.Port {
+		return false
+	}
+
+	leftMap := left.ToMap()
+	rightMap := right.ToMap()
+	for _, exclude := range excludes {
+		delete(leftMap, exclude)
+		delete(rightMap, exclude)
+	}
+
+	if len(leftMap) != len(rightMap) {
+		return false
+	}
+
+	for lk, lv := range leftMap {
+		if rv, ok := rightMap[lk]; !ok {
+			return false
+		} else if lv != rv {
+			return false
+		}
+	}
+
+	return true
+}
+
 func mergeNormalParam(mergedUrl *URL, referenceUrl *URL, paramKeys []string) []func(method string) {
 	methodConfigMergeFcn := make([]func(method string), 0, len(paramKeys))
 	for _, paramKey := range paramKeys {
@@ -660,7 +754,7 @@ func mergeNormalParam(mergedUrl *URL, referenceUrl *URL, paramKeys []string) []f
 
 // URLSlice will be used to sort URL instance
 // Instances will be order by URL.String()
-type URLSlice []URL
+type URLSlice []*URL
 
 // nolint
 func (s URLSlice) Len() int {

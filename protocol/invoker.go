@@ -26,7 +26,7 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
-// Invoker ...
+// Invoker the service invocation interface for the consumer
 //go:generate mockgen -source invoker.go -destination mock/mock_invoker.go  -self_package github.com/apache/dubbo-go/protocol/mock --package mock  Invoker
 // Extension - Invoker
 type Invoker interface {
@@ -41,13 +41,13 @@ type Invoker interface {
 
 // BaseInvoker provides default invoker implement
 type BaseInvoker struct {
-	url       common.URL
+	url       *common.URL
 	available bool
 	destroyed bool
 }
 
 // NewBaseInvoker creates a new BaseInvoker
-func NewBaseInvoker(url common.URL) *BaseInvoker {
+func NewBaseInvoker(url *common.URL) *BaseInvoker {
 	return &BaseInvoker{
 		url:       url,
 		available: true,
@@ -56,7 +56,7 @@ func NewBaseInvoker(url common.URL) *BaseInvoker {
 }
 
 // GetUrl gets base invoker URL
-func (bi *BaseInvoker) GetUrl() common.URL {
+func (bi *BaseInvoker) GetUrl() *common.URL {
 	return bi.url
 }
 

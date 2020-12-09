@@ -36,7 +36,7 @@ import (
 
 func TestMethodServiceTpsLimiterImplIsAllowableOnlyServiceLevel(t *testing.T) {
 	methodName := "hello"
-	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]string, 0))
+	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]interface{}, 0))
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -57,13 +57,13 @@ func TestMethodServiceTpsLimiterImplIsAllowableOnlyServiceLevel(t *testing.T) {
 	})
 
 	limiter := GetMethodServiceTpsLimiter()
-	result := limiter.IsAllowable(*invokeUrl, invoc)
+	result := limiter.IsAllowable(invokeUrl, invoc)
 	assert.True(t, result)
 }
 
 func TestMethodServiceTpsLimiterImplIsAllowableNoConfig(t *testing.T) {
 	methodName := "hello1"
-	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]string, 0))
+	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]interface{}, 0))
 	// ctrl := gomock.NewController(t)
 	// defer ctrl.Finish()
 
@@ -73,14 +73,14 @@ func TestMethodServiceTpsLimiterImplIsAllowableNoConfig(t *testing.T) {
 		common.WithParamsValue(constant.TPS_LIMIT_RATE_KEY, ""))
 
 	limiter := GetMethodServiceTpsLimiter()
-	result := limiter.IsAllowable(*invokeUrl, invoc)
+	result := limiter.IsAllowable(invokeUrl, invoc)
 	assert.True(t, result)
 }
 
 func TestMethodServiceTpsLimiterImplIsAllowableMethodLevelOverride(t *testing.T) {
 	methodName := "hello2"
 	methodConfigPrefix := "methods." + methodName + "."
-	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]string, 0))
+	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]interface{}, 0))
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -106,14 +106,14 @@ func TestMethodServiceTpsLimiterImplIsAllowableMethodLevelOverride(t *testing.T)
 	})
 
 	limiter := GetMethodServiceTpsLimiter()
-	result := limiter.IsAllowable(*invokeUrl, invoc)
+	result := limiter.IsAllowable(invokeUrl, invoc)
 	assert.True(t, result)
 }
 
 func TestMethodServiceTpsLimiterImplIsAllowableBothMethodAndService(t *testing.T) {
 	methodName := "hello3"
 	methodConfigPrefix := "methods." + methodName + "."
-	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]string, 0))
+	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]interface{}, 0))
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -136,7 +136,7 @@ func TestMethodServiceTpsLimiterImplIsAllowableBothMethodAndService(t *testing.T
 	})
 
 	limiter := GetMethodServiceTpsLimiter()
-	result := limiter.IsAllowable(*invokeUrl, invoc)
+	result := limiter.IsAllowable(invokeUrl, invoc)
 	assert.True(t, result)
 }
 

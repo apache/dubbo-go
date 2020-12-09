@@ -26,19 +26,20 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common"
 	_ "github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/config"
 	_ "github.com/apache/dubbo-go/filter/filter_impl"
 	"github.com/apache/dubbo-go/metadata/service/inmemory"
-	"github.com/apache/dubbo-go/protocol/dubbo"
 	_ "github.com/apache/dubbo-go/protocol/dubbo"
+	"github.com/apache/dubbo-go/remoting/getty"
 )
 
 func TestConfigurableExporter(t *testing.T) {
-	dubbo.SetServerConfig(dubbo.ServerConfig{
+	getty.SetServerConfig(getty.ServerConfig{
 		SessionNumber:  700,
 		SessionTimeout: "20s",
-		GettySessionParam: dubbo.GettySessionParam{
+		GettySessionParam: getty.GettySessionParam{
 			CompressEncoding: false,
 			TcpNoDelay:       true,
 			TcpKeepAlive:     true,
@@ -55,12 +56,23 @@ func TestConfigurableExporter(t *testing.T) {
 	mockInitProviderWithSingleRegistry()
 	metadataService, _ := inmemory.NewMetadataService()
 	exported := NewMetadataServiceExporter(metadataService)
-	assert.Equal(t, false, exported.IsExported())
-	assert.NoError(t, exported.Export())
-	assert.Equal(t, true, exported.IsExported())
-	assert.Regexp(t, "dubbo://:20000/MetadataService*", exported.GetExportedURLs()[0].String())
-	exported.Unexport()
-	assert.Equal(t, false, exported.IsExported())
+
+	t.Run("configurableExporterUrlNil", func(t *testing.T) {
+		assert.Equal(t, false, exported.IsExported())
+		assert.Error(t, exported.Export(nil), "metadata server url is nil, pls check your configuration")
+	})
+
+	t.Run("configurableExporter", func(t *testing.T) {
+		registryURL, _ := common.NewURL("service-discovery://localhost:12345")
+		subURL, _ := common.NewURL("dubbo://localhost:20003")
+		registryURL.SubURL = subURL
+		assert.Equal(t, false, exported.IsExported())
+		assert.NoError(t, exported.Export(registryURL))
+		assert.Equal(t, true, exported.IsExported())
+		assert.Regexp(t, "dubbo://:20003/MetadataService*", exported.GetExportedURLs()[0].String())
+		exported.Unexport()
+		assert.Equal(t, false, exported.IsExported())
+	})
 }
 
 // mockInitProviderWithSingleRegistry will init a mocked providerConfig

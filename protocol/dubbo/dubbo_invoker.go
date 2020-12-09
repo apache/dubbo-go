@@ -20,6 +20,7 @@ package dubbo
 import (
 	"context"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -34,8 +35,10 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 var (
@@ -46,24 +49,35 @@ var (
 )
 
 var (
-	attachmentKey = []string{constant.INTERFACE_KEY, constant.GROUP_KEY, constant.TOKEN_KEY, constant.TIMEOUT_KEY}
+	attachmentKey = []string{constant.INTERFACE_KEY, constant.GROUP_KEY, constant.TOKEN_KEY, constant.TIMEOUT_KEY,
+		constant.VERSION_KEY}
 )
 
-// DubboInvoker is dubbo client invoker.
+// DubboInvoker is implement of protocol.Invoker. A dubboInvoker refer to one service and ip.
 type DubboInvoker struct {
 	protocol.BaseInvoker
-	client   *Client
+	// the exchange layer, it is focus on network communication.
+	client   *remoting.ExchangeClient
 	quitOnce sync.Once
+	// timeout for service(interface) level.
+	timeout time.Duration
 	// Used to record the number of requests. -1 represent this DubboInvoker is destroyed
 	reqNum int64
 }
 
-// NewDubboInvoker create dubbo client invoker.
-func NewDubboInvoker(url common.URL, client *Client) *DubboInvoker {
+// NewDubboInvoker constructor
+func NewDubboInvoker(url *common.URL, client *remoting.ExchangeClient) *DubboInvoker {
+	requestTimeout := config.GetConsumerConfig().RequestTimeout
+
+	requestTimeoutStr := url.GetParam(constant.TIMEOUT_KEY, config.GetConsumerConfig().Request_Timeout)
+	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
+		requestTimeout = t
+	}
 	return &DubboInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
 		reqNum:      0,
+		timeout:     requestTimeout,
 	}
 }
 
@@ -84,6 +98,8 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	defer atomic.AddInt64(&(di.reqNum), -1)
 
 	inv := invocation.(*invocation_impl.RPCInvocation)
+	// init param
+	inv.SetAttachments(constant.PATH_KEY, di.GetUrl().GetParam(constant.INTERFACE_KEY, ""))
 	for _, k := range attachmentKey {
 		if v := di.GetUrl().GetParam(k, ""); len(v) > 0 {
 			inv.SetAttachments(k, v)
@@ -94,33 +110,59 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	di.appendCtx(ctx, inv)
 
 	url := di.GetUrl()
+	// default hessian2 serialization, compatible
+	if url.GetParam(constant.SERIALIZATION_KEY, "") == "" {
+		url.SetParam(constant.SERIALIZATION_KEY, constant.HESSIAN2_SERIALIZATION)
+	}
 	// async
 	async, err := strconv.ParseBool(inv.AttachmentsByKey(constant.ASYNC_KEY, "false"))
 	if err != nil {
 		logger.Errorf("ParseBool - error: %v", err)
 		async = false
 	}
-	response := NewResponse(inv.Reply(), nil)
+	//response := NewResponse(inv.Reply(), nil)
+	rest := &protocol.RPCResult{}
+	timeout := di.getTimeout(inv)
 	if async {
 		if callBack, ok := inv.CallBack().(func(response common.CallbackResponse)); ok {
-			result.Err = di.client.AsyncCall(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), callBack, response)
+			//result.Err = di.client.AsyncCall(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), callBack, response)
+			result.Err = di.client.AsyncRequest(&invocation, url, timeout, callBack, rest)
 		} else {
-			result.Err = di.client.CallOneway(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()))
+			result.Err = di.client.Send(&invocation, url, timeout)
 		}
 	} else {
 		if inv.Reply() == nil {
 			result.Err = ErrNoReply
 		} else {
-			result.Err = di.client.Call(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), response)
+			result.Err = di.client.Request(&invocation, url, timeout, rest)
 		}
 	}
 	if result.Err == nil {
 		result.Rest = inv.Reply()
-		result.Attrs = response.atta
+		result.Attrs = rest.Attrs
 	}
 	logger.Debugf("result.Err: %v, result.Rest: %v", result.Err, result.Rest)
 
 	return &result
+}
+
+// get timeout including methodConfig
+func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) time.Duration {
+	var timeout = di.GetUrl().GetParam(strings.Join([]string{constant.METHOD_KEYS, invocation.MethodName(), constant.TIMEOUT_KEY}, "."), "")
+	if len(timeout) != 0 {
+		if t, err := time.ParseDuration(timeout); err == nil {
+			// config timeout into attachment
+			invocation.SetAttachments(constant.TIMEOUT_KEY, strconv.Itoa(int(t.Milliseconds())))
+			return t
+		}
+	}
+	// set timeout into invocation at method level
+	invocation.SetAttachments(constant.TIMEOUT_KEY, strconv.Itoa(int(di.timeout.Milliseconds())))
+	return di.timeout
+}
+
+func (di *DubboInvoker) IsAvailable() bool {
+	return di.client.IsAvailable()
 }
 
 // Destroy destroy dubbo client invoker.
@@ -150,8 +192,7 @@ func (di *DubboInvoker) appendCtx(ctx context.Context, inv *invocation_impl.RPCI
 	// inject opentracing ctx
 	currentSpan := opentracing.SpanFromContext(ctx)
 	if currentSpan != nil {
-		carrier := opentracing.TextMapCarrier(inv.Attachments())
-		err := opentracing.GlobalTracer().Inject(currentSpan.Context(), opentracing.TextMap, carrier)
+		err := injectTraceCtx(currentSpan, inv)
 		if err != nil {
 			logger.Errorf("Could not inject the span context into attachments: %v", err)
 		}

@@ -94,7 +94,7 @@ func (mrr *metadataReportRetry) startRetryTask() {
 
 // MetadataReport is a absolute delegate for MetadataReport
 type MetadataReport struct {
-	reportUrl           common.URL
+	reportUrl           *common.URL
 	syncReport          bool
 	metadataReportRetry *metadataReportRetry
 
@@ -215,7 +215,7 @@ func (mr *MetadataReport) StoreConsumerMetadata(identifier *identifier.MetadataI
 }
 
 // SaveServiceMetadata will delegate to call remote metadata's sdk to save service metadata
-func (mr *MetadataReport) SaveServiceMetadata(identifier *identifier.ServiceMetadataIdentifier, url common.URL) error {
+func (mr *MetadataReport) SaveServiceMetadata(identifier *identifier.ServiceMetadataIdentifier, url *common.URL) error {
 	report := instance.GetMetadataReportInstance()
 	if mr.syncReport {
 		return report.SaveServiceMetadata(identifier, url)
@@ -241,7 +241,7 @@ func (mr *MetadataReport) GetExportedURLs(identifier *identifier.ServiceMetadata
 }
 
 // SaveSubscribedData will delegate to call remote metadata's sdk to save subscribed data
-func (mr *MetadataReport) SaveSubscribedData(identifier *identifier.SubscriberMetadataIdentifier, urls []common.URL) error {
+func (mr *MetadataReport) SaveSubscribedData(identifier *identifier.SubscriberMetadataIdentifier, urls []*common.URL) error {
 	urlStrList := make([]string, 0, len(urls))
 	for _, url := range urls {
 		urlStrList = append(urlStrList, url.String())
@@ -260,13 +260,13 @@ func (mr *MetadataReport) SaveSubscribedData(identifier *identifier.SubscriberMe
 }
 
 // GetSubscribedURLs will delegate to call remote metadata's sdk to get subscribed urls
-func (MetadataReport) GetSubscribedURLs(identifier *identifier.SubscriberMetadataIdentifier) ([]string, error) {
+func (mr *MetadataReport) GetSubscribedURLs(identifier *identifier.SubscriberMetadataIdentifier) ([]string, error) {
 	report := instance.GetMetadataReportInstance()
 	return report.GetSubscribedURLs(identifier)
 }
 
 // GetServiceDefinition will delegate to call remote metadata's sdk to get service definitions
-func (MetadataReport) GetServiceDefinition(identifier *identifier.MetadataIdentifier) (string, error) {
+func (mr *MetadataReport) GetServiceDefinition(identifier *identifier.MetadataIdentifier) (string, error) {
 	report := instance.GetMetadataReportInstance()
 	return report.GetServiceDefinition(identifier)
 }

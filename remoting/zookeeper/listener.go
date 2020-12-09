@@ -301,6 +301,9 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 			go func(zkPath string, listener remoting.DataListener) {
 				if l.listenServiceNodeEvent(zkPath) {
 					listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeDel})
+					l.pathMapLock.Lock()
+					defer l.pathMapLock.Unlock()
+					delete(l.pathMap, zkPath)
 				}
 				logger.Warnf("listenSelf(zk path{%s}) goroutine exit now", zkPath)
 			}(dubboPath, listener)
@@ -322,7 +325,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 		for {
 			select {
 			case <-ticker.C:
-				l.handleZkNodeEvent(zkEvent.Path, children, listener)
+				l.handleZkNodeEvent(zkPath, children, listener)
 			case zkEvent = <-childEventCh:
 				logger.Warnf("get a zookeeper zkEvent{type:%s, server:%s, path:%s, state:%d-%s, err:%s}",
 					zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, StateToString(zkEvent.State), zkEvent.Err)

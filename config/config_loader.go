@@ -28,7 +28,6 @@ import (
 )
 
 import (
-	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 )
 
@@ -141,19 +140,18 @@ func loadConsumerConfig() {
 
 	// wait for invoker is available, if wait over default 3s, then panic
 	var count int
-	checkok := true
 	for {
+		checkok := true
 		for _, refconfig := range consumerConfig.References {
 			if (refconfig.Check != nil && *refconfig.Check) ||
 				(refconfig.Check == nil && consumerConfig.Check != nil && *consumerConfig.Check) ||
 				(refconfig.Check == nil && consumerConfig.Check == nil) { // default to true
 
-				if refconfig.invoker != nil &&
-					!refconfig.invoker.IsAvailable() {
+				if refconfig.invoker != nil && !refconfig.invoker.IsAvailable() {
 					checkok = false
 					count++
 					if count > maxWait {
-						errMsg := fmt.Sprintf("Failed to check the status of the service %v . No provider available for the service to the consumer use dubbo version %v", refconfig.InterfaceName, constant.Version)
+						errMsg := fmt.Sprintf("Failed to check the status of the service %v. No provider available for the service to the consumer use dubbo version %v", refconfig.InterfaceName, constant.Version)
 						logger.Error(errMsg)
 						panic(errMsg)
 					}
@@ -161,14 +159,13 @@ func loadConsumerConfig() {
 					break
 				}
 				if refconfig.invoker == nil {
-					logger.Warnf("The interface %s invoker not exist , may you should check your interface config.", refconfig.InterfaceName)
+					logger.Warnf("The interface %s invoker not exist, may you should check your interface config.", refconfig.InterfaceName)
 				}
 			}
 		}
 		if checkok {
 			break
 		}
-		checkok = true
 	}
 }
 
@@ -219,7 +216,7 @@ func registerServiceInstance() {
 	if url == nil {
 		return
 	}
-	instance, err := createInstance(*url)
+	instance, err := createInstance(url)
 	if err != nil {
 		panic(err)
 	}
@@ -243,7 +240,7 @@ func registerServiceInstance() {
 }
 
 // nolint
-func createInstance(url common.URL) (registry.ServiceInstance, error) {
+func createInstance(url *common.URL) (registry.ServiceInstance, error) {
 	appConfig := GetApplicationConfig()
 	port, err := strconv.ParseInt(url.Port, 10, 32)
 	if err != nil {
@@ -252,10 +249,7 @@ func createInstance(url common.URL) (registry.ServiceInstance, error) {
 
 	host := url.Ip
 	if len(host) == 0 {
-		host, err = gxnet.GetLocalIP()
-		if err != nil {
-			return nil, perrors.WithMessage(err, "could not get the local Ip")
-		}
+		host = common.GetLocalIp()
 	}
 
 	// usually we will add more metadata
@@ -275,7 +269,7 @@ func createInstance(url common.URL) (registry.ServiceInstance, error) {
 
 // selectMetadataServiceExportedURL get already be exported url
 func selectMetadataServiceExportedURL() *common.URL {
-	var selectedUrl common.URL
+	var selectedUrl *common.URL
 	metaDataService, err := extension.GetMetadataService(GetApplicationConfig().MetadataType)
 	if err != nil {
 		logger.Warn(err)
@@ -300,7 +294,7 @@ func selectMetadataServiceExportedURL() *common.URL {
 			break
 		}
 	}
-	return &selectedUrl
+	return selectedUrl
 }
 
 func initRouter() {

@@ -44,8 +44,8 @@ func (r RestSubscribedURLsSynthesizer) Support(subscribedURL *common.URL) bool {
 	return false
 }
 
-func (r RestSubscribedURLsSynthesizer) Synthesize(subscribedURL *common.URL, serviceInstances []registry.ServiceInstance) []common.URL {
-	urls := make([]common.URL, len(serviceInstances), len(serviceInstances))
+func (r RestSubscribedURLsSynthesizer) Synthesize(subscribedURL *common.URL, serviceInstances []registry.ServiceInstance) []*common.URL {
+	urls := make([]*common.URL, len(serviceInstances), len(serviceInstances))
 	for i, s := range serviceInstances {
 		splitHost := strings.Split(s.GetHost(), ":")
 		u := common.NewURLWithOptions(common.WithProtocol(subscribedURL.Protocol), common.WithIp(splitHost[0]),
@@ -55,7 +55,7 @@ func (r RestSubscribedURLsSynthesizer) Synthesize(subscribedURL *common.URL, ser
 			common.WithParamsValue(constant.APPLICATION_KEY, s.GetServiceName()),
 			common.WithParamsValue(constant.REGISTRY_KEY, "true"),
 		)
-		urls[i] = *u
+		urls[i] = u
 	}
 	return urls
 }

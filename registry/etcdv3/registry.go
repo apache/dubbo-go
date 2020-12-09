@@ -91,7 +91,7 @@ func newETCDV3Registry(url *common.URL) (registry.Registry, error) {
 		r,
 		etcdv3.WithName(etcdv3.RegistryETCDV3Client),
 		etcdv3.WithTimeout(timeout),
-		etcdv3.WithEndpoints(url.Location),
+		etcdv3.WithEndpoints(strings.Split(url.Location, ",")...),
 	); err != nil {
 		return nil, err
 	}
@@ -112,8 +112,9 @@ func (r *etcdV3Registry) InitListeners() {
 }
 
 // DoRegister actually do the register job in the registry center of etcd
+// for lease
 func (r *etcdV3Registry) DoRegister(root string, node string) error {
-	return r.client.Create(path.Join(root, node), "")
+	return r.client.RegisterTemp(path.Join(root, node), "")
 }
 
 // nolint

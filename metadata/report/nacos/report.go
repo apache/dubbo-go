@@ -69,7 +69,7 @@ func (n *nacosMetadataReport) StoreConsumerMetadata(consumerMetadataIdentifier *
 }
 
 // SaveServiceMetadata saves the metadata.
-func (n *nacosMetadataReport) SaveServiceMetadata(metadataIdentifier *identifier.ServiceMetadataIdentifier, url common.URL) error {
+func (n *nacosMetadataReport) SaveServiceMetadata(metadataIdentifier *identifier.ServiceMetadataIdentifier, url *common.URL) error {
 	return n.storeMetadata(vo.ConfigParam{
 		DataId:  metadataIdentifier.GetIdentifierKey(),
 		Group:   metadataIdentifier.Group,

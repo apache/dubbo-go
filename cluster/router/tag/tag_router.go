@@ -18,17 +18,20 @@
 package tag
 
 import (
-	"net"
 	"strconv"
+	"strings"
+	"sync"
 )
 
 import (
+	"github.com/RoaringBitmap/roaring"
 	gxnet "github.com/dubbogo/gost/net"
-	"github.com/jinzhu/copier"
 	perrors "github.com/pkg/errors"
 )
 
 import (
+	"github.com/apache/dubbo-go/cluster/router"
+	"github.com/apache/dubbo-go/cluster/router/utils"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/config"
 	"github.com/apache/dubbo-go/common/constant"
@@ -38,6 +41,32 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
+const (
+	name          = "tag-router"
+	staticPrefix  = "static-"
+	dynamicPrefix = "dynamic-"
+)
+
+// addrMetadata keeps snapshot data for app name, and some infos extracted from dynamic tag rule in order to make
+// Route() method lock-free.
+type addrMetadata struct {
+	// application name
+	application string
+	// is rule a runtime rule
+	ruleRuntime bool
+	// is rule a force rule
+	ruleForce bool
+	// is rule a valid rule
+	ruleValid bool
+	// is rule an enabled rule
+	ruleEnabled bool
+}
+
+// Source indicates where the metadata comes from.
+func (m *addrMetadata) Source() string {
+	return name
+}
+
 // tagRouter defines url, enable and the priority
 type tagRouter struct {
 	url           *common.URL
@@ -45,6 +74,8 @@ type tagRouter struct {
 	enabled       bool
 	priority      int64
 	application   string
+	ruleChanged   bool
+	mutex         sync.RWMutex
 }
 
 // NewTagRouter returns a tagRouter instance if url is not nil
@@ -65,56 +96,79 @@ func (c *tagRouter) isEnabled() bool {
 }
 
 // Route gets a list of invoker
-func (c *tagRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
-	var (
-		result    []protocol.Invoker
-		addresses []string
-	)
-
-	if !c.isEnabled() || len(invokers) == 0 {
+func (c *tagRouter) Route(invokers *roaring.Bitmap, cache router.Cache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
+	if !c.isEnabled() || invokers.IsEmpty() {
 		return invokers
 	}
 
-	// Use static tags if dynamic tags are not set or invalid
-	if c.tagRouterRule == nil || !c.tagRouterRule.Valid || !c.tagRouterRule.Enabled {
-		return filterUsingStaticTag(invokers, url, invocation)
+	if shouldUseDynamicTag(cache.FindAddrMeta(c)) {
+		return c.routeWithDynamicTag(invokers, cache, url, invocation)
 	}
-
-	// since the rule can be changed by config center, we should copy one to use.
-	tagRouterRuleCopy := new(RouterRule)
-	_ = copier.Copy(tagRouterRuleCopy, c.tagRouterRule)
-	tag, ok := invocation.Attachments()[constant.Tagkey]
-	if !ok {
-		tag = url.GetParam(constant.Tagkey, "")
-	}
-
-	// if we are requesting for a Provider with a specific tag
-	if len(tag) > 0 {
-		return filterInvokersWithTag(invokers, url, invocation, *tagRouterRuleCopy, tag)
-	}
-
-	// return all addresses in dynamic tag group.
-	addresses = tagRouterRuleCopy.getAddresses()
-	if len(addresses) > 0 {
-		filterAddressNotMatches := func(invoker protocol.Invoker) bool {
-			url := invoker.GetUrl()
-			return len(addresses) == 0 || !checkAddressMatch(addresses, url.Ip, url.Port)
-		}
-		result = filterInvoker(invokers, filterAddressNotMatches)
-		// 1. all addresses are in dynamic tag group, return empty list.
-		if len(result) == 0 {
-			return result
-		}
-	}
-	// 2. if there are some addresses that are not in any dynamic tag group, continue to filter using the
-	// static tag group.
-	filter := func(invoker protocol.Invoker) bool {
-		localTag := invoker.GetUrl().GetParam(constant.Tagkey, "")
-		return len(localTag) == 0 || !(tagRouterRuleCopy.hasTag(localTag))
-	}
-	return filterInvoker(result, filter)
+	return c.routeWithStaticTag(invokers, cache, url, invocation)
 }
 
+// routeWithStaticTag routes with static tag rule
+func (c *tagRouter) routeWithStaticTag(invokers *roaring.Bitmap, cache router.Cache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
+	tag := findTag(invocation, url)
+	if tag == "" {
+		return invokers
+	}
+
+	ret, _ := c.filterWithTag(invokers, cache, staticPrefix+tag)
+	if ret.IsEmpty() && !isForceUseTag(url, invocation) {
+		return invokers
+	}
+
+	return ret
+}
+
+// routeWithDynamicTag routes with dynamic tag rule
+func (c *tagRouter) routeWithDynamicTag(invokers *roaring.Bitmap, cache router.Cache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
+	tag := findTag(invocation, url)
+	if tag == "" {
+		return c.filterNotInDynamicTag(invokers, cache)
+	}
+
+	ret, ok := c.filterWithTag(invokers, cache, dynamicPrefix+tag)
+	if ok && (!ret.IsEmpty() || isTagRuleForce(cache.FindAddrMeta(c))) {
+		return ret
+	}
+
+	// dynamic tag group doesn't have any item about the requested app OR it's null after filtered by
+	// dynamic tag group but force=false. check static tag
+	if ret.IsEmpty() {
+		ret, _ = c.filterWithTag(invokers, cache, staticPrefix+tag)
+		// If there's no tagged providers that can match the current tagged request. force.tag is set by default
+		// to false, which means it will invoke any providers without a tag unless it's explicitly disallowed.
+		if !ret.IsEmpty() || isForceUseTag(url, invocation) {
+			return ret
+		}
+		return c.filterNotInDynamicTag(invokers, cache)
+	}
+	return ret
+}
+
+// filterWithTag filters incoming invokers with the given tag
+func (c *tagRouter) filterWithTag(invokers *roaring.Bitmap, cache router.Cache, tag string) (*roaring.Bitmap, bool) {
+	if target, ok := cache.FindAddrPool(c)[tag]; ok {
+		return utils.JoinIfNotEqual(target, invokers), true
+	}
+	return utils.EmptyAddr, false
+}
+
+// filterNotInDynamicTag filters incoming invokers not applied to dynamic tag rule
+func (c *tagRouter) filterNotInDynamicTag(invokers *roaring.Bitmap, cache router.Cache) *roaring.Bitmap {
+	// FAILOVER: return all Providers without any tags.
+	invokers = invokers.Clone()
+	for k, v := range cache.FindAddrPool(c) {
+		if strings.HasPrefix(k, dynamicPrefix) {
+			invokers.AndNot(v)
+		}
+	}
+	return invokers
+}
+
+// Process parses dynamic tag rule
 func (c *tagRouter) Process(event *config_center.ConfigChangeEvent) {
 	logger.Infof("Notification of tag rule, change type is:[%s] , raw rule is:[%v]", event.ConfigType, event.Value)
 	if remoting.EventTypeDel == event.ConfigType {
@@ -132,16 +186,52 @@ func (c *tagRouter) Process(event *config_center.ConfigChangeEvent) {
 		logger.Errorf("Parse dynamic tag router rule fail,error:[%s] ", err)
 		return
 	}
+
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	c.tagRouterRule = routerRule
-	return
+	c.ruleChanged = true
 }
 
-func (c *tagRouter) Notify(invokers []protocol.Invoker) {
-	if len(invokers) == 0 {
+// URL gets the url of tagRouter
+func (c *tagRouter) URL() *common.URL {
+	return c.url
+}
+
+// Priority gets the priority of tagRouter
+func (c *tagRouter) Priority() int64 {
+	return c.priority
+}
+
+// Pool divided invokers into different address pool by tag.
+func (c *tagRouter) Pool(invokers []protocol.Invoker) (router.AddrPool, router.AddrMetadata) {
+	c.fetchRuleIfNecessary(invokers)
+
+	rb := make(router.AddrPool, 8)
+	poolWithStaticTag(invokers, rb)
+
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	poolWithDynamicTag(invokers, c.tagRouterRule, rb)
+	c.ruleChanged = false
+	// create metadata in order to avoid lock in route()
+	meta := addrMetadata{application: c.application}
+	if c.tagRouterRule != nil {
+		meta.ruleForce = c.tagRouterRule.Force
+		meta.ruleEnabled = c.tagRouterRule.Enabled
+		meta.ruleValid = c.tagRouterRule.Valid
+	}
+
+	return rb, &meta
+}
+
+// fetchRuleIfNecessary fetches, parses rule and register listener for the further change
+func (c *tagRouter) fetchRuleIfNecessary(invokers []protocol.Invoker) {
+	if invokers == nil || len(invokers) == 0 {
 		return
 	}
-	invoker := invokers[0]
-	url := invoker.GetUrl()
+
+	url := invokers[0].GetUrl()
 	providerApplication := url.GetParam(constant.RemoteApplicationKey, "")
 	if len(providerApplication) == 0 {
 		logger.Error("TagRouter must getConfig from or subscribe to a specific application, but the application " +
@@ -156,11 +246,15 @@ func (c *tagRouter) Notify(invokers []protocol.Invoker) {
 
 	if providerApplication != c.application {
 		dynamicConfiguration.RemoveListener(c.application+constant.TagRouterRuleSuffix, c)
+	} else {
+		// if app name from URL is as same as the current app name, then it is safe to jump out
+		return
 	}
 
+	c.application = providerApplication
 	routerKey := providerApplication + constant.TagRouterRuleSuffix
 	dynamicConfiguration.AddListener(routerKey, c)
-	//get rule
+	// get rule
 	rule, err := dynamicConfiguration.GetRule(routerKey, config_center.WithGroup(config_center.DEFAULT_GROUP))
 	if len(rule) == 0 || err != nil {
 		logger.Errorf("Get rule fail, config rule{%s},  error{%v}", rule, err)
@@ -174,71 +268,52 @@ func (c *tagRouter) Notify(invokers []protocol.Invoker) {
 	}
 }
 
-// URL gets the url of tagRouter
-func (c *tagRouter) URL() common.URL {
-	return *c.url
+// ShouldPool returns false, to make sure address cache for tag router happens once and only once.
+func (c *tagRouter) ShouldPool() bool {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+	return c.ruleChanged
 }
 
-// Priority gets the priority of tagRouter
-func (c *tagRouter) Priority() int64 {
-	return c.priority
+// Name returns pool's name
+func (c *tagRouter) Name() string {
+	return name
 }
 
-// filterUsingStaticTag gets a list of invoker using static tag
-func filterUsingStaticTag(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
-	if tag, ok := invocation.Attachments()[constant.Tagkey]; ok {
-		result := make([]protocol.Invoker, 0, 8)
-		for _, v := range invokers {
-			if v.GetUrl().GetParam(constant.Tagkey, "") == tag {
-				result = append(result, v)
-			}
-		}
-		if len(result) == 0 && !isForceUseTag(url, invocation) {
-			return invokers
-		}
-		return result
+// poolWithDynamicTag pools addresses with the tags defined in dynamic tag rule, all keys have prefix "dynamic-"
+func poolWithDynamicTag(invokers []protocol.Invoker, rule *RouterRule, pool router.AddrPool) {
+	if rule == nil {
+		return
 	}
-	return invokers
+
+	tagNameToAddresses := rule.getTagNameToAddresses()
+	for tag, addrs := range tagNameToAddresses {
+		pool[dynamicPrefix+tag] = addrsToBitmap(addrs, invokers)
+	}
 }
 
-// filterInvokersWithTag gets a list of invoker using dynamic route with tag
-func filterInvokersWithTag(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation, tagRouterRule RouterRule, tag string) []protocol.Invoker {
-	var (
-		result    []protocol.Invoker
-		addresses []string
-	)
-	addresses, _ = tagRouterRule.getTagNameToAddresses()[tag]
-	// filter by dynamic tag group first
-	if len(addresses) > 0 {
-		filterAddressMatches := func(invoker protocol.Invoker) bool {
-			url := invoker.GetUrl()
-			return len(addresses) > 0 && checkAddressMatch(addresses, url.Ip, url.Port)
-		}
-		result = filterInvoker(invokers, filterAddressMatches)
-		if len(result) > 0 || tagRouterRule.Force {
-			return result
-		}
-	}
-	// dynamic tag group doesn't have any item about the requested app OR it's null after filtered by
-	// dynamic tag group but force=false. check static tag
-	filter := func(invoker protocol.Invoker) bool {
-		return invoker.GetUrl().GetParam(constant.Tagkey, "") == tag
-	}
-	result = filterInvoker(invokers, filter)
-	// If there's no tagged providers that can match the current tagged request. force.tag is set by default
-	// to false, which means it will invoke any providers without a tag unless it's explicitly disallowed.
-	if len(result) > 0 || isForceUseTag(url, invocation) {
-		return result
-	}
-	// FAILOVER: return all Providers without any tags.
-	filterAddressNotMatches := func(invoker protocol.Invoker) bool {
+// poolWithStaticTag pools addresses with tags found from incoming URLs, all keys have prefix "static-"
+func poolWithStaticTag(invokers []protocol.Invoker, pool router.AddrPool) {
+	for i, invoker := range invokers {
 		url := invoker.GetUrl()
-		return len(addresses) == 0 || !checkAddressMatch(tagRouterRule.getAddresses(), url.Ip, url.Port)
+		tag := url.GetParam(constant.Tagkey, "")
+		if len(tag) > 0 {
+			if _, ok := pool[staticPrefix+tag]; !ok {
+				pool[staticPrefix+tag] = roaring.NewBitmap()
+			}
+			pool[staticPrefix+tag].AddInt(i)
+		}
 	}
-	filterTagIsEmpty := func(invoker protocol.Invoker) bool {
-		return invoker.GetUrl().GetParam(constant.Tagkey, "") == ""
-	}
-	return filterInvoker(invokers, filterAddressNotMatches, filterTagIsEmpty)
+}
+
+// shouldUseDynamicTag uses the snapshot data from the parsed rule to decide if dynamic tag rule should be used or not
+func shouldUseDynamicTag(meta router.AddrMetadata) bool {
+	return meta.(*addrMetadata).ruleValid && meta.(*addrMetadata).ruleEnabled
+}
+
+// isTagRuleForce uses the snapshot data from the parsed rule to decide if dynamic tag rule is forced or not
+func isTagRuleForce(meta router.AddrMetadata) bool {
+	return meta.(*addrMetadata).ruleForce
 }
 
 // isForceUseTag returns whether force use tag
@@ -249,31 +324,46 @@ func isForceUseTag(url *common.URL, invocation protocol.Invocation) bool {
 	return false
 }
 
-type filter func(protocol.Invoker) bool
-
-func filterInvoker(invokers []protocol.Invoker, filters ...filter) []protocol.Invoker {
-	var res []protocol.Invoker
-OUTER:
-	for _, invoker := range invokers {
-		for _, filter := range filters {
-			if !filter(invoker) {
-				continue OUTER
-			}
+// addrsToBitmap finds indexes for the given IP addresses in the target URL list, if any '0.0.0.0' IP address is met,
+// then returns back all indexes of the URLs list.
+func addrsToBitmap(addrs []string, invokers []protocol.Invoker) *roaring.Bitmap {
+	ret := roaring.NewBitmap()
+	for _, addr := range addrs {
+		if isAnyHost(addr) {
+			ret.AddRange(0, uint64(len(invokers)))
+			return ret
 		}
-		res = append(res, invoker)
+
+		index := findIndexWithIp(addr, invokers)
+		if index != -1 {
+			ret.AddInt(index)
+		}
 	}
-	return res
+	return ret
 }
 
-func checkAddressMatch(addresses []string, host, port string) bool {
-	addr := net.JoinHostPort(constant.ANYHOST_VALUE, port)
-	for _, address := range addresses {
-		if gxnet.MatchIP(address, host, port) {
-			return true
-		}
-		if address == addr {
-			return true
+// findIndexWithIp finds index for one particular IP
+func findIndexWithIp(addr string, invokers []protocol.Invoker) int {
+	for i, invoker := range invokers {
+		if gxnet.MatchIP(addr, invoker.GetUrl().Ip, invoker.GetUrl().Port) {
+			return i
 		}
 	}
-	return false
+	return -1
+}
+
+// isAnyHost checks if an IP is '0.0.0.0'
+func isAnyHost(addr string) bool {
+	return strings.HasPrefix(addr, constant.ANYHOST_VALUE)
+}
+
+// findTag finds tag, first from invocation's attachment, then from URL
+func findTag(invocation protocol.Invocation, consumerUrl *common.URL) string {
+	tag, ok := invocation.Attachments()[constant.Tagkey]
+	if !ok {
+		return consumerUrl.GetParam(constant.Tagkey, "")
+	} else if v, t := tag.(string); t {
+		return v
+	}
+	return ""
 }
