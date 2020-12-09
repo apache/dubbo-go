@@ -39,7 +39,7 @@ import (
 type FileConditionRouter struct {
 	listenableRouter
 	parseOnce sync.Once
-	url       common.URL
+	url       *common.URL
 }
 
 // NewFileConditionRouter Create file condition router instance with content ( from config file)
@@ -60,11 +60,11 @@ func NewFileConditionRouter(content []byte) (*FileConditionRouter, error) {
 }
 
 // URL Return URL in file condition router n
-func (f *FileConditionRouter) URL() common.URL {
+func (f *FileConditionRouter) URL() *common.URL {
 	f.parseOnce.Do(func() {
 		routerRule := f.routerRule
 		rule := parseCondition(routerRule.Conditions)
-		f.url = *common.NewURLWithOptions(
+		f.url = common.NewURLWithOptions(
 			common.WithProtocol(constant.CONDITION_ROUTE_PROTOCOL),
 			common.WithIp(constant.ANYHOST_VALUE),
 			common.WithParams(url.Values{}),

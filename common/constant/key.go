@@ -22,31 +22,33 @@ const (
 )
 
 const (
-	PORT_KEY               = "port"
-	GROUP_KEY              = "group"
-	VERSION_KEY            = "version"
-	INTERFACE_KEY          = "interface"
-	PATH_KEY               = "path"
-	PROTOCOL_KEY           = "protocol"
-	SERVICE_KEY            = "service"
-	METHODS_KEY            = "methods"
-	TIMEOUT_KEY            = "timeout"
-	CATEGORY_KEY           = "category"
-	CHECK_KEY              = "check"
-	ENABLED_KEY            = "enabled"
-	SIDE_KEY               = "side"
-	OVERRIDE_PROVIDERS_KEY = "providerAddresses"
-	BEAN_NAME_KEY          = "bean.name"
-	GENERIC_KEY            = "generic"
-	CLASSIFIER_KEY         = "classifier"
-	TOKEN_KEY              = "token"
-	LOCAL_ADDR             = "local-addr"
-	REMOTE_ADDR            = "remote-addr"
-	PATH_SEPARATOR         = "/"
-	DUBBO_KEY              = "dubbo"
-	RELEASE_KEY            = "release"
-	ANYHOST_KEY            = "anyhost"
-	SSL_ENABLED_KEY        = "ssl-enabled"
+	GROUP_KEY                = "group"
+	VERSION_KEY              = "version"
+	INTERFACE_KEY            = "interface"
+	MESSAGE_SIZE_KEY         = "message_size"
+	PATH_KEY                 = "path"
+	SERVICE_KEY              = "service"
+	METHODS_KEY              = "methods"
+	TIMEOUT_KEY              = "timeout"
+	CATEGORY_KEY             = "category"
+	CHECK_KEY                = "check"
+	ENABLED_KEY              = "enabled"
+	SIDE_KEY                 = "side"
+	OVERRIDE_PROVIDERS_KEY   = "providerAddresses"
+	BEAN_NAME_KEY            = "bean.name"
+	GENERIC_KEY              = "generic"
+	CLASSIFIER_KEY           = "classifier"
+	TOKEN_KEY                = "token"
+	LOCAL_ADDR               = "local-addr"
+	REMOTE_ADDR              = "remote-addr"
+	DEFAULT_REMOTING_TIMEOUT = 3000
+	RELEASE_KEY              = "release"
+	ANYHOST_KEY              = "anyhost"
+	PORT_KEY                 = "port"
+	PROTOCOL_KEY             = "protocol"
+	PATH_SEPARATOR           = "/"
+	DUBBO_KEY                = "dubbo"
+	SSL_ENABLED_KEY          = "ssl-enabled"
 )
 
 const (
@@ -81,6 +83,7 @@ const (
 	EXECUTE_REJECTED_EXECUTION_HANDLER_KEY = "execute.limit.rejected.handler"
 	PROVIDER_SHUTDOWN_FILTER               = "pshutdown"
 	CONSUMER_SHUTDOWN_FILTER               = "cshutdown"
+	SERIALIZATION_KEY                      = "serialization"
 	PID_KEY                                = "pid"
 	SYNC_REPORT_KEY                        = "sync.report"
 	RETRY_PERIOD_KEY                       = "retry.period"
@@ -170,11 +173,27 @@ const (
 )
 
 const (
+	FILE_KEY = "file"
+)
+
+const (
 	ZOOKEEPER_KEY = "zookeeper"
 )
 
 const (
 	ETCDV3_KEY = "etcdv3"
+)
+
+const (
+	CONSUL_KEY          = "consul"
+	CHECK_PASS_INTERVAL = "consul-check-pass-interval"
+	// default time-to-live in millisecond
+	DEFAULT_CHECK_PASS_INTERVAL = 16000
+	QUERY_TAG                   = "consul_query_tag"
+	ACL_TOKEN                   = "acl-token"
+	// default deregister critical server after
+	DEFAULT_DEREGISTER_TIME = "20s"
+	DEREGISTER_AFTER        = "consul-deregister-critical-service-after"
 )
 
 const (

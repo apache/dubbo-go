@@ -44,6 +44,7 @@ const (
 )
 
 type zookeeperDynamicConfiguration struct {
+	config_center.BaseDynamicConfiguration
 	url      *common.URL
 	rootPath string
 	wg       sync.WaitGroup
@@ -182,8 +183,8 @@ func (c *zookeeperDynamicConfiguration) Done() chan struct{} {
 	return c.done
 }
 
-func (c *zookeeperDynamicConfiguration) GetUrl() common.URL {
-	return *c.url
+func (c *zookeeperDynamicConfiguration) GetUrl() *common.URL {
+	return c.url
 }
 
 func (c *zookeeperDynamicConfiguration) Destroy() {

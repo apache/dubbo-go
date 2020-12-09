@@ -53,10 +53,6 @@ var (
 	providerConfigOnce sync.Once
 )
 
-//The filter in the server end of dubbo-go can't get the invoke result for now,
-//this filter ONLY works in CLIENT end (consumer side) temporarily
-//Only after the callService logic is integrated into the filter chain of server end then the filter can be used,
-//which will be done soon
 func init() {
 	extension.SetFilter(HYSTRIX_CONSUMER, GetHystrixFilterConsumer)
 	extension.SetFilter(HYSTRIX_PROVIDER, GetHystrixFilterProvider)
@@ -85,7 +81,47 @@ func NewHystrixFilterError(err error, failByHystrix bool) error {
 	}
 }
 
-// nolint
+/**
+ * HystrixFilter
+ * You should add hystrix related configuration in provider or consumer config or both, according to which side you are to apply HystrixFilter.
+ * For example:
+ * filter_conf:
+ * 	hystrix:
+ * 	 configs:
+ * 	  # =========== Define config here ============
+ * 	  "Default":
+ * 	    timeout : 1000
+ * 	    max_concurrent_requests : 25
+ * 	    sleep_window : 5000
+ * 	    error_percent_threshold : 50
+ * 	    request_volume_threshold: 20
+ * 	  "userp":
+ * 	    timeout: 2000
+ * 	    max_concurrent_requests: 512
+ * 	    sleep_window: 4000
+ * 	    error_percent_threshold: 35
+ * 	    request_volume_threshold: 6
+ * 	  "userp_m":
+ * 	    timeout : 1200
+ * 	    max_concurrent_requests : 512
+ * 	    sleep_window : 6000
+ * 	    error_percent_threshold : 60
+ * 	    request_volume_threshold: 16
+ *      # =========== Define error whitelist which will be ignored by Hystrix counter ============
+ * 	    error_whitelist: [".*exception.*"]
+ *
+ * 	 # =========== Apply default config here ===========
+ * 	 default: "Default"
+ *
+ * 	 services:
+ * 	  "com.ikurento.user.UserProvider":
+ * 	    # =========== Apply service level config ===========
+ * 	    service_config: "userp"
+ * 	    # =========== Apply method level config ===========
+ * 	    methods:
+ * 	      "GetUser": "userp_m"
+ * 	      "GetUser1": "userp_m"
+ */
 type HystrixFilter struct {
 	COrP     bool //true for consumer
 	res      map[string][]*regexp.Regexp
@@ -213,11 +249,11 @@ func getConfig(service string, method string, cOrP bool) CommandConfigWithError 
 
 func initHystrixConfigConsumer() error {
 	if config.GetConsumerConfig().FilterConf == nil {
-		return perrors.Errorf("no config for hystrix")
+		return perrors.Errorf("no config for hystrix_consumer")
 	}
 	filterConfig := config.GetConsumerConfig().FilterConf.(map[interface{}]interface{})[HYSTRIX]
 	if filterConfig == nil {
-		return perrors.Errorf("no config for hystrix")
+		return perrors.Errorf("no config for hystrix_consumer")
 	}
 	hystrixConfByte, err := yaml.Marshal(filterConfig)
 	if err != nil {
@@ -232,11 +268,11 @@ func initHystrixConfigConsumer() error {
 
 func initHystrixConfigProvider() error {
 	if config.GetProviderConfig().FilterConf == nil {
-		return perrors.Errorf("no config for hystrix")
+		return perrors.Errorf("no config for hystrix_provider")
 	}
-	filterConfig := config.GetConsumerConfig().FilterConf.(map[interface{}]interface{})[HYSTRIX]
+	filterConfig := config.GetProviderConfig().FilterConf.(map[interface{}]interface{})[HYSTRIX]
 	if filterConfig == nil {
-		return perrors.Errorf("no config for hystrix")
+		return perrors.Errorf("no config for hystrix_provider")
 	}
 	hystrixConfByte, err := yaml.Marshal(filterConfig)
 	if err != nil {

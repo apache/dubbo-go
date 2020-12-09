@@ -408,7 +408,8 @@ func (c *Client) keepAliveKV(k string, v string) error {
 		return ErrNilETCDV3Client
 	}
 
-	lease, err := c.rawClient.Grant(c.ctx, int64(time.Second.Seconds()))
+	// make lease time longer, since 1 second is too short
+	lease, err := c.rawClient.Grant(c.ctx, int64(30*time.Second.Seconds()))
 	if err != nil {
 		return perrors.WithMessage(err, "grant lease")
 	}

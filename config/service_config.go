@@ -59,6 +59,7 @@ type ServiceConfig struct {
 	Methods                     []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
 	Warmup                      string            `yaml:"warmup"  json:"warmup,omitempty"  property:"warmup"`
 	Retries                     string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
+	Serialization               string            `yaml:"serialization" json:"serialization" property:"serialization"`
 	Params                      map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
 	Token                       string            `yaml:"token" json:"token,omitempty" property:"token"`
 	AccessLog                   string            `yaml:"accesslog" json:"accesslog,omitempty" property:"accesslog"`
@@ -72,6 +73,7 @@ type ServiceConfig struct {
 	Auth                        string            `yaml:"auth" json:"auth,omitempty" property:"auth"`
 	ParamSign                   string            `yaml:"param.sign" json:"param.sign,omitempty" property:"param.sign"`
 	Tag                         string            `yaml:"tag" json:"tag,omitempty" property:"tag"`
+	GrpcMaxMessageSize          int               `default:"4" yaml:"max_message_size" json:"max_message_size,omitempty"`
 
 	Protocols     map[string]*ProtocolConfig
 	unexported    *atomic.Bool
@@ -133,7 +135,7 @@ func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
 
 		tcp, err := gxnet.ListenOnTCPRandomPort(proto.Ip)
 		if err != nil {
-			panic(perrors.New(fmt.Sprintf("Get tcp port error,err is {%v}", err)))
+			panic(perrors.New(fmt.Sprintf("Get tcp port error, err is {%v}", err)))
 		}
 		defer tcp.Close()
 		ports.PushBack(strings.Split(tcp.Addr().String(), ":")[1])
@@ -145,14 +147,14 @@ func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
 func (c *ServiceConfig) Export() error {
 	// TODO: config center start here
 
-	// TODO:delay export
+	// TODO: delay export
 	if c.unexported != nil && c.unexported.Load() {
-		err := perrors.Errorf("The service %v has already unexported! ", c.InterfaceName)
+		err := perrors.Errorf("The service %v has already unexported!", c.InterfaceName)
 		logger.Errorf(err.Error())
 		return err
 	}
 	if c.unexported != nil && c.exported.Load() {
-		logger.Warnf("The service %v has already exported! ", c.InterfaceName)
+		logger.Warnf("The service %v has already exported!", c.InterfaceName)
 		return nil
 	}
 
@@ -160,23 +162,23 @@ func (c *ServiceConfig) Export() error {
 	urlMap := c.getUrlMap()
 	protocolConfigs := loadProtocol(c.Protocol, c.Protocols)
 	if len(protocolConfigs) == 0 {
-		logger.Warnf("The service %v's '%v' protocols don't has right protocolConfigs ", c.InterfaceName, c.Protocol)
+		logger.Warnf("The service %v's '%v' protocols don't has right protocolConfigs", c.InterfaceName, c.Protocol)
 		return nil
 	}
 
 	ports := getRandomPort(protocolConfigs)
 	nextPort := ports.Front()
+	proxyFactory := extension.GetProxyFactory(providerConfig.ProxyFactory)
 	for _, proto := range protocolConfigs {
 		// registry the service reflect
 		methods, err := common.ServiceMap.Register(c.InterfaceName, proto.Name, c.rpcService)
 		if err != nil {
-			formatErr := perrors.Errorf("The service %v  export the protocol %v error! Error message is %v .", c.InterfaceName, proto.Name, err.Error())
+			formatErr := perrors.Errorf("The service %v export the protocol %v error! Error message is %v.", c.InterfaceName, proto.Name, err.Error())
 			logger.Errorf(formatErr.Error())
 			return formatErr
 		}
 
 		port := proto.Port
-
 		if len(proto.Port) == 0 {
 			port = nextPort.Value.(string)
 			nextPort = nextPort.Next()
@@ -196,33 +198,31 @@ func (c *ServiceConfig) Export() error {
 			ivkURL.AddParam(constant.Tagkey, c.Tag)
 		}
 
-		var exporter protocol.Exporter
-
 		if len(regUrls) > 0 {
+			c.cacheMutex.Lock()
+			if c.cacheProtocol == nil {
+				logger.Infof(fmt.Sprintf("First load the registry protocol, url is {%v}!", ivkURL))
+				c.cacheProtocol = extension.GetProtocol("registry")
+			}
+			c.cacheMutex.Unlock()
+
 			for _, regUrl := range regUrls {
 				regUrl.SubURL = ivkURL
-
-				c.cacheMutex.Lock()
-				if c.cacheProtocol == nil {
-					logger.Infof(fmt.Sprintf("First load the registry protocol , url is {%v}!", ivkURL))
-					c.cacheProtocol = extension.GetProtocol("registry")
-				}
-				c.cacheMutex.Unlock()
-
-				invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*regUrl)
-				exporter = c.cacheProtocol.Export(invoker)
+				invoker := proxyFactory.GetInvoker(regUrl)
+				exporter := c.cacheProtocol.Export(invoker)
 				if exporter == nil {
-					panic(perrors.New(fmt.Sprintf("Registry protocol new exporter error,registry is {%v},url is {%v}", regUrl, ivkURL)))
+					return perrors.New(fmt.Sprintf("Registry protocol new exporter error, registry is {%v}, url is {%v}", regUrl, ivkURL))
 				}
+				c.exporters = append(c.exporters, exporter)
 			}
 		} else {
-			invoker := extension.GetProxyFactory(providerConfig.ProxyFactory).GetInvoker(*ivkURL)
-			exporter = extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
+			invoker := proxyFactory.GetInvoker(ivkURL)
+			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {
-				panic(perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error,url is {%v}", ivkURL)))
+				return perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error, url is {%v}", ivkURL))
 			}
+			c.exporters = append(c.exporters, exporter)
 		}
-		c.exporters = append(c.exporters, exporter)
 	}
 	c.exported.Store(true)
 	return nil
@@ -272,7 +272,9 @@ func (c *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
 	urlMap.Set(constant.RELEASE_KEY, "dubbo-golang-"+constant.Version)
 	urlMap.Set(constant.SIDE_KEY, (common.RoleType(common.PROVIDER)).Role())
-
+	urlMap.Set(constant.MESSAGE_SIZE_KEY, strconv.Itoa(c.GrpcMaxMessageSize))
+	// todo: move
+	urlMap.Set(constant.SERIALIZATION_KEY, c.Serialization)
 	// application info
 	urlMap.Set(constant.APPLICATION_KEY, providerConfig.ApplicationConfig.Name)
 	urlMap.Set(constant.ORGANIZATION_KEY, providerConfig.ApplicationConfig.Organization)
@@ -314,7 +316,6 @@ func (c *ServiceConfig) getUrlMap() url.Values {
 
 		urlMap.Set(constant.EXECUTE_LIMIT_KEY, v.ExecuteLimit)
 		urlMap.Set(constant.EXECUTE_REJECTED_EXECUTION_HANDLER_KEY, v.ExecuteLimitRejectedHandler)
-
 	}
 
 	return urlMap
@@ -325,8 +326,7 @@ func (c *ServiceConfig) GetExportedUrls() []*common.URL {
 	if c.exported.Load() {
 		var urls []*common.URL
 		for _, exporter := range c.exporters {
-			url := exporter.GetInvoker().GetUrl()
-			urls = append(urls, &url)
+			urls = append(urls, exporter.GetInvoker().GetUrl())
 		}
 		return urls
 	}
