@@ -427,10 +427,7 @@ func (c *URL) SetParam(key string, value string) {
 	c.params.Set(key, value)
 }
 
-// SetParams will replace the URL.params
-// SetParams will put all key-value pair into url.
-// 1. if there already has same key, the value will be override
-// 2. it's not thread safe
+// ReplaceParams will replace the URL.params
 // usually it should only be invoked when you want to modify an url, such as MergeURL
 func (c *URL) ReplaceParams(param url.Values) {
 	c.paramsLock.Lock()
