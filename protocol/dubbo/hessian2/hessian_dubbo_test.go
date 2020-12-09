@@ -223,7 +223,7 @@ func TestHessianCodec_ReadAttachments(t *testing.T) {
 
 type AttachTestObject struct {
 	Id   int32
-	Name string `dubbo:name`
+	Name string `dubbo:"name"`
 }
 
 func (AttachTestObject) JavaClassName() string {

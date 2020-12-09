@@ -49,16 +49,16 @@ func TestMetadataServiceProxy_GetExportedURLs(t *testing.T) {
 func TestNewMetadataService(t *testing.T) {
 	pxy := createPxy()
 	pxy.ServiceName()
-	pxy.PublishServiceDefinition(common.URL{})
+	pxy.PublishServiceDefinition(&common.URL{})
 	pxy.GetServiceDefinition(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
 	pxy.Version()
 	pxy.GetSubscribedURLs()
-	pxy.UnsubscribeURL(common.URL{})
+	pxy.UnsubscribeURL(&common.URL{})
 	pxy.GetServiceDefinitionByServiceKey("any")
-	pxy.ExportURL(common.URL{})
-	pxy.SubscribeURL(common.URL{})
+	pxy.ExportURL(&common.URL{})
+	pxy.SubscribeURL(&common.URL{})
 	pxy.MethodMapper()
-	pxy.UnexportURL(common.URL{})
+	pxy.UnexportURL(&common.URL{})
 	pxy.RefreshMetadata(constant.ANY_VALUE, constant.ANY_VALUE)
 
 }

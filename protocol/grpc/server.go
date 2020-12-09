@@ -63,7 +63,7 @@ func (s *Server) SetBufferSize(n int) {
 }
 
 // Start gRPC server with @url
-func (s *Server) Start(url common.URL) {
+func (s *Server) Start(url *common.URL) {
 	var (
 		addr string
 		err  error
