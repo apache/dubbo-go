@@ -40,19 +40,16 @@ var (
 )
 
 func TestNewBaseDirectory(t *testing.T) {
-	directory := NewBaseDirectory(&url)
-	assert.NotNil(t, directory)
-	assert.Equal(t, url, directory.GetUrl())
-	assert.Equal(t, &url, directory.GetDirectoryUrl())
+	dir := NewBaseDirectory(url)
+	assert.Equal(t, url, dir.GetUrl())
+	assert.Equal(t, url, dir.GetDirectoryUrl())
 }
 
 func TestBuildRouterChain(t *testing.T) {
 
 	regURL := url
 	regURL.AddParam(constant.INTERFACE_KEY, "mock-app")
-	directory := NewBaseDirectory(&regURL)
-
-	assert.NotNil(t, directory)
+	directory := NewBaseDirectory(regURL)
 
 	localIP := common.GetLocalIp()
 	rule := base64.URLEncoding.EncodeToString([]byte("true => " + " host = " + localIP))
@@ -66,18 +63,18 @@ func TestBuildRouterChain(t *testing.T) {
 	assert.NotNil(t, chain)
 }
 
-func getRouteURL(rule string, u common.URL) *common.URL {
+func getRouteURL(rule string, u *common.URL) *common.URL {
 	ru := u
 	ru.AddParam("rule", rule)
 	ru.AddParam("force", "true")
 	ru.AddParam(constant.ROUTER_KEY, "router")
-	return &ru
+	return ru
 }
 
 func TestIsProperRouter(t *testing.T) {
 	regURL := url
 	regURL.AddParam(constant.APPLICATION_KEY, "mock-app")
-	d := NewBaseDirectory(&regURL)
+	d := NewBaseDirectory(regURL)
 	localIP := common.GetLocalIp()
 	rule := base64.URLEncoding.EncodeToString([]byte("true => " + " host = " + localIP))
 	routeURL := getRouteURL(rule, anyURL)
@@ -87,7 +84,7 @@ func TestIsProperRouter(t *testing.T) {
 
 	regURL.AddParam(constant.APPLICATION_KEY, "")
 	regURL.AddParam(constant.INTERFACE_KEY, "com.foo.BarService")
-	d = NewBaseDirectory(&regURL)
+	d = NewBaseDirectory(regURL)
 	routeURL = getRouteURL(rule, anyURL)
 	routeURL.AddParam(constant.INTERFACE_KEY, "com.foo.BarService")
 	rst = d.isProperRouter(routeURL)
@@ -95,14 +92,14 @@ func TestIsProperRouter(t *testing.T) {
 
 	regURL.AddParam(constant.APPLICATION_KEY, "")
 	regURL.AddParam(constant.INTERFACE_KEY, "")
-	d = NewBaseDirectory(&regURL)
+	d = NewBaseDirectory(regURL)
 	routeURL = getRouteURL(rule, anyURL)
 	rst = d.isProperRouter(routeURL)
 	assert.True(t, rst)
 
 	regURL.SetParam(constant.APPLICATION_KEY, "")
 	regURL.SetParam(constant.INTERFACE_KEY, "")
-	d = NewBaseDirectory(&regURL)
+	d = NewBaseDirectory(regURL)
 	routeURL = getRouteURL(rule, anyURL)
 	routeURL.AddParam(constant.APPLICATION_KEY, "mock-service")
 	rst = d.isProperRouter(routeURL)
@@ -110,7 +107,7 @@ func TestIsProperRouter(t *testing.T) {
 
 	regURL.SetParam(constant.APPLICATION_KEY, "")
 	regURL.SetParam(constant.INTERFACE_KEY, "")
-	d = NewBaseDirectory(&regURL)
+	d = NewBaseDirectory(regURL)
 	routeURL = getRouteURL(rule, anyURL)
 	routeURL.AddParam(constant.INTERFACE_KEY, "mock-service")
 	rst = d.isProperRouter(routeURL)

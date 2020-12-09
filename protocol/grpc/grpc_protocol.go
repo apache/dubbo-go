@@ -67,7 +67,7 @@ func (gp *GrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	return exporter
 }
 
-func (gp *GrpcProtocol) openServer(url common.URL) {
+func (gp *GrpcProtocol) openServer(url *common.URL) {
 	_, ok := gp.serverMap[url.Location]
 	if !ok {
 		_, ok := gp.ExporterMap().Load(url.ServiceKey())
@@ -89,7 +89,7 @@ func (gp *GrpcProtocol) openServer(url common.URL) {
 }
 
 // Refer a remote gRPC service
-func (gp *GrpcProtocol) Refer(url common.URL) protocol.Invoker {
+func (gp *GrpcProtocol) Refer(url *common.URL) protocol.Invoker {
 	invoker := NewGrpcInvoker(url, NewClient(url))
 	gp.SetInvokers(invoker)
 	logger.Infof("Refer service: %s", url.String())

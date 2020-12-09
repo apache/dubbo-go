@@ -15,6 +15,8 @@ Apache License, Version 2.0
 
 ## 发布日志 ##
 
+[v1.4.5 - 2020年11月18日](https://github.com/apache/dubbo-go/releases/tag/v1.4.5)
+
 [v1.5.4 - 2020年11月1日](https://github.com/apache/dubbo-go/releases/tag/v1.5.4)
 
 [v1.5.3 - 2020年9月23日](https://github.com/apache/dubbo-go/releases/tag/v1.5.3)
@@ -225,6 +227,26 @@ make test
       <td align="center"  valign="middle">
         <a href="http://www.j.cn" target="_blank">
           <img width="222px"  src="http://image.guang.j.cn/bbs/imgs/home/pc/icon_8500.png">
+        </a>
+      </td>
+      <td align="center"  valign="middle">
+        <a href="https://www.genshuixue.com/" target="_blank">
+          <img width="222px"  src="https://i.gsxcdn.com/0cms/d/file/content/2020/02/5e572137d7d94.png">
+        </a>
+      </td>
+      <td align="center"  valign="middle">
+        <a href="http://www.51h5.com" target="_blank">
+          <img width="222px"  src="https://fs-ews.51h5.com/common/hw_220_black.png">
+        </a>
+      </td>
+      <td align="center"  valign="middle">
+        <a href="https://www.zto.com" target="_blank">
+          <img width="222px"  src="https://fscdn.zto.com/fs8/M02/B2/E4/wKhBD1-8o52Ae3GnAAASU3r62ME040.png">
+        </a>
+      </td>
+      <td align="center"  valign="middle">
+        <a href="https://www.icsoc.net/" target="_blank">
+          <img width="222px"  src="https://oss.icsoc.net/icsoc-ekt-test-files/icsoc.png">
         </a>
       </td>
     </tr>
