@@ -91,7 +91,7 @@ type configCenter struct {
 
 // toURL will compatible with baseConfig.ConfigCenterConfig.Address and baseConfig.ConfigCenterConfig.RemoteRef before 1.6.0
 // After 1.6.0 will not compatible, only baseConfig.ConfigCenterConfig.RemoteRef
-func (b *configCenter) toURL(baseConfig BaseConfig) (common.URL, error) {
+func (b *configCenter) toURL(baseConfig BaseConfig) (*common.URL, error) {
 	if len(baseConfig.ConfigCenterConfig.Address) > 0 {
 		return common.NewURL(baseConfig.ConfigCenterConfig.Address,
 			common.WithProtocol(baseConfig.ConfigCenterConfig.Protocol), common.WithParams(baseConfig.ConfigCenterConfig.GetUrlMap()))
@@ -101,7 +101,7 @@ func (b *configCenter) toURL(baseConfig BaseConfig) (common.URL, error) {
 	rc, ok := baseConfig.GetRemoteConfig(remoteRef)
 
 	if !ok {
-		return common.URL{}, perrors.New("Could not find out the remote ref config, name: " + remoteRef)
+		return nil, perrors.New("Could not find out the remote ref config, name: " + remoteRef)
 	}
 
 	newURL, err := rc.toURL()
@@ -114,11 +114,11 @@ func (b *configCenter) toURL(baseConfig BaseConfig) (common.URL, error) {
 // startConfigCenter will start the config center.
 // it will prepare the environment
 func (b *configCenter) startConfigCenter(baseConfig BaseConfig) error {
-	url, err := b.toURL(baseConfig)
+	newUrl, err := b.toURL(baseConfig)
 	if err != nil {
 		return err
 	}
-	if err = b.prepareEnvironment(baseConfig, &url); err != nil {
+	if err = b.prepareEnvironment(baseConfig, newUrl); err != nil {
 		return perrors.WithMessagef(err, "start config center error!")
 	}
 	// c.fresh()

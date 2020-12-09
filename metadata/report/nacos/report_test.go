@@ -111,6 +111,6 @@ func TestNacosMetadataReportFactory_CreateMetadataReport(t *testing.T) {
 
 func newTestReport() report.MetadataReport {
 	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
-	res := extension.GetMetadataReportFactory("nacos").CreateMetadataReport(&regurl)
+	res := extension.GetMetadataReportFactory("nacos").CreateMetadataReport(regurl)
 	return res
 }
