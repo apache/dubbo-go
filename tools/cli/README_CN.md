@@ -9,9 +9,3 @@
 `sh build.sh`
 
 ### 3. 使用方法：见[example](example/README_CN.md)
-
-
-### 第三方依赖（临时兼容）
-
-github.com/LaurenceLiZhixin/dubbo-go-hessian2 \
-github.com/LaurenceLiZhixin/json-interface-parser 

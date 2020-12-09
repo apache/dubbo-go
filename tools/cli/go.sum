@@ -1,4 +1,5 @@
 github.com/LaurenceLiZhixin/gost v1.9.6 h1:EceDptmhvgkgj9IILoTuQxAdb1zP/gQRW4FfyH6OODA=
+github.com/LaurenceLiZhixin/gost v1.9.8 h1:VPPXIZ4ylic8ARnizPGpSa56UgAIPNMnaRrIiD3UKXI=
 github.com/LaurenceLiZhixin/json-interface-parser v0.0.0-20201026115035-e5b01058601f h1:c90ZYRHVlFi8Aj1KRRFI9sCT0DCETIi5FRDnIFA5hnw=
 github.com/LaurenceLiZhixin/json-interface-parser v0.0.0-20201026115035-e5b01058601f/go.mod h1:yg2osnKrQzem36qLj76dkKwUJ3kA/4n3HT5KBP0fbts=
 github.com/LaurenceLiZhixin/json-interface-parser v1.0.0 h1:Fp9oOCU5PpcIkJTrkL/UBaHqyGiMNo9Afzj/RK5sNNY=
@@ -19,6 +20,10 @@ github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dubbogo/gost v1.9.0 h1:UT+dWwvLyJiDotxJERO75jB3Yxgsdy10KztR5ycxRAk=
 github.com/dubbogo/gost v1.9.0/go.mod h1:pPTjVyoJan3aPxBPNUX0ADkXjPibLo+/Ib0/fADXSG8=
+github.com/dubbogo/gost v1.9.9 h1:fOZU5fSpZI3ZBZKTLPmTXtAfPoAdp7H8TcnCSUiIRkc=
+github.com/dubbogo/gost v1.9.9/go.mod h1:+mQGS51XQEUWZP2JeGZTxJwipjRKtJO7Tr+FOg+72rI=
+github.com/dubbogo/jsonparser v1.0.1 h1:sAIr8gk+gkahkIm6CnUxh9wTCkbgwLEQ8dTXTnAXyzo=
+github.com/dubbogo/jsonparser v1.0.1/go.mod h1:tYAtpctvSP/tWw4MeelsowSPgXQRVHHWbqL6ynps8jU=
 github.com/go-ole/go-ole v1.2.4/go.mod h1:XCwSNxSkXRo4vlyPy93sltvi/qJq0jqQhjqQNIwKuxM=
 github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88/go.mod h1:3w7q1U84EfirKl04SVQ/s7nPm1ZPhiXd34z40TNz36k=
 github.com/k0kubun/pp v3.0.1+incompatible/go.mod h1:GWse8YhT0p8pT4ir3ZgBbfZild3tgzSScAn6HmfYukg=

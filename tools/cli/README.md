@@ -11,11 +11,4 @@ run in dubbo-go/tools/cli \
 `$ sh build.sh`\
 and you can get dubbo-go-cli 
 
-### 3. Quick start：[example](example/README_CN.md)
-
-
-
-### Third party dependence（temporary）
-
-github.com/LaurenceLiZhixin/dubbo-go-hessian2 \
-github.com/LaurenceLiZhixin/json-interface-parser 
+### 3. Quick start：[example](example/README.md)
