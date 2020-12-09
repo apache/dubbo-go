@@ -138,7 +138,6 @@ func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invoc
 
 	//judge to if the selectedInvoker is invoked and available
 	if (!selectedInvoker.IsAvailable() && invoker.availablecheck) || isInvoked(selectedInvoker, invoked) {
-		// 拉黑当前
 		protocol.SetInvokerUnhealthyStatus(selectedInvoker)
 
 		// do reselect
@@ -148,7 +147,6 @@ func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invoc
 			if !invoker.IsAvailable() {
 				logger.Infof("the invoker of %s is not available, maybe some network error happened or the server is shutdown.",
 					invoker.GetUrl().Ip)
-				// 拉黑reselect
 				protocol.SetInvokerUnhealthyStatus(invoker)
 				continue
 			}
