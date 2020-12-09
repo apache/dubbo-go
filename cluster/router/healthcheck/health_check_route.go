@@ -32,9 +32,8 @@ import (
 )
 
 const (
-	HEALTH_ROUTE_ENABLED_KEY = "health.route.enabled"
-	healthy                  = "healthy"
-	name                     = "health-check-router"
+	healthy = "healthy"
+	name    = "health-check-router"
 )
 
 // HealthCheckRouter provides a health-first routing mechanism through HealthChecker
@@ -48,7 +47,7 @@ type HealthCheckRouter struct {
 func NewHealthCheckRouter(url *common.URL) (router.PriorityRouter, error) {
 	r := &HealthCheckRouter{
 		url:     url,
-		enabled: url.GetParamBool(HEALTH_ROUTE_ENABLED_KEY, false),
+		enabled: url.GetParamBool(constant.HEALTH_ROUTE_ENABLED_KEY, false),
 	}
 	if r.enabled {
 		checkerName := url.GetParam(constant.HEALTH_CHECKER, constant.DEFAULT_HEALTH_CHECKER)
@@ -87,7 +86,6 @@ func (r *HealthCheckRouter) Pool(invokers []protocol.Invoker) (router.AddrPool, 
 			rb[healthy].Add(uint32(i))
 		}
 	}
-
 	return rb, nil
 }
 
