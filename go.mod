@@ -13,7 +13,7 @@ require (
 	github.com/dubbogo/go-zookeeper v1.0.2
 	github.com/dubbogo/gost v1.9.2
 	github.com/elazarl/go-bindata-assetfs v1.0.0 // indirect
-	github.com/emicklei/go-restful/v3 v3.0.0
+	github.com/emicklei/go-restful/v3 v3.4.0
 	github.com/frankban/quicktest v1.4.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/go-co-op/gocron v0.1.1
