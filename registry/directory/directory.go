@@ -121,7 +121,12 @@ func (dir *RegistryDirectory) NotifyAll(events []*registry.ServiceEvent, callbac
 
 // refreshInvokers refreshes service's events.
 func (dir *RegistryDirectory) refreshInvokers(event *registry.ServiceEvent) {
-	logger.Debugf("refresh invokers with %+v", event)
+	if event != nil {
+		logger.Debugf("refresh invokers with %+v")
+	} else {
+		logger.Debug("refresh invokers with nil")
+	}
+
 	var oldInvoker protocol.Invoker
 	if event != nil {
 		oldInvoker, _ = dir.cacheInvokerByEvent(event)
