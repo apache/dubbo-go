@@ -7,7 +7,7 @@ require (
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
 	github.com/alibaba/sentinel-golang v0.6.2
 	github.com/apache/dubbo-getty v1.3.10
-	github.com/apache/dubbo-go-hessian2 v1.7.0
+	github.com/apache/dubbo-go-hessian2 v1.8.0
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/creasty/defaults v1.5.1
 	github.com/dubbogo/go-zookeeper v1.0.2
