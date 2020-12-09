@@ -713,6 +713,9 @@ func (c *URL) CloneWithParams(reserveParams []string) *URL {
 
 // IsEquals compares if two URLs equals with each other. Excludes are all parameter keys which should ignored.
 func IsEquals(left *URL, right *URL, excludes ...string) bool {
+	if (left == nil && right != nil) || (right == nil && left != nil) {
+		return false
+	}
 	if left.Ip != right.Ip || left.Port != right.Port {
 		return false
 	}
