@@ -41,30 +41,31 @@ import (
 
 // ReferenceConfig is the configuration of service consumer
 type ReferenceConfig struct {
-	context        context.Context
-	pxy            *proxy.Proxy
-	id             string
-	InterfaceName  string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
-	Check          *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
-	Url            string            `yaml:"url"  json:"url,omitempty" property:"url"`
-	Filter         string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	Protocol       string            `default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	Registry       string            `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
-	Cluster        string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
-	Loadbalance    string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
-	Retries        string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
-	Group          string            `yaml:"group"  json:"group,omitempty" property:"group"`
-	Version        string            `yaml:"version"  json:"version,omitempty" property:"version"`
-	ProvideBy      string            `yaml:"provide_by"  json:"provide_by,omitempty" property:"provide_by"`
-	Methods        []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
-	Async          bool              `yaml:"async"  json:"async,omitempty" property:"async"`
-	Params         map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
-	invoker        protocol.Invoker
-	urls           []*common.URL
-	Generic        bool   `yaml:"generic"  json:"generic,omitempty" property:"generic"`
-	Sticky         bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
-	RequestTimeout string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
-	ForceTag       bool   `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
+	context           context.Context
+	pxy               *proxy.Proxy
+	id                string
+	InterfaceName     string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
+	Check             *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
+	Url               string            `yaml:"url"  json:"url,omitempty" property:"url"`
+	Filter            string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	Protocol          string            `default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	Registry          string            `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
+	Cluster           string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
+	Loadbalance       string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
+	Retries           string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
+	Group             string            `yaml:"group"  json:"group,omitempty" property:"group"`
+	Version           string            `yaml:"version"  json:"version,omitempty" property:"version"`
+	ProvideBy         string            `yaml:"provide_by"  json:"provide_by,omitempty" property:"provide_by"`
+	Methods           []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
+	Async             bool              `yaml:"async"  json:"async,omitempty" property:"async"`
+	Params            map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
+	invoker           protocol.Invoker
+	urls              []*common.URL
+	Generic           bool   `yaml:"generic"  json:"generic,omitempty" property:"generic"`
+	Sticky            bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
+	RequestTimeout    string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
+	ForceTag          bool   `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
+	HealthCheckEnable bool   `yaml:"health_check" json:"health_check,omitempty" property:"health_check"`
 }
 
 // nolint
@@ -103,6 +104,9 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 	)
 	if c.ForceTag {
 		cfgURL.AddParam(constant.ForceUseTag, "true")
+	}
+	if c.HealthCheckEnable {
+		cfgURL.AddParam(constant.HEALTH_ROUTE_ENABLED_KEY, "true")
 	}
 	if c.Url != "" {
 		// 1. user specified URL, could be peer-to-peer address, or register center's address.

@@ -89,6 +89,8 @@ const (
 	RETRY_PERIOD_KEY                       = "retry.period"
 	RETRY_TIMES_KEY                        = "retry.times"
 	CYCLE_REPORT_KEY                       = "cycle.report"
+	DEFAULT_BLACK_LIST_RECOVER_BLOCK       = 10
+
 )
 
 const (
@@ -238,6 +240,9 @@ const (
 
 	// Attachment key in context in invoker
 	AttachmentKey = "attachment"
+
+	// HEALTH_ROUTE_ENABLED_KEY defines if use health router
+	HEALTH_ROUTE_ENABLED_KEY = "health.route.enabled"
 )
 
 const (
