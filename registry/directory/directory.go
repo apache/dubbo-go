@@ -154,6 +154,8 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 				"please check the Action of ServiceEvent should be EventTypeUpdate")
 			return
 		}
+		// Originally it will Merge URL many times, now we just execute once.
+		// MergeUrl is executed once and put the result into Event. After this, the key will get from Event.Key().
 		newUrl := dir.convertUrl(event)
 		newUrl = common.MergeUrl(newUrl, referenceUrl)
 		dir.overrideUrl(newUrl)
@@ -177,15 +179,18 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 		})
 		// get need add invokers from events
 		for _, event := range events {
-			// Is the key (url.Key()) of cacheInvokersMap the best way?
-			if _, ok := dir.cacheInvokersMap.Load(event.Service.Key()); !ok {
+			// Get the key from Event.Key()
+			if _, ok := dir.cacheInvokersMap.Load(event.Key()); !ok {
 				addEvents = append(addEvents, event)
 			}
 		}
 		// loop the updateEvents
 		for _, event := range addEvents {
 			logger.Debugf("registry update, result{%s}", event)
-			if oldInvoker, _ := dir.cacheInvokerByEvent(event); oldInvoker != nil {
+			logger.Infof("selector add service url{%s}", event.Service)
+			// FIXME: routers are built in every address notification?
+			dir.configRouters()
+			if oldInvoker, _ := dir.doCacheInvoker(event.Service); oldInvoker != nil {
 				oldInvokers = append(oldInvokers, oldInvoker)
 			}
 		}
@@ -209,6 +214,7 @@ func (dir *RegistryDirectory) eventMatched(key string, events []*registry.Servic
 
 // invokerCacheKey generates the key in the cache for a given ServiceEvent.
 func (dir *RegistryDirectory) invokerCacheKey(event *registry.ServiceEvent) string {
+	// If the url is merged, then return Event.Key() directly.
 	if event.Updated() {
 		return event.Key()
 	}
@@ -349,28 +355,36 @@ func (dir *RegistryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
 	if url.Protocol == referenceUrl.Protocol || referenceUrl.Protocol == "" {
 		newUrl := common.MergeUrl(url, referenceUrl)
 		dir.overrideUrl(newUrl)
-		if cacheInvoker, ok := dir.cacheInvokersMap.Load(newUrl.Key()); !ok {
-			logger.Debugf("service will be added in cache invokers: invokers url is  %s!", newUrl)
-			newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(newUrl)
-			if newInvoker != nil {
-				dir.cacheInvokersMap.Store(newUrl.Key(), newInvoker)
-			}
-		} else {
-			// if cached invoker has the same URL with the new URL, then no need to re-refer, and no need to destroy
-			// the old invoker.
-			if common.IsEquals(newUrl, cacheInvoker.(protocol.Invoker).GetUrl()) {
-				return nil
-			}
-
-			logger.Debugf("service will be updated in cache invokers: new invoker url is %s, old invoker url is %s", newUrl, cacheInvoker.(protocol.Invoker).GetUrl())
-			newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(newUrl)
-			if newInvoker != nil {
-				dir.cacheInvokersMap.Store(newUrl.Key(), newInvoker)
-				return cacheInvoker.(protocol.Invoker)
-			}
+		if v, ok := dir.doCacheInvoker(newUrl); ok {
+			return v
 		}
 	}
 	return nil
+}
+
+func (dir *RegistryDirectory) doCacheInvoker(newUrl *common.URL) (protocol.Invoker, bool) {
+	key := newUrl.Key()
+	if cacheInvoker, ok := dir.cacheInvokersMap.Load(key); !ok {
+		logger.Debugf("service will be added in cache invokers: invokers url is  %s!", newUrl)
+		newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(newUrl)
+		if newInvoker != nil {
+			dir.cacheInvokersMap.Store(key, newInvoker)
+		}
+	} else {
+		// if cached invoker has the same URL with the new URL, then no need to re-refer, and no need to destroy
+		// the old invoker.
+		if common.IsEquals(newUrl, cacheInvoker.(protocol.Invoker).GetUrl()) {
+			return nil, true
+		}
+
+		logger.Debugf("service will be updated in cache invokers: new invoker url is %s, old invoker url is %s", newUrl, cacheInvoker.(protocol.Invoker).GetUrl())
+		newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(newUrl)
+		if newInvoker != nil {
+			dir.cacheInvokersMap.Store(key, newInvoker)
+			return cacheInvoker.(protocol.Invoker), true
+		}
+	}
+	return nil, false
 }
 
 // List selected protocol invokers from the directory

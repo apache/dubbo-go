@@ -41,7 +41,9 @@ func init() {
 type ServiceEvent struct {
 	Action  remoting.EventType
 	Service *common.URL
-	key     string
+	// store the key for Service.Key()
+	key string
+	// If the url is updated, such as Merged.
 	updated bool
 }
 
