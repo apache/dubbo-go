@@ -27,5 +27,5 @@ type SubscribedURLsSynthesizer interface {
 	// Supports the synthesis of the subscribed url or not
 	Support(subscribedURL *common.URL) bool
 	// synthesize the subscribed url
-	Synthesize(subscribedURL *common.URL, serviceInstances []registry.ServiceInstance) []common.URL
+	Synthesize(subscribedURL *common.URL, serviceInstances []registry.ServiceInstance) []*common.URL
 }

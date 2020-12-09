@@ -54,7 +54,7 @@ func TestHealthCheckRouterRoute(t *testing.T) {
 	url1, _ := common.NewURL(fmt.Sprintf(healthCheckRouteUrlFormat, healthCheckRoute1010IP))
 	url2, _ := common.NewURL(fmt.Sprintf(healthCheckRouteUrlFormat, healthCheckRoute1011IP))
 	url3, _ := common.NewURL(fmt.Sprintf(healthCheckRouteUrlFormat, healthCheckRoute1012IP))
-	hcr, _ := NewHealthCheckRouter(&consumerURL)
+	hcr, _ := NewHealthCheckRouter(consumerURL)
 
 	var invokers []protocol.Invoker
 	invoker1 := NewMockInvoker(url1)
@@ -62,14 +62,14 @@ func TestHealthCheckRouterRoute(t *testing.T) {
 	invoker3 := NewMockInvoker(url3)
 	invokers = append(invokers, invoker1, invoker2, invoker3)
 	inv := invocation.NewRPCInvocation(healthCheckRouteMethodNameTest, nil, nil)
-	res := hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*HealthCheckRouter), invokers), &consumerURL, inv)
+	res := hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*HealthCheckRouter), invokers), consumerURL, inv)
 	// now all invokers are healthy
 	assert.True(t, len(res.ToArray()) == len(invokers))
 
 	for i := 0; i < 10; i++ {
 		request(url1, healthCheckRouteMethodNameTest, 0, false, false)
 	}
-	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*HealthCheckRouter), invokers), &consumerURL, inv)
+	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*HealthCheckRouter), invokers), consumerURL, inv)
 	// invokers1  is unhealthy now
 	assert.True(t, len(res.ToArray()) == 2 && !res.Contains(0))
 
@@ -78,7 +78,7 @@ func TestHealthCheckRouterRoute(t *testing.T) {
 		request(url2, healthCheckRouteMethodNameTest, 0, false, false)
 	}
 
-	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*HealthCheckRouter), invokers), &consumerURL, inv)
+	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*HealthCheckRouter), invokers), consumerURL, inv)
 	// only invokers3  is healthy now
 	assert.True(t, len(res.ToArray()) == 1 && !res.Contains(0) && !res.Contains(1))
 
@@ -88,24 +88,24 @@ func TestHealthCheckRouterRoute(t *testing.T) {
 		request(url3, healthCheckRouteMethodNameTest, 0, false, false)
 	}
 
-	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*HealthCheckRouter), invokers), &consumerURL, inv)
+	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*HealthCheckRouter), invokers), consumerURL, inv)
 	// now all invokers are unhealthy, so downgraded to all
 	assert.True(t, len(res.ToArray()) == 3)
 
 	// reset the invoker1 successive failed count, so invoker1 go to healthy
 	request(url1, healthCheckRouteMethodNameTest, 0, false, true)
-	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*HealthCheckRouter), invokers), &consumerURL, inv)
+	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*HealthCheckRouter), invokers), consumerURL, inv)
 	assert.True(t, res.Contains(0))
 
 	for i := 0; i < 6; i++ {
 		request(url1, healthCheckRouteMethodNameTest, 0, false, false)
 	}
 	// now all invokers are unhealthy, so downgraded to all again
-	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*HealthCheckRouter), invokers), &consumerURL, inv)
+	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*HealthCheckRouter), invokers), consumerURL, inv)
 	assert.True(t, len(res.ToArray()) == 3)
 	time.Sleep(time.Second * 2)
 	// invoker1 go to healthy again after 2s
-	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*HealthCheckRouter), invokers), &consumerURL, inv)
+	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*HealthCheckRouter), invokers), consumerURL, inv)
 	assert.True(t, res.Contains(0))
 
 }
@@ -113,12 +113,12 @@ func TestHealthCheckRouterRoute(t *testing.T) {
 func TestNewHealthCheckRouter(t *testing.T) {
 	defer protocol.CleanAllStatus()
 	url, _ := common.NewURL(fmt.Sprintf(healthCheckDubboUrlFormat, healthCheckDubbo1010IP))
-	hcr, _ := NewHealthCheckRouter(&url)
+	hcr, _ := NewHealthCheckRouter(url)
 	h := hcr.(*HealthCheckRouter)
 	assert.Nil(t, h.checker)
 
 	url.SetParam(HEALTH_ROUTE_ENABLED_KEY, "true")
-	hcr, _ = NewHealthCheckRouter(&url)
+	hcr, _ = NewHealthCheckRouter(url)
 	h = hcr.(*HealthCheckRouter)
 	assert.NotNil(t, h.checker)
 
@@ -130,7 +130,7 @@ func TestNewHealthCheckRouter(t *testing.T) {
 	url.SetParam(constant.CIRCUIT_TRIPPED_TIMEOUT_FACTOR_KEY, "500")
 	url.SetParam(constant.SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY, "10")
 	url.SetParam(constant.OUTSTANDING_REQUEST_COUNT_LIMIT_KEY, "1000")
-	hcr, _ = NewHealthCheckRouter(&url)
+	hcr, _ = NewHealthCheckRouter(url)
 	h = hcr.(*HealthCheckRouter)
 	dhc = h.checker.(*DefaultHealthChecker)
 	assert.Equal(t, dhc.outStandingRequestConutLimit, int32(1000))

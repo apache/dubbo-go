@@ -48,7 +48,7 @@ func TestDefaultAuthenticator_Authenticate(t *testing.T) {
 	}{"YUYU", 1}}
 	inv := invocation.NewRPCInvocation("test", parmas, nil)
 	requestTime := strconv.Itoa(int(time.Now().Unix() * 1000))
-	signature, _ := getSignature(&testurl, inv, secret, requestTime)
+	signature, _ := getSignature(testurl, inv, secret, requestTime)
 
 	var authenticator = &DefaultAuthenticator{}
 
@@ -58,7 +58,7 @@ func TestDefaultAuthenticator_Authenticate(t *testing.T) {
 		constant.REQUEST_TIMESTAMP_KEY: requestTime,
 		constant.AK_KEY:                access,
 	})
-	err := authenticator.Authenticate(invcation, &testurl)
+	err := authenticator.Authenticate(invcation, testurl)
 	assert.Nil(t, err)
 	// modify the params
 	invcation = invocation.NewRPCInvocation("test", parmas[:1], map[string]interface{}{
@@ -67,7 +67,7 @@ func TestDefaultAuthenticator_Authenticate(t *testing.T) {
 		constant.REQUEST_TIMESTAMP_KEY: requestTime,
 		constant.AK_KEY:                access,
 	})
-	err = authenticator.Authenticate(invcation, &testurl)
+	err = authenticator.Authenticate(invcation, testurl)
 	assert.NotNil(t, err)
 
 }
@@ -79,7 +79,7 @@ func TestDefaultAuthenticator_Sign(t *testing.T) {
 	testurl.SetParam(constant.SECRET_ACCESS_KEY_KEY, "skey")
 	testurl.SetParam(constant.PARAMTER_SIGNATURE_ENABLE_KEY, "false")
 	inv := invocation.NewRPCInvocation("test", []interface{}{"OK"}, nil)
-	_ = authenticator.Sign(inv, &testurl)
+	_ = authenticator.Sign(inv, testurl)
 	assert.NotEqual(t, inv.AttachmentsByKey(constant.REQUEST_SIGNATURE_KEY, ""), "")
 	assert.NotEqual(t, inv.AttachmentsByKey(constant.CONSUMER, ""), "")
 	assert.NotEqual(t, inv.AttachmentsByKey(constant.REQUEST_TIMESTAMP_KEY, ""), "")
@@ -124,7 +124,7 @@ func Test_getSignatureWithinParams(t *testing.T) {
 	})
 	secret := "dubbo"
 	current := strconv.Itoa(int(time.Now().Unix() * 1000))
-	signature, _ := getSignature(&testurl, inv, secret, current)
+	signature, _ := getSignature(testurl, inv, secret, current)
 	requestString := fmt.Sprintf(constant.SIGNATURE_STRING_FORMAT,
 		testurl.ColonSeparatedKey(), inv.MethodName(), secret, current)
 	s, _ := SignWithParams(inv.Arguments(), requestString, secret)
@@ -138,7 +138,7 @@ func Test_getSignature(t *testing.T) {
 	inv := invocation.NewRPCInvocation("test", []interface{}{"OK"}, nil)
 	secret := "dubbo"
 	current := strconv.Itoa(int(time.Now().Unix() * 1000))
-	signature, _ := getSignature(&testurl, inv, secret, current)
+	signature, _ := getSignature(testurl, inv, secret, current)
 	requestString := fmt.Sprintf(constant.SIGNATURE_STRING_FORMAT,
 		testurl.ColonSeparatedKey(), inv.MethodName(), secret, current)
 	s := Sign(requestString, secret)
