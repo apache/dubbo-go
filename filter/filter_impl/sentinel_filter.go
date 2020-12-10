@@ -58,6 +58,34 @@ func (d DubboLoggerWrapper) Debug(msg string, v ...interface{}) {
 	d.Logger.Debug(v...)
 }
 
+func (d DubboLoggerWrapper) Warn(msg string, keysAndValues ...interface{}) {
+	d.Logger.Warn(keysAndValues)
+}
+
+func (d DubboLoggerWrapper) Error(err error, msg string, keysAndValues ...interface{}) {
+	d.Logger.Error(msg)
+}
+
+func (d DubboLoggerWrapper) Info(msg string, keysAndValues ...interface{}) {
+	d.Logger.Info(msg)
+}
+
+func (d DubboLoggerWrapper) DebugEnabled() bool {
+	return false
+}
+
+func (d DubboLoggerWrapper) InfoEnabled() bool {
+	return false
+}
+
+func (d DubboLoggerWrapper) WarnEnabled() bool {
+	return false
+}
+
+func (d DubboLoggerWrapper) ErrorEnabled() bool {
+	return false
+}
+
 func (d DubboLoggerWrapper) Fatal(v ...interface{}) {
 	d.Logger.Error(v...)
 }
