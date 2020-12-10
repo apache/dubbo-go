@@ -157,7 +157,7 @@ func (c *Client) Connect(url *common.URL) error {
 	// codec
 	c.codec = remoting.GetCodec(url.Protocol)
 	c.addr = url.Location
-	_, _, err := c.selectSession(c.addr)
+	_, _, err := c.selectSession(c.addr, true)
 	if err != nil {
 		logger.Errorf("try to connect server %v failed for : %v", url.Location, err)
 	}
@@ -174,13 +174,17 @@ func (c *Client) Close() {
 
 // send request
 func (c *Client) Request(request *remoting.Request, timeout time.Duration, response *remoting.PendingResponse) error {
-	_, session, err := c.selectSession(c.addr)
+	conn, session, err := c.selectSession(c.addr, false)
 	if err != nil {
 		return perrors.WithStack(err)
 	}
 	if session == nil {
 		return errSessionNotExist
 	}
+
+	defer func() {
+		c.pool.putConnIntoPool(conn, err)
+	}()
 
 	if err = c.transfer(session, request, timeout); err != nil {
 		return perrors.WithStack(err)
@@ -202,14 +206,14 @@ func (c *Client) Request(request *remoting.Request, timeout time.Duration, respo
 
 // isAvailable returns true if the connection is available, or it can be re-established.
 func (c *Client) IsAvailable() bool {
-	client, _, err := c.selectSession(c.addr)
+	client, _, err := c.selectSession(c.addr, true)
 	return err == nil &&
 		// defensive check
 		client != nil
 }
 
-func (c *Client) selectSession(addr string) (*gettyRPCClient, getty.Session, error) {
-	rpcClient, err := c.pool.getGettyRpcClient(addr)
+func (c *Client) selectSession(addr string, isCheckHealthy bool) (*gettyRPCClient, getty.Session, error) {
+	rpcClient, err := c.pool.getGettyRpcClient(addr, isCheckHealthy)
 	if err != nil {
 		return nil, nil, perrors.WithStack(err)
 	}
