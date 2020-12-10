@@ -54,6 +54,10 @@ type DubboLoggerWrapper struct {
 	logger.Logger
 }
 
+func (d DubboLoggerWrapper) Debug(msg string, v ...interface{}) {
+	d.Logger.Debug(v...)
+}
+
 func (d DubboLoggerWrapper) Fatal(v ...interface{}) {
 	d.Logger.Error(v...)
 }
