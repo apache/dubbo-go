@@ -163,6 +163,7 @@ func (c *ProtocolCodec) Decode(p *DubboPackage) error {
 	if p.IsResponseWithException() {
 		logger.Infof("response with exception: %+v", p.Header)
 		decoder := hessian.NewDecoder(body)
+		p.Body = &ResponsePayload{}
 		exception, err := decoder.Decode()
 		if err != nil {
 			return perrors.WithStack(err)
