@@ -168,11 +168,7 @@ func (c *ProtocolCodec) Decode(p *DubboPackage) error {
 		if err != nil {
 			return perrors.WithStack(err)
 		}
-		rsp, ok := p.Body.(*ResponsePayload)
-		if !ok {
-			return perrors.Errorf("java exception:%s", exception.(string))
-		}
-		rsp.Exception = perrors.Errorf("java exception:%s", exception.(string))
+		p.Body.(*ResponsePayload).Exception = perrors.Errorf("java exception:%s", exception.(string))
 		return nil
 	} else if p.IsHeartBeat() {
 		// heartbeat no need to unmarshal contents
