@@ -8,7 +8,5 @@ type TripleHeader struct {
 
 type TriplePackage struct {
 	header *TripleHeader
-	codec  *CodeC
+	//codec  *CodeC
 }
-
-NewTriplePkgHandler
