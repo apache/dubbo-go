@@ -3,21 +3,20 @@ package dubbo3
 import (
 	"bytes"
 	"context"
-	"encoding/binary"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/dubbo3/impl"
+	"github.com/apache/dubbo-go/remoting"
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc"
 )
 
-const defaultRWBufferMaxLen = 4096
-
 type processor struct {
 	stream                *stream
-	codec                 CodeC
+	pkgHandler            remoting.PackageHandler
 	readWriteMaxBufferLen uint32 // useless
+	serializer            remoting.Dubbo3Serializer
+	methodDesc            grpc.MethodDesc
 }
 
 // Dubbo3GrpcService is gRPC service
@@ -31,43 +30,47 @@ type Dubbo3GrpcService interface {
 }
 
 // protoc config参数增加,对codec进行选择
-func newProcessor(s *stream) *processor {
-	return &processor{
-		stream:                s,
-		codec:                 impl.NewDubbo3CodeC(),
-		readWriteMaxBufferLen: defaultRWBufferMaxLen,
+func newProcessor(s *stream, pkgHandler remoting.PackageHandler, md grpc.MethodDesc) (*processor, error) {
+
+	serilizer, err := remoting.GetDubbo3Serializer(defaultSerilization)
+	if err != nil {
+		logger.Error("newProcessor with serlizationg ", defaultSerilization, " error")
+		return nil, err
 	}
+
+	return &processor{
+		serializer:            serilizer,
+		stream:                s,
+		pkgHandler:            pkgHandler,
+		readWriteMaxBufferLen: defaultRWBufferMaxLen,
+		methodDesc:            md,
+	}, nil
 }
 
-func (p *processor) processUnaryRPC(buf bytes.Buffer, method string, service common.RPCService, url *common.URL) (*bytes.Buffer, error) {
+func (p *processor) processUnaryRPC(buf bytes.Buffer, service common.RPCService) (*bytes.Buffer, error) {
 	readBuf := buf.Bytes()
-	header := readBuf[:5]
-	length := binary.BigEndian.Uint32(header[1:])
+
+	pkgData := p.pkgHandler.Frame2PkgData(readBuf)
+	// todo 这个要放到实现里面
 
 	descFunc := func(v interface{}) error {
-		if err := p.codec.Unmarshal(readBuf[5:5+length], v.(proto.Message)); err != nil {
+		if err := p.serializer.Unmarshal(pkgData, v.(proto.Message)); err != nil {
 			return err
 		}
 		return nil
 	}
 
-	ds, ok := service.(Dubbo3GrpcService)
-	if !ok {
-		logger.Error("service is not Dubbo3GrpcService")
-	}
-
-	reply, err := ds.ServiceDesc().Methods[0].Handler(service, context.Background(), descFunc, nil)
+	reply, err := p.methodDesc.Handler(service, context.Background(), descFunc, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	replyData, err := proto.Marshal(reply.(proto.Message))
+	// 这里直接调用stream上的packageHandler 的 decode函数，从msg到byte
+	replyData, err := p.serializer.Marshal(reply.(proto.Message))
 	if err != nil {
 		return nil, err
 	}
-	rsp := make([]byte, 5+len(replyData))
-	rsp[0] = byte(0)
-	binary.BigEndian.PutUint32(rsp[1:], uint32(len(replyData)))
-	copy(rsp[5:], replyData[:])
-	return bytes.NewBuffer(rsp), nil
+
+	rspFrameData := p.pkgHandler.Pkg2FrameData(replyData)
+	return bytes.NewBuffer(rspFrameData), nil
 }

@@ -7,28 +7,27 @@ import (
 	"sync"
 )
 
-
 type TripleServer struct {
-	lst net.Listener
-	addr string
+	lst        net.Listener
+	addr       string
 	rpcService common.RPCService
-	url *common.URL
+	url        *common.URL
 }
 
 func NewTripleServer(url *common.URL, service common.RPCService) *TripleServer {
 	return &TripleServer{
-		addr: url.Location,
+		addr:       url.Location,
 		rpcService: service,
+		url:        url,
 	}
 }
 
 // todo stop server
-func (t*TripleServer) Stop(){
+func (t *TripleServer) Stop() {
 
 }
 
-
-func (t*TripleServer) Start(){
+func (t *TripleServer) Start() {
 	logger.Warn("In Start()")
 	logger.Warn("tripleServer Start at ", t.addr)
 	lst, err := net.Listen("tcp", t.addr)
@@ -54,8 +53,12 @@ func (t *TripleServer) Run() {
 	}
 }
 
-func (t *TripleServer) handleRawConn(conn net.Conn) {
-	h2Controller := NewH2Controller(conn, true, t.rpcService, t.url)
+func (t *TripleServer) handleRawConn(conn net.Conn) error {
+	h2Controller, err := NewH2Controller(conn, true, t.rpcService, t.url)
+	if err != nil {
+		return err
+	}
 	h2Controller.H2ShakeHand()
 	h2Controller.run()
+	return nil
 }

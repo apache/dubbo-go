@@ -69,7 +69,10 @@ func (t *TripleClient) Connect(url *common.URL) error {
 	}
 	t.addr = url.Location
 	t.conn = conn
-	t.h2Controller = NewH2Controller(t.conn, false, nil, nil)
+	t.h2Controller, err = NewH2Controller(t.conn, false, nil, nil)
+	if err != nil {
+		return err
+	}
 	t.h2Controller.H2ShakeHand()
 	return nil
 }

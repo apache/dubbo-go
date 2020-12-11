@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/remoting"
+	"google.golang.org/grpc"
 	"sync"
 )
 
@@ -59,34 +62,59 @@ type stream struct {
 	ID        uint32
 	recvBuf   *MsgBuffer
 	sendBuf   *MsgBuffer
-	method    string
 	processor *processor
-	service   common.RPCService
 	url       *common.URL
+	header    remoting.ProtocolHeader
+	md        grpc.MethodDesc
+	service   common.RPCService
 }
 
-func newStream(data parsedTripleHeaderData, service common.RPCService, url *common.URL) *stream {
+func newStream(header remoting.ProtocolHeader, md grpc.MethodDesc, url *common.URL, service common.RPCService) (*stream, error) {
+	pkgHandler, err := remoting.GetPackagerHandler(url.Protocol)
+	if err != nil {
+		logger.Error("GetPkgHandler error with err = ", err)
+		return nil, err
+	}
+
+	if err != nil {
+		logger.Error("new stream error with err = ", err)
+		return nil, err
+	}
+
+	// stream and pkgHeader are the same level
 	newStream := &stream{
 		url:     url,
-		ID:      data.streamID,
-		method:  data.method,
+		ID:      header.GetStreamID(),
 		recvBuf: newRecvBuffer(),
 		sendBuf: newRecvBuffer(),
+		header:  header,
+		md:      md,
 		service: service,
 	}
-	newStream.processor = newProcessor(newStream)
+
+	// pkgHandler and processor are the same level
+	newStream.processor, err = newProcessor(newStream, pkgHandler, md)
+	if err != nil {
+		logger.Errorf("newStream error: ", err)
+		return nil, err
+	}
 	go newStream.run()
-	return newStream
+	return newStream, nil
 }
 
 func (s *stream) run() {
+	// stream 建立时，获得抽象protocHeader，同时根据protocHeader拿到了实现好的对应协议的package Handler
+	// package Handler里面封装了协议codec codec里面封装了 与协议独立的serillizer
+
+	//拿到了本次调用的打解包协议类型、调用的方法名。
+
 	recvChan := s.recvBuf.get()
 	for {
 		recvMsg := <-recvChan
 		if recvMsg.err != nil {
 			continue
 		}
-		rspBuffer, err := s.processor.processUnaryRPC(*recvMsg.buffer, s.method, s.service, s.url)
+		rspBuffer, err := s.processor.processUnaryRPC(*recvMsg.buffer, s.service)
 		if err != nil {
 			fmt.Println("error ,s.processUnaryRPC err = ", err)
 			continue
