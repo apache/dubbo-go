@@ -28,7 +28,7 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
-	gxpage "github.com/dubbogo/gost/page"
+	gxpage "github.com/dubbogo/gost/hash/page"
 	perrors "github.com/pkg/errors"
 )
 
