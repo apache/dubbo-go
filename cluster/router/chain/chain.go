@@ -65,8 +65,6 @@ type RouterChain struct {
 	notify chan struct{}
 	// Address cache
 	cache atomic.Value
-	// init
-	init sync.Once
 }
 
 // Route Loop routers in RouterChain and call Route method to determine the target invokers list.
@@ -112,11 +110,6 @@ func (c *RouterChain) SetInvokers(invokers []protocol.Invoker) {
 	c.mutex.Lock()
 	c.invokers = invokers
 	c.mutex.Unlock()
-
-	// it should trigger init router for first call
-	c.init.Do(func() {
-		c.notify <- struct{}{}
-	})
 
 	c.count++
 	now := time.Now()
