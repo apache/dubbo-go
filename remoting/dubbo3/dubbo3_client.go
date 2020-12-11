@@ -16,24 +16,24 @@ import (
 
 // TripleClient client endpoint for client end
 type TripleClient struct {
-	conn net.Conn
-	h2Controller *H2Controller
+	conn           net.Conn
+	h2Controller   *H2Controller
 	exchangeClient *remoting.ExchangeClient
-	addr string
-	Invoker reflect.Value
+	addr           string
+	Invoker        reflect.Value
 }
 
 type TripleConn struct {
 	client *TripleClient
-
 }
 
-func(t*TripleConn) Invoke(ctx context.Context, method string, args, reply interface{}, opts ...grpc.CallOption) error {
-	t.client.Request(method , args, reply )
+func (t *TripleConn) Invoke(ctx context.Context, method string, args, reply interface{}, opts ...grpc.CallOption) error {
+	t.client.Request(method, args, reply)
 	return nil
 }
+
 // todo 封装网络逻辑在这个函数里
-func NewTripleConn (client *TripleClient)*TripleConn{
+func NewTripleConn(client *TripleClient) *TripleConn {
 	return &TripleConn{
 		client: client,
 	}
@@ -43,6 +43,7 @@ func NewTripleConn (client *TripleClient)*TripleConn{
 func getInvoker(impl interface{}, conn *TripleConn) interface{} {
 	var in []reflect.Value
 	in = append(in, reflect.ValueOf(conn))
+
 	method := reflect.ValueOf(impl).MethodByName("GetDubboStub")
 	res := method.Call(in)
 	// res[0] 是一个包含了SayHello方法的struct: greeterClient,他的SayHello方法会调用conn的Invoke来具体实现
@@ -50,17 +51,17 @@ func getInvoker(impl interface{}, conn *TripleConn) interface{} {
 	return res[0].Interface()
 }
 
-func NewTripleClient(url *common.URL)*TripleClient {
+func NewTripleClient(url *common.URL) *TripleClient {
 	key := url.GetParam(constant.BEAN_NAME_KEY, "")
 	impl := config.GetConsumerService(key)
 	tripleClient := &TripleClient{}
 	tripleClient.Connect(url)
 	invoker := getInvoker(impl, NewTripleConn(tripleClient)) // 要把网络逻辑放到conn里面
-	tripleClient.Invoker =  reflect.ValueOf(invoker)
+	tripleClient.Invoker = reflect.ValueOf(invoker)
 	return tripleClient
 }
 
-func (t*TripleClient)Connect(url *common.URL) error {
+func (t *TripleClient) Connect(url *common.URL) error {
 	logger.Warn("want to connect to url = ", url.Location)
 	conn, err := net.Dial("tcp", url.Location)
 	if err != nil {
@@ -68,14 +69,14 @@ func (t*TripleClient)Connect(url *common.URL) error {
 	}
 	t.addr = url.Location
 	t.conn = conn
-	t.h2Controller = NewH2Controller(t.conn, false,nil, nil)
+	t.h2Controller = NewH2Controller(t.conn, false, nil, nil)
 	t.h2Controller.H2ShakeHand()
 	return nil
 }
 
-func (t*TripleClient)Request(method string, arg, reply interface{}) error{
+func (t *TripleClient) Request(method string, arg, reply interface{}) error {
 	reqData, err := proto.Marshal(arg.(proto.Message))
-	if err != nil{
+	if err != nil {
 		panic("client request marshal not ok ")
 	}
 	fmt.Printf("getInvocation first arg = %+v\n", reqData)
@@ -84,10 +85,10 @@ func (t*TripleClient)Request(method string, arg, reply interface{}) error{
 	return nil
 }
 
-func (t*TripleClient) Close() {
+func (t *TripleClient) Close() {
 
 }
 
-func (t*TripleClient) IsAvailable() bool {
+func (t *TripleClient) IsAvailable() bool {
 	return true
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 	dgrpc "github.com/apache/dubbo-go/protocol/grpc"
 	"github.com/apache/dubbo-go/protocol/invocation"
+	"github.com/apache/dubbo-go/remoting/dubbo3"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -135,11 +136,11 @@ var fileDescriptor_17b8c58d586b62f2 = []byte{
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
-var _ grpc.ClientConnInterface
+var _ grpc.ClientConn
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion6
+const _ = grpc.SupportPackageIsVersion4
 
 // GreeterClient is the client API for Greeter service.
 //
@@ -150,10 +151,10 @@ type GreeterClient interface {
 }
 
 type greeterClient struct {
-	cc grpc.ClientConnInterface
+	cc *grpc.ClientConn
 }
 
-func NewGreeterClient(cc grpc.ClientConnInterface) GreeterClient {
+func NewGreeterClient(cc *grpc.ClientConn) GreeterClient {
 	return &greeterClient{cc}
 }
 
@@ -215,6 +216,22 @@ var _Greeter_serviceDesc = grpc.ServiceDesc{
 	Metadata: "helloworld.proto",
 }
 
+type greeterDubbo3Client struct {
+	cc *dubbo3.TripleConn
+}
+
+func NewGreeterDubbo3Client(cc *dubbo3.TripleConn) GreeterClient {
+	return &greeterDubbo3Client{cc}
+}
+func (c *greeterDubbo3Client) SayHello(ctx context.Context, in *HelloRequest, opt ...grpc.CallOption) (*HelloReply, error) {
+	out := new(HelloReply)
+	err := c.cc.Invoke(ctx, "/protobuf.Greeter/SayHello", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GreeterClientImpl is the client API for Greeter service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
@@ -227,8 +244,8 @@ func (c *GreeterClientImpl) Reference() string {
 	return "greeterImpl"
 }
 
-func (c *GreeterClientImpl) GetDubboStub(cc *grpc.ClientConn) GreeterClient {
-	return NewGreeterClient(cc)
+func (c *GreeterClientImpl) GetDubboStub(cc *dubbo3.TripleConn) GreeterClient {
+	return NewGreeterDubbo3Client(cc)
 }
 
 type GreeterProviderBase struct {

@@ -127,6 +127,35 @@ func (g *dubboGrpc) generateService(file *generator.FileDescriptor, service *pb.
 		fullServName = pkg + "." + fullServName
 	}
 	servName := generator.CamelCase(origServName)
+	lowerServName := strings.ToLower(servName)
+	g.P(fmt.Sprintf("type %sDubbo3Client struct {", lowerServName))
+	g.P(fmt.Sprintf("cc *dubbo3.TripleConn"))
+	g.P("}")
+
+	g.P(fmt.Sprintf("func New%sDubbo3Client (cc *dubbo3.TripleConn) %sClient {", servName, servName))
+	g.P(fmt.Sprintf("return &%sDubbo3Client{cc}", lowerServName))
+	g.P(fmt.Sprintf("}"))
+
+	for _, method := range service.Method {
+
+		if method.GetServerStreaming() || method.GetClientStreaming() {
+			continue
+		}
+		inputTypeNames := strings.Split(method.GetInputType(), ".")
+		inputTypeName := inputTypeNames[len(inputTypeNames)-1]
+		outputTypeNames := strings.Split(method.GetOutputType(), ".")
+		outputTypeName := outputTypeNames[len(outputTypeNames)-1]
+		g.P(fmt.Sprintf("func (c *%sDubbo3Client) %s(ctx %s.Context, in *%s, opt ...grpc.CallOption) (*%s, error) {",
+			lowerServName, method.GetName(), contextPkg, inputTypeName, outputTypeName))
+		g.P(fmt.Sprintf("out := new(%s)", outputTypeName))
+		g.P(fmt.Sprintf("err := c.cc.Invoke(ctx, \"/protobuf.%s/%s\", in, out)", servName, method.GetName()))
+		g.P("if err != nil {")
+		g.P("return nil, err")
+		g.P("}")
+		g.P("return out, nil")
+		g.P("}")
+	}
+
 	deprecated := service.GetOptions().GetDeprecated()
 
 	g.P()
@@ -171,7 +200,7 @@ func (g *dubboGrpc) generateService(file *generator.FileDescriptor, service *pb.
 	//	return NewGreeterClient(cc)
 	//}
 	g.P("func (c *", dubboSrvName, ") ", " GetDubboStub(cc *dubbo3.TripleConn) ", servName, "Client {")
-	g.P(`return New`, servName, `Client(cc)`)
+	g.P(`return New`, servName, `Dubbo3Client(cc)`)
 	g.P("}")
 	g.P()
 
