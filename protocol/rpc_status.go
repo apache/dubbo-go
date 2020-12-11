@@ -213,3 +213,8 @@ func GetBlackListInvokers(blockSize int) []Invoker {
 	}
 	return resultIvks[:blockSize]
 }
+
+// RemoveUrlKeyUnhealthyStatus called when event of provider unregister, delete from black list
+func RemoveUrlKeyUnhealthyStatus(key string) {
+	invokerBlackList.Delete(key)
+}
