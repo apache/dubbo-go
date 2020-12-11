@@ -61,13 +61,13 @@ type stream struct {
 	sendBuf   *MsgBuffer
 	method    string
 	processor *processor
-	service common.RPCService
-	url *common.URL
+	service   common.RPCService
+	url       *common.URL
 }
 
-func newStream(data parsedTripleHeaderData,service common.RPCService, url *common.URL) *stream {
+func newStream(data parsedTripleHeaderData, service common.RPCService, url *common.URL) *stream {
 	newStream := &stream{
-		url: url,
+		url:     url,
 		ID:      data.streamID,
 		method:  data.method,
 		recvBuf: newRecvBuffer(),
@@ -81,7 +81,6 @@ func newStream(data parsedTripleHeaderData,service common.RPCService, url *commo
 
 func (s *stream) run() {
 	recvChan := s.recvBuf.get()
-	//sendChan := s.sendBuf.get()
 	for {
 		recvMsg := <-recvChan
 		if recvMsg.err != nil {
@@ -94,14 +93,6 @@ func (s *stream) run() {
 		}
 		s.sendBuf.put(BufferMsg{buffer: rspBuffer})
 	}
-	//for {
-	//	sendMsg := <-sendChan
-	//	if sendMsg.err != nil {
-	//		continue
-	//	}
-	//	// todo send to triple
-	//
-	//}
 }
 
 func (s *stream) putRecv(data []byte) {

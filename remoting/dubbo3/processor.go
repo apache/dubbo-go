@@ -7,6 +7,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/dubbo3/impl"
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc"
 )
@@ -33,7 +34,7 @@ type Dubbo3GrpcService interface {
 func newProcessor(s *stream) *processor {
 	return &processor{
 		stream:                s,
-		codec:                 NewProtobufCodeC(),
+		codec:                 impl.NewDubbo3CodeC(),
 		readWriteMaxBufferLen: defaultRWBufferMaxLen,
 	}
 }
@@ -49,20 +50,12 @@ func (p *processor) processUnaryRPC(buf bytes.Buffer, method string, service com
 		}
 		return nil
 	}
-	// todo 这里不能用dubbo handler，应该用pb的handler，否则无法protocol解包
-	// 需要cli支持
-	//var v interface{}
-	//p.codec.Unmarshal(readBuf[5:5+length], v.(proto.Message))
-	//var args []interface{}
-	//args = append(args, v)
-	//// 执行函数
-	//handler(invocation.NewRPCInvocation(method,args,nil))
+
 	ds, ok := service.(Dubbo3GrpcService)
-	if !ok{
+	if !ok {
 		logger.Error("service is not Dubbo3GrpcService")
 	}
 
-	// todo 明天 尝试一下用proto-gen-dubbo生成的desc能不能成功调用。
 	reply, err := ds.ServiceDesc().Methods[0].Handler(service, context.Background(), descFunc, nil)
 	if err != nil {
 		return nil, err
@@ -78,13 +71,3 @@ func (p *processor) processUnaryRPC(buf bytes.Buffer, method string, service com
 	copy(rsp[5:], replyData[:])
 	return bytes.NewBuffer(rsp), nil
 }
-
-///// 先放着
-//// server is used to implement helloworld.GreeterServer.
-//type server struct{}
-//
-//// SayHello implements helloworld.GreeterServer
-//func (s server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
-//	fmt.Println("######### get server request name :" + in.Name)
-//	return &pb.HelloReply{Message: "Hello " + in.Name}, nil
-//}
