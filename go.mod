@@ -51,4 +51,4 @@ replace (
 	launchpad.net/gocheck => github.com/go-check/check v0.0.0-20140225173054-eb6ee6f84d0a
 )
 
-go 1.13
+go 1.14
