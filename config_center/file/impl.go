@@ -24,7 +24,6 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
-	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -41,12 +40,28 @@ import (
 	"github.com/apache/dubbo-go/config_center/parser"
 )
 
+var osType string
+var path string
+
 const (
-	PARAM_NAME_PREFIX                 = "dubbo.config-center."
-	CONFIG_CENTER_DIR_PARAM_NAME      = PARAM_NAME_PREFIX + "dir"
-	CONFIG_CENTER_ENCODING_PARAM_NAME = PARAM_NAME_PREFIX + "encoding"
-	DEFAULT_CONFIG_CENTER_ENCODING    = "UTF-8"
+	windows = "windows"
 )
+
+const (
+	ParamNamePrefix               = "dubbo.config-center."
+	ConfigCenterDirParamName      = ParamNamePrefix + "dir"
+	ConfigCenterEncodingParamName = ParamNamePrefix + "encoding"
+	defaultConfigCenterEncoding   = "UTF-8"
+)
+
+func init() {
+	osType = runtime.GOOS
+	if os.IsPathSeparator('\\') { //前边的判断是否是系统的分隔符
+		path = "\\"
+	} else {
+		path = "/"
+	}
+}
 
 // FileSystemDynamicConfiguration
 type FileSystemDynamicConfiguration struct {
@@ -59,24 +74,14 @@ type FileSystemDynamicConfiguration struct {
 }
 
 func newFileSystemDynamicConfiguration(url *common.URL) (*FileSystemDynamicConfiguration, error) {
-	encode := url.GetParam(CONFIG_CENTER_ENCODING_PARAM_NAME, DEFAULT_CONFIG_CENTER_ENCODING)
+	encode := url.GetParam(ConfigCenterEncodingParamName, defaultConfigCenterEncoding)
 
-	root := url.GetParam(CONFIG_CENTER_DIR_PARAM_NAME, "")
+	root := url.GetParam(ConfigCenterDirParamName, "")
 	var c *FileSystemDynamicConfiguration
-	if _, err := os.Stat(root); err != nil {
-		// not exist, use default, /XXX/xx/.dubbo/config-center
-		if rp, err := Home(); err != nil {
-			return nil, perrors.WithStack(err)
-		} else {
-			root = path.Join(rp, ".dubbo", "config-center")
-		}
-	}
 
-	if _, err := os.Stat(root); err != nil {
-		// it must be dir, if not exist, will create
-		if err = createDir(root); err != nil {
-			return nil, perrors.WithStack(err)
-		}
+	root, err := mkdirIfNecessary(root)
+	if err != nil {
+		return nil, err
 	}
 
 	c = &FileSystemDynamicConfiguration{
@@ -195,14 +200,14 @@ func (fsdc *FileSystemDynamicConfiguration) Close() error {
 // GetPath get path
 func (fsdc *FileSystemDynamicConfiguration) GetPath(key string, group string) string {
 	if len(key) == 0 {
-		return path.Join(fsdc.rootPath, group)
+		return filepath.Join(fsdc.rootPath, group)
 	}
 
 	if len(group) == 0 {
 		group = config_center.DEFAULT_GROUP
 	}
 
-	return path.Join(fsdc.rootPath, group, key)
+	return filepath.Join(fsdc.rootPath, group, adapterKey(key))
 }
 
 func (fsdc *FileSystemDynamicConfiguration) deleteDelay(path string) (bool, error) {
@@ -306,4 +311,58 @@ func homeWindows() (string, error) {
 	}
 
 	return home, nil
+}
+
+func mkdirIfNecessary(urlRoot string) (string, error) {
+	h := false
+	if len(urlRoot) == 0 {
+		h = true
+		goto Create
+	}
+	if _, err := os.Stat(urlRoot); err != nil {
+		h = true
+		goto Create
+	}
+
+Create:
+	if h {
+		// not exist, use default, mac is: /XXX/xx/.dubbo/config-center
+		rp, err := Home()
+		if err != nil {
+			return "", perrors.WithStack(err)
+		}
+
+		urlRoot = adapterUrl(rp)
+	}
+
+	if _, err := os.Stat(urlRoot); err != nil {
+		// it must be dir, if not exist, will create
+		if err = createDir(urlRoot); err != nil {
+			return "", perrors.WithStack(err)
+		}
+	}
+
+	return urlRoot, nil
+}
+
+func adapterUrl(rp string) string {
+	if osType == windows {
+		return filepath.Join(rp, "_dubbo", "config-center")
+	}
+
+	return filepath.Join(rp, ".dubbo", "config-center")
+}
+
+// used for GetPath. param key default is instance's id.
+// e.g: (ip:port) 127.0.0.1:20081, in windows env, will change to 127_0_0_1_20081
+func adapterKey(key string) string {
+	if len(key) == 0 {
+		return ""
+	}
+
+	if osType == windows {
+		return strings.ReplaceAll(strings.ReplaceAll(key, ".", "_"), ":", "_")
+	}
+
+	return key
 }
