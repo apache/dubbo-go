@@ -314,18 +314,7 @@ func homeWindows() (string, error) {
 }
 
 func mkdirIfNecessary(urlRoot string) (string, error) {
-	h := false
-	if len(urlRoot) == 0 {
-		h = true
-		goto Create
-	}
-	if _, err := os.Stat(urlRoot); err != nil {
-		h = true
-		goto Create
-	}
-
-Create:
-	if h {
+	if !legalPath(urlRoot) {
 		// not exist, use default, mac is: /XXX/xx/.dubbo/config-center
 		rp, err := Home()
 		if err != nil {
@@ -343,6 +332,17 @@ Create:
 	}
 
 	return urlRoot, nil
+}
+
+func legalPath(path string) bool {
+	if len(path) == 0 {
+		return false
+	}
+	if _, err := os.Stat(path); err != nil {
+		return false
+	}
+
+	return true
 }
 
 func adapterUrl(rp string) string {
