@@ -85,23 +85,23 @@ func TestServiceMapRegister(t *testing.T) {
 	// lowercase
 	s0 := &testService{}
 	// methods, err := ServiceMap.Register("testporotocol", s0)
-	_, err := ServiceMap.Register(testInterfaceName, "testporotocol", s0)
+	_, err := ServiceMap.Register(testInterfaceName, "testporotocol", "", "v0", s0)
 	assert.EqualError(t, err, "type testService is not exported")
 
 	// succ
 	s := &TestService{}
-	methods, err := ServiceMap.Register(testInterfaceName, "testporotocol", s)
+	methods, err := ServiceMap.Register(testInterfaceName, "testporotocol", "", "v1", s)
 	assert.NoError(t, err)
 	assert.Equal(t, "MethodOne,MethodThree,methodTwo", methods)
 
 	// repeat
-	_, err = ServiceMap.Register(testInterfaceName, "testporotocol", s)
-	assert.EqualError(t, err, "service already defined: com.test.Path")
+	_, err = ServiceMap.Register(testInterfaceName, "testporotocol", "", "v1", s)
+	assert.EqualError(t, err, "service already defined: testService:v1")
 
 	// no method
 	s1 := &TestService1{}
-	_, err = ServiceMap.Register(testInterfaceName, "testporotocol", s1)
-	assert.EqualError(t, err, "type com.test.Path1 has no exported methods of suitable type")
+	_, err = ServiceMap.Register(testInterfaceName, "testporotocol", "", "v2", s1)
+	assert.EqualError(t, err, "type testService:v2 has no exported methods of suitable type")
 
 	ServiceMap = &serviceMap{
 		serviceMap:   make(map[string]map[string]*Service),
@@ -111,22 +111,22 @@ func TestServiceMapRegister(t *testing.T) {
 
 func TestServiceMapUnRegister(t *testing.T) {
 	s := &TestService{}
-	_, err := ServiceMap.Register("TestService", testProtocol, s)
+	_, err := ServiceMap.Register("TestService", testProtocol, "", "v1", s)
 	assert.NoError(t, err)
-	assert.NotNil(t, ServiceMap.GetService(testProtocol, referenceTestPath))
+	assert.NotNil(t, ServiceMap.GetService(testProtocol, "TestService", "", "v1"))
 	assert.Equal(t, 1, len(ServiceMap.GetInterface("TestService")))
 
-	err = ServiceMap.UnRegister("", "", referenceTestPath)
-	assert.EqualError(t, err, "protocol or serviceName is nil")
+	err = ServiceMap.UnRegister("", "", ServiceKey("TestService", "", "v1"))
+	assert.EqualError(t, err, "protocol or serviceKey is nil")
 
-	err = ServiceMap.UnRegister("", "protocol", referenceTestPath)
+	err = ServiceMap.UnRegister("", "protocol", ServiceKey("TestService", "", "v1"))
 	assert.EqualError(t, err, "no services for protocol")
 
-	err = ServiceMap.UnRegister("", testProtocol, referenceTestPathDistinct)
-	assert.EqualError(t, err, "no service for com.test.Path1")
+	err = ServiceMap.UnRegister("", testProtocol, ServiceKey("TestService", "", "v0"))
+	assert.EqualError(t, err, "no service for TestService:v0")
 
 	// succ
-	err = ServiceMap.UnRegister("TestService", testProtocol, referenceTestPath)
+	err = ServiceMap.UnRegister("TestService", testProtocol, ServiceKey("TestService", "", "v1"))
 	assert.NoError(t, err)
 }
 
