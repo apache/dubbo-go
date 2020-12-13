@@ -97,7 +97,7 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	args := invocation.Arguments()
 
 	// get service
-	svc := common.ServiceMap.GetService(proto, path)
+	svc := common.ServiceMap.GetServiceByServiceKey(proto, url.ServiceKey())
 	if svc == nil {
 		logger.Errorf("cannot find service [%s] in %s", path, proto)
 		result.SetError(perrors.Errorf("cannot find service [%s] in %s", path, proto))
