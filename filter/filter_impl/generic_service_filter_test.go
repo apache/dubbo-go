@@ -96,7 +96,7 @@ func TestGenericServiceFilterInvoke(t *testing.T) {
 			hessian.Object("222")},
 	}
 	s := &TestService{}
-	_, _ = common.ServiceMap.Register("TestService", "testprotocol", s)
+	_, _ = common.ServiceMap.Register("com.test.Path", "testprotocol", "", "", s)
 	rpcInvocation := invocation.NewRPCInvocation(methodName, aurguments, nil)
 	filter := GetGenericServiceFilter()
 	url, _ := common.NewURL("testprotocol://127.0.0.1:20000/com.test.Path")

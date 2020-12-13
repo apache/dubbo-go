@@ -383,7 +383,7 @@ func buildServerSidePackageBody(pkg *DubboPackage) {
 			"dubboVersion": dubboVersion,
 			"argsTypes":    argsTypes,
 			"args":         args,
-			"service":      common.ServiceMap.GetService(DUBBO, svc.Path), // path as a key
+			"service":      common.ServiceMap.GetService(DUBBO, svc.Interface, svc.Group, svc.Version), // path as a key
 			"attachments":  attachments,
 		})
 	}
