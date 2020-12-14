@@ -24,7 +24,6 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/protocol/invocation"
 	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
