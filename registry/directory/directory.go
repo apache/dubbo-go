@@ -208,6 +208,16 @@ func (dir *RegistryDirectory) configRouters() {
 // convertUrl processes override:// and router://
 func (dir *RegistryDirectory) convertUrl(res *registry.ServiceEvent) *common.URL {
 	ret := res.Service
+=======
+	if len(urls) > 0 {
+		dir.SetRouters(urls)
+	}
+}
+
+// convertUrl processes override:// and router://
+func (dir *RegistryDirectory) convertUrl(res *registry.ServiceEvent) *common.URL {
+	ret := &res.Service
+>>>>>>> 1.5
 	if ret.Protocol == constant.OVERRIDE_PROTOCOL || // 1.for override url in 2.6.x
 		ret.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY) == constant.CONFIGURATORS_CATEGORY {
 		dir.configurators = append(dir.configurators, extension.GetDefaultConfigurator(ret))

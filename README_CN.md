@@ -27,6 +27,14 @@ Apache License, Version 2.0
 
 [v1.5.0 - 2020年7月24日](https://github.com/apache/dubbo-go/releases/tag/v1.5.0)
 
+[v1.4.4 - 2020年8月11日](https://github.com/apache/dubbo-go/releases/tag/v1.4.4)
+
+[v1.4.3 - 2020年7月29日](https://github.com/apache/dubbo-go/releases/tag/v1.4.3)
+
+[v1.4.2 - 2020年6月7日](https://github.com/apache/dubbo-go/releases/tag/v1.4.2)
+
+[v1.4.1 - 2020年4月20日](https://github.com/apache/dubbo-go/releases/tag/v1.4.1)
+
 [v1.4.0 - 2020年3月17日](https://github.com/apache/dubbo-go/releases/tag/v1.4.0)
 
 [v1.3.0 - 2020年3月1日](https://github.com/apache/dubbo-go/releases/tag/v1.3.0)
