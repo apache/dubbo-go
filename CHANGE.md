@@ -1,5 +1,45 @@
 # Release Notes
 ---
+## 1.5.5
+
+### New Features
+- [Add Address notification batch mode](https://github.com/apache/dubbo-go/pull/741) 
+- [Add dubbo-gen stream support](https://github.com/apache/dubbo-go/pull/794) 
+- [Add Change verify to Makefile](https://github.com/apache/dubbo-go/pull/831) 
+- [Add more automatic components](https://github.com/apache/dubbo-go/pull/832) 
+- [Add grpc max message size config](https://github.com/apache/dubbo-go/pull/824) 
+
+### Enhancement
+- [when it need local ip, it will get it every time. We can get local ip once, and reused it](https://github.com/apache/dubbo-go/pull/807) 
+- [enhance client's connectivity](https://github.com/apache/dubbo-go/pull/800) 
+- [Imp: get local ip once and reused it](https://github.com/apache/dubbo-go/pull/808) 
+- [Remove unmeaning logic](https://github.com/apache/dubbo-go/pull/855) 
+
+### Bugfixes
+- [Fix: nacos registry can not get namespaceId](https://github.com/apache/dubbo-go/pull/778) [@peaman](https://github.com/peaman)       
+- [Fix: url encode](https://github.com/apache/dubbo-go/pull/802)       
+- [Fix: try to fix too many files open error](https://github.com/apache/dubbo-go/pull/797)       
+- [Fix: refact heartbeat](https://github.com/apache/dubbo-go/pull/889)       
+- [Fix: router_config add &url to url](https://github.com/apache/dubbo-go/pull/910)       
+- [Fix: Router chain can not build immediately when started](https://github.com/apache/dubbo-go/pull/927)       
+- [Fix: client block until timeout when provider return with PackageResponse_Exception](https://github.com/apache/dubbo-go/pull/926)       
+
+### Dependencies
+- [Bump github.com/mitchellh/mapstructure from 1.2.3 to 1.3.3](https://github.com/apache/dubbo-go/pull/838)
+- [Bump github.com/go-resty/resty/v2 from 2.1.0 to 2.3.0](https://github.com/apache/dubbo-go/pull/837)
+- [Bump github.com/opentracing/opentracing-go from 1.1.0 to 1.2.0](https://github.com/apache/dubbo-go/pull/836)
+- [Bump github.com/creasty/defaults from 1.3.0 to 1.5.1](https://github.com/apache/dubbo-go/pull/835)
+- [Bump github.com/dubbogo/gost from 1.9.1 to 1.9.2](https://github.com/apache/dubbo-go/pull/834)
+- [Bump github.com/zouyx/agollo/v3 from 3.4.4 to 3.4.5](https://github.com/apache/dubbo-go/pull/845)
+- [Bump github.com/golang/mock from 1.3.1 to 1.4.4](https://github.com/apache/dubbo-go/pull/844)
+- [Bump github.com/nacos-group/nacos-sdk-go from 1.0.0 to 1.0.1](https://github.com/apache/dubbo-go/pull/843)
+- [Bump github.com/magiconair/properties from 1.8.1 to 1.8.4](https://github.com/apache/dubbo-go/pull/861)
+- [Bump github.com/prometheus/client_golang from 1.1.0 to 1.8.0 ](https://github.com/apache/dubbo-go/pull/860)
+- [Bump go.uber.org/atomic from 1.6.0 to 1.7.0](https://github.com/apache/dubbo-go/pull/859)
+- [](https://github.com/apache/dubbo-go/pull/843)
+
+Milestone: [https://github.com/apache/dubbo-go/milestone/5](https://github.com/apache/dubbo-go/milestone/5?closed=1)
+
 ## 1.4.5
 
 ### Bugfixes
