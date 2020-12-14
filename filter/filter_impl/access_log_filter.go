@@ -105,8 +105,12 @@ func (ef *AccessLogFilter) logIntoChannel(accessLogData AccessLogData) {
 func (ef *AccessLogFilter) buildAccessLogData(_ protocol.Invoker, invocation protocol.Invocation) map[string]string {
 	dataMap := make(map[string]string, 16)
 	attachments := invocation.Attachments()
-	if v, ok := attachments[constant.INTERFACE_KEY]; ok && v != nil {
-		dataMap[constant.INTERFACE_KEY] = v.(string)
+	itf := attachments[constant.INTERFACE_KEY]
+	if itf == nil || len(itf.(string)) == 0 {
+		itf = attachments[constant.PATH_KEY]
+	}
+	if itf != nil {
+		dataMap[constant.INTERFACE_KEY] = itf.(string)
 	}
 	if v, ok := attachments[constant.METHOD_KEY]; ok && v != nil {
 		dataMap[constant.METHOD_KEY] = v.(string)
