@@ -86,11 +86,7 @@ func (c *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error
 	}
 
 	*c = ReferenceConfig(raw)
-	if err := defaults.Set(c); err != nil {
-		return err
-	}
-
-	return nil
+	return defaults.Set(c)
 }
 
 // Refer ...
