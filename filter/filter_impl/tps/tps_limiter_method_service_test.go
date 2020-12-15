@@ -57,7 +57,7 @@ func TestMethodServiceTpsLimiterImplIsAllowableOnlyServiceLevel(t *testing.T) {
 	})
 
 	limiter := GetMethodServiceTpsLimiter()
-	result := limiter.IsAllowable(*invokeUrl, invoc)
+	result := limiter.IsAllowable(invokeUrl, invoc)
 	assert.True(t, result)
 }
 
@@ -73,7 +73,7 @@ func TestMethodServiceTpsLimiterImplIsAllowableNoConfig(t *testing.T) {
 		common.WithParamsValue(constant.TPS_LIMIT_RATE_KEY, ""))
 
 	limiter := GetMethodServiceTpsLimiter()
-	result := limiter.IsAllowable(*invokeUrl, invoc)
+	result := limiter.IsAllowable(invokeUrl, invoc)
 	assert.True(t, result)
 }
 
@@ -106,7 +106,7 @@ func TestMethodServiceTpsLimiterImplIsAllowableMethodLevelOverride(t *testing.T)
 	})
 
 	limiter := GetMethodServiceTpsLimiter()
-	result := limiter.IsAllowable(*invokeUrl, invoc)
+	result := limiter.IsAllowable(invokeUrl, invoc)
 	assert.True(t, result)
 }
 
@@ -136,7 +136,7 @@ func TestMethodServiceTpsLimiterImplIsAllowableBothMethodAndService(t *testing.T
 	})
 
 	limiter := GetMethodServiceTpsLimiter()
-	result := limiter.IsAllowable(*invokeUrl, invoc)
+	result := limiter.IsAllowable(invokeUrl, invoc)
 	assert.True(t, result)
 }
 

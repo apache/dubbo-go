@@ -122,7 +122,7 @@ func ValidateNacosClient(container nacosClientFacade, opts ...option) error {
 	return perrors.WithMessagef(nil, "newNacosClient(address:%+v)", url.PrimitiveURL)
 }
 
-func newNacosClient(name string, nacosAddrs []string, timeout time.Duration, url common.URL) (*NacosClient, error) {
+func newNacosClient(name string, nacosAddrs []string, timeout time.Duration, url *common.URL) (*NacosClient, error) {
 	var (
 		err error
 		n   *NacosClient
@@ -149,8 +149,8 @@ func newNacosClient(name string, nacosAddrs []string, timeout time.Duration, url
 	return n, nil
 }
 
-func initNacosConfigClient(nacosAddrs []string, timeout time.Duration, url common.URL) (config_client.IConfigClient, error) {
-	svrConfList := []nacosconst.ServerConfig{}
+func initNacosConfigClient(nacosAddrs []string, timeout time.Duration, url *common.URL) (config_client.IConfigClient, error) {
+	var svrConfList []nacosconst.ServerConfig
 	for _, nacosAddr := range nacosAddrs {
 		split := strings.Split(nacosAddr, ":")
 		port, err := strconv.ParseUint(split[1], 10, 64)

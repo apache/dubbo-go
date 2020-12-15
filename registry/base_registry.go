@@ -29,7 +29,6 @@ import (
 )
 
 import (
-	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 )
 
@@ -53,7 +52,7 @@ var (
 
 func init() {
 	processID = fmt.Sprintf("%d", os.Getpid())
-	localIP, _ = gxnet.GetLocalIP()
+	localIP = common.GetLocalIp()
 }
 
 type createPathFunc func(dubboPath string) error
@@ -100,8 +99,8 @@ type BaseRegistry struct {
 	birth    int64          // time of file birth, seconds since Epoch; 0 if unknown
 	wg       sync.WaitGroup // wg+done for zk restart
 	done     chan struct{}
-	cltLock  sync.RWMutex          //ctl lock is a lock for services map
-	services map[string]common.URL // service name + protocol -> service config, for store the service registered
+	cltLock  sync.RWMutex           //ctl lock is a lock for services map
+	services map[string]*common.URL // service name + protocol -> service config, for store the service registered
 }
 
 // InitBaseRegistry for init some local variables and set BaseRegistry's subclass to it
@@ -109,14 +108,14 @@ func (r *BaseRegistry) InitBaseRegistry(url *common.URL, facadeRegistry FacadeBa
 	r.URL = url
 	r.birth = time.Now().UnixNano()
 	r.done = make(chan struct{})
-	r.services = make(map[string]common.URL)
+	r.services = make(map[string]*common.URL)
 	r.facadeBasedRegistry = facadeRegistry
 	return r
 }
 
 // GetUrl for get registry's url
-func (r *BaseRegistry) GetUrl() common.URL {
-	return *r.URL
+func (r *BaseRegistry) GetUrl() *common.URL {
+	return r.URL
 }
 
 // Destroy for graceful down
@@ -133,7 +132,7 @@ func (r *BaseRegistry) Destroy() {
 }
 
 // Register implement interface registry to register
-func (r *BaseRegistry) Register(conf common.URL) error {
+func (r *BaseRegistry) Register(conf *common.URL) error {
 	var (
 		ok  bool
 		err error
@@ -161,11 +160,11 @@ func (r *BaseRegistry) Register(conf common.URL) error {
 }
 
 // UnRegister implement interface registry to unregister
-func (r *BaseRegistry) UnRegister(conf common.URL) error {
+func (r *BaseRegistry) UnRegister(conf *common.URL) error {
 	var (
 		ok     bool
 		err    error
-		oldURL common.URL
+		oldURL *common.URL
 	)
 
 	func() {
@@ -198,7 +197,7 @@ func (r *BaseRegistry) UnRegister(conf common.URL) error {
 }
 
 // service is for getting service path stored in url
-func (r *BaseRegistry) service(c common.URL) string {
+func (r *BaseRegistry) service(c *common.URL) string {
 	return url.QueryEscape(c.Service())
 }
 
@@ -206,7 +205,7 @@ func (r *BaseRegistry) service(c common.URL) string {
 func (r *BaseRegistry) RestartCallBack() bool {
 
 	// copy r.services
-	services := make([]common.URL, 0, len(r.services))
+	services := make([]*common.URL, 0, len(r.services))
 	for _, confIf := range r.services {
 		services = append(services, confIf)
 	}
@@ -231,16 +230,16 @@ func (r *BaseRegistry) RestartCallBack() bool {
 }
 
 // register for register url to registry, include init params
-func (r *BaseRegistry) register(c common.URL) error {
+func (r *BaseRegistry) register(c *common.URL) error {
 	return r.processURL(c, r.facadeBasedRegistry.DoRegister, r.createPath)
 }
 
 // unregister for unregister url to registry, include init params
-func (r *BaseRegistry) unregister(c common.URL) error {
+func (r *BaseRegistry) unregister(c *common.URL) error {
 	return r.processURL(c, r.facadeBasedRegistry.DoUnregister, nil)
 }
 
-func (r *BaseRegistry) processURL(c common.URL, f func(string, string) error, cpf createPathFunc) error {
+func (r *BaseRegistry) processURL(c *common.URL, f func(string, string) error, cpf createPathFunc) error {
 	if f == nil {
 		panic(" Must provide a `function(string, string) error` to process URL. ")
 	}
@@ -292,7 +291,7 @@ func (r *BaseRegistry) createPath(dubboPath string) error {
 }
 
 // providerRegistry for provider role do
-func (r *BaseRegistry) providerRegistry(c common.URL, params url.Values, f createPathFunc) (string, string, error) {
+func (r *BaseRegistry) providerRegistry(c *common.URL, params url.Values, f createPathFunc) (string, string, error) {
 	var (
 		dubboPath string
 		rawURL    string
@@ -314,7 +313,7 @@ func (r *BaseRegistry) providerRegistry(c common.URL, params url.Values, f creat
 	// Dubbo java consumer to start looking for the provider url,because the category does not match,
 	// the provider will not find, causing the consumer can not start, so we use consumers.
 
-	if len(c.Methods) == 0 {
+	if len(c.Methods) != 0 {
 		params.Add(constant.METHODS_KEY, strings.Join(c.Methods, ","))
 	}
 	logger.Debugf("provider url params:%#v", params)
@@ -343,7 +342,7 @@ func (r *BaseRegistry) providerRegistry(c common.URL, params url.Values, f creat
 }
 
 // consumerRegistry for consumer role do
-func (r *BaseRegistry) consumerRegistry(c common.URL, params url.Values, f createPathFunc) (string, string, error) {
+func (r *BaseRegistry) consumerRegistry(c *common.URL, params url.Values, f createPathFunc) (string, string, error) {
 	var (
 		dubboPath string
 		rawURL    string
@@ -370,7 +369,8 @@ func (r *BaseRegistry) consumerRegistry(c common.URL, params url.Values, f creat
 	}
 
 	params.Add("protocol", c.Protocol)
-	rawURL = fmt.Sprintf("consumer://%s%s?%s", localIP, c.Path, params.Encode())
+	s, _ := url.QueryUnescape(params.Encode())
+	rawURL = fmt.Sprintf("consumer://%s%s?%s", localIP, c.Path, s)
 	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), (common.RoleType(common.CONSUMER)).String())
 
 	logger.Debugf("consumer path:%s, url:%s", dubboPath, rawURL)

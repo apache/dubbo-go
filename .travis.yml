@@ -16,15 +16,7 @@ install: true
 # define ci-stage
 script:
   # license-check
-  - echo 'start license check'
-  - go fmt ./... && [[ -z `git status -s` ]]
-  - sh before_validate_license.sh
-  - chmod u+x /tmp/tools/license/license-header-checker
-  - /tmp/tools/license/license-header-checker -v -a -r -i vendor  /tmp/tools/license/license.txt . go  && [[ -z `git status -s` ]]
-  # unit-test
-  - echo 'start unit-test'
-  - chmod u+x before_ut.sh && ./before_ut.sh
-  - go mod vendor && go test ./... -coverprofile=coverage.txt -covermode=atomic
+  - make verify
   # integrate-test
   - chmod +x integrate_test.sh && ./integrate_test.sh
 

@@ -118,13 +118,12 @@ type Options struct {
 
 // Client : some configuration for network communication.
 type Client struct {
-	addr            string
-	opts            Options
-	conf            ClientConfig
-	pool            *gettyRPCClientPool
-	codec           remoting.Codec
-	responseHandler remoting.ResponseHandler
-	ExchangeClient  *remoting.ExchangeClient
+	addr           string
+	opts           Options
+	conf           ClientConfig
+	pool           *gettyRPCClientPool
+	codec          remoting.Codec
+	ExchangeClient *remoting.ExchangeClient
 }
 
 // create client
@@ -146,12 +145,9 @@ func NewClient(opt Options) *Client {
 func (c *Client) SetExchangeClient(client *remoting.ExchangeClient) {
 	c.ExchangeClient = client
 }
-func (c *Client) SetResponseHandler(responseHandler remoting.ResponseHandler) {
-	c.responseHandler = responseHandler
-}
 
 // init client and try to connection.
-func (c *Client) Connect(url common.URL) error {
+func (c *Client) Connect(url *common.URL) error {
 	initClient(url.Protocol)
 	c.conf = *clientConf
 	// new client
@@ -204,21 +200,20 @@ func (c *Client) Request(request *remoting.Request, timeout time.Duration, respo
 	return perrors.WithStack(err)
 }
 
+// isAvailable returns true if the connection is available, or it can be re-established.
+func (c *Client) IsAvailable() bool {
+	client, _, err := c.selectSession(c.addr)
+	return err == nil &&
+		// defensive check
+		client != nil
+}
+
 func (c *Client) selectSession(addr string) (*gettyRPCClient, getty.Session, error) {
 	rpcClient, err := c.pool.getGettyRpcClient(addr)
 	if err != nil {
 		return nil, nil, perrors.WithStack(err)
 	}
 	return rpcClient, rpcClient.selectSession(), nil
-}
-
-func (c *Client) heartbeat(session getty.Session) error {
-	req := remoting.NewRequest("2.0.2")
-	req.TwoWay = true
-	req.Event = true
-	resp := remoting.NewPendingResponse(req.ID)
-	remoting.AddPendingResponse(resp)
-	return c.transfer(session, req, 3*time.Second)
 }
 
 func (c *Client) transfer(session getty.Session, request *remoting.Request, timeout time.Duration) error {

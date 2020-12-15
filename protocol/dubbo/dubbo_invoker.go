@@ -66,7 +66,7 @@ type DubboInvoker struct {
 }
 
 // NewDubboInvoker constructor
-func NewDubboInvoker(url common.URL, client *remoting.ExchangeClient) *DubboInvoker {
+func NewDubboInvoker(url *common.URL, client *remoting.ExchangeClient) *DubboInvoker {
 	requestTimeout := config.GetConsumerConfig().RequestTimeout
 
 	requestTimeoutStr := url.GetParam(constant.TIMEOUT_KEY, config.GetConsumerConfig().Request_Timeout)
@@ -159,6 +159,10 @@ func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) ti
 	// set timeout into invocation at method level
 	invocation.SetAttachments(constant.TIMEOUT_KEY, strconv.Itoa(int(di.timeout.Milliseconds())))
 	return di.timeout
+}
+
+func (di *DubboInvoker) IsAvailable() bool {
+	return di.client.IsAvailable()
 }
 
 // Destroy destroy dubbo client invoker.

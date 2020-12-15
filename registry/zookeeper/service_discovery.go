@@ -154,8 +154,8 @@ func (zksd *zookeeperServiceDiscovery) RestartCallBack() bool {
 }
 
 // nolint
-func (zksd *zookeeperServiceDiscovery) GetUrl() common.URL {
-	return *zksd.url
+func (zksd *zookeeperServiceDiscovery) GetUrl() *common.URL {
+	return zksd.url
 }
 
 // nolint
