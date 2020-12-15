@@ -79,7 +79,7 @@ func TestGetUrlStatus(t *testing.T) {
 	assert.Equal(t, int32(0), status.total)
 }
 
-func TestbeginCount0(t *testing.T) {
+func TestBeginCount0(t *testing.T) {
 	defer CleanAllStatus()
 
 	url, _ := common.NewURL(mockCommonDubboUrl)
@@ -142,7 +142,7 @@ func TestAll(t *testing.T) {
 
 }
 
-func request(url common.URL, method string, elapsed int64, active, succeeded bool) {
+func request(url *common.URL, method string, elapsed int64, active, succeeded bool) {
 	BeginCount(url, method)
 	if !active {
 		EndCount(url, method, elapsed, succeeded)

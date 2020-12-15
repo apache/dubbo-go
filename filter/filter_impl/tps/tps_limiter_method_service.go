@@ -120,7 +120,7 @@ type MethodServiceTpsLimiterImpl struct {
 // The key point is how to keep thread-safe
 // This implementation use concurrent map + loadOrStore to make implementation thread-safe
 // You can image that even multiple threads create limiter, but only one could store the limiter into tpsState
-func (limiter MethodServiceTpsLimiterImpl) IsAllowable(url common.URL, invocation protocol.Invocation) bool {
+func (limiter MethodServiceTpsLimiterImpl) IsAllowable(url *common.URL, invocation protocol.Invocation) bool {
 
 	methodConfigPrefix := "methods." + invocation.MethodName() + "."
 
@@ -176,7 +176,7 @@ func (limiter MethodServiceTpsLimiterImpl) IsAllowable(url common.URL, invocatio
 // If we can convert the methodLevelConfig to int64, return;
 // Or, we will try to look up server-level configuration and then convert it to int64
 func getLimitConfig(methodLevelConfig string,
-	url common.URL,
+	url *common.URL,
 	invocation protocol.Invocation,
 	configKey string,
 	defaultVal string) int64 {

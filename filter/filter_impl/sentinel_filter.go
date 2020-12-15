@@ -229,7 +229,7 @@ func getInterfaceGroupAndVersionEnabled() bool {
 	return true
 }
 
-func getColonSeparatedKey(url common.URL) string {
+func getColonSeparatedKey(url *common.URL) string {
 	return fmt.Sprintf("%s:%s:%s",
 		url.Service(),
 		url.GetParam(constant.GROUP_KEY, ""),

@@ -19,6 +19,8 @@ package directory
 
 import (
 	"fmt"
+	"net/url"
+	"os"
 	"sync"
 )
 
@@ -30,6 +32,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/cluster/directory"
+	"github.com/apache/dubbo-go/cluster/router/chain"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -56,6 +59,7 @@ type RegistryDirectory struct {
 	serviceType                    string
 	registry                       registry.Registry
 	cacheInvokersMap               *sync.Map // use sync.map
+	consumerURL                    *common.URL
 	cacheOriginUrl                 *common.URL
 	configurators                  []config_center.Configurator
 	consumerConfigurationListener  *consumerConfigurationListener
@@ -76,6 +80,15 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.
 		serviceType:      url.SubURL.Service(),
 		registry:         registry,
 	}
+
+	dir.consumerURL = dir.getConsumerUrl(url.SubURL)
+
+	if routerChain, err := chain.NewRouterChain(dir.consumerURL); err == nil {
+		dir.BaseDirectory.SetRouterChain(routerChain)
+	} else {
+		logger.Warnf("fail to create router chain with url: %s, err is: %v", url.SubURL, err)
+	}
+
 	dir.consumerConfigurationListener = newConsumerConfigurationListener(dir)
 
 	go dir.subscribe(url.SubURL)
@@ -136,7 +149,7 @@ func (dir *RegistryDirectory) refreshInvokers(events ...*registry.ServiceEvent) 
 // eventMatched checks if a cached invoker appears in the incoming invoker list, if no, then it is safe to remove.
 func (dir *RegistryDirectory) eventMatched(key string, events []*registry.ServiceEvent) bool {
 	for _, event := range events {
-		if dir.invokerCacheKey(&event.Service) == key {
+		if dir.invokerCacheKey(event.Service) == key {
 			return true
 		}
 	}
@@ -194,7 +207,7 @@ func (dir *RegistryDirectory) configRouters() {
 
 // convertUrl processes override:// and router://
 func (dir *RegistryDirectory) convertUrl(res *registry.ServiceEvent) *common.URL {
-	ret := &res.Service
+	ret := res.Service
 	if ret.Protocol == constant.OVERRIDE_PROTOCOL || // 1.for override url in 2.6.x
 		ret.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY) == constant.CONFIGURATORS_CATEGORY {
 		dir.configurators = append(dir.configurators, extension.GetDefaultConfigurator(ret))
@@ -283,19 +296,19 @@ func (dir *RegistryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
 		dir.overrideUrl(newUrl)
 		if cacheInvoker, ok := dir.cacheInvokersMap.Load(newUrl.Key()); !ok {
 			logger.Debugf("service will be added in cache invokers: invokers url is  %s!", newUrl)
-			newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(*newUrl)
+			newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(newUrl)
 			if newInvoker != nil {
 				dir.cacheInvokersMap.Store(newUrl.Key(), newInvoker)
 			}
 		} else {
 			// if cached invoker has the same URL with the new URL, then no need to re-refer, and no need to destroy
 			// the old invoker.
-			if common.IsEquals(*newUrl, cacheInvoker.(protocol.Invoker).GetUrl()) {
+			if common.IsEquals(newUrl, cacheInvoker.(protocol.Invoker).GetUrl()) {
 				return nil
 			}
 
 			logger.Debugf("service will be updated in cache invokers: new invoker url is %s, old invoker url is %s", newUrl, cacheInvoker.(protocol.Invoker).GetUrl())
-			newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(*newUrl)
+			newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(newUrl)
 			if newInvoker != nil {
 				dir.cacheInvokersMap.Store(newUrl.Key(), newInvoker)
 				return cacheInvoker.(protocol.Invoker)
@@ -313,7 +326,7 @@ func (dir *RegistryDirectory) List(invocation protocol.Invocation) []protocol.In
 	if routerChain == nil {
 		return invokers
 	}
-	return routerChain.Route(invokers, dir.cacheOriginUrl, invocation)
+	return routerChain.Route(dir.consumerURL, invocation)
 }
 
 // IsAvailable  whether the directory is available
@@ -347,6 +360,24 @@ func (dir *RegistryDirectory) overrideUrl(targetUrl *common.URL) {
 	doOverrideUrl(dir.configurators, targetUrl)
 	doOverrideUrl(dir.consumerConfigurationListener.Configurators(), targetUrl)
 	doOverrideUrl(dir.referenceConfigurationListener.Configurators(), targetUrl)
+}
+
+func (dir *RegistryDirectory) getConsumerUrl(c *common.URL) *common.URL {
+	processID := fmt.Sprintf("%d", os.Getpid())
+	localIP := common.GetLocalIp()
+
+	params := url.Values{}
+	c.RangeParams(func(key, value string) bool {
+		params.Add(key, value)
+		return true
+	})
+
+	params.Add("pid", processID)
+	params.Add("ip", localIP)
+	params.Add("protocol", c.Protocol)
+
+	return common.NewURLWithOptions(common.WithProtocol("consumer"), common.WithIp(localIP), common.WithPath(c.Path),
+		common.WithParams(params))
 }
 
 func doOverrideUrl(configurators []config_center.Configurator, targetUrl *common.URL) {
