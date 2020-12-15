@@ -54,6 +54,14 @@ type (
 	ServerConfig struct {
 		SSLEnabled bool
 
+		// heartbeat
+		HeartbeatPeriod string `default:"60s" yaml:"heartbeat_period" json:"heartbeat_period,omitempty"`
+		heartbeatPeriod time.Duration
+
+		// heartbeat timeout
+		HeartbeatTimeout string `default:"5s" yaml:"heartbeat_timeout" json:"heartbeat_timeout,omitempty"`
+		heartbeatTimeout time.Duration
+
 		// session
 		SessionTimeout string `default:"60s" yaml:"session_timeout" json:"session_timeout,omitempty"`
 		sessionTimeout time.Duration
@@ -76,8 +84,12 @@ type (
 		ConnectionNum int `default:"16" yaml:"connection_number" json:"connection_number,omitempty"`
 
 		// heartbeat
-		HeartbeatPeriod string `default:"15s" yaml:"heartbeat_period" json:"heartbeat_period,omitempty"`
+		HeartbeatPeriod string `default:"60s" yaml:"heartbeat_period" json:"heartbeat_period,omitempty"`
 		heartbeatPeriod time.Duration
+
+		// heartbeat timeout
+		HeartbeatTimeout string `default:"5s" yaml:"heartbeat_timeout" json:"heartbeat_timeout,omitempty"`
+		heartbeatTimeout time.Duration
 
 		// session
 		SessionTimeout string `default:"60s" yaml:"session_timeout" json:"session_timeout,omitempty"`
@@ -188,6 +200,12 @@ func (c *ClientConfig) CheckValidity() error {
 			c.HeartbeatPeriod, time.Duration(config.MaxWheelTimeSpan))
 	}
 
+	if len(c.HeartbeatTimeout) == 0 {
+		c.heartbeatTimeout = 60 * time.Second
+	} else if c.heartbeatTimeout, err = time.ParseDuration(c.HeartbeatTimeout); err != nil {
+		return perrors.WithMessagef(err, "time.ParseDuration(HeartbeatTimeout{%#v})", c.HeartbeatTimeout)
+	}
+
 	if c.sessionTimeout, err = time.ParseDuration(c.SessionTimeout); err != nil {
 		return perrors.WithMessagef(err, "time.ParseDuration(SessionTimeout{%#v})", c.SessionTimeout)
 	}
@@ -198,6 +216,23 @@ func (c *ClientConfig) CheckValidity() error {
 // CheckValidity confirm server params
 func (c *ServerConfig) CheckValidity() error {
 	var err error
+
+	if len(c.HeartbeatPeriod) == 0 {
+		c.heartbeatPeriod = 60 * time.Second
+	} else if c.heartbeatPeriod, err = time.ParseDuration(c.HeartbeatPeriod); err != nil {
+		return perrors.WithMessagef(err, "time.ParseDuration(HeartbeatPeroid{%#v})", c.HeartbeatPeriod)
+	}
+
+	if c.heartbeatPeriod >= time.Duration(config.MaxWheelTimeSpan) {
+		return perrors.WithMessagef(err, "heartbeat_period %s should be less than %s",
+			c.HeartbeatPeriod, time.Duration(config.MaxWheelTimeSpan))
+	}
+
+	if len(c.HeartbeatTimeout) == 0 {
+		c.heartbeatTimeout = 60 * time.Second
+	} else if c.heartbeatTimeout, err = time.ParseDuration(c.HeartbeatTimeout); err != nil {
+		return perrors.WithMessagef(err, "time.ParseDuration(HeartbeatTimeout{%#v})", c.HeartbeatTimeout)
+	}
 
 	if c.sessionTimeout, err = time.ParseDuration(c.SessionTimeout); err != nil {
 		return perrors.WithMessagef(err, "time.ParseDuration(SessionTimeout{%#v})", c.SessionTimeout)
