@@ -29,7 +29,7 @@ import (
 
 var (
 	instance  report.MetadataReport
-	reportUrl common.URL
+	reportUrl *common.URL
 	once      sync.Once
 )
 
@@ -41,18 +41,18 @@ func GetMetadataReportInstance(selectiveUrl ...*common.URL) report.MetadataRepor
 		if len(selectiveUrl) > 0 {
 			url = selectiveUrl[0]
 			instance = extension.GetMetadataReportFactory(url.Protocol).CreateMetadataReport(url)
-			reportUrl = *url
+			reportUrl = url
 		}
 	})
 	return instance
 }
 
 // GetMetadataReportUrl will return the report instance url
-func GetMetadataReportUrl() common.URL {
+func GetMetadataReportUrl() *common.URL {
 	return reportUrl
 }
 
 // SetMetadataReportUrl will only can be used by unit test to mock url
-func SetMetadataReportUrl(url common.URL) {
+func SetMetadataReportUrl(url *common.URL) {
 	reportUrl = url
 }

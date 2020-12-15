@@ -197,7 +197,7 @@ func initMockApollo(t *testing.T) *apolloConfiguration {
 	apolloUrl := strings.ReplaceAll(apollo.URL, "http", "apollo")
 	url, err := common.NewURL(apolloUrl, common.WithParams(c.ConfigCenterConfig.GetUrlMap()))
 	assert.NoError(t, err)
-	configuration, err := newApolloConfiguration(&url)
+	configuration, err := newApolloConfiguration(url)
 	assert.NoError(t, err)
 	return configuration
 }

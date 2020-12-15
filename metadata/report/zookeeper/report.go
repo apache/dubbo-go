@@ -63,7 +63,7 @@ func (m *zookeeperMetadataReport) StoreConsumerMetadata(consumerMetadataIdentifi
 }
 
 // SaveServiceMetadata saves the metadata.
-func (m *zookeeperMetadataReport) SaveServiceMetadata(metadataIdentifier *identifier.ServiceMetadataIdentifier, url common.URL) error {
+func (m *zookeeperMetadataReport) SaveServiceMetadata(metadataIdentifier *identifier.ServiceMetadataIdentifier, url *common.URL) error {
 	k := m.rootDir + metadataIdentifier.GetFilePathKey()
 	return m.client.CreateWithValue(k, []byte(url.String()))
 }
