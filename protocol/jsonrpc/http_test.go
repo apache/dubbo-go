@@ -49,7 +49,7 @@ type (
 )
 
 const (
-	mockJsonCommonUrl = "jsonrpc://127.0.0.1:20001/UserProvider?anyhost=true&" +
+	mockJsonCommonUrl = "jsonrpc://127.0.0.1:20001/com.ikurento.user.UserProvider?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
@@ -58,7 +58,7 @@ const (
 
 func TestHTTPClientCall(t *testing.T) {
 
-	methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "jsonrpc", &UserProvider{})
+	methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "jsonrpc", "", "", &UserProvider{})
 	assert.NoError(t, err)
 	assert.Equal(t, "GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4", methods)
 
