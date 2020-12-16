@@ -311,7 +311,7 @@ func (g *dubboGrpc) generateServerMethod(servName, fullServName string, method *
 		g.P(`invo := invocation.NewRPCInvocation("`, methName, `", args, nil)`)
 
 		g.P("if interceptor == nil {")
-		g.P("result := base.GetProxyImpl().Invoke(context.Background(), invo)")
+		g.P("result := base.GetProxyImpl().Invoke(ctx, invo)")
 		g.P("return result.Result(), result.Error()")
 		g.P("}")
 

@@ -2,7 +2,6 @@ package dubbo3
 
 import (
 	"context"
-	"fmt"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
@@ -21,6 +20,7 @@ type TripleClient struct {
 	exchangeClient *remoting.ExchangeClient
 	addr           string
 	Invoker        reflect.Value
+	url            *common.URL
 }
 
 type TripleConn struct {
@@ -28,11 +28,10 @@ type TripleConn struct {
 }
 
 func (t *TripleConn) Invoke(ctx context.Context, method string, args, reply interface{}, opts ...grpc.CallOption) error {
-	t.client.Request(method, args, reply)
+	t.client.Request(ctx, method, args, reply)
 	return nil
 }
 
-// todo 封装网络逻辑在这个函数里
 func NewTripleConn(client *TripleClient) *TripleConn {
 	return &TripleConn{
 		client: client,
@@ -51,14 +50,18 @@ func getInvoker(impl interface{}, conn *TripleConn) interface{} {
 	return res[0].Interface()
 }
 
-func NewTripleClient(url *common.URL) *TripleClient {
+func NewTripleClient(url *common.URL) (*TripleClient, error) {
 	key := url.GetParam(constant.BEAN_NAME_KEY, "")
 	impl := config.GetConsumerService(key)
-	tripleClient := &TripleClient{}
-	tripleClient.Connect(url)
+	tripleClient := &TripleClient{
+		url: url,
+	}
+	if err := tripleClient.Connect(url); err != nil {
+		return nil, err
+	}
 	invoker := getInvoker(impl, NewTripleConn(tripleClient)) // 要把网络逻辑放到conn里面
 	tripleClient.Invoker = reflect.ValueOf(invoker)
-	return tripleClient
+	return tripleClient, nil
 }
 
 func (t *TripleClient) Connect(url *common.URL) error {
@@ -73,18 +76,18 @@ func (t *TripleClient) Connect(url *common.URL) error {
 	if err != nil {
 		return err
 	}
-	t.h2Controller.H2ShakeHand()
-	return nil
+	return t.h2Controller.H2ShakeHand()
 }
 
-func (t *TripleClient) Request(method string, arg, reply interface{}) error {
+func (t *TripleClient) Request(ctx context.Context, method string, arg, reply interface{}) error {
 	reqData, err := proto.Marshal(arg.(proto.Message))
 	if err != nil {
 		panic("client request marshal not ok ")
 	}
-	fmt.Printf("getInvocation first arg = %+v\n", reqData)
-	t.h2Controller.UnaryInvoke(method, t.conn.RemoteAddr().String(), reqData, reply)
-	// todo call remote and recv rsp
+	//fmt.Printf("getInvocation first arg = %+v\n", reqData)
+	if err := t.h2Controller.UnaryInvoke(ctx, method, t.conn.RemoteAddr().String(), reqData, reply, t.url); err != nil {
+		return err
+	}
 	return nil
 }
 

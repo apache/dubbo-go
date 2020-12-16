@@ -105,7 +105,6 @@ func newStream(header remoting.ProtocolHeader, md grpc.MethodDesc, url *common.U
 func (s *stream) run() {
 	// stream 建立时，获得抽象protocHeader，同时根据protocHeader拿到了实现好的对应协议的package Handler
 	// package Handler里面封装了协议codec codec里面封装了 与协议独立的serillizer
-
 	//拿到了本次调用的打解包协议类型、调用的方法名。
 
 	recvChan := s.recvBuf.get()
@@ -114,7 +113,7 @@ func (s *stream) run() {
 		if recvMsg.err != nil {
 			continue
 		}
-		rspBuffer, err := s.processor.processUnaryRPC(*recvMsg.buffer, s.service)
+		rspBuffer, err := s.processor.processUnaryRPC(*recvMsg.buffer, s.service, s.header)
 		if err != nil {
 			fmt.Println("error ,s.processUnaryRPC err = ", err)
 			continue

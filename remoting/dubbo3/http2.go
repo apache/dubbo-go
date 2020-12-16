@@ -2,6 +2,7 @@ package dubbo3
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
 	"github.com/apache/dubbo-go/common"
@@ -26,7 +27,7 @@ type H2Controller struct {
 	streamMap map[uint32]*stream
 	mdMap     map[string]grpc.MethodDesc
 	url       *common.URL
-	header    remoting.ProtocolHeaderHandler
+	handler   remoting.ProtocolHeaderHandler
 	service   common.RPCService
 }
 
@@ -69,11 +70,11 @@ func NewH2Controller(conn net.Conn, isServer bool, service common.RPCService, ur
 		streamMap: make(map[uint32]*stream, 8),
 		mdMap:     mdMap,
 		service:   service,
-		header:    headerHandler,
+		handler:   headerHandler,
 	}, nil
 }
 
-func (h *H2Controller) H2ShakeHand() {
+func (h *H2Controller) H2ShakeHand() error {
 	// todo 替换为真实settings
 	settings := []h2.Setting{{
 		ID:  0x5,
@@ -83,60 +84,70 @@ func (h *H2Controller) H2ShakeHand() {
 	if h.isServer { // server
 		// server端1：写入第一个空setting
 		if err := h.rawFramer.WriteSettings(settings...); err != nil {
-			fmt.Println("write setting frame error")
+			logger.Error("server write setting frame error", err)
+			return err
 		}
 		// server端2：读取magic
 		// Check the validity of client preface.
 		preface := make([]byte, len(h2.ClientPreface))
 		if _, err := io.ReadFull(h.conn, preface); err != nil {
-			fmt.Println("ioReadFull err = ", err)
-			return
+			logger.Error("server read preface err = ", err)
+			return err
 		}
 		if !bytes.Equal(preface, []byte(h2.ClientPreface)) {
-			fmt.Println("recv reface = ", string(preface))
-			return
+			logger.Error("server recv reface = ", string(preface), "not as expected")
+			return perrors.Errorf("Preface Not Equal")
 		}
-		fmt.Println("Preface check successful!")
+		logger.Debug("server Preface check successful!")
 		// server端3：读取第一个空setting
 		frame, err := h.rawFramer.ReadFrame()
 		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			panic("eof")
-			return
+			logger.Error("server read firest setting err = ", err)
+			return err
 		}
 		if err != nil {
-			fmt.Println("read setting error")
-			panic(err)
+			logger.Error("server read setting err = ", err)
+			return err
 		}
 		_, ok := frame.(*h2.SettingsFrame)
 		if !ok {
-			panic("notsetting frame type")
+			logger.Error("server read frame not setting frame type")
+			return perrors.Errorf("server read frame not setting frame type")
 		}
-		fmt.Println("After empty setting read")
-		h.rawFramer.WriteSettingsAck()
+		if err := h.rawFramer.WriteSettingsAck(); err != nil {
+			logger.Error("server write setting Ack() err = ", err)
+			return err
+		}
 	} else { // client
 		// client端1 写入magic
-		h.conn.Write([]byte(h2.ClientPreface))
+		if _, err := h.conn.Write([]byte(h2.ClientPreface)); err != nil {
+			logger.Errorf("client write preface err = ", err)
+			return err
+		}
 
 		// server端2：写入第一个空setting
 		if err := h.rawFramer.WriteSettings(settings...); err != nil {
-			fmt.Println("write setting frame error")
+			logger.Errorf("client write setting frame err = ", err)
+			return err
 		}
 
 		// client端3：读取第一个setting
 		frame, err := h.rawFramer.ReadFrame()
 		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			panic("eof")
-			return
+			logger.Error("client read setting err = ", err)
+			return err
 		}
 		if err != nil {
-			fmt.Println("read setting error")
-			panic(err)
+			logger.Error("client read setting err = ", err)
+			return err
 		}
 		_, ok := frame.(*h2.SettingsFrame)
 		if !ok {
-			panic("notsetting frame type")
+			logger.Error("client read frame not setting frame type")
+			return perrors.Errorf("client read frame not setting frame type")
 		}
 	}
+	return nil
 
 }
 
@@ -154,13 +165,13 @@ func (h *H2Controller) runSendRsp(stream *stream) {
 		enc := hpack.NewEncoder(&buf)
 		for _, f := range headerFields {
 			if err := enc.WriteField(f); err != nil {
-				fmt.Println("error: enc.WriteField err = ", err)
+				logger.Error("error: enc.WriteField err = ", err)
 			}
 		}
 		hflen := buf.Len()
 		hfData := buf.Next(hflen)
 
-		fmt.Println("id = ", stream.ID)
+		logger.Debug("stream id = ", stream.ID)
 
 		if err := h.rawFramer.WriteHeaders(h2.HeadersFrameParam{
 			StreamID:      stream.ID,
@@ -168,11 +179,10 @@ func (h *H2Controller) runSendRsp(stream *stream) {
 			BlockFragment: hfData,
 			EndStream:     false,
 		}); err != nil {
-			fmt.Println("error: write rsp header error", err)
+			logger.Error("error: write rsp header err = ", err)
 		}
-		fmt.Println("rsp len= ", len(sendData))
 		if err := h.rawFramer.WriteData(stream.ID, false, sendData); err != nil {
-			fmt.Println("error: write rsp data error", err)
+			logger.Error("error: write rsp data err =", err)
 		}
 
 		// end stream
@@ -182,7 +192,7 @@ func (h *H2Controller) runSendRsp(stream *stream) {
 		headerFields = append(headerFields, hpack.HeaderField{Name: "grpc-message", Value: ""})
 		for _, f := range headerFields {
 			if err := enc.WriteField(f); err != nil {
-				fmt.Println("error: enc.WriteField err = ", err)
+				logger.Error("error: enc.WriteField err = ", err)
 			}
 		}
 		hfData = buf.Next(buf.Len())
@@ -200,7 +210,9 @@ func (h *H2Controller) run() {
 	for {
 		fm, err := h.rawFramer.ReadFrame()
 		if err != nil {
-			fmt.Println("error = ", err)
+			if err != io.EOF {
+				logger.Info("error = ", err)
+			}
 			break
 		}
 		switch fm := fm.(type) {
@@ -231,7 +243,7 @@ func (h *H2Controller) run() {
 }
 
 func (h *H2Controller) handleMetaHeaderFrame(metaHeaderFrame *h2.MetaHeadersFrame) {
-	header := h.header.ReadFromH2MetaHeader(metaHeaderFrame)
+	header := h.handler.ReadFromH2MetaHeader(metaHeaderFrame)
 	h.addStream(header)
 }
 
@@ -260,22 +272,23 @@ func (h *H2Controller) addStream(data remoting.ProtocolHeader) error {
 	return nil
 }
 
-func (h *H2Controller) UnaryInvoke(path string, url string, data []byte, reply interface{}) {
+func (h *H2Controller) UnaryInvoke(ctx context.Context, method string, addr string, data []byte, reply interface{}, url *common.URL) error {
 	// metadata header
-	headerFields := make([]hpack.HeaderField, 0, 2) // at least :status, content-type will be there if none else.
-	headerFields = append(headerFields, hpack.HeaderField{Name: ":method", Value: "POST"})
-	headerFields = append(headerFields, hpack.HeaderField{Name: ":scheme", Value: "http"})
-	headerFields = append(headerFields, hpack.HeaderField{Name: ":path", Value: path})
-	headerFields = append(headerFields, hpack.HeaderField{Name: ":authority", Value: url})
-	headerFields = append(headerFields, hpack.HeaderField{Name: "content-type", Value: "application/grpc"})
-	headerFields = append(headerFields, hpack.HeaderField{Name: "user-agent", Value: "grpc-go/1.35.0-dev"})
-	headerFields = append(headerFields, hpack.HeaderField{Name: "te", Value: "trailers"})
+	handler, err := remoting.GetProtocolHeaderHandler(url.Protocol)
+	if err != nil {
+		return err
+	}
+	// method name from grpc stub, set to :path field
+	url.SetParam(":path", method)
+	headerFields := handler.WriteHeaderField(url, ctx)
 
 	var buf bytes.Buffer
 	enc := hpack.NewEncoder(&buf)
 	for _, f := range headerFields {
 		if err := enc.WriteField(f); err != nil {
-			fmt.Println("error: enc.WriteField err = ", err)
+			logger.Error("error: enc.WriteField err = ", err)
+		} else {
+			logger.Debug("encode field f = ", f.Name, " ", f.Value, " success")
 		}
 	}
 	hflen := buf.Len()
@@ -290,7 +303,7 @@ func (h *H2Controller) UnaryInvoke(path string, url string, data []byte, reply i
 		BlockFragment: hfData,
 		EndStream:     false,
 	}); err != nil {
-		fmt.Println("error: write rsp header error", err)
+		logger.Error("error: write rsp header err = ", err)
 	}
 
 	// todo 继续请求，发送数据，接受返回值
@@ -302,18 +315,21 @@ func (h *H2Controller) UnaryInvoke(path string, url string, data []byte, reply i
 	//		SubName: "li",
 	//	},
 	//}
+
 	header := make([]byte, 5)
 	header[0] = 0
 	binary.BigEndian.PutUint32(header[1:], uint32(len(data)))
 	body := make([]byte, 5+len(data))
 	copy(body[:5], header)
 	copy(body[5:], data)
-	h.rawFramer.WriteData(id, true, body)
+	if err := h.rawFramer.WriteData(id, true, body); err != nil {
+		return err
+	}
 
 	for {
 		fm, err := h.rawFramer.ReadFrame()
 		if err != nil {
-			fmt.Println("error = ", err)
+			logger.Error("unary invoke read frame error = ", err)
 			break
 		}
 		switch fm := fm.(type) {
@@ -322,7 +338,7 @@ func (h *H2Controller) UnaryInvoke(path string, url string, data []byte, reply i
 			fmt.Println("MetaHeader frame = ", fm.String(), "id = ", id)
 			parsedTripleHeaderData := parsedTripleHeaderData{}
 			if fm.Flags.Has(h2.FlagDataEndStream) {
-				return
+				return nil
 			}
 			parsedTripleHeaderData.FromMetaHeaderFrame(fm)
 
@@ -332,14 +348,12 @@ func (h *H2Controller) UnaryInvoke(path string, url string, data []byte, reply i
 			fmt.Println(len(frameData))
 			header := frameData[:5]
 			length := binary.BigEndian.Uint32(header[1:])
-			fmt.Println("length = ", length)
 			replyMessage := reply.(proto.Message)
 			err := proto.Unmarshal(fm.Data()[5:5+length], replyMessage)
 			if err != nil {
-				fmt.Println("errororrorororor", err)
+				logger.Error("clietn unmarshal rsp ", err)
+				return err
 			}
-			fmt.Println(replyMessage)
-			//todo 这里增加返回指针，返回请求结果
 		case *h2.RSTStreamFrame:
 			fmt.Println("RSTStreamFrame")
 		case *h2.SettingsFrame:
@@ -357,5 +371,5 @@ func (h *H2Controller) UnaryInvoke(path string, url string, data []byte, reply i
 			//fmt.Println(r)
 		}
 	}
-
+	return nil
 }

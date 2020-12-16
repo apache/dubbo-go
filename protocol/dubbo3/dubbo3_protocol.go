@@ -26,7 +26,7 @@ import (
 )
 
 import (
-"github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go"
 )
 
 import (
@@ -92,7 +92,11 @@ func (dp *Dubbo3Protocol) Export(invoker protocol.Invoker) protocol.Exporter {
 
 // Refer create dubbo3 service reference.
 func (dp *Dubbo3Protocol) Refer(url *common.URL) protocol.Invoker {
-	invoker := NewDubbo3Invoker(url)
+	invoker, err := NewDubbo3Invoker(url)
+	if err != nil {
+		logger.Errorf("Refer url = %+v, with error = %s", *url, err.Error())
+		return nil
+	}
 	dp.SetInvokers(invoker)
 	logger.Infof("Refer service: %s", url.String())
 	return invoker
@@ -121,8 +125,6 @@ type Dubbo3GrpcService interface {
 	ServiceDesc() *grpc.ServiceDesc
 }
 
-
-
 func (dp *Dubbo3Protocol) openServer(url *common.URL) {
 	logger.Warn("in openServer")
 	_, ok := dp.serverMap[url.Location]
@@ -136,7 +138,6 @@ func (dp *Dubbo3Protocol) openServer(url *common.URL) {
 		_, ok = dp.serverMap[url.Location]
 		if !ok {
 			key := url.GetParam(constant.BEAN_NAME_KEY, "")
-			fmt.Println("key = ", key)
 			service := config.GetProviderService(key)
 
 			m, ok := reflect.TypeOf(service).MethodByName("SetProxyImpl")
@@ -157,7 +158,7 @@ func (dp *Dubbo3Protocol) openServer(url *common.URL) {
 			in = append(in, reflect.ValueOf(invoker))
 			m.Func.Call(in)
 
-			srv :=  dubbo3.NewTripleServer(url, service)
+			srv := dubbo3.NewTripleServer(url, service)
 
 			dp.serverMap[url.Location] = srv
 

@@ -1,20 +1,26 @@
 package remoting
 
 import (
+	"context"
 	"fmt"
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 	perrors "github.com/pkg/errors"
 	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/hpack"
 )
 
 // ProtocolHeader
 type ProtocolHeader interface {
 	GetStreamID() uint32
 	GetMethod() string
+	FieldToCtx() context.Context
 }
 
 type ProtocolHeaderHandler interface {
 	ReadFromH2MetaHeader(frame *http2.MetaHeadersFrame) ProtocolHeader
+	WriteHeaderField(url *common.URL, ctx context.Context) []hpack.HeaderField
+	//Context2Url(ctx context.Context, url *common.URL)
 }
 
 type ProtocolHeaderHandlerFactory func() ProtocolHeaderHandler
@@ -22,7 +28,6 @@ type ProtocolHeaderHandlerFactory func() ProtocolHeaderHandler
 var protocolHeaderHandlerFactoryMap = make(map[string]ProtocolHeaderHandlerFactory)
 
 func GetProtocolHeaderHandler(protocol string) (ProtocolHeaderHandler, error) {
-	fmt.Println(protocol, "ddddd")
 	if f, ok := protocolHeaderHandlerFactoryMap[protocol]; ok {
 		return f(), nil
 	}

@@ -44,23 +44,25 @@ type Dubbo3Invoker struct {
 }
 
 // NewDubbo3Invoker constructor
-func NewDubbo3Invoker(url *common.URL) *Dubbo3Invoker {
+func NewDubbo3Invoker(url *common.URL) (*Dubbo3Invoker, error) {
 	requestTimeout := config.GetConsumerConfig().RequestTimeout
 	requestTimeoutStr := url.GetParam(constant.TIMEOUT_KEY, config.GetConsumerConfig().Request_Timeout)
 	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
 		requestTimeout = t
 	}
 
-	client := dubbo3.NewTripleClient(url)
+	client, err := dubbo3.NewTripleClient(url)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Dubbo3Invoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
 		reqNum:      0,
 		timeout:     requestTimeout,
-	}
+	}, nil
 }
-
 
 // Invoke call remoting.
 func (di *Dubbo3Invoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
@@ -69,7 +71,7 @@ func (di *Dubbo3Invoker) Invoke(ctx context.Context, invocation protocol.Invocat
 	)
 
 	var in []reflect.Value
-	in = append(in, reflect.ValueOf(context.Background()))
+	in = append(in, reflect.ValueOf(ctx))
 	// 这里invocation.ParameterValues()就是要传入的value
 	in = append(in, invocation.ParameterValues()...)
 
@@ -87,8 +89,6 @@ func (di *Dubbo3Invoker) Invoke(ctx context.Context, invocation protocol.Invocat
 
 	return &result
 }
-
-
 
 // get timeout including methodConfig
 func (di *Dubbo3Invoker) getTimeout(invocation *invocation_impl.RPCInvocation) time.Duration {

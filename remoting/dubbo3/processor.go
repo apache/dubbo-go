@@ -2,7 +2,6 @@ package dubbo3
 
 import (
 	"bytes"
-	"context"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
@@ -47,11 +46,10 @@ func newProcessor(s *stream, pkgHandler remoting.PackageHandler, md grpc.MethodD
 	}, nil
 }
 
-func (p *processor) processUnaryRPC(buf bytes.Buffer, service common.RPCService) (*bytes.Buffer, error) {
+func (p *processor) processUnaryRPC(buf bytes.Buffer, service common.RPCService, header remoting.ProtocolHeader) (*bytes.Buffer, error) {
 	readBuf := buf.Bytes()
 
 	pkgData := p.pkgHandler.Frame2PkgData(readBuf)
-	// todo 这个要放到实现里面
 
 	descFunc := func(v interface{}) error {
 		if err := p.serializer.Unmarshal(pkgData, v.(proto.Message)); err != nil {
@@ -60,7 +58,7 @@ func (p *processor) processUnaryRPC(buf bytes.Buffer, service common.RPCService)
 		return nil
 	}
 
-	reply, err := p.methodDesc.Handler(service, context.Background(), descFunc, nil)
+	reply, err := p.methodDesc.Handler(service, header.FieldToCtx(), descFunc, nil)
 	if err != nil {
 		return nil, err
 	}
