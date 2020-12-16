@@ -254,6 +254,6 @@ func (c *ReferenceConfig) GenericLoad(id string) {
 }
 
 // Get invoker
-func (c *ReferenceConfig) GetInvoker() protocol.Invoker{
+func (c *ReferenceConfig) GetInvoker() protocol.Invoker {
 	return c.invoker
 }
