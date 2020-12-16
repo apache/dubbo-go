@@ -302,7 +302,7 @@ func (c *ServiceConfig) getUrlMap() url.Values {
 
 	// auth filter
 	urlMap.Set(constant.SERVICE_AUTH_KEY, c.Auth)
-	urlMap.Set(constant.PARAMTER_SIGNATURE_ENABLE_KEY, c.ParamSign)
+	urlMap.Set(constant.PARAMETER_SIGNATURE_ENABLE_KEY, c.ParamSign)
 
 	for _, v := range c.Methods {
 		prefix := "methods." + v.Name + "."

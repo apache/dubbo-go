@@ -457,7 +457,7 @@ func (csd *consulServiceDiscovery) buildRegisterInstance(instance registry.Servi
 }
 
 func (csd *consulServiceDiscovery) buildCheck(instance registry.ServiceInstance) consul.AgentServiceCheck {
-
+	// TODO tc
 	deregister, ok := instance.GetMetadata()[constant.DEREGISTER_AFTER]
 	if !ok || len(deregister) == 0 {
 		deregister = constant.DEFAULT_DEREGISTER_TIME

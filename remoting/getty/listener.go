@@ -101,7 +101,7 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 		logger.Errorf("illegal package")
 		return
 	}
-	// get heartbeart request from server
+	// get heartbeat request from server
 	if result.IsRequest {
 		req := result.Result.(*remoting.Request)
 		if req.Event {
@@ -114,12 +114,12 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 			reply(session, resp)
 			return
 		}
-		logger.Errorf("illegal request but not heartbeart. {%#v}", req)
+		logger.Errorf("illegal request but not heartbeat. {%#v}", req)
 		return
 	}
 	h.timeoutTimes = 0
 	p := result.Result.(*remoting.Response)
-	// get heartbeart
+	// get heartbeat
 	if p.Event {
 		logger.Debugf("get rpc heartbeat response{%#v}", p)
 		if p.Error != nil {

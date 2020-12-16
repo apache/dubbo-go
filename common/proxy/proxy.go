@@ -159,14 +159,15 @@ func (p *Proxy) Implement(v common.RPCService) {
 
 			result := p.invoke.Invoke(invCtx, inv)
 			if len(result.Attachments()) > 0 {
-				invCtx = context.WithValue(invCtx, constant.AttachmentKey, result.Attachments())
+				ak := constant.AttachmentKey
+				invCtx = context.WithValue(invCtx, ak, result.Attachments())
 			}
 
 			err = result.Error()
 			if err != nil {
 				// the cause reason
 				err = perrors.Cause(err)
-				// if some error happened, it should be log some info in the seperate file.
+				// if some error happened, it should be log some info in the separate file.
 				if throwabler, ok := err.(java_exception.Throwabler); ok {
 					logger.Warnf("invoke service throw exception: %v , stackTraceElements: %v", err.Error(), throwabler.GetStackTrace())
 				} else {
