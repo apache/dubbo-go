@@ -97,7 +97,7 @@ func InitTest(t *testing.T) (protocol.Protocol, *common.URL) {
 
 	hessian.RegisterPOJO(&User{})
 
-	methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "dubbo", &UserProvider{})
+	methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "dubbo", "", "", &UserProvider{})
 	assert.NoError(t, err)
 	assert.Equal(t, "GetBigPkg,GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4,GetUser5,GetUser6", methods)
 

@@ -107,7 +107,7 @@ func retrieveURL(service *consul.ServiceEntry) (*common.URL, error) {
 
 func in(url *common.URL, urls []*common.URL) bool {
 	for _, url1 := range urls {
-		if url.URLEqual(url1) {
+		if common.IsEquals(url, url1) {
 			return true
 		}
 	}
