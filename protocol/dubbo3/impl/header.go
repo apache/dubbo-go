@@ -2,10 +2,16 @@ package impl
 
 import (
 	"context"
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/remoting"
+)
+
+import (
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/hpack"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 func init() {

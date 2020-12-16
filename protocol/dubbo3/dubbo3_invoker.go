@@ -2,7 +2,21 @@ package dubbo3
 
 import (
 	"context"
+
+	"reflect"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+)
+
+import (
 	hessian2 "github.com/apache/dubbo-go-hessian2"
+	"github.com/opentracing/opentracing-go"
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
@@ -10,13 +24,6 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/apache/dubbo-go/remoting/dubbo3"
-	"github.com/opentracing/opentracing-go"
-	perrors "github.com/pkg/errors"
-	"reflect"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
 )
 
 var (

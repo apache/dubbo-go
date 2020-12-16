@@ -2,6 +2,9 @@ package impl
 
 import (
 	"encoding/binary"
+)
+
+import (
 	"github.com/apache/dubbo-go/remoting"
 )
 

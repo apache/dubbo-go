@@ -1,10 +1,13 @@
 package dubbo3
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/logger"
 	"net"
 	"sync"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/logger"
 )
 
 type TripleServer struct {

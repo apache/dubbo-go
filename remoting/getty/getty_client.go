@@ -102,8 +102,8 @@ func SetClientConf(c ClientConfig) {
 
 func setClientGrpool() {
 	if clientConf.GrPoolSize > 1 {
-		//clientGrpool = gxsync.NewTaskPool(gxsync.WithTaskPoolTaskPoolSize(clientConf.GrPoolSize), gxsync.WithTaskPoolTaskQueueLength(clientConf.QueueLen),
-		//	gxsync.WithTaskPoolTaskQueueNumber(clientConf.QueueNumber))
+		clientGrpool = gxsync.NewTaskPool(gxsync.WithTaskPoolTaskPoolSize(clientConf.GrPoolSize), gxsync.WithTaskPoolTaskQueueLength(clientConf.QueueLen),
+			gxsync.WithTaskPoolTaskQueueNumber(clientConf.QueueNumber))
 	}
 }
 

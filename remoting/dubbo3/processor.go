@@ -2,12 +2,16 @@ package dubbo3
 
 import (
 	"bytes"
+)
+import (
+	"github.com/golang/protobuf/proto"
+	"google.golang.org/grpc"
+)
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/remoting"
-	"github.com/golang/protobuf/proto"
-	"google.golang.org/grpc"
 )
 
 type processor struct {

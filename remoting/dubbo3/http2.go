@@ -5,18 +5,22 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"io"
+	"net"
+	"strings"
+)
+
+import (
+	"github.com/gogo/protobuf/proto"
+	perrors "github.com/pkg/errors"
+	h2 "golang.org/x/net/http2"
+	"golang.org/x/net/http2/hpack"
+	"google.golang.org/grpc"
+)
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/remoting"
-	"github.com/gogo/protobuf/proto"
-	perrors "github.com/pkg/errors"
-	"google.golang.org/grpc"
-	"io"
-	"net"
-
-	h2 "golang.org/x/net/http2"
-	"golang.org/x/net/http2/hpack"
-	"strings"
 )
 
 type H2Controller struct {

@@ -2,15 +2,21 @@ package dubbo3
 
 import (
 	"context"
+	"net"
+	"reflect"
+)
+
+import (
+	"github.com/golang/protobuf/proto"
+	"google.golang.org/grpc"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/remoting"
-	"github.com/golang/protobuf/proto"
-	"google.golang.org/grpc"
-	"net"
-	"reflect"
 )
 
 // TripleClient client endpoint for client end

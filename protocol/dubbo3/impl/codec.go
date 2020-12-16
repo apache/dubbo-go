@@ -1,8 +1,11 @@
 package impl
 
 import (
-	"github.com/apache/dubbo-go/remoting"
 	"github.com/golang/protobuf/proto"
+)
+
+import (
+	"github.com/apache/dubbo-go/remoting"
 )
 
 func init() {

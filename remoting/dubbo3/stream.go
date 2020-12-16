@@ -3,11 +3,15 @@ package dubbo3
 import (
 	"bytes"
 	"fmt"
+	"sync"
+)
+import (
+	"google.golang.org/grpc"
+)
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/remoting"
-	"google.golang.org/grpc"
-	"sync"
 )
 
 // recvMsg represents the received msg from the transport. All transport
