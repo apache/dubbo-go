@@ -133,7 +133,9 @@ func TestServiceMapUnRegister(t *testing.T) {
 func TestMethodTypeSuiteContext(t *testing.T) {
 	mt := &MethodType{ctxType: reflect.TypeOf(context.TODO())}
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, "key", "value")
+	type ctxKey string
+	key := ctxKey("key")
+	ctx = context.WithValue(ctx, key, "value")
 	assert.Equal(t, reflect.ValueOf(ctx), mt.SuiteContext(ctx))
 
 	assert.Equal(t, reflect.Zero(mt.ctxType), mt.SuiteContext(nil))

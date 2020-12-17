@@ -252,7 +252,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 			res.Handle()
 			return
 		}
-		logger.Errorf("illegal package but not heartbeart. {%#v}", pkg)
+		logger.Errorf("illegal package but not heartbeat. {%#v}", pkg)
 		return
 	}
 	req := decodeResult.Result.(*remoting.Request)

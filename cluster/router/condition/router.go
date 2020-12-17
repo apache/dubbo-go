@@ -235,7 +235,7 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 			values = pair.Matches
 			values.Add(content)
 		case "!=":
-			if &pair == nil {
+			if pair == emptyMatchPair {
 				var startIndex = getStartIndex(rule)
 				return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex, startIndex)
 			}

@@ -158,11 +158,6 @@ func (p *Proxy) Implement(v common.RPCService) {
 			}
 
 			result := p.invoke.Invoke(invCtx, inv)
-			if len(result.Attachments()) > 0 {
-				ak := constant.AttachmentKey
-				invCtx = context.WithValue(invCtx, ak, result.Attachments())
-			}
-
 			err = result.Error()
 			if err != nil {
 				// the cause reason

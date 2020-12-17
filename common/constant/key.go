@@ -200,6 +200,8 @@ const (
 	TRACING_REMOTE_SPAN_CTX = "tracing.remote.span.ctx"
 )
 
+type AttachmentCtxKey string
+
 // Use for router module
 const (
 	// ConditionRouterName Specify file condition router name
@@ -237,7 +239,7 @@ const (
 	Tagkey      = "dubbo.tag"
 
 	// Attachment key in context in invoker
-	AttachmentKey = "attachment"
+	AttachmentKey = AttachmentCtxKey("attachment")
 )
 
 const (
