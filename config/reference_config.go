@@ -86,17 +86,13 @@ func (c *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error
 	}
 
 	*c = ReferenceConfig(raw)
-	if err := defaults.Set(c); err != nil {
-		return err
-	}
-
-	return nil
+	return defaults.Set(c)
 }
 
 // Refer ...
 func (c *ReferenceConfig) Refer(_ interface{}) {
 	cfgURL := common.NewURLWithOptions(
-		common.WithPath(c.id),
+		common.WithPath(c.InterfaceName),
 		common.WithProtocol(c.Protocol),
 		common.WithParams(c.getUrlMap()),
 		common.WithParamsValue(constant.BEAN_NAME_KEY, c.id),
@@ -117,7 +113,7 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 				c.urls = append(c.urls, serviceUrl)
 			} else {
 				if serviceUrl.Path == "" {
-					serviceUrl.Path = "/" + c.id
+					serviceUrl.Path = "/" + c.InterfaceName
 				}
 				// merge url need to do
 				newUrl := common.MergeUrl(serviceUrl, cfgURL)

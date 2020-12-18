@@ -82,7 +82,7 @@ func TestMetadataService(t *testing.T) {
 	assert.Equal(t, 0, len(list4))
 
 	userProvider := &definition.UserProvider{}
-	common.ServiceMap.Register(serviceName, protocol, userProvider)
+	common.ServiceMap.Register(serviceName, protocol, group, version, userProvider)
 	mts.PublishServiceDefinition(u)
 	expected := "{\"CanonicalName\":\"com.ikurento.user.UserProvider\",\"CodeSource\":\"\"," +
 		"\"Methods\":[{\"Name\":\"GetUser\",\"ParameterTypes\":[\"slice\"],\"ReturnType\":\"ptr\"," +
