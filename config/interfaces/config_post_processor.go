@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package config
+package interfaces
 
 // ConfigPostProcessor is an extension to give users a chance to customize configs against ReferenceConfig and
 // ServiceConfig during deployment time.
 type ConfigPostProcessor interface {
-	// PostProcessReferenceConfig customizes ReferenceConfig
-	PostProcessReferenceConfig(rc *ReferenceConfig)
+	// PostProcessReferenceConfig customizes ReferenceConfig's params
+	PostProcessReferenceConfig(params *map[string]string)
 
-	// PostProcessServiceConfig customizes ServiceConfig
-	PostProcessServiceConfig(sc *ServiceConfig)
+	// PostProcessServiceConfig customizes ServiceConfig's params
+	PostProcessServiceConfig(params *map[string]string)
 }

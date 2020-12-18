@@ -17,25 +17,27 @@
 
 package extension
 
-import "github.com/apache/dubbo-go/config"
+import (
+	"github.com/apache/dubbo-go/config/interfaces"
+)
 
 var (
-	processors = make(map[string]config.ConfigPostProcessor)
+	processors = make(map[string]interfaces.ConfigPostProcessor)
 )
 
 // SetConfigPostProcessor registers a ConfigPostProcessor with the given name.
-func SetConfigPostProcessor(name string, processor config.ConfigPostProcessor) {
+func SetConfigPostProcessor(name string, processor interfaces.ConfigPostProcessor) {
 	processors[name] = processor
 }
 
 // GetConfigPostProcessor finds a ConfigPostProcessor by name.
-func GetConfigPostProcessor(name string) config.ConfigPostProcessor {
+func GetConfigPostProcessor(name string) interfaces.ConfigPostProcessor {
 	return processors[name]
 }
 
 // GetConfigPostProcessors returns all registered instances of ConfigPostProcessor.
-func GetConfigPostProcessors() []config.ConfigPostProcessor {
-	ret := make([]config.ConfigPostProcessor, 0, len(processors))
+func GetConfigPostProcessors() []interfaces.ConfigPostProcessor {
+	ret := make([]interfaces.ConfigPostProcessor, 0, len(processors))
 	for _, v := range processors {
 		ret = append(ret, v)
 	}
