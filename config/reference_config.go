@@ -91,6 +91,8 @@ func (c *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error
 
 // Refer ...
 func (c *ReferenceConfig) Refer(_ interface{}) {
+	c.postProcessConfig()
+
 	cfgURL := common.NewURLWithOptions(
 		common.WithPath(c.InterfaceName),
 		common.WithProtocol(c.Protocol),
@@ -247,4 +249,11 @@ func (c *ReferenceConfig) GenericLoad(id string) {
 	c.id = id
 	c.Refer(genericService)
 	c.Implement(genericService)
+}
+
+// postProcessConfig asks registered ConfigPostProcessor to post-process the current ReferenceConfig.
+func (c *ReferenceConfig) postProcessConfig() {
+	for _, p := range extension.GetConfigPostProcessors() {
+		p.PostProcessReferenceConfig(c)
+	}
 }
