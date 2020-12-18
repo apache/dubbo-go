@@ -89,7 +89,7 @@ const (
 	RETRY_PERIOD_KEY                       = "retry.period"
 	RETRY_TIMES_KEY                        = "retry.times"
 	CYCLE_REPORT_KEY                       = "cycle.report"
-	DEFAULT_BLACK_LIST_RECOVER_BLOCK       = 10
+	DEFAULT_BLACK_LIST_RECOVER_BLOCK       = 16
 )
 
 const (
@@ -211,6 +211,8 @@ const (
 	ListenableRouterName = "listenable"
 	// HealthCheckRouterName Specify the name of HealthCheckRouter
 	HealthCheckRouterName = "health_check"
+	// ConnCheckRouterName Specify the name of ConnCheckRouter
+	ConnCheckRouterName = "conn_check"
 	// TagRouterName Specify the name of TagRouter
 	TagRouterName = "tag"
 	// TagRouterRuleSuffix Specify tag router suffix
@@ -296,6 +298,8 @@ const (
 	HEALTH_CHECKER = "health.checker"
 	// The name of the default implementation of HealthChecker
 	DEFAULT_HEALTH_CHECKER = "default"
+	// The name of the default implementation of C
+	DEFAULT_CONN_CHECKER = "default"
 	// The key of oustanding-request-limit
 	OUTSTANDING_REQUEST_COUNT_LIMIT_KEY = "outstanding.request.limit"
 	// The key of successive-failed-request's threshold

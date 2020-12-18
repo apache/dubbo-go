@@ -18,6 +18,8 @@
 package protocol
 
 import (
+	"fmt"
+	"github.com/apache/dubbo-go/common/constant"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -28,9 +30,10 @@ import (
 )
 
 var (
-	methodStatistics sync.Map // url -> { methodName : RPCStatus}
-	serviceStatistic sync.Map // url -> RPCStatus
-	invokerBlackList sync.Map // store unhealthy url blackList
+	methodStatistics    sync.Map // url -> { methodName : RPCStatus}
+	serviceStatistic    sync.Map // url -> RPCStatus
+	invokerBlackList    sync.Map // store unhealthy url blackList
+	blackListRefreshing int32    // store if the refresing method is processing
 )
 
 // RPCStatus is URL statistics.
@@ -217,4 +220,30 @@ func GetBlackListInvokers(blockSize int) []Invoker {
 // RemoveUrlKeyUnhealthyStatus called when event of provider unregister, delete from black list
 func RemoveUrlKeyUnhealthyStatus(key string) {
 	invokerBlackList.Delete(key)
+}
+
+func TryRefreshBlackList() {
+	if atomic.CompareAndSwapInt32(&blackListRefreshing, 0, 1) {
+		wg := sync.WaitGroup{}
+		defer func() {
+			atomic.CompareAndSwapInt32(&blackListRefreshing, 1, 0)
+		}()
+
+		ivks := GetBlackListInvokers(constant.DEFAULT_BLACK_LIST_RECOVER_BLOCK)
+		fmt.Println("blackList len = ", len(ivks))
+
+		for i := 0; i < 3; i++ {
+			wg.Add(1)
+			go func(ivks []Invoker, i int) {
+				for j, _ := range ivks {
+					if j%3-i == 0 {
+						if ivks[j].(Invoker).IsAvailable() {
+							RemoveInvokerUnhealthyStatus(ivks[i])
+						}
+					}
+				}
+			}(ivks, i)
+		}
+		wg.Wait()
+	}
 }
