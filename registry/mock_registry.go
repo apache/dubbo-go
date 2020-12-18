@@ -18,6 +18,7 @@
 package registry
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -32,14 +33,16 @@ import (
 
 // MockRegistry is used as mock registry
 type MockRegistry struct {
-	listener  *listener
-	destroyed *atomic.Bool
+	listener   *listener
+	destroyed  *atomic.Bool
+	allAddress chan []*ServiceEvent
 }
 
 // NewMockRegistry creates a mock registry
 func NewMockRegistry(url *common.URL) (Registry, error) {
 	registry := &MockRegistry{
-		destroyed: atomic.NewBool(false),
+		destroyed:  atomic.NewBool(false),
+		allAddress: make(chan []*ServiceEvent),
 	}
 	listener := &listener{count: 0, registry: registry, listenChan: make(chan *ServiceEvent)}
 	registry.listener = listener
@@ -80,22 +83,12 @@ func (r *MockRegistry) subscribe(*common.URL) (Listener, error) {
 func (r *MockRegistry) Subscribe(url *common.URL, notifyListener NotifyListener) error {
 	go func() {
 		for {
-			if !r.IsAvailable() {
-				logger.Warnf("event listener game over.")
-				time.Sleep(time.Duration(3) * time.Second)
+			t, listener := r.checkLoopSubscribe(url)
+			if t == 0 {
+				continue
+			} else if t == -1 {
 				return
 			}
-
-			listener, err := r.subscribe(url)
-			if err != nil {
-				if !r.IsAvailable() {
-					logger.Warnf("event listener game over.")
-					return
-				}
-				time.Sleep(time.Duration(3) * time.Second)
-				continue
-			}
-
 			for {
 				serviceEvent, err := listener.Next()
 				if err != nil {
@@ -106,6 +99,26 @@ func (r *MockRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 
 				logger.Infof("update begin, service event: %v", serviceEvent.String())
 				notifyListener.Notify(serviceEvent)
+			}
+		}
+	}()
+	go func() {
+		for {
+			t, _ := r.checkLoopSubscribe(url)
+			if t == 0 {
+				continue
+			} else if t == -1 {
+				return
+			}
+
+			for {
+				select {
+				case e := <-r.allAddress:
+					notifyListener.NotifyAll(e, func() {
+						fmt.Print("notify all ok")
+					})
+					break
+				}
 			}
 		}
 	}()
@@ -137,4 +150,28 @@ func (*listener) Close() {
 // nolint
 func (r *MockRegistry) MockEvent(event *ServiceEvent) {
 	r.listener.listenChan <- event
+}
+
+// nolint
+func (r *MockRegistry) MockEvents(events []*ServiceEvent) {
+	r.allAddress <- events
+}
+
+func (r *MockRegistry) checkLoopSubscribe(url *common.URL) (int, Listener) {
+	if !r.IsAvailable() {
+		logger.Warnf("event listener game over.")
+		time.Sleep(time.Duration(3) * time.Second)
+		return -1, nil
+	}
+
+	listener, err := r.subscribe(url)
+	if err != nil {
+		if !r.IsAvailable() {
+			logger.Warnf("event listener game over.")
+			return -1, nil
+		}
+		time.Sleep(time.Duration(3) * time.Second)
+		return 0, nil
+	}
+	return 1, listener
 }
