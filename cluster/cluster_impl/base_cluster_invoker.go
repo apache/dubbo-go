@@ -124,7 +124,7 @@ func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invoc
 		logger.Errorf("the invokers of %s is nil. ", invocation.Invoker().GetUrl().ServiceKey())
 		return nil
 	}
-	refreshBlackList()
+	go protocol.TryRefreshBlackList()
 	if len(invokers) == 1 {
 		if invokers[0].IsAvailable() {
 			return invokers[0]
@@ -139,28 +139,28 @@ func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invoc
 	//judge to if the selectedInvoker is invoked and available
 	if (!selectedInvoker.IsAvailable() && invoker.availablecheck) || isInvoked(selectedInvoker, invoked) {
 		protocol.SetInvokerUnhealthyStatus(selectedInvoker)
-
+		otherInvokers := getOtherInvokers(invokers, selectedInvoker)
 		// do reselect
-		var reslectInvokers []protocol.Invoker
-
-		for _, invoker := range invokers {
-			if !invoker.IsAvailable() {
-				logger.Infof("the invoker of %s is not available, maybe some network error happened or the server is shutdown.",
-					invoker.GetUrl().Ip)
-				protocol.SetInvokerUnhealthyStatus(invoker)
+		for i := 0; i < 3; i++ {
+			if len(otherInvokers) == 0 {
+				// no other ivk to reselect, return to fallback
+				logger.Errorf("all %d invokers is unavailable for %s.", len(invokers), selectedInvoker.GetUrl().String())
+				return nil
+			}
+			reselectedInvoker := lb.Select(otherInvokers, invocation)
+			if isInvoked(reselectedInvoker, invoked) {
+				otherInvokers = getOtherInvokers(otherInvokers, reselectedInvoker)
 				continue
 			}
-
-			if !isInvoked(invoker, invoked) {
-				reslectInvokers = append(reslectInvokers, invoker)
+			if !reselectedInvoker.IsAvailable() {
+				logger.Infof("the invoker of %s is not available, maybe some network error happened or the server is shutdown.",
+					invoker.GetUrl().Ip)
+				protocol.SetInvokerUnhealthyStatus(reselectedInvoker)
+				otherInvokers = getOtherInvokers(otherInvokers, reselectedInvoker)
+				continue
 			}
-		}
-
-		if len(reslectInvokers) > 0 {
-			selectedInvoker = lb.Select(reslectInvokers, invocation)
-		} else {
-			logger.Errorf("all %d invokers is unavailable for %s.", len(invokers), selectedInvoker.GetUrl().String())
-			return nil
+			selectedInvoker = reselectedInvoker
+			break
 		}
 	}
 	return selectedInvoker
@@ -203,12 +203,12 @@ func getLoadBalance(invoker protocol.Invoker, invocation protocol.Invocation) cl
 	return extension.GetLoadbalance(lb)
 }
 
-func refreshBlackList() {
-	ivks := protocol.GetBlackListInvokers(constant.DEFAULT_BLACK_LIST_RECOVER_BLOCK)
-	logger.Debug("blackList len = ", len(ivks))
-	for i, _ := range ivks {
-		if ivks[i].(protocol.Invoker).IsAvailable() {
-			protocol.RemoveInvokerUnhealthyStatus(ivks[i])
+func getOtherInvokers(invokers []protocol.Invoker, invoker protocol.Invoker) []protocol.Invoker {
+	otherInvokers := make([]protocol.Invoker, 0)
+	for _, i := range invokers {
+		if i != invoker {
+			otherInvokers = append(otherInvokers, i)
 		}
 	}
+	return otherInvokers
 }
