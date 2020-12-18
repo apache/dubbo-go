@@ -68,6 +68,10 @@ var (
 	compareURLEqualFunc CompareURLEqualFunc
 )
 
+func init() {
+	compareURLEqualFunc = defaultCompareURLEqual
+}
+
 // nolint
 type RoleType int
 
@@ -111,7 +115,7 @@ type URL struct {
 	noCopy noCopy
 
 	baseUrl
-	Path     string // like  /com.ikurento.dubbo.UserProvider3
+	Path     string // like  /com.ikurento.dubbo.UserProvider
 	Username string
 	Password string
 	Methods  []string
@@ -780,10 +784,6 @@ type CompareURLEqualFunc func(l *URL, r *URL, excludeParam ...string) bool
 
 func defaultCompareURLEqual(l *URL, r *URL, excludeParam ...string) bool {
 	return IsEquals(l, r, excludeParam...)
-}
-
-func init() {
-	compareURLEqualFunc = defaultCompareURLEqual
 }
 
 func SetCompareURLEqualFunc(f CompareURLEqualFunc) {
