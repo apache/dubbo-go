@@ -2,11 +2,8 @@ package dubbo3
 
 import (
 	"bytes"
-	"fmt"
-	"sync"
-)
-import (
 	"google.golang.org/grpc"
+	"sync"
 )
 import (
 	"github.com/apache/dubbo-go/common"
@@ -66,14 +63,14 @@ type stream struct {
 	ID        uint32
 	recvBuf   *MsgBuffer
 	sendBuf   *MsgBuffer
-	processor *processor
+	processor processor
 	url       *common.URL
 	header    remoting.ProtocolHeader
-	md        grpc.MethodDesc
+	desc      interface{}
 	service   common.RPCService
 }
 
-func newStream(header remoting.ProtocolHeader, md grpc.MethodDesc, url *common.URL, service common.RPCService) (*stream, error) {
+func newStream(header remoting.ProtocolHeader, desc interface{}, url *common.URL, service common.RPCService) (*stream, error) {
 	pkgHandler, err := remoting.GetPackagerHandler(url.Protocol)
 	if err != nil {
 		logger.Error("GetPkgHandler error with err = ", err)
@@ -92,38 +89,22 @@ func newStream(header remoting.ProtocolHeader, md grpc.MethodDesc, url *common.U
 		recvBuf: newRecvBuffer(),
 		sendBuf: newRecvBuffer(),
 		header:  header,
-		md:      md,
+		desc:    desc,
 		service: service,
 	}
 
-	// pkgHandler and processor are the same level
-	newStream.processor, err = newProcessor(newStream, pkgHandler, md)
-	if err != nil {
-		logger.Errorf("newStream error: ", err)
-		return nil, err
+	if methodDesc, ok := desc.(grpc.MethodDesc); ok {
+		// pkgHandler and processor are the same level
+		newStream.processor, err = newUnaryProcessor(newStream, pkgHandler, methodDesc)
+	} else if streamDesc, ok := desc.(grpc.StreamDesc); ok {
+		newStream.processor, err = newStreamingProcessor(newStream, pkgHandler, streamDesc)
+	} else {
+		logger.Error("grpc desc invalid:", desc)
+		return nil, nil
 	}
-	go newStream.run()
+
+	newStream.processor.runRPC()
 	return newStream, nil
-}
-
-func (s *stream) run() {
-	// stream 建立时，获得抽象protocHeader，同时根据protocHeader拿到了实现好的对应协议的package Handler
-	// package Handler里面封装了协议codec codec里面封装了 与协议独立的serillizer
-	//拿到了本次调用的打解包协议类型、调用的方法名。
-
-	recvChan := s.recvBuf.get()
-	for {
-		recvMsg := <-recvChan
-		if recvMsg.err != nil {
-			continue
-		}
-		rspBuffer, err := s.processor.processUnaryRPC(*recvMsg.buffer, s.service, s.header)
-		if err != nil {
-			fmt.Println("error ,s.processUnaryRPC err = ", err)
-			continue
-		}
-		s.sendBuf.put(BufferMsg{buffer: rspBuffer})
-	}
 }
 
 func (s *stream) putRecv(data []byte) {

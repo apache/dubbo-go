@@ -31,8 +31,7 @@ func (t *TripleServer) Stop() {
 }
 
 func (t *TripleServer) Start() {
-	logger.Warn("In Start()")
-	logger.Warn("tripleServer Start at ", t.addr)
+	logger.Info("tripleServer Start at ", t.addr)
 	lst, err := net.Listen("tcp", t.addr)
 	if err != nil {
 		panic(err)

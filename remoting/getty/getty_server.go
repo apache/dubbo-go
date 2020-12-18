@@ -98,11 +98,11 @@ func GetServerConfig() ServerConfig {
 // SetServerGrpool set getty server GrPool
 func SetServerGrpool() {
 	if srvConf.GrPoolSize > 1 {
-		srvGrpool = gxsync.NewTaskPool(
-			gxsync.WithTaskPoolTaskPoolSize(srvConf.GrPoolSize),
-			gxsync.WithTaskPoolTaskQueueLength(srvConf.QueueLen),
-			gxsync.WithTaskPoolTaskQueueNumber(srvConf.QueueNumber),
-		)
+		//srvGrpool = gxsync.NewTaskPool(
+		//	gxsync.WithTaskPoolTaskPoolSize(srvConf.GrPoolSize),
+		//	gxsync.WithTaskPoolTaskQueueLength(srvConf.QueueLen),
+		//	gxsync.WithTaskPoolTaskQueueNumber(srvConf.QueueNumber),
+		//)
 	}
 }
 

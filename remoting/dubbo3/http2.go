@@ -30,29 +30,35 @@ type H2Controller struct {
 
 	streamMap map[uint32]*stream
 	mdMap     map[string]grpc.MethodDesc
+	strMap    map[string]grpc.StreamDesc
 	url       *common.URL
 	handler   remoting.ProtocolHeaderHandler
 	service   common.RPCService
 }
 
-func getMethodDescMap(service common.RPCService) (map[string]grpc.MethodDesc, error) {
+func getMethodAndStreamDescMap(service common.RPCService) (map[string]grpc.MethodDesc, map[string]grpc.StreamDesc, error) {
 	ds, ok := service.(Dubbo3GrpcService)
 	if !ok {
 		logger.Error("service is not Impl Dubbo3GrpcService")
-		return nil, perrors.New("service is not Impl Dubbo3GrpcService")
+		return nil, nil, perrors.New("service is not Impl Dubbo3GrpcService")
 	}
 	sdMap := make(map[string]grpc.MethodDesc, 8)
+	strMap := make(map[string]grpc.StreamDesc, 8)
 	for _, v := range ds.ServiceDesc().Methods {
 		sdMap[v.MethodName] = v
 	}
-	return sdMap, nil
+	for _, v := range ds.ServiceDesc().Streams {
+		strMap[v.StreamName] = v
+	}
+	return sdMap, strMap, nil
 }
 
 func NewH2Controller(conn net.Conn, isServer bool, service common.RPCService, url *common.URL) (*H2Controller, error) {
-	mdMap := make(map[string]grpc.MethodDesc, 8)
+	var mdMap map[string]grpc.MethodDesc
+	var strMap map[string]grpc.StreamDesc
 	var err error
 	if isServer {
-		mdMap, err = getMethodDescMap(service)
+		mdMap, strMap, err = getMethodAndStreamDescMap(service)
 		if err != nil {
 			logger.Error("new H2 controller error:", err)
 			return nil, err
@@ -73,6 +79,7 @@ func NewH2Controller(conn net.Conn, isServer bool, service common.RPCService, ur
 		isServer:  isServer,
 		streamMap: make(map[uint32]*stream, 8),
 		mdMap:     mdMap,
+		strMap:    strMap,
 		service:   service,
 		handler:   headerHandler,
 	}, nil
@@ -258,20 +265,24 @@ func (h *H2Controller) handleDataFrame(fm *h2.DataFrame) {
 
 func (h *H2Controller) addStream(data remoting.ProtocolHeader) error {
 	methodName := strings.Split(data.GetMethod(), "/")[2]
-	// todo
-	md, ok := h.mdMap[methodName]
-	for k, v := range h.mdMap {
-		fmt.Println(k, v)
+	md, okm := h.mdMap[methodName]
+	streamd, oks := h.strMap[methodName]
+	if !okm && !oks {
+		logger.Errorf("method name %s not found in desc", methodName)
+		return perrors.New(fmt.Sprintf("method name %s not found in desc", methodName))
 	}
-	if !ok {
-		logger.Errorf("method name %s not found in method desc", methodName)
-		return perrors.New(fmt.Sprintf("method name %s not found in method desc", methodName))
+	var newstm *stream
+	var err error
+	if okm {
+		newstm, err = newStream(data, md, h.url, h.service)
+	} else {
+		newstm, err = newStream(data, streamd, h.url, h.service)
 	}
-	newStream, err := newStream(data, md, h.url, h.service)
+
 	if err != nil {
 		return err
 	}
-	h.streamMap[data.GetStreamID()] = newStream
+	h.streamMap[data.GetStreamID()] = newstm
 	go h.runSendRsp(h.streamMap[data.GetStreamID()])
 	return nil
 }
