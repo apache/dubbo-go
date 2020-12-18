@@ -254,6 +254,6 @@ func (c *ReferenceConfig) GenericLoad(id string) {
 // postProcessConfig asks registered ConfigPostProcessor to post-process the current ReferenceConfig.
 func (c *ReferenceConfig) postProcessConfig() {
 	for _, p := range extension.GetConfigPostProcessors() {
-		p.PostProcessReferenceConfig(c)
+		p.PostProcessReferenceConfig(&c.Params)
 	}
 }
