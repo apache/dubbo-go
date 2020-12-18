@@ -307,6 +307,16 @@ func TestURLSetParams(t *testing.T) {
 	assert.Equal(t, "2.6.0", u1.GetParam("version", ""))
 }
 
+func TestURLReplaceParams(t *testing.T) {
+	u1, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&configVersion=1.0")
+	assert.NoError(t, err)
+	params := url.Values{}
+	params.Set("key", "3")
+	u1.ReplaceParams(params)
+	assert.Equal(t, "3", u1.GetParam("key", ""))
+	assert.Equal(t, "", u1.GetParam("version", ""))
+}
+
 func TestClone(t *testing.T) {
 	u1, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&configVersion=1.0")
 	assert.NoError(t, err)
