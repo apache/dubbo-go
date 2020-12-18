@@ -145,6 +145,7 @@ func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
 
 // Export exports the service
 func (c *ServiceConfig) Export() error {
+	c.postProcessConfig()
 	// TODO: config center start here
 
 	// TODO: delay export
@@ -331,4 +332,11 @@ func (c *ServiceConfig) GetExportedUrls() []*common.URL {
 		return urls
 	}
 	return nil
+}
+
+// postProcessConfig asks registered ConfigPostProcessor to post-process the current ServiceConfig.
+func (c *ServiceConfig) postProcessConfig() {
+	for _, p := range extension.GetConfigPostProcessors() {
+		p.PostProcessServiceConfig(c)
+	}
 }
