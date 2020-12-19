@@ -253,7 +253,7 @@ func (c *ReferenceConfig) GenericLoad(id string) {
 	c.Implement(genericService)
 }
 
-// Get invoker
+// GetInvoker get invoker from ReferenceConfig
 func (c *ReferenceConfig) GetInvoker() protocol.Invoker {
 	return c.invoker
 }
