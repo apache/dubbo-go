@@ -109,7 +109,7 @@ type URL struct {
 	noCopy noCopy
 
 	baseUrl
-	Path     string // like  /com.ikurento.dubbo.UserProvider3
+	Path     string // like  /com.ikurento.dubbo.UserProvider
 	Username string
 	Password string
 	Methods  []string
