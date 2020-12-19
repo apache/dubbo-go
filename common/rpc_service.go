@@ -157,11 +157,17 @@ type serviceMap struct {
 }
 
 // GetService gets a service defination by protocol and name
-func (sm *serviceMap) GetService(protocol, name string) *Service {
+func (sm *serviceMap) GetService(protocol, interfaceName, group, version string) *Service {
+	serviceKey := ServiceKey(interfaceName, group, version)
+	return sm.GetServiceByServiceKey(protocol, serviceKey)
+}
+
+// GetService gets a service defination by protocol and service key
+func (sm *serviceMap) GetServiceByServiceKey(protocol, serviceKey string) *Service {
 	sm.mutex.RLock()
 	defer sm.mutex.RUnlock()
 	if s, ok := sm.serviceMap[protocol]; ok {
-		if srv, ok := s[name]; ok {
+		if srv, ok := s[serviceKey]; ok {
 			return srv
 		}
 		return nil
@@ -180,7 +186,7 @@ func (sm *serviceMap) GetInterface(interfaceName string) []*Service {
 }
 
 // Register registers a service by @interfaceName and @protocol
-func (sm *serviceMap) Register(interfaceName, protocol string, rcvr RPCService) (string, error) {
+func (sm *serviceMap) Register(interfaceName, protocol, group, version string, rcvr RPCService) (string, error) {
 	if sm.serviceMap[protocol] == nil {
 		sm.serviceMap[protocol] = make(map[string]*Service)
 	}
@@ -203,8 +209,8 @@ func (sm *serviceMap) Register(interfaceName, protocol string, rcvr RPCService) 
 		return "", perrors.New(s)
 	}
 
-	sname = rcvr.Reference()
-	if server := sm.GetService(protocol, sname); server != nil {
+	sname = ServiceKey(interfaceName, group, version)
+	if server := sm.GetService(protocol, interfaceName, group, version); server != nil {
 		return "", perrors.New("service already defined: " + sname)
 	}
 	s.name = sname
@@ -228,9 +234,9 @@ func (sm *serviceMap) Register(interfaceName, protocol string, rcvr RPCService) 
 }
 
 // UnRegister cancels a service by @interfaceName, @protocol and @serviceId
-func (sm *serviceMap) UnRegister(interfaceName, protocol, serviceId string) error {
-	if protocol == "" || serviceId == "" {
-		return perrors.New("protocol or serviceName is nil")
+func (sm *serviceMap) UnRegister(interfaceName, protocol, serviceKey string) error {
+	if protocol == "" || serviceKey == "" {
+		return perrors.New("protocol or serviceKey is nil")
 	}
 
 	var (
@@ -248,9 +254,9 @@ func (sm *serviceMap) UnRegister(interfaceName, protocol, serviceId string) erro
 		if !ok {
 			return perrors.New("no services for " + protocol)
 		}
-		s, ok := svcs[serviceId]
+		s, ok := svcs[serviceKey]
 		if !ok {
-			return perrors.New("no service for " + serviceId)
+			return perrors.New("no service for " + serviceKey)
 		}
 		svrs, ok = sm.interfaceMap[interfaceName]
 		if !ok {
@@ -276,7 +282,7 @@ func (sm *serviceMap) UnRegister(interfaceName, protocol, serviceId string) erro
 			sm.interfaceMap[interfaceName] = append(sm.interfaceMap[interfaceName], svrs[i])
 		}
 	}
-	delete(svcs, serviceId)
+	delete(svcs, serviceKey)
 	if len(sm.serviceMap[protocol]) == 0 {
 		delete(sm.serviceMap, protocol)
 	}

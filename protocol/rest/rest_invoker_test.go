@@ -65,7 +65,7 @@ func TestRestInvokerInvoke(t *testing.T) {
 
 	url, err := common.NewURL(mockRestCommonUrl)
 	assert.NoError(t, err)
-	_, err = common.ServiceMap.Register("UserProvider", url.Protocol, &UserProvider{})
+	_, err = common.ServiceMap.Register(url.Service(), url.Protocol, "", "", &UserProvider{})
 	assert.NoError(t, err)
 	con := config.ProviderConfig{}
 	config.SetProviderConfig(con)
@@ -210,6 +210,6 @@ func TestRestInvokerInvoke(t *testing.T) {
 	assert.Error(t, res.Error(), "test error")
 
 	assert.Equal(t, filterNum, 12)
-	err = common.ServiceMap.UnRegister("UserProvider", url.Protocol, "com.ikurento.user.UserProvider")
+	err = common.ServiceMap.UnRegister(url.Service(), url.Protocol, url.ServiceKey())
 	assert.NoError(t, err)
 }

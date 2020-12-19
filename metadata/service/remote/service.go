@@ -115,7 +115,7 @@ func (mts *MetadataService) PublishServiceDefinition(url *common.URL) error {
 	interfaceName := url.GetParam(constant.INTERFACE_KEY, "")
 	isGeneric := url.GetParamBool(constant.GENERIC_KEY, false)
 	if len(interfaceName) > 0 && !isGeneric {
-		sv := common.ServiceMap.GetService(url.Protocol, url.GetParam(constant.BEAN_NAME_KEY, url.Service()))
+		sv := common.ServiceMap.GetServiceByServiceKey(url.Protocol, url.ServiceKey())
 		sd := definition.BuildServiceDefinition(*sv, url)
 		id := &identifier.MetadataIdentifier{
 			BaseMetadataIdentifier: identifier.BaseMetadataIdentifier{
