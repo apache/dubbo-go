@@ -37,8 +37,6 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
-type Object interface{}
-
 type HessianSerializer struct {
 }
 
@@ -474,7 +472,7 @@ func getArgType(v interface{}) string {
 		return "java.lang.String"
 	case []string:
 		return "[Ljava.lang.String;"
-	case []Object:
+	case []hessian.Object:
 		return "[Ljava.lang.Object;"
 	case map[interface{}]interface{}:
 		// return  "java.util.HashMap"
