@@ -23,7 +23,7 @@ import (
 
 import (
 	"github.com/dubbogo/gost/container/set"
-	"github.com/dubbogo/gost/page"
+	"github.com/dubbogo/gost/hash/page"
 	"github.com/stretchr/testify/assert"
 )
 import (
