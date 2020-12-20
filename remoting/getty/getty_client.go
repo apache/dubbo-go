@@ -101,9 +101,7 @@ func SetClientConf(c ClientConfig) {
 }
 
 func setClientGrpool() {
-	if clientConf.GrPoolSize > 1 {
-		clientGrpool = gxsync.NewTaskPoolSimple(clientConf.GrPoolSize)
-	}
+	clientGrpool = gxsync.NewTaskPoolSimple(clientConf.GrPoolSize)
 }
 
 // Options : param config

@@ -137,7 +137,6 @@ func (s *Server) newSession(session getty.Session) error {
 		session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
 		session.SetPkgHandler(NewRpcServerPackageHandler(s))
 		session.SetEventListener(s.rpcHandler)
-		session.SetWQLen(conf.GettySessionParam.PkgWQSize)
 		session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
 		session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
 		session.SetCronPeriod((int)(conf.heartbeatPeriod.Nanoseconds() / 1e6))
@@ -177,7 +176,6 @@ func (s *Server) newSession(session getty.Session) error {
 	session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
 	session.SetPkgHandler(NewRpcServerPackageHandler(s))
 	session.SetEventListener(s.rpcHandler)
-	session.SetWQLen(conf.GettySessionParam.PkgWQSize)
 	session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
 	session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
 	session.SetCronPeriod((int)(conf.heartbeatPeriod.Nanoseconds() / 1e6))
@@ -200,9 +198,7 @@ func (s *Server) Start() {
 			getty.WithServerTlsConfigBuilder(config.GetServerTlsConfigBuilder()))
 	}
 
-	if s.conf.GrPoolSize != 0 {
-		serverOpts = append(serverOpts, getty.WithServerTaskPool(gxsync.NewTaskPoolSimple(s.conf.GrPoolSize)))
-	}
+	serverOpts = append(serverOpts, getty.WithServerTaskPool(gxsync.NewTaskPoolSimple(s.conf.GrPoolSize)))
 
 	tcpServer = getty.NewTCPServer(serverOpts...)
 	tcpServer.RunEventLoop(s.newSession)
