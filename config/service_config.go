@@ -226,7 +226,7 @@ func (c *ServiceConfig) Export() error {
 			}
 			c.exporters = append(c.exporters, exporter)
 		}
-		PublishServiceDefinition(ivkURL)
+		publishServiceDefinition(ivkURL)
 	}
 	c.exported.Store(true)
 	return nil
@@ -337,7 +337,7 @@ func (c *ServiceConfig) GetExportedUrls() []*common.URL {
 	return nil
 }
 
-func PublishServiceDefinition(url *common.URL) {
+func publishServiceDefinition(url *common.URL) {
 	if remoteMetadataService == nil {
 		var err error
 		if remoteMetadataService, err = extension.GetMetadataService("remote"); err != nil {
