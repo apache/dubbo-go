@@ -20,7 +20,6 @@ package getty
 import (
 	"crypto/tls"
 	"fmt"
-	gxqueue "github.com/dubbogo/gost/container/queue"
 	"math/rand"
 	"net"
 	"sync"
@@ -30,6 +29,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-getty"
+	gxqueue "github.com/dubbogo/gost/container/queue"
 	perrors "github.com/pkg/errors"
 )
 
