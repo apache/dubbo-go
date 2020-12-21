@@ -109,6 +109,10 @@ type MetadataReport struct {
 // NewMetadataReport will create a MetadataReport with initiation
 func NewMetadataReport() (*MetadataReport, error) {
 	url := instance.GetMetadataReportUrl()
+	if url == nil {
+		logger.Warn("the metadataReport URL is not configured, you should configure it.")
+		return nil, perrors.New("the metadataReport URL is not configured, you should configure it.")
+	}
 	bmr := &MetadataReport{
 		reportUrl:          url,
 		syncReport:         url.GetParamBool(constant.SYNC_REPORT_KEY, false),
