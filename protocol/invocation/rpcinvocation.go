@@ -35,8 +35,11 @@ import (
 // todo: is it necessary to separate fields of consumer(provider) from RPCInvocation
 // nolint
 type RPCInvocation struct {
-	methodName      string
-	parameterTypes  []reflect.Type
+	methodName string
+	// Parameter Type Names. It is used to specify the parameterType
+	parameterTypeNames []string
+	parameterTypes     []reflect.Type
+
 	parameterValues []reflect.Value
 	arguments       []interface{}
 	reply           interface{}
@@ -78,6 +81,11 @@ func (r *RPCInvocation) MethodName() string {
 // ParameterTypes gets RPC invocation parameter types.
 func (r *RPCInvocation) ParameterTypes() []reflect.Type {
 	return r.parameterTypes
+}
+
+// ParameterTypeNames gets RPC invocation parameter types of string expression.
+func (r *RPCInvocation) ParameterTypeNames() []string {
+	return r.parameterTypeNames
 }
 
 // ParameterValues gets RPC invocation parameter values.
@@ -210,6 +218,13 @@ func WithMethodName(methodName string) option {
 func WithParameterTypes(parameterTypes []reflect.Type) option {
 	return func(invo *RPCInvocation) {
 		invo.parameterTypes = parameterTypes
+	}
+}
+
+// WithParameterTypeNames creates option with @parameterTypeNames.
+func WithParameterTypeNames(parameterTypeNames []string) option {
+	return func(invo *RPCInvocation) {
+		invo.parameterTypeNames = parameterTypeNames
 	}
 }
 
