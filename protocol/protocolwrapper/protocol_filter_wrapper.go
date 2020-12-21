@@ -68,6 +68,10 @@ func (pfw *ProtocolFilterWrapper) Destroy() {
 }
 
 func buildInvokerChain(invoker protocol.Invoker, key string) protocol.Invoker {
+	if invoker == nil {
+		return invoker
+	}
+	
 	filterName := invoker.GetUrl().GetParam(key, "")
 	if filterName == "" {
 		return invoker
