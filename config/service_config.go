@@ -40,12 +40,9 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/metadata/service"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 )
-
-var remoteMetadataService service.MetadataService
 
 // ServiceConfig is the configuration of the service provider
 type ServiceConfig struct {
@@ -338,15 +335,7 @@ func (c *ServiceConfig) GetExportedUrls() []*common.URL {
 }
 
 func publishServiceDefinition(url *common.URL) {
-	if remoteMetadataService == nil {
-		var err error
-		if remoteMetadataService, err = extension.GetMetadataService("remote"); err != nil {
-			logger.Warnf("get remote metadataService fail. %v", err)
-			return
-		} else if remoteMetadataService == nil {
-			logger.Info("get remote metadataService will nil.")
-			return
-		}
+	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
+		remoteMetadataService.PublishServiceDefinition(url)
 	}
-	remoteMetadataService.PublishServiceDefinition(url)
 }
