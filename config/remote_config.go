@@ -63,9 +63,9 @@ func (rc *RemoteConfig) GetParam(key string, def string) string {
 	return param
 }
 
-func (rc *RemoteConfig) toURL() (common.URL, error) {
+func (rc *RemoteConfig) toURL() (*common.URL, error) {
 	if len(rc.Protocol) == 0 {
-		return common.URL{}, perrors.Errorf("Must provide protocol in RemoteConfig.")
+		return nil, perrors.Errorf("Must provide protocol in RemoteConfig.")
 	}
 	return common.NewURL(rc.Address,
 		common.WithUsername(rc.Username),
