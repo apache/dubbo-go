@@ -17,17 +17,14 @@
 
 package interfaces
 
-// PostConfigurable is a marker to indicate the instance can be post-configured.
-type PostConfigurable interface{}
+import "net/url"
 
 // ConfigPostProcessor is an extension to give users a chance to customize configs against ReferenceConfig and
 // ServiceConfig during deployment time.
 type ConfigPostProcessor interface {
-	// PostProcessReferenceConfig customizes ReferenceConfig's params. The 'target' parameter must be a instance of
-	// ReferenceConfig. The implementation must assert the passed in instance is a ReferenceConfig.
-	PostProcessReferenceConfig(target PostConfigurable)
+	// PostProcessReferenceConfig customizes ReferenceConfig's params.
+	PostProcessReferenceConfig(url.Values)
 
-	// PostProcessServiceConfig customizes ServiceConfig's params. The 'target' parameter must be an instance of
-	// ServiceConfig. The implementation must assert the passed in instance is a ServiceConfig.
-	PostProcessServiceConfig(target PostConfigurable)
+	// PostProcessServiceConfig customizes ServiceConfig's params.
+	PostProcessServiceConfig(url.Values)
 }
