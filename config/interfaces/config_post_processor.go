@@ -21,8 +21,8 @@ package interfaces
 // ServiceConfig during deployment time.
 type ConfigPostProcessor interface {
 	// PostProcessReferenceConfig customizes ReferenceConfig's params
-	PostProcessReferenceConfig(params *map[string]string)
+	PostProcessReferenceConfig(params map[string]string)
 
 	// PostProcessServiceConfig customizes ServiceConfig's params
-	PostProcessServiceConfig(params *map[string]string)
+	PostProcessServiceConfig(params map[string]string)
 }
