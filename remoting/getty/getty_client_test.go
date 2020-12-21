@@ -51,7 +51,7 @@ func TestRunSuite(t *testing.T) {
 	svr.Stop()
 }
 
-func testRequestOneWay(t *testing.T, svr *Server, url common.URL, client *Client) {
+func testRequestOneWay(t *testing.T, svr *Server, url *common.URL, client *Client) {
 
 	request := remoting.NewRequest("2.0.2")
 	up := &UserProvider{}
@@ -80,7 +80,7 @@ func setAttachment(invocation *invocation.RPCInvocation, attachments map[string]
 	}
 }
 
-func getClient(url common.URL) *Client {
+func getClient(url *common.URL) *Client {
 	client := NewClient(Options{
 		ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
 	})
@@ -88,11 +88,10 @@ func getClient(url common.URL) *Client {
 	exchangeClient := remoting.NewExchangeClient(url, client, 5*time.Second, false)
 	client.SetExchangeClient(exchangeClient)
 	client.Connect(url)
-	client.SetResponseHandler(exchangeClient)
 	return client
 }
 
-func testClient_Call(t *testing.T, svr *Server, url common.URL, c *Client) {
+func testClient_Call(t *testing.T, svr *Server, url *common.URL, c *Client) {
 	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
 
 	testGetBigPkg(t, c)
@@ -212,7 +211,9 @@ func testGetUser3(t *testing.T, c *Client) {
 	request := remoting.NewRequest("2.0.2")
 	invocation := createInvocation("GetUser3", nil, nil, []interface{}{},
 		[]reflect.Value{})
-	attachment := map[string]string{INTERFACE_KEY: "com.ikurento.user.UserProvider"}
+	attachment := map[string]string{
+		INTERFACE_KEY: "com.ikurento.user.UserProvider",
+	}
 	setAttachment(invocation, attachment)
 	request.Data = invocation
 	request.Event = false
@@ -309,7 +310,7 @@ func testGetUser61(t *testing.T, c *Client) {
 	assert.Equal(t, User{Id: "1", Name: ""}, *user)
 }
 
-func testClient_AsyncCall(t *testing.T, svr *Server, url common.URL, client *Client) {
+func testClient_AsyncCall(t *testing.T, svr *Server, url *common.URL, client *Client) {
 	user := &User{}
 	lock := sync.Mutex{}
 	request := remoting.NewRequest("2.0.2")
@@ -337,12 +338,12 @@ func testClient_AsyncCall(t *testing.T, svr *Server, url common.URL, client *Cli
 	time.Sleep(1 * time.Second)
 }
 
-func InitTest(t *testing.T) (*Server, common.URL) {
+func InitTest(t *testing.T) (*Server, *common.URL) {
 
 	hessian.RegisterPOJO(&User{})
 	remoting.RegistryCodec("dubbo", &DubboTestCodec{})
 
-	methods, err := common.ServiceMap.Register("", "dubbo", &UserProvider{})
+	methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "dubbo", "", "", &UserProvider{})
 	assert.NoError(t, err)
 	assert.Equal(t, "GetBigPkg,GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4,GetUser5,GetUser6", methods)
 
@@ -388,14 +389,14 @@ func InitTest(t *testing.T) (*Server, common.URL) {
 		}})
 	assert.NoError(t, srvConf.CheckValidity())
 
-	url, err := common.NewURL("dubbo://127.0.0.1:20060/UserProvider?anyhost=true&" +
+	url, err := common.NewURL("dubbo://127.0.0.1:20060/com.ikurento.user.UserProvider?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=127.0.0.1&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
 	// init server
 	userProvider := &UserProvider{}
-	common.ServiceMap.Register("", url.Protocol, userProvider)
+	common.ServiceMap.Register("", url.Protocol, "", "0.0.1", userProvider)
 	invoker := &proxy_factory.ProxyInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 	}

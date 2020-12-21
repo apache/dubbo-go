@@ -301,6 +301,9 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 			go func(zkPath string, listener remoting.DataListener) {
 				if l.listenServiceNodeEvent(zkPath) {
 					listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeDel})
+					l.pathMapLock.Lock()
+					defer l.pathMapLock.Unlock()
+					delete(l.pathMap, zkPath)
 				}
 				logger.Warnf("listenSelf(zk path{%s}) goroutine exit now", zkPath)
 			}(dubboPath, listener)

@@ -44,7 +44,6 @@ var (
 	consulCheckPassInterval              = 17000
 	consulDeregisterCriticalServiceAfter = "20s"
 	consulWatchTimeout                   = 60000
-	registryURL                          = common.URL{}
 )
 
 func TestConsulServiceDiscovery_newConsulServiceDiscovery(t *testing.T) {
@@ -173,7 +172,7 @@ func prepareData() {
 	}
 }
 
-func prepareService() (registry.ServiceInstance, common.URL) {
+func prepareService() (registry.ServiceInstance, *common.URL) {
 	id := "id"
 
 	registryUrl, _ := common.NewURL(protocol + "://" + providerHost + ":" + strconv.Itoa(providerPort) + "/" + service + "?anyhost=true&" +
@@ -200,19 +199,19 @@ type MockEventDispatcher struct {
 }
 
 // AddEventListener do nothing
-func (m *MockEventDispatcher) AddEventListener(listener observer.EventListener) {
+func (m *MockEventDispatcher) AddEventListener(observer.EventListener) {
 }
 
 // AddEventListeners do nothing
-func (m *MockEventDispatcher) AddEventListeners(listenersSlice []observer.EventListener) {
+func (m *MockEventDispatcher) AddEventListeners([]observer.EventListener) {
 }
 
 // RemoveEventListener do nothing
-func (m *MockEventDispatcher) RemoveEventListener(listener observer.EventListener) {
+func (m *MockEventDispatcher) RemoveEventListener(observer.EventListener) {
 }
 
 // RemoveEventListeners do nothing
-func (m *MockEventDispatcher) RemoveEventListeners(listenersSlice []observer.EventListener) {
+func (m *MockEventDispatcher) RemoveEventListeners([]observer.EventListener) {
 }
 
 // GetAllEventListeners return empty list

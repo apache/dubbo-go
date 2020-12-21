@@ -105,7 +105,7 @@ func newConsistentHashSelector(invokers []protocol.Invoker, methodName string,
 	selector.virtualInvokers = make(map[uint32]protocol.Invoker)
 	selector.hashCode = hashCode
 	url := invokers[0].GetUrl()
-	selector.replicaNum = int(url.GetMethodParamInt(methodName, HashNodes, 160))
+	selector.replicaNum = url.GetMethodParamIntValue(methodName, HashNodes, 160)
 	indices := re.Split(url.GetMethodParam(methodName, HashArguments, "0"), -1)
 	for _, index := range indices {
 		i, err := strconv.Atoi(index)
