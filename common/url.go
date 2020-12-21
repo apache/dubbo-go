@@ -323,6 +323,8 @@ func isMatchCategory(category1 string, category2 string) bool {
 }
 
 func (c *URL) String() string {
+	c.paramsLock.Lock()
+	defer c.paramsLock.Unlock()
 	var buf strings.Builder
 	if len(c.Username) == 0 && len(c.Password) == 0 {
 		buf.WriteString(fmt.Sprintf("%s://%s:%s%s?", c.Protocol, c.Ip, c.Port, c.Path))
@@ -431,6 +433,14 @@ func (c *URL) SetParam(key string, value string) {
 	c.paramsLock.Lock()
 	defer c.paramsLock.Unlock()
 	c.params.Set(key, value)
+}
+
+// ReplaceParams will replace the URL.params
+// usually it should only be invoked when you want to modify an url, such as MergeURL
+func (c *URL) ReplaceParams(param url.Values) {
+	c.paramsLock.Lock()
+	defer c.paramsLock.Unlock()
+	c.params = param
 }
 
 // RangeParams will iterate the params
@@ -565,10 +575,10 @@ func (c *URL) GetMethodParamBool(method string, key string, d bool) bool {
 	return r
 }
 
-// SetParams will put all key-value pair into url.
-// 1. if there already has same key, the value will be override
-// 2. it's not thread safe
-// 3. think twice when you want to invoke this method
+//SetParams will put all key-value pair into url.
+//1. if there already has same key, the value will be override
+//2. it's not thread safe
+//3. think twice when you want to invoke this method
 func (c *URL) SetParams(m url.Values) {
 	for k := range m {
 		c.SetParam(k, m.Get(k))
@@ -627,22 +637,26 @@ func (c *URL) ToMap() map[string]string {
 // You should notice that the value of b1 is v2, not v4.
 // due to URL is not thread-safe, so this method is not thread-safe
 func MergeUrl(serviceUrl *URL, referenceUrl *URL) *URL {
+	// After Clone, it is a new url that there is no thread safe issue.
 	mergedUrl := serviceUrl.Clone()
-
+	params := mergedUrl.GetParams()
 	// iterator the referenceUrl if serviceUrl not have the key ,merge in
-	referenceUrl.RangeParams(func(key, value string) bool {
+	// referenceUrl usually will not changed. so change RangeParams to GetParams to avoid the string value copy.
+	for key, value := range referenceUrl.GetParams() {
 		if v := mergedUrl.GetParam(key, ""); len(v) == 0 {
-			mergedUrl.SetParam(key, value)
+			if len(value) > 0 {
+				params[key] = value
+			}
 		}
-		return true
-	})
+	}
+
 	// loadBalance,cluster,retries strategy config
-	methodConfigMergeFcn := mergeNormalParam(mergedUrl, referenceUrl, []string{constant.LOADBALANCE_KEY, constant.CLUSTER_KEY, constant.RETRIES_KEY, constant.TIMEOUT_KEY})
+	methodConfigMergeFcn := mergeNormalParam(params, referenceUrl, []string{constant.LOADBALANCE_KEY, constant.CLUSTER_KEY, constant.RETRIES_KEY, constant.TIMEOUT_KEY})
 
 	// remote timestamp
 	if v := serviceUrl.GetParam(constant.TIMESTAMP_KEY, ""); len(v) > 0 {
-		mergedUrl.SetParam(constant.REMOTE_TIMESTAMP_KEY, v)
-		mergedUrl.SetParam(constant.TIMESTAMP_KEY, referenceUrl.GetParam(constant.TIMESTAMP_KEY, ""))
+		params[constant.REMOTE_TIMESTAMP_KEY] = []string{v}
+		params[constant.TIMESTAMP_KEY] = []string{referenceUrl.GetParam(constant.TIMESTAMP_KEY, "")}
 	}
 
 	// finally execute methodConfigMergeFcn
@@ -651,7 +665,8 @@ func MergeUrl(serviceUrl *URL, referenceUrl *URL) *URL {
 			fcn("methods." + method)
 		}
 	}
-
+	// In this way, we will raise some performance.
+	mergedUrl.ReplaceParams(params)
 	return mergedUrl
 }
 
@@ -746,15 +761,15 @@ func IsEquals(left *URL, right *URL, excludes ...string) bool {
 	return true
 }
 
-func mergeNormalParam(mergedUrl *URL, referenceUrl *URL, paramKeys []string) []func(method string) {
+func mergeNormalParam(params url.Values, referenceUrl *URL, paramKeys []string) []func(method string) {
 	methodConfigMergeFcn := make([]func(method string), 0, len(paramKeys))
 	for _, paramKey := range paramKeys {
 		if v := referenceUrl.GetParam(paramKey, ""); len(v) > 0 {
-			mergedUrl.SetParam(paramKey, v)
+			params[paramKey] = []string{v}
 		}
 		methodConfigMergeFcn = append(methodConfigMergeFcn, func(method string) {
 			if v := referenceUrl.GetParam(method+"."+paramKey, ""); len(v) > 0 {
-				mergedUrl.SetParam(method+"."+paramKey, v)
+				params[method+"."+paramKey] = []string{v}
 			}
 		})
 	}
