@@ -145,7 +145,6 @@ func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
 
 // Export exports the service
 func (c *ServiceConfig) Export() error {
-	c.postProcessConfig()
 	// TODO: config center start here
 
 	// TODO: delay export
@@ -160,7 +159,10 @@ func (c *ServiceConfig) Export() error {
 	}
 
 	regUrls := loadRegistries(c.Registry, providerConfig.Registries, common.PROVIDER)
+
 	urlMap := c.getUrlMap()
+	c.postProcessConfig(urlMap)
+
 	protocolConfigs := loadProtocol(c.Protocol, c.Protocols)
 	if len(protocolConfigs) == 0 {
 		logger.Warnf("The service %v's '%v' protocols don't has right protocolConfigs", c.InterfaceName, c.Protocol)
@@ -335,8 +337,8 @@ func (c *ServiceConfig) GetExportedUrls() []*common.URL {
 }
 
 // postProcessConfig asks registered ConfigPostProcessor to post-process the current ServiceConfig.
-func (c *ServiceConfig) postProcessConfig() {
+func (c *ServiceConfig) postProcessConfig(values url.Values) {
 	for _, p := range extension.GetConfigPostProcessors() {
-		p.PostProcessServiceConfig(c)
+		p.PostProcessServiceConfig(values)
 	}
 }
