@@ -337,6 +337,6 @@ func (c *ServiceConfig) GetExportedUrls() []*common.URL {
 // postProcessConfig asks registered ConfigPostProcessor to post-process the current ServiceConfig.
 func (c *ServiceConfig) postProcessConfig() {
 	for _, p := range extension.GetConfigPostProcessors() {
-		p.PostProcessServiceConfig(c.Params)
+		p.PostProcessServiceConfig(c)
 	}
 }
