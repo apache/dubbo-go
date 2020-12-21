@@ -59,7 +59,7 @@ func TestParseRule(t *testing.T) {
 
 func TestNewConditionRouter(t *testing.T) {
 	url, _ := common.NewURL(`condition://0.0.0.0:?application=mock-app&category=routers&force=true&priority=1&router=condition&rule=YSAmIGMgPT4gYiAmIGQ%3D`)
-	router, err := NewConditionRouter(&url)
+	router, err := NewConditionRouter(url)
 	assert.Nil(t, err)
 	assert.Equal(t, true, router.Enabled())
 	assert.Equal(t, true, router.Force)
@@ -73,16 +73,16 @@ func TestNewConditionRouter(t *testing.T) {
 	assert.Error(t, err)
 
 	url, _ = common.NewURL(`condition://0.0.0.0:?application=mock-app&category=routers&force=true&priority=1&router=condition&rule=YSAmT4gYiAmIGQ%3D`)
-	router, err = NewConditionRouter(&url)
+	router, err = NewConditionRouter(url)
 	assert.Error(t, err)
 
 	url, _ = common.NewURL(`condition://0.0.0.0:?application=mock-app&category=routers&force=true&router=condition&rule=YSAmIGMgPT4gYiAmIGQ%3D`)
-	router, err = NewConditionRouter(&url)
+	router, err = NewConditionRouter(url)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(150), router.Priority())
 
 	url, _ = common.NewURL(`condition://0.0.0.0:?category=routers&force=true&interface=mock-service&router=condition&rule=YSAmIGMgPT4gYiAmIGQ%3D`)
-	router, err = NewConditionRouter(&url)
+	router, err = NewConditionRouter(url)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(140), router.Priority())
 }

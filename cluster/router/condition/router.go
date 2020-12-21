@@ -138,8 +138,8 @@ func (c *ConditionRouter) Priority() int64 {
 }
 
 // URL Return URL in condition router
-func (c *ConditionRouter) URL() common.URL {
-	return *c.url
+func (c *ConditionRouter) URL() *common.URL {
+	return c.url
 }
 
 // Enabled Return is condition router is enabled
@@ -173,7 +173,7 @@ func (c *ConditionRouter) Route(invokers *roaring.Bitmap, cache router.Cache, ur
 		index := iter.Next()
 		invoker := cache.GetInvokers()[index]
 		invokerUrl := invoker.GetUrl()
-		isMatchThen := c.MatchThen(&invokerUrl, url)
+		isMatchThen := c.MatchThen(invokerUrl, url)
 		if isMatchThen {
 			result.Add(index)
 		}

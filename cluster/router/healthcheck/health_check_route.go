@@ -106,8 +106,8 @@ func (r *HealthCheckRouter) Priority() int64 {
 }
 
 // URL Return URL in router
-func (r *HealthCheckRouter) URL() common.URL {
-	return *r.url
+func (r *HealthCheckRouter) URL() *common.URL {
+	return r.url
 }
 
 // HealthyChecker returns the HealthChecker bound to this HealthCheckRouter

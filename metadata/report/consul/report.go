@@ -61,7 +61,7 @@ func (m *consulMetadataReport) StoreConsumerMetadata(consumerMetadataIdentifier 
 }
 
 // SaveServiceMetadata saves the metadata.
-func (m *consulMetadataReport) SaveServiceMetadata(metadataIdentifier *identifier.ServiceMetadataIdentifier, url common.URL) error {
+func (m *consulMetadataReport) SaveServiceMetadata(metadataIdentifier *identifier.ServiceMetadataIdentifier, url *common.URL) error {
 	kv := &consul.KVPair{Key: metadataIdentifier.GetIdentifierKey(), Value: []byte(url.String())}
 	_, err := m.client.KV().Put(kv, nil)
 	return err

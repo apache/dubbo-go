@@ -55,7 +55,7 @@ type RouterChain struct {
 
 	mutex sync.RWMutex
 
-	url common.URL
+	url *common.URL
 
 	// The times of address notification since last update for address cache
 	count int64
@@ -65,6 +65,8 @@ type RouterChain struct {
 	notify chan struct{}
 	// Address cache
 	cache atomic.Value
+	// init
+	init sync.Once
 }
 
 // Route Loop routers in RouterChain and call Route method to determine the target invokers list.
@@ -111,6 +113,13 @@ func (c *RouterChain) SetInvokers(invokers []protocol.Invoker) {
 	c.invokers = invokers
 	c.mutex.Unlock()
 
+	// it should trigger init router for first call
+	c.init.Do(func() {
+		go func() {
+			c.notify <- struct{}{}
+		}()
+	})
+
 	c.count++
 	now := time.Now()
 	if c.count >= countThreshold && now.Sub(c.last) >= timeThreshold {
@@ -125,8 +134,8 @@ func (c *RouterChain) SetInvokers(invokers []protocol.Invoker) {
 // loop listens on events to update the address cache when it's necessary, either when it receives notification
 // from address update, or when timeInterval exceeds.
 func (c *RouterChain) loop() {
+	ticker := time.NewTicker(timeInterval)
 	for {
-		ticker := time.NewTicker(timeInterval)
 		select {
 		case <-ticker.C:
 			c.buildCache()
@@ -186,9 +195,6 @@ func (c *RouterChain) copyInvokerIfNecessary(cache *InvokerCache) []protocol.Inv
 func (c *RouterChain) buildCache() {
 	origin := c.loadCache()
 	invokers := c.copyInvokerIfNecessary(origin)
-	if invokers == nil || len(invokers) == 0 {
-		return
-	}
 
 	var (
 		mutex sync.Mutex
@@ -215,7 +221,7 @@ func (c *RouterChain) buildCache() {
 }
 
 // URL Return URL in RouterChain
-func (c *RouterChain) URL() common.URL {
+func (c *RouterChain) URL() *common.URL {
 	return c.url
 }
 
@@ -248,7 +254,7 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 		notify:         make(chan struct{}),
 	}
 	if url != nil {
-		chain.url = *url
+		chain.url = url
 	}
 
 	go chain.loop()

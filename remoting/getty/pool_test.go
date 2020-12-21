@@ -15,35 +15,37 @@
  * limitations under the License.
  */
 
-package protocolwrapper
+package getty
 
 import (
-	"sync"
+	"testing"
+	"time"
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/protocol"
+	"github.com/stretchr/testify/assert"
 )
 
-type mockProtocolFilter struct{}
+func TestGetConnFromPool(t *testing.T) {
+	var rpcClient Client
 
-// NewMockProtocolFilter creates a new mock protocol
-func NewMockProtocolFilter() protocol.Protocol {
-	return &mockProtocolFilter{}
-}
+	clientPoll := newGettyRPCClientConnPool(&rpcClient, 1, time.Duration(5*time.Second))
 
-// Export mock service for  remote invocation
-func (pfw *mockProtocolFilter) Export(invoker protocol.Invoker) protocol.Exporter {
-	return protocol.NewBaseExporter("key", invoker, &sync.Map{})
-}
+	var conn1 gettyRPCClient
+	conn1.active = time.Now().Unix()
+	clientPoll.put(&conn1)
+	assert.Equal(t, 1, len(clientPoll.conns))
 
-// Refer a mock remote service
-func (pfw *mockProtocolFilter) Refer(url *common.URL) protocol.Invoker {
-	return protocol.NewBaseInvoker(url)
-}
-
-// Destroy will do nothing
-func (pfw *mockProtocolFilter) Destroy() {
-	return
+	var conn2 gettyRPCClient
+	conn2.active = time.Now().Unix()
+	clientPoll.put(&conn2)
+	assert.Equal(t, 1, len(clientPoll.conns))
+	conn, err := clientPoll.get()
+	assert.Nil(t, err)
+	assert.Equal(t, &conn1, conn)
+	time.Sleep(6 * time.Second)
+	conn, err = clientPoll.get()
+	assert.Nil(t, conn)
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(clientPoll.conns))
 }

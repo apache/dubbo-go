@@ -130,31 +130,30 @@ func (proto *registryProtocol) GetRegistries() []registry.Registry {
 }
 
 // Refer provider service from registry center
-func (proto *registryProtocol) Refer(url common.URL) protocol.Invoker {
+func (proto *registryProtocol) Refer(url *common.URL) protocol.Invoker {
 	var registryUrl = url
 	var serviceUrl = registryUrl.SubURL
 	if registryUrl.Protocol == constant.REGISTRY_PROTOCOL {
-		protocol := registryUrl.GetParam(constant.REGISTRY_KEY, "")
-		registryUrl.Protocol = protocol
+		registryUrl.Protocol = registryUrl.GetParam(constant.REGISTRY_KEY, "")
 	}
 
 	var reg registry.Registry
 	if regI, loaded := proto.registries.Load(registryUrl.Key()); !loaded {
-		reg = getRegistry(&registryUrl)
+		reg = getRegistry(registryUrl)
 		proto.registries.Store(registryUrl.Key(), reg)
 	} else {
 		reg = regI.(registry.Registry)
 	}
 
 	// new registry directory for store service url from registry
-	directory, err := extension.GetDefaultRegistryDirectory(&registryUrl, reg)
+	directory, err := extension.GetDefaultRegistryDirectory(registryUrl, reg)
 	if err != nil {
 		logger.Errorf("consumer service %v create registry directory error, error message is %s, and will return nil invoker!",
 			serviceUrl.String(), err.Error())
 		return nil
 	}
 
-	err = reg.Register(*serviceUrl)
+	err = reg.Register(serviceUrl)
 	if err != nil {
 		logger.Errorf("consumer service %v register registry %v error, error message is %s",
 			serviceUrl.String(), registryUrl.String(), err.Error())
@@ -194,7 +193,7 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 	}
 
 	registeredProviderUrl := getUrlToRegistry(providerUrl, registryUrl)
-	err := reg.Register(*registeredProviderUrl)
+	err := reg.Register(registeredProviderUrl)
 	if err != nil {
 		logger.Errorf("provider service %v register registry %v error, error message is %s",
 			providerUrl.Key(), registryUrl.Key(), err.Error())
@@ -241,15 +240,20 @@ func newOverrideSubscribeListener(overriderUrl *common.URL, invoker protocol.Inv
 }
 
 // Notify will be triggered when a service change notification is received.
-func (nl *overrideSubscribeListener) Notify(events ...*registry.ServiceEvent) {
+func (nl *overrideSubscribeListener) Notify(event *registry.ServiceEvent) {
+	if isMatched(event.Service, nl.url) && event.Action == remoting.EventTypeAdd {
+		nl.configurator = extension.GetDefaultConfigurator(event.Service)
+		nl.doOverrideIfNecessary()
+	}
+}
+
+func (nl *overrideSubscribeListener) NotifyAll(events []*registry.ServiceEvent, callback func()) {
+	defer callback()
 	if len(events) == 0 {
 		return
 	}
-
-	event := events[0]
-	if isMatched(&(event.Service), nl.url) && event.Action == remoting.EventTypeAdd {
-		nl.configurator = extension.GetDefaultConfigurator(&(event.Service))
-		nl.doOverrideIfNecessary()
+	for _, e := range events {
+		nl.Notify(e)
 	}
 }
 
@@ -275,9 +279,9 @@ func (nl *overrideSubscribeListener) doOverrideIfNecessary() {
 		}
 
 		if currentUrl.String() != providerUrl.String() {
-			newRegUrl := nl.originInvoker.GetUrl()
-			setProviderUrl(&newRegUrl, providerUrl)
-			nl.protocol.reExport(nl.originInvoker, &newRegUrl)
+			newRegUrl := nl.originInvoker.GetUrl().Clone()
+			setProviderUrl(newRegUrl, providerUrl)
+			nl.protocol.reExport(nl.originInvoker, newRegUrl)
 		}
 	}
 }
@@ -369,10 +373,9 @@ func getRegistryUrl(invoker protocol.Invoker) *common.URL {
 	url := invoker.GetUrl()
 	// if the protocol == registry, set protocol the registry value in url.params
 	if url.Protocol == constant.REGISTRY_PROTOCOL {
-		protocol := url.GetParam(constant.REGISTRY_KEY, "")
-		url.Protocol = protocol
+		url.Protocol = url.GetParam(constant.REGISTRY_KEY, "")
 	}
-	return &url
+	return url
 }
 
 func getProviderUrl(invoker protocol.Invoker) *common.URL {
@@ -401,7 +404,7 @@ type wrappedInvoker struct {
 func newWrappedInvoker(invoker protocol.Invoker, url *common.URL) *wrappedInvoker {
 	return &wrappedInvoker{
 		invoker:     invoker,
-		BaseInvoker: *protocol.NewBaseInvoker(*url),
+		BaseInvoker: *protocol.NewBaseInvoker(url),
 	}
 }
 

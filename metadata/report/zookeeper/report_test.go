@@ -100,7 +100,7 @@ func (suite *zookeeperMetadataReportTestSuite) testStoreConsumerMetadata() {
 	assert.NoError(suite.t, err)
 }
 
-func (suite *zookeeperMetadataReportTestSuite) testSaveServiceMetadata(url common.URL) {
+func (suite *zookeeperMetadataReportTestSuite) testSaveServiceMetadata(url *common.URL) {
 	serviceMi := newServiceMetadataIdentifier("provider")
 	err := suite.m.SaveServiceMetadata(serviceMi, url)
 	assert.NoError(suite.t, err)
@@ -119,7 +119,7 @@ func (suite *zookeeperMetadataReportTestSuite) testGetExportedURLs() {
 	assert.NoError(suite.t, err)
 }
 
-func (suite *zookeeperMetadataReportTestSuite) testSaveSubscribedData(url common.URL) {
+func (suite *zookeeperMetadataReportTestSuite) testSaveSubscribedData(url *common.URL) {
 	subscribeMi := newSubscribeMetadataIdentifier("provider")
 	urls := []string{url.String()}
 	bytes, _ := json.Marshal(urls)
@@ -153,10 +153,10 @@ func test1(t *testing.T) {
 	suite := newZookeeperMetadataReportTestSuite(t, m)
 	suite.testStoreProviderMetadata()
 	suite.testStoreConsumerMetadata()
-	suite.testSaveServiceMetadata(*url)
+	suite.testSaveServiceMetadata(url)
 	suite.testGetExportedURLs()
 	suite.testRemoveServiceMetadata()
-	suite.testSaveSubscribedData(*url)
+	suite.testSaveSubscribedData(url)
 	suite.testGetSubscribedURLs()
 	suite.testGetServiceDefinition()
 }

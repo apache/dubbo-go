@@ -392,6 +392,7 @@ func (p *gettyRPCClientPool) get() (*gettyRPCClient, error) {
 		if d := now - conn.getActive(); d > p.ttl {
 			p.remove(conn)
 			go conn.close()
+			num = len(p.conns)
 			continue
 		}
 		conn.updateActive(now) //update active time
