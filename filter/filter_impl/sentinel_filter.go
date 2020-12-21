@@ -55,35 +55,35 @@ type DubboLoggerWrapper struct {
 }
 
 func (d DubboLoggerWrapper) Debug(msg string, v ...interface{}) {
-	d.Logger.Debug(v...)
+	d.Logger.Debug(msg, v)
 }
 
 func (d DubboLoggerWrapper) Warn(msg string, keysAndValues ...interface{}) {
-	d.Logger.Warn(keysAndValues)
+	d.Logger.Warn(msg, keysAndValues)
 }
 
 func (d DubboLoggerWrapper) Error(err error, msg string, keysAndValues ...interface{}) {
-	d.Logger.Error(msg)
+	d.Logger.Error(err, msg, keysAndValues)
 }
 
 func (d DubboLoggerWrapper) Info(msg string, keysAndValues ...interface{}) {
-	d.Logger.Info(msg)
+	d.Logger.Info(msg, keysAndValues)
 }
 
 func (d DubboLoggerWrapper) DebugEnabled() bool {
-	return false
+	return true
 }
 
 func (d DubboLoggerWrapper) InfoEnabled() bool {
-	return false
+	return true
 }
 
 func (d DubboLoggerWrapper) WarnEnabled() bool {
-	return false
+	return true
 }
 
 func (d DubboLoggerWrapper) ErrorEnabled() bool {
-	return false
+	return true
 }
 
 func (d DubboLoggerWrapper) Fatal(v ...interface{}) {
