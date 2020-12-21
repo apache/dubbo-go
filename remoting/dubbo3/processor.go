@@ -122,36 +122,9 @@ func newStreamingProcessor(s *stream, pkgHandler remoting.PackageHandler, desc g
 	}, nil
 }
 
-//func (sp *streamingProcessor) processStreamingRPC(buf bytes.Buffer, service common.RPCService, header remoting.ProtocolHeader) error {
-//	readBuf := buf.Bytes()
-//
-//	pkgData := sp.pkgHandler.Frame2PkgData(readBuf)
-//
-//	descFunc := func(v interface{}) error {
-//		if err := sp.serializer.Unmarshal(pkgData, v.(proto.Message)); err != nil {
-//			return err
-//		}
-//		return nil
-//	}
-//
-//	reply, err := sp.desc.(grpc.MethodDesc).Handler(service, header.FieldToCtx(), descFunc, nil)
-//	if err != nil {
-//		return err
-//	}
-//
-//	// 这里直接调用stream上的packageHandler 的 decode函数，从msg到byte
-//	replyData, err := sp.serializer.Marshal(reply.(proto.Message))
-//	if err != nil {
-//		return err
-//	}
-//
-//	_ := sp.pkgHandler.Pkg2FrameData(replyData)
-//	return nil
-//}
-
 func (sp *streamingProcessor) runRPC() {
 	sstream := newServerStream(sp.stream, sp.serializer, sp.pkgHandler)
-	_ = sp.streamDesc.Handler(sp.stream.service, sstream)
+	go sp.streamDesc.Handler(sp.stream.service, sstream)
 }
 
 // Dubbo3GrpcService is gRPC service
