@@ -76,7 +76,7 @@ func newConsulRegistry(url *common.URL) (registry.Registry, error) {
 
 // Register register @url
 // it delegate the job to register() method
-func (r *consulRegistry) Register(url common.URL) error {
+func (r *consulRegistry) Register(url *common.URL) error {
 	var err error
 
 	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
@@ -90,7 +90,7 @@ func (r *consulRegistry) Register(url common.URL) error {
 }
 
 // register actually register the @url
-func (r *consulRegistry) register(url common.URL) error {
+func (r *consulRegistry) register(url *common.URL) error {
 	service, err := buildService(url)
 	if err != nil {
 		return err
@@ -100,7 +100,7 @@ func (r *consulRegistry) register(url common.URL) error {
 
 // UnRegister unregister the @url
 // it delegate the job to unregister() method
-func (r *consulRegistry) UnRegister(url common.URL) error {
+func (r *consulRegistry) UnRegister(url *common.URL) error {
 	var err error
 
 	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
@@ -114,7 +114,7 @@ func (r *consulRegistry) UnRegister(url common.URL) error {
 }
 
 // unregister actually unregister the @url
-func (r *consulRegistry) unregister(url common.URL) error {
+func (r *consulRegistry) unregister(url *common.URL) error {
 	return r.client.Agent().ServiceDeregister(buildId(url))
 }
 
@@ -141,7 +141,7 @@ func (r *consulRegistry) subscribe(url *common.URL, notifyListener registry.Noti
 			return
 		}
 
-		listener, err := r.getListener(*url)
+		listener, err := r.getListener(url)
 		if err != nil {
 			if !r.IsAvailable() {
 				logger.Warnf("event listener game over.")
@@ -166,14 +166,14 @@ func (r *consulRegistry) subscribe(url *common.URL, notifyListener registry.Noti
 	}
 }
 
-func (r *consulRegistry) getListener(url common.URL) (registry.Listener, error) {
-	listener, err := newConsulListener(*r.URL, url)
+func (r *consulRegistry) getListener(url *common.URL) (registry.Listener, error) {
+	listener, err := newConsulListener(r.URL, url)
 	return listener, err
 }
 
 // GetUrl get registry URL of consul registry center
-func (r *consulRegistry) GetUrl() common.URL {
-	return *r.URL
+func (r *consulRegistry) GetUrl() *common.URL {
+	return r.URL
 }
 
 // IsAvailable checks consul registry center whether is available
@@ -197,7 +197,7 @@ func (r *consulRegistry) Destroy() {
 				}
 				done <- struct{}{}
 			}()
-			if err := r.UnRegister(*r.URL); err != nil {
+			if err := r.UnRegister(r.URL); err != nil {
 				logger.Errorf("consul registry unregister with err: %s", err.Error())
 			}
 		}()

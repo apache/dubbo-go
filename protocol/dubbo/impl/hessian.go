@@ -37,8 +37,6 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
-type Object interface{}
-
 type HessianSerializer struct {
 }
 
@@ -385,7 +383,7 @@ func buildServerSidePackageBody(pkg *DubboPackage) {
 			"dubboVersion": dubboVersion,
 			"argsTypes":    argsTypes,
 			"args":         args,
-			"service":      common.ServiceMap.GetService(DUBBO, svc.Path), // path as a key
+			"service":      common.ServiceMap.GetService(DUBBO, svc.Interface, svc.Group, svc.Version), // path as a key
 			"attachments":  attachments,
 		})
 	}
@@ -474,7 +472,7 @@ func getArgType(v interface{}) string {
 		return "java.lang.String"
 	case []string:
 		return "[Ljava.lang.String;"
-	case []Object:
+	case []hessian.Object:
 		return "[Ljava.lang.Object;"
 	case map[interface{}]interface{}:
 		// return  "java.util.HashMap"
@@ -489,6 +487,10 @@ func getArgType(v interface{}) string {
 		}
 		switch t.Kind() {
 		case reflect.Struct:
+			v, ok := v.(hessian.POJO)
+			if ok {
+				return v.JavaClassName()
+			}
 			return "java.lang.Object"
 		case reflect.Slice, reflect.Array:
 			if t.Elem().Kind() == reflect.Struct {
