@@ -224,7 +224,14 @@ func WithParameterTypes(parameterTypes []reflect.Type) option {
 // WithParameterTypeNames creates option with @parameterTypeNames.
 func WithParameterTypeNames(parameterTypeNames []string) option {
 	return func(invo *RPCInvocation) {
-		invo.parameterTypeNames = parameterTypeNames
+		if len(parameterTypeNames) == 0 {
+			return
+		}
+		parameterTypeNamesTmp := make([]string, len(parameterTypeNames))
+		for k, v := range parameterTypeNames {
+			parameterTypeNamesTmp[k] = v
+		}
+		invo.parameterTypeNames = parameterTypeNamesTmp
 	}
 }
 
