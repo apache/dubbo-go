@@ -234,3 +234,8 @@ func (p *Proxy) Get() common.RPCService {
 func (p *Proxy) GetCallback() interface{} {
 	return p.callBack
 }
+
+// GetInvoker gets Invoker.
+func (p *Proxy) GetInvoker() protocol.Invoker {
+	return p.invoke
+}
