@@ -17,14 +17,16 @@
 
 package interfaces
 
-import "net/url"
+import (
+	"github.com/apache/dubbo-go/common"
+)
 
 // ConfigPostProcessor is an extension to give users a chance to customize configs against ReferenceConfig and
 // ServiceConfig during deployment time.
 type ConfigPostProcessor interface {
 	// PostProcessReferenceConfig customizes ReferenceConfig's params.
-	PostProcessReferenceConfig(url.Values)
+	PostProcessReferenceConfig(*common.URL)
 
 	// PostProcessServiceConfig customizes ServiceConfig's params.
-	PostProcessServiceConfig(url.Values)
+	PostProcessServiceConfig(*common.URL)
 }
