@@ -293,8 +293,10 @@ func isInvokersChanged(left []protocol.Invoker, right []protocol.Invoker) bool {
 
 	for _, r := range right {
 		found := false
+		rurl := r.GetUrl()
 		for _, l := range left {
-			if common.IsEquals(l.GetUrl(), r.GetUrl(), constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY) {
+			lurl := l.GetUrl()
+			if common.GetCompareURLEqualFunc()(lurl, rurl, constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY) {
 				found = true
 				break
 			}
