@@ -78,6 +78,7 @@ type ServiceConfig struct {
 	Protocols     map[string]*ProtocolConfig
 	unexported    *atomic.Bool
 	exported      *atomic.Bool
+	export        bool // a flag to control whether the current service should export or not
 	rpcService    common.RPCService
 	cacheMutex    sync.Mutex
 	cacheProtocol protocol.Protocol
@@ -112,6 +113,7 @@ func NewServiceConfig(id string, context context.Context) *ServiceConfig {
 		id:         id,
 		unexported: atomic.NewBool(false),
 		exported:   atomic.NewBool(false),
+		export:     true,
 	}
 }
 
@@ -196,6 +198,11 @@ func (c *ServiceConfig) Export() error {
 		)
 		if len(c.Tag) > 0 {
 			ivkURL.AddParam(constant.Tagkey, c.Tag)
+		}
+
+		// config post processor may set "export" to false
+		if !ivkURL.GetParamBool(constant.EXPORT_KEY, true) {
+			return nil
 		}
 
 		if len(regUrls) > 0 {
@@ -303,6 +310,9 @@ func (c *ServiceConfig) getUrlMap() url.Values {
 	// auth filter
 	urlMap.Set(constant.SERVICE_AUTH_KEY, c.Auth)
 	urlMap.Set(constant.PARAMTER_SIGNATURE_ENABLE_KEY, c.ParamSign)
+
+	// whether to export or not
+	urlMap.Set(constant.EXPORT_KEY, strconv.FormatBool(c.export))
 
 	for _, v := range c.Methods {
 		prefix := "methods." + v.Name + "."
