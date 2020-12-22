@@ -200,6 +200,8 @@ func (c *ServiceConfig) Export() error {
 			ivkURL.AddParam(constant.Tagkey, c.Tag)
 		}
 
+		// post process the URL to be exported
+		c.postProcessConfig(ivkURL)
 		// config post processor may set "export" to false
 		if !ivkURL.GetParamBool(constant.EXPORT_KEY, true) {
 			return nil
@@ -341,4 +343,11 @@ func (c *ServiceConfig) GetExportedUrls() []*common.URL {
 		return urls
 	}
 	return nil
+}
+
+// postProcessConfig asks registered ConfigPostProcessor to post-process the current ServiceConfig.
+func (c *ServiceConfig) postProcessConfig(url *common.URL) {
+	for _, p := range extension.GetConfigPostProcessors() {
+		p.PostProcessServiceConfig(url)
+	}
 }
