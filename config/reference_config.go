@@ -91,18 +91,17 @@ func (c *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error
 
 // Refer ...
 func (c *ReferenceConfig) Refer(_ interface{}) {
-	urlMap := c.getUrlMap()
-	c.postProcessConfig(urlMap)
-
 	cfgURL := common.NewURLWithOptions(
 		common.WithPath(c.InterfaceName),
 		common.WithProtocol(c.Protocol),
-		common.WithParams(urlMap),
+		common.WithParams(c.getUrlMap()),
 		common.WithParamsValue(constant.BEAN_NAME_KEY, c.id),
 	)
 	if c.ForceTag {
 		cfgURL.AddParam(constant.ForceUseTag, "true")
 	}
+
+	c.postProcessConfig(cfgURL)
 
 	if c.Url != "" {
 		// 1. user specified URL, could be peer-to-peer address, or register center's address.
@@ -254,8 +253,8 @@ func (c *ReferenceConfig) GenericLoad(id string) {
 }
 
 // postProcessConfig asks registered ConfigPostProcessor to post-process the current ReferenceConfig.
-func (c *ReferenceConfig) postProcessConfig(values url.Values) {
+func (c *ReferenceConfig) postProcessConfig(url *common.URL) {
 	for _, p := range extension.GetConfigPostProcessors() {
-		p.PostProcessReferenceConfig(values)
+		p.PostProcessReferenceConfig(url)
 	}
 }
