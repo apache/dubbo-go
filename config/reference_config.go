@@ -185,6 +185,11 @@ func (c *ReferenceConfig) GetRPCService() common.RPCService {
 	return c.pxy.Get()
 }
 
+// GetProxy gets proxy
+func (c *ReferenceConfig) GetProxy() *proxy.Proxy {
+	return c.pxy
+}
+
 func (c *ReferenceConfig) getUrlMap() url.Values {
 	urlMap := url.Values{}
 	//first set user params
