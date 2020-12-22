@@ -339,5 +339,56 @@ func TestColonSeparatedKey(t *testing.T) {
 	assert.Equal(t, u1.ColonSeparatedKey(), u1.GetParam(constant.INTERFACE_KEY, "")+":version1:group1")
 	u1.SetParam(constant.VERSION_KEY, "")
 	assert.Equal(t, u1.ColonSeparatedKey(), u1.GetParam(constant.INTERFACE_KEY, "")+"::group1")
+}
 
+func TestCompareURLEqualFunc(t *testing.T) {
+	// test Default
+	url1, _ := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
+		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
+		"side=provider&timeout=3000&timestamp=1556509797245")
+	url2, _ := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
+		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
+		"side=provider&timeout=3000&timestamp=155650979798")
+	assert.False(t, GetCompareURLEqualFunc()(url1, url2))
+	assert.True(t, GetCompareURLEqualFunc()(url1, url2, constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY))
+
+	// test custom
+	url1, _ = NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
+		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
+		"side=provider&timeout=3000&timestamp=1556509797245")
+	url2, _ = NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
+		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
+		"side=provider&timeout=3000&timestamp=155650979798")
+	assert.True(t, GetCompareURLEqualFunc()(url1, url2, constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY))
+	SetCompareURLEqualFunc(CustomCompareURLEqual)
+	assert.False(t, GetCompareURLEqualFunc()(url1, url2))
+	assert.False(t, GetCompareURLEqualFunc()(url1, url2, constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY))
+
+	url1, _ = NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
+		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
+		"side=provider&timeout=3000")
+	url2, _ = NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
+		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
+		"side=provider&timeout=3000")
+	assert.True(t, GetCompareURLEqualFunc()(url1, url2))
+	assert.True(t, GetCompareURLEqualFunc()(url1, url2, constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY))
+	SetCompareURLEqualFunc(CustomCompareURLEqual)
+	assert.True(t, GetCompareURLEqualFunc()(url1, url2))
+	assert.True(t, GetCompareURLEqualFunc()(url1, url2, constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY))
+}
+
+func CustomCompareURLEqual(l *URL, r *URL, execludeParam ...string) bool {
+	return l.PrimitiveURL == r.PrimitiveURL
 }
