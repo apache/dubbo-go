@@ -435,6 +435,13 @@ func (c *URL) SetParam(key string, value string) {
 	c.params.Set(key, value)
 }
 
+// DelParam will delete the given key from the url
+func (c *URL) DelParam(key string) {
+	c.paramsLock.Lock()
+	defer c.paramsLock.Unlock()
+	c.params.Del(key)
+}
+
 // ReplaceParams will replace the URL.params
 // usually it should only be invoked when you want to modify an url, such as MergeURL
 func (c *URL) ReplaceParams(param url.Values) {
