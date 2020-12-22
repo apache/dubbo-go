@@ -228,9 +228,7 @@ func WithParameterTypeNames(parameterTypeNames []string) option {
 			return
 		}
 		parameterTypeNamesTmp := make([]string, len(parameterTypeNames))
-		for k, v := range parameterTypeNames {
-			parameterTypeNamesTmp[k] = v
-		}
+		copy(parameterTypeNamesTmp, parameterTypeNames)
 		invo.parameterTypeNames = parameterTypeNamesTmp
 	}
 }
