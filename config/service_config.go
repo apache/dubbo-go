@@ -103,6 +103,7 @@ func (c *ServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	}
 	c.exported = atomic.NewBool(false)
 	c.unexported = atomic.NewBool(false)
+	c.export = true
 	return nil
 }
 
