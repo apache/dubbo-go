@@ -198,6 +198,8 @@ func (c *ServiceConfig) Export() error {
 			ivkURL.AddParam(constant.Tagkey, c.Tag)
 		}
 
+		c.postProcessConfig(ivkURL)
+
 		if len(regUrls) > 0 {
 			c.cacheMutex.Lock()
 			if c.cacheProtocol == nil {
@@ -331,4 +333,11 @@ func (c *ServiceConfig) GetExportedUrls() []*common.URL {
 		return urls
 	}
 	return nil
+}
+
+// postProcessConfig asks registered ConfigPostProcessor to post-process the current ServiceConfig.
+func (c *ServiceConfig) postProcessConfig(url *common.URL) {
+	for _, p := range extension.GetConfigPostProcessors() {
+		p.PostProcessServiceConfig(url)
+	}
 }
