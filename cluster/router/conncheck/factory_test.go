@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package healthcheck
+package conncheck
 
 import (
 	"context"
