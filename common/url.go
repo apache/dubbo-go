@@ -109,7 +109,7 @@ type URL struct {
 	noCopy noCopy
 
 	baseUrl
-	Path     string // like  /com.ikurento.dubbo.UserProvider3
+	Path     string // like  /com.ikurento.dubbo.UserProvider
 	Username string
 	Password string
 	Methods  []string
@@ -317,6 +317,8 @@ func isMatchCategory(category1 string, category2 string) bool {
 }
 
 func (c *URL) String() string {
+	c.paramsLock.Lock()
+	defer c.paramsLock.Unlock()
 	var buf strings.Builder
 	if len(c.Username) == 0 && len(c.Password) == 0 {
 		buf.WriteString(fmt.Sprintf("%s://%s:%s%s?", c.Protocol, c.Ip, c.Port, c.Path))
