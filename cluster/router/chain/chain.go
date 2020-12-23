@@ -65,6 +65,8 @@ type RouterChain struct {
 	notify chan struct{}
 	// Address cache
 	cache atomic.Value
+	// init
+	init sync.Once
 }
 
 // Route Loop routers in RouterChain and call Route method to determine the target invokers list.
@@ -110,6 +112,13 @@ func (c *RouterChain) SetInvokers(invokers []protocol.Invoker) {
 	c.mutex.Lock()
 	c.invokers = invokers
 	c.mutex.Unlock()
+
+	// it should trigger init router for first call
+	c.init.Do(func() {
+		go func() {
+			c.notify <- struct{}{}
+		}()
+	})
 
 	c.count++
 	now := time.Now()
@@ -186,9 +195,6 @@ func (c *RouterChain) copyInvokerIfNecessary(cache *InvokerCache) []protocol.Inv
 func (c *RouterChain) buildCache() {
 	origin := c.loadCache()
 	invokers := c.copyInvokerIfNecessary(origin)
-	if invokers == nil || len(invokers) == 0 {
-		return
-	}
 
 	var (
 		mutex sync.Mutex
@@ -287,8 +293,10 @@ func isInvokersChanged(left []protocol.Invoker, right []protocol.Invoker) bool {
 
 	for _, r := range right {
 		found := false
+		rurl := r.GetUrl()
 		for _, l := range left {
-			if common.IsEquals(l.GetUrl(), r.GetUrl(), constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY) {
+			lurl := l.GetUrl()
+			if common.GetCompareURLEqualFunc()(lurl, rurl, constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY) {
 				found = true
 				break
 			}
