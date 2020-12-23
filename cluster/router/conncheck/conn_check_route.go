@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package healthcheck
+package conncheck
 
 import (
 	"github.com/RoaringBitmap/roaring"
@@ -82,11 +82,12 @@ func (r *ConnCheckRouter) ShouldPool() bool {
 	return true
 }
 
+// Name get name of ConnCheckerRouter
 func (r *ConnCheckRouter) Name() string {
 	return name
 }
 
-// Priority
+// Priority get Router priority level
 func (r *ConnCheckRouter) Priority() int64 {
 	return 0
 }
