@@ -18,8 +18,8 @@
 package protocol
 
 import (
-	"fmt"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -230,7 +230,7 @@ func TryRefreshBlackList() {
 		}()
 
 		ivks := GetBlackListInvokers(constant.DEFAULT_BLACK_LIST_RECOVER_BLOCK)
-		fmt.Println("blackList len = ", len(ivks))
+		logger.Debug("blackList len = ", len(ivks))
 
 		for i := 0; i < 3; i++ {
 			wg.Add(1)
