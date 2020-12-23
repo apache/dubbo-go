@@ -192,19 +192,23 @@ func CleanAllStatus() {
 	invokerBlackList.Range(delete3)
 }
 
+// GetInvokerHealthyStatus get invoker's conn healthy status
 func GetInvokerHealthyStatus(invoker Invoker) bool {
 	_, found := invokerBlackList.Load(invoker.GetUrl().Key())
 	return !found
 }
 
+// SetInvokerUnhealthyStatus add target invoker to black list
 func SetInvokerUnhealthyStatus(invoker Invoker) {
 	invokerBlackList.Store(invoker.GetUrl().Key(), invoker)
 }
 
+// RemoveInvokerUnhealthyStatus remove unhealthy status of target invoker from blacklist
 func RemoveInvokerUnhealthyStatus(invoker Invoker) {
 	invokerBlackList.Delete(invoker.GetUrl().Key())
 }
 
+// GetBlackListInvokers get at most size of blockSize invokers from black list
 func GetBlackListInvokers(blockSize int) []Invoker {
 	resultIvks := make([]Invoker, 0, 16)
 	invokerBlackList.Range(func(k, v interface{}) bool {
@@ -222,6 +226,8 @@ func RemoveUrlKeyUnhealthyStatus(key string) {
 	invokerBlackList.Delete(key)
 }
 
+// TryRefreshBlackList start 3 gr to check at most block=16 invokers in black list
+// if is available remove from black list
 func TryRefreshBlackList() {
 	if atomic.CompareAndSwapInt32(&blackListRefreshing, 0, 1) {
 		wg := sync.WaitGroup{}
