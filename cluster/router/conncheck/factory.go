@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package healthcheck
+package conncheck
 
 import (
 	"github.com/apache/dubbo-go/cluster/router"
@@ -28,16 +28,17 @@ func init() {
 	extension.SetRouterFactory(constant.ConnCheckRouterName, newConnCheckRouteFactory)
 }
 
-// ConnCheckRouteFactory
+// ConnCheckRouteFactory is the factory to create conn check router, it aims at filter ip with unhealthy status
+// the unhealthy status is storied in protocol/rpc_status.go with sync.Map
 type ConnCheckRouteFactory struct {
 }
 
-// newHealthCheckRouteFactory construct a new HealthCheckRouteFactory
+// newConnCheckRouteFactory construct a new ConnCheckRouteFactory
 func newConnCheckRouteFactory() router.PriorityRouterFactory {
 	return &ConnCheckRouteFactory{}
 }
 
-// NewPriorityRouter construct a new NewHealthCheckRouter via url
+// NewPriorityRouter construct a new NewConnCheckRouter via url
 func (f *ConnCheckRouteFactory) NewPriorityRouter(url *common.URL) (router.PriorityRouter, error) {
 	return NewConnCheckRouter(url)
 }
