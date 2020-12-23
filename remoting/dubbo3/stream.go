@@ -2,8 +2,8 @@ package dubbo3
 
 import (
 	"bytes"
+	"fmt"
 	"google.golang.org/grpc"
-	"sync"
 )
 import (
 	"github.com/apache/dubbo-go/common"
@@ -23,7 +23,6 @@ type BufferMsg struct {
 
 type MsgBuffer struct {
 	c   chan BufferMsg
-	mu  sync.Mutex
 	err error
 }
 
@@ -35,20 +34,7 @@ func newRecvBuffer() *MsgBuffer {
 }
 
 func (b *MsgBuffer) put(r BufferMsg) {
-	b.mu.Lock()
-	if b.err != nil {
-		b.mu.Unlock()
-		// An error had occurred earlier, don't accept more
-		// data or errors.
-		return
-	}
-	select {
-	case b.c <- r:
-		b.mu.Unlock()
-		return
-	default:
-	}
-	b.mu.Unlock()
+	b.c <- r
 }
 
 // get returns the channel that receives a recvMsg in the buffer.
@@ -59,70 +45,116 @@ func (b *MsgBuffer) get() <-chan BufferMsg {
 	return b.c
 }
 
-type stream struct {
-	ID        uint32
-	recvBuf   *MsgBuffer
-	sendBuf   *MsgBuffer
-	processor processor
-	url       *common.URL
-	header    remoting.ProtocolHeader
-	desc      interface{}
-	service   common.RPCService
+type stream interface {
+	putRecv(data []byte)
+	putSend(data []byte)
+	getSend() <-chan BufferMsg
+	getRecv() <-chan BufferMsg
 }
 
-func newStream(header remoting.ProtocolHeader, desc interface{}, url *common.URL, service common.RPCService) (*stream, error) {
-	pkgHandler, err := remoting.GetPackagerHandler(url.Protocol)
-	if err != nil {
-		logger.Error("GetPkgHandler error with err = ", err)
-		return nil, err
-	}
-
-	if err != nil {
-		logger.Error("new stream error with err = ", err)
-		return nil, err
-	}
-
-	// stream and pkgHeader are the same level
-	newStream := &stream{
-		url:     url,
-		ID:      header.GetStreamID(),
-		recvBuf: newRecvBuffer(),
-		sendBuf: newRecvBuffer(),
-		header:  header,
-		desc:    desc,
-		service: service,
-	}
-
-	if methodDesc, ok := desc.(grpc.MethodDesc); ok {
-		// pkgHandler and processor are the same level
-		newStream.processor, err = newUnaryProcessor(newStream, pkgHandler, methodDesc)
-	} else if streamDesc, ok := desc.(grpc.StreamDesc); ok {
-		newStream.processor, err = newStreamingProcessor(newStream, pkgHandler, streamDesc)
-	} else {
-		logger.Error("grpc desc invalid:", desc)
-		return nil, nil
-	}
-
-	newStream.processor.runRPC()
-	return newStream, nil
+type baseStream struct {
+	ID      uint32
+	recvBuf *MsgBuffer
+	sendBuf *MsgBuffer
+	url     *common.URL
+	header  remoting.ProtocolHeader
+	desc    interface{}
+	service common.RPCService
 }
 
-func (s *stream) putRecv(data []byte) {
+func (s *baseStream) putRecv(data []byte) {
+	fmt.Println("recvBuf put = ", data)
 	s.recvBuf.put(BufferMsg{
 		buffer: bytes.NewBuffer(data),
 	})
 }
 
-func (s *stream) putSend(data []byte) {
+func (s *baseStream) putSend(data []byte) {
 	s.sendBuf.put(BufferMsg{
 		buffer: bytes.NewBuffer(data),
 	})
 }
 
-func (s *stream) getRecv() <-chan BufferMsg {
+func (s *baseStream) getRecv() <-chan BufferMsg {
 	return s.recvBuf.get()
 }
 
-func (s *stream) getSend() <-chan BufferMsg {
+func (s *baseStream) getSend() <-chan BufferMsg {
 	return s.sendBuf.get()
+}
+
+func newBaseStream(streamID uint32, desc interface{}, url *common.URL, service common.RPCService) (*baseStream, error) {
+	// stream and pkgHeader are the same level
+	newStream := &baseStream{
+		url:     url,
+		ID:      streamID,
+		recvBuf: newRecvBuffer(),
+		sendBuf: newRecvBuffer(),
+		desc:    desc,
+		service: service,
+	}
+
+	return newStream, nil
+}
+
+type serverStream struct {
+	baseStream
+	processor processor
+	header    remoting.ProtocolHeader
+}
+
+func newServerStream(header remoting.ProtocolHeader, desc interface{}, url *common.URL, service common.RPCService) (*serverStream, error) {
+	baseStream, err := newBaseStream(header.GetStreamID(), desc, url, service)
+	if err != nil {
+		return nil, err
+	}
+
+	serverStream := &serverStream{
+		baseStream: *baseStream,
+		header:     header,
+	}
+	pkgHandler, err := remoting.GetPackagerHandler(url.Protocol)
+	if err != nil {
+		logger.Error("GetPkgHandler error with err = ", err)
+		return nil, err
+	}
+	if methodDesc, ok := desc.(grpc.MethodDesc); ok {
+		// pkgHandler and processor are the same level
+		serverStream.processor, err = newUnaryProcessor(serverStream, pkgHandler, methodDesc)
+	} else if streamDesc, ok := desc.(grpc.StreamDesc); ok {
+		serverStream.processor, err = newStreamingProcessor(serverStream, pkgHandler, streamDesc)
+	} else {
+		logger.Error("grpc desc invalid:", desc)
+		return nil, nil
+	}
+
+	serverStream.processor.runRPC()
+
+	return serverStream, nil
+}
+
+func (s *serverStream) getService() common.RPCService {
+	return s.service
+}
+
+func (s *serverStream) getHeader() remoting.ProtocolHeader {
+	return s.header
+}
+
+func (s *serverStream) getID() uint32 {
+	return s.ID
+}
+
+type clientStream struct {
+	baseStream
+}
+
+func newClientStream(streamID uint32, desc interface{}, url *common.URL) (*clientStream, error) {
+	baseStream, err := newBaseStream(streamID, desc, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &clientStream{
+		baseStream: *baseStream,
+	}, nil
 }

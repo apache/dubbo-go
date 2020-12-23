@@ -40,7 +40,7 @@ func (t *TripleConn) Invoke(ctx context.Context, method string, args, reply inte
 
 func (t *TripleConn) NewStream(ctx context.Context, desc *grpc.StreamDesc, method string, opts ...grpc.CallOption) (grpc.ClientStream, error) {
 	// todo use dubbo3 network
-	return nil, nil
+	return t.client.StreamRequest(ctx, desc, method)
 }
 
 func NewTripleConn(client *TripleClient) *TripleConn {
@@ -83,7 +83,7 @@ func (t *TripleClient) Connect(url *common.URL) error {
 	}
 	t.addr = url.Location
 	t.conn = conn
-	t.h2Controller, err = NewH2Controller(t.conn, false, nil, nil)
+	t.h2Controller, err = NewH2Controller(t.conn, false, nil, url)
 	if err != nil {
 		return err
 	}
@@ -100,6 +100,10 @@ func (t *TripleClient) Request(ctx context.Context, method string, arg, reply in
 		return err
 	}
 	return nil
+}
+
+func (t *TripleClient) StreamRequest(ctx context.Context, desc *grpc.StreamDesc, method string) (grpc.ClientStream, error) {
+	return t.h2Controller.StreamInvoke(ctx, desc, method)
 }
 
 func (t *TripleClient) Close() {

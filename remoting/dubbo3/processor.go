@@ -19,7 +19,7 @@ type processor interface {
 }
 
 type baseProcessor struct {
-	stream                *stream
+	stream                *serverStream
 	pkgHandler            remoting.PackageHandler
 	readWriteMaxBufferLen uint32 // useless
 	serializer            remoting.Dubbo3Serializer
@@ -31,7 +31,7 @@ type unaryProcessor struct {
 }
 
 // protoc config参数增加,对codec进行选择
-func newUnaryProcessor(s *stream, pkgHandler remoting.PackageHandler, desc grpc.MethodDesc) (processor, error) {
+func newUnaryProcessor(s *serverStream, pkgHandler remoting.PackageHandler, desc grpc.MethodDesc) (processor, error) {
 	serilizer, err := remoting.GetDubbo3Serializer(defaultSerilization)
 	if err != nil {
 		logger.Error("newProcessor with serlizationg ", defaultSerilization, " error")
@@ -88,7 +88,7 @@ func (s *unaryProcessor) runRPC() {
 			if recvMsg.err != nil {
 				continue
 			}
-			rspData, err := s.processUnaryRPC(*recvMsg.buffer, s.stream.service, s.stream.header)
+			rspData, err := s.processUnaryRPC(*recvMsg.buffer, s.stream.getService(), s.stream.getHeader())
 			if err != nil {
 				logger.Error("error ,s.processUnaryRPC err = ", err)
 				continue
@@ -104,7 +104,7 @@ type streamingProcessor struct {
 	streamDesc grpc.StreamDesc
 }
 
-func newStreamingProcessor(s *stream, pkgHandler remoting.PackageHandler, desc grpc.StreamDesc) (processor, error) {
+func newStreamingProcessor(s *serverStream, pkgHandler remoting.PackageHandler, desc grpc.StreamDesc) (processor, error) {
 	serilizer, err := remoting.GetDubbo3Serializer(defaultSerilization)
 	if err != nil {
 		logger.Error("newProcessor with serlizationg ", defaultSerilization, " error")
@@ -123,8 +123,8 @@ func newStreamingProcessor(s *stream, pkgHandler remoting.PackageHandler, desc g
 }
 
 func (sp *streamingProcessor) runRPC() {
-	sstream := newServerStream(sp.stream, sp.serializer, sp.pkgHandler)
-	go sp.streamDesc.Handler(sp.stream.service, sstream)
+	serverUserstream := newServerUserStream(sp.stream, sp.serializer, sp.pkgHandler)
+	go sp.streamDesc.Handler(sp.stream.getService(), serverUserstream)
 }
 
 // Dubbo3GrpcService is gRPC service

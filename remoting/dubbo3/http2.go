@@ -28,7 +28,7 @@ type H2Controller struct {
 	rawFramer *h2.Framer
 	isServer  bool
 
-	streamMap map[uint32]*stream
+	streamMap map[uint32]stream
 	mdMap     map[string]grpc.MethodDesc
 	strMap    map[string]grpc.StreamDesc
 	url       *common.URL
@@ -77,7 +77,7 @@ func NewH2Controller(conn net.Conn, isServer bool, service common.RPCService, ur
 		conn:      conn,
 		url:       url,
 		isServer:  isServer,
-		streamMap: make(map[uint32]*stream, 8),
+		streamMap: make(map[uint32]stream, 8),
 		mdMap:     mdMap,
 		strMap:    strMap,
 		service:   service,
@@ -159,10 +159,60 @@ func (h *H2Controller) H2ShakeHand() error {
 		}
 	}
 	return nil
+}
+
+func (h *H2Controller) runSendReqAndRecv(stream *clientStream) error {
+	sendChan := stream.getSend()
+
+	go func() {
+		for {
+			fm, err := h.rawFramer.ReadFrame()
+			if err != nil {
+				logger.Error("unary invoke read frame error = ", err)
+				break
+			}
+			switch fm := fm.(type) {
+			case *h2.MetaHeadersFrame:
+				id := fm.StreamID
+				fmt.Println("MetaHeader frame = ", fm.String(), "id = ", id)
+				if fm.Flags.Has(h2.FlagDataEndStream) {
+					return
+				}
+			case *h2.DataFrame:
+				data := make([]byte, len(fm.Data()))
+				copy(data, fm.Data())
+				stream.recvBuf.put(BufferMsg{
+					buffer: bytes.NewBuffer(data),
+				})
+				//stream.putRecv(data)
+			case *h2.RSTStreamFrame:
+				fmt.Println("RSTStreamFrame")
+			case *h2.SettingsFrame:
+				fmt.Println("SettingsFrame frame = ", fm.String())
+			case *h2.PingFrame:
+				fmt.Println("PingFrame")
+			case *h2.WindowUpdateFrame:
+				fmt.Println("WindowUpdateFrame")
+			case *h2.GoAwayFrame:
+				fmt.Println("GoAwayFrame")
+				// TODO: Handle GoAway from the client appropriately.
+			default:
+				fmt.Println("default = %+v", fm)
+			}
+		}
+	}()
+
+	for {
+		sendMsg := <-sendChan
+		sendData := sendMsg.buffer.Bytes()
+		if err := h.rawFramer.WriteData(stream.ID, false, sendData); err != nil {
+			return err
+		}
+	}
 
 }
 
-func (h *H2Controller) runSendRsp(stream *stream) {
+func (h *H2Controller) runSendRsp(stream *serverStream) {
 	sendChan := stream.getSend()
 	for {
 		sendMsg := <-sendChan
@@ -182,17 +232,17 @@ func (h *H2Controller) runSendRsp(stream *stream) {
 		hflen := buf.Len()
 		hfData := buf.Next(hflen)
 
-		logger.Debug("stream id = ", stream.ID)
+		logger.Debug("server send stream id = ", stream.getID())
 
 		if err := h.rawFramer.WriteHeaders(h2.HeadersFrameParam{
-			StreamID:      stream.ID,
+			StreamID:      stream.getID(),
 			EndHeaders:    true,
 			BlockFragment: hfData,
 			EndStream:     false,
 		}); err != nil {
 			logger.Error("error: write rsp header err = ", err)
 		}
-		if err := h.rawFramer.WriteData(stream.ID, false, sendData); err != nil {
+		if err := h.rawFramer.WriteData(stream.getID(), false, sendData); err != nil {
 			logger.Error("error: write rsp data err =", err)
 		}
 
@@ -207,8 +257,9 @@ func (h *H2Controller) runSendRsp(stream *stream) {
 			}
 		}
 		hfData = buf.Next(buf.Len())
+		// todo now it only send one then close , not stream
 		h.rawFramer.WriteHeaders(h2.HeadersFrameParam{
-			StreamID:      stream.ID,
+			StreamID:      stream.getID(),
 			EndHeaders:    true,
 			BlockFragment: hfData,
 			EndStream:     true,
@@ -216,7 +267,7 @@ func (h *H2Controller) runSendRsp(stream *stream) {
 	}
 }
 
-func (h *H2Controller) run() {
+func (h *H2Controller) serverRun() {
 	var id uint32
 	for {
 		fm, err := h.rawFramer.ReadFrame()
@@ -255,7 +306,7 @@ func (h *H2Controller) run() {
 
 func (h *H2Controller) handleMetaHeaderFrame(metaHeaderFrame *h2.MetaHeadersFrame) {
 	header := h.handler.ReadFromH2MetaHeader(metaHeaderFrame)
-	h.addStream(header)
+	h.addServerStream(header)
 }
 
 func (h *H2Controller) handleDataFrame(fm *h2.DataFrame) {
@@ -263,7 +314,7 @@ func (h *H2Controller) handleDataFrame(fm *h2.DataFrame) {
 	h.streamMap[fm.StreamID].putRecv(fm.Data())
 }
 
-func (h *H2Controller) addStream(data remoting.ProtocolHeader) error {
+func (h *H2Controller) addServerStream(data remoting.ProtocolHeader) error {
 	methodName := strings.Split(data.GetMethod(), "/")[2]
 	md, okm := h.mdMap[methodName]
 	streamd, oks := h.strMap[methodName]
@@ -271,20 +322,67 @@ func (h *H2Controller) addStream(data remoting.ProtocolHeader) error {
 		logger.Errorf("method name %s not found in desc", methodName)
 		return perrors.New(fmt.Sprintf("method name %s not found in desc", methodName))
 	}
-	var newstm *stream
+	var newstm *serverStream
 	var err error
 	if okm {
-		newstm, err = newStream(data, md, h.url, h.service)
+		newstm, err = newServerStream(data, md, h.url, h.service)
 	} else {
-		newstm, err = newStream(data, streamd, h.url, h.service)
+		newstm, err = newServerStream(data, streamd, h.url, h.service)
 	}
 
 	if err != nil {
 		return err
 	}
 	h.streamMap[data.GetStreamID()] = newstm
-	go h.runSendRsp(h.streamMap[data.GetStreamID()])
+	go h.runSendRsp(newstm)
 	return nil
+}
+
+func (h *H2Controller) StreamInvoke(ctx context.Context, desc *grpc.StreamDesc, method string) (grpc.ClientStream, error) {
+	// metadata header
+	handler, err := remoting.GetProtocolHeaderHandler(h.url.Protocol)
+	if err != nil {
+		return nil, err
+	}
+	h.url.SetParam(":path", method)
+	headerFields := handler.WriteHeaderField(h.url, ctx)
+	var buf bytes.Buffer
+	enc := hpack.NewEncoder(&buf)
+	for _, f := range headerFields {
+		if err := enc.WriteField(f); err != nil {
+			logger.Error("error: enc.WriteField err = ", err)
+		} else {
+			logger.Debug("encode field f = ", f.Name, " ", f.Value, " success")
+		}
+	}
+	hflen := buf.Len()
+	hfData := buf.Next(hflen)
+
+	// todo rpcID change
+	id := uint32(1)
+	if err := h.rawFramer.WriteHeaders(h2.HeadersFrameParam{
+		StreamID:      id,
+		EndHeaders:    true,
+		BlockFragment: hfData,
+		EndStream:     false,
+	}); err != nil {
+		logger.Error("error: write rsp header err = ", err)
+		return nil, err
+	}
+	clientStream, err := newClientStream(id, desc, h.url)
+	if err != nil {
+		logger.Error("new client stream error = ", err)
+		return nil, err
+	}
+
+	serilizer, err := remoting.GetDubbo3Serializer(defaultSerilization)
+	if err != nil {
+		logger.Error("get serilizer error = ", err)
+		return nil, err
+	}
+	pkgHandler, err := remoting.GetPackagerHandler(h.url.Protocol)
+	go h.runSendReqAndRecv(clientStream)
+	return newClientUserStream(clientStream, serilizer, pkgHandler), nil
 }
 
 func (h *H2Controller) UnaryInvoke(ctx context.Context, method string, addr string, data []byte, reply interface{}, url *common.URL) error {

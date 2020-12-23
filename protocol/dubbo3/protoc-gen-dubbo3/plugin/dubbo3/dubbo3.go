@@ -137,15 +137,37 @@ func (g *dubboGrpc) generateService(file *generator.FileDescriptor, service *pb.
 	g.P(fmt.Sprintf("}"))
 
 	for _, method := range service.Method {
-		if method.GetServerStreaming() || method.GetClientStreaming() {
-			//todo streaming client stub
-			continue
-		}
-		// unary rpc method client
 		inputTypeNames := strings.Split(method.GetInputType(), ".")
 		inputTypeName := inputTypeNames[len(inputTypeNames)-1]
 		outputTypeNames := strings.Split(method.GetOutputType(), ".")
 		outputTypeName := outputTypeNames[len(outputTypeNames)-1]
+		if method.GetServerStreaming() || method.GetClientStreaming() {
+			//todo streaming client stub
+			//now we only support two way streaming
+			g.P(fmt.Sprintf("func (c *%sDubbo3Client) %s(ctx %s.Context,opt ...grpc.CallOption) (%s, error) {",
+				lowerServName, method.GetName(), contextPkg, servName+"_"+method.GetName()+"Client"))
+			// todo client conn impl
+			g.P(fmt.Sprintf("stream, err := c.cc.NewStream(ctx, &_Greeter_serviceDesc.Streams[0], \"/protobuf.Greeter/SayHello\", opt...)"))
+			g.P("if err != nil {")
+			g.P("return nil, err")
+			g.P("}")
+			g.P(fmt.Sprintf("x := &%s%sClient{stream}", lowerServName, method.GetName()))
+			g.P("return x, nil")
+			g.P("}")
+			continue
+			/*
+				func (c *greeterDubbo3Client) SayHello(ctx context.Context, opts ...grpc.CallOption) (Greeter_SayHelloClient, error){
+					// 这里return的是我们定义的stream
+					stream, err := c.cc.NewStream(ctx, &_Greeter_serviceDesc.Streams[0], "/protobuf.Greeter/SayHello", opts...)
+					if err != nil {
+						return nil, err
+					}
+					x := &greeterSayHelloClient{stream}
+					return x, nil
+				}
+			*/
+		}
+		// unary rpc method client
 		g.P(fmt.Sprintf("func (c *%sDubbo3Client) %s(ctx %s.Context, in *%s, opt ...grpc.CallOption) (*%s, error) {",
 			lowerServName, method.GetName(), contextPkg, inputTypeName, outputTypeName))
 		g.P(fmt.Sprintf("out := new(%s)", outputTypeName))

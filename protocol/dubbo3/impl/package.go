@@ -2,6 +2,7 @@ package impl
 
 import (
 	"encoding/binary"
+	"fmt"
 )
 
 import (
@@ -18,6 +19,7 @@ type TriplePackageHandler struct {
 
 func (t *TriplePackageHandler) Frame2PkgData(frameData []byte) []byte {
 	lineHeader := frameData[:5]
+	fmt.Println("%+v", lineHeader)
 	length := binary.BigEndian.Uint32(lineHeader[1:])
 	return frameData[5 : 5+length]
 }

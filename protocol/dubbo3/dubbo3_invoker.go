@@ -3,6 +3,7 @@ package dubbo3
 import (
 	"context"
 
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -80,10 +81,14 @@ func (di *Dubbo3Invoker) Invoke(ctx context.Context, invocation protocol.Invocat
 	var in []reflect.Value
 	in = append(in, reflect.ValueOf(ctx))
 	// 这里invocation.ParameterValues()就是要传入的value
-	in = append(in, invocation.ParameterValues()...)
+	if len(invocation.ParameterValues()) == 0 {
+		in = append(in, invocation.ParameterValues()...)
+	}
 
 	methodName := invocation.MethodName()
 	method := di.client.Invoker.MethodByName(methodName)
+	fmt.Printf("in are %+v\n", in)
+	fmt.Printf("method = %+v\n", method.Type())
 	res := method.Call(in)
 
 	result.Rest = res[0]

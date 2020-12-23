@@ -61,6 +61,6 @@ func (t *TripleServer) handleRawConn(conn net.Conn) error {
 		return err
 	}
 	h2Controller.H2ShakeHand()
-	h2Controller.run()
+	h2Controller.serverRun()
 	return nil
 }
