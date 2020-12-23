@@ -38,6 +38,11 @@ func (t *TripleConn) Invoke(ctx context.Context, method string, args, reply inte
 	return nil
 }
 
+func (t *TripleConn) NewStream(ctx context.Context, desc *grpc.StreamDesc, method string, opts ...grpc.CallOption) (grpc.ClientStream, error) {
+	// todo use dubbo3 network
+	return nil, nil
+}
+
 func NewTripleConn(client *TripleClient) *TripleConn {
 	return &TripleConn{
 		client: client,

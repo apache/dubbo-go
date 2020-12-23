@@ -137,10 +137,11 @@ func (g *dubboGrpc) generateService(file *generator.FileDescriptor, service *pb.
 	g.P(fmt.Sprintf("}"))
 
 	for _, method := range service.Method {
-
 		if method.GetServerStreaming() || method.GetClientStreaming() {
+			//todo streaming client stub
 			continue
 		}
+		// unary rpc method client
 		inputTypeNames := strings.Split(method.GetInputType(), ".")
 		inputTypeName := inputTypeNames[len(inputTypeNames)-1]
 		outputTypeNames := strings.Split(method.GetOutputType(), ".")
@@ -330,6 +331,7 @@ func (g *dubboGrpc) generateServerMethod(servName, fullServName string, method *
 		g.P()
 		return hname
 	}
+	// streaming rpc
 	streamType := unexport(servName) + methName + "Server"
 	g.P("func ", hname, "(srv interface{}, stream ", grpcPkg, ".ServerStream) error {")
 	g.P("_, ok := srv.(dgrpc.DubboGrpcService)")
