@@ -81,6 +81,9 @@ func TestNacosServiceDiscovery_Destroy(t *testing.T) {
 }
 
 func TestNacosServiceDiscovery_CRUD(t *testing.T) {
+	if !checkNacosServerAlive() {
+		return
+	}
 	prepareData()
 	extension.SetEventDispatcher("mock", func() observer.EventDispatcher {
 		return &dispatcher.MockEventDispatcher{}

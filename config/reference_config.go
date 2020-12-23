@@ -41,31 +41,30 @@ import (
 
 // ReferenceConfig is the configuration of service consumer
 type ReferenceConfig struct {
-	context           context.Context
-	pxy               *proxy.Proxy
-	id                string
-	InterfaceName     string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
-	Check             *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
-	Url               string            `yaml:"url"  json:"url,omitempty" property:"url"`
-	Filter            string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	Protocol          string            `default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	Registry          string            `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
-	Cluster           string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
-	Loadbalance       string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
-	Retries           string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
-	Group             string            `yaml:"group"  json:"group,omitempty" property:"group"`
-	Version           string            `yaml:"version"  json:"version,omitempty" property:"version"`
-	ProvideBy         string            `yaml:"provide_by"  json:"provide_by,omitempty" property:"provide_by"`
-	Methods           []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
-	Async             bool              `yaml:"async"  json:"async,omitempty" property:"async"`
-	Params            map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
-	invoker           protocol.Invoker
-	urls              []*common.URL
-	Generic           bool   `yaml:"generic"  json:"generic,omitempty" property:"generic"`
-	Sticky            bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
-	RequestTimeout    string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
-	ForceTag          bool   `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
-	HealthCheckEnable bool   `yaml:"health_check" json:"health_check,omitempty" property:"health_check"`
+	context        context.Context
+	pxy            *proxy.Proxy
+	id             string
+	InterfaceName  string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
+	Check          *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
+	Url            string            `yaml:"url"  json:"url,omitempty" property:"url"`
+	Filter         string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	Protocol       string            `default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	Registry       string            `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
+	Cluster        string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
+	Loadbalance    string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
+	Retries        string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
+	Group          string            `yaml:"group"  json:"group,omitempty" property:"group"`
+	Version        string            `yaml:"version"  json:"version,omitempty" property:"version"`
+	ProvideBy      string            `yaml:"provide_by"  json:"provide_by,omitempty" property:"provide_by"`
+	Methods        []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
+	Async          bool              `yaml:"async"  json:"async,omitempty" property:"async"`
+	Params         map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
+	invoker        protocol.Invoker
+	urls           []*common.URL
+	Generic        bool   `yaml:"generic"  json:"generic,omitempty" property:"generic"`
+	Sticky         bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
+	RequestTimeout string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
+	ForceTag       bool   `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
 }
 
 // nolint
@@ -87,17 +86,13 @@ func (c *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error
 	}
 
 	*c = ReferenceConfig(raw)
-	if err := defaults.Set(c); err != nil {
-		return err
-	}
-
-	return nil
+	return defaults.Set(c)
 }
 
 // Refer ...
 func (c *ReferenceConfig) Refer(_ interface{}) {
 	cfgURL := common.NewURLWithOptions(
-		common.WithPath(c.id),
+		common.WithPath(c.InterfaceName),
 		common.WithProtocol(c.Protocol),
 		common.WithParams(c.getUrlMap()),
 		common.WithParamsValue(constant.BEAN_NAME_KEY, c.id),
@@ -105,9 +100,7 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 	if c.ForceTag {
 		cfgURL.AddParam(constant.ForceUseTag, "true")
 	}
-	if c.HealthCheckEnable {
-		cfgURL.AddParam(constant.HEALTH_ROUTE_ENABLED_KEY, "true")
-	}
+	c.postProcessConfig(cfgURL)
 	if c.Url != "" {
 		// 1. user specified URL, could be peer-to-peer address, or register center's address.
 		urlStrings := gxstrings.RegSplit(c.Url, "\\s*[;]+\\s*")
@@ -121,7 +114,7 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 				c.urls = append(c.urls, serviceUrl)
 			} else {
 				if serviceUrl.Path == "" {
-					serviceUrl.Path = "/" + c.id
+					serviceUrl.Path = "/" + c.InterfaceName
 				}
 				// merge url need to do
 				newUrl := common.MergeUrl(serviceUrl, cfgURL)
@@ -193,6 +186,11 @@ func (c *ReferenceConfig) GetRPCService() common.RPCService {
 	return c.pxy.Get()
 }
 
+// GetProxy gets proxy
+func (c *ReferenceConfig) GetProxy() *proxy.Proxy {
+	return c.pxy
+}
+
 func (c *ReferenceConfig) getUrlMap() url.Values {
 	urlMap := url.Values{}
 	//first set user params
@@ -255,4 +253,11 @@ func (c *ReferenceConfig) GenericLoad(id string) {
 	c.id = id
 	c.Refer(genericService)
 	c.Implement(genericService)
+}
+
+// postProcessConfig asks registered ConfigPostProcessor to post-process the current ReferenceConfig.
+func (c *ReferenceConfig) postProcessConfig(url *common.URL) {
+	for _, p := range extension.GetConfigPostProcessors() {
+		p.PostProcessReferenceConfig(url)
+	}
 }

@@ -171,7 +171,7 @@ func (c *ServiceConfig) Export() error {
 	proxyFactory := extension.GetProxyFactory(providerConfig.ProxyFactory)
 	for _, proto := range protocolConfigs {
 		// registry the service reflect
-		methods, err := common.ServiceMap.Register(c.InterfaceName, proto.Name, c.rpcService)
+		methods, err := common.ServiceMap.Register(c.InterfaceName, proto.Name, c.Group, c.Version, c.rpcService)
 		if err != nil {
 			formatErr := perrors.Errorf("The service %v export the protocol %v error! Error message is %v.", c.InterfaceName, proto.Name, err.Error())
 			logger.Errorf(formatErr.Error())
@@ -184,7 +184,7 @@ func (c *ServiceConfig) Export() error {
 			nextPort = nextPort.Next()
 		}
 		ivkURL := common.NewURLWithOptions(
-			common.WithPath(c.id),
+			common.WithPath(c.InterfaceName),
 			common.WithProtocol(proto.Name),
 			common.WithIp(proto.Ip),
 			common.WithPort(port),
@@ -197,6 +197,8 @@ func (c *ServiceConfig) Export() error {
 		if len(c.Tag) > 0 {
 			ivkURL.AddParam(constant.Tagkey, c.Tag)
 		}
+
+		c.postProcessConfig(ivkURL)
 
 		if len(regUrls) > 0 {
 			c.cacheMutex.Lock()
@@ -331,4 +333,11 @@ func (c *ServiceConfig) GetExportedUrls() []*common.URL {
 		return urls
 	}
 	return nil
+}
+
+// postProcessConfig asks registered ConfigPostProcessor to post-process the current ServiceConfig.
+func (c *ServiceConfig) postProcessConfig(url *common.URL) {
+	for _, p := range extension.GetConfigPostProcessors() {
+		p.PostProcessServiceConfig(url)
+	}
 }

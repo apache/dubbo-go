@@ -126,7 +126,7 @@ func mockInmemoryProc(t *testing.T) *inmemory.MetadataService {
 	_, err = mts.SubscribeURL(u)
 	assert.NoError(t, err)
 
-	_, err = common.ServiceMap.Register(serviceName, protocol, userProvider)
+	_, err = common.ServiceMap.Register(serviceName, protocol, group, version, userProvider)
 	assert.NoError(t, err)
 	err = mts.PublishServiceDefinition(u)
 	assert.NoError(t, err)

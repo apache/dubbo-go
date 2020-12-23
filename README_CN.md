@@ -251,6 +251,14 @@ make test
       </td>
     </tr>
     <tr></tr>
+    <tr>
+      <td align="center"  valign="middle">
+        <a href="http://www.mgtv.com" target="_blank">
+          <img width="222px"  src="https://ugc.hitv.com/platform_oss/F6077F1AA82542CDBDD88FD518E6E727.png">
+        </a>
+      </td>
+    </tr>
+    <tr></tr> 
   </tbody>
 </table>
 </div>
