@@ -15,24 +15,31 @@
  * limitations under the License.
  */
 
-package metrics
+package extension
 
 import (
-	"context"
-	"time"
+	"github.com/apache/dubbo-go/config/interfaces"
 )
 
-import (
-	"github.com/apache/dubbo-go/protocol"
+var (
+	processors = make(map[string]interfaces.ConfigPostProcessor)
 )
 
-const (
-	NameSpace = "dubbo"
-)
+// SetConfigPostProcessor registers a ConfigPostProcessor with the given name.
+func SetConfigPostProcessor(name string, processor interfaces.ConfigPostProcessor) {
+	processors[name] = processor
+}
 
-// Reporter will be used to report the invocation's duration
-type Reporter interface {
-	// report the duration of an invocation
-	Report(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation,
-		cost time.Duration, res protocol.Result)
+// GetConfigPostProcessor finds a ConfigPostProcessor by name.
+func GetConfigPostProcessor(name string) interfaces.ConfigPostProcessor {
+	return processors[name]
+}
+
+// GetConfigPostProcessors returns all registered instances of ConfigPostProcessor.
+func GetConfigPostProcessors() []interfaces.ConfigPostProcessor {
+	ret := make([]interfaces.ConfigPostProcessor, 0, len(processors))
+	for _, v := range processors {
+		ret = append(ret, v)
+	}
+	return ret
 }

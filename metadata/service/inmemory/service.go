@@ -124,7 +124,7 @@ func (mts *MetadataService) getAllService(services *sync.Map) []*common.URL {
 		urls := value.(*skip.SkipList)
 		for i := uint64(0); i < urls.Len(); i++ {
 			url := urls.ByPosition(i).(*common.URL)
-			if url.GetParam(constant.INTERFACE_KEY, url.Path) != constant.METADATA_SERVICE_NAME {
+			if url.Service() != constant.METADATA_SERVICE_NAME {
 				res = append(res, url)
 			}
 		}
@@ -178,7 +178,7 @@ func (mts *MetadataService) PublishServiceDefinition(url *common.URL) error {
 	interfaceName := url.GetParam(constant.INTERFACE_KEY, "")
 	isGeneric := url.GetParamBool(constant.GENERIC_KEY, false)
 	if len(interfaceName) > 0 && !isGeneric {
-		tmpService := common.ServiceMap.GetService(url.Protocol, url.GetParam(constant.BEAN_NAME_KEY, url.Service()))
+		tmpService := common.ServiceMap.GetServiceByServiceKey(url.Protocol, url.ServiceKey())
 		sd := definition.BuildServiceDefinition(*tmpService, url)
 		data, err := sd.ToBytes()
 		if err != nil {
