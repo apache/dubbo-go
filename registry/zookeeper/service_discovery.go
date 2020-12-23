@@ -27,7 +27,7 @@ import (
 
 import (
 	"github.com/dubbogo/gost/container/set"
-	"github.com/dubbogo/gost/hash/page"
+	"github.com/dubbogo/gost/page"
 	perrors "github.com/pkg/errors"
 )
 
@@ -231,7 +231,7 @@ func (zksd *zookeeperServiceDiscovery) GetInstancesByPage(serviceName string, of
 	for i := offset; i < len(all) && i < offset+pageSize; i++ {
 		res = append(res, all[i])
 	}
-	return gxpage.NewPage(offset, pageSize, res, len(all))
+	return gxpage.New(offset, pageSize, res, len(all))
 }
 
 // GetHealthyInstancesByPage will return the instance
@@ -254,7 +254,7 @@ func (zksd *zookeeperServiceDiscovery) GetHealthyInstancesByPage(serviceName str
 		}
 		i++
 	}
-	return gxpage.NewPage(offset, pageSize, res, len(all))
+	return gxpage.New(offset, pageSize, res, len(all))
 }
 
 // GetRequestInstances will return the instances

@@ -27,7 +27,7 @@ import (
 import (
 	"github.com/Workiva/go-datastructures/slice/skip"
 	gxset "github.com/dubbogo/gost/container/set"
-	gxpage "github.com/dubbogo/gost/hash/page"
+	gxpage "github.com/dubbogo/gost/page"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/atomic"
 )
