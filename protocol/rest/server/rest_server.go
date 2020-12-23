@@ -23,7 +23,6 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
-	"strings"
 )
 
 import (
@@ -90,7 +89,7 @@ func GetRouteFunc(invoker protocol.Invoker, methodConfig *rest_config.RestMethod
 			err  error
 			args []interface{}
 		)
-		svc := common.ServiceMap.GetService(invoker.GetUrl().Protocol, strings.TrimPrefix(invoker.GetUrl().Path, "/"))
+		svc := common.ServiceMap.GetServiceByServiceKey(invoker.GetUrl().Protocol, invoker.GetUrl().ServiceKey())
 		// get method
 		method := svc.Method()[methodConfig.MethodName]
 		argsTypes := method.ArgsType()
