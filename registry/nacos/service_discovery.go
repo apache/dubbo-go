@@ -24,7 +24,7 @@ import (
 
 import (
 	"github.com/dubbogo/gost/container/set"
-	"github.com/dubbogo/gost/hash/page"
+	"github.com/dubbogo/gost/page"
 	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
 	"github.com/nacos-group/nacos-sdk-go/model"
 	"github.com/nacos-group/nacos-sdk-go/vo"
@@ -174,7 +174,7 @@ func (n *nacosServiceDiscovery) GetInstancesByPage(serviceName string, offset in
 	for i := offset; i < len(all) && i < offset+pageSize; i++ {
 		res = append(res, all[i])
 	}
-	return gxpage.NewPage(offset, pageSize, res, len(all))
+	return gxpage.New(offset, pageSize, res, len(all))
 }
 
 // GetHealthyInstancesByPage will return the instance
@@ -197,7 +197,7 @@ func (n *nacosServiceDiscovery) GetHealthyInstancesByPage(serviceName string, of
 		}
 		i++
 	}
-	return gxpage.NewPage(offset, pageSize, res, len(all))
+	return gxpage.New(offset, pageSize, res, len(all))
 }
 
 // GetRequestInstances will return the instances
