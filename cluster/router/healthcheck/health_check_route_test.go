@@ -50,7 +50,7 @@ const (
 func TestHealthCheckRouterRoute(t *testing.T) {
 	defer protocol.CleanAllStatus()
 	consumerURL, _ := common.NewURL(healthCheck1001URL)
-	consumerURL.SetParam(HEALTH_ROUTE_ENABLED_KEY, "true")
+	consumerURL.SetParam(constant.HEALTH_ROUTE_ENABLED_KEY, "true")
 	url1, _ := common.NewURL(fmt.Sprintf(healthCheckRouteUrlFormat, healthCheckRoute1010IP))
 	url2, _ := common.NewURL(fmt.Sprintf(healthCheckRouteUrlFormat, healthCheckRoute1011IP))
 	url3, _ := common.NewURL(fmt.Sprintf(healthCheckRouteUrlFormat, healthCheckRoute1012IP))
@@ -117,7 +117,7 @@ func TestNewHealthCheckRouter(t *testing.T) {
 	h := hcr.(*HealthCheckRouter)
 	assert.Nil(t, h.checker)
 
-	url.SetParam(HEALTH_ROUTE_ENABLED_KEY, "true")
+	url.SetParam(constant.HEALTH_ROUTE_ENABLED_KEY, "true")
 	hcr, _ = NewHealthCheckRouter(url)
 	h = hcr.(*HealthCheckRouter)
 	assert.NotNil(t, h.checker)
