@@ -22,6 +22,7 @@ require (
 	github.com/emicklei/go-restful/v3 v3.0.0
 	github.com/frankban/quicktest v1.4.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.7
+	github.com/go-basic/uuid v1.0.0 // indirect
 	github.com/go-co-op/gocron v0.1.1
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/go-resty/resty/v2 v2.3.0

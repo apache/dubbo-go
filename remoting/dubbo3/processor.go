@@ -93,7 +93,7 @@ func (s *unaryProcessor) runRPC() {
 				logger.Error("error ,s.processUnaryRPC err = ", err)
 				continue
 			}
-			s.stream.putSend(rspData)
+			s.stream.putSend(rspData, DataMsgType)
 		}
 	}()
 
@@ -124,7 +124,10 @@ func newStreamingProcessor(s *serverStream, pkgHandler remoting.PackageHandler, 
 
 func (sp *streamingProcessor) runRPC() {
 	serverUserstream := newServerUserStream(sp.stream, sp.serializer, sp.pkgHandler)
-	go sp.streamDesc.Handler(sp.stream.getService(), serverUserstream)
+	go func() {
+		sp.streamDesc.Handler(sp.stream.getService(), serverUserstream)
+		sp.stream.putSend(nil, ServerStreamCloseMsgType)
+	}()
 }
 
 // Dubbo3GrpcService is gRPC service

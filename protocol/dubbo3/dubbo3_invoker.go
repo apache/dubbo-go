@@ -3,7 +3,6 @@ package dubbo3
 import (
 	"context"
 
-	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -87,8 +86,6 @@ func (di *Dubbo3Invoker) Invoke(ctx context.Context, invocation protocol.Invocat
 
 	methodName := invocation.MethodName()
 	method := di.client.Invoker.MethodByName(methodName)
-	fmt.Printf("in are %+v\n", in)
-	fmt.Printf("method = %+v\n", method.Type())
 	res := method.Call(in)
 
 	result.Rest = res[0]

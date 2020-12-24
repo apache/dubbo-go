@@ -28,6 +28,7 @@ type H2Controller struct {
 	rawFramer *h2.Framer
 	isServer  bool
 
+	streamID  uint32
 	streamMap map[uint32]stream
 	mdMap     map[string]grpc.MethodDesc
 	strMap    map[string]grpc.StreamDesc
@@ -82,6 +83,7 @@ func NewH2Controller(conn net.Conn, isServer bool, service common.RPCService, ur
 		strMap:    strMap,
 		service:   service,
 		handler:   headerHandler,
+		streamID:  uint32(1),
 	}, nil
 }
 
@@ -163,7 +165,6 @@ func (h *H2Controller) H2ShakeHand() error {
 
 func (h *H2Controller) runSendReqAndRecv(stream *clientStream) error {
 	sendChan := stream.getSend()
-
 	go func() {
 		for {
 			fm, err := h.rawFramer.ReadFrame()
@@ -174,27 +175,23 @@ func (h *H2Controller) runSendReqAndRecv(stream *clientStream) error {
 			switch fm := fm.(type) {
 			case *h2.MetaHeadersFrame:
 				id := fm.StreamID
-				fmt.Println("MetaHeader frame = ", fm.String(), "id = ", id)
+				logger.Debug("MetaHeader frame = ", fm.String(), "id = ", id)
 				if fm.Flags.Has(h2.FlagDataEndStream) {
 					return
 				}
 			case *h2.DataFrame:
-				data := make([]byte, len(fm.Data()))
-				copy(data, fm.Data())
-				stream.recvBuf.put(BufferMsg{
-					buffer: bytes.NewBuffer(data),
-				})
+				logger.Debug("DataFrame ")
+				//time.Sleep(time.Second)
+				fmData := fm.Data()
+				data := make([]byte, len(fmData))
+				copy(data, fmData)
+				stream.putRecv(data, DataMsgType)
 				//stream.putRecv(data)
 			case *h2.RSTStreamFrame:
-				fmt.Println("RSTStreamFrame")
 			case *h2.SettingsFrame:
-				fmt.Println("SettingsFrame frame = ", fm.String())
 			case *h2.PingFrame:
-				fmt.Println("PingFrame")
 			case *h2.WindowUpdateFrame:
-				fmt.Println("WindowUpdateFrame")
 			case *h2.GoAwayFrame:
-				fmt.Println("GoAwayFrame")
 				// TODO: Handle GoAway from the client appropriately.
 			default:
 				fmt.Println("default = %+v", fm)
@@ -209,10 +206,9 @@ func (h *H2Controller) runSendReqAndRecv(stream *clientStream) error {
 			return err
 		}
 	}
-
 }
 
-func (h *H2Controller) runSendRsp(stream *serverStream) {
+func (h *H2Controller) runSendUnaryRsp(stream *serverStream) {
 	sendChan := stream.getSend()
 	for {
 		sendMsg := <-sendChan
@@ -264,6 +260,68 @@ func (h *H2Controller) runSendRsp(stream *serverStream) {
 			BlockFragment: hfData,
 			EndStream:     true,
 		})
+		break
+	}
+}
+
+func (h *H2Controller) runSendStreamRsp(stream *serverStream) {
+	sendChan := stream.getSend()
+	headerWrited := false
+	for {
+		sendMsg := <-sendChan
+		if sendMsg.GetMsgType() == ServerStreamCloseMsgType {
+			fmt.Println("closeintinginginggi s")
+			var buf bytes.Buffer
+			enc := hpack.NewEncoder(&buf)
+			headerFields := make([]hpack.HeaderField, 0, 2) // at least :status, content-type will be there if none else.
+			headerFields = append(headerFields, hpack.HeaderField{Name: "grpc-status", Value: "0"})
+			headerFields = append(headerFields, hpack.HeaderField{Name: "grpc-message", Value: ""})
+			for _, f := range headerFields {
+				if err := enc.WriteField(f); err != nil {
+					logger.Error("error: enc.WriteField err = ", err)
+				}
+			}
+			hfData := buf.Next(buf.Len())
+			h.rawFramer.WriteHeaders(h2.HeadersFrameParam{
+				StreamID:      stream.getID(),
+				EndHeaders:    true,
+				BlockFragment: hfData,
+				EndStream:     true,
+			})
+			return
+		}
+		sendData := sendMsg.buffer.Bytes()
+		if !headerWrited {
+			// header
+			headerFields := make([]hpack.HeaderField, 0, 2) // at least :status, content-type will be there if none else.
+			headerFields = append(headerFields, hpack.HeaderField{Name: ":status", Value: "200"})
+			headerFields = append(headerFields, hpack.HeaderField{Name: "content-type", Value: "application/grpc"})
+			var buf bytes.Buffer
+			enc := hpack.NewEncoder(&buf)
+			for _, f := range headerFields {
+				if err := enc.WriteField(f); err != nil {
+					logger.Error("error: enc.WriteField err = ", err)
+				}
+			}
+			hflen := buf.Len()
+			hfData := buf.Next(hflen)
+
+			logger.Debug("server send stream id = ", stream.getID())
+
+			if err := h.rawFramer.WriteHeaders(h2.HeadersFrameParam{
+				StreamID:      stream.getID(),
+				EndHeaders:    true,
+				BlockFragment: hfData,
+				EndStream:     false,
+			}); err != nil {
+				logger.Error("error: write rsp header err = ", err)
+			}
+			headerWrited = true
+		}
+
+		if err := h.rawFramer.WriteData(stream.getID(), false, sendData); err != nil {
+			logger.Error("error: write rsp data err =", err)
+		}
 	}
 }
 
@@ -280,24 +338,18 @@ func (h *H2Controller) serverRun() {
 		switch fm := fm.(type) {
 		case *h2.MetaHeadersFrame:
 			id = fm.StreamID
-			fmt.Println("MetaHeader frame = ", fm.String(), "id = ", id)
+			logger.Debug("MetaHeader frame = ", fm.String(), "id = ", id)
 			h.handleMetaHeaderFrame(fm)
 		case *h2.DataFrame:
-			fmt.Println("DataFrame = ", fm.String(), "id = ", id)
+			logger.Debug("DataFrame = ", fm.String(), "id = ", id)
 			h.handleDataFrame(fm)
 		case *h2.RSTStreamFrame:
-			fmt.Println("RSTStreamFrame")
 		case *h2.SettingsFrame:
-			fmt.Println("SettingsFrame frame = ", fm.String())
 		case *h2.PingFrame:
-			fmt.Println("PingFrame")
 		case *h2.WindowUpdateFrame:
-			fmt.Println("WindowUpdateFrame")
 		case *h2.GoAwayFrame:
-			fmt.Println("GoAwayFrame")
 			// TODO: Handle GoAway from the client appropriately.
 		default:
-			fmt.Println("default = %+v", fm)
 			//r := frame.(*h2.MetaHeadersFrame)
 			//fmt.Println(r)
 		}
@@ -311,7 +363,7 @@ func (h *H2Controller) handleMetaHeaderFrame(metaHeaderFrame *h2.MetaHeadersFram
 
 func (h *H2Controller) handleDataFrame(fm *h2.DataFrame) {
 	// 拿到stream，放进去
-	h.streamMap[fm.StreamID].putRecv(fm.Data())
+	h.streamMap[fm.StreamID].putRecv(fm.Data(), DataMsgType)
 }
 
 func (h *H2Controller) addServerStream(data remoting.ProtocolHeader) error {
@@ -326,15 +378,18 @@ func (h *H2Controller) addServerStream(data remoting.ProtocolHeader) error {
 	var err error
 	if okm {
 		newstm, err = newServerStream(data, md, h.url, h.service)
+		if err != nil {
+			return err
+		}
+		go h.runSendUnaryRsp(newstm)
 	} else {
 		newstm, err = newServerStream(data, streamd, h.url, h.service)
-	}
-
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
+		go h.runSendStreamRsp(newstm)
 	}
 	h.streamMap[data.GetStreamID()] = newstm
-	go h.runSendRsp(newstm)
 	return nil
 }
 
@@ -358,8 +413,9 @@ func (h *H2Controller) StreamInvoke(ctx context.Context, desc *grpc.StreamDesc, 
 	hflen := buf.Len()
 	hfData := buf.Next(hflen)
 
-	// todo rpcID change
-	id := uint32(1)
+	//todo rpcID change
+	id := h.streamID
+	h.streamID += 2
 	if err := h.rawFramer.WriteHeaders(h2.HeadersFrameParam{
 		StreamID:      id,
 		EndHeaders:    true,
@@ -409,7 +465,9 @@ func (h *H2Controller) UnaryInvoke(ctx context.Context, method string, addr stri
 
 	//	h.rawFramer.ReadMetaHeaders = hpack.NewDecoder(4096, nil)
 
-	id := uint32(1)
+	// todo 目前不支持并发 id应该被区分
+	id := h.streamID
+	h.streamID += 2
 	if err := h.rawFramer.WriteHeaders(h2.HeadersFrameParam{
 		StreamID:      id,
 		EndHeaders:    true,
@@ -418,16 +476,6 @@ func (h *H2Controller) UnaryInvoke(ctx context.Context, method string, addr stri
 	}); err != nil {
 		logger.Error("error: write rsp header err = ", err)
 	}
-
-	// todo 继续请求，发送数据，接受返回值
-
-	//req := pb.HelloRequest{
-	//	Name: "lauranceli",
-	//	ID:   123,
-	//	Subobj: &pb.HelloSubObj{
-	//		SubName: "li",
-	//	},
-	//}
 
 	header := make([]byte, 5)
 	header[0] = 0

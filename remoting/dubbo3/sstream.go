@@ -2,7 +2,6 @@ package dubbo3
 
 import (
 	"context"
-	"fmt"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/remoting"
 	"google.golang.org/grpc/metadata"
@@ -34,14 +33,13 @@ func (ss *baseUserStream) SendMsg(m interface{}) error {
 		return err
 	}
 	rspFrameData := ss.pkgHandler.Pkg2FrameData(replyData)
-	ss.stream.putSend(rspFrameData)
+	ss.stream.putSend(rspFrameData, DataMsgType)
 	return nil
 }
 
 func (ss *baseUserStream) RecvMsg(m interface{}) error {
 	recvChan := ss.stream.getRecv()
 	readBuf := <-recvChan
-	fmt.Println("reaBuf = ", readBuf.buffer.Bytes())
 	pkgData := ss.pkgHandler.Frame2PkgData(readBuf.buffer.Bytes())
 	if err := ss.serilizer.Unmarshal(pkgData, m); err != nil {
 		return err

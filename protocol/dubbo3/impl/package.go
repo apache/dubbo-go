@@ -2,7 +2,6 @@ package impl
 
 import (
 	"encoding/binary"
-	"fmt"
 )
 
 import (
@@ -19,12 +18,10 @@ type TriplePackageHandler struct {
 
 func (t *TriplePackageHandler) Frame2PkgData(frameData []byte) []byte {
 	lineHeader := frameData[:5]
-	fmt.Println("%+v", lineHeader)
 	length := binary.BigEndian.Uint32(lineHeader[1:])
 	return frameData[5 : 5+length]
 }
 func (t *TriplePackageHandler) Pkg2FrameData(pkgData []byte) []byte {
-	// todo 放到实现里面
 	rsp := make([]byte, 5+len(pkgData))
 	rsp[0] = byte(0)
 	binary.BigEndian.PutUint32(rsp[1:], uint32(len(pkgData)))

@@ -2,7 +2,6 @@ package dubbo3
 
 import (
 	"bytes"
-	"fmt"
 	"google.golang.org/grpc"
 )
 import (
@@ -13,12 +12,22 @@ import (
 
 // recvMsg represents the received msg from the transport. All transport
 // protocol specific info has been removed.
+type MsgType uint8
+
+const DataMsgType = MsgType(1)
+const ServerStreamCloseMsgType = MsgType(2)
+
 type BufferMsg struct {
 	buffer *bytes.Buffer
 	// nil: received some data
 	// io.EOF: stream is completed. data is nil.
 	// other non-nil error: transport failure. data is nil.
-	err error
+	msgType MsgType
+	err     error
+}
+
+func (bm *BufferMsg) GetMsgType() MsgType {
+	return bm.msgType
 }
 
 type MsgBuffer struct {
@@ -46,8 +55,8 @@ func (b *MsgBuffer) get() <-chan BufferMsg {
 }
 
 type stream interface {
-	putRecv(data []byte)
-	putSend(data []byte)
+	putRecv(data []byte, msgType MsgType)
+	putSend(data []byte, msgType MsgType)
 	getSend() <-chan BufferMsg
 	getRecv() <-chan BufferMsg
 }
@@ -62,16 +71,17 @@ type baseStream struct {
 	service common.RPCService
 }
 
-func (s *baseStream) putRecv(data []byte) {
-	fmt.Println("recvBuf put = ", data)
+func (s *baseStream) putRecv(data []byte, msgType MsgType) {
 	s.recvBuf.put(BufferMsg{
-		buffer: bytes.NewBuffer(data),
+		buffer:  bytes.NewBuffer(data),
+		msgType: msgType,
 	})
 }
 
-func (s *baseStream) putSend(data []byte) {
+func (s *baseStream) putSend(data []byte, msgType MsgType) {
 	s.sendBuf.put(BufferMsg{
-		buffer: bytes.NewBuffer(data),
+		buffer:  bytes.NewBuffer(data),
+		msgType: msgType,
 	})
 }
 
