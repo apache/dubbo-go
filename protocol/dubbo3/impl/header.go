@@ -35,12 +35,11 @@ func init() {
 	remoting.SetProtocolHeaderHandler("dubbo3", NewTripleHeaderHandler)
 }
 
+// TripleHeader define the h2 header of triple impl
 type TripleHeader struct {
-	method   string
-	streamID uint32
-
-	ContentType string
-
+	method         string
+	streamID       uint32
+	ContentType    string
 	ServiceVersion string
 	ServiceGroup   string
 	RPCID          string
@@ -57,6 +56,7 @@ func (t *TripleHeader) GetStreamID() uint32 {
 	return t.streamID
 }
 
+// FieldToCtx parse triple Header that user defined, to ctx of server end
 func (t *TripleHeader) FieldToCtx() context.Context {
 	ctx := context.WithValue(context.Background(), "tri-service-version", t.ServiceVersion)
 	ctx = context.WithValue(ctx, "tri-service-group", t.ServiceGroup)
@@ -72,6 +72,7 @@ func NewTripleHeaderHandler() remoting.ProtocolHeaderHandler {
 	return &TripleHeaderHandler{}
 }
 
+// TripleHeaderHandler Handler the change of triple header field and h2 field
 type TripleHeaderHandler struct {
 }
 
@@ -104,6 +105,7 @@ func getCtxVaSave(ctx context.Context, field string) string {
 	return ""
 }
 
+// ReadFromH2MetaHeader read meta header field from h2 header, and parse it to ProtocolHeader as user defined
 func (t TripleHeaderHandler) ReadFromH2MetaHeader(frame *http2.MetaHeadersFrame) remoting.ProtocolHeader {
 	tripleHeader := &TripleHeader{
 		streamID: frame.StreamID,
@@ -124,87 +126,19 @@ func (t TripleHeaderHandler) ReadFromH2MetaHeader(frame *http2.MetaHeadersFrame)
 			tripleHeader.TracingContext = f.Value
 		case "tri-unit-info":
 			tripleHeader.ClusterInfo = f.Value
-
 		case "content-type":
 			tripleHeader.ContentType = f.Value
-			//contentSubtype, validContentType := grpcutil.ContentSubtype(f.Value)
-			//if !validContentType {
-			//	d.data.contentTypeErr = fmt.Sprintf("transport: received the unexpected content-type %q", f.Value)
-			//	return
-			//}
-			//d.data.contentSubtype = contentSubtype
-			//// TODO: do we want to propagate the whole content-type in the metadata,
-			//// or come up with a way to just propagate the content-subtype if it was set?
-			//// ie {"content-type": "application/grpc+proto"} or {"content-subtype": "proto"}
-			//// in the metadata?
-			//d.addMetadata(f.Name, f.Value)
-			//d.data.isGRPC = true
 		case "grpc-encoding":
-			//d.data.encoding = f.Value
 		case "grpc-status":
-			//code, err := strconv.Atoi(f.Value)
-			//if err != nil {
-			//	d.data.grpcErr = status.Errorf(codes.Internal, "transport: malformed grpc-status: %v", err)
-			//	return
-			//}
-			//d.data.rawStatusCode = &code
 		case "grpc-message":
-			//d.data.rawStatusMsg = decodeGrpcMessage(f.Value)
 		case "grpc-status-details-bin":
-			//v, err := decodeBinHeader(f.Value)
-			//if err != nil {
-			//	d.data.grpcErr = status.Errorf(codes.Internal, "transport: malformed grpc-status-details-bin: %v", err)
-			//	return
-			//}
-			//s := &spb.Status{}
-			//if err := proto.Unmarshal(v, s); err != nil {
-			//	d.data.grpcErr = status.Errorf(codes.Internal, "transport: malformed grpc-status-details-bin: %v", err)
-			//	return
-			//}
-			//d.data.statusGen = status.FromProto(s)
 		case "grpc-timeout":
-			//d.data.timeoutSet = true
-			//var err error
-			//if d.data.timeout, err = decodeTimeout(f.Value); err != nil {
-			//	d.data.grpcErr = status.Errorf(codes.Internal, "transport: malformed time-out: %v", err)
-			//}
 		case ":path":
 			tripleHeader.method = f.Value
 		case ":status":
-			//code, err := strconv.Atoi(f.Value)
-			//if err != nil {
-			//	d.data.httpErr = status.Errorf(codes.Internal, "transport: malformed http-status: %v", err)
-			//	return
-			//}
-			//d.data.httpStatus = &code
 		case "grpc-tags-bin":
-			//v, err := decodeBinHeader(f.Value)
-			//if err != nil {
-			//	d.data.grpcErr = status.Errorf(codes.Internal, "transport: malformed grpc-tags-bin: %v", err)
-			//	return
-			//}
-			//d.data.statsTags = v
-			//d.addMetadata(f.Name, string(v))
 		case "grpc-trace-bin":
-			//v, err := decodeBinHeader(f.Value)
-			//if err != nil {
-			//	d.data.grpcErr = status.Errorf(codes.Internal, "transport: malformed grpc-trace-bin: %v", err)
-			//	return
-			//}
-			//d.data.statsTrace = v
-			//d.addMetadata(f.Name, string(v))
 		default:
-			//if isReservedHeader(f.Name) && !isWhitelistedHeader(f.Name) {
-			//	break
-			//}
-			//v, err := decodeMetadataHeader(f.Name, f.Value)
-			//if err != nil {
-			//	if logger.V(logLevel) {
-			//		logger.Errorf("Failed to decode metadata header (%q, %q): %v", f.Name, f.Value, err)
-			//	}
-			//	return
-			//}
-			//d.addMetadata(f.Name, v)
 		}
 	}
 	return tripleHeader

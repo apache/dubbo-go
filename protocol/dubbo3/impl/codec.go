@@ -29,6 +29,7 @@ func init() {
 	remoting.SetDubbo3Serializer("protobuf", NewDubbo3CodeC)
 }
 
+// ProtobufCodeC is the impl of CodeC that use protobuf
 type ProtobufCodeC struct {
 }
 

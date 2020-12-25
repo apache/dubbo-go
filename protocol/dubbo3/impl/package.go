@@ -25,9 +25,8 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
-type TripleRequestHeader struct {
-}
-
+// TriplePackageHandler handles package of triple
+// e.g. now it impl as deal with pkg data as: [:5]is length and [5:lenght] is body
 type TriplePackageHandler struct {
 	header *TripleHeader
 	//codec  *CodeC

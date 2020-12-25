@@ -18,7 +18,6 @@ package dubbo3
 
 import (
 	"fmt"
-	"github.com/apache/dubbo-go/remoting/dubbo3"
 	"google.golang.org/grpc"
 	"reflect"
 	"sync"
@@ -31,6 +30,7 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/remoting/dubbo3"
 )
 
 const (
@@ -110,6 +110,7 @@ type Dubbo3GrpcService interface {
 	ServiceDesc() *grpc.ServiceDesc
 }
 
+// openServer open a dubbo3 server
 func (dp *Dubbo3Protocol) openServer(url *common.URL) {
 	_, ok := dp.serverMap[url.Location]
 	if !ok {
