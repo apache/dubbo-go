@@ -154,17 +154,6 @@ func (g *dubboGrpc) generateService(file *generator.FileDescriptor, service *pb.
 			g.P("return x, nil")
 			g.P("}")
 			continue
-			/*
-				func (c *greeterDubbo3Client) SayHello(ctx context.Context, opts ...grpc.CallOption) (Greeter_SayHelloClient, error){
-					// 这里return的是我们定义的stream
-					stream, err := c.cc.NewStream(ctx, &_Greeter_serviceDesc.Streams[0], "/protobuf.Greeter/SayHello", opts...)
-					if err != nil {
-						return nil, err
-					}
-					x := &greeterSayHelloClient{stream}
-					return x, nil
-				}
-			*/
 		}
 		// unary rpc method client
 		g.P(fmt.Sprintf("func (c *%sDubbo3Client) %s(ctx %s.Context, in *%s, opt ...grpc.CallOption) (*%s, error) {",

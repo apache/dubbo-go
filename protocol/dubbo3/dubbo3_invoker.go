@@ -81,7 +81,6 @@ func (di *Dubbo3Invoker) Invoke(ctx context.Context, invocation protocol.Invocat
 
 	var in []reflect.Value
 	in = append(in, reflect.ValueOf(ctx))
-	// 这里invocation.ParameterValues()就是要传入的value
 	if len(invocation.ParameterValues()) > 0 {
 		in = append(in, invocation.ParameterValues()...)
 	}

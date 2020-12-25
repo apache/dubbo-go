@@ -21,7 +21,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/apache/dubbo-go/protocol"
+
 	"io"
 	"net"
 	"strings"
@@ -30,7 +30,7 @@ import (
 )
 
 import (
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	perrors "github.com/pkg/errors"
 	h2 "golang.org/x/net/http2"
 	"golang.org/x/net/http2/hpack"
@@ -39,6 +39,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/remoting"
 )
 
@@ -259,8 +260,9 @@ func (h *H2Controller) runSendUnaryRsp(stream *serverStream) {
 			data:      sendData,
 		}
 
+		var buf2 bytes.Buffer
 		// end stream
-		buf.Reset()
+		enc = hpack.NewEncoder(&buf2)
 		headerFields = make([]hpack.HeaderField, 0, 2) // at least :status, content-type will be there if none else.
 		headerFields = append(headerFields, hpack.HeaderField{Name: "grpc-status", Value: "0"})
 		headerFields = append(headerFields, hpack.HeaderField{Name: "grpc-message", Value: ""})
@@ -269,12 +271,11 @@ func (h *H2Controller) runSendUnaryRsp(stream *serverStream) {
 				logger.Error("error: enc.WriteField err = ", err)
 			}
 		}
-		hfData = buf.Next(buf.Len())
-		// todo need thread safe
+		hfData2 := buf2.Next(buf2.Len())
 		h.sendChan <- h2.HeadersFrameParam{
 			StreamID:      stream.getID(),
 			EndHeaders:    true,
-			BlockFragment: hfData,
+			BlockFragment: hfData2,
 			EndStream:     true,
 		}
 		break

@@ -86,7 +86,6 @@ func (p *unaryProcessor) processUnaryRPC(buf bytes.Buffer, service common.RPCSer
 		return nil, err
 	}
 
-	// 这里直接调用stream上的packageHandler 的 decode函数，从msg到byte
 	replyData, err := p.serializer.Marshal(reply.(proto.Message))
 	if err != nil {
 		return nil, err
@@ -100,20 +99,17 @@ func (p *unaryProcessor) processUnaryRPC(buf bytes.Buffer, service common.RPCSer
 func (s *unaryProcessor) runRPC() {
 	recvChan := s.stream.getRecv()
 	go func() {
-		for {
-			recvMsg := <-recvChan
-			if recvMsg.err != nil {
-				continue
-			}
-			rspData, err := s.processUnaryRPC(*recvMsg.buffer, s.stream.getService(), s.stream.getHeader())
-			if err != nil {
-				logger.Error("error ,s.processUnaryRPC err = ", err)
-				continue
-			}
-			s.stream.putSend(rspData, DataMsgType)
+		recvMsg := <-recvChan
+		if recvMsg.err != nil {
+			return
 		}
+		rspData, err := s.processUnaryRPC(*recvMsg.buffer, s.stream.getService(), s.stream.getHeader())
+		if err != nil {
+			logger.Error("error ,s.processUnaryRPC err = ", err)
+			return
+		}
+		s.stream.putSend(rspData, DataMsgType)
 	}()
-
 }
 
 // streamingProcessor used to process streaming invocation
