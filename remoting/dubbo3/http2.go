@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"strings"
+	"sync"
 	"sync/atomic"
 )
 
@@ -28,8 +29,9 @@ type H2Controller struct {
 	rawFramer *h2.Framer
 	isServer  bool
 
-	streamID   int32
-	streamMap  map[uint32]stream
+	streamID int32
+	//streamMap  map[uint32]stream
+	streamMap  sync.Map
 	mdMap      map[string]grpc.MethodDesc
 	strMap     map[string]grpc.StreamDesc
 	url        *common.URL
@@ -90,7 +92,7 @@ func NewH2Controller(conn net.Conn, isServer bool, service common.RPCService, ur
 		conn:       conn,
 		url:        url,
 		isServer:   isServer,
-		streamMap:  make(map[uint32]stream, 8),
+		streamMap:  sync.Map{},
 		mdMap:      mdMap,
 		strMap:     strMap,
 		service:    service,
@@ -318,7 +320,7 @@ func (h *H2Controller) clientRunRecv() {
 			logger.Debug("MetaHeader frame = ", fm.String(), "id = ", id)
 			if fm.Flags.Has(h2.FlagDataEndStream) {
 				// todo graceful close
-				delete(h.streamMap, id)
+				h.streamMap.Delete(id)
 				continue
 			}
 		case *h2.DataFrame:
@@ -326,7 +328,11 @@ func (h *H2Controller) clientRunRecv() {
 			logger.Debug("DataFrame = ", fm.String(), "id = ", id)
 			data := make([]byte, len(fm.Data()))
 			copy(data, fm.Data())
-			h.streamMap[id].putRecv(data, DataMsgType)
+			val, ok := h.streamMap.Load(id)
+			if !ok {
+				continue
+			}
+			val.(stream).putRecv(data, DataMsgType)
 		case *h2.RSTStreamFrame:
 		case *h2.SettingsFrame:
 		case *h2.PingFrame:
@@ -342,7 +348,6 @@ func (h *H2Controller) clientRunRecv() {
 
 // serverRun start a loop, server start listening h2 metaheader
 func (h *H2Controller) serverRunRecv() {
-	var id uint32
 	for {
 		fm, err := h.rawFramer.ReadFrame()
 		if err != nil {
@@ -353,15 +358,18 @@ func (h *H2Controller) serverRunRecv() {
 		}
 		switch fm := fm.(type) {
 		case *h2.MetaHeadersFrame:
-			id = fm.StreamID
-			logger.Debug("MetaHeader frame = ", fm.String(), "id = ", id)
+			logger.Debug("MetaHeader frame = ", fm.String(), "id = ", fm.StreamID)
 			header := h.handler.ReadFromH2MetaHeader(fm)
 			h.addServerStream(header)
 		case *h2.DataFrame:
-			logger.Debug("DataFrame = ", fm.String(), "id = ", id)
+			logger.Debug("DataFrame = ", fm.String(), "id = ", fm.StreamID)
 			data := make([]byte, len(fm.Data()))
 			copy(data, fm.Data())
-			h.streamMap[fm.StreamID].putRecv(data, DataMsgType)
+			val, ok := h.streamMap.Load(fm.StreamID)
+			if !ok {
+				continue
+			}
+			val.(stream).putRecv(data, DataMsgType)
 		case *h2.RSTStreamFrame:
 		case *h2.SettingsFrame:
 		case *h2.PingFrame:
@@ -397,7 +405,7 @@ func (h *H2Controller) addServerStream(data remoting.ProtocolHeader) error {
 		}
 		go h.runSendStreamRsp(newstm)
 	}
-	h.streamMap[data.GetStreamID()] = newstm
+	h.streamMap.Store(newstm.ID, newstm)
 	return nil
 }
 
@@ -448,7 +456,7 @@ func (h *H2Controller) StreamInvoke(ctx context.Context, method string) (grpc.Cl
 		logger.Error("get serilizer error = ", err)
 		return nil, err
 	}
-	h.streamMap[clientStream.ID] = clientStream
+	h.streamMap.Store(clientStream.ID, clientStream)
 	go h.runSendReq(clientStream)
 	pkgHandler, err := remoting.GetPackagerHandler(h.url.Protocol)
 	return newClientUserStream(clientStream, serilizer, pkgHandler), nil
@@ -472,7 +480,7 @@ func (h *H2Controller) UnaryInvoke(ctx context.Context, method string, addr stri
 	// 1. set client stream
 	id := uint32(atomic.AddInt32(&h.streamID, 2))
 	clientStream := newClientStream(id, url)
-	h.streamMap[clientStream.ID] = clientStream
+	h.streamMap.Store(clientStream.ID, clientStream)
 
 	// 2. send req messages
 
