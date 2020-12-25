@@ -15,5 +15,5 @@
 
 grpc-gen:
 	protoc -I ./ helloworld.proto --go_out=plugins=grpc:.
-dubbo-gen:
+dubbo3-gen:
 	protoc -I ./ helloworld.proto  --dubbo3_out=plugins=grpc+dubbo:.

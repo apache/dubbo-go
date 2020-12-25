@@ -1,8 +1,24 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package dubbo3
 
 import (
 	"bytes"
-	"github.com/apache/dubbo-go/protocol"
 )
 import (
 	"github.com/golang/protobuf/proto"
@@ -14,10 +30,12 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
+// processor is the interface, with func runRPC
 type processor interface {
 	runRPC()
 }
 
+// baseProcessor is the basic impl of porcessor, which contains four base fields
 type baseProcessor struct {
 	stream                *serverStream
 	pkgHandler            remoting.PackageHandler
@@ -25,12 +43,13 @@ type baseProcessor struct {
 	serializer            remoting.Dubbo3Serializer
 }
 
+// unaryProcessor used to process unary invocation
 type unaryProcessor struct {
 	baseProcessor
 	methodDesc grpc.MethodDesc
 }
 
-// protoc config参数增加,对codec进行选择
+// newUnaryProcessor can create unary processor
 func newUnaryProcessor(s *serverStream, pkgHandler remoting.PackageHandler, desc grpc.MethodDesc) (processor, error) {
 	serilizer, err := remoting.GetDubbo3Serializer(defaultSerilization)
 	if err != nil {
@@ -49,6 +68,7 @@ func newUnaryProcessor(s *serverStream, pkgHandler remoting.PackageHandler, desc
 	}, nil
 }
 
+// processUnaryRPC can process unary rpc
 func (p *unaryProcessor) processUnaryRPC(buf bytes.Buffer, service common.RPCService, header remoting.ProtocolHeader) ([]byte, error) {
 	readBuf := buf.Bytes()
 
@@ -76,11 +96,8 @@ func (p *unaryProcessor) processUnaryRPC(buf bytes.Buffer, service common.RPCSer
 	return rspFrameData, nil
 }
 
+// runRPC is called by lower layer's stream
 func (s *unaryProcessor) runRPC() {
-	// stream 建立时，获得抽象protocHeader，同时根据protocHeader拿到了实现好的对应协议的package Handler
-	// package Handler里面封装了协议codec codec里面封装了 与协议独立的serillizer
-	//拿到了本次调用的打解包协议类型、调用的方法名。
-
 	recvChan := s.stream.getRecv()
 	go func() {
 		for {
@@ -99,11 +116,13 @@ func (s *unaryProcessor) runRPC() {
 
 }
 
+// streamingProcessor used to process streaming invocation
 type streamingProcessor struct {
 	baseProcessor
 	streamDesc grpc.StreamDesc
 }
 
+// newStreamingProcessor can create new streaming processor
 func newStreamingProcessor(s *serverStream, pkgHandler remoting.PackageHandler, desc grpc.StreamDesc) (processor, error) {
 	serilizer, err := remoting.GetDubbo3Serializer(defaultSerilization)
 	if err != nil {
@@ -122,20 +141,11 @@ func newStreamingProcessor(s *serverStream, pkgHandler remoting.PackageHandler, 
 	}, nil
 }
 
+// runRPC called by stream
 func (sp *streamingProcessor) runRPC() {
 	serverUserstream := newServerUserStream(sp.stream, sp.serializer, sp.pkgHandler)
 	go func() {
 		sp.streamDesc.Handler(sp.stream.getService(), serverUserstream)
 		sp.stream.putSend(nil, ServerStreamCloseMsgType)
 	}()
-}
-
-// Dubbo3GrpcService is gRPC service
-type Dubbo3GrpcService interface {
-	// SetProxyImpl sets proxy.
-	SetProxyImpl(impl protocol.Invoker)
-	// GetProxyImpl gets proxy.
-	GetProxyImpl() protocol.Invoker
-	// ServiceDesc gets an RPC service's specification.
-	ServiceDesc() *grpc.ServiceDesc
 }

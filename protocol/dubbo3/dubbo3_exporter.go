@@ -28,19 +28,19 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-// DubboExporter is dubbo service exporter.
+// DubboExporter is dubbo3 service exporter.
 type Dubbo3Exporter struct {
 	protocol.BaseExporter
 }
 
-// NewDubbo3Exporter get a DubboExporter.
+// NewDubbo3Exporter get a Dubbo3Exporter.
 func NewDubbo3Exporter(key string, invoker protocol.Invoker, exporterMap *sync.Map) *Dubbo3Exporter {
 	return &Dubbo3Exporter{
 		BaseExporter: *protocol.NewBaseExporter(key, invoker, exporterMap),
 	}
 }
 
-// Unexport unexport dubbo service exporter.
+// Unexport unexport dubbo3 service exporter.
 func (de *Dubbo3Exporter) Unexport() {
 	serviceId := de.GetInvoker().GetUrl().GetParam(constant.BEAN_NAME_KEY, "")
 	interfaceName := de.GetInvoker().GetUrl().GetParam(constant.INTERFACE_KEY, "")

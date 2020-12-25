@@ -17,16 +17,11 @@
 package dubbo3
 
 import (
-	"context"
 	"fmt"
 	"github.com/apache/dubbo-go/remoting/dubbo3"
 	"google.golang.org/grpc"
 	"reflect"
 	"sync"
-)
-
-import (
-	"github.com/opentracing/opentracing-go"
 )
 
 import (
@@ -36,19 +31,11 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 const (
 	// DUBBO3 is dubbo3 protocol name
 	DUBBO3 = "dubbo3"
-)
-
-var (
-	// Make the connection can be shared.
-	// It will create one connection for one address (ip+port)
-	exchangeClientMap = new(sync.Map)
-	exchangeLock      = new(sync.Map)
 )
 
 func init() {
@@ -102,10 +89,8 @@ func (dp *Dubbo3Protocol) Refer(url *common.URL) protocol.Invoker {
 	return invoker
 }
 
-// Destroy destroy dubbo service.
+// Destroy destroy dubbo3 service.
 func (dp *Dubbo3Protocol) Destroy() {
-	logger.Infof("DubboProtocol destroy.")
-
 	dp.BaseProtocol.Destroy()
 
 	// stop server
@@ -126,7 +111,6 @@ type Dubbo3GrpcService interface {
 }
 
 func (dp *Dubbo3Protocol) openServer(url *common.URL) {
-	logger.Warn("in openServer")
 	_, ok := dp.serverMap[url.Location]
 	if !ok {
 		_, ok := dp.ExporterMap().Load(url.ServiceKey())
@@ -168,57 +152,11 @@ func (dp *Dubbo3Protocol) openServer(url *common.URL) {
 	}
 }
 
-// GetProtocol get a single dubbo protocol.
+// GetProtocol get a single dubbo3 protocol.
 func GetProtocol() protocol.Protocol {
 	logger.Warn("GetProtocol")
 	if dubbo3Protocol == nil {
 		dubbo3Protocol = NewDubbo3Protocol()
 	}
 	return dubbo3Protocol
-}
-
-func doHandleRequest(rpcInvocation *invocation.RPCInvocation) protocol.RPCResult {
-	exporter, _ := dubbo3Protocol.ExporterMap().Load(rpcInvocation.ServiceKey())
-	result := protocol.RPCResult{}
-	if exporter == nil {
-		err := fmt.Errorf("don't have this exporter, key: %s", rpcInvocation.ServiceKey())
-		logger.Errorf(err.Error())
-		result.Err = err
-		//reply(session, p, hessian.PackageResponse)
-		return result
-	}
-	invoker := exporter.(protocol.Exporter).GetInvoker()
-	if invoker != nil {
-		// FIXME
-		ctx := rebuildCtx(rpcInvocation)
-
-		invokeResult := invoker.Invoke(ctx, rpcInvocation)
-		if err := invokeResult.Error(); err != nil {
-			result.Err = invokeResult.Error()
-			//p.Header.ResponseStatus = hessian.Response_OK
-			//p.Body = hessian.NewResponse(nil, err, result.Attachments())
-		} else {
-			result.Rest = invokeResult.Result()
-			//p.Header.ResponseStatus = hessian.Response_OK
-			//p.Body = hessian.NewResponse(res, nil, result.Attachments())
-		}
-	} else {
-		result.Err = fmt.Errorf("don't have the invoker, key: %s", rpcInvocation.ServiceKey())
-	}
-	return result
-}
-
-// rebuildCtx rebuild the context by attachment.
-// Once we decided to transfer more context's key-value, we should change this.
-// now we only support rebuild the tracing context
-func rebuildCtx(inv *invocation.RPCInvocation) context.Context {
-	ctx := context.WithValue(context.Background(), "attachment", inv.Attachments())
-
-	// actually, if user do not use any opentracing framework, the err will not be nil.
-	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.TextMap,
-		opentracing.TextMapCarrier(filterContext(inv.Attachments())))
-	if err == nil {
-		ctx = context.WithValue(ctx, constant.TRACING_REMOTE_SPAN_CTX, spanCtx)
-	}
-	return ctx
 }

@@ -1,9 +1,27 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package dubbo3
 
 import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/apache/dubbo-go/protocol"
 	"io"
 	"net"
 	"strings"
@@ -24,6 +42,12 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
+// H2Controller is an important object of h2 protocol
+// it can be used as serverend and clientend, identified by isServer field
+// it can shake hand by client or server end, to start http2 transfer
+// higher layer can call H2Controller's StreamInvoke or UnaryInvoke method to deal with event
+// it maintains streamMap, with can contain have many higher layer object: stream, used by event driven.
+// it maintains the data stream from lower layer's net/h2frame to higher layer's stream/userStream
 type H2Controller struct {
 	conn      net.Conn
 	rawFramer *h2.Framer
@@ -48,6 +72,16 @@ type sendChanDataPkg struct {
 	streamID  uint32
 }
 
+// Dubbo3GrpcService is gRPC service, used to check impl
+type Dubbo3GrpcService interface {
+	// SetProxyImpl sets proxy.
+	SetProxyImpl(impl protocol.Invoker)
+	// GetProxyImpl gets proxy.
+	GetProxyImpl() protocol.Invoker
+	// ServiceDesc gets an RPC service's specification.
+	ServiceDesc() *grpc.ServiceDesc
+}
+
 func getMethodAndStreamDescMap(service common.RPCService) (map[string]grpc.MethodDesc, map[string]grpc.StreamDesc, error) {
 	ds, ok := service.(Dubbo3GrpcService)
 	if !ok {
@@ -65,6 +99,7 @@ func getMethodAndStreamDescMap(service common.RPCService) (map[string]grpc.Metho
 	return sdMap, strMap, nil
 }
 
+// NewH2Controller can create H2Controller with conn
 func NewH2Controller(conn net.Conn, isServer bool, service common.RPCService, url *common.URL) (*H2Controller, error) {
 	var mdMap map[string]grpc.MethodDesc
 	var strMap map[string]grpc.StreamDesc
@@ -104,20 +139,22 @@ func NewH2Controller(conn net.Conn, isServer bool, service common.RPCService, ur
 	return h2c, nil
 }
 
+// H2ShakeHand can send magic data and setting at the beginning of conn
+// after check and send, it start listening from h2frame to streamMap
 func (h *H2Controller) H2ShakeHand() error {
-	// todo 替换为真实settings
+	// todo change to real setting
 	settings := []h2.Setting{{
 		ID:  0x5,
 		Val: 16384,
 	}}
 
 	if h.isServer { // server
-		// server端1：写入第一个空setting
+		// server end 1: write empty setting
 		if err := h.rawFramer.WriteSettings(settings...); err != nil {
 			logger.Error("server write setting frame error", err)
 			return err
 		}
-		// server端2：读取magic
+		// server end 2：read magic
 		// Check the validity of client preface.
 		preface := make([]byte, len(h2.ClientPreface))
 		if _, err := io.ReadFull(h.conn, preface); err != nil {
@@ -129,7 +166,7 @@ func (h *H2Controller) H2ShakeHand() error {
 			return perrors.Errorf("Preface Not Equal")
 		}
 		logger.Debug("server Preface check successful!")
-		// server端3：读取第一个空setting
+		// server end 3：read empty setting
 		frame, err := h.rawFramer.ReadFrame()
 		if err == io.EOF || err == io.ErrUnexpectedEOF {
 			logger.Error("server read firest setting err = ", err)
@@ -149,19 +186,19 @@ func (h *H2Controller) H2ShakeHand() error {
 			return err
 		}
 	} else { // client
-		// client端1 写入magic
+		// client end 1 write magic
 		if _, err := h.conn.Write([]byte(h2.ClientPreface)); err != nil {
 			logger.Errorf("client write preface err = ", err)
 			return err
 		}
 
-		// server端2：写入第一个空setting
+		// server end 2：write first empty setting
 		if err := h.rawFramer.WriteSettings(settings...); err != nil {
 			logger.Errorf("client write setting frame err = ", err)
 			return err
 		}
 
-		// client端3：读取第一个setting
+		// client end 3：read one setting
 		frame, err := h.rawFramer.ReadFrame()
 		if err == io.EOF || err == io.ErrUnexpectedEOF {
 			logger.Error("client read setting err = ", err)
@@ -177,6 +214,7 @@ func (h *H2Controller) H2ShakeHand() error {
 			return perrors.Errorf("client read frame not setting frame type")
 		}
 	}
+	// after shake hand, start send and receive listening
 	go h.runSend()
 	if h.isServer {
 		go h.serverRunRecv()
@@ -382,6 +420,9 @@ func (h *H2Controller) serverRunRecv() {
 		}
 	}
 }
+
+// addServerStream can create a serverStream and add to h2Controller by @data read from frame,
+// after receiving a request from client.
 func (h *H2Controller) addServerStream(data remoting.ProtocolHeader) error {
 	methodName := strings.Split(data.GetMethod(), "/")[2]
 	md, okm := h.mdMap[methodName]
@@ -409,6 +450,7 @@ func (h *H2Controller) addServerStream(data remoting.ProtocolHeader) error {
 	return nil
 }
 
+// runSend called after shakehand, start sending data from chan to h2frame
 func (h *H2Controller) runSend() {
 	for {
 		toSend := <-h.sendChan
@@ -422,6 +464,7 @@ func (h *H2Controller) runSend() {
 	}
 }
 
+// StreamInvoke can start streaming invocation, called by dubbo3 client
 func (h *H2Controller) StreamInvoke(ctx context.Context, method string) (grpc.ClientStream, error) {
 	// metadata header
 	handler, err := remoting.GetProtocolHeaderHandler(h.url.Protocol)
@@ -462,7 +505,7 @@ func (h *H2Controller) StreamInvoke(ctx context.Context, method string) (grpc.Cl
 	return newClientUserStream(clientStream, serilizer, pkgHandler), nil
 }
 
-// runSendReqAndRecv called when client stream invoke
+// runSendReq called when client stream invoke, it maintain user's streaming data send to server
 func (h *H2Controller) runSendReq(stream *clientStream) error {
 	sendChan := stream.getSend()
 	for {
@@ -476,6 +519,7 @@ func (h *H2Controller) runSendReq(stream *clientStream) error {
 	}
 }
 
+// UnaryInvoke can start unary invocation, called by dubbo3 client
 func (h *H2Controller) UnaryInvoke(ctx context.Context, method string, addr string, data []byte, reply interface{}, url *common.URL) error {
 	// 1. set client stream
 	id := uint32(atomic.AddInt32(&h.streamID, 2))

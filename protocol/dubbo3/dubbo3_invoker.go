@@ -11,7 +11,6 @@ import (
 
 import (
 	hessian2 "github.com/apache/dubbo-go-hessian2"
-	"github.com/opentracing/opentracing-go"
 )
 
 import (
@@ -100,11 +99,12 @@ func (di *Dubbo3Invoker) getTimeout(invocation *invocation_impl.RPCInvocation) t
 	return di.timeout
 }
 
+// IsAvailable check if invoker is available, now it is useless
 func (di *Dubbo3Invoker) IsAvailable() bool {
 	return di.client.IsAvailable()
 }
 
-// Destroy destroy dubbo client invoker.
+// Destroy destroy dubbo3 client invoker.
 func (di *Dubbo3Invoker) Destroy() {
 	di.quitOnce.Do(func() {
 		for {
@@ -123,17 +123,4 @@ func (di *Dubbo3Invoker) Destroy() {
 		}
 
 	})
-}
-
-// Finally, I made the decision that I don't provide a general way to transfer the whole context
-// because it could be misused. If the context contains to many key-value pairs, the performance will be much lower.
-func (di *Dubbo3Invoker) appendCtx(ctx context.Context, inv *invocation_impl.RPCInvocation) {
-	// inject opentracing ctx
-	currentSpan := opentracing.SpanFromContext(ctx)
-	if currentSpan != nil {
-		err := injectTraceCtx(currentSpan, inv)
-		if err != nil {
-			logger.Errorf("Could not inject the span context into attachments: %v", err)
-		}
-	}
 }

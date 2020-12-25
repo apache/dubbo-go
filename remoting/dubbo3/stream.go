@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package dubbo3
 
 import (
@@ -17,19 +34,19 @@ type MsgType uint8
 const DataMsgType = MsgType(1)
 const ServerStreamCloseMsgType = MsgType(2)
 
+// BufferMsg is the basic transfer unit in one stream
 type BufferMsg struct {
-	buffer *bytes.Buffer
-	// nil: received some data
-	// io.EOF: stream is completed. data is nil.
-	// other non-nil error: transport failure. data is nil.
+	buffer  *bytes.Buffer
 	msgType MsgType
 	err     error
 }
 
+// GetMsgType can get buffer's type
 func (bm *BufferMsg) GetMsgType() MsgType {
 	return bm.msgType
 }
 
+// MsgBuffer contain the chan of BufferMsg
 type MsgBuffer struct {
 	c   chan BufferMsg
 	err error
@@ -46,10 +63,6 @@ func (b *MsgBuffer) put(r BufferMsg) {
 	b.c <- r
 }
 
-// get returns the channel that receives a recvMsg in the buffer.
-//
-// Upon receipt of a recvMsg, the caller should call load to send another
-// recvMsg onto the channel if there is any.
 func (b *MsgBuffer) get() <-chan BufferMsg {
 	return b.c
 }
@@ -61,6 +74,7 @@ type stream interface {
 	getRecv() <-chan BufferMsg
 }
 
+// baseStream is the basic  impl of stream interface, it impl for basic function of stream
 type baseStream struct {
 	ID      uint32
 	recvBuf *MsgBuffer
@@ -103,6 +117,7 @@ func newBaseStream(streamID uint32, url *common.URL, service common.RPCService) 
 	}
 }
 
+// serverStream is running in server end
 type serverStream struct {
 	baseStream
 	processor processor
@@ -148,6 +163,7 @@ func (s *serverStream) getID() uint32 {
 	return s.ID
 }
 
+// clientStream is running in client end
 type clientStream struct {
 	baseStream
 }
