@@ -142,12 +142,10 @@ func (g *dubboGrpc) generateService(file *generator.FileDescriptor, service *pb.
 		outputTypeNames := strings.Split(method.GetOutputType(), ".")
 		outputTypeName := outputTypeNames[len(outputTypeNames)-1]
 		if method.GetServerStreaming() || method.GetClientStreaming() {
-			//todo streaming client stub
 			//now we only support two way streaming
 			g.P(fmt.Sprintf("func (c *%sDubbo3Client) %s(ctx %s.Context,opt ...grpc.CallOption) (%s, error) {",
 				lowerServName, method.GetName(), contextPkg, servName+"_"+method.GetName()+"Client"))
-			// todo client conn impl
-			g.P(fmt.Sprintf("stream, err := c.cc.NewStream(ctx, &_Greeter_serviceDesc.Streams[0], \"/protobuf.Greeter/SayHello\", opt...)"))
+			g.P(fmt.Sprintf("stream, err := c.cc.NewStream(ctx,  \"/protobuf.%s/%s\", opt...)", servName, method.GetName()))
 			g.P("if err != nil {")
 			g.P("return nil, err")
 			g.P("}")

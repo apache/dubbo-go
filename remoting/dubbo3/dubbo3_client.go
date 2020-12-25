@@ -38,9 +38,9 @@ func (t *TripleConn) Invoke(ctx context.Context, method string, args, reply inte
 	return nil
 }
 
-func (t *TripleConn) NewStream(ctx context.Context, desc *grpc.StreamDesc, method string, opts ...grpc.CallOption) (grpc.ClientStream, error) {
+func (t *TripleConn) NewStream(ctx context.Context, method string, opts ...grpc.CallOption) (grpc.ClientStream, error) {
 	// todo use dubbo3 network
-	return t.client.StreamRequest(ctx, desc, method)
+	return t.client.StreamRequest(ctx, method)
 }
 
 func NewTripleConn(client *TripleClient) *TripleConn {
@@ -102,8 +102,8 @@ func (t *TripleClient) Request(ctx context.Context, method string, arg, reply in
 	return nil
 }
 
-func (t *TripleClient) StreamRequest(ctx context.Context, desc *grpc.StreamDesc, method string) (grpc.ClientStream, error) {
-	return t.h2Controller.StreamInvoke(ctx, desc, method)
+func (t *TripleClient) StreamRequest(ctx context.Context, method string) (grpc.ClientStream, error) {
+	return t.h2Controller.StreamInvoke(ctx, method)
 }
 
 func (t *TripleClient) Close() {

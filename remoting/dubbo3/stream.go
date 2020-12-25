@@ -67,7 +67,6 @@ type baseStream struct {
 	sendBuf *MsgBuffer
 	url     *common.URL
 	header  remoting.ProtocolHeader
-	desc    interface{}
 	service common.RPCService
 }
 
@@ -93,18 +92,15 @@ func (s *baseStream) getSend() <-chan BufferMsg {
 	return s.sendBuf.get()
 }
 
-func newBaseStream(streamID uint32, desc interface{}, url *common.URL, service common.RPCService) (*baseStream, error) {
+func newBaseStream(streamID uint32, url *common.URL, service common.RPCService) *baseStream {
 	// stream and pkgHeader are the same level
-	newStream := &baseStream{
+	return &baseStream{
 		url:     url,
 		ID:      streamID,
 		recvBuf: newRecvBuffer(),
 		sendBuf: newRecvBuffer(),
-		desc:    desc,
 		service: service,
 	}
-
-	return newStream, nil
 }
 
 type serverStream struct {
@@ -114,10 +110,7 @@ type serverStream struct {
 }
 
 func newServerStream(header remoting.ProtocolHeader, desc interface{}, url *common.URL, service common.RPCService) (*serverStream, error) {
-	baseStream, err := newBaseStream(header.GetStreamID(), desc, url, service)
-	if err != nil {
-		return nil, err
-	}
+	baseStream := newBaseStream(header.GetStreamID(), url, service)
 
 	serverStream := &serverStream{
 		baseStream: *baseStream,
@@ -159,12 +152,9 @@ type clientStream struct {
 	baseStream
 }
 
-func newClientStream(streamID uint32, desc interface{}, url *common.URL) (*clientStream, error) {
-	baseStream, err := newBaseStream(streamID, desc, url, nil)
-	if err != nil {
-		return nil, err
-	}
+func newClientStream(streamID uint32, url *common.URL) *clientStream {
+	baseStream := newBaseStream(streamID, url, nil)
 	return &clientStream{
 		baseStream: *baseStream,
-	}, nil
+	}
 }
