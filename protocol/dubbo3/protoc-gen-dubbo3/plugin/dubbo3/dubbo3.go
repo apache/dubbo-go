@@ -128,6 +128,7 @@ func (g *dubboGrpc) generateService(file *generator.FileDescriptor, service *pb.
 	}
 	servName := generator.CamelCase(origServName)
 	lowerServName := strings.ToLower(servName)
+	lowerFrontServeName := strings.ToLower(servName[:1]) + servName[1:]
 	g.P(fmt.Sprintf("type %sDubbo3Client struct {", lowerServName))
 	g.P(fmt.Sprintf("cc *dubbo3.TripleConn"))
 	g.P("}")
@@ -149,7 +150,7 @@ func (g *dubboGrpc) generateService(file *generator.FileDescriptor, service *pb.
 			g.P("if err != nil {")
 			g.P("return nil, err")
 			g.P("}")
-			g.P(fmt.Sprintf("x := &%s%sClient{stream}", lowerServName, method.GetName()))
+			g.P(fmt.Sprintf("x := &%s%sClient{stream}", lowerFrontServeName, method.GetName()))
 			g.P("return x, nil")
 			g.P("}")
 			continue
