@@ -27,7 +27,7 @@ import (
 
 import (
 	"github.com/dubbogo/gost/container/set"
-	"github.com/dubbogo/gost/hash/page"
+	"github.com/dubbogo/gost/page"
 	consul "github.com/hashicorp/consul/api"
 	"github.com/hashicorp/consul/api/watch"
 	perrors "github.com/pkg/errors"
@@ -339,7 +339,7 @@ func (csd *consulServiceDiscovery) GetInstancesByPage(serviceName string, offset
 	for i := offset; i < len(all) && i < offset+pageSize; i++ {
 		res = append(res, all[i])
 	}
-	return gxpage.NewPage(offset, pageSize, res, len(all))
+	return gxpage.New(offset, pageSize, res, len(all))
 }
 
 func (csd *consulServiceDiscovery) GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) gxpage.Pager {
@@ -358,7 +358,7 @@ func (csd *consulServiceDiscovery) GetHealthyInstancesByPage(serviceName string,
 		}
 		i++
 	}
-	return gxpage.NewPage(offset, pageSize, res, len(all))
+	return gxpage.New(offset, pageSize, res, len(all))
 }
 
 func (csd *consulServiceDiscovery) GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]gxpage.Pager {

@@ -12,7 +12,6 @@ import (
 import (
 	hessian2 "github.com/apache/dubbo-go-hessian2"
 	"github.com/opentracing/opentracing-go"
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -23,18 +22,6 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/apache/dubbo-go/remoting/dubbo3"
-)
-
-var (
-	// ErrNoReply
-	ErrNoReply = perrors.New("request need @response")
-	// ErrDestroyedInvoker
-	ErrDestroyedInvoker = perrors.New("request Destroyed invoker")
-)
-
-var (
-	attachmentKey = []string{constant.INTERFACE_KEY, constant.GROUP_KEY, constant.TOKEN_KEY, constant.TIMEOUT_KEY,
-		constant.VERSION_KEY}
 )
 
 // Dubbo3Invoker is implement of protocol.Invoker. A dubboInvoker refer to one service and ip.
