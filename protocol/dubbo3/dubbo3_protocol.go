@@ -49,10 +49,8 @@ var (
 // It support dubbo protocol. It implements Protocol interface for dubbo protocol.
 type Dubbo3Protocol struct {
 	protocol.BaseProtocol
-	// It is store relationship about serviceKey(group/interface:version) and ExchangeServer
-	// The ExchangeServer is introduced to replace of Server. Because Server is depend on getty directly.
-	serverMap  map[string]*dubbo3.TripleServer
 	serverLock sync.Mutex
+	serverMap  map[string]*dubbo3.TripleServer // It is store relationship about serviceKey(group/interface:version) and ExchangeServer
 }
 
 // NewDubbo3Protocol create a dubbo protocol.
@@ -112,44 +110,46 @@ type Dubbo3GrpcService interface {
 // openServer open a dubbo3 server
 func (dp *Dubbo3Protocol) openServer(url *common.URL) {
 	_, ok := dp.serverMap[url.Location]
-	if !ok {
-		_, ok := dp.ExporterMap().Load(url.ServiceKey())
-		if !ok {
-			panic("[DubboProtocol]" + url.Key() + "is not existing")
-		}
-
-		dp.serverLock.Lock()
-		_, ok = dp.serverMap[url.Location]
-		if !ok {
-			key := url.GetParam(constant.BEAN_NAME_KEY, "")
-			service := config.GetProviderService(key)
-
-			m, ok := reflect.TypeOf(service).MethodByName("SetProxyImpl")
-			if !ok {
-				panic("method SetProxyImpl is necessary for grpc service")
-			}
-
-			exporter, _ := dubbo3Protocol.ExporterMap().Load(url.ServiceKey())
-			if exporter == nil {
-				panic(fmt.Sprintf("no exporter found for servicekey: %v", url.ServiceKey()))
-			}
-			invoker := exporter.(protocol.Exporter).GetInvoker()
-			if invoker == nil {
-				panic(fmt.Sprintf("no invoker found for servicekey: %v", url.ServiceKey()))
-			}
-
-			in := []reflect.Value{reflect.ValueOf(service)}
-			in = append(in, reflect.ValueOf(invoker))
-			m.Func.Call(in)
-
-			srv := dubbo3.NewTripleServer(url, service)
-
-			dp.serverMap[url.Location] = srv
-
-			srv.Start()
-		}
-		dp.serverLock.Unlock()
+	if ok {
+		return
 	}
+	_, ok = dp.ExporterMap().Load(url.ServiceKey())
+	if !ok {
+		panic("[DubboProtocol]" + url.Key() + "is not existing")
+	}
+
+	dp.serverLock.Lock()
+	defer dp.serverLock.Unlock()
+	_, ok = dp.serverMap[url.Location]
+	if ok {
+		return
+	}
+	key := url.GetParam(constant.BEAN_NAME_KEY, "")
+	service := config.GetProviderService(key)
+
+	m, ok := reflect.TypeOf(service).MethodByName("SetProxyImpl")
+	if !ok {
+		panic("method SetProxyImpl is necessary for grpc service")
+	}
+
+	exporter, _ := dubbo3Protocol.ExporterMap().Load(url.ServiceKey())
+	if exporter == nil {
+		panic(fmt.Sprintf("no exporter found for servicekey: %v", url.ServiceKey()))
+	}
+	invoker := exporter.(protocol.Exporter).GetInvoker()
+	if invoker == nil {
+		panic(fmt.Sprintf("no invoker found for servicekey: %v", url.ServiceKey()))
+	}
+
+	in := []reflect.Value{reflect.ValueOf(service)}
+	in = append(in, reflect.ValueOf(invoker))
+	m.Func.Call(in)
+
+	srv := dubbo3.NewTripleServer(url, service)
+
+	dp.serverMap[url.Location] = srv
+
+	srv.Start()
 }
 
 // GetProtocol get a single dubbo3 protocol.

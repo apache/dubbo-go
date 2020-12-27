@@ -128,16 +128,17 @@ func (t TripleHeaderHandler) ReadFromH2MetaHeader(frame *http2.MetaHeadersFrame)
 			tripleHeader.ClusterInfo = f.Value
 		case "content-type":
 			tripleHeader.ContentType = f.Value
-		case "grpc-encoding":
-		case "grpc-status":
-		case "grpc-message":
-		case "grpc-status-details-bin":
-		case "grpc-timeout":
 		case ":path":
 			tripleHeader.Method = f.Value
-		case ":status":
-		case "grpc-tags-bin":
-		case "grpc-trace-bin":
+		// todo: usage of these part of fields needs to be discussed later
+		//case "grpc-encoding":
+		//case "grpc-status":
+		//case "grpc-message":
+		//case "grpc-status-details-bin":
+		//case "grpc-timeout":
+		//case ":status":
+		//case "grpc-tags-bin":
+		//case "grpc-trace-bin":
 		default:
 		}
 	}

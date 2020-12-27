@@ -11,14 +11,13 @@ require (
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/creasty/defaults v1.5.1
 	github.com/dubbogo/go-zookeeper v1.0.2
-	github.com/dubbogo/gost v1.9.5
+	github.com/dubbogo/gost v1.9.2
 	github.com/elazarl/go-bindata-assetfs v1.0.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.0.0
 	github.com/frankban/quicktest v1.4.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/go-co-op/gocron v0.1.1
 	github.com/go-resty/resty/v2 v2.3.0
-	github.com/golang/protobuf v1.3.1
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.4.3
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645

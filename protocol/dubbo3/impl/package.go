@@ -42,8 +42,14 @@ type TriplePackageHandler struct {
 }
 
 func (t *TriplePackageHandler) Frame2PkgData(frameData []byte) []byte {
+	if len(frameData) < 5 {
+		return []byte{}
+	}
 	lineHeader := frameData[:5]
 	length := binary.BigEndian.Uint32(lineHeader[1:])
+	if len(frameData) < 5+int(length) {
+		return []byte{}
+	}
 	return frameData[5 : 5+length]
 }
 func (t *TriplePackageHandler) Pkg2FrameData(pkgData []byte) []byte {
