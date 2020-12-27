@@ -58,7 +58,6 @@ jobs:
       run: |
         make verify
 
-
     - name: Integrate Test
       run: |
         chmod +x integrate_test.sh && ./integrate_test.sh
