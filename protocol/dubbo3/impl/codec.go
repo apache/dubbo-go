@@ -26,8 +26,10 @@ import (
 )
 
 func init() {
-	remoting.SetDubbo3Serializer("protobuf", NewDubbo3CodeC)
+	remoting.SetDubbo3Serializer(DefaultDubbo3SerializerName, NewDubbo3CodeC)
 }
+
+const DefaultDubbo3SerializerName = "protobuf"
 
 // ProtobufCodeC is the impl of CodeC that use protobuf
 type ProtobufCodeC struct {

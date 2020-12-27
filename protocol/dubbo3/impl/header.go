@@ -32,13 +32,13 @@ import (
 )
 
 func init() {
-	remoting.SetProtocolHeaderHandler("dubbo3", NewTripleHeaderHandler)
+	remoting.SetProtocolHeaderHandler(DUBBO3, NewTripleHeaderHandler)
 }
 
 // TripleHeader define the h2 header of triple impl
 type TripleHeader struct {
-	method         string
-	streamID       uint32
+	Method         string
+	StreamID       uint32
 	ContentType    string
 	ServiceVersion string
 	ServiceGroup   string
@@ -50,10 +50,10 @@ type TripleHeader struct {
 }
 
 func (t *TripleHeader) GetMethod() string {
-	return t.method
+	return t.Method
 }
 func (t *TripleHeader) GetStreamID() uint32 {
-	return t.streamID
+	return t.StreamID
 }
 
 // FieldToCtx parse triple Header that user defined, to ctx of server end
@@ -108,7 +108,7 @@ func getCtxVaSave(ctx context.Context, field string) string {
 // ReadFromH2MetaHeader read meta header field from h2 header, and parse it to ProtocolHeader as user defined
 func (t TripleHeaderHandler) ReadFromH2MetaHeader(frame *http2.MetaHeadersFrame) remoting.ProtocolHeader {
 	tripleHeader := &TripleHeader{
-		streamID: frame.StreamID,
+		StreamID: frame.StreamID,
 	}
 	for _, f := range frame.Fields {
 		switch f.Name {
@@ -134,7 +134,7 @@ func (t TripleHeaderHandler) ReadFromH2MetaHeader(frame *http2.MetaHeadersFrame)
 		case "grpc-status-details-bin":
 		case "grpc-timeout":
 		case ":path":
-			tripleHeader.method = f.Value
+			tripleHeader.Method = f.Value
 		case ":status":
 		case "grpc-tags-bin":
 		case "grpc-trace-bin":

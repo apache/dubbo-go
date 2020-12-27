@@ -79,7 +79,7 @@ func (di *Dubbo3Invoker) Invoke(ctx context.Context, invocation protocol.Invocat
 		result protocol.RPCResult
 	)
 
-	var in []reflect.Value
+	in := make([]reflect.Value, 0, 16)
 	in = append(in, reflect.ValueOf(ctx))
 	if len(invocation.ParameterValues()) > 0 {
 		in = append(in, invocation.ParameterValues()...)
@@ -102,7 +102,7 @@ func (di *Dubbo3Invoker) Invoke(ctx context.Context, invocation protocol.Invocat
 
 // get timeout including methodConfig
 func (di *Dubbo3Invoker) getTimeout(invocation *invocation_impl.RPCInvocation) time.Duration {
-	var timeout = di.GetUrl().GetParam(strings.Join([]string{constant.METHOD_KEYS, invocation.MethodName(), constant.TIMEOUT_KEY}, "."), "")
+	timeout := di.GetUrl().GetParam(strings.Join([]string{constant.METHOD_KEYS, invocation.MethodName(), constant.TIMEOUT_KEY}, "."), "")
 	if len(timeout) != 0 {
 		if t, err := time.ParseDuration(timeout); err == nil {
 			// config timeout into attachment

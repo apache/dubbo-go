@@ -5,7 +5,7 @@ require (
 	github.com/RoaringBitmap/roaring v0.5.5
 	github.com/Workiva/go-datastructures v1.0.52
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
-	github.com/alibaba/sentinel-golang v0.6.1
+	github.com/alibaba/sentinel-golang v0.6.2
 	github.com/apache/dubbo-getty v1.3.10
 	github.com/apache/dubbo-go-hessian2 v1.7.0
 	github.com/coreos/etcd v3.3.25+incompatible
@@ -20,7 +20,7 @@ require (
 	github.com/go-resty/resty/v2 v2.3.0
 	github.com/golang/protobuf v1.3.1
 	github.com/golang/mock v1.4.4
-	github.com/golang/protobuf v1.4.0
+	github.com/golang/protobuf v1.4.3
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
 	github.com/hashicorp/consul v1.8.0
 	github.com/hashicorp/consul/api v1.5.0

@@ -69,7 +69,7 @@ func newTripleConn(client *TripleClient) *TripleConn {
 
 // getInvoker return invoker that have service method
 func getInvoker(impl interface{}, conn *TripleConn) interface{} {
-	var in []reflect.Value
+	in := make([]reflect.Value, 0, 16)
 	in = append(in, reflect.ValueOf(conn))
 
 	method := reflect.ValueOf(impl).MethodByName("GetDubboStub")
@@ -117,7 +117,6 @@ func (t *TripleClient) Request(ctx context.Context, method string, arg, reply in
 	if err != nil {
 		panic("client request marshal not ok ")
 	}
-	//fmt.Printf("getInvocation first arg = %+v\n", reqData)
 	if err := t.h2Controller.UnaryInvoke(ctx, method, t.conn.RemoteAddr().String(), reqData, reply, t.url); err != nil {
 		return err
 	}

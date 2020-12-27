@@ -18,7 +18,6 @@ package dubbo3
 
 import (
 	"fmt"
-	"google.golang.org/grpc"
 	"reflect"
 	"sync"
 )
@@ -31,6 +30,7 @@ import (
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/remoting/dubbo3"
+	"google.golang.org/grpc"
 )
 
 const (
@@ -39,7 +39,6 @@ const (
 )
 
 func init() {
-	logger.Warn("Init extension")
 	extension.SetProtocol(DUBBO3, GetProtocol)
 }
 

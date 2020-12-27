@@ -25,6 +25,15 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
+const (
+	// DUBBO3 is dubbo3 protocol name
+	DUBBO3 = "dubbo3"
+)
+
+func init() {
+	remoting.SetPackageHandler(DUBBO3, NewTriplePkgHandler)
+}
+
 // TriplePackageHandler handles package of triple
 // e.g. now it impl as deal with pkg data as: [:5]is length and [5:lenght] is body
 type TriplePackageHandler struct {
@@ -43,10 +52,6 @@ func (t *TriplePackageHandler) Pkg2FrameData(pkgData []byte) []byte {
 	binary.BigEndian.PutUint32(rsp[1:], uint32(len(pkgData)))
 	copy(rsp[5:], pkgData[:])
 	return rsp
-}
-
-func init() {
-	remoting.SetPackageHandler("dubbo3", NewTriplePkgHandler)
 }
 
 func NewTriplePkgHandler() remoting.PackageHandler {

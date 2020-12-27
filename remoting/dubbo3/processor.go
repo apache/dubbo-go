@@ -27,6 +27,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/protocol/dubbo3/impl"
 	"github.com/apache/dubbo-go/remoting"
 )
 
@@ -37,10 +38,9 @@ type processor interface {
 
 // baseProcessor is the basic impl of porcessor, which contains four base fields
 type baseProcessor struct {
-	stream                *serverStream
-	pkgHandler            remoting.PackageHandler
-	readWriteMaxBufferLen uint32 // useless
-	serializer            remoting.Dubbo3Serializer
+	stream     *serverStream
+	pkgHandler remoting.PackageHandler
+	serializer remoting.Dubbo3Serializer
 }
 
 // unaryProcessor used to process unary invocation
@@ -51,18 +51,17 @@ type unaryProcessor struct {
 
 // newUnaryProcessor can create unary processor
 func newUnaryProcessor(s *serverStream, pkgHandler remoting.PackageHandler, desc grpc.MethodDesc) (processor, error) {
-	serilizer, err := remoting.GetDubbo3Serializer(defaultSerilization)
+	serilizer, err := remoting.GetDubbo3Serializer(impl.DefaultDubbo3SerializerName)
 	if err != nil {
-		logger.Error("newProcessor with serlizationg ", defaultSerilization, " error")
+		logger.Error("newProcessor with serlizationg ", impl.DefaultDubbo3SerializerName, " error")
 		return nil, err
 	}
 
 	return &unaryProcessor{
 		baseProcessor: baseProcessor{
-			serializer:            serilizer,
-			stream:                s,
-			pkgHandler:            pkgHandler,
-			readWriteMaxBufferLen: defaultRWBufferMaxLen,
+			serializer: serilizer,
+			stream:     s,
+			pkgHandler: pkgHandler,
 		},
 		methodDesc: desc,
 	}, nil
@@ -120,18 +119,17 @@ type streamingProcessor struct {
 
 // newStreamingProcessor can create new streaming processor
 func newStreamingProcessor(s *serverStream, pkgHandler remoting.PackageHandler, desc grpc.StreamDesc) (processor, error) {
-	serilizer, err := remoting.GetDubbo3Serializer(defaultSerilization)
+	serilizer, err := remoting.GetDubbo3Serializer(impl.DefaultDubbo3SerializerName)
 	if err != nil {
-		logger.Error("newProcessor with serlizationg ", defaultSerilization, " error")
+		logger.Error("newProcessor with serlizationg ", impl.DefaultDubbo3SerializerName, " error")
 		return nil, err
 	}
 
 	return &streamingProcessor{
 		baseProcessor: baseProcessor{
-			serializer:            serilizer,
-			stream:                s,
-			pkgHandler:            pkgHandler,
-			readWriteMaxBufferLen: defaultRWBufferMaxLen,
+			serializer: serilizer,
+			stream:     s,
+			pkgHandler: pkgHandler,
 		},
 		streamDesc: desc,
 	}, nil

@@ -42,8 +42,9 @@ func NewDubbo3Exporter(key string, invoker protocol.Invoker, exporterMap *sync.M
 
 // Unexport unexport dubbo3 service exporter.
 func (de *Dubbo3Exporter) Unexport() {
-	serviceId := de.GetInvoker().GetUrl().GetParam(constant.BEAN_NAME_KEY, "")
-	interfaceName := de.GetInvoker().GetUrl().GetParam(constant.INTERFACE_KEY, "")
+	url := de.GetInvoker().GetUrl()
+	serviceId := url.GetParam(constant.BEAN_NAME_KEY, "")
+	interfaceName := url.GetParam(constant.INTERFACE_KEY, "")
 	de.BaseExporter.Unexport()
 	err := common.ServiceMap.UnRegister(interfaceName, DUBBO3, serviceId)
 	if err != nil {

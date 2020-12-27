@@ -19,6 +19,8 @@ package dubbo3
 
 import (
 	"bytes"
+)
+import (
 	"google.golang.org/grpc"
 )
 import (
@@ -27,12 +29,13 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
-// recvMsg represents the received msg from the transport. All transport
-// protocol specific info has been removed.
+// MsgType show the type of Message in buffer
 type MsgType uint8
 
-const DataMsgType = MsgType(1)
-const ServerStreamCloseMsgType = MsgType(2)
+const (
+	DataMsgType              = MsgType(1)
+	ServerStreamCloseMsgType = MsgType(2)
+)
 
 // BufferMsg is the basic transfer unit in one stream
 type BufferMsg struct {

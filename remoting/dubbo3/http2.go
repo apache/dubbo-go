@@ -21,7 +21,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-
+	"github.com/apache/dubbo-go/protocol/dubbo3/impl"
 	"io"
 	"net"
 	"strings"
@@ -379,8 +379,6 @@ func (h *H2Controller) clientRunRecv() {
 		case *h2.GoAwayFrame:
 			// TODO: Handle GoAway from the client appropriately.
 		default:
-			//r := frame.(*h2.MetaHeadersFrame)
-			//fmt.Println(r)
 		}
 	}
 }
@@ -416,8 +414,6 @@ func (h *H2Controller) serverRunRecv() {
 		case *h2.GoAwayFrame:
 			// TODO: Handle GoAway from the client appropriately.
 		default:
-			//r := frame.(*h2.MetaHeadersFrame)
-			//fmt.Println(r)
 		}
 	}
 }
@@ -495,7 +491,7 @@ func (h *H2Controller) StreamInvoke(ctx context.Context, method string) (grpc.Cl
 		EndStream:     false,
 	}
 	clientStream := newClientStream(id, h.url)
-	serilizer, err := remoting.GetDubbo3Serializer(defaultSerilization)
+	serilizer, err := remoting.GetDubbo3Serializer(impl.DefaultDubbo3SerializerName)
 	if err != nil {
 		logger.Error("get serilizer error = ", err)
 		return nil, err
