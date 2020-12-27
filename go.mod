@@ -1,5 +1,7 @@
 module github.com/apache/dubbo-go
 
+go 1.15
+
 require (
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
 	github.com/RoaringBitmap/roaring v0.5.5
@@ -39,9 +41,9 @@ require (
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/zouyx/agollo/v3 v3.4.5
-	go.etcd.io/bbolt v1.3.5 // indirect
 	go.uber.org/atomic v1.7.0
 	go.uber.org/zap v1.16.0
+	golang.org/x/sys v0.0.0-20201223074533-0d417f636930 // indirect
 	google.golang.org/grpc v1.26.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.16.9
@@ -51,8 +53,6 @@ require (
 )
 
 replace (
+	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.4
 	github.com/envoyproxy/go-control-plane => github.com/envoyproxy/go-control-plane v0.8.0
-	launchpad.net/gocheck => github.com/go-check/check v0.0.0-20140225173054-eb6ee6f84d0a
 )
-
-go 1.13
