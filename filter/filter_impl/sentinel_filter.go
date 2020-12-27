@@ -38,13 +38,15 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
+// Integrate Sentinel Go MUST HAVE:
+// 1. Must initialize Sentinel Go run environment,
+//     refer to https://github.com/alibaba/sentinel-golang/blob/master/api/init.go
+// 2. Register rules for resources user want to guard
+
 func init() {
 	extension.SetFilter(SentinelProviderFilterName, GetSentinelProviderFilter)
 	extension.SetFilter(SentinelConsumerFilterName, GetSentinelConsumerFilter)
 
-	if err := sentinel.InitDefault(); err != nil {
-		logger.Errorf("[Sentinel Filter] fail to initialize Sentinel")
-	}
 	if err := logging.ResetGlobalLogger(DubboLoggerWrapper{Logger: logger.GetLogger()}); err != nil {
 		logger.Errorf("[Sentinel Filter] fail to ingest dubbo logger into sentinel")
 	}
@@ -54,20 +56,36 @@ type DubboLoggerWrapper struct {
 	logger.Logger
 }
 
-func (d DubboLoggerWrapper) Fatal(v ...interface{}) {
-	d.Logger.Error(v...)
+func (d DubboLoggerWrapper) Debug(msg string, keysAndValues ...interface{}) {
+	d.Logger.Debug(logging.AssembleMsg(logging.GlobalCallerDepth, "DEBUG", msg, nil, keysAndValues))
 }
 
-func (d DubboLoggerWrapper) Fatalf(format string, v ...interface{}) {
-	d.Logger.Errorf(format, v...)
+func (d DubboLoggerWrapper) DebugEnabled() bool {
+	return true
 }
 
-func (d DubboLoggerWrapper) Panic(v ...interface{}) {
-	d.Logger.Error(v...)
+func (d DubboLoggerWrapper) Info(msg string, keysAndValues ...interface{}) {
+	d.Logger.Info(logging.AssembleMsg(logging.GlobalCallerDepth, "INFO", msg, nil, keysAndValues))
 }
 
-func (d DubboLoggerWrapper) Panicf(format string, v ...interface{}) {
-	d.Logger.Errorf(format, v...)
+func (d DubboLoggerWrapper) InfoEnabled() bool {
+	return true
+}
+
+func (d DubboLoggerWrapper) Warn(msg string, keysAndValues ...interface{}) {
+	d.Logger.Warn(logging.AssembleMsg(logging.GlobalCallerDepth, "WARN", msg, nil, keysAndValues))
+}
+
+func (d DubboLoggerWrapper) WarnEnabled() bool {
+	return true
+}
+
+func (d DubboLoggerWrapper) Error(err error, msg string, keysAndValues ...interface{}) {
+	d.Logger.Warn(logging.AssembleMsg(logging.GlobalCallerDepth, "ERROR", msg, err, keysAndValues))
+}
+
+func (d DubboLoggerWrapper) ErrorEnabled() bool {
+	return true
 }
 
 func GetSentinelConsumerFilter() filter.Filter {
