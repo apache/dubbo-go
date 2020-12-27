@@ -149,7 +149,7 @@ func (bi *TestProxyInvoker) Invoke(context context.Context, inv protocol.Invocat
 	rpcInv := inv.(*invocation.RPCInvocation)
 	mapV := inv.Attachments()
 	mapV["TestProxyInvoker"] = "TestProxyInvokerValue"
-	hessian2.ReflectResponse(mapV, rpcInv.Reply())
+	_ = hessian2.ReflectResponse(mapV, rpcInv.Reply())
 	return &protocol.RPCResult{
 		Rest: inv.Arguments(),
 	}

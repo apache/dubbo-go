@@ -38,8 +38,8 @@ import (
 )
 
 var (
-	errInvalidCodecType  = perrors.New("illegal CodecType")
-	errInvalidAddress    = perrors.New("remote address invalid or empty")
+	//errInvalidCodecType  = perrors.New("illegal CodecType")
+	//errInvalidAddress    = perrors.New("remote address invalid or empty")
 	errSessionNotExist   = perrors.New("session not exist")
 	errClientClosed      = perrors.New("client closed")
 	errClientReadTimeout = perrors.New("client read timeout")

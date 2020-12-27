@@ -10,7 +10,7 @@
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES OR  OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -46,7 +46,8 @@ func TestMetadataService(t *testing.T) {
 			"owner=ZX&pid=1447&revision=0.0.1&side=provider&timeout=3000&timestamp=1556509797245&group=%v&version=%v&bean.name=%v",
 		protocol, serviceName, group, version, beanName))
 	assert.NoError(t, err)
-	mts.ExportURL(u2)
+	_, err = mts.ExportURL(u2)
+	assert.Nil(t, err)
 
 	u3, err := common.NewURL(fmt.Sprintf(
 		"%v://127.0.0.1:20000/com.ikurento.user.UserProvider3?anyhost=true&"+
@@ -55,7 +56,8 @@ func TestMetadataService(t *testing.T) {
 			"owner=ZX&pid=1447&revision=0.0.1&side=provider&timeout=3000&timestamp=1556509797245&group=%v&version=%v&bean.name=%v",
 		protocol, serviceName, group, version, beanName))
 	assert.NoError(t, err)
-	mts.ExportURL(u3)
+	_, err = mts.ExportURL(u3)
+	assert.Nil(t, err)
 
 	u, err := common.NewURL(fmt.Sprintf(
 		"%v://127.0.0.1:20000/com.ikurento.user.UserProvider1?anyhost=true&"+
@@ -64,26 +66,36 @@ func TestMetadataService(t *testing.T) {
 			"owner=ZX&pid=1447&revision=0.0.1&side=provider&timeout=3000&timestamp=1556509797245&group=%v&version=%v&bean.name=%v",
 		protocol, serviceName, group, version, beanName))
 	assert.NoError(t, err)
-	mts.ExportURL(u)
+	_, err = mts.ExportURL(u)
+	assert.Nil(t, err)
+
 	list, _ := mts.GetExportedURLs(serviceName, group, version, protocol)
 	assert.Equal(t, 3, len(list))
-	mts.SubscribeURL(u)
+	_, err = mts.SubscribeURL(u)
+	assert.Nil(t, err)
 
-	mts.SubscribeURL(u)
+	_, err = mts.ExportURL(u)
+	assert.Nil(t, err)
+	_, err = mts.SubscribeURL(u)
+	assert.Nil(t, err)
 	list2, _ := mts.GetSubscribedURLs()
 	assert.Equal(t, 1, len(list2))
 
-	mts.UnexportURL(u)
+	err = mts.UnexportURL(u)
+	assert.Nil(t, err)
 	list3, _ := mts.GetExportedURLs(serviceName, group, version, protocol)
 	assert.Equal(t, 2, len(list3))
 
-	mts.UnsubscribeURL(u)
+	err = mts.UnsubscribeURL(u)
+	assert.Nil(t, err)
 	list4, _ := mts.GetSubscribedURLs()
 	assert.Equal(t, 0, len(list4))
 
 	userProvider := &definition.UserProvider{}
-	common.ServiceMap.Register(serviceName, protocol, group, version, userProvider)
-	mts.PublishServiceDefinition(u)
+	_, err = common.ServiceMap.Register(serviceName, protocol, group, version, userProvider)
+	assert.Nil(t, err)
+	err = mts.PublishServiceDefinition(u)
+	assert.Nil(t, err)
 	expected := "{\"CanonicalName\":\"com.ikurento.user.UserProvider\",\"CodeSource\":\"\"," +
 		"\"Methods\":[{\"Name\":\"GetUser\",\"ParameterTypes\":[\"slice\"],\"ReturnType\":\"ptr\"," +
 		"\"Parameters\":null}],\"Types\":null}"

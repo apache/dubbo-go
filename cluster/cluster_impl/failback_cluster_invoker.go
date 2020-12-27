@@ -122,7 +122,7 @@ func (invoker *failbackClusterInvoker) checkRetry(retryTask *retryTimerTask, err
 		logger.Errorf("Failed retry times exceed threshold (%v), We have to abandon, invocation-> %v.\n",
 			retryTask.retries, retryTask.invocation)
 	} else {
-		invoker.taskList.Put(retryTask)
+		_ = invoker.taskList.Put(retryTask)
 	}
 }
 
@@ -162,7 +162,7 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 		}
 
 		timerTask := newRetryTimerTask(loadBalance, invocation, invokers, ivk)
-		invoker.taskList.Put(timerTask)
+		_ = invoker.taskList.Put(timerTask)
 
 		logger.Errorf("Failback to invoke the method %v in the service %v, wait for retry in background. Ignored exception: %v.\n",
 			methodName, url.Service(), result.Error().Error())

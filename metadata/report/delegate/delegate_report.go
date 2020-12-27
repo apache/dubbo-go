@@ -220,7 +220,9 @@ func (mr *MetadataReport) SaveServiceMetadata(identifier *identifier.ServiceMeta
 	if mr.syncReport {
 		return report.SaveServiceMetadata(identifier, url)
 	}
-	go report.SaveServiceMetadata(identifier, url)
+	go func() {
+		_ = report.SaveServiceMetadata(identifier, url)
+	}()
 	return nil
 }
 
@@ -230,7 +232,9 @@ func (mr *MetadataReport) RemoveServiceMetadata(identifier *identifier.ServiceMe
 	if mr.syncReport {
 		return report.RemoveServiceMetadata(identifier)
 	}
-	go report.RemoveServiceMetadata(identifier)
+	go func() {
+		_ = report.RemoveServiceMetadata(identifier)
+	}()
 	return nil
 }
 
@@ -255,7 +259,9 @@ func (mr *MetadataReport) SaveSubscribedData(identifier *identifier.SubscriberMe
 	if mr.syncReport {
 		return report.SaveSubscribedData(identifier, string(bytes))
 	}
-	go report.SaveSubscribedData(identifier, string(bytes))
+	go func() {
+		_ = report.SaveSubscribedData(identifier, string(bytes))
+	}()
 	return nil
 }
 

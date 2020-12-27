@@ -144,19 +144,21 @@ func (suite *zookeeperMetadataReportTestSuite) testGetServiceDefinition() {
 func test1(t *testing.T) {
 	testCluster, err := zk.StartTestCluster(1, nil, nil)
 	assert.NoError(t, err)
-	defer testCluster.Stop()
+	defer func() {
+		_ = testCluster.Stop()
+	}()
 
-	url := newProviderRegistryUrl("127.0.0.1", testCluster.Servers[0].Port)
+	rURL := newProviderRegistryUrl("127.0.0.1", testCluster.Servers[0].Port)
 	mf := extension.GetMetadataReportFactory("zookeeper")
-	m := mf.CreateMetadataReport(url)
+	m := mf.CreateMetadataReport(rURL)
 
 	suite := newZookeeperMetadataReportTestSuite(t, m)
 	suite.testStoreProviderMetadata()
 	suite.testStoreConsumerMetadata()
-	suite.testSaveServiceMetadata(url)
+	suite.testSaveServiceMetadata(rURL)
 	suite.testGetExportedURLs()
 	suite.testRemoveServiceMetadata()
-	suite.testSaveSubscribedData(url)
+	suite.testSaveSubscribedData(rURL)
 	suite.testGetSubscribedURLs()
 	suite.testGetServiceDefinition()
 }

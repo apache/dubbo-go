@@ -143,7 +143,7 @@ func TestLoadWithSingleReg(t *testing.T) {
 
 	conServices = map[string]common.RPCService{}
 	proServices = map[string]common.RPCService{}
-	common.ServiceMap.UnRegister("com.MockService", "mock", common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
+	_ = common.ServiceMap.UnRegister("com.MockService", "mock", common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
 	consumerConfig = nil
 	providerConfig = nil
 }
@@ -182,7 +182,7 @@ func TestWithNoRegLoad(t *testing.T) {
 
 	conServices = map[string]common.RPCService{}
 	proServices = map[string]common.RPCService{}
-	common.ServiceMap.UnRegister("com.MockService", "mock", common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
+	_ = common.ServiceMap.UnRegister("com.MockService", "mock", common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
 	consumerConfig = nil
 	providerConfig = nil
 }
@@ -203,10 +203,10 @@ func TestConfigLoaderWithConfigCenter(t *testing.T) {
 	assert.Equal(t, ProviderConfig{}, GetProviderConfig())
 
 	err = ConsumerInit(conPath)
-	configCenterRefreshConsumer()
+	_ = configCenterRefreshConsumer()
 	assert.NoError(t, err)
 	err = ProviderInit(proPath)
-	configCenterRefreshProvider()
+	_ = configCenterRefreshProvider()
 	assert.NoError(t, err)
 
 	assert.NotNil(t, consumerConfig)
@@ -257,12 +257,12 @@ func TestConfigLoaderWithConfigCenterSingleRegistry(t *testing.T) {
 
 	err = ConsumerInit(conPath)
 	checkApplicationName(consumerConfig.ApplicationConfig)
-	configCenterRefreshConsumer()
+	_ = configCenterRefreshConsumer()
 	checkRegistries(consumerConfig.Registries, consumerConfig.Registry)
 	assert.NoError(t, err)
 	err = ProviderInit(proPath)
 	checkApplicationName(providerConfig.ApplicationConfig)
-	configCenterRefreshProvider()
+	_ = configCenterRefreshProvider()
 	checkRegistries(providerConfig.Registries, providerConfig.Registry)
 	assert.NoError(t, err)
 

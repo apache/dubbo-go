@@ -31,19 +31,19 @@ import (
 
 func TestNewNacosClient(t *testing.T) {
 	rc := &config.RemoteConfig{}
-	client, err := NewNacosClient(rc)
+	_, err := NewNacosClient(rc)
 
 	// address is nil
 	assert.NotNil(t, err)
 
 	rc.Address = "console.nacos.io:80:123"
-	client, err = NewNacosClient(rc)
+	_, err = NewNacosClient(rc)
 	// invalid address
 	assert.NotNil(t, err)
 
 	rc.Address = "console.nacos.io:80"
 	rc.TimeoutStr = "10s"
-	client, err = NewNacosClient(rc)
+	client, err := NewNacosClient(rc)
 	assert.NotNil(t, client)
 	assert.Nil(t, err)
 }

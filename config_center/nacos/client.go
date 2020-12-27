@@ -18,7 +18,6 @@
 package nacos
 
 import (
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -39,7 +38,9 @@ import (
 )
 
 // Nacos Log dir, it can be override when creating client by config_center.log_dir
-var logDir = filepath.Join("logs", "nacos", "log")
+//var (
+//	logDir = filepath.Join("logs", "nacos", "log")
+//)
 
 // NacosClient Nacos client
 type NacosClient struct {

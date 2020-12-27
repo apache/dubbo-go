@@ -216,23 +216,23 @@ func packRequest(service Service, header DubboHeader, req interface{}) ([]byte, 
 	// body
 	//////////////////////////////////////////
 	if hb {
-		encoder.Encode(nil)
+		_ = encoder.Encode(nil)
 		goto END
 	}
 
 	// dubbo version + path + version + method
-	encoder.Encode(DEFAULT_DUBBO_PROTOCOL_VERSION)
-	encoder.Encode(service.Path)
-	encoder.Encode(service.Version)
-	encoder.Encode(service.Method)
+	_ = encoder.Encode(DEFAULT_DUBBO_PROTOCOL_VERSION)
+	_ = encoder.Encode(service.Path)
+	_ = encoder.Encode(service.Version)
+	_ = encoder.Encode(service.Method)
 
 	// args = args type list + args value list
 	if types, err = getArgsTypeList(args); err != nil {
 		return nil, perrors.Wrapf(err, " PackRequest(args:%+v)", args)
 	}
-	encoder.Encode(types)
+	_ = encoder.Encode(types)
 	for _, v := range args {
-		encoder.Encode(v)
+		_ = encoder.Encode(v)
 	}
 
 	request.Attachments[PATH_KEY] = service.Path
@@ -247,7 +247,7 @@ func packRequest(service Service, header DubboHeader, req interface{}) ([]byte, 
 		request.Attachments[TIMEOUT_KEY] = strconv.Itoa(int(service.Timeout / time.Millisecond))
 	}
 
-	encoder.Encode(request.Attachments)
+	_ = encoder.Encode(request.Attachments)
 
 END:
 	byteArray = encoder.Buffer()

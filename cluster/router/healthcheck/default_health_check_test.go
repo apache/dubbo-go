@@ -55,7 +55,7 @@ func TestDefaultHealthCheckerIsHealthy(t *testing.T) {
 		request(url, healthCheckMethodTest, 0, true, false)
 	}
 	hc = NewDefaultHealthChecker(url).(*DefaultHealthChecker)
-	healthy = hc.IsHealthy(invoker)
+	_ = hc.IsHealthy(invoker)
 	// the outgoing request is more than OUTSTANDING_REQUEST_COUNT_LIMIT, go to unhealthy
 	assert.False(t, hc.IsHealthy(invoker))
 
@@ -66,12 +66,12 @@ func TestDefaultHealthCheckerIsHealthy(t *testing.T) {
 	url.SetParam(constant.SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY, "10")
 	url.SetParam(constant.OUTSTANDING_REQUEST_COUNT_LIMIT_KEY, "1000")
 	hc = NewDefaultHealthChecker(url).(*DefaultHealthChecker)
-	healthy = hc.IsHealthy(invoker)
+	_ = hc.IsHealthy(invoker)
 	assert.False(t, hc.IsHealthy(invoker))
 
 	// reset successive failed count and go to healthy
 	request(url, healthCheckMethodTest, 0, false, true)
-	healthy = hc.IsHealthy(invoker)
+	_ = hc.IsHealthy(invoker)
 	assert.True(t, hc.IsHealthy(invoker))
 }
 

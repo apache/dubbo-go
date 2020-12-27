@@ -56,7 +56,7 @@ func toBytes(data []interface{}) ([]byte, error) {
 
 func doSign(bytes []byte, key string) string {
 	mac := hmac.New(sha256.New, []byte(key))
-	mac.Write(bytes)
+	_, _ = mac.Write(bytes)
 	signature := mac.Sum(nil)
 	return base64.URLEncoding.EncodeToString(signature)
 }

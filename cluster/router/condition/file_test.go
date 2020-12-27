@@ -115,7 +115,7 @@ func TestParseServiceRouterKey(t *testing.T) {
 	assert.Equal(t, "", ver)
 
 	testString = "grp:mock-service:123"
-	grp, srv, ver, err = parseServiceRouterKey(testString)
+	_, _, _, err = parseServiceRouterKey(testString)
 	assert.Error(t, err)
 
 	testString = ""
@@ -123,4 +123,5 @@ func TestParseServiceRouterKey(t *testing.T) {
 	assert.Equal(t, "", grp)
 	assert.Equal(t, "", srv)
 	assert.Equal(t, "", ver)
+	assert.Nil(t, err)
 }

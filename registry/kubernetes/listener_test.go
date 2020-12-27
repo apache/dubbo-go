@@ -31,137 +31,137 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
-var clientPodJsonData = `{
-    "apiVersion": "v1",
-    "kind": "Pod",
-    "metadata": {
-        "annotations": {
-            "dubbo.io/annotation": "W3siayI6Ii9kdWJibyIsInYiOiIifSx7ImsiOiIvZHViYm8vY29tLmlrdXJlbnRvLnVzZXIuVXNlclByb3ZpZGVyIiwidiI6IiJ9LHsiayI6Ii9kdWJiby9jb20uaWt1cmVudG8udXNlci5Vc2VyUHJvdmlkZXIvY29uc3VtZXJzIiwidiI6IiJ9LHsiayI6Ii9kdWJibyIsInYiOiIifSx7ImsiOiIvZHViYm8vY29tLmlrdXJlbnRvLnVzZXIuVXNlclByb3ZpZGVyIiwidiI6IiJ9LHsiayI6Ii9kdWJiby9jb20uaWt1cmVudG8udXNlci5Vc2VyUHJvdmlkZXIvcHJvdmlkZXJzIiwidiI6IiJ9LHsiayI6Ii9kdWJiby9jb20uaWt1cmVudG8udXNlci5Vc2VyUHJvdmlkZXIvY29uc3VtZXJzL2NvbnN1bWVyJTNBJTJGJTJGMTcyLjE3LjAuOCUyRlVzZXJQcm92aWRlciUzRmNhdGVnb3J5JTNEY29uc3VtZXJzJTI2ZHViYm8lM0RkdWJib2dvLWNvbnN1bWVyLTIuNi4wJTI2cHJvdG9jb2wlM0RkdWJibyIsInYiOiIifV0="
-        },
-        "creationTimestamp": "2020-03-13T03:38:57Z",
-        "labels": {
-            "dubbo.io/label": "dubbo.io-value"
-        },
-        "name": "client",
-        "namespace": "default",
-        "resourceVersion": "2449700",
-        "selfLink": "/api/v1/namespaces/default/pods/client",
-        "uid": "3ec394f5-dcc6-49c3-8061-57b4b2b41344"
-    },
-    "spec": {
-        "containers": [
-            {
-                "env": [
-                    {
-                        "name": "NAMESPACE",
-                        "valueFrom": {
-                            "fieldRef": {
-                                "apiVersion": "v1",
-                                "fieldPath": "metadata.namespace"
-                            }
-                        }
-                    }
-                ],
-                "image": "registry.cn-hangzhou.aliyuncs.com/scottwang/dubbogo-client",
-                "imagePullPolicy": "Always",
-                "name": "client",
-                "resources": {},
-                "terminationMessagePath": "/dev/termination-log",
-                "terminationMessagePolicy": "File",
-                "volumeMounts": [
-                    {
-                        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
-                        "name": "dubbo-sa-token-l2lzh",
-                        "readOnly": true
-                    }
-                ]
-            }
-        ],
-        "dnsPolicy": "ClusterFirst",
-        "enableServiceLinks": true,
-        "nodeName": "minikube",
-        "priority": 0,
-        "restartPolicy": "Never",
-        "schedulerName": "default-scheduler",
-        "securityContext": {},
-        "serviceAccount": "dubbo-sa",
-        "serviceAccountName": "dubbo-sa",
-        "terminationGracePeriodSeconds": 30,
-        "tolerations": [
-            {
-                "effect": "NoExecute",
-                "key": "node.kubernetes.io/not-ready",
-                "operator": "Exists",
-                "tolerationSeconds": 300
-            },
-            {
-                "effect": "NoExecute",
-                "key": "node.kubernetes.io/unreachable",
-                "operator": "Exists",
-                "tolerationSeconds": 300
-            }
-        ],
-        "volumes": [
-            {
-                "name": "dubbo-sa-token-l2lzh",
-                "secret": {
-                    "defaultMode": 420,
-                    "secretName": "dubbo-sa-token-l2lzh"
-                }
-            }
-        ]
-    },
-    "status": {
-        "conditions": [
-            {
-                "lastProbeTime": null,
-                "lastTransitionTime": "2020-03-13T03:38:57Z",
-                "status": "True",
-                "type": "Initialized"
-            },
-            {
-                "lastProbeTime": null,
-                "lastTransitionTime": "2020-03-13T03:40:18Z",
-                "status": "True",
-                "type": "Ready"
-            },
-            {
-                "lastProbeTime": null,
-                "lastTransitionTime": "2020-03-13T03:40:18Z",
-                "status": "True",
-                "type": "ContainersReady"
-            },
-            {
-                "lastProbeTime": null,
-                "lastTransitionTime": "2020-03-13T03:38:57Z",
-                "status": "True",
-                "type": "PodScheduled"
-            }
-        ],
-        "containerStatuses": [
-            {
-                "containerID": "docker://2870d6abc19ca7fe22ca635ebcfac5d48c6d5550a659bafd74fb48104f6dfe3c",
-                "image": "registry.cn-hangzhou.aliyuncs.com/scottwang/dubbogo-client:latest",
-                "imageID": "docker-pullable://registry.cn-hangzhou.aliyuncs.com/scottwang/dubbogo-client@sha256:1f075131f708a0d400339e81549d7c4d4ed917ab0b6bd38ef458dd06ad25a559",
-                "lastState": {},
-                "name": "client",
-                "ready": true,
-                "restartCount": 0,
-                "state": {
-                    "running": {
-                        "startedAt": "2020-03-13T03:40:17Z"
-                    }
-                }
-            }
-        ],
-        "hostIP": "10.0.2.15",
-        "phase": "Running",
-        "podIP": "172.17.0.8",
-        "qosClass": "BestEffort",
-        "startTime": "2020-03-13T03:38:57Z"
-    }
-}
-`
+//var clientPodJsonData = `{
+//    "apiVersion": "v1",
+//    "kind": "Pod",
+//    "metadata": {
+//        "annotations": {
+//            "dubbo.io/annotation": "W3siayI6Ii9kdWJibyIsInYiOiIifSx7ImsiOiIvZHViYm8vY29tLmlrdXJlbnRvLnVzZXIuVXNlclByb3ZpZGVyIiwidiI6IiJ9LHsiayI6Ii9kdWJiby9jb20uaWt1cmVudG8udXNlci5Vc2VyUHJvdmlkZXIvY29uc3VtZXJzIiwidiI6IiJ9LHsiayI6Ii9kdWJibyIsInYiOiIifSx7ImsiOiIvZHViYm8vY29tLmlrdXJlbnRvLnVzZXIuVXNlclByb3ZpZGVyIiwidiI6IiJ9LHsiayI6Ii9kdWJiby9jb20uaWt1cmVudG8udXNlci5Vc2VyUHJvdmlkZXIvcHJvdmlkZXJzIiwidiI6IiJ9LHsiayI6Ii9kdWJiby9jb20uaWt1cmVudG8udXNlci5Vc2VyUHJvdmlkZXIvY29uc3VtZXJzL2NvbnN1bWVyJTNBJTJGJTJGMTcyLjE3LjAuOCUyRlVzZXJQcm92aWRlciUzRmNhdGVnb3J5JTNEY29uc3VtZXJzJTI2ZHViYm8lM0RkdWJib2dvLWNvbnN1bWVyLTIuNi4wJTI2cHJvdG9jb2wlM0RkdWJibyIsInYiOiIifV0="
+//        },
+//        "creationTimestamp": "2020-03-13T03:38:57Z",
+//        "labels": {
+//            "dubbo.io/label": "dubbo.io-value"
+//        },
+//        "name": "client",
+//        "namespace": "default",
+//        "resourceVersion": "2449700",
+//        "selfLink": "/api/v1/namespaces/default/pods/client",
+//        "uid": "3ec394f5-dcc6-49c3-8061-57b4b2b41344"
+//    },
+//    "spec": {
+//        "containers": [
+//            {
+//                "env": [
+//                    {
+//                        "name": "NAMESPACE",
+//                        "valueFrom": {
+//                            "fieldRef": {
+//                                "apiVersion": "v1",
+//                                "fieldPath": "metadata.namespace"
+//                            }
+//                        }
+//                    }
+//                ],
+//                "image": "registry.cn-hangzhou.aliyuncs.com/scottwang/dubbogo-client",
+//                "imagePullPolicy": "Always",
+//                "name": "client",
+//                "resources": {},
+//                "terminationMessagePath": "/dev/termination-log",
+//                "terminationMessagePolicy": "File",
+//                "volumeMounts": [
+//                    {
+//                        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+//                        "name": "dubbo-sa-token-l2lzh",
+//                        "readOnly": true
+//                    }
+//                ]
+//            }
+//        ],
+//        "dnsPolicy": "ClusterFirst",
+//        "enableServiceLinks": true,
+//        "nodeName": "minikube",
+//        "priority": 0,
+//        "restartPolicy": "Never",
+//        "schedulerName": "default-scheduler",
+//        "securityContext": {},
+//        "serviceAccount": "dubbo-sa",
+//        "serviceAccountName": "dubbo-sa",
+//        "terminationGracePeriodSeconds": 30,
+//        "tolerations": [
+//            {
+//                "effect": "NoExecute",
+//                "key": "node.kubernetes.io/not-ready",
+//                "operator": "Exists",
+//                "tolerationSeconds": 300
+//            },
+//            {
+//                "effect": "NoExecute",
+//                "key": "node.kubernetes.io/unreachable",
+//                "operator": "Exists",
+//                "tolerationSeconds": 300
+//            }
+//        ],
+//        "volumes": [
+//            {
+//                "name": "dubbo-sa-token-l2lzh",
+//                "secret": {
+//                    "defaultMode": 420,
+//                    "secretName": "dubbo-sa-token-l2lzh"
+//                }
+//            }
+//        ]
+//    },
+//    "status": {
+//        "conditions": [
+//            {
+//                "lastProbeTime": null,
+//                "lastTransitionTime": "2020-03-13T03:38:57Z",
+//                "status": "True",
+//                "type": "Initialized"
+//            },
+//            {
+//                "lastProbeTime": null,
+//                "lastTransitionTime": "2020-03-13T03:40:18Z",
+//                "status": "True",
+//                "type": "Ready"
+//            },
+//            {
+//                "lastProbeTime": null,
+//                "lastTransitionTime": "2020-03-13T03:40:18Z",
+//                "status": "True",
+//                "type": "ContainersReady"
+//            },
+//            {
+//                "lastProbeTime": null,
+//                "lastTransitionTime": "2020-03-13T03:38:57Z",
+//                "status": "True",
+//                "type": "PodScheduled"
+//            }
+//        ],
+//        "containerStatuses": [
+//            {
+//                "containerID": "docker://2870d6abc19ca7fe22ca635ebcfac5d48c6d5550a659bafd74fb48104f6dfe3c",
+//                "image": "registry.cn-hangzhou.aliyuncs.com/scottwang/dubbogo-client:latest",
+//                "imageID": "docker-pullable://registry.cn-hangzhou.aliyuncs.com/scottwang/dubbogo-client@sha256:1f075131f708a0d400339e81549d7c4d4ed917ab0b6bd38ef458dd06ad25a559",
+//                "lastState": {},
+//                "name": "client",
+//                "ready": true,
+//                "restartCount": 0,
+//                "state": {
+//                    "running": {
+//                        "startedAt": "2020-03-13T03:40:17Z"
+//                    }
+//                }
+//            }
+//        ],
+//        "hostIP": "10.0.2.15",
+//        "phase": "Running",
+//        "podIP": "172.17.0.8",
+//        "qosClass": "BestEffort",
+//        "startTime": "2020-03-13T03:38:57Z"
+//    }
+//}
+//`
 
 func Test_DataChange(t *testing.T) {
 	listener := NewRegistryDataListener(&MockDataListener{})

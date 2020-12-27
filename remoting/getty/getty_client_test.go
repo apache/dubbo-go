@@ -87,7 +87,7 @@ func getClient(url *common.URL) *Client {
 
 	exchangeClient := remoting.NewExchangeClient(url, client, 5*time.Second, false)
 	client.SetExchangeClient(exchangeClient)
-	client.Connect(url)
+	_ = client.Connect(url)
 	return client
 }
 
@@ -109,11 +109,11 @@ func testClient_Call(t *testing.T, svr *Server, url *common.URL, c *Client) {
 func testGetBigPkg(t *testing.T, c *Client) {
 	user := &User{}
 	request := remoting.NewRequest("2.0.2")
-	invocation := createInvocation("GetBigPkg", nil, nil, []interface{}{[]interface{}{nil}, user},
+	ivct := createInvocation("GetBigPkg", nil, nil, []interface{}{[]interface{}{nil}, user},
 		[]reflect.Value{reflect.ValueOf([]interface{}{nil}), reflect.ValueOf(user)})
 	attachment := map[string]string{INTERFACE_KEY: "com.ikurento.user.UserProvider"}
-	setAttachment(invocation, attachment)
-	request.Data = invocation
+	setAttachment(ivct, attachment)
+	request.Data = ivct
 	request.Event = false
 	request.TwoWay = true
 	pendingResponse := remoting.NewPendingResponse(request.ID)
@@ -128,11 +128,11 @@ func testGetBigPkg(t *testing.T, c *Client) {
 func testGetUser(t *testing.T, c *Client) {
 	user := &User{}
 	request := remoting.NewRequest("2.0.2")
-	invocation := createInvocation("GetUser", nil, nil, []interface{}{"1", "username"},
+	ivct := createInvocation("GetUser", nil, nil, []interface{}{"1", "username"},
 		[]reflect.Value{reflect.ValueOf("1"), reflect.ValueOf("username")})
 	attachment := map[string]string{INTERFACE_KEY: "com.ikurento.user.UserProvider"}
-	setAttachment(invocation, attachment)
-	request.Data = invocation
+	setAttachment(ivct, attachment)
+	request.Data = ivct
 	request.Event = false
 	request.TwoWay = true
 	pendingResponse := remoting.NewPendingResponse(request.ID)

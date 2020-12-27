@@ -105,11 +105,11 @@ func TestGetConfig(t *testing.T) {
 	m, err := reg.Parser().Parse(configs)
 	assert.NoError(t, err)
 	assert.Equal(t, "5s", m["dubbo.consumer.request_timeout"])
-	configs, err = reg.GetProperties(dubboPropertyFileName)
+	_, err = reg.GetProperties(dubboPropertyFileName)
 	assert.Error(t, err)
-	configs, err = reg.GetInternalProperty(dubboPropertyFileName)
+	_, err = reg.GetInternalProperty(dubboPropertyFileName)
 	assert.Error(t, err)
-	configs, err = reg.GetRule(dubboPropertyFileName)
+	_, err = reg.GetRule(dubboPropertyFileName)
 	assert.Error(t, err)
 }
 

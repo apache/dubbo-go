@@ -113,7 +113,7 @@ func Test_getAccessKeyPairFailed(t *testing.T) {
 		common.WithParamsValue(constant.SECRET_ACCESS_KEY_KEY, "skey"),
 		common.WithParamsValue(constant.ACCESS_KEY_ID_KEY, "akey"), common.WithParamsValue(constant.ACCESS_KEY_STORAGE_KEY, "dubbo"))
 	_, e = getAccessKeyPair(invcation, testurl)
-
+	assert.Nil(t, nil)
 }
 
 func Test_getSignatureWithinParams(t *testing.T) {
