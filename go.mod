@@ -5,7 +5,7 @@ require (
 	github.com/RoaringBitmap/roaring v0.5.5
 	github.com/Workiva/go-datastructures v1.0.52
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
-	github.com/alibaba/sentinel-golang v0.6.2
+	github.com/alibaba/sentinel-golang v1.0.1
 	github.com/apache/dubbo-getty v1.3.10
 	github.com/apache/dubbo-go-hessian2 v1.7.0
 	github.com/coreos/etcd v3.3.25+incompatible
@@ -39,6 +39,7 @@ require (
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/zouyx/agollo/v3 v3.4.5
+	go.etcd.io/bbolt v1.3.5 // indirect
 	go.uber.org/atomic v1.7.0
 	go.uber.org/zap v1.16.0
 	google.golang.org/grpc v1.26.0
