@@ -126,17 +126,17 @@ func initApollo() *httptest.Server {
 }
 
 func configResponse(rw http.ResponseWriter, _ *http.Request) {
-	result := fmt.Sprintf(mockConfigRes)
+	result := mockConfigRes
 	fmt.Fprintf(rw, "%s", result)
 }
 
 func notifyResponse(rw http.ResponseWriter, req *http.Request) {
-	result := fmt.Sprintf(mockNotifyRes)
+	result := mockNotifyRes
 	fmt.Fprintf(rw, "%s", result)
 }
 
 func serviceConfigResponse(rw http.ResponseWriter, _ *http.Request) {
-	result := fmt.Sprintf(mockServiceConfigRes)
+	result := mockServiceConfigRes
 	fmt.Fprintf(rw, "%s", result)
 }
 
