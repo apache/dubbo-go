@@ -230,7 +230,6 @@ func (c *DubboTestCodec) decodeRequest(data []byte) (*remoting.Request, int, err
 func (c *DubboTestCodec) decodeResponse(data []byte) (*remoting.Response, int, error) {
 	buf := bytes.NewBuffer(data)
 	pkg := impl.NewDubboPackage(buf)
-	response := &remoting.Response{}
 	err := pkg.Unmarshal()
 	if err != nil {
 		originErr := perrors.Cause(err)
@@ -240,7 +239,7 @@ func (c *DubboTestCodec) decodeResponse(data []byte) (*remoting.Response, int, e
 		}
 		return nil, 0, perrors.WithStack(err)
 	}
-	response = &remoting.Response{
+	response := &remoting.Response{
 		ID: pkg.Header.ID,
 		//Version:  pkg.Header.,
 		SerialID: pkg.Header.SerialID,
