@@ -85,6 +85,8 @@ func TestGetConfig(t *testing.T) {
 	nacos, err := initNacosData(t)
 	assert.NoError(t, err)
 	configs, err := nacos.GetProperties("dubbo.properties", config_center.WithGroup("dubbo"))
+	assert.Empty(t, configs)
+	assert.NoError(t, err)
 	_, err = nacos.Parser().Parse(configs)
 	assert.NoError(t, err)
 }
