@@ -56,7 +56,7 @@ const (
 
 func init() {
 	osType = runtime.GOOS
-	if os.IsPathSeparator('\\') { //前边的判断是否是系统的分隔符
+	if os.IsPathSeparator('\\') {
 		path = "\\"
 	} else {
 		path = "/"
