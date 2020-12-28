@@ -193,7 +193,7 @@ func (r *consulRegistry) Destroy() {
 		go func() {
 			defer func() {
 				if e := recover(); e != nil {
-					logger.Errorf("consulRegistry destory with panic: %v", e)
+					logger.Errorf("consulRegistry destroy with panic: %v", e)
 				}
 				done <- struct{}{}
 			}()

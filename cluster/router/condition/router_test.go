@@ -70,10 +70,12 @@ func TestNewConditionRouter(t *testing.T) {
 	assert.EqualValues(t, router.ThenCondition, thenRule)
 
 	router, err = NewConditionRouter(nil)
+	assert.Nil(t, router)
 	assert.Error(t, err)
 
 	url, _ = common.NewURL(`condition://0.0.0.0:?application=mock-app&category=routers&force=true&priority=1&router=condition&rule=YSAmT4gYiAmIGQ%3D`)
 	router, err = NewConditionRouter(url)
+	assert.Nil(t, router)
 	assert.Error(t, err)
 
 	url, _ = common.NewURL(`condition://0.0.0.0:?application=mock-app&category=routers&force=true&router=condition&rule=YSAmIGMgPT4gYiAmIGQ%3D`)
