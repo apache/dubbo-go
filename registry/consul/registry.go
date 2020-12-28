@@ -56,6 +56,10 @@ type consulRegistry struct {
 	// Done field represents whether
 	// consul registry is closed.
 	done chan struct{}
+
+	// registeredURLs field represents all URLs that have been registered
+	// will be unregistered when destroyed
+	registeredURLs []*common.URL
 }
 
 func newConsulRegistry(url *common.URL) (registry.Registry, error) {
@@ -91,6 +95,7 @@ func (r *consulRegistry) Register(url *common.URL) error {
 
 // register actually register the @url
 func (r *consulRegistry) register(url *common.URL) error {
+	r.registeredURLs = append(r.registeredURLs, url.Clone())
 	service, err := buildService(url)
 	if err != nil {
 		return err
@@ -188,25 +193,26 @@ func (r *consulRegistry) IsAvailable() bool {
 
 // Destroy consul registry center
 func (r *consulRegistry) Destroy() {
-	if r.URL != nil {
-		done := make(chan struct{}, 1)
-		go func() {
-			defer func() {
-				if e := recover(); e != nil {
-					logger.Errorf("consulRegistry destory with panic: %v", e)
-				}
-				done <- struct{}{}
-			}()
-			if err := r.UnRegister(r.URL); err != nil {
+	done := make(chan struct{}, 1)
+	go func() {
+		defer func() {
+			if e := recover(); e != nil {
+				logger.Errorf("consulRegistry destory with panic: %v", e)
+			}
+			done <- struct{}{}
+		}()
+		for _, url := range r.registeredURLs {
+			if err := r.UnRegister(url); err != nil {
 				logger.Errorf("consul registry unregister with err: %s", err.Error())
 			}
-		}()
-		select {
-		case <-done:
-			logger.Infof("consulRegistry unregister done")
-		case <-time.After(registryDestroyDefaultTimeout):
-			logger.Errorf("consul unregister timeout")
 		}
+	}()
+	select {
+	case <-done:
+		logger.Infof("consulRegistry unregister done")
+	case <-time.After(registryDestroyDefaultTimeout):
+		logger.Errorf("consul unregister timeout")
 	}
+
 	close(r.done)
 }
