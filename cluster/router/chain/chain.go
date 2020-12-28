@@ -65,8 +65,6 @@ type RouterChain struct {
 	notify chan struct{}
 	// Address cache
 	cache atomic.Value
-	// init
-	init sync.Once
 }
 
 // Route Loop routers in RouterChain and call Route method to determine the target invokers list.
@@ -113,35 +111,18 @@ func (c *RouterChain) SetInvokers(invokers []protocol.Invoker) {
 	c.invokers = invokers
 	c.mutex.Unlock()
 
-	// it should trigger init router for first call
-	c.init.Do(func() {
-		go func() {
-			c.notify <- struct{}{}
-		}()
-	})
-
-	c.count++
-	now := time.Now()
-	if c.count >= countThreshold && now.Sub(c.last) >= timeThreshold {
-		c.last = now
-		c.count = 0
-		go func() {
-			c.notify <- struct{}{}
-		}()
-	}
+	// it should trigger cache to refresh
+	go func() {
+		c.notify <- struct{}{}
+	}()
 }
 
-// loop listens on events to update the address cache when it's necessary, either when it receives notification
-// from address update, or when timeInterval exceeds.
+// loop listens on events to update the address cache  when it receives notification
+// from address update,
 func (c *RouterChain) loop() {
-	ticker := time.NewTicker(timeInterval)
 	for {
-		select {
-		case <-ticker.C:
-			c.buildCache()
-		case <-c.notify:
-			c.buildCache()
-		}
+		<-c.notify
+		c.buildCache()
 	}
 }
 
