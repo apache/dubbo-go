@@ -156,13 +156,13 @@ type serviceMap struct {
 	interfaceMap map[string][]*Service          // interface -> service
 }
 
-// GetService gets a service defination by protocol and name
+// GetService gets a service definition by protocol and name
 func (sm *serviceMap) GetService(protocol, interfaceName, group, version string) *Service {
 	serviceKey := ServiceKey(interfaceName, group, version)
 	return sm.GetServiceByServiceKey(protocol, serviceKey)
 }
 
-// GetService gets a service defination by protocol and service key
+// GetService gets a service definition by protocol and service key
 func (sm *serviceMap) GetServiceByServiceKey(protocol, serviceKey string) *Service {
 	sm.mutex.RLock()
 	defer sm.mutex.RUnlock()

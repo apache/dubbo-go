@@ -83,6 +83,7 @@ func TestRandomlbSelectWeight(t *testing.T) {
 		}
 		selectedInvoker = append(selectedInvoker, s)
 	}
+	assert.Equal(t, 10000, len(selectedInvoker))
 
 	assert.Condition(t, func() bool {
 		// really is 0.9999999999999
@@ -114,6 +115,8 @@ func TestRandomlbSelectWarmup(t *testing.T) {
 		}
 		selectedInvoker = append(selectedInvoker, s)
 	}
+	assert.Equal(t, 10000, len(selectedInvoker))
+
 	assert.Condition(t, func() bool {
 		return selected/10000 < 0.1
 	})
