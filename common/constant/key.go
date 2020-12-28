@@ -299,6 +299,8 @@ const (
 	HEALTH_CHECKER = "health.checker"
 	// The name of the default implementation of HealthChecker
 	DEFAULT_HEALTH_CHECKER = "default"
+	// The name of the default implementation of C
+	DEFAULT_CONN_CHECKER = "default"
 	// The key of outstanding-request-limit\
 	OUTSTANDING_REQUEST_COUNT_LIMIT_KEY = "outstanding.request.limit"
 	// The key of successive-failed-request's threshold
