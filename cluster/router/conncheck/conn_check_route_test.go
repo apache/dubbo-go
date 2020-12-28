@@ -19,8 +19,9 @@ package conncheck
 
 import (
 	"fmt"
+	"github.com/apache/dubbo-go/protocol/mock"
+	"github.com/golang/mock/gomock"
 	"testing"
-	"time"
 )
 
 import (
@@ -74,12 +75,27 @@ func TestConnCheckRouterRoute(t *testing.T) {
 	// now  invoker3 invoker1 is healthy
 	assert.True(t, len(res.ToArray()) == 2)
 
+}
+
+func TestRecovery(t *testing.T) {
 	// check recover
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	invoker1 := mock.NewMockInvoker(ctrl)
+	invoker2 := mock.NewMockInvoker(ctrl)
+
+	invoker1.EXPECT().GetUrl().Return(&common.URL{Path: "path1"}).AnyTimes()
+	invoker2.EXPECT().GetUrl().Return(&common.URL{Path: "path2"}).AnyTimes()
+	invoker1.EXPECT().IsAvailable().Return(true).AnyTimes()
+	invoker2.EXPECT().IsAvailable().Return(true).AnyTimes()
+
+	protocol.SetInvokerUnhealthyStatus(invoker1)
+	protocol.SetInvokerUnhealthyStatus(invoker2)
+	assert.Equal(t, len(protocol.GetBlackListInvokers(16)), 2)
 	protocol.TryRefreshBlackList()
-	time.Sleep(time.Second)
-	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*ConnCheckRouter), invokers), consumerURL, inv)
-	// now all invokers are healthy
-	assert.True(t, len(res.ToArray()) == 3)
+	assert.Equal(t, len(protocol.GetBlackListInvokers(16)), 0)
 }
 
 func setUpAddrCache(r router.Poolable, addrs []protocol.Invoker) router.Cache {
