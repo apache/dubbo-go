@@ -160,7 +160,7 @@ func (s *Server) newSession(session getty.Session) error {
 		session.SetTaskPool(srvGrpool)
 		return nil
 	}
-	if tcpConn, ok = session.Conn().(*net.TCPConn); !ok {
+	if _, ok = session.Conn().(*net.TCPConn); !ok {
 		panic(fmt.Sprintf("%s, session.conn{%#v} is not tcp connection\n", session.Stat(), session.Conn()))
 	}
 
