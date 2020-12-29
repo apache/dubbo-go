@@ -65,7 +65,7 @@ func TestActiveFilterOnResponse(t *testing.T) {
 	result := &protocol.RPCResult{
 		Err: errors.New("test"),
 	}
-	filter.OnResponse(nil, result, invoker, invoc)
+	filter.OnResponse(context.TODO(), result, invoker, invoc)
 	methodStatus := protocol.GetMethodStatus(url, "test")
 	urlStatus := protocol.GetURLStatus(url)
 
