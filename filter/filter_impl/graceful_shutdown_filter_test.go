@@ -65,7 +65,8 @@ func TestGenericFilterInvoke(t *testing.T) {
 	shutdownFilter.shutdownConfig = providerConfig.ShutdownConfig
 
 	assert.True(t, shutdownFilter.rejectNewRequest())
-	result = shutdownFilter.OnResponse(nil, nil, protocol.NewBaseInvoker(invokeUrl), invoc)
+	result = shutdownFilter.OnResponse(context.Background(), nil, protocol.NewBaseInvoker(invokeUrl), invoc)
+	assert.Nil(t, result)
 
 	rejectHandler := &common2.OnlyLogRejectedExecutionHandler{}
 	extension.SetRejectedExecutionHandler("mock", func() filter.RejectedExecutionHandler {

@@ -201,6 +201,8 @@ const (
 	TRACING_REMOTE_SPAN_CTX = "tracing.remote.span.ctx"
 )
 
+type AttachmentCtxKey string
+
 // Use for router module
 const (
 	// ConditionRouterName Specify file condition router name
@@ -238,7 +240,7 @@ const (
 	Tagkey      = "dubbo.tag"
 
 	// Attachment key in context in invoker
-	AttachmentKey = "attachment"
+	AttachmentKey = AttachmentCtxKey("attachment")
 )
 
 const (
@@ -265,7 +267,7 @@ const (
 	// signature format
 	SIGNATURE_STRING_FORMAT = "%s#%s#%s#%s"
 	// key whether enable signature
-	PARAMTER_SIGNATURE_ENABLE_KEY = "param.sign"
+	PARAMETER_SIGNATURE_ENABLE_KEY = "param.sign"
 	// consumer
 	CONSUMER = "consumer"
 	// key of access key id
@@ -293,7 +295,7 @@ const (
 	HEALTH_CHECKER = "health.checker"
 	// The name of the default implementation of HealthChecker
 	DEFAULT_HEALTH_CHECKER = "default"
-	// The key of oustanding-request-limit
+	// The key of outstanding-request-limit
 	OUTSTANDING_REQUEST_COUNT_LIMIT_KEY = "outstanding.request.limit"
 	// The key of successive-failed-request's threshold
 	SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY = "successive.failed.threshold"
