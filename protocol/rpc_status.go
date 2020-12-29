@@ -30,11 +30,16 @@ import (
 )
 
 var (
-	methodStatistics    sync.Map // url -> { methodName : RPCStatus}
-	serviceStatistic    sync.Map // url -> RPCStatus
-	invokerBlackList    sync.Map // store unhealthy url blackList
-	blackListRefreshing int32    // store if the refresing method is processing
+	methodStatistics    sync.Map     // url -> { methodName : RPCStatus}
+	serviceStatistic    sync.Map     // url -> RPCStatus
+	invokerBlackList    sync.Map     // store unhealthy url blackList
+	blackListCacheDirty atomic.Value // store if the cache in chain is not refreshed by blacklist
+	blackListRefreshing int32        // store if the refresing method is processing
 )
+
+func init() {
+	blackListCacheDirty.Store(false)
+}
 
 // RPCStatus is URL statistics.
 type RPCStatus struct {
@@ -201,11 +206,13 @@ func GetInvokerHealthyStatus(invoker Invoker) bool {
 // SetInvokerUnhealthyStatus add target invoker to black list
 func SetInvokerUnhealthyStatus(invoker Invoker) {
 	invokerBlackList.Store(invoker.GetUrl().Key(), invoker)
+	blackListCacheDirty.Store(true)
 }
 
 // RemoveInvokerUnhealthyStatus remove unhealthy status of target invoker from blacklist
 func RemoveInvokerUnhealthyStatus(invoker Invoker) {
 	invokerBlackList.Delete(invoker.GetUrl().Key())
+	blackListCacheDirty.Store(true)
 }
 
 // GetBlackListInvokers get at most size of blockSize invokers from black list
@@ -224,6 +231,13 @@ func GetBlackListInvokers(blockSize int) []Invoker {
 // RemoveUrlKeyUnhealthyStatus called when event of provider unregister, delete from black list
 func RemoveUrlKeyUnhealthyStatus(key string) {
 	invokerBlackList.Delete(key)
+	blackListCacheDirty.Store(true)
+}
+
+func GetAndRefreshState() bool {
+	state := blackListCacheDirty.Load()
+	blackListCacheDirty.Store(false)
+	return state.(bool)
 }
 
 // TryRefreshBlackList start 3 gr to check at most block=16 invokers in black list
