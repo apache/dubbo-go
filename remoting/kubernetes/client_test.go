@@ -365,7 +365,7 @@ func TestClientGetChildrenKVList(t *testing.T) {
 	// start get all children
 	kList, vList, err := client.GetChildren(prefix)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
 	for i := 0; i < len(kList); i++ {
@@ -392,7 +392,7 @@ func TestClientWatchPrefix(t *testing.T) {
 
 		wc, done, err := client.WatchWithPrefix(prefix)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		wg.Done()
@@ -435,7 +435,7 @@ func TestClientWatch(t *testing.T) {
 
 		wc, done, err := client.Watch(prefix)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		wg.Done()
 
