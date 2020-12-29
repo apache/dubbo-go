@@ -50,11 +50,11 @@ func TestSentinelFilter_QPS(t *testing.T) {
 
 	_, err = flow.LoadRules([]*flow.Rule{
 		{
-			Resource:               interfaceResourceName,
+			Resource: interfaceResourceName,
 			//MetricType:             flow.QPS,
 			TokenCalculateStrategy: flow.Direct,
 			ControlBehavior:        flow.Reject,
-			Threshold:                  100,
+			Threshold:              100,
 			RelationStrategy:       flow.CurrentResource,
 		},
 	})
