@@ -111,7 +111,6 @@ func (c *RouterChain) SetInvokers(invokers []protocol.Invoker) {
 	c.invokers = invokers
 	c.mutex.Unlock()
 
-	// it should trigger cache to refresh
 	go func() {
 		c.notify <- struct{}{}
 	}()
@@ -120,9 +119,16 @@ func (c *RouterChain) SetInvokers(invokers []protocol.Invoker) {
 // loop listens on events to update the address cache  when it receives notification
 // from address update,
 func (c *RouterChain) loop() {
+	ticker := time.NewTicker(timeInterval)
 	for {
-		<-c.notify
-		c.buildCache()
+		select {
+		case <-ticker.C:
+			if protocol.GetAndRefreshState() {
+				c.buildCache()
+			}
+		case <-c.notify:
+			c.buildCache()
+		}
 	}
 }
 
