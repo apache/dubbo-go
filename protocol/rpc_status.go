@@ -24,17 +24,21 @@ import (
 )
 
 import (
+	uberAtomic "go.uber.org/atomic"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 )
 
 var (
-	methodStatistics    sync.Map     // url -> { methodName : RPCStatus}
-	serviceStatistic    sync.Map     // url -> RPCStatus
-	invokerBlackList    sync.Map     // store unhealthy url blackList
-	blackListCacheDirty atomic.Value // store if the cache in chain is not refreshed by blacklist
-	blackListRefreshing int32        // store if the refresing method is processing
+	methodStatistics    sync.Map        // url -> { methodName : RPCStatus}
+	serviceStatistic    sync.Map        // url -> RPCStatus
+	invokerBlackList    sync.Map        // store unhealthy url blackList
+	blackListCacheDirty uberAtomic.Bool // store if the cache in chain is not refreshed by blacklist
+	blackListRefreshing int32           // store if the refresing method is processing
 )
 
 func init() {
@@ -237,7 +241,7 @@ func RemoveUrlKeyUnhealthyStatus(key string) {
 func GetAndRefreshState() bool {
 	state := blackListCacheDirty.Load()
 	blackListCacheDirty.Store(false)
-	return state.(bool)
+	return state
 }
 
 // TryRefreshBlackList start 3 gr to check at most block=16 invokers in black list
