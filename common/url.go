@@ -64,7 +64,13 @@ var (
 	DubboNodes = [...]string{"consumers", "configurators", "routers", "providers"}
 	// DubboRole Dubbo service role
 	DubboRole = [...]string{"consumer", "", "routers", "provider"}
+	// CompareURLEqualFunc compare two url is equal
+	compareURLEqualFunc CompareURLEqualFunc
 )
+
+func init() {
+	compareURLEqualFunc = defaultCompareURLEqual
+}
 
 // nolint
 type RoleType int
@@ -317,6 +323,8 @@ func isMatchCategory(category1 string, category2 string) bool {
 }
 
 func (c *URL) String() string {
+	c.paramsLock.Lock()
+	defer c.paramsLock.Unlock()
 	var buf strings.Builder
 	if len(c.Username) == 0 && len(c.Password) == 0 {
 		buf.WriteString(fmt.Sprintf("%s://%s:%s%s?", c.Protocol, c.Ip, c.Port, c.Path))
@@ -425,6 +433,13 @@ func (c *URL) SetParam(key string, value string) {
 	c.paramsLock.Lock()
 	defer c.paramsLock.Unlock()
 	c.params.Set(key, value)
+}
+
+// DelParam will delete the given key from the url
+func (c *URL) DelParam(key string) {
+	c.paramsLock.Lock()
+	defer c.paramsLock.Unlock()
+	c.params.Del(key)
 }
 
 // ReplaceParams will replace the URL.params
@@ -724,6 +739,9 @@ func (c *URL) CloneWithParams(reserveParams []string) *URL {
 
 // IsEquals compares if two URLs equals with each other. Excludes are all parameter keys which should ignored.
 func IsEquals(left *URL, right *URL, excludes ...string) bool {
+	if (left == nil && right != nil) || (right == nil && left != nil) {
+		return false
+	}
 	if left.Ip != right.Ip || left.Port != right.Port {
 		return false
 	}
@@ -782,4 +800,18 @@ func (s URLSlice) Less(i, j int) bool {
 // nolint
 func (s URLSlice) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
+}
+
+type CompareURLEqualFunc func(l *URL, r *URL, excludeParam ...string) bool
+
+func defaultCompareURLEqual(l *URL, r *URL, excludeParam ...string) bool {
+	return IsEquals(l, r, excludeParam...)
+}
+
+func SetCompareURLEqualFunc(f CompareURLEqualFunc) {
+	compareURLEqualFunc = f
+}
+
+func GetCompareURLEqualFunc() CompareURLEqualFunc {
+	return compareURLEqualFunc
 }
