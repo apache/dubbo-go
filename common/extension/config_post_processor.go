@@ -15,37 +15,31 @@
  * limitations under the License.
  */
 
-package nacos
+package extension
 
 import (
-	"testing"
+	"github.com/apache/dubbo-go/config/interfaces"
 )
 
-import (
-	"github.com/stretchr/testify/assert"
+var (
+	processors = make(map[string]interfaces.ConfigPostProcessor)
 )
 
-import (
-	"github.com/apache/dubbo-go/config"
-)
+// SetConfigPostProcessor registers a ConfigPostProcessor with the given name.
+func SetConfigPostProcessor(name string, processor interfaces.ConfigPostProcessor) {
+	processors[name] = processor
+}
 
-func TestNewNacosClient(t *testing.T) {
-	rc := &config.RemoteConfig{}
-	client, err := NewNacosClient(rc)
+// GetConfigPostProcessor finds a ConfigPostProcessor by name.
+func GetConfigPostProcessor(name string) interfaces.ConfigPostProcessor {
+	return processors[name]
+}
 
-	// address is nil
-	assert.Nil(t, client)
-	assert.NotNil(t, err)
-
-	rc.Address = "console.nacos.io:80:123"
-	client, err = NewNacosClient(rc)
-	// invalid address
-	assert.Nil(t, client)
-	assert.NotNil(t, err)
-
-	rc.Address = "console.nacos.io:80"
-	rc.TimeoutStr = "10s"
-	client, err = NewNacosClient(rc)
-	assert.NotNil(t, client)
-	assert.Nil(t, err)
+// GetConfigPostProcessors returns all registered instances of ConfigPostProcessor.
+func GetConfigPostProcessors() []interfaces.ConfigPostProcessor {
+	ret := make([]interfaces.ConfigPostProcessor, 0, len(processors))
+	for _, v := range processors {
+		ret = append(ret, v)
+	}
+	return ret
 }
