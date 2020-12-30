@@ -20,12 +20,12 @@ package chain
 import (
 	"sort"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
 import (
 	perrors "github.com/pkg/errors"
+	"go.uber.org/atomic"
 )
 
 import (
@@ -38,9 +38,7 @@ import (
 )
 
 const (
-	timeInterval   = 5 * time.Second
-	timeThreshold  = 2 * time.Second
-	countThreshold = 5
+	timeInterval = 5 * time.Second
 )
 
 // RouterChain Router chain
@@ -65,6 +63,8 @@ type RouterChain struct {
 	notify chan struct{}
 	// Address cache
 	cache atomic.Value
+	// routerNeedsUpdate
+	routerNeedsUpdate atomic.Bool
 }
 
 // Route Loop routers in RouterChain and call Route method to determine the target invokers list.
@@ -102,6 +102,7 @@ func (c *RouterChain) AddRouters(routers []router.PriorityRouter) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.routers = newRouters
+	c.routerNeedsUpdate.Store(true)
 }
 
 // SetInvokers receives updated invokers from registry center. If the times of notification exceeds countThreshold and
@@ -123,8 +124,9 @@ func (c *RouterChain) loop() {
 	for {
 		select {
 		case <-ticker.C:
-			if protocol.GetAndRefreshState() {
+			if protocol.GetAndRefreshState() || c.routerNeedsUpdate.Load() {
 				c.buildCache()
+				c.routerNeedsUpdate.Store(false)
 			}
 		case <-c.notify:
 			c.buildCache()
@@ -237,11 +239,14 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 
 	sortRouter(newRouters)
 
+	routerNeedsUpdateInit := atomic.Bool{}
+	routerNeedsUpdateInit.Store(false)
 	chain := &RouterChain{
-		builtinRouters: routers,
-		routers:        newRouters,
-		last:           time.Now(),
-		notify:         make(chan struct{}),
+		builtinRouters:    routers,
+		routers:           newRouters,
+		last:              time.Now(),
+		notify:            make(chan struct{}),
+		routerNeedsUpdate: routerNeedsUpdateInit,
 	}
 	if url != nil {
 		chain.url = url
