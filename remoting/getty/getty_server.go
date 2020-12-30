@@ -144,7 +144,7 @@ func (s *Server) newSession(session getty.Session) error {
 		logger.Debugf("server accepts new session:%s\n", session.Stat())
 		return nil
 	}
-	if tcpConn, ok = session.Conn().(*net.TCPConn); !ok {
+	if _, ok = session.Conn().(*net.TCPConn); !ok {
 		panic(fmt.Sprintf("%s, session.conn{%#v} is not tcp connection\n", session.Stat(), session.Conn()))
 	}
 

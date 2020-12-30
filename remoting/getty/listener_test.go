@@ -47,7 +47,7 @@ func TestRebuildCtx(t *testing.T) {
 	assert.Nil(t, ctx.Value(constant.TRACING_REMOTE_SPAN_CTX))
 
 	span, ctx := opentracing.StartSpanFromContext(ctx, "Test-Client")
-
+	assert.NotNil(t, ctx)
 	err := injectTraceCtx(span, inv)
 	assert.NoError(t, err)
 
