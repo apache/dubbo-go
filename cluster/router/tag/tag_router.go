@@ -76,10 +76,11 @@ type tagRouter struct {
 	application   string
 	ruleChanged   bool
 	mutex         sync.RWMutex
+	notify        chan struct{}
 }
 
 // NewTagRouter returns a tagRouter instance if url is not nil
-func NewTagRouter(url *common.URL) (*tagRouter, error) {
+func NewTagRouter(url *common.URL, notify chan struct{}) (*tagRouter, error) {
 	if url == nil {
 		return nil, perrors.Errorf("Illegal route URL!")
 	}
@@ -87,6 +88,7 @@ func NewTagRouter(url *common.URL) (*tagRouter, error) {
 		url:      url,
 		enabled:  url.GetParamBool(constant.RouterEnabled, true),
 		priority: url.GetParamInt(constant.RouterPriority, 0),
+		notify:   notify,
 	}, nil
 }
 
@@ -191,6 +193,7 @@ func (c *tagRouter) Process(event *config_center.ConfigChangeEvent) {
 	defer c.mutex.Unlock()
 	c.tagRouterRule = routerRule
 	c.ruleChanged = true
+	c.notify <- struct{}{}
 }
 
 // URL gets the url of tagRouter

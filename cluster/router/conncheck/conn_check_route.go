@@ -40,12 +40,14 @@ const (
 type ConnCheckRouter struct {
 	url     *common.URL
 	checker router.ConnChecker
+	notify  chan struct{}
 }
 
 // NewConnCheckRouter construct an NewConnCheckRouter via url
-func NewConnCheckRouter(url *common.URL) (router.PriorityRouter, error) {
+func NewConnCheckRouter(url *common.URL, notify chan struct{}) (router.PriorityRouter, error) {
 	r := &ConnCheckRouter{
-		url: url,
+		url:    url,
+		notify: notify,
 	}
 	checkerName := url.GetParam(constant.HEALTH_CHECKER, constant.DEFAULT_HEALTH_CHECKER)
 	r.checker = extension.GetConnChecker(checkerName, url)

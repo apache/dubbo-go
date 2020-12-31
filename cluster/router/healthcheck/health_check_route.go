@@ -41,13 +41,15 @@ type HealthCheckRouter struct {
 	url     *common.URL
 	enabled bool
 	checker router.HealthChecker
+	notify  chan struct{}
 }
 
 // NewHealthCheckRouter construct an HealthCheckRouter via url
-func NewHealthCheckRouter(url *common.URL) (router.PriorityRouter, error) {
+func NewHealthCheckRouter(url *common.URL, notify chan struct{}) (router.PriorityRouter, error) {
 	r := &HealthCheckRouter{
 		url:     url,
 		enabled: url.GetParamBool(constant.HEALTH_ROUTE_ENABLED_KEY, false),
+		notify:  notify,
 	}
 	if r.enabled {
 		checkerName := url.GetParam(constant.HEALTH_CHECKER, constant.DEFAULT_HEALTH_CHECKER)

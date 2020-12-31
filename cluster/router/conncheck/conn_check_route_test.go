@@ -48,11 +48,12 @@ const (
 
 func TestConnCheckRouterRoute(t *testing.T) {
 	defer protocol.CleanAllStatus()
+	notify := make(chan struct{})
 	consumerURL, _ := common.NewURL(connCheck1001URL)
 	url1, _ := common.NewURL(fmt.Sprintf(connCheckRouteUrlFormat, connCheckRoute1010IP))
 	url2, _ := common.NewURL(fmt.Sprintf(connCheckRouteUrlFormat, connCheckRoute1011IP))
 	url3, _ := common.NewURL(fmt.Sprintf(connCheckRouteUrlFormat, connCheckRoute1012IP))
-	hcr, _ := NewConnCheckRouter(consumerURL)
+	hcr, _ := NewConnCheckRouter(consumerURL, notify)
 
 	var invokers []protocol.Invoker
 	invoker1 := NewMockInvoker(url1)
