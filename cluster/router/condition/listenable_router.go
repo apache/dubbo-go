@@ -112,7 +112,9 @@ func (l *listenableRouter) Process(event *config_center.ConfigChangeEvent) {
 		return
 	}
 	l.generateConditions(routerRule)
-	l.notify <- struct{}{}
+	go func() {
+		l.notify <- struct{}{}
+	}()
 }
 
 func (l *listenableRouter) generateConditions(rule *RouterRule) {
