@@ -21,6 +21,7 @@ import (
 	"path"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -46,6 +47,10 @@ var (
 	errNilChildren     = perrors.Errorf("has none children")
 	errNilNode         = perrors.Errorf("node does not exist")
 )
+
+var clientHaveCreated uint32
+var mux sync.Mutex
+var zcl *ZookeeperClient
 
 // ZookeeperClient ...
 type ZookeeperClient struct {
@@ -136,7 +141,7 @@ func ValidateZookeeperClient(container zkClientFacade, opts ...Option) error {
 			return perrors.WithMessagef(err, "newZookeeperClient(address:%+v)", url.Location)
 		}
 		zkAddresses := strings.Split(url.Location, ",")
-		newClient, err := newZookeeperClient(opions.zkName, zkAddresses, timeout)
+		newClient, err := getZookeeperClient(opions.zkName, zkAddresses, timeout)
 		if err != nil {
 			logger.Warnf("newZookeeperClient(name{%s}, zk address{%v}, timeout{%d}) = error{%v}",
 				opions.zkName, url.Location, timeout.String(), err)
@@ -155,6 +160,21 @@ func ValidateZookeeperClient(container zkClientFacade, opts ...Option) error {
 	}
 
 	return perrors.WithMessagef(err, "newZookeeperClient(address:%+v)", url.PrimitiveURL)
+}
+
+func getZookeeperClient(name string, zkAddrs []string, timeout time.Duration) (*ZookeeperClient, error) {
+	if atomic.LoadUint32(&clientHaveCreated) == 0 {
+		mux.Lock()
+		defer mux.Unlock()
+		if atomic.LoadUint32(&clientHaveCreated) == 1 {
+			return zcl, nil
+		}
+		_, err := newZookeeperClient(name, zkAddrs, timeout)
+		if err == nil {
+			atomic.StoreUint32(&clientHaveCreated, 1)
+		}
+	}
+	return zcl, nil
 }
 
 func newZookeeperClient(name string, zkAddrs []string, timeout time.Duration) (*ZookeeperClient, error) {
@@ -179,7 +199,7 @@ func newZookeeperClient(name string, zkAddrs []string, timeout time.Duration) (*
 
 	z.Wait.Add(1)
 	go z.HandleZkEvent(event)
-
+	zcl = z
 	return z, nil
 }
 
