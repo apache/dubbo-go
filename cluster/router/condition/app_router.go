@@ -34,14 +34,15 @@ const (
 // AppRouter For listen application router with config center
 type AppRouter struct {
 	listenableRouter
+	notify interface{}
 }
 
 // NewAppRouter Init AppRouter by url
-func NewAppRouter(url *common.URL) (*AppRouter, error) {
+func NewAppRouter(url *common.URL, notify chan struct{}) (*AppRouter, error) {
 	if url == nil {
 		return nil, perrors.Errorf("No route URL for create app router!")
 	}
-	appRouter, err := newListenableRouter(url, url.GetParam(constant.APPLICATION_KEY, ""))
+	appRouter, err := newListenableRouter(url, url.GetParam(constant.APPLICATION_KEY, ""), notify)
 	if err != nil {
 		return nil, err
 	}

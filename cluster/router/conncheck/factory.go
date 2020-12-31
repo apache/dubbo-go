@@ -39,6 +39,6 @@ func newConnCheckRouteFactory() router.PriorityRouterFactory {
 }
 
 // NewPriorityRouter construct a new NewConnCheckRouter via url
-func (f *ConnCheckRouteFactory) NewPriorityRouter(url *common.URL) (router.PriorityRouter, error) {
-	return NewConnCheckRouter(url)
+func (f *ConnCheckRouteFactory) NewPriorityRouter(url *common.URL, notify chan struct{}) (router.PriorityRouter, error) {
+	return NewConnCheckRouter(url, notify)
 }

@@ -78,7 +78,8 @@ conditions:
 	assert.NotNil(t, configuration)
 
 	appRouteURL := getAppRouteURL(routerKey)
-	appRouter, err := NewAppRouter(appRouteURL)
+	notify := make(chan struct{})
+	appRouter, err := NewAppRouter(appRouteURL, notify)
 	assert.Nil(t, err)
 	assert.NotNil(t, appRouter)
 
@@ -126,7 +127,8 @@ conditions:
 	assert.NotNil(t, configuration)
 
 	appRouteURL := getAppRouteURL(routerKey)
-	appRouter, err := NewAppRouter(appRouteURL)
+	notify := make(chan struct{})
+	appRouter, err := NewAppRouter(appRouteURL, notify)
 	assert.Nil(t, err)
 	assert.NotNil(t, appRouter)
 
@@ -165,7 +167,8 @@ conditions:
 	assert.NotNil(t, configuration)
 
 	appRouteURL := getAppRouteURL(routerKey)
-	appRouter, err := NewAppRouter(appRouteURL)
+	notify := make(chan struct{})
+	appRouter, err := NewAppRouter(appRouteURL, notify)
 	assert.Nil(t, err)
 	assert.NotNil(t, appRouter)
 
