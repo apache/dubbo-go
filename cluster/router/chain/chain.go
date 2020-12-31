@@ -63,8 +63,10 @@ type RouterChain struct {
 	notify chan struct{}
 	// Address cache
 	cache atomic.Value
-	// routerNeedsUpdate
-	routerNeedsUpdate atomic.Bool
+}
+
+func (c *RouterChain) GetNotifyChan() chan struct{} {
+	return c.notify
 }
 
 // Route Loop routers in RouterChain and call Route method to determine the target invokers list.
@@ -102,7 +104,7 @@ func (c *RouterChain) AddRouters(routers []router.PriorityRouter) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.routers = newRouters
-	c.routerNeedsUpdate.Store(true)
+	c.notify <- struct{}{}
 }
 
 // SetInvokers receives updated invokers from registry center. If the times of notification exceeds countThreshold and
@@ -124,9 +126,8 @@ func (c *RouterChain) loop() {
 	for {
 		select {
 		case <-ticker.C:
-			if protocol.GetAndRefreshState() || c.routerNeedsUpdate.Load() {
+			if protocol.GetAndRefreshState() {
 				c.buildCache()
-				c.routerNeedsUpdate.Store(false)
 			}
 		case <-c.notify:
 			c.buildCache()
@@ -224,9 +225,15 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 	if len(routerFactories) == 0 {
 		return nil, perrors.Errorf("No routerFactory exits , create one please")
 	}
+
+	chain := &RouterChain{
+		last:   time.Now(),
+		notify: make(chan struct{}),
+	}
+
 	routers := make([]router.PriorityRouter, 0, len(routerFactories))
 	for key, routerFactory := range routerFactories {
-		r, err := routerFactory().NewPriorityRouter(url)
+		r, err := routerFactory().NewPriorityRouter(url, chain.notify)
 		if r == nil || err != nil {
 			logger.Errorf("router chain build router fail! routerFactories key:%s  error:%s", key, err.Error())
 			continue
@@ -241,13 +248,8 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 
 	routerNeedsUpdateInit := atomic.Bool{}
 	routerNeedsUpdateInit.Store(false)
-	chain := &RouterChain{
-		builtinRouters:    routers,
-		routers:           newRouters,
-		last:              time.Now(),
-		notify:            make(chan struct{}),
-		routerNeedsUpdate: routerNeedsUpdateInit,
-	}
+	chain.routers = newRouters
+	chain.builtinRouters = routers
 	if url != nil {
 		chain.url = url
 	}
