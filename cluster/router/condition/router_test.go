@@ -59,6 +59,11 @@ func TestParseRule(t *testing.T) {
 
 func TestNewConditionRouter(t *testing.T) {
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	url, _ := common.NewURL(`condition://0.0.0.0:?application=mock-app&category=routers&force=true&priority=1&router=condition&rule=YSAmIGMgPT4gYiAmIGQ%3D`)
 	router, err := NewConditionRouter(url, notify)
 	assert.Nil(t, err)
