@@ -37,8 +37,8 @@ func NewTagRouterFactory() router.PriorityRouterFactory {
 
 // NewPriorityRouter create a tagRouter by tagRouterFactory with a url
 // The url contains router configuration information
-func (c *tagRouterFactory) NewPriorityRouter(url *common.URL) (router.PriorityRouter, error) {
-	return NewTagRouter(url)
+func (c *tagRouterFactory) NewPriorityRouter(url *common.URL, notify chan struct{}) (router.PriorityRouter, error) {
+	return NewTagRouter(url, notify)
 }
 
 // NewFileRouter create a tagRouter by profile content
