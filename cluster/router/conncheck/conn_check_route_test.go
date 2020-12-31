@@ -49,6 +49,11 @@ const (
 func TestConnCheckRouterRoute(t *testing.T) {
 	defer protocol.CleanAllStatus()
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	consumerURL, _ := common.NewURL(connCheck1001URL)
 	url1, _ := common.NewURL(fmt.Sprintf(connCheckRouteUrlFormat, connCheckRoute1010IP))
 	url2, _ := common.NewURL(fmt.Sprintf(connCheckRouteUrlFormat, connCheckRoute1011IP))

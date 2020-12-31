@@ -121,6 +121,11 @@ func (bi *MockInvoker) Destroy() {
 func TestTagRouterPriority(t *testing.T) {
 	u1, err := common.NewURL(tagRouterTestUserConsumerTag)
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	assert.Nil(t, err)
 	tagRouter, e := NewTagRouter(u1, notify)
 	assert.Nil(t, e)
@@ -130,6 +135,11 @@ func TestTagRouterPriority(t *testing.T) {
 
 func TestTagRouterRouteForce(t *testing.T) {
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	u1, e1 := common.NewURL(tagRouterTestUserConsumerTag)
 	assert.Nil(t, e1)
 	tagRouter, e := NewTagRouter(u1, notify)
@@ -165,6 +175,11 @@ func TestTagRouterRouteNoForce(t *testing.T) {
 	u1, e1 := common.NewURL(tagRouterTestUserConsumer)
 	assert.Nil(t, e1)
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	tagRouter, e := NewTagRouter(u1, notify)
 	assert.Nil(t, e)
 
@@ -229,6 +244,11 @@ func TestRouteBeijingInvoker(t *testing.T) {
 
 	url, _ := common.NewURL(tagRouterTestBeijingUrl)
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	tagRouter, _ := NewTagRouter(url, notify)
 
 	rb := roaring.NewBitmap()
@@ -306,6 +326,11 @@ tags:
 	suite.Nil(e1)
 
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	tagRouter, err := NewTagRouter(url, notify)
 	suite.Nil(err)
 	suite.NotNil(tagRouter)
@@ -371,6 +396,11 @@ func TestProcess(t *testing.T) {
 	u1, err := common.NewURL(tagRouterTestUserConsumerTag)
 	assert.Nil(t, err)
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	tagRouter, e := NewTagRouter(u1, notify)
 	assert.Nil(t, e)
 	assert.NotNil(t, tagRouter)
