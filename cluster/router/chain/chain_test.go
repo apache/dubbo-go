@@ -143,6 +143,11 @@ conditions:
 	assert.NotNil(t, url)
 	factory := extension.GetRouterFactory(url.Protocol)
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	r, err := factory.NewPriorityRouter(url, notify)
 	assert.Nil(t, err)
 	assert.NotNil(t, r)
