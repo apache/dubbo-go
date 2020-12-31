@@ -20,6 +20,7 @@ package directory
 import (
 	"encoding/base64"
 	"fmt"
+	chain2 "github.com/apache/dubbo-go/cluster/router/chain"
 	"testing"
 )
 
@@ -50,7 +51,9 @@ func TestBuildRouterChain(t *testing.T) {
 	regURL := url
 	regURL.AddParam(constant.INTERFACE_KEY, "mock-app")
 	directory := NewBaseDirectory(regURL)
-
+	var err error
+	directory.routerChain, err = chain2.NewRouterChain(regURL)
+	assert.Nil(t, err)
 	localIP := common.GetLocalIp()
 	rule := base64.URLEncoding.EncodeToString([]byte("true => " + " host = " + localIP))
 	routeURL := getRouteURL(rule, anyURL)
