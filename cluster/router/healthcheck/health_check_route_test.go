@@ -50,6 +50,11 @@ const (
 func TestHealthCheckRouterRoute(t *testing.T) {
 	defer protocol.CleanAllStatus()
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	consumerURL, _ := common.NewURL(healthCheck1001URL)
 	consumerURL.SetParam(constant.HEALTH_ROUTE_ENABLED_KEY, "true")
 	url1, _ := common.NewURL(fmt.Sprintf(healthCheckRouteUrlFormat, healthCheckRoute1010IP))
@@ -114,6 +119,11 @@ func TestHealthCheckRouterRoute(t *testing.T) {
 func TestNewHealthCheckRouter(t *testing.T) {
 	defer protocol.CleanAllStatus()
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	url, _ := common.NewURL(fmt.Sprintf(healthCheckDubboUrlFormat, healthCheckDubbo1010IP))
 	hcr, _ := NewHealthCheckRouter(url, notify)
 	h := hcr.(*HealthCheckRouter)
