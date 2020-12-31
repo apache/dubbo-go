@@ -104,7 +104,9 @@ func (c *RouterChain) AddRouters(routers []router.PriorityRouter) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.routers = newRouters
-	c.notify <- struct{}{}
+	go func() {
+		c.notify <- struct{}{}
+	}()
 }
 
 // SetInvokers receives updated invokers from registry center. If the times of notification exceeds countThreshold and
