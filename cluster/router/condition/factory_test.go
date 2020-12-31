@@ -133,6 +133,11 @@ func TestRoute_matchWhen(t *testing.T) {
 	inv := &invocation.RPCInvocation{}
 	rule := base64.URLEncoding.EncodeToString([]byte("=> host = 1.2.3.4"))
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	router, _ := newConditionRouterFactory().NewPriorityRouter(getRouteUrl(rule), notify)
 	cUrl, _ := common.NewURL(fmt.Sprintf(factoryDubboFormat, factory1111Ip))
 	matchWhen := router.(*ConditionRouter).MatchWhen(cUrl, inv)
@@ -165,6 +170,11 @@ func TestRoute_matchWhen(t *testing.T) {
 
 func TestRoute_matchFilter(t *testing.T) {
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	localIP := common.GetLocalIp()
 	t.Logf("The local ip is %s", localIP)
 	url1, _ := common.NewURL("dubbo://10.20.3.3:20880/com.foo.BarService?default.serialization=fastjson")
@@ -201,6 +211,11 @@ func TestRoute_matchFilter(t *testing.T) {
 
 func TestRoute_methodRoute(t *testing.T) {
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("getFoo"), invocation.WithParameterTypes([]reflect.Type{}), invocation.WithArguments([]interface{}{}))
 	rule := base64.URLEncoding.EncodeToString([]byte("host !=4.4.4.* & host = 2.2.2.2,1.1.1.1,3.3.3.3 => host = 1.2.3.4"))
 	r, _ := newConditionRouterFactory().NewPriorityRouter(getRouteUrl(rule), notify)
@@ -225,6 +240,11 @@ func TestRoute_methodRoute(t *testing.T) {
 
 func TestRoute_ReturnFalse(t *testing.T) {
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	url, _ := common.NewURL("")
 	localIP := common.GetLocalIp()
 	invokers := []protocol.Invoker{NewMockInvoker(url, 1), NewMockInvoker(url, 2), NewMockInvoker(url, 3)}
@@ -238,6 +258,11 @@ func TestRoute_ReturnFalse(t *testing.T) {
 
 func TestRoute_ReturnEmpty(t *testing.T) {
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	localIP := common.GetLocalIp()
 	url, _ := common.NewURL("")
 	invokers := []protocol.Invoker{NewMockInvoker(url, 1), NewMockInvoker(url, 2), NewMockInvoker(url, 3)}
@@ -251,6 +276,11 @@ func TestRoute_ReturnEmpty(t *testing.T) {
 
 func TestRoute_ReturnAll(t *testing.T) {
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	localIP := common.GetLocalIp()
 	urlString := "dubbo://" + localIP + "/com.foo.BarService"
 	dubboURL, _ := common.NewURL(urlString)
@@ -272,6 +302,11 @@ func TestRoute_HostFilter(t *testing.T) {
 	url2, _ := common.NewURL(fmt.Sprintf(factoryDubboFormat, localIP))
 	url3, _ := common.NewURL(fmt.Sprintf(factoryDubboFormat, localIP))
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	invoker1 := NewMockInvoker(url1, 1)
 	invoker2 := NewMockInvoker(url2, 2)
 	invoker3 := NewMockInvoker(url3, 3)
@@ -288,6 +323,11 @@ func TestRoute_HostFilter(t *testing.T) {
 
 func TestRoute_Empty_HostFilter(t *testing.T) {
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	localIP := common.GetLocalIp()
 	url1, _ := common.NewURL(factory333URL)
 	url2, _ := common.NewURL(fmt.Sprintf(factoryDubboFormat, localIP))
@@ -308,6 +348,11 @@ func TestRoute_Empty_HostFilter(t *testing.T) {
 
 func TestRoute_False_HostFilter(t *testing.T) {
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	localIP := common.GetLocalIp()
 	url1, _ := common.NewURL(factory333URL)
 	url2, _ := common.NewURL(fmt.Sprintf(factoryDubboFormat, localIP))
@@ -328,6 +373,11 @@ func TestRoute_False_HostFilter(t *testing.T) {
 
 func TestRoute_Placeholder(t *testing.T) {
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	localIP := common.GetLocalIp()
 	url1, _ := common.NewURL(factory333URL)
 	url2, _ := common.NewURL(fmt.Sprintf(factoryDubboFormat, localIP))
@@ -348,6 +398,11 @@ func TestRoute_Placeholder(t *testing.T) {
 
 func TestRoute_NoForce(t *testing.T) {
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	localIP := common.GetLocalIp()
 	url1, _ := common.NewURL(factory333URL)
 	url2, _ := common.NewURL(fmt.Sprintf(factoryDubboFormat, localIP))
@@ -366,6 +421,11 @@ func TestRoute_NoForce(t *testing.T) {
 
 func TestRoute_Force(t *testing.T) {
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	localIP := common.GetLocalIp()
 	url1, _ := common.NewURL(factory333URL)
 	url2, _ := common.NewURL(fmt.Sprintf(factoryDubboFormat, localIP))
