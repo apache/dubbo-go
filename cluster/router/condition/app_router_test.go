@@ -79,6 +79,11 @@ conditions:
 
 	appRouteURL := getAppRouteURL(routerKey)
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	appRouter, err := NewAppRouter(appRouteURL, notify)
 	assert.Nil(t, err)
 	assert.NotNil(t, appRouter)
@@ -128,6 +133,11 @@ conditions:
 
 	appRouteURL := getAppRouteURL(routerKey)
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	appRouter, err := NewAppRouter(appRouteURL, notify)
 	assert.Nil(t, err)
 	assert.NotNil(t, appRouter)
@@ -168,6 +178,11 @@ conditions:
 
 	appRouteURL := getAppRouteURL(routerKey)
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	appRouter, err := NewAppRouter(appRouteURL, notify)
 	assert.Nil(t, err)
 	assert.NotNil(t, appRouter)
