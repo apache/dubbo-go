@@ -40,6 +40,11 @@ func TestTagRouterFactoryNewRouter(t *testing.T) {
 	assert.Nil(t, err)
 	factory := NewTagRouterFactory()
 	notify := make(chan struct{})
+	go func() {
+		for {
+			<-notify
+		}
+	}()
 	tagRouter, e := factory.NewPriorityRouter(u1, notify)
 	assert.Nil(t, e)
 	assert.NotNil(t, tagRouter)
