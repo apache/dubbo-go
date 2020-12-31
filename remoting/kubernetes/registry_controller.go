@@ -203,6 +203,17 @@ func (c *dubboRegistryController) readConfig() error {
 	if len(c.namespace) == 0 {
 		return perrors.New("read value from env by key (NAMESPACE)")
 	}
+
+	// read need watched namespaces list
+	needWatchedNameSpaceList, ok := os.LookupEnv(needWatchedNameSpaceKey)
+	if ok {
+		for _, ns := range strings.Split(needWatchedNameSpaceList, ",")[1:] {
+			logger.Debugf("adding need watched ns: %s", ns)
+			c.needWatchedNamespace[ns] = struct{}{}
+		}
+	}
+	// current work namespace should be watched
+	c.needWatchedNamespace[c.namespace] = struct{}{}
 	return nil
 }
 
@@ -241,17 +252,6 @@ func (c *dubboRegistryController) initPodInformer() error {
 	if c.role == common.PROVIDER {
 		return nil
 	}
-
-	// read need watched namespaces list
-	needWatchedNameSpaceList := os.Getenv(needWatchedNameSpaceKey)
-	if len(needWatchedNameSpaceList) == 0 {
-		return perrors.New("read value from env by key (DUBBO_NAMESPACE)")
-	}
-	for _, ns := range strings.Split(needWatchedNameSpaceList, ",") {
-		c.needWatchedNamespace[ns] = struct{}{}
-	}
-	// current work namespace should be watched
-	c.needWatchedNamespace[c.namespace] = struct{}{}
 
 	c.queue = workqueue.New()
 
