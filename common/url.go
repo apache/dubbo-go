@@ -64,7 +64,13 @@ var (
 	DubboNodes = [...]string{"consumers", "configurators", "routers", "providers"}
 	// DubboRole Dubbo service role
 	DubboRole = [...]string{"consumer", "", "routers", "provider"}
+	// CompareURLEqualFunc compare two url is equal
+	compareURLEqualFunc CompareURLEqualFunc
 )
+
+func init() {
+	compareURLEqualFunc = defaultCompareURLEqual
+}
 
 // nolint
 type RoleType int
@@ -429,6 +435,13 @@ func (c *URL) SetParam(key string, value string) {
 	c.params.Set(key, value)
 }
 
+// DelParam will delete the given key from the url
+func (c *URL) DelParam(key string) {
+	c.paramsLock.Lock()
+	defer c.paramsLock.Unlock()
+	c.params.Del(key)
+}
+
 // ReplaceParams will replace the URL.params
 // usually it should only be invoked when you want to modify an url, such as MergeURL
 func (c *URL) ReplaceParams(param url.Values) {
@@ -726,6 +739,9 @@ func (c *URL) CloneWithParams(reserveParams []string) *URL {
 
 // IsEquals compares if two URLs equals with each other. Excludes are all parameter keys which should ignored.
 func IsEquals(left *URL, right *URL, excludes ...string) bool {
+	if (left == nil && right != nil) || (right == nil && left != nil) {
+		return false
+	}
 	if left.Ip != right.Ip || left.Port != right.Port {
 		return false
 	}
@@ -784,4 +800,18 @@ func (s URLSlice) Less(i, j int) bool {
 // nolint
 func (s URLSlice) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
+}
+
+type CompareURLEqualFunc func(l *URL, r *URL, excludeParam ...string) bool
+
+func defaultCompareURLEqual(l *URL, r *URL, excludeParam ...string) bool {
+	return IsEquals(l, r, excludeParam...)
+}
+
+func SetCompareURLEqualFunc(f CompareURLEqualFunc) {
+	compareURLEqualFunc = f
+}
+
+func GetCompareURLEqualFunc() CompareURLEqualFunc {
+	return compareURLEqualFunc
 }
