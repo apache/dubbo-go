@@ -42,8 +42,8 @@ func (csf *ConsumerSignFilter) Invoke(ctx context.Context, invoker protocol.Invo
 	logger.Infof("invoking ConsumerSign filter.")
 	url := invoker.GetUrl()
 
-	err := doAuthWork(&url, func(authenticator filter.Authenticator) error {
-		return authenticator.Sign(invocation, &url)
+	err := doAuthWork(url, func(authenticator filter.Authenticator) error {
+		return authenticator.Sign(invocation, url)
 	})
 	if err != nil {
 		panic(fmt.Sprintf("Sign for invocation %s # %s failed", url.ServiceKey(), invocation.MethodName()))

@@ -84,9 +84,9 @@ func TestConsistentHashLoadBalanceSuite(t *testing.T) {
 
 type consistentHashLoadBalanceSuite struct {
 	suite.Suite
-	url1     common.URL
-	url2     common.URL
-	url3     common.URL
+	url1     *common.URL
+	url2     *common.URL
+	url3     *common.URL
 	invokers []protocol.Invoker
 	invoker1 protocol.Invoker
 	invoker2 protocol.Invoker
