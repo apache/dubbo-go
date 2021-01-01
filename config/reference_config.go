@@ -100,6 +100,9 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 	if c.ForceTag {
 		cfgURL.AddParam(constant.ForceUseTag, "true")
 	}
+
+	c.postProcessConfig(cfgURL)
+
 	if c.Url != "" {
 		// 1. user specified URL, could be peer-to-peer address, or register center's address.
 		urlStrings := gxstrings.RegSplit(c.Url, "\\s*[;]+\\s*")
@@ -185,6 +188,11 @@ func (c *ReferenceConfig) GetRPCService() common.RPCService {
 	return c.pxy.Get()
 }
 
+// GetProxy gets proxy
+func (c *ReferenceConfig) GetProxy() *proxy.Proxy {
+	return c.pxy
+}
+
 func (c *ReferenceConfig) getUrlMap() url.Values {
 	urlMap := url.Values{}
 	//first set user params
@@ -252,4 +260,12 @@ func (c *ReferenceConfig) GenericLoad(id string) {
 // GetInvoker get invoker from ReferenceConfig
 func (c *ReferenceConfig) GetInvoker() protocol.Invoker {
 	return c.invoker
+}
+
+// postProcessConfig asks registered ConfigPostProcessor to post-process the current ReferenceConfig.
+func (c *ReferenceConfig) postProcessConfig(url *common.URL) {
+	for _, p := range extension.GetConfigPostProcessors() {
+		p.PostProcessReferenceConfig(url)
+	}
+
 }
