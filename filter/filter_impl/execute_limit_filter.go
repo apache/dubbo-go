@@ -84,7 +84,7 @@ func (ef *ExecuteLimitFilter) Invoke(ctx context.Context, invoker protocol.Invok
 	methodConfigPrefix := "methods." + invocation.MethodName() + "."
 	ivkURL := invoker.GetUrl()
 	limitTarget := ivkURL.ServiceKey()
-	limitRateConfig := constant.DEFAULT_EXECUTE_LIMIT
+	var limitRateConfig string
 
 	methodLevelConfig := ivkURL.GetParam(methodConfigPrefix+constant.EXECUTE_LIMIT_KEY, "")
 	if len(methodLevelConfig) > 0 {
