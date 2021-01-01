@@ -15,37 +15,18 @@
  * limitations under the License.
  */
 
-package nacos
+package interfaces
 
 import (
-	"testing"
+	"github.com/apache/dubbo-go/common"
 )
 
-import (
-	"github.com/stretchr/testify/assert"
-)
+// ConfigPostProcessor is an extension to give users a chance to customize configs against ReferenceConfig and
+// ServiceConfig during deployment time.
+type ConfigPostProcessor interface {
+	// PostProcessReferenceConfig customizes ReferenceConfig's params.
+	PostProcessReferenceConfig(*common.URL)
 
-import (
-	"github.com/apache/dubbo-go/config"
-)
-
-func TestNewNacosClient(t *testing.T) {
-	rc := &config.RemoteConfig{}
-	client, err := NewNacosClient(rc)
-
-	// address is nil
-	assert.Nil(t, client)
-	assert.NotNil(t, err)
-
-	rc.Address = "console.nacos.io:80:123"
-	client, err = NewNacosClient(rc)
-	// invalid address
-	assert.Nil(t, client)
-	assert.NotNil(t, err)
-
-	rc.Address = "console.nacos.io:80"
-	rc.TimeoutStr = "10s"
-	client, err = NewNacosClient(rc)
-	assert.NotNil(t, client)
-	assert.Nil(t, err)
+	// PostProcessServiceConfig customizes ServiceConfig's params.
+	PostProcessServiceConfig(*common.URL)
 }

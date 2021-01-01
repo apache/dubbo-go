@@ -298,7 +298,7 @@ func (suite *ClientTestSuite) TestClientWatch() {
 
 		wc, err := c.watch(prefix)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		events := make([]mvccpb.Event, 0)
@@ -358,7 +358,7 @@ func (suite *ClientTestSuite) TestClientRegisterTemp() {
 		completePath := path.Join("scott", "wang")
 		wc, err := observeC.watch(completePath)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		events := make([]mvccpb.Event, 0)
