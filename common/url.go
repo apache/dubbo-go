@@ -217,12 +217,12 @@ func WithToken(token string) Option {
 
 // NewURLWithOptions will create a new url with options
 func NewURLWithOptions(opts ...Option) *URL {
-	newUrl := &URL{}
+	newURL := &URL{}
 	for _, opt := range opts {
-		opt(newUrl)
+		opt(newURL)
 	}
-	newUrl.Location = newUrl.Ip + ":" + newUrl.Port
-	return newUrl
+	newURL.Location = newURL.Ip + ":" + newURL.Port
+	return newURL
 }
 
 // NewURL will create a new url
@@ -679,27 +679,34 @@ func MergeUrl(serviceUrl *URL, referenceUrl *URL) *URL {
 
 // Clone will copy the url
 func (c *URL) Clone() *URL {
-	newUrl := &URL{}
-	copier.Copy(newUrl, c)
-	newUrl.params = url.Values{}
+	newURL := &URL{}
+	if err := copier.Copy(newURL, c); err != nil {
+		// this is impossible
+		return newURL
+	}
+	newURL.params = url.Values{}
 	c.RangeParams(func(key, value string) bool {
-		newUrl.SetParam(key, value)
+		newURL.SetParam(key, value)
 		return true
 	})
-	return newUrl
+
+	return newURL
 }
 
 func (c *URL) CloneExceptParams(excludeParams *gxset.HashSet) *URL {
-	newUrl := &URL{}
-	copier.Copy(newUrl, c)
-	newUrl.params = url.Values{}
+	newURL := &URL{}
+	if err := copier.Copy(newURL, c); err != nil {
+		// this is impossible
+		return newURL
+	}
+	newURL.params = url.Values{}
 	c.RangeParams(func(key, value string) bool {
 		if !excludeParams.Contains(key) {
-			newUrl.SetParam(key, value)
+			newURL.SetParam(key, value)
 		}
 		return true
 	})
-	return newUrl
+	return newURL
 }
 
 func (c *URL) Compare(comp cm.Comparator) int {

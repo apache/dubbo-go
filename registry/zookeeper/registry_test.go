@@ -87,7 +87,8 @@ func Test_Subscribe(t *testing.T) {
 	regurl.SetParam(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
 	_, reg2, _ := newMockZkRegistry(regurl, zookeeper.WithTestCluster(ts))
 
-	reg2.Register(url)
+	err = reg2.Register(url)
+	assert.Nil(t,err)
 	listener, _ := reg2.DoSubscribe(url)
 
 	serviceEvent, _ := listener.Next()
@@ -116,7 +117,8 @@ func Test_UnSubscribe(t *testing.T) {
 	regurl.SetParam(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
 	_, reg2, _ := newMockZkRegistry(regurl, zookeeper.WithTestCluster(ts))
 
-	reg2.Register(url)
+	err = reg2.Register(url)
+	assert.Nil(t,err)
 	listener, _ := reg2.DoSubscribe(url)
 
 	serviceEvent, _ := listener.Next()
@@ -126,7 +128,8 @@ func Test_UnSubscribe(t *testing.T) {
 	}
 	assert.Regexp(t, ".*ServiceEvent{Action{add}.*", serviceEvent.String())
 
-	reg2.UnSubscribe(url, nil)
+	err = reg2.UnSubscribe(url, nil)
+	assert.Nil(t,err)
 	assert.Nil(t, reg2.listener)
 
 	defer ts.Stop()
@@ -160,7 +163,8 @@ func Test_ProviderDestory(t *testing.T) {
 	defer ts.Stop()
 
 	assert.NoError(t, err)
-	reg.Register(url)
+	err = reg.Register(url)
+	assert.Nil(t,err)
 
 	//listener.Close()
 	time.Sleep(1e9)

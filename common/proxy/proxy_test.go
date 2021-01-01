@@ -19,6 +19,7 @@ package proxy
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -149,7 +150,10 @@ func (bi *TestProxyInvoker) Invoke(context context.Context, inv protocol.Invocat
 	rpcInv := inv.(*invocation.RPCInvocation)
 	mapV := inv.Attachments()
 	mapV["TestProxyInvoker"] = "TestProxyInvokerValue"
-	hessian2.ReflectResponse(mapV, rpcInv.Reply())
+	if err := hessian2.ReflectResponse(mapV, rpcInv.Reply()); err != nil {
+		fmt.Printf("hessian2.ReflectResponse(mapV:%v) = error:%v", mapV, err)
+	}
+
 	return &protocol.RPCResult{
 		Rest: inv.Arguments(),
 	}
