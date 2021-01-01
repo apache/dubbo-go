@@ -53,8 +53,6 @@ const (
 	CodeMethodNotFound   = -32601
 	CodeInvalidParams    = -32602
 	CodeInternalError    = -32603
-	codeServerErrorStart = -32099
-	codeServerErrorEnd   = -32000
 )
 
 // Error response Error
