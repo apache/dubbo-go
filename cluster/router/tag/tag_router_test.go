@@ -32,6 +32,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/cluster/router"
 	"github.com/apache/dubbo-go/cluster/router/chain"
 	"github.com/apache/dubbo-go/cluster/router/utils"
@@ -309,7 +310,9 @@ tags:
 
 func (suite *DynamicTagRouter) TearDownTest() {
 	suite.zkClient.Close()
-	suite.testCluster.Stop()
+	if err := suite.testCluster.Stop();err != nil{
+		logger.Error(err)
+	}
 }
 
 func (suite *DynamicTagRouter) TestDynamicTagRouterSetByIPv4() {

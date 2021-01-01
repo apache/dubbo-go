@@ -121,8 +121,8 @@ func (invoker *failbackClusterInvoker) checkRetry(retryTask *retryTimerTask, err
 	if retryTask.retries > invoker.maxRetries {
 		logger.Errorf("Failed retry times exceed threshold (%v), We have to abandon, invocation-> %v.\n",
 			retryTask.retries, retryTask.invocation)
-	} else {
-		invoker.taskList.Put(retryTask)
+	} else if err := invoker.taskList.Put(retryTask);err != nil{
+		logger.Error(err)
 	}
 }
 

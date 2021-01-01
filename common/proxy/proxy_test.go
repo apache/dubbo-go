@@ -29,6 +29,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
@@ -149,7 +150,9 @@ func (bi *TestProxyInvoker) Invoke(context context.Context, inv protocol.Invocat
 	rpcInv := inv.(*invocation.RPCInvocation)
 	mapV := inv.Attachments()
 	mapV["TestProxyInvoker"] = "TestProxyInvokerValue"
-	hessian2.ReflectResponse(mapV, rpcInv.Reply())
+	if err := hessian2.ReflectResponse(mapV, rpcInv.Reply());err != nil{
+		logger.Debug(err)
+	}
 	return &protocol.RPCResult{
 		Rest: inv.Arguments(),
 	}

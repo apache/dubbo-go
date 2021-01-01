@@ -33,6 +33,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common"
 	. "github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/proxy/proxy_factory"
@@ -87,7 +88,9 @@ func getClient(url *common.URL) *Client {
 
 	exchangeClient := remoting.NewExchangeClient(url, client, 5*time.Second, false)
 	client.SetExchangeClient(exchangeClient)
-	client.Connect(url)
+	if err := client.Connect(url);err != nil{
+		logger.Debug(err)
+	}
 	return client
 }
 
@@ -396,7 +399,8 @@ func InitTest(t *testing.T) (*Server, *common.URL) {
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
 	// init server
 	userProvider := &UserProvider{}
-	common.ServiceMap.Register("", url.Protocol, "", "0.0.1", userProvider)
+	_,err = common.ServiceMap.Register("", url.Protocol, "", "0.0.1", userProvider)
+	assert.NoError(t, err)
 	invoker := &proxy_factory.ProxyInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 	}

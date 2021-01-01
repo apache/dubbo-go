@@ -680,7 +680,9 @@ func MergeUrl(serviceUrl *URL, referenceUrl *URL) *URL {
 // Clone will copy the url
 func (c *URL) Clone() *URL {
 	newUrl := &URL{}
-	copier.Copy(newUrl, c)
+	if err := copier.Copy(newUrl, c);err != nil{
+		logger.Error(err)
+	}
 	newUrl.params = url.Values{}
 	c.RangeParams(func(key, value string) bool {
 		newUrl.SetParam(key, value)
@@ -691,7 +693,9 @@ func (c *URL) Clone() *URL {
 
 func (c *URL) CloneExceptParams(excludeParams *gxset.HashSet) *URL {
 	newUrl := &URL{}
-	copier.Copy(newUrl, c)
+	if err := copier.Copy(newUrl, c);err != nil{
+		logger.Error(err)
+	}
 	newUrl.params = url.Values{}
 	c.RangeParams(func(key, value string) bool {
 		if !excludeParams.Contains(key) {

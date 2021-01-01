@@ -56,7 +56,9 @@ func (bcl *BaseConfigurationListener) InitWith(key string, listener config_cente
 		bcl.configurators = []config_center.Configurator{}
 		return
 	} else if len(rawConfig) > 0 {
-		bcl.genConfiguratorFromRawRule(rawConfig)
+		if err := bcl.genConfiguratorFromRawRule(rawConfig);err != nil{
+			logger.Error(err)
+		}
 	}
 }
 

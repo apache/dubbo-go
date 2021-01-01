@@ -92,7 +92,9 @@ func (s *Server) handlePkg(conn net.Conn) {
 			t = time.Now().Add(timeout)
 		}
 
-		conn.SetDeadline(t)
+		if err := conn.SetDeadline(t);err != nil{
+			logger.Error(err)
+		}
 	}
 
 	sendErrorResp := func(header http.Header, body []byte) error {
@@ -239,7 +241,9 @@ func (s *Server) Start(url *common.URL) {
 
 	s.wg.Add(1)
 	go func() {
-		accept(listener, func(conn net.Conn) { s.handlePkg(conn) })
+		if err := accept(listener, func(conn net.Conn) { s.handlePkg(conn) });err != nil{
+			logger.Error(err)
+		}
 		s.wg.Done()
 	}()
 
