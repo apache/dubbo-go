@@ -33,10 +33,6 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
-type multiConfiger interface {
-	Prefix() string
-}
-
 // BaseConfig is the common configuration for provider and consumer
 type BaseConfig struct {
 	ConfigCenterConfig *ConfigCenterConfig `yaml:"config_center" json:"config_center,omitempty"`
@@ -78,15 +74,8 @@ func getKeyPrefix(val reflect.Value) []string {
 	} else {
 		prefix = val.MethodByName(configPrefixMethod).Call(nil)[0].String()
 	}
-	var retPrefixes []string
 
-	for _, pfx := range strings.Split(prefix, "|") {
-
-		retPrefixes = append(retPrefixes, pfx)
-
-	}
-	return retPrefixes
-
+	return strings.Split(prefix, "|")
 }
 
 func getPtrElement(v reflect.Value) reflect.Value {
@@ -216,12 +205,9 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 						prefix := s.MethodByName("Prefix").Call(nil)[0].String()
 						for _, pfx := range strings.Split(prefix, "|") {
 							m := config.GetSubProperty(pfx)
-							if m != nil {
-								for k := range m {
-									f.SetMapIndex(reflect.ValueOf(k), reflect.New(f.Type().Elem().Elem()))
-								}
+							for k := range m {
+								f.SetMapIndex(reflect.ValueOf(k), reflect.New(f.Type().Elem().Elem()))
 							}
-
 						}
 
 					}

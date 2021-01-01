@@ -86,7 +86,7 @@ func (rp *RestProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 }
 
 // Refer create rest service reference
-func (rp *RestProtocol) Refer(url common.URL) protocol.Invoker {
+func (rp *RestProtocol) Refer(url *common.URL) protocol.Invoker {
 	// create rest_invoker
 	var requestTimeout = config.GetConsumerConfig().RequestTimeout
 	requestTimeoutStr := url.GetParam(constant.TIMEOUT_KEY, config.GetConsumerConfig().Request_Timeout)
@@ -107,7 +107,7 @@ func (rp *RestProtocol) Refer(url common.URL) protocol.Invoker {
 }
 
 // nolint
-func (rp *RestProtocol) getServer(url common.URL, serverType string) server.RestServer {
+func (rp *RestProtocol) getServer(url *common.URL, serverType string) server.RestServer {
 	restServer, ok := rp.serverMap[url.Location]
 	if ok {
 		return restServer
@@ -149,8 +149,8 @@ func (rp *RestProtocol) getClient(restOptions client.RestOptions, clientType str
 func (rp *RestProtocol) Destroy() {
 	// destroy rest_server
 	rp.BaseProtocol.Destroy()
-	for key, server := range rp.serverMap {
-		server.Destroy()
+	for key, tmpServer := range rp.serverMap {
+		tmpServer.Destroy()
 		delete(rp.serverMap, key)
 	}
 	for key := range rp.clientMap {

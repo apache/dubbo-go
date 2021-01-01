@@ -36,7 +36,7 @@ import (
 
 func TestExecuteLimitFilterInvokeIgnored(t *testing.T) {
 	methodName := "hello"
-	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]string, 0))
+	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]interface{}, 0))
 
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
@@ -44,14 +44,14 @@ func TestExecuteLimitFilterInvokeIgnored(t *testing.T) {
 
 	limitFilter := GetExecuteLimitFilter()
 
-	result := limitFilter.Invoke(context.Background(), protocol.NewBaseInvoker(*invokeUrl), invoc)
+	result := limitFilter.Invoke(context.Background(), protocol.NewBaseInvoker(invokeUrl), invoc)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Error())
 }
 
 func TestExecuteLimitFilterInvokeConfigureError(t *testing.T) {
 	methodName := "hello1"
-	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]string, 0))
+	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]interface{}, 0))
 
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
@@ -61,14 +61,14 @@ func TestExecuteLimitFilterInvokeConfigureError(t *testing.T) {
 
 	limitFilter := GetExecuteLimitFilter()
 
-	result := limitFilter.Invoke(context.Background(), protocol.NewBaseInvoker(*invokeUrl), invoc)
+	result := limitFilter.Invoke(context.Background(), protocol.NewBaseInvoker(invokeUrl), invoc)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Error())
 }
 
 func TestExecuteLimitFilterInvoke(t *testing.T) {
 	methodName := "hello1"
-	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]string, 0))
+	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]interface{}, 0))
 
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
@@ -78,7 +78,7 @@ func TestExecuteLimitFilterInvoke(t *testing.T) {
 
 	limitFilter := GetExecuteLimitFilter()
 
-	result := limitFilter.Invoke(context.Background(), protocol.NewBaseInvoker(*invokeUrl), invoc)
+	result := limitFilter.Invoke(context.Background(), protocol.NewBaseInvoker(invokeUrl), invoc)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Error())
 }

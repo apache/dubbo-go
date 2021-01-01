@@ -19,6 +19,7 @@ package etcdv3
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 )
@@ -313,7 +314,7 @@ func newEtcdV3ServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 	client := etcdv3.NewServiceDiscoveryClient(
 		etcdv3.WithName(etcdv3.RegistryETCDV3Client),
 		etcdv3.WithTimeout(timeout),
-		etcdv3.WithEndpoints(remoteConfig.Address),
+		etcdv3.WithEndpoints(strings.Split(remoteConfig.Address, ",")...),
 	)
 
 	descriptor := fmt.Sprintf("etcd-service-discovery[%s]", remoteConfig.Address)

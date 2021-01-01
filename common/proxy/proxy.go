@@ -66,7 +66,6 @@ func NewProxy(invoke protocol.Invoker, callBack interface{}, attachments map[str
 //  		Yyy func(ctx context.Context, args []interface{}, rsp *Zzz) error
 // 		}
 func (p *Proxy) Implement(v common.RPCService) {
-
 	// check parameters, incoming interface must be a elem's pointer.
 	valueOf := reflect.ValueOf(v)
 	logger.Debugf("[Implement] reflect.TypeOf: %s", valueOf.String())
@@ -145,10 +144,15 @@ func (p *Proxy) Implement(v common.RPCService) {
 				inv.SetAttachments(k, value)
 			}
 
-			// add user setAttachment
+			// add user setAttachment. It is compatibility with previous versions.
 			atm := invCtx.Value(constant.AttachmentKey)
 			if m, ok := atm.(map[string]string); ok {
 				for k, value := range m {
+					inv.SetAttachments(k, value)
+				}
+			} else if m2, ok2 := atm.(map[string]interface{}); ok2 {
+				// it is support to transfer map[string]interface{}. It refers to dubbo-java 2.7.
+				for k, value := range m2 {
 					inv.SetAttachments(k, value)
 				}
 			}
@@ -229,4 +233,9 @@ func (p *Proxy) Get() common.RPCService {
 // GetCallback gets callback.
 func (p *Proxy) GetCallback() interface{} {
 	return p.callBack
+}
+
+// GetInvoker gets Invoker.
+func (p *Proxy) GetInvoker() protocol.Invoker {
+	return p.invoke
 }
