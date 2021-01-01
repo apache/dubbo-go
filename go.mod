@@ -1,13 +1,15 @@
 module github.com/apache/dubbo-go
 
+go 1.15
+
 require (
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
 	github.com/RoaringBitmap/roaring v0.5.5
 	github.com/Workiva/go-datastructures v1.0.52
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
-	github.com/alibaba/sentinel-golang v0.6.2
+	github.com/alibaba/sentinel-golang v1.0.1
 	github.com/apache/dubbo-getty v1.3.10
-	github.com/apache/dubbo-go-hessian2 v1.7.0
+	github.com/apache/dubbo-go-hessian2 v1.8.0
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/creasty/defaults v1.5.1
 	github.com/dubbogo/go-zookeeper v1.0.2
@@ -41,6 +43,7 @@ require (
 	github.com/zouyx/agollo/v3 v3.4.5
 	go.uber.org/atomic v1.7.0
 	go.uber.org/zap v1.16.0
+	golang.org/x/sys v0.0.0-20201223074533-0d417f636930 // indirect
 	google.golang.org/grpc v1.26.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.16.9
@@ -50,9 +53,6 @@ require (
 )
 
 replace (
+	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.4
 	github.com/envoyproxy/go-control-plane => github.com/envoyproxy/go-control-plane v0.8.0
-	github.com/shirou/gopsutil => github.com/shirou/gopsutil v0.0.0-20181107111621-48177ef5f880
-	launchpad.net/gocheck => github.com/go-check/check v0.0.0-20140225173054-eb6ee6f84d0a
 )
-
-go 1.13
