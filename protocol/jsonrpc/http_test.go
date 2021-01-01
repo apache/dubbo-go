@@ -49,7 +49,7 @@ type (
 )
 
 const (
-	mockJsonCommonUrl = "jsonrpc://127.0.0.1:20001/UserProvider?anyhost=true&" +
+	mockJsonCommonUrl = "jsonrpc://127.0.0.1:20001/com.ikurento.user.UserProvider?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
@@ -58,7 +58,7 @@ const (
 
 func TestHTTPClientCall(t *testing.T) {
 
-	methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "jsonrpc", &UserProvider{})
+	methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "jsonrpc", "", "", &UserProvider{})
 	assert.NoError(t, err)
 	assert.Equal(t, "GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4", methods)
 
@@ -75,7 +75,7 @@ func TestHTTPClientCall(t *testing.T) {
 
 	// call GetUser
 	ctx := context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
-		"X-Proxy-Id": "dubbogo",
+		"X-Proxy-ID": "dubbogo",
 		"X-Services": url.Path,
 		"X-Method":   "GetUser",
 	})
@@ -89,7 +89,7 @@ func TestHTTPClientCall(t *testing.T) {
 
 	// call GetUser0
 	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
-		"X-Proxy-Id": "dubbogo",
+		"X-Proxy-ID": "dubbogo",
 		"X-Services": url.Path,
 		"X-Method":   "GetUser0",
 	})
@@ -102,7 +102,7 @@ func TestHTTPClientCall(t *testing.T) {
 
 	// call GetUser1
 	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
-		"X-Proxy-Id": "dubbogo",
+		"X-Proxy-ID": "dubbogo",
 		"X-Services": url.Path,
 		"X-Method":   "GetUser1",
 	})
@@ -114,7 +114,7 @@ func TestHTTPClientCall(t *testing.T) {
 
 	// call GetUser2
 	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
-		"X-Proxy-Id": "dubbogo",
+		"X-Proxy-ID": "dubbogo",
 		"X-Services": url.Path,
 		"X-Method":   "GetUser2",
 	})
@@ -126,7 +126,7 @@ func TestHTTPClientCall(t *testing.T) {
 
 	// call GetUser3
 	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
-		"X-Proxy-Id": "dubbogo",
+		"X-Proxy-ID": "dubbogo",
 		"X-Services": url.Path,
 		"X-Method":   "GetUser3",
 	})
@@ -138,7 +138,7 @@ func TestHTTPClientCall(t *testing.T) {
 
 	// call GetUser4
 	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
-		"X-Proxy-Id": "dubbogo",
+		"X-Proxy-ID": "dubbogo",
 		"X-Services": url.Path,
 		"X-Method":   "GetUser4",
 	})
@@ -149,7 +149,7 @@ func TestHTTPClientCall(t *testing.T) {
 	assert.Equal(t, &User{Id: "", Name: ""}, reply)
 
 	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
-		"X-Proxy-Id": "dubbogo",
+		"X-Proxy-ID": "dubbogo",
 		"X-Services": url.Path,
 		"X-Method":   "GetUser4",
 	})

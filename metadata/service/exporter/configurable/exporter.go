@@ -19,6 +19,7 @@ package configurable
 
 import (
 	"context"
+	"errors"
 	"sync"
 )
 
@@ -46,13 +47,18 @@ func NewMetadataServiceExporter(metadataService service.MetadataService) exporte
 }
 
 // Export will export the metadataService
-func (exporter *MetadataServiceExporter) Export() error {
+func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 	if !exporter.IsExported() {
-
 		serviceConfig := config.NewServiceConfig(constant.SIMPLE_METADATA_SERVICE_NAME, context.Background())
 		serviceConfig.Protocol = constant.DEFAULT_PROTOCOL
+		if url == nil || url.SubURL == nil {
+			return errors.New("metadata server url is nil, pls check your configuration")
+		}
 		serviceConfig.Protocols = map[string]*config.ProtocolConfig{
-			constant.DEFAULT_PROTOCOL: generateMetadataProtocol(),
+			constant.DEFAULT_PROTOCOL: {
+				Name: url.SubURL.Protocol,
+				Port: url.SubURL.Port,
+			},
 		}
 		serviceConfig.InterfaceName = constant.METADATA_SERVICE_NAME
 		// identify this is a golang server
@@ -95,12 +101,4 @@ func (exporter *MetadataServiceExporter) IsExported() bool {
 	exporter.lock.RLock()
 	defer exporter.lock.RUnlock()
 	return exporter.ServiceConfig != nil && exporter.ServiceConfig.IsExport()
-}
-
-// generateMetadataProtocol will return a default ProtocolConfig
-func generateMetadataProtocol() *config.ProtocolConfig {
-	return &config.ProtocolConfig{
-		Name: constant.DEFAULT_PROTOCOL,
-		Port: "20000",
-	}
 }

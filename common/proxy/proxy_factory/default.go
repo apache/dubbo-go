@@ -72,7 +72,7 @@ func (factory *DefaultProxyFactory) GetAsyncProxy(invoker protocol.Invoker, call
 }
 
 // GetInvoker gets a invoker
-func (factory *DefaultProxyFactory) GetInvoker(url common.URL) protocol.Invoker {
+func (factory *DefaultProxyFactory) GetInvoker(url *common.URL) protocol.Invoker {
 	return &ProxyInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 	}
@@ -88,7 +88,8 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	result := &protocol.RPCResult{}
 	result.SetAttachments(invocation.Attachments())
 
-	url := pi.GetUrl()
+	//get providerUrl. The origin url may be is registry URL.
+	url := getProviderURL(pi.GetUrl())
 
 	methodName := invocation.MethodName()
 	proto := url.Protocol
@@ -96,7 +97,7 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	args := invocation.Arguments()
 
 	// get service
-	svc := common.ServiceMap.GetService(proto, path)
+	svc := common.ServiceMap.GetServiceByServiceKey(proto, url.ServiceKey())
 	if svc == nil {
 		logger.Errorf("cannot find service [%s] in %s", path, proto)
 		result.SetError(perrors.Errorf("cannot find service [%s] in %s", path, proto))
@@ -158,4 +159,11 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 		}
 	}
 	return result
+}
+
+func getProviderURL(url *common.URL) *common.URL {
+	if url.SubURL == nil {
+		return url
+	}
+	return url.SubURL
 }

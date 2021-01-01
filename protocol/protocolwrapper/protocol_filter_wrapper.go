@@ -55,7 +55,7 @@ func (pfw *ProtocolFilterWrapper) Export(invoker protocol.Invoker) protocol.Expo
 }
 
 // Refer a remote service
-func (pfw *ProtocolFilterWrapper) Refer(url common.URL) protocol.Invoker {
+func (pfw *ProtocolFilterWrapper) Refer(url *common.URL) protocol.Invoker {
 	if pfw.protocol == nil {
 		pfw.protocol = extension.GetProtocol(url.Protocol)
 	}
@@ -68,21 +68,19 @@ func (pfw *ProtocolFilterWrapper) Destroy() {
 }
 
 func buildInvokerChain(invoker protocol.Invoker, key string) protocol.Invoker {
-	filtName := invoker.GetUrl().GetParam(key, "")
-	if filtName == "" {
+	filterName := invoker.GetUrl().GetParam(key, "")
+	if filterName == "" {
 		return invoker
 	}
-	filtNames := strings.Split(filtName, ",")
-	next := invoker
+	filterNames := strings.Split(filterName, ",")
 
 	// The order of filters is from left to right, so loading from right to left
-
-	for i := len(filtNames) - 1; i >= 0; i-- {
-		flt := extension.GetFilter(filtNames[i])
+	next := invoker
+	for i := len(filterNames) - 1; i >= 0; i-- {
+		flt := extension.GetFilter(filterNames[i])
 		fi := &FilterInvoker{next: next, invoker: invoker, filter: flt}
 		next = fi
 	}
-
 	return next
 }
 
@@ -103,7 +101,7 @@ type FilterInvoker struct {
 }
 
 // GetUrl is used to get url from FilterInvoker
-func (fi *FilterInvoker) GetUrl() common.URL {
+func (fi *FilterInvoker) GetUrl() *common.URL {
 	return fi.invoker.GetUrl()
 }
 
