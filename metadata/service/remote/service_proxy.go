@@ -45,27 +45,27 @@ func (m *metadataServiceProxy) ServiceName() (string, error) {
 	return m.serviceName, nil
 }
 
-func (m *metadataServiceProxy) ExportURL(url common.URL) (bool, error) {
+func (m *metadataServiceProxy) ExportURL(url *common.URL) (bool, error) {
 	logger.Error("you should never invoke this implementation")
 	return true, nil
 }
 
-func (m *metadataServiceProxy) UnexportURL(url common.URL) error {
+func (m *metadataServiceProxy) UnexportURL(url *common.URL) error {
 	logger.Error("you should never invoke this implementation")
 	return nil
 }
 
-func (m *metadataServiceProxy) SubscribeURL(url common.URL) (bool, error) {
+func (m *metadataServiceProxy) SubscribeURL(url *common.URL) (bool, error) {
 	logger.Error("you should never invoke this implementation")
 	return true, nil
 }
 
-func (m *metadataServiceProxy) UnsubscribeURL(url common.URL) error {
+func (m *metadataServiceProxy) UnsubscribeURL(url *common.URL) error {
 	logger.Error("you should never invoke this implementation")
 	return nil
 }
 
-func (m *metadataServiceProxy) PublishServiceDefinition(url common.URL) error {
+func (m *metadataServiceProxy) PublishServiceDefinition(url *common.URL) error {
 	logger.Error("you should never invoke this implementation")
 	return nil
 }
@@ -85,7 +85,7 @@ func (m *metadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 	if err != nil {
 		return []interface{}{}, nil
 	}
-	res := make([]common.URL, 0, len(urls))
+	var res []*common.URL
 	for _, s := range urls {
 		u, err := common.NewURL(s)
 		if err != nil {
@@ -101,9 +101,9 @@ func (m *metadataServiceProxy) MethodMapper() map[string]string {
 	return map[string]string{}
 }
 
-func (m *metadataServiceProxy) GetSubscribedURLs() ([]common.URL, error) {
+func (m *metadataServiceProxy) GetSubscribedURLs() ([]*common.URL, error) {
 	logger.Error("you should never invoke this implementation")
-	return []common.URL{}, nil
+	return nil, nil
 }
 
 func (m *metadataServiceProxy) GetServiceDefinition(interfaceName string, group string, version string) (string, error) {

@@ -39,7 +39,7 @@ import (
 )
 
 func TestGenericFilterInvoke(t *testing.T) {
-	invoc := invocation.NewRPCInvocation("GetUser", []interface{}{"OK"}, make(map[string]string, 0))
+	invoc := invocation.NewRPCInvocation("GetUser", []interface{}{"OK"}, make(map[string]interface{}, 0))
 
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}))
@@ -54,7 +54,7 @@ func TestGenericFilterInvoke(t *testing.T) {
 	assert.Equal(t, extension.GetRejectedExecutionHandler(constant.DEFAULT_KEY),
 		shutdownFilter.getRejectHandler())
 
-	result := shutdownFilter.Invoke(context.Background(), protocol.NewBaseInvoker(*invokeUrl), invoc)
+	result := shutdownFilter.Invoke(context.Background(), protocol.NewBaseInvoker(invokeUrl), invoc)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Error())
 
@@ -65,7 +65,7 @@ func TestGenericFilterInvoke(t *testing.T) {
 	shutdownFilter.shutdownConfig = providerConfig.ShutdownConfig
 
 	assert.True(t, shutdownFilter.rejectNewRequest())
-	result = shutdownFilter.OnResponse(nil, nil, protocol.NewBaseInvoker(*invokeUrl), invoc)
+	result = shutdownFilter.OnResponse(nil, nil, protocol.NewBaseInvoker(invokeUrl), invoc)
 
 	rejectHandler := &common2.OnlyLogRejectedExecutionHandler{}
 	extension.SetRejectedExecutionHandler("mock", func() filter.RejectedExecutionHandler {

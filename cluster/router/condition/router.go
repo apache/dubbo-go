@@ -23,20 +23,22 @@ import (
 )
 
 import (
+	"github.com/RoaringBitmap/roaring"
+	"github.com/dubbogo/gost/container/set"
 	perrors "github.com/pkg/errors"
 )
 
 import (
+	"github.com/apache/dubbo-go/cluster/router"
+	"github.com/apache/dubbo-go/cluster/router/utils"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
-	"github.com/dubbogo/gost/container/set"
-	"github.com/dubbogo/gost/net"
 )
 
 const (
-	//pattern route pattern regex
+	// pattern route pattern regex
 	pattern = `([&!=,]*)\\s*([^&!=,\\s]+)`
 )
 
@@ -136,8 +138,8 @@ func (c *ConditionRouter) Priority() int64 {
 }
 
 // URL Return URL in condition router
-func (c *ConditionRouter) URL() common.URL {
-	return *c.url
+func (c *ConditionRouter) URL() *common.URL {
+	return c.url
 }
 
 // Enabled Return is condition router is enabled
@@ -148,36 +150,44 @@ func (c *ConditionRouter) Enabled() bool {
 }
 
 // Route Determine the target invokers list.
-func (c *ConditionRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+func (c *ConditionRouter) Route(invokers *roaring.Bitmap, cache router.Cache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
 	if !c.Enabled() {
 		return invokers
 	}
-	if len(invokers) == 0 {
+
+	if invokers.IsEmpty() {
 		return invokers
 	}
+
 	isMatchWhen := c.MatchWhen(url, invocation)
 	if !isMatchWhen {
 		return invokers
 	}
-	var result []protocol.Invoker
+
 	if len(c.ThenCondition) == 0 {
-		return result
+		return utils.EmptyAddr
 	}
-	for _, invoker := range invokers {
+
+	result := roaring.NewBitmap()
+	for iter := invokers.Iterator(); iter.HasNext(); {
+		index := iter.Next()
+		invoker := cache.GetInvokers()[index]
 		invokerUrl := invoker.GetUrl()
-		isMatchThen := c.MatchThen(&invokerUrl, url)
+		isMatchThen := c.MatchThen(invokerUrl, url)
 		if isMatchThen {
-			result = append(result, invoker)
+			result.Add(index)
 		}
 	}
-	if len(result) > 0 {
+
+	if !result.IsEmpty() {
 		return result
 	} else if c.Force {
 		rule, _ := url.GetParamAndDecoded(constant.RULE_KEY)
-		localIP, _ := gxnet.GetLocalIP()
+		localIP := common.GetLocalIp()
 		logger.Warnf("The route result is empty and force execute. consumer: %s, service: %s, router: %s", localIP, url.Service(), rule)
 		return result
 	}
+
 	return invokers
 }
 

@@ -65,7 +65,6 @@ func TestNewRouterChain(t *testing.T) {
 	assert.NoError(t, err)
 	err = z.Create(path)
 	assert.NoError(t, err)
-
 	testyml := `scope: application
 key: mock-app
 enabled: true
@@ -81,7 +80,7 @@ conditions:
 	defer z.Close()
 
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, localIP, ts.Servers[0].Port))
-	configuration, err := extension.GetConfigCenterFactory(zk).GetDynamicConfiguration(&zkUrl)
+	configuration, err := extension.GetConfigCenterFactory(zk).GetDynamicConfiguration(zkUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
 
 	assert.Nil(t, err)
@@ -133,7 +132,7 @@ conditions:
 	defer z.Close()
 
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, localIP, ts.Servers[0].Port))
-	configuration, err := extension.GetConfigCenterFactory(zk).GetDynamicConfiguration(&zkUrl)
+	configuration, err := extension.GetConfigCenterFactory(zk).GetDynamicConfiguration(zkUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
 
 	chain, err := NewRouterChain(getConditionRouteUrl(applicationKey))
@@ -159,7 +158,7 @@ func TestRouterChainRoute(t *testing.T) {
 	defer z.Close()
 
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, localIP, ts.Servers[0].Port))
-	configuration, err := extension.GetConfigCenterFactory(zk).GetDynamicConfiguration(&zkUrl)
+	configuration, err := extension.GetConfigCenterFactory(zk).GetDynamicConfiguration(zkUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
 
 	chain, err := NewRouterChain(getConditionRouteUrl(applicationKey))
@@ -169,15 +168,15 @@ func TestRouterChainRoute(t *testing.T) {
 	url := getConditionRouteUrl(applicationKey)
 	assert.NotNil(t, url)
 
-	invokers := []protocol.Invoker{}
+	var invokers []protocol.Invoker
 	dubboURL, _ := common.NewURL(fmt.Sprintf(dubboForamt, test1234IP, port20000))
 	invokers = append(invokers, protocol.NewBaseInvoker(dubboURL))
-
 	chain.SetInvokers(invokers)
+	chain.buildCache()
 
 	targetURL, _ := common.NewURL(fmt.Sprintf(consumerFormat, test1111IP))
 	inv := &invocation.RPCInvocation{}
-	finalInvokers := chain.Route(invokers, &targetURL, inv)
+	finalInvokers := chain.Route(targetURL, inv)
 
 	assert.Equal(t, 1, len(finalInvokers))
 }
@@ -203,20 +202,22 @@ conditions:
 	defer z.Close()
 
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, localIP, ts.Servers[0].Port))
-	configuration, err := extension.GetConfigCenterFactory(zk).GetDynamicConfiguration(&zkUrl)
+	configuration, err := extension.GetConfigCenterFactory(zk).GetDynamicConfiguration(zkUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
 
 	chain, err := NewRouterChain(getConditionRouteUrl(applicationKey))
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(chain.routers))
 
-	invokers := []protocol.Invoker{}
+	var invokers []protocol.Invoker
 	dubboURL, _ := common.NewURL(fmt.Sprintf(dubboForamt, test1234IP, port20000))
 	invokers = append(invokers, protocol.NewBaseInvoker(dubboURL))
+	chain.SetInvokers(invokers)
+	chain.buildCache()
 
 	targetURL, _ := common.NewURL(fmt.Sprintf(consumerFormat, test1111IP))
 	inv := &invocation.RPCInvocation{}
-	finalInvokers := chain.Route(invokers, &targetURL, inv)
+	finalInvokers := chain.Route(targetURL, inv)
 
 	assert.Equal(t, 0, len(finalInvokers))
 }
@@ -227,7 +228,7 @@ func TestRouterChainRouteNoRoute(t *testing.T) {
 	defer z.Close()
 
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, localIP, ts.Servers[0].Port))
-	configuration, err := extension.GetConfigCenterFactory(zk).GetDynamicConfiguration(&zkUrl)
+	configuration, err := extension.GetConfigCenterFactory(zk).GetDynamicConfiguration(zkUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
 
 	chain, err := NewRouterChain(getConditionNoRouteUrl(applicationKey))
@@ -236,13 +237,16 @@ func TestRouterChainRouteNoRoute(t *testing.T) {
 
 	url := getConditionRouteUrl(applicationKey)
 	assert.NotNil(t, url)
-	invokers := []protocol.Invoker{}
+
+	var invokers []protocol.Invoker
 	dubboURL, _ := common.NewURL(fmt.Sprintf(dubboForamt, test1234IP, port20000))
 	invokers = append(invokers, protocol.NewBaseInvoker(dubboURL))
+	chain.SetInvokers(invokers)
+	chain.buildCache()
 
 	targetURL, _ := common.NewURL(fmt.Sprintf(consumerFormat, test1111IP))
 	inv := &invocation.RPCInvocation{}
-	finalInvokers := chain.Route(invokers, &targetURL, inv)
+	finalInvokers := chain.Route(targetURL, inv)
 
 	assert.Equal(t, 0, len(finalInvokers))
 }
@@ -253,7 +257,7 @@ func getConditionNoRouteUrl(applicationKey string) *common.URL {
 	url.AddParam(forceField, forceValue)
 	rule := base64.URLEncoding.EncodeToString([]byte("host = 1.1.1.1 => host != 1.2.3.4"))
 	url.AddParam(constant.RULE_KEY, rule)
-	return &url
+	return url
 }
 
 func getConditionRouteUrl(applicationKey string) *common.URL {
@@ -262,12 +266,12 @@ func getConditionRouteUrl(applicationKey string) *common.URL {
 	url.AddParam(forceField, forceValue)
 	rule := base64.URLEncoding.EncodeToString([]byte("host = 1.1.1.1 => host = 1.2.3.4"))
 	url.AddParam(constant.RULE_KEY, rule)
-	return &url
+	return url
 }
 
 func getRouteUrl(applicationKey string) *common.URL {
 	url, _ := common.NewURL(fmt.Sprintf(anyUrlFormat, test0000IP))
 	url.AddParam(applicationField, applicationKey)
 	url.AddParam(forceField, forceValue)
-	return &url
+	return url
 }
