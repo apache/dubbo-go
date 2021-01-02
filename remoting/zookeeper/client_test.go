@@ -83,7 +83,7 @@ func Test_newMockZookeeperClient(t *testing.T) {
 	assert.NoError(t, err)
 	defer func() {
 		err := ts.Stop()
-		assert.Nil(t,err)
+		assert.Nil(t, err)
 	}()
 	states := []zk.State{zk.StateConnecting, zk.StateConnected, zk.StateHasSession}
 	verifyEventStateOrder(t, event, states, "event channel")
@@ -97,7 +97,7 @@ func TestCreate(t *testing.T) {
 	assert.NoError(t, err)
 	defer func() {
 		err := ts.Stop()
-		assert.Nil(t,err)
+		assert.Nil(t, err)
 	}()
 	err = z.Create("test1/test2/test3/test4")
 	assert.NoError(t, err)
@@ -111,7 +111,7 @@ func TestCreateDelete(t *testing.T) {
 	assert.NoError(t, err)
 	defer func() {
 		err := ts.Stop()
-		assert.Nil(t,err)
+		assert.Nil(t, err)
 	}()
 
 	states := []zk.State{zk.StateConnecting, zk.StateConnected, zk.StateHasSession}
@@ -128,7 +128,7 @@ func TestRegisterTemp(t *testing.T) {
 	assert.NoError(t, err)
 	defer func() {
 		err := ts.Stop()
-		assert.Nil(t,err)
+		assert.Nil(t, err)
 	}()
 	err = z.Create("/test1/test2/test3")
 	assert.NoError(t, err)
@@ -145,7 +145,7 @@ func TestRegisterTempSeq(t *testing.T) {
 	assert.NoError(t, err)
 	defer func() {
 		err := ts.Stop()
-		assert.Nil(t,err)
+		assert.Nil(t, err)
 	}()
 	err = z.Create("/test1/test2/test3")
 	assert.NoError(t, err)

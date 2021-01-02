@@ -19,6 +19,7 @@ package proxy
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -29,7 +30,6 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
@@ -146,13 +146,14 @@ type TestProxyInvoker struct {
 	protocol.BaseInvoker
 }
 
-func (bi *TestProxyInvoker) Invoke(context context.Context, inv protocol.Invocation) protocol.Result {
+func (bi *TestProxyInvoker) Invoke(_ context.Context, inv protocol.Invocation) protocol.Result {
 	rpcInv := inv.(*invocation.RPCInvocation)
 	mapV := inv.Attachments()
 	mapV["TestProxyInvoker"] = "TestProxyInvokerValue"
-	if err := hessian2.ReflectResponse(mapV, rpcInv.Reply());err != nil{
-		logger.Debug(err)
+	if err := hessian2.ReflectResponse(mapV, rpcInv.Reply()); err != nil {
+		fmt.Printf("hessian2.ReflectResponse(mapV:%v) = error:%v", mapV, err)
 	}
+
 	return &protocol.RPCResult{
 		Rest: inv.Arguments(),
 	}

@@ -18,7 +18,6 @@
 package jsonrpc
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -50,7 +49,7 @@ func TestJsonrpcProtocolExport(t *testing.T) {
 	assert.True(t, eq)
 
 	// make sure exporterMap after 'Unexport'
-	fmt.Println(url.Path)
+	t.Logf("url.Path:%v", url.Path)
 	_, ok := proto.(*JsonrpcProtocol).ExporterMap().Load(strings.TrimPrefix(url.Path, "/"))
 	assert.True(t, ok)
 	exporter.Unexport()

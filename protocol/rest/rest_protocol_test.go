@@ -20,7 +20,6 @@ package rest
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -107,7 +106,7 @@ func TestRestProtocolExport(t *testing.T) {
 	eq := exporter.GetInvoker().GetUrl().URLEqual(url)
 	assert.True(t, eq)
 	// make sure exporterMap after 'Unexport'
-	fmt.Println(url.Path)
+	t.Logf("url.Path:%v", url.Path)
 	_, ok := proto.(*RestProtocol).ExporterMap().Load(strings.TrimPrefix(url.Path, "/"))
 	assert.True(t, ok)
 	exporter.Unexport()

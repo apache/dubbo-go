@@ -149,22 +149,22 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 		panic(fmt.Sprintf("%s, session.conn{%#v} is not tcp connection\n", session.Stat(), session.Conn()))
 	}
 
-	if err := tcpConn.SetNoDelay(conf.GettySessionParam.TcpNoDelay);err != nil{
-		logger.Error(err)
+	if err := tcpConn.SetNoDelay(conf.GettySessionParam.TcpNoDelay); err != nil {
+		logger.Error("tcpConn.SetNoDelay() = error:%v", err)
 	}
-	if err := tcpConn.SetKeepAlive(conf.GettySessionParam.TcpKeepAlive);err != nil{
-		logger.Error(err)
+	if err := tcpConn.SetKeepAlive(conf.GettySessionParam.TcpKeepAlive); err != nil {
+		logger.Error("tcpConn.SetKeepAlive() = error:%v", err)
 	}
 	if conf.GettySessionParam.TcpKeepAlive {
-		if err := tcpConn.SetKeepAlivePeriod(conf.GettySessionParam.keepAlivePeriod);err != nil{
-			logger.Error(err)
+		if err := tcpConn.SetKeepAlivePeriod(conf.GettySessionParam.keepAlivePeriod); err != nil {
+			logger.Error("tcpConn.SetKeepAlivePeriod() = error:%v", err)
 		}
 	}
-	if err := tcpConn.SetReadBuffer(conf.GettySessionParam.TcpRBufSize);err != nil{
-		logger.Error(err)
+	if err := tcpConn.SetReadBuffer(conf.GettySessionParam.TcpRBufSize); err != nil {
+		logger.Error("tcpConn.SetReadBuffer() = error:%v", err)
 	}
-	if err := tcpConn.SetWriteBuffer(conf.GettySessionParam.TcpWBufSize);err != nil{
-		logger.Error(err)
+	if err := tcpConn.SetWriteBuffer(conf.GettySessionParam.TcpWBufSize); err != nil {
+		logger.Error("tcpConn.SetWriteBuffer() = error:%v", err)
 	}
 
 	session.SetName(conf.GettySessionParam.SessionName)

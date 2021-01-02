@@ -32,7 +32,6 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/cluster/router"
 	"github.com/apache/dubbo-go/cluster/router/chain"
 	"github.com/apache/dubbo-go/cluster/router/utils"
@@ -74,7 +73,7 @@ const (
 )
 
 var (
-	zkFormat        = "zookeeper://%s:%d"
+	zkFormat = "zookeeper://%s:%d"
 )
 
 // MockInvoker is only mock the Invoker to support test tagRouter
@@ -310,9 +309,8 @@ tags:
 
 func (suite *DynamicTagRouter) TearDownTest() {
 	suite.zkClient.Close()
-	if err := suite.testCluster.Stop();err != nil{
-		logger.Error(err)
-	}
+	err := suite.testCluster.Stop()
+	suite.Nil(err)
 }
 
 func (suite *DynamicTagRouter) TestDynamicTagRouterSetByIPv4() {

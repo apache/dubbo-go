@@ -19,7 +19,6 @@ package kubernetes
 
 import (
 	"encoding/json"
-	"fmt"
 	_ "net/http/pprof"
 	"os"
 	"strings"
@@ -327,7 +326,7 @@ func TestClientGetChildrenKVList(t *testing.T) {
 			select {
 			case e := <-wc:
 				i++
-				fmt.Printf("got event %v k %s v %s\n", e.EventType, e.Key, e.Value)
+				t.Logf("got event %v k %s v %s\n", e.EventType, e.Key, e.Value)
 				if i == 3 {
 					// already sync all event
 					syncDataComplete <- struct{}{}

@@ -102,8 +102,8 @@ func (dir *RegistryDirectory) subscribe(url *common.URL) {
 	logger.Debugf("subscribe service :%s for RegistryDirectory.", url.Key())
 	dir.consumerConfigurationListener.addNotifyListener(dir)
 	dir.referenceConfigurationListener = newReferenceConfigurationListener(dir, url)
-	if err := dir.registry.Subscribe(url, dir);err != nil{
-		logger.Error(err)
+	if err := dir.registry.Subscribe(url, dir); err != nil {
+		logger.Error("registry.Subscribe(url:%v, dir:%v) = error:%v", url, dir, err)
 	}
 }
 
@@ -154,7 +154,6 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 		if event.Action != remoting.EventTypeUpdate {
 			panic("Your implements of register center is wrong, " +
 				"please check the Action of ServiceEvent should be EventTypeUpdate")
-			return
 		}
 		// Originally it will Merge URL many times, now we just execute once.
 		// MergeUrl is executed once and put the result into Event. After this, the key will get from Event.Key().

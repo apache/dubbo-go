@@ -92,8 +92,8 @@ func (s *Server) handlePkg(conn net.Conn) {
 			t = time.Now().Add(timeout)
 		}
 
-		if err := conn.SetDeadline(t);err != nil{
-			logger.Error(err)
+		if err := conn.SetDeadline(t); err != nil {
+			logger.Error("connection.SetDeadline(t:%v) = error:%v", t, err)
 		}
 	}
 
@@ -241,8 +241,8 @@ func (s *Server) Start(url *common.URL) {
 
 	s.wg.Add(1)
 	go func() {
-		if err := accept(listener, func(conn net.Conn) { s.handlePkg(conn) });err != nil{
-			logger.Error(err)
+		if err := accept(listener, func(conn net.Conn) { s.handlePkg(conn) }); err != nil {
+			logger.Error("accept() = error:%v", err)
 		}
 		s.wg.Done()
 	}()
