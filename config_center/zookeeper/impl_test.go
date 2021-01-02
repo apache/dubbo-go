@@ -99,7 +99,11 @@ func initZkData(group string, t *testing.T) (*zk.TestCluster, *zookeeperDynamicC
 
 func TestGetConfig(t *testing.T) {
 	ts, reg := initZkData("dubbo", t)
-	defer ts.Stop()
+	defer func() {
+		if err := ts.Stop(); err != nil {
+			t.Errorf("ts.Stop() = error: %v", err)
+		}
+	}()
 	configs, err := reg.GetProperties(dubboPropertyFileName, config_center.WithGroup("dubbo"))
 	assert.NoError(t, err)
 	m, err := reg.Parser().Parse(configs)
