@@ -79,18 +79,17 @@ func TestServiceDiscoveryRegistry_Register(t *testing.T) {
 	registry, err := newServiceDiscoveryRegistry(registryURL)
 	assert.Nil(t, err)
 	assert.NotNil(t, registry)
-	registry.Register(url)
+	err = registry.Register(url)
+	assert.NoError(t, err)
 }
 
 type mockEventDispatcher struct {
 }
 
 func (m *mockEventDispatcher) AddEventListener(observer.EventListener) {
-
 }
 
 func (m *mockEventDispatcher) AddEventListeners([]observer.EventListener) {
-
 }
 
 func (m *mockEventDispatcher) RemoveEventListener(observer.EventListener) {

@@ -84,7 +84,10 @@ func TestConsulServiceDiscovery_Destroy(t *testing.T) {
 func TestConsulServiceDiscovery_CRUD(t *testing.T) {
 	// start consul agent
 	consulAgent := consul.NewConsulAgent(t, registryPort)
-	defer consulAgent.Shutdown()
+	defer func() {
+		err := consulAgent.Shutdown()
+		assert.NoError(t, err)
+	}()
 
 	prepareData()
 	var eventDispatcher = MockEventDispatcher{Notify: make(chan struct{}, 1)}
