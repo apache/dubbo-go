@@ -102,7 +102,9 @@ func (dir *RegistryDirectory) subscribe(url *common.URL) {
 	logger.Debugf("subscribe service :%s for RegistryDirectory.", url.Key())
 	dir.consumerConfigurationListener.addNotifyListener(dir)
 	dir.referenceConfigurationListener = newReferenceConfigurationListener(dir, url)
-	dir.registry.Subscribe(url, dir)
+	if err := dir.registry.Subscribe(url, dir); err != nil {
+		logger.Error("registry.Subscribe(url:%v, dir:%v) = error:%v", url, dir, err)
+	}
 }
 
 // Notify monitor changes from registry,and update the cacheServices
