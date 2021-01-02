@@ -73,7 +73,7 @@ const (
 )
 
 var (
-	zkFormat        = "zookeeper://%s:%d"
+	zkFormat = "zookeeper://%s:%d"
 )
 
 // MockInvoker is only mock the Invoker to support test tagRouter
@@ -309,7 +309,8 @@ tags:
 
 func (suite *DynamicTagRouter) TearDownTest() {
 	suite.zkClient.Close()
-	suite.testCluster.Stop()
+	err := suite.testCluster.Stop()
+	suite.Nil(err)
 }
 
 func (suite *DynamicTagRouter) TestDynamicTagRouterSetByIPv4() {
