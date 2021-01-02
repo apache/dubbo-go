@@ -133,7 +133,8 @@ func (suite *ClientTestSuite) setUpClient() *Client {
 // set up a client for suite
 func (suite *ClientTestSuite) SetupTest() {
 	c := suite.setUpClient()
-	c.CleanKV()
+	err := c.CleanKV()
+	suite.Nil(err)
 	suite.client = c
 	return
 }

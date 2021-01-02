@@ -76,8 +76,10 @@ conditions:
 
 	_, err = z.Conn.Set(path, []byte(testyml), 0)
 	assert.NoError(t, err)
-	defer ts.Stop()
-	defer z.Close()
+	defer func() {
+		_ = ts.Stop()
+		z.Close()
+	}()
 
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, localIP, ts.Servers[0].Port))
 	configuration, err := extension.GetConfigCenterFactory(zk).GetDynamicConfiguration(zkUrl)
@@ -128,11 +130,15 @@ conditions:
 
 	_, err = z.Conn.Set(path, []byte(testyml), 0)
 	assert.NoError(t, err)
-	defer ts.Stop()
-	defer z.Close()
+	defer func() {
+		err := ts.Stop()
+		assert.NoError(t, err)
+		z.Close()
+	}()
 
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, localIP, ts.Servers[0].Port))
 	configuration, err := extension.GetConfigCenterFactory(zk).GetDynamicConfiguration(zkUrl)
+	assert.NoError(t, err)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
 
 	chain, err := NewRouterChain(getConditionRouteUrl(applicationKey))
@@ -154,11 +160,15 @@ conditions:
 
 func TestRouterChainRoute(t *testing.T) {
 	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
-	defer ts.Stop()
-	defer z.Close()
+	defer func() {
+		err = ts.Stop()
+		assert.NoError(t, err)
+		z.Close()
+	}()
 
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, localIP, ts.Servers[0].Port))
 	configuration, err := extension.GetConfigCenterFactory(zk).GetDynamicConfiguration(zkUrl)
+	assert.NoError(t, err)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
 
 	chain, err := NewRouterChain(getConditionRouteUrl(applicationKey))
@@ -198,11 +208,15 @@ conditions:
 
 	_, err = z.Conn.Set(path, []byte(testyml), 0)
 	assert.NoError(t, err)
-	defer ts.Stop()
-	defer z.Close()
+	defer func() {
+		err := ts.Stop()
+		assert.NoError(t, err)
+		z.Close()
+	}()
 
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, localIP, ts.Servers[0].Port))
 	configuration, err := extension.GetConfigCenterFactory(zk).GetDynamicConfiguration(zkUrl)
+	assert.NoError(t, err)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
 
 	chain, err := NewRouterChain(getConditionRouteUrl(applicationKey))
@@ -224,8 +238,11 @@ conditions:
 
 func TestRouterChainRouteNoRoute(t *testing.T) {
 	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
-	defer ts.Stop()
-	defer z.Close()
+	defer func() {
+		err := ts.Stop()
+		assert.NoError(t, err)
+		z.Close()
+	}()
 
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, localIP, ts.Servers[0].Port))
 	configuration, err := extension.GetConfigCenterFactory(zk).GetDynamicConfiguration(zkUrl)
