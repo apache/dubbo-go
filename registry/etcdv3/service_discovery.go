@@ -108,8 +108,11 @@ func (e *etcdV3ServiceDiscovery) Update(instance registry.ServiceInstance) error
 
 	if nil != e.client {
 		ins, err := jsonutil.EncodeJSON(instance)
-		if nil == err {
-			e.client.RegisterTemp(path, string(ins))
+		if err == nil {
+			if err = e.client.RegisterTemp(path, string(ins)); err != nil {
+				logger.Warnf("etcdV3ServiceDiscovery.client.RegisterTemp(path:%v, instance:%v) = error:%v",
+					path, string(ins), err)
+			}
 			e.services.Add(instance.GetServiceName())
 		}
 	}

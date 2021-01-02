@@ -82,7 +82,9 @@ func newFileSystemServiceDiscovery(name string) (registry.ServiceDiscovery, erro
 	}
 
 	extension.AddCustomShutdownCallback(func() {
-		sd.Destroy()
+		if err := sd.Destroy(); err != nil {
+			logger.Warnf("sd.Destroy() = error:%v", err)
+		}
 	})
 
 	for _, v := range sd.GetServices().Values() {
