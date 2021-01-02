@@ -105,10 +105,6 @@ func (l *RegistryConfigurationListener) Process(configType *config_center.Config
 func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
-		case <-l.client.Done():
-			logger.Warnf("listener's zk client connection is broken, so zk event listener exit now.")
-			return nil, perrors.New("listener stopped")
-
 		case <-l.registry.Done():
 			logger.Warnf("zk consumer register has quit, so zk event listener exit now.")
 			return nil, perrors.New("listener stopped")
