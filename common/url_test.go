@@ -68,12 +68,18 @@ func TestURL(t *testing.T) {
 		"side=provider&timeout=3000&timestamp=1556509797245")
 	assert.NoError(t, err)
 
+	urlInst := URL{}
+	urlInst.noCopy.Lock()
+	urlInst.noCopy.Unlock()
+	urlInst.baseUrl.paramsLock.Lock()
+	urlInst.baseUrl.paramsLock.Unlock()
+
 	assert.Equal(t, "/com.ikurento.user.UserProvider", u.Path)
 	assert.Equal(t, "127.0.0.1:20000", u.Location)
 	assert.Equal(t, "dubbo", u.Protocol)
 	assert.Equal(t, loopbackAddress, u.Ip)
 	assert.Equal(t, "20000", u.Port)
-	assert.Equal(t, URL{}.Methods, u.Methods)
+	assert.Equal(t, urlInst.Methods, u.Methods)
 	assert.Equal(t, "", u.Username)
 	assert.Equal(t, "", u.Password)
 	assert.Equal(t, "anyhost=true&application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-"+

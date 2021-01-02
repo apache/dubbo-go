@@ -18,6 +18,7 @@ package hessian2
 
 import (
 	"encoding/binary"
+	"github.com/apache/dubbo-go/common/logger"
 	"math"
 	"reflect"
 	"strconv"
@@ -93,7 +94,9 @@ func packResponse(header DubboHeader, ret interface{}) ([]byte, error) {
 
 	if header.ResponseStatus == Response_OK {
 		if hb {
-			encoder.Encode(nil)
+			if err := encoder.Encode(nil); err != nil {
+				logger.Warnf("Encode(nil) = %v", err)
+			}
 		} else {
 			atta := isSupportResponseAttachment(response.Attachments[DUBBO_VERSION_KEY])
 
@@ -109,30 +112,30 @@ func packResponse(header DubboHeader, ret interface{}) ([]byte, error) {
 			}
 
 			if response.Exception != nil { // throw error
-				encoder.Encode(resWithException)
+				_ = encoder.Encode(resWithException)
 				if t, ok := response.Exception.(java_exception.Throwabler); ok {
-					encoder.Encode(t)
+					_ = encoder.Encode(t)
 				} else {
-					encoder.Encode(java_exception.NewThrowable(response.Exception.Error()))
+					_ = encoder.Encode(java_exception.NewThrowable(response.Exception.Error()))
 				}
 			} else {
 				if response.RspObj == nil {
-					encoder.Encode(resNullValue)
+					_ = encoder.Encode(resNullValue)
 				} else {
-					encoder.Encode(resValue)
-					encoder.Encode(response.RspObj) // result
+					_ = encoder.Encode(resValue)
+					_ = encoder.Encode(response.RspObj) // result
 				}
 			}
 
 			if atta {
-				encoder.Encode(response.Attachments) // attachments
+				_ = encoder.Encode(response.Attachments) // attachments
 			}
 		}
 	} else {
 		if response.Exception != nil { // throw error
-			encoder.Encode(response.Exception.Error())
+			_ = encoder.Encode(response.Exception.Error())
 		} else {
-			encoder.Encode(response.RspObj)
+			_ = encoder.Encode(response.RspObj)
 		}
 	}
 
@@ -145,7 +148,6 @@ func packResponse(header DubboHeader, ret interface{}) ([]byte, error) {
 	// byteArray{body length}
 	binary.BigEndian.PutUint32(byteArray[12:], uint32(pkgLen-HEADER_LENGTH))
 	return byteArray, nil
-
 }
 
 // hessian decode response body
