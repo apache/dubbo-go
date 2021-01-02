@@ -102,7 +102,8 @@ func TestNacosDynamicConfiguration_GetConfigKeysByGroup(t *testing.T) {
 }
 `
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(data))
+		_, err := w.Write([]byte(data))
+		assert.Nil(t, err)
 	}))
 
 	nacosURL := strings.ReplaceAll(ts.URL, "http", "registry")
