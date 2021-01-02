@@ -89,18 +89,21 @@ func TestParseServiceRouterKey(t *testing.T) {
 	assert.Equal(t, "mock-group", grp)
 	assert.Equal(t, "mock-service", srv)
 	assert.Equal(t, "1.0.0", ver)
+	assert.Nil(t, err)
 
 	testString = "mock-group/mock-service"
 	grp, srv, ver, err = parseServiceRouterKey(testString)
 	assert.Equal(t, "mock-group", grp)
 	assert.Equal(t, "mock-service", srv)
 	assert.Equal(t, "", ver)
+	assert.Nil(t, err)
 
 	testString = "mock-service:1.0.0"
 	grp, srv, ver, err = parseServiceRouterKey(testString)
 	assert.Equal(t, "", grp)
 	assert.Equal(t, "mock-service", srv)
 	assert.Equal(t, "1.0.0", ver)
+	assert.Nil(t, err)
 
 	testString = "mock-service"
 	grp, srv, ver, err = parseServiceRouterKey(testString)
