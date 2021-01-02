@@ -181,15 +181,17 @@ func (c *HTTPClient) Do(addr, path string, httpHeader http.Header, body []byte) 
 		return nil, perrors.WithStack(err)
 	}
 	defer tcpConn.Close()
-	setNetConnTimeout := func(conn net.Conn, timeout time.Duration) {
+	setNetConnTimeout := func(conn net.Conn, timeout time.Duration) error {
 		t := time.Time{}
 		if timeout > time.Duration(0) {
 			t = time.Now().Add(timeout)
 		}
 
-		conn.SetDeadline(t)
+		return conn.SetDeadline(t)
 	}
-	setNetConnTimeout(tcpConn, c.options.HTTPTimeout)
+	if err := setNetConnTimeout(tcpConn, c.options.HTTPTimeout); err != nil {
+		return nil, err
+	}
 
 	if _, err = reqBuf.WriteTo(tcpConn); err != nil {
 		return nil, perrors.WithStack(err)
