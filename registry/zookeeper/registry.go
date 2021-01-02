@@ -79,9 +79,7 @@ func newZkRegistry(url *common.URL) (registry.Registry, error) {
 		return nil, err
 	}
 	r.WaitGroup().Add(1) //zk client start successful, then wg +1
-
 	go zookeeper.HandleClientRestart(r)
-
 	r.listener = zookeeper.NewZkEventListener(r.client)
 	r.configListener = NewRegistryConfigurationListener(r.client, r)
 	r.dataListener = NewRegistryDataListener(r.configListener)
@@ -113,8 +111,6 @@ func newMockZkRegistry(url *common.URL, opts ...zookeeper.Option) (*zk.TestClust
 	if err != nil {
 		return nil, nil, err
 	}
-	r.WaitGroup().Add(1) //zk client start successful, then wg +1
-	go zookeeper.HandleClientRestart(r)
 	r.InitListeners()
 	return c, r, nil
 }
@@ -138,7 +134,6 @@ func (r *zkRegistry) DoSubscribe(conf *common.URL) (registry.Listener, error) {
 }
 
 func (r *zkRegistry) CloseAndNilClient() {
-	r.client.Close()
 	r.client = nil
 }
 
@@ -168,7 +163,7 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 
 	r.cltLock.Lock()
 	defer r.cltLock.Unlock()
-	if r.client == nil{
+	if r.client == nil {
 		return perrors.WithStack(perrors.New("zk client already been closed"))
 	}
 	err = r.client.Create(root)

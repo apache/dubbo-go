@@ -91,12 +91,9 @@ func (l *ZkEventListener) ListenServiceNodeEvent(zkPath string, listener ...remo
 				logger.Warnf("zk.ExistW(key{%s}) = event{EventNodeDeleted}", zkPath)
 				return true
 			}
-		case <-l.client.Done():
-			return false
 		}
 	}
 
-	return false
 }
 
 func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, listener remoting.DataListener) {
@@ -211,10 +208,6 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 			case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)):
 				l.client.UnregisterEvent(zkPath, &event)
 				continue
-			case <-l.client.Done():
-				l.client.UnregisterEvent(zkPath, &event)
-				logger.Warnf("client.done(), listen(path{%s}) goroutine exit now...", zkPath)
-				return
 			case <-event:
 				logger.Infof("get zk.EventNodeDataChange notify event")
 				l.client.UnregisterEvent(zkPath, &event)
@@ -285,9 +278,6 @@ func (l *ZkEventListener) listenDirEvent(zkPath string, listener remoting.DataLi
 				continue
 			}
 			l.handleZkNodeEvent(zkEvent.Path, children, listener)
-		case <-l.client.Done():
-			logger.Warnf("client.done(), listen(path{%s}) goroutine exit now...", zkPath)
-			return
 		}
 	}
 }
