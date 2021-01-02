@@ -62,12 +62,19 @@ func TestNewMetadataService(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = pxy.GetServiceDefinitionByServiceKey("any")
 	assert.Nil(t, err)
-	pxy.ExportURL(&common.URL{})
-	pxy.SubscribeURL(&common.URL{})
-	pxy.MethodMapper()
-	pxy.UnexportURL(&common.URL{})
-	pxy.RefreshMetadata(constant.ANY_VALUE, constant.ANY_VALUE)
-
+	ok, err := pxy.ExportURL(&common.URL{})
+	assert.False(t, ok)
+	assert.NoError(t, err)
+	ok, err = pxy.SubscribeURL(&common.URL{})
+	assert.False(t, ok)
+	assert.NoError(t, err)
+	m := pxy.MethodMapper()
+	assert.True(t, len(m) == 0)
+	err = pxy.UnexportURL(&common.URL{})
+	assert.NoError(t, err)
+	ok, err = pxy.RefreshMetadata(constant.ANY_VALUE, constant.ANY_VALUE)
+	assert.False(t, ok)
+	assert.NoError(t, err)
 }
 
 func createPxy() service.MetadataService {
