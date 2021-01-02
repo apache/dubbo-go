@@ -227,7 +227,7 @@ func TestListener(t *testing.T) {
 	apollo.listeners.Range(func(_, value interface{}) bool {
 		apolloListener := value.(*apolloListener)
 		for e := range apolloListener.listeners {
-			fmt.Println(e)
+			t.Logf("listener:%v", e)
 			listenerCount++
 		}
 		return true
