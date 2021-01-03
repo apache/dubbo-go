@@ -165,7 +165,7 @@ func (e *etcdV3ServiceDiscovery) GetInstances(serviceName string) []registry.Ser
 		logger.Infof("could not getChildrenKVList the err is:%v", err)
 	}
 
-	return make([]registry.ServiceInstance, 0, 0)
+	return make([]registry.ServiceInstance, 0)
 }
 
 // GetInstancesByPage will return a page containing instances of ServiceInstance with the serviceName
@@ -322,5 +322,5 @@ func newEtcdV3ServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 
 	descriptor := fmt.Sprintf("etcd-service-discovery[%s]", remoteConfig.Address)
 
-	return &etcdV3ServiceDiscovery{descriptor, client, nil, gxset.NewSet(), make(map[string]*etcdv3.EventListener, 0)}, nil
+	return &etcdV3ServiceDiscovery{descriptor, client, nil, gxset.NewSet(), make(map[string]*etcdv3.EventListener)}, nil
 }

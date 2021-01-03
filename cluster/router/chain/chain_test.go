@@ -238,6 +238,7 @@ conditions:
 
 func TestRouterChainRouteNoRoute(t *testing.T) {
 	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
+	assert.Nil(t, err)
 	defer func() {
 		err := ts.Stop()
 		assert.NoError(t, err)
@@ -247,6 +248,7 @@ func TestRouterChainRouteNoRoute(t *testing.T) {
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, localIP, ts.Servers[0].Port))
 	configuration, err := extension.GetConfigCenterFactory(zk).GetDynamicConfiguration(zkUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
+	assert.Nil(t, err)
 
 	chain, err := NewRouterChain(getConditionNoRouteUrl(applicationKey))
 	assert.Nil(t, err)

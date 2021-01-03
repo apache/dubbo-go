@@ -19,7 +19,6 @@ package kubernetes
 
 import (
 	"fmt"
-	"os"
 	"path"
 	"sync"
 	"time"
@@ -40,10 +39,10 @@ import (
 	"github.com/apache/dubbo-go/remoting/kubernetes"
 )
 
-var (
-	processID = ""
-	localIP   = ""
-)
+//var (
+//	processID = ""
+//	localIP   = ""
+//)
 
 const (
 	Name         = "kubernetes"
@@ -52,8 +51,8 @@ const (
 )
 
 func init() {
-	processID = fmt.Sprintf("%d", os.Getpid())
-	localIP = common.GetLocalIp()
+	//processID = fmt.Sprintf("%d", os.Getpid())
+	//localIP = common.GetLocalIp()
 	extension.SetRegistry(Name, newKubernetesRegistry)
 }
 
