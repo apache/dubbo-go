@@ -18,6 +18,7 @@
 package zookeeper
 
 import (
+	"github.com/apache/dubbo-go/common/logger"
 	"sync"
 	"time"
 )
@@ -42,7 +43,10 @@ func HandleClientRestart(r zkClientFacade) {
 		select {
 		case <-r.ZkClient().Reconnect():
 			r.RestartCallBack()
+			time.Sleep(10 * time.Microsecond)
+		case <-r.Done():
+			logger.Warnf("receive registry destroy, so HandleClientRestart quit")
+			return
 		}
-		time.Sleep(10 * time.Microsecond)
 	}
 }
