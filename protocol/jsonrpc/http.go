@@ -49,14 +49,14 @@ import (
 
 // Request is HTTP protocol request
 type Request struct {
-	ID          int64
-	group       string
-	protocol    string
-	version     string
-	service     string
-	method      string
-	args        interface{}
-	contentType string
+	ID       int64
+	group    string
+	protocol string
+	version  string
+	service  string
+	method   string
+	args     interface{}
+	//contentType string
 }
 
 // ////////////////////////////////////////////

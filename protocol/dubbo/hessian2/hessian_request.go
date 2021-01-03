@@ -43,7 +43,7 @@ func getArgType(v interface{}) string {
 		return "V"
 	}
 
-	switch v.(type) {
+	switch v := v.(type) {
 	// Serialized tags for base types
 	case nil:
 		return "V"

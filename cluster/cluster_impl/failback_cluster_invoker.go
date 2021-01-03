@@ -77,8 +77,7 @@ func (invoker *failbackClusterInvoker) tryTimerTaskProc(ctx context.Context, ret
 	invoked = append(invoked, retryTask.lastInvoker)
 
 	retryInvoker := invoker.doSelect(retryTask.loadbalance, retryTask.invocation, retryTask.invokers, invoked)
-	var result protocol.Result
-	result = retryInvoker.Invoke(ctx, retryTask.invocation)
+	result := retryInvoker.Invoke(ctx, retryTask.invocation)
 	if result.Error() != nil {
 		retryTask.lastInvoker = retryInvoker
 		invoker.checkRetry(retryTask, result.Error())
