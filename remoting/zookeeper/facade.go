@@ -46,6 +46,7 @@ func HandleClientRestart(r zkClientFacade) {
 			time.Sleep(10 * time.Microsecond)
 		case <-r.Done():
 			logger.Warnf("receive registry destroy, so HandleClientRestart quit")
+			r.WaitGroup().Done()
 			return
 		}
 	}
