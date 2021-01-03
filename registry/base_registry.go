@@ -18,7 +18,6 @@
 package registry
 
 import (
-	"context"
 	"fmt"
 	"net/url"
 	"os"
@@ -93,7 +92,7 @@ type FacadeBasedRegistry interface {
 
 // BaseRegistry is a common logic abstract for registry. It implement Registry interface.
 type BaseRegistry struct {
-	context             context.Context
+	//context             context.Context
 	facadeBasedRegistry FacadeBasedRegistry
 	*common.URL
 	birth    int64          // time of file birth, seconds since Epoch; 0 if unknown

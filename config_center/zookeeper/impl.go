@@ -52,7 +52,7 @@ type zookeeperDynamicConfiguration struct {
 	done     chan struct{}
 	client   *zookeeper.ZookeeperClient
 
-	listenerLock  sync.Mutex
+	//listenerLock  sync.Mutex
 	listener      *zookeeper.ZkEventListener
 	cacheListener *CacheListener
 	parser        parser.ConfigurationParser

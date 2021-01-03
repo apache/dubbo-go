@@ -70,9 +70,8 @@ func TestURL(t *testing.T) {
 
 	urlInst := URL{}
 	urlInst.noCopy.Lock()
+	urlInst.SetParam("hello", "world")
 	urlInst.noCopy.Unlock()
-	urlInst.baseUrl.paramsLock.Lock()
-	urlInst.baseUrl.paramsLock.Unlock()
 
 	assert.Equal(t, "/com.ikurento.user.UserProvider", u.Path)
 	assert.Equal(t, "127.0.0.1:20000", u.Location)

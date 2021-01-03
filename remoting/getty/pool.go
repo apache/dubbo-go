@@ -91,7 +91,7 @@ func newGettyRPCClientConn(pool *gettyRPCClientPool, addr string) (*gettyRPCClie
 			break
 		}
 
-		if time.Now().Sub(start) > connectTimeout {
+		if time.Since(start) > connectTimeout {
 			c.gettyClient.Close()
 			return nil, perrors.New(fmt.Sprintf("failed to create client connection to %s in %s", addr, connectTimeout))
 		}
@@ -292,11 +292,7 @@ func (c *gettyRPCClient) getClientRpcSession(session getty.Session) (rpcSession,
 }
 
 func (c *gettyRPCClient) isAvailable() bool {
-	if c.selectSession() == nil {
-		return false
-	}
-
-	return true
+	return c.selectSession() != nil
 }
 
 func (c *gettyRPCClient) close() error {
@@ -314,9 +310,7 @@ func (c *gettyRPCClient) close() error {
 			c.gettyClient = nil
 
 			sessions = make([]*rpcSession, 0, len(c.sessions))
-			for _, s := range c.sessions {
-				sessions = append(sessions, s)
-			}
+			sessions = append(sessions, c.sessions...)
 			c.sessions = c.sessions[:0]
 		}()
 

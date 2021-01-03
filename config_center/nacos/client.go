@@ -65,7 +65,7 @@ type option func(*options)
 
 type options struct {
 	nacosName string
-	client    *NacosClient
+	//client    *NacosClient
 }
 
 // WithNacosName Set nacos name

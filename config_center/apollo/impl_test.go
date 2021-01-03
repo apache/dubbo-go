@@ -143,7 +143,7 @@ func serviceConfigResponse(rw http.ResponseWriter, _ *http.Request) {
 // run mock config server
 func runMockConfigServer(handlerMap map[string]func(http.ResponseWriter, *http.Request),
 	notifyHandler func(http.ResponseWriter, *http.Request)) *httptest.Server {
-	uriHandlerMap := make(map[string]func(http.ResponseWriter, *http.Request), 0)
+	uriHandlerMap := make(map[string]func(http.ResponseWriter, *http.Request))
 	for namespace, handler := range handlerMap {
 		uri := fmt.Sprintf("/configs/%s/%s/%s", mockAppId, mockCluster, namespace)
 		uriHandlerMap[uri] = handler

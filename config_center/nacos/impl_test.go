@@ -40,7 +40,7 @@ import (
 // run mock config server
 func runMockConfigServer(configHandler func(http.ResponseWriter, *http.Request),
 	configListenHandler func(http.ResponseWriter, *http.Request)) *httptest.Server {
-	uriHandlerMap := make(map[string]func(http.ResponseWriter, *http.Request), 0)
+	uriHandlerMap := make(map[string]func(http.ResponseWriter, *http.Request))
 
 	uriHandlerMap["/nacos/v1/cs/configs"] = configHandler
 	uriHandlerMap["/nacos/v1/cs/configs/listener"] = configListenHandler

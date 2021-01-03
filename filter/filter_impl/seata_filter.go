@@ -23,6 +23,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/filter"
@@ -30,12 +31,12 @@ import (
 )
 
 const (
-	SEATA     = "seata"
-	SEATA_XID = "SEATA_XID"
+	SEATA     = constant.DubboCtxKey("seata")
+	SEATA_XID = constant.DubboCtxKey("SEATA_XID")
 )
 
 func init() {
-	extension.SetFilter(SEATA, getSeataFilter)
+	extension.SetFilter(string(SEATA), getSeataFilter)
 }
 
 // SeataFilter when use seata-golang, use this filter to transfer xid
@@ -45,7 +46,7 @@ type SeataFilter struct{}
 // Invoke Get Xid by attachment key `SEATA_XID`
 func (sf *SeataFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("invoking seata filter.")
-	xid := invocation.AttachmentsByKey(SEATA_XID, "")
+	xid := invocation.AttachmentsByKey(string(SEATA_XID), "")
 	if strings.TrimSpace(xid) != "" {
 		logger.Debugf("Method: %v,Xid: %v", invocation.MethodName(), xid)
 		return invoker.Invoke(context.WithValue(ctx, SEATA_XID, xid), invocation)

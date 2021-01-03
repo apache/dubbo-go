@@ -186,12 +186,12 @@ func ValidateClient(container clientFacade) error {
 
 // NewMockClient exports for registry package test
 func NewMockClient(podList *v1.PodList) (*Client, error) {
-
 	ctx, cancel := context.WithCancel(context.Background())
 	controller, err := newDubboRegistryController(ctx, common.CONSUMER, func() (kubernetes.Interface, error) {
 		return fake.NewSimpleClientset(podList), nil
 	})
 	if err != nil {
+		cancel()
 		return nil, perrors.WithMessage(err, "new dubbo-registry controller")
 	}
 
