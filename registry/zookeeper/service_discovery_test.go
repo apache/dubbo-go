@@ -75,7 +75,9 @@ func TestNewZookeeperServiceDiscovery(t *testing.T) {
 
 func TestCURDZookeeperServiceDiscovery(t *testing.T) {
 	ts := prepareData(t)
-	defer ts.Stop()
+	defer func() {
+		_ = ts.Stop()
+	}()
 	sd, err := newZookeeperServiceDiscovery(testName)
 	assert.Nil(t, err)
 	defer func() {
@@ -143,7 +145,9 @@ func TestCURDZookeeperServiceDiscovery(t *testing.T) {
 
 func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
 	ts := prepareData(t)
-	defer ts.Stop()
+	defer func() {
+		_ = ts.Stop()
+	}()
 	sd, err := newZookeeperServiceDiscovery(testName)
 	assert.Nil(t, err)
 	defer func() {
@@ -176,7 +180,7 @@ func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
 	extension.SetAndInitGlobalDispatcher("direct")
 	extension.GetGlobalDispatcher().AddEventListener(sicl)
 	err = sd.AddListener(sicl)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	err = sd.Update(&registry.DefaultServiceInstance{
 		Id:          "testId",
@@ -187,6 +191,7 @@ func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
 		Healthy:     true,
 		Metadata:    nil,
 	})
+	assert.NoError(t, err)
 	tn.wg.Wait()
 }
 

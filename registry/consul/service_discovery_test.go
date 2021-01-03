@@ -141,7 +141,8 @@ func TestConsulServiceDiscovery_CRUD(t *testing.T) {
 	assert.Equal(t, 1, len(page.GetData()))
 
 	instanceResult = page.GetData()[0].(*registry.DefaultServiceInstance)
-	v, _ := instanceResult.Metadata["aaa"]
+	v, ok := instanceResult.Metadata["aaa"]
+	assert.True(t, ok)
 	assert.Equal(t, "bbb", v)
 
 	// test dispatcher event

@@ -108,7 +108,6 @@ func (suite *ClientTestSuite) SetupSuite() {
 	}
 
 	suite.etcd = e
-	return
 }
 
 // stop etcd server
@@ -136,7 +135,6 @@ func (suite *ClientTestSuite) SetupTest() {
 	err := c.CleanKV()
 	suite.Nil(err)
 	suite.client = c
-	return
 }
 
 func (suite *ClientTestSuite) TestClientClose() {

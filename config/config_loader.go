@@ -406,9 +406,9 @@ func GetBaseConfig() *BaseConfig {
 			baseConfig = &BaseConfig{
 				MetricConfig:       &MetricConfig{},
 				ConfigCenterConfig: &ConfigCenterConfig{},
-				Remotes:            make(map[string]*RemoteConfig, 0),
+				Remotes:            make(map[string]*RemoteConfig),
 				ApplicationConfig:  &ApplicationConfig{},
-				ServiceDiscoveries: make(map[string]*ServiceDiscoveryConfig, 0),
+				ServiceDiscoveries: make(map[string]*ServiceDiscoveryConfig),
 			}
 		}
 	}

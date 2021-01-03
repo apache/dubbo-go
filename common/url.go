@@ -415,6 +415,9 @@ func (c *URL) Service() string {
 func (c *URL) AddParam(key string, value string) {
 	c.paramsLock.Lock()
 	defer c.paramsLock.Unlock()
+	if c.params == nil {
+		c.params = url.Values{}
+	}
 	c.params.Add(key, value)
 }
 
@@ -433,6 +436,9 @@ func (c *URL) AddParamAvoidNil(key string, value string) {
 func (c *URL) SetParam(key string, value string) {
 	c.paramsLock.Lock()
 	defer c.paramsLock.Unlock()
+	if c.params == nil {
+		c.params = url.Values{}
+	}
 	c.params.Set(key, value)
 }
 
@@ -440,7 +446,9 @@ func (c *URL) SetParam(key string, value string) {
 func (c *URL) DelParam(key string) {
 	c.paramsLock.Lock()
 	defer c.paramsLock.Unlock()
-	c.params.Del(key)
+	if c.params != nil {
+		c.params.Del(key)
+	}
 }
 
 // ReplaceParams will replace the URL.params
@@ -466,10 +474,15 @@ func (c *URL) RangeParams(f func(key, value string) bool) {
 func (c *URL) GetParam(s string, d string) string {
 	c.paramsLock.RLock()
 	defer c.paramsLock.RUnlock()
-	r := c.params.Get(s)
+
+	var r string
+	if len(c.params) > 0 {
+		r = c.params.Get(s)
+	}
 	if len(r) == 0 {
 		r = d
 	}
+
 	return r
 }
 

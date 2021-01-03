@@ -396,6 +396,7 @@ func InitTest(t *testing.T) (*Server, *common.URL) {
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=127.0.0.1&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
+	assert.NoError(t, err)
 	// init server
 	userProvider := &UserProvider{}
 	_, err = common.ServiceMap.Register("", url.Protocol, "", "0.0.1", userProvider)
@@ -432,7 +433,7 @@ type (
 	}
 
 	UserProvider struct {
-		user map[string]User
+		//user map[string]User
 	}
 )
 
