@@ -253,7 +253,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 			case <-event:
 				logger.Infof("get zk.EventNodeDataChange notify event")
 				l.client.UnregisterEvent(zkPath, &event)
-				l.handleZkNodeEvent(zkPath, nil, listener)
+				l.handleZkNodeEvent(zkPath, children, listener)
 				continue
 			}
 		}
