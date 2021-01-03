@@ -134,7 +134,7 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 
 	newChildren, err := l.client.GetChildren(zkPath)
 	if err != nil {
-		if err == errNilChildren {
+		/*if err == errNilChildren {
 			content, _, err := l.client.Conn.Get(zkPath)
 			if err != nil {
 				logger.Errorf("Get new node path {%v} 's content error,message is  {%v}", zkPath, perrors.WithStack(err))
@@ -144,7 +144,9 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 
 		} else {
 			logger.Errorf("path{%s} child nodes changed, zk.Children() = error{%v}", zkPath, perrors.WithStack(err))
-		}
+		}*/
+		logger.Errorf("path{%s} child nodes are empty, zk.Children() = error{%v}", zkPath, perrors.WithStack(err))
+		return
 	}
 
 	// a node was added -- listen the new node
