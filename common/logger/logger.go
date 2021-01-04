@@ -163,6 +163,7 @@ type OpsLogger interface {
 // SetLoggerLevel use for set logger level
 func (dl *DubboLogger) SetLoggerLevel(level string) {
 	l := new(zapcore.Level)
-	l.Set(level)
-	dl.dynamicLevel.SetLevel(*l)
+	if err := l.Set(level); err == nil {
+		dl.dynamicLevel.SetLevel(*l)
+	}
 }

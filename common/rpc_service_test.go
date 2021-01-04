@@ -27,6 +27,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+import (
+	"github.com/apache/dubbo-go/common/constant"
+)
+
 const (
 	referenceTestPath             = "com.test.Path"
 	referenceTestPathDistinct     = "com.test.Path1"
@@ -125,7 +129,7 @@ func TestServiceMapUnRegister(t *testing.T) {
 	err = ServiceMap.UnRegister("", testProtocol, ServiceKey("TestService", "", "v0"))
 	assert.EqualError(t, err, "no service for TestService:v0")
 
-	// succ
+	// success
 	err = ServiceMap.UnRegister("TestService", testProtocol, ServiceKey("TestService", "", "v1"))
 	assert.NoError(t, err)
 }
@@ -133,16 +137,12 @@ func TestServiceMapUnRegister(t *testing.T) {
 func TestMethodTypeSuiteContext(t *testing.T) {
 	mt := &MethodType{ctxType: reflect.TypeOf(context.TODO())}
 	ctx := context.Background()
-	type ctxKey string
-	key := ctxKey("key")
+	key := constant.DubboCtxKey("key")
 	ctx = context.WithValue(ctx, key, "value")
 	assert.Equal(t, reflect.ValueOf(ctx), mt.SuiteContext(ctx))
-
-	assert.Equal(t, reflect.Zero(mt.ctxType), mt.SuiteContext(nil))
 }
 
 func TestSuiteMethod(t *testing.T) {
-
 	s := &TestService{}
 	method, ok := reflect.TypeOf(s).MethodByName("MethodOne")
 	assert.True(t, ok)
