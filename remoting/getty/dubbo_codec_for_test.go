@@ -171,10 +171,7 @@ func (c *DubboTestCodec) Decode(data []byte) (remoting.DecodeResult, int, error)
 }
 
 func (c *DubboTestCodec) isRequest(data []byte) bool {
-	if data[2]&byte(0x80) == 0x00 {
-		return false
-	}
-	return true
+	return data[2]&byte(0x80) != 0x00
 }
 
 // decode request

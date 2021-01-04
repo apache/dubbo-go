@@ -462,7 +462,7 @@ func (s *serviceDiscoveryRegistry) initRevisionExportedURLsByInst(serviceInstanc
 	}
 	revisionExportedURLs := revisionExportedURLsMap[revision]
 	firstGet := false
-	if revisionExportedURLs == nil || len(revisionExportedURLs) == 0 {
+	if len(revisionExportedURLs) == 0 {
 		if len(revisionExportedURLsMap) > 0 {
 			// The case is that current ServiceInstance with the different revision
 			logger.Warnf("The ServiceInstance[id: %s, host : %s , port : %s] has different revision : %s"+
