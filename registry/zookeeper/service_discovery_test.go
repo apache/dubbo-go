@@ -81,8 +81,7 @@ func TestCURDZookeeperServiceDiscovery(t *testing.T) {
 	sd, err := newZookeeperServiceDiscovery(testName)
 	assert.Nil(t, err)
 	defer func() {
-		err := sd.Destroy()
-		assert.Nil(t, err)
+		_ = sd.Destroy()
 	}()
 	md := make(map[string]string)
 	md["t1"] = "test1"
@@ -151,8 +150,7 @@ func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
 	sd, err := newZookeeperServiceDiscovery(testName)
 	assert.Nil(t, err)
 	defer func() {
-		err := sd.Destroy()
-		assert.Nil(t, err)
+		_ = sd.Destroy()
 	}()
 
 	err = sd.Register(&registry.DefaultServiceInstance{
@@ -164,8 +162,6 @@ func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
 		Healthy:     true,
 		Metadata:    nil,
 	})
-	assert.Nil(t, err)
-
 	assert.Nil(t, err)
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
