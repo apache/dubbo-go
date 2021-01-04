@@ -46,13 +46,10 @@ func TestMetadataReport_MetadataReportRetry(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	retry.startRetryTask()
-	itsTime := time.After(2500 * time.Millisecond)
-	select {
-	case <-itsTime:
-		retry.scheduler.Clear()
-		assert.Equal(t, counter.Load(), int64(3))
-		logger.Info("over")
-	}
+	<-time.After(2500 * time.Millisecond)
+	retry.scheduler.Clear()
+	assert.Equal(t, counter.Load(), int64(3))
+	logger.Info("over")
 }
 
 func TestMetadataReport_MetadataReportRetryWithLimit(t *testing.T) {
@@ -64,13 +61,10 @@ func TestMetadataReport_MetadataReportRetryWithLimit(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	retry.startRetryTask()
-	itsTime := time.After(2500 * time.Millisecond)
-	select {
-	case <-itsTime:
-		retry.scheduler.Clear()
-		assert.Equal(t, counter.Load(), int64(2))
-		logger.Info("over")
-	}
+	<-time.After(2500 * time.Millisecond)
+	retry.scheduler.Clear()
+	assert.Equal(t, counter.Load(), int64(2))
+	logger.Info("over")
 }
 
 func mockNewMetadataReport(t *testing.T) *MetadataReport {

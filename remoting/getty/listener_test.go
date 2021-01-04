@@ -23,14 +23,14 @@ import (
 )
 
 import (
+	"github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 )
 
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol/invocation"
-	"github.com/opentracing/opentracing-go"
-	"github.com/opentracing/opentracing-go/mocktracer"
 )
 
 // test rebuild the ctx
@@ -63,7 +63,7 @@ func TestRebuildCtx(t *testing.T) {
 // Once we decided to transfer more context's key-value, we should change this.
 // now we only support rebuild the tracing context
 func rebuildCtx(inv *invocation.RPCInvocation) context.Context {
-	ctx := context.WithValue(context.Background(), "attachment", inv.Attachments())
+	ctx := context.WithValue(context.Background(), constant.DubboCtxKey("attachment"), inv.Attachments())
 
 	// actually, if user do not use any opentracing framework, the err will not be nil.
 	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.TextMap,

@@ -252,7 +252,7 @@ func (csd *consulServiceDiscovery) GetServices() *gxset.HashSet {
 		return res
 	}
 
-	for service, _ := range services {
+	for service := range services {
 		res.Add(service)
 	}
 	return res

@@ -20,6 +20,7 @@ package registry
 import (
 	perrors "github.com/pkg/errors"
 )
+
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/config"
@@ -42,7 +43,9 @@ func (bcl *BaseConfigurationListener) Configurators() []config_center.Configurat
 }
 
 // InitWith will init BaseConfigurationListener by @key+@Listener+@f
-func (bcl *BaseConfigurationListener) InitWith(key string, listener config_center.ConfigurationListener, f func(url *common.URL) config_center.Configurator) {
+func (bcl *BaseConfigurationListener) InitWith(key string, listener config_center.ConfigurationListener,
+	f func(url *common.URL) config_center.Configurator) {
+
 	bcl.dynamicConfiguration = config.GetEnvInstance().GetDynamicConfiguration()
 	if bcl.dynamicConfiguration == nil {
 		//set configurators to empty
@@ -51,12 +54,15 @@ func (bcl *BaseConfigurationListener) InitWith(key string, listener config_cente
 	}
 	bcl.defaultConfiguratorFunc = f
 	bcl.dynamicConfiguration.AddListener(key, listener)
-	if rawConfig, err := bcl.dynamicConfiguration.GetInternalProperty(key, config_center.WithGroup(constant.DUBBO)); err != nil {
+	if rawConfig, err := bcl.dynamicConfiguration.GetInternalProperty(key,
+		config_center.WithGroup(constant.DUBBO)); err != nil {
 		//set configurators to empty
 		bcl.configurators = []config_center.Configurator{}
 		return
 	} else if len(rawConfig) > 0 {
-		bcl.genConfiguratorFromRawRule(rawConfig)
+		if err := bcl.genConfiguratorFromRawRule(rawConfig); err != nil {
+			logger.Error("bcl.genConfiguratorFromRawRule(rawConfig:%v) = error:%v", rawConfig, err)
+		}
 	}
 }
 

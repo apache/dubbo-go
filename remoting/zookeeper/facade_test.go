@@ -88,7 +88,11 @@ func (r *mockFacade) IsAvailable() bool {
 func Test_Facade(t *testing.T) {
 	ts, z, event, err := NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
-	defer ts.Stop()
+	defer func() {
+		if err := ts.Stop(); err != nil {
+			t.Errorf("tc.Stop() = error: %v", err)
+		}
+	}()
 	url, _ := common.NewURL("mock://127.0.0.1")
 	mock := newMockFacade(z, url)
 	go HandleClientRestart(mock)

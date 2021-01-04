@@ -129,7 +129,7 @@ func (r *zkRegistry) InitListeners() {
 		defer oldDataListener.mutex.Unlock()
 		r.dataListener.closed = true
 		recovered := r.dataListener.subscribed
-		if recovered != nil && len(recovered) > 0 {
+		if len(recovered) > 0 {
 			// recover all subscribed url
 			for _, oldListener := range recovered {
 				var (
