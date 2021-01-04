@@ -104,7 +104,8 @@ func TestLoad(t *testing.T) {
 
 	conServices = map[string]common.RPCService{}
 	proServices = map[string]common.RPCService{}
-	err := common.ServiceMap.UnRegister("com.MockService", "mock", common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
+	err := common.ServiceMap.UnRegister("com.MockService", "mock",
+		common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
 	assert.Nil(t, err)
 	consumerConfig = nil
 	providerConfig = nil
@@ -143,7 +144,8 @@ func TestLoadWithSingleReg(t *testing.T) {
 
 	conServices = map[string]common.RPCService{}
 	proServices = map[string]common.RPCService{}
-	err := common.ServiceMap.UnRegister("com.MockService", "mock", common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
+	err := common.ServiceMap.UnRegister("com.MockService", "mock",
+		common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
 	assert.Nil(t, err)
 	consumerConfig = nil
 	providerConfig = nil
@@ -183,7 +185,8 @@ func TestWithNoRegLoad(t *testing.T) {
 
 	conServices = map[string]common.RPCService{}
 	proServices = map[string]common.RPCService{}
-	err := common.ServiceMap.UnRegister("com.MockService", "mock", common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
+	err := common.ServiceMap.UnRegister("com.MockService", "mock",
+		common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
 	assert.Nil(t, err)
 	consumerConfig = nil
 	providerConfig = nil
