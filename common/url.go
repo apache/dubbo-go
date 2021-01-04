@@ -90,9 +90,7 @@ type baseUrl struct {
 	Location string // ip+port
 	Ip       string
 	Port     string
-	//url.Values is not safe map, add to avoid concurrent map read and map write error
-	paramsLock   sync.RWMutex
-	params       url.Values
+
 	PrimitiveURL string
 }
 
@@ -116,6 +114,10 @@ type URL struct {
 	noCopy noCopy
 
 	baseUrl
+	//url.Values is not safe map, add to avoid concurrent map read and map write error
+	paramsLock sync.RWMutex
+	params     url.Values
+
 	Path     string // like  /com.ikurento.dubbo.UserProvider
 	Username string
 	Password string
