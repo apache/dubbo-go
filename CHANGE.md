@@ -22,7 +22,9 @@
 - [Fix: refact heartbeat](https://github.com/apache/dubbo-go/pull/889)       
 - [Fix: router_config add &url to url](https://github.com/apache/dubbo-go/pull/910)       
 - [Fix: Router chain can not build immediately when started](https://github.com/apache/dubbo-go/pull/927)       
-- [Fix: client block until timeout when provider return with PackageResponse_Exception](https://github.com/apache/dubbo-go/pull/926)       
+- [Fix: client block until timeout when provider return with PackageResponse_Exception](https://github.com/apache/dubbo-go/pull/926)      
+- [Fix: URL.String() data race panic](https://github.com/apache/dubbo-go/pull/944)
+- [Fix: generic "encode hessian.Object"](https://github.com/apache/dubbo-go/pull/945)
 
 ### Dependencies
 - [Bump github.com/mitchellh/mapstructure from 1.2.3 to 1.3.3](https://github.com/apache/dubbo-go/pull/838)
