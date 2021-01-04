@@ -190,9 +190,9 @@ func (h *HessianCodec) ReadBody(rspObj interface{}) error {
 	switch h.pkgType & PackageType_BitSize {
 	case PackageResponse | PackageHeartbeat | PackageResponse_Exception, PackageResponse | PackageResponse_Exception:
 		decoder := hessian.NewDecoder(buf[:])
-		exception, err := decoder.Decode()
-		if err != nil {
-			return perrors.WithStack(err)
+		exception, exceptionErr := decoder.Decode()
+		if exceptionErr != nil {
+			return perrors.WithStack(exceptionErr)
 		}
 		rsp, ok := rspObj.(*DubboResponse)
 		if !ok {
