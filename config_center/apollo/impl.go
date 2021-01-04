@@ -146,8 +146,8 @@ func (c *apolloConfiguration) getAddressWithProtocolPrefix(url *common.URL) stri
 	address := url.Location
 	converted := address
 	if len(address) != 0 {
-		address := regexp.MustCompile(`\s+`).ReplaceAllString(address, "")
-		parts := strings.Split(address, ",")
+		addr := regexp.MustCompile(`\s+`).ReplaceAllString(address, "")
+		parts := strings.Split(addr, ",")
 		addrs := make([]string, 0)
 		for _, part := range parts {
 			addr := part
