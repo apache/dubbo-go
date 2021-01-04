@@ -38,9 +38,9 @@ import (
 )
 
 var (
-	errSessionNotExist   = perrors.New("session not exist")
-	errClientClosed      = perrors.New("client closed")
-	errClientReadTimeout = perrors.New("client read timeout")
+	errSessionNotExist               = perrors.New("session not exist")
+	errClientClosed                  = perrors.New("client closed")
+	errClientReadTimeoutOrDecoedFail = perrors.New("client read timeout or decode pkg fail")
 
 	clientConf   *ClientConfig
 	clientGrpool *gxsync.TaskPool
@@ -190,7 +190,7 @@ func (c *Client) Request(request *remoting.Request, timeout time.Duration, respo
 
 	select {
 	case <-getty.GetTimeWheel().After(timeout):
-		return perrors.WithStack(errClientReadTimeout)
+		return perrors.WithStack(errClientReadTimeoutOrDecoedFail)
 	case <-response.Done:
 		err = response.Err
 	}
