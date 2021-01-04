@@ -113,7 +113,7 @@ func TestMethodServiceTpsLimiterImplIsAllowableMethodLevelOverride(t *testing.T)
 func TestMethodServiceTpsLimiterImplIsAllowableBothMethodAndService(t *testing.T) {
 	methodName := "hello3"
 	methodConfigPrefix := "methods." + methodName + "."
-	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]interface{}, 0))
+	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]interface{}))
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
