@@ -39,6 +39,7 @@ func TestDynamicConfigurationServiceNameMapping(t *testing.T) {
 	dc, err := (&config_center.MockDynamicConfigurationFactory{
 		Content: appName,
 	}).GetDynamicConfiguration(nil)
+	assert.NoError(t, err)
 	config.GetApplicationConfig().Name = appName
 
 	mapping := &DynamicConfigurationServiceNameMapping{dc: dc}

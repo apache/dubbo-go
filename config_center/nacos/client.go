@@ -18,7 +18,6 @@
 package nacos
 
 import (
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -37,9 +36,6 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 )
-
-// Nacos Log dir, it can be override when creating client by config_center.log_dir
-var logDir = filepath.Join("logs", "nacos", "log")
 
 // NacosClient Nacos client
 type NacosClient struct {
@@ -69,7 +65,7 @@ type option func(*options)
 
 type options struct {
 	nacosName string
-	client    *NacosClient
+	//client    *NacosClient
 }
 
 // WithNacosName Set nacos name

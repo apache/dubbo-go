@@ -362,9 +362,9 @@ func (l *ZkEventListener) ListenServiceEvent(conf *common.URL, zkPath string, li
 	}(zkPath, listener)
 }
 
-func (l *ZkEventListener) valid() bool {
-	return l.client.ZkConnValid()
-}
+//func (l *ZkEventListener) valid() bool {
+//	return l.client.ZkConnValid()
+//}
 
 // Close will let client listen exit
 func (l *ZkEventListener) Close() {

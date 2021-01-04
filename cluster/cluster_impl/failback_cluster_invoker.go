@@ -77,8 +77,7 @@ func (invoker *failbackClusterInvoker) tryTimerTaskProc(ctx context.Context, ret
 	invoked = append(invoked, retryTask.lastInvoker)
 
 	retryInvoker := invoker.doSelect(retryTask.loadbalance, retryTask.invocation, retryTask.invokers, invoked)
-	var result protocol.Result
-	result = retryInvoker.Invoke(ctx, retryTask.invocation)
+	result := retryInvoker.Invoke(ctx, retryTask.invocation)
 	if result.Error() != nil {
 		retryTask.lastInvoker = retryInvoker
 		invoker.checkRetry(retryTask, result.Error())
@@ -121,8 +120,11 @@ func (invoker *failbackClusterInvoker) checkRetry(retryTask *retryTimerTask, err
 	if retryTask.retries > invoker.maxRetries {
 		logger.Errorf("Failed retry times exceed threshold (%v), We have to abandon, invocation-> %v.\n",
 			retryTask.retries, retryTask.invocation)
-	} else {
-		invoker.taskList.Put(retryTask)
+		return
+	}
+
+	if err := invoker.taskList.Put(retryTask); err != nil {
+		logger.Errorf("invoker.taskList.Put(retryTask:%#v) = error:%v", retryTask, err)
 	}
 }
 

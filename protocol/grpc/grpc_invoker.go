@@ -63,7 +63,7 @@ func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 	}
 
 	var in []reflect.Value
-	in = append(in, reflect.ValueOf(context.Background()))
+	in = append(in, reflect.ValueOf(ctx))
 	in = append(in, invocation.ParameterValues()...)
 
 	methodName := invocation.MethodName()

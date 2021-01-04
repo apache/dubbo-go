@@ -167,7 +167,9 @@ func TestNacosRegistry_Subscribe_del(t *testing.T) {
 
 	nacosReg := reg.(*nacosRegistry)
 	//deregister instance to mock instance offline
-	nacosReg.namingClient.DeregisterInstance(vo.DeregisterInstanceParam{Ip: "127.0.0.2", Port: 20000, ServiceName: "providers:com.ikurento.user.UserProvider:2.0.0:guangzhou-idc"})
+	_, err = nacosReg.namingClient.DeregisterInstance(vo.DeregisterInstanceParam{Ip: "127.0.0.2", Port: 20000,
+		ServiceName: "providers:com.ikurento.user.UserProvider:2.0.0:guangzhou-idc"})
+	assert.NoError(t, err)
 
 	serviceEvent3, _ := listener.Next()
 	assert.NoError(t, err)

@@ -17,6 +17,8 @@
 
 package constant
 
+type DubboCtxKey string
+
 const (
 	ASYNC_KEY = "async" // it's value should be "true" or "false" of string type
 )
@@ -47,8 +49,8 @@ const (
 	PORT_KEY                 = "port"
 	PROTOCOL_KEY             = "protocol"
 	PATH_SEPARATOR           = "/"
-	DUBBO_KEY                = "dubbo"
-	SSL_ENABLED_KEY          = "ssl-enabled"
+	//DUBBO_KEY                = "dubbo"
+	SSL_ENABLED_KEY = "ssl-enabled"
 )
 
 const (
@@ -93,7 +95,7 @@ const (
 )
 
 const (
-	DUBBOGO_CTX_KEY = "dubbogo-ctx"
+	DUBBOGO_CTX_KEY = DubboCtxKey("dubbogo-ctx")
 )
 
 const (
@@ -199,10 +201,8 @@ const (
 )
 
 const (
-	TRACING_REMOTE_SPAN_CTX = "tracing.remote.span.ctx"
+	TRACING_REMOTE_SPAN_CTX = DubboCtxKey("tracing.remote.span.ctx")
 )
-
-type AttachmentCtxKey string
 
 // Use for router module
 const (
