@@ -96,7 +96,7 @@ func TestCreate(t *testing.T) {
 	ts, z, event, err := NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
 	defer func() {
-		err := ts.Stop()
+		_ = ts.Stop()
 		assert.Nil(t, err)
 	}()
 	err = z.Create("test1/test2/test3/test4")
@@ -110,7 +110,7 @@ func TestCreateDelete(t *testing.T) {
 	ts, z, event, err := NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
 	defer func() {
-		err := ts.Stop()
+		_ = ts.Stop()
 		assert.Nil(t, err)
 	}()
 
@@ -127,7 +127,7 @@ func TestRegisterTemp(t *testing.T) {
 	ts, z, event, err := NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
 	defer func() {
-		err := ts.Stop()
+		_ = ts.Stop()
 		assert.Nil(t, err)
 	}()
 	err = z.Create("/test1/test2/test3")
@@ -144,7 +144,7 @@ func TestRegisterTempSeq(t *testing.T) {
 	ts, z, event, err := NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
 	defer func() {
-		err := ts.Stop()
+		_ = ts.Stop()
 		assert.Nil(t, err)
 	}()
 	err = z.Create("/test1/test2/test3")

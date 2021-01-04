@@ -237,8 +237,8 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	}
 	h.rwlock.Unlock()
 
-	decodeResult, ok := pkg.(remoting.DecodeResult)
-	if !ok {
+	decodeResult, drOK := pkg.(remoting.DecodeResult)
+	if !drOK {
 		logger.Errorf("illegal package{%#v}", pkg)
 		return
 	}
@@ -252,7 +252,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 			res.Handle()
 			return
 		}
-		logger.Errorf("illegal package but not heartbeart. {%#v}", pkg)
+		logger.Errorf("illegal package but not heartbeat. {%#v}", pkg)
 		return
 	}
 	req := decodeResult.Result.(*remoting.Request)
