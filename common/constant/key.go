@@ -244,7 +244,7 @@ const (
 	// HEALTH_ROUTE_ENABLED_KEY defines if use health router
 	HEALTH_ROUTE_ENABLED_KEY = "health.route.enabled"
 	// AttachmentKey in context in invoker
-	AttachmentKey = AttachmentCtxKey("attachment")
+	AttachmentKey = "attachment"
 )
 
 const (
