@@ -101,7 +101,7 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 		logger.Errorf("illegal package")
 		return
 	}
-	// get heartbeart request from server
+	// get heartbeat request from server
 	if result.IsRequest {
 		req := result.Result.(*remoting.Request)
 		if req.Event {
@@ -114,12 +114,12 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 			reply(session, resp)
 			return
 		}
-		logger.Errorf("illegal request but not heartbeart. {%#v}", req)
+		logger.Errorf("illegal request but not heartbeat. {%#v}", req)
 		return
 	}
 	h.timeoutTimes = 0
 	p := result.Result.(*remoting.Response)
-	// get heartbeart
+	// get heartbeat
 	if p.Event {
 		logger.Debugf("get rpc heartbeat response{%#v}", p)
 		if p.Error != nil {
@@ -138,7 +138,7 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 // OnCron check the session health periodic. if the session's sessionTimeout has reached, just close the session
 func (h *RpcClientHandler) OnCron(session getty.Session) {
-	rpcSession, err := h.conn.getClientRpcSession(session)
+	rs, err := h.conn.getClientRpcSession(session)
 	if err != nil {
 		logger.Errorf("client.getClientSession(session{%s}) = error{%v}",
 			session.Stat(), perrors.WithStack(err))
@@ -146,7 +146,7 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 	}
 	if h.conn.pool.rpcClient.conf.sessionTimeout.Nanoseconds() < time.Since(session.GetActive()).Nanoseconds() {
 		logger.Warnf("session{%s} timeout{%s}, reqNum{%d}",
-			session.Stat(), time.Since(session.GetActive()).String(), rpcSession.reqNum)
+			session.Stat(), time.Since(session.GetActive()).String(), rs.reqNum)
 		h.conn.removeSession(session) // -> h.conn.close() -> h.conn.pool.remove(h.conn)
 		return
 	}

@@ -200,7 +200,7 @@ const (
 )
 
 const (
-	TRACING_REMOTE_SPAN_CTX = "tracing.remote.span.ctx"
+	TRACING_REMOTE_SPAN_CTX = DubboCtxKey("tracing.remote.span.ctx")
 )
 
 // Use for router module
