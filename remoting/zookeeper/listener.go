@@ -70,7 +70,7 @@ func (l *ZkEventListener) ListenServiceNodeEvent(zkPath string, listener remotin
 		if l.listenServiceNodeEvent(zkPath, listener) {
 			listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeDel})
 		}
-		logger.Warnf("listenSelf(zk path{%s}) goroutine exit now", zkPath)
+		logger.Warnf("ListenServiceNodeEvent->listenSelf(zk path{%s}) goroutine exit now", zkPath)
 	}(zkPath, listener)
 }
 
@@ -87,7 +87,7 @@ func (l *ZkEventListener) listenServiceNodeEvent(zkPath string, listener ...remo
 
 		select {
 		case zkEvent = <-keyEventCh:
-			logger.Warnf("get a zookeeper zkEvent{type:%s, server:%s, path:%s, state:%d-%s, err:%s}",
+			logger.Warnf("get a zookeeper keyEventCh{type:%s, server:%s, path:%s, state:%d-%s, err:%s}",
 				zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, StateToString(zkEvent.State), zkEvent.Err)
 			switch zkEvent.Type {
 			case zk.EventNodeDataChanged:
@@ -174,7 +174,7 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 				logger.Infof("delete content{%s}", node)
 				listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeDel})
 			}
-			logger.Warnf("listenSelf(zk path{%s}) goroutine exit now", zkPath)
+			logger.Warnf("handleZkNodeEvent->listenSelf(zk path{%s}) goroutine exit now", zkPath)
 		}(newNode, zkPath, listener)
 	}
 
@@ -185,13 +185,13 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 			continue
 		}
 
-		oldNode = path.Join(zkPath, n)
-		logger.Warnf("delete zkPath{%s}", oldNode)
-
 		if err != nil {
 			logger.Errorf("NewURL(i{%s}) = error{%v}", n, perrors.WithStack(err))
 			continue
 		}
+
+		oldNode = path.Join(zkPath, n)
+		logger.Warnf("delete zkPath{%s}", oldNode)
 		listener.DataChange(remoting.Event{Path: oldNode, Action: remoting.EventTypeDel})
 	}
 }
@@ -305,7 +305,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 					defer l.pathMapLock.Unlock()
 					delete(l.pathMap, zkPath)
 				}
-				logger.Warnf("listenSelf(zk path{%s}) goroutine exit now", zkPath)
+				logger.Warnf("listenDirEvent->listenSelf(zk path{%s}) goroutine exit now", zkPath)
 			}(dubboPath, listener)
 
 			// listen sub path recursive
@@ -327,7 +327,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 			case <-ticker.C:
 				l.handleZkNodeEvent(zkPath, children, listener)
 			case zkEvent = <-childEventCh:
-				logger.Warnf("get a zookeeper zkEvent{type:%s, server:%s, path:%s, state:%d-%s, err:%s}",
+				logger.Warnf("get a zookeeper childEventCh{type:%s, server:%s, path:%s, state:%d-%s, err:%s}",
 					zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, StateToString(zkEvent.State), zkEvent.Err)
 				ticker.Stop()
 				if zkEvent.Type != zk.EventNodeChildrenChanged {
