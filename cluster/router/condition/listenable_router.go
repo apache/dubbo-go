@@ -47,8 +47,8 @@ type listenableRouter struct {
 	conditionRouters []*ConditionRouter
 	routerRule       *RouterRule
 	url              *common.URL
-	force            bool
-	priority         int64
+	//force            bool
+	priority int64
 }
 
 // RouterRule Get RouterRule instance from listenableRouter

@@ -180,7 +180,7 @@ func (fsdc *FileSystemDynamicConfiguration) GetConfigKeysByGroup(group string) (
 	return r, nil
 }
 
-// RemoveConfig will remove the config whit hte (key, group)
+// RemoveConfig will remove tconfig_center/nacos/impl_testhe config whit hte (key, group)
 func (fsdc *FileSystemDynamicConfiguration) RemoveConfig(key string, group string) error {
 	tmpPath := fsdc.GetPath(key, group)
 	_, err := fsdc.deleteDelay(tmpPath)
