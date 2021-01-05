@@ -29,11 +29,6 @@ const (
 )
 
 const (
-	mask = byte(127)
-	flag = byte(128)
-)
-
-const (
 	// Zero : byte zero
 	Zero = byte(0x00)
 )
@@ -84,10 +79,6 @@ const (
 	BC_LIST_FIXED              = byte('V')
 	BC_LIST_VARIABLE_UNTYPED   = byte(0x57)
 	BC_LIST_FIXED_UNTYPED      = byte(0x58)
-	_listFixedTypedLenTagMin   = byte(0x70)
-	_listFixedTypedLenTagMax   = byte(0x77)
-	_listFixedUntypedLenTagMin = byte(0x78)
-	_listFixedUntypedLenTagMax = byte(0x7f)
 
 	BC_LIST_DIRECT         = byte(0x70)
 	BC_LIST_DIRECT_UNTYPED = byte(0x78)

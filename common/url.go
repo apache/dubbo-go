@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	cm "github.com/Workiva/go-datastructures/common"
 	"math"
 	"net"
 	"net/url"
@@ -31,7 +30,9 @@ import (
 )
 
 import (
+	cm "github.com/Workiva/go-datastructures/common"
 	gxset "github.com/dubbogo/gost/container/set"
+
 	"github.com/jinzhu/copier"
 	perrors "github.com/pkg/errors"
 	"github.com/satori/go.uuid"
@@ -89,9 +90,7 @@ type baseUrl struct {
 	Location string // ip+port
 	Ip       string
 	Port     string
-	//url.Values is not safe map, add to avoid concurrent map read and map write error
-	paramsLock   sync.RWMutex
-	params       url.Values
+
 	PrimitiveURL string
 }
 
@@ -115,6 +114,10 @@ type URL struct {
 	noCopy noCopy
 
 	baseUrl
+	//url.Values is not safe map, add to avoid concurrent map read and map write error
+	paramsLock sync.RWMutex
+	params     url.Values
+
 	Path     string // like  /com.ikurento.dubbo.UserProvider
 	Username string
 	Password string
@@ -217,12 +220,12 @@ func WithToken(token string) Option {
 
 // NewURLWithOptions will create a new url with options
 func NewURLWithOptions(opts ...Option) *URL {
-	newUrl := &URL{}
+	newURL := &URL{}
 	for _, opt := range opts {
-		opt(newUrl)
+		opt(newURL)
 	}
-	newUrl.Location = newUrl.Ip + ":" + newUrl.Port
-	return newUrl
+	newURL.Location = newURL.Ip + ":" + newURL.Port
+	return newURL
 }
 
 // NewURL will create a new url
@@ -414,6 +417,9 @@ func (c *URL) Service() string {
 func (c *URL) AddParam(key string, value string) {
 	c.paramsLock.Lock()
 	defer c.paramsLock.Unlock()
+	if c.params == nil {
+		c.params = url.Values{}
+	}
 	c.params.Add(key, value)
 }
 
@@ -432,6 +438,9 @@ func (c *URL) AddParamAvoidNil(key string, value string) {
 func (c *URL) SetParam(key string, value string) {
 	c.paramsLock.Lock()
 	defer c.paramsLock.Unlock()
+	if c.params == nil {
+		c.params = url.Values{}
+	}
 	c.params.Set(key, value)
 }
 
@@ -439,7 +448,9 @@ func (c *URL) SetParam(key string, value string) {
 func (c *URL) DelParam(key string) {
 	c.paramsLock.Lock()
 	defer c.paramsLock.Unlock()
-	c.params.Del(key)
+	if c.params != nil {
+		c.params.Del(key)
+	}
 }
 
 // ReplaceParams will replace the URL.params
@@ -465,10 +476,15 @@ func (c *URL) RangeParams(f func(key, value string) bool) {
 func (c *URL) GetParam(s string, d string) string {
 	c.paramsLock.RLock()
 	defer c.paramsLock.RUnlock()
-	r := c.params.Get(s)
+
+	var r string
+	if len(c.params) > 0 {
+		r = c.params.Get(s)
+	}
 	if len(r) == 0 {
 		r = d
 	}
+
 	return r
 }
 
@@ -679,27 +695,34 @@ func MergeUrl(serviceUrl *URL, referenceUrl *URL) *URL {
 
 // Clone will copy the url
 func (c *URL) Clone() *URL {
-	newUrl := &URL{}
-	copier.Copy(newUrl, c)
-	newUrl.params = url.Values{}
+	newURL := &URL{}
+	if err := copier.Copy(newURL, c); err != nil {
+		// this is impossible
+		return newURL
+	}
+	newURL.params = url.Values{}
 	c.RangeParams(func(key, value string) bool {
-		newUrl.SetParam(key, value)
+		newURL.SetParam(key, value)
 		return true
 	})
-	return newUrl
+
+	return newURL
 }
 
 func (c *URL) CloneExceptParams(excludeParams *gxset.HashSet) *URL {
-	newUrl := &URL{}
-	copier.Copy(newUrl, c)
-	newUrl.params = url.Values{}
+	newURL := &URL{}
+	if err := copier.Copy(newURL, c); err != nil {
+		// this is impossible
+		return newURL
+	}
+	newURL.params = url.Values{}
 	c.RangeParams(func(key, value string) bool {
 		if !excludeParams.Contains(key) {
-			newUrl.SetParam(key, value)
+			newURL.SetParam(key, value)
 		}
 		return true
 	})
-	return newUrl
+	return newURL
 }
 
 func (c *URL) Compare(comp cm.Comparator) int {

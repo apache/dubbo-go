@@ -15,7 +15,7 @@ install: true
 
 # define ci-stage
 script:
-  - go fmt ./... && [[ -z `git status -s` ]]
+  - go fmt ./... && git checkout -- go.mod && [[ -z `git status -s` ]]
   # license-check
   - make verify
   # integrate-test
