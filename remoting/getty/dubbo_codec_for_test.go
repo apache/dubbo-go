@@ -99,7 +99,7 @@ func (c *DubboTestCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer
 	return pkg.Marshal()
 }
 
-// encode heartbeart request
+// encode heartbeat request
 func (c *DubboTestCodec) encodeHeartbeartReqeust(request *remoting.Request) (*bytes.Buffer, error) {
 	header := impl.DubboHeader{
 		Type:     impl.PackageHeartbeat,
@@ -171,10 +171,7 @@ func (c *DubboTestCodec) Decode(data []byte) (remoting.DecodeResult, int, error)
 }
 
 func (c *DubboTestCodec) isRequest(data []byte) bool {
-	if data[2]&byte(0x80) == 0x00 {
-		return false
-	}
-	return true
+	return data[2]&byte(0x80) != 0x00
 }
 
 // decode request
@@ -230,7 +227,6 @@ func (c *DubboTestCodec) decodeRequest(data []byte) (*remoting.Request, int, err
 func (c *DubboTestCodec) decodeResponse(data []byte) (*remoting.Response, int, error) {
 	buf := bytes.NewBuffer(data)
 	pkg := impl.NewDubboPackage(buf)
-	response := &remoting.Response{}
 	err := pkg.Unmarshal()
 	if err != nil {
 		originErr := perrors.Cause(err)
@@ -240,7 +236,7 @@ func (c *DubboTestCodec) decodeResponse(data []byte) (*remoting.Response, int, e
 		}
 		return nil, 0, perrors.WithStack(err)
 	}
-	response = &remoting.Response{
+	response := &remoting.Response{
 		ID: pkg.Header.ID,
 		//Version:  pkg.Header.,
 		SerialID: pkg.Header.SerialID,

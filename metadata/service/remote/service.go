@@ -107,7 +107,9 @@ func (mts *MetadataService) SubscribeURL(url *common.URL) (bool, error) {
 
 // UnsubscribeURL will be implemented by in memory service
 func (mts *MetadataService) UnsubscribeURL(url *common.URL) error {
-	return mts.UnsubscribeURL(url)
+	// TODO remove call self.
+	return nil
+	//return mts.UnsubscribeURL(url)
 }
 
 // PublishServiceDefinition will call remote metadata's StoreProviderMetadata to store url info and service definition
@@ -186,7 +188,7 @@ func (mts *MetadataService) RefreshMetadata(exportedRevision string, subscribedR
 			logger.Errorf("Error occur when execute remote.MetadataService.RefreshMetadata, error message is %v+", err)
 			return false, err
 		}
-		if urls != nil && len(urls) > 0 {
+		if len(urls) > 0 {
 			id := &identifier.SubscriberMetadataIdentifier{
 				MetadataIdentifier: identifier.MetadataIdentifier{
 					Application: config.GetApplicationConfig().Name,
