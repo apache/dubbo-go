@@ -151,7 +151,8 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 	assert.Equal(t, 1, len(page.GetData()))
 
 	instance = page.GetData()[0].(*registry.DefaultServiceInstance)
-	v, _ := instance.Metadata["a"]
+	v, ok := instance.Metadata["a"]
+	assert.True(t, ok)
 	assert.Equal(t, "b", v)
 
 	// test dispatcher event

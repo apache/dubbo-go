@@ -176,7 +176,8 @@ func (c *ServiceConfig) Export() error {
 		// registry the service reflect
 		methods, err := common.ServiceMap.Register(c.InterfaceName, proto.Name, c.Group, c.Version, c.rpcService)
 		if err != nil {
-			formatErr := perrors.Errorf("The service %v export the protocol %v error! Error message is %v.", c.InterfaceName, proto.Name, err.Error())
+			formatErr := perrors.Errorf("The service %v export the protocol %v error! Error message is %v.",
+				c.InterfaceName, proto.Name, err.Error())
 			logger.Errorf(formatErr.Error())
 			return formatErr
 		}
@@ -312,7 +313,7 @@ func (c *ServiceConfig) getUrlMap() url.Values {
 
 	// auth filter
 	urlMap.Set(constant.SERVICE_AUTH_KEY, c.Auth)
-	urlMap.Set(constant.PARAMTER_SIGNATURE_ENABLE_KEY, c.ParamSign)
+	urlMap.Set(constant.PARAMETER_SIGNATURE_ENABLE_KEY, c.ParamSign)
 
 	// whether to export or not
 	urlMap.Set(constant.EXPORT_KEY, strconv.FormatBool(c.export))

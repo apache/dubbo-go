@@ -41,7 +41,7 @@ type FileTagRouter struct {
 	router     *tagRouter
 	routerRule *RouterRule
 	url        *common.URL
-	force      bool
+	//force      bool
 }
 
 // NewFileTagRouter Create file tag router instance with content (from config file)

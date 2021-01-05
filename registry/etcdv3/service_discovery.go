@@ -26,7 +26,7 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
-	gxpage "github.com/dubbogo/gost/page"
+	gxpage "github.com/dubbogo/gost/hash/page"
 	"github.com/hashicorp/vault/sdk/helper/jsonutil"
 	perrors "github.com/pkg/errors"
 )
@@ -108,8 +108,11 @@ func (e *etcdV3ServiceDiscovery) Update(instance registry.ServiceInstance) error
 
 	if nil != e.client {
 		ins, err := jsonutil.EncodeJSON(instance)
-		if nil == err {
-			e.client.RegisterTemp(path, string(ins))
+		if err == nil {
+			if err = e.client.RegisterTemp(path, string(ins)); err != nil {
+				logger.Warnf("etcdV3ServiceDiscovery.client.RegisterTemp(path:%v, instance:%v) = error:%v",
+					path, string(ins), err)
+			}
 			e.services.Add(instance.GetServiceName())
 		}
 	}
@@ -162,7 +165,7 @@ func (e *etcdV3ServiceDiscovery) GetInstances(serviceName string) []registry.Ser
 		logger.Infof("could not getChildrenKVList the err is:%v", err)
 	}
 
-	return make([]registry.ServiceInstance, 0, 0)
+	return make([]registry.ServiceInstance, 0)
 }
 
 // GetInstancesByPage will return a page containing instances of ServiceInstance with the serviceName
@@ -177,7 +180,7 @@ func (e *etcdV3ServiceDiscovery) GetInstancesByPage(serviceName string, offset i
 		res = append(res, all[i])
 	}
 
-	return gxpage.New(offset, pageSize, res, len(all))
+	return gxpage.NewPage(offset, pageSize, res, len(all))
 }
 
 // GetHealthyInstancesByPage will return a page containing instances of ServiceInstance.
@@ -199,7 +202,7 @@ func (e *etcdV3ServiceDiscovery) GetHealthyInstancesByPage(serviceName string, o
 		}
 		i++
 	}
-	return gxpage.New(offset, pageSize, res, len(all))
+	return gxpage.NewPage(offset, pageSize, res, len(all))
 }
 
 // Batch get all instances by the specified service names
@@ -319,5 +322,5 @@ func newEtcdV3ServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 
 	descriptor := fmt.Sprintf("etcd-service-discovery[%s]", remoteConfig.Address)
 
-	return &etcdV3ServiceDiscovery{descriptor, client, nil, gxset.NewSet(), make(map[string]*etcdv3.EventListener, 0)}, nil
+	return &etcdV3ServiceDiscovery{descriptor, client, nil, gxset.NewSet(), make(map[string]*etcdv3.EventListener)}, nil
 }
