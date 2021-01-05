@@ -40,7 +40,7 @@ import (
 var (
 	errSessionNotExist   = perrors.New("session not exist")
 	errClientClosed      = perrors.New("client closed")
-	errClientReadTimeout = perrors.New("client read timeout")
+	errClientReadTimeout = perrors.New("maybe the client read timeout or fail to decode tcp stream in Writer.Write")
 
 	clientConf   *ClientConfig
 	clientGrpool gxsync.GenericTaskPool
