@@ -43,7 +43,7 @@ var (
 	errClientReadTimeout = perrors.New("client read timeout")
 
 	clientConf   *ClientConfig
-	clientGrpool *gxsync.TaskPool
+	clientGrpool gxsync.GenericTaskPool
 )
 
 // it is init client for single protocol.
@@ -99,10 +99,7 @@ func SetClientConf(c ClientConfig) {
 }
 
 func setClientGrpool() {
-	if clientConf.GrPoolSize > 1 {
-		clientGrpool = gxsync.NewTaskPool(gxsync.WithTaskPoolTaskPoolSize(clientConf.GrPoolSize), gxsync.WithTaskPoolTaskQueueLength(clientConf.QueueLen),
-			gxsync.WithTaskPoolTaskQueueNumber(clientConf.QueueNumber))
-	}
+	clientGrpool = gxsync.NewTaskPoolSimple(clientConf.GrPoolSize)
 }
 
 // Options : param config

@@ -26,7 +26,7 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
-	gxpage "github.com/dubbogo/gost/page"
+	gxpage "github.com/dubbogo/gost/hash/page"
 	"github.com/hashicorp/vault/sdk/helper/jsonutil"
 	perrors "github.com/pkg/errors"
 )
@@ -180,7 +180,7 @@ func (e *etcdV3ServiceDiscovery) GetInstancesByPage(serviceName string, offset i
 		res = append(res, all[i])
 	}
 
-	return gxpage.New(offset, pageSize, res, len(all))
+	return gxpage.NewPage(offset, pageSize, res, len(all))
 }
 
 // GetHealthyInstancesByPage will return a page containing instances of ServiceInstance.
@@ -202,7 +202,7 @@ func (e *etcdV3ServiceDiscovery) GetHealthyInstancesByPage(serviceName string, o
 		}
 		i++
 	}
-	return gxpage.New(offset, pageSize, res, len(all))
+	return gxpage.NewPage(offset, pageSize, res, len(all))
 }
 
 // Batch get all instances by the specified service names
