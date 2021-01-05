@@ -60,21 +60,20 @@ func newGettyRPCClientConn(pool *gettyRPCClientPool, addr string) (*gettyRPCClie
 		sslEnabled  bool
 	)
 	sslEnabled = pool.sslEnabled
-	if sslEnabled {
-		gettyClient = getty.NewTCPClient(
-			getty.WithServerAddress(addr),
-			getty.WithConnectionNumber((int)(pool.rpcClient.conf.ConnectionNum)),
-			getty.WithReconnectInterval(pool.rpcClient.conf.ReconnectInterval),
-			getty.WithClientSslEnabled(pool.sslEnabled),
-			getty.WithClientTlsConfigBuilder(config.GetClientTlsConfigBuilder()),
-		)
-	} else {
-		gettyClient = getty.NewTCPClient(
-			getty.WithServerAddress(addr),
-			getty.WithConnectionNumber((int)(pool.rpcClient.conf.ConnectionNum)),
-			getty.WithReconnectInterval(pool.rpcClient.conf.ReconnectInterval),
-		)
+	clientOpts := []getty.ClientOption{
+		getty.WithServerAddress(addr),
+		getty.WithConnectionNumber((int)(pool.rpcClient.conf.ConnectionNum)),
+		getty.WithReconnectInterval(pool.rpcClient.conf.ReconnectInterval),
 	}
+	if sslEnabled {
+		clientOpts = append(clientOpts, getty.WithClientSslEnabled(pool.sslEnabled), getty.WithClientTlsConfigBuilder(config.GetClientTlsConfigBuilder()))
+	}
+
+	if clientGrpool != nil {
+		clientOpts = append(clientOpts, getty.WithClientTaskPool(clientGrpool))
+	}
+
+	gettyClient = getty.NewTCPClient(clientOpts...)
 	c := &gettyRPCClient{
 		addr:        addr,
 		pool:        pool,
@@ -136,13 +135,11 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 		session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
 		session.SetPkgHandler(NewRpcClientPackageHandler(c.pool.rpcClient))
 		session.SetEventListener(NewRpcClientHandler(c))
-		session.SetWQLen(conf.GettySessionParam.PkgWQSize)
 		session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
 		session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
 		session.SetCronPeriod((int)(conf.heartbeatPeriod.Nanoseconds() / 1e6))
 		session.SetWaitTime(conf.GettySessionParam.waitTimeout)
 		logger.Debugf("client new session:%s\n", session.Stat())
-		session.SetTaskPool(clientGrpool)
 		return nil
 	}
 	if tcpConn, ok = session.Conn().(*net.TCPConn); !ok {
@@ -171,15 +168,11 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 	session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
 	session.SetPkgHandler(NewRpcClientPackageHandler(c.pool.rpcClient))
 	session.SetEventListener(NewRpcClientHandler(c))
-	session.SetWQLen(conf.GettySessionParam.PkgWQSize)
 	session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
 	session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
 	session.SetCronPeriod((int)(conf.heartbeatPeriod.Nanoseconds() / 1e6))
 	session.SetWaitTime(conf.GettySessionParam.waitTimeout)
 	logger.Debugf("client new session:%s\n", session.Stat())
-
-	session.SetTaskPool(clientGrpool)
-
 	return nil
 }
 
