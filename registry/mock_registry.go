@@ -137,10 +137,7 @@ type listener struct {
 }
 
 func (l *listener) Next() (*ServiceEvent, error) {
-	select {
-	case e := <-l.listenChan:
-		return e, nil
-	}
+	return <-l.listenChan, nil
 }
 
 func (*listener) Close() {

@@ -28,7 +28,7 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
-	gxpage "github.com/dubbogo/gost/page"
+	gxpage "github.com/dubbogo/gost/hash/page"
 	perrors "github.com/pkg/errors"
 )
 
@@ -212,7 +212,7 @@ func (fssd *fileSystemServiceDiscovery) GetInstances(serviceName string) []regis
 	if err != nil {
 		logger.Errorf("[FileServiceDiscovery] Could not query the instances for service{%s}, error = err{%v} ",
 			serviceName, err)
-		return make([]registry.ServiceInstance, 0, 0)
+		return make([]registry.ServiceInstance, 0)
 	}
 
 	res := make([]registry.ServiceInstance, 0, set.Size())
@@ -223,7 +223,7 @@ func (fssd *fileSystemServiceDiscovery) GetInstances(serviceName string) []regis
 			logger.Errorf("[FileServiceDiscovery] Could not get the properties for id{%s}, service{%s}, "+
 				"error = err{%v} ",
 				id, serviceName, err)
-			return make([]registry.ServiceInstance, 0, 0)
+			return make([]registry.ServiceInstance, 0)
 		}
 
 		dsi := &registry.DefaultServiceInstance{}
@@ -232,7 +232,7 @@ func (fssd *fileSystemServiceDiscovery) GetInstances(serviceName string) []regis
 			logger.Errorf("[FileServiceDiscovery] Could not unmarshal the properties for id{%s}, service{%s}, "+
 				"error = err{%v} ",
 				id, serviceName, err)
-			return make([]registry.ServiceInstance, 0, 0)
+			return make([]registry.ServiceInstance, 0)
 		}
 
 		res = append(res, dsi)

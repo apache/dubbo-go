@@ -237,7 +237,7 @@ func TestRouteBeijingInvoker(t *testing.T) {
 
 type DynamicTagRouter struct {
 	suite.Suite
-	rule *RouterRule
+	//rule *RouterRule
 
 	route       *tagRouter
 	zkClient    *zookeeper.ZookeeperClient
