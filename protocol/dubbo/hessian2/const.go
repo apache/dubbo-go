@@ -75,10 +75,10 @@ const (
 	INT_SHORT_MAX     = 0x3ffff
 	BC_INT_SHORT_ZERO = byte(0xd4)
 
-	BC_LIST_VARIABLE           = byte(0x55)
-	BC_LIST_FIXED              = byte('V')
-	BC_LIST_VARIABLE_UNTYPED   = byte(0x57)
-	BC_LIST_FIXED_UNTYPED      = byte(0x58)
+	BC_LIST_VARIABLE         = byte(0x55)
+	BC_LIST_FIXED            = byte('V')
+	BC_LIST_VARIABLE_UNTYPED = byte(0x57)
+	BC_LIST_FIXED_UNTYPED    = byte(0x58)
 
 	BC_LIST_DIRECT         = byte(0x70)
 	BC_LIST_DIRECT_UNTYPED = byte(0x78)
