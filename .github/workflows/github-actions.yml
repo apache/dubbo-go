@@ -53,7 +53,18 @@ jobs:
         else
             go get -v -t -d ./...
         fi
-        
+
+    - name: gofmt
+      run: |
+        go fmt ./... && git checkout -- go.mod && git status && [[ -z `git status -s` ]]
+        # diff -u <(echo -n) <(gofmt -d -s .)
+
+    - name: Install go ci lint
+      run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.27.0
+
+    - name: Run Linter
+      run: golangci-lint run --timeout=10m -v
+
     - name: Verify
       run: |
         make verify
@@ -61,12 +72,6 @@ jobs:
     - name: Integrate Test
       run: |
         chmod +x integrate_test.sh && ./integrate_test.sh
-        
-    - name: Install go ci lint
-      run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.27.0
-
-    - name: Run Linter
-      run: golangci-lint run --timeout=10m -v
 
     - name: Post Coverage
       run: bash <(curl -s https://codecov.io/bash)

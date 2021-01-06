@@ -37,7 +37,7 @@ func Sign(metadata, key string) string {
 
 // SignWithParams returns a signature with giving params and metadata.
 func SignWithParams(params []interface{}, metadata, key string) (string, error) {
-	if params == nil || len(params) == 0 {
+	if len(params) == 0 {
 		return Sign(metadata, key), nil
 	}
 

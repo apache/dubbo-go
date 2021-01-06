@@ -49,14 +49,14 @@ import (
 
 // Request is HTTP protocol request
 type Request struct {
-	ID          int64
-	group       string
-	protocol    string
-	version     string
-	service     string
-	method      string
-	args        interface{}
-	contentType string
+	ID       int64
+	group    string
+	protocol string
+	version  string
+	service  string
+	method   string
+	args     interface{}
+	//contentType string
 }
 
 // ////////////////////////////////////////////
@@ -189,7 +189,7 @@ func (c *HTTPClient) Do(addr, path string, httpHeader http.Header, body []byte) 
 
 		return conn.SetDeadline(t)
 	}
-	if err := setNetConnTimeout(tcpConn, c.options.HTTPTimeout); err != nil {
+	if err = setNetConnTimeout(tcpConn, c.options.HTTPTimeout); err != nil {
 		return nil, err
 	}
 

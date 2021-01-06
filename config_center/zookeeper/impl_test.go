@@ -100,9 +100,8 @@ func initZkData(group string, t *testing.T) (*zk.TestCluster, *zookeeperDynamicC
 func TestGetConfig(t *testing.T) {
 	ts, reg := initZkData("dubbo", t)
 	defer func() {
-		if err := ts.Stop(); err != nil {
-			t.Errorf("ts.Stop() = error: %v", err)
-		}
+		err := ts.Stop()
+		assert.NoError(t, err)
 	}()
 	configs, err := reg.GetProperties(dubboPropertyFileName, config_center.WithGroup("dubbo"))
 	assert.NoError(t, err)
@@ -122,7 +121,10 @@ func TestGetConfig(t *testing.T) {
 
 func TestAddListener(t *testing.T) {
 	ts, reg := initZkData("", t)
-	defer ts.Stop()
+	defer func() {
+		err := ts.Stop()
+		assert.NoError(t, err)
+	}()
 	listener := &mockDataListener{}
 	reg.AddListener(dubboPropertyFileName, listener)
 	listener.wg.Add(1)
@@ -155,7 +157,10 @@ func TestAddListener(t *testing.T) {
 
 func TestRemoveListener(t *testing.T) {
 	ts, reg := initZkData("", t)
-	defer ts.Stop()
+	defer func() {
+		err := ts.Stop()
+		assert.NoError(t, err)
+	}()
 	listener := &mockDataListener{}
 	reg.AddListener(dubboPropertyFileName, listener)
 	listener.wg.Add(1)
@@ -193,7 +198,10 @@ func TestZookeeperDynamicConfigurationPublishConfig(t *testing.T) {
 	customGroup := "Custom Group"
 	key := "myKey"
 	ts, zk := initZkData(config_center.DEFAULT_GROUP, t)
-	defer ts.Stop()
+	defer func() {
+		err := ts.Stop()
+		assert.NoError(t, err)
+	}()
 	err := zk.PublishConfig(key, customGroup, value)
 	assert.Nil(t, err)
 	result, err := zk.GetInternalProperty("myKey", config_center.WithGroup(customGroup))

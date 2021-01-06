@@ -107,6 +107,7 @@ var baseMockRef = map[string]*ReferenceConfig{
 
 func TestRefresh(t *testing.T) {
 	c := &BaseConfig{}
+	c.fileStream = nil
 	mockMap := getMockMap()
 	mockMap["dubbo.shutdown.timeout"] = "12s"
 

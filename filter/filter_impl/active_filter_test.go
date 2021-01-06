@@ -37,7 +37,7 @@ import (
 )
 
 func TestActiveFilterInvoke(t *testing.T) {
-	invoc := invocation.NewRPCInvocation("test", []interface{}{"OK"}, make(map[string]interface{}, 0))
+	invoc := invocation.NewRPCInvocation("test", []interface{}{"OK"}, make(map[string]interface{}))
 	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
 	filter := ActiveFilter{}
 	ctrl := gomock.NewController(t)
