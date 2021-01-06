@@ -95,13 +95,16 @@ func TestMetadataService(t *testing.T) {
 	assert.Equal(t, 0, len(list4))
 
 	userProvider := &definition.UserProvider{}
-	common.ServiceMap.Register(serviceName, protocol, group, version, userProvider)
-	mts.PublishServiceDefinition(u)
+	_, err = common.ServiceMap.Register(serviceName, protocol, group, version, userProvider)
+	assert.NoError(t, err)
+	err = mts.PublishServiceDefinition(u)
+	assert.NoError(t, err)
 	expected := "{\"CanonicalName\":\"com.ikurento.user.UserProvider\",\"CodeSource\":\"\"," +
 		"\"Methods\":[{\"Name\":\"GetUser\",\"ParameterTypes\":[\"slice\"],\"ReturnType\":\"ptr\"," +
 		"\"Parameters\":null}],\"Types\":null}"
-	def1, _ := mts.GetServiceDefinition(serviceName, group, version)
+	def1, err := mts.GetServiceDefinition(serviceName, group, version)
 	assert.Equal(t, expected, def1)
+	assert.NoError(t, err)
 	serviceKey := definition.ServiceDescriperBuild(serviceName, group, version)
 	def2, err := mts.GetServiceDefinitionByServiceKey(serviceKey)
 	assert.Equal(t, expected, def2)
