@@ -42,6 +42,7 @@ require (
 	go.uber.org/atomic v1.6.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/net v0.0.0-20200822124328-c89045814202
+	google.golang.org/genproto v0.0.0-20191216164720-4f79533eabd1
 	google.golang.org/grpc v1.26.0
 	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.16.9
