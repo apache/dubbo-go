@@ -26,7 +26,6 @@ import (
 
 import (
 	perrors "github.com/pkg/errors"
-	"go.uber.org/atomic"
 )
 
 import (
@@ -64,9 +63,9 @@ type RegistryDirectory struct {
 	configurators                  []config_center.Configurator
 	consumerConfigurationListener  *consumerConfigurationListener
 	referenceConfigurationListener *referenceConfigurationListener
-	serviceKey                     string
-	forbidden                      atomic.Bool
-	registerLock                   sync.Mutex // this lock if for register
+	//serviceKey                     string
+	//forbidden                      atomic.Bool
+	registerLock sync.Mutex // this lock if for register
 }
 
 // NewRegistryDirectory will create a new RegistryDirectory
@@ -154,7 +153,6 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 		if event.Action != remoting.EventTypeUpdate {
 			panic("Your implements of register center is wrong, " +
 				"please check the Action of ServiceEvent should be EventTypeUpdate")
-			return
 		}
 		// Originally it will Merge URL many times, now we just execute once.
 		// MergeUrl is executed once and put the result into Event. After this, the key will get from Event.Key().
@@ -297,11 +295,7 @@ func (dir *RegistryDirectory) toGroupInvokers() []protocol.Invoker {
 	for _, invoker := range newInvokersList {
 		group := invoker.GetUrl().GetParam(constant.GROUP_KEY, "")
 
-		if _, ok := groupInvokersMap[group]; ok {
-			groupInvokersMap[group] = append(groupInvokersMap[group], invoker)
-		} else {
-			groupInvokersMap[group] = []protocol.Invoker{invoker}
-		}
+		groupInvokersMap[group] = append(groupInvokersMap[group], invoker)
 	}
 	groupInvokersList := make([]protocol.Invoker, 0, len(groupInvokersMap))
 	if len(groupInvokersMap) == 1 {

@@ -68,12 +68,17 @@ func TestURL(t *testing.T) {
 		"side=provider&timeout=3000&timestamp=1556509797245")
 	assert.NoError(t, err)
 
+	urlInst := URL{}
+	urlInst.noCopy.Lock()
+	urlInst.SetParam("hello", "world")
+	urlInst.noCopy.Unlock()
+
 	assert.Equal(t, "/com.ikurento.user.UserProvider", u.Path)
 	assert.Equal(t, "127.0.0.1:20000", u.Location)
 	assert.Equal(t, "dubbo", u.Protocol)
 	assert.Equal(t, loopbackAddress, u.Ip)
 	assert.Equal(t, "20000", u.Port)
-	assert.Equal(t, URL{}.Methods, u.Methods)
+	assert.Equal(t, urlInst.Methods, u.Methods)
 	assert.Equal(t, "", u.Username)
 	assert.Equal(t, "", u.Password)
 	assert.Equal(t, "anyhost=true&application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-"+
@@ -156,7 +161,10 @@ func TestURLEqual(t *testing.T) {
 func TestURLGetParam(t *testing.T) {
 	params := url.Values{}
 	params.Set("key", "value")
-	u := URL{baseUrl: baseUrl{params: params}}
+
+	u := URL{}
+	u.SetParams(params)
+
 	v := u.GetParam("key", "default")
 	assert.Equal(t, "value", v)
 
@@ -167,8 +175,11 @@ func TestURLGetParam(t *testing.T) {
 
 func TestURLGetParamInt(t *testing.T) {
 	params := url.Values{}
-	params.Set("key", "")
-	u := URL{baseUrl: baseUrl{params: params}}
+	params.Set("key", "value")
+
+	u := URL{}
+	u.SetParams(params)
+
 	v := u.GetParamInt("key", 1)
 	assert.Equal(t, int64(1), v)
 
@@ -180,7 +191,10 @@ func TestURLGetParamInt(t *testing.T) {
 func TestURLGetParamIntValue(t *testing.T) {
 	params := url.Values{}
 	params.Set("key", "0")
-	u := URL{baseUrl: baseUrl{params: params}}
+
+	u := URL{}
+	u.SetParams(params)
+
 	v := u.GetParamInt("key", 1)
 	assert.Equal(t, int64(0), v)
 
@@ -192,7 +206,10 @@ func TestURLGetParamIntValue(t *testing.T) {
 func TestURLGetParamBool(t *testing.T) {
 	params := url.Values{}
 	params.Set("force", "true")
-	u := URL{baseUrl: baseUrl{params: params}}
+
+	u := URL{}
+	u.SetParams(params)
+
 	v := u.GetParamBool("force", false)
 	assert.Equal(t, true, v)
 
@@ -205,7 +222,10 @@ func TestURLGetParamAndDecoded(t *testing.T) {
 	rule := "host = 2.2.2.2,1.1.1.1,3.3.3.3 & host !=1.1.1.1 => host = 1.2.3.4"
 	params := url.Values{}
 	params.Set("rule", base64.URLEncoding.EncodeToString([]byte(rule)))
-	u := URL{baseUrl: baseUrl{params: params}}
+
+	u := URL{}
+	u.SetParams(params)
+
 	v, _ := u.GetParamAndDecoded("rule")
 	assert.Equal(t, rule, v)
 }
@@ -242,7 +262,10 @@ func TestURLToMap(t *testing.T) {
 func TestURLGetMethodParamInt(t *testing.T) {
 	params := url.Values{}
 	params.Set("methods.GetValue.timeout", "3")
-	u := URL{baseUrl: baseUrl{params: params}}
+
+	u := URL{}
+	u.SetParams(params)
+
 	v := u.GetMethodParamInt("GetValue", "timeout", 1)
 	assert.Equal(t, int64(3), v)
 
@@ -254,7 +277,10 @@ func TestURLGetMethodParamInt(t *testing.T) {
 func TestURLGetMethodParam(t *testing.T) {
 	params := url.Values{}
 	params.Set("methods.GetValue.timeout", "3s")
-	u := URL{baseUrl: baseUrl{params: params}}
+
+	u := URL{}
+	u.SetParams(params)
+
 	v := u.GetMethodParam("GetValue", "timeout", "1s")
 	assert.Equal(t, "3s", v)
 
@@ -266,7 +292,10 @@ func TestURLGetMethodParam(t *testing.T) {
 func TestURLGetMethodParamBool(t *testing.T) {
 	params := url.Values{}
 	params.Set("methods.GetValue.async", "true")
-	u := URL{baseUrl: baseUrl{params: params}}
+
+	u := URL{}
+	u.SetParams(params)
+
 	v := u.GetMethodParamBool("GetValue", "async", false)
 	assert.Equal(t, true, v)
 

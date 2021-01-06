@@ -36,7 +36,7 @@ type apolloListener struct {
 // nolint
 func newApolloListener() *apolloListener {
 	return &apolloListener{
-		listeners: make(map[config_center.ConfigurationListener]struct{}, 0),
+		listeners: make(map[config_center.ConfigurationListener]struct{}),
 	}
 }
 
