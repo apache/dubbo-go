@@ -18,6 +18,7 @@
 package consul
 
 import (
+	getty "github.com/apache/dubbo-getty"
 	"strconv"
 	"time"
 )
@@ -210,7 +211,7 @@ func (r *consulRegistry) Destroy() {
 	select {
 	case <-done:
 		logger.Infof("consulRegistry unregister done")
-	case <-time.After(registryDestroyDefaultTimeout):
+	case <-getty.GetTimeWheel().After(registryDestroyDefaultTimeout):
 		logger.Errorf("consul unregister timeout")
 	}
 
