@@ -73,7 +73,6 @@ func TestConnCheckRouterRoute(t *testing.T) {
 
 	// now  invoker3 is healthy
 	assert.True(t, len(res.ToArray()) == 1)
-	invoker2 = NewMockInvoker(url2)
 
 	// check blacklist remove
 	protocol.RemoveInvokerUnhealthyStatus(invoker1)
