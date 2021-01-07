@@ -1,12 +1,28 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package dubbo3
 
 import (
 	"bytes"
-	status2 "github.com/apache/dubbo-go/remoting/dubbo3/status"
+	"github.com/apache/dubbo-go/remoting/dubbo3/codes"
+	"github.com/apache/dubbo-go/remoting/dubbo3/status"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/hpack"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"net/http"
 	"strconv"
 	"strings"
@@ -38,7 +54,7 @@ var (
 		http2.ErrCodeInadequateSecurity: codes.PermissionDenied,
 		http2.ErrCodeHTTP11Required:     codes.Internal,
 	}
-	// HTTPStatusConvTab is the HTTP status code to gRPC error code conversion table.
+	// HTTPStatusConvTab is the HTTP status codes to triple error codes conversion table.
 	HTTPStatusConvTab = map[int]codes.Code{
 		// 400 Bad Request - INTERNAL.
 		http.StatusBadRequest: codes.Internal,
@@ -81,10 +97,10 @@ type decodeState struct {
 }
 
 
-func (d *decodeState) status() *status2.Status {
+func (d *decodeState) status() *status.Status {
 	if d.data.statusGen == nil {
-		// No status-details were provided; generate status using code/msg.
-		d.data.statusGen = status2.New(codes.Code(int32(*(d.data.rawStatusCode))), d.data.rawStatusMsg)
+		// No status-details were provided; generate status using codes/msg.
+		d.data.statusGen = status.New(codes.Code(int32(*(d.data.rawStatusCode))), d.data.rawStatusMsg)
 	}
 	return d.data.statusGen
 }
@@ -107,18 +123,15 @@ func (d *decodeState) processHeaderField(f hpack.HeaderField) {
 	}
 }
 
-
-
-
 // constructErrMsg constructs error message to be returned in HTTP fallback mode.
-// Format: HTTP status code and its corresponding message + content-type error message.
+// Format: HTTP status codes and its corresponding message + content-type error message.
 func (d *decodeState) constructHTTPErrMsg() string {
 	var errMsgs []string
 
 	if d.data.httpStatus == nil {
 		errMsgs = append(errMsgs, "malformed header: missing HTTP status")
 	} else {
-		errMsgs = append(errMsgs, fmt.Sprintf("%s: HTTP status code %d", http.StatusText(*(d.data.httpStatus)), *d.data.httpStatus))
+		errMsgs = append(errMsgs, fmt.Sprintf("%s: HTTP status codes %d", http.StatusText(*(d.data.httpStatus)), *d.data.httpStatus))
 	}
 
 	if d.data.contentTypeErr == "" {
@@ -173,7 +186,7 @@ type parsedHeaderData struct {
 	// statusGen caches the stream status received from the trailer the server
 	// sent.  Client side only.  Do not access directly.  After all trailers are
 	// parsed, use the status method to retrieve the status.
-	statusGen *status2.Status
+	statusGen *status.Status
 	rawStatusCode *int
 	rawStatusMsg  string
 	httpStatus    *int

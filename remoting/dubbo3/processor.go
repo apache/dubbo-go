@@ -19,9 +19,8 @@ package dubbo3
 
 import (
 	"bytes"
-	status2 "github.com/apache/dubbo-go/remoting/dubbo3/status"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"github.com/apache/dubbo-go/remoting/dubbo3/codes"
+	"github.com/apache/dubbo-go/remoting/dubbo3/status"
 )
 import (
 	"github.com/golang/protobuf/proto"
@@ -120,10 +119,10 @@ func (s *unaryProcessor) runRPC() {
 
 func (s *unaryProcessor) handleUnaryRPCErr(err error) {
 	logger.Error("error ,s.processUnaryRPC err = ", err)
-	appStatus, ok := status2.FromError(err)
+	appStatus, ok := status.FromError(err)
 	if !ok {
-		err = status.Error(codes.Unknown, err.Error())
-		appStatus, _ = status2.FromError(err)
+		err = status.Errorf(codes.Unknown, err.Error())
+		appStatus, _ = status.FromError(err)
 	}
 	s.stream.WriteStatus(appStatus)
 }

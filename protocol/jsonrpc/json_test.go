@@ -56,8 +56,8 @@ func TestJsonClientCodecRead(t *testing.T) {
 
 	//error
 	codec.pending[1] = "GetUser"
-	err = codec.Read([]byte("{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"error\"}}\n"), rsp)
-	assert.EqualError(t, err, "{\"code\":-32000,\"message\":\"error\"}")
+	err = codec.Read([]byte("{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"codes\":-32000,\"message\":\"error\"}}\n"), rsp)
+	assert.EqualError(t, err, "{\"codes\":-32000,\"message\":\"error\"}")
 }
 
 func TestServerCodecWrite(t *testing.T) {
@@ -66,18 +66,18 @@ func TestServerCodecWrite(t *testing.T) {
 	codec.req = serverRequest{Version: "1.0", Method: "GetUser", ID: &a}
 	data, err := codec.Write("error", &TestData{Test: "test"})
 	assert.NoError(t, err)
-	assert.Equal(t, "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"Test\":\"test\"},\"error\":{\"code\":-32000,\"message\":\"error\"}}\n", string(data))
+	assert.Equal(t, "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"Test\":\"test\"},\"error\":{\"codes\":-32000,\"message\":\"error\"}}\n", string(data))
 
-	data, err = codec.Write("{\"code\":-32000,\"message\":\"error\"}", &TestData{Test: "test"})
+	data, err = codec.Write("{\"codes\":-32000,\"message\":\"error\"}", &TestData{Test: "test"})
 	assert.NoError(t, err)
-	assert.Equal(t, "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"Test\":\"test\"},\"error\":{\"code\":-32000,\"message\":\"error\"}}\n", string(data))
+	assert.Equal(t, "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"Test\":\"test\"},\"error\":{\"codes\":-32000,\"message\":\"error\"}}\n", string(data))
 }
 
 func TestServerCodecRead(t *testing.T) {
 	codec := newServerCodec()
 	header := map[string]string{}
 	err := codec.ReadHeader(header, []byte("{\"jsonrpc\":\"2.0\",\"method\":\"GetUser\",\"params\":[\"args\",2],\"id\":1}\n"))
-	assert.EqualError(t, err, "{\"code\":-32601,\"message\":\"Method not found\"}")
+	assert.EqualError(t, err, "{\"codes\":-32601,\"message\":\"Method not found\"}")
 
 	header["HttpMethod"] = "POST"
 	err = codec.ReadHeader(header, []byte("{\"jsonrpc\":\"2.0\",\"method\":\"GetUser\",\"params\":[\"args\",2],\"id\":1}\n"))

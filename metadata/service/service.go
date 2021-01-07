@@ -41,7 +41,7 @@ type MetadataService interface {
 	SubscribeURL(url *common.URL) (bool, error)
 	// UnsubscribeURL will delete the subscribed url in metadata
 	UnsubscribeURL(url *common.URL) error
-	// PublishServiceDefinition will generate the target url's code info
+	// PublishServiceDefinition will generate the target url's codes info
 	PublishServiceDefinition(url *common.URL) error
 	// GetExportedURLs will get the target exported url in metadata
 	// the url should be unique

@@ -1,10 +1,10 @@
 /*
- *
- * Copyright 2020 gRPC authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -13,31 +13,22 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
-// Package status implements errors returned by gRPC.  These errors are
-// serialized and transmitted on the wire between server and client, and allow
-// for additional data to be transmitted via the Details field in the status
-// proto.  gRPC service handlers should return an error created by this
-// package, and gRPC clients should expect a corresponding error to be
-// returned from the RPC call.
-//
-// This package upholds the invariants that a non-nil error may not
-// contain an OK code, and an OK code must result in a nil error.
+
 package status
 
 import (
 	"errors"
 	"fmt"
+	"github.com/apache/dubbo-go/remoting/dubbo3/codes"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
-	"google.golang.org/grpc/codes"
 )
 
-// Status represents an RPC status code, message, and details.  It is immutable
+// Status represents an RPC status codes, message, and details.  It is immutable
 // and should be created with New, Newf, or FromProto.
 type Status struct {
 	s *spb.Status
@@ -82,7 +73,7 @@ func Errorf(c codes.Code, format string, a ...interface{}) error {
 	return Err(c, fmt.Sprintf(format, a...))
 }
 
-// Code returns the status code contained in s.
+// Code returns the status codes contained in s.
 func (s *Status) Code() codes.Code {
 	if s == nil || s.s == nil {
 		return codes.OK
@@ -118,7 +109,7 @@ func (s *Status) Err() error {
 // If any errors are encountered, it returns nil and the first error encountered.
 func (s *Status) WithDetails(details ...proto.Message) (*Status, error) {
 	if s.Code() == codes.OK {
-		return nil, errors.New("no error details for status with code OK")
+		return nil, errors.New("no error details for status with codes OK")
 	}
 	// s.Code() != OK implies that s.Proto() != nil.
 	p := s.Proto()
@@ -157,16 +148,12 @@ type Error struct {
 }
 
 func (e *Error) Error() string {
-	return fmt.Sprintf("rpc error: code = %s desc = %s", codes.Code(e.e.GetCode()), e.e.GetMessage())
+	return fmt.Sprintf("rpc error: codes = %s desc = %s", codes.Code(e.e.GetCode()), e.e.GetMessage())
 }
 
-// GRPCStatus returns the Status represented by se.
-func (e *Error) GRPCStatus() *Status {
-	return FromProto(e.e)
-}
 
 // Is implements future error.Is functionality.
-// A Error is equivalent if the code and message are identical.
+// A Error is equivalent if the codes and message are identical.
 func (e *Error) Is(target error) bool {
 	tse, ok := target.(*Error)
 	if !ok {
