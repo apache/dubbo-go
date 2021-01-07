@@ -145,6 +145,7 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 		} else {
 			logger.Errorf("path{%s} child nodes changed, zk.Children() = error{%v}", zkPath, perrors.WithStack(err))
 		}
+		return
 	}
 
 	// a node was added -- listen the new node
@@ -182,11 +183,6 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 	var oldNode string
 	for _, n := range children {
 		if contains(newChildren, n) {
-			continue
-		}
-
-		if err != nil {
-			logger.Errorf("NewURL(i{%s}) = error{%v}", n, perrors.WithStack(err))
 			continue
 		}
 
