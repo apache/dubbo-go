@@ -46,7 +46,6 @@ func TestDefaultConnCheckerIsHealthy(t *testing.T) {
 
 	invoker = NewMockInvoker(url)
 	cc = NewDefaultConnChecker(url).(*DefaultConnChecker)
-	healthy = cc.IsConnHealthy(invoker)
 	// add to black list
 	protocol.SetInvokerUnhealthyStatus(invoker)
 	assert.False(t, cc.IsConnHealthy(invoker))
