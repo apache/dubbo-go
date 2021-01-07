@@ -135,8 +135,8 @@ func TestProxyImplementForContext(t *testing.T) {
 	attahments1 := make(map[string]interface{}, 4)
 	attahments1["k1"] = "v1"
 	attahments1["k2"] = "v2"
-	context := context.WithValue(context.Background(), constant.AttachmentKey, attahments1)
-	r, err := p.Get().(*TestService).MethodSix(context, "xxx")
+	ctx := context.WithValue(context.Background(), constant.AttachmentKey, attahments1)
+	r, err := p.Get().(*TestService).MethodSix(ctx, "xxx")
 	v1 := r.(map[string]interface{})
 	assert.NoError(t, err)
 	assert.Equal(t, v1["TestProxyInvoker"], "TestProxyInvokerValue")
