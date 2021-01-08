@@ -19,6 +19,7 @@ package dubbo3
 
 import (
 	"bytes"
+	"github.com/apache/dubbo-go/remoting/dubbo3/status"
 )
 import (
 	"google.golang.org/grpc"
@@ -41,6 +42,7 @@ const (
 type BufferMsg struct {
 	buffer  *bytes.Buffer
 	msgType MsgType
+	st *status.Status
 	err     error
 }
 
@@ -73,6 +75,7 @@ func (b *MsgBuffer) get() <-chan BufferMsg {
 type stream interface {
 	putRecv(data []byte, msgType MsgType)
 	putSend(data []byte, msgType MsgType)
+	putRecvErr(err error)
 	getSend() <-chan BufferMsg
 	getRecv() <-chan BufferMsg
 }
@@ -85,12 +88,30 @@ type baseStream struct {
 	url     *common.URL
 	header  remoting.ProtocolHeader
 	service common.RPCService
+
+	// On client-side it is the status error received from the server.
+	// On server-side it is unused.
+	status *status.Status
+}
+
+func (s *baseStream) WriteStatus(st *status.Status) {
+	s.sendBuf.put(BufferMsg{
+		st : st,
+		msgType: ServerStreamCloseMsgType,
+	})
 }
 
 func (s *baseStream) putRecv(data []byte, msgType MsgType) {
 	s.recvBuf.put(BufferMsg{
 		buffer:  bytes.NewBuffer(data),
 		msgType: msgType,
+	})
+}
+
+func (s *baseStream) putRecvErr(err error) {
+	s.recvBuf.put(BufferMsg{
+		err: err,
+		msgType: ServerStreamCloseMsgType,
 	})
 }
 
@@ -108,6 +129,8 @@ func (s *baseStream) getRecv() <-chan BufferMsg {
 func (s *baseStream) getSend() <-chan BufferMsg {
 	return s.sendBuf.get()
 }
+
+
 
 func newBaseStream(streamID uint32, url *common.URL, service common.RPCService) *baseStream {
 	// stream and pkgHeader are the same level

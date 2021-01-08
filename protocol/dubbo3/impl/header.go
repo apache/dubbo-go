@@ -47,6 +47,8 @@ type TripleHeader struct {
 	TracingRPCID   string
 	TracingContext string
 	ClusterInfo    string
+	GrpcStatus     string
+	GrpcMessage    string
 }
 
 func (t *TripleHeader) GetMethod() string {
@@ -65,6 +67,9 @@ func (t *TripleHeader) FieldToCtx() context.Context {
 	ctx = context.WithValue(ctx, "tri-trace-rpcid", t.TracingRPCID)
 	ctx = context.WithValue(ctx, "tri-trace-proto-bin", t.TracingContext)
 	ctx = context.WithValue(ctx, "tri-unit-info", t.ClusterInfo)
+	ctx = context.WithValue(ctx, "grpc-status", t.GrpcStatus)
+	ctx = context.WithValue(ctx, "grpc-message", t.GrpcMessage)
+
 	return ctx
 }
 
@@ -94,6 +99,9 @@ func (t TripleHeaderHandler) WriteHeaderField(url *common.URL, ctx context.Conte
 	headerFields = append(headerFields, hpack.HeaderField{Name: "tri-trace-rpcid", Value: getCtxVaSave(ctx, "tri-trace-rpcid")})
 	headerFields = append(headerFields, hpack.HeaderField{Name: "tri-trace-proto-bin", Value: getCtxVaSave(ctx, "tri-trace-proto-bin")})
 	headerFields = append(headerFields, hpack.HeaderField{Name: "tri-unit-info", Value: getCtxVaSave(ctx, "tri-unit-info")})
+	headerFields = append(headerFields, hpack.HeaderField{Name: "grpc-status", Value: getCtxVaSave(ctx, "grpc-status")})
+	headerFields = append(headerFields, hpack.HeaderField{Name: "grpc-message", Value: getCtxVaSave(ctx, "grpc-message")})
+
 	return headerFields
 }
 
@@ -132,8 +140,10 @@ func (t TripleHeaderHandler) ReadFromH2MetaHeader(frame *http2.MetaHeadersFrame)
 			tripleHeader.Method = f.Value
 		// todo: usage of these part of fields needs to be discussed later
 		//case "grpc-encoding":
-		//case "grpc-status":
-		//case "grpc-message":
+		case "grpc-status":
+			tripleHeader.GrpcStatus = f.Value
+		case "grpc-message":
+			tripleHeader.GrpcMessage = f.Value
 		//case "grpc-status-details-bin":
 		//case "grpc-timeout":
 		//case ":status":

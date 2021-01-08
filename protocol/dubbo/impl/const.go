@@ -184,7 +184,7 @@ const (
 
 /**
  * the dubbo protocol header length is 16 Bytes.
- * the first 2 Bytes is magic code '0xdabb'
+ * the first 2 Bytes is magic codes '0xdabb'
  * the next 1 Byte is message flags, in which its 16-20 bit is serial id, 21 for event, 22 for two way, 23 for request/response flag
  * the next 1 Bytes is response state.
  * the next 8 Bytes is package DI.

@@ -186,7 +186,7 @@ func TestHystricFilterInvokeCircuitBreak(t *testing.T) {
 			resChan <- result
 		}()
 	}
-	//This can not always pass the test when on travis due to concurrency, you can uncomment the code below and test it locally
+	//This can not always pass the test when on travis due to concurrency, you can uncomment the codes below and test it locally
 
 	//var lastRest bool
 	//for i := 0; i < 50; i++ {
@@ -215,7 +215,7 @@ func TestHystricFilterInvokeCircuitBreakOmitException(t *testing.T) {
 			resChan <- result
 		}()
 	}
-	//This can not always pass the test when on travis due to concurrency, you can uncomment the code below and test it locally
+	//This can not always pass the test when on travis due to concurrency, you can uncomment the codes below and test it locally
 
 	//time.Sleep(time.Second * 6)
 	//var lastRest bool

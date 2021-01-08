@@ -51,7 +51,9 @@ type TripleConn struct {
 
 // Invoke called when unary rpc 's pb.go file
 func (t *TripleConn) Invoke(ctx context.Context, method string, args, reply interface{}, opts ...grpc.CallOption) error {
-	t.client.Request(ctx, method, args, reply)
+	if err := t.client.Request(ctx, method, args, reply); err != nil {
+		return err
+	}
 	return nil
 }
 

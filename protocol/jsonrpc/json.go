@@ -59,7 +59,7 @@ const (
 
 // Error response Error
 type Error struct {
-	Code    int         `json:"code"`
+	Code    int         `json:"codes"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
 }
@@ -72,7 +72,7 @@ func (e *Error) Error() string {
 		if retryErr != nil {
 			msg = []byte("jsonrpc2.Error: json.Marshal failed")
 		}
-		return fmt.Sprintf(`{"code":%d,"message":%s}`, -32001, string(msg))
+		return fmt.Sprintf(`{"codes":%d,"message":%s}`, -32001, string(msg))
 	}
 	return string(buf)
 }
@@ -362,7 +362,7 @@ func (c *ServerCodec) ReadBody(x interface{}) error {
 	return nil
 }
 
-// NewError creates a error with @code and @message
+// NewError creates a error with @codes and @message
 func NewError(code int, message string) *Error {
 	return &Error{Code: code, Message: message}
 }

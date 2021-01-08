@@ -43,7 +43,7 @@ jobs:
     # 📚 https://git.io/JvXDl
 
     # ✏️ If the Autobuild fails above, remove it and uncomment the following three lines
-    #    and modify them (or add more) to build your code if your project
+    #    and modify them (or add more) to build your codes if your project
     #    uses a compiled language
 
     #- run: |

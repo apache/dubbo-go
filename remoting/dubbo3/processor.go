@@ -19,6 +19,8 @@ package dubbo3
 
 import (
 	"bytes"
+	"github.com/apache/dubbo-go/remoting/dubbo3/codes"
+	"github.com/apache/dubbo-go/remoting/dubbo3/status"
 )
 import (
 	"github.com/golang/protobuf/proto"
@@ -100,15 +102,29 @@ func (s *unaryProcessor) runRPC() {
 	go func() {
 		recvMsg := <-recvChan
 		if recvMsg.err != nil {
+			logger.Error("error ,s.processUnaryRPC err = ", recvMsg.err)
 			return
 		}
 		rspData, err := s.processUnaryRPC(*recvMsg.buffer, s.stream.getService(), s.stream.getHeader())
+
 		if err != nil {
-			logger.Error("error ,s.processUnaryRPC err = ", err)
+			s.handleUnaryRPCErr(err)
 			return
 		}
+		// TODO: status sendResponse should has err, then writeStatus(err) use one function and defer
 		s.stream.putSend(rspData, DataMsgType)
 	}()
+}
+
+
+func (s *unaryProcessor) handleUnaryRPCErr(err error) {
+	logger.Error("error ,s.processUnaryRPC err = ", err)
+	appStatus, ok := status.FromError(err)
+	if !ok {
+		err = status.Errorf(codes.Unknown, err.Error())
+		appStatus, _ = status.FromError(err)
+	}
+	s.stream.WriteStatus(appStatus)
 }
 
 // streamingProcessor used to process streaming invocation

@@ -28,13 +28,13 @@ import (
 	"github.com/golang/protobuf/protoc-gen-go/generator"
 )
 
-// generatedCodeVersion indicates a version of the generated code.
-// It is incremented whenever an incompatibility between the generated code and
-// the grpc package is introduced; the generated code references
+// generatedCodeVersion indicates a version of the generated codes.
+// It is incremented whenever an incompatibility between the generated codes and
+// the grpc package is introduced; the generated codes references
 // a constant, grpc.SupportPackageIsVersionN (where N is generatedCodeVersion).
 const generatedCodeVersion = 4
 
-// Paths for packages used by code generated in this file,
+// Paths for packages used by codes generated in this file,
 // relative to the import_prefix of the generator.Generator.
 const (
 	contextPkgPath = "context"
@@ -58,7 +58,7 @@ func (g *dubboGrpc) Name() string {
 	return "dubbo"
 }
 
-// The names for packages imported in the generated code.
+// The names for packages imported in the generated codes.
 // They may vary from the final path component of the import path
 // if the name is used by other packages.
 var (
@@ -86,7 +86,7 @@ func (g *dubboGrpc) typeName(str string) string {
 // P forwards to g.gen.P.
 func (g *dubboGrpc) P(args ...interface{}) { g.gen.P(args...) }
 
-// Generate generates code for the services in the given file.
+// Generate generates codes for the services in the given file.
 // be consistent with grpc plugin
 func (g *dubboGrpc) Generate(file *generator.FileDescriptor) {
 	if len(file.FileDescriptorProto.Service) == 0 {
@@ -117,7 +117,7 @@ func unexport(s string) string { return strings.ToLower(s[:1]) + s[1:] }
 // messages, fields, enums, and enum values.
 var deprecationComment = "// Deprecated: Do not use."
 
-// generateService generates all the code for the named service.
+// generateService generates all the codes for the named service.
 func (g *dubboGrpc) generateService(file *generator.FileDescriptor, service *pb.ServiceDescriptorProto, index int) {
 	path := fmt.Sprintf("6,%d", index) // 6 means service.
 

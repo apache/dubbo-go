@@ -110,7 +110,7 @@ func TestHTTPClientCall(t *testing.T) {
 	reply = &User{}
 	err = client.Call(ctx, url, req, reply)
 	assert.True(t, strings.Contains(err.Error(), "500 Internal Server Error"))
-	assert.True(t, strings.Contains(err.Error(), "\\\"result\\\":{},\\\"error\\\":{\\\"code\\\":-32000,\\\"message\\\":\\\"error\\\"}"))
+	assert.True(t, strings.Contains(err.Error(), "\\\"result\\\":{},\\\"error\\\":{\\\"codes\\\":-32000,\\\"message\\\":\\\"error\\\"}"))
 
 	// call GetUser2
 	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
