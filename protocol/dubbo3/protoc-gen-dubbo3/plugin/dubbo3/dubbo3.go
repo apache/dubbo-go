@@ -107,7 +107,7 @@ func (g *dubboGrpc) GenerateImports(file *generator.FileDescriptor) {
 	g.P(`dgrpc "github.com/apache/dubbo-go/protocol/grpc"`)
 	g.P(`"github.com/apache/dubbo-go/protocol/invocation"`)
 	g.P(`"github.com/apache/dubbo-go/protocol"`)
-	g.P(`"github.com/apache/dubbo-go/remoting/dubbo3"`)
+	g.P(`dubbo3 "github.com/dubbogo/triple/pkg/triple"`)
 	g.P(` ) `)
 }
 
