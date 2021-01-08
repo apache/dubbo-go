@@ -37,7 +37,7 @@ import (
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
-	"github.com/apache/dubbo-go/remoting/dubbo3"
+	dubbo3 "github.com/dubbogo/triple/pkg/triple"
 )
 
 // Dubbo3Invoker is implement of protocol.Invoker. A dubboInvoker refer to one service and ip.

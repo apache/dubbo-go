@@ -32,7 +32,7 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 	dgrpc "github.com/apache/dubbo-go/protocol/grpc"
 	"github.com/apache/dubbo-go/protocol/invocation"
-	"github.com/apache/dubbo-go/remoting/dubbo3"
+	dubbo3 "github.com/dubbogo/triple/pkg/triple"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

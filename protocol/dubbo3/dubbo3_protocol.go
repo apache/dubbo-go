@@ -29,7 +29,7 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/remoting/dubbo3"
+	dubbo3 "github.com/dubbogo/triple/pkg/triple"
 	"google.golang.org/grpc"
 )
 
