@@ -43,7 +43,7 @@ import (
 // Dubbo3Invoker is implement of protocol.Invoker. A dubboInvoker refer to one service and ip.
 type Dubbo3Invoker struct {
 	protocol.BaseInvoker
-	// the exchange layer, it is focus on network communication.
+	// the net layer client, it is focus on network communication.
 	client   *dubbo3.TripleClient
 	quitOnce sync.Once
 	// timeout for service(interface) level.
