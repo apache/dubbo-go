@@ -356,12 +356,6 @@ func (proto *registryProtocol) Destroy() {
 		ivk.Destroy()
 	}
 	proto.invokers = []protocol.Invoker{}
-	proto.bounds.Range(func(key, value interface{}) bool {
-		exporter := value.(protocol.Exporter)
-		exporter.Unexport()
-		proto.bounds.Delete(key)
-		return true
-	})
 	proto.registries.Range(func(key, value interface{}) bool {
 		reg := value.(registry.Registry)
 		if reg.IsAvailable() {
