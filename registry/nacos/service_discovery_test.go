@@ -162,8 +162,8 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 
 func TestNacosServiceDiscovery_GetDefaultPageSize(t *testing.T) {
 	prepareData()
-	serviceDiscovry, _ := extension.GetServiceDiscovery(constant.NACOS_KEY, testName)
-	assert.Equal(t, registry.DefaultPageSize, serviceDiscovry.GetDefaultPageSize())
+	serviceDiscovery, _ := extension.GetServiceDiscovery(constant.NACOS_KEY, testName)
+	assert.Equal(t, registry.DefaultPageSize, serviceDiscovery.GetDefaultPageSize())
 }
 
 func prepareData() {
