@@ -8,19 +8,22 @@ require (
 	github.com/alibaba/sentinel-golang v0.6.2
 	github.com/apache/dubbo-getty v1.3.10
 	github.com/apache/dubbo-go-hessian2 v1.7.0
+	github.com/cncf/udpa/go v0.0.0-20200629203442-efcf912fb354 // indirect
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/creasty/defaults v1.5.1
 	github.com/dubbogo/go-zookeeper v1.0.2
 	github.com/dubbogo/gost v1.9.5
-	github.com/dubbogo/triple v0.0.0-20210108081039-4fe35975aff1
 	github.com/elazarl/go-bindata-assetfs v1.0.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.4.0
+	github.com/envoyproxy/go-control-plane v0.9.7 // indirect
 	github.com/frankban/quicktest v1.4.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/go-co-op/gocron v0.1.1
 	github.com/go-resty/resty/v2 v2.3.0
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.4.3
+	github.com/google/go-cmp v0.5.0 // indirect
+	github.com/google/uuid v1.1.2 // indirect
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
 	github.com/hashicorp/consul v1.8.0
 	github.com/hashicorp/consul/api v1.5.0
@@ -42,8 +45,9 @@ require (
 	github.com/zouyx/agollo/v3 v3.4.5
 	go.uber.org/atomic v1.7.0
 	go.uber.org/zap v1.16.0
-	google.golang.org/grpc v1.34.0
-	google.golang.org/grpc/examples v0.0.0-20210107225343-0bd76be2bb6b // indirect
+	golang.org/x/net v0.0.0-20201224014010-6772e930b67b // indirect
+	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
+	google.golang.org/grpc v1.26.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.16.9
 	k8s.io/apimachinery v0.16.9
@@ -55,7 +59,7 @@ replace (
 	github.com/envoyproxy/go-control-plane => github.com/envoyproxy/go-control-plane v0.8.0
 	github.com/shirou/gopsutil => github.com/shirou/gopsutil v0.0.0-20181107111621-48177ef5f880
 	launchpad.net/gocheck => github.com/go-check/check v0.0.0-20140225173054-eb6ee6f84d0a
-	//github.com/dubbogo/triple => ../triple
+//github.com/dubbogo/triple => ../triple
 )
 
 go 1.13
