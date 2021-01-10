@@ -135,7 +135,7 @@ func (m metadataServiceProxy) Version() (string, error) {
 func newMetadataServiceProxy(ins registry.ServiceInstance) service.MetadataService {
 	revision := ins.GetMetadata()[constant.EXPORTED_SERVICES_REVISION_PROPERTY_NAME]
 	if len(revision) == 0 {
-		revision = constant.DEFAULT_REVIESION
+		revision = constant.DEFAULT_REVISION
 	}
 
 	return &metadataServiceProxy{
