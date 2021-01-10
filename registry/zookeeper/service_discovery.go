@@ -27,7 +27,7 @@ import (
 
 import (
 	"github.com/dubbogo/gost/container/set"
-	"github.com/dubbogo/gost/page"
+	"github.com/dubbogo/gost/hash/page"
 	perrors "github.com/pkg/errors"
 )
 
@@ -60,9 +60,9 @@ func init() {
 }
 
 type zookeeperServiceDiscovery struct {
-	client      *zookeeper.ZookeeperClient
-	csd         *curator_discovery.ServiceDiscovery
-	listener    *zookeeper.ZkEventListener
+	client *zookeeper.ZookeeperClient
+	csd    *curator_discovery.ServiceDiscovery
+	//listener    *zookeeper.ZkEventListener
 	url         *common.URL
 	wg          sync.WaitGroup
 	cltLock     sync.Mutex
@@ -154,8 +154,8 @@ func (zksd *zookeeperServiceDiscovery) RestartCallBack() bool {
 }
 
 // nolint
-func (zksd *zookeeperServiceDiscovery) GetUrl() common.URL {
-	return *zksd.url
+func (zksd *zookeeperServiceDiscovery) GetUrl() *common.URL {
+	return zksd.url
 }
 
 // nolint
@@ -214,7 +214,7 @@ func (zksd *zookeeperServiceDiscovery) GetInstances(serviceName string) []regist
 	if err != nil {
 		logger.Errorf("[zkServiceDiscovery] Could not query the instances for service{%s}, error = err{%v} ",
 			serviceName, err)
-		return make([]registry.ServiceInstance, 0, 0)
+		return make([]registry.ServiceInstance, 0)
 	}
 	iss := make([]registry.ServiceInstance, 0, len(criss))
 	for _, cris := range criss {
@@ -231,7 +231,7 @@ func (zksd *zookeeperServiceDiscovery) GetInstancesByPage(serviceName string, of
 	for i := offset; i < len(all) && i < offset+pageSize; i++ {
 		res = append(res, all[i])
 	}
-	return gxpage.New(offset, pageSize, res, len(all))
+	return gxpage.NewPage(offset, pageSize, res, len(all))
 }
 
 // GetHealthyInstancesByPage will return the instance
@@ -254,7 +254,7 @@ func (zksd *zookeeperServiceDiscovery) GetHealthyInstancesByPage(serviceName str
 		}
 		i++
 	}
-	return gxpage.New(offset, pageSize, res, len(all))
+	return gxpage.NewPage(offset, pageSize, res, len(all))
 }
 
 // GetRequestInstances will return the instances

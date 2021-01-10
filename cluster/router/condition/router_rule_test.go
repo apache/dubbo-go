@@ -80,5 +80,5 @@ conditions:
 
 func TestIsMatchGlobPattern(t *testing.T) {
 	url, _ := common.NewURL("dubbo://localhost:8080/Foo?key=v*e")
-	assert.Equal(t, true, isMatchGlobalPattern("$key", "value", &url))
+	assert.Equal(t, true, isMatchGlobalPattern("$key", "value", url))
 }

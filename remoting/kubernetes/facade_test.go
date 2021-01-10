@@ -19,7 +19,6 @@ package kubernetes
 
 import (
 	"strconv"
-	"sync"
 	"testing"
 )
 
@@ -30,9 +29,9 @@ import (
 
 type mockFacade struct {
 	*common.URL
-	client  *Client
-	cltLock sync.Mutex
-	done    chan struct{}
+	client *Client
+	//cltLock sync.Mutex
+	//done    chan struct{}
 }
 
 func (r *mockFacade) Client() *Client {
@@ -43,8 +42,8 @@ func (r *mockFacade) SetClient(client *Client) {
 	r.client = client
 }
 
-func (r *mockFacade) GetUrl() common.URL {
-	return *r.URL
+func (r *mockFacade) GetUrl() *common.URL {
+	return r.URL
 }
 
 func (r *mockFacade) Destroy() {
@@ -68,7 +67,7 @@ func Test_Facade(t *testing.T) {
 
 	mockClient := getTestClient(t)
 	m := &mockFacade{
-		URL:    &regUrl,
+		URL:    regUrl,
 		client: mockClient,
 	}
 

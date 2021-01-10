@@ -67,11 +67,14 @@ conditions:
 
 	_, err = z.Conn.Set(routerPath, []byte(testYML), 0)
 	assert.NoError(t, err)
-	defer ts.Stop()
-	defer z.Close()
+	defer func() {
+		err = ts.Stop()
+		assert.NoError(t, err)
+		z.Close()
+	}()
 
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, routerLocalIP, ts.Servers[0].Port))
-	configuration, err := extension.GetConfigCenterFactory(routerZk).GetDynamicConfiguration(&zkUrl)
+	configuration, err := extension.GetConfigCenterFactory(routerZk).GetDynamicConfiguration(zkUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
 
 	assert.Nil(t, err)
@@ -115,11 +118,14 @@ conditions:
 
 	_, err = z.Conn.Set(routerPath, []byte(testYML), 0)
 	assert.NoError(t, err)
-	defer ts.Stop()
-	defer z.Close()
+	defer func() {
+		err = ts.Stop()
+		assert.NoError(t, err)
+		z.Close()
+	}()
 
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, routerLocalIP, ts.Servers[0].Port))
-	configuration, err := extension.GetConfigCenterFactory(routerZk).GetDynamicConfiguration(&zkUrl)
+	configuration, err := extension.GetConfigCenterFactory(routerZk).GetDynamicConfiguration(zkUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
 
 	assert.Nil(t, err)
@@ -154,11 +160,14 @@ conditions:
 
 	_, err = z.Conn.Set(routerPath, []byte(testYML), 0)
 	assert.NoError(t, err)
-	defer ts.Stop()
-	defer z.Close()
+	defer func() {
+		err = ts.Stop()
+		assert.NoError(t, err)
+		z.Close()
+	}()
 
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, routerLocalIP, ts.Servers[0].Port))
-	configuration, err := extension.GetConfigCenterFactory(routerZk).GetDynamicConfiguration(&zkUrl)
+	configuration, err := extension.GetConfigCenterFactory(routerZk).GetDynamicConfiguration(zkUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
 
 	assert.Nil(t, err)
@@ -194,5 +203,5 @@ func getAppRouteURL(applicationKey string) *common.URL {
 	url, _ := common.NewURL(fmt.Sprintf(conditionFormat, constant.ANYHOST_VALUE))
 	url.AddParam("application", applicationKey)
 	url.AddParam("force", "true")
-	return &url
+	return url
 }

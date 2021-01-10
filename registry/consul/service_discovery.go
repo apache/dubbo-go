@@ -27,7 +27,7 @@ import (
 
 import (
 	"github.com/dubbogo/gost/container/set"
-	"github.com/dubbogo/gost/page"
+	"github.com/dubbogo/gost/hash/page"
 	consul "github.com/hashicorp/consul/api"
 	"github.com/hashicorp/consul/api/watch"
 	perrors "github.com/pkg/errors"
@@ -252,7 +252,7 @@ func (csd *consulServiceDiscovery) GetServices() *gxset.HashSet {
 		return res
 	}
 
-	for service, _ := range services {
+	for service := range services {
 		res.Add(service)
 	}
 	return res
@@ -339,7 +339,7 @@ func (csd *consulServiceDiscovery) GetInstancesByPage(serviceName string, offset
 	for i := offset; i < len(all) && i < offset+pageSize; i++ {
 		res = append(res, all[i])
 	}
-	return gxpage.New(offset, pageSize, res, len(all))
+	return gxpage.NewPage(offset, pageSize, res, len(all))
 }
 
 func (csd *consulServiceDiscovery) GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) gxpage.Pager {
@@ -358,7 +358,7 @@ func (csd *consulServiceDiscovery) GetHealthyInstancesByPage(serviceName string,
 		}
 		i++
 	}
-	return gxpage.New(offset, pageSize, res, len(all))
+	return gxpage.NewPage(offset, pageSize, res, len(all))
 }
 
 func (csd *consulServiceDiscovery) GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]gxpage.Pager {
@@ -444,7 +444,7 @@ func (csd *consulServiceDiscovery) buildRegisterInstance(instance registry.Servi
 	metadata = encodeConsulMetadata(metadata)
 	metadata[enable] = strconv.FormatBool(instance.IsEnable())
 	// check
-	check := csd.buildCheck(instance)
+	check := csd.buildCheck()
 
 	return &consul.AgentServiceRegistration{
 		ID:      buildID(instance),
@@ -456,12 +456,7 @@ func (csd *consulServiceDiscovery) buildRegisterInstance(instance registry.Servi
 	}, nil
 }
 
-func (csd *consulServiceDiscovery) buildCheck(instance registry.ServiceInstance) consul.AgentServiceCheck {
-
-	deregister, ok := instance.GetMetadata()[constant.DEREGISTER_AFTER]
-	if !ok || len(deregister) == 0 {
-		deregister = constant.DEFAULT_DEREGISTER_TIME
-	}
+func (csd *consulServiceDiscovery) buildCheck() consul.AgentServiceCheck {
 	return consul.AgentServiceCheck{
 		TTL:                            strconv.FormatInt(csd.checkPassInterval/1000, 10) + "s",
 		DeregisterCriticalServiceAfter: csd.deregisterCriticalServiceAfter,

@@ -38,14 +38,12 @@ import (
 )
 
 var (
-	errInvalidCodecType  = perrors.New("illegal CodecType")
-	errInvalidAddress    = perrors.New("remote address invalid or empty")
 	errSessionNotExist   = perrors.New("session not exist")
 	errClientClosed      = perrors.New("client closed")
-	errClientReadTimeout = perrors.New("client read timeout")
+	errClientReadTimeout = perrors.New("maybe the client read timeout or fail to decode tcp stream in Writer.Write")
 
 	clientConf   *ClientConfig
-	clientGrpool *gxsync.TaskPool
+	clientGrpool gxsync.GenericTaskPool
 )
 
 // it is init client for single protocol.
@@ -101,16 +99,13 @@ func SetClientConf(c ClientConfig) {
 }
 
 func setClientGrpool() {
-	if clientConf.GrPoolSize > 1 {
-		clientGrpool = gxsync.NewTaskPool(gxsync.WithTaskPoolTaskPoolSize(clientConf.GrPoolSize), gxsync.WithTaskPoolTaskQueueLength(clientConf.QueueLen),
-			gxsync.WithTaskPoolTaskQueueNumber(clientConf.QueueNumber))
-	}
+	clientGrpool = gxsync.NewTaskPoolSimple(clientConf.GrPoolSize)
 }
 
 // Options : param config
 type Options struct {
 	// connect timeout
-	// remove request timeout, it will be calulate for every request
+	// remove request timeout, it will be calculate for every request
 	ConnectTimeout time.Duration
 	// request timeout
 	RequestTimeout time.Duration
@@ -118,13 +113,12 @@ type Options struct {
 
 // Client : some configuration for network communication.
 type Client struct {
-	addr            string
-	opts            Options
-	conf            ClientConfig
-	pool            *gettyRPCClientPool
-	codec           remoting.Codec
-	responseHandler remoting.ResponseHandler
-	ExchangeClient  *remoting.ExchangeClient
+	addr           string
+	opts           Options
+	conf           ClientConfig
+	pool           *gettyRPCClientPool
+	codec          remoting.Codec
+	ExchangeClient *remoting.ExchangeClient
 }
 
 // create client
@@ -146,12 +140,9 @@ func NewClient(opt Options) *Client {
 func (c *Client) SetExchangeClient(client *remoting.ExchangeClient) {
 	c.ExchangeClient = client
 }
-func (c *Client) SetResponseHandler(responseHandler remoting.ResponseHandler) {
-	c.responseHandler = responseHandler
-}
 
 // init client and try to connection.
-func (c *Client) Connect(url common.URL) error {
+func (c *Client) Connect(url *common.URL) error {
 	initClient(url.Protocol)
 	c.conf = *clientConf
 	// new client
@@ -218,15 +209,6 @@ func (c *Client) selectSession(addr string) (*gettyRPCClient, getty.Session, err
 		return nil, nil, perrors.WithStack(err)
 	}
 	return rpcClient, rpcClient.selectSession(), nil
-}
-
-func (c *Client) heartbeat(session getty.Session) error {
-	req := remoting.NewRequest("2.0.2")
-	req.TwoWay = true
-	req.Event = true
-	resp := remoting.NewPendingResponse(req.ID)
-	remoting.AddPendingResponse(resp)
-	return c.transfer(session, req, 3*time.Second)
 }
 
 func (c *Client) transfer(session getty.Session, request *remoting.Request, timeout time.Duration) error {

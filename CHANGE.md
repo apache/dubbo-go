@@ -1,5 +1,9 @@
 # Release Notes
 ---
+## 1.4.5
+
+### Bugfixes
+- [Fix too many files open error](https://github.com/apache/dubbo-go/pull/828)  [@wenxuwan](https://github.com/wenxuwan) Milestone: [https://github.com/apache/dubbo-go/milestone/6](https://github.com/apache/dubbo-go/milestone/6?closed=1)
 
 ## 1.5.4
 
