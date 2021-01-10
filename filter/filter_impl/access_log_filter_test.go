@@ -77,6 +77,6 @@ func TestAccessLogFilterInvokeDefaultConfig(t *testing.T) {
 func TestAccessLogFilterOnResponse(t *testing.T) {
 	result := &protocol.RPCResult{}
 	accessLogFilter := GetAccessLogFilter()
-	response := accessLogFilter.OnResponse(nil, result, nil, nil)
+	response := accessLogFilter.OnResponse(context.TODO(), result, nil, nil)
 	assert.Equal(t, result, response)
 }

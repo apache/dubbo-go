@@ -66,5 +66,5 @@ type Config struct {
 }
 
 type ChildConfig struct {
-	StrTest string `default:"strTest" default:"default" yaml:"strTest"  json:"strTest,omitempty"`
+	StrTest string `default:"default" yaml:"strTest"  json:"strTest,omitempty"`
 }
