@@ -106,10 +106,10 @@ func (m *MethodType) ReplyType() reflect.Type {
 	return m.replyType
 }
 
-// SuiteContext tranfers @ctx to reflect.Value type or get it from @m.ctxType.
+// SuiteContext transfers @ctx to reflect.Value type or get it from @m.ctxType.
 func (m *MethodType) SuiteContext(ctx context.Context) reflect.Value {
-	if contextv := reflect.ValueOf(ctx); contextv.IsValid() {
-		return contextv
+	if ctxV := reflect.ValueOf(ctx); ctxV.IsValid() {
+		return ctxV
 	}
 	return reflect.Zero(m.ctxType)
 }

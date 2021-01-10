@@ -48,11 +48,11 @@ type CodecData struct {
 const (
 	// Errors defined in the JSON-RPC spec. See
 	// http://www.jsonrpc.org/specification#error_object.
-	CodeParseError       = -32700
-	CodeInvalidRequest   = -32600
-	CodeMethodNotFound   = -32601
-	CodeInvalidParams    = -32602
-	CodeInternalError    = -32603
+	CodeParseError     = -32700
+	CodeInvalidRequest = -32600
+	CodeMethodNotFound = -32601
+	CodeInvalidParams  = -32602
+	CodeInternalError  = -32603
 )
 
 // Error response Error

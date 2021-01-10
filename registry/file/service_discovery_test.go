@@ -44,7 +44,7 @@ func TestNewFileSystemServiceDiscoveryAndDestroy(t *testing.T) {
 	serviceDiscovery, err := newFileSystemServiceDiscovery(testName)
 	assert.NoError(t, err)
 	assert.NotNil(t, serviceDiscovery)
-	defer func () {
+	defer func() {
 		err = serviceDiscovery.Destroy()
 		assert.Nil(t, err)
 	}()
@@ -82,7 +82,7 @@ func TestCURDFileSystemServiceDiscovery(t *testing.T) {
 
 	err = serviceDiscovery.Register(r1)
 	assert.NoError(t, err)
-	defer func () {
+	defer func() {
 		err = serviceDiscovery.Destroy()
 		assert.NoError(t, err)
 	}()
