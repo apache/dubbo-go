@@ -34,11 +34,13 @@ func TestNewNacosClient(t *testing.T) {
 	client, err := NewNacosClient(rc)
 
 	// address is nil
+	assert.Nil(t, client)
 	assert.NotNil(t, err)
 
 	rc.Address = "console.nacos.io:80:123"
 	client, err = NewNacosClient(rc)
 	// invalid address
+	assert.Nil(t, client)
 	assert.NotNil(t, err)
 
 	rc.Address = "console.nacos.io:80"

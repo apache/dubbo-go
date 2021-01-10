@@ -60,9 +60,9 @@ func init() {
 }
 
 type zookeeperServiceDiscovery struct {
-	client      *zookeeper.ZookeeperClient
-	csd         *curator_discovery.ServiceDiscovery
-	listener    *zookeeper.ZkEventListener
+	client *zookeeper.ZookeeperClient
+	csd    *curator_discovery.ServiceDiscovery
+	//listener    *zookeeper.ZkEventListener
 	url         *common.URL
 	wg          sync.WaitGroup
 	cltLock     sync.Mutex
@@ -214,7 +214,7 @@ func (zksd *zookeeperServiceDiscovery) GetInstances(serviceName string) []regist
 	if err != nil {
 		logger.Errorf("[zkServiceDiscovery] Could not query the instances for service{%s}, error = err{%v} ",
 			serviceName, err)
-		return make([]registry.ServiceInstance, 0, 0)
+		return make([]registry.ServiceInstance, 0)
 	}
 	iss := make([]registry.ServiceInstance, 0, len(criss))
 	for _, cris := range criss {
