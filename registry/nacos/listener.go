@@ -188,7 +188,9 @@ func (nl *nacosListener) startListen() error {
 	}
 	serviceName := getSubscribeName(nl.listenUrl)
 	nl.subscribeParam = &vo.SubscribeParam{ServiceName: serviceName, SubscribeCallback: nl.Callback}
-	go nl.namingClient.Subscribe(nl.subscribeParam)
+	go func() {
+		_ = nl.namingClient.Subscribe(nl.subscribeParam)
+	}()
 	return nil
 }
 

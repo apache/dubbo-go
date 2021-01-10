@@ -16,13 +16,13 @@ Apache License, Version 2.0
 
 ## Release note ##
 
+[v1.5.5 - Jan 5, 2021](https://github.com/apache/dubbo-go/releases/tag/v1.5.5)
+
 [v1.4.5 - Nov 18, 2020](https://github.com/apache/dubbo-go/releases/tag/v1.4.5)
 
 [v1.5.4 - Nov 1, 2020](https://github.com/apache/dubbo-go/releases/tag/v1.5.4)
 
 [v1.5.3 - Sep 23, 2020](https://github.com/apache/dubbo-go/releases/tag/v1.5.3)
-
-[v1.5.2 - discard]()
 
 [v1.5.1 - Aug 23, 2020](https://github.com/apache/dubbo-go/releases/tag/v1.5.1)
 
@@ -249,6 +249,14 @@ If you are using [apache/dubbo-go](github.com/apache/dubbo-go) and think that it
       <td align="center"  valign="middle">
         <a href="https://www.icsoc.net/" target="_blank">
           <img width="222px"  src="https://oss.icsoc.net/icsoc-ekt-test-files/icsoc.png">
+        </a>
+      </td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="center"  valign="middle">
+        <a href="http://www.mgtv.com" target="_blank">
+          <img width="222px"  src="https://ugc.hitv.com/platform_oss/F6077F1AA82542CDBDD88FD518E6E727.png">
         </a>
       </td>
     </tr>

@@ -135,7 +135,7 @@ func (m metadataServiceProxy) Version() (string, error) {
 func newMetadataServiceProxy(ins registry.ServiceInstance) service.MetadataService {
 	revision := ins.GetMetadata()[constant.EXPORTED_SERVICES_REVISION_PROPERTY_NAME]
 	if len(revision) == 0 {
-		revision = constant.DEFAULT_REVIESION
+		revision = constant.DEFAULT_REVISION
 	}
 
 	return &metadataServiceProxy{
@@ -146,7 +146,7 @@ func newMetadataServiceProxy(ins registry.ServiceInstance) service.MetadataServi
 }
 
 func parse(key string) []string {
-	arr := make([]string, 3, 3)
+	arr := make([]string, 3)
 	tmp := strings.SplitN(key, "/", 2)
 	if len(tmp) > 1 {
 		arr[0] = tmp[0]
