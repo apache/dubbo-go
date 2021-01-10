@@ -141,8 +141,9 @@ func (n *nacosServiceDiscovery) GetInstances(serviceName string) []registry.Serv
 		GroupName:   n.group,
 	})
 	if err != nil {
-		logger.Errorf("Could not query the instances for service: " + serviceName + ", group: " + n.group)
-		return make([]registry.ServiceInstance, 0, 0)
+		logger.Errorf("Could not query the instances for service: %+v, group: %+v . It happened err %+v",
+			serviceName, n.group, err)
+		return make([]registry.ServiceInstance, 0)
 	}
 	res := make([]registry.ServiceInstance, 0, len(instances))
 	for _, ins := range instances {
