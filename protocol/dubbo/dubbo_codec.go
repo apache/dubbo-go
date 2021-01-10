@@ -105,7 +105,7 @@ func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, er
 	return pkg.Marshal()
 }
 
-// encode heartbeart request
+// encode heartbeat request
 func (c *DubboCodec) encodeHeartbeartReqeust(request *remoting.Request) (*bytes.Buffer, error) {
 	header := impl.DubboHeader{
 		Type:     impl.PackageHeartbeat,

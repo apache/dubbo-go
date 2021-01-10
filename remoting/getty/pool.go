@@ -60,21 +60,20 @@ func newGettyRPCClientConn(pool *gettyRPCClientPool, addr string) (*gettyRPCClie
 		sslEnabled  bool
 	)
 	sslEnabled = pool.sslEnabled
-	if sslEnabled {
-		gettyClient = getty.NewTCPClient(
-			getty.WithServerAddress(addr),
-			getty.WithConnectionNumber((int)(pool.rpcClient.conf.ConnectionNum)),
-			getty.WithReconnectInterval(pool.rpcClient.conf.ReconnectInterval),
-			getty.WithClientSslEnabled(pool.sslEnabled),
-			getty.WithClientTlsConfigBuilder(config.GetClientTlsConfigBuilder()),
-		)
-	} else {
-		gettyClient = getty.NewTCPClient(
-			getty.WithServerAddress(addr),
-			getty.WithConnectionNumber((int)(pool.rpcClient.conf.ConnectionNum)),
-			getty.WithReconnectInterval(pool.rpcClient.conf.ReconnectInterval),
-		)
+	clientOpts := []getty.ClientOption{
+		getty.WithServerAddress(addr),
+		getty.WithConnectionNumber((int)(pool.rpcClient.conf.ConnectionNum)),
+		getty.WithReconnectInterval(pool.rpcClient.conf.ReconnectInterval),
 	}
+	if sslEnabled {
+		clientOpts = append(clientOpts, getty.WithClientSslEnabled(pool.sslEnabled), getty.WithClientTlsConfigBuilder(config.GetClientTlsConfigBuilder()))
+	}
+
+	if clientGrpool != nil {
+		clientOpts = append(clientOpts, getty.WithClientTaskPool(clientGrpool))
+	}
+
+	gettyClient = getty.NewTCPClient(clientOpts...)
 	c := &gettyRPCClient{
 		addr:        addr,
 		pool:        pool,
@@ -136,13 +135,11 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 		session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
 		session.SetPkgHandler(NewRpcClientPackageHandler(c.pool.rpcClient))
 		session.SetEventListener(NewRpcClientHandler(c))
-		session.SetWQLen(conf.GettySessionParam.PkgWQSize)
 		session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
 		session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
 		session.SetCronPeriod((int)(conf.heartbeatPeriod.Nanoseconds() / 1e6))
 		session.SetWaitTime(conf.GettySessionParam.waitTimeout)
 		logger.Debugf("client new session:%s\n", session.Stat())
-		session.SetTaskPool(clientGrpool)
 		return nil
 	}
 	if tcpConn, ok = session.Conn().(*net.TCPConn); !ok {
@@ -171,15 +168,11 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 	session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
 	session.SetPkgHandler(NewRpcClientPackageHandler(c.pool.rpcClient))
 	session.SetEventListener(NewRpcClientHandler(c))
-	session.SetWQLen(conf.GettySessionParam.PkgWQSize)
 	session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
 	session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
 	session.SetCronPeriod((int)(conf.heartbeatPeriod.Nanoseconds() / 1e6))
 	session.SetWaitTime(conf.GettySessionParam.waitTimeout)
 	logger.Debugf("client new session:%s\n", session.Stat())
-
-	session.SetTaskPool(clientGrpool)
-
 	return nil
 }
 
@@ -270,25 +263,25 @@ func (c *gettyRPCClient) updateSession(session getty.Session) {
 
 func (c *gettyRPCClient) getClientRpcSession(session getty.Session) (rpcSession, error) {
 	var (
-		err        error
-		rpcSession rpcSession
+		err error
+		rs  rpcSession
 	)
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 	if c.sessions == nil {
-		return rpcSession, errClientClosed
+		return rs, errClientClosed
 	}
 
 	err = errSessionNotExist
 	for _, s := range c.sessions {
 		if s.session == session {
-			rpcSession = *s
+			rs = *s
 			err = nil
 			break
 		}
 	}
 
-	return rpcSession, perrors.WithStack(err)
+	return rs, perrors.WithStack(err)
 }
 
 func (c *gettyRPCClient) isAvailable() bool {
@@ -363,16 +356,16 @@ func (p *gettyRPCClientPool) close() {
 }
 
 func (p *gettyRPCClientPool) getGettyRpcClient(addr string) (*gettyRPCClient, error) {
-	conn, err := p.get()
-	if err == nil && conn == nil {
+	conn, connErr := p.get()
+	if connErr == nil && conn == nil {
 		// create new conn
-		rpcClientConn, err := newGettyRPCClientConn(p, addr)
-		if err == nil {
+		rpcClientConn, rpcErr := newGettyRPCClientConn(p, addr)
+		if rpcErr == nil {
 			p.put(rpcClientConn)
 		}
-		return rpcClientConn, perrors.WithStack(err)
+		return rpcClientConn, perrors.WithStack(rpcErr)
 	}
-	return conn, perrors.WithStack(err)
+	return conn, perrors.WithStack(connErr)
 }
 
 func (p *gettyRPCClientPool) get() (*gettyRPCClient, error) {
