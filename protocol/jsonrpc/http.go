@@ -189,7 +189,7 @@ func (c *HTTPClient) Do(addr, path string, httpHeader http.Header, body []byte) 
 
 		return conn.SetDeadline(t)
 	}
-	if err := setNetConnTimeout(tcpConn, c.options.HTTPTimeout); err != nil {
+	if err = setNetConnTimeout(tcpConn, c.options.HTTPTimeout); err != nil {
 		return nil, err
 	}
 

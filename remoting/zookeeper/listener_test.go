@@ -95,7 +95,7 @@ func TestListener(t *testing.T) {
 `
 	var wait sync.WaitGroup
 	ts, client, event := initZkData(t)
-	defer func () {
+	defer func() {
 		if err := ts.Stop(); err != nil {
 			t.Errorf("ts.Stop() = error: %v", err)
 		}
