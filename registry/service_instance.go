@@ -91,7 +91,7 @@ func (d *DefaultServiceInstance) IsHealthy() bool {
 // GetMetadata will return the metadata, it will never return nil
 func (d *DefaultServiceInstance) GetMetadata() map[string]string {
 	if d.Metadata == nil {
-		d.Metadata = make(map[string]string, 0)
+		d.Metadata = make(map[string]string)
 	}
 	return d.Metadata
 }

@@ -45,27 +45,27 @@ func (m *metadataServiceProxy) ServiceName() (string, error) {
 	return m.serviceName, nil
 }
 
-func (m *metadataServiceProxy) ExportURL(url common.URL) (bool, error) {
+func (m *metadataServiceProxy) ExportURL(url *common.URL) (bool, error) {
 	logger.Error("you should never invoke this implementation")
 	return true, nil
 }
 
-func (m *metadataServiceProxy) UnexportURL(url common.URL) error {
+func (m *metadataServiceProxy) UnexportURL(url *common.URL) error {
 	logger.Error("you should never invoke this implementation")
 	return nil
 }
 
-func (m *metadataServiceProxy) SubscribeURL(url common.URL) (bool, error) {
+func (m *metadataServiceProxy) SubscribeURL(url *common.URL) (bool, error) {
 	logger.Error("you should never invoke this implementation")
 	return true, nil
 }
 
-func (m *metadataServiceProxy) UnsubscribeURL(url common.URL) error {
+func (m *metadataServiceProxy) UnsubscribeURL(url *common.URL) error {
 	logger.Error("you should never invoke this implementation")
 	return nil
 }
 
-func (m *metadataServiceProxy) PublishServiceDefinition(url common.URL) error {
+func (m *metadataServiceProxy) PublishServiceDefinition(url *common.URL) error {
 	logger.Error("you should never invoke this implementation")
 	return nil
 }
@@ -85,7 +85,7 @@ func (m *metadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 	if err != nil {
 		return []interface{}{}, nil
 	}
-	res := make([]common.URL, 0, len(urls))
+	var res []*common.URL
 	for _, s := range urls {
 		u, err := common.NewURL(s)
 		if err != nil {
@@ -101,9 +101,9 @@ func (m *metadataServiceProxy) MethodMapper() map[string]string {
 	return map[string]string{}
 }
 
-func (m *metadataServiceProxy) GetSubscribedURLs() ([]common.URL, error) {
+func (m *metadataServiceProxy) GetSubscribedURLs() ([]*common.URL, error) {
 	logger.Error("you should never invoke this implementation")
-	return []common.URL{}, nil
+	return nil, nil
 }
 
 func (m *metadataServiceProxy) GetServiceDefinition(interfaceName string, group string, version string) (string, error) {
@@ -135,7 +135,7 @@ func (m metadataServiceProxy) Version() (string, error) {
 func newMetadataServiceProxy(ins registry.ServiceInstance) service.MetadataService {
 	revision := ins.GetMetadata()[constant.EXPORTED_SERVICES_REVISION_PROPERTY_NAME]
 	if len(revision) == 0 {
-		revision = constant.DEFAULT_REVIESION
+		revision = constant.DEFAULT_REVISION
 	}
 
 	return &metadataServiceProxy{
@@ -146,7 +146,7 @@ func newMetadataServiceProxy(ins registry.ServiceInstance) service.MetadataServi
 }
 
 func parse(key string) []string {
-	arr := make([]string, 3, 3)
+	arr := make([]string, 3)
 	tmp := strings.SplitN(key, "/", 2)
 	if len(tmp) > 1 {
 		arr[0] = tmp[0]

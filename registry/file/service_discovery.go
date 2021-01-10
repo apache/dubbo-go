@@ -28,7 +28,7 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
-	gxpage "github.com/dubbogo/gost/page"
+	gxpage "github.com/dubbogo/gost/hash/page"
 	perrors "github.com/pkg/errors"
 )
 
@@ -70,7 +70,7 @@ func newFileSystemServiceDiscovery(name string) (registry.ServiceDiscovery, erro
 	p := path.Join(rp, ".dubbo", constant.REGISTRY_KEY)
 	url, _ := common.NewURL("")
 	url.AddParamAvoidNil(file.CONFIG_CENTER_DIR_PARAM_NAME, p)
-	c, err := fdcf.GetDynamicConfiguration(&url)
+	c, err := fdcf.GetDynamicConfiguration(url)
 	if err != nil {
 		return nil, perrors.WithStack(err)
 	}
@@ -82,7 +82,9 @@ func newFileSystemServiceDiscovery(name string) (registry.ServiceDiscovery, erro
 	}
 
 	extension.AddCustomShutdownCallback(func() {
-		sd.Destroy()
+		if err := sd.Destroy(); err != nil {
+			logger.Warnf("sd.Destroy() = error:%v", err)
+		}
 	})
 
 	for _, v := range sd.GetServices().Values() {
@@ -210,7 +212,7 @@ func (fssd *fileSystemServiceDiscovery) GetInstances(serviceName string) []regis
 	if err != nil {
 		logger.Errorf("[FileServiceDiscovery] Could not query the instances for service{%s}, error = err{%v} ",
 			serviceName, err)
-		return make([]registry.ServiceInstance, 0, 0)
+		return make([]registry.ServiceInstance, 0)
 	}
 
 	res := make([]registry.ServiceInstance, 0, set.Size())
@@ -221,7 +223,7 @@ func (fssd *fileSystemServiceDiscovery) GetInstances(serviceName string) []regis
 			logger.Errorf("[FileServiceDiscovery] Could not get the properties for id{%s}, service{%s}, "+
 				"error = err{%v} ",
 				id, serviceName, err)
-			return make([]registry.ServiceInstance, 0, 0)
+			return make([]registry.ServiceInstance, 0)
 		}
 
 		dsi := &registry.DefaultServiceInstance{}
@@ -230,7 +232,7 @@ func (fssd *fileSystemServiceDiscovery) GetInstances(serviceName string) []regis
 			logger.Errorf("[FileServiceDiscovery] Could not unmarshal the properties for id{%s}, service{%s}, "+
 				"error = err{%v} ",
 				id, serviceName, err)
-			return make([]registry.ServiceInstance, 0, 0)
+			return make([]registry.ServiceInstance, 0)
 		}
 
 		res = append(res, dsi)

@@ -78,6 +78,7 @@ type ServiceConfig struct {
 	Protocols     map[string]*ProtocolConfig
 	unexported    *atomic.Bool
 	exported      *atomic.Bool
+	export        bool // a flag to control whether the current service should export or not
 	rpcService    common.RPCService
 	cacheMutex    sync.Mutex
 	cacheProtocol protocol.Protocol
@@ -102,6 +103,7 @@ func (c *ServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	}
 	c.exported = atomic.NewBool(false)
 	c.unexported = atomic.NewBool(false)
+	c.export = true
 	return nil
 }
 
@@ -112,6 +114,7 @@ func NewServiceConfig(id string, context context.Context) *ServiceConfig {
 		id:         id,
 		unexported: atomic.NewBool(false),
 		exported:   atomic.NewBool(false),
+		export:     true,
 	}
 }
 
@@ -171,9 +174,10 @@ func (c *ServiceConfig) Export() error {
 	proxyFactory := extension.GetProxyFactory(providerConfig.ProxyFactory)
 	for _, proto := range protocolConfigs {
 		// registry the service reflect
-		methods, err := common.ServiceMap.Register(c.InterfaceName, proto.Name, c.rpcService)
+		methods, err := common.ServiceMap.Register(c.InterfaceName, proto.Name, c.Group, c.Version, c.rpcService)
 		if err != nil {
-			formatErr := perrors.Errorf("The service %v export the protocol %v error! Error message is %v.", c.InterfaceName, proto.Name, err.Error())
+			formatErr := perrors.Errorf("The service %v export the protocol %v error! Error message is %v.",
+				c.InterfaceName, proto.Name, err.Error())
 			logger.Errorf(formatErr.Error())
 			return formatErr
 		}
@@ -184,7 +188,7 @@ func (c *ServiceConfig) Export() error {
 			nextPort = nextPort.Next()
 		}
 		ivkURL := common.NewURLWithOptions(
-			common.WithPath(c.id),
+			common.WithPath(c.InterfaceName),
 			common.WithProtocol(proto.Name),
 			common.WithIp(proto.Ip),
 			common.WithPort(port),
@@ -198,6 +202,13 @@ func (c *ServiceConfig) Export() error {
 			ivkURL.AddParam(constant.Tagkey, c.Tag)
 		}
 
+		// post process the URL to be exported
+		c.postProcessConfig(ivkURL)
+		// config post processor may set "export" to false
+		if !ivkURL.GetParamBool(constant.EXPORT_KEY, true) {
+			return nil
+		}
+
 		if len(regUrls) > 0 {
 			c.cacheMutex.Lock()
 			if c.cacheProtocol == nil {
@@ -208,7 +219,7 @@ func (c *ServiceConfig) Export() error {
 
 			for _, regUrl := range regUrls {
 				regUrl.SubURL = ivkURL
-				invoker := proxyFactory.GetInvoker(*regUrl)
+				invoker := proxyFactory.GetInvoker(regUrl)
 				exporter := c.cacheProtocol.Export(invoker)
 				if exporter == nil {
 					return perrors.New(fmt.Sprintf("Registry protocol new exporter error, registry is {%v}, url is {%v}", regUrl, ivkURL))
@@ -216,7 +227,7 @@ func (c *ServiceConfig) Export() error {
 				c.exporters = append(c.exporters, exporter)
 			}
 		} else {
-			invoker := proxyFactory.GetInvoker(*ivkURL)
+			invoker := proxyFactory.GetInvoker(ivkURL)
 			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {
 				return perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error, url is {%v}", ivkURL))
@@ -302,7 +313,10 @@ func (c *ServiceConfig) getUrlMap() url.Values {
 
 	// auth filter
 	urlMap.Set(constant.SERVICE_AUTH_KEY, c.Auth)
-	urlMap.Set(constant.PARAMTER_SIGNATURE_ENABLE_KEY, c.ParamSign)
+	urlMap.Set(constant.PARAMETER_SIGNATURE_ENABLE_KEY, c.ParamSign)
+
+	// whether to export or not
+	urlMap.Set(constant.EXPORT_KEY, strconv.FormatBool(c.export))
 
 	for _, v := range c.Methods {
 		prefix := "methods." + v.Name + "."
@@ -326,10 +340,16 @@ func (c *ServiceConfig) GetExportedUrls() []*common.URL {
 	if c.exported.Load() {
 		var urls []*common.URL
 		for _, exporter := range c.exporters {
-			url := exporter.GetInvoker().GetUrl()
-			urls = append(urls, &url)
+			urls = append(urls, exporter.GetInvoker().GetUrl())
 		}
 		return urls
 	}
 	return nil
+}
+
+// postProcessConfig asks registered ConfigPostProcessor to post-process the current ServiceConfig.
+func (c *ServiceConfig) postProcessConfig(url *common.URL) {
+	for _, p := range extension.GetConfigPostProcessors() {
+		p.PostProcessServiceConfig(url)
+	}
 }

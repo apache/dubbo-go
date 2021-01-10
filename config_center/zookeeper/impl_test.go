@@ -50,7 +50,7 @@ func initZkData(group string, t *testing.T) (*zk.TestCluster, *zookeeperDynamicC
 	assert.NoError(t, err)
 	regurl.AddParam(constant.REGISTRY_TIMEOUT_KEY, "15s")
 	zkFactory := &zookeeperDynamicConfigurationFactory{}
-	reg, err := zkFactory.GetDynamicConfiguration(&regurl)
+	reg, err := zkFactory.GetDynamicConfiguration(regurl)
 	zreg, ok := reg.(*zookeeperDynamicConfiguration)
 	assert.True(t, ok)
 	assert.NoError(t, err)
@@ -99,7 +99,10 @@ func initZkData(group string, t *testing.T) (*zk.TestCluster, *zookeeperDynamicC
 
 func TestGetConfig(t *testing.T) {
 	ts, reg := initZkData("dubbo", t)
-	defer ts.Stop()
+	defer func() {
+		err := ts.Stop()
+		assert.NoError(t, err)
+	}()
 	configs, err := reg.GetProperties(dubboPropertyFileName, config_center.WithGroup("dubbo"))
 	assert.NoError(t, err)
 	m, err := reg.Parser().Parse(configs)
@@ -107,15 +110,21 @@ func TestGetConfig(t *testing.T) {
 	assert.Equal(t, "5s", m["dubbo.consumer.request_timeout"])
 	configs, err = reg.GetProperties(dubboPropertyFileName)
 	assert.Error(t, err)
+	assert.Equal(t, "", configs)
 	configs, err = reg.GetInternalProperty(dubboPropertyFileName)
 	assert.Error(t, err)
+	assert.Equal(t, "", configs)
 	configs, err = reg.GetRule(dubboPropertyFileName)
 	assert.Error(t, err)
+	assert.Equal(t, "", configs)
 }
 
 func TestAddListener(t *testing.T) {
 	ts, reg := initZkData("", t)
-	defer ts.Stop()
+	defer func() {
+		err := ts.Stop()
+		assert.NoError(t, err)
+	}()
 	listener := &mockDataListener{}
 	reg.AddListener(dubboPropertyFileName, listener)
 	listener.wg.Add(1)
@@ -148,7 +157,10 @@ func TestAddListener(t *testing.T) {
 
 func TestRemoveListener(t *testing.T) {
 	ts, reg := initZkData("", t)
-	defer ts.Stop()
+	defer func() {
+		err := ts.Stop()
+		assert.NoError(t, err)
+	}()
 	listener := &mockDataListener{}
 	reg.AddListener(dubboPropertyFileName, listener)
 	listener.wg.Add(1)
@@ -186,7 +198,10 @@ func TestZookeeperDynamicConfigurationPublishConfig(t *testing.T) {
 	customGroup := "Custom Group"
 	key := "myKey"
 	ts, zk := initZkData(config_center.DEFAULT_GROUP, t)
-	defer ts.Stop()
+	defer func() {
+		err := ts.Stop()
+		assert.NoError(t, err)
+	}()
 	err := zk.PublishConfig(key, customGroup, value)
 	assert.Nil(t, err)
 	result, err := zk.GetInternalProperty("myKey", config_center.WithGroup(customGroup))

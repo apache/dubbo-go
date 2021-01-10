@@ -53,7 +53,7 @@ type addrMetadata struct {
 	// application name
 	application string
 	// is rule a runtime rule
-	ruleRuntime bool
+	//ruleRuntime bool
 	// is rule a force rule
 	ruleForce bool
 	// is rule a valid rule
@@ -194,8 +194,8 @@ func (c *tagRouter) Process(event *config_center.ConfigChangeEvent) {
 }
 
 // URL gets the url of tagRouter
-func (c *tagRouter) URL() common.URL {
-	return *c.url
+func (c *tagRouter) URL() *common.URL {
+	return c.url
 }
 
 // Priority gets the priority of tagRouter
@@ -227,7 +227,7 @@ func (c *tagRouter) Pool(invokers []protocol.Invoker) (router.AddrPool, router.A
 
 // fetchRuleIfNecessary fetches, parses rule and register listener for the further change
 func (c *tagRouter) fetchRuleIfNecessary(invokers []protocol.Invoker) {
-	if invokers == nil || len(invokers) == 0 {
+	if len(invokers) == 0 {
 		return
 	}
 

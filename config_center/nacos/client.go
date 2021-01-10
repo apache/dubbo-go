@@ -18,7 +18,6 @@
 package nacos
 
 import (
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -37,9 +36,6 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 )
-
-// Nacos Log dir, it can be override when creating client by config_center.log_dir
-var logDir = filepath.Join("logs", "nacos", "log")
 
 // NacosClient Nacos client
 type NacosClient struct {
@@ -69,7 +65,7 @@ type option func(*options)
 
 type options struct {
 	nacosName string
-	client    *NacosClient
+	//client    *NacosClient
 }
 
 // WithNacosName Set nacos name
@@ -122,7 +118,7 @@ func ValidateNacosClient(container nacosClientFacade, opts ...option) error {
 	return perrors.WithMessagef(nil, "newNacosClient(address:%+v)", url.PrimitiveURL)
 }
 
-func newNacosClient(name string, nacosAddrs []string, timeout time.Duration, url common.URL) (*NacosClient, error) {
+func newNacosClient(name string, nacosAddrs []string, timeout time.Duration, url *common.URL) (*NacosClient, error) {
 	var (
 		err error
 		n   *NacosClient
@@ -149,8 +145,8 @@ func newNacosClient(name string, nacosAddrs []string, timeout time.Duration, url
 	return n, nil
 }
 
-func initNacosConfigClient(nacosAddrs []string, timeout time.Duration, url common.URL) (config_client.IConfigClient, error) {
-	svrConfList := []nacosconst.ServerConfig{}
+func initNacosConfigClient(nacosAddrs []string, timeout time.Duration, url *common.URL) (config_client.IConfigClient, error) {
+	var svrConfList []nacosconst.ServerConfig
 	for _, nacosAddr := range nacosAddrs {
 		split := strings.Split(nacosAddr, ":")
 		port, err := strconv.ParseUint(split[1], 10, 64)
