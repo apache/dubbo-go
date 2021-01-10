@@ -44,7 +44,8 @@ const (
 )
 
 var (
-	errTooManySessions = perrors.New("too many sessions")
+	errTooManySessions      = perrors.New("too many sessions")
+	errHeartbeatReadTimeout = perrors.New("heartbeat read timeout")
 )
 
 type rpcSession struct {
@@ -66,7 +67,8 @@ func (s *rpcSession) GetReqNum() int32 {
 
 // nolint
 type RpcClientHandler struct {
-	conn *gettyRPCClient
+	conn         *gettyRPCClient
+	timeoutTimes int
 }
 
 // nolint
@@ -99,7 +101,7 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 		logger.Errorf("illegal package")
 		return
 	}
-	// get heartbeart request from server
+	// get heartbeat request from server
 	if result.IsRequest {
 		req := result.Result.(*remoting.Request)
 		if req.Event {
@@ -109,25 +111,21 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 			resp.Event = req.Event
 			resp.SerialID = req.SerialID
 			resp.Version = "2.0.2"
-			reply(session, resp, hessian.PackageHeartbeat)
+			reply(session, resp)
 			return
 		}
-		logger.Errorf("illegal request but not heartbeart. {%#v}", req)
+		logger.Errorf("illegal request but not heartbeat. {%#v}", req)
 		return
 	}
-
+	h.timeoutTimes = 0
 	p := result.Result.(*remoting.Response)
-	// get heartbeart
+	// get heartbeat
 	if p.Event {
 		logger.Debugf("get rpc heartbeat response{%#v}", p)
 		if p.Error != nil {
 			logger.Errorf("rpc heartbeat response{error: %#v}", p.Error)
 		}
-		h.conn.pool.rpcClient.responseHandler.Handler(p)
-		return
-	}
-	if result.IsRequest {
-		logger.Errorf("illegal package for it is response type. {%#v}", pkg)
+		p.Handle()
 		return
 	}
 
@@ -135,12 +133,12 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 
 	h.conn.updateSession(session)
 
-	h.conn.pool.rpcClient.responseHandler.Handler(p)
+	p.Handle()
 }
 
 // OnCron check the session health periodic. if the session's sessionTimeout has reached, just close the session
 func (h *RpcClientHandler) OnCron(session getty.Session) {
-	rpcSession, err := h.conn.getClientRpcSession(session)
+	rs, err := h.conn.getClientRpcSession(session)
 	if err != nil {
 		logger.Errorf("client.getClientSession(session{%s}) = error{%v}",
 			session.Stat(), perrors.WithStack(err))
@@ -148,12 +146,27 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 	}
 	if h.conn.pool.rpcClient.conf.sessionTimeout.Nanoseconds() < time.Since(session.GetActive()).Nanoseconds() {
 		logger.Warnf("session{%s} timeout{%s}, reqNum{%d}",
-			session.Stat(), time.Since(session.GetActive()).String(), rpcSession.reqNum)
+			session.Stat(), time.Since(session.GetActive()).String(), rs.reqNum)
 		h.conn.removeSession(session) // -> h.conn.close() -> h.conn.pool.remove(h.conn)
 		return
 	}
 
-	h.conn.pool.rpcClient.heartbeat(session)
+	heartbeatCallBack := func(err error) {
+		if err != nil {
+			logger.Warnf("failed to send heartbeat, error{%v}", err)
+			if h.timeoutTimes >= 3 {
+				h.conn.removeSession(session)
+				return
+			}
+			h.timeoutTimes++
+			return
+		}
+		h.timeoutTimes = 0
+	}
+
+	if err := heartbeat(session, h.conn.pool.rpcClient.conf.heartbeatTimeout, heartbeatCallBack); err != nil {
+		logger.Warnf("failed to send heartbeat, error{%v}", err)
+	}
 }
 
 // //////////////////////////////////////////
@@ -167,6 +180,7 @@ type RpcServerHandler struct {
 	sessionMap     map[getty.Session]*rpcSession
 	rwlock         sync.RWMutex
 	server         *Server
+	timeoutTimes   int
 }
 
 // nolint
@@ -223,13 +237,22 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	}
 	h.rwlock.Unlock()
 
-	decodeResult, ok := pkg.(remoting.DecodeResult)
-	if !ok {
+	decodeResult, drOK := pkg.(remoting.DecodeResult)
+	if !drOK {
 		logger.Errorf("illegal package{%#v}", pkg)
 		return
 	}
 	if !decodeResult.IsRequest {
-		logger.Errorf("illegal package for it is response type. {%#v}", pkg)
+		res := decodeResult.Result.(*remoting.Response)
+		if res.Event {
+			logger.Debugf("get rpc heartbeat response{%#v}", res)
+			if res.Error != nil {
+				logger.Errorf("rpc heartbeat response{error: %#v}", res.Error)
+			}
+			res.Handle()
+			return
+		}
+		logger.Errorf("illegal package but not heartbeat. {%#v}", pkg)
 		return
 	}
 	req := decodeResult.Result.(*remoting.Request)
@@ -243,7 +266,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	// heartbeat
 	if req.Event {
 		logger.Debugf("get rpc heartbeat request{%#v}", resp)
-		reply(session, resp, hessian.PackageHeartbeat)
+		reply(session, resp)
 		return
 	}
 
@@ -264,7 +287,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 			if !req.TwoWay {
 				return
 			}
-			reply(session, resp, hessian.PackageResponse)
+			reply(session, resp)
 		}
 
 	}()
@@ -272,7 +295,6 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	invoc, ok := req.Data.(*invocation.RPCInvocation)
 	if !ok {
 		panic("create invocation occur some exception for the type is not suitable one.")
-		return
 	}
 	attachments := invoc.Attachments()
 	attachments[constant.LOCAL_ADDR] = session.LocalAddr()
@@ -283,7 +305,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 		return
 	}
 	resp.Result = result
-	reply(session, resp, hessian.PackageResponse)
+	reply(session, resp)
 }
 
 // OnCron check the session health periodic. if the session's sessionTimeout has reached, just close the session
@@ -310,10 +332,52 @@ func (h *RpcServerHandler) OnCron(session getty.Session) {
 		h.rwlock.Unlock()
 		session.Close()
 	}
+
+	heartbeatCallBack := func(err error) {
+		if err != nil {
+			logger.Warnf("failed to send heartbeat, error{%v}", err)
+			if h.timeoutTimes >= 3 {
+				h.rwlock.Lock()
+				delete(h.sessionMap, session)
+				h.rwlock.Unlock()
+				session.Close()
+				return
+			}
+			h.timeoutTimes++
+			return
+		}
+		h.timeoutTimes = 0
+	}
+
+	if err := heartbeat(session, h.server.conf.heartbeatTimeout, heartbeatCallBack); err != nil {
+		logger.Warnf("failed to send heartbeat, error{%v}", err)
+	}
 }
 
-func reply(session getty.Session, resp *remoting.Response, tp hessian.PackageType) {
+func reply(session getty.Session, resp *remoting.Response) {
 	if err := session.WritePkg(resp, WritePkg_Timeout); err != nil {
 		logger.Errorf("WritePkg error: %#v, %#v", perrors.WithStack(err), resp)
 	}
+}
+
+func heartbeat(session getty.Session, timeout time.Duration, callBack func(err error)) error {
+	req := remoting.NewRequest("2.0.2")
+	req.TwoWay = true
+	req.Event = true
+	resp := remoting.NewPendingResponse(req.ID)
+	remoting.AddPendingResponse(resp)
+	err := session.WritePkg(req, 3*time.Second)
+
+	go func() {
+		var err1 error
+		select {
+		case <-getty.GetTimeWheel().After(timeout):
+			err1 = errHeartbeatReadTimeout
+		case <-resp.Done:
+			err1 = resp.Err
+		}
+		callBack(err1)
+	}()
+
+	return perrors.WithStack(err)
 }

@@ -23,6 +23,7 @@ import (
 )
 
 import (
+	getty "github.com/apache/dubbo-getty"
 	consul "github.com/hashicorp/consul/api"
 	perrors "github.com/pkg/errors"
 )
@@ -56,6 +57,10 @@ type consulRegistry struct {
 	// Done field represents whether
 	// consul registry is closed.
 	done chan struct{}
+
+	// registeredURLs field represents all URLs that have been registered
+	// will be unregistered when destroyed
+	registeredURLs []*common.URL
 }
 
 func newConsulRegistry(url *common.URL) (registry.Registry, error) {
@@ -76,7 +81,7 @@ func newConsulRegistry(url *common.URL) (registry.Registry, error) {
 
 // Register register @url
 // it delegate the job to register() method
-func (r *consulRegistry) Register(url common.URL) error {
+func (r *consulRegistry) Register(url *common.URL) error {
 	var err error
 
 	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
@@ -90,7 +95,8 @@ func (r *consulRegistry) Register(url common.URL) error {
 }
 
 // register actually register the @url
-func (r *consulRegistry) register(url common.URL) error {
+func (r *consulRegistry) register(url *common.URL) error {
+	r.registeredURLs = append(r.registeredURLs, url.Clone())
 	service, err := buildService(url)
 	if err != nil {
 		return err
@@ -100,7 +106,7 @@ func (r *consulRegistry) register(url common.URL) error {
 
 // UnRegister unregister the @url
 // it delegate the job to unregister() method
-func (r *consulRegistry) UnRegister(url common.URL) error {
+func (r *consulRegistry) UnRegister(url *common.URL) error {
 	var err error
 
 	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
@@ -114,7 +120,7 @@ func (r *consulRegistry) UnRegister(url common.URL) error {
 }
 
 // unregister actually unregister the @url
-func (r *consulRegistry) unregister(url common.URL) error {
+func (r *consulRegistry) unregister(url *common.URL) error {
 	return r.client.Agent().ServiceDeregister(buildId(url))
 }
 
@@ -141,7 +147,7 @@ func (r *consulRegistry) subscribe(url *common.URL, notifyListener registry.Noti
 			return
 		}
 
-		listener, err := r.getListener(*url)
+		listener, err := r.getListener(url)
 		if err != nil {
 			if !r.IsAvailable() {
 				logger.Warnf("event listener game over.")
@@ -166,14 +172,14 @@ func (r *consulRegistry) subscribe(url *common.URL, notifyListener registry.Noti
 	}
 }
 
-func (r *consulRegistry) getListener(url common.URL) (registry.Listener, error) {
-	listener, err := newConsulListener(*r.URL, url)
+func (r *consulRegistry) getListener(url *common.URL) (registry.Listener, error) {
+	listener, err := newConsulListener(r.URL, url)
 	return listener, err
 }
 
 // GetUrl get registry URL of consul registry center
-func (r *consulRegistry) GetUrl() common.URL {
-	return *r.URL
+func (r *consulRegistry) GetUrl() *common.URL {
+	return r.URL
 }
 
 // IsAvailable checks consul registry center whether is available
@@ -188,25 +194,26 @@ func (r *consulRegistry) IsAvailable() bool {
 
 // Destroy consul registry center
 func (r *consulRegistry) Destroy() {
-	if r.URL != nil {
-		done := make(chan struct{}, 1)
-		go func() {
-			defer func() {
-				if e := recover(); e != nil {
-					logger.Errorf("consulRegistry destory with panic: %v", e)
-				}
-				done <- struct{}{}
-			}()
-			if err := r.UnRegister(*r.URL); err != nil {
+	done := make(chan struct{}, 1)
+	go func() {
+		defer func() {
+			if e := recover(); e != nil {
+				logger.Errorf("consulRegistry destroy with panic: %v", e)
+			}
+			done <- struct{}{}
+		}()
+		for _, url := range r.registeredURLs {
+			if err := r.UnRegister(url); err != nil {
 				logger.Errorf("consul registry unregister with err: %s", err.Error())
 			}
-		}()
-		select {
-		case <-done:
-			logger.Infof("consulRegistry unregister done")
-		case <-time.After(registryDestroyDefaultTimeout):
-			logger.Errorf("consul unregister timeout")
 		}
+	}()
+	select {
+	case <-done:
+		logger.Infof("consulRegistry unregister done")
+	case <-getty.GetTimeWheel().After(registryDestroyDefaultTimeout):
+		logger.Errorf("consul unregister timeout")
 	}
+
 	close(r.done)
 }

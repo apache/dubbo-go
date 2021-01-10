@@ -94,7 +94,7 @@ func (mrr *metadataReportRetry) startRetryTask() {
 
 // MetadataReport is a absolute delegate for MetadataReport
 type MetadataReport struct {
-	reportUrl           common.URL
+	reportUrl           *common.URL
 	syncReport          bool
 	metadataReportRetry *metadataReportRetry
 
@@ -215,12 +215,16 @@ func (mr *MetadataReport) StoreConsumerMetadata(identifier *identifier.MetadataI
 }
 
 // SaveServiceMetadata will delegate to call remote metadata's sdk to save service metadata
-func (mr *MetadataReport) SaveServiceMetadata(identifier *identifier.ServiceMetadataIdentifier, url common.URL) error {
+func (mr *MetadataReport) SaveServiceMetadata(identifier *identifier.ServiceMetadataIdentifier, url *common.URL) error {
 	report := instance.GetMetadataReportInstance()
 	if mr.syncReport {
 		return report.SaveServiceMetadata(identifier, url)
 	}
-	go report.SaveServiceMetadata(identifier, url)
+	go func() {
+		if err := report.SaveServiceMetadata(identifier, url); err != nil {
+			logger.Warnf("report.SaveServiceMetadata(identifier:%v, url:%v) = error:%v", identifier, url, err)
+		}
+	}()
 	return nil
 }
 
@@ -230,7 +234,11 @@ func (mr *MetadataReport) RemoveServiceMetadata(identifier *identifier.ServiceMe
 	if mr.syncReport {
 		return report.RemoveServiceMetadata(identifier)
 	}
-	go report.RemoveServiceMetadata(identifier)
+	go func() {
+		if err := report.RemoveServiceMetadata(identifier); err != nil {
+			logger.Warnf("report.RemoveServiceMetadata(identifier:%v) = error:%v", identifier, err)
+		}
+	}()
 	return nil
 }
 
@@ -241,7 +249,7 @@ func (mr *MetadataReport) GetExportedURLs(identifier *identifier.ServiceMetadata
 }
 
 // SaveSubscribedData will delegate to call remote metadata's sdk to save subscribed data
-func (mr *MetadataReport) SaveSubscribedData(identifier *identifier.SubscriberMetadataIdentifier, urls []common.URL) error {
+func (mr *MetadataReport) SaveSubscribedData(identifier *identifier.SubscriberMetadataIdentifier, urls []*common.URL) error {
 	urlStrList := make([]string, 0, len(urls))
 	for _, url := range urls {
 		urlStrList = append(urlStrList, url.String())
@@ -255,18 +263,23 @@ func (mr *MetadataReport) SaveSubscribedData(identifier *identifier.SubscriberMe
 	if mr.syncReport {
 		return report.SaveSubscribedData(identifier, string(bytes))
 	}
-	go report.SaveSubscribedData(identifier, string(bytes))
+	go func() {
+		if err := report.SaveSubscribedData(identifier, string(bytes)); err != nil {
+			logger.Warnf("report.SaveSubscribedData(identifier:%v, string(bytes):%v) = error: %v",
+				identifier, string(bytes), err)
+		}
+	}()
 	return nil
 }
 
 // GetSubscribedURLs will delegate to call remote metadata's sdk to get subscribed urls
-func (MetadataReport) GetSubscribedURLs(identifier *identifier.SubscriberMetadataIdentifier) ([]string, error) {
+func (mr *MetadataReport) GetSubscribedURLs(identifier *identifier.SubscriberMetadataIdentifier) ([]string, error) {
 	report := instance.GetMetadataReportInstance()
 	return report.GetSubscribedURLs(identifier)
 }
 
 // GetServiceDefinition will delegate to call remote metadata's sdk to get service definitions
-func (MetadataReport) GetServiceDefinition(identifier *identifier.MetadataIdentifier) (string, error) {
+func (mr *MetadataReport) GetServiceDefinition(identifier *identifier.MetadataIdentifier) (string, error) {
 	report := instance.GetMetadataReportInstance()
 	return report.GetServiceDefinition(identifier)
 }

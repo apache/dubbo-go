@@ -47,8 +47,8 @@ type listenableRouter struct {
 	conditionRouters []*ConditionRouter
 	routerRule       *RouterRule
 	url              *common.URL
-	force            bool
-	priority         int64
+	//force            bool
+	priority int64
 }
 
 // RouterRule Get RouterRule instance from listenableRouter
@@ -148,6 +148,6 @@ func (l *listenableRouter) Priority() int64 {
 }
 
 // URL Return URL in listenable router
-func (l *listenableRouter) URL() common.URL {
-	return *l.url
+func (l *listenableRouter) URL() *common.URL {
+	return l.url
 }

@@ -45,7 +45,7 @@ type router interface {
 	Route(*roaring.Bitmap, Cache, *common.URL, protocol.Invocation) *roaring.Bitmap
 
 	// URL Return URL in router
-	URL() common.URL
+	URL() *common.URL
 }
 
 // Router

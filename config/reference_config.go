@@ -86,17 +86,13 @@ func (c *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error
 	}
 
 	*c = ReferenceConfig(raw)
-	if err := defaults.Set(c); err != nil {
-		return err
-	}
-
-	return nil
+	return defaults.Set(c)
 }
 
 // Refer ...
 func (c *ReferenceConfig) Refer(_ interface{}) {
 	cfgURL := common.NewURLWithOptions(
-		common.WithPath(c.id),
+		common.WithPath(c.InterfaceName),
 		common.WithProtocol(c.Protocol),
 		common.WithParams(c.getUrlMap()),
 		common.WithParamsValue(constant.BEAN_NAME_KEY, c.id),
@@ -104,6 +100,9 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 	if c.ForceTag {
 		cfgURL.AddParam(constant.ForceUseTag, "true")
 	}
+
+	c.postProcessConfig(cfgURL)
+
 	if c.Url != "" {
 		// 1. user specified URL, could be peer-to-peer address, or register center's address.
 		urlStrings := gxstrings.RegSplit(c.Url, "\\s*[;]+\\s*")
@@ -114,13 +113,13 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 			}
 			if serviceUrl.Protocol == constant.REGISTRY_PROTOCOL {
 				serviceUrl.SubURL = cfgURL
-				c.urls = append(c.urls, &serviceUrl)
+				c.urls = append(c.urls, serviceUrl)
 			} else {
 				if serviceUrl.Path == "" {
-					serviceUrl.Path = "/" + c.id
+					serviceUrl.Path = "/" + c.InterfaceName
 				}
 				// merge url need to do
-				newUrl := common.MergeUrl(&serviceUrl, cfgURL)
+				newUrl := common.MergeUrl(serviceUrl, cfgURL)
 				c.urls = append(c.urls, newUrl)
 			}
 		}
@@ -135,12 +134,12 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 	}
 
 	if len(c.urls) == 1 {
-		c.invoker = extension.GetProtocol(c.urls[0].Protocol).Refer(*c.urls[0])
+		c.invoker = extension.GetProtocol(c.urls[0].Protocol).Refer(c.urls[0])
 	} else {
 		invokers := make([]protocol.Invoker, 0, len(c.urls))
 		var regUrl *common.URL
 		for _, u := range c.urls {
-			invokers = append(invokers, extension.GetProtocol(u.Protocol).Refer(*u))
+			invokers = append(invokers, extension.GetProtocol(u.Protocol).Refer(u))
 			if u.Protocol == constant.REGISTRY_PROTOCOL {
 				regUrl = u
 			}
@@ -187,6 +186,11 @@ func (c *ReferenceConfig) Implement(v common.RPCService) {
 // GetRPCService gets RPCService from proxy
 func (c *ReferenceConfig) GetRPCService() common.RPCService {
 	return c.pxy.Get()
+}
+
+// GetProxy gets proxy
+func (c *ReferenceConfig) GetProxy() *proxy.Proxy {
+	return c.pxy
 }
 
 func (c *ReferenceConfig) getUrlMap() url.Values {
@@ -251,4 +255,11 @@ func (c *ReferenceConfig) GenericLoad(id string) {
 	c.id = id
 	c.Refer(genericService)
 	c.Implement(genericService)
+}
+
+// postProcessConfig asks registered ConfigPostProcessor to post-process the current ReferenceConfig.
+func (c *ReferenceConfig) postProcessConfig(url *common.URL) {
+	for _, p := range extension.GetConfigPostProcessors() {
+		p.PostProcessReferenceConfig(url)
+	}
 }

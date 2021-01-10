@@ -18,14 +18,13 @@
 package config
 
 import (
-	"context"
 	"net/url"
 	"reflect"
-	"time"
 )
 
 import (
 	"github.com/creasty/defaults"
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -35,7 +34,6 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config_center"
-	perrors "github.com/pkg/errors"
 )
 
 // ConfigCenterConfig is configuration for config center
@@ -46,7 +44,7 @@ import (
 //
 // ConfigCenter has currently supported Zookeeper, Nacos, Etcd, Consul, Apollo
 type ConfigCenterConfig struct {
-	context       context.Context
+	//context       context.Context
 	Protocol      string `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
 	Address       string `yaml:"address" json:"address,omitempty"`
 	Cluster       string `yaml:"cluster" json:"cluster,omitempty"`
@@ -60,7 +58,7 @@ type ConfigCenterConfig struct {
 	AppId         string `default:"dubbo" yaml:"app_id"  json:"app_id,omitempty"`
 	TimeoutStr    string `yaml:"timeout"  json:"timeout,omitempty"`
 	RemoteRef     string `required:"false"  yaml:"remote_ref"  json:"remote_ref,omitempty"`
-	timeout       time.Duration
+	//timeout       time.Duration
 }
 
 // UnmarshalYAML unmarshals the ConfigCenterConfig by @unmarshal function
@@ -69,10 +67,7 @@ func (c *ConfigCenterConfig) UnmarshalYAML(unmarshal func(interface{}) error) er
 		return err
 	}
 	type plain ConfigCenterConfig
-	if err := unmarshal((*plain)(c)); err != nil {
-		return err
-	}
-	return nil
+	return unmarshal((*plain)(c))
 }
 
 // GetUrlMap gets url map from ConfigCenterConfig
@@ -91,7 +86,7 @@ type configCenter struct {
 
 // toURL will compatible with baseConfig.ConfigCenterConfig.Address and baseConfig.ConfigCenterConfig.RemoteRef before 1.6.0
 // After 1.6.0 will not compatible, only baseConfig.ConfigCenterConfig.RemoteRef
-func (b *configCenter) toURL(baseConfig BaseConfig) (common.URL, error) {
+func (b *configCenter) toURL(baseConfig BaseConfig) (*common.URL, error) {
 	if len(baseConfig.ConfigCenterConfig.Address) > 0 {
 		return common.NewURL(baseConfig.ConfigCenterConfig.Address,
 			common.WithProtocol(baseConfig.ConfigCenterConfig.Protocol), common.WithParams(baseConfig.ConfigCenterConfig.GetUrlMap()))
@@ -101,7 +96,7 @@ func (b *configCenter) toURL(baseConfig BaseConfig) (common.URL, error) {
 	rc, ok := baseConfig.GetRemoteConfig(remoteRef)
 
 	if !ok {
-		return common.URL{}, perrors.New("Could not find out the remote ref config, name: " + remoteRef)
+		return nil, perrors.New("Could not find out the remote ref config, name: " + remoteRef)
 	}
 
 	newURL, err := rc.toURL()
@@ -114,11 +109,11 @@ func (b *configCenter) toURL(baseConfig BaseConfig) (common.URL, error) {
 // startConfigCenter will start the config center.
 // it will prepare the environment
 func (b *configCenter) startConfigCenter(baseConfig BaseConfig) error {
-	url, err := b.toURL(baseConfig)
+	newUrl, err := b.toURL(baseConfig)
 	if err != nil {
 		return err
 	}
-	if err = b.prepareEnvironment(baseConfig, &url); err != nil {
+	if err = b.prepareEnvironment(baseConfig, newUrl); err != nil {
 		return perrors.WithMessagef(err, "start config center error!")
 	}
 	// c.fresh()

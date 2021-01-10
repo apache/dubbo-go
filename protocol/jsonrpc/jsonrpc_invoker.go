@@ -36,7 +36,7 @@ type JsonrpcInvoker struct {
 }
 
 // NewJsonrpcInvoker creates JSON RPC invoker with @url and @client
-func NewJsonrpcInvoker(url common.URL, client *HTTPClient) *JsonrpcInvoker {
+func NewJsonrpcInvoker(url *common.URL, client *HTTPClient) *JsonrpcInvoker {
 	return &JsonrpcInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
@@ -45,10 +45,7 @@ func NewJsonrpcInvoker(url common.URL, client *HTTPClient) *JsonrpcInvoker {
 
 // Invoke the JSON RPC invocation and return result.
 func (ji *JsonrpcInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
-
-	var (
-		result protocol.RPCResult
-	)
+	var result protocol.RPCResult
 
 	inv := invocation.(*invocation_impl.RPCInvocation)
 	url := ji.GetUrl()
