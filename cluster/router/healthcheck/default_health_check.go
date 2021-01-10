@@ -96,7 +96,6 @@ func (c *DefaultHealthChecker) getCircuitBreakerSleepWindowTime(status *protocol
 	return int64(sleepWindow)
 }
 
-
 // GetRequestSuccessiveFailureThreshold return the requestSuccessiveFailureThreshold bound to this DefaultHealthChecker
 func (c *DefaultHealthChecker) GetRequestSuccessiveFailureThreshold() int32 {
 	return c.requestSuccessiveFailureThreshold
