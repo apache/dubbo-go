@@ -15,13 +15,18 @@
  * limitations under the License.
  */
 
-package constant
+package interfaces
 
-const (
-	// Version apache/dubbo-go version
-	Version = "1.5.5"
-	// Name module name
-	Name = "dubbogo"
-	// Date release date
-	DATE = "2021/01/05"
+import (
+	"github.com/apache/dubbo-go/common"
 )
+
+// ConfigPostProcessor is an extension to give users a chance to customize configs against ReferenceConfig and
+// ServiceConfig during deployment time.
+type ConfigPostProcessor interface {
+	// PostProcessReferenceConfig customizes ReferenceConfig's params.
+	PostProcessReferenceConfig(*common.URL)
+
+	// PostProcessServiceConfig customizes ServiceConfig's params.
+	PostProcessServiceConfig(*common.URL)
+}
