@@ -54,6 +54,38 @@ type DubboLoggerWrapper struct {
 	logger.Logger
 }
 
+func (d DubboLoggerWrapper) Debug(msg string, v ...interface{}) {
+	d.Logger.Debug(msg, v)
+}
+
+func (d DubboLoggerWrapper) DebugEnabled() bool {
+	return true
+}
+
+func (d DubboLoggerWrapper) Info(msg string, v ...interface{}) {
+	d.Logger.Info(msg, v)
+}
+
+func (d DubboLoggerWrapper) InfoEnabled() bool {
+	return true
+}
+
+func (d DubboLoggerWrapper) Warn(msg string, v ...interface{}) {
+	d.Logger.Warn(msg, v)
+}
+
+func (d DubboLoggerWrapper) WarnEnabled() bool {
+	return true
+}
+
+func (d DubboLoggerWrapper) Error(err error, msg string, v ...interface{}) {
+	d.Logger.Error(err, msg, v)
+}
+
+func (d DubboLoggerWrapper) ErrorEnabled() bool {
+	return true
+}
+
 func (d DubboLoggerWrapper) Fatal(v ...interface{}) {
 	d.Logger.Error(v...)
 }
