@@ -48,16 +48,16 @@ type Client struct {
 
 // newClient returns Client instance for registry
 func newClient(url *common.URL) (*Client, error) {
-
-	ctx, cancel := context.WithCancel(context.Background())
-
 	// read type
 	r, err := strconv.Atoi(url.GetParams().Get(constant.ROLE_KEY))
 	if err != nil {
 		return nil, perrors.WithMessage(err, "atoi role")
 	}
+	ctx, cancel := context.WithCancel(context.Background())
+
 	controller, err := newDubboRegistryController(ctx, common.RoleType(r), GetInClusterKubernetesClient)
 	if err != nil {
+		cancel()
 		return nil, perrors.WithMessage(err, "new dubbo-registry controller")
 	}
 
@@ -186,12 +186,12 @@ func ValidateClient(container clientFacade) error {
 
 // NewMockClient exports for registry package test
 func NewMockClient(podList *v1.PodList) (*Client, error) {
-
 	ctx, cancel := context.WithCancel(context.Background())
 	controller, err := newDubboRegistryController(ctx, common.CONSUMER, func() (kubernetes.Interface, error) {
 		return fake.NewSimpleClientset(podList), nil
 	})
 	if err != nil {
+		cancel()
 		return nil, perrors.WithMessage(err, "new dubbo-registry controller")
 	}
 

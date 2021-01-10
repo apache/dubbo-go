@@ -37,8 +37,6 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
-type Object interface{}
-
 type HessianSerializer struct {
 }
 
@@ -65,7 +63,7 @@ func marshalResponse(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 	response := EnsureResponsePayload(p.Body)
 	if header.ResponseStatus == Response_OK {
 		if p.IsHeartBeat() {
-			encoder.Encode(nil)
+			_ = encoder.Encode(nil)
 		} else {
 			var version string
 			if attachmentVersion, ok := response.Attachments[DUBBO_VERSION_KEY]; ok {
@@ -85,30 +83,30 @@ func marshalResponse(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 			}
 
 			if response.Exception != nil { // throw error
-				encoder.Encode(resWithException)
+				_ = encoder.Encode(resWithException)
 				if t, ok := response.Exception.(java_exception.Throwabler); ok {
-					encoder.Encode(t)
+					_ = encoder.Encode(t)
 				} else {
-					encoder.Encode(java_exception.NewThrowable(response.Exception.Error()))
+					_ = encoder.Encode(java_exception.NewThrowable(response.Exception.Error()))
 				}
 			} else {
 				if response.RspObj == nil {
-					encoder.Encode(resNullValue)
+					_ = encoder.Encode(resNullValue)
 				} else {
-					encoder.Encode(resValue)
-					encoder.Encode(response.RspObj) // result
+					_ = encoder.Encode(resValue)
+					_ = encoder.Encode(response.RspObj) // result
 				}
 			}
 
 			if atta {
-				encoder.Encode(response.Attachments) // attachments
+				_ = encoder.Encode(response.Attachments) // attachments
 			}
 		}
 	} else {
 		if response.Exception != nil { // throw error
-			encoder.Encode(response.Exception.Error())
+			_ = encoder.Encode(response.Exception.Error())
 		} else {
-			encoder.Encode(response.RspObj)
+			_ = encoder.Encode(response.RspObj)
 		}
 	}
 	bs := encoder.Buffer()
@@ -120,10 +118,10 @@ func marshalResponse(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 func marshalRequest(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 	service := p.Service
 	request := EnsureRequestPayload(p.Body)
-	encoder.Encode(DEFAULT_DUBBO_PROTOCOL_VERSION)
-	encoder.Encode(service.Path)
-	encoder.Encode(service.Version)
-	encoder.Encode(service.Method)
+	_ = encoder.Encode(DEFAULT_DUBBO_PROTOCOL_VERSION)
+	_ = encoder.Encode(service.Path)
+	_ = encoder.Encode(service.Version)
+	_ = encoder.Encode(service.Method)
 
 	args, ok := request.Params.([]interface{})
 
@@ -135,9 +133,9 @@ func marshalRequest(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 	if err != nil {
 		return nil, perrors.Wrapf(err, " PackRequest(args:%+v)", args)
 	}
-	encoder.Encode(types)
+	_ = encoder.Encode(types)
 	for _, v := range args {
-		encoder.Encode(v)
+		_ = encoder.Encode(v)
 	}
 
 	request.Attachments[PATH_KEY] = service.Path
@@ -152,9 +150,8 @@ func marshalRequest(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 		request.Attachments[TIMEOUT_KEY] = strconv.Itoa(int(service.Timeout / time.Millisecond))
 	}
 
-	encoder.Encode(request.Attachments)
+	_ = encoder.Encode(request.Attachments)
 	return encoder.Buffer(), nil
-
 }
 
 var versionInt = make(map[string]int)
@@ -420,7 +417,7 @@ func getArgType(v interface{}) string {
 		return "V"
 	}
 
-	switch v.(type) {
+	switch v := v.(type) {
 	// Serialized tags for base types
 	case nil:
 		return "V"
@@ -474,7 +471,7 @@ func getArgType(v interface{}) string {
 		return "java.lang.String"
 	case []string:
 		return "[Ljava.lang.String;"
-	case []Object:
+	case []hessian.Object:
 		return "[Ljava.lang.Object;"
 	case map[interface{}]interface{}:
 		// return  "java.util.HashMap"
