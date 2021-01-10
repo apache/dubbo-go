@@ -37,7 +37,7 @@ const (
 	failover = "failover"
 )
 
-func TestConfigureVerison2p6(t *testing.T) {
+func TestConfigureVersion2p6(t *testing.T) {
 	url, err := common.NewURL("override://0.0.0.0:0/com.xxx.mock.userProvider?group=1&version=1&cluster=failfast&application=BDTService")
 	assert.NoError(t, err)
 	configurator := extension.GetConfigurator(defaults, url)
@@ -49,7 +49,7 @@ func TestConfigureVerison2p6(t *testing.T) {
 	assert.Equal(t, failfast, providerUrl.GetParam(constant.CLUSTER_KEY, ""))
 }
 
-func TestConfigureVerisonOverrideAddr(t *testing.T) {
+func TestConfigureVersionOverrideAddr(t *testing.T) {
 	url, err := common.NewURL("override://0.0.0.0:0/com.xxx.mock.userProvider?group=1&version=1&cluster=failfast&application=BDTService&providerAddresses=127.0.0.2:20001|127.0.0.3:20001")
 	assert.NoError(t, err)
 	configurator := extension.GetConfigurator(defaults, url)
@@ -61,7 +61,7 @@ func TestConfigureVerisonOverrideAddr(t *testing.T) {
 	assert.Equal(t, failover, providerUrl.GetParam(constant.CLUSTER_KEY, ""))
 }
 
-func TestConfigureVerison2p6WithIp(t *testing.T) {
+func TestConfigureVersion2p6WithIp(t *testing.T) {
 	url, err := common.NewURL("override://127.0.0.1:20001/com.xxx.mock.userProvider?group=1&version=1&cluster=failfast&application=BDTService")
 	assert.NoError(t, err)
 	configurator := extension.GetConfigurator(defaults, url)
@@ -74,7 +74,7 @@ func TestConfigureVerison2p6WithIp(t *testing.T) {
 
 }
 
-func TestConfigureVerison2p7(t *testing.T) {
+func TestConfigureVersion2p7(t *testing.T) {
 	url, err := common.NewURL("jsonrpc://0.0.0.0:20001/com.xxx.mock.userProvider?group=1&version=1&cluster=failfast&application=BDTService&configVersion=1.0&side=provider")
 	assert.NoError(t, err)
 	configurator := extension.GetConfigurator(defaults, url)

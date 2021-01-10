@@ -75,6 +75,6 @@ func Test_newEtcdV3ServiceDiscovery(t *testing.T) {
 
 func TestEtcdV3ServiceDiscovery_GetDefaultPageSize(t *testing.T) {
 	setUp()
-	serviceDiscovry := &etcdV3ServiceDiscovery{}
-	assert.Equal(t, registry.DefaultPageSize, serviceDiscovry.GetDefaultPageSize())
+	serviceDiscovery := &etcdV3ServiceDiscovery{}
+	assert.Equal(t, registry.DefaultPageSize, serviceDiscovery.GetDefaultPageSize())
 }
