@@ -90,18 +90,18 @@ type Client struct {
 }
 
 // NewClient creates a new gRPC client.
-func NewClient(url common.URL) *Client {
+func NewClient(url *common.URL) *Client {
 	// if global trace instance was set , it means trace function enabled. If not , will return Nooptracer
 	tracer := opentracing.GlobalTracer()
-	dailOpts := make([]grpc.DialOption, 0, 4)
+	dialOpts := make([]grpc.DialOption, 0, 4)
 	maxMessageSize, _ := strconv.Atoi(url.GetParam(constant.MESSAGE_SIZE_KEY, "4"))
-	dailOpts = append(dailOpts, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithUnaryInterceptor(
+	dialOpts = append(dialOpts, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithUnaryInterceptor(
 		otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())),
 		grpc.WithDefaultCallOptions(
 			grpc.CallContentSubtype(clientConf.ContentSubType),
 			grpc.MaxCallRecvMsgSize(1024*1024*maxMessageSize),
 			grpc.MaxCallSendMsgSize(1024*1024*maxMessageSize)))
-	conn, err := grpc.Dial(url.Location, dailOpts...)
+	conn, err := grpc.Dial(url.Location, dialOpts...)
 	if err != nil {
 		panic(err)
 	}
@@ -117,7 +117,7 @@ func NewClient(url common.URL) *Client {
 }
 
 func getInvoker(impl interface{}, conn *grpc.ClientConn) interface{} {
-	in := []reflect.Value{}
+	var in []reflect.Value
 	in = append(in, reflect.ValueOf(conn))
 	method := reflect.ValueOf(impl).MethodByName("GetDubboStub")
 	res := method.Call(in)

@@ -66,7 +66,6 @@ func NewProxy(invoke protocol.Invoker, callBack interface{}, attachments map[str
 //  		Yyy func(ctx context.Context, args []interface{}, rsp *Zzz) error
 // 		}
 func (p *Proxy) Implement(v common.RPCService) {
-
 	// check parameters, incoming interface must be a elem's pointer.
 	valueOf := reflect.ValueOf(v)
 	logger.Debugf("[Implement] reflect.TypeOf: %s", valueOf.String())
@@ -145,7 +144,7 @@ func (p *Proxy) Implement(v common.RPCService) {
 				inv.SetAttachments(k, value)
 			}
 
-			// add user setAttachment.  It is compatibility with previous versions.
+			// add user setAttachment. It is compatibility with previous versions.
 			atm := invCtx.Value(constant.AttachmentKey)
 			if m, ok := atm.(map[string]string); ok {
 				for k, value := range m {
@@ -159,15 +158,11 @@ func (p *Proxy) Implement(v common.RPCService) {
 			}
 
 			result := p.invoke.Invoke(invCtx, inv)
-			if len(result.Attachments()) > 0 {
-				invCtx = context.WithValue(invCtx, constant.AttachmentKey, result.Attachments())
-			}
-
 			err = result.Error()
 			if err != nil {
 				// the cause reason
 				err = perrors.Cause(err)
-				// if some error happened, it should be log some info in the seperate file.
+				// if some error happened, it should be log some info in the separate file.
 				if throwabler, ok := err.(java_exception.Throwabler); ok {
 					logger.Warnf("invoke service throw exception: %v , stackTraceElements: %v", err.Error(), throwabler.GetStackTrace())
 				} else {
@@ -234,4 +229,9 @@ func (p *Proxy) Get() common.RPCService {
 // GetCallback gets callback.
 func (p *Proxy) GetCallback() interface{} {
 	return p.callBack
+}
+
+// GetInvoker gets Invoker.
+func (p *Proxy) GetInvoker() protocol.Invoker {
+	return p.invoke
 }

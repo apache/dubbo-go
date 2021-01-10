@@ -52,7 +52,7 @@ type zookeeperDynamicConfiguration struct {
 	done     chan struct{}
 	client   *zookeeper.ZookeeperClient
 
-	listenerLock  sync.Mutex
+	//listenerLock  sync.Mutex
 	listener      *zookeeper.ZkEventListener
 	cacheListener *CacheListener
 	parser        parser.ConfigurationParser
@@ -183,8 +183,8 @@ func (c *zookeeperDynamicConfiguration) Done() chan struct{} {
 	return c.done
 }
 
-func (c *zookeeperDynamicConfiguration) GetUrl() common.URL {
-	return *c.url
+func (c *zookeeperDynamicConfiguration) GetUrl() *common.URL {
+	return c.url
 }
 
 func (c *zookeeperDynamicConfiguration) Destroy() {

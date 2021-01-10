@@ -92,7 +92,9 @@ func (s *Server) handlePkg(conn net.Conn) {
 			t = time.Now().Add(timeout)
 		}
 
-		conn.SetDeadline(t)
+		if err := conn.SetDeadline(t); err != nil {
+			logger.Error("connection.SetDeadline(t:%v) = error:%v", t, err)
+		}
 	}
 
 	sendErrorResp := func(header http.Header, body []byte) error {
@@ -229,7 +231,7 @@ func accept(listener net.Listener, fn func(net.Conn)) error {
 }
 
 // Start JSON RPC server then ready for accept request.
-func (s *Server) Start(url common.URL) {
+func (s *Server) Start(url *common.URL) {
 	listener, err := net.Listen("tcp", url.Location)
 	if err != nil {
 		logger.Errorf("jsonrpc server [%s] start failed: %v", url.Path, err)
@@ -239,7 +241,9 @@ func (s *Server) Start(url common.URL) {
 
 	s.wg.Add(1)
 	go func() {
-		accept(listener, func(conn net.Conn) { s.handlePkg(conn) })
+		if err := accept(listener, func(conn net.Conn) { s.handlePkg(conn) }); err != nil {
+			logger.Error("accept() = error:%v", err)
+		}
 		s.wg.Done()
 	}()
 

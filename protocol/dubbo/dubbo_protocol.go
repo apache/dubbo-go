@@ -90,7 +90,7 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 }
 
 // Refer create dubbo service reference.
-func (dp *DubboProtocol) Refer(url common.URL) protocol.Invoker {
+func (dp *DubboProtocol) Refer(url *common.URL) protocol.Invoker {
 	exchangeClient := getExchangeClient(url)
 	if exchangeClient == nil {
 		logger.Warnf("can't dial the server: %+v", url.Location)
@@ -115,7 +115,7 @@ func (dp *DubboProtocol) Destroy() {
 	}
 }
 
-func (dp *DubboProtocol) openServer(url common.URL) {
+func (dp *DubboProtocol) openServer(url *common.URL) {
 	_, ok := dp.serverMap[url.Location]
 	if !ok {
 		_, ok := dp.ExporterMap().Load(url.ServiceKey())
@@ -176,7 +176,7 @@ func doHandleRequest(rpcInvocation *invocation.RPCInvocation) protocol.RPCResult
 	return result
 }
 
-func getExchangeClient(url common.URL) *remoting.ExchangeClient {
+func getExchangeClient(url *common.URL) *remoting.ExchangeClient {
 	clientTmp, ok := exchangeClientMap.Load(url.Location)
 	if !ok {
 		var exchangeClientTmp *remoting.ExchangeClient
@@ -222,13 +222,13 @@ func getExchangeClient(url common.URL) *remoting.ExchangeClient {
 // Once we decided to transfer more context's key-value, we should change this.
 // now we only support rebuild the tracing context
 func rebuildCtx(inv *invocation.RPCInvocation) context.Context {
-	ctx := context.WithValue(context.Background(), "attachment", inv.Attachments())
+	ctx := context.WithValue(context.Background(), constant.DubboCtxKey("attachment"), inv.Attachments())
 
 	// actually, if user do not use any opentracing framework, the err will not be nil.
 	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.TextMap,
 		opentracing.TextMapCarrier(filterContext(inv.Attachments())))
 	if err == nil {
-		ctx = context.WithValue(ctx, constant.TRACING_REMOTE_SPAN_CTX, spanCtx)
+		ctx = context.WithValue(ctx, constant.DubboCtxKey(constant.TRACING_REMOTE_SPAN_CTX), spanCtx)
 	}
 	return ctx
 }

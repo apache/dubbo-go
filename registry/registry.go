@@ -34,7 +34,7 @@ type Registry interface {
 	// Register is used for service provider calling, register services
 	// to registry. And it is also used for service consumer calling, register
 	// services cared about, for dubbo's admin monitoring.
-	Register(url common.URL) error
+	Register(url *common.URL) error
 
 	// UnRegister is required to support the contract:
 	// 1. If it is the persistent stored data of dynamic=false, the
@@ -43,7 +43,7 @@ type Registry interface {
 	// 2. Unregister according to the full url match.
 	// url Registration information, is not allowed to be empty, e.g:
 	// dubbo://10.20.153.10/org.apache.dubbo.foo.BarService?version=1.0.0&application=kylin
-	UnRegister(url common.URL) error
+	UnRegister(url *common.URL) error
 
 	// Subscribe is required to support the contract:
 	// When creating new registry extension, pls select one of the
@@ -72,7 +72,12 @@ type NotifyListener interface {
 	// events are passed in, it's considered as a complete list, on the other side, if one single event is
 	// passed in, then it's a incremental event. Pls. note when a list (instead of single event) comes,
 	// the impl of NotifyListener may abandon the accumulated result from previous notifications.
-	Notify(...*ServiceEvent)
+	Notify(*ServiceEvent)
+	// NotifyAll the events are complete Service Event List.
+	// The argument of events []*ServiceEvent is equal to urls []*URL, The Action of serviceEvent should be EventTypeUpdate.
+	// If your registry center can only get all urls but can't get individual event, you should use this one.
+	// After notify the address, the callback func will be invoked.
+	NotifyAll([]*ServiceEvent, func())
 }
 
 // Listener Deprecated!

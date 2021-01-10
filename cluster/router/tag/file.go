@@ -41,7 +41,7 @@ type FileTagRouter struct {
 	router     *tagRouter
 	routerRule *RouterRule
 	url        *common.URL
-	force      bool
+	//force      bool
 }
 
 // NewFileTagRouter Create file tag router instance with content (from config file)
@@ -52,13 +52,12 @@ func NewFileTagRouter(content []byte) (*FileTagRouter, error) {
 		return nil, perrors.Errorf("yaml.Unmarshal() failed , error:%v", perrors.WithStack(err))
 	}
 	fileRouter.routerRule = rule
-	url := fileRouter.URL()
-	fileRouter.router, err = NewTagRouter(&url)
+	fileRouter.router, err = NewTagRouter(fileRouter.URL())
 	return fileRouter, err
 }
 
 // URL Return URL in file tag router n
-func (f *FileTagRouter) URL() common.URL {
+func (f *FileTagRouter) URL() *common.URL {
 	f.parseOnce.Do(func() {
 		routerRule := f.routerRule
 		f.url = common.NewURLWithOptions(
@@ -68,7 +67,7 @@ func (f *FileTagRouter) URL() common.URL {
 			common.WithParamsValue(constant.RouterPriority, strconv.Itoa(routerRule.Priority)),
 			common.WithParamsValue(constant.ROUTER_KEY, constant.TAG_ROUTE_PROTOCOL))
 	})
-	return *f.url
+	return f.url
 }
 
 // Priority Return Priority in listenable router

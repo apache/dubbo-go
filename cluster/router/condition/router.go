@@ -46,6 +46,13 @@ var (
 	routerPatternReg = regexp.MustCompile(`([&!=,]*)\s*([^&!=,\s]+)`)
 )
 
+var (
+	emptyMatchPair = MatchPair{
+		Matches:    gxset.NewSet(),
+		Mismatches: gxset.NewSet(),
+	}
+)
+
 // ConditionRouter Condition router struct
 type ConditionRouter struct {
 	Pattern       string
@@ -138,8 +145,8 @@ func (c *ConditionRouter) Priority() int64 {
 }
 
 // URL Return URL in condition router
-func (c *ConditionRouter) URL() common.URL {
-	return *c.url
+func (c *ConditionRouter) URL() *common.URL {
+	return c.url
 }
 
 // Enabled Return is condition router is enabled
@@ -173,7 +180,7 @@ func (c *ConditionRouter) Route(invokers *roaring.Bitmap, cache router.Cache, ur
 		index := iter.Next()
 		invoker := cache.GetInvokers()[index]
 		invokerUrl := invoker.GetUrl()
-		isMatchThen := c.MatchThen(&invokerUrl, url)
+		isMatchThen := c.MatchThen(invokerUrl, url)
 		if isMatchThen {
 			result.Add(index)
 		}
@@ -221,14 +228,14 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 				condition[content] = pair
 			}
 		case "=":
-			if &pair == nil {
+			if pair == emptyMatchPair {
 				var startIndex = getStartIndex(rule)
 				return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex, startIndex)
 			}
 			values = pair.Matches
 			values.Add(content)
 		case "!=":
-			if &pair == nil {
+			if pair == emptyMatchPair {
 				var startIndex = getStartIndex(rule)
 				return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex, startIndex)
 			}
