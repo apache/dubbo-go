@@ -220,23 +220,21 @@ func packRequest(service Service, header DubboHeader, req interface{}) ([]byte, 
 	// body
 	//////////////////////////////////////////
 	if hb {
-		if err := encoder.Encode(nil); err != nil {
-			logger.Warnf("Encode(nil) = error: %v", err)
-		}
+		_ = encoder.Encode(nil)
 		goto END
 	}
 
 	// dubbo version + path + version + method
-	if err := encoder.Encode(DEFAULT_DUBBO_PROTOCOL_VERSION); err != nil {
+	if err = encoder.Encode(DEFAULT_DUBBO_PROTOCOL_VERSION); err != nil {
 		logger.Warnf("Encode(DEFAULT_DUBBO_PROTOCOL_VERSION) = error: %v", err)
 	}
-	if err := encoder.Encode(service.Path); err != nil {
+	if err = encoder.Encode(service.Path); err != nil {
 		logger.Warnf("Encode(service.Path) = error: %v", err)
 	}
-	if err := encoder.Encode(service.Version); err != nil {
+	if err = encoder.Encode(service.Version); err != nil {
 		logger.Warnf("Encode(service.Version) = error: %v", err)
 	}
-	if err := encoder.Encode(service.Method); err != nil {
+	if err = encoder.Encode(service.Method); err != nil {
 		logger.Warnf("Encode(service.Method) = error: %v", err)
 	}
 
