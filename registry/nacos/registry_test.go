@@ -55,6 +55,7 @@ func TestNacosRegistry_Register(t *testing.T) {
 		t.Errorf("new nacos registry error:%s \n", err.Error())
 		return
 	}
+	time.Sleep(60 * time.Second)
 	err = reg.Register(testUrl)
 	assert.Nil(t, err)
 	if err != nil {
@@ -83,6 +84,7 @@ func TestNacosRegistry_Subscribe(t *testing.T) {
 	testUrl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParams(urlMap), common.WithMethods([]string{"GetUser", "AddUser"}))
 
 	reg, _ := newNacosRegistry(regurl)
+	time.Sleep(60 * time.Second)
 	err := reg.Register(testUrl)
 	assert.Nil(t, err)
 	if err != nil {
