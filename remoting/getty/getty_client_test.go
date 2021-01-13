@@ -94,7 +94,7 @@ func getClient(url *common.URL) *Client {
 }
 
 func testClient_Call(t *testing.T, svr *Server, url *common.URL, c *Client) {
-	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
+	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL), &common.URL{})
 
 	testGetBigPkg(t, c)
 	testGetUser(t, c)

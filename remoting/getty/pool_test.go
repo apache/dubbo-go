@@ -18,6 +18,7 @@
 package getty
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"testing"
 	"time"
 )
@@ -29,7 +30,7 @@ import (
 func TestGetConnFromPool(t *testing.T) {
 	var rpcClient Client
 
-	clientPoll := newGettyRPCClientConnPool(&rpcClient, 1, time.Duration(5*time.Second))
+	clientPoll := newGettyRPCClientConnPool(&rpcClient, 1, time.Duration(5*time.Second), &common.URL{})
 
 	var conn1 gettyRPCClient
 	conn1.active = time.Now().Unix()
