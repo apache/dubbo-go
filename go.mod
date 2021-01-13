@@ -56,4 +56,7 @@ require (
 )
 
 //github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.4
-replace github.com/envoyproxy/go-control-plane => github.com/envoyproxy/go-control-plane v0.8.0
+replace (
+ github.com/envoyproxy/go-control-plane => github.com/envoyproxy/go-control-plane v0.8.0
+ github.com/dubbogo/triple v0.0.0-20210109081225-7eb79b3a65e1 => ../triple
+ )
