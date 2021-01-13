@@ -20,6 +20,7 @@ package getty
 import (
 	"crypto/tls"
 	"fmt"
+	"github.com/apache/dubbo-go/common"
 	"math/rand"
 	"net"
 	"sync"
@@ -54,7 +55,7 @@ var (
 	errClientPoolClosed = perrors.New("client pool closed")
 )
 
-func newGettyRPCClientConn(pool *gettyRPCClientPool, addr string) (*gettyRPCClient, error) {
+func newGettyRPCClientConn(pool *gettyRPCClientPool, addr string, url *common.URL) (*gettyRPCClient, error) {
 	var (
 		gettyClient getty.Client
 		sslEnabled  bool
@@ -134,7 +135,7 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 		session.SetName(conf.GettySessionParam.SessionName)
 		session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
 		session.SetPkgHandler(NewRpcClientPackageHandler(c.pool.rpcClient))
-		session.SetEventListener(NewRpcClientHandler(c))
+		session.SetEventListener(NewRpcClientHandler(c, c.pool.url))
 		session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
 		session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
 		session.SetCronPeriod((int)(conf.heartbeatPeriod.Nanoseconds() / 1e6))
@@ -167,7 +168,7 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 	session.SetName(conf.GettySessionParam.SessionName)
 	session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
 	session.SetPkgHandler(NewRpcClientPackageHandler(c.pool.rpcClient))
-	session.SetEventListener(NewRpcClientHandler(c))
+	session.SetEventListener(NewRpcClientHandler(c, c.pool.url))
 	session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
 	session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
 	session.SetCronPeriod((int)(conf.heartbeatPeriod.Nanoseconds() / 1e6))
@@ -333,15 +334,17 @@ type gettyRPCClientPool struct {
 
 	sync.Mutex
 	conns []*gettyRPCClient
+	url   *common.URL
 }
 
-func newGettyRPCClientConnPool(rpcClient *Client, size int, ttl time.Duration) *gettyRPCClientPool {
+func newGettyRPCClientConnPool(rpcClient *Client, size int, ttl time.Duration, url *common.URL) *gettyRPCClientPool {
 	return &gettyRPCClientPool{
 		rpcClient: rpcClient,
 		size:      size,
 		ttl:       int64(ttl.Seconds()),
 		// init capacity : 2
 		conns: make([]*gettyRPCClient, 0, 2),
+		url:   url,
 	}
 }
 
@@ -359,7 +362,7 @@ func (p *gettyRPCClientPool) getGettyRpcClient(addr string) (*gettyRPCClient, er
 	conn, connErr := p.get()
 	if connErr == nil && conn == nil {
 		// create new conn
-		rpcClientConn, rpcErr := newGettyRPCClientConn(p, addr)
+		rpcClientConn, rpcErr := newGettyRPCClientConn(p, addr, p.url)
 		if rpcErr == nil {
 			p.put(rpcClientConn)
 		}

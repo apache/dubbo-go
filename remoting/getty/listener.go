@@ -19,6 +19,7 @@ package getty
 
 import (
 	"fmt"
+	"github.com/apache/dubbo-go/common"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -69,11 +70,15 @@ func (s *rpcSession) GetReqNum() int32 {
 type RpcClientHandler struct {
 	conn         *gettyRPCClient
 	timeoutTimes int
+	url          *common.URL
 }
 
 // nolint
-func NewRpcClientHandler(client *gettyRPCClient) *RpcClientHandler {
-	return &RpcClientHandler{conn: client}
+func NewRpcClientHandler(client *gettyRPCClient, url *common.URL) *RpcClientHandler {
+	return &RpcClientHandler{
+		conn: client,
+		url:  url,
+	}
 }
 
 // OnOpen call the getty client session opened, add the session to getty client session list
@@ -91,6 +96,12 @@ func (h *RpcClientHandler) OnError(session getty.Session, err error) {
 // OnClose close the session, remove it from the getty session list
 func (h *RpcClientHandler) OnClose(session getty.Session) {
 	logger.Infof("session{%s} is closing......", session.Stat())
+	f, ok := common.DirMap.Load(h.url.Key())
+	if !ok {
+		h.conn.removeSession(session)
+		return
+	}
+	f.(func(url *common.URL))(h.url)
 	h.conn.removeSession(session)
 }
 

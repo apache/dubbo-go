@@ -146,7 +146,7 @@ func (c *Client) Connect(url *common.URL) error {
 	initClient(url.Protocol)
 	c.conf = *clientConf
 	// new client
-	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
+	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL), url)
 	c.pool.sslEnabled = url.GetParamBool(constant.SSL_ENABLED_KEY, false)
 
 	// codec

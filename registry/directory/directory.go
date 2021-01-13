@@ -69,7 +69,7 @@ type RegistryDirectory struct {
 }
 
 // NewRegistryDirectory will create a new RegistryDirectory
-func NewRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.Directory, error) {
+func NewRegistryDirectory(url *common.URL, reg registry.Registry) (cluster.Directory, error) {
 	if url.SubURL == nil {
 		return nil, perrors.Errorf("url is invalid, suburl can not be nil")
 	}
@@ -79,7 +79,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.
 		cacheInvokers:    []protocol.Invoker{},
 		cacheInvokersMap: &sync.Map{},
 		serviceType:      url.SubURL.Service(),
-		registry:         registry,
+		registry:         reg,
 	}
 
 	dir.consumerURL = dir.getConsumerUrl(url.SubURL)
@@ -233,6 +233,20 @@ func (dir *RegistryDirectory) setNewInvokers() {
 	dir.RouterChain().SetInvokers(newInvokers)
 }
 
+// AddToDirMap is called after receive Add event
+// this function add a way to delete service in directory directory by getty-session, not only by registry
+// getty-session way to delete is faster than registry to delete
+// this function register the delete function to common sync.Map, and it read by getty-session, to push url
+func (dir *RegistryDirectory) AddToDirMap(url *common.URL) {
+	common.DirMap.Store(url.Key(), func(url *common.URL) {
+		eve := &registry.ServiceEvent{
+			Service: url,
+			Action:  remoting.EventTypeDel,
+		}
+		dir.Notify(eve)
+	})
+}
+
 // cacheInvokerByEvent caches invokers from the service event
 func (dir *RegistryDirectory) cacheInvokerByEvent(event *registry.ServiceEvent) (protocol.Invoker, error) {
 	// judge is override or others
@@ -243,6 +257,7 @@ func (dir *RegistryDirectory) cacheInvokerByEvent(event *registry.ServiceEvent) 
 			logger.Infof("selector add service url{%s}", event.Service)
 			// FIXME: routers are built in every address notification?
 			dir.configRouters()
+			dir.AddToDirMap(event.Service)
 			return dir.cacheInvoker(u), nil
 		case remoting.EventTypeDel:
 			logger.Infof("selector delete service url{%s}", event.Service)
