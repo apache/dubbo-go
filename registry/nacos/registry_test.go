@@ -24,11 +24,16 @@ import (
 	"strconv"
 	"testing"
 	"time"
+)
 
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
+import (
 	"github.com/nacos-group/nacos-sdk-go/vo"
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 )
 
 func TestNacosRegistry_Register(t *testing.T) {
