@@ -61,10 +61,6 @@ type Poolable interface {
 	// Pool created address pool and address metadata from the invokers.
 	Pool([]protocol.Invoker) (AddrPool, AddrMetadata)
 
-	// ShouldPool returns if it should pool. One typical scenario is a router rule changes, in this case, a pooling
-	// is necessary, even if the addresses not changed at all.
-	ShouldPool() bool
-
 	// Name return the Poolable's name.
 	Name() string
 }

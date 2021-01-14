@@ -269,7 +269,7 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 // rule doesn't change), and the address list doesn't change, then the existing data will be re-used.
 func poolRouter(p router.Poolable, origin *InvokerCache, invokers []protocol.Invoker) (router.AddrPool, router.AddrMetadata) {
 	name := p.Name()
-	if isCacheMiss(origin, name) || p.ShouldPool() || &(origin.invokers) != &invokers {
+	if isCacheMiss(origin, name) || &(origin.invokers) != &invokers {
 		logger.Debugf("build address cache for router %q", name)
 		return p.Pool(invokers)
 	}

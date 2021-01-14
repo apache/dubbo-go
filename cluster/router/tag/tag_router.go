@@ -74,7 +74,6 @@ type tagRouter struct {
 	enabled       bool
 	priority      int64
 	application   string
-	ruleChanged   bool
 	mutex         sync.RWMutex
 }
 
@@ -190,7 +189,6 @@ func (c *tagRouter) Process(event *config_center.ConfigChangeEvent) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.tagRouterRule = routerRule
-	c.ruleChanged = true
 }
 
 // URL gets the url of tagRouter
@@ -213,7 +211,6 @@ func (c *tagRouter) Pool(invokers []protocol.Invoker) (router.AddrPool, router.A
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	poolWithDynamicTag(invokers, c.tagRouterRule, rb)
-	c.ruleChanged = false
 	// create metadata in order to avoid lock in route()
 	meta := addrMetadata{application: c.application}
 	if c.tagRouterRule != nil {
@@ -266,13 +263,6 @@ func (c *tagRouter) fetchRuleIfNecessary(invokers []protocol.Invoker) {
 			Value:      rule,
 			ConfigType: remoting.EventTypeUpdate})
 	}
-}
-
-// ShouldPool returns false, to make sure address cache for tag router happens once and only once.
-func (c *tagRouter) ShouldPool() bool {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
-	return c.ruleChanged
 }
 
 // Name returns pool's name

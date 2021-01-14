@@ -91,11 +91,6 @@ func (r *HealthCheckRouter) Pool(invokers []protocol.Invoker) (router.AddrPool, 
 	return rb, nil
 }
 
-// ShouldPool will always return true to make sure healthy check constantly.
-func (r *HealthCheckRouter) ShouldPool() bool {
-	return r.enabled
-}
-
 func (r *HealthCheckRouter) Name() string {
 	return name
 }
