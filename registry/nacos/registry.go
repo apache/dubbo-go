@@ -23,22 +23,19 @@ import (
 	"strconv"
 	"strings"
 	"time"
-)
 
-import (
 	"github.com/nacos-group/nacos-sdk-go/clients"
 	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
+
 	nacosConstant "github.com/nacos-group/nacos-sdk-go/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/vo"
-	perrors "github.com/pkg/errors"
-)
 
-import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/registry"
+	perrors "github.com/pkg/errors"
 )
 
 var (
@@ -289,7 +286,13 @@ func getNacosConfig(url *common.URL) (map[string]interface{}, error) {
 	clientConfig.NamespaceId = url.GetParam(constant.NACOS_NAMESPACE_ID, "")
 
 	//enable local cache when nacos can not connect.
-	clientConfig.NotLoadCacheAtStart = false
+	notLoadCache, err := strconv.ParseBool(url.GetParam(constant.NACOS_NOT_LOAD_LOCAL_CACHE, "false"))
+	if err != nil {
+		logger.Errorf("ParseBool - error: %v", err)
+		notLoadCache = false
+	}
+	clientConfig.NotLoadCacheAtStart = notLoadCache
+
 	configMap["clientConfig"] = clientConfig
 
 	return configMap, nil
