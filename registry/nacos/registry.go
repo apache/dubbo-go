@@ -274,7 +274,7 @@ func getNacosConfig(url *common.URL) (map[string]interface{}, error) {
 			Port:   uint64(port),
 		})
 	}
-	configMap["serverConfigs"] = serverConfigs
+	configMap[nacosConstant.KEY_SERVER_CONFIGS] = serverConfigs
 
 	var clientConfig nacosConstant.ClientConfig
 	timeout, err := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
@@ -296,7 +296,7 @@ func getNacosConfig(url *common.URL) (map[string]interface{}, error) {
 	}
 	clientConfig.NotLoadCacheAtStart = notLoadCache
 
-	configMap["clientConfig"] = clientConfig
+	configMap[nacosConstant.KEY_CLIENT_CONFIG] = clientConfig
 
 	return configMap, nil
 }
