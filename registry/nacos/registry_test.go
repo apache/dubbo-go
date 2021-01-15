@@ -51,7 +51,6 @@ func TestNacosRegistry_Register(t *testing.T) {
 	urlMap.Set(constant.INTERFACE_KEY, "com.ikurento.user.UserProvider")
 	urlMap.Set(constant.VERSION_KEY, "1.0.0")
 	urlMap.Set(constant.CLUSTER_KEY, "mock")
-	urlMap.Set(constant.NACOS_NOT_LOAD_LOCAL_CACHE, "true")
 	testUrl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParams(urlMap), common.WithMethods([]string{"GetUser", "AddUser"}))
 
 	reg, err := newNacosRegistry(regurl)
@@ -89,7 +88,6 @@ func TestNacosRegistry_Subscribe(t *testing.T) {
 	urlMap.Set(constant.VERSION_KEY, "1.0.0")
 	urlMap.Set(constant.CLUSTER_KEY, "mock")
 	urlMap.Set(constant.NACOS_PATH_KEY, "")
-	urlMap.Set(constant.NACOS_NOT_LOAD_LOCAL_CACHE, "true")
 	testUrl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParams(urlMap), common.WithMethods([]string{"GetUser", "AddUser"}))
 
 	reg, _ := newNacosRegistry(regurl)
@@ -135,7 +133,6 @@ func TestNacosRegistry_Subscribe_del(t *testing.T) {
 	urlMap.Set(constant.VERSION_KEY, "2.0.0")
 	urlMap.Set(constant.CLUSTER_KEY, "mock")
 	urlMap.Set(constant.NACOS_PATH_KEY, "")
-	urlMap.Set(constant.NACOS_NOT_LOAD_LOCAL_CACHE, "true")
 	url1, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParams(urlMap), common.WithMethods([]string{"GetUser", "AddUser"}))
 	url2, _ := common.NewURL("dubbo://127.0.0.2:20000/com.ikurento.user.UserProvider", common.WithParams(urlMap), common.WithMethods([]string{"GetUser", "AddUser"}))
 
@@ -208,8 +205,6 @@ func TestNacosListener_Close(t *testing.T) {
 	urlMap.Set(constant.VERSION_KEY, "1.0.0")
 	urlMap.Set(constant.CLUSTER_KEY, "mock")
 	urlMap.Set(constant.NACOS_PATH_KEY, "")
-	urlMap.Set(constant.NACOS_NOT_LOAD_LOCAL_CACHE, "true")
-
 	url1, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider2", common.WithParams(urlMap), common.WithMethods([]string{"GetUser", "AddUser"}))
 	reg, _ := newNacosRegistry(regurl)
 	listener, err := reg.(*nacosRegistry).subscribe(url1)
