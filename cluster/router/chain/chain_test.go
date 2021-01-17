@@ -131,7 +131,7 @@ conditions:
 	_, err = z.Conn.Set(path, []byte(testyml), 0)
 	assert.NoError(t, err)
 	defer func() {
-		err := ts.Stop()
+		_ = ts.Stop()
 		assert.NoError(t, err)
 		z.Close()
 	}()
@@ -215,7 +215,7 @@ conditions:
 	_, err = z.Conn.Set(path, []byte(testyml), 0)
 	assert.NoError(t, err)
 	defer func() {
-		err := ts.Stop()
+		_ = ts.Stop()
 		assert.NoError(t, err)
 		z.Close()
 	}()
@@ -246,7 +246,7 @@ func TestRouterChainRouteNoRoute(t *testing.T) {
 	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
 	assert.Nil(t, err)
 	defer func() {
-		err := ts.Stop()
+		_ = ts.Stop()
 		assert.NoError(t, err)
 		z.Close()
 	}()
