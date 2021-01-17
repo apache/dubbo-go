@@ -136,7 +136,7 @@ func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invoc
 
 	selectedInvoker := lb.Select(invokers, invocation)
 
-	//judge to if the selectedInvoker is invoked and available
+	//judge if the selected Invoker is invoked and available
 	if (!selectedInvoker.IsAvailable() && invoker.availablecheck) || isInvoked(selectedInvoker, invoked) {
 		protocol.SetInvokerUnhealthyStatus(selectedInvoker)
 		otherInvokers := getOtherInvokers(invokers, selectedInvoker)

@@ -33,7 +33,8 @@ func SetConnChecker(name string, fcn func(_ *common.URL) router.ConnChecker) {
 
 // GetHealthChecker gets the HealthChecker with @name
 func GetConnChecker(name string, url *common.URL) router.ConnChecker {
-	if connCheckers[name] == nil {
+	f, ok := connCheckers[name]
+	if !ok || f == nil {
 		panic("connCheckers for " + name + " is not existing, make sure you have import the package.")
 	}
 	return connCheckers[name](url)
