@@ -90,18 +90,18 @@ func (h *RpcClientHandler) OnOpen(session getty.Session) error {
 // OnError the getty client session has errored, so remove the session from the getty client session list
 func (h *RpcClientHandler) OnError(session getty.Session, err error) {
 	logger.Infof("session{%s} got error{%v}, will be closed.", session.Stat(), err)
-	h.tryDirectlyDelete()
+	h.tryDirectDelete()
 	h.conn.removeSession(session)
 }
 
 // OnClose close the session, remove it from the getty session list
 func (h *RpcClientHandler) OnClose(session getty.Session) {
 	logger.Infof("session{%s} is closing......", session.Stat())
-	h.tryDirectlyDelete()
+	h.tryDirectDelete()
 	h.conn.removeSession(session)
 }
 
-func (h *RpcClientHandler) tryDirectlyDelete() {
+func (h *RpcClientHandler) tryDirectDelete() {
 	f, ok := common.DirMap.Load(h.url.Key())
 	if !ok {
 		return

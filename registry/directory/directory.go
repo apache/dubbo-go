@@ -234,8 +234,8 @@ func (dir *RegistryDirectory) setNewInvokers() {
 }
 
 // AddToDirMap is called after receive Add event
-// this function add a way to delete service in directory directory by getty-session, not only by registry
-// getty-session way to delete is faster than registry to delete
+// this function add a way to delete service in directory by getty-session, not only by registry.
+// the way of using getty-session to delete is faster than registry to delete
 // this function register the delete function to common sync.Map, and it read by getty-session, to push url
 func (dir *RegistryDirectory) AddToDirMap(url *common.URL) {
 	common.DirMap.Store(url.Key(), func(url *common.URL) {
