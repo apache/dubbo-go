@@ -18,13 +18,16 @@
 package getty
 
 import (
-	"github.com/apache/dubbo-go/common"
 	"testing"
 	"time"
 )
 
 import (
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
 )
 
 func TestGetConnFromPool(t *testing.T) {

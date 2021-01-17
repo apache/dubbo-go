@@ -20,7 +20,6 @@ package getty
 import (
 	"crypto/tls"
 	"fmt"
-	"github.com/apache/dubbo-go/common"
 	"math/rand"
 	"net"
 	"sync"
@@ -34,6 +33,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 )
