@@ -39,11 +39,6 @@ import (
 	"github.com/apache/dubbo-go/remoting/kubernetes"
 )
 
-//var (
-//	processID = ""
-//	localIP   = ""
-//)
-
 const (
 	Name         = "kubernetes"
 	ConnDelay    = 3
