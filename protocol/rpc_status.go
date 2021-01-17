@@ -245,7 +245,7 @@ func GetAndRefreshState() bool {
 }
 
 // TryRefreshBlackList start 3 gr to check at most block=16 invokers in black list
-// if is available remove from black list
+// if target invoker is available, then remove it from black list
 func TryRefreshBlackList() {
 	if atomic.CompareAndSwapInt32(&blackListRefreshing, 0, 1) {
 		wg := sync.WaitGroup{}
