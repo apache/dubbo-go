@@ -1,6 +1,6 @@
 module github.com/apache/dubbo-go
 
-go 1.15
+go 1.13
 
 require (
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
@@ -9,7 +9,7 @@ require (
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
 	github.com/alibaba/sentinel-golang v1.0.1
 	github.com/apache/dubbo-getty v1.4.1
-	github.com/apache/dubbo-go-hessian2 v1.8.0
+	github.com/apache/dubbo-go-hessian2 v1.8.2
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/creasty/defaults v1.5.1
 	github.com/dubbogo/go-zookeeper v1.0.2
