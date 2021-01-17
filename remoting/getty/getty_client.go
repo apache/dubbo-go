@@ -40,10 +40,10 @@ import (
 var (
 	errSessionNotExist   = perrors.New("session not exist")
 	errClientClosed      = perrors.New("client closed")
-	errClientReadTimeout = perrors.New("client read timeout")
+	errClientReadTimeout = perrors.New("maybe the client read timeout or fail to decode tcp stream in Writer.Write")
 
 	clientConf   *ClientConfig
-	clientGrpool *gxsync.TaskPool
+	clientGrpool gxsync.GenericTaskPool
 )
 
 // it is init client for single protocol.
@@ -99,10 +99,7 @@ func SetClientConf(c ClientConfig) {
 }
 
 func setClientGrpool() {
-	if clientConf.GrPoolSize > 1 {
-		clientGrpool = gxsync.NewTaskPool(gxsync.WithTaskPoolTaskPoolSize(clientConf.GrPoolSize), gxsync.WithTaskPoolTaskQueueLength(clientConf.QueueLen),
-			gxsync.WithTaskPoolTaskQueueNumber(clientConf.QueueNumber))
-	}
+	clientGrpool = gxsync.NewTaskPoolSimple(clientConf.GrPoolSize)
 }
 
 // Options : param config
