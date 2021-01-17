@@ -62,6 +62,6 @@ func GetRemoteMetadataService() (service.MetadataService, error) {
 		remoteMetadataService, err = creator()
 		return remoteMetadataService, err
 	}
-	logger.Info("could not find the metadata service creator for metadataType: remote")
+	logger.Warn("could not find the metadata service creator for metadataType: remote")
 	return nil, perrors.New(fmt.Sprintf("could not find the metadata service creator for metadataType: remote"))
 }
