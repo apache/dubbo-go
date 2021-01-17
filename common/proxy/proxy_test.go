@@ -132,19 +132,11 @@ func TestProxyImplementForContext(t *testing.T) {
 	p := NewProxy(invoker, nil, map[string]string{constant.ASYNC_KEY: "false"})
 	s := &TestService{}
 	p.Implement(s)
-<<<<<<< HEAD
-	attahments1 := make(map[string]interface{}, 4)
-	attahments1["k1"] = "v1"
-	attahments1["k2"] = "v2"
-	ctx := context.WithValue(context.Background(), constant.AttachmentKey, attahments1)
-	r, err := p.Get().(*TestService).MethodSix(ctx, "xxx")
-=======
 	attachments1 := make(map[string]interface{}, 4)
 	attachments1["k1"] = "v1"
 	attachments1["k2"] = "v2"
 	context := context.WithValue(context.Background(), constant.AttachmentKey, attachments1)
 	r, err := p.Get().(*TestService).MethodSix(context, "xxx")
->>>>>>> develop
 	v1 := r.(map[string]interface{})
 	assert.NoError(t, err)
 	assert.Equal(t, v1["TestProxyInvoker"], "TestProxyInvokerValue")
