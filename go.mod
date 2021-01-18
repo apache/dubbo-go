@@ -5,7 +5,7 @@ require (
 	github.com/RoaringBitmap/roaring v0.5.5
 	github.com/Workiva/go-datastructures v1.0.52
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
-	github.com/alibaba/sentinel-golang v1.0.1
+	github.com/alibaba/sentinel-golang v1.0.2
 	github.com/apache/dubbo-getty v1.4.1
 	github.com/apache/dubbo-go-hessian2 v1.8.2
 	github.com/coreos/etcd v3.3.25+incompatible
