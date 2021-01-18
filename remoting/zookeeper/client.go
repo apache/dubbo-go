@@ -38,7 +38,7 @@ const (
 	// ConnDelay connection delay interval
 	ConnDelay = 3
 	// MaxFailTimes max fail times
-	MaxFailTimes = 15
+	MaxFailTimes = 3
 )
 
 var (
