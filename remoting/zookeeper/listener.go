@@ -189,12 +189,7 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 		}
 
 		oldNode = path.Join(zkPath, n)
-		logger.Warnf("delete zkPath{%s}", oldNode)
-
-		if err != nil {
-			logger.Errorf("NewURL(i{%s}) = error{%v}", n, perrors.WithStack(err))
-			continue
-		}
+		logger.Warnf("delete oldNode{%s}", oldNode)
 		listener.DataChange(remoting.Event{Path: oldNode, Action: remoting.EventTypeDel})
 	}
 }
