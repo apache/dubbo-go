@@ -555,7 +555,7 @@ func (z *ZookeeperClient) GetChildrenW(path string) ([]string, <-chan zk.Event, 
 		if err == zk.ErrNoNode {
 			return nil, nil, errNilNode
 		}
-		logger.Errorf("zk.ChildrenW(path{%s}) = error(%v)", path, err)
+		logger.Warnf("zk.ChildrenW(path{%s}) = error(%v)", path, err)
 		return nil, nil, perrors.WithMessagef(err, "zk.ChildrenW(path:%s)", path)
 	}
 	if stat == nil {
