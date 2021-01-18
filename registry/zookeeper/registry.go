@@ -212,9 +212,6 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 
 	r.cltLock.Lock()
 	defer r.cltLock.Unlock()
-	if r.client == nil {
-		return perrors.WithStack(perrors.New("zk client already been closed"))
-	}
 	err = r.client.Create(root)
 	if err != nil {
 		logger.Errorf("zk.Create(root{%s}) = err{%v}", root, perrors.WithStack(err))
@@ -223,23 +220,22 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 
 	// try to register the node
 	zkPath, err = r.client.RegisterTemp(root, node)
-	if err != nil {
-		logger.Errorf("Register temp node(root{%s}, node{%s}) = error{%v}", root, node, perrors.WithStack(err))
-		if perrors.Cause(err) == zk.ErrNodeExists {
-			// should delete the old node
-			logger.Info("Register temp node failed, try to delete the old and recreate  (root{%s}, node{%s}) , ignore!", root, node)
-			if err = r.client.Delete(zkPath); err == nil {
-				_, err = r.client.RegisterTemp(root, node)
-			}
-			if err != nil {
-				logger.Errorf("Recreate the temp node failed, (root{%s}, node{%s}) = error{%v}", root, node, perrors.WithStack(err))
-			}
-		}
-		return perrors.WithMessagef(err, "RegisterTempNode(root{%s}, node{%s})", root, node)
+	if err == nil {
+		return nil
 	}
-	logger.Debugf("Create a zookeeper node:%s", zkPath)
 
-	return nil
+	if perrors.Cause(err) == zk.ErrNodeExists {
+		if err = r.client.Delete(zkPath); err == nil {
+			_, err = r.client.RegisterTemp(root, node)
+		}
+
+		if err == nil {
+			return nil
+		}
+	}
+
+	logger.Errorf("Register temp node(root{%s}, node{%s}) = error{%v}", root, node, perrors.WithStack(err))
+	return perrors.WithMessagef(err, "RegisterTempNode(root{%s}, node{%s})", root, node)
 }
 
 func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListener, error) {
