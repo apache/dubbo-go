@@ -23,22 +23,20 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-)
 
-import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/dubbogo/getty"
-	gxsync "github.com/dubbogo/gost/sync"
-	perrors "github.com/pkg/errors"
-	uatomic "go.uber.org/atomic"
-	"gopkg.in/yaml.v2"
-)
 
-import (
+	gxsync "github.com/dubbogo/gost/sync"
+
+	perrors "github.com/pkg/errors"
+
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
+	uatomic "go.uber.org/atomic"
+	"gopkg.in/yaml.v2"
 )
 
 var (
@@ -274,13 +272,14 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 				ok := atomic.CompareAndSwapUint32(&c.pool.pushing, 0, 1)
 				if ok {
 					c.pool.poolQueue.pushHead(conn)
-					c.pool.pushing = 0
+					atomic.CompareAndSwapUint32(&c.pool.pushing, 1, 0)
 					c.pool.ch <- struct{}{}
 					return
 				}
 				failNumber++
 				if failNumber%10 == 0 {
-					time.Sleep(1e6)
+					logger.Warnf("put conn into pool failed 10 times")
+					time.Sleep(10 * time.Microsecond)
 				}
 			}
 		} else {
