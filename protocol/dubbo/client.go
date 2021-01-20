@@ -272,14 +272,16 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 				ok := atomic.CompareAndSwapUint32(&c.pool.pushing, 0, 1)
 				if ok {
 					c.pool.poolQueue.pushHead(conn)
-					atomic.CompareAndSwapUint32(&c.pool.pushing, 1, 0)
 					c.pool.ch <- struct{}{}
+					atomic.CompareAndSwapUint32(&c.pool.pushing, 1, 0)
 					return
 				}
 				failNumber++
-				if failNumber%10 == 0 {
-					logger.Warnf("put conn into pool failed 10 times")
-					time.Sleep(10 * time.Microsecond)
+				if failNumber == 10 {
+					logger.Warnf("interface %+v put conn into pool failed 10 times", p.Service.Interface)
+					c.pool.ch <- struct{}{}
+					conn.close()
+					return
 				}
 			}
 		} else {
