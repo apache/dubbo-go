@@ -21,7 +21,6 @@ import (
 	"math/rand"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	hessian "github.com/apache/dubbo-go-hessian2"
@@ -266,21 +265,13 @@ func (c *Client) call(ct CallType, request *Request, response *Response, callbac
 		return errSessionNotExist
 	}
 	defer func() {
-		failNumber := 0
 		if err == nil {
 			for {
-				ok := atomic.CompareAndSwapUint32(&c.pool.pushing, 0, 1)
-				if ok {
+				select {
+				case <-c.pool.pushing:
 					c.pool.poolQueue.pushHead(conn)
+					c.pool.pushing <- struct{}{}
 					c.pool.ch <- struct{}{}
-					atomic.CompareAndSwapUint32(&c.pool.pushing, 1, 0)
-					return
-				}
-				failNumber++
-				if failNumber == 10 {
-					logger.Warnf("interface %+v put conn into pool failed 10 times", p.Service.Interface)
-					c.pool.ch <- struct{}{}
-					conn.close()
 					return
 				}
 			}

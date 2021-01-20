@@ -24,15 +24,11 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-)
 
-import (
 	"github.com/dubbogo/getty"
-	perrors "github.com/pkg/errors"
-)
 
-import (
 	"github.com/apache/dubbo-go/common/logger"
+	perrors "github.com/pkg/errors"
 )
 
 type gettyRPCClient struct {
@@ -295,7 +291,7 @@ type gettyRPCClientPool struct {
 	ch            chan struct{}
 	closeCh       chan struct{}
 	poolQueue     *poolDequeue // store *gettyRPCClient
-	pushing       uint32
+	pushing       chan struct{}
 	sync.RWMutex
 }
 
@@ -308,6 +304,7 @@ func newGettyRPCClientConnPool(rpcClient *Client, size int, ttl time.Duration) *
 		maxSize:   size,
 		ttl:       int64(ttl.Seconds()),
 		closeCh:   make(chan struct{}, 0),
+		pushing:   make(chan struct{}, 1),
 		poolQueue: pq,
 	}
 }
@@ -340,6 +337,7 @@ func (p *gettyRPCClientPool) lazyInit() {
 		for i := 0; i < p.maxSize; i++ {
 			p.ch <- struct{}{}
 		}
+		p.pushing <- struct{}{}
 		atomic.StoreUint32(&p.chInitialized, 1)
 	}
 	p.Unlock()
