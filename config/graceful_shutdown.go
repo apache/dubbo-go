@@ -69,16 +69,13 @@ func GracefulShutdownInit() {
 				logger.Warn("Shutdown gracefully timeout, application will shutdown immediately. ")
 				os.Exit(0)
 			})
-
 			BeforeShutdown()
-
 			// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
 			for _, dumpSignal := range DumpHeapShutdownSignals {
 				if sig == dumpSignal {
 					debug.WriteHeapDump(os.Stdout.Fd())
 				}
 			}
-
 			os.Exit(0)
 		}
 	}()
