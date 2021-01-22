@@ -212,7 +212,11 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 		logger.Infof("The exporter has not been cached, and will return a new exporter!")
 	}
 
-	go reg.Subscribe(overriderUrl, overrideSubscribeListener)
+	go func() {
+		if err = reg.Subscribe(overriderUrl, overrideSubscribeListener); err != nil {
+			logger.Warnf("reg.subscribe(overriderUrl:%v) = error:%v", overriderUrl, err)
+		}
+	}()
 	return cachedExporter.(protocol.Exporter)
 }
 
@@ -240,15 +244,20 @@ func newOverrideSubscribeListener(overriderUrl *common.URL, invoker protocol.Inv
 }
 
 // Notify will be triggered when a service change notification is received.
-func (nl *overrideSubscribeListener) Notify(events ...*registry.ServiceEvent) {
-	if len(events) == 0 {
-		return
-	}
-
-	event := events[0]
+func (nl *overrideSubscribeListener) Notify(event *registry.ServiceEvent) {
 	if isMatched(event.Service, nl.url) && event.Action == remoting.EventTypeAdd {
 		nl.configurator = extension.GetDefaultConfigurator(event.Service)
 		nl.doOverrideIfNecessary()
+	}
+}
+
+func (nl *overrideSubscribeListener) NotifyAll(events []*registry.ServiceEvent, callback func()) {
+	defer callback()
+	if len(events) == 0 {
+		return
+	}
+	for _, e := range events {
+		nl.Notify(e)
 	}
 }
 

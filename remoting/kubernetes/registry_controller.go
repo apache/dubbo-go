@@ -442,7 +442,7 @@ func (c *dubboRegistryController) initCurrentPod() error {
 		return perrors.WithMessage(err, "get patch")
 	}
 
-	currentPod, err = c.patchCurrentPod(p)
+	_, err = c.patchCurrentPod(p)
 	if err != nil {
 		return perrors.WithMessage(err, "patch to current pod")
 	}
