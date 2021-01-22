@@ -59,6 +59,7 @@ const (
 )
 
 const (
+	USER_DEFINED                           = "user-defined."
 	TIMESTAMP_KEY                          = "timestamp"
 	REMOTE_TIMESTAMP_KEY                   = "remote.timestamp"
 	CLUSTER_KEY                            = "cluster"

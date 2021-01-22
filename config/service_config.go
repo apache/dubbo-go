@@ -60,7 +60,7 @@ type ServiceConfig struct {
 	Warmup                      string            `yaml:"warmup"  json:"warmup,omitempty"  property:"warmup"`
 	Retries                     string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
 	Serialization               string            `yaml:"serialization" json:"serialization" property:"serialization"`
-	Params                      map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
+	Params                      map[string]string `default:"{}" yaml:"params"  json:"params,omitempty" property:"params"`
 	Token                       string            `yaml:"token" json:"token,omitempty" property:"token"`
 	AccessLog                   string            `yaml:"accesslog" json:"accesslog,omitempty" property:"accesslog"`
 	TpsLimiter                  string            `yaml:"tps.limiter" json:"tps.limiter,omitempty" property:"tps.limiter"`
@@ -269,9 +269,14 @@ func (c *ServiceConfig) Implement(s common.RPCService) {
 func (c *ServiceConfig) getUrlMap() url.Values {
 	urlMap := url.Values{}
 	// first set user params
+	simplified := providerConfig.Registries[c.Registry].Simplified
 	for k, v := range c.Params {
+		if simplified {
+			k = constant.USER_DEFINED + k
+		}
 		urlMap.Set(k, v)
 	}
+
 	urlMap.Set(constant.INTERFACE_KEY, c.InterfaceName)
 	urlMap.Set(constant.TIMESTAMP_KEY, strconv.FormatInt(time.Now().Unix(), 10))
 	urlMap.Set(constant.CLUSTER_KEY, c.Cluster)
