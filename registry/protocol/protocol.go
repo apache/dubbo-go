@@ -100,14 +100,14 @@ func getUrlToRegistry(providerUrl *common.URL, registryUrl *common.URL) *common.
 }
 
 func filterSimplifiedKey(url *common.URL) *common.URL {
-	params := url.CloneWithParams(reserveParams)
+	newUrl := url.CloneWithParams(reserveParams)
 	for k := range url.GetParams() {
 		if !strings.HasPrefix(k, constant.USER_DEFINED) {
 			continue
 		}
-		params.SetParam(strings.TrimPrefix(k, constant.USER_DEFINED), url.GetParam(k, ""))
+		newUrl.SetParam(strings.TrimPrefix(k, constant.USER_DEFINED), url.GetParam(k, ""))
 	}
-	return params
+	return newUrl
 }
 
 // filterHideKey filter the parameters that do not need to be output in url(Starting with .)
