@@ -1,5 +1,7 @@
 module github.com/apache/dubbo-go
 
+go 1.13
+
 require (
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
 	github.com/RoaringBitmap/roaring v0.5.5
