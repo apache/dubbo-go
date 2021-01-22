@@ -121,7 +121,6 @@ func (invoker *baseClusterInvoker) doSelect(lb cluster.LoadBalance, invocation p
 
 func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invocation protocol.Invocation, invokers []protocol.Invoker, invoked []protocol.Invoker) protocol.Invoker {
 	if len(invokers) == 0 {
-		logger.Errorf("the invokers of %s is nil. ", invocation.Invoker().GetUrl().ServiceKey())
 		return nil
 	}
 	go protocol.TryRefreshBlackList()
@@ -130,7 +129,7 @@ func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invoc
 			return invokers[0]
 		}
 		protocol.SetInvokerUnhealthyStatus(invokers[0])
-		logger.Errorf("the invokers of %s is nil. ", invocation.Invoker().GetUrl().ServiceKey())
+		logger.Errorf("the invokers of %s is nil. ", invokers[0].GetUrl().ServiceKey())
 		return nil
 	}
 
