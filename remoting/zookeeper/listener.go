@@ -22,19 +22,15 @@ import (
 	"strings"
 	"sync"
 	"time"
-)
 
-import (
-	"github.com/apache/dubbo-getty"
+	getty "github.com/apache/dubbo-getty"
 	"github.com/dubbogo/go-zookeeper/zk"
-	perrors "github.com/pkg/errors"
-)
 
-import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/remoting"
+	perrors "github.com/pkg/errors"
 )
 
 var (
@@ -116,8 +112,6 @@ func (l *ZkEventListener) listenServiceNodeEvent(zkPath string, listener ...remo
 				logger.Warnf("zk.ExistW(key{%s}) = event{EventNodeDeleted}", zkPath)
 				return true
 			}
-		case <-l.client.Done():
-			return false
 		}
 	}
 }
@@ -246,10 +240,6 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 			case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)):
 				l.client.UnregisterEvent(zkPath, &event)
 				continue
-			case <-l.client.Done():
-				l.client.UnregisterEvent(zkPath, &event)
-				logger.Warnf("client.done(), listen(path{%s}) goroutine exit now...", zkPath)
-				return
 			case <-event:
 				logger.Infof("get zk.EventNodeDataChange notify event")
 				l.client.UnregisterEvent(zkPath, &event)
@@ -337,10 +327,6 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 				}
 				l.handleZkNodeEvent(zkEvent.Path, children, listener)
 				break WATCH
-			case <-l.client.Done():
-				logger.Warnf("client.done(), listen(path{%s}) goroutine exit now...", zkPath)
-				ticker.Stop()
-				return
 			}
 		}
 
@@ -370,6 +356,5 @@ func (l *ZkEventListener) ListenServiceEvent(conf *common.URL, zkPath string, li
 
 // Close will let client listen exit
 func (l *ZkEventListener) Close() {
-	close(l.client.exit)
 	l.wg.Wait()
 }

@@ -21,13 +21,10 @@ import (
 	"sync"
 	"testing"
 	"time"
-)
-import (
+
+	"github.com/apache/dubbo-go/common"
 	"github.com/dubbogo/go-zookeeper/zk"
 	"github.com/stretchr/testify/assert"
-)
-import (
-	"github.com/apache/dubbo-go/common"
 )
 
 type mockFacade struct {
@@ -98,7 +95,6 @@ func Test_Facade(t *testing.T) {
 	go HandleClientRestart(mock)
 	states := []zk.State{zk.StateConnecting, zk.StateConnected, zk.StateHasSession}
 	verifyEventStateOrder(t, event, states, "event channel")
-	z.Close()
 	verifyEventStateOrder(t, event, []zk.State{zk.StateDisconnected}, "event channel")
 	//time.Sleep(2e9)
 }
