@@ -96,9 +96,6 @@ func (p *Proxy) Implement(v common.RPCService) {
 				inVArr []reflect.Value
 				reply  reflect.Value
 			)
-			if methodName == "Echo" {
-				methodName = "$echo"
-			}
 
 			if len(outs) == 2 {
 				if outs[0].Kind() == reflect.Ptr {
@@ -216,7 +213,9 @@ func (p *Proxy) Implement(v common.RPCService) {
 			for i := 0; i < outNum; i++ {
 				funcOuts[i] = t.Type.Out(i)
 			}
-
+			if methodName == "Echo" {
+				methodName = "$echo"
+			}
 			// do method proxy here:
 			f.Set(reflect.MakeFunc(f.Type(), makeDubboCallProxy(methodName, funcOuts)))
 			logger.Debugf("set method [%s]", methodName)
