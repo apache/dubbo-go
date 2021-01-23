@@ -60,7 +60,7 @@ jobs:
         # diff -u <(echo -n) <(gofmt -d -s .)
 
     - name: hash
-      run: echo commit hash ${{github.event.pull_request.merge_commit_sha}}
+      run: echo commit hash ${{github.event.pull_request.head.sha}}
 
     - name: Install go ci lint
       run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.27.0
