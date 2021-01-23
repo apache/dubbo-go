@@ -30,6 +30,7 @@ echo "travis current commit id  -> ${GITHUB_SHA}"
 echo "travis pull request branch -> ${GITHUB_REF}"
 echo "travis pull request slug -> ${GITHUB_REPOSITORY}"
 echo "travis pull request repo slug -> ${GITHUB_REPOSITORY}"
+echo "travis pull request actor -> ${GITHUB_ACTOR}"
 
 
 # #start etcd registry  insecure listen in [:]:2379
