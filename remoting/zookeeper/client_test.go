@@ -20,15 +20,10 @@ package zookeeper
 import (
 	"testing"
 	"time"
-)
 
-import (
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/dubbogo/go-zookeeper/zk"
 	"github.com/stretchr/testify/assert"
-)
-
-import (
-	"github.com/apache/dubbo-go/common/logger"
 )
 
 func verifyEventStateOrder(t *testing.T, c <-chan zk.Event, expectedStates []zk.State, source string) {
@@ -79,7 +74,7 @@ func verifyEventStateOrder(t *testing.T, c <-chan zk.Event, expectedStates []zk.
 //}
 
 func Test_newMockZookeeperClient(t *testing.T) {
-	ts, z, event, err := NewMockZookeeperClient("test", 15*time.Second)
+	ts, _, event, err := NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
 	defer func() {
 		err := ts.Stop()
@@ -88,8 +83,6 @@ func Test_newMockZookeeperClient(t *testing.T) {
 	states := []zk.State{zk.StateConnecting, zk.StateConnected, zk.StateHasSession}
 	verifyEventStateOrder(t, event, states, "event channel")
 
-	z.Close()
-	verifyEventStateOrder(t, event, []zk.State{zk.StateDisconnected}, "event channel")
 }
 
 func TestCreate(t *testing.T) {
