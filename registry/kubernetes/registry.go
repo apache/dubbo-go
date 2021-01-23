@@ -22,18 +22,21 @@ import (
 	"path"
 	"sync"
 	"time"
+)
 
+import (
 	getty "github.com/apache/dubbo-getty"
-
 	perrors "github.com/pkg/errors"
+	v1 "k8s.io/api/core/v1"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting/kubernetes"
-	v1 "k8s.io/api/core/v1"
 )
 
 const (

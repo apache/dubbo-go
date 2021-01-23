@@ -21,10 +21,15 @@ import (
 	"sync"
 	"testing"
 	"time"
+)
 
-	"github.com/apache/dubbo-go/common"
+import (
 	"github.com/dubbogo/go-zookeeper/zk"
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
 )
 
 type mockFacade struct {
