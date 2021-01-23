@@ -20,14 +20,18 @@ package zookeeper
 import (
 	"strings"
 	"sync"
+)
 
+import (
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting"
-	perrors "github.com/pkg/errors"
-
 	zk "github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
