@@ -31,6 +31,7 @@ echo "travis pull request branch -> ${GITHUB_REF}"
 echo "travis pull request slug -> ${GITHUB_REPOSITORY}"
 echo "travis pull request repo slug -> ${GITHUB_REPOSITORY}"
 echo "travis pull request actor -> ${GITHUB_ACTOR}"
+echo "travis pull request repo param -> $1"
 
 
 # #start etcd registry  insecure listen in [:]:2379
