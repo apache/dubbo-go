@@ -30,21 +30,24 @@ type ZkClientFacade interface {
 	SetZkClient(*ZookeeperClient)
 	ZkClientLock() *sync.Mutex
 	WaitGroup() *sync.WaitGroup // for wait group control, zk client listener & zk client container
-	Done() chan struct{}        // for zk client control
+	Done() chan struct{}        // for registry destroy
 	RestartCallBack() bool
 	GetUrl() *common.URL
 }
 
 // HandleClientRestart keeps the connection between client and server
 func HandleClientRestart(r ZkClientFacade) {
+	defer r.WaitGroup().Done()
 	for {
 		select {
 		case <-r.ZkClient().Reconnect():
 			r.RestartCallBack()
 			time.Sleep(10 * time.Microsecond)
 		case <-r.Done():
-			logger.Warnf("receive registry destroy, so HandleClientRestart quit")
-			r.WaitGroup().Done()
+			logger.Warnf("receive registry destroy event, quit client restart handler")
+			return
+		case <-r.ZkClient().CloseConn():
+			logger.Warnf("receive zk client close event, quit client restart handler")
 			return
 		}
 	}
