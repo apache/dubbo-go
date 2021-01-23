@@ -16,25 +16,22 @@ require (
 	github.com/dubbogo/gost v1.10.1
 	github.com/elazarl/go-bindata-assetfs v1.0.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.4.0
-	github.com/frankban/quicktest v1.4.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/go-co-op/gocron v0.1.1
 	github.com/go-resty/resty/v2 v2.3.0
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.4.3
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
-	github.com/hashicorp/consul v1.8.0
-	github.com/hashicorp/consul/api v1.5.0
+	github.com/hashicorp/consul v1.8.7
+	github.com/hashicorp/consul/api v1.7.0
 	github.com/hashicorp/go-raftchunking v0.6.3-0.20191002164813-7e9e8525653a // indirect
-	github.com/hashicorp/vault/api v1.0.5-0.20191108163347-bdd38fca2cff // indirect
-	github.com/hashicorp/vault/sdk v0.1.14-0.20191112033314-390e96e22eb2
+	github.com/hashicorp/vault/sdk v0.1.14-0.20200519221838-e0cfd64bc267
 	github.com/jinzhu/copier v0.0.0-20190625015134-976e0346caa8
 	github.com/magiconair/properties v1.8.4
 	github.com/mitchellh/mapstructure v1.4.0
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 	github.com/nacos-group/nacos-sdk-go v1.0.3
 	github.com/opentracing/opentracing-go v1.2.0
-	github.com/pierrec/lz4 v2.2.6+incompatible // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.8.0
 	github.com/satori/go.uuid v1.2.1-0.20181028125025-b2ce2384e17b
@@ -52,7 +49,4 @@ require (
 	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a // indirect
 )
 
-replace (
-	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.4
-	github.com/envoyproxy/go-control-plane => github.com/envoyproxy/go-control-plane v0.8.0
-)
+replace github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.4
