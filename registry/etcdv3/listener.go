@@ -121,7 +121,6 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 }
 
 // Close etcd registry center
-// BugFix why no real close
 func (l *configurationListener) Close() {
 	l.closeOnce.Do(func() {
 		l.registry.WaitGroup().Done()
