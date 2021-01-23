@@ -112,14 +112,10 @@ func WithZkName(name string) Option {
 
 // ValidateZookeeperClient validates client and sets options
 func ValidateZookeeperClient(container ZkClientFacade, opts ...Option) error {
-	var (
-		err error
-	)
 	options := &Options{}
 	for _, opt := range opts {
 		opt(options)
 	}
-	connected := false
 
 	lock := container.ZkClientLock()
 	url := container.GetUrl()
@@ -143,25 +139,8 @@ func ValidateZookeeperClient(container ZkClientFacade, opts ...Option) error {
 			return perrors.WithMessagef(cltErr, "newZookeeperClient(address:%+v)", url.Location)
 		}
 		container.SetZkClient(newClient)
-		connected = true
 	}
-
-	if container.ZkClient().Conn == nil {
-		var event <-chan zk.Event
-		container.ZkClient().Conn, event, err = zk.Connect(container.ZkClient().ZkAddrs, container.ZkClient().Timeout)
-		if err == nil {
-			container.ZkClient().Wait.Add(1)
-			connected = true
-			go container.ZkClient().HandleZkEvent(event)
-		}
-	}
-
-	if connected {
-		logger.Infof("Connect to zookeeper successfully, name{%s}, zk address{%v}", options.zkName, url.Location)
-		container.WaitGroup().Add(1) // zk client start successful, then registry wg +1
-	}
-
-	return perrors.WithMessagef(err, "newZookeeperClient(address:%+v)", url.PrimitiveURL)
+	return nil
 }
 
 func getZookeeperClient(name string, zkAddrs []string, timeout time.Duration) (*ZookeeperClient, error) {
