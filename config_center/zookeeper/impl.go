@@ -23,6 +23,7 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
 	perrors "github.com/pkg/errors"
 )
 
@@ -33,7 +34,6 @@ import (
 	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/config_center/parser"
 	"github.com/apache/dubbo-go/remoting/zookeeper"
-	gxset "github.com/dubbogo/gost/container/set"
 )
 
 const (
@@ -206,9 +206,9 @@ func (c *zookeeperDynamicConfiguration) IsAvailable() bool {
 }
 
 func (c *zookeeperDynamicConfiguration) closeConfigs() {
+	logger.Infof("begin to close provider zk client")
 	c.cltLock.Lock()
 	defer c.cltLock.Unlock()
-	logger.Infof("begin to close provider zk client")
 	c.client = nil
 }
 
