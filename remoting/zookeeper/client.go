@@ -59,6 +59,7 @@ type ZookeeperClient struct {
 	Wait              sync.WaitGroup
 	valid             uint32
 	reconnectCh       chan struct{}
+	closeCh           chan struct{}
 	eventRegistry     map[string][]*chan struct{}
 	eventRegistryLock sync.RWMutex
 }
@@ -144,17 +145,17 @@ func ValidateZookeeperClient(container ZkClientFacade, opts ...Option) error {
 }
 
 func getZookeeperClient(name string, zkAddrs []string, timeout time.Duration) (*ZookeeperClient, error) {
+	var err error
 	if atomic.LoadUint32(&clientHaveCreated) == 0 {
 		mux.Lock()
 		defer mux.Unlock()
-		if atomic.LoadUint32(&clientHaveCreated) == 1 {
-			return zkClient, nil
-		}
-		_, err := NewZookeeperClient(name, zkAddrs, timeout)
-		if err == nil {
-			atomic.StoreUint32(&clientHaveCreated, 1)
-		} else {
-			return nil, err
+		if atomic.LoadUint32(&clientHaveCreated) == 0 {
+			zkClient, err = NewZookeeperClient(name, zkAddrs, timeout)
+			if err == nil {
+				atomic.StoreUint32(&clientHaveCreated, 1)
+			} else {
+				return nil, err
+			}
 		}
 	}
 	return zkClient, nil
@@ -173,6 +174,7 @@ func NewZookeeperClient(name string, zkAddrs []string, timeout time.Duration) (*
 		ZkAddrs:       zkAddrs,
 		Timeout:       timeout,
 		reconnectCh:   make(chan struct{}),
+		closeCh:       make(chan struct{}),
 		eventRegistry: make(map[string][]*chan struct{}),
 	}
 	// connect to zookeeper
@@ -183,7 +185,6 @@ func NewZookeeperClient(name string, zkAddrs []string, timeout time.Duration) (*
 
 	atomic.StoreUint32(&z.valid, 1)
 	go z.HandleZkEvent(event)
-	zkClient = z
 	return z, nil
 }
 
@@ -208,6 +209,7 @@ func NewMockZookeeperClient(name string, timeout time.Duration, opts ...Option) 
 		ZkAddrs:       []string{},
 		Timeout:       timeout,
 		reconnectCh:   make(chan struct{}),
+		closeCh:       make(chan struct{}),
 		eventRegistry: make(map[string][]*chan struct{}),
 	}
 
@@ -592,7 +594,17 @@ func (z *ZookeeperClient) getConn() *zk.Conn {
 	return z.Conn
 }
 
-// Reconnect gets zookeeper reconnect event chanel
+// Reconnect gets zookeeper reconnect event
 func (z *ZookeeperClient) Reconnect() <-chan struct{} {
 	return z.reconnectCh
+}
+
+// CloseConn gets zookeeper client close event
+func (z *ZookeeperClient) CloseConn() <-chan struct{} {
+	return z.closeCh
+}
+
+// In my opinion, this method should never called by user, here just for lint
+func (z *ZookeeperClient) Close() {
+	z.Conn.Close()
 }
