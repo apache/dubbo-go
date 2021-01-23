@@ -19,6 +19,7 @@ package etcdv3
 
 import (
 	"strings"
+	"sync"
 )
 
 import (
@@ -79,8 +80,9 @@ func (l *dataListener) DataChange(eventType remoting.Event) bool {
 }
 
 type configurationListener struct {
-	registry *etcdV3Registry
-	events   chan *config_center.ConfigChangeEvent
+	registry  *etcdV3Registry
+	events    chan *config_center.ConfigChangeEvent
+	closeOnce sync.Once
 }
 
 // NewConfigurationListener for listening the event of etcdv3.
@@ -119,6 +121,9 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 }
 
 // Close etcd registry center
+// BugFix why no real close
 func (l *configurationListener) Close() {
-	l.registry.WaitGroup().Done()
+	l.closeOnce.Do(func() {
+		l.registry.WaitGroup().Done()
+	})
 }
