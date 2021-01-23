@@ -23,16 +23,20 @@ import (
 	"path"
 	"sync"
 	"time"
+)
 
+import (
 	"github.com/dubbogo/go-zookeeper/zk"
+	perrors "github.com/pkg/errors"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting/zookeeper"
-	perrors "github.com/pkg/errors"
 )
 
 const (
