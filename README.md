@@ -7,6 +7,7 @@
 ![license](https://img.shields.io/badge/license-Apache--2.0-green.svg)
 
 ---
+
 Apache Dubbo Go Implementation.
 
 
@@ -134,25 +135,17 @@ Finished List:
     * [Zookeeper](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/zookeeper/service_discovery.go)
     * [Etcd](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/etcdv3/service_discovery.go)
 
-- Others:
-    * start check
-    * connecting certain provider
-    * multi-protocols
-    * multi-registries
-    * multi-versions
-    * service group
-
 You can know more about dubbo-go by its [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap).
 
 ![feature](./doc/pic/arch/dubbo-go-arch.png)
 
 ## Document
 
-https://dubbogo.github.io/dubbo-go-website (**Improving**)
+[dubbo-doc](http://dubbo.apache.org/zh/blog/) or [dubbo-go-doc-list](http://alexstocks.github.io/html/dubbogo.html)
 
 ## Quick Start
 
-[dubbo-go-samples](https://github.com/apache/dubbo-go-samples) shows how to use dubbo-go. Please read the [dubbo-samples/golang/README.md](https://github.com/apache/dubbo-go-samples/blob/master/README.md) carefully to learn how to dispose the configuration and compile the program.
+[dubbo-go-samples](https://github.com/apache/dubbo-go-samples) gives many examples to  tell u how to use dubbo-go. Please read the [dubbo-samples/golang/README.md](https://github.com/apache/dubbo-go-samples/blob/master/README.md) carefully to learn how to dispose the configuration and compile the program.
 
 ## Running unit tests
 
@@ -181,6 +174,30 @@ Please move to [dubbo-samples/golang](https://github.com/dubbogo/dubbo-samples)
 ## Contributing
 
 If you are willing to do some code contributions and document contributions to [Apache/dubbo-go](https://github.com/apache/dubbo-go), please visit [contribution intro](https://github.com/apache/dubbo-go/blob/master/contributing.md).
+
+## Community
+
+If u want to communicate with our community, pls scan the following  [dubbobo Ding-Ding QR code](https://mmbiz.qpic.cn/mmbiz_jpg/yvBJb5IiafvnHVBdtia30dxA2hKotr9DEckWsZ7aOJcDWDaSVMGwLmYv8GRgIQtqb4C2svicp8nVkMmGy7yKC5tyA/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1) or search our commnity DingDing group code 31363295.
+
+<div>
+<table>
+  <tbody>
+  <tr></tr>
+    <tr>
+      <td align="center"  valign="middle">
+        <a href="http://alexstocks.github.io/html/dubbogo.html" target="_blank">
+          <img width="80px" height="85px" src="./doc/pic/misc/dubbogo-dingding.png">
+        </a>
+      </td>
+    </tr>
+    <tr></tr>
+  </tbody>
+</table>
+</div>
+
+If u want to visit the wechat group, pls add my wechat AlexanderStocks.
+
+We welcome the friends who can give us constructing suggestions instead of known-nothing.
 
 ## Benchmark
 
