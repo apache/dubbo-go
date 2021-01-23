@@ -42,7 +42,7 @@ import (
 // ReferenceConfig is the configuration of service consumer
 type ReferenceConfig struct {
 	context        context.Context
-	pxy            *proxy.Proxy
+	pxy            proxy.ProxyInterface
 	id             string
 	InterfaceName  string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
 	Check          *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
@@ -189,7 +189,7 @@ func (c *ReferenceConfig) GetRPCService() common.RPCService {
 }
 
 // GetProxy gets proxy
-func (c *ReferenceConfig) GetProxy() *proxy.Proxy {
+func (c *ReferenceConfig) GetProxy() proxy.ProxyInterface {
 	return c.pxy
 }
 

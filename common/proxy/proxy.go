@@ -37,6 +37,14 @@ import (
 )
 
 // nolint
+type ProxyInterface interface {
+	Implement(v common.RPCService)
+	Get() common.RPCService
+	GetCallback() interface{}
+	GetInvoker() protocol.Invoker
+}
+
+// nolint
 type Proxy struct {
 	rpc         common.RPCService
 	invoke      protocol.Invoker

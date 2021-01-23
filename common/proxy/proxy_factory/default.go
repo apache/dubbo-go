@@ -59,12 +59,12 @@ func NewDefaultProxyFactory(_ ...proxy.Option) proxy.ProxyFactory {
 }
 
 // GetProxy gets a proxy
-func (factory *DefaultProxyFactory) GetProxy(invoker protocol.Invoker, url *common.URL) *proxy.Proxy {
+func (factory *DefaultProxyFactory) GetProxy(invoker protocol.Invoker, url *common.URL) proxy.ProxyInterface {
 	return factory.GetAsyncProxy(invoker, nil, url)
 }
 
 // GetAsyncProxy gets a async proxy
-func (factory *DefaultProxyFactory) GetAsyncProxy(invoker protocol.Invoker, callBack interface{}, url *common.URL) *proxy.Proxy {
+func (factory *DefaultProxyFactory) GetAsyncProxy(invoker protocol.Invoker, callBack interface{}, url *common.URL) proxy.ProxyInterface {
 	//create proxy
 	attachments := map[string]string{}
 	attachments[constant.ASYNC_KEY] = url.GetParam(constant.ASYNC_KEY, "false")
