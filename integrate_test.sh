@@ -53,13 +53,13 @@ echo "zookeeper listen in [:]2181"
 
 # build go-server image
 cd ./test/integrate/dubbo/go-server
-docker build . -t  ci-provider --build-arg PR_ORIGIN_REPO=${GITHUB_REPOSITORY} --build-arg PR_ORIGIN_COMMITID=${GITHUB_SHA}
+docker build . -t  ci-provider --build-arg PR_ORIGIN_REPO=$1 --build-arg PR_ORIGIN_COMMITID=${GITHUB_SHA}
 cd ${ROOT_DIR}
 docker run -d --network host ci-provider
 
 # build go-client image
 cd ./test/integrate/dubbo/go-client
-docker build . -t  ci-consumer --build-arg PR_ORIGIN_REPO=${GITHUB_REPOSITORY} --build-arg PR_ORIGIN_COMMITID=${GITHUB_SHA}
+docker build . -t  ci-consumer --build-arg PR_ORIGIN_REPO=$1 --build-arg PR_ORIGIN_COMMITID=${GITHUB_SHA}
 cd ${ROOT_DIR}
 # run provider
 # check consumer status
