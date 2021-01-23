@@ -23,11 +23,14 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-
+)
+import (
 	gxset "github.com/dubbogo/gost/container/set"
-
 	gxpage "github.com/dubbogo/gost/hash/page"
+	perrors "github.com/pkg/errors"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -37,7 +40,6 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 	"github.com/apache/dubbo-go/remoting/zookeeper"
 	"github.com/apache/dubbo-go/remoting/zookeeper/curator_discovery"
-	perrors "github.com/pkg/errors"
 )
 
 const (

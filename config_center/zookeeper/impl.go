@@ -20,16 +20,20 @@ package zookeeper
 import (
 	"strings"
 	"sync"
+)
 
-	gxset "github.com/dubbogo/gost/container/set"
+import (
+	perrors "github.com/pkg/errors"
+)
 
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/config_center/parser"
 	"github.com/apache/dubbo-go/remoting/zookeeper"
-	perrors "github.com/pkg/errors"
+	gxset "github.com/dubbogo/gost/container/set"
 )
 
 const (

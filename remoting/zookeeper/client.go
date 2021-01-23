@@ -23,12 +23,16 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+)
 
+import (
 	"github.com/dubbogo/go-zookeeper/zk"
+	perrors "github.com/pkg/errors"
+)
 
+import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
-	perrors "github.com/pkg/errors"
 )
 
 const (
@@ -232,7 +236,7 @@ func NewMockZookeeperClient(name string, timeout time.Duration, opts ...Option) 
 	if err != nil {
 		return nil, nil, nil, perrors.WithMessagef(err, "zk.Connect")
 	}
-
+	atomic.StoreUint32(&z.valid, 1)
 	return ts, z, event, nil
 }
 

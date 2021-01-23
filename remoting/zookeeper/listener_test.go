@@ -22,11 +22,16 @@ import (
 	"sync"
 	"testing"
 	"time"
+)
 
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/remoting"
+import (
 	"github.com/dubbogo/go-zookeeper/zk"
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 var (
