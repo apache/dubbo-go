@@ -20,18 +20,14 @@ package zookeeper
 import (
 	"strings"
 	"sync"
-)
 
-import (
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting"
+	perrors "github.com/pkg/errors"
+
 	zk "github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
@@ -142,9 +138,6 @@ func (l *RegistryConfigurationListener) Process(configType *config_center.Config
 func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
-		case <-l.client.Done():
-			logger.Warnf("listener's zk client connection (address {%s}) is broken, so zk event listener exit now.", l.client.ZkAddrs)
-			return nil, perrors.New("zookeeper client stopped")
 		case <-l.close:
 			return nil, perrors.New("listener have been closed")
 		case <-l.registry.Done():

@@ -23,20 +23,16 @@ import (
 	"path"
 	"sync"
 	"time"
-)
 
-import (
 	"github.com/dubbogo/go-zookeeper/zk"
-	perrors "github.com/pkg/errors"
-)
 
-import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting/zookeeper"
+	perrors "github.com/pkg/errors"
 )
 
 const (
@@ -178,7 +174,6 @@ func (r *zkRegistry) DoUnsubscribe(conf *common.URL) (registry.Listener, error) 
 
 // CloseAndNilClient closes listeners and clear client
 func (r *zkRegistry) CloseAndNilClient() {
-	r.client.Close()
 	r.client = nil
 }
 
