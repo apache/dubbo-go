@@ -23,15 +23,11 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-)
 
-import (
-	"github.com/dubbogo/gost/container/set"
-	"github.com/dubbogo/gost/hash/page"
-	perrors "github.com/pkg/errors"
-)
+	gxset "github.com/dubbogo/gost/container/set"
 
-import (
+	gxpage "github.com/dubbogo/gost/hash/page"
+
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -41,6 +37,7 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 	"github.com/apache/dubbo-go/remoting/zookeeper"
 	"github.com/apache/dubbo-go/remoting/zookeeper/curator_discovery"
+	perrors "github.com/pkg/errors"
 )
 
 const (
@@ -165,7 +162,6 @@ func (zksd *zookeeperServiceDiscovery) String() string {
 
 // Close client be closed
 func (zksd *zookeeperServiceDiscovery) Destroy() error {
-	zksd.client.Close()
 	return nil
 }
 
