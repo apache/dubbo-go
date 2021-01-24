@@ -100,6 +100,4 @@ func Test_Facade(t *testing.T) {
 	go HandleClientRestart(mock)
 	states := []zk.State{zk.StateConnecting, zk.StateConnected, zk.StateHasSession}
 	verifyEventStateOrder(t, event, states, "event channel")
-	verifyEventStateOrder(t, event, []zk.State{zk.StateDisconnected}, "event channel")
-	//time.Sleep(2e9)
 }
