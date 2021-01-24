@@ -19,12 +19,11 @@ package conncheck
 
 import (
 	"fmt"
-	"github.com/apache/dubbo-go/protocol/mock"
-	"github.com/golang/mock/gomock"
 	"testing"
 )
 
 import (
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,6 +34,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
+	"github.com/apache/dubbo-go/protocol/mock"
 )
 
 const (
