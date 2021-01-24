@@ -37,7 +37,7 @@ import (
 )
 
 func TestActiveFilterInvoke(t *testing.T) {
-	invoc := invocation.NewRPCInvocation("test", []interface{}{"OK"}, make(map[string]interface{}, 0))
+	invoc := invocation.NewRPCInvocation("test", []interface{}{"OK"}, make(map[string]interface{}))
 	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
 	filter := ActiveFilter{}
 	ctrl := gomock.NewController(t)
@@ -65,7 +65,7 @@ func TestActiveFilterOnResponse(t *testing.T) {
 	result := &protocol.RPCResult{
 		Err: errors.New("test"),
 	}
-	filter.OnResponse(nil, result, invoker, invoc)
+	filter.OnResponse(context.TODO(), result, invoker, invoc)
 	methodStatus := protocol.GetMethodStatus(url, "test")
 	urlStatus := protocol.GetURLStatus(url)
 
