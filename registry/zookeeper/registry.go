@@ -251,8 +251,7 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 	dataListener.mutex.Lock()
 	defer dataListener.mutex.Unlock()
 	if r.dataListener.subscribed[conf.ServiceKey()] != nil {
-
-		zkListener, _ := r.dataListener.subscribed[conf.ServiceKey()].(*RegistryConfigurationListener)
+		zkListener, _ = r.dataListener.subscribed[conf.ServiceKey()].(*RegistryConfigurationListener)
 		if zkListener != nil {
 			r.listenerLock.Lock()
 			defer r.listenerLock.Unlock()
