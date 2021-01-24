@@ -294,7 +294,7 @@ func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationL
 	r.dataListener.mutex.Lock()
 	configurationListener := r.dataListener.subscribed[conf.ServiceKey()]
 	if configurationListener != nil {
-		zkListener, _ := configurationListener.(*RegistryConfigurationListener)
+		zkListener, _ = configurationListener.(*RegistryConfigurationListener)
 		if zkListener != nil {
 			if zkListener.isClosed {
 				r.dataListener.mutex.Unlock()
