@@ -69,6 +69,9 @@ func (l *ZkEventListener) ListenServiceNodeEvent(zkPath string, listener remotin
 	go func(zkPath string, listener remoting.DataListener) {
 		if l.listenServiceNodeEvent(zkPath, listener) {
 			listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeDel})
+			l.pathMapLock.Lock()
+			delete(l.pathMap, zkPath)
+			l.pathMapLock.Unlock()
 		}
 		logger.Warnf("ListenServiceNodeEvent->listenSelf(zk path{%s}) goroutine exit now", zkPath)
 	}(zkPath, listener)
@@ -113,9 +116,6 @@ func (l *ZkEventListener) listenServiceNodeEvent(zkPath string, listener ...remo
 			case zk.EventNotWatching:
 				logger.Warnf("zk.ExistW(key{%s}) = event{EventNotWatching}", zkPath)
 			case zk.EventNodeDeleted:
-				l.pathMapLock.Lock()
-				delete(l.pathMap, zkPath)
-				l.pathMapLock.Unlock()
 				logger.Warnf("zk.ExistW(key{%s}) = event{EventNodeDeleted}", zkPath)
 				return true
 			}
@@ -176,6 +176,9 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 			if l.listenServiceNodeEvent(node, listener) {
 				logger.Warnf("delete zkNode{%s}", node)
 				listener.DataChange(remoting.Event{Path: node, Action: remoting.EventTypeDel})
+				l.pathMapLock.Lock()
+				delete(l.pathMap, zkPath)
+				l.pathMapLock.Unlock()
 			}
 			logger.Warnf("handleZkNodeEvent->listenSelf(zk path{%s}) goroutine exit now", node)
 		}(newNode, listener)
@@ -299,6 +302,9 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 			go func(zkPath string, listener remoting.DataListener) {
 				if l.listenServiceNodeEvent(zkPath) {
 					listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeDel})
+					l.pathMapLock.Lock()
+					delete(l.pathMap, zkPath)
+					l.pathMapLock.Unlock()
 				}
 				logger.Warnf("listenDirEvent->listenSelf(zk path{%s}) goroutine exit now", zkPath)
 			}(dubboPath, listener)
