@@ -63,7 +63,6 @@ type ZookeeperClient struct {
 	Wait              sync.WaitGroup
 	valid             uint32
 	reconnectCh       chan struct{}
-	closeCh           chan struct{}
 	eventRegistry     map[string][]*chan struct{}
 	eventRegistryLock sync.RWMutex
 }
@@ -178,7 +177,6 @@ func NewZookeeperClient(name string, zkAddrs []string, timeout time.Duration) (*
 		ZkAddrs:       zkAddrs,
 		Timeout:       timeout,
 		reconnectCh:   make(chan struct{}),
-		closeCh:       make(chan struct{}),
 		eventRegistry: make(map[string][]*chan struct{}),
 	}
 	// connect to zookeeper
@@ -213,7 +211,6 @@ func NewMockZookeeperClient(name string, timeout time.Duration, opts ...Option) 
 		ZkAddrs:       []string{},
 		Timeout:       timeout,
 		reconnectCh:   make(chan struct{}),
-		closeCh:       make(chan struct{}),
 		eventRegistry: make(map[string][]*chan struct{}),
 	}
 
@@ -601,11 +598,6 @@ func (z *ZookeeperClient) getConn() *zk.Conn {
 // Reconnect gets zookeeper reconnect event
 func (z *ZookeeperClient) Reconnect() <-chan struct{} {
 	return z.reconnectCh
-}
-
-// CloseConn gets zookeeper client close event
-func (z *ZookeeperClient) CloseConn() <-chan struct{} {
-	return z.closeCh
 }
 
 // In my opinion, this method should never called by user, here just for lint

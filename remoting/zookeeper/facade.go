@@ -48,9 +48,6 @@ func HandleClientRestart(r ZkClientFacade) {
 		case <-r.Done():
 			logger.Warnf("receive registry destroy event, quit client restart handler")
 			return
-		case <-r.ZkClient().CloseConn():
-			logger.Warnf("receive zk client close event, quit client restart handler")
-			return
 		}
 	}
 }
