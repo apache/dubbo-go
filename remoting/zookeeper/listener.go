@@ -47,6 +47,7 @@ type ZkEventListener struct {
 	pathMapLock sync.Mutex
 	pathMap     map[string]struct{}
 	wg          sync.WaitGroup
+	exit        chan struct{}
 }
 
 // NewZkEventListener returns a EventListener instance
@@ -54,6 +55,7 @@ func NewZkEventListener(client *ZookeeperClient) *ZkEventListener {
 	return &ZkEventListener{
 		client:  client,
 		pathMap: make(map[string]struct{}),
+		exit:    make(chan struct{}),
 	}
 }
 
@@ -116,6 +118,8 @@ func (l *ZkEventListener) listenServiceNodeEvent(zkPath string, listener ...remo
 				logger.Warnf("zk.ExistW(key{%s}) = event{EventNodeDeleted}", zkPath)
 				return true
 			}
+		case <-l.exit:
+			return false
 		}
 	}
 }
@@ -244,6 +248,10 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 			case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)):
 				l.client.UnregisterEvent(zkPath, &event)
 				continue
+			case <-l.exit:
+				l.client.UnregisterEvent(zkPath, &event)
+				logger.Warnf("listen(path{%s}) goroutine exit now...", zkPath)
+				return
 			case <-event:
 				logger.Infof("get zk.EventNodeDataChange notify event")
 				l.client.UnregisterEvent(zkPath, &event)
@@ -331,6 +339,10 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 				}
 				l.handleZkNodeEvent(zkEvent.Path, children, listener)
 				break WATCH
+			case <-l.exit:
+				logger.Warnf("listen(path{%s}) goroutine exit now...", zkPath)
+				ticker.Stop()
+				return
 			}
 		}
 
@@ -360,5 +372,6 @@ func (l *ZkEventListener) ListenServiceEvent(conf *common.URL, zkPath string, li
 
 // Close will let client listen exit
 func (l *ZkEventListener) Close() {
+	close(l.exit)
 	l.wg.Wait()
 }
