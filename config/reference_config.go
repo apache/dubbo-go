@@ -165,7 +165,8 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 		// FailoverClusterInvoker(RegistryDirectory, routing happens here) -> Invoker
 		c.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
 	}
-
+	// publish consumer metadata
+	publishConsumerDefinition(cfgURL)
 	// create proxy
 	if c.Async {
 		callback := GetCallback(c.id)
@@ -253,6 +254,12 @@ func (c *ReferenceConfig) GenericLoad(id string) {
 	c.id = id
 	c.Refer(genericService)
 	c.Implement(genericService)
+}
+
+func publishConsumerDefinition(url *common.URL) {
+	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
+		remoteMetadataService.PublishServiceDefinition(url)
+	}
 }
 
 // postProcessConfig asks registered ConfigPostProcessor to post-process the current ReferenceConfig.
