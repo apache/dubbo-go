@@ -67,11 +67,11 @@ conditions:
 
 	_, err = z.Conn.Set(routerPath, []byte(testYML), 0)
 	assert.NoError(t, err)
-	defer func() {
-		err = ts.Stop()
-		assert.NoError(t, err)
-		z.Close()
-	}()
+	//defer func() {
+	//	err = ts.Stop()
+	//	assert.NoError(t, err)
+	//	z.Close()
+	//}()
 
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, routerLocalIP, ts.Servers[0].Port))
 	configuration, err := extension.GetConfigCenterFactory(routerZk).GetDynamicConfiguration(zkUrl)
@@ -118,11 +118,11 @@ conditions:
 
 	_, err = z.Conn.Set(routerPath, []byte(testYML), 0)
 	assert.NoError(t, err)
-	defer func() {
-		err = ts.Stop()
-		assert.NoError(t, err)
-		z.Close()
-	}()
+	//defer func() {
+	//	err = ts.Stop()
+	//	assert.NoError(t, err)
+	//	z.Close()
+	//}()
 
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, routerLocalIP, ts.Servers[0].Port))
 	configuration, err := extension.GetConfigCenterFactory(routerZk).GetDynamicConfiguration(zkUrl)

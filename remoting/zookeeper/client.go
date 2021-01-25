@@ -605,11 +605,11 @@ func (z *ZookeeperClient) Close() {
 	z.Conn.Close()
 }
 
-func CloseZookeeperClient() {
-	if atomic.LoadUint32(&clientHaveCreated) == 1 {
-		mux.Lock()
-		defer mux.Unlock()
-		zkClient.Conn.Close()
-		zkClient = nil
-	}
-}
+//func closeZookeeperClient() {
+//	if atomic.LoadUint32(&clientHaveCreated) == 1 {
+//		mux.Lock()
+//		defer mux.Unlock()
+//		zkClient.Conn.Close()
+//		zkClient = nil
+//	}
+//}
