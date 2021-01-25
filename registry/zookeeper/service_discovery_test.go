@@ -37,11 +37,14 @@ import (
 
 var testName = "test"
 
+var tc *zk.TestCluster
+
 func prepareData(t *testing.T) *zk.TestCluster {
-	ts, err := zk.StartTestCluster(1, nil, nil)
+	var err error
+	tc, err = zk.StartTestCluster(1, nil, nil)
 	assert.NoError(t, err)
-	assert.NotNil(t, ts.Servers[0])
-	address := "127.0.0.1:" + strconv.Itoa(ts.Servers[0].Port)
+	assert.NotNil(t, tc.Servers[0])
+	address := "127.0.0.1:" + strconv.Itoa(tc.Servers[0].Port)
 
 	config.GetBaseConfig().ServiceDiscoveries[testName] = &config.ServiceDiscoveryConfig{
 		Protocol:  "zookeeper",
@@ -52,7 +55,7 @@ func prepareData(t *testing.T) *zk.TestCluster {
 		Address:    address,
 		TimeoutStr: "10s",
 	}
-	return ts
+	return tc
 }
 
 func TestNewZookeeperServiceDiscovery(t *testing.T) {
@@ -74,10 +77,7 @@ func TestNewZookeeperServiceDiscovery(t *testing.T) {
 }
 
 func TestCURDZookeeperServiceDiscovery(t *testing.T) {
-	ts := prepareData(t)
-	defer func() {
-		_ = ts.Stop()
-	}()
+	prepareData(t)
 	sd, err := newZookeeperServiceDiscovery(testName)
 	assert.Nil(t, err)
 	defer func() {
@@ -143,9 +143,8 @@ func TestCURDZookeeperServiceDiscovery(t *testing.T) {
 }
 
 func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
-	ts := prepareData(t)
 	defer func() {
-		_ = ts.Stop()
+		_ = tc.Stop()
 	}()
 	sd, err := newZookeeperServiceDiscovery(testName)
 	assert.Nil(t, err)
