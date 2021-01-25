@@ -161,6 +161,7 @@ conditions:
 
 func TestRouterChainRoute(t *testing.T) {
 	ts, _, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second, zookeeper.WithTestCluster(zkCluster))
+	assert.Nil(t, err)
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, localIP, ts.Servers[0].Port))
 	configuration, err := extension.GetConfigCenterFactory(zkName).GetDynamicConfiguration(zkUrl)
 	assert.NoError(t, err)
