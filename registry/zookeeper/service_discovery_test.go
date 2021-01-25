@@ -75,10 +75,14 @@ func TestNewZookeeperServiceDiscovery(t *testing.T) {
 
 func TestCURDZookeeperServiceDiscovery(t *testing.T) {
 	ts := prepareData(t)
-	defer ts.Stop()
+	defer func() {
+		_ = ts.Stop()
+	}()
 	sd, err := newZookeeperServiceDiscovery(testName)
 	assert.Nil(t, err)
-	defer sd.Destroy()
+	defer func() {
+		_ = sd.Destroy()
+	}()
 	md := make(map[string]string)
 	md["t1"] = "test1"
 	err = sd.Register(&registry.DefaultServiceInstance{
@@ -140,10 +144,14 @@ func TestCURDZookeeperServiceDiscovery(t *testing.T) {
 
 func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
 	ts := prepareData(t)
-	defer ts.Stop()
+	defer func() {
+		_ = ts.Stop()
+	}()
 	sd, err := newZookeeperServiceDiscovery(testName)
 	assert.Nil(t, err)
-	defer sd.Destroy()
+	defer func() {
+		_ = sd.Destroy()
+	}()
 
 	err = sd.Register(&registry.DefaultServiceInstance{
 		Id:          "testId",
@@ -154,8 +162,6 @@ func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
 		Healthy:     true,
 		Metadata:    nil,
 	})
-	assert.Nil(t, err)
-
 	assert.Nil(t, err)
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
@@ -170,7 +176,7 @@ func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
 	extension.SetAndInitGlobalDispatcher("direct")
 	extension.GetGlobalDispatcher().AddEventListener(sicl)
 	err = sd.AddListener(sicl)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	err = sd.Update(&registry.DefaultServiceInstance{
 		Id:          "testId",
@@ -181,6 +187,7 @@ func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
 		Healthy:     true,
 		Metadata:    nil,
 	})
+	assert.NoError(t, err)
 	tn.wg.Wait()
 }
 
