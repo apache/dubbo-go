@@ -308,9 +308,9 @@ tags:
 }
 
 func (suite *DynamicTagRouter) TearDownTest() {
-	suite.zkClient.Close()
-	err := suite.testCluster.Stop()
-	suite.Nil(err)
+	//suite.zkClient.Close()
+	//err := suite.testCluster.Stop()
+	//suite.Nil(err)
 }
 
 func (suite *DynamicTagRouter) TestDynamicTagRouterSetByIPv4() {
