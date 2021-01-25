@@ -53,7 +53,7 @@ type addrMetadata struct {
 	// application name
 	application string
 	// is rule a runtime rule
-	ruleRuntime bool
+	//ruleRuntime bool
 	// is rule a force rule
 	ruleForce bool
 	// is rule a valid rule
@@ -227,7 +227,7 @@ func (c *tagRouter) Pool(invokers []protocol.Invoker) (router.AddrPool, router.A
 
 // fetchRuleIfNecessary fetches, parses rule and register listener for the further change
 func (c *tagRouter) fetchRuleIfNecessary(invokers []protocol.Invoker) {
-	if invokers == nil || len(invokers) == 0 {
+	if len(invokers) == 0 {
 		return
 	}
 

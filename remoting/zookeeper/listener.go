@@ -138,9 +138,10 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 	newChildren, err := l.client.GetChildren(zkPath)
 	if err != nil {
 		if err == errNilChildren {
-			content, _, err := l.client.Conn.Get(zkPath)
-			if err != nil {
-				logger.Errorf("Get new node path {%v} 's content error,message is  {%v}", zkPath, perrors.WithStack(err))
+			content, _, connErr := l.client.Conn.Get(zkPath)
+			if connErr != nil {
+				logger.Errorf("Get new node path {%v} 's content error,message is  {%v}",
+					zkPath, perrors.WithStack(connErr))
 			} else {
 				listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeUpdate, Content: string(content)})
 			}
@@ -162,9 +163,10 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 
 		newNode = path.Join(zkPath, n)
 		logger.Infof("add zkNode{%s}", newNode)
-		content, _, err := l.client.Conn.Get(newNode)
-		if err != nil {
-			logger.Errorf("Get new node path {%v} 's content error,message is  {%v}", newNode, perrors.WithStack(err))
+		content, _, connErr := l.client.Conn.Get(newNode)
+		if connErr != nil {
+			logger.Errorf("Get new node path {%v} 's content error,message is  {%v}",
+				newNode, perrors.WithStack(connErr))
 		}
 
 		if !listener.DataChange(remoting.Event{Path: newNode, Action: remoting.EventTypeAdd, Content: string(content)}) {
@@ -363,9 +365,9 @@ func (l *ZkEventListener) ListenServiceEvent(conf *common.URL, zkPath string, li
 	}(zkPath, listener)
 }
 
-func (l *ZkEventListener) valid() bool {
-	return l.client.ZkConnValid()
-}
+//func (l *ZkEventListener) valid() bool {
+//	return l.client.ZkConnValid()
+//}
 
 // Close will let client listen exit
 func (l *ZkEventListener) Close() {
