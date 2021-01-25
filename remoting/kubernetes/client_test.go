@@ -317,7 +317,8 @@ func TestClientGetChildrenKVList(t *testing.T) {
 
 		wc, done, err := client.WatchWithPrefix(prefix)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
+			return
 		}
 
 		wg.Done()

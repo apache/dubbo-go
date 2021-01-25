@@ -144,7 +144,10 @@ func (suite *zookeeperMetadataReportTestSuite) testGetServiceDefinition() {
 func test1(t *testing.T) {
 	testCluster, err := zk.StartTestCluster(1, nil, nil)
 	assert.NoError(t, err)
-	defer testCluster.Stop()
+	defer func() {
+		err := testCluster.Stop()
+		assert.Nil(t, err)
+	}()
 
 	url := newProviderRegistryUrl("127.0.0.1", testCluster.Servers[0].Port)
 	mf := extension.GetMetadataReportFactory("zookeeper")

@@ -128,18 +128,18 @@ func ValidateZookeeperClient(container ZkClientFacade, opts ...Option) error {
 
 	if container.ZkClient() == nil {
 		// in dubbo, every registry only connect one node, so this is []string{r.Address}
-		timeout, err := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
-		if err != nil {
-			logger.Errorf("timeout config %v is invalid ,err is %v",
-				url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), err.Error())
-			return perrors.WithMessagef(err, "newZookeeperClient(address:%+v)", url.Location)
+		timeout, paramErr := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
+		if paramErr != nil {
+			logger.Errorf("timeout config %v is invalid, err is %v",
+				url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), paramErr.Error())
+			return perrors.WithMessagef(paramErr, "newZookeeperClient(address:%+v)", url.Location)
 		}
 		zkAddresses := strings.Split(url.Location, ",")
-		newClient, err := NewZookeeperClient(options.zkName, zkAddresses, timeout)
-		if err != nil {
+		newClient, cltErr := NewZookeeperClient(options.zkName, zkAddresses, timeout)
+		if cltErr != nil {
 			logger.Warnf("newZookeeperClient(name{%s}, zk address{%v}, timeout{%d}) = error{%v}",
-				options.zkName, url.Location, timeout.String(), err)
-			return perrors.WithMessagef(err, "newZookeeperClient(address:%+v)", url.Location)
+				options.zkName, url.Location, timeout.String(), cltErr)
+			return perrors.WithMessagef(cltErr, "newZookeeperClient(address:%+v)", url.Location)
 		}
 		container.SetZkClient(newClient)
 		connected = true

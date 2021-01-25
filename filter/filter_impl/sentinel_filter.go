@@ -42,6 +42,7 @@ import (
 // 1. Must initialize Sentinel Go run environment,
 //     refer to https://github.com/alibaba/sentinel-golang/blob/master/api/init.go
 // 2. Register rules for resources user want to guard
+
 func init() {
 	extension.SetFilter(SentinelProviderFilterName, GetSentinelProviderFilter)
 	extension.SetFilter(SentinelConsumerFilterName, GetSentinelConsumerFilter)
@@ -204,8 +205,8 @@ const (
 	DefaultProviderPrefix = "dubbo:provider:"
 	DefaultConsumerPrefix = "dubbo:consumer:"
 
-	MethodEntryKey    = "$$sentinelMethodEntry"
-	InterfaceEntryKey = "$$sentinelInterfaceEntry"
+	MethodEntryKey    = constant.DubboCtxKey("$$sentinelMethodEntry")
+	InterfaceEntryKey = constant.DubboCtxKey("$$sentinelInterfaceEntry")
 )
 
 func getResourceName(invoker protocol.Invoker, invocation protocol.Invocation, prefix string) (interfaceResourceName, methodResourceName string) {
