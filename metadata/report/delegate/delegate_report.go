@@ -109,6 +109,10 @@ type MetadataReport struct {
 // NewMetadataReport will create a MetadataReport with initiation
 func NewMetadataReport() (*MetadataReport, error) {
 	url := instance.GetMetadataReportUrl()
+	if url == nil {
+		logger.Warn("the metadataReport URL is not configured, you should configure it.")
+		return nil, perrors.New("the metadataReport URL is not configured, you should configure it.")
+	}
 	bmr := &MetadataReport{
 		reportUrl:          url,
 		syncReport:         url.GetParamBool(constant.SYNC_REPORT_KEY, false),
@@ -220,7 +224,11 @@ func (mr *MetadataReport) SaveServiceMetadata(identifier *identifier.ServiceMeta
 	if mr.syncReport {
 		return report.SaveServiceMetadata(identifier, url)
 	}
-	go report.SaveServiceMetadata(identifier, url)
+	go func() {
+		if err := report.SaveServiceMetadata(identifier, url); err != nil {
+			logger.Warnf("report.SaveServiceMetadata(identifier:%v, url:%v) = error:%v", identifier, url, err)
+		}
+	}()
 	return nil
 }
 
@@ -230,7 +238,11 @@ func (mr *MetadataReport) RemoveServiceMetadata(identifier *identifier.ServiceMe
 	if mr.syncReport {
 		return report.RemoveServiceMetadata(identifier)
 	}
-	go report.RemoveServiceMetadata(identifier)
+	go func() {
+		if err := report.RemoveServiceMetadata(identifier); err != nil {
+			logger.Warnf("report.RemoveServiceMetadata(identifier:%v) = error:%v", identifier, err)
+		}
+	}()
 	return nil
 }
 
@@ -255,7 +267,12 @@ func (mr *MetadataReport) SaveSubscribedData(identifier *identifier.SubscriberMe
 	if mr.syncReport {
 		return report.SaveSubscribedData(identifier, string(bytes))
 	}
-	go report.SaveSubscribedData(identifier, string(bytes))
+	go func() {
+		if err := report.SaveSubscribedData(identifier, string(bytes)); err != nil {
+			logger.Warnf("report.SaveSubscribedData(identifier:%v, string(bytes):%v) = error: %v",
+				identifier, string(bytes), err)
+		}
+	}()
 	return nil
 }
 

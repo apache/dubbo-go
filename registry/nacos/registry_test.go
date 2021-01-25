@@ -40,7 +40,11 @@ func TestNacosRegistry_Register(t *testing.T) {
 	if !checkNacosServerAlive() {
 		return
 	}
-	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
+	regurlMap := url.Values{}
+	regurlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
+	regurlMap.Set(constant.NACOS_NOT_LOAD_LOCAL_CACHE, "true")
+	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
+
 	urlMap := url.Values{}
 	urlMap.Set(constant.GROUP_KEY, "guangzhou-idc")
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
@@ -72,7 +76,11 @@ func TestNacosRegistry_Subscribe(t *testing.T) {
 	if !checkNacosServerAlive() {
 		return
 	}
-	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
+	regurlMap := url.Values{}
+	regurlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
+	regurlMap.Set(constant.NACOS_NOT_LOAD_LOCAL_CACHE, "true")
+	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
+
 	urlMap := url.Values{}
 	urlMap.Set(constant.GROUP_KEY, "guangzhou-idc")
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
@@ -113,7 +121,11 @@ func TestNacosRegistry_Subscribe_del(t *testing.T) {
 	if !checkNacosServerAlive() {
 		return
 	}
-	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
+	regurlMap := url.Values{}
+	regurlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
+	regurlMap.Set(constant.NACOS_NOT_LOAD_LOCAL_CACHE, "true")
+	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
+
 	urlMap := url.Values{}
 	urlMap.Set(constant.GROUP_KEY, "guangzhou-idc")
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
@@ -167,7 +179,9 @@ func TestNacosRegistry_Subscribe_del(t *testing.T) {
 
 	nacosReg := reg.(*nacosRegistry)
 	//deregister instance to mock instance offline
-	nacosReg.namingClient.DeregisterInstance(vo.DeregisterInstanceParam{Ip: "127.0.0.2", Port: 20000, ServiceName: "providers:com.ikurento.user.UserProvider:2.0.0:guangzhou-idc"})
+	_, err = nacosReg.namingClient.DeregisterInstance(vo.DeregisterInstanceParam{Ip: "127.0.0.2", Port: 20000,
+		ServiceName: "providers:com.ikurento.user.UserProvider:2.0.0:guangzhou-idc"})
+	assert.NoError(t, err)
 
 	serviceEvent3, _ := listener.Next()
 	assert.NoError(t, err)
@@ -179,7 +193,11 @@ func TestNacosRegistry_Subscribe_del(t *testing.T) {
 }
 
 func TestNacosListener_Close(t *testing.T) {
-	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
+	regurlMap := url.Values{}
+	regurlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
+	regurlMap.Set(constant.NACOS_NOT_LOAD_LOCAL_CACHE, "true")
+	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
+
 	urlMap := url.Values{}
 	urlMap.Set(constant.GROUP_KEY, "guangzhou-idc")
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
