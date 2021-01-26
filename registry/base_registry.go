@@ -18,7 +18,6 @@
 package registry
 
 import (
-	"context"
 	"fmt"
 	"net/url"
 	"os"
@@ -93,7 +92,7 @@ type FacadeBasedRegistry interface {
 
 // BaseRegistry is a common logic abstract for registry. It implement Registry interface.
 type BaseRegistry struct {
-	context             context.Context
+	//context             context.Context
 	facadeBasedRegistry FacadeBasedRegistry
 	*common.URL
 	birth    int64          // time of file birth, seconds since Epoch; 0 if unknown
@@ -273,6 +272,10 @@ func (r *BaseRegistry) processURL(c *common.URL, f func(string, string) error, c
 	default:
 		return perrors.Errorf("@c{%v} type is not referencer or provider", c)
 	}
+	if err != nil {
+		return perrors.WithMessagef(err, "@c{%v} registry fail", c)
+	}
+
 	encodedURL = url.QueryEscape(rawURL)
 	dubboPath = strings.ReplaceAll(dubboPath, "$", "%24")
 	err = f(dubboPath, encodedURL)
