@@ -23,10 +23,12 @@ import (
 )
 
 //////////////////////////////////// default registry config
-const defaultZKAddr = "127.0.0.1:2181"
-const defaultConsulAddr = "127.0.0.1:8500"
-const defaultNacosAddr = "127.0.0.1:8848"
-const defaultRegistryTimeout = "3s"
+const (
+	defaultZKAddr          = "127.0.0.1:2181"
+	defaultConsulAddr      = "127.0.0.1:8500"
+	defaultNacosAddr       = "127.0.0.1:8848"
+	defaultRegistryTimeout = "3s"
+)
 
 func NewDefaultRegistryConfig(protocol string) *RegistryConfig {
 	switch protocol {
