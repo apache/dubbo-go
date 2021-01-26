@@ -1,10 +1,13 @@
 package config
 
 import (
-	"github.com/stretchr/testify/assert"
 	"strconv"
 	"testing"
 	"time"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewDefaultServiceConfig(t *testing.T) {
