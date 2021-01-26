@@ -173,6 +173,7 @@ const (
 	NACOS_NAMESPACE_ID           = "namespaceId"
 	NACOS_PASSWORD               = "password"
 	NACOS_USERNAME               = "username"
+	NACOS_NOT_LOAD_LOCAL_CACHE   = "nacos.not.load.cache"
 )
 
 const (
