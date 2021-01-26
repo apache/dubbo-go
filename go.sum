@@ -249,6 +249,8 @@ github.com/dubbogo/gost v1.11.0/go.mod h1:w8Yw29eDWtRVo3tx9nPpHkNZnOi4SRx1fZf7eV
 github.com/dubbogo/jsonparser v1.0.1/go.mod h1:tYAtpctvSP/tWw4MeelsowSPgXQRVHHWbqL6ynps8jU=
 github.com/dubbogo/triple v0.0.0-20210121123924-b520a38ad388 h1:Pk4/dSYY5j+LqPCJ0cVU8R9Ch+2aJYA/wRoD9vRwi7s=
 github.com/dubbogo/triple v0.0.0-20210121123924-b520a38ad388/go.mod h1:BjcB5hCtXrvEQ0C6SpILTXYCRoP54qUiFd88ELNa4nI=
+github.com/dubbogo/triple v0.0.0-20210126122925-f5ca080bd156 h1:/7YqdIxdCjpW7jkszouum4MfXgW0gDG22y3Z50I2HXE=
+github.com/dubbogo/triple v0.0.0-20210126122925-f5ca080bd156/go.mod h1:Jsn9daeAcyuES89X9qee2Wl2TpLJsoe8QMuUOvl6uBo=
 github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/dustin/go-humanize v1.0.0 h1:VSnTsYCnlFHaM2/igO1h6X3HA71jcobQuxemgkq4zYo=
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
@@ -1288,9 +1290,8 @@ google.golang.org/grpc v1.25.1/go.mod h1:c3i+UQWmh7LiEpx4sFZnkU36qjEYZ0imhYfXVyQ
 google.golang.org/grpc v1.26.0 h1:2dTRdpdFEEhJYQD8EMLB61nnrzSCTbG38PhqdhvOltg=
 google.golang.org/grpc v1.26.0/go.mod h1:qbnxyOmOxrQa7FizSgH+ReBfzJrCY1pSN7KXBS8abTk=
 google.golang.org/grpc v1.27.0/go.mod h1:qbnxyOmOxrQa7FizSgH+ReBfzJrCY1pSN7KXBS8abTk=
+google.golang.org/grpc v1.31.0 h1:T7P4R73V3SSDPhH7WW7ATbfViLtmamH0DKrP3f9AuDI=
 google.golang.org/grpc v1.31.0/go.mod h1:N36X2cJ7JwdamYAgDz+s+rVMFjt3numwzf/HckM8pak=
-google.golang.org/grpc v1.34.0 h1:raiipEjMOIC/TO2AvyTxP25XFdLxNIBwzDh3FM3XztI=
-google.golang.org/grpc v1.34.0/go.mod h1:WotjhfgOW/POjDeRt8vscBtXq+2VjORFy659qA51WJ8=
 google.golang.org/grpc v1.35.0 h1:TwIQcH3es+MojMVojxxfQ3l3OF2KzlRxML2xZq0kRo8=
 google.golang.org/grpc/examples v0.0.0-20210122012134-2c42474aca0c h1:SiWBD+cC77TBL94mBP6CZSlkxifkQpckpyGHcetepgc=
 google.golang.org/grpc/examples v0.0.0-20210122012134-2c42474aca0c/go.mod h1:Ly7ZA/ARzg8fnPU9TyZIxoz33sEUuWX7txiqs8lPTgE=
