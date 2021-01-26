@@ -234,6 +234,7 @@ func (c *ServiceConfig) Export() error {
 			}
 			c.exporters = append(c.exporters, exporter)
 		}
+		publishServiceDefinition(ivkURL)
 	}
 	c.exported.Store(true)
 	return nil
@@ -345,6 +346,12 @@ func (c *ServiceConfig) GetExportedUrls() []*common.URL {
 		return urls
 	}
 	return nil
+}
+
+func publishServiceDefinition(url *common.URL) {
+	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
+		remoteMetadataService.PublishServiceDefinition(url)
+	}
 }
 
 // postProcessConfig asks registered ConfigPostProcessor to post-process the current ServiceConfig.
