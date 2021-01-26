@@ -18,10 +18,8 @@
 package grpc
 
 import (
-	"context"
 	"reflect"
 	"strconv"
-	"time"
 )
 
 import (
@@ -103,13 +101,7 @@ func NewClient(url *common.URL) *Client {
 			grpc.CallContentSubtype(clientConf.ContentSubType),
 			grpc.MaxCallRecvMsgSize(1024*1024*maxMessageSize),
 			grpc.MaxCallSendMsgSize(1024*1024*maxMessageSize)))
-<<<<<<< HEAD
-	ctx := context.Background()
-	ctx, _ = context.WithTimeout(ctx, time.Second*3)
-	conn, err := grpc.DialContext(ctx, url.Location, dailOpts...)
-=======
 	conn, err := grpc.Dial(url.Location, dialOpts...)
->>>>>>> develop
 	if err != nil {
 		panic(err)
 	}

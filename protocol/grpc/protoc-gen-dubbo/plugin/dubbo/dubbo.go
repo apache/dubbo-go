@@ -28,17 +28,7 @@ import (
 	"github.com/golang/protobuf/protoc-gen-go/generator"
 )
 
-<<<<<<< HEAD
-// generatedCodeVersion indicates a version of the generated codes.
-// It is incremented whenever an incompatibility between the generated codes and
-// the grpc package is introduced; the generated codes references
-// a constant, grpc.SupportPackageIsVersionN (where N is generatedCodeVersion).
-const generatedCodeVersion = 4
-
-// Paths for packages used by codes generated in this file,
-=======
 // Paths for packages used by code generated in this file,
->>>>>>> develop
 // relative to the import_prefix of the generator.Generator.
 const (
 	contextPkgPath = "context"
