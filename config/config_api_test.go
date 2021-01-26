@@ -92,7 +92,7 @@ func TestNewConsumerConfig(t *testing.T) {
 	assert.Equal(t, defaultZKRegistry.Protocol, "zookeeper")
 	assert.Equal(t, defaultZKRegistry.TimeoutStr, defaultRegistryTimeout)
 
-	consumerConfig := NewConsumerConfig(
+	testConsumerConfig := NewConsumerConfig(
 		WithConsumerConfigCheck(true),
 		WithConsumerConnTimeout(time.Minute),
 		WithConsumerRequestTimeout(time.Hour),
@@ -100,11 +100,11 @@ func TestNewConsumerConfig(t *testing.T) {
 		WithConsumerRegistryConfig("demoZK", defaultZKRegistry),
 	)
 
-	assert.Equal(t, *consumerConfig.Check, true)
-	assert.Equal(t, consumerConfig.ConnectTimeout, time.Minute)
-	assert.Equal(t, consumerConfig.RequestTimeout, time.Hour)
-	assert.Equal(t, consumerConfig.Registries["demoZK"], defaultZKRegistry)
-	assert.Equal(t, consumerConfig.References["UserProvider"], referConfig)
+	assert.Equal(t, *testConsumerConfig.Check, true)
+	assert.Equal(t, testConsumerConfig.ConnectTimeout, time.Minute)
+	assert.Equal(t, testConsumerConfig.RequestTimeout, time.Hour)
+	assert.Equal(t, testConsumerConfig.Registries["demoZK"], defaultZKRegistry)
+	assert.Equal(t, testConsumerConfig.References["UserProvider"], referConfig)
 }
 
 func TestNewProviderConfig(t *testing.T) {
