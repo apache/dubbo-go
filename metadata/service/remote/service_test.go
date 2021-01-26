@@ -95,7 +95,7 @@ func (metadataReport) GetServiceDefinition(*identifier.MetadataIdentifier) (stri
 
 func TestMetadataService(t *testing.T) {
 	extension.SetMetadataReportFactory("mock", getMetadataReportFactory)
-	u, err := common.NewURL(fmt.Sprintf("mock://127.0.0.1:20000/?sync.report=true"))
+	u, err := common.NewURL("mock://127.0.0.1:20000/?sync.report=true")
 	assert.NoError(t, err)
 	instance.GetMetadataReportInstance(u)
 	mts, err := newMetadataService()

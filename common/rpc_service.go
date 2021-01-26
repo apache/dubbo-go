@@ -106,10 +106,10 @@ func (m *MethodType) ReplyType() reflect.Type {
 	return m.replyType
 }
 
-// SuiteContext tranfers @ctx to reflect.Value type or get it from @m.ctxType.
+// SuiteContext transfers @ctx to reflect.Value type or get it from @m.ctxType.
 func (m *MethodType) SuiteContext(ctx context.Context) reflect.Value {
-	if contextv := reflect.ValueOf(ctx); contextv.IsValid() {
-		return contextv
+	if ctxV := reflect.ValueOf(ctx); ctxV.IsValid() {
+		return ctxV
 	}
 	return reflect.Zero(m.ctxType)
 }
@@ -156,13 +156,13 @@ type serviceMap struct {
 	interfaceMap map[string][]*Service          // interface -> service
 }
 
-// GetService gets a service defination by protocol and name
+// GetService gets a service definition by protocol and name
 func (sm *serviceMap) GetService(protocol, interfaceName, group, version string) *Service {
 	serviceKey := ServiceKey(interfaceName, group, version)
 	return sm.GetServiceByServiceKey(protocol, serviceKey)
 }
 
-// GetService gets a service defination by protocol and service key
+// GetService gets a service definition by protocol and service key
 func (sm *serviceMap) GetServiceByServiceKey(protocol, serviceKey string) *Service {
 	sm.mutex.RLock()
 	defer sm.mutex.RUnlock()
