@@ -195,6 +195,9 @@ func (c *RouterChain) copyInvokerIfNecessary(cache *InvokerCache) []protocol.Inv
 func (c *RouterChain) buildCache() {
 	origin := c.loadCache()
 	invokers := c.copyInvokerIfNecessary(origin)
+	if len(invokers) == 0 {
+		return
+	}
 
 	var (
 		mutex sync.Mutex

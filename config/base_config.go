@@ -45,7 +45,7 @@ type BaseConfig struct {
 	// application config
 	ApplicationConfig *ApplicationConfig `yaml:"application" json:"application,omitempty" property:"application"`
 
-	prefix              string
+	//prefix              string
 	fatherConfig        interface{}
 	EventDispatcherType string        `default:"direct" yaml:"event_dispatcher_type" json:"event_dispatcher_type,omitempty"`
 	MetricConfig        *MetricConfig `yaml:"metrics" json:"metrics,omitempty"`

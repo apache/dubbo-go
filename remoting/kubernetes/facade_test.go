@@ -19,7 +19,6 @@ package kubernetes
 
 import (
 	"strconv"
-	"sync"
 	"testing"
 )
 
@@ -30,9 +29,9 @@ import (
 
 type mockFacade struct {
 	*common.URL
-	client  *Client
-	cltLock sync.Mutex
-	done    chan struct{}
+	client *Client
+	//cltLock sync.Mutex
+	//done    chan struct{}
 }
 
 func (r *mockFacade) Client() *Client {
