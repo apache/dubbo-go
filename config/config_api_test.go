@@ -130,21 +130,21 @@ func TestNewProviderConfig(t *testing.T) {
 	assert.Equal(t, defaultNacosRegistry.Protocol, "nacos")
 	assert.Equal(t, defaultNacosRegistry.TimeoutStr, defaultRegistryTimeout)
 
-	providerConfig := NewProviderConfig(
+	testProviderConfig := NewProviderConfig(
 		WithProviderServices("UserProvider", serviceConfig),
 		WithProviderProtocol("dubbo", "dubbo", "20000"),
 		WithProviderRegistry("demoConsul", defaultConsulRegistry),
 		WithProviderRegistry("demoNacos", defaultNacosRegistry),
 	)
 
-	assert.NotNil(t, providerConfig.Services)
-	for k, v := range providerConfig.Services {
+	assert.NotNil(t, testProviderConfig.Services)
+	for k, v := range testProviderConfig.Services {
 		assert.Equal(t, k, "UserProvider")
 		assert.Equal(t, v, serviceConfig)
 	}
-	assert.NotNil(t, providerConfig.Registries)
+	assert.NotNil(t, testProviderConfig.Registries)
 	i := 0
-	for k, v := range providerConfig.Registries {
+	for k, v := range testProviderConfig.Registries {
 		if i == 0 {
 			assert.Equal(t, k, "demoConsul")
 			assert.Equal(t, v, defaultConsulRegistry)
@@ -155,7 +155,7 @@ func TestNewProviderConfig(t *testing.T) {
 		}
 	}
 
-	assert.NotNil(t, providerConfig.Protocols)
-	assert.Equal(t, providerConfig.Protocols["dubbo"].Name, "dubbo")
-	assert.Equal(t, providerConfig.Protocols["dubbo"].Port, "20000")
+	assert.NotNil(t, testProviderConfig.Protocols)
+	assert.Equal(t, testProviderConfig.Protocols["dubbo"].Name, "dubbo")
+	assert.Equal(t, testProviderConfig.Protocols["dubbo"].Port, "20000")
 }
