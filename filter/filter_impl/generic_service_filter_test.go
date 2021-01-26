@@ -125,7 +125,7 @@ func TestGenericServiceFilterResponseTestStruct(t *testing.T) {
 	filter := GetGenericServiceFilter()
 	methodName := "$invoke"
 	rpcInvocation := invocation.NewRPCInvocation(methodName, aurguments, nil)
-	r := filter.OnResponse(nil, result, nil, rpcInvocation)
+	r := filter.OnResponse(context.TODO(), result, nil, rpcInvocation)
 	assert.NotNil(t, r.Result())
 	assert.Equal(t, reflect.ValueOf(r.Result()).Kind(), reflect.Map)
 }
@@ -143,7 +143,7 @@ func TestGenericServiceFilterResponseString(t *testing.T) {
 	filter := GetGenericServiceFilter()
 	methodName := "$invoke"
 	rpcInvocation := invocation.NewRPCInvocation(methodName, aurguments, nil)
-	r := filter.OnResponse(nil, result, nil, rpcInvocation)
+	r := filter.OnResponse(context.TODO(), result, nil, rpcInvocation)
 	assert.NotNil(t, r.Result())
 	assert.Equal(t, reflect.ValueOf(r.Result()).Kind(), reflect.String)
 }

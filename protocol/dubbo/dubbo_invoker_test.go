@@ -169,7 +169,7 @@ type (
 	}
 
 	UserProvider struct {
-		user map[string]User
+		//user map[string]User
 	}
 )
 

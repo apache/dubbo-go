@@ -205,8 +205,8 @@ const (
 	DefaultProviderPrefix = "dubbo:provider:"
 	DefaultConsumerPrefix = "dubbo:consumer:"
 
-	MethodEntryKey    = "$$sentinelMethodEntry"
-	InterfaceEntryKey = "$$sentinelInterfaceEntry"
+	MethodEntryKey    = constant.DubboCtxKey("$$sentinelMethodEntry")
+	InterfaceEntryKey = constant.DubboCtxKey("$$sentinelInterfaceEntry")
 )
 
 func getResourceName(invoker protocol.Invoker, invocation protocol.Invocation, prefix string) (interfaceResourceName, methodResourceName string) {
