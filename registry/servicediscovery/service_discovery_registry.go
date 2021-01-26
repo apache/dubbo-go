@@ -174,10 +174,6 @@ func (s *serviceDiscoveryRegistry) Register(url *common.URL) error {
 		logger.Warnf("The URL[%s] has been registry!", url.String())
 	}
 
-	err = s.metaDataService.PublishServiceDefinition(url)
-	if err != nil {
-		return perrors.WithMessage(err, "publish the service definition failed. ")
-	}
 	return s.serviceNameMapping.Map(url.GetParam(constant.INTERFACE_KEY, ""),
 		url.GetParam(constant.GROUP_KEY, ""),
 		url.GetParam(constant.Version, ""),
@@ -462,7 +458,7 @@ func (s *serviceDiscoveryRegistry) initRevisionExportedURLsByInst(serviceInstanc
 	}
 	revisionExportedURLs := revisionExportedURLsMap[revision]
 	firstGet := false
-	if revisionExportedURLs == nil || len(revisionExportedURLs) == 0 {
+	if len(revisionExportedURLs) == 0 {
 		if len(revisionExportedURLsMap) > 0 {
 			// The case is that current ServiceInstance with the different revision
 			logger.Warnf("The ServiceInstance[id: %s, host : %s , port : %s] has different revision : %s"+

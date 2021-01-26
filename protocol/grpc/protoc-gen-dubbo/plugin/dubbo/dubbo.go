@@ -28,6 +28,7 @@ import (
 	"github.com/golang/protobuf/protoc-gen-go/generator"
 )
 
+<<<<<<< HEAD
 // generatedCodeVersion indicates a version of the generated codes.
 // It is incremented whenever an incompatibility between the generated codes and
 // the grpc package is introduced; the generated codes references
@@ -35,12 +36,13 @@ import (
 const generatedCodeVersion = 4
 
 // Paths for packages used by codes generated in this file,
+=======
+// Paths for packages used by code generated in this file,
+>>>>>>> develop
 // relative to the import_prefix of the generator.Generator.
 const (
 	contextPkgPath = "context"
 	grpcPkgPath    = "google.golang.org/grpc"
-	codePkgPath    = "google.golang.org/grpc/codes"
-	statusPkgPath  = "google.golang.org/grpc/status"
 )
 
 func init() {
@@ -262,8 +264,8 @@ func (g *dubboGrpc) generateClientSignature(servName string, method *pb.MethodDe
 	return fmt.Sprintf("%s func(ctx %s.Context%s, %s) error", methName, contextPkg, reqArg, respName)
 }
 
-func (g *dubboGrpc) generateClientMethod(servName, fullServName, serviceDescVar string, method *pb.MethodDescriptorProto, descExpr string) {
-}
+//func (g *dubboGrpc) generateClientMethod(servName, fullServName, serviceDescVar string, method *pb.MethodDescriptorProto, descExpr string) {
+//}
 
 func (g *dubboGrpc) generateServerMethod(servName, fullServName string, method *pb.MethodDescriptorProto) string {
 	methName := generator.CamelCase(method.GetName())
@@ -281,7 +283,7 @@ func (g *dubboGrpc) generateServerMethod(servName, fullServName string, method *
 		g.P(`invo := invocation.NewRPCInvocation("`, methName, `", args, nil)`)
 
 		g.P("if interceptor == nil {")
-		g.P("result := base.GetProxyImpl().Invoke(context.Background(), invo)")
+		g.P("result := base.GetProxyImpl().Invoke(ctx, invo)")
 		g.P("return result.Result(), result.Error()")
 		g.P("}")
 
@@ -291,7 +293,7 @@ func (g *dubboGrpc) generateServerMethod(servName, fullServName string, method *
 		g.P("}")
 
 		g.P("handler := func(ctx ", contextPkg, ".Context, req interface{}) (interface{}, error) {")
-		g.P("result := base.GetProxyImpl().Invoke(context.Background(), invo)")
+		g.P("result := base.GetProxyImpl().Invoke(ctx, invo)")
 		g.P("return result.Result(), result.Error()")
 		g.P("}")
 

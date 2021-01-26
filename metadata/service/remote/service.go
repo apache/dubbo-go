@@ -107,29 +107,49 @@ func (mts *MetadataService) SubscribeURL(url *common.URL) (bool, error) {
 
 // UnsubscribeURL will be implemented by in memory service
 func (mts *MetadataService) UnsubscribeURL(url *common.URL) error {
-	return mts.UnsubscribeURL(url)
+	// TODO remove call self.
+	return nil
+	//return mts.UnsubscribeURL(url)
 }
 
 // PublishServiceDefinition will call remote metadata's StoreProviderMetadata to store url info and service definition
 func (mts *MetadataService) PublishServiceDefinition(url *common.URL) error {
 	interfaceName := url.GetParam(constant.INTERFACE_KEY, "")
 	isGeneric := url.GetParamBool(constant.GENERIC_KEY, false)
-	if len(interfaceName) > 0 && !isGeneric {
-		sv := common.ServiceMap.GetService(url.Protocol, url.GetParam(constant.BEAN_NAME_KEY, url.Service()))
-		sd := definition.BuildServiceDefinition(*sv, url)
+	if common.RoleType(common.PROVIDER).Role() == url.GetParam(constant.SIDE_KEY, "") {
+		if len(interfaceName) > 0 && !isGeneric {
+			sv := common.ServiceMap.GetServiceByServiceKey(url.Protocol, url.ServiceKey())
+			sd := definition.BuildServiceDefinition(*sv, url)
+			id := &identifier.MetadataIdentifier{
+				BaseMetadataIdentifier: identifier.BaseMetadataIdentifier{
+					ServiceInterface: interfaceName,
+					Version:          url.GetParam(constant.VERSION_KEY, ""),
+					Group:            url.GetParam(constant.GROUP_KEY, constant.DUBBO),
+					Side:             url.GetParam(constant.SIDE_KEY, constant.PROVIDER_PROTOCOL),
+				},
+			}
+			mts.delegateReport.StoreProviderMetadata(id, sd)
+			return nil
+		}
+		logger.Errorf("publishProvider interfaceName is empty . providerUrl:%v ", url)
+	} else {
+		params := make(map[string]string, len(url.GetParams()))
+		url.RangeParams(func(key, value string) bool {
+			params[key] = value
+			return true
+		})
 		id := &identifier.MetadataIdentifier{
 			BaseMetadataIdentifier: identifier.BaseMetadataIdentifier{
 				ServiceInterface: interfaceName,
 				Version:          url.GetParam(constant.VERSION_KEY, ""),
-				// Group:            url.GetParam(constant.GROUP_KEY, constant.SERVICE_DISCOVERY_DEFAULT_GROUP),
-				Group: url.GetParam(constant.GROUP_KEY, constant.DUBBO),
-				Side:  url.GetParam(constant.SIDE_KEY, "provider"),
+				Group:            url.GetParam(constant.GROUP_KEY, constant.DUBBO),
+				Side:             url.GetParam(constant.SIDE_KEY, "consumer"),
 			},
 		}
-		mts.delegateReport.StoreProviderMetadata(id, sd)
+		mts.delegateReport.StoreConsumerMetadata(id, params)
 		return nil
 	}
-	logger.Errorf("publishProvider interfaceName is empty . providerUrl:%v ", url)
+
 	return nil
 }
 
@@ -186,7 +206,7 @@ func (mts *MetadataService) RefreshMetadata(exportedRevision string, subscribedR
 			logger.Errorf("Error occur when execute remote.MetadataService.RefreshMetadata, error message is %v+", err)
 			return false, err
 		}
-		if urls != nil && len(urls) > 0 {
+		if len(urls) > 0 {
 			id := &identifier.SubscriberMetadataIdentifier{
 				MetadataIdentifier: identifier.MetadataIdentifier{
 					Application: config.GetApplicationConfig().Name,

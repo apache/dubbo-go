@@ -95,17 +95,21 @@ type Client struct {
 func NewClient(url *common.URL) *Client {
 	// if global trace instance was set , it means trace function enabled. If not , will return Nooptracer
 	tracer := opentracing.GlobalTracer()
-	dailOpts := make([]grpc.DialOption, 0, 4)
+	dialOpts := make([]grpc.DialOption, 0, 4)
 	maxMessageSize, _ := strconv.Atoi(url.GetParam(constant.MESSAGE_SIZE_KEY, "4"))
-	dailOpts = append(dailOpts, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithUnaryInterceptor(
+	dialOpts = append(dialOpts, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithUnaryInterceptor(
 		otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())),
 		grpc.WithDefaultCallOptions(
 			grpc.CallContentSubtype(clientConf.ContentSubType),
 			grpc.MaxCallRecvMsgSize(1024*1024*maxMessageSize),
 			grpc.MaxCallSendMsgSize(1024*1024*maxMessageSize)))
+<<<<<<< HEAD
 	ctx := context.Background()
 	ctx, _ = context.WithTimeout(ctx, time.Second*3)
 	conn, err := grpc.DialContext(ctx, url.Location, dailOpts...)
+=======
+	conn, err := grpc.Dial(url.Location, dialOpts...)
+>>>>>>> develop
 	if err != nil {
 		panic(err)
 	}

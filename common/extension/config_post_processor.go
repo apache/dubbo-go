@@ -15,13 +15,31 @@
  * limitations under the License.
  */
 
-package constant
+package extension
 
-const (
-	// Version apache/dubbo-go version
-	Version = "1.5.5"
-	// Name module name
-	Name = "dubbogo"
-	// Date release date
-	DATE = "2021/01/05"
+import (
+	"github.com/apache/dubbo-go/config/interfaces"
 )
+
+var (
+	processors = make(map[string]interfaces.ConfigPostProcessor)
+)
+
+// SetConfigPostProcessor registers a ConfigPostProcessor with the given name.
+func SetConfigPostProcessor(name string, processor interfaces.ConfigPostProcessor) {
+	processors[name] = processor
+}
+
+// GetConfigPostProcessor finds a ConfigPostProcessor by name.
+func GetConfigPostProcessor(name string) interfaces.ConfigPostProcessor {
+	return processors[name]
+}
+
+// GetConfigPostProcessors returns all registered instances of ConfigPostProcessor.
+func GetConfigPostProcessors() []interfaces.ConfigPostProcessor {
+	ret := make([]interfaces.ConfigPostProcessor, 0, len(processors))
+	for _, v := range processors {
+		ret = append(ret, v)
+	}
+	return ret
+}

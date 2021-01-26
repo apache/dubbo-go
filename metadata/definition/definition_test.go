@@ -28,7 +28,6 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
 )
 
 func TestBuildServiceDefinition(t *testing.T) {
@@ -44,9 +43,9 @@ func TestBuildServiceDefinition(t *testing.T) {
 			"owner=ZX&pid=1447&revision=0.0.1&side=provider&timeout=3000&timestamp=1556509797245&group=%v&version=%v&bean.name=%v",
 		protocol, serviceName, group, version, beanName))
 	assert.NoError(t, err)
-	_, err = common.ServiceMap.Register(serviceName, protocol, &UserProvider{})
+	_, err = common.ServiceMap.Register(serviceName, protocol, group, version, &UserProvider{})
 	assert.NoError(t, err)
-	service := common.ServiceMap.GetService(url.Protocol, url.GetParam(constant.BEAN_NAME_KEY, url.Service()))
+	service := common.ServiceMap.GetServiceByServiceKey(url.Protocol, url.ServiceKey())
 	sd := BuildServiceDefinition(*service, url)
 	assert.Equal(t, "{canonicalName:com.ikurento.user.UserProvider, codeSource:, methods:[{name:GetUser,parameterTypes:[{type:slice}],returnType:ptr,params:[] }], types:[]}", sd.String())
 }

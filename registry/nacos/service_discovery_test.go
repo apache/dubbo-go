@@ -81,6 +81,9 @@ func TestNacosServiceDiscovery_Destroy(t *testing.T) {
 }
 
 func TestNacosServiceDiscovery_CRUD(t *testing.T) {
+	if !checkNacosServerAlive() {
+		return
+	}
 	prepareData()
 	extension.SetEventDispatcher("mock", func() observer.EventDispatcher {
 		return &dispatcher.MockEventDispatcher{}
@@ -148,7 +151,8 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 	assert.Equal(t, 1, len(page.GetData()))
 
 	instance = page.GetData()[0].(*registry.DefaultServiceInstance)
-	v, _ := instance.Metadata["a"]
+	v, ok := instance.Metadata["a"]
+	assert.True(t, ok)
 	assert.Equal(t, "b", v)
 
 	// test dispatcher event
@@ -162,8 +166,8 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 
 func TestNacosServiceDiscovery_GetDefaultPageSize(t *testing.T) {
 	prepareData()
-	serviceDiscovry, _ := extension.GetServiceDiscovery(constant.NACOS_KEY, testName)
-	assert.Equal(t, registry.DefaultPageSize, serviceDiscovry.GetDefaultPageSize())
+	serviceDiscovery, _ := extension.GetServiceDiscovery(constant.NACOS_KEY, testName)
+	assert.Equal(t, registry.DefaultPageSize, serviceDiscovery.GetDefaultPageSize())
 }
 
 func prepareData() {

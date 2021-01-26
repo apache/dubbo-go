@@ -15,13 +15,13 @@ Apache License, Version 2.0
 
 ## 发布日志 ##
 
+[v1.5.5 - 2021年1月5日](https://github.com/apache/dubbo-go/releases/tag/v1.5.5)
+
 [v1.4.5 - 2020年11月18日](https://github.com/apache/dubbo-go/releases/tag/v1.4.5)
 
 [v1.5.4 - 2020年11月1日](https://github.com/apache/dubbo-go/releases/tag/v1.5.4)
 
 [v1.5.3 - 2020年9月23日](https://github.com/apache/dubbo-go/releases/tag/v1.5.3)
-
-[v1.5.2 - 舍弃]()
 
 [v1.5.1 - 2020年8月23日](https://github.com/apache/dubbo-go/releases/tag/v1.5.1)
 
@@ -67,11 +67,11 @@ Apache License, Version 2.0
     * Jsonrpc2.0
     * [gRPC](https://github.com/apache/dubbo-go/pull/311)
     * [RESTful](https://github.com/apache/dubbo-go/pull/352)
-    
+
 - 路由器
     * [Condition router](https://github.com/apache/dubbo-go/pull/294)
     * [Health check router](https://github.com/apache/dubbo-go/pull/389)
-    
+
 - 注册中心
     * ZooKeeper
     * [etcd v3](https://github.com/apache/dubbo-go/pull/148)
@@ -112,7 +112,7 @@ Apache License, Version 2.0
 
 - 调用
     * [泛化调用](https://github.com/apache/dubbo-go/pull/122)
-    
+
 - 监控
     * Opentracing API
     * [Prometheus](https://github.com/apache/dubbo-go/pull/342)
@@ -133,25 +133,17 @@ Apache License, Version 2.0
     * [Zookeeper](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/zookeeper/service_discovery.go)
     * [Etcd](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/etcdv3/service_discovery.go)
 
-- 其他功能支持:
-    * 启动时检查
-    * 服务直连
-    * 多服务协议
-    * 多注册中心
-    * 多服务版本
-    * 服务分组
-
 你可以通过访问 [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap) 知道更多关于 dubbo-go 的信息。
 
 ![feature](./doc/pic/arch/dubbo-go-arch.png)
 
 ## 文档
 
-https://dubbogo.github.io/dubbo-go-website (**完善中**)
+请访问 [dubbo官方文档中关于 dubbo-go 的系列文档](http://dubbo.apache.org/zh/blog/) 或 [过往dubbo-go文档列表](http://alexstocks.github.io/html/dubbogo.html)。
 
 ## 快速开始 ##
 
-[dubbo-samples/golang](https://github.com/dubbogo/dubbo-samples)这个项目的事例展示了如何使用 dubbo-go 。请仔细阅读 [dubbo-samples/golang/README.md](https://github.com/dubbogo/dubbo-samples/blob/master/golang/README.md) 学习如何处理配置并编译程序。
+[dubbo-samples/golang](https://github.com/apache/dubbo-go-samples)这个项目的事例展示了如何使用 dubbo-go 。请仔细阅读 [dubbo-samples/golang/README.md](https://github.com/apache/dubbo-go-samples/blob/master/README.md) 学习如何处理配置并编译程序。
 
 ## 运行单测
 
@@ -180,6 +172,17 @@ make test
 ## 如何贡献
 
 如果您愿意给 [Apache/dubbo-go](https://github.com/apache/dubbo-go) 贡献代码或者文档，我们都热烈欢迎。具体请参考 [contribution intro](https://github.com/apache/dubbo-go/blob/master/contributing.md)。
+
+## 社区
+
+如果想访问官方钉钉群，请在钉钉中搜索社区群号 31363295 或者 扫描如下[二维码](https://mmbiz.qpic.cn/mmbiz_jpg/yvBJb5IiafvnHVBdtia30dxA2hKotr9DEckWsZ7aOJcDWDaSVMGwLmYv8GRgIQtqb4C2svicp8nVkMmGy7yKC5tyA/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)。
+
+<a href="http://alexstocks.github.io/html/dubbogo.html">
+<img src="./doc/pic/misc/dubbogo-dingding.png"  height="80" width="80"></a>
+
+如果想加入到社区微信群，可以先添加社区负责人 于雨 的微信 AlexanderStocks 。添加微信之前，请先给 dubbo-go 点 star 作为对项目的支持，添加好友时请报上 github ID 以进行验证。
+
+作为一个维护已经帮助构建了经受多家大型微服务系统的社区，我们足以为现有的成绩感到自豪。社区欢迎能提出建设性意见者，只知索取者和喷子请绕行。
 
 ## 性能测试 ##
 
@@ -247,6 +250,19 @@ make test
       <td align="center"  valign="middle">
         <a href="https://www.icsoc.net/" target="_blank">
           <img width="222px"  src="https://oss.icsoc.net/icsoc-ekt-test-files/icsoc.png">
+        </a>
+      </td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="center"  valign="middle">
+        <a href="http://www.mgtv.com" target="_blank">
+          <img width="222px"  src="https://ugc.hitv.com/platform_oss/F6077F1AA82542CDBDD88FD518E6E727.png">
+        </a>
+      </td>
+	    <td align="center"  valign="middle">
+        <a href="http://www.dmall.com" target="_blank">
+          <img width="222px"  src="https://mosn.io/images/community/duodian.png">
         </a>
       </td>
     </tr>

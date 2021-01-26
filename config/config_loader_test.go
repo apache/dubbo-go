@@ -104,7 +104,8 @@ func TestLoad(t *testing.T) {
 
 	conServices = map[string]common.RPCService{}
 	proServices = map[string]common.RPCService{}
-	err := common.ServiceMap.UnRegister("com.MockService", "mock", "MockService")
+	err := common.ServiceMap.UnRegister("com.MockService", "mock",
+		common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
 	assert.Nil(t, err)
 	consumerConfig = nil
 	providerConfig = nil
@@ -143,7 +144,9 @@ func TestLoadWithSingleReg(t *testing.T) {
 
 	conServices = map[string]common.RPCService{}
 	proServices = map[string]common.RPCService{}
-	common.ServiceMap.UnRegister("com.MockService", "mock", "MockService")
+	err := common.ServiceMap.UnRegister("com.MockService", "mock",
+		common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
+	assert.Nil(t, err)
 	consumerConfig = nil
 	providerConfig = nil
 }
@@ -182,7 +185,9 @@ func TestWithNoRegLoad(t *testing.T) {
 
 	conServices = map[string]common.RPCService{}
 	proServices = map[string]common.RPCService{}
-	common.ServiceMap.UnRegister("com.MockService", "mock", "MockService")
+	err := common.ServiceMap.UnRegister("com.MockService", "mock",
+		common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
+	assert.Nil(t, err)
 	consumerConfig = nil
 	providerConfig = nil
 }
@@ -203,10 +208,12 @@ func TestConfigLoaderWithConfigCenter(t *testing.T) {
 	assert.Equal(t, ProviderConfig{}, GetProviderConfig())
 
 	err = ConsumerInit(conPath)
-	configCenterRefreshConsumer()
+	assert.NoError(t, err)
+	err = configCenterRefreshConsumer()
 	assert.NoError(t, err)
 	err = ProviderInit(proPath)
-	configCenterRefreshProvider()
+	assert.NoError(t, err)
+	err = configCenterRefreshProvider()
 	assert.NoError(t, err)
 
 	assert.NotNil(t, consumerConfig)
@@ -256,13 +263,15 @@ func TestConfigLoaderWithConfigCenterSingleRegistry(t *testing.T) {
 	assert.Equal(t, ProviderConfig{}, GetProviderConfig())
 
 	err = ConsumerInit(conPath)
+	assert.NoError(t, err)
 	checkApplicationName(consumerConfig.ApplicationConfig)
-	configCenterRefreshConsumer()
+	err = configCenterRefreshConsumer()
 	checkRegistries(consumerConfig.Registries, consumerConfig.Registry)
 	assert.NoError(t, err)
 	err = ProviderInit(proPath)
+	assert.NoError(t, err)
 	checkApplicationName(providerConfig.ApplicationConfig)
-	configCenterRefreshProvider()
+	err = configCenterRefreshProvider()
 	checkRegistries(providerConfig.Registries, providerConfig.Registry)
 	assert.NoError(t, err)
 
