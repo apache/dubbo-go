@@ -32,12 +32,12 @@ func init() {
 type SelfDiscRouteFactory struct {
 }
 
-// newHealthCheckRouteFactory construct a new HealthCheckRouteFactory
+// newSelfDiscRouteFactory construct a new SelfDiscRouteFactory
 func newSelfDiscRouteFactory() router.PriorityRouterFactory {
 	return &SelfDiscRouteFactory{}
 }
 
-// NewPriorityRouter construct a new NewHealthCheckRouter via url
+// NewPriorityRouter construct a new NewSelfDiscRouter via url
 func (f *SelfDiscRouteFactory) NewPriorityRouter(url *common.URL) (router.PriorityRouter, error) {
 	return NewSelfDiscRouter(url)
 }
