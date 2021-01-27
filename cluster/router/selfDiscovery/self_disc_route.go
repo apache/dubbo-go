@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package self_disc
+package self
 
 import (
 	"github.com/RoaringBitmap/roaring"
