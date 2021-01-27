@@ -63,7 +63,7 @@ func NewProxy(invoke protocol.Invoker, callback interface{}, attachments map[str
 		WithProxyImplementFunc(DefaultProxyImplementFunc))
 }
 
-// NewProxy create service proxy.
+// NewProxyWithOptions create service proxy with options.
 func NewProxyWithOptions(invoke protocol.Invoker, callback interface{}, attachments map[string]string, opts ...ProxyOption) *Proxy {
 	p := &Proxy{
 		invoke:      invoke,
@@ -76,6 +76,7 @@ func NewProxyWithOptions(invoke protocol.Invoker, callback interface{}, attachme
 	return p
 }
 
+// WithProxyImplementFunc an option function to setup proxy.ImplementFunc
 func WithProxyImplementFunc(f ImplementFunc) ProxyOption {
 	return func(p *Proxy) {
 		p.implement = f
@@ -110,6 +111,7 @@ func (p *Proxy) GetInvoker() protocol.Invoker {
 	return p.invoke
 }
 
+// DefaultProxyImplementFunc the default function for proxy impl
 func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 	// check parameters, incoming interface must be a elem's pointer.
 	valueOf := reflect.ValueOf(v)
