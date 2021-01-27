@@ -214,6 +214,8 @@ const (
 	ListenableRouterName = "listenable"
 	// HealthCheckRouterName Specify the name of HealthCheckRouter
 	HealthCheckRouterName = "health_check"
+	// SelfDiscoveryRouterName Specify the name of HealthCheckRouter
+	SelfDiscoveryRouterName = "self_disc"
 	// TagRouterName Specify the name of TagRouter
 	TagRouterName = "tag"
 	// TagRouterRuleSuffix Specify tag router suffix
