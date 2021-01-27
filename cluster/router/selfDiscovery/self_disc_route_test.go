@@ -36,20 +36,19 @@ import (
 )
 
 const (
-	healthCheckRoute1010IP         = "192.168.10.10"
-	healthCheckRoute1011IP         = "192.168.10.11"
-	healthCheckRoute1012IP         = "192.168.10.12"
-	healthCheckRouteMethodNameTest = "test"
-	healthCheck1001URL             = "dubbo://192.168.10.1/com.ikurento.user.UserProvider"
-	healthCheckRouteUrlFormat      = "dubbo://%s:20000/com.ikurento.user.UserProvider"
+	selfDiscRoute1010IP         = "192.168.10.10"
+	selfDiscRoute1011IP         = "192.168.10.11"
+	selfDiscRoute1012IP         = "192.168.10.12"
+	selfDiscRouteMethodNameTest = "test"
+	selfDiscRouteUrlFormat      = "dubbo://%s:20000/com.ikurento.user.UserProvider"
 )
 
-func TestHealthCheckRouterRoute(t *testing.T) {
+func TestSelfDiscRouterRoute(t *testing.T) {
 	defer protocol.CleanAllStatus()
-	consumerURL, _ := common.NewURL(fmt.Sprintf(healthCheckRouteUrlFormat, healthCheckRoute1010IP))
-	url1, _ := common.NewURL(fmt.Sprintf(healthCheckRouteUrlFormat, healthCheckRoute1010IP))
-	url2, _ := common.NewURL(fmt.Sprintf(healthCheckRouteUrlFormat, healthCheckRoute1011IP))
-	url3, _ := common.NewURL(fmt.Sprintf(healthCheckRouteUrlFormat, healthCheckRoute1012IP))
+	consumerURL, _ := common.NewURL(fmt.Sprintf(selfDiscRouteUrlFormat, selfDiscRoute1010IP))
+	url1, _ := common.NewURL(fmt.Sprintf(selfDiscRouteUrlFormat, selfDiscRoute1010IP))
+	url2, _ := common.NewURL(fmt.Sprintf(selfDiscRouteUrlFormat, selfDiscRoute1011IP))
+	url3, _ := common.NewURL(fmt.Sprintf(selfDiscRouteUrlFormat, selfDiscRoute1012IP))
 	hcr, _ := NewSelfDiscRouter(consumerURL)
 
 	var invokers []protocol.Invoker
@@ -57,11 +56,12 @@ func TestHealthCheckRouterRoute(t *testing.T) {
 	invoker2 := NewMockInvoker(url2)
 	invoker3 := NewMockInvoker(url3)
 	invokers = append(invokers, invoker1, invoker2, invoker3)
-	inv := invocation.NewRPCInvocation(healthCheckRouteMethodNameTest, nil, nil)
+	inv := invocation.NewRPCInvocation(selfDiscRouteMethodNameTest, nil, nil)
 	res := hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*SelfDiscRouter), invokers), consumerURL, inv)
-	// now all invokers are healthy
+	// now only same ip invoker is selected
 	assert.True(t, len(res.ToArray()) == 1)
 
+	// now all invoker with ip that not match client are selected
 	invokers = invokers[1:]
 	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*SelfDiscRouter), invokers), consumerURL, inv)
 	assert.True(t, len(res.ToArray()) == 2)
