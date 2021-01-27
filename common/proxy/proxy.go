@@ -48,7 +48,6 @@ type Proxy struct {
 
 type (
 	// ProxyOption a function to init Proxy with options
-	// nolint
 	ProxyOption func(p *Proxy)
 	// ImplementFunc function for proxy impl of RPCService functions
 	ImplementFunc func(p *Proxy, v common.RPCService)
@@ -60,12 +59,12 @@ var (
 
 // NewProxy create service proxy.
 func NewProxy(invoke protocol.Invoker, callback interface{}, attachments map[string]string) *Proxy {
-	return NewProxyWith(invoke, callback, attachments,
+	return NewProxyWithOptions(invoke, callback, attachments,
 		WithProxyImplementFunc(DefaultProxyImplementFunc))
 }
 
 // NewProxy create service proxy.
-func NewProxyWith(invoke protocol.Invoker, callback interface{}, attachments map[string]string, opts ...ProxyOption) *Proxy {
+func NewProxyWithOptions(invoke protocol.Invoker, callback interface{}, attachments map[string]string, opts ...ProxyOption) *Proxy {
 	p := &Proxy{
 		invoke:      invoke,
 		callback:    callback,
@@ -94,7 +93,6 @@ func (p *Proxy) Implement(v common.RPCService) {
 		p.implement(p, v)
 		p.rpc = v
 	})
-
 }
 
 // Get gets rpc service instance.
