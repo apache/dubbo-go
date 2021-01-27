@@ -100,6 +100,7 @@ func getUrlToRegistry(providerUrl *common.URL, registryUrl *common.URL) *common.
 }
 
 func filterSimplifiedKey(url *common.URL) *common.URL {
+	// get url with reserve params
 	newUrl := url.CloneWithParams(reserveParams)
 	for k := range url.GetParams() {
 		if !strings.HasPrefix(k, constant.USER_DEFINED) {
