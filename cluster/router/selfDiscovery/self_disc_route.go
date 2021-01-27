@@ -30,18 +30,19 @@ import (
 )
 
 const (
-	HEALTH_ROUTE_ENABLED_KEY = "health.route.enabled"
-	selfDesc                 = "self-desc"
-	name                     = "health-check-router"
+	selfDesc = "self-desc"
+	name     = "self-desc-router"
 )
 
-// SelfDiscRouter provides a health-first routing mechanism through HealthChecker
+// SelfDiscRouter provides a ip-same-first routing logic
+// if there is not provider with same ip as consumer, it would not filter any invoker
+// if exists same ip invoker, it would retains this invoker only
 type SelfDiscRouter struct {
 	url     *common.URL
 	localIP string
 }
 
-// NewSelfDiscRouter construct an HealthCheckRouter via url
+// NewSelfDiscRouter construct an SelfDiscRouter via url
 func NewSelfDiscRouter(url *common.URL) (router.PriorityRouter, error) {
 	r := &SelfDiscRouter{
 		url:     url,
@@ -50,12 +51,12 @@ func NewSelfDiscRouter(url *common.URL) (router.PriorityRouter, error) {
 	return r, nil
 }
 
-// Route gets a list of healthy invoker
+// Route gets a list of match-logic invoker
 func (r *SelfDiscRouter) Route(invokers *roaring.Bitmap, cache router.Cache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
 	addrPool := cache.FindAddrPool(r)
-	// Add healthy invoker to the list
+	// Add selfDesc invoker to the list
 	selectedInvokers := utils.JoinIfNotEqual(addrPool[selfDesc], invokers)
-	// If all invokers are considered unhealthy, downgrade to all invoker
+	// If all invokers are considered not match, downgrade to all invoker
 	if selectedInvokers.IsEmpty() {
 		logger.Warnf(" Now all invokers are not match, so downgraded to all! Service: [%s]", url.ServiceKey())
 		return invokers
@@ -63,12 +64,11 @@ func (r *SelfDiscRouter) Route(invokers *roaring.Bitmap, cache router.Cache, url
 	return selectedInvokers
 }
 
-// Pool separates healthy invokers from others.
+// Pool separates same ip invoker from others.
 func (r *SelfDiscRouter) Pool(invokers []protocol.Invoker) (router.AddrPool, router.AddrMetadata) {
 	rb := make(router.AddrPool, 8)
 	rb[selfDesc] = roaring.NewBitmap()
 	selfDescFound := false
-	logger.Debug("local ip = ", r.localIP)
 	for i, invoker := range invokers {
 		if invoker.GetUrl().Ip == r.localIP {
 			rb[selfDesc].Add(uint32(i))
@@ -86,7 +86,7 @@ func (r *SelfDiscRouter) Pool(invokers []protocol.Invoker) (router.AddrPool, rou
 	return rb, nil
 }
 
-// ShouldPool will always return true to make sure healthy check constantly.
+// ShouldPool will always return true to make sure self call logic constantly.
 func (r *SelfDiscRouter) ShouldPool() bool {
 	return true
 }
