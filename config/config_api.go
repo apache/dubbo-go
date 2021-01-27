@@ -61,7 +61,7 @@ func NewDefaultRegistryConfig(protocol string) *RegistryConfig {
 type RegistryConfigOpt func(config *RegistryConfig) *RegistryConfig
 
 func NewRegistryConfig(opts ...RegistryConfigOpt) *RegistryConfig {
-	newRegistryConfig := NewDefaultRegistryConfig("none")
+	newRegistryConfig := NewDefaultRegistryConfig("")
 	for _, v := range opts {
 		newRegistryConfig = v(newRegistryConfig)
 	}
@@ -168,6 +168,7 @@ func NewConsumerConfig(opts ...ConsumerConfigOpt) *ConsumerConfig {
 	}
 	return newConfig
 }
+
 func WithConsumerAppConfig(appConfig *ApplicationConfig) ConsumerConfigOpt {
 	return func(config *ConsumerConfig) *ConsumerConfig {
 		config.ApplicationConfig = appConfig
@@ -241,24 +242,28 @@ func WithReferenceRegistry(registry string) ReferenceConfigOpt {
 		return config
 	}
 }
+
 func WithReferenceProtocol(protocol string) ReferenceConfigOpt {
 	return func(config *ReferenceConfig) *ReferenceConfig {
 		config.Protocol = protocol
 		return config
 	}
 }
+
 func WithReferenceInterface(interfaceName string) ReferenceConfigOpt {
 	return func(config *ReferenceConfig) *ReferenceConfig {
 		config.InterfaceName = interfaceName
 		return config
 	}
 }
+
 func WithReferenceCluster(cluster string) ReferenceConfigOpt {
 	return func(config *ReferenceConfig) *ReferenceConfig {
 		config.Cluster = cluster
 		return config
 	}
 }
+
 func WithReferenceMethod(methodName, retries, lb string) ReferenceConfigOpt {
 	return func(config *ReferenceConfig) *ReferenceConfig {
 		config.Methods = append(config.Methods, &MethodConfig{
@@ -368,12 +373,14 @@ func WithServiceProtocol(protocol string) ServiceConfigOpt {
 		return config
 	}
 }
+
 func WithServiceInterface(interfaceName string) ServiceConfigOpt {
 	return func(config *ServiceConfig) *ServiceConfig {
 		config.InterfaceName = interfaceName
 		return config
 	}
 }
+
 func WithServiceLoadBalance(lb string) ServiceConfigOpt {
 	return func(config *ServiceConfig) *ServiceConfig {
 		config.Loadbalance = lb
