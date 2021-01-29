@@ -180,9 +180,9 @@ make test
 <a href="http://alexstocks.github.io/html/dubbogo.html">
 <img src="./doc/pic/misc/dubbogo-dingding.png"  height="80" width="80"></a>
 
-如果想加入到社区微信群，可以先添加社区负责人 于雨 的微信 AlexanderStocks 。添加微信之前，请先给 dubbo-go 点 star 作为对项目的支持，添加好友时请报上 github ID 以进行验证。
+如果想加入到社区微信群，可以先添加社区负责人 于雨 的微信 AlexanderStocks 。
 
-作为一个维护已经帮助构建了经受多家大型微服务系统的社区，我们足以为现有的成绩感到自豪。社区欢迎能提出建设性意见者，只知索取者和喷子请绕行。
+作为一个维护已经帮助构建了经受多家大型微服务系统的社区，我们足以为现有的成绩感到自豪。社区欢迎能提出建设性意见者。
 
 ## 性能测试 ##
 
