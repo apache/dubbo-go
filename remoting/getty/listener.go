@@ -355,7 +355,10 @@ func (h *RpcServerHandler) OnCron(session getty.Session) {
 }
 
 func reply(session getty.Session, resp *remoting.Response) {
-	if err := session.WritePkg(resp, WritePkg_Timeout); err != nil {
+	if totalLen, sendLen, err := session.WritePkg(resp, WritePkg_Timeout); err != nil {
+		if sendLen != 0 && totalLen != sendLen {
+			go session.Close()
+		}
 		logger.Errorf("WritePkg error: %#v, %#v", perrors.WithStack(err), resp)
 	}
 }
@@ -366,7 +369,10 @@ func heartbeat(session getty.Session, timeout time.Duration, callBack func(err e
 	req.Event = true
 	resp := remoting.NewPendingResponse(req.ID)
 	remoting.AddPendingResponse(resp)
-	err := session.WritePkg(req, 3*time.Second)
+	totalLen, sendLen, err := session.WritePkg(req, 3*time.Second)
+	if sendLen != 0 && totalLen != sendLen {
+		go session.Close()
+	}
 
 	go func() {
 		var err1 error
