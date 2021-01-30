@@ -19,6 +19,7 @@ package getty
 
 import (
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -116,6 +117,7 @@ type Client struct {
 	addr           string
 	opts           Options
 	conf           ClientConfig
+	mux            sync.RWMutex
 	pool           *gettyRPCClientPool
 	codec          remoting.Codec
 	ExchangeClient *remoting.ExchangeClient
@@ -161,10 +163,13 @@ func (c *Client) Connect(url *common.URL) error {
 
 // close network connection
 func (c *Client) Close() {
-	if c.pool != nil {
-		c.pool.close()
-	}
+	c.mux.Lock()
+	p := c.pool
 	c.pool = nil
+	c.mux.Unlock()
+	if p != nil {
+		p.close()
+	}
 }
 
 // send request
@@ -204,6 +209,11 @@ func (c *Client) IsAvailable() bool {
 }
 
 func (c *Client) selectSession(addr string) (*gettyRPCClient, getty.Session, error) {
+	c.mux.RLock()
+	defer c.mux.RUnlock()
+	if c.pool == nil {
+		return nil, nil, perrors.New("client pool have been closed")
+	}
 	rpcClient, err := c.pool.getGettyRpcClient(addr)
 	if err != nil {
 		return nil, nil, perrors.WithStack(err)
