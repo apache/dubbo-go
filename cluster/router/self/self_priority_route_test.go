@@ -49,7 +49,7 @@ func TestSelfDiscRouterRoute(t *testing.T) {
 	url1, _ := common.NewURL(fmt.Sprintf(selfDiscRouteUrlFormat, selfDiscRoute1010IP))
 	url2, _ := common.NewURL(fmt.Sprintf(selfDiscRouteUrlFormat, selfDiscRoute1011IP))
 	url3, _ := common.NewURL(fmt.Sprintf(selfDiscRouteUrlFormat, selfDiscRoute1012IP))
-	hcr, _ := NewSelfDiscRouter(consumerURL)
+	hcr, _ := NewSelfPriorityRouter(consumerURL)
 
 	var invokers []protocol.Invoker
 	invoker1 := NewMockInvoker(url1)
@@ -57,13 +57,13 @@ func TestSelfDiscRouterRoute(t *testing.T) {
 	invoker3 := NewMockInvoker(url3)
 	invokers = append(invokers, invoker1, invoker2, invoker3)
 	inv := invocation.NewRPCInvocation(selfDiscRouteMethodNameTest, nil, nil)
-	res := hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*SelfDiscRouter), invokers), consumerURL, inv)
+	res := hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*SelfPriorityRouter), invokers), consumerURL, inv)
 	// now only same ip invoker is selected
 	assert.True(t, len(res.ToArray()) == 1)
 
 	// now all invoker with ip that not match client are selected
 	invokers = invokers[1:]
-	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*SelfDiscRouter), invokers), consumerURL, inv)
+	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*SelfPriorityRouter), invokers), consumerURL, inv)
 	assert.True(t, len(res.ToArray()) == 2)
 }
 
