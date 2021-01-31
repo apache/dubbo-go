@@ -182,6 +182,7 @@ func (c *Client) Request(request *remoting.Request, timeout time.Duration, respo
 	)
 	if totalLen, sendLen, err = c.transfer(session, request, timeout); err != nil {
 		if sendLen != 0 && totalLen != sendLen {
+			logger.Warnf("start to close the session at request because %d of %d bytes data is sent success. err:%+v", sendLen, totalLen, err)
 			go c.Close()
 		}
 		return perrors.WithStack(err)
