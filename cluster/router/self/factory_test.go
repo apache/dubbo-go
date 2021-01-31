@@ -69,6 +69,6 @@ func (bi *MockInvoker) Destroy() {
 
 // nolint
 func TestSelfDiscRouteFactory(t *testing.T) {
-	factory := newSelfDiscRouteFactory()
+	factory := newSelfPriorityRouteFactory()
 	assert.NotNil(t, factory)
 }
