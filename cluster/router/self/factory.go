@@ -25,19 +25,19 @@ import (
 )
 
 func init() {
-	extension.SetRouterFactory(constant.SelfDiscoveryRouterName, newSelfDiscRouteFactory)
+	extension.SetRouterFactory(constant.SelfPriorityRouterName, newSelfPriorityRouteFactory)
 }
 
-// SelfDiscRouteFactory
-type SelfDiscRouteFactory struct {
+// SelfPriorityRouteFactory
+type SelfPriorityRouteFactory struct {
 }
 
-// newSelfDiscRouteFactory construct a new SelfDiscRouteFactory
-func newSelfDiscRouteFactory() router.PriorityRouterFactory {
-	return &SelfDiscRouteFactory{}
+// newSelfPriorityRouteFactory construct a new SelfDiscRouteFactory
+func newSelfPriorityRouteFactory() router.PriorityRouterFactory {
+	return &SelfPriorityRouteFactory{}
 }
 
 // NewPriorityRouter construct a new NewSelfDiscRouter via url
-func (f *SelfDiscRouteFactory) NewPriorityRouter(url *common.URL) (router.PriorityRouter, error) {
-	return NewSelfDiscRouter(url)
+func (f *SelfPriorityRouteFactory) NewPriorityRouter(url *common.URL) (router.PriorityRouter, error) {
+	return NewSelfPriorityRouter(url)
 }
