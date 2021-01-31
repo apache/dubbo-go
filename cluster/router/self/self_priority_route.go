@@ -30,21 +30,21 @@ import (
 )
 
 const (
-	selfDesc = "self-desc"
-	name     = "self-desc-router"
+	selfPriority = "self-priority"
+	name         = "self-priority-router"
 )
 
-// SelfDiscRouter provides a ip-same-first routing logic
+// SelfPriorityRouter provides a ip-same-first routing logic
 // if there is not provider with same ip as consumer, it would not filter any invoker
 // if exists same ip invoker, it would retains this invoker only
-type SelfDiscRouter struct {
+type SelfPriorityRouter struct {
 	url     *common.URL
 	localIP string
 }
 
-// NewSelfDiscRouter construct an SelfDiscRouter via url
-func NewSelfDiscRouter(url *common.URL) (router.PriorityRouter, error) {
-	r := &SelfDiscRouter{
+// NewSelfPriorityRouter construct an SelfPriorityRouter via url
+func NewSelfPriorityRouter(url *common.URL) (router.PriorityRouter, error) {
+	r := &SelfPriorityRouter{
 		url:     url,
 		localIP: url.Ip,
 	}
@@ -52,10 +52,10 @@ func NewSelfDiscRouter(url *common.URL) (router.PriorityRouter, error) {
 }
 
 // Route gets a list of match-logic invoker
-func (r *SelfDiscRouter) Route(invokers *roaring.Bitmap, cache router.Cache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
+func (r *SelfPriorityRouter) Route(invokers *roaring.Bitmap, cache router.Cache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
 	addrPool := cache.FindAddrPool(r)
-	// Add selfDesc invoker to the list
-	selectedInvokers := utils.JoinIfNotEqual(addrPool[selfDesc], invokers)
+	// Add selfPriority invoker to the list
+	selectedInvokers := utils.JoinIfNotEqual(addrPool[selfPriority], invokers)
 	// If all invokers are considered not match, downgrade to all invoker
 	if selectedInvokers.IsEmpty() {
 		logger.Warnf(" Now all invokers are not match, so downgraded to all! Service: [%s]", url.ServiceKey())
@@ -65,42 +65,42 @@ func (r *SelfDiscRouter) Route(invokers *roaring.Bitmap, cache router.Cache, url
 }
 
 // Pool separates same ip invoker from others.
-func (r *SelfDiscRouter) Pool(invokers []protocol.Invoker) (router.AddrPool, router.AddrMetadata) {
+func (r *SelfPriorityRouter) Pool(invokers []protocol.Invoker) (router.AddrPool, router.AddrMetadata) {
 	rb := make(router.AddrPool, 8)
-	rb[selfDesc] = roaring.NewBitmap()
-	selfDescFound := false
+	rb[selfPriority] = roaring.NewBitmap()
+	selfIpFound := false
 	for i, invoker := range invokers {
 		if invoker.GetUrl().Ip == r.localIP {
-			rb[selfDesc].Add(uint32(i))
-			selfDescFound = true
+			rb[selfPriority].Add(uint32(i))
+			selfIpFound = true
 		}
 	}
-	if selfDescFound {
+	if selfIpFound {
 		// found self desc
-		logger.Debug("found self desc ")
+		logger.Debug("found self ip ")
 		return rb, nil
 	}
 	for i, _ := range invokers {
-		rb[selfDesc].Add(uint32(i))
+		rb[selfPriority].Add(uint32(i))
 	}
 	return rb, nil
 }
 
 // ShouldPool will always return true to make sure self call logic constantly.
-func (r *SelfDiscRouter) ShouldPool() bool {
+func (r *SelfPriorityRouter) ShouldPool() bool {
 	return true
 }
 
-func (r *SelfDiscRouter) Name() string {
+func (r *SelfPriorityRouter) Name() string {
 	return name
 }
 
 // Priority
-func (r *SelfDiscRouter) Priority() int64 {
+func (r *SelfPriorityRouter) Priority() int64 {
 	return 0
 }
 
 // URL Return URL in router
-func (r *SelfDiscRouter) URL() *common.URL {
+func (r *SelfPriorityRouter) URL() *common.URL {
 	return r.url
 }
