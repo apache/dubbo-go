@@ -214,8 +214,8 @@ const (
 	ListenableRouterName = "listenable"
 	// HealthCheckRouterName Specify the name of HealthCheckRouter
 	HealthCheckRouterName = "health_check"
-	// SelfPriorityRouterName Specify the name of SelfPriorityRouter
-	SelfPriorityRouterName = "self_priority"
+	// LocalPriorityRouterName Specify the name of LocalPriorityRouter
+	LocalPriorityRouterName = "self_priority"
 	// TagRouterName Specify the name of TagRouter
 	TagRouterName = "tag"
 	// TagRouterRuleSuffix Specify tag router suffix

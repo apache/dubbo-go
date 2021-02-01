@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package self
+package local
 
 import (
 	"fmt"
@@ -36,34 +36,34 @@ import (
 )
 
 const (
-	selfDiscRoute1010IP         = "192.168.10.10"
-	selfDiscRoute1011IP         = "192.168.10.11"
-	selfDiscRoute1012IP         = "192.168.10.12"
-	selfDiscRouteMethodNameTest = "test"
-	selfDiscRouteUrlFormat      = "dubbo://%s:20000/com.ikurento.user.UserProvider"
+	localDiscRoute1010IP         = "192.168.10.10"
+	localDiscRoute1011IP         = "192.168.10.11"
+	localDiscRoute1012IP         = "192.168.10.12"
+	localDiscRouteMethodNameTest = "test"
+	localDiscRouteUrlFormat      = "dubbo://%s:20000/com.ikurento.user.UserProvider"
 )
 
-func TestSelfDiscRouterRoute(t *testing.T) {
+func TestLocalDiscRouterRoute(t *testing.T) {
 	defer protocol.CleanAllStatus()
-	consumerURL, _ := common.NewURL(fmt.Sprintf(selfDiscRouteUrlFormat, selfDiscRoute1010IP))
-	url1, _ := common.NewURL(fmt.Sprintf(selfDiscRouteUrlFormat, selfDiscRoute1010IP))
-	url2, _ := common.NewURL(fmt.Sprintf(selfDiscRouteUrlFormat, selfDiscRoute1011IP))
-	url3, _ := common.NewURL(fmt.Sprintf(selfDiscRouteUrlFormat, selfDiscRoute1012IP))
-	hcr, _ := NewSelfPriorityRouter(consumerURL)
+	consumerURL, _ := common.NewURL(fmt.Sprintf(localDiscRouteUrlFormat, localDiscRoute1010IP))
+	url1, _ := common.NewURL(fmt.Sprintf(localDiscRouteUrlFormat, localDiscRoute1010IP))
+	url2, _ := common.NewURL(fmt.Sprintf(localDiscRouteUrlFormat, localDiscRoute1011IP))
+	url3, _ := common.NewURL(fmt.Sprintf(localDiscRouteUrlFormat, localDiscRoute1012IP))
+	hcr, _ := NewLocalPriorityRouter(consumerURL)
 
 	var invokers []protocol.Invoker
 	invoker1 := NewMockInvoker(url1)
 	invoker2 := NewMockInvoker(url2)
 	invoker3 := NewMockInvoker(url3)
 	invokers = append(invokers, invoker1, invoker2, invoker3)
-	inv := invocation.NewRPCInvocation(selfDiscRouteMethodNameTest, nil, nil)
-	res := hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*SelfPriorityRouter), invokers), consumerURL, inv)
+	inv := invocation.NewRPCInvocation(localDiscRouteMethodNameTest, nil, nil)
+	res := hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*LocalPriorityRouter), invokers), consumerURL, inv)
 	// now only same ip invoker is selected
 	assert.True(t, len(res.ToArray()) == 1)
 
 	// now all invoker with ip that not match client are selected
 	invokers = invokers[1:]
-	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*SelfPriorityRouter), invokers), consumerURL, inv)
+	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*LocalPriorityRouter), invokers), consumerURL, inv)
 	assert.True(t, len(res.ToArray()) == 2)
 }
 
