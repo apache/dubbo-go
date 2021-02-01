@@ -116,21 +116,17 @@ type watcherSetImpl struct {
 // closeWatchers
 // when the watcher-set was closed
 func (s *watcherSetImpl) closeWatchers() {
+	<-s.ctx.Done()
+	// parent ctx be canceled, close the watch-set's watchers
+	s.lock.Lock()
+	watchers := s.watchers
+	s.lock.Unlock()
 
-	select {
-	case <-s.ctx.Done():
-
-		// parent ctx be canceled, close the watch-set's watchers
-		s.lock.Lock()
-		watchers := s.watchers
-		s.lock.Unlock()
-
-		for _, w := range watchers {
-			// stop data stream
-			// close(w.ch)
-			// stop watcher
-			w.stop()
-		}
+	for _, w := range watchers {
+		// stop data stream
+		// close(w.ch)
+		// stop watcher
+		w.stop()
 	}
 }
 
