@@ -192,6 +192,34 @@ func Test_toGroupInvokers(t *testing.T) {
 	assert.Len(t, groupInvokers, 2)
 }
 
+func Test_RefreshUrl(t *testing.T) {
+	registryDirectory, mockRegistry := normalRegistryDir()
+	providerUrl, _ := common.NewURL("dubbo://0.0.0.0:20011/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.CLUSTER_KEY, "mock1"),
+		common.WithParamsValue(constant.GROUP_KEY, "group"),
+		common.WithParamsValue(constant.VERSION_KEY, "1.0.0"))
+	providerUrl2, _ := common.NewURL("dubbo://0.0.0.0:20012/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.CLUSTER_KEY, "mock1"),
+		common.WithParamsValue(constant.GROUP_KEY, "group"),
+		common.WithParamsValue(constant.VERSION_KEY, "1.0.0"))
+	time.Sleep(1e9)
+	assert.Len(t, registryDirectory.cacheInvokers, 3)
+	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerUrl})
+	time.Sleep(1e9)
+	assert.Len(t, registryDirectory.cacheInvokers, 4)
+	mockRegistry.MockEvents([]*registry.ServiceEvent{&registry.ServiceEvent{Action: remoting.EventTypeUpdate, Service: providerUrl}})
+	time.Sleep(1e9)
+	assert.Len(t, registryDirectory.cacheInvokers, 1)
+	mockRegistry.MockEvents([]*registry.ServiceEvent{&registry.ServiceEvent{Action: remoting.EventTypeUpdate, Service: providerUrl},
+		&registry.ServiceEvent{Action: remoting.EventTypeUpdate, Service: providerUrl2}})
+	time.Sleep(1e9)
+	assert.Len(t, registryDirectory.cacheInvokers, 2)
+	// clear all address
+	mockRegistry.MockEvents([]*registry.ServiceEvent{})
+	time.Sleep(1e9)
+	assert.Len(t, registryDirectory.cacheInvokers, 0)
+}
+
 func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockRegistry) {
 	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
 
