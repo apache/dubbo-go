@@ -72,6 +72,12 @@ func (env *Environment) UpdateExternalConfigMap(externalMap map[string]string) {
 	for k, v := range externalMap {
 		env.externalConfigMap.Store(k, v)
 	}
+	env.externalConfigMap.Range(func(key, value interface{}) bool {
+		if _, ok := externalMap[key.(string)]; !ok {
+			env.externalConfigMap.Delete(key)
+		}
+		return true
+	})
 }
 
 // UpdateAppExternalConfigMap updates env appExternalConfigMap field
@@ -79,15 +85,21 @@ func (env *Environment) UpdateAppExternalConfigMap(externalMap map[string]string
 	for k, v := range externalMap {
 		env.appExternalConfigMap.Store(k, v)
 	}
+	env.appExternalConfigMap.Range(func(key, value interface{}) bool {
+		if _, ok := externalMap[key.(string)]; !ok {
+			env.appExternalConfigMap.Delete(key)
+		}
+		return true
+	})
 }
 
 // Configuration puts externalConfigMap and appExternalConfigMap into list
 // List represents a doubly linked list.
 func (env *Environment) Configuration() *list.List {
 	cfgList := list.New()
-	// The sequence would be: SystemConfiguration -> ExternalConfiguration -> AppExternalConfiguration -> AbstractConfig -> PropertiesConfiguration
-	cfgList.PushFront(newInmemoryConfiguration(&(env.externalConfigMap)))
-	cfgList.PushFront(newInmemoryConfiguration(&(env.appExternalConfigMap)))
+	// The sequence would be: SystemConfiguration -> AppExternalConfiguration -> ExternalConfiguration -> AbstractConfig -> PropertiesConfiguration
+	cfgList.PushBack(newInmemoryConfiguration(&(env.appExternalConfigMap)))
+	cfgList.PushBack(newInmemoryConfiguration(&(env.externalConfigMap)))
 	return cfgList
 }
 
