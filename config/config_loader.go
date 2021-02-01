@@ -69,7 +69,7 @@ func init() {
 	fs.StringVar(&confProFile, "proConf", "", "default server config path")
 	fs.StringVar(&confRouterFile, "rouConf", "", "default router config path")
 	fs.Parse(os.Args[1:])
-	for len(fs.Args()) != 0{
+	for len(fs.Args()) != 0 {
 		fs.Parse(fs.Args()[1:])
 	}
 

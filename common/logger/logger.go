@@ -64,7 +64,7 @@ func init() {
 	fs := flag.NewFlagSet("log_config", flag.ContinueOnError)
 	logConfFile := fs.String("logConf", "", "default log config path")
 	fs.Parse(os.Args[1:])
-	for len(fs.Args()) != 0{
+	for len(fs.Args()) != 0 {
 		fs.Parse(fs.Args()[1:])
 	}
 	err := InitLog(*logConfFile)
