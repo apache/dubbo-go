@@ -40,7 +40,7 @@ import (
 // run mock config server
 func runMockConfigServer(configHandler func(http.ResponseWriter, *http.Request),
 	configListenHandler func(http.ResponseWriter, *http.Request)) *httptest.Server {
-	uriHandlerMap := make(map[string]func(http.ResponseWriter, *http.Request), 0)
+	uriHandlerMap := make(map[string]func(http.ResponseWriter, *http.Request))
 
 	uriHandlerMap["/nacos/v1/cs/configs"] = configHandler
 	uriHandlerMap["/nacos/v1/cs/configs/listener"] = configListenHandler
@@ -85,6 +85,8 @@ func TestGetConfig(t *testing.T) {
 	nacos, err := initNacosData(t)
 	assert.NoError(t, err)
 	configs, err := nacos.GetProperties("dubbo.properties", config_center.WithGroup("dubbo"))
+	assert.Empty(t, configs)
+	assert.NoError(t, err)
 	_, err = nacos.Parser().Parse(configs)
 	assert.NoError(t, err)
 }
@@ -100,7 +102,8 @@ func TestNacosDynamicConfiguration_GetConfigKeysByGroup(t *testing.T) {
 }
 `
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(data))
+		_, err := w.Write([]byte(data))
+		assert.Nil(t, err)
 	}))
 
 	nacosURL := strings.ReplaceAll(ts.URL, "http", "registry")

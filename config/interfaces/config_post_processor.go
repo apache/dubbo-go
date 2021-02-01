@@ -15,24 +15,18 @@
  * limitations under the License.
  */
 
-package metrics
+package interfaces
 
 import (
-	"context"
-	"time"
+	"github.com/apache/dubbo-go/common"
 )
 
-import (
-	"github.com/apache/dubbo-go/protocol"
-)
+// ConfigPostProcessor is an extension to give users a chance to customize configs against ReferenceConfig and
+// ServiceConfig during deployment time.
+type ConfigPostProcessor interface {
+	// PostProcessReferenceConfig customizes ReferenceConfig's params.
+	PostProcessReferenceConfig(*common.URL)
 
-const (
-	NameSpace = "dubbo"
-)
-
-// Reporter will be used to report the invocation's duration
-type Reporter interface {
-	// report the duration of an invocation
-	Report(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation,
-		cost time.Duration, res protocol.Result)
+	// PostProcessServiceConfig customizes ServiceConfig's params.
+	PostProcessServiceConfig(*common.URL)
 }

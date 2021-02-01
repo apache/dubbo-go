@@ -59,7 +59,11 @@ func (pfw *ProtocolFilterWrapper) Refer(url *common.URL) protocol.Invoker {
 	if pfw.protocol == nil {
 		pfw.protocol = extension.GetProtocol(url.Protocol)
 	}
-	return buildInvokerChain(pfw.protocol.Refer(url), constant.REFERENCE_FILTER_KEY)
+	invoker := pfw.protocol.Refer(url)
+	if invoker == nil {
+		return nil
+	}
+	return buildInvokerChain(invoker, constant.REFERENCE_FILTER_KEY)
 }
 
 // Destroy will destroy all invoker and exporter.
@@ -77,7 +81,7 @@ func buildInvokerChain(invoker protocol.Invoker, key string) protocol.Invoker {
 	// The order of filters is from left to right, so loading from right to left
 	next := invoker
 	for i := len(filterNames) - 1; i >= 0; i-- {
-		flt := extension.GetFilter(filterNames[i])
+		flt := extension.GetFilter(strings.TrimSpace(filterNames[i]))
 		fi := &FilterInvoker{next: next, invoker: invoker, filter: flt}
 		next = fi
 	}
