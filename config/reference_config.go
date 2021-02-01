@@ -86,11 +86,7 @@ func (c *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error
 	}
 
 	*c = ReferenceConfig(raw)
-	if err := defaults.Set(c); err != nil {
-		return err
-	}
-
-	return nil
+	return defaults.Set(c)
 }
 
 // Refer ...
@@ -104,6 +100,9 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 	if c.ForceTag {
 		cfgURL.AddParam(constant.ForceUseTag, "true")
 	}
+
+	c.postProcessConfig(cfgURL)
+
 	if c.Url != "" {
 		// 1. user specified URL, could be peer-to-peer address, or register center's address.
 		urlStrings := gxstrings.RegSplit(c.Url, "\\s*[;]+\\s*")
@@ -168,7 +167,8 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 		// FailoverClusterInvoker(RegistryDirectory, routing happens here) -> Invoker
 		c.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
 	}
-
+	// publish consumer metadata
+	publishConsumerDefinition(cfgURL)
 	// create proxy
 	if c.Async {
 		callback := GetCallback(c.id)
@@ -187,6 +187,11 @@ func (c *ReferenceConfig) Implement(v common.RPCService) {
 // GetRPCService gets RPCService from proxy
 func (c *ReferenceConfig) GetRPCService() common.RPCService {
 	return c.pxy.Get()
+}
+
+// GetProxy gets proxy
+func (c *ReferenceConfig) GetProxy() *proxy.Proxy {
+	return c.pxy
 }
 
 func (c *ReferenceConfig) getUrlMap() url.Values {
@@ -251,4 +256,17 @@ func (c *ReferenceConfig) GenericLoad(id string) {
 	c.id = id
 	c.Refer(genericService)
 	c.Implement(genericService)
+}
+
+func publishConsumerDefinition(url *common.URL) {
+	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
+		remoteMetadataService.PublishServiceDefinition(url)
+	}
+}
+
+// postProcessConfig asks registered ConfigPostProcessor to post-process the current ReferenceConfig.
+func (c *ReferenceConfig) postProcessConfig(url *common.URL) {
+	for _, p := range extension.GetConfigPostProcessors() {
+		p.PostProcessReferenceConfig(url)
+	}
 }

@@ -25,6 +25,8 @@ import (
 type Invocation interface {
 	// MethodName gets invocation method name.
 	MethodName() string
+	// ParameterTypeNames gets invocation parameter type names.
+	ParameterTypeNames() []string
 	// ParameterTypes gets invocation parameter types.
 	ParameterTypes() []reflect.Type
 	// ParameterValues gets invocation parameter values.
