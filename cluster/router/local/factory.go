@@ -15,60 +15,29 @@
  * limitations under the License.
  */
 
-package self
+package local
 
 import (
-	"context"
-	"testing"
-)
-
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
+	"github.com/apache/dubbo-go/cluster/router"
 	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
 )
 
-// nolint
-type MockInvoker struct {
-	url *common.URL
+func init() {
+	extension.SetRouterFactory(constant.LocalPriorityRouterName, newLocalPriorityRouteFactory)
 }
 
-// nolint
-func NewMockInvoker(url *common.URL) *MockInvoker {
-	return &MockInvoker{
-		url: url,
-	}
+// LocalPriorityRouteFactory
+type LocalPriorityRouteFactory struct {
 }
 
-// nolint
-func (bi *MockInvoker) GetUrl() *common.URL {
-	return bi.url
+// newLocalPriorityRouteFactory construct a new LocalDiscRouteFactory
+func newLocalPriorityRouteFactory() router.PriorityRouterFactory {
+	return &LocalPriorityRouteFactory{}
 }
 
-// nolint
-func (bi *MockInvoker) IsAvailable() bool {
-	return true
-}
-
-// nolint
-func (bi *MockInvoker) IsDestroyed() bool {
-	return true
-}
-
-// nolint
-func (bi *MockInvoker) Invoke(_ context.Context, _ protocol.Invocation) protocol.Result {
-	return nil
-}
-
-// nolint
-func (bi *MockInvoker) Destroy() {
-}
-
-// nolint
-func TestSelfDiscRouteFactory(t *testing.T) {
-	factory := newSelfPriorityRouteFactory()
-	assert.NotNil(t, factory)
+// NewPriorityRouter construct a new NewLocalDiscRouter via url
+func (f *LocalPriorityRouteFactory) NewPriorityRouter(url *common.URL) (router.PriorityRouter, error) {
+	return NewLocalPriorityRouter(url)
 }
