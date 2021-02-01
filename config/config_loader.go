@@ -18,6 +18,7 @@
 package config
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -63,9 +64,14 @@ func init() {
 		confProFile string
 	)
 
-	confConFile = os.Getenv(constant.CONF_CONSUMER_FILE_PATH)
-	confProFile = os.Getenv(constant.CONF_PROVIDER_FILE_PATH)
-	confRouterFile = os.Getenv(constant.CONF_ROUTER_FILE_PATH)
+	fs := flag.NewFlagSet("config_loader", flag.ContinueOnError)
+	fs.StringVar(&confConFile, "conConf", "", "default client config path")
+	fs.StringVar(&confProFile, "proConf", "", "default server config path")
+	fs.StringVar(&confRouterFile, "rouConf", "", "default router config path")
+	fs.Parse(os.Args[1:])
+	for len(fs.Args()) != 0{
+		fs.Parse(fs.Args()[1:])
+	}
 
 	if errCon := ConsumerInit(confConFile); errCon != nil {
 		log.Printf("[consumerInit] %#v", errCon)
