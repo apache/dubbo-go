@@ -195,7 +195,7 @@ func (c *RouterChain) copyInvokerIfNecessary(cache *InvokerCache) []protocol.Inv
 func (c *RouterChain) buildCache() {
 	origin := c.loadCache()
 	invokers := c.copyInvokerIfNecessary(origin)
-	if invokers == nil || len(invokers) == 0 {
+	if len(invokers) == 0 {
 		return
 	}
 
@@ -296,8 +296,10 @@ func isInvokersChanged(left []protocol.Invoker, right []protocol.Invoker) bool {
 
 	for _, r := range right {
 		found := false
+		rurl := r.GetUrl()
 		for _, l := range left {
-			if common.IsEquals(l.GetUrl(), r.GetUrl(), constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY) {
+			lurl := l.GetUrl()
+			if common.GetCompareURLEqualFunc()(lurl, rurl, constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY) {
 				found = true
 				break
 			}

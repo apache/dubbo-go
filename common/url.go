@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	cm "github.com/Workiva/go-datastructures/common"
 	"math"
 	"net"
 	"net/url"
@@ -31,6 +30,7 @@ import (
 )
 
 import (
+	cm "github.com/Workiva/go-datastructures/common"
 	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/jinzhu/copier"
 	perrors "github.com/pkg/errors"
@@ -64,7 +64,13 @@ var (
 	DubboNodes = [...]string{"consumers", "configurators", "routers", "providers"}
 	// DubboRole Dubbo service role
 	DubboRole = [...]string{"consumer", "", "routers", "provider"}
+	// CompareURLEqualFunc compare two url is equal
+	compareURLEqualFunc CompareURLEqualFunc
 )
+
+func init() {
+	compareURLEqualFunc = defaultCompareURLEqual
+}
 
 // nolint
 type RoleType int
@@ -83,9 +89,7 @@ type baseUrl struct {
 	Location string // ip+port
 	Ip       string
 	Port     string
-	//url.Values is not safe map, add to avoid concurrent map read and map write error
-	paramsLock   sync.RWMutex
-	params       url.Values
+
 	PrimitiveURL string
 }
 
@@ -109,6 +113,10 @@ type URL struct {
 	noCopy noCopy
 
 	baseUrl
+	//url.Values is not safe map, add to avoid concurrent map read and map write error
+	paramsLock sync.RWMutex
+	params     url.Values
+
 	Path     string // like  /com.ikurento.dubbo.UserProvider
 	Username string
 	Password string
@@ -211,12 +219,12 @@ func WithToken(token string) Option {
 
 // NewURLWithOptions will create a new url with options
 func NewURLWithOptions(opts ...Option) *URL {
-	newUrl := &URL{}
+	newURL := &URL{}
 	for _, opt := range opts {
-		opt(newUrl)
+		opt(newURL)
 	}
-	newUrl.Location = newUrl.Ip + ":" + newUrl.Port
-	return newUrl
+	newURL.Location = newURL.Ip + ":" + newURL.Port
+	return newURL
 }
 
 // NewURL will create a new url
@@ -408,6 +416,9 @@ func (c *URL) Service() string {
 func (c *URL) AddParam(key string, value string) {
 	c.paramsLock.Lock()
 	defer c.paramsLock.Unlock()
+	if c.params == nil {
+		c.params = url.Values{}
+	}
 	c.params.Add(key, value)
 }
 
@@ -426,7 +437,27 @@ func (c *URL) AddParamAvoidNil(key string, value string) {
 func (c *URL) SetParam(key string, value string) {
 	c.paramsLock.Lock()
 	defer c.paramsLock.Unlock()
+	if c.params == nil {
+		c.params = url.Values{}
+	}
 	c.params.Set(key, value)
+}
+
+// DelParam will delete the given key from the url
+func (c *URL) DelParam(key string) {
+	c.paramsLock.Lock()
+	defer c.paramsLock.Unlock()
+	if c.params != nil {
+		c.params.Del(key)
+	}
+}
+
+// ReplaceParams will replace the URL.params
+// usually it should only be invoked when you want to modify an url, such as MergeURL
+func (c *URL) ReplaceParams(param url.Values) {
+	c.paramsLock.Lock()
+	defer c.paramsLock.Unlock()
+	c.params = param
 }
 
 // RangeParams will iterate the params
@@ -444,10 +475,15 @@ func (c *URL) RangeParams(f func(key, value string) bool) {
 func (c *URL) GetParam(s string, d string) string {
 	c.paramsLock.RLock()
 	defer c.paramsLock.RUnlock()
-	r := c.params.Get(s)
+
+	var r string
+	if len(c.params) > 0 {
+		r = c.params.Get(s)
+	}
 	if len(r) == 0 {
 		r = d
 	}
+
 	return r
 }
 
@@ -623,22 +659,26 @@ func (c *URL) ToMap() map[string]string {
 // You should notice that the value of b1 is v2, not v4.
 // due to URL is not thread-safe, so this method is not thread-safe
 func MergeUrl(serviceUrl *URL, referenceUrl *URL) *URL {
+	// After Clone, it is a new url that there is no thread safe issue.
 	mergedUrl := serviceUrl.Clone()
-
+	params := mergedUrl.GetParams()
 	// iterator the referenceUrl if serviceUrl not have the key ,merge in
-	referenceUrl.RangeParams(func(key, value string) bool {
+	// referenceUrl usually will not changed. so change RangeParams to GetParams to avoid the string value copy.
+	for key, value := range referenceUrl.GetParams() {
 		if v := mergedUrl.GetParam(key, ""); len(v) == 0 {
-			mergedUrl.SetParam(key, value)
+			if len(value) > 0 {
+				params[key] = value
+			}
 		}
-		return true
-	})
+	}
+
 	// loadBalance,cluster,retries strategy config
-	methodConfigMergeFcn := mergeNormalParam(mergedUrl, referenceUrl, []string{constant.LOADBALANCE_KEY, constant.CLUSTER_KEY, constant.RETRIES_KEY, constant.TIMEOUT_KEY})
+	methodConfigMergeFcn := mergeNormalParam(params, referenceUrl, []string{constant.LOADBALANCE_KEY, constant.CLUSTER_KEY, constant.RETRIES_KEY, constant.TIMEOUT_KEY})
 
 	// remote timestamp
 	if v := serviceUrl.GetParam(constant.TIMESTAMP_KEY, ""); len(v) > 0 {
-		mergedUrl.SetParam(constant.REMOTE_TIMESTAMP_KEY, v)
-		mergedUrl.SetParam(constant.TIMESTAMP_KEY, referenceUrl.GetParam(constant.TIMESTAMP_KEY, ""))
+		params[constant.REMOTE_TIMESTAMP_KEY] = []string{v}
+		params[constant.TIMESTAMP_KEY] = []string{referenceUrl.GetParam(constant.TIMESTAMP_KEY, "")}
 	}
 
 	// finally execute methodConfigMergeFcn
@@ -647,33 +687,41 @@ func MergeUrl(serviceUrl *URL, referenceUrl *URL) *URL {
 			fcn("methods." + method)
 		}
 	}
-
+	// In this way, we will raise some performance.
+	mergedUrl.ReplaceParams(params)
 	return mergedUrl
 }
 
 // Clone will copy the url
 func (c *URL) Clone() *URL {
-	newUrl := &URL{}
-	copier.Copy(newUrl, c)
-	newUrl.params = url.Values{}
+	newURL := &URL{}
+	if err := copier.Copy(newURL, c); err != nil {
+		// this is impossible
+		return newURL
+	}
+	newURL.params = url.Values{}
 	c.RangeParams(func(key, value string) bool {
-		newUrl.SetParam(key, value)
+		newURL.SetParam(key, value)
 		return true
 	})
-	return newUrl
+
+	return newURL
 }
 
 func (c *URL) CloneExceptParams(excludeParams *gxset.HashSet) *URL {
-	newUrl := &URL{}
-	copier.Copy(newUrl, c)
-	newUrl.params = url.Values{}
+	newURL := &URL{}
+	if err := copier.Copy(newURL, c); err != nil {
+		// this is impossible
+		return newURL
+	}
+	newURL.params = url.Values{}
 	c.RangeParams(func(key, value string) bool {
 		if !excludeParams.Contains(key) {
-			newUrl.SetParam(key, value)
+			newURL.SetParam(key, value)
 		}
 		return true
 	})
-	return newUrl
+	return newURL
 }
 
 func (c *URL) Compare(comp cm.Comparator) int {
@@ -713,6 +761,9 @@ func (c *URL) CloneWithParams(reserveParams []string) *URL {
 
 // IsEquals compares if two URLs equals with each other. Excludes are all parameter keys which should ignored.
 func IsEquals(left *URL, right *URL, excludes ...string) bool {
+	if (left == nil && right != nil) || (right == nil && left != nil) {
+		return false
+	}
 	if left.Ip != right.Ip || left.Port != right.Port {
 		return false
 	}
@@ -739,15 +790,15 @@ func IsEquals(left *URL, right *URL, excludes ...string) bool {
 	return true
 }
 
-func mergeNormalParam(mergedUrl *URL, referenceUrl *URL, paramKeys []string) []func(method string) {
+func mergeNormalParam(params url.Values, referenceUrl *URL, paramKeys []string) []func(method string) {
 	methodConfigMergeFcn := make([]func(method string), 0, len(paramKeys))
 	for _, paramKey := range paramKeys {
 		if v := referenceUrl.GetParam(paramKey, ""); len(v) > 0 {
-			mergedUrl.SetParam(paramKey, v)
+			params[paramKey] = []string{v}
 		}
 		methodConfigMergeFcn = append(methodConfigMergeFcn, func(method string) {
 			if v := referenceUrl.GetParam(method+"."+paramKey, ""); len(v) > 0 {
-				mergedUrl.SetParam(method+"."+paramKey, v)
+				params[method+"."+paramKey] = []string{v}
 			}
 		})
 	}
@@ -771,4 +822,18 @@ func (s URLSlice) Less(i, j int) bool {
 // nolint
 func (s URLSlice) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
+}
+
+type CompareURLEqualFunc func(l *URL, r *URL, excludeParam ...string) bool
+
+func defaultCompareURLEqual(l *URL, r *URL, excludeParam ...string) bool {
+	return IsEquals(l, r, excludeParam...)
+}
+
+func SetCompareURLEqualFunc(f CompareURLEqualFunc) {
+	compareURLEqualFunc = f
+}
+
+func GetCompareURLEqualFunc() CompareURLEqualFunc {
+	return compareURLEqualFunc
 }

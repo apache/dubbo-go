@@ -257,6 +257,7 @@ func assembleArgsFromQueryParams(methodConfig *rest_config.RestMethodConfig, arg
 		kind := t.Kind()
 		if kind == reflect.Ptr {
 			t = t.Elem()
+			kind = t.Kind()
 		}
 		if kind == reflect.Slice {
 			param = req.QueryParameters(v)
@@ -297,6 +298,7 @@ func assembleArgsFromPathParams(methodConfig *rest_config.RestMethodConfig, args
 		kind := t.Kind()
 		if kind == reflect.Ptr {
 			t = t.Elem()
+			kind = t.Kind()
 		}
 		if kind == reflect.Int {
 			param, err = strconv.Atoi(req.PathParameter(v))
