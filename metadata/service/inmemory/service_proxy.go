@@ -39,8 +39,8 @@ import (
 // this is the stub, or proxy
 // for now, only GetExportedURLs need to be implemented
 type MetadataServiceProxy struct {
-	invkr        protocol.Invoker
-	golangServer bool
+	invkr protocol.Invoker
+	//golangServer bool
 }
 
 func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]interface{}, error) {
@@ -67,11 +67,7 @@ func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 	urlStrs := res.Result().(*[]interface{})
 
 	ret := make([]interface{}, 0, len(*urlStrs))
-
-	for _, s := range *urlStrs {
-		ret = append(ret, s)
-	}
-	return ret, nil
+	return append(ret, *urlStrs...), nil
 }
 
 func (m *MetadataServiceProxy) MethodMapper() map[string]string {
