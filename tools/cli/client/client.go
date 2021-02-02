@@ -35,6 +35,7 @@ import (
 	_ "github.com/apache/dubbo-go/tools/cli/protocol/dubbo"
 )
 
+// defaultBufferSize is the tcp read default buffer size
 const defaultBufferSize = 1024 * 1024 * 4
 
 // TelnetClient maintain a connection to target
