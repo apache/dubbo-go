@@ -274,5 +274,4 @@ func (c *ReferenceConfig) postProcessConfig(url *common.URL) {
 	for _, p := range extension.GetConfigPostProcessors() {
 		p.PostProcessReferenceConfig(url)
 	}
-
 }
