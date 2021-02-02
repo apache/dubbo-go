@@ -64,10 +64,10 @@ func init() {
 		confProFile string
 	)
 
-	fs := flag.NewFlagSet("config_loader", flag.ContinueOnError)
-	fs.StringVar(&confConFile, "conConf", "", "default client config path")
-	fs.StringVar(&confProFile, "proConf", "", "default server config path")
-	fs.StringVar(&confRouterFile, "rouConf", "", "default router config path")
+	fs := flag.NewFlagSet("config", flag.ContinueOnError)
+	fs.StringVar(&confConFile, "conConf", os.Getenv(constant.CONF_CONSUMER_FILE_PATH), "default client config path")
+	fs.StringVar(&confProFile, "proConf", os.Getenv(constant.CONF_PROVIDER_FILE_PATH), "default server config path")
+	fs.StringVar(&confRouterFile, "rouConf", os.Getenv(constant.CONF_ROUTER_FILE_PATH), "default router config path")
 	fs.Parse(os.Args[1:])
 	for len(fs.Args()) != 0 {
 		fs.Parse(fs.Args()[1:])
