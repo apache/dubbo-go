@@ -50,8 +50,7 @@ func TestConnCheckRouterRoute(t *testing.T) {
 	defer protocol.CleanAllStatus()
 	notify := make(chan struct{})
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	consumerURL, _ := common.NewURL(connCheck1001URL)

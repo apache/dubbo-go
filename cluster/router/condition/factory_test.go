@@ -134,8 +134,7 @@ func TestRoute_matchWhen(t *testing.T) {
 	rule := base64.URLEncoding.EncodeToString([]byte("=> host = 1.2.3.4"))
 	notify := make(chan struct{})
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	router, _ := newConditionRouterFactory().NewPriorityRouter(getRouteUrl(rule), notify)
@@ -171,8 +170,7 @@ func TestRoute_matchWhen(t *testing.T) {
 func TestRoute_matchFilter(t *testing.T) {
 	notify := make(chan struct{})
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	localIP := common.GetLocalIp()
@@ -212,8 +210,7 @@ func TestRoute_matchFilter(t *testing.T) {
 func TestRoute_methodRoute(t *testing.T) {
 	notify := make(chan struct{})
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("getFoo"), invocation.WithParameterTypes([]reflect.Type{}), invocation.WithArguments([]interface{}{}))
@@ -241,8 +238,7 @@ func TestRoute_methodRoute(t *testing.T) {
 func TestRoute_ReturnFalse(t *testing.T) {
 	notify := make(chan struct{})
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	url, _ := common.NewURL("")
@@ -259,8 +255,7 @@ func TestRoute_ReturnFalse(t *testing.T) {
 func TestRoute_ReturnEmpty(t *testing.T) {
 	notify := make(chan struct{})
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	localIP := common.GetLocalIp()
@@ -277,8 +272,7 @@ func TestRoute_ReturnEmpty(t *testing.T) {
 func TestRoute_ReturnAll(t *testing.T) {
 	notify := make(chan struct{})
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	localIP := common.GetLocalIp()
@@ -303,8 +297,7 @@ func TestRoute_HostFilter(t *testing.T) {
 	url3, _ := common.NewURL(fmt.Sprintf(factoryDubboFormat, localIP))
 	notify := make(chan struct{})
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	invoker1 := NewMockInvoker(url1, 1)
@@ -324,8 +317,7 @@ func TestRoute_HostFilter(t *testing.T) {
 func TestRoute_Empty_HostFilter(t *testing.T) {
 	notify := make(chan struct{})
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	localIP := common.GetLocalIp()
@@ -349,8 +341,7 @@ func TestRoute_Empty_HostFilter(t *testing.T) {
 func TestRoute_False_HostFilter(t *testing.T) {
 	notify := make(chan struct{})
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	localIP := common.GetLocalIp()
@@ -374,8 +365,7 @@ func TestRoute_False_HostFilter(t *testing.T) {
 func TestRoute_Placeholder(t *testing.T) {
 	notify := make(chan struct{})
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	localIP := common.GetLocalIp()
@@ -399,8 +389,7 @@ func TestRoute_Placeholder(t *testing.T) {
 func TestRoute_NoForce(t *testing.T) {
 	notify := make(chan struct{})
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	localIP := common.GetLocalIp()
@@ -422,8 +411,7 @@ func TestRoute_NoForce(t *testing.T) {
 func TestRoute_Force(t *testing.T) {
 	notify := make(chan struct{})
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	localIP := common.GetLocalIp()
