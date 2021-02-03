@@ -1,0 +1,12 @@
+{
+  "ID": "string",
+  "Name": "string",
+  "Age": "int",
+  "JavaClassName":  "string@com.ikurento.user.User",
+  "SubInfo": {
+    "SubID": "string",
+    "SubMale": "bool",
+    "SubAge": "int",
+    "JavaClassName":"string@com.ikurento.user.SubInfo"
+  }
+}
