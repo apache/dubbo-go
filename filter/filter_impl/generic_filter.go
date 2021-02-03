@@ -122,19 +122,32 @@ func struct2MapAll(obj interface{}) interface{} {
 		}
 		return newTemps
 	} else if t.Kind() == reflect.Map {
-		var newTempMap = make(map[string]interface{}, v.Len())
+		var newTempMap = make(map[interface{}]interface{}, v.Len())
 		iter := v.MapRange()
 		for iter.Next() {
-			mapK := iter.Key().String()
 			if !iter.Value().CanInterface() {
 				continue
 			}
+			key := iter.Key()
 			mapV := iter.Value().Interface()
-			newTempMap[mapK] = struct2MapAll(mapV)
+			newTempMap[convertMapKey(key)] = struct2MapAll(mapV)
 		}
 		return newTempMap
 	} else {
 		return obj
+	}
+}
+
+func convertMapKey(key reflect.Value) interface{} {
+	switch key.Kind() {
+	case reflect.Bool, reflect.Int, reflect.Int8,
+		reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16,
+		reflect.Uint32, reflect.Uint64, reflect.Float32,
+		reflect.Float64, reflect.String:
+		return key.Interface()
+	default:
+		return key.String()
 	}
 }
 
