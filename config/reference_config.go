@@ -258,6 +258,11 @@ func (c *ReferenceConfig) GenericLoad(id string) {
 	c.Implement(genericService)
 }
 
+// GetInvoker get invoker from ReferenceConfig
+func (c *ReferenceConfig) GetInvoker() protocol.Invoker {
+	return c.invoker
+}
+
 func publishConsumerDefinition(url *common.URL) {
 	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
 		remoteMetadataService.PublishServiceDefinition(url)
