@@ -179,21 +179,8 @@ If you are willing to do some code contributions and document contributions to [
 
 If u want to communicate with our community, pls scan the following  [dubbobo Ding-Ding QR code](https://mmbiz.qpic.cn/mmbiz_jpg/yvBJb5IiafvnHVBdtia30dxA2hKotr9DEckWsZ7aOJcDWDaSVMGwLmYv8GRgIQtqb4C2svicp8nVkMmGy7yKC5tyA/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1) or search our commnity DingDing group code 31363295.
 
-<div>
-<table>
-  <tbody>
-  <tr></tr>
-    <tr>
-      <td align="center"  valign="middle">
-        <a href="http://alexstocks.github.io/html/dubbogo.html" target="_blank">
-          <img width="80px" height="85px" src="./doc/pic/misc/dubbogo-dingding.png">
-        </a>
-      </td>
-    </tr>
-    <tr></tr>
-  </tbody>
-</table>
-</div>
+<a href="http://alexstocks.github.io/html/dubbogo.html">
+<img src="./doc/pic/misc/dubbogo-dingding.png"  height="80" width="80"></a>
 
 If u want to visit the wechat group, pls add my wechat AlexanderStocks.
 
