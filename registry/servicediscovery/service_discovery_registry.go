@@ -174,10 +174,6 @@ func (s *serviceDiscoveryRegistry) Register(url *common.URL) error {
 		logger.Warnf("The URL[%s] has been registry!", url.String())
 	}
 
-	err = s.metaDataService.PublishServiceDefinition(url)
-	if err != nil {
-		return perrors.WithMessage(err, "publish the service definition failed. ")
-	}
 	return s.serviceNameMapping.Map(url.GetParam(constant.INTERFACE_KEY, ""),
 		url.GetParam(constant.GROUP_KEY, ""),
 		url.GetParam(constant.Version, ""),
