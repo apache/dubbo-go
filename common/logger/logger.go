@@ -18,6 +18,7 @@
 package logger
 
 import (
+	"flag"
 	"io/ioutil"
 	"log"
 	"os"
@@ -64,8 +65,14 @@ func init() {
 	if logger != nil {
 		return
 	}
-	logConfFile := os.Getenv(constant.APP_LOG_CONF_FILE)
-	err := InitLog(logConfFile)
+
+	fs := flag.NewFlagSet("log", flag.ContinueOnError)
+	logConfFile := fs.String("logConf", os.Getenv(constant.APP_LOG_CONF_FILE), "default log config path")
+	fs.Parse(os.Args[1:])
+	for len(fs.Args()) != 0 {
+		fs.Parse(fs.Args()[1:])
+	}
+	err := InitLog(*logConfFile)
 	if err != nil {
 		log.Printf("[InitLog] warn: %v", err)
 	}
