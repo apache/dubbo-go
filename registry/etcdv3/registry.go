@@ -51,7 +51,7 @@ type etcdV3Registry struct {
 	registry.BaseRegistry
 	cltLock        sync.Mutex
 	client         *etcdv3.Client
-	listenerLock   sync.Mutex
+	listenerLock   sync.RWMutex
 	listener       *etcdv3.EventListener
 	dataListener   *dataListener
 	configListener *configurationListener
@@ -150,14 +150,9 @@ func (r *etcdV3Registry) CreatePath(k string) error {
 
 // DoSubscribe actually subscribe the provider URL
 func (r *etcdV3Registry) DoSubscribe(svc *common.URL) (registry.Listener, error) {
-
-	var (
-		configListener *configurationListener
-	)
-
-	r.listenerLock.Lock()
-	configListener = r.configListener
-	r.listenerLock.Unlock()
+	r.listenerLock.RLock()
+	configListener := r.configListener
+	r.listenerLock.RUnlock()
 	if r.listener == nil {
 		r.cltLock.Lock()
 		client := r.client
@@ -165,12 +160,8 @@ func (r *etcdV3Registry) DoSubscribe(svc *common.URL) (registry.Listener, error)
 		if client == nil {
 			return nil, perrors.New("etcd client broken")
 		}
-
-		// new client & listener
-		listener := etcdv3.NewEventListener(r.client)
-
 		r.listenerLock.Lock()
-		r.listener = listener
+		r.listener = etcdv3.NewEventListener(r.client) // new client & listener
 		r.listenerLock.Unlock()
 	}
 
