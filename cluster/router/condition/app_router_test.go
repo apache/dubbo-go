@@ -83,8 +83,7 @@ conditions:
 	appRouteURL := getAppRouteURL(routerKey)
 	notify := make(chan struct{})
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	appRouter, err := NewAppRouter(appRouteURL, notify)
@@ -140,8 +139,7 @@ conditions:
 	appRouteURL := getAppRouteURL(routerKey)
 	notify := make(chan struct{})
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	appRouter, err := NewAppRouter(appRouteURL, notify)
@@ -188,8 +186,7 @@ conditions:
 	appRouteURL := getAppRouteURL(routerKey)
 	notify := make(chan struct{})
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	appRouter, err := NewAppRouter(appRouteURL, notify)
