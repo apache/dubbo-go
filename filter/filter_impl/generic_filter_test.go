@@ -98,15 +98,17 @@ func TestStruct2MapAllSlice(t *testing.T) {
 
 func TestStruct2MapAllMap(t *testing.T) {
 	var testData struct {
-		AaAa string
-		Baba map[string]interface{}
-		CaCa map[string]string
-		DdDd map[string]interface{}
+		AaAa   string
+		Baba   map[string]interface{}
+		CaCa   map[string]string
+		DdDd   map[string]interface{}
+		IntMap map[int]interface{}
 	}
 	testData.AaAa = "aaaa"
 	testData.Baba = make(map[string]interface{})
 	testData.CaCa = make(map[string]string)
 	testData.DdDd = nil
+	testData.IntMap = make(map[int]interface{})
 
 	testData.Baba["kk"] = 1
 	var structData struct {
@@ -117,14 +119,19 @@ func TestStruct2MapAllMap(t *testing.T) {
 	testData.Baba["nil"] = nil
 	testData.CaCa["k1"] = "v1"
 	testData.CaCa["kv2"] = "v2"
+	testData.IntMap[1] = 1
 	m := struct2MapAll(testData)
 
 	assert.Equal(t, reflect.Map, reflect.TypeOf(m).Kind())
-	assert.Equal(t, reflect.String, reflect.TypeOf(m.(map[string]interface{})["aaAa"]).Kind())
-	assert.Equal(t, reflect.Map, reflect.TypeOf(m.(map[string]interface{})["baba"]).Kind())
-	assert.Equal(t, reflect.Map, reflect.TypeOf(m.(map[string]interface{})["baba"].(map[string]interface{})["struct"]).Kind())
-	assert.Equal(t, "str", m.(map[string]interface{})["baba"].(map[string]interface{})["struct"].(map[string]interface{})["str"])
-	assert.Equal(t, nil, m.(map[string]interface{})["baba"].(map[string]interface{})["nil"])
-	assert.Equal(t, reflect.Map, reflect.TypeOf(m.(map[string]interface{})["caCa"]).Kind())
-	assert.Equal(t, reflect.Map, reflect.TypeOf(m.(map[string]interface{})["ddDd"]).Kind())
+	mappedStruct := m.(map[string]interface{})
+	assert.Equal(t, reflect.String, reflect.TypeOf(mappedStruct["aaAa"]).Kind())
+	assert.Equal(t, reflect.Map, reflect.TypeOf(mappedStruct["baba"]).Kind())
+	assert.Equal(t, reflect.Map, reflect.TypeOf(mappedStruct["baba"].(map[interface{}]interface{})["struct"]).Kind())
+	assert.Equal(t, "str", mappedStruct["baba"].(map[interface{}]interface{})["struct"].(map[string]interface{})["str"])
+	assert.Equal(t, nil, mappedStruct["baba"].(map[interface{}]interface{})["nil"])
+	assert.Equal(t, reflect.Map, reflect.TypeOf(mappedStruct["caCa"]).Kind())
+	assert.Equal(t, reflect.Map, reflect.TypeOf(mappedStruct["ddDd"]).Kind())
+	intMap := mappedStruct["intMap"]
+	assert.Equal(t, reflect.Map, reflect.TypeOf(intMap).Kind())
+	assert.Equal(t, 1, intMap.(map[interface{}]interface{})[1])
 }
