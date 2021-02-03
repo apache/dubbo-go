@@ -150,8 +150,7 @@ conditions:
 	factory := extension.GetRouterFactory(url.Protocol)
 	notify := make(chan struct{})
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	r, err := factory.NewPriorityRouter(url, notify)
