@@ -82,6 +82,7 @@ LOOP:
 					break
 				}
 				failTimes++
+				logger.Warnf("ZK reconnect failed %d times", failTimes)
 				if MaxFailTimes <= failTimes {
 					failTimes = MaxFailTimes
 				}
