@@ -38,7 +38,7 @@ const (
 	// ConnDelay connection delay interval
 	ConnDelay = 3
 	// MaxFailTimes max fail times
-	MaxFailTimes = 15
+	MaxFailTimes = 3
 )
 
 var (
@@ -259,7 +259,6 @@ func (z *ZookeeperClient) HandleZkEvent(session <-chan zk.Event) {
 			switch (int)(event.State) {
 			case (int)(zk.StateDisconnected):
 				logger.Warnf("zk{addr:%s} state is StateDisconnected, so close the zk client{name:%s}.", z.ZkAddrs, z.name)
-				z.stop()
 				z.Lock()
 				conn := z.Conn
 				z.Conn = nil
@@ -267,6 +266,7 @@ func (z *ZookeeperClient) HandleZkEvent(session <-chan zk.Event) {
 				if conn != nil {
 					conn.Close()
 				}
+				z.stop()
 				return
 			case (int)(zk.EventNodeDataChanged), (int)(zk.EventNodeChildrenChanged):
 				logger.Infof("zkClient{%s} get zk node changed event{path:%s}", z.name, event.Path)
@@ -555,7 +555,7 @@ func (z *ZookeeperClient) GetChildrenW(path string) ([]string, <-chan zk.Event, 
 		if err == zk.ErrNoNode {
 			return nil, nil, errNilNode
 		}
-		logger.Errorf("zk.ChildrenW(path{%s}) = error(%v)", path, err)
+		logger.Warnf("zk.ChildrenW(path{%s}) = error(%v)", path, err)
 		return nil, nil, perrors.WithMessagef(err, "zk.ChildrenW(path:%s)", path)
 	}
 	if stat == nil {
@@ -637,6 +637,9 @@ func (z *ZookeeperClient) SetContent(zkPath string, content []byte, version int3
 
 // getConn gets zookeeper connection safely
 func (z *ZookeeperClient) getConn() *zk.Conn {
+	if z == nil {
+		return nil
+	}
 	z.RLock()
 	defer z.RUnlock()
 	return z.Conn
