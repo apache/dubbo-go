@@ -121,8 +121,7 @@ func TestTagRouterPriority(t *testing.T) {
 	u1, err := common.NewURL(tagRouterTestUserConsumerTag)
 	notify := make(chan struct{})
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	assert.Nil(t, err)
@@ -135,8 +134,7 @@ func TestTagRouterPriority(t *testing.T) {
 func TestTagRouterRouteForce(t *testing.T) {
 	notify := make(chan struct{})
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	u1, e1 := common.NewURL(tagRouterTestUserConsumerTag)
@@ -175,8 +173,7 @@ func TestTagRouterRouteNoForce(t *testing.T) {
 	assert.Nil(t, e1)
 	notify := make(chan struct{})
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	tagRouter, e := NewTagRouter(u1, notify)
@@ -244,8 +241,7 @@ func TestRouteBeijingInvoker(t *testing.T) {
 	url, _ := common.NewURL(tagRouterTestBeijingUrl)
 	notify := make(chan struct{})
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	tagRouter, _ := NewTagRouter(url, notify)
@@ -326,8 +322,7 @@ tags:
 
 	notify := make(chan struct{})
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	tagRouter, err := NewTagRouter(url, notify)
@@ -397,8 +392,7 @@ func TestProcess(t *testing.T) {
 	assert.Nil(t, err)
 	notify := make(chan struct{})
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	tagRouter, e := NewTagRouter(u1, notify)
@@ -420,8 +414,7 @@ tags:
     addresses: [192.168.1.3, 192.168.1.4]
 `
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	tagRouter.Process(&config_center.ConfigChangeEvent{Value: testYML, ConfigType: remoting.EventTypeAdd})

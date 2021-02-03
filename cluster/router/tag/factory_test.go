@@ -41,8 +41,7 @@ func TestTagRouterFactoryNewRouter(t *testing.T) {
 	factory := NewTagRouterFactory()
 	notify := make(chan struct{})
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	tagRouter, e := factory.NewPriorityRouter(u1, notify)

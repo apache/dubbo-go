@@ -51,8 +51,7 @@ func TestHealthCheckRouterRoute(t *testing.T) {
 	defer protocol.CleanAllStatus()
 	notify := make(chan struct{})
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	consumerURL, _ := common.NewURL(healthCheck1001URL)
@@ -120,8 +119,7 @@ func TestNewHealthCheckRouter(t *testing.T) {
 	defer protocol.CleanAllStatus()
 	notify := make(chan struct{})
 	go func() {
-		for {
-			<-notify
+		for range notify {
 		}
 	}()
 	url, _ := common.NewURL(fmt.Sprintf(healthCheckDubboUrlFormat, healthCheckDubbo1010IP))
