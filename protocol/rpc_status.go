@@ -264,10 +264,8 @@ func TryRefreshBlackList() {
 			go func(ivks []Invoker, i int) {
 				defer wg.Done()
 				for j, _ := range ivks {
-					if j%3-i == 0 {
-						if ivks[j].(Invoker).IsAvailable() {
-							RemoveInvokerUnhealthyStatus(ivks[i])
-						}
+					if j%3-i == 0 && ivks[j].(Invoker).IsAvailable() {
+						RemoveInvokerUnhealthyStatus(ivks[i])
 					}
 				}
 			}(ivks, i)
