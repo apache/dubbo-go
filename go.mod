@@ -55,3 +55,6 @@ require (
 )
 
 replace github.com/envoyproxy/go-control-plane => github.com/envoyproxy/go-control-plane v0.8.0
+replace (
+	github.com/dubbogo/triple v0.0.0-20210126122925-f5ca080bd156 => ../triple
+)

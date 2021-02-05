@@ -60,7 +60,9 @@ func NewDubbo3Invoker(url *common.URL) (*Dubbo3Invoker, error) {
 		requestTimeout = t
 	}
 
-	client, err := dubbo3.NewTripleClient(url)
+	key := url.GetParam(constant.BEAN_NAME_KEY, "")
+	consumerService := config.GetConsumerService(key)
+	client, err := dubbo3.NewTripleClient(url, consumerService)
 	if err != nil {
 		return nil, err
 	}
