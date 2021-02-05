@@ -143,8 +143,7 @@ func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invoc
 		for i := 0; i < 3; i++ {
 			if len(otherInvokers) == 0 {
 				// no other ivk to reselect, return to fallback
-				logger.Errorf("all %d invokers is unavailable for %s.", len(invokers), selectedInvoker.GetUrl().String())
-				return nil
+				break
 			}
 			reselectedInvoker := lb.Select(otherInvokers, invocation)
 			if isInvoked(reselectedInvoker, invoked) {
@@ -158,11 +157,13 @@ func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invoc
 				otherInvokers = getOtherInvokers(otherInvokers, reselectedInvoker)
 				continue
 			}
-			selectedInvoker = reselectedInvoker
-			break
+			return reselectedInvoker
 		}
+	} else {
+		return selectedInvoker
 	}
-	return selectedInvoker
+	logger.Errorf("all %d invokers is unavailable for %s.", len(invokers), selectedInvoker.GetUrl().String())
+	return nil
 }
 
 func (invoker *baseClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
