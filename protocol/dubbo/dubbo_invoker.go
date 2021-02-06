@@ -27,8 +27,6 @@ import (
 
 import (
 	"github.com/opentracing/opentracing-go"
-	perrors "github.com/pkg/errors"
-	uatomic "go.uber.org/atomic"
 )
 
 import (
@@ -42,13 +40,6 @@ import (
 )
 
 var (
-	// ErrNoReply
-	ErrNoReply = perrors.New("request need @response")
-	// ErrDestroyedInvoker
-	ErrDestroyedInvoker = perrors.New("request Destroyed invoker")
-)
-
-var (
 	attachmentKey = []string{constant.INTERFACE_KEY, constant.GROUP_KEY, constant.TOKEN_KEY, constant.TIMEOUT_KEY,
 		constant.VERSION_KEY}
 )
@@ -57,13 +48,11 @@ var (
 type DubboInvoker struct {
 	protocol.BaseInvoker
 	// the exchange layer, it is focus on network communication.
-	client   *remoting.ExchangeClient
-	quitOnce sync.Once
+	clientGuard *sync.RWMutex
+	client      *remoting.ExchangeClient
+	quitOnce    sync.Once
 	// timeout for service(interface) level.
 	timeout time.Duration
-	// Used to record the number of requests. -1 represent this DubboInvoker is destroyed
-	reqNum uatomic.Int64
-	closed  uatomic.Bool
 }
 
 // NewDubboInvoker constructor
@@ -76,13 +65,26 @@ func NewDubboInvoker(url *common.URL, client *remoting.ExchangeClient) *DubboInv
 	}
 	di := &DubboInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
+		clientGuard: &sync.RWMutex{},
 		client:      client,
 		timeout:     requestTimeout,
 	}
-	di.reqNum.Store(0)
-	di.closed.Store(false)
 
 	return di
+}
+
+func (di *DubboInvoker) setClient(client *remoting.ExchangeClient) {
+	di.clientGuard.Lock()
+	defer di.clientGuard.Unlock()
+
+	di.client = client
+}
+
+func (di *DubboInvoker) getClient() *remoting.ExchangeClient {
+	di.clientGuard.RLock()
+	defer di.clientGuard.RUnlock()
+
+	return di.client
 }
 
 // Invoke call remoting.
@@ -91,15 +93,24 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 		err    error
 		result protocol.RPCResult
 	)
-	if di.closed.Load() {
+	if !di.BaseInvoker.IsAvailable() {
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
 		logger.Warnf("this dubboInvoker is destroyed")
-		result.Err = ErrDestroyedInvoker
+		result.Err = protocol.ErrDestroyedInvoker
 		return &result
 	}
-	di.reqNum.Add(1)
-	defer di.reqNum.Add(-1)
+
+	di.AddInvokerTimes(1)
+	defer di.AddInvokerTimes(-1)
+
+	if !di.BaseInvoker.IsAvailable() {
+		// Generally, the case will not happen, because the invoker has been removed
+		// from the invoker list before destroy,so no new request will enter the destroyed invoker
+		logger.Warnf("this dubboInvoker is destroying")
+		result.Err = protocol.ErrDestroyedInvoker
+		return &result
+	}
 
 	inv := invocation.(*invocation_impl.RPCInvocation)
 	// init param
@@ -127,18 +138,22 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	//response := NewResponse(inv.Reply(), nil)
 	rest := &protocol.RPCResult{}
 	timeout := di.getTimeout(inv)
-	if async {
-		if callBack, ok := inv.CallBack().(func(response common.CallbackResponse)); ok {
-			//result.Err = di.client.AsyncCall(NewRequest(url.Location, url, inv.MethodName(), inv.Arguments(), inv.Attachments()), callBack, response)
-			result.Err = di.client.AsyncRequest(&invocation, url, timeout, callBack, rest)
-		} else {
-			result.Err = di.client.Send(&invocation, url, timeout)
-		}
+	client := di.getClient()
+	if client == nil {
+		result.Err = protocol.ErrClientClosed
 	} else {
-		if inv.Reply() == nil {
-			result.Err = ErrNoReply
+		if async {
+			if callBack, ok := inv.CallBack().(func(response common.CallbackResponse)); ok {
+				result.Err = client.AsyncRequest(&invocation, url, timeout, callBack, rest)
+			} else {
+				result.Err = client.Send(&invocation, url, timeout)
+			}
 		} else {
-			result.Err = di.client.Request(&invocation, url, timeout, rest)
+			if inv.Reply() == nil {
+				result.Err = protocol.ErrNoReply
+			} else {
+				result.Err = client.Request(&invocation, url, timeout, rest)
+			}
 		}
 	}
 	if result.Err == nil {
@@ -166,25 +181,36 @@ func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) ti
 }
 
 func (di *DubboInvoker) IsAvailable() bool {
-	return di.client.IsAvailable()
+	client := di.getClient()
+	if client != nil {
+		return client.IsAvailable()
+	}
+
+	return false
 }
 
 // Destroy destroy dubbo client invoker.
 func (di *DubboInvoker) Destroy() {
 	di.quitOnce.Do(func() {
-		di.closed.Store(true)
+		di.BaseInvoker.Stop()
+		var times int64
 		for {
-			if di.reqNum.Load() == 0 {
-				di.reqNum.Add(-1)
-				logger.Infof("dubboInvoker is destroyed,url:{%s}", di.GetUrl().Key())
+			times = di.BaseInvoker.InvokeTimes()
+			if times == 0 {
+				di.BaseInvoker.AddInvokerTimes(-1)
+				logger.Infof("dubboInvoker is destroyed, url:{%s}", di.GetUrl().Key())
 				di.BaseInvoker.Destroy()
-				if di.client != nil {
-					di.client.Close()
-					di.client = nil
+				client := di.getClient()
+				if client != nil {
+					di.setClient(nil)
+					client.Close()
 				}
 				break
+			} else if times < 0 {
+				logger.Infof("impossible log: dubboInvoker has destroyed, url:{%s}", di.GetUrl().Key())
+				break
 			}
-			logger.Warnf("DubboInvoker is to be destroyed, wait {%v} req end,url:{%s}", di.reqNum.Load(), di.GetUrl().Key())
+			logger.Warnf("DubboInvoker is to be destroyed, wait {%v} req end,url:{%s}", times, di.GetUrl().Key())
 			time.Sleep(1 * time.Second)
 		}
 	})
