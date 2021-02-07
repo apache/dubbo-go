@@ -47,8 +47,9 @@ type listenableRouter struct {
 	conditionRouters []*ConditionRouter
 	routerRule       *RouterRule
 	url              *common.URL
-	//force            bool
-	priority int64
+	force            bool
+	priority         int64
+	notify           chan struct{}
 }
 
 // RouterRule Get RouterRule instance from listenableRouter
@@ -56,7 +57,7 @@ func (l *listenableRouter) RouterRule() *RouterRule {
 	return l.routerRule
 }
 
-func newListenableRouter(url *common.URL, ruleKey string) (*AppRouter, error) {
+func newListenableRouter(url *common.URL, ruleKey string, notify chan struct{}) (*AppRouter, error) {
 	if ruleKey == "" {
 		return nil, perrors.Errorf("NewListenableRouter ruleKey is nil, can't create Listenable router")
 	}
@@ -64,6 +65,7 @@ func newListenableRouter(url *common.URL, ruleKey string) (*AppRouter, error) {
 
 	l.url = url
 	l.priority = listenableRouterDefaultPriority
+	l.notify = notify
 
 	routerKey := ruleKey + constant.ConditionRouterRuleSuffix
 	// add listener
@@ -110,6 +112,9 @@ func (l *listenableRouter) Process(event *config_center.ConfigChangeEvent) {
 		return
 	}
 	l.generateConditions(routerRule)
+	go func() {
+		l.notify <- struct{}{}
+	}()
 }
 
 func (l *listenableRouter) generateConditions(rule *RouterRule) {

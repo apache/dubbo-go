@@ -15,36 +15,27 @@
  * limitations under the License.
  */
 
-package tag
+package extension
 
 import (
-	"fmt"
-	"testing"
-)
-
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
+	"github.com/apache/dubbo-go/cluster/router"
 	"github.com/apache/dubbo-go/common"
 )
 
-const (
-	factoryLocalIP = "127.0.0.1"
-	factoryFormat  = "dubbo://%s:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=true"
+var (
+	connCheckers = make(map[string]func(url *common.URL) router.ConnChecker)
 )
 
-func TestTagRouterFactoryNewRouter(t *testing.T) {
-	u1, err := common.NewURL(fmt.Sprintf(factoryFormat, factoryLocalIP))
-	assert.Nil(t, err)
-	factory := NewTagRouterFactory()
-	notify := make(chan struct{})
-	go func() {
-		for range notify {
-		}
-	}()
-	tagRouter, e := factory.NewPriorityRouter(u1, notify)
-	assert.Nil(t, e)
-	assert.NotNil(t, tagRouter)
+// SetHealthChecker sets the HealthChecker with @name
+func SetConnChecker(name string, fcn func(_ *common.URL) router.ConnChecker) {
+	connCheckers[name] = fcn
+}
+
+// GetHealthChecker gets the HealthChecker with @name
+func GetConnChecker(name string, url *common.URL) router.ConnChecker {
+	f, ok := connCheckers[name]
+	if !ok || f == nil {
+		panic("connCheckers for " + name + " is not existing, make sure you have import the package.")
+	}
+	return connCheckers[name](url)
 }
