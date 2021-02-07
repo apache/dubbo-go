@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package tag
+package conncheck
 
 import (
 	"fmt"
@@ -28,23 +28,25 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/protocol"
 )
 
 const (
-	factoryLocalIP = "127.0.0.1"
-	factoryFormat  = "dubbo://%s:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=true"
+	connCheckDubbo1010IP    = "192.168.10.10"
+	connCheckDubboUrlFormat = "dubbo://%s:20000/com.ikurento.user.UserProvider"
 )
 
-func TestTagRouterFactoryNewRouter(t *testing.T) {
-	u1, err := common.NewURL(fmt.Sprintf(factoryFormat, factoryLocalIP))
-	assert.Nil(t, err)
-	factory := NewTagRouterFactory()
-	notify := make(chan struct{})
-	go func() {
-		for range notify {
-		}
-	}()
-	tagRouter, e := factory.NewPriorityRouter(u1, notify)
-	assert.Nil(t, e)
-	assert.NotNil(t, tagRouter)
+func TestDefaultConnCheckerIsHealthy(t *testing.T) {
+	defer protocol.CleanAllStatus()
+	url, _ := common.NewURL(fmt.Sprintf(connCheckDubboUrlFormat, connCheckDubbo1010IP))
+	cc := NewDefaultConnChecker(url).(*DefaultConnChecker)
+	invoker := NewMockInvoker(url)
+	healthy := cc.IsConnHealthy(invoker)
+	assert.True(t, healthy)
+
+	invoker = NewMockInvoker(url)
+	cc = NewDefaultConnChecker(url).(*DefaultConnChecker)
+	// add to black list
+	protocol.SetInvokerUnhealthyStatus(invoker)
+	assert.False(t, cc.IsConnHealthy(invoker))
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package healthcheck
+package conncheck
 
 import (
 	"github.com/RoaringBitmap/roaring"
@@ -32,41 +32,33 @@ import (
 )
 
 const (
-	healthy = "healthy"
-	name    = "health-check-router"
+	connHealthy = "conn-healthy"
+	name        = "conn-check-router"
 )
 
-// HealthCheckRouter provides a health-first routing mechanism through HealthChecker
-type HealthCheckRouter struct {
+// ConnCheckRouter provides a health-first routing mechanism through ConnChecker
+type ConnCheckRouter struct {
 	url     *common.URL
-	enabled bool
-	checker router.HealthChecker
+	checker router.ConnChecker
 	notify  chan struct{}
 }
 
-// NewHealthCheckRouter construct an HealthCheckRouter via url
-func NewHealthCheckRouter(url *common.URL, notify chan struct{}) (router.PriorityRouter, error) {
-	r := &HealthCheckRouter{
-		url:     url,
-		enabled: url.GetParamBool(constant.HEALTH_ROUTE_ENABLED_KEY, false),
-		notify:  notify,
+// NewConnCheckRouter construct an NewConnCheckRouter via url
+func NewConnCheckRouter(url *common.URL, notify chan struct{}) (router.PriorityRouter, error) {
+	r := &ConnCheckRouter{
+		url:    url,
+		notify: notify,
 	}
-	if r.enabled {
-		checkerName := url.GetParam(constant.HEALTH_CHECKER, constant.DEFAULT_HEALTH_CHECKER)
-		r.checker = extension.GetHealthChecker(checkerName, url)
-	}
+	checkerName := url.GetParam(constant.HEALTH_CHECKER, constant.DEFAULT_HEALTH_CHECKER)
+	r.checker = extension.GetConnChecker(checkerName, url)
 	return r, nil
 }
 
 // Route gets a list of healthy invoker
-func (r *HealthCheckRouter) Route(invokers *roaring.Bitmap, cache router.Cache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
-	if !r.enabled {
-		return invokers
-	}
-
+func (r *ConnCheckRouter) Route(invokers *roaring.Bitmap, cache router.Cache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
 	addrPool := cache.FindAddrPool(r)
 	// Add healthy invoker to the list
-	healthyInvokers := utils.JoinIfNotEqual(addrPool[healthy], invokers)
+	healthyInvokers := utils.JoinIfNotEqual(addrPool[connHealthy], invokers)
 	// If all invokers are considered unhealthy, downgrade to all invoker
 	if healthyInvokers.IsEmpty() {
 		logger.Warnf(" Now all invokers are unhealthy, so downgraded to all! Service: [%s]", url.ServiceKey())
@@ -76,41 +68,38 @@ func (r *HealthCheckRouter) Route(invokers *roaring.Bitmap, cache router.Cache, 
 }
 
 // Pool separates healthy invokers from others.
-func (r *HealthCheckRouter) Pool(invokers []protocol.Invoker) (router.AddrPool, router.AddrMetadata) {
-	if !r.enabled {
-		return nil, nil
-	}
-
+func (r *ConnCheckRouter) Pool(invokers []protocol.Invoker) (router.AddrPool, router.AddrMetadata) {
 	rb := make(router.AddrPool, 8)
-	rb[healthy] = roaring.NewBitmap()
+	rb[connHealthy] = roaring.NewBitmap()
 	for i, invoker := range invokers {
-		if r.checker.IsHealthy(invoker) {
-			rb[healthy].Add(uint32(i))
+		if r.checker.IsConnHealthy(invoker) {
+			rb[connHealthy].Add(uint32(i))
 		}
 	}
 	return rb, nil
 }
 
 // ShouldPool will always return true to make sure healthy check constantly.
-func (r *HealthCheckRouter) ShouldPool() bool {
-	return r.enabled
+func (r *ConnCheckRouter) ShouldPool() bool {
+	return true
 }
 
-func (r *HealthCheckRouter) Name() string {
+// Name get name of ConnCheckerRouter
+func (r *ConnCheckRouter) Name() string {
 	return name
 }
 
-// Priority
-func (r *HealthCheckRouter) Priority() int64 {
+// Priority get Router priority level
+func (r *ConnCheckRouter) Priority() int64 {
 	return 0
 }
 
 // URL Return URL in router
-func (r *HealthCheckRouter) URL() *common.URL {
+func (r *ConnCheckRouter) URL() *common.URL {
 	return r.url
 }
 
-// HealthyChecker returns the HealthChecker bound to this HealthCheckRouter
-func (r *HealthCheckRouter) HealthyChecker() router.HealthChecker {
+// ConnChecker returns the HealthChecker bound to this HealthCheckRouter
+func (r *ConnCheckRouter) ConnChecker() router.ConnChecker {
 	return r.checker
 }

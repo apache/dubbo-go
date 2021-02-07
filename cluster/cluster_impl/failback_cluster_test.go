@@ -72,6 +72,8 @@ func TestFailbackSuceess(t *testing.T) {
 
 	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()
 
+	invoker.EXPECT().IsAvailable().Return(true)
+
 	mockResult := &protocol.RPCResult{Rest: rest{tried: 0, success: true}}
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
 
@@ -88,6 +90,7 @@ func TestFailbackRetryOneSuccess(t *testing.T) {
 	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
 
 	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()
+	invoker.EXPECT().IsAvailable().Return(true)
 
 	// failed at first
 	mockFailedResult := &protocol.RPCResult{Err: perrors.New("error")}
@@ -98,6 +101,7 @@ func TestFailbackRetryOneSuccess(t *testing.T) {
 	wg.Add(1)
 	now := time.Now()
 	mockSuccResult := &protocol.RPCResult{Rest: rest{tried: 0, success: true}}
+	invoker.EXPECT().IsAvailable().Return(true)
 	invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(func(protocol.Invocation) protocol.Result {
 		delta := time.Since(now).Nanoseconds() / int64(time.Second)
 		assert.True(t, delta >= 5)
@@ -131,6 +135,7 @@ func TestFailbackRetryFailed(t *testing.T) {
 	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
 
 	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()
+	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 
 	mockFailedResult := &protocol.RPCResult{Err: perrors.New("error")}
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockFailedResult)
@@ -177,6 +182,7 @@ func TestFailbackRetryFailed10Times(t *testing.T) {
 	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
 	clusterInvoker.maxRetries = 10
 
+	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()
 
 	// 10 task should failed firstly.
@@ -220,6 +226,7 @@ func TestFailbackOutOfLimit(t *testing.T) {
 	clusterInvoker.failbackTasks = 1
 
 	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()
+	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 
 	mockFailedResult := &protocol.RPCResult{Err: perrors.New("error")}
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockFailedResult).Times(11)

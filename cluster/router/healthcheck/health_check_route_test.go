@@ -49,12 +49,17 @@ const (
 
 func TestHealthCheckRouterRoute(t *testing.T) {
 	defer protocol.CleanAllStatus()
+	notify := make(chan struct{})
+	go func() {
+		for range notify {
+		}
+	}()
 	consumerURL, _ := common.NewURL(healthCheck1001URL)
-	consumerURL.SetParam(HEALTH_ROUTE_ENABLED_KEY, "true")
+	consumerURL.SetParam(constant.HEALTH_ROUTE_ENABLED_KEY, "true")
 	url1, _ := common.NewURL(fmt.Sprintf(healthCheckRouteUrlFormat, healthCheckRoute1010IP))
 	url2, _ := common.NewURL(fmt.Sprintf(healthCheckRouteUrlFormat, healthCheckRoute1011IP))
 	url3, _ := common.NewURL(fmt.Sprintf(healthCheckRouteUrlFormat, healthCheckRoute1012IP))
-	hcr, _ := NewHealthCheckRouter(consumerURL)
+	hcr, _ := NewHealthCheckRouter(consumerURL, notify)
 
 	var invokers []protocol.Invoker
 	invoker1 := NewMockInvoker(url1)
@@ -112,13 +117,18 @@ func TestHealthCheckRouterRoute(t *testing.T) {
 
 func TestNewHealthCheckRouter(t *testing.T) {
 	defer protocol.CleanAllStatus()
+	notify := make(chan struct{})
+	go func() {
+		for range notify {
+		}
+	}()
 	url, _ := common.NewURL(fmt.Sprintf(healthCheckDubboUrlFormat, healthCheckDubbo1010IP))
-	hcr, _ := NewHealthCheckRouter(url)
+	hcr, _ := NewHealthCheckRouter(url, notify)
 	h := hcr.(*HealthCheckRouter)
 	assert.Nil(t, h.checker)
 
-	url.SetParam(HEALTH_ROUTE_ENABLED_KEY, "true")
-	hcr, _ = NewHealthCheckRouter(url)
+	url.SetParam(constant.HEALTH_ROUTE_ENABLED_KEY, "true")
+	hcr, _ = NewHealthCheckRouter(url, notify)
 	h = hcr.(*HealthCheckRouter)
 	assert.NotNil(t, h.checker)
 
@@ -130,7 +140,7 @@ func TestNewHealthCheckRouter(t *testing.T) {
 	url.SetParam(constant.CIRCUIT_TRIPPED_TIMEOUT_FACTOR_KEY, "500")
 	url.SetParam(constant.SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY, "10")
 	url.SetParam(constant.OUTSTANDING_REQUEST_COUNT_LIMIT_KEY, "1000")
-	hcr, _ = NewHealthCheckRouter(url)
+	hcr, _ = NewHealthCheckRouter(url, notify)
 	h = hcr.(*HealthCheckRouter)
 	dhc = h.checker.(*DefaultHealthChecker)
 	assert.Equal(t, dhc.outStandingRequestConutLimit, int32(1000))
