@@ -119,17 +119,27 @@ func (bi *MockInvoker) Destroy() {
 
 func TestTagRouterPriority(t *testing.T) {
 	u1, err := common.NewURL(tagRouterTestUserConsumerTag)
+	notify := make(chan struct{})
+	go func() {
+		for range notify {
+		}
+	}()
 	assert.Nil(t, err)
-	tagRouter, e := NewTagRouter(u1)
+	tagRouter, e := NewTagRouter(u1, notify)
 	assert.Nil(t, e)
 	p := tagRouter.Priority()
 	assert.Equal(t, int64(0), p)
 }
 
 func TestTagRouterRouteForce(t *testing.T) {
+	notify := make(chan struct{})
+	go func() {
+		for range notify {
+		}
+	}()
 	u1, e1 := common.NewURL(tagRouterTestUserConsumerTag)
 	assert.Nil(t, e1)
-	tagRouter, e := NewTagRouter(u1)
+	tagRouter, e := NewTagRouter(u1, notify)
 	assert.Nil(t, e)
 
 	u2, e2 := common.NewURL(tagRouterTestHangZhouUrl)
@@ -161,7 +171,12 @@ func TestTagRouterRouteForce(t *testing.T) {
 func TestTagRouterRouteNoForce(t *testing.T) {
 	u1, e1 := common.NewURL(tagRouterTestUserConsumer)
 	assert.Nil(t, e1)
-	tagRouter, e := NewTagRouter(u1)
+	notify := make(chan struct{})
+	go func() {
+		for range notify {
+		}
+	}()
+	tagRouter, e := NewTagRouter(u1, notify)
 	assert.Nil(t, e)
 
 	u2, e2 := common.NewURL(tagRouterTestHangZhouUrl)
@@ -224,7 +239,12 @@ func TestRouteBeijingInvoker(t *testing.T) {
 	invokers = append(invokers, inv2, inv3, inv4, inv5)
 
 	url, _ := common.NewURL(tagRouterTestBeijingUrl)
-	tagRouter, _ := NewTagRouter(url)
+	notify := make(chan struct{})
+	go func() {
+		for range notify {
+		}
+	}()
+	tagRouter, _ := NewTagRouter(url, notify)
 
 	rb := roaring.NewBitmap()
 	rb.AddRange(0, uint64(len(invokers)))
@@ -300,7 +320,12 @@ tags:
 	url, e1 := common.NewURL(tagRouterTestUserConsumerTag)
 	suite.Nil(e1)
 
-	tagRouter, err := NewTagRouter(url)
+	notify := make(chan struct{})
+	go func() {
+		for range notify {
+		}
+	}()
+	tagRouter, err := NewTagRouter(url, notify)
 	suite.Nil(err)
 	suite.NotNil(tagRouter)
 	suite.route = tagRouter
@@ -365,7 +390,12 @@ func (suite *DynamicTagRouter) TestDynamicTagRouterByNoTagAndAddressMatch() {
 func TestProcess(t *testing.T) {
 	u1, err := common.NewURL(tagRouterTestUserConsumerTag)
 	assert.Nil(t, err)
-	tagRouter, e := NewTagRouter(u1)
+	notify := make(chan struct{})
+	go func() {
+		for range notify {
+		}
+	}()
+	tagRouter, e := NewTagRouter(u1, notify)
 	assert.Nil(t, e)
 	assert.NotNil(t, tagRouter)
 
@@ -383,12 +413,17 @@ tags:
   - name: hangzhou
     addresses: [192.168.1.3, 192.168.1.4]
 `
+	go func() {
+		for range notify {
+		}
+	}()
 	tagRouter.Process(&config_center.ConfigChangeEvent{Value: testYML, ConfigType: remoting.EventTypeAdd})
 	assert.NotNil(t, tagRouter.tagRouterRule)
 	assert.Equal(t, []string{"beijing", "hangzhou"}, tagRouter.tagRouterRule.getTagNames())
 	assert.Equal(t, []string{"192.168.1.1", "192.168.1.2", "192.168.1.3", "192.168.1.4"}, tagRouter.tagRouterRule.getAddresses())
 	assert.Equal(t, []string{"192.168.1.3", "192.168.1.4"}, tagRouter.tagRouterRule.getTagNameToAddresses()["hangzhou"])
 	assert.Equal(t, []string{"beijing"}, tagRouter.tagRouterRule.getAddressToTagNames()["192.168.1.1"])
+
 	tagRouter.Process(&config_center.ConfigChangeEvent{ConfigType: remoting.EventTypeDel})
 	assert.Nil(t, tagRouter.tagRouterRule)
 }

@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-package tag
+package conncheck
 
 import (
-	"fmt"
+	"context"
 	"testing"
 )
 
@@ -28,23 +28,47 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/protocol"
 )
 
-const (
-	factoryLocalIP = "127.0.0.1"
-	factoryFormat  = "dubbo://%s:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=true"
-)
+// nolint
+type MockInvoker struct {
+	url *common.URL
+}
 
-func TestTagRouterFactoryNewRouter(t *testing.T) {
-	u1, err := common.NewURL(fmt.Sprintf(factoryFormat, factoryLocalIP))
-	assert.Nil(t, err)
-	factory := NewTagRouterFactory()
-	notify := make(chan struct{})
-	go func() {
-		for range notify {
-		}
-	}()
-	tagRouter, e := factory.NewPriorityRouter(u1, notify)
-	assert.Nil(t, e)
-	assert.NotNil(t, tagRouter)
+// nolint
+func NewMockInvoker(url *common.URL) *MockInvoker {
+	return &MockInvoker{
+		url: url,
+	}
+}
+
+// nolint
+func (bi *MockInvoker) GetUrl() *common.URL {
+	return bi.url
+}
+
+// nolint
+func (bi *MockInvoker) IsAvailable() bool {
+	return true
+}
+
+// nolint
+func (bi *MockInvoker) IsDestroyed() bool {
+	return true
+}
+
+// nolint
+func (bi *MockInvoker) Invoke(_ context.Context, _ protocol.Invocation) protocol.Result {
+	return nil
+}
+
+// nolint
+func (bi *MockInvoker) Destroy() {
+}
+
+// nolint
+func TestHealthCheckRouteFactory(t *testing.T) {
+	factory := newConnCheckRouteFactory()
+	assert.NotNil(t, factory)
 }

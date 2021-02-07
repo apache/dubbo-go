@@ -15,37 +15,31 @@
  * limitations under the License.
  */
 
-package condition
+package conncheck
 
 import (
-	perrors "github.com/pkg/errors"
-)
-
-import (
+	"github.com/apache/dubbo-go/cluster/router"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/protocol"
 )
 
-const (
-	// Default priority for application router
-	appRouterDefaultPriority = int64(150)
-)
-
-// AppRouter For listen application router with config center
-type AppRouter struct {
-	listenableRouter
-	notify interface{}
+func init() {
+	extension.SetConnChecker(constant.DEFAULT_CONN_CHECKER, NewDefaultConnChecker)
 }
 
-// NewAppRouter Init AppRouter by url
-func NewAppRouter(url *common.URL, notify chan struct{}) (*AppRouter, error) {
-	if url == nil {
-		return nil, perrors.Errorf("No route URL for create app router!")
-	}
-	appRouter, err := newListenableRouter(url, url.GetParam(constant.APPLICATION_KEY, ""), notify)
-	if err != nil {
-		return nil, err
-	}
-	appRouter.priority = appRouterDefaultPriority
-	return appRouter, nil
+// DefaultConnChecker is the default implementation of ConnChecker, which determines the health status of invoker conn
+type DefaultConnChecker struct {
+}
+
+// IsConnHealthy evaluates the healthy state on the given Invoker based on the number of successive bad request
+// and the current active request
+func (c *DefaultConnChecker) IsConnHealthy(invoker protocol.Invoker) bool {
+	return protocol.GetInvokerHealthyStatus(invoker)
+}
+
+// NewDefaultConnChecker constructs a new DefaultConnChecker based on the url
+func NewDefaultConnChecker(url *common.URL) router.ConnChecker {
+	return &DefaultConnChecker{}
 }

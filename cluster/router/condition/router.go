@@ -62,6 +62,7 @@ type ConditionRouter struct {
 	enabled       bool
 	WhenCondition map[string]MatchPair
 	ThenCondition map[string]MatchPair
+	notify        chan struct{}
 }
 
 // NewConditionRouterWithRule Init condition router by raw rule
@@ -111,7 +112,7 @@ func NewConditionRouterWithRule(rule string) (*ConditionRouter, error) {
 }
 
 // NewConditionRouter Init condition router by URL
-func NewConditionRouter(url *common.URL) (*ConditionRouter, error) {
+func NewConditionRouter(url *common.URL, notify chan struct{}) (*ConditionRouter, error) {
 	if url == nil {
 		return nil, perrors.Errorf("Illegal route URL!")
 	}
@@ -135,6 +136,7 @@ func NewConditionRouter(url *common.URL) (*ConditionRouter, error) {
 	router.priority = url.GetParamInt(constant.RouterPriority, defaultPriority)
 	router.Force = url.GetParamBool(constant.RouterForce, false)
 	router.enabled = url.GetParamBool(constant.RouterEnabled, true)
+	router.notify = notify
 
 	return router, nil
 }
