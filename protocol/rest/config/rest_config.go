@@ -123,13 +123,13 @@ func (c *RestMethodConfig) UnmarshalYAML(unmarshal func(interface{}) error) erro
 }
 
 // nolint
-func GetRestConsumerServiceConfig(path string) *RestServiceConfig {
-	return restConsumerServiceConfigMap[path]
+func GetRestConsumerServiceConfig(id string) *RestServiceConfig {
+	return restConsumerServiceConfigMap[id]
 }
 
 // nolint
-func GetRestProviderServiceConfig(path string) *RestServiceConfig {
-	return restProviderServiceConfigMap[path]
+func GetRestProviderServiceConfig(id string) *RestServiceConfig {
+	return restProviderServiceConfigMap[id]
 }
 
 // nolint
