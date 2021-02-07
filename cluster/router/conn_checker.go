@@ -15,36 +15,14 @@
  * limitations under the License.
  */
 
-package tag
+package router
 
 import (
-	"fmt"
-	"testing"
+	"github.com/apache/dubbo-go/protocol"
 )
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
-	"github.com/apache/dubbo-go/common"
-)
-
-const (
-	factoryLocalIP = "127.0.0.1"
-	factoryFormat  = "dubbo://%s:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=true"
-)
-
-func TestTagRouterFactoryNewRouter(t *testing.T) {
-	u1, err := common.NewURL(fmt.Sprintf(factoryFormat, factoryLocalIP))
-	assert.Nil(t, err)
-	factory := NewTagRouterFactory()
-	notify := make(chan struct{})
-	go func() {
-		for range notify {
-		}
-	}()
-	tagRouter, e := factory.NewPriorityRouter(u1, notify)
-	assert.Nil(t, e)
-	assert.NotNil(t, tagRouter)
+// ConnChecker is used to determine whether the invoker is healthy or not
+type ConnChecker interface {
+	// IsConnHealthy evaluates the healthy state on the given Invoker
+	IsConnHealthy(invoker protocol.Invoker) bool
 }

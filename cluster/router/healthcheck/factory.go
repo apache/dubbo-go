@@ -38,6 +38,6 @@ func newHealthCheckRouteFactory() router.PriorityRouterFactory {
 }
 
 // NewPriorityRouter construct a new NewHealthCheckRouter via url
-func (f *HealthCheckRouteFactory) NewPriorityRouter(url *common.URL) (router.PriorityRouter, error) {
-	return NewHealthCheckRouter(url)
+func (f *HealthCheckRouteFactory) NewPriorityRouter(url *common.URL, notify chan struct{}) (router.PriorityRouter, error) {
+	return NewHealthCheckRouter(url, notify)
 }
