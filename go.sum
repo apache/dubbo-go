@@ -251,6 +251,8 @@ github.com/dubbogo/triple v0.0.0-20210121123924-b520a38ad388 h1:Pk4/dSYY5j+LqPCJ
 github.com/dubbogo/triple v0.0.0-20210121123924-b520a38ad388/go.mod h1:BjcB5hCtXrvEQ0C6SpILTXYCRoP54qUiFd88ELNa4nI=
 github.com/dubbogo/triple v0.0.0-20210126122925-f5ca080bd156 h1:/7YqdIxdCjpW7jkszouum4MfXgW0gDG22y3Z50I2HXE=
 github.com/dubbogo/triple v0.0.0-20210126122925-f5ca080bd156/go.mod h1:Jsn9daeAcyuES89X9qee2Wl2TpLJsoe8QMuUOvl6uBo=
+github.com/dubbogo/triple v0.0.0-20210205060737-5ed455ad6017 h1:IF1qNx/jru+oZYgJOZisTaBKnmwrfr+Y8vy9XPwYFzk=
+github.com/dubbogo/triple v0.0.0-20210205060737-5ed455ad6017/go.mod h1:ULV/Y9oyHId8sZaNfGi9yWomJ0Q22JThWcOawAaVUJw=
 github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/dustin/go-humanize v1.0.0 h1:VSnTsYCnlFHaM2/igO1h6X3HA71jcobQuxemgkq4zYo=
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=

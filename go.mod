@@ -14,7 +14,7 @@ require (
 	github.com/creasty/defaults v1.5.1
 	github.com/dubbogo/go-zookeeper v1.0.2
 	github.com/dubbogo/gost v1.11.0
-	github.com/dubbogo/triple v0.0.0-20210126122925-f5ca080bd156
+	github.com/dubbogo/triple v0.0.0-20210205060737-5ed455ad6017
 	github.com/elazarl/go-bindata-assetfs v1.0.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.4.0
 	github.com/frankban/quicktest v1.4.1 // indirect
@@ -55,6 +55,3 @@ require (
 )
 
 replace github.com/envoyproxy/go-control-plane => github.com/envoyproxy/go-control-plane v0.8.0
-replace (
-	github.com/dubbogo/triple v0.0.0-20210126122925-f5ca080bd156 => ../triple
-)
