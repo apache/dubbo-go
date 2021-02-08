@@ -18,7 +18,6 @@
 package rest
 
 import (
-	"strings"
 	"sync"
 	"time"
 )
@@ -72,7 +71,8 @@ func (rp *RestProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetUrl()
 	serviceKey := url.ServiceKey()
 	exporter := NewRestExporter(serviceKey, invoker, rp.ExporterMap())
-	restServiceConfig := rest_config.GetRestProviderServiceConfig(strings.TrimPrefix(url.Path, "/"))
+	id := url.GetParam(constant.BEAN_NAME_KEY, "")
+	restServiceConfig := rest_config.GetRestProviderServiceConfig(id)
 	if restServiceConfig == nil {
 		logger.Errorf("%s service doesn't has provider config", url.Path)
 		return nil
@@ -94,7 +94,8 @@ func (rp *RestProtocol) Refer(url *common.URL) protocol.Invoker {
 	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
 		requestTimeout = t
 	}
-	restServiceConfig := rest_config.GetRestConsumerServiceConfig(strings.TrimPrefix(url.Path, "/"))
+	id := url.GetParam(constant.BEAN_NAME_KEY, "")
+	restServiceConfig := rest_config.GetRestConsumerServiceConfig(id)
 	if restServiceConfig == nil {
 		logger.Errorf("%s service doesn't has consumer config", url.Path)
 		return nil
