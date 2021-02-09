@@ -7,7 +7,8 @@
 ![license](https://img.shields.io/badge/license-Apache--2.0-green.svg)
 
 ---
-Apache Dubbo Go 语言实现
+
+Apache Dubbo Go 语言实现，架起java和go之间的桥梁，与 gRPC/Spring Cloud 生态互联互通，带领Java生态享受云原生时代的技术红利。
 
 ## 证书 ##
 
