@@ -8,7 +8,7 @@
 
 ---
 
-Apache Dubbo Go Implementation.
+Apache Dubbo Go Implementation to bridge the gap between java and go.
 
 
 ## License
