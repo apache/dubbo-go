@@ -37,14 +37,6 @@ func TestBaseInvoker(t *testing.T) {
 	assert.NotNil(t, ivk.GetUrl())
 	assert.True(t, ivk.IsAvailable())
 	assert.False(t, ivk.IsDestroyed())
-	assert.Zero(t, ivk.InvokeTimes())
-
-	ivk.AddInvokerTimes(1)
-	assert.True(t, ivk.InvokeTimes() == 1)
-
-	ivk.Stop()
-	assert.False(t, ivk.IsAvailable())
-	assert.False(t, ivk.IsDestroyed())
 
 	ivk.Destroy()
 	assert.False(t, ivk.IsAvailable())

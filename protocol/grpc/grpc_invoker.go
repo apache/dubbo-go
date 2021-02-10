@@ -21,7 +21,6 @@ import (
 	"context"
 	"reflect"
 	"sync"
-	"time"
 )
 
 import (
@@ -85,11 +84,10 @@ func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 		return &result
 	}
 
-	gi.AddInvokerTimes(1)
-	defer gi.AddInvokerTimes(-1)
+	gi.clientGuard.RLock()
+	defer gi.clientGuard.RUnlock()
 
-	client := gi.getClient()
-	if client == nil {
+	if gi.client == nil {
 		result.Err = protocol.ErrClientClosed
 		return &result
 	}
@@ -111,7 +109,7 @@ func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 	in = append(in, invocation.ParameterValues()...)
 
 	methodName := invocation.MethodName()
-	method := client.invoker.MethodByName(methodName)
+	method := gi.client.invoker.MethodByName(methodName)
 	res := method.Call(in)
 
 	result.Rest = res[0]
@@ -148,26 +146,11 @@ func (gi *GrpcInvoker) IsDestroyed() bool {
 // Destroy will destroy gRPC's invoker and client, so it is only called once
 func (gi *GrpcInvoker) Destroy() {
 	gi.quitOnce.Do(func() {
-		gi.BaseInvoker.Stop()
-		var times int64
-		for {
-			times = gi.BaseInvoker.InvokeTimes()
-			if times == 0 {
-				gi.BaseInvoker.AddInvokerTimes(-1)
-				logger.Infof("grpcInvoker is destroyed, url:{%s}", gi.GetUrl().Key())
-				gi.BaseInvoker.Destroy()
-				client := gi.getClient()
-				if client != nil {
-					gi.setClient(nil)
-					client.Close()
-				}
-				break
-			} else if times < 0 {
-				logger.Infof("impossible log: grpcInvoker has destroyed, url:{%s}", gi.GetUrl().Key())
-				break
-			}
-			logger.Warnf("GrpcInvoker is to be destroyed, wait {%v} req end, url:{%s}", times, gi.GetUrl().Key())
-			time.Sleep(1 * time.Second)
+		gi.BaseInvoker.Destroy()
+		client := gi.getClient()
+		if client != nil {
+			gi.setClient(nil)
+			client.Close()
 		}
 	})
 }

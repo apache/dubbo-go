@@ -101,8 +101,14 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 		return &result
 	}
 
-	di.AddInvokerTimes(1)
-	defer di.AddInvokerTimes(-1)
+	di.clientGuard.RLock()
+	defer di.clientGuard.RUnlock()
+
+	if di.client == nil {
+		result.Err = protocol.ErrClientClosed
+		logger.Debugf("result.Err: %v", result.Err)
+		return &result
+	}
 
 	if !di.BaseInvoker.IsAvailable() {
 		// Generally, the case will not happen, because the invoker has been removed
@@ -138,22 +144,17 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	//response := NewResponse(inv.Reply(), nil)
 	rest := &protocol.RPCResult{}
 	timeout := di.getTimeout(inv)
-	client := di.getClient()
-	if client == nil {
-		result.Err = protocol.ErrClientClosed
-	} else {
-		if async {
-			if callBack, ok := inv.CallBack().(func(response common.CallbackResponse)); ok {
-				result.Err = client.AsyncRequest(&invocation, url, timeout, callBack, rest)
-			} else {
-				result.Err = client.Send(&invocation, url, timeout)
-			}
+	if async {
+		if callBack, ok := inv.CallBack().(func(response common.CallbackResponse)); ok {
+			result.Err = di.client.AsyncRequest(&invocation, url, timeout, callBack, rest)
 		} else {
-			if inv.Reply() == nil {
-				result.Err = protocol.ErrNoReply
-			} else {
-				result.Err = client.Request(&invocation, url, timeout, rest)
-			}
+			result.Err = di.client.Send(&invocation, url, timeout)
+		}
+	} else {
+		if inv.Reply() == nil {
+			result.Err = protocol.ErrNoReply
+		} else {
+			result.Err = di.client.Request(&invocation, url, timeout, rest)
 		}
 	}
 	if result.Err == nil {
@@ -192,26 +193,11 @@ func (di *DubboInvoker) IsAvailable() bool {
 // Destroy destroy dubbo client invoker.
 func (di *DubboInvoker) Destroy() {
 	di.quitOnce.Do(func() {
-		di.BaseInvoker.Stop()
-		var times int64
-		for {
-			times = di.BaseInvoker.InvokeTimes()
-			if times == 0 {
-				di.BaseInvoker.AddInvokerTimes(-1)
-				logger.Infof("dubboInvoker is destroyed, url:{%s}", di.GetUrl().Key())
-				di.BaseInvoker.Destroy()
-				client := di.getClient()
-				if client != nil {
-					di.setClient(nil)
-					client.Close()
-				}
-				break
-			} else if times < 0 {
-				logger.Infof("impossible log: dubboInvoker has destroyed, url:{%s}", di.GetUrl().Key())
-				break
-			}
-			logger.Warnf("DubboInvoker is to be destroyed, wait {%v} req end,url:{%s}", times, di.GetUrl().Key())
-			time.Sleep(1 * time.Second)
+		di.BaseInvoker.Destroy()
+		client := di.getClient()
+		if client != nil {
+			di.setClient(nil)
+			client.Close()
 		}
 	})
 }
