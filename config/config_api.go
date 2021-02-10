@@ -24,12 +24,24 @@ import (
 
 //////////////////////////////////// default registry config
 const (
-	defaultZKAddr          = "127.0.0.1:2181"
-	defaultConsulAddr      = "127.0.0.1:8500"
-	defaultNacosAddr       = "127.0.0.1:8848"
+	// defaultZKAddr is the default registry address of zookeeper
+	defaultZKAddr = "127.0.0.1:2181"
+
+	// defaultConsulAddr is the default registry address of consul
+	defaultConsulAddr = "127.0.0.1:8500"
+
+	// defaultNacosAddr is the default registry address of nacos
+	defaultNacosAddr = "127.0.0.1:8848"
+
+	// defaultRegistryTimeout is the default registry timeout
 	defaultRegistryTimeout = "3s"
 )
 
+// NewDefaultRegistryConfig New default registry config
+// the input @protocol can only be:
+// "zookeeper" with default addr "127.0.0.1:2181"
+// "consul" with default addr "127.0.0.1:8500"
+// "nacos" with default addr "127.0.0.1:8848"
 func NewDefaultRegistryConfig(protocol string) *RegistryConfig {
 	switch protocol {
 	case "zookeeper":
@@ -60,6 +72,7 @@ func NewDefaultRegistryConfig(protocol string) *RegistryConfig {
 ///////////////////////////////////// registry config api
 type RegistryConfigOpt func(config *RegistryConfig) *RegistryConfig
 
+// NewRegistryConfig creates New RegistryConfig with @opts
 func NewRegistryConfig(opts ...RegistryConfigOpt) *RegistryConfig {
 	newRegistryConfig := NewDefaultRegistryConfig("")
 	for _, v := range opts {
@@ -68,6 +81,7 @@ func NewRegistryConfig(opts ...RegistryConfigOpt) *RegistryConfig {
 	return newRegistryConfig
 }
 
+// WithRegistryProtocol returns RegistryConfigOpt with given @regProtocol name
 func WithRegistryProtocol(regProtocol string) RegistryConfigOpt {
 	return func(config *RegistryConfig) *RegistryConfig {
 		config.Protocol = regProtocol
@@ -75,6 +89,7 @@ func WithRegistryProtocol(regProtocol string) RegistryConfigOpt {
 	}
 }
 
+// WithRegistryAddress returns RegistryConfigOpt with given @addr registry address
 func WithRegistryAddress(addr string) RegistryConfigOpt {
 	return func(config *RegistryConfig) *RegistryConfig {
 		config.Address = addr
@@ -82,6 +97,7 @@ func WithRegistryAddress(addr string) RegistryConfigOpt {
 	}
 }
 
+// WithRegistryTimeOut returns RegistryConfigOpt with given @timeout registry config
 func WithRegistryTimeOut(timeout string) RegistryConfigOpt {
 	return func(config *RegistryConfig) *RegistryConfig {
 		config.TimeoutStr = timeout
@@ -89,6 +105,7 @@ func WithRegistryTimeOut(timeout string) RegistryConfigOpt {
 	}
 }
 
+// WithRegistryGroup returns RegistryConfigOpt with given @group registry group
 func WithRegistryGroup(group string) RegistryConfigOpt {
 	return func(config *RegistryConfig) *RegistryConfig {
 		config.Group = group
@@ -96,6 +113,7 @@ func WithRegistryGroup(group string) RegistryConfigOpt {
 	}
 }
 
+// WithRegistryTTL returns RegistryConfigOpt with given @ttl registry ttl
 func WithRegistryTTL(ttl string) RegistryConfigOpt {
 	return func(config *RegistryConfig) *RegistryConfig {
 		config.TTL = ttl
@@ -103,6 +121,7 @@ func WithRegistryTTL(ttl string) RegistryConfigOpt {
 	}
 }
 
+// WithRegistryUserName returns RegistryConfigOpt with given @userName registry userName
 func WithRegistryUserName(userName string) RegistryConfigOpt {
 	return func(config *RegistryConfig) *RegistryConfig {
 		config.Username = userName
@@ -110,6 +129,7 @@ func WithRegistryUserName(userName string) RegistryConfigOpt {
 	}
 }
 
+// WithRegistryPassword returns RegistryConfigOpt with given @psw registry password
 func WithRegistryPassword(psw string) RegistryConfigOpt {
 	return func(config *RegistryConfig) *RegistryConfig {
 		config.Password = psw
@@ -117,6 +137,7 @@ func WithRegistryPassword(psw string) RegistryConfigOpt {
 	}
 }
 
+// WithRegistrySimplified returns RegistryConfigOpt with given @simplified registry simplified flag
 func WithRegistrySimplified(simplified bool) RegistryConfigOpt {
 	return func(config *RegistryConfig) *RegistryConfig {
 		config.Simplified = simplified
@@ -124,6 +145,7 @@ func WithRegistrySimplified(simplified bool) RegistryConfigOpt {
 	}
 }
 
+// WithRegistryPreferred returns RegistryConfig with given @preferred registry preferred flag
 func WithRegistryPreferred(preferred bool) RegistryConfigOpt {
 	return func(config *RegistryConfig) *RegistryConfig {
 		config.Preferred = preferred
@@ -131,6 +153,7 @@ func WithRegistryPreferred(preferred bool) RegistryConfigOpt {
 	}
 }
 
+// WithRegistryWeight returns RegistryConfigOpt with given @weight registry weight flag
 func WithRegistryWeight(weight int64) RegistryConfigOpt {
 	return func(config *RegistryConfig) *RegistryConfig {
 		config.Weight = weight
@@ -138,6 +161,7 @@ func WithRegistryWeight(weight int64) RegistryConfigOpt {
 	}
 }
 
+// WithRegistryParams returns RegistryConfigOpt with given registry @params
 func WithRegistryParams(params map[string]string) RegistryConfigOpt {
 	return func(config *RegistryConfig) *RegistryConfig {
 		config.Params = params
@@ -146,8 +170,11 @@ func WithRegistryParams(params map[string]string) RegistryConfigOpt {
 }
 
 ///////////////////////////////////// consumer config api
+// ConsumerConfigOpt is the options to init ConsumerConfig
 type ConsumerConfigOpt func(config *ConsumerConfig) *ConsumerConfig
 
+// NewDefaultConsumerConfig returns default ConsumerConfig
+// with connection timeout = 3s, request timeout = 3s
 func NewDefaultConsumerConfig() *ConsumerConfig {
 	check := true
 	newConsumerConfig := &ConsumerConfig{
@@ -161,6 +188,7 @@ func NewDefaultConsumerConfig() *ConsumerConfig {
 	return newConsumerConfig
 }
 
+// NewConsumerConfig returns ConsumerConfig with @opts
 func NewConsumerConfig(opts ...ConsumerConfigOpt) *ConsumerConfig {
 	newConfig := NewDefaultConsumerConfig()
 	for _, v := range opts {
@@ -169,6 +197,7 @@ func NewConsumerConfig(opts ...ConsumerConfigOpt) *ConsumerConfig {
 	return newConfig
 }
 
+// WithConsumerAppConfig returns ConsumerConfigOpt with given @appConfig
 func WithConsumerAppConfig(appConfig *ApplicationConfig) ConsumerConfigOpt {
 	return func(config *ConsumerConfig) *ConsumerConfig {
 		config.ApplicationConfig = appConfig
@@ -176,6 +205,7 @@ func WithConsumerAppConfig(appConfig *ApplicationConfig) ConsumerConfigOpt {
 	}
 }
 
+// WithConsumerRegistryConfig returns ConsumerConfigOpt with given @registryKey and @regConfig
 func WithConsumerRegistryConfig(registryKey string, regConfig *RegistryConfig) ConsumerConfigOpt {
 	return func(config *ConsumerConfig) *ConsumerConfig {
 		config.Registries[registryKey] = regConfig
@@ -183,6 +213,7 @@ func WithConsumerRegistryConfig(registryKey string, regConfig *RegistryConfig) C
 	}
 }
 
+// WithConsumerReferenceConfig returns ConsumerConfigOpt with
 func WithConsumerReferenceConfig(referenceKey string, refConfig *ReferenceConfig) ConsumerConfigOpt {
 	return func(config *ConsumerConfig) *ConsumerConfig {
 		config.References[referenceKey] = refConfig
@@ -190,6 +221,7 @@ func WithConsumerReferenceConfig(referenceKey string, refConfig *ReferenceConfig
 	}
 }
 
+// WithConsumerConnTimeout returns ConsumerConfigOpt with given consumer conn @timeout
 func WithConsumerConnTimeout(timeout time.Duration) ConsumerConfigOpt {
 	return func(config *ConsumerConfig) *ConsumerConfig {
 		config.ConnectTimeout = timeout
@@ -197,6 +229,7 @@ func WithConsumerConnTimeout(timeout time.Duration) ConsumerConfigOpt {
 	}
 }
 
+// WithConsumerRequestTimeout returns ConsumerConfigOpt with given consumer request @timeout
 func WithConsumerRequestTimeout(timeout time.Duration) ConsumerConfigOpt {
 	return func(config *ConsumerConfig) *ConsumerConfig {
 		config.RequestTimeout = timeout
@@ -204,6 +237,7 @@ func WithConsumerRequestTimeout(timeout time.Duration) ConsumerConfigOpt {
 	}
 }
 
+// WithConsumerConfigCenterConfig returns ConsumerConfigOpt with given @configCenterConfig
 func WithConsumerConfigCenterConfig(configCenterConfig *ConfigCenterConfig) ConsumerConfigOpt {
 	return func(config *ConsumerConfig) *ConsumerConfig {
 		config.ConfigCenterConfig = configCenterConfig
@@ -211,6 +245,7 @@ func WithConsumerConfigCenterConfig(configCenterConfig *ConfigCenterConfig) Cons
 	}
 }
 
+// WithConsumerConfigCheck returns ConsumerConfigOpt with given @check flag
 func WithConsumerConfigCheck(check bool) ConsumerConfigOpt {
 	return func(config *ConsumerConfig) *ConsumerConfig {
 		*config.Check = check
@@ -219,8 +254,10 @@ func WithConsumerConfigCheck(check bool) ConsumerConfigOpt {
 }
 
 //////////////////////////////////// reference config api
+// ReferenceConfigOpt is consumer's reference config
 type ReferenceConfigOpt func(config *ReferenceConfig) *ReferenceConfig
 
+// NewDefaultReferenceConfig returns empty ReferenceConfig
 func NewDefaultReferenceConfig() *ReferenceConfig {
 	newReferenceConfig := NewReferenceConfig("", context.Background())
 	newReferenceConfig.Methods = make([]*MethodConfig, 0, 8)
@@ -228,6 +265,7 @@ func NewDefaultReferenceConfig() *ReferenceConfig {
 	return newReferenceConfig
 }
 
+// NewReferenceConfigByAPI returns ReferenceConfig with given @opts
 func NewReferenceConfigByAPI(opts ...ReferenceConfigOpt) *ReferenceConfig {
 	newreferenceConfig := NewDefaultReferenceConfig()
 	for _, v := range opts {
@@ -236,6 +274,7 @@ func NewReferenceConfigByAPI(opts ...ReferenceConfigOpt) *ReferenceConfig {
 	return newreferenceConfig
 }
 
+// WithReferenceRegistry returns ReferenceConfigOpt with given registryKey: @registry
 func WithReferenceRegistry(registry string) ReferenceConfigOpt {
 	return func(config *ReferenceConfig) *ReferenceConfig {
 		config.Registry = registry
@@ -243,6 +282,7 @@ func WithReferenceRegistry(registry string) ReferenceConfigOpt {
 	}
 }
 
+// WithReferenceProtocol returns ReferenceConfigOpt with given protocolKey: @protocol
 func WithReferenceProtocol(protocol string) ReferenceConfigOpt {
 	return func(config *ReferenceConfig) *ReferenceConfig {
 		config.Protocol = protocol
@@ -250,6 +290,7 @@ func WithReferenceProtocol(protocol string) ReferenceConfigOpt {
 	}
 }
 
+// WithReferenceInterface returns ReferenceConfigOpt with given @interfaceName
 func WithReferenceInterface(interfaceName string) ReferenceConfigOpt {
 	return func(config *ReferenceConfig) *ReferenceConfig {
 		config.InterfaceName = interfaceName
@@ -257,6 +298,7 @@ func WithReferenceInterface(interfaceName string) ReferenceConfigOpt {
 	}
 }
 
+// WithReferenceCluster returns ReferenceConfigOpt with given cluster name: @cluster
 func WithReferenceCluster(cluster string) ReferenceConfigOpt {
 	return func(config *ReferenceConfig) *ReferenceConfig {
 		config.Cluster = cluster
@@ -264,6 +306,7 @@ func WithReferenceCluster(cluster string) ReferenceConfigOpt {
 	}
 }
 
+// WithReferenceMethod returns ReferenceConfigOpt with given @method, @retries, and load balance: @lb
 func WithReferenceMethod(methodName, retries, lb string) ReferenceConfigOpt {
 	return func(config *ReferenceConfig) *ReferenceConfig {
 		config.Methods = append(config.Methods, &MethodConfig{
@@ -276,8 +319,10 @@ func WithReferenceMethod(methodName, retries, lb string) ReferenceConfigOpt {
 }
 
 ///////////////////////////////////// provider config api
+// ProviderConfigOpt is the
 type ProviderConfigOpt func(config *ProviderConfig) *ProviderConfig
 
+// NewDefaultProviderConfig returns ProviderConfig with default ApplicationConfig
 func NewDefaultProviderConfig() *ProviderConfig {
 	newConsumerConfig := &ProviderConfig{
 		BaseConfig: BaseConfig{
@@ -295,6 +340,7 @@ func NewDefaultProviderConfig() *ProviderConfig {
 	return newConsumerConfig
 }
 
+// NewProviderConfig returns ProviderConfig with given @opts
 func NewProviderConfig(opts ...ProviderConfigOpt) *ProviderConfig {
 	newConfig := NewDefaultProviderConfig()
 	for _, v := range opts {
@@ -303,6 +349,7 @@ func NewProviderConfig(opts ...ProviderConfigOpt) *ProviderConfig {
 	return newConfig
 }
 
+// WithPrividerRegistryConfig returns ProviderConfigOpt with given registry config: @regConfig
 func WithPrividerRegistryConfig(regConfig *RegistryConfig) ProviderConfigOpt {
 	return func(config *ProviderConfig) *ProviderConfig {
 		config.Registries[regConfig.Protocol] = regConfig
@@ -310,6 +357,7 @@ func WithPrividerRegistryConfig(regConfig *RegistryConfig) ProviderConfigOpt {
 	}
 }
 
+// WithProviderAppConfig returns ProviderConfigOpt with given @appConfig
 func WithProviderAppConfig(appConfig *ApplicationConfig) ProviderConfigOpt {
 	return func(config *ProviderConfig) *ProviderConfig {
 		config.ApplicationConfig = appConfig
@@ -317,6 +365,7 @@ func WithProviderAppConfig(appConfig *ApplicationConfig) ProviderConfigOpt {
 	}
 }
 
+// WithProviderServices returns ProviderConfig with given serviceNameKey @serviceName and @serviceConfig
 func WithProviderServices(serviceName string, serviceConfig *ServiceConfig) ProviderConfigOpt {
 	return func(config *ProviderConfig) *ProviderConfig {
 		config.Services[serviceName] = serviceConfig
@@ -324,6 +373,7 @@ func WithProviderServices(serviceName string, serviceConfig *ServiceConfig) Prov
 	}
 }
 
+// WithProviderProtocol returns ProviderConfigOpt with given @protocolKey, protocolName @protocol and @port
 func WithProviderProtocol(protocolKey, protocol, port string) ProviderConfigOpt {
 	return func(config *ProviderConfig) *ProviderConfig {
 		config.Protocols[protocolKey] = &ProtocolConfig{
@@ -334,6 +384,7 @@ func WithProviderProtocol(protocolKey, protocol, port string) ProviderConfigOpt 
 	}
 }
 
+// WithProviderRegistry returns ProviderConfigOpt with given @registryKey and registry @registryConfig
 func WithProviderRegistry(registryKey string, registryConfig *RegistryConfig) ProviderConfigOpt {
 	return func(config *ProviderConfig) *ProviderConfig {
 		config.Registries[registryKey] = registryConfig
@@ -342,8 +393,10 @@ func WithProviderRegistry(registryKey string, registryConfig *RegistryConfig) Pr
 }
 
 /////////////////////////////////////// service config api
+// ServiceConfigOpt is the option to init ServiceConfig
 type ServiceConfigOpt func(config *ServiceConfig) *ServiceConfig
 
+// NewDefaultServiceConfig returns default ServiceConfig
 func NewDefaultServiceConfig() *ServiceConfig {
 	newServiceConfig := NewServiceConfig("", context.Background())
 	newServiceConfig.Params = make(map[string]string)
@@ -352,6 +405,7 @@ func NewDefaultServiceConfig() *ServiceConfig {
 }
 
 // NewServiceConfigByAPI is named as api, because there is NewServiceConfig func already declared
+// NewServiceConfigByAPI returns ServiceConfig with given @opts
 func NewServiceConfigByAPI(opts ...ServiceConfigOpt) *ServiceConfig {
 	defaultServiceConfig := NewDefaultServiceConfig()
 	for _, v := range opts {
@@ -360,6 +414,7 @@ func NewServiceConfigByAPI(opts ...ServiceConfigOpt) *ServiceConfig {
 	return defaultServiceConfig
 }
 
+// WithServiceRegistry returns ServiceConfigOpt with given registryKey @registry
 func WithServiceRegistry(registry string) ServiceConfigOpt {
 	return func(config *ServiceConfig) *ServiceConfig {
 		config.Registry = registry
@@ -367,6 +422,7 @@ func WithServiceRegistry(registry string) ServiceConfigOpt {
 	}
 }
 
+// WithServiceProtocol returns ServiceConfigOpt with given protocolKey @protocol
 func WithServiceProtocol(protocol string) ServiceConfigOpt {
 	return func(config *ServiceConfig) *ServiceConfig {
 		config.Protocol = protocol
@@ -374,6 +430,7 @@ func WithServiceProtocol(protocol string) ServiceConfigOpt {
 	}
 }
 
+// WithServiceInterface returns ServiceConfigOpt with given @interfaceName
 func WithServiceInterface(interfaceName string) ServiceConfigOpt {
 	return func(config *ServiceConfig) *ServiceConfig {
 		config.InterfaceName = interfaceName
@@ -381,6 +438,7 @@ func WithServiceInterface(interfaceName string) ServiceConfigOpt {
 	}
 }
 
+// WithServiceLoadBalance returns ServiceConfigOpt with given load balance @lb
 func WithServiceLoadBalance(lb string) ServiceConfigOpt {
 	return func(config *ServiceConfig) *ServiceConfig {
 		config.Loadbalance = lb
@@ -388,6 +446,7 @@ func WithServiceLoadBalance(lb string) ServiceConfigOpt {
 	}
 }
 
+// WithServiceWarmUpTime returns ServiceConfigOpt with given @warmUp time
 func WithServiceWarmUpTime(warmUp string) ServiceConfigOpt {
 	return func(config *ServiceConfig) *ServiceConfig {
 		config.Warmup = warmUp
@@ -395,6 +454,7 @@ func WithServiceWarmUpTime(warmUp string) ServiceConfigOpt {
 	}
 }
 
+// WithServiceCluster returns ServiceConfigOpt with given cluster name @cluster
 func WithServiceCluster(cluster string) ServiceConfigOpt {
 	return func(config *ServiceConfig) *ServiceConfig {
 		config.Cluster = cluster
@@ -402,6 +462,7 @@ func WithServiceCluster(cluster string) ServiceConfigOpt {
 	}
 }
 
+// WithServiceMethod returns ServiceConfigOpt with given @name, @retries and load balance @lb
 func WithServiceMethod(name, retries, lb string) ServiceConfigOpt {
 	return func(config *ServiceConfig) *ServiceConfig {
 		config.Methods = append(config.Methods, &MethodConfig{
@@ -414,8 +475,16 @@ func WithServiceMethod(name, retries, lb string) ServiceConfigOpt {
 }
 
 ///////////////////////////////////////// Application config api
+// ApplicationConfigOpt is option to init ApplicationConfig
 type ApplicationConfigOpt func(config *ApplicationConfig) *ApplicationConfig
 
+// NewDefaultApplicationConfig returns ApplicationConfig with default
+// name: dubbo.io
+// module: sample
+// organization: dubbo.io
+// owner: dubbogo
+// version: 0.0.1
+// environment dev
 func NewDefaultApplicationConfig() *ApplicationConfig {
 	newAppConfig := &ApplicationConfig{
 		Name:         "dubbo.io",
@@ -429,6 +498,7 @@ func NewDefaultApplicationConfig() *ApplicationConfig {
 }
 
 // NewApplicationConfig is named as api, because there is NewServiceConfig func already declared
+// NewApplicationConfig returns ApplicationConfig wigh default application config
 func NewApplicationConfig(opts ...ApplicationConfigOpt) *ApplicationConfig {
 	defaultServiceConfig := NewDefaultApplicationConfig()
 	for _, v := range opts {
@@ -437,6 +507,7 @@ func NewApplicationConfig(opts ...ApplicationConfigOpt) *ApplicationConfig {
 	return defaultServiceConfig
 }
 
+// WithAppName returns ApplicationConfigOpt with given @name
 func WithAppName(name string) ApplicationConfigOpt {
 	return func(config *ApplicationConfig) *ApplicationConfig {
 		config.Name = name
@@ -444,6 +515,7 @@ func WithAppName(name string) ApplicationConfigOpt {
 	}
 }
 
+// WithAppModule returns ApplicationConfigOpt with given @module
 func WithAppModule(module string) ApplicationConfigOpt {
 	return func(config *ApplicationConfig) *ApplicationConfig {
 		config.Module = module
@@ -451,6 +523,7 @@ func WithAppModule(module string) ApplicationConfigOpt {
 	}
 }
 
+// WithAppOrganization returns ApplicationConfigOpt wight given organization @org
 func WithAppOrganization(org string) ApplicationConfigOpt {
 	return func(config *ApplicationConfig) *ApplicationConfig {
 		config.Organization = org
@@ -458,6 +531,7 @@ func WithAppOrganization(org string) ApplicationConfigOpt {
 	}
 }
 
+// WithAppOwner returns ApplicationConfigOpt with given @owner
 func WithAppOwner(owner string) ApplicationConfigOpt {
 	return func(config *ApplicationConfig) *ApplicationConfig {
 		config.Owner = owner
@@ -465,6 +539,7 @@ func WithAppOwner(owner string) ApplicationConfigOpt {
 	}
 }
 
+// WithAppVersion returns ApplicationConfigOpt with given version @version
 func WithAppVersion(version string) ApplicationConfigOpt {
 	return func(config *ApplicationConfig) *ApplicationConfig {
 		config.Version = version
@@ -472,6 +547,7 @@ func WithAppVersion(version string) ApplicationConfigOpt {
 	}
 }
 
+// WithAppEnvironment returns ApplicationConfigOpt wigh given environment @env
 func WithAppEnvironment(env string) ApplicationConfigOpt {
 	return func(config *ApplicationConfig) *ApplicationConfig {
 		config.Environment = env
