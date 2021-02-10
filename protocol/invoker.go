@@ -58,8 +58,6 @@ type BaseInvoker struct {
 	url       *common.URL
 	available uatomic.Bool
 	destroyed uatomic.Bool
-	// Used to record the number of requests. -1 represent this invoker is destroyed
-	ivkNum uatomic.Int64
 }
 
 // NewBaseInvoker creates a new BaseInvoker
@@ -69,7 +67,6 @@ func NewBaseInvoker(url *common.URL) *BaseInvoker {
 	}
 	ivk.available.Store(true)
 	ivk.destroyed.Store(false)
-	ivk.ivkNum.Store(0)
 
 	return ivk
 }
@@ -89,25 +86,9 @@ func (bi *BaseInvoker) IsDestroyed() bool {
 	return bi.destroyed.Load()
 }
 
-// InvokeTimes atomically loads the wrapped value and return the invoke times.
-func (bi *BaseInvoker) InvokeTimes() int64 {
-	return bi.ivkNum.Load()
-}
-
-// AddInvokerTimes atomically adds to the wrapped int64 and returns the new value.
-func (bi *BaseInvoker) AddInvokerTimes(num int64) int64 {
-	return bi.ivkNum.Add(num)
-}
-
 // Invoke provides default invoker implement
 func (bi *BaseInvoker) Invoke(context context.Context, invocation Invocation) Result {
 	return &RPCResult{}
-}
-
-// Stop changes available flag
-func (bi *BaseInvoker) Stop() {
-	logger.Infof("Stop invoker: %s", bi.GetUrl())
-	bi.available.Store(false)
 }
 
 // Destroy changes available and destroyed flag
