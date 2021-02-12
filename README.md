@@ -45,7 +45,7 @@ Both extension module and layered project architecture is according to Apache Du
 
 ![dubbo go extend](./doc/pic/arch/dubbo-go-ext.png)
 
-If you wanna know more about dubbo-go, please visit this reference [Project Architecture design](https://github.com/apache/dubbo-go/wiki/dubbo-go-V1.0-design)
+If you want to know more about dubbo-go, please visit this reference [Project Architecture design](https://github.com/apache/dubbo-go/wiki/dubbo-go-V1.0-design)
 
 ## Feature list ##
 
@@ -207,7 +207,7 @@ About dubbo-go benchmarking report, please refer to [dubbo benchmarking report](
 
 ## [User List](https://github.com/apache/dubbo-go/issues/2)
 
-If you are using [apache/dubbo-go](github.com/apache/dubbo-go) and think that it helps you or want do some contributions to it, please add your company to to [the user list](https://github.com/apache/dubbo-go/issues/2) to let us know your needs.
+If you are using [apache/dubbo-go](https://github.com/apache/dubbo-go) and think that it helps you or want do some contributions to it, please add your company to to [the user list](https://github.com/apache/dubbo-go/issues/2) to let us know your needs.
 
 
 <div>
