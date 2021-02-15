@@ -18,10 +18,8 @@
 package grpc
 
 import (
-	"context"
 	"reflect"
 	"strconv"
-	"time"
 )
 
 import (
@@ -97,18 +95,8 @@ func NewClient(url *common.URL) *Client {
 	tracer := opentracing.GlobalTracer()
 	dialOpts := make([]grpc.DialOption, 0, 4)
 	maxMessageSize, _ := strconv.Atoi(url.GetParam(constant.MESSAGE_SIZE_KEY, "4"))
-
-	// request timeout
-	requestTimeout := config.GetConsumerConfig().RequestTimeout
-	requestTimeoutStr := url.GetParam(constant.TIMEOUT_KEY, config.GetConsumerConfig().Request_Timeout)
-	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
-		requestTimeout = t
-	}
-
 	dialOpts = append(dialOpts, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithUnaryInterceptor(
 		otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())),
-		//client Timeout
-		grpc.WithUnaryInterceptor(UnaryClientTimeoutInterceptor(requestTimeout)),
 		grpc.WithDefaultCallOptions(
 			grpc.CallContentSubtype(clientConf.ContentSubType),
 			grpc.MaxCallRecvMsgSize(1024*1024*maxMessageSize),
@@ -134,13 +122,4 @@ func getInvoker(impl interface{}, conn *grpc.ClientConn) interface{} {
 	method := reflect.ValueOf(impl).MethodByName("GetDubboStub")
 	res := method.Call(in)
 	return res[0].Interface()
-}
-
-//client time out
-func UnaryClientTimeoutInterceptor(timeout time.Duration) grpc.UnaryClientInterceptor {
-	return func(parentCtx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-		parentCtx, _ = context.WithTimeout(parentCtx, timeout)
-		err := invoker(parentCtx, method, req, reply, cc, opts...)
-		return err
-	}
 }
