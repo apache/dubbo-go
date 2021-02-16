@@ -135,12 +135,12 @@ func getInvoker(impl interface{}, conn *grpc.ClientConn) interface{} {
 	return res[0].Interface()
 }
 
-//client time out
+//client timeout
 func UnaryClientTimeoutInterceptor(timeout time.Duration) grpc.UnaryClientInterceptor {
 	return func(parentCtx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 		parentCtx, cancel := context.WithTimeout(parentCtx, timeout)
+		defer cancel()
 		err := invoker(parentCtx, method, req, reply, cc, opts...)
-		cancel()
 		return err
 	}
 }
