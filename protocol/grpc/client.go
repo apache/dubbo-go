@@ -107,7 +107,7 @@ func NewClient(url *common.URL) *Client {
 	dialOpts = append(dialOpts, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithUnaryInterceptor(
 		otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())),
 		//client Timeout
-		grpc.WithUnaryInterceptor(UnaryClientTimeoutInterceptor(requestTimeout)),
+		grpc.WithUnaryInterceptor(unaryClientTimeoutInterceptor(requestTimeout)),
 		grpc.WithDefaultCallOptions(
 			grpc.CallContentSubtype(clientConf.ContentSubType),
 			grpc.MaxCallRecvMsgSize(1024*1024*maxMessageSize),
@@ -136,7 +136,7 @@ func getInvoker(impl interface{}, conn *grpc.ClientConn) interface{} {
 }
 
 //client timeout
-func UnaryClientTimeoutInterceptor(timeout time.Duration) grpc.UnaryClientInterceptor {
+func unaryClientTimeoutInterceptor(timeout time.Duration) grpc.UnaryClientInterceptor {
 	return func(parentCtx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 		parentCtx, cancel := context.WithTimeout(parentCtx, timeout)
 		defer cancel()
