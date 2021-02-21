@@ -1,5 +1,31 @@
 # Release Notes
 ---
+## 1.5.6
+
+### New Features
+- [Add dubbo-go-cli telnet tool](https://github.com/apache/dubbo-go/pull/818)
+- [Add Prox ImplementFunc to allow override impl](https://github.com/apache/dubbo-go/pull/1019)
+- [Add read configuration path from the command line when start](https://github.com/apache/dubbo-go/pull/1039)
+
+### Enhancement
+- [introduce ConfigPostProcessor extension](https://github.com/apache/dubbo-go/pull/943)
+- [Impl extension of two urls comparison](https://github.com/apache/dubbo-go/pull/854)
+- [using event-driven to let router send signal to notify channel](https://github.com/apache/dubbo-go/pull/976)
+- [lint codes](https://github.com/apache/dubbo-go/pull/941)
+
+### Bugfixes
+- [Fix: generic struct2MapAll key of map keep type](https://github.com/apache/dubbo-go/pull/928)
+- [Fix: when events empty, delete all the invokers](https://github.com/apache/dubbo-go/pull/758)
+- [Fix: file service discovery run in windows](https://github.com/apache/dubbo-go/pull/932)
+- [Fix: make metadata report work without serviceDiscovery](https://github.com/apache/dubbo-go/pull/948)
+- [Fix: consumer invoker cache set nil after the ZK connection is lost](https://github.com/apache/dubbo-go/pull/985)
+- [Fix: integration test in Github action](https://github.com/apache/dubbo-go/pull/1012)
+- [Fix: etcd exit panic](https://github.com/apache/dubbo-go/pull/1013)
+- [Fix: when connect to provider fail, will occur panic](https://github.com/apache/dubbo-go/pull/1021)
+- [Fix: support getty send Length, when the data transfer failed](https://github.com/apache/dubbo-go/pull/1028)
+
+Milestone: [https://github.com/apache/dubbo-go/milestone/7](https://github.com/apache/dubbo-go/milestone/7?closed=1)
+
 ## 1.5.5
 
 ### New Features
