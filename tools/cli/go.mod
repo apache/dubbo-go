@@ -8,3 +8,5 @@ require (
 	github.com/pkg/errors v0.9.1
 	go.uber.org/atomic v1.7.0
 )
+
+replace github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.4
