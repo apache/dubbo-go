@@ -21,7 +21,7 @@ Apache开源软件是有社区驱动的，为了提高发布软件质量而指�
 
 ## 1. 发版准备
 
-发版文件需要签名，需要安装pgp工具. 
+发版文件需要签名，需要安装pgp工具.
 
 ```bash
 $ brew install gpg
@@ -167,7 +167,7 @@ $ svn commit  --username wongoo -m "Release dubbo-go-hessian2 v1.4.0-rc1"
 发任何邮件都是有一定格式的，你加入社区邮件列表后，就会收到很多这样的邮件，多看看就知道了，具体邮件范本参考文章后面的邮件范本。
 
 发完【VOTE】邮件，私下沟通群里面请大佬PMC投票。
-PMC投票会对你上传打包文件进行相关检查, 
+PMC投票会对你上传打包文件进行相关检查,
 详细可以了解孵化中的项目发布完整的检查项参考： https://cwiki.apache.org/confluence/display/INCUBATOR2/IncubatorReleaseChecklist
 
 收到3个binding邮件且超过72小时后，就可以发 投票结果 [RESULT] [VOTE] 邮件了。
@@ -185,7 +185,7 @@ PMC投票会对你上传打包文件进行相关检查,
 
 ## 5. 发布版本
 
-当正式发布投票成功后，先发[Result]邮件，然后就准备 release package。 
+当正式发布投票成功后，先发[Result]邮件，然后就准备 release package。
 将之前在dev下发布的对应rc文件夹下的源码包、签名文件和hash文件拷贝到另一个目录 v1.4.0，
 注意文件名字中不要rcxx (可以rename，但不要重新计算签名，hash可以重新计算，结果不会变)。
 
@@ -253,7 +253,7 @@ Hello Dubbo/Dubbogo Community,
  [ ] +1 approve
  [ ] +0 no opinion
  [ ] -1 disapprove with the reason
- 
+
  Thanks,
  The Apache Dubbo-go Team
  ```
@@ -284,7 +284,7 @@ between text And link. I suggest add one to make it looks better.  <--- 一些�
 I checked the following items:
 
 [v] Are release files in correct location?                    <-- 发布文件目录是否正确
-[v] Do release files have the word incubating in their name?  
+[v] Do release files have the word incubating in their name?
 [v] Are the digital signature and hashes correct?             <-- 签名、hash是否正确
 [v] Do LICENSE and NOTICE files exists?
 [v] Is the LICENSE and NOTICE text correct?                   <-- 协议文本是否正确
