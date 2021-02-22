@@ -30,7 +30,7 @@ import (
 // an embedded consul server.
 func NewConsulAgent(t *testing.T, port int) *agent.TestAgent {
 	hcl := `
-		ports { 
+		ports {
 			http = ` + strconv.Itoa(port) + `
 		}
 	`
