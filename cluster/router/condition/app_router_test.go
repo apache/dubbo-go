@@ -114,7 +114,7 @@ force: true
 runtime: false
 conditions:
   - => host != 172.22.3.91
-  - host = 192.168.199.208 => host = 192.168.199.208 
+  - host = 192.168.199.208 => host = 192.168.199.208
 `
 	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
