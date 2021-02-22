@@ -1,5 +1,5 @@
 # dubbo router yaml configure file
-routerRules: 
+routerRules:
   - priority: 1
     force: true
     noConditions :
