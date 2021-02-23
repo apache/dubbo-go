@@ -149,7 +149,12 @@ conditions:
 	url := getConditionRouteUrl(applicationKey)
 	assert.NotNil(t, url)
 	factory := extension.GetRouterFactory(url.Protocol)
-	r, err := factory.NewPriorityRouter(url)
+	notify := make(chan struct{})
+	go func() {
+		for range notify {
+		}
+	}()
+	r, err := factory.NewPriorityRouter(url, notify)
 	assert.Nil(t, err)
 	assert.NotNil(t, r)
 
