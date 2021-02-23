@@ -39,7 +39,7 @@ const (
 	// ConnDelay connection delay interval
 	ConnDelay = 3
 	// MaxFailTimes max fail times
-	MaxFailTimes = 15
+	MaxFailTimes = 3
 )
 
 var (
@@ -508,7 +508,7 @@ func (z *ZookeeperClient) GetChildrenW(path string) ([]string, <-chan zk.Event, 
 		if err == zk.ErrNoNode {
 			return nil, nil, errNilNode
 		}
-		logger.Errorf("zk.ChildrenW(path{%s}) = error(%v)", path, err)
+		logger.Warnf("zk.ChildrenW(path{%s}) = error(%v)", path, err)
 		return nil, nil, perrors.WithMessagef(err, "zk.ChildrenW(path:%s)", path)
 	}
 	if stat == nil {
@@ -590,6 +590,9 @@ func (z *ZookeeperClient) SetContent(zkPath string, content []byte, version int3
 
 // getConn gets zookeeper connection safely
 func (z *ZookeeperClient) getConn() *zk.Conn {
+	if z == nil {
+		return nil
+	}
 	z.RLock()
 	defer z.RUnlock()
 	return z.Conn
