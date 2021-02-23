@@ -136,6 +136,13 @@ func (r *BaseRegistry) Register(conf *common.URL) error {
 		ok  bool
 		err error
 	)
+	// if developer define registry port and ip, use it first.
+	if ipToRegistry := os.Getenv("DUBBO_IP_TO_REGISTRY"); ipToRegistry != "" {
+		conf.Ip = ipToRegistry
+	}
+	if portToRegistry := os.Getenv("DUBBO_PORT_TO_REGISTRY"); portToRegistry != "" {
+		conf.Port = portToRegistry
+	}
 	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
 	// Check if the service has been registered
 	r.cltLock.Lock()
