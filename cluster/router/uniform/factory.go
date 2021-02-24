@@ -15,37 +15,29 @@
  * limitations under the License.
  */
 
-package condition
+package uniform
 
 import (
-	perrors "github.com/pkg/errors"
-)
-
-import (
-	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/cluster/router"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
 )
 
-const (
-	// Default priority for application router
-	appRouterDefaultPriority = int64(150)
-)
-
-// AppRouter For listen application router with config center
-type AppRouter struct {
-	listenableRouter
-	notify interface{}
+func init() {
+	extension.SetRouterFactory(constant.UniformRouterName, newUniformRouterFactory)
 }
 
-// NewAppRouter Init AppRouter by url
-func NewAppRouter(url *common.URL, notify chan struct{}) (*AppRouter, error) {
-	if url == nil {
-		return nil, perrors.Errorf("No route URL for create app router!")
-	}
-	appRouter, err := newListenableRouter(url, url.GetParam(constant.APPLICATION_KEY, ""), notify)
-	if err != nil {
-		return nil, err
-	}
-	appRouter.priority = appRouterDefaultPriority
-	return appRouter, nil
+// ConnCheckRouteFactory is the factory to create conn check router, it aims at filter ip with unhealthy status
+// the unhealthy status is storied in protocol/rpc_status.go with sync.Map
+type UniformRouteFactory struct {
+}
+
+// newConnCheckRouteFactory construct a new ConnCheckRouteFactory
+func newUniformRouterFactory() router.PriorityRouterFactory {
+	return &UniformRouteFactory{}
+}
+
+// NewPriorityRouter construct a new NewConnCheckRouter via url
+func (f *UniformRouteFactory) NewPriorityRouter(vsConfigBytes, distConfigBytes []byte, notify chan struct{}) (router.PriorityRouter, error) {
+	return NewUniformRouterChain(vsConfigBytes, distConfigBytes, notify)
 }

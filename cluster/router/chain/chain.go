@@ -41,6 +41,11 @@ const (
 	timeInterval = 5 * time.Second
 )
 
+var (
+	virtualServiceConfigByte  []byte
+	destinationRuleConfigByte []byte
+)
+
 // RouterChain Router chain
 type RouterChain struct {
 	// Full list of addresses from registry, classified by method name.
@@ -71,23 +76,29 @@ func (c *RouterChain) GetNotifyChan() chan struct{} {
 
 // Route Loop routers in RouterChain and call Route method to determine the target invokers list.
 func (c *RouterChain) Route(url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
-	cache := c.loadCache()
-	if cache == nil {
-		c.mutex.RLock()
-		defer c.mutex.RUnlock()
-		return c.invokers
-	}
+	//cache := c.loadCache()
+	//if cache == nil {
+	//	c.mutex.RLock()
+	//	defer c.mutex.RUnlock()
+	//	return c.invokers
+	//}
 
-	bitmap := cache.bitmap
+	finalInvokers := make([]protocol.Invoker, 0)
 	for _, r := range c.copyRouters() {
-		bitmap = r.Route(bitmap, cache, url, invocation)
+		finalInvokers = r.Route(c.invokers, url, invocation)
 	}
 
-	indexes := bitmap.ToArray()
-	finalInvokers := make([]protocol.Invoker, len(indexes))
-	for i, index := range indexes {
-		finalInvokers[i] = cache.invokers[index]
-	}
+	//
+	//bitmap := cache.bitmap
+	//for _, r := range c.copyRouters() {
+	//	bitmap = r.Route(bitmap, cache, url, invocation)
+	//}
+	//
+	//indexes := bitmap.ToArray()
+	//finalInvokers := make([]protocol.Invoker, len(indexes))
+	//for i, index := range indexes {
+	//	finalInvokers[i] = cache.invokers[index]
+	//}
 
 	return finalInvokers
 }
@@ -119,22 +130,6 @@ func (c *RouterChain) SetInvokers(invokers []protocol.Invoker) {
 	go func() {
 		c.notify <- struct{}{}
 	}()
-}
-
-// loop listens on events to update the address cache  when it receives notification
-// from address update,
-func (c *RouterChain) loop() {
-	ticker := time.NewTicker(timeInterval)
-	for {
-		select {
-		case <-ticker.C:
-			if protocol.GetAndRefreshState() {
-				c.buildCache()
-			}
-		case <-c.notify:
-			c.buildCache()
-		}
-	}
 }
 
 // copyRouters make a snapshot copy from RouterChain's router list.
@@ -220,6 +215,11 @@ func (c *RouterChain) URL() *common.URL {
 	return c.url
 }
 
+func SetVSAndDRConfigByte(vs, dr []byte) {
+	virtualServiceConfigByte = vs
+	destinationRuleConfigByte = dr
+}
+
 // NewRouterChain Use url to init router chain
 // Loop routerFactories and call NewRouter method
 func NewRouterChain(url *common.URL) (*RouterChain, error) {
@@ -234,8 +234,21 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 	}
 
 	routers := make([]router.PriorityRouter, 0, len(routerFactories))
+	// to delete
+	//for key, routerFactory := range fileRouterFactories {
+	//	r, err := routerFactory.NewFileRouter(config.GetUniformRouterConfigByte(), chain.notify)
+	//	if r == nil || err != nil {
+	//		logger.Errorf("router chain build router fail! routerFactories key:%s  error:%s", key, err.Error())
+	//		continue
+	//	}
+	//	routers = append(routers, r)
+	//}
+
 	for key, routerFactory := range routerFactories {
-		r, err := routerFactory().NewPriorityRouter(url, chain.notify)
+		if virtualServiceConfigByte == nil || destinationRuleConfigByte == nil {
+			logger.Errorf("virtual Service Config or destinationRule Confi Byte may be empty, pls check your CONF_VIRTUAL_SERVICE_FILE_PATH and CONF_DEST_RULE_FILE_PATH env is correctly point to your yaml file\n")
+		}
+		r, err := routerFactory().NewPriorityRouter(virtualServiceConfigByte, destinationRuleConfigByte, chain.notify)
 		if r == nil || err != nil {
 			logger.Errorf("router chain build router fail! routerFactories key:%s  error:%s", key, err.Error())
 			continue
@@ -256,7 +269,7 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 		chain.url = url
 	}
 
-	go chain.loop()
+	//go chain.loop()
 	return chain, nil
 }
 

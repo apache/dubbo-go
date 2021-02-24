@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-package conncheck
+package uniform
 
 import (
-	"context"
+	"fmt"
 	"testing"
 )
 
@@ -31,44 +31,22 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-// nolint
-type MockInvoker struct {
-	url *common.URL
-}
+const (
+	connCheckDubbo1010IP    = "192.168.10.10"
+	connCheckDubboUrlFormat = "dubbo://%s:20000/com.ikurento.user.UserProvider"
+)
 
-// nolint
-func NewMockInvoker(url *common.URL) *MockInvoker {
-	return &MockInvoker{
-		url: url,
-	}
-}
+func TestDefaultConnCheckerIsHealthy(t *testing.T) {
+	defer protocol.CleanAllStatus()
+	url, _ := common.NewURL(fmt.Sprintf(connCheckDubboUrlFormat, connCheckDubbo1010IP))
+	cc := NewDefaultConnChecker(url).(*DefaultConnChecker)
+	invoker := NewMockInvoker(url)
+	healthy := cc.IsConnHealthy(invoker)
+	assert.True(t, healthy)
 
-// nolint
-func (bi *MockInvoker) GetUrl() *common.URL {
-	return bi.url
-}
-
-// nolint
-func (bi *MockInvoker) IsAvailable() bool {
-	return true
-}
-
-// nolint
-func (bi *MockInvoker) IsDestroyed() bool {
-	return true
-}
-
-// nolint
-func (bi *MockInvoker) Invoke(_ context.Context, _ protocol.Invocation) protocol.Result {
-	return nil
-}
-
-// nolint
-func (bi *MockInvoker) Destroy() {
-}
-
-// nolint
-func TestHealthCheckRouteFactory(t *testing.T) {
-	factory := newConnCheckRouteFactory()
-	assert.NotNil(t, factory)
+	invoker = NewMockInvoker(url)
+	cc = NewDefaultConnChecker(url).(*DefaultConnChecker)
+	// add to black list
+	protocol.SetInvokerUnhealthyStatus(invoker)
+	assert.False(t, cc.IsConnHealthy(invoker))
 }
