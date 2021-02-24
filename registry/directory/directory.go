@@ -261,9 +261,9 @@ func (dir *RegistryDirectory) configRouters() {
 		urls = append(urls, v.(*common.URL))
 	}
 
-	if len(urls) > 0 {
-		dir.SetRouters(urls)
-	}
+	//if len(urls) > 0 {
+	//	dir.SetRouters(urls)
+	//}
 }
 
 // convertUrl processes override:// and router://

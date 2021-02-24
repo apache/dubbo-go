@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package conncheck
+package uniform
 
 import (
 	"fmt"

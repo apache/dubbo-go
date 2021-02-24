@@ -217,6 +217,8 @@ const (
 	HealthCheckRouterName = "health_check"
 	// ConnCheckRouterName Specify the name of ConnCheckRouter
 	ConnCheckRouterName = "conn_check"
+	// UniformRouterName Specifythe name of UniformRouter
+	UniformRouterName = "uniform"
 	// TagRouterName Specify the name of TagRouter
 	TagRouterName = "tag"
 	// TagRouterRuleSuffix Specify tag router suffix
