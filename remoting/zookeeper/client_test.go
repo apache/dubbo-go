@@ -18,6 +18,7 @@
 package zookeeper
 
 import (
+	"strconv"
 	"testing"
 	"time"
 )
@@ -77,6 +78,56 @@ func verifyEventStateOrder(t *testing.T, c <-chan zk.Event, expectedStates []zk.
 //	verifyEventStateOrder(t, eventChan, []zk.State{zk.StateDisconnected}, "event channel")
 //
 //}
+
+func Test_getZookeeperClient(t *testing.T) {
+	var err error
+	var tc *zk.TestCluster
+	var address []string
+	tc, err = zk.StartTestCluster(1, nil, nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, tc.Servers[0])
+	address = append(address, "127.0.0.1:"+strconv.Itoa(tc.Servers[0].Port))
+	client1, err := getZookeeperClient("test1", address, 3*time.Second)
+	assert.Nil(t, err)
+	client2, err := getZookeeperClient("test1", address, 3*time.Second)
+	assert.Nil(t, err)
+	client3, err := getZookeeperClient("test2", address, 3*time.Second)
+	assert.Nil(t, err)
+	assert.Equal(t, client1, client2)
+	assert.NotEqual(t, client1, client3)
+	client1.Close()
+	client2.Close()
+	client3.Close()
+	tc.Stop()
+}
+
+func Test_Close(t *testing.T) {
+	var err error
+	var tc *zk.TestCluster
+	var address []string
+	tc, err = zk.StartTestCluster(1, nil, nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, tc.Servers[0])
+	address = append(address, "127.0.0.1:"+strconv.Itoa(tc.Servers[0].Port))
+	client1, err := getZookeeperClient("test1", address, 3*time.Second)
+	assert.Nil(t, err)
+	client2, err := getZookeeperClient("test1", address, 3*time.Second)
+	assert.Nil(t, err)
+	assert.Equal(t, client2, client1)
+	client1.Close()
+	client3, err := getZookeeperClient("test1", address, 3*time.Second)
+	assert.Nil(t, err)
+	assert.Equal(t, client3, client2)
+	client2.Close()
+	assert.Equal(t, client1.activeNumber, uint32(1))
+	client1.Close()
+	assert.Equal(t, client1.activeNumber, uint32(0))
+	client4, err := getZookeeperClient("test1", address, 3*time.Second)
+	assert.Nil(t, err)
+	assert.Equal(t, client4.activeNumber, uint32(1))
+	assert.NotEqual(t, client3, client4)
+	tc.Stop()
+}
 
 func Test_newMockZookeeperClient(t *testing.T) {
 	ts, _, event, err := NewMockZookeeperClient("test", 15*time.Second)

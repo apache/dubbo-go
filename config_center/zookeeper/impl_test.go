@@ -41,14 +41,9 @@ const (
 	dubboPropertyFileName = "dubbo.properties"
 )
 
-var ts *zk.TestCluster
-
-func InitTestCluster(t *testing.T) {
-	var err error
-	ts, err = zk.StartTestCluster(1, nil, nil)
-	assert.NoError(t, err)
-}
 func initZkData(group string, t *testing.T) (*zk.TestCluster, *zookeeperDynamicConfiguration) {
+	ts, err := zk.StartTestCluster(1, nil, nil)
+	assert.NoError(t, err)
 	assert.NotNil(t, ts.Servers[0])
 	urlString := "registry://127.0.0.1:" + strconv.Itoa(ts.Servers[0].Port)
 	regurl, err := common.NewURL(urlString)
@@ -86,10 +81,10 @@ func initZkData(group string, t *testing.T) (*zk.TestCluster, *zookeeperDynamicC
 	dubbo.service.com.ikurento.user.UserProvider.cluster=failover
 `
 	if group != "" {
-		err = zreg.client.Create(path.Join(zreg.rootPath, "dubbo", dubboPropertyFileName))
+		err = zreg.client.Create(path.Join(zreg.rootPath, group, dubboPropertyFileName))
 		assert.NoError(t, err)
 
-		_, err = zreg.client.Conn.Set(path.Join(zreg.rootPath, "dubbo", dubboPropertyFileName), []byte(data), 0)
+		_, err = zreg.client.Conn.Set(path.Join(zreg.rootPath, group, dubboPropertyFileName), []byte(data), 0)
 		assert.NoError(t, err)
 	} else {
 		err = zreg.client.Create(path.Join(zreg.rootPath, dubboPropertyFileName))
@@ -102,22 +97,12 @@ func initZkData(group string, t *testing.T) (*zk.TestCluster, *zookeeperDynamicC
 	return ts, zreg
 }
 
-func deleteDubboPath(zreg *zookeeperDynamicConfiguration, group string, t *testing.T) {
-	var err error
-	if group != "" {
-		err = zreg.client.Delete(path.Join(zreg.rootPath, "dubbo", dubboPropertyFileName))
-		assert.NoError(t, err)
-	} else {
-		err = zreg.client.Delete(path.Join(zreg.rootPath, dubboPropertyFileName))
-		assert.NoError(t, err)
-	}
-}
-
 func TestGetConfig(t *testing.T) {
-	InitTestCluster(t)
-	_, reg := initZkData("dubbo", t)
+	ts, reg := initZkData("dubbo", t)
 	defer func() {
-		deleteDubboPath(reg, "dubbo", t)
+		reg.client.Close()
+		err := ts.Stop()
+		assert.NoError(t, err)
 	}()
 	configs, err := reg.GetProperties(dubboPropertyFileName, config_center.WithGroup("dubbo"))
 	assert.NoError(t, err)
@@ -135,13 +120,23 @@ func TestGetConfig(t *testing.T) {
 	assert.Equal(t, "", configs)
 }
 
+func printMap(key, value interface{}) bool {
+	fmt.Println(key, value)
+	return true
+}
+
 func TestAddListener(t *testing.T) {
-	_, reg := initZkData("", t)
+	ts, reg := initZkData("", t)
 	defer func() {
-		deleteDubboPath(reg, "", t)
+		reg.client.Close()
+		err := ts.Stop()
+		assert.NoError(t, err)
 	}()
+	reg.cacheListener.keyListeners.Range(printMap)
 	listener := &mockDataListener{}
 	reg.AddListener(dubboPropertyFileName, listener)
+
+	reg.cacheListener.keyListeners.Range(printMap)
 	listener.wg.Add(1)
 	data := `
 	dubbo.consumer.request_timeout=3s
@@ -171,9 +166,11 @@ func TestAddListener(t *testing.T) {
 }
 
 func TestRemoveListener(t *testing.T) {
-	_, reg := initZkData("", t)
+	ts, reg := initZkData("", t)
 	defer func() {
-		deleteDubboPath(reg, "", t)
+		reg.client.Close()
+		err := ts.Stop()
+		assert.NoError(t, err)
 	}()
 	listener := &mockDataListener{}
 	reg.AddListener(dubboPropertyFileName, listener)
@@ -211,19 +208,20 @@ func TestZookeeperDynamicConfigurationPublishConfig(t *testing.T) {
 	value := "Test Data"
 	customGroup := "Custom Group"
 	key := "myKey"
-	_, zk := initZkData(config_center.DEFAULT_GROUP, t)
+	ts, reg := initZkData(config_center.DEFAULT_GROUP, t)
 	defer func() {
+		reg.client.Close()
 		err := ts.Stop()
 		assert.NoError(t, err)
 	}()
-	err := zk.PublishConfig(key, customGroup, value)
+	err := reg.PublishConfig(key, customGroup, value)
 	assert.Nil(t, err)
-	result, err := zk.GetInternalProperty("myKey", config_center.WithGroup(customGroup))
+	result, err := reg.GetInternalProperty("myKey", config_center.WithGroup(customGroup))
 	assert.Nil(t, err)
 	assert.Equal(t, value, result)
 
 	var keys *gxset.HashSet
-	keys, err = zk.GetConfigKeysByGroup(customGroup)
+	keys, err = reg.GetConfigKeysByGroup(customGroup)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, keys.Size())
 	assert.True(t, keys.Contains(key))
