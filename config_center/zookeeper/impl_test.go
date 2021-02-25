@@ -120,11 +120,6 @@ func TestGetConfig(t *testing.T) {
 	assert.Equal(t, "", configs)
 }
 
-func printMap(key, value interface{}) bool {
-	fmt.Println(key, value)
-	return true
-}
-
 func TestAddListener(t *testing.T) {
 	ts, reg := initZkData("", t)
 	defer func() {
@@ -132,11 +127,9 @@ func TestAddListener(t *testing.T) {
 		err := ts.Stop()
 		assert.NoError(t, err)
 	}()
-	reg.cacheListener.keyListeners.Range(printMap)
 	listener := &mockDataListener{}
 	reg.AddListener(dubboPropertyFileName, listener)
 
-	reg.cacheListener.keyListeners.Range(printMap)
 	listener.wg.Add(1)
 	data := `
 	dubbo.consumer.request_timeout=3s
