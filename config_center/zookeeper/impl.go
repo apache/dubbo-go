@@ -209,6 +209,7 @@ func (c *zookeeperDynamicConfiguration) closeConfigs() {
 	logger.Infof("begin to close provider zk client")
 	c.cltLock.Lock()
 	defer c.cltLock.Unlock()
+	c.client.Close()
 	c.client = nil
 }
 

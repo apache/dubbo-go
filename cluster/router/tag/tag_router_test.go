@@ -333,9 +333,7 @@ tags:
 }
 
 func (suite *DynamicTagRouter) TearDownTest() {
-	//suite.zkClient.Close()
-	//err := suite.testCluster.Stop()
-	//suite.Nil(err)
+	suite.zkClient.Close()
 }
 
 func (suite *DynamicTagRouter) TestDynamicTagRouterSetByIPv4() {

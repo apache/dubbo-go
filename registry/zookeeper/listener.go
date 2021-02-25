@@ -154,9 +154,6 @@ func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 				logger.Warnf("update @result{%s}. But its connection to registry is invalid", e.Value)
 				continue
 			}
-			//r.update(e.res)
-			//write to invoker
-			//r.outerEventCh <- e.res
 			return &registry.ServiceEvent{Action: e.ConfigType, Service: e.Value.(*common.URL)}, nil
 		}
 	}

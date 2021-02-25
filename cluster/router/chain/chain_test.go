@@ -82,6 +82,7 @@ conditions:
 	assert.NoError(t, err)
 	defer func() {
 		z.Delete(path)
+		z.Close()
 	}()
 
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, localIP, ts.Servers[0].Port))
@@ -135,6 +136,7 @@ conditions:
 	assert.NoError(t, err)
 	defer func() {
 		z.Delete(path)
+		z.Close()
 	}()
 
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, localIP, zkCluster.Servers[0].Port))
@@ -211,6 +213,7 @@ conditions:
 	assert.NoError(t, err)
 	defer func() {
 		z.Delete(path)
+		z.Close()
 	}()
 
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, localIP, ts.Servers[0].Port))
