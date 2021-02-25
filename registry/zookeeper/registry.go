@@ -178,6 +178,7 @@ func (r *zkRegistry) DoUnsubscribe(conf *common.URL) (registry.Listener, error) 
 
 // CloseAndNilClient closes listeners and clear client
 func (r *zkRegistry) CloseAndNilClient() {
+	r.client.Close()
 	r.client = nil
 }
 
