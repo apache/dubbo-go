@@ -47,11 +47,16 @@ var (
 	errNilChildren     = perrors.Errorf("has none children")
 	errNilNode         = perrors.Errorf("node does not exist")
 )
+
 var (
-	clientHaveCreated uint32
-	mux               sync.Mutex
-	zkClient          *ZookeeperClient
+	zkClientPool ZookeeperClientPool
+	once         sync.Once
 )
+
+type ZookeeperClientPool struct {
+	sync.Mutex
+	zkClient map[string]*ZookeeperClient
+}
 
 // ZookeeperClient represents zookeeper client Configuration
 type ZookeeperClient struct {
@@ -59,6 +64,7 @@ type ZookeeperClient struct {
 	ZkAddrs           []string
 	sync.RWMutex      // for conn
 	Conn              *zk.Conn
+	activeNumber      uint32
 	Timeout           time.Duration
 	Wait              sync.WaitGroup
 	valid             uint32
@@ -147,20 +153,23 @@ func ValidateZookeeperClient(container ZkClientFacade, opts ...Option) error {
 	return nil
 }
 
+func initZookeeperClientPool() {
+	zkClientPool.zkClient = make(map[string]*ZookeeperClient)
+}
 func getZookeeperClient(name string, zkAddrs []string, timeout time.Duration) (*ZookeeperClient, error) {
-	var err error
-	if atomic.LoadUint32(&clientHaveCreated) == 0 {
-		mux.Lock()
-		defer mux.Unlock()
-		if atomic.LoadUint32(&clientHaveCreated) == 0 {
-			zkClient, err = NewZookeeperClient(name, zkAddrs, timeout)
-			if err == nil {
-				atomic.StoreUint32(&clientHaveCreated, 1)
-			} else {
-				return nil, err
-			}
-		}
+	once.Do(initZookeeperClientPool)
+	zkClientPool.Lock()
+	defer zkClientPool.Unlock()
+	if zkClient, ok := zkClientPool.zkClient[name]; ok {
+		zkClient.activeNumber++
+		return zkClient, nil
 	}
+	zkClient, err := NewZookeeperClient(name, zkAddrs, timeout)
+	if err != nil {
+		return nil, err
+	}
+	zkClientPool.zkClient[name] = zkClient
+	zkClient.activeNumber++
 	return zkClient, nil
 }
 
@@ -176,6 +185,7 @@ func NewZookeeperClient(name string, zkAddrs []string, timeout time.Duration) (*
 		name:          name,
 		ZkAddrs:       zkAddrs,
 		Timeout:       timeout,
+		activeNumber:  0,
 		reconnectCh:   make(chan struct{}),
 		eventRegistry: make(map[string][]*chan struct{}),
 	}
@@ -234,6 +244,7 @@ func NewMockZookeeperClient(name string, timeout time.Duration, opts ...Option) 
 		return nil, nil, nil, perrors.WithMessagef(err, "zk.Connect")
 	}
 	atomic.StoreUint32(&z.valid, 1)
+	z.activeNumber++
 	return ts, z, event, nil
 }
 
@@ -605,5 +616,11 @@ func (z *ZookeeperClient) Reconnect() <-chan struct{} {
 
 // In my opinion, this method should never called by user, here just for lint
 func (z *ZookeeperClient) Close() {
-	z.Conn.Close()
+	zkClientPool.Lock()
+	defer zkClientPool.Unlock()
+	z.activeNumber--
+	if z.activeNumber == 0 {
+		z.Conn.Close()
+		delete(zkClientPool.zkClient, z.name)
+	}
 }
