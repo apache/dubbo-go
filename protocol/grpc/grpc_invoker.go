@@ -24,32 +24,50 @@ import (
 )
 
 import (
+	hessian2 "github.com/apache/dubbo-go-hessian2"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/connectivity"
 )
 
 import (
-	hessian2 "github.com/apache/dubbo-go-hessian2"
-
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
 )
 
-var errNoReply = errors.New("request need @response")
+var (
+	errNoReply = errors.New("request need @response")
+)
 
 // nolint
 type GrpcInvoker struct {
 	protocol.BaseInvoker
-	quitOnce sync.Once
-	client   *Client
+	quitOnce    sync.Once
+	clientGuard *sync.RWMutex
+	client      *Client
 }
 
 // NewGrpcInvoker returns a Grpc invoker instance
 func NewGrpcInvoker(url *common.URL, client *Client) *GrpcInvoker {
 	return &GrpcInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
+		clientGuard: &sync.RWMutex{},
 		client:      client,
 	}
+}
+
+func (gi *GrpcInvoker) setClient(client *Client) {
+	gi.clientGuard.Lock()
+	defer gi.clientGuard.Unlock()
+
+	gi.client = client
+}
+
+func (gi *GrpcInvoker) getClient() *Client {
+	gi.clientGuard.RLock()
+	defer gi.clientGuard.RUnlock()
+
+	return gi.client
 }
 
 // Invoke is used to call service method by invocation
@@ -57,6 +75,30 @@ func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 	var (
 		result protocol.RPCResult
 	)
+
+	if !gi.BaseInvoker.IsAvailable() {
+		// Generally, the case will not happen, because the invoker has been removed
+		// from the invoker list before destroy,so no new request will enter the destroyed invoker
+		logger.Warnf("this grpcInvoker is destroyed")
+		result.Err = protocol.ErrDestroyedInvoker
+		return &result
+	}
+
+	gi.clientGuard.RLock()
+	defer gi.clientGuard.RUnlock()
+
+	if gi.client == nil {
+		result.Err = protocol.ErrClientClosed
+		return &result
+	}
+
+	if !gi.BaseInvoker.IsAvailable() {
+		// Generally, the case will not happen, because the invoker has been removed
+		// from the invoker list before destroy,so no new request will enter the destroyed invoker
+		logger.Warnf("this grpcInvoker is destroying")
+		result.Err = protocol.ErrDestroyedInvoker
+		return &result
+	}
 
 	if invocation.Reply() == nil {
 		result.Err = errNoReply
@@ -83,21 +125,32 @@ func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 
 // IsAvailable get available status
 func (gi *GrpcInvoker) IsAvailable() bool {
-	return gi.BaseInvoker.IsAvailable() && gi.client.GetState() != connectivity.Shutdown
+	client := gi.getClient()
+	if client != nil {
+		return gi.BaseInvoker.IsAvailable() && client.GetState() != connectivity.Shutdown
+	}
+
+	return false
 }
 
 // IsDestroyed get destroyed status
 func (gi *GrpcInvoker) IsDestroyed() bool {
-	return gi.BaseInvoker.IsDestroyed() && gi.client.GetState() == connectivity.Shutdown
+	client := gi.getClient()
+	if client != nil {
+		return gi.BaseInvoker.IsDestroyed() && client.GetState() == connectivity.Shutdown
+	}
+
+	return false
 }
 
 // Destroy will destroy gRPC's invoker and client, so it is only called once
 func (gi *GrpcInvoker) Destroy() {
 	gi.quitOnce.Do(func() {
 		gi.BaseInvoker.Destroy()
-
-		if gi.client != nil {
-			_ = gi.client.Close()
+		client := gi.getClient()
+		if client != nil {
+			gi.setClient(nil)
+			client.Close()
 		}
 	})
 }
