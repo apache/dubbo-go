@@ -43,7 +43,7 @@ func newZoneAwareClusterInvoker(directory cluster.Directory) protocol.Invoker {
 	invoke := &zoneAwareClusterInvoker{
 		baseClusterInvoker: newBaseClusterInvoker(directory),
 	}
-	// add self to interceptor
+	// add local to interceptor
 	invoke.interceptor = invoke
 	return invoke
 }
