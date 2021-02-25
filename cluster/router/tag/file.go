@@ -45,6 +45,7 @@ type FileTagRouter struct {
 }
 
 // NewFileTagRouter Create file tag router instance with content (from config file)
+// todo fix this router, now it is useless, tag router is nil
 func NewFileTagRouter(content []byte) (*FileTagRouter, error) {
 	fileRouter := &FileTagRouter{}
 	rule, err := getRule(string(content))
@@ -52,7 +53,8 @@ func NewFileTagRouter(content []byte) (*FileTagRouter, error) {
 		return nil, perrors.Errorf("yaml.Unmarshal() failed , error:%v", perrors.WithStack(err))
 	}
 	fileRouter.routerRule = rule
-	fileRouter.router, err = NewTagRouter(fileRouter.URL())
+	notify := make(chan struct{})
+	fileRouter.router, err = NewTagRouter(fileRouter.URL(), notify)
 	return fileRouter, err
 }
 
