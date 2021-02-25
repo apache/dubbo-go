@@ -165,6 +165,7 @@ func (zksd *zookeeperServiceDiscovery) String() string {
 
 // Close client be closed
 func (zksd *zookeeperServiceDiscovery) Destroy() error {
+	zksd.client.Close()
 	return nil
 }
 
