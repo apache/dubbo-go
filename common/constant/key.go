@@ -215,7 +215,7 @@ const (
 	// HealthCheckRouterName Specify the name of HealthCheckRouter
 	HealthCheckRouterName = "health_check"
 	// LocalPriorityRouterName Specify the name of LocalPriorityRouter
-	LocalPriorityRouterName = "self_priority"
+	LocalPriorityRouterName = "local_priority"
 	// TagRouterName Specify the name of TagRouter
 	TagRouterName = "tag"
 	// TagRouterRuleSuffix Specify tag router suffix
