@@ -77,5 +77,6 @@ func (l *CacheListener) DataChange(event remoting.Event) bool {
 }
 
 func (l *CacheListener) pathToKey(path string) string {
-	return strings.Replace(strings.Replace(path, l.rootPath+"/", "", -1), "/", ".", -1)
+	groupKey := strings.Replace(strings.Replace(path, l.rootPath+"/", "", -1), "/", ".", -1)
+	return groupKey[strings.Index(groupKey, ".")+1:]
 }
