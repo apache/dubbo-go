@@ -164,11 +164,9 @@ func (c *Client) Connect(url *common.URL) error {
 // close network connection
 func (c *Client) Close() {
 	c.mux.Lock()
-	p := c.pool
-	c.pool = nil
 	c.mux.Unlock()
-	if p != nil {
-		p.close()
+	if c.pool != nil {
+		c.pool.close()
 	}
 }
 
