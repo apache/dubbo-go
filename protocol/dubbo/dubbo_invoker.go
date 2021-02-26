@@ -195,6 +195,7 @@ func (di *DubboInvoker) Destroy() {
 	di.quitOnce.Do(func() {
 		di.BaseInvoker.Destroy()
 		client := di.getClient()
+		exchangeClientMap.Delete(di.client)
 		if client != nil {
 			di.setClient(nil)
 			client.Close()
