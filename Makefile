@@ -19,7 +19,10 @@ VERSION ?= latest
 
 GO = go
 GO_PATH = $(shell $(GO) env GOPATH)
+DUBBOGO_PATH = ~/dubbogo
 GO_OS = $(shell $(GO) env GOOS)
+GO_OS0 := $(GO_OS)
+GO_ARCH = $(shell $(GO) env GOARCH)
 ifeq ($(GO_OS), darwin)
     GO_OS = mac
 endif
@@ -30,9 +33,10 @@ GO_BUILD_FLAGS = -v
 GO_BUILD_LDFLAGS = -X main.version=$(VERSION)
 
 GO_LICENSE_CHECKER_DIR = license-header-checker-$(GO_OS)
-GO_LICENSE_CHECKER = $(GO_PATH)/bin/license-header-checker
+GO_LICENSE_CHECKER = $(DUBBOGO_PATH)/bin/license-header-checker
+GO_LINT_DIR = golangci-lint-1.37.1-$(GO_OS0)-$(GO_ARCH)
+GO_LINT = $(DUBBOGO_PATH)/bin/golangci-lint
 LICENSE_DIR = /tmp/tools/license
-
 ARCH = amd64
 # for add zookeeper fatjar
 ZK_TEST_LIST=config_center/zookeeper registry/zookeeper cluster/router/chain cluster/router/condition cluster/router/tag  metadata/report/zookeeper
@@ -44,8 +48,11 @@ ZK_JAR=$(ZK_JAR_PATH)/$(ZK_JAR_NAME)
 SHELL = /bin/bash
 
 prepareLic:
-	$(GO_LICENSE_CHECKER) -version || (wget https://github.com/lsm-dev/license-header-checker/releases/download/v1.2.0/$(GO_LICENSE_CHECKER_DIR).zip -O $(GO_LICENSE_CHECKER_DIR).zip && unzip -o $(GO_LICENSE_CHECKER_DIR).zip && mkdir -p $(GO_PATH)/bin/ && cp $(GO_LICENSE_CHECKER_DIR)/64bit/license-header-checker $(GO_PATH)/bin/)
+	$(GO_LICENSE_CHECKER) -version || (wget https://github.com/lsm-dev/license-header-checker/releases/download/v1.2.0/$(GO_LICENSE_CHECKER_DIR).zip -O $(GO_LICENSE_CHECKER_DIR).zip && unzip -o $(GO_LICENSE_CHECKER_DIR).zip && mkdir -p $(DUBBOGO_PATH)/bin/ && cp $(GO_LICENSE_CHECKER_DIR)/64bit/license-header-checker $(DUBBOGO_PATH)/bin/)
 	ls /tmp/tools/license/license.txt || wget -P $(LICENSE_DIR) https://github.com/dubbogo/resources/raw/master/tools/license/license.txt
+
+prepareLint:
+	$(GO_LINT) -v || (wget https://github.com/golangci/golangci-lint/releases/download/v1.37.1/$(GO_LINT_DIR).tar.gz -O $(GO_LINT_DIR).tar.gz && tar -zxf $(GO_LINT_DIR).tar.gz && mkdir -p $(DUBBOGO_PATH)/bin/ && mv $(GO_LINT_DIR)/golangci-lint $(DUBBOGO_PATH)/bin/) && rm -rf $(GO_LINT_DIR).tar.gz $(GO_LINT_DIR)
 
 prepareZk:
 	ls $(ZK_JAR) || (mkdir -p $(ZK_JAR_PATH)&&  wget -P $(ZK_JAR_PATH) https://github.com/dubbogo/resources/raw/master/zookeeper-4unitest/contrib/fatjar/${ZK_JAR_NAME})
@@ -54,7 +61,7 @@ prepareZk:
 		cp ${ZK_JAR} $$i$(ZK_FATJAR_BASE);\
 	done
 
-prepare: prepareZk prepareLic
+prepare: prepareZk prepareLic prepareLint
 
 .PHONE: test
 test: clean prepareZk
@@ -67,10 +74,15 @@ deps: prepare
 license: clean prepareLic
 	$(GO_LICENSE_CHECKER) -v -a -r -i vendor $(LICENSE_DIR)/license.txt . go && [[ -z `git status -s` ]]
 
+.PHONY: linter
+linter: prepareLint
+	$(GO_LINT) run --timeout=5m -v
+
 .PHONY: verify
-verify: clean license test
+verify: clean license linter test
 
 .PHONY: clean
 clean: prepare
 	rm -rf coverage.txt
 	rm -rf license-header-checker*
+
