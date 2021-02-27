@@ -101,7 +101,7 @@ func (client *ExchangeClient) DecreaseActiveNumber() {
 	atomic.AddUint32(&client.activeNum, ^uint32(0))
 }
 
-// decrease number of service using client
+// get number of service using client
 func (client *ExchangeClient) GetActiveNumber() uint32 {
 	return atomic.LoadUint32(&client.activeNum)
 }
