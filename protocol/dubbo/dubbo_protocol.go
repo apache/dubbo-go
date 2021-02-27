@@ -215,7 +215,9 @@ func getExchangeClient(url *common.URL) *remoting.ExchangeClient {
 	if clientTmp == nil {
 		return nil
 	}
-	return clientTmp.(*remoting.ExchangeClient)
+	exchangeClient := clientTmp.(*remoting.ExchangeClient)
+	exchangeClient.IncreaseActiveNumber()
+	return exchangeClient
 }
 
 // rebuildCtx rebuild the context by attachment.

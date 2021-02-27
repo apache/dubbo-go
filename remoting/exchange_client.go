@@ -18,6 +18,7 @@ package remoting
 
 import (
 	"errors"
+	"sync/atomic"
 	"time"
 )
 
@@ -51,6 +52,8 @@ type ExchangeClient struct {
 	client Client
 	// the tag for init.
 	init bool
+	// the number of service using the exchangeClient
+	activeNum uint32
 }
 
 // create ExchangeClient
@@ -59,6 +62,7 @@ func NewExchangeClient(url *common.URL, client Client, connectTimeout time.Durat
 		ConnectTimeout: connectTimeout,
 		address:        url.Location,
 		client:         client,
+		activeNum:      0,
 	}
 	client.SetExchangeClient(exchangeClient)
 	if !lazyInit {
@@ -66,7 +70,7 @@ func NewExchangeClient(url *common.URL, client Client, connectTimeout time.Durat
 			return nil
 		}
 	}
-
+	exchangeClient.IncreaseActiveNumber()
 	return exchangeClient
 }
 
@@ -85,6 +89,21 @@ func (cl *ExchangeClient) doInit(url *common.URL) error {
 	//FIXME atomic operation
 	cl.init = true
 	return nil
+}
+
+// increase number of service using client
+func (client *ExchangeClient) IncreaseActiveNumber() {
+	atomic.AddUint32(&client.activeNum, 1)
+}
+
+// decrease number of service using client
+func (client *ExchangeClient) DecreaseActiveNumber() {
+	atomic.AddUint32(&client.activeNum, ^uint32(0))
+}
+
+// decrease number of service using client
+func (client *ExchangeClient) GetActiveNumber() uint32 {
+	atomic.LoadUint32(&client.activeNum)
 }
 
 // two way request
