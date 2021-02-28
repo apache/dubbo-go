@@ -91,6 +91,7 @@ const (
 	RETRY_PERIOD_KEY                       = "retry.period"
 	RETRY_TIMES_KEY                        = "retry.times"
 	CYCLE_REPORT_KEY                       = "cycle.report"
+	DEFAULT_BLACK_LIST_RECOVER_BLOCK       = 16
 )
 
 const (
@@ -214,6 +215,10 @@ const (
 	ListenableRouterName = "listenable"
 	// HealthCheckRouterName Specify the name of HealthCheckRouter
 	HealthCheckRouterName = "health_check"
+	// LocalPriorityRouterName Specify the name of LocalPriorityRouter
+	LocalPriorityRouterName = "local_priority"
+	// ConnCheckRouterName Specify the name of ConnCheckRouter
+	ConnCheckRouterName = "conn_check"
 	// TagRouterName Specify the name of TagRouter
 	TagRouterName = "tag"
 	// TagRouterRuleSuffix Specify tag router suffix
@@ -239,8 +244,9 @@ const (
 	// ForceUseTag is the tag in attachment
 	ForceUseTag = "dubbo.force.tag"
 	Tagkey      = "dubbo.tag"
-
-	// Attachment key in context in invoker
+	// HEALTH_ROUTE_ENABLED_KEY defines if use health router
+	HEALTH_ROUTE_ENABLED_KEY = "health.route.enabled"
+	// AttachmentKey in context in invoker
 	AttachmentKey = DubboCtxKey("attachment")
 )
 
@@ -296,7 +302,9 @@ const (
 	HEALTH_CHECKER = "health.checker"
 	// The name of the default implementation of HealthChecker
 	DEFAULT_HEALTH_CHECKER = "default"
-	// The key of outstanding-request-limit
+	// The name of the default implementation of C
+	DEFAULT_CONN_CHECKER = "default"
+	// The key of outstanding-request-limit\
 	OUTSTANDING_REQUEST_COUNT_LIMIT_KEY = "outstanding.request.limit"
 	// The key of successive-failed-request's threshold
 	SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY = "successive.failed.threshold"

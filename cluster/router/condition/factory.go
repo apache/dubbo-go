@@ -37,8 +37,8 @@ func newConditionRouterFactory() router.PriorityRouterFactory {
 }
 
 // NewPriorityRouter creates ConditionRouterFactory by URL
-func (c *ConditionRouterFactory) NewPriorityRouter(url *common.URL) (router.PriorityRouter, error) {
-	return NewConditionRouter(url)
+func (c *ConditionRouterFactory) NewPriorityRouter(url *common.URL, notify chan struct{}) (router.PriorityRouter, error) {
+	return NewConditionRouter(url, notify)
 }
 
 // NewRouter Create FileRouterFactory by Content
@@ -54,6 +54,6 @@ func newAppRouterFactory() router.PriorityRouterFactory {
 }
 
 // NewPriorityRouter creates AppRouterFactory by URL
-func (c *AppRouterFactory) NewPriorityRouter(url *common.URL) (router.PriorityRouter, error) {
-	return NewAppRouter(url)
+func (c *AppRouterFactory) NewPriorityRouter(url *common.URL, notify chan struct{}) (router.PriorityRouter, error) {
+	return NewAppRouter(url, notify)
 }
