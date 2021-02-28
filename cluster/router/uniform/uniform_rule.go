@@ -73,15 +73,17 @@ func (vsr *VirtualServiceRule) match(url *common.URL, invocation protocol.Invoca
 // try from destination 's header to final fallback destination, when success, it return result destination, else return error
 func (vsr *VirtualServiceRule) tryGetSubsetFromRouterOfOneDestination(desc *config.DubboDestination, invokers []protocol.Invoker) ([]protocol.Invoker, error) {
 	subSet := desc.Destination.Subset
-	labels := vsr.uniformRule.DestinationLabelListMap[subSet]
+	labels, ok := vsr.uniformRule.DestinationLabelListMap[subSet]
 	resultInvokers := make([]protocol.Invoker, 0)
-	for _, v := range invokers {
-		if match_judger.JudgeUrlLabel(v.GetUrl(), labels) {
-			resultInvokers = append(resultInvokers, v)
+	if ok {
+		for _, v := range invokers {
+			if match_judger.JudgeUrlLabel(v.GetUrl(), labels) {
+				resultInvokers = append(resultInvokers, v)
+			}
 		}
-	}
-	if len(resultInvokers) != 0 {
-		return resultInvokers, nil
+		if len(resultInvokers) != 0 {
+			return resultInvokers, nil
+		}
 	}
 
 	if desc.Fallback != nil {

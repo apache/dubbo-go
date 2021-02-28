@@ -18,6 +18,7 @@ require (
 	github.com/emicklei/go-restful/v3 v3.4.0
 	github.com/frankban/quicktest v1.4.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.9
+	github.com/ghodss/yaml v1.0.0
 	github.com/go-co-op/gocron v0.1.1
 	github.com/go-resty/resty/v2 v2.3.0
 	github.com/golang/mock v1.4.4
