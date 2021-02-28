@@ -35,7 +35,7 @@ echo "travis pull request repo param -> $1"
 
 
 # #start etcd registry  insecure listen in [:]:2379
-# docker run -d --network host k8s.gcr.io/etcd:3.3.10 etcd
+# docker run -d --network host k8sCRD.gcr.io/etcd:3.3.10 etcd
 # echo "etcdv3 listen in [:]2379"
 
 # #start consul registry insecure listen in [:]:8500
