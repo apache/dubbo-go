@@ -30,7 +30,7 @@ import (
 // PriorityRouterFactory creates creates priority router with url
 type PriorityRouterFactory interface {
 	// NewPriorityRouter creates router instance with URL
-	NewPriorityRouter(*common.URL) (PriorityRouter, error)
+	NewPriorityRouter(*common.URL, chan struct{}) (PriorityRouter, error)
 }
 
 // FilePriorityRouterFactory creates priority router with parse config file
