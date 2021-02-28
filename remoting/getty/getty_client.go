@@ -181,8 +181,15 @@ func (c *Client) Request(request *remoting.Request, timeout time.Duration, respo
 	if session == nil {
 		return errSessionNotExist
 	}
-
-	if err = c.transfer(session, request, timeout); err != nil {
+	var (
+		totalLen int
+		sendLen  int
+	)
+	if totalLen, sendLen, err = c.transfer(session, request, timeout); err != nil {
+		if sendLen != 0 && totalLen != sendLen {
+			logger.Warnf("start to close the session at request because %d of %d bytes data is sent success. err:%+v", sendLen, totalLen, err)
+			go c.Close()
+		}
 		return perrors.WithStack(err)
 	}
 
@@ -221,7 +228,7 @@ func (c *Client) selectSession(addr string) (*gettyRPCClient, getty.Session, err
 	return rpcClient, rpcClient.selectSession(), nil
 }
 
-func (c *Client) transfer(session getty.Session, request *remoting.Request, timeout time.Duration) error {
-	err := session.WritePkg(request, timeout)
-	return perrors.WithStack(err)
+func (c *Client) transfer(session getty.Session, request *remoting.Request, timeout time.Duration) (int, int, error) {
+	totalLen, sendLen, err := session.WritePkg(request, timeout)
+	return totalLen, sendLen, perrors.WithStack(err)
 }

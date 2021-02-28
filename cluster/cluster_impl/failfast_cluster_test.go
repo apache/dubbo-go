@@ -53,6 +53,7 @@ func registerFailfast(invoker *mock.MockInvoker) protocol.Invoker {
 	invokers := []protocol.Invoker{}
 	invokers = append(invokers, invoker)
 
+	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 	invoker.EXPECT().GetUrl().Return(failfastUrl)
 
 	staticDir := directory.NewStaticDirectory(invokers)
@@ -67,6 +68,7 @@ func TestFailfastInvokeSuccess(t *testing.T) {
 	invoker := mock.NewMockInvoker(ctrl)
 	clusterInvoker := registerFailfast(invoker)
 
+	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 	invoker.EXPECT().GetUrl().Return(failfastUrl).AnyTimes()
 
 	mockResult := &protocol.RPCResult{Rest: rest{tried: 0, success: true}}
@@ -87,6 +89,7 @@ func TestFailfastInvokeFail(t *testing.T) {
 	invoker := mock.NewMockInvoker(ctrl)
 	clusterInvoker := registerFailfast(invoker)
 
+	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 	invoker.EXPECT().GetUrl().Return(failfastUrl).AnyTimes()
 
 	mockResult := &protocol.RPCResult{Err: perrors.New("error")}

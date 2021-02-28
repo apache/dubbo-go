@@ -1,5 +1,5 @@
 # dubbo router yaml configure file
-routerRules: 
+routerRules:
   - scope: application
     key: mock-app
     priority: 1
