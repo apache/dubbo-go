@@ -20,12 +20,12 @@ package chain
 import (
 	"sort"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
 import (
 	perrors "github.com/pkg/errors"
+	"go.uber.org/atomic"
 )
 
 import (
@@ -38,9 +38,7 @@ import (
 )
 
 const (
-	timeInterval   = 5 * time.Second
-	timeThreshold  = 2 * time.Second
-	countThreshold = 5
+	timeInterval = 5 * time.Second
 )
 
 // RouterChain Router chain
@@ -65,8 +63,10 @@ type RouterChain struct {
 	notify chan struct{}
 	// Address cache
 	cache atomic.Value
-	// init
-	init sync.Once
+}
+
+func (c *RouterChain) GetNotifyChan() chan struct{} {
+	return c.notify
 }
 
 // Route Loop routers in RouterChain and call Route method to determine the target invokers list.
@@ -104,6 +104,9 @@ func (c *RouterChain) AddRouters(routers []router.PriorityRouter) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.routers = newRouters
+	go func() {
+		c.notify <- struct{}{}
+	}()
 }
 
 // SetInvokers receives updated invokers from registry center. If the times of notification exceeds countThreshold and
@@ -113,32 +116,21 @@ func (c *RouterChain) SetInvokers(invokers []protocol.Invoker) {
 	c.invokers = invokers
 	c.mutex.Unlock()
 
-	// it should trigger init router for first call
-	c.init.Do(func() {
-		go func() {
-			c.notify <- struct{}{}
-		}()
-	})
-
-	c.count++
-	now := time.Now()
-	if c.count >= countThreshold && now.Sub(c.last) >= timeThreshold {
-		c.last = now
-		c.count = 0
-		go func() {
-			c.notify <- struct{}{}
-		}()
-	}
+	go func() {
+		c.notify <- struct{}{}
+	}()
 }
 
-// loop listens on events to update the address cache when it's necessary, either when it receives notification
-// from address update, or when timeInterval exceeds.
+// loop listens on events to update the address cache  when it receives notification
+// from address update,
 func (c *RouterChain) loop() {
 	ticker := time.NewTicker(timeInterval)
 	for {
 		select {
 		case <-ticker.C:
-			c.buildCache()
+			if protocol.GetAndRefreshState() {
+				c.buildCache()
+			}
 		case <-c.notify:
 			c.buildCache()
 		}
@@ -235,9 +227,15 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 	if len(routerFactories) == 0 {
 		return nil, perrors.Errorf("No routerFactory exits , create one please")
 	}
+
+	chain := &RouterChain{
+		last:   time.Now(),
+		notify: make(chan struct{}),
+	}
+
 	routers := make([]router.PriorityRouter, 0, len(routerFactories))
 	for key, routerFactory := range routerFactories {
-		r, err := routerFactory().NewPriorityRouter(url)
+		r, err := routerFactory().NewPriorityRouter(url, chain.notify)
 		if r == nil || err != nil {
 			logger.Errorf("router chain build router fail! routerFactories key:%s  error:%s", key, err.Error())
 			continue
@@ -250,12 +248,10 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 
 	sortRouter(newRouters)
 
-	chain := &RouterChain{
-		builtinRouters: routers,
-		routers:        newRouters,
-		last:           time.Now(),
-		notify:         make(chan struct{}),
-	}
+	routerNeedsUpdateInit := atomic.Bool{}
+	routerNeedsUpdateInit.Store(false)
+	chain.routers = newRouters
+	chain.builtinRouters = routers
 	if url != nil {
 		chain.url = url
 	}
