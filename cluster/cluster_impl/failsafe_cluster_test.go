@@ -52,6 +52,7 @@ func registerFailsafe(invoker *mock.MockInvoker) protocol.Invoker {
 
 	invokers := []protocol.Invoker{}
 	invokers = append(invokers, invoker)
+	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 
 	invoker.EXPECT().GetUrl().Return(failbackUrl)
 
@@ -66,6 +67,8 @@ func TestFailSafeInvokeSuccess(t *testing.T) {
 
 	invoker := mock.NewMockInvoker(ctrl)
 	clusterInvoker := registerFailsafe(invoker)
+
+	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 
 	invoker.EXPECT().GetUrl().Return(failsafeUrl).AnyTimes()
 
@@ -85,6 +88,7 @@ func TestFailSafeInvokeFail(t *testing.T) {
 
 	invoker := mock.NewMockInvoker(ctrl)
 	clusterInvoker := registerFailsafe(invoker)
+	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 
 	invoker.EXPECT().GetUrl().Return(failsafeUrl).AnyTimes()
 
