@@ -92,13 +92,13 @@ func (cl *ExchangeClient) doInit(url *common.URL) error {
 }
 
 // increase number of service using client
-func (client *ExchangeClient) IncreaseActiveNumber() {
-	atomic.AddUint32(&client.activeNum, 1)
+func (client *ExchangeClient) IncreaseActiveNumber() uint32 {
+	return atomic.AddUint32(&client.activeNum, 1)
 }
 
 // decrease number of service using client
-func (client *ExchangeClient) DecreaseActiveNumber() {
-	atomic.AddUint32(&client.activeNum, ^uint32(0))
+func (client *ExchangeClient) DecreaseActiveNumber() uint32 {
+	return atomic.AddUint32(&client.activeNum, ^uint32(0))
 }
 
 // get number of service using client
