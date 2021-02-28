@@ -15,35 +15,60 @@
  * limitations under the License.
  */
 
-package config
+package local
 
 import (
+	"context"
 	"testing"
-	"time"
 )
 
 import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestShutdownConfigGetTimeout(t *testing.T) {
-	config := ShutdownConfig{}
-	assert.False(t, config.RejectRequest)
-	assert.False(t, config.RequestsFinished)
+import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/protocol"
+)
 
-	config = ShutdownConfig{
-		Timeout:     "60s",
-		StepTimeout: "10s",
+// nolint
+type MockInvoker struct {
+	url *common.URL
+}
+
+// nolint
+func NewMockInvoker(url *common.URL) *MockInvoker {
+	return &MockInvoker{
+		url: url,
 	}
+}
 
-	assert.Equal(t, 60*time.Second, config.GetTimeout())
-	assert.Equal(t, 10*time.Second, config.GetStepTimeout())
+// nolint
+func (bi *MockInvoker) GetUrl() *common.URL {
+	return bi.url
+}
 
-	config = ShutdownConfig{
-		Timeout:     "34ms",
-		StepTimeout: "79ms",
-	}
+// nolint
+func (bi *MockInvoker) IsAvailable() bool {
+	return true
+}
 
-	assert.Equal(t, 34*time.Millisecond, config.GetTimeout())
-	assert.Equal(t, 79*time.Millisecond, config.GetStepTimeout())
+// nolint
+func (bi *MockInvoker) IsDestroyed() bool {
+	return true
+}
+
+// nolint
+func (bi *MockInvoker) Invoke(_ context.Context, _ protocol.Invocation) protocol.Result {
+	return nil
+}
+
+// nolint
+func (bi *MockInvoker) Destroy() {
+}
+
+// nolint
+func TestLocalDiscRouteFactory(t *testing.T) {
+	factory := newLocalPriorityRouteFactory()
+	assert.NotNil(t, factory)
 }

@@ -15,35 +15,29 @@
  * limitations under the License.
  */
 
-package config
+package local
 
 import (
-	"testing"
-	"time"
+	"github.com/apache/dubbo-go/cluster/router"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
 )
 
-import (
-	"github.com/stretchr/testify/assert"
-)
+func init() {
+	extension.SetRouterFactory(constant.LocalPriorityRouterName, newLocalPriorityRouteFactory)
+}
 
-func TestShutdownConfigGetTimeout(t *testing.T) {
-	config := ShutdownConfig{}
-	assert.False(t, config.RejectRequest)
-	assert.False(t, config.RequestsFinished)
+// LocalPriorityRouteFactory
+type LocalPriorityRouteFactory struct {
+}
 
-	config = ShutdownConfig{
-		Timeout:     "60s",
-		StepTimeout: "10s",
-	}
+// newLocalPriorityRouteFactory construct a new LocalDiscRouteFactory
+func newLocalPriorityRouteFactory() router.PriorityRouterFactory {
+	return &LocalPriorityRouteFactory{}
+}
 
-	assert.Equal(t, 60*time.Second, config.GetTimeout())
-	assert.Equal(t, 10*time.Second, config.GetStepTimeout())
-
-	config = ShutdownConfig{
-		Timeout:     "34ms",
-		StepTimeout: "79ms",
-	}
-
-	assert.Equal(t, 34*time.Millisecond, config.GetTimeout())
-	assert.Equal(t, 79*time.Millisecond, config.GetStepTimeout())
+// NewPriorityRouter construct a new NewLocalDiscRouter via url
+func (f *LocalPriorityRouteFactory) NewPriorityRouter(url *common.URL, notify chan struct{}) (router.PriorityRouter, error) {
+	return NewLocalPriorityRouter(url)
 }
