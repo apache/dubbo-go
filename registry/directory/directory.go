@@ -242,7 +242,6 @@ func (dir *RegistryDirectory) cacheInvokerByEvent(event *registry.ServiceEvent) 
 		switch event.Action {
 		case remoting.EventTypeAdd, remoting.EventTypeUpdate:
 			logger.Infof("selector add service url{%s}", event.Service)
-			// FIXME: routers are built in every address notification?
 			if constant.ROUTER_PROTOCOL == u.Protocol {
 				dir.configRouters()
 			}
