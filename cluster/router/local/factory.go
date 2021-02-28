@@ -38,6 +38,6 @@ func newLocalPriorityRouteFactory() router.PriorityRouterFactory {
 }
 
 // NewPriorityRouter construct a new NewLocalDiscRouter via url
-func (f *LocalPriorityRouteFactory) NewPriorityRouter(url *common.URL) (router.PriorityRouter, error) {
+func (f *LocalPriorityRouteFactory) NewPriorityRouter(url *common.URL, notify chan struct{}) (router.PriorityRouter, error) {
 	return NewLocalPriorityRouter(url)
 }
