@@ -51,6 +51,7 @@ import (
  * The signals are different on different platforms.
  * We define them by using 'package build' feature https://golang.org/pkg/go/build/
  */
+const defaultShutDownTime = time.Second * 60
 
 // nolint
 func GracefulShutdownInit() {
@@ -64,20 +65,17 @@ func GracefulShutdownInit() {
 		case sig := <-signals:
 			logger.Infof("get signal %s, application will shutdown.", sig)
 			// gracefulShutdownOnce.Do(func() {
+			time.AfterFunc(totalTimeout(), func() {
+				logger.Warn("Shutdown gracefully timeout, application will shutdown immediately. ")
+				os.Exit(0)
+			})
 			BeforeShutdown()
-
 			// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
 			for _, dumpSignal := range DumpHeapShutdownSignals {
 				if sig == dumpSignal {
 					debug.WriteHeapDump(os.Stdout.Fd())
 				}
 			}
-
-			time.AfterFunc(totalTimeout(), func() {
-				logger.Warn("Shutdown gracefully timeout, application will shutdown immediately. ")
-				os.Exit(0)
-			})
-
 			os.Exit(0)
 		}
 	}()
@@ -196,7 +194,7 @@ func waitingProcessedTimeout(shutdownConfig *ShutdownConfig) {
 }
 
 func totalTimeout() time.Duration {
-	var providerShutdown time.Duration
+	var providerShutdown = defaultShutDownTime
 	if providerConfig != nil && providerConfig.ShutdownConfig != nil {
 		providerShutdown = providerConfig.ShutdownConfig.GetTimeout()
 	}
