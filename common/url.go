@@ -32,7 +32,6 @@ import (
 import (
 	cm "github.com/Workiva/go-datastructures/common"
 	gxset "github.com/dubbogo/gost/container/set"
-
 	"github.com/jinzhu/copier"
 	perrors "github.com/pkg/errors"
 	"github.com/satori/go.uuid"
@@ -598,10 +597,10 @@ func (c *URL) GetMethodParamBool(method string, key string, d bool) bool {
 	return r
 }
 
-//SetParams will put all key-value pair into url.
-//1. if there already has same key, the value will be override
-//2. it's not thread safe
-//3. think twice when you want to invoke this method
+// SetParams will put all key-value pair into url.
+// 1. if there already has same key, the value will be override
+// 2. it's not thread safe
+// 3. think twice when you want to invoke this method
 func (c *URL) SetParams(m url.Values) {
 	for k := range m {
 		c.SetParam(k, m.Get(k))

@@ -81,7 +81,12 @@ conditions:
 	assert.NotNil(t, configuration)
 
 	appRouteURL := getAppRouteURL(routerKey)
-	appRouter, err := NewAppRouter(appRouteURL)
+	notify := make(chan struct{})
+	go func() {
+		for range notify {
+		}
+	}()
+	appRouter, err := NewAppRouter(appRouteURL, notify)
 	assert.Nil(t, err)
 	assert.NotNil(t, appRouter)
 
@@ -109,7 +114,7 @@ force: true
 runtime: false
 conditions:
   - => host != 172.22.3.91
-  - host = 192.168.199.208 => host = 192.168.199.208 
+  - host = 192.168.199.208 => host = 192.168.199.208
 `
 	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
@@ -132,7 +137,12 @@ conditions:
 	assert.NotNil(t, configuration)
 
 	appRouteURL := getAppRouteURL(routerKey)
-	appRouter, err := NewAppRouter(appRouteURL)
+	notify := make(chan struct{})
+	go func() {
+		for range notify {
+		}
+	}()
+	appRouter, err := NewAppRouter(appRouteURL, notify)
 	assert.Nil(t, err)
 	assert.NotNil(t, appRouter)
 
@@ -174,7 +184,12 @@ conditions:
 	assert.NotNil(t, configuration)
 
 	appRouteURL := getAppRouteURL(routerKey)
-	appRouter, err := NewAppRouter(appRouteURL)
+	notify := make(chan struct{})
+	go func() {
+		for range notify {
+		}
+	}()
+	appRouter, err := NewAppRouter(appRouteURL, notify)
 	assert.Nil(t, err)
 	assert.NotNil(t, appRouter)
 
