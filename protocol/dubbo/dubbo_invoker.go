@@ -196,9 +196,9 @@ func (di *DubboInvoker) Destroy() {
 		di.BaseInvoker.Destroy()
 		client := di.getClient()
 		if client != nil {
-			client.DecreaseActiveNumber()
+			activeNumber := client.DecreaseActiveNumber()
 			di.setClient(nil)
-			if client.GetActiveNumber() == 0 {
+			if activeNumber == 0 {
 				exchangeClientMap.Delete(di.GetUrl().Location)
 				client.Close()
 			}
