@@ -107,7 +107,7 @@ func (mts *MetadataService) SubscribeURL(url *common.URL) (bool, error) {
 
 // UnsubscribeURL will be implemented by in memory service
 func (mts *MetadataService) UnsubscribeURL(url *common.URL) error {
-	// TODO remove call self.
+	// TODO remove call local.
 	return nil
 	//return mts.UnsubscribeURL(url)
 }
