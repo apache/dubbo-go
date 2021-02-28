@@ -188,7 +188,7 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 		for _, event := range addEvents {
 			logger.Debugf("registry update, result{%s}", event)
 			logger.Infof("selector add service url{%s}", event.Service)
-			if event != nil && constant.ROUTER_PROTOCOL == event.Service.Protocol {
+			if event != nil && event.Service != nil && constant.ROUTER_PROTOCOL == event.Service.Protocol {
 				dir.configRouters()
 			}
 			if oldInvoker, _ := dir.doCacheInvoker(event.Service); oldInvoker != nil {
