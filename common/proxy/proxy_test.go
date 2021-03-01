@@ -19,6 +19,7 @@ package proxy
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -131,10 +132,10 @@ func TestProxyImplementForContext(t *testing.T) {
 	p := NewProxy(invoker, nil, map[string]string{constant.ASYNC_KEY: "false"})
 	s := &TestService{}
 	p.Implement(s)
-	attahments1 := make(map[string]interface{}, 4)
-	attahments1["k1"] = "v1"
-	attahments1["k2"] = "v2"
-	context := context.WithValue(context.Background(), constant.AttachmentKey, attahments1)
+	attachments1 := make(map[string]interface{}, 4)
+	attachments1["k1"] = "v1"
+	attachments1["k2"] = "v2"
+	context := context.WithValue(context.Background(), constant.AttachmentKey, attachments1)
 	r, err := p.Get().(*TestService).MethodSix(context, "xxx")
 	v1 := r.(map[string]interface{})
 	assert.NoError(t, err)
@@ -145,11 +146,14 @@ type TestProxyInvoker struct {
 	protocol.BaseInvoker
 }
 
-func (bi *TestProxyInvoker) Invoke(context context.Context, inv protocol.Invocation) protocol.Result {
+func (bi *TestProxyInvoker) Invoke(_ context.Context, inv protocol.Invocation) protocol.Result {
 	rpcInv := inv.(*invocation.RPCInvocation)
 	mapV := inv.Attachments()
 	mapV["TestProxyInvoker"] = "TestProxyInvokerValue"
-	hessian2.ReflectResponse(mapV, rpcInv.Reply())
+	if err := hessian2.ReflectResponse(mapV, rpcInv.Reply()); err != nil {
+		fmt.Printf("hessian2.ReflectResponse(mapV:%v) = error:%v", mapV, err)
+	}
+
 	return &protocol.RPCResult{
 		Rest: inv.Arguments(),
 	}

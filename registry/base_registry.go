@@ -18,7 +18,6 @@
 package registry
 
 import (
-	"context"
 	"fmt"
 	"net/url"
 	"os"
@@ -93,7 +92,7 @@ type FacadeBasedRegistry interface {
 
 // BaseRegistry is a common logic abstract for registry. It implement Registry interface.
 type BaseRegistry struct {
-	context             context.Context
+	//context             context.Context
 	facadeBasedRegistry FacadeBasedRegistry
 	*common.URL
 	birth    int64          // time of file birth, seconds since Epoch; 0 if unknown
@@ -137,6 +136,13 @@ func (r *BaseRegistry) Register(conf *common.URL) error {
 		ok  bool
 		err error
 	)
+	// if developer define registry port and ip, use it first.
+	if ipToRegistry := os.Getenv("DUBBO_IP_TO_REGISTRY"); ipToRegistry != "" {
+		conf.Ip = ipToRegistry
+	}
+	if portToRegistry := os.Getenv("DUBBO_PORT_TO_REGISTRY"); portToRegistry != "" {
+		conf.Port = portToRegistry
+	}
 	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
 	// Check if the service has been registered
 	r.cltLock.Lock()
@@ -273,6 +279,10 @@ func (r *BaseRegistry) processURL(c *common.URL, f func(string, string) error, c
 	default:
 		return perrors.Errorf("@c{%v} type is not referencer or provider", c)
 	}
+	if err != nil {
+		return perrors.WithMessagef(err, "@c{%v} registry fail", c)
+	}
+
 	encodedURL = url.QueryEscape(rawURL)
 	dubboPath = strings.ReplaceAll(dubboPath, "$", "%24")
 	err = f(dubboPath, encodedURL)

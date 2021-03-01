@@ -24,6 +24,7 @@ import (
 	"sync"
 	"time"
 )
+
 import (
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -64,7 +65,6 @@ var (
 
 // should initialize after loading configuration
 func init() {
-
 	extension.SetMetricReporter(reporterName, newPrometheusReporter)
 }
 
@@ -72,12 +72,10 @@ func init() {
 // if you want to use this feature, you need to initialize your prometheus.
 // https://prometheus.io/docs/guides/go-application/
 type PrometheusReporter struct {
-
 	// report the consumer-side's summary data
 	consumerSummaryVec *prometheus.SummaryVec
 	// report the provider-side's summary data
 	providerSummaryVec *prometheus.SummaryVec
-
 	// report the provider-side's histogram data
 	providerHistogramVec *prometheus.HistogramVec
 	// report the consumer-side's histogram data

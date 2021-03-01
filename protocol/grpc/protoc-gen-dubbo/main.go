@@ -43,7 +43,7 @@ func main() {
 		g.Error(err, "reading input")
 	}
 
-	if err := proto.Unmarshal(data, g.Request); err != nil {
+	if err = proto.Unmarshal(data, g.Request); err != nil {
 		g.Error(err, "parsing input proto")
 	}
 

@@ -44,7 +44,7 @@ func TestTpsLimitFilterInvokeWithNoTpsLimiter(t *testing.T) {
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.TPS_LIMITER_KEY, ""))
-	attch := make(map[string]interface{}, 0)
+	attch := make(map[string]interface{})
 
 	result := tpsFilter.Invoke(context.Background(),
 		protocol.NewBaseInvoker(invokeUrl),
@@ -68,7 +68,7 @@ func TestGenericFilterInvokeWithDefaultTpsLimiter(t *testing.T) {
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.TPS_LIMITER_KEY, constant.DEFAULT_KEY))
-	attch := make(map[string]interface{}, 0)
+	attch := make(map[string]interface{})
 
 	result := tpsFilter.Invoke(context.Background(),
 		protocol.NewBaseInvoker(invokeUrl),
@@ -99,7 +99,7 @@ func TestGenericFilterInvokeWithDefaultTpsLimiterNotAllow(t *testing.T) {
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.TPS_LIMITER_KEY, constant.DEFAULT_KEY))
-	attch := make(map[string]interface{}, 0)
+	attch := make(map[string]interface{})
 
 	result := tpsFilter.Invoke(context.Background(),
 		protocol.NewBaseInvoker(

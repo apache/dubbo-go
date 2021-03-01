@@ -108,7 +108,6 @@ func (suite *ClientTestSuite) SetupSuite() {
 	}
 
 	suite.etcd = e
-	return
 }
 
 // stop etcd server
@@ -133,9 +132,9 @@ func (suite *ClientTestSuite) setUpClient() *Client {
 // set up a client for suite
 func (suite *ClientTestSuite) SetupTest() {
 	c := suite.setUpClient()
-	c.CleanKV()
+	err := c.CleanKV()
+	suite.Nil(err)
 	suite.client = c
-	return
 }
 
 func (suite *ClientTestSuite) TestClientClose() {
@@ -298,7 +297,7 @@ func (suite *ClientTestSuite) TestClientWatch() {
 
 		wc, err := c.watch(prefix)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		events := make([]mvccpb.Event, 0)
@@ -358,7 +357,7 @@ func (suite *ClientTestSuite) TestClientRegisterTemp() {
 		completePath := path.Join("scott", "wang")
 		wc, err := observeC.watch(completePath)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		events := make([]mvccpb.Event, 0)

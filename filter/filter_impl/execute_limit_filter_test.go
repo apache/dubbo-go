@@ -36,7 +36,7 @@ import (
 
 func TestExecuteLimitFilterInvokeIgnored(t *testing.T) {
 	methodName := "hello"
-	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]interface{}, 0))
+	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]interface{}))
 
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
@@ -51,7 +51,7 @@ func TestExecuteLimitFilterInvokeIgnored(t *testing.T) {
 
 func TestExecuteLimitFilterInvokeConfigureError(t *testing.T) {
 	methodName := "hello1"
-	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]interface{}, 0))
+	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]interface{}))
 
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
@@ -68,7 +68,7 @@ func TestExecuteLimitFilterInvokeConfigureError(t *testing.T) {
 
 func TestExecuteLimitFilterInvoke(t *testing.T) {
 	methodName := "hello1"
-	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]interface{}, 0))
+	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]interface{}))
 
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),

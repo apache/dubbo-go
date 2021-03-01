@@ -36,7 +36,7 @@ import (
 // nolint
 type EventListener struct {
 	client     *Client
-	keyMapLock sync.Mutex
+	keyMapLock sync.RWMutex
 	keyMap     map[string]struct{}
 	wg         sync.WaitGroup
 }
@@ -181,9 +181,9 @@ func timeSecondDuration(sec int) time.Duration {
 //                            --------> listenServiceNodeEvent
 func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataListener) {
 
-	l.keyMapLock.Lock()
+	l.keyMapLock.RLock()
 	_, ok := l.keyMap[key]
-	l.keyMapLock.Unlock()
+	l.keyMapLock.RUnlock()
 	if ok {
 		logger.Warnf("etcdv3 key %s has already been listened.", key)
 		return

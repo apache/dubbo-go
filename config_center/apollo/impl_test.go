@@ -126,24 +126,24 @@ func initApollo() *httptest.Server {
 }
 
 func configResponse(rw http.ResponseWriter, _ *http.Request) {
-	result := fmt.Sprintf(mockConfigRes)
+	result := mockConfigRes
 	fmt.Fprintf(rw, "%s", result)
 }
 
 func notifyResponse(rw http.ResponseWriter, req *http.Request) {
-	result := fmt.Sprintf(mockNotifyRes)
+	result := mockNotifyRes
 	fmt.Fprintf(rw, "%s", result)
 }
 
 func serviceConfigResponse(rw http.ResponseWriter, _ *http.Request) {
-	result := fmt.Sprintf(mockServiceConfigRes)
+	result := mockServiceConfigRes
 	fmt.Fprintf(rw, "%s", result)
 }
 
 // run mock config server
 func runMockConfigServer(handlerMap map[string]func(http.ResponseWriter, *http.Request),
 	notifyHandler func(http.ResponseWriter, *http.Request)) *httptest.Server {
-	uriHandlerMap := make(map[string]func(http.ResponseWriter, *http.Request), 0)
+	uriHandlerMap := make(map[string]func(http.ResponseWriter, *http.Request))
 	for namespace, handler := range handlerMap {
 		uri := fmt.Sprintf("/configs/%s/%s/%s", mockAppId, mockCluster, namespace)
 		uriHandlerMap[uri] = handler
@@ -227,7 +227,7 @@ func TestListener(t *testing.T) {
 	apollo.listeners.Range(func(_, value interface{}) bool {
 		apolloListener := value.(*apolloListener)
 		for e := range apolloListener.listeners {
-			fmt.Println(e)
+			t.Logf("listener:%v", e)
 			listenerCount++
 		}
 		return true
