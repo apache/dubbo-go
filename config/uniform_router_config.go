@@ -57,6 +57,14 @@ type DubboMatchRequest struct {
 }
 
 type DoubleMatch struct {
+	Exact float64           `yaml:"exact" json:"exact"`
+	Range *DoubleRangeMatch `yaml:"range" json:"range"`
+	Mode  float64           `yaml:"mode" json:"mode"`
+}
+
+type DoubleRangeMatch struct {
+	Start float64 `yaml:"start" json:"start"`
+	End   float64 `yaml:"end" json:"end"`
 }
 
 type DubboAttachmentMatch struct {
@@ -73,19 +81,23 @@ type DubboMethodMatch struct {
 }
 
 type DubboMethodArg struct {
-	Index     uint32          `yaml:"index" json:"index"`
-	Type      string          `yaml:"type" json:"type"`
-	StrValue  ListStringMatch `yaml:"str_value" json:"str_value"`
-	NumValue  ListDoubleMatch `yaml:"num_value" json:"num_value"`
-	BoolValue BoolMatch       `yaml:"bool_value" json:"bool_value"`
+	Index     uint32           `yaml:"index" json:"index"`
+	Type      string           `yaml:"type" json:"type"`
+	StrValue  *ListStringMatch `yaml:"str_value" json:"str_value"`
+	NumValue  *ListDoubleMatch `yaml:"num_value" json:"num_value"`
+	BoolValue *BoolMatch       `yaml:"bool_value" json:"bool_value"`
 	//todo reserve field
 }
 
 type ListStringMatch struct {
+	Oneof []*StringMatch `yaml:"oneof" json:"oneof"`
 }
 type ListDoubleMatch struct {
+	Oneof []*DoubleMatch `yaml:"oneof" json:"oneof"`
 }
+
 type BoolMatch struct {
+	Exact bool `yaml:"exact" json:"exact"`
 }
 
 type StringMatch struct {
@@ -110,10 +122,10 @@ type RouterDest struct {
 // DestinationRule Definition
 
 type DestinationRuleConfig struct {
-	YamlAPIVersion    string `yaml:"apiVersion" `
-	YamlKind          string `yaml:"kind" `
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
+	YamlAPIVersion    string              `yaml:"apiVersion" `
+	YamlKind          string              `yaml:"kind" `
 	MetaData          MetaDataStruct      `yaml:"metadata"`
 	Spec              DestinationRuleSpec `yaml:"spec" json:"spec"`
 }
