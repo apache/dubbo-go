@@ -16,7 +16,6 @@ func (mmj *MethodMatchJudger) Judge(invocation protocol.Invocation) bool {
 		if !strJudger.Judge(invocation.MethodName()) {
 			return false
 		}
-		return true
 	}
 
 	// todo now argc Must not be zero, else it will cause unexpected result
@@ -25,15 +24,40 @@ func (mmj *MethodMatchJudger) Judge(invocation protocol.Invocation) bool {
 	}
 
 	if mmj.Args != nil {
-		// todo Args match judge
+		params := invocation.ParameterValues()
+		for _, v := range mmj.Args {
+			index := int(v.Index)
+			if index > len(params) || index < 1 {
+				return false
+			}
+			value := params[index-1]
+			if value.Type().String() != v.Type {
+				return false
+			}
+			switch v.Type {
+			case "string":
+				if !newListStringMatchJudger(v.StrValue).Judge(value.String()) {
+					return false
+				}
+			case "float", "int":
+				// todo now numbers Must not be zero, else it will ignore this match
+				if !newListDoubleMatchJudger(v.NumValue).Judge(value.Float()) {
+					return false
+				}
+			case "bool":
+				if !newBoolMatchJudger(v.BoolValue).Judge(value.Bool()) {
+					return false
+				}
+			default:
+			}
+		}
 	}
 	if mmj.Argp != nil {
-		// todo Argp match judge
+		// todo Argp match judge ??? conflict to args?
 	}
 	if mmj.Headers != nil {
-		// todo Headers match judge
+		// todo Headers match judge: reserve for triple
 	}
-
 	return true
 }
 

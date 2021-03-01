@@ -40,7 +40,7 @@ func NewUniformRouterChain(virtualServiceConfig, destinationRuleConfig []byte, n
 		notify:                     notify,
 	}
 	if err := k8s_api.SetK8sEventListener(r); err != nil {
-		logger.Info("try listen K8s router config filed")
+		logger.Info("try listen K8s router config failed")
 		if !fromFileConfig {
 			return nil, perrors.New("No config file from both local file and k8s")
 		}
@@ -49,7 +49,6 @@ func NewUniformRouterChain(virtualServiceConfig, destinationRuleConfig []byte, n
 }
 
 func (r *RouterChain) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
-	// todo is this none copy cause problem?
 	for _, v := range r.routers {
 		invokers = v.Route(invokers, url, invocation)
 	}
@@ -57,7 +56,6 @@ func (r *RouterChain) Route(invokers []protocol.Invoker, url *common.URL, invoca
 }
 
 func (r *RouterChain) Process(event *config_center.ConfigChangeEvent) {
-	// todo deal with router change
 	fmt.Printf("on processed event = %+v\n", *event)
 	if event.ConfigType == remoting.EventTypeAdd || event.ConfigType == remoting.EventTypeUpdate {
 		fmt.Println("event type add or update ")
@@ -138,23 +136,6 @@ func (r *RouterChain) Process(event *config_center.ConfigChangeEvent) {
 	}
 }
 
-// Pool separates healthy invokers from others.
-func (r *RouterChain) Pool(invokers []protocol.Invoker) (router.AddrPool, router.AddrMetadata) {
-	rb := make(router.AddrPool, 8)
-	//rb[uniformSelected] = roaring.NewBitmap()
-	//for i, invoker := range invokers {
-	//	if r.checker.IsConnHealthy(invoker) {
-	//		rb[connHealthy].Add(uint32(i))
-	//	}
-	//}
-	return rb, nil
-}
-
-// ShouldPool will always return true to make sure healthy check constantly.
-func (r *RouterChain) ShouldPool() bool {
-	return true
-}
-
 // Name get name of ConnCheckerRouter
 func (r *RouterChain) Name() string {
 	return name
@@ -171,10 +152,7 @@ func (r *RouterChain) URL() *common.URL {
 }
 
 // parseFromConfigToRouters file -> routers
-// todo file -> configResouce -> router
 func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte, notify chan struct{}) ([]*UniformRouter, error) {
-	// todo parse config byte
-	fmt.Println(" virtualServiceConfig bytes = ", string(virtualServiceConfig))
 	var virtualServiceConfigList []*config.VirtualServiceConfig
 	destRuleConfigsMap := make(map[string]map[string]map[string]string)
 
@@ -191,9 +169,7 @@ func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte
 		if err != nil {
 			logger.Error("parseFromConfigTo virtual service err = ", err)
 			return nil, err
-
 		}
-		fmt.Printf("decoded virtualServiceCfg = %+v\n", virtualServiceCfg)
 		virtualServiceConfigList = append(virtualServiceConfigList, virtualServiceCfg)
 	}
 
@@ -241,6 +217,6 @@ func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte
 		}
 		routers = append(routers, rtr)
 	}
-	fmt.Println("parsed successed!", len(routers))
+	logger.Debug("parsed successed! with router size = ", len(routers))
 	return routers, nil
 }
