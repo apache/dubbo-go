@@ -280,7 +280,7 @@ func TestSubscribe(t *testing.T) {
 		defer wg.Done()
 		registerErr := r.Register(url)
 		if registerErr != nil {
-			t.Fatal(registerErr)
+			t.Error(registerErr)
 		}
 	}()
 

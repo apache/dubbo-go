@@ -72,7 +72,7 @@ func TestRestProtocolExport(t *testing.T) {
 	proto := GetRestProtocol()
 	url, err := common.NewURL(mockRestCommonUrl)
 	assert.NoError(t, err)
-	_, err = common.ServiceMap.Register("UserProvider", url.Protocol, &UserProvider{})
+	_, err = common.ServiceMap.Register(url.Service(), url.Protocol, "", "", &UserProvider{})
 	assert.NoError(t, err)
 	con := config.ProviderConfig{}
 	config.SetProviderConfig(con)
@@ -120,8 +120,6 @@ func TestRestProtocolExport(t *testing.T) {
 	proto.Destroy()
 	_, ok = proto.(*RestProtocol).serverMap[url.Location]
 	assert.False(t, ok)
-	err = common.ServiceMap.UnRegister("UserProvider", url.Protocol, "com.ikurento.user.UserProvider")
-	assert.NoError(t, err)
 }
 
 type UserProvider struct {

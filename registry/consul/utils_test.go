@@ -19,6 +19,8 @@ package consul
 
 import (
 	"fmt"
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/stretchr/testify/assert"
 	"net"
 	"net/url"
 	"strconv"
@@ -113,15 +115,24 @@ func (server *testServer) serve() {
 			if err != nil {
 				continue
 			}
-			conn.Write([]byte("Hello World"))
-			conn.Close()
+			_, err = conn.Write([]byte("Hello World"))
+			if err != nil {
+				logger.Warnf("conn.Write() = error: %v", err)
+			}
+			err = conn.Close()
+			if err != nil {
+				logger.Warnf("conn.Close() = error: %v", err)
+			}
 		}
 	}
 }
 
 func (server *testServer) close() {
 	close(server.done)
-	server.listener.Close()
+	if err := server.listener.Close(); err != nil {
+		fmt.Printf("server.listener.Close() = error:%v\n", err)
+	}
+
 	server.wg.Wait()
 }
 
@@ -148,7 +159,10 @@ func (suite *consulRegistryTestSuite) close() {
 // register -> subscribe -> unregister
 func test1(t *testing.T) {
 	consulAgent := consul.NewConsulAgent(t, registryPort)
-	defer consulAgent.Shutdown()
+	defer func() {
+		err := consulAgent.Shutdown()
+		assert.NoError(t, err)
+	}()
 
 	server := newServer(providerHost, providerPort)
 	defer server.close()
@@ -169,7 +183,10 @@ func test1(t *testing.T) {
 // subscribe -> register -> unregister
 func test2(t *testing.T) {
 	consulAgent := consul.NewConsulAgent(t, registryPort)
-	defer consulAgent.Shutdown()
+	defer func() {
+		err := consulAgent.Shutdown()
+		assert.NoError(t, err)
+	}()
 
 	server := newServer(providerHost, providerPort)
 	defer server.close()

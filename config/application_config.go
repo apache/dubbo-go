@@ -48,8 +48,5 @@ func (c *ApplicationConfig) UnmarshalYAML(unmarshal func(interface{}) error) err
 		return err
 	}
 	type plain ApplicationConfig
-	if err := unmarshal((*plain)(c)); err != nil {
-		return err
-	}
-	return nil
+	return unmarshal((*plain)(c))
 }

@@ -26,12 +26,12 @@ ROOT_DIR=$(pwd)
 echo "integrate-test root work-space -> ${ROOT_DIR}"
 
 # show all travis-env
-echo "travis current commit id  -> ${TRAVIS_COMMIT}"
-echo "travis pull request -> ${TRAVIS_PULL_REQUEST}"
-echo "travis pull request branch -> ${TRAVIS_PULL_REQUEST_BRANCH}"
-echo "travis pull request slug -> ${TRAVIS_PULL_REQUEST_SLUG}"
-echo "travis pull request sha -> ${TRAVIS_PULL_REQUEST_SHA}"
-echo "travis pull request repo slug -> ${TRAVIS_REPO_SLUG}"
+echo "travis current commit id  -> $2"
+echo "travis pull request branch -> ${GITHUB_REF}"
+echo "travis pull request slug -> ${GITHUB_REPOSITORY}"
+echo "travis pull request repo slug -> ${GITHUB_REPOSITORY}"
+echo "travis pull request actor -> ${GITHUB_ACTOR}"
+echo "travis pull request repo param -> $1"
 
 
 # #start etcd registry  insecure listen in [:]:2379
@@ -53,13 +53,13 @@ echo "zookeeper listen in [:]2181"
 
 # build go-server image
 cd ./test/integrate/dubbo/go-server
-docker build . -t  ci-provider --build-arg PR_ORIGIN_REPO=${TRAVIS_PULL_REQUEST_SLUG} --build-arg PR_ORIGIN_COMMITID=${TRAVIS_PULL_REQUEST_SHA}
+docker build . -t  ci-provider --build-arg PR_ORIGIN_REPO=$1 --build-arg PR_ORIGIN_COMMITID=$2
 cd ${ROOT_DIR}
 docker run -d --network host ci-provider
 
 # build go-client image
 cd ./test/integrate/dubbo/go-client
-docker build . -t  ci-consumer --build-arg PR_ORIGIN_REPO=${TRAVIS_PULL_REQUEST_SLUG} --build-arg PR_ORIGIN_COMMITID=${TRAVIS_PULL_REQUEST_SHA}
+docker build . -t  ci-consumer --build-arg PR_ORIGIN_REPO=$1 --build-arg PR_ORIGIN_COMMITID=$2
 cd ${ROOT_DIR}
 # run provider
 # check consumer status

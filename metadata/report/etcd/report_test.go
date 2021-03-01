@@ -82,8 +82,9 @@ func TestEtcdMetadataReport_CRUD(t *testing.T) {
 	assert.Nil(t, err)
 
 	serviceMi := newServiceMetadataIdentifier()
-	serviceUrl, _ := common.NewURL("registry://localhost:8848", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
-	metadataReport.SaveServiceMetadata(serviceMi, serviceUrl)
+	serviceUrl, err := common.NewURL("registry://localhost:8848", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
+	assert.Nil(t, err)
+	err = metadataReport.SaveServiceMetadata(serviceMi, serviceUrl)
 	assert.Nil(t, err)
 
 	subMi := newSubscribeMetadataIdentifier()

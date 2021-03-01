@@ -124,7 +124,7 @@ func Test_Destroy(t *testing.T) {
 func Test_List(t *testing.T) {
 	registryDirectory, _ := normalRegistryDir()
 
-	time.Sleep(4e9)
+	time.Sleep(6e9)
 	assert.Len(t, registryDirectory.List(&invocation.RPCInvocation{}), 3)
 	assert.Equal(t, true, registryDirectory.IsAvailable())
 
@@ -190,6 +190,34 @@ func Test_toGroupInvokers(t *testing.T) {
 	registryDirectory.cacheInvokersMap.Store("group1", invoker)
 	groupInvokers := registryDirectory.toGroupInvokers()
 	assert.Len(t, groupInvokers, 2)
+}
+
+func Test_RefreshUrl(t *testing.T) {
+	registryDirectory, mockRegistry := normalRegistryDir()
+	providerUrl, _ := common.NewURL("dubbo://0.0.0.0:20011/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.CLUSTER_KEY, "mock1"),
+		common.WithParamsValue(constant.GROUP_KEY, "group"),
+		common.WithParamsValue(constant.VERSION_KEY, "1.0.0"))
+	providerUrl2, _ := common.NewURL("dubbo://0.0.0.0:20012/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.CLUSTER_KEY, "mock1"),
+		common.WithParamsValue(constant.GROUP_KEY, "group"),
+		common.WithParamsValue(constant.VERSION_KEY, "1.0.0"))
+	time.Sleep(1e9)
+	assert.Len(t, registryDirectory.cacheInvokers, 3)
+	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerUrl})
+	time.Sleep(1e9)
+	assert.Len(t, registryDirectory.cacheInvokers, 4)
+	mockRegistry.MockEvents([]*registry.ServiceEvent{&registry.ServiceEvent{Action: remoting.EventTypeUpdate, Service: providerUrl}})
+	time.Sleep(1e9)
+	assert.Len(t, registryDirectory.cacheInvokers, 1)
+	mockRegistry.MockEvents([]*registry.ServiceEvent{&registry.ServiceEvent{Action: remoting.EventTypeUpdate, Service: providerUrl},
+		&registry.ServiceEvent{Action: remoting.EventTypeUpdate, Service: providerUrl2}})
+	time.Sleep(1e9)
+	assert.Len(t, registryDirectory.cacheInvokers, 2)
+	// clear all address
+	mockRegistry.MockEvents([]*registry.ServiceEvent{})
+	time.Sleep(1e9)
+	assert.Len(t, registryDirectory.cacheInvokers, 0)
 }
 
 func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockRegistry) {

@@ -416,7 +416,9 @@ func (c *Client) keepAliveKV(k string, v string) error {
 
 	keepAlive, err := c.rawClient.KeepAlive(c.ctx, lease.ID)
 	if err != nil || keepAlive == nil {
-		c.rawClient.Revoke(c.ctx, lease.ID)
+		if _, revokeErr := c.rawClient.Revoke(c.ctx, lease.ID); revokeErr != nil {
+			logger.Warnf("rawClient.Revoke() = error:%v", revokeErr)
+		}
 		if err != nil {
 			return perrors.WithMessage(err, "keep alive lease")
 		} else {

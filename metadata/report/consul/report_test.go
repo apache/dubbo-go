@@ -143,7 +143,9 @@ func (suite *consulMetadataReportTestSuite) testGetServiceDefinition() {
 
 func test1(t *testing.T) {
 	consulAgent := consul.NewConsulAgent(t, 8500)
-	defer consulAgent.Shutdown()
+	defer func() {
+		_ = consulAgent.Shutdown()
+	}()
 
 	url := newProviderRegistryUrl("localhost", 8500)
 	mf := extension.GetMetadataReportFactory("consul")

@@ -129,7 +129,7 @@ type AsyncCallbackResponse struct {
 	Reply     interface{}
 }
 
-// the client sends requst to server, there is one pendingResponse at client side to wait the response from server
+// the client sends request to server, there is one pendingResponse at client side to wait the response from server
 type PendingResponse struct {
 	seq       int64
 	Err       error
