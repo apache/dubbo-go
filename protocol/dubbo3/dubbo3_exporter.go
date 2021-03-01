@@ -29,19 +29,19 @@ import (
 )
 
 // DubboExporter is dubbo3 service exporter.
-type Dubbo3Exporter struct {
+type DubboExporter struct {
 	protocol.BaseExporter
 }
 
-// NewDubbo3Exporter get a Dubbo3Exporter.
-func NewDubbo3Exporter(key string, invoker protocol.Invoker, exporterMap *sync.Map) *Dubbo3Exporter {
-	return &Dubbo3Exporter{
+// NewDubboExporter get a Dubbo3Exporter.
+func NewDubboExporter(key string, invoker protocol.Invoker, exporterMap *sync.Map) *DubboExporter {
+	return &DubboExporter{
 		BaseExporter: *protocol.NewBaseExporter(key, invoker, exporterMap),
 	}
 }
 
 // Unexport unexport dubbo3 service exporter.
-func (de *Dubbo3Exporter) Unexport() {
+func (de *DubboExporter) Unexport() {
 	url := de.GetInvoker().GetUrl()
 	serviceId := url.GetParam(constant.BEAN_NAME_KEY, "")
 	interfaceName := url.GetParam(constant.INTERFACE_KEY, "")

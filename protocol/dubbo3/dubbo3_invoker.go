@@ -40,8 +40,8 @@ import (
 	dubbo3 "github.com/dubbogo/triple/pkg/triple"
 )
 
-// Dubbo3Invoker is implement of protocol.Invoker. A dubboInvoker refer to one service and ip.
-type Dubbo3Invoker struct {
+// DubboInvoker is implement of protocol.Invoker. A dubboInvoker refer to one service and ip.
+type DubboInvoker struct {
 	protocol.BaseInvoker
 	// the net layer client, it is focus on network communication.
 	client   *dubbo3.TripleClient
@@ -52,8 +52,8 @@ type Dubbo3Invoker struct {
 	reqNum int64
 }
 
-// NewDubbo3Invoker constructor
-func NewDubbo3Invoker(url *common.URL) (*Dubbo3Invoker, error) {
+// NewDubboInvoker constructor
+func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	requestTimeout := config.GetConsumerConfig().RequestTimeout
 	requestTimeoutStr := url.GetParam(constant.TIMEOUT_KEY, config.GetConsumerConfig().Request_Timeout)
 	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
@@ -67,7 +67,7 @@ func NewDubbo3Invoker(url *common.URL) (*Dubbo3Invoker, error) {
 		return nil, err
 	}
 
-	return &Dubbo3Invoker{
+	return &DubboInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
 		reqNum:      0,
@@ -76,7 +76,7 @@ func NewDubbo3Invoker(url *common.URL) (*Dubbo3Invoker, error) {
 }
 
 // Invoke call remoting.
-func (di *Dubbo3Invoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	var (
 		result protocol.RPCResult
 	)
@@ -103,7 +103,7 @@ func (di *Dubbo3Invoker) Invoke(ctx context.Context, invocation protocol.Invocat
 }
 
 // get timeout including methodConfig
-func (di *Dubbo3Invoker) getTimeout(invocation *invocation_impl.RPCInvocation) time.Duration {
+func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) time.Duration {
 	timeout := di.GetUrl().GetParam(strings.Join([]string{constant.METHOD_KEYS, invocation.MethodName(), constant.TIMEOUT_KEY}, "."), "")
 	if len(timeout) != 0 {
 		if t, err := time.ParseDuration(timeout); err == nil {
@@ -118,12 +118,12 @@ func (di *Dubbo3Invoker) getTimeout(invocation *invocation_impl.RPCInvocation) t
 }
 
 // IsAvailable check if invoker is available, now it is useless
-func (di *Dubbo3Invoker) IsAvailable() bool {
+func (di *DubboInvoker) IsAvailable() bool {
 	return di.client.IsAvailable()
 }
 
 // Destroy destroy dubbo3 client invoker.
-func (di *Dubbo3Invoker) Destroy() {
+func (di *DubboInvoker) Destroy() {
 	di.quitOnce.Do(func() {
 		for {
 			if di.reqNum == 0 {

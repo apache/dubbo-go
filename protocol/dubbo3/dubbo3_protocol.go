@@ -43,29 +43,29 @@ func init() {
 }
 
 var (
-	dubbo3Protocol *Dubbo3Protocol
+	dubboProtocol *DubboProtocol
 )
 
 // It support dubbo protocol. It implements Protocol interface for dubbo protocol.
-type Dubbo3Protocol struct {
+type DubboProtocol struct {
 	protocol.BaseProtocol
 	serverLock sync.Mutex
 	serverMap  map[string]*dubbo3.TripleServer // It is store relationship about serviceKey(group/interface:version) and ExchangeServer
 }
 
-// NewDubbo3Protocol create a dubbo protocol.
-func NewDubbo3Protocol() *Dubbo3Protocol {
-	return &Dubbo3Protocol{
+// NewDubboProtocol create a dubbo protocol.
+func NewDubboProtocol() *DubboProtocol {
+	return &DubboProtocol{
 		BaseProtocol: protocol.NewBaseProtocol(),
 		serverMap:    make(map[string]*dubbo3.TripleServer),
 	}
 }
 
 // Export export dubbo3 service.
-func (dp *Dubbo3Protocol) Export(invoker protocol.Invoker) protocol.Exporter {
+func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetUrl()
 	serviceKey := url.ServiceKey()
-	exporter := NewDubbo3Exporter(serviceKey, invoker, dp.ExporterMap())
+	exporter := NewDubboExporter(serviceKey, invoker, dp.ExporterMap())
 	dp.SetExporterMap(serviceKey, exporter)
 	logger.Infof("Export service: %s", url.String())
 	// start server
@@ -75,8 +75,8 @@ func (dp *Dubbo3Protocol) Export(invoker protocol.Invoker) protocol.Exporter {
 }
 
 // Refer create dubbo3 service reference.
-func (dp *Dubbo3Protocol) Refer(url *common.URL) protocol.Invoker {
-	invoker, err := NewDubbo3Invoker(url)
+func (dp *DubboProtocol) Refer(url *common.URL) protocol.Invoker {
+	invoker, err := NewDubboInvoker(url)
 	if err != nil {
 		logger.Errorf("Refer url = %+v, with error = %s", *url, err.Error())
 		return nil
@@ -87,7 +87,7 @@ func (dp *Dubbo3Protocol) Refer(url *common.URL) protocol.Invoker {
 }
 
 // Destroy destroy dubbo3 service.
-func (dp *Dubbo3Protocol) Destroy() {
+func (dp *DubboProtocol) Destroy() {
 	dp.BaseProtocol.Destroy()
 
 	// stop server
@@ -108,7 +108,7 @@ type Dubbo3GrpcService interface {
 }
 
 // openServer open a dubbo3 server
-func (dp *Dubbo3Protocol) openServer(url *common.URL) {
+func (dp *DubboProtocol) openServer(url *common.URL) {
 	_, ok := dp.serverMap[url.Location]
 	if ok {
 		return
@@ -132,7 +132,7 @@ func (dp *Dubbo3Protocol) openServer(url *common.URL) {
 		panic("method SetProxyImpl is necessary for grpc service")
 	}
 
-	exporter, _ := dubbo3Protocol.ExporterMap().Load(url.ServiceKey())
+	exporter, _ := dubboProtocol.ExporterMap().Load(url.ServiceKey())
 	if exporter == nil {
 		panic(fmt.Sprintf("no exporter found for servicekey: %v", url.ServiceKey()))
 	}
@@ -155,8 +155,8 @@ func (dp *Dubbo3Protocol) openServer(url *common.URL) {
 // GetProtocol get a single dubbo3 protocol.
 func GetProtocol() protocol.Protocol {
 	logger.Warn("GetProtocol")
-	if dubbo3Protocol == nil {
-		dubbo3Protocol = NewDubbo3Protocol()
+	if dubboProtocol == nil {
+		dubboProtocol = NewDubboProtocol()
 	}
-	return dubbo3Protocol
+	return dubboProtocol
 }

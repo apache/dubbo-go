@@ -242,6 +242,7 @@ github.com/dubbogo/net v0.0.0-20210209064142-0e3827157a56 h1:SGuRExIHI3zirhNOzZY
 github.com/dubbogo/net v0.0.0-20210209064142-0e3827157a56/go.mod h1:c+UEOYQYSvuxEb0Lnb/dNiD5jhxOYIa044Pw5gaANzY=
 github.com/dubbogo/net v0.0.2-0.20210301062110-06998ddf7cee h1:buc5s5MuiuMNuzKekYB7S1ofPZ0kwOIolDUWK6RSnxA=
 github.com/dubbogo/net v0.0.2-0.20210301062110-06998ddf7cee/go.mod h1:/HnN8q8+J78c7FLM4IUQvuzdnz04sMgU9goaPWNM04A=
+github.com/dubbogo/net v0.0.2-0.20210301082523-598c5b483149 h1:5l836FmJx+o4ZQ8HQoNlmkdu/CB0XSa8N9Cn9nEoy/Q=
 github.com/dubbogo/net v0.0.2-0.20210301082523-598c5b483149/go.mod h1:B6/ka3g8VzcyrmdCH4VkHP1K0aHeI37FmclS+TCwIBU=
 github.com/dubbogo/triple v0.0.0-20210209063802-ba75c3ed4425/go.mod h1:H0+IdFdLkIm5m8rCn8ANoJQuIp+K1U/7ifm8f4EUPvA=
 github.com/dubbogo/triple v0.0.0-20210228095705-08683b74a72b h1:9pV3okaeYmZ6w65fZotr/PMFFTCnK3P+aoy13YQPruA=
