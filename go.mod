@@ -13,7 +13,7 @@ require (
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/creasty/defaults v1.5.1
 	github.com/dubbogo/go-zookeeper v1.0.2
-	github.com/dubbogo/gost v1.11.0
+	github.com/dubbogo/gost v1.11.1
 	github.com/dubbogo/triple v0.0.0-20210301083516-185f5a3b1234
 	github.com/elazarl/go-bindata-assetfs v1.0.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.4.0
@@ -45,7 +45,7 @@ require (
 	go.uber.org/atomic v1.7.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/sys v0.0.0-20201223074533-0d417f636930 // indirect
-	google.golang.org/grpc v1.31.0
+	google.golang.org/grpc v1.26.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.16.9
 	k8s.io/apimachinery v0.16.9
@@ -54,6 +54,7 @@ require (
 )
 
 replace (
+	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.4
 	github.com/envoyproxy/go-control-plane => github.com/envoyproxy/go-control-plane v0.8.0
 	github.com/shirou/gopsutil => github.com/shirou/gopsutil v0.0.0-20181107111621-48177ef5f880
 )
