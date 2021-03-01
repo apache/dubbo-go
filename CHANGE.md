@@ -1,9 +1,122 @@
 # Release Notes
 ---
+## 1.5.6
+
+### New Features
+- [Add dubbo-go-cli telnet tool](https://github.com/apache/dubbo-go/pull/818)
+- [Add Prox ImplementFunc to allow override impl](https://github.com/apache/dubbo-go/pull/1019)
+- [Add read configuration path from the command line when start](https://github.com/apache/dubbo-go/pull/1039)
+
+### Enhancement
+- [introduce ConfigPostProcessor extension](https://github.com/apache/dubbo-go/pull/943)
+- [Impl extension of two urls comparison](https://github.com/apache/dubbo-go/pull/854)
+- [using event-driven to let router send signal to notify channel](https://github.com/apache/dubbo-go/pull/976)
+- [lint codes](https://github.com/apache/dubbo-go/pull/941)
+
+### Bugfixes
+- [Fix: generic struct2MapAll key of map keep type](https://github.com/apache/dubbo-go/pull/928)
+- [Fix: when events empty, delete all the invokers](https://github.com/apache/dubbo-go/pull/758)
+- [Fix: file service discovery run in windows](https://github.com/apache/dubbo-go/pull/932)
+- [Fix: make metadata report work without serviceDiscovery](https://github.com/apache/dubbo-go/pull/948)
+- [Fix: consumer invoker cache set nil after the ZK connection is lost](https://github.com/apache/dubbo-go/pull/985)
+- [Fix: integration test in Github action](https://github.com/apache/dubbo-go/pull/1012)
+- [Fix: etcd exit panic](https://github.com/apache/dubbo-go/pull/1013)
+- [Fix: when connect to provider fail, will occur panic](https://github.com/apache/dubbo-go/pull/1021)
+- [Fix: support getty send Length, when the data transfer failed](https://github.com/apache/dubbo-go/pull/1028)
+
+Milestone: [https://github.com/apache/dubbo-go/milestone/7](https://github.com/apache/dubbo-go/milestone/7?closed=1)
+
+## 1.5.5
+
+### New Features
+- [Add Address notification batch mode](https://github.com/apache/dubbo-go/pull/741) 
+- [Add dubbo-gen stream support](https://github.com/apache/dubbo-go/pull/794) 
+- [Add Change verify to Makefile](https://github.com/apache/dubbo-go/pull/831) 
+- [Add more automatic components](https://github.com/apache/dubbo-go/pull/832) 
+- [Add grpc max message size config](https://github.com/apache/dubbo-go/pull/824) 
+
+### Enhancement
+- [when it need local ip, it will get it every time. We can get local ip once, and reused it](https://github.com/apache/dubbo-go/pull/807) 
+- [enhance client's connectivity](https://github.com/apache/dubbo-go/pull/800) 
+- [Imp: get local ip once and reused it](https://github.com/apache/dubbo-go/pull/808) 
+- [Remove unmeaning logic](https://github.com/apache/dubbo-go/pull/855) 
+
+### Bugfixes
+- [Fix: nacos registry can not get namespaceId](https://github.com/apache/dubbo-go/pull/778) [@peaman](https://github.com/peaman)       
+- [Fix: url encode](https://github.com/apache/dubbo-go/pull/802)       
+- [Fix: try to fix too many files open error](https://github.com/apache/dubbo-go/pull/797)       
+- [Fix: refact heartbeat](https://github.com/apache/dubbo-go/pull/889)       
+- [Fix: router_config add &url to url](https://github.com/apache/dubbo-go/pull/910)       
+- [Fix: Router chain can not build immediately when started](https://github.com/apache/dubbo-go/pull/927)       
+- [Fix: client block until timeout when provider return with PackageResponse_Exception](https://github.com/apache/dubbo-go/pull/926)      
+- [Fix: URL.String() data race panic](https://github.com/apache/dubbo-go/pull/944)
+- [Fix: generic "encode hessian.Object"](https://github.com/apache/dubbo-go/pull/945)
+
+### Dependencies
+- [Bump github.com/mitchellh/mapstructure from 1.2.3 to 1.3.3](https://github.com/apache/dubbo-go/pull/838)
+- [Bump github.com/go-resty/resty/v2 from 2.1.0 to 2.3.0](https://github.com/apache/dubbo-go/pull/837)
+- [Bump github.com/opentracing/opentracing-go from 1.1.0 to 1.2.0](https://github.com/apache/dubbo-go/pull/836)
+- [Bump github.com/creasty/defaults from 1.3.0 to 1.5.1](https://github.com/apache/dubbo-go/pull/835)
+- [Bump github.com/dubbogo/gost from 1.9.1 to 1.9.2](https://github.com/apache/dubbo-go/pull/834)
+- [Bump github.com/zouyx/agollo/v3 from 3.4.4 to 3.4.5](https://github.com/apache/dubbo-go/pull/845)
+- [Bump github.com/golang/mock from 1.3.1 to 1.4.4](https://github.com/apache/dubbo-go/pull/844)
+- [Bump github.com/nacos-group/nacos-sdk-go from 1.0.0 to 1.0.1](https://github.com/apache/dubbo-go/pull/843)
+- [Bump github.com/magiconair/properties from 1.8.1 to 1.8.4](https://github.com/apache/dubbo-go/pull/861)
+- [Bump github.com/prometheus/client_golang from 1.1.0 to 1.8.0 ](https://github.com/apache/dubbo-go/pull/860)
+- [Bump go.uber.org/atomic from 1.6.0 to 1.7.0](https://github.com/apache/dubbo-go/pull/859)
+- [](https://github.com/apache/dubbo-go/pull/843)
+
+Milestone: [https://github.com/apache/dubbo-go/milestone/5](https://github.com/apache/dubbo-go/milestone/5?closed=1)
+
 ## 1.4.5
 
 ### Bugfixes
 - [Fix too many files open error](https://github.com/apache/dubbo-go/pull/828)  [@wenxuwan](https://github.com/wenxuwan) Milestone: [https://github.com/apache/dubbo-go/milestone/6](https://github.com/apache/dubbo-go/milestone/6?closed=1)
+
+## 1.5.4
+
+### Bugfixes
+- [Fix etcd cluster reconnect](https://github.com/apache/dubbo-go/pull/828)
+- [Fix zookeeper deadlock problem](https://github.com/apache/dubbo-go/pull/826)
+- [Fix generic struct2MapAll](https://github.com/apache/dubbo-go/pull/822)
+- [Fix Consumer panic when restart provider](https://github.com/apache/dubbo-go/pull/803)
+- [Fix etcd can not registry](https://github.com/apache/dubbo-go/pull/819) [@lin-jianjun](https://github.com/lin-jianjun)
+- [Fix cannot call go provider service when used by java dubbo 2.7.7 version](https://github.com/apache/dubbo-go/pull/815) [@jack15083](https://github.com/jack15083)
+- [Fix go client quit abnormally when it connects java server](https://github.com/apache/dubbo-go/pull/820) [@wenxuwan](https://github.com/wenxuwan)
+- [Fix sentinel windows issue](https://github.com/apache/dubbo-go/pull/821) [@louyuting](https://github.com/louyuting)
+- [Fix metadata default port](https://github.com/apache/dubbo-go/pull/821) [@sanxun0325](https://github.com/sanxun0325)
+- [Fix consul can not destory](https://github.com/apache/dubbo-go/pull/788) [@LaurenceLiZhixin](https://github.com/LaurenceLiZhixin)
+
+Milestone: [https://github.com/apache/dubbo-go/milestone/6](https://github.com/apache/dubbo-go/milestone/6?closed=1)
+
+## 1.5.3
+
+### New Features
+- [Add consul service discovery](https://github.com/apache/dubbo-go/pull/701) [@zhangshen023](https://github.com/zhangshen023)
+- [Add File system service discovery](https://github.com/apache/dubbo-go/pull/732) [@DogBaoBao](https://github.com/DogBaoBao)
+- [Migrate travis Ci to Github Actions](https://github.com/apache/dubbo-go/pull/752) [@sdttttt](https://github.com/sdttttt)
+- [Add sentinel-golang flow control/circuit breaker](https://github.com/apache/dubbo-go/pull/748) [@louyuting](https://github.com/louyuting)
+- [Add dubbo-go docs and blog into doc directory](https://github.com/apache/dubbo-go/pull/767) [@oaoit](https://github.com/oaoit)
+
+### Enhancement
+- [Add address notification batch mode](https://github.com/apache/dubbo-go/pull/741) [@beiwei30](https://github.com/beiwei30)
+- [Refactor network and codec model](https://github.com/apache/dubbo-go/pull/673) [@fangyincheng](https://github.com/fangyincheng) [@georgehao](https://github.com/georgehao)
+- [Remove unnecessary return and judgement](https://github.com/apache/dubbo-go/pull/730) [@YongHaoWu](https://github.com/YongHaoWu)
+- [Improve exporter append method](https://github.com/apache/dubbo-go/pull/722) [@gaoxinge](https://github.com/gaoxinge)
+- [Refactor for proxyInvoker cannot be extended](https://github.com/apache/dubbo-go/pull/747) [@cvictory](https://github.com/cvictory)
+- [Refactor attachment type from map\[string\]stiring to map\[string\]interface{}](https://github.com/apache/dubbo-go/pull/713) [@cvictory](https://github.com/cvictory)
+- [Improve map access concurrency](https://github.com/apache/dubbo-go/pull/739) [@skyao](https://github.com/skyao)
+- [Improve code quantity](https://github.com/apache/dubbo-go/pull/763) [@gaoxinge](https://github.com/gaoxinge)
+
+### Bugfixes
+- [Fix etcdv3 lease](https://github.com/apache/dubbo-go/pull/738) [@zhangshen023](https://github.com/zhangshen023)
+- [Fix rename SethealthChecker to SetHealthChecker](https://github.com/apache/dubbo-go/pull/746) [@watermelo](https://github.com/watermelo)
+- [Fix init config problem in HystrixFilter](https://github.com/apache/dubbo-go/pull/731) [@YGrylls](https://github.com/YGrylls)
+- [Fix zookeeper listener report error after started](https://github.com/apache/dubbo-go/pull/735) [@wenxuwan](https://github.com/wenxuwan)
+
+Milestone: [https://github.com/apache/dubbo-go/milestone/4](https://github.com/apache/dubbo-go/milestone/4?closed=1)
+
+Project: [https://github.com/apache/dubbo-go/projects/10](https://github.com/apache/dubbo-go/projects/10)
 
 ## 1.5.4
 
@@ -171,7 +284,7 @@ Project: [https://github.com/apache/dubbo-go/projects/8](https://github.com/apac
 - [Add grpc protocol](https://github.com/apache/dubbo-go/pull/311)
 
 ### Enhancement
-    
+
 - [The SIGSYS and SIGSTOP are not supported in windows platform](https://github.com/apache/dubbo-go/pull/262)
 - [Error should be returned when `NewURL` failed](https://github.com/apache/dubbo-go/pull/266)
 - [Split config center GetConfig method](https://github.com/apache/dubbo-go/pull/267)
@@ -181,7 +294,7 @@ Project: [https://github.com/apache/dubbo-go/projects/8](https://github.com/apac
 - [Change zk version and add base_registry](https://github.com/apache/dubbo-go/pull/355)
 
 ### Bugfixes
-    
+
 - [Fix negative wait group count](https://github.com/apache/dubbo-go/pull/253)
 - [After disconnection with ZK registry, cosumer can't listen to provider changes](https://github.com/apache/dubbo-go/pull/258)
 - [The generic filter and default reference filters lack ','](https://github.com/apache/dubbo-go/pull/260)

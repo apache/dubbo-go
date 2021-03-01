@@ -53,7 +53,7 @@ type addrMetadata struct {
 	// application name
 	application string
 	// is rule a runtime rule
-	ruleRuntime bool
+	//ruleRuntime bool
 	// is rule a force rule
 	ruleForce bool
 	// is rule a valid rule
@@ -76,10 +76,11 @@ type tagRouter struct {
 	application   string
 	ruleChanged   bool
 	mutex         sync.RWMutex
+	notify        chan struct{}
 }
 
 // NewTagRouter returns a tagRouter instance if url is not nil
-func NewTagRouter(url *common.URL) (*tagRouter, error) {
+func NewTagRouter(url *common.URL, notify chan struct{}) (*tagRouter, error) {
 	if url == nil {
 		return nil, perrors.Errorf("Illegal route URL!")
 	}
@@ -87,6 +88,7 @@ func NewTagRouter(url *common.URL) (*tagRouter, error) {
 		url:      url,
 		enabled:  url.GetParamBool(constant.RouterEnabled, true),
 		priority: url.GetParamInt(constant.RouterPriority, 0),
+		notify:   notify,
 	}, nil
 }
 
@@ -191,6 +193,7 @@ func (c *tagRouter) Process(event *config_center.ConfigChangeEvent) {
 	defer c.mutex.Unlock()
 	c.tagRouterRule = routerRule
 	c.ruleChanged = true
+	c.notify <- struct{}{}
 }
 
 // URL gets the url of tagRouter
@@ -227,7 +230,7 @@ func (c *tagRouter) Pool(invokers []protocol.Invoker) (router.AddrPool, router.A
 
 // fetchRuleIfNecessary fetches, parses rule and register listener for the further change
 func (c *tagRouter) fetchRuleIfNecessary(invokers []protocol.Invoker) {
-	if invokers == nil || len(invokers) == 0 {
+	if len(invokers) == 0 {
 		return
 	}
 

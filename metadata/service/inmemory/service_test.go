@@ -46,7 +46,9 @@ func TestMetadataService(t *testing.T) {
 			"owner=ZX&pid=1447&revision=0.0.1&side=provider&timeout=3000&timestamp=1556509797245&group=%v&version=%v&bean.name=%v",
 		protocol, serviceName, group, version, beanName))
 	assert.NoError(t, err)
-	mts.ExportURL(u2)
+	ok, err := mts.ExportURL(u2)
+	assert.True(t, ok)
+	assert.NoError(t, err)
 
 	u3, err := common.NewURL(fmt.Sprintf(
 		"%v://127.0.0.1:20000/com.ikurento.user.UserProvider3?anyhost=true&"+
@@ -55,7 +57,9 @@ func TestMetadataService(t *testing.T) {
 			"owner=ZX&pid=1447&revision=0.0.1&side=provider&timeout=3000&timestamp=1556509797245&group=%v&version=%v&bean.name=%v",
 		protocol, serviceName, group, version, beanName))
 	assert.NoError(t, err)
-	mts.ExportURL(u3)
+	ok, err = mts.ExportURL(u3)
+	assert.True(t, ok)
+	assert.NoError(t, err)
 
 	u, err := common.NewURL(fmt.Sprintf(
 		"%v://127.0.0.1:20000/com.ikurento.user.UserProvider1?anyhost=true&"+
@@ -64,32 +68,45 @@ func TestMetadataService(t *testing.T) {
 			"owner=ZX&pid=1447&revision=0.0.1&side=provider&timeout=3000&timestamp=1556509797245&group=%v&version=%v&bean.name=%v",
 		protocol, serviceName, group, version, beanName))
 	assert.NoError(t, err)
-	mts.ExportURL(u)
+	ok, err = mts.ExportURL(u)
+	assert.True(t, ok)
+	assert.NoError(t, err)
 	list, _ := mts.GetExportedURLs(serviceName, group, version, protocol)
 	assert.Equal(t, 3, len(list))
-	mts.SubscribeURL(u)
+	ok, err = mts.SubscribeURL(u)
+	assert.True(t, ok)
+	assert.NoError(t, err)
 
-	mts.SubscribeURL(u)
-	list2, _ := mts.GetSubscribedURLs()
+	ok, err = mts.SubscribeURL(u)
+	assert.False(t, ok)
+	assert.NoError(t, err)
+	list2, err := mts.GetSubscribedURLs()
 	assert.Equal(t, 1, len(list2))
+	assert.NoError(t, err)
 
-	mts.UnexportURL(u)
+	err = mts.UnexportURL(u)
+	assert.NoError(t, err)
 	list3, _ := mts.GetExportedURLs(serviceName, group, version, protocol)
 	assert.Equal(t, 2, len(list3))
 
-	mts.UnsubscribeURL(u)
+	err = mts.UnsubscribeURL(u)
+	assert.NoError(t, err)
 	list4, _ := mts.GetSubscribedURLs()
 	assert.Equal(t, 0, len(list4))
 
 	userProvider := &definition.UserProvider{}
-	common.ServiceMap.Register(serviceName, protocol, userProvider)
-	mts.PublishServiceDefinition(u)
+	_, err = common.ServiceMap.Register(serviceName, protocol, group, version, userProvider)
+	assert.NoError(t, err)
+	err = mts.PublishServiceDefinition(u)
+	assert.NoError(t, err)
 	expected := "{\"CanonicalName\":\"com.ikurento.user.UserProvider\",\"CodeSource\":\"\"," +
 		"\"Methods\":[{\"Name\":\"GetUser\",\"ParameterTypes\":[\"slice\"],\"ReturnType\":\"ptr\"," +
 		"\"Parameters\":null}],\"Types\":null}"
-	def1, _ := mts.GetServiceDefinition(serviceName, group, version)
+	def1, err := mts.GetServiceDefinition(serviceName, group, version)
 	assert.Equal(t, expected, def1)
+	assert.NoError(t, err)
 	serviceKey := definition.ServiceDescriperBuild(serviceName, group, version)
-	def2, _ := mts.GetServiceDefinitionByServiceKey(serviceKey)
+	def2, err := mts.GetServiceDefinitionByServiceKey(serviceKey)
 	assert.Equal(t, expected, def2)
+	assert.NoError(t, err)
 }

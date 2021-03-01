@@ -67,8 +67,11 @@ conditions:
 
 	_, err = z.Conn.Set(routerPath, []byte(testYML), 0)
 	assert.NoError(t, err)
-	defer ts.Stop()
-	defer z.Close()
+	defer func() {
+		err = ts.Stop()
+		assert.NoError(t, err)
+		z.Close()
+	}()
 
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, routerLocalIP, ts.Servers[0].Port))
 	configuration, err := extension.GetConfigCenterFactory(routerZk).GetDynamicConfiguration(zkUrl)
@@ -78,7 +81,12 @@ conditions:
 	assert.NotNil(t, configuration)
 
 	appRouteURL := getAppRouteURL(routerKey)
-	appRouter, err := NewAppRouter(appRouteURL)
+	notify := make(chan struct{})
+	go func() {
+		for range notify {
+		}
+	}()
+	appRouter, err := NewAppRouter(appRouteURL, notify)
 	assert.Nil(t, err)
 	assert.NotNil(t, appRouter)
 
@@ -106,7 +114,7 @@ force: true
 runtime: false
 conditions:
   - => host != 172.22.3.91
-  - host = 192.168.199.208 => host = 192.168.199.208 
+  - host = 192.168.199.208 => host = 192.168.199.208
 `
 	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
@@ -115,8 +123,11 @@ conditions:
 
 	_, err = z.Conn.Set(routerPath, []byte(testYML), 0)
 	assert.NoError(t, err)
-	defer ts.Stop()
-	defer z.Close()
+	defer func() {
+		err = ts.Stop()
+		assert.NoError(t, err)
+		z.Close()
+	}()
 
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, routerLocalIP, ts.Servers[0].Port))
 	configuration, err := extension.GetConfigCenterFactory(routerZk).GetDynamicConfiguration(zkUrl)
@@ -126,7 +137,12 @@ conditions:
 	assert.NotNil(t, configuration)
 
 	appRouteURL := getAppRouteURL(routerKey)
-	appRouter, err := NewAppRouter(appRouteURL)
+	notify := make(chan struct{})
+	go func() {
+		for range notify {
+		}
+	}()
+	appRouter, err := NewAppRouter(appRouteURL, notify)
 	assert.Nil(t, err)
 	assert.NotNil(t, appRouter)
 
@@ -154,8 +170,11 @@ conditions:
 
 	_, err = z.Conn.Set(routerPath, []byte(testYML), 0)
 	assert.NoError(t, err)
-	defer ts.Stop()
-	defer z.Close()
+	defer func() {
+		err = ts.Stop()
+		assert.NoError(t, err)
+		z.Close()
+	}()
 
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, routerLocalIP, ts.Servers[0].Port))
 	configuration, err := extension.GetConfigCenterFactory(routerZk).GetDynamicConfiguration(zkUrl)
@@ -165,7 +184,12 @@ conditions:
 	assert.NotNil(t, configuration)
 
 	appRouteURL := getAppRouteURL(routerKey)
-	appRouter, err := NewAppRouter(appRouteURL)
+	notify := make(chan struct{})
+	go func() {
+		for range notify {
+		}
+	}()
+	appRouter, err := NewAppRouter(appRouteURL, notify)
 	assert.Nil(t, err)
 	assert.NotNil(t, appRouter)
 

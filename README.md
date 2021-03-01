@@ -1,13 +1,14 @@
 # Apache Dubbo-go [中文](./README_CN.md) #
 
-[![Build Status](https://travis-ci.org/apache/dubbo-go.svg?branch=master)](https://travis-ci.org/apache/dubbo-go)
+[![Build Status](https://github.com/apache/dubbo-go/workflows/CI/badge.svg)](https://travis-ci.org/apache/dubbo-go)
 [![codecov](https://codecov.io/gh/apache/dubbo-go/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/dubbo-go)
 [![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/apache/dubbo-go?tab=doc)
 [![Go Report Card](https://goreportcard.com/badge/github.com/apache/dubbo-go)](https://goreportcard.com/report/github.com/apache/dubbo-go)
 ![license](https://img.shields.io/badge/license-Apache--2.0-green.svg)
 
 ---
-Apache Dubbo Go Implementation.
+
+Apache Dubbo Go Implementation to bridge the gap between java and go.
 
 
 ## License
@@ -16,13 +17,13 @@ Apache License, Version 2.0
 
 ## Release note ##
 
+[v1.5.5 - Jan 5, 2021](https://github.com/apache/dubbo-go/releases/tag/v1.5.5)
+
 [v1.4.5 - Nov 18, 2020](https://github.com/apache/dubbo-go/releases/tag/v1.4.5)
 
 [v1.5.4 - Nov 1, 2020](https://github.com/apache/dubbo-go/releases/tag/v1.5.4)
 
 [v1.5.3 - Sep 23, 2020](https://github.com/apache/dubbo-go/releases/tag/v1.5.3)
-
-[v1.5.2 - discard]()
 
 [v1.5.1 - Aug 23, 2020](https://github.com/apache/dubbo-go/releases/tag/v1.5.1)
 
@@ -44,7 +45,7 @@ Both extension module and layered project architecture is according to Apache Du
 
 ![dubbo go extend](./doc/pic/arch/dubbo-go-ext.png)
 
-If you wanna know more about dubbo-go, please visit this reference [Project Architecture design](https://github.com/apache/dubbo-go/wiki/dubbo-go-V1.0-design)
+If you want to know more about dubbo-go, please visit this reference [Project Architecture design](https://github.com/apache/dubbo-go/wiki/dubbo-go-V1.0-design)
 
 ## Feature list ##
 
@@ -134,25 +135,17 @@ Finished List:
     * [Zookeeper](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/zookeeper/service_discovery.go)
     * [Etcd](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/etcdv3/service_discovery.go)
 
-- Others:
-    * start check
-    * connecting certain provider
-    * multi-protocols
-    * multi-registries
-    * multi-versions
-    * service group
-
 You can know more about dubbo-go by its [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap).
 
 ![feature](./doc/pic/arch/dubbo-go-arch.png)
 
 ## Document
 
-https://dubbogo.github.io/dubbo-go-website (**Improving**)
+[dubbo-doc](http://dubbo.apache.org/zh/blog/) or [dubbo-go-doc-list](http://alexstocks.github.io/html/dubbogo.html)
 
 ## Quick Start
 
-[dubbo-go-samples](https://github.com/apache/dubbo-go-samples) shows how to use dubbo-go. Please read the [dubbo-samples/golang/README.md](https://github.com/apache/dubbo-go-samples/blob/master/README.md) carefully to learn how to dispose the configuration and compile the program.
+[dubbo-go-samples](https://github.com/apache/dubbo-go-samples) gives many examples to  tell u how to use dubbo-go. Please read the [dubbo-samples/golang/README.md](https://github.com/apache/dubbo-go-samples/blob/master/README.md) carefully to learn how to dispose the configuration and compile the program.
 
 ## Running unit tests
 
@@ -182,6 +175,30 @@ Please move to [dubbo-samples/golang](https://github.com/dubbogo/dubbo-samples)
 
 If you are willing to do some code contributions and document contributions to [Apache/dubbo-go](https://github.com/apache/dubbo-go), please visit [contribution intro](https://github.com/apache/dubbo-go/blob/master/contributing.md).
 
+## Community
+
+If u want to communicate with our community, pls scan the following  [dubbobo Ding-Ding QR code](https://mmbiz.qpic.cn/mmbiz_jpg/yvBJb5IiafvnHVBdtia30dxA2hKotr9DEckWsZ7aOJcDWDaSVMGwLmYv8GRgIQtqb4C2svicp8nVkMmGy7yKC5tyA/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1) or search our commnity DingDing group code 31363295.
+
+<div>
+<table>
+  <tbody>
+  <tr></tr>
+    <tr>
+      <td align="center"  valign="middle">
+        <a href="http://alexstocks.github.io/html/dubbogo.html" target="_blank">
+          <img width="80px" height="85px" src="./doc/pic/misc/dubbogo-dingding.png">
+        </a>
+      </td>
+    </tr>
+    <tr></tr>
+  </tbody>
+</table>
+</div>
+
+If u want to visit the wechat group, pls add my wechat AlexanderStocks.
+
+We welcome the friends who can give us constructing suggestions instead of known-nothing.
+
 ## Benchmark
 
 Benchmark project [dubbo-go-benchmark](https://github.com/dubbogo/dubbo-go-benchmark).
@@ -190,7 +207,7 @@ About dubbo-go benchmarking report, please refer to [dubbo benchmarking report](
 
 ## [User List](https://github.com/apache/dubbo-go/issues/2)
 
-If you are using [apache/dubbo-go](github.com/apache/dubbo-go) and think that it helps you or want do some contributions to it, please add your company to to [the user list](https://github.com/apache/dubbo-go/issues/2) to let us know your needs.
+If you are using [apache/dubbo-go](https://github.com/apache/dubbo-go) and think that it helps you or want do some contributions to it, please add your company to to [the user list](https://github.com/apache/dubbo-go/issues/2) to let us know your needs.
 
 
 <div>
@@ -249,6 +266,19 @@ If you are using [apache/dubbo-go](github.com/apache/dubbo-go) and think that it
       <td align="center"  valign="middle">
         <a href="https://www.icsoc.net/" target="_blank">
           <img width="222px"  src="https://oss.icsoc.net/icsoc-ekt-test-files/icsoc.png">
+        </a>
+      </td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="center"  valign="middle">
+        <a href="http://www.mgtv.com" target="_blank">
+          <img width="222px"  src="https://ugc.hitv.com/platform_oss/F6077F1AA82542CDBDD88FD518E6E727.png">
+        </a>
+      </td>
+      <td align="center"  valign="middle">
+        <a href="http://www.dmall.com" target="_blank">
+          <img width="222px"  src="https://mosn.io/images/community/duodian.png">
         </a>
       </td>
     </tr>

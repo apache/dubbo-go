@@ -31,6 +31,8 @@ ADD . /go/src/github.com/apache/dubbo-go/test/integrate/dubbo/go-client
 RUN test ${PR_ORIGIN_REPO} && echo "github.com/apache/dubbo-go will be replace to github.com/${PR_ORIGIN_REPO}@${PR_ORIGIN_COMMITID}" || echo 'go get github.com/apache/dubbo-go@develop'
 RUN test ${PR_ORIGIN_REPO} && go mod edit  -replace=github.com/apache/dubbo-go=github.com/${PR_ORIGIN_REPO}@${PR_ORIGIN_COMMITID} || go get -u github.com/apache/dubbo-go@develop
 
+ENV GO111MODULE on
+
 RUN go install github.com/apache/dubbo-go/test/integrate/dubbo/go-client
 
 CMD go-client

@@ -115,14 +115,14 @@ func (nl *nacosListener) Callback(services []model.SubscribeService, err error) 
 		logger.Errorf("nacos subscribe callback error:%s , subscribe:%+v ", err.Error(), nl.subscribeParam)
 		return
 	}
-	nl.cacheLock.Lock()
-	defer nl.cacheLock.Unlock()
+
 	addInstances := make([]model.Instance, 0, len(services))
 	delInstances := make([]model.Instance, 0, len(services))
 	updateInstances := make([]model.Instance, 0, len(services))
-
 	newInstanceMap := make(map[string]model.Instance, len(services))
 
+	nl.cacheLock.Lock()
+	defer nl.cacheLock.Unlock()
 	for i := range services {
 		if !services[i].Enable || !services[i].Valid {
 			// instance is not available,so ignore it
@@ -188,7 +188,9 @@ func (nl *nacosListener) startListen() error {
 	}
 	serviceName := getSubscribeName(nl.listenUrl)
 	nl.subscribeParam = &vo.SubscribeParam{ServiceName: serviceName, SubscribeCallback: nl.Callback}
-	go nl.namingClient.Subscribe(nl.subscribeParam)
+	go func() {
+		_ = nl.namingClient.Subscribe(nl.subscribeParam)
+	}()
 	return nil
 }
 

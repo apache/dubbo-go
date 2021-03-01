@@ -30,6 +30,10 @@ import (
 	perrors "github.com/pkg/errors"
 )
 
+import (
+	"github.com/apache/dubbo-go/common/logger"
+)
+
 /////////////////////////////////////////
 // dubbo
 /////////////////////////////////////////
@@ -39,7 +43,7 @@ func getArgType(v interface{}) string {
 		return "V"
 	}
 
-	switch v.(type) {
+	switch v := v.(type) {
 	// Serialized tags for base types
 	case nil:
 		return "V"
@@ -216,23 +220,31 @@ func packRequest(service Service, header DubboHeader, req interface{}) ([]byte, 
 	// body
 	//////////////////////////////////////////
 	if hb {
-		encoder.Encode(nil)
+		_ = encoder.Encode(nil)
 		goto END
 	}
 
 	// dubbo version + path + version + method
-	encoder.Encode(DEFAULT_DUBBO_PROTOCOL_VERSION)
-	encoder.Encode(service.Path)
-	encoder.Encode(service.Version)
-	encoder.Encode(service.Method)
+	if err = encoder.Encode(DEFAULT_DUBBO_PROTOCOL_VERSION); err != nil {
+		logger.Warnf("Encode(DEFAULT_DUBBO_PROTOCOL_VERSION) = error: %v", err)
+	}
+	if err = encoder.Encode(service.Path); err != nil {
+		logger.Warnf("Encode(service.Path) = error: %v", err)
+	}
+	if err = encoder.Encode(service.Version); err != nil {
+		logger.Warnf("Encode(service.Version) = error: %v", err)
+	}
+	if err = encoder.Encode(service.Method); err != nil {
+		logger.Warnf("Encode(service.Method) = error: %v", err)
+	}
 
 	// args = args type list + args value list
 	if types, err = getArgsTypeList(args); err != nil {
 		return nil, perrors.Wrapf(err, " PackRequest(args:%+v)", args)
 	}
-	encoder.Encode(types)
+	_ = encoder.Encode(types)
 	for _, v := range args {
-		encoder.Encode(v)
+		_ = encoder.Encode(v)
 	}
 
 	request.Attachments[PATH_KEY] = service.Path
@@ -247,7 +259,7 @@ func packRequest(service Service, header DubboHeader, req interface{}) ([]byte, 
 		request.Attachments[TIMEOUT_KEY] = strconv.Itoa(int(service.Timeout / time.Millisecond))
 	}
 
-	encoder.Encode(request.Attachments)
+	_ = encoder.Encode(request.Attachments)
 
 END:
 	byteArray = encoder.Buffer()
