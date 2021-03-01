@@ -14,7 +14,7 @@ require (
 	github.com/creasty/defaults v1.5.1
 	github.com/dubbogo/go-zookeeper v1.0.2
 	github.com/dubbogo/gost v1.11.0
-	github.com/dubbogo/triple v0.0.0-20210301083516-185f5a3b1234 // indirect
+	github.com/dubbogo/triple v0.0.0-20210301083516-185f5a3b1234
 	github.com/elazarl/go-bindata-assetfs v1.0.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.4.0
 	github.com/frankban/quicktest v1.4.1 // indirect
