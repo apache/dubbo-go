@@ -84,7 +84,10 @@ func TestConsulServiceDiscovery_Destroy(t *testing.T) {
 func TestConsulServiceDiscovery_CRUD(t *testing.T) {
 	// start consul agent
 	consulAgent := consul.NewConsulAgent(t, registryPort)
-	defer consulAgent.Shutdown()
+	defer func() {
+		err := consulAgent.Shutdown()
+		assert.NoError(t, err)
+	}()
 
 	prepareData()
 	var eventDispatcher = MockEventDispatcher{Notify: make(chan struct{}, 1)}
@@ -138,7 +141,8 @@ func TestConsulServiceDiscovery_CRUD(t *testing.T) {
 	assert.Equal(t, 1, len(page.GetData()))
 
 	instanceResult = page.GetData()[0].(*registry.DefaultServiceInstance)
-	v, _ := instanceResult.Metadata["aaa"]
+	v, ok := instanceResult.Metadata["aaa"]
+	assert.True(t, ok)
 	assert.Equal(t, "bbb", v)
 
 	// test dispatcher event

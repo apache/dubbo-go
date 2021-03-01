@@ -84,9 +84,9 @@ func (t *RouterRule) getTagNames() []string {
 	return result
 }
 
-func (t *RouterRule) hasTag(tag string) bool {
-	return len(t.TagNameToAddresses[tag]) > 0
-}
+//func (t *RouterRule) hasTag(tag string) bool {
+//	return len(t.TagNameToAddresses[tag]) > 0
+//}
 
 func (t *RouterRule) getAddressToTagNames() map[string][]string {
 	return t.AddressToTagNames
@@ -96,10 +96,10 @@ func (t *RouterRule) getTagNameToAddresses() map[string][]string {
 	return t.TagNameToAddresses
 }
 
-func (t *RouterRule) getTags() []Tag {
-	return t.Tags
-}
+//func (t *RouterRule) getTags() []Tag {
+//	return t.Tags
+//}
 
-func (t *RouterRule) setTags(tags []Tag) {
-	t.Tags = tags
-}
+//func (t *RouterRule) setTags(tags []Tag) {
+//	t.Tags = tags
+//}

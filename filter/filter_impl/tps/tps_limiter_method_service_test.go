@@ -22,7 +22,6 @@ import (
 	"testing"
 )
 import (
-	"github.com/apache/dubbo-go/filter"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,12 +30,13 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/filter"
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 func TestMethodServiceTpsLimiterImplIsAllowableOnlyServiceLevel(t *testing.T) {
 	methodName := "hello"
-	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]interface{}, 0))
+	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]interface{}))
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -63,7 +63,7 @@ func TestMethodServiceTpsLimiterImplIsAllowableOnlyServiceLevel(t *testing.T) {
 
 func TestMethodServiceTpsLimiterImplIsAllowableNoConfig(t *testing.T) {
 	methodName := "hello1"
-	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]interface{}, 0))
+	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]interface{}))
 	// ctrl := gomock.NewController(t)
 	// defer ctrl.Finish()
 
@@ -80,7 +80,7 @@ func TestMethodServiceTpsLimiterImplIsAllowableNoConfig(t *testing.T) {
 func TestMethodServiceTpsLimiterImplIsAllowableMethodLevelOverride(t *testing.T) {
 	methodName := "hello2"
 	methodConfigPrefix := "methods." + methodName + "."
-	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]interface{}, 0))
+	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]interface{}))
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -113,7 +113,7 @@ func TestMethodServiceTpsLimiterImplIsAllowableMethodLevelOverride(t *testing.T)
 func TestMethodServiceTpsLimiterImplIsAllowableBothMethodAndService(t *testing.T) {
 	methodName := "hello3"
 	methodConfigPrefix := "methods." + methodName + "."
-	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]interface{}, 0))
+	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]interface{}))
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 

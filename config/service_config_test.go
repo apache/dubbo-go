@@ -176,7 +176,8 @@ func TestExport(t *testing.T) {
 		service := providerConfig.Services[i]
 		service.Implement(&MockService{})
 		service.Protocols = providerConfig.Protocols
-		service.Export()
+		err := service.Export()
+		assert.Nil(t, err)
 	}
 	providerConfig = nil
 }

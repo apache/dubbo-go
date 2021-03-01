@@ -82,6 +82,8 @@ func (dir *BaseDirectory) SetRouters(urls []*common.URL) {
 
 	routers := make([]router.PriorityRouter, 0, len(urls))
 
+	rc := dir.routerChain
+
 	for _, url := range urls {
 		routerKey := url.GetParam(constant.ROUTER_KEY, "")
 
@@ -94,7 +96,7 @@ func (dir *BaseDirectory) SetRouters(urls []*common.URL) {
 			}
 		}
 		factory := extension.GetRouterFactory(url.Protocol)
-		r, err := factory.NewPriorityRouter(url)
+		r, err := factory.NewPriorityRouter(url, rc.GetNotifyChan())
 		if err != nil {
 			logger.Errorf("Create router fail. router key: %s, url:%s, error: %+v", routerKey, url.Service(), err)
 			return
@@ -104,10 +106,8 @@ func (dir *BaseDirectory) SetRouters(urls []*common.URL) {
 
 	logger.Infof("Init file condition router success, size: %v", len(routers))
 	dir.mutex.Lock()
-	rc := dir.routerChain
-	dir.mutex.Unlock()
-
 	rc.AddRouters(routers)
+	dir.mutex.Unlock()
 }
 
 func (dir *BaseDirectory) isProperRouter(url *common.URL) bool {
