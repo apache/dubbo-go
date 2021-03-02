@@ -27,6 +27,7 @@ import (
 import (
 	getty "github.com/apache/dubbo-getty"
 	"github.com/dubbogo/go-zookeeper/zk"
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	perrors "github.com/pkg/errors"
 )
 
@@ -43,7 +44,7 @@ var (
 
 // nolint
 type ZkEventListener struct {
-	client      *ZookeeperClient
+	client      *gxzookeeper.ZookeeperClient
 	pathMapLock sync.Mutex
 	pathMap     map[string]struct{}
 	wg          sync.WaitGroup
@@ -51,7 +52,7 @@ type ZkEventListener struct {
 }
 
 // NewZkEventListener returns a EventListener instance
-func NewZkEventListener(client *ZookeeperClient) *ZkEventListener {
+func NewZkEventListener(client *gxzookeeper.ZookeeperClient) *ZkEventListener {
 	return &ZkEventListener{
 		client:  client,
 		pathMap: make(map[string]struct{}),
@@ -60,7 +61,7 @@ func NewZkEventListener(client *ZookeeperClient) *ZkEventListener {
 }
 
 // nolint
-func (l *ZkEventListener) SetClient(client *ZookeeperClient) {
+func (l *ZkEventListener) SetClient(client *gxzookeeper.ZookeeperClient) {
 	l.client = client
 }
 
@@ -93,7 +94,7 @@ func (l *ZkEventListener) listenServiceNodeEvent(zkPath string, listener ...remo
 		select {
 		case zkEvent = <-keyEventCh:
 			logger.Warnf("get a zookeeper keyEventCh{type:%s, server:%s, path:%s, state:%d-%s, err:%s}",
-				zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, StateToString(zkEvent.State), zkEvent.Err)
+				zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, gxzookeeper.StateToString(zkEvent.State), zkEvent.Err)
 			switch zkEvent.Type {
 			case zk.EventNodeDataChanged:
 				logger.Warnf("zk.ExistW(key{%s}) = event{EventNodeDataChanged}", zkPath)
@@ -304,7 +305,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 			logger.Infof("listen dubbo service key{%s}", dubboPath)
 			l.wg.Add(1)
 			go func(zkPath string, listener remoting.DataListener) {
-				if l.listenServiceNodeEvent(zkPath) {
+				if l.listenServiceNodeEvent(zkPath, listener) {
 					listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeDel})
 					l.pathMapLock.Lock()
 					delete(l.pathMap, zkPath)
@@ -333,7 +334,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 				l.handleZkNodeEvent(zkPath, children, listener)
 			case zkEvent = <-childEventCh:
 				logger.Warnf("get a zookeeper childEventCh{type:%s, server:%s, path:%s, state:%d-%s, err:%s}",
-					zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, StateToString(zkEvent.State), zkEvent.Err)
+					zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, gxzookeeper.StateToString(zkEvent.State), zkEvent.Err)
 				ticker.Stop()
 				if zkEvent.Type != zk.EventNodeChildrenChanged {
 					break WATCH

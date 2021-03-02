@@ -27,6 +27,7 @@ import (
 import (
 	"github.com/RoaringBitmap/roaring"
 	"github.com/dubbogo/go-zookeeper/zk"
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -260,7 +261,7 @@ type DynamicTagRouter struct {
 	//rule *RouterRule
 
 	route       *tagRouter
-	zkClient    *zookeeper.ZookeeperClient
+	zkClient    *gxzookeeper.ZookeeperClient
 	testCluster *zk.TestCluster
 	invokers    []protocol.Invoker
 	url         *common.URL
@@ -299,7 +300,7 @@ tags:
   - name: tag3
     addresses: ["127.0.0.1:20003", "127.0.0.1:20004"]
 `
-	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
+	ts, z, _, err := gxzookeeper.NewMockZookeeperClient("test", 15*time.Second)
 	suite.NoError(err)
 	err = z.Create(routerPath)
 	suite.NoError(err)

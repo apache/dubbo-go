@@ -21,15 +21,17 @@ import (
 	"sync"
 	"time"
 )
-
+import (
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
+)
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 )
 
 type ZkClientFacade interface {
-	ZkClient() *ZookeeperClient
-	SetZkClient(*ZookeeperClient)
+	ZkClient() *gxzookeeper.ZookeeperClient
+	SetZkClient(*gxzookeeper.ZookeeperClient)
 	ZkClientLock() *sync.Mutex
 	WaitGroup() *sync.WaitGroup // for wait group control, zk client listener & zk client container
 	Done() chan struct{}        // for registry destroy

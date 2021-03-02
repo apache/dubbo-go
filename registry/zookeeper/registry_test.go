@@ -24,13 +24,13 @@ import (
 )
 
 import (
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	"github.com/stretchr/testify/assert"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
 func Test_Register(t *testing.T) {
@@ -93,7 +93,7 @@ func Test_Subscribe(t *testing.T) {
 
 	//consumer register
 	regURL.SetParam(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
-	_, reg2, _ := newMockZkRegistry(regURL, zookeeper.WithTestCluster(ts))
+	_, reg2, _ := newMockZkRegistry(regURL, gxzookeeper.WithTestCluster(ts))
 
 	err = reg2.Register(url)
 	assert.Nil(t, err)
@@ -125,7 +125,7 @@ func Test_UnSubscribe(t *testing.T) {
 
 	//consumer register
 	regURL.SetParam(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
-	_, reg2, _ := newMockZkRegistry(regURL, zookeeper.WithTestCluster(ts))
+	_, reg2, _ := newMockZkRegistry(regURL, gxzookeeper.WithTestCluster(ts))
 
 	err = reg2.Register(url)
 	assert.Nil(t, err)

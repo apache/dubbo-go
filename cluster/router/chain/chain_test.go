@@ -26,6 +26,7 @@ import (
 
 import (
 	zk "github.com/dubbogo/go-zookeeper/zk"
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,7 +40,6 @@ import (
 	_ "github.com/apache/dubbo-go/config_center/zookeeper"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
-	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
 const (
@@ -64,7 +64,7 @@ const (
 var zkCluster *zk.TestCluster
 
 func TestNewRouterChain(t *testing.T) {
-	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
+	ts, z, _, err := gxzookeeper.NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
 	zkCluster = ts
 	err = z.Create(path)
@@ -118,7 +118,7 @@ func TestNewRouterChainURLNil(t *testing.T) {
 }
 
 func TestRouterChainAddRouters(t *testing.T) {
-	_, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second, zookeeper.WithTestCluster(zkCluster))
+	_, z, _, err := gxzookeeper.NewMockZookeeperClient("test", 15*time.Second, gxzookeeper.WithTestCluster(zkCluster))
 	assert.NoError(t, err)
 	err = z.Create(path)
 	assert.NoError(t, err)
@@ -167,7 +167,7 @@ conditions:
 }
 
 func TestRouterChainRoute(t *testing.T) {
-	ts, _, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second, zookeeper.WithTestCluster(zkCluster))
+	ts, _, _, err := gxzookeeper.NewMockZookeeperClient("test", 15*time.Second, gxzookeeper.WithTestCluster(zkCluster))
 	assert.Nil(t, err)
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, localIP, ts.Servers[0].Port))
 	configuration, err := extension.GetConfigCenterFactory(zkName).GetDynamicConfiguration(zkUrl)
@@ -195,7 +195,7 @@ func TestRouterChainRoute(t *testing.T) {
 }
 
 func TestRouterChainRouteAppRouter(t *testing.T) {
-	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second, zookeeper.WithTestCluster(zkCluster))
+	ts, z, _, err := gxzookeeper.NewMockZookeeperClient("test", 15*time.Second, gxzookeeper.WithTestCluster(zkCluster))
 	assert.NoError(t, err)
 	err = z.Create(path)
 	assert.NoError(t, err)
@@ -239,7 +239,7 @@ conditions:
 }
 
 func TestRouterChainRouteNoRoute(t *testing.T) {
-	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second, zookeeper.WithTestCluster(zkCluster))
+	ts, z, _, err := gxzookeeper.NewMockZookeeperClient("test", 15*time.Second, gxzookeeper.WithTestCluster(zkCluster))
 	assert.Nil(t, err)
 	defer func() {
 		_ = ts.Stop()
