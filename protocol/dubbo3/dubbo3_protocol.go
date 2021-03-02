@@ -78,7 +78,7 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 func (dp *DubboProtocol) Refer(url *common.URL) protocol.Invoker {
 	invoker, err := NewDubboInvoker(url)
 	if err != nil {
-		logger.Errorf("Refer url = %+v, with error = %s", *url, err.Error())
+		logger.Errorf("Refer url = %+v, with error = %s", url, err.Error())
 		return nil
 	}
 	dp.SetInvokers(invoker)
