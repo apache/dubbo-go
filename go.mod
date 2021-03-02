@@ -49,5 +49,3 @@ replace (
 	go.etcd.io/bbolt v1.3.4 => github.com/coreos/bbolt v1.3.3
 	google.golang.org/grpc => google.golang.org/grpc v1.26.0
 )
-
-replace github.com/dubbogo/triple => ../triple
