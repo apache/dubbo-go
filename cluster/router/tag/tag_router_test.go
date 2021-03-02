@@ -44,7 +44,6 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/apache/dubbo-go/remoting"
-	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
 const (
