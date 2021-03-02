@@ -18,10 +18,12 @@ package remoting
 
 import (
 	"errors"
-	"sync/atomic"
 	"time"
 )
 
+import (
+	uatomic "go.uber.org/atomic"
+)
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
@@ -53,7 +55,7 @@ type ExchangeClient struct {
 	// the tag for init.
 	init bool
 	// the number of service using the exchangeClient
-	activeNum uint32
+	activeNum uatomic.Uint32
 }
 
 // create ExchangeClient
@@ -62,7 +64,6 @@ func NewExchangeClient(url *common.URL, client Client, connectTimeout time.Durat
 		ConnectTimeout: connectTimeout,
 		address:        url.Location,
 		client:         client,
-		activeNum:      0,
 	}
 	client.SetExchangeClient(exchangeClient)
 	if !lazyInit {
@@ -93,17 +94,17 @@ func (cl *ExchangeClient) doInit(url *common.URL) error {
 
 // increase number of service using client
 func (client *ExchangeClient) IncreaseActiveNumber() uint32 {
-	return atomic.AddUint32(&client.activeNum, 1)
+	return client.activeNum.Add(1)
 }
 
 // decrease number of service using client
 func (client *ExchangeClient) DecreaseActiveNumber() uint32 {
-	return atomic.AddUint32(&client.activeNum, ^uint32(0))
+	return client.activeNum.Sub(1)
 }
 
 // get number of service using client
 func (client *ExchangeClient) GetActiveNumber() uint32 {
-	return atomic.LoadUint32(&client.activeNum)
+	return client.activeNum.Load()
 }
 
 // two way request

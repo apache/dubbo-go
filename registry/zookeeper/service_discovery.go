@@ -19,6 +19,7 @@ package zookeeper
 
 import (
 	"fmt"
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	"net/url"
 	"strconv"
 	"strings"
@@ -59,7 +60,7 @@ func init() {
 }
 
 type zookeeperServiceDiscovery struct {
-	client *zookeeper.ZookeeperClient
+	client *gxzookeeper.ZookeeperClient
 	csd    *curator_discovery.ServiceDiscovery
 	//listener    *zookeeper.ZkEventListener
 	url         *common.URL
@@ -106,7 +107,7 @@ func newZookeeperServiceDiscovery(name string) (registry.ServiceDiscovery, error
 		url:      url,
 		rootPath: rootPath,
 	}
-	err := zookeeper.ValidateZookeeperClient(zksd, zookeeper.WithZkName(ServiceDiscoveryZkClient))
+	err := zookeeper.ValidateZookeeperClient(zksd, ServiceDiscoveryZkClient)
 	if err != nil {
 		return nil, err
 	}
@@ -117,12 +118,12 @@ func newZookeeperServiceDiscovery(name string) (registry.ServiceDiscovery, error
 }
 
 // nolint
-func (zksd *zookeeperServiceDiscovery) ZkClient() *zookeeper.ZookeeperClient {
+func (zksd *zookeeperServiceDiscovery) ZkClient() *gxzookeeper.ZookeeperClient {
 	return zksd.client
 }
 
 // nolint
-func (zksd *zookeeperServiceDiscovery) SetZkClient(client *zookeeper.ZookeeperClient) {
+func (zksd *zookeeperServiceDiscovery) SetZkClient(client *gxzookeeper.ZookeeperClient) {
 	zksd.client = client
 }
 
