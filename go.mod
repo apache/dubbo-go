@@ -11,7 +11,7 @@ require (
 	github.com/apache/dubbo-go-hessian2 v1.8.2
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/creasty/defaults v1.5.1
-	github.com/dubbogo/go-zookeeper v1.0.2
+	github.com/dubbogo/go-zookeeper v1.0.3
 	github.com/dubbogo/gost v1.11.0
 	github.com/emicklei/go-restful/v3 v3.4.0
 	github.com/fsnotify/fsnotify v1.4.9
@@ -24,7 +24,6 @@ require (
 	github.com/hashicorp/consul/api v1.5.0
 	github.com/hashicorp/vault/sdk v0.1.14-0.20191112033314-390e96e22eb2
 	github.com/jinzhu/copier v0.0.0-20190625015134-976e0346caa8
-	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/magiconair/properties v1.8.4
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
@@ -48,7 +47,7 @@ require (
 
 replace (
 	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.4
-	github.com/dubbogo/gost => github.com/wenxuwan/gost v1.9.4-0.20210302082346-4f0dc3bef61f
+	github.com/dubbogo/gost => github.com/wenxuwan/gost v1.9.4-0.20210303060806-fde1b7159726
 	github.com/envoyproxy/go-control-plane => github.com/envoyproxy/go-control-plane v0.8.0
 	github.com/shirou/gopsutil => github.com/shirou/gopsutil v0.0.0-20181107111621-48177ef5f880
 	go.etcd.io/bbolt v1.3.4 => github.com/coreos/bbolt v1.3.3
