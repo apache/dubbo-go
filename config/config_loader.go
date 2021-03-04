@@ -87,15 +87,15 @@ func init() {
 		log.Printf("[consumerInit] %#v", errCon)
 		//consumerConfig = nil
 		consumerConfig = NewConsumerConfig(
-			WithConsumerAppConfig(NewDefaultApplicationConfig()), // default app config
-			WithConsumerConnTimeout(time.Second*3), // timeout
-			WithConsumerRequestTimeout(time.Second*3), // timeout
+			WithConsumerAppConfig(NewDefaultApplicationConfig()),                        // default app config
+			WithConsumerConnTimeout(time.Second*3),                                      // timeout
+			WithConsumerRequestTimeout(time.Second*3),                                   // timeout
 			WithConsumerRegistryConfig("demoZk", NewDefaultRegistryConfig("zookeeper")), // registry config
 			WithConsumerReferenceConfig("UserProvider", NewReferenceConfigByAPI( // set refer config
-				WithReferenceRegistry("demoZk"), // registry key
-				WithReferenceProtocol("dubbo"), // protocol
-				WithReferenceInterface("com.ikurento.user.UserProvider"),// interface name
-				WithReferenceMethod("GetUser", "3", "random"), // method and lb
+				WithReferenceRegistry("demoZk"),                          // registry key
+				WithReferenceProtocol("dubbo"),                           // protocol
+				WithReferenceInterface("com.ikurento.user.UserProvider"), // interface name
+				WithReferenceMethod("GetUser", "3", "random"),            // method and lb
 				WithReferenceCluster("failover"),
 			)),
 		)
@@ -104,18 +104,17 @@ func init() {
 	// because we think read from config file is correct config
 	baseConfig = &consumerConfig.BaseConfig
 
-
 	if errPro := ProviderInit(confProFile); errPro != nil {
 		log.Printf("[providerInit] %#v", errPro)
 		providerConfig = NewProviderConfig(
 			WithProviderAppConfig(NewDefaultApplicationConfig()),
-			WithProviderProtocol("dubbo", "dubbo", "20000"),// protocol and port
+			WithProviderProtocol("dubbo", "dubbo", "20000"),                       // protocol and port
 			WithProviderRegistry("demoZk", NewDefaultRegistryConfig("zookeeper")), // registry config
 			WithProviderServices("UserProvider", NewServiceConfigByAPI(
-				WithServiceRegistry("demoZk"), // registry key, equal to upper line
-				WithServiceProtocol("dubbo"), // export protocol
+				WithServiceRegistry("demoZk"),                          // registry key, equal to upper line
+				WithServiceProtocol("dubbo"),                           // export protocol
 				WithServiceInterface("com.ikurento.user.UserProvider"), // interface id
-				WithServiceLoadBalance("random"), // lb
+				WithServiceLoadBalance("random"),                       // lb
 				WithServiceWarmUpTime("100"),
 				WithServiceCluster("failover"),
 				WithServiceMethod("GetUser", "1", "random"),
