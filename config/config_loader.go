@@ -73,23 +73,59 @@ func init() {
 		fs.Parse(fs.Args()[1:])
 	}
 
+	if confConFile == "" {
+		confConFile = constant.DEFAULT_CONSUMER_CONF_FILE_PATH
+	}
+	if confProFile == "" {
+		confProFile = constant.DEFAULT_PROVIDER_CONF_FILE_PATH
+	}
+	if confRouterFile == "" {
+		confRouterFile = constant.DEFAULT_ROUTER_CONF_FILE_PATH
+	}
+
 	if errCon := ConsumerInit(confConFile); errCon != nil {
 		log.Printf("[consumerInit] %#v", errCon)
-		consumerConfig = nil
-	} else {
-		// Even though baseConfig has been initialized, we override it
-		// because we think read from config file is correct config
-		baseConfig = &consumerConfig.BaseConfig
+		//consumerConfig = nil
+		consumerConfig = NewConsumerConfig(
+			WithConsumerAppConfig(NewDefaultApplicationConfig()), // default app config
+			WithConsumerConnTimeout(time.Second*3), // timeout
+			WithConsumerRequestTimeout(time.Second*3), // timeout
+			WithConsumerRegistryConfig("demoZk", NewDefaultRegistryConfig("zookeeper")), // registry config
+			WithConsumerReferenceConfig("UserProvider", NewReferenceConfigByAPI( // set refer config
+				WithReferenceRegistry("demoZk"), // registry key
+				WithReferenceProtocol("dubbo"), // protocol
+				WithReferenceInterface("com.ikurento.user.UserProvider"),// interface name
+				WithReferenceMethod("GetUser", "3", "random"), // method and lb
+				WithReferenceCluster("failover"),
+			)),
+		)
 	}
+	// Even though baseConfig has been initialized, we override it
+	// because we think read from config file is correct config
+	baseConfig = &consumerConfig.BaseConfig
+
 
 	if errPro := ProviderInit(confProFile); errPro != nil {
 		log.Printf("[providerInit] %#v", errPro)
-		providerConfig = nil
-	} else {
-		// Even though baseConfig has been initialized, we override it
-		// because we think read from config file is correct config
-		baseConfig = &providerConfig.BaseConfig
+		providerConfig = NewProviderConfig(
+			WithProviderAppConfig(NewDefaultApplicationConfig()),
+			WithProviderProtocol("dubbo", "dubbo", "20000"),// protocol and port
+			WithProviderRegistry("demoZk", NewDefaultRegistryConfig("zookeeper")), // registry config
+			WithProviderServices("UserProvider", NewServiceConfigByAPI(
+				WithServiceRegistry("demoZk"), // registry key, equal to upper line
+				WithServiceProtocol("dubbo"), // export protocol
+				WithServiceInterface("com.ikurento.user.UserProvider"), // interface id
+				WithServiceLoadBalance("random"), // lb
+				WithServiceWarmUpTime("100"),
+				WithServiceCluster("failover"),
+				WithServiceMethod("GetUser", "1", "random"),
+			)),
+		)
 	}
+	// Even though baseConfig has been initialized, we override it
+	// because we think read from config file is correct config
+	baseConfig = &providerConfig.BaseConfig
+
 }
 
 func checkRegistries(registries map[string]*RegistryConfig, singleRegistry *RegistryConfig) {
