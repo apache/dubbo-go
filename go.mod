@@ -12,7 +12,7 @@ require (
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/creasty/defaults v1.5.1
 	github.com/dubbogo/go-zookeeper v1.0.3
-	github.com/dubbogo/gost v1.11.0
+	github.com/dubbogo/gost v1.11.2
 	github.com/emicklei/go-restful/v3 v3.4.0
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/go-co-op/gocron v0.1.1
@@ -47,7 +47,6 @@ require (
 
 replace (
 	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.4
-	github.com/dubbogo/gost => github.com/wenxuwan/gost v1.9.4-0.20210303060806-fde1b7159726
 	github.com/envoyproxy/go-control-plane => github.com/envoyproxy/go-control-plane v0.8.0
 	github.com/shirou/gopsutil => github.com/shirou/gopsutil v0.0.0-20181107111621-48177ef5f880
 	go.etcd.io/bbolt v1.3.4 => github.com/coreos/bbolt v1.3.3
