@@ -87,3 +87,10 @@ const (
 const (
 	SERVICE_DISCOVERY_DEFAULT_GROUP = "DEFAULT_GROUP"
 )
+
+const (
+	DEFAULT_PROVIDER_CONF_FILE_PATH = "../profiles/dev/server.yml"
+	DEFAULT_CONSUMER_CONF_FILE_PATH = "../profiles/dev/client.yml"
+	DEFAULT_LOG_CONF_FILE_PATH      = "../profiles/dev/log.yml"
+	DEFAULT_ROUTER_CONF_FILE_PATH   = "../profiles/dev/router.yml"
+)

@@ -72,6 +72,9 @@ func init() {
 	for len(fs.Args()) != 0 {
 		fs.Parse(fs.Args()[1:])
 	}
+	if *logConfFile == "" {
+		*logConfFile = constant.DEFAULT_LOG_CONF_FILE_PATH
+	}
 	err := InitLog(*logConfFile)
 	if err != nil {
 		log.Printf("[InitLog] warn: %v", err)
