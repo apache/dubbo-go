@@ -168,7 +168,7 @@ func (c *Client) Close() {
 	c.pool = nil
 	c.mux.Unlock()
 	if p != nil {
-		c.Close()
+		p.close()
 	}
 }
 
