@@ -33,6 +33,6 @@ RUN test ${PR_ORIGIN_REPO} && go mod edit  -replace=github.com/apache/dubbo-go=g
 
 ENV GO111MODULE on
 
-RUN go install github.com/apache/dubbo-go/test/integrate/dubbo/go-client
+RUN go mod tidy && go install github.com/apache/dubbo-go/test/integrate/dubbo/go-client
 
 CMD go-client
