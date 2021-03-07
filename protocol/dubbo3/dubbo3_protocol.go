@@ -23,14 +23,17 @@ import (
 )
 
 import (
+	dubbo3 "github.com/dubbogo/triple/pkg/triple"
+	"google.golang.org/grpc"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
-	dubbo3 "github.com/dubbogo/triple/pkg/triple"
-	"google.golang.org/grpc"
 )
 
 const (
@@ -38,8 +41,11 @@ const (
 	DUBBO3 = "dubbo3"
 )
 
+var protocolOnce sync.Once
+
 func init() {
 	extension.SetProtocol(DUBBO3, GetProtocol)
+	protocolOnce = sync.Once{}
 }
 
 var (
@@ -154,9 +160,8 @@ func (dp *DubboProtocol) openServer(url *common.URL) {
 
 // GetProtocol get a single dubbo3 protocol.
 func GetProtocol() protocol.Protocol {
-	logger.Warn("GetProtocol")
-	if dubboProtocol == nil {
+	protocolOnce.Do(func() {
 		dubboProtocol = NewDubboProtocol()
-	}
+	})
 	return dubboProtocol
 }
