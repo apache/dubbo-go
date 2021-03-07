@@ -28,28 +28,26 @@ import (
 
 import (
 	hessian2 "github.com/apache/dubbo-go-hessian2"
+	dubbo3 "github.com/dubbogo/triple/pkg/triple"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
-	dubbo3 "github.com/dubbogo/triple/pkg/triple"
 )
 
 // DubboInvoker is implement of protocol.Invoker. A dubboInvoker refer to one service and ip.
 type DubboInvoker struct {
 	protocol.BaseInvoker
 	// the net layer client, it is focus on network communication.
-	client   *dubbo3.TripleClient
+	client *dubbo3.TripleClient
+	// quitOnce is used to make sure DubboInvoker is only destroyed once
 	quitOnce sync.Once
 	// timeout for service(interface) level.
 	timeout time.Duration
-	// Used to record the number of requests. -1 represent this DubboInvoker is destroyed
-	reqNum int64
 }
 
 // NewDubboInvoker constructor
@@ -70,7 +68,6 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	return &DubboInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
-		reqNum:      0,
 		timeout:     requestTimeout,
 	}, nil
 }
@@ -119,26 +116,19 @@ func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) ti
 
 // IsAvailable check if invoker is available, now it is useless
 func (di *DubboInvoker) IsAvailable() bool {
+	if di.client == nil {
+		return false
+	}
 	return di.client.IsAvailable()
 }
 
 // Destroy destroy dubbo3 client invoker.
 func (di *DubboInvoker) Destroy() {
 	di.quitOnce.Do(func() {
-		for {
-			if di.reqNum == 0 {
-				di.reqNum = -1
-				logger.Infof("dubboInvoker is destroyed,url:{%s}", di.GetUrl().Key())
-				di.BaseInvoker.Destroy()
-				if di.client != nil {
-					di.client.Close()
-					di.client = nil
-				}
-				break
-			}
-			logger.Warnf("DubboInvoker is to be destroyed, wait {%v} req end,url:{%s}", di.reqNum, di.GetUrl().Key())
-			time.Sleep(1 * time.Second)
+		di.BaseInvoker.Destroy()
+		if di.client != nil {
+			di.client.Close()
+			di.client = nil
 		}
-
 	})
 }
