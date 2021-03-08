@@ -26,6 +26,7 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
+	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 	gxpage "github.com/dubbogo/gost/hash/page"
 	"github.com/hashicorp/vault/sdk/helper/jsonutil"
 	perrors "github.com/pkg/errors"
@@ -58,7 +59,7 @@ type etcdV3ServiceDiscovery struct {
 	// descriptor is a short string about the basic information of this instance
 	descriptor string
 	// client is current Etcdv3 client
-	client *etcdv3.Client
+	client *gxetcd.Client
 	// serviceInstance is current serviceInstance
 	serviceInstance *registry.ServiceInstance
 	// services is when register or update will add service name
