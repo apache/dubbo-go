@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-getty"
+	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 	perrors "github.com/pkg/errors"
 )
 
@@ -34,8 +35,8 @@ import (
 )
 
 type clientFacade interface {
-	Client() *Client
-	SetClient(*Client)
+	Client() *gxetcd.Client
+	SetClient(client *gxetcd.Client)
 	ClientLock() *sync.Mutex
 	WaitGroup() *sync.WaitGroup //for wait group control, etcd client listener & etcd client container
 	Done() chan struct{}        //for etcd client control
@@ -63,7 +64,7 @@ LOOP:
 			r.ClientLock().Lock()
 			clientName := RegistryETCDV3Client
 			timeout, _ := time.ParseDuration(r.GetUrl().GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
-			endpoints := r.Client().endpoints
+			endpoints := r.Client().GetEndPoints()
 			r.Client().Close()
 			r.SetClient(nil)
 			r.ClientLock().Unlock()
