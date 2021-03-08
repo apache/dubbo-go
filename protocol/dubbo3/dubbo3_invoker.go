@@ -19,6 +19,7 @@ package dubbo3
 
 import (
 	"context"
+	"github.com/apache/dubbo-go/common/logger"
 	"reflect"
 	"strconv"
 	"strings"
@@ -48,6 +49,8 @@ type DubboInvoker struct {
 	quitOnce sync.Once
 	// timeout for service(interface) level.
 	timeout time.Duration
+	// clientGuard is the client lock of dubbo invoker
+	clientGuard *sync.RWMutex
 }
 
 // NewDubboInvoker constructor
@@ -69,7 +72,22 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
 		timeout:     requestTimeout,
+		clientGuard: &sync.RWMutex{},
 	}, nil
+}
+
+func (di *DubboInvoker) setClient(client *dubbo3.TripleClient) {
+	di.clientGuard.Lock()
+	defer di.clientGuard.Unlock()
+
+	di.client = client
+}
+
+func (di *DubboInvoker) getClient() *dubbo3.TripleClient {
+	di.clientGuard.RLock()
+	defer di.clientGuard.RUnlock()
+
+	return di.client
 }
 
 // Invoke call remoting.
@@ -77,6 +95,30 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	var (
 		result protocol.RPCResult
 	)
+
+	if !di.BaseInvoker.IsAvailable() {
+		// Generally, the case will not happen, because the invoker has been removed
+		// from the invoker list before destroy,so no new request will enter the destroyed invoker
+		logger.Warnf("this dubboInvoker is destroyed")
+		result.Err = protocol.ErrDestroyedInvoker
+		return &result
+	}
+
+	di.clientGuard.RLock()
+	defer di.clientGuard.RUnlock()
+
+	if di.client == nil {
+		result.Err = protocol.ErrClientClosed
+		return &result
+	}
+
+	if !di.BaseInvoker.IsAvailable() {
+		// Generally, the case will not happen, because the invoker has been removed
+		// from the invoker list before destroy,so no new request will enter the destroyed invoker
+		logger.Warnf("this grpcInvoker is destroying")
+		result.Err = protocol.ErrDestroyedInvoker
+		return &result
+	}
 
 	in := make([]reflect.Value, 0, 16)
 	in = append(in, reflect.ValueOf(ctx))
@@ -116,19 +158,22 @@ func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) ti
 
 // IsAvailable check if invoker is available, now it is useless
 func (di *DubboInvoker) IsAvailable() bool {
-	if di.client == nil {
-		return false
+	client := di.getClient()
+	if client != nil {
+		return client.IsAvailable()
 	}
-	return di.client.IsAvailable()
+
+	return false
 }
 
 // Destroy destroy dubbo3 client invoker.
 func (di *DubboInvoker) Destroy() {
 	di.quitOnce.Do(func() {
 		di.BaseInvoker.Destroy()
-		if di.client != nil {
-			di.client.Close()
-			di.client = nil
+		client := di.getClient()
+		if client != nil {
+			di.setClient(nil)
+			client.Close()
 		}
 	})
 }
