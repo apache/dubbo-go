@@ -31,7 +31,7 @@ func NewUniformRouterChain(virtualServiceConfig, destinationRuleConfig []byte, n
 	uniformRouters, err = parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig, notify)
 	if err != nil {
 		fromFileConfig = false
-		logger.Info("parse router config form local file failed")
+		logger.Warnf("parse router config form local file failed, error = %+v", err)
 	}
 	r := &RouterChain{
 		virtualServiceConfigBytes:  virtualServiceConfig,
@@ -40,7 +40,7 @@ func NewUniformRouterChain(virtualServiceConfig, destinationRuleConfig []byte, n
 		notify:                     notify,
 	}
 	if err := k8s_api.SetK8sEventListener(r); err != nil {
-		logger.Info("try listen K8s router config failed")
+		logger.Warnf("try listen K8s router config failed, error = %+v", err)
 		if !fromFileConfig {
 			return nil, perrors.New("No config file from both local file and k8s")
 		}

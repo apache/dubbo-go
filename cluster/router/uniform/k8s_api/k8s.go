@@ -5,9 +5,11 @@ import (
 	"github.com/apache/dubbo-go/remoting/k8sCRD"
 )
 
-const GroupName = "service.dubbo.apache.org"
-const GroupVersion = "v1alpha1"
-const Namespace = "dubbo-workplace"
+const (
+	GroupName    = "service.dubbo.apache.org"
+	GroupVersion = "v1alpha1"
+	Namespace    = "dubbo-workplace"
+)
 
 func SetK8sEventListener(listener config_center.ConfigurationListener) error {
 	vsUniformRouterListenerHandler := newVirtualServiceListenerHandler(listener)
