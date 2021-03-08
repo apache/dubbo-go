@@ -176,7 +176,7 @@ func newUniformRule(dubboRoute *config.DubboRoute, destinationMap map[string]map
 }
 
 func (u *UniformRule) route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
-	// servicerule + destination -> filter
+	// service rule + destination -> filter
 	resultInvokers := make([]protocol.Invoker, 0)
 	matchService := false
 	for _, v := range u.services {
@@ -188,7 +188,7 @@ func (u *UniformRule) route(invokers []protocol.Invoker, url *common.URL, invoca
 	if !matchService {
 		return resultInvokers
 	}
-	// routeDeatail level match
+	// route Details level match
 	for _, rule := range u.virtualServiceRules {
 		if rule.match(url, invocation) {
 			resultInvokers, err := rule.getRuleTargetInvokers(invokers)
