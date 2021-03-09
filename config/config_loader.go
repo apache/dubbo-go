@@ -72,7 +72,8 @@ func init() {
 	for len(fs.Args()) != 0 {
 		fs.Parse(fs.Args()[1:])
 	}
-
+	// If user did not set the environment variables or flags,
+	// we provide default value
 	if confConFile == "" {
 		confConFile = constant.DEFAULT_CONSUMER_CONF_FILE_PATH
 	}
@@ -85,46 +86,60 @@ func init() {
 
 	if errCon := ConsumerInit(confConFile); errCon != nil {
 		log.Printf("[consumerInit] %#v", errCon)
-		//consumerConfig = nil
-		consumerConfig = NewConsumerConfig(
-			WithConsumerAppConfig(NewDefaultApplicationConfig()),                        // default app config
-			WithConsumerConnTimeout(time.Second*3),                                      // timeout
-			WithConsumerRequestTimeout(time.Second*3),                                   // timeout
-			WithConsumerRegistryConfig("demoZk", NewDefaultRegistryConfig("zookeeper")), // registry config
-			WithConsumerReferenceConfig("UserProvider", NewReferenceConfigByAPI( // set refer config
-				WithReferenceRegistry("demoZk"),                          // registry key
-				WithReferenceProtocol("dubbo"),                           // protocol
-				WithReferenceInterface("com.ikurento.user.UserProvider"), // interface name
-				WithReferenceMethod("GetUser", "3", "random"),            // method and lb
-				WithReferenceCluster("failover"),
-			)),
-		)
+		consumerConfig = nil
+	} else {
+		// Check if there are some important key fields missing,
+		// if so, we set a default value for it
+		setDefaultValue(consumerConfig)
+		// Even though baseConfig has been initialized, we override it
+		// because we think read from config file is correct config
+		baseConfig = &consumerConfig.BaseConfig
 	}
-	// Even though baseConfig has been initialized, we override it
-	// because we think read from config file is correct config
-	baseConfig = &consumerConfig.BaseConfig
 
 	if errPro := ProviderInit(confProFile); errPro != nil {
 		log.Printf("[providerInit] %#v", errPro)
-		providerConfig = NewProviderConfig(
-			WithProviderAppConfig(NewDefaultApplicationConfig()),
-			WithProviderProtocol("dubbo", "dubbo", "20000"),                       // protocol and port
-			WithProviderRegistry("demoZk", NewDefaultRegistryConfig("zookeeper")), // registry config
-			WithProviderServices("UserProvider", NewServiceConfigByAPI(
-				WithServiceRegistry("demoZk"),                          // registry key, equal to upper line
-				WithServiceProtocol("dubbo"),                           // export protocol
-				WithServiceInterface("com.ikurento.user.UserProvider"), // interface id
-				WithServiceLoadBalance("random"),                       // lb
-				WithServiceWarmUpTime("100"),
-				WithServiceCluster("failover"),
-				WithServiceMethod("GetUser", "1", "random"),
-			)),
-		)
+		providerConfig = nil
+	} else {
+		// Check if there are some important key fields missing,
+		// if so, we set a default value for it
+		setDefaultValue(providerConfig)
+		// Even though baseConfig has been initialized, we override it
+		// because we think read from config file is correct config
+		baseConfig = &providerConfig.BaseConfig
 	}
-	// Even though baseConfig has been initialized, we override it
-	// because we think read from config file is correct config
-	baseConfig = &providerConfig.BaseConfig
+}
 
+// setDefaultValue set default value for providerConfig or consumerConfig if it is null
+func setDefaultValue(target interface{}) {
+	registryConfig := &RegistryConfig{
+		Protocol:   "zookeeper",
+		TimeoutStr: "3s",
+		Address:    "127.0.0.1:2181",
+	}
+	switch target.(type) {
+	case ProviderConfig:
+		p := target.(*ProviderConfig)
+		if len(p.Registries) == 0 {
+			p.Registries["demoZK"] = registryConfig
+		}
+		if len(p.Protocols) == 0 {
+			p.Protocols["dubbo"] = &ProtocolConfig{
+				Name: "dubbo",
+				Port: "20000",
+			}
+		}
+		if p.ApplicationConfig == nil {
+			p.ApplicationConfig = NewDefaultApplicationConfig()
+		}
+	default:
+		c := target.(*ConsumerConfig)
+		if len(c.Registries) == 0 {
+			c.Registries["demoZK"] = registryConfig
+		}
+		if c.ApplicationConfig == nil {
+			c.ApplicationConfig = NewDefaultApplicationConfig()
+		}
+	}
 }
 
 func checkRegistries(registries map[string]*RegistryConfig, singleRegistry *RegistryConfig) {
