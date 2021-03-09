@@ -34,7 +34,6 @@ import (
 	"github.com/apache/dubbo-go/metadata/identifier"
 	"github.com/apache/dubbo-go/metadata/report"
 	"github.com/apache/dubbo-go/metadata/report/factory"
-	"github.com/apache/dubbo-go/remoting/etcdv3"
 )
 
 const DEFAULT_ROOT = "dubbo"
@@ -125,7 +124,7 @@ type etcdMetadataReportFactory struct{}
 func (e *etcdMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {
 	timeout, _ := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
 	addresses := strings.Split(url.Location, ",")
-	client, err := gxetcd.NewClient(etcdv3.MetadataETCDV3Client, addresses, timeout, 1)
+	client, err := gxetcd.NewClient(gxetcd.MetadataETCDV3Client, addresses, timeout, 1)
 	if err != nil {
 		logger.Errorf("Could not create etcd metadata report. URL: %s,error:{%v}", url.String(), err)
 		return nil
