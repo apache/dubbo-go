@@ -90,9 +90,9 @@ func newETCDV3Registry(url *common.URL) (registry.Registry, error) {
 
 	if err := etcdv3.ValidateClient(
 		r,
-		etcdv3.WithName(etcdv3.RegistryETCDV3Client),
-		etcdv3.WithTimeout(timeout),
-		etcdv3.WithEndpoints(strings.Split(url.Location, ",")...),
+		gxetcd.WithName(gxetcd.RegistryETCDV3Client),
+		gxetcd.WithTimeout(timeout),
+		gxetcd.WithEndpoints(strings.Split(url.Location, ",")...),
 	); err != nil {
 		return nil, err
 	}

@@ -54,7 +54,7 @@ require (
 
 replace (
 	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.4
-	github.com/dubbogo/gost => github.com/wenxuwan/gost v1.9.4-0.20210308123701-030139cdbe17
+	github.com/dubbogo/gost => github.com/wenxuwan/gost v1.9.4-0.20210309022905-7993b30b1a7d
 	github.com/envoyproxy/go-control-plane => github.com/envoyproxy/go-control-plane v0.8.0
 	github.com/shirou/gopsutil => github.com/shirou/gopsutil v0.0.0-20181107111621-48177ef5f880
 	go.etcd.io/bbolt v1.3.4 => github.com/coreos/bbolt v1.3.3
