@@ -316,9 +316,9 @@ func newEtcdV3ServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 	logger.Infof("etcd address is: %v,timeout is:%s", remoteConfig.Address, timeout.String())
 
 	client := etcdv3.NewServiceDiscoveryClient(
-		etcdv3.WithName(etcdv3.RegistryETCDV3Client),
-		etcdv3.WithTimeout(timeout),
-		etcdv3.WithEndpoints(strings.Split(remoteConfig.Address, ",")...),
+		gxetcd.WithName(gxetcd.RegistryETCDV3Client),
+		gxetcd.WithTimeout(timeout),
+		gxetcd.WithEndpoints(strings.Split(remoteConfig.Address, ",")...),
 	)
 
 	descriptor := fmt.Sprintf("etcd-service-discovery[%s]", remoteConfig.Address)

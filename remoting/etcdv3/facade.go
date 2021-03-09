@@ -62,7 +62,7 @@ LOOP:
 			// re-register all services
 		case <-r.Client().Done():
 			r.ClientLock().Lock()
-			clientName := RegistryETCDV3Client
+			clientName := gxetcd.RegistryETCDV3Client
 			timeout, _ := time.ParseDuration(r.GetUrl().GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
 			endpoints := r.Client().GetEndPoints()
 			r.Client().Close()
@@ -76,13 +76,14 @@ LOOP:
 				case <-r.Done():
 					logger.Warnf("(ETCDV3ProviderRegistry)reconnectETCDRegistry goroutine exit now...")
 					break LOOP
-				case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)): // avoid connect frequent
+				case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * gxetcd.ConnDelay)): // avoid connect frequent
 				}
 				err = ValidateClient(
 					r,
-					WithName(clientName),
-					WithEndpoints(endpoints...),
-					WithTimeout(timeout),
+					gxetcd.WithName(clientName),
+					gxetcd.WithEndpoints(endpoints...),
+					gxetcd.WithTimeout(timeout),
+					gxetcd.WithHeartbeat(1),
 				)
 				logger.Infof("ETCDV3ProviderRegistry.validateETCDV3Client(etcd Addr{%s}) = error{%#v}",
 					endpoints, perrors.WithStack(err))
@@ -90,8 +91,8 @@ LOOP:
 					break
 				}
 				failTimes++
-				if MaxFailTimes <= failTimes {
-					failTimes = MaxFailTimes
+				if gxetcd.MaxFailTimes <= failTimes {
+					failTimes = gxetcd.MaxFailTimes
 				}
 			}
 		}
