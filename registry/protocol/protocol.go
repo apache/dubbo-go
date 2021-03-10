@@ -48,7 +48,7 @@ var (
 	reserveParams = []string{
 		"application", "codec", "exchanger", "serialization", "cluster", "connections", "deprecated", "group",
 		"loadbalance", "mock", "path", "timeout", "token", "version", "warmup", "weight", "timestamp", "dubbo",
-		"release", "interface", "registry.role",
+		"release", "interface",
 	}
 )
 
