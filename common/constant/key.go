@@ -50,7 +50,8 @@ const (
 	PROTOCOL_KEY             = "protocol"
 	PATH_SEPARATOR           = "/"
 	//DUBBO_KEY                = "dubbo"
-	SSL_ENABLED_KEY = "ssl-enabled"
+	SSL_ENABLED_KEY  = "ssl-enabled"
+	ParameterTypeKey = "parameter-type-names" // ParameterType key used in dapr, to tranfer rsp param type
 )
 
 const (
@@ -199,6 +200,8 @@ const (
 	// default deregister critical server after
 	DEFAULT_DEREGISTER_TIME = "20s"
 	DEREGISTER_AFTER        = "consul-deregister-critical-service-after"
+	// PassThroughProxyFactoryKey is key of proxy factory with raw data input service
+	PassThroughProxyFactoryKey = "dubbo-raw"
 )
 
 const (
