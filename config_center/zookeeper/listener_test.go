@@ -91,7 +91,7 @@ configs:
 	exists, _, err := reg.client.Conn.Exists(zkPath)
 	assert.NoError(t, err)
 	if !exists {
-		err := reg.client.Create(zkPath)
+		err = reg.client.Create(zkPath)
 		assert.NoError(t, err)
 	}
 	_, err = reg.client.SetContent(zkPath, []byte(data), 0)
