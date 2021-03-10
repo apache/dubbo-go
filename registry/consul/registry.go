@@ -84,7 +84,7 @@ func newConsulRegistry(url *common.URL) (registry.Registry, error) {
 func (r *consulRegistry) Register(url *common.URL) error {
 	var err error
 
-	role, _ := strconv.Atoi(url.GetParam(constant.ROLE_KEY, ""))
+	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
 	if role == common.PROVIDER {
 		err = r.register(url)
 		if err != nil {
