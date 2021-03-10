@@ -178,7 +178,6 @@ github.com/dubbogo/go-zookeeper v1.0.3 h1:UkuY+rBsxdT7Bs63QAzp9z7XqQ53W1j8E5rwl8
 github.com/dubbogo/go-zookeeper v1.0.3/go.mod h1:fn6n2CAEer3novYgk9ULLwAjuV8/g4DdC2ENwRb6E+c=
 github.com/dubbogo/gost v1.9.0/go.mod h1:pPTjVyoJan3aPxBPNUX0ADkXjPibLo+/Ib0/fADXSG8=
 github.com/dubbogo/gost v1.10.1/go.mod h1:+mQGS51XQEUWZP2JeGZTxJwipjRKtJO7Tr+FOg+72rI=
-github.com/dubbogo/gost v1.11.2/go.mod h1:3QQEj50QOhkWTERT785YZ5ZxIRGNdR11FCLP7FzHsMc=
 github.com/dubbogo/gost v1.11.3 h1:PSP9KQyuRJugmPLqC18MFgoIL0g1G4n/9FTKgQYjjbE=
 github.com/dubbogo/gost v1.11.3/go.mod h1:3QQEj50QOhkWTERT785YZ5ZxIRGNdR11FCLP7FzHsMc=
 github.com/dubbogo/jsonparser v1.0.1/go.mod h1:tYAtpctvSP/tWw4MeelsowSPgXQRVHHWbqL6ynps8jU=
@@ -799,10 +798,6 @@ github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijb
 github.com/urfave/cli v1.22.1/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
 github.com/vmware/govmomi v0.18.0 h1:f7QxSmP7meCtoAmiKZogvVbLInT+CZx6Px6K5rYsJZo=
 github.com/vmware/govmomi v0.18.0/go.mod h1:URlwyTFZX72RmxtxuaFL2Uj3fD1JTvZdx59bHWk6aFU=
-github.com/wenxuwan/gost v1.9.4-0.20210308123701-030139cdbe17 h1:wZzqQ+W8VJ5jOeSNLK2snVe7XZS+oqpz/FAPh2e8+WM=
-github.com/wenxuwan/gost v1.9.4-0.20210308123701-030139cdbe17/go.mod h1:3QQEj50QOhkWTERT785YZ5ZxIRGNdR11FCLP7FzHsMc=
-github.com/wenxuwan/gost v1.9.4-0.20210309022905-7993b30b1a7d h1:BFkkDQ/Kk2HichX5e1i02QwqGdEsZY17rEeC8dtiGJA=
-github.com/wenxuwan/gost v1.9.4-0.20210309022905-7993b30b1a7d/go.mod h1:3QQEj50QOhkWTERT785YZ5ZxIRGNdR11FCLP7FzHsMc=
 github.com/willf/bitset v1.1.10 h1:NotGKqX0KwQ72NUzqrjZq5ipPNDQex9lo3WpaS8L2sc=
 github.com/willf/bitset v1.1.10/go.mod h1:RjeCKbqT1RxIR/KWY6phxZiaY1IyutSBfGjNPySAYV4=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 h1:eY9dn8+vbi4tKz5Qo6v2eYzo7kUS51QINcR5jNpbZS8=
