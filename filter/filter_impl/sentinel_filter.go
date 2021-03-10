@@ -135,11 +135,13 @@ func (d *SentinelProviderFilter) Invoke(ctx context.Context, invoker protocol.In
 		return sentinelDubboProviderFallback(ctx, invoker, invocation, b)
 	}
 	ctx = context.WithValue(ctx, MethodEntryKey, methodEntry)
-	return invoker.Invoke(ctx, invocation)
+	result := invoker.Invoke(ctx, invocation)
+	// because ctx cann't transport to OnResponse func.
+	sentinelExit(ctx, result)
+	return result
 }
 
 func (d *SentinelProviderFilter) OnResponse(ctx context.Context, result protocol.Result, _ protocol.Invoker, _ protocol.Invocation) protocol.Result {
-	sentinelExit(ctx, result)
 	return result
 }
 
@@ -168,11 +170,13 @@ func (d *SentinelConsumerFilter) Invoke(ctx context.Context, invoker protocol.In
 	}
 	ctx = context.WithValue(ctx, MethodEntryKey, methodEntry)
 
-	return invoker.Invoke(ctx, invocation)
+	result := invoker.Invoke(ctx, invocation)
+	// because ctx cann't transport to OnResponse func.
+	sentinelExit(ctx, result)
+	return result
 }
 
 func (d *SentinelConsumerFilter) OnResponse(ctx context.Context, result protocol.Result, _ protocol.Invoker, _ protocol.Invocation) protocol.Result {
-	sentinelExit(ctx, result)
 	return result
 }
 
