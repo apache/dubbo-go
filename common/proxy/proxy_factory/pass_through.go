@@ -19,13 +19,19 @@ package proxy_factory
 
 import (
 	"context"
+	"reflect"
+)
+
+import (
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/proxy"
 	"github.com/apache/dubbo-go/protocol"
-	perrors "github.com/pkg/errors"
-	"reflect"
 )
 
 func init() {
