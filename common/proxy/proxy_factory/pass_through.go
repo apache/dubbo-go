@@ -86,9 +86,7 @@ func (pi *PassThroughProxyInvoker) Invoke(ctx context.Context, invocation protoc
 	srv := common.ServiceMap.GetServiceByServiceKey(url.Protocol, url.ServiceKey())
 
 	var args [][]byte
-	if len(arguments) == 0 {
-		args = [][]byte{}
-	} else {
+	if len(arguments) > 0 {
 		args = make([][]byte, 0, len(arguments))
 		for _, arg := range arguments {
 			if v, ok := arg.([]byte); ok {
@@ -101,9 +99,10 @@ func (pi *PassThroughProxyInvoker) Invoke(ctx context.Context, invocation protoc
 	}
 	method := srv.Method()["Service"]
 
-	in := []reflect.Value{srv.Rcvr()}
+	in := make([]reflect.Value, 5)
+	in = append(in, srv.Rcvr())
 	in = append(in, reflect.ValueOf(invocation.MethodName()))
-	in = append(in, reflect.ValueOf(invocation.Attachment(constant.ParameterTypeKey)))
+	in = append(in, reflect.ValueOf(invocation.Attachment(constant.PARAMS_TYPE_Key)))
 	in = append(in, reflect.ValueOf(args))
 	in = append(in, reflect.ValueOf(invocation.Attachments()))
 
@@ -115,10 +114,10 @@ func (pi *PassThroughProxyInvoker) Invoke(ctx context.Context, invocation protoc
 
 	if retErr != nil {
 		result.SetError(retErr.(error))
-	} else {
-		if replyv.IsValid() && (replyv.Kind() != reflect.Ptr || replyv.Kind() == reflect.Ptr && replyv.Elem().IsValid()) {
-			result.SetResult(replyv.Interface())
-		}
+		return result
+	}
+	if replyv.IsValid() && (replyv.Kind() != reflect.Ptr || replyv.Kind() == reflect.Ptr && replyv.Elem().IsValid()) {
+		result.SetResult(replyv.Interface())
 	}
 	return result
 }
