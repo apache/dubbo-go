@@ -15,24 +15,30 @@
  * limitations under the License.
  */
 
-package consul
+package protocol
 
 import (
-	"strconv"
 	"testing"
 )
 
 import (
-	"github.com/hashicorp/consul/agent"
+	"github.com/stretchr/testify/assert"
 )
 
-// Consul agent, used for test, simulates
-// an embedded consul server.
-func NewConsulAgent(t *testing.T, port int) *agent.TestAgent {
-	hcl := `
-		ports {
-			http = ` + strconv.Itoa(port) + `
-		}
-	`
-	return agent.NewTestAgent(t, hcl)
+import (
+	"github.com/apache/dubbo-go/common"
+)
+
+func TestBaseInvoker(t *testing.T) {
+	url, err := common.NewURL("dubbo://localhost:9090")
+	assert.Nil(t, err)
+
+	ivk := NewBaseInvoker(url)
+	assert.NotNil(t, ivk.GetUrl())
+	assert.True(t, ivk.IsAvailable())
+	assert.False(t, ivk.IsDestroyed())
+
+	ivk.Destroy()
+	assert.False(t, ivk.IsAvailable())
+	assert.True(t, ivk.IsDestroyed())
 }
