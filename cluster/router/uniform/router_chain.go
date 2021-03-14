@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package uniform
 
 import (
@@ -17,6 +34,8 @@ import (
 	"strings"
 )
 
+// RouterChain contains all uniform router logic
+// it has UniformRouter list,
 type RouterChain struct {
 	routers                    []*UniformRouter
 	virtualServiceConfigBytes  []byte
@@ -24,6 +43,7 @@ type RouterChain struct {
 	notify                     chan struct{}
 }
 
+// NewUniformRouterChain return
 func NewUniformRouterChain(virtualServiceConfig, destinationRuleConfig []byte, notify chan struct{}) (router.PriorityRouter, error) {
 	uniformRouters := make([]*UniformRouter, 0)
 	var err error
@@ -48,6 +68,7 @@ func NewUniformRouterChain(virtualServiceConfig, destinationRuleConfig []byte, n
 	return r, nil
 }
 
+// Route route invokers using RouterChain's routers one by one
 func (r *RouterChain) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	for _, v := range r.routers {
 		invokers = v.Route(invokers, url, invocation)
@@ -151,7 +172,7 @@ func (r *RouterChain) URL() *common.URL {
 	return nil
 }
 
-// parseFromConfigToRouters file -> routers
+// parseFromConfigToRouters parse virtualService and destinationRule yaml file bytes to target router list
 func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte, notify chan struct{}) ([]*UniformRouter, error) {
 	var virtualServiceConfigList []*config.VirtualServiceConfig
 	destRuleConfigsMap := make(map[string]map[string]map[string]string)
@@ -219,4 +240,10 @@ func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte
 	}
 	logger.Debug("parsed successed! with router size = ", len(routers))
 	return routers, nil
+}
+
+func mapCombine(dist map[string]map[string]string, from map[string]map[string]string) {
+	for k, v := range from {
+		dist[k] = v
+	}
 }

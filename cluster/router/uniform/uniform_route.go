@@ -22,7 +22,6 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/cluster/router"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
 )
@@ -31,16 +30,10 @@ const (
 	name = "uniform-router"
 )
 
-// UniformRouter provides a health-first routing mechanism through ConnChecker
+// UniformRouter have
 type UniformRouter struct {
 	dubboRouter *DubboRouterRule
 	notify      chan struct{}
-}
-
-func mapCombine(dist map[string]map[string]string, from map[string]map[string]string) {
-	for k, v := range from {
-		dist[k] = v
-	}
 }
 
 // NewUniformRouter construct an NewConnCheckRouter via url
@@ -57,26 +50,8 @@ func (r *UniformRouter) Route(invokers []protocol.Invoker, url *common.URL, invo
 	return r.dubboRouter.route(invokers, url, invocation)
 }
 
+// Process there is no process needs for uniform Router, as it upper struct RouterChain has done it
 func (r *UniformRouter) Process(event *config_center.ConfigChangeEvent) {
-	// todo deal with router change
-
-}
-
-// Pool separates healthy invokers from others.
-func (r *UniformRouter) Pool(invokers []protocol.Invoker) (router.AddrPool, router.AddrMetadata) {
-	rb := make(router.AddrPool, 8)
-	//rb[uniformSelected] = roaring.NewBitmap()
-	//for i, invoker := range invokers {
-	//	if r.checker.IsConnHealthy(invoker) {
-	//		rb[connHealthy].Add(uint32(i))
-	//	}
-	//}
-	return rb, nil
-}
-
-// ShouldPool will always return true to make sure healthy check constantly.
-func (r *UniformRouter) ShouldPool() bool {
-	return true
 }
 
 // Name get name of ConnCheckerRouter

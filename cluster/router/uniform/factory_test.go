@@ -23,7 +23,7 @@ import (
 )
 
 // nolint
-func TestHealthCheckRouteFactory(t *testing.T) {
+func TestUniformRouterFacotry(t *testing.T) {
 	factory := newUniformRouterFactory()
 	assert.NotNil(t, factory)
 	router, err := factory.NewPriorityRouter([]byte{}, []byte{}, make(chan struct{}))

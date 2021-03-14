@@ -19,12 +19,18 @@ package uniform
 
 import (
 	"fmt"
+)
+
+import (
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"github.com/apache/dubbo-go/cluster/router/uniform/match_judger"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
-	perrors "github.com/pkg/errors"
 )
 
 // VirtualServiceRule is item of virtual service, it aims at judge if invocation context match it's condition, and
@@ -146,7 +152,6 @@ func (vsr *VirtualServiceRule) getRuleTargetInvokers(invokers []protocol.Invoker
 	for _, v := range resultInvokersMap {
 		invokerList = append(invokerList, v)
 	}
-	// todo
 	return invokerList, nil
 }
 
@@ -180,17 +185,21 @@ func (u *UniformRule) route(invokers []protocol.Invoker, url *common.URL, invoca
 	resultInvokers := make([]protocol.Invoker, 0)
 	matchService := false
 	for _, v := range u.services {
+		// check if match service field
 		if match_judger.NewStringMatchJudger(v).Judge(url.ServiceKey()) {
 			matchService = true
 			break
 		}
 	}
 	if !matchService {
+		// if not match, jump this rule
 		return resultInvokers
 	}
-	// route Details level match
+	// match service field, route Details level(service level) match
+	// then, check all sub rule, if match, get destination rule target invokers, else do fail back logic
 	for _, rule := range u.virtualServiceRules {
 		if rule.match(url, invocation) {
+			// match this rule, do get target logic
 			resultInvokers, err := rule.getRuleTargetInvokers(invokers)
 			if err != nil {
 				logger.Error("getRuleTargetInvokers from rule err = ", err)
