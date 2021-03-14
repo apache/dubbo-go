@@ -18,6 +18,7 @@ package dubbo3
 
 import (
 	"fmt"
+	tripleCommon "github.com/dubbogo/triple/pkg/common"
 	"reflect"
 	"sync"
 )
@@ -151,7 +152,7 @@ func (dp *DubboProtocol) openServer(url *common.URL) {
 	in = append(in, reflect.ValueOf(invoker))
 	m.Func.Call(in)
 
-	srv := dubbo3.NewTripleServer(url, service.(dubbo3.Dubbo3GrpcService))
+	srv := dubbo3.NewTripleServer(url, service.(tripleCommon.Dubbo3GrpcService))
 
 	dp.serverMap[url.Location] = srv
 
