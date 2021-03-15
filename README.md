@@ -135,9 +135,10 @@ Finished List:
     * [Nacos](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/nacos/service_discovery.go)
     * [Zookeeper](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/zookeeper/service_discovery.go)
     * [Etcd](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/etcdv3/service_discovery.go)
-
+    * [File](https://github.com/apache/dubbo-go/pull/732)
+    
 - Tool
-    * [dubbo-go-cli](https://github.com/apache/dubbo-go/pull/818)
+    * [Dubbo-go-cli](https://github.com/apache/dubbo-go/pull/818)
 
 You can know more about dubbo-go by its [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap).
 
