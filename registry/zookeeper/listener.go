@@ -18,6 +18,7 @@
 package zookeeper
 
 import (
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	"strings"
 	"sync"
 )
@@ -32,7 +33,6 @@ import (
 	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting"
-	zk "github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
 // RegistryDataListener contains all URL information subscribed by zookeeper registry
@@ -56,12 +56,13 @@ func (l *RegistryDataListener) SubscribeURL(url *common.URL, listener config_cen
 	l.subscribed[url.ServiceKey()] = listener
 }
 
-// UnSubscribeURL is used to set a watch listener for url
+// UnSubscribeURL is used to unset a watch listener for url
 func (l *RegistryDataListener) UnSubscribeURL(url *common.URL) config_center.ConfigurationListener {
 	if l.closed {
 		return nil
 	}
 	listener := l.subscribed[url.ServiceKey()]
+	listener.(*RegistryConfigurationListener).Close()
 	delete(l.subscribed, url.ServiceKey())
 	return listener
 }
@@ -112,7 +113,7 @@ func (l *RegistryDataListener) Close() {
 
 // RegistryConfigurationListener represent the processor of zookeeper watcher
 type RegistryConfigurationListener struct {
-	client       *zk.ZookeeperClient
+	client       *gxzookeeper.ZookeeperClient
 	registry     *zkRegistry
 	events       chan *config_center.ConfigChangeEvent
 	isClosed     bool
@@ -122,7 +123,7 @@ type RegistryConfigurationListener struct {
 }
 
 // NewRegistryConfigurationListener for listening the event of zk.
-func NewRegistryConfigurationListener(client *zk.ZookeeperClient, reg *zkRegistry, conf *common.URL) *RegistryConfigurationListener {
+func NewRegistryConfigurationListener(client *gxzookeeper.ZookeeperClient, reg *zkRegistry, conf *common.URL) *RegistryConfigurationListener {
 	reg.WaitGroup().Add(1)
 	return &RegistryConfigurationListener{
 		client:       client,
@@ -142,9 +143,6 @@ func (l *RegistryConfigurationListener) Process(configType *config_center.Config
 func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
-		case <-l.client.Done():
-			logger.Warnf("listener's zk client connection (address {%s}) is broken, so zk event listener exit now.", l.client.ZkAddrs)
-			return nil, perrors.New("zookeeper client stopped")
 		case <-l.close:
 			return nil, perrors.New("listener have been closed")
 		case <-l.registry.Done():
@@ -156,9 +154,6 @@ func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 				logger.Warnf("update @result{%s}. But its connection to registry is invalid", e.Value)
 				continue
 			}
-			//r.update(e.res)
-			//write to invoker
-			//r.outerEventCh <- e.res
 			return &registry.ServiceEvent{Action: e.ConfigType, Service: e.Value.(*common.URL)}, nil
 		}
 	}
