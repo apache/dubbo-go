@@ -134,9 +134,10 @@ Apache License, Version 2.0
     * [Nacos](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/nacos/service_discovery.go)
     * [Zookeeper](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/zookeeper/service_discovery.go)
     * [Etcd](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/etcdv3/service_discovery.go)
-
+    * [File](https://github.com/apache/dubbo-go/pull/732)
+    
 - 工具箱
-    * [dubbo-go-cli](https://github.com/apache/dubbo-go/pull/818)
+    * [Dubbo-go-cli](https://github.com/apache/dubbo-go/pull/818)
 
 你可以通过访问 [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap) 知道更多关于 dubbo-go 的信息。
 
