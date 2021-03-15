@@ -29,7 +29,6 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/cluster/router/chain"
-	_ "github.com/apache/dubbo-go/cluster/router/condition"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 )
