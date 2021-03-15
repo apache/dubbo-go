@@ -20,6 +20,7 @@ package config
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"reflect"
@@ -38,6 +39,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	_ "github.com/apache/dubbo-go/common/observer/dispatcher"
+	"github.com/apache/dubbo-go/common/yaml"
 	"github.com/apache/dubbo-go/registry"
 )
 
@@ -144,6 +146,17 @@ func loadConsumerConfig() {
 		ref.Implement(rpcService)
 	}
 
+	// Write current configuration to cache file.
+	if consumerConfig.CacheFile != "" {
+		if data, err := yaml.MarshalYML(consumerConfig); err != nil {
+			logger.Errorf("Marshal consumer config err: %s", err.Error())
+		} else {
+			if err := ioutil.WriteFile(consumerConfig.CacheFile, data, 0666); err != nil {
+				logger.Errorf("Write consumer config cache file err: %s", err.Error())
+			}
+		}
+	}
+
 	// wait for invoker is available, if wait over default 3s, then panic
 	var count int
 	for {
@@ -199,6 +212,17 @@ func loadProviderConfig() {
 		logger.Errorf("[provider config center refresh] %#v", err)
 	}
 	checkRegistries(providerConfig.Registries, providerConfig.Registry)
+
+	// Write the current configuration to cache file.
+	if providerConfig.CacheFile != "" {
+		if data, err := yaml.MarshalYML(providerConfig); err != nil {
+			logger.Errorf("Marshal provider config err: %s", err.Error())
+		} else {
+			if err := ioutil.WriteFile(providerConfig.CacheFile, data, 0666); err != nil {
+				logger.Errorf("Write provider config cache file err: %s", err.Error())
+			}
+		}
+	}
 
 	for key, svs := range providerConfig.Services {
 		rpcService := GetProviderService(key)
