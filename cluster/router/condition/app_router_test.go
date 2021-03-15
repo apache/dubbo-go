@@ -24,6 +24,7 @@ import (
 )
 
 import (
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,7 +36,6 @@ import (
 	"github.com/apache/dubbo-go/config_center"
 	_ "github.com/apache/dubbo-go/config_center/zookeeper"
 	"github.com/apache/dubbo-go/remoting"
-	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
 const (
@@ -60,7 +60,7 @@ runtime: false
 conditions:
   - => host != 172.22.3.91
 `
-	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
+	ts, z, _, err := gxzookeeper.NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
 	err = z.Create(routerPath)
 	assert.NoError(t, err)
@@ -68,7 +68,6 @@ conditions:
 	_, err = z.Conn.Set(routerPath, []byte(testYML), 0)
 	assert.NoError(t, err)
 	defer func() {
-		err = ts.Stop()
 		assert.NoError(t, err)
 		z.Close()
 	}()
@@ -116,7 +115,7 @@ conditions:
   - => host != 172.22.3.91
   - host = 192.168.199.208 => host = 192.168.199.208
 `
-	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
+	ts, z, _, err := gxzookeeper.NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
 	err = z.Create(routerPath)
 	assert.NoError(t, err)
@@ -124,7 +123,6 @@ conditions:
 	_, err = z.Conn.Set(routerPath, []byte(testYML), 0)
 	assert.NoError(t, err)
 	defer func() {
-		err = ts.Stop()
 		assert.NoError(t, err)
 		z.Close()
 	}()
@@ -163,7 +161,7 @@ runtime: false
 conditions:
   - => host != 172.22.3.91
 `
-	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
+	ts, z, _, err := gxzookeeper.NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
 	err = z.Create(routerPath)
 	assert.NoError(t, err)

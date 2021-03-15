@@ -25,7 +25,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-getty"
+	getty "github.com/apache/dubbo-getty"
 	perrors "github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 )
@@ -202,7 +202,7 @@ func (r *kubernetesRegistry) HandleClientRestart() {
 		failTimes int
 	)
 
-	defer r.WaitGroup()
+	defer r.WaitGroup().Done()
 LOOP:
 	for {
 		select {
