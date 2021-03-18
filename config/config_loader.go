@@ -201,6 +201,9 @@ func loadProviderConfig() {
 	checkRegistries(providerConfig.Registries, providerConfig.Registry)
 
 	for key, svs := range providerConfig.Services {
+		if key == "GrpcGreeterImpl2" {
+			fmt.Println("here")
+		}
 		rpcService := GetProviderService(key)
 		if rpcService == nil {
 			logger.Warnf("%s does not exist!", key)
@@ -208,6 +211,7 @@ func loadProviderConfig() {
 		}
 		svs.id = key
 		svs.Implement(rpcService)
+
 		svs.Protocols = providerConfig.Protocols
 		if err := svs.Export(); err != nil {
 			panic(fmt.Sprintf("service %s export failed! err: %#v", key, err))

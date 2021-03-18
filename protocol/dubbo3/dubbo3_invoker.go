@@ -19,7 +19,6 @@ package dubbo3
 
 import (
 	"context"
-	"github.com/apache/dubbo-go/common/logger"
 	"reflect"
 	"strconv"
 	"strings"
@@ -29,12 +28,14 @@ import (
 
 import (
 	hessian2 "github.com/apache/dubbo-go-hessian2"
-	dubbo3 "github.com/dubbogo/triple/pkg/triple"
+	triConfig "github.com/dubbogo/triple/pkg/config"
+	"github.com/dubbogo/triple/pkg/triple"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
@@ -44,7 +45,7 @@ import (
 type DubboInvoker struct {
 	protocol.BaseInvoker
 	// the net layer client, it is focus on network communication.
-	client *dubbo3.TripleClient
+	client *triple.TripleClient
 	// quitOnce is used to make sure DubboInvoker is only destroyed once
 	quitOnce sync.Once
 	// timeout for service(interface) level.
@@ -63,7 +64,13 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 
 	key := url.GetParam(constant.BEAN_NAME_KEY, "")
 	consumerService := config.GetConsumerService(key)
-	client, err := dubbo3.NewTripleClient(url, consumerService)
+
+	// new triple client
+	triOption := triConfig.NewTripleOption(
+		triConfig.WithClientTimeout(uint32(requestTimeout.Seconds())),
+	)
+	client, err := triple.NewTripleClient(url, consumerService, triOption)
+
 	if err != nil {
 		return nil, err
 	}
@@ -76,14 +83,14 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	}, nil
 }
 
-func (di *DubboInvoker) setClient(client *dubbo3.TripleClient) {
+func (di *DubboInvoker) setClient(client *triple.TripleClient) {
 	di.clientGuard.Lock()
 	defer di.clientGuard.Unlock()
 
 	di.client = client
 }
 
-func (di *DubboInvoker) getClient() *dubbo3.TripleClient {
+func (di *DubboInvoker) getClient() *triple.TripleClient {
 	di.clientGuard.RLock()
 	defer di.clientGuard.RUnlock()
 
@@ -120,14 +127,20 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 		return &result
 	}
 
+	// append interface id to ctx
+	interfaceKey := constant.INTERFACE_KEY
+	ctx = context.WithValue(ctx, interfaceKey, di.BaseInvoker.GetUrl().GetParam(constant.INTERFACE_KEY, ""))
 	in := make([]reflect.Value, 0, 16)
 	in = append(in, reflect.ValueOf(ctx))
+
 	if len(invocation.ParameterValues()) > 0 {
 		in = append(in, invocation.ParameterValues()...)
 	}
 
 	methodName := invocation.MethodName()
 	method := di.client.Invoker.MethodByName(methodName)
+
+	// call function in pb.go
 	res := method.Call(in)
 
 	result.Rest = res[0]

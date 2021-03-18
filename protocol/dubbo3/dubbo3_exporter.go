@@ -22,6 +22,10 @@ import (
 )
 
 import (
+	tripleCommon "github.com/dubbogo/triple/pkg/common"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
@@ -31,12 +35,15 @@ import (
 // DubboExporter is dubbo3 service exporter.
 type DubboExporter struct {
 	protocol.BaseExporter
+	// serviceMap
+	serviceMap *sync.Map
 }
 
 // NewDubboExporter get a Dubbo3Exporter.
-func NewDubboExporter(key string, invoker protocol.Invoker, exporterMap *sync.Map) *DubboExporter {
+func NewDubboExporter(key string, invoker protocol.Invoker, exporterMap *sync.Map, serviceMap *sync.Map) *DubboExporter {
 	return &DubboExporter{
 		BaseExporter: *protocol.NewBaseExporter(key, invoker, exporterMap),
+		serviceMap:   serviceMap,
 	}
 }
 
@@ -46,8 +53,9 @@ func (de *DubboExporter) Unexport() {
 	serviceId := url.GetParam(constant.BEAN_NAME_KEY, "")
 	interfaceName := url.GetParam(constant.INTERFACE_KEY, "")
 	de.BaseExporter.Unexport()
-	err := common.ServiceMap.UnRegister(interfaceName, DUBBO3, serviceId)
+	err := common.ServiceMap.UnRegister(interfaceName, tripleCommon.TRIPLE, serviceId)
 	if err != nil {
 		logger.Errorf("[DubboExporter.Unexport] error: %v", err)
 	}
+	de.serviceMap.Delete(interfaceName)
 }
