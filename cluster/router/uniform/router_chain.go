@@ -45,10 +45,8 @@ type RouterChain struct {
 
 // NewUniformRouterChain return
 func NewUniformRouterChain(virtualServiceConfig, destinationRuleConfig []byte, notify chan struct{}) (router.PriorityRouter, error) {
-	uniformRouters := make([]*UniformRouter, 0)
-	var err error
 	fromFileConfig := true
-	uniformRouters, err = parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig, notify)
+	uniformRouters, err := parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig, notify)
 	if err != nil {
 		fromFileConfig = false
 		logger.Warnf("parse router config form local file failed, error = %+v", err)
@@ -152,9 +150,10 @@ func (r *RouterChain) Process(event *config_center.ConfigChangeEvent) {
 		}
 	}
 
-	if event.ConfigType == remoting.EventTypeDel {
-		// todo delete router
-	}
+	// todo delete router
+	//if event.ConfigType == remoting.EventTypeDel {
+	//
+	//}
 }
 
 // Name get name of ConnCheckerRouter
