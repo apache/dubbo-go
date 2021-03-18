@@ -32,9 +32,10 @@ func (dmj *DoubleMatchJudger) Judge(input float64) bool {
 	if dmj.Range != nil {
 		return newDoubleRangeMatchJudger(dmj.Range).Judge(input)
 	}
-	if dmj.Mode != 0 {
-		// todo  mod  match ??
-	}
+	// todo  mod  match ??
+	//if dmj.Mode != 0 {
+	//
+	//}
 	return true
 }
 

@@ -69,12 +69,14 @@ func (mmj *MethodMatchJudger) Judge(invocation protocol.Invocation) bool {
 			}
 		}
 	}
-	if mmj.Argp != nil {
-		// todo Argp match judge ??? conflict to args?
-	}
-	if mmj.Headers != nil {
-		// todo Headers match judge: reserve for triple
-	}
+	// todo Argp match judge ??? conflict to args?
+	//if mmj.Argp != nil {
+	//
+	//}
+	// todo Headers match judge: reserve for triple
+	//if mmj.Headers != nil {
+	//
+	//}
 	return true
 }
 
