@@ -114,8 +114,8 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 	req, length, err := (p.server.codec).Decode(data)
 	//resp,len, err := (*p.).DecodeResponse(buf)
 	if err != nil {
-		err = perrors.Cause(err)
-		if err == hessian.ErrHeaderNotEnough || err == hessian.ErrBodyNotEnough {
+		originErr := perrors.Cause(err)
+		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
 			return nil, 0, nil
 		}
 
