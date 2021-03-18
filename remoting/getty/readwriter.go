@@ -18,6 +18,7 @@
 package getty
 
 import (
+	"errors"
 	"reflect"
 )
 
@@ -114,8 +115,7 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 	req, length, err := (p.server.codec).Decode(data)
 	//resp,len, err := (*p.).DecodeResponse(buf)
 	if err != nil {
-		originErr := perrors.Cause(err)
-		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
+		if errors.Is(err, hessian.ErrHeaderNotEnough) || errors.Is(err, hessian.ErrBodyNotEnough) {
 			return nil, 0, nil
 		}
 
