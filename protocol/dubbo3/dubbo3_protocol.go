@@ -18,13 +18,13 @@ package dubbo3
 
 import (
 	"fmt"
-	tripleCommon "github.com/dubbogo/triple/pkg/common"
 	"reflect"
 	"sync"
 )
 
 import (
-	dubbo3 "github.com/dubbogo/triple/pkg/triple"
+	tripleCommon "github.com/dubbogo/triple/pkg/common"
+	"github.com/dubbogo/triple/pkg/triple"
 	"google.golang.org/grpc"
 )
 
@@ -37,15 +37,10 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-const (
-	// DUBBO3 is dubbo3 protocol name
-	DUBBO3 = "dubbo3"
-)
-
 var protocolOnce sync.Once
 
 func init() {
-	extension.SetProtocol(DUBBO3, GetProtocol)
+	extension.SetProtocol(tripleCommon.TRIPLE, GetProtocol)
 	protocolOnce = sync.Once{}
 }
 
@@ -57,14 +52,16 @@ var (
 type DubboProtocol struct {
 	protocol.BaseProtocol
 	serverLock sync.Mutex
-	serverMap  map[string]*dubbo3.TripleServer // It is store relationship about serviceKey(group/interface:version) and ExchangeServer
+	serviceMap *sync.Map                       // is used to export multiple service by one server
+	serverMap  map[string]*triple.TripleServer // It is store relationship about serviceKey(group/interface:version) and ExchangeServer
 }
 
 // NewDubboProtocol create a dubbo protocol.
 func NewDubboProtocol() *DubboProtocol {
 	return &DubboProtocol{
 		BaseProtocol: protocol.NewBaseProtocol(),
-		serverMap:    make(map[string]*dubbo3.TripleServer),
+		serverMap:    make(map[string]*triple.TripleServer),
+		serviceMap:   &sync.Map{},
 	}
 }
 
@@ -72,11 +69,29 @@ func NewDubboProtocol() *DubboProtocol {
 func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetUrl()
 	serviceKey := url.ServiceKey()
-	exporter := NewDubboExporter(serviceKey, invoker, dp.ExporterMap())
+	exporter := NewDubboExporter(serviceKey, invoker, dp.ExporterMap(), dp.serviceMap)
 	dp.SetExporterMap(serviceKey, exporter)
 	logger.Infof("Export service: %s", url.String())
-	// start server
 
+	key := url.GetParam(constant.BEAN_NAME_KEY, "")
+	service := config.GetProviderService(key)
+
+	m, ok := reflect.TypeOf(service).MethodByName("SetProxyImpl")
+	if !ok {
+		panic("method SetProxyImpl is necessary for triple service")
+	}
+
+	if invoker == nil {
+		panic(fmt.Sprintf("no invoker found for servicekey: %v", url.ServiceKey()))
+	}
+
+	in := []reflect.Value{reflect.ValueOf(service)}
+	in = append(in, reflect.ValueOf(invoker))
+	m.Func.Call(in)
+
+	dp.serviceMap.Store(url.GetParam(constant.INTERFACE_KEY, ""), service)
+
+	// try start server
 	dp.openServer(url)
 	return exporter
 }
@@ -114,7 +129,7 @@ type Dubbo3GrpcService interface {
 	ServiceDesc() *grpc.ServiceDesc
 }
 
-// openServer open a dubbo3 server
+// openServer open a dubbo3 server, if there is already a service using the same protocol, it returns directly.
 func (dp *DubboProtocol) openServer(url *common.URL) {
 	_, ok := dp.serverMap[url.Location]
 	if ok {
@@ -131,29 +146,8 @@ func (dp *DubboProtocol) openServer(url *common.URL) {
 	if ok {
 		return
 	}
-	key := url.GetParam(constant.BEAN_NAME_KEY, "")
-	service := config.GetProviderService(key)
 
-	m, ok := reflect.TypeOf(service).MethodByName("SetProxyImpl")
-	if !ok {
-		panic("method SetProxyImpl is necessary for grpc service")
-	}
-
-	exporter, _ := dubboProtocol.ExporterMap().Load(url.ServiceKey())
-	if exporter == nil {
-		panic(fmt.Sprintf("no exporter found for servicekey: %v", url.ServiceKey()))
-	}
-	invoker := exporter.(protocol.Exporter).GetInvoker()
-	if invoker == nil {
-		panic(fmt.Sprintf("no invoker found for servicekey: %v", url.ServiceKey()))
-	}
-
-	in := []reflect.Value{reflect.ValueOf(service)}
-	in = append(in, reflect.ValueOf(invoker))
-	m.Func.Call(in)
-
-	srv := dubbo3.NewTripleServer(url, service.(tripleCommon.Dubbo3GrpcService))
-
+	srv := triple.NewTripleServer(url, dp.serviceMap, nil)
 	dp.serverMap[url.Location] = srv
 
 	srv.Start()
