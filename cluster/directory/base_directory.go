@@ -72,42 +72,6 @@ func (dir *BaseDirectory) GetDirectoryUrl() *common.URL {
 	return dir.url
 }
 
-// SetRouters Convert url to routers and add them into dir.routerChain
-func (dir *BaseDirectory) SetRouters(urls []*common.URL) {
-	//if len(urls) == 0 {
-	//	return
-	//}
-	//
-	//routers := make([]router.PriorityRouter, 0, len(urls))
-	//
-	//rc := dir.routerChain
-	//
-	//for _, url := range urls {
-	//	routerKey := url.GetParam(constant.ROUTER_KEY, "")
-	//
-	//	if len(routerKey) == 0 {
-	//		continue
-	//	}
-	//	if url.Protocol == constant.CONDITION_ROUTE_PROTOCOL {
-	//		if !dir.isProperRouter(url) {
-	//			continue
-	//		}
-	//	}
-	//	factory := extension.GetRouterFactory(url.Protocol)
-	//	r, err := factory.NewPriorityRouter(url, rc.GetNotifyChan())
-	//	if err != nil {
-	//		logger.Errorf("Create router fail. router key: %s, url:%s, error: %+v", routerKey, url.Service(), err)
-	//		return
-	//	}
-	//	routers = append(routers, r)
-	//}
-	//
-	//logger.Infof("Init file condition router success, size: %v", len(routers))
-	//dir.mutex.Lock()
-	//rc.AddRouters(routers)
-	//dir.mutex.Unlock()
-}
-
 func (dir *BaseDirectory) isProperRouter(url *common.URL) bool {
 	app := url.GetParam(constant.APPLICATION_KEY, "")
 	dirApp := dir.GetUrl().GetParam(constant.APPLICATION_KEY, "")

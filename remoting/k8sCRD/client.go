@@ -63,7 +63,7 @@ func NewK8sCRDClient(groupName, groupVersion, namespace string, handlers ...List
 	SchemeBuilder := runtime.NewSchemeBuilder(newClient.addKnownTypes)
 
 	// add to scheme
-	if err := SchemeBuilder.AddToScheme(scheme.Scheme); err != nil {
+	if err = SchemeBuilder.AddToScheme(scheme.Scheme); err != nil {
 		logger.Error("AddToScheme failed in k8s CRD process")
 		return nil, err
 	}
