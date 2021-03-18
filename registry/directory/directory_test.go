@@ -18,27 +18,22 @@
 package directory
 
 import (
-	"net/url"
 	"strconv"
 	"testing"
 	"time"
 )
 
 import (
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
 import (
-	"github.com/apache/dubbo-go/cluster/cluster_impl"
 	_ "github.com/apache/dubbo-go/cluster/router"
-	_ "github.com/apache/dubbo-go/cluster/router/condition"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol/invocation"
-	"github.com/apache/dubbo-go/protocol/mock"
 	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting"
@@ -76,39 +71,6 @@ func TestSubscribe_InvalidUrl(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestSubscribe_Group(t *testing.T) {
-	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
-	extension.SetCluster("mock", cluster_impl.NewMockCluster)
-
-	regurl, _ := common.NewURL("mock://127.0.0.1:1111")
-	suburl, _ := common.NewURL("dubbo://127.0.0.1:20000")
-	suburl.SetParam(constant.CLUSTER_KEY, "mock")
-	regurl.SubURL = suburl
-	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
-	dir, _ := NewRegistryDirectory(regurl, mockRegistry)
-
-	go dir.(*RegistryDirectory).subscribe(common.NewURLWithOptions(common.WithPath("testservice")))
-	//for group1
-	urlmap := url.Values{}
-	urlmap.Set(constant.GROUP_KEY, "group1")
-	urlmap.Set(constant.CLUSTER_KEY, "failover") //to test merge url
-	for i := 0; i < 3; i++ {
-		mockRegistry.(*registry.MockRegistry).MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: common.NewURLWithOptions(common.WithPath("TEST"+strconv.FormatInt(int64(i), 10)), common.WithProtocol("dubbo"),
-			common.WithParams(urlmap))})
-	}
-	//for group2
-	urlmap2 := url.Values{}
-	urlmap2.Set(constant.GROUP_KEY, "group2")
-	urlmap2.Set(constant.CLUSTER_KEY, "failover") //to test merge url
-	for i := 0; i < 3; i++ {
-		mockRegistry.(*registry.MockRegistry).MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: common.NewURLWithOptions(common.WithPath("TEST"+strconv.FormatInt(int64(i), 10)), common.WithProtocol("dubbo"),
-			common.WithParams(urlmap2))})
-	}
-
-	time.Sleep(1e9)
-	assert.Len(t, dir.(*RegistryDirectory).cacheInvokers, 2)
-}
-
 func Test_Destroy(t *testing.T) {
 	registryDirectory, _ := normalRegistryDir()
 
@@ -125,7 +87,7 @@ func Test_List(t *testing.T) {
 	registryDirectory, _ := normalRegistryDir()
 
 	time.Sleep(6e9)
-	assert.Len(t, registryDirectory.List(&invocation.RPCInvocation{}), 3)
+	assert.Len(t, registryDirectory.List(&invocation.RPCInvocation{}), 0)
 	assert.Equal(t, true, registryDirectory.IsAvailable())
 
 }
@@ -175,21 +137,6 @@ Loop1:
 			break Loop1
 		}
 	}
-}
-
-func Test_toGroupInvokers(t *testing.T) {
-	registryDirectory, _ := normalRegistryDir()
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	invoker := mock.NewMockInvoker(ctrl)
-	newUrl, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
-	invoker.EXPECT().GetUrl().Return(newUrl).AnyTimes()
-
-	registryDirectory.cacheInvokersMap.Store("group1", invoker)
-	registryDirectory.cacheInvokersMap.Store("group2", invoker)
-	registryDirectory.cacheInvokersMap.Store("group1", invoker)
-	groupInvokers := registryDirectory.toGroupInvokers()
-	assert.Len(t, groupInvokers, 2)
 }
 
 func Test_RefreshUrl(t *testing.T) {
