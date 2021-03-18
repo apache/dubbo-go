@@ -128,8 +128,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	}
 
 	// append interface id to ctx
-	interfaceKey := constant.INTERFACE_KEY
-	ctx = context.WithValue(ctx, interfaceKey, di.BaseInvoker.GetUrl().GetParam(constant.INTERFACE_KEY, ""))
+	ctx = context.WithValue(ctx, constant.DubboCtxKey(constant.INTERFACE_KEY), di.BaseInvoker.GetUrl().GetParam(constant.INTERFACE_KEY, ""))
 	in := make([]reflect.Value, 0, 16)
 	in = append(in, reflect.ValueOf(ctx))
 
