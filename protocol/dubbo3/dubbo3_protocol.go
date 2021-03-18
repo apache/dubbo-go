@@ -52,8 +52,8 @@ var (
 type DubboProtocol struct {
 	protocol.BaseProtocol
 	serverLock sync.Mutex
-	serviceMap *sync.Map                       // is used to export multiple service by one server
-	serverMap  map[string]*triple.TripleServer // It is store relationship about serviceKey(group/interface:version) and ExchangeServer
+	serviceMap *sync.Map                       // serviceMap is used to export multiple service by one server
+	serverMap  map[string]*triple.TripleServer // serverMap stores all exported server
 }
 
 // NewDubboProtocol create a dubbo protocol.
@@ -112,10 +112,16 @@ func (dp *DubboProtocol) Refer(url *common.URL) protocol.Invoker {
 func (dp *DubboProtocol) Destroy() {
 	dp.BaseProtocol.Destroy()
 
-	// stop server
-	for key, server := range dp.serverMap {
-		delete(dp.serverMap, key)
-		server.Stop()
+	dp.serverLock.Lock()
+	defer dp.serverLock.Unlock()
+	// Stop all server
+	keyList := make([]string, 16)
+	for k, _ := range dp.serverMap {
+		keyList = append(keyList, k)
+	}
+	for _, v := range keyList {
+		dp.serverMap[v].Stop()
+		delete(dp.serverMap, v)
 	}
 }
 
