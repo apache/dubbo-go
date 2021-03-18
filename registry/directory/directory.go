@@ -256,11 +256,11 @@ func (dir *RegistryDirectory) cacheInvokerByEvent(event *registry.ServiceEvent) 
 
 // configRouters configures dynamic routers into the router chain, but, the current impl is incorrect, see FIXME above.
 func (dir *RegistryDirectory) configRouters() {
-	var urls []*common.URL
-	for _, v := range config.GetRouterURLSet().Values() {
-		urls = append(urls, v.(*common.URL))
-	}
-
+	//var urls []*common.URL
+	//for _, v := range config.GetRouterURLSet().Values() {
+	//	urls = append(urls, v.(*common.URL))
+	//}
+	//
 	//if len(urls) > 0 {
 	//	dir.SetRouters(urls)
 	//}

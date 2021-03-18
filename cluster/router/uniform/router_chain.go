@@ -153,7 +153,7 @@ func (r *RouterChain) Process(event *config_center.ConfigChangeEvent) {
 	}
 
 	if event.ConfigType == remoting.EventTypeDel {
-
+		// todo delete router
 	}
 }
 
