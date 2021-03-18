@@ -147,7 +147,7 @@ func (g *dubboGrpc) generateService(file *generator.FileDescriptor, service *pb.
 			//now we only support two way streaming
 			g.P(fmt.Sprintf("func (c *%sDubbo3Client) %s(ctx %s.Context,opt ...grpc.CallOption) (%s, error) {",
 				lowerServName, method.GetName(), contextPkg, servName+"_"+method.GetName()+"Client"))
-			g.P(fmt.Sprintf("interfaceKey := ctx.Value(dubboConstant.INTERFACE_KEY).(string)"))
+			g.P(fmt.Sprintf("interfaceKey := ctx.Value(dubboConstant.DubboCtxKey(dubboConstant.INTERFACE_KEY)).(string)"))
 			g.P(fmt.Sprintf("stream, err := c.cc.NewStream(ctx, \"/\" + interfaceKey + \"/%s\", opt...)", method.GetName()))
 			g.P("if err != nil {")
 			g.P("return nil, err")
@@ -161,7 +161,7 @@ func (g *dubboGrpc) generateService(file *generator.FileDescriptor, service *pb.
 		g.P(fmt.Sprintf("func (c *%sDubbo3Client) %s(ctx %s.Context, in *%s, opt ...grpc.CallOption) (*%s, error) {",
 			lowerServName, method.GetName(), contextPkg, inputTypeName, outputTypeName))
 		g.P(fmt.Sprintf("out := new(%s)", outputTypeName))
-		g.P(fmt.Sprintf("interfaceKey := ctx.Value(dubboConstant.INTERFACE_KEY).(string)"))
+		g.P(fmt.Sprintf("interfaceKey := ctx.Value(dubboConstant.DubboCtxKey(dubboConstant.INTERFACE_KEY)).(string)"))
 		g.P(fmt.Sprintf("err := c.cc.Invoke(ctx, \"/\" + interfaceKey + \"/%s\", in, out)", method.GetName()))
 		g.P("if err != nil {")
 		g.P("return nil, err")
