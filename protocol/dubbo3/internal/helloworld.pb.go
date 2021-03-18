@@ -164,10 +164,10 @@ type GreeterClient interface {
 }
 
 type greeterClient struct {
-	cc grpc.ClientConn
+	cc *grpc.ClientConn
 }
 
-func NewGreeterClient(cc grpc.ClientConn) GreeterClient {
+func NewGreeterClient(cc *grpc.ClientConn) GreeterClient {
 	return &greeterClient{cc}
 }
 
