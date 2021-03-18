@@ -44,7 +44,7 @@ func (s *Server) Reference() string {
 func InitDubboServer() {
 	providerConfig := config.NewProviderConfig(
 		config.WithProviderAppConfig(config.NewDefaultApplicationConfig()),
-		config.WithProviderProtocol("tri", "tri", "20002"), // protocol and port
+		config.WithProviderProtocol("tri", "tri", "20000"), // protocol and port
 		config.WithProviderServices("DubboGreeterImpl", config.NewServiceConfigByAPI(
 			config.WithServiceProtocol("tri"),                                // export protocol
 			config.WithServiceInterface("org.apache.dubbo.DubboGreeterImpl"), // interface id
