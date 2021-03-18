@@ -111,11 +111,11 @@ func (dp *DubboProtocol) Refer(url *common.URL) protocol.Invoker {
 // Destroy destroy dubbo3 service.
 func (dp *DubboProtocol) Destroy() {
 	dp.BaseProtocol.Destroy()
+	keyList := make([]string, 16)
 
 	dp.serverLock.Lock()
 	defer dp.serverLock.Unlock()
 	// Stop all server
-	keyList := make([]string, 16)
 	for k, _ := range dp.serverMap {
 		keyList = append(keyList, k)
 	}
