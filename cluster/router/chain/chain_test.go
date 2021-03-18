@@ -30,7 +30,6 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/cluster/router"
-	"github.com/apache/dubbo-go/cluster/router/condition"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/config"
 	"github.com/apache/dubbo-go/common/constant"
@@ -91,20 +90,6 @@ conditions:
 	chain, err := NewRouterChain(getRouteUrl(applicationKey))
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(chain.routers))
-	appRouter := chain.routers[0].(*condition.AppRouter)
-
-	assert.NotNil(t, appRouter)
-	assert.NotNil(t, appRouter.RouterRule())
-	rule := appRouter.RouterRule()
-	assert.Equal(t, "application", rule.Scope)
-	assert.True(t, rule.Force)
-	assert.True(t, rule.Enabled)
-	assert.True(t, rule.Valid)
-
-	assert.Equal(t, testyml, rule.RawRule)
-	assert.Equal(t, false, rule.Runtime)
-	assert.Equal(t, false, rule.Dynamic)
-	assert.Equal(t, "mock-app", rule.Key)
 }
 
 func TestNewRouterChainURLNil(t *testing.T) {
@@ -153,7 +138,7 @@ conditions:
 		for range notify {
 		}
 	}()
-	r, err := factory.NewPriorityRouter(url, notify)
+	r, err := factory.NewPriorityRouter([]byte{}, []byte{}, notify)
 	assert.Nil(t, err)
 	assert.NotNil(t, r)
 
