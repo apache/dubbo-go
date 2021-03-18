@@ -120,7 +120,9 @@ func (dp *DubboProtocol) Destroy() {
 		keyList = append(keyList, k)
 	}
 	for _, v := range keyList {
-		dp.serverMap[v].Stop()
+		if server := dp.serverMap[v]; server != nil {
+			server.Stop()
+		}
 		delete(dp.serverMap, v)
 	}
 }

@@ -238,7 +238,7 @@ func NewGreeterDubbo3Client(cc *dubbo3.TripleConn) GreeterClient {
 }
 func (c *greeterDubbo3Client) SayHello(ctx context.Context, in *HelloRequest, opt ...grpc.CallOption) (*HelloReply, error) {
 	out := new(HelloReply)
-	interfaceKey := ctx.Value(dubboConstant.INTERFACE_KEY).(string)
+	interfaceKey := ctx.Value(dubboConstant.DubboCtxKey(dubboConstant.INTERFACE_KEY)).(string)
 	err := c.cc.Invoke(ctx, "/"+interfaceKey+"/SayHello", in, out)
 	if err != nil {
 		return nil, err
