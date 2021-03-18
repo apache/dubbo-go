@@ -40,25 +40,16 @@ type LocalRouterRules struct {
 // RouterInit Set config file to init router config
 func RouterInit(vsConfigPath, drConfigPath string) error {
 	vsBytes, err := yaml.LoadYMLConfig(vsConfigPath)
+	if err != nil {
+		return err
+	}
 	drBytes, err := yaml.LoadYMLConfig(drConfigPath)
+	if err != nil {
+		return err
+	}
 	chain.SetVSAndDRConfigByte(vsBytes, drBytes)
-	return err
+	return nil
 }
-
-//func initRouterConfig(content []byte, factories map[string]router.FilePriorityRouterFactory) error {
-//	logger.Warnf("get fileRouterFactories len{%+v})", len(factories))
-//
-//	for k, factory := range factories {
-//		r, e := factory.NewFileRouter(content)
-//		if e == nil {
-//			url := r.URL()
-//			routerURLSet.Add(url)
-//			return nil
-//		}
-//		logger.Warnf("router config type %s create fail {%v}\n", k, e)
-//	}
-//	return perrors.Errorf("no file router exists for parse %s , implement router.FIleRouterFactory please.", confRouterFile)
-//}
 
 // GetRouterURLSet exposes the routerURLSet
 func GetRouterURLSet() *gxset.HashSet {
