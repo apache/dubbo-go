@@ -18,18 +18,24 @@ package getty
 
 import (
 	"context"
+	"reflect"
+	"testing"
+	"time"
+)
+
+import (
 	hessian "github.com/apache/dubbo-go-hessian2"
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
-	. "github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 	"github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/apache/dubbo-go/remoting"
-	"github.com/stretchr/testify/assert"
-	"reflect"
-	"testing"
-	"time"
 )
 
 func TestTCPPackageHandle(t *testing.T) {
@@ -41,15 +47,16 @@ func TestTCPPackageHandle(t *testing.T) {
 
 func testDecodeTCPPackage(t *testing.T, svr *Server, client *Client) {
 	request := remoting.NewRequest("2.0.2")
-	up := &AdminProvider{}
-	invocation := createInvocation("GetAdmin", nil, nil, []interface{}{[]interface{}{"1", "username"}},
-		[]reflect.Value{reflect.ValueOf([]interface{}{"1", "username"}), reflect.ValueOf(up)})
-	attachment := map[string]string{INTERFACE_KEY: "com.ikurento.user.AdminProvider",
-		PATH_KEY:    "AdminProvider",
-		VERSION_KEY: "1.0.0",
+	ap := &AdminProvider{}
+	rpcInvocation := createInvocation("GetAdmin", nil, nil, []interface{}{[]interface{}{"1", "username"}},
+		[]reflect.Value{reflect.ValueOf([]interface{}{"1", "username"}), reflect.ValueOf(ap)})
+	attachment := map[string]string{
+		constant.INTERFACE_KEY: "com.ikurento.user.AdminProvider",
+		constant.PATH_KEY:      "AdminProvider",
+		constant.VERSION_KEY:   "1.0.0",
 	}
-	setAttachment(invocation, attachment)
-	request.Data = invocation
+	setAttachment(rpcInvocation, attachment)
+	request.Data = rpcInvocation
 	request.Event = false
 	request.TwoWay = false
 
@@ -153,17 +160,15 @@ func getServer(t *testing.T) (*Server, *common.URL) {
 	return server, url
 }
 
-type (
-	AdminProvider struct {
-	}
-)
+type AdminProvider struct {
+}
 
-func (u *AdminProvider) GetAdmin(ctx context.Context, req []interface{}, rsp *User) error {
+func (a *AdminProvider) GetAdmin(ctx context.Context, req []interface{}, rsp *User) error {
 	rsp.Id = req[0].(string)
 	rsp.Name = req[1].(string)
 	return nil
 }
 
-func (u *AdminProvider) Reference() string {
+func (a *AdminProvider) Reference() string {
 	return "AdminProvider"
 }
