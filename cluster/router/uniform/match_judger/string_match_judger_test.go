@@ -17,10 +17,36 @@
 
 package match_judger
 
-import "testing"
+import (
+	"github.com/apache/dubbo-go/config"
+	"github.com/stretchr/testify/assert"
+	"testing"
+)
 
 func TestNewStringMatchJudger(t *testing.T) {
+	assert.True(t, NewStringMatchJudger(&config.StringMatch{
+		Exact: "abc",
+	}).Judge("abc"))
 
+	assert.False(t, NewStringMatchJudger(&config.StringMatch{
+		Exact: "abcd",
+	}).Judge("abc"))
+
+	assert.True(t, NewStringMatchJudger(&config.StringMatch{
+		Prefix: "abc",
+	}).Judge("abcd"))
+
+	assert.False(t, NewStringMatchJudger(&config.StringMatch{
+		Exact: "abcd",
+	}).Judge("abdc"))
+
+	assert.True(t, NewStringMatchJudger(&config.StringMatch{
+		Empty: "true",
+	}).Judge(""))
+
+	assert.False(t, NewStringMatchJudger(&config.StringMatch{
+		NoEmpty: "true",
+	}).Judge(""))
 }
 
 func TestStringMatchJudger_Judge(t *testing.T) {
