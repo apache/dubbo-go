@@ -151,7 +151,6 @@ func TestNewProviderConfig(t *testing.T) {
 		WithProviderServices("UserProvider", serviceConfig),
 		WithProviderProtocol("dubbo", "dubbo", "20000"),
 		WithProviderRegistry("demoConsul", defaultConsulRegistry),
-		WithProviderRegistry("demoNacos", defaultNacosRegistry),
 	)
 
 	assert.NotNil(t, testProviderConfig.Services)
@@ -160,16 +159,9 @@ func TestNewProviderConfig(t *testing.T) {
 		assert.Equal(t, v, serviceConfig)
 	}
 	assert.NotNil(t, testProviderConfig.Registries)
-	i := 0
 	for k, v := range testProviderConfig.Registries {
-		if i == 0 {
-			assert.Equal(t, k, "demoConsul")
-			assert.Equal(t, v, defaultConsulRegistry)
-			i++
-		} else {
-			assert.Equal(t, k, "demoNacos")
-			assert.Equal(t, v, defaultNacosRegistry)
-		}
+		assert.Equal(t, k, "demoConsul")
+		assert.Equal(t, v, defaultConsulRegistry)
 	}
 
 	assert.NotNil(t, testProviderConfig.Protocols)
