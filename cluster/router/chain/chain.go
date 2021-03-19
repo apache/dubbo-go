@@ -76,7 +76,7 @@ func (c *RouterChain) GetNotifyChan() chan struct{} {
 
 // Route Loop routers in RouterChain and call Route method to determine the target invokers list.
 func (c *RouterChain) Route(url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
-	finalInvokers := make([]protocol.Invoker, 0)
+	finalInvokers := c.invokers
 	for _, r := range c.copyRouters() {
 		finalInvokers = r.Route(c.invokers, url, invocation)
 	}
@@ -133,68 +133,6 @@ func (c *RouterChain) copyInvokers() []protocol.Invoker {
 	return ret
 }
 
-// loadCache loads cache from sync.Value to guarantee the visibility
-func (c *RouterChain) loadCache() *InvokerCache {
-	v := c.cache.Load()
-	if v == nil {
-		return nil
-	}
-
-	return v.(*InvokerCache)
-}
-
-// copyInvokerIfNecessary compares chain's invokers copy and cache's invokers copy, to avoid copy as much as possible
-func (c *RouterChain) copyInvokerIfNecessary(cache *InvokerCache) []protocol.Invoker {
-	var invokers []protocol.Invoker
-	if cache != nil {
-		invokers = cache.invokers
-	}
-
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
-	if isInvokersChanged(invokers, c.invokers) {
-		invokers = c.copyInvokers()
-	}
-	return invokers
-}
-
-// buildCache builds address cache with the new invokers for all poolable routers.
-func (c *RouterChain) buildCache() {
-	origin := c.loadCache()
-	invokers := c.copyInvokerIfNecessary(origin)
-	if len(invokers) == 0 {
-		return
-	}
-
-	var (
-		mutex sync.Mutex
-		wg    sync.WaitGroup
-	)
-
-	cache := BuildCache(invokers)
-	for _, r := range c.copyRouters() {
-		if p, ok := r.(router.Poolable); ok {
-			wg.Add(1)
-			go func(p router.Poolable) {
-				defer wg.Done()
-				pool, info := poolRouter(p, origin, invokers)
-				mutex.Lock()
-				defer mutex.Unlock()
-				cache.pools[p.Name()] = pool
-				cache.metadatas[p.Name()] = info
-			}(p)
-		}
-	}
-	wg.Wait()
-
-	c.cache.Store(cache)
-}
-
-// URL Return URL in RouterChain
-func (c *RouterChain) URL() *common.URL {
-	return c.url
-}
-
 func SetVSAndDRConfigByte(vs, dr []byte) {
 	virtualServiceConfigByte = vs
 	destinationRuleConfigByte = dr
@@ -240,32 +178,7 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 		chain.url = url
 	}
 
-	//go chain.loop()
 	return chain, nil
-}
-
-// poolRouter calls poolable router's Pool() to create new address pool and address metadata if necessary.
-// If the corresponding cache entry exists, and the poolable router answers no need to re-pool (possibly because its
-// rule doesn't change), and the address list doesn't change, then the existing data will be re-used.
-func poolRouter(p router.Poolable, origin *InvokerCache, invokers []protocol.Invoker) (router.AddrPool, router.AddrMetadata) {
-	name := p.Name()
-	if isCacheMiss(origin, name) || p.ShouldPool() || &(origin.invokers) != &invokers {
-		logger.Debugf("build address cache for router %q", name)
-		return p.Pool(invokers)
-	}
-
-	logger.Debugf("reuse existing address cache for router %q", name)
-	return origin.pools[name], origin.metadatas[name]
-}
-
-// isCacheMiss checks if the corresponding cache entry for a poolable router has already existed.
-// False returns when the cache is nil, or cache's pool is nil, or cache's invokers snapshot is nil, or the entry
-// doesn't exist.
-func isCacheMiss(cache *InvokerCache, key string) bool {
-	if cache == nil || cache.pools == nil || cache.invokers == nil || cache.pools[key] == nil {
-		return true
-	}
-	return false
 }
 
 // isInvokersChanged compares new invokers on the right changes, compared with the old invokers on the left.
