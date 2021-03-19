@@ -42,7 +42,7 @@ func TestStaticDirList(t *testing.T) {
 	staticDir := NewStaticDirectory(invokers)
 	list := staticDir.List(&invocation.RPCInvocation{})
 
-	assert.Len(t, list, 0)
+	assert.Len(t, list, 10)
 }
 
 func TestStaticDirDestroy(t *testing.T) {
