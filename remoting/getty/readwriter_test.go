@@ -79,7 +79,6 @@ func testDecodeTCPPackage(t *testing.T, svr *Server, client *Client) {
 }
 
 func getServer(t *testing.T) (*Server, *common.URL) {
-
 	hessian.RegisterPOJO(&User{})
 	remoting.RegistryCodec("dubbo", &DubboTestCodec{})
 
