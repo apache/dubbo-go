@@ -87,7 +87,7 @@ func Test_List(t *testing.T) {
 	registryDirectory, _ := normalRegistryDir()
 
 	time.Sleep(6e9)
-	assert.Len(t, registryDirectory.List(&invocation.RPCInvocation{}), 0)
+	assert.Len(t, registryDirectory.List(&invocation.RPCInvocation{}), 10)
 	assert.Equal(t, true, registryDirectory.IsAvailable())
 
 }
