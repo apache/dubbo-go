@@ -41,7 +41,7 @@ import (
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 )
 
-// DubboInvoker is implement of protocol.Invoker. A dubboInvoker refer to one service and ip.
+// DubboInvoker is implement of protocol.Invoker, a dubboInvoker refer to one service and ip.
 type DubboInvoker struct {
 	protocol.BaseInvoker
 	// the net layer client, it is focus on network communication.
