@@ -38,14 +38,11 @@ type RestSubscribedURLsSynthesizer struct {
 }
 
 func (r RestSubscribedURLsSynthesizer) Support(subscribedURL *common.URL) bool {
-	if "rest" == subscribedURL.Protocol {
-		return true
-	}
-	return false
+	return "rest" == subscribedURL.Protocol
 }
 
 func (r RestSubscribedURLsSynthesizer) Synthesize(subscribedURL *common.URL, serviceInstances []registry.ServiceInstance) []*common.URL {
-	urls := make([]*common.URL, len(serviceInstances), len(serviceInstances))
+	urls := make([]*common.URL, len(serviceInstances))
 	for i, s := range serviceInstances {
 		splitHost := strings.Split(s.GetHost(), ":")
 		u := common.NewURLWithOptions(common.WithProtocol(subscribedURL.Protocol), common.WithIp(splitHost[0]),

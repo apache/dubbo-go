@@ -69,7 +69,7 @@ func getSignature(url *common.URL, invocation protocol.Invocation, secrectKey st
 	requestString := fmt.Sprintf(constant.SIGNATURE_STRING_FORMAT,
 		url.ColonSeparatedKey(), invocation.MethodName(), secrectKey, currentTime)
 	var signature string
-	if parameterEncrypt := url.GetParamBool(constant.PARAMTER_SIGNATURE_ENABLE_KEY, false); parameterEncrypt {
+	if parameterEncrypt := url.GetParamBool(constant.PARAMETER_SIGNATURE_ENABLE_KEY, false); parameterEncrypt {
 		var err error
 		if signature, err = SignWithParams(invocation.Arguments(), requestString, secrectKey); err != nil {
 			// TODO

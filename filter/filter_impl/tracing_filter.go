@@ -83,7 +83,7 @@ func (tf *tracingFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 	}()
 
 	result := invoker.Invoke(spanCtx, invocation)
-	span.SetTag(successKey, result.Error() != nil)
+	span.SetTag(successKey, result.Error() == nil)
 	if result.Error() != nil {
 		span.LogFields(log.String(errorKey, result.Error().Error()))
 	}

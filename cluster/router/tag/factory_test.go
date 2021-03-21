@@ -39,7 +39,12 @@ func TestTagRouterFactoryNewRouter(t *testing.T) {
 	u1, err := common.NewURL(fmt.Sprintf(factoryFormat, factoryLocalIP))
 	assert.Nil(t, err)
 	factory := NewTagRouterFactory()
-	tagRouter, e := factory.NewPriorityRouter(u1)
+	notify := make(chan struct{})
+	go func() {
+		for range notify {
+		}
+	}()
+	tagRouter, e := factory.NewPriorityRouter(u1, notify)
 	assert.Nil(t, e)
 	assert.NotNil(t, tagRouter)
 }

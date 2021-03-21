@@ -17,7 +17,6 @@
 package config
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 )
@@ -108,6 +107,7 @@ var baseMockRef = map[string]*ReferenceConfig{
 
 func TestRefresh(t *testing.T) {
 	c := &BaseConfig{}
+	c.fileStream = nil
 	mockMap := getMockMap()
 	mockMap["dubbo.shutdown.timeout"] = "12s"
 
@@ -285,8 +285,7 @@ func TestInitializeStruct(t *testing.T) {
 	tp := reflect.TypeOf(ConsumerConfig{})
 	v := reflect.New(tp)
 	initializeStruct(tp, v.Elem())
-	fmt.Println(reflect.ValueOf(testConsumerConfig).Elem().Type().String())
-	fmt.Println(v.Elem().Type().String())
+	t.Logf("testConsumerConfig type:%s", reflect.ValueOf(testConsumerConfig).Elem().Type().String())
 	reflect.ValueOf(testConsumerConfig).Elem().Set(v.Elem())
 
 	assert.Condition(t, func() (success bool) {

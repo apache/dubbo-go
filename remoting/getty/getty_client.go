@@ -19,6 +19,7 @@ package getty
 
 import (
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -38,14 +39,12 @@ import (
 )
 
 var (
-	errInvalidCodecType  = perrors.New("illegal CodecType")
-	errInvalidAddress    = perrors.New("remote address invalid or empty")
 	errSessionNotExist   = perrors.New("session not exist")
 	errClientClosed      = perrors.New("client closed")
-	errClientReadTimeout = perrors.New("client read timeout")
+	errClientReadTimeout = perrors.New("maybe the client read timeout or fail to decode tcp stream in Writer.Write")
 
 	clientConf   *ClientConfig
-	clientGrpool *gxsync.TaskPool
+	clientGrpool gxsync.GenericTaskPool
 )
 
 // it is init client for single protocol.
@@ -101,16 +100,13 @@ func SetClientConf(c ClientConfig) {
 }
 
 func setClientGrpool() {
-	if clientConf.GrPoolSize > 1 {
-		clientGrpool = gxsync.NewTaskPool(gxsync.WithTaskPoolTaskPoolSize(clientConf.GrPoolSize), gxsync.WithTaskPoolTaskQueueLength(clientConf.QueueLen),
-			gxsync.WithTaskPoolTaskQueueNumber(clientConf.QueueNumber))
-	}
+	clientGrpool = gxsync.NewTaskPoolSimple(clientConf.GrPoolSize)
 }
 
 // Options : param config
 type Options struct {
 	// connect timeout
-	// remove request timeout, it will be calulate for every request
+	// remove request timeout, it will be calculate for every request
 	ConnectTimeout time.Duration
 	// request timeout
 	RequestTimeout time.Duration
@@ -121,6 +117,7 @@ type Client struct {
 	addr           string
 	opts           Options
 	conf           ClientConfig
+	mux            sync.RWMutex
 	pool           *gettyRPCClientPool
 	codec          remoting.Codec
 	ExchangeClient *remoting.ExchangeClient
@@ -166,10 +163,13 @@ func (c *Client) Connect(url *common.URL) error {
 
 // close network connection
 func (c *Client) Close() {
-	if c.pool != nil {
-		c.pool.close()
-	}
+	c.mux.Lock()
+	p := c.pool
 	c.pool = nil
+	c.mux.Unlock()
+	if p != nil {
+		p.close()
+	}
 }
 
 // send request
@@ -181,8 +181,15 @@ func (c *Client) Request(request *remoting.Request, timeout time.Duration, respo
 	if session == nil {
 		return errSessionNotExist
 	}
-
-	if err = c.transfer(session, request, timeout); err != nil {
+	var (
+		totalLen int
+		sendLen  int
+	)
+	if totalLen, sendLen, err = c.transfer(session, request, timeout); err != nil {
+		if sendLen != 0 && totalLen != sendLen {
+			logger.Warnf("start to close the session at request because %d of %d bytes data is sent success. err:%+v", sendLen, totalLen, err)
+			go c.Close()
+		}
 		return perrors.WithStack(err)
 	}
 
@@ -209,6 +216,11 @@ func (c *Client) IsAvailable() bool {
 }
 
 func (c *Client) selectSession(addr string) (*gettyRPCClient, getty.Session, error) {
+	c.mux.RLock()
+	defer c.mux.RUnlock()
+	if c.pool == nil {
+		return nil, nil, perrors.New("client pool have been closed")
+	}
 	rpcClient, err := c.pool.getGettyRpcClient(addr)
 	if err != nil {
 		return nil, nil, perrors.WithStack(err)
@@ -216,7 +228,7 @@ func (c *Client) selectSession(addr string) (*gettyRPCClient, getty.Session, err
 	return rpcClient, rpcClient.selectSession(), nil
 }
 
-func (c *Client) transfer(session getty.Session, request *remoting.Request, timeout time.Duration) error {
-	err := session.WritePkg(request, timeout)
-	return perrors.WithStack(err)
+func (c *Client) transfer(session getty.Session, request *remoting.Request, timeout time.Duration) (int, int, error) {
+	totalLen, sendLen, err := session.WritePkg(request, timeout)
+	return totalLen, sendLen, perrors.WithStack(err)
 }

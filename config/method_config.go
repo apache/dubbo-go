@@ -57,8 +57,5 @@ func (c *MethodConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		return err
 	}
 	type plain MethodConfig
-	if err := unmarshal((*plain)(c)); err != nil {
-		return err
-	}
-	return nil
+	return unmarshal((*plain)(c))
 }
