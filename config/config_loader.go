@@ -72,11 +72,25 @@ func init() {
 	for len(fs.Args()) != 0 {
 		fs.Parse(fs.Args()[1:])
 	}
+	// If user did not set the environment variables or flags,
+	// we provide default value
+	if confConFile == "" {
+		confConFile = constant.DEFAULT_CONSUMER_CONF_FILE_PATH
+	}
+	if confProFile == "" {
+		confProFile = constant.DEFAULT_PROVIDER_CONF_FILE_PATH
+	}
+	if confRouterFile == "" {
+		confRouterFile = constant.DEFAULT_ROUTER_CONF_FILE_PATH
+	}
 
 	if errCon := ConsumerInit(confConFile); errCon != nil {
 		log.Printf("[consumerInit] %#v", errCon)
 		consumerConfig = nil
 	} else {
+		// Check if there are some important key fields missing,
+		// if so, we set a default value for it
+		setDefaultValue(consumerConfig)
 		// Even though baseConfig has been initialized, we override it
 		// because we think read from config file is correct config
 		baseConfig = &consumerConfig.BaseConfig
@@ -86,9 +100,45 @@ func init() {
 		log.Printf("[providerInit] %#v", errPro)
 		providerConfig = nil
 	} else {
+		// Check if there are some important key fields missing,
+		// if so, we set a default value for it
+		setDefaultValue(providerConfig)
 		// Even though baseConfig has been initialized, we override it
 		// because we think read from config file is correct config
 		baseConfig = &providerConfig.BaseConfig
+	}
+}
+
+// setDefaultValue set default value for providerConfig or consumerConfig if it is null
+func setDefaultValue(target interface{}) {
+	registryConfig := &RegistryConfig{
+		Protocol:   "zookeeper",
+		TimeoutStr: "3s",
+		Address:    "127.0.0.1:2181",
+	}
+	switch target.(type) {
+	case ProviderConfig:
+		p := target.(*ProviderConfig)
+		if len(p.Registries) == 0 {
+			p.Registries["demoZK"] = registryConfig
+		}
+		if len(p.Protocols) == 0 {
+			p.Protocols["dubbo"] = &ProtocolConfig{
+				Name: "dubbo",
+				Port: "20000",
+			}
+		}
+		if p.ApplicationConfig == nil {
+			p.ApplicationConfig = NewDefaultApplicationConfig()
+		}
+	default:
+		c := target.(*ConsumerConfig)
+		if len(c.Registries) == 0 {
+			c.Registries["demoZK"] = registryConfig
+		}
+		if c.ApplicationConfig == nil {
+			c.ApplicationConfig = NewDefaultApplicationConfig()
+		}
 	}
 }
 
