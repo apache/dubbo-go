@@ -42,7 +42,7 @@ func initFileData(t *testing.T) (*FileSystemDynamicConfiguration, error) {
 	urlString := "registry://127.0.0.1:2181"
 	regurl, err := common.NewURL(urlString)
 	assert.NoError(t, err)
-	dc, err := extension.GetConfigCenterFactory("file").GetDynamicConfiguration(&regurl)
+	dc, err := extension.GetConfigCenterFactory("file").GetDynamicConfiguration(regurl)
 	assert.NoError(t, err)
 
 	return dc.(*FileSystemDynamicConfiguration), err
@@ -63,6 +63,7 @@ func TestPublishAndGetConfig(t *testing.T) {
 
 func TestAddListener(t *testing.T) {
 	file, err := initFileData(t)
+	assert.Nil(t, err)
 	group := "dubbogo"
 	value := "Test Value"
 	err = file.PublishConfig(key, group, value)
@@ -81,6 +82,7 @@ func TestAddListener(t *testing.T) {
 
 func TestRemoveListener(t *testing.T) {
 	file, err := initFileData(t)
+	assert.NoError(t, err)
 	group := "dubbogo"
 	value := "Test Value"
 	err = file.PublishConfig(key, group, value)
@@ -106,9 +108,11 @@ func TestRemoveListener(t *testing.T) {
 
 func TestGetConfigKeysByGroup(t *testing.T) {
 	file, err := initFileData(t)
+	assert.Nil(t, err)
 	group := "dubbogo"
 	value := "Test Value"
 	err = file.PublishConfig(key, group, value)
+	assert.NoError(t, err)
 	gs, err := file.GetConfigKeysByGroup(group)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, gs.Size())

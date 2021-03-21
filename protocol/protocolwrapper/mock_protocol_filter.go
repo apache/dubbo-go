@@ -39,11 +39,10 @@ func (pfw *mockProtocolFilter) Export(invoker protocol.Invoker) protocol.Exporte
 }
 
 // Refer a mock remote service
-func (pfw *mockProtocolFilter) Refer(url common.URL) protocol.Invoker {
+func (pfw *mockProtocolFilter) Refer(url *common.URL) protocol.Invoker {
 	return protocol.NewBaseInvoker(url)
 }
 
 // Destroy will do nothing
 func (pfw *mockProtocolFilter) Destroy() {
-	return
 }

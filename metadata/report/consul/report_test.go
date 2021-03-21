@@ -100,7 +100,7 @@ func (suite *consulMetadataReportTestSuite) testStoreConsumerMetadata() {
 	assert.NoError(suite.t, err)
 }
 
-func (suite *consulMetadataReportTestSuite) testSaveServiceMetadata(url common.URL) {
+func (suite *consulMetadataReportTestSuite) testSaveServiceMetadata(url *common.URL) {
 	serviceMi := newServiceMetadataIdentifier("provider")
 	err := suite.m.SaveServiceMetadata(serviceMi, url)
 	assert.NoError(suite.t, err)
@@ -119,7 +119,7 @@ func (suite *consulMetadataReportTestSuite) testGetExportedURLs() {
 	assert.NoError(suite.t, err)
 }
 
-func (suite *consulMetadataReportTestSuite) testSaveSubscribedData(url common.URL) {
+func (suite *consulMetadataReportTestSuite) testSaveSubscribedData(url *common.URL) {
 	subscribeMi := newSubscribeMetadataIdentifier("provider")
 	urls := []string{url.String()}
 	bytes, _ := json.Marshal(urls)
@@ -143,7 +143,9 @@ func (suite *consulMetadataReportTestSuite) testGetServiceDefinition() {
 
 func test1(t *testing.T) {
 	consulAgent := consul.NewConsulAgent(t, 8500)
-	defer consulAgent.Shutdown()
+	defer func() {
+		_ = consulAgent.Shutdown()
+	}()
 
 	url := newProviderRegistryUrl("localhost", 8500)
 	mf := extension.GetMetadataReportFactory("consul")
@@ -152,10 +154,10 @@ func test1(t *testing.T) {
 	suite := newConsulMetadataReportTestSuite(t, m)
 	suite.testStoreProviderMetadata()
 	suite.testStoreConsumerMetadata()
-	suite.testSaveServiceMetadata(*url)
+	suite.testSaveServiceMetadata(url)
 	suite.testGetExportedURLs()
 	suite.testRemoveServiceMetadata()
-	suite.testSaveSubscribedData(*url)
+	suite.testSaveSubscribedData(url)
 	suite.testGetSubscribedURLs()
 	suite.testGetServiceDefinition()
 }

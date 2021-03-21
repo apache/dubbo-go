@@ -18,7 +18,9 @@
 package config
 
 import (
+	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"reflect"
@@ -28,7 +30,6 @@ import (
 )
 
 import (
-	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 )
 
@@ -38,6 +39,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	_ "github.com/apache/dubbo-go/common/observer/dispatcher"
+	"github.com/apache/dubbo-go/common/yaml"
 	"github.com/apache/dubbo-go/registry"
 )
 
@@ -64,9 +66,14 @@ func init() {
 		confProFile string
 	)
 
-	confConFile = os.Getenv(constant.CONF_CONSUMER_FILE_PATH)
-	confProFile = os.Getenv(constant.CONF_PROVIDER_FILE_PATH)
-	confRouterFile = os.Getenv(constant.CONF_ROUTER_FILE_PATH)
+	fs := flag.NewFlagSet("config", flag.ContinueOnError)
+	fs.StringVar(&confConFile, "conConf", os.Getenv(constant.CONF_CONSUMER_FILE_PATH), "default client config path")
+	fs.StringVar(&confProFile, "proConf", os.Getenv(constant.CONF_PROVIDER_FILE_PATH), "default server config path")
+	fs.StringVar(&confRouterFile, "rouConf", os.Getenv(constant.CONF_ROUTER_FILE_PATH), "default router config path")
+	fs.Parse(os.Args[1:])
+	for len(fs.Args()) != 0 {
+		fs.Parse(fs.Args()[1:])
+	}
 
 	if errCon := ConsumerInit(confConFile); errCon != nil {
 		log.Printf("[consumerInit] %#v", errCon)
@@ -139,6 +146,17 @@ func loadConsumerConfig() {
 		ref.Implement(rpcService)
 	}
 
+	// Write current configuration to cache file.
+	if consumerConfig.CacheFile != "" {
+		if data, err := yaml.MarshalYML(consumerConfig); err != nil {
+			logger.Errorf("Marshal consumer config err: %s", err.Error())
+		} else {
+			if err := ioutil.WriteFile(consumerConfig.CacheFile, data, 0666); err != nil {
+				logger.Errorf("Write consumer config cache file err: %s", err.Error())
+			}
+		}
+	}
+
 	// wait for invoker is available, if wait over default 3s, then panic
 	var count int
 	for {
@@ -195,6 +213,17 @@ func loadProviderConfig() {
 	}
 	checkRegistries(providerConfig.Registries, providerConfig.Registry)
 
+	// Write the current configuration to cache file.
+	if providerConfig.CacheFile != "" {
+		if data, err := yaml.MarshalYML(providerConfig); err != nil {
+			logger.Errorf("Marshal provider config err: %s", err.Error())
+		} else {
+			if err := ioutil.WriteFile(providerConfig.CacheFile, data, 0666); err != nil {
+				logger.Errorf("Write provider config cache file err: %s", err.Error())
+			}
+		}
+	}
+
 	for key, svs := range providerConfig.Services {
 		rpcService := GetProviderService(key)
 		if rpcService == nil {
@@ -217,7 +246,7 @@ func registerServiceInstance() {
 	if url == nil {
 		return
 	}
-	instance, err := createInstance(*url)
+	instance, err := createInstance(url)
 	if err != nil {
 		panic(err)
 	}
@@ -241,7 +270,7 @@ func registerServiceInstance() {
 }
 
 // nolint
-func createInstance(url common.URL) (registry.ServiceInstance, error) {
+func createInstance(url *common.URL) (registry.ServiceInstance, error) {
 	appConfig := GetApplicationConfig()
 	port, err := strconv.ParseInt(url.Port, 10, 32)
 	if err != nil {
@@ -250,10 +279,7 @@ func createInstance(url common.URL) (registry.ServiceInstance, error) {
 
 	host := url.Ip
 	if len(host) == 0 {
-		host, err = gxnet.GetLocalIP()
-		if err != nil {
-			return nil, perrors.WithMessage(err, "could not get the local Ip")
-		}
+		host = common.GetLocalIp()
 	}
 
 	// usually we will add more metadata
@@ -273,7 +299,7 @@ func createInstance(url common.URL) (registry.ServiceInstance, error) {
 
 // selectMetadataServiceExportedURL get already be exported url
 func selectMetadataServiceExportedURL() *common.URL {
-	var selectedUrl common.URL
+	var selectedUrl *common.URL
 	metaDataService, err := extension.GetMetadataService(GetApplicationConfig().MetadataType)
 	if err != nil {
 		logger.Warn(err)
@@ -298,7 +324,7 @@ func selectMetadataServiceExportedURL() *common.URL {
 			break
 		}
 	}
-	return &selectedUrl
+	return selectedUrl
 }
 
 func initRouter() {
@@ -410,9 +436,9 @@ func GetBaseConfig() *BaseConfig {
 			baseConfig = &BaseConfig{
 				MetricConfig:       &MetricConfig{},
 				ConfigCenterConfig: &ConfigCenterConfig{},
-				Remotes:            make(map[string]*RemoteConfig, 0),
+				Remotes:            make(map[string]*RemoteConfig),
 				ApplicationConfig:  &ApplicationConfig{},
-				ServiceDiscoveries: make(map[string]*ServiceDiscoveryConfig, 0),
+				ServiceDiscoveries: make(map[string]*ServiceDiscoveryConfig),
 			}
 		}
 	}

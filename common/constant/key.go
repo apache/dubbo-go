@@ -17,6 +17,8 @@
 
 package constant
 
+type DubboCtxKey string
+
 const (
 	ASYNC_KEY = "async" // it's value should be "true" or "false" of string type
 )
@@ -25,6 +27,7 @@ const (
 	GROUP_KEY                = "group"
 	VERSION_KEY              = "version"
 	INTERFACE_KEY            = "interface"
+	MESSAGE_SIZE_KEY         = "message_size"
 	PATH_KEY                 = "path"
 	SERVICE_KEY              = "service"
 	METHODS_KEY              = "methods"
@@ -46,8 +49,8 @@ const (
 	PORT_KEY                 = "port"
 	PROTOCOL_KEY             = "protocol"
 	PATH_SEPARATOR           = "/"
-	DUBBO_KEY                = "dubbo"
-	SSL_ENABLED_KEY          = "ssl-enabled"
+	//DUBBO_KEY                = "dubbo"
+	SSL_ENABLED_KEY = "ssl-enabled"
 )
 
 const (
@@ -88,10 +91,11 @@ const (
 	RETRY_PERIOD_KEY                       = "retry.period"
 	RETRY_TIMES_KEY                        = "retry.times"
 	CYCLE_REPORT_KEY                       = "cycle.report"
+	DEFAULT_BLACK_LIST_RECOVER_BLOCK       = 16
 )
 
 const (
-	DUBBOGO_CTX_KEY = "dubbogo-ctx"
+	DUBBOGO_CTX_KEY = DubboCtxKey("dubbogo-ctx")
 )
 
 const (
@@ -126,6 +130,7 @@ const (
 	TAG_ROUTE_PROTOCOL       = "tag"
 	PROVIDERS_CATEGORY       = "providers"
 	ROUTER_KEY               = "router"
+	EXPORT_KEY               = "export"
 )
 
 const (
@@ -169,6 +174,7 @@ const (
 	NACOS_NAMESPACE_ID           = "namespaceId"
 	NACOS_PASSWORD               = "password"
 	NACOS_USERNAME               = "username"
+	NACOS_NOT_LOAD_LOCAL_CACHE   = "nacos.not.load.cache"
 )
 
 const (
@@ -196,7 +202,7 @@ const (
 )
 
 const (
-	TRACING_REMOTE_SPAN_CTX = "tracing.remote.span.ctx"
+	TRACING_REMOTE_SPAN_CTX = DubboCtxKey("tracing.remote.span.ctx")
 )
 
 // Use for router module
@@ -209,6 +215,10 @@ const (
 	ListenableRouterName = "listenable"
 	// HealthCheckRouterName Specify the name of HealthCheckRouter
 	HealthCheckRouterName = "health_check"
+	// LocalPriorityRouterName Specify the name of LocalPriorityRouter
+	LocalPriorityRouterName = "local_priority"
+	// ConnCheckRouterName Specify the name of ConnCheckRouter
+	ConnCheckRouterName = "conn_check"
 	// TagRouterName Specify the name of TagRouter
 	TagRouterName = "tag"
 	// TagRouterRuleSuffix Specify tag router suffix
@@ -234,9 +244,10 @@ const (
 	// ForceUseTag is the tag in attachment
 	ForceUseTag = "dubbo.force.tag"
 	Tagkey      = "dubbo.tag"
-
-	// Attachment key in context in invoker
-	AttachmentKey = "attachment"
+	// HEALTH_ROUTE_ENABLED_KEY defines if use health router
+	HEALTH_ROUTE_ENABLED_KEY = "health.route.enabled"
+	// AttachmentKey in context in invoker
+	AttachmentKey = DubboCtxKey("attachment")
 )
 
 const (
@@ -263,7 +274,7 @@ const (
 	// signature format
 	SIGNATURE_STRING_FORMAT = "%s#%s#%s#%s"
 	// key whether enable signature
-	PARAMTER_SIGNATURE_ENABLE_KEY = "param.sign"
+	PARAMETER_SIGNATURE_ENABLE_KEY = "param.sign"
 	// consumer
 	CONSUMER = "consumer"
 	// key of access key id
@@ -291,7 +302,9 @@ const (
 	HEALTH_CHECKER = "health.checker"
 	// The name of the default implementation of HealthChecker
 	DEFAULT_HEALTH_CHECKER = "default"
-	// The key of oustanding-request-limit
+	// The name of the default implementation of C
+	DEFAULT_CONN_CHECKER = "default"
+	// The key of outstanding-request-limit\
 	OUTSTANDING_REQUEST_COUNT_LIMIT_KEY = "outstanding.request.limit"
 	// The key of successive-failed-request's threshold
 	SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY = "successive.failed.threshold"

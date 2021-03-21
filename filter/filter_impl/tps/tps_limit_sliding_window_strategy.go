@@ -54,7 +54,7 @@ type SlidingWindowTpsLimitStrategyImpl struct {
 	queue    *list.List
 }
 
-// IsAllowable determins whether the number of requests within the time window overs the threshold
+// IsAllowable determines whether the number of requests within the time window overs the threshold
 // It is thread-safe.
 func (impl *SlidingWindowTpsLimitStrategyImpl) IsAllowable() bool {
 	impl.mutex.Lock()

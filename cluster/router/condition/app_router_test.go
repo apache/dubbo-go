@@ -24,6 +24,7 @@ import (
 )
 
 import (
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,7 +36,6 @@ import (
 	"github.com/apache/dubbo-go/config_center"
 	_ "github.com/apache/dubbo-go/config_center/zookeeper"
 	"github.com/apache/dubbo-go/remoting"
-	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
 const (
@@ -60,25 +60,32 @@ runtime: false
 conditions:
   - => host != 172.22.3.91
 `
-	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
+	ts, z, _, err := gxzookeeper.NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
 	err = z.Create(routerPath)
 	assert.NoError(t, err)
 
 	_, err = z.Conn.Set(routerPath, []byte(testYML), 0)
 	assert.NoError(t, err)
-	defer ts.Stop()
-	defer z.Close()
+	defer func() {
+		assert.NoError(t, err)
+		z.Close()
+	}()
 
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, routerLocalIP, ts.Servers[0].Port))
-	configuration, err := extension.GetConfigCenterFactory(routerZk).GetDynamicConfiguration(&zkUrl)
+	configuration, err := extension.GetConfigCenterFactory(routerZk).GetDynamicConfiguration(zkUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, configuration)
 
 	appRouteURL := getAppRouteURL(routerKey)
-	appRouter, err := NewAppRouter(appRouteURL)
+	notify := make(chan struct{})
+	go func() {
+		for range notify {
+		}
+	}()
+	appRouter, err := NewAppRouter(appRouteURL, notify)
 	assert.Nil(t, err)
 	assert.NotNil(t, appRouter)
 
@@ -106,27 +113,34 @@ force: true
 runtime: false
 conditions:
   - => host != 172.22.3.91
-  - host = 192.168.199.208 => host = 192.168.199.208 
+  - host = 192.168.199.208 => host = 192.168.199.208
 `
-	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
+	ts, z, _, err := gxzookeeper.NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
 	err = z.Create(routerPath)
 	assert.NoError(t, err)
 
 	_, err = z.Conn.Set(routerPath, []byte(testYML), 0)
 	assert.NoError(t, err)
-	defer ts.Stop()
-	defer z.Close()
+	defer func() {
+		assert.NoError(t, err)
+		z.Close()
+	}()
 
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, routerLocalIP, ts.Servers[0].Port))
-	configuration, err := extension.GetConfigCenterFactory(routerZk).GetDynamicConfiguration(&zkUrl)
+	configuration, err := extension.GetConfigCenterFactory(routerZk).GetDynamicConfiguration(zkUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, configuration)
 
 	appRouteURL := getAppRouteURL(routerKey)
-	appRouter, err := NewAppRouter(appRouteURL)
+	notify := make(chan struct{})
+	go func() {
+		for range notify {
+		}
+	}()
+	appRouter, err := NewAppRouter(appRouteURL, notify)
 	assert.Nil(t, err)
 	assert.NotNil(t, appRouter)
 
@@ -147,25 +161,33 @@ runtime: false
 conditions:
   - => host != 172.22.3.91
 `
-	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
+	ts, z, _, err := gxzookeeper.NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
 	err = z.Create(routerPath)
 	assert.NoError(t, err)
 
 	_, err = z.Conn.Set(routerPath, []byte(testYML), 0)
 	assert.NoError(t, err)
-	defer ts.Stop()
-	defer z.Close()
+	defer func() {
+		err = ts.Stop()
+		assert.NoError(t, err)
+		z.Close()
+	}()
 
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, routerLocalIP, ts.Servers[0].Port))
-	configuration, err := extension.GetConfigCenterFactory(routerZk).GetDynamicConfiguration(&zkUrl)
+	configuration, err := extension.GetConfigCenterFactory(routerZk).GetDynamicConfiguration(zkUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, configuration)
 
 	appRouteURL := getAppRouteURL(routerKey)
-	appRouter, err := NewAppRouter(appRouteURL)
+	notify := make(chan struct{})
+	go func() {
+		for range notify {
+		}
+	}()
+	appRouter, err := NewAppRouter(appRouteURL, notify)
 	assert.Nil(t, err)
 	assert.NotNil(t, appRouter)
 
@@ -194,5 +216,5 @@ func getAppRouteURL(applicationKey string) *common.URL {
 	url, _ := common.NewURL(fmt.Sprintf(conditionFormat, constant.ANYHOST_VALUE))
 	url.AddParam("application", applicationKey)
 	url.AddParam("force", "true")
-	return &url
+	return url
 }

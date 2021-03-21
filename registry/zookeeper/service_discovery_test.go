@@ -37,11 +37,14 @@ import (
 
 var testName = "test"
 
+var tc *zk.TestCluster
+
 func prepareData(t *testing.T) *zk.TestCluster {
-	ts, err := zk.StartTestCluster(1, nil, nil)
+	var err error
+	tc, err = zk.StartTestCluster(1, nil, nil)
 	assert.NoError(t, err)
-	assert.NotNil(t, ts.Servers[0])
-	address := "127.0.0.1:" + strconv.Itoa(ts.Servers[0].Port)
+	assert.NotNil(t, tc.Servers[0])
+	address := "127.0.0.1:" + strconv.Itoa(tc.Servers[0].Port)
 
 	config.GetBaseConfig().ServiceDiscoveries[testName] = &config.ServiceDiscoveryConfig{
 		Protocol:  "zookeeper",
@@ -52,7 +55,7 @@ func prepareData(t *testing.T) *zk.TestCluster {
 		Address:    address,
 		TimeoutStr: "10s",
 	}
-	return ts
+	return tc
 }
 
 func TestNewZookeeperServiceDiscovery(t *testing.T) {
@@ -74,11 +77,12 @@ func TestNewZookeeperServiceDiscovery(t *testing.T) {
 }
 
 func TestCURDZookeeperServiceDiscovery(t *testing.T) {
-	ts := prepareData(t)
-	defer ts.Stop()
+	prepareData(t)
 	sd, err := newZookeeperServiceDiscovery(testName)
 	assert.Nil(t, err)
-	defer sd.Destroy()
+	defer func() {
+		_ = sd.Destroy()
+	}()
 	md := make(map[string]string)
 	md["t1"] = "test1"
 	err = sd.Register(&registry.DefaultServiceInstance{
@@ -139,11 +143,14 @@ func TestCURDZookeeperServiceDiscovery(t *testing.T) {
 }
 
 func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
-	ts := prepareData(t)
-	defer ts.Stop()
+	defer func() {
+		_ = tc.Stop()
+	}()
 	sd, err := newZookeeperServiceDiscovery(testName)
 	assert.Nil(t, err)
-	defer sd.Destroy()
+	defer func() {
+		_ = sd.Destroy()
+	}()
 
 	err = sd.Register(&registry.DefaultServiceInstance{
 		Id:          "testId",
@@ -154,8 +161,6 @@ func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
 		Healthy:     true,
 		Metadata:    nil,
 	})
-	assert.Nil(t, err)
-
 	assert.Nil(t, err)
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
@@ -170,7 +175,7 @@ func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
 	extension.SetAndInitGlobalDispatcher("direct")
 	extension.GetGlobalDispatcher().AddEventListener(sicl)
 	err = sd.AddListener(sicl)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	err = sd.Update(&registry.DefaultServiceInstance{
 		Id:          "testId",
@@ -181,6 +186,7 @@ func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
 		Healthy:     true,
 		Metadata:    nil,
 	})
+	assert.NoError(t, err)
 	tn.wg.Wait()
 }
 

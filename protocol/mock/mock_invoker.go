@@ -59,9 +59,9 @@ func (m *MockInvoker) EXPECT() *MockInvokerMockRecorder {
 }
 
 // GetUrl mocks base method
-func (m *MockInvoker) GetUrl() common.URL {
+func (m *MockInvoker) GetUrl() *common.URL {
 	ret := m.ctrl.Call(m, "GetUrl")
-	ret0, _ := ret[0].(common.URL)
+	ret0, _ := ret[0].(*common.URL)
 	return ret0
 }
 
