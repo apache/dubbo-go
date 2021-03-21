@@ -66,11 +66,11 @@ func TestCreateProxy(t *testing.T) {
 type mockProtocol struct {
 }
 
-func (m mockProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
+func (m mockProtocol) Export(protocol.Invoker) protocol.Exporter {
 	panic("implement me")
 }
 
-func (m mockProtocol) Refer(url common.URL) protocol.Invoker {
+func (m mockProtocol) Refer(*common.URL) protocol.Invoker {
 	return &mockInvoker{}
 }
 
@@ -81,7 +81,7 @@ func (m mockProtocol) Destroy() {
 type mockInvoker struct {
 }
 
-func (m *mockInvoker) GetUrl() common.URL {
+func (m *mockInvoker) GetUrl() *common.URL {
 	panic("implement me")
 }
 

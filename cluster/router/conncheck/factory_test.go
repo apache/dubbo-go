@@ -15,18 +15,60 @@
  * limitations under the License.
  */
 
-package router
+package conncheck
 
 import (
+	"context"
+	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
 )
 
-// Chain
-type Chain interface {
-	router
-	// AddRouters Add routers
-	AddRouters([]PriorityRouter)
+// nolint
+type MockInvoker struct {
+	url *common.URL
+}
 
-	// SetInvokers notify router chain of the initial addresses from registry at the first time. Notify whenever addresses in registry change.
-	SetInvokers(invokers []protocol.Invoker)
+// nolint
+func NewMockInvoker(url *common.URL) *MockInvoker {
+	return &MockInvoker{
+		url: url,
+	}
+}
+
+// nolint
+func (bi *MockInvoker) GetUrl() *common.URL {
+	return bi.url
+}
+
+// nolint
+func (bi *MockInvoker) IsAvailable() bool {
+	return true
+}
+
+// nolint
+func (bi *MockInvoker) IsDestroyed() bool {
+	return true
+}
+
+// nolint
+func (bi *MockInvoker) Invoke(_ context.Context, _ protocol.Invocation) protocol.Result {
+	return nil
+}
+
+// nolint
+func (bi *MockInvoker) Destroy() {
+}
+
+// nolint
+func TestHealthCheckRouteFactory(t *testing.T) {
+	factory := newConnCheckRouteFactory()
+	assert.NotNil(t, factory)
 }

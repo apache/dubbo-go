@@ -36,7 +36,7 @@ func TestNewNacosClient(t *testing.T) {
 	nacosURL := strings.ReplaceAll(server.URL, "http", "registry")
 	registryUrl, _ := common.NewURL(nacosURL)
 	c := &nacosDynamicConfiguration{
-		url:  &registryUrl,
+		url:  registryUrl,
 		done: make(chan struct{}),
 	}
 	err := ValidateNacosClient(c, WithNacosName(nacosClientName))
@@ -59,7 +59,7 @@ func TestSetNacosClient(t *testing.T) {
 	nacosURL := "registry://" + server.Listener.Addr().String()
 	registryUrl, _ := common.NewURL(nacosURL)
 	c := &nacosDynamicConfiguration{
-		url:  &registryUrl,
+		url:  registryUrl,
 		done: make(chan struct{}),
 	}
 	var client *NacosClient
@@ -93,7 +93,7 @@ func TestNewNacosClient_connectError(t *testing.T) {
 	registryUrl, err := common.NewURL(nacosURL)
 	assert.NoError(t, err)
 	c := &nacosDynamicConfiguration{
-		url:  &registryUrl,
+		url:  registryUrl,
 		done: make(chan struct{}),
 	}
 	err = ValidateNacosClient(c, WithNacosName(nacosClientName))

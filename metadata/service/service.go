@@ -34,15 +34,15 @@ type MetadataService interface {
 	// ServiceName will get the service's name in meta service , which is application name
 	ServiceName() (string, error)
 	// ExportURL will store the exported url in metadata
-	ExportURL(url common.URL) (bool, error)
+	ExportURL(url *common.URL) (bool, error)
 	// UnexportURL will delete the exported url in metadata
-	UnexportURL(url common.URL) error
+	UnexportURL(url *common.URL) error
 	// SubscribeURL will store the subscribed url in metadata
-	SubscribeURL(url common.URL) (bool, error)
+	SubscribeURL(url *common.URL) (bool, error)
 	// UnsubscribeURL will delete the subscribed url in metadata
-	UnsubscribeURL(url common.URL) error
+	UnsubscribeURL(url *common.URL) error
 	// PublishServiceDefinition will generate the target url's code info
-	PublishServiceDefinition(url common.URL) error
+	PublishServiceDefinition(url *common.URL) error
 	// GetExportedURLs will get the target exported url in metadata
 	// the url should be unique
 	// due to dubbo-go only support return array []interface{} in RPCService, so we should declare the return type as []interface{}
@@ -53,7 +53,7 @@ type MetadataService interface {
 
 	// GetExportedURLs will get the target subscribed url in metadata
 	// the url should be unique
-	GetSubscribedURLs() ([]common.URL, error)
+	GetSubscribedURLs() ([]*common.URL, error)
 	// GetServiceDefinition will get the target service info store in metadata
 	GetServiceDefinition(interfaceName string, group string, version string) (string, error)
 	// GetServiceDefinition will get the target service info store in metadata by service key
@@ -122,7 +122,7 @@ func getExportedServicesRevision(serviceInstance registry.ServiceInstance) strin
 	return metaData[constant.EXPORTED_SERVICES_REVISION_PROPERTY_NAME]
 }
 
-func ConvertURLArrToIntfArr(urls []common.URL) []interface{} {
+func ConvertURLArrToIntfArr(urls []*common.URL) []interface{} {
 	if len(urls) == 0 {
 		return []interface{}{}
 	}

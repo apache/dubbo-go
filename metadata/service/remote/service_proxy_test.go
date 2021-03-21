@@ -54,18 +54,28 @@ func TestMetadataServiceProxy_GetServiceDefinition(t *testing.T) {
 // in fact, we don't use them
 func TestMetadataServiceProxy(t *testing.T) {
 	pxy := createProxy()
-	pxy.ServiceName()
-	pxy.PublishServiceDefinition(common.URL{})
-	pxy.Version()
-	pxy.GetSubscribedURLs()
-	pxy.UnsubscribeURL(common.URL{})
-	pxy.GetServiceDefinitionByServiceKey("any")
-	pxy.ExportURL(common.URL{})
-	pxy.SubscribeURL(common.URL{})
-	pxy.MethodMapper()
-	pxy.UnexportURL(common.URL{})
-	pxy.Reference()
-	pxy.RefreshMetadata(constant.ANY_VALUE, constant.ANY_VALUE)
+	_, err := pxy.ServiceName()
+	assert.NoError(t, err)
+	err = pxy.PublishServiceDefinition(&common.URL{})
+	assert.NoError(t, err)
+	_, err = pxy.Version()
+	assert.NoError(t, err)
+	_, err = pxy.GetSubscribedURLs()
+	assert.NoError(t, err)
+	err = pxy.UnsubscribeURL(&common.URL{})
+	assert.NoError(t, err)
+	_, err = pxy.GetServiceDefinitionByServiceKey("any")
+	assert.NoError(t, err)
+	_, err = pxy.ExportURL(&common.URL{})
+	assert.NoError(t, err)
+	_, err = pxy.SubscribeURL(&common.URL{})
+	assert.NoError(t, err)
+	_ = pxy.MethodMapper()
+	err = pxy.UnexportURL(&common.URL{})
+	assert.NoError(t, err)
+	_ = pxy.Reference()
+	_, err = pxy.RefreshMetadata(constant.ANY_VALUE, constant.ANY_VALUE)
+	assert.NoError(t, err)
 }
 
 func createProxy() service.MetadataService {
@@ -89,7 +99,7 @@ func prepareTest() {
 		return &mockMetadataReportFactory{}
 	})
 	u, _ := common.NewURL("mock://localhost")
-	instance.GetMetadataReportInstance(&u)
+	instance.GetMetadataReportInstance(u)
 }
 
 type mockMetadataReportFactory struct {
@@ -110,7 +120,7 @@ func (m mockMetadataReport) StoreConsumerMetadata(*identifier.MetadataIdentifier
 	panic("implement me")
 }
 
-func (m mockMetadataReport) SaveServiceMetadata(*identifier.ServiceMetadataIdentifier, common.URL) error {
+func (m mockMetadataReport) SaveServiceMetadata(*identifier.ServiceMetadataIdentifier, *common.URL) error {
 	return nil
 }
 

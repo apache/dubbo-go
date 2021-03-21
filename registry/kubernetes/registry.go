@@ -19,15 +19,13 @@ package kubernetes
 
 import (
 	"fmt"
-	"os"
 	"path"
 	"sync"
 	"time"
 )
 
 import (
-	"github.com/apache/dubbo-getty"
-	"github.com/dubbogo/gost/net"
+	getty "github.com/apache/dubbo-getty"
 	perrors "github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 )
@@ -41,11 +39,6 @@ import (
 	"github.com/apache/dubbo-go/remoting/kubernetes"
 )
 
-var (
-	processID = ""
-	localIP   = ""
-)
-
 const (
 	Name         = "kubernetes"
 	ConnDelay    = 3
@@ -53,8 +46,8 @@ const (
 )
 
 func init() {
-	processID = fmt.Sprintf("%d", os.Getpid())
-	localIP, _ = gxnet.GetLocalIP()
+	//processID = fmt.Sprintf("%d", os.Getpid())
+	//localIP = common.GetLocalIp()
 	extension.SetRegistry(Name, newKubernetesRegistry)
 }
 
@@ -209,7 +202,7 @@ func (r *kubernetesRegistry) HandleClientRestart() {
 		failTimes int
 	)
 
-	defer r.WaitGroup()
+	defer r.WaitGroup().Done()
 LOOP:
 	for {
 		select {

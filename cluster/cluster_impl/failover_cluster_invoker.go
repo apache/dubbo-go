@@ -24,12 +24,12 @@ import (
 )
 
 import (
-	gxnet "github.com/dubbogo/gost/net"
 	perrors "github.com/pkg/errors"
 )
 
 import (
 	"github.com/apache/dubbo-go/cluster"
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
@@ -51,6 +51,7 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 		result    protocol.Result
 		invoked   []protocol.Invoker
 		providers []string
+		ivk       protocol.Invoker
 	)
 
 	invokers := invoker.directory.List(invocation)
@@ -75,7 +76,7 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 				return &protocol.RPCResult{Err: err}
 			}
 		}
-		ivk := invoker.doSelect(loadBalance, invocation, invokers, invoked)
+		ivk = invoker.doSelect(loadBalance, invocation, invokers, invoked)
 		if ivk == nil {
 			continue
 		}
@@ -88,10 +89,17 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 		}
 		return result
 	}
-
-	ip, _ := gxnet.GetLocalIP()
+	ip := common.GetLocalIp()
 	invokerSvc := invoker.GetUrl().Service()
 	invokerUrl := invoker.directory.GetUrl()
+	if ivk == nil {
+		logger.Errorf("Failed to invoke the method %s of the service %s .No provider is available.", methodName, invokerSvc)
+		return &protocol.RPCResult{
+			Err: perrors.Errorf("Failed to invoke the method %s of the service %s .No provider is available because can't connect server.",
+				methodName, invokerSvc),
+		}
+	}
+
 	return &protocol.RPCResult{
 		Err: perrors.Wrap(result.Error(), fmt.Sprintf("Failed to invoke the method %v in the service %v. "+
 			"Tried %v times of the providers %v (%v/%v)from the registry %v on the consumer %v using the dubbo version %v. "+

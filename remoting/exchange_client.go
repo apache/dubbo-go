@@ -18,8 +18,11 @@ package remoting
 
 import (
 	"errors"
-	"sync"
 	"time"
+)
+
+import (
+	uatomic "go.uber.org/atomic"
 )
 
 import (
@@ -28,25 +31,18 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-var (
-	// store requestID and response
-	pendingResponses = new(sync.Map)
-)
-
-type SequenceType int64
-
 // It is interface of client for network communication.
 // If you use getty as network communication, you should define GettyClient that implements this interface.
 type Client interface {
 	SetExchangeClient(client *ExchangeClient)
-	// responseHandler is used to deal with msg
-	SetResponseHandler(responseHandler ResponseHandler)
 	// connect url
-	Connect(url common.URL) error
+	Connect(url *common.URL) error
 	// close
 	Close()
 	// send request to server.
 	Request(request *Request, timeout time.Duration, response *PendingResponse) error
+	// check if the client is still available
+	IsAvailable() bool
 }
 
 // This is abstraction level. it is like facade.
@@ -59,15 +55,12 @@ type ExchangeClient struct {
 	client Client
 	// the tag for init.
 	init bool
-}
-
-// handle the message from server
-type ResponseHandler interface {
-	Handler(response *Response)
+	// the number of service using the exchangeClient
+	activeNum uatomic.Uint32
 }
 
 // create ExchangeClient
-func NewExchangeClient(url common.URL, client Client, connectTimeout time.Duration, lazyInit bool) *ExchangeClient {
+func NewExchangeClient(url *common.URL, client Client, connectTimeout time.Duration, lazyInit bool) *ExchangeClient {
 	exchangeClient := &ExchangeClient{
 		ConnectTimeout: connectTimeout,
 		address:        url.Location,
@@ -79,12 +72,11 @@ func NewExchangeClient(url common.URL, client Client, connectTimeout time.Durati
 			return nil
 		}
 	}
-
-	client.SetResponseHandler(exchangeClient)
+	exchangeClient.IncreaseActiveNumber()
 	return exchangeClient
 }
 
-func (cl *ExchangeClient) doInit(url common.URL) error {
+func (cl *ExchangeClient) doInit(url *common.URL) error {
 	if cl.init {
 		return nil
 	}
@@ -101,8 +93,23 @@ func (cl *ExchangeClient) doInit(url common.URL) error {
 	return nil
 }
 
+// increase number of service using client
+func (client *ExchangeClient) IncreaseActiveNumber() uint32 {
+	return client.activeNum.Add(1)
+}
+
+// decrease number of service using client
+func (client *ExchangeClient) DecreaseActiveNumber() uint32 {
+	return client.activeNum.Sub(1)
+}
+
+// get number of service using client
+func (client *ExchangeClient) GetActiveNumber() uint32 {
+	return client.activeNum.Load()
+}
+
 // two way request
-func (client *ExchangeClient) Request(invocation *protocol.Invocation, url common.URL, timeout time.Duration,
+func (client *ExchangeClient) Request(invocation *protocol.Invocation, url *common.URL, timeout time.Duration,
 	result *protocol.RPCResult) error {
 	if er := client.doInit(url); er != nil {
 		return er
@@ -132,7 +139,7 @@ func (client *ExchangeClient) Request(invocation *protocol.Invocation, url commo
 }
 
 // async two way request
-func (client *ExchangeClient) AsyncRequest(invocation *protocol.Invocation, url common.URL, timeout time.Duration,
+func (client *ExchangeClient) AsyncRequest(invocation *protocol.Invocation, url *common.URL, timeout time.Duration,
 	callback common.AsyncCallback, result *protocol.RPCResult) error {
 	if er := client.doInit(url); er != nil {
 		return er
@@ -158,7 +165,7 @@ func (client *ExchangeClient) AsyncRequest(invocation *protocol.Invocation, url 
 }
 
 // oneway request
-func (client *ExchangeClient) Send(invocation *protocol.Invocation, url common.URL, timeout time.Duration) error {
+func (client *ExchangeClient) Send(invocation *protocol.Invocation, url *common.URL, timeout time.Duration) error {
 	if er := client.doInit(url); er != nil {
 		return er
 	}
@@ -184,46 +191,7 @@ func (client *ExchangeClient) Close() {
 	client.init = false
 }
 
-// handle the response from server
-func (client *ExchangeClient) Handler(response *Response) {
-
-	pendingResponse := removePendingResponse(SequenceType(response.ID))
-	if pendingResponse == nil {
-		logger.Errorf("failed to get pending response context for response package %s", *response)
-		return
-	}
-
-	pendingResponse.response = response
-
-	if pendingResponse.Callback == nil {
-		pendingResponse.Err = pendingResponse.response.Error
-		pendingResponse.Done <- struct{}{}
-	} else {
-		pendingResponse.Callback(pendingResponse.GetCallResponse())
-	}
-}
-
-// store response into map
-func AddPendingResponse(pr *PendingResponse) {
-	pendingResponses.Store(SequenceType(pr.seq), pr)
-}
-
-// get and remove response
-func removePendingResponse(seq SequenceType) *PendingResponse {
-	if pendingResponses == nil {
-		return nil
-	}
-	if presp, ok := pendingResponses.Load(seq); ok {
-		pendingResponses.Delete(seq)
-		return presp.(*PendingResponse)
-	}
-	return nil
-}
-
-// get response
-func GetPendingResponse(seq SequenceType) *PendingResponse {
-	if presp, ok := pendingResponses.Load(seq); ok {
-		return presp.(*PendingResponse)
-	}
-	return nil
+// IsAvailable to check if the underlying network client is available yet.
+func (client *ExchangeClient) IsAvailable() bool {
+	return client.client.IsAvailable()
 }

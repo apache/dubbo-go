@@ -55,15 +55,15 @@ func (c *DubboTestCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer
 	if !ok {
 		return nil, perrors.Errorf("encode request failed for parameter type :%+v", request)
 	}
-	invocation := *invoc
+	tmpInvocation := invoc
 
 	svc := impl.Service{}
-	svc.Path = invocation.AttachmentsByKey(constant.PATH_KEY, "")
-	svc.Interface = invocation.AttachmentsByKey(constant.INTERFACE_KEY, "")
-	svc.Version = invocation.AttachmentsByKey(constant.VERSION_KEY, "")
-	svc.Group = invocation.AttachmentsByKey(constant.GROUP_KEY, "")
-	svc.Method = invocation.MethodName()
-	timeout, err := strconv.Atoi(invocation.AttachmentsByKey(constant.TIMEOUT_KEY, strconv.Itoa(constant.DEFAULT_REMOTING_TIMEOUT)))
+	svc.Path = tmpInvocation.AttachmentsByKey(constant.PATH_KEY, "")
+	svc.Interface = tmpInvocation.AttachmentsByKey(constant.INTERFACE_KEY, "")
+	svc.Version = tmpInvocation.AttachmentsByKey(constant.VERSION_KEY, "")
+	svc.Group = tmpInvocation.AttachmentsByKey(constant.GROUP_KEY, "")
+	svc.Method = tmpInvocation.MethodName()
+	timeout, err := strconv.Atoi(tmpInvocation.AttachmentsByKey(constant.TIMEOUT_KEY, strconv.Itoa(constant.DEFAULT_REMOTING_TIMEOUT)))
 	if err != nil {
 		// it will be wrapped in readwrite.Write .
 		return nil, perrors.WithStack(err)
@@ -71,7 +71,7 @@ func (c *DubboTestCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer
 	svc.Timeout = time.Duration(timeout)
 
 	header := impl.DubboHeader{}
-	serialization := invocation.AttachmentsByKey(constant.SERIALIZATION_KEY, constant.HESSIAN2_SERIALIZATION)
+	serialization := tmpInvocation.AttachmentsByKey(constant.SERIALIZATION_KEY, constant.HESSIAN2_SERIALIZATION)
 	if serialization == constant.PROTOBUF_SERIALIZATION {
 		header.SerialID = constant.S_Proto
 	} else {
@@ -87,7 +87,7 @@ func (c *DubboTestCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer
 	pkg := &impl.DubboPackage{
 		Header:  header,
 		Service: svc,
-		Body:    impl.NewRequestPayload(invocation.Arguments(), invocation.Attachments()),
+		Body:    impl.NewRequestPayload(tmpInvocation.Arguments(), tmpInvocation.Attachments()),
 		Err:     nil,
 		Codec:   impl.NewDubboCodec(nil),
 	}
@@ -99,7 +99,7 @@ func (c *DubboTestCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer
 	return pkg.Marshal()
 }
 
-// encode heartbeart request
+// encode heartbeat request
 func (c *DubboTestCodec) encodeHeartbeartReqeust(request *remoting.Request) (*bytes.Buffer, error) {
 	header := impl.DubboHeader{
 		Type:     impl.PackageHeartbeat,
@@ -171,10 +171,7 @@ func (c *DubboTestCodec) Decode(data []byte) (remoting.DecodeResult, int, error)
 }
 
 func (c *DubboTestCodec) isRequest(data []byte) bool {
-	if data[2]&byte(0x80) == 0x00 {
-		return false
-	}
-	return true
+	return data[2]&byte(0x80) != 0x00
 }
 
 // decode request
@@ -230,7 +227,6 @@ func (c *DubboTestCodec) decodeRequest(data []byte) (*remoting.Request, int, err
 func (c *DubboTestCodec) decodeResponse(data []byte) (*remoting.Response, int, error) {
 	buf := bytes.NewBuffer(data)
 	pkg := impl.NewDubboPackage(buf)
-	response := &remoting.Response{}
 	err := pkg.Unmarshal()
 	if err != nil {
 		originErr := perrors.Cause(err)
@@ -240,7 +236,7 @@ func (c *DubboTestCodec) decodeResponse(data []byte) (*remoting.Response, int, e
 		}
 		return nil, 0, perrors.WithStack(err)
 	}
-	response = &remoting.Response{
+	response := &remoting.Response{
 		ID: pkg.Header.ID,
 		//Version:  pkg.Header.,
 		SerialID: pkg.Header.SerialID,

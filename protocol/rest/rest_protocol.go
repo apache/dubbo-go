@@ -18,7 +18,6 @@
 package rest
 
 import (
-	"strings"
 	"sync"
 	"time"
 )
@@ -72,7 +71,8 @@ func (rp *RestProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetUrl()
 	serviceKey := url.ServiceKey()
 	exporter := NewRestExporter(serviceKey, invoker, rp.ExporterMap())
-	restServiceConfig := rest_config.GetRestProviderServiceConfig(strings.TrimPrefix(url.Path, "/"))
+	id := url.GetParam(constant.BEAN_NAME_KEY, "")
+	restServiceConfig := rest_config.GetRestProviderServiceConfig(id)
 	if restServiceConfig == nil {
 		logger.Errorf("%s service doesn't has provider config", url.Path)
 		return nil
@@ -86,7 +86,7 @@ func (rp *RestProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 }
 
 // Refer create rest service reference
-func (rp *RestProtocol) Refer(url common.URL) protocol.Invoker {
+func (rp *RestProtocol) Refer(url *common.URL) protocol.Invoker {
 	// create rest_invoker
 	var requestTimeout = config.GetConsumerConfig().RequestTimeout
 	requestTimeoutStr := url.GetParam(constant.TIMEOUT_KEY, config.GetConsumerConfig().Request_Timeout)
@@ -94,7 +94,8 @@ func (rp *RestProtocol) Refer(url common.URL) protocol.Invoker {
 	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
 		requestTimeout = t
 	}
-	restServiceConfig := rest_config.GetRestConsumerServiceConfig(strings.TrimPrefix(url.Path, "/"))
+	id := url.GetParam(constant.BEAN_NAME_KEY, "")
+	restServiceConfig := rest_config.GetRestConsumerServiceConfig(id)
 	if restServiceConfig == nil {
 		logger.Errorf("%s service doesn't has consumer config", url.Path)
 		return nil
@@ -107,7 +108,7 @@ func (rp *RestProtocol) Refer(url common.URL) protocol.Invoker {
 }
 
 // nolint
-func (rp *RestProtocol) getServer(url common.URL, serverType string) server.RestServer {
+func (rp *RestProtocol) getServer(url *common.URL, serverType string) server.RestServer {
 	restServer, ok := rp.serverMap[url.Location]
 	if ok {
 		return restServer
@@ -149,8 +150,8 @@ func (rp *RestProtocol) getClient(restOptions client.RestOptions, clientType str
 func (rp *RestProtocol) Destroy() {
 	// destroy rest_server
 	rp.BaseProtocol.Destroy()
-	for key, server := range rp.serverMap {
-		server.Destroy()
+	for key, tmpServer := range rp.serverMap {
+		tmpServer.Destroy()
 		delete(rp.serverMap, key)
 	}
 	for key := range rp.clientMap {

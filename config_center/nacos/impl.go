@@ -186,8 +186,8 @@ func (n *nacosDynamicConfiguration) GetDone() chan struct{} {
 }
 
 // GetUrl Get Url
-func (n *nacosDynamicConfiguration) GetUrl() common.URL {
-	return *n.url
+func (n *nacosDynamicConfiguration) GetUrl() *common.URL {
+	return n.url
 }
 
 // Destroy Destroy configuration instance
