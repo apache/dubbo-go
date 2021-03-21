@@ -38,7 +38,7 @@ type MetadataReport interface {
 	// SaveServiceMetadata saves the metadata.
 	// Metadata includes the basic info of the server,
 	// service info, and other user custom info.
-	SaveServiceMetadata(*identifier.ServiceMetadataIdentifier, common.URL) error
+	SaveServiceMetadata(*identifier.ServiceMetadataIdentifier, *common.URL) error
 
 	// RemoveServiceMetadata removes the metadata.
 	RemoveServiceMetadata(*identifier.ServiceMetadataIdentifier) error

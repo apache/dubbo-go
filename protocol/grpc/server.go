@@ -40,6 +40,7 @@ import (
 // Server is a gRPC server
 type Server struct {
 	grpcServer *grpc.Server
+	bufferSize int
 }
 
 // NewServer creates a new server
@@ -57,8 +58,12 @@ type DubboGrpcService interface {
 	ServiceDesc() *grpc.ServiceDesc
 }
 
+func (s *Server) SetBufferSize(n int) {
+	s.bufferSize = n
+}
+
 // Start gRPC server with @url
-func (s *Server) Start(url common.URL) {
+func (s *Server) Start(url *common.URL) {
 	var (
 		addr string
 		err  error
@@ -72,7 +77,9 @@ func (s *Server) Start(url common.URL) {
 	// if global trace instance was set, then server tracer instance can be get. If not , will return Nooptracer
 	tracer := opentracing.GlobalTracer()
 	server := grpc.NewServer(
-		grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)))
+		grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)),
+		grpc.MaxRecvMsgSize(1024*1024*s.bufferSize),
+		grpc.MaxSendMsgSize(1024*1024*s.bufferSize))
 
 	key := url.GetParam(constant.BEAN_NAME_KEY, "")
 	service := config.GetProviderService(key)

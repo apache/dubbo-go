@@ -18,6 +18,7 @@
 package logger
 
 import (
+	"flag"
 	"io/ioutil"
 	"log"
 	"os"
@@ -64,8 +65,14 @@ func init() {
 	if logger != nil {
 		return
 	}
-	logConfFile := os.Getenv(constant.APP_LOG_CONF_FILE)
-	err := InitLog(logConfFile)
+
+	fs := flag.NewFlagSet("log", flag.ContinueOnError)
+	logConfFile := fs.String("logConf", os.Getenv(constant.APP_LOG_CONF_FILE), "default log config path")
+	fs.Parse(os.Args[1:])
+	for len(fs.Args()) != 0 {
+		fs.Parse(fs.Args()[1:])
+	}
+	err := InitLog(*logConfFile)
 	if err != nil {
 		log.Printf("[InitLog] warn: %v", err)
 	}
@@ -163,6 +170,7 @@ type OpsLogger interface {
 // SetLoggerLevel use for set logger level
 func (dl *DubboLogger) SetLoggerLevel(level string) {
 	l := new(zapcore.Level)
-	l.Set(level)
-	dl.dynamicLevel.SetLevel(*l)
+	if err := l.Set(level); err == nil {
+		dl.dynamicLevel.SetLevel(*l)
+	}
 }

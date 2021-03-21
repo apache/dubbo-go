@@ -44,7 +44,7 @@ const (
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
-		"side=provider&timeout=3000&timestamp=1556509797245"
+		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=com.ikurento.user.UserProvider"
 )
 
 func TestRestInvokerInvoke(t *testing.T) {
@@ -65,7 +65,7 @@ func TestRestInvokerInvoke(t *testing.T) {
 
 	url, err := common.NewURL(mockRestCommonUrl)
 	assert.NoError(t, err)
-	_, err = common.ServiceMap.Register("UserProvider", url.Protocol, &UserProvider{})
+	_, err = common.ServiceMap.Register(url.Service(), url.Protocol, "", "", &UserProvider{})
 	assert.NoError(t, err)
 	con := config.ProviderConfig{}
 	config.SetProviderConfig(con)
@@ -210,6 +210,6 @@ func TestRestInvokerInvoke(t *testing.T) {
 	assert.Error(t, res.Error(), "test error")
 
 	assert.Equal(t, filterNum, 12)
-	err = common.ServiceMap.UnRegister("UserProvider", url.Protocol, "com.ikurento.user.UserProvider")
+	err = common.ServiceMap.UnRegister(url.Service(), url.Protocol, url.ServiceKey())
 	assert.NoError(t, err)
 }

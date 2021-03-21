@@ -39,7 +39,7 @@ func initRegistry(t *testing.T) *etcdV3Registry {
 		t.Fatal(err)
 	}
 
-	reg, err := newETCDV3Registry(&regurl)
+	reg, err := newETCDV3Registry(regurl)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -86,7 +86,7 @@ func (suite *RegistryTestSuite) TestSubscribe() {
 
 	err = reg2.Register(url)
 	assert.NoError(t, err)
-	listener, err := reg2.DoSubscribe(&url)
+	listener, err := reg2.DoSubscribe(url)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -104,7 +104,7 @@ func (suite *RegistryTestSuite) TestConsumerDestroy() {
 	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 
 	reg := initRegistry(t)
-	_, err := reg.DoSubscribe(&url)
+	_, err := reg.DoSubscribe(url)
 	if err != nil {
 		t.Fatal(err)
 	}

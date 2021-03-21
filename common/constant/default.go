@@ -81,7 +81,7 @@ const (
 
 const (
 	SIMPLE_METADATA_SERVICE_NAME = "MetadataService"
-	DEFAULT_REVIESION            = "N/A"
+	DEFAULT_REVISION             = "N/A"
 )
 
 const (

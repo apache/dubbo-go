@@ -19,6 +19,7 @@ package etcdv3
 
 import (
 	"strings"
+	"sync"
 )
 
 import (
@@ -64,7 +65,7 @@ func (l *dataListener) DataChange(eventType remoting.Event) bool {
 	}
 
 	for _, v := range l.interestedURL {
-		if serviceURL.URLEqual(*v) {
+		if serviceURL.URLEqual(v) {
 			l.listener.Process(
 				&config_center.ConfigChangeEvent{
 					Key:        eventType.Path,
@@ -79,8 +80,9 @@ func (l *dataListener) DataChange(eventType remoting.Event) bool {
 }
 
 type configurationListener struct {
-	registry *etcdV3Registry
-	events   chan *config_center.ConfigChangeEvent
+	registry  *etcdV3Registry
+	events    chan *config_center.ConfigChangeEvent
+	closeOnce sync.Once
 }
 
 // NewConfigurationListener for listening the event of etcdv3.
@@ -113,12 +115,14 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 				}
 				continue
 			}
-			return &registry.ServiceEvent{Action: e.ConfigType, Service: e.Value.(common.URL)}, nil
+			return &registry.ServiceEvent{Action: e.ConfigType, Service: e.Value.(*common.URL)}, nil
 		}
 	}
 }
 
 // Close etcd registry center
 func (l *configurationListener) Close() {
-	l.registry.WaitGroup().Done()
+	l.closeOnce.Do(func() {
+		l.registry.WaitGroup().Done()
+	})
 }

@@ -56,7 +56,7 @@ func (invoker *forkingClusterInvoker) Invoke(ctx context.Context, invocation pro
 	}
 
 	var selected []protocol.Invoker
-	forks := int(invoker.GetUrl().GetParamInt(constant.FORKS_KEY, constant.DEFAULT_FORKS))
+	forks := invoker.GetUrl().GetParamByIntValue(constant.FORKS_KEY, constant.DEFAULT_FORKS)
 	timeouts := invoker.GetUrl().GetParamInt(constant.TIMEOUT_KEY, constant.DEFAULT_TIMEOUT)
 	if forks < 0 || forks > len(invokers) {
 		selected = invokers

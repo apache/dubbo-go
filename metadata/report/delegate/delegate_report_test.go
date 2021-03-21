@@ -46,13 +46,10 @@ func TestMetadataReport_MetadataReportRetry(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	retry.startRetryTask()
-	itsTime := time.After(2500 * time.Millisecond)
-	select {
-	case <-itsTime:
-		retry.scheduler.Clear()
-		assert.Equal(t, counter.Load(), int64(3))
-		logger.Info("over")
-	}
+	<-time.After(2500 * time.Millisecond)
+	retry.scheduler.Clear()
+	assert.Equal(t, counter.Load(), int64(3))
+	logger.Info("over")
 }
 
 func TestMetadataReport_MetadataReportRetryWithLimit(t *testing.T) {
@@ -64,13 +61,10 @@ func TestMetadataReport_MetadataReportRetryWithLimit(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	retry.startRetryTask()
-	itsTime := time.After(2500 * time.Millisecond)
-	select {
-	case <-itsTime:
-		retry.scheduler.Clear()
-		assert.Equal(t, counter.Load(), int64(2))
-		logger.Info("over")
-	}
+	<-time.After(2500 * time.Millisecond)
+	retry.scheduler.Clear()
+	assert.Equal(t, counter.Load(), int64(2))
+	logger.Info("over")
 }
 
 func mockNewMetadataReport(t *testing.T) *MetadataReport {
@@ -116,8 +110,8 @@ func getMockDefinition(id *identifier.MetadataIdentifier, t *testing.T) *definit
 			"owner=ZX&pid=1447&revision=0.0.1&side=provider&timeout=3000&timestamp=1556509797245&group=%v&version=%v&bean.name=%v",
 		protocol, id.ServiceInterface, id.Group, id.Version, beanName))
 	assert.NoError(t, err)
-	_, err = common.ServiceMap.Register(id.ServiceInterface, protocol, &definition.UserProvider{})
+	_, err = common.ServiceMap.Register(id.ServiceInterface, protocol, id.Group, id.Version, &definition.UserProvider{})
 	assert.NoError(t, err)
-	service := common.ServiceMap.GetService(url.Protocol, url.GetParam(constant.BEAN_NAME_KEY, url.Service()))
+	service := common.ServiceMap.GetServiceByServiceKey(url.Protocol, url.ServiceKey())
 	return definition.BuildServiceDefinition(*service, url)
 }

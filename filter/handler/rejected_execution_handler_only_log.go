@@ -63,7 +63,7 @@ type OnlyLogRejectedExecutionHandler struct {
 }
 
 // RejectedExecution will do nothing, it only log the invocation.
-func (handler *OnlyLogRejectedExecutionHandler) RejectedExecution(url common.URL,
+func (handler *OnlyLogRejectedExecutionHandler) RejectedExecution(url *common.URL,
 	_ protocol.Invocation) protocol.Result {
 
 	logger.Errorf("The invocation was rejected. url: %s", url.String())

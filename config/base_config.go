@@ -33,10 +33,6 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
-type multiConfiger interface {
-	Prefix() string
-}
-
 // BaseConfig is the common configuration for provider and consumer
 type BaseConfig struct {
 	ConfigCenterConfig *ConfigCenterConfig `yaml:"config_center" json:"config_center,omitempty"`
@@ -49,11 +45,14 @@ type BaseConfig struct {
 	// application config
 	ApplicationConfig *ApplicationConfig `yaml:"application" json:"application,omitempty" property:"application"`
 
-	prefix              string
+	//prefix              string
 	fatherConfig        interface{}
 	EventDispatcherType string        `default:"direct" yaml:"event_dispatcher_type" json:"event_dispatcher_type,omitempty"`
 	MetricConfig        *MetricConfig `yaml:"metrics" json:"metrics,omitempty"`
 	fileStream          *bytes.Buffer
+
+	// cache file used to store the current used configurations.
+	CacheFile string `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
 }
 
 // nolint
@@ -244,7 +243,7 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 
 func (c *BaseConfig) fresh() {
 	configList := config.GetEnvInstance().Configuration()
-	for element := configList.Front(); element != nil; element = element.Next() {
+	for element := configList.Back(); element != nil; element = element.Prev() {
 		cfg := element.Value.(*config.InmemoryConfiguration)
 		c.freshInternalConfig(cfg)
 	}

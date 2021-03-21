@@ -58,7 +58,7 @@ func (m *MockRejectedExecutionHandler) EXPECT() *MockRejectedExecutionHandlerMoc
 }
 
 // RejectedExecution mocks base method
-func (m *MockRejectedExecutionHandler) RejectedExecution(url common.URL, invocation protocol.Invocation) protocol.Result {
+func (m *MockRejectedExecutionHandler) RejectedExecution(url *common.URL, invocation protocol.Invocation) protocol.Result {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RejectedExecution", url, invocation)
 	ret0, _ := ret[0].(protocol.Result)

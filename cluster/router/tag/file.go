@@ -24,10 +24,12 @@ import (
 )
 
 import (
+	"github.com/RoaringBitmap/roaring"
 	perrors "github.com/pkg/errors"
 )
 
 import (
+	"github.com/apache/dubbo-go/cluster/router"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
@@ -39,10 +41,11 @@ type FileTagRouter struct {
 	router     *tagRouter
 	routerRule *RouterRule
 	url        *common.URL
-	force      bool
+	//force      bool
 }
 
 // NewFileTagRouter Create file tag router instance with content (from config file)
+// todo fix this router, now it is useless, tag router is nil
 func NewFileTagRouter(content []byte) (*FileTagRouter, error) {
 	fileRouter := &FileTagRouter{}
 	rule, err := getRule(string(content))
@@ -50,13 +53,13 @@ func NewFileTagRouter(content []byte) (*FileTagRouter, error) {
 		return nil, perrors.Errorf("yaml.Unmarshal() failed , error:%v", perrors.WithStack(err))
 	}
 	fileRouter.routerRule = rule
-	url := fileRouter.URL()
-	fileRouter.router, err = NewTagRouter(&url)
+	notify := make(chan struct{})
+	fileRouter.router, err = NewTagRouter(fileRouter.URL(), notify)
 	return fileRouter, err
 }
 
 // URL Return URL in file tag router n
-func (f *FileTagRouter) URL() common.URL {
+func (f *FileTagRouter) URL() *common.URL {
 	f.parseOnce.Do(func() {
 		routerRule := f.routerRule
 		f.url = common.NewURLWithOptions(
@@ -66,7 +69,7 @@ func (f *FileTagRouter) URL() common.URL {
 			common.WithParamsValue(constant.RouterPriority, strconv.Itoa(routerRule.Priority)),
 			common.WithParamsValue(constant.ROUTER_KEY, constant.TAG_ROUTE_PROTOCOL))
 	})
-	return *f.url
+	return f.url
 }
 
 // Priority Return Priority in listenable router
@@ -74,9 +77,10 @@ func (f *FileTagRouter) Priority() int64 {
 	return f.router.priority
 }
 
-func (f *FileTagRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
-	if len(invokers) == 0 {
+func (f *FileTagRouter) Route(invokers *roaring.Bitmap, cache router.Cache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
+	if invokers.IsEmpty() {
 		return invokers
 	}
-	return f.Route(invokers, url, invocation)
+	// FIXME: I believe this is incorrect.
+	return f.Route(invokers, cache, url, invocation)
 }

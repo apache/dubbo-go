@@ -40,22 +40,46 @@ import (
 type Proxy struct {
 	rpc         common.RPCService
 	invoke      protocol.Invoker
-	callBack    interface{}
+	callback    interface{}
 	attachments map[string]string
-
-	once sync.Once
+	implement   ImplementFunc
+	once        sync.Once
 }
+
+type (
+	// ProxyOption a function to init Proxy with options
+	ProxyOption func(p *Proxy)
+	// ImplementFunc function for proxy impl of RPCService functions
+	ImplementFunc func(p *Proxy, v common.RPCService)
+)
 
 var (
 	typError = reflect.Zero(reflect.TypeOf((*error)(nil)).Elem()).Type()
 )
 
 // NewProxy create service proxy.
-func NewProxy(invoke protocol.Invoker, callBack interface{}, attachments map[string]string) *Proxy {
-	return &Proxy{
+func NewProxy(invoke protocol.Invoker, callback interface{}, attachments map[string]string) *Proxy {
+	return NewProxyWithOptions(invoke, callback, attachments,
+		WithProxyImplementFunc(DefaultProxyImplementFunc))
+}
+
+// NewProxyWithOptions create service proxy with options.
+func NewProxyWithOptions(invoke protocol.Invoker, callback interface{}, attachments map[string]string, opts ...ProxyOption) *Proxy {
+	p := &Proxy{
 		invoke:      invoke,
-		callBack:    callBack,
+		callback:    callback,
 		attachments: attachments,
+	}
+	for _, opt := range opts {
+		opt(p)
+	}
+	return p
+}
+
+// WithProxyImplementFunc an option function to setup proxy.ImplementFunc
+func WithProxyImplementFunc(f ImplementFunc) ProxyOption {
+	return func(p *Proxy) {
+		p.implement = f
 	}
 }
 
@@ -66,7 +90,29 @@ func NewProxy(invoke protocol.Invoker, callBack interface{}, attachments map[str
 //  		Yyy func(ctx context.Context, args []interface{}, rsp *Zzz) error
 // 		}
 func (p *Proxy) Implement(v common.RPCService) {
+	p.once.Do(func() {
+		p.implement(p, v)
+		p.rpc = v
+	})
+}
 
+// Get gets rpc service instance.
+func (p *Proxy) Get() common.RPCService {
+	return p.rpc
+}
+
+// GetCallback gets callback.
+func (p *Proxy) GetCallback() interface{} {
+	return p.callback
+}
+
+// GetInvoker gets Invoker.
+func (p *Proxy) GetInvoker() protocol.Invoker {
+	return p.invoke
+}
+
+// DefaultProxyImplementFunc the default function for proxy impl
+func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 	// check parameters, incoming interface must be a elem's pointer.
 	valueOf := reflect.ValueOf(v)
 	logger.Debugf("[Implement] reflect.TypeOf: %s", valueOf.String())
@@ -139,13 +185,13 @@ func (p *Proxy) Implement(v common.RPCService) {
 
 			inv = invocation_impl.NewRPCInvocationWithOptions(invocation_impl.WithMethodName(methodName),
 				invocation_impl.WithArguments(inIArr), invocation_impl.WithReply(reply.Interface()),
-				invocation_impl.WithCallBack(p.callBack), invocation_impl.WithParameterValues(inVArr))
+				invocation_impl.WithCallBack(p.callback), invocation_impl.WithParameterValues(inVArr))
 
 			for k, value := range p.attachments {
 				inv.SetAttachments(k, value)
 			}
 
-			// add user setAttachment.  It is compatibility with previous versions.
+			// add user setAttachment. It is compatibility with previous versions.
 			atm := invCtx.Value(constant.AttachmentKey)
 			if m, ok := atm.(map[string]string); ok {
 				for k, value := range m {
@@ -159,15 +205,11 @@ func (p *Proxy) Implement(v common.RPCService) {
 			}
 
 			result := p.invoke.Invoke(invCtx, inv)
-			if len(result.Attachments()) > 0 {
-				invCtx = context.WithValue(invCtx, constant.AttachmentKey, result.Attachments())
-			}
-
 			err = result.Error()
 			if err != nil {
 				// the cause reason
 				err = perrors.Cause(err)
-				// if some error happened, it should be log some info in the seperate file.
+				// if some error happened, it should be log some info in the separate file.
 				if throwabler, ok := err.(java_exception.Throwabler); ok {
 					logger.Warnf("invoke service throw exception: %v , stackTraceElements: %v", err.Error(), throwabler.GetStackTrace())
 				} else {
@@ -220,18 +262,4 @@ func (p *Proxy) Implement(v common.RPCService) {
 		}
 	}
 
-	p.once.Do(func() {
-		p.rpc = v
-	})
-
-}
-
-// Get gets rpc service instance.
-func (p *Proxy) Get() common.RPCService {
-	return p.rpc
-}
-
-// GetCallback gets callback.
-func (p *Proxy) GetCallback() interface{} {
-	return p.callBack
 }

@@ -60,7 +60,7 @@ func TestEtcdMetadataReportFactory_CreateMetadataReport(t *testing.T) {
 		t.Fatal(err)
 	}
 	metadataReportFactory := &etcdMetadataReportFactory{}
-	metadataReport := metadataReportFactory.CreateMetadataReport(&url)
+	metadataReport := metadataReportFactory.CreateMetadataReport(url)
 	assert.NotNil(t, metadataReport)
 	e.Close()
 }
@@ -72,7 +72,7 @@ func TestEtcdMetadataReport_CRUD(t *testing.T) {
 		t.Fatal(err)
 	}
 	metadataReportFactory := &etcdMetadataReportFactory{}
-	metadataReport := metadataReportFactory.CreateMetadataReport(&url)
+	metadataReport := metadataReportFactory.CreateMetadataReport(url)
 	assert.NotNil(t, metadataReport)
 
 	err = metadataReport.StoreConsumerMetadata(newMetadataIdentifier("consumer"), "consumer metadata")
@@ -82,8 +82,9 @@ func TestEtcdMetadataReport_CRUD(t *testing.T) {
 	assert.Nil(t, err)
 
 	serviceMi := newServiceMetadataIdentifier()
-	serviceUrl, _ := common.NewURL("registry://localhost:8848", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
-	metadataReport.SaveServiceMetadata(serviceMi, serviceUrl)
+	serviceUrl, err := common.NewURL("registry://localhost:8848", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
+	assert.Nil(t, err)
+	err = metadataReport.SaveServiceMetadata(serviceMi, serviceUrl)
 	assert.Nil(t, err)
 
 	subMi := newSubscribeMetadataIdentifier()

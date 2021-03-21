@@ -36,3 +36,5 @@ config_center/apollo/mockDubbog.properties.json
 # vim stuff
 *~
 .*.sw?
+/license-header-checker-linux/
+/license-header-checker-linux.zip
