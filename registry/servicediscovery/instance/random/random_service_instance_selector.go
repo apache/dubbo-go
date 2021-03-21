@@ -41,7 +41,7 @@ func NewRandomServiceInstanceSelector() instance.ServiceInstanceSelector {
 	return &RandomServiceInstanceSelector{}
 }
 
-func (r *RandomServiceInstanceSelector) Select(url common.URL, serviceInstances []registry.ServiceInstance) registry.ServiceInstance {
+func (r *RandomServiceInstanceSelector) Select(url *common.URL, serviceInstances []registry.ServiceInstance) registry.ServiceInstance {
 	if len(serviceInstances) == 0 {
 		return nil
 	}

@@ -63,7 +63,7 @@ func (e *etcdMetadataReport) StoreConsumerMetadata(consumerMetadataIdentifier *i
 
 // SaveServiceMetadata will store the metadata
 // metadata including the basic info of the server, service info, and other user custom info
-func (e *etcdMetadataReport) SaveServiceMetadata(metadataIdentifier *identifier.ServiceMetadataIdentifier, url common.URL) error {
+func (e *etcdMetadataReport) SaveServiceMetadata(metadataIdentifier *identifier.ServiceMetadataIdentifier, url *common.URL) error {
 	key := e.getNodeKey(metadataIdentifier)
 	return e.client.Create(key, url.String())
 }

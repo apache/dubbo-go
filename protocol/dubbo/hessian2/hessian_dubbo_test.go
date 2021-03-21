@@ -80,6 +80,7 @@ func doTestHessianEncodeHeader(t *testing.T, packageType PackageType, responseSt
 
 func doTestResponse(t *testing.T, packageType PackageType, responseStatus byte, body interface{}, decodedResponse *DubboResponse, assertFunc func()) {
 	resp, err := doTestHessianEncodeHeader(t, packageType, responseStatus, body)
+	assert.NoError(t, err)
 
 	codecR := NewHessianCodec(bufio.NewReader(bytes.NewReader(resp)))
 
@@ -163,6 +164,7 @@ func TestResponse(t *testing.T) {
 
 func doTestRequest(t *testing.T, packageType PackageType, responseStatus byte, body interface{}) {
 	resp, err := doTestHessianEncodeHeader(t, packageType, responseStatus, body)
+	assert.NoError(t, err)
 
 	codecR := NewHessianCodec(bufio.NewReader(bytes.NewReader(resp)))
 
@@ -223,7 +225,7 @@ func TestHessianCodec_ReadAttachments(t *testing.T) {
 
 type AttachTestObject struct {
 	Id   int32
-	Name string `dubbo:name`
+	Name string `dubbo:"name"`
 }
 
 func (AttachTestObject) JavaClassName() string {

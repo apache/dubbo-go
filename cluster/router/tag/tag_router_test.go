@@ -25,22 +25,25 @@ import (
 )
 
 import (
+	"github.com/RoaringBitmap/roaring"
 	"github.com/dubbogo/go-zookeeper/zk"
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
 import (
+	"github.com/apache/dubbo-go/cluster/router"
+	"github.com/apache/dubbo-go/cluster/router/chain"
+	"github.com/apache/dubbo-go/cluster/router/utils"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/config"
-	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/config_center"
 	_ "github.com/apache/dubbo-go/config_center/zookeeper"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/apache/dubbo-go/remoting"
-	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
 const (
@@ -70,19 +73,18 @@ const (
 )
 
 var (
-	zkFormat        = "zookeeper://%s:%d"
-	conditionFormat = "condition://%s/com.foo.BarService"
+	zkFormat = "zookeeper://%s:%d"
 )
 
 // MockInvoker is only mock the Invoker to support test tagRouter
 type MockInvoker struct {
-	url          common.URL
+	url          *common.URL
 	available    bool
 	destroyed    bool
 	successCount int
 }
 
-func NewMockInvoker(url common.URL) *MockInvoker {
+func NewMockInvoker(url *common.URL) *MockInvoker {
 	return &MockInvoker{
 		url:          url,
 		available:    true,
@@ -91,7 +93,7 @@ func NewMockInvoker(url common.URL) *MockInvoker {
 	}
 }
 
-func (bi *MockInvoker) GetUrl() common.URL {
+func (bi *MockInvoker) GetUrl() *common.URL {
 	return bi.url
 }
 
@@ -117,17 +119,27 @@ func (bi *MockInvoker) Destroy() {
 
 func TestTagRouterPriority(t *testing.T) {
 	u1, err := common.NewURL(tagRouterTestUserConsumerTag)
+	notify := make(chan struct{})
+	go func() {
+		for range notify {
+		}
+	}()
 	assert.Nil(t, err)
-	tagRouter, e := NewTagRouter(&u1)
+	tagRouter, e := NewTagRouter(u1, notify)
 	assert.Nil(t, e)
 	p := tagRouter.Priority()
 	assert.Equal(t, int64(0), p)
 }
 
 func TestTagRouterRouteForce(t *testing.T) {
+	notify := make(chan struct{})
+	go func() {
+		for range notify {
+		}
+	}()
 	u1, e1 := common.NewURL(tagRouterTestUserConsumerTag)
 	assert.Nil(t, e1)
-	tagRouter, e := NewTagRouter(&u1)
+	tagRouter, e := NewTagRouter(u1, notify)
 	assert.Nil(t, e)
 
 	u2, e2 := common.NewURL(tagRouterTestHangZhouUrl)
@@ -143,23 +155,28 @@ func TestTagRouterRouteForce(t *testing.T) {
 	invokers = append(invokers, inv2, inv3, inv4)
 	inv := &invocation.RPCInvocation{}
 	inv.SetAttachments(tagRouterTestDubboTag, tagRouterTestHangZhou)
-	invRst1 := tagRouter.Route(invokers, &u1, inv)
-	assert.Equal(t, 1, len(invRst1))
-	assert.Equal(t, tagRouterTestHangZhou, invRst1[0].GetUrl().GetParam(tagRouterTestDubboTag, ""))
+	invRst1 := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), u1, inv)
+	assert.Equal(t, 1, len(invRst1.ToArray()))
+	assert.Equal(t, tagRouterTestHangZhou, invokers[invRst1.ToArray()[0]].GetUrl().GetParam(tagRouterTestDubboTag, ""))
 
 	inv.SetAttachments(tagRouterTestDubboTag, tagRouterTestGuangZhou)
-	invRst2 := tagRouter.Route(invokers, &u1, inv)
-	assert.Equal(t, 0, len(invRst2))
+	invRst2 := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), u1, inv)
+	assert.Equal(t, 0, len(invRst2.ToArray()))
 	inv.SetAttachments(tagRouterTestDubboForceTag, tagRouterTestFalse)
 	inv.SetAttachments(tagRouterTestDubboTag, tagRouterTestGuangZhou)
-	invRst3 := tagRouter.Route(invokers, &u1, inv)
-	assert.Equal(t, 3, len(invRst3))
+	invRst3 := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), u1, inv)
+	assert.Equal(t, 3, len(invRst3.ToArray()))
 }
 
 func TestTagRouterRouteNoForce(t *testing.T) {
 	u1, e1 := common.NewURL(tagRouterTestUserConsumer)
 	assert.Nil(t, e1)
-	tagRouter, e := NewTagRouter(&u1)
+	notify := make(chan struct{})
+	go func() {
+		for range notify {
+		}
+	}()
+	tagRouter, e := NewTagRouter(u1, notify)
 	assert.Nil(t, e)
 
 	u2, e2 := common.NewURL(tagRouterTestHangZhouUrl)
@@ -175,20 +192,37 @@ func TestTagRouterRouteNoForce(t *testing.T) {
 	invokers = append(invokers, inv2, inv3, inv4)
 	inv := &invocation.RPCInvocation{}
 	inv.SetAttachments(tagRouterTestDubboTag, tagRouterTestHangZhou)
-	invRst := tagRouter.Route(invokers, &u1, inv)
-	assert.Equal(t, 1, len(invRst))
-	assert.Equal(t, tagRouterTestHangZhou, invRst[0].GetUrl().GetParam(tagRouterTestDubboTag, ""))
+	invRst := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), u1, inv)
+	assert.Equal(t, 1, len(invRst.ToArray()))
+	assert.Equal(t, tagRouterTestHangZhou, invokers[invRst.ToArray()[0]].GetUrl().GetParam(tagRouterTestDubboTag, ""))
 
 	inv.SetAttachments(tagRouterTestDubboTag, tagRouterTestGuangZhou)
 	inv.SetAttachments(tagRouterTestDubboForceTag, tagRouterTestTrue)
-	invRst1 := tagRouter.Route(invokers, &u1, inv)
-	assert.Equal(t, 0, len(invRst1))
+	invRst1 := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), u1, inv)
+	assert.Equal(t, 0, len(invRst1.ToArray()))
 	inv.SetAttachments(tagRouterTestDubboForceTag, tagRouterTestFalse)
-	invRst2 := tagRouter.Route(invokers, &u1, inv)
-	assert.Equal(t, 3, len(invRst2))
+	invRst2 := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), u1, inv)
+	assert.Equal(t, 3, len(invRst2.ToArray()))
 }
 
-func TestFilterInvoker(t *testing.T) {
+func setUpAddrCache(r router.Poolable, addrs []protocol.Invoker) router.Cache {
+	pool, info := r.Pool(addrs)
+	cache := chain.BuildCache(addrs)
+	cache.SetAddrPool(r.Name(), pool)
+	cache.SetAddrMeta(r.Name(), info)
+	return cache
+}
+
+func setUpAddrCacheWithRuleDisabled(r router.Poolable, addrs []protocol.Invoker) router.Cache {
+	pool, info := r.Pool(addrs)
+	info.(*addrMetadata).ruleEnabled = false
+	cache := chain.BuildCache(addrs)
+	cache.SetAddrPool(r.Name(), pool)
+	cache.SetAddrMeta(r.Name(), info)
+	return cache
+}
+
+func TestRouteBeijingInvoker(t *testing.T) {
 	u2, e2 := common.NewURL(tagRouterTestHangZhouUrl)
 	u3, e3 := common.NewURL(tagRouterTestShangHaiUrl)
 	u4, e4 := common.NewURL(tagRouterTestBeijingUrl)
@@ -203,31 +237,30 @@ func TestFilterInvoker(t *testing.T) {
 	inv5 := NewMockInvoker(u5)
 	var invokers []protocol.Invoker
 	invokers = append(invokers, inv2, inv3, inv4, inv5)
-	filterTag := func(invoker protocol.Invoker) bool {
-		if invoker.GetUrl().GetParam(constant.Tagkey, "") == "beijing" {
-			return true
+
+	url, _ := common.NewURL(tagRouterTestBeijingUrl)
+	notify := make(chan struct{})
+	go func() {
+		for range notify {
 		}
-		return false
-	}
-	res := filterInvoker(invokers, filterTag)
-	assert.Equal(t, []protocol.Invoker{inv4, inv5}, res)
-	flag := true
-	filterEnabled := func(invoker protocol.Invoker) bool {
-		if invoker.GetUrl().GetParamBool(constant.RouterEnabled, false) == flag {
-			return true
-		}
-		return false
-	}
-	res2 := filterInvoker(invokers, filterTag, filterEnabled)
-	assert.Equal(t, []protocol.Invoker{inv4}, res2)
+	}()
+	tagRouter, _ := NewTagRouter(url, notify)
+
+	rb := roaring.NewBitmap()
+	rb.AddRange(0, uint64(len(invokers)))
+	cache := setUpAddrCache(tagRouter, invokers)
+	inv := &invocation.RPCInvocation{}
+	res := tagRouter.Route(rb, cache, url, inv)
+	// inv4 and inv5
+	assert.Equal(t, []uint32{2, 3}, res.ToArray())
 }
 
 type DynamicTagRouter struct {
 	suite.Suite
-	rule *RouterRule
+	//rule *RouterRule
 
 	route       *tagRouter
-	zkClient    *zookeeper.ZookeeperClient
+	zkClient    *gxzookeeper.ZookeeperClient
 	testCluster *zk.TestCluster
 	invokers    []protocol.Invoker
 	url         *common.URL
@@ -266,7 +299,7 @@ tags:
   - name: tag3
     addresses: ["127.0.0.1:20003", "127.0.0.1:20004"]
 `
-	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
+	ts, z, _, err := gxzookeeper.NewMockZookeeperClient("test", 15*time.Second)
 	suite.NoError(err)
 	err = z.Create(routerPath)
 	suite.NoError(err)
@@ -278,7 +311,7 @@ tags:
 	suite.NoError(err)
 
 	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, routerLocalIP, suite.testCluster.Servers[0].Port))
-	configuration, err := extension.GetConfigCenterFactory(routerZk).GetDynamicConfiguration(&zkUrl)
+	configuration, err := extension.GetConfigCenterFactory(routerZk).GetDynamicConfiguration(zkUrl)
 	config.GetEnvInstance().SetDynamicConfiguration(configuration)
 
 	suite.Nil(err)
@@ -287,64 +320,80 @@ tags:
 	url, e1 := common.NewURL(tagRouterTestUserConsumerTag)
 	suite.Nil(e1)
 
-	tagRouter, err := NewTagRouter(&url)
+	notify := make(chan struct{})
+	go func() {
+		for range notify {
+		}
+	}()
+	tagRouter, err := NewTagRouter(url, notify)
 	suite.Nil(err)
 	suite.NotNil(tagRouter)
 	suite.route = tagRouter
-	suite.url = &url
+	suite.url = url
 }
 
 func (suite *DynamicTagRouter) TearDownTest() {
 	suite.zkClient.Close()
-	suite.testCluster.Stop()
 }
 
 func (suite *DynamicTagRouter) TestDynamicTagRouterSetByIPv4() {
 	invokers := suite.invokers
-	suite.route.Notify(invokers)
+	rb := roaring.NewBitmap()
+	rb.AddRange(0, uint64(len(invokers)))
+	cache := setUpAddrCache(suite.route, invokers)
 	suite.NotNil(suite.route.tagRouterRule)
 
 	consumer := &invocation.RPCInvocation{}
 	consumer.SetAttachments(tagRouterTestDubboTag, "tag1")
-	targetInvokers := suite.route.Route(invokers, suite.url, consumer)
-	suite.Equal(1, len(targetInvokers))
-	suite.Equal(targetInvokers[0], suite.invokers[0])
+	targetInvokers := suite.route.Route(rb, cache, suite.url, consumer)
+	suite.Equal(uint64(1), targetInvokers.GetCardinality())
+	suite.Equal(targetInvokers.ToArray()[0], uint32(0))
 
 	consumer.SetAttachments(tagRouterTestDubboTag, "tag3")
-	targetInvokers = suite.route.Route(invokers, suite.url, consumer)
-	suite.Equal(2, len(targetInvokers))
-	suite.Equal(targetInvokers, []protocol.Invoker{suite.invokers[2], suite.invokers[3]})
+	targetInvokers = suite.route.Route(rb, cache, suite.url, consumer)
+	suite.Equal(uint64(2), targetInvokers.GetCardinality())
+	suite.True(targetInvokers.Contains(2) && targetInvokers.Contains(3))
 }
 
 func (suite *DynamicTagRouter) TestDynamicTagRouterStaticTag() {
 	invokers := suite.invokers
+	rb := roaring.NewBitmap()
+	rb.AddRange(0, uint64(len(invokers)))
+	cache := setUpAddrCacheWithRuleDisabled(suite.route, invokers)
 	consumer := &invocation.RPCInvocation{}
 	consumer.SetAttachments(tagRouterTestDubboTag, "tag4")
-	targetInvokers := suite.route.Route(invokers, suite.url, consumer)
-	suite.Equal(1, len(targetInvokers))
-	suite.Equal(targetInvokers[0], suite.invokers[3])
+	targetInvokers := suite.route.Route(rb, cache, suite.url, consumer)
+	suite.Equal(uint64(1), targetInvokers.GetCardinality())
+	suite.Equal(targetInvokers.ToArray()[0], uint32(3))
 }
 
 // Teas no tag and return a address are not in dynamic tag group
 func (suite *DynamicTagRouter) TestDynamicTagRouterByNoTagAndAddressMatch() {
 	invokers := suite.invokers
-	suite.route.Notify(invokers)
+	rb := roaring.NewBitmap()
+	rb.AddRange(0, uint64(len(invokers)))
+	cache := setUpAddrCache(suite.route, invokers)
 	suite.NotNil(suite.route.tagRouterRule)
 	consumer := &invocation.RPCInvocation{}
-	targetInvokers := suite.route.Route(invokers, suite.url, consumer)
-	suite.Equal(1, len(targetInvokers))
-	suite.Equal(targetInvokers[0], suite.invokers[4])
+	targetInvokers := suite.route.Route(rb, cache, suite.url, consumer)
+	suite.Equal(uint64(1), targetInvokers.GetCardinality())
+	suite.Equal(targetInvokers.ToArray()[0], uint32(4))
 	// test if there are some addresses that are not in any dynamic tag group, continue to filter using the static tag group.
 	consumer.SetAttachments(tagRouterTestDubboTag, "tag5")
-	targetInvokers = suite.route.Route(invokers, suite.url, consumer)
-	suite.Equal(1, len(targetInvokers))
-	suite.Equal(targetInvokers[0], suite.invokers[4])
+	targetInvokers = suite.route.Route(rb, cache, suite.url, consumer)
+	suite.Equal(uint64(1), targetInvokers.GetCardinality())
+	suite.Equal(targetInvokers.ToArray()[0], uint32(4))
 }
 
 func TestProcess(t *testing.T) {
 	u1, err := common.NewURL(tagRouterTestUserConsumerTag)
 	assert.Nil(t, err)
-	tagRouter, e := NewTagRouter(&u1)
+	notify := make(chan struct{})
+	go func() {
+		for range notify {
+		}
+	}()
+	tagRouter, e := NewTagRouter(u1, notify)
 	assert.Nil(t, e)
 	assert.NotNil(t, tagRouter)
 
@@ -362,12 +411,17 @@ tags:
   - name: hangzhou
     addresses: [192.168.1.3, 192.168.1.4]
 `
+	go func() {
+		for range notify {
+		}
+	}()
 	tagRouter.Process(&config_center.ConfigChangeEvent{Value: testYML, ConfigType: remoting.EventTypeAdd})
 	assert.NotNil(t, tagRouter.tagRouterRule)
 	assert.Equal(t, []string{"beijing", "hangzhou"}, tagRouter.tagRouterRule.getTagNames())
 	assert.Equal(t, []string{"192.168.1.1", "192.168.1.2", "192.168.1.3", "192.168.1.4"}, tagRouter.tagRouterRule.getAddresses())
 	assert.Equal(t, []string{"192.168.1.3", "192.168.1.4"}, tagRouter.tagRouterRule.getTagNameToAddresses()["hangzhou"])
 	assert.Equal(t, []string{"beijing"}, tagRouter.tagRouterRule.getAddressToTagNames()["192.168.1.1"])
+
 	tagRouter.Process(&config_center.ConfigChangeEvent{ConfigType: remoting.EventTypeDel})
 	assert.Nil(t, tagRouter.tagRouterRule)
 }

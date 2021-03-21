@@ -25,8 +25,9 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-getty"
+	getty "github.com/apache/dubbo-getty"
 	"github.com/dubbogo/go-zookeeper/zk"
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	perrors "github.com/pkg/errors"
 )
 
@@ -43,22 +44,24 @@ var (
 
 // nolint
 type ZkEventListener struct {
-	client      *ZookeeperClient
+	client      *gxzookeeper.ZookeeperClient
 	pathMapLock sync.Mutex
 	pathMap     map[string]struct{}
 	wg          sync.WaitGroup
+	exit        chan struct{}
 }
 
 // NewZkEventListener returns a EventListener instance
-func NewZkEventListener(client *ZookeeperClient) *ZkEventListener {
+func NewZkEventListener(client *gxzookeeper.ZookeeperClient) *ZkEventListener {
 	return &ZkEventListener{
 		client:  client,
 		pathMap: make(map[string]struct{}),
+		exit:    make(chan struct{}),
 	}
 }
 
 // nolint
-func (l *ZkEventListener) SetClient(client *ZookeeperClient) {
+func (l *ZkEventListener) SetClient(client *gxzookeeper.ZookeeperClient) {
 	l.client = client
 }
 
@@ -69,8 +72,11 @@ func (l *ZkEventListener) ListenServiceNodeEvent(zkPath string, listener remotin
 	go func(zkPath string, listener remoting.DataListener) {
 		if l.listenServiceNodeEvent(zkPath, listener) {
 			listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeDel})
+			l.pathMapLock.Lock()
+			delete(l.pathMap, zkPath)
+			l.pathMapLock.Unlock()
 		}
-		logger.Warnf("listenSelf(zk path{%s}) goroutine exit now", zkPath)
+		logger.Warnf("ListenServiceNodeEvent->listenSelf(zk path{%s}) goroutine exit now", zkPath)
 	}(zkPath, listener)
 }
 
@@ -87,8 +93,8 @@ func (l *ZkEventListener) listenServiceNodeEvent(zkPath string, listener ...remo
 
 		select {
 		case zkEvent = <-keyEventCh:
-			logger.Warnf("get a zookeeper zkEvent{type:%s, server:%s, path:%s, state:%d-%s, err:%s}",
-				zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, StateToString(zkEvent.State), zkEvent.Err)
+			logger.Warnf("get a zookeeper keyEventCh{type:%s, server:%s, path:%s, state:%d-%s, err:%s}",
+				zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, gxzookeeper.StateToString(zkEvent.State), zkEvent.Err)
 			switch zkEvent.Type {
 			case zk.EventNodeDataChanged:
 				logger.Warnf("zk.ExistW(key{%s}) = event{EventNodeDataChanged}", zkPath)
@@ -116,7 +122,7 @@ func (l *ZkEventListener) listenServiceNodeEvent(zkPath string, listener ...remo
 				logger.Warnf("zk.ExistW(key{%s}) = event{EventNodeDeleted}", zkPath)
 				return true
 			}
-		case <-l.client.Done():
+		case <-l.exit:
 			return false
 		}
 	}
@@ -135,9 +141,10 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 	newChildren, err := l.client.GetChildren(zkPath)
 	if err != nil {
 		if err == errNilChildren {
-			content, _, err := l.client.Conn.Get(zkPath)
-			if err != nil {
-				logger.Errorf("Get new node path {%v} 's content error,message is  {%v}", zkPath, perrors.WithStack(err))
+			content, _, connErr := l.client.Conn.Get(zkPath)
+			if connErr != nil {
+				logger.Errorf("Get new node path {%v} 's content error,message is  {%v}",
+					zkPath, perrors.WithStack(connErr))
 			} else {
 				listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeUpdate, Content: string(content)})
 			}
@@ -145,6 +152,7 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 		} else {
 			logger.Errorf("path{%s} child nodes changed, zk.Children() = error{%v}", zkPath, perrors.WithStack(err))
 		}
+		return
 	}
 
 	// a node was added -- listen the new node
@@ -158,24 +166,27 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 
 		newNode = path.Join(zkPath, n)
 		logger.Infof("add zkNode{%s}", newNode)
-		content, _, err := l.client.Conn.Get(newNode)
-		if err != nil {
-			logger.Errorf("Get new node path {%v} 's content error,message is  {%v}", newNode, perrors.WithStack(err))
+		content, _, connErr := l.client.Conn.Get(newNode)
+		if connErr != nil {
+			logger.Errorf("Get new node path {%v} 's content error,message is  {%v}",
+				newNode, perrors.WithStack(connErr))
 		}
 
-		if !listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeAdd, Content: string(content)}) {
+		if !listener.DataChange(remoting.Event{Path: newNode, Action: remoting.EventTypeAdd, Content: string(content)}) {
 			continue
 		}
 		// listen l service node
 		l.wg.Add(1)
-		go func(node string, zkPath string, listener remoting.DataListener) {
-			logger.Infof("delete zkNode{%s}", node)
+		go func(node string, listener remoting.DataListener) {
 			if l.listenServiceNodeEvent(node, listener) {
-				logger.Infof("delete content{%s}", node)
-				listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeDel})
+				logger.Warnf("delete zkNode{%s}", node)
+				listener.DataChange(remoting.Event{Path: node, Action: remoting.EventTypeDel})
+				l.pathMapLock.Lock()
+				delete(l.pathMap, zkPath)
+				l.pathMapLock.Unlock()
 			}
-			logger.Warnf("listenSelf(zk path{%s}) goroutine exit now", zkPath)
-		}(newNode, zkPath, listener)
+			logger.Warnf("handleZkNodeEvent->listenSelf(zk path{%s}) goroutine exit now", node)
+		}(newNode, listener)
 	}
 
 	// old node was deleted
@@ -186,12 +197,7 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 		}
 
 		oldNode = path.Join(zkPath, n)
-		logger.Warnf("delete zkPath{%s}", oldNode)
-
-		if err != nil {
-			logger.Errorf("NewURL(i{%s}) = error{%v}", n, perrors.WithStack(err))
-			continue
-		}
+		logger.Warnf("delete oldNode{%s}", oldNode)
 		listener.DataChange(remoting.Event{Path: oldNode, Action: remoting.EventTypeDel})
 	}
 }
@@ -244,9 +250,9 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 			case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)):
 				l.client.UnregisterEvent(zkPath, &event)
 				continue
-			case <-l.client.Done():
+			case <-l.exit:
 				l.client.UnregisterEvent(zkPath, &event)
-				logger.Warnf("client.done(), listen(path{%s}) goroutine exit now...", zkPath)
+				logger.Warnf("listen(path{%s}) goroutine exit now...", zkPath)
 				return
 			case <-event:
 				logger.Infof("get zk.EventNodeDataChange notify event")
@@ -299,10 +305,13 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 			logger.Infof("listen dubbo service key{%s}", dubboPath)
 			l.wg.Add(1)
 			go func(zkPath string, listener remoting.DataListener) {
-				if l.listenServiceNodeEvent(zkPath) {
+				if l.listenServiceNodeEvent(zkPath, listener) {
 					listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeDel})
+					l.pathMapLock.Lock()
+					delete(l.pathMap, zkPath)
+					l.pathMapLock.Unlock()
 				}
-				logger.Warnf("listenSelf(zk path{%s}) goroutine exit now", zkPath)
+				logger.Warnf("listenDirEvent->listenSelf(zk path{%s}) goroutine exit now", zkPath)
 			}(dubboPath, listener)
 
 			// listen sub path recursive
@@ -324,16 +333,16 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 			case <-ticker.C:
 				l.handleZkNodeEvent(zkPath, children, listener)
 			case zkEvent = <-childEventCh:
-				logger.Warnf("get a zookeeper zkEvent{type:%s, server:%s, path:%s, state:%d-%s, err:%s}",
-					zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, StateToString(zkEvent.State), zkEvent.Err)
+				logger.Warnf("get a zookeeper childEventCh{type:%s, server:%s, path:%s, state:%d-%s, err:%s}",
+					zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, gxzookeeper.StateToString(zkEvent.State), zkEvent.Err)
 				ticker.Stop()
 				if zkEvent.Type != zk.EventNodeChildrenChanged {
 					break WATCH
 				}
 				l.handleZkNodeEvent(zkEvent.Path, children, listener)
 				break WATCH
-			case <-l.client.Done():
-				logger.Warnf("client.done(), listen(path{%s}) goroutine exit now...", zkPath)
+			case <-l.exit:
+				logger.Warnf("listen(path{%s}) goroutine exit now...", zkPath)
 				ticker.Stop()
 				return
 			}
@@ -355,16 +364,16 @@ func (l *ZkEventListener) ListenServiceEvent(conf *common.URL, zkPath string, li
 	l.wg.Add(1)
 	go func(zkPath string, listener remoting.DataListener) {
 		l.listenDirEvent(conf, zkPath, listener)
-		logger.Warnf("listenDirEvent(zkPath{%s}) goroutine exit now", zkPath)
+		logger.Warnf("ListenServiceEvent->listenDirEvent(zkPath{%s}) goroutine exit now", zkPath)
 	}(zkPath, listener)
 }
 
-func (l *ZkEventListener) valid() bool {
-	return l.client.ZkConnValid()
-}
+//func (l *ZkEventListener) valid() bool {
+//	return l.client.ZkConnValid()
+//}
 
 // Close will let client listen exit
 func (l *ZkEventListener) Close() {
-	close(l.client.exit)
+	close(l.exit)
 	l.wg.Wait()
 }

@@ -37,8 +37,8 @@ import (
 
 // ProviderConfig is the default configuration of service provider
 type ProviderConfig struct {
-	BaseConfig `yaml:",inline"`
-	configCenter
+	BaseConfig     `yaml:",inline"`
+	configCenter   `yaml:"-"`
 	Filter         string                     `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	ProxyFactory   string                     `yaml:"proxy_factory" default:"default" json:"proxy_factory,omitempty" property:"proxy_factory"`
 	Services       map[string]*ServiceConfig  `yaml:"services" json:"services,omitempty" property:"services"`
@@ -58,10 +58,7 @@ func (c *ProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) error 
 		return err
 	}
 	type plain ProviderConfig
-	if err := unmarshal((*plain)(c)); err != nil {
-		return err
-	}
-	return nil
+	return unmarshal((*plain)(c))
 }
 
 // nolint

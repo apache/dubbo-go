@@ -59,7 +59,7 @@ func NewGoRestfulServer() server.RestServer {
 
 // Start go-restful server
 // It will add all go-restful filters
-func (grs *GoRestfulServer) Start(url common.URL) {
+func (grs *GoRestfulServer) Start(url *common.URL) {
 	container := restful.NewContainer()
 	for _, filter := range filterSlice {
 		container.Filter(filter)
@@ -99,8 +99,6 @@ func (grs *GoRestfulServer) Deploy(restMethodConfig *config.RestMethodConfig, ro
 
 // Delete a http api in go-restful server
 func (grs *GoRestfulServer) UnDeploy(restMethodConfig *config.RestMethodConfig) {
-	ws := new(restful.WebService)
-	ws.Path(restMethodConfig.Path)
 	err := grs.ws.RemoveRoute(restMethodConfig.Path, restMethodConfig.MethodType)
 	if err != nil {
 		logger.Warnf("[Go restful] Remove web service error:%v", err)

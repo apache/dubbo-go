@@ -17,7 +17,6 @@
 package config
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 )
@@ -108,10 +107,12 @@ var baseMockRef = map[string]*ReferenceConfig{
 
 func TestRefresh(t *testing.T) {
 	c := &BaseConfig{}
+	c.fileStream = nil
 	mockMap := getMockMap()
 	mockMap["dubbo.shutdown.timeout"] = "12s"
 
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
+	config.GetEnvInstance().UpdateAppExternalConfigMap(map[string]string{})
 
 	father := &ConsumerConfig{
 		Check: &[]bool{true}[0],
@@ -144,9 +145,10 @@ func TestAppExternalRefresh(t *testing.T) {
 	mockMap := getMockMap()
 	mockMap["dubbo.reference.com.MockService.retries"] = "5"
 
-	config.GetEnvInstance().UpdateAppExternalConfigMap(mockMap)
-	mockMap["dubbo.consumer.check"] = "true"
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
+	mockMap["dubbo.consumer.check"] = "true"
+	config.GetEnvInstance().UpdateAppExternalConfigMap(mockMap)
+
 	father := &ConsumerConfig{
 		Check: &[]bool{true}[0],
 		BaseConfig: BaseConfig{
@@ -172,9 +174,9 @@ func TestAppExternalWithoutIDRefresh(t *testing.T) {
 	delete(mockMap, "dubbo.reference.com.MockService.MockService.retries")
 	mockMap["dubbo.reference.com.MockService.retries"] = "10"
 
-	config.GetEnvInstance().UpdateAppExternalConfigMap(mockMap)
-	mockMap["dubbo.consumer.check"] = "true"
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
+	mockMap["dubbo.consumer.check"] = "true"
+	config.GetEnvInstance().UpdateAppExternalConfigMap(mockMap)
 	father := &ConsumerConfig{
 		Check: &[]bool{true}[0],
 		BaseConfig: BaseConfig{
@@ -204,6 +206,7 @@ func TestRefreshSingleRegistry(t *testing.T) {
 	mockMap["dubbo.application.name"] = "dubbo"
 
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
+	config.GetEnvInstance().UpdateAppExternalConfigMap(map[string]string{})
 
 	father := &ConsumerConfig{
 		Check: &[]bool{true}[0],
@@ -235,6 +238,7 @@ func TestRefreshProvider(t *testing.T) {
 	mockMap["dubbo.protocols.jsonrpc1.port"] = "20001"
 
 	config.GetEnvInstance().UpdateExternalConfigMap(mockMap)
+	config.GetEnvInstance().UpdateAppExternalConfigMap(map[string]string{})
 
 	father := &ProviderConfig{
 		BaseConfig: BaseConfig{
@@ -285,8 +289,7 @@ func TestInitializeStruct(t *testing.T) {
 	tp := reflect.TypeOf(ConsumerConfig{})
 	v := reflect.New(tp)
 	initializeStruct(tp, v.Elem())
-	fmt.Println(reflect.ValueOf(testConsumerConfig).Elem().Type().String())
-	fmt.Println(v.Elem().Type().String())
+	t.Logf("testConsumerConfig type:%s", reflect.ValueOf(testConsumerConfig).Elem().Type().String())
 	reflect.ValueOf(testConsumerConfig).Elem().Set(v.Elem())
 
 	assert.Condition(t, func() (success bool) {

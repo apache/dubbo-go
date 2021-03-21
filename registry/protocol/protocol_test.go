@@ -59,7 +59,7 @@ func referNormal(t *testing.T, regProtocol *registryProtocol) {
 		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
 	)
 
-	url.SubURL = &suburl
+	url.SubURL = suburl
 
 	invoker := regProtocol.Refer(url)
 	assert.IsType(t, &protocol.BaseInvoker{}, invoker)
@@ -84,7 +84,7 @@ func TestMultiRegRefer(t *testing.T) {
 		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
 	)
 
-	url2.SubURL = &suburl2
+	url2.SubURL = suburl2
 
 	regProtocol.Refer(url2)
 	var count int
@@ -105,7 +105,7 @@ func TestOneRegRefer(t *testing.T) {
 		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
 	)
 
-	url2.SubURL = &suburl2
+	url2.SubURL = suburl2
 
 	regProtocol.Refer(url2)
 	var count int
@@ -128,13 +128,13 @@ func exporterNormal(t *testing.T, regProtocol *registryProtocol) *common.URL {
 		common.WithParamsValue(constant.VERSION_KEY, "1.0.0"),
 	)
 
-	url.SubURL = &suburl
+	url.SubURL = suburl
 	invoker := protocol.NewBaseInvoker(url)
 	exporter := regProtocol.Export(invoker)
 
 	assert.IsType(t, &protocol.BaseExporter{}, exporter)
 	assert.Equal(t, exporter.GetInvoker().GetUrl().String(), suburl.String())
-	return &url
+	return url
 }
 
 func TestExporter(t *testing.T) {
@@ -153,7 +153,7 @@ func TestMultiRegAndMultiProtoExporter(t *testing.T) {
 		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
 	)
 
-	url2.SubURL = &suburl2
+	url2.SubURL = suburl2
 	invoker2 := protocol.NewBaseInvoker(url2)
 	regProtocol.Export(invoker2)
 
@@ -184,7 +184,7 @@ func TestOneRegAndProtoExporter(t *testing.T) {
 		common.WithParamsValue(constant.VERSION_KEY, "1.0.0"),
 	)
 
-	url2.SubURL = &suburl2
+	url2.SubURL = suburl2
 	invoker2 := protocol.NewBaseInvoker(url2)
 	regProtocol.Export(invoker2)
 
@@ -253,7 +253,7 @@ func TestExportWithOverrideListener(t *testing.T) {
 func TestExportWithServiceConfig(t *testing.T) {
 	extension.SetDefaultConfigurator(configurator.NewMockConfigurator)
 	ccUrl, _ := common.NewURL("mock://127.0.0.1:1111")
-	dc, _ := (&config_center.MockDynamicConfigurationFactory{}).GetDynamicConfiguration(&ccUrl)
+	dc, _ := (&config_center.MockDynamicConfigurationFactory{}).GetDynamicConfiguration(ccUrl)
 	common_cfg.GetEnvInstance().SetDynamicConfiguration(dc)
 	regProtocol := newRegistryProtocol()
 	url := exporterNormal(t, regProtocol)
@@ -265,6 +265,7 @@ func TestExportWithServiceConfig(t *testing.T) {
 
 	newUrl := url.SubURL.Clone()
 	newUrl.SetParam(constant.CLUSTER_KEY, "mock1")
+
 	v2, _ := regProtocol.bounds.Load(getCacheKey(newUrl))
 	assert.NotNil(t, v2)
 }
@@ -272,7 +273,7 @@ func TestExportWithServiceConfig(t *testing.T) {
 func TestExportWithApplicationConfig(t *testing.T) {
 	extension.SetDefaultConfigurator(configurator.NewMockConfigurator)
 	ccUrl, _ := common.NewURL("mock://127.0.0.1:1111")
-	dc, _ := (&config_center.MockDynamicConfigurationFactory{}).GetDynamicConfiguration(&ccUrl)
+	dc, _ := (&config_center.MockDynamicConfigurationFactory{}).GetDynamicConfiguration(ccUrl)
 	common_cfg.GetEnvInstance().SetDynamicConfiguration(dc)
 	regProtocol := newRegistryProtocol()
 	url := exporterNormal(t, regProtocol)
@@ -290,7 +291,7 @@ func TestExportWithApplicationConfig(t *testing.T) {
 
 func TestGetProviderUrlWithHideKey(t *testing.T) {
 	url, _ := common.NewURL("dubbo://127.0.0.1:1111?a=a1&b=b1&.c=c1&.d=d1&e=e1&protocol=registry")
-	providerUrl := getUrlToRegistry(&url, &url)
+	providerUrl := getUrlToRegistry(url, url)
 	assert.NotContains(t, providerUrl.GetParams(), ".c")
 	assert.NotContains(t, providerUrl.GetParams(), ".d")
 	assert.Contains(t, providerUrl.GetParams(), "a")

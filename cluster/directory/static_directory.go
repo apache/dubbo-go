@@ -34,15 +34,18 @@ type staticDirectory struct {
 
 // NewStaticDirectory Create a new staticDirectory with invokers
 func NewStaticDirectory(invokers []protocol.Invoker) *staticDirectory {
-	var url common.URL
+	var url *common.URL
 
 	if len(invokers) > 0 {
 		url = invokers[0].GetUrl()
 	}
-	return &staticDirectory{
-		BaseDirectory: NewBaseDirectory(&url),
+	dir := &staticDirectory{
+		BaseDirectory: NewBaseDirectory(url),
 		invokers:      invokers,
 	}
+
+	dir.routerChain.SetInvokers(invokers)
+	return dir
 }
 
 //for-loop invokers ,if all invokers is available ,then it means directory is available
@@ -69,7 +72,7 @@ func (dir *staticDirectory) List(invocation protocol.Invocation) []protocol.Invo
 		return invokers
 	}
 	dirUrl := dir.GetUrl()
-	return routerChain.Route(invokers, &dirUrl, invocation)
+	return routerChain.Route(dirUrl, invocation)
 }
 
 // Destroy Destroy
@@ -88,10 +91,11 @@ func (dir *staticDirectory) BuildRouterChain(invokers []protocol.Invoker) error 
 		return perrors.Errorf("invokers == null")
 	}
 	url := invokers[0].GetUrl()
-	routerChain, e := chain.NewRouterChain(&url)
+	routerChain, e := chain.NewRouterChain(url)
 	if e != nil {
 		return e
 	}
+	routerChain.SetInvokers(dir.invokers)
 	dir.SetRouterChain(routerChain)
 	return nil
 }

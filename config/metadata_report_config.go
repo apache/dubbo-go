@@ -84,7 +84,7 @@ func (c *MetadataReportConfig) ToUrl() (*common.URL, error) {
 		return nil, perrors.New("Invalid MetadataReportConfig.")
 	}
 	res.SetParam("metadata", res.Protocol)
-	return &res, nil
+	return res, nil
 }
 
 func (c *MetadataReportConfig) IsValid() bool {
@@ -101,8 +101,8 @@ func startMetadataReport(metadataType string, metadataReportConfig *MetadataRepo
 		return perrors.New("MetadataConfig remote ref can not be empty.")
 	}
 
-	if url, err := metadataReportConfig.ToUrl(); err == nil {
-		instance.GetMetadataReportInstance(url)
+	if tmpUrl, err := metadataReportConfig.ToUrl(); err == nil {
+		instance.GetMetadataReportInstance(tmpUrl)
 	} else {
 		return perrors.Wrap(err, "Start MetadataReport failed.")
 	}

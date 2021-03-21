@@ -93,7 +93,7 @@ type TypeDefinition struct {
 }
 
 // BuildServiceDefinition can build service definition which will be used to describe a service
-func BuildServiceDefinition(service common.Service, url common.URL) *ServiceDefinition {
+func BuildServiceDefinition(service common.Service, url *common.URL) *ServiceDefinition {
 	sd := &ServiceDefinition{}
 	sd.CanonicalName = url.Service()
 
