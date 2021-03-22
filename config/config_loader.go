@@ -60,7 +60,7 @@ var (
 
 // loaded consumer & provider config from xxx.yml, and log config from xxx.xml
 // Namely: dubbo.consumer.xml & dubbo.provider.xml in java dubbo
-func init() {
+func DefaultInit() (routerInitOption, consumerInitOption, providerInitOption LoaderInitOption) {
 	var (
 		confConFile string
 		confProFile string
@@ -75,23 +75,7 @@ func init() {
 		fs.Parse(fs.Args()[1:])
 	}
 
-	if errCon := ConsumerInit(confConFile); errCon != nil {
-		log.Printf("[consumerInit] %#v", errCon)
-		consumerConfig = nil
-	} else {
-		// Even though baseConfig has been initialized, we override it
-		// because we think read from config file is correct config
-		baseConfig = &consumerConfig.BaseConfig
-	}
-
-	if errPro := ProviderInit(confProFile); errPro != nil {
-		log.Printf("[providerInit] %#v", errPro)
-		providerConfig = nil
-	} else {
-		// Even though baseConfig has been initialized, we override it
-		// because we think read from config file is correct config
-		baseConfig = &providerConfig.BaseConfig
-	}
+	return RouterInitOption(confRouterFile), ConsumerInitOption(confConFile), ProviderInitOption(confProFile)
 }
 
 func checkRegistries(registries map[string]*RegistryConfig, singleRegistry *RegistryConfig) {
@@ -337,9 +321,14 @@ func initRouter() {
 
 // Load Dubbo Init
 func Load() {
+	routerInitOption, consumerInitOption, providerInitOption := DefaultInit()
+	LoadWithOptions(routerInitOption, consumerInitOption, providerInitOption)
+}
 
-	// init router
-	initRouter()
+func LoadWithOptions(routerInitOption, consumerInitOption, providerInitOption LoaderInitOption) {
+	if routerInitOption != nil {
+		routerInitOption.apply()
+	}
 
 	// init the global event dispatcher
 	extension.SetAndInitGlobalDispatcher(GetBaseConfig().EventDispatcherType)
@@ -350,11 +339,13 @@ func Load() {
 		return
 	}
 
-	// reference config
-	loadConsumerConfig()
+	if consumerInitOption != nil {
+		consumerInitOption.apply()
+	}
 
-	// service config
-	loadProviderConfig()
+	if providerInitOption != nil {
+		providerInitOption.apply()
+	}
 
 	// init the shutdown callback
 	GracefulShutdownInit()
