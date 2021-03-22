@@ -60,7 +60,7 @@ var (
 
 // loaded consumer & provider config from xxx.yml, and log config from xxx.xml
 // Namely: dubbo.consumer.xml & dubbo.provider.xml in java dubbo
-func DefaultInit() (routerInitOption, consumerInitOption, providerInitOption LoaderInitOption) {
+func DefaultInit() []LoaderInitOption {
 	var (
 		confConFile string
 		confProFile string
@@ -75,7 +75,7 @@ func DefaultInit() (routerInitOption, consumerInitOption, providerInitOption Loa
 		fs.Parse(fs.Args()[1:])
 	}
 
-	return RouterInitOption(confRouterFile), ConsumerInitOption(confConFile), ProviderInitOption(confProFile)
+	return []LoaderInitOption{RouterInitOption(confRouterFile), ConsumerInitOption(confConFile), ProviderInitOption(confProFile)}
 }
 
 func checkRegistries(registries map[string]*RegistryConfig, singleRegistry *RegistryConfig) {
@@ -321,14 +321,11 @@ func initRouter() {
 
 // Load Dubbo Init
 func Load() {
-	routerInitOption, consumerInitOption, providerInitOption := DefaultInit()
-	LoadWithOptions(routerInitOption, consumerInitOption, providerInitOption)
+	options := DefaultInit()
+	LoadWithOptions(options...)
 }
 
-func LoadWithOptions(routerInitOption, consumerInitOption, providerInitOption LoaderInitOption) {
-	if routerInitOption != nil {
-		routerInitOption.apply()
-	}
+func LoadWithOptions(options ...LoaderInitOption) {
 
 	// init the global event dispatcher
 	extension.SetAndInitGlobalDispatcher(GetBaseConfig().EventDispatcherType)
@@ -339,12 +336,8 @@ func LoadWithOptions(routerInitOption, consumerInitOption, providerInitOption Lo
 		return
 	}
 
-	if consumerInitOption != nil {
-		consumerInitOption.apply()
-	}
-
-	if providerInitOption != nil {
-		providerInitOption.apply()
+	for _, option := range options {
+		option.apply()
 	}
 
 	// init the shutdown callback
