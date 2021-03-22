@@ -44,12 +44,11 @@ require (
 	go.uber.org/atomic v1.7.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/sys v0.0.0-20201223074533-0d417f636930 // indirect
-	google.golang.org/grpc v1.26.0
+	google.golang.org/grpc v1.27.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.16.9
-	k8s.io/apimachinery v0.16.9
+	k8s.io/apimachinery v0.20.5
 	k8s.io/client-go v0.16.9
-	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a // indirect
 )
 
 replace (
