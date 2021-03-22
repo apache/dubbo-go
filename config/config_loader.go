@@ -327,6 +327,9 @@ func Load() {
 
 func LoadWithOptions(options ...LoaderInitOption) {
 
+	for _, option := range options {
+		option.apply()
+	}
 	// init the global event dispatcher
 	extension.SetAndInitGlobalDispatcher(GetBaseConfig().EventDispatcherType)
 
@@ -334,10 +337,6 @@ func LoadWithOptions(options ...LoaderInitOption) {
 	if err := startMetadataReport(GetApplicationConfig().MetadataType, GetBaseConfig().MetadataReportConfig); err != nil {
 		logger.Errorf("Provider starts metadata report error, and the error is {%#v}", err)
 		return
-	}
-
-	for _, option := range options {
-		option.apply()
 	}
 
 	// init the shutdown callback
