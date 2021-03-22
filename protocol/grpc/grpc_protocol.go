@@ -90,7 +90,12 @@ func (gp *GrpcProtocol) openServer(url *common.URL) {
 
 // Refer a remote gRPC service
 func (gp *GrpcProtocol) Refer(url *common.URL) protocol.Invoker {
-	invoker := NewGrpcInvoker(url, NewClient(url))
+	client, err := NewClient(url)
+	if err != nil {
+		logger.Warnf("can't dial the server: %s", url.Key())
+		return nil
+	}
+	invoker := NewGrpcInvoker(url, client)
 	gp.SetInvokers(invoker)
 	logger.Infof("Refer service: %s", url.String())
 	return invoker
