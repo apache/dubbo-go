@@ -54,11 +54,12 @@ var (
 
 	maxWait        = 3
 	confRouterFile string
+	confBaseFile   string
 )
 
 // loaded consumer & provider config from xxx.yml, and log config from xxx.xml
 // Namely: dubbo.consumer.xml & dubbo.provider.xml in java dubbo
-func init() {
+func DefaultInit() []LoaderInitOption {
 	var (
 		confConFile string
 		confProFile string
@@ -83,30 +84,7 @@ func init() {
 	if confRouterFile == "" {
 		confRouterFile = constant.DEFAULT_ROUTER_CONF_FILE_PATH
 	}
-
-	if errCon := ConsumerInit(confConFile); errCon != nil {
-		log.Printf("[consumerInit] %#v", errCon)
-		consumerConfig = nil
-	} else {
-		// Check if there are some important key fields missing,
-		// if so, we set a default value for it
-		setDefaultValue(consumerConfig)
-		// Even though baseConfig has been initialized, we override it
-		// because we think read from config file is correct config
-		baseConfig = &consumerConfig.BaseConfig
-	}
-
-	if errPro := ProviderInit(confProFile); errPro != nil {
-		log.Printf("[providerInit] %#v", errPro)
-		providerConfig = nil
-	} else {
-		// Check if there are some important key fields missing,
-		// if so, we set a default value for it
-		setDefaultValue(providerConfig)
-		// Even though baseConfig has been initialized, we override it
-		// because we think read from config file is correct config
-		baseConfig = &providerConfig.BaseConfig
-	}
+	return []LoaderInitOption{RouterInitOption(confRouterFile), BaseInitOption(""), ConsumerInitOption(confConFile), ProviderInitOption(confProFile)}
 }
 
 // setDefaultValue set default value for providerConfig or consumerConfig if it is null
@@ -363,24 +341,17 @@ func initRouter() {
 
 // Load Dubbo Init
 func Load() {
+	options := DefaultInit()
+	LoadWithOptions(options...)
+}
 
-	// init router
-	initRouter()
-
-	// init the global event dispatcher
-	extension.SetAndInitGlobalDispatcher(GetBaseConfig().EventDispatcherType)
-
-	// start the metadata report if config set
-	if err := startMetadataReport(GetApplicationConfig().MetadataType, GetBaseConfig().MetadataReportConfig); err != nil {
-		logger.Errorf("Provider starts metadata report error, and the error is {%#v}", err)
-		return
+func LoadWithOptions(options ...LoaderInitOption) {
+	for _, option := range options {
+		option.init()
 	}
-
-	// reference config
-	loadConsumerConfig()
-
-	// service config
-	loadProviderConfig()
+	for _, option := range options {
+		option.apply()
+	}
 
 	// init the shutdown callback
 	GracefulShutdownInit()

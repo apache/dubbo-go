@@ -19,6 +19,7 @@ package config
 
 import (
 	"bytes"
+	"github.com/apache/dubbo-go/common/yaml"
 	"reflect"
 	"strconv"
 	"strings"
@@ -50,6 +51,19 @@ type BaseConfig struct {
 	EventDispatcherType string        `default:"direct" yaml:"event_dispatcher_type" json:"event_dispatcher_type,omitempty"`
 	MetricConfig        *MetricConfig `yaml:"metrics" json:"metrics,omitempty"`
 	fileStream          *bytes.Buffer
+}
+
+func BaseInit(confBaseFile string) error {
+	if confBaseFile == "" {
+		return perrors.Errorf("application configure(base) file name is nil")
+	}
+	baseConfig = &BaseConfig{}
+	fileStream, err := yaml.UnmarshalYMLConfig(confBaseFile, baseConfig)
+	if err != nil {
+		return perrors.Errorf("unmarshalYmlConfig error %v", perrors.WithStack(err))
+	}
+	baseConfig.fileStream = bytes.NewBuffer(fileStream)
+	return nil
 }
 
 // nolint
