@@ -56,6 +56,7 @@ var (
 
 	maxWait        = 3
 	confRouterFile string
+	confBaseFile   string
 )
 
 // loaded consumer & provider config from xxx.yml, and log config from xxx.xml
@@ -75,7 +76,7 @@ func DefaultInit() []LoaderInitOption {
 		fs.Parse(fs.Args()[1:])
 	}
 
-	return []LoaderInitOption{RouterInitOption(confRouterFile), ConsumerInitOption(confConFile), ProviderInitOption(confProFile)}
+	return []LoaderInitOption{RouterInitOption(confRouterFile), BaseInitOption(""), ConsumerInitOption(confConFile), ProviderInitOption(confProFile)}
 }
 
 func checkRegistries(registries map[string]*RegistryConfig, singleRegistry *RegistryConfig) {
@@ -328,17 +329,11 @@ func Load() {
 func LoadWithOptions(options ...LoaderInitOption) {
 
 	for _, option := range options {
+		option.init()
+	}
+	for _, option := range options {
 		option.apply()
 	}
-	// init the global event dispatcher
-	extension.SetAndInitGlobalDispatcher(GetBaseConfig().EventDispatcherType)
-
-	// start the metadata report if config set
-	if err := startMetadataReport(GetApplicationConfig().MetadataType, GetBaseConfig().MetadataReportConfig); err != nil {
-		logger.Errorf("Provider starts metadata report error, and the error is {%#v}", err)
-		return
-	}
-
 	// init the shutdown callback
 	GracefulShutdownInit()
 }
