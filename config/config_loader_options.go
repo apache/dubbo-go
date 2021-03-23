@@ -78,7 +78,7 @@ func ProviderInitOption(confProFile string) LoaderInitOption {
 }
 
 func ProviderMustInitOption(confProFile string) LoaderInitOption {
-	return providerInitOption(confProFile, false)
+	return providerInitOption(confProFile, true)
 }
 
 func providerInitOption(confProFile string, must bool) LoaderInitOption {
