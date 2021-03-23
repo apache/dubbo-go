@@ -45,6 +45,12 @@ import (
 	"github.com/apache/dubbo-go/registry"
 )
 
+func init() {
+	for _, option := range DefaultInit() {
+		option.init()
+	}
+}
+
 const mockConsumerConfigPath = "./testdata/consumer_config.yml"
 const mockProviderConfigPath = "./testdata/provider_config.yml"
 
