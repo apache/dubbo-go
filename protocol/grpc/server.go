@@ -52,7 +52,6 @@ type DubboGrpcService interface {
 type Server struct {
 	listener   net.Listener
 	grpcServer *grpc.Server
-	bufferSize int
 }
 
 // NewServer creates a new server
