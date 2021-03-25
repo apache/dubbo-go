@@ -1,0 +1,3 @@
+[submodule "samples"]
+	path = samples
+	url = ../../apache/dubbo-go-samples.git
