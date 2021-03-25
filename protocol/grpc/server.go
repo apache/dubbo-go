@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+	"strconv"
 )
 
 import (
@@ -37,17 +38,6 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-// Server is a gRPC server
-type Server struct {
-	grpcServer *grpc.Server
-	bufferSize int
-}
-
-// NewServer creates a new server
-func NewServer() *Server {
-	return &Server{}
-}
-
 // DubboGrpcService is gRPC service
 type DubboGrpcService interface {
 	// SetProxyImpl sets proxy.
@@ -58,28 +48,48 @@ type DubboGrpcService interface {
 	ServiceDesc() *grpc.ServiceDesc
 }
 
-func (s *Server) SetBufferSize(n int) {
-	s.bufferSize = n
+// Server is a gRPC server
+type Server struct {
+	listener   net.Listener
+	grpcServer *grpc.Server
+	bufferSize int
+}
+
+// NewServer creates a new server
+func NewServer(url *common.URL) *Server {
+	var (
+		err error
+	)
+
+	listener, err := net.Listen("tcp", url.Location)
+	if err != nil {
+		panic(err)
+	}
+
+	// If global trace instance was set, then server tracer
+	// instance can be get. If not, will return NoopTracer.
+	tracer := opentracing.GlobalTracer()
+	grpcMessageSize, _ := strconv.Atoi(url.GetParam(constant.MESSAGE_SIZE_KEY, "4"))
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)),
+		grpc.StreamInterceptor(otgrpc.OpenTracingStreamServerInterceptor(tracer)),
+		grpc.MaxRecvMsgSize(1024*1024*grpcMessageSize),
+		grpc.MaxSendMsgSize(1024*1024*grpcMessageSize),
+	)
+
+	server := Server{
+		listener:   listener,
+		grpcServer: grpcServer,
+	}
+
+	return &server
 }
 
 // Start gRPC server with @url
 func (s *Server) Start(url *common.URL) {
 	var (
-		addr string
 		err  error
 	)
-	addr = url.Location
-	lis, err := net.Listen("tcp", addr)
-	if err != nil {
-		panic(err)
-	}
-
-	// if global trace instance was set, then server tracer instance can be get. If not , will return Nooptracer
-	tracer := opentracing.GlobalTracer()
-	server := grpc.NewServer(
-		grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)),
-		grpc.MaxRecvMsgSize(1024*1024*s.bufferSize),
-		grpc.MaxSendMsgSize(1024*1024*s.bufferSize))
 
 	key := url.GetParam(constant.BEAN_NAME_KEY, "")
 	service := config.GetProviderService(key)
@@ -106,11 +116,10 @@ func (s *Server) Start(url *common.URL) {
 	in = append(in, reflect.ValueOf(invoker))
 	m.Func.Call(in)
 
-	server.RegisterService(ds.ServiceDesc(), service)
+	s.grpcServer.RegisterService(ds.ServiceDesc(), service)
 
-	s.grpcServer = server
 	go func() {
-		if err = server.Serve(lis); err != nil {
+		if err = s.grpcServer.Serve(s.listener); err != nil {
 			logger.Errorf("server serve failed with err: %v", err)
 		}
 	}()
