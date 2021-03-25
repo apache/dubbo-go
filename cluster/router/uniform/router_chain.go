@@ -220,11 +220,7 @@ func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte
 			// copy to new Map
 			mapCombine(tempSerivceNeedsDescMap, targetDestMap)
 		}
-		data, err := json.Marshal(v.Spec.Dubbo)
-		if err != nil {
-			logger.Error("v.Spec.Dubbo unmarshal error = ", err)
-		}
-		fmt.Printf("===v.Spec.Dubbo = %s\n", string(data))
+		// change single config to one rule
 		newRule, err := newDubboRouterRule(v.Spec.Dubbo, tempSerivceNeedsDescMap)
 		if err != nil {
 			logger.Error("Parse config to uniform rule err = ", err)

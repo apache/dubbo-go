@@ -1,0 +1,17 @@
+apiVersion: service.dubbo.apache.org/v1alpha1
+kind: DestinationRule
+metadata:
+  name: demo-route
+spec:
+  host: demo
+  subsets:
+    - name: v1
+      labels:
+        sigma.ali/mg: v1-host
+        generic: false
+    - name: v2
+      labels:
+        generic: false
+    - name: v3
+      labels:
+        sigma.ali/mg: v3-host
