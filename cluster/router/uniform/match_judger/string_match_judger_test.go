@@ -48,7 +48,3 @@ func TestNewStringMatchJudger(t *testing.T) {
 		NoEmpty: "true",
 	}).Judge(""))
 }
-
-func TestStringMatchJudger_Judge(t *testing.T) {
-
-}
