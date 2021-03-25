@@ -22,7 +22,7 @@ import (
 	"testing"
 )
 
-// nolint
+// TestUniformRouterFacotry created a new factory that can new uniform router
 func TestUniformRouterFacotry(t *testing.T) {
 	factory := newUniformRouterFactory()
 	assert.NotNil(t, factory)
