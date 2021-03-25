@@ -50,15 +50,14 @@ type DubboGrpcService interface {
 
 // Server is a gRPC server
 type Server struct {
+	handler    *FallbackHandler
 	listener   net.Listener
 	grpcServer *grpc.Server
 }
 
 // NewServer creates a new server
 func NewServer(url *common.URL) *Server {
-	var (
-		err error
-	)
+	handler := NewFallbackHandler()
 
 	listener, err := net.Listen("tcp", url.Location)
 	if err != nil {
@@ -70,6 +69,7 @@ func NewServer(url *common.URL) *Server {
 	tracer := opentracing.GlobalTracer()
 	grpcMessageSize, _ := strconv.Atoi(url.GetParam(constant.MESSAGE_SIZE_KEY, "4"))
 	grpcServer := grpc.NewServer(
+		grpc.UnknownServiceHandler(handler.Handle),
 		grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)),
 		grpc.StreamInterceptor(otgrpc.OpenTracingStreamServerInterceptor(tracer)),
 		grpc.MaxRecvMsgSize(1024*1024*grpcMessageSize),
@@ -77,6 +77,7 @@ func NewServer(url *common.URL) *Server {
 	)
 
 	server := Server{
+		handler:    handler,
 		listener:   listener,
 		grpcServer: grpcServer,
 	}
@@ -84,12 +85,8 @@ func NewServer(url *common.URL) *Server {
 	return &server
 }
 
-// Start gRPC server with @url
-func (s *Server) Start(url *common.URL) {
-	var (
-		err  error
-	)
-
+// RegisterService register service on grpc server
+func (s *Server) RegisterService(url *common.URL) {
 	key := url.GetParam(constant.BEAN_NAME_KEY, "")
 	service := config.GetProviderService(key)
 
@@ -107,18 +104,23 @@ func (s *Server) Start(url *common.URL) {
 	if exporter == nil {
 		panic(fmt.Sprintf("no exporter found for servicekey: %v", url.ServiceKey()))
 	}
+
 	invoker := exporter.(protocol.Exporter).GetInvoker()
 	if invoker == nil {
 		panic(fmt.Sprintf("no invoker found for servicekey: %v", url.ServiceKey()))
 	}
+
 	in := []reflect.Value{reflect.ValueOf(service)}
 	in = append(in, reflect.ValueOf(invoker))
 	m.Func.Call(in)
 
-	s.grpcServer.RegisterService(ds.ServiceDesc(), service)
+	s.handler.RegisterService(ds.ServiceDesc(), service)
+}
 
+// Start gRPC server with @url
+func (s *Server) Start(url *common.URL) {
 	go func() {
-		if err = s.grpcServer.Serve(s.listener); err != nil {
+		if err := s.grpcServer.Serve(s.listener); err != nil {
 			logger.Errorf("server serve failed with err: %v", err)
 		}
 	}()

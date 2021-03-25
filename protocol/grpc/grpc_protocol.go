@@ -66,7 +66,7 @@ func (gp *GrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 }
 
 func (gp *GrpcProtocol) openServer(url *common.URL) {
-	_, ok := gp.serverMap[url.Location]
+	srv, ok := gp.serverMap[url.Location]
 	if !ok {
 		_, ok := gp.ExporterMap().Load(url.ServiceKey())
 		if !ok {
@@ -76,12 +76,13 @@ func (gp *GrpcProtocol) openServer(url *common.URL) {
 		gp.serverLock.Lock()
 		_, ok = gp.serverMap[url.Location]
 		if !ok {
-			srv := NewServer(url)
+			srv = NewServer(url)
 			gp.serverMap[url.Location] = srv
 			srv.Start(url)
 		}
 		gp.serverLock.Unlock()
 	}
+	srv.RegisterService(url)
 }
 
 // Refer a remote gRPC service
