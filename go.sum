@@ -251,6 +251,8 @@ github.com/dubbogo/net v0.0.2-0.20210301082523-598c5b483149 h1:5l836FmJx+o4ZQ8HQ
 github.com/dubbogo/net v0.0.2-0.20210301082523-598c5b483149/go.mod h1:B6/ka3g8VzcyrmdCH4VkHP1K0aHeI37FmclS+TCwIBU=
 github.com/dubbogo/net v0.0.2-0.20210314060136-1d6159530542 h1:OI/gVOgFquJmcZ08iMyYikKT6Yv+SDSQwXKrnYxp1Ho=
 github.com/dubbogo/net v0.0.2-0.20210314060136-1d6159530542/go.mod h1:B6/ka3g8VzcyrmdCH4VkHP1K0aHeI37FmclS+TCwIBU=
+github.com/dubbogo/net v0.0.2-0.20210326124702-e6a866993192 h1:CBEicrrVwR6u8ty+kL68ItxXVk1jaVYThrsx5ARhxUc=
+github.com/dubbogo/net v0.0.2-0.20210326124702-e6a866993192/go.mod h1:B6/ka3g8VzcyrmdCH4VkHP1K0aHeI37FmclS+TCwIBU=
 github.com/dubbogo/triple v0.0.0-20210301083516-185f5a3b1234 h1:2u3jO/06/Itk5pI15ObaX1r/+wmwPiO64/AEo+E8ECM=
 github.com/dubbogo/triple v0.0.0-20210301083516-185f5a3b1234/go.mod h1:v1szRcUO/P3lbe2NveWHBLsI4d3fF9tVCg5f8CB3WE8=
 github.com/dubbogo/triple v0.0.0-20210314060249-a8daea612f94 h1:njPcvq1+x/RMMKjE62R+G3cJQ7hlka64A5aOioGIBMA=
@@ -259,6 +261,10 @@ github.com/dubbogo/triple v0.0.0-20210318020559-4db55a5388a2 h1:1kHGnzCr5E97Y9fW
 github.com/dubbogo/triple v0.0.0-20210318020559-4db55a5388a2/go.mod h1:xNXaE2KrRrZfHSaS6ipvMyREzV/LyGeHdjXa9wbTS7Y=
 github.com/dubbogo/triple v0.0.0-20210318081906-6fdf7ced4828 h1:/jmL2E+kPB3MY8cK77lUHfDq0zBuTtP5Hn4tA8Uqb2o=
 github.com/dubbogo/triple v0.0.0-20210318081906-6fdf7ced4828/go.mod h1:LQDA+Bcob67J7qTEVjotf0+sSFiNUwFNDycWmUZk1w8=
+github.com/dubbogo/triple v0.0.0-20210326125029-a4a43e36ba3c h1:tXqiyaD2jm2y3nhnptcsgW9KP9KoMEd56THghnYbz5A=
+github.com/dubbogo/triple v0.0.0-20210326125029-a4a43e36ba3c/go.mod h1:gPoFcJtqjddQ/lJX7N1I12KZl9CjznK7ZP4q7Z0ADok=
+github.com/dubbogo/triple v0.0.0-20210326135539-e327cad74255 h1:sCuy2QvaRA9EAn8Qb6y5T7KzJP8TXyYJD+24CT6rHDc=
+github.com/dubbogo/triple v0.0.0-20210326135539-e327cad74255/go.mod h1:gPoFcJtqjddQ/lJX7N1I12KZl9CjznK7ZP4q7Z0ADok=
 github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/dustin/go-humanize v1.0.0 h1:VSnTsYCnlFHaM2/igO1h6X3HA71jcobQuxemgkq4zYo=
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
