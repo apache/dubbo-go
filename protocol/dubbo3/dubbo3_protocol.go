@@ -18,6 +18,7 @@ package dubbo3
 
 import (
 	"fmt"
+	triConfig "github.com/dubbogo/triple/pkg/config"
 	"reflect"
 	"sync"
 )
@@ -155,7 +156,10 @@ func (dp *DubboProtocol) openServer(url *common.URL) {
 		return
 	}
 
-	srv := triple.NewTripleServer(url, dp.serviceMap, nil)
+	triOption := triConfig.NewTripleOption(
+		triConfig.WithSerializerType(tripleCommon.PBSerializerName),
+	)
+	srv := triple.NewTripleServer(url, dp.serviceMap, triOption)
 	dp.serverMap[url.Location] = srv
 
 	srv.Start()
