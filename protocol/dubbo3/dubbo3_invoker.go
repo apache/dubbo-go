@@ -19,6 +19,7 @@ package dubbo3
 
 import (
 	"context"
+	tripleCommon "github.com/dubbogo/triple/pkg/common"
 	"reflect"
 	"strconv"
 	"strings"
@@ -68,6 +69,7 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	// new triple client
 	triOption := triConfig.NewTripleOption(
 		triConfig.WithClientTimeout(uint32(requestTimeout.Seconds())),
+		triConfig.WithSerializerType(tripleCommon.HessianSerializerName),
 	)
 	client, err := triple.NewTripleClient(url, consumerService, triOption)
 
