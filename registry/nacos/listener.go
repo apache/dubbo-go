@@ -124,7 +124,7 @@ func (nl *nacosListener) Callback(services []model.SubscribeService, err error) 
 	nl.cacheLock.Lock()
 	defer nl.cacheLock.Unlock()
 	for i := range services {
-		if !services[i].Enable || !services[i].Valid {
+		if !services[i].Enable {
 			// instance is not available,so ignore it
 			continue
 		}
