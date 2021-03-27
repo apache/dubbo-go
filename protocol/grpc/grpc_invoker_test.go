@@ -19,7 +19,6 @@ package grpc
 
 import (
 	"context"
-	"github.com/apache/dubbo-go/common/logger"
 	"reflect"
 	"testing"
 )
@@ -30,6 +29,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol/grpc/internal"
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
