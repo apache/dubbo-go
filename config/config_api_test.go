@@ -161,11 +161,11 @@ func TestNewProviderConfig(t *testing.T) {
 	}
 	assert.NotNil(t, testProviderConfig.Registries)
 
-	if registry ,ok := testProviderConfig.Registries["demoConsul"];ok {
+	if registry, ok := testProviderConfig.Registries["demoConsul"]; ok {
 		assert.Equal(t, registry, defaultConsulRegistry)
 	}
 
-	if registry ,ok := testProviderConfig.Registries["demoNacos"];ok {
+	if registry, ok := testProviderConfig.Registries["demoNacos"]; ok {
 		assert.Equal(t, registry, defaultNacosRegistry)
 	}
 
