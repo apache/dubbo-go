@@ -68,24 +68,22 @@ func (gp *GrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 }
 
 func (gp *GrpcProtocol) openServer(url *common.URL) {
-	_, ok := gp.serverMap[url.Location]
-	if !ok {
-		_, ok := gp.ExporterMap().Load(url.ServiceKey())
-		if !ok {
-			panic("[GrpcProtocol]" + url.Key() + "is not existing")
-		}
+	gp.serverLock.Lock()
+	defer gp.serverLock.Unlock()
 
-		gp.serverLock.Lock()
-		_, ok = gp.serverMap[url.Location]
-		if !ok {
-			grpcMessageSize, _ := strconv.Atoi(url.GetParam(constant.MESSAGE_SIZE_KEY, "4"))
-			srv := NewServer()
-			srv.SetBufferSize(grpcMessageSize)
-			gp.serverMap[url.Location] = srv
-			srv.Start(url)
-		}
-		gp.serverLock.Unlock()
+	if _, ok := gp.serverMap[url.Location]; ok {
+		return
 	}
+
+	if _, ok := gp.ExporterMap().Load(url.ServiceKey()); !ok {
+		panic("[GrpcProtocol]" + url.Key() + "is not existing")
+	}
+
+	grpcMessageSize, _ := strconv.Atoi(url.GetParam(constant.MESSAGE_SIZE_KEY, "4"))
+	srv := NewServer()
+	srv.SetBufferSize(grpcMessageSize)
+	gp.serverMap[url.Location] = srv
+	srv.Start(url)
 }
 
 // Refer a remote gRPC service
