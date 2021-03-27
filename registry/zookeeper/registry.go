@@ -27,6 +27,7 @@ import (
 
 import (
 	"github.com/dubbogo/go-zookeeper/zk"
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	perrors "github.com/pkg/errors"
 )
 
@@ -54,7 +55,7 @@ func init() {
 
 type zkRegistry struct {
 	registry.BaseRegistry
-	client       *zookeeper.ZookeeperClient
+	client       *gxzookeeper.ZookeeperClient
 	listenerLock sync.Mutex
 	listener     *zookeeper.ZkEventListener
 	dataListener *RegistryDataListener
@@ -73,7 +74,7 @@ func newZkRegistry(url *common.URL) (registry.Registry, error) {
 	}
 	r.InitBaseRegistry(url, r)
 
-	err = zookeeper.ValidateZookeeperClient(r, zookeeper.WithZkName(RegistryZkClient))
+	err = zookeeper.ValidateZookeeperClient(r, RegistryZkClient)
 	if err != nil {
 		return nil, err
 	}
@@ -89,13 +90,13 @@ func newZkRegistry(url *common.URL) (registry.Registry, error) {
 
 // nolint
 type Options struct {
-	client *zookeeper.ZookeeperClient
+	client *gxzookeeper.ZookeeperClient
 }
 
 // nolint
 type Option func(*Options)
 
-func newMockZkRegistry(url *common.URL, opts ...zookeeper.Option) (*zk.TestCluster, *zkRegistry, error) {
+func newMockZkRegistry(url *common.URL, opts ...gxzookeeper.Option) (*zk.TestCluster, *zkRegistry, error) {
 	var (
 		err error
 		r   *zkRegistry
@@ -107,7 +108,7 @@ func newMockZkRegistry(url *common.URL, opts ...zookeeper.Option) (*zk.TestClust
 		zkPath: make(map[string]int),
 	}
 	r.InitBaseRegistry(url, r)
-	c, r.client, _, err = zookeeper.NewMockZookeeperClient("test", 15*time.Second, opts...)
+	c, r.client, _, err = gxzookeeper.NewMockZookeeperClient("test", 15*time.Second, opts...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -183,12 +184,12 @@ func (r *zkRegistry) CloseAndNilClient() {
 }
 
 // nolint
-func (r *zkRegistry) ZkClient() *zookeeper.ZookeeperClient {
+func (r *zkRegistry) ZkClient() *gxzookeeper.ZookeeperClient {
 	return r.client
 }
 
 // nolint
-func (r *zkRegistry) SetZkClient(client *zookeeper.ZookeeperClient) {
+func (r *zkRegistry) SetZkClient(client *gxzookeeper.ZookeeperClient) {
 	r.client = client
 }
 
@@ -282,11 +283,7 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 	//Interested register to dataconfig.
 	r.dataListener.SubscribeURL(conf, zkListener)
 
-	go r.listener.ListenServiceEvent(
-		conf,
-		fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, url.QueryEscape(conf.Service())),
-		r.dataListener,
-	)
+	go r.listener.ListenServiceEvent(conf, fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, url.QueryEscape(conf.Service())), r.dataListener)
 
 	return zkListener, nil
 }
@@ -297,12 +294,10 @@ func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationL
 	r.dataListener.mutex.Lock()
 	configurationListener := r.dataListener.subscribed[conf.ServiceKey()]
 	if configurationListener != nil {
-		rcListener, _ := configurationListener.(*RegistryConfigurationListener)
-		if rcListener != nil {
-			if rcListener.isClosed {
-				r.dataListener.mutex.Unlock()
-				return nil, perrors.New("configListener already been closed")
-			}
+		zkListener, _ = configurationListener.(*RegistryConfigurationListener)
+		if zkListener != nil && zkListener.isClosed {
+			r.dataListener.mutex.Unlock()
+			return nil, perrors.New("configListener already been closed")
 		}
 	}
 
