@@ -107,9 +107,9 @@ func NewClient(url *common.URL) (*Client, error) {
 			grpc.MaxCallRecvMsgSize(1024*1024*maxMessageSize),
 			grpc.MaxCallSendMsgSize(1024*1024*maxMessageSize)))
 
-	logger.Infof("begin grpc dail:%s, begin time: %s ", url, time.Now().Format("2006-01-02 15:04:05.000"))
+	logger.Infof("begin grpc dail:%s, begin time: %s ", url, time.Now())
 	conn, err := grpc.Dial(url.Location, dialOpts...)
-	logger.Infof("end grpc dail: dail:%s, end time: %s", url, time.Now().Format("2006-01-02 15:04:05.000"))
+	logger.Infof("end grpc dail: dail:%s, end time: %s", url, time.Now())
 
 	if err != nil {
 		logger.Errorf("grpc dail error: %v", err)
