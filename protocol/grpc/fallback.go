@@ -46,16 +46,16 @@ type serviceInfo struct {
 //
 // For example:
 //
-//     listener, err := net.Listen("tcp", port)
-//	   if err != nil {
-//         log.Fatalf("failed to listen: %v", err)
-//     }
-//
 //     handler := NewFallbackHandler()
 //     go func() {
 //         time.Sleep(25 * time.Second)
 //         handler.RegisterService(sd0, ss0)
 //     }()
+//
+//     listener, err := net.Listen("tcp", port)
+//     if err != nil {
+//         log.Fatalf("failed to listen: %v", err)
+//     }
 //
 //     server := grpc.NewServer(grpc.UnknownServiceHandler(handler.Handle))
 //     server.RegisterService(sd0, ss0)
