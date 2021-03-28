@@ -105,6 +105,8 @@ func (gp *GrpcProtocol) Destroy() {
 
 	gp.BaseProtocol.Destroy()
 
+	gp.serverLock.Lock()
+	defer gp.serverLock.Unlock()
 	for key, server := range gp.serverMap {
 		delete(gp.serverMap, key)
 		server.Stop()
