@@ -89,7 +89,7 @@ func (s *Server) Start(url *common.URL) {
 		if len(providerServices) == 0 {
 			panic("provider service map is null")
 		}
-		// wait all exporter ready , then grpc.registerService
+		// wait all exporter ready , then set proxy impl and grpc.registerService
 		waitGrpcExporter(providerServices)
 		registerService(providerServices, server)
 
