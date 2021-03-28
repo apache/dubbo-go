@@ -254,6 +254,10 @@ func unmarshalRequestBody(body []byte, p *DubboPackage) error {
 		return perrors.WithStack(err)
 	}
 
+	if attachments == nil {
+		attachments = map[interface{}]interface{}{constant.INTERFACE_KEY: target}
+	}
+
 	if v, ok := attachments.(map[interface{}]interface{}); ok {
 		v[DUBBO_VERSION_KEY] = dubboVersion
 		req[6] = ToMapStringInterface(v)
