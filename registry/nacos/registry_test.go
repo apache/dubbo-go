@@ -69,7 +69,7 @@ func TestNacosRegistry_Register(t *testing.T) {
 	service, _ := nacosReg.namingClient.GetService(vo.GetServiceParam{ServiceName: "providers:com.ikurento.user.UserProvider:1.0.0:guangzhou-idc"})
 	data, _ := json.Marshal(service)
 	t.Logf(string(data))
-	//assert.Equal(t, 1, len(service.Hosts))
+	assert.Equal(t, 1, len(service.Hosts))
 }
 
 func TestNacosRegistry_Subscribe(t *testing.T) {
@@ -107,14 +107,14 @@ func TestNacosRegistry_Subscribe(t *testing.T) {
 		return
 	}
 
-	//serviceEvent, _ := listener.Next()
-	//assert.NoError(t, err)
-	//if err != nil {
-	//	t.Errorf("listener error:%s \n", err.Error())
-	//	return
-	//}
-	//t.Logf("serviceEvent:%+v \n", serviceEvent)
-	//assert.Regexp(t, ".*ServiceEvent{Action{add}.*", serviceEvent.String())
+	serviceEvent, _ := listener.Next()
+	assert.NoError(t, err)
+	if err != nil {
+		t.Errorf("listener error:%s \n", err.Error())
+		return
+	}
+	t.Logf("serviceEvent:%+v \n", serviceEvent)
+	assert.Regexp(t, ".*ServiceEvent{Action{add}.*", serviceEvent.String())
 
 }
 
