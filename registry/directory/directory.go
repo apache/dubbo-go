@@ -366,6 +366,8 @@ func (dir *RegistryDirectory) doCacheInvoker(newUrl *common.URL) (protocol.Invok
 		newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(newUrl)
 		if newInvoker != nil {
 			dir.cacheInvokersMap.Store(key, newInvoker)
+		} else {
+			logger.Warnf("service will be added in cache invokers fail, result is null, invokers url is %+v", newUrl.String())
 		}
 	} else {
 		// if cached invoker has the same URL with the new URL, then no need to re-refer, and no need to destroy
@@ -379,6 +381,8 @@ func (dir *RegistryDirectory) doCacheInvoker(newUrl *common.URL) (protocol.Invok
 		if newInvoker != nil {
 			dir.cacheInvokersMap.Store(key, newInvoker)
 			return cacheInvoker.(protocol.Invoker), true
+		} else {
+			logger.Warnf("service will be updated in cache invokers fail, result is null, invokers url is %+v", newUrl.String())
 		}
 	}
 	return nil, false

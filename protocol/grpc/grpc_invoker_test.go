@@ -48,7 +48,7 @@ func TestInvoke(t *testing.T) {
 	url, err := common.NewURL(mockGrpcCommonUrl)
 	assert.Nil(t, err)
 
-	cli := NewClient(url)
+	cli, _ := NewClient(url)
 
 	invoker := NewGrpcInvoker(url, cli)
 

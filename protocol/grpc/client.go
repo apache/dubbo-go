@@ -20,6 +20,7 @@ package grpc
 import (
 	"reflect"
 	"strconv"
+	"time"
 )
 
 import (
@@ -90,20 +91,30 @@ type Client struct {
 }
 
 // NewClient creates a new gRPC client.
-func NewClient(url *common.URL) *Client {
+func NewClient(url *common.URL) (*Client, error) {
 	// if global trace instance was set , it means trace function enabled. If not , will return Nooptracer
 	tracer := opentracing.GlobalTracer()
 	dialOpts := make([]grpc.DialOption, 0, 4)
 	maxMessageSize, _ := strconv.Atoi(url.GetParam(constant.MESSAGE_SIZE_KEY, "4"))
-	dialOpts = append(dialOpts, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithUnaryInterceptor(
-		otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())),
+
+	//consumer config client connectTimeout
+	connectTimeout := config.GetConsumerConfig().ConnectTimeout
+
+	dialOpts = append(dialOpts, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(connectTimeout),
+		grpc.WithUnaryInterceptor(
+			otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())),
 		grpc.WithDefaultCallOptions(
 			grpc.CallContentSubtype(clientConf.ContentSubType),
 			grpc.MaxCallRecvMsgSize(1024*1024*maxMessageSize),
 			grpc.MaxCallSendMsgSize(1024*1024*maxMessageSize)))
+
+	logger.Infof("begin grpc dial:%s, begin time: %s ", url, time.Now().Format("2006-01-02 15:04:05.000"))
 	conn, err := grpc.Dial(url.Location, dialOpts...)
+	logger.Infof("end grpc dial:%s, end time: %s", url, time.Now().Format("2006-01-02 15:04:05.000"))
+
 	if err != nil {
-		panic(err)
+		logger.Errorf("grpc dial error: %v", err)
+		return nil, err
 	}
 
 	key := url.GetParam(constant.BEAN_NAME_KEY, "")
@@ -113,7 +124,7 @@ func NewClient(url *common.URL) *Client {
 	return &Client{
 		ClientConn: conn,
 		invoker:    reflect.ValueOf(invoker),
-	}
+	}, nil
 }
 
 func getInvoker(impl interface{}, conn *grpc.ClientConn) interface{} {
