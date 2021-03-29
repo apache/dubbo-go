@@ -27,7 +27,7 @@ require (
 	github.com/magiconair/properties v1.8.4
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
-	github.com/nacos-group/nacos-sdk-go v1.0.7-0.20210325111144-d75caca21a46
+	github.com/nacos-group/nacos-sdk-go v1.0.7
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.9.0
@@ -38,7 +38,6 @@ require (
 	go.uber.org/zap v1.16.0
 	golang.org/x/sys v0.0.0-20201223074533-0d417f636930 // indirect
 	google.golang.org/grpc v1.33.1
-	google.golang.org/grpc/examples v0.0.0-20210301210255-fc8f38cccf75 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.16.9
 	k8s.io/apimachinery v0.16.9
