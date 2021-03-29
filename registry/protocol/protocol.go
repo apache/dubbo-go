@@ -71,8 +71,7 @@ func init() {
 }
 
 func getCacheKey(url *common.URL) string {
-	delKeys := gxset.NewSet("dynamic", "enabled")
-	return url.CloneExceptParams(delKeys).String()
+	return url.ServiceKey()
 }
 
 func newRegistryProtocol() *registryProtocol {
