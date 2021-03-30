@@ -249,17 +249,27 @@ func (c *ServiceConfig) Unexport() {
 		return
 	}
 
+	if !c.exported.CAS(true, false) {
+		return
+	}
+	if !c.unexported.CAS(false, true) {
+		return
+	}
+
 	func() {
 		c.exportersLock.Lock()
 		defer c.exportersLock.Unlock()
 		for _, exporter := range c.exporters {
 			exporter.Unexport()
+
+			interfaceName := exporter.GetInvoker().GetUrl().GetParam(constant.INTERFACE_KEY, "")
+			err := common.ServiceMap.UnRegister(interfaceName, exporter.GetInvoker().GetUrl().Protocol, exporter.GetInvoker().GetUrl().ServiceKey())
+			if err != nil {
+				logger.Errorf("[ServiceConfig.Unexport] error: %v", err)
+			}
 		}
 		c.exporters = nil
 	}()
-
-	c.exported.Store(false)
-	c.unexported.Store(true)
 }
 
 // Implement only store the @s and return

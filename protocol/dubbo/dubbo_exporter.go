@@ -22,9 +22,6 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
 )
 
@@ -42,10 +39,5 @@ func NewDubboExporter(key string, invoker protocol.Invoker, exporterMap *sync.Ma
 
 // Unexport unexport dubbo service exporter.
 func (de *DubboExporter) Unexport() {
-	interfaceName := de.GetInvoker().GetUrl().GetParam(constant.INTERFACE_KEY, "")
 	de.BaseExporter.Unexport()
-	err := common.ServiceMap.UnRegister(interfaceName, DUBBO, de.GetInvoker().GetUrl().ServiceKey())
-	if err != nil {
-		logger.Errorf("[DubboExporter.Unexport] error: %v", err)
-	}
 }
