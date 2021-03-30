@@ -20,7 +20,6 @@ package grpc
 import (
 	"reflect"
 	"strconv"
-	"time"
 )
 
 import (
@@ -108,9 +107,7 @@ func NewClient(url *common.URL) (*Client, error) {
 			grpc.MaxCallRecvMsgSize(1024*1024*maxMessageSize),
 			grpc.MaxCallSendMsgSize(1024*1024*maxMessageSize)))
 
-	logger.Infof("begin grpc dial:%s, begin time: %s ", url, time.Now().Format("2006-01-02 15:04:05.000"))
 	conn, err := grpc.Dial(url.Location, dialOpts...)
-	logger.Infof("end grpc dial:%s, end time: %s", url, time.Now().Format("2006-01-02 15:04:05.000"))
 
 	if err != nil {
 		logger.Errorf("grpc dial error: %v", err)
