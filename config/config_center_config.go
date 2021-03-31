@@ -162,11 +162,11 @@ func (b *configCenter) prepareEnvironment(baseConfig BaseConfig, configCenterUrl
 
 	// appGroup config file
 	if len(appContent) != 0 {
-		appMapConent, err := dynamicConfig.Parser().Parse(appContent)
+		appMapContent, err := dynamicConfig.Parser().Parse(appContent)
 		if err != nil {
 			return perrors.WithStack(err)
 		}
-		config.GetEnvInstance().UpdateAppExternalConfigMap(appMapConent)
+		config.GetEnvInstance().UpdateAppExternalConfigMap(appMapContent)
 	}
 
 	return nil
