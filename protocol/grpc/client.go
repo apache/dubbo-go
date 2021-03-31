@@ -36,9 +36,7 @@ import (
 	"github.com/apache/dubbo-go/config"
 )
 
-var (
-	clientConf *ClientConfig
-)
+var clientConf *ClientConfig
 
 func init() {
 	// load clientconfig from consumer_config
@@ -80,7 +78,6 @@ func init() {
 			panic(err)
 		}
 	}
-
 }
 
 // Client is gRPC client include client connection and invoker
@@ -96,7 +93,7 @@ func NewClient(url *common.URL) (*Client, error) {
 	dialOpts := make([]grpc.DialOption, 0, 4)
 	maxMessageSize, _ := strconv.Atoi(url.GetParam(constant.MESSAGE_SIZE_KEY, "4"))
 
-	//consumer config client connectTimeout
+	// consumer config client connectTimeout
 	connectTimeout := config.GetConsumerConfig().ConnectTimeout
 
 	dialOpts = append(dialOpts, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(connectTimeout), grpc.WithUnaryInterceptor(
@@ -107,7 +104,6 @@ func NewClient(url *common.URL) (*Client, error) {
 			grpc.MaxCallSendMsgSize(1024*1024*maxMessageSize)))
 
 	conn, err := grpc.Dial(url.Location, dialOpts...)
-
 	if err != nil {
 		logger.Errorf("grpc dail error: %v", err)
 		return nil, err

@@ -33,7 +33,7 @@ import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 )
 
-//SerialID serial ID
+// SerialID serial ID
 type SerialID byte
 
 const (
@@ -41,7 +41,7 @@ const (
 	S_Dubbo SerialID = 2
 )
 
-//CallType call type
+// CallType call type
 type CallType int32
 
 const (

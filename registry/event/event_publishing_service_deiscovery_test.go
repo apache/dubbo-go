@@ -40,7 +40,6 @@ import (
 )
 
 func TestEventPublishingServiceDiscovery_DispatchEvent(t *testing.T) {
-
 	// extension.SetMetadataService("local", inmemory.NewMetadataService)
 
 	config.GetApplicationConfig().MetadataType = "local"
@@ -69,7 +68,6 @@ func TestEventPublishingServiceDiscovery_DispatchEvent(t *testing.T) {
 	si := &registry.DefaultServiceInstance{Id: "testServiceInstance"}
 	err = dc.Register(si)
 	assert.Nil(t, err)
-
 }
 
 type TestServiceDiscoveryDestroyingEventListener struct {
@@ -113,8 +111,7 @@ func (tel *TestServiceInstancePreRegisteredEventListener) GetEventType() reflect
 	return reflect.TypeOf(ServiceInstancePreRegisteredEvent{})
 }
 
-type ServiceDiscoveryA struct {
-}
+type ServiceDiscoveryA struct{}
 
 // String return mockServiceDiscovery
 func (msd *ServiceDiscoveryA) String() string {
@@ -178,8 +175,7 @@ func (msd *ServiceDiscoveryA) DispatchEvent(event *registry.ServiceInstancesChan
 	return nil
 }
 
-type mockServiceNameMapping struct {
-}
+type mockServiceNameMapping struct{}
 
 func (m *mockServiceNameMapping) Map(serviceInterface string, group string, version string, protocol string) error {
 	return nil

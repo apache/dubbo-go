@@ -27,5 +27,4 @@ type MetadataReportFactory interface {
 	CreateMetadataReport(*common.URL) report.MetadataReport
 }
 
-type BaseMetadataReportFactory struct {
-}
+type BaseMetadataReportFactory struct{}

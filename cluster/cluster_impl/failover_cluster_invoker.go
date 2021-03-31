@@ -64,8 +64,8 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 	loadBalance := getLoadBalance(invokers[0], invocation)
 
 	for i := 0; i <= retries; i++ {
-		//Reselect before retry to avoid a change of candidate `invokers`.
-		//NOTE: if `invokers` changed, then `invoked` also lose accuracy.
+		// Reselect before retry to avoid a change of candidate `invokers`.
+		// NOTE: if `invokers` changed, then `invoked` also lose accuracy.
 		if i > 0 {
 			if err := invoker.checkWhetherDestroyed(); err != nil {
 				return &protocol.RPCResult{Err: err}
@@ -81,7 +81,7 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 			continue
 		}
 		invoked = append(invoked, ivk)
-		//DO INVOKE
+		// DO INVOKE
 		result = ivk.Invoke(ctx, invocation)
 		if result.Error() != nil {
 			providers = append(providers, ivk.GetUrl().Key())
@@ -105,7 +105,8 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 			"Tried %v times of the providers %v (%v/%v)from the registry %v on the consumer %v using the dubbo version %v. "+
 			"Last error is %+v.", methodName, invokerSvc, retries, providers, len(providers), len(invokers),
 			invokerUrl, ip, constant.Version, result.Error().Error()),
-		)}
+		),
+	}
 }
 
 func getRetries(invokers []protocol.Invoker, methodName string) int {
@@ -114,9 +115,9 @@ func getRetries(invokers []protocol.Invoker, methodName string) int {
 	}
 
 	url := invokers[0].GetUrl()
-	//get reties
+	// get reties
 	retriesConfig := url.GetParam(constant.RETRIES_KEY, constant.DEFAULT_RETRIES)
-	//Get the service method loadbalance config if have
+	// Get the service method loadbalance config if have
 	if v := url.GetMethodParam(methodName, constant.RETRIES_KEY, ""); len(v) != 0 {
 		retriesConfig = v
 	}

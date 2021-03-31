@@ -45,8 +45,10 @@ import (
 	"github.com/apache/dubbo-go/registry"
 )
 
-const mockConsumerConfigPath = "./testdata/consumer_config.yml"
-const mockProviderConfigPath = "./testdata/provider_config.yml"
+const (
+	mockConsumerConfigPath = "./testdata/consumer_config.yml"
+	mockProviderConfigPath = "./testdata/provider_config.yml"
+)
 
 func TestConfigLoader(t *testing.T) {
 	conPath, err := filepath.Abs(mockConsumerConfigPath)
@@ -222,7 +224,6 @@ func TestConfigLoaderWithConfigCenter(t *testing.T) {
 
 	assert.Equal(t, "BDTService", consumerConfig.ApplicationConfig.Name)
 	assert.Equal(t, "127.0.0.1:2181", consumerConfig.Registries["hangzhouzk"].Address)
-
 }
 
 func TestConfigLoaderWithConfigCenterSingleRegistry(t *testing.T) {
@@ -281,7 +282,6 @@ func TestConfigLoaderWithConfigCenterSingleRegistry(t *testing.T) {
 
 	assert.Equal(t, "BDTService", consumerConfig.ApplicationConfig.Name)
 	assert.Equal(t, "mock://127.0.0.1:2182", consumerConfig.Registries[constant.DEFAULT_KEY].Address)
-
 }
 
 func TestGetBaseConfig(t *testing.T) {
@@ -301,7 +301,8 @@ func mockInitProviderWithSingleRegistry() {
 				Module:       "module",
 				Version:      "1.0.0",
 				Owner:        "dubbo",
-				Environment:  "test"},
+				Environment:  "test",
+			},
 		},
 
 		Registry: &RegistryConfig{
@@ -452,8 +453,7 @@ func (m *mockMetadataService) getAllService(services *sync.Map) []*common.URL {
 	return res
 }
 
-type mockServiceDiscoveryRegistry struct {
-}
+type mockServiceDiscoveryRegistry struct{}
 
 func (mr *mockServiceDiscoveryRegistry) GetUrl() *common.URL {
 	panic("implement me")
@@ -487,8 +487,7 @@ func (s *mockServiceDiscoveryRegistry) GetServiceDiscovery() registry.ServiceDis
 	return &mockServiceDiscovery{}
 }
 
-type mockServiceDiscovery struct {
-}
+type mockServiceDiscovery struct{}
 
 func (m *mockServiceDiscovery) String() string {
 	panic("implement me")

@@ -134,8 +134,10 @@ func (state *ExecuteState) decrease() {
 	atomic.AddInt64(&state.concurrentCount, -1)
 }
 
-var executeLimitOnce sync.Once
-var executeLimitFilter *ExecuteLimitFilter
+var (
+	executeLimitOnce   sync.Once
+	executeLimitFilter *ExecuteLimitFilter
+)
 
 // GetExecuteLimitFilter returns the singleton ExecuteLimitFilter instance
 func GetExecuteLimitFilter() filter.Filter {

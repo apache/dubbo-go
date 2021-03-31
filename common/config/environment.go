@@ -35,7 +35,7 @@ import (
 // But for add these features in future ,I finish the environment struct following Environment class in java.
 type Environment struct {
 	configCenterFirst bool
-	//externalConfigs      sync.Map
+	// externalConfigs      sync.Map
 	externalConfigMap    sync.Map
 	appExternalConfigMap sync.Map
 	dynamicConfiguration config_center.DynamicConfiguration

@@ -62,7 +62,8 @@ func TestStartConfigCenterWithRemoteRef(t *testing.T) {
 			Group:      "dubbo",
 			RemoteRef:  "mock",
 			ConfigFile: "mockDubbo.properties",
-		}}
+		},
+	}
 
 	c := &configCenter{}
 	err := c.startConfigCenter(*baseConfig)
@@ -85,7 +86,8 @@ func TestStartConfigCenterWithRemoteRefError(t *testing.T) {
 			Group:      "dubbo",
 			RemoteRef:  "mock",
 			ConfigFile: "mockDubbo.properties",
-		}}
+		},
+	}
 
 	c := &configCenter{}
 	err := c.startConfigCenter(*baseConfig)
