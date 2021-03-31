@@ -56,7 +56,7 @@ func (invoker *baseClusterInvoker) GetUrl() *common.URL {
 }
 
 func (invoker *baseClusterInvoker) Destroy() {
-	//this is must atom operation
+	// this is must atom operation
 	if invoker.destroyed.CAS(false, true) {
 		invoker.directory.Destroy()
 	}
@@ -69,7 +69,7 @@ func (invoker *baseClusterInvoker) IsAvailable() bool {
 	return invoker.directory.IsAvailable()
 }
 
-//check invokers availables
+// check invokers availables
 func (invoker *baseClusterInvoker) checkInvokers(invokers []protocol.Invoker, invocation protocol.Invocation) error {
 	if len(invokers) == 0 {
 		ip := common.GetLocalIp()
@@ -78,10 +78,9 @@ func (invoker *baseClusterInvoker) checkInvokers(invokers []protocol.Invoker, in
 			invocation.MethodName(), invoker.directory.GetUrl().SubURL.Key(), invoker.directory.GetUrl().String(), ip, constant.Version)
 	}
 	return nil
-
 }
 
-//check cluster invoker is destroyed or not
+// check cluster invoker is destroyed or not
 func (invoker *baseClusterInvoker) checkWhetherDestroyed() error {
 	if invoker.destroyed.Load() {
 		ip := common.GetLocalIp()
@@ -99,7 +98,7 @@ func (invoker *baseClusterInvoker) doSelect(lb cluster.LoadBalance, invocation p
 
 	url := invokers[0].GetUrl()
 	sticky := url.GetParamBool(constant.STICKY_KEY, false)
-	//Get the service method sticky config if have
+	// Get the service method sticky config if have
 	sticky = url.GetMethodParamBool(invocation.MethodName(), constant.STICKY_KEY, sticky)
 
 	if invoker.stickyInvoker != nil && !isInvoked(invoker.stickyInvoker, invokers) {
@@ -135,7 +134,7 @@ func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invoc
 
 	selectedInvoker := lb.Select(invokers, invocation)
 
-	//judge if the selected Invoker is invoked and available
+	// judge if the selected Invoker is invoked and available
 	if (!selectedInvoker.IsAvailable() && invoker.availablecheck) || isInvoked(selectedInvoker, invoked) {
 		protocol.SetInvokerUnhealthyStatus(selectedInvoker)
 		otherInvokers := getOtherInvokers(invokers, selectedInvoker)
@@ -193,10 +192,10 @@ func getLoadBalance(invoker protocol.Invoker, invocation protocol.Invocation) cl
 	url := invoker.GetUrl()
 
 	methodName := invocation.MethodName()
-	//Get the service loadbalance config
+	// Get the service loadbalance config
 	lb := url.GetParam(constant.LOADBALANCE_KEY, constant.DEFAULT_LOADBALANCE)
 
-	//Get the service method loadbalance config if have
+	// Get the service method loadbalance config if have
 	if v := url.GetMethodParam(methodName, constant.LOADBALANCE_KEY, ""); len(v) > 0 {
 		lb = v
 	}

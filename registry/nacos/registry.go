@@ -41,9 +41,7 @@ import (
 	"github.com/apache/dubbo-go/registry"
 )
 
-var (
-	localIP = ""
-)
+var localIP = ""
 
 const (
 	// RegistryConnDelay registry connection delay
@@ -293,7 +291,7 @@ func getNacosConfig(url *common.URL) (map[string]interface{}, error) {
 	clientConfig.Endpoint = url.GetParam(constant.NACOS_ENDPOINT, "")
 	clientConfig.NamespaceId = url.GetParam(constant.NACOS_NAMESPACE_ID, "")
 
-	//enable local cache when nacos can not connect.
+	// enable local cache when nacos can not connect.
 	notLoadCache, err := strconv.ParseBool(url.GetParam(constant.NACOS_NOT_LOAD_LOCAL_CACHE, "false"))
 	if err != nil {
 		logger.Errorf("ParseBool - error: %v", err)

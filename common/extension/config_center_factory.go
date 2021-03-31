@@ -21,9 +21,7 @@ import (
 	"github.com/apache/dubbo-go/config_center"
 )
 
-var (
-	configCenterFactories = make(map[string]func() config_center.DynamicConfigurationFactory)
-)
+var configCenterFactories = make(map[string]func() config_center.DynamicConfigurationFactory)
 
 // SetConfigCenterFactory sets the DynamicConfigurationFactory with @name
 func SetConfigCenterFactory(name string, v func() config_center.DynamicConfigurationFactory) {

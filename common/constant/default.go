@@ -20,7 +20,7 @@ package constant
 const (
 	DUBBO             = "dubbo"
 	PROVIDER_PROTOCOL = "provider"
-	//compatible with 2.6.x
+	// compatible with 2.6.x
 	OVERRIDE_PROTOCOL = "override"
 	EMPTY_PROTOCOL    = "empty"
 	ROUTER_PROTOCOL   = "router"

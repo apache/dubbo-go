@@ -128,7 +128,8 @@ func (cl *CacheListener) AddListener(key string, listener config_center.Configur
 	// reference from https://stackoverflow.com/questions/34018908/golang-why-dont-we-have-a-set-datastructure
 	// make a map[your type]struct{} like set in java
 	listeners, loaded := cl.keyListeners.LoadOrStore(key, map[config_center.ConfigurationListener]struct{}{
-		listener: {}})
+		listener: {},
+	})
 	if loaded {
 		listeners.(map[config_center.ConfigurationListener]struct{})[listener] = struct{}{}
 		cl.keyListeners.Store(key, listeners)

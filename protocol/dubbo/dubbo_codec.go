@@ -36,7 +36,7 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
-//SerialID serial ID
+// SerialID serial ID
 type SerialID byte
 
 func init() {
@@ -46,8 +46,7 @@ func init() {
 }
 
 // DubboCodec. It is implements remoting.Codec
-type DubboCodec struct {
-}
+type DubboCodec struct{}
 
 // encode request for transport
 func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, error) {
@@ -129,7 +128,7 @@ func (c *DubboCodec) encodeHeartbeartReqeust(request *remoting.Request) (*bytes.
 
 // encode response
 func (c *DubboCodec) EncodeResponse(response *remoting.Response) (*bytes.Buffer, error) {
-	var ptype = impl.PackageResponse
+	ptype := impl.PackageResponse
 	if response.IsHeartbeat() {
 		ptype = impl.PackageHeartbeat
 	}
@@ -190,7 +189,7 @@ func (c *DubboCodec) decodeRequest(data []byte) (*remoting.Request, int, error) 
 	if err != nil {
 		originErr := perrors.Cause(err)
 		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
-			//FIXME
+			// FIXME
 			return nil, 0, originErr
 		}
 		logger.Errorf("pkg.Unmarshal(len(@data):%d) = error:%+v", buf.Len(), err)
@@ -207,19 +206,19 @@ func (c *DubboCodec) decodeRequest(data []byte) (*remoting.Request, int, error) 
 		// convert params of request
 		req := pkg.Body.(map[string]interface{})
 
-		//invocation := request.Data.(*invocation.RPCInvocation)
+		// invocation := request.Data.(*invocation.RPCInvocation)
 		var methodName string
 		var args []interface{}
 		attachments := make(map[string]interface{})
 		if req[impl.DubboVersionKey] != nil {
-			//dubbo version
+			// dubbo version
 			request.Version = req[impl.DubboVersionKey].(string)
 		}
-		//path
+		// path
 		attachments[constant.PATH_KEY] = pkg.Service.Path
-		//version
+		// version
 		attachments[constant.VERSION_KEY] = pkg.Service.Version
-		//method
+		// method
 		methodName = pkg.Service.Method
 		args = req[impl.ArgsKey].([]interface{})
 		attachments = req[impl.AttachmentsKey].(map[string]interface{})
@@ -248,7 +247,7 @@ func (c *DubboCodec) decodeResponse(data []byte) (*remoting.Response, int, error
 	}
 	response := &remoting.Response{
 		ID: pkg.Header.ID,
-		//Version:  pkg.Header.,
+		// Version:  pkg.Header.,
 		SerialID: pkg.Header.SerialID,
 		Status:   pkg.Header.ResponseStatus,
 		Event:    (pkg.Header.Type & impl.PackageHeartbeat) != 0,
@@ -264,7 +263,7 @@ func (c *DubboCodec) decodeResponse(data []byte) (*remoting.Response, int, error
 		} else {
 			logger.Debugf("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", pkg.Header, pkg.Service, pkg.Body)
 			response.Status = hessian.Response_OK
-			//reply(session, p, hessian.PackageHeartbeat)
+			// reply(session, p, hessian.PackageHeartbeat)
 		}
 		return response, hessian.HEADER_LENGTH + pkg.Header.BodyLen, error
 	}

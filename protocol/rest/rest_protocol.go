@@ -37,9 +37,7 @@ import (
 	_ "github.com/apache/dubbo-go/protocol/rest/server/server_impl"
 )
 
-var (
-	restProtocol *RestProtocol
-)
+var restProtocol *RestProtocol
 
 const REST = "rest"
 
@@ -88,7 +86,7 @@ func (rp *RestProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 // Refer create rest service reference
 func (rp *RestProtocol) Refer(url *common.URL) protocol.Invoker {
 	// create rest_invoker
-	var requestTimeout = config.GetConsumerConfig().RequestTimeout
+	requestTimeout := config.GetConsumerConfig().RequestTimeout
 	requestTimeoutStr := url.GetParam(constant.TIMEOUT_KEY, config.GetConsumerConfig().Request_Timeout)
 	connectTimeout := config.GetConsumerConfig().ConnectTimeout
 	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {

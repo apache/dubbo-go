@@ -57,7 +57,8 @@ func TestBeforeShutdown(t *testing.T) {
 		ShutdownConfig: &ShutdownConfig{
 			Timeout:     "1",
 			StepTimeout: "1s",
-		}}
+		},
+	}
 
 	providerProtocols := map[string]*ProtocolConfig{}
 	providerProtocols[constant.DUBBO] = &ProtocolConfig{

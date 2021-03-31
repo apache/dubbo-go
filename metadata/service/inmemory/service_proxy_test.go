@@ -35,13 +35,11 @@ import (
 )
 
 func TestMetadataServiceProxy_GetExportedURLs(t *testing.T) {
-
 	pxy := createPxy()
 	assert.NotNil(t, pxy)
 	res, err := pxy.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
 	assert.Nil(t, err)
 	assert.Len(t, res, 1)
-
 }
 
 // TestNewMetadataService: those methods are not implemented

@@ -238,9 +238,7 @@ func packRequest(p DubboPackage, serializer Serializer) ([]byte, error) {
 }
 
 func packResponse(p DubboPackage, serializer Serializer) ([]byte, error) {
-	var (
-		byteArray []byte
-	)
+	var byteArray []byte
 	header := p.Header
 	hb := p.IsHeartBeat()
 

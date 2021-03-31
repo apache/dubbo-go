@@ -47,7 +47,7 @@ func TestNewHystrixFilterError(t *testing.T) {
 }
 
 func mockInitHystrixConfig() {
-	//Mock config
+	// Mock config
 	confConsumer = &HystrixFilterConfig{
 		make(map[string]*CommandConfigWithError),
 		"Default",
@@ -85,7 +85,6 @@ func mockInitHystrixConfig() {
 			"GetUser": "userp_m",
 		},
 	}
-
 }
 
 func TestGetHystrixFilter(t *testing.T) {
@@ -117,7 +116,7 @@ func TestGetConfig2(t *testing.T) {
 
 func TestGetConfig3(t *testing.T) {
 	mockInitHystrixConfig()
-	//This should use default
+	// This should use default
 	configGot := getConfig("Mock.Service", "GetMock", true)
 	assert.NotNil(t, configGot)
 	assert.Equal(t, 1000, configGot.Timeout)
@@ -186,7 +185,7 @@ func TestHystricFilterInvokeCircuitBreak(t *testing.T) {
 			resChan <- result
 		}()
 	}
-	//This can not always pass the test when on travis due to concurrency, you can uncomment the code below and test it locally
+	// This can not always pass the test when on travis due to concurrency, you can uncomment the code below and test it locally
 
 	//var lastRest bool
 	//for i := 0; i < 50; i++ {
@@ -195,7 +194,6 @@ func TestHystricFilterInvokeCircuitBreak(t *testing.T) {
 	//Normally the last result should be true, which means the circuit has been opened
 	//
 	//assert.True(t, lastRest)
-
 }
 
 func TestHystricFilterInvokeCircuitBreakOmitException(t *testing.T) {
@@ -215,7 +213,7 @@ func TestHystricFilterInvokeCircuitBreakOmitException(t *testing.T) {
 			resChan <- result
 		}()
 	}
-	//This can not always pass the test when on travis due to concurrency, you can uncomment the code below and test it locally
+	// This can not always pass the test when on travis due to concurrency, you can uncomment the code below and test it locally
 
 	//time.Sleep(time.Second * 6)
 	//var lastRest bool
@@ -224,7 +222,6 @@ func TestHystricFilterInvokeCircuitBreakOmitException(t *testing.T) {
 	//}
 	//
 	//assert.False(t, lastRest)
-
 }
 
 func TestGetHystrixFilterConsumer(t *testing.T) {

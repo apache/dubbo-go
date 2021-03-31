@@ -63,8 +63,8 @@ type RegistryDirectory struct {
 	configurators                  []config_center.Configurator
 	consumerConfigurationListener  *consumerConfigurationListener
 	referenceConfigurationListener *referenceConfigurationListener
-	//serviceKey                     string
-	//forbidden                      atomic.Bool
+	// serviceKey                     string
+	// forbidden                      atomic.Bool
 	registerLock sync.Mutex // this lock if for register
 }
 
