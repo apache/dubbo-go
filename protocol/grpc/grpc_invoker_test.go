@@ -29,6 +29,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol/grpc/internal"
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
@@ -48,8 +49,10 @@ func TestInvoke(t *testing.T) {
 	url, err := common.NewURL(mockGrpcCommonUrl)
 	assert.Nil(t, err)
 
-	cli := NewClient(url)
-
+	cli, err := NewClient(url)
+	if err != nil {
+		logger.Errorf("grpc new client error %v", err)
+	}
 	invoker := NewGrpcInvoker(url, cli)
 
 	args := []reflect.Value{}
