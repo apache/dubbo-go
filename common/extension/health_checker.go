@@ -22,9 +22,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 )
 
-var (
-	healthCheckers = make(map[string]func(url *common.URL) router.HealthChecker)
-)
+var healthCheckers = make(map[string]func(url *common.URL) router.HealthChecker)
 
 // SetHealthChecker sets the HealthChecker with @name
 func SetHealthChecker(name string, fcn func(_ *common.URL) router.HealthChecker) {

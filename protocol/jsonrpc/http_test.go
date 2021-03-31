@@ -43,8 +43,7 @@ type (
 		Name string `json:"name"`
 	}
 
-	UserProvider struct {
-		//user map[string]User
+	UserProvider struct { // user map[string]User
 	}
 )
 
@@ -57,7 +56,6 @@ const (
 )
 
 func TestHTTPClientCall(t *testing.T) {
-
 	methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "jsonrpc", "", "", &UserProvider{})
 	assert.NoError(t, err)
 	assert.Equal(t, "GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4", methods)
@@ -165,7 +163,6 @@ func TestHTTPClientCall(t *testing.T) {
 
 	// destroy
 	proto.Destroy()
-
 }
 
 func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User) error {

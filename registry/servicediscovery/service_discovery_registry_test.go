@@ -26,6 +26,7 @@ import (
 	"github.com/dubbogo/gost/hash/page"
 	"github.com/stretchr/testify/assert"
 )
+
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
@@ -83,8 +84,7 @@ func TestServiceDiscoveryRegistry_Register(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-type mockEventDispatcher struct {
-}
+type mockEventDispatcher struct{}
 
 func (m *mockEventDispatcher) AddEventListener(observer.EventListener) {
 }
@@ -111,8 +111,7 @@ func (m *mockEventDispatcher) RemoveAllEventListeners() {
 func (m *mockEventDispatcher) Dispatch(observer.Event) {
 }
 
-type mockServiceNameMapping struct {
-}
+type mockServiceNameMapping struct{}
 
 func (m *mockServiceNameMapping) Map(string, string, string, string) error {
 	return nil
@@ -122,8 +121,7 @@ func (m *mockServiceNameMapping) Get(string, string, string, string) (*gxset.Has
 	panic("implement me")
 }
 
-type mockServiceDiscovery struct {
-}
+type mockServiceDiscovery struct{}
 
 func (m *mockServiceDiscovery) String() string {
 	panic("implement me")
@@ -185,8 +183,7 @@ func (m *mockServiceDiscovery) DispatchEvent(*registry.ServiceInstancesChangedEv
 	panic("implement me")
 }
 
-type mockMetadataService struct {
-}
+type mockMetadataService struct{}
 
 func (m *mockMetadataService) Reference() string {
 	panic("implement me")

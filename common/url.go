@@ -113,7 +113,7 @@ type URL struct {
 	noCopy noCopy
 
 	baseUrl
-	//url.Values is not safe map, add to avoid concurrent map read and map write error
+	// url.Values is not safe map, add to avoid concurrent map read and map write error
 	paramsLock sync.RWMutex
 	params     url.Values
 

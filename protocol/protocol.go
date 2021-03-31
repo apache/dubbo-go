@@ -137,7 +137,6 @@ func NewBaseExporter(key string, invoker Invoker, exporterMap *sync.Map) *BaseEx
 // GetInvoker gets invoker
 func (de *BaseExporter) GetInvoker() Invoker {
 	return de.invoker
-
 }
 
 // Unexport exported service.

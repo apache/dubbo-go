@@ -72,9 +72,7 @@ const (
 	routerZk      = "zookeeper"
 )
 
-var (
-	zkFormat = "zookeeper://%s:%d"
-)
+var zkFormat = "zookeeper://%s:%d"
 
 // MockInvoker is only mock the Invoker to support test tagRouter
 type MockInvoker struct {
@@ -257,7 +255,7 @@ func TestRouteBeijingInvoker(t *testing.T) {
 
 type DynamicTagRouter struct {
 	suite.Suite
-	//rule *RouterRule
+	// rule *RouterRule
 
 	route       *tagRouter
 	zkClient    *gxzookeeper.ZookeeperClient

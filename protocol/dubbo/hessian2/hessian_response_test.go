@@ -93,7 +93,7 @@ func TestReflectResponse(t *testing.T) {
 	var s1r []string
 	doTestReflectResponse(t, s1, &s1r)
 
-	s2 := []rr{rr{"dubbo", 666}, rr{"go", 999}}
+	s2 := []rr{{"dubbo", 666}, {"go", 999}}
 	var s2r []rr
 	doTestReflectResponse(t, s2, &s2r)
 
@@ -221,5 +221,4 @@ func TestVersion2Int(t *testing.T) {
 
 	v = version2Int("2.1.3.4.5")
 	assert.Equal(t, 201030405, v)
-
 }

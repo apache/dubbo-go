@@ -122,8 +122,7 @@ func TestRestProtocolExport(t *testing.T) {
 	assert.False(t, ok)
 }
 
-type UserProvider struct {
-}
+type UserProvider struct{}
 
 func (p *UserProvider) Reference() string {
 	return "com.ikurento.user.UserProvider"

@@ -69,7 +69,7 @@ func (t *RouterRule) parseTags() {
 }
 
 func (t *RouterRule) getAddresses() []string {
-	var result = make([]string, 0, 2*len(t.Tags))
+	result := make([]string, 0, 2*len(t.Tags))
 	for _, tag := range t.Tags {
 		result = append(result, tag.Addresses...)
 	}
@@ -77,7 +77,7 @@ func (t *RouterRule) getAddresses() []string {
 }
 
 func (t *RouterRule) getTagNames() []string {
-	var result = make([]string, 0, len(t.Tags))
+	result := make([]string, 0, len(t.Tags))
 	for _, tag := range t.Tags {
 		result = append(result, tag.Name)
 	}

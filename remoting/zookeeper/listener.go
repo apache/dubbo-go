@@ -38,9 +38,7 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
-var (
-	defaultTTL = 15 * time.Minute
-)
+var defaultTTL = 15 * time.Minute
 
 // nolint
 type ZkEventListener struct {

@@ -138,7 +138,6 @@ func exporterNormal(t *testing.T, regProtocol *registryProtocol) *common.URL {
 }
 
 func TestExporter(t *testing.T) {
-
 	regProtocol := newRegistryProtocol()
 	exporterNormal(t, regProtocol)
 }
@@ -295,5 +294,4 @@ func TestGetProviderUrlWithHideKey(t *testing.T) {
 	assert.NotContains(t, providerUrl.GetParams(), ".c")
 	assert.NotContains(t, providerUrl.GetParams(), ".d")
 	assert.Contains(t, providerUrl.GetParams(), "a")
-
 }

@@ -30,8 +30,7 @@ import (
 )
 
 // ProviderAuthFilter verifies the correctness of the signature on provider side
-type ProviderAuthFilter struct {
-}
+type ProviderAuthFilter struct{}
 
 func init() {
 	extension.SetFilter(constant.PROVIDER_AUTH_FILTER, getProviderAuthFilter)

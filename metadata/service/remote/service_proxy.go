@@ -20,6 +20,7 @@ package remote
 import (
 	"strings"
 )
+
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
@@ -81,7 +82,6 @@ func (m *metadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 		Revision: m.revision,
 		Protocol: protocol,
 	})
-
 	if err != nil {
 		return []interface{}{}, nil
 	}

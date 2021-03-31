@@ -26,7 +26,6 @@ import (
 )
 
 func TestWatchSet(t *testing.T) {
-
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
@@ -61,7 +60,6 @@ func TestWatchSet(t *testing.T) {
 
 		wg.Add(1)
 		go func() {
-
 			defer wg.Done()
 			w, err := s.Watch("key", true)
 			if err != nil {

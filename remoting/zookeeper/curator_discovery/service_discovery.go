@@ -120,7 +120,6 @@ func (sd *ServiceDiscovery) UpdateService(instance *ServiceInstance) error {
 		return perrors.New("[ServiceDiscovery] services value not entry")
 	}
 	data, err := json.Marshal(instance)
-
 	if err != nil {
 		return err
 	}

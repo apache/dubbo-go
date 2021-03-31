@@ -58,7 +58,8 @@ func initDubboInvokerTest() {
 			WaitTimeout:      "1s",
 			MaxMsgLen:        10240000000,
 			SessionName:      "server",
-		}})
+		},
+	})
 	getty.SetClientConf(getty.ClientConfig{
 		ConnectionNum:   1,
 		HeartbeatPeriod: "3s",

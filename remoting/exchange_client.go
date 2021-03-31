@@ -81,14 +81,14 @@ func (cl *ExchangeClient) doInit(url *common.URL) error {
 		return nil
 	}
 	if cl.client.Connect(url) != nil {
-		//retry for a while
+		// retry for a while
 		time.Sleep(100 * time.Millisecond)
 		if cl.client.Connect(url) != nil {
 			logger.Errorf("Failed to connect server %+v " + url.Location)
 			return errors.New("Failed to connect server " + url.Location)
 		}
 	}
-	//FIXME atomic operation
+	// FIXME atomic operation
 	cl.init = true
 	return nil
 }
