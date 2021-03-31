@@ -20,13 +20,12 @@ package extension
 import (
 	perrors "github.com/pkg/errors"
 )
+
 import (
 	"github.com/apache/dubbo-go/registry"
 )
 
-var (
-	discoveryCreatorMap = make(map[string]func(name string) (registry.ServiceDiscovery, error), 4)
-)
+var discoveryCreatorMap = make(map[string]func(name string) (registry.ServiceDiscovery, error), 4)
 
 // SetServiceDiscovery will store the @creator and @name
 // protocol indicate the implementation, like nacos

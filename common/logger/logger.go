@@ -37,9 +37,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
-var (
-	logger Logger
-)
+var logger Logger
 
 // nolint
 type DubboLogger struct {

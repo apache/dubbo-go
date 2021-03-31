@@ -21,9 +21,7 @@ import (
 	"github.com/apache/dubbo-go/protocol/rest/server"
 )
 
-var (
-	restServers = make(map[string]func() server.RestServer, 8)
-)
+var restServers = make(map[string]func() server.RestServer, 8)
 
 // SetRestServer sets the RestServer with @name
 func SetRestServer(name string, fun func() server.RestServer) {

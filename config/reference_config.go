@@ -194,7 +194,7 @@ func (c *ReferenceConfig) GetProxy() *proxy.Proxy {
 
 func (c *ReferenceConfig) getUrlMap() url.Values {
 	urlMap := url.Values{}
-	//first set user params
+	// first set user params
 	for k, v := range c.Params {
 		urlMap.Set(k, v)
 	}
@@ -215,11 +215,11 @@ func (c *ReferenceConfig) getUrlMap() url.Values {
 	if len(c.RequestTimeout) != 0 {
 		urlMap.Set(constant.TIMEOUT_KEY, c.RequestTimeout)
 	}
-	//getty invoke async or sync
+	// getty invoke async or sync
 	urlMap.Set(constant.ASYNC_KEY, strconv.FormatBool(c.Async))
 	urlMap.Set(constant.STICKY_KEY, strconv.FormatBool(c.Sticky))
 
-	//application info
+	// application info
 	urlMap.Set(constant.APPLICATION_KEY, consumerConfig.ApplicationConfig.Name)
 	urlMap.Set(constant.ORGANIZATION_KEY, consumerConfig.ApplicationConfig.Organization)
 	urlMap.Set(constant.NAME_KEY, consumerConfig.ApplicationConfig.Name)
@@ -228,8 +228,8 @@ func (c *ReferenceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.OWNER_KEY, consumerConfig.ApplicationConfig.Owner)
 	urlMap.Set(constant.ENVIRONMENT_KEY, consumerConfig.ApplicationConfig.Environment)
 
-	//filter
-	var defaultReferenceFilter = constant.DEFAULT_REFERENCE_FILTERS
+	// filter
+	defaultReferenceFilter := constant.DEFAULT_REFERENCE_FILTERS
 	if c.Generic {
 		defaultReferenceFilter = constant.GENERIC_REFERENCE_FILTERS + "," + defaultReferenceFilter
 	}

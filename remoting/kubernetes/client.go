@@ -76,7 +76,6 @@ func newClient(url *common.URL) (*Client, error) {
 
 // Create creates k/v pair in watcher-set
 func (c *Client) Create(k, v string) error {
-
 	// the read current pod must be lock, protect every
 	// create operation can be atomic
 	c.lock.Lock()
@@ -92,7 +91,6 @@ func (c *Client) Create(k, v string) error {
 
 // GetChildren gets k children list from kubernetes-watcherSet
 func (c *Client) GetChildren(k string) ([]string, []string, error) {
-
 	objectList, err := c.controller.watcherSet.Get(k, true)
 	if err != nil {
 		return nil, nil, perrors.WithMessagef(err, "get children from watcherSet on (%s)", k)
@@ -111,7 +109,6 @@ func (c *Client) GetChildren(k string) ([]string, []string, error) {
 
 // Watch watches on spec key
 func (c *Client) Watch(k string) (<-chan *WatcherEvent, <-chan struct{}, error) {
-
 	w, err := c.controller.watcherSet.Watch(k, false)
 	if err != nil {
 		return nil, nil, perrors.WithMessagef(err, "watch on (%s)", k)
@@ -122,7 +119,6 @@ func (c *Client) Watch(k string) (<-chan *WatcherEvent, <-chan struct{}, error) 
 
 // WatchWithPrefix watches on spec prefix
 func (c *Client) WatchWithPrefix(prefix string) (<-chan *WatcherEvent, <-chan struct{}, error) {
-
 	w, err := c.controller.watcherSet.Watch(prefix, true)
 	if err != nil {
 		return nil, nil, perrors.WithMessagef(err, "watch on prefix (%s)", prefix)
@@ -133,7 +129,6 @@ func (c *Client) WatchWithPrefix(prefix string) (<-chan *WatcherEvent, <-chan st
 
 // if returns false, the client is die
 func (c *Client) Valid() bool {
-
 	select {
 	case <-c.Done():
 		return false
@@ -151,10 +146,9 @@ func (c *Client) Done() <-chan struct{} {
 
 // nolint
 func (c *Client) Close() {
-
 	select {
 	case <-c.ctx.Done():
-		//already stopped
+		// already stopped
 		return
 	default:
 	}
@@ -167,7 +161,6 @@ func (c *Client) Close() {
 
 // ValidateClient validates the kubernetes client
 func ValidateClient(container clientFacade) error {
-
 	client := container.Client()
 
 	// new Client

@@ -125,7 +125,8 @@ func getServer(t *testing.T) (*Server, *common.URL) {
 			WaitTimeout:      "1s",
 			MaxMsgLen:        10240000000,
 			SessionName:      "server",
-		}})
+		},
+	})
 	assert.NoError(t, srvConf.CheckValidity())
 
 	url, err := common.NewURL("dubbo://127.0.0.1:20061/com.ikurento.user.AdminProvider?anyhost=true&" +
@@ -142,7 +143,7 @@ func getServer(t *testing.T) (*Server, *common.URL) {
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 	}
 	handler := func(invocation *invocation.RPCInvocation) protocol.RPCResult {
-		//result := protocol.RPCResult{}
+		// result := protocol.RPCResult{}
 		r := invoker.Invoke(context.Background(), invocation)
 		result := protocol.RPCResult{
 			Err:   r.Error(),
@@ -159,8 +160,7 @@ func getServer(t *testing.T) (*Server, *common.URL) {
 	return server, url
 }
 
-type AdminProvider struct {
-}
+type AdminProvider struct{}
 
 func (a *AdminProvider) GetAdmin(ctx context.Context, req []interface{}, rsp *User) error {
 	rsp.Id = req[0].(string)

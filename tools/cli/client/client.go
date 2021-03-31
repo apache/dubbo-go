@@ -68,7 +68,7 @@ func NewTelnetClient(host string, port int, protocolName, interfaceID, version, 
 	return &TelnetClient{
 		tcpAddr:          tcpAddr,
 		conn:             conn,
-		responseTimeout:  time.Duration(timeout) * time.Millisecond, //default timeout
+		responseTimeout:  time.Duration(timeout) * time.Millisecond, // default timeout
 		protocolName:     protocolName,
 		pendingResponses: &sync.Map{},
 		proto:            proto,
@@ -95,7 +95,7 @@ func resolveTCPAddr(addr string) *net.TCPAddr {
 
 // ProcessRequests send all requests
 func (t *TelnetClient) ProcessRequests(userPkg interface{}) {
-	for i, _ := range t.requestList {
+	for i := range t.requestList {
 		t.processSingleRequest(t.requestList[i], userPkg)
 	}
 }

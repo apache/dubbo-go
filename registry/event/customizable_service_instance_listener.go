@@ -32,8 +32,7 @@ func init() {
 }
 
 // customizableServiceInstanceListener is singleton
-type customizableServiceInstanceListener struct {
-}
+type customizableServiceInstanceListener struct{}
 
 // GetPriority return priority 9999,
 // 9999 is big enough to make sure it will be last invoked

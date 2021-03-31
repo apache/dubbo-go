@@ -29,9 +29,7 @@ import (
 	"github.com/apache/dubbo-go/common/yaml"
 )
 
-var (
-	routerURLSet = gxset.NewSet()
-)
+var routerURLSet = gxset.NewSet()
 
 // LocalRouterRules defines the local router config structure
 type LocalRouterRules struct {

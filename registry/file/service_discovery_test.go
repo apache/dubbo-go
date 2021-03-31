@@ -35,9 +35,7 @@ import (
 	"github.com/apache/dubbo-go/registry"
 )
 
-var (
-	testName = "test"
-)
+var testName = "test"
 
 func TestNewFileSystemServiceDiscoveryAndDestroy(t *testing.T) {
 	prepareData()

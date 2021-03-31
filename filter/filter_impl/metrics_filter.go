@@ -34,9 +34,7 @@ const (
 	metricFilterName = "metrics"
 )
 
-var (
-	metricFilterInstance filter.Filter
-)
+var metricFilterInstance filter.Filter
 
 // must initialized before using the filter and after loading configuration
 func init() {

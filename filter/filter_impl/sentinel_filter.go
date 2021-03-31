@@ -186,9 +186,11 @@ type DubboFallback func(context.Context, protocol.Invoker, protocol.Invocation, 
 func SetDubboConsumerFallback(f DubboFallback) {
 	sentinelDubboConsumerFallback = f
 }
+
 func SetDubboProviderFallback(f DubboFallback) {
 	sentinelDubboProviderFallback = f
 }
+
 func getDefaultDubboFallback() DubboFallback {
 	return func(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, blockError *base.BlockError) protocol.Result {
 		result := &protocol.RPCResult{}

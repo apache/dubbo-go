@@ -53,7 +53,7 @@ type zookeeperDynamicConfiguration struct {
 	done     chan struct{}
 	client   *gxzookeeper.ZookeeperClient
 
-	//listenerLock  sync.Mutex
+	// listenerLock  sync.Mutex
 	listener      *zookeeper.ZkEventListener
 	cacheListener *CacheListener
 	parser        parser.ConfigurationParser
@@ -78,7 +78,6 @@ func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfigu
 	err = c.client.Create(c.rootPath)
 	c.listener.ListenServiceEvent(url, c.rootPath, c.cacheListener)
 	return c, err
-
 }
 
 func (c *zookeeperDynamicConfiguration) AddListener(key string, listener config_center.ConfigurationListener, opions ...config_center.Option) {
@@ -90,7 +89,6 @@ func (c *zookeeperDynamicConfiguration) RemoveListener(key string, listener conf
 }
 
 func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config_center.Option) (string, error) {
-
 	tmpOpts := &config_center.Options{}
 	for _, opt := range opts {
 		opt(tmpOpts)

@@ -27,9 +27,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-var (
-	s *grpc.Server
-)
+var s *grpc.Server
 
 // server is used to implement helloworld.GreeterServer.
 type server struct {

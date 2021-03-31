@@ -83,7 +83,7 @@ func (lb *roundRobinLoadBalance) Select(invokers []protocol.Invoker, invocation 
 	)
 
 	for _, invoker := range invokers {
-		var weight = GetWeight(invoker, invocation)
+		weight := GetWeight(invoker, invocation)
 		if weight < 0 {
 			weight = 0
 		}

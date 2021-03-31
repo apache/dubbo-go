@@ -33,8 +33,7 @@ func init() {
 }
 
 // logEventListener is singleton
-type logEventListener struct {
-}
+type logEventListener struct{}
 
 func (l *logEventListener) GetPriority() int {
 	return 0
@@ -49,8 +48,10 @@ func (l *logEventListener) GetEventType() reflect.Type {
 	return reflect.TypeOf(&observer.BaseEvent{})
 }
 
-var logEventListenerInstance *logEventListener
-var logEventListenerOnce sync.Once
+var (
+	logEventListenerInstance *logEventListener
+	logEventListenerOnce     sync.Once
+)
 
 func GetLogEventListener() observer.EventListener {
 	logEventListenerOnce.Do(func() {

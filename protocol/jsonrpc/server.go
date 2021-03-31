@@ -43,12 +43,10 @@ import (
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
-var (
-	// A value sent as a placeholder for the server's response value when the server
-	// receives an invalid request. It is never decoded by the client since the Response
-	// contains an error when it is used.
-	invalidRequest = struct{}{}
-)
+// A value sent as a placeholder for the server's response value when the server
+// receives an invalid request. It is never decoded by the client since the Response
+// contains an error when it is used.
+var invalidRequest = struct{}{}
 
 const (
 	// DefaultMaxSleepTime max sleep interval in accept
@@ -349,7 +347,8 @@ func serveRequest(ctx context.Context, header map[string]string, body []byte, co
 	if invoker != nil {
 		result := invoker.Invoke(ctx, invocation.NewRPCInvocation(methodName, args, map[string]interface{}{
 			constant.PATH_KEY:    path,
-			constant.VERSION_KEY: codec.req.Version}))
+			constant.VERSION_KEY: codec.req.Version,
+		}))
 		if err := result.Error(); err != nil {
 			rspStream, codecErr := codec.Write(err.Error(), invalidRequest)
 			if codecErr != nil {
