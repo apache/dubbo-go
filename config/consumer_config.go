@@ -43,9 +43,9 @@ const (
 
 // ConsumerConfig is Consumer default configuration
 type ConsumerConfig struct {
-	BaseConfig `yaml:",inline"`
-	configCenter
-	Filter string `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	BaseConfig   `yaml:",inline"`
+	configCenter `yaml:"-"`
+	Filter       string `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	// client
 	Connect_Timeout string `default:"100ms"  yaml:"connect_timeout" json:"connect_timeout,omitempty" property:"connect_timeout"`
 	ConnectTimeout  time.Duration

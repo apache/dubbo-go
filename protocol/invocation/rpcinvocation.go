@@ -19,6 +19,7 @@ package invocation
 
 import (
 	"reflect"
+	"strings"
 	"sync"
 )
 
@@ -197,7 +198,7 @@ func (r *RPCInvocation) SetCallBack(c interface{}) {
 }
 
 func (r *RPCInvocation) ServiceKey() string {
-	return common.ServiceKey(r.AttachmentsByKey(constant.INTERFACE_KEY, ""),
+	return common.ServiceKey(strings.TrimPrefix(r.AttachmentsByKey(constant.PATH_KEY, r.AttachmentsByKey(constant.INTERFACE_KEY, "")), "/"),
 		r.AttachmentsByKey(constant.GROUP_KEY, ""), r.AttachmentsByKey(constant.VERSION_KEY, ""))
 }
 
