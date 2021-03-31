@@ -34,6 +34,29 @@ func TestEnvironmentUpdateExternalConfigMap(t *testing.T) {
 	v, ok := GetEnvInstance().externalConfigMap.Load("1")
 	assert.True(t, ok)
 	assert.Equal(t, "2", v)
+
+	GetEnvInstance().UpdateExternalConfigMap(map[string]string{"a": "b"})
+	v, ok = GetEnvInstance().externalConfigMap.Load("a")
+	assert.True(t, ok)
+	assert.Equal(t, "b", v)
+	v, ok = GetEnvInstance().externalConfigMap.Load("1")
+	assert.False(t, ok)
+	assert.Equal(t, nil, v)
+}
+
+func TestEnvironmentUpdateAppExternalConfigMap(t *testing.T) {
+	GetEnvInstance().UpdateAppExternalConfigMap(map[string]string{"1": "2"})
+	v, ok := GetEnvInstance().appExternalConfigMap.Load("1")
+	assert.True(t, ok)
+	assert.Equal(t, "2", v)
+
+	GetEnvInstance().UpdateAppExternalConfigMap(map[string]string{"a": "b"})
+	v, ok = GetEnvInstance().appExternalConfigMap.Load("a")
+	assert.True(t, ok)
+	assert.Equal(t, "b", v)
+	v, ok = GetEnvInstance().appExternalConfigMap.Load("1")
+	assert.False(t, ok)
+	assert.Equal(t, nil, v)
 }
 
 func TestEnvironmentConfigurationAndGetProperty(t *testing.T) {
