@@ -117,7 +117,7 @@ func setDefaultValue(target interface{}) {
 		Address:    "127.0.0.1:2181",
 	}
 	switch target.(type) {
-	case ProviderConfig:
+	case *ProviderConfig:
 		p := target.(*ProviderConfig)
 		if len(p.Registries) == 0 {
 			p.Registries["demoZK"] = registryConfig

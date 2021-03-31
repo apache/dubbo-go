@@ -191,6 +191,26 @@ func TestWithNoRegLoad(t *testing.T) {
 	providerConfig = nil
 }
 
+func TestSetDefaultValue(t *testing.T) {
+	proConfig := &ProviderConfig{Registries: make(map[string]*RegistryConfig), Protocols: make(map[string]*ProtocolConfig)}
+	assert.Nil(t, proConfig.ApplicationConfig)
+	setDefaultValue(proConfig)
+	assert.Equal(t, proConfig.Registries["demoZK"].Address, "127.0.0.1:2181")
+	assert.Equal(t, proConfig.Registries["demoZK"].TimeoutStr, "3s")
+	assert.Equal(t, proConfig.Registries["demoZK"].Protocol, "zookeeper")
+	assert.Equal(t, proConfig.Protocols["dubbo"].Name, "dubbo")
+	assert.Equal(t, proConfig.Protocols["dubbo"].Port, "20000")
+	assert.NotNil(t, proConfig.ApplicationConfig)
+
+	conConfig := &ConsumerConfig{Registries: make(map[string]*RegistryConfig)}
+	assert.Nil(t, conConfig.ApplicationConfig)
+	setDefaultValue(conConfig)
+	assert.Equal(t, conConfig.Registries["demoZK"].Address, "127.0.0.1:2181")
+	assert.Equal(t, conConfig.Registries["demoZK"].TimeoutStr, "3s")
+	assert.Equal(t, conConfig.Registries["demoZK"].Protocol, "zookeeper")
+	assert.NotNil(t, conConfig.ApplicationConfig)
+
+}
 func TestConfigLoaderWithConfigCenter(t *testing.T) {
 	extension.SetConfigCenterFactory("mock", func() config_center.DynamicConfigurationFactory {
 		return &config_center.MockDynamicConfigurationFactory{}
