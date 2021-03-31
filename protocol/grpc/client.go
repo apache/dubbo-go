@@ -90,20 +90,27 @@ type Client struct {
 }
 
 // NewClient creates a new gRPC client.
-func NewClient(url *common.URL) *Client {
+func NewClient(url *common.URL) (*Client, error) {
 	// if global trace instance was set , it means trace function enabled. If not , will return Nooptracer
 	tracer := opentracing.GlobalTracer()
 	dialOpts := make([]grpc.DialOption, 0, 4)
 	maxMessageSize, _ := strconv.Atoi(url.GetParam(constant.MESSAGE_SIZE_KEY, "4"))
-	dialOpts = append(dialOpts, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithUnaryInterceptor(
+
+	//consumer config client connectTimeout
+	connectTimeout := config.GetConsumerConfig().ConnectTimeout
+
+	dialOpts = append(dialOpts, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(connectTimeout), grpc.WithUnaryInterceptor(
 		otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())),
 		grpc.WithDefaultCallOptions(
 			grpc.CallContentSubtype(clientConf.ContentSubType),
 			grpc.MaxCallRecvMsgSize(1024*1024*maxMessageSize),
 			grpc.MaxCallSendMsgSize(1024*1024*maxMessageSize)))
+
 	conn, err := grpc.Dial(url.Location, dialOpts...)
+
 	if err != nil {
-		panic(err)
+		logger.Errorf("grpc dail error: %v", err)
+		return nil, err
 	}
 
 	key := url.GetParam(constant.BEAN_NAME_KEY, "")
@@ -113,7 +120,7 @@ func NewClient(url *common.URL) *Client {
 	return &Client{
 		ClientConn: conn,
 		invoker:    reflect.ValueOf(invoker),
-	}
+	}, nil
 }
 
 func getInvoker(impl interface{}, conn *grpc.ClientConn) interface{} {

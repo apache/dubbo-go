@@ -22,6 +22,10 @@ import (
 )
 
 import (
+	uatomic "go.uber.org/atomic"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
@@ -51,6 +55,8 @@ type ExchangeClient struct {
 	client Client
 	// the tag for init.
 	init bool
+	// the number of service using the exchangeClient
+	activeNum uatomic.Uint32
 }
 
 // create ExchangeClient
@@ -66,7 +72,7 @@ func NewExchangeClient(url *common.URL, client Client, connectTimeout time.Durat
 			return nil
 		}
 	}
-
+	exchangeClient.IncreaseActiveNumber()
 	return exchangeClient
 }
 
@@ -85,6 +91,21 @@ func (cl *ExchangeClient) doInit(url *common.URL) error {
 	//FIXME atomic operation
 	cl.init = true
 	return nil
+}
+
+// increase number of service using client
+func (client *ExchangeClient) IncreaseActiveNumber() uint32 {
+	return client.activeNum.Add(1)
+}
+
+// decrease number of service using client
+func (client *ExchangeClient) DecreaseActiveNumber() uint32 {
+	return client.activeNum.Sub(1)
+}
+
+// get number of service using client
+func (client *ExchangeClient) GetActiveNumber() uint32 {
+	return client.activeNum.Load()
 }
 
 // two way request
