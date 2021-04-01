@@ -56,7 +56,7 @@ type Request struct {
 	service  string
 	method   string
 	args     interface{}
-	//contentType string
+	// contentType string
 }
 
 // ////////////////////////////////////////////
@@ -102,7 +102,6 @@ func NewHTTPClient(opt *HTTPOptions) *HTTPClient {
 
 // NewRequest creates a new HTTP request with @service ,@method and @arguments.
 func (c *HTTPClient) NewRequest(service *common.URL, method string, args interface{}) *Request {
-
 	return &Request{
 		ID:       atomic.AddInt64(&c.ID, 1),
 		group:    service.GetParam(constant.GROUP_KEY, ""),

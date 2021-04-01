@@ -53,7 +53,7 @@ type addrMetadata struct {
 	// application name
 	application string
 	// is rule a runtime rule
-	//ruleRuntime bool
+	// ruleRuntime bool
 	// is rule a force rule
 	ruleForce bool
 	// is rule a valid rule
@@ -267,7 +267,8 @@ func (c *tagRouter) fetchRuleIfNecessary(invokers []protocol.Invoker) {
 		c.Process(&config_center.ConfigChangeEvent{
 			Key:        routerKey,
 			Value:      rule,
-			ConfigType: remoting.EventTypeUpdate})
+			ConfigType: remoting.EventTypeUpdate,
+		})
 	}
 }
 

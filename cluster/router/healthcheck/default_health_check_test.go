@@ -123,7 +123,6 @@ func TestDefaultHealthCheckerGetCircuitBreakerTimeout(t *testing.T) {
 	timeout = defaultHc.getCircuitBreakerTimeout(protocol.GetURLStatus(url1))
 	// timeout must after the current time
 	assert.True(t, timeout > protocol.CurrentTimeMillis())
-
 }
 
 func TestDefaultHealthCheckerIsCircuitBreakerTripped(t *testing.T) {
@@ -139,7 +138,6 @@ func TestDefaultHealthCheckerIsCircuitBreakerTripped(t *testing.T) {
 	}
 	tripped = defaultHc.isCircuitBreakerTripped(protocol.GetURLStatus(url))
 	assert.True(t, tripped)
-
 }
 
 func TestNewDefaultHealthChecker(t *testing.T) {

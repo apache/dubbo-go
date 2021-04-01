@@ -42,10 +42,8 @@ import (
 	"github.com/apache/dubbo-go/protocol/mock"
 )
 
-var (
-	forkingUrl, _ = common.NewURL(
-		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
-)
+var forkingUrl, _ = common.NewURL(
+	fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
 
 func registerForking(mockInvokers ...*mock.MockInvoker) protocol.Invoker {
 	extension.SetLoadbalance(loadbalance.RoundRobin, loadbalance.NewRoundRobinLoadBalance)
@@ -72,7 +70,7 @@ func TestForkingInvokeSuccess(t *testing.T) {
 
 	mockResult := &protocol.RPCResult{Rest: rest{tried: 0, success: true}}
 	forkingUrl.AddParam(constant.FORKS_KEY, strconv.Itoa(3))
-	//forkingUrl.AddParam(constant.TIMEOUT_KEY, strconv.Itoa(constant.DEFAULT_TIMEOUT))
+	// forkingUrl.AddParam(constant.TIMEOUT_KEY, strconv.Itoa(constant.DEFAULT_TIMEOUT))
 
 	var wg sync.WaitGroup
 	wg.Add(2)

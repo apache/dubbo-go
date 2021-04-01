@@ -42,8 +42,7 @@ func init() {
 	remoting.RegistryCodec("dubbo", codec)
 }
 
-type DubboTestCodec struct {
-}
+type DubboTestCodec struct{}
 
 // encode request for transport
 func (c *DubboTestCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, error) {
@@ -123,7 +122,7 @@ func (c *DubboTestCodec) encodeHeartbeartReqeust(request *remoting.Request) (*by
 
 // encode response
 func (c *DubboTestCodec) EncodeResponse(response *remoting.Response) (*bytes.Buffer, error) {
-	var ptype = impl.PackageResponse
+	ptype := impl.PackageResponse
 	if response.IsHeartbeat() {
 		ptype = impl.PackageHeartbeat
 	}
@@ -184,7 +183,7 @@ func (c *DubboTestCodec) decodeRequest(data []byte) (*remoting.Request, int, err
 	if err != nil {
 		originErr := perrors.Cause(err)
 		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
-			//FIXME
+			// FIXME
 			return nil, 0, originErr
 		}
 		return request, 0, perrors.WithStack(err)
@@ -199,19 +198,19 @@ func (c *DubboTestCodec) decodeRequest(data []byte) (*remoting.Request, int, err
 		// convert params of request
 		req := pkg.Body.(map[string]interface{})
 
-		//invocation := request.Data.(*invocation.RPCInvocation)
+		// invocation := request.Data.(*invocation.RPCInvocation)
 		var methodName string
 		var args []interface{}
 		attachments := make(map[string]interface{})
 		if req[impl.DubboVersionKey] != nil {
-			//dubbo version
+			// dubbo version
 			request.Version = req[impl.DubboVersionKey].(string)
 		}
-		//path
+		// path
 		attachments[constant.PATH_KEY] = pkg.Service.Path
-		//version
+		// version
 		attachments[constant.VERSION_KEY] = pkg.Service.Version
-		//method
+		// method
 		methodName = pkg.Service.Method
 		args = req[impl.ArgsKey].([]interface{})
 		attachments = req[impl.AttachmentsKey].(map[string]interface{})
@@ -238,7 +237,7 @@ func (c *DubboTestCodec) decodeResponse(data []byte) (*remoting.Response, int, e
 	}
 	response := &remoting.Response{
 		ID: pkg.Header.ID,
-		//Version:  pkg.Header.,
+		// Version:  pkg.Header.,
 		SerialID: pkg.Header.SerialID,
 		Status:   pkg.Header.ResponseStatus,
 		Event:    (pkg.Header.Type & impl.PackageHeartbeat) != 0,
@@ -251,7 +250,7 @@ func (c *DubboTestCodec) decodeResponse(data []byte) (*remoting.Response, int, e
 			}
 		} else {
 			response.Status = hessian.Response_OK
-			//reply(session, p, hessian.PackageHeartbeat)
+			// reply(session, p, hessian.PackageHeartbeat)
 		}
 		return response, hessian.HEADER_LENGTH + pkg.Header.BodyLen, error
 	}

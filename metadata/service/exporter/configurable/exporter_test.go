@@ -52,7 +52,8 @@ func TestConfigurableExporter(t *testing.T) {
 			WaitTimeout:      "1s",
 			MaxMsgLen:        10240000000,
 			SessionName:      "server",
-		}})
+		},
+	})
 	mockInitProviderWithSingleRegistry()
 	metadataService, _ := inmemory.NewMetadataService()
 	exported := NewMetadataServiceExporter(metadataService)
@@ -86,7 +87,8 @@ func mockInitProviderWithSingleRegistry() {
 				Module:       "module",
 				Version:      "1.0.0",
 				Owner:        "dubbo",
-				Environment:  "test"},
+				Environment:  "test",
+			},
 		},
 
 		Registry: &config.RegistryConfig{

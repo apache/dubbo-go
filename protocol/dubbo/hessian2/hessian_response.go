@@ -18,11 +18,12 @@ package hessian2
 
 import (
 	"encoding/binary"
-	"github.com/apache/dubbo-go/common/logger"
 	"math"
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/apache/dubbo-go/common/logger"
 )
 
 import (
@@ -64,9 +65,7 @@ func EnsureResponse(body interface{}) *DubboResponse {
 // https://github.com/apache/dubbo/blob/dubbo-2.7.1/dubbo-remoting/dubbo-remoting-api/src/main/java/org/apache/dubbo/remoting/exchange/codec/ExchangeCodec.java#L256
 // hessian encode response
 func packResponse(header DubboHeader, ret interface{}) ([]byte, error) {
-	var (
-		byteArray []byte
-	)
+	var byteArray []byte
 
 	response := EnsureResponse(ret)
 
@@ -362,7 +361,7 @@ func version2Int(ver interface{}) int {
 	if !ok || len(version) == 0 {
 		return 0
 	}
-	var v = 0
+	v := 0
 	varr := strings.Split(version, ".")
 	length := len(varr)
 	for key, value := range varr {

@@ -40,8 +40,7 @@ func init() {
 }
 
 // ActiveFilter tracks the requests status
-type ActiveFilter struct {
-}
+type ActiveFilter struct{}
 
 // Invoke starts to record the requests status
 func (ef *ActiveFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {

@@ -46,6 +46,11 @@ func GetProviderService(name string) common.RPCService {
 	return proServices[name]
 }
 
+// GetAllProviderService gets all ProviderService
+func GetAllProviderService() map[string]common.RPCService {
+	return proServices
+}
+
 // GetCallback gets CallbackResponse by @name
 func GetCallback(name string) func(response common.CallbackResponse) {
 	service := GetConsumerService(name)

@@ -24,6 +24,7 @@ import (
 import (
 	gxset "github.com/dubbogo/gost/container/set"
 )
+
 import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/config"
@@ -44,8 +45,10 @@ func (i *InMemoryServiceNameMapping) Get(serviceInterface string, group string, 
 	return gxset.NewSet(config.GetApplicationConfig().Name), nil
 }
 
-var serviceNameMappingInstance *InMemoryServiceNameMapping
-var serviceNameMappingOnce sync.Once
+var (
+	serviceNameMappingInstance *InMemoryServiceNameMapping
+	serviceNameMappingOnce     sync.Once
+)
 
 func GetNameMappingInstance() mapping.ServiceNameMapping {
 	serviceNameMappingOnce.Do(func() {

@@ -63,8 +63,8 @@ type RegistryDirectory struct {
 	configurators                  []config_center.Configurator
 	consumerConfigurationListener  *consumerConfigurationListener
 	referenceConfigurationListener *referenceConfigurationListener
-	//serviceKey                     string
-	//forbidden                      atomic.Bool
+	// serviceKey                     string
+	// forbidden                      atomic.Bool
 	registerLock sync.Mutex // this lock if for register
 }
 
@@ -111,7 +111,7 @@ func (dir *RegistryDirectory) Notify(event *registry.ServiceEvent) {
 	if event == nil {
 		return
 	}
-	go dir.refreshInvokers(event)
+	dir.refreshInvokers(event)
 }
 
 // NotifyAll notify the events that are complete Service Event List.
@@ -370,6 +370,8 @@ func (dir *RegistryDirectory) doCacheInvoker(newUrl *common.URL) (protocol.Invok
 		newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(newUrl)
 		if newInvoker != nil {
 			dir.cacheInvokersMap.Store(key, newInvoker)
+		} else {
+			logger.Warnf("service will be added in cache invokers fail, result is null, invokers url is %+v", newUrl.String())
 		}
 	} else {
 		// if cached invoker has the same URL with the new URL, then no need to re-refer, and no need to destroy
@@ -383,6 +385,8 @@ func (dir *RegistryDirectory) doCacheInvoker(newUrl *common.URL) (protocol.Invok
 		if newInvoker != nil {
 			dir.cacheInvokersMap.Store(key, newInvoker)
 			return cacheInvoker.(protocol.Invoker), true
+		} else {
+			logger.Warnf("service will be updated in cache invokers fail, result is null, invokers url is %+v", newUrl.String())
 		}
 	}
 	return nil, false

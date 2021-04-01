@@ -173,8 +173,7 @@ func (n *nacosMetadataReport) getConfig(param vo.ConfigParam) (string, error) {
 	return cfg, nil
 }
 
-type nacosMetadataReportFactory struct {
-}
+type nacosMetadataReportFactory struct{}
 
 // nolint
 func (n *nacosMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {
