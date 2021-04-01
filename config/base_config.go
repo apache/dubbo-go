@@ -19,7 +19,6 @@ package config
 
 import (
 	"bytes"
-	"github.com/apache/dubbo-go/common/yaml"
 	"reflect"
 	"strconv"
 	"strings"
@@ -32,6 +31,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common/config"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/common/yaml"
 )
 
 // BaseConfig is the common configuration for provider and consumer
