@@ -19,6 +19,8 @@ package conncheck
 
 import (
 	"github.com/RoaringBitmap/roaring"
+	"strconv"
+	"strings"
 )
 
 import (
@@ -65,6 +67,20 @@ func (r *ConnCheckRouter) Route(invokers *roaring.Bitmap, cache router.Cache, ur
 		return invokers
 	}
 	return healthyInvokers
+}
+
+func (r *ConnCheckRouter) RouteSnapshot(cache router.Cache) string {
+	addrPool := cache.FindAddrPool(r)
+	// Add healthy invoker to the list
+	healthBit := addrPool[connHealthy]
+	sb := strings.Builder{}
+	sb.WriteString(r.Name())
+	sb.WriteString(" -> ")
+	sb.WriteString("Count:")
+	sb.WriteString(strconv.FormatUint(healthBit.GetCardinality(), 10))
+	sb.WriteString(" ")
+	sb.WriteString(healthBit.String())
+	return sb.String()
 }
 
 // Pool separates healthy invokers from others.
