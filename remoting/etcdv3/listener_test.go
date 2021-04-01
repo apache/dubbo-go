@@ -92,7 +92,7 @@ func ClearEtcdServer(t *testing.T) {
 
 func TestListener(t *testing.T) {
 
-	var tests = []struct {
+	tests := []struct {
 		input struct {
 			k string
 			v string

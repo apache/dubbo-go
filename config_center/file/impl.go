@@ -40,9 +40,7 @@ import (
 	"github.com/apache/dubbo-go/config_center/parser"
 )
 
-var (
-	osType = runtime.GOOS
-)
+var osType = runtime.GOOS
 
 const (
 	windowsOS = "windows"

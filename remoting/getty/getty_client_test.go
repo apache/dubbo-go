@@ -52,7 +52,6 @@ func TestRunSuite(t *testing.T) {
 }
 
 func testRequestOneWay(t *testing.T, svr *Server, url *common.URL, client *Client) {
-
 	request := remoting.NewRequest("2.0.2")
 	up := &UserProvider{}
 	invocation := createInvocation("GetUser", nil, nil, []interface{}{[]interface{}{"1", "username"}, up},
@@ -62,7 +61,7 @@ func testRequestOneWay(t *testing.T, svr *Server, url *common.URL, client *Clien
 	request.Data = invocation
 	request.Event = false
 	request.TwoWay = false
-	//user := &User{}
+	// user := &User{}
 	err := client.Request(request, 3*time.Second, nil)
 	assert.NoError(t, err)
 }
@@ -169,9 +168,7 @@ func testGetUser0(t *testing.T, c *Client) {
 }
 
 func testGetUser1(t *testing.T, c *Client) {
-	var (
-		err error
-	)
+	var err error
 	request := remoting.NewRequest("2.0.2")
 	invocation := createInvocation("GetUser1", nil, nil, []interface{}{},
 		[]reflect.Value{})
@@ -189,9 +186,7 @@ func testGetUser1(t *testing.T, c *Client) {
 }
 
 func testGetUser2(t *testing.T, c *Client) {
-	var (
-		err error
-	)
+	var err error
 	request := remoting.NewRequest("2.0.2")
 	invocation := createInvocation("GetUser2", nil, nil, []interface{}{},
 		[]reflect.Value{})
@@ -207,9 +202,7 @@ func testGetUser2(t *testing.T, c *Client) {
 }
 
 func testGetUser3(t *testing.T, c *Client) {
-	var (
-		err error
-	)
+	var err error
 	request := remoting.NewRequest("2.0.2")
 	invocation := createInvocation("GetUser3", nil, nil, []interface{}{},
 		[]reflect.Value{})
@@ -230,9 +223,7 @@ func testGetUser3(t *testing.T, c *Client) {
 }
 
 func testGetUser4(t *testing.T, c *Client) {
-	var (
-		err error
-	)
+	var err error
 	request := remoting.NewRequest("2.0.2")
 	invocation := invocation.NewRPCInvocation("GetUser4", []interface{}{[]interface{}{"1", "username"}}, nil)
 	attachment := map[string]string{INTERFACE_KEY: "com.ikurento.user.UserProvider"}
@@ -250,9 +241,7 @@ func testGetUser4(t *testing.T, c *Client) {
 }
 
 func testGetUser5(t *testing.T, c *Client) {
-	var (
-		err error
-	)
+	var err error
 	request := remoting.NewRequest("2.0.2")
 	invocation := invocation.NewRPCInvocation("GetUser5", []interface{}{map[interface{}]interface{}{"id": "1", "name": "username"}}, nil)
 	attachment := map[string]string{INTERFACE_KEY: "com.ikurento.user.UserProvider"}
@@ -341,7 +330,6 @@ func testClient_AsyncCall(t *testing.T, svr *Server, url *common.URL, client *Cl
 }
 
 func InitTest(t *testing.T) (*Server, *common.URL) {
-
 	hessian.RegisterPOJO(&User{})
 	remoting.RegistryCodec("dubbo", &DubboTestCodec{})
 
@@ -388,7 +376,8 @@ func InitTest(t *testing.T) (*Server, *common.URL) {
 			WaitTimeout:      "1s",
 			MaxMsgLen:        10240000000,
 			SessionName:      "server",
-		}})
+		},
+	})
 	assert.NoError(t, srvConf.CheckValidity())
 
 	url, err := common.NewURL("dubbo://127.0.0.1:20060/com.ikurento.user.UserProvider?anyhost=true&" +
@@ -405,7 +394,7 @@ func InitTest(t *testing.T) (*Server, *common.URL) {
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 	}
 	handler := func(invocation *invocation.RPCInvocation) protocol.RPCResult {
-		//result := protocol.RPCResult{}
+		// result := protocol.RPCResult{}
 		r := invoker.Invoke(context.Background(), invocation)
 		result := protocol.RPCResult{
 			Err:   r.Error(),
@@ -432,8 +421,7 @@ type (
 		Name string `json:"name"`
 	}
 
-	UserProvider struct {
-		//user map[string]User
+	UserProvider struct { // user map[string]User
 	}
 )
 
@@ -473,7 +461,6 @@ func (u *UserProvider) GetUser3(rsp *[]interface{}) error {
 }
 
 func (u *UserProvider) GetUser4(ctx context.Context, req []interface{}) ([]interface{}, error) {
-
 	return []interface{}{User{Id: req[0].([]interface{})[0].(string), Name: req[0].([]interface{})[1].(string)}}, nil
 }
 

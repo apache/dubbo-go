@@ -34,8 +34,7 @@ func init() {
 	hessian.RegisterPOJO(&CallUserStruct{})
 }
 
-type UserProvider struct {
-}
+type UserProvider struct{}
 
 func (u *UserProvider) GetUser(ctx context.Context, userStruct *CallUserStruct) (*User, error) {
 	fmt.Printf("=======================\nreq:%#v\n", userStruct)

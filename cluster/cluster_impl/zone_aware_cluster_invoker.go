@@ -125,7 +125,6 @@ func (invoker *zoneAwareClusterInvoker) BeforeInvoker(ctx context.Context, invoc
 }
 
 func (invoker *zoneAwareClusterInvoker) AfterInvoker(ctx context.Context, invocation protocol.Invocation) {
-
 }
 
 func matchParam(target, key, def string, invoker protocol.Invoker) bool {

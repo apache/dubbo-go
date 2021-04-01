@@ -56,7 +56,6 @@ func TestSign(t *testing.T) {
 	key := "key"
 	signature := Sign(metadata, key)
 	assert.NotNil(t, signature)
-
 }
 
 func TestSignWithParams(t *testing.T) {

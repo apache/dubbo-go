@@ -32,7 +32,6 @@ import (
 )
 
 func TestGetCustomizableServiceInstanceListener(t *testing.T) {
-
 	prepareMetadataServiceForTest()
 
 	cus := GetCustomizableServiceInstanceListener()
@@ -50,8 +49,7 @@ func TestGetCustomizableServiceInstanceListener(t *testing.T) {
 	assert.NotNil(t, tp)
 }
 
-type mockEvent struct {
-}
+type mockEvent struct{}
 
 func (m *mockEvent) String() string {
 	panic("implement me")
@@ -65,8 +63,7 @@ func (m *mockEvent) GetTimestamp() time.Time {
 	panic("implement me")
 }
 
-type mockCustomizer struct {
-}
+type mockCustomizer struct{}
 
 func (m *mockCustomizer) GetPriority() int {
 	return 0

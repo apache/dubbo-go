@@ -40,10 +40,8 @@ import (
 	"github.com/apache/dubbo-go/protocol/mock"
 )
 
-var (
-	broadcastUrl, _ = common.NewURL(
-		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
-)
+var broadcastUrl, _ = common.NewURL(
+	fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
 
 func registerBroadcast(mockInvokers ...*mock.MockInvoker) protocol.Invoker {
 	extension.SetLoadbalance("random", loadbalance.NewRandomLoadBalance)
