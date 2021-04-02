@@ -67,4 +67,5 @@ func TestJsonrpcInvokerInvoke(t *testing.T) {
 
 	// destroy
 	proto.Destroy()
+	common.ServiceMap.UnRegister("com.ikurento.user.UserProvider", "jsonrpc", common.ServiceKey("com.ikurento.user.UserProvider", "", ""))
 }

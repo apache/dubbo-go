@@ -163,6 +163,7 @@ func TestHTTPClientCall(t *testing.T) {
 
 	// destroy
 	proto.Destroy()
+	common.ServiceMap.UnRegister("com.ikurento.user.UserProvider", "jsonrpc", common.ServiceKey("com.ikurento.user.UserProvider", "", ""))
 }
 
 func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User) error {
