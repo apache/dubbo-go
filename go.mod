@@ -13,13 +13,13 @@ require (
 	github.com/creasty/defaults v1.5.1
 	github.com/dubbogo/go-zookeeper v1.0.2
 	github.com/dubbogo/gost v1.11.0
-	github.com/dubbogo/triple v0.0.0-20210326135539-e327cad74255
+	github.com/dubbogo/triple v0.0.0-20210402135031-9aa541d21f6d
 	github.com/emicklei/go-restful/v3 v3.4.0
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/go-co-op/gocron v0.1.1
 	github.com/go-resty/resty/v2 v2.3.0
 	github.com/golang/mock v1.4.4
-	github.com/golang/protobuf v1.4.3
+	github.com/golang/protobuf v1.5.2
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
 	github.com/hashicorp/consul v1.8.5
 	github.com/hashicorp/consul/api v1.8.0

@@ -77,23 +77,34 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	key := url.GetParam(constant.BEAN_NAME_KEY, "")
 	service := config.GetProviderService(key)
 
-	m, ok := reflect.TypeOf(service).MethodByName("SetProxyImpl")
-	if !ok {
-		panic("method SetProxyImpl is necessary for triple service")
+	serializationType := url.GetParam(constant.SERIALIZATION_KEY, constant.PROTOBUF_SERIALIZATION)
+	var triSerializationType tripleCommon.TripleSerializerName
+	switch serializationType {
+	case constant.PROTOBUF_SERIALIZATION:
+		m, ok := reflect.TypeOf(service).MethodByName("SetProxyImpl")
+		if !ok {
+			panic("method SetProxyImpl is necessary for triple service")
+		}
+		if invoker == nil {
+			panic(fmt.Sprintf("no invoker found for servicekey: %v", url.ServiceKey()))
+		}
+		in := []reflect.Value{reflect.ValueOf(service)}
+		in = append(in, reflect.ValueOf(invoker))
+		m.Func.Call(in)
+		triSerializationType = tripleCommon.PBSerializerName
+	case constant.HESSIAN2_SERIALIZATION:
+		tripleService := Dubbo3HessianService{}
+		tripleService.SetProxyImpl(invoker)
+		service = &tripleService
+		triSerializationType = tripleCommon.TripleHessianWrapperSerializerName
+	default:
+		panic(fmt.Sprintf("unsupport serialization = %s", serializationType))
 	}
-
-	if invoker == nil {
-		panic(fmt.Sprintf("no invoker found for servicekey: %v", url.ServiceKey()))
-	}
-
-	in := []reflect.Value{reflect.ValueOf(service)}
-	in = append(in, reflect.ValueOf(invoker))
-	m.Func.Call(in)
 
 	dp.serviceMap.Store(url.GetParam(constant.INTERFACE_KEY, ""), service)
 
 	// try start server
-	dp.openServer(url)
+	dp.openServer(url, triSerializationType)
 	return exporter
 }
 
@@ -138,8 +149,28 @@ type Dubbo3GrpcService interface {
 	ServiceDesc() *grpc.ServiceDesc
 }
 
+type Dubbo3HessianService struct {
+	proxyImpl protocol.Invoker
+}
+
+func (d *Dubbo3HessianService) SetProxyImpl(impl protocol.Invoker) {
+	d.proxyImpl = impl
+}
+
+func (d *Dubbo3HessianService) GetProxyImpl() protocol.Invoker {
+	return d.proxyImpl
+}
+
+func (d *Dubbo3HessianService) ServiceDesc() *grpc.ServiceDesc {
+	return nil
+}
+
+func (d *Dubbo3HessianService) Reference() string {
+	return ""
+}
+
 // openServer open a dubbo3 server, if there is already a service using the same protocol, it returns directly.
-func (dp *DubboProtocol) openServer(url *common.URL) {
+func (dp *DubboProtocol) openServer(url *common.URL, tripleSerializationType tripleCommon.TripleSerializerName) {
 	_, ok := dp.serverMap[url.Location]
 	if ok {
 		return
@@ -157,7 +188,7 @@ func (dp *DubboProtocol) openServer(url *common.URL) {
 	}
 
 	triOption := triConfig.NewTripleOption(
-		triConfig.WithSerializerType(tripleCommon.PBSerializerName),
+		triConfig.WithSerializerType(tripleSerializationType),
 	)
 	srv := triple.NewTripleServer(url, dp.serviceMap, triOption)
 	dp.serverMap[url.Location] = srv
