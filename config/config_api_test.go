@@ -159,11 +159,14 @@ func TestNewProviderConfig(t *testing.T) {
 		assert.Equal(t, v, serviceConfig)
 	}
 	assert.NotNil(t, testProviderConfig.Registries)
-	for k, v := range testProviderConfig.Registries {
-		assert.Equal(t, k, "demoConsul")
-		assert.Equal(t, v, defaultConsulRegistry)
+
+	if registry, ok := testProviderConfig.Registries["demoConsul"]; ok {
+		assert.Equal(t, registry, defaultConsulRegistry)
 	}
 
+	if registry, ok := testProviderConfig.Registries["demoNacos"]; ok {
+		assert.Equal(t, registry, defaultNacosRegistry)
+	}
 	assert.NotNil(t, testProviderConfig.Protocols)
 	assert.Equal(t, testProviderConfig.Protocols["dubbo"].Name, "dubbo")
 	assert.Equal(t, testProviderConfig.Protocols["dubbo"].Port, "20000")

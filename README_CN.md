@@ -72,6 +72,7 @@ Apache License, Version 2.0
 - 路由器
     * [Condition router](https://github.com/apache/dubbo-go/pull/294)
     * [Health check router](https://github.com/apache/dubbo-go/pull/389)
+    * [Dynamic_tag_router](https://github.com/apache/dubbo-go/pull/703)
 
 - 注册中心
     * ZooKeeper
@@ -133,6 +134,10 @@ Apache License, Version 2.0
     * [Nacos](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/nacos/service_discovery.go)
     * [Zookeeper](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/zookeeper/service_discovery.go)
     * [Etcd](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/etcdv3/service_discovery.go)
+    * [File](https://github.com/apache/dubbo-go/pull/732)
+    
+- 工具箱
+    * [Dubbo-go-cli](https://github.com/apache/dubbo-go/pull/818)
 
 你可以通过访问 [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap) 知道更多关于 dubbo-go 的信息。
 
@@ -194,7 +199,22 @@ make test
 </table>
 </div>
 
-如果想加入到社区微信群，可以先添加社区负责人 于雨 的微信 AlexanderStocks 。添加微信之前，请先给 dubbo-go 点 star 作为对项目的支持，添加好友时请报上 github ID 以进行验证。
+dubbogo 社区已经开通微信公众号 "dubbogo大区"，可在微信搜索 "dubbogo大区" 或者扫描如下二维码关注，可通过公众号私信留言加入 dubbogo 微信社区。
+
+<div>
+<table>
+  <tbody>
+  <tr></tr>
+    <tr>
+      <td align="center"  valign="middle">
+          <img width="80px" height="115px" src="./doc/pic/misc/dubbogo-wechat.png">
+        </a>
+      </td>
+    </tr>
+    <tr></tr>
+  </tbody>
+</table>
+</div>
 
 作为一个维护已经帮助构建了经受多家大型微服务系统的社区，我们足以为现有的成绩感到自豪。社区欢迎能提出建设性意见者，只知索取者和喷子请绕行。
 

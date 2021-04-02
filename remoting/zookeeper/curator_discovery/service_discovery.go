@@ -26,6 +26,7 @@ import (
 
 import (
 	"github.com/dubbogo/go-zookeeper/zk"
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	perrors "github.com/pkg/errors"
 )
 
@@ -46,7 +47,7 @@ type Entry struct {
 // https://github.com/apache/curator/blob/master/curator-x-discovery/src/main/java/org/apache/curator/x/discovery/ServiceDiscovery.java
 // It's not exactly the same as curator-x-discovery's service discovery
 type ServiceDiscovery struct {
-	client   *zookeeper.ZookeeperClient
+	client   *gxzookeeper.ZookeeperClient
 	mutex    *sync.Mutex
 	basePath string
 	services *sync.Map
@@ -54,7 +55,7 @@ type ServiceDiscovery struct {
 }
 
 // NewServiceDiscovery the constructor of service discovery
-func NewServiceDiscovery(client *zookeeper.ZookeeperClient, basePath string) *ServiceDiscovery {
+func NewServiceDiscovery(client *gxzookeeper.ZookeeperClient, basePath string) *ServiceDiscovery {
 	return &ServiceDiscovery{
 		client:   client,
 		mutex:    &sync.Mutex{},

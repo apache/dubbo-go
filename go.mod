@@ -1,6 +1,6 @@
 module github.com/apache/dubbo-go
 
-go 1.13
+go 1.15
 
 require (
 	github.com/RoaringBitmap/roaring v0.5.5
@@ -8,11 +8,11 @@ require (
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
 	github.com/alibaba/sentinel-golang v1.0.2
 	github.com/apache/dubbo-getty v1.4.3
-	github.com/apache/dubbo-go-hessian2 v1.8.2
+	github.com/apache/dubbo-go-hessian2 v1.9.1
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/creasty/defaults v1.5.1
-	github.com/dubbogo/go-zookeeper v1.0.2
-	github.com/dubbogo/gost v1.11.0
+	github.com/dubbogo/go-zookeeper v1.0.3
+	github.com/dubbogo/gost v1.11.2
 	github.com/dubbogo/triple v0.0.0-20210402135031-9aa541d21f6d
 	github.com/emicklei/go-restful/v3 v3.4.0
 	github.com/fsnotify/fsnotify v1.4.9
@@ -28,7 +28,7 @@ require (
 	github.com/magiconair/properties v1.8.4
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
-	github.com/nacos-group/nacos-sdk-go v1.0.6
+	github.com/nacos-group/nacos-sdk-go v1.0.7
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.9.0

@@ -56,7 +56,7 @@ jobs:
 
     - name: gofmt
       run: |
-        go fmt ./... && git checkout -- go.mod && git status && [[ -z `git status -s` ]]
+        go fmt ./... && git status && [[ -z `git status -s` ]]
         # diff -u <(echo -n) <(gofmt -d -s .)
 
     - name: Install go ci lint
@@ -69,9 +69,9 @@ jobs:
       run: |
         make verify
 
-#    - name: Integrate Test
-#      run: |
-#        chmod +x integrate_test.sh && ./integrate_test.sh ${{github.event.pull_request.head.repo.full_name}} ${{github.event.pull_request.head.sha}}
+    - name: Integrate Test
+      run: |
+        chmod +x integrate_test.sh && ./integrate_test.sh ${{github.event.pull_request.head.repo.full_name}} ${{github.event.pull_request.head.sha}}
 
     - name: Post Coverage
       run: bash <(curl -s https://codecov.io/bash)
