@@ -38,7 +38,7 @@ require (
 	go.uber.org/atomic v1.7.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/sys v0.0.0-20201223074533-0d417f636930 // indirect
-	google.golang.org/grpc v1.33.1
+	google.golang.org/grpc v1.26.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.16.9
 	k8s.io/apimachinery v0.16.9
@@ -50,5 +50,4 @@ replace (
 	github.com/envoyproxy/go-control-plane => github.com/envoyproxy/go-control-plane v0.8.0
 	github.com/shirou/gopsutil => github.com/shirou/gopsutil v0.0.0-20181107111621-48177ef5f880
 	go.etcd.io/bbolt v1.3.4 => github.com/coreos/bbolt v1.3.3
-	google.golang.org/grpc => google.golang.org/grpc v1.26.0
 )
