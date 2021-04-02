@@ -265,7 +265,7 @@ func (fssd *fileSystemServiceDiscovery) GetRequestInstances(serviceNames []strin
 // AddListener adds a new ServiceInstancesChangedListener
 // client
 func (fssd *fileSystemServiceDiscovery) AddListener(listener *registry.ServiceInstancesChangedListener) error {
-	//fssd.dynamicConfiguration.AddListener(listener.ServiceName)
+	// fssd.dynamicConfiguration.AddListener(listener.ServiceName)
 	return nil
 }
 

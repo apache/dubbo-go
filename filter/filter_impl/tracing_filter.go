@@ -50,8 +50,7 @@ var (
 
 // if you wish to using opentracing, please add the this filter into your filter attribute in your configure file.
 // notice that this could be used in both client-side and server-side.
-type tracingFilter struct {
-}
+type tracingFilter struct{}
 
 func (tf *tracingFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	var (
@@ -95,9 +94,7 @@ func (tf *tracingFilter) OnResponse(ctx context.Context, result protocol.Result,
 	return result
 }
 
-var (
-	tracingFilterInstance *tracingFilter
-)
+var tracingFilterInstance *tracingFilter
 
 func newTracingFilter() filter.Filter {
 	if tracingFilterInstance == nil {

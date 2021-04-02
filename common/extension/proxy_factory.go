@@ -21,9 +21,7 @@ import (
 	"github.com/apache/dubbo-go/common/proxy"
 )
 
-var (
-	proxyFactories = make(map[string]func(...proxy.Option) proxy.ProxyFactory)
-)
+var proxyFactories = make(map[string]func(...proxy.Option) proxy.ProxyFactory)
 
 // SetProxyFactory sets the ProxyFactory extension with @name
 func SetProxyFactory(name string, f func(...proxy.Option) proxy.ProxyFactory) {

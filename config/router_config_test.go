@@ -31,7 +31,6 @@ const testDestinationRuleYML = "testdata/router_config_dest_rule.yml"
 const errorTestDestinationRuleYML = "testdata/router_config_destination_rule_error.yml"
 
 func TestString(t *testing.T) {
-
 	s := "a1=>a2"
 	s1 := "=>a2"
 	s2 := "a1=>"

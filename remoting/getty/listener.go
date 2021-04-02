@@ -289,7 +289,6 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 			}
 			reply(session, resp)
 		}
-
 	}()
 
 	invoc, ok := req.Data.(*invocation.RPCInvocation)

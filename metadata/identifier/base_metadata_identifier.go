@@ -68,7 +68,6 @@ func (mdi *BaseMetadataIdentifier) getFilePathKey(params ...string) string {
 		withPathSeparator(mdi.Group) +
 		withPathSeparator(mdi.Side) +
 		joinParams(constant.PATH_SEPARATOR, params)
-
 }
 
 // serviceToPath uss URL encode to decode the @serviceInterface
@@ -82,7 +81,6 @@ func serviceToPath(serviceInterface string) string {
 		}
 		return string(decoded)
 	}
-
 }
 
 // withPathSeparator return "/" + @path

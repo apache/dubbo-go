@@ -25,9 +25,7 @@ import (
 	"github.com/apache/dubbo-go/registry"
 )
 
-var (
-	customizers = make([]registry.ServiceInstanceCustomizer, 0, 8)
-)
+var customizers = make([]registry.ServiceInstanceCustomizer, 0, 8)
 
 // AddCustomizers will put the customizer into slices and then sort them;
 // this method will be invoked several time, so we sort them here.

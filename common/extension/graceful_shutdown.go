@@ -21,9 +21,7 @@ import (
 	"container/list"
 )
 
-var (
-	customShutdownCallbacks = list.New()
-)
+var customShutdownCallbacks = list.New()
 
 /**
  * AddCustomShutdownCallback

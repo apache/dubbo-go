@@ -40,9 +40,7 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
-var (
-	srvConf *ServerConfig
-)
+var srvConf *ServerConfig
 
 func initServer(protocol string) {
 	// load clientconfig from provider_config
@@ -104,7 +102,7 @@ type Server struct {
 
 // NewServer create a new Server
 func NewServer(url *common.URL, handlers func(*invocation.RPCInvocation) protocol.RPCResult) *Server {
-	//init
+	// init
 	initServer(url.Protocol)
 
 	srvConf.SSLEnabled = url.GetParamBool(constant.SSL_ENABLED_KEY, false)

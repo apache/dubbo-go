@@ -86,7 +86,6 @@ func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.
 // return true means the event type is DELETE
 // return false means the event type is CREATE || UPDATE
 func (l *EventListener) handleEvents(event *WatcherEvent, listeners ...remoting.DataListener) bool {
-
 	logger.Infof("got a kubernetes-watcherSet event {type: %d, key: %s}", event.EventType, event.Key)
 
 	switch event.EventType {
@@ -120,7 +119,6 @@ func (l *EventListener) handleEvents(event *WatcherEvent, listeners ...remoting.
 
 // Listen on a set of key with spec prefix
 func (l *EventListener) ListenServiceNodeEventWithPrefix(prefix string, listener ...remoting.DataListener) {
-
 	defer l.wg.Done()
 	for {
 		wc, done, err := l.client.WatchWithPrefix(prefix)
@@ -157,7 +155,6 @@ func (l *EventListener) ListenServiceNodeEventWithPrefix(prefix string, listener
 //                            |
 //                            --------> ListenServiceNodeEvent
 func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataListener) {
-
 	l.keyMapLock.RLock()
 	_, ok := l.keyMap[key]
 	l.keyMapLock.RUnlock()

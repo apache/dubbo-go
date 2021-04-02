@@ -95,9 +95,9 @@ func ConsumerInit(confConFile string) error {
 		return perrors.Errorf("unmarshalYmlConfig error %v", perrors.WithStack(err))
 	}
 	consumerConfig.fileStream = bytes.NewBuffer(fileStream)
-	//set method interfaceId & interfaceName
+	// set method interfaceId & interfaceName
 	for k, v := range consumerConfig.References {
-		//set id for reference
+		// set id for reference
 		for _, n := range consumerConfig.References[k].Methods {
 			n.InterfaceName = v.InterfaceName
 			n.InterfaceId = k
@@ -124,7 +124,7 @@ func ConsumerInit(confConFile string) error {
 }
 
 func configCenterRefreshConsumer() error {
-	//fresh it
+	// fresh it
 	var err error
 	if consumerConfig.Request_Timeout != "" {
 		if consumerConfig.RequestTimeout, err = time.ParseDuration(consumerConfig.Request_Timeout); err != nil {

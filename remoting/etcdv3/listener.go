@@ -97,7 +97,6 @@ func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.
 // return true means the event type is DELETE
 // return false means the event type is CREATE || UPDATE
 func (l *EventListener) handleEvents(event *clientv3.Event, listeners ...remoting.DataListener) bool {
-
 	logger.Infof("got a etcd event {type: %s, key: %s}", event.Type, event.Kv.Key)
 
 	switch event.Type {
@@ -180,7 +179,6 @@ func timeSecondDuration(sec int) time.Duration {
 //                            |
 //                            --------> listenServiceNodeEvent
 func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataListener) {
-
 	l.keyMapLock.RLock()
 	_, ok := l.keyMap[key]
 	l.keyMapLock.RUnlock()

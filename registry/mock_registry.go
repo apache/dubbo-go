@@ -141,7 +141,6 @@ func (l *listener) Next() (*ServiceEvent, error) {
 }
 
 func (*listener) Close() {
-
 }
 
 // nolint
