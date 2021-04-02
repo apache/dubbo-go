@@ -261,7 +261,7 @@ func (c *ServiceConfig) Unexport() {
 		defer c.exportersLock.Unlock()
 		for _, exporter := range c.exporters {
 			exporter.Unexport()
-
+			// UnRegister ServiceMap after exporter Unexport
 			interfaceName := exporter.GetInvoker().GetUrl().GetParam(constant.INTERFACE_KEY, "")
 			err := common.ServiceMap.UnRegister(interfaceName, exporter.GetInvoker().GetUrl().Protocol, exporter.GetInvoker().GetUrl().ServiceKey())
 			if err != nil {
