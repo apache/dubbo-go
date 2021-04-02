@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	//used in URL.
+	// used in URL.
 
 	// nolint
 	FileDateFormat = "2006-01-02"
@@ -43,7 +43,7 @@ const (
 	// nolint
 	LogMaxBuffer = 5000
 	// nolint
-	LogFileMode = 0600
+	LogFileMode = 0o600
 
 	// those fields are the data collected by this filter
 

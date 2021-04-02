@@ -20,6 +20,7 @@ package config
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"reflect"
@@ -38,6 +39,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	_ "github.com/apache/dubbo-go/common/observer/dispatcher"
+	"github.com/apache/dubbo-go/common/yaml"
 	"github.com/apache/dubbo-go/registry"
 )
 
@@ -72,11 +74,25 @@ func init() {
 	for len(fs.Args()) != 0 {
 		fs.Parse(fs.Args()[1:])
 	}
+	// If user did not set the environment variables or flags,
+	// we provide default value
+	if confConFile == "" {
+		confConFile = constant.DEFAULT_CONSUMER_CONF_FILE_PATH
+	}
+	if confProFile == "" {
+		confProFile = constant.DEFAULT_PROVIDER_CONF_FILE_PATH
+	}
+	if confRouterFile == "" {
+		confRouterFile = constant.DEFAULT_ROUTER_CONF_FILE_PATH
+	}
 
 	if errCon := ConsumerInit(confConFile); errCon != nil {
 		log.Printf("[consumerInit] %#v", errCon)
 		consumerConfig = nil
 	} else {
+		// Check if there are some important key fields missing,
+		// if so, we set a default value for it
+		setDefaultValue(consumerConfig)
 		// Even though baseConfig has been initialized, we override it
 		// because we think read from config file is correct config
 		baseConfig = &consumerConfig.BaseConfig
@@ -86,9 +102,45 @@ func init() {
 		log.Printf("[providerInit] %#v", errPro)
 		providerConfig = nil
 	} else {
+		// Check if there are some important key fields missing,
+		// if so, we set a default value for it
+		setDefaultValue(providerConfig)
 		// Even though baseConfig has been initialized, we override it
 		// because we think read from config file is correct config
 		baseConfig = &providerConfig.BaseConfig
+	}
+}
+
+// setDefaultValue set default value for providerConfig or consumerConfig if it is null
+func setDefaultValue(target interface{}) {
+	registryConfig := &RegistryConfig{
+		Protocol:   "zookeeper",
+		TimeoutStr: "3s",
+		Address:    "127.0.0.1:2181",
+	}
+	switch target.(type) {
+	case *ProviderConfig:
+		p := target.(*ProviderConfig)
+		if len(p.Registries) == 0 {
+			p.Registries["demoZK"] = registryConfig
+		}
+		if len(p.Protocols) == 0 {
+			p.Protocols["dubbo"] = &ProtocolConfig{
+				Name: "dubbo",
+				Port: "20000",
+			}
+		}
+		if p.ApplicationConfig == nil {
+			p.ApplicationConfig = NewDefaultApplicationConfig()
+		}
+	default:
+		c := target.(*ConsumerConfig)
+		if len(c.Registries) == 0 {
+			c.Registries["demoZK"] = registryConfig
+		}
+		if c.ApplicationConfig == nil {
+			c.ApplicationConfig = NewDefaultApplicationConfig()
+		}
 	}
 }
 
@@ -142,6 +194,17 @@ func loadConsumerConfig() {
 		ref.id = key
 		ref.Refer(rpcService)
 		ref.Implement(rpcService)
+	}
+
+	// Write current configuration to cache file.
+	if consumerConfig.CacheFile != "" {
+		if data, err := yaml.MarshalYML(consumerConfig); err != nil {
+			logger.Errorf("Marshal consumer config err: %s", err.Error())
+		} else {
+			if err := ioutil.WriteFile(consumerConfig.CacheFile, data, 0o666); err != nil {
+				logger.Errorf("Write consumer config cache file err: %s", err.Error())
+			}
+		}
 	}
 
 	// wait for invoker is available, if wait over default 3s, then panic
@@ -199,6 +262,17 @@ func loadProviderConfig() {
 		logger.Errorf("[provider config center refresh] %#v", err)
 	}
 	checkRegistries(providerConfig.Registries, providerConfig.Registry)
+
+	// Write the current configuration to cache file.
+	if providerConfig.CacheFile != "" {
+		if data, err := yaml.MarshalYML(providerConfig); err != nil {
+			logger.Errorf("Marshal provider config err: %s", err.Error())
+		} else {
+			if err := ioutil.WriteFile(providerConfig.CacheFile, data, 0o666); err != nil {
+				logger.Errorf("Write provider config cache file err: %s", err.Error())
+			}
+		}
+	}
 
 	for key, svs := range providerConfig.Services {
 		rpcService := GetProviderService(key)
@@ -313,7 +387,6 @@ func initRouter() {
 
 // Load Dubbo Init
 func Load() {
-
 	// init router
 	initRouter()
 
@@ -424,9 +497,11 @@ func GetBaseConfig() *BaseConfig {
 func GetSslEnabled() bool {
 	return sslEnabled
 }
+
 func SetSslEnabled(enabled bool) {
 	sslEnabled = enabled
 }
+
 func IsProvider() bool {
 	return providerConfig != nil
 }

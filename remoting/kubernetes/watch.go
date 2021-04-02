@@ -46,7 +46,6 @@ const (
 )
 
 func (e eventType) String() string {
-
 	switch e {
 	case Create:
 		return "CREATE"
@@ -143,9 +142,7 @@ func (s *watcherSetImpl) Done() <-chan struct{} {
 
 // Put puts the watch event to watcher-set
 func (s *watcherSetImpl) Put(watcherEvent *WatcherEvent) error {
-
 	blockSendMsg := func(object *WatcherEvent, w *watcher) {
-
 		select {
 		case <-w.done():
 			// the watcher already stop
@@ -212,7 +209,6 @@ func (s *watcherSetImpl) valid() error {
 
 // addWatcher
 func (s *watcherSetImpl) addWatcher(key string, prefix bool) (Watcher, error) {
-
 	if err := s.valid(); err != nil {
 		return nil, err
 	}
@@ -239,7 +235,6 @@ func (s *watcherSetImpl) addWatcher(key string, prefix bool) (Watcher, error) {
 
 // Get gets elements from watcher-set
 func (s *watcherSetImpl) Get(key string, prefix bool) ([]*WatcherEvent, error) {
-
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
@@ -302,7 +297,6 @@ func (w *watcher) ID() string {
 
 // nolint
 func (w *watcher) stop() {
-
 	// double close will panic
 	w.closeOnce.Do(func() {
 		close(w.exit)

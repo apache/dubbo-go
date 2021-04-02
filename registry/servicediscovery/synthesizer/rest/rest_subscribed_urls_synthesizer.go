@@ -33,9 +33,8 @@ func init() {
 	synthesizer.AddSynthesizer(NewRestSubscribedURLsSynthesizer())
 }
 
-//SubscribedURLsSynthesizer implementation for rest protocol
-type RestSubscribedURLsSynthesizer struct {
-}
+// SubscribedURLsSynthesizer implementation for rest protocol
+type RestSubscribedURLsSynthesizer struct{}
 
 func (r RestSubscribedURLsSynthesizer) Support(subscribedURL *common.URL) bool {
 	return "rest" == subscribedURL.Protocol

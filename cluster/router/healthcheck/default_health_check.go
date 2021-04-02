@@ -77,7 +77,6 @@ func (c *DefaultHealthChecker) getCircuitBreakerTimeout(status *protocol.RPCStat
 
 // getCircuitBreakerSleepWindowTime get the sleep window time of invoker, the unit is millisecond
 func (c *DefaultHealthChecker) getCircuitBreakerSleepWindowTime(status *protocol.RPCStatus) int64 {
-
 	successiveFailureCount := status.GetSuccessiveRequestFailureCount()
 	diff := successiveFailureCount - c.GetRequestSuccessiveFailureThreshold()
 	if diff < 0 {

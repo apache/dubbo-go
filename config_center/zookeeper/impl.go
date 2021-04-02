@@ -24,6 +24,7 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	perrors "github.com/pkg/errors"
 )
 
@@ -50,9 +51,9 @@ type zookeeperDynamicConfiguration struct {
 	wg       sync.WaitGroup
 	cltLock  sync.Mutex
 	done     chan struct{}
-	client   *zookeeper.ZookeeperClient
+	client   *gxzookeeper.ZookeeperClient
 
-	//listenerLock  sync.Mutex
+	// listenerLock  sync.Mutex
 	listener      *zookeeper.ZkEventListener
 	cacheListener *CacheListener
 	parser        parser.ConfigurationParser
@@ -63,7 +64,7 @@ func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfigu
 		url:      url,
 		rootPath: "/" + url.GetParam(constant.CONFIG_NAMESPACE_KEY, config_center.DEFAULT_GROUP) + "/config",
 	}
-	err := zookeeper.ValidateZookeeperClient(c, zookeeper.WithZkName(ZkClient))
+	err := zookeeper.ValidateZookeeperClient(c, ZkClient)
 	if err != nil {
 		logger.Errorf("zookeeper client start error ,error message is %v", err)
 		return nil, err
@@ -77,7 +78,6 @@ func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfigu
 	err = c.client.Create(c.rootPath)
 	c.listener.ListenServiceEvent(url, c.rootPath, c.cacheListener)
 	return c, err
-
 }
 
 func (c *zookeeperDynamicConfiguration) AddListener(key string, listener config_center.ConfigurationListener, opions ...config_center.Option) {
@@ -89,7 +89,6 @@ func (c *zookeeperDynamicConfiguration) RemoveListener(key string, listener conf
 }
 
 func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config_center.Option) (string, error) {
-
 	tmpOpts := &config_center.Options{}
 	for _, opt := range opts {
 		opt(tmpOpts)
@@ -163,11 +162,11 @@ func (c *zookeeperDynamicConfiguration) SetParser(p parser.ConfigurationParser) 
 	c.parser = p
 }
 
-func (c *zookeeperDynamicConfiguration) ZkClient() *zookeeper.ZookeeperClient {
+func (c *zookeeperDynamicConfiguration) ZkClient() *gxzookeeper.ZookeeperClient {
 	return c.client
 }
 
-func (c *zookeeperDynamicConfiguration) SetZkClient(client *zookeeper.ZookeeperClient) {
+func (c *zookeeperDynamicConfiguration) SetZkClient(client *gxzookeeper.ZookeeperClient) {
 	c.client = client
 }
 
@@ -206,10 +205,9 @@ func (c *zookeeperDynamicConfiguration) IsAvailable() bool {
 }
 
 func (c *zookeeperDynamicConfiguration) closeConfigs() {
+	logger.Infof("begin to close provider zk client")
 	c.cltLock.Lock()
 	defer c.cltLock.Unlock()
-	logger.Infof("begin to close provider zk client")
-	// Close the old client first to close the tmp node
 	c.client.Close()
 	c.client = nil
 }

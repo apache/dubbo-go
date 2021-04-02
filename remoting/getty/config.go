@@ -134,7 +134,8 @@ func GetDefaultClientConfig() ClientConfig {
 			WaitTimeout:      "1s",
 			MaxMsgLen:        102400,
 			SessionName:      "client",
-		}}
+		},
+	}
 }
 
 // GetDefaultServerConfig gets server default configuration

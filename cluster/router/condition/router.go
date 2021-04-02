@@ -42,16 +42,12 @@ const (
 	pattern = `([&!=,]*)\\s*([^&!=,\\s]+)`
 )
 
-var (
-	routerPatternReg = regexp.MustCompile(`([&!=,]*)\s*([^&!=,\s]+)`)
-)
+var routerPatternReg = regexp.MustCompile(`([&!=,]*)\s*([^&!=,\s]+)`)
 
-var (
-	emptyMatchPair = MatchPair{
-		Matches:    gxset.NewSet(),
-		Mismatches: gxset.NewSet(),
-	}
-)
+var emptyMatchPair = MatchPair{
+	Matches:    gxset.NewSet(),
+	Mismatches: gxset.NewSet(),
+}
 
 // ConditionRouter Condition router struct
 type ConditionRouter struct {
@@ -231,26 +227,26 @@ func parseRule(rule string) (map[string]MatchPair, error) {
 			}
 		case "=":
 			if pair == emptyMatchPair {
-				var startIndex = getStartIndex(rule)
+				startIndex := getStartIndex(rule)
 				return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex, startIndex)
 			}
 			values = pair.Matches
 			values.Add(content)
 		case "!=":
 			if pair == emptyMatchPair {
-				var startIndex = getStartIndex(rule)
+				startIndex := getStartIndex(rule)
 				return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex, startIndex)
 			}
 			values = pair.Mismatches
 			values.Add(content)
 		case ",":
 			if values.Empty() {
-				var startIndex = getStartIndex(rule)
+				startIndex := getStartIndex(rule)
 				return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex, startIndex)
 			}
 			values.Add(content)
 		default:
-			var startIndex = getStartIndex(rule)
+			startIndex := getStartIndex(rule)
 			return nil, perrors.Errorf("Illegal route rule \"%s\", The error char '%s' at index %d before \"%d\".", rule, separator, startIndex, startIndex)
 
 		}

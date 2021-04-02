@@ -54,7 +54,7 @@ func TestJsonClientCodecRead(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "test", rsp.Test)
 
-	//error
+	// error
 	codec.pending[1] = "GetUser"
 	err = codec.Read([]byte("{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"error\"}}\n"), rsp)
 	assert.EqualError(t, err, "{\"code\":-32000,\"message\":\"error\"}")

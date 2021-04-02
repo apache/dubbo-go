@@ -37,15 +37,14 @@ type clientFacade interface {
 	Client() *Client
 	SetClient(*Client)
 	ClientLock() *sync.Mutex
-	WaitGroup() *sync.WaitGroup //for wait group control, etcd client listener & etcd client container
-	Done() chan struct{}        //for etcd client control
+	WaitGroup() *sync.WaitGroup // for wait group control, etcd client listener & etcd client container
+	Done() chan struct{}        // for etcd client control
 	RestartCallBack() bool
 	common.Node
 }
 
 // HandleClientRestart keeps the connection between client and server
 func HandleClientRestart(r clientFacade) {
-
 	var (
 		err       error
 		failTimes int

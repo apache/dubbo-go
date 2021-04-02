@@ -37,9 +37,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 )
 
-var (
-	logger Logger
-)
+var logger Logger
 
 // nolint
 type DubboLogger struct {
@@ -71,6 +69,9 @@ func init() {
 	fs.Parse(os.Args[1:])
 	for len(fs.Args()) != 0 {
 		fs.Parse(fs.Args()[1:])
+	}
+	if *logConfFile == "" {
+		*logConfFile = constant.DEFAULT_LOG_CONF_FILE_PATH
 	}
 	err := InitLog(*logConfFile)
 	if err != nil {

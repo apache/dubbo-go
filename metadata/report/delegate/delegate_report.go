@@ -125,7 +125,6 @@ func NewMetadataReport() (*MetadataReport, error) {
 		url.GetParamInt(constant.RETRY_TIMES_KEY, defaultMetadataReportRetryTimes),
 		bmr.retry,
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +138,6 @@ func NewMetadataReport() (*MetadataReport, error) {
 				bmr.allMetadataReportsLock.RLock()
 				bmr.doHandlerMetadataCollection(bmr.allMetadataReports)
 				bmr.allMetadataReportsLock.RUnlock()
-
 			})
 		if err != nil {
 			return nil, err

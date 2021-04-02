@@ -204,7 +204,6 @@ func TestRoute_matchFilter(t *testing.T) {
 	assert.Equal(t, 1, len(ret4.ToArray()))
 	assert.Equal(t, 2, len(ret5.ToArray()))
 	assert.Equal(t, 1, len(ret6.ToArray()))
-
 }
 
 func TestRoute_methodRoute(t *testing.T) {
@@ -232,7 +231,6 @@ func TestRoute_methodRoute(t *testing.T) {
 	router3, _ := newConditionRouterFactory().NewPriorityRouter(getRouteUrl(rule3), notify)
 	matchWhen = router3.(*ConditionRouter).MatchWhen(url3, inv)
 	assert.Equal(t, true, matchWhen)
-
 }
 
 func TestRoute_ReturnFalse(t *testing.T) {
