@@ -89,7 +89,6 @@ func Test_List(t *testing.T) {
 	time.Sleep(6e9)
 	assert.Len(t, registryDirectory.List(&invocation.RPCInvocation{}), 3)
 	assert.Equal(t, true, registryDirectory.IsAvailable())
-
 }
 
 func Test_MergeProviderUrl(t *testing.T) {
@@ -104,7 +103,6 @@ func Test_MergeProviderUrl(t *testing.T) {
 	if len(registryDirectory.cacheInvokers) > 0 {
 		assert.Equal(t, "mock", registryDirectory.cacheInvokers[0].GetUrl().GetParam(constant.CLUSTER_KEY, ""))
 	}
-
 }
 
 func Test_MergeOverrideUrl(t *testing.T) {
@@ -154,11 +152,13 @@ func Test_RefreshUrl(t *testing.T) {
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerUrl})
 	time.Sleep(1e9)
 	assert.Len(t, registryDirectory.cacheInvokers, 4)
-	mockRegistry.MockEvents([]*registry.ServiceEvent{&registry.ServiceEvent{Action: remoting.EventTypeUpdate, Service: providerUrl}})
+	mockRegistry.MockEvents([]*registry.ServiceEvent{{Action: remoting.EventTypeUpdate, Service: providerUrl}})
 	time.Sleep(1e9)
 	assert.Len(t, registryDirectory.cacheInvokers, 1)
-	mockRegistry.MockEvents([]*registry.ServiceEvent{&registry.ServiceEvent{Action: remoting.EventTypeUpdate, Service: providerUrl},
-		&registry.ServiceEvent{Action: remoting.EventTypeUpdate, Service: providerUrl2}})
+	mockRegistry.MockEvents([]*registry.ServiceEvent{
+		{Action: remoting.EventTypeUpdate, Service: providerUrl},
+		{Action: remoting.EventTypeUpdate, Service: providerUrl2},
+	})
 	time.Sleep(1e9)
 	assert.Len(t, registryDirectory.cacheInvokers, 2)
 	// clear all address

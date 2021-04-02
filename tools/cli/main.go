@@ -27,16 +27,18 @@ import (
 	"github.com/apache/dubbo-go/tools/cli/json_register"
 )
 
-var host string
-var port int
-var protocolName string
-var InterfaceID string
-var version string
-var group string
-var method string
-var sendObjFilePath string
-var recvObjFilePath string
-var timeout int
+var (
+	host            string
+	port            int
+	protocolName    string
+	InterfaceID     string
+	version         string
+	group           string
+	method          string
+	sendObjFilePath string
+	recvObjFilePath string
+	timeout         int
+)
 
 func init() {
 	flag.StringVar(&host, "h", "localhost", "target server host")

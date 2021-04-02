@@ -137,10 +137,10 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 		return &protocol.RPCResult{}
 	}
 
-	//Get the service loadbalance config
+	// Get the service loadbalance config
 	url := invokers[0].GetUrl()
 	lb := url.GetParam(constant.LOADBALANCE_KEY, constant.DEFAULT_LOADBALANCE)
-	//Get the service method loadbalance config if have
+	// Get the service method loadbalance config if have
 	methodName := invocation.MethodName()
 	if v := url.GetMethodParam(methodName, constant.LOADBALANCE_KEY, ""); v != "" {
 		lb = v
@@ -149,7 +149,7 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 	loadBalance := extension.GetLoadbalance(lb)
 	invoked := make([]protocol.Invoker, 0, len(invokers))
 	ivk := invoker.doSelect(loadBalance, invocation, invokers, invoked)
-	//DO INVOKE
+	// DO INVOKE
 	result := ivk.Invoke(ctx, invocation)
 	if result.Error() != nil {
 		invoker.once.Do(func() {

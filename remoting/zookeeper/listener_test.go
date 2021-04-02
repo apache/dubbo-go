@@ -35,9 +35,7 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
-var (
-	dubboPropertiesPath = "/dubbo/dubbo.properties"
-)
+var dubboPropertiesPath = "/dubbo/dubbo.properties"
 
 func initZkData(t *testing.T) (*zk.TestCluster, *gxzookeeper.ZookeeperClient, <-chan zk.Event) {
 	ts, client, event, err := gxzookeeper.NewMockZookeeperClient("test", 15*time.Second)

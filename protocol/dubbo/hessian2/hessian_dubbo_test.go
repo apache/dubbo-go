@@ -54,7 +54,7 @@ func (c CaseA) JavaClassName() string {
 	return "com.test.casea"
 }
 
-//JavaClassName  java fully qualified path
+// JavaClassName  java fully qualified path
 func (c Case) JavaClassName() string {
 	return "com.test.case"
 }

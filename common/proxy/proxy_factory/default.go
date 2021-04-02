@@ -41,11 +41,10 @@ func init() {
 }
 
 // DefaultProxyFactory is the default proxy factory
-type DefaultProxyFactory struct {
-	//delegate ProxyFactory
+type DefaultProxyFactory struct { // delegate ProxyFactory
 }
 
-//you can rewrite DefaultProxyFactory in extension and delegate the default proxy factory like below
+// you can rewrite DefaultProxyFactory in extension and delegate the default proxy factory like below
 
 //func WithDelegate(delegateProxyFactory ProxyFactory) Option {
 //	return func(proxy ProxyFactory) {
@@ -65,7 +64,7 @@ func (factory *DefaultProxyFactory) GetProxy(invoker protocol.Invoker, url *comm
 
 // GetAsyncProxy gets a async proxy
 func (factory *DefaultProxyFactory) GetAsyncProxy(invoker protocol.Invoker, callBack interface{}, url *common.URL) *proxy.Proxy {
-	//create proxy
+	// create proxy
 	attachments := map[string]string{}
 	attachments[constant.ASYNC_KEY] = url.GetParam(constant.ASYNC_KEY, "false")
 	return proxy.NewProxy(invoker, callBack, attachments)
@@ -88,7 +87,7 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	result := &protocol.RPCResult{}
 	result.SetAttachments(invocation.Attachments())
 
-	//get providerUrl. The origin url may be is registry URL.
+	// get providerUrl. The origin url may be is registry URL.
 	url := getProviderURL(pi.GetUrl())
 
 	methodName := invocation.MethodName()

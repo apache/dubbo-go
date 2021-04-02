@@ -48,7 +48,7 @@ func NewStaticDirectory(invokers []protocol.Invoker) *staticDirectory {
 	return dir
 }
 
-//for-loop invokers ,if all invokers is available ,then it means directory is available
+// for-loop invokers ,if all invokers is available ,then it means directory is available
 func (dir *staticDirectory) IsAvailable() bool {
 	if len(dir.invokers) == 0 {
 		return false

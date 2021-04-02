@@ -109,7 +109,7 @@ func (mts *MetadataService) SubscribeURL(url *common.URL) (bool, error) {
 func (mts *MetadataService) UnsubscribeURL(url *common.URL) error {
 	// TODO remove call local.
 	return nil
-	//return mts.UnsubscribeURL(url)
+	// return mts.UnsubscribeURL(url)
 }
 
 // PublishServiceDefinition will call remote metadata's StoreProviderMetadata to store url info and service definition

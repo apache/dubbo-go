@@ -18,9 +18,10 @@
 package zookeeper
 
 import (
-	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	"strings"
 	"sync"
+
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 )
 
 import (
@@ -45,7 +46,8 @@ type RegistryDataListener struct {
 // NewRegistryDataListener constructs a new RegistryDataListener
 func NewRegistryDataListener() *RegistryDataListener {
 	return &RegistryDataListener{
-		subscribed: make(map[string]config_center.ConfigurationListener)}
+		subscribed: make(map[string]config_center.ConfigurationListener),
+	}
 }
 
 // SubscribeURL is used to set a watch listener for url
@@ -131,7 +133,8 @@ func NewRegistryConfigurationListener(client *gxzookeeper.ZookeeperClient, reg *
 		events:       make(chan *config_center.ConfigChangeEvent, 32),
 		isClosed:     false,
 		close:        make(chan struct{}, 1),
-		subscribeURL: conf}
+		subscribeURL: conf,
+	}
 }
 
 // Process submit the ConfigChangeEvent to the event chan to notify all observer

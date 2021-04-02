@@ -50,7 +50,7 @@ func TestDefaultAuthenticator_Authenticate(t *testing.T) {
 	requestTime := strconv.Itoa(int(time.Now().Unix() * 1000))
 	signature, _ := getSignature(testurl, inv, secret, requestTime)
 
-	var authenticator = &DefaultAuthenticator{}
+	authenticator := &DefaultAuthenticator{}
 
 	invcation := invocation.NewRPCInvocation("test", parmas, map[string]interface{}{
 		constant.REQUEST_SIGNATURE_KEY: signature,
@@ -69,7 +69,6 @@ func TestDefaultAuthenticator_Authenticate(t *testing.T) {
 	})
 	err = authenticator.Authenticate(invcation, testurl)
 	assert.NotNil(t, err)
-
 }
 
 func TestDefaultAuthenticator_Sign(t *testing.T) {
@@ -84,7 +83,6 @@ func TestDefaultAuthenticator_Sign(t *testing.T) {
 	assert.NotEqual(t, inv.AttachmentsByKey(constant.CONSUMER, ""), "")
 	assert.NotEqual(t, inv.AttachmentsByKey(constant.REQUEST_TIMESTAMP_KEY, ""), "")
 	assert.Equal(t, inv.AttachmentsByKey(constant.AK_KEY, ""), "akey")
-
 }
 
 func Test_getAccessKeyPairSuccess(t *testing.T) {
@@ -114,7 +112,6 @@ func Test_getAccessKeyPairFailed(t *testing.T) {
 		common.WithParamsValue(constant.ACCESS_KEY_ID_KEY, "akey"), common.WithParamsValue(constant.ACCESS_KEY_STORAGE_KEY, "dubbo"))
 	_, e = getAccessKeyPair(invcation, testurl)
 	assert.NoError(t, e)
-
 }
 
 func Test_getSignatureWithinParams(t *testing.T) {

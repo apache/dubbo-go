@@ -49,7 +49,7 @@ const (
 	PORT_KEY                 = "port"
 	PROTOCOL_KEY             = "protocol"
 	PATH_SEPARATOR           = "/"
-	//DUBBO_KEY                = "dubbo"
+	// DUBBO_KEY                = "dubbo"
 	SSL_ENABLED_KEY = "ssl-enabled"
 )
 
@@ -144,6 +144,7 @@ const (
 	CONFIG_VERSION_KEY    = "configVersion"
 	COMPATIBLE_CONFIG_KEY = "compatible_config"
 )
+
 const (
 	RegistryConfigPrefix       = "dubbo.registries."
 	SingleRegistryConfigPrefix = "dubbo.registry."

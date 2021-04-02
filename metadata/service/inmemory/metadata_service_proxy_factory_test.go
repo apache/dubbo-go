@@ -63,8 +63,7 @@ func TestCreateProxy(t *testing.T) {
 	assert.NotNil(t, pxy)
 }
 
-type mockProtocol struct {
-}
+type mockProtocol struct{}
 
 func (m mockProtocol) Export(protocol.Invoker) protocol.Exporter {
 	panic("implement me")
@@ -78,8 +77,7 @@ func (m mockProtocol) Destroy() {
 	panic("implement me")
 }
 
-type mockInvoker struct {
-}
+type mockInvoker struct{}
 
 func (m *mockInvoker) GetUrl() *common.URL {
 	panic("implement me")
