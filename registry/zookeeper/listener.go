@@ -18,12 +18,12 @@
 package zookeeper
 
 import (
-	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	"strings"
 	"sync"
 )
 
 import (
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	perrors "github.com/pkg/errors"
 )
 

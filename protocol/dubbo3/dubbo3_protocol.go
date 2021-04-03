@@ -18,13 +18,13 @@ package dubbo3
 
 import (
 	"fmt"
-	triConfig "github.com/dubbogo/triple/pkg/config"
 	"reflect"
 	"sync"
 )
 
 import (
 	tripleCommon "github.com/dubbogo/triple/pkg/common"
+	triConfig "github.com/dubbogo/triple/pkg/config"
 	"github.com/dubbogo/triple/pkg/triple"
 	"google.golang.org/grpc"
 )
