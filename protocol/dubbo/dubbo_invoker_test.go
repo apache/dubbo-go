@@ -70,7 +70,7 @@ func TestDubboInvokerInvoke(t *testing.T) {
 		r := response.(remoting.AsyncCallbackResponse)
 		rst := *r.Reply.(*remoting.Response).Result.(*protocol.RPCResult)
 		assert.Equal(t, User{Id: "1", Name: "username"}, *(rst.Rest.(*User)))
-		//assert.Equal(t, User{ID: "1", Name: "username"}, *r.Reply.(*Response).reply.(*User))
+		// assert.Equal(t, User{ID: "1", Name: "username"}, *r.Reply.(*Response).reply.(*User))
 		lock.Unlock()
 	})
 	res = invoker.Invoke(context.Background(), inv)
@@ -94,7 +94,6 @@ func TestDubboInvokerInvoke(t *testing.T) {
 }
 
 func InitTest(t *testing.T) (protocol.Protocol, *common.URL) {
-
 	hessian.RegisterPOJO(&User{})
 
 	methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "dubbo", "", "", &UserProvider{})
@@ -139,7 +138,8 @@ func InitTest(t *testing.T) (protocol.Protocol, *common.URL) {
 			WaitTimeout:      "1s",
 			MaxMsgLen:        10240000000,
 			SessionName:      "server",
-		}})
+		},
+	})
 
 	// Export
 	proto := GetProtocol()
@@ -168,8 +168,7 @@ type (
 		Name string `json:"name"`
 	}
 
-	UserProvider struct {
-		//user map[string]User
+	UserProvider struct { // user map[string]User
 	}
 )
 
@@ -209,7 +208,6 @@ func (u *UserProvider) GetUser3(rsp *[]interface{}) error {
 }
 
 func (u *UserProvider) GetUser4(ctx context.Context, req []interface{}) ([]interface{}, error) {
-
 	return []interface{}{User{Id: req[0].([]interface{})[0].(string), Name: req[0].([]interface{})[1].(string)}}, nil
 }
 

@@ -41,7 +41,6 @@ func TestListenable(t *testing.T) {
 	ts = append(ts, el)
 	b.AddEventListeners(ts)
 	assert.Equal(t, len(al), 1)
-
 }
 
 type TestEvent struct {

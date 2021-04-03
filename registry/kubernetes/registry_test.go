@@ -202,7 +202,6 @@ var clientPodListJsonData = `{
 `
 
 func getTestRegistry(t *testing.T) *kubernetesRegistry {
-
 	const (
 		podNameKey              = "HOSTNAME"
 		nameSpaceKey            = "NAMESPACE"
@@ -240,7 +239,6 @@ func getTestRegistry(t *testing.T) *kubernetesRegistry {
 }
 
 func TestRegister(t *testing.T) {
-
 	r := getTestRegistry(t)
 	defer r.Destroy()
 
@@ -259,7 +257,6 @@ func TestRegister(t *testing.T) {
 }
 
 func TestSubscribe(t *testing.T) {
-
 	r := getTestRegistry(t)
 	defer r.Destroy()
 
@@ -276,7 +273,6 @@ func TestSubscribe(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
-
 		defer wg.Done()
 		registerErr := r.Register(url)
 		if registerErr != nil {
@@ -294,7 +290,6 @@ func TestSubscribe(t *testing.T) {
 }
 
 func TestConsumerDestroy(t *testing.T) {
-
 	r := getTestRegistry(t)
 
 	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider",
@@ -306,16 +301,14 @@ func TestConsumerDestroy(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	//listener.Close()
+	// listener.Close()
 	time.Sleep(1e9)
 	r.Destroy()
 
 	assert.Equal(t, false, r.IsAvailable())
-
 }
 
 func TestProviderDestroy(t *testing.T) {
-
 	r := getTestRegistry(t)
 
 	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider",
@@ -330,7 +323,6 @@ func TestProviderDestroy(t *testing.T) {
 }
 
 func TestNewRegistry(t *testing.T) {
-
 	regUrl, err := common.NewURL("registry://127.0.0.1:443",
 		common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
 	if err != nil {
@@ -343,7 +335,6 @@ func TestNewRegistry(t *testing.T) {
 }
 
 func TestHandleClientRestart(t *testing.T) {
-
 	r := getTestRegistry(t)
 	r.WaitGroup().Add(1)
 	go r.HandleClientRestart()

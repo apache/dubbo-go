@@ -29,8 +29,7 @@ func init() {
 }
 
 // LocalPriorityRouteFactory
-type LocalPriorityRouteFactory struct {
-}
+type LocalPriorityRouteFactory struct{}
 
 // newLocalPriorityRouteFactory construct a new LocalDiscRouteFactory
 func newLocalPriorityRouteFactory() router.PriorityRouterFactory {

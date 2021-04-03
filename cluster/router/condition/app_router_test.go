@@ -51,7 +51,6 @@ var (
 )
 
 func TestNewAppRouter(t *testing.T) {
-
 	testYML := `scope: application
 key: mock-app
 enabled: true
@@ -105,7 +104,6 @@ conditions:
 }
 
 func TestGenerateConditions(t *testing.T) {
-
 	testYML := `scope: application
 key: mock-app
 enabled: true
@@ -152,7 +150,6 @@ conditions:
 }
 
 func TestProcess(t *testing.T) {
-
 	testYML := `scope: application
 key: mock-app
 enabled: true

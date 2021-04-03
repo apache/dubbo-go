@@ -33,7 +33,6 @@ import (
 )
 
 func initRegistry(t *testing.T) *etcdV3Registry {
-
 	regurl, err := common.NewURL("registry://127.0.0.1:2379", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
 	if err != nil {
 		t.Fatal(err)
@@ -51,7 +50,6 @@ func initRegistry(t *testing.T) *etcdV3Registry {
 }
 
 func (suite *RegistryTestSuite) TestRegister() {
-
 	t := suite.T()
 
 	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
@@ -68,19 +66,18 @@ func (suite *RegistryTestSuite) TestRegister() {
 }
 
 func (suite *RegistryTestSuite) TestSubscribe() {
-
 	t := suite.T()
 	regurl, _ := common.NewURL("registry://127.0.0.1:1111", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
 	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 
 	reg := initRegistry(t)
-	//provider register
+	// provider register
 	err := reg.Register(url)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	//consumer register
+	// consumer register
 	regurl.SetParam(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
 	reg2 := initRegistry(t)
 
@@ -99,7 +96,6 @@ func (suite *RegistryTestSuite) TestSubscribe() {
 }
 
 func (suite *RegistryTestSuite) TestConsumerDestroy() {
-
 	t := suite.T()
 	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 
@@ -109,23 +105,21 @@ func (suite *RegistryTestSuite) TestConsumerDestroy() {
 		t.Fatal(err)
 	}
 
-	//listener.Close()
+	// listener.Close()
 	time.Sleep(1e9)
 	reg.Destroy()
 
 	assert.Equal(t, false, reg.IsAvailable())
-
 }
 
 func (suite *RegistryTestSuite) TestProviderDestroy() {
-
 	t := suite.T()
 	reg := initRegistry(t)
 	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 	err := reg.Register(url)
 	assert.NoError(t, err)
 
-	//listener.Close()
+	// listener.Close()
 	time.Sleep(1e9)
 	reg.Destroy()
 	assert.Equal(t, false, reg.IsAvailable())

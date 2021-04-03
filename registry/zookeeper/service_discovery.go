@@ -63,7 +63,7 @@ func init() {
 type zookeeperServiceDiscovery struct {
 	client *gxzookeeper.ZookeeperClient
 	csd    *curator_discovery.ServiceDiscovery
-	//listener    *zookeeper.ZkEventListener
+	// listener    *zookeeper.ZkEventListener
 	url         *common.URL
 	wg          sync.WaitGroup
 	cltLock     sync.Mutex
@@ -112,7 +112,7 @@ func newZookeeperServiceDiscovery(name string) (registry.ServiceDiscovery, error
 	if err != nil {
 		return nil, err
 	}
-	zksd.WaitGroup().Add(1) //zk client start successful, then wg +1
+	zksd.WaitGroup().Add(1) // zk client start successful, then wg +1
 	go zookeeper.HandleClientRestart(zksd)
 	zksd.csd = curator_discovery.NewServiceDiscovery(zksd.client, rootPath)
 	return zksd, nil

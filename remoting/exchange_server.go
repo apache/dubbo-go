@@ -23,9 +23,9 @@ import (
 // It is interface of server for network communication.
 // If you use getty as network communication, you should define GettyServer that implements this interface.
 type Server interface {
-	//invoke once for connection
+	// invoke once for connection
 	Start()
-	//it is for destroy
+	// it is for destroy
 	Stop()
 }
 

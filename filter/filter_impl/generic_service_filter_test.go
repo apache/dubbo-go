@@ -93,7 +93,8 @@ func TestGenericServiceFilterInvoke(t *testing.T) {
 			hessian.Object(append(make([]map[string]interface{}, 1), m)),
 			hessian.Object("111"),
 			hessian.Object(append(make([]map[string]interface{}, 1), m)),
-			hessian.Object("222")},
+			hessian.Object("222"),
+		},
 	}
 	s := &TestService{}
 	_, _ = common.ServiceMap.Register("com.test.Path", "testprotocol", "", "", s)

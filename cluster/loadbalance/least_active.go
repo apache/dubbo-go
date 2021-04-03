@@ -36,8 +36,7 @@ func init() {
 	extension.SetLoadbalance(LeastActive, NewLeastActiveLoadBalance)
 }
 
-type leastActiveLoadBalance struct {
-}
+type leastActiveLoadBalance struct{}
 
 // NewLeastActiveLoadBalance returns a least active load balance.
 //

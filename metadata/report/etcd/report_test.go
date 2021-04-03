@@ -105,7 +105,6 @@ func newSubscribeMetadataIdentifier() *identifier.SubscriberMetadataIdentifier {
 		Revision:           "subscribe",
 		MetadataIdentifier: *newMetadataIdentifier("provider"),
 	}
-
 }
 
 func newServiceMetadataIdentifier() *identifier.ServiceMetadataIdentifier {

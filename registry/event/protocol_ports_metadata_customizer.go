@@ -35,8 +35,7 @@ func init() {
 }
 
 // ProtocolPortsMetadataCustomizer will update the endpoints
-type ProtocolPortsMetadataCustomizer struct {
-}
+type ProtocolPortsMetadataCustomizer struct{}
 
 // GetPriority will return 0, which means it will be invoked at the beginning
 func (p *ProtocolPortsMetadataCustomizer) GetPriority() int {
