@@ -137,6 +137,7 @@ github.com/dubbogo/gost v1.11.2/go.mod h1:3QQEj50QOhkWTERT785YZ5ZxIRGNdR11FCLP7F
 github.com/dubbogo/jsonparser v1.0.1/go.mod h1:tYAtpctvSP/tWw4MeelsowSPgXQRVHHWbqL6ynps8jU=
 github.com/dubbogo/v3router v0.0.0-20210403091511-3890ea206ba7/go.mod h1:6EFRGYlEOHyLkjVpe0xfxw4FO6KJe0Kx/xyI+enROh8=
 github.com/dubbogo/v3router v0.0.0-20210403091802-c5480f6e6f8f/go.mod h1:6EFRGYlEOHyLkjVpe0xfxw4FO6KJe0Kx/xyI+enROh8=
+github.com/dubbogo/v3router v0.0.0-20210403094230-574be83d8d6d/go.mod h1:prAeY9nOJfo09GBDh5DMV4khJhQOhy5JnLdMCzVk18c=
 github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/eapache/go-resiliency v1.1.0/go.mod h1:kFI+JgMyC7bLPUVY133qvEBtVayf5mFgVsvEsIPBvNs=
