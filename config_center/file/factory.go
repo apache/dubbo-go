@@ -35,8 +35,7 @@ func init() {
 	})
 }
 
-type fileDynamicConfigurationFactory struct {
-}
+type fileDynamicConfigurationFactory struct{}
 
 // GetDynamicConfiguration Get Configuration with URL
 func (f *fileDynamicConfigurationFactory) GetDynamicConfiguration(url *common.URL) (config_center.DynamicConfiguration,

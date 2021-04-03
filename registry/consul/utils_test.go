@@ -19,13 +19,14 @@ package consul
 
 import (
 	"fmt"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/stretchr/testify/assert"
 	"net"
 	"net/url"
 	"strconv"
 	"sync"
 	"testing"
+
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/stretchr/testify/assert"
 )
 
 import (

@@ -46,7 +46,8 @@ func doInitConsumer() {
 				Module:       "module",
 				Version:      "2.6.0",
 				Owner:        "dubbo",
-				Environment:  "test"},
+				Environment:  "test",
+			},
 		},
 
 		Registries: map[string]*RegistryConfig{
@@ -120,8 +121,7 @@ func doInitConsumer() {
 
 var mockProvider = new(MockProvider)
 
-type MockProvider struct {
-}
+type MockProvider struct{}
 
 func (m *MockProvider) Reference() string {
 	return "MockProvider"
@@ -148,7 +148,8 @@ func doInitConsumerWithSingleRegistry() {
 				Module:       "module",
 				Version:      "2.6.0",
 				Owner:        "dubbo",
-				Environment:  "test"},
+				Environment:  "test",
+			},
 		},
 
 		Registry: &RegistryConfig{
@@ -359,6 +360,7 @@ func (*mockRegistryProtocol) Export(invoker protocol.Invoker) protocol.Exporter 
 func (*mockRegistryProtocol) Destroy() {
 	// Destroy is a mock function
 }
+
 func getRegistryUrl(invoker protocol.Invoker) *common.URL {
 	// here add * for return a new url
 	url := invoker.GetUrl()

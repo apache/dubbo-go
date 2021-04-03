@@ -52,7 +52,6 @@ func TestFileTagRouterURL(t *testing.T) {
 	priority := url.GetParam(constant.RouterPriority, "0")
 	assert.Equal(t, "true", force)
 	assert.Equal(t, "100", priority)
-
 }
 
 func TestFileTagRouterPriority(t *testing.T) {

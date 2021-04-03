@@ -39,7 +39,6 @@ import (
 )
 
 func TestMetricsFilterInvoke(t *testing.T) {
-
 	// prepare the mock reporter
 	config.GetMetricConfig().Reporters = []string{"mock"}
 	mk := &mockReporter{}

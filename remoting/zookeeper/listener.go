@@ -25,8 +25,9 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-getty"
+	getty "github.com/apache/dubbo-getty"
 	"github.com/dubbogo/go-zookeeper/zk"
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	perrors "github.com/pkg/errors"
 )
 
@@ -37,28 +38,28 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
-var (
-	defaultTTL = 15 * time.Minute
-)
+var defaultTTL = 15 * time.Minute
 
 // nolint
 type ZkEventListener struct {
-	client      *ZookeeperClient
+	client      *gxzookeeper.ZookeeperClient
 	pathMapLock sync.Mutex
 	pathMap     map[string]struct{}
 	wg          sync.WaitGroup
+	exit        chan struct{}
 }
 
 // NewZkEventListener returns a EventListener instance
-func NewZkEventListener(client *ZookeeperClient) *ZkEventListener {
+func NewZkEventListener(client *gxzookeeper.ZookeeperClient) *ZkEventListener {
 	return &ZkEventListener{
 		client:  client,
 		pathMap: make(map[string]struct{}),
+		exit:    make(chan struct{}),
 	}
 }
 
 // nolint
-func (l *ZkEventListener) SetClient(client *ZookeeperClient) {
+func (l *ZkEventListener) SetClient(client *gxzookeeper.ZookeeperClient) {
 	l.client = client
 }
 
@@ -91,7 +92,7 @@ func (l *ZkEventListener) listenServiceNodeEvent(zkPath string, listener ...remo
 		select {
 		case zkEvent = <-keyEventCh:
 			logger.Warnf("get a zookeeper keyEventCh{type:%s, server:%s, path:%s, state:%d-%s, err:%s}",
-				zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, StateToString(zkEvent.State), zkEvent.Err)
+				zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, gxzookeeper.StateToString(zkEvent.State), zkEvent.Err)
 			switch zkEvent.Type {
 			case zk.EventNodeDataChanged:
 				logger.Warnf("zk.ExistW(key{%s}) = event{EventNodeDataChanged}", zkPath)
@@ -119,7 +120,7 @@ func (l *ZkEventListener) listenServiceNodeEvent(zkPath string, listener ...remo
 				logger.Warnf("zk.ExistW(key{%s}) = event{EventNodeDeleted}", zkPath)
 				return true
 			}
-		case <-l.client.Done():
+		case <-l.exit:
 			return false
 		}
 	}
@@ -247,9 +248,9 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 			case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)):
 				l.client.UnregisterEvent(zkPath, &event)
 				continue
-			case <-l.client.Done():
+			case <-l.exit:
 				l.client.UnregisterEvent(zkPath, &event)
-				logger.Warnf("client.done(), listen(path{%s}) goroutine exit now...", zkPath)
+				logger.Warnf("listen(path{%s}) goroutine exit now...", zkPath)
 				return
 			case <-event:
 				logger.Infof("get zk.EventNodeDataChange notify event")
@@ -302,7 +303,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 			logger.Infof("listen dubbo service key{%s}", dubboPath)
 			l.wg.Add(1)
 			go func(zkPath string, listener remoting.DataListener) {
-				if l.listenServiceNodeEvent(zkPath) {
+				if l.listenServiceNodeEvent(zkPath, listener) {
 					listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeDel})
 					l.pathMapLock.Lock()
 					delete(l.pathMap, zkPath)
@@ -331,15 +332,15 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 				l.handleZkNodeEvent(zkPath, children, listener)
 			case zkEvent = <-childEventCh:
 				logger.Warnf("get a zookeeper childEventCh{type:%s, server:%s, path:%s, state:%d-%s, err:%s}",
-					zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, StateToString(zkEvent.State), zkEvent.Err)
+					zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, gxzookeeper.StateToString(zkEvent.State), zkEvent.Err)
 				ticker.Stop()
 				if zkEvent.Type != zk.EventNodeChildrenChanged {
 					break WATCH
 				}
 				l.handleZkNodeEvent(zkEvent.Path, children, listener)
 				break WATCH
-			case <-l.client.Done():
-				logger.Warnf("watch client.done(), listen(path{%s}) goroutine exit now...", zkPath)
+			case <-l.exit:
+				logger.Warnf("listen(path{%s}) goroutine exit now...", zkPath)
 				ticker.Stop()
 				return
 			}
@@ -371,6 +372,6 @@ func (l *ZkEventListener) ListenServiceEvent(conf *common.URL, zkPath string, li
 
 // Close will let client listen exit
 func (l *ZkEventListener) Close() {
-	close(l.client.exit)
+	close(l.exit)
 	l.wg.Wait()
 }

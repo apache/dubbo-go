@@ -29,8 +29,7 @@ func init() {
 }
 
 // HealthCheckRouteFactory
-type HealthCheckRouteFactory struct {
-}
+type HealthCheckRouteFactory struct{}
 
 // newHealthCheckRouteFactory construct a new HealthCheckRouteFactory
 func newHealthCheckRouteFactory() router.PriorityRouterFactory {

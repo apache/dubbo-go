@@ -121,7 +121,6 @@ type MethodServiceTpsLimiterImpl struct {
 // This implementation use concurrent map + loadOrStore to make implementation thread-safe
 // You can image that even multiple threads create limiter, but only one could store the limiter into tpsState
 func (limiter MethodServiceTpsLimiterImpl) IsAllowable(url *common.URL, invocation protocol.Invocation) bool {
-
 	methodConfigPrefix := "methods." + invocation.MethodName() + "."
 
 	methodLimitRateConfig := url.GetParam(methodConfigPrefix+constant.TPS_LIMIT_RATE_KEY, "")
@@ -193,15 +192,16 @@ func getLimitConfig(methodLevelConfig string,
 	// actually there is no method-level configuration, so we use the service-level configuration
 
 	result, err := strconv.ParseInt(url.GetParam(configKey, defaultVal), 0, 0)
-
 	if err != nil {
 		panic(fmt.Sprintf("Cannot parse the configuration %s, please check your configuration!", configKey))
 	}
 	return result
 }
 
-var methodServiceTpsLimiterInstance *MethodServiceTpsLimiterImpl
-var methodServiceTpsLimiterOnce sync.Once
+var (
+	methodServiceTpsLimiterInstance *MethodServiceTpsLimiterImpl
+	methodServiceTpsLimiterOnce     sync.Once
+)
 
 // GetMethodServiceTpsLimiter will return an MethodServiceTpsLimiterImpl instance.
 func GetMethodServiceTpsLimiter() filter.TpsLimiter {

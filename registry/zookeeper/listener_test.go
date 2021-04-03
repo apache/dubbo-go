@@ -39,8 +39,7 @@ func Test_DataChange(t *testing.T) {
 	assert.Equal(t, true, int)
 }
 
-type MockConfigurationListener struct {
-}
+type MockConfigurationListener struct{}
 
 func (*MockConfigurationListener) Process(configType *config_center.ConfigChangeEvent) {
 }

@@ -23,9 +23,7 @@ import (
 
 type ServiceNameMappingCreator func() mapping.ServiceNameMapping
 
-var (
-	globalNameMappingCreator ServiceNameMappingCreator
-)
+var globalNameMappingCreator ServiceNameMappingCreator
 
 func SetGlobalServiceNameMapping(nameMappingCreator ServiceNameMappingCreator) {
 	globalNameMappingCreator = nameMappingCreator

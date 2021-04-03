@@ -78,7 +78,6 @@ func TestConnCheckRouterRoute(t *testing.T) {
 	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*ConnCheckRouter), invokers), consumerURL, inv)
 	// now  invoker3 invoker1 is healthy
 	assert.True(t, len(res.ToArray()) == 2)
-
 }
 
 func TestRecovery(t *testing.T) {

@@ -29,9 +29,7 @@ import (
 	"github.com/apache/dubbo-go/metadata/report/factory"
 )
 
-var (
-	emptyStrSlice = make([]string, 0)
-)
+var emptyStrSlice = make([]string, 0)
 
 func init() {
 	mf := &consulMetadataReportFactory{}
@@ -111,8 +109,7 @@ func (m *consulMetadataReport) GetServiceDefinition(metadataIdentifier *identifi
 	return string(kv.Value), nil
 }
 
-type consulMetadataReportFactory struct {
-}
+type consulMetadataReportFactory struct{}
 
 // nolint
 func (mf *consulMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {

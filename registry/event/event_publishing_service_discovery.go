@@ -64,7 +64,6 @@ func (epsd *EventPublishingServiceDiscovery) Register(instance registry.ServiceI
 	}
 	return epsd.executeWithEvents(NewServiceInstancePreRegisteredEvent(epsd.serviceDiscovery, instance),
 		f, NewServiceInstanceRegisteredEvent(epsd.serviceDiscovery, instance))
-
 }
 
 // Update returns the result of serviceDiscovery.Update

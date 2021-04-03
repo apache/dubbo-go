@@ -83,7 +83,8 @@ func newListenableRouter(url *common.URL, ruleKey string, notify chan struct{}) 
 	l.Process(&config_center.ConfigChangeEvent{
 		Key:        routerKey,
 		Value:      rule,
-		ConfigType: remoting.EventTypeUpdate})
+		ConfigType: remoting.EventTypeUpdate,
+	})
 
 	logger.Info("Init app router success")
 	return l, nil

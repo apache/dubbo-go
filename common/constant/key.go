@@ -146,6 +146,7 @@ const (
 	CONFIG_VERSION_KEY    = "configVersion"
 	COMPATIBLE_CONFIG_KEY = "compatible_config"
 )
+
 const (
 	RegistryConfigPrefix       = "dubbo.registries."
 	SingleRegistryConfigPrefix = "dubbo.registry."
