@@ -43,7 +43,7 @@ type PassThroughProxyFactory struct {
 }
 
 // NewPassThroughProxyFactory returns a proxy factory instance
-func NewPassThroughProxyFactory() proxy.ProxyFactory {
+func NewPassThroughProxyFactory(_ ...proxy.Option) proxy.ProxyFactory {
 	return &PassThroughProxyFactory{}
 }
 
