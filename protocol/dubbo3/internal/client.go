@@ -19,8 +19,14 @@ package internal
 
 import (
 	"context"
-	"github.com/apache/dubbo-go/config"
+)
+
+import (
 	"github.com/dubbogo/triple/pkg/triple"
+)
+
+import (
+	"github.com/apache/dubbo-go/config"
 )
 
 func init() {
