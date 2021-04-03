@@ -199,7 +199,7 @@ func TestRestInvokerInvoke(t *testing.T) {
 	assert.Equal(t, "username", res.Result().(*User).Name)
 	// test 3
 	inv = invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUserFour"),
-		invocation.WithArguments([]interface{}{[]User{User{1, nil, int32(23), "username"}}}), invocation.WithReply(user))
+		invocation.WithArguments([]interface{}{[]User{{1, nil, int32(23), "username"}}}), invocation.WithReply(user))
 	res = invoker.Invoke(context.Background(), inv)
 	assert.NoError(t, res.Error())
 	assert.NotNil(t, res.Result())

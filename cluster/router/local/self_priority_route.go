@@ -80,7 +80,7 @@ func (r *LocalPriorityRouter) Pool(invokers []protocol.Invoker) (router.AddrPool
 		logger.Debug("found local ip ")
 		return rb, nil
 	}
-	for i, _ := range invokers {
+	for i := range invokers {
 		rb[localPriority].Add(uint32(i))
 	}
 	return rb, nil

@@ -81,7 +81,7 @@ func Test_Subscribe(t *testing.T) {
 	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 	ts, reg, _ := newMockZkRegistry(regURL)
 
-	//provider register
+	// provider register
 	err := reg.Register(url)
 	assert.NoError(t, err)
 
@@ -89,7 +89,7 @@ func Test_Subscribe(t *testing.T) {
 		return
 	}
 
-	//consumer register
+	// consumer register
 	regURL.SetParam(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
 	_, reg2, _ := newMockZkRegistry(regURL, gxzookeeper.WithTestCluster(ts))
 
@@ -113,7 +113,7 @@ func Test_UnSubscribe(t *testing.T) {
 	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 	ts, reg, _ := newMockZkRegistry(regURL)
 
-	//provider register
+	// provider register
 	err := reg.Register(url)
 	assert.NoError(t, err)
 
@@ -121,7 +121,7 @@ func Test_UnSubscribe(t *testing.T) {
 		return
 	}
 
-	//consumer register
+	// consumer register
 	regURL.SetParam(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
 	_, reg2, _ := newMockZkRegistry(regURL, gxzookeeper.WithTestCluster(ts))
 
@@ -159,7 +159,7 @@ func Test_ConsumerDestroy(t *testing.T) {
 	_, err = reg.DoSubscribe(url)
 	assert.NoError(t, err)
 
-	//listener.Close()
+	// listener.Close()
 	time.Sleep(1e9)
 	reg.Destroy()
 	assert.Equal(t, false, reg.IsAvailable())
@@ -178,7 +178,7 @@ func Test_ProviderDestroy(t *testing.T) {
 	err = reg.Register(url)
 	assert.Nil(t, err)
 
-	//listener.Close()
+	// listener.Close()
 	time.Sleep(1e9)
 	reg.Destroy()
 	assert.Equal(t, false, reg.IsAvailable())

@@ -23,6 +23,6 @@ import (
 )
 
 type ServiceInstanceSelector interface {
-	//Select an instance of ServiceInstance by the specified ServiceInstance service instances
+	// Select an instance of ServiceInstance by the specified ServiceInstance service instances
 	Select(url *common.URL, serviceInstances []registry.ServiceInstance) registry.ServiceInstance
 }

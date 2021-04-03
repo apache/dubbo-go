@@ -308,7 +308,6 @@ var (
 // newNacosServiceDiscovery will create new service discovery instance
 // use double-check pattern to reduce race condition
 func newNacosServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
-
 	instance, ok := instanceMap[name]
 	if ok {
 		return instance, nil

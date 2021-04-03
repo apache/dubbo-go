@@ -19,7 +19,6 @@ require (
 	github.com/emicklei/go-restful/v3 v3.4.0
 	github.com/frankban/quicktest v1.4.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.9
-	github.com/gin-gonic/gin v1.5.0 // indirect
 	github.com/go-co-op/gocron v0.1.1
 	github.com/go-resty/resty/v2 v2.3.0
 	github.com/golang/mock v1.4.4
@@ -31,9 +30,7 @@ require (
 	github.com/hashicorp/vault/api v1.0.5-0.20191108163347-bdd38fca2cff // indirect
 	github.com/hashicorp/vault/sdk v0.1.14-0.20200519221838-e0cfd64bc267
 	github.com/jinzhu/copier v0.0.0-20190625015134-976e0346caa8
-	github.com/labstack/echo/v4 v4.1.15 // indirect
-	github.com/magiconair/properties v1.8.4
-	github.com/micro/go-micro/v2 v2.9.1 // indirect
+	github.com/magiconair/properties v1.8.5
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 	github.com/nacos-group/nacos-sdk-go v1.0.7

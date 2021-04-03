@@ -37,8 +37,7 @@ func TestGetHealthChecker(t *testing.T) {
 	assert.NotNil(t, checker)
 }
 
-type mockHealthChecker struct {
-}
+type mockHealthChecker struct{}
 
 func (m mockHealthChecker) IsHealthy(invoker protocol.Invoker) bool {
 	return true

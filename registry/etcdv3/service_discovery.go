@@ -45,9 +45,7 @@ const (
 	ROOT = "/services"
 )
 
-var (
-	initLock sync.Mutex
-)
+var initLock sync.Mutex
 
 func init() {
 	extension.SetServiceDiscovery(constant.ETCDV3_KEY, newEtcdV3ServiceDiscovery)
@@ -82,7 +80,6 @@ func (e *etcdV3ServiceDiscovery) Destroy() error {
 
 // Register will register an instance of ServiceInstance to registry
 func (e *etcdV3ServiceDiscovery) Register(instance registry.ServiceInstance) error {
-
 	e.serviceInstance = &instance
 
 	path := toPath(instance)
@@ -147,7 +144,6 @@ func (e *etcdV3ServiceDiscovery) GetServices() *gxset.HashSet {
 
 // GetInstances will return all service instances with serviceName
 func (e *etcdV3ServiceDiscovery) GetInstances(serviceName string) []registry.ServiceInstance {
-
 	if nil != e.client {
 		// get keys and values
 		_, vList, err := e.client.GetChildrenKVList(toParentPath(serviceName))
@@ -171,7 +167,6 @@ func (e *etcdV3ServiceDiscovery) GetInstances(serviceName string) []registry.Ser
 // GetInstancesByPage will return a page containing instances of ServiceInstance with the serviceName
 // the page will start at offset
 func (e *etcdV3ServiceDiscovery) GetInstancesByPage(serviceName string, offset int, pageSize int) gxpage.Pager {
-
 	all := e.GetInstances(serviceName)
 
 	res := make([]interface{}, 0, pageSize)
@@ -253,7 +248,6 @@ func toParentPath(serviceName string) string {
 
 // register service watcher
 func (e *etcdV3ServiceDiscovery) registerSreviceWatcher(serviceName string) error {
-
 	initLock.Lock()
 	defer initLock.Unlock()
 
@@ -273,7 +267,6 @@ func (e *etcdV3ServiceDiscovery) registerSreviceWatcher(serviceName string) erro
 
 // when child data change should DispatchEventByServiceName
 func (e *etcdV3ServiceDiscovery) DataChange(eventType remoting.Event) bool {
-
 	if eventType.Action == remoting.EventTypeUpdate {
 		instance := &registry.DefaultServiceInstance{}
 		err := jsonutil.DecodeJSON([]byte(eventType.Content), &instance)
@@ -291,7 +284,6 @@ func (e *etcdV3ServiceDiscovery) DataChange(eventType remoting.Event) bool {
 
 // netEcdv3ServiceDiscovery
 func newEtcdV3ServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
-
 	initLock.Lock()
 	defer initLock.Unlock()
 

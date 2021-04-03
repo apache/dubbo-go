@@ -47,7 +47,6 @@ func TestNewBaseDirectory(t *testing.T) {
 }
 
 func TestBuildRouterChain(t *testing.T) {
-
 	regURL := url
 	regURL.AddParam(constant.INTERFACE_KEY, "mock-app")
 	directory := NewBaseDirectory(regURL)

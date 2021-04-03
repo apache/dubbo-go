@@ -60,7 +60,7 @@ type zkRegistry struct {
 	listener     *zookeeper.ZkEventListener
 	dataListener *RegistryDataListener
 	cltLock      sync.Mutex
-	//for provider
+	// for provider
 	zkPath map[string]int // key = protocol://ip:port/interface
 }
 
@@ -101,7 +101,7 @@ func newMockZkRegistry(url *common.URL, opts ...gxzookeeper.Option) (*zk.TestClu
 		err error
 		r   *zkRegistry
 		c   *zk.TestCluster
-		//event <-chan zk.Event
+		// event <-chan zk.Event
 	)
 
 	r = &zkRegistry{
@@ -112,7 +112,7 @@ func newMockZkRegistry(url *common.URL, opts ...gxzookeeper.Option) (*zk.TestClu
 	if err != nil {
 		return nil, nil, err
 	}
-	r.WaitGroup().Add(1) //zk client start successful, then wg +1
+	r.WaitGroup().Add(1) // zk client start successful, then wg +1
 	go zookeeper.HandleClientRestart(r)
 	r.InitListeners()
 	return c, r, nil
@@ -243,7 +243,6 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 }
 
 func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListener, error) {
-
 	var zkListener *RegistryConfigurationListener
 	dataListener := r.dataListener
 	ttl := r.GetParam(constant.REGISTRY_TTL_KEY, constant.DEFAULT_REG_TTL)
@@ -280,7 +279,7 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 		r.listenerLock.Unlock()
 	}
 
-	//Interested register to dataconfig.
+	// Interested register to dataconfig.
 	r.dataListener.SubscribeURL(conf, zkListener)
 
 	go r.listener.ListenServiceEvent(conf, fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, url.QueryEscape(conf.Service())), r.dataListener)
@@ -289,7 +288,6 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 }
 
 func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationListener, error) {
-
 	var zkListener *RegistryConfigurationListener
 	r.dataListener.mutex.Lock()
 	configurationListener := r.dataListener.subscribed[conf.ServiceKey()]
@@ -308,7 +306,7 @@ func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationL
 		return nil, perrors.New("listener is null can not close.")
 	}
 
-	//Interested register to dataconfig.
+	// Interested register to dataconfig.
 	r.listenerLock.Lock()
 	listener := r.listener
 	r.listener = nil

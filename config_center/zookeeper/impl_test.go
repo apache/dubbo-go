@@ -218,7 +218,6 @@ func TestZookeeperDynamicConfigurationPublishConfig(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 1, keys.Size())
 	assert.True(t, keys.Contains(key))
-
 }
 
 type mockDataListener struct {

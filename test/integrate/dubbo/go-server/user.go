@@ -41,8 +41,7 @@ type User struct {
 	Time time.Time
 }
 
-type UserProvider struct {
-}
+type UserProvider struct{}
 
 func (u *UserProvider) GetUser(ctx context.Context, req []interface{}) (*User, error) {
 	println("req:%#v", req)

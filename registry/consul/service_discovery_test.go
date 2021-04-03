@@ -90,7 +90,7 @@ func TestConsulServiceDiscovery_CRUD(t *testing.T) {
 	}()
 
 	prepareData()
-	var eventDispatcher = MockEventDispatcher{Notify: make(chan struct{}, 1)}
+	eventDispatcher := MockEventDispatcher{Notify: make(chan struct{}, 1)}
 	extension.SetEventDispatcher("mock", func() observer.EventDispatcher {
 		return &eventDispatcher
 	})
@@ -110,8 +110,8 @@ func TestConsulServiceDiscovery_CRUD(t *testing.T) {
 	err = serviceDiscovery.Register(instance)
 	assert.Nil(t, err)
 
-	//sometimes nacos may be failed to push update of instance,
-	//so it need 10s to pull, we sleep 10 second to make sure instance has been update
+	// sometimes nacos may be failed to push update of instance,
+	// so it need 10s to pull, we sleep 10 second to make sure instance has been update
 	time.Sleep(3 * time.Second)
 	page := serviceDiscovery.GetHealthyInstancesByPage(instance.GetServiceName(), 0, 10, true)
 	assert.NotNil(t, page)
@@ -146,8 +146,8 @@ func TestConsulServiceDiscovery_CRUD(t *testing.T) {
 	assert.Equal(t, "bbb", v)
 
 	// test dispatcher event
-	//err = serviceDiscovery.DispatchEventByServiceName(instanceResult.GetServiceName())
-	//assert.Nil(t, err)
+	// err = serviceDiscovery.DispatchEventByServiceName(instanceResult.GetServiceName())
+	// assert.Nil(t, err)
 
 	// test AddListener
 	err = serviceDiscovery.AddListener(&registry.ServiceInstancesChangedListener{ServiceName: instance.GetServiceName()})

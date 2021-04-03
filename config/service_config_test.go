@@ -18,8 +18,9 @@
 package config
 
 import (
-	"github.com/apache/dubbo-go/common"
 	"testing"
+
+	"github.com/apache/dubbo-go/common"
 )
 
 import (
@@ -195,7 +196,7 @@ func TestGetRandomPort(t *testing.T) {
 	protocolConfigs = append(protocolConfigs, &ProtocolConfig{
 		Ip: ip,
 	})
-	//assert.NoError(t, err)
+	// assert.NoError(t, err)
 	ports := getRandomPort(protocolConfigs)
 
 	assert.Equal(t, ports.Len(), len(protocolConfigs))

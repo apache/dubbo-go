@@ -112,7 +112,6 @@ func TestHealthCheckRouterRoute(t *testing.T) {
 	// invoker1 go to healthy again after 2s
 	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*HealthCheckRouter), invokers), consumerURL, inv)
 	assert.True(t, res.Contains(0))
-
 }
 
 func TestNewHealthCheckRouter(t *testing.T) {

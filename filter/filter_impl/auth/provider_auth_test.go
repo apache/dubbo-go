@@ -70,5 +70,4 @@ func TestProviderAuthFilter_Invoke(t *testing.T) {
 	assert.Equal(t, result, filter.Invoke(context.Background(), invoker, inv))
 	url.SetParam(constant.SERVICE_AUTH_KEY, "true")
 	assert.Equal(t, result, filter.Invoke(context.Background(), invoker, inv))
-
 }

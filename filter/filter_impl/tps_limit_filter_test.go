@@ -52,7 +52,6 @@ func TestTpsLimitFilterInvokeWithNoTpsLimiter(t *testing.T) {
 			[]interface{}{"OK"}, attch))
 	assert.Nil(t, result.Error())
 	assert.Nil(t, result.Result())
-
 }
 
 func TestGenericFilterInvokeWithDefaultTpsLimiter(t *testing.T) {

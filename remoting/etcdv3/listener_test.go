@@ -52,8 +52,7 @@ var changedData = `
 `
 
 func (suite *ClientTestSuite) TestListener() {
-
-	var tests = []struct {
+	tests := []struct {
 		input struct {
 			k string
 			v string

@@ -87,7 +87,7 @@ func mockNewMetadataReport(t *testing.T) *MetadataReport {
 
 func TestMetadataReport_StoreProviderMetadata(t *testing.T) {
 	mtr := mockNewMetadataReport(t)
-	var metadataId = &identifier.MetadataIdentifier{
+	metadataId := &identifier.MetadataIdentifier{
 		Application: "app",
 		BaseMetadataIdentifier: identifier.BaseMetadataIdentifier{
 			ServiceInterface: "com.ikurento.user.UserProvider",

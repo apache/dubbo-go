@@ -119,7 +119,7 @@ type Options struct {
 	ConnectTimeout time.Duration
 }
 
-//AsyncCallbackResponse async response for dubbo
+// AsyncCallbackResponse async response for dubbo
 type AsyncCallbackResponse struct {
 	common.CallbackResponse
 	Opts      Options
