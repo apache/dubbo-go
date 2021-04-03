@@ -125,7 +125,6 @@ func (r *RouterChain) Process(event *config_center.ConfigChangeEvent) {
 				logger.Error("newVSValue.ObjectMeta.Annotations has no key named kubectl.kubernetes.io/last-applied-configuration")
 				return
 			}
-			fmt.Println("json file = ", newDRJsonValue)
 			newDestRuleConfig := &config.DestinationRuleConfig{}
 			if err := json.Unmarshal([]byte(newDRJsonValue), newDestRuleConfig); err != nil {
 				logger.Error("on process json data unmarshal error = ", err)
