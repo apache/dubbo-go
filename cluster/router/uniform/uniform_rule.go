@@ -19,6 +19,8 @@ package uniform
 
 import (
 	"fmt"
+	"math/rand"
+	"time"
 )
 
 import (
@@ -77,7 +79,7 @@ func (vsr *VirtualServiceRule) match(url *common.URL, invocation protocol.Invoca
 
 // tryGetSubsetFromRouterOfOneDestination is a recursion function
 // try from destination 's header to final fallback destination, when success, it return result destination, else return error
-func (vsr *VirtualServiceRule) tryGetSubsetFromRouterOfOneDestination(desc *config.DubboDestination, invokers []protocol.Invoker) ([]protocol.Invoker, error) {
+func (vsr *VirtualServiceRule) tryGetSubsetFromRouterOfOneDestination(desc *config.DubboDestination, invokers []protocol.Invoker) ([]protocol.Invoker, int, error) {
 	subSet := desc.Destination.Subset
 	labels, ok := vsr.uniformRule.DestinationLabelListMap[subSet]
 	resultInvokers := make([]protocol.Invoker, 0)
@@ -88,19 +90,65 @@ func (vsr *VirtualServiceRule) tryGetSubsetFromRouterOfOneDestination(desc *conf
 			}
 		}
 		if len(resultInvokers) != 0 {
-			return resultInvokers, nil
+			return resultInvokers, desc.Destination.Weight, nil
 		}
 	}
 
 	if desc.Fallback != nil {
 		return vsr.tryGetSubsetFromRouterOfOneDestination(desc.Fallback, invokers)
 	}
-	return nil, perrors.New("No invoker matches and no fallback destination to choose!")
+	return nil, 0, perrors.New("No invoker matches and no fallback destination to choose!")
+}
+
+//weightInvokersPair stores weight and invoker list.
+type weightInvokersPair struct {
+	weight      int
+	invokerList []protocol.Invoker
+}
+
+type weightInvokerPairResults struct {
+	pairs []weightInvokersPair
+}
+
+func (w *weightInvokerPairResults) getTargetInvokers() []protocol.Invoker {
+	if len(w.pairs) == 0 {
+		return []protocol.Invoker{}
+	}
+
+	if len(w.pairs) == 1 {
+		return w.pairs[0].invokerList
+	}
+	rand.Seed(time.Now().UnixNano())
+	target := rand.Intn(100)
+	// noweight means all weigh is zero, random choose one invoker list
+	noWeight := true
+	// check if empty
+	for _, v := range w.pairs {
+		if v.weight != 0 {
+			noWeight = false // user defined weight
+			break
+		}
+	}
+	if noWeight {
+		// random choose one list
+		weitUnit := 100/len(w.pairs) + 1
+		return w.pairs[target/weitUnit].invokerList
+	} else {
+		total := 0
+		for _, v := range w.pairs {
+			total += v.weight
+			if total > target {
+				return v.invokerList
+			}
+		}
+	}
+	// invalid weight set: total is smaller than 100, choose first
+	return w.pairs[0].invokerList
 }
 
 func (vsr *VirtualServiceRule) getRuleTargetInvokers(invokers []protocol.Invoker) ([]protocol.Invoker, error) {
-	// descResultList is the collection routerDesc of all destination fields,
-	invokerList := make([]protocol.Invoker, 0)
+	// weightInvokerPairResult is the collection routerDesc of all destination fields,
+	weightInvokerPairResult := weightInvokerPairResults{}
 	for _, v := range vsr.routerItem.Router {
 		// v is one destination 's header e.g.
 		/*
@@ -128,7 +176,7 @@ func (vsr *VirtualServiceRule) getRuleTargetInvokers(invokers []protocol.Invoker
 						 host: demo
 						 subset: v6
 		*/
-		invokerListOfOneDest, err := vsr.tryGetSubsetFromRouterOfOneDestination(v, invokers)
+		invokerListOfOneDest, weight, err := vsr.tryGetSubsetFromRouterOfOneDestination(v, invokers)
 		if err != nil {
 			return nil, err
 		}
@@ -141,18 +189,13 @@ func (vsr *VirtualServiceRule) getRuleTargetInvokers(invokers []protocol.Invoker
 			   host: demo
 			   subset: na610
 		*/
-		invokerList = append(invokerList, invokerListOfOneDest...)
+		weightInvokerPairResult.pairs = append(weightInvokerPairResult.pairs, weightInvokersPair{
+			weight:      weight,
+			invokerList: invokerListOfOneDest,
+		})
 	}
-	// delete equal invoker
-	resultInvokersMap := make(map[string]protocol.Invoker)
-	for _, v := range invokerList {
-		resultInvokersMap[v.GetUrl().Key()] = v
-	}
-	invokerList = make([]protocol.Invoker, 0)
-	for _, v := range resultInvokersMap {
-		invokerList = append(invokerList, v)
-	}
-	return invokerList, nil
+
+	return weightInvokerPairResult.getTargetInvokers(), nil
 }
 
 // UniformRule

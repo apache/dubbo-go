@@ -52,6 +52,7 @@ type DubboServiceRouterItem struct {
 	Name   string               `yaml:"name" json:"name"`
 	Match  []*DubboMatchRequest `yaml:"match" json:"match"`
 	Router []*DubboDestination  `yaml:"route" json:"route"`
+	// todo mirror/retries/timeout
 }
 
 type DubboMatchRequest struct {
@@ -124,6 +125,8 @@ type DubboDestination struct {
 type RouterDest struct {
 	Host   string `yaml:"host" json:"host"`
 	Subset string `yaml:"subset" json:"subset"`
+	Weight int    `yaml:"weight" json:"weight"`
+	// todo port
 }
 
 // DestinationRule Definition
