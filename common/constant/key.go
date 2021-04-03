@@ -51,6 +51,8 @@ const (
 	PATH_SEPARATOR           = "/"
 	// DUBBO_KEY                = "dubbo"
 	SSL_ENABLED_KEY = "ssl-enabled"
+	// PARAMS_TYPE_Key key used in pass through invoker factory, to define param type
+	PARAMS_TYPE_Key = "parameter-type-names"
 )
 
 const (
@@ -200,6 +202,8 @@ const (
 	// default deregister critical server after
 	DEFAULT_DEREGISTER_TIME = "20s"
 	DEREGISTER_AFTER        = "consul-deregister-critical-service-after"
+	// PassThroughProxyFactoryKey is key of proxy factory with raw data input service
+	PassThroughProxyFactoryKey = "dubbo-raw"
 )
 
 const (
