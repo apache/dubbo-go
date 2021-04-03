@@ -124,6 +124,7 @@ func TestNewConsumerConfig(t *testing.T) {
 	assert.Equal(t, testConsumerConfig.References["UserProvider"], referConfig)
 }
 
+// TestNewProviderConfig test NewProviderConfig api
 func TestNewProviderConfig(t *testing.T) {
 	serviceConfig := NewServiceConfigByAPI(
 		WithServiceCluster("test-cluster"),
