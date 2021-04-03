@@ -13,7 +13,7 @@ require (
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/creasty/defaults v1.5.1
 	github.com/dubbogo/go-zookeeper v1.0.3
-	github.com/dubbogo/gost v1.11.2
+	github.com/dubbogo/gost v1.11.3
 	github.com/dubbogo/triple v0.0.0-20210403061850-372f2dc47e02
 	github.com/elazarl/go-bindata-assetfs v1.0.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.4.0
