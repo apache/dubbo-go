@@ -23,7 +23,7 @@ import (
 )
 
 import (
-	zk "github.com/dubbogo/gost/database/kv/zk"
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	perrors "github.com/pkg/errors"
 )
 
@@ -113,7 +113,7 @@ func (l *RegistryDataListener) Close() {
 
 // RegistryConfigurationListener represent the processor of zookeeper watcher
 type RegistryConfigurationListener struct {
-	client       *zk.ZookeeperClient
+	client       *gxzookeeper.ZookeeperClient
 	registry     *zkRegistry
 	events       chan *config_center.ConfigChangeEvent
 	isClosed     bool
@@ -123,7 +123,7 @@ type RegistryConfigurationListener struct {
 }
 
 // NewRegistryConfigurationListener for listening the event of zk.
-func NewRegistryConfigurationListener(client *zk.ZookeeperClient, reg *zkRegistry, conf *common.URL) *RegistryConfigurationListener {
+func NewRegistryConfigurationListener(client *gxzookeeper.ZookeeperClient, reg *zkRegistry, conf *common.URL) *RegistryConfigurationListener {
 	reg.WaitGroup().Add(1)
 	return &RegistryConfigurationListener{
 		client:       client,
