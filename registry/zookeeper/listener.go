@@ -20,11 +20,10 @@ package zookeeper
 import (
 	"strings"
 	"sync"
-
-	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 )
 
 import (
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	perrors "github.com/pkg/errors"
 )
 
