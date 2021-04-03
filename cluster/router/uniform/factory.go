@@ -21,6 +21,7 @@ import (
 	"github.com/apache/dubbo-go/cluster/router"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	v3router "github.com/dubbogo/v3router/pkg"
 )
 
 func init() {
@@ -39,5 +40,5 @@ func newUniformRouterFactory() router.PriorityRouterFactory {
 
 // NewPriorityRouter construct a new NewConnCheckRouter via url
 func (f *UniformRouteFactory) NewPriorityRouter(vsConfigBytes, distConfigBytes []byte, notify chan struct{}) (router.PriorityRouter, error) {
-	return NewUniformRouterChain(vsConfigBytes, distConfigBytes, notify)
+	return v3router.NewUniformRouterChain(vsConfigBytes, distConfigBytes, notify)
 }

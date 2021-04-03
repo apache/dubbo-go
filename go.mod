@@ -13,9 +13,9 @@ require (
 	github.com/creasty/defaults v1.5.1
 	github.com/dubbogo/go-zookeeper v1.0.3
 	github.com/dubbogo/gost v1.11.2
+	github.com/dubbogo/v3router v0.0.0-20210403091802-c5480f6e6f8f // indirect
 	github.com/emicklei/go-restful/v3 v3.4.0
 	github.com/fsnotify/fsnotify v1.4.9
-	github.com/ghodss/yaml v1.0.0
 	github.com/go-co-op/gocron v0.1.1
 	github.com/go-resty/resty/v2 v2.3.0
 	github.com/golang/mock v1.4.4
@@ -41,8 +41,8 @@ require (
 	google.golang.org/grpc v1.33.1
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.16.9
-	k8s.io/apimachinery v0.16.9
-	k8s.io/client-go v0.16.9
+	k8s.io/apimachinery v0.20.5
+	k8s.io/client-go v11.0.0+incompatible
 )
 
 replace (
