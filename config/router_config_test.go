@@ -31,12 +31,13 @@ import (
 	_ "github.com/apache/dubbo-go/cluster/router/condition"
 )
 
-const testYML = "testdata/router_config.yml"
-const testMultiRouterYML = "testdata/router_multi_config.yml"
-const errorTestYML = "testdata/router_config_error.yml"
+const (
+	testYML            = "testdata/router_config.yml"
+	testMultiRouterYML = "testdata/router_multi_config.yml"
+	errorTestYML       = "testdata/router_config_error.yml"
+)
 
 func TestString(t *testing.T) {
-
 	s := "a1=>a2"
 	s1 := "=>a2"
 	s2 := "a1=>"

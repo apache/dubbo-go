@@ -44,7 +44,6 @@ const defaultEtcdV3WorkDir = "/tmp/default-dubbo-go-registry.etcd"
 
 // start etcd server
 func (suite *RegistryTestSuite) SetupSuite() {
-
 	t := suite.T()
 
 	cfg := embed.NewConfig()
@@ -75,7 +74,6 @@ func (suite *RegistryTestSuite) TearDownSuite() {
 }
 
 func (suite *RegistryTestSuite) TestDataChange() {
-
 	t := suite.T()
 
 	listener := NewRegistryDataListener(&MockDataListener{})

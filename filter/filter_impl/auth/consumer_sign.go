@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 )
+
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -30,8 +31,7 @@ import (
 )
 
 // ConsumerSignFilter signs the request on consumer side
-type ConsumerSignFilter struct {
-}
+type ConsumerSignFilter struct{}
 
 func init() {
 	extension.SetFilter(constant.CONSUMER_SIGN_FILTER, getConsumerSignFilter)
@@ -47,7 +47,6 @@ func (csf *ConsumerSignFilter) Invoke(ctx context.Context, invoker protocol.Invo
 	})
 	if err != nil {
 		panic(fmt.Sprintf("Sign for invocation %s # %s failed", url.ServiceKey(), invocation.MethodName()))
-
 	}
 	return invoker.Invoke(ctx, invocation)
 }

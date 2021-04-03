@@ -50,9 +50,7 @@ const (
 	watch_passingonly_true = true
 )
 
-var (
-	errConsulClientClosed = perrors.New("consul client is closed")
-)
+var errConsulClientClosed = perrors.New("consul client is closed")
 
 // init will put the service discovery into extension
 func init() {
@@ -241,7 +239,7 @@ func (csd *consulServiceDiscovery) GetServices() *gxset.HashSet {
 		consulClient *consul.Client
 		services     map[string][]string
 	)
-	var res = gxset.NewSet()
+	res := gxset.NewSet()
 	if consulClient = csd.getConsulClient(); consulClient == nil {
 		logger.Warnf("consul client is closed!")
 		return res
@@ -256,7 +254,6 @@ func (csd *consulServiceDiscovery) GetServices() *gxset.HashSet {
 		res.Add(service)
 	}
 	return res
-
 }
 
 // encodeConsulMetadata because consul validate key strictly.
@@ -370,7 +367,6 @@ func (csd *consulServiceDiscovery) GetRequestInstances(serviceNames []string, of
 }
 
 func (csd *consulServiceDiscovery) AddListener(listener *registry.ServiceInstancesChangedListener) error {
-
 	params := make(map[string]interface{}, 8)
 	params[watch_type] = watch_type_service
 	params[watch_service] = listener.ServiceName

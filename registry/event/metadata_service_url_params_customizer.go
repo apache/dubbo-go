@@ -42,7 +42,6 @@ func init() {
 		// remove TIMESTAMP_KEY because it's nonsense
 		constant.TIMESTAMP_KEY)
 	extension.AddCustomizers(&metadataServiceURLParamsMetadataCustomizer{exceptKeys: exceptKeys})
-
 }
 
 type metadataServiceURLParamsMetadataCustomizer struct {
@@ -79,7 +78,6 @@ func (m *metadataServiceURLParamsMetadataCustomizer) Customize(instance registry
 }
 
 func (m *metadataServiceURLParamsMetadataCustomizer) convertToParams(urls []interface{}) map[string]map[string]string {
-
 	// usually there will be only one protocol
 	res := make(map[string]map[string]string, 1)
 	// those keys are useless

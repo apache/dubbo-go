@@ -32,9 +32,7 @@ type DecodeResult struct {
 	Result    interface{}
 }
 
-var (
-	codec = make(map[string]Codec, 2)
-)
+var codec = make(map[string]Codec, 2)
 
 func RegistryCodec(protocol string, codecTmp Codec) {
 	codec[protocol] = codecTmp

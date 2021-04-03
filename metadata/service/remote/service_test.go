@@ -47,15 +47,13 @@ func getMetadataReportFactory() factory.MetadataReportFactory {
 	return &metadataReportFactory{}
 }
 
-type metadataReportFactory struct {
-}
+type metadataReportFactory struct{}
 
 func (mrf *metadataReportFactory) CreateMetadataReport(*common.URL) report.MetadataReport {
 	return &metadataReport{}
 }
 
-type metadataReport struct {
-}
+type metadataReport struct{}
 
 func (metadataReport) StoreProviderMetadata(*identifier.MetadataIdentifier, string) error {
 	return nil

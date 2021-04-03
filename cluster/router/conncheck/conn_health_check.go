@@ -30,8 +30,7 @@ func init() {
 }
 
 // DefaultConnChecker is the default implementation of ConnChecker, which determines the health status of invoker conn
-type DefaultConnChecker struct {
-}
+type DefaultConnChecker struct{}
 
 // IsConnHealthy evaluates the healthy state on the given Invoker based on the number of successive bad request
 // and the current active request

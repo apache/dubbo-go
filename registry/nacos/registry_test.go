@@ -114,7 +114,6 @@ func TestNacosRegistry_Subscribe(t *testing.T) {
 	}
 	t.Logf("serviceEvent:%+v \n", serviceEvent)
 	assert.Regexp(t, ".*ServiceEvent{Action{add}.*", serviceEvent.String())
-
 }
 
 func TestNacosRegistry_Subscribe_del(t *testing.T) {
@@ -178,9 +177,11 @@ func TestNacosRegistry_Subscribe_del(t *testing.T) {
 	assert.Regexp(t, ".*ServiceEvent{Action{add}.*", serviceEvent2.String())
 
 	nacosReg := reg.(*nacosRegistry)
-	//deregister instance to mock instance offline
-	_, err = nacosReg.namingClient.DeregisterInstance(vo.DeregisterInstanceParam{Ip: "127.0.0.2", Port: 20000,
-		ServiceName: "providers:com.ikurento.user.UserProvider:2.0.0:guangzhou-idc"})
+	// deregister instance to mock instance offline
+	_, err = nacosReg.namingClient.DeregisterInstance(vo.DeregisterInstanceParam{
+		Ip: "127.0.0.2", Port: 20000,
+		ServiceName: "providers:com.ikurento.user.UserProvider:2.0.0:guangzhou-idc",
+	})
 	assert.NoError(t, err)
 
 	serviceEvent3, _ := listener.Next()

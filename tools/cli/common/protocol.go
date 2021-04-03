@@ -21,9 +21,7 @@ import (
 	"github.com/apache/dubbo-go/tools/cli/protocol"
 )
 
-var (
-	protocols = make(map[string]func() protocol.Protocol, 8)
-)
+var protocols = make(map[string]func() protocol.Protocol, 8)
 
 // SetProtocol sets the protocol extension with @name
 func SetProtocol(name string, v func() protocol.Protocol) {

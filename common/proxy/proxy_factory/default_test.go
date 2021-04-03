@@ -38,8 +38,7 @@ func TestGetProxy(t *testing.T) {
 	assert.NotNil(t, proxy)
 }
 
-type TestAsync struct {
-}
+type TestAsync struct{}
 
 func (u *TestAsync) CallBack(res common.CallbackResponse) {
 	fmt.Println("CallBack res:", res)

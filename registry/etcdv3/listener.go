@@ -51,7 +51,6 @@ func (l *dataListener) AddInterestedURL(url *common.URL) {
 
 // DataChange processes the data change event from registry center of etcd
 func (l *dataListener) DataChange(eventType remoting.Event) bool {
-
 	index := strings.Index(eventType.Path, "/providers/")
 	if index == -1 {
 		logger.Warnf("Listen with no url, event.path={%v}", eventType.Path)

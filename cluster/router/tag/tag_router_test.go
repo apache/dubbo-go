@@ -27,6 +27,7 @@ import (
 import (
 	"github.com/RoaringBitmap/roaring"
 	"github.com/dubbogo/go-zookeeper/zk"
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -43,7 +44,6 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/apache/dubbo-go/remoting"
-	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
 const (
@@ -72,9 +72,7 @@ const (
 	routerZk      = "zookeeper"
 )
 
-var (
-	zkFormat = "zookeeper://%s:%d"
-)
+var zkFormat = "zookeeper://%s:%d"
 
 // MockInvoker is only mock the Invoker to support test tagRouter
 type MockInvoker struct {
@@ -257,10 +255,10 @@ func TestRouteBeijingInvoker(t *testing.T) {
 
 type DynamicTagRouter struct {
 	suite.Suite
-	//rule *RouterRule
+	// rule *RouterRule
 
 	route       *tagRouter
-	zkClient    *zookeeper.ZookeeperClient
+	zkClient    *gxzookeeper.ZookeeperClient
 	testCluster *zk.TestCluster
 	invokers    []protocol.Invoker
 	url         *common.URL
@@ -299,7 +297,7 @@ tags:
   - name: tag3
     addresses: ["127.0.0.1:20003", "127.0.0.1:20004"]
 `
-	ts, z, _, err := zookeeper.NewMockZookeeperClient("test", 15*time.Second)
+	ts, z, _, err := gxzookeeper.NewMockZookeeperClient("test", 15*time.Second)
 	suite.NoError(err)
 	err = z.Create(routerPath)
 	suite.NoError(err)
@@ -334,8 +332,6 @@ tags:
 
 func (suite *DynamicTagRouter) TearDownTest() {
 	suite.zkClient.Close()
-	err := suite.testCluster.Stop()
-	suite.Nil(err)
 }
 
 func (suite *DynamicTagRouter) TestDynamicTagRouterSetByIPv4() {

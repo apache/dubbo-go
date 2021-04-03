@@ -24,24 +24,25 @@ import (
 )
 
 import (
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	"github.com/stretchr/testify/assert"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
 func Test_Register(t *testing.T) {
 	regURL, _ := common.NewURL("registry://127.0.0.1:1111", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
 	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithParamsValue("serviceid", "soa.mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 
-	ts, reg, _ := newMockZkRegistry(regURL)
+	ts, reg, err := newMockZkRegistry(regURL)
+	assert.NoError(t, err)
 	defer func() {
 		_ = ts.Stop()
 	}()
-	err := reg.Register(url)
+	err = reg.Register(url)
 	children, _ := reg.client.GetChildren("/dubbo/com.ikurento.user.UserProvider/providers")
 	assert.Regexp(t, ".*dubbo%3A%2F%2F127.0.0.1%3A20000%2Fcom.ikurento.user.UserProvider%3Fanyhost%3Dtrue%26cluster%3Dmock%26.*.serviceid%3Dsoa.mock", children)
 	assert.NoError(t, err)
@@ -80,7 +81,7 @@ func Test_Subscribe(t *testing.T) {
 	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 	ts, reg, _ := newMockZkRegistry(regURL)
 
-	//provider register
+	// provider register
 	err := reg.Register(url)
 	assert.NoError(t, err)
 
@@ -88,9 +89,9 @@ func Test_Subscribe(t *testing.T) {
 		return
 	}
 
-	//consumer register
+	// consumer register
 	regURL.SetParam(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
-	_, reg2, _ := newMockZkRegistry(regURL, zookeeper.WithTestCluster(ts))
+	_, reg2, _ := newMockZkRegistry(regURL, gxzookeeper.WithTestCluster(ts))
 
 	err = reg2.Register(url)
 	assert.Nil(t, err)
@@ -112,7 +113,7 @@ func Test_UnSubscribe(t *testing.T) {
 	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 	ts, reg, _ := newMockZkRegistry(regURL)
 
-	//provider register
+	// provider register
 	err := reg.Register(url)
 	assert.NoError(t, err)
 
@@ -120,9 +121,9 @@ func Test_UnSubscribe(t *testing.T) {
 		return
 	}
 
-	//consumer register
+	// consumer register
 	regURL.SetParam(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
-	_, reg2, _ := newMockZkRegistry(regURL, zookeeper.WithTestCluster(ts))
+	_, reg2, _ := newMockZkRegistry(regURL, gxzookeeper.WithTestCluster(ts))
 
 	err = reg2.Register(url)
 	assert.Nil(t, err)
@@ -158,7 +159,7 @@ func Test_ConsumerDestroy(t *testing.T) {
 	_, err = reg.DoSubscribe(url)
 	assert.NoError(t, err)
 
-	//listener.Close()
+	// listener.Close()
 	time.Sleep(1e9)
 	reg.Destroy()
 	assert.Equal(t, false, reg.IsAvailable())
@@ -177,7 +178,7 @@ func Test_ProviderDestroy(t *testing.T) {
 	err = reg.Register(url)
 	assert.Nil(t, err)
 
-	//listener.Close()
+	// listener.Close()
 	time.Sleep(1e9)
 	reg.Destroy()
 	assert.Equal(t, false, reg.IsAvailable())
