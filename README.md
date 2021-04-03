@@ -182,7 +182,7 @@ If you are willing to do some code contributions and document contributions to [
 
 ## Community
 
-If u want to communicate with our community, pls scan the following dubbobo Ding-Ding QR code or search our commnity DingDing group code 31363295.
+If u want to communicate with our community, pls scan the following dubbobo DingDing QR code or search our commnity DingDing group code 31363295.
 
 <div>
 <table>
