@@ -98,7 +98,6 @@ func NewClient(url *common.URL) (*Client, error) {
 
 	//consumer config client connectTimeout
 	connectTimeout := config.GetConsumerConfig().ConnectTimeout
-
 	dialOpts = append(dialOpts, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(connectTimeout),
 		grpc.WithUnaryInterceptor(
 			otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())),
