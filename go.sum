@@ -111,6 +111,7 @@ github.com/apache/dubbo-getty v1.3.10/go.mod h1:x6rraK01BL5C7jUM2fPl5KMkAxLVIx54
 github.com/apache/dubbo-getty v1.4.3 h1:PCKpryDasKOxwT5MBC6MIMO+0NLOaHF6Xco9YXQw7HI=
 github.com/apache/dubbo-getty v1.4.3/go.mod h1:ansXgKxxyhCOiQL29nO5ce1MDcEKmCyZuNR9oMs3hek=
 github.com/apache/dubbo-go v1.5.5/go.mod h1:KAty5L/vcHjh3qcTfC4R5Nfd0tkk7MLJnux/IQKfQLg=
+github.com/apache/dubbo-go v1.5.6-rc2/go.mod h1:wLJvPWbnrf6/bhoohBT404QK4t2JoNcckMw+/fJ9P+c=
 github.com/apache/dubbo-go-hessian2 v1.7.0/go.mod h1:7rEw9guWABQa6Aqb8HeZcsYPHsOS7XT1qtJvkmI6c5w=
 github.com/apache/dubbo-go-hessian2 v1.9.1 h1:ceSsU/9z/gv3hzUpl8GceEhQvF3i0BionfdHUGMmjHU=
 github.com/apache/dubbo-go-hessian2 v1.9.1/go.mod h1:xQUjE7F8PX49nm80kChFvepA/AvqAZ0oh/UaB6+6pBE=
@@ -248,6 +249,8 @@ github.com/dubbogo/net v0.0.2-0.20210326124702-e6a866993192 h1:CBEicrrVwR6u8ty+k
 github.com/dubbogo/net v0.0.2-0.20210326124702-e6a866993192/go.mod h1:B6/ka3g8VzcyrmdCH4VkHP1K0aHeI37FmclS+TCwIBU=
 github.com/dubbogo/triple v0.0.0-20210402135031-9aa541d21f6d h1:BhsqRMFaYFnIKtKnJSZsc9xb1tmmOeMUQD+vH73Hj3I=
 github.com/dubbogo/triple v0.0.0-20210402135031-9aa541d21f6d/go.mod h1:QEkkIVUHu506i2sdRWfzi/0MSc94+ahtqKMvh8nlwkk=
+github.com/dubbogo/triple v0.0.0-20210403061850-372f2dc47e02 h1:UBbWY1RWTTuNGUpQgOsvLxgGzNqms1DNEGJqwJ/LE/A=
+github.com/dubbogo/triple v0.0.0-20210403061850-372f2dc47e02/go.mod h1:ArB/FJCvy6DQXs8tW6LmNRtLaZuncGmDHqD/1JOAwsU=
 github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/dustin/go-humanize v1.0.0 h1:VSnTsYCnlFHaM2/igO1h6X3HA71jcobQuxemgkq4zYo=
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
