@@ -151,7 +151,6 @@ func TestNewProviderConfig(t *testing.T) {
 		WithProviderServices("UserProvider", serviceConfig),
 		WithProviderProtocol("dubbo", "dubbo", "20000"),
 		WithProviderRegistry("demoConsul", defaultConsulRegistry),
-		WithProviderRegistry("demoNacos", defaultNacosRegistry),
 	)
 
 	assert.NotNil(t, testProviderConfig.Services)
