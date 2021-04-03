@@ -20,8 +20,6 @@ package zookeeper
 import (
 	"strings"
 	"sync"
-
-	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 )
 
 import (
