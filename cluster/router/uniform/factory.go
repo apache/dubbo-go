@@ -21,6 +21,9 @@ import (
 	"github.com/apache/dubbo-go/cluster/router"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+)
+
+import (
 	v3router "github.com/dubbogo/v3router/pkg"
 )
 
