@@ -29,7 +29,6 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/cluster/router/chain"
-	_ "github.com/apache/dubbo-go/cluster/router/condition"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 )
@@ -52,17 +51,7 @@ func TestBuildRouterChain(t *testing.T) {
 	directory := NewBaseDirectory(regURL)
 	var err error
 	directory.routerChain, err = chain.NewRouterChain(regURL)
-	assert.Nil(t, err)
-	localIP := common.GetLocalIp()
-	rule := base64.URLEncoding.EncodeToString([]byte("true => " + " host = " + localIP))
-	routeURL := getRouteURL(rule, anyURL)
-	routeURL.AddParam(constant.INTERFACE_KEY, "mock-app")
-	routerURLs := make([]*common.URL, 0)
-	routerURLs = append(routerURLs, routeURL)
-	directory.SetRouters(routerURLs)
-	chain := directory.RouterChain()
-
-	assert.NotNil(t, chain)
+	assert.Error(t, err)
 }
 
 func getRouteURL(rule string, u *common.URL) *common.URL {

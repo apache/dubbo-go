@@ -23,7 +23,6 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/cluster/router"
-	"github.com/apache/dubbo-go/cluster/router/utils"
 	"github.com/apache/dubbo-go/protocol"
 )
 
@@ -48,7 +47,6 @@ type InvokerCache struct {
 func BuildCache(invokers []protocol.Invoker) *InvokerCache {
 	return &InvokerCache{
 		invokers:  invokers,
-		bitmap:    utils.ToBitmap(invokers),
 		pools:     make(map[string]router.AddrPool, 8),
 		metadatas: make(map[string]router.AddrMetadata, 8),
 	}

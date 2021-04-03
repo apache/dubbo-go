@@ -54,8 +54,10 @@ var (
 	// it should be used combine with double-check to avoid the race condition
 	configAccessMutex sync.Mutex
 
-	maxWait        = 3
-	confRouterFile string
+	maxWait                         = 3
+	confRouterFile                  string
+	uniformVirturlServiceConfigPath string
+	uniformDestRuleConfigPath       string
 )
 
 // loaded consumer & provider config from xxx.yml, and log config from xxx.xml
@@ -70,6 +72,8 @@ func init() {
 	fs.StringVar(&confConFile, "conConf", os.Getenv(constant.CONF_CONSUMER_FILE_PATH), "default client config path")
 	fs.StringVar(&confProFile, "proConf", os.Getenv(constant.CONF_PROVIDER_FILE_PATH), "default server config path")
 	fs.StringVar(&confRouterFile, "rouConf", os.Getenv(constant.CONF_ROUTER_FILE_PATH), "default router config path")
+	fs.StringVar(&uniformVirturlServiceConfigPath, "vsConf", os.Getenv(constant.CONF_VIRTUAL_SERVICE_FILE_PATH), "default virtual service of uniform router config path")
+	fs.StringVar(&uniformDestRuleConfigPath, "drConf", os.Getenv(constant.CONF_DEST_RULE_FILE_PATH), "default destination rule of uniform router config path")
 	fs.Parse(os.Args[1:])
 	for len(fs.Args()) != 0 {
 		fs.Parse(fs.Args()[1:])
@@ -378,9 +382,9 @@ func selectMetadataServiceExportedURL() *common.URL {
 }
 
 func initRouter() {
-	if confRouterFile != "" {
-		if err := RouterInit(confRouterFile); err != nil {
-			log.Printf("[routerConfig init] %#v", err)
+	if uniformDestRuleConfigPath != "" && uniformVirturlServiceConfigPath != "" {
+		if err := RouterInit(uniformVirturlServiceConfigPath, uniformDestRuleConfigPath); err != nil {
+			logger.Warnf("[routerConfig init] %#v", err)
 		}
 	}
 }

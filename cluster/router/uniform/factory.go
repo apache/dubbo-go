@@ -15,60 +15,32 @@
  * limitations under the License.
  */
 
-package healthcheck
+package uniform
 
 import (
-	"context"
-	"testing"
+	"github.com/apache/dubbo-go/cluster/router"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
 )
 
 import (
-	"github.com/stretchr/testify/assert"
+	v3router "github.com/dubbogo/v3router/pkg"
 )
 
-import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/protocol"
-)
-
-// nolint
-type MockInvoker struct {
-	url *common.URL
+func init() {
+	extension.SetRouterFactory(constant.UniformRouterName, newUniformRouterFactory)
 }
 
-// nolint
-func NewMockInvoker(url *common.URL) *MockInvoker {
-	return &MockInvoker{
-		url: url,
-	}
+// UniformRouteFactory is uniform router's factory
+type UniformRouteFactory struct {
 }
 
-// nolint
-func (bi *MockInvoker) GetUrl() *common.URL {
-	return bi.url
+// newUniformRouterFactory construct a new ConnCheckRouteFactory
+func newUniformRouterFactory() router.PriorityRouterFactory {
+	return &UniformRouteFactory{}
 }
 
-// nolint
-func (bi *MockInvoker) IsAvailable() bool {
-	return true
-}
-
-// nolint
-func (bi *MockInvoker) IsDestroyed() bool {
-	return true
-}
-
-// nolint
-func (bi *MockInvoker) Invoke(_ context.Context, _ protocol.Invocation) protocol.Result {
-	return nil
-}
-
-// nolint
-func (bi *MockInvoker) Destroy() {
-}
-
-// nolint
-func TestHealthCheckRouteFactory(t *testing.T) {
-	factory := newHealthCheckRouteFactory()
-	assert.NotNil(t, factory)
+// NewPriorityRouter construct a new PriorityRouter via url
+func (f *UniformRouteFactory) NewPriorityRouter(vsConfigBytes, distConfigBytes []byte, notify chan struct{}) (router.PriorityRouter, error) {
+	return v3router.NewUniformRouterChain(vsConfigBytes, distConfigBytes, notify)
 }
