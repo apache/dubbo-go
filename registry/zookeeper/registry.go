@@ -79,6 +79,7 @@ func newZkRegistry(url *common.URL) (registry.Registry, error) {
 		return nil, err
 	}
 
+	r.WaitGroup().Add(1) //zk client start successful, then wg +1
 	go zookeeper.HandleClientRestart(r)
 
 	r.listener = zookeeper.NewZkEventListener(r.client)
