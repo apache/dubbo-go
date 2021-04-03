@@ -19,16 +19,8 @@ package config
 
 import (
 	"github.com/apache/dubbo-go/cluster/router/chain"
-	gxset "github.com/dubbogo/gost/container/set"
-)
-
-import (
-	//"github.com/apache/dubbo-go/common/extension"
-	//"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/yaml"
 )
-
-var routerURLSet = gxset.NewSet()
 
 // LocalRouterRules defines the local router config structure
 type LocalRouterRules struct {
@@ -47,9 +39,4 @@ func RouterInit(vsConfigPath, drConfigPath string) error {
 	}
 	chain.SetVSAndDRConfigByte(vsBytes, drBytes)
 	return nil
-}
-
-// GetRouterURLSet exposes the routerURLSet
-func GetRouterURLSet() *gxset.HashSet {
-	return routerURLSet
 }

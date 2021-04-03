@@ -54,16 +54,6 @@ func TestSubscribe(t *testing.T) {
 	assert.Len(t, registryDirectory.cacheInvokers, 3)
 }
 
-////Deprecated! not support delete
-//func TestSubscribe_Delete(t *testing.T) {
-//	registryDirectory, mockRegistry := normalRegistryDir()
-//	time.Sleep(1e9)
-//	assert.Len(t, registryDirectory.cacheInvokers, 3)
-//	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeDel, Service: *event.NewURLWithOptions(event.WithPath("TEST0"), event.WithProtocol("dubbo"))})
-//	time.Sleep(1e9)
-//	assert.Len(t, registryDirectory.cacheInvokers, 2)
-//}
-
 func TestSubscribe_InvalidUrl(t *testing.T) {
 	url, _ := common.NewURL("mock://127.0.0.1:1111")
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
