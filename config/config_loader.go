@@ -384,7 +384,7 @@ func selectMetadataServiceExportedURL() *common.URL {
 func initRouter() {
 	if uniformDestRuleConfigPath != "" && uniformVirturlServiceConfigPath != "" {
 		if err := RouterInit(uniformVirturlServiceConfigPath, uniformDestRuleConfigPath); err != nil {
-			log.Printf("[routerConfig init] %#v", err)
+			logger.Warnf("[routerConfig init] %#v", err)
 		}
 	}
 }

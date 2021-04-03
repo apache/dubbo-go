@@ -37,10 +37,6 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-const (
-	timeInterval = 5 * time.Second
-)
-
 var (
 	virtualServiceConfigByte  []byte
 	destinationRuleConfigByte []byte
@@ -155,7 +151,7 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 
 	for key, routerFactory := range routerFactories {
 		if virtualServiceConfigByte == nil || destinationRuleConfigByte == nil {
-			logger.Errorf("virtual Service Config or destinationRule Confi Byte may be empty, pls check your CONF_VIRTUAL_SERVICE_FILE_PATH and CONF_DEST_RULE_FILE_PATH env is correctly point to your yaml file\n")
+			logger.Warnf("virtual Service Config or destinationRule Confi Byte may be empty, pls check your CONF_VIRTUAL_SERVICE_FILE_PATH and CONF_DEST_RULE_FILE_PATH env is correctly point to your yaml file\n")
 		}
 		r, err := routerFactory().NewPriorityRouter(virtualServiceConfigByte, destinationRuleConfigByte, chain.notify)
 		if r == nil || err != nil {

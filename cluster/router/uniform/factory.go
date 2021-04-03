@@ -31,17 +31,16 @@ func init() {
 	extension.SetRouterFactory(constant.UniformRouterName, newUniformRouterFactory)
 }
 
-// ConnCheckRouteFactory is the factory to create conn check router, it aims at filter ip with unhealthy status
-// the unhealthy status is storied in protocol/rpc_status.go with sync.Map
+// UniformRouteFactory is uniform router's factory
 type UniformRouteFactory struct {
 }
 
-// newConnCheckRouteFactory construct a new ConnCheckRouteFactory
+// newUniformRouterFactory construct a new ConnCheckRouteFactory
 func newUniformRouterFactory() router.PriorityRouterFactory {
 	return &UniformRouteFactory{}
 }
 
-// NewPriorityRouter construct a new NewConnCheckRouter via url
+// NewPriorityRouter construct a new PriorityRouter via url
 func (f *UniformRouteFactory) NewPriorityRouter(vsConfigBytes, distConfigBytes []byte, notify chan struct{}) (router.PriorityRouter, error) {
 	return v3router.NewUniformRouterChain(vsConfigBytes, distConfigBytes, notify)
 }
