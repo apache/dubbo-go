@@ -18,7 +18,12 @@
 package registry
 
 import (
+	"encoding/json"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
 	gxsort "github.com/dubbogo/gost/sort"
+	"strconv"
 )
 
 // ServiceInstance is the model class of an instance of a service, which is used for service registration and discovery.
@@ -44,18 +49,38 @@ type ServiceInstance interface {
 
 	// GetMetadata will return the metadata
 	GetMetadata() map[string]string
+
+	// ToURLs
+	ToURLs() []*common.URL
+
+	// GetEndPoints
+	GetEndPoints() []*Endpoint
+
+	// Copy
+	Copy(endpoint *Endpoint) ServiceInstance
+
+	// GetAddress
+	GetAddress() string
+}
+
+// nolint
+type Endpoint struct {
+	Port     int    `json:"port, omitempty"`
+	Protocol string `json:"protocol, omitempty"`
 }
 
 // DefaultServiceInstance the default implementation of ServiceInstance
 // or change the ServiceInstance to be struct???
 type DefaultServiceInstance struct {
-	Id          string
-	ServiceName string
-	Host        string
-	Port        int
-	Enable      bool
-	Healthy     bool
-	Metadata    map[string]string
+	Id              string
+	ServiceName     string
+	Host            string
+	Port            int
+	Enable          bool
+	Healthy         bool
+	Metadata        map[string]string
+	ServiceMetadata *common.MetadataInfo
+	Address         string
 }
 
 // GetId will return this instance's id. It should be unique.
@@ -86,6 +111,59 @@ func (d *DefaultServiceInstance) IsEnable() bool {
 // IsHealthy will return the value represent the instance whether healthy or not
 func (d *DefaultServiceInstance) IsHealthy() bool {
 	return d.Healthy
+}
+
+func (d *DefaultServiceInstance) GetAddress() string {
+	if d.Address != "" {
+		return d.Address
+	}
+	if d.Port <= 0 {
+		d.Address = d.Host
+	} else {
+		d.Address = d.Host + ":" + strconv.Itoa(d.Port)
+	}
+	return d.Address
+}
+
+// ToURLs
+func (d *DefaultServiceInstance) ToURLs() []*common.URL {
+	urls := make([]*common.URL, 0, 8)
+	for _, service := range d.ServiceMetadata.Services {
+		url := common.NewURLWithOptions(common.WithProtocol(service.Protocol),
+			common.WithIp(d.Host), common.WithPort(strconv.Itoa(d.Port)),
+			common.WithMethods(service.GetMethods()), common.WithParams(service.GetParams()))
+		urls = append(urls, url)
+	}
+	return urls
+}
+
+func (d *DefaultServiceInstance) GetEndPoints() []*Endpoint {
+	rawEndpoints := d.Metadata[constant.SERVICE_INSTANCE_ENDPOINTS]
+	if len(rawEndpoints) == 0 {
+		return nil
+	}
+	var endpoints []*Endpoint
+	err := json.Unmarshal([]byte(rawEndpoints), &endpoints)
+	if err != nil {
+		logger.Errorf("json umarshal rawEndpoints[%s] catch error:%s", rawEndpoints, err.Error())
+		return nil
+	}
+	return endpoints
+}
+
+func (d *DefaultServiceInstance) Copy(endpoint *Endpoint) ServiceInstance {
+	dn := &DefaultServiceInstance{
+		Id:              d.Id,
+		ServiceName:     d.ServiceName,
+		Host:            d.Host,
+		Port:            endpoint.Port,
+		Enable:          d.Enable,
+		Healthy:         d.Healthy,
+		Metadata:        d.Metadata,
+		ServiceMetadata: d.ServiceMetadata,
+	}
+	dn.Id = d.GetAddress()
+	return dn
 }
 
 // GetMetadata will return the metadata, it will never return nil

@@ -62,6 +62,12 @@ type MetadataService interface {
 	RefreshMetadata(exportedRevision string, subscribedRevision string) (bool, error)
 	// Version will return the metadata service version
 	Version() (string, error)
+
+	GetMetadataInfo(revision string) *common.MetadataInfo
+
+	GetExportedServiceURLs() []*common.URL
+
+	GetMetadataServiceURL() *common.URL
 }
 
 // BaseMetadataService is used for the event logic for struct who will implement interface MetadataService

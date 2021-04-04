@@ -18,6 +18,9 @@
 package zookeeper
 
 import (
+	"encoding/json"
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/dubbogo/go-zookeeper/zk"
 	"strings"
 	"time"
 )
@@ -48,6 +51,34 @@ func init() {
 type zookeeperMetadataReport struct {
 	client  *zookeeper.ZookeeperClient
 	rootDir string
+}
+
+func (m *zookeeperMetadataReport) GetAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
+	k := m.rootDir + metadataIdentifier.GetFilePathKey()
+	data, _, err := m.client.GetContent(k)
+	if err != nil {
+		return nil, err
+	}
+	var metadataInfo common.MetadataInfo
+	err = json.Unmarshal(data, &metadataInfo)
+	if err != nil {
+		return nil, err
+	}
+	return &metadataInfo, nil
+}
+
+func (m *zookeeperMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier, info *common.MetadataInfo) error {
+	k := m.rootDir + metadataIdentifier.GetFilePathKey()
+	data, err := json.Marshal(metadataIdentifier)
+	if err != nil {
+		return err
+	}
+	err = m.client.CreateTempWithValue(k, data)
+	if err == zk.ErrNodeExists {
+		logger.Debugf("Try to create the node data failed. In most cases, it's not a problem. ")
+		return nil
+	}
+	return err
 }
 
 // StoreProviderMetadata stores the metadata.

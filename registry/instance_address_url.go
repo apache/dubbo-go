@@ -15,16 +15,21 @@
  * limitations under the License.
  */
 
-package remote
+package registry
 
-import (
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/metadata/service"
-)
+import "github.com/apache/dubbo-go/common"
 
-func init() {
-	factory := service.NewBaseMetadataServiceProxyFactory(newMetadataServiceProxy)
-	extension.SetMetadataServiceProxyFactory(remote, func() service.MetadataServiceProxyFactory {
-		return factory
-	})
+type InstanceAddressURL struct {
+	common.URL
+	instance     *ServiceInstance
+	metadataInfo *common.MetadataInfo
+}
+
+func NewInstanceAddressURL(instance *ServiceInstance, info *common.MetadataInfo) *common.URL {
+
+	a := &InstanceAddressURL{
+		instance:     instance,
+		metadataInfo: info,
+	}
+	return &a.URL
 }

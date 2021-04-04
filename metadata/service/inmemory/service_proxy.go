@@ -70,6 +70,15 @@ func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 	return append(ret, *urlStrs...), nil
 }
 
+func (m *MetadataServiceProxy) GetExportedServiceURLs() []*common.URL {
+	logger.Error("you should never invoke this implementation")
+	return nil
+}
+
+func (m *MetadataServiceProxy) GetMetadataServiceURL() *common.URL {
+	return nil
+}
+
 func (m *MetadataServiceProxy) MethodMapper() map[string]string {
 	return map[string]string{}
 }
@@ -132,4 +141,9 @@ func (m *MetadataServiceProxy) RefreshMetadata(exportedRevision string, subscrib
 func (m *MetadataServiceProxy) Version() (string, error) {
 	logger.Error("you should never invoke this implementation")
 	return "", nil
+}
+
+func (m *MetadataServiceProxy) GetMetadataInfo(revision string) *common.MetadataInfo {
+	logger.Error("you should never invoke this implementation")
+	return nil
 }

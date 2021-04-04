@@ -370,59 +370,61 @@ func (csd *consulServiceDiscovery) GetRequestInstances(serviceNames []string, of
 }
 
 func (csd *consulServiceDiscovery) AddListener(listener *registry.ServiceInstancesChangedListener) error {
-
-	params := make(map[string]interface{}, 8)
-	params[watch_type] = watch_type_service
-	params[watch_service] = listener.ServiceName
-	params[watch_passingonly] = watch_passingonly_true
-	plan, err := watch.Parse(params)
-	if err != nil {
-		logger.Errorf("add listener for service %s,error:%v", listener.ServiceName, err)
-		return err
-	}
-
-	plan.Handler = func(idx uint64, raw interface{}) {
-		services, ok := raw.([]*consul.ServiceEntry)
-		if !ok {
-			err = perrors.New("handler get non ServiceEntry type parameter")
-			return
-		}
-		instances := make([]registry.ServiceInstance, 0, len(services))
-		for _, ins := range services {
-			metadata := ins.Service.Meta
-
-			// enable status
-			enableStr := metadata[enable]
-			delete(metadata, enable)
-			enable, _ := strconv.ParseBool(enableStr)
-
-			// health status
-			status := ins.Checks.AggregatedStatus()
-			healthy := false
-			if status == consul.HealthPassing {
-				healthy = true
-			}
-			instances = append(instances, &registry.DefaultServiceInstance{
-				Id:          ins.Service.ID,
-				ServiceName: ins.Service.Service,
-				Host:        ins.Service.Address,
-				Port:        ins.Service.Port,
-				Enable:      enable,
-				Healthy:     healthy,
-				Metadata:    metadata,
-			})
-		}
-		e := csd.DispatchEventForInstances(listener.ServiceName, instances)
-		if e != nil {
-			logger.Errorf("Dispatching event got exception, service name: %s, err: %v", listener.ServiceName, err)
-		}
-	}
-	go func() {
-		err = plan.RunWithConfig(csd.Config.Address, csd.Config)
+	for _, v := range listener.ServiceNames.Values() {
+		serviceName := v.(string)
+		params := make(map[string]interface{}, 8)
+		params[watch_type] = watch_type_service
+		params[watch_service] = serviceName
+		params[watch_passingonly] = watch_passingonly_true
+		plan, err := watch.Parse(params)
 		if err != nil {
-			logger.Error("consul plan run failure!error:%v", err)
+			logger.Errorf("add listener for service %s,error:%v", serviceName, err)
+			return err
 		}
-	}()
+
+		plan.Handler = func(idx uint64, raw interface{}) {
+			services, ok := raw.([]*consul.ServiceEntry)
+			if !ok {
+				err = perrors.New("handler get non ServiceEntry type parameter")
+				return
+			}
+			instances := make([]registry.ServiceInstance, 0, len(services))
+			for _, ins := range services {
+				metadata := ins.Service.Meta
+
+				// enable status
+				enableStr := metadata[enable]
+				delete(metadata, enable)
+				enable, _ := strconv.ParseBool(enableStr)
+
+				// health status
+				status := ins.Checks.AggregatedStatus()
+				healthy := false
+				if status == consul.HealthPassing {
+					healthy = true
+				}
+				instances = append(instances, &registry.DefaultServiceInstance{
+					Id:          ins.Service.ID,
+					ServiceName: ins.Service.Service,
+					Host:        ins.Service.Address,
+					Port:        ins.Service.Port,
+					Enable:      enable,
+					Healthy:     healthy,
+					Metadata:    metadata,
+				})
+			}
+			e := csd.DispatchEventForInstances(serviceName, instances)
+			if e != nil {
+				logger.Errorf("Dispatching event got exception, service name: %s, err: %v", serviceName, err)
+			}
+		}
+		go func() {
+			err = plan.RunWithConfig(csd.Config.Address, csd.Config)
+			if err != nil {
+				logger.Error("consul plan run failure!error:%v", err)
+			}
+		}()
+	}
 	return nil
 }
 

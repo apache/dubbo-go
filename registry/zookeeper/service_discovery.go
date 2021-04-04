@@ -270,8 +270,15 @@ func (zksd *zookeeperServiceDiscovery) GetRequestInstances(serviceNames []string
 func (zksd *zookeeperServiceDiscovery) AddListener(listener *registry.ServiceInstancesChangedListener) error {
 	zksd.listenLock.Lock()
 	defer zksd.listenLock.Unlock()
-	zksd.listenNames = append(zksd.listenNames, listener.ServiceName)
-	zksd.csd.ListenServiceEvent(listener.ServiceName, zksd)
+	for _, t := range listener.ServiceNames.Values() {
+		serviceName, ok := t.(string)
+		if !ok {
+			logger.Errorf("service name error %s", t)
+			continue
+		}
+		zksd.listenNames = append(zksd.listenNames, serviceName)
+		zksd.csd.ListenServiceEvent(serviceName, zksd)
+	}
 	return nil
 }
 

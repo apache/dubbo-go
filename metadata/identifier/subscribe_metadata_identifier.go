@@ -23,6 +23,21 @@ type SubscriberMetadataIdentifier struct {
 	MetadataIdentifier
 }
 
+func NewSubscriberMetadataIdentifier(application string, revision string) *SubscriberMetadataIdentifier {
+	return &SubscriberMetadataIdentifier{
+		Revision: revision,
+		MetadataIdentifier: MetadataIdentifier{
+			Application: application,
+			BaseMetadataIdentifier: BaseMetadataIdentifier{
+				ServiceInterface: "",
+				Version:          "",
+				Group:            "",
+				Side:             "",
+			},
+		},
+	}
+}
+
 // GetIdentifierKey returns string that format is service:Version:Group:Side:Revision
 func (mdi *SubscriberMetadataIdentifier) GetIdentifierKey() string {
 	return mdi.BaseMetadataIdentifier.getIdentifierKey(mdi.Revision)

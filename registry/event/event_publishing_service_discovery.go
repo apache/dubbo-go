@@ -18,6 +18,7 @@
 package event
 
 import (
+	"github.com/apache/dubbo-go/metadata/service/inmemory"
 	gxset "github.com/dubbogo/gost/container/set"
 	gxpage "github.com/dubbogo/gost/hash/page"
 )
@@ -25,7 +26,6 @@ import (
 import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/observer"
-	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/metadata/service"
 	"github.com/apache/dubbo-go/registry"
 )
@@ -153,5 +153,5 @@ func (epsd *EventPublishingServiceDiscovery) executeWithEvents(beforeEvent obser
 
 // getMetadataService returns metadata service instance
 func getMetadataService() (service.MetadataService, error) {
-	return extension.GetMetadataService(config.GetApplicationConfig().MetadataType)
+	return inmemory.GetInMemoryMetadataService()
 }

@@ -18,6 +18,7 @@
 package remote
 
 import (
+	"github.com/apache/dubbo-go/registry"
 	"sync"
 )
 
@@ -28,13 +29,10 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/metadata/definition"
 	"github.com/apache/dubbo-go/metadata/identifier"
 	"github.com/apache/dubbo-go/metadata/report/delegate"
-	"github.com/apache/dubbo-go/metadata/service"
 	"github.com/apache/dubbo-go/metadata/service/inmemory"
 )
 
@@ -44,14 +42,9 @@ const (
 	remote  = "remote"
 )
 
-func init() {
-	extension.SetMetadataService(remote, newMetadataService)
-}
-
 // MetadataService is a implement of metadata service which will delegate the remote metadata report
 // This is singleton
-type MetadataService struct {
-	service.BaseMetadataService
+type RemoteMetadataService struct {
 	inMemoryMetadataService *inmemory.MetadataService
 	exportedRevision        atomic.String
 	subscribedRevision      atomic.String
@@ -60,11 +53,11 @@ type MetadataService struct {
 
 var (
 	metadataServiceOnce     sync.Once
-	metadataServiceInstance *MetadataService
+	metadataServiceInstance *RemoteMetadataService
 )
 
-// newMetadataService will create a new remote MetadataService instance
-func newMetadataService() (service.MetadataService, error) {
+// GetRemoteMetadataService will create a new remote MetadataService instance
+func GetRemoteMetadataService() (*RemoteMetadataService, error) {
 	var err error
 	metadataServiceOnce.Do(func() {
 		var mr *delegate.MetadataReport
@@ -73,9 +66,8 @@ func newMetadataService() (service.MetadataService, error) {
 			return
 		}
 		// it will never return error
-		inms, _ := inmemory.NewMetadataService()
-		metadataServiceInstance = &MetadataService{
-			BaseMetadataService:     service.NewBaseMetadataService(config.GetApplicationConfig().Name),
+		inms, _ := inmemory.GetInMemoryMetadataService()
+		metadataServiceInstance = &RemoteMetadataService{
 			inMemoryMetadataService: inms.(*inmemory.MetadataService),
 			delegateReport:          mr,
 		}
@@ -83,37 +75,30 @@ func newMetadataService() (service.MetadataService, error) {
 	return metadataServiceInstance, err
 }
 
-// setInMemoryMetadataService will replace the in memory metadata service by the specific param
-func (mts *MetadataService) setInMemoryMetadataService(metadata *inmemory.MetadataService) {
-	mts.inMemoryMetadataService = metadata
+// publishMetadata
+func (mts *RemoteMetadataService) PublishMetadata(service string) {
+	info := mts.inMemoryMetadataService.GetMetadataInfo("")
+	if info.HasReported() {
+		return
+	}
+	id := identifier.NewSubscriberMetadataIdentifier(service, info.CalAndGetRevision())
+	err := mts.delegateReport.PublishAppMetadata(id, info)
+	if err != nil {
+		logger.Errorf("Publishing metadata to error[%v]", err)
+		return
+	}
+	info.MarkReported()
 }
 
-// ExportURL will be implemented by in memory service
-func (mts *MetadataService) ExportURL(url *common.URL) (bool, error) {
-	return mts.inMemoryMetadataService.ExportURL(url)
-}
-
-// UnexportURL remove @url's metadata
-func (mts *MetadataService) UnexportURL(url *common.URL) error {
-	smi := identifier.NewServiceMetadataIdentifier(url)
-	smi.Revision = mts.exportedRevision.Load()
-	return mts.delegateReport.RemoveServiceMetadata(smi)
-}
-
-// SubscribeURL will be implemented by in memory service
-func (mts *MetadataService) SubscribeURL(url *common.URL) (bool, error) {
-	return mts.inMemoryMetadataService.SubscribeURL(url)
-}
-
-// UnsubscribeURL will be implemented by in memory service
-func (mts *MetadataService) UnsubscribeURL(url *common.URL) error {
-	// TODO remove call self.
-	return nil
-	//return mts.UnsubscribeURL(url)
+// publishMetadata
+func (mts *RemoteMetadataService) GetMetadata(instance registry.ServiceInstance) (*common.MetadataInfo, error) {
+	revision := instance.GetMetadata()[constant.EXPORTED_SERVICES_REVISION_PROPERTY_NAME]
+	id := identifier.NewSubscriberMetadataIdentifier(instance.GetServiceName(), revision)
+	return mts.delegateReport.GetAppMetadata(id)
 }
 
 // PublishServiceDefinition will call remote metadata's StoreProviderMetadata to store url info and service definition
-func (mts *MetadataService) PublishServiceDefinition(url *common.URL) error {
+func (mts *RemoteMetadataService) PublishServiceDefinition(url *common.URL) error {
 	interfaceName := url.GetParam(constant.INTERFACE_KEY, "")
 	isGeneric := url.GetParamBool(constant.GENERIC_KEY, false)
 	if common.RoleType(common.PROVIDER).Role() == url.GetParam(constant.SIDE_KEY, "") {
@@ -154,75 +139,21 @@ func (mts *MetadataService) PublishServiceDefinition(url *common.URL) error {
 }
 
 // GetExportedURLs will be implemented by in memory service
-func (mts *MetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]interface{}, error) {
+func (mts *RemoteMetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]interface{}, error) {
 	return mts.inMemoryMetadataService.GetExportedURLs(serviceInterface, group, version, protocol)
 }
 
 // GetSubscribedURLs will be implemented by in memory service
-func (mts *MetadataService) GetSubscribedURLs() ([]*common.URL, error) {
+func (mts *RemoteMetadataService) GetSubscribedURLs() ([]*common.URL, error) {
 	return mts.inMemoryMetadataService.GetSubscribedURLs()
 }
 
 // GetServiceDefinition will be implemented by in memory service
-func (mts *MetadataService) GetServiceDefinition(interfaceName string, group string, version string) (string, error) {
+func (mts *RemoteMetadataService) GetServiceDefinition(interfaceName string, group string, version string) (string, error) {
 	return mts.inMemoryMetadataService.GetServiceDefinition(interfaceName, group, version)
 }
 
 // GetServiceDefinitionByServiceKey will be implemented by in memory service
-func (mts *MetadataService) GetServiceDefinitionByServiceKey(serviceKey string) (string, error) {
+func (mts *RemoteMetadataService) GetServiceDefinitionByServiceKey(serviceKey string) (string, error) {
 	return mts.inMemoryMetadataService.GetServiceDefinitionByServiceKey(serviceKey)
-}
-
-// RefreshMetadata will refresh the exported & subscribed metadata to remote metadata report from the inmemory metadata service
-func (mts *MetadataService) RefreshMetadata(exportedRevision string, subscribedRevision string) (bool, error) {
-	if len(exportedRevision) != 0 && exportedRevision != mts.exportedRevision.Load() {
-		mts.exportedRevision.Store(exportedRevision)
-		urls, err := mts.inMemoryMetadataService.GetExportedURLs(constant.ANY_VALUE, "", "", "")
-		if err != nil {
-			logger.Errorf("Error occur when execute remote.MetadataService.RefreshMetadata, error message is %+v", err)
-			return false, err
-		}
-		logger.Infof("urls length = %v", len(urls))
-		for _, ui := range urls {
-
-			u, err := common.NewURL(ui.(string))
-			if err != nil {
-				logger.Errorf("this is not valid url string: %s ", ui.(string))
-				continue
-			}
-			id := identifier.NewServiceMetadataIdentifier(u)
-			id.Revision = mts.exportedRevision.Load()
-			if err := mts.delegateReport.SaveServiceMetadata(id, u); err != nil {
-				logger.Errorf("Error occur when execute remote.MetadataService.RefreshMetadata, error message is %+v", err)
-				return false, err
-			}
-		}
-	}
-
-	if len(subscribedRevision) != 0 && subscribedRevision != mts.subscribedRevision.Load() {
-		mts.subscribedRevision.Store(subscribedRevision)
-		urls, err := mts.inMemoryMetadataService.GetSubscribedURLs()
-		if err != nil {
-			logger.Errorf("Error occur when execute remote.MetadataService.RefreshMetadata, error message is %v+", err)
-			return false, err
-		}
-		if len(urls) > 0 {
-			id := &identifier.SubscriberMetadataIdentifier{
-				MetadataIdentifier: identifier.MetadataIdentifier{
-					Application: config.GetApplicationConfig().Name,
-				},
-				Revision: subscribedRevision,
-			}
-			if err := mts.delegateReport.SaveSubscribedData(id, urls); err != nil {
-				logger.Errorf("Error occur when execute remote.MetadataService.RefreshMetadata, error message is %+v", err)
-				return false, err
-			}
-		}
-	}
-	return true, nil
-}
-
-// Version will return the remote service version
-func (MetadataService) Version() (string, error) {
-	return version, nil
 }
