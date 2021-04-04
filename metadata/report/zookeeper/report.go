@@ -19,8 +19,6 @@ package zookeeper
 
 import (
 	"encoding/json"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/dubbogo/go-zookeeper/zk"
 	"strings"
 	"time"
 )
@@ -29,10 +27,12 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/metadata/identifier"
 	"github.com/apache/dubbo-go/metadata/report"
 	"github.com/apache/dubbo-go/metadata/report/factory"
 	"github.com/apache/dubbo-go/remoting/zookeeper"
+	"github.com/dubbogo/go-zookeeper/zk"
 )
 
 var (

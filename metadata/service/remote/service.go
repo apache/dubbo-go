@@ -137,23 +137,3 @@ func (mts *RemoteMetadataService) PublishServiceDefinition(url *common.URL) erro
 
 	return nil
 }
-
-// GetExportedURLs will be implemented by in memory service
-func (mts *RemoteMetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]interface{}, error) {
-	return mts.inMemoryMetadataService.GetExportedURLs(serviceInterface, group, version, protocol)
-}
-
-// GetSubscribedURLs will be implemented by in memory service
-func (mts *RemoteMetadataService) GetSubscribedURLs() ([]*common.URL, error) {
-	return mts.inMemoryMetadataService.GetSubscribedURLs()
-}
-
-// GetServiceDefinition will be implemented by in memory service
-func (mts *RemoteMetadataService) GetServiceDefinition(interfaceName string, group string, version string) (string, error) {
-	return mts.inMemoryMetadataService.GetServiceDefinition(interfaceName, group, version)
-}
-
-// GetServiceDefinitionByServiceKey will be implemented by in memory service
-func (mts *RemoteMetadataService) GetServiceDefinitionByServiceKey(serviceKey string) (string, error) {
-	return mts.inMemoryMetadataService.GetServiceDefinitionByServiceKey(serviceKey)
-}

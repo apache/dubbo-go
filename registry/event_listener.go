@@ -18,18 +18,21 @@
 package registry
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/metadata/service/inmemory"
-	"github.com/apache/dubbo-go/metadata/service/remote"
-	"github.com/apache/dubbo-go/remoting"
-	gxset "github.com/dubbogo/gost/container/set"
 	"reflect"
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/observer"
+	"github.com/apache/dubbo-go/metadata/service/inmemory"
+	"github.com/apache/dubbo-go/metadata/service/remote"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 // The Service Discovery Changed  Event Listener

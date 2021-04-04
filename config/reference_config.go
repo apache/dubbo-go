@@ -36,6 +36,7 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/proxy"
+	"github.com/apache/dubbo-go/metadata/service/remote"
 	"github.com/apache/dubbo-go/protocol"
 )
 
@@ -259,7 +260,7 @@ func (c *ReferenceConfig) GenericLoad(id string) {
 }
 
 func publishConsumerDefinition(url *common.URL) {
-	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
+	if remoteMetadataService, err := remote.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
 		remoteMetadataService.PublishServiceDefinition(url)
 	}
 }
