@@ -83,7 +83,7 @@ func createProxy() service.MetadataService {
 	prepareTest()
 
 	ins := &registry.DefaultServiceInstance{
-		Id:          "test-id",
+		ID:          "test-id",
 		ServiceName: "com.dubbo",
 		Host:        "localhost",
 		Port:        8080,
@@ -110,34 +110,34 @@ func (m *mockMetadataReportFactory) CreateMetadataReport(*common.URL) report.Met
 
 type mockMetadataReport struct{}
 
-func (m mockMetadataReport) StoreProviderMetadata(*identifier.MetadataIdentifier, string) error {
+func (m mockMetadataReport) StoreProviderMetadata(*identifier.MetadataIDentifier, string) error {
 	panic("implement me")
 }
 
-func (m mockMetadataReport) StoreConsumerMetadata(*identifier.MetadataIdentifier, string) error {
+func (m mockMetadataReport) StoreConsumerMetadata(*identifier.MetadataIDentifier, string) error {
 	panic("implement me")
 }
 
-func (m mockMetadataReport) SaveServiceMetadata(*identifier.ServiceMetadataIdentifier, *common.URL) error {
+func (m mockMetadataReport) SaveServiceMetadata(*identifier.ServiceMetadataIDentifier, *common.URL) error {
 	return nil
 }
 
-func (m mockMetadataReport) RemoveServiceMetadata(*identifier.ServiceMetadataIdentifier) error {
+func (m mockMetadataReport) RemoveServiceMetadata(*identifier.ServiceMetadataIDentifier) error {
 	panic("implement me")
 }
 
-func (m mockMetadataReport) GetExportedURLs(*identifier.ServiceMetadataIdentifier) ([]string, error) {
+func (m mockMetadataReport) GetExportedURLs(*identifier.ServiceMetadataIDentifier) ([]string, error) {
 	return []string{"mock://localhost1", "mock://localhost2"}, nil
 }
 
-func (m mockMetadataReport) SaveSubscribedData(*identifier.SubscriberMetadataIdentifier, string) error {
+func (m mockMetadataReport) SaveSubscribedData(*identifier.SubscriberMetadataIDentifier, string) error {
 	return nil
 }
 
-func (m mockMetadataReport) GetSubscribedURLs(*identifier.SubscriberMetadataIdentifier) ([]string, error) {
+func (m mockMetadataReport) GetSubscribedURLs(*identifier.SubscriberMetadataIDentifier) ([]string, error) {
 	panic("implement me")
 }
 
-func (m mockMetadataReport) GetServiceDefinition(*identifier.MetadataIdentifier) (string, error) {
+func (m mockMetadataReport) GetServiceDefinition(*identifier.MetadataIDentifier) (string, error) {
 	return "definition", nil
 }

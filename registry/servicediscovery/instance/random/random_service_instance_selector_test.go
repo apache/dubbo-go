@@ -34,7 +34,7 @@ func TestRandomServiceInstanceSelector_Select(t *testing.T) {
 	selector := NewRandomServiceInstanceSelector()
 	serviceInstances := []registry.ServiceInstance{
 		&registry.DefaultServiceInstance{
-			Id:          "1",
+			ID:          "1",
 			ServiceName: "test1",
 			Host:        "127.0.0.1:80",
 			Port:        0,
@@ -43,7 +43,7 @@ func TestRandomServiceInstanceSelector_Select(t *testing.T) {
 			Metadata:    nil,
 		},
 		&registry.DefaultServiceInstance{
-			Id:          "2",
+			ID:          "2",
 			ServiceName: "test2",
 			Host:        "127.0.0.1:80",
 			Port:        0,

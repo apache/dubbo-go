@@ -45,9 +45,9 @@ func init() {
 	sequence.Store(0)
 }
 
-func SequenceId() int64 {
+func SequenceID() int64 {
 	// increse 2 for every request as the same before.
-	// We expect that the request from client to server, the requestId is even; but from server to client, the requestId is odd.
+	// We expect that the request from client to server, the requestID is even; but from server to client, the requestID is odd.
 	return sequence.Add(2)
 }
 
@@ -68,7 +68,7 @@ type Request struct {
 // The ID is auto increase.
 func NewRequest(version string) *Request {
 	return &Request{
-		ID:      SequenceId(),
+		ID:      SequenceID(),
 		Version: version,
 	}
 }
@@ -142,7 +142,7 @@ type PendingResponse struct {
 }
 
 // NewPendingResponse aims to create PendingResponse.
-// Id is always from ID of Request
+// ID is always from ID of Request
 func NewPendingResponse(id int64) *PendingResponse {
 	return &PendingResponse{
 		seq:      id,

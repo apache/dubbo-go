@@ -316,7 +316,7 @@ func (zksd *zookeeperServiceDiscovery) toCuratorInstance(instance registry.Servi
 	pl["metadata"] = instance.GetMetadata()
 	cuis := &curator_discovery.ServiceInstance{
 		Name:                instance.GetServiceName(),
-		Id:                  id,
+		ID:                  id,
 		Address:             instance.GetHost(),
 		Port:                instance.GetPort(),
 		Payload:             pl,
@@ -329,12 +329,12 @@ func (zksd *zookeeperServiceDiscovery) toCuratorInstance(instance registry.Servi
 func (zksd *zookeeperServiceDiscovery) toZookeeperInstance(cris *curator_discovery.ServiceInstance) registry.ServiceInstance {
 	pl, ok := cris.Payload.(map[string]interface{})
 	if !ok {
-		logger.Errorf("[zkServiceDiscovery] toZookeeperInstance{%s} payload is not map[string]interface{}", cris.Id)
+		logger.Errorf("[zkServiceDiscovery] toZookeeperInstance{%s} payload is not map[string]interface{}", cris.ID)
 		return nil
 	}
 	mdi, ok := pl["metadata"].(map[string]interface{})
 	if !ok {
-		logger.Errorf("[zkServiceDiscovery] toZookeeperInstance{%s} metadata is not map[string]interface{}", cris.Id)
+		logger.Errorf("[zkServiceDiscovery] toZookeeperInstance{%s} metadata is not map[string]interface{}", cris.ID)
 		return nil
 	}
 	md := make(map[string]string, len(mdi))
@@ -342,7 +342,7 @@ func (zksd *zookeeperServiceDiscovery) toZookeeperInstance(cris *curator_discove
 		md[k] = fmt.Sprint(v)
 	}
 	return &registry.DefaultServiceInstance{
-		Id:          cris.Id,
+		ID:          cris.ID,
 		ServiceName: cris.Name,
 		Host:        cris.Address,
 		Port:        cris.Port,

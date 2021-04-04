@@ -48,7 +48,7 @@ func (u *UserProvider) Reference() string {
 }
 
 type User struct {
-	Id      string
+	ID      string
 	Name    string
 	Age     int32
 	SubInfo SubInfo
