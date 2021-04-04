@@ -153,7 +153,7 @@ func (n *nacosServiceDiscovery) GetInstances(serviceName string) []registry.Serv
 		delete(metadata, idKey)
 
 		res = append(res, &registry.DefaultServiceInstance{
-			Id:          id,
+			ID:          id,
 			ServiceName: ins.ServiceName,
 			Host:        ins.Ip,
 			Port:        int(ins.Port),
@@ -229,7 +229,7 @@ func (n *nacosServiceDiscovery) AddListener(listener *registry.ServiceInstancesC
 				delete(metadata, idKey)
 
 				instances = append(instances, &registry.DefaultServiceInstance{
-					Id:          id,
+					ID:          id,
 					ServiceName: service.ServiceName,
 					Host:        service.Ip,
 					Port:        int(service.Port),
@@ -270,7 +270,7 @@ func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInst
 	if metadata == nil {
 		metadata = make(map[string]string, 1)
 	}
-	metadata[idKey] = instance.GetId()
+	metadata[idKey] = instance.GetID()
 	return vo.RegisterInstanceParam{
 		ServiceName: instance.GetServiceName(),
 		Ip:          instance.GetHost(),

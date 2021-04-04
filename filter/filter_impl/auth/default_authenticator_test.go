@@ -44,7 +44,7 @@ func TestDefaultAuthenticator_Authenticate(t *testing.T) {
 	testurl.SetParam(constant.SECRET_ACCESS_KEY_KEY, secret)
 	parmas := []interface{}{"OK", struct {
 		Name string
-		Id   int64
+		ID   int64
 	}{"YUYU", 1}}
 	inv := invocation.NewRPCInvocation("test", parmas, nil)
 	requestTime := strconv.Itoa(int(time.Now().Unix() * 1000))

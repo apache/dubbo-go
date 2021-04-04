@@ -340,7 +340,7 @@ func createInstance(url *common.URL) (registry.ServiceInstance, error) {
 		ServiceName: appConfig.Name,
 		Host:        host,
 		Port:        int(port),
-		Id:          host + constant.KEY_SEPARATOR + url.Port,
+		ID:          host + constant.KEY_SEPARATOR + url.Port,
 		Enable:      true,
 		Healthy:     true,
 		Metadata:    metadata,

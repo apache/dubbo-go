@@ -47,7 +47,7 @@ func TestCreateProxy(t *testing.T) {
 		return &mockProtocol{}
 	})
 	ins := &registry.DefaultServiceInstance{
-		Id:          "test-id",
+		ID:          "test-id",
 		ServiceName: "com.dubbo",
 		Host:        "localhost",
 		Port:        8080,

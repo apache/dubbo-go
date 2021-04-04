@@ -63,7 +63,7 @@ func TestJsonrpcInvokerInvoke(t *testing.T) {
 		invocation.WithReply(user)))
 
 	assert.NoError(t, res.Error())
-	assert.Equal(t, User{Id: "1", Name: "username"}, *res.Result().(*User))
+	assert.Equal(t, User{ID: "1", Name: "username"}, *res.Result().(*User))
 
 	// destroy
 	proto.Destroy()

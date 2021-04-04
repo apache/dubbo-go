@@ -163,7 +163,7 @@ func getServer(t *testing.T) (*Server, *common.URL) {
 type AdminProvider struct{}
 
 func (a *AdminProvider) GetAdmin(ctx context.Context, req []interface{}, rsp *User) error {
-	rsp.Id = req[0].(string)
+	rsp.ID = req[0].(string)
 	rsp.Name = req[1].(string)
 	return nil
 }

@@ -67,7 +67,7 @@ func NewServiceDiscovery(client *gxzookeeper.ZookeeperClient, basePath string) *
 
 // registerService register service to zookeeper
 func (sd *ServiceDiscovery) registerService(instance *ServiceInstance) error {
-	path := sd.pathForInstance(instance.Name, instance.Id)
+	path := sd.pathForInstance(instance.Name, instance.ID)
 	data, err := json.Marshal(instance)
 	if err != nil {
 		return err
@@ -91,7 +91,7 @@ func (sd *ServiceDiscovery) registerService(instance *ServiceInstance) error {
 
 // RegisterService register service to zookeeper, and ensure cache is consistent with zookeeper
 func (sd *ServiceDiscovery) RegisterService(instance *ServiceInstance) error {
-	value, loaded := sd.services.LoadOrStore(instance.Id, &Entry{})
+	value, loaded := sd.services.LoadOrStore(instance.ID, &Entry{})
 	entry, ok := value.(*Entry)
 	if !ok {
 		return perrors.New("[ServiceDiscovery] services value not entry")
@@ -104,16 +104,16 @@ func (sd *ServiceDiscovery) RegisterService(instance *ServiceInstance) error {
 		return err
 	}
 	if !loaded {
-		sd.ListenServiceInstanceEvent(instance.Name, instance.Id, sd)
+		sd.ListenServiceInstanceEvent(instance.Name, instance.ID, sd)
 	}
 	return nil
 }
 
 // UpdateService update service in zookeeper, and ensure cache is consistent with zookeeper
 func (sd *ServiceDiscovery) UpdateService(instance *ServiceInstance) error {
-	value, ok := sd.services.Load(instance.Id)
+	value, ok := sd.services.Load(instance.ID)
 	if !ok {
-		return perrors.Errorf("[ServiceDiscovery] Service{%s} not registered", instance.Id)
+		return perrors.Errorf("[ServiceDiscovery] Service{%s} not registered", instance.ID)
 	}
 	entry, ok := value.(*Entry)
 	if !ok {
@@ -127,7 +127,7 @@ func (sd *ServiceDiscovery) UpdateService(instance *ServiceInstance) error {
 	entry.Lock()
 	defer entry.Unlock()
 	entry.instance = instance
-	path := sd.pathForInstance(instance.Name, instance.Id)
+	path := sd.pathForInstance(instance.Name, instance.ID)
 
 	_, err = sd.client.SetContent(path, data, -1)
 	if err != nil {
@@ -158,17 +158,17 @@ func (sd *ServiceDiscovery) updateInternalService(name, id string) {
 
 // UnregisterService un-register service in zookeeper and delete service in cache
 func (sd *ServiceDiscovery) UnregisterService(instance *ServiceInstance) error {
-	_, ok := sd.services.Load(instance.Id)
+	_, ok := sd.services.Load(instance.ID)
 	if !ok {
 		return nil
 	}
-	sd.services.Delete(instance.Id)
+	sd.services.Delete(instance.ID)
 	return sd.unregisterService(instance)
 }
 
 // unregisterService un-register service in zookeeper
 func (sd *ServiceDiscovery) unregisterService(instance *ServiceInstance) error {
-	path := sd.pathForInstance(instance.Name, instance.Id)
+	path := sd.pathForInstance(instance.Name, instance.ID)
 	return sd.client.Delete(path)
 }
 
@@ -184,10 +184,10 @@ func (sd *ServiceDiscovery) ReRegisterServices() {
 		instance := entry.instance
 		err := sd.registerService(instance)
 		if err != nil {
-			logger.Errorf("[zkServiceDiscovery] registerService{%s} error = err{%v}", instance.Id, perrors.WithStack(err))
+			logger.Errorf("[zkServiceDiscovery] registerService{%s} error = err{%v}", instance.ID, perrors.WithStack(err))
 			return true
 		}
-		sd.ListenServiceInstanceEvent(instance.Name, instance.Id, sd)
+		sd.ListenServiceInstanceEvent(instance.Name, instance.ID, sd)
 		return true
 	})
 }
@@ -245,7 +245,7 @@ func (sd *ServiceDiscovery) ListenServiceInstanceEvent(name, id string, listener
 // DataChange implement DataListener's DataChange function
 func (sd *ServiceDiscovery) DataChange(eventType remoting.Event) bool {
 	path := eventType.Path
-	name, id, err := sd.getNameAndId(path)
+	name, id, err := sd.getNameAndID(path)
 	if err != nil {
 		logger.Errorf("[ServiceDiscovery] data change error = {%v}", err)
 		return true
@@ -254,8 +254,8 @@ func (sd *ServiceDiscovery) DataChange(eventType remoting.Event) bool {
 	return true
 }
 
-// getNameAndId get service name and instance id by path
-func (sd *ServiceDiscovery) getNameAndId(path string) (string, string, error) {
+// getNameAndID get service name and instance id by path
+func (sd *ServiceDiscovery) getNameAndID(path string) (string, string, error) {
 	path = strings.TrimPrefix(path, sd.basePath)
 	path = strings.TrimPrefix(path, constant.PATH_SEPARATOR)
 	pathSlice := strings.Split(path, constant.PATH_SEPARATOR)

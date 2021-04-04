@@ -47,7 +47,7 @@ func TestProviderAuthFilter_Invoke(t *testing.T) {
 		"OK",
 		struct {
 			Name string
-			Id   int64
+			ID   int64
 		}{"YUYU", 1},
 	}
 	inv := invocation.NewRPCInvocation("test", parmas, nil)

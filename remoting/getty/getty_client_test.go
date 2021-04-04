@@ -122,7 +122,7 @@ func testGetBigPkg(t *testing.T, c *Client) {
 	remoting.AddPendingResponse(pendingResponse)
 	err := c.Request(request, 8*time.Second, pendingResponse)
 	assert.NoError(t, err)
-	assert.NotEqual(t, "", user.Id)
+	assert.NotEqual(t, "", user.ID)
 	assert.NotEqual(t, "", user.Name)
 }
 
@@ -141,7 +141,7 @@ func testGetUser(t *testing.T, c *Client) {
 	remoting.AddPendingResponse(pendingResponse)
 	err := c.Request(request, 3*time.Second, pendingResponse)
 	assert.NoError(t, err)
-	assert.Equal(t, User{Id: "1", Name: "username"}, *user)
+	assert.Equal(t, User{ID: "1", Name: "username"}, *user)
 }
 
 func testGetUser0(t *testing.T, c *Client) {
@@ -164,7 +164,7 @@ func testGetUser0(t *testing.T, c *Client) {
 	rsp.Reply = user
 	err = c.Request(request, 3*time.Second, rsp)
 	assert.NoError(t, err)
-	assert.Equal(t, User{Id: "1", Name: "username"}, *user)
+	assert.Equal(t, User{ID: "1", Name: "username"}, *user)
 }
 
 func testGetUser1(t *testing.T, c *Client) {
@@ -219,7 +219,7 @@ func testGetUser3(t *testing.T, c *Client) {
 	remoting.AddPendingResponse(pendingResponse)
 	err = c.Request(request, 3*time.Second, pendingResponse)
 	assert.NoError(t, err)
-	assert.Equal(t, &User{Id: "1", Name: "username"}, user2[0])
+	assert.Equal(t, &User{ID: "1", Name: "username"}, user2[0])
 }
 
 func testGetUser4(t *testing.T, c *Client) {
@@ -237,7 +237,7 @@ func testGetUser4(t *testing.T, c *Client) {
 	remoting.AddPendingResponse(pendingResponse)
 	err = c.Request(request, 3*time.Second, pendingResponse)
 	assert.NoError(t, err)
-	assert.Equal(t, &User{Id: "1", Name: "username"}, user2[0])
+	assert.Equal(t, &User{ID: "1", Name: "username"}, user2[0])
 }
 
 func testGetUser5(t *testing.T, c *Client) {
@@ -256,7 +256,7 @@ func testGetUser5(t *testing.T, c *Client) {
 	err = c.Request(request, 3*time.Second, pendingResponse)
 	assert.NoError(t, err)
 	assert.NotNil(t, user3)
-	assert.Equal(t, &User{Id: "1", Name: "username"}, user3["key"])
+	assert.Equal(t, &User{ID: "1", Name: "username"}, user3["key"])
 }
 
 func testGetUser6(t *testing.T, c *Client) {
@@ -277,7 +277,7 @@ func testGetUser6(t *testing.T, c *Client) {
 	remoting.AddPendingResponse(pendingResponse)
 	err = c.Request(request, 3*time.Second, pendingResponse)
 	assert.NoError(t, err)
-	assert.Equal(t, User{Id: "", Name: ""}, *user)
+	assert.Equal(t, User{ID: "", Name: ""}, *user)
 }
 
 func testGetUser61(t *testing.T, c *Client) {
@@ -298,7 +298,7 @@ func testGetUser61(t *testing.T, c *Client) {
 	remoting.AddPendingResponse(pendingResponse)
 	err = c.Request(request, 3*time.Second, pendingResponse)
 	assert.NoError(t, err)
-	assert.Equal(t, User{Id: "1", Name: ""}, *user)
+	assert.Equal(t, User{ID: "1", Name: ""}, *user)
 }
 
 func testClient_AsyncCall(t *testing.T, svr *Server, url *common.URL, client *Client) {
@@ -319,7 +319,7 @@ func testClient_AsyncCall(t *testing.T, svr *Server, url *common.URL, client *Cl
 	rsp.Callback = func(response common.CallbackResponse) {
 		r := response.(remoting.AsyncCallbackResponse)
 		rst := *r.Reply.(*remoting.Response).Result.(*protocol.RPCResult)
-		assert.Equal(t, User{Id: "4", Name: "username"}, *(rst.Rest.(*User)))
+		assert.Equal(t, User{ID: "4", Name: "username"}, *(rst.Rest.(*User)))
 		lock.Unlock()
 	}
 	lock.Lock()
@@ -417,7 +417,7 @@ func InitTest(t *testing.T) (*Server, *common.URL) {
 
 type (
 	User struct {
-		Id   string `json:"id"`
+		ID   string `json:"id"`
 		Name string `json:"name"`
 	}
 
@@ -432,19 +432,19 @@ func (u *UserProvider) GetBigPkg(ctx context.Context, req []interface{}, rsp *Us
 		argBuf.WriteString("击鼓其镗，踊跃用兵。土国城漕，我独南行。从孙子仲，平陈与宋。不我以归，忧心有忡。爰居爰处？爰丧其马？于以求之？于林之下。死生契阔，与子成说。执子之手，与子偕老。于嗟阔兮，不我活兮。于嗟洵兮，不我信兮。")
 		argBuf.WriteString("击鼓其镗，踊跃用兵。土国城漕，我独南行。从孙子仲，平陈与宋。不我以归，忧心有忡。爰居爰处？爰丧其马？于以求之？于林之下。死生契阔，与子成说。执子之手，与子偕老。于嗟阔兮，不我活兮。于嗟洵兮，不我信兮。")
 	}
-	rsp.Id = argBuf.String()
+	rsp.ID = argBuf.String()
 	rsp.Name = argBuf.String()
 	return nil
 }
 
 func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User) error {
-	rsp.Id = req[0].(string)
+	rsp.ID = req[0].(string)
 	rsp.Name = req[1].(string)
 	return nil
 }
 
 func (u *UserProvider) GetUser0(id string, k *User, name string) (User, error) {
-	return User{Id: id, Name: name}, nil
+	return User{ID: id, Name: name}, nil
 }
 
 func (u *UserProvider) GetUser1() error {
@@ -456,23 +456,23 @@ func (u *UserProvider) GetUser2() error {
 }
 
 func (u *UserProvider) GetUser3(rsp *[]interface{}) error {
-	*rsp = append(*rsp, User{Id: "1", Name: "username"})
+	*rsp = append(*rsp, User{ID: "1", Name: "username"})
 	return nil
 }
 
 func (u *UserProvider) GetUser4(ctx context.Context, req []interface{}) ([]interface{}, error) {
-	return []interface{}{User{Id: req[0].([]interface{})[0].(string), Name: req[0].([]interface{})[1].(string)}}, nil
+	return []interface{}{User{ID: req[0].([]interface{})[0].(string), Name: req[0].([]interface{})[1].(string)}}, nil
 }
 
 func (u *UserProvider) GetUser5(ctx context.Context, req []interface{}) (map[interface{}]interface{}, error) {
-	return map[interface{}]interface{}{"key": User{Id: req[0].(map[interface{}]interface{})["id"].(string), Name: req[0].(map[interface{}]interface{})["name"].(string)}}, nil
+	return map[interface{}]interface{}{"key": User{ID: req[0].(map[interface{}]interface{})["id"].(string), Name: req[0].(map[interface{}]interface{})["name"].(string)}}, nil
 }
 
 func (u *UserProvider) GetUser6(id int64) (*User, error) {
 	if id == 0 {
 		return nil, nil
 	}
-	return &User{Id: "1"}, nil
+	return &User{ID: "1"}, nil
 }
 
 func (u *UserProvider) Reference() string {

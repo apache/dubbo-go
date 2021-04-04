@@ -81,7 +81,7 @@ func createPxy() service.MetadataService {
 	})
 
 	ins := &registry.DefaultServiceInstance{
-		Id:          "test-id",
+		ID:          "test-id",
 		ServiceName: "com.dubbo",
 		Host:        "localhost",
 		Port:        8080,
