@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-package config
+package uniform
 
 import (
-	"strings"
 	"testing"
 )
 
@@ -26,35 +25,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const (
-	testDestinationRuleYML      = "testdata/router_config_dest_rule.yml"
-	errorTestDestinationRuleYML = "testdata/router_config_destination_rule_error.yml"
-	testVirtualServiceYML       = "testdata/router_config_virtual_service.yml"
-)
-
-func TestString(t *testing.T) {
-	s := "a1=>a2"
-	s1 := "=>a2"
-	s2 := "a1=>"
-
-	n := strings.SplitN(s, "=>", 2)
-	n1 := strings.SplitN(s1, "=>", 2)
-	n2 := strings.SplitN(s2, "=>", 2)
-
-	assert.Equal(t, n[0], "a1")
-	assert.Equal(t, n[1], "a2")
-
-	assert.Equal(t, n1[0], "")
-	assert.Equal(t, n1[1], "a2")
-
-	assert.Equal(t, n2[0], "a1")
-	assert.Equal(t, n2[1], "")
-}
-
-func TestRouterInit(t *testing.T) {
-	err := RouterInit(testVirtualServiceYML, testDestinationRuleYML)
-	assert.NoError(t, err)
-
-	err = RouterInit(testVirtualServiceYML, errorTestDestinationRuleYML)
-	assert.Error(t, err)
+// TestUniformRouterFacotry created a new factory that can new uniform router
+func TestUniformRouterFacotry(t *testing.T) {
+	factory := newUniformRouterFactory()
+	assert.NotNil(t, factory)
+	router, err := factory.NewPriorityRouter([]byte{}, []byte{}, make(chan struct{}))
+	assert.Nil(t, err)
+	assert.NotNil(t, router)
 }

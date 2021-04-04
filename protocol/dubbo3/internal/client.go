@@ -15,20 +15,36 @@
  * limitations under the License.
  */
 
-package constant
+package internal
 
-// nolint
-const (
-	// CONF_CONSUMER_FILE_PATH ...
-	CONF_CONSUMER_FILE_PATH = "CONF_CONSUMER_FILE_PATH"
-	// CONF_PROVIDER_FILE_PATH ...
-	CONF_PROVIDER_FILE_PATH = "CONF_PROVIDER_FILE_PATH"
-	// APP_LOG_CONF_FILE ...
-	APP_LOG_CONF_FILE = "APP_LOG_CONF_FILE"
-	// CONF_ROUTER_FILE_PATH Specify Path variable of router config file
-	CONF_ROUTER_FILE_PATH = "CONF_ROUTER_FILE_PATH"
-	// CONF_VIRTUAL_SERVICE_FILE_PATH Specify path to Virtual service of uniform router config file
-	CONF_VIRTUAL_SERVICE_FILE_PATH = "CONF_VIRTUAL_SERVICE_FILE_PATH"
-	// CONF_DEST_RULE_FILE_PATH Specify path to destination rule of uniform router config file
-	CONF_DEST_RULE_FILE_PATH = "CONF_DEST_RULE_FILE_PATH"
+import (
+	"context"
 )
+
+import (
+	"github.com/dubbogo/triple/pkg/triple"
+)
+
+import (
+	"github.com/apache/dubbo-go/config"
+)
+
+func init() {
+	config.SetConsumerService(&GrpcGreeterImpl{})
+}
+
+// GrpcGreeterImpl
+//used for dubbo3 biz client
+type GrpcGreeterImpl struct {
+	SayHello func(ctx context.Context, in *HelloRequest, out *HelloReply) error
+}
+
+// Reference ...
+func (u *GrpcGreeterImpl) Reference() string {
+	return "DubboGreeterImpl"
+}
+
+// GetDubboStub ...
+func (u *GrpcGreeterImpl) GetDubboStub(cc *triple.TripleConn) GreeterClient {
+	return NewGreeterDubbo3Client(cc)
+}

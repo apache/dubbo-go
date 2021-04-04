@@ -124,6 +124,7 @@ func TestNewConsumerConfig(t *testing.T) {
 	assert.Equal(t, testConsumerConfig.References["UserProvider"], referConfig)
 }
 
+// TestNewProviderConfig test NewProviderConfig api
 func TestNewProviderConfig(t *testing.T) {
 	serviceConfig := NewServiceConfigByAPI(
 		WithServiceCluster("test-cluster"),
@@ -151,7 +152,6 @@ func TestNewProviderConfig(t *testing.T) {
 		WithProviderServices("UserProvider", serviceConfig),
 		WithProviderProtocol("dubbo", "dubbo", "20000"),
 		WithProviderRegistry("demoConsul", defaultConsulRegistry),
-		WithProviderRegistry("demoNacos", defaultNacosRegistry),
 	)
 
 	assert.NotNil(t, testProviderConfig.Services)
