@@ -47,7 +47,7 @@ type MetadataService struct {
 	subscribedServiceURLs *sync.Map
 	serviceDefinitions    *sync.Map
 	lock                  *sync.RWMutex
-	mlock                 *sync.Mutex
+	mOnce                 *sync.Once
 	metadataInfo          *common.MetadataInfo
 	metadataServiceURL    *common.URL
 }
@@ -156,11 +156,9 @@ func (mts *MetadataService) ExportURL(url *common.URL) (bool, error) {
 		mts.metadataServiceURL = url
 		return true, nil
 	}
-	mts.mlock.Lock()
-	if mts.metadataInfo == nil {
+	mts.mOnce.Do(func() {
 		mts.metadataInfo = common.NewMetadataInfWithApp(config.GetApplicationConfig().Name)
-	}
-	mts.mlock.Unlock()
+	})
 	mts.metadataInfo.AddService(common.NewServiceInfoWithUrl(url))
 	return mts.addURL(mts.exportedServiceURLs, url), nil
 }
