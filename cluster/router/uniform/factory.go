@@ -15,35 +15,32 @@
  * limitations under the License.
  */
 
-package extension
-
-import (
-	"sync"
-)
+package uniform
 
 import (
 	"github.com/apache/dubbo-go/cluster/router"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
 )
 
-var (
-	routers               = make(map[string]func() router.PriorityRouterFactory)
-	fileRouterFactoryOnce sync.Once
+import (
+	v3router "github.com/dubbogo/v3router/pkg"
 )
 
-// SetRouterFactory sets create router factory function with @name
-func SetRouterFactory(name string, fun func() router.PriorityRouterFactory) {
-	routers[name] = fun
+func init() {
+	extension.SetRouterFactory(constant.UniformRouterName, newUniformRouterFactory)
 }
 
-// GetRouterFactory gets create router factory function by @name
-func GetRouterFactory(name string) router.PriorityRouterFactory {
-	if routers[name] == nil {
-		panic("router_factory for " + name + " is not existing, make sure you have import the package.")
-	}
-	return routers[name]()
+// UniformRouteFactory is uniform router's factory
+type UniformRouteFactory struct {
 }
 
-// GetRouterFactories gets all create router factory function
-func GetRouterFactories() map[string]func() router.PriorityRouterFactory {
-	return routers
+// newUniformRouterFactory construct a new ConnCheckRouteFactory
+func newUniformRouterFactory() router.PriorityRouterFactory {
+	return &UniformRouteFactory{}
+}
+
+// NewPriorityRouter construct a new PriorityRouter via url
+func (f *UniformRouteFactory) NewPriorityRouter(vsConfigBytes, distConfigBytes []byte, notify chan struct{}) (router.PriorityRouter, error) {
+	return v3router.NewUniformRouterChain(vsConfigBytes, distConfigBytes, notify)
 }

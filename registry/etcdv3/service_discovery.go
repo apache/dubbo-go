@@ -26,6 +26,7 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
+	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 	gxpage "github.com/dubbogo/gost/hash/page"
 	"github.com/hashicorp/vault/sdk/helper/jsonutil"
 	perrors "github.com/pkg/errors"
@@ -56,7 +57,7 @@ type etcdV3ServiceDiscovery struct {
 	// descriptor is a short string about the basic information of this instance
 	descriptor string
 	// client is current Etcdv3 client
-	client *etcdv3.Client
+	client *gxetcd.Client
 	// serviceInstance is current serviceInstance
 	serviceInstance *registry.ServiceInstance
 	// services is when register or update will add service name
@@ -307,9 +308,9 @@ func newEtcdV3ServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 	logger.Infof("etcd address is: %v,timeout is:%s", remoteConfig.Address, timeout.String())
 
 	client := etcdv3.NewServiceDiscoveryClient(
-		etcdv3.WithName(etcdv3.RegistryETCDV3Client),
-		etcdv3.WithTimeout(timeout),
-		etcdv3.WithEndpoints(strings.Split(remoteConfig.Address, ",")...),
+		gxetcd.WithName(gxetcd.RegistryETCDV3Client),
+		gxetcd.WithTimeout(timeout),
+		gxetcd.WithEndpoints(strings.Split(remoteConfig.Address, ",")...),
 	)
 
 	descriptor := fmt.Sprintf("etcd-service-discovery[%s]", remoteConfig.Address)
