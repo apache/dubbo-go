@@ -651,14 +651,14 @@ func (c *URL) ToMap() map[string]string {
 //  in this function we should merge the reference local url config into the service url from registry.
 // TODO configuration merge, in the future , the configuration center's config should merge too.
 
-// MergeUrl will merge those two url
+// MergeURL will merge those two url
 // the result is based on serviceUrl, and the key which si only contained in referenceUrl
 // will be added into result.
 // for example, if serviceUrl contains params (a1->v1, b1->v2) and referenceUrl contains params(a2->v3, b1 -> v4)
 // the params of result will be (a1->v1, b1->v2, a2->v3).
 // You should notice that the value of b1 is v2, not v4.
 // due to URL is not thread-safe, so this method is not thread-safe
-func MergeUrl(serviceUrl *URL, referenceUrl *URL) *URL {
+func MergeURL(serviceUrl *URL, referenceUrl *URL) *URL {
 	// After Clone, it is a new url that there is no thread safe issue.
 	mergedUrl := serviceUrl.Clone()
 	params := mergedUrl.GetParams()
