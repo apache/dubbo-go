@@ -25,6 +25,7 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -228,28 +229,39 @@ func (proto *registryProtocol) reExport(invoker protocol.Invoker, newUrl *common
 		oldExporter.(protocol.Exporter).Unexport()
 		proto.bounds.Delete(key)
 
-		providerUrl := getProviderUrl(invoker)
-		id := providerUrl.GetParam(constant.BEAN_NAME_KEY, "")
-
-		serviceConfig := config.GetProviderConfig().Services[id]
-		if serviceConfig == nil {
-			logger.Errorf("reExport can not get serviceConfig")
-		}
-		rpcService := config.GetProviderService(id)
-		if rpcService == nil {
-			logger.Errorf("reExport can not get RPCService")
+		// oldExporter Unexport function unRegister rpcService from the serviceMap, so need register it again as far as possible
+		if err := registerServiceMap(invoker); err != nil {
+			logger.Error(err.Error())
 		}
 
-		// oldExporter Unexport function unRegister rpcService from the serviceMap, so need register it again
-		_, err := common.ServiceMap.Register(serviceConfig.InterfaceName,
-			serviceConfig.Protocol, serviceConfig.Group,
-			serviceConfig.Version, rpcService)
-		if err != nil {
-			logger.Errorf("reExport can not re register ServiceMap. Error message is %s", err.Error())
-		}
 		proto.Export(wrappedNewInvoker)
 		// TODO:  unregister & unsubscribe
 	}
+}
+
+func registerServiceMap(invoker protocol.Invoker) error {
+	providerUrl := getProviderUrl(invoker)
+	id := providerUrl.GetParam(constant.BEAN_NAME_KEY, "")
+
+	serviceConfig := config.GetProviderConfig().Services[id]
+	if serviceConfig == nil {
+		s := "reExport can not get serviceConfig"
+		return perrors.New(s)
+	}
+	rpcService := config.GetProviderService(id)
+	if rpcService == nil {
+		s := "reExport can not get RPCService"
+		return perrors.New(s)
+	}
+
+	_, err := common.ServiceMap.Register(serviceConfig.InterfaceName,
+		serviceConfig.Protocol, serviceConfig.Group,
+		serviceConfig.Version, rpcService)
+	if err != nil {
+		s := "reExport can not re register ServiceMap. Error message is " + err.Error()
+		return perrors.New(s)
+	}
+	return nil
 }
 
 type overrideSubscribeListener struct {

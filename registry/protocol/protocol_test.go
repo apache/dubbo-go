@@ -23,6 +23,7 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -246,7 +247,9 @@ func TestExportWithOverrideListener(t *testing.T) {
 	time.Sleep(1e9)
 	newUrl := url.SubURL.Clone()
 	newUrl.SetParam(constant.CLUSTER_KEY, "mock1")
-	v2, _ := regProtocol.bounds.Load(getCacheKey(newUrl))
+	delKeys := gxset.NewSet("dynamic", "enabled")
+	key := newUrl.CloneExceptParams(delKeys).String()
+	v2, _ := regProtocol.bounds.Load(key)
 	assert.NotNil(t, v2)
 }
 
@@ -266,7 +269,9 @@ func TestExportWithServiceConfig(t *testing.T) {
 	newUrl := url.SubURL.Clone()
 	newUrl.SetParam(constant.CLUSTER_KEY, "mock1")
 
-	v2, _ := regProtocol.bounds.Load(getCacheKey(newUrl))
+	delKeys := gxset.NewSet("dynamic", "enabled")
+	key := newUrl.CloneExceptParams(delKeys).String()
+	v2, _ := regProtocol.bounds.Load(key)
 	assert.NotNil(t, v2)
 }
 
@@ -285,7 +290,9 @@ func TestExportWithApplicationConfig(t *testing.T) {
 
 	newUrl := url.SubURL.Clone()
 	newUrl.SetParam(constant.CLUSTER_KEY, "mock1")
-	v2, _ := regProtocol.bounds.Load(getCacheKey(newUrl))
+	delKeys := gxset.NewSet("dynamic", "enabled")
+	key := newUrl.CloneExceptParams(delKeys).String()
+	v2, _ := regProtocol.bounds.Load(key)
 	assert.NotNil(t, v2)
 }
 
