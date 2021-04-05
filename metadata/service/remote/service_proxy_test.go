@@ -110,34 +110,34 @@ func (m *mockMetadataReportFactory) CreateMetadataReport(*common.URL) report.Met
 
 type mockMetadataReport struct{}
 
-func (m mockMetadataReport) StoreProviderMetadata(*identifier.MetadataIDentifier, string) error {
+func (m mockMetadataReport) StoreProviderMetadata(*identifier.MetadataIdentifier, string) error {
 	panic("implement me")
 }
 
-func (m mockMetadataReport) StoreConsumerMetadata(*identifier.MetadataIDentifier, string) error {
+func (m mockMetadataReport) StoreConsumerMetadata(*identifier.MetadataIdentifier, string) error {
 	panic("implement me")
 }
 
-func (m mockMetadataReport) SaveServiceMetadata(*identifier.ServiceMetadataIDentifier, *common.URL) error {
+func (m mockMetadataReport) SaveServiceMetadata(*identifier.ServiceMetadataIdentifier, *common.URL) error {
 	return nil
 }
 
-func (m mockMetadataReport) RemoveServiceMetadata(*identifier.ServiceMetadataIDentifier) error {
+func (m mockMetadataReport) RemoveServiceMetadata(*identifier.ServiceMetadataIdentifier) error {
 	panic("implement me")
 }
 
-func (m mockMetadataReport) GetExportedURLs(*identifier.ServiceMetadataIDentifier) ([]string, error) {
+func (m mockMetadataReport) GetExportedURLs(*identifier.ServiceMetadataIdentifier) ([]string, error) {
 	return []string{"mock://localhost1", "mock://localhost2"}, nil
 }
 
-func (m mockMetadataReport) SaveSubscribedData(*identifier.SubscriberMetadataIDentifier, string) error {
+func (m mockMetadataReport) SaveSubscribedData(*identifier.SubscriberMetadataIdentifier, string) error {
 	return nil
 }
 
-func (m mockMetadataReport) GetSubscribedURLs(*identifier.SubscriberMetadataIDentifier) ([]string, error) {
+func (m mockMetadataReport) GetSubscribedURLs(*identifier.SubscriberMetadataIdentifier) ([]string, error) {
 	panic("implement me")
 }
 
-func (m mockMetadataReport) GetServiceDefinition(*identifier.MetadataIDentifier) (string, error) {
+func (m mockMetadataReport) GetServiceDefinition(*identifier.MetadataIdentifier) (string, error) {
 	return "definition", nil
 }

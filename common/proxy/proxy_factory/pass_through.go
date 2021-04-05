@@ -80,7 +80,7 @@ type PassThroughProxyInvoker struct {
 func (pi *PassThroughProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	result := &protocol.RPCResult{}
 	result.SetAttachments(invocation.Attachments())
-	url := getProviderURL(pi.GetUrl())
+	url := getProviderURL(pi.GetURL())
 
 	arguments := invocation.Arguments()
 	srv := common.ServiceMap.GetServiceByServiceKey(url.Protocol, url.ServiceKey())

@@ -58,7 +58,7 @@ func NewGRPCProtocol() *GrpcProtocol {
 
 // Export gRPC service for remote invocation
 func (gp *GrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
-	url := invoker.GetUrl()
+	url := invoker.GetURL()
 	serviceKey := url.ServiceKey()
 	exporter := NewGrpcExporter(serviceKey, invoker, gp.ExporterMap())
 	gp.SetExporterMap(serviceKey, exporter)
