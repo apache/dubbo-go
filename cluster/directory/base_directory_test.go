@@ -41,7 +41,7 @@ var (
 
 func TestNewBaseDirectory(t *testing.T) {
 	dir := NewBaseDirectory(url)
-	assert.Equal(t, url, dir.GetUrl())
+	assert.Equal(t, url, dir.GetURL())
 	assert.Equal(t, url, dir.GetDirectoryUrl())
 }
 

@@ -71,7 +71,7 @@ func (r *MockRegistry) IsAvailable() bool {
 }
 
 // nolint
-func (r *MockRegistry) GetUrl() *common.URL {
+func (r *MockRegistry) GetURL() *common.URL {
 	return nil
 }
 

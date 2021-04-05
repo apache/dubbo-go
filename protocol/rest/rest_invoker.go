@@ -83,7 +83,7 @@ func (ri *RestInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 		body = inv.Arguments()[methodConfig.Body]
 	}
 	req := &client.RestClientRequest{
-		Location:    ri.GetUrl().Location,
+		Location:    ri.GetURL().Location,
 		Method:      methodConfig.MethodType,
 		Path:        methodConfig.Path,
 		PathParams:  pathParams,

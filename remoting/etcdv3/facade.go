@@ -62,7 +62,7 @@ LOOP:
 		case <-r.Client().Done():
 			r.ClientLock().Lock()
 			clientName := gxetcd.RegistryETCDV3Client
-			timeout, _ := time.ParseDuration(r.GetUrl().GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
+			timeout, _ := time.ParseDuration(r.GetURL().GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
 			endpoints := r.Client().GetEndPoints()
 			r.Client().Close()
 			r.SetClient(nil)
