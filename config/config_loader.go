@@ -21,7 +21,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"reflect"
 	"strconv"
@@ -54,9 +53,9 @@ var (
 	// it should be used combine with double-check to avoid the race condition
 	configAccessMutex sync.Mutex
 
-	maxWait        = 3
-	confRouterFile string
-	confBaseFile   string
+	maxWait                         = 3
+	confRouterFile                  string
+	confBaseFile                    string
 	uniformVirturlServiceConfigPath string
 	uniformDestRuleConfigPath       string
 )
@@ -379,9 +378,9 @@ func LoadWithOptions(options ...LoaderInitOption) {
 	}
 	for _, option := range options {
 		option.apply()
-  }
+	}
 	// init router
-  initRouter()
+	initRouter()
 
 	// init the shutdown callback
 	GracefulShutdownInit()
