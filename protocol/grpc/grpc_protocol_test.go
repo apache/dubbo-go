@@ -79,7 +79,7 @@ func TestGrpcProtocolExport(t *testing.T) {
 	time.Sleep(time.Second)
 
 	// make sure url
-	eq := exporter.GetInvoker().GetUrl().URLEqual(url)
+	eq := exporter.GetInvoker().GetURL().URLEqual(url)
 	assert.True(t, eq)
 
 	// make sure exporterMap after 'Unexport'
@@ -108,7 +108,7 @@ func TestGrpcProtocolRefer(t *testing.T) {
 	invoker := proto.Refer(url)
 
 	// make sure url
-	eq := invoker.GetUrl().URLEqual(url)
+	eq := invoker.GetURL().URLEqual(url)
 	assert.True(t, eq)
 
 	// make sure invokers after 'Destroy'

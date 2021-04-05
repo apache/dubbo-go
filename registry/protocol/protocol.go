@@ -265,7 +265,7 @@ func (nl *overrideSubscribeListener) doOverrideIfNecessary() {
 	providerUrl := getProviderUrl(nl.originInvoker)
 	key := getCacheKey(providerUrl)
 	if exporter, ok := nl.protocol.bounds.Load(key); ok {
-		currentUrl := exporter.(protocol.Exporter).GetInvoker().GetUrl()
+		currentUrl := exporter.(protocol.Exporter).GetInvoker().GetURL()
 		// Compatible with the 2.6.x
 		if nl.configurator != nil {
 			nl.configurator.Configure(providerUrl)
@@ -283,7 +283,7 @@ func (nl *overrideSubscribeListener) doOverrideIfNecessary() {
 		}
 
 		if currentUrl.String() != providerUrl.String() {
-			newRegUrl := nl.originInvoker.GetUrl().Clone()
+			newRegUrl := nl.originInvoker.GetURL().Clone()
 			setProviderUrl(newRegUrl, providerUrl)
 			nl.protocol.reExport(nl.originInvoker, newRegUrl)
 		}
@@ -374,7 +374,7 @@ func (proto *registryProtocol) Destroy() {
 
 func getRegistryUrl(invoker protocol.Invoker) *common.URL {
 	// here add * for return a new url
-	url := invoker.GetUrl()
+	url := invoker.GetURL()
 	// if the protocol == registry, set protocol the registry value in url.params
 	if url.Protocol == constant.REGISTRY_PROTOCOL {
 		url.Protocol = url.GetParam(constant.REGISTRY_KEY, "")
@@ -383,7 +383,7 @@ func getRegistryUrl(invoker protocol.Invoker) *common.URL {
 }
 
 func getProviderUrl(invoker protocol.Invoker) *common.URL {
-	url := invoker.GetUrl()
+	url := invoker.GetURL()
 	// be careful params maps in url is map type
 	return url.SubURL.Clone()
 }

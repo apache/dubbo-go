@@ -43,7 +43,7 @@ func TestRoundRobinSelect(t *testing.T) {
 		constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
 	invokers = append(invokers, protocol.NewBaseInvoker(url))
 	i := loadBalance.Select(invokers, &invocation.RPCInvocation{})
-	assert.True(t, i.GetUrl().URLEqual(url))
+	assert.True(t, i.GetURL().URLEqual(url))
 
 	for i := 1; i < 10; i++ {
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/org.apache.demo.HelloService", i))
@@ -71,7 +71,7 @@ func TestRoundRobinByWeight(t *testing.T) {
 	}
 
 	for _, i := range invokers {
-		w, _ := strconv.Atoi(i.GetUrl().GetParam("weight", "-1"))
+		w, _ := strconv.Atoi(i.GetURL().GetParam("weight", "-1"))
 		assert.True(t, selected[i] == w)
 	}
 }

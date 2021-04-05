@@ -143,7 +143,7 @@ func (s *serviceDiscoveryRegistry) GetServiceDiscovery() registry.ServiceDiscove
 	return s.serviceDiscovery
 }
 
-func (s *serviceDiscoveryRegistry) GetUrl() *common.URL {
+func (s *serviceDiscoveryRegistry) GetURL() *common.URL {
 	return s.url
 }
 
@@ -457,7 +457,7 @@ func (s *serviceDiscoveryRegistry) initRevisionExportedURLsByInst(serviceInstanc
 		if len(revisionExportedURLsMap) > 0 {
 			// The case is that current ServiceInstance with the different revision
 			logger.Warnf("The ServiceInstance[id: %s, host : %s , port : %s] has different revision : %s"+
-				", please make sure the service [name : %s] is changing or not.", serviceInstance.GetId(),
+				", please make sure the service [name : %s] is changing or not.", serviceInstance.GetID(),
 				serviceInstance.GetHost(), serviceInstance.GetPort(), revision, serviceInstance.GetServiceName())
 		} else {
 			firstGet = true
@@ -467,14 +467,14 @@ func (s *serviceDiscoveryRegistry) initRevisionExportedURLsByInst(serviceInstanc
 			revisionExportedURLsMap[revision] = revisionExportedURLs
 			logger.Debugf("Get the exported URLs[size : %s, first : %s] from the target service "+
 				"instance [id: %s , service : %s , host : %s , port : %s , revision : %s]",
-				len(revisionExportedURLs), firstGet, serviceInstance.GetId(), serviceInstance.GetServiceName(),
+				len(revisionExportedURLs), firstGet, serviceInstance.GetID(), serviceInstance.GetServiceName(),
 				serviceInstance.GetHost(), serviceInstance.GetPort(), revision)
 		}
 	} else {
 		// Else, The cache is hit
 		logger.Debugf("Get the exported URLs[size : %s] from cache, the instance"+
 			"[id: %s , service : %s , host : %s , port : %s , revision : %s]", len(revisionExportedURLs), firstGet,
-			serviceInstance.GetId(), serviceInstance.GetServiceName(), serviceInstance.GetHost(),
+			serviceInstance.GetID(), serviceInstance.GetServiceName(), serviceInstance.GetHost(),
 			serviceInstance.GetPort(), revision)
 	}
 	return revisionExportedURLs

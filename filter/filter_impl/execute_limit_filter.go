@@ -82,7 +82,7 @@ type ExecuteState struct {
 // Invoke judges whether the current processing requests over the threshold
 func (ef *ExecuteLimitFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	methodConfigPrefix := "methods." + invocation.MethodName() + "."
-	ivkURL := invoker.GetUrl()
+	ivkURL := invoker.GetURL()
 	limitTarget := ivkURL.ServiceKey()
 	var limitRateConfig string
 

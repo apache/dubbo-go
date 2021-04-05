@@ -19,7 +19,7 @@ package common
 
 // Node use for process dubbo node
 type Node interface {
-	GetUrl() *URL
+	GetURL() *URL
 	IsAvailable() bool
 	Destroy()
 }
