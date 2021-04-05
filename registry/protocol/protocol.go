@@ -48,7 +48,7 @@ var (
 	reserveParams = []string{
 		"application", "codec", "exchanger", "serialization", "cluster", "connections", "deprecated", "group",
 		"loadbalance", "mock", "path", "timeout", "token", "version", "warmup", "weight", "timestamp", "dubbo",
-		"release", "interface",
+		"release", "interface", "registry.role",
 	}
 )
 
@@ -131,8 +131,8 @@ func (proto *registryProtocol) GetRegistries() []registry.Registry {
 
 // Refer provider service from registry center
 func (proto *registryProtocol) Refer(url *common.URL) protocol.Invoker {
-	var registryUrl = url
-	var serviceUrl = registryUrl.SubURL
+	registryUrl := url
+	serviceUrl := registryUrl.SubURL
 	if registryUrl.Protocol == constant.REGISTRY_PROTOCOL {
 		registryUrl.Protocol = registryUrl.GetParam(constant.REGISTRY_KEY, "")
 	}

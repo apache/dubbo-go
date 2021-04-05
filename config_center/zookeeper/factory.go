@@ -28,8 +28,7 @@ func init() {
 	extension.SetConfigCenterFactory("zookeeper", func() config_center.DynamicConfigurationFactory { return &zookeeperDynamicConfigurationFactory{} })
 }
 
-type zookeeperDynamicConfigurationFactory struct {
-}
+type zookeeperDynamicConfigurationFactory struct{}
 
 func (f *zookeeperDynamicConfigurationFactory) GetDynamicConfiguration(url *common.URL) (config_center.DynamicConfiguration, error) {
 	dynamicConfiguration, err := newZookeeperDynamicConfiguration(url)
@@ -38,5 +37,4 @@ func (f *zookeeperDynamicConfigurationFactory) GetDynamicConfiguration(url *comm
 	}
 	dynamicConfiguration.SetParser(&parser.DefaultConfigurationParser{})
 	return dynamicConfiguration, err
-
 }

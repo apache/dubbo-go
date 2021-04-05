@@ -33,9 +33,8 @@ func init() {
 	extension.SetServiceInstanceSelector("random", NewRandomServiceInstanceSelector)
 }
 
-//the ServiceInstanceSelector implementation based on Random algorithm
-type RandomServiceInstanceSelector struct {
-}
+// the ServiceInstanceSelector implementation based on Random algorithm
+type RandomServiceInstanceSelector struct{}
 
 func NewRandomServiceInstanceSelector() instance.ServiceInstanceSelector {
 	return &RandomServiceInstanceSelector{}
@@ -51,5 +50,4 @@ func (r *RandomServiceInstanceSelector) Select(url *common.URL, serviceInstances
 	rand.Seed(time.Now().UnixNano())
 	index := rand.Intn(len(serviceInstances))
 	return serviceInstances[index]
-
 }

@@ -122,8 +122,7 @@ func TestRestProtocolExport(t *testing.T) {
 	assert.False(t, ok)
 }
 
-type UserProvider struct {
-}
+type UserProvider struct{}
 
 func (p *UserProvider) Reference() string {
 	return "com.ikurento.user.UserProvider"
@@ -131,7 +130,7 @@ func (p *UserProvider) Reference() string {
 
 func (p *UserProvider) GetUser(ctx context.Context, id int, age int32, name string, contentType string) (*User, error) {
 	return &User{
-		Id:   id,
+		ID:   id,
 		Time: nil,
 		Age:  age,
 		Name: name,
@@ -169,7 +168,7 @@ func (p *UserProvider) GetUserFive(ctx context.Context, user []interface{}) (*Us
 }
 
 type User struct {
-	Id   int
+	ID   int
 	Time *time.Time
 	Age  int32
 	Name string

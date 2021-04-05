@@ -63,8 +63,8 @@ type RegistryDirectory struct {
 	configurators                  []config_center.Configurator
 	consumerConfigurationListener  *consumerConfigurationListener
 	referenceConfigurationListener *referenceConfigurationListener
-	//serviceKey                     string
-	//forbidden                      atomic.Bool
+	// serviceKey                     string
+	// forbidden                      atomic.Bool
 	registerLock sync.Mutex // this lock if for register
 }
 
@@ -111,7 +111,7 @@ func (dir *RegistryDirectory) Notify(event *registry.ServiceEvent) {
 	if event == nil {
 		return
 	}
-	go dir.refreshInvokers(event)
+	dir.refreshInvokers(event)
 }
 
 // NotifyAll notify the events that are complete Service Event List.
@@ -187,9 +187,12 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 		// loop the updateEvents
 		for _, event := range addEvents {
 			logger.Debugf("registry update, result{%s}", event)
-			logger.Infof("selector add service url{%s}", event.Service)
-			// FIXME: routers are built in every address notification?
-			dir.configRouters()
+			if event != nil && event.Service != nil {
+				logger.Infof("selector add service url{%s}", event.Service.String())
+			}
+			if event != nil && event.Service != nil && constant.ROUTER_PROTOCOL == event.Service.Protocol {
+				dir.configRouters()
+			}
 			if oldInvoker, _ := dir.doCacheInvoker(event.Service); oldInvoker != nil {
 				oldInvokers = append(oldInvokers, oldInvoker)
 			}
@@ -241,8 +244,9 @@ func (dir *RegistryDirectory) cacheInvokerByEvent(event *registry.ServiceEvent) 
 		switch event.Action {
 		case remoting.EventTypeAdd, remoting.EventTypeUpdate:
 			logger.Infof("selector add service url{%s}", event.Service)
-			// FIXME: routers are built in every address notification?
-			dir.configRouters()
+			if u != nil && constant.ROUTER_PROTOCOL == u.Protocol {
+				dir.configRouters()
+			}
 			return dir.cacheInvoker(u), nil
 		case remoting.EventTypeDel:
 			logger.Infof("selector delete service url{%s}", event.Service)
@@ -256,14 +260,6 @@ func (dir *RegistryDirectory) cacheInvokerByEvent(event *registry.ServiceEvent) 
 
 // configRouters configures dynamic routers into the router chain, but, the current impl is incorrect, see FIXME above.
 func (dir *RegistryDirectory) configRouters() {
-	var urls []*common.URL
-	for _, v := range config.GetRouterURLSet().Values() {
-		urls = append(urls, v.(*common.URL))
-	}
-
-	if len(urls) > 0 {
-		dir.SetRouters(urls)
-	}
 }
 
 // convertUrl processes override:// and router://
@@ -366,6 +362,8 @@ func (dir *RegistryDirectory) doCacheInvoker(newUrl *common.URL) (protocol.Invok
 		newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(newUrl)
 		if newInvoker != nil {
 			dir.cacheInvokersMap.Store(key, newInvoker)
+		} else {
+			logger.Warnf("service will be added in cache invokers fail, result is null, invokers url is %+v", newUrl.String())
 		}
 	} else {
 		// if cached invoker has the same URL with the new URL, then no need to re-refer, and no need to destroy
@@ -379,6 +377,8 @@ func (dir *RegistryDirectory) doCacheInvoker(newUrl *common.URL) (protocol.Invok
 		if newInvoker != nil {
 			dir.cacheInvokersMap.Store(key, newInvoker)
 			return cacheInvoker.(protocol.Invoker), true
+		} else {
+			logger.Warnf("service will be updated in cache invokers fail, result is null, invokers url is %+v", newUrl.String())
 		}
 	}
 	return nil, false

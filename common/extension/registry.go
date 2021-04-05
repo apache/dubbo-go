@@ -22,9 +22,7 @@ import (
 	"github.com/apache/dubbo-go/registry"
 )
 
-var (
-	registrys = make(map[string]func(config *common.URL) (registry.Registry, error))
-)
+var registrys = make(map[string]func(config *common.URL) (registry.Registry, error))
 
 // SetRegistry sets the registry extension with @name
 func SetRegistry(name string, v func(_ *common.URL) (registry.Registry, error)) {
@@ -37,5 +35,4 @@ func GetRegistry(name string, config *common.URL) (registry.Registry, error) {
 		panic("registry for " + name + " does not exist. please make sure that you have imported the package `github.com/apache/dubbo-go/registry/" + name + "`.")
 	}
 	return registrys[name](config)
-
 }

@@ -48,7 +48,7 @@ func (bcl *BaseConfigurationListener) InitWith(key string, listener config_cente
 
 	bcl.dynamicConfiguration = config.GetEnvInstance().GetDynamicConfiguration()
 	if bcl.dynamicConfiguration == nil {
-		//set configurators to empty
+		// set configurators to empty
 		bcl.configurators = []config_center.Configurator{}
 		return
 	}
@@ -56,7 +56,7 @@ func (bcl *BaseConfigurationListener) InitWith(key string, listener config_cente
 	bcl.dynamicConfiguration.AddListener(key, listener)
 	if rawConfig, err := bcl.dynamicConfiguration.GetInternalProperty(key,
 		config_center.WithGroup(constant.DUBBO)); err != nil {
-		//set configurators to empty
+		// set configurators to empty
 		bcl.configurators = []config_center.Configurator{}
 		return
 	} else if len(rawConfig) > 0 {

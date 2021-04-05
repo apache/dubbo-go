@@ -39,10 +39,10 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
-var (
-	attachmentKey = []string{constant.INTERFACE_KEY, constant.GROUP_KEY, constant.TOKEN_KEY, constant.TIMEOUT_KEY,
-		constant.VERSION_KEY}
-)
+var attachmentKey = []string{
+	constant.INTERFACE_KEY, constant.GROUP_KEY, constant.TOKEN_KEY, constant.TIMEOUT_KEY,
+	constant.VERSION_KEY,
+}
 
 // DubboInvoker is implement of protocol.Invoker. A dubboInvoker refers to one service and ip.
 type DubboInvoker struct {
@@ -141,7 +141,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 		logger.Errorf("ParseBool - error: %v", err)
 		async = false
 	}
-	//response := NewResponse(inv.Reply(), nil)
+	// response := NewResponse(inv.Reply(), nil)
 	rest := &protocol.RPCResult{}
 	timeout := di.getTimeout(inv)
 	if async {
@@ -168,7 +168,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 // get timeout including methodConfig
 func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) time.Duration {
-	var timeout = di.GetUrl().GetParam(strings.Join([]string{constant.METHOD_KEYS, invocation.MethodName(), constant.TIMEOUT_KEY}, "."), "")
+	timeout := di.GetUrl().GetParam(strings.Join([]string{constant.METHOD_KEYS, invocation.MethodName(), constant.TIMEOUT_KEY}, "."), "")
 	if len(timeout) != 0 {
 		if t, err := time.ParseDuration(timeout); err == nil {
 			// config timeout into attachment
@@ -196,8 +196,12 @@ func (di *DubboInvoker) Destroy() {
 		di.BaseInvoker.Destroy()
 		client := di.getClient()
 		if client != nil {
+			activeNumber := client.DecreaseActiveNumber()
 			di.setClient(nil)
-			client.Close()
+			if activeNumber == 0 {
+				exchangeClientMap.Delete(di.GetUrl().Location)
+				client.Close()
+			}
 		}
 	})
 }

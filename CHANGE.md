@@ -6,12 +6,17 @@
 - [Add dubbo-go-cli telnet tool](https://github.com/apache/dubbo-go/pull/818)
 - [Add Prox ImplementFunc to allow override impl](https://github.com/apache/dubbo-go/pull/1019)
 - [Add read configuration path from the command line when start](https://github.com/apache/dubbo-go/pull/1039)
+- [Add use invoker with same ip as client first](https://github.com/apache/dubbo-go/pull/1023)
+- [Add an "api way" to set general configure](https://github.com/apache/dubbo-go/pull/1020)
+- [Add registry ip:port set from enviroment variable](https://github.com/apache/dubbo-go/pull/1036)
 
 ### Enhancement
 - [introduce ConfigPostProcessor extension](https://github.com/apache/dubbo-go/pull/943)
 - [Impl extension of two urls comparison](https://github.com/apache/dubbo-go/pull/854)
 - [using event-driven to let router send signal to notify channel](https://github.com/apache/dubbo-go/pull/976)
 - [lint codes](https://github.com/apache/dubbo-go/pull/941)
+- [Imp: destroy invoker smoothly](https://github.com/apache/dubbo-go/pull/1045)
+- [Improve config center](https://github.com/apache/dubbo-go/pull/1030)
 
 ### Bugfixes
 - [Fix: generic struct2MapAll key of map keep type](https://github.com/apache/dubbo-go/pull/928)
@@ -23,8 +28,21 @@
 - [Fix: etcd exit panic](https://github.com/apache/dubbo-go/pull/1013)
 - [Fix: when connect to provider fail, will occur panic](https://github.com/apache/dubbo-go/pull/1021)
 - [Fix: support getty send Length, when the data transfer failed](https://github.com/apache/dubbo-go/pull/1028)
+- [Fix: RPCInvocation.ServiceKey use PATH_KEY instead of INTERFACE_KEY ](https://github.com/apache/dubbo-go/pull/1078/files)
+- [Fix: zk too many tcp conn](https://github.com/apache/dubbo-go/pull/1010)
+- [Fix: fix zk listener func pathToKey](https://github.com/apache/dubbo-go/pull/1066)
+- [Fix: graceful shutdown](https://github.com/apache/dubbo-go/pull/1007)
+- [Fix: nacos service provider does not require subscribe](https://github.com/apache/dubbo-go/pull/1056)
+- [Fix: key of generic map convert is more general](https://github.com/apache/dubbo-go/pull/1041)
+- [Fix: body buffer too short](https://github.com/apache/dubbo-go/pull/1090)
 
-Milestone: [https://github.com/apache/dubbo-go/milestone/7](https://github.com/apache/dubbo-go/milestone/7?closed=1)
+### Dependencies
+- [Bump dubbo-go-hessian2 from v1.9.0-rc1 to v1.9.1](https://github.com/apache/dubbo-go/pull/1088/files)
+- [Bump github.com/nacos-group/nacos-sdk-go from 1.0.5 to v1.0.7](https://github.com/apache/dubbo-go/pull/1106)
+
+Milestone: 
+- [https://github.com/apache/dubbo-go/milestone/7](https://github.com/apache/dubbo-go/milestone/7?closed=1)
+- [https://github.com/apache/dubbo-go/milestone/10](https://github.com/apache/dubbo-go/milestone/10?closed=1)
 
 ## 1.5.5
 

@@ -21,7 +21,7 @@ package curator_discovery
 // https://github.com/apache/curator/blob/master/curator-x-discovery/src/main/java/org/apache/curator/x/discovery/ServiceInstance.java
 type ServiceInstance struct {
 	Name                string
-	Id                  string
+	ID                  string
 	Address             string
 	Port                int
 	Payload             interface{}
