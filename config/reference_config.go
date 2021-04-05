@@ -152,7 +152,7 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 			// not a registry url, must be direct invoke.
 			hitClu = constant.FAILOVER_CLUSTER_NAME
 			if len(invokers) > 0 {
-				u := invokers[0].GetURL()
+				u := invokers[0].GetUrl()
 				if nil != &u {
 					hitClu = u.GetParam(constant.CLUSTER_KEY, constant.ZONEAWARE_CLUSTER_NAME)
 				}
