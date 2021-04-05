@@ -84,6 +84,7 @@ func NewBaseMetadataService(serviceName string) BaseMetadataService {
 func (mts *BaseMetadataService) MethodMapper() map[string]string {
 	return map[string]string{
 		"GetExportedURLs": "getExportedURLs",
+		"GetMetadataInfo": "getMetadataInfo",
 	}
 }
 
