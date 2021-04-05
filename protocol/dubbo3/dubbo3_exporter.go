@@ -49,7 +49,7 @@ func NewDubboExporter(key string, invoker protocol.Invoker, exporterMap *sync.Ma
 
 // Unexport unexport dubbo3 service exporter.
 func (de *DubboExporter) Unexport() {
-	url := de.GetInvoker().GetUrl()
+	url := de.GetInvoker().GetURL()
 	serviceId := url.GetParam(constant.BEAN_NAME_KEY, "")
 	interfaceName := url.GetParam(constant.INTERFACE_KEY, "")
 	de.BaseExporter.Unexport()

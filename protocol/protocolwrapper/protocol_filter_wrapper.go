@@ -48,7 +48,7 @@ type ProtocolFilterWrapper struct {
 // Export service for remote invocation
 func (pfw *ProtocolFilterWrapper) Export(invoker protocol.Invoker) protocol.Exporter {
 	if pfw.protocol == nil {
-		pfw.protocol = extension.GetProtocol(invoker.GetUrl().Protocol)
+		pfw.protocol = extension.GetProtocol(invoker.GetURL().Protocol)
 	}
 	invoker = buildInvokerChain(invoker, constant.SERVICE_FILTER_KEY)
 	return pfw.protocol.Export(invoker)
@@ -72,7 +72,7 @@ func (pfw *ProtocolFilterWrapper) Destroy() {
 }
 
 func buildInvokerChain(invoker protocol.Invoker, key string) protocol.Invoker {
-	filterName := invoker.GetUrl().GetParam(key, "")
+	filterName := invoker.GetURL().GetParam(key, "")
 	if filterName == "" {
 		return invoker
 	}
@@ -104,9 +104,9 @@ type FilterInvoker struct {
 	filter  filter.Filter
 }
 
-// GetUrl is used to get url from FilterInvoker
-func (fi *FilterInvoker) GetUrl() *common.URL {
-	return fi.invoker.GetUrl()
+// GetURL is used to get url from FilterInvoker
+func (fi *FilterInvoker) GetURL() *common.URL {
+	return fi.invoker.GetURL()
 }
 
 // IsAvailable is used to get available status

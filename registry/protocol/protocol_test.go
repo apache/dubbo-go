@@ -63,7 +63,7 @@ func referNormal(t *testing.T, regProtocol *registryProtocol) {
 
 	invoker := regProtocol.Refer(url)
 	assert.IsType(t, &protocol.BaseInvoker{}, invoker)
-	assert.Equal(t, invoker.GetUrl().String(), url.String())
+	assert.Equal(t, invoker.GetURL().String(), url.String())
 }
 
 func TestRefer(t *testing.T) {
@@ -133,7 +133,7 @@ func exporterNormal(t *testing.T, regProtocol *registryProtocol) *common.URL {
 	exporter := regProtocol.Export(invoker)
 
 	assert.IsType(t, &protocol.BaseExporter{}, exporter)
-	assert.Equal(t, exporter.GetInvoker().GetUrl().String(), suburl.String())
+	assert.Equal(t, exporter.GetInvoker().GetURL().String(), suburl.String())
 	return url
 }
 

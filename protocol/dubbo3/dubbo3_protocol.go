@@ -68,7 +68,7 @@ func NewDubboProtocol() *DubboProtocol {
 
 // Export export dubbo3 service.
 func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
-	url := invoker.GetUrl()
+	url := invoker.GetURL()
 	serviceKey := url.ServiceKey()
 	exporter := NewDubboExporter(serviceKey, invoker, dp.ExporterMap(), dp.serviceMap)
 	dp.SetExporterMap(serviceKey, exporter)

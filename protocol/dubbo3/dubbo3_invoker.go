@@ -142,7 +142,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	}
 
 	// append interface id to ctx
-	ctx = context.WithValue(ctx, constant.DubboCtxKey(constant.INTERFACE_KEY), di.BaseInvoker.GetUrl().GetParam(constant.INTERFACE_KEY, ""))
+	ctx = context.WithValue(ctx, constant.DubboCtxKey(constant.INTERFACE_KEY), di.BaseInvoker.GetURL().GetParam(constant.INTERFACE_KEY, ""))
 	in := make([]reflect.Value, 0, 16)
 	in = append(in, reflect.ValueOf(ctx))
 
@@ -167,7 +167,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 // get timeout including methodConfig
 func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) time.Duration {
-	timeout := di.GetUrl().GetParam(strings.Join([]string{constant.METHOD_KEYS, invocation.MethodName(), constant.TIMEOUT_KEY}, "."), "")
+	timeout := di.GetURL().GetParam(strings.Join([]string{constant.METHOD_KEYS, invocation.MethodName(), constant.TIMEOUT_KEY}, "."), "")
 	if len(timeout) != 0 {
 		if t, err := time.ParseDuration(timeout); err == nil {
 			// config timeout into attachment
