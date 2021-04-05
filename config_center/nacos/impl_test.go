@@ -117,7 +117,6 @@ func TestNacosDynamicConfiguration_GetConfigKeysByGroup(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 1, configs.Size())
 	assert.True(t, configs.Contains("application"))
-
 }
 
 func TestNacosDynamicConfigurationPublishConfig(t *testing.T) {
@@ -139,7 +138,7 @@ func TestAddListener(t *testing.T) {
 }
 
 func TestRemoveListener(_ *testing.T) {
-	//TODO not supported in current go_nacos_sdk version
+	// TODO not supported in current go_nacos_sdk version
 }
 
 type mockDataListener struct {

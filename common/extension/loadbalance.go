@@ -21,9 +21,7 @@ import (
 	"github.com/apache/dubbo-go/cluster"
 )
 
-var (
-	loadbalances = make(map[string]func() cluster.LoadBalance)
-)
+var loadbalances = make(map[string]func() cluster.LoadBalance)
 
 // SetLoadbalance sets the loadbalance extension with @name
 // For example: random/round_robin/consistent_hash/least_active/...

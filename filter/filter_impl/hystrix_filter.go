@@ -23,11 +23,13 @@ import (
 	"regexp"
 	"sync"
 )
+
 import (
 	"github.com/afex/hystrix-go/hystrix"
 	perrors "github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
+
 import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
@@ -123,7 +125,7 @@ func NewHystrixFilterError(err error, failByHystrix bool) error {
  * 	      "GetUser1": "userp_m"
  */
 type HystrixFilter struct {
-	COrP     bool //true for consumer
+	COrP     bool // true for consumer
 	res      map[string][]*regexp.Regexp
 	ifNewMap sync.Map
 }
@@ -179,7 +181,7 @@ func (hf *HystrixFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 		}
 		return err
 	}, func(err error) error {
-		//Return error and if it is caused by hystrix logic, so that it can be handled by previous filters.
+		// Return error and if it is caused by hystrix logic, so that it can be handled by previous filters.
 		_, ok := err.(hystrix.CircuitError)
 		logger.Debugf("[Hystrix Filter]Hystrix health check counted, error is: %v, failed by hystrix: %v; %s", err, ok, cmdName)
 		result = &protocol.RPCResult{}
@@ -197,7 +199,7 @@ func (hf *HystrixFilter) OnResponse(ctx context.Context, result protocol.Result,
 
 // GetHystrixFilterConsumer returns HystrixFilter instance for consumer
 func GetHystrixFilterConsumer() filter.Filter {
-	//When first called, load the config in
+	// When first called, load the config in
 	consumerConfigOnce.Do(func() {
 		if err := initHystrixConfigConsumer(); err != nil {
 			logger.Warnf("[Hystrix Filter]Config load failed for consumer, error is: %v , will use default", err)
@@ -217,7 +219,7 @@ func GetHystrixFilterProvider() filter.Filter {
 }
 
 func getConfig(service string, method string, cOrP bool) CommandConfigWithError {
-	//Find method level config
+	// Find method level config
 	var conf *HystrixFilterConfig
 	if cOrP {
 		conf = confConsumer
@@ -229,13 +231,13 @@ func getConfig(service string, method string, cOrP bool) CommandConfigWithError 
 		logger.Infof("[Hystrix Filter]Found method-level config for %s - %s", service, method)
 		return *getConf
 	}
-	//Find service level config
+	// Find service level config
 	getConf = conf.Configs[conf.Services[service].ServiceConfig]
 	if getConf != nil {
 		logger.Infof("[Hystrix Filter]Found service-level config for %s - %s", service, method)
 		return *getConf
 	}
-	//Find default config
+	// Find default config
 	getConf = conf.Configs[conf.Default]
 	if getConf != nil {
 		logger.Infof("[Hystrix Filter]Found global default config for %s - %s", service, method)
@@ -244,7 +246,6 @@ func getConfig(service string, method string, cOrP bool) CommandConfigWithError 
 	getConf = &CommandConfigWithError{}
 	logger.Infof("[Hystrix Filter]No config found for %s - %s, using default", service, method)
 	return *getConf
-
 }
 
 func initHystrixConfigConsumer() error {

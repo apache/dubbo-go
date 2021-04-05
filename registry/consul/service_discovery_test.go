@@ -90,7 +90,7 @@ func TestConsulServiceDiscovery_CRUD(t *testing.T) {
 	}()
 
 	prepareData()
-	var eventDispatcher = MockEventDispatcher{Notify: make(chan struct{}, 1)}
+	eventDispatcher := MockEventDispatcher{Notify: make(chan struct{}, 1)}
 	extension.SetEventDispatcher("mock", func() observer.EventDispatcher {
 		return &eventDispatcher
 	})
@@ -110,8 +110,8 @@ func TestConsulServiceDiscovery_CRUD(t *testing.T) {
 	err = serviceDiscovery.Register(instance)
 	assert.Nil(t, err)
 
-	//sometimes nacos may be failed to push update of instance,
-	//so it need 10s to pull, we sleep 10 second to make sure instance has been update
+	// sometimes nacos may be failed to push update of instance,
+	// so it need 10s to pull, we sleep 10 second to make sure instance has been update
 	time.Sleep(3 * time.Second)
 	page := serviceDiscovery.GetHealthyInstancesByPage(instance.GetServiceName(), 0, 10, true)
 	assert.NotNil(t, page)
@@ -121,7 +121,7 @@ func TestConsulServiceDiscovery_CRUD(t *testing.T) {
 
 	instanceResult := page.GetData()[0].(*registry.DefaultServiceInstance)
 	assert.NotNil(t, instanceResult)
-	assert.Equal(t, buildID(instance), instanceResult.GetId())
+	assert.Equal(t, buildID(instance), instanceResult.GetID())
 	assert.Equal(t, instance.GetHost(), instanceResult.GetHost())
 	assert.Equal(t, instance.GetPort(), instanceResult.GetPort())
 	assert.Equal(t, instance.GetServiceName(), instanceResult.GetServiceName())
@@ -146,8 +146,8 @@ func TestConsulServiceDiscovery_CRUD(t *testing.T) {
 	assert.Equal(t, "bbb", v)
 
 	// test dispatcher event
-	//err = serviceDiscovery.DispatchEventByServiceName(instanceResult.GetServiceName())
-	//assert.Nil(t, err)
+	// err = serviceDiscovery.DispatchEventByServiceName(instanceResult.GetServiceName())
+	// assert.Nil(t, err)
 
 	// test AddListener
 	err = serviceDiscovery.AddListener(&registry.ServiceInstancesChangedListener{ServiceName: instance.GetServiceName()})
@@ -187,7 +187,7 @@ func prepareService() (registry.ServiceInstance, *common.URL) {
 		"consul-watch-timeout=" + strconv.Itoa(consulWatchTimeout))
 
 	return &registry.DefaultServiceInstance{
-		Id:          id,
+		ID:          id,
 		ServiceName: service,
 		Host:        registryHost,
 		Port:        registryPort,

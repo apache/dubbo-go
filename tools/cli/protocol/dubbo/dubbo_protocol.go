@@ -39,8 +39,7 @@ func init() {
 }
 
 // RpcClientPackageHandler handle package for client in getty.
-type RpcClientPackageHandler struct {
-}
+type RpcClientPackageHandler struct{}
 
 func NewRpcClientPackageHandler() protocol.Protocol {
 	return RpcClientPackageHandler{}

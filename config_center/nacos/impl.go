@@ -72,7 +72,6 @@ func newNacosDynamicConfiguration(url *common.URL) (*nacosDynamicConfiguration, 
 	c.wg.Add(1)
 	go HandleClientRestart(c)
 	return c, err
-
 }
 
 // AddListener Add listener
@@ -97,7 +96,6 @@ func (n *nacosDynamicConfiguration) GetInternalProperty(key string, opts ...conf
 
 // PublishConfig will publish the config with the (key, group, value) pair
 func (n *nacosDynamicConfiguration) PublishConfig(key string, group string, value string) error {
-
 	group = n.resolvedGroup(group)
 
 	ok, err := (*n.client.Client()).PublishConfig(vo.ConfigParam{
@@ -105,7 +103,6 @@ func (n *nacosDynamicConfiguration) PublishConfig(key string, group string, valu
 		Group:   group,
 		Content: value,
 	})
-
 	if err != nil {
 		return perrors.WithStack(err)
 	}
@@ -185,8 +182,8 @@ func (n *nacosDynamicConfiguration) GetDone() chan struct{} {
 	return n.done
 }
 
-// GetUrl Get Url
-func (n *nacosDynamicConfiguration) GetUrl() *common.URL {
+// GetURL Get URL
+func (n *nacosDynamicConfiguration) GetURL() *common.URL {
 	return n.url
 }
 

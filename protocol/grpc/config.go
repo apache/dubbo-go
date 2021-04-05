@@ -23,8 +23,7 @@ import (
 
 type (
 	// ServerConfig currently is empty struct,for future expansion
-	ServerConfig struct {
-	}
+	ServerConfig struct{}
 
 	// ClientConfig wrap client call parameters
 	ClientConfig struct {

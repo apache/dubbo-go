@@ -42,7 +42,6 @@ func newApolloListener() *apolloListener {
 
 // OnChange process each listener
 func (a *apolloListener) OnChange(changeEvent *storage.ChangeEvent) {
-
 }
 
 // OnNewestChange process each listener by all changes

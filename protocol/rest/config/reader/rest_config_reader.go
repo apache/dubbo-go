@@ -43,8 +43,7 @@ func init() {
 	extension.SetDefaultConfigReader(REST, REST)
 }
 
-type RestConfigReader struct {
-}
+type RestConfigReader struct{}
 
 func NewRestConfigReader() interfaces.ConfigReader {
 	return &RestConfigReader{}

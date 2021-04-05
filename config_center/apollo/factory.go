@@ -42,5 +42,4 @@ func (f *apolloConfigurationFactory) GetDynamicConfiguration(url *common.URL) (c
 	}
 	dynamicConfiguration.SetParser(&parser.DefaultConfigurationParser{})
 	return dynamicConfiguration, err
-
 }

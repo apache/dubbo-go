@@ -26,8 +26,9 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/container/set"
-	"github.com/dubbogo/gost/hash/page"
+	gxset "github.com/dubbogo/gost/container/set"
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
+	gxpage "github.com/dubbogo/gost/hash/page"
 	perrors "github.com/pkg/errors"
 )
 
@@ -60,9 +61,9 @@ func init() {
 }
 
 type zookeeperServiceDiscovery struct {
-	client *zookeeper.ZookeeperClient
+	client *gxzookeeper.ZookeeperClient
 	csd    *curator_discovery.ServiceDiscovery
-	//listener    *zookeeper.ZkEventListener
+	// listener    *zookeeper.ZkEventListener
 	url         *common.URL
 	wg          sync.WaitGroup
 	cltLock     sync.Mutex
@@ -107,22 +108,23 @@ func newZookeeperServiceDiscovery(name string) (registry.ServiceDiscovery, error
 		url:      url,
 		rootPath: rootPath,
 	}
-	err := zookeeper.ValidateZookeeperClient(zksd, zookeeper.WithZkName(ServiceDiscoveryZkClient))
+	err := zookeeper.ValidateZookeeperClient(zksd, ServiceDiscoveryZkClient)
 	if err != nil {
 		return nil, err
 	}
+	zksd.WaitGroup().Add(1) // zk client start successful, then wg +1
 	go zookeeper.HandleClientRestart(zksd)
 	zksd.csd = curator_discovery.NewServiceDiscovery(zksd.client, rootPath)
 	return zksd, nil
 }
 
 // nolint
-func (zksd *zookeeperServiceDiscovery) ZkClient() *zookeeper.ZookeeperClient {
+func (zksd *zookeeperServiceDiscovery) ZkClient() *gxzookeeper.ZookeeperClient {
 	return zksd.client
 }
 
 // nolint
-func (zksd *zookeeperServiceDiscovery) SetZkClient(client *zookeeper.ZookeeperClient) {
+func (zksd *zookeeperServiceDiscovery) SetZkClient(client *gxzookeeper.ZookeeperClient) {
 	zksd.client = client
 }
 
@@ -314,7 +316,7 @@ func (zksd *zookeeperServiceDiscovery) toCuratorInstance(instance registry.Servi
 	pl["metadata"] = instance.GetMetadata()
 	cuis := &curator_discovery.ServiceInstance{
 		Name:                instance.GetServiceName(),
-		Id:                  id,
+		ID:                  id,
 		Address:             instance.GetHost(),
 		Port:                instance.GetPort(),
 		Payload:             pl,
@@ -327,12 +329,12 @@ func (zksd *zookeeperServiceDiscovery) toCuratorInstance(instance registry.Servi
 func (zksd *zookeeperServiceDiscovery) toZookeeperInstance(cris *curator_discovery.ServiceInstance) registry.ServiceInstance {
 	pl, ok := cris.Payload.(map[string]interface{})
 	if !ok {
-		logger.Errorf("[zkServiceDiscovery] toZookeeperInstance{%s} payload is not map[string]interface{}", cris.Id)
+		logger.Errorf("[zkServiceDiscovery] toZookeeperInstance{%s} payload is not map[string]interface{}", cris.ID)
 		return nil
 	}
 	mdi, ok := pl["metadata"].(map[string]interface{})
 	if !ok {
-		logger.Errorf("[zkServiceDiscovery] toZookeeperInstance{%s} metadata is not map[string]interface{}", cris.Id)
+		logger.Errorf("[zkServiceDiscovery] toZookeeperInstance{%s} metadata is not map[string]interface{}", cris.ID)
 		return nil
 	}
 	md := make(map[string]string, len(mdi))
@@ -340,7 +342,7 @@ func (zksd *zookeeperServiceDiscovery) toZookeeperInstance(cris *curator_discove
 		md[k] = fmt.Sprint(v)
 	}
 	return &registry.DefaultServiceInstance{
-		Id:          cris.Id,
+		ID:          cris.ID,
 		ServiceName: cris.Name,
 		Host:        cris.Address,
 		Port:        cris.Port,

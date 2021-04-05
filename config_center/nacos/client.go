@@ -65,7 +65,7 @@ type option func(*options)
 
 type options struct {
 	nacosName string
-	//client    *NacosClient
+	// client    *NacosClient
 }
 
 // WithNacosName Set nacos name
@@ -94,7 +94,7 @@ func ValidateNacosClient(container nacosClientFacade, opts ...option) error {
 	}
 	nacosAddresses := strings.Split(url.Location, ",")
 	if container.NacosClient() == nil {
-		//in dubbo ,every registry only connect one node ,so this is []string{r.Address}
+		// in dubbo ,every registry only connect one node ,so this is []string{r.Address}
 		newClient, err := newNacosClient(os.nacosName, nacosAddresses, timeout, url)
 		if err != nil {
 			logger.Errorf("newNacosClient(name{%s}, nacos address{%v}, timeout{%d}) = error{%v}",

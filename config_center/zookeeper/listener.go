@@ -23,6 +23,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/remoting"
 )
@@ -40,7 +41,6 @@ func NewCacheListener(rootPath string) *CacheListener {
 
 // AddListener will add a listener if loaded
 func (l *CacheListener) AddListener(key string, listener config_center.ConfigurationListener) {
-
 	// reference from https://stackoverflow.com/questions/34018908/golang-why-dont-we-have-a-set-datastructure
 	// make a map[your type]struct{} like set in java
 	listeners, loaded := l.keyListeners.LoadOrStore(key, map[config_center.ConfigurationListener]struct{}{listener: {}})
@@ -61,7 +61,7 @@ func (l *CacheListener) RemoveListener(key string, listener config_center.Config
 // DataChange changes all listeners' event
 func (l *CacheListener) DataChange(event remoting.Event) bool {
 	if event.Content == "" {
-		//meanings new node
+		// meanings new node
 		return true
 	}
 	key := l.pathToKey(event.Path)
@@ -77,5 +77,12 @@ func (l *CacheListener) DataChange(event remoting.Event) bool {
 }
 
 func (l *CacheListener) pathToKey(path string) string {
-	return strings.Replace(strings.Replace(path, l.rootPath+"/", "", -1), "/", ".", -1)
+	key := strings.Replace(strings.Replace(path, l.rootPath+"/", "", -1), "/", ".", -1)
+	if strings.HasSuffix(key, constant.CONFIGURATORS_SUFFIX) ||
+		strings.HasSuffix(key, constant.TagRouterRuleSuffix) ||
+		strings.HasSuffix(key, constant.ConditionRouterRuleSuffix) {
+		// governance config, so we remove the "dubbo." prefix
+		return key[strings.Index(key, ".")+1:]
+	}
+	return key
 }

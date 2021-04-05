@@ -20,6 +20,7 @@ package config
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"reflect"
@@ -38,6 +39,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	_ "github.com/apache/dubbo-go/common/observer/dispatcher"
+	"github.com/apache/dubbo-go/common/yaml"
 	"github.com/apache/dubbo-go/registry"
 )
 
@@ -55,6 +57,8 @@ var (
 	maxWait        = 3
 	confRouterFile string
 	confBaseFile   string
+	uniformVirturlServiceConfigPath string
+	uniformDestRuleConfigPath       string
 )
 
 // loaded consumer & provider config from xxx.yml, and log config from xxx.xml
@@ -69,6 +73,8 @@ func DefaultInit() []LoaderInitOption {
 	fs.StringVar(&confConFile, "conConf", os.Getenv(constant.CONF_CONSUMER_FILE_PATH), "default client config path")
 	fs.StringVar(&confProFile, "proConf", os.Getenv(constant.CONF_PROVIDER_FILE_PATH), "default server config path")
 	fs.StringVar(&confRouterFile, "rouConf", os.Getenv(constant.CONF_ROUTER_FILE_PATH), "default router config path")
+	fs.StringVar(&uniformVirturlServiceConfigPath, "vsConf", os.Getenv(constant.CONF_VIRTUAL_SERVICE_FILE_PATH), "default virtual service of uniform router config path")
+	fs.StringVar(&uniformDestRuleConfigPath, "drConf", os.Getenv(constant.CONF_DEST_RULE_FILE_PATH), "default destination rule of uniform router config path")
 	fs.Parse(os.Args[1:])
 	for len(fs.Args()) != 0 {
 		fs.Parse(fs.Args()[1:])
@@ -95,7 +101,7 @@ func setDefaultValue(target interface{}) {
 		Address:    "127.0.0.1:2181",
 	}
 	switch target.(type) {
-	case ProviderConfig:
+	case *ProviderConfig:
 		p := target.(*ProviderConfig)
 		if len(p.Registries) == 0 {
 			p.Registries["demoZK"] = registryConfig
@@ -172,6 +178,17 @@ func loadConsumerConfig() {
 		ref.Implement(rpcService)
 	}
 
+	// Write current configuration to cache file.
+	if consumerConfig.CacheFile != "" {
+		if data, err := yaml.MarshalYML(consumerConfig); err != nil {
+			logger.Errorf("Marshal consumer config err: %s", err.Error())
+		} else {
+			if err := ioutil.WriteFile(consumerConfig.CacheFile, data, 0o666); err != nil {
+				logger.Errorf("Write consumer config cache file err: %s", err.Error())
+			}
+		}
+	}
+
 	// wait for invoker is available, if wait over default 3s, then panic
 	var count int
 	for {
@@ -227,6 +244,17 @@ func loadProviderConfig() {
 		logger.Errorf("[provider config center refresh] %#v", err)
 	}
 	checkRegistries(providerConfig.Registries, providerConfig.Registry)
+
+	// Write the current configuration to cache file.
+	if providerConfig.CacheFile != "" {
+		if data, err := yaml.MarshalYML(providerConfig); err != nil {
+			logger.Errorf("Marshal provider config err: %s", err.Error())
+		} else {
+			if err := ioutil.WriteFile(providerConfig.CacheFile, data, 0o666); err != nil {
+				logger.Errorf("Write provider config cache file err: %s", err.Error())
+			}
+		}
+	}
 
 	for key, svs := range providerConfig.Services {
 		rpcService := GetProviderService(key)
@@ -294,7 +322,7 @@ func createInstance(url *common.URL) (registry.ServiceInstance, error) {
 		ServiceName: appConfig.Name,
 		Host:        host,
 		Port:        int(port),
-		Id:          host + constant.KEY_SEPARATOR + url.Port,
+		ID:          host + constant.KEY_SEPARATOR + url.Port,
 		Enable:      true,
 		Healthy:     true,
 		Metadata:    metadata,
@@ -332,9 +360,9 @@ func selectMetadataServiceExportedURL() *common.URL {
 }
 
 func initRouter() {
-	if confRouterFile != "" {
-		if err := RouterInit(confRouterFile); err != nil {
-			log.Printf("[routerConfig init] %#v", err)
+	if uniformDestRuleConfigPath != "" && uniformVirturlServiceConfigPath != "" {
+		if err := RouterInit(uniformVirturlServiceConfigPath, uniformDestRuleConfigPath); err != nil {
+			logger.Warnf("[routerConfig init] %#v", err)
 		}
 	}
 }
@@ -351,7 +379,9 @@ func LoadWithOptions(options ...LoaderInitOption) {
 	}
 	for _, option := range options {
 		option.apply()
-	}
+  }
+	// init router
+  initRouter()
 
 	// init the shutdown callback
 	GracefulShutdownInit()
@@ -445,9 +475,11 @@ func GetBaseConfig() *BaseConfig {
 func GetSslEnabled() bool {
 	return sslEnabled
 }
+
 func SetSslEnabled(enabled bool) {
 	sslEnabled = enabled
 }
+
 func IsProvider() bool {
 	return providerConfig != nil
 }

@@ -20,6 +20,7 @@ package filter_impl
 import (
 	"context"
 )
+
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -53,8 +54,7 @@ func init() {
  *   tps.limit.rejected.handler: "default", # optional, or the name of the implementation
  *   if the value of 'tps.limiter' is nil or empty string, the tps filter will do nothing
  */
-type TpsLimitFilter struct {
-}
+type TpsLimitFilter struct{}
 
 // Invoke gets the configured limter to impose TPS limiting
 func (t TpsLimitFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
