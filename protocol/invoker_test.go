@@ -34,7 +34,7 @@ func TestBaseInvoker(t *testing.T) {
 	assert.Nil(t, err)
 
 	ivk := NewBaseInvoker(url)
-	assert.NotNil(t, ivk.GetUrl())
+	assert.NotNil(t, ivk.GetURL())
 	assert.True(t, ivk.IsAvailable())
 	assert.False(t, ivk.IsDestroyed())
 
