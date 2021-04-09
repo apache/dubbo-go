@@ -20,6 +20,7 @@ package remote
 import (
 	"testing"
 )
+
 import (
 	"github.com/stretchr/testify/assert"
 )
@@ -79,11 +80,10 @@ func TestMetadataServiceProxy(t *testing.T) {
 }
 
 func createProxy() service.MetadataService {
-
 	prepareTest()
 
 	ins := &registry.DefaultServiceInstance{
-		Id:          "test-id",
+		ID:          "test-id",
 		ServiceName: "com.dubbo",
 		Host:        "localhost",
 		Port:        8080,
@@ -102,15 +102,13 @@ func prepareTest() {
 	instance.GetMetadataReportInstance(u)
 }
 
-type mockMetadataReportFactory struct {
-}
+type mockMetadataReportFactory struct{}
 
 func (m *mockMetadataReportFactory) CreateMetadataReport(*common.URL) report.MetadataReport {
 	return &mockMetadataReport{}
 }
 
-type mockMetadataReport struct {
-}
+type mockMetadataReport struct{}
 
 func (m mockMetadataReport) StoreProviderMetadata(*identifier.MetadataIdentifier, string) error {
 	panic("implement me")

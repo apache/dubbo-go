@@ -30,8 +30,6 @@ import (
 	"github.com/apache/dubbo-go/cluster/router/chain"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
 )
 
 // BaseDirectory Abstract implementation of Directory: Invoker list returned from this Directory's list method have been filtered by Routers
@@ -64,8 +62,8 @@ func (dir *BaseDirectory) SetRouterChain(routerChain router.Chain) {
 	dir.routerChain = routerChain
 }
 
-// GetUrl Get URL
-func (dir *BaseDirectory) GetUrl() *common.URL {
+// GetURL Get URL
+func (dir *BaseDirectory) GetURL() *common.URL {
 	return dir.url
 }
 
@@ -74,51 +72,15 @@ func (dir *BaseDirectory) GetDirectoryUrl() *common.URL {
 	return dir.url
 }
 
-// SetRouters Convert url to routers and add them into dir.routerChain
-func (dir *BaseDirectory) SetRouters(urls []*common.URL) {
-	if len(urls) == 0 {
-		return
-	}
-
-	routers := make([]router.PriorityRouter, 0, len(urls))
-
-	rc := dir.routerChain
-
-	for _, url := range urls {
-		routerKey := url.GetParam(constant.ROUTER_KEY, "")
-
-		if len(routerKey) == 0 {
-			continue
-		}
-		if url.Protocol == constant.CONDITION_ROUTE_PROTOCOL {
-			if !dir.isProperRouter(url) {
-				continue
-			}
-		}
-		factory := extension.GetRouterFactory(url.Protocol)
-		r, err := factory.NewPriorityRouter(url, rc.GetNotifyChan())
-		if err != nil {
-			logger.Errorf("Create router fail. router key: %s, url:%s, error: %+v", routerKey, url.Service(), err)
-			return
-		}
-		routers = append(routers, r)
-	}
-
-	logger.Infof("Init file condition router success, size: %v", len(routers))
-	dir.mutex.Lock()
-	rc.AddRouters(routers)
-	dir.mutex.Unlock()
-}
-
 func (dir *BaseDirectory) isProperRouter(url *common.URL) bool {
 	app := url.GetParam(constant.APPLICATION_KEY, "")
-	dirApp := dir.GetUrl().GetParam(constant.APPLICATION_KEY, "")
-	if len(dirApp) == 0 && dir.GetUrl().SubURL != nil {
-		dirApp = dir.GetUrl().SubURL.GetParam(constant.APPLICATION_KEY, "")
+	dirApp := dir.GetURL().GetParam(constant.APPLICATION_KEY, "")
+	if len(dirApp) == 0 && dir.GetURL().SubURL != nil {
+		dirApp = dir.GetURL().SubURL.GetParam(constant.APPLICATION_KEY, "")
 	}
-	serviceKey := dir.GetUrl().ServiceKey()
+	serviceKey := dir.GetURL().ServiceKey()
 	if len(serviceKey) == 0 {
-		serviceKey = dir.GetUrl().SubURL.ServiceKey()
+		serviceKey = dir.GetURL().SubURL.ServiceKey()
 	}
 	if len(app) > 0 && app == dirApp {
 		return true

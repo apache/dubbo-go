@@ -47,7 +47,7 @@ func TestProviderAuthFilter_Invoke(t *testing.T) {
 		"OK",
 		struct {
 			Name string
-			Id   int64
+			ID   int64
 		}{"YUYU", 1},
 	}
 	inv := invocation.NewRPCInvocation("test", parmas, nil)
@@ -70,5 +70,4 @@ func TestProviderAuthFilter_Invoke(t *testing.T) {
 	assert.Equal(t, result, filter.Invoke(context.Background(), invoker, inv))
 	url.SetParam(constant.SERVICE_AUTH_KEY, "true")
 	assert.Equal(t, result, filter.Invoke(context.Background(), invoker, inv))
-
 }

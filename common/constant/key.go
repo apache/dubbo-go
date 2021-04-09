@@ -49,8 +49,10 @@ const (
 	PORT_KEY                 = "port"
 	PROTOCOL_KEY             = "protocol"
 	PATH_SEPARATOR           = "/"
-	//DUBBO_KEY                = "dubbo"
+	// DUBBO_KEY                = "dubbo"
 	SSL_ENABLED_KEY = "ssl-enabled"
+	// PARAMS_TYPE_Key key used in pass through invoker factory, to define param type
+	PARAMS_TYPE_Key = "parameter-type-names"
 )
 
 const (
@@ -144,6 +146,7 @@ const (
 	CONFIG_VERSION_KEY    = "configVersion"
 	COMPATIBLE_CONFIG_KEY = "compatible_config"
 )
+
 const (
 	RegistryConfigPrefix       = "dubbo.registries."
 	SingleRegistryConfigPrefix = "dubbo.registry."
@@ -199,6 +202,8 @@ const (
 	// default deregister critical server after
 	DEFAULT_DEREGISTER_TIME = "20s"
 	DEREGISTER_AFTER        = "consul-deregister-critical-service-after"
+	// PassThroughProxyFactoryKey is key of proxy factory with raw data input service
+	PassThroughProxyFactoryKey = "dubbo-raw"
 )
 
 const (
@@ -207,18 +212,8 @@ const (
 
 // Use for router module
 const (
-	// ConditionRouterName Specify file condition router name
-	ConditionRouterName = "condition"
-	// ConditionAppRouterName Specify listenable application router name
-	ConditionAppRouterName = "app"
-	// ListenableRouterName Specify listenable router name
-	ListenableRouterName = "listenable"
-	// HealthCheckRouterName Specify the name of HealthCheckRouter
-	HealthCheckRouterName = "health_check"
-	// LocalPriorityRouterName Specify the name of LocalPriorityRouter
-	LocalPriorityRouterName = "local_priority"
-	// ConnCheckRouterName Specify the name of ConnCheckRouter
-	ConnCheckRouterName = "conn_check"
+	// UniformRouterName Specifythe name of UniformRouter
+	UniformRouterName = "uniform"
 	// TagRouterName Specify the name of TagRouter
 	TagRouterName = "tag"
 	// TagRouterRuleSuffix Specify tag router suffix
@@ -227,12 +222,6 @@ const (
 	// ConditionRouterRuleSuffix Specify condition router suffix
 	ConditionRouterRuleSuffix = ".condition-router"
 
-	// Force Force key in router module
-	RouterForce = "force"
-	// Enabled Enabled key in router module
-	RouterEnabled = "enabled"
-	// Priority Priority key in router module
-	RouterPriority = "priority"
 	// RouterScope Scope key in router module
 	RouterScope = "scope"
 	// RouterApplicationScope Scope key in router module

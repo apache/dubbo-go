@@ -23,18 +23,19 @@ import (
 )
 
 import (
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/metadata/identifier"
 	"github.com/apache/dubbo-go/metadata/report"
 	"github.com/apache/dubbo-go/metadata/report/factory"
-	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
-var (
-	emptyStrSlice = make([]string, 0)
-)
+var emptyStrSlice = make([]string, 0)
 
 func init() {
 	mf := &zookeeperMetadataReportFactory{}
@@ -46,7 +47,7 @@ func init() {
 // zookeeperMetadataReport is the implementation of
 // MetadataReport based on zookeeper.
 type zookeeperMetadataReport struct {
-	client  *zookeeper.ZookeeperClient
+	client  *gxzookeeper.ZookeeperClient
 	rootDir string
 }
 
@@ -107,15 +108,15 @@ func (m *zookeeperMetadataReport) GetServiceDefinition(metadataIdentifier *ident
 	return string(v), err
 }
 
-type zookeeperMetadataReportFactory struct {
-}
+type zookeeperMetadataReportFactory struct{}
 
 // nolint
 func (mf *zookeeperMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {
-	client, err := zookeeper.NewZookeeperClient(
+	client, err := gxzookeeper.NewZookeeperClient(
 		"zookeeperMetadataReport",
 		strings.Split(url.Location, ","),
-		15*time.Second,
+		false,
+		gxzookeeper.WithZkTimeOut(15*time.Second),
 	)
 	if err != nil {
 		panic(err)

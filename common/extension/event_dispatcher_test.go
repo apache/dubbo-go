@@ -25,6 +25,7 @@ import (
 import (
 	"github.com/stretchr/testify/assert"
 )
+
 import (
 	"github.com/apache/dubbo-go/common/observer"
 )
@@ -64,8 +65,7 @@ func TestAddEventListener(t *testing.T) {
 	assert.Equal(t, 2, len(initEventListeners))
 }
 
-type mockEventListener struct {
-}
+type mockEventListener struct{}
 
 func (m mockEventListener) GetPriority() int {
 	panic("implement me")
@@ -79,8 +79,7 @@ func (m mockEventListener) GetEventType() reflect.Type {
 	panic("implement me")
 }
 
-type mockEventDispatcher struct {
-}
+type mockEventDispatcher struct{}
 
 func (m mockEventDispatcher) AddEventListener(listener observer.EventListener) {
 	panic("implement me")

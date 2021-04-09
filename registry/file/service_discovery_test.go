@@ -35,9 +35,7 @@ import (
 	"github.com/apache/dubbo-go/registry"
 )
 
-var (
-	testName = "test"
-)
+var testName = "test"
 
 func TestNewFileSystemServiceDiscoveryAndDestroy(t *testing.T) {
 	prepareData()
@@ -60,7 +58,7 @@ func TestCURDFileSystemServiceDiscovery(t *testing.T) {
 	serviceName := "service-name" + strconv.Itoa(rand.Intn(10000))
 	md["t1"] = "test1"
 	r1 := &registry.DefaultServiceInstance{
-		Id:          "123456789",
+		ID:          "123456789",
 		ServiceName: serviceName,
 		Host:        "127.0.0.1",
 		Port:        2233,
@@ -73,7 +71,7 @@ func TestCURDFileSystemServiceDiscovery(t *testing.T) {
 
 	instances := serviceDiscovery.GetInstances(r1.ServiceName)
 	assert.Equal(t, 1, len(instances))
-	assert.Equal(t, r1.Id, instances[0].GetId())
+	assert.Equal(t, r1.ID, instances[0].GetID())
 	assert.Equal(t, r1.ServiceName, instances[0].GetServiceName())
 	assert.Equal(t, r1.Port, instances[0].GetPort())
 

@@ -17,6 +17,8 @@ Apache License, Version 2.0
 
 ## Release note ##
 
+[v1.5.6 - Apr 8, 2021](https://github.com/apache/dubbo-go/releases/tag/v1.5.6)
+
 [v1.5.5 - Jan 5, 2021](https://github.com/apache/dubbo-go/releases/tag/v1.5.5)
 
 [v1.4.5 - Nov 18, 2020](https://github.com/apache/dubbo-go/releases/tag/v1.4.5)
@@ -73,6 +75,7 @@ Finished List:
 - Router
     * [Condition router](https://github.com/apache/dubbo-go/pull/294)
     * [Health check router](https://github.com/apache/dubbo-go/pull/389)
+    * [Dynamic_tag_router](https://github.com/apache/dubbo-go/pull/703)
 
 - Registry
     * ZooKeeper
@@ -134,6 +137,10 @@ Finished List:
     * [Nacos](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/nacos/service_discovery.go)
     * [Zookeeper](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/zookeeper/service_discovery.go)
     * [Etcd](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/etcdv3/service_discovery.go)
+    * [File](https://github.com/apache/dubbo-go/pull/732)
+    
+- Tool
+    * [Dubbo-go-cli](https://github.com/apache/dubbo-go/pull/818)
 
 You can know more about dubbo-go by its [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap).
 
@@ -177,7 +184,7 @@ If you are willing to do some code contributions and document contributions to [
 
 ## Community
 
-If u want to communicate with our community, pls scan the following dubbobo Ding-Ding QR code or search our commnity DingDing group code 31363295.
+If u want to communicate with our community, pls scan the following dubbobo DingDing QR code or search our commnity DingDing group code 31363295.
 
 <div>
 <table>

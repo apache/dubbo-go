@@ -37,8 +37,7 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
-type HessianSerializer struct {
-}
+type HessianSerializer struct{}
 
 func (h HessianSerializer) Marshal(p DubboPackage) ([]byte, error) {
 	encoder := hessian.NewEncoder()
@@ -178,7 +177,7 @@ func isSupportResponseAttachment(version string) bool {
 }
 
 func version2Int(version string) int {
-	var v = 0
+	v := 0
 	varr := strings.Split(version, ".")
 	length := len(varr)
 	for key, value := range varr {
@@ -252,6 +251,10 @@ func unmarshalRequestBody(body []byte, p *DubboPackage) error {
 	attachments, err := decoder.Decode()
 	if err != nil {
 		return perrors.WithStack(err)
+	}
+
+	if attachments == nil {
+		attachments = map[interface{}]interface{}{constant.INTERFACE_KEY: target}
 	}
 
 	if v, ok := attachments.(map[interface{}]interface{}); ok {

@@ -39,7 +39,7 @@ import (
 
 type gettyRPCClient struct {
 	once sync.Once
-	//protocol string
+	// protocol string
 	addr   string
 	active int64 // zero, not create or be destroyed
 
@@ -50,9 +50,7 @@ type gettyRPCClient struct {
 	sessions    []*rpcSession
 }
 
-var (
-	errClientPoolClosed = perrors.New("client pool closed")
-)
+var errClientPoolClosed = perrors.New("client pool closed")
 
 func newGettyRPCClientConn(pool *gettyRPCClientPool, addr string) (*gettyRPCClient, error) {
 	var (

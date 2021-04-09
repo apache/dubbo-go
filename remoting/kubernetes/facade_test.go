@@ -30,8 +30,8 @@ import (
 type mockFacade struct {
 	*common.URL
 	client *Client
-	//cltLock sync.Mutex
-	//done    chan struct{}
+	// cltLock sync.Mutex
+	// done    chan struct{}
 }
 
 func (r *mockFacade) Client() *Client {
@@ -42,7 +42,7 @@ func (r *mockFacade) SetClient(client *Client) {
 	r.client = client
 }
 
-func (r *mockFacade) GetUrl() *common.URL {
+func (r *mockFacade) GetURL() *common.URL {
 	return r.URL
 }
 
@@ -57,8 +57,8 @@ func (r *mockFacade) RestartCallBack() bool {
 func (r *mockFacade) IsAvailable() bool {
 	return true
 }
-func Test_Facade(t *testing.T) {
 
+func Test_Facade(t *testing.T) {
 	regUrl, err := common.NewURL("registry://127.0.0.1:443",
 		common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER)))
 	if err != nil {

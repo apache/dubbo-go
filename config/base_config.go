@@ -31,6 +31,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common/config"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/common/yaml"
 )
 
 // BaseConfig is the common configuration for provider and consumer
@@ -45,11 +46,27 @@ type BaseConfig struct {
 	// application config
 	ApplicationConfig *ApplicationConfig `yaml:"application" json:"application,omitempty" property:"application"`
 
-	//prefix              string
+	// prefix              string
 	fatherConfig        interface{}
 	EventDispatcherType string        `default:"direct" yaml:"event_dispatcher_type" json:"event_dispatcher_type,omitempty"`
 	MetricConfig        *MetricConfig `yaml:"metrics" json:"metrics,omitempty"`
 	fileStream          *bytes.Buffer
+
+	// cache file used to store the current used configurations.
+	CacheFile string `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
+}
+
+func BaseInit(confBaseFile string) error {
+	if confBaseFile == "" {
+		return perrors.Errorf("application configure(base) file name is nil")
+	}
+	baseConfig = &BaseConfig{}
+	fileStream, err := yaml.UnmarshalYMLConfig(confBaseFile, baseConfig)
+	if err != nil {
+		return perrors.Errorf("unmarshalYmlConfig error %v", perrors.WithStack(err))
+	}
+	baseConfig.fileStream = bytes.NewBuffer(fileStream)
+	return nil
 }
 
 // nolint
@@ -65,9 +82,7 @@ func (c *BaseConfig) GetRemoteConfig(name string) (config *RemoteConfig, ok bool
 }
 
 func getKeyPrefix(val reflect.Value) []string {
-	var (
-		prefix string
-	)
+	var prefix string
 	configPrefixMethod := "Prefix"
 	if val.CanAddr() {
 		prefix = val.Addr().MethodByName(configPrefixMethod).Call(nil)[0].String()
@@ -94,7 +109,6 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 			f := val.Field(i)
 			if f.IsValid() {
 				setBaseValue := func(f reflect.Value) {
-
 					var (
 						ok    bool
 						value string
@@ -167,7 +181,6 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 						}
 
 					}
-
 				}
 
 				if f.Kind() == reflect.Ptr {
@@ -195,7 +208,6 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 						}
 
 					}
-
 				}
 				if f.Kind() == reflect.Map {
 
@@ -240,7 +252,7 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 
 func (c *BaseConfig) fresh() {
 	configList := config.GetEnvInstance().Configuration()
-	for element := configList.Front(); element != nil; element = element.Next() {
+	for element := configList.Back(); element != nil; element = element.Prev() {
 		cfg := element.Value.(*config.InmemoryConfiguration)
 		c.freshInternalConfig(cfg)
 	}

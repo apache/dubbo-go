@@ -56,7 +56,6 @@ func TestSign(t *testing.T) {
 	key := "key"
 	signature := Sign(metadata, key)
 	assert.NotNil(t, signature)
-
 }
 
 func TestSignWithParams(t *testing.T) {
@@ -65,7 +64,7 @@ func TestSignWithParams(t *testing.T) {
 	params := []interface{}{
 		"a", 1, struct {
 			Name string
-			Id   int64
+			ID   int64
 		}{"YuYu", 1},
 	}
 	signature, _ := SignWithParams(params, metadata, key)
@@ -85,13 +84,13 @@ func Test_toBytes(t *testing.T) {
 	params := []interface{}{
 		"a", 1, struct {
 			Name string
-			Id   int64
+			ID   int64
 		}{"YuYu", 1},
 	}
 	params2 := []interface{}{
 		"a", 1, struct {
 			Name string
-			Id   int64
+			ID   int64
 		}{"YuYu", 1},
 	}
 	jsonBytes, _ := toBytes(params)

@@ -35,8 +35,7 @@ func init() {
 	extension.SetLoadbalance(name, NewRandomLoadBalance)
 }
 
-type randomLoadBalance struct {
-}
+type randomLoadBalance struct{}
 
 // NewRandomLoadBalance returns a random load balance instance.
 //

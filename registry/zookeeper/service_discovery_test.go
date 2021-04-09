@@ -37,11 +37,14 @@ import (
 
 var testName = "test"
 
+var tc *zk.TestCluster
+
 func prepareData(t *testing.T) *zk.TestCluster {
-	ts, err := zk.StartTestCluster(1, nil, nil)
+	var err error
+	tc, err = zk.StartTestCluster(1, nil, nil)
 	assert.NoError(t, err)
-	assert.NotNil(t, ts.Servers[0])
-	address := "127.0.0.1:" + strconv.Itoa(ts.Servers[0].Port)
+	assert.NotNil(t, tc.Servers[0])
+	address := "127.0.0.1:" + strconv.Itoa(tc.Servers[0].Port)
 
 	config.GetBaseConfig().ServiceDiscoveries[testName] = &config.ServiceDiscoveryConfig{
 		Protocol:  "zookeeper",
@@ -52,7 +55,7 @@ func prepareData(t *testing.T) *zk.TestCluster {
 		Address:    address,
 		TimeoutStr: "10s",
 	}
-	return ts
+	return tc
 }
 
 func TestNewZookeeperServiceDiscovery(t *testing.T) {
@@ -74,10 +77,7 @@ func TestNewZookeeperServiceDiscovery(t *testing.T) {
 }
 
 func TestCURDZookeeperServiceDiscovery(t *testing.T) {
-	ts := prepareData(t)
-	defer func() {
-		_ = ts.Stop()
-	}()
+	prepareData(t)
 	sd, err := newZookeeperServiceDiscovery(testName)
 	assert.Nil(t, err)
 	defer func() {
@@ -86,7 +86,7 @@ func TestCURDZookeeperServiceDiscovery(t *testing.T) {
 	md := make(map[string]string)
 	md["t1"] = "test1"
 	err = sd.Register(&registry.DefaultServiceInstance{
-		Id:          "testId",
+		ID:          "testID",
 		ServiceName: testName,
 		Host:        "127.0.0.1",
 		Port:        2233,
@@ -100,12 +100,12 @@ func TestCURDZookeeperServiceDiscovery(t *testing.T) {
 	assert.Equal(t, 1, testsPager.GetDataSize())
 	assert.Equal(t, 1, testsPager.GetTotalPages())
 	test := testsPager.GetData()[0].(registry.ServiceInstance)
-	assert.Equal(t, "127.0.0.1:2233", test.GetId())
+	assert.Equal(t, "127.0.0.1:2233", test.GetID())
 	assert.Equal(t, "test1", test.GetMetadata()["t1"])
 
 	md["t1"] = "test12"
 	err = sd.Update(&registry.DefaultServiceInstance{
-		Id:          "testId",
+		ID:          "testID",
 		ServiceName: testName,
 		Host:        "127.0.0.1",
 		Port:        2233,
@@ -131,7 +131,7 @@ func TestCURDZookeeperServiceDiscovery(t *testing.T) {
 	assert.Equal(t, testName, names.Values()[0])
 
 	err = sd.Unregister(&registry.DefaultServiceInstance{
-		Id:          "testId",
+		ID:          "testID",
 		ServiceName: testName,
 		Host:        "127.0.0.1",
 		Port:        2233,
@@ -143,9 +143,8 @@ func TestCURDZookeeperServiceDiscovery(t *testing.T) {
 }
 
 func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
-	ts := prepareData(t)
 	defer func() {
-		_ = ts.Stop()
+		_ = tc.Stop()
 	}()
 	sd, err := newZookeeperServiceDiscovery(testName)
 	assert.Nil(t, err)
@@ -154,7 +153,7 @@ func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
 	}()
 
 	err = sd.Register(&registry.DefaultServiceInstance{
-		Id:          "testId",
+		ID:          "testID",
 		ServiceName: testName,
 		Host:        "127.0.0.1",
 		Port:        2233,
@@ -179,7 +178,7 @@ func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
 	assert.NoError(t, err)
 
 	err = sd.Update(&registry.DefaultServiceInstance{
-		Id:          "testId",
+		ID:          "testID",
 		ServiceName: testName,
 		Host:        "127.0.0.1",
 		Port:        2233,
@@ -199,6 +198,6 @@ type testNotify struct {
 func (tn *testNotify) Notify(e observer.Event) {
 	ice := e.(*registry.ServiceInstancesChangedEvent)
 	assert.Equal(tn.t, 1, len(ice.Instances))
-	assert.Equal(tn.t, "127.0.0.1:2233", ice.Instances[0].GetId())
+	assert.Equal(tn.t, "127.0.0.1:2233", ice.Instances[0].GetID())
 	tn.wg.Done()
 }

@@ -318,7 +318,7 @@ func TestMergeUrl(t *testing.T) {
 	referenceUrl, _ := NewURL("mock1://127.0.0.1:1111", WithParams(referenceUrlParams), WithMethods([]string{"testMethod"}))
 	serviceUrl, _ := NewURL("mock2://127.0.0.1:20000", WithParams(serviceUrlParams))
 
-	mergedUrl := MergeUrl(serviceUrl, referenceUrl)
+	mergedUrl := MergeURL(serviceUrl, referenceUrl)
 	assert.Equal(t, "random", mergedUrl.GetParam(constant.CLUSTER_KEY, ""))
 	assert.Equal(t, "1", mergedUrl.GetParam("test2", ""))
 	assert.Equal(t, "1", mergedUrl.GetParam("test3", ""))

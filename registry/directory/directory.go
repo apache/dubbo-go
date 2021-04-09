@@ -63,8 +63,8 @@ type RegistryDirectory struct {
 	configurators                  []config_center.Configurator
 	consumerConfigurationListener  *consumerConfigurationListener
 	referenceConfigurationListener *referenceConfigurationListener
-	//serviceKey                     string
-	//forbidden                      atomic.Bool
+	// serviceKey                     string
+	// forbidden                      atomic.Bool
 	registerLock sync.Mutex // this lock if for register
 }
 
@@ -111,7 +111,7 @@ func (dir *RegistryDirectory) Notify(event *registry.ServiceEvent) {
 	if event == nil {
 		return
 	}
-	go dir.refreshInvokers(event)
+	dir.refreshInvokers(event)
 }
 
 // NotifyAll notify the events that are complete Service Event List.
@@ -155,9 +155,9 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 				"please check the Action of ServiceEvent should be EventTypeUpdate")
 		}
 		// Originally it will Merge URL many times, now we just execute once.
-		// MergeUrl is executed once and put the result into Event. After this, the key will get from Event.Key().
+		// MergeURL is executed once and put the result into Event. After this, the key will get from Event.Key().
 		newUrl := dir.convertUrl(event)
-		newUrl = common.MergeUrl(newUrl, referenceUrl)
+		newUrl = common.MergeURL(newUrl, referenceUrl)
 		dir.overrideUrl(newUrl)
 		event.Update(newUrl)
 	}
@@ -187,7 +187,7 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 		// loop the updateEvents
 		for _, event := range addEvents {
 			logger.Debugf("registry update, result{%s}", event)
-			if event.Service != nil {
+			if event != nil && event.Service != nil {
 				logger.Infof("selector add service url{%s}", event.Service.String())
 			}
 			if event != nil && event.Service != nil && constant.ROUTER_PROTOCOL == event.Service.Protocol {
@@ -222,7 +222,7 @@ func (dir *RegistryDirectory) invokerCacheKey(event *registry.ServiceEvent) stri
 		return event.Key()
 	}
 	referenceUrl := dir.GetDirectoryUrl().SubURL
-	newUrl := common.MergeUrl(event.Service, referenceUrl)
+	newUrl := common.MergeURL(event.Service, referenceUrl)
 	event.Update(newUrl)
 	return newUrl.Key()
 }
@@ -260,14 +260,6 @@ func (dir *RegistryDirectory) cacheInvokerByEvent(event *registry.ServiceEvent) 
 
 // configRouters configures dynamic routers into the router chain, but, the current impl is incorrect, see FIXME above.
 func (dir *RegistryDirectory) configRouters() {
-	var urls []*common.URL
-	for _, v := range config.GetRouterURLSet().Values() {
-		urls = append(urls, v.(*common.URL))
-	}
-
-	if len(urls) > 0 {
-		dir.SetRouters(urls)
-	}
 }
 
 // convertUrl processes override:// and router://
@@ -297,7 +289,7 @@ func (dir *RegistryDirectory) toGroupInvokers() []protocol.Invoker {
 	})
 
 	for _, invoker := range newInvokersList {
-		group := invoker.GetUrl().GetParam(constant.GROUP_KEY, "")
+		group := invoker.GetURL().GetParam(constant.GROUP_KEY, "")
 
 		groupInvokersMap[group] = append(groupInvokersMap[group], invoker)
 	}
@@ -310,7 +302,7 @@ func (dir *RegistryDirectory) toGroupInvokers() []protocol.Invoker {
 	} else {
 		for _, invokers := range groupInvokersMap {
 			staticDir := directory.NewStaticDirectory(invokers)
-			cst := extension.GetCluster(dir.GetUrl().SubURL.GetParam(constant.CLUSTER_KEY, constant.DEFAULT_CLUSTER))
+			cst := extension.GetCluster(dir.GetURL().SubURL.GetParam(constant.CLUSTER_KEY, constant.DEFAULT_CLUSTER))
 			err = staticDir.BuildRouterChain(invokers)
 			if err != nil {
 				logger.Error(err)
@@ -354,7 +346,7 @@ func (dir *RegistryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
 	}
 	// check the url's protocol is equal to the protocol which is configured in reference config or referenceUrl is not care about protocol
 	if url.Protocol == referenceUrl.Protocol || referenceUrl.Protocol == "" {
-		newUrl := common.MergeUrl(url, referenceUrl)
+		newUrl := common.MergeURL(url, referenceUrl)
 		dir.overrideUrl(newUrl)
 		if v, ok := dir.doCacheInvoker(newUrl); ok {
 			return v
@@ -370,19 +362,23 @@ func (dir *RegistryDirectory) doCacheInvoker(newUrl *common.URL) (protocol.Invok
 		newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(newUrl)
 		if newInvoker != nil {
 			dir.cacheInvokersMap.Store(key, newInvoker)
+		} else {
+			logger.Warnf("service will be added in cache invokers fail, result is null, invokers url is %+v", newUrl.String())
 		}
 	} else {
 		// if cached invoker has the same URL with the new URL, then no need to re-refer, and no need to destroy
 		// the old invoker.
-		if common.GetCompareURLEqualFunc()(newUrl, cacheInvoker.(protocol.Invoker).GetUrl()) {
+		if common.GetCompareURLEqualFunc()(newUrl, cacheInvoker.(protocol.Invoker).GetURL()) {
 			return nil, true
 		}
 
-		logger.Debugf("service will be updated in cache invokers: new invoker url is %s, old invoker url is %s", newUrl, cacheInvoker.(protocol.Invoker).GetUrl())
+		logger.Debugf("service will be updated in cache invokers: new invoker url is %s, old invoker url is %s", newUrl, cacheInvoker.(protocol.Invoker).GetURL())
 		newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(newUrl)
 		if newInvoker != nil {
 			dir.cacheInvokersMap.Store(key, newInvoker)
 			return cacheInvoker.(protocol.Invoker), true
+		} else {
+			logger.Warnf("service will be updated in cache invokers fail, result is null, invokers url is %+v", newUrl.String())
 		}
 	}
 	return nil, false

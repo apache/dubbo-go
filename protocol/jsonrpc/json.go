@@ -231,7 +231,7 @@ func (r *serverRequest) UnmarshalJSON(raw []byte) error {
 		return perrors.New("bad request")
 	}
 
-	var o = make(map[string]*json.RawMessage)
+	o := make(map[string]*json.RawMessage)
 	if err := json.Unmarshal(raw, &o); err != nil {
 		return perrors.New("bad request")
 	}

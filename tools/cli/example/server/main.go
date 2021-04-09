@@ -38,9 +38,7 @@ import (
 	_ "github.com/apache/dubbo-go/registry/protocol"
 )
 
-var (
-	survivalTimeout = int(3e9)
-)
+var survivalTimeout = int(3e9)
 
 // they are necessary:
 // 		export CONF_PROVIDER_FILE_PATH="xxx"

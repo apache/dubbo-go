@@ -35,7 +35,6 @@ import (
 )
 
 func TestJsonrpcInvokerInvoke(t *testing.T) {
-
 	methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "jsonrpc", "", "", &UserProvider{})
 	assert.NoError(t, err)
 	assert.Equal(t, "GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4", methods)
@@ -64,7 +63,7 @@ func TestJsonrpcInvokerInvoke(t *testing.T) {
 		invocation.WithReply(user)))
 
 	assert.NoError(t, res.Error())
-	assert.Equal(t, User{Id: "1", Name: "username"}, *res.Result().(*User))
+	assert.Equal(t, User{ID: "1", Name: "username"}, *res.Result().(*User))
 
 	// destroy
 	proto.Destroy()

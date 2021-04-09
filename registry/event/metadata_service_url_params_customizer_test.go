@@ -44,7 +44,6 @@ func prepareMetadataServiceForTest() {
 }
 
 func TestMetadataServiceURLParamsMetadataCustomizer(t *testing.T) {
-
 	prepareMetadataServiceForTest()
 
 	msup := &metadataServiceURLParamsMetadataCustomizer{exceptKeys: gxset.NewSet()}
