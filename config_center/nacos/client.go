@@ -85,7 +85,7 @@ func ValidateNacosClient(container nacosClientFacade, opts ...option) error {
 		opt(os)
 	}
 
-	url := container.GetUrl()
+	url := container.GetURL()
 	timeout, err := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
 	if err != nil {
 		logger.Errorf("invalid timeout config %+v,got err %+v",

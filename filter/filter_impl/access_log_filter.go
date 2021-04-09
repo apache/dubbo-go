@@ -80,7 +80,7 @@ type AccessLogFilter struct {
 // Invoke will check whether user wants to use this filter.
 // If we find the value of key constant.ACCESS_LOG_KEY, we will log the invocation info
 func (ef *AccessLogFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	accessLog := invoker.GetUrl().GetParam(constant.ACCESS_LOG_KEY, "")
+	accessLog := invoker.GetURL().GetParam(constant.ACCESS_LOG_KEY, "")
 
 	// the user do not
 	if len(accessLog) > 0 {

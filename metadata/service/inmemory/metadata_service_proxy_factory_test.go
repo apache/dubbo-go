@@ -79,7 +79,7 @@ func (m mockProtocol) Destroy() {
 
 type mockInvoker struct{}
 
-func (m *mockInvoker) GetUrl() *common.URL {
+func (m *mockInvoker) GetURL() *common.URL {
 	panic("implement me")
 }
 
