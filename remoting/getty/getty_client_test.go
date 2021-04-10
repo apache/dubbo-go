@@ -93,7 +93,7 @@ func getClient(url *common.URL) *Client {
 }
 
 func testClient_Call(t *testing.T, svr *Server, url *common.URL, c *Client) {
-	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
+	c.pool = newGettyRPCClientConnPool(c)
 
 	testGetBigPkg(t, c)
 	testGetUser(t, c)
@@ -342,8 +342,6 @@ func InitTest(t *testing.T) (*Server, *common.URL) {
 		ConnectionNum:   2,
 		HeartbeatPeriod: "5s",
 		SessionTimeout:  "20s",
-		PoolTTL:         600,
-		PoolSize:        64,
 		GettySessionParam: GettySessionParam{
 			CompressEncoding: false,
 			TcpNoDelay:       true,

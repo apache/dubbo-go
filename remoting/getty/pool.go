@@ -325,8 +325,6 @@ func (c *gettyRPCClient) close() error {
 
 type gettyRPCClientPool struct {
 	rpcClient  *Client
-	size       int   // size of []*gettyRPCClient
-	ttl        int64 // ttl of every gettyRPCClient, it is checked when getConn
 	sslEnabled bool
 	closed     bool
 
@@ -334,11 +332,9 @@ type gettyRPCClientPool struct {
 	conn *gettyRPCClient
 }
 
-func newGettyRPCClientConnPool(rpcClient *Client, size int, ttl time.Duration) *gettyRPCClientPool {
+func newGettyRPCClientConnPool(rpcClient *Client) *gettyRPCClientPool {
 	return &gettyRPCClientPool{
 		rpcClient: rpcClient,
-		size:      size,
-		ttl:       int64(ttl.Seconds()),
 		closed:    false,
 	}
 }

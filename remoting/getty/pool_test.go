@@ -19,7 +19,6 @@ package getty
 
 import (
 	"testing"
-	"time"
 )
 
 import (
@@ -29,7 +28,7 @@ import (
 func TestGetConnFromPool(t *testing.T) {
 	var rpcClient Client
 
-	clientPoll := newGettyRPCClientConnPool(&rpcClient, 1, time.Duration(5*time.Second))
+	clientPoll := newGettyRPCClientConnPool(&rpcClient)
 	cli, err := clientPoll.get()
 	assert.Nil(t, cli)
 	assert.Nil(t, err)
