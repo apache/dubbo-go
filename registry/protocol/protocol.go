@@ -25,6 +25,7 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -70,7 +71,8 @@ func init() {
 	extension.SetProtocol("registry", GetProtocol)
 }
 
-func getCacheKey(url *common.URL) string {
+func getCacheKey(invoker protocol.Invoker) string {
+	url := getProviderUrl(invoker)
 	delKeys := gxset.NewSet("dynamic", "enabled")
 	return url.CloneExceptParams(delKeys).String()
 }
@@ -200,7 +202,7 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 		return nil
 	}
 
-	key := getCacheKey(providerUrl)
+	key := getCacheKey(invoker)
 	logger.Infof("The cached exporter keys is %v!", key)
 	cachedExporter, loaded := proto.bounds.Load(key)
 	if loaded {
@@ -221,15 +223,43 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 }
 
 func (proto *registryProtocol) reExport(invoker protocol.Invoker, newUrl *common.URL) {
-	url := getProviderUrl(invoker)
-	key := getCacheKey(url)
+	key := getCacheKey(invoker)
 	if oldExporter, loaded := proto.bounds.Load(key); loaded {
 		wrappedNewInvoker := newWrappedInvoker(invoker, newUrl)
 		oldExporter.(protocol.Exporter).Unexport()
 		proto.bounds.Delete(key)
+		// oldExporter Unexport function unRegister rpcService from the serviceMap, so need register it again as far as possible
+		if err := registerServiceMap(invoker); err != nil {
+			logger.Error(err.Error())
+		}
 		proto.Export(wrappedNewInvoker)
 		// TODO:  unregister & unsubscribe
 	}
+}
+
+func registerServiceMap(invoker protocol.Invoker) error {
+	providerUrl := getProviderUrl(invoker)
+	id := providerUrl.GetParam(constant.BEAN_NAME_KEY, "")
+
+	serviceConfig := config.GetProviderConfig().Services[id]
+	if serviceConfig == nil {
+		s := "reExport can not get serviceConfig"
+		return perrors.New(s)
+	}
+	rpcService := config.GetProviderService(id)
+	if rpcService == nil {
+		s := "reExport can not get RPCService"
+		return perrors.New(s)
+	}
+
+	_, err := common.ServiceMap.Register(serviceConfig.InterfaceName,
+		serviceConfig.Protocol, serviceConfig.Group,
+		serviceConfig.Version, rpcService)
+	if err != nil {
+		s := "reExport can not re register ServiceMap. Error message is " + err.Error()
+		return perrors.New(s)
+	}
+	return nil
 }
 
 type overrideSubscribeListener struct {
@@ -263,7 +293,7 @@ func (nl *overrideSubscribeListener) NotifyAll(events []*registry.ServiceEvent, 
 
 func (nl *overrideSubscribeListener) doOverrideIfNecessary() {
 	providerUrl := getProviderUrl(nl.originInvoker)
-	key := getCacheKey(providerUrl)
+	key := getCacheKey(nl.originInvoker)
 	if exporter, ok := nl.protocol.bounds.Load(key); ok {
 		currentUrl := exporter.(protocol.Exporter).GetInvoker().GetURL()
 		// Compatible with the 2.6.x
