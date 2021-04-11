@@ -43,28 +43,26 @@ type gettyRPCClient struct {
 	addr   string
 	active int64 // zero, not create or be destroyed
 
-	pool *gettyRPCClientPool
+	rpcClient *Client
 
 	lock        sync.RWMutex
 	gettyClient getty.Client
 	sessions    []*rpcSession
 }
 
-var errClientPoolClosed = perrors.New("client pool closed")
-
-func newGettyRPCClientConn(pool *gettyRPCClientPool, addr string) (*gettyRPCClient, error) {
+func newGettyRPCClientConn(rpcClient *Client, addr string) (*gettyRPCClient, error) {
 	var (
 		gettyClient getty.Client
 		sslEnabled  bool
 	)
-	sslEnabled = pool.sslEnabled
+	sslEnabled = rpcClient.sslEnabled
 	clientOpts := []getty.ClientOption{
 		getty.WithServerAddress(addr),
-		getty.WithConnectionNumber((int)(pool.rpcClient.conf.ConnectionNum)),
-		getty.WithReconnectInterval(pool.rpcClient.conf.ReconnectInterval),
+		getty.WithConnectionNumber((int)(rpcClient.conf.ConnectionNum)),
+		getty.WithReconnectInterval(rpcClient.conf.ReconnectInterval),
 	}
 	if sslEnabled {
-		clientOpts = append(clientOpts, getty.WithClientSslEnabled(pool.sslEnabled), getty.WithClientTlsConfigBuilder(config.GetClientTlsConfigBuilder()))
+		clientOpts = append(clientOpts, getty.WithClientSslEnabled(sslEnabled), getty.WithClientTlsConfigBuilder(config.GetClientTlsConfigBuilder()))
 	}
 
 	if clientGrpool != nil {
@@ -74,14 +72,14 @@ func newGettyRPCClientConn(pool *gettyRPCClientPool, addr string) (*gettyRPCClie
 	gettyClient = getty.NewTCPClient(clientOpts...)
 	c := &gettyRPCClient{
 		addr:        addr,
-		pool:        pool,
+		rpcClient:   rpcClient,
 		gettyClient: gettyClient,
 	}
 	go c.gettyClient.RunEventLoop(c.newSession)
 
 	idx := 1
 	start := time.Now()
-	connectTimeout := pool.rpcClient.opts.ConnectTimeout
+	connectTimeout := rpcClient.opts.ConnectTimeout
 	for {
 		idx++
 		if c.isAvailable() {
@@ -120,8 +118,8 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 		conf       ClientConfig
 		sslEnabled bool
 	)
-	conf = c.pool.rpcClient.conf
-	sslEnabled = c.pool.sslEnabled
+	conf = c.rpcClient.conf
+	sslEnabled = c.rpcClient.sslEnabled
 	if conf.GettySessionParam.CompressEncoding {
 		session.SetCompressType(getty.CompressZip)
 	}
@@ -131,7 +129,7 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 		}
 		session.SetName(conf.GettySessionParam.SessionName)
 		session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
-		session.SetPkgHandler(NewRpcClientPackageHandler(c.pool.rpcClient))
+		session.SetPkgHandler(NewRpcClientPackageHandler(c.rpcClient))
 		session.SetEventListener(NewRpcClientHandler(c))
 		session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
 		session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
@@ -164,7 +162,7 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 
 	session.SetName(conf.GettySessionParam.SessionName)
 	session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
-	session.SetPkgHandler(NewRpcClientPackageHandler(c.pool.rpcClient))
+	session.SetPkgHandler(NewRpcClientPackageHandler(c.rpcClient))
 	session.SetEventListener(NewRpcClientHandler(c))
 	session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
 	session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
@@ -181,7 +179,6 @@ func (c *gettyRPCClient) selectSession() getty.Session {
 	if c.sessions == nil {
 		return nil
 	}
-
 	count := len(c.sessions)
 	if count == 0 {
 		return nil
@@ -229,7 +226,7 @@ func (c *gettyRPCClient) removeSession(session getty.Session) {
 		}
 	}()
 	if removeFlag {
-		c.pool.resetConn()
+		c.rpcClient.resetRpcConn()
 		c.close()
 	}
 }
@@ -321,62 +318,4 @@ func (c *gettyRPCClient) close() error {
 		closeErr = nil
 	})
 	return closeErr
-}
-
-type gettyRPCClientPool struct {
-	rpcClient  *Client
-	sslEnabled bool
-	closed     bool
-
-	sync.Mutex
-	conn *gettyRPCClient
-}
-
-func newGettyRPCClientConnPool(rpcClient *Client) *gettyRPCClientPool {
-	return &gettyRPCClientPool{
-		rpcClient: rpcClient,
-		closed:    false,
-	}
-}
-
-func (p *gettyRPCClientPool) close() {
-	p.Lock()
-	conn := p.conn
-	p.conn = nil
-	p.closed = true
-	p.Unlock()
-	if conn != nil {
-		conn.close()
-	}
-}
-
-func (p *gettyRPCClientPool) getGettyRpcClient(addr string) (*gettyRPCClient, error) {
-	p.Lock()
-	defer p.Unlock()
-	conn, connErr := p.get()
-	if connErr == nil && conn == nil {
-		// create new conn
-		rpcClientConn, rpcErr := newGettyRPCClientConn(p, addr)
-		if rpcErr == nil {
-			p.conn = rpcClientConn
-		}
-		return rpcClientConn, perrors.WithStack(rpcErr)
-	}
-	return conn, perrors.WithStack(connErr)
-}
-
-func (p *gettyRPCClientPool) get() (*gettyRPCClient, error) {
-	if p.closed {
-		return nil, errClientPoolClosed
-	}
-	if p.conn != nil {
-		return p.conn, nil
-	}
-	return nil, nil
-}
-
-func (p *gettyRPCClientPool) resetConn() {
-	p.Lock()
-	defer p.Unlock()
-	p.conn = nil
 }
