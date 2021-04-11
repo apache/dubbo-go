@@ -239,6 +239,8 @@ func (proto *registryProtocol) reExport(invoker protocol.Invoker, newUrl *common
 
 func registerServiceMap(invoker protocol.Invoker) error {
 	providerUrl := getProviderUrl(invoker)
+	// the bean.name param of providerUrl is the ServiceConfig id property
+	// such as dubbo://:20000/org.apache.dubbo.UserProvider?bean.name=UserProvider&cluster=failfast...
 	id := providerUrl.GetParam(constant.BEAN_NAME_KEY, "")
 
 	serviceConfig := config.GetProviderConfig().Services[id]
