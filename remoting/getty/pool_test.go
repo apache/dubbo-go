@@ -27,10 +27,8 @@ import (
 
 func TestGetConnFromPool(t *testing.T) {
 	var rpcClient Client
-
 	clientPoll := newGettyRPCClientConnPool(&rpcClient)
 	cli, err := clientPoll.get()
 	assert.Nil(t, cli)
 	assert.Nil(t, err)
-
 }
