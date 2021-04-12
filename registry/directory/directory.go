@@ -224,7 +224,7 @@ func (dir *RegistryDirectory) invokerCacheKey(event *registry.ServiceEvent) stri
 	referenceUrl := dir.GetDirectoryUrl().SubURL
 	newUrl := common.MergeUrl(event.Service, referenceUrl)
 	event.Update(newUrl)
-	return newUrl.Key()
+	return newUrl.CacheInvokerMapKey()
 }
 
 // setNewInvokers groups the invokers from the cache first, then set the result to both directory and router chain.
