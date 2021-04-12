@@ -153,7 +153,7 @@ func (d *DefaultServiceInstance) GetEndPoints() []*Endpoint {
 
 func (d *DefaultServiceInstance) Copy(endpoint *Endpoint) ServiceInstance {
 	dn := &DefaultServiceInstance{
-		Id:              d.Id,
+		ID:              d.ID,
 		ServiceName:     d.ServiceName,
 		Host:            d.Host,
 		Port:            endpoint.Port,
@@ -162,7 +162,7 @@ func (d *DefaultServiceInstance) Copy(endpoint *Endpoint) ServiceInstance {
 		Metadata:        d.Metadata,
 		ServiceMetadata: d.ServiceMetadata,
 	}
-	dn.Id = d.GetAddress()
+	dn.ID = d.GetAddress()
 	return dn
 }
 

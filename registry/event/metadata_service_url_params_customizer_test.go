@@ -22,7 +22,6 @@ import (
 )
 
 import (
-	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,7 +31,7 @@ import (
 )
 
 func TestMetadataServiceURLParamsMetadataCustomizer(t *testing.T) {
-	msup := &metadataServiceURLParamsMetadataCustomizer{exceptKeys: gxset.NewSet()}
+	msup := &metadataServiceURLParamsMetadataCustomizer{}
 	assert.Equal(t, 0, msup.GetPriority())
 
 	msup.Customize(createInstance())

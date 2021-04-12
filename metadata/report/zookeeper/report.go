@@ -36,7 +36,6 @@ import (
 	"github.com/apache/dubbo-go/metadata/identifier"
 	"github.com/apache/dubbo-go/metadata/report"
 	"github.com/apache/dubbo-go/metadata/report/factory"
-	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
 var emptyStrSlice = make([]string, 0)
