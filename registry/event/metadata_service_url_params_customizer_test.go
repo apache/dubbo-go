@@ -32,7 +32,6 @@ import (
 )
 
 func TestMetadataServiceURLParamsMetadataCustomizer(t *testing.T) {
-
 	msup := &metadataServiceURLParamsMetadataCustomizer{exceptKeys: gxset.NewSet()}
 	assert.Equal(t, 0, msup.GetPriority())
 

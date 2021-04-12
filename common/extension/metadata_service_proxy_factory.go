@@ -25,9 +25,7 @@ import (
 	"github.com/apache/dubbo-go/metadata/service"
 )
 
-var (
-	metadataServiceProxyFactoryMap = make(map[string]func() service.MetadataServiceProxyFactory, 2)
-)
+var metadataServiceProxyFactoryMap = make(map[string]func() service.MetadataServiceProxyFactory, 2)
 
 type MetadataServiceProxyFactoryFunc func() service.MetadataServiceProxyFactory
 

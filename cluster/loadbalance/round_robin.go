@@ -69,7 +69,7 @@ func (lb *roundRobinLoadBalance) Select(invokers []protocol.Invoker, invocation 
 		return invokers[0]
 	}
 
-	key := invokers[0].GetUrl().Path + "." + invocation.MethodName()
+	key := invokers[0].GetURL().Path + "." + invocation.MethodName()
 	cache, _ := methodWeightMap.LoadOrStore(key, &cachedInvokers{})
 	cachedInvokers := cache.(*cachedInvokers)
 
@@ -83,12 +83,12 @@ func (lb *roundRobinLoadBalance) Select(invokers []protocol.Invoker, invocation 
 	)
 
 	for _, invoker := range invokers {
-		var weight = GetWeight(invoker, invocation)
+		weight := GetWeight(invoker, invocation)
 		if weight < 0 {
 			weight = 0
 		}
 
-		identifier := invoker.GetUrl().Key()
+		identifier := invoker.GetURL().Key()
 		loaded, found := cachedInvokers.LoadOrStore(identifier, &weightedRoundRobin{weight: weight})
 		weightRobin := loaded.(*weightedRoundRobin)
 		if !found {

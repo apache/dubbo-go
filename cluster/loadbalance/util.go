@@ -29,7 +29,7 @@ import (
 // GetWeight gets weight for load balance strategy
 func GetWeight(invoker protocol.Invoker, invocation protocol.Invocation) int64 {
 	var weight int64
-	url := invoker.GetUrl()
+	url := invoker.GetURL()
 	// Multiple registry scenario, load balance among multiple registries.
 	isRegIvk := url.GetParamBool(constant.REGISTRY_KEY+"."+constant.REGISTRY_LABEL_KEY, false)
 	if isRegIvk {
@@ -38,7 +38,7 @@ func GetWeight(invoker protocol.Invoker, invocation protocol.Invocation) int64 {
 		weight = url.GetMethodParamInt64(invocation.MethodName(), constant.WEIGHT_KEY, constant.DEFAULT_WEIGHT)
 
 		if weight > 0 {
-			//get service register time an do warm up time
+			// get service register time an do warm up time
 			now := time.Now().Unix()
 			timestamp := url.GetParamInt(constant.REMOTE_TIMESTAMP_KEY, now)
 			if uptime := now - timestamp; uptime > 0 {

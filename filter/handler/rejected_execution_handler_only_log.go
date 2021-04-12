@@ -18,8 +18,9 @@
 package handler
 
 import (
-	"github.com/apache/dubbo-go/filter"
 	"sync"
+
+	"github.com/apache/dubbo-go/filter"
 )
 
 import (
@@ -41,8 +42,10 @@ func init() {
 	extension.SetRejectedExecutionHandler(constant.DEFAULT_KEY, GetOnlyLogRejectedExecutionHandler)
 }
 
-var onlyLogHandlerInstance *OnlyLogRejectedExecutionHandler
-var onlyLogHandlerOnce sync.Once
+var (
+	onlyLogHandlerInstance *OnlyLogRejectedExecutionHandler
+	onlyLogHandlerOnce     sync.Once
+)
 
 // OnlyLogRejectedExecutionHandler implements the RejectedExecutionHandler
 /**
@@ -59,8 +62,7 @@ var onlyLogHandlerOnce sync.Once
  *    - name: "GetUser"
  * OnlyLogRejectedExecutionHandler is designed to be singleton
  */
-type OnlyLogRejectedExecutionHandler struct {
-}
+type OnlyLogRejectedExecutionHandler struct{}
 
 // RejectedExecution will do nothing, it only log the invocation.
 func (handler *OnlyLogRejectedExecutionHandler) RejectedExecution(url *common.URL,

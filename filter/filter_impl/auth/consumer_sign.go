@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 )
+
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -30,8 +31,7 @@ import (
 )
 
 // ConsumerSignFilter signs the request on consumer side
-type ConsumerSignFilter struct {
-}
+type ConsumerSignFilter struct{}
 
 func init() {
 	extension.SetFilter(constant.CONSUMER_SIGN_FILTER, getConsumerSignFilter)
@@ -40,14 +40,13 @@ func init() {
 // Invoke retrieves the configured Authenticator to add signature to invocation
 func (csf *ConsumerSignFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("invoking ConsumerSign filter.")
-	url := invoker.GetUrl()
+	url := invoker.GetURL()
 
 	err := doAuthWork(url, func(authenticator filter.Authenticator) error {
 		return authenticator.Sign(invocation, url)
 	})
 	if err != nil {
 		panic(fmt.Sprintf("Sign for invocation %s # %s failed", url.ServiceKey(), invocation.MethodName()))
-
 	}
 	return invoker.Invoke(ctx, invocation)
 }

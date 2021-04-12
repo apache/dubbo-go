@@ -63,7 +63,7 @@ func referNormal(t *testing.T, regProtocol *registryProtocol) {
 
 	invoker := regProtocol.Refer(url)
 	assert.IsType(t, &protocol.BaseInvoker{}, invoker)
-	assert.Equal(t, invoker.GetUrl().String(), url.String())
+	assert.Equal(t, invoker.GetURL().String(), url.String())
 }
 
 func TestRefer(t *testing.T) {
@@ -133,12 +133,11 @@ func exporterNormal(t *testing.T, regProtocol *registryProtocol) *common.URL {
 	exporter := regProtocol.Export(invoker)
 
 	assert.IsType(t, &protocol.BaseExporter{}, exporter)
-	assert.Equal(t, exporter.GetInvoker().GetUrl().String(), suburl.String())
+	assert.Equal(t, exporter.GetInvoker().GetURL().String(), suburl.String())
 	return url
 }
 
 func TestExporter(t *testing.T) {
-
 	regProtocol := newRegistryProtocol()
 	exporterNormal(t, regProtocol)
 }
@@ -295,5 +294,4 @@ func TestGetProviderUrlWithHideKey(t *testing.T) {
 	assert.NotContains(t, providerUrl.GetParams(), ".c")
 	assert.NotContains(t, providerUrl.GetParams(), ".d")
 	assert.Contains(t, providerUrl.GetParams(), "a")
-
 }

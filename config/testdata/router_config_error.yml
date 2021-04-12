@@ -1,7 +1,0 @@
-# dubbo router yaml configure file
-routerRules: 
-  - priority: 1
-    force: true
-    noConditions :
-    - "a => b"
-    - "c => d"

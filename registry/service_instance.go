@@ -29,8 +29,8 @@ import (
 // ServiceInstance is the model class of an instance of a service, which is used for service registration and discovery.
 type ServiceInstance interface {
 
-	// GetId will return this instance's id. It should be unique.
-	GetId() string
+	// GetID will return this instance's id. It should be unique.
+	GetID() string
 
 	// GetServiceName will return the serviceName
 	GetServiceName() string
@@ -72,7 +72,7 @@ type Endpoint struct {
 // DefaultServiceInstance the default implementation of ServiceInstance
 // or change the ServiceInstance to be struct???
 type DefaultServiceInstance struct {
-	Id              string
+	ID              string
 	ServiceName     string
 	Host            string
 	Port            int
@@ -83,9 +83,9 @@ type DefaultServiceInstance struct {
 	Address         string
 }
 
-// GetId will return this instance's id. It should be unique.
-func (d *DefaultServiceInstance) GetId() string {
-	return d.Id
+// GetID will return this instance's id. It should be unique.
+func (d *DefaultServiceInstance) GetID() string {
+	return d.ID
 }
 
 // GetServiceName will return the serviceName

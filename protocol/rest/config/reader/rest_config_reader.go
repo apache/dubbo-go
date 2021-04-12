@@ -43,8 +43,7 @@ func init() {
 	extension.SetDefaultConfigReader(REST, REST)
 }
 
-type RestConfigReader struct {
-}
+type RestConfigReader struct{}
 
 func NewRestConfigReader() interfaces.ConfigReader {
 	return &RestConfigReader{}
@@ -62,7 +61,7 @@ func (cr *RestConfigReader) ReadConsumerConfig(reader *bytes.Buffer) error {
 	for key, rc := range restConsumerConfig.RestServiceConfigsMap {
 		rc.Client = getNotEmptyStr(rc.Client, restConsumerConfig.Client, constant.DEFAULT_REST_CLIENT)
 		rc.RestMethodConfigsMap = initMethodConfigMap(rc, restConsumerConfig.Consumes, restConsumerConfig.Produces)
-		restConsumerServiceConfigMap[strings.TrimPrefix(key, "/")] = rc
+		restConsumerServiceConfigMap[key] = rc
 	}
 	config.SetRestConsumerServiceConfigMap(restConsumerServiceConfigMap)
 	return nil
@@ -79,7 +78,7 @@ func (cr *RestConfigReader) ReadProviderConfig(reader *bytes.Buffer) error {
 	for key, rc := range restProviderConfig.RestServiceConfigsMap {
 		rc.Server = getNotEmptyStr(rc.Server, restProviderConfig.Server, constant.DEFAULT_REST_SERVER)
 		rc.RestMethodConfigsMap = initMethodConfigMap(rc, restProviderConfig.Consumes, restProviderConfig.Produces)
-		restProviderServiceConfigMap[strings.TrimPrefix(key, "/")] = rc
+		restProviderServiceConfigMap[key] = rc
 	}
 	config.SetRestProviderServiceConfigMap(restProviderServiceConfigMap)
 	return nil

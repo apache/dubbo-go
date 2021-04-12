@@ -27,6 +27,7 @@ import (
 
 import (
 	"github.com/dubbogo/go-zookeeper/zk"
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	perrors "github.com/pkg/errors"
 )
 
@@ -54,12 +55,12 @@ func init() {
 
 type zkRegistry struct {
 	registry.BaseRegistry
-	client       *zookeeper.ZookeeperClient
+	client       *gxzookeeper.ZookeeperClient
 	listenerLock sync.Mutex
 	listener     *zookeeper.ZkEventListener
 	dataListener *RegistryDataListener
 	cltLock      sync.Mutex
-	//for provider
+	// for provider
 	zkPath map[string]int // key = protocol://ip:port/interface
 }
 
@@ -73,11 +74,12 @@ func newZkRegistry(url *common.URL) (registry.Registry, error) {
 	}
 	r.InitBaseRegistry(url, r)
 
-	err = zookeeper.ValidateZookeeperClient(r, zookeeper.WithZkName(RegistryZkClient))
+	err = zookeeper.ValidateZookeeperClient(r, RegistryZkClient)
 	if err != nil {
 		return nil, err
 	}
 
+	r.WaitGroup().Add(1) //zk client start successful, then wg +1
 	go zookeeper.HandleClientRestart(r)
 
 	r.listener = zookeeper.NewZkEventListener(r.client)
@@ -89,29 +91,29 @@ func newZkRegistry(url *common.URL) (registry.Registry, error) {
 
 // nolint
 type Options struct {
-	client *zookeeper.ZookeeperClient
+	client *gxzookeeper.ZookeeperClient
 }
 
 // nolint
 type Option func(*Options)
 
-func newMockZkRegistry(url *common.URL, opts ...zookeeper.Option) (*zk.TestCluster, *zkRegistry, error) {
+func newMockZkRegistry(url *common.URL, opts ...gxzookeeper.Option) (*zk.TestCluster, *zkRegistry, error) {
 	var (
 		err error
 		r   *zkRegistry
 		c   *zk.TestCluster
-		//event <-chan zk.Event
+		// event <-chan zk.Event
 	)
 
 	r = &zkRegistry{
 		zkPath: make(map[string]int),
 	}
 	r.InitBaseRegistry(url, r)
-	c, r.client, _, err = zookeeper.NewMockZookeeperClient("test", 15*time.Second, opts...)
+	c, r.client, _, err = gxzookeeper.NewMockZookeeperClient("test", 15*time.Second, opts...)
 	if err != nil {
 		return nil, nil, err
 	}
-	r.WaitGroup().Add(1) //zk client start successful, then wg +1
+	r.WaitGroup().Add(1) // zk client start successful, then wg +1
 	go zookeeper.HandleClientRestart(r)
 	r.InitListeners()
 	return c, r, nil
@@ -183,12 +185,12 @@ func (r *zkRegistry) CloseAndNilClient() {
 }
 
 // nolint
-func (r *zkRegistry) ZkClient() *zookeeper.ZookeeperClient {
+func (r *zkRegistry) ZkClient() *gxzookeeper.ZookeeperClient {
 	return r.client
 }
 
 // nolint
-func (r *zkRegistry) SetZkClient(client *zookeeper.ZookeeperClient) {
+func (r *zkRegistry) SetZkClient(client *gxzookeeper.ZookeeperClient) {
 	r.client = client
 }
 
@@ -223,27 +225,25 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 
 	// try to register the node
 	zkPath, err = r.client.RegisterTemp(root, node)
-	if err != nil {
-		logger.Errorf("Register temp node(root{%s}, node{%s}) = error{%v}", root, node, perrors.WithStack(err))
-		if perrors.Cause(err) == zk.ErrNodeExists {
-			// should delete the old node
-			logger.Info("Register temp node failed, try to delete the old and recreate  (root{%s}, node{%s}) , ignore!", root, node)
-			if err = r.client.Delete(zkPath); err == nil {
-				_, err = r.client.RegisterTemp(root, node)
-			}
-			if err != nil {
-				logger.Errorf("Recreate the temp node failed, (root{%s}, node{%s}) = error{%v}", root, node, perrors.WithStack(err))
-			}
-		}
-		return perrors.WithMessagef(err, "RegisterTempNode(root{%s}, node{%s})", root, node)
+	if err == nil {
+		return nil
 	}
-	logger.Debugf("Create a zookeeper node:%s", zkPath)
 
-	return nil
+	if perrors.Cause(err) == zk.ErrNodeExists {
+		if err = r.client.Delete(zkPath); err == nil {
+			_, err = r.client.RegisterTemp(root, node)
+		}
+
+		if err == nil {
+			return nil
+		}
+	}
+
+	logger.Errorf("Register temp node(root{%s}, node{%s}) = error{%v}", root, node, perrors.WithStack(err))
+	return perrors.WithMessagef(err, "RegisterTempNode(root{%s}, node{%s})", root, node)
 }
 
 func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListener, error) {
-
 	var zkListener *RegistryConfigurationListener
 	dataListener := r.dataListener
 	ttl := r.GetParam(constant.REGISTRY_TTL_KEY, constant.DEFAULT_REG_TTL)
@@ -280,30 +280,23 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 		r.listenerLock.Unlock()
 	}
 
-	//Interested register to dataconfig.
+	// Interested register to dataconfig.
 	r.dataListener.SubscribeURL(conf, zkListener)
 
-	go r.listener.ListenServiceEvent(
-		conf,
-		fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, url.QueryEscape(conf.Service())),
-		r.dataListener,
-	)
+	go r.listener.ListenServiceEvent(conf, fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, url.QueryEscape(conf.Service())), r.dataListener)
 
 	return zkListener, nil
 }
 
 func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationListener, error) {
-
 	var zkListener *RegistryConfigurationListener
 	r.dataListener.mutex.Lock()
 	configurationListener := r.dataListener.subscribed[conf.ServiceKey()]
 	if configurationListener != nil {
-		rcListener, _ := configurationListener.(*RegistryConfigurationListener)
-		if rcListener != nil {
-			if rcListener.isClosed {
-				r.dataListener.mutex.Unlock()
-				return nil, perrors.New("configListener already been closed")
-			}
+		zkListener, _ = configurationListener.(*RegistryConfigurationListener)
+		if zkListener != nil && zkListener.isClosed {
+			r.dataListener.mutex.Unlock()
+			return nil, perrors.New("configListener already been closed")
 		}
 	}
 
@@ -314,7 +307,7 @@ func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationL
 		return nil, perrors.New("listener is null can not close.")
 	}
 
-	//Interested register to dataconfig.
+	// Interested register to dataconfig.
 	r.listenerLock.Lock()
 	listener := r.listener
 	r.listener = nil

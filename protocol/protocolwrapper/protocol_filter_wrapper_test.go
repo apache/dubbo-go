@@ -60,7 +60,7 @@ func TestProtocolFilterWrapperRefer(t *testing.T) {
 	assert.True(t, ok)
 }
 
-//the same as echo filter, for test
+// the same as echo filter, for test
 func init() {
 	extension.SetFilter("echo", GetFilter)
 }

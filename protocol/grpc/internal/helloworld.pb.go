@@ -32,9 +32,11 @@ import (
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
-var _ = proto.Marshal
-var _ = fmt.Errorf
-var _ = math.Inf
+var (
+	_ = proto.Marshal
+	_ = fmt.Errorf
+	_ = math.Inf
+)
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the proto package it is being compiled against.
@@ -60,15 +62,19 @@ func (*HelloRequest) Descriptor() ([]byte, []int) {
 func (m *HelloRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_HelloRequest.Unmarshal(m, b)
 }
+
 func (m *HelloRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_HelloRequest.Marshal(b, m, deterministic)
 }
+
 func (m *HelloRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_HelloRequest.Merge(m, src)
 }
+
 func (m *HelloRequest) XXX_Size() int {
 	return xxx_messageInfo_HelloRequest.Size(m)
 }
+
 func (m *HelloRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_HelloRequest.DiscardUnknown(m)
 }
@@ -100,15 +106,19 @@ func (*HelloReply) Descriptor() ([]byte, []int) {
 func (m *HelloReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_HelloReply.Unmarshal(m, b)
 }
+
 func (m *HelloReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_HelloReply.Marshal(b, m, deterministic)
 }
+
 func (m *HelloReply) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_HelloReply.Merge(m, src)
 }
+
 func (m *HelloReply) XXX_Size() int {
 	return xxx_messageInfo_HelloReply.Size(m)
 }
+
 func (m *HelloReply) XXX_DiscardUnknown() {
 	xxx_messageInfo_HelloReply.DiscardUnknown(m)
 }
@@ -145,8 +155,10 @@ var fileDescriptor_17b8c58d586b62f2 = []byte{
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
-var _ context.Context
-var _ grpc.ClientConn
+var (
+	_ context.Context
+	_ grpc.ClientConn
+)
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
@@ -184,8 +196,7 @@ type GreeterServer interface {
 }
 
 // UnimplementedGreeterServer can be embedded to have forward compatible implementations.
-type UnimplementedGreeterServer struct {
-}
+type UnimplementedGreeterServer struct{}
 
 func (*UnimplementedGreeterServer) SayHello(ctx context.Context, req *HelloRequest) (*HelloReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SayHello not implemented")

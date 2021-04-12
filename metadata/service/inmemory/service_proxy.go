@@ -40,11 +40,10 @@ import (
 // for now, only GetExportedURLs need to be implemented
 type MetadataServiceProxy struct {
 	invkr protocol.Invoker
-	//golangServer bool
+	// golangServer bool
 }
 
 func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]interface{}, error) {
-
 	siV := reflect.ValueOf(serviceInterface)
 	gV := reflect.ValueOf(group)
 	vV := reflect.ValueOf(version)

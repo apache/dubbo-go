@@ -40,10 +40,8 @@ import (
 	"github.com/apache/dubbo-go/protocol/mock"
 )
 
-var (
-	failsafeUrl, _ = common.NewURL(
-		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
-)
+var failsafeUrl, _ = common.NewURL(
+	fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
 
 // registerFailsafe register failsafeCluster to cluster extension.
 func registerFailsafe(invoker *mock.MockInvoker) protocol.Invoker {
@@ -52,6 +50,7 @@ func registerFailsafe(invoker *mock.MockInvoker) protocol.Invoker {
 
 	invokers := []protocol.Invoker{}
 	invokers = append(invokers, invoker)
+	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 
 	invoker.EXPECT().GetUrl().Return(failbackUrl)
 
@@ -66,6 +65,8 @@ func TestFailSafeInvokeSuccess(t *testing.T) {
 
 	invoker := mock.NewMockInvoker(ctrl)
 	clusterInvoker := registerFailsafe(invoker)
+
+	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 
 	invoker.EXPECT().GetUrl().Return(failsafeUrl).AnyTimes()
 
@@ -85,6 +86,7 @@ func TestFailSafeInvokeFail(t *testing.T) {
 
 	invoker := mock.NewMockInvoker(ctrl)
 	clusterInvoker := registerFailsafe(invoker)
+	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 
 	invoker.EXPECT().GetUrl().Return(failsafeUrl).AnyTimes()
 

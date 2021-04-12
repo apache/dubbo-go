@@ -1,6 +1,6 @@
 # Apache Dubbo-go [中文](./README_CN.md) #
 
-[![Build Status](https://travis-ci.org/apache/dubbo-go.svg?branch=master)](https://travis-ci.org/apache/dubbo-go)
+[![Build Status](https://github.com/apache/dubbo-go/workflows/CI/badge.svg)](https://travis-ci.org/apache/dubbo-go)
 [![codecov](https://codecov.io/gh/apache/dubbo-go/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/dubbo-go)
 [![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/apache/dubbo-go?tab=doc)
 [![Go Report Card](https://goreportcard.com/badge/github.com/apache/dubbo-go)](https://goreportcard.com/report/github.com/apache/dubbo-go)
@@ -8,7 +8,7 @@
 
 ---
 
-Apache Dubbo Go Implementation.
+Apache Dubbo Go Implementation to bridge the gap between java and go.
 
 
 ## License
@@ -16,6 +16,8 @@ Apache Dubbo Go Implementation.
 Apache License, Version 2.0
 
 ## Release note ##
+
+[v1.5.6 - Apr 8, 2021](https://github.com/apache/dubbo-go/releases/tag/v1.5.6)
 
 [v1.5.5 - Jan 5, 2021](https://github.com/apache/dubbo-go/releases/tag/v1.5.5)
 
@@ -45,7 +47,7 @@ Both extension module and layered project architecture is according to Apache Du
 
 ![dubbo go extend](./doc/pic/arch/dubbo-go-ext.png)
 
-If you wanna know more about dubbo-go, please visit this reference [Project Architecture design](https://github.com/apache/dubbo-go/wiki/dubbo-go-V1.0-design)
+If you want to know more about dubbo-go, please visit this reference [Project Architecture design](https://github.com/apache/dubbo-go/wiki/dubbo-go-V1.0-design)
 
 ## Feature list ##
 
@@ -73,6 +75,7 @@ Finished List:
 - Router
     * [Condition router](https://github.com/apache/dubbo-go/pull/294)
     * [Health check router](https://github.com/apache/dubbo-go/pull/389)
+    * [Dynamic_tag_router](https://github.com/apache/dubbo-go/pull/703)
 
 - Registry
     * ZooKeeper
@@ -134,6 +137,10 @@ Finished List:
     * [Nacos](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/nacos/service_discovery.go)
     * [Zookeeper](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/zookeeper/service_discovery.go)
     * [Etcd](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/etcdv3/service_discovery.go)
+    * [File](https://github.com/apache/dubbo-go/pull/732)
+    
+- Tool
+    * [Dubbo-go-cli](https://github.com/apache/dubbo-go/pull/818)
 
 You can know more about dubbo-go by its [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap).
 
@@ -177,10 +184,23 @@ If you are willing to do some code contributions and document contributions to [
 
 ## Community
 
-If u want to communicate with our community, pls scan the following  [dubbobo Ding-Ding QR code](https://mmbiz.qpic.cn/mmbiz_jpg/yvBJb5IiafvnHVBdtia30dxA2hKotr9DEckWsZ7aOJcDWDaSVMGwLmYv8GRgIQtqb4C2svicp8nVkMmGy7yKC5tyA/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1) or search our commnity DingDing group code 31363295.
+If u want to communicate with our community, pls scan the following dubbobo DingDing QR code or search our commnity DingDing group code 31363295.
 
-<a href="http://alexstocks.github.io/html/dubbogo.html">
-<img src="./doc/pic/misc/dubbogo-dingding.png"  height="80" width="80"></a>
+<div>
+<table>
+  <tbody>
+  <tr></tr>
+    <tr>
+      <td align="center"  valign="middle">
+        <a href="http://alexstocks.github.io/html/dubbogo.html" target="_blank">
+          <img width="80px" height="85px" src="./doc/pic/misc/dubbogo-dingding.png">
+        </a>
+      </td>
+    </tr>
+    <tr></tr>
+  </tbody>
+</table>
+</div>
 
 If u want to visit the wechat group, pls add my wechat AlexanderStocks.
 
@@ -194,7 +214,7 @@ About dubbo-go benchmarking report, please refer to [dubbo benchmarking report](
 
 ## [User List](https://github.com/apache/dubbo-go/issues/2)
 
-If you are using [apache/dubbo-go](github.com/apache/dubbo-go) and think that it helps you or want do some contributions to it, please add your company to to [the user list](https://github.com/apache/dubbo-go/issues/2) to let us know your needs.
+If you are using [apache/dubbo-go](https://github.com/apache/dubbo-go) and think that it helps you or want do some contributions to it, please add your company to to [the user list](https://github.com/apache/dubbo-go/issues/2) to let us know your needs.
 
 
 <div>

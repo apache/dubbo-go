@@ -26,8 +26,7 @@ import (
 )
 
 // DefaultAccesskeyStorage is the default implementation of AccesskeyStorage
-type DefaultAccesskeyStorage struct {
-}
+type DefaultAccesskeyStorage struct{}
 
 // GetAccessKeyPair retrieves AccessKeyPair from url by the key "accessKeyId" and "secretAccessKey"
 func (storage *DefaultAccesskeyStorage) GetAccessKeyPair(invocation protocol.Invocation, url *common.URL) *filter.AccessKeyPair {

@@ -71,7 +71,6 @@ type serviceDiscoveryRegistry struct {
 }
 
 func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
-
 	tryInitMetadataService(url)
 
 	serviceDiscovery, err := creatServiceDiscovery(url)
@@ -141,7 +140,7 @@ func parseServices(literalServices string) *gxset.HashSet {
 	if len(literalServices) == 0 {
 		return set
 	}
-	var splitServices = strings.Split(literalServices, ",")
+	splitServices := strings.Split(literalServices, ",")
 	for _, s := range splitServices {
 		if len(s) != 0 {
 			set.Add(s)
@@ -154,7 +153,7 @@ func (s *serviceDiscoveryRegistry) GetServiceDiscovery() registry.ServiceDiscove
 	return s.serviceDiscovery
 }
 
-func (s *serviceDiscoveryRegistry) GetUrl() *common.URL {
+func (s *serviceDiscoveryRegistry) GetURL() *common.URL {
 	return s.url
 }
 
@@ -177,7 +176,6 @@ func (s *serviceDiscoveryRegistry) Register(url *common.URL) error {
 		return nil
 	}
 	ok, err := s.metaDataService.ExportURL(url)
-
 	if err != nil {
 		logger.Errorf("The URL[%s] registry catch error:%s!", url.String(), err.Error())
 		return err
@@ -249,7 +247,6 @@ func (s *serviceDiscoveryRegistry) registerServiceInstancesChangedListener(url *
 			logger.Errorf("add listener[%s] catch error,url:%s err:%s", listenerId, url.String(), err.Error())
 		}
 	}
-
 }
 
 func getUrlKey(url *common.URL) string {
@@ -330,7 +327,6 @@ var (
 // tryInitMetadataService will try to initialize metadata service
 // TODO (move to somewhere)
 func tryInitMetadataService(url *common.URL) {
-
 	ms, err := inmemory.GetInMemoryMetadataService()
 	if err != nil {
 		logger.Errorf("could not init metadata service", err)

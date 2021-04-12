@@ -44,7 +44,7 @@ const (
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
-		"side=provider&timeout=3000&timestamp=1556509797245"
+		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=com.ikurento.user.UserProvider"
 )
 
 func TestRestInvokerInvoke(t *testing.T) {
@@ -172,14 +172,14 @@ func TestRestInvokerInvoke(t *testing.T) {
 		invocation.WithArguments([]interface{}{1, int32(23), "username", "application/json"}), invocation.WithReply(user))
 	res := invoker.Invoke(context.Background(), inv)
 	assert.NoError(t, res.Error())
-	assert.Equal(t, User{Id: 1, Age: int32(23), Name: "username"}, *res.Result().(*User))
+	assert.Equal(t, User{ID: 1, Age: int32(23), Name: "username"}, *res.Result().(*User))
 	now := time.Now()
 	inv = invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUserOne"),
 		invocation.WithArguments([]interface{}{&User{1, &now, int32(23), "username"}}), invocation.WithReply(user))
 	res = invoker.Invoke(context.Background(), inv)
 	assert.NoError(t, res.Error())
 	assert.NotNil(t, res.Result())
-	assert.Equal(t, 1, res.Result().(*User).Id)
+	assert.Equal(t, 1, res.Result().(*User).ID)
 	assert.Equal(t, now.Unix(), res.Result().(*User).Time.Unix())
 	assert.Equal(t, int32(23), res.Result().(*User).Age)
 	assert.Equal(t, "username", res.Result().(*User).Name)
@@ -199,7 +199,7 @@ func TestRestInvokerInvoke(t *testing.T) {
 	assert.Equal(t, "username", res.Result().(*User).Name)
 	// test 3
 	inv = invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUserFour"),
-		invocation.WithArguments([]interface{}{[]User{User{1, nil, int32(23), "username"}}}), invocation.WithReply(user))
+		invocation.WithArguments([]interface{}{[]User{{1, nil, int32(23), "username"}}}), invocation.WithReply(user))
 	res = invoker.Invoke(context.Background(), inv)
 	assert.NoError(t, res.Error())
 	assert.NotNil(t, res.Result())

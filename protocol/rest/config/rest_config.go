@@ -69,7 +69,7 @@ func (c *RestProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) er
 // nolint
 type RestServiceConfig struct {
 	InterfaceName        string              `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
-	Url                  string              `yaml:"url"  json:"url,omitempty" property:"url"`
+	URL                  string              `yaml:"url"  json:"url,omitempty" property:"url"`
 	Path                 string              `yaml:"rest_path"  json:"rest_path,omitempty" property:"rest_path"`
 	Produces             string              `yaml:"rest_produces"  json:"rest_produces,omitempty" property:"rest_produces"`
 	Consumes             string              `yaml:"rest_consumes"  json:"rest_consumes,omitempty" property:"rest_consumes"`
@@ -96,7 +96,7 @@ func (c *RestServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) err
 type RestMethodConfig struct {
 	InterfaceName  string
 	MethodName     string `required:"true" yaml:"name"  json:"name,omitempty" property:"name"`
-	Url            string `yaml:"url"  json:"url,omitempty" property:"url"`
+	URL            string `yaml:"url"  json:"url,omitempty" property:"url"`
 	Path           string `yaml:"rest_path"  json:"rest_path,omitempty" property:"rest_path"`
 	Produces       string `yaml:"rest_produces"  json:"rest_produces,omitempty" property:"rest_produces"`
 	Consumes       string `yaml:"rest_consumes"  json:"rest_consumes,omitempty" property:"rest_consumes"`
@@ -123,13 +123,13 @@ func (c *RestMethodConfig) UnmarshalYAML(unmarshal func(interface{}) error) erro
 }
 
 // nolint
-func GetRestConsumerServiceConfig(path string) *RestServiceConfig {
-	return restConsumerServiceConfigMap[path]
+func GetRestConsumerServiceConfig(id string) *RestServiceConfig {
+	return restConsumerServiceConfigMap[id]
 }
 
 // nolint
-func GetRestProviderServiceConfig(path string) *RestServiceConfig {
-	return restProviderServiceConfigMap[path]
+func GetRestProviderServiceConfig(id string) *RestServiceConfig {
+	return restProviderServiceConfigMap[id]
 }
 
 // nolint

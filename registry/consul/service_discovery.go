@@ -50,9 +50,7 @@ const (
 	watch_passingonly_true = true
 )
 
-var (
-	errConsulClientClosed = perrors.New("consul client is closed")
-)
+var errConsulClientClosed = perrors.New("consul client is closed")
 
 // init will put the service discovery into extension
 func init() {
@@ -218,12 +216,12 @@ func (csd *consulServiceDiscovery) Unregister(instance registry.ServiceInstance)
 	}
 	err = consulClient.Agent().ServiceDeregister(buildID(instance))
 	if err != nil {
-		logger.Errorf("unregister service instance %s,error: %v", instance.GetId(), err)
+		logger.Errorf("unregister service instance %s,error: %v", instance.GetID(), err)
 		return err
 	}
 	stopChanel, ok := csd.ttl.Load(buildID(instance))
 	if !ok {
-		logger.Warnf("ttl for service instance %s didn't exist", instance.GetId())
+		logger.Warnf("ttl for service instance %s didn't exist", instance.GetID())
 		return nil
 	}
 	close(stopChanel.(chan struct{}))
@@ -241,7 +239,7 @@ func (csd *consulServiceDiscovery) GetServices() *gxset.HashSet {
 		consulClient *consul.Client
 		services     map[string][]string
 	)
-	var res = gxset.NewSet()
+	res := gxset.NewSet()
 	if consulClient = csd.getConsulClient(); consulClient == nil {
 		logger.Warnf("consul client is closed!")
 		return res
@@ -256,7 +254,6 @@ func (csd *consulServiceDiscovery) GetServices() *gxset.HashSet {
 		res.Add(service)
 	}
 	return res
-
 }
 
 // encodeConsulMetadata because consul validate key strictly.
@@ -320,7 +317,7 @@ func (csd *consulServiceDiscovery) GetInstances(serviceName string) []registry.S
 			healthy = true
 		}
 		res = append(res, &registry.DefaultServiceInstance{
-			Id:          ins.Service.ID,
+			ID:          ins.Service.ID,
 			ServiceName: ins.Service.Service,
 			Host:        ins.Service.Address,
 			Port:        ins.Service.Port,
@@ -404,7 +401,7 @@ func (csd *consulServiceDiscovery) AddListener(listener *registry.ServiceInstanc
 					healthy = true
 				}
 				instances = append(instances, &registry.DefaultServiceInstance{
-					Id:          ins.Service.ID,
+					ID:          ins.Service.ID,
 					ServiceName: ins.Service.Service,
 					Host:        ins.Service.Address,
 					Port:        ins.Service.Port,
@@ -490,6 +487,6 @@ func getDeregisterAfter(metadata map[string]string) string {
 
 // nolint
 func buildID(instance registry.ServiceInstance) string {
-	id := fmt.Sprintf("id:%s,serviceName:%s,host:%s,port:%d", instance.GetId(), instance.GetServiceName(), instance.GetHost(), instance.GetPort())
+	id := fmt.Sprintf("id:%s,serviceName:%s,host:%s,port:%d", instance.GetID(), instance.GetServiceName(), instance.GetHost(), instance.GetPort())
 	return id
 }

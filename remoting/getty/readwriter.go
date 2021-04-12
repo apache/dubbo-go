@@ -18,6 +18,7 @@
 package getty
 
 import (
+	"errors"
 	"reflect"
 )
 
@@ -50,10 +51,9 @@ func NewRpcClientPackageHandler(client *Client) *RpcClientPackageHandler {
 // and send to client each time. the Read can assemble it.
 func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
 	resp, length, err := (p.client.codec).Decode(data)
-	//err := pkg.Unmarshal(buf, p.client)
+	// err := pkg.Unmarshal(buf, p.client)
 	if err != nil {
-		err = perrors.Cause(err)
-		if err == hessian.ErrHeaderNotEnough || err == hessian.ErrBodyNotEnough {
+		if errors.Is(err, hessian.ErrHeaderNotEnough) || errors.Is(err, hessian.ErrBodyNotEnough) {
 			return nil, 0, nil
 		}
 
@@ -112,9 +112,9 @@ func NewRpcServerPackageHandler(server *Server) *RpcServerPackageHandler {
 // and send to client each time. the Read can assemble it.
 func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
 	req, length, err := (p.server.codec).Decode(data)
-	//resp,len, err := (*p.).DecodeResponse(buf)
+	// resp,len, err := (*p.).DecodeResponse(buf)
 	if err != nil {
-		if err == hessian.ErrHeaderNotEnough || err == hessian.ErrBodyNotEnough {
+		if errors.Is(err, hessian.ErrHeaderNotEnough) || errors.Is(err, hessian.ErrBodyNotEnough) {
 			return nil, 0, nil
 		}
 
@@ -150,5 +150,4 @@ func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg interface{}) ([]by
 
 	logger.Errorf("illegal pkg:%+v\n, it is %+v", pkg, reflect.TypeOf(pkg))
 	return nil, perrors.New("invalid rpc response")
-
 }

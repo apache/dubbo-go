@@ -19,21 +19,23 @@ package event
 
 import (
 	"encoding/json"
-)
-
-import (
-	gxset "github.com/dubbogo/gost/container/set"
+	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/registry"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"s
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/registry"
 )
 
+func init() {
+	extension.AddCustomizers(&metadataServiceURLParamsMetadataCustomizer{})
+}
+
 type metadataServiceURLParamsMetadataCustomizer struct {
-	exceptKeys *gxset.HashSet
 }
 
 // GetPriority will return 0 so that it will be invoked in front of user defining Customizer

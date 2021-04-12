@@ -1,19 +1,22 @@
 # Apache Dubbo-go [English](./README.md) #
 
-[![Build Status](https://travis-ci.org/apache/dubbo-go.svg?branch=master)](https://travis-ci.org/apache/dubbo-go)
+[![Build Status](https://github.com/apache/dubbo-go/workflows/CI/badge.svg)](https://travis-ci.org/apache/dubbo-go)
 [![codecov](https://codecov.io/gh/apache/dubbo-go/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/dubbo-go)
 [![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/apache/dubbo-go?tab=doc)
 [![Go Report Card](https://goreportcard.com/badge/github.com/apache/dubbo-go)](https://goreportcard.com/report/github.com/apache/dubbo-go)
 ![license](https://img.shields.io/badge/license-Apache--2.0-green.svg)
 
 ---
-Apache Dubbo Go 语言实现
+
+Apache Dubbo Go 语言实现，架起java和go之间的桥梁，与 gRPC/Spring Cloud 生态互联互通，带领Java生态享受云原生时代的技术红利。
 
 ## 证书 ##
 
 Apache License, Version 2.0
 
 ## 发布日志 ##
+
+[v1.5.6 - 2021年4月8日](https://github.com/apache/dubbo-go/releases/tag/v1.5.6)
 
 [v1.5.5 - 2021年1月5日](https://github.com/apache/dubbo-go/releases/tag/v1.5.5)
 
@@ -71,6 +74,7 @@ Apache License, Version 2.0
 - 路由器
     * [Condition router](https://github.com/apache/dubbo-go/pull/294)
     * [Health check router](https://github.com/apache/dubbo-go/pull/389)
+    * [Dynamic_tag_router](https://github.com/apache/dubbo-go/pull/703)
 
 - 注册中心
     * ZooKeeper
@@ -132,6 +136,10 @@ Apache License, Version 2.0
     * [Nacos](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/nacos/service_discovery.go)
     * [Zookeeper](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/zookeeper/service_discovery.go)
     * [Etcd](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/etcdv3/service_discovery.go)
+    * [File](https://github.com/apache/dubbo-go/pull/732)
+    
+- 工具箱
+    * [Dubbo-go-cli](https://github.com/apache/dubbo-go/pull/818)
 
 你可以通过访问 [roadmap](https://github.com/apache/dubbo-go/wiki/Roadmap) 知道更多关于 dubbo-go 的信息。
 
@@ -177,12 +185,40 @@ make test
 
 如果想访问官方钉钉群，请在钉钉中搜索社区群号 31363295 或者 扫描如下[二维码](https://mmbiz.qpic.cn/mmbiz_jpg/yvBJb5IiafvnHVBdtia30dxA2hKotr9DEckWsZ7aOJcDWDaSVMGwLmYv8GRgIQtqb4C2svicp8nVkMmGy7yKC5tyA/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)。
 
-<a href="http://alexstocks.github.io/html/dubbogo.html">
-<img src="./doc/pic/misc/dubbogo-dingding.png"  height="80" width="80"></a>
+<div>
+<table>
+  <tbody>
+  <tr></tr>
+    <tr>
+      <td align="center"  valign="middle">
+        <a href="http://alexstocks.github.io/html/dubbogo.html" target="_blank">
+          <img width="80px" height="85px" src="./doc/pic/misc/dubbogo-dingding.png">
+        </a>
+      </td>
+    </tr>
+    <tr></tr>
+  </tbody>
+</table>
+</div>
 
-如果想加入到社区微信群，可以先添加社区负责人 于雨 的微信 AlexanderStocks 。
+dubbogo 社区已经开通微信公众号 "dubbogo大区"，可在微信搜索 "dubbogo大区" 或者扫描如下二维码关注，可通过公众号私信留言加入 dubbogo 微信社区。
 
-作为一个维护已经帮助构建了经受多家大型微服务系统的社区，我们足以为现有的成绩感到自豪。社区欢迎能提出建设性意见者。
+<div>
+<table>
+  <tbody>
+  <tr></tr>
+    <tr>
+      <td align="center"  valign="middle">
+          <img width="80px" height="115px" src="./doc/pic/misc/dubbogo-wechat.png">
+        </a>
+      </td>
+    </tr>
+    <tr></tr>
+  </tbody>
+</table>
+</div>
+
+作为一个维护已经帮助构建了经受多家大型微服务系统的社区，我们足以为现有的成绩感到自豪。社区欢迎能提出建设性意见者，只知索取者和喷子请绕行。
 
 ## 性能测试 ##
 
@@ -192,7 +228,7 @@ make test
 
 ## [User List](https://github.com/apache/dubbo-go/issues/2)
 
-若你正在使用 [apache/dubbo-go](github.com/apache/dubbo-go) 且认为其有用或者想对其做改进，请添列贵司信息于 [用户列表](https://github.com/apache/dubbo-go/issues/2)，以便我们知晓。
+若你正在使用 [apache/dubbo-go](https://github.com/apache/dubbo-go) 且认为其有用或者想对其做改进，请添列贵司信息于 [用户列表](https://github.com/apache/dubbo-go/issues/2)，以便我们知晓。
 
 <div>
 <table>

@@ -39,7 +39,7 @@ import (
 
 type gettyRPCClient struct {
 	once sync.Once
-	//protocol string
+	// protocol string
 	addr   string
 	active int64 // zero, not create or be destroyed
 
@@ -50,9 +50,7 @@ type gettyRPCClient struct {
 	sessions    []*rpcSession
 }
 
-var (
-	errClientPoolClosed = perrors.New("client pool closed")
-)
+var errClientPoolClosed = perrors.New("client pool closed")
 
 func newGettyRPCClientConn(pool *gettyRPCClientPool, addr string) (*gettyRPCClient, error) {
 	var (
@@ -384,7 +382,7 @@ func (p *gettyRPCClientPool) get() (*gettyRPCClient, error) {
 			conn = p.conns[0]
 		}
 		// This will recreate gettyRpcClient for remove last position
-		//p.conns = p.conns[:len(p.conns)-1]
+		// p.conns = p.conns[:len(p.conns)-1]
 
 		if d := now - conn.getActive(); d > p.ttl {
 			p.remove(conn)
@@ -392,7 +390,7 @@ func (p *gettyRPCClientPool) get() (*gettyRPCClient, error) {
 			num = len(p.conns)
 			continue
 		}
-		conn.updateActive(now) //update active time
+		conn.updateActive(now) // update active time
 		return conn, nil
 	}
 	return nil, nil
