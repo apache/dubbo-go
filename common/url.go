@@ -344,6 +344,14 @@ func (c *URL) Key() string {
 	return buildString
 }
 
+//CacheInvokerMapKey get dir cacheInvokerMap key
+func (c *URL) CacheInvokerMapKey() string {
+	buildString := fmt.Sprintf("%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s&timestamp=%s",
+		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GROUP_KEY, ""),
+		c.GetParam(constant.VERSION_KEY, ""), c.GetParam(constant.TIMESTAMP_KEY, ""))
+	return buildString
+}
+
 // ServiceKey gets a unique key of a service.
 func (c *URL) ServiceKey() string {
 	return ServiceKey(c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/")),
