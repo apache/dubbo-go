@@ -77,9 +77,5 @@ func (f *FileTagRouter) Priority() int64 {
 }
 
 func (f *FileTagRouter) Route(invokers *roaring.Bitmap, cache router.Cache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
-	if invokers.IsEmpty() {
-		return invokers
-	}
-	// FIXME: I believe this is incorrect.
-	return f.Route(invokers, cache, url, invocation)
+	return invokers
 }
