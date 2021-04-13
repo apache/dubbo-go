@@ -84,12 +84,25 @@ func NewTagRouter(url *common.URL, notify chan struct{}) (*tagRouter, error) {
 	if url == nil {
 		return nil, perrors.Errorf("Illegal route URL!")
 	}
-	return &tagRouter{
+	r := &tagRouter{
 		url:      url,
 		enabled:  url.GetParamBool(constant.RouterEnabled, true),
 		priority: url.GetParamInt(constant.RouterPriority, 0),
 		notify:   notify,
-	}, nil
+	}
+
+	if content, err := url.GetParamAndDecoded(constant.RULE_KEY); err != nil {
+		return nil, err
+	} else if content != "" {
+		if rule, err := getRule(content); err != nil {
+			return nil, err
+		} else {
+			r.tagRouterRule = rule
+			r.ruleChanged = true
+		}
+	}
+
+	return r, nil
 }
 
 // nolint

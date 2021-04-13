@@ -18,6 +18,7 @@
 package tag
 
 import (
+	"encoding/base64"
 	"net/url"
 	"strconv"
 	"sync"
@@ -54,21 +55,19 @@ func NewFileTagRouter(content []byte) (*FileTagRouter, error) {
 	}
 	fileRouter.routerRule = rule
 	notify := make(chan struct{})
+	fileRouter.url = common.NewURLWithOptions(
+		common.WithProtocol(constant.TAG_ROUTE_PROTOCOL),
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.RULE_KEY, base64.URLEncoding.EncodeToString(content)),
+		common.WithParamsValue(constant.ForceUseTag, strconv.FormatBool(rule.Force)),
+		common.WithParamsValue(constant.RouterPriority, strconv.Itoa(rule.Priority)),
+		common.WithParamsValue(constant.ROUTER_KEY, constant.TAG_ROUTE_PROTOCOL))
 	fileRouter.router, err = NewTagRouter(fileRouter.URL(), notify)
 	return fileRouter, err
 }
 
 // URL Return URL in file tag router n
 func (f *FileTagRouter) URL() *common.URL {
-	f.parseOnce.Do(func() {
-		routerRule := f.routerRule
-		f.url = common.NewURLWithOptions(
-			common.WithProtocol(constant.TAG_ROUTE_PROTOCOL),
-			common.WithParams(url.Values{}),
-			common.WithParamsValue(constant.ForceUseTag, strconv.FormatBool(routerRule.Force)),
-			common.WithParamsValue(constant.RouterPriority, strconv.Itoa(routerRule.Priority)),
-			common.WithParamsValue(constant.ROUTER_KEY, constant.TAG_ROUTE_PROTOCOL))
-	})
 	return f.url
 }
 
