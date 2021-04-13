@@ -67,12 +67,12 @@ const (
 
 const (
 	CONFIGURATORS_CATEGORY             = "configurators"
-	ROUTER_CATEGORY                    = "category"
-	DEFAULT_CATEGORY                   = PROVIDER_CATEGORY
 	DYNAMIC_CONFIGURATORS_CATEGORY     = "dynamicconfigurators"
 	APP_DYNAMIC_CONFIGURATORS_CATEGORY = "appdynamicconfigurators"
+	DEFAULT_CATEGORY                   = PROVIDER_CATEGORY
 	PROVIDER_CATEGORY                  = "providers"
 	CONSUMER_CATEGORY                  = "consumers"
+	ROUTER_CATEGORY                    = "routers"
 )
 
 const (
