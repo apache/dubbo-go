@@ -90,7 +90,7 @@ func (r *mockFacade) Done() chan struct{} {
 	return r.done
 }
 
-func (r *mockFacade) GetUrl() *common.URL {
+func (r *mockFacade) GetURL() *common.URL {
 	return r.URL
 }
 

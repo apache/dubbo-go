@@ -23,18 +23,13 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/container/set"
 	"github.com/stretchr/testify/assert"
 )
 
-import (
-	_ "github.com/apache/dubbo-go/cluster/router/condition"
-)
-
 const (
-	testYML            = "testdata/router_config.yml"
-	testMultiRouterYML = "testdata/router_multi_config.yml"
-	errorTestYML       = "testdata/router_config_error.yml"
+	testDestinationRuleYML      = "testdata/router_config_dest_rule.yml"
+	errorTestDestinationRuleYML = "testdata/router_config_destination_rule_error.yml"
+	testVirtualServiceYML       = "testdata/router_config_virtual_service.yml"
 )
 
 func TestString(t *testing.T) {
@@ -57,19 +52,9 @@ func TestString(t *testing.T) {
 }
 
 func TestRouterInit(t *testing.T) {
-	errPro := RouterInit(errorTestYML)
-	assert.Error(t, errPro)
+	err := RouterInit(testVirtualServiceYML, testDestinationRuleYML)
+	assert.NoError(t, err)
 
-	assert.Equal(t, 0, routerURLSet.Size())
-
-	errPro = RouterInit(testYML)
-	assert.NoError(t, errPro)
-
-	assert.Equal(t, 1, routerURLSet.Size())
-
-	routerURLSet = gxset.NewSet()
-	errPro = RouterInit(testMultiRouterYML)
-	assert.NoError(t, errPro)
-
-	assert.Equal(t, 2, routerURLSet.Size())
+	err = RouterInit(testVirtualServiceYML, errorTestDestinationRuleYML)
+	assert.Error(t, err)
 }

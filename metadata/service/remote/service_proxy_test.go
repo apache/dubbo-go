@@ -83,7 +83,7 @@ func createProxy() service.MetadataService {
 	prepareTest()
 
 	ins := &registry.DefaultServiceInstance{
-		Id:          "test-id",
+		ID:          "test-id",
 		ServiceName: "com.dubbo",
 		Host:        "localhost",
 		Port:        8080,

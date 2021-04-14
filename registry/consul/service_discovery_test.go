@@ -121,7 +121,7 @@ func TestConsulServiceDiscovery_CRUD(t *testing.T) {
 
 	instanceResult := page.GetData()[0].(*registry.DefaultServiceInstance)
 	assert.NotNil(t, instanceResult)
-	assert.Equal(t, buildID(instance), instanceResult.GetId())
+	assert.Equal(t, buildID(instance), instanceResult.GetID())
 	assert.Equal(t, instance.GetHost(), instanceResult.GetHost())
 	assert.Equal(t, instance.GetPort(), instanceResult.GetPort())
 	assert.Equal(t, instance.GetServiceName(), instanceResult.GetServiceName())
@@ -187,7 +187,7 @@ func prepareService() (registry.ServiceInstance, *common.URL) {
 		"consul-watch-timeout=" + strconv.Itoa(consulWatchTimeout))
 
 	return &registry.DefaultServiceInstance{
-		Id:          id,
+		ID:          id,
 		ServiceName: service,
 		Host:        registryHost,
 		Port:        registryPort,

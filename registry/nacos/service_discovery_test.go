@@ -93,7 +93,7 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 	host := "host"
 	port := 123
 	instance := &registry.DefaultServiceInstance{
-		Id:          id,
+		ID:          id,
 		ServiceName: serviceName,
 		Host:        host,
 		Port:        port,
@@ -108,7 +108,7 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 
 	// clean data for local test
 	err = serviceDiscovery.Unregister(&registry.DefaultServiceInstance{
-		Id:          id,
+		ID:          id,
 		ServiceName: serviceName,
 		Host:        host,
 		Port:        port,
@@ -129,7 +129,7 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 
 	instance = page.GetData()[0].(*registry.DefaultServiceInstance)
 	assert.NotNil(t, instance)
-	assert.Equal(t, id, instance.GetId())
+	assert.Equal(t, id, instance.GetID())
 	assert.Equal(t, host, instance.GetHost())
 	assert.Equal(t, port, instance.GetPort())
 	// TODO: console.nacos.io has updated to nacos 2.0 and serviceName has changed in 2.0, so ignore temporarily.

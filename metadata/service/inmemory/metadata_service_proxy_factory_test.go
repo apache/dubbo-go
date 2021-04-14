@@ -47,7 +47,7 @@ func TestCreateProxy(t *testing.T) {
 		return &mockProtocol{}
 	})
 	ins := &registry.DefaultServiceInstance{
-		Id:          "test-id",
+		ID:          "test-id",
 		ServiceName: "com.dubbo",
 		Host:        "localhost",
 		Port:        8080,
@@ -79,7 +79,7 @@ func (m mockProtocol) Destroy() {
 
 type mockInvoker struct{}
 
-func (m *mockInvoker) GetUrl() *common.URL {
+func (m *mockInvoker) GetURL() *common.URL {
 	panic("implement me")
 }
 

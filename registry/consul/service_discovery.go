@@ -216,12 +216,12 @@ func (csd *consulServiceDiscovery) Unregister(instance registry.ServiceInstance)
 	}
 	err = consulClient.Agent().ServiceDeregister(buildID(instance))
 	if err != nil {
-		logger.Errorf("unregister service instance %s,error: %v", instance.GetId(), err)
+		logger.Errorf("unregister service instance %s,error: %v", instance.GetID(), err)
 		return err
 	}
 	stopChanel, ok := csd.ttl.Load(buildID(instance))
 	if !ok {
-		logger.Warnf("ttl for service instance %s didn't exist", instance.GetId())
+		logger.Warnf("ttl for service instance %s didn't exist", instance.GetID())
 		return nil
 	}
 	close(stopChanel.(chan struct{}))
@@ -317,7 +317,7 @@ func (csd *consulServiceDiscovery) GetInstances(serviceName string) []registry.S
 			healthy = true
 		}
 		res = append(res, &registry.DefaultServiceInstance{
-			Id:          ins.Service.ID,
+			ID:          ins.Service.ID,
 			ServiceName: ins.Service.Service,
 			Host:        ins.Service.Address,
 			Port:        ins.Service.Port,
@@ -399,7 +399,7 @@ func (csd *consulServiceDiscovery) AddListener(listener *registry.ServiceInstanc
 				healthy = true
 			}
 			instances = append(instances, &registry.DefaultServiceInstance{
-				Id:          ins.Service.ID,
+				ID:          ins.Service.ID,
 				ServiceName: ins.Service.Service,
 				Host:        ins.Service.Address,
 				Port:        ins.Service.Port,
@@ -484,6 +484,6 @@ func getDeregisterAfter(metadata map[string]string) string {
 
 // nolint
 func buildID(instance registry.ServiceInstance) string {
-	id := fmt.Sprintf("id:%s,serviceName:%s,host:%s,port:%d", instance.GetId(), instance.GetServiceName(), instance.GetHost(), instance.GetPort())
+	id := fmt.Sprintf("id:%s,serviceName:%s,host:%s,port:%d", instance.GetID(), instance.GetServiceName(), instance.GetHost(), instance.GetPort())
 	return id
 }

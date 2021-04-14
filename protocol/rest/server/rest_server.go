@@ -89,7 +89,7 @@ func GetRouteFunc(invoker protocol.Invoker, methodConfig *rest_config.RestMethod
 			err  error
 			args []interface{}
 		)
-		svc := common.ServiceMap.GetServiceByServiceKey(invoker.GetUrl().Protocol, invoker.GetUrl().ServiceKey())
+		svc := common.ServiceMap.GetServiceByServiceKey(invoker.GetURL().Protocol, invoker.GetURL().ServiceKey())
 		// get method
 		method := svc.Method()[methodConfig.MethodName]
 		argsTypes := method.ArgsType()

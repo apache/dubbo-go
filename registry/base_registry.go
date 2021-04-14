@@ -112,8 +112,8 @@ func (r *BaseRegistry) InitBaseRegistry(url *common.URL, facadeRegistry FacadeBa
 	return r
 }
 
-// GetUrl for get registry's url
-func (r *BaseRegistry) GetUrl() *common.URL {
+// GetURL for get registry's url
+func (r *BaseRegistry) GetURL() *common.URL {
 	return r.URL
 }
 

@@ -65,7 +65,7 @@ func TestEventPublishingServiceDiscovery_DispatchEvent(t *testing.T) {
 	extension.SetAndInitGlobalDispatcher("direct")
 	err := dc.Destroy()
 	assert.Nil(t, err)
-	si := &registry.DefaultServiceInstance{Id: "testServiceInstance"}
+	si := &registry.DefaultServiceInstance{ID: "testServiceInstance"}
 	err = dc.Register(si)
 	assert.Nil(t, err)
 }
@@ -99,7 +99,7 @@ type TestServiceInstancePreRegisteredEventListener struct {
 func (tel *TestServiceInstancePreRegisteredEventListener) OnEvent(e observer.Event) error {
 	e1, ok := e.(*ServiceInstancePreRegisteredEvent)
 	assert.Equal(tel.T(), ok, true)
-	assert.Equal(tel.T(), "testServiceInstance", e1.getServiceInstance().GetId())
+	assert.Equal(tel.T(), "testServiceInstance", e1.getServiceInstance().GetID())
 	return nil
 }
 

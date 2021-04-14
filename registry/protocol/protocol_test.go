@@ -23,6 +23,7 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -63,7 +64,7 @@ func referNormal(t *testing.T, regProtocol *registryProtocol) {
 
 	invoker := regProtocol.Refer(url)
 	assert.IsType(t, &protocol.BaseInvoker{}, invoker)
-	assert.Equal(t, invoker.GetUrl().String(), url.String())
+	assert.Equal(t, invoker.GetURL().String(), url.String())
 }
 
 func TestRefer(t *testing.T) {
@@ -133,7 +134,7 @@ func exporterNormal(t *testing.T, regProtocol *registryProtocol) *common.URL {
 	exporter := regProtocol.Export(invoker)
 
 	assert.IsType(t, &protocol.BaseExporter{}, exporter)
-	assert.Equal(t, exporter.GetInvoker().GetUrl().String(), suburl.String())
+	assert.Equal(t, exporter.GetInvoker().GetURL().String(), suburl.String())
 	return url
 }
 
@@ -245,7 +246,9 @@ func TestExportWithOverrideListener(t *testing.T) {
 	time.Sleep(1e9)
 	newUrl := url.SubURL.Clone()
 	newUrl.SetParam(constant.CLUSTER_KEY, "mock1")
-	v2, _ := regProtocol.bounds.Load(getCacheKey(newUrl))
+	delKeys := gxset.NewSet("dynamic", "enabled")
+	key := newUrl.CloneExceptParams(delKeys).String()
+	v2, _ := regProtocol.bounds.Load(key)
 	assert.NotNil(t, v2)
 }
 
@@ -265,7 +268,10 @@ func TestExportWithServiceConfig(t *testing.T) {
 	newUrl := url.SubURL.Clone()
 	newUrl.SetParam(constant.CLUSTER_KEY, "mock1")
 
-	v2, _ := regProtocol.bounds.Load(getCacheKey(newUrl))
+	delKeys := gxset.NewSet("dynamic", "enabled")
+	key := newUrl.CloneExceptParams(delKeys).String()
+	v2, _ := regProtocol.bounds.Load(key)
+
 	assert.NotNil(t, v2)
 }
 
@@ -284,7 +290,9 @@ func TestExportWithApplicationConfig(t *testing.T) {
 
 	newUrl := url.SubURL.Clone()
 	newUrl.SetParam(constant.CLUSTER_KEY, "mock1")
-	v2, _ := regProtocol.bounds.Load(getCacheKey(newUrl))
+	delKeys := gxset.NewSet("dynamic", "enabled")
+	key := newUrl.CloneExceptParams(delKeys).String()
+	v2, _ := regProtocol.bounds.Load(key)
 	assert.NotNil(t, v2)
 }
 
