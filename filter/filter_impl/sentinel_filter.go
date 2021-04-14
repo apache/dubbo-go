@@ -47,16 +47,17 @@ func init() {
 	extension.SetFilter(SentinelProviderFilterName, GetSentinelProviderFilter)
 	extension.SetFilter(SentinelConsumerFilterName, GetSentinelConsumerFilter)
 
-	if err := logging.ResetGlobalLogger(DubboLoggerWrapper{}); err != nil {
+	if err := logging.ResetGlobalLogger(DubboLoggerWrapper{Logger: logger.GetLogger()}); err != nil {
 		logger.Errorf("[Sentinel Filter] fail to ingest dubbo logger into sentinel")
 	}
 }
 
 type DubboLoggerWrapper struct {
+	logger.Logger
 }
 
 func (d DubboLoggerWrapper) Debug(msg string, keysAndValues ...interface{}) {
-	logger.GetLogger().Debug(logging.AssembleMsg(logging.GlobalCallerDepth, "DEBUG", msg, nil, keysAndValues))
+	d.Logger.Debug(logging.AssembleMsg(logging.GlobalCallerDepth, "DEBUG", msg, nil, keysAndValues))
 }
 
 func (d DubboLoggerWrapper) DebugEnabled() bool {
@@ -64,7 +65,7 @@ func (d DubboLoggerWrapper) DebugEnabled() bool {
 }
 
 func (d DubboLoggerWrapper) Info(msg string, keysAndValues ...interface{}) {
-	logger.GetLogger().Info(logging.AssembleMsg(logging.GlobalCallerDepth, "INFO", msg, nil, keysAndValues))
+	d.Logger.Info(logging.AssembleMsg(logging.GlobalCallerDepth, "INFO", msg, nil, keysAndValues))
 }
 
 func (d DubboLoggerWrapper) InfoEnabled() bool {
@@ -72,7 +73,7 @@ func (d DubboLoggerWrapper) InfoEnabled() bool {
 }
 
 func (d DubboLoggerWrapper) Warn(msg string, keysAndValues ...interface{}) {
-	logger.GetLogger().Warn(logging.AssembleMsg(logging.GlobalCallerDepth, "WARN", msg, nil, keysAndValues))
+	d.Logger.Warn(logging.AssembleMsg(logging.GlobalCallerDepth, "WARN", msg, nil, keysAndValues))
 }
 
 func (d DubboLoggerWrapper) WarnEnabled() bool {
@@ -80,7 +81,7 @@ func (d DubboLoggerWrapper) WarnEnabled() bool {
 }
 
 func (d DubboLoggerWrapper) Error(err error, msg string, keysAndValues ...interface{}) {
-	logger.GetLogger().Warn(logging.AssembleMsg(logging.GlobalCallerDepth, "ERROR", msg, err, keysAndValues))
+	d.Logger.Warn(logging.AssembleMsg(logging.GlobalCallerDepth, "ERROR", msg, err, keysAndValues))
 }
 
 func (d DubboLoggerWrapper) ErrorEnabled() bool {
@@ -134,13 +135,11 @@ func (d *SentinelProviderFilter) Invoke(ctx context.Context, invoker protocol.In
 		return sentinelDubboProviderFallback(ctx, invoker, invocation, b)
 	}
 	ctx = context.WithValue(ctx, MethodEntryKey, methodEntry)
-	result := invoker.Invoke(ctx, invocation)
-	// because ctx cann't transport to OnResponse func.
-	sentinelExit(ctx, result)
-	return result
+	return invoker.Invoke(ctx, invocation)
 }
 
 func (d *SentinelProviderFilter) OnResponse(ctx context.Context, result protocol.Result, _ protocol.Invoker, _ protocol.Invocation) protocol.Result {
+	sentinelExit(ctx, result)
 	return result
 }
 
@@ -169,13 +168,11 @@ func (d *SentinelConsumerFilter) Invoke(ctx context.Context, invoker protocol.In
 	}
 	ctx = context.WithValue(ctx, MethodEntryKey, methodEntry)
 
-	result := invoker.Invoke(ctx, invocation)
-	// because ctx cann't transport to OnResponse func.
-	sentinelExit(ctx, result)
-	return result
+	return invoker.Invoke(ctx, invocation)
 }
 
 func (d *SentinelConsumerFilter) OnResponse(ctx context.Context, result protocol.Result, _ protocol.Invoker, _ protocol.Invocation) protocol.Result {
+	sentinelExit(ctx, result)
 	return result
 }
 
