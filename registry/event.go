@@ -69,7 +69,7 @@ func (e *ServiceEvent) Key() string {
 	if len(e.key) > 0 {
 		return e.key
 	}
-	e.key = e.Service.Key()
+	e.key = e.Service.CacheInvokerMapKey()
 	return e.key
 }
 
