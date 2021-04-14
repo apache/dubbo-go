@@ -24,25 +24,20 @@ import (
 )
 
 import (
-	uberAtomic "go.uber.org/atomic"
-)
-
-import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 )
 
 var (
-	methodStatistics    sync.Map        // url -> { methodName : RPCStatus}
-	serviceStatistic    sync.Map        // url -> RPCStatus
-	invokerBlackList    sync.Map        // store unhealthy url blackList
-	blackListCacheDirty uberAtomic.Bool // store if the cache in chain is not refreshed by blacklist
-	blackListRefreshing int32           // store if the refresing method is processing
+	methodStatistics       sync.Map // url -> { methodName : RPCStatus}
+	serviceStatistic       sync.Map // url -> RPCStatus
+	invokerBlackList       sync.Map // store unhealthy url blackList
+	blackListCacheDirty    sync.Map // store if the cache in chain is not refreshed by blacklist
+	blackListRefreshingMap sync.Map // store if the refresing method is processing
 )
 
 func init() {
-	blackListCacheDirty.Store(false)
 }
 
 // RPCStatus is URL statistics.
@@ -211,52 +206,77 @@ func GetInvokerHealthyStatus(invoker Invoker) bool {
 func SetInvokerUnhealthyStatus(invoker Invoker) {
 	invokerBlackList.Store(invoker.GetUrl().Key(), invoker)
 	logger.Info("Add invoker ip = ", invoker.GetUrl().Location, " to black list")
-	blackListCacheDirty.Store(true)
+	activeBlackListCacheDirty(invoker)
 }
 
 // RemoveInvokerUnhealthyStatus remove unhealthy status of target invoker from blacklist
 func RemoveInvokerUnhealthyStatus(invoker Invoker) {
 	invokerBlackList.Delete(invoker.GetUrl().Key())
 	logger.Info("Remove invoker ip = ", invoker.GetUrl().Location, " from black list")
-	blackListCacheDirty.Store(true)
+	activeBlackListCacheDirty(invoker)
 }
 
 // GetBlackListInvokers get at most size of blockSize invokers from black list
-func GetBlackListInvokers(blockSize int) []Invoker {
-	resultIvks := make([]Invoker, 0, 16)
+func GetBlackListInvokers(serviceKey string, blockSize int) []Invoker {
+	resultIvks := make([]Invoker, 0, blockSize)
 	invokerBlackList.Range(func(k, v interface{}) bool {
-		resultIvks = append(resultIvks, v.(Invoker))
+		invoker := v.(Invoker)
+		if invoker.GetUrl().ServiceKey() == serviceKey {
+			resultIvks = append(resultIvks, invoker)
+		}
+		if len(resultIvks) == blockSize {
+			return false
+		}
 		return true
 	})
-	if blockSize > len(resultIvks) {
-		return resultIvks
-	}
-	return resultIvks[:blockSize]
+	return resultIvks
 }
 
 // RemoveUrlKeyUnhealthyStatus called when event of provider unregister, delete from black list
 func RemoveUrlKeyUnhealthyStatus(key string) {
-	invokerBlackList.Delete(key)
+	if value, ok := invokerBlackList.LoadAndDelete(key); ok {
+		if invoker, ok2 := value.(Invoker); ok2 {
+			activeBlackListCacheDirty(invoker)
+		}
+	}
 	logger.Info("Remove invoker key = ", key, " from black list")
-	blackListCacheDirty.Store(true)
 }
 
-func GetAndRefreshState() bool {
-	state := blackListCacheDirty.Load()
-	blackListCacheDirty.Store(false)
-	return state
+func activeBlackListCacheDirty(invoker Invoker) {
+	blackListCacheDirty.Store(invoker.GetUrl().ServiceKey(), true)
+}
+
+func GetAndRefreshState(url *common.URL) bool {
+	var needRefresh = false
+	key := url.ServiceKey()
+	if state, ok1 := blackListCacheDirty.Load(key); ok1 {
+		needRefresh, _ = state.(bool)
+	}
+	blackListCacheDirty.Store(key, false)
+	return needRefresh
 }
 
 // TryRefreshBlackList start 3 gr to check at most block=16 invokers in black list
 // if target invoker is available, then remove it from black list
-func TryRefreshBlackList() {
-	if atomic.CompareAndSwapInt32(&blackListRefreshing, 0, 1) {
+func TryRefreshBlackList(url *common.URL) {
+	var (
+		initValue                int32 = 0
+		blackListRefreshingValue *int32
+		ok                       bool
+	)
+	blackListRefreshing, _ := blackListRefreshingMap.LoadOrStore(url.ServiceKey(), &initValue)
+	if blackListRefreshingValue, ok = blackListRefreshing.(*int32); !ok {
+		logger.Warnf("the store value of black list is illegal.")
+		return
+	}
+
+	if atomic.CompareAndSwapInt32(blackListRefreshingValue, 0, 1) {
 		wg := sync.WaitGroup{}
 		defer func() {
-			atomic.CompareAndSwapInt32(&blackListRefreshing, 1, 0)
+			atomic.CompareAndSwapInt32(blackListRefreshingValue, 1, 0)
 		}()
 
-		ivks := GetBlackListInvokers(constant.DEFAULT_BLACK_LIST_RECOVER_BLOCK)
+		ivks := GetBlackListInvokers(url.ServiceKey(), constant.DEFAULT_BLACK_LIST_RECOVER_BLOCK)
 		logger.Debug("blackList len = ", len(ivks))
 
 		for i := 0; i < 3; i++ {

@@ -91,7 +91,7 @@ const (
 	RETRY_PERIOD_KEY                       = "retry.period"
 	RETRY_TIMES_KEY                        = "retry.times"
 	CYCLE_REPORT_KEY                       = "cycle.report"
-	DEFAULT_BLACK_LIST_RECOVER_BLOCK       = 16
+	DEFAULT_BLACK_LIST_RECOVER_BLOCK       = 64
 )
 
 const (

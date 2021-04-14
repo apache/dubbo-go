@@ -97,9 +97,14 @@ func TestRecovery(t *testing.T) {
 
 	protocol.SetInvokerUnhealthyStatus(invoker1)
 	protocol.SetInvokerUnhealthyStatus(invoker2)
-	assert.Equal(t, len(protocol.GetBlackListInvokers(16)), 2)
-	protocol.TryRefreshBlackList()
-	assert.Equal(t, len(protocol.GetBlackListInvokers(16)), 0)
+	assert.Equal(t, len(protocol.GetBlackListInvokers(invoker1.GetUrl().ServiceKey(), 16)), 1)
+	assert.Equal(t, len(protocol.GetBlackListInvokers(invoker2.GetUrl().ServiceKey(), 16)), 1)
+	protocol.TryRefreshBlackList(invoker1.GetUrl())
+	assert.Equal(t, len(protocol.GetBlackListInvokers(invoker1.GetUrl().ServiceKey(), 16)), 0)
+	assert.Equal(t, len(protocol.GetBlackListInvokers(invoker2.GetUrl().ServiceKey(), 16)), 1)
+	protocol.TryRefreshBlackList(invoker2.GetUrl())
+	assert.Equal(t, len(protocol.GetBlackListInvokers(invoker1.GetUrl().ServiceKey(), 16)), 0)
+	assert.Equal(t, len(protocol.GetBlackListInvokers(invoker2.GetUrl().ServiceKey(), 16)), 0)
 }
 
 func setUpAddrCache(r router.Poolable, addrs []protocol.Invoker) router.Cache {

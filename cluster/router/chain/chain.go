@@ -128,7 +128,8 @@ func (c *RouterChain) loop() {
 	for {
 		select {
 		case <-ticker.C:
-			if protocol.GetAndRefreshState() {
+			if protocol.GetAndRefreshState(c.url) {
+				logger.Warnf("start to build route cache because the invokers in black list is changed: %s", c.url.ServiceKey())
 				c.buildCache()
 			}
 		case <-c.notify:
