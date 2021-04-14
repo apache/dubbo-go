@@ -124,6 +124,7 @@ func NewNacosClient(rc *config.RemoteConfig) (naming_client.INamingClient, error
 	clientConfig.Username = rc.Username
 	clientConfig.Password = rc.Password
 	clientConfig.NotLoadCacheAtStart = true
+	clientConfig.NamespaceId = rc.GetParam(constant.NACOS_NAMESPACE_ID, "")
 	configMap["clientConfig"] = clientConfig
 
 	return clients.CreateNamingClient(configMap)
