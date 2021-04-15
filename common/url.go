@@ -344,8 +344,8 @@ func (c *URL) Key() string {
 	return buildString
 }
 
-//CacheInvokerMapKey get dir cacheInvokerMap key
-func (c *URL) CacheInvokerMapKey() string {
+//GetCacheInvokerMapKey get directory cacheInvokerMap key
+func (c *URL) GetCacheInvokerMapKey() string {
 	urlNew, _ := NewURL(c.PrimitiveURL)
 
 	buildString := fmt.Sprintf("%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s&timestamp=%s",
