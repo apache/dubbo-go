@@ -20,6 +20,7 @@ package conncheck
 import (
 	"fmt"
 	"testing"
+	"time"
 )
 
 import (
@@ -63,8 +64,10 @@ func TestConnCheckRouterRoute(t *testing.T) {
 	invoker1 := NewMockInvoker(url1)
 	invoker2 := NewMockInvoker(url2)
 	invoker3 := NewMockInvoker(url3)
-	protocol.SetInvokerUnhealthyStatus(invoker1)
-	protocol.SetInvokerUnhealthyStatus(invoker2)
+	state1 := protocol.NewServiceState(consumerURL.ServiceKey())
+
+	state1.SetInvokerUnhealthyStatus(invoker1)
+	state1.SetInvokerUnhealthyStatus(invoker2)
 
 	invokers = append(invokers, invoker1, invoker2, invoker3)
 	inv := invocation.NewRPCInvocation(connCheckRouteMethodNameTest, nil, nil)
@@ -74,7 +77,7 @@ func TestConnCheckRouterRoute(t *testing.T) {
 	assert.True(t, len(res.ToArray()) == 1)
 
 	// check blacklist remove
-	protocol.RemoveInvokerUnhealthyStatus(invoker1)
+	state1.RemoveInvokerUnhealthyStatus(invoker1)
 	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*ConnCheckRouter), invokers), consumerURL, inv)
 	// now  invoker3 invoker1 is healthy
 	assert.True(t, len(res.ToArray()) == 2)
@@ -95,16 +98,22 @@ func TestRecovery(t *testing.T) {
 	invoker1.EXPECT().IsAvailable().Return(true).AnyTimes()
 	invoker2.EXPECT().IsAvailable().Return(true).AnyTimes()
 
-	protocol.SetInvokerUnhealthyStatus(invoker1)
-	protocol.SetInvokerUnhealthyStatus(invoker2)
-	assert.Equal(t, len(protocol.GetBlackListInvokers(invoker1.GetUrl().ServiceKey(), 16)), 1)
-	assert.Equal(t, len(protocol.GetBlackListInvokers(invoker2.GetUrl().ServiceKey(), 16)), 1)
-	protocol.TryRefreshBlackList(invoker1.GetUrl())
-	assert.Equal(t, len(protocol.GetBlackListInvokers(invoker1.GetUrl().ServiceKey(), 16)), 0)
-	assert.Equal(t, len(protocol.GetBlackListInvokers(invoker2.GetUrl().ServiceKey(), 16)), 1)
-	protocol.TryRefreshBlackList(invoker2.GetUrl())
-	assert.Equal(t, len(protocol.GetBlackListInvokers(invoker1.GetUrl().ServiceKey(), 16)), 0)
-	assert.Equal(t, len(protocol.GetBlackListInvokers(invoker2.GetUrl().ServiceKey(), 16)), 0)
+	state1 := protocol.NewServiceState(invoker1.GetUrl().ServiceKey())
+	state2 := protocol.NewServiceState(invoker2.GetUrl().ServiceKey())
+	assert.Equal(t, len(state1.GetBlackListInvokers(16)), 0)
+	assert.Equal(t, len(state2.GetBlackListInvokers(16)), 0)
+	state1.SetInvokerUnhealthyStatus(invoker1)
+	state2.SetInvokerUnhealthyStatus(invoker2)
+	assert.Equal(t, len(state1.GetBlackListInvokers(16)), 1)
+	assert.Equal(t, len(state2.GetBlackListInvokers(16)), 1)
+	state1.TryRefreshBlackList()
+	time.Sleep(300 * time.Millisecond)
+	assert.Equal(t, len(state1.GetBlackListInvokers(16)), 0)
+	assert.Equal(t, len(state2.GetBlackListInvokers(16)), 1)
+	state2.TryRefreshBlackList()
+	time.Sleep(300 * time.Millisecond)
+	assert.Equal(t, len(state1.GetBlackListInvokers(16)), 0)
+	assert.Equal(t, len(state2.GetBlackListInvokers(16)), 0)
 }
 
 func setUpAddrCache(r router.Poolable, addrs []protocol.Invoker) router.Cache {

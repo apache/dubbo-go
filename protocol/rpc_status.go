@@ -18,6 +18,8 @@
 package protocol
 
 import (
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -25,16 +27,12 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/logger"
 )
 
 var (
-	methodStatistics       sync.Map // url -> { methodName : RPCStatus}
-	serviceStatistic       sync.Map // url -> RPCStatus
-	invokerBlackList       sync.Map // store unhealthy url blackList
-	blackListCacheDirty    sync.Map // store if the cache in chain is not refreshed by blacklist
-	blackListRefreshingMap sync.Map // store if the refresing method is processing
+	methodStatistics sync.Map // url -> { methodName : RPCStatus}
+	serviceStatistic sync.Map // url -> RPCStatus
+	serviceStateMap  sync.Map
 )
 
 func init() {
@@ -189,41 +187,124 @@ func CleanAllStatus() {
 		return true
 	}
 	serviceStatistic.Range(delete2)
-	delete3 := func(key, _ interface{}) bool {
-		invokerBlackList.Delete(key)
+	delete3 := func(_, value interface{}) bool {
+		if v, ok := value.(*ServiceHealthState); ok {
+			v.blackList.Range(func(key, value interface{}) bool {
+				v.blackList.Delete(key)
+				return true
+			})
+		}
 		return true
 	}
-	invokerBlackList.Range(delete3)
+	serviceStateMap.Range(delete3)
+}
+
+// if the ip is changed in kubernetes, then the ip will not exist. So we should recycle the invoker.
+// there are two ways :
+// 1. we should know when the invoker is dropped and clear the data from blacklist
+// 2. we add a counter to collect the retry times. After 512 times(just now) retry, we should clear it.
+type invokerState struct {
+	invoker    Invoker
+	retryTimes int32
+}
+
+func newInvokeState(invoker Invoker) *invokerState {
+	return &invokerState{
+		invoker: invoker,
+	}
+}
+
+func (s *invokerState) increateRetryTimes() {
+	s.retryTimes++
 }
 
 // GetInvokerHealthyStatus get invoker's conn healthy status
 func GetInvokerHealthyStatus(invoker Invoker) bool {
-	_, found := invokerBlackList.Load(invoker.GetUrl().Key())
-	return !found
+	if v, ok := serviceStateMap.Load(invoker.GetUrl().ServiceKey()); ok {
+		if state, ok := v.(*ServiceHealthState); ok {
+			_, found := state.blackList.Load(invoker.GetUrl().Key())
+			return !found
+		}
+	}
+	return true
+}
+
+// nolint
+func GetAndRefreshState(url *common.URL) bool {
+	if v, ok := serviceStateMap.Load(url.ServiceKey()); ok {
+		if state, ok := v.(*ServiceHealthState); ok {
+			return atomic.CompareAndSwapInt32(state.rebuildRoute, 1, 0)
+		}
+	}
+	return false
+}
+
+type ServiceHealthState struct {
+	serviceKey string
+	//if some process in refresh
+	refreshState *int32
+	refresh      atomic.Value
+	rebuildRoute *int32
+	blackList    sync.Map // store unhealthy url blackList
+}
+
+func NewServiceState(serviceKey string) *ServiceHealthState {
+	if v, ok := serviceStateMap.Load(serviceKey); ok {
+		return v.(*ServiceHealthState)
+	}
+	serviceState := &ServiceHealthState{
+		refreshState: new(int32),
+		rebuildRoute: new(int32),
+		serviceKey:   serviceKey,
+	}
+	serviceStateMap.Store(serviceKey, serviceState)
+	return serviceState
+}
+
+func (s *ServiceHealthState) reset() {
+	s.refresh.Store(false)
+	atomic.StoreInt32(s.rebuildRoute, 0)
+	s.blackList.Range(func(key, value interface{}) bool {
+		s.blackList.Delete(key)
+		return true
+	})
+}
+
+func (s *ServiceHealthState) configNeedRefresh(needRefresh bool) {
+	s.refresh.Store(needRefresh)
+}
+
+func (s *ServiceHealthState) needRefresh() bool {
+	v := s.refresh.Load()
+	if v == nil {
+		return false
+	}
+	return v.(bool)
 }
 
 // SetInvokerUnhealthyStatus add target invoker to black list
-func SetInvokerUnhealthyStatus(invoker Invoker) {
-	invokerBlackList.Store(invoker.GetUrl().Key(), invoker)
-	logger.Info("Add invoker ip = ", invoker.GetUrl().Location, " to black list")
-	activeBlackListCacheDirty(invoker)
+func (s *ServiceHealthState) SetInvokerUnhealthyStatus(invoker Invoker) {
+	s.configNeedRefresh(true)
+	s.blackList.Store(invoker.GetUrl().Key(), newInvokeState(invoker))
+	logger.Infof("Add invoker ip(%s) to black list for service(%s)", invoker.GetUrl().Location, invoker.GetUrl().ServiceKey())
+	s.activeBlackListCacheDirty()
 }
 
 // RemoveInvokerUnhealthyStatus remove unhealthy status of target invoker from blacklist
-func RemoveInvokerUnhealthyStatus(invoker Invoker) {
-	invokerBlackList.Delete(invoker.GetUrl().Key())
-	logger.Info("Remove invoker ip = ", invoker.GetUrl().Location, " from black list")
-	activeBlackListCacheDirty(invoker)
+func (s *ServiceHealthState) RemoveInvokerUnhealthyStatus(invoker Invoker) {
+	s.blackList.Delete(invoker.GetUrl().Key())
+	logger.Infof("Remove invoker ip(%s) from black list for service(%s)", invoker.GetUrl().Location, invoker.GetUrl().ServiceKey())
+	s.activeBlackListCacheDirty()
 }
 
 // GetBlackListInvokers get at most size of blockSize invokers from black list
-func GetBlackListInvokers(serviceKey string, blockSize int) []Invoker {
-	resultIvks := make([]Invoker, 0, blockSize)
-	invokerBlackList.Range(func(k, v interface{}) bool {
-		invoker := v.(Invoker)
-		if invoker.GetUrl().ServiceKey() == serviceKey {
-			resultIvks = append(resultIvks, invoker)
+func (s *ServiceHealthState) GetBlackListInvokers(blockSize int) []*invokerState {
+	resultIvks := make([]*invokerState, 0, blockSize)
+	s.blackList.Range(func(k, v interface{}) bool {
+		if v == nil {
+			return true
 		}
+		resultIvks = append(resultIvks, v.(*invokerState))
 		if len(resultIvks) == blockSize {
 			return false
 		}
@@ -233,62 +314,62 @@ func GetBlackListInvokers(serviceKey string, blockSize int) []Invoker {
 }
 
 // RemoveUrlKeyUnhealthyStatus called when event of provider unregister, delete from black list
-func RemoveUrlKeyUnhealthyStatus(key string) {
-	if value, ok := invokerBlackList.LoadAndDelete(key); ok {
-		if invoker, ok2 := value.(Invoker); ok2 {
-			activeBlackListCacheDirty(invoker)
-		}
+func (s *ServiceHealthState) RemoveUrlKeyUnhealthyStatus(key string) {
+	if _, ok := s.blackList.Load(key); ok {
+		s.blackList.Delete(key)
+		s.activeBlackListCacheDirty()
 	}
 	logger.Info("Remove invoker key = ", key, " from black list")
 }
 
-func activeBlackListCacheDirty(invoker Invoker) {
-	blackListCacheDirty.Store(invoker.GetUrl().ServiceKey(), true)
-}
-
-func GetAndRefreshState(url *common.URL) bool {
-	var needRefresh = false
-	key := url.ServiceKey()
-	if state, ok1 := blackListCacheDirty.Load(key); ok1 {
-		needRefresh, _ = state.(bool)
-	}
-	blackListCacheDirty.Store(key, false)
-	return needRefresh
+func (s *ServiceHealthState) activeBlackListCacheDirty() {
+	atomic.StoreInt32(s.rebuildRoute, 1)
 }
 
 // TryRefreshBlackList start 3 gr to check at most block=16 invokers in black list
 // if target invoker is available, then remove it from black list
-func TryRefreshBlackList(url *common.URL) {
-	var (
-		initValue                int32 = 0
-		blackListRefreshingValue *int32
-		ok                       bool
-	)
-	blackListRefreshing, _ := blackListRefreshingMap.LoadOrStore(url.ServiceKey(), &initValue)
-	if blackListRefreshingValue, ok = blackListRefreshing.(*int32); !ok {
-		logger.Warnf("the store value of black list is illegal.")
-		return
+func (s *ServiceHealthState) TryRefreshBlackList() {
+	if s.needRefresh() {
+		go s.refreshBlackList()
 	}
+}
 
-	if atomic.CompareAndSwapInt32(blackListRefreshingValue, 0, 1) {
-		wg := sync.WaitGroup{}
+func (s *ServiceHealthState) refreshBlackList() {
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Errorf("try to refresh black list failed: %s, %+v", s.serviceKey, r)
+		}
+	}()
+
+	if atomic.CompareAndSwapInt32(s.refreshState, 0, 1) {
 		defer func() {
-			atomic.CompareAndSwapInt32(blackListRefreshingValue, 1, 0)
+			atomic.CompareAndSwapInt32(s.refreshState, 1, 0)
 		}()
 
-		ivks := GetBlackListInvokers(url.ServiceKey(), constant.DEFAULT_BLACK_LIST_RECOVER_BLOCK)
-		logger.Debug("blackList len = ", len(ivks))
-
+		ivkStates := s.GetBlackListInvokers(constant.DEFAULT_BLACK_LIST_RECOVER_BLOCK)
+		logger.Debug("blackList len = ", len(ivkStates))
+		if len(ivkStates) == 0 {
+			logger.Infof("there is no data in black list, and will not refresh black list.")
+			s.configNeedRefresh(false)
+			return
+		}
+		wg := sync.WaitGroup{}
 		for i := 0; i < 3; i++ {
 			wg.Add(1)
-			go func(ivks []Invoker, i int) {
+			go func(ivks []*invokerState, i int) {
 				defer wg.Done()
 				for j, _ := range ivks {
-					if j%3-i == 0 && ivks[j].(Invoker).IsAvailable() {
-						RemoveInvokerUnhealthyStatus(ivks[i])
+					if j%3-i == 0 && ivks[j].invoker.IsAvailable() {
+						s.RemoveInvokerUnhealthyStatus(ivks[j].invoker)
+					} else {
+						ivks[j].increateRetryTimes()
+					}
+					// if the ip is changed in kubernetes, then the ip will not exist. So we should recycle the invoker.
+					if ivks[j].retryTimes > constant.DEFAULT_BLACK_LIST_MAX_RETRY_TIMES {
+						s.RemoveInvokerUnhealthyStatus(ivks[j].invoker)
 					}
 				}
-			}(ivks, i)
+			}(ivkStates, i)
 		}
 		wg.Wait()
 	}

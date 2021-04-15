@@ -167,7 +167,7 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 		invoker.taskList.Put(timerTask)
 
 		logger.Errorf("Failback to invoke the method %v in the service %v, wait for retry in background. Ignored exception: %v.\n",
-			methodName, url.Service(), result.Error().Error())
+			methodName, url.Service(), result.Error())
 		// ignore
 		return &protocol.RPCResult{}
 	}

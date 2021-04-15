@@ -66,6 +66,8 @@ type RegistryDirectory struct {
 	//serviceKey                     string
 	//forbidden                      atomic.Bool
 	registerLock sync.Mutex // this lock if for register
+	// healthState
+	serviceHealthState *protocol.ServiceHealthState
 }
 
 // NewRegistryDirectory will create a new RegistryDirectory
@@ -80,6 +82,8 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.
 		cacheInvokersMap: &sync.Map{},
 		serviceType:      url.SubURL.Service(),
 		registry:         registry,
+		// init serviceHealthState
+		serviceHealthState: protocol.NewServiceState(url.ServiceKey()),
 	}
 
 	dir.consumerURL = dir.getConsumerUrl(url.SubURL)
@@ -330,7 +334,7 @@ func (dir *RegistryDirectory) uncacheInvoker(url *common.URL) protocol.Invoker {
 
 func (dir *RegistryDirectory) uncacheInvokerWithKey(key string) protocol.Invoker {
 	logger.Debugf("service will be deleted in cache invokers: invokers key is  %s!", key)
-	protocol.RemoveUrlKeyUnhealthyStatus(key)
+	dir.serviceHealthState.RemoveUrlKeyUnhealthyStatus(key)
 	if cacheInvoker, ok := dir.cacheInvokersMap.Load(key); ok {
 		dir.cacheInvokersMap.Delete(key)
 		return cacheInvoker.(protocol.Invoker)
@@ -401,6 +405,11 @@ func (dir *RegistryDirectory) List(invocation protocol.Invocation) []protocol.In
 		return invokers
 	}
 	return routerChain.Route(dir.consumerURL, invocation)
+}
+
+// Fetch ServiceHealthState
+func (dir *RegistryDirectory) ServiceHealthState() *protocol.ServiceHealthState {
+	return dir.serviceHealthState
 }
 
 // IsAvailable  whether the directory is available

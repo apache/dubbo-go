@@ -27,4 +27,5 @@ import (
 type Directory interface {
 	common.Node
 	List(invocation protocol.Invocation) []protocol.Invoker
+	ServiceHealthState() *protocol.ServiceHealthState
 }
