@@ -151,7 +151,7 @@ func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invoc
 		invoker.getServiceHealthState().SetInvokerUnhealthyStatus(selectedInvoker)
 		otherInvokers := getOtherInvokers(invokers, selectedInvoker)
 		// do reselect
-		for i := 0; i < 3; i++ {
+		for i := 0; i < 5; i++ {
 			if len(otherInvokers) == 0 {
 				// no other ivk to reselect, return to fallback
 				break

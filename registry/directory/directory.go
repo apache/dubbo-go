@@ -83,7 +83,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.
 		serviceType:      url.SubURL.Service(),
 		registry:         registry,
 		// init serviceHealthState
-		serviceHealthState: protocol.NewServiceState(url.ServiceKey()),
+		serviceHealthState: protocol.NewServiceState(url.SubURL.ServiceKey()),
 	}
 
 	dir.consumerURL = dir.getConsumerUrl(url.SubURL)

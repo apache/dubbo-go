@@ -349,7 +349,7 @@ func (s *ServiceHealthState) refreshBlackList() {
 		ivkStates := s.GetBlackListInvokers(constant.DEFAULT_BLACK_LIST_RECOVER_BLOCK)
 		logger.Debug("blackList len = ", len(ivkStates))
 		if len(ivkStates) == 0 {
-			logger.Infof("there is no data in black list, and will not refresh black list.")
+			logger.Infof("there is no data in black list(%s), and will not refresh black list.", s.serviceKey)
 			s.configNeedRefresh(false)
 			return
 		}
